@@ -1,0 +1,38 @@
+base:
+  command:
+    help:
+      map: Send a graph wit' visual monitorin'
+      cpu-score: Get her rutter speed score.
+      guess-memory: How many band 'o pirates can she handle?
+      monitoring: Sees title-text monitorin'
+      reload: Inspects th' ship 'n repairs any damage
+      status: Sends a scroll of updated 'treasures' react finds.
+      version: Check the docks if we can steal anew
+      guess: How much can th' vessel handle
+      query: Whats on deck?
+      servers: Who is in our fleet?
+      help: Help! SOS! We are in need of rescue
+  message:
+    update-found: There is a new ship to steal out there
+    action:
+      fully-automatic: '%s Be a full automatic action.'
+      manual:
+        finished: 'Manual task: %s done %s'
+        started: 'Manual task: %s set off for sail.'
+      stabilizing: '%s: Fixin...'
+      fixed: '%s: Repairs be complete!'
+    sided:
+      ingame: You must be on deck to use this.
+      console: You cant use this on deck
+    insufficient-permission: Insufficient Permission
+    monitoring:
+      enabled: Monitorin' be here
+      disabled: Monitorin' fleed
+    internal:
+      reloaded: ' v%s Repaired'
+    mapping:
+      disabled: Monitorin' fleed
+      enabled: Mappin' be here
+language:
+  name: Pirate Speak
+  code: pirate
