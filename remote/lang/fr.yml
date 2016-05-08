@@ -1,0 +1,38 @@
+base:
+  command:
+    help:
+      map: activer le monitoring graphique
+      cpu-score: suppose le score du CPU
+      guess-memory: suppose les capacités du serveur avec X Ram
+      monitoring: activer le monitoring avec title-text
+      reload: recharge toute la configuration de react.
+      status: Envoie un livre avec les questions répondu trouvées.
+      version: Compare la version du plugin actuel avec la dernière version.
+      guess: Suppose les capacités du serveur.
+      query: Query information on plugin(s).
+      servers: Liste tous les serveurs sur le network avec les données.
+      help: Envoie un livre d'informations sur les rubriques d'aide.
+  message:
+    update-found: Une mise à jour a été trouvée !
+    action:
+      fully-automatic: '%s est une action entièrement automatique.'
+      manual:
+        finished: 'Action manuelle: %s fini %s'
+        started: 'Action manuelle: %s commence.'
+      stabilizing: '%s: Stabilisation...'
+      fixed: '%s: Fixé !'
+    sided:
+      ingame: Tu dois être connecté pour utiliser ça.
+      console: Tu dois passer par la console pour utiliser ça.
+    insufficient-permission: Droits insuffisant
+    monitoring:
+      enabled: Monitoring activé
+      disabled: Monitoring désactivé
+    internal:
+      reloaded: ' v%s Redémarré'
+    mapping:
+      disabled: Mapping désactivé
+      enabled: Mapping activé
+language:
+  name: Français
+  code: fr
