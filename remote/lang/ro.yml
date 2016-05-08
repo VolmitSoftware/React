@@ -7,7 +7,7 @@ base:
       monitoring: porneste monitorul titlu-text
       reload: reloadeaza toate configuratiile REACT.
       status: iti da o carte cu updateurile pluginurile.
-      lang: List all supported languages (or swap them)
+      lang: Lista cu toate limbile suportate
       version: Compara versiunea ta cu versiunile noi ale pluginului.
       guess: Ghiceste capabilitatea serverului.
       query: Informatii Query pentru plugin(uri).
