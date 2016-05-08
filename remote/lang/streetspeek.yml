@@ -6,6 +6,7 @@ base:
       guess-memory: Because ram makes your faster
       monitoring: Text on the vision
       reload: Does spooky magic behind something
+      lang: List all supported languages (or swap them)
       status: Ugh... books
       version: Get the latest stuff
       guess: Push it to the limit... what is it?
