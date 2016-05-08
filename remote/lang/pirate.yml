@@ -24,7 +24,7 @@ base:
     sided:
       ingame: You must be on deck to use this.
       console: You cant use this on deck
-    insufficient-permission: Insufficient Permission
+    insufficient-permission: Get Yir Keeprs' off me booty!
     monitoring:
       enabled: Monitorin' be here
       disabled: Monitorin' fleed
