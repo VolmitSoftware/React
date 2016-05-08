@@ -8,7 +8,7 @@ base:
       reload: "L\xc3\xa4dt alle Konfigurationsdateien von React neu."
       status: Gibt ein Buch mit aktualisierten Fehlern die React findet.
       version: "Pr\xc3\xbcft die Aktualit\xc3\xa4t der installierten Version von React."
-      lang: List all supported languages (or swap them)
+      lang: Zeigt alle unterstützten Sprachen an (oder wechselt sie)
       guess: "Berechnet die ungefähre Leistungsf\xc3\xa4higkeit deines Servers."
       query: "Ermittelt Informationen \xc3\xbcber Plugin(s)."
       servers: Zeigt alle Server auf dem Netzwerk an die React installiert haben.
