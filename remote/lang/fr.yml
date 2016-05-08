@@ -5,6 +5,7 @@ base:
       cpu-score: Obtient le score du CPU
       guess-memory: Suppose les capacités du serveur avec X Ram
       monitoring: permet le monitoring title-text
+      lang: HELP! EDIT ME EDIT ME
       reload: recharge toute la configuration de react.
       status: Envoie un livre avec les questions répondu trouvées.
       version: Compare la version du plugin actuel avec la dernière version.
