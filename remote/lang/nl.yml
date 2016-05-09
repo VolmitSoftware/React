@@ -10,7 +10,7 @@ base:
       version: Vergelijk jouw versie met een nieuwere versie.
       guess: Raad server mogelijkheden.
       query: Vraag infomatie over plugin(s) op.
-      servers: Bekijk alle server op het network met data.
+      servers: Bekijk alle servers op het network met data.
       help: Stuurt een boek met infomatie met hulp.
   message:
     update-found: Update gevonden!
