@@ -1,5 +1,5 @@
 react:
   version:
-    name: '1.7.2'
-    code: 1702
-    desc: 'Something might pop up here.'
+    name: '1.7'
+    code: 1700
+    desc: 'New update system'
