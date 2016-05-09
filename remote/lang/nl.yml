@@ -1,0 +1,38 @@
+base:
+  command:
+    help:
+      map: Zet visuele grafische controle aan.
+      cpu-score: Bekijke jouw server cpu score.
+      guess-memory: Raad server mogelijkheden met X Ram.
+      monitoring: Zet titel-tekst controle aan.
+      reload: Herlaad alle react configuratie bestanden.
+      status: Stuurt een boek met problemen die react vind.
+      version: Vergelijk jouw versie met een nieuwere versie.
+      guess: Raad server mogelijkheden.
+      query: Vraag infomatie over plugin(s) op.
+      servers: Bekijk alle servers op het network met data.
+      help: Stuurt een boek met infomatie met hulp.
+  message:
+    update-found: Update gevonden!
+    action:
+      fully-automatic: '%s is een volledig automatische actie.'
+      manual:
+        finished: 'Handmatige Actie: %s klaar %s'
+        started: 'Handmatige Actie: %s gestart.'
+      stabilizing: '%s: Stabiliseren...'
+      fixed: '%s: gemaakt!'
+    sided:
+      ingame: Je moet ingame zijn om dit te kunnen doen.
+      console: Je moet dit doen vanuit de console.
+    insufficient-permission: Onvoldoende toegang.
+    monitoring:
+      enabled: Controle aan
+      disabled: Controle uit
+    internal:
+      reloaded: ' v%s Herladen'
+    mapping:
+      disabled: In kaart brengen uit
+      enabled: In kaart brengen aan
+language:
+  name: Dutch
+  code: nl
