@@ -1,5 +1,5 @@
 react:
   version:
-    name: '1.7'
-    code: 1700
-    desc: 'New update system'
+    name: '1.7.1'
+    code: 1701
+    desc: 'Minor Bugfixes and more.'
