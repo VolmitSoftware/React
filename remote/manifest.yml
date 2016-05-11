@@ -1,5 +1,5 @@
 react:
   version:
-    name: '1.7.2'
-    code: 1702
-    desc: 'Now Compatible with 1.9.4!'
+    name: '1.7.3'
+    code: 1703
+    desc: 'Verbose in the console or ingame! New command'
