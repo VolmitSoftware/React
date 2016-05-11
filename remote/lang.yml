@@ -1,4 +1,9 @@
 all:
 - en
 - de
+- da
+- nl
+- ro
+- fr
 - pirate
+- streetspeek

@@ -7,6 +7,7 @@ base:
       monitoring: enables title-text monitoring
       reload: reloads all react configuration files.
       status: Sends a book of updated issues react finds.
+      lang: List all supported languages (or swap them)
       version: Compares your version with any new ones.
       guess: Guess Server Capabilities.
       query: Query information on plugin(s).

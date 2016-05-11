@@ -1,35 +1,36 @@
 base:
   command:
     help:
-      map: Aktiviert die grafische Darstellung
-      cpu-score: Berecne den CPU-Score deines Servers.
-      guess-memory: "Berechnet die ungef\xc3\xa4hre maximale Spieleranzahl mit X RAM"
-      monitoring: Aktiviert die Darstellung mit Titeln
+      map: Aktiviert die grafische Darstellung.
+      cpu-score: Berechnet den CPU-Score des Servers.
+      guess-memory: "Berechnet die ungef\xc3\xa4hre maximale Spieleranzahl mit X RAM."
+      monitoring: Aktiviert die Darstellung über der Actionbar.
       reload: "L\xc3\xa4dt alle Konfigurationsdateien von React neu."
-      status: Gibt dir ein Buch mit aktualisierten Fehlern die React findet.
-      version: "Pr\xc3\xbcft die Aktualit\xc3\xa4t deiner aktuellen Version."
-      guess: "R\xc3\xa4t die Leistungsf\xc3\xa4higkeit deines Servers."
+      status: Gibt ein Buch mit aktualisierten Fehlern die React findet.
+      version: "Pr\xc3\xbcft die Aktualit\xc3\xa4t der installierten Version von React."
+      lang: Zeigt alle unterstützten Sprachen an (oder wechselt sie)
+      guess: "Berechnet die ungefähre Leistungsf\xc3\xa4higkeit deines Servers."
       query: "Ermittelt Informationen \xc3\xbcber Plugin(s)."
       servers: Zeigt alle Server auf dem Netzwerk an die React installiert haben.
-      help: Gibt dir ein Buch mit Hilfe-Themen.
+      help: Gibt ein Buch mit Hilfe-Themen.
   message:
     update-found: Update gefunden!
     action:
       fully-automatic: '%s ist eine voll automatische Aktion.'
       manual:
         finished: 'Manuelle Aktion: %s fertiggestellt in %s'
-        started: 'Manuelle Action: %s gestartet.'
+        started: 'Manuelle Aktion: %s gestartet.'
       stabilizing: '%s: Stabilisiere...'
       fixed: '%s: Behoben!'
     sided:
-      ingame: "Du musst im Spiel sein um dies zu machen k\xc3\xb6nnen."
-      console: Du musst dies von der Konsole aus benutzen.
-    insufficient-permission: Unzureichende Rechte
+      ingame: "Dieser Kommando kann nur im Spiel ausgeführt werden!"
+      console: Dieser Kommando muss in der Konsole ausgeführt werden!
+    insufficient-permission: Unzureichende Rechte!
     monitoring:
       enabled: Darstellung aktiviert
       disabled: Darstellung deaktiviert
     internal:
-      reloaded: '%s Neu Geladen'
+      reloaded: 'v%s Neu Geladen'
     mapping:
       disabled: Kartendarstellung deaktiviert
       enabled: Kartendarstellung aktiviert

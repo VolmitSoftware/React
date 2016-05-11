@@ -1,0 +1,39 @@
+base:
+  command:
+    help:
+      map: Zet visuele graphische monitoring aan.
+      cpu-score: Geeft je server's cpu score.
+      guess-memory: Geeft het aantal geschatte spelers voor een X aantal Ram.
+      monitoring: Zet titel-tekst monitoring aan.
+      reload: Herlaad alle configuratie bestanden van React.
+      status: Geeft een boek met alle gecorrigeerde problemen die React heeft gevonden.
+      lang: Lijst van alle ondersteunde talen (of wijzig de taal)
+      version: Vergelijk jouw versie met de nieuwe.
+      guess: Geeft het aantal maximaal geschatte spelers weer.
+      query: Vraag informatie op over plugin(s).
+      servers: Geeft een lijst van alle servers op het netwerk met gegevens.
+      help: Geeft een boek met informatie over help topics.
+  message:
+    update-found: Er is een nieuwe update!
+    action:
+      fully-automatic: '%s is een volautomatische actie.'
+      manual:
+        finished: 'Manuele Actie: %s voltooid %s'
+        started: 'Manuele Actie: %s begonnen.'
+      stabilizing: '%s: Stabilizeren...'
+      fixed: '%s: Hersteld!'
+    sided:
+      ingame: Je moet ingame zijn om dit te doen.
+      console: Je moet dit vanuit de console doen.
+    insufficient-permission: Je hebt geen toestemming om dit te doen.
+    monitoring:
+      enabled: Monitoring aan
+      disabled: Monitoring uit
+    internal:
+      reloaded: ' v%s Herladen'
+    mapping:
+      disabled: Live map uit
+      enabled: Live map aan
+language:
+  name: Nederland
+  code: nl

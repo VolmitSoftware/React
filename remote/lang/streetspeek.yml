@@ -1,0 +1,39 @@
+base:
+  command:
+    help:
+      map: Draw the lines on a paper
+      cpu-score: Faster is gooder
+      guess-memory: Because ram makes your faster
+      monitoring: Text on the vision
+      reload: Does spooky magic behind something
+      lang: List all supported languages (or swap them)
+      status: Ugh... books
+      version: Get the latest stuff
+      guess: Push it to the limit... what is it?
+      query: Plugin stuff and stuff.
+      servers: Show networks and stuff
+      help: Ugh... More books.
+  message:
+    update-found: Yo, got ya another react. Its better than the last one.
+    action:
+      fully-automatic: '%s be fully-auto'
+      manual:
+        finished: 'That same task: %s finished %s'
+        started: 'Some task: %s started.'
+      stabilizing: '%s: I got chu'
+      fixed: '%s: Yeah. And stay down.'
+    sided:
+      ingame: Get on your client at least...
+      console: You need the black screen with white symbols on it.
+    insufficient-permission: Yo, you cant pass without the password.
+    monitoring:
+      enabled: Funny text on the screen turned on.
+      disabled: Spooky text left the vision.
+    internal:
+      reloaded: ' v%s Spooky stuff did stuff behind the stuff'
+    mapping:
+      disabled: Poof! Whurrrrd it go?!?!?
+      enabled: A paper with lines on it randomly appears...
+language:
+  name: Street Speek
+  code: streetspeek

@@ -1,0 +1,5 @@
+react:
+  version:
+    name: '1.7.3'
+    code: 1703
+    desc: 'Verbose in the console or ingame! New command'
