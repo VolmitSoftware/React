@@ -1,5 +1,5 @@
 react:
   version:
-    name: '1.7.5'
-    code: 1705
-    desc: 'Fix update message on react reload (even if there isnt an update)'
+    name: '1.7.7'
+    code: 1707
+    desc: 'Major Performance Improvement for HeartBeat Thread'
