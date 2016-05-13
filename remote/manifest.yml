@@ -1,5 +1,5 @@
 react:
   version:
-    name: '1.7.7'
-    code: 1707
-    desc: 'Major Performance Improvement for HeartBeat Thread'
+    name: '1.7.9'
+    code: 1709
+    desc: 'Several bugfixes.'
