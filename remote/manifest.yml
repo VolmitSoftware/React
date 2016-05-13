@@ -1,5 +1,5 @@
 react:
   version:
-    name: '1.7.9'
-    code: 1709
-    desc: 'Several bugfixes.'
+    name: '1.8'
+    code: 1800
+    desc: 'Fix many issues with actions & the updater'
