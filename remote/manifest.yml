@@ -1,5 +1,5 @@
 react:
   version:
-    name: '1.8.4'
-    code: 1804
-    desc: 'NEW Commands and fixes!'
+    name: '1.8.5'
+    code: 1805
+    desc: 'Bugfixes and performence improvements.'
