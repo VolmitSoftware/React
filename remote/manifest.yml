@@ -1,5 +1,5 @@
 react:
   version:
-    name: '1.8.3'
-    code: 1803
-    desc: 'NEW Action: Purge Chunks (manual)'
+    name: '1.8.4'
+    code: 1804
+    desc: 'NEW Commands and fixes!'
