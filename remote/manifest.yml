@@ -1,5 +1,5 @@
 react:
   version:
-    name: '1.8'
-    code: 1800
-    desc: 'Fix many issues with actions & the updater'
+    name: '1.8.1'
+    code: 1801
+    desc: 'Performance Improvements'
