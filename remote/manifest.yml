@@ -1,5 +1,5 @@
 react:
   version:
-    name: '1.8.6'
-    code: 1806
-    desc: 'Speed up networking for the react client & Bugfixes'
+    name: '1.8.7'
+    code: 1807
+    desc: 'Heartbeat threading tweaks.'
