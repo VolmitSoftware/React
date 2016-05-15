@@ -1,5 +1,5 @@
 react:
   version:
-    name: '1.8.5'
-    code: 1805
-    desc: 'Bugfixes and performence improvements.'
+    name: '1.8.6'
+    code: 1806
+    desc: 'Speed up networking for the react client & Bugfixes'
