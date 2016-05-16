@@ -32,7 +32,7 @@ base:
     internal:
       reloaded: ' v%s Repaired'
     mapping:
-      disabled: Monitorin' fleed
+      disabled: Mappin' sailed away
       enabled: Mappin' be here
 language:
   name: Pirate Speak
