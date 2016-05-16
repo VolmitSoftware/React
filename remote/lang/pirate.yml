@@ -10,7 +10,7 @@ base:
       version: Check the docks if we can steal anew
       lang: List all supported languages (or swap them)
       guess: How much can th' vessel handle
-      query: Whats on deck?
+      query: What's on deck?
       servers: Who is in our fleet?
       help: Help! SOS! We are in need of rescue
   message:
@@ -24,7 +24,7 @@ base:
       fixed: '%s: Repairs be complete!'
     sided:
       ingame: You must be on deck to use this.
-      console: You cant use this on deck
+      console: You can't use this on deck
     insufficient-permission: Get Yir Keeprs' off me booty!
     monitoring:
       enabled: Monitorin' be here
