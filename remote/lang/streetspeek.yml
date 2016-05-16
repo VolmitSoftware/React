@@ -23,7 +23,7 @@ base:
       stabilizing: '%s: I got chu'
       fixed: '%s: Yeah. And stay down.'
     sided:
-      ingame: Get on your client at least...
+      ingame: Man, at least be on the client or somethin'...
       console: You need the black screen with white symbols on it.
     insufficient-permission: Yo, you cant pass without the password.
     monitoring:
