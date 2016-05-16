@@ -11,7 +11,7 @@ base:
       lang: List all supported languages (or swap them)
       guess: How much can th' vessel handle
       query: What's on deck?
-      servers: Who is in our fleet?
+      servers: Who be in our fleet?
       help: Help! SOS! We are in need of rescue
   message:
     update-found: There be a new ship to steal out there
