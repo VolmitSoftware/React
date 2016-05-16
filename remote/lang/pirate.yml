@@ -14,7 +14,7 @@ base:
       servers: Who is in our fleet?
       help: Help! SOS! We are in need of rescue
   message:
-    update-found: There is a new ship to steal out there
+    update-found: There be a new ship to steal out there
     action:
       fully-automatic: '%s Be a full automatic action.'
       manual:
