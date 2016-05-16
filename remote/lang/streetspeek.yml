@@ -27,13 +27,13 @@ base:
       console: You need the black screen with white symbols on it.
     insufficient-permission: Yo, you cant pass without the password.
     monitoring:
-      enabled: Funny text on the screen turned on.
-      disabled: Spooky text left the vision.
+      enabled: Dat gobbledy-gook is back.
+      disabled: The gobbledy-gunk done left.
     internal:
       reloaded: ' v%s Spooky stuff did stuff behind the stuff'
     mapping:
       disabled: Poof! Whurrrrd it go?!?!?
-      enabled: A paper with lines on it randomly appears...
+      enabled: One o' them magical papers done did arriveded!
 language:
   name: Street Speek
   code: streetspeek
