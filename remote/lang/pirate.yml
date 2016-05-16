@@ -7,7 +7,7 @@ base:
       monitoring: Sees title-text monitorin'
       reload: Inspects th' ship 'n repairs any damage
       status: Sends a scroll of updated 'treasures' react finds.
-      version: Check the docks if we can steal anew
+      version: Search the brig for more booty!
       lang: List all supported languages (or swap them)
       guess: How much can th' vessel handle
       query: What's on deck?
