@@ -1,0 +1,39 @@
+base:
+  command:
+    help:
+      map: Bekapcsolja a vizuális grafikus megfigyelot.
+      cpu-score: Megadja a szervered processzorának pontszámát.
+      guess-memory: Megjósolja a szerver képességét ha X memóriával fut.
+      monitoring: Bekapcsolja a szöveges megfigyelot.
+      reload: Újratölti plugint és a konfigurációs fájlokat.
+      status: Ad egy könyvet a szerveren fellépo hibákról.
+      lang: Listázza az összes elérheto nyelvet (vagy átvált rá)
+      version: Összeveti a jelenelegi verziód a legfrissebb verzióval.
+      guess: Megjósolja a szerver képességét.
+      query: Lekérdezi a pluginjaid információit.
+      servers: Listázza az összes szervert a hálózaton, adataikkal.
+      help: Ad egy információs könyvet a megadott témából.
+  message:
+    update-found: Újabb verzió érheto el!
+    action:
+      fully-automatic: '%s teljesen automatizált beavatkozás.'
+      manual:
+        finished: 'Kézi beavatkozás: %s kész. Eltelt ido: %s'
+        started: 'Kézi beavatkozás: %s elindítva.'
+      stabilizing: '%s: Stabilizálása...'
+      fixed: '%s: Kijavítva!'
+    sided:
+      ingame: Csak játékban használhatod ezt a parancsot.
+      console: Csak konzolból használhatod ezt a parancsot.
+    insufficient-permission: Nincs jogod ehhez.
+    monitoring:
+      enabled: Megfigyelés Bekapcsolva
+      disabled: Megfigyelés Kikapcsolva
+    internal:
+      reloaded: ' v%s újratöltve'
+    mapping:
+      disabled: Vizuális grafikus megjeleníto (map) Kikapcsolva
+      enabled: Vizuális grafikus megjeleníto (map) Bekapcsolva
+language:
+  name: Magyar
+  code: hu
