@@ -1,5 +1,5 @@
 react:
   version:
-    name: '1.8.7'
-    code: 1807
-    desc: 'Heartbeat threading tweaks.'
+    name: '1.9'
+    code: 1900
+    desc: 'Spigot Timings In Books, Bugfixes, and more!'

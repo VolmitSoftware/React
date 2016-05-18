@@ -4,6 +4,7 @@ all:
 - da
 - nl
 - ro
+- hu
 - fr
 - pirate
 - streetspeek
