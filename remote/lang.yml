@@ -4,6 +4,7 @@ all:
 - da
 - nl
 - ro
+- no
 - hu
 - fr
 - pirate

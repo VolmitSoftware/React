@@ -1,0 +1,39 @@
+base:
+  command:
+    help:
+      map: viser en grafisk systemoversikt
+      cpu-score: Viser din CPU poengsum.
+      guess-memory: Vis en antakelise av serverakapasiteten, med X minne
+      monitoring: viser systemoversikt på skjermtekst
+      reload: les inn hele react konfigurasjonen på nytt.
+      status: Gir en boko med oppdatet oversikt over ting react finner i systemet.
+      lang: Oversikt over støttede språk.
+      version: Sammenligner din versjon med eventuelle nye.
+      guess: Viser en antakelse over din servers kapasitet.
+      query: Sjekk tilgjengelig plugininformasjon.
+      servers: Liste over alle servere på nettverket med data.
+      help: Gir en bok med informasjon om hjelp.
+  message:
+    update-found: Oppdatering funnet!
+    action:
+      fully-automatic: '%s er en fullstendig automatisk handling.'
+      manual:
+        finished: 'Maneuell Handling: %s ferdig %s'
+        started: 'Manuell Handling: %s påbegynt.'
+      stabilizing: '%s: Stabiliserer...'
+      fixed: '%s: Ordnet!'
+    sided:
+      ingame: Du må være inne i spillet for å gjøre det.
+      console: Du må bruke denne fra console.
+    insufficient-permission: Ikke nok rettigheter
+    monitoring:
+      enabled: Systemovervåkning påbegynt
+      disabled: Systemovervåkning stoppet
+    internal:
+      reloaded: ' v%s Omstartet'
+    mapping:
+      disabled: Kartlegging stoppet
+      enabled: Kartlegging påbegynt
+language:
+  name: Norwegian
+  code: "no"
