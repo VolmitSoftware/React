@@ -1,5 +1,5 @@
 react:
   version:
-    name: '1.9'
-    code: 1900
-    desc: 'Spigot Timings In Books, Bugfixes, and more!'
+    name: '1.9.9'
+    code: 1909
+    desc: 'Major Performance Improvements, Search Timings & More!'
