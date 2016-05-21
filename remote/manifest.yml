@@ -1,5 +1,5 @@
 react:
   version:
-    name: '2'
-    code: 2000
+    name: '2.0.1'
+    code: 2001
     desc: 'Many improvements & New Monitoring Features!'
