@@ -1,5 +1,5 @@
 react:
   version:
-    name: '2.0.1'
-    code: 2001
-    desc: 'Many improvements & New Monitoring Features!'
+    name: '2.0.2'
+    code: 2002
+    desc: 'Faster Timings Sampling and measure the Percent of a tick used!'
