@@ -1,5 +1,5 @@
 react:
   version:
-    name: '2.0.2'
-    code: 2002
-    desc: 'Faster Timings Sampling and measure the Percent of a tick used!'
+    name: '2.0.4'
+    code: 2004
+    desc: 'The ability to dump data with /react dump + many fixes and optimizations.'
