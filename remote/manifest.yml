@@ -1,5 +1,5 @@
 react:
   version:
-    name: '2.0.4'
-    code: 2004
-    desc: 'The ability to dump data with /react dump + many fixes and optimizations.'
+    name: '2.0.6'
+    code: 2006
+    desc: 'New Action! Find the heaviest (most entities/drops) in all chunks!'
