@@ -1,5 +1,5 @@
 react:
   version:
-    name: '2.0.6'
-    code: 2006
-    desc: 'New Action! Find the heaviest (most entities/drops) in all chunks!'
+    name: '2.0.7'
+    code: 2007
+    desc: 'AUTO UPDATING! All versions from here on out are expected to auto update (if configured to do so)'
