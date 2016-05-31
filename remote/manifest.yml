@@ -1,5 +1,5 @@
 react:
   version:
-    name: '2.0.9'
-    code: 2009
-    desc: 'Timings Name Tweaks & Force update command (/re update)'
+    name: '2.1'
+    code: 2100
+    desc: 'React Plugin timings /re plugins + /re act <action> & /mem overrides. Many new changes to improve performance also!'
