@@ -1,5 +1,5 @@
 react:
   version:
-    name: '2.0.8'
-    code: 2008
-    desc: 'Minor Bugfixes'
+    name: '2.0.9'
+    code: 2009
+    desc: 'Timings Name Tweaks & Force update command (/re update)'
