@@ -1,5 +1,5 @@
 react:
   version:
-    name: '2.1.3'
-    code: 2103
-    desc: 'Added Warnings for plugins using more than the configurable amount of time. Configurable.'
+    name: '2.1.4'
+    code: 2104
+    desc: 'Fix Update Command Issues.'
