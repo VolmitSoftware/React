@@ -1,0 +1,39 @@
+base:
+  command:
+    help:
+      map: Permite la supervisión visual gráfica
+      cpu-score: Muestra el CPU de tu servidor.
+      guess-memory: Adivina las capacidades del servidor con X Ram.
+      monitoring: Permite la supervisión del título de texto.
+      reload: Reinicia todos los archivos de la configuración de React.
+      status: Envía un libro de actualizaciones encontradas de React.
+      lang: Cambia o ve la lista de idiomas soportados.
+      version: Compara tu versión con alguna nueva.
+      guess: Adivina las capacidades del servidor.
+      query: Consulta información sobre plugin(s).
+      servers: Muestra todos los servidores de la network con los datos.
+      help: Envía un libro de información sobre los temas de ayuda.
+  message:
+    update-found: ¡Actualización encontrada!
+    action:
+      fully-automatic: '%s es una opción totalmente automática.'
+      manual:
+        finished: 'Opción Manual: %s terminó %s'
+        started: 'Opción Manual: %s ha empezado.'
+      stabilizing: '%s: Estabilizando...'
+      fixed: '%s: ¡Arreglado!'
+    sided:
+      ingame: ¡Debes estar en juego para usar esto!
+      console: Debes usar esto desde la consola.
+    insufficient-permission: No dispones de suficientes permisos.
+    monitoring:
+      enabled: Supervisión Activada
+      disabled: Supervisión Desactivada
+    internal:
+      reloaded: ' La versión v%s se ha reiniciado.'
+    mapping:
+      disabled: Mapa Desactivado
+      enabled: Mapa Activado
+language:
+  name: Spanish
+  code: es
