@@ -1,5 +1,5 @@
 react:
   version:
-    name: '2.1'
-    code: 2100
-    desc: 'React Plugin timings /re plugins + /re act <action> & /mem overrides. Many new changes to improve performance also!'
+    name: '2.1.1'
+    code: 2101
+    desc: 'Fix Issues with Tacospigot & Removed the issue with the reload message.'
