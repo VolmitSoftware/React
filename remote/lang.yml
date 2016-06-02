@@ -6,6 +6,7 @@ all:
 - ro
 - no
 - hu
+- es
 - fr
 - pirate
 - streetspeek
