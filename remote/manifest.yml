@@ -1,5 +1,5 @@
 react:
   version:
-    name: '2.1.4'
-    code: 2104
-    desc: 'Fix Update Command Issues.'
+    name: '2.1.6'
+    code: 2106
+    desc: 'Purge Entity Filters & Bugfixes'
