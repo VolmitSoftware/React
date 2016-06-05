@@ -1,5 +1,5 @@
 react:
   version:
-    name: '1.9'
-    code: 1900
-    desc: 'Spigot Timings In Books, Bugfixes, and more!'
+    name: '2.1.6'
+    code: 2106
+    desc: 'Purge Entity Filters & Bugfixes'

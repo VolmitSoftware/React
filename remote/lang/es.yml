@@ -1,0 +1,40 @@
+base:
+  command:
+    help:
+      map: Activa el monitor visual grafico.
+      cpu-score: Obten la informacion del cpu de tu server.
+      guess-memory: Muestra la capacidad del servidor con X Ram
+      monitoring: activa titulos de texto para monitoreo
+      reload: recarga todos los archivos de React.
+      status: Envia un libro con los incidentes que React encontro.
+      lang: Cambia o muestra los lenguajes disponibles
+      version: Compara tu version con las recientes.
+      guess: Muestra la capacidad del servidor.
+      query: Informacion de los plugins.
+      servers: Lista de todos los servidores en la network con su data.
+      help: Envia un libro con informacion de ayuda.
+  message:
+    update-found: Actualizacion encontrada!
+    action:
+      fully-automatic: '%s es una accion automatica.'
+      manual:
+        finished: 'Accion manual: %s terminada %s'
+        started: 'Accion manual: %s iniciada.'
+      stabilizing: '%s: Estabilizando...'
+      fixed: '%s: Solucionado!'
+    sided:
+      ingame: Debes ejecutar esto en juego.
+      console: Debes ejecutar esto desde la consola.
+    insufficient-permission: No tienes permiso
+    monitoring:
+      enabled: Monitoreo Activado
+      disabled: Monitoreo Desactivado
+    internal:
+      reloaded: ' v%s Recargado'
+    mapping:
+      disabled: Mapeo Desactivado
+      enabled: Mapeo Activado
+language:
+  name: Spanish
+  code: es
+
