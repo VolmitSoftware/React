@@ -1,5 +1,5 @@
 react:
   version:
-    name: '2.1.6'
-    code: 2106
-    desc: 'Purge Entity Filters & Bugfixes'
+    name: '2.1.7'
+    code: 2107
+    desc: 'Bugfixes'
