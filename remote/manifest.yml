@@ -1,5 +1,5 @@
 react:
   version:
-    name: '2.1.8'
-    code: 2108
-    desc: 'Bugfixes & Performance Improvements. Changed SPMS to GC/Minute'
+    name: '2.1.9'
+    code: 2109
+    desc: 'Bugfixes & Performance Improvements. Added new networking improvements for future remote client features'
