@@ -1,11 +1,11 @@
 base:
   command:
     help:
-      map: aktiverer visuel grafisk overvågning
+      map: Aktiverer visuel grafisk overvågning
       cpu-score: Få din servers cpu score
       guess-memory: Gæt Server Evner Med X Ram
-      monitoring: aktiverer title-tekst overvågning
-      reload: genindlæser alle React konfigurationsfiler.
+      monitoring: Aktiverer title-tekst overvågning
+      reload: Genindlæser alle React konfigurationsfiler.
       status: Giver en bog af opdaterede emner React finder.
       lang: List alle understøttede sprog (eller bytte dem)
       version: Sammenligner din version med eventuelle nye.
@@ -16,7 +16,7 @@ base:
   message:
     update-found: Opdatering fundet!
     action:
-      fully-automatic: '%s is a full automatic action.'
+      fully-automatic: '%s er en fuldautomatisk handling.'
       manual:
         finished: 'Manuelt Aktion: %s færdigt %s'
         started: 'Manuelt Aktion: %s startet.'
