@@ -1,31 +1,31 @@
 base:
   command:
     help:
-      map: Activa el monitor visual grafico.
-      cpu-score: Obten la informacion del cpu de tu server.
+      map: Activa el monitor visual gráfico.
+      cpu-score: Obten la información del CPU de tu servidor.
       guess-memory: Muestra la capacidad del servidor con X Ram
-      monitoring: activa titulos de texto para monitoreo
-      reload: recarga todos los archivos de React.
-      status: Envia un libro con los incidentes que React encontro.
-      lang: Cambia o muestra los lenguajes disponibles
-      version: Compara tu version con las recientes.
+      monitoring: Activa los títulos de texto para monitoreo
+      reload: Recarga todos los archivos de React.
+      status: Envía un libro con los incidentes que React encontró.
+      lang: Cambia o muestra los lenguajes disponibles.
+      version: Compara tu versión con las recientes.
       guess: Muestra la capacidad del servidor.
-      query: Informacion de los plugins.
+      query: Información de los plugins.
       servers: Lista de todos los servidores en la network con su data.
-      help: Envia un libro con informacion de ayuda.
+      help: Envía un libro con información de ayuda.
   message:
-    update-found: Actualizacion encontrada!
+    update-found: ¡Actualización encontrada!
     action:
-      fully-automatic: '%s es una accion automatica.'
+      fully-automatic: '%s es una opción automatica.'
       manual:
-        finished: 'Accion manual: %s terminada %s'
-        started: 'Accion manual: %s iniciada.'
+        finished: 'Opción manual: %s terminada %s'
+        started: 'Opción manual: %s iniciada.'
       stabilizing: '%s: Estabilizando...'
-      fixed: '%s: Solucionado!'
+      fixed: '%s: ¡Solucionado!'
     sided:
       ingame: Debes ejecutar esto en juego.
       console: Debes ejecutar esto desde la consola.
-    insufficient-permission: No tienes permiso
+    insufficient-permission: ¡No tienes permiso!
     monitoring:
       enabled: Monitoreo Activado
       disabled: Monitoreo Desactivado
