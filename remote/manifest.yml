@@ -1,5 +1,5 @@
 react:
   version:
-    name: '2.1.6'
-    code: 2106
-    desc: 'Purge Entity Filters & Bugfixes'
+    name: '2.1.8'
+    code: 2108
+    desc: 'Bugfixes & Performance Improvements. Changed SPMS to GC/Minute'
