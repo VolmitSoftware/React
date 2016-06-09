@@ -1,6 +1,6 @@
 package:
-  version: '2.2p'
-  version-code: 2200
+  version: '2.2.1p'
+  version-code: 2201
   description:
   - 'New Networking System for External Software'
   - 'Faster Updating System'
