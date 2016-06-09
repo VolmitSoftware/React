@@ -1,6 +1,8 @@
 package:
-  version: '2.2.1p'
-  version-code: 2201
+  version: '2.2.2p'
+  version-code: 2202
   description:
-  - 'Now compatible with MC: 1.10'
-  - 'Minor Bugfixes and improvements'
+  - 'PaperSpigot Timings! (Some limitations)'
+  - 'Entities that spawn will now force react to cull another entity to make room for the spawning entity'
+  - 'Performance improvements for the action controller'
+  - 'Added extra information to the /react dump command (in the file)'
