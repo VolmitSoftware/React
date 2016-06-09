@@ -1,5 +1,5 @@
 react:
   version:
-    name: '2.1.9'
-    code: 2109
-    desc: 'Bugfixes & Performance Improvements. Added new networking improvements for future remote client features'
+    name: '2.2'
+    code: 2200
+    desc: 'Massive Overhaul for languages, the updater, networking, and much more.'
