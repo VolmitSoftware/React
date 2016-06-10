@@ -1,10 +1,8 @@
 react:
+  language:
+    name: English
+    code: en
   message:
-    server:
-      count:
-        b: ' servers on the network using react.'
-        a: 'There are '
-      current: 'You are on '
     sided:
       ingame: You must be in-game to use this_
       console: You must use this from the console.
@@ -14,6 +12,9 @@ react:
       start: STARTING HEART BEAT THREAD
     'no':
       data: No Data. This typically means you are not on a bungeecord network.
+    servercount:
+      a: 'There are '
+      b: ' servers on the network using react.'
     help:
       samplers:
         b: Shows all of the samplers react uses.
@@ -48,6 +49,11 @@ react:
         fail: Please turn on monitoring to lock tabs.
     plugins: 'Plugins/Other: '
     queryresult: Queried Result
+    error:
+      notcommand: Unknown Command. Use /react
+      nonumber: 'Not a number: '
+      latestversion: You have the latest version!
+      pluginunknown: Unknown Plugin
     chunks: 'Chunks: '
     verbose: 'Verbose: '
     insufficient:
@@ -55,10 +61,6 @@ react:
     mapping:
       enabled: Mapping Enabled
       disabled: Mapping Disabled
-    error:
-      nonumber: 'Not a number: '
-      latestversion: You have the latest version!
-      pluginunknown: Unknown Plugin
     issues: Stabilizing...
     lang:
       help: /re lang <language>
@@ -72,7 +74,7 @@ react:
     memory:
       max: 'Max Memory: '
       used: 'Used Memory: '
-    reloaded: ' Reloaded'
+    reloaded: React Reloaded
     verboseoff: Verbose Disabled
     book: Book given/updated
     world:
@@ -88,14 +90,40 @@ react:
       success: Hooked into Placeholder API
     players: 'Players: '
     bungeeoff: Bungeecord support is off.
+    servercurrent: 'You are on '
     update:
       found: 'Update Found: '
     dumped: 'Created a dump file to '
     verboseon: Verbose Enabled
     cpuscore: 'CPU Score: '
-  language:
-    name: English
-    code: en
+  sampler:
+    general:
+      hitrate: Determines the hit rate of reacts reactions. For example, what percent of the time does react detect something specific.
+      timings: Check the hardest hitting timings value.
+      tps: Twenty times a second the server 'ticks'. This is where all the action happens on the cpu. If this number is lower than 17 you will start to expirience server lag.
+      reactiontime: Counts the ammount of time in miliseconds it takes react to do everything it is scheduled to do. One tick is 50ms, so typically react is under 3ms
+      stability: This percent is determined by your TPS, MEM, and more over large periods of time.
+      cpuscore: This calculates the single threaded performance of your cpu while under (or not) load.
+      history: View this on the lower right quadrant on the map.
+      players: Samples how many players are connected to the server.
+      plugins: React tracks and communicates with other plugins. They are typically common plugins that lots of servers use.
+    memory:
+      garbagedirection: When the server uses memory, and is done using it, it marks it as trash. This sample measures the direction of it.
+      used: Memory (RAM) is temporary storage for short term data such as player position, chunks, and more. This measures how much memory you are using.
+      players: A very rough estimate of how many megabytes a player takes up.
+      mahs: This measures the rate the server consumes memory. Note that more than 90% of this memory will be quickly restored for reuse.
+      gc: When the server uses memory, and is done using it, it marks it as trash. This sample measures how often it 'cleans' the trash.
+    world:
+      drops: Counts all drops loaded on all worlds.
+      liquidflow: Liquid Flows per Second. This is when liquid expands or drains.
+      redstone: Redstone Updates per Second. Every time redstone updates at all.
+      entities: Counts all entities loaded on all worlds.
+      tnt: The average tnt primes per second.
+    chunk:
+      gen: The average chunks generated per second.
+      memory: Counts all chunks in all loaded worlds and determines the memory consumption.
+      loaded: Counts all chunks in all loaded worlds.
+      load: The average chunks loaded per second.
   book:
     trialerror:
       title: Trial & Error
