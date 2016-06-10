@@ -1,7 +1,6 @@
 package:
-  version: '2.2.3p'
-  version-code: 2203
+  version: '2.2.4p'
+  version-code: 2204
   description:
-  - 'Bugfixes for common issues on different server versions'
-  - 'Intelligent Error checking/fixing (problems that react has)'
-  - 'Performance improvements for the PaperSpigotTimings processing'
+  - 'Add an option to turn off timings processing'
+  - 'Bugfixes and performance improvements'
