@@ -3,5 +3,5 @@ package:
   version-code: 2203
   description:
   - 'Bugfixes for common issues on different server versions'
-  - 'Inteligent Error checking/fixing (problems that react has)'
+  - 'Intelligent Error checking/fixing (problems that react has)'
   - 'Performance improvements for the PaperSpigotTimings processing'
