@@ -154,6 +154,21 @@ react:
     tabs:
       title: Changing Tabs
       text: Each element in the monitor actually contains more samples. Hold Shift and scroll your mouse wheel to select the tab you like. Try it!
+  action:
+    instabilitycause: 'If any sort of instability is detected, react begins to collect
+      evidence and determine the right thing to do. '
+    culldrops: Drops are determined by their worth within the configs. This will then determine weather react should cull 30 pieces of dirt, or 20 diamonds. Basically, friendly drop culling.
+    suppressgrowth: This dynamically changes the growth modifiers depending on how dense the growth is.
+    purgedrops: Removes ALL DROPS in ALL WORLDS
+    purgeentities: Removes ALL ENTITY TYPES DEFINED IN THIS CONFIG in ALL WORLDS
+    cullentities: Removes excess mobs from highly populated chunks. Additionally prevents spawning if the limit is reached.
+    heavychunk: Teleports you close to the chunk with the most entities in it. If there are no heavy chunks, you may not be teleported or it may not be that laggy at all.
+    suppressredstone: Suppresses redstone if and only if the instability threshold reaches a limit for redstone.
+    purgechunks: This action purges chunks that have not unloaded. MANUAL ONLY
+    teleportdrops: When enabled, some drops will be teleported and given to the player who broke the block only when the server has too many drops or is lagging.
+    suppressliquid: Suppresses liquid if and only if the instability threshold reaches a limit for liquid.
+    suppresstnt: Suppresses tnt if and only if the instability threshold reaches a limit for tnt.
+    garbagecollection: This takes out the virtual trash (sometimes frees memory up). Warning this will freeze the server for 1-5 seconds. This is only used automatically if it is configured to do so.
   command:
     plugins: List plugin timings
     help: Sends a book of information on help topics.
