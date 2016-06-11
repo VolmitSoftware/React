@@ -1,8 +1,6 @@
 package:
-  version: '2.2.5p'
-  version-code: 2205
+  version: '2.2.6p'
+  version-code: 2206
   description:
-  - 'Players flying into generating chunks at faster than normal speeds are slowed down temporarily. Configurable in reactions/action-instability-cause.yml'
-  - 'Fixed some issues that can happen on startup for 1.7'
-  - 'Faster Mass Chunk Generation DETECTION'
-  - 'Performance improvements'
+  - 'Bugfixes and stability improvements'
+  - 'Added failures within react to the dump file.'
