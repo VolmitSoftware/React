@@ -1,6 +1,6 @@
 package:
-  version: '2.2.6p'
-  version-code: 2206
+  version: '2.2.7p'
+  version-code: 2207
   description:
-  - 'Bugfixes and stability improvements'
-  - 'Added failures within react to the dump file.'
+  - 'Monitor information per player is now saved and used after reboots/login/logout'
+  - 'Performance optimizations for timings & more'
