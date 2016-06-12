@@ -1,6 +1,5 @@
 package:
-  version: '2.2.7p'
-  version-code: 2207
+  version: '2.2.8p'
+  version-code: 2208
   description:
-  - 'Monitor information per player is now saved and used after reboots/login/logout'
-  - 'Performance optimizations for timings & more'
+  - 'Several more Performance optimizations for timings & more'
