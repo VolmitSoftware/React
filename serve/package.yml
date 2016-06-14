@@ -1,5 +1,6 @@
 package:
-  version: '2.2.8p'
-  version-code: 2208
+  version: '2.2.9p'
+  version-code: 2209
   description:
-  - 'Several more Performance optimizations for timings & more'
+  - 'Entity Fixes with Armor Stands'
+  - 'Networking tweaks for the new upcoming client'
