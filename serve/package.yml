@@ -1,6 +1,5 @@
 package:
-  version: '2.3.1p'
-  version-code: 2301
+  version: '2.3.2p'
+  version-code: 2302
   description:
-  - 'Bugfixes and performance optimizations'
-  - 'Added Uptime to the /mem command override'
+  - 'Bugfixes and improvements'
