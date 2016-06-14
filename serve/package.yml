@@ -1,6 +1,6 @@
 package:
-  version: '2.3p'
-  version-code: 2300
+  version: '2.3.1p'
+  version-code: 2301
   description:
-  - 'New Networking System along with a new Client!'
-  - 'Allows multiple servers, and devices per server!'
+  - 'Bugfixes and performance optimizations'
+  - 'Added Uptime to the /mem command override'
