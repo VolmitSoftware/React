@@ -1,5 +1,5 @@
 package:
-  version: '2.3.8p'
-  version-code: 2308
+  version: '2.3.9p'
+  version-code: 2309
   description:
-  - 'Fix issues with the GUI for /re act'
+  - 'Fixed the armor stand culling issue!'
