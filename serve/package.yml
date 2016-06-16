@@ -1,6 +1,8 @@
 package:
-  version: '2.3.5p'
-  version-code: 2305
+  version: '2.3.6p'
+  version-code: 2306
   description:
-  - 'Fixed Monitoring issues from removing the heartbeat thread'
-  - 'Fixed issues with PaperSpigot 1.7 users'
+  - 'Added a /react ping command for ping comparison'
+  - 'Finally added text to the map graphs'
+  - 'Bugfixes for the action controller'
+  - 'Updated the client for better handling of lost connections'
