@@ -1,8 +1,5 @@
 package:
-  version: '2.3.6p'
-  version-code: 2306
+  version: '2.3.7p'
+  version-code: 2307
   description:
-  - 'Added a /react ping command for ping comparison'
-  - 'Finally added text to the map graphs'
-  - 'Bugfixes for the action controller'
-  - 'Updated the client for better handling of lost connections'
+  - 'Fix conflicting issues with other plugins dealing with entities.'
