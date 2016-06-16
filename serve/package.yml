@@ -1,5 +1,6 @@
 package:
-  version: '2.3.3p'
-  version-code: 2303
+  version: '2.3.4p'
+  version-code: 2304
   description:
   - 'Bugfixes and improvements'
+  - 'Removed the heartbeat thread'
