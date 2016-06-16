@@ -1,5 +1,5 @@
 package:
-  version: '2.3.7p'
-  version-code: 2307
+  version: '2.3.8p'
+  version-code: 2308
   description:
-  - 'Fix conflicting issues with other plugins dealing with entities.'
+  - 'Fix issues with the GUI for /re act'
