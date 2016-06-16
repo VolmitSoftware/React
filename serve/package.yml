@@ -1,6 +1,6 @@
 package:
-  version: '2.3.4p'
-  version-code: 2304
+  version: '2.3.5p'
+  version-code: 2305
   description:
-  - 'Bugfixes and improvements'
-  - 'Removed the heartbeat thread'
+  - 'Fixed Monitoring issues from removing the heartbeat thread'
+  - 'Fixed issues with PaperSpigot 1.7 users'
