@@ -1,5 +1,7 @@
 package:
-  version: '2.3.9p'
-  version-code: 2309
+  version: '2.4p'
+  version-code: 2400
   description:
-  - 'Fixed the armor stand culling issue!'
+  - 'Added world settings for per world configurations'
+  - 'World Settings Feature: Fast-Fall for sand and gravel'
+  - 'World Settings Feature: Fast-Decay for fast leaf decay'
