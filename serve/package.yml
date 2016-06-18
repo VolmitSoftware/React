@@ -1,5 +1,6 @@
 package:
-  version: '2.4.1p'
-  version-code: 2401
+  version: '2.4.2p'
+  version-code: 2402
   description:
-  - 'Performance Improvements'
+  - 'Added option to turn off issue notifications'
+  - 'React Auto update no longer requires reboots/reloads!'
