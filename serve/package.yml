@@ -1,7 +1,5 @@
 package:
-  version: '2.4p'
-  version-code: 2400
+  version: '2.4.1p'
+  version-code: 2401
   description:
-  - 'Added world settings for per world configurations'
-  - 'World Settings Feature: Fast-Fall for sand and gravel'
-  - 'World Settings Feature: Fast-Decay for fast leaf decay'
+  - 'Performance Improvements'
