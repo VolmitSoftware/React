@@ -1,5 +1,5 @@
 package:
-  version: '2.4.4p'
-  version-code: 2404
+  version: '2.4.5p'
+  version-code: 2405
   description:
-  - 'Smart auto World saving (default by default)'
+  - 'Bugfixes and performance improvements.'
