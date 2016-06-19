@@ -1,5 +1,6 @@
 package:
-  version: '2.4.5p'
-  version-code: 2405
+  version: '2.4.6p'
+  version-code: 2406
   description:
-  - 'Bugfixes and performance improvements.'
+  - 'Full fledged auto-update system. It is truly automatic now. No more /re update spamming!'
+  - 'Bugfixes and optimizations'
