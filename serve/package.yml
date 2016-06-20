@@ -1,7 +1,6 @@
 package:
-  version: '2.4.9p'
-  version-code: 2409
+  version: '2.5p'
+  version-code: 2500
   description:
-  - 'Dynamic Monitoring Tick Delays for faster timings'
-  - 'Optimized Chunk counting for faster sampling'
-  - 'Stored some information in memory instead of using the cpu often to determine it. (0.2ms increase on test server)'
+  - 'Fixed Error on startup'
+  - 'Added /re tasks command to show what issues are going on. (/re tl)'
