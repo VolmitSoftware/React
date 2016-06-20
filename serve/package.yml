@@ -1,6 +1,6 @@
 package:
-  version: '2.5p'
-  version-code: 2500
+  version: '2.5.1p'
+  version-code: 2501
   description:
-  - 'Fixed Error on startup'
-  - 'Added /re tasks command to show what issues are going on. (/re tl)'
+  - 'Redesigned the command help page when using /react'
+  - 'Tweaked how the mass chunk gen is detected due to missfires'
