@@ -1,6 +1,6 @@
 package:
-  version: '2.4.8p'
-  version-code: 2408
+  version: '2.4.9p'
+  version-code: 2409
   description:
   - 'Dynamic Monitoring Tick Delays for faster timings'
   - 'Optimized Chunk counting for faster sampling'
