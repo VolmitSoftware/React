@@ -1,6 +1,6 @@
 package:
-  version: '2.5.1p'
-  version-code: 2501
+  version: '2.5.2p'
+  version-code: 2502
   description:
-  - 'Redesigned the command help page when using /react'
-  - 'Tweaked how the mass chunk gen is detected due to missfires'
+  - 'Compatability with Citizens & Chunk Purging. No more dead NPCs!'
+  - 'Added Command Tabulation with next and previous buttons in chat.'
