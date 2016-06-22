@@ -1,5 +1,6 @@
 package:
-  version: '2.5.5p'
-  version-code: 2505
+  version: '2.5.6p'
+  version-code: 2506
   description:
-  - 'Removed the 1.7 warning for the update command.'
+  - 'Fixed issue with bungeecord on some networks'
+  - 'Fixed issue with auto updater spam'
