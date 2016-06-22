@@ -1,8 +1,5 @@
 package:
-  version: '2.5.3p'
-  version-code: 2503
+  version: '2.5.4p'
+  version-code: 2504
   description:
-  - 'Added an EULA for any future complications. You do not need to worry about it unless you are distributing react illegally'
-  - 'Added a new feature /re configure,conf which allows you to edit configs ingame via guis. This is experimental, and has not been well tested yet, so be careful when using it!'
-  - 'Added a new feature /re cfs which allows you to edit configurations and retreive data about configurations aswell. This feature is experimental and has not yet been tested!'
-  - 'Increased performance on shut down & samplers'
+  - 'Fix some issues with the old 1.7 servers. Especially auto update.'
