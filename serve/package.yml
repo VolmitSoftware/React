@@ -1,5 +1,8 @@
 package:
-  version: '2.5.8p'
-  version-code: 2508
+  version: '2.5.9p'
+  version-code: 2509
   description:
-  - 'Mob Arena Compatibility'
+  - 'Removed Bungeecord support for the time being, better features will come'
+  - 'Tweaks to the React CFS Features, mostly bugfixes'
+  - 'Fixed some minimal glitches with the auto updater.'
+  - 'Security Patches'
