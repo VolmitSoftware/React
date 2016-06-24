@@ -1,6 +1,8 @@
 package:
-  version: '2.5.10p'
-  version-code: 2510
+  version: '2.6p'
+  version-code: 2600
   description:
-  - 'Defaulted Auto updating and checking to false. This will only affect new users'
-  - 'Added some tweaks to the auto updater (plans to make a new reliable updater)'
+  - 'Added a NEW config for auto updating, and updating in general. The old configuration will do nothing'
+  - 'Redesigned the way react updates, checks for updates, and auto updates'
+  - 'If you have issues updating to this version from your current one, download it manually'
+  - 'Bugfixes and other various improvements with commands and scheduled execution.'
