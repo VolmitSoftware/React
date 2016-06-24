@@ -1,8 +1,6 @@
 package:
-  version: '2.5.9p'
-  version-code: 2509
+  version: '2.5.10p'
+  version-code: 2510
   description:
-  - 'Removed Bungeecord support for the time being, better features will come'
-  - 'Tweaks to the React CFS Features, mostly bugfixes'
-  - 'Fixed some minimal glitches with the auto updater.'
-  - 'Security Patches'
+  - 'Defaulted Auto updating and checking to false. This will only affect new users'
+  - 'Added some tweaks to the auto updater (plans to make a new reliable updater)'
