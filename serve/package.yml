@@ -1,7 +1,5 @@
 package:
-  version: '2.6.3p'
-  version-code: 2603
+  version: '2.6.4p'
+  version-code: 2604
   description:
-  - 'Mobs now stack correctly when chunks are loaded.'
-  - 'Several performance improvements for startup time'
-  - 'Fixed crash on linux systems'
+  - 'Performance Optimizations for MobStacking and startup'
