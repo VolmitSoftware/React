@@ -1,8 +1,7 @@
 package:
-  version: '2.6p'
-  version-code: 2600
+  version: '2.6.1p'
+  version-code: 2601
   description:
-  - 'Added a NEW config for auto updating, and updating in general. The old configuration will do nothing'
-  - 'Redesigned the way react updates, checks for updates, and auto updates'
-  - 'If you have issues updating to this version from your current one, download it manually'
-  - 'Bugfixes and other various improvements with commands and scheduled execution.'
+  - 'Mob Stacking! Disabled by default, and still being worked on, stacks mobs together!'
+  - 'We recommend you test this first before turning it on in your production environment'
+  - 'Performance optimizations for many operations with players and samplers!'
