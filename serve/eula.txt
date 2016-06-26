@@ -1,0 +1,74 @@
+React
+Copyright (c) 2016 Overcode Technologies (cyberpwn)
+
+*** END USER LICENSE AGREEMENT ***
+
+IMPORTANT: PLEASE READ THIS LICENSE CAREFULLY BEFORE USING THIS SOFTWARE.
+
+1. LICENSE
+
+By receiving, opening the file package, and/or using React ("Software") containing this software, you agree that this End User User License Agreement(EULA) is a legally binding and valid contract and agree to be bound by it. You agree to abide by the intellectual property laws and all of the terms and conditions of this Agreement.
+
+Unless you have a different license agreement signed by Overcode Technologies (cyberpwn) your use of React indicates your acceptance of this license agreement and warranty.
+
+Subject to the terms of this Agreement, Overcode Technologies (cyberpwn) grants to you a limited, non-exclusive, non-transferable license, without right to sub-license, to use React in accordance with this Agreement and any other written agreement with Overcode Technologies (cyberpwn). Overcode Technologies (cyberpwn) does not transfer the title of React to you; the license granted to you is not a sale. This agreement is a binding legal agreement between Overcode Technologies (cyberpwn) and the purchasers or users of React.
+
+If you do not agree to be bound by this agreement, remove React from your server(s) now and, if applicable, promptly return to Overcode Technologies (cyberpwn) by mail any copies of React and related documentation and packaging in your possession.
+
+2. DISTRIBUTION
+
+React and the license herein granted shall not be copied, shared, distributed, re-sold, offered for re-sale, transferred or sub-licensed in whole or in part except that you may use react servers that you have ownership over. For information about redistribution of React contact Overcode Technologies (cyberpwn).
+
+3. USER AGREEMENT
+
+3.1 Use
+
+Your license to use React is limited to the number of licenses purchased by you. You shall not allow others to use, copy or evaluate copies of React.
+
+3.2 Use Restrictions
+
+You shall use React in compliance with all applicable laws and not for any unlawful purpose. Without limiting the foregoing, use, display or distribution of React together with material that is pornographic, racist, vulgar, obscene, defamatory, libelous, abusive, promoting hatred, discriminating or displaying prejudice based on religion, ethnic heritage, race, sexual orientation or age is strictly prohibited.
+
+Each licensed copy of React may be used on one single server "entity" location by one network. Use of React means that you have loaded, installed, or run React on a server or network of servers under the same domain. If you install React onto a multi-user platform, file sharing site or a related function, each and every individual user of React must be licensed separately by Overcode Technologies (cyberpwn) and approved by Overcode Technologies (cyberpwn).
+
+Other users may not use your copy of React. The assignment, sublicense, networking, sale, or distribution of copies of React are strictly forbidden without the prior written consent of Overcode Technologies (cyberpwn). It is a violation of this agreement to assign, sell, share, loan, rent, lease, borrow, network or transfer the use of React. If any person other than yourself uses React registered in your name, regardless of whether it is at the same time or different times, then this agreement is being violated and you are responsible for that violation!
+
+3.3 Copyright Restriction
+
+This Software contains copyrighted material, trade secrets and other proprietary material. You shall not, and shall not attempt to, modify, reverse engineer, disassemble or decompile React. Nor can you create any derivative works or other works that are based upon or derived from React in whole or in part.
+
+Overcode Technologies (cyberpwn)'s name, logo and graphics file that represents React shall not be used in any way to promote products developed with React. Overcode Technologies (cyberpwn) retains sole and exclusive ownership of all right, title and interest in and to React and all Intellectual Property rights relating thereto.
+
+Copyright law and international copyright treaty provisions protect all parts of React, products and services. No program, code, part, image, audio sample, or text may be copied or used in any way by the user except as intended within the bounds of the single user program. All rights not expressly granted hereunder are reserved for Overcode Technologies (cyberpwn).
+
+3.4 Limitation of Responsibility
+
+You will indemnify, hold harmless, and defend Overcode Technologies (cyberpwn), its employees, agents and distributors against any and all claims, proceedings, demand and costs resulting from or in any way connected with your use of Overcode Technologies (cyberpwn)'s Software.
+
+In no event (including, without limitation, in the event of negligence) will Overcode Technologies (cyberpwn), its employees, agents or distributors be liable for any consequential, incidental, indirect, special or punitive damages whatsoever (including, without limitation, damages for loss of profits, loss of use, business interruption, loss of information or data, or pecuniary loss), in connection with or arising out of or related to this Agreement, React or the use or inability to use React or the furnishing, performance or use of any other matters hereunder whether based upon contract, tort or any other theory including negligence.
+
+Overcode Technologies (cyberpwn)'s entire liability, without exception, is limited to the customers' reimbursement of the purchase price of the Software (maximum being the lesser of the amount paid by you and the suggested retail price as listed by Overcode Technologies (cyberpwn) ) in exchange for the return of the product, all copies, registration papers and manuals, and all materials that constitute a transfer of license from the customer back to Overcode Technologies (cyberpwn).
+
+3.5 Warranties
+
+Except as expressly stated in writing, Overcode Technologies (cyberpwn) makes no representation or warranties in respect of this Software and expressly excludes all other warranties, expressed or implied, oral or written, including, without limitation, any implied warranties of merchantable quality or fitness for a particular purpose.
+
+3.6 Governing Law
+
+This Agreement shall be governed by the law of the United States applicable therein. You hereby irrevocably attorn and submit to the non-exclusive jurisdiction of the courts of United States therefrom. If any provision shall be considered unlawful, void or otherwise unenforceable, then that provision shall be deemed severable from this License and not affect the validity and enforceability of any other provisions.
+
+3.7 Termination
+
+Any failure to comply with the terms and conditions of this Agreement will result in automatic and immediate termination of this license. Upon termination of this license granted herein for any reason, you agree to immediately cease use of React and destroy all copies of React supplied under this Agreement. The financial obligations incurred by you shall survive the expiration or termination of this license.
+
+4. DISCLAIMER OF WARRANTY
+
+THIS SOFTWARE AND THE ACCOMPANYING FILES ARE SOLD "AS IS" AND WITHOUT WARRANTIES AS TO PERFORMANCE OR MERCHANTABILITY OR ANY OTHER WARRANTIES WHETHER EXPRESSED OR IMPLIED. THIS DISCLAIMER CONCERNS ALL FILES GENERATED AND EDITED BY React AS WELL.
+
+5. CONSENT OF USE OF DATA
+
+You agree that Overcode Technologies (cyberpwn) may collect and use information gathered in any manner as part of the product support services provided to you, if any, related to React. Overcode Technologies (cyberpwn) may also use this information to provide notices to you which may be of use or interest to you.
+
+6. DIGITAL SIGNATURE
+<$>
+ 	
