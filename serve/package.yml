@@ -1,7 +1,6 @@
 package:
-  version: '2.6.5p'
-  version-code: 2605
+  version: '2.6.6p'
+  version-code: 2606
   description:
-  - 'Stacked Mobs now should drop experience as intended'
-  - 'Several Performance improvements for mob stacking aswell'
-  - 'Fixed the ability to change the react tag with colors. (bottom of config.yml)'
+  - 'Fix issue with protocol lib failing with react even though its not installed.'
+  - 'Added the ability to change the permission denied message.'
