@@ -1,6 +1,6 @@
 package:
-  version: '2.6.6p'
-  version-code: 2606
+  version: '2.6.7p'
+  version-code: 2607
   description:
-  - 'Fix issue with protocol lib failing with react even though its not installed.'
-  - 'Added the ability to change the permission denied message.'
+  - 'Holding shift while monitoring shows more detailed information (higher accuracy)'
+  - 'Made the splash text more fancy :P'
