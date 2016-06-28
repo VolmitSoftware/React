@@ -1,6 +1,7 @@
 package:
-  version: '2.6.7p'
-  version-code: 2607
+  version: '2.6.8p'
+  version-code: 2608
   description:
-  - 'Holding shift while monitoring shows more detailed information (higher accuracy)'
-  - 'Made the splash text more fancy :P'
+  - 'Added a per-world option to assume-no-side-effects to entity types'
+  - 'Added a per-world option to disable stacking for that world while stacking is enabled'
+  - 'Tweaks to the entity stacker'
