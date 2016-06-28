@@ -1,7 +1,8 @@
 package:
-  version: '2.6.8p'
-  version-code: 2608
+  version: '2.6.9p'
+  version-code: 2609
   description:
-  - 'Added a per-world option to assume-no-side-effects to entity types'
-  - 'Added a per-world option to disable stacking for that world while stacking is enabled'
-  - 'Tweaks to the entity stacker'
+  - 'Auto update now updates on restart (downloading live)'
+  - 'You can turn back the live updater if you dont have issues with it in the updater.yml file'
+  - 'Bugfixes for many entity related issues'
+  - 'Performance tweaks to the sampler system'
