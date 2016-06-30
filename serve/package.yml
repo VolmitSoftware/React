@@ -1,8 +1,6 @@
 package:
-  version: '2.7p'
-  version-code: 2700
+  version: '2.7.1p'
+  version-code: 2701
   description:
-  - 'Added a method of monitoring via scoreboards (/re board) NOT PERFECTED YET'
-  - 'Added additional placeholders for formatted sampler values instead of raw'
-  - 'Bugfixes for some commands'
-  - 'Performance improvements for the monitor controller'
+  - 'Added a new command to ignore instability messages per player per type (/re ignore)'
+  - 'Performance tweaks for player data'
