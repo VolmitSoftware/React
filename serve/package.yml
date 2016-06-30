@@ -1,8 +1,8 @@
 package:
-  version: '2.6.9p'
-  version-code: 2609
+  version: '2.7p'
+  version-code: 2700
   description:
-  - 'Auto update now updates on restart (downloading live)'
-  - 'You can turn back the live updater if you dont have issues with it in the updater.yml file'
-  - 'Bugfixes for many entity related issues'
-  - 'Performance tweaks to the sampler system'
+  - 'Added a method of monitoring via scoreboards (/re board) NOT PERFECTED YET'
+  - 'Added additional placeholders for formatted sampler values instead of raw'
+  - 'Bugfixes for some commands'
+  - 'Performance improvements for the monitor controller'
