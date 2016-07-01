@@ -1,6 +1,6 @@
 package:
-  version: '2.7.1p'
-  version-code: 2701
+  version: '2.7.2p'
+  version-code: 2702
   description:
-  - 'Added a new command to ignore instability messages per player per type (/re ignore)'
-  - 'Performance tweaks for player data'
+  - 'Added a feature to prevent new chunks from being generated in world configs.'
+  - 'Fixes for player data'
