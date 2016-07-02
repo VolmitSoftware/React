@@ -1,6 +1,9 @@
 package:
-  version: '2.7.2p'
-  version-code: 2702
+  version: '2.7.3p'
+  version-code: 2703
   description:
-  - 'Added a feature to prevent new chunks from being generated in world configs.'
-  - 'Fixes for player data'
+  - 'Added a new feature called Photon. Used for relighting chunks.'
+  - 'Before Enabling Photon if you need it, please read these warnings!'
+  - 'WARNING: Please understand that relighting chunks consumes more bandwith'
+  - 'WARNING: Relighting can drop framerates of players'
+  - 'WARNING: Relighting is intended for those with very decent processors.'
