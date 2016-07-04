@@ -1,7 +1,7 @@
 package:
-  version: '2.7.4p'
-  version-code: 2704
+  version: '2.7.5p'
+  version-code: 2705
   description:
-  - 'Fixed some errors from photon'
-  - 'Fixed an issue with chunks not being calculated correctly'
-  - 'Fixed several other data issues.'
+  - 'Fixed errors with some events'
+  - 'Added comments to almost every config!'
+  - 'Happy 4th!'
