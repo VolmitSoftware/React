@@ -1,7 +1,9 @@
 package:
-  version: '2.7.5p'
-  version-code: 2705
+  version: '2.7.6p'
+  version-code: 2706
   description:
-  - 'Fixed errors with some events'
-  - 'Added comments to almost every config!'
-  - 'Happy 4th!'
+  - 'Fix 1.10.2 Crash when Slimes are killed.'
+  - 'Fix timings cache not clearing when timings turned off.'
+  - 'Drastic performance improvements for SpigotTimings processing.'
+  - 'Dropped all craftbukkit requirements (no need to update for new version of mc)'
+  - 'Added new command /re fs (for browsing file sizes in plugins folder)'
