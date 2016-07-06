@@ -1,9 +1,8 @@
 package:
-  version: '2.7.6p'
-  version-code: 2706
+  version: '2.7.7p'
+  version-code: 2707
   description:
-  - 'Fix 1.10.2 Crash when Slimes are killed.'
-  - 'Fix timings cache not clearing when timings turned off.'
-  - 'Drastic performance improvements for SpigotTimings processing.'
-  - 'Dropped all craftbukkit requirements (no need to update for new version of mc)'
-  - 'Added new command /re fs (for browsing file sizes in plugins folder)'
+  - 'Redesigned the way entitiy culling works.'
+  - 'Recommended: Delete your old action-cull-entities then reconfigure it!'
+  - 'Added a config version for all configs.'
+  - 'Fixed an issue with tag colors not actually working.'
