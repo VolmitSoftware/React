@@ -1,8 +1,5 @@
 package:
-  version: '2.7.7p'
-  version-code: 2707
+  version: '2.7.9p'
+  version-code: 2709
   description:
-  - 'Redesigned the way entitiy culling works.'
-  - 'Recommended: Delete your old action-cull-entities then reconfigure it!'
-  - 'Added a config version for all configs.'
-  - 'Fixed an issue with tag colors not actually working.'
+  - 'Ended the TPS Massacre'
