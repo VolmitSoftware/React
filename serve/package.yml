@@ -1,12 +1,7 @@
 package:
-  version: '2.8p'
-  version-code: 2800
+  version: '2.8.1p'
+  version-code: 2801
   description:
-  - 'Ended the TPS Massacre'
-  - 'Stopped culling all horses'
-  - 'Added a default value comment for all configs'
-  - 'All configs modified will be detected and inject changes into react. No need to reload!'
-  - 'Added a config for configuring configs... Look at the configuration-settings.yml'
-  - 'Fixed bug with entity count going all over the place'
-  - 'Performance improvements for radius-entity detection'
-  - 'Other various performance improvements and fixes'
+  - 'Fix issues with entity culling removing entities.'
+  - 'Added a hard limit for culling per chunk.'
+  - 'RECOMMENDED: DELETE reactions/action-cull-entities.yml'
