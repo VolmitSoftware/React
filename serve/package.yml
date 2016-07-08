@@ -1,11 +1,7 @@
 package:
-  version: '2.8.2p'
-  version-code: 2802
+  version: '2.8.3p'
+  version-code: 2803
   description:
-  - 'Photon is now about 30% faster with new config options.'
-  - 'Photon FIX for popping off doors and other items.'
-  - 'Default entity culling is much less aggressive now.'
-  - 'Disabled Radius Culling by default (if its enabled it still will be for you)'
-  - 'Fixed an issue with protocol lib failing terribly.'
-  - 'Added a monitor notification when trying to scroll on a locked monitor'
-  - 'The monitor will bold itself when near high light levels for clarity.'
+  - 'Photon no longer pops items out of chests (trapped also), hoppers, and anvils.'
+  - 'Added a configurable option in the config.yml for title bolding (Off by default)'
+  - 'Major performance tweaks for the monitor title.'
