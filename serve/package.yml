@@ -1,5 +1,11 @@
 package:
-  version: '2.8.4p'
-  version-code: 2804
+  version: '2.8.5p'
+  version-code: 2805
   description:
   - 'Fix issues with radius culling.'
+  - 'Fix signs from resetting due to photon (other invnetories aswell)'
+  - 'Fix config change message with no actual changes.'
+  - 'Fix auto update check messages even when auto update checking is off.'
+  - 'Added an option to only stack entities from spawners. (Mob Stacking)'
+  - 'Added options in the config.yml to change monitor ticking speeds'
+  - 'Added an option to turn off monitor-shift-accuracy.'
