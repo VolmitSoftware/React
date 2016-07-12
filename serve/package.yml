@@ -1,7 +1,5 @@
 package:
-  version: '2.8.6p'
-  version-code: 2806
+  version: '2.8.7p'
+  version-code: 2807
   description:
-  - 'Fix many issues for several errors reported'
-  - 'Added a small (expanding) api, documentation will be on the react page'
-  - 'Performance improvements for startup.'
+  - 'Fix issues with Timings Controllers and detection'
