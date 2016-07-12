@@ -1,11 +1,7 @@
 package:
-  version: '2.8.5p'
-  version-code: 2805
+  version: '2.8.6p'
+  version-code: 2806
   description:
-  - 'Fix issues with radius culling.'
-  - 'Fix signs from resetting due to photon (other invnetories aswell)'
-  - 'Fix config change message with no actual changes.'
-  - 'Fix auto update check messages even when auto update checking is off.'
-  - 'Added an option to only stack entities from spawners. (Mob Stacking)'
-  - 'Added options in the config.yml to change monitor ticking speeds'
-  - 'Added an option to turn off monitor-shift-accuracy.'
+  - 'Fix many issues for several errors reported'
+  - 'Added a small (expanding) api, documentation will be on the react page'
+  - 'Performance improvements for startup.'
