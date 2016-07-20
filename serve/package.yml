@@ -1,8 +1,6 @@
 package:
-  version: '2.8.8p'
-  version-code: 2808
+  version: '2.8.9p'
+  version-code: 2809
   description:
   - 'Several bugfixes and performance improvements'
-  - 'Added a Limiting config which allows you to dynamically change the player limit'
-  - 'You can also kick the excess players when lagging by the most afk, or just kick them'
-  - 'View the limits.yml'
+  - 'Fixed the chat issue (error)'
