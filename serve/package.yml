@@ -1,5 +1,8 @@
 package:
-  version: '2.8.7p'
-  version-code: 2807
+  version: '2.8.8p'
+  version-code: 2808
   description:
-  - 'Fix issues with Timings Controllers and detection'
+  - 'Several bugfixes and performance improvements'
+  - 'Added a Limiting config which allows you to dynamically change the player limit'
+  - 'You can also kick the excess players when lagging by the most afk, or just kick them'
+  - 'View the limits.yml'
