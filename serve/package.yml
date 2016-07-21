@@ -1,6 +1,6 @@
 package:
-  version: '2.8.9p'
-  version-code: 2809
+  version: '2.9p'
+  version-code: 2900
   description:
   - 'Several bugfixes and performance improvements'
-  - 'Fixed the chat issue (error)'
+  - 'Fixed the onDeathEvent issue (harmless, but an exception)'
