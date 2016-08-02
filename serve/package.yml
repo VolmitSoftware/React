@@ -1,6 +1,8 @@
 package:
-  version: '2.9p'
-  version-code: 2900
+  version: '3p'
+  version-code: 3000
   description:
-  - 'Several bugfixes and performance improvements'
-  - 'Fixed the onDeathEvent issue (harmless, but an exception)'
+  - 'Many, Many bugfixes and performance improvements'
+  - 'Added additional information for the dump file'
+  - 'A few networking tweaks for client expansion'
+  - 'Api tweaks'
