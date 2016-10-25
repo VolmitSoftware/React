@@ -1,8 +1,7 @@
 package:
-  version: '3p'
-  version-code: 3000
+  version: '3.1p'
+  version-code: 3100
   description:
-  - 'Many, Many bugfixes and performance improvements'
-  - 'Added additional information for the dump file'
-  - 'A few networking tweaks for client expansion'
-  - 'Api tweaks'
+  - 'Sped up startup a bit'
+  - 'Fixed issue with disabling all reactions'
+  - 'Tweaked ticking for samplers for speed'
