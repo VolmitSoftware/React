@@ -1,7 +1,7 @@
 package:
-  version: '3.2p'
-  version-code: 3200
+  version: '4p'
+  version-code: 4000
   description:
-  - 'Monitoring now works with 1.11'
-  - 'Monitoring should work for future versions'
-  - 'Fixed reaction gui not working properly on 1.11'
+  - 'Removed Photon & Entity Stacking'
+  - 'Removed the timings tab on the monitor'
+  - 'Updates will come soon revising features.'
