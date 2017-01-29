@@ -1,7 +1,11 @@
 package:
-  version: '4p'
-  version-code: 4000
+  version: '4.0.1p'
+  version-code: 4010
   description:
-  - 'Removed Photon & Entity Stacking'
-  - 'Removed the timings tab on the monitor'
-  - 'Updates will come soon revising features.'
+  - 'Old configuration values are now auto pruned'
+  - 'Redesigned entity culling'
+  - '> Fixed culling on restricted entities'
+  - '> Simplified culling for a max per chunk'
+  - '> Culling is much faster cpu wise'
+  
+  
