@@ -1,11 +1,10 @@
 package:
-  version: '4.0.1p'
-  version-code: 4010
+  version: '4.0.2p'
+  version-code: 4020
   description:
-  - 'Old configuration values are now auto pruned'
-  - 'Redesigned entity culling'
-  - '> Fixed culling on restricted entities'
-  - '> Simplified culling for a max per chunk'
-  - '> Culling is much faster cpu wise'
+  - 'Mob Culling Overhaul!'
+  - 'React will cull mobs hostile first (underground)'
+  - 'React will cull mobs in darker lighting first'
+  - 'Culling uses selective bias (configurable)'
   
   
