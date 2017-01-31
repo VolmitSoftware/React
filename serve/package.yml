@@ -1,19 +1,6 @@
 package:
   version: '4.0.4p'
-  version-code: 4040
+  version-code: 4050
   description:
-  - 'Fixed issues with area detection'
-  - 'Fixed issues with chunk mapping'
-  - 'Fixed compatibility with 1.11.2'
-  - 'Fixed exception spammed (monitor)'
-  - 'Fixed NPEs with executors'
-  - 'Fixed map graphing (now works)'
-  - 'Fixed exception with limiters'
-  - 'Reaction Time is now more accurate'
-  - 'Added Drop caching.'
-  - '> Disables drops away from players'
-  - '> Enables drops near players'
-  - '> Configurable in React/drops.yml'
-  
-  
-  
+  - 'Fixed drop errors'
+  - 'Fixed move event errors'
