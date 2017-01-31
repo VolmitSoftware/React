@@ -1,10 +1,9 @@
 package:
-  version: '4.0.2p'
-  version-code: 4020
+  version: '4.0.3p'
+  version-code: 4030
   description:
-  - 'Mob Culling Overhaul!'
-  - 'React will cull mobs hostile first (underground)'
-  - 'React will cull mobs in darker lighting first'
-  - 'Culling uses selective bias (configurable)'
+  - 'Fixed issues with monitoring'
+  - 'Fixed PlaceholderAPI failures'
+  - 'Performance improvements for Timings'
   
   
