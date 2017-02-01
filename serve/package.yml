@@ -1,7 +1,7 @@
 package:
-  version: '4.0.6p'
-  version-code: 4060
+  version: '4.0.7p'
+  version-code: 4070
   description:
-  - 'Drop caching reworked for faster response times'
-  - 'Drop caching is disabled by default.'
-  - 'Configurable in React/drops.yml'
+  - 'Drop caching removed until fixes can come'
+  - 'Major performance improvement in event mapping'
+  - 'Fixed react server crash from portscan'
