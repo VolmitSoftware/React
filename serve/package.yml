@@ -1,7 +1,6 @@
 package:
-  version: '4.0.7p'
-  version-code: 4070
+  version: '4.0.8p'
+  version-code: 4080
   description:
-  - 'Drop caching removed until fixes can come'
-  - 'Major performance improvement in event mapping'
-  - 'Fixed react server crash from portscan'
+  - 'Improved Sampler performance'
+  - 'Removed action teleport-drops'
