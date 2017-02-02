@@ -1,6 +1,8 @@
 package:
-  version: '4.0.8p'
-  version-code: 4080
+  version: '4.0.9p'
+  version-code: 4090
   description:
-  - 'Improved Sampler performance'
-  - 'Removed action teleport-drops'
+  - 'Tweaked display on entities for monitor'
+  - 'Improved color selection for command help'
+  - 'Performance improvements while monitoring'
+  - 'Rendering fixes for maps (visual artifacts)'
