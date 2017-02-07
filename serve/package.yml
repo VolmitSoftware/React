@@ -1,8 +1,7 @@
 package:
-  version: '4.0.9p'
-  version-code: 4090
+  version: '4.1p'
+  version-code: 4100
   description:
-  - 'Tweaked display on entities for monitor'
-  - 'Improved color selection for command help'
-  - 'Performance improvements while monitoring'
-  - 'Rendering fixes for maps (visual artifacts)'
+  - 'Fixed update checking when its set to off'
+  - 'Fixed error on entity cycling'
+  - 'Fixed exception with executive iterators'
