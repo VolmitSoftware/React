@@ -1,7 +1,7 @@
 package:
-  version: '4.1p'
-  version-code: 4100
+  version: '4.1.1p'
+  version-code: 4110
   description:
-  - 'Fixed update checking when its set to off'
-  - 'Fixed error on entity cycling'
-  - 'Fixed exception with executive iterators'
+  - 'Fixed update checking when its set to off again...'
+  - 'Languages are now searched locally and loaded'
+  - 'Fixed local language issues'
