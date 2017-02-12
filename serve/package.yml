@@ -1,7 +1,8 @@
 package:
-  version: '4.1.1p'
-  version-code: 4110
+  version: '4.1.3p'
+  version-code: 4130
   description:
-  - 'Fixed update checking when its set to off again...'
-  - 'Languages are now searched locally and loaded'
-  - 'Fixed local language issues'
+  - 'Fixed drop sample error'
+  - 'Sampler performance improvements'
+  - 'Added async tnt option (in worlds config)'
+  - 'Added /re status command. Shows load distrobution'
