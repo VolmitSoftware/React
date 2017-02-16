@@ -1,8 +1,9 @@
 package:
-  version: '4.1.3p'
-  version-code: 4130
+  version: '4.1.5p'
+  version-code: 4150
   description:
-  - 'Fixed drop sample error'
-  - 'Sampler performance improvements'
-  - 'Added async tnt option (in worlds config)'
-  - 'Added /re status command. Shows load distrobution'
+  - 'Protocol changes to allow new client actions'
+  - 'Added new language nodes'
+  - 'Fixed issues with language startup'
+  - 'Updated react splash text (see image)'
+  - 'Various bugfixes related to performance'
