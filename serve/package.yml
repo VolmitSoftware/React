@@ -1,9 +1,7 @@
 package:
-  version: '4.1.5p'
-  version-code: 4150
+  version: '4.1.6p'
+  version-code: 4160
   description:
-  - 'Protocol changes to allow new client actions'
-  - 'Added new language nodes'
-  - 'Fixed issues with language startup'
-  - 'Updated react splash text (see image)'
-  - 'Various bugfixes related to performance'
+  - 'Various bugfixes around the plugin'
+  - 'Chunk related mob limits not yet added (sorry)'
+  - 'React Remote now supports the console!'
