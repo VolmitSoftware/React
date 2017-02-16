@@ -1,7 +1,7 @@
 package:
-  version: '4.1.6p'
-  version-code: 4160
+  version: '4.1.7p'
+  version-code: 4170
   description:
-  - 'Various bugfixes around the plugin'
-  - 'Chunk related mob limits not yet added (sorry)'
-  - 'React Remote now supports the console!'
+  - 'Added scoreboard interval to the main config.yml'
+  - 'Added notification of mob culls (in action-cull-entities.yml)'
+  - 'Added config for console hacks (needed for remote) console.yml'
