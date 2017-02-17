@@ -1,7 +1,7 @@
 package:
-  version: '4.1.7p'
-  version-code: 4170
+  version: '4.1.8p'
+  version-code: 4180
   description:
-  - 'Added scoreboard interval to the main config.yml'
-  - 'Added notification of mob culls (in action-cull-entities.yml)'
-  - 'Added config for console hacks (needed for remote) console.yml'
+  - 'Added drop countdown for removing drops (configurable)'
+  - 'Added permissions in config.yml for remote users'
+  - 'Loads of bugfixes and tweaks READ MORE ON SPIGOT!'
