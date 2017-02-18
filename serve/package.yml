@@ -1,7 +1,7 @@
 package:
-  version: '4.1.9p'
-  version-code: 4190
+  version: '4.2p'
+  version-code: 4200
   description:
-  - 'Allow override of despawn rate in action-cull-entities'
-  - 'Fixed console issue when reloading sometimes (and update fixing)'
-  - 'Other various fixes and tweaks'
+  - 'Various performance fixes and tweaks'
+  - 'Fixed issues with drop culling'
+  - 'Tweaked client protocol for speed'
