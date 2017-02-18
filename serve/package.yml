@@ -1,7 +1,8 @@
 package:
-  version: '4.2p'
-  version-code: 4200
+  version: '4.2.1p'
+  version-code: 4210
   description:
   - 'Various performance fixes and tweaks'
-  - 'Fixed issues with drop culling'
-  - 'Tweaked client protocol for speed'
+  - 'Fixed drop event error'
+  - 'Fixed action bar error console spam'
+  - 'Auto updater task will destroy itself if checking is off'
