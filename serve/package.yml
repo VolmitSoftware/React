@@ -1,7 +1,7 @@
 package:
-  version: '4.1.8p'
-  version-code: 4180
+  version: '4.1.9p'
+  version-code: 4190
   description:
-  - 'Added drop countdown for removing drops (configurable)'
-  - 'Added permissions in config.yml for remote users'
-  - 'Loads of bugfixes and tweaks READ MORE ON SPIGOT!'
+  - 'Allow override of despawn rate in action-cull-entities'
+  - 'Fixed console issue when reloading sometimes (and update fixing)'
+  - 'Other various fixes and tweaks'
