@@ -1,8 +1,5 @@
 package:
-  version: '4.2.2p'
-  version-code: 4220
+  version: 4.2.3p
+  version-code: 4230
   description:
-  - 'Various performance fixes and tweaks'
-  - 'Fixed drop merge-despawn'
-  - 'Added console-view permission for react remote users'
-  - 'Moved react remote users to a react-remote folder'
+  - Fixed permission issue with remote console.
