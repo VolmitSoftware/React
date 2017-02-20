@@ -1,5 +1,11 @@
 package:
-  version: 4.2.3p
-  version-code: 4230
+  version: 4.2.4p
+  version-code: 4240
   description:
-  - Fixed permission issue with remote console.
+  - Added new Remote Graphs for task system
+  - New task system for performance
+  - Fixed Memory/cpu leak on monitor/relog spam
+  - Improved overall performance by 20-30 percent
+  - Added mob stacking :P
+  - Removed several debugging messages
+  - View more on the release page
