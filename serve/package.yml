@@ -1,6 +1,6 @@
 package:
-  version: 4.2.5p
-  version-code: 4250
+  version: 4.2.6p
+  version-code: 4260
   description:
-  - Fixed task-manager.yml load
-  - Added splash-screen setting in config.yml
+  - Fix exception at startup
+  - Tweaked mob stacking a bit (performance)
