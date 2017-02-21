@@ -1,11 +1,6 @@
 package:
-  version: 4.2.4p
-  version-code: 4240
+  version: 4.2.5p
+  version-code: 4250
   description:
-  - Added new Remote Graphs for task system
-  - New task system for performance
-  - Fixed Memory/cpu leak on monitor/relog spam
-  - Improved overall performance by 20-30 percent
-  - Added mob stacking :P
-  - Removed several debugging messages
-  - View more on the release page
+  - Fixed task-manager.yml load
+  - Added splash-screen setting in config.yml
