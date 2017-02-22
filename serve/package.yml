@@ -1,6 +1,6 @@
 package:
-  version: 4.2.6p
-  version-code: 4260
+  version: 4.2.7p
+  version-code: 4270
   description:
-  - Fix exception at startup
-  - Tweaked mob stacking a bit (performance)
+  - Fix exception on tick samples
+  - Fix integrity cachefails
