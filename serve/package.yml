@@ -1,6 +1,8 @@
 package:
-  version: 4.2.7p
-  version-code: 4270
+  version: 4.2.8p
+  version-code: 4280
   description:
-  - Fix exception on tick samples
-  - Fix integrity cachefails
+  - Add Custom World Guard flags with /re rg. World guard + World Edit must be installed to use this.
+  - 'Custom Flag: DENY_REACTIONS: Dont touch things in region'
+  - 'Custom Flag: DENY_MONITORING: No Action bar monitor in region'
+  - 'Custom Flag: DENY_MAPPING: No Maps in region'
