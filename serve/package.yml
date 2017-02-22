@@ -1,8 +1,5 @@
 package:
-  version: 4.2.8p
-  version-code: 4280
+  version: 4.2.9p
+  version-code: 4290
   description:
-  - Add Custom World Guard flags with /re rg. World guard + World Edit must be installed to use this.
-  - 'Custom Flag: DENY_REACTIONS: Dont touch things in region'
-  - 'Custom Flag: DENY_MONITORING: No Action bar monitor in region'
-  - 'Custom Flag: DENY_MAPPING: No Maps in region'
+  - Fix update notification on join if checking is off.
