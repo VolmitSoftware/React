@@ -1,5 +1,5 @@
 package:
-  version: 4.2.9p
-  version-code: 4290
+  version: 4.3p
+  version-code: 4300
   description:
-  - Fix update notification on join if checking is off.
+  - Major performance improvement to scoreboards.
