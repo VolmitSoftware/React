@@ -1,5 +1,9 @@
 package:
-  version: 4.3p
-  version-code: 4300
+  version: 4.3.1p
+  version-code: 4310
   description:
-  - Major performance improvement to scoreboards.
+  - Mobs can now be un-stacked via action or by shift right clicking mobs.
+  - Mobs now make pop sounds when stacking or unstacking
+  - Mobs wont re-stack when split
+  - Added the un-stack action to unstack all mobs
+  - Added the re-stack action to re-stack unstacked mobs
