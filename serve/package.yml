@@ -1,9 +1,8 @@
 package:
-  version: 4.3.1p
-  version-code: 4310
+  version: 4.3.2p
+  version-code: 4320
   description:
-  - Mobs can now be un-stacked via action or by shift right clicking mobs.
-  - Mobs now make pop sounds when stacking or unstacking
-  - Mobs wont re-stack when split
-  - Added the un-stack action to unstack all mobs
-  - Added the re-stack action to re-stack unstacked mobs
+  - Action Performance improvemtns
+  - Fixed NPE while reading config
+  - Fixed NPE for 1.9+ servers using stacking
+  - Fixed log debugger spam
