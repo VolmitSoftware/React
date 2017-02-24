@@ -1,8 +1,7 @@
 package:
-  version: 4.3.2p
-  version-code: 4320
+  version: 4.3.3p
+  version-code: 4330
   description:
-  - Action Performance improvemtns
-  - Fixed NPE while reading config
-  - Fixed NPE for 1.9+ servers using stacking
-  - Fixed log debugger spam
+  - Entities now display tags of their stack.
+  - Name tags update and remove themselves from node tagging (invisible color tags)
+  - Fixed stacking merge issue
