@@ -1,7 +1,8 @@
 package:
-  version: 4.3.3p
-  version-code: 4330
+  version: 4.3.4p
+  version-code: 4340
   description:
-  - Entities now display tags of their stack.
-  - Name tags update and remove themselves from node tagging (invisible color tags)
-  - Fixed stacking merge issue
+  - Timings Processing is now much faster (on the cpu)
+  - Added timings-controller setting max threads for multithreaded processing
+  - Paperspigot now only takes 2 seconds to get the first batch of timings instead of 5 minutes
+  - Improved performance while timings are off
