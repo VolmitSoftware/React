@@ -1,8 +1,8 @@
 package:
-  version: 4.3.4p
-  version-code: 4340
+  version: 4.3.5
+  version-code: 4350
   description:
-  - Timings Processing is now much faster (on the cpu)
-  - Added timings-controller setting max threads for multithreaded processing
-  - Paperspigot now only takes 2 seconds to get the first batch of timings instead of 5 minutes
-  - Improved performance while timings are off
+  - Updater overhaul. Now downloads updates from spigot (you need to authenticate yourself)
+  - Added a guide on how to set this up on the release page
+  - Major performance improvements at startup
+  - You may need to reconfigure your updater.yml file
