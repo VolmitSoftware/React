@@ -22,6 +22,16 @@ React 6.0 is a full rewrite and it has been worked on for the past 2 months. Her
   * [x] Process physics updates into a queue from redstone, blocks, pistons, and other worldly things (if it moves or changes, it is recorded)
   * [x] Categorize each type into a color to show up as glass (stained glass)
   * [x] Off of the main thread, quickly send a packet to change the updated block to colored glass, then back after 70 milliseconds or so
+* [x] Advanced entity culling
+  * [x] Define entity groups and entities with maximums. 
+  * [x] Use multiple rules involving the same entity types for even more control
+  * [x] Iterative culling (logic async, sync killing)
+  * [x] Add Defer & Refuse fields. Defer suggests to cull others before the specified type. Refuse ignores it completley
+* [ ] An accurate cpu score benchmark
+  * [ ] Calculate how many times a cpu can calculate x in 10 or so seconds
+  * [ ] Make the calculation diverse. Use math, and other calculation types
+* [ ] BStats Integration
+* [ ] React Server Integration
   
 ## Required Testing
 Testing is pretty much needed since this update wont be going to only a few people. All react owners (oh yeah and all of the pirates out there sailing the seas of react) will be getting this. So it's crucial to ensure it works on 6.0.0, and not 6.2.5 for example.
