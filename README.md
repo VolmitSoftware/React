@@ -27,11 +27,19 @@ React 6.0 is a full rewrite and it has been worked on for the past 2 months. Her
   * [x] Use multiple rules involving the same entity types for even more control
   * [x] Iterative culling (logic async, sync killing)
   * [x] Add Defer & Refuse fields. Defer suggests to cull others before the specified type. Refuse ignores it completley
-* [ ] An accurate cpu score benchmark
-  * [ ] Calculate how many times a cpu can calculate x in 10 or so seconds
-  * [ ] Make the calculation diverse. Use math, and other calculation types
+* [x] An accurate cpu score benchmark
+  * [x] Calculate how many times a cpu can calculate x in 10 or so seconds
+  * [x] Make the calculation diverse. Use math, and other calculation types
 * [ ] BStats Integration
 * [ ] React Server Integration
+* [ ] Actions
+  * [x] Action Cull Entities
+  * [x] Action Purge Entities
+  * [x] Action Purge Chunks
+  * [ ] Action Collect Garbage
+* [ ] Fast TNT Controller
+  * [ ] Tnt is destroyed without creating entities
+  
   
 ## Required Testing
 Testing is pretty much needed since this update wont be going to only a few people. All react owners (oh yeah and all of the pirates out there sailing the seas of react) will be getting this. So it's crucial to ensure it works on 6.0.0, and not 6.2.5 for example.
