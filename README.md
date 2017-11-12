@@ -36,9 +36,7 @@ React 6.0 is a full rewrite and it has been worked on for the past 2 months. Her
   * [x] Action Cull Entities
   * [x] Action Purge Entities
   * [x] Action Purge Chunks
-  * [ ] Action Collect Garbage
-* [ ] Fast TNT Controller
-  * [ ] Tnt is destroyed without creating entities
+  * [x] Action Collect Garbage
   
   
 ## Required Testing
