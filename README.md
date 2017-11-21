@@ -67,6 +67,15 @@ React 6.0 is a full rewrite and it has been worked on for the past 2 months. Her
   * [ ] Offer simplistic, but detailed stack traces ingame
 * [ ] BStats Integration
   * [ ] Send cpu score on startup
+* [ ] NMS Abstraction layer (direct, non reflective)
+  * [ ] Support most typical packets
+  * [ ] Support fast block setting and getting async via queue
+  * [ ] Support relighting and resending of chunks
+  * [ ] Support Block force updating & physics actions
+* [x] Selectors 
+  * [x] Positional selector
+  * [x] Time Selector
+  * [x] Entity Type Selector
 * [ ] Actions
   * [x] Action Cull Entities
     * Supports Positional Selectors
