@@ -30,6 +30,25 @@ React 6.0 is a full rewrite and it has been worked on for the past 2 months. Her
 * [x] An accurate cpu score benchmark
   * [x] Calculate how many times a cpu can calculate x in 10 or so seconds
   * [x] Make the calculation diverse. Use math, and other calculation types
+* [ ] RAI (React AI)
+  * [ ] Goal System
+    * [x] Goal Stablilize TPS
+    * [x] Goal Keep Stable Redstone
+    * [x] Goal Keep Stable Hoppers
+    * [x] Goal Keep Stable Entity Counts
+    * [ ] Goal Keep Stable Liquid Tick
+* [ ] FastSave Controller
+  * [ ] Offer alternative world saving intended to make world saving async & not spike the server
+  * [ ] Crash Mitigation Auto-save (saves the world when possible crash)
+  * [ ] World stream saving (the world saves more frequently off of the main thread)
+  * [ ] Seperation of savedata (save files elsewhere, merge and apply on startup for maximum compatability)
+* [ ] Spike Manager
+  * [x] Track Server Spikes
+    * [x] Determine which plugins caused the spike
+    * [ ] Determine the time the spike took
+  * [x] Map plugins by spikes
+  * [x] Prescan plugins to identify classes for blame instead of realtime scanning (slower)
+  * [ ] Offer simplistic, but detailed stack traces ingame
 * [ ] BStats Integration
 * [ ] React Server Integration
 * [ ] Actions
