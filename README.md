@@ -37,6 +37,22 @@ React 6.0 is a full rewrite and it has been worked on for the past 2 months. Her
     * [x] Goal Keep Stable Hoppers
     * [x] Goal Keep Stable Entity Counts
     * [ ] Goal Keep Stable Liquid Tick
+* [ ] Physics optimizations
+  * [ ] Offer fluid optimizations (less updating, possibly async but not likley)
+  * [ ] Offer redstone optimizations (same as fluids)
+  * [ ] Offer hopper tick optimizations (same as fluids)
+* [ ] React Chronophy
+  * [ ] Offer hopper physics warping (teleports items by skipping hoppers, saving ticks)
+  * [ ] Offer entity velocity warping (teleports entities instead of calculating all physics on the main thread)
+  * [ ] Offer liquid optimizations (instant liquid flow by calculating flow dynamics off of the main thread)
+* [ ] React Discord Webhook integration
+  * [ ] Define what to send to the discord server via configs
+  * [ ] Customize intervals, batch updates & more
+* [ ] React Client integration
+  * [ ] A new client may be required for full integration
+  * [ ] Support all samplers by graphing (offer gl rendering. lwjgl gui)
+  * [ ] Support firing actions
+  * [ ] Support visualization of the world chunks, and information about each one (redstone use, hopper use etc), also display current locks on that chunk such as RAI redstone locks.
 * [ ] FastSave Controller
   * [ ] Offer alternative world saving intended to make world saving async & not spike the server
   * [ ] Crash Mitigation Auto-save (saves the world when possible crash)
@@ -50,7 +66,7 @@ React 6.0 is a full rewrite and it has been worked on for the past 2 months. Her
   * [x] Prescan plugins to identify classes for blame instead of realtime scanning (slower)
   * [ ] Offer simplistic, but detailed stack traces ingame
 * [ ] BStats Integration
-* [ ] React Server Integration
+  * [ ] Send cpu score on startup
 * [ ] Actions
   * [x] Action Cull Entities
     * Supports Positional Selectors
