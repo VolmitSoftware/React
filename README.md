@@ -34,9 +34,29 @@ React 6.0 is a full rewrite and it has been worked on for the past 2 months. Her
 * [ ] React Server Integration
 * [ ] Actions
   * [x] Action Cull Entities
+    * Supports Positional Selectors
+    * Supports Entity Type Selectors
   * [x] Action Purge Entities
+    * Supports Positional Selectors
+    * Supports Entity Type Selectors
   * [x] Action Purge Chunks
-  * [x] Action Collect Garbage
+    * Supports Positional Selectors
+  * [ ] Action Collect Garbage
+  * [x] Action Lock Redstone
+    * Supports Positional Selectors
+    * Supports Time Type Selectors
+  * [x] Action Unlock Redstone
+    * Supports Positional Selectors
+  * [x] Action Lock Hoppers
+    * Supports Positional Selectors
+    * Supports Time Type Selectors
+  * [x] Action Unlock Hoppers
+    * Supports Positional Selectors
+  * [ ] Action Lock Fluid
+    * Supports Positional Selectors
+    * Supports Time Type Selectors
+  * [ ] Action Unlock Fluid
+    * Supports Positional Selectors
   
   
 ## Required Testing
