@@ -36,7 +36,7 @@ React 6.0 is a full rewrite and it has been worked on for the past 2 months. Her
     * [x] Goal Keep Stable Redstone
     * [x] Goal Keep Stable Hoppers
     * [x] Goal Keep Stable Entity Counts
-    * [ ] Goal Keep Stable Liquid Tick
+    * [x] Goal Keep Stable Liquid Tick
 * [ ] Physics optimizations
   * [ ] Offer fluid optimizations (less updating, possibly async but not likley)
   * [ ] Offer redstone optimizations (same as fluids)
@@ -77,6 +77,10 @@ React 6.0 is a full rewrite and it has been worked on for the past 2 months. Her
   * [x] Positional selector
   * [x] Time Selector
   * [x] Entity Type Selector
+* [ ] Action Log Board
+  * [ ] Use the scoreboard to log actions currently running
+  * [ ] Mash percents and counts with queued AND running actions
+  * [ ] Toggled just like /re glass or /re mon or /re map
 * [ ] Actions
   * [x] Action Cull Entities
     * Supports Positional Selectors
@@ -97,10 +101,10 @@ React 6.0 is a full rewrite and it has been worked on for the past 2 months. Her
     * Supports Time Type Selectors
   * [x] Action Unlock Hoppers
     * Supports Positional Selectors
-  * [ ] Action Lock Fluid
+  * [x] Action Lock Fluid
     * Supports Positional Selectors
     * Supports Time Type Selectors
-  * [ ] Action Unlock Fluid
+  * [x] Action Unlock Fluid
     * Supports Positional Selectors
   
   
