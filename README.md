@@ -45,6 +45,7 @@ React 6.0 is a full rewrite and it has been worked on for the past 2 months. Her
   * [ ] Offer hopper physics warping (teleports items by skipping hoppers, saving ticks)
   * [ ] Offer entity velocity warping (teleports entities instead of calculating all physics on the main thread)
   * [ ] Offer liquid optimizations (instant liquid flow by calculating flow dynamics off of the main thread)
+  * [ ] Offer falling block speedup optimizations (raycast physics to destination)
 * [ ] React Discord Webhook integration
   * [ ] Define what to send to the discord server via configs
   * [ ] Customize intervals, batch updates & more
