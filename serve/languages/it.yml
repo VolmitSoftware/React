@@ -1,0 +1,267 @@
+react:
+  language:
+    name: Italian
+    code: it
+  sampler:
+    general:
+      hitrate: Determina il tasso di reazioni di react. Per esempio, quale percentuale di tempo react rileva qualcosa di specifico.
+      timings: Controlla i valori più alti di timings.
+      tps: Venti volte a secondo sono 'ticks' server. Questo è dove tutta l'azione avviene sulla cpu. Se questo numero è sotto 17 si avrà del lag nel server.
+      stability: Questa percentuale è determinata dai tuoi TPS, MEM, e altro su grandi periodi di tempo.
+      history: Visualizza questo sul quadrante in basso a destra sulla mappa.
+      players: Campiona quanti giocatori sono connessi al server.
+      reactiontime: Conta il tempo in milisecondi che prende react per fare qualsiasi cosa è programmata da fare. Un tick è 50ms, in genere ract è sotto 3ms
+      cpuscore: Questo calcola le performance di un singolo thread della tua cpu sotto (o no) carico.
+      plugins: React traccia e comunica con gli altri plugins. Essi sono in genere plugin comuni che utilizzano molti di server.
+    chunk:
+      memory: Conta tutti i chunk in tutti i mondi caricati e determina il consumo di memoria.
+      loaded: Conta tutti i chunk in tutti i mondi caricati.
+      load: I chunk caricati in media per secondo.
+      gen: I chunk generati in media per secondo.
+    world:
+      liquidflow: Scorrimento Liquido per Secondo. Questo è quando il liquido si espande o scola.
+      drops: Conta tutti i drop caricati in tutti i mondi.
+      redstone: Aggiornamenti Redstone per Secondo. Ogni volta la redstone si aggiorna completamente.
+      entities: Conta tutte le entità caricate in tutti i mondi.
+      tnt: Gli inneschi medi di tnt al secondo.
+    memory:
+      garbagedirection: Quando un server usa memoria, e finisce di usarla, la segna come spazzatura. Questo campione misura la direzione di essa.
+      used: La memoria (RAM) è di stoccaggio temporaneo per i dati a breve termine, come posizione del giocatore, chunk, e altro. Questa misura la quantità di memoria che si sta utilizzando.
+      players: Una stima molto approssimativa di quanti megabyte prende un giocatore.
+      mahs: Questo misura il tasso di consumo di memoria del server. Considera che più del 90% di questa memoria sarà velocemente ripristinata per il riuso.
+      gc: Quando un server usa memoria, e finisce di usarla, la segna come spazzatura. Questo campione misura quanto frequentemente 'pulisce' la spazzatura.
+  message:
+    heartbeat:
+      start: AVVIAMENTO THREAD HEART BEAT
+    slowed:
+      fixed: La tua velocità di volo è stato ripristinata.
+    help:
+      guess: /react guess -m 1024 >> Indovina i giocatori con 1g di mem
+      samplers:
+        b: Mostra tutto sugli usi dei campionatori di react.
+        a: /re help samplers
+      reactions:
+        a: /re help reactions
+        b: Mostra tutte le azioni che possono essere usate da react.
+      monitoring:
+        a: /re help monitoring
+        b: Informazioni su come monitorare.
+      about:
+        b: Informazioni Generali su cos'è react e come iniziare.
+        a: /re help about
+    garbage: 'Spazzatura: '
+    sided:
+      console: Devi usare questo dalla console.
+      ingame: Devi essere in gioco per usare questo_
+    console:
+      only: Devi usare questo dalla console.
+      complete: React ha scaricato un aggiornamento! Riavvia il tuo server per aggiornare!
+    manual:
+      started: ' avviato.'
+      finish: 'Azione Manuale: '
+    unknown:
+      book: Libro sconosciuto. Usa /re help
+      action: Azione Sconosciuta. Usa /re act per la lista di azioni.
+    monitor:
+      lock:
+        fail: Attiva il monitoraggio per bloccare le schede.
+    plugins: 'Plugins/Altro: '
+    scoreboard:
+      enabled: Monitoraggio Scoreboard Abilitato
+      disabled: Monitoraggio Scoreboard Disabilitato
+    error:
+      notcommand: Comando Sconosciuto. Usa /react
+      latestversion: Hai l'ultima versione!
+      pluginunknown: Plugin Sconosciuto
+      nonumber: 'Non è un numero: '
+    mapping:
+      enabled: Mappatura Abilitata
+      disabled: Mappatura Disabilitata
+      resumed: Mappatura Ripresa
+      paused: Mappatura Sospesa
+    lang:
+      help: /re lang <lingua>
+      unknown: Lingua sconosciuta
+    internal:
+      reloaded: Ricaricato
+    monitoring:
+      resumed: Monitoraggio Ripreso
+      enabled: Monitoraggio Abilitato
+      disabled: Monitoraggio Disabilitato
+      paused: Monitoraggio Sospeso
+    book: Libro dato/aggiornato
+    world:
+      save: 'SALVATAGGIO MONDO: '
+      success: PRECAUZIONI PRESE. SPERIAMO NON VADA IN CRASH!
+      warning: 'AVVERTIMENTO: IL SERVER STAVA LAGGANDO MOLTO NELL''ULTIMO TICK'
+      disable: SALVATAGGIO HEART BEAT DISABILITATO. Non salvando mondi o giocatori.
+      saveinvalid: Non salvato... Abbiamo Appena Salvato!
+      playersave: SALVATAGGIO GIOCATORI...
+      precaution: REACT STA PRENDENDO LE PRECAUZIONI PER EVITARE PERDITE DI DATI IN CASO DI CRASH
+    players: 'Giocatori: '
+    update:
+      found: 'Aggiornamento Trovato: '
+    servercurrent: 'Sei sulla '
+    dumped: 'Creato un file dump su '
+    memory:
+      used: 'Memoria Usata: '
+      max: 'Memoria Massima: '
+    verboseon: Verbose Abilitato
+    metric:
+      fail: React non è riuscito a connettersi a metrics per qualche motivo.
+    cpuscore: 'Punteggio CPU: '
+    paper:
+      unsupported: Il Processo Timings di React non supporta ancora PaperSpigot perché PaperSpigot modifica la api per ottenere i timings causando ogni tipo di problema.
+    'no':
+      data: Nessun Dato. Questo generalmente significa che non sei su un network Bungeecord.
+    servercount:
+      a: 'Ci sono '
+      b: ' server nel network che usano react.'
+    fixed: Corretto!
+    kex:
+      finish1: Un-Kexxing
+      finish2: ' Aggiornamento...'
+      start: ' Aggiornamento Kexxed...'
+    player:
+      only: Devi essere in gioco per usare questo.
+    queryresult: Risultato Query
+    chunks: 'Chunks: '
+    verbose: 'Verbose: '
+    insufficient:
+      permission: §cPermessi Insufficienti
+    issues: Stabilizzazione...
+    action:
+      fully:
+        automatic: ' è un''azione completamente automatica.'
+      stabilizing: Stabilizzazione...
+    reloaded: React Ricaricato
+    verboseoff: Verbose Disabilitato
+    hook:
+      attempt: Tentativo di aggancio in Placeholder API
+      success: Agganciato in Placeholder API
+    bungeeoff: Il supporto Bungeecord è disabilitato.
+    load:
+      fail: React ha fallito a caricarsi correttamente. Tentando l'avvio forzato.
+    dump:
+      fail: Fallito nello scrivere sul file dump.
+    uptime: 'Tempo di Attività: '
+  action:
+    instabilitycause: 'Se si rileva qualsiasi tipo di instabilità, react comincia a raccogliere
+      evidenziare e determinare la cosa giusta da fare. '
+    suppressgrowth: Questo cambia dinamicamente i modificatori di crescita a seconda di come è densa la crescita.
+    purgedrops: Rimuove TUTTI I DROP in TUTTI I MONDI
+    cullentities: Rimuove i mob in eccesso nei chunk molto popolati. Inoltre previene lo spawning se è raggiunto il limite.
+    heavychunk: Ti teletrasporta nel chunk con più entità. Se non ci sono chunk pesanti, potresti non essere teletrasportato o potrebbe non laggare affatto.
+    restackentities: Riaccatasta tutte le entità forzatamente disaccatastate
+    suppressredstone: Sopprime la redstone se e solo se il limite di instabilità raggiunge il limite per la redstone.
+    suppresstnt: Sopprime la tnt se e solo se la soglia di instabilità raggiunge un limite per la tnt.
+    culldrops: I drop sono determinati dal loro valore nelle config. Questo determinerà se react dovrebbe abbattere 30 pezzi di terra, o 20 diamanti. Fondamentalmente, amichevole abbattimento di drop.
+    stackentities: Le entità sono accatastate insieme per ridurre il sovraccarico.
+    purgeentities: Rimuove TUTTI I TIPI DI ENTITA' DEFINITE IN QUESTA CONFIG in TUTTI I MONDI
+    unstackentities: Disaccatasta tutte le entità accatastate e previene il riaccatastamento di quelle entità.
+    purgechunks: Questa azione spurga i chunk che non sono stati scaricati. SOLO MANUALE
+    teleportdrops: Quando abilitato, alcuni drop saranno teletrasportati e dati al giocatore che ha rotto il blocco solo quando il server ha troppi drop o sta laggando.
+    suppressliquid: Sopprime il liquido se e solo se la soglia di instabilità raggiunge un limite per il liquido.
+    garbagecollection: Questo si sbarazza della spazzatura virtuale (a volte libera memoria). Attenzione questo bloccherà il server per 1-5 secondi. Questo viene utilizzato automaticamente solo se è configurato per farlo.
+  command:
+    help: Invia un libro di informazioni su argomenti della guida.
+    client: Visualizza informazioni su i client react connessi.
+    servers: Elenca tutti i server del nel network con i dati.
+    ping: Mostra il ping più alto, il meno alto, e il tuo.
+    auth: Imposta l'autenticazione spigot per gli aggiornamenti.
+    verbose: Abilita le informazioni verbose in gioco/console
+    cpuscore: Ottieni il punteggio CPU del tuo server.
+    act: Esegui azioni (o attiva/disattiva le azioni automatiche)
+    dump: Fai il dump delle informazioni su un file per la revisione
+    lang: Cambia o elenca le lingue supportate
+    reload: ricarica tutti i file di configurazione di react.
+    scoreboard: Visualizza le informazioni di monitoraggio via scoreboard.
+    rg: Comandi Regione per World Guard
+    plugins: Elenca i timings dei plugins
+    version: Confronta la tua versione con eventuali nuove.
+    tm: Stato Gestione Attività
+    query: Interroga le informazioni sui plugins.
+    map: abilita il monitoraggio visivo grafico
+    list: Elenca tutti i server del nel network con i dati.
+    guessmemory: Guess server capabilities with X Ram
+    guess: Indovina le Possibilità del Server.
+    book: Invia un libro con i problemi aggiornati trovati da react.
+    stfu: Avvertenze Silenziose React
+    monitor: abilita il monitoraggio con i titoli
+    update: Forza il Download dell'ultima copia di react.
+    status: Invia un libro problemi aggiornati trovati da React.
+    timings: Invia un libro con i timings più alti.
+  gui:
+    actions: Azioni
+  monitoring: Monitoraggio
+  config:
+    react:
+      allowtitleverbose: Consentire i messaggi su i titoli? I giocatori devono ancora abilitarlo se è abilitato.
+      overrides:
+        memory: Sovrascrive i comandi /mem e /memory per informazioni più accurate
+        tps: Sovrascrive i comandi /tps e /lag per informazioni più accurate
+      verbose: Verbose di avvio per informazioni extra.
+      debugmessages: Esegue il garbage collector dopo l'avvio per prevenire problemi di memoria ricaricando e avviando.
+      allowshiftaccuracy: Quando abilitato, premendo shift durante il monitoraggio mostrerà numeri più accurati.
+      titletick:
+        base: |-
+          Il tasso di tick predefinito per il monitoraggio. Minore = più veloce.
+          Questo avrà effetto solo se il ticking dinamico è off.
+        dynamic: Rallenta il monitoraggio del tasso di tick a seconda della richiesta al server.
+      remote:
+        enable: Questo è per l'accesso remoto al server react
+        port: Assicurati che la porta è aperta. Potresti ottenere un messaggio di fallimento di collegamento se non lo è. NON USARE 25565!
+      titlebolding: Grassetta il testo sul monitor in pieno giorno. Questo ha lo scopo di rendere il testo più chiaro quando si guarda colori brillanti sullo schermo.
+      tag: Qui puoi configurare il tag per react. Usa i codici di formattazione.
+      stats: Tenere traccia delle statistiche di utilizzo?
+      instabilitynotify: Notifica i giocatori con i permessi react.monitor di instabilità?
+      disablereactions: Disabilita tutte le reazioni. Solo il campionamento fondamentalmente.
+      permdenymsg: Messaggio permesso negato.
+  book:
+    configuration:
+      text: React è altamente configurabile. Puoi disabilitare qualsiasi caratteristica che vuoi, e configurare qualsiasi timings come ti piace. React puà essere adattato a letteralmente ogni server.
+      title: Configurazione
+    persistance:
+      title: Persistenza
+      text: Se slogghi, o il server si riavvia, la tua modalità monitor/mappa sarà ripristinata (a meno che non lo disattivi)
+    reactions:
+      text: Dal momento che react campiona molti aspetti del server, possiamo determinare la fonte del lag. Questo ci consente di 'reagire a esso', correggendo il problema automaticamente.
+      title: Reazioni
+    greeting:
+      text: React è un plugin che gestisce il lag del server in un modo giudicatore & reattivo. Questo plugin non solo rimuove le entità con un timer e si chiama 'rimozione lag'. React corregge questo problema.
+    monitoring:
+      text: React non è opaco. Sei in grado di vedere tutto ciò che react vede, per avviare il monitoraggio, usa /react monitor, ma si consiglia di usare /re help monitoring prima per vedere come funziona.
+      title: Monitoraggio
+    monitor:
+      text: Il comando base per il monitoraggio è /re mon (/react monitor). Questo comando invia messaggi in titolo con dei numeri. Se non sai cos'è un campione, usa /re help samplers
+      title: Come Monitorare
+    trialerror:
+      text: Visto che ci sono molti modi per risolvere un problema, react proverà diverse cose per risolvere un problema. Se lo corregge, react manterrà l'uso di quel metodo. Questo significa che react si adatta al tuo server nel tempo.
+      title: Prova & Errore
+    samples:
+      title: Campioni
+      text: Per React per valutare accuratamente il lag, non puoi semplicemente tracciare i Tick per secondo. Se non sai cosa CAUSA il lag, non puoi garantire una correzione. Benvenuto su react!
+    tabs:
+      text: Ogni elemento del monitoraggio in realtà contiene più campioni. Tieni premuto Shift e scorri la rotellina del mouse per selezionare la schermata che ti piace. Provalo!
+      title: Cambiare Schermate
+    performance:
+      title: Grafici Prestazioni
+      text: Puoi anche visualizzare un grafico in tempo reale delle prestazioni del server. E' renderizzato su una mappa. Usa /re map
+  debug:
+    released: 'Rilasciati '
+    finished: Tutto bene per andare!
+    ofmemory: ' di memoria.'
+    metrics:
+      start: Metrics Avviate
+    controller:
+      stopping: 'Arrestando il Controller: '
+    in: ' in '
+    start: 'Avviato '
+    ms: ms
+  samplers: Campionatori
+  reactions: Reazioni
+  example: Esempio
+  react:
+    name: React
+config:
+  version: 1
