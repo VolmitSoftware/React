@@ -40,9 +40,9 @@ React 6.0 is a full rewrite and it has been worked on for the past 2 months. Her
 * [ ] Physics optimizations
   * [ ] Offer fluid optimizations (less updating, possibly async but not likley)
   * [ ] Offer redstone optimizations (same as fluids)
-  * [ ] Offer hopper tick optimizations (same as fluids)
+  * [x] Offer hopper tick optimizations (same as fluids)
 * [ ] React Chronophy
-  * [ ] Offer hopper physics warping (teleports items by skipping hoppers, saving ticks)
+  * [x] Offer hopper physics warping (teleports items by skipping hoppers, saving ticks)
   * [ ] Offer entity velocity warping (teleports entities instead of calculating all physics on the main thread)
   * [ ] Offer liquid optimizations (instant liquid flow by calculating flow dynamics off of the main thread)
   * [ ] Offer falling block speedup optimizations (raycast physics to destination)
@@ -68,6 +68,13 @@ React 6.0 is a full rewrite and it has been worked on for the past 2 months. Her
   * [ ] Offer simplistic, but detailed stack traces ingame
 * [ ] BStats Integration
   * [ ] Send cpu score on startup
+* [ ] Block Injections & Configurations
+  * [ ] Hopper Injections to improve hopper performance
+  * [ ] Faster redstone and diodes
+  * [ ] Improved leaf decay speed
+  * [ ] Improved grass & mycel growth and decay
+  * [ ] Faster fluid calculations
+  * [ ] Faster fire mechanics
 * [ ] NMS Abstraction layer (direct, non reflective)
   * [ ] Support most typical packets
   * [ ] Support fast block setting and getting async via queue
@@ -77,10 +84,17 @@ React 6.0 is a full rewrite and it has been worked on for the past 2 months. Her
   * [x] Positional selector
   * [x] Time Selector
   * [x] Entity Type Selector
+* [ ] React Map
+  * [x] Support a "Colossal View" which adds multiple graphs into a map
+  * [x] Allow views to be scrolled vertically down (more graphs)
+  * [ ] Allow shifting the time scale for all graphs by shift-scrolling
+  * [ ] Support designing of maps somehow.
 * [ ] Action Log Board
-  * [ ] Use the scoreboard to log actions currently running
-  * [ ] Mash percents and counts with queued AND running actions
-  * [ ] Toggled just like /re glass or /re mon or /re map
+  * [x] Use the scoreboard to log actions currently running
+  * [x] Mash percents and counts with queued AND running actions
+  * [x] Toggled just like /re glass or /re mon or /re map
+  * [ ] Show RAI tasks with actions 
+  * [ ] Make the log scroll instead of showing only current items. Update with "Completed"
 * [ ] Actions
   * [x] Action Cull Entities
     * Supports Positional Selectors
@@ -91,6 +105,13 @@ React 6.0 is a full rewrite and it has been worked on for the past 2 months. Her
   * [x] Action Purge Chunks
     * Supports Positional Selectors
   * [ ] Action Collect Garbage
+  * [ ] Action Lock Spawning 
+    * Supports Time Type Selectors
+    * Supports Positional Selectors
+    * Supports Entity Type Selectors
+  * [ ] Action Unlock Spawning
+    * Supports Positional Selectors
+    * Supports Entity Type Selectors
   * [x] Action Lock Redstone
     * Supports Positional Selectors
     * Supports Time Type Selectors
