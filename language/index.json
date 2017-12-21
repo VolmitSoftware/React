@@ -3,6 +3,7 @@
   "default": "enUS.properties",
   "languages": [
     "enUS.properties",
-    "enPirate.properties"
+    "enPirate.properties",
+    "nlNL.properties"
   ]
 }
