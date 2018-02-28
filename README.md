@@ -9,12 +9,12 @@ React may use packets or tricks to accomplish something, it needs to be tested.
 
 | Version | Actionbar & Title | Event Handling | Hotloading & Reloading | COFOBF |
 |---|---|---|---|---|
-| 1.12.X | **Pass** | **Pass** | **Pass** | **Pass** |
-| 1.11.X | **TBT** | **TBT** | **TBT** | **TBT** |
-| 1.10.X | **TBT** | **TBT** | **TBT** | **TBT** |
-| 1.9.X | **TBT** | **TBT** | **TBT** | **TBT** |
-| 1.8.X | **TBT** | **TBT** | **TBT** | **TBT** |
-| 1.7.10 | **TBT** | **TBT** | **TBT** | **TBT** |
+| 1.12.X | Pass | Pass | Pass | **Fail** |
+| 1.11.X | Pass | Pass | Pass | **Fail** |
+| 1.10.X | Pass | Pass | Pass | **Fail** |
+| 1.9.X | Pass | Pass | Pass | **Fail** |
+| 1.8.X | Pass | Pass | Pass | **Fail** |
+| 1.7.10 | **Fail** | Pass | Pass | **Fail** |
 
 ## FAQ
 Some random questions people have asked in the discord development channel for react6
