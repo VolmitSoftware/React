@@ -549,7 +549,6 @@ public class MonitorController extends Controller
 		i.setHotbarSlot(hot);
 	}
 
-	// More testing for 1.13 TODO
 	private void handleShifting(ReactPlayer i)
 	{
 		try
