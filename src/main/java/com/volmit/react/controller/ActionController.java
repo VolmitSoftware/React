@@ -2,6 +2,7 @@ package com.volmit.react.controller;
 
 import org.bukkit.Chunk;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 
 import com.volmit.react.Config;
 import com.volmit.react.Gate;
@@ -31,7 +32,12 @@ import com.volmit.react.util.Controller;
 import com.volmit.react.util.Ex;
 import com.volmit.react.util.JSONArray;
 import com.volmit.react.util.JSONObject;
+import com.volmit.react.util.MaterialBlock;
 import com.volmit.react.util.TICK;
+import com.volmit.react.util.inventory.UIElement;
+import com.volmit.react.util.inventory.UIWindow;
+import com.volmit.react.util.inventory.Window;
+import com.volmit.react.util.inventory.WindowResolution;
 import com.volmit.volume.lang.collections.GList;
 import com.volmit.volume.lang.collections.GMap;
 import com.volmit.volume.lang.collections.GTriset;
@@ -119,6 +125,53 @@ public class ActionController extends Controller
 		registerAction(new ActionCPUScore());
 		registerAction(new ActionDump());
 		registerAction(new ActionFileSize());
+	}
+
+	@SuppressWarnings("deprecation")
+	public void showActionPanel(Player p)
+	{
+		//@builder
+		PlayerActionSource s = new PlayerActionSource(p);
+		Window w = new UIWindow(p)
+				.setResolution(WindowResolution.W9_H6)
+				.setTitle("Click an Action");
+		//@done
+
+		int m = 0;
+		int d = -2;
+
+		for(IAction i : getActions())
+		{
+			//@builder
+			w.setElement(d, m, new UIElement("action:" + i.getNodes()[0])
+					.setName(C.AQUA + i.getName())
+					.addLore(C.GRAY + i.getDescription())
+					.setMaterial(new MaterialBlock(i.getIcon().getType(), i.getIcon().getData().getData()))
+					.onLeftClick((e) -> {
+						try
+						{
+							fireAction(i.getType(), s);
+						}
+
+						catch(ActionException e1)
+						{
+							s.sendResponseError(e1.getMessage());
+						}
+
+						w.close();
+					}));
+			//@done
+
+			d++;
+
+			if(d > 2)
+			{
+				d = -2;
+				m++;
+			}
+		}
+
+		w.open();
 	}
 
 	public void fire(ActionType type, IActionSource source, ISelector... selectors)
