@@ -9,6 +9,7 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
 import org.bukkit.plugin.Plugin;
 
+//
 import com.volmit.react.api.Clip;
 import com.volmit.react.api.Comment;
 import com.volmit.react.api.Experimental;
@@ -41,7 +42,7 @@ public class Config
 	@Key("features.react.collision.collision-tweaks-enabled")
 	@Injection(InjectionMethod.SWAP)
 	public static boolean USE_COLLISION = true;
-	
+
 	@Comment("'Meow' instead of 'Plop'")
 	@Key("features.react.sound.meow")
 	@Injection(InjectionMethod.SWAP)
@@ -51,7 +52,7 @@ public class Config
 	@Key("features.react.beta.junk")
 	@Injection(InjectionMethod.SWAP)
 	public static boolean USE_BETA = false;
-	
+
 	@Comment("Learns the patterns of repeated executions and attempts to grab low cpu tasks and burn through them to improve low ms latency.")
 	@Key("features.react.queue.group-suppression")
 	@Injection(InjectionMethod.SWAP)
