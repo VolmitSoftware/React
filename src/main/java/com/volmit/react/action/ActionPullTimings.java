@@ -5,6 +5,7 @@ import com.volmit.react.api.Action;
 import com.volmit.react.api.ActionType;
 import com.volmit.react.api.IActionSource;
 import com.volmit.react.api.ISelector;
+import com.volmit.react.api.PlayerActionSource;
 import com.volmit.react.api.SelectorTime;
 import com.volmit.react.util.AccessCallback;
 import com.volmit.react.util.C;
@@ -50,7 +51,7 @@ public class ActionPullTimings extends Action
 			@Override
 			public void run(String t)
 			{
-				source.sendResponseSuccess("Timings Captured " + C.WHITE + t);
+				Gate.msgSuccess(((PlayerActionSource) source).getPlayer(), "Timings Captured " + C.WHITE + t);
 				completeAction();
 			}
 		});
