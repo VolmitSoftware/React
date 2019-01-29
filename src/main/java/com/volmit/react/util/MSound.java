@@ -233,7 +233,15 @@ public enum MSound
 				return null;
 			}
 
-			return resolvedSound = Sound.valueOf(pre19sound);
+			try
+			{
+				return resolvedSound = Sound.valueOf(pre19sound);
+			}
+
+			catch(Throwable ex)
+			{
+				return null;
+			}
 		}
 	}
 }
