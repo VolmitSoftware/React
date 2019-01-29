@@ -6,11 +6,13 @@ import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.plugin.Plugin;
 
+import com.volmit.react.Gate;
 import com.volmit.react.ReactPlugin;
 import com.volmit.react.api.Action;
 import com.volmit.react.api.ActionType;
 import com.volmit.react.api.IActionSource;
 import com.volmit.react.api.ISelector;
+import com.volmit.react.api.PlayerActionSource;
 import com.volmit.react.util.A;
 import com.volmit.react.util.C;
 import com.volmit.react.util.DataCluster;
@@ -42,16 +44,12 @@ public class ActionFileSize extends Action
 			{
 				long tw = 0;
 
-				source.sendResponseActing("Calculating World Sizes");
-
 				for(World i : Bukkit.getWorlds())
 				{
-					source.sendResponseActing("  Calculating World " + i.getName() + "'s size");
 					long ws = size(i.getWorldFolder());
 					map.put("worlds.world." + i.getName().replaceAll(" ", "-"), ws);
 					tw += ws;
 				}
-				source.sendResponseActing("Calculating Plugin Sizes");
 
 				for(Plugin i : Bukkit.getPluginManager().getPlugins())
 				{
@@ -59,14 +57,11 @@ public class ActionFileSize extends Action
 
 					if(fxx.exists() && fxx.isDirectory())
 					{
-						source.sendResponseActing("  Calculating " + i.getName() + "'s data size");
 						map.put("plugins.plugin-data." + i.getName(), size(fxx));
 					}
 				}
 
-				source.sendResponseActing("  Calculating Total Plugin Size");
 				map.put("plugins.total", size(ReactPlugin.i.getDataFolder().getParentFile()));
-				source.sendResponseActing("Calculating literally everything's size");
 				map.put("everything", size(f));
 				map.put("worlds.total", tw);
 
@@ -88,7 +83,7 @@ public class ActionFileSize extends Action
 						@Override
 						public void run()
 						{
-							source.sendResponseSuccess("Ding! " + C.WHITE + C.UNDERLINE + u + ".txt");
+							Gate.msgSuccess(((PlayerActionSource) source).getPlayer(), "Ding! " + C.WHITE + C.UNDERLINE + u + ".txt");
 						}
 					};
 				}
