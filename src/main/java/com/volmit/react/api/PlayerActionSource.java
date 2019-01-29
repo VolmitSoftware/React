@@ -1,8 +1,14 @@
 package com.volmit.react.api;
 
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 
+import com.volmit.react.Config;
 import com.volmit.react.Gate;
+import com.volmit.react.util.C;
+import com.volmit.react.util.nmp.FrameType;
+import com.volmit.react.util.nmp.NMP;
 
 public class PlayerActionSource implements IActionSource
 {
@@ -27,19 +33,43 @@ public class PlayerActionSource implements IActionSource
 	@Override
 	public void sendResponseSuccess(String r)
 	{
-		Gate.msgSuccess(p, r);
+		if(Config.ADVANCEMENT_NOTIFY && Capability.ADVANCEMENT_NOTIFICATIONS.isCapable())
+		{
+			NMP.MESSAGE.advance(p, new ItemStack(Material.SLIME_BALL), C.GREEN + "\u2714 " + C.GRAY + r, FrameType.GOAL);
+		}
+
+		else
+		{
+			Gate.msgSuccess(p, r);
+		}
 	}
 
 	@Override
 	public void sendResponseError(String r)
 	{
-		Gate.msgError(p, r);
+		if(Config.ADVANCEMENT_NOTIFY && Capability.ADVANCEMENT_NOTIFICATIONS.isCapable())
+		{
+			NMP.MESSAGE.advance(p, new ItemStack(Material.BARRIER), C.RED + "\u2718 " + C.GRAY + r, FrameType.GOAL);
+		}
+
+		else
+		{
+			Gate.msgError(p, r);
+		}
 	}
 
 	@Override
 	public void sendResponseActing(String r)
 	{
-		Gate.msgActing(p, r);
+		if(Config.ADVANCEMENT_NOTIFY && Capability.ADVANCEMENT_NOTIFICATIONS.isCapable())
+		{
+			NMP.MESSAGE.advance(p, new ItemStack(Material.BOOK_AND_QUILL), C.GOLD + "\u26A0 " + C.GRAY + r, FrameType.GOAL);
+		}
+
+		else
+		{
+			Gate.msgActing(p, r);
+		}
 	}
 
 	@Override
