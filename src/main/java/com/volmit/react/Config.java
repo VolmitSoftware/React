@@ -9,7 +9,6 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
 import org.bukkit.plugin.Plugin;
 
-//
 import com.volmit.react.api.Clip;
 import com.volmit.react.api.Comment;
 import com.volmit.react.api.Experimental;
