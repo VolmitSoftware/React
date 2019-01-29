@@ -181,7 +181,15 @@ public class MessageController extends Controller
 		{
 			if(i.hasChannel(n.getType().toString()))
 			{
-				Gate.msg(i, n);
+				if(!n.getType().equals(Note.VERBOSE) && Config.ADVANCEMENT_NOTIFY)
+				{
+					Gate.msgadv(i, n);
+				}
+
+				else
+				{
+					Gate.msg(i, n);
+				}
 			}
 		}
 
