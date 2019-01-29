@@ -166,12 +166,6 @@ public class ReactPlugin extends JavaPlugin
 		}
 
 		System.out.println(Protocol.getProtocolVersion().getVersionString());
-		if(Protocol.getProtocolVersion().equals(Protocol.R1_13))
-		{
-			Gate.safe = true;
-			System.out.println("1.13 Detected, Safe mode activated.");
-		}
-
 		initNMS();
 	}
 
