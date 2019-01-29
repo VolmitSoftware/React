@@ -148,13 +148,13 @@ public class Catalyst13 extends CatalystPacketListener implements CatalystHost
 	@Override
 	public String getServerVersion()
 	{
-		return "1_12_R1";
+		return "1_13_R2";
 	}
 
 	@Override
 	public String getVersion()
 	{
-		return "1.12.X";
+		return "1.13.X";
 	}
 
 	@Override
@@ -182,7 +182,7 @@ public class Catalyst13 extends CatalystPacketListener implements CatalystHost
 				if(packet instanceof PacketPlayInSettings)
 				{
 					PacketPlayInSettings s = (PacketPlayInSettings) packet;
-					playerSettings.put(player, new PlayerSettings(new V(s).get("a"), new V(s).get("b"), ChatMode.values()[((EnumChatVisibility) new V(s).get("c")).ordinal()], new V(s).get("d"), new V(s).get("e"), ((EnumMainHand) new V(s).get("f")).equals(EnumMainHand.RIGHT)));
+					playerSettings.put(player, new PlayerSettings(new V(s).get("a"), new V(s).get("viewDistance"), ChatMode.values()[((EnumChatVisibility) new V(s).get("c")).ordinal()], new V(s).get("d"), new V(s).get("e"), ((EnumMainHand) new V(s).get("f")).equals(EnumMainHand.RIGHT)));
 				}
 
 				return packet;

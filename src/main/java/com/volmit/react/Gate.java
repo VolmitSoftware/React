@@ -70,7 +70,7 @@ import io.lumine.xikage.mythicmobs.mobs.MythicMob;
 
 public class Gate
 {
-	public static boolean safe = false;
+	public static final boolean safe = false;
 	public static boolean lowMemoryMode = false;
 	public static GMap<Integer, DeadEntity> markedForDeath = new GMap<Integer, DeadEntity>();
 	public static int snd = 3;
@@ -765,7 +765,7 @@ public class Gate
 			{
 				((Player) p).playSound(((Player) p).getLocation(), Config.USE_MEOW ? MSound.CAT_MEOW.bs() : MSound.CHICKEN_EGG_POP.bs(), 0.15f, 1.9f);
 				snd--;
-//Java7-BS
+				//Java7-BS
 			}
 		}
 

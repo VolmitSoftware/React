@@ -6,7 +6,9 @@ public class Catalyst
 
 	private static CatalystHost getHost()
 	{
-		switch(NMSVersion.current())
+		NMSVersion v = NMSVersion.current();
+
+		switch(v)
 		{
 			case R1_10:
 				return new Catalyst10();

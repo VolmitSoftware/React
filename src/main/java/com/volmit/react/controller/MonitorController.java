@@ -39,6 +39,7 @@ import com.volmit.react.util.PhantomSlate;
 import com.volmit.react.util.S;
 import com.volmit.react.util.TICK;
 import com.volmit.react.util.TaskLater;
+import com.volmit.react.util.nmp.NMP;
 import com.volmit.react.xmonitor.TitleCollection;
 import com.volmit.react.xmonitor.TitleHeader;
 import com.volmit.volume.bukkit.util.sound.GSound;
@@ -550,48 +551,56 @@ public class MonitorController extends Controller
 
 	private void handleShifting(ReactPlayer i)
 	{
-		double height = i.getP().getLocation().getY();
-		i.setHeightMovement(false);
-		i.setLastHeight(height);
-		boolean sh = i.getP().isSneaking() && (!i.isHeightMovement() || !i.getP().isFlying());
-		boolean osh = i.isShifting();
-
-		if(i.getMonitorPosted())
+		try
 		{
-			return;
-		}
+			double height = i.getP().getLocation().getY();
+			i.setHeightMovement(false);
+			i.setLastHeight(height);
+			boolean sh = i.getP().isSneaking() && (!i.isHeightMovement() || !i.getP().isFlying());
+			boolean osh = i.isShifting();
 
-		if(sh != osh)
-		{
-			if(sh)
+			if(i.getMonitorPosted())
 			{
-				i.setMonitorSelection(i.getMonitorLastSelection());
-				i.setSwitchNotification(maxCooldown);
-
-				if(Config.SOUNDS && !Gate.safe)
-				{
-					new GSound(MSound.DIG_WOOL.bs(), calcVolume(i), 1.9f).play(i.getP());
-				}
-
-				i.setPlays(i.getPlays() + 3);
+				return;
 			}
 
-			else
+			if(sh != osh)
 			{
-				i.setMonitorLastSelection(i.getMonitorSelection());
-				i.setMonitorSelection(-1);
-
-				if(Config.SOUNDS && !Gate.safe)
+				if(sh)
 				{
-					new GSound(MSound.DIG_WOOL.bs(), calcVolume(i), 1.5f).play(i.getP());
+					i.setMonitorSelection(i.getMonitorLastSelection());
+					i.setSwitchNotification(maxCooldown);
+
+					if(Config.SOUNDS && !Gate.safe)
+					{
+						new GSound(MSound.DIG_WOOL.bs(), calcVolume(i), 1.9f).play(i.getP());
+					}
+
+					i.setPlays(i.getPlays() + 3);
 				}
 
-				i.setPlays(i.getPlays() + 3);
+				else
+				{
+					i.setMonitorLastSelection(i.getMonitorSelection());
+					i.setMonitorSelection(-1);
+
+					if(Config.SOUNDS && !Gate.safe)
+					{
+						new GSound(MSound.DIG_WOOL.bs(), calcVolume(i), 1.5f).play(i.getP());
+					}
+
+					i.setPlays(i.getPlays() + 3);
+				}
 			}
+
+			i.setSwitchNotification(i.getSwitchNotification() > 0 ? i.getSwitchNotification() - 1 : 0);
+			i.setShifting(sh);
 		}
 
-		i.setSwitchNotification(i.getSwitchNotification() > 0 ? i.getSwitchNotification() - 1 : 0);
-		i.setShifting(sh);
+		catch(Throwable e)
+		{
+			e.printStackTrace();
+		}
 	}
 
 	private void handlePosting(ReactPlayer i)
@@ -674,7 +683,7 @@ public class MonitorController extends Controller
 			{
 				String m = prefixFor(rp, sel, rp.getSwitchNotification());
 				String v = sel != -1 ? (rp.getSwitchNotification() > 0 ? (m + titleMonitor.getHeadFor(sel).getName()) : "  ") : "  "; //$NON-NLS-1$ //$NON-NLS-2$
-				NMSX.sendTitle(p, 0, 5, 0, v, titleMonitor.getHotbarFor(sel, rp.isShift(), rp));
+				NMP.MESSAGE.title(p, v, titleMonitor.getHotbarFor(sel, rp.isShift(), rp), 0, 7, 0);
 			}
 
 			else if(sel >= 0 && high)
@@ -682,7 +691,7 @@ public class MonitorController extends Controller
 				String k = titleMonitor.getHotbarHeadFor(sel, rp.isShift(), this, rp, rp.getSwitchNotification());
 				String m = prefixFor(rp, sel, rp.getSwitchNotification());
 				String v = sel != -1 ? (rp.getSwitchNotification() > 0 ? (m + titleMonitor.getHeadFor(sel).getName()) : "  ") : "  "; //$NON-NLS-1$ //$NON-NLS-2$
-				NMSX.sendTitle(p, 0, 5, 0, v, k);
+				NMP.MESSAGE.title(p, v, k, 0, 7, 0);
 			}
 
 			else
@@ -699,7 +708,7 @@ public class MonitorController extends Controller
 						rck = C.RESET + "" + z + "\u2193";
 					}
 
-					NMSX.sendActionBar(p, lck + " " + titleMonitor.getHotbarFor(rp.getMonitorPosted() ? -1 : sel, rp.isShift(), rp) + " " + rck);
+					NMP.MESSAGE.action(p, lck + " " + titleMonitor.getHotbarFor(rp.getMonitorPosted() ? -1 : sel, rp.isShift(), rp) + " " + rck);
 					String k = titleMonitor.getHotbarHeadFor(sel, rp.isShift() && !rp.getMonitorPosted(), this, rp, rp.getSwitchNotification());
 					String m = prefixFor(rp, rp.getMonitorPosted() ? -1 : sel, rp.getSwitchNotification());
 					String v = sel != -1 ? (rp.getSwitchNotification() > 0 ? (m + titleMonitor.getHeadFor(sel).getName()) : "  ") : "  "; //$NON-NLS-1$ //$NON-NLS-2$
@@ -735,7 +744,7 @@ public class MonitorController extends Controller
 						v = "";
 					}
 
-					NMSX.sendTitle(p, 0, 5, 0, v, k);
+					NMP.MESSAGE.title(p, v, k, 0, 7, 0);
 				}
 			}
 		}
