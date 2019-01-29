@@ -6,6 +6,9 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.text.ParseException;
 
+import org.bukkit.Material;
+import org.bukkit.inventory.ItemStack;
+
 import com.volmit.react.Gate;
 import com.volmit.react.ReactPlugin;
 import com.volmit.react.api.Action;
@@ -189,5 +192,11 @@ public class ActionDump extends Action
 	public String getNode()
 	{
 		return "dump";
+	}
+
+	@Override
+	public ItemStack getIcon()
+	{
+		return new ItemStack(Material.BOOKSHELF);
 	}
 }

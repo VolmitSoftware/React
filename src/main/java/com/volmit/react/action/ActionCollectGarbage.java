@@ -1,5 +1,8 @@
 package com.volmit.react.action;
 
+import org.bukkit.Material;
+import org.bukkit.inventory.ItemStack;
+
 import com.volmit.react.Info;
 import com.volmit.react.Lang;
 import com.volmit.react.api.Action;
@@ -47,6 +50,12 @@ public class ActionCollectGarbage extends Action
 				completeAction();
 			}
 		};
+	}
+
+	@Override
+	public ItemStack getIcon()
+	{
+		return new ItemStack(Material.FLOWER_POT_ITEM);
 	}
 
 	@Override

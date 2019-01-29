@@ -1,8 +1,10 @@
 package com.volmit.react.action;
 
 import org.bukkit.Chunk;
+import org.bukkit.Material;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
+import org.bukkit.inventory.ItemStack;
 
 import com.volmit.react.Config;
 import com.volmit.react.Gate;
@@ -204,5 +206,11 @@ public class ActionPurgeEntities extends Action
 	public String getNode()
 	{
 		return "purge-entities";
+	}
+
+	@Override
+	public ItemStack getIcon()
+	{
+		return new ItemStack(Material.SKULL_ITEM);
 	}
 }

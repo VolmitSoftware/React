@@ -1,7 +1,9 @@
 package com.volmit.react.action;
 
 import org.bukkit.Chunk;
+import org.bukkit.Material;
 import org.bukkit.entity.EntityType;
+import org.bukkit.inventory.ItemStack;
 
 import com.volmit.react.Info;
 import com.volmit.react.Lang;
@@ -145,6 +147,12 @@ public class ActionCullEntities extends Action
 			}
 
 		};
+	}
+
+	@Override
+	public ItemStack getIcon()
+	{
+		return new ItemStack(Material.SHEARS);
 	}
 
 	public void cull(Chunk chunk, Runnable cb, IActionSource source, ISelector... selectors)

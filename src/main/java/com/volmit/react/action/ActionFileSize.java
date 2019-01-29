@@ -3,7 +3,9 @@ package com.volmit.react.action;
 import java.io.File;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 
 import com.volmit.react.Gate;
@@ -133,5 +135,11 @@ public class ActionFileSize extends Action
 	public String getNode()
 	{
 		return "file-size";
+	}
+
+	@Override
+	public ItemStack getIcon()
+	{
+		return new ItemStack(Material.PAPER);
 	}
 }

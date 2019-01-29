@@ -1,6 +1,8 @@
 package com.volmit.react.action;
 
 import org.bukkit.Chunk;
+import org.bukkit.Material;
+import org.bukkit.inventory.ItemStack;
 
 import com.volmit.react.Gate;
 import com.volmit.react.Info;
@@ -181,5 +183,11 @@ public class ActionPurgeChunks extends Action
 	public String getNode()
 	{
 		return "purge-chunks";
+	}
+
+	@Override
+	public ItemStack getIcon()
+	{
+		return new ItemStack(Material.GRASS);
 	}
 }

@@ -1,5 +1,8 @@
 package com.volmit.react.action;
 
+import org.bukkit.Material;
+import org.bukkit.inventory.ItemStack;
+
 import com.volmit.react.api.Action;
 import com.volmit.react.api.ActionType;
 import com.volmit.react.api.CPUBenchmark;
@@ -78,5 +81,11 @@ public class ActionCPUScore extends Action
 	public String getNode()
 	{
 		return "cpu-score";
+	}
+
+	@Override
+	public ItemStack getIcon()
+	{
+		return new ItemStack(Material.WATCH);
 	}
 }

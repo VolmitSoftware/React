@@ -1,5 +1,8 @@
 package com.volmit.react.action;
 
+import org.bukkit.Material;
+import org.bukkit.inventory.ItemStack;
+
 import com.volmit.react.Gate;
 import com.volmit.react.api.Action;
 import com.volmit.react.api.ActionType;
@@ -61,5 +64,11 @@ public class ActionPullTimings extends Action
 	public String getNode()
 	{
 		return "timings-report";
+	}
+
+	@Override
+	public ItemStack getIcon()
+	{
+		return new ItemStack(Material.WRITTEN_BOOK);
 	}
 }

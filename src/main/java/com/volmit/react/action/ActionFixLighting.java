@@ -1,6 +1,8 @@
 package com.volmit.react.action;
 
 import org.bukkit.Chunk;
+import org.bukkit.Material;
+import org.bukkit.inventory.ItemStack;
 
 import com.volmit.react.Config;
 import com.volmit.react.Gate;
@@ -111,5 +113,11 @@ public class ActionFixLighting extends Action
 	public String getNode()
 	{
 		return "fix-lighting";
+	}
+
+	@Override
+	public ItemStack getIcon()
+	{
+		return new ItemStack(Material.WRITTEN_BOOK);
 	}
 }
