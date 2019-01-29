@@ -76,7 +76,15 @@ public class CommandAct extends ReactCommand
 	{
 		if(args.length == 0)
 		{
-			sendPage(sender, 0, 8);
+			if(sender instanceof Player)
+			{
+				React.instance.actionController.showActionPanel((Player) sender);
+			}
+
+			else
+			{
+				sendPage(sender, 0, 8);
+			}
 			return;
 		}
 
