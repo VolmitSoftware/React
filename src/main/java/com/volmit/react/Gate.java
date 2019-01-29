@@ -10,6 +10,7 @@ import java.net.URL;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
@@ -21,6 +22,7 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.spigotmc.SpigotWorldConfig;
 import org.spigotmc.TickLimiter;
 
@@ -61,6 +63,8 @@ import com.volmit.react.util.TXT;
 import com.volmit.react.util.Task;
 import com.volmit.react.util.TaskLater;
 import com.volmit.react.util.W;
+import com.volmit.react.util.nmp.FrameType;
+import com.volmit.react.util.nmp.NMP;
 import com.volmit.volume.lang.collections.GList;
 import com.volmit.volume.lang.collections.GMap;
 import com.volmit.volume.lang.collections.GSet;
@@ -686,6 +690,21 @@ public class Gate
 		return s;
 	}
 
+	public static String msgadv(ReactPlayer p, Notification n)
+	{
+		syncColor();
+		String s = C.WHITE + F.capitalizeWords(n.getType().toString().toLowerCase()) + C.GRAY + ": " + n.getMessage();
+
+		if(Config.STYLE_STRIP_COLOR)
+		{
+			s = C.stripColor(s);
+		}
+
+		NMP.MESSAGE.advance(p.getP(), new ItemStack(Material.FEATHER), s, FrameType.GOAL);
+
+		return s;
+	}
+
 	public static String msgRAI(CommandSender p, String msg)
 	{
 		syncColor();
@@ -765,7 +784,7 @@ public class Gate
 			{
 				((Player) p).playSound(((Player) p).getLocation(), Config.USE_MEOW ? MSound.CAT_MEOW.bs() : MSound.CHICKEN_EGG_POP.bs(), 0.15f, 1.9f);
 				snd--;
-				//Java7-BS
+				// Java7-BS
 			}
 		}
 

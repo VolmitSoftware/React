@@ -67,6 +67,11 @@ public class Config
 	@Injection(InjectionMethod.SWAP)
 	public static boolean ADVANCEMENT_NOTIFY = true;
 
+	@Comment("Opens an inventory gui to fire an action when using /re act. You can still change pages with /re act 1 and /re act 2 etc")
+	@Key("features.react.action-panel")
+	@Injection(InjectionMethod.SWAP)
+	public static boolean ACTION_GUI = true;
+
 	@Comment("Always disables entities in this list from colliding.")
 	@Key("features.react.collision.disable-collide-always")
 	@Injection(InjectionMethod.SWAP)
