@@ -12,8 +12,8 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 import com.volmit.react.ReactPlugin;
+import com.volmit.react.sched.J;
 import com.volmit.react.util.M;
-import com.volmit.volume.bukkit.task.S;
 import com.volmit.volume.lang.collections.Callback;
 import com.volmit.volume.lang.collections.GMap;
 import com.volmit.volume.lang.collections.GSet;
@@ -138,44 +138,36 @@ public class UIWindow implements Window, Listener
 
 					if(clickcheck == 1)
 					{
-						new S()
+						J.s(() ->
 						{
-							@Override
-							public void run()
+							if(clickcheck == 1)
 							{
-								if(clickcheck == 1)
-								{
-									clickcheck = 0;
+								clickcheck = 0;
 
-									if(element != null)
-									{
-										element.call(ElementEvent.LEFT, element);
-									}
+								if(element != null)
+								{
+									element.call(ElementEvent.LEFT, element);
 								}
 							}
-						};
+						});
 					}
 
 					else if(clickcheck == 2)
 					{
-						new S()
+						J.s(() ->
 						{
-							@Override
-							public void run()
+							if(doubleclicked)
 							{
-								if(doubleclicked)
-								{
-									doubleclicked = false;
-								}
-
-								else
-								{
-									scroll(1);
-								}
-
-								clickcheck = 0;
+								doubleclicked = false;
 							}
-						};
+
+							else
+							{
+								scroll(1);
+							}
+
+							clickcheck = 0;
+						});
 					}
 
 					break;
@@ -216,6 +208,7 @@ public class UIWindow implements Window, Listener
 		}
 
 		e.setCancelled(true);
+
 	}
 
 	@EventHandler

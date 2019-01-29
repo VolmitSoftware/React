@@ -3,7 +3,6 @@ package com.volmit.react.util.inventory;
 import org.bukkit.inventory.ItemStack;
 
 import com.volmit.react.util.MaterialBlock;
-import com.volmit.volume.lang.collections.Callback;
 import com.volmit.volume.lang.collections.GList;
 
 public interface Element
