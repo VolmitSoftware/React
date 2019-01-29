@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
@@ -18,6 +19,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 
 import com.volmit.react.ReactPlugin;
+import com.volmit.react.sched.J;
 
 import net.minecraft.server.v1_13_R2.Block;
 import net.minecraft.server.v1_13_R2.BlockPosition;
@@ -43,7 +45,18 @@ public class Catalyst13 extends CatalystPacketListener implements CatalystHost
 	@Override
 	public void sendAdvancement(Player p, FrameType type, ItemStack is, String text)
 	{
-		// TODO 1.13.X NMS Advancements AdvancementHolder13
+		AdvancementHolder13 a = new AdvancementHolder13(UUID.randomUUID().toString());
+		a.withToast(true);
+		a.withDescription("?");
+		a.withFrame(type);
+		a.withAnnouncement(false);
+		a.withTitle(text);
+		a.withTrigger("minecraft:impossible");
+		a.withIcon(is.getData());
+		a.withBackground("minecraft:textures/blocks/bedrock.png");
+		a.loadAdvancement();
+		a.sendPlayer(p);
+		J.s(() -> a.delete(p), 5);
 	}
 
 	// START PACKETS
