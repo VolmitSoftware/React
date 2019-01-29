@@ -25,6 +25,9 @@ import com.volmit.react.util.S;
 import com.volmit.react.util.TICK;
 import com.volmit.react.util.Task;
 import com.volmit.react.util.TaskLater;
+import com.volmit.react.util.nmp.Catalyst;
+import com.volmit.react.util.nmp.NMP;
+import com.volmit.react.util.nmp.NMSVersion;
 import com.volmit.volume.lang.collections.GList;
 
 public class ReactPlugin extends JavaPlugin
@@ -167,6 +170,53 @@ public class ReactPlugin extends JavaPlugin
 		{
 			Gate.safe = true;
 			System.out.println("1.13 Detected, Safe mode activated.");
+		}
+
+		initNMS();
+	}
+
+	@Override
+	public void onDisable()
+	{
+		for(IController i : controllers)
+		{
+			try
+			{
+				i.stop();
+			}
+
+			catch(Throwable e)
+			{
+				e.printStackTrace();
+			}
+		}
+
+		mgr.untrackall();
+		controllers.clear();
+		pool.shutdown();
+		stopRLServer();
+		stopNMS();
+	}
+
+	private void stopNMS()
+	{
+		Catalyst.host.stop();
+	}
+
+	private void initNMS()
+	{
+		Catalyst.host.start();
+		NMP.host = Catalyst.host;
+		NMSVersion v = NMSVersion.current();
+
+		if(v != null)
+		{
+			getLogger().info("Selected " + NMSVersion.current().name());
+		}
+
+		else
+		{
+			getLogger().info("Could not find a suitable binder for this server version!");
 		}
 	}
 
@@ -332,28 +382,6 @@ public class ReactPlugin extends JavaPlugin
 				}
 			}
 		}.start();
-	}
-
-	@Override
-	public void onDisable()
-	{
-		for(IController i : controllers)
-		{
-			try
-			{
-				i.stop();
-			}
-
-			catch(Throwable e)
-			{
-				e.printStackTrace();
-			}
-		}
-
-		mgr.untrackall();
-		controllers.clear();
-		pool.shutdown();
-		stopRLServer();
 	}
 
 	public static void reload()
