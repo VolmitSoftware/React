@@ -595,7 +595,6 @@ public class MonitorController extends Controller
 
 			i.setSwitchNotification(i.getSwitchNotification() > 0 ? i.getSwitchNotification() - 1 : 0);
 			i.setShifting(sh);
-			System.out.println("SHIFTED!!!!!!!!!!!!! " + i.isShifting() + " --> " + sh);
 		}
 
 		catch(Throwable e)
