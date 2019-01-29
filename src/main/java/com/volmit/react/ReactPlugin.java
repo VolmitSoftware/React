@@ -48,6 +48,7 @@ public class ReactPlugin extends JavaPlugin
 		i = this;
 		react = new React();
 		React.instance = react;
+		initNMS();
 
 		pool = new ParallelPoolManager(1)
 		{
@@ -166,7 +167,6 @@ public class ReactPlugin extends JavaPlugin
 		}
 
 		System.out.println(Protocol.getProtocolVersion().getVersionString());
-		initNMS();
 	}
 
 	@Override
