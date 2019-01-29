@@ -62,6 +62,11 @@ public class Config
 	@Injection(InjectionMethod.SWAP)
 	public static boolean USE_COLLISION_ON_CULL = true;
 
+	@Comment("Notify action completions via advancements (1.9+)")
+	@Key("features.react.advancements")
+	@Injection(InjectionMethod.SWAP)
+	public static boolean ADVANCEMENT_NOTIFY = true;
+
 	@Comment("Always disables entities in this list from colliding.")
 	@Key("features.react.collision.disable-collide-always")
 	@Injection(InjectionMethod.SWAP)
