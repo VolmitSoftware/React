@@ -1,10 +1,14 @@
 package com.volmit.react.api;
 
+import org.bukkit.inventory.ItemStack;
+
 import com.volmit.react.util.AccessCallback;
 import com.volmit.volume.lang.collections.GMap;
 
 public interface IAction
 {
+	public ItemStack getIcon();
+
 	public String getName();
 
 	public String getDescription();
