@@ -8,6 +8,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 
+import com.volmit.react.Config;
 import com.volmit.react.Gate;
 import com.volmit.react.Info;
 import com.volmit.react.Lang;
@@ -76,7 +77,7 @@ public class CommandAct extends ReactCommand
 	{
 		if(args.length == 0)
 		{
-			if(sender instanceof Player)
+			if(Config.ACTION_GUI && sender instanceof Player)
 			{
 				React.instance.actionController.showActionPanel((Player) sender);
 			}
@@ -85,6 +86,7 @@ public class CommandAct extends ReactCommand
 			{
 				sendPage(sender, 0, 8);
 			}
+
 			return;
 		}
 
