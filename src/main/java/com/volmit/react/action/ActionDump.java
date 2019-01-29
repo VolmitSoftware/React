@@ -15,6 +15,7 @@ import com.volmit.react.api.Action;
 import com.volmit.react.api.ActionType;
 import com.volmit.react.api.IActionSource;
 import com.volmit.react.api.ISelector;
+import com.volmit.react.api.PlayerActionSource;
 import com.volmit.react.api.RAI;
 import com.volmit.react.util.A;
 import com.volmit.react.util.C;
@@ -132,7 +133,8 @@ public class ActionDump extends Action
 													@Override
 													public void run()
 													{
-														as.sendResponseSuccess("Dump Package Created: " + C.WHITE + url);
+														Gate.msgSuccess(((PlayerActionSource) as).getPlayer(), "Dump Package Created: " + C.WHITE + url);
+														completeAction();
 													}
 												};
 											}
