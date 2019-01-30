@@ -2,6 +2,7 @@ package com.volmit.react.controller;
 
 import java.lang.reflect.Field;
 
+import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 
@@ -319,6 +320,19 @@ public class SampleController extends Controller
 
 	public void onTickAsync()
 	{
+		try
+		{
+			if(Bukkit.getOnlinePlayers().isEmpty())
+			{
+				return;
+			}
+		}
+
+		catch(Throwable e)
+		{
+
+		}
+
 		for(ISampler i : samplers.v())
 		{
 			try

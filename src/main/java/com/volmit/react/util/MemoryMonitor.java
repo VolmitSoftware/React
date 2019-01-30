@@ -1,5 +1,7 @@
 package com.volmit.react.util;
 
+import org.bukkit.Bukkit;
+
 public abstract class MemoryMonitor
 {
 	private long memoryFree;
@@ -39,6 +41,19 @@ public abstract class MemoryMonitor
 
 	public void run()
 	{
+		try
+		{
+			if(Bukkit.getOnlinePlayers().isEmpty())
+			{
+				return;
+			}
+		}
+
+		catch(Throwable e)
+		{
+
+		}
+
 		memoryMax = Runtime.getRuntime().maxMemory();
 		memoryFree = Runtime.getRuntime().freeMemory() + (memoryMax - Runtime.getRuntime().totalMemory());
 		memoryUsed = memoryMax - memoryFree;

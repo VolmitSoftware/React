@@ -1,5 +1,7 @@
 package com.volmit.react.controller;
 
+import org.bukkit.Bukkit;
+
 import com.volmit.react.Config;
 import com.volmit.react.Gate;
 import com.volmit.react.Surge;
@@ -51,6 +53,19 @@ public class RAIController extends Controller
 		if(Gate.isLowMemory() && TICK.tick % 5 != 0)
 		{
 			return;
+		}
+
+		try
+		{
+			if(Bukkit.getOnlinePlayers().isEmpty())
+			{
+				return;
+			}
+		}
+
+		catch(Throwable e)
+		{
+
 		}
 
 		new A()

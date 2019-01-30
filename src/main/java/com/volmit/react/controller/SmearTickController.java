@@ -39,9 +39,23 @@ public class SmearTickController extends Controller
 		{
 			return;
 		}
+
 		if(!Capability.ENTITY_THROTTLING.isCapable() || !Capability.TILE_THROTTLING.isCapable())
 		{
 			return;
+		}
+
+		try
+		{
+			if(Bukkit.getOnlinePlayers().isEmpty())
+			{
+				return;
+			}
+		}
+
+		catch(Throwable e)
+		{
+
 		}
 
 		Surge.register(this);

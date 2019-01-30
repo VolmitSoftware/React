@@ -53,6 +53,19 @@ public abstract class WorldMonitor implements Listener
 
 		try
 		{
+			if(Bukkit.getOnlinePlayers().isEmpty())
+			{
+				return;
+			}
+		}
+
+		catch(Throwable e)
+		{
+
+		}
+
+		try
+		{
 			sample();
 		}
 
