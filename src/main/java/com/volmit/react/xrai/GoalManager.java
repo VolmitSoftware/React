@@ -170,15 +170,11 @@ public class GoalManager
 
 		writeGoal(createPurgeChunks(), new File(v, "purge-chunks.json"));
 		writeGoal(createCullEntities(), new File(v, "cull-entities.json"));
-		writeGoal(createSuppressFluids(), new File(v, "suppress-fluids.json"));
-		writeGoal(createSuppressRedstone(), new File(v, "suppress-redstone.json"));
 
 		if(mf)
 		{
 			writeGoal(createPurgeChunks(), new File(f, "purge-chunks.json"));
 			writeGoal(createCullEntities(), new File(f, "cull-entities.json"));
-			writeGoal(createSuppressFluids(), new File(f, "suppress-fluids.json"));
-			writeGoal(createSuppressRedstone(), new File(f, "suppress-redstone.json"));
 		}
 
 		if(!new File(v, "new").exists())
@@ -214,55 +210,6 @@ public class GoalManager
 
 		VirtualAction va = new VirtualAction(ActionType.CULL_ENTITIES);
 		va.getOptions().put("near", ChunkIssue.ENTITY.name().toLowerCase());
-		purgeChunks.setAction(va);
-
-		return purgeChunks;
-	}
-
-	public RAIGoal createSuppressFluids()
-	{
-		RAIGoal purgeChunks = new RAIGoal();
-		purgeChunks.setInterval(250);
-		purgeChunks.setSv("5t");
-		purgeChunks.setAuthor("React");
-		purgeChunks.setName("Suppress Fluids");
-		purgeChunks.setDescription("Reduces fluid flows");
-		purgeChunks.setHealthRegen(1);
-		purgeChunks.setMaxHealth(400);
-		purgeChunks.setHealthDamage(70);
-		purgeChunks.setEnabled(false);
-
-		ConditionSet cs = new ConditionSet();
-		cs.getConditions().add(new Condition(SampledType.FLUID_TICK_USAGE, ConditionOp.GREATER, 0.25));
-		purgeChunks.setConditions(cs);
-
-		VirtualAction va = new VirtualAction(ActionType.LOCK_FLUID);
-		va.getOptions().put("near", ChunkIssue.FLUID.name().toLowerCase());
-		va.getOptions().put("time", "15t");
-		purgeChunks.setAction(va);
-
-		return purgeChunks;
-	}
-
-	public RAIGoal createSuppressRedstone()
-	{
-		RAIGoal purgeChunks = new RAIGoal();
-		purgeChunks.setInterval(1000);
-		purgeChunks.setSv("1s");
-		purgeChunks.setAuthor("React");
-		purgeChunks.setEnabled(false);
-		purgeChunks.setName("Suppress Redstone");
-		purgeChunks.setDescription("Reduces Redstone usage");
-		purgeChunks.setHealthRegen(1);
-		purgeChunks.setMaxHealth(400);
-		purgeChunks.setHealthDamage(70);
-		ConditionSet cs = new ConditionSet();
-		cs.getConditions().add(new Condition(SampledType.REDSTONE_TICK_USAGE, ConditionOp.GREATER, 0.33));
-		purgeChunks.setConditions(cs);
-
-		VirtualAction va = new VirtualAction(ActionType.LOCK_REDSTONE);
-		va.getOptions().put("near", ChunkIssue.REDSTONE.name().toLowerCase());
-		va.getOptions().put("time", "1s");
 		purgeChunks.setAction(va);
 
 		return purgeChunks;
