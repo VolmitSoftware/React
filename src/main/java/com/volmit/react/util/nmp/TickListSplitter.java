@@ -7,6 +7,8 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 
+import com.volmit.react.Config;
+import com.volmit.react.util.RollingAverage;
 import com.volmit.volume.lang.collections.GList;
 import com.volmit.volume.lang.collections.GMap;
 import com.volmit.volume.math.M;
@@ -21,6 +23,7 @@ public class TickListSplitter
 	private final GMap<Object, Integer> witholdFluid;
 	private final GMap<Material, Integer> witholdTypes;
 	private final GMap<Chunk, Integer> witholdChunks;
+	private final RollingAverage avg;
 	private int globalThrottle;
 
 	public TickListSplitter(World world)
@@ -34,6 +37,7 @@ public class TickListSplitter
 		witholdFluid = new GMap<>();
 		witholdChunks = new GMap<>();
 		setGlobalThrottle(0);
+		avg = new RollingAverage(50);
 	}
 
 	public int getTickCount()
@@ -163,6 +167,19 @@ public class TickListSplitter
 				witholdFluid.put(i, witholdChunks.get(b.getChunk()));
 				masterFluid.remove(i);
 			}
+		}
+
+		avg.put(getTickCount());
+
+		if(avg.get() > Config.MAX_TICKS_PER_WORLD)
+		{
+			System.out.println("TICK++");
+			setGlobalThrottle((int) M.clip(globalThrottle + 1, 0, 20));
+		}
+
+		else
+		{
+			setGlobalThrottle((int) M.clip(globalThrottle - 1, 0, 20));
 		}
 
 		dumpWitheldTickList();

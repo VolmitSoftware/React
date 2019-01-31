@@ -37,6 +37,11 @@ public class Config
 {
 	private static final GMap<World, WorldConfig> worldConfigs = new GMap<World, WorldConfig>();
 
+	@Comment("Slows down block physics on a per world basis if the maximum ticks per world is exceeded")
+	@Key("features.react.tick-splitter.max-ticks-per-world")
+	@Injection(InjectionMethod.SWAP)
+	public static int MAX_TICKS_PER_WORLD = 48;
+
 	@Comment("Disables collision for certain entities based on lag and conditions.")
 	@Key("features.react.collision.collision-tweaks-enabled")
 	@Injection(InjectionMethod.SWAP)

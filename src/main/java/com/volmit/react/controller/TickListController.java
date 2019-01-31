@@ -3,6 +3,7 @@ package com.volmit.react.controller;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
 
@@ -51,6 +52,33 @@ public class TickListController extends Controller
 
 		for(World i : Bukkit.getWorlds())
 		{
+			splitter.put(i, new TickListSplitter(i));
+		}
+	}
+
+	@EventHandler
+	public void on(BlockBreakEvent e)
+	{
+		checkReg(e.getBlock().getWorld());
+	}
+
+	public void checkReg(World world)
+	{
+		if(splitter.containsKey(world))
+		{
+			return;
+		}
+
+		splitter.put(world, new TickListSplitter(world));
+	}
+
+	@Override
+	public void stop()
+	{
+		Surge.unregister(this);
+
+		for(World i : Bukkit.getWorlds())
+		{
 			try
 			{
 				splitter.get(i).dumpAll();
@@ -61,17 +89,6 @@ public class TickListController extends Controller
 			{
 
 			}
-		}
-	}
-
-	@Override
-	public void stop()
-	{
-		Surge.unregister(this);
-
-		for(World i : Bukkit.getWorlds())
-		{
-			splitter.put(i, new TickListSplitter(i));
 		}
 	}
 
