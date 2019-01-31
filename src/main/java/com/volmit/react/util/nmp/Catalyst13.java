@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
@@ -11,6 +12,7 @@ import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.craftbukkit.v1_13_R2.CraftChunk;
+import org.bukkit.craftbukkit.v1_13_R2.CraftWorld;
 import org.bukkit.craftbukkit.v1_13_R2.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -26,6 +28,7 @@ import net.minecraft.server.v1_13_R2.BlockPosition;
 import net.minecraft.server.v1_13_R2.EntityHuman.EnumChatVisibility;
 import net.minecraft.server.v1_13_R2.EnumMainHand;
 import net.minecraft.server.v1_13_R2.IChatBaseComponent;
+import net.minecraft.server.v1_13_R2.NextTickListEntry;
 import net.minecraft.server.v1_13_R2.Packet;
 import net.minecraft.server.v1_13_R2.PacketPlayInSettings;
 import net.minecraft.server.v1_13_R2.PacketPlayOutAnimation;
@@ -319,5 +322,18 @@ public class Catalyst13 extends CatalystPacketListener implements CatalystHost
 	public ShadowChunk shadowCopy(Chunk at)
 	{
 		return null;
+	}
+
+	@Override
+	public Set<Object> getTickList(World world)
+	{
+		return new V(((CraftWorld) world).getHandle()).get("nextTickList");
+	}
+
+	@Override
+	public org.bukkit.block.Block getBlock(World world, Object tickListEntry)
+	{
+		BlockPosition pos = ((NextTickListEntry<?>) tickListEntry).a;
+		return world.getBlockAt(pos.getX(), pos.getY(), pos.getZ());
 	}
 }

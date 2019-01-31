@@ -1,10 +1,12 @@
 package com.volmit.react.util.nmp;
 
 import java.util.List;
+import java.util.Set;
 
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 import org.bukkit.inventory.ItemStack;
@@ -325,4 +327,8 @@ public interface CatalystHost extends PacketListener, Listener
 	 * Stop the handler
 	 */
 	public void stop();
+
+	public Set<Object> getTickList(World world);
+
+	public Block getBlock(World world, Object tickListEntry);
 }

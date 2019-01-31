@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
@@ -25,6 +26,7 @@ import net.minecraft.server.v1_8_R3.Block;
 import net.minecraft.server.v1_8_R3.BlockPosition;
 import net.minecraft.server.v1_8_R3.EntityHuman.EnumChatVisibility;
 import net.minecraft.server.v1_8_R3.IChatBaseComponent;
+import net.minecraft.server.v1_8_R3.NextTickListEntry;
 import net.minecraft.server.v1_8_R3.Packet;
 import net.minecraft.server.v1_8_R3.PacketPlayInSettings;
 import net.minecraft.server.v1_8_R3.PacketPlayOutAnimation;
@@ -307,5 +309,18 @@ public class Catalyst8 extends CatalystPacketListener implements CatalystHost
 	public ShadowChunk shadowCopy(Chunk at)
 	{
 		return new ShadowChunk8(at);
+	}
+
+	@Override
+	public Set<Object> getTickList(World world)
+	{
+		return new V(((CraftWorld) world).getHandle()).get("M");
+	}
+
+	@Override
+	public org.bukkit.block.Block getBlock(World world, Object tickListEntry)
+	{
+		BlockPosition pos = ((NextTickListEntry) tickListEntry).a;
+		return world.getBlockAt(pos.getX(), pos.getY(), pos.getZ());
 	}
 }
