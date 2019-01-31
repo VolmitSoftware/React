@@ -21,6 +21,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 
 import com.volmit.react.ReactPlugin;
+import com.volmit.volume.lang.collections.GSet;
 
 import net.minecraft.server.v1_8_R3.Block;
 import net.minecraft.server.v1_8_R3.BlockPosition;
@@ -322,5 +323,11 @@ public class Catalyst8 extends CatalystPacketListener implements CatalystHost
 	{
 		BlockPosition pos = ((NextTickListEntry) tickListEntry).a;
 		return world.getBlockAt(pos.getX(), pos.getY(), pos.getZ());
+	}
+
+	@Override
+	public Set<Object> getTickListFluid(World world)
+	{
+		return new GSet<>();
 	}
 }

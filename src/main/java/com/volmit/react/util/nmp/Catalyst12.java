@@ -22,6 +22,7 @@ import org.bukkit.inventory.ItemStack;
 
 import com.volmit.react.ReactPlugin;
 import com.volmit.react.sched.J;
+import com.volmit.volume.lang.collections.GSet;
 
 import net.minecraft.server.v1_12_R1.Block;
 import net.minecraft.server.v1_12_R1.BlockPosition;
@@ -335,5 +336,11 @@ public class Catalyst12 extends CatalystPacketListener implements CatalystHost
 	{
 		BlockPosition pos = ((NextTickListEntry) tickListEntry).a;
 		return world.getBlockAt(pos.getX(), pos.getY(), pos.getZ());
+	}
+
+	@Override
+	public Set<Object> getTickListFluid(World world)
+	{
+		return new GSet<>();
 	}
 }

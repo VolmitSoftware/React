@@ -330,5 +330,7 @@ public interface CatalystHost extends PacketListener, Listener
 
 	public Set<Object> getTickList(World world);
 
+	public Set<Object> getTickListFluid(World world);
+
 	public Block getBlock(World world, Object tickListEntry);
 }

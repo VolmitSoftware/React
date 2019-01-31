@@ -40,6 +40,7 @@ import net.minecraft.server.v1_13_R2.PacketPlayOutMapChunk;
 import net.minecraft.server.v1_13_R2.PacketPlayOutTitle;
 import net.minecraft.server.v1_13_R2.PacketPlayOutTitle.EnumTitleAction;
 import net.minecraft.server.v1_13_R2.PacketPlayOutUnloadChunk;
+import net.minecraft.server.v1_13_R2.TickListServer;
 
 public class Catalyst13 extends CatalystPacketListener implements CatalystHost
 {
@@ -327,7 +328,15 @@ public class Catalyst13 extends CatalystPacketListener implements CatalystHost
 	@Override
 	public Set<Object> getTickList(World world)
 	{
-		return new V(((CraftWorld) world).getHandle()).get("nextTickList");
+		TickListServer<?> l = new V(((CraftWorld) world).getHandle()).get("nextTickListBlock");
+		return new V(l).get("nextTickList");
+	}
+
+	@Override
+	public Set<Object> getTickListFluid(World world)
+	{
+		TickListServer<?> l = new V(((CraftWorld) world).getHandle()).get("nextTickListFluid");
+		return new V(l).get("nextTickList");
 	}
 
 	@Override
