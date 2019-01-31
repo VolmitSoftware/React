@@ -16,6 +16,7 @@ public class TickListSplitter
 	private final CatalystHost host;
 	private final GMap<Object, Integer> withold;
 	private final GMap<Material, Integer> witholdTypes;
+	private int globalThrottle;
 
 	public TickListSplitter(World world)
 	{
@@ -24,6 +25,7 @@ public class TickListSplitter
 		master = host.getTickList(world);
 		witholdTypes = new GMap<>();
 		withold = new GMap<>();
+		globalThrottle = 0;
 	}
 
 	public void unregisterAll()
@@ -36,9 +38,19 @@ public class TickListSplitter
 		witholdTypes.remove(type);
 	}
 
+	public void setGlobalThrottle(int throttle)
+	{
+		this.globalThrottle = throttle;
+	}
+
 	public void register(Material type, int ticks)
 	{
-		witholdTypes.put(type, ticks);
+		if(ticks > 0)
+		{
+			witholdTypes.put(type, ticks);
+		}
+
+		unregister(type);
 	}
 
 	public void dumpAll()
@@ -59,6 +71,12 @@ public class TickListSplitter
 			if(witholdTypes.containsKey(t))
 			{
 				withold.put(i, witholdTypes.get(t));
+				master.remove(i);
+			}
+
+			else if(globalThrottle > 0)
+			{
+				withold.put(i, globalThrottle);
 				master.remove(i);
 			}
 		}
