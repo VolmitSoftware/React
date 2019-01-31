@@ -5,14 +5,18 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import com.volmit.react.api.Capability;
 import com.volmit.react.api.Permissable;
 import com.volmit.react.legacy.server.ReactServer;
+import com.volmit.react.sched.J;
 import com.volmit.react.util.A;
+import com.volmit.react.util.C;
 import com.volmit.react.util.Control;
 import com.volmit.react.util.Ex;
 import com.volmit.react.util.HotloadManager;
@@ -26,6 +30,7 @@ import com.volmit.react.util.TICK;
 import com.volmit.react.util.Task;
 import com.volmit.react.util.TaskLater;
 import com.volmit.react.util.nmp.Catalyst;
+import com.volmit.react.util.nmp.FrameType;
 import com.volmit.react.util.nmp.NMP;
 import com.volmit.react.util.nmp.NMSVersion;
 import com.volmit.react.util.nmp.Psycho;
@@ -105,10 +110,11 @@ public class ReactPlugin extends JavaPlugin
 					if(Permissable.ACCESS.has(i) || i.isOp())
 					{
 						Gate.msgSuccess(i, "Injecting Configuration Changes");
+						NMP.MESSAGE.advance(i, new ItemStack(Material.EMPTY_MAP), C.GRAY + "React Config Hotloaded", FrameType.GOAL);
 					}
 				}
 
-				reload();
+				J.s(() -> reload(), 10);
 			}
 		};
 
