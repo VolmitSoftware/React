@@ -7,6 +7,7 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
 
+import com.volmit.react.Config;
 import com.volmit.react.Surge;
 import com.volmit.react.util.Controller;
 import com.volmit.react.util.JSONObject;
@@ -95,6 +96,11 @@ public class TickListController extends Controller
 	@Override
 	public void tick()
 	{
+		if(!Config.ENABLED_SPLITTER)
+		{
+			return;
+		}
+
 		for(World i : splitter.k())
 		{
 			splitter.get(i).tick();
