@@ -1,5 +1,6 @@
 package com.volmit.react.util.nmp;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -22,6 +23,7 @@ import org.bukkit.inventory.ItemStack;
 
 import com.volmit.react.ReactPlugin;
 import com.volmit.react.sched.J;
+import com.volmit.volume.lang.collections.GSet;
 
 import net.minecraft.server.v1_13_R2.Block;
 import net.minecraft.server.v1_13_R2.BlockPosition;
@@ -41,6 +43,7 @@ import net.minecraft.server.v1_13_R2.PacketPlayOutTitle;
 import net.minecraft.server.v1_13_R2.PacketPlayOutTitle.EnumTitleAction;
 import net.minecraft.server.v1_13_R2.PacketPlayOutUnloadChunk;
 import net.minecraft.server.v1_13_R2.TickListServer;
+import net.minecraft.server.v1_13_R2.WorldServer;
 
 public class Catalyst13 extends CatalystPacketListener implements CatalystHost
 {
@@ -325,18 +328,48 @@ public class Catalyst13 extends CatalystPacketListener implements CatalystHost
 		return null;
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public Set<Object> getTickList(World world)
 	{
-		TickListServer<?> l = new V(((CraftWorld) world).getHandle()).get("nextTickListBlock");
-		return new V(l).get("nextTickList");
+		try
+		{
+			Field f = WorldServer.class.getDeclaredField("nextTickListBlock");
+			Field ff = TickListServer.class.getDeclaredField("nextTickList");
+			f.setAccessible(true);
+			ff.setAccessible(true);
+			TickListServer<?> l = (TickListServer<?>) f.get(((CraftWorld) world).getHandle());
+			return (Set<Object>) ff.get(l);
+		}
+
+		catch(Throwable e)
+		{
+			e.printStackTrace();
+		}
+
+		return new GSet<>();
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public Set<Object> getTickListFluid(World world)
 	{
-		TickListServer<?> l = new V(((CraftWorld) world).getHandle()).get("nextTickListFluid");
-		return new V(l).get("nextTickList");
+		try
+		{
+			Field f = WorldServer.class.getDeclaredField("nextTickListFluid");
+			Field ff = TickListServer.class.getDeclaredField("nextTickList");
+			f.setAccessible(true);
+			ff.setAccessible(true);
+			TickListServer<?> l = (TickListServer<?>) f.get(((CraftWorld) world).getHandle());
+			return (Set<Object>) ff.get(l);
+		}
+
+		catch(Throwable e)
+		{
+			e.printStackTrace();
+		}
+
+		return new GSet<>();
 	}
 
 	@Override

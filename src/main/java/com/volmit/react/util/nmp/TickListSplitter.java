@@ -31,7 +31,7 @@ public class TickListSplitter
 		withold = new GMap<>();
 		witholdFluid = new GMap<>();
 		globalThrottle = 0;
-		setGlobalThrottle(5);
+		setGlobalThrottle(10);
 	}
 
 	public int getTickCount()
@@ -114,13 +114,13 @@ public class TickListSplitter
 
 			if(witholdTypes.containsKey(t))
 			{
-				withold.put(i, witholdTypes.get(t));
+				witholdFluid.put(i, witholdTypes.get(t));
 				masterFluid.remove(i);
 			}
 
 			else if(globalThrottle > 0)
 			{
-				withold.put(i, globalThrottle);
+				witholdFluid.put(i, globalThrottle);
 				masterFluid.remove(i);
 			}
 		}
