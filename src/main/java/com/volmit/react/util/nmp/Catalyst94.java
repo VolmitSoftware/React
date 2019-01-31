@@ -1,5 +1,6 @@
 package com.volmit.react.util.nmp;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -42,6 +43,7 @@ import net.minecraft.server.v1_9_R2.PacketPlayOutMapChunk;
 import net.minecraft.server.v1_9_R2.PacketPlayOutTitle;
 import net.minecraft.server.v1_9_R2.PacketPlayOutTitle.EnumTitleAction;
 import net.minecraft.server.v1_9_R2.PacketPlayOutUnloadChunk;
+import net.minecraft.server.v1_9_R2.WorldServer;
 
 public class Catalyst94 extends CatalystPacketListener implements CatalystHost
 {
@@ -326,10 +328,23 @@ public class Catalyst94 extends CatalystPacketListener implements CatalystHost
 		return new ShadowChunk94(at);
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public Set<Object> getTickList(World world)
 	{
-		return new V(((CraftWorld) world).getHandle()).get("nextTickList");
+		try
+		{
+			Field f = WorldServer.class.getDeclaredField("nextTickList");
+			f.setAccessible(true);
+			return (Set<Object>) f.get(((CraftWorld) world).getHandle());
+		}
+
+		catch(Throwable ee)
+		{
+
+		}
+
+		return new GSet<>();
 	}
 
 	@Override
