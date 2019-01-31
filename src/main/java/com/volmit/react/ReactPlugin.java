@@ -28,6 +28,7 @@ import com.volmit.react.util.TaskLater;
 import com.volmit.react.util.nmp.Catalyst;
 import com.volmit.react.util.nmp.NMP;
 import com.volmit.react.util.nmp.NMSVersion;
+import com.volmit.react.util.nmp.Psycho;
 import com.volmit.volume.lang.collections.GList;
 
 public class ReactPlugin extends JavaPlugin
@@ -167,6 +168,7 @@ public class ReactPlugin extends JavaPlugin
 		}
 
 		System.out.println(Protocol.getProtocolVersion().getVersionString());
+		Psycho.init(this);
 	}
 
 	@Override
