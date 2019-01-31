@@ -27,12 +27,23 @@ public class TickListController extends Controller
 	@EventHandler
 	public void on(WorldLoadEvent e)
 	{
+		if(!Config.ENABLED_SPLITTER)
+		{
+			return;
+		}
+
 		splitter.put(e.getWorld(), new TickListSplitter(e.getWorld()));
 	}
 
 	@EventHandler
 	public void on(WorldUnloadEvent e)
 	{
+		if(!Config.ENABLED_SPLITTER)
+		{
+			splitter.clear();
+			return;
+		}
+
 		try
 		{
 			splitter.get(e.getWorld()).dumpAll();
@@ -51,6 +62,11 @@ public class TickListController extends Controller
 		splitter = new GMap<>();
 		Surge.register(this);
 
+		if(!Config.ENABLED_SPLITTER)
+		{
+			return;
+		}
+
 		for(World i : Bukkit.getWorlds())
 		{
 			splitter.put(i, new TickListSplitter(i));
@@ -60,6 +76,11 @@ public class TickListController extends Controller
 	@EventHandler
 	public void on(BlockBreakEvent e)
 	{
+		if(!Config.ENABLED_SPLITTER)
+		{
+			return;
+		}
+
 		checkReg(e.getBlock().getWorld());
 	}
 
@@ -77,6 +98,11 @@ public class TickListController extends Controller
 	public void stop()
 	{
 		Surge.unregister(this);
+
+		if(!Config.ENABLED_SPLITTER)
+		{
+			return;
+		}
 
 		for(World i : Bukkit.getWorlds())
 		{
