@@ -173,7 +173,6 @@ public class TickListSplitter
 
 		if(avg.get() > Config.MAX_TICKS_PER_WORLD)
 		{
-			System.out.println("TICK++");
 			setGlobalThrottle((int) M.clip(globalThrottle + 1, 0, 20));
 		}
 
