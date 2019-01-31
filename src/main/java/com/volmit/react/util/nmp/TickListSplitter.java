@@ -2,6 +2,7 @@ package com.volmit.react.util.nmp;
 
 import java.util.Set;
 
+import org.bukkit.Chunk;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -19,6 +20,7 @@ public class TickListSplitter
 	private final GMap<Object, Integer> withold;
 	private final GMap<Object, Integer> witholdFluid;
 	private final GMap<Material, Integer> witholdTypes;
+	private final GMap<Chunk, Integer> witholdChunks;
 	private int globalThrottle;
 
 	public TickListSplitter(World world)
@@ -30,8 +32,8 @@ public class TickListSplitter
 		witholdTypes = new GMap<>();
 		withold = new GMap<>();
 		witholdFluid = new GMap<>();
-		globalThrottle = 0;
-		setGlobalThrottle(10);
+		witholdChunks = new GMap<>();
+		setGlobalThrottle(0);
 	}
 
 	public int getTickCount()
@@ -54,6 +56,19 @@ public class TickListSplitter
 		return 1D - (double) M.clip(globalThrottle, 0, 20D) / 20D;
 	}
 
+	public void withold(Chunk c, int cy)
+	{
+		if(cy > 0)
+		{
+			witholdChunks.put(c, cy);
+		}
+
+		else
+		{
+			unregister(c);
+		}
+	}
+
 	public void unregisterAll()
 	{
 		witholdTypes.clear();
@@ -62,6 +77,16 @@ public class TickListSplitter
 	public void unregister(Material type)
 	{
 		witholdTypes.remove(type);
+	}
+
+	public void unregisterAllChunks()
+	{
+		witholdChunks.clear();
+	}
+
+	public void unregister(Chunk type)
+	{
+		witholdChunks.remove(type);
 	}
 
 	public void setGlobalThrottle(int throttle)
@@ -76,7 +101,10 @@ public class TickListSplitter
 			witholdTypes.put(type, ticks);
 		}
 
-		unregister(type);
+		else
+		{
+			unregister(type);
+		}
 	}
 
 	public void dumpAll()
@@ -105,6 +133,12 @@ public class TickListSplitter
 				withold.put(i, globalThrottle);
 				master.remove(i);
 			}
+
+			else if(witholdChunks.containsKey(b.getChunk()))
+			{
+				withold.put(i, witholdChunks.get(b.getChunk()));
+				master.remove(i);
+			}
 		}
 
 		for(Object i : new GList<>(masterFluid))
@@ -121,6 +155,12 @@ public class TickListSplitter
 			else if(globalThrottle > 0)
 			{
 				witholdFluid.put(i, globalThrottle);
+				masterFluid.remove(i);
+			}
+
+			else if(witholdChunks.containsKey(b.getChunk()))
+			{
+				witholdFluid.put(i, witholdChunks.get(b.getChunk()));
 				masterFluid.remove(i);
 			}
 		}
