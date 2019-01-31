@@ -32,6 +32,7 @@ import com.volmit.react.controller.RedstoneController;
 import com.volmit.react.controller.SampleController;
 import com.volmit.react.controller.SmearTickController;
 import com.volmit.react.controller.SpikeController;
+import com.volmit.react.controller.TickListController;
 import com.volmit.react.controller.WorldController;
 import com.volmit.react.util.Control;
 import com.volmit.react.util.D;
@@ -140,6 +141,9 @@ public class React
 
 	@Control
 	public MemoryController memoryController;
+
+	@Control
+	public TickListController tickListController;
 
 	public React()
 	{
