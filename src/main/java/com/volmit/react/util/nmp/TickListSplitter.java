@@ -126,7 +126,13 @@ public class TickListSplitter
 			Block b = host.getBlock(world, i);
 			Material t = b.getType();
 
-			if(witholdTypes.containsKey(t))
+			if(witholdChunks.containsKey(b.getChunk()))
+			{
+				withold.put(i, witholdChunks.get(b.getChunk()));
+				master.remove(i);
+			}
+
+			else if(witholdTypes.containsKey(t))
 			{
 				withold.put(i, witholdTypes.get(t));
 				master.remove(i);
@@ -135,12 +141,6 @@ public class TickListSplitter
 			else if(globalThrottle > 0)
 			{
 				withold.put(i, globalThrottle);
-				master.remove(i);
-			}
-
-			else if(witholdChunks.containsKey(b.getChunk()))
-			{
-				withold.put(i, witholdChunks.get(b.getChunk()));
 				master.remove(i);
 			}
 		}
