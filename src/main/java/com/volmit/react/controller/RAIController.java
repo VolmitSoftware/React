@@ -73,6 +73,11 @@ public class RAIController extends Controller
 			@Override
 			public void run()
 			{
+				if(rai == null)
+				{
+					return;
+				}
+
 				rai.tick();
 			}
 		};
