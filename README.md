@@ -7,9 +7,11 @@ See [Contributing](https://github.com/VolmitSoftware/React/blob/master/CONTRIBUT
 # Building
 You can build a fresh copy of react very simply.
 
-## Prerequisites 
+#### Prerequisites 
 * Java JDK 8 must be installed
 * JAVA_HOME path might need to be defined (though it may not be needed on all systems) (google is your friend)
+
+To Build React:
 
 1. Clone this repository to your computer somewhere
 2. Execute `build.bat` for Windows or `build.sh` for Linux or MacOSX
