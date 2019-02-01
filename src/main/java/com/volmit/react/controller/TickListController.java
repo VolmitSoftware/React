@@ -1,6 +1,7 @@
 package com.volmit.react.controller;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Chunk;
 import org.bukkit.World;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -143,5 +144,15 @@ public class TickListController extends Controller
 	public boolean isUrgent()
 	{
 		return true;
+	}
+
+	public boolean throttle(Chunk chunk, int tickDelay, long time)
+	{
+		if(splitter.containsKey(chunk.getWorld()))
+		{
+			return splitter.get(chunk.getWorld()).throttle(chunk, tickDelay, time);
+		}
+
+		return false;
 	}
 }

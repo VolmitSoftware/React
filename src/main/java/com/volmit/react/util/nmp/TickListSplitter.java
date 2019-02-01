@@ -23,6 +23,7 @@ public class TickListSplitter
 	private final GMap<Object, Integer> witholdFluid;
 	private final GMap<Material, Integer> witholdTypes;
 	private final GMap<Chunk, Integer> witholdChunks;
+	private final GMap<Chunk, Integer> witholdTicks;
 	private final RollingAverage avg;
 	private int globalThrottle;
 
@@ -36,28 +37,32 @@ public class TickListSplitter
 		withold = new GMap<>();
 		witholdFluid = new GMap<>();
 		witholdChunks = new GMap<>();
+		witholdTicks = new GMap<>();
 		setGlobalThrottle(0);
 		avg = new RollingAverage(50);
 	}
 
-	public int getTickCount()
+	public void tick()
 	{
-		return master.size() + masterFluid.size();
+		throttleTick(new GList<>(master), withold);
+		throttleTick(new GList<>(masterFluid), witholdFluid);
+		computeGlobalTickLimiter();
+		dropTickChunks();
+		dumpWitheldTickList();
 	}
 
-	public int getWitheldCount()
+	private void dropTickChunks()
 	{
-		return withold.size() + witholdFluid.size();
-	}
+		for(Chunk i : witholdTicks.k())
+		{
+			witholdTicks.put(i, witholdTicks.get(i) - 1);
 
-	public void setPhysicsSpeed(double d)
-	{
-		setGlobalThrottle((int) (M.clip(d, 0, 1D) * 20D));
-	}
-
-	public double getPhysicsSpeed()
-	{
-		return 1D - (double) M.clip(globalThrottle, 0, 20D) / 20D;
+			if(witholdTicks.get(i) <= 0)
+			{
+				witholdTicks.remove(i);
+				witholdChunks.remove(i);
+			}
+		}
 	}
 
 	public void withold(Chunk c, int cy)
@@ -71,31 +76,6 @@ public class TickListSplitter
 		{
 			unregister(c);
 		}
-	}
-
-	public void unregisterAll()
-	{
-		witholdTypes.clear();
-	}
-
-	public void unregister(Material type)
-	{
-		witholdTypes.remove(type);
-	}
-
-	public void unregisterAllChunks()
-	{
-		witholdChunks.clear();
-	}
-
-	public void unregister(Chunk type)
-	{
-		witholdChunks.remove(type);
-	}
-
-	public void setGlobalThrottle(int throttle)
-	{
-		this.globalThrottle = throttle;
 	}
 
 	public void register(Material type, int ticks)
@@ -119,56 +99,35 @@ public class TickListSplitter
 		}
 	}
 
-	public void tick()
+	private void throttleTick(GList<Object> tickListCopy, GMap<Object, Integer> withold)
 	{
-		for(Object i : new GList<>(master))
+		for(Object i : new GList<>(tickListCopy))
 		{
 			Block b = host.getBlock(world, i);
 			Material t = b.getType();
 
-			if(witholdChunks.containsKey(b.getChunk()))
+			if(witholdChunks.containsKey(b.getChunk()) && witholdTicks.containsKey(b.getChunk()) && witholdTicks.get(b.getChunk()) > 0)
 			{
 				withold.put(i, witholdChunks.get(b.getChunk()));
-				master.remove(i);
+				tickListCopy.remove(i);
 			}
 
 			else if(witholdTypes.containsKey(t))
 			{
 				withold.put(i, witholdTypes.get(t));
-				master.remove(i);
+				tickListCopy.remove(i);
 			}
 
 			else if(globalThrottle > 0)
 			{
 				withold.put(i, globalThrottle);
-				master.remove(i);
+				tickListCopy.remove(i);
 			}
 		}
+	}
 
-		for(Object i : new GList<>(masterFluid))
-		{
-			Block b = host.getBlock(world, i);
-			Material t = b.getType();
-
-			if(witholdTypes.containsKey(t))
-			{
-				witholdFluid.put(i, witholdTypes.get(t));
-				masterFluid.remove(i);
-			}
-
-			else if(globalThrottle > 0)
-			{
-				witholdFluid.put(i, globalThrottle);
-				masterFluid.remove(i);
-			}
-
-			else if(witholdChunks.containsKey(b.getChunk()))
-			{
-				witholdFluid.put(i, witholdChunks.get(b.getChunk()));
-				masterFluid.remove(i);
-			}
-		}
-
+	private void computeGlobalTickLimiter()
+	{
 		avg.put(getTickCount());
 
 		if(avg.get() > Config.MAX_TICKS_PER_WORLD)
@@ -180,8 +139,6 @@ public class TickListSplitter
 		{
 			setGlobalThrottle((int) M.clip(globalThrottle - 1, 0, 20));
 		}
-
-		dumpWitheldTickList();
 	}
 
 	private void dumpWitheldTickList()
@@ -207,5 +164,58 @@ public class TickListSplitter
 				masterFluid.add(i);
 			}
 		}
+	}
+
+	public boolean throttle(Chunk chunk, int tickDelay, long time)
+	{
+		withold(chunk, tickDelay);
+		witholdTicks.put(chunk, (int) (time / 50));
+
+		return true;
+	}
+
+	public int getTickCount()
+	{
+		return master.size() + masterFluid.size();
+	}
+
+	public int getWitheldCount()
+	{
+		return withold.size() + witholdFluid.size();
+	}
+
+	public void setPhysicsSpeed(double d)
+	{
+		setGlobalThrottle((int) (M.clip(d, 0, 1D) * 20D));
+	}
+
+	public double getPhysicsSpeed()
+	{
+		return 1D - (double) M.clip(globalThrottle, 0, 20D) / 20D;
+	}
+
+	public void unregisterAll()
+	{
+		witholdTypes.clear();
+	}
+
+	public void unregister(Material type)
+	{
+		witholdTypes.remove(type);
+	}
+
+	public void unregisterAllChunks()
+	{
+		witholdChunks.clear();
+	}
+
+	public void unregister(Chunk type)
+	{
+		witholdChunks.remove(type);
+	}
+
+	public void setGlobalThrottle(int throttle)
+	{
+		this.globalThrottle = throttle;
 	}
 }

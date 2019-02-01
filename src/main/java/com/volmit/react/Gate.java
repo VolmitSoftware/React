@@ -1312,4 +1312,9 @@ public class Gate
 	{
 		ReactPlugin.i.getPool().tickSyncQueue(true);
 	}
+
+	public static boolean throttleChunk(Chunk chunk, int tickDelay, long time)
+	{
+		return React.instance.tickListController.throttle(chunk, tickDelay, time);
+	}
 }
