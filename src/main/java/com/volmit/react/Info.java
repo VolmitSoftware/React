@@ -322,6 +322,7 @@ public class Info
 	public static String ACTION_PURGE_ENTITIES_NAME = Lang.getString("action.purge-entities.name"); //$NON-NLS-1$
 	public static String ACTION_PURGE_ENTITIES_DESCRIPTION = Lang.getString("action.purge-entities.description"); //$NON-NLS-1$
 
+	public static String[] ACTION_THROTTLE_PHYSICS_TAGS = new String[] {"throttle-physics", "phy", "tpy", "thp", "throttle", "physics"}; //$NON-NLS-1$ //$NON-NLS-2$
 	public static String[] ACTION_PURGE_CHUNKS_TAGS = new String[] {"purge-chunks", "pc"}; //$NON-NLS-1$ //$NON-NLS-2$
 	public static String ACTION_PURGE_CHUNKS_STATUS = Lang.getString("action.purge-chunks.status"); //$NON-NLS-1$
 	public static String ACTION_PURGE_CHUNKS_NAME = Lang.getString("action.purge-chunks.name"); //$NON-NLS-1$

@@ -30,6 +30,7 @@ import com.volmit.react.api.SelectorParseException;
 import com.volmit.react.api.SideGate;
 import com.volmit.react.util.C;
 import com.volmit.react.util.ColoredString;
+import com.volmit.react.util.D;
 import com.volmit.react.util.Ex;
 import com.volmit.react.util.F;
 import com.volmit.react.util.RTEX;
@@ -60,12 +61,20 @@ public class CommandAct extends ReactCommand
 
 		for(ActionType i : ActionType.values())
 		{
-			for(String j : React.instance.actionController.getAction(i).getNodes())
+			try
 			{
-				if(j.toLowerCase().toLowerCase().startsWith(arg3[1]))
+				for(String j : React.instance.actionController.getAction(i).getNodes())
 				{
-					l.add(j);
+					if(j.toLowerCase().toLowerCase().startsWith(arg3[1]))
+					{
+						l.add(j);
+					}
 				}
+			}
+
+			catch(Throwable e)
+			{
+				D.v("Couldnt handle action params for " + i.name());
 			}
 		}
 
