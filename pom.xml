@@ -4,10 +4,13 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.volmit</groupId>
 	<artifactId>React</artifactId>
-	<version>6.588</version>
+	<version>6.589</version>
 	<name>React</name>
 	<description>A performance plugin</description>
 	<properties>
+        <secretary.rebuild.interval>2</secretary.rebuild.interval>
+        <secretary.rebuild.cooldown>5</secretary.rebuild.cooldown>
+        <secretary.bind>src</secretary.bind>
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

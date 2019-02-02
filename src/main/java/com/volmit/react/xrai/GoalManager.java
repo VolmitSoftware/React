@@ -269,6 +269,11 @@ public class GoalManager
 				{
 					e.printStackTrace();
 				}
+
+				catch(Throwable e)
+				{
+
+				}
 			}
 		}
 	}

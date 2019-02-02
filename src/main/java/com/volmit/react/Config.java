@@ -75,12 +75,12 @@ public class Config
 	@Comment("Notify action completions via advancements (1.9+)")
 	@Key("features.react.advancements")
 	@Injection(InjectionMethod.SWAP)
-	public static boolean ADVANCEMENT_NOTIFY = true;
+	public static boolean ADVANCEMENT_NOTIFY = false;
 
 	@Comment("Notify config hotloads via advancements (1.9+)")
 	@Key("features.react.advancement-on-hotload")
 	@Injection(InjectionMethod.SWAP)
-	public static boolean ADVANCEMENT_NOTIFY_HOTLOAD = true;
+	public static boolean ADVANCEMENT_NOTIFY_HOTLOAD = false;
 
 	@Comment("Opens an inventory gui to fire an action when using /re act. You can still change pages with /re act 1 and /re act 2 etc")
 	@Key("features.react.action-panel")
