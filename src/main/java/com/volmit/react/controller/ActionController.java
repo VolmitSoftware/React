@@ -115,7 +115,6 @@ public class ActionController extends Controller
 		pending = new GMap<Integer, GTriset<ActionType, IActionSource, GList<ISelector>>>();
 		actions = new GMap<ActionType, IAction>();
 		rans = new GMap<String, GList<ActionType>>();
-
 		registerAction(new ActionCollectGarbage());
 		registerAction(new ActionPullTimings());
 		registerAction(new ActionCullEntities());
