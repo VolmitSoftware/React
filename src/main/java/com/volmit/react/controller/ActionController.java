@@ -15,7 +15,6 @@ import com.volmit.react.action.ActionFixLighting;
 import com.volmit.react.action.ActionPullTimings;
 import com.volmit.react.action.ActionPurgeChunks;
 import com.volmit.react.action.ActionPurgeEntities;
-import com.volmit.react.action.ActionThrottlePhysics;
 import com.volmit.react.api.ActionAlreadyRunningException;
 import com.volmit.react.api.ActionException;
 import com.volmit.react.api.ActionState;
@@ -117,7 +116,6 @@ public class ActionController extends Controller
 		actions = new GMap<ActionType, IAction>();
 		rans = new GMap<String, GList<ActionType>>();
 
-		registerAction(new ActionThrottlePhysics());
 		registerAction(new ActionCollectGarbage());
 		registerAction(new ActionPullTimings());
 		registerAction(new ActionCullEntities());
