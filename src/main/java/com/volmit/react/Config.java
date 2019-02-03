@@ -45,7 +45,7 @@ public class Config
 	@Comment("Slows down block physics on a per world basis.")
 	@Key("features.react.tick-splitter.enabled")
 	@Injection(InjectionMethod.SWAP)
-	public static boolean ENABLED_SPLITTER = true;
+	public static boolean ENABLED_SPLITTER = false;
 
 	@Comment("Disables collision for certain entities based on lag and conditions.")
 	@Key("features.react.collision.collision-tweaks-enabled")

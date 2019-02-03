@@ -5,6 +5,8 @@ import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
+import com.volmit.react.Config;
+
 public class NMP
 {
 	public static CatalystHost host;
@@ -82,6 +84,11 @@ public class NMP
 		 */
 		public static void advance(Player player, ItemStack item, String msg, FrameType type)
 		{
+			if(!Config.ADVANCEMENT_NOTIFY)
+			{
+				return;
+			}
+
 			host.sendAdvancement(player, type, item, msg);
 		}
 
