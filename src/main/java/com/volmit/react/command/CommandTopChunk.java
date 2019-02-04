@@ -3,11 +3,13 @@ package com.volmit.react.command;
 import java.util.Collections;
 import java.util.List;
 
+import org.bukkit.Chunk;
+import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import com.volmit.react.Gate;
 import com.volmit.react.Info;
 import com.volmit.react.api.ChunkIssue;
 import com.volmit.react.api.LagMap;
@@ -16,12 +18,18 @@ import com.volmit.react.api.Permissable;
 import com.volmit.react.api.ReactCommand;
 import com.volmit.react.api.SideGate;
 import com.volmit.react.controller.EventController;
+import com.volmit.react.sched.J;
 import com.volmit.react.util.C;
-import com.volmit.react.util.ColoredString;
 import com.volmit.react.util.F;
-import com.volmit.react.util.RTEX;
-import com.volmit.react.util.RTX;
+import com.volmit.react.util.FinalInteger;
+import com.volmit.react.util.MaterialBlock;
+import com.volmit.react.util.inventory.Element;
+import com.volmit.react.util.inventory.UIElement;
+import com.volmit.react.util.inventory.UIPaneDecorator;
+import com.volmit.react.util.inventory.UIWindow;
+import com.volmit.react.util.inventory.Window;
 import com.volmit.volume.lang.collections.GList;
+import com.volmit.volume.lang.collections.GMap;
 
 public class CommandTopChunk extends ReactCommand
 {
@@ -34,6 +42,7 @@ public class CommandTopChunk extends ReactCommand
 		description = Info.COMMAND_TOPCHUNK_DESCRIPTION;
 		sideGate = SideGate.PLAYERS_ONLY;
 	}
+
 	@Override
 	public List<String> onTabComplete(CommandSender arg0, Command arg1, String arg2, String[] arg3)
 	{
@@ -45,43 +54,76 @@ public class CommandTopChunk extends ReactCommand
 	@Override
 	public void fire(CommandSender sender, String[] args)
 	{
-		LagMap map = EventController.map;
-		GList<LagMapChunk> htl = new GList<LagMapChunk>(map.getChunks().v());
-		Collections.sort(htl);
-		Collections.reverse(htl);
-		int k = 0;
-
-		if(htl.isEmpty())
+		Window w = new UIWindow((Player) sender).setDecorator(new UIPaneDecorator(C.DARK_GRAY));
+		w.setTitle("Top Chunks");
+		w.open();
+		FinalInteger fi = new FinalInteger(-1);
+		fi.set(J.sr(new Runnable()
 		{
-			Gate.msgActing(sender, "There are no significant chunk events yet.");
-			return;
-		}
+			@Override
+			public void run()
+			{
+				if(w.isVisible())
+				{
+					update(w);
+				}
 
-		sender.sendMessage(Gate.header(C.YELLOW));
+				else
+				{
+					J.csr(fi.get());
+				}
+			}
+		}, 20));
+	}
+
+	private void update(Window w)
+	{
+		w.clearElements();
+		LagMap map = EventController.map;
+		GList<LagMapChunk> htl = map.sorted();
+		Collections.reverse(htl);
+		int index = 0;
+		double tmax = 0;
 
 		for(LagMapChunk i : htl)
 		{
-			String string = " " + i.getWorld().getName() + " -> [" + i.getX() + ", " + i.getZ() + "] ";
-			C color = C.AQUA;
+			double ts = i.totalScore();
 
-			k++;
-			RTX rtx = new RTX();
-			RTEX rtex = new RTEX();
-			rtex.getExtras().add(new ColoredString(C.AQUA, "Click to teleport"));
-			rtx.addTextFireHoverCommand(string, rtex, "/react chunktp " + i.getWorld().getName() + " " + i.getX() + " " + i.getZ(), color);
-			rtx.tellRawTo((Player) sender);
+			if(ts > tmax)
+			{
+				tmax = ts;
+			}
+		}
+
+		for(LagMapChunk i : htl)
+		{
+			GMap<ChunkIssue, Double> g = i.getPercent();
+			Chunk c = i.getC();
+			World ww = i.getWorld();
+			//@builder
+			Element e = new UIElement("ch-"+ index)
+					.setName(C.GOLD + ww.getName() + " at " + C.YELLOW + c.getX() + ", " + c.getZ())
+					.setMaterial(new MaterialBlock(Material.IRON_CHESTPLATE))
+					.setProgress(i.totalScore() / (tmax == 0 ? 1 : tmax))
+					.addLore(C.AQUA + "Entities: " + C.DARK_AQUA  + C.BOLD+ F.f(c.getEntities().length))
+					.addLore(C.AQUA + "Tiles: " + C.DARK_AQUA  + C.BOLD+ F.f(c.getTileEntities().length));
 
 			for(ChunkIssue j : i.getHits().k())
 			{
-				sender.sendMessage("  " + C.GRAY + j.name() + ": " + C.WHITE + F.time(i.getMS(j), 2));
+				e.addLore(C.AQUA + j.toName() + ": " + C.DARK_AQUA + C.BOLD + F.pc(g.get(j), 0) + " Impact: " + F.f((int)(i.getHits().get(j) / 10000D)));
 			}
 
-			if(k > 5)
+			w.setElement(w.getPosition(index), w.getRow(index), e);
+			//@done
+
+			index++;
+
+			if(index > 56)
 			{
 				break;
 			}
 		}
 
-		sender.sendMessage(Gate.header(C.YELLOW));
+		w.updateInventory();
 	}
 }

@@ -1,5 +1,7 @@
 package com.volmit.react.api;
 
+import com.volmit.react.util.F;
+
 public enum ChunkIssue
 {
 	ENTITY,
@@ -8,6 +10,11 @@ public enum ChunkIssue
 	REDSTONE,
 	FLUID,
 	PHYSICS;
+
+	public String toName()
+	{
+		return F.capitalize(name().toLowerCase());
+	}
 
 	public double getMS()
 	{

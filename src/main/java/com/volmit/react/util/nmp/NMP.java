@@ -6,6 +6,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import com.volmit.react.Config;
+import com.volmit.volume.bukkit.task.S;
 
 public class NMP
 {
@@ -89,7 +90,14 @@ public class NMP
 				return;
 			}
 
-			host.sendAdvancement(player, type, item, msg);
+			new S()
+			{
+				@Override
+				public void run()
+				{
+					host.sendAdvancement(player, type, item, msg);
+				}
+			};
 		}
 
 		/**

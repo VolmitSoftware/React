@@ -45,6 +45,33 @@ public class LagMapChunk implements Comparable<LagMapChunk>
 		return m;
 	}
 
+	public GMap<ChunkIssue, Double> getPercent()
+	{
+		GMap<ChunkIssue, Double> k = EventController.map.getGrandTotal();
+		GMap<ChunkIssue, Double> m = new GMap<ChunkIssue, Double>();
+
+		try
+		{
+			for(ChunkIssue type : hits.k())
+			{
+				if(!hits.containsKey(type) || !k.containsKey(type))
+				{
+					m.put(type, 0.0);
+					continue;
+				}
+
+				m.put(type, hits.get(type) / k.get(type));
+			}
+		}
+
+		catch(Throwable e)
+		{
+			Ex.t(e);
+		}
+
+		return m;
+	}
+
 	public double totalMS()
 	{
 		double ms = 0;

@@ -4,6 +4,7 @@ import org.bukkit.Chunk;
 import org.bukkit.Location;
 
 import com.volmit.react.util.Ex;
+import com.volmit.volume.lang.collections.GList;
 import com.volmit.volume.lang.collections.GMap;
 
 public class LagMap
@@ -115,6 +116,18 @@ public class LagMap
 		{
 
 		}
+	}
+
+	public GList<LagMapChunk> sorted()
+	{
+		GMap<LagMapChunk, Double> g = new GMap<>();
+
+		for(Chunk i : getChunks().k())
+		{
+			g.put(getChunks().get(i), getChunks().get(i).totalScore());
+		}
+
+		return g.sortK();
 	}
 
 	public GMap<Chunk, LagMapChunk> getChunks()
