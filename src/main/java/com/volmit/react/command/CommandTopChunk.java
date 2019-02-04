@@ -10,7 +10,9 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
+import com.volmit.react.Gate;
 import com.volmit.react.Info;
+import com.volmit.react.React;
 import com.volmit.react.api.ChunkIssue;
 import com.volmit.react.api.LagMap;
 import com.volmit.react.api.LagMapChunk;
@@ -54,6 +56,12 @@ public class CommandTopChunk extends ReactCommand
 	@Override
 	public void fire(CommandSender sender, String[] args)
 	{
+		if(!(sender instanceof Player))
+		{
+			Gate.msg(sender, "Ingame only!");
+			return;
+		}
+
 		Window w = new UIWindow((Player) sender).setDecorator(new UIPaneDecorator(C.DARK_GRAY));
 		w.setTitle("Top Chunks");
 		w.open();
@@ -70,10 +78,12 @@ public class CommandTopChunk extends ReactCommand
 
 				else
 				{
+					React.instance.monitorController.removeTop((Player) sender);
 					J.csr(fi.get());
 				}
 			}
 		}, 20));
+		React.instance.monitorController.addTop((Player) sender);
 	}
 
 	private void update(Window w)

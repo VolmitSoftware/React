@@ -10,6 +10,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
 
 import com.volmit.react.Config;
@@ -44,6 +45,7 @@ import com.volmit.react.xmonitor.TitleCollection;
 import com.volmit.react.xmonitor.TitleHeader;
 import com.volmit.volume.bukkit.util.sound.GSound;
 import com.volmit.volume.lang.collections.GMap;
+import com.volmit.volume.lang.collections.GSet;
 
 @AsyncTick
 public class MonitorController extends Controller
@@ -51,6 +53,7 @@ public class MonitorController extends Controller
 	public static int maxCooldown = 4;
 	private TitleMonitor titleMonitor;
 	private GMap<Player, Integer> posts;
+	private GSet<Player> tops;
 	private PhantomSlate sb;
 	private boolean ready;
 
@@ -65,6 +68,17 @@ public class MonitorController extends Controller
 		ready = false;
 		posts = new GMap<Player, Integer>();
 		titleMonitor = new TitleMonitor();
+		tops = new GSet<>();
+	}
+
+	public void addTop(Player p)
+	{
+		tops.add(p);
+	}
+
+	public void removeTop(Player p)
+	{
+		tops.add(p);
 	}
 
 	@Override
@@ -181,6 +195,13 @@ public class MonitorController extends Controller
 				sb.removeViewer(i);
 			}
 		}
+
+		for(Player i : tops)
+		{
+			i.closeInventory();
+		}
+
+		tops.clear();
 	}
 
 	public void constructMonitor()
@@ -330,6 +351,12 @@ public class MonitorController extends Controller
 		m.getHeaders().add(entity);
 
 		return m.toJSON();
+	}
+
+	@EventHandler
+	public void on(PlayerQuitEvent e)
+	{
+		tops.remove(e.getPlayer());
 	}
 
 	public float calcVolume(ReactPlayer i)
