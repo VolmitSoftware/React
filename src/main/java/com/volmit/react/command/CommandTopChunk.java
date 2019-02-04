@@ -115,6 +115,7 @@ public class CommandTopChunk extends ReactCommand
 					.setName(C.GOLD + ww.getName() + " at " + C.YELLOW + c.getX() + ", " + c.getZ())
 					.setMaterial(new MaterialBlock(Material.IRON_CHESTPLATE))
 					.setProgress(i.totalScore() / (tmax == 0 ? 1 : tmax))
+					.onLeftClick((x) -> tpChunk(c, w.getViewer()))
 					.addLore(C.AQUA + "Entities: " + C.DARK_AQUA  + C.BOLD+ F.f(c.getEntities().length))
 					.addLore(C.AQUA + "Tiles: " + C.DARK_AQUA  + C.BOLD+ F.f(c.getTileEntities().length));
 
@@ -135,5 +136,10 @@ public class CommandTopChunk extends ReactCommand
 		}
 
 		w.updateInventory();
+	}
+
+	private void tpChunk(Chunk c, Player v)
+	{
+		v.teleport(c.getWorld().getHighestBlockAt(c.getBlock(0, 256, 0).getLocation()).getLocation());
 	}
 }
