@@ -12,9 +12,9 @@ import com.volmit.react.api.IFix;
 import com.volmit.react.api.Permissable;
 import com.volmit.react.api.ReactCommand;
 import com.volmit.react.api.SideGate;
-import com.volmit.react.util.C;
 
 import primal.lang.collection.GList;
+import primal.util.text.C;
 
 public class CommandFix extends ReactCommand
 {

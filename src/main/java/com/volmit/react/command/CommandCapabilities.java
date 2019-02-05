@@ -12,10 +12,10 @@ import com.volmit.react.api.Flavor;
 import com.volmit.react.api.Permissable;
 import com.volmit.react.api.ReactCommand;
 import com.volmit.react.api.SideGate;
-import com.volmit.react.util.C;
 import com.volmit.react.util.Protocol;
 
 import primal.lang.collection.GList;
+import primal.util.text.C;
 
 public class CommandCapabilities extends ReactCommand
 {

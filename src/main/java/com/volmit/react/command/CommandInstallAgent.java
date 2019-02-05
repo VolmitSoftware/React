@@ -12,7 +12,6 @@ import com.volmit.react.api.Permissable;
 import com.volmit.react.api.ReactCommand;
 import com.volmit.react.api.SideGate;
 import com.volmit.react.util.A;
-import com.volmit.react.util.C;
 import com.volmit.react.util.Download;
 import com.volmit.react.util.DownloadMonitor;
 import com.volmit.react.util.DownloadState;
@@ -20,6 +19,7 @@ import com.volmit.react.util.F;
 import com.volmit.react.util.S;
 
 import primal.lang.collection.GList;
+import primal.util.text.C;
 
 public class CommandInstallAgent extends ReactCommand
 {

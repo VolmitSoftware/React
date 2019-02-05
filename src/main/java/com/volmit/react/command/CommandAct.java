@@ -28,7 +28,6 @@ import com.volmit.react.api.ReactCommand;
 import com.volmit.react.api.Selector;
 import com.volmit.react.api.SelectorParseException;
 import com.volmit.react.api.SideGate;
-import com.volmit.react.util.C;
 import com.volmit.react.util.ColoredString;
 import com.volmit.react.util.D;
 import com.volmit.react.util.Ex;
@@ -39,6 +38,7 @@ import com.volmit.react.util.RawText;
 
 import primal.lang.collection.GList;
 import primal.lang.collection.GMap;
+import primal.util.text.C;
 
 public class CommandAct extends ReactCommand
 {

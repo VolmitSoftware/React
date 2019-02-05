@@ -5,10 +5,10 @@ import org.bukkit.command.CommandSender;
 
 import com.volmit.react.Gate;
 import com.volmit.react.Lang;
-import com.volmit.react.util.C;
 import com.volmit.react.util.Protocol;
 
 import primal.lang.collection.GList;
+import primal.util.text.C;
 
 public class Capability
 {

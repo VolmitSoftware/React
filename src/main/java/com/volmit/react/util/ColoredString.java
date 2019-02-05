@@ -1,5 +1,7 @@
 package com.volmit.react.util;
 
+import primal.util.text.C;
+
 /**
  * Represents a colored String
  *

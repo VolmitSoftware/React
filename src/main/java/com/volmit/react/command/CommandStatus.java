@@ -19,10 +19,10 @@ import com.volmit.react.api.Permissable;
 import com.volmit.react.api.ReactCommand;
 import com.volmit.react.api.SampledType;
 import com.volmit.react.api.SideGate;
-import com.volmit.react.util.C;
 import com.volmit.react.util.F;
 
 import primal.lang.collection.GList;
+import primal.util.text.C;
 
 public class CommandStatus extends ReactCommand
 {

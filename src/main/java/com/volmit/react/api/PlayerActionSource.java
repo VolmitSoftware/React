@@ -6,9 +6,10 @@ import org.bukkit.inventory.ItemStack;
 
 import com.volmit.react.Config;
 import com.volmit.react.Gate;
-import com.volmit.react.util.C;
-import com.volmit.react.util.nmp.FrameType;
-import com.volmit.react.util.nmp.NMP;
+
+import primal.bukkit.nms.FrameType;
+import primal.bukkit.nms.NMP;
+import primal.util.text.C;
 
 public class PlayerActionSource implements IActionSource
 {

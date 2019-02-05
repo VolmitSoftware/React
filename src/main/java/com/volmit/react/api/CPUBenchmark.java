@@ -4,8 +4,9 @@ import org.bukkit.command.CommandSender;
 
 import com.volmit.react.Gate;
 import com.volmit.react.Lang;
-import com.volmit.react.util.C;
 import com.volmit.react.util.F;
+
+import primal.util.text.C;
 
 public class CPUBenchmark extends Thread
 {

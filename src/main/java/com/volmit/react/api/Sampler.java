@@ -1,7 +1,8 @@
 package com.volmit.react.api;
 
-import com.volmit.react.util.C;
 import com.volmit.react.util.M;
+
+import primal.util.text.C;
 
 public abstract class Sampler implements ISampler
 {

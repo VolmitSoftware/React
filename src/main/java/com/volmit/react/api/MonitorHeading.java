@@ -1,8 +1,7 @@
 package com.volmit.react.api;
 
-import com.volmit.react.util.C;
-
 import primal.lang.collection.GList;
+import primal.util.text.C;
 
 public class MonitorHeading
 {
