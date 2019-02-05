@@ -141,6 +141,6 @@ public class CommandTopChunk extends ReactCommand
 
 	private void tpChunk(Chunk c, Player v)
 	{
-		v.teleport(c.getWorld().getHighestBlockAt(c.getBlock(0, 256, 0).getLocation()).getLocation());
+		v.teleport(c.getWorld().getHighestBlockAt(c.getBlock(0, 255, 0).getLocation()).getLocation());
 	}
 }

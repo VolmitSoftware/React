@@ -51,7 +51,7 @@ public class CommandChunkTP extends ReactCommand
 			int x = Integer.valueOf(args[1]);
 			int z = Integer.valueOf(args[2]);
 			Chunk c = world.getChunkAt(x, z);
-			((Player) sender).teleport(world.getHighestBlockAt(c.getBlock(0, 256, 0).getLocation()).getLocation());
+			((Player) sender).teleport(world.getHighestBlockAt(c.getBlock(0, 255, 0).getLocation()).getLocation());
 		}
 
 		catch(Throwable e)
