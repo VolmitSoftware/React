@@ -32,14 +32,15 @@ import com.volmit.react.api.PointedGraph;
 import com.volmit.react.api.ReactPlayer;
 import com.volmit.react.api.SampledType;
 import com.volmit.react.util.A;
-import com.volmit.react.util.C;
 import com.volmit.react.util.Controller;
 import com.volmit.react.util.F;
 import com.volmit.react.util.JSONObject;
 import com.volmit.react.util.P;
 import com.volmit.react.util.S;
-import com.volmit.volume.lang.collections.GList;
-import com.volmit.volume.lang.collections.GMap;
+
+import primal.lang.collection.GList;
+import primal.lang.collection.GMap;
+import primal.util.text.C;
 
 public class GraphController extends Controller
 {

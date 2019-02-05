@@ -28,8 +28,9 @@ import com.volmit.react.util.RawEvent;
 import com.volmit.react.util.TaskLater;
 import com.volmit.react.util.YamlDataInput;
 import com.volmit.react.util.YamlDataOutput;
-import com.volmit.volume.lang.collections.GList;
-import com.volmit.volume.lang.collections.GMap;
+
+import primal.lang.collection.GList;
+import primal.lang.collection.GMap;
 
 @PoolDescriber
 @DynamicConfiguration

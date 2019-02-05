@@ -9,8 +9,9 @@ import java.io.PrintWriter;
 
 import com.volmit.react.util.Ex;
 import com.volmit.react.util.JSONObject;
-import com.volmit.volume.lang.collections.GList;
-import com.volmit.volume.lang.collections.GMap;
+
+import primal.lang.collection.GList;
+import primal.lang.collection.GMap;
 
 public abstract class RecordBook<T extends IRecord<?>> implements IRecordBook<T>
 {

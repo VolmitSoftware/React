@@ -15,7 +15,8 @@ import com.volmit.react.util.Ex;
 import com.volmit.react.util.IConfigurable;
 import com.volmit.react.util.KeyPointer;
 import com.volmit.react.util.KeyStore;
-import com.volmit.volume.lang.collections.GMap;
+
+import primal.lang.collection.GMap;
 
 public class ReactPlayer implements IConfigurable
 {

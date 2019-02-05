@@ -10,8 +10,9 @@ import java.io.PrintWriter;
 import java.util.Date;
 
 import com.volmit.react.ReactPlugin;
-import com.volmit.react.util.C;
 import com.volmit.react.util.M;
+
+import primal.util.text.C;
 
 public class EventLog
 {

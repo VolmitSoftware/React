@@ -16,9 +16,10 @@ import com.volmit.react.util.D;
 import com.volmit.react.util.Ex;
 import com.volmit.react.util.JSONObject;
 import com.volmit.react.util.Task;
-import com.volmit.volume.lang.collections.GList;
-import com.volmit.volume.lang.collections.GMap;
-import com.volmit.volume.lang.collections.GSet;
+
+import primal.lang.collection.GList;
+import primal.lang.collection.GMap;
+import primal.lang.collection.GSet;
 
 @AsyncTick
 public class SpikeController extends Controller
@@ -103,7 +104,7 @@ public class SpikeController extends Controller
 
 						for(String j : gv)
 						{
-							if(!spikes.contains(j))
+							if(!spikes.containsKey(j))
 							{
 								spikes.put(j, 0);
 							}

@@ -7,7 +7,7 @@ import java.io.FileOutputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 
-import com.volmit.volume.lang.collections.GList;
+import primal.lang.collection.GList;
 
 public class YamlDataOutput implements IDataOutput
 {

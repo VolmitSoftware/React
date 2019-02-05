@@ -15,8 +15,9 @@ import com.volmit.react.util.Average;
 import com.volmit.react.util.M;
 import com.volmit.react.util.Protocol;
 import com.volmit.react.util.ProtocolRange;
-import com.volmit.volume.lang.collections.GBiset;
-import com.volmit.volume.lang.collections.GMap;
+
+import primal.lang.collection.GBiset;
+import primal.lang.collection.GMap;
 
 public class ProtocolAdapter implements Listener
 {

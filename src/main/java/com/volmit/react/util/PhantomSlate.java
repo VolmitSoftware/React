@@ -4,7 +4,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Scoreboard;
 
-import com.volmit.volume.lang.collections.GList;
+import primal.lang.collection.GList;
 
 /**
  * Slate implementation

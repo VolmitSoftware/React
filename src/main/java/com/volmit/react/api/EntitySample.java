@@ -4,9 +4,9 @@ import org.bukkit.Chunk;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 
-import com.volmit.volume.lang.collections.GList;
-import com.volmit.volume.lang.collections.GMap;
-import com.volmit.volume.lang.collections.GSet;
+import primal.lang.collection.GList;
+import primal.lang.collection.GMap;
+import primal.lang.collection.GSet;
 
 public class EntitySample
 {

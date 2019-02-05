@@ -5,8 +5,8 @@ import java.util.Queue;
 
 import org.spigotmc.CustomTimingsHandler;
 
-import com.volmit.volume.lang.collections.GSet;
-import com.volmit.volume.reflect.V;
+import primal.lang.collection.GSet;
+import primal.util.reflection.V;
 
 public class TimeList
 {

@@ -27,7 +27,6 @@ import com.volmit.react.api.ReactPlayer;
 import com.volmit.react.api.SampledType;
 import com.volmit.react.api.TitleMonitor;
 import com.volmit.react.util.AsyncTick;
-import com.volmit.react.util.C;
 import com.volmit.react.util.Controller;
 import com.volmit.react.util.D;
 import com.volmit.react.util.F;
@@ -40,12 +39,14 @@ import com.volmit.react.util.PhantomSlate;
 import com.volmit.react.util.S;
 import com.volmit.react.util.TICK;
 import com.volmit.react.util.TaskLater;
-import com.volmit.react.util.nmp.NMP;
 import com.volmit.react.xmonitor.TitleCollection;
 import com.volmit.react.xmonitor.TitleHeader;
-import com.volmit.volume.bukkit.util.sound.GSound;
-import com.volmit.volume.lang.collections.GMap;
-import com.volmit.volume.lang.collections.GSet;
+
+import primal.bukkit.nms.NMP;
+import primal.bukkit.sound.GSound;
+import primal.lang.collection.GMap;
+import primal.lang.collection.GSet;
+import primal.util.text.C;
 
 @AsyncTick
 public class MonitorController extends Controller

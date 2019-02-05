@@ -15,6 +15,7 @@ import com.volmit.react.action.ActionFixLighting;
 import com.volmit.react.action.ActionPullTimings;
 import com.volmit.react.action.ActionPurgeChunks;
 import com.volmit.react.action.ActionPurgeEntities;
+import com.volmit.react.action.ActionThrottlePhysics;
 import com.volmit.react.api.ActionAlreadyRunningException;
 import com.volmit.react.api.ActionException;
 import com.volmit.react.api.ActionState;
@@ -27,20 +28,21 @@ import com.volmit.react.api.Note;
 import com.volmit.react.api.PlayerActionSource;
 import com.volmit.react.api.RAIActionSource;
 import com.volmit.react.api.SelectorPosition;
-import com.volmit.react.util.C;
 import com.volmit.react.util.Controller;
 import com.volmit.react.util.Ex;
 import com.volmit.react.util.JSONArray;
 import com.volmit.react.util.JSONObject;
-import com.volmit.react.util.MaterialBlock;
 import com.volmit.react.util.TICK;
-import com.volmit.react.util.inventory.UIElement;
-import com.volmit.react.util.inventory.UIWindow;
-import com.volmit.react.util.inventory.Window;
-import com.volmit.react.util.inventory.WindowResolution;
-import com.volmit.volume.lang.collections.GList;
-import com.volmit.volume.lang.collections.GMap;
-import com.volmit.volume.lang.collections.GTriset;
+
+import primal.bukkit.inventory.UIElement;
+import primal.bukkit.inventory.UIWindow;
+import primal.bukkit.inventory.Window;
+import primal.bukkit.inventory.WindowResolution;
+import primal.bukkit.world.MaterialBlock;
+import primal.lang.collection.GList;
+import primal.lang.collection.GMap;
+import primal.lang.collection.GTriset;
+import primal.util.text.C;
 
 public class ActionController extends Controller
 {
@@ -124,6 +126,7 @@ public class ActionController extends Controller
 		registerAction(new ActionCPUScore());
 		registerAction(new ActionDump());
 		registerAction(new ActionFileSize());
+		registerAction(new ActionThrottlePhysics());
 	}
 
 	@SuppressWarnings("deprecation")
@@ -345,6 +348,7 @@ public class ActionController extends Controller
 			catch(ActionException e)
 			{
 				pending.remove(d);
+				Ex.t(e);
 			}
 		}
 

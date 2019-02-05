@@ -1,6 +1,6 @@
 package com.volmit.react.util;
 
-import com.volmit.volume.lang.collections.GMap;
+import primal.lang.collection.GMap;
 
 public class I
 {

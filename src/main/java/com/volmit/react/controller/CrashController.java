@@ -13,7 +13,6 @@ import com.volmit.react.Gate;
 import com.volmit.react.ReactPlugin;
 import com.volmit.react.Surge;
 import com.volmit.react.api.Flavor;
-import com.volmit.react.util.C;
 import com.volmit.react.util.CPS;
 import com.volmit.react.util.ColoredString;
 import com.volmit.react.util.Controller;
@@ -22,9 +21,11 @@ import com.volmit.react.util.M;
 import com.volmit.react.util.RTEX;
 import com.volmit.react.util.RTX;
 import com.volmit.react.util.S;
-import com.volmit.volume.lang.collections.GList;
-import com.volmit.volume.lang.collections.GMap;
-import com.volmit.volume.lang.format.F;
+
+import primal.lang.collection.GList;
+import primal.lang.collection.GMap;
+import primal.logic.format.F;
+import primal.util.text.C;
 
 public class CrashController extends Controller
 {

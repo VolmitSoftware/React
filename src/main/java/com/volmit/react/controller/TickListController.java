@@ -12,8 +12,9 @@ import com.volmit.react.Config;
 import com.volmit.react.Surge;
 import com.volmit.react.util.Controller;
 import com.volmit.react.util.JSONObject;
-import com.volmit.react.util.nmp.TickListSplitter;
-import com.volmit.volume.lang.collections.GMap;
+import com.volmit.react.util.TickListSplitter;
+
+import primal.lang.collection.GMap;
 
 public class TickListController extends Controller
 {

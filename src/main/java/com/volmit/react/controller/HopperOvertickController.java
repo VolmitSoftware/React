@@ -10,7 +10,8 @@ import com.volmit.react.Config;
 import com.volmit.react.Surge;
 import com.volmit.react.util.Controller;
 import com.volmit.react.util.JSONObject;
-import com.volmit.volume.lang.collections.GList;
+
+import primal.lang.collection.GList;
 
 public class HopperOvertickController extends Controller
 {

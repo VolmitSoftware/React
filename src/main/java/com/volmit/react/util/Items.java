@@ -6,7 +6,8 @@ import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
 
-import com.volmit.volume.lang.collections.GList;
+import primal.bukkit.world.MaterialBlock;
+import primal.lang.collection.GList;
 
 /**
  * Itemstack utilities

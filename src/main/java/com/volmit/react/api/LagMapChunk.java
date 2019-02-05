@@ -5,7 +5,8 @@ import org.bukkit.World;
 
 import com.volmit.react.controller.EventController;
 import com.volmit.react.util.Ex;
-import com.volmit.volume.lang.collections.GMap;
+
+import primal.lang.collection.GMap;
 
 public class LagMapChunk implements Comparable<LagMapChunk>
 {

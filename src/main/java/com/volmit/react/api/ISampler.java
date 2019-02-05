@@ -1,6 +1,6 @@
 package com.volmit.react.api;
 
-import com.volmit.react.util.C;
+import primal.util.text.C;
 
 public interface ISampler
 {

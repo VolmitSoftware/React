@@ -4,8 +4,9 @@ import org.bukkit.Chunk;
 import org.bukkit.Location;
 
 import com.volmit.react.util.Ex;
-import com.volmit.volume.lang.collections.GList;
-import com.volmit.volume.lang.collections.GMap;
+
+import primal.lang.collection.GList;
+import primal.lang.collection.GMap;
 
 public class LagMap
 {

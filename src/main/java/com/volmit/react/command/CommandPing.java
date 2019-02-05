@@ -15,12 +15,13 @@ import com.volmit.react.api.Permissable;
 import com.volmit.react.api.ReactCommand;
 import com.volmit.react.api.SideGate;
 import com.volmit.react.util.Average;
-import com.volmit.react.util.C;
 import com.volmit.react.util.F;
 import com.volmit.react.util.M;
 import com.volmit.react.util.P;
-import com.volmit.volume.lang.collections.GList;
-import com.volmit.volume.lang.collections.GMap;
+
+import primal.lang.collection.GList;
+import primal.lang.collection.GMap;
+import primal.util.text.C;
 
 public class CommandPing extends ReactCommand
 {

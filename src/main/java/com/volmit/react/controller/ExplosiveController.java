@@ -18,9 +18,10 @@ import com.volmit.react.util.Average;
 import com.volmit.react.util.Controller;
 import com.volmit.react.util.JSONObject;
 import com.volmit.react.util.M;
-import com.volmit.react.util.MaterialBlock;
-import com.volmit.volume.lang.collections.GList;
-import com.volmit.volume.lang.collections.GSet;
+
+import primal.bukkit.world.MaterialBlock;
+import primal.lang.collection.GList;
+import primal.lang.collection.GSet;
 
 public class ExplosiveController extends Controller
 {

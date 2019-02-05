@@ -19,7 +19,8 @@ import com.volmit.react.api.ReactScrollEvent;
 import com.volmit.react.api.ScrollDirection;
 import com.volmit.react.util.Controller;
 import com.volmit.react.util.JSONObject;
-import com.volmit.volume.lang.collections.GMap;
+
+import primal.lang.collection.GMap;
 
 public class EventController extends Controller
 {

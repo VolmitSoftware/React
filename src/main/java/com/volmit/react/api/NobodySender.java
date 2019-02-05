@@ -10,7 +10,7 @@ import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.permissions.PermissionAttachmentInfo;
 import org.bukkit.plugin.Plugin;
 
-import com.volmit.volume.lang.collections.GList;
+import primal.lang.collection.GList;
 
 public class NobodySender implements CommandSender
 {

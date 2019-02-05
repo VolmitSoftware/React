@@ -3,7 +3,7 @@ package com.volmit.react.util;
 import org.bukkit.Chunk;
 import org.bukkit.World;
 
-import com.volmit.volume.lang.collections.GSet;
+import primal.lang.collection.GSet;
 
 public class PositionalSelector
 {

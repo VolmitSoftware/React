@@ -5,7 +5,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.List;
 
-import com.volmit.volume.lang.collections.GMap;
+import primal.lang.collection.GMap;
 
 public class ConfigurationDataOutput
 {

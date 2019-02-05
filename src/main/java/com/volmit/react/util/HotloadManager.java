@@ -2,7 +2,7 @@ package com.volmit.react.util;
 
 import java.io.File;
 
-import com.volmit.volume.lang.collections.GMap;
+import primal.lang.collection.GMap;
 
 public class HotloadManager
 {

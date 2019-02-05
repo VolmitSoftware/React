@@ -9,8 +9,9 @@ import com.volmit.react.api.ReactPlayer;
 import com.volmit.react.util.A;
 import com.volmit.react.util.Controller;
 import com.volmit.react.util.JSONObject;
-import com.volmit.volume.lang.collections.GList;
-import com.volmit.volume.lang.collections.GSet;
+
+import primal.lang.collection.GList;
+import primal.lang.collection.GSet;
 
 public class PlayerController extends Controller
 {

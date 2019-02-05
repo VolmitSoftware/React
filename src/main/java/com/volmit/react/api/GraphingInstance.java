@@ -20,13 +20,14 @@ import com.volmit.react.Config;
 import com.volmit.react.Gate;
 import com.volmit.react.React;
 import com.volmit.react.Surge;
-import com.volmit.react.util.C;
 import com.volmit.react.util.F;
 import com.volmit.react.util.M;
 import com.volmit.react.util.MSound;
 import com.volmit.react.util.Task;
-import com.volmit.volume.bukkit.util.sound.GSound;
-import com.volmit.volume.lang.collections.GList;
+
+import primal.bukkit.sound.GSound;
+import primal.lang.collection.GList;
+import primal.util.text.C;
 
 public class GraphingInstance implements Listener
 {

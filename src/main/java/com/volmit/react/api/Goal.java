@@ -1,7 +1,8 @@
 package com.volmit.react.api;
 
 import com.volmit.react.util.S;
-import com.volmit.volume.lang.collections.GList;
+
+import primal.lang.collection.GList;
 
 public abstract class Goal implements IGoal
 {

@@ -3,6 +3,8 @@ package com.volmit.react.util;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
+import primal.util.text.C;
+
 /**
  * Raw Text holder
  *

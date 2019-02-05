@@ -7,7 +7,7 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 
-import com.volmit.volume.lang.collections.GList;
+import primal.lang.collection.GList;
 
 public class CachedEntityLiving extends CachedEntity
 {

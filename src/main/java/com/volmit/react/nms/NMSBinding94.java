@@ -8,12 +8,12 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
 import com.volmit.react.Config;
-import com.volmit.react.util.MaterialBlock;
 import com.volmit.react.util.P;
 
 import net.minecraft.server.v1_9_R2.BlockPosition;
 import net.minecraft.server.v1_9_R2.IBlockData;
 import net.minecraft.server.v1_9_R2.PacketPlayOutCollect;
+import primal.bukkit.world.MaterialBlock;
 
 public class NMSBinding94 extends NMSBinding
 {

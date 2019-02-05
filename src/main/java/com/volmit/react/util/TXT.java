@@ -2,7 +2,8 @@ package com.volmit.react.util;
 
 import org.apache.commons.lang.WordUtils;
 
-import com.volmit.volume.lang.collections.GList;
+import primal.lang.collection.GList;
+import primal.util.text.C;
 
 /**
  * Textual Utilities

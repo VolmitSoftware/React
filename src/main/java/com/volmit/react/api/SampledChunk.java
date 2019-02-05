@@ -3,7 +3,8 @@ package com.volmit.react.api;
 import org.bukkit.Chunk;
 
 import com.volmit.react.util.Ex;
-import com.volmit.volume.lang.collections.GMap;
+
+import primal.lang.collection.GMap;
 
 public class SampledChunk
 {
@@ -25,6 +26,11 @@ public class SampledChunk
 	{
 		try
 		{
+			if(issue == null)
+			{
+				return;
+			}
+
 			if(!counts.containsKey(issue))
 			{
 				counts.put(issue, 0);

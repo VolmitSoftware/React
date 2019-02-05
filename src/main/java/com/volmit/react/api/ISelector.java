@@ -2,7 +2,7 @@ package com.volmit.react.api;
 
 import org.bukkit.command.CommandSender;
 
-import com.volmit.volume.lang.collections.GSet;
+import primal.lang.collection.GSet;
 
 public interface ISelector
 {

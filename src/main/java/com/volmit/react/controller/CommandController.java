@@ -55,13 +55,14 @@ import com.volmit.react.command.CommandTopChunk;
 import com.volmit.react.command.CommandUnsubscribe;
 import com.volmit.react.command.CommandVersion;
 import com.volmit.react.util.A;
-import com.volmit.react.util.C;
 import com.volmit.react.util.Controller;
 import com.volmit.react.util.Ex;
 import com.volmit.react.util.F;
 import com.volmit.react.util.JSONObject;
 import com.volmit.react.xrai.RAIGoal;
-import com.volmit.volume.lang.collections.GList;
+
+import primal.lang.collection.GList;
+import primal.util.text.C;
 
 public class CommandController extends Controller implements Listener, CommandExecutor, TabCompleter
 {

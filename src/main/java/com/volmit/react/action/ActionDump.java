@@ -18,7 +18,6 @@ import com.volmit.react.api.ISelector;
 import com.volmit.react.api.PlayerActionSource;
 import com.volmit.react.api.RAI;
 import com.volmit.react.util.A;
-import com.volmit.react.util.C;
 import com.volmit.react.util.Callback;
 import com.volmit.react.util.F;
 import com.volmit.react.util.JSONException;
@@ -27,6 +26,8 @@ import com.volmit.react.util.M;
 import com.volmit.react.util.Paste;
 import com.volmit.react.util.S;
 import com.volmit.react.util.Task;
+
+import primal.util.text.C;
 
 public class ActionDump extends Action
 {

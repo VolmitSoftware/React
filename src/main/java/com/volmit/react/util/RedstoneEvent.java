@@ -3,6 +3,8 @@ package com.volmit.react.util;
 import org.bukkit.event.block.BlockRedstoneEvent;
 import org.bukkit.util.Vector;
 
+import primal.bukkit.world.MaterialBlock;
+
 public class RedstoneEvent
 {
 	private MaterialBlock block;
