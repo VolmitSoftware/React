@@ -9,7 +9,6 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.plugin.java.JavaPlugin;
 
 import com.volmit.react.api.Capability;
 import com.volmit.react.api.Permissable;
@@ -32,11 +31,12 @@ import primal.bukkit.nms.Catalyst;
 import primal.bukkit.nms.FrameType;
 import primal.bukkit.nms.NMP;
 import primal.bukkit.nms.NMSVersion;
+import primal.bukkit.plugin.PrimalPlugin;
 import primal.bukkit.sched.J;
 import primal.lang.collection.GList;
 import primal.util.text.C;
 
-public class ReactPlugin extends JavaPlugin
+public class ReactPlugin extends PrimalPlugin
 {
 	public static ReactPlugin i;
 	private GList<IController> controllers;
@@ -47,7 +47,7 @@ public class ReactPlugin extends JavaPlugin
 
 	@SuppressWarnings("deprecation")
 	@Override
-	public void onEnable()
+	public void start()
 	{
 		controllers = new GList<IController>();
 		Surge.m();
@@ -177,7 +177,7 @@ public class ReactPlugin extends JavaPlugin
 	}
 
 	@Override
-	public void onDisable()
+	public void stop()
 	{
 		for(IController i : controllers)
 		{
@@ -197,6 +197,17 @@ public class ReactPlugin extends JavaPlugin
 		pool.shutdown();
 		stopRLServer();
 		stopNMS();
+	}
+
+	@Override
+	public String getTag(String subTag)
+	{
+		if(subTag == null || subTag.trim().isEmpty())
+		{
+			return C.AQUA + "[" + C.DARK_GRAY + "React" + C.AQUA + "]" + C.GRAY + ": ";
+		}
+
+		return C.AQUA + "[" + C.DARK_GRAY + "React" + C.GRAY + " - " + C.WHITE + subTag.trim() + C.AQUA + "]" + C.GRAY + ": ";
 	}
 
 	private void stopNMS()

@@ -4,6 +4,6 @@ public class Ex
 {
 	public static void t(Throwable e)
 	{
-		e.printStackTrace();
+
 	}
 }
