@@ -40,12 +40,12 @@ public class Config
 	@Comment("Slows down block physics on a per world basis if the maximum ticks per world is exceeded")
 	@Key("features.react.tick-splitter.max-ticks-per-world")
 	@Injection(InjectionMethod.SWAP)
-	public static int MAX_TICKS_PER_WORLD = 145;
+	public static int MAX_TICKS_PER_WORLD = 135;
 
 	@Comment("Slows down block physics on a per world basis.")
 	@Key("features.react.tick-splitter.enabled")
 	@Injection(InjectionMethod.SWAP)
-	public static boolean ENABLED_SPLITTER = false;
+	public static boolean ENABLED_SPLITTER = true;
 
 	@Comment("Disables collision for certain entities based on lag and conditions.")
 	@Key("features.react.collision.collision-tweaks-enabled")

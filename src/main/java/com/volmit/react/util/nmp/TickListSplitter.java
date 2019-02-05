@@ -44,8 +44,8 @@ public class TickListSplitter
 
 	public void tick()
 	{
-		throttleTick(new GList<>(master), withold);
-		throttleTick(new GList<>(masterFluid), witholdFluid);
+		throttleTick(master, withold);
+		throttleTick(masterFluid, witholdFluid);
 		computeGlobalTickLimiter();
 		dropTickChunks();
 		dumpWitheldTickList();
@@ -99,9 +99,9 @@ public class TickListSplitter
 		}
 	}
 
-	private void throttleTick(GList<Object> tickListCopy, GMap<Object, Integer> withold)
+	private void throttleTick(Set<Object> master2, GMap<Object, Integer> withold)
 	{
-		for(Object i : new GList<>(tickListCopy))
+		for(Object i : new GList<>(master2))
 		{
 			Block b = host.getBlock(world, i);
 			Material t = b.getType();
@@ -109,19 +109,19 @@ public class TickListSplitter
 			if(witholdChunks.containsKey(b.getChunk()) && witholdTicks.containsKey(b.getChunk()) && witholdTicks.get(b.getChunk()) > 0)
 			{
 				withold.put(i, witholdChunks.get(b.getChunk()));
-				tickListCopy.remove(i);
+				master2.remove(i);
 			}
 
 			else if(witholdTypes.containsKey(t))
 			{
 				withold.put(i, witholdTypes.get(t));
-				tickListCopy.remove(i);
+				master2.remove(i);
 			}
 
 			else if(globalThrottle > 0)
 			{
 				withold.put(i, globalThrottle);
-				tickListCopy.remove(i);
+				master2.remove(i);
 			}
 		}
 	}
@@ -149,7 +149,7 @@ public class TickListSplitter
 
 			if(withold.get(i) <= 0)
 			{
-				withold.remove(i);
+				withold.remove(i, withold.get(i));
 				master.add(i);
 			}
 		}
