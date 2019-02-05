@@ -41,7 +41,8 @@ import com.volmit.react.util.Profiler;
 import com.volmit.react.util.S;
 import com.volmit.react.util.TICK;
 import com.volmit.volume.bukkit.util.sound.GSound;
-import com.volmit.volume.lang.collections.GList;
+
+import primal.lang.collection.GList;
 
 public class EntityStackController extends Controller
 {

@@ -4,7 +4,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
 import com.volmit.react.util.Cuboid.CuboidDirection;
-import com.volmit.volume.lang.collections.GList;
+
+import primal.lang.collection.GList;
 
 /**
  * Directions

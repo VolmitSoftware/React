@@ -1,4 +1,4 @@
-package com.volmit.react.util.nmp;
+package com.volmit.react.util;
 
 import java.util.Set;
 
@@ -8,10 +8,11 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 
 import com.volmit.react.Config;
-import com.volmit.react.util.RollingAverage;
-import com.volmit.volume.lang.collections.GList;
-import com.volmit.volume.lang.collections.GMap;
-import com.volmit.volume.math.M;
+
+import primal.bukkit.nms.Catalyst;
+import primal.bukkit.nms.CatalystHost;
+import primal.lang.collection.GList;
+import primal.lang.collection.GMap;
 
 public class TickListSplitter
 {

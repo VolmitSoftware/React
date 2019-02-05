@@ -19,8 +19,9 @@ import com.volmit.react.util.C;
 import com.volmit.react.util.F;
 import com.volmit.react.util.M;
 import com.volmit.react.util.P;
-import com.volmit.volume.lang.collections.GList;
-import com.volmit.volume.lang.collections.GMap;
+
+import primal.lang.collection.GList;
+import primal.lang.collection.GMap;
 
 public class CommandPing extends ReactCommand
 {

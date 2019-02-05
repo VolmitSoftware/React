@@ -44,8 +44,9 @@ import com.volmit.react.util.nmp.NMP;
 import com.volmit.react.xmonitor.TitleCollection;
 import com.volmit.react.xmonitor.TitleHeader;
 import com.volmit.volume.bukkit.util.sound.GSound;
-import com.volmit.volume.lang.collections.GMap;
-import com.volmit.volume.lang.collections.GSet;
+
+import primal.lang.collection.GMap;
+import primal.lang.collection.GSet;
 
 @AsyncTick
 public class MonitorController extends Controller

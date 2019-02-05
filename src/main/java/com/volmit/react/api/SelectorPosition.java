@@ -11,7 +11,8 @@ import org.bukkit.entity.Player;
 
 import com.volmit.react.util.Ex;
 import com.volmit.react.util.W;
-import com.volmit.volume.lang.collections.GSet;
+
+import primal.lang.collection.GSet;
 
 public class SelectorPosition extends Selector
 {

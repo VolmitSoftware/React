@@ -2,7 +2,7 @@ package com.volmit.react.api;
 
 import java.io.File;
 
-import com.volmit.volume.lang.collections.GMap;
+import primal.lang.collection.GMap;
 
 public interface IRecordBook<T extends IRecord<?>>
 {

@@ -65,12 +65,12 @@ import com.volmit.react.util.TaskLater;
 import com.volmit.react.util.W;
 import com.volmit.react.util.nmp.FrameType;
 import com.volmit.react.util.nmp.NMP;
-import com.volmit.volume.lang.collections.GList;
-import com.volmit.volume.lang.collections.GMap;
-import com.volmit.volume.lang.collections.GSet;
 
 import io.lumine.xikage.mythicmobs.MythicMobs;
 import io.lumine.xikage.mythicmobs.mobs.MythicMob;
+import primal.lang.collection.GList;
+import primal.lang.collection.GMap;
+import primal.lang.collection.GSet;
 
 public class Gate
 {

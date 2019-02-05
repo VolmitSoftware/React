@@ -18,7 +18,8 @@ import com.volmit.react.util.C;
 import com.volmit.react.util.Ex;
 import com.volmit.react.util.F;
 import com.volmit.react.util.Platform;
-import com.volmit.volume.lang.collections.GList;
+
+import primal.lang.collection.GList;
 
 public class CommandEnvironment extends ReactCommand
 {

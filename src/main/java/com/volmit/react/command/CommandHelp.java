@@ -22,8 +22,9 @@ import com.volmit.react.util.F;
 import com.volmit.react.util.RTEX;
 import com.volmit.react.util.RTX;
 import com.volmit.react.util.RawText;
-import com.volmit.volume.lang.collections.GList;
-import com.volmit.volume.lang.collections.GMap;
+
+import primal.lang.collection.GList;
+import primal.lang.collection.GMap;
 
 public class CommandHelp extends ReactCommand
 {

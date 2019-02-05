@@ -7,7 +7,8 @@ import com.volmit.react.Gate;
 import com.volmit.react.Lang;
 import com.volmit.react.util.C;
 import com.volmit.react.util.Protocol;
-import com.volmit.volume.lang.collections.GList;
+
+import primal.lang.collection.GList;
 
 public class Capability
 {

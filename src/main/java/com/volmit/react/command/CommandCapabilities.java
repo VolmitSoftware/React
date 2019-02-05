@@ -14,7 +14,8 @@ import com.volmit.react.api.ReactCommand;
 import com.volmit.react.api.SideGate;
 import com.volmit.react.util.C;
 import com.volmit.react.util.Protocol;
-import com.volmit.volume.lang.collections.GList;
+
+import primal.lang.collection.GList;
 
 public class CommandCapabilities extends ReactCommand
 {

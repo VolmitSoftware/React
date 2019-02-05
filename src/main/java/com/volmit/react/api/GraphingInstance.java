@@ -26,7 +26,8 @@ import com.volmit.react.util.M;
 import com.volmit.react.util.MSound;
 import com.volmit.react.util.Task;
 import com.volmit.volume.bukkit.util.sound.GSound;
-import com.volmit.volume.lang.collections.GList;
+
+import primal.lang.collection.GList;
 
 public class GraphingInstance implements Listener
 {

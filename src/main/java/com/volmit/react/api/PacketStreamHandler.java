@@ -7,7 +7,8 @@ import com.comphenix.protocol.events.ListenerPriority;
 import com.comphenix.protocol.events.PacketEvent;
 import com.comphenix.protocol.events.PacketOutputHandler;
 import com.volmit.react.ReactPlugin;
-import com.volmit.volume.lang.collections.GMap;
+
+import primal.lang.collection.GMap;
 
 public class PacketStreamHandler implements PacketOutputHandler
 {

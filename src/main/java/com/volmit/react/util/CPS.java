@@ -14,8 +14,8 @@ import java.util.zip.ZipInputStream;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
 
-import com.volmit.volume.lang.collections.GList;
-import com.volmit.volume.lang.collections.GMap;
+import primal.lang.collection.GList;
+import primal.lang.collection.GMap;
 
 public class CPS
 {

@@ -30,8 +30,9 @@ import com.volmit.react.util.inventory.UIElement;
 import com.volmit.react.util.inventory.UIPaneDecorator;
 import com.volmit.react.util.inventory.UIWindow;
 import com.volmit.react.util.inventory.Window;
-import com.volmit.volume.lang.collections.GList;
-import com.volmit.volume.lang.collections.GMap;
+
+import primal.lang.collection.GList;
+import primal.lang.collection.GMap;
 
 public class CommandTopChunk extends ReactCommand
 {

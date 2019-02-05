@@ -22,9 +22,10 @@ import com.volmit.react.util.M;
 import com.volmit.react.util.RTEX;
 import com.volmit.react.util.RTX;
 import com.volmit.react.util.S;
-import com.volmit.volume.lang.collections.GList;
-import com.volmit.volume.lang.collections.GMap;
-import com.volmit.volume.lang.format.F;
+
+import primal.lang.collection.GList;
+import primal.lang.collection.GMap;
+import primal.logic.format.F;
 
 public class CrashController extends Controller
 {

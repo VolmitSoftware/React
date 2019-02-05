@@ -20,7 +20,8 @@ import com.volmit.react.util.Controller;
 import com.volmit.react.util.Ex;
 import com.volmit.react.util.JSONObject;
 import com.volmit.react.util.M;
-import com.volmit.volume.lang.collections.GMap;
+
+import primal.lang.collection.GMap;
 
 @AsyncTick
 public class PhysicsController extends Controller

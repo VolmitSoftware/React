@@ -2,7 +2,7 @@ package com.volmit.react.api;
 
 import org.bukkit.entity.Entity;
 
-import com.volmit.volume.lang.collections.GSet;
+import primal.lang.collection.GSet;
 
 public class CullList
 {

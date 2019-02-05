@@ -15,9 +15,10 @@ import com.volmit.react.api.ReactCommand;
 import com.volmit.react.api.SideGate;
 import com.volmit.react.util.F;
 import com.volmit.react.util.M;
-import com.volmit.volume.lang.collections.GList;
-import com.volmit.volume.lang.collections.GMap;
-import com.volmit.volume.lang.collections.GSet;
+
+import primal.lang.collection.GList;
+import primal.lang.collection.GMap;
+import primal.lang.collection.GSet;
 
 public class CommandAccess extends ReactCommand
 {

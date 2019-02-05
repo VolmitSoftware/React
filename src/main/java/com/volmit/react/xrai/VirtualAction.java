@@ -11,8 +11,9 @@ import com.volmit.react.api.SelectorParseException;
 import com.volmit.react.api.SelectorPosition;
 import com.volmit.react.api.SelectorTime;
 import com.volmit.react.util.JSONObject;
-import com.volmit.volume.lang.collections.GList;
-import com.volmit.volume.lang.collections.GMap;
+
+import primal.lang.collection.GList;
+import primal.lang.collection.GMap;
 
 public class VirtualAction
 {

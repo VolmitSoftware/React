@@ -21,7 +21,8 @@ import com.volmit.react.api.SampledType;
 import com.volmit.react.api.SideGate;
 import com.volmit.react.util.C;
 import com.volmit.react.util.F;
-import com.volmit.volume.lang.collections.GList;
+
+import primal.lang.collection.GList;
 
 public class CommandStatus extends ReactCommand
 {

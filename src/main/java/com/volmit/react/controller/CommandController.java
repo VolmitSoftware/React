@@ -61,7 +61,8 @@ import com.volmit.react.util.Ex;
 import com.volmit.react.util.F;
 import com.volmit.react.util.JSONObject;
 import com.volmit.react.xrai.RAIGoal;
-import com.volmit.volume.lang.collections.GList;
+
+import primal.lang.collection.GList;
 
 public class CommandController extends Controller implements Listener, CommandExecutor, TabCompleter
 {

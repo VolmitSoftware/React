@@ -20,7 +20,8 @@ import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.RegisteredListener;
 
 import com.volmit.react.ReactPlugin;
-import com.volmit.volume.lang.collections.GList;
+
+import primal.lang.collection.GList;
 
 /*
  * #%L

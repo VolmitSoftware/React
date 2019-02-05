@@ -6,7 +6,8 @@ import com.volmit.react.Config;
 import com.volmit.react.util.Ex;
 import com.volmit.react.util.M;
 import com.volmit.react.xrai.GoalManager;
-import com.volmit.volume.lang.collections.GList;
+
+import primal.lang.collection.GList;
 
 public class RAI implements IRAI
 {

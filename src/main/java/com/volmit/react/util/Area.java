@@ -8,7 +8,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 
-import com.volmit.volume.lang.collections.GList;
+import primal.lang.collection.GList;
 
 /**
  * Used to Create an instance of a spherical area based on a central location

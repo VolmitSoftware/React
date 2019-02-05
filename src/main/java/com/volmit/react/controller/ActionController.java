@@ -15,6 +15,7 @@ import com.volmit.react.action.ActionFixLighting;
 import com.volmit.react.action.ActionPullTimings;
 import com.volmit.react.action.ActionPurgeChunks;
 import com.volmit.react.action.ActionPurgeEntities;
+import com.volmit.react.action.ActionThrottlePhysics;
 import com.volmit.react.api.ActionAlreadyRunningException;
 import com.volmit.react.api.ActionException;
 import com.volmit.react.api.ActionState;
@@ -38,9 +39,10 @@ import com.volmit.react.util.inventory.UIElement;
 import com.volmit.react.util.inventory.UIWindow;
 import com.volmit.react.util.inventory.Window;
 import com.volmit.react.util.inventory.WindowResolution;
-import com.volmit.volume.lang.collections.GList;
-import com.volmit.volume.lang.collections.GMap;
-import com.volmit.volume.lang.collections.GTriset;
+
+import primal.lang.collection.GList;
+import primal.lang.collection.GMap;
+import primal.lang.collection.GTriset;
 
 public class ActionController extends Controller
 {
@@ -124,6 +126,7 @@ public class ActionController extends Controller
 		registerAction(new ActionCPUScore());
 		registerAction(new ActionDump());
 		registerAction(new ActionFileSize());
+		registerAction(new ActionThrottlePhysics());
 	}
 
 	@SuppressWarnings("deprecation")
@@ -345,6 +348,7 @@ public class ActionController extends Controller
 			catch(ActionException e)
 			{
 				pending.remove(d);
+				Ex.t(e);
 			}
 		}
 

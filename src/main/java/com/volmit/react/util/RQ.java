@@ -2,7 +2,7 @@ package com.volmit.react.util;
 
 import org.bukkit.Bukkit;
 
-import com.volmit.volume.lang.collections.GList;
+import primal.lang.collection.GList;
 
 public class RQ extends Thread
 {
@@ -56,7 +56,7 @@ public class RQ extends Thread
 			{
 				Bukkit.getScheduler().scheduleAsyncDelayedTask(Bukkit.getPluginManager().getPlugin("React"), a);
 			}
-			
+
 			catch(Throwable e)
 			{
 				// Hush

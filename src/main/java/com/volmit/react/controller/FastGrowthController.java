@@ -16,7 +16,8 @@ import com.volmit.react.util.JSONObject;
 import com.volmit.react.util.M;
 import com.volmit.react.util.MaterialBlock;
 import com.volmit.react.util.TICK;
-import com.volmit.volume.lang.collections.GMap;
+
+import primal.lang.collection.GMap;
 
 public class FastGrowthController extends Controller
 {

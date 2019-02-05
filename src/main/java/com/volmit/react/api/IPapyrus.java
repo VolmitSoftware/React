@@ -3,7 +3,7 @@ package com.volmit.react.api;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.map.MapView;
 
-import com.volmit.volume.lang.collections.GList;
+import primal.lang.collection.GList;
 
 public interface IPapyrus
 {

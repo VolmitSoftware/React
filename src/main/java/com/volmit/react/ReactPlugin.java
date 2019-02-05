@@ -34,7 +34,8 @@ import com.volmit.react.util.nmp.FrameType;
 import com.volmit.react.util.nmp.NMP;
 import com.volmit.react.util.nmp.NMSVersion;
 import com.volmit.react.util.nmp.Psycho;
-import com.volmit.volume.lang.collections.GList;
+
+import primal.lang.collection.GList;
 
 public class ReactPlugin extends JavaPlugin
 {

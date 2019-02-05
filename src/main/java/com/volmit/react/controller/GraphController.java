@@ -38,8 +38,9 @@ import com.volmit.react.util.F;
 import com.volmit.react.util.JSONObject;
 import com.volmit.react.util.P;
 import com.volmit.react.util.S;
-import com.volmit.volume.lang.collections.GList;
-import com.volmit.volume.lang.collections.GMap;
+
+import primal.lang.collection.GList;
+import primal.lang.collection.GMap;
 
 public class GraphController extends Controller
 {

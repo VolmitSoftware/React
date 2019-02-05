@@ -19,7 +19,8 @@ import com.volmit.react.util.JSONObject;
 import com.volmit.react.util.M;
 import com.volmit.react.util.Platform;
 import com.volmit.react.util.S;
-import com.volmit.volume.lang.collections.GList;
+
+import primal.lang.collection.GList;
 
 public class ReactServer extends Thread
 {

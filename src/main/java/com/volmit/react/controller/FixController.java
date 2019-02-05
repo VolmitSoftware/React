@@ -12,7 +12,8 @@ import com.volmit.react.fix.FixLowMM;
 import com.volmit.react.util.C;
 import com.volmit.react.util.Controller;
 import com.volmit.react.util.JSONObject;
-import com.volmit.volume.lang.collections.GList;
+
+import primal.lang.collection.GList;
 
 public class FixController extends Controller
 {

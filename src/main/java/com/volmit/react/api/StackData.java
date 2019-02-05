@@ -13,8 +13,9 @@ import java.util.zip.GZIPOutputStream;
 import org.bukkit.entity.LivingEntity;
 
 import com.volmit.react.React;
-import com.volmit.volume.lang.collections.GMap;
-import com.volmit.volume.lang.collections.GSet;
+
+import primal.lang.collection.GMap;
+import primal.lang.collection.GSet;
 
 public class StackData
 {

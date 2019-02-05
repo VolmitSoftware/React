@@ -1,7 +1,8 @@
 package com.volmit.react.api;
 
 import com.volmit.react.xrai.GoalManager;
-import com.volmit.volume.lang.collections.GList;
+
+import primal.lang.collection.GList;
 
 public interface IRAI
 {

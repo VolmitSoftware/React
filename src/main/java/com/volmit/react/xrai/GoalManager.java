@@ -23,7 +23,8 @@ import com.volmit.react.util.M;
 import com.volmit.react.util.Paste;
 import com.volmit.react.util.S;
 import com.volmit.react.util.TaskLater;
-import com.volmit.volume.lang.collections.GList;
+
+import primal.lang.collection.GList;
 
 public class GoalManager
 {

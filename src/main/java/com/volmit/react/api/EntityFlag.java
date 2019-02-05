@@ -12,7 +12,8 @@ import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
 
 import com.volmit.react.Gate;
 import com.volmit.react.React;
-import com.volmit.volume.lang.collections.GSet;
+
+import primal.lang.collection.GSet;
 
 public enum EntityFlag
 {

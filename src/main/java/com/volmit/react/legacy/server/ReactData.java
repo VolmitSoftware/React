@@ -2,7 +2,8 @@ package com.volmit.react.legacy.server;
 
 import com.volmit.react.React;
 import com.volmit.react.api.SampledType;
-import com.volmit.volume.lang.collections.GMap;
+
+import primal.lang.collection.GMap;
 
 public class ReactData
 {

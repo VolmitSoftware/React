@@ -5,7 +5,8 @@ import java.io.File;
 import org.bukkit.Bukkit;
 
 import com.volmit.react.Surge;
-import com.volmit.volume.lang.collections.GList;
+
+import primal.lang.collection.GList;
 
 public class D
 {

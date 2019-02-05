@@ -3,7 +3,8 @@ package com.volmit.react.util;
 import com.volmit.react.React;
 import com.volmit.react.Surge;
 import com.volmit.react.controller.CrashController;
-import com.volmit.volume.lang.collections.GList;
+
+import primal.lang.collection.GList;
 
 public abstract class TPSMonitor extends Thread
 {

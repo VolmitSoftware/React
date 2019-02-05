@@ -7,7 +7,7 @@ import java.io.InputStream;
 
 import javax.crypto.Cipher;
 
-import com.volmit.volume.lang.collections.GList;
+import primal.lang.collection.GList;
 
 /**
  * A pretty good input stream

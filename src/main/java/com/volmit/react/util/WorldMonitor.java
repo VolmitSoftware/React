@@ -16,7 +16,8 @@ import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
 
 import com.volmit.react.Surge;
-import com.volmit.volume.lang.collections.GList;
+
+import primal.lang.collection.GList;
 
 @SuppressWarnings("deprecation")
 public abstract class WorldMonitor implements Listener

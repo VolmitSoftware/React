@@ -1,7 +1,8 @@
 package com.volmit.react.xrai;
 
 import com.volmit.react.util.JSONArray;
-import com.volmit.volume.lang.collections.GList;
+
+import primal.lang.collection.GList;
 
 public class ConditionSet
 {

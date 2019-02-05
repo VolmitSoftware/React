@@ -20,7 +20,7 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 
-import com.volmit.volume.lang.collections.GList;
+import primal.lang.collection.GList;
 
 /**
  * World utils

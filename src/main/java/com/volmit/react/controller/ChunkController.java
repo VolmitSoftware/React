@@ -13,7 +13,8 @@ import com.volmit.react.util.Average;
 import com.volmit.react.util.Controller;
 import com.volmit.react.util.JSONObject;
 import com.volmit.react.util.M;
-import com.volmit.volume.lang.collections.GMap;
+
+import primal.lang.collection.GMap;
 
 public class ChunkController extends Controller
 {

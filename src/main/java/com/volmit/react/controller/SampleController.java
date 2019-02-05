@@ -72,8 +72,9 @@ import com.volmit.react.util.SuperSampler;
 import com.volmit.react.util.TICK;
 import com.volmit.react.util.TaskLater;
 import com.volmit.react.util.TimingsReport;
-import com.volmit.volume.lang.collections.GList;
-import com.volmit.volume.lang.collections.GMap;
+
+import primal.lang.collection.GList;
+import primal.lang.collection.GMap;
 
 @AsyncTick
 public class SampleController extends Controller

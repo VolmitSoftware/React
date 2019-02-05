@@ -1,6 +1,6 @@
 package com.volmit.react.api;
 
-import com.volmit.volume.lang.collections.GMap;
+import primal.lang.collection.GMap;
 
 public abstract class ReactCommand implements ICommand
 {
