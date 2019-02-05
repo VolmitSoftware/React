@@ -6,7 +6,6 @@ import org.bukkit.inventory.ItemStack;
 
 import com.volmit.react.Gate;
 import com.volmit.react.Info;
-import com.volmit.react.Lang;
 import com.volmit.react.api.Action;
 import com.volmit.react.api.ActionState;
 import com.volmit.react.api.ActionType;
@@ -83,7 +82,7 @@ public class ActionThrottlePhysics extends Action
 			}
 		}
 
-		source.sendResponseActing("Throttling " + F.f(tchu) + " chunk" + ((tchu > 1 || tchu == 0) ? "s" : "")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+		source.sendResponseActing("Throttling " + F.f(tchu) + " chunk" + ((tchu > 1 || tchu == 0) ? "s" : "") + " for " + F.time(timeFor, 1)); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 
 		for(ISelector i : selectors)
 		{
@@ -133,7 +132,7 @@ public class ActionThrottlePhysics extends Action
 											if(completed.get() == total.get())
 											{
 												completeAction();
-												source.sendResponseSuccess(Lang.getString("action.purge-chunks.purged") + F.f(acompleted.get()) + Lang.getString("action.purge-chunks.chunk") + ((acompleted.get() > 1 || acompleted.get() == 0) ? "s" : "")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+												source.sendResponseSuccess("Throttled " + F.f(acompleted.get()) + " chunk" + ((acompleted.get() > 1 || acompleted.get() == 0) ? "s" : "")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 											}
 										}
 									}, source, selectors);
