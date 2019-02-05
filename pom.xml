@@ -230,8 +230,8 @@
 		</dependency>
 		<dependency>
 			<groupId>com.volmit</groupId>
-			<artifactId>VolumePlugin</artifactId>
-			<version>1.11</version>
+			<artifactId>Primal</artifactId>
+			<version>1.0.6</version>
 		</dependency>
 	</dependencies>
 </project>
