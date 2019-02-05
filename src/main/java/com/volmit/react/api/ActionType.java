@@ -6,6 +6,7 @@ public enum ActionType
 {
 	FIX_LIGHTING(ActionHandle.MUTEX, ActionTargetType.POSITIONAL, Info.ACTION_FIX_LIGHTING_NAME, Info.ACTION_FIX_LIGHTING_DESCRIPTION),
 	CPU_SCORE(ActionHandle.MUTEX, ActionTargetType.SYSTEM, "CPU Score", "Tempts the processor to turbo and catches the score."),
+	THROTTLE_PHYSICS(ActionHandle.MUTEX, ActionTargetType.POSITIONAL, "Throttle Physics", "Reduces physics ticking in the specified chunks."),
 	DUMP(ActionHandle.MUTEX, ActionTargetType.SYSTEM, "Dump", "Dumps debugging and performance information into paste."),
 	FILE_SIZE(ActionHandle.MUTEX, ActionTargetType.SYSTEM, "File Size", "Checks the server files for a size report."),
 	TIMINGS(ActionHandle.MUTEX, ActionTargetType.SYSTEM, "Timings Report", "Pulls a timings report for some time."),
