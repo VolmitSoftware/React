@@ -1,5 +1,7 @@
 package com.volmit.react.util;
 
+import primal.util.text.C;
+
 /**
  * Colored circle spinner
  *

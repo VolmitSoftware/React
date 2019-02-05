@@ -16,6 +16,7 @@ import org.bukkit.plugin.Plugin;
 
 import primal.lang.collection.GList;
 import primal.lang.collection.GMap;
+import primal.util.text.C;
 
 public class CPS
 {

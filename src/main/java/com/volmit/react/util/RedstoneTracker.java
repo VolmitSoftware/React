@@ -15,6 +15,7 @@ import com.volmit.react.Surge;
 import com.volmit.react.api.SampledType;
 import com.volmit.react.controller.FeatureController;
 
+import primal.bukkit.world.MaterialBlock;
 import primal.lang.collection.GList;
 
 public class RedstoneTracker implements Listener

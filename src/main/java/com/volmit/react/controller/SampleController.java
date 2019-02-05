@@ -57,7 +57,6 @@ import com.volmit.react.sampler.SampleTileTime;
 import com.volmit.react.sampler.SampleTileTimeLock;
 import com.volmit.react.util.AsyncTick;
 import com.volmit.react.util.Average;
-import com.volmit.react.util.C;
 import com.volmit.react.util.Control;
 import com.volmit.react.util.Controller;
 import com.volmit.react.util.D;
@@ -75,6 +74,7 @@ import com.volmit.react.util.TimingsReport;
 
 import primal.lang.collection.GList;
 import primal.lang.collection.GMap;
+import primal.util.text.C;
 
 @AsyncTick
 public class SampleController extends Controller

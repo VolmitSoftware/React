@@ -17,8 +17,9 @@ import com.volmit.react.nms.NMSBinding92;
 import com.volmit.react.nms.NMSBinding94;
 import com.volmit.react.util.Controller;
 import com.volmit.react.util.JSONObject;
-import com.volmit.react.util.MaterialBlock;
 import com.volmit.react.util.Protocol;
+
+import primal.bukkit.world.MaterialBlock;
 
 public class FeatureController extends Controller implements INMSBinding
 {

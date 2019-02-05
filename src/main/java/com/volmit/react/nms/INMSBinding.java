@@ -4,7 +4,7 @@ import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 
-import com.volmit.react.util.MaterialBlock;
+import primal.bukkit.world.MaterialBlock;
 
 public interface INMSBinding
 {

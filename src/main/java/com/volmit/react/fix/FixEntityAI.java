@@ -6,9 +6,10 @@ import org.bukkit.entity.LivingEntity;
 
 import com.volmit.react.Gate;
 import com.volmit.react.api.Capability;
-import com.volmit.react.util.C;
 import com.volmit.react.util.F;
 import com.volmit.react.util.Worlds;
+
+import primal.util.text.C;
 
 public class FixEntityAI extends Fix
 {

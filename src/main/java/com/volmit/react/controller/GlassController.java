@@ -26,10 +26,10 @@ import com.volmit.react.util.A;
 import com.volmit.react.util.Controller;
 import com.volmit.react.util.Ex;
 import com.volmit.react.util.JSONObject;
-import com.volmit.react.util.MaterialBlock;
 import com.volmit.react.util.ParticleEffect;
 import com.volmit.react.util.Task;
 
+import primal.bukkit.world.MaterialBlock;
 import primal.lang.collection.GList;
 import primal.lang.collection.GMap;
 

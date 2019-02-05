@@ -11,7 +11,6 @@ import com.volmit.react.api.Note;
 import com.volmit.react.api.Notification;
 import com.volmit.react.api.Permissable;
 import com.volmit.react.api.ReactPlayer;
-import com.volmit.react.util.C;
 import com.volmit.react.util.Callback;
 import com.volmit.react.util.Controller;
 import com.volmit.react.util.D;
@@ -21,6 +20,7 @@ import com.volmit.react.util.JSONObject;
 import com.volmit.react.util.TXT;
 
 import primal.lang.collection.GList;
+import primal.util.text.C;
 
 public class MessageController extends Controller
 {

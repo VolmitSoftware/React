@@ -104,7 +104,7 @@ public class SpikeController extends Controller
 
 						for(String j : gv)
 						{
-							if(!spikes.contains(j))
+							if(!spikes.containsKey(j))
 							{
 								spikes.put(j, 0);
 							}

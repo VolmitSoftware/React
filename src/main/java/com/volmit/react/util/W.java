@@ -20,6 +20,7 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 
+import primal.bukkit.world.MaterialBlock;
 import primal.lang.collection.GList;
 
 /**

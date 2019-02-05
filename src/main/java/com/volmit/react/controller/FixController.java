@@ -9,11 +9,11 @@ import com.volmit.react.api.IFix;
 import com.volmit.react.fix.FixEntityAI;
 import com.volmit.react.fix.FixInvisibleChunk;
 import com.volmit.react.fix.FixLowMM;
-import com.volmit.react.util.C;
 import com.volmit.react.util.Controller;
 import com.volmit.react.util.JSONObject;
 
 import primal.lang.collection.GList;
+import primal.util.text.C;
 
 public class FixController extends Controller
 {

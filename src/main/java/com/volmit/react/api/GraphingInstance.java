@@ -24,8 +24,8 @@ import com.volmit.react.util.F;
 import com.volmit.react.util.M;
 import com.volmit.react.util.MSound;
 import com.volmit.react.util.Task;
-import com.volmit.volume.bukkit.util.sound.GSound;
 
+import primal.bukkit.sound.GSound;
 import primal.lang.collection.GList;
 import primal.util.text.C;
 

@@ -3,7 +3,8 @@ package com.volmit.react.fix;
 import org.bukkit.command.CommandSender;
 
 import com.volmit.react.Gate;
-import com.volmit.react.util.C;
+
+import primal.util.text.C;
 
 public class FixLowMM extends Fix
 {

@@ -4,9 +4,10 @@ import com.volmit.react.Lang;
 import com.volmit.react.api.IFormatter;
 import com.volmit.react.api.MSampler;
 import com.volmit.react.api.SampledType;
-import com.volmit.react.util.C;
 import com.volmit.react.util.F;
 import com.volmit.react.util.M;
+
+import primal.util.text.C;
 
 public class SampleTicksPerSecond extends MSampler
 {

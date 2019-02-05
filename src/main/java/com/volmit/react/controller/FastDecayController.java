@@ -24,12 +24,12 @@ import com.volmit.react.util.Ex;
 import com.volmit.react.util.JSONObject;
 import com.volmit.react.util.M;
 import com.volmit.react.util.MSound;
-import com.volmit.react.util.MaterialBlock;
 import com.volmit.react.util.S;
 import com.volmit.react.util.TICK;
 import com.volmit.react.util.W;
-import com.volmit.volume.bukkit.util.sound.GSound;
 
+import primal.bukkit.sound.GSound;
+import primal.bukkit.world.MaterialBlock;
 import primal.lang.collection.GList;
 
 public class FastDecayController extends Controller
