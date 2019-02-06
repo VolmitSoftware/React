@@ -41,7 +41,7 @@ public class Config
 	@Comment("Slows down block physics on a per world basis if the maximum ticks per world is exceeded")
 	@Key("features.react.tick-splitter.max-ticks-per-world")
 	@Injection(InjectionMethod.SWAP)
-	public static int MAX_TICKS_PER_WORLD = 135;
+	public static int MAX_TICKS_PER_WORLD = 185;
 
 	@Comment("Slows down block physics on a per world basis.")
 	@Key("features.react.tick-splitter.enabled")
