@@ -99,4 +99,27 @@ public class TitleMonitor
 
 		return m.substring(1);
 	}
+
+	public String getConsoleHotbar()
+	{
+		String m = "";
+		int sl = 0;
+		int sel = -1;
+
+		for(MonitorHeading i : headings)
+		{
+			String pd = C.DARK_GRAY.toString();
+			String po = i.getHead().getColor().toString();
+			String pc = (sel == -1 || sl == sel) ? po : pd;
+			m += " " + C.RESET + pc + i.getHead().get();
+			sl++;
+		}
+
+		if(m.length() < 2)
+		{
+			return m;
+		}
+
+		return m.substring(1);
+	}
 }
