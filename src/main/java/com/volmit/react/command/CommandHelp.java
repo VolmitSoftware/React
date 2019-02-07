@@ -57,7 +57,7 @@ public class CommandHelp extends ReactCommand
 
 		else
 		{
-			for(ICommand i : getSortedCommands())
+			for(ICommand i : getSortedCommands(false))
 			{
 				sendCommand(sender, i);
 			}
@@ -71,7 +71,7 @@ public class CommandHelp extends ReactCommand
 			return;
 		}
 
-		if(page >= getPageSize(maxEntries))
+		if(page >= getPageSize(maxEntries, !(sender instanceof Player)))
 		{
 			return;
 		}
@@ -79,7 +79,7 @@ public class CommandHelp extends ReactCommand
 		sender.sendMessage("  "); //$NON-NLS-1$
 		sendHeader(sender, page, maxEntries);
 
-		for(ICommand i : getPage(page, maxEntries))
+		for(ICommand i : getPage(page, maxEntries, !(sender instanceof Player)))
 		{
 			sendCommand(sender, i);
 		}
@@ -184,7 +184,7 @@ public class CommandHelp extends ReactCommand
 			String dgray = Config.STYLE_STRIP_COLOR ? RawText.COLOR_WHITE : RawText.COLOR_DARK_GRAY;
 			String daq = Config.STYLE_STRIP_COLOR ? RawText.COLOR_WHITE : RawText.COLOR_AQUA;
 			rtx.addText(F.repeat(gray + " ", 17), dgray, false, false, true, true, false); //$NON-NLS-1$
-			rtx.addText(" " + (page + 1) + Lang.getString("command.help.ofs") + (getPageSize(maxEntries)) + " ", daq); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+			rtx.addText(" " + (page + 1) + Lang.getString("command.help.ofs") + (getPageSize(maxEntries, false)) + " ", daq); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			rtx.addText(F.repeat(gray + " ", 17), dgray, false, false, true, true, false); //$NON-NLS-1$
 			rtx.tellRawTo(ReactPlugin.i, (Player) sender);
 		}
@@ -212,7 +212,7 @@ public class CommandHelp extends ReactCommand
 			rtx.addText(F.repeat(C.GRAY + " ", 17), dgray, false, false, true, true, false); //$NON-NLS-1$
 			rtx.addText(F.repeat(C.GRAY + " ", 17), dgray, false, false, true, true, false); //$NON-NLS-1$
 
-			if(page < getPageSize(maxEntries) - 1)
+			if(page < getPageSize(maxEntries, false) - 1)
 			{
 				rtx.addTextWithHoverCommand(Lang.getString("command.help.symbol-next"), daq, Lang.getString("command.help.rehelpjumper") + (page + 2), Lang.getString("command.help.next-page"), daq, false, false, false, false, false); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			}
@@ -226,21 +226,26 @@ public class CommandHelp extends ReactCommand
 		}
 	}
 
-	public GList<ICommand> getSortedCommands()
+	public GList<ICommand> getSortedCommands(boolean console)
 	{
 		GMap<String, ICommand> cmds = new GMap<String, ICommand>();
 
 		for(ICommand i : React.instance.commandController.getCommands())
 		{
+			if(i.getSideGate().equals(SideGate.PLAYERS_ONLY))
+			{
+				continue;
+			}
+
 			cmds.put(i.getCommand(), i);
 		}
 
 		return cmds.sortV();
 	}
 
-	public int getPageSize(int maxEntries)
+	public int getPageSize(int maxEntries, boolean console)
 	{
-		int s = getSortedCommands().size();
+		int s = getSortedCommands(console).size();
 
 		if((double) s % (double) maxEntries > 0)
 		{
@@ -250,22 +255,22 @@ public class CommandHelp extends ReactCommand
 		return (int) ((double) s / (double) maxEntries);
 	}
 
-	public boolean isValidPage(int page, int maxEntries)
+	public boolean isValidPage(int page, int maxEntries, boolean console)
 	{
-		return page < getPageSize(maxEntries) || page >= 0;
+		return page < getPageSize(maxEntries, console) || page >= 0;
 	}
 
-	public GList<ICommand> getPage(int page, int maxEntries)
+	public GList<ICommand> getPage(int page, int maxEntries, boolean console)
 	{
-		if(!isValidPage(page, maxEntries))
+		if(!isValidPage(page, maxEntries, console))
 		{
 			return null;
 		}
 
 		int start = page * maxEntries;
 		int end = start + maxEntries - 1;
-		end = getSortedCommands().getIndexOrLast(end);
+		end = getSortedCommands(console).getIndexOrLast(end);
 
-		return getSortedCommands().grepExplicit(start, end);
+		return getSortedCommands(console).grepExplicit(start, end);
 	}
 }
