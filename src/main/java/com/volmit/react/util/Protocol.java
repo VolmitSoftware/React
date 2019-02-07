@@ -195,6 +195,21 @@ public enum Protocol
 		return getMetaVersion();
 	}
 
+	public static boolean isNewAPI()
+	{
+		return R1_13.to(LATEST).contains(getProtocolVersion());
+	}
+
+	public static boolean isOldAPI()
+	{
+		return R1_9.to(R1_12_2).contains(getProtocolVersion());
+	}
+
+	public static boolean isAncientAPI()
+	{
+		return EARLIEST.to(R1_8).contains(getProtocolVersion());
+	}
+
 	public int getCVersion()
 	{
 		if(isActualVersion() && !isNettySupported())
