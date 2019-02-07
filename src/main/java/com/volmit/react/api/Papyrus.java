@@ -1,15 +1,20 @@
 package com.volmit.react.api;
 
+import java.lang.reflect.Method;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.MapMeta;
 import org.bukkit.map.MapCanvas;
 import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
 
 import com.volmit.react.util.A;
+import com.volmit.react.util.Ex;
+import com.volmit.react.util.Protocol;
 
 import primal.lang.collection.GList;
 
@@ -22,7 +27,7 @@ public class Papyrus extends MapRenderer implements IPapyrus
 
 	public Papyrus(World world)
 	{
-		map = Bukkit.createMap(world);
+		map = createMap(world);
 		frameBuffer = new BufferedFrame();
 		lastFrameBuffer = new BufferedFrame();
 		renderers = new GList<IRenderer>();
@@ -33,6 +38,11 @@ public class Papyrus extends MapRenderer implements IPapyrus
 		}
 
 		map.addRenderer(this);
+	}
+
+	private MapView createMap(World world)
+	{
+		return Bukkit.createMap(world);
 	}
 
 	@Override
@@ -120,7 +130,31 @@ public class Papyrus extends MapRenderer implements IPapyrus
 	public ItemStack makeMapItem()
 	{
 		ItemStack is = new ItemStack(Material.MAP);
-		is.setDurability(map.getId());
+
+		if(Protocol.isNewAPI())
+		{
+			MapMeta mm = (MapMeta) is.getItemMeta();
+
+			try
+			{
+				Method m = mm.getClass().getMethod("setMapId", int.class);
+				m.setAccessible(true);
+				m.invoke(mm, (int) map.getId());
+			}
+
+			catch(Throwable e)
+			{
+				Ex.t(e);
+			}
+
+			is.setItemMeta(mm);
+		}
+
+		else
+		{
+			is.setDurability(map.getId());
+		}
+
 		return is;
 	}
 }

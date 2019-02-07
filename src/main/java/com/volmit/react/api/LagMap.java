@@ -59,63 +59,79 @@ public class LagMap
 
 	public void pump()
 	{
-		for(Chunk i : chunks.k())
+		try
 		{
-			try
+			for(Chunk i : chunks.k())
 			{
-				chunks.get(i).pump();
-			}
-
-			catch(Throwable e)
-			{
-				Ex.t(e);
-			}
-
-			try
-			{
-				if(chunks.get(i).getHits().isEmpty())
+				try
 				{
-					chunks.remove(i);
+					chunks.get(i).pump();
+				}
+
+				catch(Throwable e)
+				{
+					Ex.t(e);
+				}
+
+				try
+				{
+					if(chunks.get(i).getHits().isEmpty())
+					{
+						chunks.remove(i);
+					}
+				}
+
+				catch(Throwable e)
+				{
+					Ex.t(e);
+
+					if(i != null && chunks != null)
+					{
+						chunks.remove(i);
+					}
 				}
 			}
+		}
 
-			catch(Throwable e)
-			{
-				Ex.t(e);
-
-				if(i != null && chunks != null)
-				{
-					chunks.remove(i);
-				}
-			}
+		catch(Throwable e)
+		{
+			Ex.t(e);
 		}
 	}
 
 	public void hit(Location location, ChunkIssue type, double amt)
 	{
-		if(!chunks.containsKey(location.getChunk()))
+		try
 		{
-			chunks.put(location.getChunk(), new LagMapChunk(location.getChunk()));
+			if(!chunks.containsKey(location.getChunk()))
+			{
+				chunks.put(location.getChunk(), new LagMapChunk(location.getChunk()));
+			}
+
+			chunks.get(location.getChunk()).hit(type, amt);
 		}
 
-		chunks.get(location.getChunk()).hit(type, amt);
+		catch(Throwable e)
+		{
+			Ex.t(e);
+		}
 	}
 
 	public void hit(Chunk c, ChunkIssue type, double amt)
 	{
-		if(!chunks.containsKey(c))
-		{
-			chunks.put(c, new LagMapChunk(c));
-		}
-
 		try
 		{
+			if(!chunks.containsKey(c))
+			{
+				chunks.put(c, new LagMapChunk(c));
+			}
+
 			chunks.get(c).hit(type, amt);
 		}
 
 		catch(Exception e)
 		{
-
+			Ex.t(e);
 		}
 	}
 
