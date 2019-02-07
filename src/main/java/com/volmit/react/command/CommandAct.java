@@ -368,6 +368,11 @@ public class CommandAct extends ReactCommand
 
 			rtx.tellRawTo((Player) sender);
 		}
+
+		else
+		{
+			sender.sendMessage(C.AQUA + React.instance.actionController.getAction(command).getNodes()[0] + C.GRAY + " - " + command.getDescription());
+		}
 	}
 
 	public void sendHeader(CommandSender sender, int page, int maxEntries)
