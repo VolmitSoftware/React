@@ -19,6 +19,7 @@ import com.volmit.react.controller.EventController;
 import com.volmit.react.util.F;
 
 import primal.lang.collection.GList;
+import primal.lang.collection.GMap;
 import primal.util.text.C;
 
 public class CommandChunk extends ReactCommand
@@ -57,10 +58,11 @@ public class CommandChunk extends ReactCommand
 			if(lm.getChunks().containsKey(c))
 			{
 				LagMapChunk lc = lm.getChunks().get(c);
+				GMap<ChunkIssue, Double> g = lc.getPercent();
 
-				for(ChunkIssue i : lc.getHits().k())
+				for(ChunkIssue j : lc.getHits().k())
 				{
-					sender.sendMessage(C.GRAY + i.name() + ": " + C.WHITE + C.BOLD + F.f(lc.getMS(i), 2) + "ms");
+					sender.sendMessage(C.AQUA + j.toName() + ": " + C.DARK_AQUA + C.BOLD + F.pc(g.get(j), 0) + " Impact: " + F.f((int) (lc.getHits().get(j) / 10000D)));
 				}
 			}
 		}

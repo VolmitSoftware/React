@@ -16,8 +16,8 @@ public class Capability
 	public static final Capability DUAL_WEILD = new Capability(Lang.getString("react.capabilities.dual-wield"), Protocol.R1_9); //$NON-NLS-1$
 	public static final Capability ADVANCEMENT_NOTIFICATIONS = new Capability("Advancements", Protocol.R1_9); //$NON-NLS-1$
 	public static final Capability PLACEHOLDERS = new Capability("Placeholders", Protocol.R1_7_10, "PlaceholderAPI"); //$NON-NLS-1$
-	public static final Capability SCOREBOARD = new Capability(Lang.getString("react.capabilities.scoreboard"), Protocol.B1_5).max(Protocol.R1_12_2); //$NON-NLS-1$
-	public static final Capability SCOREBOARD_ADVANCED = new Capability(Lang.getString("react.capabilities.adv-scoreboard"), Protocol.R1_8).max(Protocol.R1_12_2); //$NON-NLS-1$
+	public static final Capability SCOREBOARD = new Capability(Lang.getString("react.capabilities.scoreboard"), Protocol.B1_5).max(Protocol.LATEST); //$NON-NLS-1$
+	public static final Capability SCOREBOARD_ADVANCED = new Capability(Lang.getString("react.capabilities.adv-scoreboard"), Protocol.R1_8).max(Protocol.LATEST); //$NON-NLS-1$
 	public static final Capability HOPPER = new Capability(Lang.getString("react.capabilities.hopper"), Protocol.B1_5); //$NON-NLS-1$
 	public static final Capability ENTITY_ATTRIBUTES = new Capability(Lang.getString("react.capabilities.entity-att"), Protocol.R1_12); //$NON-NLS-1$
 	public static final Capability ENTITY_AI = new Capability(Lang.getString("react.capabilities.entity-ai"), Protocol.R1_9); //$NON-NLS-1$

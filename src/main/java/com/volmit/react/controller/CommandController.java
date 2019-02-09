@@ -11,6 +11,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
+import org.bukkit.event.server.ServerCommandEvent;
 
 import com.volmit.react.Config;
 import com.volmit.react.Gate;
@@ -52,6 +53,7 @@ import com.volmit.react.command.CommandScoreboardMonitor;
 import com.volmit.react.command.CommandStatus;
 import com.volmit.react.command.CommandSubscribe;
 import com.volmit.react.command.CommandTopChunk;
+import com.volmit.react.command.CommandTps;
 import com.volmit.react.command.CommandUnsubscribe;
 import com.volmit.react.command.CommandVersion;
 import com.volmit.react.util.A;
@@ -121,6 +123,7 @@ public class CommandController extends Controller implements Listener, CommandEx
 		commands.add(new CommandUnsubscribe());
 		commands.add(new CommandVersion());
 		commands.add(new CommandMem());
+		commands.add(new CommandTps());
 	}
 
 	@Override
@@ -378,6 +381,28 @@ public class CommandController extends Controller implements Listener, CommandEx
 		}
 
 		return false;
+	}
+
+	@EventHandler
+	public void on(ServerCommandEvent e)
+	{
+		if(e.getCommand().toLowerCase().equalsIgnoreCase("tps") || e.getCommand().toLowerCase().equalsIgnoreCase("lag"))
+		{
+			if(Permissable.TPS.has(e.getSender()) && Config.COMMANDOVERRIDES_TPS)
+			{
+				Gate.msgSuccess(e.getSender(), "Current TPS: " + C.GREEN + SampledType.TPS.get().get() + C.GRAY + " (" + C.GREEN + F.f(SampledType.TICK.get().getValue(), 1) + "ms" + C.GRAY + ")");
+				e.setCancelled(true);
+			}
+		}
+
+		if(e.getCommand().toLowerCase().equalsIgnoreCase("mem") || e.getCommand().toLowerCase().equalsIgnoreCase("memory") || e.getCommand().toLowerCase().equalsIgnoreCase("/gc"))
+		{
+			if(Config.COMMANDOVERRIDES_MEMORY)
+			{
+				CommandMem.showMem(e.getSender());
+				e.setCancelled(true);
+			}
+		}
 	}
 
 	@EventHandler

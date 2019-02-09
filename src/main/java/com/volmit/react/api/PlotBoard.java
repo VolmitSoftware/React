@@ -95,12 +95,21 @@ public class PlotBoard
 	{
 		long min = Long.MAX_VALUE;
 
-		for(long i : plots.k())
+		try
 		{
-			if(i < min)
+			for(long i : plots.k())
 			{
-				min = i;
+				if(i < min)
+				{
+					min = i;
+				}
 			}
+		}
+
+		catch(Throwable e)
+		{
+			Ex.t(e);
+			return M.ms() - 10000;
 		}
 
 		return min;

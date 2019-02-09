@@ -1,6 +1,7 @@
 package com.volmit.react.controller;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.block.BlockPhysicsEvent;
@@ -8,6 +9,7 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.EntitySpawnEvent;
+import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
@@ -144,6 +146,20 @@ public class EventController extends Controller
 	public void on(EntityDamageEvent e)
 	{
 		map.hit(e.getEntity().getLocation().getChunk(), ChunkIssue.ENTITY, 20);
+	}
+
+	@EventHandler
+	public void on(InventoryMoveItemEvent e)
+	{
+		if(e.getSource().getLocation().getBlock().getType().equals(Material.HOPPER))
+		{
+			map.hit(e.getSource().getLocation().getChunk(), ChunkIssue.HOPPER, 20);
+		}
+
+		if(e.getDestination().getLocation().getBlock().getType().equals(Material.HOPPER))
+		{
+			map.hit(e.getDestination().getLocation().getChunk(), ChunkIssue.HOPPER, 20);
+		}
 	}
 
 	@EventHandler
