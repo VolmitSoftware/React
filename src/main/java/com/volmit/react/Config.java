@@ -5,7 +5,6 @@ import java.lang.reflect.Field;
 import java.util.List;
 
 import org.bukkit.World;
-import org.bukkit.entity.EntityType;
 import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
 import org.bukkit.plugin.Plugin;
 
@@ -16,6 +15,7 @@ import com.volmit.react.api.Injection;
 import com.volmit.react.api.InjectionMethod;
 import com.volmit.react.api.Key;
 import com.volmit.react.api.Note;
+import com.volmit.react.api.RET;
 import com.volmit.react.api.WorldConfig;
 import com.volmit.react.util.D;
 import com.volmit.react.util.DataCluster;
@@ -897,7 +897,7 @@ public class Config
 		GList<String> ents = new GList<String>();
 		GList<String> entx = new GList<String>();
 
-		for(EntityType i : EntityType.values())
+		for(RET i : RET.values())
 		{
 			entx.add(i.name());
 		}
@@ -980,7 +980,7 @@ public class Config
 	{
 		GList<String> ents = new GList<String>();
 
-		ents.add(EntityType.BAT.name());
+		ents.add(RET.BAT.name());
 
 		return ents;
 	}
@@ -990,7 +990,7 @@ public class Config
 		GList<String> ents = new GList<String>();
 		GList<String> entx = new GList<String>();
 
-		for(EntityType i : EntityType.values())
+		for(RET i : RET.values())
 		{
 			entx.add(i.name());
 		}
@@ -1074,7 +1074,7 @@ public class Config
 		GList<String> ents = new GList<String>();
 		GList<String> entx = new GList<String>();
 
-		for(EntityType i : EntityType.values())
+		for(RET i : RET.values())
 		{
 			entx.add(i.name());
 		}
@@ -1098,7 +1098,7 @@ public class Config
 		GList<String> ents = new GList<String>();
 		GList<String> entx = new GList<String>();
 
-		for(EntityType i : EntityType.values())
+		for(RET i : RET.values())
 		{
 			entx.add(i.name());
 		}
@@ -1190,10 +1190,36 @@ public class Config
 		scrs.add("@Restrict Pig,Cow,Sheep,Chicken = 14"); //$NON-NLS-1$
 		scrs.add("@Restrict Zombie,Spider,Skeleton,Creeper = 14"); //$NON-NLS-1$
 		scrs.add("@Restrict Wolf,Ocelot,Horse = 9"); //$NON-NLS-1$
+		scrs.add("@Restrict Pufferfish,Tropical Fish,Squid = 3");
 
 		for(String i : ents)
 		{
-			int m = 28;
+			int m = 16;
+
+			if(i.toString().equals("TURTLE")) //$NON-NLS-1$
+			{
+				m = 2;
+			}
+
+			if(i.toString().equals("TROPICAL_FISH")) //$NON-NLS-1$
+			{
+				m = 3;
+			}
+
+			if(i.toString().equals("PUFFERFISH")) //$NON-NLS-1$
+			{
+				m = 3;
+			}
+
+			if(i.toString().equals("PARROT")) //$NON-NLS-1$
+			{
+				m = 5;
+			}
+
+			if(i.toString().equals("TURTLE")) //$NON-NLS-1$
+			{
+				m = 3;
+			}
 
 			if(i.toString().equals("VILLAGER")) //$NON-NLS-1$
 			{
