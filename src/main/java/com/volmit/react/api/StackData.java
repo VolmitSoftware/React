@@ -61,6 +61,7 @@ public class StackData
 
 	public void save(File f) throws IOException
 	{
+		f.getParentFile().mkdirs();
 		FileOutputStream fos = new FileOutputStream(f);
 		GZIPOutputStream gzo = new GZIPOutputStream(fos);
 		DataOutputStream dos = new DataOutputStream(gzo);
@@ -78,6 +79,7 @@ public class StackData
 
 	public void load(File f) throws IOException
 	{
+		f.getParentFile().mkdirs();
 		emap.clear();
 		FileInputStream fin = new FileInputStream(f);
 		GZIPInputStream gzi = new GZIPInputStream(fin);

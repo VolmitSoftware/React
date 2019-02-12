@@ -184,20 +184,28 @@ public class PlotBoard
 	{
 		GMap<Long, Double> m = new GMap<Long, Double>();
 
-		for(Long i : plots.k())
+		try
 		{
-			try
+			for(Long i : plots.k())
 			{
-				if(within(from, to, i))
+				try
 				{
-					m.put(i, plots.get(i));
+					if(within(from, to, i))
+					{
+						m.put(i, plots.get(i));
+					}
+				}
+
+				catch(Throwable e)
+				{
+					Ex.t(e);
 				}
 			}
+		}
 
-			catch(Throwable e)
-			{
-				Ex.t(e);
-			}
+		catch(Throwable e)
+		{
+			Ex.t(e);
 		}
 
 		return m;
