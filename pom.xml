@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.volmit</groupId>
 	<artifactId>React</artifactId>
-	<version>6.599</version>
+	<version>6.600</version>
 	<name>React</name>
 	<description>A performance plugin</description>
 	<properties>
@@ -231,7 +231,7 @@
 		<dependency>
 			<groupId>com.volmit</groupId>
 			<artifactId>Primal</artifactId>
-			<version>1.0.8</version>
+			<version>1.0.32</version>
 		</dependency>
 	</dependencies>
 </project>
