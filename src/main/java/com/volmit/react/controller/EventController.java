@@ -21,6 +21,7 @@ import com.volmit.react.api.ReactScrollEvent;
 import com.volmit.react.api.ScrollDirection;
 import com.volmit.react.util.Controller;
 import com.volmit.react.util.JSONObject;
+import com.volmit.react.util.Protocol;
 
 import primal.lang.collection.GMap;
 
@@ -151,6 +152,11 @@ public class EventController extends Controller
 	@EventHandler
 	public void on(InventoryMoveItemEvent e)
 	{
+		if(Protocol.isAncientAPI())
+		{
+			return;
+		}
+
 		if(e.getSource().getLocation().getBlock().getType().equals(Material.HOPPER))
 		{
 			map.hit(e.getSource().getLocation().getChunk(), ChunkIssue.HOPPER, 20);
