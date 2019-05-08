@@ -25,6 +25,7 @@ import com.volmit.react.util.JSONArray;
 import com.volmit.react.util.JSONObject;
 import com.volmit.react.util.M;
 import com.volmit.react.util.S;
+import java.util.HashSet;
 
 import primal.bukkit.world.Players;
 import primal.lang.collection.GList;
@@ -141,6 +142,7 @@ public class EntityCullController extends Controller
 			@Override
 			public void run()
 			{
+				HashSet<UUID> toRemove = new HashSet();
 				searching: for(UUID i : trackReasons.k())
 				{
 					for(Entity j : je)
@@ -151,8 +153,10 @@ public class EntityCullController extends Controller
 						}
 					}
 
-					trackReasons.remove(i);
+					toRemove.add(i);
 				}
+				for(UUID i : toRemove)
+					trackReasons.remove(i);
 			}
 		};
 	}
