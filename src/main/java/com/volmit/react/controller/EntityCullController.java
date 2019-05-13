@@ -142,8 +142,7 @@ public class EntityCullController extends Controller
 			@Override
 			public void run()
 			{
-				HashSet<UUID> toRemove = new HashSet();
-				searching: for(UUID i : trackReasons.k())
+				searching: for(UUID i : trackReasons.k().clone())
 				{
 					for(Entity j : je)
 					{
@@ -153,10 +152,8 @@ public class EntityCullController extends Controller
 						}
 					}
 
-					toRemove.add(i);
-				}
-				for(UUID i : toRemove)
 					trackReasons.remove(i);
+				}
 			}
 		};
 	}
