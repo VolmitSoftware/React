@@ -647,7 +647,7 @@ public class Config
 	@Injection(InjectionMethod.SWAP)
 	public static boolean FAST_PING = true;
 	
-	@Comment("Slows down block physics on a per world basis if the maximum ticks per world is exceeded")
+	@Comment("The default ping in ms.")
 	@Key("features.react.monitor.default-ping")
 	@Injection(InjectionMethod.SWAP)
 	public static int DEFAULT_PING = -1;
