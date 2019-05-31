@@ -131,7 +131,7 @@ public class ProtocolAdapter implements Listener
 			return pings.get(p);
 		}
 
-		return -1;
+		return Config.DEFAULT_PING;
 	}
 
 	public long ago(Player p)
@@ -141,7 +141,7 @@ public class ProtocolAdapter implements Listener
 			return ago.get(p);
 		}
 
-		return -1;
+		return Config.DEFAULT_PING;
 	}
 
 	public boolean isLongs()
