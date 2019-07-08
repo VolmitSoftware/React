@@ -41,7 +41,7 @@ public class Config
 	@Comment("Slows down block physics on a per world basis if the maximum ticks per world is exceeded")
 	@Key("features.react.tick-splitter.max-ticks-per-world")
 	@Injection(InjectionMethod.SWAP)
-	public static int MAX_TICKS_PER_WORLD = 185;
+	public static int MAX_TICKS_PER_WORLD = 180;
 
 	@Comment("Slows down block physics on a per world basis.")
 	@Key("features.react.tick-splitter.enabled")
@@ -157,7 +157,7 @@ public class Config
 	@Key("features.culling.mark-for-death.death-time")
 	@Injection(InjectionMethod.SWAP)
 	@Clip(min = 1, max = 600)
-	public static int ENTITY_MARK_TIME = 200;
+	public static int ENTITY_MARK_TIME = 150;
 
 	@Comment("If mythic mobs is enabled, allow purging of them with /re a pe")
 	@Key("features.mythic-mobs.allow-purging")
@@ -212,12 +212,12 @@ public class Config
 	@Comment("Cap the framerate of the map. Bukkit hard caps at 60, anything higher than 60 will do nothing. Keep in mind that the higher the frame rate, the more bukkit will spawn craft scheduler threads. Keeping this low reduces memory, cpu usage and allows more people to use the map at the same time.")
 	@Key("features.react.map.max-framerate")
 	@Injection(InjectionMethod.SWAP)
-	public static int MAP_FPS = 15;
+	public static int MAP_FPS = 20;
 
 	@Comment("Cap the framerate of the individual graphs in the react map. Keep this value low as there are many graphs to map.")
 	@Key("features.react.map.max-graph-framerate")
 	@Injection(InjectionMethod.SWAP)
-	public static int GRAPH_FPS = 10;
+	public static int GRAPH_FPS = 5;
 
 	@Comment("Disable all automatic actions, including RAI. Will still purge chunks if enabled.")
 	@Key("features.react.monitoring-only")
