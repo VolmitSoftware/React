@@ -1,5 +1,6 @@
 package com.volmit.react.api;
 
+import com.volmit.react.Config;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
