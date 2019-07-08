@@ -5,7 +5,7 @@ import java.util.ResourceBundle;
 
 public class Lang
 {
-	private static final String BUNDLE_NAME = "com.volmit.react.lang"; //$NON-NLS-1$
+	private static final String BUNDLE_NAME = "language.lang"; //$NON-NLS-1$
 	public static final ResourceBundle RESOURCE_BUNDLE = ResourceBundle.getBundle(BUNDLE_NAME);
 	public static ResourceBundle PRIMARY_BUNDLE = RESOURCE_BUNDLE;
 

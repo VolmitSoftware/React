@@ -9,6 +9,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Locale;
+import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 
 import com.volmit.react.Config;
@@ -271,15 +272,22 @@ public class LanguageController extends Controller
 
 	public void loadLanguage(String key) throws Exception
 	{
-		File f = getFileForLanguage(key).getParentFile();
-		URL[] urls = {f.toURI().toURL()};
-		ClassLoader loader = new URLClassLoader(urls);
-		ResourceBundle rb = ResourceBundle.getBundle(key, Locale.getDefault(), loader);
+		try {
+			File f = getFileForLanguage(key).getParentFile();
+			URL[] urls = {f.toURI().toURL()};
+			ClassLoader loader = new URLClassLoader(urls);
+			ResourceBundle rb = ResourceBundle.getBundle(key, Locale.getDefault(), loader);
 
-		if(rb != null)
-		{
-			Lang.PRIMARY_BUNDLE = rb;
-			return;
+			if (rb != null) {
+				Lang.PRIMARY_BUNDLE = rb;
+				return;
+			}
+		} catch (MissingResourceException ex) {
+			ResourceBundle rb = ResourceBundle.getBundle("language." + key);
+			if (rb != null) {
+				Lang.PRIMARY_BUNDLE = rb;
+				return;
+			}
 		}
 
 		throw new Exception("Unable to load resourceBundle");
@@ -292,7 +300,7 @@ public class LanguageController extends Controller
 
 	public void writeDefaults() throws IOException
 	{
-		InputStream in = React.class.getResourceAsStream("/com/volmit/react/lang.properties");
+		InputStream in = React.class.getResourceAsStream("/language/lang.properties");
 		FileOutputStream fos = new FileOutputStream(new File(languageFolder, "enUS.properties"));
 		byte[] buf = new byte[4096];
 		int read = 0;
