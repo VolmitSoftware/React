@@ -42,6 +42,13 @@
 					<include>**/*.txt</include>
 				</includes>
 			</resource>
+			<resource>
+				<directory>${project.basedir}</directory>
+				<filtering>true</filtering>
+				<includes>
+					<include>**/language/*.properties</include>
+				</includes>
+			</resource>
 		</resources>
 		<plugins>
 			<plugin>
