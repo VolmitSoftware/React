@@ -646,6 +646,11 @@ public class Config
 	@Key("features.react.monitor.fast-ping")
 	@Injection(InjectionMethod.SWAP)
 	public static boolean FAST_PING = true;
+	
+	@Comment("The default ping in ms.")
+	@Key("features.react.monitor.default-ping")
+	@Injection(InjectionMethod.SWAP)
+	public static int DEFAULT_PING = -1;
 
 	@Comment("Use NMS Adapters. Disabling this will basically make any nms or fast options do nothing either way. This may fix issues with FAWE and chunks on 1.8.8 though")
 	@Key("features.react.nms-adapters")
