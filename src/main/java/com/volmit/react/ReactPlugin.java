@@ -134,7 +134,7 @@ public class ReactPlugin extends PrimalPlugin
 		if(Capability.PLACEHOLDERS.isCapable())
 		{
 			PlaceholderHandler h = new PlaceholderHandler();
-			h.hook();
+			h.register();
 
 			new TaskLater("waiter", 5)
 			{
