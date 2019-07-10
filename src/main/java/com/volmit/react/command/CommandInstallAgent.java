@@ -23,6 +23,9 @@ import primal.util.text.C;
 
 public class CommandInstallAgent extends ReactCommand
 {
+
+	private final static String library = "http://nexus.volmit.com/content/repositories/thirdparty/com/javamex/classmexer/1.0/classmexer-1.0.jar";
+
 	public CommandInstallAgent()
 	{
 		command = "installagent";
@@ -60,7 +63,7 @@ public class CommandInstallAgent extends ReactCommand
 				{
 					try
 					{
-						URL u = new URL("http://nexus.volmit.com/service/local/repositories/volmit/content/com/javamex/classmexer/ClassMexer/1.0/ClassMexer-1.0.jar");
+						URL u = new URL(library);
 						Download d = new Download(new DownloadMonitor()
 						{
 							@Override
