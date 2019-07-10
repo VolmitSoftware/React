@@ -706,6 +706,7 @@ public class MonitorController extends Controller
 			Player p = rp.getP();
 			boolean high = rp.highMonitor;
 			int sel = rp.getMonitorSelection();
+			if (rp.isShift() && sel == -1) sel = 0;
 
 			if(sel < 0 && high)
 			{
