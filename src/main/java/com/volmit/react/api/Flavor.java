@@ -18,56 +18,60 @@ public enum Flavor
 	FORGE_HACK,
 	SPONGE_HACK;
 
+	private static Flavor flavorCache = null;
+
 	public static Flavor getHostFlavor()
 	{
+		if (flavorCache != null) return flavorCache;
+
 		String v = Bukkit.getVersion().toLowerCase();
 
 		if(v.contains("paper"))
 		{
-			return Flavor.PAPER_SPIGOT;
+			return flavorCache = Flavor.PAPER_SPIGOT;
 		}
 
 		if(v.contains("taco"))
 		{
-			return Flavor.TACO_SPIGOT;
+			return flavorCache = Flavor.TACO_SPIGOT;
 		}
 
 		if(v.contains("torch"))
 		{
-			return Flavor.TORCH_SPIGOT;
+			return flavorCache = Flavor.TORCH_SPIGOT;
 		}
 
 		if(v.contains("thermos"))
 		{
-			return Flavor.FORGE_HACK;
+			return flavorCache = Flavor.FORGE_HACK;
 		}
 
 		if(v.contains("cauldron"))
 		{
-			return Flavor.FORGE_HACK;
+			return flavorCache = Flavor.FORGE_HACK;
 		}
 
 		if(v.contains("sponge"))
 		{
-			return Flavor.SPONGE_HACK;
+			return flavorCache = Flavor.SPONGE_HACK;
 		}
 
 		if(v.contains("spigot"))
 		{
-			return Flavor.SPIGOT;
+			return flavorCache = Flavor.SPIGOT;
 		}
 
 		if(v.contains("craftbukkit"))
 		{
-			return Flavor.CRAFT_BUKKIT;
+			return flavorCache = Flavor.CRAFT_BUKKIT;
 		}
 
 		if(v.contains("bukkit"))
 		{
-			return Flavor.BUKKIT;
+			return flavorCache = Flavor.BUKKIT;
 		}
 
-		return Flavor.SAFE_MODE;
+		return flavorCache = Flavor.SAFE_MODE;
 	}
 
 	public boolean compatableWith(Flavor flavor)
