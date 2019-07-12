@@ -31,7 +31,7 @@ public class Capability
 	public static final Capability ENTITY_THROTTLING = new Capability(Lang.getString("react.capabilities.throttling"), Protocol.R1_8, Flavor.SOGGY_SPIGOT); //$NON-NLS-1$
 	public static final Capability TILE_THROTTLING = new Capability(Lang.getString("react.capabilities.tile-throttling"), Protocol.R1_8, Flavor.SOGGY_SPIGOT); //$NON-NLS-1$
 	public static final Capability PASSENGERS = new Capability(Lang.getString("react.capabilities.passengers"), Protocol.R1_11); //$NON-NLS-1$
-	public static final Capability FAST_MAPPING = new Capability("Fast Mapping", Protocol.R1_8).max(Protocol.R1_13_2); //$NON-NLS-1$
+	public static final Capability FAST_MAPPING = new Capability("Fast Mapping", Protocol.R1_8); //$NON-NLS-1$
 	public static final Capability ARROW_OWNER = new Capability("Arrow Owner", Protocol.R1_12); //$NON-NLS-1$
 	public static final GList<Capability> capabilities = new GList<Capability>();
 
