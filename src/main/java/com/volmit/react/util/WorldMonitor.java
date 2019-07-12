@@ -3,7 +3,9 @@ package com.volmit.react.util;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.World;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -18,6 +20,8 @@ import org.bukkit.event.world.ChunkUnloadEvent;
 import com.volmit.react.Surge;
 
 import primal.lang.collection.GList;
+
+import java.util.List;
 
 @SuppressWarnings("deprecation")
 public abstract class WorldMonitor implements Listener
@@ -148,9 +152,9 @@ public abstract class WorldMonitor implements Listener
 
 		try
 		{
-			if(chunksChanged)
+			if(chunksChanged || tileChanged)
 			{
-				sampleChunkCount();
+				sampleTilesAndChunks();
 				chunksChanged = false;
 				doUpdate();
 			}
@@ -164,54 +168,12 @@ public abstract class WorldMonitor implements Listener
 
 		try
 		{
-			if(dropChanged)
+			if(totalChanged || livingChanged || dropChanged)
 			{
-				sampleDropCount();
-				dropChanged = false;
-				doUpdate();
-			}
-		}
-
-		catch(Throwable e)
-		{
-			Ex.t(e);
-		}
-
-		try
-		{
-			if(tileChanged)
-			{
-				sampleTileCount();
-				doUpdate();
-			}
-		}
-
-		catch(Throwable e)
-		{
-			Ex.t(e);
-		}
-
-		try
-		{
-			if(livingChanged)
-			{
-				sampleLivingCount();
-				livingChanged = false;
-				doUpdate();
-			}
-		}
-
-		catch(Throwable e)
-		{
-			Ex.t(e);
-		}
-
-		try
-		{
-			if(totalChanged)
-			{
-				sampleTotalCount();
+				sampleEntities();
 				totalChanged = false;
+				livingChanged = false;
+				dropChanged = false;
 				doUpdate();
 			}
 
@@ -243,63 +205,46 @@ public abstract class WorldMonitor implements Listener
 		}
 	}
 
-	private void sampleTotalCount()
+	private void sampleEntities()
 	{
-		totalEntities = 0;
+		totalEntities = totalLiving = totalDrops = 0;
 
-		for(World i : Bukkit.getWorlds())
-		{
-			try
-			{
-				totalEntities += i.getEntities().size();
-			}
+		for (World w : Bukkit.getWorlds()) {
+			final List<Entity> e = w.getEntities();
+			totalEntities += e.size();
 
-			catch(Throwable e)
-			{
-
+			for (Entity t : e) {
+				if (t instanceof LivingEntity) ++totalLiving;
+				else if (t instanceof Item) ++totalDrops;
 			}
 		}
 	}
 
-	private void sampleLivingCount()
+	private void sampleTilesAndChunks()
 	{
-		totalLiving = 0;
+		totalChunks = 0;
 
-		for(World i : Bukkit.getWorlds())
-		{
-			try
-			{
-				totalLiving += i.getLivingEntities().size();
-			}
-
-			catch(Throwable e)
-			{
-
-			}
-		}
-	}
-
-	private void sampleTileCount()
-	{
-		if(pending.isEmpty())
-		{
+		if (pending.isEmpty()) {
 			totalTiles = rollingTileCount;
 			rollingTileCount = 0;
+		}
 
-			for(World i : Bukkit.getWorlds())
+		for(World i : Bukkit.getWorlds())
+		{
+			try
 			{
-				try
-				{
-					for(Chunk j : i.getLoadedChunks())
-					{
-						pending.add(j);
-					}
-				}
+				final Chunk[] chunks = i.getLoadedChunks();
+				totalChunks += chunks.length;
 
-				catch(Throwable e)
+				for(Chunk j : chunks)
 				{
-					Ex.t(e);
+					if (pending.isEmpty()) pending.add(j);
 				}
+			}
+
+			catch(Throwable e)
+			{
+				Ex.t(e);
 			}
 		}
 
@@ -332,34 +277,6 @@ public abstract class WorldMonitor implements Listener
 			};
 
 			return;
-		}
-	}
-
-	private void sampleDropCount()
-	{
-		totalDrops = 0;
-
-		for(World i : Bukkit.getWorlds())
-		{
-			try
-			{
-				totalDrops += i.getEntitiesByClass(Item.class).size();
-			}
-
-			catch(Throwable e)
-			{
-
-			}
-		}
-	}
-
-	private void sampleChunkCount()
-	{
-		totalChunks = 0;
-
-		for(World i : Bukkit.getWorlds())
-		{
-			totalChunks += i.getLoadedChunks().length;
 		}
 	}
 }
