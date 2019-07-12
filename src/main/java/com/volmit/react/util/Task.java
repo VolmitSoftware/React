@@ -26,6 +26,7 @@ public abstract class Task implements ITask, ICancellable
 			@Override
 			public void run()
 			{
+				Thread.currentThread().setName("React:Task$" + name);
 				activeProfiler.begin();
 				Task.this.run();
 				activeProfiler.end();
@@ -51,6 +52,7 @@ public abstract class Task implements ITask, ICancellable
 			@Override
 			public void run()
 			{
+				Thread.currentThread().setName("React:Task$" + name);
 				activeProfiler.begin();
 				Task.this.run();
 				ticks++;
@@ -76,6 +78,7 @@ public abstract class Task implements ITask, ICancellable
 			@Override
 			public void run()
 			{
+				Thread.currentThread().setName("React:Task$" + name);
 				activeProfiler.begin();
 				Task.this.run();
 				ticks++;

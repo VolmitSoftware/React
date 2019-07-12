@@ -33,6 +33,7 @@ public abstract class TaskLater implements ITask, ICancellable
 			{
 				try
 				{
+					Thread.currentThread().setName("React:TaskLater$" + name);
 					activeProfiler.begin();
 					TaskLater.this.run();
 					ticks++;
