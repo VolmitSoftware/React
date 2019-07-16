@@ -2,6 +2,7 @@ package com.volmit.react.util;
 
 import com.volmit.react.ReactPlugin;
 import com.volmit.react.controller.SampleController;
+import org.bukkit.Bukkit;
 
 public abstract class TaskLater implements ITask, ICancellable
 {
@@ -33,7 +34,8 @@ public abstract class TaskLater implements ITask, ICancellable
 			{
 				try
 				{
-					Thread.currentThread().setName("React:TaskLater$" + name);
+					if (!Bukkit.isPrimaryThread())
+						Thread.currentThread().setName("React:TaskLater$" + name);
 					activeProfiler.begin();
 					TaskLater.this.run();
 					ticks++;

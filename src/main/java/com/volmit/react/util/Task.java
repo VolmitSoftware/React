@@ -2,6 +2,7 @@ package com.volmit.react.util;
 
 import com.volmit.react.ReactPlugin;
 import com.volmit.react.controller.SampleController;
+import org.bukkit.Bukkit;
 
 public abstract class Task implements ITask, ICancellable
 {
@@ -26,7 +27,8 @@ public abstract class Task implements ITask, ICancellable
 			@Override
 			public void run()
 			{
-				Thread.currentThread().setName("React:Task$" + name);
+				if (!Bukkit.isPrimaryThread())
+					Thread.currentThread().setName("React:Task$" + name);
 				activeProfiler.begin();
 				Task.this.run();
 				activeProfiler.end();
@@ -52,7 +54,8 @@ public abstract class Task implements ITask, ICancellable
 			@Override
 			public void run()
 			{
-				Thread.currentThread().setName("React:Task$" + name);
+				if (!Bukkit.isPrimaryThread())
+					Thread.currentThread().setName("React:Task$" + name);
 				activeProfiler.begin();
 				Task.this.run();
 				ticks++;
@@ -78,7 +81,8 @@ public abstract class Task implements ITask, ICancellable
 			@Override
 			public void run()
 			{
-				Thread.currentThread().setName("React:Task$" + name);
+				if (!Bukkit.isPrimaryThread())
+					Thread.currentThread().setName("React:Task$" + name);
 				activeProfiler.begin();
 				Task.this.run();
 				ticks++;
