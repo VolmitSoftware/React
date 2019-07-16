@@ -3,6 +3,7 @@ package com.volmit.react.controller;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
@@ -43,11 +44,12 @@ import com.volmit.react.util.TICK;
 
 import primal.bukkit.sound.GSound;
 import primal.lang.collection.GList;
+import primal.lang.collection.GMap;
 
 public class EntityStackController extends Controller
 {
 	private StackData sd;
-	private GList<StackedEntity> stacks = new GList<StackedEntity>();
+	private GMap<Integer, StackedEntity> stacks = new GMap<>();
 	private GList<LivingEntity> check = new GList<LivingEntity>();
 
 	@Override
@@ -175,16 +177,17 @@ public class EntityStackController extends Controller
 
 		if(TICK.tick % 10 == 0)
 		{
-			for(StackedEntity i : stacks.copy())
+			for(Map.Entry<Integer, StackedEntity> i : stacks.copy().entrySet())
 			{
-				i.update();
-
-				if(i.getEntity().isDead())
+				if(!i.getValue().isValid())
 				{
-					stacks.remove(i);
+					i.getValue().remove();
+					stacks.remove(i.getKey());
+					continue;
 				}
-				sd.put(i.getEntity());
-				sd.get(i.getEntity());
+
+				i.getValue().update();
+				sd.put(i.getValue().getEntity());
 			}
 		}
 
@@ -266,7 +269,7 @@ public class EntityStackController extends Controller
 	{
 		if(!isStacked(k) && sd.get(k) > 0)
 		{
-			stacks.add(new StackedEntity(k, sd.get(k)));
+			stacks.put(k.getEntityId(), new StackedEntity(k, sd.get(k)));
 		}
 	}
 
@@ -332,7 +335,7 @@ public class EntityStackController extends Controller
 		}
 
 		StackedEntity se = new StackedEntity(le, e.size());
-		stacks.add(se);
+		stacks.put(le.getEntityId(), se);
 	}
 
 	public boolean isStacked(LivingEntity e)
@@ -362,10 +365,13 @@ public class EntityStackController extends Controller
 			return null;
 		}
 
-		for(StackedEntity i : stacks)
+		if (stacks.containsKey(e.getEntityId())) {
+			return stacks.get(e.getEntityId());
+		}
+
+		for(StackedEntity i : stacks.values())
 		{
-			if(i.getEntity().getEntityId() == e.getEntityId())
-			{
+			if (i.isEntity(e)) {
 				return i;
 			}
 		}
@@ -465,7 +471,8 @@ public class EntityStackController extends Controller
 
 				if(se.getCount() <= 1)
 				{
-					stacks.remove(se);
+					se.remove();
+					stacks.remove(se.getEntity().getEntityId());
 				}
 			}
 		}
@@ -489,7 +496,8 @@ public class EntityStackController extends Controller
 
 				if(se.getCount() <= 1)
 				{
-					stacks.remove(se);
+					se.remove();
+					stacks.remove(se.getEntity().getEntityId());
 				}
 			}
 		}
@@ -512,12 +520,12 @@ public class EntityStackController extends Controller
 		React.instance.featureController.merge(b.getEntity(), a.getEntity());
 		se.update();
 		b.getEntity().remove();
-		stacks.remove(a);
-		stacks.remove(b);
+		stacks.remove(a.getEntity().getEntityId());
+		stacks.remove(b.getEntity().getEntityId());
 		a.destroy();
 		b.destroy();
 		se.update();
-		stacks.add(se);
+		stacks.put(se.getEntity().getEntityId(), se);
 	}
 
 	public void checkNear(LivingEntity e)
@@ -535,7 +543,7 @@ public class EntityStackController extends Controller
 			return;
 		}
 
-		if(e.isDead())
+		if(!e.isValid())
 		{
 			return;
 		}
@@ -547,13 +555,11 @@ public class EntityStackController extends Controller
 		GList<LivingEntity> le = new GList<LivingEntity>();
 		GList<StackedEntity> fullStacks = new GList<StackedEntity>();
 
-		if(!e.isDead() && !isStacked(e))
+		if(!isStacked(e))
 		{
 			le.add(e);
 		}
-
-		if(!e.isDead() && isStacked(e))
-		{
+		else {
 			fullStacks.add(getStack(e));
 		}
 
@@ -584,12 +590,10 @@ public class EntityStackController extends Controller
 				continue;
 			}
 
-			if(!i.isDead() && !isStacked((LivingEntity) i))
+			if(!isStacked((LivingEntity) i))
 			{
 				le.add((LivingEntity) i);
-			}
-
-			if(!i.isDead() && isStacked((LivingEntity) i))
+			} else
 			{
 				fullStacks.add(getStack((LivingEntity) i));
 			}
@@ -626,9 +630,9 @@ public class EntityStackController extends Controller
 			return;
 		}
 
-		if(e.getEntity() instanceof LivingEntity)
+		if(e.getEntity() != null)
 		{
-			if(e.getEntity().isDead())
+			if(!e.getEntity().isValid())
 			{
 				return;
 			}

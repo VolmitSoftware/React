@@ -104,7 +104,7 @@ public class StackData
 
 		else
 		{
-			emap.remove(e.getUniqueId());
+			this.remove(e);
 		}
 
 		touched.add(e.getUniqueId());
@@ -120,5 +120,10 @@ public class StackData
 		}
 
 		return 0;
+	}
+
+	public void remove(LivingEntity entity)
+	{
+		emap.remove(entity.getUniqueId());
 	}
 }

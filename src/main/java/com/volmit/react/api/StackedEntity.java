@@ -181,6 +181,12 @@ public class StackedEntity
 			entity.setCustomName("");
 			entity.resetMaxHealth();
 		}
+		this.remove();
+	}
+
+	public void remove()
+	{
+		this.entity.remove();
 	}
 
 	private void signalSize()
@@ -376,4 +382,15 @@ public class StackedEntity
 	{
 		return count;
 	}
+
+	public boolean isValid()
+	{
+		return this.entity != null && this.entity.isValid();
+	}
+
+	public boolean isEntity(Entity e)
+	{
+		return e.equals(this.entity);
+	}
+
 }
