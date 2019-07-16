@@ -145,7 +145,7 @@ public class SuperSampler
 
 		try
 		{
-			r.destroy();
+			r.stop();
 		}
 
 		catch(Throwable e)
