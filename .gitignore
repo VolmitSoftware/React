@@ -106,5 +106,6 @@ Temporary Items
 *.classpath
 
 release/
+.idea/
 
 dependency-reduced-pom\.xml
