@@ -6,6 +6,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.text.ParseException;
 
+import com.volmit.react.util.*;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 
@@ -17,15 +18,6 @@ import com.volmit.react.api.IActionSource;
 import com.volmit.react.api.ISelector;
 import com.volmit.react.api.PlayerActionSource;
 import com.volmit.react.api.RAI;
-import com.volmit.react.util.A;
-import com.volmit.react.util.Callback;
-import com.volmit.react.util.F;
-import com.volmit.react.util.JSONException;
-import com.volmit.react.util.JSONObject;
-import com.volmit.react.util.M;
-import com.volmit.react.util.Paste;
-import com.volmit.react.util.S;
-import com.volmit.react.util.Task;
 
 import primal.util.text.C;
 
@@ -46,13 +38,14 @@ public class ActionDump extends Action
 		{
 			try
 			{
+				System.out.println("[React Dump] Forcing a debug!");
 				String urlDump = Paste.paste(Gate.dump().toString(4)) + ".json";
 				as.sendResponseSuccess("Cha-Ching " + C.WHITE + urlDump);
 				completeAction();
 				return;
 			}
 
-			catch(JSONException | IOException | ParseException | org.json.simple.parser.ParseException e)
+			catch(Exception e)
 			{
 				e.printStackTrace();
 			}
@@ -65,6 +58,7 @@ public class ActionDump extends Action
 			{
 				try
 				{
+					System.out.println("[React Dump] Dumping configurations");
 					JSONObject js = new JSONObject();
 					String urlDump = Paste.paste(Gate.dump().toString(4));
 					String urlConfig = readFile(new File(ReactPlugin.i.getDataFolder(), "config.yml"));
@@ -79,6 +73,7 @@ public class ActionDump extends Action
 						@Override
 						public void run()
 						{
+							System.out.println("[React Dump] Collecting timings report");
 							long ms = M.ms();
 
 							new Task("task", inter)
@@ -140,22 +135,7 @@ public class ActionDump extends Action
 												};
 											}
 
-											catch(JSONException e)
-											{
-												e.printStackTrace();
-											}
-
-											catch(IOException e)
-											{
-												e.printStackTrace();
-											}
-
-											catch(ParseException e)
-											{
-												e.printStackTrace();
-											}
-
-											catch(org.json.simple.parser.ParseException e)
+											catch(Exception e)
 											{
 												e.printStackTrace();
 											}
@@ -169,7 +149,7 @@ public class ActionDump extends Action
 
 				catch(Throwable e)
 				{
-
+					e.printStackTrace();
 				}
 			}
 		};
