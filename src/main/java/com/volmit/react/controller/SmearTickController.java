@@ -30,7 +30,7 @@ public class SmearTickController extends Controller
 	@Override
 	public void dump(JSONObject object)
 	{
-		object.put("throttled-world-instances", etl.size() + ttl.size());
+		object.put("throttled-world-instances", (etl == null || ttl == null ? -1 : etl.size() + ttl.size()));
 	}
 
 	@Override
