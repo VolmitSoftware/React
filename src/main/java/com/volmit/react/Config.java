@@ -597,6 +597,11 @@ public class Config
 	@Injection(InjectionMethod.SWAP)
 	public static boolean PURGE = true;
 
+	@Comment("Chunk purge distance multiplier (multiplied by the server's view distance)")
+	@Key("tweaks.chunks.distance-multiplier")
+	@Injection(InjectionMethod.SWAP)
+	public static float CHUNK_DISTANCE = 1.0f;
+
 	@Comment("Play sounds during react's usage (chat, monitor, map, etc)")
 	@Key("features.react.interaction-sounds")
 	@Injection(InjectionMethod.SWAP)

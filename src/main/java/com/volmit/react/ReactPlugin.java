@@ -49,6 +49,18 @@ public class ReactPlugin extends PrimalPlugin
 	@Override
 	public void start()
 	{
+		System.out.println("==============================================================");
+		System.out.println(" THIS IS AN EARLY REACT BETA RELEASE");
+		System.out.println(" THIS VERSION WAS DISTRIBUTED TO SPECIFIC TRUSTED USERS");
+		System.out.println(" TO TEST NEW AND BREAKING CHANGES TO THE REACT.");
+		System.out.println(" PLEASE DO NOT REDISTRIBUTE!");
+		System.out.println("==============================================================");
+
+		try {
+			Thread.sleep(1000 * 3);
+		} catch (InterruptedException e) {
+		}
+
 		controllers = new GList<IController>();
 		Surge.m();
 		i = this;

@@ -2,6 +2,7 @@ package com.volmit.react.util;
 
 import java.util.Set;
 
+import com.volmit.react.Config;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
@@ -27,7 +28,7 @@ public class P
 {
 	public static boolean isWithinViewDistance(Player p, Chunk c)
 	{
-		int manhattan = (int) (Bukkit.getViewDistance() * 1.5);
+		int manhattan = (int) (Bukkit.getViewDistance() * Config.CHUNK_DISTANCE);
 		int mdist = Math.abs(p.getLocation().getChunk().getX() - c.getX()) + Math.abs(p.getLocation().getChunk().getZ() - c.getZ());
 
 		return mdist <= manhattan;
