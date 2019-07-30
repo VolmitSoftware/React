@@ -28,7 +28,7 @@ public class P
 {
 	public static boolean isWithinViewDistance(Player p, Chunk c)
 	{
-		int manhattan = (int) (Bukkit.getViewDistance() * Config.CHUNK_DISTANCE);
+		int manhattan = (int) ((float) Bukkit.getViewDistance() * Config.CHUNK_DISTANCE);
 		int mdist = Math.abs(p.getLocation().getChunk().getX() - c.getX()) + Math.abs(p.getLocation().getChunk().getZ() - c.getZ());
 
 		return mdist <= manhattan;

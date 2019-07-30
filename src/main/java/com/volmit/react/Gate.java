@@ -67,6 +67,7 @@ import io.lumine.xikage.mythicmobs.MythicMobs;
 import io.lumine.xikage.mythicmobs.mobs.MythicMob;
 import primal.bukkit.nms.FrameType;
 import primal.bukkit.nms.NMP;
+import primal.bukkit.nms.V;
 import primal.lang.collection.GList;
 import primal.lang.collection.GMap;
 import primal.lang.collection.GSet;
@@ -820,6 +821,15 @@ public class Gate
 				return false;
 			}
 
+			if (Protocol.R1_13.to(Protocol.LATEST).contains(Protocol.getProtocolVersion())) {
+				Method m = c.getWorld().getClass().getMethod("setChunkForceLoaded", int.class, int.class, boolean.class);
+				m.setAccessible(true);
+				m.invoke(
+					c.getWorld(),
+					c.getX(), c.getZ(), false
+				);
+			}
+
 			if(canUnload(c.getWorld(), c.getX(), c.getZ()))
 			{
 				if(!P.isWithinViewDistance(c))
@@ -834,6 +844,7 @@ public class Gate
 		catch(Throwable e)
 		{
 			Ex.t(e);
+			e.printStackTrace();
 			return false;
 		}
 	}
