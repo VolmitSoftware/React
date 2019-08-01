@@ -821,7 +821,7 @@ public class Gate
 				return false;
 			}
 
-			if (Protocol.R1_13.to(Protocol.LATEST).contains(Protocol.getProtocolVersion())) {
+			if (Config.CHUNK_PURGE_FORCE && Protocol.R1_13.to(Protocol.LATEST).contains(Protocol.getProtocolVersion())) {
 				Method m = c.getWorld().getClass().getMethod("setChunkForceLoaded", int.class, int.class, boolean.class);
 				m.setAccessible(true);
 				m.invoke(

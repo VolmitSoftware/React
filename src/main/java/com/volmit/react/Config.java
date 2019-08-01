@@ -597,6 +597,11 @@ public class Config
 	@Injection(InjectionMethod.SWAP)
 	public static boolean PURGE = true;
 
+	@Comment("Bypass forced open chunks to be purged, 1.13+ only")
+	@Key("tweaks.chunks.force-bypass")
+	@Injection(InjectionMethod.SWAP)
+	public static boolean CHUNK_PURGE_FORCE = true;
+
 	@Comment("Chunk purge distance multiplier (multiplied by the server's view distance)")
 	@Key("tweaks.chunks.distance-multiplier")
 	@Injection(InjectionMethod.SWAP)
