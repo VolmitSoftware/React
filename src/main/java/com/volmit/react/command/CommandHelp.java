@@ -2,6 +2,7 @@ package com.volmit.react.command;
 
 import java.util.List;
 
+import com.volmit.react.api.*;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -12,10 +13,6 @@ import com.volmit.react.Info;
 import com.volmit.react.Lang;
 import com.volmit.react.React;
 import com.volmit.react.ReactPlugin;
-import com.volmit.react.api.ICommand;
-import com.volmit.react.api.Permissable;
-import com.volmit.react.api.ReactCommand;
-import com.volmit.react.api.SideGate;
 import com.volmit.react.util.ColoredString;
 import com.volmit.react.util.F;
 import com.volmit.react.util.RTEX;
@@ -57,7 +54,7 @@ public class CommandHelp extends ReactCommand
 
 		else
 		{
-			for(ICommand i : getSortedCommands(false))
+			for(ICommand i : getSortedCommands(!(sender instanceof Player)))
 			{
 				sendCommand(sender, i);
 			}
@@ -183,9 +180,9 @@ public class CommandHelp extends ReactCommand
 			C gray = Config.STYLE_STRIP_COLOR ? C.WHITE : C.GRAY;
 			String dgray = Config.STYLE_STRIP_COLOR ? RawText.COLOR_WHITE : RawText.COLOR_DARK_GRAY;
 			String daq = Config.STYLE_STRIP_COLOR ? RawText.COLOR_WHITE : RawText.COLOR_AQUA;
-			rtx.addText(F.repeat(gray + " ", 17), dgray, false, false, true, true, false); //$NON-NLS-1$
+			rtx.addText(F.repeat(gray + "=", 17), dgray, false, false, true, true, false); //$NON-NLS-1$
 			rtx.addText(" " + (page + 1) + Lang.getString("command.help.ofs") + (getPageSize(maxEntries, false)) + " ", daq); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-			rtx.addText(F.repeat(gray + " ", 17), dgray, false, false, true, true, false); //$NON-NLS-1$
+			rtx.addText(F.repeat(gray + "=", 17), dgray, false, false, true, true, false); //$NON-NLS-1$
 			rtx.tellRawTo(ReactPlugin.i, (Player) sender);
 		}
 	}
@@ -232,8 +229,9 @@ public class CommandHelp extends ReactCommand
 
 		for(ICommand i : React.instance.commandController.getCommands())
 		{
-			if(i.getSideGate().equals(SideGate.PLAYERS_ONLY))
-			{
+			if(console && !i.getSideGate().supports(Side.CONSOLE) ||
+				!console && !i.getSideGate().supports(Side.PLAYERS)
+			) {
 				continue;
 			}
 
