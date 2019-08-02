@@ -49,17 +49,8 @@ public class ReactPlugin extends PrimalPlugin
 	@Override
 	public void start()
 	{
-		System.out.println("==============================================================");
-		System.out.println(" THIS IS AN EARLY REACT BETA RELEASE");
-		System.out.println(" THIS VERSION WAS DISTRIBUTED TO SPECIFIC TRUSTED USERS");
-		System.out.println(" TO TEST NEW AND BREAKING CHANGES TO THE REACT.");
-		System.out.println(" PLEASE DO NOT REDISTRIBUTE!");
-		System.out.println("==============================================================");
-
-		try {
-			Thread.sleep(1000 * 3);
-		} catch (InterruptedException e) {
-		}
+		if (this.getDescription().getVersion().contains("-dev"))
+			this.warn();
 
 		controllers = new GList<IController>();
 		Surge.m();
@@ -220,6 +211,21 @@ public class ReactPlugin extends PrimalPlugin
 		}
 
 		return C.AQUA + "[" + C.DARK_GRAY + "React" + C.GRAY + " - " + C.WHITE + subTag.trim() + C.AQUA + "]" + C.GRAY + ": ";
+	}
+
+	public void warn()
+	{
+		System.out.println("==============================================================");
+		System.out.println("THIS IS AN EARLY REACT BETA RELEASE. THIS VERSION WAS PROVIDED");
+		System.out.println("TO SPECIFIC AND TRUSTED USERS. THIS BUILD MAY BE UNSTABLE.");
+		System.out.println("PLEASE USE COMMON SENSE WHEN USING DEVELOPMENT BUILDS, AND HAVE");
+		System.out.println("TESTED BACKUPS. PLEASE DO NOT REDISTRIBUTE THIS EARLY ACCESS BUILD.");
+		System.out.println("==============================================================");
+
+		try {
+			Thread.sleep(1000 * 3);
+		} catch (InterruptedException e) {
+		}
 	}
 
 	private void stopNMS()
