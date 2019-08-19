@@ -174,7 +174,7 @@ public class ActionPurgeEntities extends Action
 			final int k = f;
 			Entity i = e[f];
 
-			if (e == null) continue seeking;
+			if (i == null) continue seeking;
 
 			for(ISelector j : selectors)
 			{
