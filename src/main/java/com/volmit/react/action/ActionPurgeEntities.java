@@ -167,11 +167,14 @@ public class ActionPurgeEntities extends Action
 	{
 		boolean nc = false;
 		FinalInteger cu = new FinalInteger(0);
+		final Entity[] e = chunk.getEntities();
 
-		seeking: for(int f = 0; f < chunk.getEntities().length; f++)
+		seeking: for(int f = 0; f < e.length; f++)
 		{
 			final int k = f;
-			Entity i = chunk.getEntities()[f];
+			Entity i = e[f];
+
+			if (e == null) continue seeking;
 
 			for(ISelector j : selectors)
 			{
