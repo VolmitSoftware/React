@@ -11,10 +11,8 @@ prefix: React
 commands: 
   react: 
     aliases: [re, ract]
-    permission: react.access
   rai:
     aliases: [react-ai]
-    permission: react.rai
 permissions:
   react.*:
     description: Gives access to all React permissions
