@@ -482,7 +482,7 @@ public class GraphingInstance implements Listener
 			return;
 		}
 
-		for(int i = 12; i < 33; i--)
+		for(int i = 12; i >= 0 ; i--)
 		{
 			if(player.getInventory().getItem(i) == null || player.getInventory().getItem(i).getType().equals(Material.AIR))
 			{
