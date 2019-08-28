@@ -181,7 +181,7 @@ public class CommandPing extends ReactCommand
 				rtex.getExtras().add(new ColoredString(aq, p.getName()));
 				rtex.getExtras().add(new ColoredString(gr, Lang.getString("command.ping.all.info").replaceAll("%ping%", getPlayerPing(p))));
 				rtex.getExtras().add(new ColoredString(gr, Lang.getString("command.ping.all.measured").replaceAll("%time%", F.time(M.ms() - React.instance.protocolController.ago(p), 0))));
-				rtex.getExtras().add(new ColoredString(C.RESET, "\n"));
+				rtex.getExtras().add(new ColoredString(C.RESET, "\n\n"));
 				rtex.getExtras().add(new ColoredString(yeeet, Lang.getString("command.ping.all.tp")));
 				rtx.addTextFireHoverCommand(new ColoredString(i % 2 == 0 ? aq : gr, p.getName()).toString() + " ", rtex,
 						"/tp " + p.getName(), aq);
