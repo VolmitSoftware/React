@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.volmit</groupId>
 	<artifactId>React</artifactId>
-	<version>6.614-dev</version>
+	<version>6.614</version>
 	<name>React</name>
 	<description>A performance plugin</description>
 	<properties>
