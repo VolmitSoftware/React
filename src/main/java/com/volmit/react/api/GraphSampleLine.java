@@ -200,7 +200,7 @@ public class GraphSampleLine extends NormalGraph implements IGraph
 
 		for(Double i : map)
 		{
-			aa.put(i);
+			aa.put(i != null ? i : 0.0);
 		}
 
 		double dp = M.clip(1.0 - (aa.getAverage() / getMax()), 0, 1) * frame.getHeight();
