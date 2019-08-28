@@ -195,7 +195,7 @@ public class CommandPing extends ReactCommand
 			for (Player p : players) {
 				sender.sendMessage(
 					(new ColoredString(aq, p.getName())).toString() + gr + ": " +
-						(new ColoredString(gr, Lang.getString("command.ping.all.info").replaceAll("%ping%", getPlayerPing(p)))).toString().trim()
+						(new ColoredString(gr, Lang.getString("command.ping.all.info").replaceAll("%ping%", getPlayerPing(p)))).toString().replace('\n', ' ').trim()
 				);
 			}
 		}
