@@ -29,6 +29,7 @@ public class Info
 	public static String COMMAND_PING = "ping"; //$NON-NLS-1$
 	public static String COMMAND_PING_ALIAS_1 = "png"; //$NON-NLS-1$
 	public static String COMMAND_PING_ALIAS_2 = "p"; //$NON-NLS-1$
+	public static String COMMAND_PING_ALIAS_3 = "pings";
 	public static String COMMAND_PING_USAGE = "[player] [opts]"; //$NON-NLS-1$
 
 	public static String COMMAND_STATUS_DESCRIPTION = Lang.getString("command.status.description"); //$NON-NLS-1$
