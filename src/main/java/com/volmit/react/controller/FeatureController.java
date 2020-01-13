@@ -69,6 +69,11 @@ public class FeatureController extends Controller implements INMSBinding
 					trueBinding = new NMSBinding14(getPackageVersion());
 				}
 
+				else if(Protocol.R1_15.to(Protocol.LATEST).contains(Protocol.getProtocolVersion()))
+				{
+					trueBinding = new NMSBinding15(getPackageVersion());
+				}
+
 				else
 				{
 					trueBinding = null;
@@ -82,7 +87,7 @@ public class FeatureController extends Controller implements INMSBinding
 		}
 		catch(Throwable e)
 		{
-			System.out.println("No NMS Binder Found i cri 1.14");
+			System.out.println("No NMS Binder Found");
 			e.printStackTrace();
 		}
 	}
