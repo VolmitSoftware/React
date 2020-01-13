@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.volmit</groupId>
 	<artifactId>React</artifactId>
-	<version>6.614</version>
+	<version>6.615</version>
 	<name>React</name>
 	<description>A performance plugin</description>
 	<properties>
@@ -124,7 +124,7 @@
 		</repository>
 		<repository>
 			<id>volmit</id>
-			<url>http://nexus.volmit.com/content/repositories/volmit</url>
+			<url>http://nexus.volmit.com:8080/repository/volmit/</url>
 		</repository>
 		<repository>
 			<id>placeholderapi</id>
@@ -134,58 +134,52 @@
 	<dependencies>
 		<!-- Spigot API -->
 		<dependency>
-			<groupId>org.spigotmc</groupId>
+			<groupId>org.spigot</groupId>
 			<artifactId>spigot</artifactId>
 			<version>1.12.2</version>
 			<scope>provided</scope>
 		</dependency>
 		<!-- Craftbukkit Versions -->
 		<dependency>
-			<groupId>org.bukkit</groupId>
+			<groupId>org.craftbukkit</groupId>
 			<artifactId>craftbukkit14</artifactId>
-			<version>1.14.2</version>
+			<version>14</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.bukkit</groupId>
+			<groupId>org.craftbukkit</groupId>
 			<artifactId>craftbukkit13</artifactId>
-			<version>1.13.2</version>
+			<version>13</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.bukkit</groupId>
+			<groupId>org.craftbukkit</groupId>
 			<artifactId>craftbukkit12</artifactId>
-			<version>1.12.2</version>
+			<version>12</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.bukkit</groupId>
+			<groupId>org.craftbukkit</groupId>
 			<artifactId>craftbukkit11</artifactId>
-			<version>1.11.2</version>
+			<version>11</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.bukkit</groupId>
+			<groupId>org.craftbukkit</groupId>
 			<artifactId>craftbukkit10</artifactId>
-			<version>1.10.2</version>
+			<version>10</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.bukkit</groupId>
-			<artifactId>craftbukkit94</artifactId>
-			<version>1.9.4</version>
+			<groupId>org.craftbukkit</groupId>
+			<artifactId>craftbukkit19</artifactId>
+			<version>19</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.bukkit</groupId>
-			<artifactId>craftbukkit92</artifactId>
-			<version>1.9.2</version>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.bukkit</groupId>
+			<groupId>org.craftbukkit</groupId>
 			<artifactId>craftbukkit18</artifactId>
-			<version>1.8.8</version>
+			<version>18</version>
 			<scope>provided</scope>
 		</dependency>
 		<!-- Plugin Hooks -->
@@ -244,7 +238,7 @@
 		<dependency>
 			<groupId>com.volmit</groupId>
 			<artifactId>Primal</artifactId>
-			<version>1.0.41</version>
+			<version>1.0.42</version>
 		</dependency>
 	</dependencies>
 </project>
