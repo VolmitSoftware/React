@@ -2,9 +2,16 @@ package com.volmit.react.util;
 
 import org.bukkit.Bukkit;
 
+/**
+ * See https://wiki.vg/Protocol_version_numbers for updating
+ * @author cyberpwn
+ *
+ */
 public enum Protocol
 {
 	LATEST(10000, "Latest"),
+	R1_15_1(575, "1.15.1", "v1_15_R1"),
+	R1_15(573, "1.15", "v1_15_R1"),
 	R1_14_3(490, "1.14.3", "v1_14_R1"),
 	R1_14_2(485, "1.14.2", "v1_14_R1"),
 	R1_14_1(480, "1.14.2", "v1_14_R1"),

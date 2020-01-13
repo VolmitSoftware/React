@@ -26,7 +26,7 @@
 		<react.release.name>${project.name}-${project.version}</react.release.name>
 		<react.target>${project.basedir}/target</react.target>
 		<react.release.target>${react.target}/${react.release.name}.jar</react.release.target>
-		<react.development.location>${user.home}\Documents\development\servers\dynamic\plugins\${project.name}.jar</react.development.location>
+		<react.development.location>${user.home}\Documents\development\server\plugins\${project.name}.jar</react.development.location>
 		<react.release.location>${react.release}/${project.name}-${project.version}.jar</react.release.location>
 		<react.script.copy>${react.scripts}\copy.bat</react.script.copy>
 		<react.skip-copy>false</react.skip-copy>
@@ -95,7 +95,7 @@
 		<profile>
 			<id>cyberpwn</id>
 			<properties>
-				<react.development.location>${user.home}\Documents\development\servers\dynamic\plugins\React.jar</react.development.location>
+				<react.development.location>${user.home}\Documents\development\server\plugins\React.jar</react.development.location>
 			</properties>
 		</profile>
 		<profile>
@@ -140,6 +140,12 @@
 			<scope>provided</scope>
 		</dependency>
 		<!-- Craftbukkit Versions -->
+		<dependency>
+			<groupId>org.craftbukkit</groupId>
+			<artifactId>craftbukkit15</artifactId>
+			<version>15</version>
+			<scope>provided</scope>
+		</dependency>
 		<dependency>
 			<groupId>org.craftbukkit</groupId>
 			<artifactId>craftbukkit14</artifactId>
@@ -238,7 +244,7 @@
 		<dependency>
 			<groupId>com.volmit</groupId>
 			<artifactId>Primal</artifactId>
-			<version>1.0.42</version>
+			<version>1.0.43</version>
 		</dependency>
 	</dependencies>
 </project>
