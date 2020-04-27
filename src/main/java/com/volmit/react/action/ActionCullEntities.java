@@ -1,7 +1,9 @@
 package com.volmit.react.action;
 
+import com.volmit.react.Gate;
 import org.bukkit.Chunk;
 import org.bukkit.Material;
+import org.bukkit.SkullType;
 import org.bukkit.entity.EntityType;
 import org.bukkit.inventory.ItemStack;
 
@@ -21,6 +23,9 @@ import com.volmit.react.util.F;
 import com.volmit.react.util.FinalInteger;
 import com.volmit.react.util.M;
 import com.volmit.react.util.Task;
+import org.bukkit.inventory.meta.ItemMeta;
+
+import static org.bukkit.Bukkit.getServer;
 
 public class ActionCullEntities extends Action
 {
@@ -149,12 +154,6 @@ public class ActionCullEntities extends Action
 		};
 	}
 
-	@Override
-	public ItemStack getIcon()
-	{
-		return new ItemStack(Material.SHEARS);
-	}
-
 	public void cull(Chunk chunk, Runnable cb, IActionSource source, ISelector... selectors)
 	{
 		lcd = React.instance.entityCullController.cull(chunk);
@@ -165,5 +164,11 @@ public class ActionCullEntities extends Action
 	public String getNode()
 	{
 		return "cull-entities";
+	}
+
+	@Override
+	public ItemStack getIcon()
+	{
+		return new ItemStack(Material.SKULL_ITEM);
 	}
 }
