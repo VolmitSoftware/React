@@ -109,3 +109,4 @@ release/
 .idea/
 
 dependency-reduced-pom\.xml
+/React.iml

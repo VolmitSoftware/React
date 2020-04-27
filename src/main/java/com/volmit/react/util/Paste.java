@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 
 import com.volmit.react.Config;
@@ -14,13 +15,14 @@ import com.volmit.react.Config;
  * Paste to the web
  *
  * @author cyberpwn
+ * Modified by relavis
  */
 public class Paste
 {
 	public static String lastKey;
 
 	/**
-	 * Paste to throw.volmit.com/
+	 * Paste to hastebin.com/
 	 *
 	 * @param s
 	 *            the paste text (use newline chars for new lines)
@@ -36,10 +38,16 @@ public class Paste
 			return "http://SAFEMODE-NETWORKING-ENABLED";
 		}
 
-		HttpURLConnection hastebin = (HttpURLConnection) new URL("http://paste.volmit.com/documents").openConnection();
+		byte[] pasteData = toPaste.getBytes(StandardCharsets.UTF_8);
+		int pasteDataLength = pasteData.length;
+
+		HttpURLConnection hastebin = (HttpURLConnection) new URL("https://hastebin.com/documents").openConnection();
 		hastebin.setRequestMethod("POST");
 		hastebin.setDoOutput(true);
 		hastebin.setDoInput(true);
+		hastebin.setRequestProperty("User-Agent", "Hastebin-React Interface");
+		hastebin.setRequestProperty("Content-Length", Integer.toString(pasteDataLength));
+		hastebin.setUseCaches(false);
 		DataOutputStream dos = new DataOutputStream(hastebin.getOutputStream());
 		dos.writeBytes(toPaste);
 		dos.flush();
@@ -48,6 +56,6 @@ public class Paste
 		JSONObject json = new JSONObject(rd.readLine());
 
 		lastKey = json.get("key") + "";
-		return "http://paste.volmit.com/" + json.get("key");
+		return "https://hastebin.com/" + json.get("key");
 	}
 }

@@ -39,7 +39,7 @@ public class ActionDump extends Action
 			try
 			{
 				System.out.println("[React Dump] Forcing a debug!");
-				String urlDump = Paste.paste(Gate.dump().toString(4)) + ".json";
+				String urlDump = Paste.paste(Gate.dump().toString(4));
 				as.sendResponseSuccess("Cha-Ching " + C.WHITE + urlDump);
 				completeAction();
 				return;
@@ -62,9 +62,9 @@ public class ActionDump extends Action
 					JSONObject js = new JSONObject();
 					String urlDump = Paste.paste(Gate.dump().toString(4));
 					String urlConfig = readFile(new File(ReactPlugin.i.getDataFolder(), "config.yml"));
-					String urlGoals = RAI.instance.getGoalManager().saveGoalsToPaste().split(" ")[1].trim() + ".json";
-					js.put("dump", urlDump + ".json");
-					js.put("config", urlConfig);
+					String urlGoals = RAI.instance.getGoalManager().saveGoalsToPaste().split(" ")[1].trim();
+					js.put("dump", urlDump);
+					js.put("config", urlConfig.substring(0, urlConfig.length() - 4));
 					js.put("goals", urlGoals);
 					long time = 215000;
 					int inter = 196;
@@ -122,7 +122,7 @@ public class ActionDump extends Action
 
 											try
 											{
-												url = Paste.paste(js.toString(4)) + ".json";
+												url = Paste.paste(js.toString(4));
 
 												new S("tfin")
 												{

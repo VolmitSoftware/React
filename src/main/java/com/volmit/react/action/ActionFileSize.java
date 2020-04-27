@@ -86,7 +86,7 @@ public class ActionFileSize extends Action
 						@Override
 						public void run()
 						{
-							Gate.msgSuccess(((PlayerActionSource) source).getPlayer(), "Ding! " + C.WHITE + C.UNDERLINE + u + ".txt");
+							Gate.msgSuccess(((PlayerActionSource) source).getPlayer(), "Ding! " + C.WHITE + C.UNDERLINE + u);
 						}
 					};
 				}
@@ -101,7 +101,7 @@ public class ActionFileSize extends Action
 						public void run()
 						{
 							source.sendResponseActing(d);
-							source.sendResponseError("Failed to paste to volmit.");
+							source.sendResponseError("Failed to paste to Hastebin.");
 						}
 					};
 				}
