@@ -60,15 +60,15 @@ public class CommandStatus extends ReactCommand
 
 	private ItemStack makeBook()
 	{
-		ItemStack is = new ItemStack(Material.WRITTEN_BOOK);
+		ItemStack is = new ItemStack(Material.WRITTEN_BOOK, 1);
 		BookMeta book = (BookMeta) is.getItemMeta();
-		book.setTitle(C.BLACK + "^" + C.AQUA + Lang.getString("command.status.server-status")); //$NON-NLS-1$
+		book.setTitle(C.BLACK + "^" + C.AQUA + Lang.getString("command.status.server-status") + C.RESET); //$NON-NLS-1$
+		book.setAuthor("React");
 		GList<String> set = new GList<String>();
 		addStatusPages(set);
 		addSpikePages(set);
 		book.setPages(set);
 		is.setItemMeta(book);
-
 		return is;
 	}
 
