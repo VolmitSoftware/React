@@ -101,7 +101,7 @@ public class ActionFileSize extends Action
 						public void run()
 						{
 							source.sendResponseActing(d);
-							source.sendResponseError("Failed to paste to volmit.");
+							source.sendResponseError("Failed to paste to hasteb.in.");
 						}
 					};
 				}

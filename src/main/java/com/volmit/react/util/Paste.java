@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 
 import com.volmit.react.Config;
@@ -20,13 +21,13 @@ public class Paste
 	public static String lastKey;
 
 	/**
-	 * Paste to throw.volmit.com/
+	 * Paste to hasteb.in/
 	 *
 	 * @param s
 	 *            the paste text (use newline chars for new lines)
 	 * @return the url to access the paste
 	 * @throws org.json.simple.parser.ParseException
-	 * @throws Exception
+	 * @throws IOException
 	 *             shit happens
 	 */
 	public static String paste(String toPaste) throws IOException, ParseException, org.json.simple.parser.ParseException
@@ -36,10 +37,17 @@ public class Paste
 			return "http://SAFEMODE-NETWORKING-ENABLED";
 		}
 
-		HttpURLConnection hastebin = (HttpURLConnection) new URL("http://paste.volmit.com/documents").openConnection();
+
+		byte[] pasteData = toPaste.getBytes(StandardCharsets.UTF_8);
+		int pasteDataLength = pasteData.length;
+
+		HttpURLConnection hastebin = (HttpURLConnection) new URL("https://hasteb.in/documents").openConnection();
 		hastebin.setRequestMethod("POST");
 		hastebin.setDoOutput(true);
 		hastebin.setDoInput(true);
+		hastebin.setRequestProperty("User-Agent", "React");
+		hastebin.setRequestProperty("Content-Length", Integer.toString(pasteDataLength));
+		hastebin.setUseCaches(false);
 		DataOutputStream dos = new DataOutputStream(hastebin.getOutputStream());
 		dos.writeBytes(toPaste);
 		dos.flush();
@@ -48,6 +56,6 @@ public class Paste
 		JSONObject json = new JSONObject(rd.readLine());
 
 		lastKey = json.get("key") + "";
-		return "http://paste.volmit.com/" + json.get("key");
+		return "https://hasteb.in/" + json.get("key");
 	}
 }
