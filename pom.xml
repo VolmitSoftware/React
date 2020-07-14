@@ -202,11 +202,10 @@
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
-			<groupId>com.mm</groupId>
-			<artifactId>myth</artifactId>
-			<scope>system</scope>
-			<systemPath>${react.libs}/MythicMobs-4.3.2-SNAPSHOT.jar</systemPath>
-			<version>1.0</version>
+			<groupId>com.mythicmobs</groupId>
+			<artifactId>mythicmobs</artifactId>
+			<version>4.3.2</version>
+			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>me.clip</groupId>
