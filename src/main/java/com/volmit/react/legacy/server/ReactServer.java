@@ -7,7 +7,6 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 
-import com.volmit.react.util.*;
 import org.apache.commons.lang3.StringUtils;
 import org.bukkit.Bukkit;
 
@@ -16,6 +15,10 @@ import com.volmit.react.api.ActionHandle;
 import com.volmit.react.api.ActionType;
 import com.volmit.react.api.ConsoleActionSource;
 import com.volmit.react.api.SampledType;
+import com.volmit.react.util.JSONObject;
+import com.volmit.react.util.M;
+import com.volmit.react.util.Platform;
+import com.volmit.react.util.S;
 
 import primal.lang.collection.GList;
 
@@ -294,6 +297,7 @@ public class ReactServer extends Thread
 	}
 
 
+	@SuppressWarnings("deprecation")
 	public void destroy()
 	{
 		try {
