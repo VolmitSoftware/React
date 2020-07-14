@@ -247,10 +247,5 @@
 			<artifactId>async-http-client</artifactId>
 			<version>1.6.3</version>
 		</dependency>
-		<dependency>
-			<groupId>com.volmit</groupId>
-			<artifactId>Primal</artifactId>
-			<version>1.0.44</version>
-		</dependency>
 	</dependencies>
 </project>
