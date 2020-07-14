@@ -45,7 +45,6 @@ public class ReactPlugin extends PrimalPlugin
 	private HotloadManager mgr;
 	private ReactServer srv;
 
-	@SuppressWarnings("deprecation")
 	@Override
 	public void start()
 	{
