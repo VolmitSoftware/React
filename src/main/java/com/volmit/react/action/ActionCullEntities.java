@@ -152,7 +152,7 @@ public class ActionCullEntities extends Action
 	@Override
 	public ItemStack getIcon()
 	{
-		return new ItemStack(Material.SHEARS);
+		return new ItemStack(Material.STONE);
 	}
 
 	public void cull(Chunk chunk, Runnable cb, IActionSource source, ISelector... selectors)

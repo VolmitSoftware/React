@@ -5,6 +5,8 @@ import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
+import com.volmit.react.util.Protocol;
+
 import primal.bukkit.world.MaterialBlock;
 import primal.compute.math.M;
 import primal.lang.collection.GList;
@@ -44,6 +46,19 @@ public class UIElement implements Element
 	@Override
 	public UIElement setMaterial(MaterialBlock material)
 	{
+		try
+		{
+			if(Protocol.R1_13.to(Protocol.LATEST).contains(Protocol.getProtocolVersion()))
+			{
+				material.setData((byte) 0);
+			}
+		}
+		
+		catch(Throwable e)
+		{
+			e.printStackTrace();
+		}
+
 		this.material = material;
 		return this;
 	}

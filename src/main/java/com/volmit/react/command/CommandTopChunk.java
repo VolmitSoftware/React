@@ -22,6 +22,7 @@ import com.volmit.react.api.SideGate;
 import com.volmit.react.controller.EventController;
 import com.volmit.react.util.F;
 import com.volmit.react.util.FinalInteger;
+import com.volmit.react.util.Protocol;
 
 import primal.bukkit.inventory.Element;
 import primal.bukkit.inventory.UIElement;
@@ -114,7 +115,7 @@ public class CommandTopChunk extends ReactCommand
 			//@builder
 			Element e = new UIElement("ch-"+ index)
 					.setName(C.GOLD + ww.getName() + " at " + C.YELLOW + c.getX() + ", " + c.getZ())
-					.setMaterial(new MaterialBlock(Material.IRON_CHESTPLATE))
+					.setMaterial(new MaterialBlock(Protocol.R1_13.to(Protocol.LATEST).contains(Protocol.getProtocolVersion()) ? Material.STONE : Material.IRON_CHESTPLATE))
 					.setProgress(i.totalScore() / (tmax == 0 ? 1 : tmax))
 					.onLeftClick((x) -> tpChunk(c, w.getViewer()))
 					.addLore(C.AQUA + "Entities: " + C.DARK_AQUA  + C.BOLD+ F.f(c.getEntities().length))
