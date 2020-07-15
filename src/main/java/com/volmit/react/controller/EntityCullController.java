@@ -141,17 +141,25 @@ public class EntityCullController extends Controller
 			@Override
 			public void run()
 			{
-				searching: for(UUID i : trackReasons.k().clone())
+				try
 				{
-					for(Entity j : je)
+					searching: for(UUID i : trackReasons.k().copy())
 					{
-						if(j.getUniqueId().equals(i))
+						for(Entity j : je)
 						{
-							continue searching;
+							if(j.getUniqueId().equals(i))
+							{
+								continue searching;
+							}
 						}
-					}
 
-					trackReasons.remove(i);
+						trackReasons.remove(i);
+					}
+				}
+				
+				catch(Throwable e)
+				{
+					
 				}
 			}
 		};
