@@ -24,7 +24,7 @@ public class Capability
 	public static final Capability ACTION_BAR = new Capability(Lang.getString("react.capabilities.action-bars"), Protocol.R1_8); //$NON-NLS-1$
 	public static final Capability ENTITY_NAMES = new Capability(Lang.getString("react.capabilities.entity-naming"), Protocol.R1_8); //$NON-NLS-1$
 	public static final Capability TITLE_BAR = new Capability(Lang.getString("react.capabilities.title-bar"), Protocol.R1_7_10); //$NON-NLS-1$
-	public static final Capability CHUNK_RELIGHTING = new Capability(Lang.getString("react.capabilities.chunk-relighting"), Lang.getString("react.capabilities.fawe")).max(Protocol.R1_13_2); //$NON-NLS-1$ //$NON-NLS-2$
+	public static final Capability CHUNK_RELIGHTING = new Capability(Lang.getString("react.capabilities.chunk-relighting"), Lang.getString("react.capabilities.fawe")); //$NON-NLS-1$ //$NON-NLS-2$
 	public static final Capability MONITOR_SUBMISSIVENESS = new Capability(Lang.getString("react.capabilities.monitor-submissive"), Protocol.R1_7_1, Lang.getString("react.capabilities.proto")); //$NON-NLS-1$ //$NON-NLS-2$
 	public static final Capability ACCELERATED_PING = new Capability(Lang.getString("react.capabilities.ping"), Protocol.R1_8, Lang.getString("react.capabilities.proto")); //$NON-NLS-1$ //$NON-NLS-2$
 	public static final Capability STREAM_PROFILING = new Capability("Stream Profiling", Protocol.R1_8, Lang.getString("react.capabilities.proto")); //$NON-NLS-1$ //$NON-NLS-2$
@@ -33,7 +33,7 @@ public class Capability
 	public static final Capability PASSENGERS = new Capability(Lang.getString("react.capabilities.passengers"), Protocol.R1_11); //$NON-NLS-1$
 	public static final Capability FAST_MAPPING = new Capability("Fast Mapping", Protocol.R1_8); //$NON-NLS-1$
 	public static final Capability ARROW_OWNER = new Capability("Arrow Owner", Protocol.R1_12); //$NON-NLS-1$
-	public static final GList<Capability> capabilities = new GList<Capability>();
+	public static final GList<Capability> capabilities = new GList<>();
 
 	static
 	{

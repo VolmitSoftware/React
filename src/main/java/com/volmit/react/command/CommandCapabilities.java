@@ -69,7 +69,7 @@ public class CommandCapabilities extends ReactCommand
 					}
 				}
 
-				Gate.msgSuccess(sender, C.WHITE + i.getName() + C.GRAY + "(" + why.substring(1) + C.GRAY + ")");
+				Gate.msgSuccess(sender, C.WHITE + i.getName() + C.GRAY + " (" + why.substring(1) + C.GRAY + ")");
 			}
 
 			else if(!i.isFlavorCapable())
