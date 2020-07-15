@@ -33,22 +33,20 @@ public class Unzip
     {
         if(state.equals(UnzipState.UNZIPPING))
         {
-            throw new IOException("Download already running!");
+            throw new IOException("Unzip already running!");
         }
-
+        if(!outputDestination.exists()) outputDestination.mkdirs();
+        FileInputStream fis;
         try
         {
-            if(!outputDestination.exists()) outputDestination.mkdirs();
+            fis = new FileInputStream(file);
+            ZipInputStream zis = new ZipInputStream(fis);
+            ZipEntry ze = zis.getNextEntry();
 
             long time = M.ms();
             int read = 0;
             long size = file.length();
 
-            FileInputStream in = new FileInputStream(file);
-            
-            ZipInputStream zipin = new ZipInputStream(in);
-            ZipEntry zipEntry = zipin.getNextEntry();
-            String fileName = zipEntry.getName();
             UnzipState lastState = state;
             status.setBytesTotal(size);
             status.setBytesUnzipped(0);
@@ -57,26 +55,26 @@ public class Unzip
             monitor.onUnzipStateChanged(this, lastState, state);
             monitor.onUnzipStarted(this);
 
-            while(zipEntry != null)
-            {
+            while(ze != null){
+                String fileName = ze.getName();
                 File newFile = new File(outputDestination + File.separator + fileName);
                 System.out.println("Unzipping to "+newFile.getAbsolutePath());
                 //create directories for sub directories in zip
                 new File(newFile.getParent()).mkdirs();
-                FileOutputStream out = new FileOutputStream(newFile);
-                while ((read = in.read(buffer, 0, bufferSize)) != -1) {
-                    out.write(buffer, 0, read);
+                FileOutputStream fos = new FileOutputStream(newFile);
+                int len;
+                while ((len = zis.read(buffer)) > 0) {
+                    fos.write(buffer, 0, len);
                 }
-                out.close();
+                fos.close();
                 //close this ZipEntry
-                zipin.closeEntry();
-                zipEntry = zipin.getNextEntry();
-                status.setBytesUnzipped(status.getBytesUnzipped() + read);
-                status.setTimeElapsed(M.ms() - time);
-                monitor.onUnzipUpdateProgress(this, status.getBytesUnzipped(), status.getBytesTotal(), status.getPercentCompleted());
+                zis.closeEntry();
+                ze = zis.getNextEntry();
             }
 
-            in.close();
+            zis.closeEntry();
+            zis.close();
+            fis.close();
             lastState = state;
             state = UnzipState.FINISHED;
             monitor.onUnzipStateChanged(this, lastState, state);
