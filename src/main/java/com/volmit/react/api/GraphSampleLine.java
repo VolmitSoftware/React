@@ -267,27 +267,40 @@ public class GraphSampleLine extends NormalGraph implements IGraph
 
 	public void scaleFor(GList<Double> nums)
 	{
-		double max = Double.MIN_VALUE;
-
-		for(double i : nums)
+		if(nums == null)
 		{
-			if(i > max)
-			{
-				max = i;
-			}
-		}
-
-		if(max < 0)
-		{
-			setMax(1.0);
 			return;
 		}
-
-		if(Math.abs(getMax() - max) > 0.01)
+		
+		try
 		{
-			double dist = Math.abs(getMax() - max);
-			double move = dist / 5;
-			setMax(getMax() > max ? getMax() - move : getMax() + move);
+			double max = Double.MIN_VALUE;
+
+			for(double i : nums)
+			{
+				if(i > max)
+				{
+					max = i;
+				}
+			}
+
+			if(max < 0)
+			{
+				setMax(1.0);
+				return;
+			}
+
+			if(Math.abs(getMax() - max) > 0.01)
+			{
+				double dist = Math.abs(getMax() - max);
+				double move = dist / 5;
+				setMax(getMax() > max ? getMax() - move : getMax() + move);
+			}
+		}
+		
+		catch(Throwable e)
+		{
+			
 		}
 	}
 
