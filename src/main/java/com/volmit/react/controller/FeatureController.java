@@ -69,9 +69,14 @@ public class FeatureController extends Controller implements INMSBinding
 					trueBinding = new NMSBinding14(getPackageVersion());
 				}
 
-				else if(Protocol.R1_15.to(Protocol.LATEST).contains(Protocol.getProtocolVersion()))
+				else if(Protocol.R1_15.to(Protocol.R1_15_2).contains(Protocol.getProtocolVersion()))
 				{
 					trueBinding = new NMSBinding15(getPackageVersion());
+				}
+
+				else if(Protocol.R1_16.to(Protocol.LATEST).contains(Protocol.getProtocolVersion()))
+				{
+					trueBinding = new NMSBinding16(getPackageVersion());
 				}
 
 				else
