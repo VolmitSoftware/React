@@ -1,13 +1,11 @@
 package com.volmit.react.util;
 
-import java.io.*;
-import java.net.URL;
-import java.net.URLConnection;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
+import org.zeroturnaround.zip.ZipUtil;
 
-public class Unzip
-{
+import java.io.File;
+import java.io.IOException;
+
+public class Unzip {
     private UnzipState state;
     private UnzipType type;
     private UnzipStatus status;
@@ -17,8 +15,7 @@ public class Unzip
     private int bufferSize;
     private byte[] buffer;
 
-    public Unzip(UnzipMonitor monitor, File file, File outputDestination, int bufferSize)
-    {
+    public Unzip(UnzipMonitor monitor, File file, File outputDestination, int bufferSize) {
         this.file = file;
         this.outputDestination = outputDestination;
         this.monitor = monitor;
@@ -29,20 +26,13 @@ public class Unzip
         type = UnzipType.INDETERMINATE;
     }
 
-    public void start() throws IOException
-    {
-        if(state.equals(UnzipState.UNZIPPING))
-        {
+    public void start() throws IOException {
+        if (state.equals(UnzipState.UNZIPPING)) {
             throw new IOException("Unzip already running!");
         }
-        if(!outputDestination.exists()) outputDestination.mkdirs();
-        FileInputStream fis;
-        try
-        {
-            fis = new FileInputStream(file);
-            ZipInputStream zis = new ZipInputStream(fis);
-            ZipEntry ze = zis.getNextEntry();
+        if (!outputDestination.exists()) outputDestination.mkdirs();
 
+        try {
             long time = M.ms();
             int read = 0;
             long size = file.length();
@@ -54,35 +44,12 @@ public class Unzip
             state = UnzipState.UNZIPPING;
             monitor.onUnzipStateChanged(this, lastState, state);
             monitor.onUnzipStarted(this);
-
-            while(ze != null){
-                String fileName = ze.getName();
-                File newFile = new File(outputDestination + File.separator + fileName);
-                System.out.println("Unzipping to "+newFile.getAbsolutePath());
-                //create directories for sub directories in zip
-                new File(newFile.getParent()).mkdirs();
-                FileOutputStream fos = new FileOutputStream(newFile);
-                int len;
-                while ((len = zis.read(buffer)) > 0) {
-                    fos.write(buffer, 0, len);
-                }
-                fos.close();
-                //close this ZipEntry
-                zis.closeEntry();
-                ze = zis.getNextEntry();
-            }
-
-            zis.closeEntry();
-            zis.close();
-            fis.close();
+            ZipUtil.unpack(file, outputDestination);
             lastState = state;
             state = UnzipState.FINISHED;
             monitor.onUnzipStateChanged(this, lastState, state);
             monitor.onUnzipFinished(this);
-        }
-
-        catch(Throwable e)
-        {
+        } catch (Throwable e) {
             Ex.t(e);
             UnzipState lastState = state;
             state = UnzipState.FAILED;
@@ -92,33 +59,27 @@ public class Unzip
         }
     }
 
-    public UnzipState getState()
-    {
+    public UnzipState getState() {
         return state;
     }
 
-    public UnzipType getType()
-    {
+    public UnzipType getType() {
         return type;
     }
 
-    public UnzipStatus getStatus()
-    {
+    public UnzipStatus getStatus() {
         return status;
     }
 
-    public UnzipMonitor getMonitor()
-    {
+    public UnzipMonitor getMonitor() {
         return monitor;
     }
 
-    public File getFile()
-    {
+    public File getFile() {
         return file;
     }
 
-    public int getBufferSize()
-    {
+    public int getBufferSize() {
         return bufferSize;
     }
 }
