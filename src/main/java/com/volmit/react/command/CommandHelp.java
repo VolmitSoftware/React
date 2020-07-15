@@ -180,11 +180,11 @@ public class CommandHelp extends ReactCommand
 			C gray = Config.STYLE_STRIP_COLOR ? C.WHITE : C.GRAY;
 			String dgray = Config.STYLE_STRIP_COLOR ? RawText.COLOR_WHITE : RawText.COLOR_DARK_GRAY;
 			String daq = Config.STYLE_STRIP_COLOR ? RawText.COLOR_WHITE : RawText.COLOR_AQUA;
-			rtx.addText(F.repeat(gray + "=", 17), dgray, false, false, true, true, false); //$NON-NLS-1$
+			rtx.addText(F.repeat(gray + "\u23AF", 26), dgray, false, false, true, true, false); //$NON-NLS-1$
 			rtx.addText(" " + (page + 1) + Lang.getString("command.help.ofs") + (getPageSize(maxEntries, false)) + " ", daq); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-			rtx.addText(F.repeat(gray + "=", 17), dgray, false, false, true, true, false); //$NON-NLS-1$
+			rtx.addText(F.repeat(gray + "\u23AF", 26), dgray, false, false, true, true, false); //$NON-NLS-1$
 			rtx.tellRawTo(ReactPlugin.i, (Player) sender);
-		}
+		} 
 	}
 
 	public void sendFooter(CommandSender sender, int page, int maxEntries)
@@ -206,8 +206,8 @@ public class CommandHelp extends ReactCommand
 				rtx.addTextWithHover(Lang.getString("command.help.symbol-pipe"), dgray, Lang.getString("command.help.previous-page"), dred, false, false, false, false, false); //$NON-NLS-1$ //$NON-NLS-2$
 			}
 
-			rtx.addText(F.repeat(C.GRAY + " ", 17), dgray, false, false, true, true, false); //$NON-NLS-1$
-			rtx.addText(F.repeat(C.GRAY + " ", 17), dgray, false, false, true, true, false); //$NON-NLS-1$
+			rtx.addText(F.repeat(C.GRAY + " ", 29), dgray, false, false, true, true, false); //$NON-NLS-1$
+			rtx.addText(F.repeat(C.GRAY + " ", 29), dgray, false, false, true, true, false); //$NON-NLS-1$
 
 			if(page < getPageSize(maxEntries, false) - 1)
 			{
