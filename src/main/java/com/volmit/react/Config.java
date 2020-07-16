@@ -38,6 +38,21 @@ public class Config
 {
 	private static final GMap<World, WorldConfig> worldConfigs = new GMap<World, WorldConfig>();
 
+	@Comment("Synapse is the new react remote. Enable this to use Synapse. (EXPERIMENTAL)")
+	@Key("features.react.synapse.enabled")
+	@Injection(InjectionMethod.SWAP)
+	public static boolean ENABLE_SYNAPSE = false;
+
+	@Comment("The synapse server will run from react as a webserver for apps to communicate with it. Synapse requires a port that is not your server port to bind to. The default port is 21743 which the app assumes.")
+	@Key("features.react.synapse.port")
+	@Injection(InjectionMethod.SWAP)
+	public static int SYNAPSE_PORT = 21743;
+	
+	@Comment("The path to the server. For example, if your path is /react, then you would connect with https://server.com:<PORT>/react. Use / for root directory.")
+	@Key("features.react.synapse.path")
+	@Injection(InjectionMethod.SWAP)
+	public static String SYNAPSE_PATH = "/";
+	
 	@Comment("Slows down block physics on a per world basis if the maximum ticks per world is exceeded")
 	@Key("features.react.tick-splitter.max-ticks-per-world")
 	@Injection(InjectionMethod.SWAP)
