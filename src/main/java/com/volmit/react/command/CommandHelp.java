@@ -92,7 +92,7 @@ public class CommandHelp extends ReactCommand
 		RTEX rtex = new RTEX();
 		rtex.getExtras().add(new ColoredString(aq, Lang.getString("command.help.descriptor-react"))); //$NON-NLS-1$
 		rtex.getExtras().add(new ColoredString(gr, Lang.getString("command.help.or-re"))); //$NON-NLS-1$
-		rtx.addTextHover(Lang.getString("command.help.react-cmd"), rtex, aq); //$NON-NLS-1$
+		rtx.addTextSuggestedHoverCommand(Lang.getString("command.help.react-cmd"), rtex, Lang.getString("command.help.react-cmd") + " ", aq); //$NON-NLS-1$
 
 		return rtx;
 	}
@@ -123,7 +123,7 @@ public class CommandHelp extends ReactCommand
 				desc.getExtras().add(new ColoredString(gr, "\n" + i)); //$NON-NLS-1$
 			}
 
-			rtx.addTextHover(" " + command.getCommand(), desc, gr); //$NON-NLS-1$
+			rtx.addTextSuggestedHoverCommand(" " + command.getCommand(), desc, Lang.getString("command.help.react-cmd") + " " + command.getCommand(), gr); //$NON-NLS-1$
 
 			if(command.getUsage().trim().length() > 0)
 			{
@@ -159,7 +159,7 @@ public class CommandHelp extends ReactCommand
 
 					us.getExtras().add(descx);
 					us.getExtras().add(new ColoredString(gr, "\n" + F.wrapWords("\"" + des + "\"", 28))); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-					rtx.addTextHover(" " + i, us, prefix); //$NON-NLS-1$
+					rtx.addTextSuggestedHoverCommand(" " + i, us, Lang.getString("command.help.react-cmd") + " " + command.getCommand() + " ", prefix);
 				}
 			}
 
