@@ -29,7 +29,7 @@
 		<react.development.location>${user.home}\Documents\development\server\plugins\${project.name}.jar</react.development.location>
 		<react.release.location>${react.release}/${project.name}-${project.version}.jar</react.release.location>
 		<react.script.copy>${react.scripts}\copy.bat</react.script.copy>
-		<react.skip-copy>true</react.skip-copy>
+		<react.skip-copy>false</react.skip-copy>
 	</properties>
 	<build>
 		<resources>
@@ -220,6 +220,11 @@
 			<scope>provided</scope>
 		</dependency>
 		<!-- Utilities -->
+		<dependency>
+			<groupId>ninja.bytecode</groupId>
+			<artifactId>Shuriken</artifactId>
+			<version>1.2</version>
+		</dependency>
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
