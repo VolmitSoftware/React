@@ -19,7 +19,7 @@ public class SamplePhysicsTickTime extends MSampler
 			@Override
 			public String from(double d)
 			{
-				return F.time(d / 1000000.0, 1);
+				return F.time(d, 1);
 			}
 		};
 	}
@@ -38,7 +38,7 @@ public class SamplePhysicsTickTime extends MSampler
 	@Override
 	public void sample()
 	{
-		setValue(React.instance.physicsController.getaRSMS().getAverage());
+		setValue(React.instance.physicsController.getaRSMS().getAverage() / 1000000.0);
 	}
 
 	@Override

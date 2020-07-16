@@ -77,6 +77,8 @@ public class VirtualAction
 			{
 				e.printStackTrace();
 			}
+			
+			selectors.add(st);
 		}
 
 		if(options.containsKey("entity"))

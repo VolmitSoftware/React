@@ -171,11 +171,13 @@ public class GoalManager
 
 		writeGoal(createPurgeChunks(), new File(v, "purge-chunks.json"));
 		writeGoal(createCullEntities(), new File(v, "cull-entities.json"));
+		writeGoal(createThrottlePhysics(), new File(v, "throttle-physics.json"));
 
 		if(mf)
 		{
 			writeGoal(createPurgeChunks(), new File(f, "purge-chunks.json"));
 			writeGoal(createCullEntities(), new File(f, "cull-entities.json"));
+			writeGoal(createThrottlePhysics(), new File(f, "throttle-physics.json"));
 		}
 
 		if(!new File(v, "new").exists())
@@ -235,6 +237,30 @@ public class GoalManager
 		purgeChunks.setAction(va);
 
 		return purgeChunks;
+	}
+
+	public RAIGoal createThrottlePhysics()
+	{
+		RAIGoal throttlePhysics = new RAIGoal();
+		throttlePhysics.setInterval(13000);
+		throttlePhysics.setSv("13s");
+		throttlePhysics.setAuthor("React");
+		throttlePhysics.setName("Manage Physics");
+		throttlePhysics.setDescription("Throttles physics in areas where redstone fluids or normal physics is high.");
+		throttlePhysics.setHealthRegen(3);
+		throttlePhysics.setMaxHealth(250);
+		throttlePhysics.setHealthDamage(100);
+		ConditionSet cs = new ConditionSet();
+		cs.getConditions().add(new Condition(SampledType.PHYSICS_TIME, ConditionOp.GREATER, 5));
+		throttlePhysics.setConditions(cs);
+
+		VirtualAction va = new VirtualAction(ActionType.THROTTLE_PHYSICS);
+		va.getOptions().put("near", ChunkIssue.PHYSICS.name().toLowerCase());
+		va.getOptions().put("range", "2");
+		va.getOptions().put("time", "10s");
+		throttlePhysics.setAction(va);
+
+		return throttlePhysics;
 	}
 
 	public void loadGoals()

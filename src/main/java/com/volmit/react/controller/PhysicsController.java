@@ -49,7 +49,7 @@ public class PhysicsController extends Controller
 		Surge.register(this);
 		redstonePerTick = 0;
 		redstonePerSecond = 0;
-		aRSMS = new Average(20);
+		aRSMS = new Average(100);
 		aRST = new Average(15);
 		aRSS = new Average(3);
 		firstTickList = false;
