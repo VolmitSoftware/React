@@ -104,6 +104,13 @@ public class Info
 	public static String COMMAND_MAP_ALIAS_2 = "pap"; //$NON-NLS-1$
 	public static String COMMAND_MAP_USAGE = "(toggle) [options]"; //$NON-NLS-1$
 
+	public static String COMMAND_MEMORY_DESCRIPTION = Lang.getString("command.memory.description"); //$NON-NLS-1$
+	public static String COMMAND_MEMORY = "memory"; //$NON-NLS-1$
+	public static String COMMAND_MEMORY_ALIAS_1 = "mem"; //$NON-NLS-1$
+	public static String COMMAND_MEMORY_ALIAS_2 = "ram"; //$NON-NLS-1$
+	public static String COMMAND_MEMORY_ALIAS_3 = "wam"; //$NON-NLS-1$
+	public static String COMMAND_MEMORY_USAGE = "[plugin/top]"; //$NON-NLS-1$
+
 	public static String COMMAND_TOPCHUNK_DESCRIPTION = Lang.getString("command.topchunk.description"); //$NON-NLS-1$
 	public static String COMMAND_TOPCHUNK = "top"; //$NON-NLS-1$
 	public static String COMMAND_TOPCHUNK_ALIAS_1 = "topchunk"; //$NON-NLS-1$

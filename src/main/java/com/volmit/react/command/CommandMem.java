@@ -2,6 +2,7 @@ package com.volmit.react.command;
 
 import java.util.List;
 
+import com.volmit.react.Info;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.command.Command;
@@ -29,12 +30,13 @@ public class CommandMem extends ReactCommand
 {
 	public CommandMem()
 	{
-		command = "memory";
-		aliases = new String[] {"mem", "ram", "wam"};
+		command = Info.COMMAND_MEMORY;
+		aliases = new String[] {Info.COMMAND_MEMORY_ALIAS_1, Info.COMMAND_MEMORY_ALIAS_2, Info.COMMAND_MEMORY_ALIAS_3};
 		permissions = new String[] {Permissable.ACCESS.getNode(), Permissable.MONITOR_ENVIRONMENT.getNode()};
-		usage = "";
-		description = "Displays Memory information";
+		usage = Info.COMMAND_MEMORY_USAGE;
+		description = Info.COMMAND_MEMORY_DESCRIPTION;
 		sideGate = SideGate.ANYTHING;
+		registerParameterDescription("[plugin/top]", "Provide a plugin name to determine ram usage, or top to list plugins using most ram.");
 	}
 
 	@Override
