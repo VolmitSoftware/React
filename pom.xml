@@ -9,7 +9,7 @@
 	<description>A performance plugin</description>
 	<properties>
 		<secretary.monitor>src</secretary.monitor>
-		<secretary.build>package -Dreact.skip-copy=true</secretary.build>
+		<secretary.build>package -Dreact.skip-copy=true -Dreact.minify=false</secretary.build>
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -30,6 +30,7 @@
 		<react.release.location>${react.release}/${project.name}-${project.version}.jar</react.release.location>
 		<react.script.copy>${react.scripts}\copy.bat</react.script.copy>
 		<react.skip-copy>false</react.skip-copy>
+		<react.minify>true</react.minify>
 	</properties>
 	<build>
 		<resources>
