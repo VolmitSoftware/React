@@ -653,6 +653,11 @@ public class W
 	{
 		GList<Chunk> cx = new GList<Chunk>();
 
+		if(c == null)
+		{
+			return cx; 
+		}
+
 		for(int i = c.getX() - rad + 1; i < c.getX() + rad; i++)
 		{
 			for(int j = c.getZ() - rad + 1; j < c.getZ() + rad; j++)
