@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
@@ -48,6 +49,11 @@ public class ReactPlugin extends PrimalPlugin
 	@Override
 	public void start()
 	{
+		Bukkit.getLogger().info(ChatColor.DARK_AQUA + ",---.               |    ");
+		Bukkit.getLogger().info(ChatColor.DARK_AQUA + "|---',---.,---.,---.|--- ");
+		Bukkit.getLogger().info(ChatColor.DARK_AQUA + "|  \\ |---',---||    |    ");
+		Bukkit.getLogger().info(ChatColor.DARK_AQUA + "`   ``---'`---^`---'`---'");
+
 		if (this.getDescription().getVersion().contains("-dev"))
 			this.warn();
 
