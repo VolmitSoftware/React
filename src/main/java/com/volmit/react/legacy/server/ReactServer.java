@@ -42,7 +42,7 @@ public class ReactServer extends Thread
 		{
 			size = 0;
 			perc = 0;
-			System.out.println("Starting React Server @port/" + port);
+			System.out.println("Starting React Server @ " + Bukkit.getIp() + ":" + port);
 			reactData = new ReactData();
 			runnables = new GList<ReactRunnable>();
 			serverSocket = new ServerSocket(port);
