@@ -10,8 +10,8 @@ import org.bukkit.configuration.file.YamlConfiguration;
 
 public class Fetcher extends Thread
 {
-	private String url;
-	private FCCallback callback;
+	private final String url;
+	private final FCCallback callback;
 
 	public Fetcher(String s, FCCallback callback)
 	{
@@ -30,14 +30,8 @@ public class Fetcher extends Thread
 			callback.run(fc);
 		}
 
-		catch(IOException e)
+		catch(IOException | InvalidConfigurationException ignored)
 		{
-			return;
-		}
-
-		catch(InvalidConfigurationException e)
-		{
-			return;
 		}
 	}
 }

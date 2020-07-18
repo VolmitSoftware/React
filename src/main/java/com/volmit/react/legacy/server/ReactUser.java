@@ -1,121 +1,104 @@
 package com.volmit.react.legacy.server;
 
-import java.io.File;
-
-import org.apache.commons.lang3.StringUtils;
-
 import com.volmit.react.React;
 import com.volmit.react.util.DataCluster;
 import com.volmit.react.util.YamlDataInput;
 import com.volmit.react.util.YamlDataOutput;
+import org.apache.commons.lang3.StringUtils;
 
-public class ReactUser
-{
-	private String username;
-	private String password;
-	private boolean canViewConsole;
-	private boolean canUseConsole;
-	private boolean canUseActions;
-	private boolean enabled;
-	private DataCluster cc;
+import java.io.File;
 
-	public ReactUser(String username)
-	{
-		this.username = username;
-		password = "unknown";
-		canViewConsole = true;
-		canUseActions = false;
-		canUseConsole = false;
-		enabled = false;
-		cc = new DataCluster();
-	}
+public class ReactUser {
+    private String username;
+    private String password;
+    private boolean canViewConsole;
+    private boolean canUseConsole;
+    private boolean canUseActions;
+    private boolean enabled;
+    private DataCluster cc;
 
-	public void onNewConfig(DataCluster cc)
-	{
-		cc.set("username", username);
-		cc.set("password", password);
-		cc.set("permissions.console.view", canViewConsole);
-		cc.set("permissions.console.use", canUseConsole);
-		cc.set("permissions.actions.use", canUseActions);
-		cc.set("enabled", enabled);
-		cc.comment("enabled", "Copy this file and make new users.\nMake sure the file name matches the username.\nSet enabled to true to turn on users");
-	}
+    public ReactUser(String username) {
+        this.username = username;
+        password = "unknown";
+        canViewConsole = true;
+        canUseActions = false;
+        canUseConsole = false;
+        enabled = false;
+        cc = new DataCluster();
+    }
 
-	public void onReadConfig()
-	{
-		username = cc.getString("username");
-		password = cc.getString("password");
-		canViewConsole = cc.getBoolean("permissions.console.view");
-		canUseConsole = cc.getBoolean("permissions.console.use");
-		canUseActions = cc.getBoolean("permissions.actions.use");
-		enabled = cc.getBoolean("enabled");
-	}
+    public void onNewConfig(DataCluster cc) {
+        cc.set("username", username);
+        cc.set("password", password);
+        cc.set("permissions.console.view", canViewConsole);
+        cc.set("permissions.console.use", canUseConsole);
+        cc.set("permissions.actions.use", canUseActions);
+        cc.set("enabled", enabled);
+        cc.comment("enabled", "Copy this file and make new users.\nMake sure the file name matches the username.\nSet enabled to true to turn on users");
+    }
 
-	public DataCluster getConfiguration()
-	{
-		return cc;
-	}
+    public void onReadConfig() {
+        username = cc.getString("username");
+        password = cc.getString("password");
+        canViewConsole = cc.getBoolean("permissions.console.view");
+        canUseConsole = cc.getBoolean("permissions.console.use");
+        canUseActions = cc.getBoolean("permissions.actions.use");
+        enabled = cc.getBoolean("enabled");
+    }
 
-	public String getCodeName()
-	{
-		return username;
-	}
+    public DataCluster getConfiguration() {
+        return cc;
+    }
 
-	public void reload()
-	{
-		File ff = new File(new File(React.instance().getDataFolder(), "remote-users"), getCodeName() + ".yml");
-		DataCluster cc = new DataCluster();
-		onNewConfig(cc);
+    public String getCodeName() {
+        return username;
+    }
 
-		if(ff.exists())
-		{
-			DataCluster cv = new YamlDataInput().read(ff);
+    public void reload() {
+        File ff = new File(new File(React.instance().getDataFolder(), "remote-users"), getCodeName() + ".yml");
+        DataCluster cc = new DataCluster();
+        onNewConfig(cc);
 
-			for(String i : cv.keys())
-			{
-				cc.trySet(i, cv.get(i));
-			}
-		}
+        if (ff.exists()) {
+            DataCluster cv = new YamlDataInput().read(ff);
 
-		new YamlDataOutput().write(cc, ff);
-		this.cc = cc;
-		onReadConfig();
-	}
+            for (String i : cv.keys()) {
+                cc.trySet(i, cv.get(i));
+            }
+        }
 
-	public String getUsername()
-	{
-		return username;
-	}
+        new YamlDataOutput().write(cc, ff);
+        this.cc = cc;
+        onReadConfig();
+    }
 
-	public String getPassword()
-	{
-		return password;
-	}
+    public String getUsername() {
+        return username;
+    }
 
-	public boolean canViewConsole()
-	{
-		return canViewConsole;
-	}
+    public String getPassword() {
+        return password;
+    }
 
-	public boolean canUseConsole()
-	{
-		return canUseConsole;
-	}
+    public boolean canViewConsole() {
+        return canViewConsole;
+    }
 
-	public boolean canUseActions()
-	{
-		return canUseActions;
-	}
+    public boolean canUseConsole() {
+        return canUseConsole;
+    }
 
-	public boolean isEnabled()
-	{
-		return enabled;
-	}
+    public boolean canUseActions() {
+        return canUseActions;
+    }
 
-	@Override
-	public String toString()
-	{
-		cc.set("password", StringUtils.repeat("*", cc.getString("password").length()));
-		return cc.toFileConfiguration().saveToString();
-	}
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    @Override
+    public String toString() {
+        cc.set("password", StringUtils.repeat("*", cc.getString("password").length()));
+        return cc.toFileConfiguration().saveToString();
+    }
 }

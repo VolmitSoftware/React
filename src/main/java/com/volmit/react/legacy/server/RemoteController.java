@@ -1,68 +1,57 @@
 package com.volmit.react.legacy.server;
 
-import java.io.File;
-
 import com.volmit.react.React;
 import com.volmit.react.util.A;
-
 import primal.lang.collection.GList;
 
-public class RemoteController
-{
-	private GList<ReactUser> users;
+import java.io.File;
+import java.util.Objects;
 
-	public RemoteController()
-	{
-		users = new GList<ReactUser>();
-		reload();
-	}
+public class RemoteController {
+    private final GList<ReactUser> users;
 
-	public ReactUser auth(String username, String password)
-	{
-		for(ReactUser i : users)
-		{
-			if(i.getUsername().equals(username) && password.equals(i.getPassword()))
-			{
-				return i;
-			}
-		}
+    public RemoteController() {
+        users = new GList<>();
+        reload();
+    }
 
-		return null;
-	}
+    public ReactUser auth(String username, String password) {
+        for (ReactUser i : users) {
+            if (i.getUsername().equals(username) && password.equals(i.getPassword())) {
+                return i;
+            }
+        }
 
-	public void reload()
-	{
-		new A()
-		{
-			@Override
-			public void run()
-			{
-				users.clear();
-				System.out.println("[React Server]: Loading Remote Users");
-				File base = new File(React.instance().getDataFolder(), "remote-users");
+        return null;
+    }
 
-				if(!base.exists())
-				{
-					base.mkdirs();
-				}
+    public void reload() {
+        new A() {
+            @Override
+            public void run() {
+                users.clear();
+                System.out.println("[React Server]: Loading Remote Users");
+                File base = new File(React.instance().getDataFolder(), "remote-users");
 
-				ReactUser m = new ReactUser("example-user");
-				m.reload();
+                if (!base.exists()) {
+                    base.mkdirs();
+                }
 
-				for(File i : base.listFiles())
-				{
-					ReactUser u = new ReactUser(i.getName().substring(0, i.getName().length() - 4));
-					u.reload();
+                ReactUser m = new ReactUser("example-user");
+                m.reload();
 
-					if(!u.isEnabled())
-					{
-						continue;
-					}
+                for (File i : Objects.requireNonNull(base.listFiles())) {
+                    ReactUser u = new ReactUser(i.getName().substring(0, i.getName().length() - 4));
+                    u.reload();
 
-					System.out.println("[React Server]: Loaded User: " + u.getUsername());
-					users.add(u);
-				}
-			}
-		};
-	}
+                    if (!u.isEnabled()) {
+                        continue;
+                    }
+
+                    System.out.println("[React Server]: Loaded User: " + u.getUsername());
+                    users.add(u);
+                }
+            }
+        };
+    }
 }
