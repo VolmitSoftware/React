@@ -518,6 +518,11 @@ public class Config
 	@Key("features.entity-stacker.options.sheep-wool-drops")
 	@Injection(InjectionMethod.SWAP)
 	public static boolean ENTITY_STACKER_SHEEP = true;
+	
+	@Comment("Only stack sheep with the same color")
+	@Key("features.entity-stacker.options.sheep-color-specific")
+	@Injection(InjectionMethod.SWAP)
+	public static boolean ENTITY_SHEEP_COLOR_SPECIFIC = false;
 
 	@Comment("Language to use. Languages are downloaded from https://github.com/VolmitSoftware/React/tree/master/language")
 	@Key("features.react.language")

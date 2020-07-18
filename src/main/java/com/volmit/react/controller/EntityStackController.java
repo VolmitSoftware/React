@@ -2,11 +2,13 @@ package com.volmit.react.controller;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.Map;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
+import org.bukkit.DyeColor;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
@@ -20,8 +22,11 @@ import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.player.PlayerShearEntityEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.material.Colorable;
+import org.bukkit.material.Wool;
 
 import com.volmit.react.Config;
 import com.volmit.react.Gate;
@@ -38,7 +43,9 @@ import com.volmit.react.util.D;
 import com.volmit.react.util.F;
 import com.volmit.react.util.JSONObject;
 import com.volmit.react.util.MSound;
+import com.volmit.react.util.Platform;
 import com.volmit.react.util.Profiler;
+import com.volmit.react.util.Protocol;
 import com.volmit.react.util.S;
 import com.volmit.react.util.TICK;
 
@@ -51,6 +58,7 @@ public class EntityStackController extends Controller
 	private StackData sd;
 	private GMap<Integer, StackedEntity> stacks = new GMap<>();
 	private GList<LivingEntity> check = new GList<LivingEntity>();
+	private boolean lay = false;
 
 	@Override
 	public void dump(JSONObject object)
@@ -259,6 +267,7 @@ public class EntityStackController extends Controller
 								checkNear(le.get((int) (Math.random() * (i.getLivingEntities().size() - 1))));
 							}
 						}
+
 					};
 				}
 			}
@@ -365,18 +374,55 @@ public class EntityStackController extends Controller
 			return null;
 		}
 
-		if (stacks.containsKey(e.getEntityId())) {
+		if(stacks.containsKey(e.getEntityId()))
+		{
 			return stacks.get(e.getEntityId());
 		}
 
 		for(StackedEntity i : stacks.values())
 		{
-			if (i.isEntity(e)) {
+			if(i.isEntity(e))
+			{
 				return i;
 			}
 		}
 
 		return null;
+	}
+
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+	public void on(ItemSpawnEvent e)
+	{
+		if(e.getEntity().getItemStack().getType().equals(Material.EGG))
+		{
+			if(lay)
+			{
+				lay = false;
+				return;
+			}
+
+			Area a = new Area(e.getLocation(), 0.5);
+
+			for(Entity i : a.getNearbyEntities())
+			{
+				if(i.getType().equals(EntityType.CHICKEN))
+				{
+					if(isStacked((LivingEntity) i))
+					{
+						int extra = getStack((LivingEntity) i).getCount() - 1;
+
+						if(extra > 0)
+						{
+							ItemStack is = new ItemStack(Material.EGG);
+							is.setAmount(extra);
+							lay = true;
+							e.getEntity().getWorld().dropItem(e.getLocation(), is);
+						}
+					}
+					break;
+				}
+			}
+		}
 	}
 
 	@SuppressWarnings("deprecation")
@@ -395,35 +441,57 @@ public class EntityStackController extends Controller
 
 		if(e.getEntity() instanceof LivingEntity && isStacked((LivingEntity) e.getEntity()))
 		{
-			if(e.getEntity() instanceof Sheep)
+			try
 			{
-				Sheep s = (Sheep) e.getEntity();
-
-				if(s.isAdult() && !s.isSheared())
+				if(e.getEntity() instanceof Sheep)
 				{
-					e.setCancelled(true);
-					Material m = Material.WOOL;
-					byte d = s.getColor().getWoolData();
-					ItemStack is = new ItemStack(m, 1, (short) 0, d);
-					int c = getStack(s).getCount();
+					Sheep s = (Sheep) e.getEntity();
+					int count = (int) (getStack(s).getCount() * (Math.random() * 2D));
 
-					for(int i = 0; i < c; i++)
+					if(s.isAdult() && !s.isSheared())
 					{
-						is.setAmount((int) (is.getAmount() + (Math.random() * 2)));
-					}
+						e.setCancelled(true);
+						ItemStack is = null;
+						if(Protocol.R1_13.to(Protocol.LATEST).contains(Protocol.getProtocolVersion()))
+						{
+							DyeColor color = s.getColor();
+							try
+							{
+								is = ItemStack.class.getConstructor(Material.class, int.class).newInstance(Material.class.getMethod("valueOf", String.class).invoke(null, color.name() + "_WOOL"), count);
+							}
 
-					s.setSheared(true);
-					s.getLocation().getWorld().dropItemNaturally(s.getLocation().clone().add(0, 1, 0), is);
+							catch(InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e1)
+							{
 
-					if(!Gate.safe)
-					{
-						new GSound(MSound.SHEEP_SHEAR.bs(), 1f, (float) (0.5f + (1.25f * Math.random()))).play(s.getLocation());
+							}
+						}
+
+						else
+						{
+							Material m = Material.WOOL;
+							byte d = s.getColor().getWoolData();
+							is = new ItemStack(m, 1, (short) 0, d);
+							is.setAmount(count);
+						}
+						s.getLocation().getWorld().dropItemNaturally(s.getLocation().clone().add(0, 1, 0), is);
+
+						s.setSheared(true);
+
+						if(!Gate.safe)
+						{
+							new GSound(MSound.SHEEP_SHEAR.bs(), 1f, (float) (0.5f + (1.25f * Math.random()))).play(s.getLocation());
+						}
+
 					}
 				}
+
+				e.setCancelled(true);
 			}
 
-			e.setCancelled(true);
+			catch(Throwable ex)
+			{
 
+			}
 		}
 	}
 
@@ -522,7 +590,6 @@ public class EntityStackController extends Controller
 		b.getEntity().remove();
 		stacks.remove(a.getEntity().getEntityId());
 		stacks.remove(b.getEntity().getEntityId());
-		a.destroy();
 		b.destroy();
 		se.update();
 		stacks.put(se.getEntity().getEntityId(), se);
@@ -559,7 +626,8 @@ public class EntityStackController extends Controller
 		{
 			le.add(e);
 		}
-		else {
+		else
+		{
 			fullStacks.add(getStack(e));
 		}
 
@@ -590,10 +658,22 @@ public class EntityStackController extends Controller
 				continue;
 			}
 
+			if(Config.ENTITY_SHEEP_COLOR_SPECIFIC && e.getType().equals(EntityType.SHEEP))
+			{
+				Colorable s = (Colorable) e;
+				Colorable g = (Colorable) i;
+
+				if(!s.getColor().equals(g.getColor()))
+				{
+					continue;
+				}
+			}
+
 			if(!isStacked((LivingEntity) i))
 			{
 				le.add((LivingEntity) i);
-			} else
+			}
+			else
 			{
 				fullStacks.add(getStack((LivingEntity) i));
 			}
