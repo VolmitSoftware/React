@@ -77,32 +77,32 @@ public enum Protocol
 	UNKNOWN(-10000);
 
 	private static Protocol CURRENT = null;
-	private int version;
-	private String packageVersion;
-	private String versionName;
-	private boolean netty;
+	private final int version;
+	private final String packageVersion;
+	private final String versionName;
+	private final boolean netty;
 
-	private Protocol(int version, String versionName, boolean beta)
+	Protocol(int version, String versionName, boolean beta)
 	{
 		this(version, versionName, "UNKNOWN", beta);
 	}
 
-	private Protocol(int version)
+	Protocol(int version)
 	{
 		this(version, "UNKNOWN", "UNKNOWN", false);
 	}
 
-	private Protocol(int version, String versionName)
+	Protocol(int version, String versionName)
 	{
 		this(version, versionName, "UNKNOWN", false);
 	}
 
-	private Protocol(int version, String versionName, String packageVersion)
+	Protocol(int version, String versionName, String packageVersion)
 	{
 		this(version, versionName, packageVersion, false);
 	}
 
-	private Protocol(int version, String versionName, String packageVersion, boolean beta)
+	Protocol(int version, String versionName, String packageVersion, boolean beta)
 	{
 		this.version = version;
 		this.versionName = versionName;
@@ -191,7 +191,7 @@ public enum Protocol
 
 	public boolean isNettySupported()
 	{
-		return !netty;
+		return netty;
 	}
 
 	public boolean isActualVersion()
@@ -201,7 +201,7 @@ public enum Protocol
 
 	public int getVersion()
 	{
-		if(isActualVersion() && !isNettySupported())
+		if(isActualVersion() && isNettySupported())
 		{
 			return getMetaVersion() + 1000;
 		}
@@ -226,7 +226,7 @@ public enum Protocol
 
 	public int getCVersion()
 	{
-		if(isActualVersion() && !isNettySupported())
+		if(isActualVersion() && isNettySupported())
 		{
 			return getMetaVersion();
 		}
