@@ -1,8 +1,7 @@
 package com.volmit.react.api;
 
-import com.volmit.react.util.JSONArray;
-import com.volmit.react.util.JSONObject;
-
+import org.json.JSONArray;
+import org.json.JSONObject;
 import primal.lang.collection.GList;
 
 public class StackTraceRecord extends Record<GList<StackTraceElement>>

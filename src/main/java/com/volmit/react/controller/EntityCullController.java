@@ -21,11 +21,11 @@ import com.volmit.react.api.EntitySample;
 import com.volmit.react.util.A;
 import com.volmit.react.util.Controller;
 import com.volmit.react.util.D;
-import com.volmit.react.util.JSONArray;
-import com.volmit.react.util.JSONObject;
 import com.volmit.react.util.M;
 import com.volmit.react.util.S;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
 import primal.bukkit.world.Players;
 import primal.lang.collection.GList;
 import primal.lang.collection.GMap;

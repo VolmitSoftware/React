@@ -11,9 +11,9 @@ import org.bukkit.event.world.WorldUnloadEvent;
 import com.volmit.react.Config;
 import com.volmit.react.Surge;
 import com.volmit.react.util.Controller;
-import com.volmit.react.util.JSONObject;
 import com.volmit.react.util.TickListSplitter;
 
+import org.json.JSONObject;
 import primal.lang.collection.GMap;
 
 public class TickListController extends Controller

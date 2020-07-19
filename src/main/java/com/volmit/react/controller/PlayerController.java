@@ -8,8 +8,8 @@ import com.volmit.react.Surge;
 import com.volmit.react.api.ReactPlayer;
 import com.volmit.react.util.A;
 import com.volmit.react.util.Controller;
-import com.volmit.react.util.JSONObject;
 
+import org.json.JSONObject;
 import primal.lang.collection.GList;
 import primal.lang.collection.GSet;
 

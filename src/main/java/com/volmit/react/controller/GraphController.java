@@ -34,10 +34,10 @@ import com.volmit.react.api.SampledType;
 import com.volmit.react.util.A;
 import com.volmit.react.util.Controller;
 import com.volmit.react.util.F;
-import com.volmit.react.util.JSONObject;
 import com.volmit.react.util.P;
 import com.volmit.react.util.S;
 
+import org.json.JSONObject;
 import primal.lang.collection.GList;
 import primal.lang.collection.GMap;
 import primal.util.text.C;

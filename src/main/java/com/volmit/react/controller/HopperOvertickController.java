@@ -9,8 +9,8 @@ import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import com.volmit.react.Config;
 import com.volmit.react.Surge;
 import com.volmit.react.util.Controller;
-import com.volmit.react.util.JSONObject;
 
+import org.json.JSONObject;
 import primal.lang.collection.GList;
 
 public class HopperOvertickController extends Controller

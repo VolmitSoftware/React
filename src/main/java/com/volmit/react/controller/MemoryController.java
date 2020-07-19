@@ -8,7 +8,7 @@ import java.lang.reflect.Modifier;
 import org.bukkit.plugin.Plugin;
 
 import com.volmit.react.util.Controller;
-import com.volmit.react.util.JSONObject;
+import org.json.JSONObject;
 
 public class MemoryController extends Controller
 {

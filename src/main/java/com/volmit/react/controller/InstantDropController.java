@@ -20,10 +20,10 @@ import com.volmit.react.Surge;
 import com.volmit.react.api.Capability;
 import com.volmit.react.util.Area;
 import com.volmit.react.util.Controller;
-import com.volmit.react.util.JSONObject;
 import com.volmit.react.util.S;
 import com.volmit.react.util.TICK;
 
+import org.json.JSONObject;
 import primal.lang.collection.GList;
 
 public class InstantDropController extends Controller

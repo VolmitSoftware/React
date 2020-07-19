@@ -16,14 +16,14 @@ import com.volmit.react.api.ActionType;
 import com.volmit.react.api.ChunkIssue;
 import com.volmit.react.api.Note;
 import com.volmit.react.api.SampledType;
-import com.volmit.react.util.JSONArray;
-import com.volmit.react.util.JSONException;
-import com.volmit.react.util.JSONObject;
 import com.volmit.react.util.M;
 import com.volmit.react.util.Paste;
 import com.volmit.react.util.S;
 import com.volmit.react.util.TaskLater;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import primal.lang.collection.GList;
 
 public class GoalManager

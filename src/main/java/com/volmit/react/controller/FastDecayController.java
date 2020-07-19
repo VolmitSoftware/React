@@ -21,13 +21,13 @@ import com.volmit.react.Surge;
 import com.volmit.react.util.BlockFinder;
 import com.volmit.react.util.Controller;
 import com.volmit.react.util.Ex;
-import com.volmit.react.util.JSONObject;
 import com.volmit.react.util.M;
 import com.volmit.react.util.MSound;
 import com.volmit.react.util.S;
 import com.volmit.react.util.TICK;
 import com.volmit.react.util.W;
 
+import org.json.JSONObject;
 import primal.bukkit.sound.GSound;
 import primal.bukkit.world.MaterialBlock;
 import primal.lang.collection.GList;

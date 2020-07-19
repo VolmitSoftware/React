@@ -8,6 +8,7 @@ import org.bukkit.World;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
+import org.json.JSONObject;
 import org.spigotmc.TickLimiter;
 
 import com.volmit.react.Config;
@@ -17,7 +18,6 @@ import com.volmit.react.api.Capability;
 import com.volmit.react.api.SpecializedTickLimiter;
 import com.volmit.react.util.Controller;
 import com.volmit.react.util.Ex;
-import com.volmit.react.util.JSONObject;
 import com.volmit.react.util.NMSX;
 
 import primal.lang.collection.GMap;

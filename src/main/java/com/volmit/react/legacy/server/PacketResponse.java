@@ -1,7 +1,7 @@
 package com.volmit.react.legacy.server;
 
-import com.volmit.react.util.JSONArray;
-import com.volmit.react.util.JSONObject;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import primal.lang.collection.GList;
 
 public class PacketResponse {

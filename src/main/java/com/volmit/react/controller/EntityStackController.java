@@ -26,7 +26,6 @@ import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.player.PlayerShearEntityEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.material.Colorable;
-import org.bukkit.material.Wool;
 
 import com.volmit.react.Config;
 import com.volmit.react.Gate;
@@ -41,14 +40,13 @@ import com.volmit.react.util.Area;
 import com.volmit.react.util.Controller;
 import com.volmit.react.util.D;
 import com.volmit.react.util.F;
-import com.volmit.react.util.JSONObject;
 import com.volmit.react.util.MSound;
-import com.volmit.react.util.Platform;
 import com.volmit.react.util.Profiler;
 import com.volmit.react.util.Protocol;
 import com.volmit.react.util.S;
 import com.volmit.react.util.TICK;
 
+import org.json.JSONObject;
 import primal.bukkit.sound.GSound;
 import primal.lang.collection.GList;
 import primal.lang.collection.GMap;

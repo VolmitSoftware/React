@@ -1,9 +1,9 @@
 package com.volmit.react.xmonitor;
 
 import com.volmit.react.api.SampledType;
-import com.volmit.react.util.JSONArray;
-import com.volmit.react.util.JSONObject;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
 import primal.lang.collection.GList;
 
 public class TitleHeader

@@ -3,9 +3,9 @@ package com.volmit.react.xrai;
 import com.volmit.react.api.ActionType;
 import com.volmit.react.api.SelectorParseException;
 import com.volmit.react.api.SelectorTime;
-import com.volmit.react.util.JSONException;
-import com.volmit.react.util.JSONObject;
 import com.volmit.react.util.M;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 public class RAIGoal
 {

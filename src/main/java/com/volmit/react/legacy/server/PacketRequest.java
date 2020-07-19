@@ -1,6 +1,6 @@
 package com.volmit.react.legacy.server;
 
-import com.volmit.react.util.JSONObject;
+import org.json.JSONObject;
 
 public class PacketRequest {
     private final String username;

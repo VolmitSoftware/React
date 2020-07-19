@@ -1,6 +1,6 @@
 package com.volmit.react.api;
 
-import com.volmit.react.util.JSONObject;
+import org.json.JSONObject;
 
 public abstract class Record<T> implements IRecord<T>
 {

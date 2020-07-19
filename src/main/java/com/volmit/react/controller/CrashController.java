@@ -16,12 +16,12 @@ import com.volmit.react.api.Flavor;
 import com.volmit.react.util.CPS;
 import com.volmit.react.util.ColoredString;
 import com.volmit.react.util.Controller;
-import com.volmit.react.util.JSONObject;
 import com.volmit.react.util.M;
 import com.volmit.react.util.RTEX;
 import com.volmit.react.util.RTX;
 import com.volmit.react.util.S;
 
+import org.json.JSONObject;
 import primal.lang.collection.GList;
 import primal.lang.collection.GMap;
 import primal.logic.format.F;

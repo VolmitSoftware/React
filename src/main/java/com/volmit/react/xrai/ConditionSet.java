@@ -1,7 +1,6 @@
 package com.volmit.react.xrai;
 
-import com.volmit.react.util.JSONArray;
-
+import org.json.JSONArray;
 import primal.lang.collection.GList;
 
 public class ConditionSet
