@@ -11,7 +11,10 @@ public enum VersionBukkit
 	V11,
 	V111,
 	V112,
-	V113;
+	V113,
+	V114,
+	V115,
+	V116;
 
 	public static boolean tc()
 	{
@@ -68,6 +71,21 @@ public enum VersionBukkit
 		if(Bukkit.getBukkitVersion().startsWith("1.13"))
 		{
 			return V113;
+		}
+
+		if(Bukkit.getBukkitVersion().startsWith("1.14"))
+		{
+			return V114;
+		}
+
+		if(Bukkit.getBukkitVersion().startsWith("1.15"))
+		{
+			return V115;
+		}
+
+		if(Bukkit.getBukkitVersion().startsWith("1.16"))
+		{
+			return V116;
 		}
 
 		return VU;
