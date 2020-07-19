@@ -71,7 +71,7 @@
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>exec-maven-plugin</artifactId>
-				<version>1.2</version>
+				<version>1.6.0</version>
 				<executions>
 					<execution>
 						<id>runbatchfile</id>
@@ -231,6 +231,11 @@
 			<groupId>org.zeroturnaround</groupId>
 			<artifactId>zt-zip</artifactId>
 			<version>1.13</version>
+		</dependency>
+		<dependency>
+			<groupId>org.json</groupId>
+			<artifactId>json</artifactId>
+			<version>20150729</version>
 		</dependency>
 	</dependencies>
 </project>

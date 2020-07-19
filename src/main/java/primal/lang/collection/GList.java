@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
-import primal.lang.json.JSONArray;
+import org.json.JSONArray;
 
 /**
  * GLists are Arraylists with special enhancements

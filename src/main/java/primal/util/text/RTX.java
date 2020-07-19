@@ -3,8 +3,8 @@ package primal.util.text;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
-import primal.lang.json.JSONArray;
-import primal.lang.json.JSONObject;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 /**
  * Raw Text holder
