@@ -12,6 +12,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.server.ServerCommandEvent;
+import org.json.JSONObject;
 
 import com.volmit.react.Config;
 import com.volmit.react.Gate;
@@ -62,7 +63,6 @@ import com.volmit.react.util.Ex;
 import com.volmit.react.util.F;
 import com.volmit.react.xrai.RAIGoal;
 
-import org.json.JSONObject;
 import primal.lang.collection.GList;
 import primal.util.text.C;
 
