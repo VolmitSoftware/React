@@ -251,7 +251,7 @@ public class GoalManager
 		throttlePhysics.setMaxHealth(250);
 		throttlePhysics.setHealthDamage(100);
 		ConditionSet cs = new ConditionSet();
-		cs.getConditions().add(new Condition(SampledType.PHYSICS_TIME, ConditionOp.GREATER, 5));
+		cs.getConditions().add(new Condition(SampledType.PHYSICS_TIME, ConditionOp.GREATER, 15));
 		throttlePhysics.setConditions(cs);
 
 		VirtualAction va = new VirtualAction(ActionType.THROTTLE_PHYSICS);
