@@ -3,6 +3,7 @@ package com.volmit.react;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.util.Objects;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -57,7 +58,7 @@ public class ReactPlugin extends PrimalPlugin
 		if (this.getDescription().getVersion().contains("-dev"))
 			this.warn();
 
-		controllers = new GList<IController>();
+		controllers = new GList<>();
 		Surge.m();
 		i = this;
 		react = new React();
@@ -108,22 +109,17 @@ public class ReactPlugin extends PrimalPlugin
 		}
 
 		mgr = new HotloadManager();
-		Runnable rl = new Runnable()
-		{
-			@Override
-			public void run()
+		Runnable rl = () -> {
+			for(Player i : P.onlinePlayers())
 			{
-				for(Player i : P.onlinePlayers())
+				if(Permissable.ACCESS.has(i) || i.isOp())
 				{
-					if(Permissable.ACCESS.has(i) || i.isOp())
-					{
-						Gate.msgSuccess(i, "Injecting Configuration Changes");
-						NMP.MESSAGE.advance(i, new ItemStack(Material.EMPTY_MAP), C.GRAY + "React Config Hotloaded", FrameType.GOAL);
-					}
+					Gate.msgSuccess(i, "Injecting Configuration Changes");
+					NMP.MESSAGE.advance(i, new ItemStack(Material.EMPTY_MAP), C.GRAY + "React Config Hotloaded", FrameType.GOAL);
 				}
-
-				J.s(() -> reload(), 10);
 			}
+
+			J.s(ReactPlugin::reload, 10);
 		};
 
 		mgr.track(new File(getDataFolder(), "config.yml"), rl);
@@ -229,24 +225,26 @@ public class ReactPlugin extends PrimalPlugin
 
 		try {
 			Thread.sleep(1000 * 3);
-		} catch (InterruptedException e) {
+		} catch (InterruptedException ignored) {
 		}
 	}
 
 	private void stopNMS()
 	{
+		assert Catalyst.host != null;
 		Catalyst.host.stop();
 	}
 
 	private void initNMS()
 	{
+		assert Catalyst.host != null;
 		Catalyst.host.start();
 		NMP.host = Catalyst.host;
 		NMSVersion v = NMSVersion.current();
 
 		if(v != null)
 		{
-			getLogger().info("Selected " + NMSVersion.current().name());
+			getLogger().info("Selected " + Objects.requireNonNull(NMSVersion.current()).name());
 		}
 
 		else
@@ -288,7 +286,7 @@ public class ReactPlugin extends PrimalPlugin
 
 	private void doTick(IController i)
 	{
-		if(TICK.tick % (i.getInterval() < 1 ? 1 : i.getInterval()) != 0)
+		if(TICK.tick % (Math.max(i.getInterval(), 1)) != 0)
 		{
 			return;
 		}
@@ -382,7 +380,7 @@ public class ReactPlugin extends PrimalPlugin
 									srv.serverSocket.close();
 								}
 
-								catch(IOException e)
+								catch(IOException ignored)
 								{
 
 								}
@@ -392,7 +390,7 @@ public class ReactPlugin extends PrimalPlugin
 									srv.stop();
 								}
 
-								catch(Throwable e)
+								catch(Throwable ignored)
 								{
 
 								}
@@ -402,7 +400,7 @@ public class ReactPlugin extends PrimalPlugin
 									srv.destroy();
 								}
 
-								catch(Throwable e)
+								catch(Throwable ignored)
 								{
 
 								}
