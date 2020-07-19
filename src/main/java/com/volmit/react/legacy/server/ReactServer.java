@@ -152,7 +152,6 @@ public class ReactServer extends Thread {
         } else if (command.equals(PacketRequestType.GET_BASIC.toString())) {
             response.put("type", PacketResponseType.OK);
             response.put("version", Bukkit.getVersion());
-            response.put("bukkit-version", Bukkit.getBukkitVersion());
             response.put("version-bukkit", Bukkit.getBukkitVersion());
         } else if (command.startsWith("COMMAND ")) {
             String cmd = command.replaceFirst("COMMAND ", "");
