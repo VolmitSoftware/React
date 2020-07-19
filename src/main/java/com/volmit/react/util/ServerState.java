@@ -10,8 +10,8 @@ public enum ServerState
 	START,
 
 	/**
-	 * A server plugin ENABLE. Not a start. This happens when a plugin is enaled, or
-	 * loaded AFTER startup. While the server is running, for example plugman loads
+	 * A server plugin ENABLE. Not a start. This happens when a plugin is enabled, or
+	 * loaded AFTER startup. While the server is running, for example PlugMan loads
 	 * and such.
 	 */
 	ENABLE,
@@ -19,7 +19,7 @@ public enum ServerState
 	/**
 	 * A server plugin DISABLE. Not a stop, this happens when a plugin is disabled
 	 * or unloaded AFTER the server is already running, and is NOT stopping. For
-	 * example plugman unloads and such.
+	 * example PlugMan unloads and such.
 	 */
 	DISABLE,
 
