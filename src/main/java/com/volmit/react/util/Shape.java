@@ -70,10 +70,7 @@ public class Shape
 		{
 			if(l.getY() > check.getY() - size.getY() && l.getY() < check.getY() + size.getY())
 			{
-				if(l.getZ() > check.getZ() - size.getZ() && l.getZ() < check.getZ() + size.getZ())
-				{
-					return true;
-				}
+				return l.getZ() > check.getZ() - size.getZ() && l.getZ() < check.getZ() + size.getZ();
 			}
 		}
 		
