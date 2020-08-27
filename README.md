@@ -16,7 +16,7 @@ To Build React:
 4. Once the terminal exits, You can find the react jar in `release/VERSION/React-VERSION.jar`
 
 # License
-Copyright © 2020 Volmit Software <https://www.volmit.com/>
-This work is free. You can redistribute it and/or modify it under the
-terms of the Do What The Fuck You Want To Public License, Version 2,
+Copyright © 2020 Volmit Software <https://www.volmit.com/>  
+This work is free. You can redistribute it and/or modify it under the  
+terms of the Do What The Fuck You Want To Public License, Version 2,  
 as published by Sam Hocevar. See LICENSE.md for more details.
