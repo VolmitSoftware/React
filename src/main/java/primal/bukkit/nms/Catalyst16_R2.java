@@ -59,7 +59,7 @@ public class Catalyst16_R2 extends CatalystPacketListener implements CatalystHos
     @Override
     public Object packetChunkFullSend(Chunk chunk)
     {
-        return new PacketPlayOutMapChunk(((CraftChunk) chunk).getHandle(), 65535, true);
+        return new PacketPlayOutMapChunk(((CraftChunk) chunk).getHandle(), 65535);
     }
 
     @Override
