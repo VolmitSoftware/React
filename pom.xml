@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.volmit</groupId>
 	<artifactId>React</artifactId>
-	<version>6.635</version>
+	<version>6.636</version>
 	<name>React</name>
 	<description>A performance plugin</description>
 	<properties>
@@ -141,6 +141,12 @@
 			<scope>provided</scope>
 		</dependency>
 		<!-- Craftbukkit Versions -->
+		<dependency>
+			<groupId>org.bukkit.craftbukkit</groupId>
+			<artifactId>cb-1.16.2</artifactId>
+			<version>1.16.2</version>
+			<scope>provided</scope>
+		</dependency>
 		<dependency>
 			<groupId>org.bukkit.craftbukkit</groupId>
 			<artifactId>cb-1.16.1</artifactId>
