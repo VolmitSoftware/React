@@ -53,10 +53,10 @@ public class NMSBinding12 extends NMSBinding
 			return;
 		}
 
-		net.minecraft.server.v1_12_R1.Block b = org.bukkit.craftbukkit.v1_12_R1.util.CraftMagicNumbers.getBlock((org.bukkit.craftbukkit.v1_12_R1.block.CraftBlock) bfg);
+		net.minecraft.server.v1_12_R1.Block b = org.bukkit.craftbukkit.v1_12_R1.util.CraftMagicNumbers.getBlock(bfg);
 		net.minecraft.server.v1_12_R1.BlockPosition bp = new net.minecraft.server.v1_12_R1.BlockPosition(bfg.getX(), bfg.getY(), bfg.getZ());
 		org.bukkit.craftbukkit.v1_12_R1.CraftWorld w = (org.bukkit.craftbukkit.v1_12_R1.CraftWorld) bfg.getWorld();
-		net.minecraft.server.v1_12_R1.World v = (net.minecraft.server.v1_12_R1.World) w.getHandle();
+		net.minecraft.server.v1_12_R1.World v = w.getHandle();
 		v.applyPhysics(bp, b, true);
 	}
 

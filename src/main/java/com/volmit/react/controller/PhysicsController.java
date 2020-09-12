@@ -176,7 +176,7 @@ public class PhysicsController extends Controller
 			}
 
 			samples.get(c).hit(issue, weight);
-			EventController.map.hit(c, issue, (double) weight);
+			EventController.map.hit(c, issue, weight);
 		}
 
 		catch(Throwable e)

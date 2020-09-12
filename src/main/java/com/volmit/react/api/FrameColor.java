@@ -32,8 +32,8 @@ public class FrameColor
 	private static double getDistance(Color c1, Color c2)
 	{
 		double rmean = (double) (c1.getRed() + c2.getRed()) / 2.0D;
-		double r = (double) (c1.getRed() - c2.getRed());
-		double g = (double) (c1.getGreen() - c2.getGreen());
+		double r = c1.getRed() - c2.getRed();
+		double g = c1.getGreen() - c2.getGreen();
 		int b = c1.getBlue() - c2.getBlue();
 		double weightR = 2.0D + rmean / 256.0D;
 		double weightG = 4.0D;
@@ -45,16 +45,16 @@ public class FrameColor
 	{
 		BufferedImage result = new BufferedImage(128, 128, 2);
 		Graphics2D graphics = result.createGraphics();
-		graphics.drawImage(image, 0, 0, 128, 128, (ImageObserver) null);
+		graphics.drawImage(image, 0, 0, 128, 128, null);
 		graphics.dispose();
 		return result;
 	}
 
 	public static byte[] imageToBytes(Image image)
 	{
-		BufferedImage temp = new BufferedImage(image.getWidth((ImageObserver) null), image.getHeight((ImageObserver) null), 2);
+		BufferedImage temp = new BufferedImage(image.getWidth(null), image.getHeight(null), 2);
 		Graphics2D graphics = temp.createGraphics();
-		graphics.drawImage(image, 0, 0, (ImageObserver) null);
+		graphics.drawImage(image, 0, 0, null);
 		graphics.dispose();
 		int[] pixels = new int[temp.getWidth() * temp.getHeight()];
 		temp.getRGB(0, 0, temp.getWidth(), temp.getHeight(), pixels, 0, temp.getWidth());

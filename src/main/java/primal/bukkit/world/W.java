@@ -191,7 +191,7 @@ public class W
 	 */
 	public static void dropXp(Location location, int xp)
 	{
-		((ExperienceOrb) location.getWorld().spawn(location, ExperienceOrb.class)).setExperience(xp);
+		location.getWorld().spawn(location, ExperienceOrb.class).setExperience(xp);
 	}
 
 	/**

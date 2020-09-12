@@ -183,7 +183,7 @@ public class NMSX
 	{
 		try
 		{
-			Object handle = player.getClass().getMethod("getHandle", new Class[0]).invoke((Object) player);
+			Object handle = player.getClass().getMethod("getHandle", new Class[0]).invoke(player);
 			Object playerConnection = handle.getClass().getField("playerConnection").get(handle);
 			playerConnection.getClass().getMethod("sendPacket", NMSX.getNMSClass("Packet")).invoke(playerConnection, packet);
 		}
@@ -240,7 +240,7 @@ public class NMSX
 
 			if(title != null)
 			{
-				title = ChatColor.translateAlternateColorCodes((char) '&', (String) title);
+				title = ChatColor.translateAlternateColorCodes('&', title);
 				title = title.replaceAll("%player%", player.getDisplayName());
 				e = eTimes;
 				Object chatTitle = NMSX.getNMSClass("IChatBaseComponent").getDeclaredClasses()[0].getMethod("a", String.class).invoke(null, "{\"text\":\"" + title + "\"}");
@@ -256,7 +256,7 @@ public class NMSX
 
 			if(subtitle != null)
 			{
-				subtitle = ChatColor.translateAlternateColorCodes((char) '&', (String) subtitle);
+				subtitle = ChatColor.translateAlternateColorCodes('&', subtitle);
 				subtitle = subtitle.replaceAll("%player%", player.getDisplayName());
 
 				e = eTimes;
@@ -292,14 +292,14 @@ public class NMSX
 			header = "";
 		}
 
-		header = ChatColor.translateAlternateColorCodes((char) '&', (String) header);
+		header = ChatColor.translateAlternateColorCodes('&', header);
 
 		if(footer == null)
 		{
 			footer = "";
 		}
 
-		footer = ChatColor.translateAlternateColorCodes((char) '&', (String) footer);
+		footer = ChatColor.translateAlternateColorCodes('&', footer);
 		header = header.replaceAll("%player%", player.getDisplayName());
 		footer = footer.replaceAll("%player%", player.getDisplayName());
 
@@ -339,7 +339,7 @@ public class NMSX
 			Class<?> c3;
 			Class<?> c2;
 			Class<?> c1 = Class.forName("org.bukkit.craftbukkit." + nmsver + ".entity.CraftPlayer");
-			Object p = c1.cast((Object) player);
+			Object p = c1.cast(player);
 			Class<?> c4 = Class.forName("net.minecraft.server." + nmsver + ".PacketPlayOutChat");
 			Class<?> c5 = Class.forName("net.minecraft.server." + nmsver + ".Packet");
 
@@ -404,7 +404,7 @@ public class NMSX
 				{
 					NMSX.sendActionBar(player, "");
 				}
-			}.runTaskLater((Plugin) bountifulAPI, (long) (duration + 1));
+			}.runTaskLater((Plugin) bountifulAPI, duration + 1);
 		}
 
 		while(duration > 60)
@@ -418,7 +418,7 @@ public class NMSX
 				{
 					NMSX.sendActionBar(player, message);
 				}
-			}.runTaskLater((Plugin) bountifulAPI, (long) sched);
+			}.runTaskLater((Plugin) bountifulAPI, sched);
 		}
 	}
 

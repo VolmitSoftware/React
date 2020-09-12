@@ -78,12 +78,12 @@ public class ActionPurgeChunks extends Action
 					{
 						mk += 0.03;
 						int dk = (int) mk;
-						new Task("waiter-tr", 0, (int) dk) //$NON-NLS-1$
+						new Task("waiter-tr", 0, dk) //$NON-NLS-1$
 						{
 							@Override
 							public void run()
 							{
-								if((int) dk - 1 == ticks)
+								if(dk - 1 == ticks)
 								{
 									purge((Chunk) j, new Runnable()
 									{

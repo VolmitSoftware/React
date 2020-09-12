@@ -33,6 +33,6 @@ public class ObjectCache<O>
 			valid = true;
 		}
 
-		return (O) o;
+		return o;
 	}
 }

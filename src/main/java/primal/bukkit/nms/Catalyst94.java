@@ -229,7 +229,7 @@ public class Catalyst94 extends CatalystPacketListener implements CatalystHost
 				if(packet instanceof PacketPlayInSettings)
 				{
 					PacketPlayInSettings s = (PacketPlayInSettings) packet;
-					playerSettings.put(player, new PlayerSettings(new V(s).get("a"), new V(s).get("b"), ChatMode.values()[((EnumChatVisibility) new V(s).get("c")).ordinal()], new V(s).get("d"), new V(s).get("e"), ((EnumMainHand) new V(s).get("f")).equals(EnumMainHand.RIGHT)));
+					playerSettings.put(player, new PlayerSettings(new V(s).get("a"), new V(s).get("b"), ChatMode.values()[((EnumChatVisibility) new V(s).get("c")).ordinal()], new V(s).get("d"), new V(s).get("e"), new V(s).get("f").equals(EnumMainHand.RIGHT)));
 				}
 
 				return packet;

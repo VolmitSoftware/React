@@ -52,7 +52,7 @@ public class NMSBinding13 extends NMSBinding
 		net.minecraft.server.v1_13_R2.Block b = org.bukkit.craftbukkit.v1_13_R2.util.CraftMagicNumbers.getBlock(bfg.getType());
 		net.minecraft.server.v1_13_R2.BlockPosition bp = new net.minecraft.server.v1_13_R2.BlockPosition(bfg.getX(), bfg.getY(), bfg.getZ());
 		org.bukkit.craftbukkit.v1_13_R2.CraftWorld w = (org.bukkit.craftbukkit.v1_13_R2.CraftWorld) bfg.getWorld();
-		net.minecraft.server.v1_13_R2.World v = (net.minecraft.server.v1_13_R2.World) w.getHandle();
+		net.minecraft.server.v1_13_R2.World v = w.getHandle();
 		v.applyPhysics(bp, b);
 	}
 

@@ -59,6 +59,6 @@ public class DTest
 			score += b + 1;
 		}
 
-		return 1100 + (int) (score);
+		return 1100 + score;
 	}
 }

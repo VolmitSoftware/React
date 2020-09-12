@@ -137,7 +137,7 @@ public class TXT
 		int i = l.length() + r.length() + f.length();
 		len = len < (l.length() + r.length() + f.length()) ? l.length() + r.length() + f.length() + 6 : len;
 		int a = len - (l.length() + r.length() + f.length());
-		int b = (int) ((double) a * (double) percent);
+		int b = (int) ((double) a * percent);
 		int c = len - b;
 		return (percent == 0.0 ? ((k + C.DARK_GRAY + C.UNDERLINE + F.repeat(" ", c) + C.DARK_GRAY + C.UNDERLINE + r)) : (k + F.repeat(" ", b) + (percent == 1.0 ? r : (f + C.DARK_GRAY + C.UNDERLINE + F.repeat(" ", c) + C.DARK_GRAY + C.UNDERLINE + r))));
 	}

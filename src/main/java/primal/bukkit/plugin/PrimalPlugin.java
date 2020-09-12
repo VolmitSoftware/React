@@ -129,7 +129,7 @@ public abstract class PrimalPlugin extends JavaPlugin
 			Map.Entry<String, Command> entry = it.next();
 			if(entry.getValue() instanceof Command)
 			{
-				org.bukkit.command.Command c = (org.bukkit.command.Command) entry.getValue();
+				org.bukkit.command.Command c = entry.getValue();
 				String u = c.getUsage();
 
 				if(u != null && u.equals(getName() + ":" + getClass().toString() + ":" + cmd.getNode()))

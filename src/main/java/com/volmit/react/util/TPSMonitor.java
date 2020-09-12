@@ -86,7 +86,7 @@ public abstract class TPSMonitor extends Thread
 			{
 				tickProfiler.end();
 				tickTimeMS = tickProfiler.getMilliseconds();
-				rawTicksPerSecond = M.clip(1000.0 / ((double) (lmsx + tickTimeMS) / 2.0), 0, 20);
+				rawTicksPerSecond = M.clip(1000.0 / ((lmsx + tickTimeMS) / 2.0), 0, 20);
 				lmsx = tickTimeMS;
 				tickProfiler.reset();
 				tickProfiler.begin();

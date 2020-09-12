@@ -210,7 +210,7 @@ public class Catalyst16_R2 extends CatalystPacketListener implements CatalystHos
                 if(packet instanceof PacketPlayInSettings)
                 {
                     PacketPlayInSettings s = (PacketPlayInSettings) packet;
-                    playerSettings.put(player, new PlayerSettings(new V(s).get("locale"), new V(s).get("viewDistance"), ChatMode.values()[((EnumChatVisibility) new V(s).get("c")).ordinal()], new V(s).get("d"), new V(s).get("e"), ((EnumMainHand) new V(s).get("f")).equals(EnumMainHand.RIGHT)));
+                    playerSettings.put(player, new PlayerSettings(new V(s).get("locale"), new V(s).get("viewDistance"), ChatMode.values()[((EnumChatVisibility) new V(s).get("c")).ordinal()], new V(s).get("d"), new V(s).get("e"), new V(s).get("f").equals(EnumMainHand.RIGHT)));
                 }
 
                 return packet;

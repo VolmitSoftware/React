@@ -163,7 +163,7 @@ public class StackedEntity
 
 	public static int getMaxCount(LivingEntity exf)
 	{
-		return (int) Math.ceil(((double) 2000 / (double) getMaxHealth(exf)));
+		return (int) Math.ceil(((double) 2000 / getMaxHealth(exf)));
 	}
 
 	public void update()
@@ -326,7 +326,7 @@ public class StackedEntity
 
 	public int getEffectiveCount(double hp)
 	{
-		return (int) Math.ceil(((double) hp / (double) getRealMaxHealth()));
+		return (int) Math.ceil((hp / getRealMaxHealth()));
 	}
 
 	public double getEffectiveMaxHealth(int count)

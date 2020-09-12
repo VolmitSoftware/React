@@ -25,7 +25,7 @@ public class DopplerAudibleEntity extends AudibleEntity
 		Vector pv = i.getVelocity();
 		Vector ev = entity.getVelocity();
 		Double speedDifference = VectorMath.getSpeed(pv.subtract(ev)) * (entity.getLocation().distance(i.getLocation()));
-		audible.setPitch((float) ((float) (audible.getPitch() / speedDifference) * 10));
+		audible.setPitch((float) (audible.getPitch() / speedDifference) * 10);
 		audible.play(i, entity.getLocation());
 		System.out.println("Speed: " + speedDifference + " Pitch: " + audible.getPitch());
 	}

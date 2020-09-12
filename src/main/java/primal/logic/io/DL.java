@@ -203,8 +203,8 @@ public abstract class DL
 	private long calculateSize() throws IOException
 	{
 		URLConnection c = u.openConnection();
-		c.setConnectTimeout((int) timeout);
-		c.setReadTimeout((int) timeout);
+		c.setConnectTimeout(timeout);
+		c.setReadTimeout(timeout);
 		c.connect();
 		long m = c.getContentLengthLong();
 		return m;

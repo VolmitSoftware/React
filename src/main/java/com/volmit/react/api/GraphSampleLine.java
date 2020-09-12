@@ -150,12 +150,12 @@ public class GraphSampleLine extends NormalGraph implements IGraph
 		{
 			if(lx > xv)
 			{
-				lx -= ((double) Math.abs(xv - lx) / 10.0);
+				lx -= (Math.abs(xv - lx) / 10.0);
 			}
 
 			if(lx < xv)
 			{
-				lx += ((double) Math.abs(xv - lx) / 10.0);
+				lx += (Math.abs(xv - lx) / 10.0);
 			}
 		}
 
@@ -163,12 +163,12 @@ public class GraphSampleLine extends NormalGraph implements IGraph
 		{
 			if(ly > yv)
 			{
-				ly -= ((double) Math.abs(yv - ly) / 10.0);
+				ly -= (Math.abs(yv - ly) / 10.0);
 			}
 
 			if(ly < yv)
 			{
-				ly += ((double) Math.abs(yv - ly) / 10.0);
+				ly += (Math.abs(yv - ly) / 10.0);
 			}
 		}
 

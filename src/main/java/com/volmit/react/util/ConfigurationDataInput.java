@@ -42,22 +42,22 @@ public class ConfigurationDataInput
 			switch(current.getType(k.value()))
 			{
 				case BOOLEAN:
-					i.set(c, (Boolean) raw);
+					i.set(c, raw);
 					break;
 				case DOUBLE:
-					i.set(c, (Double) raw);
+					i.set(c, raw);
 					break;
 				case INT:
-					i.set(c, (Integer) raw);
+					i.set(c, raw);
 					break;
 				case LONG:
-					i.set(c, (Long) raw);
+					i.set(c, raw);
 					break;
 				case STRING:
-					i.set(c, (String) raw);
+					i.set(c, raw);
 					break;
 				case STRING_LIST:
-					i.set(c, (ArrayList<String>) raw);
+					i.set(c, raw);
 					break;
 			}
 		}
@@ -102,22 +102,22 @@ public class ConfigurationDataInput
 				switch(current.getType(skey))
 				{
 					case BOOLEAN:
-						i.set(c, (Boolean) raw);
+						i.set(c, raw);
 						break;
 					case DOUBLE:
-						i.set(c, (Double) raw);
+						i.set(c, raw);
 						break;
 					case INT:
-						i.set(c, (Integer) raw);
+						i.set(c, raw);
 						break;
 					case LONG:
-						i.set(c, (Long) raw);
+						i.set(c, raw);
 						break;
 					case STRING:
-						i.set(c, (String) raw);
+						i.set(c, raw);
 						break;
 					case STRING_LIST:
-						i.set(c, (ArrayList<String>) raw);
+						i.set(c, raw);
 						break;
 				}
 			}

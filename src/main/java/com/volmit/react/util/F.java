@@ -70,12 +70,12 @@ public class F
 
 	public static String wrap(String arg, int arg0)
 	{
-		return wrap(arg, arg0, (String) null, false);
+		return wrap(arg, arg0, null, false);
 	}
 
 	public static String wrapWords(String arg, int arg0)
 	{
-		return wrap(arg, arg0, (String) null, true);
+		return wrap(arg, arg0, null, true);
 	}
 
 	public static String wrap(String arg, int arg0, String arg1, boolean arg2)
@@ -583,7 +583,7 @@ public class F
 
 			else
 			{
-				double gb = (double) mb / 1024.0;
+				double gb = mb / 1024.0;
 
 				return fd(gb, 2) + " GB";
 			}

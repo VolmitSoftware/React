@@ -316,7 +316,7 @@ public class VectorMath
 		CDou cy = new CDou(360);
 		cy.set(y);
 		l.setYaw((float) cy.get());
-		l.setPitch((float) Math.max(-90, p - amt));
+		l.setPitch(Math.max(-90, p - amt));
 
 		return l.getDirection();
 	}
@@ -339,7 +339,7 @@ public class VectorMath
 		CDou cy = new CDou(360);
 		cy.set(y);
 		l.setYaw((float) cy.get());
-		l.setPitch((float) Math.min(90, p + amt));
+		l.setPitch(Math.min(90, p + amt));
 
 		return l.getDirection();
 	}

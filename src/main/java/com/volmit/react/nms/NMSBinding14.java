@@ -50,7 +50,7 @@ public class NMSBinding14 extends NMSBinding
 		net.minecraft.server.v1_14_R1.Block b = org.bukkit.craftbukkit.v1_14_R1.util.CraftMagicNumbers.getBlock(bfg.getType());
 		BlockPosition bp = new BlockPosition(bfg.getX(), bfg.getY(), bfg.getZ());
 		CraftWorld w = (CraftWorld) bfg.getWorld();
-		net.minecraft.server.v1_14_R1.World v = (net.minecraft.server.v1_14_R1.World) w.getHandle();
+		net.minecraft.server.v1_14_R1.World v = w.getHandle();
 		v.applyPhysics(bp, b);
 	}
 

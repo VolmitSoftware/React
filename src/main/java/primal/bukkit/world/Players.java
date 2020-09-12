@@ -416,7 +416,7 @@ public class Players
 	 */
 	public static GList<Player> getPlayers(GListAdapter<Player, Player> adapter)
 	{
-		return (GList<Player>) adapter.adapt(getPlayers());
+		return adapter.adapt(getPlayers());
 	}
 
 	/**
@@ -497,7 +497,7 @@ public class Players
 	 */
 	public static Location targetBlock(Player p, int distance)
 	{
-		return p.getTargetBlock((Set<Material>) null, distance).getLocation().clone().add(0.5, 0.5, 0.5);
+		return p.getTargetBlock(null, distance).getLocation().clone().add(0.5, 0.5, 0.5);
 	}
 
 	/**

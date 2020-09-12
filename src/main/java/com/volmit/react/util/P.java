@@ -188,7 +188,7 @@ public class P
 	 */
 	public static Location targetBlock(Player p, int distance)
 	{
-		return p.getTargetBlock((Set<Material>) null, distance).getLocation().clone().add(0.5, 0.5, 0.5);
+		return p.getTargetBlock(null, distance).getLocation().clone().add(0.5, 0.5, 0.5);
 	}
 
 	/**

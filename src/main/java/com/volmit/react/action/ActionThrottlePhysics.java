@@ -97,12 +97,12 @@ public class ActionThrottlePhysics extends Action
 						long t = timeFor;
 						mk += 0.03;
 						int dk = (int) mk;
-						new Task("waiter-trx", 0, (int) dk) //$NON-NLS-1$
+						new Task("waiter-trx", 0, dk) //$NON-NLS-1$
 						{
 							@Override
 							public void run()
 							{
-								if((int) dk - 1 == ticks)
+								if(dk - 1 == ticks)
 								{
 									throttle(t, (Chunk) j, new Runnable()
 									{

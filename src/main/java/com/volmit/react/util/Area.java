@@ -107,7 +107,7 @@ public class Area
 	 */
 	public boolean isWithin(Location location)
 	{
-		return this.location.distance(location) <= ((double) (radius * radius));
+		return this.location.distance(location) <= (radius * radius);
 	}
 
 	/**

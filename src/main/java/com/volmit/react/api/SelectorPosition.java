@@ -156,7 +156,7 @@ public class SelectorPosition extends Selector
 
 			if(sender instanceof Player)
 			{
-				c = ((Player) sender).getTargetBlock((Set<Material>) null, 512).getChunk();
+				c = ((Player) sender).getTargetBlock(null, 512).getChunk();
 			}
 
 			else

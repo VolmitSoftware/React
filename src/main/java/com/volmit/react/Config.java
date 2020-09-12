@@ -804,8 +804,8 @@ public class Config
 
 								else if(i.getType().equals(Double.class) || i.getType().equals(double.class))
 								{
-									i.set(null, (double) M.clip(in.getDouble(j), c.min(), c.max()));
-									cc.set(key, (double) M.clip(in.getDouble(j), c.min(), c.max()));
+									i.set(null, M.clip(in.getDouble(j), c.min(), c.max()));
+									cc.set(key, M.clip(in.getDouble(j), c.min(), c.max()));
 								}
 
 								else if(i.getType().equals(Long.class) || i.getType().equals(long.class))

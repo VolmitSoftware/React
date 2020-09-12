@@ -34,7 +34,7 @@ public class Range
 	 */
 	public Range(int min, int max)
 	{
-		this((double) min, (double) max);
+		this(min, (double) max);
 	}
 	
 	/**

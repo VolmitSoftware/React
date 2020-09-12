@@ -192,7 +192,7 @@ public class TickListSplitter
 
 	public double getPhysicsSpeed()
 	{
-		return 1D - (double) M.clip(globalThrottle, 0, 20D) / 20D;
+		return 1D - M.clip(globalThrottle, 0, 20D) / 20D;
 	}
 
 	public void unregisterAll()

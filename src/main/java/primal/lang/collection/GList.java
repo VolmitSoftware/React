@@ -59,7 +59,7 @@ public class GList<T> extends ArrayList<T>
 
 	public T getAt(int index)
 	{
-		return get((int) index);
+		return get(index);
 	}
 
 	public T getAt(Integer index)

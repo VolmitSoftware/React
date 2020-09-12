@@ -39,7 +39,7 @@ public class V
 	{
 		try
 		{
-			return (T) (local ? Violator.getDeclaredAnnotation(o.getClass(), t) : Violator.getAnnotation(o.getClass(), t));
+			return local ? Violator.getDeclaredAnnotation(o.getClass(), t) : Violator.getAnnotation(o.getClass(), t);
 		}
 
 		catch(Throwable e)
@@ -57,7 +57,7 @@ public class V
 	{
 		try
 		{
-			return (T) (local ? Violator.getDeclaredAnnotation(Violator.getDeclaredMethod(o.getClass(), mn, pars), t) : Violator.getAnnotation(Violator.getMethod(o.getClass(), mn, pars), t));
+			return local ? Violator.getDeclaredAnnotation(Violator.getDeclaredMethod(o.getClass(), mn, pars), t) : Violator.getAnnotation(Violator.getMethod(o.getClass(), mn, pars), t);
 		}
 
 		catch(Throwable e)
@@ -75,7 +75,7 @@ public class V
 	{
 		try
 		{
-			return (T) (local ? Violator.getDeclaredAnnotation(Violator.getDeclaredField(o.getClass(), mn), t) : Violator.getAnnotation(Violator.getField(o.getClass(), mn), t));
+			return local ? Violator.getDeclaredAnnotation(Violator.getDeclaredField(o.getClass(), mn), t) : Violator.getAnnotation(Violator.getField(o.getClass(), mn), t);
 		}
 
 		catch(Throwable e)

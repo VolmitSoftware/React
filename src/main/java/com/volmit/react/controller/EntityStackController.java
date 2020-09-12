@@ -730,7 +730,7 @@ public class EntityStackController extends Controller
 				return;
 			}
 
-			checkNear((LivingEntity) e.getEntity());
+			checkNear(e.getEntity());
 		}
 	}
 
