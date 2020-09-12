@@ -67,8 +67,8 @@ public class CommandStatus extends ReactCommand {
     }
 
     private void addSpikePages(GList<String> set) {
-        String f = ""; //$NON-NLS-1$
-        f += C.DARK_AQUA + C.BOLD.toString() + C.ITALIC + Lang.getString("command.status.server-spikes") + C.RESET; //$NON-NLS-1$
+        StringBuilder f = new StringBuilder(); //$NON-NLS-1$
+        f.append(C.DARK_AQUA).append(C.BOLD.toString()).append(C.ITALIC).append(Lang.getString("command.status.server-spikes")).append(C.RESET); //$NON-NLS-1$
 
         GList<Integer> ints = React.instance.spikeController.getSpikes().v();
         Collections.sort(ints);
@@ -82,13 +82,13 @@ public class CommandStatus extends ReactCommand {
             for (String j : React.instance.spikeController.getSpikes().k()) {
                 if (React.instance.spikeController.getSpikes().get(j).equals(i)) {
                     String jn = j.length() > 14 ? j.substring(0, 14) + Lang.getString("command.status.elips") : j; //$NON-NLS-1$
-                    f += C.GRAY + jn + ": " + C.BLACK + C.BOLD.toString() + i + "\n"; //$NON-NLS-1$ //$NON-NLS-2$
+                    f.append(C.GRAY).append(jn).append(": ").append(C.BLACK).append(C.BOLD.toString()).append(i).append("\n"); //$NON-NLS-1$ //$NON-NLS-2$
                     break;
                 }
             }
         }
 
-        set.add(f);
+        set.add(f.toString());
     }
 
     private void addStatusPages(GList<String> set) {

@@ -88,17 +88,17 @@ public class M
 		roman_numerals.put("IV", 4);
 		roman_numerals.put("I", 1);
 
-		String res = "";
+		StringBuilder res = new StringBuilder();
 
 		for(Map.Entry<String, Integer> entry : roman_numerals.entrySet())
 		{
 			int matches = num / entry.getValue();
 
-			res += repeat(entry.getKey(), matches);
+			res.append(repeat(entry.getKey(), matches));
 			num = num % entry.getValue();
 		}
 
-		return res;
+		return res.toString();
 	}
 
 	/**

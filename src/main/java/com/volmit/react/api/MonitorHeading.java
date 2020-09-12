@@ -43,17 +43,17 @@ public class MonitorHeading
 
 	public String getChildText()
 	{
-		String m = "";
+		StringBuilder m = new StringBuilder();
 
 		for(ISampler i : getChildren())
 		{
 			String p = i.getColor() + i.get() + C.RESET + i.getColor() + " " + i.getID();
-			m += " " + p;
+			m.append(" ").append(p);
 		}
 
 		if(m.length() < 2)
 		{
-			return m;
+			return m.toString();
 		}
 
 		return m.substring(1);

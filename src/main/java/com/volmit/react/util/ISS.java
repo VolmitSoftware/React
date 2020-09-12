@@ -406,14 +406,14 @@ public class ISS extends InputStream
 	public final String readString() throws IOException
 	{
 		int len = readInt();
-		String v = "";
+		StringBuilder v = new StringBuilder();
 
 		for(int i = 0; i < len; i++)
 		{
-			v += readChar();
+			v.append(readChar());
 		}
 
-		return v;
+		return v.toString();
 	}
 
 	/**

@@ -271,17 +271,17 @@ public class GoalManager
 			{
 				try
 				{
-					String l = "";
+					StringBuilder l = new StringBuilder();
 					String line = null;
 					BufferedReader bu = new BufferedReader(new FileReader(i));
 
 					while((line = bu.readLine()) != null)
 					{
-						l += line;
+						l.append(line);
 					}
 
 					bu.close();
-					JSONObject j = new JSONObject(l);
+					JSONObject j = new JSONObject(l.toString());
 					RAIGoal g = new RAIGoal(j);
 					goals.add(g);
 					writeGoal(g, i);
@@ -342,15 +342,15 @@ public class GoalManager
 		{
 			URL u = new URL("http://paste.volmit.com/raw/" + code);
 			BufferedReader bu = new BufferedReader(new InputStreamReader(u.openStream()));
-			String c = "";
+			StringBuilder c = new StringBuilder();
 			String l = "";
 
 			while((l = bu.readLine()) != null)
 			{
-				c += l + "\n";
+				c.append(l).append("\n");
 			}
 
-			JSONArray ja = new JSONArray(c);
+			JSONArray ja = new JSONArray(c.toString());
 
 			for(int i = 0; i < ja.length(); i++)
 			{

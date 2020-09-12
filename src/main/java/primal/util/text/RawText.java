@@ -304,10 +304,10 @@ public class RawText
 
 	public String compile()
 	{
-		String base = "[\"\"";
+		StringBuilder base = new StringBuilder("[\"\"");
 		for(JSONObject i : components)
 		{
-			base = base + "," + i.toString();
+			base.append(",").append(i.toString());
 		}
 
 		return base + "]";

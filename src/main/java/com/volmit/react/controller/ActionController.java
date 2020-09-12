@@ -289,14 +289,14 @@ public class ActionController extends Controller
 					cts.put(j, cts.get(j) + 1);
 				}
 
-				String s = C.WHITE + i + C.GRAY + " ran";
+				StringBuilder s = new StringBuilder(C.WHITE + i + C.GRAY + " ran");
 
 				for(ActionType j : cts.k())
 				{
-					s += " " + (cts.get(j) > 1 ? (C.GRAY.toString() + cts.get(j) + "x " + C.WHITE) : C.WHITE + "") + j.getName() + C.GRAY;
+					s.append(" ").append(cts.get(j) > 1 ? (C.GRAY.toString() + cts.get(j) + "x " + C.WHITE) : C.WHITE + "").append(j.getName()).append(C.GRAY);
 				}
 
-				Note.ACTION.bake(s);
+				Note.ACTION.bake(s.toString());
 			}
 
 			rans.clear();

@@ -748,7 +748,7 @@ public enum C
 	 */
 	public static String getLastColors(String input)
 	{
-		String result = "";
+		StringBuilder result = new StringBuilder();
 		int length = input.length();
 
 		// Search backwards from the end as it is faster
@@ -762,7 +762,7 @@ public enum C
 
 				if(color != null)
 				{
-					result = color.toString() + result;
+					result.insert(0, color.toString());
 
 					// Once we find a color or reset we can stop searching
 					if(color.isColor() || color.equals(RESET))
@@ -773,7 +773,7 @@ public enum C
 			}
 		}
 
-		return result;
+		return result.toString();
 	}
 
 	static

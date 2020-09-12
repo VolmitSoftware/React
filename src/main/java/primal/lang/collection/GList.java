@@ -557,7 +557,7 @@ public class GList<T> extends ArrayList<T>
 			return "";
 		}
 
-		String s = "";
+		StringBuilder s = new StringBuilder();
 
 		if(split == null)
 		{
@@ -566,7 +566,7 @@ public class GList<T> extends ArrayList<T>
 
 		for(Object i : this)
 		{
-			s = s + split + i.toString();
+			s.append(split).append(i.toString());
 		}
 
 		if(s.length() == 0)

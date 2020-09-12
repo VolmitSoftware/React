@@ -119,17 +119,17 @@ public class CPS
 				InputStream stream = zipFile.getInputStream(entry);
 				InputStreamReader reads = new InputStreamReader(stream);
 				BufferedReader reader = new BufferedReader(reads);
-				String src = "";
+				StringBuilder src = new StringBuilder();
 				String line;
 
 				while((line = reader.readLine()) != null)
 				{
-					src = src + line + "\n";
+					src.append(line).append("\n");
 				}
 
 				reader.close();
 
-				return src;
+				return src.toString();
 			}
 		}
 

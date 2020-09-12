@@ -133,14 +133,14 @@ public class CubicleIterator
 	{
 		for(int i = 0; i < yCubes; i++)
 		{
-			String k = "";
+			StringBuilder k = new StringBuilder();
 
 			for(int j = 0; j < xCubes; j++)
 			{
-				k += "[" + positionFor(mapping[i][j]) + "] ";
+				k.append("[").append(positionFor(mapping[i][j])).append("] ");
 			}
 
-			D.v(k);
+			D.v(k.toString());
 		}
 	}
 }

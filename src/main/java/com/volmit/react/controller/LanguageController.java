@@ -91,17 +91,17 @@ public class LanguageController extends Controller
 				{
 					if(dlf.exists())
 					{
-						String cf = "";
+						StringBuilder cf = new StringBuilder();
 						BufferedReader bu = new BufferedReader(new FileReader(dlf));
 						String ln = "";
 
 						while((ln = bu.readLine()) != null)
 						{
-							cf += ln;
+							cf.append(ln);
 						}
 
 						bu.close();
-						JSONObject jso = new JSONObject(cf);
+						JSONObject jso = new JSONObject(cf.toString());
 						oldVersion = jso.getInt("version");
 					}
 
@@ -152,17 +152,17 @@ public class LanguageController extends Controller
 
 	private void downloadAll(boolean b) throws IOException
 	{
-		String cf = "";
+		StringBuilder cf = new StringBuilder();
 		BufferedReader bu = new BufferedReader(new FileReader(dlf));
 		String ln = "";
 
 		while((ln = bu.readLine()) != null)
 		{
-			cf += ln;
+			cf.append(ln);
 		}
 
 		bu.close();
-		JSONObject jso = new JSONObject(cf);
+		JSONObject jso = new JSONObject(cf.toString());
 
 		boolean ud = false;
 
@@ -240,17 +240,17 @@ public class LanguageController extends Controller
 	{
 		try
 		{
-			String cf = "";
+			StringBuilder cf = new StringBuilder();
 			BufferedReader bu = new BufferedReader(new FileReader(dlf));
 			String ln = "";
 
 			while((ln = bu.readLine()) != null)
 			{
-				cf += ln;
+				cf.append(ln);
 			}
 
 			bu.close();
-			JSONObject jso = new JSONObject(cf);
+			JSONObject jso = new JSONObject(cf.toString());
 			int newVersion = jso.getInt("version");
 
 			if(newVersion != oldVersion)

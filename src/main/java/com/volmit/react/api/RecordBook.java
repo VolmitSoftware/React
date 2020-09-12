@@ -204,14 +204,14 @@ public abstract class RecordBook<T extends IRecord<?>> implements IRecordBook<T>
 		FileReader fin = new FileReader(recordFile);
 		BufferedReader bu = new BufferedReader(fin);
 		String line;
-		String content = "";
+		StringBuilder content = new StringBuilder();
 
 		while((line = bu.readLine()) != null)
 		{
-			content += line;
+			content.append(line);
 		}
 
 		bu.close();
-		js = new JSONObject(content);
+		js = new JSONObject(content.toString());
 	}
 }

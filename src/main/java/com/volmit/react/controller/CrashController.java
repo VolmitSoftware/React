@@ -271,18 +271,18 @@ public class CrashController extends Controller
 			return cls;
 		}
 
-		String m = "";
+		StringBuilder m = new StringBuilder();
 		GList<String> v = new GList<String>(cls.split("\\."));
 		String l = v.popLast();
 
 		for(String i : v)
 		{
-			m += i.charAt(0) + ".";
+			m.append(i.charAt(0)).append(".");
 		}
 
-		m += l;
+		m.append(l);
 
-		return m;
+		return m.toString();
 	}
 
 	public String fcf(String className)

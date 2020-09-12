@@ -347,32 +347,32 @@ public class VIO
 	public static String readAll(File f) throws IOException
 	{
 		BufferedReader bu = new BufferedReader(new FileReader(f));
-		String c = "";
+		StringBuilder c = new StringBuilder();
 		String l = "";
 
 		while((l = bu.readLine()) != null)
 		{
-			c += l + "\n";
+			c.append(l).append("\n");
 		}
 
 		bu.close();
 
-		return c;
+		return c.toString();
 	}
 
 	public static String readAll(InputStream in) throws IOException
 	{
 		BufferedReader bu = new BufferedReader(new InputStreamReader(in));
-		String c = "";
+		StringBuilder c = new StringBuilder();
 		String l = "";
 
 		while((l = bu.readLine()) != null)
 		{
-			c += l + "\n";
+			c.append(l).append("\n");
 		}
 
 		bu.close();
 
-		return c;
+		return c.toString();
 	}
 }

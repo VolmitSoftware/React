@@ -57,22 +57,22 @@ public class TitleMonitor
 
 	public String getHotbarHeadFor(int sel, boolean b, MonitorController mc, ReactPlayer rp, int cd)
 	{
-		String m = "";
+		StringBuilder m = new StringBuilder();
 
 		if(!b)
 		{
-			return m;
+			return m.toString();
 		}
 
 		for(ISampler i : getHeadFor(sel).getChildren())
 		{
 			String cx = mc.prefixForSub(rp, i.getColor(), cd);
-			m += " " + C.RESET + cx + "" + C.stripColor(i.get());
+			m.append(" " + C.RESET).append(cx).append(C.stripColor(i.get()));
 		}
 
 		if(m.length() < 2)
 		{
-			return m;
+			return m.toString();
 		}
 
 		return m.substring(1);
@@ -80,7 +80,7 @@ public class TitleMonitor
 
 	public String getHotbarFor(int sel, boolean b, ReactPlayer rp)
 	{
-		String m = "";
+		StringBuilder m = new StringBuilder();
 		int sl = 0;
 
 		for(MonitorHeading i : headings)
@@ -88,13 +88,13 @@ public class TitleMonitor
 			String pd = C.DARK_GRAY.toString();
 			String po = i.getHead().getColor().toString();
 			String pc = (sel == -1 || sl == sel) ? po : pd;
-			m += " " + C.RESET + pc + i.getHead().get();
+			m.append(" " + C.RESET).append(pc).append(i.getHead().get());
 			sl++;
 		}
 
 		if(m.length() < 2)
 		{
-			return m;
+			return m.toString();
 		}
 
 		return m.substring(1);
@@ -102,7 +102,7 @@ public class TitleMonitor
 
 	public String getConsoleHotbar()
 	{
-		String m = "";
+		StringBuilder m = new StringBuilder();
 		int sl = 0;
 		int sel = -1;
 
@@ -111,13 +111,13 @@ public class TitleMonitor
 			String pd = C.DARK_GRAY.toString();
 			String po = i.getHead().getColor().toString();
 			String pc = (sel == -1 || sl == sel) ? po : pd;
-			m += " " + C.RESET + pc + i.getHead().get();
+			m.append(" " + C.RESET).append(pc).append(i.getHead().get());
 			sl++;
 		}
 
 		if(m.length() < 2)
 		{
-			return m;
+			return m.toString();
 		}
 
 		return m.substring(1);

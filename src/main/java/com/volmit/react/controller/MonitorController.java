@@ -247,15 +247,15 @@ public class MonitorController extends Controller
 		try
 		{
 			BufferedReader bu = new BufferedReader(new FileReader(mf));
-			String c = "";
+			StringBuilder c = new StringBuilder();
 			String l = "";
 
 			while((l = bu.readLine()) != null)
 			{
-				c += l + "\n";
+				c.append(l).append("\n");
 			}
 
-			JSONArray jo = new JSONArray(c);
+			JSONArray jo = new JSONArray(c.toString());
 			TitleCollection tm = new TitleCollection(jo);
 
 			for(TitleHeader i : tm.getHeaders())

@@ -29,11 +29,11 @@ public class CommandSubscribe extends ReactCommand
 		description = Info.COMMAND_SUB_DESCRIPTION;
 		sideGate = SideGate.PLAYERS_ONLY;
 
-		String ch = "Channels: ";
+		StringBuilder ch = new StringBuilder("Channels: ");
 
 		for(Note i : Note.values())
 		{
-			ch += C.WHITE + i.toString().toLowerCase() + ", ";
+			ch.append(C.WHITE).append(i.toString().toLowerCase()).append(", ");
 		}
 
 		registerParameterDescription("[channel]", "The channel to subscribe to. " + ch + C.GRAY);

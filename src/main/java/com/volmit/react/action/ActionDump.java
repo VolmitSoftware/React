@@ -158,18 +158,18 @@ public class ActionDump extends Action
 
 	private String readFile(File file) throws IOException, ParseException, org.json.simple.parser.ParseException
 	{
-		String c = "";
+		StringBuilder c = new StringBuilder();
 		String l = "";
 		BufferedReader bu = new BufferedReader(new FileReader(file));
 
 		while((l = bu.readLine()) != null)
 		{
-			c += l + "\n";
+			c.append(l).append("\n");
 		}
 
 		bu.close();
 
-		return Paste.paste(c) + "." + file.getName().split("\\.")[file.getName().split("\\.").length - 1];
+		return Paste.paste(c.toString()) + "." + file.getName().split("\\.")[file.getName().split("\\.").length - 1];
 	}
 
 	@Override
