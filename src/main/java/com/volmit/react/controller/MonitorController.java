@@ -362,7 +362,7 @@ public class MonitorController extends Controller
 
 	public float calcVolume(ReactPlayer i)
 	{
-		i.setPlays(i.getPlays() > 50 ? 50 : i.getPlays());
+		i.setPlays(Math.min(i.getPlays(), 50));
 		float volume = 0.5f;
 		int plays = (int) M.clip(i.getPlays(), 0, 20);
 		volume -= ((float) plays / 20f) * 0.4f;

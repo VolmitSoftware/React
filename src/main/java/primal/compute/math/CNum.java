@@ -46,7 +46,7 @@ public class CNum
 	{
 		if(number < 0)
 		{
-			number = max - (Math.abs(number) > max ? max : Math.abs(number));
+			number = max - (Math.min(Math.abs(number), max));
 		}
 
 		number = number % (max);

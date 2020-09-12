@@ -26,8 +26,8 @@ public class TitleMonitor
 
 	public int left(int sel)
 	{
-		sel = sel > getMaxSelection() ? getMaxSelection() : sel;
-		sel = sel < 0 ? 0 : sel;
+		sel = Math.min(sel, getMaxSelection());
+		sel = Math.max(sel, 0);
 
 		if(sel == 0)
 		{
@@ -39,8 +39,8 @@ public class TitleMonitor
 
 	public int right(int sel)
 	{
-		sel = sel > getMaxSelection() ? getMaxSelection() : sel;
-		sel = sel < 0 ? 0 : sel;
+		sel = Math.min(sel, getMaxSelection());
+		sel = Math.max(sel, 0);
 
 		if(sel == getMaxSelection())
 		{

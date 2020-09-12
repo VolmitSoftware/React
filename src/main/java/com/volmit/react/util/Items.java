@@ -284,7 +284,7 @@ public class Items
 			return;
 		}
 
-		pc = (pc > 1.0 ? 1.0 : (pc < 0.0 ? 0.0 : pc));
+		pc = (pc > 1.0 ? 1.0 : (Math.max(pc, 0.0)));
 
 		if(getDurability(is) == 0)
 		{

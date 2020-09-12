@@ -156,7 +156,7 @@ public class Datalog
 
 	public long getIntervalMS()
 	{
-		return (getInterval() < 1 ? 1 : getInterval()) * 50;
+		return (Math.max(getInterval(), 1)) * 50;
 	}
 
 	public int getInterval()

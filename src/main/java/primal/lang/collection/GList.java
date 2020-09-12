@@ -238,7 +238,7 @@ public class GList<T> extends ArrayList<T>
 	public GList<GList<T>> split(int v)
 	{
 		GList<GList<T>> mtt = new GList<GList<T>>();
-		int d = size() / v < 1 ? 1 : size() / v;
+		int d = Math.max(size() / v, 1);
 
 		for(int i = 0; i < v + 1; i++)
 		{

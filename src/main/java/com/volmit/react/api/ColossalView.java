@@ -131,8 +131,8 @@ public class ColossalView
 
 		for(Point i : buffers.k())
 		{
-			maxX = i.x + buffers.get(i).getWidth() > maxX ? i.x + buffers.get(i).getWidth() : maxX;
-			maxY = i.y + buffers.get(i).getHeight() > maxY ? i.y + buffers.get(i).getHeight() : maxY;
+			maxX = Math.max(i.x + buffers.get(i).getWidth(), maxX);
+			maxY = Math.max(i.y + buffers.get(i).getHeight(), maxY);
 		}
 
 		maxY -= 128;

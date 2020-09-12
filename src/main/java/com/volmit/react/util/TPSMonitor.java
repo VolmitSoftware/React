@@ -74,7 +74,7 @@ public abstract class TPSMonitor extends Thread
 
 			try
 			{
-				lastTick = React.instance.sampleController.lastTick > lastTick ? React.instance.sampleController.lastTick : lastTick;
+				lastTick = Math.max(React.instance.sampleController.lastTick, lastTick);
 			}
 
 			catch(Exception e)

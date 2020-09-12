@@ -459,7 +459,7 @@ public class EntityCullController extends Controller
 			totalOf += sample.get(j);
 		}
 
-		toCullNormal = totalOf >= toCull ? toCull : totalOf;
+		toCullNormal = Math.min(totalOf, toCull);
 		toCullDefered = toCullNormal < toCull ? toCull - toCullNormal : 0;
 
 		GList<Entity> totals = new GList<Entity>();
@@ -475,8 +475,8 @@ public class EntityCullController extends Controller
 			totalsDef.addAll(deferedSample.getSet(j));
 		}
 
-		toCullDefered = totalsDef.size() < toCullDefered ? totalsDef.size() : toCullDefered;
-		toCullNormal = totals.size() < toCullNormal ? totals.size() : toCullNormal;
+		toCullDefered = Math.min(totalsDef.size(), toCullDefered);
+		toCullNormal = Math.min(totals.size(), toCullNormal);
 
 		for(int j = 0; j < toCullNormal; j++)
 		{

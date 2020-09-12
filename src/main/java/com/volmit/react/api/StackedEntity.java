@@ -316,7 +316,7 @@ public class StackedEntity
 	public void setHealth(double hp)
 	{
 		hp = M.clip(hp, 1, 2000);
-		entity.setHealth(getMaxHealth() < hp ? getMaxHealth() : hp);
+		entity.setHealth(Math.min(getMaxHealth(), hp));
 	}
 
 	public int getEffectiveCount()
