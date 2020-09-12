@@ -117,10 +117,7 @@ public class EventBuffer<T extends Event> implements Listener
 		{
 			String s = sorter.apply(i);
 
-			if(order.contains(s))
-			{
-				order.remove(s);
-			}
+			order.remove(s);
 
 			order.add(s);
 			sorted.put(s, i);

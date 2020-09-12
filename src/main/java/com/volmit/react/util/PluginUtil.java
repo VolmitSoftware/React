@@ -589,10 +589,10 @@ public class PluginUtil
 
 		pluginManager.disablePlugin(plugin);
 
-		if(plugins != null && plugins.contains(plugin))
+		if(plugins != null)
 			plugins.remove(plugin);
 
-		if(names != null && names.containsKey(name))
+		if(names != null)
 			names.remove(name);
 
 		if(listeners != null && reloadlisteners)
@@ -692,12 +692,12 @@ public class PluginUtil
 
 		pluginManager.disablePlugin(plugin);
 
-		if(plugins != null && plugins.contains(plugin))
+		if(plugins != null)
 		{
 			plugins.remove(plugin);
 		}
 
-		if(names != null && names.containsKey(name))
+		if(names != null)
 		{
 			names.remove(name);
 		}

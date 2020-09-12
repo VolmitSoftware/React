@@ -95,10 +95,7 @@ public class SpikeController extends Controller
 						{
 							for(Plugin k : CPS.identify(j.getClassName()))
 							{
-								if(!gv.contains(k.getName()))
-								{
-									gv.add(k.getName());
-								}
+								gv.add(k.getName());
 							}
 						}
 
