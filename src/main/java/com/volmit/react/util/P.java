@@ -1,12 +1,9 @@
 package com.volmit.react.util;
 
-import java.util.Set;
-
 import com.volmit.react.Config;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
