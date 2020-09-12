@@ -29,8 +29,8 @@ public abstract class LineParticleManipulator extends ParticleManipulator
 	public void play(Location a, Location b, Double ppb)
 	{
 		Double dist = a.distance(b);
-		Double jump = dist / ppb;
-		Double jumps = dist * ppb;
+		double jump = dist / ppb;
+		double jumps = dist * ppb;
 		Location cursor = a.clone();
 		Vector direction = VectorMath.direction(a, b);
 

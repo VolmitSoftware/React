@@ -94,7 +94,7 @@ public class VectorSchematic
 			Vector shift = i;
 			Location base = location.clone().subtract(shift);
 			GMap<Vector, Location> map = new GMap<Vector, Location>();
-			Boolean found = true;
+			boolean found = true;
 
 			for(Vector j : schematic.k())
 			{

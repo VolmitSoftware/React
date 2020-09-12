@@ -337,7 +337,7 @@ public class F
 	 */
 	public static String ofSize(long s, int div)
 	{
-		Double d = (double) s;
+		double d = (double) s;
 		String sub = "b";
 
 		if(d > div - 1)
@@ -377,7 +377,7 @@ public class F
 
 	public static String ofSize(long s, int div, int dec)
 	{
-		Double d = (double) s;
+		double d = (double) s;
 		String sub = "Bytes";
 
 		if(d > div - 1)
@@ -414,7 +414,7 @@ public class F
 		{
 			s = -s;
 		}
-		Double d = (double) s;
+		double d = (double) s;
 		String sub = "Grams";
 
 		if(d > div - 1)

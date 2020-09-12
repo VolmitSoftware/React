@@ -131,7 +131,7 @@ public class GraphingInstance implements Listener
 	public void send(String s)
 	{
 		String f = C.stripColor(s.split(":REACTSPLITTERFFF:")[0]);
-		Long g = Long.valueOf(f);
+		long g = Long.parseLong(f);
 		String msg = C.YELLOW + "[" + F.time((double) (M.ms() - g), 0) + " ago] " + s.split(":REACTSPLITTERFFF:")[1];
 		player.sendMessage(msg);
 	}

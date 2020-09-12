@@ -502,8 +502,8 @@ public class P
 	{
 		Location base = p.getEyeLocation();
 		Location mode = p.getEyeLocation();
-		Float yaw = p.getLocation().getYaw() + 50 + yawShift;
-		Float pitch = p.getLocation().getPitch() + pitchShift;
+		float yaw = p.getLocation().getYaw() + 50 + yawShift;
+		float pitch = p.getLocation().getPitch() + pitchShift;
 
 		mode.setYaw(yaw);
 		mode.setPitch(pitch);

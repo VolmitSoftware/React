@@ -352,7 +352,7 @@ public class W
 	public static MaterialBlock getMaterialBlock(String s)
 	{
 		Material material = null;
-		Byte meta = (byte) 0;
+		byte meta = (byte) 0;
 		String m = "0";
 		String b = "0";
 

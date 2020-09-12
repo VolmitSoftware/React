@@ -28,7 +28,7 @@ public class MFADistortion extends AudioDistortion
 		
 		for(int i = 0; i < span; i++)
 		{
-			Float diff = i * ((to - start) / span);
+			float diff = i * ((to - start) / span);
 			Audible ab = a.clone();
 			ab.setPitch(start + diff);
 			n.add(ab);

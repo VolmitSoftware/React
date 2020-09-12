@@ -287,7 +287,7 @@ public class SelectorPosition extends Selector
 						{
 							try
 							{
-								Integer rad = Integer.valueOf(subs.substring(1));
+								int rad = Integer.parseInt(subs.substring(1));
 
 								if(rad < 1)
 								{
