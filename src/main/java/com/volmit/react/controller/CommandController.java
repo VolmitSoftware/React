@@ -319,10 +319,7 @@ public class CommandController extends Controller implements Listener, CommandEx
 				{
 					String[] args = new String[a.length - 1];
 
-					for(int i = 1; i < a.length; i++)
-					{
-						args[i - 1] = a[i];
-					}
+					System.arraycopy(a, 1, args, 0, a.length - 1);
 
 					cmd.fire(plr ? px : s, args);
 				}
