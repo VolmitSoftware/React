@@ -26,7 +26,7 @@ public enum Direction
 	private int z;
 	private CuboidDirection f;
 
-	private Direction(int x, int y, int z, CuboidDirection f)
+	Direction(int x, int y, int z, CuboidDirection f)
 	{
 		this.x = x;
 		this.y = y;

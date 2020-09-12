@@ -55,7 +55,7 @@ public class AdvancementHolder12
 		this.holders.add(api);
 	}
 
-	public static enum AdvancementBackground
+	public enum AdvancementBackground
 	{
 		ADVENTURE("minecraft:textures/gui/advancements/backgrounds/adventure.png"),
 		END("minecraft:textures/gui/advancements/backgrounds/end.png"),

@@ -330,12 +330,12 @@ public enum C
 		dyeHexMap.put(DyeColor.YELLOW, "#c2b51c");
 	}
 
-	private C(char code, int intCode)
+	C(char code, int intCode)
 	{
 		this(code, intCode, false);
 	}
 
-	private C(char code, int intCode, boolean isFormat)
+	C(char code, int intCode, boolean isFormat)
 	{
 		this.code = code;
 		this.intCode = intCode;

@@ -61,7 +61,7 @@ public enum SampledType
 		return node;
 	}
 
-	private SampledType(String s)
+	SampledType(String s)
 	{
 		try
 		{

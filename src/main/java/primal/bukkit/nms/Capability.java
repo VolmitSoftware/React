@@ -7,18 +7,18 @@ public enum Capability
 	private NMSVersion minVersion;
 	private NMSVersion maxVersion;
 
-	private Capability(NMSVersion v)
+	Capability(NMSVersion v)
 	{
 		this(v, NMSVersion.getMaximum());
 	}
 
-	private Capability(NMSVersion min, NMSVersion max)
+	Capability(NMSVersion min, NMSVersion max)
 	{
 		this.minVersion = min;
 		this.maxVersion = max;
 	}
 
-	private Capability()
+	Capability()
 	{
 		this(NMSVersion.getMinimum(), NMSVersion.getMaximum());
 	}

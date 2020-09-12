@@ -15,7 +15,7 @@ public enum Aud
 
 	private Audible aud;
 
-	private Aud(Audible aud)
+	Aud(Audible aud)
 	{
 		this.aud = aud;
 	}

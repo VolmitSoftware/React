@@ -478,7 +478,7 @@ public enum ParticleEffect
 	 * @param properties
 	 *            Properties of this particle effect
 	 */
-	private ParticleEffect(String name, int id, int requiredVersion, ParticleProperty... properties)
+	ParticleEffect(String name, int id, int requiredVersion, ParticleProperty... properties)
 	{
 		this.name = name;
 		this.id = id;
@@ -1238,7 +1238,7 @@ public enum ParticleEffect
 	 * @author DarkBlade12
 	 * @since 1.7
 	 */
-	public static enum ParticleProperty
+	public enum ParticleProperty
 	{
 		/**
 		 * The particle effect requires water to be displayed

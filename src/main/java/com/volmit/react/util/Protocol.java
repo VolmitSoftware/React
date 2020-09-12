@@ -83,27 +83,27 @@ public enum Protocol
 	private String versionName;
 	private boolean netty;
 
-	private Protocol(int version, String versionName, boolean beta)
+	Protocol(int version, String versionName, boolean beta)
 	{
 		this(version, versionName, "UNKNOWN", beta);
 	}
 
-	private Protocol(int version)
+	Protocol(int version)
 	{
 		this(version, "UNKNOWN", "UNKNOWN", false);
 	}
 
-	private Protocol(int version, String versionName)
+	Protocol(int version, String versionName)
 	{
 		this(version, versionName, "UNKNOWN", false);
 	}
 
-	private Protocol(int version, String versionName, String packageVersion)
+	Protocol(int version, String versionName, String packageVersion)
 	{
 		this(version, versionName, packageVersion, false);
 	}
 
-	private Protocol(int version, String versionName, String packageVersion, boolean beta)
+	Protocol(int version, String versionName, String packageVersion, boolean beta)
 	{
 		this.version = version;
 		this.versionName = versionName;

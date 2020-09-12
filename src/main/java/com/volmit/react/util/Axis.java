@@ -12,7 +12,7 @@ public enum Axis
 	private int y;
 	private int z;
 	
-	private Axis(int x, int y, int z)
+	Axis(int x, int y, int z)
 	{
 		this.x = x;
 		this.y = y;

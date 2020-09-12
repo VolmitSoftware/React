@@ -12,7 +12,7 @@ public enum WindowResolution
 	private int maxHeight;
 	private InventoryType type;
 
-	private WindowResolution(int w, int h, InventoryType type)
+	WindowResolution(int w, int h, InventoryType type)
 	{
 		this.width = w;
 		this.maxHeight = h;

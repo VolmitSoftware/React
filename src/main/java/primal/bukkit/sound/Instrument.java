@@ -99,7 +99,7 @@ public enum Instrument
 
 	private Audible sound;
 
-	private Instrument(Audible sound)
+	Instrument(Audible sound)
 	{
 		this.sound = sound;
 	}

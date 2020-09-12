@@ -67,13 +67,13 @@ public enum EntityFlag
 	private String m;
 	private boolean spawnRule;
 
-	private EntityFlag(String m)
+	EntityFlag(String m)
 	{
 		this.m = m;
 		spawnRule = false;
 	}
 
-	private EntityFlag(String m, boolean spawnRule)
+	EntityFlag(String m, boolean spawnRule)
 	{
 		this.spawnRule = spawnRule;
 		this.m = m;

@@ -20,7 +20,7 @@ public enum ActionType
 	private ActionHandle handle;
 	private ActionTargetType target;
 
-	private ActionType(ActionHandle handle, ActionTargetType target, String name, String description)
+	ActionType(ActionHandle handle, ActionTargetType target, String name, String description)
 	{
 		this.name = name;
 		this.description = description;

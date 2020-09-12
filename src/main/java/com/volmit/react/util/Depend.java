@@ -12,7 +12,7 @@ public enum Depend
 	
 	private String name;
 	
-	private Depend(String name)
+	Depend(String name)
 	{
 		this.name = name;
 	}

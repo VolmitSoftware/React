@@ -34,7 +34,7 @@ public enum Permissable
 	private String node;
 	public static GList<TemporaryAccessor> accessors = new GList<TemporaryAccessor>();
 
-	private Permissable(String s)
+	Permissable(String s)
 	{
 		try
 		{
