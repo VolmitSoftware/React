@@ -177,7 +177,6 @@ public class ReactPlugin extends PrimalPlugin
 			};
 		}
 
-		System.out.println(Protocol.getProtocolVersion().getVersionString());
 	}
 
 	@Override
