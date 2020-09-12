@@ -220,7 +220,7 @@ public class SelectorPosition extends Selector
 
 					chunks.addAll(Arrays.asList(i.getLoadedChunks()));
 
-					break searching;
+					break;
 				}
 			}
 
@@ -309,7 +309,7 @@ public class SelectorPosition extends Selector
 						}
 					}
 
-					break searching;
+					break;
 				}
 			}
 

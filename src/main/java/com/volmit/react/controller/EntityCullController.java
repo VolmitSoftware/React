@@ -319,14 +319,14 @@ public class EntityCullController extends Controller
 									}
 								}
 
-								continue parsing;
+								continue;
 							}
 						}
 					}
 
 					if(g.getEntityTypes().isEmpty())
 					{
-						continue searching;
+						continue;
 					}
 
 					maxs.put(g, limit);
