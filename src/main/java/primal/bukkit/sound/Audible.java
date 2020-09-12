@@ -22,7 +22,7 @@ public interface Audible
 	 * @param l
 	 *            the location
 	 */
-	public void play(Player p, Location l);
+    void play(Player p, Location l);
 	
 	/**
 	 * Play the sound to just the player
@@ -30,7 +30,7 @@ public interface Audible
 	 * @param p
 	 *            the player
 	 */
-	public void play(Player p);
+    void play(Player p);
 	
 	/**
 	 * Play the sound globally
@@ -38,7 +38,7 @@ public interface Audible
 	 * @param l
 	 *            the location
 	 */
-	public void play(Location l);
+    void play(Location l);
 	
 	/**
 	 * Play the sound to the player
@@ -48,14 +48,14 @@ public interface Audible
 	 * @param v
 	 *            relative to the players location
 	 */
-	public void play(Player p, Vector v);
+    void play(Player p, Vector v);
 	
 	/**
 	 * Get volume
 	 * 
 	 * @return the volume
 	 */
-	public Float getVolume();
+    Float getVolume();
 	
 	/**
 	 * Sets the volume
@@ -63,14 +63,14 @@ public interface Audible
 	 * @param volume
 	 *            the volume
 	 */
-	public void setVolume(Float volume);
+    void setVolume(Float volume);
 	
 	/**
 	 * get the pitch
 	 * 
 	 * @return the pitch
 	 */
-	public Float getPitch();
+    Float getPitch();
 	
 	/**
 	 * Set the pitch
@@ -78,12 +78,12 @@ public interface Audible
 	 * @param pitch
 	 *            the pitch
 	 */
-	public void setPitch(Float pitch);
+    void setPitch(Float pitch);
 	
 	/**
 	 * Clone the audio
 	 * 
 	 * @return the audio
 	 */
-	public Audible clone();
+    Audible clone();
 }

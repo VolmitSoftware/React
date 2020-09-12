@@ -8,11 +8,11 @@ import primal.bukkit.world.MaterialBlock;
 
 public interface INMSBinding
 {
-	public String getPackageVersion();
+	String getPackageVersion();
 
-	public void updateBlock(Block b);
+	void updateBlock(Block b);
 
-	public void setBlock(Location l, MaterialBlock m);
+	void setBlock(Location l, MaterialBlock m);
 
-	public void merge(Entity drop, Entity into);
+	void merge(Entity drop, Entity into);
 }

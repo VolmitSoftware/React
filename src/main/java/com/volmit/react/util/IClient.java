@@ -4,11 +4,11 @@ import java.io.IOException;
 
 public interface IClient
 {
-	public int getPort();
+	int getPort();
 
-	public String getAddress();
+	String getAddress();
 
-	public IPacket sendPacket(IPacket send) throws IOException, Exception;
+	IPacket sendPacket(IPacket send) throws IOException, Exception;
 
-	public PacketHandler getHandler();
+	PacketHandler getHandler();
 }

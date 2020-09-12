@@ -4,15 +4,15 @@ import org.bukkit.command.CommandSender;
 
 public interface IFix
 {
-	public String getId();
+	String getId();
 
-	public String[] getAliases();
+	String[] getAliases();
 
-	public String getName();
+	String getName();
 
-	public String getDescription();
+	String getDescription();
 
-	public String getUsage();
+	String getUsage();
 
-	public void run(CommandSender sender, String[] args);
+	void run(CommandSender sender, String[] args);
 }

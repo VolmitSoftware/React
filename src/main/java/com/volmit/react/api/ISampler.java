@@ -4,37 +4,37 @@ import primal.util.text.C;
 
 public interface ISampler
 {
-	public String getID();
+	String getID();
 
-	public IFormatter getFormatter();
+	IFormatter getFormatter();
 
-	public String getName();
+	String getName();
 
-	public String getDescription();
+	String getDescription();
 
-	public void setID(String id);
+	void setID(String id);
 
-	public void setName(String name);
+	void setName(String name);
 
-	public void setDescription(String description);
+	void setDescription(String description);
 
-	public C getColor();
+	C getColor();
 
-	public C getAltColor();
+	C getAltColor();
 
-	public void setColor(C color, C alt);
+	void setColor(C color, C alt);
 
-	public int getInterval();
+	int getInterval();
 
-	public void setInterval(int interval);
+	void setInterval(int interval);
 
-	public void sample();
+	void sample();
 
-	public String get();
+	String get();
 
-	public void construct();
+	void construct();
 
-	public void setValue(double v);
+	void setValue(double v);
 
-	public double getValue();
+	double getValue();
 }

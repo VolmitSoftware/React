@@ -10,28 +10,28 @@ import primal.lang.collection.GList;
  */
 public interface ICommand
 {
-	public GList<String> getRequiredPermissions();
+	GList<String> getRequiredPermissions();
 
 	/**
 	 * Get the name of this command (node)
 	 *
 	 * @return the node
 	 */
-	public String getNode();
+    String getNode();
 
 	/**
 	 * Get all (realized) nodes of this command
 	 *
 	 * @return the nodes
 	 */
-	public GList<String> getNodes();
+    GList<String> getNodes();
 
 	/**
 	 * Get all (every) node in this command
 	 *
 	 * @return all nodes
 	 */
-	public GList<String> getAllNodes();
+    GList<String> getAllNodes();
 
 	/**
 	 * Add a node to this command
@@ -39,7 +39,7 @@ public interface ICommand
 	 * @param node
 	 *            the node
 	 */
-	public void addNode(String node);
+    void addNode(String node);
 
 	/**
 	 * Handle a command. If this is a subcommand, parameters after the subcommand
@@ -51,5 +51,5 @@ public interface ICommand
 	 *            the arguments after this command node
 	 * @return return true to mark it as handled
 	 */
-	public boolean handle(PrimalSender sender, String[] args);
+    boolean handle(PrimalSender sender, String[] args);
 }

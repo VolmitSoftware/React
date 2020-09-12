@@ -7,19 +7,19 @@ import primal.lang.collection.GList;
 
 public interface IPapyrus
 {
-	public MapView getView();
+	MapView getView();
 
-	public BufferedFrame getFrameBuffer();
+	BufferedFrame getFrameBuffer();
 
-	public void addRenderer(IRenderer renderer);
+	void addRenderer(IRenderer renderer);
 
-	public void clearRenderers();
+	void clearRenderers();
 
-	public GList<IRenderer> getRenderers();
+	GList<IRenderer> getRenderers();
 
-	public void removeRenderer(IRenderer renderer);
+	void removeRenderer(IRenderer renderer);
 
-	public void destroy();
+	void destroy();
 
-	public ItemStack makeMapItem();
+	ItemStack makeMapItem();
 }

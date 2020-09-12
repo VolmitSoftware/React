@@ -10,30 +10,30 @@ public interface SurgePlugin
 	 * @param serverProtocol
 	 *            the minecraft version
 	 */
-	public void onStart(Protocol serverProtocol);
+    void onStart(Protocol serverProtocol);
 
 	/**
 	 * Called after surge has shut down all tasks and threads, clean up here
 	 * (effective onDisable)
 	 */
-	public void onStop();
+    void onStop();
 
 	/**
 	 * Called after onLoad(), only some of the Surge service apis are loaded up here
 	 */
-	public void onPostInit();
+    void onPostInit();
 
 	/**
 	 * Not the best way to start off a day. This is called literally just after the
 	 * plugin jar file is loaded up and this plugin object is initialized. Surge
 	 * apis which require services will not be online here yet. Be safe.
 	 */
-	public void onPreInit();
+    void onPreInit();
 
 	/**
 	 * Called when it is time to register controllers
 	 */
-	public void onControllerRegistry();
+    void onControllerRegistry();
 
 	/**
 	 * Register a controller
@@ -41,19 +41,19 @@ public interface SurgePlugin
 	 * @param c
 	 *            the controller
 	 */
-	public void registerController(IController c);
+    void registerController(IController c);
 
 	/**
 	 * Get all active controllers
 	 *
 	 * @return a list of controllable objects
 	 */
-	public GList<IController> getControllers();
+    GList<IController> getControllers();
 
 	/**
 	 * Get the threadPool
 	 *
 	 * @return the pool manager
 	 */
-	public ParallelPoolManager getThreadPool();
+    ParallelPoolManager getThreadPool();
 }

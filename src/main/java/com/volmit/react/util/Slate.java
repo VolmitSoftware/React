@@ -14,7 +14,7 @@ public interface Slate
 	/**
 	 * Rebuild the scoreboard
 	 */
-	public void build();
+    void build();
 
 	/**
 	 * Set the name of the slate
@@ -22,21 +22,21 @@ public interface Slate
 	 * @param name
 	 *            the name of the slate
 	 */
-	public void setName(String name);
+    void setName(String name);
 
 	/**
 	 * Get the name of the slate
 	 *
 	 * @return the name
 	 */
-	public String getName();
+    String getName();
 
 	/**
 	 * Get all lines in the board
 	 *
 	 * @return the lines
 	 */
-	public GList<String> getLines();
+    GList<String> getLines();
 
 	/**
 	 * Set a line in the board
@@ -46,7 +46,7 @@ public interface Slate
 	 * @param line
 	 *            the line text
 	 */
-	public void set(int index, String line);
+    void set(int index, String line);
 
 	/**
 	 * Set the board lines
@@ -54,7 +54,7 @@ public interface Slate
 	 * @param lines
 	 *            the lines
 	 */
-	public void setLines(GList<String> lines);
+    void setLines(GList<String> lines);
 
 	/**
 	 * Get a line in the board
@@ -63,7 +63,7 @@ public interface Slate
 	 *            the index
 	 * @return the line or null
 	 */
-	public String get(int index);
+    String get(int index);
 
 	/**
 	 * Add a player viewer
@@ -71,7 +71,7 @@ public interface Slate
 	 * @param p
 	 *            the player
 	 */
-	public void addViewer(Player p);
+    void addViewer(Player p);
 
 	/**
 	 * Add a line of text
@@ -79,12 +79,12 @@ public interface Slate
 	 * @param s
 	 *            the line
 	 */
-	public void addLine(String s);
+    void addLine(String s);
 
 	/**
 	 * Clear all lines
 	 */
-	public void clearLines();
+    void clearLines();
 
 	/**
 	 * Remove a player viewer
@@ -92,14 +92,14 @@ public interface Slate
 	 * @param p
 	 *            the player
 	 */
-	public void removeViewer(Player p);
+    void removeViewer(Player p);
 
 	/**
 	 * Get all viewers
 	 *
 	 * @return viewers of this slate
 	 */
-	public GList<Player> getViewers();
+    GList<Player> getViewers();
 
 	/**
 	 * Is the given player viewing this slate
@@ -108,10 +108,10 @@ public interface Slate
 	 *            the player
 	 * @return true if the player is
 	 */
-	public boolean isViewing(Player p);
+    boolean isViewing(Player p);
 
 	/**
 	 * Update the board to all players online
 	 */
-	public void update();
+    void update();
 }

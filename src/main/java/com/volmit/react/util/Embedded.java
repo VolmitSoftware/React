@@ -20,7 +20,7 @@ public interface Embedded<T>
 	 *
 	 * @return the objects
 	 */
-	public GList<T> get();
+    GList<T> get();
 
 	/**
 	 * Add an embedded object to this embedded object
@@ -28,5 +28,5 @@ public interface Embedded<T>
 	 * @param t
 	 *            the embedded object
 	 */
-	public void add(T t);
+    void add(T t);
 }

@@ -6,17 +6,17 @@ import primal.lang.collection.GSet;
 
 public interface ISelector
 {
-	public SelectionMode getMode();
+	SelectionMode getMode();
 
-	public Class<?> getType();
+	Class<?> getType();
 
-	public boolean can(Object o);
+	boolean can(Object o);
 
-	public GSet<Object> getList();
+	GSet<Object> getList();
 
-	public GSet<Object> getPossibilities();
+	GSet<Object> getPossibilities();
 
-	public int parse(CommandSender sender, String input) throws SelectorParseException;
+	int parse(CommandSender sender, String input) throws SelectorParseException;
 
-	public String getName();
+	String getName();
 }

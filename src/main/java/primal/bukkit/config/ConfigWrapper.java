@@ -6,19 +6,19 @@ import primal.lang.collection.GList;
 
 public interface ConfigWrapper
 {
-	public void load(File f) throws Exception;
+	void load(File f) throws Exception;
 
-	public void save(File f) throws Exception;
+	void save(File f) throws Exception;
 
-	public String save();
+	String save();
 
-	public void load(String string) throws Exception;
+	void load(String string) throws Exception;
 
-	public void set(String key, Object o);
+	void set(String key, Object o);
 
-	public Object get(String key);
+	Object get(String key);
 
-	public GList<String> keys();
+	GList<String> keys();
 
-	public boolean contains(String key);
+	boolean contains(String key);
 }

@@ -5,21 +5,21 @@ import org.bukkit.command.TabCompleter;
 
 public interface ICommand extends TabCompleter
 {
-	public String getCommand();
+	String getCommand();
 
-	public String[] getAliases();
+	String[] getAliases();
 
-	public String[] getPermissions();
+	String[] getPermissions();
 
-	public String getUsage();
+	String getUsage();
 
-	public String getDescription();
+	String getDescription();
 
-	public String getDescriptionForParameter(String par);
+	String getDescriptionForParameter(String par);
 
-	public SideGate getSideGate();
+	SideGate getSideGate();
 
-	public void registerParameterDescription(String id, String desc);
+	void registerParameterDescription(String id, String desc);
 
-	public void fire(CommandSender sender, String[] args);
+	void fire(CommandSender sender, String[] args);
 }

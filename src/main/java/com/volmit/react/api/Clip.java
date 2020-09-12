@@ -10,7 +10,7 @@ import java.lang.annotation.Target;
 @Target(FIELD)
 public @interface Clip
 {
-	public double min();
+	double min();
 
-	public double max();
+	double max();
 }

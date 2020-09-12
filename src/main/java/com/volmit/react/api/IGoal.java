@@ -4,21 +4,21 @@ import primal.lang.collection.GList;
 
 public interface IGoal
 {
-	public GList<IGoal> getSubgoals();
+	GList<IGoal> getSubgoals();
 
-	public void propigate();
+	void propigate();
 
-	public void onPropigated();
+	void onPropigated();
 
-	public String getTag();
+	String getTag();
 
-	public GList<IGoal> getFailingSubgoals();
+	GList<IGoal> getFailingSubgoals();
 
-	public boolean isFailing();
+	boolean isFailing();
 
-	public boolean onCheckFailing();
+	boolean onCheckFailing();
 
-	public void update();
+	void update();
 
-	public void addGoal(IGoal subgoal);
+	void addGoal(IGoal subgoal);
 }

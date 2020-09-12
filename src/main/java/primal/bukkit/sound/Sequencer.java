@@ -15,14 +15,14 @@ public interface Sequencer extends Audible
 	 * @param timing
 	 *            the amount of ticks into the sequence
 	 */
-	public void add(Audible a, int timing);
+    void add(Audible a, int timing);
 	
 	/**
 	 * Is the sequencer currently playing?
 	 * 
 	 * @return true if it is
 	 */
-	public boolean isPlaying();
+    boolean isPlaying();
 	
 	/**
 	 * Set the position of the playhead
@@ -30,19 +30,19 @@ public interface Sequencer extends Audible
 	 * @param p
 	 *            the positition
 	 */
-	public void setPlayHead(int p);
+    void setPlayHead(int p);
 	
 	/**
 	 * Get the length of this sequence in ticks
 	 * 
 	 * @return the length or 0
 	 */
-	public int getLength();
+    int getLength();
 	
 	/**
 	 * Get the position of the playhead
 	 * 
 	 * @return the playhead position
 	 */
-	public int getPlayHead();
+    int getPlayHead();
 }

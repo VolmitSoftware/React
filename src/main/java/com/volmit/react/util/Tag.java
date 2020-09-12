@@ -19,5 +19,5 @@ import java.lang.annotation.Target;
 @Target({TYPE, FIELD, METHOD, PARAMETER, CONSTRUCTOR, LOCAL_VARIABLE, ANNOTATION_TYPE, PACKAGE, TYPE_PARAMETER, TYPE_USE})
 public @interface Tag
 {
-	public String value();
+	String value();
 }

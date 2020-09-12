@@ -22,13 +22,13 @@ public interface ShadowChunk
 	 *
 	 * @return true if the next chunk packet will be a full send
 	 */
-	public boolean isFullModification();
+    boolean isFullModification();
 
 	/**
 	 * Rebase the shadow of the real chunk, essentially syncing this shadow to the
 	 * real chunk. This dumps any non-flushed modifications
 	 */
-	public void rebase();
+    void rebase();
 
 	/**
 	 * Rebase the shadow section from the real chunk section.
@@ -36,31 +36,31 @@ public interface ShadowChunk
 	 * @param section
 	 *            the section to rebase
 	 */
-	public void rebaseSection(int section);
+    void rebaseSection(int section);
 
 	/**
 	 * Queue the given chunk section for resending
 	 */
-	public void queueSection(int section);
+    void queueSection(int section);
 
 	/**
 	 * Queue biomes for resending
 	 */
-	public void queueBiomes();
+    void queueBiomes();
 
 	/**
 	 * Get the source chunk
 	 *
 	 * @return the source this shadow is... shadowing
 	 */
-	public Chunk getSource();
+    Chunk getSource();
 
 	/**
 	 * Flush all pending modifications into packets to send
 	 *
 	 * @return the packets to send
 	 */
-	public List<Object> flush();
+    List<Object> flush();
 
 	/**
 	 * Flushes only the given section
@@ -71,7 +71,7 @@ public interface ShadowChunk
 	 *         it will return a full flush instead. If nothing needs to be flushed
 	 *         in that section, an empty list is returned.
 	 */
-	public List<Object> flushSection(int section);
+    List<Object> flushSection(int section);
 
 	/**
 	 * Get the bitmask of the entire chunk.
@@ -81,14 +81,14 @@ public interface ShadowChunk
 	 *
 	 * @return the bitmask
 	 */
-	public int getEntireMask();
+    int getEntireMask();
 
 	/**
 	 * Get the bitmask of the non-flushed modified sections
 	 *
 	 * @return the modified bitmask
 	 */
-	public int getModifiedMask();
+    int getModifiedMask();
 
 	/**
 	 * Set skylight
@@ -104,7 +104,7 @@ public interface ShadowChunk
 	 * @param light
 	 *            the light level
 	 */
-	public void setSkyLight(int x, int y, int z, int light);
+    void setSkyLight(int x, int y, int z, int light);
 
 	/**
 	 * Set blocklight
@@ -118,7 +118,7 @@ public interface ShadowChunk
 	 * @param light
 	 *            the light level
 	 */
-	public void setBlockLight(int x, int y, int z, int light);
+    void setBlockLight(int x, int y, int z, int light);
 
 	/**
 	 * Set the biome
@@ -130,7 +130,7 @@ public interface ShadowChunk
 	 * @param bio
 	 *            the biome
 	 */
-	public void setBiome(int x, int z, Biome bio);
+    void setBiome(int x, int z, Biome bio);
 
 	/**
 	 * Set the biome
@@ -142,7 +142,7 @@ public interface ShadowChunk
 	 * @param bio
 	 *            the biome id
 	 */
-	public void setBiome(int x, int z, int bio);
+    void setBiome(int x, int z, int bio);
 
 	/**
 	 * Set a block
@@ -158,7 +158,7 @@ public interface ShadowChunk
 	 * @param data
 	 *            the block meta
 	 */
-	public void setBlock(int x, int y, int z, int type, int data);
+    void setBlock(int x, int y, int z, int type, int data);
 
 	/**
 	 * Set a block
@@ -172,7 +172,7 @@ public interface ShadowChunk
 	 * @param material
 	 *            the material
 	 */
-	public void setBlock(int x, int y, int z, Material material, int data);
+    void setBlock(int x, int y, int z, Material material, int data);
 
 	/**
 	 * Set a block
@@ -186,7 +186,7 @@ public interface ShadowChunk
 	 * @param material
 	 *            the material (assumes data = 0)
 	 */
-	public void setBlock(int x, int y, int z, Material material);
+    void setBlock(int x, int y, int z, Material material);
 
 	/**
 	 * Set a block
@@ -198,7 +198,7 @@ public interface ShadowChunk
 	 * @param data
 	 *            the data.
 	 */
-	public void setBlock(Location location, Material material, int data);
+    void setBlock(Location location, Material material, int data);
 
 	/**
 	 * Set a block
@@ -208,5 +208,5 @@ public interface ShadowChunk
 	 * @param material
 	 *            the material (assumes data = 0)
 	 */
-	public void setBlock(Location location, Material material);
+    void setBlock(Location location, Material material);
 }

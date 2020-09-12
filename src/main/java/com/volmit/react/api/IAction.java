@@ -8,43 +8,43 @@ import primal.lang.collection.GMap;
 
 public interface IAction
 {
-	public ItemStack getIcon();
+	ItemStack getIcon();
 
-	public String getName();
+	String getName();
 
-	public String getDescription();
+	String getDescription();
 
-	public ActionHandle getHandleType();
+	ActionHandle getHandleType();
 
-	public void act(IActionSource source, ISelector... selectors) throws ActionAlreadyRunningException;
+	void act(IActionSource source, ISelector... selectors) throws ActionAlreadyRunningException;
 
-	public void enact(IActionSource source, ISelector... selectors);
+	void enact(IActionSource source, ISelector... selectors);
 
-	public ActionState getState();
+	ActionState getState();
 
-	public ActionTargetType getTarget();
+	ActionTargetType getTarget();
 
-	public void setNodes(String... nodes);
+	void setNodes(String... nodes);
 
-	public String[] getNodes();
+	String[] getNodes();
 
-	public String getStatus();
+	String getStatus();
 
-	public void setStatus(String status);
+	void setStatus(String status);
 
-	public double getProgress();
+	double getProgress();
 
-	public void setProgress(double progress);
+	void setProgress(double progress);
 
-	public ActionType getType();
+	ActionType getType();
 
-	public GMap<Class<?>, AccessCallback<ISelector>> getDefaultSelectors();
+	GMap<Class<?>, AccessCallback<ISelector>> getDefaultSelectors();
 
-	public void setDefaultSelector(Class<?> clazz, AccessCallback<ISelector> selector);
+	void setDefaultSelector(Class<?> clazz, AccessCallback<ISelector> selector);
 
-	public ISelector[] biselect(ISelector... selectors);
+	ISelector[] biselect(ISelector... selectors);
 
-	public IActionSource getCurrentSource();
+	IActionSource getCurrentSource();
 
-	public void completeAction();
+	void completeAction();
 }

@@ -11,17 +11,17 @@ public interface PacketListener
 	/**
 	 * Called when the packet listener is opened
 	 */
-	public void onOpened();
+    void onOpened();
 
 	/**
 	 * Start listening for packets
 	 */
-	public void openListener();
+    void openListener();
 
 	/**
 	 * Close the packet listener
 	 */
-	public void closeListener();
+    void closeListener();
 
 	/**
 	 * Add a packet listener for outgoing packets (server -> client)
@@ -33,7 +33,7 @@ public interface PacketListener
 	 *            packet to the player or not. Returning true sends the packet,
 	 *            false cancels it.
 	 */
-	public <T> void addOutgoingListener(Class<? extends T> packetType, PacketHandler<T> handler);
+    <T> void addOutgoingListener(Class<? extends T> packetType, PacketHandler<T> handler);
 
 	/**
 	 * Add a packet listener for outgoing packets (server -> client)
@@ -43,7 +43,7 @@ public interface PacketListener
 	 *            packet to the player or not. Returning true sends the packet,
 	 *            false cancels it.
 	 */
-	public void addGlobalOutgoingListener(PacketHandler<?> handler);
+    void addGlobalOutgoingListener(PacketHandler<?> handler);
 
 	/**
 	 * Add a packet listener for incoming packets (client -> server)
@@ -55,7 +55,7 @@ public interface PacketListener
 	 *            packet to the server (handled by craftbukkit) or not. Returning
 	 *            true sends the packet, false cancels it.
 	 */
-	public <T> void addIncomingListener(Class<? extends T> packetType, PacketHandler<T> handler);
+    <T> void addIncomingListener(Class<? extends T> packetType, PacketHandler<T> handler);
 
 	/**
 	 * Add a packet listener for incoming packets (client -> server)
@@ -65,7 +65,7 @@ public interface PacketListener
 	 *            packet to the server (handled by craftbukkit) or not. Returning
 	 *            true sends the packet, false cancels it.
 	 */
-	public void addGlobalIncomingListener(PacketHandler<?> handler);
+    void addGlobalIncomingListener(PacketHandler<?> handler);
 
 	/**
 	 * Remove all outgoing listeners for the given packet type
@@ -73,12 +73,12 @@ public interface PacketListener
 	 * @param c
 	 *            the packet class
 	 */
-	public void removeOutgoingPacketListeners(Class<?> c);
+    void removeOutgoingPacketListeners(Class<?> c);
 
 	/**
 	 * Remove all outgoing packet listeners
 	 */
-	public void removeOutgoingPacketListeners();
+    void removeOutgoingPacketListeners();
 
 	/**
 	 * Remove all incoming listeners for the given packet type
@@ -86,10 +86,10 @@ public interface PacketListener
 	 * @param c
 	 *            the packet class
 	 */
-	public void removeIncomingPacketListeners(Class<?> c);
+    void removeIncomingPacketListeners(Class<?> c);
 
 	/**
 	 * Remove all incoming packet listeners
 	 */
-	public void removeIncomingPacketListeners();
+    void removeIncomingPacketListeners();
 }

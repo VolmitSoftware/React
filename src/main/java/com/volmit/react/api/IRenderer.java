@@ -5,5 +5,5 @@ import org.bukkit.map.MapView;
 
 public interface IRenderer
 {
-	public void draw(BufferedFrame frame, MapCanvas c, MapView v);
+	void draw(BufferedFrame frame, MapCanvas c, MapView v);
 }

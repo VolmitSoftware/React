@@ -10,5 +10,5 @@ public interface Refreshable
 	/**
 	 * Refresh the object
 	 */
-	public void refresh();
+    void refresh();
 }

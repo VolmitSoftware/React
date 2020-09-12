@@ -18,7 +18,7 @@ public interface Adapter<FROM, TO>
 	 *            the from object
 	 * @return the adapted object
 	 */
-	public TO adapt(FROM from);
+    TO adapt(FROM from);
 
 	/**
 	 * Handles the adapter processing
@@ -27,5 +27,5 @@ public interface Adapter<FROM, TO>
 	 *            the from object
 	 * @return the adapted object
 	 */
-	public TO onAdapt(FROM from);
+    TO onAdapt(FROM from);
 }

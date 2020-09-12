@@ -4,19 +4,19 @@ import primal.lang.collection.GList;
 
 public interface Queue<T>
 {
-	public void queue(T t);
+	void queue(T t);
 
-	public void queue(GList<T> t);
+	void queue(GList<T> t);
 
-	public boolean hasNext(int amt);
+	boolean hasNext(int amt);
 
-	public boolean hasNext();
+	boolean hasNext();
 
-	public T next();
+	T next();
 
-	public GList<T> next(int amt);
+	GList<T> next(int amt);
 
-	public void clear();
+	void clear();
 
-	public int size();
+	int size();
 }
