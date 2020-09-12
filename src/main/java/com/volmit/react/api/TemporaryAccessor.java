@@ -4,6 +4,8 @@ import org.bukkit.entity.Player;
 
 import primal.lang.collection.GSet;
 
+import java.util.Arrays;
+
 public class TemporaryAccessor
 {
 	private Player player;
@@ -32,9 +34,6 @@ public class TemporaryAccessor
 
 	public void addAll()
 	{
-		for(Permissable i : Permissable.values())
-		{
-			permissions.add(i);
-		}
+		permissions.addAll(Arrays.asList(Permissable.values()));
 	}
 }

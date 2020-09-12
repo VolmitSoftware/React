@@ -428,10 +428,7 @@ public class Players
 	{
 		GList<Player> p = new GList<Player>();
 
-		for(Player i : Bukkit.getOnlinePlayers())
-		{
-			p.add(i);
-		}
+		p.addAll(Bukkit.getOnlinePlayers());
 
 		return p;
 	}
@@ -627,10 +624,7 @@ public class Players
 	{
 		GList<Player> px = new GList<Player>();
 
-		for(Player i : Bukkit.getOnlinePlayers())
-		{
-			px.add(i);
-		}
+		px.addAll(Bukkit.getOnlinePlayers());
 
 		return px;
 	}

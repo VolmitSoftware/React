@@ -375,10 +375,7 @@ public class SampleController extends Controller
 	{
 		GList<String> samps = new GList<String>();
 
-		for(String i : getSamplers().k())
-		{
-			samps.add(i);
-		}
+		samps.addAll(getSamplers().k());
 
 		return samps;
 	}

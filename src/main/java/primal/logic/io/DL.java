@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.Arrays;
 
 import primal.lang.collection.GSet;
 import primal.logic.queue.ChronoLatch;
@@ -48,10 +49,7 @@ public abstract class DL
 		flags = new GSet<DownloadFlag>();
 		latch = new ChronoLatch(500);
 
-		for(DownloadFlag i : downloadFlags)
-		{
-			flags.add(i);
-		}
+		flags.addAll(Arrays.asList(downloadFlags));
 	}
 	
 	public void monitor(DownloadMonitor m)

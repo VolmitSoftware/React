@@ -360,10 +360,7 @@ public class P
 	{
 		GList<Player> px = new GList<Player>();
 
-		for(Player i : Bukkit.getOnlinePlayers())
-		{
-			px.add(i);
-		}
+		px.addAll(Bukkit.getOnlinePlayers());
 
 		return px;
 	}

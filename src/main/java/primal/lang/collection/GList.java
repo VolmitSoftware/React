@@ -1,13 +1,6 @@
 package primal.lang.collection;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 
 import org.json.JSONArray;
 
@@ -84,10 +77,7 @@ public class GList<T> extends ArrayList<T>
 	{
 		super();
 
-		for(T i : set)
-		{
-			add(i);
-		}
+		this.addAll(set);
 	}
 
 	/**
@@ -119,10 +109,7 @@ public class GList<T> extends ArrayList<T>
 	{
 		super();
 
-		for(T i : set)
-		{
-			add(i);
-		}
+		this.addAll(set);
 	}
 
 	/**
@@ -512,10 +499,7 @@ public class GList<T> extends ArrayList<T>
 	@SuppressWarnings("unchecked")
 	public void add(T... array)
 	{
-		for(T i : array)
-		{
-			add(i);
-		}
+		this.addAll(Arrays.asList(array));
 	}
 
 	/**
@@ -545,10 +529,7 @@ public class GList<T> extends ArrayList<T>
 	 */
 	public void add(List<T> array)
 	{
-		for(T i : array)
-		{
-			add(i);
-		}
+		this.addAll(array);
 	}
 
 	/**
@@ -631,10 +612,7 @@ public class GList<T> extends ArrayList<T>
 	{
 		GList<T> c = new GList<T>();
 
-		for(T i : this)
-		{
-			c.add(i);
-		}
+		c.addAll(this);
 
 		return c;
 	}

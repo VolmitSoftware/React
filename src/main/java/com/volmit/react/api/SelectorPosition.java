@@ -1,5 +1,6 @@
 package com.volmit.react.api;
 
+import java.util.Arrays;
 import java.util.Set;
 
 import org.bukkit.Bukkit;
@@ -85,10 +86,7 @@ public class SelectorPosition extends Selector
 				throw new SelectorParseException("Cannot negate from nothing. Use <something>&!<somethingElse>");
 			}
 
-			for(Chunk j : parseNode(sender, input))
-			{
-				ch.add(j);
-			}
+			ch.addAll(parseNode(sender, input));
 		}
 
 		getPossibilities().addAll(ch);
@@ -142,10 +140,7 @@ public class SelectorPosition extends Selector
 					throw new SelectorParseException("Chunk Radius must be positive (" + input + ")");
 				}
 
-				for(Chunk i : W.chunkRadius(c, rad))
-				{
-					chunks.add(i);
-				}
+				chunks.addAll(W.chunkRadius(c, rad));
 			}
 
 			else
@@ -195,10 +190,7 @@ public class SelectorPosition extends Selector
 					throw new SelectorParseException("Chunk Radius must be positive (" + input + ")");
 				}
 
-				for(Chunk i : W.chunkRadius(c, rad))
-				{
-					chunks.add(i);
-				}
+				chunks.addAll(W.chunkRadius(c, rad));
 			}
 
 			else
@@ -211,10 +203,7 @@ public class SelectorPosition extends Selector
 		{
 			for(World i : Bukkit.getWorlds())
 			{
-				for(Chunk j : i.getLoadedChunks())
-				{
-					chunks.add(j);
-				}
+				chunks.addAll(Arrays.asList(i.getLoadedChunks()));
 			}
 		}
 
@@ -229,10 +218,7 @@ public class SelectorPosition extends Selector
 				{
 					found = true;
 
-					for(Chunk j : i.getLoadedChunks())
-					{
-						chunks.add(j);
-					}
+					chunks.addAll(Arrays.asList(i.getLoadedChunks()));
 
 					break searching;
 				}

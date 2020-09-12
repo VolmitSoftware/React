@@ -1,6 +1,7 @@
 package com.volmit.react.controller;
 
 import java.awt.Color;
+import java.util.Arrays;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -288,10 +289,7 @@ public class GraphController extends Controller
 
 			if(rp.pargs.contains(","))
 			{
-				for(String i : rp.pargs.split(","))
-				{
-					r.add(i);
-				}
+				r.addAll(Arrays.asList(rp.pargs.split(",")));
 			}
 
 			else
