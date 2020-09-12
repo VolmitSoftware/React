@@ -726,7 +726,7 @@ public class Catalyst14 extends CatalystPacketListener implements CatalystHost
 			addTeam(p, c, c, color.toString(), C.RESET.toString(), color);
 			updateTeam(p, c, c, color.toString(), C.RESET.toString(), color);
 
-			addToTeam(p, c, euid.toString());
+			addToTeam(p, c, euid);
 		}
 	}
 

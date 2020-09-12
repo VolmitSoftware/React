@@ -1216,37 +1216,37 @@ public class Config
 		{
 			int m = 16;
 
-			if(i.toString().equals("TURTLE")) //$NON-NLS-1$
+			if(i.equals("TURTLE")) //$NON-NLS-1$
 			{
 				m = 2;
 			}
 
-			if(i.toString().equals("TROPICAL_FISH")) //$NON-NLS-1$
+			if(i.equals("TROPICAL_FISH")) //$NON-NLS-1$
 			{
 				m = 3;
 			}
 
-			if(i.toString().equals("PUFFERFISH")) //$NON-NLS-1$
+			if(i.equals("PUFFERFISH")) //$NON-NLS-1$
 			{
 				m = 3;
 			}
 
-			if(i.toString().equals("PARROT")) //$NON-NLS-1$
+			if(i.equals("PARROT")) //$NON-NLS-1$
 			{
 				m = 5;
 			}
 
-			if(i.toString().equals("TURTLE")) //$NON-NLS-1$
+			if(i.equals("TURTLE")) //$NON-NLS-1$
 			{
 				m = 3;
 			}
 
-			if(i.toString().equals("VILLAGER")) //$NON-NLS-1$
+			if(i.equals("VILLAGER")) //$NON-NLS-1$
 			{
 				m = 16;
 			}
 
-			if(i.toString().equals("DROPPED_ITEM")) //$NON-NLS-1$
+			if(i.equals("DROPPED_ITEM")) //$NON-NLS-1$
 			{
 				m = 30;
 			}

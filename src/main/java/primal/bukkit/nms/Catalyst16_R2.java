@@ -751,7 +751,7 @@ public class Catalyst16_R2 extends CatalystPacketListener implements CatalystHos
             addTeam(p, c, c, color.toString(), C.RESET.toString(), color);
             updateTeam(p, c, c, color.toString(), C.RESET.toString(), color);
 
-            addToTeam(p, c, euid.toString());
+            addToTeam(p, c, euid);
         }
     }
 

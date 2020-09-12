@@ -140,13 +140,13 @@ public class F
 
 				if(arg8 >= arg6)
 				{
-					arg7.append(arg.substring(arg6, arg8));
+					arg7.append(arg, arg6, arg8);
 					arg7.append(arg1);
 					arg6 = arg8 + 1;
 				}
 				else if(arg2)
 				{
-					arg7.append(arg.substring(arg6, arg0 + arg6));
+					arg7.append(arg, arg6, arg0 + arg6);
 					arg7.append(arg1);
 					arg6 += arg0;
 				}
@@ -160,7 +160,7 @@ public class F
 
 					if(arg8 >= 0)
 					{
-						arg7.append(arg.substring(arg6, arg8));
+						arg7.append(arg, arg6, arg8);
 						arg7.append(arg1);
 						arg6 = arg8 + 1;
 					}
