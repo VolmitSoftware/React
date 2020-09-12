@@ -1,5 +1,7 @@
 package com.volmit.react.util;
 
+import java.util.Arrays;
+
 public class DoubleArrayUtils
 {
 	public static void shiftRight(double[] values, double push)
@@ -17,9 +19,6 @@ public class DoubleArrayUtils
 
 	public static void fill(double[] values, double value)
 	{
-		for(int i = 0; i < values.length; i++)
-		{
-			values[i] = value;
-		}
+		Arrays.fill(values, value);
 	}
 }
