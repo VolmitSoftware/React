@@ -1,105 +1,54 @@
 package com.volmit.react.controller;
 
-import java.util.concurrent.Callable;
-
-import org.bukkit.Bukkit;
-
 import com.volmit.react.Config;
 import com.volmit.react.ReactPlugin;
-import com.volmit.react.api.BStats;
 import com.volmit.react.api.SampledType;
 import com.volmit.react.api.Unused;
 import com.volmit.react.util.Controller;
+import org.bstats.bukkit.Metrics;
+import org.bukkit.Bukkit;
 import org.json.JSONObject;
 
-public class MetricsController extends Controller
-{
-	private BStats stats;
+public class MetricsController extends Controller {
 
-	@Override
-	public void dump(JSONObject object)
-	{
+    @Override
+    public void dump(JSONObject object) {
 
-	}
+    }
 
-	@Override
-	public void start()
-	{
-		if(Config.SAFE_MODE_NETWORKING)
-		{
-			return;
-		}
+    @Override
+    public void start() {
+        if (Config.SAFE_MODE_NETWORKING) {
+            return;
+        }
 
-		stats = new BStats(ReactPlugin.i);
+        Metrics stats = new Metrics(ReactPlugin.i, 1650);
 
-		stats.addCustomChart(new BStats.SimplePie("max_memory", new Callable<String>()
-		{
-			@Override
-			public String call() throws Exception
-			{
-				return SampledType.MAXMEM.get().get();
-			}
-		}));
+        stats.addCustomChart(new Metrics.SimplePie("max_memory", () -> SampledType.MAXMEM.get().get()));
+        stats.addCustomChart(new Metrics.SimplePie("language", () -> Config.LANGUAGE));
+        stats.addCustomChart(new Metrics.SimplePie("view_distance", () -> Bukkit.getServer().getViewDistance() + ""));
+        stats.addCustomChart(new Metrics.SimplePie("using_protocollib", () -> Bukkit.getPluginManager().getPlugin("ProtocolLib") != null ? "Yes" : "No"));
+        stats.addCustomChart(new Metrics.SimplePie("using_fawe", () -> Bukkit.getPluginManager().getPlugin("FastAsyncWorldEdit") != null ? "Yes" : "No"));
+    }
 
-		stats.addCustomChart(new BStats.SimplePie("language", new Callable<String>()
-		{
-			@Override
-			public String call() throws Exception
-			{
-				return Config.LANGUAGE;
-			}
-		}));
+    @Override
+    public void stop() {
 
-		stats.addCustomChart(new BStats.SimplePie("view_distance", new Callable<String>()
-		{
-			@Override
-			public String call() throws Exception
-			{
-				return Bukkit.getServer().getViewDistance() + "";
-			}
-		}));
+    }
 
-		stats.addCustomChart(new BStats.SimplePie("using_protocollib", new Callable<String>()
-		{
-			@Override
-			public String call() throws Exception
-			{
-				return Bukkit.getPluginManager().getPlugin("ProtocolLib") != null ? "Yes" : "No";
-			}
-		}));
+    @Unused
+    @Override
+    public void tick() {
 
-		stats.addCustomChart(new BStats.SimplePie("using_fawe", new Callable<String>()
-		{
-			@Override
-			public String call() throws Exception
-			{
-				return Bukkit.getPluginManager().getPlugin("FastAsyncWorldEdit") != null ? "Yes" : "No";
-			}
-		}));
-	}
+    }
 
-	@Override
-	public void stop()
-	{
+    @Override
+    public int getInterval() {
+        return 2016;
+    }
 
-	}
-
-	@Unused
-	@Override
-	public void tick()
-	{
-
-	}
-
-	@Override
-	public int getInterval()
-	{
-		return 2016;
-	}
-
-	@Override
-	public boolean isUrgent()
-	{
-		return false;
-	}
+    @Override
+    public boolean isUrgent() {
+        return false;
+    }
 }
