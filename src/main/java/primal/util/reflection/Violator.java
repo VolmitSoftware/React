@@ -163,7 +163,7 @@ public class Violator
 
 		try
 		{
-			Constructor<?> co = getConstructor(c, cv.toArray(new Class<?>[cv.size()]));
+			Constructor<?> co = getConstructor(c, cv.toArray(new Class<?>[0]));
 			return (T) co.newInstance(parameters);
 		}
 

@@ -107,7 +107,7 @@ public class CommandAct extends ReactCommand
 		{
 			force = true;
 			ar.remove(ar.last());
-			args = ar.toArray(new String[ar.size()]);
+			args = ar.toArray(new String[0]);
 		}
 
 		if(args.length == 1)

@@ -293,7 +293,7 @@ public abstract class ParallelPoolManager
 
 	public ParallelThread[] getThreads()
 	{
-		return threads.toArray(new ParallelThread[threads.size()]);
+		return threads.toArray(new ParallelThread[0]);
 	}
 
 	private void updateThreadInformation()

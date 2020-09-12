@@ -74,6 +74,6 @@ public class CommandFix extends ReactCommand
 		String name = args[0];
 		GList<String> argx = new GList<String>(args);
 		argx.remove(0);
-		React.instance.fixController.runFix(sender, name, argx.toArray(new String[argx.size()]));
+		React.instance.fixController.runFix(sender, name, argx.toArray(new String[0]));
 	}
 }

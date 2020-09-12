@@ -75,7 +75,7 @@ public abstract class Action implements IAction
 			set.add(getDefaultSelectors().get(i).get());
 		}
 
-		return set.toArray(new ISelector[set.size()]);
+		return set.toArray(new ISelector[0]);
 	}
 
 	@Override

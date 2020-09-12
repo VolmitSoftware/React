@@ -97,7 +97,7 @@ public class VirtualAction
 			}
 		}
 
-		React.instance.actionController.fire(getActionType(), new RAIActionSource(), selectors.toArray(new ISelector[selectors.size()]));
+		React.instance.actionController.fire(getActionType(), new RAIActionSource(), selectors.toArray(new ISelector[0]));
 	}
 
 	public JSONObject toJSON()

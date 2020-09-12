@@ -317,7 +317,7 @@ public class ActionController extends Controller
 			GTriset<ActionType, IActionSource, GList<ISelector>> i = pending.get(d);
 			IAction action = getAction(i.getA());
 			IActionSource source = i.getB();
-			ISelector[] selectors = i.getC().toArray(new ISelector[i.getC().size()]);
+			ISelector[] selectors = i.getC().toArray(new ISelector[0]);
 			boolean running = action.getState().equals(ActionState.IDLE);
 
 			try

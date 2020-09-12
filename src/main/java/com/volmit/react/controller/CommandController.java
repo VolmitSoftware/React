@@ -365,7 +365,7 @@ public class CommandController extends Controller implements Listener, CommandEx
 					acts.add("a");
 					acts.addAll(new GList<String>(a));
 
-					onCommand(plr ? px : s, c, n, acts.toArray(new String[acts.size()])); // $NON-NLS-1$
+					onCommand(plr ? px : s, c, n, acts.toArray(new String[0])); // $NON-NLS-1$
 				}
 
 				else

@@ -297,7 +297,7 @@ public class GraphController extends Controller
 				r.add(rp.pargs);
 			}
 
-			toggleMapping(player, r.toArray(new String[r.size()]));
+			toggleMapping(player, r.toArray(new String[0]));
 			return;
 		}
 

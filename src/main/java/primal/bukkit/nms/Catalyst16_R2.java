@@ -796,7 +796,7 @@ public class Catalyst16_R2 extends CatalystPacketListener implements CatalystHos
     @Override
     public void sendEntityMetadata(Player p, int eid, List<Object> objects)
     {
-        sendEntityMetadata(p, eid, objects.toArray(new Object[objects.size()]));
+        sendEntityMetadata(p, eid, objects.toArray(new Object[0]));
     }
 
     @Override
