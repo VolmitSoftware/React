@@ -21,7 +21,7 @@ public class ActionPullTimings extends Action
 	public ActionPullTimings()
 	{
 		super(ActionType.TIMINGS);
-		setNodes(new String[] {"timings", "time", "times", "tr"});
+		setNodes("timings", "time", "times", "tr");
 
 		setDefaultSelector(Long.class, new AccessCallback<ISelector>()
 		{

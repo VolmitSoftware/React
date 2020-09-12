@@ -183,7 +183,7 @@ public class NMSX
 	{
 		try
 		{
-			Object handle = player.getClass().getMethod("getHandle", new Class[0]).invoke((Object) player, new Object[0]);
+			Object handle = player.getClass().getMethod("getHandle", new Class[0]).invoke((Object) player);
 			Object playerConnection = handle.getClass().getField("playerConnection").get(handle);
 			playerConnection.getClass().getMethod("sendPacket", NMSX.getNMSClass("Packet")).invoke(playerConnection, packet);
 		}
@@ -378,8 +378,8 @@ public class NMSX
 				}
 			}
 
-			Method m1 = c1.getDeclaredMethod("getHandle", new Class[0]);
-			Object h = m1.invoke(p, new Object[0]);
+			Method m1 = c1.getDeclaredMethod("getHandle");
+			Object h = m1.invoke(p);
 			Field f1 = h.getClass().getDeclaredField("playerConnection");
 			Object pc = f1.get(h);
 			Method m5 = pc.getClass().getDeclaredMethod("sendPacket", c5);

@@ -18,7 +18,7 @@ public class ActionCPUScore extends Action
 	public ActionCPUScore()
 	{
 		super(ActionType.CPU_SCORE);
-		setNodes(new String[] {"cpu-score", "cs", "cpu", "cscore", "benchmarkcpu"});
+		setNodes("cpu-score", "cs", "cpu", "cscore", "benchmarkcpu");
 
 		setDefaultSelector(Long.class, new AccessCallback<ISelector>()
 		{

@@ -29,7 +29,7 @@ public class ActionFileSize extends Action
 	public ActionFileSize()
 	{
 		super(ActionType.FILE_SIZE);
-		setNodes(new String[] {"filesize", "fs", "file"});
+		setNodes("filesize", "fs", "file");
 	}
 
 	@Override
