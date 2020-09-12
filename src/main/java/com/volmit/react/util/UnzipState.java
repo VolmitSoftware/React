@@ -5,5 +5,5 @@ public enum UnzipState
     IDLE,
     UNZIPPING,
     FAILED,
-    FINISHED;
+    FINISHED
 }

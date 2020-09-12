@@ -5,5 +5,5 @@ public enum DownloadState
 	IDLE,
 	DOWNLOADING,
 	FAILED,
-	FINISHED;
+	FINISHED
 }

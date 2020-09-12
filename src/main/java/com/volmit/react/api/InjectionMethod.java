@@ -4,5 +4,5 @@ public enum InjectionMethod
 {
 	SWAP,
 	SUBSTRATE,
-	RELOAD;
+	RELOAD
 }

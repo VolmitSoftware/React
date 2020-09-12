@@ -346,7 +346,7 @@ public enum C
 	public net.md_5.bungee.api.ChatColor asBungee()
 	{
 		return net.md_5.bungee.api.ChatColor.RESET;
-	};
+	}
 
 	/**
 	 * Gets the char value associated with this color

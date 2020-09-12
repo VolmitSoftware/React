@@ -12,8 +12,8 @@ public class PacketUtil
 		R19,
 		R111,
 		R110,
-		R112;
-	}
+		R112
+    }
 
 	public static V getVersion()
 	{

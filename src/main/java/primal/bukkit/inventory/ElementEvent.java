@@ -13,5 +13,5 @@ public enum ElementEvent
 	SHIFT_LEFT,
 	SHIFT_RIGHT,
 	DRAG_INTO,
-	OTHER_DRAG_INTO;
+	OTHER_DRAG_INTO
 }

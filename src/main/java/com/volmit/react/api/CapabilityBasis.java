@@ -4,5 +4,5 @@ public enum CapabilityBasis
 {
 	VERSION,
 	FLAVOR,
-	PLUGIN;
+	PLUGIN
 }

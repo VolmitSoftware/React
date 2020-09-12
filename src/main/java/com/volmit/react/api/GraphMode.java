@@ -4,5 +4,5 @@ public enum GraphMode
 {
 	NORMAL,
 	ITEMFRAME,
-	EOD;
+	EOD
 }

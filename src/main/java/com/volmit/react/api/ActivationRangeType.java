@@ -4,5 +4,5 @@ public enum ActivationRangeType
 {
 	ANIMALS,
 	MONSTERS,
-	MISC;
+	MISC
 }

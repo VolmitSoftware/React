@@ -34,5 +34,5 @@ public enum ServerState
 	 * The server is running. The state of plugins should be enabled, unless
 	 * changed, and the server is not stopping.
 	 */
-	RUNNING;
+	RUNNING
 }

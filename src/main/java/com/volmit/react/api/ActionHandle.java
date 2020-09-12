@@ -4,5 +4,5 @@ public enum ActionHandle
 {
 	AUTOMATIC,
 	MANUAL,
-	MUTEX;
+	MUTEX
 }
