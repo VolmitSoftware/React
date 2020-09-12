@@ -42,21 +42,11 @@ public class ConfigurationDataInput
 			switch(current.getType(k.value()))
 			{
 				case BOOLEAN:
-					i.set(c, raw);
-					break;
-				case DOUBLE:
-					i.set(c, raw);
-					break;
-				case INT:
-					i.set(c, raw);
-					break;
-				case LONG:
-					i.set(c, raw);
-					break;
-				case STRING:
-					i.set(c, raw);
-					break;
 				case STRING_LIST:
+				case STRING:
+				case LONG:
+				case INT:
+				case DOUBLE:
 					i.set(c, raw);
 					break;
 			}
@@ -102,21 +92,11 @@ public class ConfigurationDataInput
 				switch(current.getType(skey))
 				{
 					case BOOLEAN:
-						i.set(c, raw);
-						break;
-					case DOUBLE:
-						i.set(c, raw);
-						break;
-					case INT:
-						i.set(c, raw);
-						break;
-					case LONG:
-						i.set(c, raw);
-						break;
-					case STRING:
-						i.set(c, raw);
-						break;
 					case STRING_LIST:
+					case STRING:
+					case LONG:
+					case INT:
+					case DOUBLE:
 						i.set(c, raw);
 						break;
 				}

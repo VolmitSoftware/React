@@ -927,66 +927,36 @@ public class Config
 			switch(i)
 			{
 				case "PLAYER":
-					continue;
-				case "ARMOR_STAND":
-					continue;
-				case "AREA_EFFECT_CLOUD":
-					continue;
-				case "BOAT":
-					continue;
-				case "ARROW":
-					continue;
-				case "ITEM_FRAME":
-					continue;
-				case "DROPPED_ITEM":
-					continue;
-				case "COMPLEX_PART":
-					continue;
-				case "DRAGON_FIREBALL":
-					continue;
-				case "EGG":
-					continue;
-				case "ENDER_CRYSTAL":
-					continue;
-				case "WITHER_SKULL":
-					continue;
-				case "ENDER_PEARL":
-					continue;
-				case "ENDER_SIGNAL":
-					continue;
-				case "WEATHER":
-					continue;
-				case "UNKNOWN":
-					continue;
-				case "TIPPED_ARROW":
-					continue;
-				case "THROWN_EXP_BOTTLE":
-					continue;
-				case "SPLASH_POTION":
-					continue;
-				case "SPECTRAL_ARROW":
-					continue;
-				case "SHULKER_BULLET":
-					continue;
-				case "EVOKER_FANGS":
-					continue;
-				case "EXPERIENCE_ORB":
-					continue;
-				case "SNOWBALL":
-					continue;
-				case "FIREBALL":
-					continue;
-				case "SMALL_FIREBALL":
-					continue;
-				case "FIREWORK":
-					continue;
-				case "PRIMED_TNT":
-					continue;
-				case "LIGHTNING":
-					continue;
-				case "LINGERING_POTION":
-					continue;
 				case "LEASH_HITCH":
+				case "LINGERING_POTION":
+				case "LIGHTNING":
+				case "PRIMED_TNT":
+				case "FIREWORK":
+				case "SMALL_FIREBALL":
+				case "FIREBALL":
+				case "SNOWBALL":
+				case "EXPERIENCE_ORB":
+				case "EVOKER_FANGS":
+				case "SHULKER_BULLET":
+				case "SPECTRAL_ARROW":
+				case "SPLASH_POTION":
+				case "THROWN_EXP_BOTTLE":
+				case "TIPPED_ARROW":
+				case "UNKNOWN":
+				case "WEATHER":
+				case "ENDER_SIGNAL":
+				case "ENDER_PEARL":
+				case "WITHER_SKULL":
+				case "ENDER_CRYSTAL":
+				case "EGG":
+				case "DRAGON_FIREBALL":
+				case "COMPLEX_PART":
+				case "DROPPED_ITEM":
+				case "ITEM_FRAME":
+				case "ARROW":
+				case "BOAT":
+				case "AREA_EFFECT_CLOUD":
+				case "ARMOR_STAND":
 					continue;
 				default:
 					ents.add(i);
@@ -1020,66 +990,36 @@ public class Config
 			switch(i)
 			{
 				case "PLAYER":
-					continue;
-				case "ARMOR_STAND":
-					continue;
-				case "AREA_EFFECT_CLOUD":
-					continue;
-				case "BOAT":
-					continue;
-				case "ARROW":
-					continue;
-				case "ITEM_FRAME":
-					continue;
-				case "DROPPED_ITEM":
-					continue;
-				case "COMPLEX_PART":
-					continue;
-				case "DRAGON_FIREBALL":
-					continue;
-				case "EGG":
-					continue;
-				case "ENDER_CRYSTAL":
-					continue;
-				case "WITHER_SKULL":
-					continue;
-				case "ENDER_PEARL":
-					continue;
-				case "ENDER_SIGNAL":
-					continue;
-				case "WEATHER":
-					continue;
-				case "UNKNOWN":
-					continue;
-				case "TIPPED_ARROW":
-					continue;
-				case "THROWN_EXP_BOTTLE":
-					continue;
-				case "SPLASH_POTION":
-					continue;
-				case "SPECTRAL_ARROW":
-					continue;
-				case "SHULKER_BULLET":
-					continue;
-				case "EVOKER_FANGS":
-					continue;
-				case "EXPERIENCE_ORB":
-					continue;
-				case "SNOWBALL":
-					continue;
-				case "FIREBALL":
-					continue;
-				case "SMALL_FIREBALL":
-					continue;
-				case "FIREWORK":
-					continue;
-				case "PRIMED_TNT":
-					continue;
-				case "LIGHTNING":
-					continue;
-				case "LINGERING_POTION":
-					continue;
 				case "LEASH_HITCH":
+				case "LINGERING_POTION":
+				case "LIGHTNING":
+				case "PRIMED_TNT":
+				case "FIREWORK":
+				case "SMALL_FIREBALL":
+				case "FIREBALL":
+				case "SNOWBALL":
+				case "EXPERIENCE_ORB":
+				case "EVOKER_FANGS":
+				case "SHULKER_BULLET":
+				case "SPECTRAL_ARROW":
+				case "SPLASH_POTION":
+				case "THROWN_EXP_BOTTLE":
+				case "TIPPED_ARROW":
+				case "UNKNOWN":
+				case "WEATHER":
+				case "ENDER_SIGNAL":
+				case "ENDER_PEARL":
+				case "WITHER_SKULL":
+				case "ENDER_CRYSTAL":
+				case "EGG":
+				case "DRAGON_FIREBALL":
+				case "COMPLEX_PART":
+				case "DROPPED_ITEM":
+				case "ITEM_FRAME":
+				case "ARROW":
+				case "BOAT":
+				case "AREA_EFFECT_CLOUD":
+				case "ARMOR_STAND":
 					continue;
 				default:
 					ents.add(i);
@@ -1128,24 +1068,15 @@ public class Config
 			switch(i)
 			{
 				case "PLAYER":
-					continue;
-				case "ITEM_FRAME":
-					continue;
-				case "COMPLEX_PART":
-					continue;
-				case "WEATHER":
-					continue;
-				case "UNKNOWN":
-					continue;
-				case "EXPERIENCE_ORB":
-					continue;
-				case "PRIMED_TNT":
-					continue;
-				case "LIGHTNING":
-					continue;
-				case "LINGERING_POTION":
-					continue;
 				case "LEASH_HITCH":
+				case "LINGERING_POTION":
+				case "LIGHTNING":
+				case "PRIMED_TNT":
+				case "EXPERIENCE_ORB":
+				case "UNKNOWN":
+				case "WEATHER":
+				case "COMPLEX_PART":
+				case "ITEM_FRAME":
 					continue;
 				default:
 					ents.add(i);

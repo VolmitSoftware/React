@@ -13,10 +13,9 @@ public enum SideGate
 			switch(this)
 			{
 				case ANYTHING:
-					return true;
-				case CONSOLES_ONLY:
-					return true;
-				case PLAYERS_ONLY:
+                case CONSOLES_ONLY:
+                    return true;
+                case PLAYERS_ONLY:
 					return false;
 			}
 		}
@@ -24,12 +23,11 @@ public enum SideGate
 		switch(this)
 		{
 			case ANYTHING:
-				return true;
+            case PLAYERS_ONLY:
+                return true;
 			case CONSOLES_ONLY:
 				return false;
-			case PLAYERS_ONLY:
-				return true;
-		}
+        }
 
 		return false;
 	}

@@ -637,9 +637,6 @@ public enum C
 			case BLACK:
 				return 0;
 			case BLUE:
-				return 9;
-			case BOLD:
-				return -1;
 			case DARK_AQUA:
 				return 9;
 			case DARK_BLUE:
@@ -658,20 +655,10 @@ public enum C
 				return 7;
 			case GREEN:
 				return 10;
-			case ITALIC:
-				return -1;
 			case LIGHT_PURPLE:
 				return 13;
-			case MAGIC:
-				return -1;
 			case RED:
 				return 12;
-			case RESET:
-				return -1;
-			case STRIKETHROUGH:
-				return -1;
-			case UNDERLINE:
-				return -1;
 			case WHITE:
 				return 15;
 			case YELLOW:
@@ -686,15 +673,12 @@ public enum C
 		switch(this)
 		{
 			case AQUA:
+			case DARK_AQUA:
 				return 9;
 			case BLACK:
 				return 15;
 			case BLUE:
 				return 3;
-			case BOLD:
-				return -1;
-			case DARK_AQUA:
-				return 9;
 			case DARK_BLUE:
 				return 11;
 			case DARK_GRAY:
@@ -704,31 +688,19 @@ public enum C
 			case DARK_PURPLE:
 				return 10;
 			case DARK_RED:
+			case RED:
 				return 14;
 			case GOLD:
+			case YELLOW:
 				return 4;
 			case GRAY:
 				return 8;
 			case GREEN:
 				return 5;
-			case ITALIC:
-				return -1;
 			case LIGHT_PURPLE:
 				return 2;
-			case MAGIC:
-				return -1;
-			case RED:
-				return 14;
-			case RESET:
-				return -1;
-			case STRIKETHROUGH:
-				return -1;
-			case UNDERLINE:
-				return -1;
 			case WHITE:
 				return 0;
-			case YELLOW:
-				return 4;
 			default:
 				return -1;
 		}

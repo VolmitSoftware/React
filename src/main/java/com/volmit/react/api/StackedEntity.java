@@ -41,17 +41,31 @@ public class StackedEntity
 		switch(type)
 		{
 			case BAT:
+			case PARROT:
 				return 6;
 			case BLAZE:
+			case ZOMBIE_VILLAGER:
+			case ZOMBIE:
+			case WITHER_SKELETON:
+			case VILLAGER:
+			case STRAY:
+			case SKELETON:
+			case PIG_ZOMBIE:
+			case HUSK:
+			case CREEPER:
 				return 20;
 			case CAVE_SPIDER:
 				return 12;
 			case CHICKEN:
+			case SNOWMAN:
 				return 4;
 			case COW:
+			case SQUID:
+			case PIG:
+			case OCELOT:
+			case MUSHROOM_COW:
+			case GHAST:
 				return 10;
-			case CREEPER:
-				return 20;
 			case DONKEY:
 				return 30;
 			case ELDER_GUARDIAN:
@@ -64,16 +78,12 @@ public class StackedEntity
 				return 200;
 			case EVOKER:
 				return 24;
-			case GHAST:
-				return 10;
 			case GIANT:
 				return 100;
 			case GUARDIAN:
 				return 30;
 			case HORSE:
 				return 30;
-			case HUSK:
-				return 20;
 			case ILLUSIONER:
 				return 32;
 			case IRON_GOLEM:
@@ -84,16 +94,6 @@ public class StackedEntity
 				return 16;
 			case MULE:
 				return 30;
-			case MUSHROOM_COW:
-				return 10;
-			case OCELOT:
-				return 10;
-			case PARROT:
-				return 6;
-			case PIG:
-				return 10;
-			case PIG_ZOMBIE:
-				return 20;
 			case POLAR_BEAR:
 				return 30;
 			case RABBIT:
@@ -104,40 +104,24 @@ public class StackedEntity
 				return 30;
 			case SILVERFISH:
 				return 8;
-			case SKELETON:
-				return 20;
 			case SKELETON_HORSE:
 				return 30;
 			case SLIME:
 				return 16;
-			case SNOWMAN:
-				return 4;
 			case SPIDER:
 				return 16;
-			case SQUID:
-				return 10;
-			case STRAY:
-				return 20;
 			case VEX:
 				return 14;
-			case VILLAGER:
-				return 20;
 			case VINDICATOR:
 				return 24;
 			case WITCH:
 				return 26;
 			case WITHER:
 				return 300;
-			case WITHER_SKELETON:
-				return 20;
 			case WOLF:
 				return 8;
-			case ZOMBIE:
-				return 20;
 			case ZOMBIE_HORSE:
 				return 15;
-			case ZOMBIE_VILLAGER:
-				return 20;
 			default:
 				break;
 		}
