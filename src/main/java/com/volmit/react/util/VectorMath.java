@@ -130,9 +130,10 @@ public class VectorMath
 		u = axis.getX();
 		v = axis.getY();
 		w = axis.getZ();
-		double xPrime = u * (u * x + v * y + w * z) * (1d - Math.cos(theta)) + x * Math.cos(theta) + (-w * y + v * z) * Math.sin(theta);
-		double yPrime = v * (u * x + v * y + w * z) * (1d - Math.cos(theta)) + y * Math.cos(theta) + (w * x - u * z) * Math.sin(theta);
-		double zPrime = w * (u * x + v * y + w * z) * (1d - Math.cos(theta)) + z * Math.cos(theta) + (-v * x + u * y) * Math.sin(theta);
+		double v1 = u * x + v * y + w * z;
+		double xPrime = u * v1 * (1d - Math.cos(theta)) + x * Math.cos(theta) + (-w * y + v * z) * Math.sin(theta);
+		double yPrime = v * v1 * (1d - Math.cos(theta)) + y * Math.cos(theta) + (w * x - u * z) * Math.sin(theta);
+		double zPrime = w * v1 * (1d - Math.cos(theta)) + z * Math.cos(theta) + (-v * x + u * y) * Math.sin(theta);
 
 		return clip(new Vector(xPrime, yPrime, zPrime), 4);
 	}

@@ -169,7 +169,8 @@ public class TXT
 	public static String getLine(C cc, int len, double percent, String l, String f, String r)
 	{
 		String k = cc + "" + C.UNDERLINE + l;
-		len = len < l.length() + r.length() + f.length() ? l.length() + r.length() + f.length() + 6 : len;
+		int i = l.length() + r.length() + f.length();
+		len = len < (l.length() + r.length() + f.length()) ? l.length() + r.length() + f.length() + 6 : len;
 		int a = len - (l.length() + r.length() + f.length());
 		int b = (int) ((double) a * (double) percent);
 		int c = len - b;
