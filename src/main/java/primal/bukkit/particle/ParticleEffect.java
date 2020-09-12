@@ -47,7 +47,6 @@ import primal.bukkit.particle.ReflectionUtils.PackageType;
  * @author DarkBlade12
  * @version 1.7
  */
-@SuppressWarnings("unused")
 public enum ParticleEffect
 {
 	/**

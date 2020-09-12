@@ -50,7 +50,6 @@ import com.volmit.react.util.ReflectionUtils.PackageType;
  * @author DarkBlade12
  * @version 1.7
  */
-@SuppressWarnings("unused")
 public enum ParticleEffect
 {
 	/**

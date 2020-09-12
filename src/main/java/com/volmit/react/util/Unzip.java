@@ -14,7 +14,6 @@ public class Unzip
 	private File file;
 	private File outputDestination;
 	private int bufferSize;
-	@SuppressWarnings("unused")
 	private byte[] buffer;
 
 	public Unzip(UnzipMonitor monitor, File file, File outputDestination, int bufferSize)
@@ -29,7 +28,6 @@ public class Unzip
 		type = UnzipType.INDETERMINATE;
 	}
 
-	@SuppressWarnings("unused")
 	public void start() throws IOException
 	{
 		if(state.equals(UnzipState.UNZIPPING))

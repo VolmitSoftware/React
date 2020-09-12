@@ -384,7 +384,6 @@ public class AdvancementHolder12
 		Bukkit.getUnsafe().removeAdvancement(getID());
 	}
 
-	@SuppressWarnings("deprecation")
 	public void delete(Player... player)
 	{
 		for(Player p : player)

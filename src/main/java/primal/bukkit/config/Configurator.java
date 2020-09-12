@@ -128,7 +128,6 @@ public class Configurator
 	 * @throws IllegalAccessException
 	 *             really shouldnt happen
 	 */
-	@SuppressWarnings("unchecked")
 	public void stick(ConfigWrapper fc, Object object) throws Exception
 	{
 		boolean explicit = false;
@@ -207,7 +206,6 @@ public class Configurator
 	 * @throws InstantiationException
 	 *             .............
 	 */
-	@SuppressWarnings("unchecked")
 	public ConfigWrapper peel(Object object) throws Exception
 	{
 		ConfigWrapper fc = cfg.getConstructor().newInstance();

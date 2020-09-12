@@ -2,7 +2,6 @@ package com.volmit.react.util;
 
 import java.util.List;
 
-@SuppressWarnings("hiding")
 public interface IBursterator<T>
 {
 	public void burst(T t);
