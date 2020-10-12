@@ -47,6 +47,7 @@ import primal.bukkit.particle.ReflectionUtils.PackageType;
  * @author DarkBlade12
  * @version 1.7
  */
+@SuppressWarnings("unused")
 public enum ParticleEffect
 {
 	/**
@@ -2064,6 +2065,7 @@ public enum ParticleEffect
 			 * @param cause
 			 *            Cause of the exception
 			 */
+			@SuppressWarnings("unused")
 			public VersionIncompatibleException(String message, Throwable cause)
 			{
 				super(message, cause);

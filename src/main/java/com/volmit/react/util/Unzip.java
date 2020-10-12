@@ -14,7 +14,6 @@ public class Unzip
 	private File file;
 	private File outputDestination;
 	private int bufferSize;
-	private byte[] buffer;
 
 	public Unzip(UnzipMonitor monitor, File file, File outputDestination, int bufferSize)
 	{
@@ -22,7 +21,6 @@ public class Unzip
 		this.outputDestination = outputDestination;
 		this.monitor = monitor;
 		this.bufferSize = bufferSize;
-		buffer = new byte[bufferSize];
 		status = new UnzipStatus();
 		state = UnzipState.IDLE;
 		type = UnzipType.INDETERMINATE;
@@ -39,8 +37,6 @@ public class Unzip
 
 		try
 		{
-			long time = M.ms();
-			int read = 0;
 			long size = file.length();
 
 			UnzipState lastState = state;

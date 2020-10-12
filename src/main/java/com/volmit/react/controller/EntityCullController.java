@@ -205,7 +205,7 @@ public class EntityCullController extends Controller
 		prefer.clear();
 		defer.clear();
 
-		searching: for(String i : Config.CULL_RULES)
+		for(String i : Config.CULL_RULES)
 		{
 			if(i.startsWith("@Refuse ")) //$NON-NLS-1$
 			{

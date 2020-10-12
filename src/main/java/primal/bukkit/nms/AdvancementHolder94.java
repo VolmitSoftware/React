@@ -31,7 +31,6 @@ import net.minecraft.server.v1_9_R2.Item;
 import net.minecraft.server.v1_9_R2.MinecraftKey;
 import primal.bukkit.plugin.PrimalPlugin;
 
-
 public class AdvancementHolder94
 {
 	private NamespacedKey id;
@@ -397,6 +396,7 @@ public class AdvancementHolder94
 
 		Bukkit.getScheduler().scheduleSyncDelayedTask(PrimalPlugin.instance, new Runnable()
 		{
+			@SuppressWarnings("deprecation")
 			@Override
 			public void run()
 			{

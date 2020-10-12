@@ -6,8 +6,6 @@ import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
-import primal.bukkit.sound.Audible;
-
 /**
  * A GSound can play a sound
  *

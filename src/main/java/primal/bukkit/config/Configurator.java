@@ -132,6 +132,7 @@ public class Configurator
 	{
 		boolean explicit = false;
 		boolean stat = object instanceof Class<?>;
+		@SuppressWarnings("unchecked")
 		Class<?> c = stat ? (Class<? extends Object>) object : object.getClass();
 
 		for(Field i : c.getDeclaredFields())
@@ -211,6 +212,7 @@ public class Configurator
 		ConfigWrapper fc = cfg.getConstructor().newInstance();
 		boolean explicit = false;
 		boolean stat = object.getClass().getCanonicalName().equals(Class.class.getCanonicalName());
+		@SuppressWarnings("unchecked")
 		Class<?> c = stat ? (Class<? extends Object>) object : object.getClass();
 
 		for(Field i : c.getDeclaredFields())
