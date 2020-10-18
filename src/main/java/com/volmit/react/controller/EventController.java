@@ -152,22 +152,35 @@ public class EventController extends Controller
 	@EventHandler
 	public void on(InventoryMoveItemEvent e)
 	{
-		if (Protocol.isAncientAPI()) {
+		if(Protocol.isAncientAPI())
+		{
 			return;
 		}
 
-		if (e.getSource() != null &&
-				e.getSource().getLocation() != null &&
-				e.getSource().getLocation().getBlock().getType().equals(Material.HOPPER)
-		) {
-			map.hit(e.getSource().getLocation().getChunk(), ChunkIssue.HOPPER, 20);
+		try
+		{
+			if(e.getSource() != null && e.getSource().getLocation() != null && e.getSource().getLocation().getBlock().getType().equals(Material.HOPPER))
+			{
+				map.hit(e.getSource().getLocation().getChunk(), ChunkIssue.HOPPER, 20);
+			}
 		}
 
-		if (e.getDestination() != null &&
-				e.getDestination().getLocation() != null &&
-				e.getDestination().getLocation().getBlock().getType().equals(Material.HOPPER)
-		) {
-			map.hit(e.getDestination().getLocation().getChunk(), ChunkIssue.HOPPER, 20);
+		catch(Throwable ex)
+		{
+
+		}
+
+		try
+		{
+			if(e.getDestination() != null && e.getDestination().getLocation() != null && e.getDestination().getLocation().getBlock().getType().equals(Material.HOPPER))
+			{
+				map.hit(e.getDestination().getLocation().getChunk(), ChunkIssue.HOPPER, 20);
+			}
+		}
+
+		catch(Throwable ex)
+		{
+
 		}
 	}
 
