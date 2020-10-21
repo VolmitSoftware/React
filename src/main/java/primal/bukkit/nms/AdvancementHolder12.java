@@ -396,6 +396,7 @@ public class AdvancementHolder12
 
 		Bukkit.getScheduler().scheduleSyncDelayedTask(PrimalPlugin.instance, new Runnable()
 		{
+			@SuppressWarnings("deprecation")
 			@Override
 			public void run()
 			{

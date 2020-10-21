@@ -210,7 +210,7 @@ public class SelectorPosition extends Selector
 			String wsearch = input.substring(0, input.length() - 2);
 			boolean found = false;
 
-			searching: for(World i : Bukkit.getWorlds())
+			for(World i : Bukkit.getWorlds())
 			{
 				if(i.getName().equalsIgnoreCase(wsearch))
 				{
@@ -234,7 +234,7 @@ public class SelectorPosition extends Selector
 
 			boolean found = false;
 
-			searching: for(World i : Bukkit.getWorlds())
+			for(World i : Bukkit.getWorlds())
 			{
 				if(i.getName().equalsIgnoreCase(wsearch))
 				{

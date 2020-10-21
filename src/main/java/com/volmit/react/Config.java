@@ -518,7 +518,7 @@ public class Config
 	@Key("features.entity-stacker.options.sheep-wool-drops")
 	@Injection(InjectionMethod.SWAP)
 	public static boolean ENTITY_STACKER_SHEEP = true;
-	
+
 	@Comment("Only stack sheep with the same color")
 	@Key("features.entity-stacker.options.sheep-color-specific")
 	@Injection(InjectionMethod.SWAP)

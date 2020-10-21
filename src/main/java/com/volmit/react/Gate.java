@@ -325,7 +325,7 @@ public class Gate
 
 					catch(
 
-							Throwable e)
+					Throwable e)
 					{
 						Ex.t(e);
 						prog.run(1.0);
@@ -820,13 +820,11 @@ public class Gate
 				return false;
 			}
 
-			if (Config.CHUNK_PURGE_FORCE && Protocol.R1_13.to(Protocol.LATEST).contains(Protocol.getProtocolVersion())) {
+			if(Config.CHUNK_PURGE_FORCE && Protocol.R1_13.to(Protocol.LATEST).contains(Protocol.getProtocolVersion()))
+			{
 				Method m = c.getWorld().getClass().getMethod("setChunkForceLoaded", int.class, int.class, boolean.class);
 				m.setAccessible(true);
-				m.invoke(
-					c.getWorld(),
-					c.getX(), c.getZ(), false
-				);
+				m.invoke(c.getWorld(), c.getX(), c.getZ(), false);
 			}
 
 			if(canUnload(c.getWorld(), c.getX(), c.getZ()))
