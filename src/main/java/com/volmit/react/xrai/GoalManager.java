@@ -214,7 +214,6 @@ public class GoalManager
 		purgeChunks.setConditions(cs);
 
 		VirtualAction va = new VirtualAction(ActionType.CULL_ENTITIES);
-		va.getOptions().put("near", ChunkIssue.ENTITY.name().toLowerCase());
 		purgeChunks.setAction(va);
 
 		return purgeChunks;
