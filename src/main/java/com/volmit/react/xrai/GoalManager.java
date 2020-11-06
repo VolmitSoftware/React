@@ -205,10 +205,10 @@ public class GoalManager
 		purgeChunks.setDescription("Culls Entities in entity dense areas");
 		purgeChunks.setHealthRegen(1);
 		purgeChunks.setMaxHealth(295);
-		purgeChunks.setHealthDamage(126);
+		purgeChunks.setHealthDamage(80);
 
 		ConditionSet cs = new ConditionSet();
-		cs.getConditions().add(new Condition(SampledType.ENTITY_TIME, ConditionOp.GREATER, 7.5));
+		cs.getConditions().add(new Condition(SampledType.TPS, ConditionOp.LESS, 18.5));
 		purgeChunks.setConditions(cs);
 
 		VirtualAction va = new VirtualAction(ActionType.CULL_ENTITIES);
