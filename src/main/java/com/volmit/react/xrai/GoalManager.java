@@ -208,7 +208,7 @@ public class GoalManager
 		purgeChunks.setHealthDamage(80);
 
 		ConditionSet cs = new ConditionSet();
-		cs.getConditions().add(new Condition(SampledType.TPS, ConditionOp.LESS, 18.5));
+		cs.getConditions().add(new Condition(SampledType.TPS, ConditionOp.LESS, 17.5));
 		purgeChunks.setConditions(cs);
 
 		VirtualAction va = new VirtualAction(ActionType.CULL_ENTITIES);
