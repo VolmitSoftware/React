@@ -10,21 +10,21 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" scope="PROVIDED" name="Maven: org.spigotmc:spigot-full:1.12.2" level="project" />
-    <orderEntry type="library" scope="PROVIDED" name="Maven: org.bukkit.craftbukkit:cb-1.16.2:1.16.2" level="project" />
-    <orderEntry type="library" scope="PROVIDED" name="Maven: org.bukkit.craftbukkit:cb-1.16.1:1.16.1" level="project" />
-    <orderEntry type="library" scope="PROVIDED" name="Maven: org.bukkit.craftbukkit:cb-1.15.1:1.15.1" level="project" />
-    <orderEntry type="library" scope="PROVIDED" name="Maven: org.bukkit.craftbukkit:cb-1.14.4:1.14.4" level="project" />
-    <orderEntry type="library" scope="PROVIDED" name="Maven: org.bukkit.craftbukkit:cb-1.13.2:1.13.2" level="project" />
-    <orderEntry type="library" scope="PROVIDED" name="Maven: org.bukkit.craftbukkit:cb-1.12.2:1.12.2" level="project" />
-    <orderEntry type="library" scope="PROVIDED" name="Maven: org.bukkit.craftbukkit:cb-1.11.2:1.11.2" level="project" />
-    <orderEntry type="library" scope="PROVIDED" name="Maven: org.bukkit.craftbukkit:cb-1.10.2:1.10.2" level="project" />
-    <orderEntry type="library" scope="PROVIDED" name="Maven: org.bukkit.craftbukkit:cb-1.9.4:1.9.4" level="project" />
-    <orderEntry type="library" scope="PROVIDED" name="Maven: org.bukkit.craftbukkit:cb-1.8.8:1.8.8" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.spigotmc.full:1.12.2:1.12.2" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.bukkit.craftbukkit:1.16.3:1.16.3" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.bukkit.craftbukkit:1.16.1:1.16.1" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.bukkit.craftbukkit:1.15.1:1.15.1" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.bukkit.craftbukkit:1.14.4:1.14.4" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.bukkit.craftbukkit:1.13.2:1.13.2" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.bukkit.craftbukkit:1.12.2:1.12.2" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.bukkit.craftbukkit:1.11.2:1.11.2" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.bukkit.craftbukkit:1.10.2:1.10.2" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.bukkit.craftbukkit:1.9.4:1.9.4" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.bukkit.craftbukkit:1.8.8:1.8.8" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: com.comphenix.protocol:ProtocolLib-API:4.3.0" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: cglib:cglib-nodep:3.2.5" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: com.comphenix.executors:BukkitExecutors:1.1-SNAPSHOT" level="project" />
-    <orderEntry type="library" scope="PROVIDED" name="Maven: com.mythicmobs:mythicmobs:4.3.2" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: io.lumine.xikage:MythicMobs:4.9.1" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: me.clip:placeholderapi:2.9.2" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: com.boydti:fawe-api:latest" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: org.projectlombok:lombok:1.18.8" level="project" />

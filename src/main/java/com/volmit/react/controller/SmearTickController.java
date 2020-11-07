@@ -3,12 +3,17 @@ package com.volmit.react.controller;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 
+import com.volmit.react.util.D;
+import net.minecraft.server.v1_16_R1.WorldServer;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
+import org.bukkit.craftbukkit.v1_16_R2.CraftWorld;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
 import org.json.JSONObject;
+import org.spigotmc.SpigotConfig;
+import org.spigotmc.SpigotWorldConfig;
 import org.spigotmc.TickLimiter;
 
 import com.volmit.react.Config;
@@ -44,19 +49,6 @@ public class SmearTickController extends Controller
 		if(!Capability.ENTITY_THROTTLING.isCapable() || !Capability.TILE_THROTTLING.isCapable())
 		{
 			return;
-		}
-
-		try
-		{
-			if(Bukkit.getOnlinePlayers().isEmpty())
-			{
-				return;
-			}
-		}
-
-		catch(Throwable e)
-		{
-
 		}
 
 		Surge.register(this);
