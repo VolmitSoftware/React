@@ -136,7 +136,7 @@ public enum NMSVersion
 			return R1_16_2;
 		}
 
-		if(tryVersion("1_16_R4"))
+		if(tryVersion("1_16_R3"))
 		{
 			return R1_16_4;
 		}
