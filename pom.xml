@@ -129,6 +129,12 @@
 		<!-- Craftbukkit Versions -->
 		<dependency>
 			<groupId>org.bukkit.craftbukkit</groupId>
+			<artifactId>1.16.4</artifactId>
+			<version>1.16.4</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.bukkit.craftbukkit</groupId>
 			<artifactId>1.16.3</artifactId>
 			<version>1.16.3</version>
 			<scope>provided</scope>

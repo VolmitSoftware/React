@@ -2,19 +2,19 @@ package com.volmit.react.nms;
 
 import com.volmit.react.Config;
 import com.volmit.react.util.P;
-import net.minecraft.server.v1_16_R1.BlockPosition;
-import net.minecraft.server.v1_16_R1.PacketPlayOutCollect;
+import net.minecraft.server.v1_16_R3.BlockPosition;
+import net.minecraft.server.v1_16_R3.PacketPlayOutCollect;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
-import org.bukkit.craftbukkit.v1_16_R1.CraftWorld;
-import org.bukkit.craftbukkit.v1_16_R1.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_16_R3.CraftWorld;
+import org.bukkit.craftbukkit.v1_16_R3.entity.CraftPlayer;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import primal.bukkit.world.MaterialBlock;
 
-public class NMSBinding16 extends NMSBinding
+public class NMSBinding16_R3 extends NMSBinding
 {
-    public NMSBinding16(String packageVersion)
+    public NMSBinding16_R3(String packageVersion)
     {
         super(packageVersion);
     }
@@ -32,10 +32,10 @@ public class NMSBinding16 extends NMSBinding
         int x = l.getBlockX();
         int y = l.getBlockY();
         int z = l.getBlockZ();
-        net.minecraft.server.v1_16_R1.World w = ((CraftWorld) l.getWorld()).getHandle();
-        net.minecraft.server.v1_16_R1.Chunk chunk = w.getChunkAt(x >> 4, z >> 4);
+        net.minecraft.server.v1_16_R3.World w = ((CraftWorld) l.getWorld()).getHandle();
+        net.minecraft.server.v1_16_R3.Chunk chunk = w.getChunkAt(x >> 4, z >> 4);
         BlockPosition bp = new BlockPosition(x, y, z);
-        chunk.setType(bp, net.minecraft.server.v1_16_R1.Block.getByCombinedId(m.getMaterial().getId() + (m.getData() << 12)), false);
+        chunk.setType(bp, net.minecraft.server.v1_16_R3.Block.getByCombinedId(m.getMaterial().getId() + (m.getData() << 12)), false);
     }
 
     @Override
@@ -46,10 +46,10 @@ public class NMSBinding16 extends NMSBinding
             return;
         }
 
-        net.minecraft.server.v1_16_R1.Block b = org.bukkit.craftbukkit.v1_16_R1.util.CraftMagicNumbers.getBlock(bfg.getType());
+        net.minecraft.server.v1_16_R3.Block b = org.bukkit.craftbukkit.v1_16_R3.util.CraftMagicNumbers.getBlock(bfg.getType());
         BlockPosition bp = new BlockPosition(bfg.getX(), bfg.getY(), bfg.getZ());
         CraftWorld w = (CraftWorld) bfg.getWorld();
-        net.minecraft.server.v1_16_R1.World v = w.getHandle();
+        net.minecraft.server.v1_16_R3.World v = w.getHandle();
         v.applyPhysics(bp, b);
     }
 

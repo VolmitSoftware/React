@@ -5,6 +5,7 @@ import java.util.List;
 
 public enum NMSVersion
 {
+	R1_16_4,
 	R1_16_2,
 	R1_16,
 	R1_15,
@@ -133,6 +134,11 @@ public enum NMSVersion
 		if(tryVersion("1_16_R2"))
 		{
 			return R1_16_2;
+		}
+
+		if(tryVersion("1_16_R4"))
+		{
+			return R1_16_4;
 		}
 		return null;
 	}
