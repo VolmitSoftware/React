@@ -1,0 +1,93 @@
+buildscript {
+    repositories {
+        jcenter()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.3'
+    }
+}
+
+
+plugins {
+    id 'java'
+    id 'maven-publish'
+    id 'io.freefair.lombok' version '5.3.0' apply false
+    id "com.github.johnrengelman.shadow" version "6.1.0"
+}
+
+group 'com.volmit'
+version '6.639'
+
+subprojects {
+    apply plugin: 'java'
+
+    apply plugin: 'io.freefair.lombok'
+    apply plugin: 'com.github.johnrengelman.shadow'
+    group rootProject.group
+    version rootProject.version
+    java.sourceCompatibility = JavaVersion.VERSION_1_8
+    String finalJarName = rootProject.name + "-" + project.name + "-" + project.version;
+    String finalJarPath = jar.archiveFile.get().getAsFile().getParentFile().getParentFile().getParentFile().getParentFile().getAbsolutePath() + "\\release\\" + project.version + "\\" + finalJarName + ".jar";
+
+    shadowJar {
+        zip64 true
+        minimize()
+        project.configurations.implementation.canBeResolved = true
+        project.configurations.runtime.canBeResolved = true
+        project.configurations.compile.canBeResolved = true
+        archiveFileName = finalJarPath
+    }
+
+    task buildRelease {
+        group 'React'
+        dependsOn 'shadowJar'
+    }
+
+    repositories {
+        mavenLocal()
+        jcenter()
+        maven {
+            url = uri('http://repo.volmit.com/repository/volmit/')
+        }
+    }
+
+    dependencies {
+        implementation 'org.json:json:20160810'
+        implementation 'org.zeroturnaround:zt-zip:1.13'
+        implementation 'org.bstats:bstats-bukkit:1.7'
+        compileOnly 'org.spigotmc.full:1.12.2:1.12.2'
+        compileOnly 'org.bukkit.craftbukkit:1.16.4:1.16.4'
+        compileOnly 'org.bukkit.craftbukkit:1.16.3:1.16.3'
+        compileOnly 'org.bukkit.craftbukkit:1.16.1:1.16.1'
+        compileOnly 'org.bukkit.craftbukkit:1.15.1:1.15.1'
+        compileOnly 'org.bukkit.craftbukkit:1.14.4:1.14.4'
+        compileOnly 'org.bukkit.craftbukkit:1.13.2:1.13.2'
+        compileOnly 'org.bukkit.craftbukkit:1.12.2:1.12.2'
+        compileOnly 'org.bukkit.craftbukkit:1.11.2:1.11.2'
+        compileOnly 'org.bukkit.craftbukkit:1.10.2:1.10.2'
+        compileOnly 'org.bukkit.craftbukkit:1.9.4:1.9.4'
+        compileOnly 'org.bukkit.craftbukkit:1.8.8:1.8.8'
+        compileOnly 'com.comphenix.protocol:ProtocolLib-API:4.3.0'
+        compileOnly 'io.lumine.xikage:MythicMobs:4.9.1'
+        compileOnly 'me.clip:placeholderapi:2.9.2'
+        compileOnly 'com.boydti:fawe-api:latest'
+        compileOnly 'org.projectlombok:lombok:1.18.8'
+    }
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            from(components.java)
+        }
+    }
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+
+
+

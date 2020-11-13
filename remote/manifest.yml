@@ -1,5 +1,0 @@
-react:
-  version:
-    name: '2.2'
-    code: 2200
-    desc: 'Massive Overhaul for languages, the updater, networking, and much more.'

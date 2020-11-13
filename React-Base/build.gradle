@@ -1,0 +1,14 @@
+plugins {
+    id 'java'
+}
+
+group 'com.volmit'
+version '6.639'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+}
