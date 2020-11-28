@@ -116,3 +116,4 @@ gradle/
 .gradle/
 
 React-Base/build/
+build/libs/
