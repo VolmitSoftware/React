@@ -32,7 +32,7 @@ subprojects {
     processResources {
         from(sourceSets.main.resources.srcDirs) {
             filter ReplaceTokens, tokens: [
-                    version: version,
+                    version: rootProject.version,
                     name: rootProject.name,
                     main: 'com.volmit.react.ReactPlugin'
             ]
@@ -40,7 +40,7 @@ subprojects {
     }
 
     java.sourceCompatibility = JavaVersion.VERSION_1_8
-    String finalJarName = rootProject.name + "-" + project.name + "-" + project.version;
+    String finalJarName = rootProject.name + "-" + project.version;
     String finalJarPath = jar.archiveFile.get().getAsFile().getParentFile().getParentFile().getParentFile().getParentFile().getAbsolutePath() + "\\release\\" + project.version + "\\" + finalJarName + ".jar";
 
     shadowJar {
