@@ -19,7 +19,7 @@ plugins {
 }
 
 group 'com.volmit'
-version '6.639'
+version '6.640'
 
 subprojects {
     apply plugin: 'java'
