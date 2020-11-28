@@ -106,6 +106,14 @@ Temporary Items
 *.classpath
 
 release/
+
 .idea/
 
 dependency-reduced-pom\.xml
+
+gradle/
+
+.gradle/
+
+React-Base/build/
+build/libs/

@@ -1,0 +1,80 @@
+import org.apache.tools.ant.filters.ReplaceTokens
+
+buildscript {
+    repositories {
+        jcenter()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.3'
+    }
+}
+
+
+plugins {
+    id 'java'
+    id 'maven-publish'
+    id 'io.freefair.lombok' version '5.3.0' apply false
+    id "com.github.johnrengelman.shadow" version "6.1.0"
+}
+
+group 'com.volmit'
+version '6.640'
+
+subprojects {
+    apply plugin: 'java'
+
+    apply plugin: 'io.freefair.lombok'
+    apply plugin: 'com.github.johnrengelman.shadow'
+    group rootProject.group
+    version rootProject.version
+
+    processResources {
+        from(sourceSets.main.resources.srcDirs) {
+            filter ReplaceTokens, tokens: [
+                    version: rootProject.version,
+                    name: rootProject.name,
+                    main: 'com.volmit.react.ReactPlugin'
+            ]
+        }
+    }
+
+    java.sourceCompatibility = JavaVersion.VERSION_1_8
+    String finalJarName = rootProject.name + "-" + project.version;
+    String finalJarPath = jar.archiveFile.get().getAsFile().getParentFile().getParentFile().getParentFile().getParentFile().getAbsolutePath() + "\\release\\" + project.version + "\\" + finalJarName + ".jar";
+
+    shadowJar {
+        zip64 true
+        minimize()
+        project.configurations.implementation.canBeResolved = true
+        project.configurations.runtime.canBeResolved = true
+        project.configurations.compile.canBeResolved = true
+        archiveFileName = finalJarPath
+    }
+
+    task buildRelease {
+        group 'React'
+        dependsOn 'shadowJar'
+    }
+
+    repositories {
+        mavenLocal()
+        jcenter()
+        maven {
+            url = uri('http://repo.volmit.com/repository/volmit/')
+        }
+    }
+
+    dependencies {
+        implementation 'org.json:json:20160810'
+        compileOnly 'org.projectlombok:lombok:1.18.8'
+    }
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+
+
+

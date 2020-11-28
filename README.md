@@ -11,9 +11,8 @@ You can build a fresh copy of react very simply.
 To Build React:
 
 1. Clone this repository to your computer somewhere
-2. Execute `build.bat` for Windows or `build.sh` for Linux or MacOSX
-3. Wait. This may take some time the first time you build react. After the first build, it should take less than 5 seconds.
-4. Once the terminal exits, You can find the react jar in `release/VERSION/React-VERSION.jar`
+2. Use your preferred IDE and import the project as a Gradle project
+3. Use your IDE's build feature to build React
 
 # License
 Copyright © 2020 Volmit Software <https://www.volmit.com/>  

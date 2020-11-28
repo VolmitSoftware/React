@@ -1,8 +1,0 @@
-package:
-  version: 4.3.5
-  version-code: 4350
-  description:
-  - Updater overhaul. Now downloads updates from spigot (you need to authenticate yourself)
-  - Added a guide on how to set this up on the release page
-  - Major performance improvements at startup
-  - You may need to reconfigure your updater.yml file
