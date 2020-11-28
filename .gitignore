@@ -114,3 +114,5 @@ dependency-reduced-pom\.xml
 gradle/
 
 .gradle/
+
+React-Base/build/

@@ -1,6 +1,6 @@
-name: ${react.plugin.name}
-version: ${project.version}
-main: ${react.plugin.main}
+name: @name@
+version: @version@
+main: @main@
 authors: [cyberpwn, Puretie, PsychopathNextdoor]
 description: React is a smart performance plugin designed to automatically fix lag from the source.
 load: STARTUP
