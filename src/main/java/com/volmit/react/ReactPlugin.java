@@ -49,11 +49,6 @@ public class ReactPlugin extends PrimalPlugin
 	@Override
 	public void start()
 	{
-		Bukkit.getLogger().info(ChatColor.DARK_AQUA + ",---.               |    ");
-		Bukkit.getLogger().info(ChatColor.DARK_AQUA + "|---',---.,---.,---.|--- ");
-		Bukkit.getLogger().info(ChatColor.DARK_AQUA + "|  \\ |---',---||    |    ");
-		Bukkit.getLogger().info(ChatColor.DARK_AQUA + "`   ``---'`---^`---'`---'");
-
 		if (this.getDescription().getVersion().contains("-dev"))
 			this.warn();
 
