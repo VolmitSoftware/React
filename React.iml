@@ -11,6 +11,7 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: org.spigotmc.full:1.12.2:1.12.2" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.bukkit.craftbukkit:1.16.4:1.16.4" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: org.bukkit.craftbukkit:1.16.3:1.16.3" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: org.bukkit.craftbukkit:1.16.1:1.16.1" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: org.bukkit.craftbukkit:1.15.1:1.15.1" level="project" />
