@@ -3,6 +3,7 @@ package com.volmit.react.util;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
+import primal.bukkit.sched.J;
 import primal.json.JSONArray;
 import primal.json.JSONObject;
 import primal.util.text.C;
@@ -273,6 +274,6 @@ public class RTX
 	 */
 	public void tellRawTo(Player p)
 	{
-		Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), "tellraw " + p.getName() + " " + toJSON().toString());
+		J.s(() -> 		Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), "tellraw " + p.getName() + " " + toJSON().toString()));
 	}
 }

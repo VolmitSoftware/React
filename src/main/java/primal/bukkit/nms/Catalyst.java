@@ -1,5 +1,7 @@
 package primal.bukkit.nms;
 
+import com.volmit.react.util.D;
+
 public class Catalyst
 {
 	public static final CatalystHost host = getHost();
@@ -7,7 +9,13 @@ public class Catalyst
 	private static CatalystHost getHost()
 	{
 		NMSVersion v = NMSVersion.current();
-	
+
+		if(v == null)
+		{
+			D.w("Unable to find NMS version!");
+			return null;
+		}
+
 		switch(v)
 		{
 			case R1_10:
@@ -32,8 +40,8 @@ public class Catalyst
 				return new Catalyst8();
 			case R1_9_4:
 				return new Catalyst94();
-			default:
-				return null;
 		}
+
+		return null;
 	}
 }
