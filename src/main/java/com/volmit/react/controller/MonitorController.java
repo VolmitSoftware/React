@@ -329,7 +329,7 @@ public class MonitorController extends Controller
 
 	private JSONArray defaultMonitor()
 	{
-		com.volmit.react.xmonitor.TitleCollection m = new com.volmit.react.xmonitor.TitleCollection();
+		TitleCollection m = new TitleCollection();
 		TitleHeader tick = new TitleHeader(Info.NAME_TICK, SampledType.TPS);
 		tick.f(SampledType.TICK);
 		tick.f(SampledType.CPU);

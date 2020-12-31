@@ -1,80 +1,87 @@
-import org.apache.tools.ant.filters.ReplaceTokens
-
-buildscript {
-    repositories {
-        jcenter()
-        mavenCentral()
-    }
-    dependencies {
-        classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.3'
-    }
-}
-
-
 plugins {
     id 'java'
-    id 'maven-publish'
-    id 'io.freefair.lombok' version '5.3.0' apply false
+    id 'java-library'
     id "com.github.johnrengelman.shadow" version "6.1.0"
 }
 
-group 'com.volmit'
-version '6.640'
+group 'com.volmit.react'
+version '6.641'
 
-subprojects {
-    apply plugin: 'java'
-
-    apply plugin: 'io.freefair.lombok'
-    apply plugin: 'com.github.johnrengelman.shadow'
-    group rootProject.group
-    version rootProject.version
-
-    processResources {
-        from(sourceSets.main.resources.srcDirs) {
-            filter ReplaceTokens, tokens: [
-                    version: rootProject.version,
-                    name: rootProject.name,
-                    main: 'com.volmit.react.ReactPlugin'
-            ]
-        }
-    }
-
-    java.sourceCompatibility = JavaVersion.VERSION_1_8
-    String finalJarName = rootProject.name + "-" + project.version;
-    String finalJarPath = jar.archiveFile.get().getAsFile().getParentFile().getParentFile().getParentFile().getParentFile().getAbsolutePath() + "\\release\\" + project.version + "\\" + finalJarName + ".jar";
-
-    shadowJar {
-        zip64 true
-        minimize()
-        project.configurations.implementation.canBeResolved = true
-        project.configurations.runtime.canBeResolved = true
-        project.configurations.compile.canBeResolved = true
-        archiveFileName = finalJarPath
-    }
-
-    task buildRelease {
-        group 'React'
-        dependsOn 'shadowJar'
-    }
-
-    repositories {
-        mavenLocal()
-        jcenter()
-        maven {
-            url = uri('http://repo.volmit.com/repository/volmit/')
-        }
-    }
-
-    dependencies {
-        implementation 'org.json:json:20160810'
-        compileOnly 'org.projectlombok:lombok:1.18.8'
+repositories {
+    mavenCentral()
+    maven {
+        url = "http://repo.volmit.com/repository/volmit/"
     }
 }
 
-tasks.withType(JavaCompile) {
-    options.encoding = 'UTF-8'
+String releasePath = project.rootDir.absolutePath + "\\release\\" + project.version + "\\React-" + project.version + ".jar";
+String devPath = "C:\\Users\\cyberpwn\\Documents\\development\\server\\plugins\\React.jar";
+
+task release {
+    group 'react'
+    dependsOn 'configureRelease'
+    dependsOn 'shadowJar'
 }
 
+task development {
+    group 'react'
+    dependsOn 'configureDev'
+    dependsOn 'shadowJar'
+}
 
+task configureDev {
+    group 'react-utils'
+    doFirst {
+        shadowJar {
+            zip64 true
+            project.configurations.implementation.canBeResolved = true
+            project.configurations.runtime.canBeResolved = true
+            project.configurations.api.canBeResolved = true
+            project.configurations.compile.canBeResolved = true
+            archiveFileName = devPath
+        }
+    }
+}
 
+task configureRelease {
+    group 'react-utils'
+    doFirst {
+        shadowJar {
+            zip64 true
+            project.configurations.implementation.canBeResolved = true
+            project.configurations.runtime.canBeResolved = true
+            project.configurations.api.canBeResolved = false
+            project.configurations.compile.canBeResolved = true
+            archiveFileName = releasePath
 
+            dependencies {
+                exclude(dependency {
+                    it.moduleGroup == 'org.bukkit.craftbukkit'
+                })
+            }
+        }
+    }
+}
+
+dependencies {
+    implementation 'org.zeroturnaround:zt-zip:1.13'
+    implementation 'org.bstats:bstats-bukkit:1.7'
+    annotationProcessor 'org.projectlombok:lombok:1.18.16'
+    api 'org.projectlombok:lombok:1.18.16'
+    api 'org.spigotmc.full:1.12.2:1.12.2'
+    api 'org.bukkit.craftbukkit:1.16.4:1.16.4'
+    api 'org.bukkit.craftbukkit:1.16.3:1.16.3'
+    api 'org.bukkit.craftbukkit:1.16.1:1.16.1'
+    api 'org.bukkit.craftbukkit:1.15.1:1.15.1'
+    api 'org.bukkit.craftbukkit:1.14.4:1.14.4'
+    api 'org.bukkit.craftbukkit:1.13.2:1.13.2'
+    api 'org.bukkit.craftbukkit:1.12.2:1.12.2'
+    api 'org.bukkit.craftbukkit:1.11.2:1.11.2'
+    api 'org.bukkit.craftbukkit:1.10.2:1.10.2'
+    api 'org.bukkit.craftbukkit:1.9.4:1.9.4'
+    api 'org.bukkit.craftbukkit:1.8.8:1.8.8'
+    api 'com.comphenix.protocol:ProtocolLib:4.5.1'
+    api 'io.lumine.xikage:MythicMobs:4.9.1'
+    api 'me.clip:placeholderapi:2.9.2'
+    api 'com.boydti:fawe-api:latest'
+}
