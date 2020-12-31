@@ -8,7 +8,7 @@ import com.volmit.react.api.Capability;
 import com.volmit.react.api.ProtocolAdapter;
 import com.volmit.react.util.Controller;
 
-import org.json.JSONObject;
+import primal.json.JSONObject;
 import primal.lang.collection.GBiset;
 import primal.lang.collection.GMap;
 

@@ -4,8 +4,8 @@ import com.volmit.react.api.ActionType;
 import com.volmit.react.api.SelectorParseException;
 import com.volmit.react.api.SelectorTime;
 import com.volmit.react.util.M;
-import org.json.JSONException;
-import org.json.JSONObject;
+import primal.json.JSONException;
+import primal.json.JSONObject;
 
 public class RAIGoal
 {

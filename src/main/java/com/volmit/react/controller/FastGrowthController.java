@@ -15,7 +15,7 @@ import com.volmit.react.util.Controller;
 import com.volmit.react.util.M;
 import com.volmit.react.util.TICK;
 
-import org.json.JSONObject;
+import primal.json.JSONObject;
 import primal.bukkit.world.MaterialBlock;
 import primal.lang.collection.GMap;
 

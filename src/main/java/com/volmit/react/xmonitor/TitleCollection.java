@@ -1,6 +1,6 @@
 package com.volmit.react.xmonitor;
 
-import org.json.JSONArray;
+import primal.json.JSONArray;
 import primal.lang.collection.GList;
 
 public class TitleCollection

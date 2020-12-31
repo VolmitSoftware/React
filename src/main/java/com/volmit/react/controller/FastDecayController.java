@@ -27,7 +27,7 @@ import com.volmit.react.util.S;
 import com.volmit.react.util.TICK;
 import com.volmit.react.util.W;
 
-import org.json.JSONObject;
+import primal.json.JSONObject;
 import primal.bukkit.sound.GSound;
 import primal.bukkit.world.MaterialBlock;
 import primal.lang.collection.GList;

@@ -1,8 +1,8 @@
 package primal.util.text;
 
 import primal.lang.collection.GList;
-import org.json.JSONArray;
-import org.json.JSONObject;
+import primal.json.JSONArray;
+import primal.json.JSONObject;
 
 /**
  * Raw Text EXTRA

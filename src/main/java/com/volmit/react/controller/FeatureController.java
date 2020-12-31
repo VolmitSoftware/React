@@ -12,7 +12,7 @@ import com.volmit.react.Surge;
 import com.volmit.react.util.Controller;
 import com.volmit.react.util.Protocol;
 
-import org.json.JSONObject;
+import primal.json.JSONObject;
 import primal.bukkit.world.MaterialBlock;
 
 public class FeatureController extends Controller implements INMSBinding

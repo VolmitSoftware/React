@@ -38,7 +38,7 @@ import com.volmit.react.util.F;
 import com.volmit.react.util.P;
 import com.volmit.react.util.S;
 
-import org.json.JSONObject;
+import primal.json.JSONObject;
 import primal.lang.collection.GList;
 import primal.lang.collection.GMap;
 import primal.util.text.C;

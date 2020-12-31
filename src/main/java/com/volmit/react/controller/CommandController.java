@@ -12,7 +12,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.server.ServerCommandEvent;
-import org.json.JSONObject;
+import primal.json.JSONObject;
 
 import com.volmit.react.Config;
 import com.volmit.react.Gate;

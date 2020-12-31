@@ -32,8 +32,8 @@ import com.volmit.react.util.Controller;
 import com.volmit.react.util.Ex;
 import com.volmit.react.util.TICK;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
+import primal.json.JSONArray;
+import primal.json.JSONObject;
 import primal.bukkit.inventory.UIElement;
 import primal.bukkit.inventory.UIWindow;
 import primal.bukkit.inventory.Window;

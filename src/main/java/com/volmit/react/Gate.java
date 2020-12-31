@@ -23,8 +23,6 @@ import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.json.JSONArray;
-import org.json.JSONObject;
 import org.spigotmc.SpigotWorldConfig;
 import org.spigotmc.TickLimiter;
 
@@ -67,6 +65,8 @@ import io.lumine.xikage.mythicmobs.MythicMobs;
 import io.lumine.xikage.mythicmobs.mobs.MythicMob;
 import primal.bukkit.nms.FrameType;
 import primal.bukkit.nms.NMP;
+import primal.json.JSONArray;
+import primal.json.JSONObject;
 import primal.lang.collection.GList;
 import primal.lang.collection.GMap;
 import primal.lang.collection.GSet;

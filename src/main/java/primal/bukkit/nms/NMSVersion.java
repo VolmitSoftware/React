@@ -6,6 +6,7 @@ import java.util.List;
 public enum NMSVersion
 {
 	R1_16_4,
+	R1_16_3,
 	R1_16_2,
 	R1_16,
 	R1_15,

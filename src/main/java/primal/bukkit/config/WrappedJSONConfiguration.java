@@ -4,8 +4,8 @@ import java.io.File;
 import java.util.List;
 
 import primal.lang.collection.GList;
-import org.json.JSONArray;
-import org.json.JSONObject;
+import primal.json.JSONArray;
+import primal.json.JSONObject;
 import primal.logic.io.VIO;
 
 public class WrappedJSONConfiguration implements ConfigWrapper

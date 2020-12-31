@@ -3,8 +3,8 @@ package com.volmit.react.util;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
+import primal.json.JSONArray;
+import primal.json.JSONObject;
 import primal.util.text.C;
 
 /**

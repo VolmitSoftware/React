@@ -1,8 +1,8 @@
 package primal.lang.collection;
 
-import java.util.*;
+import primal.json.JSONArray;
 
-import org.json.JSONArray;
+import java.util.*;
 
 /**
  * GLists are Arraylists with special enhancements
@@ -87,7 +87,7 @@ public class GList<T> extends ArrayList<T>
 	 *            the JSONArray
 	 * @return a GList<String> representing this json array
 	 */
-	public static GList<String> from(JSONArray ja)
+	public static GList<String> from(primal.json.JSONArray ja)
 	{
 		GList<String> g = new GList<String>();
 
@@ -376,7 +376,7 @@ public class GList<T> extends ArrayList<T>
 	 * Example List a, b, c, d <br/>
 	 * cropFrom(1) > a, b
 	 *
-	 * @param from
+	 * @param to
 	 *            the from index to be the new beginning of the next index
 	 * @return the cropped glist
 	 */

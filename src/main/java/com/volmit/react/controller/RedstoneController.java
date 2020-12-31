@@ -21,7 +21,7 @@ import com.volmit.react.util.Controller;
 import com.volmit.react.util.M;
 import com.volmit.react.util.RedstoneTracker;
 
-import org.json.JSONObject;
+import primal.json.JSONObject;
 import primal.lang.collection.GList;
 import primal.lang.collection.GMap;
 import primal.lang.collection.GSet;

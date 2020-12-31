@@ -21,9 +21,9 @@ import com.volmit.react.util.Paste;
 import com.volmit.react.util.S;
 import com.volmit.react.util.TaskLater;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+import primal.json.JSONArray;
+import primal.json.JSONException;
+import primal.json.JSONObject;
 import primal.lang.collection.GList;
 
 public class GoalManager

@@ -9,7 +9,7 @@ import com.volmit.react.api.ReactPlayer;
 import com.volmit.react.util.A;
 import com.volmit.react.util.Controller;
 
-import org.json.JSONObject;
+import primal.json.JSONObject;
 import primal.lang.collection.GList;
 import primal.lang.collection.GSet;
 

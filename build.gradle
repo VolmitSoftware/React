@@ -17,6 +17,13 @@ repositories {
 String releasePath = project.rootDir.absolutePath + "\\release\\" + project.version + "\\React-" + project.version + ".jar";
 String devPath = "C:\\Users\\cyberpwn\\Documents\\development\\server\\plugins\\React.jar";
 
+shadowJar {
+    project.configurations.implementation.canBeResolved = true
+    project.configurations.runtime.canBeResolved = true
+    project.configurations.api.canBeResolved = false
+    project.configurations.compile.canBeResolved = true
+}
+
 task release {
     group 'react'
     dependsOn 'configureRelease'
@@ -34,10 +41,6 @@ task configureDev {
     doFirst {
         shadowJar {
             zip64 true
-            project.configurations.implementation.canBeResolved = true
-            project.configurations.runtime.canBeResolved = true
-            project.configurations.api.canBeResolved = true
-            project.configurations.compile.canBeResolved = true
             archiveFileName = devPath
         }
     }
@@ -48,17 +51,7 @@ task configureRelease {
     doFirst {
         shadowJar {
             zip64 true
-            project.configurations.implementation.canBeResolved = true
-            project.configurations.runtime.canBeResolved = true
-            project.configurations.api.canBeResolved = false
-            project.configurations.compile.canBeResolved = true
             archiveFileName = releasePath
-
-            dependencies {
-                exclude(dependency {
-                    it.moduleGroup == 'org.bukkit.craftbukkit'
-                })
-            }
         }
     }
 }

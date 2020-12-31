@@ -11,7 +11,7 @@ import com.volmit.react.api.SelectorParseException;
 import com.volmit.react.api.SelectorPosition;
 import com.volmit.react.api.SelectorTime;
 
-import org.json.JSONObject;
+import primal.json.JSONObject;
 import primal.lang.collection.GList;
 import primal.lang.collection.GMap;
 

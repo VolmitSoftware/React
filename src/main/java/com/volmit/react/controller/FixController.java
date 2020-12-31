@@ -11,7 +11,7 @@ import com.volmit.react.fix.FixInvisibleChunk;
 import com.volmit.react.fix.FixLowMM;
 import com.volmit.react.util.Controller;
 
-import org.json.JSONObject;
+import primal.json.JSONObject;
 import primal.lang.collection.GList;
 import primal.util.text.C;
 

@@ -28,7 +28,7 @@ import com.volmit.react.util.Ex;
 import com.volmit.react.util.ParticleEffect;
 import com.volmit.react.util.Task;
 
-import org.json.JSONObject;
+import primal.json.JSONObject;
 import primal.bukkit.world.MaterialBlock;
 import primal.lang.collection.GList;
 import primal.lang.collection.GMap;

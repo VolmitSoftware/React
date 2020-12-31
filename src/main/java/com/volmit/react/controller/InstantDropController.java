@@ -23,7 +23,7 @@ import com.volmit.react.util.Controller;
 import com.volmit.react.util.S;
 import com.volmit.react.util.TICK;
 
-import org.json.JSONObject;
+import primal.json.JSONObject;
 import primal.lang.collection.GList;
 
 public class InstantDropController extends Controller

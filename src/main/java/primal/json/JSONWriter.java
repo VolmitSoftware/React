@@ -1,4 +1,4 @@
-package ninja.bytecode.shuriken.json;
+package primal.json;
 
 
 import java.io.IOException;

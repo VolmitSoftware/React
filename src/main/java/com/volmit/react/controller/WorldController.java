@@ -11,7 +11,7 @@ import com.volmit.react.Config;
 import com.volmit.react.ReactPlugin;
 import com.volmit.react.Surge;
 import com.volmit.react.util.Controller;
-import org.json.JSONObject;
+import primal.json.JSONObject;
 
 public class WorldController extends Controller
 {

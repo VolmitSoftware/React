@@ -7,7 +7,7 @@ import com.volmit.react.api.Unused;
 import com.volmit.react.util.Controller;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
-import org.json.JSONObject;
+import primal.json.JSONObject;
 
 public class MetricsController extends Controller {
 

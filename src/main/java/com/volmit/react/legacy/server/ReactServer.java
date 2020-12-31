@@ -10,7 +10,7 @@ import com.volmit.react.util.Platform;
 import com.volmit.react.util.S;
 import org.apache.commons.lang3.StringUtils;
 import org.bukkit.Bukkit;
-import org.json.JSONObject;
+import primal.json.JSONObject;
 import primal.lang.collection.GList;
 
 import java.io.DataInputStream;

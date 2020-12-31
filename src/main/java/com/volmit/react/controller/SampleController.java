@@ -71,7 +71,7 @@ import com.volmit.react.util.TICK;
 import com.volmit.react.util.TaskLater;
 import com.volmit.react.util.TimingsReport;
 
-import org.json.JSONObject;
+import primal.json.JSONObject;
 import primal.lang.collection.GList;
 import primal.lang.collection.GMap;
 import primal.util.text.C;

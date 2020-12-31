@@ -46,7 +46,7 @@ import com.volmit.react.util.Protocol;
 import com.volmit.react.util.S;
 import com.volmit.react.util.TICK;
 
-import org.json.JSONObject;
+import primal.json.JSONObject;
 import primal.bukkit.sound.GSound;
 import primal.lang.collection.GList;
 import primal.lang.collection.GMap;

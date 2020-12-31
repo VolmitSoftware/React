@@ -8,7 +8,7 @@ import org.bukkit.event.entity.SpawnerSpawnEvent;
 import com.volmit.react.Config;
 import com.volmit.react.Surge;
 import com.volmit.react.util.Controller;
-import org.json.JSONObject;
+import primal.json.JSONObject;
 
 public class CollisionController extends Controller
 {

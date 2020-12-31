@@ -1,6 +1,6 @@
 package com.volmit.react.util;
 
-import org.json.JSONObject;
+import primal.json.JSONObject;
 
 public interface IController
 {

@@ -1,7 +1,7 @@
 package com.volmit.react.util;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
+import primal.json.JSONArray;
+import primal.json.JSONObject;
 import primal.lang.collection.GList;
 
 /**

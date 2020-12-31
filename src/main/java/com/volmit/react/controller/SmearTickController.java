@@ -11,7 +11,7 @@ import org.bukkit.craftbukkit.v1_16_R2.CraftWorld;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
-import org.json.JSONObject;
+import primal.json.JSONObject;
 import org.spigotmc.SpigotConfig;
 import org.spigotmc.SpigotWorldConfig;
 import org.spigotmc.TickLimiter;

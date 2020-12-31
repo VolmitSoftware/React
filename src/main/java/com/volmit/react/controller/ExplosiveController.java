@@ -18,7 +18,7 @@ import com.volmit.react.util.Average;
 import com.volmit.react.util.Controller;
 import com.volmit.react.util.M;
 
-import org.json.JSONObject;
+import primal.json.JSONObject;
 import primal.bukkit.world.MaterialBlock;
 import primal.lang.collection.GList;
 import primal.lang.collection.GSet;

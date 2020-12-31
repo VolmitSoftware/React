@@ -1,6 +1,6 @@
 package com.volmit.react.api;
 
-import org.json.JSONObject;
+import primal.json.JSONObject;
 
 public interface IRecord<T>
 {

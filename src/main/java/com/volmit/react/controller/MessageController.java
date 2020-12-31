@@ -18,7 +18,7 @@ import com.volmit.react.util.Ex;
 import com.volmit.react.util.F;
 import com.volmit.react.util.TXT;
 
-import org.json.JSONObject;
+import primal.json.JSONObject;
 import primal.lang.collection.GList;
 import primal.util.text.C;
 
