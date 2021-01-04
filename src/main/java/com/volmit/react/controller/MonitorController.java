@@ -235,6 +235,8 @@ public class MonitorController extends Controller
 				JSONArray jf = defaultMonitor();
 				pw.println(jf.toString(4));
 				pw.close();
+
+				
 			}
 
 			catch(IOException e)
