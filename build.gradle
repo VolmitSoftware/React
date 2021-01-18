@@ -28,12 +28,14 @@ task release {
     group 'react'
     dependsOn 'configureRelease'
     dependsOn 'shadowJar'
+    file(jar.archiveFile.get().getAsFile().getParentFile().getParentFile().getParentFile().getParentFile().getAbsolutePath() + '/build/resources/main/plugin.yml').delete()
 }
 
 task development {
     group 'react'
     dependsOn 'configureDev'
     dependsOn 'shadowJar'
+    file(jar.archiveFile.get().getAsFile().getParentFile().getParentFile().getParentFile().getParentFile().getAbsolutePath() + '/build/resources/main/plugin.yml').delete()
 }
 
 task configureDev {
@@ -50,7 +52,16 @@ task configureRelease {
     group 'react-utils'
     doFirst {
         shadowJar {
+            dependencies {
+                include dependency('org.bstats:bstats-bukkit')
+                include dependency('org.zeroturnaround:zt-zip')
+            }
+            dependencies {
+                relocate('org.bstats.bukkit', project.group + '.libraries.bstats')
+                relocate('org.zeroturnaround.zip', project.group + '.libraries.zip')
+            }
             zip64 true
+            minimize()
             archiveFileName = releasePath
         }
     }
