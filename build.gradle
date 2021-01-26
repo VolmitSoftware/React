@@ -5,7 +5,7 @@ plugins {
 }
 
 group 'com.volmit.react'
-version '6.641'
+version '6.643'
 
 repositories {
     mavenCentral()
@@ -35,7 +35,7 @@ task development {
     group 'react'
     dependsOn 'configureDev'
     dependsOn 'shadowJar'
-    file(jar.archiveFile.get().getAsFile().getParentFile().getParentFile().getParentFile().getParentFile().getAbsolutePath() + '/build/resources/main/plugin.yml').delete()
+    file(jar.archiveFile.get().getAsFile().getParentFile().getParentFile().getParentFile().getAbsolutePath() + '/build/resources/main/plugin.yml').delete()
 }
 
 task configureDev {
@@ -82,8 +82,10 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok:1.18.16'
     compileOnly 'org.projectlombok:lombok:1.18.16'
     compileOnly 'org.spigotmc.full:1.12.2:1.12.2'
+    //compileOnly 'org.bukkit.craftbukkit:1.16.5:1.16.5'
     compileOnly 'org.bukkit.craftbukkit:1.16.4:1.16.4'
     compileOnly 'org.bukkit.craftbukkit:1.16.3:1.16.3'
+    compileOnly 'org.bukkit.craftbukkit:1.16.2:1.16.2'
     compileOnly 'org.bukkit.craftbukkit:1.16.1:1.16.1'
     compileOnly 'org.bukkit.craftbukkit:1.15.1:1.15.1'
     compileOnly 'org.bukkit.craftbukkit:1.14.4:1.14.4'
