@@ -102,7 +102,7 @@ public class FeatureController extends Controller implements INMSBinding
 		}
 		catch(Throwable e)
 		{
-			System.out.println("No NMS Binder Found");
+			System.out.println("No NMS Binder Found. This usually occurs if you've updated to a new Spigot version that React does not yet support.");
 			e.printStackTrace();
 		}
 	}
