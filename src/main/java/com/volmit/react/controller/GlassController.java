@@ -1,9 +1,7 @@
 package com.volmit.react.controller;
 
-import org.bukkit.Color;
-import org.bukkit.DyeColor;
-import org.bukkit.Location;
-import org.bukkit.Material;
+import com.volmit.react.util.*;
+import org.bukkit.*;
 import org.bukkit.block.Hopper;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -22,11 +20,6 @@ import com.volmit.react.React;
 import com.volmit.react.Surge;
 import com.volmit.react.api.Permissable;
 import com.volmit.react.api.ReactPlayer;
-import com.volmit.react.util.A;
-import com.volmit.react.util.Controller;
-import com.volmit.react.util.Ex;
-import com.volmit.react.util.ParticleEffect;
-import com.volmit.react.util.Task;
 
 import primal.json.JSONObject;
 import primal.bukkit.world.MaterialBlock;
@@ -122,7 +115,16 @@ public class GlassController extends Controller
 				{
 					if(Config.GLASS_SHOW_PARTICLES)
 					{
-						ParticleEffect.SPELL_MOB.display(new ParticleEffect.OrdinaryColor(cc.get(i)), i, g);
+						if(Protocol.isAncientAPI()) {
+							ParticleEffect.SPELL_MOB.display(new ParticleEffect.OrdinaryColor(cc.get(i)), i, g);
+						} else {
+							double red = cc.get(i).getRed() / 255D;
+							double green = cc.get(i).getGreen() / 255D;
+							double blue = cc.get(i).getBlue() / 255D;
+							g.forEach((primal.lang.collection.Callback<Player>) player -> {
+								player.spawnParticle(Particle.SPELL_MOB, i, 0, red, green, blue, 1);
+							});
+						}
 					}
 
 					if(Config.GLASS_SHOW_BLOCKS)
