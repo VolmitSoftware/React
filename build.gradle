@@ -5,7 +5,7 @@ plugins {
 }
 
 group 'com.volmit.react'
-version '6.643'
+version '6.644'
 
 repositories {
     mavenCentral()
