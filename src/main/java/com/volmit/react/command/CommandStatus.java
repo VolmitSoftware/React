@@ -49,7 +49,7 @@ public class CommandStatus extends ReactCommand {
             p.getInventory().setItem(slot, makeBook());
             Gate.msgSuccess(p, "Status book given.");
         } else {
-			Gate.msgError(p, "Please empty a slot in your hotbar.");
+            Gate.msgError(p, "Please empty a slot in your hotbar.");
         }
     }
 

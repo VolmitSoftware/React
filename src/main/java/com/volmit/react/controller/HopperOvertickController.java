@@ -1,108 +1,85 @@
 package com.volmit.react.controller;
 
+import com.volmit.react.Config;
+import com.volmit.react.Surge;
+import com.volmit.react.util.Controller;
 import org.bukkit.Location;
 import org.bukkit.block.Hopper;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
-
-import com.volmit.react.Config;
-import com.volmit.react.Surge;
-import com.volmit.react.util.Controller;
-
 import primal.json.JSONObject;
 import primal.lang.collection.GList;
 
-public class HopperOvertickController extends Controller
-{
-	private GList<Location> possiblePlunge;
+public class HopperOvertickController extends Controller {
+    private GList<Location> possiblePlunge;
 
-	@Override
-	public void dump(JSONObject object)
-	{
-		object.put("plunging", possiblePlunge.size());
-	}
+    @Override
+    public void dump(JSONObject object) {
+        object.put("plunging", possiblePlunge.size());
+    }
 
-	@Override
-	public void start()
-	{
-		Surge.register(this);
-		possiblePlunge = new GList<Location>();
-	}
+    @Override
+    public void start() {
+        Surge.register(this);
+        possiblePlunge = new GList<Location>();
+    }
 
-	@Override
-	public void stop()
-	{
-		Surge.unregister(this);
-	}
+    @Override
+    public void stop() {
+        Surge.unregister(this);
+    }
 
-	@Override
-	public void tick()
-	{
-		possiblePlunge.clear();
-	}
+    @Override
+    public void tick() {
+        possiblePlunge.clear();
+    }
 
-	public boolean plunge(Hopper h)
-	{
-		if(!Config.HOPPER_OVERTICK_ENABLE)
-		{
-			return false;
-		}
+    public boolean plunge(Hopper h) {
+        if (!Config.HOPPER_OVERTICK_ENABLE) {
+            return false;
+        }
 
-		if(h.getInventory().firstEmpty() == -1)
-		{
-			if(possiblePlunge.contains(h.getLocation()))
-			{
-				return true;
-			}
+        if (h.getInventory().firstEmpty() == -1) {
+            if (possiblePlunge.contains(h.getLocation())) {
+                return true;
+            } else {
+                possiblePlunge.add(h.getLocation());
+            }
+        } else {
+            possiblePlunge.remove(h.getLocation());
+        }
 
-			else
-			{
-				possiblePlunge.add(h.getLocation());
-			}
-		}
+        return false;
+    }
 
-		else
-		{
-			possiblePlunge.remove(h.getLocation());
-		}
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void on(InventoryMoveItemEvent e) {
+        if (!Config.HOPPER_OVERTICK_ENABLE) {
+            return;
+        }
 
-		return false;
-	}
+        boolean tc = false;
+        boolean td = false;
 
-	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-	public void on(InventoryMoveItemEvent e)
-	{
-		if(!Config.HOPPER_OVERTICK_ENABLE)
-		{
-			return;
-		}
+        if (e.getDestination().getHolder() instanceof Hopper) {
+            tc = plunge((Hopper) e.getDestination().getHolder());
+        }
 
-		boolean tc = false;
-		boolean td = false;
+        if (e.getSource().getHolder() instanceof Hopper) {
+            td = plunge((Hopper) e.getSource().getHolder());
+        }
 
-		if(e.getDestination().getHolder() instanceof Hopper)
-		{
-			tc = plunge((Hopper) e.getDestination().getHolder());
-		}
+        e.setCancelled(tc || td);
+    }
 
-		if(e.getSource().getHolder() instanceof Hopper)
-		{
-			td = plunge((Hopper) e.getSource().getHolder());
-		}
+    @Override
+    public int getInterval() {
+        return 1;
+    }
 
-		e.setCancelled(tc || td);
-	}
-
-	@Override
-	public int getInterval()
-	{
-		return 1;
-	}
-
-	@Override
-	public boolean isUrgent()
-	{
-		return true;
-	}
+    @Override
+    public boolean isUrgent() {
+        return true;
+    }
 }

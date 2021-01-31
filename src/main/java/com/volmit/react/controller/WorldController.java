@@ -1,87 +1,73 @@
 package com.volmit.react.controller;
 
-import java.io.File;
-
-import org.bukkit.Bukkit;
-import org.bukkit.World;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.world.WorldUnloadEvent;
-
 import com.volmit.react.Config;
 import com.volmit.react.ReactPlugin;
 import com.volmit.react.Surge;
 import com.volmit.react.util.Controller;
+import org.bukkit.Bukkit;
+import org.bukkit.World;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.world.WorldUnloadEvent;
 import primal.json.JSONObject;
 
-public class WorldController extends Controller
-{
-	private boolean aboutToWipe;
+import java.io.File;
 
-	@Override
-	public void dump(JSONObject object)
-	{
+public class WorldController extends Controller {
+    private boolean aboutToWipe;
 
-	}
+    @Override
+    public void dump(JSONObject object) {
 
-	@Override
-	public void start()
-	{
-		aboutToWipe = false;
-		Surge.register(this);
+    }
 
-		for(World i : Bukkit.getWorlds())
-		{
-			Config.getWorldConfig(i);
-		}
-	}
+    @Override
+    public void start() {
+        aboutToWipe = false;
+        Surge.register(this);
 
-	@Override
-	public void stop()
-	{
-		Surge.unregister(this);
+        for (World i : Bukkit.getWorlds()) {
+            Config.getWorldConfig(i);
+        }
+    }
 
-		for(World i : Bukkit.getWorlds())
-		{
-			Config.closeWorldConfig(i);
-		}
+    @Override
+    public void stop() {
+        Surge.unregister(this);
 
-		if(aboutToWipe)
-		{
-			File fx = new File(ReactPlugin.i.getDataFolder(), "worlds");
+        for (World i : Bukkit.getWorlds()) {
+            Config.closeWorldConfig(i);
+        }
 
-			for(File i : fx.listFiles())
-			{
-				i.delete();
-			}
-		}
-	}
+        if (aboutToWipe) {
+            File fx = new File(ReactPlugin.i.getDataFolder(), "worlds");
 
-	@Override
-	public void tick()
-	{
+            for (File i : fx.listFiles()) {
+                i.delete();
+            }
+        }
+    }
 
-	}
+    @Override
+    public void tick() {
 
-	@EventHandler
-	public void on(WorldUnloadEvent e)
-	{
-		Config.closeWorldConfig(e.getWorld());
-	}
+    }
 
-	public void wipe()
-	{
-		aboutToWipe = true;
-	}
+    @EventHandler
+    public void on(WorldUnloadEvent e) {
+        Config.closeWorldConfig(e.getWorld());
+    }
 
-	@Override
-	public int getInterval()
-	{
-		return 1256;
-	}
+    public void wipe() {
+        aboutToWipe = true;
+    }
 
-	@Override
-	public boolean isUrgent()
-	{
-		return false;
-	}
+    @Override
+    public int getInterval() {
+        return 1256;
+    }
+
+    @Override
+    public boolean isUrgent() {
+        return false;
+    }
 }

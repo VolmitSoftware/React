@@ -1,186 +1,141 @@
 package com.volmit.react.action;
 
+import com.volmit.react.Gate;
+import com.volmit.react.ReactPlugin;
+import com.volmit.react.api.*;
+import com.volmit.react.util.*;
+import org.bukkit.Material;
+import org.bukkit.inventory.ItemStack;
+import primal.json.JSONObject;
+import primal.util.text.C;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.text.ParseException;
 
-import com.volmit.react.util.*;
-import org.bukkit.Material;
-import org.bukkit.inventory.ItemStack;
+public class ActionDump extends Action {
+    public ActionDump() {
+        super(ActionType.DUMP);
+        setNodes("dump", "du", "dmp", "support", "vsu");
+    }
 
-import com.volmit.react.Gate;
-import com.volmit.react.ReactPlugin;
-import com.volmit.react.api.Action;
-import com.volmit.react.api.ActionType;
-import com.volmit.react.api.IActionSource;
-import com.volmit.react.api.ISelector;
-import com.volmit.react.api.PlayerActionSource;
-import com.volmit.react.api.RAI;
+    @Override
+    public void enact(IActionSource as, ISelector... selectors) {
+        as.sendResponseActing("Collecting Information, Please Wait.");
 
-import primal.json.JSONObject;
-import primal.util.text.C;
+        if (isForceful()) {
+            try {
+                System.out.println("[React Dump] Forcing a debug!");
+                String urlDump = Paste.paste(Gate.dump().toString(4)) + ".json";
+                as.sendResponseSuccess("Cha-Ching " + C.WHITE + urlDump);
+                completeAction();
+                return;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
 
-public class ActionDump extends Action
-{
-	public ActionDump()
-	{
-		super(ActionType.DUMP);
-		setNodes("dump", "du", "dmp", "support", "vsu");
-	}
+        new A() {
+            @Override
+            public void run() {
+                try {
+                    System.out.println("[React Dump] Dumping configurations");
+                    JSONObject js = new JSONObject();
+                    String urlDump = Paste.paste(Gate.dump().toString(4));
+                    String urlConfig = readFile(new File(ReactPlugin.i.getDataFolder(), "config.yml"));
+                    String urlGoals = RAI.instance.getGoalManager().saveGoalsToPaste().split(" ")[1].trim() + ".json";
+                    js.put("dump", urlDump + ".json");
+                    js.put("config", urlConfig);
+                    js.put("goals", urlGoals);
+                    long time = 215000;
+                    int inter = 196;
+                    new S("dw") {
+                        @Override
+                        public void run() {
+                            System.out.println("[React Dump] Collecting timings report");
+                            long ms = M.ms();
 
-	@Override
-	public void enact(IActionSource as, ISelector... selectors)
-	{
-		as.sendResponseActing("Collecting Information, Please Wait.");
+                            new Task("task", inter) {
+                                @Override
+                                public void run() {
+                                    long elapsed = M.ms() - ms;
 
-		if(isForceful())
-		{
-			try
-			{
-				System.out.println("[React Dump] Forcing a debug!");
-				String urlDump = Paste.paste(Gate.dump().toString(4)) + ".json";
-				as.sendResponseSuccess("Cha-Ching " + C.WHITE + urlDump);
-				completeAction();
-				return;
-			}
+                                    if (elapsed < 2500) {
+                                        return;
+                                    }
 
-			catch(Exception e)
-			{
-				e.printStackTrace();
-			}
-		}
+                                    if (elapsed > time - 1234) {
+                                        cancel();
+                                    } else {
+                                        as.sendResponseActing("Collecting: " + C.WHITE + F.pc((double) elapsed / (double) time, 0) + " (about " + F.timeLong(time - elapsed, 0) + " left)");
+                                    }
+                                }
+                            };
 
-		new A()
-		{
-			@Override
-			public void run()
-			{
-				try
-				{
-					System.out.println("[React Dump] Dumping configurations");
-					JSONObject js = new JSONObject();
-					String urlDump = Paste.paste(Gate.dump().toString(4));
-					String urlConfig = readFile(new File(ReactPlugin.i.getDataFolder(), "config.yml"));
-					String urlGoals = RAI.instance.getGoalManager().saveGoalsToPaste().split(" ")[1].trim() + ".json";
-					js.put("dump", urlDump + ".json");
-					js.put("config", urlConfig);
-					js.put("goals", urlGoals);
-					long time = 215000;
-					int inter = 196;
-					new S("dw")
-					{
-						@Override
-						public void run()
-						{
-							System.out.println("[React Dump] Collecting timings report");
-							long ms = M.ms();
+                            Gate.pullTimingsReport(time, new Callback<String>() {
+                                @Override
+                                public void run(String t) {
+                                    new A() {
+                                        @Override
+                                        public void run() {
+                                            String vt = t;
 
-							new Task("task", inter)
-							{
-								@Override
-								public void run()
-								{
-									long elapsed = M.ms() - ms;
+                                            if (vt == null || vt.length() == 0) {
+                                                vt = "CHECK PAPER CONSOLE FOR TIMINGS LINK (unsupported)";
+                                            }
 
-									if(elapsed < 2500)
-									{
-										return;
-									}
+                                            js.put("timings", vt);
+                                            String url;
 
-									if(elapsed > time - 1234)
-									{
-										cancel();
-									}
+                                            try {
+                                                url = Paste.paste(js.toString(4)) + ".json";
 
-									else
-									{
-										as.sendResponseActing("Collecting: " + C.WHITE + F.pc((double) elapsed / (double) time, 0) + " (about " + F.timeLong(time - elapsed, 0) + " left)");
-									}
-								}
-							};
+                                                new S("tfin") {
+                                                    @Override
+                                                    public void run() {
+                                                        Gate.msgSuccess(((PlayerActionSource) as).getPlayer(), "Dump Package Created: " + C.WHITE + url);
+                                                        completeAction();
+                                                    }
+                                                };
+                                            } catch (Exception e) {
+                                                e.printStackTrace();
+                                            }
+                                        }
+                                    };
+                                }
+                            });
+                        }
+                    };
+                } catch (Throwable e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+    }
 
-							Gate.pullTimingsReport(time, new Callback<String>()
-							{
-								@Override
-								public void run(String t)
-								{
-									new A()
-									{
-										@Override
-										public void run()
-										{
-											String vt = t;
+    private String readFile(File file) throws IOException, ParseException, org.json.simple.parser.ParseException {
+        StringBuilder c = new StringBuilder();
+        String l = "";
+        BufferedReader bu = new BufferedReader(new FileReader(file));
 
-											if(vt == null || vt.length() == 0)
-											{
-												vt = "CHECK PAPER CONSOLE FOR TIMINGS LINK (unsupported)";
-											}
+        while ((l = bu.readLine()) != null) {
+            c.append(l).append("\n");
+        }
 
-											js.put("timings", vt);
-											String url;
+        bu.close();
 
-											try
-											{
-												url = Paste.paste(js.toString(4)) + ".json";
+        return Paste.paste(c.toString()) + "." + file.getName().split("\\.")[file.getName().split("\\.").length - 1];
+    }
 
-												new S("tfin")
-												{
-													@Override
-													public void run()
-													{
-														Gate.msgSuccess(((PlayerActionSource) as).getPlayer(), "Dump Package Created: " + C.WHITE + url);
-														completeAction();
-													}
-												};
-											}
+    @Override
+    public String getNode() {
+        return "dump";
+    }
 
-											catch(Exception e)
-											{
-												e.printStackTrace();
-											}
-										}
-									};
-								}
-							});
-						}
-					};
-				}
-
-				catch(Throwable e)
-				{
-					e.printStackTrace();
-				}
-			}
-		};
-	}
-
-	private String readFile(File file) throws IOException, ParseException, org.json.simple.parser.ParseException
-	{
-		StringBuilder c = new StringBuilder();
-		String l = "";
-		BufferedReader bu = new BufferedReader(new FileReader(file));
-
-		while((l = bu.readLine()) != null)
-		{
-			c.append(l).append("\n");
-		}
-
-		bu.close();
-
-		return Paste.paste(c.toString()) + "." + file.getName().split("\\.")[file.getName().split("\\.").length - 1];
-	}
-
-	@Override
-	public String getNode()
-	{
-		return "dump";
-	}
-
-	@Override
-	public ItemStack getIcon()
-	{
-		return new ItemStack(Material.BOOKSHELF);
-	}
+    @Override
+    public ItemStack getIcon() {
+        return new ItemStack(Material.BOOKSHELF);
+    }
 }

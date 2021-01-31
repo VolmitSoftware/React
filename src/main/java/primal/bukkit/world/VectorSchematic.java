@@ -159,16 +159,9 @@ public class VectorSchematic
 		VectorSchematic other = (VectorSchematic) obj;
 		if(schematic == null)
 		{
-			if(other.schematic != null)
-			{
-				return false;
-			}
+			return other.schematic == null;
 		}
-		else if(!schematic.equals(other.schematic))
-		{
-			return false;
-		}
-		return true;
+		else return schematic.equals(other.schematic);
 	}
 
 	/**

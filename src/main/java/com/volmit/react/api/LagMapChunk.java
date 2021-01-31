@@ -1,187 +1,146 @@
 package com.volmit.react.api;
 
-import org.bukkit.Chunk;
-import org.bukkit.World;
-
 import com.volmit.react.controller.EventController;
 import com.volmit.react.util.Ex;
-
+import org.bukkit.Chunk;
+import org.bukkit.World;
 import primal.lang.collection.GMap;
 
-public class LagMapChunk implements Comparable<LagMapChunk>
-{
-	private GMap<ChunkIssue, Double> hits;
-	private Chunk c;
+public class LagMapChunk implements Comparable<LagMapChunk> {
+    private final GMap<ChunkIssue, Double> hits;
+    private final Chunk c;
 
-	public LagMapChunk(Chunk c)
-	{
-		this.c = c;
-		hits = new GMap<ChunkIssue, Double>();
-	}
+    public LagMapChunk(Chunk c) {
+        this.c = c;
+        hits = new GMap<ChunkIssue, Double>();
+    }
 
-	public GMap<ChunkIssue, Double> getMS()
-	{
-		GMap<ChunkIssue, Double> k = EventController.map.getGrandTotal();
-		GMap<ChunkIssue, Double> m = new GMap<ChunkIssue, Double>();
+    public GMap<ChunkIssue, Double> getMS() {
+        GMap<ChunkIssue, Double> k = EventController.map.getGrandTotal();
+        GMap<ChunkIssue, Double> m = new GMap<ChunkIssue, Double>();
 
-		try
-		{
-			for(ChunkIssue type : hits.k())
-			{
-				if(!hits.containsKey(type) || !k.containsKey(type))
-				{
-					m.put(type, 0.0);
-					continue;
-				}
+        try {
+            for (ChunkIssue type : hits.k()) {
+                if (!hits.containsKey(type) || !k.containsKey(type)) {
+                    m.put(type, 0.0);
+                    continue;
+                }
 
-				m.put(type, type.getMS() * (hits.get(type) / k.get(type)));
-			}
-		}
+                m.put(type, type.getMS() * (hits.get(type) / k.get(type)));
+            }
+        } catch (Throwable e) {
+            Ex.t(e);
+        }
 
-		catch(Throwable e)
-		{
-			Ex.t(e);
-		}
+        return m;
+    }
 
-		return m;
-	}
+    public GMap<ChunkIssue, Double> getPercent() {
+        GMap<ChunkIssue, Double> k = EventController.map.getGrandTotal();
+        GMap<ChunkIssue, Double> m = new GMap<ChunkIssue, Double>();
 
-	public GMap<ChunkIssue, Double> getPercent()
-	{
-		GMap<ChunkIssue, Double> k = EventController.map.getGrandTotal();
-		GMap<ChunkIssue, Double> m = new GMap<ChunkIssue, Double>();
+        try {
+            for (ChunkIssue type : hits.k()) {
+                if (!hits.containsKey(type) || !k.containsKey(type)) {
+                    m.put(type, 0.0);
+                    continue;
+                }
 
-		try
-		{
-			for(ChunkIssue type : hits.k())
-			{
-				if(!hits.containsKey(type) || !k.containsKey(type))
-				{
-					m.put(type, 0.0);
-					continue;
-				}
+                m.put(type, hits.get(type) / k.get(type));
+            }
+        } catch (Throwable e) {
+            Ex.t(e);
+        }
 
-				m.put(type, hits.get(type) / k.get(type));
-			}
-		}
+        return m;
+    }
 
-		catch(Throwable e)
-		{
-			Ex.t(e);
-		}
+    public double totalMS() {
+        double ms = 0;
 
-		return m;
-	}
+        GMap<ChunkIssue, Double> k = EventController.map.getGrandTotal();
 
-	public double totalMS()
-	{
-		double ms = 0;
+        for (ChunkIssue type : hits.k()) {
+            if (!hits.containsKey(type) || !k.containsKey(type)) {
+                continue;
+            }
 
-		GMap<ChunkIssue, Double> k = EventController.map.getGrandTotal();
+            ms += type.getMS() * (hits.get(type) / k.get(type));
+        }
 
-		for(ChunkIssue type : hits.k())
-		{
-			if(!hits.containsKey(type) || !k.containsKey(type))
-			{
-				continue;
-			}
+        if (hits.containsKey(ChunkIssue.PHYSICS) && hits.containsKey(ChunkIssue.REDSTONE)) {
+            ms -= ChunkIssue.PHYSICS.getMS() * (hits.get(ChunkIssue.PHYSICS) / k.get(ChunkIssue.PHYSICS));
+        } else if (hits.containsKey(ChunkIssue.PHYSICS) && hits.containsKey(ChunkIssue.FLUID)) {
+            ms -= ChunkIssue.PHYSICS.getMS() * (hits.get(ChunkIssue.PHYSICS) / k.get(ChunkIssue.PHYSICS));
+        }
 
-			ms += type.getMS() * (hits.get(type) / k.get(type));
-		}
+        return ms;
+    }
 
-		if(hits.containsKey(ChunkIssue.PHYSICS) && hits.containsKey(ChunkIssue.REDSTONE))
-		{
-			ms -= ChunkIssue.PHYSICS.getMS() * (hits.get(ChunkIssue.PHYSICS) / k.get(ChunkIssue.PHYSICS));
-		}
+    public double getMS(ChunkIssue type) {
+        GMap<ChunkIssue, Double> k = EventController.map.getGrandTotal();
 
-		else if(hits.containsKey(ChunkIssue.PHYSICS) && hits.containsKey(ChunkIssue.FLUID))
-		{
-			ms -= ChunkIssue.PHYSICS.getMS() * (hits.get(ChunkIssue.PHYSICS) / k.get(ChunkIssue.PHYSICS));
-		}
+        if (!hits.containsKey(type) || !k.containsKey(type)) {
+            return 0;
+        }
 
-		return ms;
-	}
+        return type.getMS() * (hits.get(type) / k.get(type));
+    }
 
-	public double getMS(ChunkIssue type)
-	{
-		GMap<ChunkIssue, Double> k = EventController.map.getGrandTotal();
+    public void hit(ChunkIssue type, double amt) {
+        if (!hits.containsKey(type)) {
+            hits.put(type, 0.0);
+        }
 
-		if(!hits.containsKey(type) || !k.containsKey(type))
-		{
-			return 0;
-		}
+        hits.put(type, hits.get(type) + amt);
+    }
 
-		return type.getMS() * (hits.get(type) / k.get(type));
-	}
+    public void hit(ChunkIssue type) {
+        hit(type, 20);
+    }
 
-	public void hit(ChunkIssue type, double amt)
-	{
-		if(!hits.containsKey(type))
-		{
-			hits.put(type, 0.0);
-		}
+    public int getX() {
+        return c.getX();
+    }
 
-		hits.put(type, hits.get(type) + amt);
-	}
+    public int getZ() {
+        return c.getZ();
+    }
 
-	public void hit(ChunkIssue type)
-	{
-		hit(type, 20);
-	}
+    public double totalScore() {
+        double d = 0;
 
-	public int getX()
-	{
-		return c.getX();
-	}
+        for (Double i : getHits().v()) {
+            d += i;
+        }
 
-	public int getZ()
-	{
-		return c.getZ();
-	}
+        return d;
+    }
 
-	public double totalScore()
-	{
-		double d = 0;
+    public GMap<ChunkIssue, Double> getHits() {
+        return hits;
+    }
 
-		for(Double i : getHits().v())
-		{
-			d += i;
-		}
+    public void pump() {
+        for (ChunkIssue i : getHits().k()) {
+            hits.put(i, hits.get(i) / 1.01);
 
-		return d;
-	}
+            if (hits.get(i) < 0.5) {
+                hits.remove(i);
+            }
+        }
+    }
 
-	public GMap<ChunkIssue, Double> getHits()
-	{
-		return hits;
-	}
+    @Override
+    public int compareTo(LagMapChunk o) {
+        return (int) (1000.0 * (totalScore() - o.totalScore()));
+    }
 
-	public void pump()
-	{
-		for(ChunkIssue i : getHits().k())
-		{
-			hits.put(i, hits.get(i) / 1.01);
+    public Chunk getC() {
+        return c;
+    }
 
-			if(hits.get(i) < 0.5)
-			{
-				hits.remove(i);
-			}
-		}
-	}
-
-	@Override
-	public int compareTo(LagMapChunk o)
-	{
-		return (int) (1000.0 * (totalScore() - o.totalScore()));
-	}
-
-	public Chunk getC()
-	{
-		return c;
-	}
-
-	public World getWorld()
-	{
-		return c.getWorld();
-	}
+    public World getWorld() {
+        return c.getWorld();
+    }
 }

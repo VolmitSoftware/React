@@ -8,9 +8,9 @@ public enum WindowResolution
 	W5_H1(5, 1, InventoryType.HOPPER),
 	W3_H3(3, 3, InventoryType.DROPPER);
 
-	private int width;
-	private int maxHeight;
-	private InventoryType type;
+	private final int width;
+	private final int maxHeight;
+	private final InventoryType type;
 
 	WindowResolution(int w, int h, InventoryType type)
 	{

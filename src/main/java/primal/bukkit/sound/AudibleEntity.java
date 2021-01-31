@@ -14,7 +14,7 @@ import primal.bukkit.world.Area;
  */
 public class AudibleEntity
 {
-	private Entity entity;
+	private final Entity entity;
 	private Audible audible;
 	private SR task;
 

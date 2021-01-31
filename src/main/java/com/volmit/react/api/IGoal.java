@@ -2,23 +2,22 @@ package com.volmit.react.api;
 
 import primal.lang.collection.GList;
 
-public interface IGoal
-{
-	GList<IGoal> getSubgoals();
+public interface IGoal {
+    GList<IGoal> getSubgoals();
 
-	void propigate();
+    void propigate();
 
-	void onPropigated();
+    void onPropigated();
 
-	String getTag();
+    String getTag();
 
-	GList<IGoal> getFailingSubgoals();
+    GList<IGoal> getFailingSubgoals();
 
-	boolean isFailing();
+    boolean isFailing();
 
-	boolean onCheckFailing();
+    boolean onCheckFailing();
 
-	void update();
+    void update();
 
-	void addGoal(IGoal subgoal);
+    void addGoal(IGoal subgoal);
 }

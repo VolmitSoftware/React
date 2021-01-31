@@ -1,146 +1,110 @@
 package com.volmit.react.action;
 
-import java.io.File;
-
+import com.volmit.react.Gate;
+import com.volmit.react.ReactPlugin;
+import com.volmit.react.api.*;
+import com.volmit.react.util.*;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
-
-import com.volmit.react.Gate;
-import com.volmit.react.ReactPlugin;
-import com.volmit.react.api.Action;
-import com.volmit.react.api.ActionType;
-import com.volmit.react.api.IActionSource;
-import com.volmit.react.api.ISelector;
-import com.volmit.react.api.PlayerActionSource;
-import com.volmit.react.util.A;
-import com.volmit.react.util.DataCluster;
-import com.volmit.react.util.F;
-import com.volmit.react.util.Paste;
-import com.volmit.react.util.S;
-
 import primal.lang.collection.GMap;
 import primal.util.text.C;
 
-public class ActionFileSize extends Action
-{
-	public ActionFileSize()
-	{
-		super(ActionType.FILE_SIZE);
-		setNodes("filesize", "fs", "file");
-	}
+import java.io.File;
 
-	@Override
-	public void enact(IActionSource source, ISelector... selectors)
-	{
-		source.sendResponseActing("Calculating File Sizes Please Wait...");
-		GMap<String, Long> map = new GMap<String, Long>();
+public class ActionFileSize extends Action {
+    public ActionFileSize() {
+        super(ActionType.FILE_SIZE);
+        setNodes("filesize", "fs", "file");
+    }
 
-		File f = new File(".");
+    @Override
+    public void enact(IActionSource source, ISelector... selectors) {
+        source.sendResponseActing("Calculating File Sizes Please Wait...");
+        GMap<String, Long> map = new GMap<String, Long>();
 
-		new A()
-		{
-			@Override
-			public void run()
-			{
-				long tw = 0;
+        File f = new File(".");
 
-				for(World i : Bukkit.getWorlds())
-				{
-					long ws = size(i.getWorldFolder());
-					map.put("worlds.world." + i.getName().replaceAll(" ", "-"), ws);
-					tw += ws;
-				}
+        new A() {
+            @Override
+            public void run() {
+                long tw = 0;
 
-				for(Plugin i : Bukkit.getPluginManager().getPlugins())
-				{
-					File fxx = i.getDataFolder();
+                for (World i : Bukkit.getWorlds()) {
+                    long ws = size(i.getWorldFolder());
+                    map.put("worlds.world." + i.getName().replaceAll(" ", "-"), ws);
+                    tw += ws;
+                }
 
-					if(fxx.exists() && fxx.isDirectory())
-					{
-						map.put("plugins.plugin-data." + i.getName(), size(fxx));
-					}
-				}
+                for (Plugin i : Bukkit.getPluginManager().getPlugins()) {
+                    File fxx = i.getDataFolder();
 
-				map.put("plugins.total", size(ReactPlugin.i.getDataFolder().getParentFile()));
-				map.put("everything", size(f));
-				map.put("worlds.total", tw);
+                    if (fxx.exists() && fxx.isDirectory()) {
+                        map.put("plugins.plugin-data." + i.getName(), size(fxx));
+                    }
+                }
 
-				DataCluster cc = new DataCluster();
+                map.put("plugins.total", size(ReactPlugin.i.getDataFolder().getParentFile()));
+                map.put("everything", size(f));
+                map.put("worlds.total", tw);
 
-				for(String i : map.k())
-				{
-					cc.set(i, F.ofSize(map.get(i), 1000, 2));
-				}
+                DataCluster cc = new DataCluster();
 
-				String d = cc.toFileConfiguration().saveToString();
+                for (String i : map.k()) {
+                    cc.set(i, F.ofSize(map.get(i), 1000, 2));
+                }
 
-				try
-				{
-					String u = Paste.paste(d);
+                String d = cc.toFileConfiguration().saveToString();
 
-					new S("respond")
-					{
-						@Override
-						public void run()
-						{
-							Gate.msgSuccess(((PlayerActionSource) source).getPlayer(), "Ding! " + C.WHITE + C.UNDERLINE + u + ".txt");
-						}
-					};
-				}
+                try {
+                    String u = Paste.paste(d);
 
-				catch(Exception e)
-				{
-					e.printStackTrace();
+                    new S("respond") {
+                        @Override
+                        public void run() {
+                            Gate.msgSuccess(((PlayerActionSource) source).getPlayer(), "Ding! " + C.WHITE + C.UNDERLINE + u + ".txt");
+                        }
+                    };
+                } catch (Exception e) {
+                    e.printStackTrace();
 
-					new S("respond")
-					{
-						@Override
-						public void run()
-						{
-							source.sendResponseActing(d);
-							source.sendResponseError("Failed to paste to hasteb.in.");
-						}
-					};
-				}
-			}
-		};
-	}
+                    new S("respond") {
+                        @Override
+                        public void run() {
+                            source.sendResponseActing(d);
+                            source.sendResponseError("Failed to paste to hasteb.in.");
+                        }
+                    };
+                }
+            }
+        };
+    }
 
-	public long size(File f)
-	{
-		long size = 0;
+    public long size(File f) {
+        long size = 0;
 
-		if(f != null && f.exists())
-		{
-			if(f.isDirectory())
-			{
-				for(File i : f.listFiles())
-				{
-					size += size(i);
-				}
-			}
+        if (f != null && f.exists()) {
+            if (f.isDirectory()) {
+                for (File i : f.listFiles()) {
+                    size += size(i);
+                }
+            } else {
+                size += f.length();
+            }
+        }
 
-			else
-			{
-				size += f.length();
-			}
-		}
+        return size;
+    }
 
-		return size;
-	}
+    @Override
+    public String getNode() {
+        return "file-size";
+    }
 
-	@Override
-	public String getNode()
-	{
-		return "file-size";
-	}
-
-	@Override
-	public ItemStack getIcon()
-	{
-		return new ItemStack(Material.PAPER);
-	}
+    @Override
+    public ItemStack getIcon() {
+        return new ItemStack(Material.PAPER);
+    }
 }

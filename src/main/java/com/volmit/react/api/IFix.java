@@ -2,17 +2,16 @@ package com.volmit.react.api;
 
 import org.bukkit.command.CommandSender;
 
-public interface IFix
-{
-	String getId();
+public interface IFix {
+    String getId();
 
-	String[] getAliases();
+    String[] getAliases();
 
-	String getName();
+    String getName();
 
-	String getDescription();
+    String getDescription();
 
-	String getUsage();
+    String getUsage();
 
-	void run(CommandSender sender, String[] args);
+    void run(CommandSender sender, String[] args);
 }

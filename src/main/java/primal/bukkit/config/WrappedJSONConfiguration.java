@@ -10,7 +10,7 @@ import primal.logic.io.VIO;
 
 public class WrappedJSONConfiguration implements ConfigWrapper
 {
-	private JSONObject wrapped;
+	private final JSONObject wrapped;
 
 	public WrappedJSONConfiguration()
 	{

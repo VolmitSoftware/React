@@ -1,217 +1,172 @@
 package com.volmit.react.api;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
-
 import com.volmit.react.util.Ex;
-
 import primal.json.JSONObject;
 import primal.lang.collection.GList;
 import primal.lang.collection.GMap;
 
-public abstract class RecordBook<T extends IRecord<?>> implements IRecordBook<T>
-{
-	private File recordFile;
-	private JSONObject js;
-	private String type;
+import java.io.*;
 
-	public RecordBook(String type, File recordFile)
-	{
-		this.recordFile = recordFile;
-		this.type = type;
-		js = new JSONObject();
+public abstract class RecordBook<T extends IRecord<?>> implements IRecordBook<T> {
+    private final File recordFile;
+    private final String type;
+    private JSONObject js;
 
-		if(!recordFile.exists())
-		{
-			try
-			{
-				write();
-			}
+    public RecordBook(String type, File recordFile) {
+        this.recordFile = recordFile;
+        this.type = type;
+        js = new JSONObject();
 
-			catch(Throwable e)
-			{
-				Ex.t(e);
-			}
-		}
+        if (!recordFile.exists()) {
+            try {
+                write();
+            } catch (Throwable e) {
+                Ex.t(e);
+            }
+        }
 
-		try
-		{
-			read();
-		}
+        try {
+            read();
+        } catch (Throwable e) {
+            Ex.t(e);
+        }
+    }
 
-		catch(Throwable e)
-		{
-			Ex.t(e);
-		}
-	}
+    @Override
+    public void save() {
+        try {
+            write();
+        } catch (Throwable e) {
+            Ex.t(e);
+        }
+    }
 
-	@Override
-	public void save()
-	{
-		try
-		{
-			write();
-		}
+    @Override
+    public int getSize() {
+        return js.keySet().size();
+    }
 
-		catch(Throwable e)
-		{
-			Ex.t(e);
-		}
-	}
+    @Override
+    public void addRecord(T t) {
+        js.put(t.getRecordTime() + "", t.toJSON());
+    }
 
-	@Override
-	public int getSize()
-	{
-		return js.keySet().size();
-	}
+    @Override
+    public T getRecord(long record) {
+        if (js.has("" + record)) {
+            T t = createDummyRecord(record, type);
+            JSONObject jsx = js.getJSONObject("" + record);
+            t.fromJSON(jsx);
+            return t;
+        }
 
-	@Override
-	public void addRecord(T t)
-	{
-		js.put(t.getRecordTime() + "", t.toJSON());
-	}
+        return null;
+    }
 
-	@Override
-	public T getRecord(long record)
-	{
-		if(js.has("" + record))
-		{
-			T t = createDummyRecord(record, type);
-			JSONObject jsx = js.getJSONObject("" + record);
-			t.fromJSON(jsx);
-			return t;
-		}
+    public abstract T createDummyRecord(long time, String type);
 
-		return null;
-	}
+    @Override
+    public long getOldestRecordTime() {
+        long beginningOfTime = Long.MAX_VALUE;
 
-	public abstract T createDummyRecord(long time, String type);
+        for (String i : js.keySet()) {
+            long k = Long.valueOf(i);
 
-	@Override
-	public long getOldestRecordTime()
-	{
-		long beginningOfTime = Long.MAX_VALUE;
+            if (k < beginningOfTime) {
+                beginningOfTime = k;
+            }
+        }
 
-		for(String i : js.keySet())
-		{
-			long k = Long.valueOf(i);
+        return beginningOfTime;
+    }
 
-			if(k < beginningOfTime)
-			{
-				beginningOfTime = k;
-			}
-		}
+    @Override
+    public long getLatestRecordTime() {
+        long beginningOfTime = Long.MIN_VALUE;
 
-		return beginningOfTime;
-	}
+        for (String i : js.keySet()) {
+            long k = Long.valueOf(i);
 
-	@Override
-	public long getLatestRecordTime()
-	{
-		long beginningOfTime = Long.MIN_VALUE;
+            if (k > beginningOfTime) {
+                beginningOfTime = k;
+            }
+        }
 
-		for(String i : js.keySet())
-		{
-			long k = Long.valueOf(i);
+        return beginningOfTime;
+    }
 
-			if(k > beginningOfTime)
-			{
-				beginningOfTime = k;
-			}
-		}
+    private boolean within(long v, long from, long to) {
+        return v >= from && v <= to;
+    }
 
-		return beginningOfTime;
-	}
+    @Override
+    public int countRecords(long from, long to) {
+        int c = 0;
 
-	private boolean within(long v, long from, long to)
-	{
-		return v >= from && v <= to;
-	}
+        for (String i : js.keySet()) {
+            long k = Long.valueOf(i);
+            c += within(k, from, to) ? 1 : 0;
+        }
 
-	@Override
-	public int countRecords(long from, long to)
-	{
-		int c = 0;
+        return c;
+    }
 
-		for(String i : js.keySet())
-		{
-			long k = Long.valueOf(i);
-			c += within(k, from, to) ? 1 : 0;
-		}
+    @Override
+    public GMap<Long, T> getRecords(long from, long to) {
+        GMap<Long, T> v = new GMap<Long, T>();
 
-		return c;
-	}
+        for (String i : js.keySet()) {
+            long k = Long.valueOf(i);
 
-	@Override
-	public GMap<Long, T> getRecords(long from, long to)
-	{
-		GMap<Long, T> v = new GMap<Long, T>();
+            if (within(k, from, to)) {
+                v.put(k, getRecord(k));
+            }
+        }
 
-		for(String i : js.keySet())
-		{
-			long k = Long.valueOf(i);
+        return v;
+    }
 
-			if(within(k, from, to))
-			{
-				v.put(k, getRecord(k));
-			}
-		}
+    @Override
+    public int purgeRecordsBefore(long time) {
+        int prg = 0;
 
-		return v;
-	}
+        for (String i : new GList<String>(js.keySet())) {
+            long k = Long.valueOf(i);
 
-	@Override
-	public int purgeRecordsBefore(long time)
-	{
-		int prg = 0;
+            if (within(k, Long.MIN_VALUE, time)) {
+                prg++;
+                js.remove("" + k);
+            }
+        }
 
-		for(String i : new GList<String>(js.keySet()))
-		{
-			long k = Long.valueOf(i);
+        return prg;
+    }
 
-			if(within(k, Long.MIN_VALUE, time))
-			{
-				prg++;
-				js.remove("" + k);
-			}
-		}
+    @Override
+    public File getFile() {
+        return recordFile;
+    }
 
-		return prg;
-	}
+    private void write() throws IOException {
+        recordFile.getParentFile().mkdirs();
+        recordFile.createNewFile();
+        FileWriter fw = new FileWriter(recordFile);
+        PrintWriter pw = new PrintWriter(fw);
+        pw.println(js.toString(4));
+        pw.close();
+    }
 
-	@Override
-	public File getFile()
-	{
-		return recordFile;
-	}
+    private void read() throws IOException {
+        FileReader fin = new FileReader(recordFile);
+        BufferedReader bu = new BufferedReader(fin);
+        String line;
+        StringBuilder content = new StringBuilder();
 
-	private void write() throws IOException
-	{
-		recordFile.getParentFile().mkdirs();
-		recordFile.createNewFile();
-		FileWriter fw = new FileWriter(recordFile);
-		PrintWriter pw = new PrintWriter(fw);
-		pw.println(js.toString(4));
-		pw.close();
-	}
+        while ((line = bu.readLine()) != null) {
+            content.append(line);
+        }
 
-	private void read() throws IOException
-	{
-		FileReader fin = new FileReader(recordFile);
-		BufferedReader bu = new BufferedReader(fin);
-		String line;
-		StringBuilder content = new StringBuilder();
-
-		while((line = bu.readLine()) != null)
-		{
-			content.append(line);
-		}
-
-		bu.close();
-		js = new JSONObject(content.toString());
-	}
+        bu.close();
+        js = new JSONObject(content.toString());
+    }
 }

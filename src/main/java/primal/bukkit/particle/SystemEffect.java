@@ -12,7 +12,7 @@ import primal.lang.collection.GList;
  */
 public class SystemEffect implements VisualEffect
 {
-	private GList<VisualEffect> effects;
+	private final GList<VisualEffect> effects;
 
 	/**
 	 * Create a system effect

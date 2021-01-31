@@ -7,7 +7,7 @@ package primal.util.text;
  */
 public class ProgressSpinner
 {
-	private String[] chars;
+	private final String[] chars;
 	private int index;
 	public static final ProgressSpinner DEFAULT;
 	public static final ProgressSpinner NETWORK;

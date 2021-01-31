@@ -3,74 +3,61 @@ package com.volmit.react.api;
 import primal.lang.collection.GList;
 import primal.util.text.C;
 
-public class MonitorHeading
-{
-	private ISampler head;
-	private GList<ISampler> children;
-	private String name;
+public class MonitorHeading {
+    private ISampler head;
+    private GList<ISampler> children;
+    private String name;
 
-	public MonitorHeading(String name, ISampler head)
-	{
-		this.name = name;
-		this.head = head;
-		children = new GList<ISampler>();
-	}
+    public MonitorHeading(String name, ISampler head) {
+        this.name = name;
+        this.head = head;
+        children = new GList<ISampler>();
+    }
 
-	public void addSampler(ISampler s)
-	{
-		children.add(s);
-	}
+    public void addSampler(ISampler s) {
+        children.add(s);
+    }
 
-	public ISampler getHead()
-	{
-		return head;
-	}
+    public ISampler getHead() {
+        return head;
+    }
 
-	public void setHead(ISampler head)
-	{
-		this.head = head;
-	}
+    public void setHead(ISampler head) {
+        this.head = head;
+    }
 
-	public GList<ISampler> getChildren()
-	{
-		return children;
-	}
+    public GList<ISampler> getChildren() {
+        return children;
+    }
 
-	public String getHeadText()
-	{
-		return getHead().getColor() + getHead().get() + C.RESET + getHead().getColor() + " " + getHead().getID();
-	}
+    public void setChildren(GList<ISampler> children) {
+        this.children = children;
+    }
 
-	public String getChildText()
-	{
-		StringBuilder m = new StringBuilder();
+    public String getHeadText() {
+        return getHead().getColor() + getHead().get() + C.RESET + getHead().getColor() + " " + getHead().getID();
+    }
 
-		for(ISampler i : getChildren())
-		{
-			String p = i.getColor() + i.get() + C.RESET + i.getColor() + " " + i.getID();
-			m.append(" ").append(p);
-		}
+    public String getChildText() {
+        StringBuilder m = new StringBuilder();
 
-		if(m.length() < 2)
-		{
-			return m.toString();
-		}
+        for (ISampler i : getChildren()) {
+            String p = i.getColor() + i.get() + C.RESET + i.getColor() + " " + i.getID();
+            m.append(" ").append(p);
+        }
 
-		return m.substring(1);
-	}
+        if (m.length() < 2) {
+            return m.toString();
+        }
 
-	public String getName()
-	{
-		return name;
-	}
+        return m.substring(1);
+    }
 
-	public void setName(String name)
-	{
-		this.name = name;
-	}
+    public String getName() {
+        return name;
+    }
 
-	public void setChildren(GList<ISampler> children)
-	{
-		this.children = children;
-	}
+    public void setName(String name) {
+        this.name = name;
+    }
 }

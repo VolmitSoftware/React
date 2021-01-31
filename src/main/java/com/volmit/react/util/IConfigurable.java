@@ -1,6 +1,5 @@
 package com.volmit.react.util;
 
-public interface IConfigurable
-{
+public interface IConfigurable {
 
 }

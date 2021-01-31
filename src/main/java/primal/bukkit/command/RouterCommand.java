@@ -12,7 +12,7 @@ import org.bukkit.command.CommandSender;
  */
 public class RouterCommand extends org.bukkit.command.Command
 {
-	private CommandExecutor ex;
+	private final CommandExecutor ex;
 	private String usage;
 
 	/**

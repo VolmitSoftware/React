@@ -3,7 +3,7 @@ package primal.compute.math;
 public class CDou
 {
 	private double number;
-	private double max;
+	private final double max;
 
 	public CDou(double max)
 	{

@@ -15,10 +15,10 @@ public abstract class CatalystPacketListener implements PacketListener
 {
 	private TinyProtocol protocol;
 	protected GMap<String, String> teamCache;
-	private Map<Class<?>, List<PacketHandler<?>>> inHandlers = new HashMap<>();
-	private Map<Class<?>, List<PacketHandler<?>>> outHandlers = new HashMap<>();
-	private List<PacketHandler<?>> inGlobal = new ArrayList<>();
-	private List<PacketHandler<?>> outGlobal = new ArrayList<>();
+	private final Map<Class<?>, List<PacketHandler<?>>> inHandlers = new HashMap<>();
+	private final Map<Class<?>, List<PacketHandler<?>>> outHandlers = new HashMap<>();
+	private final List<PacketHandler<?>> inGlobal = new ArrayList<>();
+	private final List<PacketHandler<?>> outGlobal = new ArrayList<>();
 
 	public CatalystPacketListener()
 	{

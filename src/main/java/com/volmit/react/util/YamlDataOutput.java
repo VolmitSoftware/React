@@ -1,101 +1,73 @@
 package com.volmit.react.util;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-
 import primal.lang.collection.GList;
 
-public class YamlDataOutput implements IDataOutput
-{
-	@Override
-	public void write(DataCluster c, File f)
-	{
-		try
-		{
-			c.toFileConfiguration().save(f);
-			GList<String> lines = new GList<String>();
-			GList<String> newLines = new GList<String>();
-			BufferedReader r = new BufferedReader(new InputStreamReader(new FileInputStream(f)));
-			String line;
+import java.io.*;
 
-			while((line = r.readLine()) != null)
-			{
-				lines.add(line);
-			}
+public class YamlDataOutput implements IDataOutput {
+    @Override
+    public void write(DataCluster c, File f) {
+        try {
+            c.toFileConfiguration().save(f);
+            GList<String> lines = new GList<String>();
+            GList<String> newLines = new GList<String>();
+            BufferedReader r = new BufferedReader(new InputStreamReader(new FileInputStream(f)));
+            String line;
 
-			r.close();
+            while ((line = r.readLine()) != null) {
+                lines.add(line);
+            }
 
-			FileOutputStream fos = new FileOutputStream(f);
-			PrintWriter pw = new PrintWriter(fos);
+            r.close();
 
-			for(String i : lines)
-			{
-				if(!i.contains(": "))
-				{
-					newLines.add(i);
-					continue;
-				}
+            FileOutputStream fos = new FileOutputStream(f);
+            PrintWriter pw = new PrintWriter(fos);
 
-				for(String j : c.keys())
-				{
-					if(j.contains("."))
-					{
-						GList<String> cs = new GList<String>(j.split("\\."));
-						int spaces = i.length() - i.trim().length();
-						int indents = spaces / 2;
+            for (String i : lines) {
+                if (!i.contains(": ")) {
+                    newLines.add(i);
+                    continue;
+                }
 
-						if(cs.get(cs.last()).equals(i.trim().split(": ")[0]))
-						{
-							if(indents == cs.size() - 1)
-							{
-								if(c.hasComment(j))
-								{
-									newLines.add("");
-									String s = F.wrapWords(c.getComment(j), 77);
+                for (String j : c.keys()) {
+                    if (j.contains(".")) {
+                        GList<String> cs = new GList<String>(j.split("\\."));
+                        int spaces = i.length() - i.trim().length();
+                        int indents = spaces / 2;
 
-									if(s.contains("\n"))
-									{
-										for(String k : s.split("\n"))
-										{
-											newLines.add(F.repeat(" ", spaces) + "# " + k);
-										}
-									}
+                        if (cs.get(cs.last()).equals(i.trim().split(": ")[0])) {
+                            if (indents == cs.size() - 1) {
+                                if (c.hasComment(j)) {
+                                    newLines.add("");
+                                    String s = F.wrapWords(c.getComment(j), 77);
 
-									else
-									{
-										newLines.add(F.repeat(" ", spaces) + "# " + s);
-									}
-								}
-							}
+                                    if (s.contains("\n")) {
+                                        for (String k : s.split("\n")) {
+                                            newLines.add(F.repeat(" ", spaces) + "# " + k);
+                                        }
+                                    } else {
+                                        newLines.add(F.repeat(" ", spaces) + "# " + s);
+                                    }
+                                }
+                            }
 
-							break;
-						}
-					}
+                            break;
+                        }
+                    } else {
+                        // TODO handle no dot
+                    }
+                }
 
-					else
-					{
-						// TODO handle no dot
-					}
-				}
+                newLines.add(i);
+            }
 
-				newLines.add(i);
-			}
+            for (String i : newLines) {
+                pw.println(i);
+            }
 
-			for(String i : newLines)
-			{
-				pw.println(i);
-			}
-
-			pw.close();
-		}
-
-		catch(Throwable e)
-		{
-			Ex.t(e);
-		}
-	}
+            pw.close();
+        } catch (Throwable e) {
+            Ex.t(e);
+        }
+    }
 }

@@ -1,95 +1,81 @@
 package com.volmit.react.api;
 
-import java.awt.Color;
-import java.util.UUID;
-
 import com.volmit.react.util.Average;
 import com.volmit.react.util.F;
 import com.volmit.react.util.M;
 import com.volmit.react.util.Platform;
 
-public class GraphCPUArc extends NormalGraph implements IGraph
-{
-	private byte fontColor;
-	private byte backgroundColor;
-	private double pct;
-	private Average aax = new Average(20);
-	private Average aay = new Average(40);
-	private Average aaz = new Average(60);
-	private long msx;
-	private long lastf = M.ms();
-	private BufferedFrame last;
+import java.awt.*;
+import java.util.UUID;
 
-	public GraphCPUArc(byte fontColor)
-	{
-		super("cpuGraph-" + UUID.randomUUID(), 1000);
-		msx = M.ms();
-		sample();
-		this.fontColor = fontColor;
-		this.backgroundColor = FrameColor.matchColor(FrameColor.getColor(fontColor));
-	}
+public class GraphCPUArc extends NormalGraph implements IGraph {
+    private final Average aax = new Average(20);
+    private final Average aay = new Average(40);
+    private final Average aaz = new Average(60);
+    private byte fontColor;
+    private byte backgroundColor;
+    private double pct;
+    private long msx;
+    private long lastf = M.ms();
+    private BufferedFrame last;
 
-	private void sample()
-	{
-		if(M.ms() - msx > 500)
-		{
-			pct = Platform.CPU.getCPULoad();
-			msx = M.ms();
-		}
-	}
+    public GraphCPUArc(byte fontColor) {
+        super("cpuGraph-" + UUID.randomUUID(), 1000);
+        msx = M.ms();
+        sample();
+        this.fontColor = fontColor;
+        this.backgroundColor = FrameColor.matchColor(FrameColor.getColor(fontColor));
+    }
 
-	@Override
-	public void onRender(BufferedFrame frame)
-	{
-		if(M.ms() - lastf < 750.0)
-		{
-			if(last != null)
-			{
-				frame.write(last);
-				return;
-			}
-		}
+    private void sample() {
+        if (M.ms() - msx > 500) {
+            pct = Platform.CPU.getCPULoad();
+            msx = M.ms();
+        }
+    }
 
-		lastf = M.ms();
-		sample();
-		aax.put(pct);
-		aay.put(aax.getAverage());
-		aaz.put(aay.getAverage());
-		frame.write(FrameColor.matchColor(10, 10, 10));
-		frame.drawText((frame.getWidth() / 2) - (ReactFont.Font.getWidth("CPU") / 2), (frame.getHeight() / 2) - (ReactFont.Font.getHeight() + 4), ReactFont.Font, FrameColor.matchColor(Color.getHSBColor((float) aax.getAverage(), 1f, 1f)), "CPU");
-		frame.drawText((frame.getWidth() / 2) - (ReactFont.Font.getWidth(F.pc(aax.getAverage())) / 2), frame.getHeight() / 2, ReactFont.Font, FrameColor.matchColor(Color.getHSBColor((float) aax.getAverage(), 1f, 1f)), F.pc(aax.getAverage()));
+    @Override
+    public void onRender(BufferedFrame frame) {
+        if (M.ms() - lastf < 750.0) {
+            if (last != null) {
+                frame.write(last);
+                return;
+            }
+        }
 
-		for(int i = 0; i < frame.getWidth(); i++)
-		{
-			for(int j = 0; j < frame.getHeight(); j++)
-			{
-				if((i == 0 || j == 0) || (i == frame.getWidth() - 1 || j == frame.getHeight() - 1))
-				{
-					frame.write(i, j, FrameColor.DARK_GRAY);
-				}
-			}
-		}
+        lastf = M.ms();
+        sample();
+        aax.put(pct);
+        aay.put(aax.getAverage());
+        aaz.put(aay.getAverage());
+        frame.write(FrameColor.matchColor(10, 10, 10));
+        frame.drawText((frame.getWidth() / 2) - (ReactFont.Font.getWidth("CPU") / 2), (frame.getHeight() / 2) - (ReactFont.Font.getHeight() + 4), ReactFont.Font, FrameColor.matchColor(Color.getHSBColor((float) aax.getAverage(), 1f, 1f)), "CPU");
+        frame.drawText((frame.getWidth() / 2) - (ReactFont.Font.getWidth(F.pc(aax.getAverage())) / 2), frame.getHeight() / 2, ReactFont.Font, FrameColor.matchColor(Color.getHSBColor((float) aax.getAverage(), 1f, 1f)), F.pc(aax.getAverage()));
 
-		last = frame;
-	}
+        for (int i = 0; i < frame.getWidth(); i++) {
+            for (int j = 0; j < frame.getHeight(); j++) {
+                if ((i == 0 || j == 0) || (i == frame.getWidth() - 1 || j == frame.getHeight() - 1)) {
+                    frame.write(i, j, FrameColor.DARK_GRAY);
+                }
+            }
+        }
 
-	public byte getFontColor()
-	{
-		return fontColor;
-	}
+        last = frame;
+    }
 
-	public void setFontColor(byte fontColor)
-	{
-		this.fontColor = fontColor;
-	}
+    public byte getFontColor() {
+        return fontColor;
+    }
 
-	public byte getBackgroundColor()
-	{
-		return backgroundColor;
-	}
+    public void setFontColor(byte fontColor) {
+        this.fontColor = fontColor;
+    }
 
-	public void setBackgroundColor(byte backgroundColor)
-	{
-		this.backgroundColor = backgroundColor;
-	}
+    public byte getBackgroundColor() {
+        return backgroundColor;
+    }
+
+    public void setBackgroundColor(byte backgroundColor) {
+        this.backgroundColor = backgroundColor;
+    }
 }

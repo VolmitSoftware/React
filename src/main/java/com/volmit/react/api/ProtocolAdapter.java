@@ -1,167 +1,134 @@
 package com.volmit.react.api;
 
-import com.volmit.react.Config;
-import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerQuitEvent;
-
 import com.comphenix.protocol.PacketType;
 import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.events.PacketAdapter;
 import com.comphenix.protocol.events.PacketEvent;
+import com.volmit.react.Config;
 import com.volmit.react.ReactPlugin;
 import com.volmit.react.Surge;
 import com.volmit.react.util.Average;
 import com.volmit.react.util.M;
 import com.volmit.react.util.Protocol;
 import com.volmit.react.util.ProtocolRange;
-
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerQuitEvent;
 import primal.lang.collection.GBiset;
 import primal.lang.collection.GMap;
 
-public class ProtocolAdapter implements Listener
-{
-	private boolean longs;
-	private GMap<Player, Double> pings;
-	private GMap<Player, Long> ago;
-	private GMap<Player, GBiset<Long, Long>> times;
-	private double avgPing;
+public class ProtocolAdapter implements Listener {
+    private boolean longs;
+    private GMap<Player, Double> pings;
+    private GMap<Player, Long> ago;
+    private GMap<Player, GBiset<Long, Long>> times;
+    private double avgPing;
 
-	public void start()
-	{
-		Surge.register(this);
-		avgPing = 0;
-		pings = new GMap<Player, Double>();
-		ago = new GMap<Player, Long>();
-		times = new GMap<Player, GBiset<Long, Long>>();
-		longs = !new ProtocolRange(Protocol.EARLIEST, Protocol.R1_11_2).contains(Protocol.getProtocolVersion());
-		trackPing();
-	}
+    public void start() {
+        Surge.register(this);
+        avgPing = 0;
+        pings = new GMap<Player, Double>();
+        ago = new GMap<Player, Long>();
+        times = new GMap<Player, GBiset<Long, Long>>();
+        longs = !new ProtocolRange(Protocol.EARLIEST, Protocol.R1_11_2).contains(Protocol.getProtocolVersion());
+        trackPing();
+    }
 
-	private void trackPing()
-	{
-		ProtocolLibrary.getProtocolManager().addPacketListener(new PacketAdapter(ReactPlugin.i, PacketType.Play.Server.KEEP_ALIVE)
-		{
-			@Override
-			public void onPacketReceiving(PacketEvent e)
-			{
+    private void trackPing() {
+        ProtocolLibrary.getProtocolManager().addPacketListener(new PacketAdapter(ReactPlugin.i, PacketType.Play.Server.KEEP_ALIVE) {
+            @Override
+            public void onPacketReceiving(PacketEvent e) {
 
-			}
+            }
 
-			@Override
-			public void onPacketSending(PacketEvent e)
-			{
-				try
-				{
-					long id = longs ? e.getPacket().getLongs().read(0) : e.getPacket().getIntegers().read(0);
-					times.put(e.getPlayer(), new GBiset<Long, Long>(id, M.ns()));
-				}
+            @Override
+            public void onPacketSending(PacketEvent e) {
+                try {
+                    long id = longs ? e.getPacket().getLongs().read(0) : e.getPacket().getIntegers().read(0);
+                    times.put(e.getPlayer(), new GBiset<Long, Long>(id, M.ns()));
+                } catch (Throwable ex) {
 
-				catch(Throwable ex)
-				{
+                }
+            }
+        });
 
-				}
-			}
-		});
+        ProtocolLibrary.getProtocolManager().addPacketListener(new PacketAdapter(ReactPlugin.i, PacketType.Play.Client.KEEP_ALIVE) {
+            @Override
+            public void onPacketReceiving(PacketEvent e) {
+                try {
+                    if (times.containsKey(e.getPlayer())) {
+                        long id = longs ? e.getPacket().getLongs().read(0) : e.getPacket().getIntegers().read(0);
 
-		ProtocolLibrary.getProtocolManager().addPacketListener(new PacketAdapter(ReactPlugin.i, PacketType.Play.Client.KEEP_ALIVE)
-		{
-			@Override
-			public void onPacketReceiving(PacketEvent e)
-			{
-				try
-				{
-					if(times.containsKey(e.getPlayer()))
-					{
-						long id = longs ? e.getPacket().getLongs().read(0) : e.getPacket().getIntegers().read(0);
+                        if (id == times.get(e.getPlayer()).getA()) {
+                            long timeNS = M.ns() - times.get(e.getPlayer()).getB();
+                            times.remove(e.getPlayer());
+                            pings.put(e.getPlayer(), (double) timeNS / 1000000.0);
+                            ago.put(e.getPlayer(), M.ms());
+                        }
+                    }
+                } catch (Throwable ex) {
 
-						if(id == times.get(e.getPlayer()).getA())
-						{
-							long timeNS = M.ns() - times.get(e.getPlayer()).getB();
-							times.remove(e.getPlayer());
-							pings.put(e.getPlayer(), (double) timeNS / 1000000.0);
-							ago.put(e.getPlayer(), M.ms());
-						}
-					}
-				}
+                }
+            }
+        });
+    }
 
-				catch(Throwable ex)
-				{
+    public void tick() {
+        Average a = new Average(pings.size());
 
-				}
-			}
-		});
-	}
+        for (Double i : pings.v()) {
+            a.put(i);
+        }
 
-	public void tick()
-	{
-		Average a = new Average(pings.size());
+        avgPing = a.getAverage();
+    }
 
-		for(Double i : pings.v())
-		{
-			a.put(i);
-		}
+    @EventHandler
+    public void on(PlayerQuitEvent e) {
+        ago.remove(e.getPlayer());
+        pings.remove(e.getPlayer());
+        times.remove(e.getPlayer());
+    }
 
-		avgPing = a.getAverage();
-	}
+    public void stop() {
+        Surge.unregister(this);
+        ProtocolLibrary.getProtocolManager().removePacketListeners(ReactPlugin.i);
+    }
 
-	@EventHandler
-	public void on(PlayerQuitEvent e)
-	{
-		ago.remove(e.getPlayer());
-		pings.remove(e.getPlayer());
-		times.remove(e.getPlayer());
-	}
+    public double getAvgPing() {
+        return avgPing;
+    }
 
-	public void stop()
-	{
-		Surge.unregister(this);
-		ProtocolLibrary.getProtocolManager().removePacketListeners(ReactPlugin.i);
-	}
+    public double ping(Player p) {
+        if (pings.containsKey(p)) {
+            return pings.get(p);
+        }
 
-	public double getAvgPing()
-	{
-		return avgPing;
-	}
+        return Config.DEFAULT_PING;
+    }
 
-	public double ping(Player p)
-	{
-		if(pings.containsKey(p))
-		{
-			return pings.get(p);
-		}
+    public long ago(Player p) {
+        if (ago.containsKey(p)) {
+            return ago.get(p);
+        }
 
-		return Config.DEFAULT_PING;
-	}
+        return Config.DEFAULT_PING;
+    }
 
-	public long ago(Player p)
-	{
-		if(ago.containsKey(p))
-		{
-			return ago.get(p);
-		}
+    public boolean isLongs() {
+        return longs;
+    }
 
-		return Config.DEFAULT_PING;
-	}
+    public GMap<Player, Double> getPings() {
+        return pings;
+    }
 
-	public boolean isLongs()
-	{
-		return longs;
-	}
+    public GMap<Player, Long> getAgo() {
+        return ago;
+    }
 
-	public GMap<Player, Double> getPings()
-	{
-		return pings;
-	}
-
-	public GMap<Player, Long> getAgo()
-	{
-		return ago;
-	}
-
-	public GMap<Player, GBiset<Long, Long>> getTimes()
-	{
-		return times;
-	}
+    public GMap<Player, GBiset<Long, Long>> getTimes() {
+        return times;
+    }
 }
