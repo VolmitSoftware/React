@@ -6,6 +6,7 @@ import com.volmit.react.api.SampledType;
 import com.volmit.react.api.Unused;
 import com.volmit.react.util.Controller;
 import org.bstats.bukkit.Metrics;
+import org.bstats.charts.SimplePie;
 import org.bukkit.Bukkit;
 import primal.json.JSONObject;
 
@@ -24,11 +25,11 @@ public class MetricsController extends Controller {
 
         Metrics stats = new Metrics(ReactPlugin.i, 1650);
 
-        stats.addCustomChart(new Metrics.SimplePie("max_memory", () -> SampledType.MAXMEM.get().get()));
-        stats.addCustomChart(new Metrics.SimplePie("language", () -> Config.LANGUAGE));
-        stats.addCustomChart(new Metrics.SimplePie("view_distance", () -> Bukkit.getServer().getViewDistance() + ""));
-        stats.addCustomChart(new Metrics.SimplePie("using_protocollib", () -> Bukkit.getPluginManager().getPlugin("ProtocolLib") != null ? "Yes" : "No"));
-        stats.addCustomChart(new Metrics.SimplePie("using_fawe", () -> Bukkit.getPluginManager().getPlugin("FastAsyncWorldEdit") != null ? "Yes" : "No"));
+        stats.addCustomChart(new SimplePie("max_memory", () -> SampledType.MAXMEM.get().get()));
+        stats.addCustomChart(new SimplePie("language", () -> Config.LANGUAGE));
+        stats.addCustomChart(new SimplePie("view_distance", () -> Bukkit.getServer().getViewDistance() + ""));
+        stats.addCustomChart(new SimplePie("using_protocollib", () -> Bukkit.getPluginManager().getPlugin("ProtocolLib") != null ? "Yes" : "No"));
+        stats.addCustomChart(new SimplePie("using_fawe", () -> Bukkit.getPluginManager().getPlugin("FastAsyncWorldEdit") != null ? "Yes" : "No"));
     }
 
     @Override
