@@ -78,7 +78,7 @@ processResources {
 
 dependencies {
     implementation 'org.zeroturnaround:zt-zip:1.13'
-    implementation 'org.bstats:bstats-bukkit:2.1.0'
+    implementation 'org.bstats:bstats-bukkit:1.8'
     annotationProcessor 'org.projectlombok:lombok:1.18.16'
     compileOnly 'org.projectlombok:lombok:1.18.16'
     compileOnly 'org.spigotmc.full:1.12.2:1.12.2'
