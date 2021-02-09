@@ -1,21 +1,26 @@
 package com.volmit.react.fix;
 
-import com.volmit.react.Gate;
 import org.bukkit.command.CommandSender;
+
+import com.volmit.react.Gate;
+
 import primal.util.text.C;
 
-public class FixLowMM extends Fix {
-    public FixLowMM() {
-        setName("Low Memory Mode");
-        setId("low-mem");
-        setAliases(new String[]{"lmm", "mem"});
-        setDescription("Toggles react low memory mode");
-        setUsage("");
-    }
+public class FixLowMM extends Fix
+{
+	public FixLowMM()
+	{
+		setName("Low Memory Mode");
+		setId("low-mem");
+		setAliases(new String[] {"lmm", "mem"});
+		setDescription("Toggles react low memory mode");
+		setUsage("");
+	}
 
-    @Override
-    public void run(CommandSender sender, String[] args) {
-        Gate.toggleLowMemoryMode();
-        Gate.msgSuccess(sender, "Low memory mode: " + C.WHITE + (Gate.isLowMemory() ? "ENABLED" : "DISABLED"));
-    }
+	@Override
+	public void run(CommandSender sender, String[] args)
+	{
+		Gate.toggleLowMemoryMode();
+		Gate.msgSuccess(sender, "Low memory mode: " + C.WHITE + (Gate.isLowMemory() ? "ENABLED" : "DISABLED"));
+	}
 }

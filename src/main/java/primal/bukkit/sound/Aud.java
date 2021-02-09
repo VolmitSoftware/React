@@ -13,7 +13,7 @@ public enum Aud
 {
 	CLICK(new GSound(Sound.UI_BUTTON_CLICK, 1f, 1.5f));
 
-	private final Audible aud;
+	private Audible aud;
 
 	Aud(Audible aud)
 	{

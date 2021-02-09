@@ -6,7 +6,7 @@ public class ObjectCache<O>
 {
 	private boolean valid;
 	private O o;
-	private final Supplier<O> s;
+	private Supplier<O> s;
 
 	public ObjectCache(Supplier<O> s)
 	{

@@ -2,38 +2,39 @@ package com.volmit.react.api;
 
 import primal.util.text.C;
 
-public interface ISampler {
-    String getID();
+public interface ISampler
+{
+	String getID();
 
-    void setID(String id);
+	IFormatter getFormatter();
 
-    IFormatter getFormatter();
+	String getName();
 
-    String getName();
+	String getDescription();
 
-    void setName(String name);
+	void setID(String id);
 
-    String getDescription();
+	void setName(String name);
 
-    void setDescription(String description);
+	void setDescription(String description);
 
-    C getColor();
+	C getColor();
 
-    C getAltColor();
+	C getAltColor();
 
-    void setColor(C color, C alt);
+	void setColor(C color, C alt);
 
-    int getInterval();
+	int getInterval();
 
-    void setInterval(int interval);
+	void setInterval(int interval);
 
-    void sample();
+	void sample();
 
-    String get();
+	String get();
 
-    void construct();
+	void construct();
 
-    double getValue();
+	void setValue(double v);
 
-    void setValue(double v);
+	double getValue();
 }

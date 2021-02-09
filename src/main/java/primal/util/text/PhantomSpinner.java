@@ -6,8 +6,8 @@ package primal.util.text;
  */
 public class PhantomSpinner
 {
-	private final ProgressSpinner s;
-	private final ProgressSpinner c;
+	private ProgressSpinner s;
+	private ProgressSpinner c;
 
 	public PhantomSpinner()
 	{

@@ -10,7 +10,7 @@ import primal.lang.collection.GList;
 
 public class WrappedBukkitFileConfiguration implements ConfigWrapper
 {
-	private final FileConfiguration wrapped;
+	private FileConfiguration wrapped;
 
 	public WrappedBukkitFileConfiguration()
 	{

@@ -1,5 +1,11 @@
 package com.volmit.react.controller;
 
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.block.BlockGrowEvent;
+
 import com.volmit.react.Config;
 import com.volmit.react.React;
 import com.volmit.react.Surge;
@@ -8,119 +14,139 @@ import com.volmit.react.util.Average;
 import com.volmit.react.util.Controller;
 import com.volmit.react.util.M;
 import com.volmit.react.util.TICK;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.block.BlockGrowEvent;
-import primal.bukkit.world.MaterialBlock;
+
 import primal.json.JSONObject;
+import primal.bukkit.world.MaterialBlock;
 import primal.lang.collection.GMap;
 
-public class FastGrowthController extends Controller {
-    private boolean firstTickList;
-    private long firstTick;
-    private long lastTick;
-    private Average aCSMS;
-    private GMap<Location, MaterialBlock> changes;
+public class FastGrowthController extends Controller
+{
+	private boolean firstTickList;
+	private long firstTick;
+	private long lastTick;
+	private Average aCSMS;
+	private GMap<Location, MaterialBlock> changes;
 
-    @Override
-    public void dump(JSONObject object) {
-        object.put("queue", changes.size());
-    }
+	@Override
+	public void dump(JSONObject object)
+	{
+		object.put("queue", changes.size());
+	}
 
-    @Override
-    public void start() {
-        Surge.register(this);
-        firstTickList = false;
-        firstTick = M.ns();
-        lastTick = M.ns();
-        aCSMS = new Average(30);
-        changes = new GMap<Location, MaterialBlock>();
-    }
+	@Override
+	public void start()
+	{
+		Surge.register(this);
+		firstTickList = false;
+		firstTick = M.ns();
+		lastTick = M.ns();
+		aCSMS = new Average(30);
+		changes = new GMap<Location, MaterialBlock>();
+	}
 
-    private void flushTickList() {
-        if (firstTickList == false) {
-            aCSMS.put(0);
-            return;
-        }
+	private void flushTickList()
+	{
+		if(firstTickList == false)
+		{
+			aCSMS.put(0);
+			return;
+		}
 
-        if (lastTick < firstTick) {
-            firstTick = lastTick;
-        }
+		if(lastTick < firstTick)
+		{
+			firstTick = lastTick;
+		}
 
-        aCSMS.put(lastTick - firstTick);
-        firstTickList = false;
-    }
+		aCSMS.put(lastTick - firstTick);
+		firstTickList = false;
+	}
 
-    private void tickNextTickList() {
-        if (!firstTickList) {
-            firstTickList = true;
-            firstTick = M.ns();
-        } else {
-            lastTick = M.ns();
-        }
-    }
+	private void tickNextTickList()
+	{
+		if(!firstTickList)
+		{
+			firstTickList = true;
+			firstTick = M.ns();
+		}
 
-    @Override
-    public void stop() {
-        Surge.unregister(this);
-    }
+		else
+		{
+			lastTick = M.ns();
+		}
+	}
 
-    @Unused
-    @Override
-    public void tick() {
-        flushTickList();
+	@Override
+	public void stop()
+	{
+		Surge.unregister(this);
+	}
 
-        if (TICK.tick % 5 == 0) {
-            for (Location i : changes.k()) {
-                React.instance.featureController.setBlock(i, changes.get(i));
-            }
+	@Unused
+	@Override
+	public void tick()
+	{
+		flushTickList();
 
-            changes.clear();
-        }
-    }
+		if(TICK.tick % 5 == 0)
+		{
+			for(Location i : changes.k())
+			{
+				React.instance.featureController.setBlock(i, changes.get(i));
+			}
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void on(BlockGrowEvent e) {
-        tickNextTickList();
-        // fastApply(e);
-    }
+			changes.clear();
+		}
+	}
 
-    @SuppressWarnings("deprecation")
-    public void fastApply(BlockGrowEvent e) {
-        if (!Config.FAST_GROWTH) {
-            return;
-        }
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+	public void on(BlockGrowEvent e)
+	{
+		tickNextTickList();
+		// fastApply(e);
+	}
 
-        e.setCancelled(true);
-        MaterialBlock nb = new MaterialBlock(Material.getMaterial(e.getNewState().getTypeId()), e.getNewState().getRawData());
-        changes.put(e.getBlock().getLocation(), nb);
-    }
+	@SuppressWarnings("deprecation")
+	public void fastApply(BlockGrowEvent e)
+	{
+		if(!Config.FAST_GROWTH)
+		{
+			return;
+		}
 
-    public boolean isFirstTickList() {
-        return firstTickList;
-    }
+		e.setCancelled(true);
+		MaterialBlock nb = new MaterialBlock(Material.getMaterial(e.getNewState().getTypeId()), e.getNewState().getRawData());
+		changes.put(e.getBlock().getLocation(), nb);
+	}
 
-    public long getFirstTick() {
-        return firstTick;
-    }
+	public boolean isFirstTickList()
+	{
+		return firstTickList;
+	}
 
-    public long getLastTick() {
-        return lastTick;
-    }
+	public long getFirstTick()
+	{
+		return firstTick;
+	}
 
-    public Average getaCSMS() {
-        return aCSMS;
-    }
+	public long getLastTick()
+	{
+		return lastTick;
+	}
 
-    @Override
-    public int getInterval() {
-        return 1;
-    }
+	public Average getaCSMS()
+	{
+		return aCSMS;
+	}
 
-    @Override
-    public boolean isUrgent() {
-        return false;
-    }
+	@Override
+	public int getInterval()
+	{
+		return 1;
+	}
+
+	@Override
+	public boolean isUrgent()
+	{
+		return false;
+	}
 }

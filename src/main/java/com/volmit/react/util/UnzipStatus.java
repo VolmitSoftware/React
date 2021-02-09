@@ -6,46 +6,56 @@ public class UnzipStatus {
     private long bytesPerSecond;
     private long timeElapsed;
 
-    public UnzipStatus() {
+    public UnzipStatus()
+    {
         this.bytesUnzipped = 0;
         this.bytesTotal = 0;
         this.bytesPerSecond = 0;
         this.timeElapsed = 0;
     }
 
-    public double getPercentCompleted() {
+    public double getPercentCompleted()
+    {
         return (double) bytesUnzipped / (double) bytesTotal;
     }
 
-    public long getBytesUnzipped() {
+    public long getBytesUnzipped()
+    {
         return bytesUnzipped;
     }
 
-    public void setBytesUnzipped(long bytesDownloaded) {
+    public void setBytesUnzipped(long bytesDownloaded)
+    {
         this.bytesUnzipped = bytesDownloaded;
     }
 
-    public long getBytesTotal() {
+    public long getBytesTotal()
+    {
         return bytesTotal;
     }
 
-    public void setBytesTotal(long bytesTotal) {
+    public void setBytesTotal(long bytesTotal)
+    {
         this.bytesTotal = bytesTotal;
     }
 
-    public long getBytesPerSecond() {
+    public long getBytesPerSecond()
+    {
         return bytesPerSecond;
     }
 
-    public void setBytesPerSecond(long bytesPerSecond) {
+    public void setBytesPerSecond(long bytesPerSecond)
+    {
         this.bytesPerSecond = bytesPerSecond;
     }
 
-    public long getTimeElapsed() {
+    public long getTimeElapsed()
+    {
         return timeElapsed;
     }
 
-    public void setTimeElapsed(long timeElapsed) {
+    public void setTimeElapsed(long timeElapsed)
+    {
         this.timeElapsed = timeElapsed;
     }
 }

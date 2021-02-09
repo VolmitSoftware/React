@@ -16,7 +16,7 @@ import primal.lang.collection.GList;
  */
 public class Audio implements Audible
 {
-	private final GList<Audible> audibles;
+	private GList<Audible> audibles;
 
 	/**
 	 * Create an audible object

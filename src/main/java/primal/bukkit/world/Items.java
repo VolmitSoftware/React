@@ -429,7 +429,12 @@ public class Items
 				}
 			}
 
-			return a.getMaxStackSize() >= a.getAmount() + b.getAmount();
+			if(a.getMaxStackSize() < a.getAmount() + b.getAmount())
+			{
+				return false;
+			}
+
+			return true;
 		}
 
 		return false;

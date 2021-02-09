@@ -1,15 +1,16 @@
 package com.volmit.react.api;
 
-public interface IGraph {
-    String getName();
+public interface IGraph
+{
+	String getName();
 
-    PlotBoard getPlotBoard();
+	PlotBoard getPlotBoard();
 
-    long getTimeViewport();
+	long getTimeViewport();
 
-    void render(BufferedFrame frame);
+	void render(BufferedFrame frame);
 
-    double getMax();
+	double getMax();
 
-    void setMax(double max);
+	void setMax(double max);
 }

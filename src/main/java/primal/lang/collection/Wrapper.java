@@ -47,9 +47,16 @@ public class Wrapper<T>
 		Wrapper<?> other = (Wrapper<?>) obj;
 		if(t == null)
 		{
-			return other.t == null;
+			if(other.t != null)
+			{
+				return false;
+			}
 		}
-		else return t.equals(other.t);
+		else if(!t.equals(other.t))
+		{
+			return false;
+		}
+		return true;
 	}
 
 	@Override

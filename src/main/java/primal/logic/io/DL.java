@@ -227,7 +227,7 @@ public abstract class DL
 	
 	public static class ThrottledDownload extends Download
 	{
-		private final long mbps;
+		private long mbps;
 		
 		public ThrottledDownload(URL u, File d, long mbps, DownloadFlag... downloadFlags) {
 			super(u, d, downloadFlags);

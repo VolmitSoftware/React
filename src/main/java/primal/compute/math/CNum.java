@@ -3,7 +3,7 @@ package primal.compute.math;
 public class CNum
 {
 	private int number;
-	private final int max;
+	private int max;
 
 	public int getMax()
 	{

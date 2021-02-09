@@ -1,115 +1,140 @@
 package com.volmit.react.api;
 
-public class MemoryTracker {
-    private long current;
-    private long last;
-    private boolean gcd;
-    private long totalCollected;
-    private long totalAllocated;
-    private long collected;
-    private long allocated;
-    private long lastCol;
-    private long lastAll;
+public class MemoryTracker
+{
+	private long current;
+	private long last;
+	private boolean gcd;
+	private long totalCollected;
+	private long totalAllocated;
+	private long collected;
+	private long allocated;
+	private long lastCol;
+	private long lastAll;
 
-    public MemoryTracker() {
-        current = getMemory();
-        last = current;
-        allocated = 0;
-        collected = 0;
-        totalAllocated = 0;
-        totalCollected = 0;
-        lastCol = 0;
-        lastAll = 0;
-        gcd = false;
-    }
+	public MemoryTracker()
+	{
+		current = getMemory();
+		last = current;
+		allocated = 0;
+		collected = 0;
+		totalAllocated = 0;
+		totalCollected = 0;
+		lastCol = 0;
+		lastAll = 0;
+		gcd = false;
+	}
 
-    public long getMemory() {
-        Runtime r = Runtime.getRuntime();
-        return r.totalMemory() - r.freeMemory();
-    }
+	public long getMemory()
+	{
+		Runtime r = Runtime.getRuntime();
+		return r.totalMemory() - r.freeMemory();
+	}
 
-    public void tick() {
-        last = current;
-        current = getMemory();
+	public void tick()
+	{
+		last = current;
+		current = getMemory();
 
-        if (last > current) {
-            collected = last - current;
-            totalCollected += last - current;
-            gcd = true;
-        } else {
-            allocated += current - last;
-            totalAllocated += current - last;
-        }
+		if(last > current)
+		{
+			collected = last - current;
+			totalCollected += last - current;
+			gcd = true;
+		}
 
-        if (gcd) {
-            lastCol = collected;
-            lastAll = allocated;
-            collected = 0;
-            allocated = 0;
-        }
-    }
+		else
+		{
+			allocated += current - last;
+			totalAllocated += current - last;
+		}
 
-    public long getCurrent() {
-        return current;
-    }
+		if(gcd)
+		{
+			lastCol = collected;
+			lastAll = allocated;
+			collected = 0;
+			allocated = 0;
+		}
+	}
 
-    public void setCurrent(long current) {
-        this.current = current;
-    }
+	public long getCurrent()
+	{
+		return current;
+	}
 
-    public long getLast() {
-        return last;
-    }
+	public void setCurrent(long current)
+	{
+		this.current = current;
+	}
 
-    public void setLast(long last) {
-        this.last = last;
-    }
+	public long getLast()
+	{
+		return last;
+	}
 
-    public boolean isGcd() {
-        return gcd;
-    }
+	public void setLast(long last)
+	{
+		this.last = last;
+	}
 
-    public void setGcd(boolean gcd) {
-        this.gcd = gcd;
-    }
+	public boolean isGcd()
+	{
+		return gcd;
+	}
 
-    public long getTotalCollected() {
-        return totalCollected;
-    }
+	public void setGcd(boolean gcd)
+	{
+		this.gcd = gcd;
+	}
 
-    public long getTotalAllocated() {
-        return totalAllocated;
-    }
+	public long getTotalCollected()
+	{
+		return totalCollected;
+	}
 
-    public long getCollected() {
-        return collected;
-    }
+	public long getTotalAllocated()
+	{
+		return totalAllocated;
+	}
 
-    public void setCollected(long collected) {
-        this.collected = collected;
-    }
+	public long getCollected()
+	{
+		return collected;
+	}
 
-    public long getAllocated() {
-        return allocated;
-    }
+	public void setCollected(long collected)
+	{
+		this.collected = collected;
+	}
 
-    public void setAllocated(long allocated) {
-        this.allocated = allocated;
-    }
+	public long getAllocated()
+	{
+		return allocated;
+	}
 
-    public long getLastCol() {
-        return lastCol;
-    }
+	public void setAllocated(long allocated)
+	{
+		this.allocated = allocated;
+	}
 
-    public void setLastCol(long lastCol) {
-        this.lastCol = lastCol;
-    }
+	public long getLastCol()
+	{
+		return lastCol;
+	}
 
-    public long getLastAll() {
-        return lastAll;
-    }
+	public void setLastCol(long lastCol)
+	{
+		this.lastCol = lastCol;
+	}
 
-    public void setLastAll(long lastAll) {
-        this.lastAll = lastAll;
-    }
+	public long getLastAll()
+	{
+		return lastAll;
+	}
+
+	public void setLastAll(long lastAll)
+	{
+		this.lastAll = lastAll;
+	}
 }

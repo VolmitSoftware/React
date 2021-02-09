@@ -42,7 +42,7 @@ public class RawText
 	private static final String HEAD_ACTION_SHOW_TEXT = "show_text";
 	private static final String HEAD_ACTION_COMMAND = "run_command";
 
-	private final ArrayList<JSONObject> components;
+	private ArrayList<JSONObject> components;
 
 	public RawText()
 	{

@@ -150,7 +150,7 @@ public class Configurator
 		{
 			i.setAccessible(true);
 
-			if(!explicit || i.isAnnotationPresent(Key.class))
+			if((explicit && i.isAnnotationPresent(Key.class)) || !explicit)
 			{
 				String key = i.getName().toLowerCase().replaceAll("__", ".").replaceAll("_", "-");
 
@@ -230,7 +230,7 @@ public class Configurator
 		{
 			i.setAccessible(true);
 
-			if(!explicit || i.isAnnotationPresent(Key.class))
+			if((explicit && i.isAnnotationPresent(Key.class)) || !explicit)
 			{
 				String key = i.getName().toLowerCase().replaceAll("__", ".").replaceAll("_", "-");
 

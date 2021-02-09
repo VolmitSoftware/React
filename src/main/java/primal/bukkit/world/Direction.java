@@ -17,10 +17,10 @@ public enum Direction
 	E(1, 0, 0, CuboidDirection.East),
 	W(-1, 0, 0, CuboidDirection.West);
 
-	private final int x;
-	private final int y;
-	private final int z;
-	private final CuboidDirection f;
+	private int x;
+	private int y;
+	private int z;
+	private CuboidDirection f;
 
 	Direction(int x, int y, int z, CuboidDirection f)
 	{

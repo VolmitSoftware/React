@@ -16,7 +16,7 @@ public class BasicSequencer implements Sequencer
 {
 	private float volume;
 	private float pitch;
-	private final GMap<Audible, Integer> table;
+	private GMap<Audible, Integer> table;
 	private int playhead;
 	private boolean playing;
 

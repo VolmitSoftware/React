@@ -1,27 +1,28 @@
 package com.volmit.react.api;
 
-import primal.lang.collection.GMap;
-
 import java.io.File;
 
-public interface IRecordBook<T extends IRecord<?>> {
-    int getSize();
+import primal.lang.collection.GMap;
 
-    T getRecord(long record);
+public interface IRecordBook<T extends IRecord<?>>
+{
+	int getSize();
 
-    long getOldestRecordTime();
+	T getRecord(long record);
 
-    void addRecord(T t);
+	long getOldestRecordTime();
 
-    long getLatestRecordTime();
+	void addRecord(T t);
 
-    int countRecords(long from, long to);
+	long getLatestRecordTime();
 
-    GMap<Long, T> getRecords(long from, long to);
+	int countRecords(long from, long to);
 
-    int purgeRecordsBefore(long time);
+	GMap<Long, T> getRecords(long from, long to);
 
-    void save();
+	int purgeRecordsBefore(long time);
 
-    File getFile();
+	void save();
+
+	File getFile();
 }

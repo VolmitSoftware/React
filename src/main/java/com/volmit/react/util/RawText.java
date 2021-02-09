@@ -1,261 +1,323 @@
 package com.volmit.react.util;
 
+import java.util.ArrayList;
+
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import primal.json.JSONObject;
 
-import java.util.ArrayList;
+public class RawText
+{
+	public static final String COLOR_BLACK = "black";
+	public static final String COLOR_DARK_BLUE = "dark_blue";
+	public static final String COLOR_DARK_GREEN = "dark_green";
+	public static final String COLOR_DARK_AQUA = "dark_aqua";
+	public static final String COLOR_DARK_RED = "dark_red";
+	public static final String COLOR_DARK_PURPLE = "dark_purple";
+	public static final String COLOR_GOLD = "gold";
+	public static final String COLOR_GRAY = "gray";
+	public static final String COLOR_DARK_GRAY = "dark_gray";
+	public static final String COLOR_BLUE = "blue";
+	public static final String COLOR_GREEN = "green";
+	public static final String COLOR_AQUA = "aqua";
+	public static final String COLOR_RED = "red";
+	public static final String COLOR_LIGHT_PURPLE = "light_purple";
+	public static final String COLOR_YELLOW = "yellow";
+	public static final String COLOR_WHITE = "white";
+	public static final String COLOR_NONE = "none";
 
-public class RawText {
-    public static final String COLOR_BLACK = "black";
-    public static final String COLOR_DARK_BLUE = "dark_blue";
-    public static final String COLOR_DARK_GREEN = "dark_green";
-    public static final String COLOR_DARK_AQUA = "dark_aqua";
-    public static final String COLOR_DARK_RED = "dark_red";
-    public static final String COLOR_DARK_PURPLE = "dark_purple";
-    public static final String COLOR_GOLD = "gold";
-    public static final String COLOR_GRAY = "gray";
-    public static final String COLOR_DARK_GRAY = "dark_gray";
-    public static final String COLOR_BLUE = "blue";
-    public static final String COLOR_GREEN = "green";
-    public static final String COLOR_AQUA = "aqua";
-    public static final String COLOR_RED = "red";
-    public static final String COLOR_LIGHT_PURPLE = "light_purple";
-    public static final String COLOR_YELLOW = "yellow";
-    public static final String COLOR_WHITE = "white";
-    public static final String COLOR_NONE = "none";
+	private static final String HEAD_TEXT = "text";
+	private static final String HEAD_COLOR = "color";
+	private static final String HEAD_BOLD = "bold";
+	private static final String HEAD_ITALIC = "italic";
+	private static final String HEAD_UNDERLINED = "underlined";
+	private static final String HEAD_STRIKETHROUGH = "strikethrough";
+	private static final String HEAD_OBFUSCATED = "obfuscated";
+	private static final String HEAD_CLICK_EVENT = "clickEvent";
+	private static final String HEAD_HOVER_EVENT = "hoverEvent";
+	private static final String HEAD_ACTION = "action";
+	private static final String HEAD_VALUE = "value";
+	private static final String HEAD_EXTRA = "extra";
+	private static final String HEAD_ACTION_SHOW_TEXT = "show_text";
+	private static final String HEAD_ACTION_COMMAND = "run_command";
 
-    private static final String HEAD_TEXT = "text";
-    private static final String HEAD_COLOR = "color";
-    private static final String HEAD_BOLD = "bold";
-    private static final String HEAD_ITALIC = "italic";
-    private static final String HEAD_UNDERLINED = "underlined";
-    private static final String HEAD_STRIKETHROUGH = "strikethrough";
-    private static final String HEAD_OBFUSCATED = "obfuscated";
-    private static final String HEAD_CLICK_EVENT = "clickEvent";
-    private static final String HEAD_HOVER_EVENT = "hoverEvent";
-    private static final String HEAD_ACTION = "action";
-    private static final String HEAD_VALUE = "value";
-    private static final String HEAD_EXTRA = "extra";
-    private static final String HEAD_ACTION_SHOW_TEXT = "show_text";
-    private static final String HEAD_ACTION_COMMAND = "run_command";
+	private ArrayList<JSONObject> components;
 
-    private final ArrayList<JSONObject> components;
+	public RawText()
+	{
+		this.components = new ArrayList<JSONObject>();
+	}
 
-    public RawText() {
-        this.components = new ArrayList<JSONObject>();
-    }
+	public RawText addText(String text)
+	{
+		return addText(text, COLOR_NONE);
+	}
 
-    public RawText addText(String text) {
-        return addText(text, COLOR_NONE);
-    }
+	public RawText addText(String text, String color)
+	{
+		return addText(text, color, false, false, false, false, false);
+	}
 
-    public RawText addText(String text, String color) {
-        return addText(text, color, false, false, false, false, false);
-    }
+	public RawText addText(String text, String color, boolean bold, boolean italic, boolean underlined, boolean strikethrough, boolean obfuscated)
+	{
+		try
+		{
+			JSONObject object = new JSONObject();
 
-    public RawText addText(String text, String color, boolean bold, boolean italic, boolean underlined, boolean strikethrough, boolean obfuscated) {
-        try {
-            JSONObject object = new JSONObject();
+			object.put(HEAD_TEXT, text);
 
-            object.put(HEAD_TEXT, text);
+			if(!color.equals(COLOR_NONE))
+			{
+				object.put(HEAD_COLOR, color);
+			}
 
-            if (!color.equals(COLOR_NONE)) {
-                object.put(HEAD_COLOR, color);
-            }
+			if(bold)
+			{
+				object.put(HEAD_BOLD, true);
+			}
 
-            if (bold) {
-                object.put(HEAD_BOLD, true);
-            }
+			if(italic)
+			{
+				object.put(HEAD_ITALIC, true);
+			}
 
-            if (italic) {
-                object.put(HEAD_ITALIC, true);
-            }
+			if(underlined)
+			{
+				object.put(HEAD_UNDERLINED, true);
+			}
 
-            if (underlined) {
-                object.put(HEAD_UNDERLINED, true);
-            }
+			if(strikethrough)
+			{
+				object.put(HEAD_STRIKETHROUGH, true);
+			}
 
-            if (strikethrough) {
-                object.put(HEAD_STRIKETHROUGH, true);
-            }
+			if(obfuscated)
+			{
+				object.put(HEAD_OBFUSCATED, true);
+			}
 
-            if (obfuscated) {
-                object.put(HEAD_OBFUSCATED, true);
-            }
+			components.add(object);
+		}
 
-            components.add(object);
-        } catch (Throwable e) {
-            Ex.t(e);
-            e.printStackTrace();
-        }
+		catch(Throwable e)
+		{
+			Ex.t(e);
+			e.printStackTrace();
+		}
 
-        return this;
-    }
+		return this;
+	}
 
-    public RawText addTextWithCommand(String text, String color, String command) {
-        return addTextWithCommand(text, color, command, false, false, false, false, false);
-    }
+	public RawText addTextWithCommand(String text, String color, String command)
+	{
+		return addTextWithCommand(text, color, command, false, false, false, false, false);
+	}
 
-    public RawText addTextWithCommand(String text, String color, String command, boolean bold, boolean italic, boolean underlined, boolean strikethrough, boolean obfuscated) {
-        try {
-            JSONObject object = new JSONObject();
+	public RawText addTextWithCommand(String text, String color, String command, boolean bold, boolean italic, boolean underlined, boolean strikethrough, boolean obfuscated)
+	{
+		try
+		{
+			JSONObject object = new JSONObject();
 
-            object.put(HEAD_TEXT, text);
+			object.put(HEAD_TEXT, text);
 
-            if (!color.equals(COLOR_NONE)) {
-                object.put(HEAD_COLOR, color);
-            }
+			if(!color.equals(COLOR_NONE))
+			{
+				object.put(HEAD_COLOR, color);
+			}
 
-            if (bold) {
-                object.put(HEAD_BOLD, true);
-            }
+			if(bold)
+			{
+				object.put(HEAD_BOLD, true);
+			}
 
-            if (italic) {
-                object.put(HEAD_ITALIC, true);
-            }
+			if(italic)
+			{
+				object.put(HEAD_ITALIC, true);
+			}
 
-            if (underlined) {
-                object.put(HEAD_UNDERLINED, true);
-            }
+			if(underlined)
+			{
+				object.put(HEAD_UNDERLINED, true);
+			}
 
-            if (strikethrough) {
-                object.put(HEAD_STRIKETHROUGH, true);
-            }
+			if(strikethrough)
+			{
+				object.put(HEAD_STRIKETHROUGH, true);
+			}
 
-            if (obfuscated) {
-                object.put(HEAD_OBFUSCATED, true);
-            }
+			if(obfuscated)
+			{
+				object.put(HEAD_OBFUSCATED, true);
+			}
 
-            object.put(HEAD_CLICK_EVENT, new JSONObject().put(HEAD_ACTION, HEAD_ACTION_COMMAND).put(HEAD_VALUE, command));
+			object.put(HEAD_CLICK_EVENT, new JSONObject().put(HEAD_ACTION, HEAD_ACTION_COMMAND).put(HEAD_VALUE, command));
 
-            components.add(object);
-        } catch (Throwable e) {
-            Ex.t(e);
-            e.printStackTrace();
-        }
+			components.add(object);
+		}
 
-        return this;
-    }
+		catch(Throwable e)
+		{
+			Ex.t(e);
+			e.printStackTrace();
+		}
 
-    public RawText addTextWithHover(String text, String color, String hoverText, String hoverColor) {
-        return addTextWithHover(text, color, hoverText, hoverColor, false, false, false, false, false);
-    }
+		return this;
+	}
 
-    public RawText addTextWithHover(String text, String color, String hoverText, String hoverColor, boolean bold, boolean italic, boolean underlined, boolean strikethrough, boolean obfuscated) {
-        try {
-            JSONObject object = new JSONObject();
+	public RawText addTextWithHover(String text, String color, String hoverText, String hoverColor)
+	{
+		return addTextWithHover(text, color, hoverText, hoverColor, false, false, false, false, false);
+	}
 
-            object.put(HEAD_TEXT, text);
+	public RawText addTextWithHover(String text, String color, String hoverText, String hoverColor, boolean bold, boolean italic, boolean underlined, boolean strikethrough, boolean obfuscated)
+	{
+		try
+		{
+			JSONObject object = new JSONObject();
 
-            if (!color.equals(COLOR_NONE)) {
-                object.put(HEAD_COLOR, color);
-            }
+			object.put(HEAD_TEXT, text);
 
-            if (bold) {
-                object.put(HEAD_BOLD, true);
-            }
+			if(!color.equals(COLOR_NONE))
+			{
+				object.put(HEAD_COLOR, color);
+			}
 
-            if (italic) {
-                object.put(HEAD_ITALIC, true);
-            }
+			if(bold)
+			{
+				object.put(HEAD_BOLD, true);
+			}
 
-            if (underlined) {
-                object.put(HEAD_UNDERLINED, true);
-            }
+			if(italic)
+			{
+				object.put(HEAD_ITALIC, true);
+			}
 
-            if (strikethrough) {
-                object.put(HEAD_STRIKETHROUGH, true);
-            }
+			if(underlined)
+			{
+				object.put(HEAD_UNDERLINED, true);
+			}
 
-            if (obfuscated) {
-                object.put(HEAD_OBFUSCATED, true);
-            }
+			if(strikethrough)
+			{
+				object.put(HEAD_STRIKETHROUGH, true);
+			}
 
-            JSONObject[] dummy = new JSONObject[1];
+			if(obfuscated)
+			{
+				object.put(HEAD_OBFUSCATED, true);
+			}
 
-            if (!hoverColor.equals(COLOR_NONE)) {
-                dummy[0] = new JSONObject().put(HEAD_TEXT, hoverText).put(HEAD_COLOR, hoverColor);
-                object.put(HEAD_HOVER_EVENT, new JSONObject().put(HEAD_ACTION, HEAD_ACTION_SHOW_TEXT).put(HEAD_VALUE, new JSONObject().put(HEAD_TEXT, "").put(HEAD_EXTRA, dummy)));
-            } else {
-                dummy[0] = new JSONObject().put(HEAD_TEXT, hoverText);
-                object.put(HEAD_HOVER_EVENT, new JSONObject().put(HEAD_ACTION, HEAD_ACTION_SHOW_TEXT).put(HEAD_VALUE, new JSONObject().put(HEAD_TEXT, "").put(HEAD_EXTRA, dummy)));
-            }
+			JSONObject[] dummy = new JSONObject[1];
 
-            components.add(object);
-        } catch (Throwable e) {
-            Ex.t(e);
-            e.printStackTrace();
-        }
+			if(!hoverColor.equals(COLOR_NONE))
+			{
+				dummy[0] = new JSONObject().put(HEAD_TEXT, hoverText).put(HEAD_COLOR, hoverColor);
+				object.put(HEAD_HOVER_EVENT, new JSONObject().put(HEAD_ACTION, HEAD_ACTION_SHOW_TEXT).put(HEAD_VALUE, new JSONObject().put(HEAD_TEXT, "").put(HEAD_EXTRA, dummy)));
+			}
 
-        return this;
-    }
+			else
+			{
+				dummy[0] = new JSONObject().put(HEAD_TEXT, hoverText);
+				object.put(HEAD_HOVER_EVENT, new JSONObject().put(HEAD_ACTION, HEAD_ACTION_SHOW_TEXT).put(HEAD_VALUE, new JSONObject().put(HEAD_TEXT, "").put(HEAD_EXTRA, dummy)));
+			}
 
-    public RawText addTextWithHoverCommand(String text, String color, String command, String hoverText, String hoverColor) {
-        return addTextWithHoverCommand(text, color, command, hoverText, hoverColor, false, false, false, false, false);
-    }
+			components.add(object);
+		}
 
-    public RawText addTextWithHoverCommand(String text, String color, String command, String hoverText, String hoverColor, boolean bold, boolean italic, boolean underlined, boolean strikethrough, boolean obfuscated) {
-        try {
-            JSONObject object = new JSONObject();
+		catch(Throwable e)
+		{
+			Ex.t(e);
+			e.printStackTrace();
+		}
 
-            object.put(HEAD_TEXT, text);
+		return this;
+	}
 
-            if (!color.equals(COLOR_NONE)) {
-                object.put(HEAD_COLOR, color);
-            }
+	public RawText addTextWithHoverCommand(String text, String color, String command, String hoverText, String hoverColor)
+	{
+		return addTextWithHoverCommand(text, color, command, hoverText, hoverColor, false, false, false, false, false);
+	}
 
-            if (bold) {
-                object.put(HEAD_BOLD, true);
-            }
+	public RawText addTextWithHoverCommand(String text, String color, String command, String hoverText, String hoverColor, boolean bold, boolean italic, boolean underlined, boolean strikethrough, boolean obfuscated)
+	{
+		try
+		{
+			JSONObject object = new JSONObject();
 
-            if (italic) {
-                object.put(HEAD_ITALIC, true);
-            }
+			object.put(HEAD_TEXT, text);
 
-            if (underlined) {
-                object.put(HEAD_UNDERLINED, true);
-            }
+			if(!color.equals(COLOR_NONE))
+			{
+				object.put(HEAD_COLOR, color);
+			}
 
-            if (strikethrough) {
-                object.put(HEAD_STRIKETHROUGH, true);
-            }
+			if(bold)
+			{
+				object.put(HEAD_BOLD, true);
+			}
 
-            if (obfuscated) {
-                object.put(HEAD_OBFUSCATED, true);
-            }
+			if(italic)
+			{
+				object.put(HEAD_ITALIC, true);
+			}
 
-            object.put(HEAD_CLICK_EVENT, new JSONObject().put(HEAD_ACTION, HEAD_ACTION_COMMAND).put(HEAD_VALUE, command));
+			if(underlined)
+			{
+				object.put(HEAD_UNDERLINED, true);
+			}
 
-            JSONObject[] dummy = new JSONObject[1];
+			if(strikethrough)
+			{
+				object.put(HEAD_STRIKETHROUGH, true);
+			}
 
-            if (!hoverColor.equals(COLOR_NONE)) {
-                dummy[0] = new JSONObject().put(HEAD_TEXT, hoverText).put(HEAD_COLOR, hoverColor);
-                object.put(HEAD_HOVER_EVENT, new JSONObject().put(HEAD_ACTION, HEAD_ACTION_SHOW_TEXT).put(HEAD_VALUE, new JSONObject().put(HEAD_TEXT, "").put(HEAD_EXTRA, dummy)));
-            } else {
-                dummy[0] = new JSONObject().put(HEAD_TEXT, hoverText);
-                object.put(HEAD_HOVER_EVENT, new JSONObject().put(HEAD_ACTION, HEAD_ACTION_SHOW_TEXT).put(HEAD_VALUE, new JSONObject().put(HEAD_TEXT, "").put(HEAD_EXTRA, dummy)));
-            }
+			if(obfuscated)
+			{
+				object.put(HEAD_OBFUSCATED, true);
+			}
 
-            components.add(object);
-        } catch (Throwable e) {
-            Ex.t(e);
-            e.printStackTrace();
-        }
+			object.put(HEAD_CLICK_EVENT, new JSONObject().put(HEAD_ACTION, HEAD_ACTION_COMMAND).put(HEAD_VALUE, command));
 
-        return this;
-    }
+			JSONObject[] dummy = new JSONObject[1];
 
-    public String compile() {
-        StringBuilder base = new StringBuilder("[\"\"");
-        for (JSONObject i : components) {
-            base.append(",").append(i.toString());
-        }
+			if(!hoverColor.equals(COLOR_NONE))
+			{
+				dummy[0] = new JSONObject().put(HEAD_TEXT, hoverText).put(HEAD_COLOR, hoverColor);
+				object.put(HEAD_HOVER_EVENT, new JSONObject().put(HEAD_ACTION, HEAD_ACTION_SHOW_TEXT).put(HEAD_VALUE, new JSONObject().put(HEAD_TEXT, "").put(HEAD_EXTRA, dummy)));
+			}
 
-        return base + "]";
-    }
+			else
+			{
+				dummy[0] = new JSONObject().put(HEAD_TEXT, hoverText);
+				object.put(HEAD_HOVER_EVENT, new JSONObject().put(HEAD_ACTION, HEAD_ACTION_SHOW_TEXT).put(HEAD_VALUE, new JSONObject().put(HEAD_TEXT, "").put(HEAD_EXTRA, dummy)));
+			}
 
-    public void tellRawTo(JavaPlugin pl, Player p) {
-        pl.getServer().dispatchCommand(pl.getServer().getConsoleSender(), "tellraw " + p.getName() + " " + compile());
-    }
+			components.add(object);
+		}
+
+		catch(Throwable e)
+		{
+			Ex.t(e);
+			e.printStackTrace();
+		}
+
+		return this;
+	}
+
+	public String compile()
+	{
+		StringBuilder base = new StringBuilder("[\"\"");
+		for(JSONObject i : components)
+		{
+			base.append(",").append(i.toString());
+		}
+
+		return base + "]";
+	}
+
+	public void tellRawTo(JavaPlugin pl, Player p)
+	{
+		pl.getServer().dispatchCommand(pl.getServer().getConsoleSender(), "tellraw " + p.getName() + " " + compile());
+	}
 }

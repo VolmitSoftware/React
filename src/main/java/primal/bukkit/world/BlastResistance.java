@@ -158,7 +158,7 @@ public enum BlastResistance
 	LEAVES_2(1),
 	SNOW(1);
 
-	private final int br;
+	private int br;
 
 	BlastResistance(int br)
 	{

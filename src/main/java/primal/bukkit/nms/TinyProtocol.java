@@ -60,23 +60,23 @@ public abstract class TinyProtocol {
 	private static final Reflection.FieldAccessor<GameProfile> getGameProfile = Reflection.getField(PACKET_LOGIN_IN_START, GameProfile.class, 0);
 
 	// Speedup channel lookup
-	private final Map<String, Channel> channelLookup = new MapMaker().weakValues().makeMap();
+	private Map<String, Channel> channelLookup = new MapMaker().weakValues().makeMap();
 	private Listener listener;
 
 	// Channels that have already been removed
-	private final Set<Channel> uninjectedChannels = Collections.newSetFromMap(new MapMaker().weakKeys().makeMap());
+	private Set<Channel> uninjectedChannels = Collections.newSetFromMap(new MapMaker().weakKeys().<Channel, Boolean>makeMap());
 
 	// List of network markers
 	private List<Object> networkManagers;
 
 	// Injected channel handlers
-	private final List<Channel> serverChannels = Lists.newArrayList();
+	private List<Channel> serverChannels = Lists.newArrayList();
 	private ChannelInboundHandlerAdapter serverChannelHandler;
 	private ChannelInitializer<Channel> beginInitProtocol;
 	private ChannelInitializer<Channel> endInitProtocol;
 
 	// Current handler name
-	private final String handlerName;
+	private String handlerName;
 
 	protected volatile boolean closed;
 	protected Plugin plugin;
@@ -206,7 +206,7 @@ public abstract class TinyProtocol {
 			List<Object> list = Reflection.getField(serverConnection.getClass(), List.class, i).get(serverConnection);
 
 			for (Object item : list) {
-				if (!(item instanceof ChannelFuture))
+				if (!ChannelFuture.class.isInstance(item))
 					break;
 
 				// Channel future that contains the server connection

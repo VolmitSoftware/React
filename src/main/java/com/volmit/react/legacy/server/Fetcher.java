@@ -1,30 +1,37 @@
 package com.volmit.react.legacy.server;
 
-import org.bukkit.configuration.InvalidConfigurationException;
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
-
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
 
-public class Fetcher extends Thread {
-    private final String url;
-    private final FCCallback callback;
+import org.bukkit.configuration.InvalidConfigurationException;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 
-    public Fetcher(String s, FCCallback callback) {
-        this.url = s;
-        this.callback = callback;
-    }
+public class Fetcher extends Thread
+{
+	private final String url;
+	private final FCCallback callback;
 
-    @Override
-    public void run() {
-        FileConfiguration fc = new YamlConfiguration();
+	public Fetcher(String s, FCCallback callback)
+	{
+		this.url = s;
+		this.callback = callback;
+	}
 
-        try {
-            fc.load(new InputStreamReader(new URL(url).openStream()));
-            callback.run(fc);
-        } catch (IOException | InvalidConfigurationException ignored) {
-        }
-    }
+	@Override
+	public void run()
+	{
+		FileConfiguration fc = new YamlConfiguration();
+
+		try
+		{
+			fc.load(new InputStreamReader(new URL(url).openStream()));
+			callback.run(fc);
+		}
+
+		catch(IOException | InvalidConfigurationException ignored)
+		{
+		}
+	}
 }

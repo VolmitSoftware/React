@@ -6,7 +6,7 @@ import primal.bukkit.world.MaterialBlock;
 
 public class UIStaticDecorator implements WindowDecorator
 {
-	private final Element element;
+	private Element element;
 
 	public UIStaticDecorator(Element element)
 	{

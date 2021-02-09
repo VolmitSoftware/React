@@ -32,11 +32,11 @@ import java.util.Objects;
 
 public class AdvancementHolder15
 {
-	private final NamespacedKey id;
+	private NamespacedKey id;
 	private String title, parent, trigger, icon, description, background, frame;
 	private Integer subID = 0, amount = 0;
 	private boolean announce, toast = true;
-	private final List<ItemStack> items;
+	private List<ItemStack> items;
 	public List<AdvancementHolder15> holders = new ArrayList<AdvancementHolder15>();
 
 	public void addAdvancment(AdvancementHolder15 api)

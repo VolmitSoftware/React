@@ -1,123 +1,149 @@
 package com.volmit.react.controller;
 
-import com.volmit.react.Surge;
-import com.volmit.react.api.Unused;
-import com.volmit.react.util.Average;
-import com.volmit.react.util.Controller;
-import com.volmit.react.util.M;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.plugin.Plugin;
+
+import com.volmit.react.Surge;
+import com.volmit.react.api.Unused;
+import com.volmit.react.util.Average;
+import com.volmit.react.util.Controller;
+import com.volmit.react.util.M;
+
 import primal.json.JSONObject;
 import primal.lang.collection.GMap;
 
-public class ChunkController extends Controller {
-    private boolean firstTickList;
-    private long firstTick;
-    private long lastTick;
-    private Average aCSMS;
-    private GMap<Plugin, Integer> pluginLoads;
-    private GMap<Player, Integer> playerLoads;
-    private int serverLoads;
+public class ChunkController extends Controller
+{
+	private boolean firstTickList;
+	private long firstTick;
+	private long lastTick;
+	private Average aCSMS;
+	private GMap<Plugin, Integer> pluginLoads;
+	private GMap<Player, Integer> playerLoads;
+	private int serverLoads;
 
-    @Override
-    public void dump(JSONObject object) {
+	@Override
+	public void dump(JSONObject object)
+	{
 
-    }
+	}
 
-    @Override
-    public void start() {
-        Surge.register(this);
-        firstTickList = false;
-        firstTick = M.ns();
-        lastTick = M.ns();
-        aCSMS = new Average(30);
-        playerLoads = new GMap<Player, Integer>();
-        pluginLoads = new GMap<Plugin, Integer>();
-        serverLoads = 0;
-    }
+	@Override
+	public void start()
+	{
+		Surge.register(this);
+		firstTickList = false;
+		firstTick = M.ns();
+		lastTick = M.ns();
+		aCSMS = new Average(30);
+		playerLoads = new GMap<Player, Integer>();
+		pluginLoads = new GMap<Plugin, Integer>();
+		serverLoads = 0;
+	}
 
-    private void flushTickList() {
-        if (firstTickList == false) {
-            aCSMS.put(0);
-            return;
-        }
+	private void flushTickList()
+	{
+		if(firstTickList == false)
+		{
+			aCSMS.put(0);
+			return;
+		}
 
-        if (lastTick < firstTick) {
-            firstTick = lastTick;
-        }
+		if(lastTick < firstTick)
+		{
+			firstTick = lastTick;
+		}
 
-        aCSMS.put(lastTick - firstTick);
-        firstTickList = false;
-    }
+		aCSMS.put(lastTick - firstTick);
+		firstTickList = false;
+	}
 
-    private void tickNextTickList() {
-        if (!firstTickList) {
-            firstTickList = true;
-            firstTick = M.ns();
-        } else {
-            lastTick = M.ns();
-        }
-    }
+	private void tickNextTickList()
+	{
+		if(!firstTickList)
+		{
+			firstTickList = true;
+			firstTick = M.ns();
+		}
 
-    @Override
-    public void stop() {
-        Surge.unregister(this);
-    }
+		else
+		{
+			lastTick = M.ns();
+		}
+	}
 
-    @Unused
-    @Override
-    public void tick() {
-        flushTickList();
-    }
+	@Override
+	public void stop()
+	{
+		Surge.unregister(this);
+	}
 
-    public void on(PlayerQuitEvent e) {
-        playerLoads.remove(e.getPlayer());
-    }
+	@Unused
+	@Override
+	public void tick()
+	{
+		flushTickList();
+	}
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onLoad(ChunkLoadEvent e) {
-        tickNextTickList();
-    }
+	public void on(PlayerQuitEvent e)
+	{
+		playerLoads.remove(e.getPlayer());
+	}
 
-    public boolean isFirstTickList() {
-        return firstTickList;
-    }
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+	public void onLoad(ChunkLoadEvent e)
+	{
+		tickNextTickList();
+	}
 
-    public long getFirstTick() {
-        return firstTick;
-    }
+	public boolean isFirstTickList()
+	{
+		return firstTickList;
+	}
 
-    public long getLastTick() {
-        return lastTick;
-    }
+	public long getFirstTick()
+	{
+		return firstTick;
+	}
 
-    public Average getaCSMS() {
-        return aCSMS;
-    }
+	public long getLastTick()
+	{
+		return lastTick;
+	}
 
-    public GMap<Plugin, Integer> getPluginLoads() {
-        return pluginLoads;
-    }
+	public Average getaCSMS()
+	{
+		return aCSMS;
+	}
 
-    public GMap<Player, Integer> getPlayerLoads() {
-        return playerLoads;
-    }
+	public GMap<Plugin, Integer> getPluginLoads()
+	{
+		return pluginLoads;
+	}
 
-    public int getServerLoads() {
-        return serverLoads;
-    }
+	public GMap<Player, Integer> getPlayerLoads()
+	{
+		return playerLoads;
+	}
 
-    @Override
-    public int getInterval() {
-        return 1;
-    }
+	public int getServerLoads()
+	{
+		return serverLoads;
+	}
 
-    @Override
-    public boolean isUrgent() {
-        return true;
-    }
+	@Override
+	public int getInterval()
+	{
+		return 1;
+	}
+
+	@Override
+	public boolean isUrgent()
+	{
+		return true;
+	}
 }

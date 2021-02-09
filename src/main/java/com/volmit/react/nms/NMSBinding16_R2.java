@@ -12,15 +12,19 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import primal.bukkit.world.MaterialBlock;
 
-public class NMSBinding16_R2 extends NMSBinding {
-    public NMSBinding16_R2(String packageVersion) {
+public class NMSBinding16_R2 extends NMSBinding
+{
+    public NMSBinding16_R2(String packageVersion)
+    {
         super(packageVersion);
     }
 
     @SuppressWarnings("deprecation")
     @Override
-    public void setBlock(Location l, MaterialBlock m) {
-        if (!Config.USE_NMS) {
+    public void setBlock(Location l, MaterialBlock m)
+    {
+        if(!Config.USE_NMS)
+        {
             l.getBlock().setTypeIdAndData(m.getMaterial().getId(), m.getData(), false);
             return;
         }
@@ -35,8 +39,10 @@ public class NMSBinding16_R2 extends NMSBinding {
     }
 
     @Override
-    public void updateBlock(Block bfg) {
-        if (!Config.USE_NMS) {
+    public void updateBlock(Block bfg)
+    {
+        if(!Config.USE_NMS)
+        {
             return;
         }
 
@@ -48,9 +54,12 @@ public class NMSBinding16_R2 extends NMSBinding {
     }
 
     @Override
-    public void merge(Entity drop, Entity into) {
-        for (Player i : drop.getWorld().getPlayers()) {
-            if (P.isWithinViewDistance(i, drop.getLocation().getChunk())) {
+    public void merge(Entity drop, Entity into)
+    {
+        for(Player i : drop.getWorld().getPlayers())
+        {
+            if(P.isWithinViewDistance(i, drop.getLocation().getChunk()))
+            {
                 ((CraftPlayer) i).getHandle().playerConnection.sendPacket(new PacketPlayOutCollect(drop.getEntityId(), into.getEntityId(), 1));
             }
         }

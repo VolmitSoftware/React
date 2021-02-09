@@ -1,27 +1,32 @@
 package com.volmit.react.util;
 
-import javax.crypto.Cipher;
-import javax.crypto.CipherInputStream;
-import javax.crypto.CipherOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-public class CipherStreamConstructor implements StreamConstructor<CipherInputStream, CipherOutputStream> {
-    private final Cipher cipher;
+import javax.crypto.Cipher;
+import javax.crypto.CipherInputStream;
+import javax.crypto.CipherOutputStream;
 
-    public CipherStreamConstructor(Cipher cipher) {
-        this.cipher = cipher;
-    }
+public class CipherStreamConstructor implements StreamConstructor<CipherInputStream, CipherOutputStream>
+{
+	private final Cipher cipher;
 
-    @Override
-    public CipherInputStream constructInput(InputStream base) throws IOException {
-        return new CipherInputStream(base, cipher);
-    }
+	public CipherStreamConstructor(Cipher cipher)
+	{
+		this.cipher = cipher;
+	}
 
-    @Override
-    public CipherOutputStream constructOutput(OutputStream base) throws IOException {
-        return new CipherOutputStream(base, cipher);
-    }
+	@Override
+	public CipherInputStream constructInput(InputStream base) throws IOException
+	{
+		return new CipherInputStream(base, cipher);
+	}
+
+	@Override
+	public CipherOutputStream constructOutput(OutputStream base) throws IOException
+	{
+		return new CipherOutputStream(base, cipher);
+	}
 
 }

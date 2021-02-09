@@ -1,5 +1,6 @@
 package com.volmit.react.util;
 
-public interface SuperCaller {
-    void run();
+public interface SuperCaller
+{
+	void run();
 }

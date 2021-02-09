@@ -23,7 +23,7 @@ public class UIWindow implements Window, Listener
 	private final Player viewer;
 	private Callback<Window> eClose;
 	private WindowResolution resolution;
-	private final GMap<Integer, Element> elements;
+	private GMap<Integer, Element> elements;
 	private String title;
 	private boolean visible;
 	private int viewportPosition;

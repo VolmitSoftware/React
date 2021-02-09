@@ -1,13 +1,5 @@
 package com.volmit.react.controller;
 
-import com.volmit.react.Config;
-import com.volmit.react.Gate;
-import com.volmit.react.React;
-import com.volmit.react.Surge;
-import com.volmit.react.api.Unused;
-import com.volmit.react.util.Average;
-import com.volmit.react.util.Controller;
-import com.volmit.react.util.M;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -16,144 +8,187 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.inventory.ItemStack;
-import primal.bukkit.world.MaterialBlock;
+
+import com.volmit.react.Config;
+import com.volmit.react.Gate;
+import com.volmit.react.React;
+import com.volmit.react.Surge;
+import com.volmit.react.api.Unused;
+import com.volmit.react.util.Average;
+import com.volmit.react.util.Controller;
+import com.volmit.react.util.M;
+
 import primal.json.JSONObject;
+import primal.bukkit.world.MaterialBlock;
 import primal.lang.collection.GList;
 import primal.lang.collection.GSet;
 
-public class ExplosiveController extends Controller {
-    private boolean firstTickList;
-    private long firstTick;
-    private long lastTick;
-    private Average aCSMS;
-    private GSet<Location> locs;
+public class ExplosiveController extends Controller
+{
+	private boolean firstTickList;
+	private long firstTick;
+	private long lastTick;
+	private Average aCSMS;
+	private GSet<Location> locs;
 
-    @Override
-    public void dump(JSONObject object) {
-        object.put("queue", locs.size());
-    }
+	@Override
+	public void dump(JSONObject object)
+	{
+		object.put("queue", locs.size());
+	}
 
-    @Override
-    public void start() {
-        Surge.register(this);
-        firstTickList = false;
-        firstTick = M.ns();
-        lastTick = M.ns();
-        aCSMS = new Average(30);
-        locs = new GSet<Location>();
-    }
+	@Override
+	public void start()
+	{
+		Surge.register(this);
+		firstTickList = false;
+		firstTick = M.ns();
+		lastTick = M.ns();
+		aCSMS = new Average(30);
+		locs = new GSet<Location>();
+	}
 
-    private void flushTickList() {
-        if (firstTickList == false) {
-            aCSMS.put(0);
-            return;
-        }
+	private void flushTickList()
+	{
+		if(firstTickList == false)
+		{
+			aCSMS.put(0);
+			return;
+		}
 
-        if (lastTick < firstTick) {
-            firstTick = lastTick;
-        }
+		if(lastTick < firstTick)
+		{
+			firstTick = lastTick;
+		}
 
-        aCSMS.put(lastTick - firstTick);
-        firstTickList = false;
-    }
+		aCSMS.put(lastTick - firstTick);
+		firstTickList = false;
+	}
 
-    private void tickNextTickList() {
-        if (!firstTickList) {
-            firstTickList = true;
-            firstTick = M.ns();
-        } else {
-            lastTick = M.ns();
-        }
-    }
+	private void tickNextTickList()
+	{
+		if(!firstTickList)
+		{
+			firstTickList = true;
+			firstTick = M.ns();
+		}
 
-    @Override
-    public void stop() {
-        Surge.unregister(this);
-    }
+		else
+		{
+			lastTick = M.ns();
+		}
+	}
 
-    @Unused
-    @Override
-    public void tick() {
-        flushTickList();
+	@Override
+	public void stop()
+	{
+		Surge.unregister(this);
+	}
 
-        for (Location i : locs) {
-            if (M.r(0.5)) {
-                for (ItemStack j : i.getBlock().getDrops()) {
-                    if (M.r(0.5)) {
-                        i.getWorld().dropItemNaturally(i, j);
-                    }
-                }
-            }
+	@Unused
+	@Override
+	public void tick()
+	{
+		flushTickList();
 
-            React.instance.featureController.setBlock(i, new MaterialBlock());
-        }
+		for(Location i : locs)
+		{
+			if(M.r(0.5))
+			{
+				for(ItemStack j : i.getBlock().getDrops())
+				{
+					if(M.r(0.5))
+					{
+						i.getWorld().dropItemNaturally(i, j);
+					}
+				}
+			}
 
-        locs.clear();
-    }
+			React.instance.featureController.setBlock(i, new MaterialBlock());
+		}
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onLoad(EntityExplodeEvent e) {
-        if (Config.SAFE_MODE_NMS) {
-            return;
-        }
+		locs.clear();
+	}
 
-        if (Config.FACTIONS && Gate.factions()) {
-            return;
-        }
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+	public void onLoad(EntityExplodeEvent e)
+	{
+		if(Config.SAFE_MODE_NMS)
+		{
+			return;
+		}
 
-        if (aCSMS.getAverage() > Config.MAX_EXPLOSION_MS && Config.THROTTLE_EXPLOSIONS) {
-            if (M.r(0.65)) {
-                e.setCancelled(true);
-            }
-        }
+		if(Config.FACTIONS && Gate.factions())
+		{
+			return;
+		}
 
-        if (!e.isCancelled()) {
-            if (Config.FAST_EXPLOSIONS) {
-                GList<Block> bl = new GList<Block>(e.blockList());
-                e.blockList().clear();
+		if(aCSMS.getAverage() > Config.MAX_EXPLOSION_MS && Config.THROTTLE_EXPLOSIONS)
+		{
+			if(M.r(0.65))
+			{
+				e.setCancelled(true);
+			}
+		}
 
-                for (Block i : bl) {
-                    if (i.getType().equals(Material.TNT)) {
-                        e.blockList().add(i);
-                        continue;
-                    }
+		if(!e.isCancelled())
+		{
+			if(Config.FAST_EXPLOSIONS)
+			{
+				GList<Block> bl = new GList<Block>(e.blockList());
+				e.blockList().clear();
 
-                    locs.add(i.getLocation());
-                }
-            }
-        }
+				for(Block i : bl)
+				{
+					if(i.getType().equals(Material.TNT))
+					{
+						e.blockList().add(i);
+						continue;
+					}
 
-        tickNextTickList();
-    }
+					locs.add(i.getLocation());
+				}
+			}
+		}
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onLoad(BlockExplodeEvent e) {
-        tickNextTickList();
-    }
+		tickNextTickList();
+	}
 
-    public boolean isFirstTickList() {
-        return firstTickList;
-    }
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+	public void onLoad(BlockExplodeEvent e)
+	{
+		tickNextTickList();
+	}
 
-    public long getFirstTick() {
-        return firstTick;
-    }
+	public boolean isFirstTickList()
+	{
+		return firstTickList;
+	}
 
-    public long getLastTick() {
-        return lastTick;
-    }
+	public long getFirstTick()
+	{
+		return firstTick;
+	}
 
-    public Average getaCSMS() {
-        return aCSMS;
-    }
+	public long getLastTick()
+	{
+		return lastTick;
+	}
 
-    @Override
-    public int getInterval() {
-        return 0;
-    }
+	public Average getaCSMS()
+	{
+		return aCSMS;
+	}
 
-    @Override
-    public boolean isUrgent() {
-        return true;
-    }
+	@Override
+	public int getInterval()
+	{
+		return 0;
+	}
+
+	@Override
+	public boolean isUrgent()
+	{
+		return true;
+	}
 }

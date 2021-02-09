@@ -3,22 +3,23 @@ package com.volmit.react.api;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 
-public interface ICommand extends TabCompleter {
-    String getCommand();
+public interface ICommand extends TabCompleter
+{
+	String getCommand();
 
-    String[] getAliases();
+	String[] getAliases();
 
-    String[] getPermissions();
+	String[] getPermissions();
 
-    String getUsage();
+	String getUsage();
 
-    String getDescription();
+	String getDescription();
 
-    String getDescriptionForParameter(String par);
+	String getDescriptionForParameter(String par);
 
-    SideGate getSideGate();
+	SideGate getSideGate();
 
-    void registerParameterDescription(String id, String desc);
+	void registerParameterDescription(String id, String desc);
 
-    void fire(CommandSender sender, String[] args);
+	void fire(CommandSender sender, String[] args);
 }

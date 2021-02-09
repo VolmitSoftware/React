@@ -6,7 +6,7 @@ import primal.lang.collection.GList;
 
 public class V
 {
-	private final Object o;
+	private Object o;
 	private boolean local;
 	private boolean suppress = false;
 

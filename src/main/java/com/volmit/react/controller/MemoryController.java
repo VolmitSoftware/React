@@ -1,92 +1,118 @@
 package com.volmit.react.controller;
 
-import com.volmit.react.util.Controller;
-import org.bukkit.plugin.Plugin;
-import primal.json.JSONObject;
-
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
-public class MemoryController extends Controller {
-    private boolean running;
-    private Method in;
+import org.bukkit.plugin.Plugin;
 
-    public boolean isRunning() {
-        return running;
-    }
+import com.volmit.react.util.Controller;
+import primal.json.JSONObject;
 
-    public Method getIn() {
-        return in;
-    }
+public class MemoryController extends Controller
+{
+	private boolean running;
+	private Method in;
 
-    public long getMemoryUsagePlugin(Plugin p) {
-        long v = 0;
+	public boolean isRunning()
+	{
+		return running;
+	}
 
-        for (Field i : p.getClass().getDeclaredFields()) {
-            if (Modifier.isStatic(i.getModifiers())) {
-                continue;
-            }
+	public Method getIn()
+	{
+		return in;
+	}
 
-            i.setAccessible(true);
+	public long getMemoryUsagePlugin(Plugin p)
+	{
+		long v = 0;
 
-            try {
-                v += getMemoryUsage(i.get(p));
-            } catch (IllegalArgumentException | IllegalAccessException e) {
+		for(Field i : p.getClass().getDeclaredFields())
+		{
+			if(Modifier.isStatic(i.getModifiers()))
+			{
+				continue;
+			}
 
-            }
-        }
+			i.setAccessible(true);
 
-        return v;
-    }
+			try
+			{
+				v += getMemoryUsage(i.get(p));
+			}
 
-    public long getMemoryUsage(Object o) {
-        try {
-            return running && in != null ? (long) in.invoke(null, o) : -1;
-        } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+			catch(IllegalArgumentException | IllegalAccessException e)
+			{
 
-        }
+			}
+		}
 
-        return -1;
-    }
+		return v;
+	}
 
-    @Override
-    public void dump(JSONObject object) {
+	public long getMemoryUsage(Object o)
+	{
+		try
+		{
+			return running && in != null ? (long) in.invoke(null, o) : -1;
+		}
 
-    }
+		catch(IllegalAccessException | IllegalArgumentException | InvocationTargetException e)
+		{
 
-    @Override
-    public void start() {
-        running = false;
+		}
 
-        try {
-            Class<?> c = Class.forName("com.javamex.classmexer.MemoryUtil");
-            in = c.getDeclaredMethod("deepMemoryUsageOf", Object.class);
-            System.out.println("React Memory Monitor LINKED!");
-            running = true;
-        } catch (Throwable e) {
-            running = false;
-        }
-    }
+		return -1;
+	}
 
-    @Override
-    public void stop() {
+	@Override
+	public void dump(JSONObject object)
+	{
 
-    }
+	}
 
-    @Override
-    public void tick() {
+	@Override
+	public void start()
+	{
+		running = false;
 
-    }
+		try
+		{
+			Class<?> c = Class.forName("com.javamex.classmexer.MemoryUtil");
+			in = c.getDeclaredMethod("deepMemoryUsageOf", Object.class);
+			System.out.println("React Memory Monitor LINKED!");
+			running = true;
+		}
 
-    @Override
-    public int getInterval() {
-        return 948;
-    }
+		catch(Throwable e)
+		{
+			running = false;
+		}
+	}
 
-    @Override
-    public boolean isUrgent() {
-        return false;
-    }
+	@Override
+	public void stop()
+	{
+
+	}
+
+	@Override
+	public void tick()
+	{
+
+	}
+
+	@Override
+	public int getInterval()
+	{
+		return 948;
+	}
+
+	@Override
+	public boolean isUrgent()
+	{
+		return false;
+	}
 }

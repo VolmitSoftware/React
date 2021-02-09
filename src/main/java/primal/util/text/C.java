@@ -540,7 +540,7 @@ public enum C
 
 	public static Color rgbToColor(String rgb)
 	{
-		String[] parts = rgb.split("[^0-9]+");
+		String parts[] = rgb.split("[^0-9]+");
 		if(parts.length < 3)
 		{
 			return null;

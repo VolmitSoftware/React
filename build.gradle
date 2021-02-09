@@ -14,8 +14,8 @@ repositories {
     }
 }
 
-String releasePath = project.rootDir.absolutePath + "\\release\\" + project.version + "\\React-" + project.version + ".jar"
-String devPath = "C:\\Users\\cyberpwn\\Documents\\development\\server\\plugins\\React.jar"
+String releasePath = project.rootDir.absolutePath + "\\release\\" + project.version + "\\React-" + project.version + ".jar";
+String devPath = "C:\\Users\\cyberpwn\\Documents\\development\\server\\plugins\\React.jar";
 
 shadowJar {
     project.configurations.implementation.canBeResolved = true

@@ -1,11 +1,14 @@
 package com.volmit.react.util;
 
-public interface IClient {
-    int getPort();
+import java.io.IOException;
 
-    String getAddress();
+public interface IClient
+{
+	int getPort();
 
-    IPacket sendPacket(IPacket send) throws Exception;
+	String getAddress();
 
-    PacketHandler getHandler();
+	IPacket sendPacket(IPacket send) throws IOException, Exception;
+
+	PacketHandler getHandler();
 }

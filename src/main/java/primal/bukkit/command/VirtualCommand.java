@@ -19,10 +19,10 @@ import primal.util.text.C;
  */
 public class VirtualCommand
 {
-	private final ICommand command;
-	private final String tag;
+	private ICommand command;
+	private String tag;
 
-	private final GMap<GList<String>, VirtualCommand> children;
+	private GMap<GList<String>, VirtualCommand> children;
 
 	public VirtualCommand(ICommand command)
 	{

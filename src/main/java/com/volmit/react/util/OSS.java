@@ -1,178 +1,214 @@
 package com.volmit.react.util;
 
-import primal.lang.collection.GList;
-
-import javax.crypto.Cipher;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InvalidClassException;
 import java.io.OutputStream;
 
-public class OSS extends OutputStream {
-    private final OutputStream gen;
-    private final StreamBuilder bu;
-    private final byte[] writeBuffer = new byte[8];
-    private OutputStream out;
-    private boolean built;
+import javax.crypto.Cipher;
 
-    public OSS(OutputStream out) {
-        this.out = out;
-        this.gen = out;
-        this.bu = new StreamBuilder();
-        this.built = false;
-    }
+import primal.lang.collection.GList;
 
-    public OSS() {
-        this(new ByteArrayOutputStream());
-    }
+public class OSS extends OutputStream
+{
+	private OutputStream out;
+	private OutputStream gen;
+	private final StreamBuilder bu;
+	private boolean built;
 
-    public OSS buffer(int bufferSize) {
-        bu.bindBuffer(bufferSize);
-        return this;
-    }
+	public OSS(OutputStream out)
+	{
+		this.out = out;
+		this.gen = out;
+		this.bu = new StreamBuilder();
+		this.built = false;
+	}
 
-    public OSS gzip(int compressionLevel) {
-        bu.bindGZIP(compressionLevel);
-        return this;
-    }
+	public OSS()
+	{
+		this(new ByteArrayOutputStream());
+	}
 
-    public OSS encrypt(Cipher cipher) {
-        bu.bindCipher(cipher);
-        return this;
-    }
+	public OSS buffer(int bufferSize)
+	{
+		bu.bindBuffer(bufferSize);
+		return this;
+	}
 
-    private void build() throws IOException {
-        if (!built) {
-            built = true;
-            out = bu.constructOutput(out);
-        }
-    }
+	public OSS gzip(int compressionLevel)
+	{
+		bu.bindGZIP(compressionLevel);
+		return this;
+	}
 
-    public final void writeBoolean(boolean v) throws IOException {
-        write(v ? 1 : 0);
-    }
+	public OSS encrypt(Cipher cipher)
+	{
+		bu.bindCipher(cipher);
+		return this;
+	}
 
-    public final void writeByte(int v) throws IOException {
-        write(v);
-    }
+	private void build() throws IOException
+	{
+		if(!built)
+		{
+			built = true;
+			out = bu.constructOutput(out);
+		}
+	}
 
-    public final void writeShort(int v) throws IOException {
-        write((v >>> 8) & 0xFF);
-        write((v >>> 0) & 0xFF);
-    }
+	public final void writeBoolean(boolean v) throws IOException
+	{
+		write(v ? 1 : 0);
+	}
 
-    public final void writeChar(int v) throws IOException {
-        write((v >>> 8) & 0xFF);
-        write((v >>> 0) & 0xFF);
-    }
+	public final void writeByte(int v) throws IOException
+	{
+		write(v);
+	}
 
-    public final void writeInt(int v) throws IOException {
-        write((v >>> 24) & 0xFF);
-        write((v >>> 16) & 0xFF);
-        write((v >>> 8) & 0xFF);
-        write((v >>> 0) & 0xFF);
-    }
+	public final void writeShort(int v) throws IOException
+	{
+		write((v >>> 8) & 0xFF);
+		write((v >>> 0) & 0xFF);
+	}
 
-    public final void writeStringList(GList<String> s) throws IOException {
-        writeInt(s.size());
+	public final void writeChar(int v) throws IOException
+	{
+		write((v >>> 8) & 0xFF);
+		write((v >>> 0) & 0xFF);
+	}
 
-        for (String i : s) {
-            writeString(i);
-        }
-    }
+	public final void writeInt(int v) throws IOException
+	{
+		write((v >>> 24) & 0xFF);
+		write((v >>> 16) & 0xFF);
+		write((v >>> 8) & 0xFF);
+		write((v >>> 0) & 0xFF);
+	}
 
-    public final void writeDoubleList(GList<Double> s) throws IOException {
-        writeInt(s.size());
+	public final void writeStringList(GList<String> s) throws IOException
+	{
+		writeInt(s.size());
 
-        for (Double i : s) {
-            writeDouble(i);
-        }
-    }
+		for(String i : s)
+		{
+			writeString(i);
+		}
+	}
 
-    public final void writeLongList(GList<Long> s) throws IOException {
-        writeInt(s.size());
+	public final void writeDoubleList(GList<Double> s) throws IOException
+	{
+		writeInt(s.size());
 
-        for (Long i : s) {
-            writeLong(i);
-        }
-    }
+		for(Double i : s)
+		{
+			writeDouble(i);
+		}
+	}
 
-    public final void writeStreamableList(GList<Streamable> s) throws Exception {
-        writeInt(s.size());
+	public final void writeLongList(GList<Long> s) throws IOException
+	{
+		writeInt(s.size());
 
-        for (Streamable i : s) {
-            write(i);
-        }
-    }
+		for(Long i : s)
+		{
+			writeLong(i);
+		}
+	}
 
-    public final void writeLong(long v) throws IOException {
-        writeBuffer[1] = (byte) (v >>> 48);
-        writeBuffer[2] = (byte) (v >>> 40);
-        writeBuffer[3] = (byte) (v >>> 32);
-        writeBuffer[4] = (byte) (v >>> 24);
-        writeBuffer[5] = (byte) (v >>> 16);
-        writeBuffer[6] = (byte) (v >>> 8);
-        writeBuffer[7] = (byte) (v >>> 0);
-        write(writeBuffer, 0, 8);
-    }
+	public final void writeStreamableList(GList<Streamable> s) throws Exception
+	{
+		writeInt(s.size());
 
-    public final void writeFloat(float v) throws IOException {
-        writeInt(Float.floatToIntBits(v));
-    }
+		for(Streamable i : s)
+		{
+			write(i);
+		}
+	}
 
-    public final void writeDouble(double v) throws IOException {
-        writeLong(Double.doubleToLongBits(v));
-    }
+	private byte writeBuffer[] = new byte[8];
 
-    public final void writeString(String s) throws IOException {
-        int len = s.length();
+	public final void writeLong(long v) throws IOException
+	{
+		writeBuffer[1] = (byte) (v >>> 48);
+		writeBuffer[2] = (byte) (v >>> 40);
+		writeBuffer[3] = (byte) (v >>> 32);
+		writeBuffer[4] = (byte) (v >>> 24);
+		writeBuffer[5] = (byte) (v >>> 16);
+		writeBuffer[6] = (byte) (v >>> 8);
+		writeBuffer[7] = (byte) (v >>> 0);
+		write(writeBuffer, 0, 8);
+	}
 
-        writeInt(len);
+	public final void writeFloat(float v) throws IOException
+	{
+		writeInt(Float.floatToIntBits(v));
+	}
 
-        for (int i = 0; i < len; i++) {
-            int v = s.charAt(i);
-            writeChar(v);
-        }
-    }
+	public final void writeDouble(double v) throws IOException
+	{
+		writeLong(Double.doubleToLongBits(v));
+	}
 
-    public void db() {
+	public final void writeString(String s) throws IOException
+	{
+		int len = s.length();
 
-    }
+		writeInt(len);
 
-    @Override
-    public void write(int b) throws IOException {
-        build();
-        out.write(b);
-    }
+		for(int i = 0; i < len; i++)
+		{
+			int v = s.charAt(i);
+			writeChar(v);
+		}
+	}
 
-    /**
-     * Write a streamable object
-     *
-     * @param s the object
-     * @throws Exception
-     */
-    public void write(Streamable s) throws Exception {
-        OSS dout = new OSS();
-        s.toBytes(dout);
-        write(dout.getBytes());
-    }
+	public void db()
+	{
 
-    public final byte[] getBytes() throws IOException {
-        if (gen instanceof ByteArrayOutputStream) {
-            flush();
-            return ((ByteArrayOutputStream) gen).toByteArray();
-        }
+	}
 
-        throw new InvalidClassException("The initial output stream must be a ByteArrayOutputStream");
-    }
+	@Override
+	public void write(int b) throws IOException
+	{
+		build();
+		out.write(b);
+	}
 
-    @Override
-    public void close() throws IOException {
-        out.close();
-    }
+	/**
+	 * Write a streamable object
+	 *
+	 * @param s
+	 *            the object
+	 * @throws Exception
+	 */
+	public void write(Streamable s) throws Exception
+	{
+		OSS dout = new OSS();
+		s.toBytes(dout);
+		write(dout.getBytes());
+	}
 
-    @Override
-    public void flush() throws IOException {
-        out.flush();
-    }
+	public final byte[] getBytes() throws IOException
+	{
+		if(gen instanceof ByteArrayOutputStream)
+		{
+			flush();
+			return ((ByteArrayOutputStream) gen).toByteArray();
+		}
+
+		throw new InvalidClassException("The initial output stream must be a ByteArrayOutputStream");
+	}
+
+	@Override
+	public void close() throws IOException
+	{
+		out.close();
+	}
+
+	@Override
+	public void flush() throws IOException
+	{
+		out.flush();
+	}
 }

@@ -13,10 +13,10 @@ import primal.lang.collection.GList;
  */
 public abstract class PrimalCommand implements ICommand
 {
-	private final GList<PrimalCommand> children;
-	private final GList<String> nodes;
-	private final GList<String> requiredPermissions;
-	private final String node;
+	private GList<PrimalCommand> children;
+	private GList<String> nodes;
+	private GList<String> requiredPermissions;
+	private String node;
 	private String category;
 
 	/**

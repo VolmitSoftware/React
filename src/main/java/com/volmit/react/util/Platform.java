@@ -1,220 +1,275 @@
 package com.volmit.react.util;
 
-import com.sun.management.OperatingSystemMXBean;
-
 import java.io.File;
 import java.lang.management.ManagementFactory;
 
+import com.sun.management.OperatingSystemMXBean;
+
 @SuppressWarnings("restriction")
-public class Platform {
-    public static boolean ENABLE = true;
-    public static double PROC_CPU = CPU.getLiveProcessCPULoad();
+public class Platform
+{
+	public static boolean ENABLE = true;
+	public static double PROC_CPU = CPU.getLiveProcessCPULoad();
 
-    public static String getVersion() {
-        if (!ENABLE) {
-            return "?";
-        }
+	public static class ENVIRONMENT
+	{
+		public static boolean canRunBatch()
+		{
+			return getSystem().getName().toLowerCase().contains("windows");
+		}
 
-        return getSystem().getVersion();
-    }
+		public static String getJavaHome()
+		{
+			if(!ENABLE)
+			{
+				return "";
+			}
 
-    public static String getName() {
-        if (!ENABLE) {
-            return "?";
-        }
+			return System.getProperty("java.home");
+		}
 
-        return getSystem().getName();
-    }
+		public static String getJavaVendor()
+		{
+			if(!ENABLE)
+			{
+				return "";
+			}
 
-    private static OperatingSystemMXBean getSystem() {
-        return (OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
-    }
+			return System.getProperty("java.vendor");
+		}
 
-    public static class ENVIRONMENT {
-        public static boolean canRunBatch() {
-            return getSystem().getName().toLowerCase().contains("windows");
-        }
+		public static String getJavaVersion()
+		{
+			if(!ENABLE)
+			{
+				return "";
+			}
 
-        public static String getJavaHome() {
-            if (!ENABLE) {
-                return "";
-            }
+			return System.getProperty("java.version");
+		}
+	}
 
-            return System.getProperty("java.home");
-        }
+	public static class STORAGE
+	{
+		public static long getAbsoluteTotalSpace()
+		{
+			long t = 0;
 
-        public static String getJavaVendor() {
-            if (!ENABLE) {
-                return "";
-            }
+			for(File i : getRoots())
+			{
+				t += getTotalSpace(i);
+			}
 
-            return System.getProperty("java.vendor");
-        }
+			return t;
+		}
 
-        public static String getJavaVersion() {
-            if (!ENABLE) {
-                return "";
-            }
+		public static long getTotalSpace()
+		{
+			return getTotalSpace(new File("."));
+		}
 
-            return System.getProperty("java.version");
-        }
-    }
+		public static long getTotalSpace(File root)
+		{
+			return root.getTotalSpace();
+		}
 
-    public static class STORAGE {
-        public static long getAbsoluteTotalSpace() {
-            long t = 0;
+		public static long getAbsoluteFreeSpace()
+		{
+			long t = 0;
 
-            for (File i : getRoots()) {
-                t += getTotalSpace(i);
-            }
+			for(File i : getRoots())
+			{
+				t += getFreeSpace(i);
+			}
 
-            return t;
-        }
+			return t;
+		}
 
-        public static long getTotalSpace() {
-            return getTotalSpace(new File("."));
-        }
+		public static long getFreeSpace()
+		{
+			return getFreeSpace(new File("."));
+		}
 
-        public static long getTotalSpace(File root) {
-            return root.getTotalSpace();
-        }
+		public static long getFreeSpace(File root)
+		{
+			return root.getFreeSpace();
+		}
 
-        public static long getAbsoluteFreeSpace() {
-            long t = 0;
+		public static long getUsedSpace()
+		{
+			return getTotalSpace() - getFreeSpace();
+		}
 
-            for (File i : getRoots()) {
-                t += getFreeSpace(i);
-            }
+		public static long getUsedSpace(File root)
+		{
+			return getTotalSpace(root) - getFreeSpace(root);
+		}
 
-            return t;
-        }
+		public static long getAbsoluteUsedSpace()
+		{
+			return getAbsoluteTotalSpace() - getAbsoluteFreeSpace();
+		}
 
-        public static long getFreeSpace() {
-            return getFreeSpace(new File("."));
-        }
+		public static File[] getRoots()
+		{
+			return File.listRoots();
+		}
+	}
 
-        public static long getFreeSpace(File root) {
-            return root.getFreeSpace();
-        }
+	public static class MEMORY
+	{
+		public static class PHYSICAL
+		{
+			public static long getTotalMemory()
+			{
+				if(!ENABLE)
+				{
+					return 0;
+				}
 
-        public static long getUsedSpace() {
-            return getTotalSpace() - getFreeSpace();
-        }
+				return getSystem().getTotalPhysicalMemorySize();
+			}
 
-        public static long getUsedSpace(File root) {
-            return getTotalSpace(root) - getFreeSpace(root);
-        }
+			public static long getFreeMemory()
+			{
+				if(!ENABLE)
+				{
+					return 0;
+				}
 
-        public static long getAbsoluteUsedSpace() {
-            return getAbsoluteTotalSpace() - getAbsoluteFreeSpace();
-        }
+				return getSystem().getFreePhysicalMemorySize();
+			}
 
-        public static File[] getRoots() {
-            return File.listRoots();
-        }
-    }
+			public static long getUsedMemory()
+			{
+				if(!ENABLE)
+				{
+					return 0;
+				}
 
-    public static class MEMORY {
-        public static class PHYSICAL {
-            public static long getTotalMemory() {
-                if (!ENABLE) {
-                    return 0;
-                }
+				return getTotalMemory() - getFreeMemory();
+			}
+		}
 
-                return getSystem().getTotalPhysicalMemorySize();
-            }
+		public static class VIRTUAL
+		{
+			public static long getTotalMemory()
+			{
+				if(!ENABLE)
+				{
+					return 0;
+				}
 
-            public static long getFreeMemory() {
-                if (!ENABLE) {
-                    return 0;
-                }
+				return getSystem().getTotalSwapSpaceSize();
+			}
 
-                return getSystem().getFreePhysicalMemorySize();
-            }
+			public static long getFreeMemory()
+			{
+				if(!ENABLE)
+				{
+					return 0;
+				}
 
-            public static long getUsedMemory() {
-                if (!ENABLE) {
-                    return 0;
-                }
+				return getSystem().getFreeSwapSpaceSize();
+			}
 
-                return getTotalMemory() - getFreeMemory();
-            }
-        }
+			public static long getUsedMemory()
+			{
+				if(!ENABLE)
+				{
+					return 0;
+				}
 
-        public static class VIRTUAL {
-            public static long getTotalMemory() {
-                if (!ENABLE) {
-                    return 0;
-                }
+				return getTotalMemory() - getFreeMemory();
+			}
 
-                return getSystem().getTotalSwapSpaceSize();
-            }
+			public static long getCommittedVirtualMemory()
+			{
+				if(!ENABLE)
+				{
+					return 0;
+				}
 
-            public static long getFreeMemory() {
-                if (!ENABLE) {
-                    return 0;
-                }
+				return getSystem().getCommittedVirtualMemorySize();
+			}
+		}
+	}
 
-                return getSystem().getFreeSwapSpaceSize();
-            }
+	public static class CPU
+	{
+		public static int getAvailableProcessors()
+		{
+			if(!ENABLE)
+			{
+				return Runtime.getRuntime().availableProcessors();
+			}
 
-            public static long getUsedMemory() {
-                if (!ENABLE) {
-                    return 0;
-                }
+			return getSystem().getAvailableProcessors();
+		}
 
-                return getTotalMemory() - getFreeMemory();
-            }
+		public static double getCPULoad()
+		{
+			if(!ENABLE)
+			{
+				return 0;
+			}
 
-            public static long getCommittedVirtualMemory() {
-                if (!ENABLE) {
-                    return 0;
-                }
+			return getSystem().getSystemCpuLoad();
+		}
 
-                return getSystem().getCommittedVirtualMemorySize();
-            }
-        }
-    }
+		public static double getProcessCPULoad()
+		{
+			if(!ENABLE)
+			{
+				return 0;
+			}
 
-    public static class CPU {
-        public static int getAvailableProcessors() {
-            if (!ENABLE) {
-                return Runtime.getRuntime().availableProcessors();
-            }
+			return PROC_CPU;
+		}
 
-            return getSystem().getAvailableProcessors();
-        }
+		public static double getLiveProcessCPULoad()
+		{
+			if(!ENABLE)
+			{
+				return 0;
+			}
 
-        public static double getCPULoad() {
-            if (!ENABLE) {
-                return 0;
-            }
+			return getSystem().getProcessCpuLoad();
+		}
 
-            return getSystem().getSystemCpuLoad();
-        }
+		public static String getArchitecture()
+		{
+			if(!ENABLE)
+			{
+				return "?";
+			}
 
-        public static double getProcessCPULoad() {
-            if (!ENABLE) {
-                return 0;
-            }
+			return getSystem().getArch();
+		}
+	}
 
-            return PROC_CPU;
-        }
+	public static String getVersion()
+	{
+		if(!ENABLE)
+		{
+			return "?";
+		}
 
-        public static double getLiveProcessCPULoad() {
-            if (!ENABLE) {
-                return 0;
-            }
+		return getSystem().getVersion();
+	}
 
-            return getSystem().getProcessCpuLoad();
-        }
+	public static String getName()
+	{
+		if(!ENABLE)
+		{
+			return "?";
+		}
 
-        public static String getArchitecture() {
-            if (!ENABLE) {
-                return "?";
-            }
+		return getSystem().getName();
+	}
 
-            return getSystem().getArch();
-        }
-    }
+	private static OperatingSystemMXBean getSystem()
+	{
+		return (OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
+	}
 }

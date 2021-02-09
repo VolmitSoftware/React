@@ -97,7 +97,7 @@ public enum Instrument
 	WOOD_HIT_MID(new MFADistortion(8, 1.5f).distort(new GSound(Sound.ENTITY_ZOMBIE_ATTACK_DOOR_WOOD, 1f, 0.6f))),
 	WOOD_HIT_LOW(new MFADistortion(8, 1f).distort(new GSound(Sound.ENTITY_ZOMBIE_ATTACK_DOOR_WOOD, 1f, 0.2f)));
 
-	private final Audible sound;
+	private Audible sound;
 
 	Instrument(Audible sound)
 	{

@@ -1,101 +1,129 @@
 package com.volmit.react.api;
 
-import com.volmit.react.React;
-import org.bukkit.entity.LivingEntity;
-import primal.lang.collection.GMap;
-import primal.lang.collection.GSet;
-
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.UUID;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
-public class StackData {
-    private GMap<UUID, Integer> emap;
-    private GSet<UUID> touched;
+import org.bukkit.entity.LivingEntity;
 
-    public StackData() {
-        emap = new GMap<UUID, Integer>();
-        touched = new GSet<UUID>();
-    }
+import com.volmit.react.React;
 
-    public GMap<UUID, Integer> getEmap() {
-        return emap;
-    }
+import primal.lang.collection.GMap;
+import primal.lang.collection.GSet;
 
-    public void setEmap(GMap<UUID, Integer> emap) {
-        this.emap = emap;
-    }
+public class StackData
+{
+	private GMap<UUID, Integer> emap;
+	private GSet<UUID> touched;
 
-    public GSet<UUID> getTouched() {
-        return touched;
-    }
+	public StackData()
+	{
+		emap = new GMap<UUID, Integer>();
+		touched = new GSet<UUID>();
+	}
 
-    public void setTouched(GSet<UUID> touched) {
-        this.touched = touched;
-    }
+	public GMap<UUID, Integer> getEmap()
+	{
+		return emap;
+	}
 
-    public void clear() {
-        for (UUID i : emap.k()) {
-            if (!touched.contains(i)) {
-                emap.remove(i);
-            }
-        }
-    }
+	public void setEmap(GMap<UUID, Integer> emap)
+	{
+		this.emap = emap;
+	}
 
-    public void save(File f) throws IOException {
-        f.getParentFile().mkdirs();
-        FileOutputStream fos = new FileOutputStream(f);
-        GZIPOutputStream gzo = new GZIPOutputStream(fos);
-        DataOutputStream dos = new DataOutputStream(gzo);
-        dos.writeInt(emap.size());
+	public GSet<UUID> getTouched()
+	{
+		return touched;
+	}
 
-        for (UUID i : emap.k()) {
-            dos.writeLong(i.getMostSignificantBits());
-            dos.writeLong(i.getLeastSignificantBits());
-            dos.writeShort(emap.get(i));
-        }
+	public void setTouched(GSet<UUID> touched)
+	{
+		this.touched = touched;
+	}
 
-        dos.close();
-    }
+	public void clear()
+	{
+		for(UUID i : emap.k())
+		{
+			if(!touched.contains(i))
+			{
+				emap.remove(i);
+			}
+		}
+	}
 
-    public void load(File f) throws IOException {
-        f.getParentFile().mkdirs();
-        emap.clear();
-        FileInputStream fin = new FileInputStream(f);
-        GZIPInputStream gzi = new GZIPInputStream(fin);
-        DataInputStream din = new DataInputStream(gzi);
-        int s = din.readInt();
+	public void save(File f) throws IOException
+	{
+		f.getParentFile().mkdirs();
+		FileOutputStream fos = new FileOutputStream(f);
+		GZIPOutputStream gzo = new GZIPOutputStream(fos);
+		DataOutputStream dos = new DataOutputStream(gzo);
+		dos.writeInt(emap.size());
 
-        for (int i = 0; i < s; i++) {
-            emap.put(new UUID(din.readLong(), din.readLong()), (int) din.readShort());
-        }
+		for(UUID i : emap.k())
+		{
+			dos.writeLong(i.getMostSignificantBits());
+			dos.writeLong(i.getLeastSignificantBits());
+			dos.writeShort(emap.get(i));
+		}
 
-        din.close();
-    }
+		dos.close();
+	}
 
-    public void put(LivingEntity e) {
-        if (React.instance.entityStackController.isStacked(e)) {
-            StackedEntity se = React.instance.entityStackController.getStack(e);
-            emap.put(e.getUniqueId(), se.getCount());
-        } else {
-            this.remove(e);
-        }
+	public void load(File f) throws IOException
+	{
+		f.getParentFile().mkdirs();
+		emap.clear();
+		FileInputStream fin = new FileInputStream(f);
+		GZIPInputStream gzi = new GZIPInputStream(fin);
+		DataInputStream din = new DataInputStream(gzi);
+		int s = din.readInt();
 
-        touched.add(e.getUniqueId());
-    }
+		for(int i = 0; i < s; i++)
+		{
+			emap.put(new UUID(din.readLong(), din.readLong()), (int) din.readShort());
+		}
 
-    public int get(LivingEntity e) {
-        touched.add(e.getUniqueId());
+		din.close();
+	}
 
-        if (emap.containsKey(e.getUniqueId())) {
-            return emap.get(e.getUniqueId());
-        }
+	public void put(LivingEntity e)
+	{
+		if(React.instance.entityStackController.isStacked(e))
+		{
+			StackedEntity se = React.instance.entityStackController.getStack(e);
+			emap.put(e.getUniqueId(), se.getCount());
+		}
 
-        return 0;
-    }
+		else
+		{
+			this.remove(e);
+		}
 
-    public void remove(LivingEntity entity) {
-        emap.remove(entity.getUniqueId());
-    }
+		touched.add(e.getUniqueId());
+	}
+
+	public int get(LivingEntity e)
+	{
+		touched.add(e.getUniqueId());
+
+		if(emap.containsKey(e.getUniqueId()))
+		{
+			return emap.get(e.getUniqueId());
+		}
+
+		return 0;
+	}
+
+	public void remove(LivingEntity entity)
+	{
+		emap.remove(entity.getUniqueId());
+	}
 }

@@ -1,47 +1,50 @@
 package com.volmit.react.api;
 
-import com.volmit.react.util.AccessCallback;
 import org.bukkit.inventory.ItemStack;
+
+import com.volmit.react.util.AccessCallback;
+
 import primal.lang.collection.GMap;
 
-public interface IAction {
-    ItemStack getIcon();
+public interface IAction
+{
+	ItemStack getIcon();
 
-    String getName();
+	String getName();
 
-    String getDescription();
+	String getDescription();
 
-    ActionHandle getHandleType();
+	ActionHandle getHandleType();
 
-    void act(IActionSource source, ISelector... selectors) throws ActionAlreadyRunningException;
+	void act(IActionSource source, ISelector... selectors) throws ActionAlreadyRunningException;
 
-    void enact(IActionSource source, ISelector... selectors);
+	void enact(IActionSource source, ISelector... selectors);
 
-    ActionState getState();
+	ActionState getState();
 
-    ActionTargetType getTarget();
+	ActionTargetType getTarget();
 
-    String[] getNodes();
+	void setNodes(String... nodes);
 
-    void setNodes(String... nodes);
+	String[] getNodes();
 
-    String getStatus();
+	String getStatus();
 
-    void setStatus(String status);
+	void setStatus(String status);
 
-    double getProgress();
+	double getProgress();
 
-    void setProgress(double progress);
+	void setProgress(double progress);
 
-    ActionType getType();
+	ActionType getType();
 
-    GMap<Class<?>, AccessCallback<ISelector>> getDefaultSelectors();
+	GMap<Class<?>, AccessCallback<ISelector>> getDefaultSelectors();
 
-    void setDefaultSelector(Class<?> clazz, AccessCallback<ISelector> selector);
+	void setDefaultSelector(Class<?> clazz, AccessCallback<ISelector> selector);
 
-    ISelector[] biselect(ISelector... selectors);
+	ISelector[] biselect(ISelector... selectors);
 
-    IActionSource getCurrentSource();
+	IActionSource getCurrentSource();
 
-    void completeAction();
+	void completeAction();
 }

@@ -1,6 +1,7 @@
 package com.volmit.react.xrai;
 
-public enum ConditionOp {
-    GREATER,
-    LESS
+public enum ConditionOp
+{
+	GREATER,
+	LESS
 }

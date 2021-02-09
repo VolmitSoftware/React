@@ -5,7 +5,7 @@ package primal.compute.noise;
  */
 public abstract class NoiseGenerator
 {
-	protected final int[] perm = new int[512];
+	protected final int perm[] = new int[512];
 	protected double offsetX;
 	protected double offsetY;
 	protected double offsetZ;

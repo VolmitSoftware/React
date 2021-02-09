@@ -127,6 +127,10 @@ public class MaterialBlock
 		{
 			return false;
 		}
-		return material == other.material;
+		if(material != other.material)
+		{
+			return false;
+		}
+		return true;
 	}
 }

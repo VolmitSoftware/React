@@ -74,12 +74,12 @@ public final class Reflection {
 	}
 
 	// Deduce the net.minecraft.server.v* package
-	private static final String OBC_PREFIX = Bukkit.getServer().getClass().getPackage().getName();
-	private static final String NMS_PREFIX = OBC_PREFIX.replace("org.bukkit.craftbukkit", "net.minecraft.server");
-	private static final String VERSION = OBC_PREFIX.replace("org.bukkit.craftbukkit", "").replace(".", "");
+	private static String OBC_PREFIX = Bukkit.getServer().getClass().getPackage().getName();
+	private static String NMS_PREFIX = OBC_PREFIX.replace("org.bukkit.craftbukkit", "net.minecraft.server");
+	private static String VERSION = OBC_PREFIX.replace("org.bukkit.craftbukkit", "").replace(".", "");
 
 	// Variable replacement
-	private static final Pattern MATCH_VARIABLE = Pattern.compile("\\{([^\\}]+)\\}");
+	private static Pattern MATCH_VARIABLE = Pattern.compile("\\{([^\\}]+)\\}");
 
 	private Reflection() {
 		// Seal class

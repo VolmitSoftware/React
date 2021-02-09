@@ -2,63 +2,75 @@ package com.volmit.react.fix;
 
 import com.volmit.react.api.IFix;
 
-public abstract class Fix implements IFix {
-    private String id;
-    private String[] aliases;
-    private String name;
-    private String description;
-    private String usage;
+public abstract class Fix implements IFix
+{
+	private String id;
+	private String[] aliases;
+	private String name;
+	private String description;
+	private String usage;
 
-    public Fix() {
-        id = "null";
-        aliases = new String[]{"null"};
-        name = "null";
-        description = "null";
-        usage = "null";
-    }
+	public Fix()
+	{
+		id = "null";
+		aliases = new String[] {"null"};
+		name = "null";
+		description = "null";
+		usage = "null";
+	}
 
-    @Override
-    public String getId() {
-        return id;
-    }
+	public void setId(String id)
+	{
+		this.id = id;
+	}
 
-    public void setId(String id) {
-        this.id = id;
-    }
+	public void setAliases(String[] aliases)
+	{
+		this.aliases = aliases;
+	}
 
-    @Override
-    public String[] getAliases() {
-        return aliases;
-    }
+	public void setName(String name)
+	{
+		this.name = name;
+	}
 
-    public void setAliases(String[] aliases) {
-        this.aliases = aliases;
-    }
+	public void setDescription(String description)
+	{
+		this.description = description;
+	}
 
-    @Override
-    public String getName() {
-        return name;
-    }
+	public void setUsage(String usage)
+	{
+		this.usage = usage;
+	}
 
-    public void setName(String name) {
-        this.name = name;
-    }
+	@Override
+	public String getId()
+	{
+		return id;
+	}
 
-    @Override
-    public String getDescription() {
-        return description;
-    }
+	@Override
+	public String[] getAliases()
+	{
+		return aliases;
+	}
 
-    public void setDescription(String description) {
-        this.description = description;
-    }
+	@Override
+	public String getName()
+	{
+		return name;
+	}
 
-    @Override
-    public String getUsage() {
-        return usage;
-    }
+	@Override
+	public String getDescription()
+	{
+		return description;
+	}
 
-    public void setUsage(String usage) {
-        this.usage = usage;
-    }
+	@Override
+	public String getUsage()
+	{
+		return usage;
+	}
 }

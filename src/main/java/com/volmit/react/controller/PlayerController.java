@@ -1,113 +1,141 @@
 package com.volmit.react.controller;
 
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.player.PlayerQuitEvent;
+
 import com.volmit.react.Surge;
 import com.volmit.react.api.ReactPlayer;
 import com.volmit.react.util.A;
 import com.volmit.react.util.Controller;
-import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.player.PlayerQuitEvent;
+
 import primal.json.JSONObject;
 import primal.lang.collection.GList;
 import primal.lang.collection.GSet;
 
-public class PlayerController extends Controller {
-    private GList<ReactPlayer> players;
-    private GSet<ReactPlayer> save;
+public class PlayerController extends Controller
+{
+	private GList<ReactPlayer> players;
+	private GSet<ReactPlayer> save;
 
-    @Override
-    public void dump(JSONObject object) {
-        object.put("active-react-players", players.size());
-    }
+	@Override
+	public void dump(JSONObject object)
+	{
+		object.put("active-react-players", players.size());
+	}
 
-    @Override
-    public void start() {
-        players = new GList<ReactPlayer>();
-        save = new GSet<ReactPlayer>();
-        Surge.register(this);
-    }
+	@Override
+	public void start()
+	{
+		players = new GList<ReactPlayer>();
+		save = new GSet<ReactPlayer>();
+		Surge.register(this);
+	}
 
-    @Override
-    public void stop() {
-        save.addAll(players);
+	@Override
+	public void stop()
+	{
+		save.addAll(players);
 
-        for (ReactPlayer i : new GList<ReactPlayer>(save)) {
-            requestSave(i.getP(), true);
-        }
+		for(ReactPlayer i : new GList<ReactPlayer>(save))
+		{
+			requestSave(i.getP(), true);
+		}
 
-        save.clear();
+		save.clear();
 
-        Surge.unregister(this);
-    }
+		Surge.unregister(this);
+	}
 
-    @Override
-    public void tick() {
-        GList<ReactPlayer> toSave = new GList<ReactPlayer>(save);
-        save.clear();
+	@Override
+	public void tick()
+	{
+		GList<ReactPlayer> toSave = new GList<ReactPlayer>(save);
+		save.clear();
 
-        new A() {
-            @Override
-            public void run() {
-                for (ReactPlayer i : toSave) {
-                    requestSave(i.getP(), true);
-                }
-            }
-        };
-    }
+		new A()
+		{
+			@Override
+			public void run()
+			{
+				for(ReactPlayer i : toSave)
+				{
+					requestSave(i.getP(), true);
+				}
+			}
+		};
+	}
 
-    public boolean has(Player p) {
-        for (ReactPlayer i : players) {
-            if (i.getP().equals(p)) {
-                return true;
-            }
-        }
+	public boolean has(Player p)
+	{
+		for(ReactPlayer i : players)
+		{
+			if(i.getP().equals(p))
+			{
+				return true;
+			}
+		}
 
-        return false;
-    }
+		return false;
+	}
 
-    public void requestSave(Player p, boolean thisFuckingInstant) {
-        if (has(p)) {
-            if (thisFuckingInstant) {
-                save.remove(getPlayer(p));
-                getPlayer(p).save();
-            } else {
-                save.add(getPlayer(p));
-            }
-        }
-    }
+	public void requestSave(Player p, boolean thisFuckingInstant)
+	{
+		if(has(p))
+		{
+			if(thisFuckingInstant)
+			{
+				save.remove(getPlayer(p));
+				getPlayer(p).save();
+			}
 
-    public ReactPlayer getPlayer(Player p) {
-        for (ReactPlayer i : players) {
-            if (i.getP().equals(p)) {
-                return i;
-            }
-        }
+			else
+			{
+				save.add(getPlayer(p));
+			}
+		}
+	}
 
-        ReactPlayer rp = new ReactPlayer(p);
-        players.add(rp);
+	public ReactPlayer getPlayer(Player p)
+	{
+		for(ReactPlayer i : players)
+		{
+			if(i.getP().equals(p))
+			{
+				return i;
+			}
+		}
 
-        return rp;
-    }
+		ReactPlayer rp = new ReactPlayer(p);
+		players.add(rp);
 
-    public GList<ReactPlayer> getPlayers() {
-        return players;
-    }
+		return rp;
+	}
 
-    @EventHandler
-    public void on(PlayerQuitEvent e) {
-        if (has(e.getPlayer())) {
-            getPlayer(e.getPlayer()).save();
-            players.remove(getPlayer(e.getPlayer()));
-        }
-    }
+	public GList<ReactPlayer> getPlayers()
+	{
+		return players;
+	}
 
-    @Override
-    public int getInterval() {
-        return 65;
-    }
+	@EventHandler
+	public void on(PlayerQuitEvent e)
+	{
+		if(has(e.getPlayer()))
+		{
+			getPlayer(e.getPlayer()).save();
+			players.remove(getPlayer(e.getPlayer()));
+		}
+	}
 
-    @Override
-    public boolean isUrgent() {
-        return false;
-    }
+	@Override
+	public int getInterval()
+	{
+		return 65;
+	}
+
+	@Override
+	public boolean isUrgent()
+	{
+		return false;
+	}
 }

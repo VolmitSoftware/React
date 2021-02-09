@@ -2,20 +2,21 @@ package com.volmit.react.util;
 
 import primal.json.JSONObject;
 
-public interface IController {
-    void start();
+public interface IController
+{
+	void start();
 
-    void stop();
+	void stop();
 
-    void tick();
+	void tick();
 
-    int getInterval();
+	int getInterval();
 
-    boolean isUrgent();
+	boolean isUrgent();
 
-    double getTime();
+	void setTime(double ms);
 
-    void setTime(double ms);
+	double getTime();
 
-    void dump(JSONObject object);
+	void dump(JSONObject object);
 }

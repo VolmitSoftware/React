@@ -22,7 +22,7 @@ public class F
 	private static NumberFormat NF;
 	private static DecimalFormat DF;
 
-	private static final String[] NAMES = new String[] {"Thousand", "Million", "Billion", "Trillion", "Quadrillion", "Quintillion", "Sextillion", "Septillion", "Octillion", "Nonillion", "Decillion", "Undecillion", "Duodecillion", "Tredecillion", "Quattuordecillion", "Quindecillion", "Sexdecillion", "Septendecillion", "Octodecillion", "Novemdecillion", "Vigintillion",};
+	private static final String NAMES[] = new String[] {"Thousand", "Million", "Billion", "Trillion", "Quadrillion", "Quintillion", "Sextillion", "Septillion", "Octillion", "Nonillion", "Decillion", "Undecillion", "Duodecillion", "Tredecillion", "Quattuordecillion", "Quindecillion", "Sexdecillion", "Septendecillion", "Octodecillion", "Novemdecillion", "Vigintillion",};
 	private static final BigInteger THOUSAND = BigInteger.valueOf(1000);
 	private static final NavigableMap<BigInteger, String> MAP;
 

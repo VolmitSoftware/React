@@ -267,7 +267,7 @@ public class VIO
 		return wrote;
 	}
 
-	public static void readEntry(File zipfile, String entryname, InputHandler v) throws IOException
+	public static void readEntry(File zipfile, String entryname, InputHandler v) throws ZipException, IOException
 	{
 		ZipFile file = new ZipFile(zipfile);
 		Throwable x = null;
@@ -303,7 +303,7 @@ public class VIO
 		}
 	}
 
-	public static GList<String> listEntries(File zipfile) throws IOException
+	public static GList<String> listEntries(File zipfile) throws ZipException, IOException
 	{
 		ZipFile file = new ZipFile(zipfile);
 		GList<String> e = new GList<String>();

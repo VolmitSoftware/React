@@ -25,9 +25,9 @@ import primal.lang.collection.GMap;
  */
 public class EventBuffer<T extends Event> implements Listener
 {
-	private final GList<T> buffer;
-	private final Class<? extends T> eventClass;
-	private final GList<Consumer<T>> consumers;
+	private GList<T> buffer;
+	private Class<? extends T> eventClass;
+	private GList<Consumer<T>> consumers;
 	private Function<T, String> sorter;
 	private EventPriority priority;
 	private boolean ignoreCancelled;

@@ -11,7 +11,7 @@ import primal.json.JSONObject;
  */
 public class RTEX
 {
-	private final GList<ColoredString> extras;
+	private GList<ColoredString> extras;
 
 	/**
 	 * Create a new raw text base

@@ -1,6 +1,7 @@
 package com.volmit.react.api;
 
-public enum ActionTargetType {
-    POSITIONAL,
-    SYSTEM
+public enum ActionTargetType
+{
+	POSITIONAL,
+	SYSTEM
 }

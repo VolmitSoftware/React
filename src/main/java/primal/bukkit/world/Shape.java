@@ -10,9 +10,9 @@ import org.bukkit.util.Vector;
  */
 public class Shape
 {
-	private final Location location;
-	private final Vector offset;
-	private final Vector size;
+	private Location location;
+	private Vector offset;
+	private Vector size;
 	
 	/**
 	 * Create a shape
@@ -70,7 +70,10 @@ public class Shape
 		{
 			if(l.getY() > check.getY() - size.getY() && l.getY() < check.getY() + size.getY())
 			{
-				return l.getZ() > check.getZ() - size.getZ() && l.getZ() < check.getZ() + size.getZ();
+				if(l.getZ() > check.getZ() - size.getZ() && l.getZ() < check.getZ() + size.getZ())
+				{
+					return true;
+				}
 			}
 		}
 		

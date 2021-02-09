@@ -20,7 +20,7 @@ import primal.util.text.C;
  */
 public class PrimalSender implements CommandSender
 {
-	private final CommandSender s;
+	private CommandSender s;
 	private String tag;
 
 	/**

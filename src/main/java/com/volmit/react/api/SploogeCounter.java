@@ -1,131 +1,164 @@
 package com.volmit.react.api;
 
-import com.volmit.react.util.Cuboid;
-import com.volmit.react.util.Ex;
-import com.volmit.react.util.S;
+import java.util.Iterator;
+
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.util.Vector;
+
+import com.volmit.react.util.Cuboid;
+import com.volmit.react.util.Ex;
+import com.volmit.react.util.S;
+
 import primal.lang.collection.GList;
 import primal.lang.collection.GSet;
 
-import java.util.Iterator;
+public abstract class SploogeCounter
+{
+	private GList<Location> sources;
+	private GList<Location> splooge;
+	private GSet<Location> destroy;
 
-public abstract class SploogeCounter {
-    private final GList<Location> sources;
-    private final GList<Location> splooge;
-    private final GSet<Location> destroy;
+	public SploogeCounter(int checkDistance, int maxDistance, Location start)
+	{
+		sources = new GList<Location>();
+		splooge = new GList<Location>();
+		destroy = new GSet<Location>();
+		Location a = start.clone().add(new Vector(checkDistance, checkDistance, checkDistance));
+		Location b = start.clone().add(new Vector(-checkDistance, -checkDistance, -checkDistance));
+		Cuboid c = new Cuboid(a, b);
+		Iterator<Block> it = c.iterator();
 
-    public SploogeCounter(int checkDistance, int maxDistance, Location start) {
-        sources = new GList<Location>();
-        splooge = new GList<Location>();
-        destroy = new GSet<Location>();
-        Location a = start.clone().add(new Vector(checkDistance, checkDistance, checkDistance));
-        Location b = start.clone().add(new Vector(-checkDistance, -checkDistance, -checkDistance));
-        Cuboid c = new Cuboid(a, b);
-        Iterator<Block> it = c.iterator();
+		while(it.hasNext())
+		{
+			try
+			{
+				Block bx = it.next();
 
-        while (it.hasNext()) {
-            try {
-                Block bx = it.next();
+				if(bx.getLocation().equals(start))
+				{
+					continue;
+				}
 
-                if (bx.getLocation().equals(start)) {
-                    continue;
-                }
+				if(isAllowedSplooge(bx.getLocation()))
+				{
+					splooge.add(bx.getLocation());
+				}
 
-                if (isAllowedSplooge(bx.getLocation())) {
-                    splooge.add(bx.getLocation());
-                } else if (isAllowedSource(bx.getLocation())) {
-                    sources.add(bx.getLocation());
-                }
-            } catch (Throwable e) {
-                Ex.t(e);
-            }
-        }
+				else if(isAllowedSource(bx.getLocation()))
+				{
+					sources.add(bx.getLocation());
+				}
+			}
 
-        if (splooge.isEmpty()) {
-            return;
-        }
+			catch(Throwable e)
+			{
+				Ex.t(e);
+			}
+		}
 
-        for (Location i : splooge) {
-            int min = Integer.MAX_VALUE;
+		if(splooge.isEmpty())
+		{
+			return;
+		}
 
-            for (Location j : sources) {
-                int dist = getManhattanDistance(i, j);
+		for(Location i : splooge)
+		{
+			int min = Integer.MAX_VALUE;
 
-                if (dist < min) {
-                    min = dist;
-                }
-            }
+			for(Location j : sources)
+			{
+				int dist = getManhattanDistance(i, j);
 
-            if (min > maxDistance) {
-                destroy.add(i);
-            }
-        }
+				if(dist < min)
+				{
+					min = dist;
+				}
+			}
 
-        new S("action.splooc") {
-            @Override
-            public void run() {
-                for (Location i : destroy) {
-                    clipped(i);
-                }
+			if(min > maxDistance)
+			{
+				destroy.add(i);
+			}
+		}
 
-                finished();
-            }
-        };
-    }
+		new S("action.splooc")
+		{
+			@Override
+			public void run()
+			{
+				for(Location i : destroy)
+				{
+					clipped(i);
+				}
 
-    public boolean isValid(Location afrom, Location to) {
-        Location from = afrom.clone();
+				finished();
+			}
+		};
+	}
 
-        for (int i = Math.min(from.getBlockX(), to.getBlockX()); i < Math.max(from.getBlockX(), to.getBlockX()); i++) {
-            Location check = new Location(from.getWorld(), i, from.getY(), from.getZ());
+	public boolean isValid(Location afrom, Location to)
+	{
+		Location from = afrom.clone();
 
-            if (!sources.contains(check) && !splooge.contains(check)) {
-                return false;
-            }
+		for(int i = Math.min(from.getBlockX(), to.getBlockX()); i < Math.max(from.getBlockX(), to.getBlockX()); i++)
+		{
+			Location check = new Location(from.getWorld(), i, from.getY(), from.getZ());
 
-            if (i >= Math.max(from.getBlockX(), to.getBlockX())) {
-                from = check.clone();
-            }
-        }
+			if(!sources.contains(check) && !splooge.contains(check))
+			{
+				return false;
+			}
 
-        for (int j = Math.min(from.getBlockY(), to.getBlockY()); j < Math.max(from.getBlockY(), to.getBlockY()); j++) {
-            Location check = new Location(from.getWorld(), from.getX(), j, from.getZ());
+			if(i >= Math.max(from.getBlockX(), to.getBlockX()))
+			{
+				from = check.clone();
+			}
+		}
 
-            if (!sources.contains(check) && !splooge.contains(check)) {
-                return false;
-            }
+		for(int j = Math.min(from.getBlockY(), to.getBlockY()); j < Math.max(from.getBlockY(), to.getBlockY()); j++)
+		{
+			Location check = new Location(from.getWorld(), from.getX(), j, from.getZ());
 
-            if (j >= Math.max(from.getBlockY(), to.getBlockY())) {
-                from = check.clone();
-            }
-        }
+			if(!sources.contains(check) && !splooge.contains(check))
+			{
+				return false;
+			}
 
-        for (int k = Math.min(from.getBlockZ(), to.getBlockZ()); k < Math.max(from.getBlockZ(), to.getBlockZ()); k++) {
-            Location check = new Location(from.getWorld(), from.getX(), from.getBlockY(), k);
+			if(j >= Math.max(from.getBlockY(), to.getBlockY()))
+			{
+				from = check.clone();
+			}
+		}
 
-            if (!sources.contains(check) && !splooge.contains(check)) {
-                return false;
-            }
+		for(int k = Math.min(from.getBlockZ(), to.getBlockZ()); k < Math.max(from.getBlockZ(), to.getBlockZ()); k++)
+		{
+			Location check = new Location(from.getWorld(), from.getX(), from.getBlockY(), k);
 
-            if (k >= Math.max(from.getBlockZ(), to.getBlockZ())) {
-                from = check.clone();
-            }
-        }
+			if(!sources.contains(check) && !splooge.contains(check))
+			{
+				return false;
+			}
 
-        return true;
-    }
+			if(k >= Math.max(from.getBlockZ(), to.getBlockZ()))
+			{
+				from = check.clone();
+			}
+		}
 
-    public int getManhattanDistance(Location from, Location start) {
-        return Math.abs(from.getBlockX() - start.getBlockX()) + Math.abs(from.getBlockY() - start.getBlockY()) + Math.abs(from.getBlockZ() - start.getBlockZ());
-    }
+		return true;
+	}
 
-    public abstract void clipped(Location l);
+	public int getManhattanDistance(Location from, Location start)
+	{
+		return Math.abs(from.getBlockX() - start.getBlockX()) + Math.abs(from.getBlockY() - start.getBlockY()) + Math.abs(from.getBlockZ() - start.getBlockZ());
+	}
 
-    public abstract void finished();
+	public abstract void clipped(Location l);
 
-    public abstract boolean isAllowedSplooge(Location l);
+	public abstract void finished();
 
-    public abstract boolean isAllowedSource(Location l);
+	public abstract boolean isAllowedSplooge(Location l);
+
+	public abstract boolean isAllowedSource(Location l);
 }

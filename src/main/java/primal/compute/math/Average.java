@@ -2,7 +2,7 @@ package primal.compute.math;
 
 public class Average
 {
-	private final double[] values;
+	private double[] values;
 	private double average;
 	private boolean dirty;
 

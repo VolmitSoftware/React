@@ -3,36 +3,44 @@ package com.volmit.react.xmonitor;
 import primal.json.JSONArray;
 import primal.lang.collection.GList;
 
-public class TitleCollection {
-    private GList<TitleHeader> headers;
+public class TitleCollection
+{
+	private GList<TitleHeader> headers;
 
-    public TitleCollection() {
-        headers = new GList<TitleHeader>();
-    }
+	public TitleCollection()
+	{
+		headers = new GList<TitleHeader>();
+	}
 
-    public TitleCollection(JSONArray j) {
-        this();
+	public TitleCollection(JSONArray j)
+	{
+		this();
 
-        for (int i = 0; i < j.length(); i++) {
-            headers.add(new TitleHeader(j.getJSONObject(i)));
-        }
-    }
+		for(int i = 0; i < j.length(); i++)
+		{
+			headers.add(new TitleHeader(j.getJSONObject(i)));
+		}
+	}
 
-    public JSONArray toJSON() {
-        JSONArray ja = new JSONArray();
+	public JSONArray toJSON()
+	{
+		JSONArray ja = new JSONArray();
 
-        for (TitleHeader i : headers) {
-            ja.put(i.toJSON());
-        }
+		for(TitleHeader i : headers)
+		{
+			ja.put(i.toJSON());
+		}
 
-        return ja;
-    }
+		return ja;
+	}
 
-    public GList<TitleHeader> getHeaders() {
-        return headers;
-    }
+	public GList<TitleHeader> getHeaders()
+	{
+		return headers;
+	}
 
-    public void setHeaders(GList<TitleHeader> headers) {
-        this.headers = headers;
-    }
+	public void setHeaders(GList<TitleHeader> headers)
+	{
+		this.headers = headers;
+	}
 }

@@ -1,261 +1,340 @@
 package com.volmit.react.controller;
 
-import com.volmit.react.Config;
-import com.volmit.react.Lang;
-import com.volmit.react.React;
-import com.volmit.react.ReactPlugin;
-import com.volmit.react.util.*;
-import primal.json.JSONObject;
-
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Locale;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 
-public class LanguageController extends Controller {
-    File dlf;
-    private File languageFolder;
-    private int oldVersion = 0;
+import com.volmit.react.Config;
+import com.volmit.react.Lang;
+import com.volmit.react.React;
+import com.volmit.react.ReactPlugin;
+import com.volmit.react.util.A;
+import com.volmit.react.util.Controller;
+import com.volmit.react.util.D;
+import com.volmit.react.util.Download;
+import com.volmit.react.util.DownloadMonitor;
+import com.volmit.react.util.DownloadState;
+import com.volmit.react.util.Ex;
+import com.volmit.react.util.TaskLater;
+import primal.json.JSONObject;
 
-    @Override
-    public void dump(JSONObject object) {
-        object.put("language", Config.LANGUAGE);
-    }
+public class LanguageController extends Controller
+{
+	private File languageFolder;
+	private int oldVersion = 0;
+	File dlf;
 
-    @Override
-    public void start() {
-        languageFolder = new File(ReactPlugin.i.getDataFolder(), "lang");
-        languageFolder.mkdirs();
+	@Override
+	public void dump(JSONObject object)
+	{
+		object.put("language", Config.LANGUAGE);
+	}
 
-        try {
-            writeDefaults();
-        } catch (Throwable e) {
-            Ex.t(e);
-        }
+	@Override
+	public void start()
+	{
+		languageFolder = new File(ReactPlugin.i.getDataFolder(), "lang");
+		languageFolder.mkdirs();
 
-        try {
-            loadLanguage(Config.LANGUAGE);
-            D.s("Language: " + Config.LANGUAGE);
-        } catch (Throwable e) {
-            Ex.t(e);
-            Lang.PRIMARY_BUNDLE = Lang.RESOURCE_BUNDLE;
-            D.f("Failed to load language: " + Config.LANGUAGE + ".properties (in plugins/React/lang/");
-        }
+		try
+		{
+			writeDefaults();
+		}
 
-        dlf = new File(languageFolder, "index.json");
-        Thread t = new Thread() {
-            @Override
-            public void run() {
-                checkForLanguageUpdates();
-            }
-        };
-        t.setPriority(Thread.MIN_PRIORITY);
-        t.setName("Surge Language Injector");
-    }
+		catch(Throwable e)
+		{
+			Ex.t(e);
+		}
 
-    public void checkForLanguageUpdates() {
-        new A() {
-            @Override
-            public void run() {
-                try {
-                    if (dlf.exists()) {
-                        StringBuilder cf = new StringBuilder();
-                        BufferedReader bu = new BufferedReader(new FileReader(dlf));
-                        String ln = "";
+		try
+		{
+			loadLanguage(Config.LANGUAGE);
+			D.s("Language: " + Config.LANGUAGE);
+		}
 
-                        while ((ln = bu.readLine()) != null) {
-                            cf.append(ln);
-                        }
+		catch(Throwable e)
+		{
+			Ex.t(e);
+			Lang.PRIMARY_BUNDLE = Lang.RESOURCE_BUNDLE;
+			D.f("Failed to load language: " + Config.LANGUAGE + ".properties (in plugins/React/lang/");
+		}
 
-                        bu.close();
-                        JSONObject jso = new JSONObject(cf.toString());
-                        oldVersion = jso.getInt("version");
-                    }
+		dlf = new File(languageFolder, "index.json");
+		Thread t = new Thread()
+		{
+			@Override
+			public void run()
+			{
+				checkForLanguageUpdates();
+			}
+		};
+		t.setPriority(Thread.MIN_PRIORITY);
+		t.setName("Surge Language Injector");
+	}
 
-                    Download dl = new Download(new DownloadMonitor() {
-                        @Override
-                        public void onDownloadUpdateProgress(Download download, long bytes, long totalBytes, double percentComplete) {
+	public void checkForLanguageUpdates()
+	{
+		new A()
+		{
+			@Override
+			public void run()
+			{
+				try
+				{
+					if(dlf.exists())
+					{
+						StringBuilder cf = new StringBuilder();
+						BufferedReader bu = new BufferedReader(new FileReader(dlf));
+						String ln = "";
 
-                        }
+						while((ln = bu.readLine()) != null)
+						{
+							cf.append(ln);
+						}
 
-                        @Override
-                        public void onDownloadStateChanged(Download download, DownloadState from, DownloadState to) {
+						bu.close();
+						JSONObject jso = new JSONObject(cf.toString());
+						oldVersion = jso.getInt("version");
+					}
 
-                        }
+					Download dl = new Download(new DownloadMonitor()
+					{
+						@Override
+						public void onDownloadUpdateProgress(Download download, long bytes, long totalBytes, double percentComplete)
+						{
 
-                        @Override
-                        public void onDownloadStarted(Download download) {
+						}
 
-                        }
+						@Override
+						public void onDownloadStateChanged(Download download, DownloadState from, DownloadState to)
+						{
 
-                        @Override
-                        public void onDownloadFinished(Download download) {
-                            D.s("Downloaded Language Index");
-                            check();
-                        }
+						}
 
-                        @Override
-                        public void onDownloadFailed(Download download) {
+						@Override
+						public void onDownloadStarted(Download download)
+						{
 
-                        }
-                    }, new URL("https://raw.githubusercontent.com/VolmitSoftware/React/master/language/index.json"), dlf, 8192);
+						}
 
-                    dl.start();
-                } catch (Throwable e) {
-                    Ex.t(e);
-                }
-            }
-        };
-    }
+						@Override
+						public void onDownloadFinished(Download download)
+						{
+							D.s("Downloaded Language Index");
+							check();
+						}
 
-    private void downloadAll(boolean b) throws IOException {
-        StringBuilder cf = new StringBuilder();
-        BufferedReader bu = new BufferedReader(new FileReader(dlf));
-        String ln = "";
+						@Override
+						public void onDownloadFailed(Download download)
+						{
 
-        while ((ln = bu.readLine()) != null) {
-            cf.append(ln);
-        }
+						}
+					}, new URL("https://raw.githubusercontent.com/VolmitSoftware/React/master/language/index.json"), dlf, 8192);
 
-        bu.close();
-        JSONObject jso = new JSONObject(cf.toString());
+					dl.start();
+				}
 
-        boolean ud = false;
+				catch(Throwable e)
+				{
+					Ex.t(e);
+				}
+			}
+		};
+	}
 
-        for (Object i : jso.getJSONArray("languages")) {
-            if (b) {
-                ud = true;
-                downloadLanguage((String) i);
-            } else if (!b && !new File(languageFolder, i.toString()).exists()) {
-                ud = true;
-                downloadLanguage((String) i);
-            }
-        }
+	private void downloadAll(boolean b) throws IOException
+	{
+		StringBuilder cf = new StringBuilder();
+		BufferedReader bu = new BufferedReader(new FileReader(dlf));
+		String ln = "";
 
-        if (ud) {
-            D.s("Languages out of date. Updating...");
+		while((ln = bu.readLine()) != null)
+		{
+			cf.append(ln);
+		}
 
-            new TaskLater("dlwaiter", 5) {
-                @Override
-                public void run() {
-                    ReactPlugin.reload();
-                }
-            };
-        }
-    }
+		bu.close();
+		JSONObject jso = new JSONObject(cf.toString());
 
-    private void downloadLanguage(String i) throws IOException {
-        File dld = new File(languageFolder, i);
+		boolean ud = false;
 
-        Download dl = new Download(new DownloadMonitor() {
-            @Override
-            public void onDownloadUpdateProgress(Download download, long bytes, long totalBytes, double percentComplete) {
+		for(Object i : jso.getJSONArray("languages"))
+		{
+			if(b)
+			{
+				ud = true;
+				downloadLanguage((String) i);
+			}
 
-            }
+			else if(!b && !new File(languageFolder, i.toString()).exists())
+			{
+				ud = true;
+				downloadLanguage((String) i);
+			}
+		}
 
-            @Override
-            public void onDownloadStateChanged(Download download, DownloadState from, DownloadState to) {
+		if(ud)
+		{
+			D.s("Languages out of date. Updating...");
 
-            }
+			new TaskLater("dlwaiter", 5)
+			{
+				@Override
+				public void run()
+				{
+					ReactPlugin.reload();
+				}
+			};
+		}
+	}
 
-            @Override
-            public void onDownloadStarted(Download download) {
+	private void downloadLanguage(String i) throws IOException
+	{
+		File dld = new File(languageFolder, i);
 
-            }
+		Download dl = new Download(new DownloadMonitor()
+		{
+			@Override
+			public void onDownloadUpdateProgress(Download download, long bytes, long totalBytes, double percentComplete)
+			{
 
-            @Override
-            public void onDownloadFinished(Download download) {
-                D.s("Downloaded Language: " + dld.getName().split("\\.")[0]);
-            }
+			}
 
-            @Override
-            public void onDownloadFailed(Download download) {
+			@Override
+			public void onDownloadStateChanged(Download download, DownloadState from, DownloadState to)
+			{
 
-            }
-        }, new URL("https://raw.githubusercontent.com/VolmitSoftware/React/master/language/" + i), dld, 8192);
+			}
 
-        dl.start();
-    }
+			@Override
+			public void onDownloadStarted(Download download)
+			{
 
-    private void check() {
-        try {
-            StringBuilder cf = new StringBuilder();
-            BufferedReader bu = new BufferedReader(new FileReader(dlf));
-            String ln = "";
+			}
 
-            while ((ln = bu.readLine()) != null) {
-                cf.append(ln);
-            }
+			@Override
+			public void onDownloadFinished(Download download)
+			{
+				D.s("Downloaded Language: " + dld.getName().split("\\.")[0]);
+			}
 
-            bu.close();
-            JSONObject jso = new JSONObject(cf.toString());
-            int newVersion = jso.getInt("version");
+			@Override
+			public void onDownloadFailed(Download download)
+			{
 
-            downloadAll(newVersion != oldVersion);
-        } catch (Throwable e) {
-            Ex.t(e);
-        }
-    }
+			}
+		}, new URL("https://raw.githubusercontent.com/VolmitSoftware/React/master/language/" + i), dld, 8192);
 
-    public void loadLanguage(String key) throws Exception {
-        try {
-            File f = getFileForLanguage(key).getParentFile();
-            URL[] urls = {f.toURI().toURL()};
-            ClassLoader loader = new URLClassLoader(urls);
-            ResourceBundle rb = ResourceBundle.getBundle(key, Locale.getDefault(), loader);
+		dl.start();
+	}
 
-            if (rb != null) {
-                Lang.PRIMARY_BUNDLE = rb;
-                return;
-            }
-        } catch (MissingResourceException ex) {
-            ResourceBundle rb = ResourceBundle.getBundle("language." + key);
-            if (rb != null) {
-                Lang.PRIMARY_BUNDLE = rb;
-                return;
-            }
-        }
+	private void check()
+	{
+		try
+		{
+			StringBuilder cf = new StringBuilder();
+			BufferedReader bu = new BufferedReader(new FileReader(dlf));
+			String ln = "";
 
-        throw new Exception("Unable to load resourceBundle");
-    }
+			while((ln = bu.readLine()) != null)
+			{
+				cf.append(ln);
+			}
 
-    public File getFileForLanguage(String name) {
-        return new File(languageFolder, name + ".properties");
-    }
+			bu.close();
+			JSONObject jso = new JSONObject(cf.toString());
+			int newVersion = jso.getInt("version");
 
-    public void writeDefaults() throws IOException {
-        InputStream in = React.class.getResourceAsStream("/language/lang.properties");
-        FileOutputStream fos = new FileOutputStream(new File(languageFolder, "enUS.properties"));
-        byte[] buf = new byte[4096];
-        int read = 0;
+			if(newVersion != oldVersion)
+			{
+				downloadAll(true);
+			}
 
-        while ((read = in.read(buf)) != -1) {
-            fos.write(buf, 0, read);
-        }
+			else
+			{
+				downloadAll(false);
+			}
+		}
 
-        fos.close();
-        in.close();
-    }
+		catch(Throwable e)
+		{
+			Ex.t(e);
+		}
+	}
 
-    @Override
-    public void stop() {
+	public void loadLanguage(String key) throws Exception
+	{
+		try {
+			File f = getFileForLanguage(key).getParentFile();
+			URL[] urls = {f.toURI().toURL()};
+			ClassLoader loader = new URLClassLoader(urls);
+			ResourceBundle rb = ResourceBundle.getBundle(key, Locale.getDefault(), loader);
 
-    }
+			if (rb != null) {
+				Lang.PRIMARY_BUNDLE = rb;
+				return;
+			}
+		} catch (MissingResourceException ex) {
+			ResourceBundle rb = ResourceBundle.getBundle("language." + key);
+			if (rb != null) {
+				Lang.PRIMARY_BUNDLE = rb;
+				return;
+			}
+		}
 
-    @Override
-    public void tick() {
+		throw new Exception("Unable to load resourceBundle");
+	}
 
-    }
+	public File getFileForLanguage(String name)
+	{
+		return new File(languageFolder, name + ".properties");
+	}
 
-    @Override
-    public int getInterval() {
-        return 1923;
-    }
+	public void writeDefaults() throws IOException
+	{
+		InputStream in = React.class.getResourceAsStream("/language/lang.properties");
+		FileOutputStream fos = new FileOutputStream(new File(languageFolder, "enUS.properties"));
+		byte[] buf = new byte[4096];
+		int read = 0;
 
-    @Override
-    public boolean isUrgent() {
-        return false;
-    }
+		while((read = in.read(buf)) != -1)
+		{
+			fos.write(buf, 0, read);
+		}
+
+		fos.close();
+		in.close();
+	}
+
+	@Override
+	public void stop()
+	{
+
+	}
+
+	@Override
+	public void tick()
+	{
+
+	}
+
+	@Override
+	public int getInterval()
+	{
+		return 1923;
+	}
+
+	@Override
+	public boolean isUrgent()
+	{
+		return false;
+	}
 }

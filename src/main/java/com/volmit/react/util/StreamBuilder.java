@@ -1,60 +1,73 @@
 package com.volmit.react.util;
 
-import primal.lang.collection.GList;
-
-import javax.crypto.Cipher;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-public class StreamBuilder {
-    public GList<StreamConstructor<?, ?>> constructors;
+import javax.crypto.Cipher;
 
-    public StreamBuilder() {
-        constructors = new GList<StreamConstructor<?, ?>>();
-    }
+import primal.lang.collection.GList;
 
-    public InputStream constructInput(InputStream base) throws IOException {
-        InputStream m = base;
+public class StreamBuilder
+{
+	public GList<StreamConstructor<?, ?>> constructors;
 
-        for (StreamConstructor<?, ?> i : constructors) {
-            m = i.constructInput(m);
-        }
+	public StreamBuilder()
+	{
+		constructors = new GList<StreamConstructor<?, ?>>();
+	}
 
-        return m;
-    }
+	public InputStream constructInput(InputStream base) throws IOException
+	{
+		InputStream m = base;
 
-    public OutputStream constructOutput(OutputStream base) throws IOException {
-        OutputStream m = base;
+		for(StreamConstructor<?, ?> i : constructors)
+		{
+			m = i.constructInput(m);
+		}
 
-        for (StreamConstructor<?, ?> i : constructors) {
-            m = i.constructOutput(m);
-        }
+		return m;
+	}
 
-        return m;
-    }
+	public OutputStream constructOutput(OutputStream base) throws IOException
+	{
+		OutputStream m = base;
 
-    public void bind(StreamConstructor<?, ?> constructor) {
-        constructors.add(constructor);
-    }
+		for(StreamConstructor<?, ?> i : constructors)
+		{
+			m = i.constructOutput(m);
+		}
 
-    public void bindGZIP(int compressionLevel) {
-        bind(new GZipStreamConstructor(compressionLevel));
-    }
+		return m;
+	}
 
-    public void bindGZIP() {
-        bind(new GZipStreamConstructor());
-    }
+	public void bind(StreamConstructor<?, ?> constructor)
+	{
+		constructors.add(constructor);
+	}
 
-    public void bindCipher(Cipher cipher) {
-        bind(new CipherStreamConstructor(cipher));
-    }
+	public void bindGZIP(int compressionLevel)
+	{
+		bind(new GZipStreamConstructor(compressionLevel));
+	}
 
-    public void bindBuffer(int bufferSize) {
-        bind(new BufferedStreamConstructor(bufferSize));
-    }
+	public void bindGZIP()
+	{
+		bind(new GZipStreamConstructor());
+	}
 
-    public void bindBuffer() {
-        bind(new BufferedStreamConstructor());
-    }
+	public void bindCipher(Cipher cipher)
+	{
+		bind(new CipherStreamConstructor(cipher));
+	}
+
+	public void bindBuffer(int bufferSize)
+	{
+		bind(new BufferedStreamConstructor(bufferSize));
+	}
+
+	public void bindBuffer()
+	{
+		bind(new BufferedStreamConstructor());
+	}
 }

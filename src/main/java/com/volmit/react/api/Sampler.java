@@ -1,93 +1,109 @@
 package com.volmit.react.api;
 
 import com.volmit.react.util.M;
+
 import primal.util.text.C;
 
-public abstract class Sampler implements ISampler {
-    private double value;
-    private String id;
-    private String name;
-    private String description;
-    private C color;
-    private C altColor;
-    private int interval;
+public abstract class Sampler implements ISampler
+{
+	private double value;
+	private String id;
+	private String name;
+	private String description;
+	private C color;
+	private C altColor;
+	private int interval;
 
-    public Sampler() {
-        construct();
-    }
+	public Sampler()
+	{
+		construct();
+	}
 
-    @Override
-    public String getID() {
-        return id;
-    }
+	@Override
+	public String getID()
+	{
+		return id;
+	}
 
-    @Override
-    public void setID(String id) {
-        this.id = id;
-    }
+	@Override
+	public String getName()
+	{
+		return name;
+	}
 
-    @Override
-    public String getName() {
-        return name;
-    }
+	@Override
+	public String getDescription()
+	{
+		return description;
+	}
 
-    @Override
-    public void setName(String name) {
-        this.name = name;
-    }
+	@Override
+	public C getColor()
+	{
+		return color;
+	}
 
-    @Override
-    public String getDescription() {
-        return description;
-    }
+	@Override
+	public C getAltColor()
+	{
+		return altColor;
+	}
 
-    @Override
-    public void setDescription(String description) {
-        this.description = description;
-    }
+	@Override
+	public int getInterval()
+	{
+		return interval;
+	}
 
-    @Override
-    public C getColor() {
-        return color;
-    }
+	@Override
+	public abstract void sample();
 
-    @Override
-    public C getAltColor() {
-        return altColor;
-    }
+	@Override
+	public abstract void construct();
 
-    @Override
-    public int getInterval() {
-        return interval;
-    }
+	@Override
+	public abstract String get();
 
-    @Override
-    public void setInterval(int interval) {
-        this.interval = (int) M.clip(interval, 1, 1200);
-    }
+	@Override
+	public void setValue(double v)
+	{
+		value = v;
+	}
 
-    @Override
-    public abstract void sample();
+	@Override
+	public double getValue()
+	{
+		return value;
+	}
 
-    @Override
-    public abstract void construct();
+	@Override
+	public void setID(String id)
+	{
+		this.id = id;
+	}
 
-    @Override
-    public abstract String get();
+	@Override
+	public void setName(String name)
+	{
+		this.name = name;
+	}
 
-    @Override
-    public double getValue() {
-        return value;
-    }
+	@Override
+	public void setDescription(String description)
+	{
+		this.description = description;
+	}
 
-    @Override
-    public void setValue(double v) {
-        value = v;
-    }
+	@Override
+	public void setColor(C color, C altColor)
+	{
+		this.color = color;
+		this.altColor = altColor;
+	}
 
-    @Override
-    public void setColor(C color, C altColor) {
-        this.color = color;
-        this.altColor = altColor;
-    }
+	@Override
+	public void setInterval(int interval)
+	{
+		this.interval = (int) M.clip(interval, 1, 1200);
+	}
 }

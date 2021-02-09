@@ -1,6 +1,7 @@
 package com.volmit.react.util;
 
-public enum UnzipType {
+public enum UnzipType
+{
     DETERMINATE,
     INDETERMINATE
 }

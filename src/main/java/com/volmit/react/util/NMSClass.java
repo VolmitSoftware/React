@@ -1,96 +1,133 @@
 package com.volmit.react.util;
 
-public class NMSClass {
+public class NMSClass
+{
 
-    public static Class<?> PacketPlayOutPlayerListHeaderFooter;
-    public static Class<?> IChatBaseComponent;
-    public static Class<?> ChatSerializer;
-    public static Class<?> PacketPlayOutPlayerInfo;
-    public static Class<?> PlayerInfoData;
-    public static Class<?> GameProfile;
-    public static Class<?> EnumGamemode;
-    public static Class<?> TileEntitySkull;
-    public static Class<?> LoadingCache;
-    protected static int version = 170;
-    protected static Class<?> EnumPlayerInfoAction;
-    private static boolean init = false;
+	private static boolean init = false;
+	protected static int version = 170;
 
-    static {
-        if (!init) {
-            if (NMSX.getVersion().contains("1_7")) {
-                version = 170;
-            }
+	public static Class<?> PacketPlayOutPlayerListHeaderFooter;
+	public static Class<?> IChatBaseComponent;
+	public static Class<?> ChatSerializer;
+	public static Class<?> PacketPlayOutPlayerInfo;
+	public static Class<?> PlayerInfoData;
+	protected static Class<?> EnumPlayerInfoAction;
+	public static Class<?> GameProfile;
+	public static Class<?> EnumGamemode;
+	public static Class<?> TileEntitySkull;
+	public static Class<?> LoadingCache;
 
-            if (NMSX.getVersion().contains("1_8")) {
-                version = 180;
-            }
+	static
+	{
+		if(!init)
+		{
+			if(NMSX.getVersion().contains("1_7"))
+			{
+				version = 170;
+			}
 
-            if (NMSX.getVersion().contains("1_8_R1")) {
-                version = 181;
-            }
+			if(NMSX.getVersion().contains("1_8"))
+			{
+				version = 180;
+			}
 
-            if (NMSX.getVersion().contains("1_8_R2")) {
-                version = 182;
-            }
+			if(NMSX.getVersion().contains("1_8_R1"))
+			{
+				version = 181;
+			}
 
-            if (NMSX.getVersion().contains("1_8_R3")) {
-                version = 183;
-            }
+			if(NMSX.getVersion().contains("1_8_R2"))
+			{
+				version = 182;
+			}
 
-            if (version >= 180) {
-                PacketPlayOutPlayerListHeaderFooter = NMSX.getNMSClass("PacketPlayOutPlayerListHeaderFooter");
-            }
+			if(NMSX.getVersion().contains("1_8_R3"))
+			{
+				version = 183;
+			}
 
-            IChatBaseComponent = NMSX.getCBNMSClass("IChatBaseComponent");
+			if(version >= 180)
+			{
+				PacketPlayOutPlayerListHeaderFooter = NMSX.getNMSClass("PacketPlayOutPlayerListHeaderFooter");
+			}
 
-            if (version < 181) {
-                ChatSerializer = NMSX.getCBNMSClass("ChatSerializer");
-            } else {
-                ChatSerializer = NMSX.getCBNMSClass("IChatBaseComponent$ChatSerializer");
-            }
+			IChatBaseComponent = NMSX.getCBNMSClass("IChatBaseComponent");
 
-            PacketPlayOutPlayerInfo = NMSX.getCBNMSClass("PacketPlayOutPlayerInfo");
+			if(version < 181)
+			{
+				ChatSerializer = NMSX.getCBNMSClass("ChatSerializer");
+			}
+			else
+			{
+				ChatSerializer = NMSX.getCBNMSClass("IChatBaseComponent$ChatSerializer");
+			}
 
-            if (version >= 180) {
-                PlayerInfoData = NMSX.getCBNMSClass("PacketPlayOutPlayerInfo$PlayerInfoData");
-            }
+			PacketPlayOutPlayerInfo = NMSX.getCBNMSClass("PacketPlayOutPlayerInfo");
 
-            if (version <= 181) {
-                EnumPlayerInfoAction = NMSX.getCBNMSClass("EnumPlayerInfoAction");
-            } else {
-                EnumPlayerInfoAction = NMSX.getCBNMSClass("PacketPlayOutPlayerInfo$EnumPlayerInfoAction");
-            }
+			if(version >= 180)
+			{
+				PlayerInfoData = NMSX.getCBNMSClass("PacketPlayOutPlayerInfo$PlayerInfoData");
+			}
 
-            try {
-                if (version < 180) {
-                    GameProfile = Class.forName("net.minecraft.util.com.mojang.authlib.GameProfile");
-                } else {
-                    GameProfile = Class.forName("com.mojang.authlib.GameProfile");
-                }
-            } catch (Throwable e) {
+			if(version <= 181)
+			{
+				EnumPlayerInfoAction = NMSX.getCBNMSClass("EnumPlayerInfoAction");
+			}
 
-            }
+			else
+			{
+				EnumPlayerInfoAction = NMSX.getCBNMSClass("PacketPlayOutPlayerInfo$EnumPlayerInfoAction");
+			}
 
-            if (version < 182) {
-                EnumGamemode = NMSX.getCBNMSClass("EnumGamemode");
-            } else {
-                EnumGamemode = NMSX.getCBNMSClass("WorldSettings$EnumGamemode");
-            }
+			try
+			{
+				if(version < 180)
+				{
+					GameProfile = Class.forName("net.minecraft.util.com.mojang.authlib.GameProfile");
+				}
 
-            TileEntitySkull = NMSX.getCBNMSClass("TileEntitySkull");
+				else
+				{
+					GameProfile = Class.forName("com.mojang.authlib.GameProfile");
+				}
+			}
 
-            try {
-                if (version < 180) {
-                    LoadingCache = Class.forName("net.minecraft.util.com.google.common.cache.LoadingCache");
-                } else {
-                    LoadingCache = Class.forName("com.google.common.cache.LoadingCache");
-                }
-            } catch (Throwable e) {
+			catch(Throwable e)
+			{
 
-            }
+			}
 
-            init = true;
-        }
-    }
+			if(version < 182)
+			{
+				EnumGamemode = NMSX.getCBNMSClass("EnumGamemode");
+			}
+
+			else
+			{
+				EnumGamemode = NMSX.getCBNMSClass("WorldSettings$EnumGamemode");
+			}
+
+			TileEntitySkull = NMSX.getCBNMSClass("TileEntitySkull");
+
+			try
+			{
+				if(version < 180)
+				{
+					LoadingCache = Class.forName("net.minecraft.util.com.google.common.cache.LoadingCache");
+				}
+				else
+				{
+					LoadingCache = Class.forName("com.google.common.cache.LoadingCache");
+				}
+			}
+
+			catch(Throwable e)
+			{
+
+			}
+
+			init = true;
+		}
+	}
 
 }

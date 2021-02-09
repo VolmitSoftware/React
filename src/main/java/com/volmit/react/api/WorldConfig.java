@@ -1,76 +1,95 @@
 package com.volmit.react.api;
 
-import com.volmit.react.Config;
-import com.volmit.react.Info;
-import com.volmit.react.Surge;
-import com.volmit.react.util.Key;
-import com.volmit.react.util.*;
-import org.bukkit.World;
-import primal.lang.collection.GList;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-public class WorldConfig implements IConfigurable {
-    @Key("allow.rai")
-    public boolean allowRai = true;
+import org.bukkit.World;
 
-    @Key("allow.stacking")
-    public boolean allowStacking = true;
+import com.volmit.react.Config;
+import com.volmit.react.Info;
+import com.volmit.react.Surge;
+import com.volmit.react.util.ConfigurationDataInput;
+import com.volmit.react.util.ConfigurationDataOutput;
+import com.volmit.react.util.Ex;
+import com.volmit.react.util.IConfigurable;
+import com.volmit.react.util.Key;
 
-    @Key("allow.actions")
-    public boolean allowActions = true;
+import primal.lang.collection.GList;
 
-    @Key("allow.relighting")
-    public boolean allowRelighting = true;
+public class WorldConfig implements IConfigurable
+{
+	@Key("allow.rai")
+	public boolean allowRai = true;
 
-    @Key("allow.tile-throttling")
-    public boolean allowTileThrottling = true;
+	@Key("allow.stacking")
+	public boolean allowStacking = true;
 
-    @Key("allow.entity-throttling")
-    public boolean allowEntityThrottling = true;
+	@Key("allow.actions")
+	public boolean allowActions = true;
 
-    @Key("allow.fast-leaf-decay")
-    public boolean allowFastLeafDecay = true;
+	@Key("allow.relighting")
+	public boolean allowRelighting = true;
 
-    @Key("allow.chunk-purging")
-    public boolean allowChunkPurging = true;
+	@Key("allow.tile-throttling")
+	public boolean allowTileThrottling = true;
 
-    @Key("allow.xp-handling")
-    public boolean allowXPHandling = true;
+	@Key("allow.entity-throttling")
+	public boolean allowEntityThrottling = true;
 
-    @Key("allow.drop-handling")
-    public boolean allowDropHandling = true;
+	@Key("allow.fast-leaf-decay")
+	public boolean allowFastLeafDecay = true;
 
-    @Key("entities.assume-no-side-effects")
-    public List<String> assumeNoSideEffectsEntities = new ArrayList<String>(new GList<String>().qadd("ARMOR_STAND"));
+	@Key("allow.chunk-purging")
+	public boolean allowChunkPurging = true;
 
-    public File getConfigFile(World world) {
-        return new File(Surge.folder(Info.WORLD_CONFIGS), world.getName() + "-" + world.getSeed() + Info.CORE_DOTYML);
-    }
+	@Key("allow.xp-handling")
+	public boolean allowXPHandling = true;
 
-    public void save(World world) {
-        if (!Config.USE_WORLD_CONFIGS) {
-            return;
-        }
+	@Key("allow.drop-handling")
+	public boolean allowDropHandling = true;
 
-        try {
-            new ConfigurationDataOutput().write(this, getConfigFile(world));
-        } catch (Throwable e) {
-            Ex.t(e);
-        }
-    }
+	@Key("entities.assume-no-side-effects")
+	public List<String> assumeNoSideEffectsEntities = new ArrayList<String>(new GList<String>().qadd("ARMOR_STAND"));
 
-    public void load(World world) {
-        if (!Config.USE_WORLD_CONFIGS) {
-            return;
-        }
+	public File getConfigFile(World world)
+	{
+		return new File(Surge.folder(Info.WORLD_CONFIGS), world.getName() + "-" + world.getSeed() + Info.CORE_DOTYML);
+	}
 
-        try {
-            new ConfigurationDataInput().read(this, getConfigFile(world));
-        } catch (Throwable e) {
-            Ex.t(e);
-        }
-    }
+	public void save(World world)
+	{
+		if(!Config.USE_WORLD_CONFIGS)
+		{
+			return;
+		}
+
+		try
+		{
+			new ConfigurationDataOutput().write(this, getConfigFile(world));
+		}
+
+		catch(Throwable e)
+		{
+			Ex.t(e);
+		}
+	}
+
+	public void load(World world)
+	{
+		if(!Config.USE_WORLD_CONFIGS)
+		{
+			return;
+		}
+
+		try
+		{
+			new ConfigurationDataInput().read(this, getConfigFile(world));
+		}
+
+		catch(Throwable e)
+		{
+			Ex.t(e);
+		}
+	}
 }

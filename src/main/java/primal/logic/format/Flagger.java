@@ -2,9 +2,9 @@ package primal.logic.format;
 
 public class Flagger
 {
-	private final String prefix;
-	private final String split;
-	private final String[] args;
+	private String prefix;
+	private String split;
+	private String[] args;
 	
 	public Flagger(String prefix, String split, String[] args)
 	{

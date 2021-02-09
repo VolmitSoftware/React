@@ -1,231 +1,290 @@
 package com.volmit.react.api;
 
-import com.volmit.react.util.M;
-import org.bukkit.map.MapFont;
-import org.bukkit.map.MapFont.CharacterSprite;
-
-import java.awt.*;
+import java.awt.Color;
 import java.awt.geom.AffineTransform;
 import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 
-public class BufferedFrame {
-    private final byte[][] frame;
-    private final int width;
-    private final int height;
+import org.bukkit.map.MapFont;
+import org.bukkit.map.MapFont.CharacterSprite;
 
-    public BufferedFrame() {
-        this(128, 128);
-    }
+import com.volmit.react.util.M;
 
-    public BufferedFrame(int w, int h) {
-        width = w;
-        height = h;
-        frame = new byte[w][h];
-        write(FrameColor.TRANSPARENT);
-    }
+public class BufferedFrame
+{
+	private byte[][] frame;
+	private int width;
+	private int height;
 
-    public void drawText(int x, int y, MapFont font, byte ccc, String text) {
-        int xStart = x;
-        byte color = ccc;
-        if (!font.isValid(text)) {
-            throw new IllegalArgumentException("text contains invalid characters");
-        }
+	public BufferedFrame()
+	{
+		this(128, 128);
+	}
 
-        for (int i = 0; i < text.length(); ++i) {
-            char ch = text.charAt(i);
+	public BufferedFrame(int w, int h)
+	{
+		width = w;
+		height = h;
+		frame = new byte[w][h];
+		write(FrameColor.TRANSPARENT);
+	}
 
-            if (ch == '\n') {
-                x = xStart;
-                y += font.getHeight() + 1;
-                continue;
-            } else if (ch == '\u00A7') {
-                int j = text.indexOf(';', i);
-                if (j >= 0) {
-                    try {
-                        color = Byte.parseByte(text.substring(i + 1, j));
-                        i = j;
-                        continue;
-                    } catch (NumberFormatException ex) {
+	public void drawText(int x, int y, MapFont font, byte ccc, String text)
+	{
+		int xStart = x;
+		byte color = ccc;
+		if(!font.isValid(text))
+		{
+			throw new IllegalArgumentException("text contains invalid characters");
+		}
 
-                    }
-                }
-            }
+		for(int i = 0; i < text.length(); ++i)
+		{
+			char ch = text.charAt(i);
 
-            CharacterSprite sprite = font.getChar(text.charAt(i));
+			if(ch == '\n')
+			{
+				x = xStart;
+				y += font.getHeight() + 1;
+				continue;
+			}
 
-            for (int r = 0; r < font.getHeight(); ++r) {
-                for (int c = 0; c < sprite.getWidth(); ++c) {
-                    if (sprite.get(r, c)) {
-                        write(x + c, y + r, color);
-                    }
-                }
-            }
+			else if(ch == '\u00A7')
+			{
+				int j = text.indexOf(';', i);
+				if(j >= 0)
+				{
+					try
+					{
+						color = Byte.parseByte(text.substring(i + 1, j));
+						i = j;
+						continue;
+					}
+					catch(NumberFormatException ex)
+					{
 
-            x += sprite.getWidth() + 1;
-        }
-    }
+					}
+				}
+			}
 
-    public void write(byte c) {
-        int i;
-        int j;
+			CharacterSprite sprite = font.getChar(text.charAt(i));
 
-        for (i = 0; i < width; i++) {
-            for (j = 0; j < height; j++) {
-                write(i, j, c);
-            }
-        }
-    }
+			for(int r = 0; r < font.getHeight(); ++r)
+			{
+				for(int c = 0; c < sprite.getWidth(); ++c)
+				{
+					if(sprite.get(r, c))
+					{
+						write(x + c, y + r, color);
+					}
+				}
+			}
 
-    public BufferedFrame scale(double x, double y, int affineTransformOp) {
-        BufferedImage before = toBufferedImage();
-        int w = before.getWidth();
-        int h = before.getHeight();
-        BufferedImage after = new BufferedImage((int) (w * x), (int) (h * y), BufferedImage.TYPE_INT_ARGB);
-        AffineTransform at = new AffineTransform();
-        at.scale(x, y);
-        AffineTransformOp scaleOp = new AffineTransformOp(at, affineTransformOp);
-        after = scaleOp.filter(before, after);
-        BufferedFrame bf = new BufferedFrame(after.getWidth(), after.getHeight());
-        bf.fromBufferedImage(after);
+			x += sprite.getWidth() + 1;
+		}
+	}
 
-        return bf;
-    }
+	public void write(byte c)
+	{
+		int i;
+		int j;
 
-    public void fromBufferedImage(BufferedImage bu) {
-        int i;
-        int j;
+		for(i = 0; i < width; i++)
+		{
+			for(j = 0; j < height; j++)
+			{
+				write(i, j, c);
+			}
+		}
+	}
 
-        for (i = 0; i < width; i++) {
-            for (j = 0; j < height; j++) {
-                write(i, j, FrameColor.matchColor(new Color(bu.getRGB(i, j), true)));
-            }
-        }
-    }
+	public BufferedFrame scale(double x, double y, int affineTransformOp)
+	{
+		BufferedImage before = toBufferedImage();
+		int w = before.getWidth();
+		int h = before.getHeight();
+		BufferedImage after = new BufferedImage((int) (w * x), (int) (h * y), BufferedImage.TYPE_INT_ARGB);
+		AffineTransform at = new AffineTransform();
+		at.scale(x, y);
+		AffineTransformOp scaleOp = new AffineTransformOp(at, affineTransformOp);
+		after = scaleOp.filter(before, after);
+		BufferedFrame bf = new BufferedFrame(after.getWidth(), after.getHeight());
+		bf.fromBufferedImage(after);
 
-    public void fromBufferedImage(BufferedImage bu, int xs, int ys) {
-        int i;
-        int j;
+		return bf;
+	}
 
-        for (i = 0; i < width; i++) {
-            for (j = 0; j < height; j++) {
-                try {
-                    write(i, j, FrameColor.matchColor(new Color(bu.getRGB(i + xs, j + ys), true)));
-                } catch (Exception e) {
+	public void fromBufferedImage(BufferedImage bu)
+	{
+		int i;
+		int j;
 
-                }
-            }
-        }
-    }
+		for(i = 0; i < width; i++)
+		{
+			for(j = 0; j < height; j++)
+			{
+				write(i, j, FrameColor.matchColor(new Color(bu.getRGB(i, j), true)));
+			}
+		}
+	}
 
-    public BufferedImage toBufferedImage() {
-        BufferedImage bu = new BufferedImage(getWidth(), getHeight(), BufferedImage.TYPE_INT_ARGB);
+	public void fromBufferedImage(BufferedImage bu, int xs, int ys)
+	{
+		int i;
+		int j;
 
-        int i;
-        int j;
+		for(i = 0; i < width; i++)
+		{
+			for(j = 0; j < height; j++)
+			{
+				try
+				{
+					write(i, j, FrameColor.matchColor(new Color(bu.getRGB(i + xs, j + ys), true)));
+				}
 
-        for (i = 0; i < width; i++) {
-            for (j = 0; j < height; j++) {
-                Color a = FrameColor.getColor(frame[i][j]);
-                bu.setRGB(i, j, new Color(a.getRed(), a.getGreen(), a.getBlue(), a.getAlpha()).getRGB());
-            }
-        }
+				catch(Exception e)
+				{
 
-        return bu;
-    }
+				}
+			}
+		}
+	}
 
-    public void writeRainbowMul() {
-        int i;
-        int j;
+	public BufferedImage toBufferedImage()
+	{
+		BufferedImage bu = new BufferedImage(getWidth(), getHeight(), BufferedImage.TYPE_INT_ARGB);
 
-        for (i = 0; i < width; i++) {
-            for (j = 0; j < height; j++) {
-                write(i, j, FrameColor.matchColor(Color.getHSBColor((float) (i * j) / (float) (width * height), 1.0f, 1.0f)));
-            }
-        }
-    }
+		int i;
+		int j;
 
-    public void writeRainbowAdd() {
-        int i;
-        int j;
+		for(i = 0; i < width; i++)
+		{
+			for(j = 0; j < height; j++)
+			{
+				Color a = FrameColor.getColor(frame[i][j]);
+				bu.setRGB(i, j, new Color(a.getRed(), a.getGreen(), a.getBlue(), a.getAlpha()).getRGB());
+			}
+		}
 
-        for (i = 0; i < width; i++) {
-            for (j = 0; j < height; j++) {
-                write(i, j, FrameColor.matchColor(Color.getHSBColor((float) (i + j) / (float) (width + height), 1.0f, 1f)));
-            }
-        }
-    }
+		return bu;
+	}
 
-    public void writeSparks() {
-        int i;
-        int j;
+	public void writeRainbowMul()
+	{
+		int i;
+		int j;
 
-        for (i = 0; i < width; i++) {
-            for (j = 0; j < height; j++) {
-                if (M.r(0.05)) {
-                    write(i, j, FrameColor.WHITE);
-                }
-            }
-        }
-    }
+		for(i = 0; i < width; i++)
+		{
+			for(j = 0; j < height; j++)
+			{
+				write(i, j, FrameColor.matchColor(Color.getHSBColor((float) (i * j) / (float) (width * height), 1.0f, 1.0f)));
+			}
+		}
+	}
 
-    public boolean write(int x, int y, byte c) {
-        if ((int) M.clip(x, 0, width - 1) != x || (int) M.clip(y, 0, height - 1) != y) {
-            return false;
-        }
+	public void writeRainbowAdd()
+	{
+		int i;
+		int j;
 
-        frame[(int) M.clip(x, 0, width - 1)][(int) M.clip(y, 0, height - 1)] = c;
-        return true;
-    }
+		for(i = 0; i < width; i++)
+		{
+			for(j = 0; j < height; j++)
+			{
+				write(i, j, FrameColor.matchColor(Color.getHSBColor((float) (i + j) / (float) (width + height), 1.0f, 1f)));
+			}
+		}
+	}
 
-    public int write(BufferedFrame frame, int sx, int sy) {
-        int wrote = 0;
-        byte[][] pframe = frame.getRawFrame();
+	public void writeSparks()
+	{
+		int i;
+		int j;
 
-        int i;
-        int j;
+		for(i = 0; i < width; i++)
+		{
+			for(j = 0; j < height; j++)
+			{
+				if(M.r(0.05))
+				{
+					write(i, j, FrameColor.WHITE);
+				}
+			}
+		}
+	}
 
-        for (i = 0; i < M.min(frame.getWidth(), getWidth()); i++) {
-            for (j = 0; j < M.min(frame.getHeight(), getHeight()); j++) {
-                if (pframe[i][j] == 0) {
-                    continue;
-                }
+	public boolean write(int x, int y, byte c)
+	{
+		if((int) M.clip(x, 0, width - 1) != x || (int) M.clip(y, 0, height - 1) != y)
+		{
+			return false;
+		}
 
-                if (write(i + sx, j + sy, pframe[i][j])) {
-                    wrote++;
-                }
-            }
-        }
+		frame[(int) M.clip(x, 0, width - 1)][(int) M.clip(y, 0, height - 1)] = c;
+		return true;
+	}
 
-        return wrote;
-    }
+	public int write(BufferedFrame frame, int sx, int sy)
+	{
+		int wrote = 0;
+		byte[][] pframe = frame.getRawFrame();
 
-    public void write(BufferedFrame frame) {
-        byte[][] pframe = frame.getRawFrame();
+		int i;
+		int j;
 
-        int i;
-        int j;
+		for(i = 0; i < M.min(frame.getWidth(), getWidth()); i++)
+		{
+			for(j = 0; j < M.min(frame.getHeight(), getHeight()); j++)
+			{
+				if(pframe[i][j] == 0)
+				{
+					continue;
+				}
 
-        for (i = 0; i < M.min(frame.getWidth(), getWidth()); i++) {
-            for (j = 0; j < M.min(frame.getHeight(), getHeight()); j++) {
-                if (pframe[i][j] == 0) {
-                    continue;
-                }
+				if(write(i + sx, j + sy, pframe[i][j]))
+				{
+					wrote++;
+				}
+			}
+		}
 
-                write(i, j, pframe[i][j]);
-            }
-        }
-    }
+		return wrote;
+	}
 
-    public byte[][] getRawFrame() {
-        return frame;
-    }
+	public void write(BufferedFrame frame)
+	{
+		byte[][] pframe = frame.getRawFrame();
 
-    public int getWidth() {
-        return width;
-    }
+		int i;
+		int j;
 
-    public int getHeight() {
-        return height;
-    }
+		for(i = 0; i < M.min(frame.getWidth(), getWidth()); i++)
+		{
+			for(j = 0; j < M.min(frame.getHeight(), getHeight()); j++)
+			{
+				if(pframe[i][j] == 0)
+				{
+					continue;
+				}
+
+				write(i, j, pframe[i][j]);
+			}
+		}
+	}
+
+	public byte[][] getRawFrame()
+	{
+		return frame;
+	}
+
+	public int getWidth()
+	{
+		return width;
+	}
+
+	public int getHeight()
+	{
+		return height;
+	}
 }

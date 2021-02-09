@@ -1,7 +1,8 @@
 package com.volmit.react.api;
 
-public enum ActionHandle {
-    AUTOMATIC,
-    MANUAL,
-    MUTEX
+public enum ActionHandle
+{
+	AUTOMATIC,
+	MANUAL,
+	MUTEX
 }

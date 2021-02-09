@@ -7,39 +7,48 @@ import primal.util.text.C;
  *
  * @author cyberpwn
  */
-public class ColoredString {
-    private C c;
-    private String s;
+public class ColoredString
+{
+	private C c;
+	private String s;
 
-    /**
-     * Create a colored string
-     *
-     * @param c the color
-     * @param s the string
-     */
-    public ColoredString(C c, String s) {
-        this.c = c;
-        this.s = s;
-    }
+	/**
+	 * Create a colored string
+	 *
+	 * @param c
+	 *            the color
+	 * @param s
+	 *            the string
+	 */
+	public ColoredString(C c, String s)
+	{
+		this.c = c;
+		this.s = s;
+	}
 
-    @Override
-    public String toString() {
-        return c.toString() + s;
-    }
+	@Override
+	public String toString()
+	{
+		return c.toString() + s;
+	}
 
-    public C getC() {
-        return c;
-    }
+	public C getC()
+	{
+		return c;
+	}
 
-    public void setC(C c) {
-        this.c = c;
-    }
+	public void setC(C c)
+	{
+		this.c = c;
+	}
 
-    public String getS() {
-        return s;
-    }
+	public String getS()
+	{
+		return s;
+	}
 
-    public void setS(String s) {
-        this.s = s;
-    }
+	public void setS(String s)
+	{
+		this.s = s;
+	}
 }

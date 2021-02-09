@@ -10,7 +10,7 @@ import java.util.Arrays;
  */
 public class RollingAverage
 {
-	private final double[] data;
+	private double[] data;
 	private double average;
 	private boolean dirty;
 	private int currentIndex;

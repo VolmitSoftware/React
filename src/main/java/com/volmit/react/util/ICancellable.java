@@ -1,5 +1,6 @@
 package com.volmit.react.util;
 
-public interface ICancellable {
-    void cancel();
+public interface ICancellable
+{
+	void cancel();
 }

@@ -1,7 +1,8 @@
 package com.volmit.react.util;
 
 
-public enum QueueMode {
-    ROUND_ROBIN,
-    SMALLEST
+public enum QueueMode
+{
+	ROUND_ROBIN,
+	SMALLEST
 }

@@ -1,20 +1,22 @@
 package com.volmit.react.api;
 
 import org.bukkit.command.CommandSender;
+
 import primal.lang.collection.GSet;
 
-public interface ISelector {
-    SelectionMode getMode();
+public interface ISelector
+{
+	SelectionMode getMode();
 
-    Class<?> getType();
+	Class<?> getType();
 
-    boolean can(Object o);
+	boolean can(Object o);
 
-    GSet<Object> getList();
+	GSet<Object> getList();
 
-    GSet<Object> getPossibilities();
+	GSet<Object> getPossibilities();
 
-    int parse(CommandSender sender, String input) throws SelectorParseException;
+	int parse(CommandSender sender, String input) throws SelectorParseException;
 
-    String getName();
+	String getName();
 }

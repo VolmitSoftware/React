@@ -3,25 +3,30 @@ package com.volmit.react.api;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-public enum Side {
-    PLAYERS("players"),
-    CONSOLE("the console");
+public enum Side
+{
+	PLAYERS("players"),
+	CONSOLE("the console");
 
-    private final String ss;
+	private String ss;
 
-    Side(String s) {
-        ss = s;
-    }
+	Side(String s)
+	{
+		ss = s;
+	}
 
-    public static Side get(CommandSender sender) {
-        if (sender instanceof Player) {
-            return Side.PLAYERS;
-        }
+	public String ss()
+	{
+		return ss;
+	}
 
-        return Side.CONSOLE;
-    }
+	public static Side get(CommandSender sender)
+	{
+		if(sender instanceof Player)
+		{
+			return Side.PLAYERS;
+		}
 
-    public String ss() {
-        return ss;
-    }
+		return Side.CONSOLE;
+	}
 }

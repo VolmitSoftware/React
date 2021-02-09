@@ -2,98 +2,120 @@ package com.volmit.react.util;
 
 import org.bukkit.entity.Player;
 
-public class Title {
-    private String title;
-    private String subTitle;
-    private String action;
-    private Integer fadeIn;
-    private Integer fadeOut;
-    private Integer stayTime;
+public class Title
+{
+	private String title;
+	private String subTitle;
+	private String action;
+	private Integer fadeIn;
+	private Integer fadeOut;
+	private Integer stayTime;
 
-    public Title() {
-        fadeIn = 0;
-        fadeOut = 0;
-        stayTime = 5;
-    }
+	public Title()
+	{
+		fadeIn = 0;
+		fadeOut = 0;
+		stayTime = 5;
+	}
 
-    public Title(String title, String subTitle, String action, Integer fadeIn, Integer fadeOut, Integer stayTime) {
-        this.title = title;
-        this.subTitle = subTitle;
-        this.action = action;
-        this.fadeIn = fadeIn;
-        this.fadeOut = fadeOut;
-        this.stayTime = stayTime;
-    }
+	public Title(String title, String subTitle, String action, Integer fadeIn, Integer fadeOut, Integer stayTime)
+	{
+		this.title = title;
+		this.subTitle = subTitle;
+		this.action = action;
+		this.fadeIn = fadeIn;
+		this.fadeOut = fadeOut;
+		this.stayTime = stayTime;
+	}
 
-    public Title(String title, String subTitle, Integer fadeIn, Integer fadeOut, Integer stayTime) {
-        this.title = title;
-        this.subTitle = subTitle;
-        this.fadeIn = fadeIn;
-        this.fadeOut = fadeOut;
-        this.stayTime = stayTime;
-    }
+	public Title(String title, String subTitle, Integer fadeIn, Integer fadeOut, Integer stayTime)
+	{
+		this.title = title;
+		this.subTitle = subTitle;
+		this.fadeIn = fadeIn;
+		this.fadeOut = fadeOut;
+		this.stayTime = stayTime;
+	}
 
-    public Title(String action, Integer fadeIn, Integer fadeOut, Integer stayTime) {
-        this.action = action;
-        this.fadeIn = fadeIn;
-        this.fadeOut = fadeOut;
-        this.stayTime = stayTime;
-    }
+	public Title(String action, Integer fadeIn, Integer fadeOut, Integer stayTime)
+	{
+		this.action = action;
+		this.fadeIn = fadeIn;
+		this.fadeOut = fadeOut;
+		this.stayTime = stayTime;
+	}
 
-    public void send(Player p) {
-        try {
-            PacketUtil.sendTitle(p, fadeIn, stayTime, fadeOut, title, subTitle);
-            PacketUtil.sendActionBar(p, action);
-        } catch (Throwable e) {
-            Ex.t(e);
-        }
-    }
+	public void send(Player p)
+	{
+		try
+		{
+			PacketUtil.sendTitle(p, fadeIn, stayTime, fadeOut, title, subTitle);
+			PacketUtil.sendActionBar(p, action);
+		}
 
-    public String getTitle() {
-        return title;
-    }
+		catch(Throwable e)
+		{
+			Ex.t(e);
+		}
+	}
 
-    public void setTitle(String title) {
-        this.title = title;
-    }
+	public String getTitle()
+	{
+		return title;
+	}
 
-    public String getSubTitle() {
-        return subTitle;
-    }
+	public void setTitle(String title)
+	{
+		this.title = title;
+	}
 
-    public void setSubTitle(String subTitle) {
-        this.subTitle = subTitle;
-    }
+	public String getSubTitle()
+	{
+		return subTitle;
+	}
 
-    public String getAction() {
-        return action;
-    }
+	public void setSubTitle(String subTitle)
+	{
+		this.subTitle = subTitle;
+	}
 
-    public void setAction(String action) {
-        this.action = action;
-    }
+	public String getAction()
+	{
+		return action;
+	}
 
-    public Integer getFadeIn() {
-        return fadeIn;
-    }
+	public void setAction(String action)
+	{
+		this.action = action;
+	}
 
-    public void setFadeIn(Integer fadeIn) {
-        this.fadeIn = fadeIn;
-    }
+	public Integer getFadeIn()
+	{
+		return fadeIn;
+	}
 
-    public Integer getFadeOut() {
-        return fadeOut;
-    }
+	public void setFadeIn(Integer fadeIn)
+	{
+		this.fadeIn = fadeIn;
+	}
 
-    public void setFadeOut(Integer fadeOut) {
-        this.fadeOut = fadeOut;
-    }
+	public Integer getFadeOut()
+	{
+		return fadeOut;
+	}
 
-    public Integer getStayTime() {
-        return stayTime;
-    }
+	public void setFadeOut(Integer fadeOut)
+	{
+		this.fadeOut = fadeOut;
+	}
 
-    public void setStayTime(Integer stayTime) {
-        this.stayTime = stayTime;
-    }
+	public Integer getStayTime()
+	{
+		return stayTime;
+	}
+
+	public void setStayTime(Integer stayTime)
+	{
+		this.stayTime = stayTime;
+	}
 }
