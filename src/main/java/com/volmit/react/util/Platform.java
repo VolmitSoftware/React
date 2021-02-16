@@ -209,12 +209,13 @@ public class Platform
 
 		public static double getCPULoad()
 		{
-			if(!ENABLE)
+			double CPULoad = getSystem().getSystemCpuLoad();
+			if(!ENABLE || Double.isNaN(CPULoad))
 			{
 				return 0;
 			}
 
-			return getSystem().getSystemCpuLoad();
+			return CPULoad;
 		}
 
 		public static double getProcessCPULoad()

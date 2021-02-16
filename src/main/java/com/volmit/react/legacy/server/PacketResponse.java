@@ -1,5 +1,6 @@
 package com.volmit.react.legacy.server;
 
+import org.bukkit.Bukkit;
 import primal.json.JSONArray;
 import primal.json.JSONObject;
 import primal.lang.collection.GList;
@@ -16,7 +17,11 @@ public class PacketResponse {
     }
 
     public void put(String s, Double o) {
-        js.put(s, o);
+        if (Double.isFinite(o)) {
+            js.put(s, o);
+        } else {
+            Bukkit.broadcastMessage(s + o);
+        }
     }
 
     public void put(String s, Integer o) {

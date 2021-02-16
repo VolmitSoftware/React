@@ -5,6 +5,10 @@ import com.volmit.react.React;
 public class ReactRunnable implements Runnable {
     private React react;
 
+    public ReactRunnable() {
+        run(React.instance);
+    }
+
     public void run(React react) {
         this.react = react;
         run();

@@ -9,6 +9,8 @@ import com.volmit.react.util.M;
 import com.volmit.react.util.Platform;
 import com.volmit.react.util.S;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.Logger;
 import org.bukkit.Bukkit;
 import primal.json.JSONObject;
 import primal.lang.collection.GList;
@@ -133,11 +135,14 @@ public class ReactServer extends Thread {
             response.put("requests per second", (double) (requests / (1 + (M.ms() - ms) / 1000)));
             response.put("memory-max", Runtime.getRuntime().maxMemory() / 1024 / 1024);
             response.put("processor-cores", Runtime.getRuntime().availableProcessors());
-            response.put("CPU Usage", 100 * (Platform.CPU.getCPULoad()));
+            response.put("CPU Usage", Platform.CPU.getCPULoad());
             response.put("CPU Process Usage", 100 * (Platform.CPU.getProcessCPULoad()));
             response.put("Physical Memory Usage", Platform.MEMORY.PHYSICAL.getUsedMemory() / 1024 / 1024);
             response.put("Virtual Memory Usage", Platform.MEMORY.VIRTUAL.getUsedMemory() / 1024 / 1024);
             response.put("Virtual Commit", Platform.MEMORY.VIRTUAL.getCommittedVirtualMemory() / 1024 / 1024);
+
+            Logger log = (Logger) LogManager.getRootLogger();
+            log.addAppender(new HijackedConsole());
 
             GList<String> console = HijackedConsole.out.copy();
             String data = console.toString("\n");
