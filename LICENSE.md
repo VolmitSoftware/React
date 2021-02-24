@@ -38,6 +38,6 @@ TERMS AND CONDITIONS
 
 5. For any conditions not outlined in the License, refer to your country or state laws for Copyright.
 
-6. If you do not agree to any of the above conditions you must delete the Content in its entirety as well as all copies of the Content and derivitive works of the Content that you have made.
+6. If you do not agree to any of the above conditions you must delete the Content in its entirety as well as all copies of the Content and derivative works of the Content that you have made.
 
 END TERMS AND CONDITIONS
