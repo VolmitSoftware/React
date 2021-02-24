@@ -1,6 +1,6 @@
 VOLMIT SOFTWARE PUBLIC LICENSE
 
-Version 1.0, 24 February 2021
+Version 1.1, 24 February 2021
 
 Copyright :copyright: 2021 Andrew Baker
 
@@ -37,5 +37,7 @@ TERMS AND CONDITIONS
 4. You may not host, copy, Modify, distribute, create derivative works, or distribute derivative works of the Content if you are Brian Fopiano <mypsn1550@gmail.com> or are associated with Brian Fopiano.
 
 5. For any conditions not outlined in the License, refer to your country or state laws for Copyright.
+
+6. If you do not agree to any of the above conditions you must delete the Content in its entirety as well as all copies of the Content and derivitive works of the Content that you have made.
 
 END TERMS AND CONDITIONS
