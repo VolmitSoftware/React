@@ -5,10 +5,11 @@ plugins {
 }
 
 group 'com.volmit.react'
-version '6.650'
+version '6.651'
 
 repositories {
     mavenCentral()
+    mavenLocal()
     maven {
         url = "http://repo.volmit.com/repository/volmit/"
     }
