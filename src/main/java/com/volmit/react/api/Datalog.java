@@ -1,206 +1,169 @@
 package com.volmit.react.api;
 
-import java.io.BufferedInputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.zip.GZIPInputStream;
-
 import com.volmit.react.util.M;
-
 import primal.lang.collection.GList;
 
-public class Datalog
-{
-	private File file;
-	private int interval;
-	private long start;
-	private int size;
-	private int max;
-	private int itrf;
-	private int written;
-	private int read;
-	private DataOutputStream dos;
-	private DataInputStream din;
+import java.io.*;
+import java.util.zip.GZIPInputStream;
 
-	public Datalog(File file)
-	{
-		this.file = file;
-		written = 0;
-		max = 0;
-		itrf = 0;
-		read = 0;
-	}
+public class Datalog {
+    private final File file;
+    private int interval;
+    private long start;
+    private int size;
+    private int max;
+    private int itrf;
+    private int written;
+    private int read;
+    private DataOutputStream dos;
+    private DataInputStream din;
 
-	public void openReadStream() throws IOException
-	{
-		FileInputStream fin = new FileInputStream(file);
-		GZIPInputStream gzi = new GZIPInputStream(fin);
-		BufferedInputStream bin = new BufferedInputStream(gzi, 8192);
-		din = new DataInputStream(bin);
-		start = din.readLong();
-		interval = din.readInt();
-		size = din.readInt();
-		itrf = din.readInt();
-	}
+    public Datalog(File file) {
+        this.file = file;
+        written = 0;
+        max = 0;
+        itrf = 0;
+        read = 0;
+    }
 
-	public void skipStream(int itr) throws IOException
-	{
-		din.skip(4 * size * itr);
-		read += itr;
-	}
+    public void openReadStream() throws IOException {
+        FileInputStream fin = new FileInputStream(file);
+        GZIPInputStream gzi = new GZIPInputStream(fin);
+        BufferedInputStream bin = new BufferedInputStream(gzi, 8192);
+        din = new DataInputStream(bin);
+        start = din.readLong();
+        interval = din.readInt();
+        size = din.readInt();
+        itrf = din.readInt();
+    }
 
-	public void skipStream() throws IOException
-	{
-		din.skip(4 * size);
-		read++;
-	}
+    public void skipStream(int itr) throws IOException {
+        din.skip(4 * size * itr);
+        read += itr;
+    }
 
-	public GList<Double> readStream() throws IOException
-	{
-		GList<Double> gg = new GList<Double>();
+    public void skipStream() throws IOException {
+        din.skip(4 * size);
+        read++;
+    }
 
-		for(int i = 0; i < itrf; i++)
-		{
-			gg.add((double) din.readFloat() * 32);
-		}
+    public GList<Double> readStream() throws IOException {
+        GList<Double> gg = new GList<Double>();
 
-		read++;
+        for (int i = 0; i < itrf; i++) {
+            gg.add((double) din.readFloat() * 32);
+        }
 
-		return gg;
-	}
+        read++;
 
-	public boolean hasNext()
-	{
-		return read < size;
-	}
+        return gg;
+    }
 
-	public boolean hasNext(int howMany)
-	{
-		return read + howMany < size;
-	}
+    public boolean hasNext() {
+        return read < size;
+    }
 
-	public void openStream(int interval, int itr, int size) throws IOException
-	{
-		openStream(interval, itr, size, M.ms());
-	}
+    public boolean hasNext(int howMany) {
+        return read + howMany < size;
+    }
 
-	public int remaining()
-	{
-		return max - written;
-	}
+    public void openStream(int interval, int itr, int size) throws IOException {
+        openStream(interval, itr, size, M.ms());
+    }
 
-	public void openStream(int interval, int itr, int size, long start) throws IOException
-	{
-		this.interval = interval;
-		itrf = itr;
-		max = size;
-		file.getParentFile().mkdirs();
-		FileOutputStream fos = new FileOutputStream(file);
-		HGZO gzo = new HGZO(fos);
-		dos = new DataOutputStream(gzo);
-		dos.writeLong(start);
-		dos.writeInt(interval);
-		dos.writeInt(size);
-		dos.writeInt(itr);
-	}
+    public int remaining() {
+        return max - written;
+    }
 
-	public void stream(GList<Double> doubles) throws IOException
-	{
-		if(doubles.size() != itrf)
-		{
-			throw new IllegalArgumentException("Expected " + itrf + " doubles. (" + doubles.size() + ")");
-		}
+    public void openStream(int interval, int itr, int size, long start) throws IOException {
+        this.interval = interval;
+        itrf = itr;
+        max = size;
+        file.getParentFile().mkdirs();
+        FileOutputStream fos = new FileOutputStream(file);
+        HGZO gzo = new HGZO(fos);
+        dos = new DataOutputStream(gzo);
+        dos.writeLong(start);
+        dos.writeInt(interval);
+        dos.writeInt(size);
+        dos.writeInt(itr);
+    }
 
-		for(Double i : doubles)
-		{
-			dos.writeFloat(i.floatValue() / 32);
-		}
+    public void stream(GList<Double> doubles) throws IOException {
+        if (doubles.size() != itrf) {
+            throw new IllegalArgumentException("Expected " + itrf + " doubles. (" + doubles.size() + ")");
+        }
 
-		if(written % 20 == 0)
-		{
-			dos.flush();
-		}
+        for (Double i : doubles) {
+            dos.writeFloat(i.floatValue() / 32);
+        }
 
-		written++;
-	}
+        if (written % 20 == 0) {
+            dos.flush();
+        }
 
-	public void closeRead() throws IOException
-	{
-		din.close();
-	}
+        written++;
+    }
 
-	public boolean close() throws IOException
-	{
-		GList<Double> dummy = new GList<Double>();
-		dummy.fill(-1D, itrf);
-		boolean full = true;
+    public void closeRead() throws IOException {
+        din.close();
+    }
 
-		while(written < max)
-		{
-			stream(dummy);
-			full = false;
-		}
+    public boolean close() throws IOException {
+        GList<Double> dummy = new GList<Double>();
+        dummy.fill(-1D, itrf);
+        boolean full = true;
 
-		dos.close();
-		return full;
-	}
+        while (written < max) {
+            stream(dummy);
+            full = false;
+        }
 
-	public File getFile()
-	{
-		return file;
-	}
+        dos.close();
+        return full;
+    }
 
-	public long getIntervalMS()
-	{
-		return (Math.max(getInterval(), 1)) * 50;
-	}
+    public File getFile() {
+        return file;
+    }
 
-	public int getInterval()
-	{
-		return interval;
-	}
+    public long getIntervalMS() {
+        return (Math.max(getInterval(), 1)) * 50;
+    }
 
-	public long getStart()
-	{
-		return start;
-	}
+    public int getInterval() {
+        return interval;
+    }
 
-	public int getSize()
-	{
-		return size;
-	}
+    public long getStart() {
+        return start;
+    }
 
-	public int getMax()
-	{
-		return max;
-	}
+    public int getSize() {
+        return size;
+    }
 
-	public int getItrf()
-	{
-		return itrf;
-	}
+    public int getMax() {
+        return max;
+    }
 
-	public int getWritten()
-	{
-		return written;
-	}
+    public int getItrf() {
+        return itrf;
+    }
 
-	public int getRead()
-	{
-		return read;
-	}
+    public int getWritten() {
+        return written;
+    }
 
-	public DataOutputStream getDos()
-	{
-		return dos;
-	}
+    public int getRead() {
+        return read;
+    }
 
-	public DataInputStream getDin()
-	{
-		return din;
-	}
+    public DataOutputStream getDos() {
+        return dos;
+    }
+
+    public DataInputStream getDin() {
+        return din;
+    }
 }

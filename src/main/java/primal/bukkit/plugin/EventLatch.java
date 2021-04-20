@@ -13,7 +13,7 @@ import org.bukkit.plugin.EventExecutor;
 
 public class EventLatch<T extends Event> implements Listener
 {
-	private Class<? extends T> t;
+	private final Class<? extends T> t;
 	private EventPriority priority;
 	private boolean ignoreCancelled;
 	private Function<T, Boolean> filter;

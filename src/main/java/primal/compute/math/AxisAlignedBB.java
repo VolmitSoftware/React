@@ -2,12 +2,12 @@ package primal.compute.math;
 
 public class AxisAlignedBB
 {
-	private double xa;
-	private double xb;
-	private double ya;
-	private double yb;
-	private double za;
-	private double zb;
+	private final double xa;
+	private final double xb;
+	private final double ya;
+	private final double yb;
+	private final double za;
+	private final double zb;
 
 	public AxisAlignedBB(double xa, double xb, double ya, double yb, double za, double zb)
 	{

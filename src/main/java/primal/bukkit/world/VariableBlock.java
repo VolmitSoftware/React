@@ -11,7 +11,7 @@ import primal.lang.collection.GList;
  */
 public class VariableBlock
 {
-	private GList<MaterialBlock> blocks;
+	private final GList<MaterialBlock> blocks;
 
 	public VariableBlock()
 	{

@@ -76,7 +76,7 @@ import primal.util.text.C;
 
 public class Catalyst13_R2 extends CatalystPacketListener implements CatalystHost
 {
-	private Map<Player, PlayerSettings> playerSettings = new HashMap<>();
+	private final Map<Player, PlayerSettings> playerSettings = new HashMap<>();
 
 	@Override
 	public void sendAdvancement(Player p, FrameType type, ItemStack is, String text)

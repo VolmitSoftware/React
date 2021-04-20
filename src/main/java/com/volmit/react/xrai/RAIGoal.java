@@ -7,266 +7,217 @@ import com.volmit.react.util.M;
 import primal.json.JSONException;
 import primal.json.JSONObject;
 
-public class RAIGoal
-{
-	private ConditionSet conditions;
-	private VirtualAction action;
-	private long interval;
-	private String sv;
-	private String name;
-	private String description;
-	private String author;
-	private boolean enabled;
-	private long last = M.ms();
-	private int hp;
-	private int chp;
-	private int hpt;
-	private int dmg;
+public class RAIGoal {
+    private ConditionSet conditions;
+    private VirtualAction action;
+    private long interval;
+    private String sv;
+    private String name;
+    private String description;
+    private String author;
+    private boolean enabled;
+    private long last = M.ms();
+    private int hp;
+    private int chp;
+    private int hpt;
+    private int dmg;
 
-	public RAIGoal()
-	{
-		conditions = new ConditionSet();
-		action = new VirtualAction(ActionType.PURGE_CHUNKS);
-		interval = -1;
-		sv = null;
-		description = "no description";
-		author = "React";
-		name = "goal";
-		hp = 600;
-		hpt = 1;
-		dmg = 100;
-		chp = 0;
-		enabled = true;
-	}
+    public RAIGoal() {
+        conditions = new ConditionSet();
+        action = new VirtualAction(ActionType.PURGE_CHUNKS);
+        interval = -1;
+        sv = null;
+        description = "no description";
+        author = "React";
+        name = "goal";
+        hp = 600;
+        hpt = 1;
+        dmg = 100;
+        chp = 0;
+        enabled = true;
+    }
 
-	public void setMaxHealth(int hp)
-	{
-		this.hp = hp;
-	}
+    public RAIGoal(JSONObject j) {
+        this();
 
-	public void setHealthRegen(int hp)
-	{
-		this.hpt = hp;
-	}
+        conditions = new ConditionSet(j.getJSONArray("conditions"));
+        action = new VirtualAction(j.getJSONObject("reaction"));
 
-	public void setHealthDamage(int hp)
-	{
-		this.dmg = hp;
-	}
+        if (j.has("action-health-regen")) {
+            hpt = j.getInt("action-health-regen");
+        }
 
-	public int getHealth()
-	{
-		return chp;
-	}
+        if (j.has("action-health-max")) {
+            hp = j.getInt("action-health-max");
+        }
 
-	public int getMaxHealth()
-	{
-		return hp;
-	}
+        if (j.has("action-health-damage")) {
+            dmg = j.getInt("action-health-damage");
+        }
 
-	public double getHealthPercent()
-	{
-		return (double) getHealth() / (double) getMaxHealth();
-	}
+        if (j.has("enabled")) {
+            enabled = j.getBoolean("enabled");
+        }
 
-	public double getHealthUtilization()
-	{
-		return 1.0 - getHealthPercent();
-	}
+        if (j.has("name")) {
+            name = j.getString("name");
+        }
 
-	public void regenHealth()
-	{
-		chp += hpt;
-		chp = (int) M.clip(chp, 0, hp);
-	}
+        if (j.has("author")) {
+            author = j.getString("author");
+        }
 
-	public boolean damageHealth()
-	{
-		if(chp - dmg >= 0)
-		{
-			chp -= dmg;
-			return true;
-		}
+        if (j.has("description")) {
+            description = j.getString("description");
+        }
 
-		return false;
-	}
+        if (j.has("interval")) {
+            try {
+                interval = new SelectorTime().parse(null, sv = j.getString("interval"));
+            } catch (SelectorParseException e) {
+                e.printStackTrace();
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
+    }
 
-	public long getLast()
-	{
-		return last;
-	}
+    public void setHealthRegen(int hp) {
+        this.hpt = hp;
+    }
 
-	public void setLast(long last)
-	{
-		this.last = last;
-	}
+    public void setHealthDamage(int hp) {
+        this.dmg = hp;
+    }
 
-	public RAIGoal(JSONObject j)
-	{
-		this();
+    public int getHealth() {
+        return chp;
+    }
 
-		conditions = new ConditionSet(j.getJSONArray("conditions"));
-		action = new VirtualAction(j.getJSONObject("reaction"));
+    public int getMaxHealth() {
+        return hp;
+    }
 
-		if(j.has("action-health-regen"))
-		{
-			hpt = j.getInt("action-health-regen");
-		}
+    public void setMaxHealth(int hp) {
+        this.hp = hp;
+    }
 
-		if(j.has("action-health-max"))
-		{
-			hp = j.getInt("action-health-max");
-		}
+    public double getHealthPercent() {
+        return (double) getHealth() / (double) getMaxHealth();
+    }
 
-		if(j.has("action-health-damage"))
-		{
-			dmg = j.getInt("action-health-damage");
-		}
+    public double getHealthUtilization() {
+        return 1.0 - getHealthPercent();
+    }
 
-		if(j.has("enabled"))
-		{
-			enabled = j.getBoolean("enabled");
-		}
+    public void regenHealth() {
+        chp += hpt;
+        chp = (int) M.clip(chp, 0, hp);
+    }
 
-		if(j.has("name"))
-		{
-			name = j.getString("name");
-		}
+    public boolean damageHealth() {
+        if (chp - dmg >= 0) {
+            chp -= dmg;
+            return true;
+        }
 
-		if(j.has("author"))
-		{
-			author = j.getString("author");
-		}
+        return false;
+    }
 
-		if(j.has("description"))
-		{
-			description = j.getString("description");
-		}
+    public long getLast() {
+        return last;
+    }
 
-		if(j.has("interval"))
-		{
-			try
-			{
-				interval = new SelectorTime().parse(null, sv = j.getString("interval"));
-			}
+    public void setLast(long last) {
+        this.last = last;
+    }
 
-			catch(SelectorParseException e)
-			{
-				e.printStackTrace();
-			}
+    public JSONObject toJSON() {
+        JSONObject j = new JSONObject();
 
-			catch(JSONException e)
-			{
-				e.printStackTrace();
-			}
-		}
-	}
+        j.put("conditions", conditions.toJSON());
+        j.put("reaction", action.toJSON());
 
-	public JSONObject toJSON()
-	{
-		JSONObject j = new JSONObject();
+        if (interval >= 0) {
+            j.put("interval", sv);
+        }
 
-		j.put("conditions", conditions.toJSON());
-		j.put("reaction", action.toJSON());
+        j.put("name", name);
+        j.put("author", author);
+        j.put("description", description);
+        j.put("enabled", enabled);
+        j.put("action-health-max", hp);
+        j.put("action-health-regen", hpt);
+        j.put("action-health-damage", dmg);
 
-		if(interval >= 0)
-		{
-			j.put("interval", sv);
-		}
+        return j;
+    }
 
-		j.put("name", name);
-		j.put("author", author);
-		j.put("description", description);
-		j.put("enabled", enabled);
-		j.put("action-health-max", hp);
-		j.put("action-health-regen", hpt);
-		j.put("action-health-damage", dmg);
+    public ConditionSet getConditions() {
+        return conditions;
+    }
 
-		return j;
-	}
+    public void setConditions(ConditionSet conditions) {
+        this.conditions = conditions;
+    }
 
-	public ConditionSet getConditions()
-	{
-		return conditions;
-	}
+    public VirtualAction getAction() {
+        return action;
+    }
 
-	public void setConditions(ConditionSet conditions)
-	{
-		this.conditions = conditions;
-	}
+    public void setAction(VirtualAction action) {
+        this.action = action;
+    }
 
-	public VirtualAction getAction()
-	{
-		return action;
-	}
+    public long getInterval() {
+        return interval;
+    }
 
-	public void setAction(VirtualAction action)
-	{
-		this.action = action;
-	}
+    public void setInterval(long interval) {
+        this.interval = interval;
+    }
 
-	public long getInterval()
-	{
-		return interval;
-	}
+    public String getSv() {
+        return sv;
+    }
 
-	public void setInterval(long interval)
-	{
-		this.interval = interval;
-	}
+    public void setSv(String sv) {
+        this.sv = sv;
+    }
 
-	public String getSv()
-	{
-		return sv;
-	}
+    public String getName() {
+        return name;
+    }
 
-	public void setSv(String sv)
-	{
-		this.sv = sv;
-	}
+    public void setName(String name) {
+        this.name = name;
+    }
 
-	public String getName()
-	{
-		return name;
-	}
+    public int getMaxUses() {
+        return getHealth() / dmg;
+    }
 
-	public void setName(String name)
-	{
-		this.name = name;
-	}
+    public String getDescription() {
+        return description;
+    }
 
-	public int getMaxUses()
-	{
-		return getHealth() / dmg;
-	}
+    public void setDescription(String description) {
+        this.description = description;
+    }
 
-	public String getDescription()
-	{
-		return description;
-	}
+    public String getAuthor() {
+        return author;
+    }
 
-	public void setDescription(String description)
-	{
-		this.description = description;
-	}
+    public void setAuthor(String author) {
+        this.author = author;
+    }
 
-	public String getAuthor()
-	{
-		return author;
-	}
+    public boolean isEnabled() {
+        return enabled;
+    }
 
-	public void setAuthor(String author)
-	{
-		this.author = author;
-	}
-
-	public boolean isEnabled()
-	{
-		return enabled;
-	}
-
-	public void setEnabled(boolean enabled)
-	{
-		this.enabled = enabled;
-	}
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
 }

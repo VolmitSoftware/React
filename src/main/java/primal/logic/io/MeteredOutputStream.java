@@ -5,7 +5,7 @@ import java.io.OutputStream;
 
 public class MeteredOutputStream extends OutputStream
 {
-	private OutputStream os;
+	private final OutputStream os;
 	private long written;
 	private long totalWritten;
 	private long since;

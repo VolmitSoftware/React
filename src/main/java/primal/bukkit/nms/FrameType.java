@@ -6,7 +6,7 @@ public enum FrameType
 	GOAL("goal"),
 	TASK("task");
 
-	private String str;
+	private final String str;
 
 	FrameType(String str)
 	{

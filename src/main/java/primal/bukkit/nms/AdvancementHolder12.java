@@ -33,11 +33,11 @@ import primal.bukkit.plugin.PrimalPlugin;
 
 public class AdvancementHolder12
 {
-	private NamespacedKey id;
+	private final NamespacedKey id;
 	private String title, parent, trigger, icon, description, background, frame;
 	private Integer subID = 0, amount = 0;
 	private boolean announce, toast = true;
-	private List<ItemStack> items;
+	private final List<ItemStack> items;
 	public List<AdvancementHolder12> holders = new ArrayList<AdvancementHolder12>();
 
 	public void addAdvancment(AdvancementHolder12 api)

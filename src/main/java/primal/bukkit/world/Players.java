@@ -582,7 +582,7 @@ public class Players
 	 */
 	public static boolean canFindPlayer(String search)
 	{
-		return findPlayer(search) == null ? false : true;
+		return findPlayer(search) != null;
 	}
 
 	/**

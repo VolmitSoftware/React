@@ -4,8 +4,8 @@ public enum Capability
 {
 	SEND_TITLE;
 
-	private NMSVersion minVersion;
-	private NMSVersion maxVersion;
+	private final NMSVersion minVersion;
+	private final NMSVersion maxVersion;
 
 	Capability(NMSVersion v)
 	{

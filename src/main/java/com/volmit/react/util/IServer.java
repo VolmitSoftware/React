@@ -1,10 +1,9 @@
 package com.volmit.react.util;
 
-public interface IServer
-{
-	int getPort();
+public interface IServer {
+    int getPort();
 
-	PacketHandler getHandler();
+    PacketHandler getHandler();
 
-	IPacket onPacketReceived(IPacket p);
+    IPacket onPacketReceived(IPacket p);
 }

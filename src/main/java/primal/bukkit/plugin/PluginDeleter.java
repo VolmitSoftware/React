@@ -20,9 +20,9 @@ import org.bukkit.plugin.RegisteredListener;
 
 public class PluginDeleter extends Thread
 {
-	private Plugin plugin;
-	private File f;
-	private Runnable r;
+	private final Plugin plugin;
+	private final File f;
+	private final Runnable r;
 
 	public PluginDeleter(Plugin p, File f, Runnable runnable)
 	{

@@ -12,7 +12,7 @@ public class Impulse
 	private double radius;
 	private double forceMax;
 	private double forceMin;
-	private GList<Entity> ignore;
+	private final GList<Entity> ignore;
 	private double damageMin;
 	private double damageMax;
 

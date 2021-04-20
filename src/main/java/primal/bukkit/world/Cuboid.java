@@ -820,10 +820,14 @@ public class Cuboid implements Iterable<Block>, Cloneable, ConfigurationSerializ
 
 	public class CuboidIterator implements Iterator<Block>
 	{
-		private World w;
-		private int baseX, baseY, baseZ;
+		private final World w;
+		private final int baseX;
+		private final int baseY;
+		private final int baseZ;
 		private int x, y, z;
-		private int sizeX, sizeY, sizeZ;
+		private final int sizeX;
+		private final int sizeY;
+		private final int sizeZ;
 
 		public CuboidIterator(World w, int x1, int y1, int z1, int x2, int y2, int z2)
 		{

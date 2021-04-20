@@ -1,136 +1,100 @@
 package com.volmit.react.xrai;
 
 import com.volmit.react.React;
-import com.volmit.react.api.ActionType;
-import com.volmit.react.api.ChunkIssue;
-import com.volmit.react.api.ISelector;
-import com.volmit.react.api.RAIActionSource;
-import com.volmit.react.api.SelectionMode;
-import com.volmit.react.api.SelectorEntityType;
-import com.volmit.react.api.SelectorParseException;
-import com.volmit.react.api.SelectorPosition;
-import com.volmit.react.api.SelectorTime;
-
+import com.volmit.react.api.*;
 import primal.json.JSONObject;
 import primal.lang.collection.GList;
 import primal.lang.collection.GMap;
 
-public class VirtualAction
-{
-	private ActionType actionType;
-	private GMap<String, String> options;
+public class VirtualAction {
+    private ActionType actionType;
+    private GMap<String, String> options;
 
-	public VirtualAction(ActionType at)
-	{
-		this.actionType = at;
-		options = new GMap<String, String>();
-	}
+    public VirtualAction(ActionType at) {
+        this.actionType = at;
+        options = new GMap<String, String>();
+    }
 
-	public VirtualAction(JSONObject j)
-	{
-		this(ActionType.valueOf(j.getString("type").toUpperCase()));
+    public VirtualAction(JSONObject j) {
+        this(ActionType.valueOf(j.getString("type").toUpperCase()));
 
-		for(String i : j.keySet())
-		{
-			if(i.equalsIgnoreCase("type"))
-			{
-				continue;
-			}
+        for (String i : j.keySet()) {
+            if (i.equalsIgnoreCase("type")) {
+                continue;
+            }
 
-			options.put(i, j.get(i).toString());
-		}
-	}
+            options.put(i, j.get(i).toString());
+        }
+    }
 
-	public void execute()
-	{
-		GList<ISelector> selectors = new GList<ISelector>();
+    public void execute() {
+        GList<ISelector> selectors = new GList<ISelector>();
 
-		if(options.containsKey("near"))
-		{
-			SelectorPosition s = new SelectorPosition();
-			ChunkIssue ci = ChunkIssue.valueOf(options.get("near").toUpperCase());
+        if (options.containsKey("near")) {
+            SelectorPosition s = new SelectorPosition();
+            ChunkIssue ci = ChunkIssue.valueOf(options.get("near").toUpperCase());
 
-			if(options.containsKey("range"))
-			{
-				int r = Integer.valueOf(options.get("range"));
-				s.add(Finder.high(ci), r);
-			}
+            if (options.containsKey("range")) {
+                int r = Integer.valueOf(options.get("range"));
+                s.add(Finder.high(ci), r);
+            } else {
+                s.add(Finder.high(ci));
+            }
 
-			else
-			{
-				s.add(Finder.high(ci));
-			}
+            selectors.add(s);
+        }
 
-			selectors.add(s);
-		}
+        if (options.containsKey("time")) {
+            SelectorTime st = new SelectorTime();
 
-		if(options.containsKey("time"))
-		{
-			SelectorTime st = new SelectorTime();
+            try {
+                st.set((long) st.parse(null, options.get("time")));
+            } catch (SelectorParseException e) {
+                e.printStackTrace();
+            }
 
-			try
-			{
-				st.set((long) st.parse(null, options.get("time")));
-			}
+            selectors.add(st);
+        }
 
-			catch(SelectorParseException e)
-			{
-				e.printStackTrace();
-			}
-			
-			selectors.add(st);
-		}
+        if (options.containsKey("entity")) {
+            SelectorEntityType et = new SelectorEntityType(SelectionMode.WHITELIST);
 
-		if(options.containsKey("entity"))
-		{
-			SelectorEntityType et = new SelectorEntityType(SelectionMode.WHITELIST);
+            try {
+                et.parse(null, options.get("entity"));
+                selectors.add(et);
+            } catch (SelectorParseException e) {
+                e.printStackTrace();
+            }
+        }
 
-			try
-			{
-				et.parse(null, options.get("entity"));
-				selectors.add(et);
-			}
+        React.instance.actionController.fire(getActionType(), new RAIActionSource(), selectors.toArray(new ISelector[0]));
+    }
 
-			catch(SelectorParseException e)
-			{
-				e.printStackTrace();
-			}
-		}
+    public JSONObject toJSON() {
+        JSONObject j = new JSONObject();
 
-		React.instance.actionController.fire(getActionType(), new RAIActionSource(), selectors.toArray(new ISelector[0]));
-	}
+        j.put("type", getActionType().name().toLowerCase());
 
-	public JSONObject toJSON()
-	{
-		JSONObject j = new JSONObject();
+        for (String i : options.k()) {
+            j.put(i, options.get(i));
+        }
 
-		j.put("type", getActionType().name().toLowerCase());
+        return j;
+    }
 
-		for(String i : options.k())
-		{
-			j.put(i, options.get(i));
-		}
+    public ActionType getActionType() {
+        return actionType;
+    }
 
-		return j;
-	}
+    public void setActionType(ActionType actionType) {
+        this.actionType = actionType;
+    }
 
-	public ActionType getActionType()
-	{
-		return actionType;
-	}
+    public GMap<String, String> getOptions() {
+        return options;
+    }
 
-	public void setActionType(ActionType actionType)
-	{
-		this.actionType = actionType;
-	}
-
-	public GMap<String, String> getOptions()
-	{
-		return options;
-	}
-
-	public void setOptions(GMap<String, String> options)
-	{
-		this.options = options;
-	}
+    public void setOptions(GMap<String, String> options) {
+        this.options = options;
+    }
 }

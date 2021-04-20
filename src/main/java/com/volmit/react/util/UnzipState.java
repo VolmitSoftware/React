@@ -1,7 +1,6 @@
 package com.volmit.react.util;
 
-public enum UnzipState
-{
+public enum UnzipState {
     IDLE,
     UNZIPPING,
     FAILED,

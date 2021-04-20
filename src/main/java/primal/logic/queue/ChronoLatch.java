@@ -2,7 +2,7 @@ package primal.logic.queue;
 
 public class ChronoLatch
 {
-	private long interval;
+	private final long interval;
 	private long since;
 	
 	public ChronoLatch(long interval, boolean openedAtStart)

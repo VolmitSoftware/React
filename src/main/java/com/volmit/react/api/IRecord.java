@@ -2,15 +2,14 @@ package com.volmit.react.api;
 
 import primal.json.JSONObject;
 
-public interface IRecord<T>
-{
-	String getRecordType();
+public interface IRecord<T> {
+    String getRecordType();
 
-	long getRecordTime();
+    long getRecordTime();
 
-	JSONObject toJSON();
+    JSONObject toJSON();
 
-	T getRecordObject();
+    T getRecordObject();
 
-	void fromJSON(JSONObject k);
+    void fromJSON(JSONObject k);
 }

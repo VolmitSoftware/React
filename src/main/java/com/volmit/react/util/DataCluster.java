@@ -1,242 +1,173 @@
 package com.volmit.react.util;
 
-import java.util.List;
-
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
-
 import primal.json.JSONObject;
 import primal.lang.collection.GList;
 import primal.lang.collection.GMap;
 
-public class DataCluster
-{
-	private GMap<String, ICluster<?>> clusters;
-	private GMap<String, String> comments;
+import java.util.List;
 
-	public DataCluster()
-	{
-		this.clusters = new GMap<String, ICluster<?>>();
-		this.comments = new GMap<String, String>();
-	}
+public class DataCluster {
+    private final GMap<String, ICluster<?>> clusters;
+    private final GMap<String, String> comments;
 
-	public void comment(String k, String c)
-	{
-		comments.put(k, c);
-	}
+    public DataCluster() {
+        this.clusters = new GMap<String, ICluster<?>>();
+        this.comments = new GMap<String, String>();
+    }
 
-	public GMap<String, String> getComments()
-	{
-		return comments;
-	}
+    public void comment(String k, String c) {
+        comments.put(k, c);
+    }
 
-	public boolean hasComment(String key)
-	{
-		return getComment(key) != null;
-	}
+    public GMap<String, String> getComments() {
+        return comments;
+    }
 
-	public String getComment(String key)
-	{
-		return comments.get(key);
-	}
+    public boolean hasComment(String key) {
+        return getComment(key) != null;
+    }
 
-	public GList<String> keys()
-	{
-		return clusters.k();
-	}
+    public String getComment(String key) {
+        return comments.get(key);
+    }
 
-	public void fromJson(JSONObject j)
-	{
-		for(String i : j.keySet())
-		{
-			trySet(i, j.get(i));
-		}
-	}
+    public GList<String> keys() {
+        return clusters.k();
+    }
 
-	public JSONObject toJson()
-	{
-		JSONObject j = new JSONObject();
+    public void fromJson(JSONObject j) {
+        for (String i : j.keySet()) {
+            trySet(i, j.get(i));
+        }
+    }
 
-		for(String i : keys())
-		{
-			j.put(i, get(i));
-		}
+    public JSONObject toJson() {
+        JSONObject j = new JSONObject();
 
-		return j;
-	}
+        for (String i : keys()) {
+            j.put(i, get(i));
+        }
 
-	public FileConfiguration toFileConfiguration()
-	{
-		FileConfiguration fc = new YamlConfiguration();
+        return j;
+    }
 
-		for(String i : keys())
-		{
-			fc.set(i, get(i));
-		}
+    public FileConfiguration toFileConfiguration() {
+        FileConfiguration fc = new YamlConfiguration();
 
-		return fc;
-	}
+        for (String i : keys()) {
+            fc.set(i, get(i));
+        }
 
-	public void fromFileConfiguration(FileConfiguration fc)
-	{
-		for(String i : fc.getKeys(true))
-		{
-			ICluster<?> c = null;
+        return fc;
+    }
 
-			if(fc.isBoolean(i))
-			{
-				c = new ClusterBoolean(fc.getBoolean(i));
-			}
+    public void fromFileConfiguration(FileConfiguration fc) {
+        for (String i : fc.getKeys(true)) {
+            ICluster<?> c = null;
 
-			else if(fc.isDouble(i))
-			{
-				c = new ClusterDouble(fc.getDouble(i));
-			}
+            if (fc.isBoolean(i)) {
+                c = new ClusterBoolean(fc.getBoolean(i));
+            } else if (fc.isDouble(i)) {
+                c = new ClusterDouble(fc.getDouble(i));
+            } else if (fc.isInt(i)) {
+                c = new ClusterInt(fc.getInt(i));
+            } else if (fc.isString(i)) {
+                c = new ClusterString(fc.getString(i));
+            } else if (fc.isList(i)) {
+                c = new ClusterStringList(fc.getStringList(i));
+            } else if (fc.isLong(i)) {
+                c = new ClusterLong(fc.getLong(i));
+            }
 
-			else if(fc.isInt(i))
-			{
-				c = new ClusterInt(fc.getInt(i));
-			}
+            if (c != null) {
+                clusters.put(i, c);
+            }
+        }
+    }
 
-			else if(fc.isString(i))
-			{
-				c = new ClusterString(fc.getString(i));
-			}
+    public boolean contains(String k) {
+        return clusters.containsKey(k);
+    }
 
-			else if(fc.isList(i))
-			{
-				c = new ClusterStringList(fc.getStringList(i));
-			}
+    public ClusterType getType(String k) {
+        return clusters.get(k).getType();
+    }
 
-			else if(fc.isLong(i))
-			{
-				c = new ClusterLong(fc.getLong(i));
-			}
+    public int getInt(String k) {
+        return (Integer) clusters.get(k).get();
+    }
 
-			if(c != null)
-			{
-				clusters.put(i, c);
-			}
-		}
-	}
+    public Object get(String k) {
+        return clusters.get(k).get();
+    }
 
-	public boolean contains(String k)
-	{
-		return clusters.containsKey(k);
-	}
+    public long getLong(String k) {
+        if (clusters.get(k).get() instanceof Integer) {
+            return ((Integer) clusters.get(k).get()).longValue();
+        }
 
-	public ClusterType getType(String k)
-	{
-		return clusters.get(k).getType();
-	}
+        return (Long) clusters.get(k).get();
+    }
 
-	public int getInt(String k)
-	{
-		return (Integer) clusters.get(k).get();
-	}
+    public String getString(String k) {
+        return clusters.get(k).get().toString();
+    }
 
-	public Object get(String k)
-	{
-		return clusters.get(k).get();
-	}
+    public double getDouble(String k) {
+        return (Double) clusters.get(k).get();
+    }
 
-	public long getLong(String k)
-	{
-		if(clusters.get(k).get() instanceof Integer)
-		{
-			return ((Integer) clusters.get(k).get()).longValue();
-		}
+    public boolean getBoolean(String k) {
+        return (Boolean) clusters.get(k).get();
+    }
 
-		return (Long) clusters.get(k).get();
-	}
+    @SuppressWarnings("unchecked")
+    public List<String> getStringList(String k) {
+        return (List<String>) clusters.get(k).get();
+    }
 
-	public String getString(String k)
-	{
-		return clusters.get(k).get().toString();
-	}
+    @SuppressWarnings("unchecked")
+    public void trySet(String k, Object o) {
+        if (o instanceof Integer) {
+            set(k, (Integer) o);
+        } else if (o instanceof Boolean) {
+            set(k, (Boolean) o);
+        } else if (o instanceof Double) {
+            set(k, (Double) o);
+        } else if (o instanceof String) {
+            set(k, (String) o);
+        } else if (o instanceof Long) {
+            set(k, (Long) o);
+        } else if (o instanceof List) {
+            set(k, (List<String>) o);
+        } else {
+            D.f("Failed to parse object type " + o.getClass().toString());
+        }
+    }
 
-	public double getDouble(String k)
-	{
-		return (Double) clusters.get(k).get();
-	}
+    public void set(String k, int integer) {
+        clusters.put(k, new ClusterInt(integer));
+    }
 
-	public boolean getBoolean(String k)
-	{
-		return (Boolean) clusters.get(k).get();
-	}
+    public void set(String k, boolean bool) {
+        clusters.put(k, new ClusterBoolean(bool));
+    }
 
-	@SuppressWarnings("unchecked")
-	public List<String> getStringList(String k)
-	{
-		return (List<String>) clusters.get(k).get();
-	}
+    public void set(String k, double d) {
+        clusters.put(k, new ClusterDouble(d));
+    }
 
-	@SuppressWarnings("unchecked")
-	public void trySet(String k, Object o)
-	{
-		if(o instanceof Integer)
-		{
-			set(k, (Integer) o);
-		}
+    public void set(String k, long d) {
+        clusters.put(k, new ClusterLong(d));
+    }
 
-		else if(o instanceof Boolean)
-		{
-			set(k, (Boolean) o);
-		}
+    public void set(String k, String s) {
+        clusters.put(k, new ClusterString(s));
+    }
 
-		else if(o instanceof Double)
-		{
-			set(k, (Double) o);
-		}
-
-		else if(o instanceof String)
-		{
-			set(k, (String) o);
-		}
-
-		else if(o instanceof Long)
-		{
-			set(k, (Long) o);
-		}
-
-		else if(o instanceof List)
-		{
-			set(k, (List<String>) o);
-		}
-
-		else
-		{
-			D.f("Failed to parse object type " + o.getClass().toString());
-		}
-	}
-
-	public void set(String k, int integer)
-	{
-		clusters.put(k, new ClusterInt(integer));
-	}
-
-	public void set(String k, boolean bool)
-	{
-		clusters.put(k, new ClusterBoolean(bool));
-	}
-
-	public void set(String k, double d)
-	{
-		clusters.put(k, new ClusterDouble(d));
-	}
-
-	public void set(String k, long d)
-	{
-		clusters.put(k, new ClusterLong(d));
-	}
-
-	public void set(String k, String s)
-	{
-		clusters.put(k, new ClusterString(s));
-	}
-
-	public void set(String k, List<String> slist)
-	{
-		clusters.put(k, new ClusterStringList(slist));
-	}
+    public void set(String k, List<String> slist) {
+        clusters.put(k, new ClusterStringList(slist));
+    }
 }

@@ -1,140 +1,114 @@
 package com.volmit.react.util;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import org.bukkit.Bukkit;
+import org.bukkit.plugin.Plugin;
+import primal.lang.collection.GList;
+import primal.lang.collection.GMap;
+import primal.util.text.C;
+
+import java.io.*;
 import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 
-import org.bukkit.Bukkit;
-import org.bukkit.plugin.Plugin;
+public class CPS {
+    private static final GMap<String, GList<String>> keys = new GMap<String, GList<String>>();
 
-import primal.lang.collection.GList;
-import primal.lang.collection.GMap;
-import primal.util.text.C;
+    public static String format(StackTraceElement e) {
+        return C.GRAY + e.getClassName() + "." + C.WHITE + e.getMethodName() + C.GRAY + "(" + C.RED + e.getLineNumber() + C.GRAY + ")";
+    }
 
-public class CPS
-{
-	private static GMap<String, GList<String>> keys = new GMap<String, GList<String>>();
+    public static GList<Plugin> identify(String clazz) {
+        GList<Plugin> plgs = new GList<Plugin>();
 
-	public static String format(StackTraceElement e)
-	{
-		return C.GRAY + e.getClassName() + "." + C.WHITE + e.getMethodName() + C.GRAY + "(" + C.RED + e.getLineNumber() + C.GRAY + ")";
-	}
+        searching:
+        for (String i : keys.k()) {
+            for (String j : keys.get(i)) {
+                if (j.equals(clazz)) {
+                    plgs.add(Bukkit.getPluginManager().getPlugin(i));
+                    continue searching;
+                }
+            }
+        }
 
-	public static GList<Plugin> identify(String clazz)
-	{
-		GList<Plugin> plgs = new GList<Plugin>();
+        return plgs;
+    }
 
-		searching: for(String i : keys.k())
-		{
-			for(String j : keys.get(i))
-			{
-				if(j.equals(clazz))
-				{
-					plgs.add(Bukkit.getPluginManager().getPlugin(i));
-					continue searching;
-				}
-			}
-		}
+    public static void scan() throws IOException {
+        File pluginsFolder = new File("plugins");
 
-		return plgs;
-	}
+        for (File i : pluginsFolder.listFiles()) {
+            if (!i.isFile() || !i.getName().endsWith(".jar")) {
+                continue;
+            }
 
-	public static void scan() throws IOException
-	{
-		File pluginsFolder = new File("plugins");
+            GList<String> names = new GList<String>();
+            String plugin = null;
+            File jar = i;
+            FileInputStream fin = new FileInputStream(jar);
+            ZipInputStream zip = new ZipInputStream(fin);
 
-		for(File i : pluginsFolder.listFiles())
-		{
-			if(!i.isFile() || !i.getName().endsWith(".jar"))
-			{
-				continue;
-			}
+            for (ZipEntry entry = zip.getNextEntry(); entry != null; entry = zip.getNextEntry()) {
+                if (!entry.isDirectory() && entry.getName().endsWith(".class")) {
+                    if (entry.getName().contains("$")) {
+                        continue;
+                    }
 
-			GList<String> names = new GList<String>();
-			String plugin = null;
-			File jar = i;
-			FileInputStream fin = new FileInputStream(jar);
-			ZipInputStream zip = new ZipInputStream(fin);
+                    String c = entry.getName().replaceAll("/", ".").replace(".class", "");
+                    names.add(c);
+                }
 
-			for(ZipEntry entry = zip.getNextEntry(); entry != null; entry = zip.getNextEntry())
-			{
-				if(!entry.isDirectory() && entry.getName().endsWith(".class"))
-				{
-					if(entry.getName().contains("$"))
-					{
-						continue;
-					}
+                if (!entry.isDirectory() && !entry.getName().endsWith(".class")) {
+                    if (entry.getName().endsWith("plugin.yml")) {
+                        String content = readResource(jar, entry.getName());
 
-					String c = entry.getName().replaceAll("/", ".").replace(".class", "");
-					names.add(c);
-				}
+                        for (String j : content.split("\n")) {
+                            if (j.startsWith("name:")) {
+                                plugin = j.split(":")[1].trim();
+                            }
+                        }
+                    }
+                }
+            }
 
-				if(!entry.isDirectory() && !entry.getName().endsWith(".class"))
-				{
-					if(entry.getName().endsWith("plugin.yml"))
-					{
-						String content = readResource(jar, entry.getName());
+            zip.close();
 
-						for(String j : content.split("\n"))
-						{
-							if(j.startsWith("name:"))
-							{
-								plugin = j.split(":")[1].trim();
-							}
-						}
-					}
-				}
-			}
+            if (plugin != null) {
+                keys.put(plugin, names);
+                D.l("Identified " + plugin + " with " + names.size() + " signatures.");
+            }
+        }
+    }
 
-			zip.close();
+    private static String readResource(File f, String resource) throws IOException {
+        String target = resource;
+        File jar = f;
+        ZipFile zipFile = new ZipFile(jar);
+        Enumeration<? extends ZipEntry> entries = zipFile.entries();
 
-			if(plugin != null)
-			{
-				keys.put(plugin, names);
-				D.l("Identified " + plugin + " with " + names.size() + " signatures.");
-			}
-		}
-	}
+        while (entries.hasMoreElements()) {
+            ZipEntry entry = entries.nextElement();
 
-	private static String readResource(File f, String resource) throws IOException
-	{
-		String target = resource;
-		File jar = f;
-		ZipFile zipFile = new ZipFile(jar);
-		Enumeration<? extends ZipEntry> entries = zipFile.entries();
+            if (entry.getName().equals(target)) {
+                InputStream stream = zipFile.getInputStream(entry);
+                InputStreamReader reads = new InputStreamReader(stream);
+                BufferedReader reader = new BufferedReader(reads);
+                StringBuilder src = new StringBuilder();
+                String line;
 
-		while(entries.hasMoreElements())
-		{
-			ZipEntry entry = entries.nextElement();
+                while ((line = reader.readLine()) != null) {
+                    src.append(line).append("\n");
+                }
 
-			if(entry.getName().equals(target))
-			{
-				InputStream stream = zipFile.getInputStream(entry);
-				InputStreamReader reads = new InputStreamReader(stream);
-				BufferedReader reader = new BufferedReader(reads);
-				StringBuilder src = new StringBuilder();
-				String line;
+                reader.close();
 
-				while((line = reader.readLine()) != null)
-				{
-					src.append(line).append("\n");
-				}
+                return src.toString();
+            }
+        }
 
-				reader.close();
+        zipFile.close();
 
-				return src.toString();
-			}
-		}
-
-		zipFile.close();
-
-		return null;
-	}
+        return null;
+    }
 }

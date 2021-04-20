@@ -1,10 +1,8 @@
 package com.volmit.react.util;
 
+import com.volmit.react.util.Cuboid.CuboidDirection;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
-
-import com.volmit.react.util.Cuboid.CuboidDirection;
-
 import primal.lang.collection.GList;
 
 /**
@@ -12,168 +10,134 @@ import primal.lang.collection.GList;
  *
  * @author cyberpwn
  */
-public enum Direction
-{
-	U(0, 1, 0, CuboidDirection.Up),
-	D(0, -1, 0, CuboidDirection.Down),
-	N(0, 0, -1, CuboidDirection.North),
-	S(0, 0, 1, CuboidDirection.South),
-	E(1, 0, 0, CuboidDirection.East),
-	W(-1, 0, 0, CuboidDirection.West);
+public enum Direction {
+    U(0, 1, 0, CuboidDirection.Up),
+    D(0, -1, 0, CuboidDirection.Down),
+    N(0, 0, -1, CuboidDirection.North),
+    S(0, 0, 1, CuboidDirection.South),
+    E(1, 0, 0, CuboidDirection.East),
+    W(-1, 0, 0, CuboidDirection.West);
 
-	private int x;
-	private int y;
-	private int z;
-	private CuboidDirection f;
+    private final int x;
+    private final int y;
+    private final int z;
+    private final CuboidDirection f;
 
-	Direction(int x, int y, int z, CuboidDirection f)
-	{
-		this.x = x;
-		this.y = y;
-		this.z = z;
-		this.f = f;
-	}
+    Direction(int x, int y, int z, CuboidDirection f) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.f = f;
+    }
 
-	public Direction reverse()
-	{
-		switch(this)
-		{
-			case D:
-				return U;
-			case E:
-				return W;
-			case N:
-				return S;
-			case S:
-				return N;
-			case U:
-				return D;
-			case W:
-				return E;
-			default:
-				break;
-		}
+    public static GList<Direction> news() {
+        return new GList<Direction>().qadd(N).qadd(E).qadd(W).qadd(S);
+    }
 
-		return null;
-	}
+    public static GList<Direction> udnews() {
+        return new GList<Direction>().qadd(U).qadd(D).qadd(N).qadd(E).qadd(W).qadd(S);
+    }
 
-	public int x()
-	{
-		return x;
-	}
+    public static Direction facing(Player p) {
+        Vector dir = VectorMath.triNormalize(p.getLocation().getDirection());
 
-	public int y()
-	{
-		return y;
-	}
+        for (Direction i : udnews()) {
+            if (dir.getBlockX() == i.x && dir.getBlockY() == i.y && dir.getBlockZ() == i.z) {
+                return i;
+            }
+        }
 
-	public int z()
-	{
-		return z;
-	}
+        return Direction.D;
+    }
 
-	public CuboidDirection f()
-	{
-		return f;
-	}
+    /**
+     * Get the directional value from the given byte from common directional blocks
+     * (MUST BE BETWEEN 0 and 5 INCLUSIVE)
+     *
+     * @param b the byte
+     * @return the direction or null if the byte is outside of the inclusive range
+     * 0-5
+     */
+    public static Direction fromByte(byte b) {
+        if (b > 5 || b < 0) {
+            return null;
+        }
 
-	public static GList<Direction> news()
-	{
-		return new GList<Direction>().qadd(N).qadd(E).qadd(W).qadd(S);
-	}
+        if (b == 0) {
+            return D;
+        } else if (b == 1) {
+            return U;
+        } else if (b == 2) {
+            return N;
+        } else if (b == 3) {
+            return S;
+        } else if (b == 4) {
+            return W;
+        } else {
+            return E;
+        }
+    }
 
-	public static GList<Direction> udnews()
-	{
-		return new GList<Direction>().qadd(U).qadd(D).qadd(N).qadd(E).qadd(W).qadd(S);
-	}
+    public Direction reverse() {
+        switch (this) {
+            case D:
+                return U;
+            case E:
+                return W;
+            case N:
+                return S;
+            case S:
+                return N;
+            case U:
+                return D;
+            case W:
+                return E;
+            default:
+                break;
+        }
 
-	public static Direction facing(Player p)
-	{
-		Vector dir = VectorMath.triNormalize(p.getLocation().getDirection());
+        return null;
+    }
 
-		for(Direction i : udnews())
-		{
-			if(dir.getBlockX() == i.x && dir.getBlockY() == i.y && dir.getBlockZ() == i.z)
-			{
-				return i;
-			}
-		}
+    public int x() {
+        return x;
+    }
 
-		return Direction.D;
-	}
+    public int y() {
+        return y;
+    }
 
-	/**
-	 * Get the directional value from the given byte from common directional blocks
-	 * (MUST BE BETWEEN 0 and 5 INCLUSIVE)
-	 *
-	 * @param b
-	 *            the byte
-	 * @return the direction or null if the byte is outside of the inclusive range
-	 *         0-5
-	 */
-	public static Direction fromByte(byte b)
-	{
-		if(b > 5 || b < 0)
-		{
-			return null;
-		}
+    public int z() {
+        return z;
+    }
 
-		if(b == 0)
-		{
-			return D;
-		}
+    public CuboidDirection f() {
+        return f;
+    }
 
-		else if(b == 1)
-		{
-			return U;
-		}
+    /**
+     * Get the byte value represented in some directional blocks
+     *
+     * @return the byte value
+     */
+    public byte byteValue() {
+        switch (this) {
+            case D:
+                return 0;
+            case E:
+                return 5;
+            case N:
+                return 2;
+            case S:
+                return 3;
+            case U:
+                return 1;
+            case W:
+                return 4;
+            default:
+                break;
+        }
 
-		else if(b == 2)
-		{
-			return N;
-		}
-
-		else if(b == 3)
-		{
-			return S;
-		}
-
-		else if(b == 4)
-		{
-			return W;
-		}
-
-		else
-		{
-			return E;
-		}
-	}
-
-	/**
-	 * Get the byte value represented in some directional blocks
-	 *
-	 * @return the byte value
-	 */
-	public byte byteValue()
-	{
-		switch(this)
-		{
-			case D:
-				return 0;
-			case E:
-				return 5;
-			case N:
-				return 2;
-			case S:
-				return 3;
-			case U:
-				return 1;
-			case W:
-				return 4;
-			default:
-				break;
-		}
-
-		return -1;
-	}
+        return -1;
+    }
 }

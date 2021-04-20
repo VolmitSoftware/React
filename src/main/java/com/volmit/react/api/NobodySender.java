@@ -1,7 +1,5 @@
 package com.volmit.react.api;
 
-import java.util.Set;
-
 import org.bukkit.Bukkit;
 import org.bukkit.Server;
 import org.bukkit.command.CommandSender;
@@ -9,141 +7,118 @@ import org.bukkit.permissions.Permission;
 import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.permissions.PermissionAttachmentInfo;
 import org.bukkit.plugin.Plugin;
-
 import primal.lang.collection.GList;
 
-public class NobodySender implements CommandSender
-{
-	private GList<String> in;
+import java.util.Set;
 
-	public NobodySender()
-	{
-		in = new GList<String>();
-	}
+public class NobodySender implements CommandSender {
+    private final GList<String> in;
 
-	public void dump()
-	{
-		in.clear();
-	}
+    public NobodySender() {
+        in = new GList<String>();
+    }
 
-	public String pump()
-	{
-		if(in.isEmpty())
-		{
-			return null;
-		}
+    public void dump() {
+        in.clear();
+    }
 
-		return in.pop();
-	}
+    public String pump() {
+        if (in.isEmpty()) {
+            return null;
+        }
 
-	@Override
-	public PermissionAttachment addAttachment(Plugin arg0)
-	{
-		return Bukkit.getConsoleSender().addAttachment(arg0);
-	}
+        return in.pop();
+    }
 
-	@Override
-	public PermissionAttachment addAttachment(Plugin arg0, int arg1)
-	{
-		return Bukkit.getConsoleSender().addAttachment(arg0, arg1);
-	}
+    @Override
+    public PermissionAttachment addAttachment(Plugin arg0) {
+        return Bukkit.getConsoleSender().addAttachment(arg0);
+    }
 
-	@Override
-	public PermissionAttachment addAttachment(Plugin arg0, String arg1, boolean arg2)
-	{
-		return Bukkit.getConsoleSender().addAttachment(arg0, arg1, arg2);
-	}
+    @Override
+    public PermissionAttachment addAttachment(Plugin arg0, int arg1) {
+        return Bukkit.getConsoleSender().addAttachment(arg0, arg1);
+    }
 
-	@Override
-	public PermissionAttachment addAttachment(Plugin arg0, String arg1, boolean arg2, int arg3)
-	{
-		return Bukkit.getConsoleSender().addAttachment(arg0, arg1, arg2, arg3);
-	}
+    @Override
+    public PermissionAttachment addAttachment(Plugin arg0, String arg1, boolean arg2) {
+        return Bukkit.getConsoleSender().addAttachment(arg0, arg1, arg2);
+    }
 
-	@Override
-	public Set<PermissionAttachmentInfo> getEffectivePermissions()
-	{
-		return Bukkit.getConsoleSender().getEffectivePermissions();
-	}
+    @Override
+    public PermissionAttachment addAttachment(Plugin arg0, String arg1, boolean arg2, int arg3) {
+        return Bukkit.getConsoleSender().addAttachment(arg0, arg1, arg2, arg3);
+    }
 
-	@Override
-	public boolean hasPermission(String arg0)
-	{
-		return true;
-	}
+    @Override
+    public Set<PermissionAttachmentInfo> getEffectivePermissions() {
+        return Bukkit.getConsoleSender().getEffectivePermissions();
+    }
 
-	@Override
-	public boolean hasPermission(Permission arg0)
-	{
-		return true;
-	}
+    @Override
+    public boolean hasPermission(String arg0) {
+        return true;
+    }
 
-	@Override
-	public boolean isPermissionSet(String arg0)
-	{
-		return Bukkit.getConsoleSender().isPermissionSet(arg0);
-	}
+    @Override
+    public boolean hasPermission(Permission arg0) {
+        return true;
+    }
 
-	@Override
-	public boolean isPermissionSet(Permission arg0)
-	{
-		return Bukkit.getConsoleSender().isPermissionSet(arg0);
-	}
+    @Override
+    public boolean isPermissionSet(String arg0) {
+        return Bukkit.getConsoleSender().isPermissionSet(arg0);
+    }
 
-	@Override
-	public void recalculatePermissions()
-	{
-		Bukkit.getConsoleSender().recalculatePermissions();
-	}
+    @Override
+    public boolean isPermissionSet(Permission arg0) {
+        return Bukkit.getConsoleSender().isPermissionSet(arg0);
+    }
 
-	@Override
-	public void removeAttachment(PermissionAttachment arg0)
-	{
-		Bukkit.getConsoleSender().removeAttachment(arg0);
-	}
+    @Override
+    public void recalculatePermissions() {
+        Bukkit.getConsoleSender().recalculatePermissions();
+    }
 
-	@Override
-	public boolean isOp()
-	{
-		return true;
-	}
+    @Override
+    public void removeAttachment(PermissionAttachment arg0) {
+        Bukkit.getConsoleSender().removeAttachment(arg0);
+    }
 
-	@Override
-	public void setOp(boolean arg0)
-	{
-		// No
-	}
+    @Override
+    public boolean isOp() {
+        return true;
+    }
 
-	@Override
-	public String getName()
-	{
-		return "Nobody";
-	}
+    @Override
+    public void setOp(boolean arg0) {
+        // No
+    }
 
-	@Override
-	public Server getServer()
-	{
-		return Bukkit.getServer();
-	}
+    @Override
+    public String getName() {
+        return "Nobody";
+    }
 
-	@Override
-	public void sendMessage(String arg0)
-	{
-		in.add(arg0);
-	}
+    @Override
+    public Server getServer() {
+        return Bukkit.getServer();
+    }
 
-	@Override
-	public void sendMessage(String[] arg0)
-	{
-		for(String i : arg0)
-		{
-			sendMessage(i);
-		}
-	}
+    @Override
+    public void sendMessage(String arg0) {
+        in.add(arg0);
+    }
 
-	@Override
-	public Spigot spigot()
-	{
-		return Bukkit.getConsoleSender().spigot();
-	}
+    @Override
+    public void sendMessage(String[] arg0) {
+        for (String i : arg0) {
+            sendMessage(i);
+        }
+    }
+
+    @Override
+    public Spigot spigot() {
+        return Bukkit.getConsoleSender().spigot();
+    }
 }

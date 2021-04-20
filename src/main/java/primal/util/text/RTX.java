@@ -13,7 +13,7 @@ import primal.json.JSONObject;
  */
 public class RTX
 {
-	private JSONArray base;
+	private final JSONArray base;
 
 	/**
 	 * Create a base raw text holder

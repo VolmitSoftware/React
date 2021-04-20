@@ -1,9 +1,7 @@
 package com.volmit.react.util;
 
-public class Ex
-{
-	public static void t(Throwable e)
-	{
+public class Ex {
+    public static void t(Throwable e) {
 
-	}
+    }
 }

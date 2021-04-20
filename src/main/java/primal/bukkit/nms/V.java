@@ -5,7 +5,7 @@ import java.util.List;
 
 public class V
 {
-	private Object o;
+	private final Object o;
 	private boolean local;
 
 	public V(Class<?> c, Object... parameters)

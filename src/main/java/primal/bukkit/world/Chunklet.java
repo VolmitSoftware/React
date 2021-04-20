@@ -268,10 +268,7 @@ public class Chunklet
 		if(object instanceof Chunklet)
 		{
 			Chunklet c = (Chunklet) object;
-			if(c.x == x && c.z == z && c.world.equals(world))
-			{
-				return true;
-			}
+			return c.x == x && c.z == z && c.world.equals(world);
 		}
 
 		return false;

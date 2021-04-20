@@ -2,24 +2,22 @@ package com.volmit.react.api;
 
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.map.MapView;
-
 import primal.lang.collection.GList;
 
-public interface IPapyrus
-{
-	MapView getView();
+public interface IPapyrus {
+    MapView getView();
 
-	BufferedFrame getFrameBuffer();
+    BufferedFrame getFrameBuffer();
 
-	void addRenderer(IRenderer renderer);
+    void addRenderer(IRenderer renderer);
 
-	void clearRenderers();
+    void clearRenderers();
 
-	GList<IRenderer> getRenderers();
+    GList<IRenderer> getRenderers();
 
-	void removeRenderer(IRenderer renderer);
+    void removeRenderer(IRenderer renderer);
 
-	void destroy();
+    void destroy();
 
-	ItemStack makeMapItem();
+    ItemStack makeMapItem();
 }

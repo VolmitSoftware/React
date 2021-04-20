@@ -2,7 +2,7 @@ package primal.bukkit.sound;
 
 public class MFADistortion extends AudioDistortion
 {
-	private int span;
+	private final int span;
 	private float to;
 	
 	public MFADistortion(int span, float to)
