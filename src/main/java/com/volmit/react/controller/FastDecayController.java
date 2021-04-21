@@ -1,5 +1,6 @@
 package com.volmit.react.controller;
 
+import com.cryptomorin.xseries.XMaterial;
 import com.volmit.react.Config;
 import com.volmit.react.Gate;
 import com.volmit.react.React;
@@ -11,6 +12,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.block.BlockState;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -81,6 +83,7 @@ public class FastDecayController extends Controller {
 
             for (Block i : W.blockFaces(source)) {
                 if (leaves.contains(i.getType())) {
+                    if(((Leaves) i.getState().getData()).isDecayable())
                     try {
                         boolean b = BlockFinder.follow(i, leaves, logs, 5);
 
@@ -171,49 +174,45 @@ public class FastDecayController extends Controller {
     public GList<ItemStack> getDrops(Block b) {
         GList<ItemStack> drops = new GList<>();
 
-        if (b.getType().equals(Material.LEAVES) || b.getType().equals(Material.LEAVES_2)) {
-            Leaves l = new Leaves(b.getType(), b.getData());
+        switch (XMaterial.matchXMaterial(b.getType())) {
+            case ACACIA_LEAVES:
+                if (M.r(0.05)) {
+                    drops.add(new ItemStack(XMaterial.ACACIA_SAPLING.parseMaterial(), 1));
+                }
+                break;
+            case BIRCH_LEAVES:
+                if (M.r(0.05)) {
+                    drops.add(new ItemStack(XMaterial.BIRCH_SAPLING.parseMaterial(), 1));
+                }
+                break;
+            case DARK_OAK_LEAVES:
+                if (M.r(0.005)) {
+                    drops.add(new ItemStack(Material.APPLE));
+                }
 
-            switch (l.getSpecies()) {
-                case ACACIA:
-                    if (M.r(0.05)) {
-                        drops.add(new ItemStack(Material.SAPLING, 1, (short) 0, (byte) 4));
-                    }
-                    break;
-                case BIRCH:
-                    if (M.r(0.05)) {
-                        drops.add(new ItemStack(Material.SAPLING, 1, (short) 0, (byte) 2));
-                    }
-                    break;
-                case DARK_OAK:
-                    if (M.r(0.005)) {
-                        drops.add(new ItemStack(Material.APPLE));
-                    }
+                if (M.r(0.05)) {
+                    drops.add(new ItemStack(XMaterial.DARK_OAK_SAPLING.parseMaterial(), 1));
+                }
+                break;
+            case OAK_LEAVES: // oak
+                if (M.r(0.005)) {
+                    drops.add(new ItemStack(Material.APPLE));
+                }
 
-                    if (M.r(0.05)) {
-                        drops.add(new ItemStack(Material.SAPLING, 1, (short) 0, (byte) 5));
-                    }
-                    break;
-                case GENERIC: // oak
-                    if (M.r(0.005)) {
-                        drops.add(new ItemStack(Material.APPLE));
-                    }
-
-                    if (M.r(0.05)) {
-                        drops.add(new ItemStack(Material.SAPLING, 1, (short) 0, (byte) 0));
-                    }
-                    break;
-                case JUNGLE:
-                    if (M.r(0.025)) {
-                        drops.add(new ItemStack(Material.SAPLING, 1, (short) 0, (byte) 3));
-                    }
-                    break;
-                case REDWOOD:// spruce
-                    if (M.r(0.05)) {
-                        drops.add(new ItemStack(Material.SAPLING, 1, (short) 0, (byte) 1));
-                    }
-                    break;
-            }
+                if (M.r(0.05)) {
+                    drops.add(new ItemStack(XMaterial.OAK_SAPLING.parseMaterial(), 1));
+                }
+                break;
+            case JUNGLE_LEAVES:
+                if (M.r(0.025)) {
+                    drops.add(new ItemStack(XMaterial.JUNGLE_SAPLING.parseMaterial(), 1));
+                }
+                break;
+            case SPRUCE_LEAVES:// spruce
+                if (M.r(0.05)) {
+                    drops.add(new ItemStack(XMaterial.SPRUCE_SAPLING.parseMaterial(), 1));
+                }
+                break;
         }
 
         return drops;

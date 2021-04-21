@@ -5,7 +5,7 @@ plugins {
 }
 
 group 'com.volmit.react'
-version '6.652'
+version '6.653'
 
 repositories {
     mavenCentral()
@@ -80,6 +80,7 @@ processResources {
 dependencies {
     implementation 'org.zeroturnaround:zt-zip:1.13'
     implementation 'org.bstats:bstats-bukkit:1.8'
+    implementation 'com.github.cryptomorin:XSeries:7.6.1'
     annotationProcessor 'org.projectlombok:lombok:1.18.16'
     compileOnly 'org.projectlombok:lombok:1.18.16'
     compileOnly 'org.spigotmc.full:1.12.2:1.12.2'
