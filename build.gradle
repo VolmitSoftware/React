@@ -13,6 +13,12 @@ repositories {
     maven {
         url = "http://repo.volmit.com/repository/volmit/"
     }
+    maven {
+        url = "http://ci.athion.net/job/FastAsyncWorldEdit/ws/mvn/"
+    }
+    maven {
+        url = "https://repo.extendedclip.com/content/repositories/placeholderapi/"
+    }
 }
 
 String releasePath = project.rootDir.absolutePath + "\\release\\" + project.version + "\\React-" + project.version + ".jar"
@@ -83,11 +89,11 @@ dependencies {
     implementation 'com.github.cryptomorin:XSeries:7.6.1'
     annotationProcessor 'org.projectlombok:lombok:1.18.16'
     compileOnly 'org.projectlombok:lombok:1.18.16'
-    compileOnly 'org.spigotmc.full:1.12.2:1.12.2'
+    compileOnly 'org.spigotmc:spigot:1.12.2-R0.1-SNAPSHOT'
     //compileOnly 'org.bukkit.craftbukkit:1.16.5:1.16.5'
     compileOnly 'org.bukkit.craftbukkit:1.16.4:1.16.4'
     compileOnly 'org.bukkit.craftbukkit:1.16.3:1.16.3'
-    compileOnly 'org.bukkit.craftbukkit:1.16.2:1.16.2'
+    //compileOnly 'org.bukkit.craftbukkit:1.16.2:1.16.2'
     compileOnly 'org.bukkit.craftbukkit:1.16.1:1.16.1'
     compileOnly 'org.bukkit.craftbukkit:1.15.1:1.15.1'
     compileOnly 'org.bukkit.craftbukkit:1.14.4:1.14.4'
