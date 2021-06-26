@@ -1,0 +1,69 @@
+plugins {
+    id 'java'
+    id 'io.freefair.lombok' version '5.2.1'
+    id "com.github.johnrengelman.shadow" version "7.0.0"
+}
+
+group 'com.volmit.iris'
+version '7.0.0'
+def apiVersion = '1.17'
+def name = 'React'
+def main = 'com.volmit.react.React'
+
+// ADD YOURSELF AS A NEW LINE IF YOU WANT YOUR OWN BUILD TASK GENERATED
+// ==============================================================
+registerCustomOutputTask('Cyberpwn', 'C://Users/cyberpwn/Documents/development/server/plugins');
+registerCustomOutputTask('ArcaneArts', 'C://Users/arcane/Documents/development/server/plugins');
+// ==============================================================
+
+def registerCustomOutputTask(name, path) {
+    tasks.register('build' + name, Copy) {
+        group('development')
+        outputs.upToDateWhen{false}
+        dependsOn ':shadowJar'
+        from(file('build/libs/React-' + version + '-all.jar'))
+        into(file(path))
+        rename { String fileName ->
+            fileName.replace('React-' + version + '-all.jar', "React.jar")
+        }
+    }
+}
+
+processResources {
+    filesMatching('**/plugin.yml') {
+        expand(
+                'name': name.toString(),
+                'version': version.toString(),
+                'main': main.toString(),
+                'apiversion': apiVersion.toString()
+        )
+    }
+}
+
+repositories {
+    maven {
+        allowInsecureProtocol true
+        url "http://archive.arcane.art/repository/arcane"
+    }
+    mavenLocal()
+}
+
+shadowJar
+        {
+            minimize()
+            dependencies {
+                include(dependency('io.papermc:paperlib:1.0.5'))
+                include(dependency('com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru:1.4.2'))
+            }
+        }
+
+dependencies {
+    compileOnly 'org.projectlombok:lombok:1.18.20'
+    annotationProcessor 'org.projectlombok:lombok:1.18.20'
+    implementation 'com.google.code.gson:gson:2.8.5'
+    implementation 'io.papermc:paperlib:1.0.5'
+    implementation 'com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru:1.4.2'
+    implementation 'org.spigotmc:spigot-api:1.17-R0.1-SNAPSHOT'
+    implementation 'org.bukkit.craftbukkit:1.17:1.17'
+    implementation 'com.github.ArcaneArts:Quill:latest.release'
+}
