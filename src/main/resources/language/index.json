@@ -1,9 +1,0 @@
-{
-  "version": 1,
-  "default": "enUS.properties",
-  "languages": [
-    "enUS.properties",
-    "enPirate.properties",
-    "nlNL.properties"
-  ]
-}
