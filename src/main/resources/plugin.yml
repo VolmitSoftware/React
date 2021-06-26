@@ -1,0 +1,10 @@
+name: ${name}
+main: ${main}
+version: ${version}
+authors: [cyberpwn, Puretie, PsychopathNextdoor, relavis]
+description: React is a smart performance plugin designed to automatically fix lag from the source.
+load: STARTUP
+website: https://www.spigotmc.org/resources/react-smart-server-performance.21057/
+database: false
+softdepend: [ProtocolLib, FastAsyncWorldEdit, PlaceholderAPI]
+prefix: React

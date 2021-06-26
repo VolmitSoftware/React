@@ -4,7 +4,7 @@ plugins {
     id "com.github.johnrengelman.shadow" version "7.0.0"
 }
 
-group 'com.volmit.iris'
+group 'com.volmit.react'
 version '7.0.0'
 def apiVersion = '1.17'
 def name = 'React'
@@ -49,13 +49,13 @@ repositories {
 }
 
 shadowJar
-        {
-            minimize()
-            dependencies {
-                include(dependency('io.papermc:paperlib:1.0.5'))
-                include(dependency('com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru:1.4.2'))
-            }
-        }
+{
+    minimize()
+    dependencies {
+        include(dependency('io.papermc:paperlib:1.0.5'))
+        include(dependency('com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru:1.4.2'))
+    }
+}
 
 dependencies {
     compileOnly 'org.projectlombok:lombok:1.18.20'
