@@ -2,10 +2,10 @@ package com.volmit.react.controller;
 
 import com.volmit.react.Config;
 import com.volmit.react.ReactPlugin;
+import com.volmit.Metrics;
 import com.volmit.react.api.SampledType;
 import com.volmit.react.api.Unused;
 import com.volmit.react.util.Controller;
-import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
 import primal.json.JSONObject;
 
