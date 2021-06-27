@@ -25,7 +25,7 @@ public abstract class DoubleSampler extends ReactSampler {
         return getLastValue();
     }
 
-    private RollingSequence getSequence()
+    public RollingSequence getSequence()
     {
         if(sequence == null)
         {
