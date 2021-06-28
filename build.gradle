@@ -91,6 +91,7 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok:1.18.16'
     compileOnly 'org.projectlombok:lombok:1.18.16'
     implementation 'org.spigotmc.full:1.12.2:1.12.2'
+    implementation 'org.bukkit.craftbukkit:1.17:1.17'
     implementation 'org.bukkit.craftbukkit:1.16.5:1.16.5'
     implementation 'org.bukkit.craftbukkit:1.16.4:1.16.4'
     implementation 'org.bukkit.craftbukkit:1.16.3:1.16.3'
