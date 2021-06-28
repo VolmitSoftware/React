@@ -24,7 +24,7 @@ public class TickListController extends Controller {
 
     @EventHandler
     public void on(WorldLoadEvent e) {
-        if (!Config.ENABLED_SPLITTER) {
+        if (!Config.ENABLED_SPLITTER || Config.SAFE_MODE_NMS) {
             return;
         }
 
@@ -33,7 +33,7 @@ public class TickListController extends Controller {
 
     @EventHandler
     public void on(WorldUnloadEvent e) {
-        if (!Config.ENABLED_SPLITTER) {
+        if (!Config.ENABLED_SPLITTER || Config.SAFE_MODE_NMS) {
             splitter.clear();
             return;
         }
@@ -49,11 +49,11 @@ public class TickListController extends Controller {
     @Override
     public void start() {
         splitter = new GMap<>();
-        Surge.register(this);
-
-        if (!Config.ENABLED_SPLITTER) {
+        if (!Config.ENABLED_SPLITTER || Config.SAFE_MODE_NMS) {
             return;
         }
+        Surge.register(this);
+
 
         for (World i : Bukkit.getWorlds()) {
             splitter.put(i, new TickListSplitter(i));
@@ -62,7 +62,7 @@ public class TickListController extends Controller {
 
     @EventHandler
     public void on(BlockBreakEvent e) {
-        if (!Config.ENABLED_SPLITTER) {
+        if (!Config.ENABLED_SPLITTER || Config.SAFE_MODE_NMS) {
             return;
         }
 
@@ -70,6 +70,9 @@ public class TickListController extends Controller {
     }
 
     public void checkReg(World world) {
+        if (!Config.ENABLED_SPLITTER || Config.SAFE_MODE_NMS) {
+            return;
+        }
         if (splitter.containsKey(world)) {
             return;
         }
@@ -79,9 +82,12 @@ public class TickListController extends Controller {
 
     @Override
     public void stop() {
+        if (!Config.ENABLED_SPLITTER || Config.SAFE_MODE_NMS) {
+            return;
+        }
         Surge.unregister(this);
 
-        if (!Config.ENABLED_SPLITTER) {
+        if (!Config.ENABLED_SPLITTER || Config.SAFE_MODE_NMS) {
             return;
         }
 
@@ -97,7 +103,7 @@ public class TickListController extends Controller {
 
     @Override
     public void tick() {
-        if (!Config.ENABLED_SPLITTER) {
+        if (!Config.ENABLED_SPLITTER || Config.SAFE_MODE_NMS) {
             return;
         }
 

@@ -191,7 +191,13 @@ public class ReactPlugin extends PrimalPlugin {
     }
 
     private void initNMS() {
-        assert Catalyst.host != null;
+        if(Catalyst.host == null)
+        {
+            Config.SAFE_MODE_NMS = true;
+            getLogger().warning("React is now in SAFE_MODE NMS. This version has limited NMS Support!");
+            return;
+        }
+
         Catalyst.host.start();
         NMP.host = Catalyst.host;
         NMSVersion v = NMSVersion.current();

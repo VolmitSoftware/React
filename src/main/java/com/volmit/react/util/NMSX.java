@@ -12,6 +12,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.UUID;
 
 public class NMSX {
     public static NMSX bountifulAPI;
@@ -20,6 +21,8 @@ public class NMSX {
     public static Object eTitle = null;
     public static Object eSubtitle = null;
     private static boolean useOldMethods;
+    private static final UUID z = new UUID(0L, 0L);
+
 
     static {
         nmsver = Bukkit.getServer().getClass().getPackage().getName();
@@ -271,6 +274,23 @@ public class NMSX {
 
         if (!VersionBukkit.tc()) {
             return;
+        }
+
+        if(Protocol.R1_17.isActualVersion())
+        {
+            try
+            {
+                org.bukkit.craftbukkit.v1_17_R1.entity.CraftPlayer cp = (org.bukkit.craftbukkit.v1_17_R1.entity.CraftPlayer) player;
+                net.minecraft.network.protocol.game.PacketPlayOutChat c = new net.minecraft.network.protocol.game.PacketPlayOutChat(
+                        net.minecraft.network.chat.IChatBaseComponent.ChatSerializer.a("{\"text\": \"" + message + "\"}"),
+                        net.minecraft.network.chat.ChatMessageType.c, z);
+                cp.getHandle().b.sendPacket(c);
+            }
+
+            catch(Throwable e)
+            {
+
+            }
         }
 
         try {
