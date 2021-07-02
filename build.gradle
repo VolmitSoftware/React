@@ -35,7 +35,7 @@ task release {
 task development {
     group 'react'
     dependsOn 'configureDev'
-    dependsOn 'build'
+    dependsOn 'shadowJar'
     file(jar.archiveFile.get().getAsFile().getParentFile().getParentFile().getParentFile().getAbsolutePath() + '/build/resources/main/plugin.yml').delete()
 }
 

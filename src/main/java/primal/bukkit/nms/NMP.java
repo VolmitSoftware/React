@@ -141,7 +141,10 @@ public class NMP
 		 */
 		public static void title(Player p, String title, String subtitle, int in, int stay, int out)
 		{
-			new PacketBuffer().q(host.packetTitleMessage(title)).q(host.packetSubtitleMessage(subtitle)).q(host.packetTimes(in, stay, out)).flush(p);
+			new PacketBuffer().q(host.packetTitleMessage(title))
+					.q(host.packetSubtitleMessage(subtitle))
+					.q(host.packetTimes(in, stay, out))
+					.flush(p);
 		}
 	}
 

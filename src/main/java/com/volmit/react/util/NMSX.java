@@ -9,6 +9,7 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
+import primal.bukkit.nms.NMP;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -279,21 +280,7 @@ public class NMSX {
 
         if(Protocol.R1_17.isActualVersion())
         {
-            try
-            {
-                org.bukkit.craftbukkit.v1_17_R1.entity.CraftPlayer cp =
-                        (org.bukkit.craftbukkit.v1_17_R1.entity.CraftPlayer) player;
-                net.minecraft.network.protocol.game.PacketPlayOutChat c =
-                        new net.minecraft.network.protocol.game.PacketPlayOutChat(
-                                new ChatComponentText("Test"),
-                        net.minecraft.network.chat.ChatMessageType.c, z);
-                cp.getHandle().b.sendPacket(c);
-            }
-
-            catch(Throwable e)
-            {
-
-            }
+            NMP.MESSAGE.action(player, message);
             return;
         }
 

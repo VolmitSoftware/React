@@ -1,6 +1,7 @@
 package primal.bukkit.nms;
 
 import net.minecraft.core.BlockPosition;
+import net.minecraft.network.chat.ChatBaseComponent;
 import net.minecraft.network.chat.IChatBaseComponent;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.*;
@@ -126,9 +127,7 @@ public class Catalyst17 extends CatalystPacketListener implements CatalystHost
     @Override
     public Object packetTitleMessage(String title)
     {
-        // TODO: WHERE PACKET GO? Message now?
-        //return new PacketPlayOutTitle(EnumTitleAction.TITLE, IChatBaseComponent.ChatSerializer.a("{\"text\": \"" + title + "\"}"));
-        return null;
+        return new net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket(IChatBaseComponent.ChatSerializer.a("{\"text\": \"" + title + "\"}"));
     }
 
     @Override
