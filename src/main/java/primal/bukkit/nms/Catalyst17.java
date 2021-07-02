@@ -134,41 +134,31 @@ public class Catalyst17 extends CatalystPacketListener implements CatalystHost
     @Override
     public Object packetSubtitleMessage(String subtitle)
     {
-        // TODO: WHERE PACKET GO? Message now?
-        //return new PacketPlayOutTitle(EnumTitleAction.SUBTITLE, IChatBaseComponent.ChatSerializer.a("{\"text\": \"" + subtitle + "\"}"));
-        return null;
+        return new net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket(IChatBaseComponent.ChatSerializer.a("{\"text\": \"" + subtitle + "\"}"));
     }
 
     @Override
     public Object packetActionBarMessage(String subtitle)
     {
-        // TODO: WHERE PACKET GO? Message now?
-        //return new PacketPlayOutTitle(EnumTitleAction.ACTIONBAR, IChatBaseComponent.ChatSerializer.a("{\"text\": \"" + subtitle + "\"}"));
-        return null;
+        return new net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket(IChatBaseComponent.ChatSerializer.a("{\"text\": \"" + subtitle + "\"}"));
     }
 
     @Override
     public Object packetResetTitle()
     {
-        // TOODO: WHERE PACKET GO? Message now?
-        //return new PacketPlayOutTitle(EnumTitleAction.RESET, null);
-        return null;
+        return new net.minecraft.network.protocol.game.ClientboundClearTitlesPacket(true);
     }
 
     @Override
     public Object packetClearTitle()
     {
-        // TODO: WHERE PACKET GO? Message now?
-        //return new PacketPlayOutTitle(EnumTitleAction.CLEAR, null);
-        return null;
+        return new net.minecraft.network.protocol.game.ClientboundClearTitlesPacket(false);
     }
 
     @Override
     public Object packetTimes(int in, int stay, int out)
     {
-        // TODO: WHERE PACKET GO? Message now?
-        //return new PacketPlayOutTitle(in, stay, out);
-        return null;
+        return new net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket(in, stay, out);
     }
 
     private BlockPosition toBlockPos(Location location)
