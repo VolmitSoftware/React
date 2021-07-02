@@ -7,7 +7,28 @@ plugins {
 }
 
 group 'com.volmit.react'
-version '6.653'
+version '6.654'
+def name = 'React'
+
+
+// ADD YOURSELF AS A NEW LINE IF YOU WANT YOUR OWN BUILD TASK GENERATED
+// ==============================================================
+registerCustomOutputTask('Cyberpwn', 'C://Users/cyberpwn/Documents/development/server/plugins');
+registerCustomOutputTask('ArcaneArts', 'C://Users/arcane/Documents/development/server/plugins');
+// ==============================================================
+
+def registerCustomOutputTask(name, path) {
+    tasks.register('build' + name, Copy) {
+        group('development')
+        outputs.upToDateWhen{false}
+        dependsOn ':shadowJar'
+        from(file('build/libs/React-' + version + '-all.jar'))
+        into(file(path))
+        rename { String fileName ->
+            fileName.replace('React-' + version + '-all.jar', "React.jar")
+        }
+    }
+}
 
 repositories {
     maven {
@@ -17,62 +38,20 @@ repositories {
     mavenLocal()
 }
 
-String releasePath = project.rootDir.absolutePath + "\\release\\" + project.version + "\\React-" + project.version + ".jar"
-String devPath = "C:\\Users\\cyberpwn\\Documents\\development\\server\\plugins\\React.jar"
-
-shadowJar {
-    project.configurations.implementation.canBeResolved = true
-    project.configurations.api.canBeResolved = false
-}
-
-task release {
-    group 'react'
-    dependsOn 'configureRelease'
-    dependsOn 'shadowJar'
-    file(jar.archiveFile.get().getAsFile().getParentFile().getParentFile().getParentFile().getParentFile().getAbsolutePath() + '/build/resources/main/plugin.yml').delete()
-}
-
-task development {
-    group 'react'
-    dependsOn 'configureDev'
-    dependsOn 'shadowJar'
-    file(jar.archiveFile.get().getAsFile().getParentFile().getParentFile().getParentFile().getAbsolutePath() + '/build/resources/main/plugin.yml').delete()
-}
-
-task configureDev {
-    group 'react-utils'
-    doFirst {
-        shadowJar {
-            zip64 true
-            archiveFileName = devPath
-        }
-    }
-}
-
-task configureRelease {
-    group 'react-utils'
-    doFirst {
-        shadowJar {
-            dependencies {
-                include dependency('org.bstats:bstats-bukkit')
-                include dependency('org.zeroturnaround:zt-zip')
-            }
-            dependencies {
-                relocate('org.bstats.bukkit', project.group + '.libraries.bstats')
-                relocate('org.zeroturnaround.zip', project.group + '.libraries.zip')
-            }
-            zip64 true
-            minimize()
-            archiveFileName = releasePath
-        }
+shadowJar
+{
+    minimize()
+    dependencies {
+        include(dependency('org.zeroturnaround:zt-zip:1.14'))
+        include(dependency('com.github.cryptomorin:XSeries:7.6.1'))
     }
 }
 
 processResources {
-    filesMatching(["**/plugin.yml"]) {
+    filesMatching('**/plugin.yml') {
         expand(
-                version: version,
-                name: project.name,
+            'name': name.toString(),
+            'version': version.toString()
         )
     }
 }
