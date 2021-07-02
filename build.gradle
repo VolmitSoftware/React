@@ -2,12 +2,13 @@ plugins {
     id 'java'
     id 'idea'
     id 'java-library'
+    id 'io.freefair.lombok' version '5.2.1'
     id "com.github.johnrengelman.shadow" version "6.1.0"
 }
 
 group 'com.volmit.react'
 version '6.653'
-//wft
+
 repositories {
     maven {
         allowInsecureProtocol true
@@ -21,9 +22,7 @@ String devPath = "C:\\Users\\cyberpwn\\Documents\\development\\server\\plugins\\
 
 shadowJar {
     project.configurations.implementation.canBeResolved = true
-    project.configurations.runtime.canBeResolved = true
     project.configurations.api.canBeResolved = false
-    project.configurations.compile.canBeResolved = true
 }
 
 task release {
@@ -36,7 +35,7 @@ task release {
 task development {
     group 'react'
     dependsOn 'configureDev'
-    dependsOn 'shadowJar'
+    dependsOn 'build'
     file(jar.archiveFile.get().getAsFile().getParentFile().getParentFile().getParentFile().getAbsolutePath() + '/build/resources/main/plugin.yml').delete()
 }
 
@@ -88,8 +87,8 @@ idea {
 dependencies {
     implementation 'org.zeroturnaround:zt-zip:1.14'
     implementation 'com.github.cryptomorin:XSeries:7.6.1'
-    annotationProcessor 'org.projectlombok:lombok:1.18.16'
-    compileOnly 'org.projectlombok:lombok:1.18.16'
+    compileOnly 'org.projectlombok:lombok:1.18.20'
+    annotationProcessor 'org.projectlombok:lombok:1.18.20'
     implementation 'org.spigotmc.full:1.12.2:1.12.2'
     implementation 'org.bukkit.craftbukkit:1.17:1.17'
     implementation 'org.bukkit.craftbukkit:1.16.5:1.16.5'

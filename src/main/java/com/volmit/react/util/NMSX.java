@@ -1,6 +1,7 @@
 package com.volmit.react.util;
 
 import com.volmit.react.api.Capability;
+import net.minecraft.network.chat.ChatComponentText;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Entity;
@@ -280,9 +281,11 @@ public class NMSX {
         {
             try
             {
-                org.bukkit.craftbukkit.v1_17_R1.entity.CraftPlayer cp = (org.bukkit.craftbukkit.v1_17_R1.entity.CraftPlayer) player;
-                net.minecraft.network.protocol.game.PacketPlayOutChat c = new net.minecraft.network.protocol.game.PacketPlayOutChat(
-                        net.minecraft.network.chat.IChatBaseComponent.ChatSerializer.a("{\"text\": \"" + message + "\"}"),
+                org.bukkit.craftbukkit.v1_17_R1.entity.CraftPlayer cp =
+                        (org.bukkit.craftbukkit.v1_17_R1.entity.CraftPlayer) player;
+                net.minecraft.network.protocol.game.PacketPlayOutChat c =
+                        new net.minecraft.network.protocol.game.PacketPlayOutChat(
+                                new ChatComponentText("Test"),
                         net.minecraft.network.chat.ChatMessageType.c, z);
                 cp.getHandle().b.sendPacket(c);
             }
@@ -291,6 +294,7 @@ public class NMSX {
             {
 
             }
+            return;
         }
 
         try {
