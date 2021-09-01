@@ -17,6 +17,7 @@ import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerPickupItemEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
+import primal.bukkit.sched.J;
 import primal.lang.collection.GList;
 
 import java.util.List;
@@ -164,17 +165,21 @@ public abstract class WorldMonitor implements Listener {
     }
 
     private void sampleEntities() {
-        totalEntities = totalLiving = totalDrops = 0;
+        J.s(() -> {
+            totalEntities = 0;
+            totalLiving = 0;
+            totalDrops = 0;
 
-        for (World w : Bukkit.getWorlds()) {
-            final List<Entity> e = w.getEntities();
-            totalEntities += e.size();
+            for (World w : Bukkit.getWorlds()) {
+                final List<Entity> e = w.getEntities();
+                totalEntities += e.size();
 
-            for (Entity t : e) {
-                if (t instanceof LivingEntity) ++totalLiving;
-                else if (t instanceof Item) ++totalDrops;
+                for (Entity t : e) {
+                    if (t instanceof LivingEntity) ++totalLiving;
+                    else if (t instanceof Item) ++totalDrops;
+                }
             }
-        }
+        });
     }
 
     private void sampleTilesAndChunks() {
