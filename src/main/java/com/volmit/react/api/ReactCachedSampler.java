@@ -6,10 +6,22 @@ import com.volmit.react.util.ChronoLatch;
 public abstract class ReactCachedSampler implements Sampler {
     private final ChronoLatch latch;
     private final AtomicDouble last;
+    private final String id;
 
-    public ReactCachedSampler(long sampleDelay) {
+    public ReactCachedSampler(String id, long sampleDelay) {
+        this.id = id;
         this.latch = new ChronoLatch(sampleDelay, true);
         this.last = new AtomicDouble();
+    }
+
+    @Override
+    public void start() {
+
+    }
+
+    @Override
+    public void stop() {
+
     }
 
     public abstract double onSample();
@@ -24,5 +36,9 @@ public abstract class ReactCachedSampler implements Sampler {
         }
 
         return t;
+    }
+
+    public String getId() {
+        return id;
     }
 }

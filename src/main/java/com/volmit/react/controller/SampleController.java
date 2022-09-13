@@ -5,6 +5,7 @@ import com.volmit.react.React;
 import com.volmit.react.api.Sampler;
 import com.volmit.react.sampler.SamplerTicksPerSecond;
 import com.volmit.react.util.IController;
+import com.volmit.react.util.J;
 import com.volmit.react.util.JarScanner;
 import com.volmit.react.util.tick.Ticked;
 import lombok.Data;
@@ -21,10 +22,6 @@ public class SampleController implements IController {
     @Override
     public String getName() {
         return "Sample";
-    }
-
-    public Sampler getSampler(String id) {
-        return samplers.get(id);
     }
 
     @Override
@@ -53,15 +50,20 @@ public class SampleController implements IController {
                     }
                 });
             samplers = samplers.unmodifiable();
-            React.info("Registered " + samplers.size() + " Samplers");
         } catch(IOException e) {
             throw new RuntimeException(e);
         }
     }
 
+    public void postStart()
+    {
+        samplers.values().forEach(Sampler::start);
+        React.info("Registered " + samplers.size() + " Samplers");
+    }
+
     @Override
     public void stop() {
-        samplers.values().forEach(Ticked::unregister);
+        samplers.values().forEach(Sampler::stop);
     }
 
     @Override

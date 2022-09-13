@@ -1,6 +1,13 @@
 package com.volmit.react;
 
 import com.volmit.react.controller.SampleController;
+import com.volmit.react.sampler.SamplerChunksLoaded;
+import com.volmit.react.sampler.SamplerEntities;
+import com.volmit.react.sampler.SamplerMemoryGarbage;
+import com.volmit.react.sampler.SamplerMemoryPressure;
+import com.volmit.react.sampler.SamplerMemoryUsed;
+import com.volmit.react.sampler.SamplerMemoryUsedAfterGC;
+import com.volmit.react.sampler.SamplerTicksPerSecond;
 import com.volmit.react.util.C;
 import com.volmit.react.util.Control;
 import com.volmit.react.util.Instance;
@@ -28,7 +35,7 @@ public class React extends VolmitPlugin {
 
     @Override
     public void start() {
-
+        sampleController.postStart();
     }
 
     @Override

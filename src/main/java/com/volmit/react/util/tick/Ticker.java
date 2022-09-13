@@ -21,6 +21,13 @@ package com.volmit.react.util.tick;
 
 import art.arcane.multiburst.BurstExecutor;
 import art.arcane.multiburst.MultiBurst;
+import com.volmit.react.React;
+import com.volmit.react.sampler.SamplerChunksLoaded;
+import com.volmit.react.sampler.SamplerMemoryGarbage;
+import com.volmit.react.sampler.SamplerMemoryPressure;
+import com.volmit.react.sampler.SamplerMemoryUsed;
+import com.volmit.react.sampler.SamplerMemoryUsedAfterGC;
+import com.volmit.react.sampler.SamplerTicksPerSecond;
 import com.volmit.react.util.J;
 import com.volmit.react.util.Looper;
 import manifold.ext.rt.api.Self;
@@ -48,6 +55,7 @@ public class Ticker {
                 if(!ticking) {
                     tick();
                 }
+
                 return 50;
             }
         };
