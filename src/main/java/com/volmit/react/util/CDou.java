@@ -1,8 +1,26 @@
+/*------------------------------------------------------------------------------
+ -   Adapt is a Skill/Integration plugin  for Minecraft Bukkit Servers
+ -   Copyright (c) 2022 Arcane Arts (Volmit Software)
+ -
+ -   This program is free software: you can redistribute it and/or modify
+ -   it under the terms of the GNU General Public License as published by
+ -   the Free Software Foundation, either version 3 of the License, or
+ -   (at your option) any later version.
+ -
+ -   This program is distributed in the hope that it will be useful,
+ -   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ -   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ -   GNU General Public License for more details.
+ -
+ -   You should have received a copy of the GNU General Public License
+ -   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ -----------------------------------------------------------------------------*/
+
 package com.volmit.react.util;
 
 public class CDou {
-    private final double max;
     private double number;
+    private final double max;
 
     public CDou(double max) {
         number = 0;
@@ -32,8 +50,8 @@ public class CDou {
     }
 
     public void circ() {
-        if (number < 0) {
-            number = max - (Math.min(Math.abs(number), max));
+        if(number < 0) {
+            number = max - (Math.abs(number) > max ? max : Math.abs(number));
         }
 
         number = number % (max);

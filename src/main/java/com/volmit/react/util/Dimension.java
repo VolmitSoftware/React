@@ -1,3 +1,21 @@
+/*------------------------------------------------------------------------------
+ -   Adapt is a Skill/Integration plugin  for Minecraft Bukkit Servers
+ -   Copyright (c) 2022 Arcane Arts (Volmit Software)
+ -
+ -   This program is free software: you can redistribute it and/or modify
+ -   it under the terms of the GNU General Public License as published by
+ -   the Free Software Foundation, either version 3 of the License, or
+ -   (at your option) any later version.
+ -
+ -   This program is distributed in the hope that it will be useful,
+ -   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ -   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ -   GNU General Public License for more details.
+ -
+ -   You should have received a copy of the GNU General Public License
+ -   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ -----------------------------------------------------------------------------*/
+
 package com.volmit.react.util;
 
 /**
@@ -13,9 +31,12 @@ public class Dimension {
     /**
      * Make a dimension
      *
-     * @param width  width of this (X)
-     * @param height the height (Y)
-     * @param depth  the depth (Z)
+     * @param width
+     *     width of this (X)
+     * @param height
+     *     the height (Y)
+     * @param depth
+     *     the depth (Z)
      */
     public Dimension(int width, int height, int depth) {
         this.width = width;
@@ -26,8 +47,10 @@ public class Dimension {
     /**
      * Make a dimension
      *
-     * @param width  width of this (X)
-     * @param height the height (Y)
+     * @param width
+     *     width of this (X)
+     * @param height
+     *     the height (Y)
      */
     public Dimension(int width, int height) {
         this.width = width;
@@ -36,20 +59,21 @@ public class Dimension {
     }
 
     /**
-     * Get the direction of the flat part of this dimension (null if no thin face)
+     * Get the direction of the flat part of this dimension (null if no thin
+     * face)
      *
      * @return the direction of the flat pane or null
      */
     public DimensionFace getPane() {
-        if (width == 1) {
+        if(width == 1) {
             return DimensionFace.X;
         }
 
-        if (height == 1) {
+        if(height == 1) {
             return DimensionFace.Y;
         }
 
-        if (depth == 1) {
+        if(depth == 1) {
             return DimensionFace.Z;
         }
 

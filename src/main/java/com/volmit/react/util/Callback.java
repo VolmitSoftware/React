@@ -1,40 +1,37 @@
+/*------------------------------------------------------------------------------
+ -   Adapt is a Skill/Integration plugin  for Minecraft Bukkit Servers
+ -   Copyright (c) 2022 Arcane Arts (Volmit Software)
+ -
+ -   This program is free software: you can redistribute it and/or modify
+ -   it under the terms of the GNU General Public License as published by
+ -   the Free Software Foundation, either version 3 of the License, or
+ -   (at your option) any later version.
+ -
+ -   This program is distributed in the hope that it will be useful,
+ -   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ -   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ -   GNU General Public License for more details.
+ -
+ -   You should have received a copy of the GNU General Public License
+ -   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ -----------------------------------------------------------------------------*/
+
 package com.volmit.react.util;
 
 /**
  * Callback for async workers
  *
- * @param <T> the type of object to be returned in the runnable
+ * @param <T>
+ *     the type of object to be returned in the runnable
  * @author cyberpwn
  */
-@SuppressWarnings("hiding")
-public class Callback<T> implements Runnable {
-    private T t;
-
+@FunctionalInterface
+public interface Callback<T> {
     /**
-     * Execute the callback via async.
+     * Called when the callback calls back...
      *
-     * @param t the object to be called back from the worker thead
+     * @param t
+     *     the object to be called back
      */
-    public void run(T t) {
-        this.t = t;
-        run();
-    }
-
-    /**
-     * Implement your callback code through here. Invoke get(); to get the
-     * called back object
-     */
-    @Override
-    public void run() {
-
-    }
-
-    /**
-     * Get the object from the worker thread
-     *
-     * @return the Object of the defined type T
-     */
-    public T get() {
-        return t;
-    }
+    void run(T t);
 }

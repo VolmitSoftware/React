@@ -1,95 +1,331 @@
+/*
+ * React is Copyright (c) 2021 Arcane Arts (Volmit Software)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 plugins {
     id 'java'
-    id 'idea'
     id 'java-library'
-    id 'io.freefair.lombok' version '5.2.1'
-    id "com.github.johnrengelman.shadow" version "6.1.0"
+    id "io.freefair.lombok" version "6.3.0"
+    id "com.github.johnrengelman.shadow" version "7.1.2"
+    id "de.undercouch.download" version "5.0.1"
 }
 
-group 'com.volmit.react'
-version '6.655'
-def name = 'React'
 
+version '8.0.0-1.19.2' // Needs to be version specific
+def nmsVersion = "1.19.2"
+def apiVersion = '1.19'
+def specialSourceVersion = '1.11.0'
+def spigotJarVersion = '1.19.2-R0.1-SNAPSHOT'
+def name = getRootProject().getName() // Defined in settings.gradle
+def main = 'com.volmit.react.React'
 
 // ADD YOURSELF AS A NEW LINE IF YOU WANT YOUR OWN BUILD TASK GENERATED
+// ======================== WINDOWS =============================
+registerCustomOutputTask('Cyberpwn', 'C://Users/cyberpwn/Documents/development/server/plugins')
+registerCustomOutputTask('Psycho', 'D://Dan/MinecraftDevelopment/server/plugins')
+registerCustomOutputTask('ArcaneArts', 'C://Users/arcane/Documents/development/server/plugins')
+registerCustomOutputTask('Vatuu', 'D://Minecraft/Servers/1.19/plugins')
+registerCustomOutputTask('Nowhere', 'E://Desktop/server/plugins')
+// ========================== UNIX ==============================
+registerCustomOutputTaskUnix('CyberpwnLT', '/Users/danielmills/development/server/plugins')
+registerCustomOutputTaskUnix('PsychoLT', '/Users/brianfopiano/Desktop/REMOTES/RemoteMinecraft/plugins')
 // ==============================================================
-registerCustomOutputTask('Cyberpwn', 'C://Users/cyberpwn/Documents/development/server/plugins');
-registerCustomOutputTask('ArcaneArts', 'C://Users/arcane/Documents/development/server/plugins');
-// ==============================================================
 
-def registerCustomOutputTask(name, path) {
-    tasks.register('build' + name, Copy) {
-        group('development')
-        outputs.upToDateWhen{false}
-        dependsOn ':shadowJar'
-        from(file('build/libs/React-' + version + '-all.jar'))
-        into(file(path))
-        rename { String fileName ->
-            fileName.replace('React-' + version + '-all.jar', "React.jar")
-        }
-    }
-}
+/**
+ * Gradle is weird sometimes, we need to delete the plugin yml from the build folder to actually filter properly.
+ */
+file(jar.archiveFile.get().getAsFile().getParentFile().getParentFile().getParentFile().getAbsolutePath() + '/build/resources/main/plugin.yml').delete()
 
-repositories {
-    maven {
-        allowInsecureProtocol true
-        url "http://archive.arcane.art/repository/arcane"
-    }
-    mavenLocal()
-}
-
-shadowJar
-{
-    minimize()
-    dependencies {
-        include(dependency('org.zeroturnaround:zt-zip:1.14'))
-        include(dependency('com.github.cryptomorin:XSeries:7.6.1'))
-    }
-}
+/**
+ * Expand properties into plugin yml
+ */
 
 processResources {
     filesMatching('**/plugin.yml') {
         expand(
-            'name': name.toString(),
-            'version': version.toString()
+                'name': name.toString(),
+                'version': version.toString(),
+                'main': main.toString(),
+                'apiversion': apiVersion.toString()
         )
     }
 }
 
-idea {
-    module {
-        downloadJavadoc = false
-        downloadSources = false
+repositories {
+    mavenLocal {
+        content {
+            includeGroup("org.bukkit")
+            includeGroup("org.spigotmc")
+        }
+    }
+    maven { url "https://arcanearts.jfrog.io/artifactory/archives" }
+}
+
+/**
+ * We need parameter meta for the decree command system
+ */
+compileJava {
+    options.compilerArgs << '-parameters'
+}
+
+/**
+ * Configure React for shading
+ */
+shadowJar {
+    minimize()
+    append("plugin.yml")
+    relocate 'manifold', 'com.volmit.react.util.manifold'
+    relocate 'art.arcane', 'com.volmit.react.util.arcane'
+    relocate 'io.papermc.lib', 'com.volmit.react.util.paper'
+    relocate 'net.kyori', 'com.volmit.react.util.kyori'
+    relocate 'ChumBukkit.extensions', 'com.volmit.react.util.extensions'
+    relocate 'IrisBukkit.extensions', 'com.volmit.react.util.extensions'
+    relocate 'Fukkit.extensions', 'com.volmit.react.util.extensions'
+    relocate 'Amulet.extensions', 'com.volmit.react.util.extensions'
+    dependencies {
+        include(dependency('io.papermc:paperlib'))
+        include(dependency('net.kyori:'))
+        include(dependency('systems.manifold:'))
+        include(dependency('xyz.xenondevs:'))
+        include(dependency('art.arcane:'))
     }
 }
 
-dependencies {
-    implementation 'org.zeroturnaround:zt-zip:1.14'
-    implementation 'com.github.cryptomorin:XSeries:7.6.1'
-    compileOnly 'org.projectlombok:lombok:1.18.20'
-    annotationProcessor 'org.projectlombok:lombok:1.18.20'
-    implementation 'org.spigotmc.full:1.12.2:1.12.2'
-    implementation 'org.bukkit.craftbukkit:1.17:1.17'
-    implementation 'org.bukkit.craftbukkit:1.16.5:1.16.5'
-    implementation 'org.bukkit.craftbukkit:1.16.4:1.16.4'
-    implementation 'org.bukkit.craftbukkit:1.16.3:1.16.3'
-    implementation 'org.bukkit.craftbukkit:1.16.2:1.16.2'
-    implementation 'org.bukkit.craftbukkit:1.16.1:1.16.1'
-    implementation 'org.bukkit.craftbukkit:1.15.1:1.15.1'
-    implementation 'org.bukkit.craftbukkit:1.14.4:1.14.4'
-    implementation 'org.bukkit.craftbukkit:1.13.2:1.13.2'
-    implementation 'org.bukkit.craftbukkit:1.12.2:1.12.2'
-    implementation 'org.bukkit.craftbukkit:1.11.2:1.11.2'
-    implementation 'org.bukkit.craftbukkit:1.10.2:1.10.2'
-    implementation 'org.bukkit.craftbukkit:1.9.4:1.9.4'
-    implementation 'org.bukkit.craftbukkit:1.8.8:1.8.8'
-    implementation 'com.comphenix.protocol:ProtocolLib:4.5.1'
-    implementation 'io.lumine.xikage:MythicMobs:4.9.1'
-    implementation 'me.clip:placeholderapi:2.9.2'
-    implementation 'com.boydti:fawe-api:latest'
+configurations.all {
+    resolutionStrategy.cacheChangingModulesFor 60, 'minutes'
+    resolutionStrategy.cacheDynamicVersionsFor 60, 'minutes'
 }
 
 
+dependencies {
+    // Provided or Classpath
+    compileOnly 'org.projectlombok:lombok:1.18.24'
+    annotationProcessor 'org.projectlombok:lombok:1.18.24'
+    implementation 'org.spigotmc:spigot-api:1.19.2-R0.1-SNAPSHOT'
+    implementation 'me.clip:placeholderapi:2.11.1'
+    implementation 'io.th0rgal:oraxen:1.94.0'
+    implementation 'org.bukkit:craftbukkit:1.19.2-R0.1-SNAPSHOT:remapped-mojang'
+    implementation 'com.github.LoneDev6:api-itemsadder:3.1.0b'
+
+    // Cancer
+    implementation 'art.arcane:Amulet:22.7.18'
+    implementation 'art.arcane:Fukkit:22.7.5'
+    annotationProcessor 'systems.manifold:manifold-ext:2022.1.19'
+    testAnnotationProcessor 'systems.manifold:manifold-ext:2022.1.19'
+    implementation 'systems.manifold:manifold-rt:2022.1.19'
+
+    // Shaded
+    implementation 'io.papermc:paperlib:1.0.5'
+    implementation "net.kyori:adventure-text-minimessage:4.11.0"
+    implementation 'net.kyori:adventure-platform-bukkit:4.1.2'
+    implementation 'net.kyori:adventure-api:4.11.0'
+    implementation 'xyz.xenondevs:particle:1.8.1'
+
+    // Dynamically Loaded
+    implementation 'com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru:1.4.2'
+    implementation 'org.apache.commons:commons-lang3:3.12.0'
+    implementation 'com.google.code.gson:gson:2.9.0'
+}
+
+if (JavaVersion.current().toString() != "17") {
+    System.err.println()
+    System.err.println("=========================================================================================================")
+    System.err.println("You must run gradle on Java 17. You are using " + JavaVersion.current())
+    System.err.println()
+    System.err.println("=== For IDEs ===")
+    System.err.println("1. Configure the project for Java 17")
+    System.err.println("2. Configure the bundled gradle to use Java 17 in settings")
+    System.err.println()
+    System.err.println("=== For Command Line (gradlew) ===")
+    System.err.println("1. Install JDK 17 from https://www.oracle.com/java/technologies/javase/jdk17-archive-downloads.html")
+    System.err.println("2. Set JAVA_HOME environment variable to the new jdk installation folder such as C:\\Program Files\\Java\\jdk-17.0.1")
+    System.err.println("3. Open a new command prompt window to get the new environment variables if need be.")
+    System.err.println("=========================================================================================================")
+    System.err.println()
+    System.exit(69)
+}
 
 
+def buildToolsJar = new File(buildDir, "buildtools/BuildTools.jar")
+def specialSourceJar = new File(buildDir, "specialsource/SpecialSource.jar")
+def buildToolsFolder = new File(buildDir, "buildtools")
+def specialSourceFolder = new File(buildDir, "specialsource")
+def buildToolsHint = new File(buildDir, "buildtools/craftbukkit-" + nmsVersion + ".jar")
+def outputShadeJar = new File(buildDir, "libs/React-" + version + "-all.jar")
+def ssiJar = new File(buildDir, "specialsource/React-" + version + "-all.jar")
+def ssobfJar = new File(buildDir, "specialsource/React-" + version + "-rmo.jar")
+def ssJar = new File(buildDir, "specialsource/React-" + version + "-rma.jar")
+def homePath = System.properties['user.home']
+def m2 = new File(homePath + "/.m2/repository")
+def m2s = m2.getAbsolutePath()
+
+// ======================== Building Mapped Jars =============================
+task downloadBuildtools(type: Download) {
+    group "remapping"
+    src 'https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar'
+    dest buildToolsJar
+    onlyIf {
+        !buildToolsJar.exists()
+    }
+}
+
+task downloadSpecialSource(type: Download) {
+    group "remapping"
+    src 'https://repo.maven.apache.org/maven2/net/md-5/SpecialSource/' + specialSourceVersion + '/SpecialSource-'+specialSourceVersion+'-shaded.jar'
+    dest specialSourceJar
+    onlyIf {
+        !specialSourceJar.exists()
+    }
+}
+
+task executeBuildTools(dependsOn: downloadBuildtools, type: JavaExec)
+{
+    group "remapping"
+    classpath = files(buildToolsJar)
+    workingDir = buildToolsFolder
+    args = [
+            "--rev",
+            nmsVersion,
+            "--compile",
+            "craftbukkit",
+            "--remap"
+    ]
+    onlyIf {
+        !buildToolsHint.exists()
+    }
+}
+
+task copyBuildToSpecialSource(type: Copy)
+{
+    group "remapping"
+    from outputShadeJar
+    into specialSourceFolder
+    dependsOn(downloadSpecialSource, shadowJar)
+}
+
+task specialSourceRemapObfuscate(type: JavaExec)
+{
+    group "remapping"
+    dependsOn(copyBuildToSpecialSource, downloadSpecialSource, shadowJar)
+    workingDir = specialSourceFolder
+    classpath = files(specialSourceJar,
+            new File(m2s + "/org/spigotmc/spigot/" + spigotJarVersion + "/spigot-" + spigotJarVersion + "-remapped-mojang.jar"))
+    mainClass = "net.md_5.specialsource.SpecialSource"
+    args = [
+            "--live",
+            "-i",
+            ssiJar.getName(),
+            "-o",
+            ssobfJar.getName(),
+            "-m",
+            m2s + "/org/spigotmc/minecraft-server/" + spigotJarVersion + "/minecraft-server-" + spigotJarVersion + "-maps-mojang.txt",
+            "--reverse",
+    ]
+}
+
+task specialSourceRemap(type: JavaExec)
+{
+    group "remapping"
+    dependsOn(specialSourceRemapObfuscate)
+    workingDir = specialSourceFolder
+    classpath = files(specialSourceJar,
+            new File(m2s + "/org/spigotmc/spigot/" + spigotJarVersion + "/spigot-" + spigotJarVersion + "-remapped-obf.jar"))
+    mainClass = "net.md_5.specialsource.SpecialSource"
+    args = [
+            "--live",
+            "-i",
+            ssobfJar.getName(),
+            "-o",
+            ssJar.getName(),
+            "-m",
+            m2s + "/org/spigotmc/minecraft-server/" + spigotJarVersion + "/minecraft-server-" + spigotJarVersion + "-maps-spigot.csrg"
+    ]
+}
+
+tasks.compileJava.dependsOn(executeBuildTools)
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+compileJava {
+    options.encoding = "UTF-8"
+}
+
+task setup()
+{
+    group("react")
+    dependsOn(clean, executeBuildTools)
+}
+
+task react(type: Copy)
+{
+    group "react"
+    from ssJar
+    into buildDir
+    rename { String fileName ->
+        fileName.replace('React-' + version + '-rma.jar', "React-" + version + ".jar")
+    }
+    dependsOn(specialSourceRemap)
+}
+
+def registerCustomOutputTask(name, path) {
+    if (!System.properties['os.name'].toLowerCase().contains('windows')) {
+        return
+    }
+
+    tasks.register('build' + name, Copy) {
+        group('development')
+        outputs.upToDateWhen { false }
+        dependsOn(react)
+        from(new File(buildDir, "React-" + version + ".jar"))
+        into(file(path))
+        rename { String fileName ->
+            fileName.replace("React-" + version + ".jar", "React-" + version + ".jar")
+        }
+    }
+}
+
+def registerCustomOutputTaskUnix(name, path) {
+    if (System.properties['os.name'].toLowerCase().contains('windows')) {
+        return
+    }
+
+    tasks.register('build' + name, Copy) {
+        group('development')
+        outputs.upToDateWhen { false }
+        dependsOn(react)
+        from(new File(buildDir, "React-" + version + ".jar"))
+        into(file(path))
+        rename { String fileName ->
+            fileName.replace("React-" + version + ".jar", "React-" + version + ".jar")
+        }
+    }
+}
+
+if (JavaVersion.current() != JavaVersion.VERSION_1_8 &&
+        sourceSets.main.allJava.files.any { it.name == "module-info.java" }) {
+    tasks.withType(JavaCompile) {
+        options.compilerArgs += ['-Xplugin:Manifold', '--module-path', it.classpath.asPath]
+    }
+} else {
+    tasks.withType(JavaCompile) {
+        options.compilerArgs += ['-Xplugin:Manifold']
+    }
+}
 

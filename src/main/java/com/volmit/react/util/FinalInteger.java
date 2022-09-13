@@ -1,3 +1,21 @@
+/*------------------------------------------------------------------------------
+ -   Adapt is a Skill/Integration plugin  for Minecraft Bukkit Servers
+ -   Copyright (c) 2022 Arcane Arts (Volmit Software)
+ -
+ -   This program is free software: you can redistribute it and/or modify
+ -   it under the terms of the GNU General Public License as published by
+ -   the Free Software Foundation, either version 3 of the License, or
+ -   (at your option) any later version.
+ -
+ -   This program is distributed in the hope that it will be useful,
+ -   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ -   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ -   GNU General Public License for more details.
+ -
+ -   You should have received a copy of the GNU General Public License
+ -   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ -----------------------------------------------------------------------------*/
+
 package com.volmit.react.util;
 
 /**
@@ -5,51 +23,28 @@ package com.volmit.react.util;
  *
  * @author cyberpwn
  */
-public class FinalInteger {
-    private int i;
-
-    /**
-     * Create a final number
-     *
-     * @param i the initial number
-     */
-    public FinalInteger(int i) {
-        this.i = i;
-    }
-
-    /**
-     * Get the value
-     *
-     * @return the number value
-     */
-    public int get() {
-        return i;
-    }
-
-    /**
-     * Set the value
-     *
-     * @param i the number value
-     */
-    public void set(int i) {
-        this.i = i;
+public class FinalInteger extends Wrapper<Integer> {
+    public FinalInteger(Integer t) {
+        super(t);
     }
 
     /**
      * Add to this value
      *
-     * @param i the number to add to this value (value = value + i)
+     * @param i
+     *     the number to add to this value (value = value + i)
      */
     public void add(int i) {
-        this.i += i;
+        set(get() + i);
     }
 
     /**
      * Subtract from this value
      *
-     * @param i the number to subtract from this value (value = value - i)
+     * @param i
+     *     the number to subtract from this value (value = value - i)
      */
     public void sub(int i) {
-        this.i -= i;
+        set(get() - i);
     }
 }

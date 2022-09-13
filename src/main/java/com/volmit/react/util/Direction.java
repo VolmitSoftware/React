@@ -1,9 +1,32 @@
+/*------------------------------------------------------------------------------
+ -   Adapt is a Skill/Integration plugin  for Minecraft Bukkit Servers
+ -   Copyright (c) 2022 Arcane Arts (Volmit Software)
+ -
+ -   This program is free software: you can redistribute it and/or modify
+ -   it under the terms of the GNU General Public License as published by
+ -   the Free Software Foundation, either version 3 of the License, or
+ -   (at your option) any later version.
+ -
+ -   This program is distributed in the hope that it will be useful,
+ -   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ -   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ -   GNU General Public License for more details.
+ -
+ -   You should have received a copy of the GNU General Public License
+ -   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ -----------------------------------------------------------------------------*/
+
 package com.volmit.react.util;
 
 import com.volmit.react.util.Cuboid.CuboidDirection;
-import org.bukkit.entity.Player;
+import org.bukkit.Axis;
+import org.bukkit.block.BlockFace;
 import org.bukkit.util.Vector;
-import primal.lang.collection.GList;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Directions
@@ -18,10 +41,144 @@ public enum Direction {
     E(1, 0, 0, CuboidDirection.East),
     W(-1, 0, 0, CuboidDirection.West);
 
+    private static Map<GBiset<Direction, Direction>, DOP> permute = null;
+
     private final int x;
     private final int y;
     private final int z;
     private final CuboidDirection f;
+
+    public static Direction getDirection(BlockFace f) {
+        switch(f) {
+            case DOWN:
+                return D;
+            case EAST:
+                return E;
+            case EAST_NORTH_EAST:
+                return E;
+            case EAST_SOUTH_EAST:
+                return E;
+            case NORTH:
+                return N;
+            case NORTH_EAST:
+                return N;
+            case NORTH_NORTH_EAST:
+                return N;
+            case NORTH_NORTH_WEST:
+                return N;
+            case NORTH_WEST:
+                return N;
+            case SELF:
+                return U;
+            case SOUTH:
+                return S;
+            case SOUTH_EAST:
+                return S;
+            case SOUTH_SOUTH_EAST:
+                return S;
+            case SOUTH_SOUTH_WEST:
+                return S;
+            case SOUTH_WEST:
+                return S;
+            case UP:
+                return U;
+            case WEST:
+                return W;
+            case WEST_NORTH_WEST:
+                return W;
+            case WEST_SOUTH_WEST:
+                return W;
+        }
+
+        return D;
+    }
+
+    @Override
+    public String toString() {
+        switch(this) {
+            case D:
+                return "Down";
+            case E:
+                return "East";
+            case N:
+                return "North";
+            case S:
+                return "South";
+            case U:
+                return "Up";
+            case W:
+                return "West";
+        }
+
+        return "?";
+    }
+
+    public boolean isVertical() {
+        return equals(D) || equals(U);
+    }
+
+    public static Direction closest(Vector v) {
+        double m = Double.MAX_VALUE;
+        Direction s = null;
+
+        for(Direction i : values()) {
+            Vector x = i.toVector();
+            double g = x.dot(v);
+
+            if(g < m) {
+                m = g;
+                s = i;
+            }
+        }
+
+        return s;
+    }
+
+    public static Direction closest(Vector v, Direction... d) {
+        double m = Double.MAX_VALUE;
+        Direction s = null;
+
+        for(Direction i : d) {
+            Vector x = i.toVector();
+            double g = x.distance(v);
+
+            if(g < m) {
+                m = g;
+                s = i;
+            }
+        }
+
+        return s;
+    }
+
+    public static Direction closest(Vector v, List<Direction> d) {
+        double m = Double.MAX_VALUE;
+        Direction s = null;
+
+        for(Direction i : d) {
+            Vector x = i.toVector();
+            double g = x.distance(v);
+
+            if(g < m) {
+                m = g;
+                s = i;
+            }
+        }
+
+        return s;
+    }
+
+    public Vector toVector() {
+        return new Vector(x, y, z);
+    }
+
+    public boolean isCrooked(Direction to) {
+        if(equals(to.reverse())) {
+            return false;
+        }
+
+        return !equals(to);
+    }
 
     Direction(int x, int y, int z, CuboidDirection f) {
         this.x = x;
@@ -30,56 +187,20 @@ public enum Direction {
         this.f = f;
     }
 
-    public static GList<Direction> news() {
-        return new GList<Direction>().qadd(N).qadd(E).qadd(W).qadd(S);
-    }
+    public Vector angle(Vector initial, Direction d) {
+        calculatePermutations();
 
-    public static GList<Direction> udnews() {
-        return new GList<Direction>().qadd(U).qadd(D).qadd(N).qadd(E).qadd(W).qadd(S);
-    }
-
-    public static Direction facing(Player p) {
-        Vector dir = VectorMath.triNormalize(p.getLocation().getDirection());
-
-        for (Direction i : udnews()) {
-            if (dir.getBlockX() == i.x && dir.getBlockY() == i.y && dir.getBlockZ() == i.z) {
-                return i;
+        for(GBiset<Direction, Direction> i : permute.keySet()) {
+            if(i.getA().equals(this) && i.getB().equals(d)) {
+                return permute.get(i).op(initial);
             }
         }
 
-        return Direction.D;
-    }
-
-    /**
-     * Get the directional value from the given byte from common directional blocks
-     * (MUST BE BETWEEN 0 and 5 INCLUSIVE)
-     *
-     * @param b the byte
-     * @return the direction or null if the byte is outside of the inclusive range
-     * 0-5
-     */
-    public static Direction fromByte(byte b) {
-        if (b > 5 || b < 0) {
-            return null;
-        }
-
-        if (b == 0) {
-            return D;
-        } else if (b == 1) {
-            return U;
-        } else if (b == 2) {
-            return N;
-        } else if (b == 3) {
-            return S;
-        } else if (b == 4) {
-            return W;
-        } else {
-            return E;
-        }
+        return initial;
     }
 
     public Direction reverse() {
-        switch (this) {
+        switch(this) {
             case D:
                 return U;
             case E:
@@ -115,13 +236,66 @@ public enum Direction {
         return f;
     }
 
+    public static List<Direction> news() {
+        List<Direction> d = new ArrayList<>();
+        d.add(N, E, W, S);
+        return d;
+    }
+
+    public static Direction getDirection(Vector v) {
+        Vector k = VectorMath.triNormalize(v.clone().normalize());
+
+        for(Direction i : udnews()) {
+            if(i.x == k.getBlockX() && i.y == k.getBlockY() && i.z == k.getBlockZ()) {
+                return i;
+            }
+        }
+
+        return Direction.N;
+    }
+
+    public static List<Direction> udnews() {
+        List<Direction> d = new ArrayList<>();
+        d.add(U, D, N, E, W, S);
+        return d;
+    }
+
+    /**
+     * Get the directional value from the given byte from common directional blocks
+     * (MUST BE BETWEEN 0 and 5 INCLUSIVE)
+     *
+     * @param b
+     *     the byte
+     * @return the direction or null if the byte is outside of the inclusive range
+     * 0-5
+     */
+    public static Direction fromByte(byte b) {
+        if(b > 5 || b < 0) {
+            return null;
+        }
+
+        if(b == 0) {
+            return D;
+        } else if(b == 1) {
+            return U;
+        } else if(b == 2) {
+            return N;
+        } else if(b == 3) {
+            return S;
+        } else if(b == 4) {
+            return W;
+        } else {
+            return E;
+        }
+    }
+
     /**
      * Get the byte value represented in some directional blocks
      *
      * @return the byte value
      */
     public byte byteValue() {
-        switch (this) {
+        switch(this) {
             case D:
                 return 0;
             case E:
@@ -139,5 +313,131 @@ public enum Direction {
         }
 
         return -1;
+    }
+
+    public static void calculatePermutations() {
+        if(permute != null) {
+            return;
+        }
+
+        permute = new HashMap<>();
+
+        for(Direction i : udnews()) {
+            for(Direction j : udnews()) {
+                GBiset<Direction, Direction> b = new GBiset<Direction, Direction>(i, j);
+
+                if(i.equals(j)) {
+                    permute.put(b, new DOP("DIRECT") {
+                        @Override
+                        public Vector op(Vector v) {
+                            return v;
+                        }
+                    });
+                } else if(i.reverse().equals(j)) {
+                    if(i.isVertical()) {
+                        permute.put(b, new DOP("R180CCZ") {
+                            @Override
+                            public Vector op(Vector v) {
+                                return VectorMath.rotate90CCZ(VectorMath.rotate90CCZ(v));
+                            }
+                        });
+                    } else {
+                        permute.put(b, new DOP("R180CCY") {
+                            @Override
+                            public Vector op(Vector v) {
+                                return VectorMath.rotate90CCY(VectorMath.rotate90CCY(v));
+                            }
+                        });
+                    }
+                } else if(getDirection(VectorMath.rotate90CX(i.toVector())).equals(j)) {
+                    permute.put(b, new DOP("R90CX") {
+                        @Override
+                        public Vector op(Vector v) {
+                            return VectorMath.rotate90CX(v);
+                        }
+                    });
+                } else if(getDirection(VectorMath.rotate90CCX(i.toVector())).equals(j)) {
+                    permute.put(b, new DOP("R90CCX") {
+                        @Override
+                        public Vector op(Vector v) {
+                            return VectorMath.rotate90CCX(v);
+                        }
+                    });
+                } else if(getDirection(VectorMath.rotate90CY(i.toVector())).equals(j)) {
+                    permute.put(b, new DOP("R90CY") {
+                        @Override
+                        public Vector op(Vector v) {
+                            return VectorMath.rotate90CY(v);
+                        }
+                    });
+                } else if(getDirection(VectorMath.rotate90CCY(i.toVector())).equals(j)) {
+                    permute.put(b, new DOP("R90CCY") {
+                        @Override
+                        public Vector op(Vector v) {
+                            return VectorMath.rotate90CCY(v);
+                        }
+                    });
+                } else if(getDirection(VectorMath.rotate90CZ(i.toVector())).equals(j)) {
+                    permute.put(b, new DOP("R90CZ") {
+                        @Override
+                        public Vector op(Vector v) {
+                            return VectorMath.rotate90CZ(v);
+                        }
+                    });
+                } else if(getDirection(VectorMath.rotate90CCZ(i.toVector())).equals(j)) {
+                    permute.put(b, new DOP("R90CCZ") {
+                        @Override
+                        public Vector op(Vector v) {
+                            return VectorMath.rotate90CCZ(v);
+                        }
+                    });
+                } else {
+                    permute.put(b, new DOP("FAIL") {
+                        @Override
+                        public Vector op(Vector v) {
+                            return v;
+                        }
+                    });
+                }
+            }
+        }
+    }
+
+    public BlockFace getFace() {
+        switch(this) {
+            case D:
+                return BlockFace.DOWN;
+            case E:
+                return BlockFace.EAST;
+            case N:
+                return BlockFace.NORTH;
+            case S:
+                return BlockFace.SOUTH;
+            case U:
+                return BlockFace.UP;
+            case W:
+                return BlockFace.WEST;
+        }
+
+        return null;
+    }
+
+    public Axis getAxis() {
+        switch(this) {
+            case D:
+                return Axis.Y;
+            case E:
+                return Axis.X;
+            case N:
+                return Axis.Z;
+            case S:
+                return Axis.Z;
+            case U:
+                return Axis.Y;
+            case W:
+                return Axis.X;
+        }
+
+        return null;
     }
 }
