@@ -1,12 +1,10 @@
-package com.volmit.react.api;
+package com.volmit.react.api.sampler;
 
 import com.volmit.react.React;
-import com.volmit.react.util.ChronoLatch;
 import com.volmit.react.util.RollingSequence;
 import com.volmit.react.util.tick.TickedObject;
 
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 
 public abstract class ReactTickedSampler extends TickedObject implements Sampler {
     private final RollingSequence sequence;

@@ -1,7 +1,7 @@
 package com.volmit.react.sampler;
 
 import com.volmit.react.React;
-import com.volmit.react.api.ReactCachedSampler;
+import com.volmit.react.api.sampler.ReactCachedSampler;
 import com.volmit.react.util.ChronoLatch;
 import com.volmit.react.util.Form;
 import com.volmit.react.util.J;

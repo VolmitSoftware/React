@@ -1,6 +1,6 @@
 package com.volmit.react.sampler;
 
-import com.volmit.react.api.ReactTickedSampler;
+import com.volmit.react.api.sampler.ReactTickedSampler;
 import com.volmit.react.util.Form;
 
 import java.util.concurrent.atomic.AtomicLong;

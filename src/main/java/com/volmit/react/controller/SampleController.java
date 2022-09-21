@@ -1,18 +1,13 @@
 package com.volmit.react.controller;
 
-import art.arcane.amulet.Amulet;
 import com.volmit.react.React;
-import com.volmit.react.api.Sampler;
-import com.volmit.react.sampler.SamplerTicksPerSecond;
+import com.volmit.react.api.sampler.Sampler;
 import com.volmit.react.util.IController;
-import com.volmit.react.util.J;
 import com.volmit.react.util.JarScanner;
-import com.volmit.react.util.tick.Ticked;
 import lombok.Data;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @Data
@@ -22,6 +17,10 @@ public class SampleController implements IController {
     @Override
     public String getName() {
         return "Sample";
+    }
+
+    public Sampler getSampler(String id) {
+        return samplers.get(id);
     }
 
     @Override

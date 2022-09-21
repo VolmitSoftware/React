@@ -1,13 +1,10 @@
-package com.volmit.react.api;
+package com.volmit.react.api.sampler;
 
 import com.volmit.react.React;
 import com.volmit.react.util.J;
-import com.volmit.react.util.tick.Ticked;
 import org.bukkit.Bukkit;
 
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public interface Sampler {

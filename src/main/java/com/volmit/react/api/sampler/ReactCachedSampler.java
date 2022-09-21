@@ -1,4 +1,4 @@
-package com.volmit.react.api;
+package com.volmit.react.api.sampler;
 
 import com.google.common.util.concurrent.AtomicDouble;
 import com.volmit.react.util.ChronoLatch;

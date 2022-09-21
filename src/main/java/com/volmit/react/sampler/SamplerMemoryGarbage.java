@@ -1,7 +1,7 @@
 package com.volmit.react.sampler;
 
-import com.volmit.react.api.ReactCachedSampler;
-import com.volmit.react.api.Sampler;
+import com.volmit.react.api.sampler.ReactCachedSampler;
+import com.volmit.react.api.sampler.Sampler;
 import com.volmit.react.util.Form;
 
 public class SamplerMemoryGarbage extends ReactCachedSampler {

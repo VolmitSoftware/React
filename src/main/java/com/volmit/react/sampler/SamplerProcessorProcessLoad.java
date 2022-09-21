@@ -1,7 +1,7 @@
 package com.volmit.react.sampler;
 
 import art.arcane.amulet.util.Platform;
-import com.volmit.react.api.ReactCachedSampler;
+import com.volmit.react.api.sampler.ReactCachedSampler;
 import com.volmit.react.util.Form;
 
 public class SamplerProcessorProcessLoad extends ReactCachedSampler {
