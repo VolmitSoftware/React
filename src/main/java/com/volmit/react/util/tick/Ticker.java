@@ -30,6 +30,7 @@ import com.volmit.react.sampler.SamplerMemoryUsedAfterGC;
 import com.volmit.react.sampler.SamplerTicksPerSecond;
 import com.volmit.react.util.J;
 import com.volmit.react.util.Looper;
+import com.volmit.react.util.PrecisionStopwatch;
 import manifold.ext.rt.api.Self;
 
 import java.util.ArrayList;
@@ -42,9 +43,11 @@ public class Ticker {
     private final List<Ticked> newTicks;
     private final List<String> removeTicks;
     private volatile boolean ticking;
+    private boolean closed;
     private final Looper looper;
 
     public Ticker() {
+        this.closed = false;
         this.ticklist = new ArrayList<>(4096);
         this.newTicks = new ArrayList<>(128);
         this.removeTicks = new ArrayList<>(128);
@@ -52,6 +55,11 @@ public class Ticker {
         looper = new Looper() {
             @Override
             protected long loop() {
+                if(closed)
+                {
+                    return 100;
+                }
+
                 if(!ticking) {
                     tick();
                 }
@@ -88,7 +96,14 @@ public class Ticker {
                 if(t != null && t.shouldTick()) {
                     tc.incrementAndGet();
                     try {
+                        PrecisionStopwatch p = PrecisionStopwatch.start();
                         t.tick();
+                        p.end();
+
+                        if(p.getMilliseconds() > 50)
+                        {
+                            System.out.println("Tick " + t.getId() + " took " + p.getMilliseconds() + "ms");
+                        }
                     } catch(Throwable exxx) {
                         exxx.printStackTrace();
                     }
@@ -125,6 +140,8 @@ public class Ticker {
     }
 
     public void close() {
+        closed = true;
         looper.interrupt();
+        MultiBurst.burst.close();
     }
 }

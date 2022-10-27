@@ -2,18 +2,21 @@ package com.volmit.react.sampler;
 
 import art.arcane.amulet.util.Platform;
 import com.volmit.react.api.sampler.ReactCachedSampler;
+import com.volmit.react.util.AsyncRequest;
 import com.volmit.react.util.Form;
 
 public class SamplerProcessorProcessLoad extends ReactCachedSampler {
     public static final String ID = "processor-process-load";
+    private final AsyncRequest<Double> poller;
 
     public SamplerProcessorProcessLoad() {
         super(ID, 100);
+        poller = new AsyncRequest<>(Platform.CPU::getLiveProcessCPULoad, 0D);
     }
 
     @Override
     public double onSample() {
-        return Platform.CPU.getLiveProcessCPULoad();
+        return poller.request();
     }
 
     @Override

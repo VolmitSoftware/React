@@ -1,6 +1,8 @@
 package com.volmit.react;
 
+import art.arcane.multiburst.MultiBurst;
 import com.volmit.react.api.monitor.ActionBarMonitor;
+import com.volmit.react.controller.PlayerController;
 import com.volmit.react.controller.SampleController;
 import com.volmit.react.sampler.SamplerChunksLoaded;
 import com.volmit.react.sampler.SamplerEntities;
@@ -30,6 +32,8 @@ public class React extends VolmitPlugin {
 
     @Control
     private SampleController sampleController;
+    @Control
+    private PlayerController playerController;
 
     @Override
     public void onEnable() {
@@ -41,14 +45,6 @@ public class React extends VolmitPlugin {
     @Override
     public void start() {
         sampleController.postStart();
-    }
-
-    @EventHandler
-    public void on(PlayerJoinEvent e) {
-        new ActionBarMonitor(e.getPlayer())
-            .sample(SamplerTicksPerSecond.ID)
-            .sample(SamplerMemoryUsedAfterGC.ID)
-            .start();
     }
 
     @Override

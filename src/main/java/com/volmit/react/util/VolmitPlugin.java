@@ -566,9 +566,6 @@ public abstract class VolmitPlugin extends JavaPlugin implements Listener {
     }
 
     private void stopControllers() {
-        if (bad) {
-            return;
-        }
         for (IController i : controllers.v()) {
             try {
                 unregisterListener(i);

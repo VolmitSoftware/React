@@ -74,6 +74,6 @@ public class SamplerChunksLoaded extends ReactCachedSampler implements Listener 
 
     @Override
     public String format(double t) {
-        return Form.f(loadedChunks.get()) + " Chunks";
+        return Form.f(loadedChunks.get()) + " CHK";
     }
 }

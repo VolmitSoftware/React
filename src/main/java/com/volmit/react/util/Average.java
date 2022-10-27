@@ -66,10 +66,10 @@ public class Average {
             return;
         }
 
+        cursor = cursor + 1 < size() ? cursor + 1 : 0;
         double current = values[cursor];
         lastSum = (lastSum - current) + i;
         values[cursor] = i;
-        cursor = cursor + 1 < size() ? cursor + 1 : 0;
     }
 
     /**
