@@ -35,7 +35,7 @@ def main = 'com.volmit.react.React'
 // ADD YOURSELF AS A NEW LINE IF YOU WANT YOUR OWN BUILD TASK GENERATED
 // ======================== WINDOWS =============================
 registerCustomOutputTask('Cyberpwn', 'C://Users/cyberpwn/Documents/development/server/plugins')
-registerCustomOutputTask('Psycho', 'D://Dan/MinecraftDevelopment/server/plugins')
+registerCustomOutputTask('Psycho', 'C://Dan/MinecraftDevelopment/server/plugins')
 registerCustomOutputTask('ArcaneArts', 'C://Users/arcane/Documents/development/server/plugins')
 registerCustomOutputTask('Vatuu', 'D://Minecraft/Servers/1.19/plugins')
 registerCustomOutputTask('Nowhere', 'E://Desktop/server/plugins')
