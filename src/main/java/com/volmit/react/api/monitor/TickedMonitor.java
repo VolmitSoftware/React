@@ -1,6 +1,7 @@
 package com.volmit.react.api.monitor;
 
 import com.volmit.react.api.sampler.Sampler;
+import com.volmit.react.util.M;
 import com.volmit.react.util.PrecisionStopwatch;
 import com.volmit.react.util.tick.TickedObject;
 import lombok.Getter;
@@ -11,6 +12,7 @@ import java.util.Map;
 
 public abstract class TickedMonitor extends TickedObject implements Monitor {
     protected final Map<Sampler, Double> samplers;
+    protected final Map<Sampler, Double> changers;
     @Getter
     protected final Map<Sampler, Boolean> visible;
     protected long sleepingRate;
@@ -25,6 +27,7 @@ public abstract class TickedMonitor extends TickedObject implements Monitor {
         this.sleepingRate = interval * 2;
         this.sleepDelay = 35;
         this.currentSleepDelay = 20;
+        this.changers = new HashMap<>();
         this.samplers = new HashMap<>();
     }
 
@@ -49,15 +52,27 @@ public abstract class TickedMonitor extends TickedObject implements Monitor {
         }
     }
 
+    public double getChanger(Sampler s)
+    {
+        Double d = changers.get(s);
+        return d == null ? 0 : d;
+    }
+
     @Override
     public void onTick() {
+        for(Sampler i : changers.k())
+        {
+            changers.put(i, M.lerp(changers.get(i), 0, 0.1));
+        }
+
         boolean flushable = false;
 
         for(Sampler i : visible.keySet()) {
            if(visible.get(i)) {
                Double old = getSamplers().put(i, i.sample());
-
-               if(old == null || old != i.sample()) {
+               double s = i.sample();
+               if(old == null || old != s) {
+                   changers.put(i, M.lerp(getChanger(i), 1, 0.333));
                    flushable = true;
                }
            }

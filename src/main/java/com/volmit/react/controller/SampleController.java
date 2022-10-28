@@ -73,12 +73,12 @@ public class SampleController implements IController {
 
     @Override
     public void tick() {
-        React.info("Tasks/s " + getSampler(SamplerReactTasksPerSecond.ID).sampleFormatted());
+
     }
 
     @Override
     public int getTickInterval() {
-        return 50;
+        return 1000;
     }
 
     @Override

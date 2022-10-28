@@ -7,6 +7,7 @@ import com.volmit.react.api.player.ReactPlayer;
 import com.volmit.react.api.sampler.Sampler;
 import com.volmit.react.util.C;
 import com.volmit.react.util.Form;
+import com.volmit.react.util.M;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.key.Keyed;
 import net.kyori.adventure.text.Component;
@@ -21,6 +22,7 @@ import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Location;
 import org.jetbrains.annotations.NotNull;
 
+import java.awt.Color;
 import java.time.Duration;
 import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
@@ -56,22 +58,55 @@ public class ActionBarMonitor extends PlayerMonitor {
         super.stop();
     }
 
-    private String writeHeaderTitle(MonitorGroup group) {
-        return (focusUpAnimation > 2 ? group.getColor().toString() : C.DARK_GRAY.toString()) + (focusUpAnimation > 3 ? C.BOLD : "") + group.getName();
+    private Component writeHeaderTitle(MonitorGroup group) {
+        if(focusUpAnimation > 3)
+        {
+            return Component.text(group.getName()).style(Style.style(TextColor.fromHexString(group.getColor()), TextDecoration.BOLD));
+        }
+
+        if(focusUpAnimation > 2)
+        {
+            return Component.text(group.getName()).style(Style.style(TextColor.fromHexString(darker(group.getColor()))));
+        }
+
+        if(focusUpAnimation > 1)
+        {
+            return Component.text(group.getName()).style(Style.style(TextColor.fromHexString(darker(darker(group.getColor())))).font(Key.key("uniform")));
+        }
+
+        return Component.text(group.getName()).style(Style.style(TextColor.fromHexString(darker(darker(darker(group.getColor()))))).font(Key.key("uniform")));
+    }
+
+    private String changify(String color, double change)
+    {
+        Color c = new Color(Integer.parseInt(color.substring(1), 16));
+        float [] hsb = Color.RGBtoHSB(c.getRed(), c.getGreen(), c.getBlue(), null);
+
+        hsb[0] = (float) (M.lerp(hsb[0], hsb[0] + 0.05, change));
+        hsb[1] = (float) (M.lerp(hsb[1] * 0.8, 1, change));
+        hsb[2] = (float) (M.lerp(hsb[2] * 0.8, 1, change));
+
+        return "#" + Integer.toString(Color.getHSBColor(hsb[0], hsb[1], hsb[2]).getRGB(), 16);
+    }
+
+    private String darker(String color)
+    {
+        return "#" + Integer.toString(new Color(Integer.parseInt(color.substring(1), 16)).darker().getRGB(), 16);
     }
 
     private Component writeSubSamplers(MonitorGroup group) {
         var builder = Component.text();
 
         boolean first = true;
-        Style s = Style.style(TextColor.fromHexString(group.getColor()));
-        Style ss = Style.style(TextColor.fromHexString(group.getColor())).font(Key.key("uniform"));
 
         for(Sampler i : group.getSubSamplers()) {
             if(!first)
             {
                 builder.append(Component.space());
             }
+
+            Style s = Style.style(TextColor.fromHexString(changify(group.getColor(), getChanger(i))));
+            Style ss = Style.style(TextColor.fromHexString(changify(group.getColor(), getChanger(i)))).font(Key.key("uniform"));
             first = false;
             builder.append(Component.text(i.formattedValue(i.sample()), s)).append(Component.text(i.formattedSuffix(i.sample()), ss));
         }
@@ -95,10 +130,12 @@ public class ActionBarMonitor extends PlayerMonitor {
             Double value = samplers.get(head);
             value = value == null ? 0 : value;
 
-            Style s = focus == i ? Style.style(TextColor.fromHexString(i.getColor()), TextDecoration.UNDERLINED)
-                : Style.style(TextColor.fromHexString(i.getColor()));
-            Style ss = focus == i ? Style.style(TextColor.fromHexString(i.getColor()), TextDecoration.UNDERLINED).font(Key.key("uniform"))
-                : Style.style(TextColor.fromHexString(i.getColor())).font(Key.key("uniform"));
+            String color = changify(i.getColor(), getChanger(head));
+
+            Style s = focus == i ? Style.style(TextColor.fromHexString(color), TextDecoration.UNDERLINED)
+                : Style.style(TextColor.fromHexString(color));
+            Style ss = focus == i ? Style.style(TextColor.fromHexString(color), TextDecoration.UNDERLINED).font(Key.key("uniform"))
+                : Style.style(TextColor.fromHexString(color)).font(Key.key("uniform"));
 
             builder.append(head.format(Component.text(head.formattedValue(value), s), Component.text(head.formattedSuffix(value), ss)));
         }
@@ -115,7 +152,7 @@ public class ActionBarMonitor extends PlayerMonitor {
 
         if(focus != f) {
             if(focus != null) {
-                focusUpAnimation = 4;
+                focusUpAnimation = 5;
             }
 
             else {
@@ -131,31 +168,37 @@ public class ActionBarMonitor extends PlayerMonitor {
             }
         }
 
-        if(focus != null) {
-            String t = " ";
+        React.adventure.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.TIMES, new Title.Times() {
+            @Override
+            public @NotNull Duration fadeIn() {
+                return Duration.ZERO;
+            }
 
-            if(focusUpAnimation > 0) {
-                t = writeHeaderTitle(focus);
+            @Override
+            public @NotNull Duration stay() {
+                return Duration.ofMillis(((int) ((getInterval() / 50) + 3)) * 50L);
+            }
+
+            @Override
+            public @NotNull Duration fadeOut() {
+                return Duration.ofMillis(20 * 50);
+            }
+        });
+
+        if(focus != null) {
+            if(focusUpAnimation >= -10) {
+                if(focusUpAnimation > 0)
+                {
+                    React.adventure.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.TITLE, writeHeaderTitle(focus));
+                }
+                else {
+                    React.adventure.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.TITLE, Component.space());
+                }
+
                 focusUpAnimation--;
             }
 
             React.adventure.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.SUBTITLE, writeSubSamplers(focus));
-            React.adventure.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.TIMES, new Title.Times() {
-                @Override
-                public @NotNull Duration fadeIn() {
-                    return Duration.ZERO;
-                }
-
-                @Override
-                public @NotNull Duration stay() {
-                    return Duration.ofMillis(((int) ((getInterval() / 50) + 3)) * 50L);
-                }
-
-                @Override
-                public @NotNull Duration fadeOut() {
-                    return Duration.ofMillis(20 * 50);
-                }
-            });
         }
 
         else if(focusDownAnimation) {
