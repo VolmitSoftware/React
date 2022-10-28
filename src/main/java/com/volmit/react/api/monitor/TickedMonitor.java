@@ -11,6 +11,7 @@ import java.util.Map;
 
 public abstract class TickedMonitor extends TickedObject implements Monitor {
     protected final Map<Sampler, Double> samplers;
+    @Getter
     protected final Map<Sampler, Boolean> visible;
     protected long sleepingRate;
     protected int sleepDelay;
@@ -42,8 +43,7 @@ public abstract class TickedMonitor extends TickedObject implements Monitor {
         }
     }
 
-    public void clearVisibility()
-    {
+    public void clearVisibility() {
         for(Sampler i : visible.keySet()) {
             visible.put(i, false);
         }
@@ -54,11 +54,13 @@ public abstract class TickedMonitor extends TickedObject implements Monitor {
         boolean flushable = false;
 
         for(Sampler i : visible.keySet()) {
-            Double old = getSamplers().put(i, i.sample());
+           if(visible.get(i)) {
+               Double old = getSamplers().put(i, i.sample());
 
-            if(old == null || old != i.sample()) {
-                flushable = true;
-            }
+               if(old == null || old != i.sample()) {
+                   flushable = true;
+               }
+           }
         }
 
         currentSleepDelay = flushable ? sleepDelay : currentSleepDelay - 1;

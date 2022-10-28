@@ -37,18 +37,29 @@ public class SamplerTicksPerSecond extends ReactTickedSampler {
     }
 
     @Override
-    public String format(double t) {
+    public String formattedValue(double t) {
         long dur = Math.ms() - lastTick.get();
 
         if(dur > 3000) {
-            return Form.duration(dur, 1);
+            return Form.durationSplit(dur, 1)[0];
         }
 
         if(t > 19.85) {
-            return "20 TPS";
+            return "20";
         }
 
-        return Form.f(t, 2) + " TPS";
+        return Form.f(t, 2);
+    }
+
+    @Override
+    public String formattedSuffix(double t) {
+        long dur = Math.ms() - lastTick.get();
+
+        if(dur > 3000) {
+            return Form.durationSplit(dur, 1)[1];
+        }
+
+        return "TPS";
     }
 
     @Override

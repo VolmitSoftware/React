@@ -2,6 +2,8 @@ package com.volmit.react.controller;
 
 import com.volmit.react.React;
 import com.volmit.react.api.sampler.Sampler;
+import com.volmit.react.sampler.SamplerReactTasksPerSecond;
+import com.volmit.react.sampler.SamplerUnknown;
 import com.volmit.react.util.IController;
 import com.volmit.react.util.JarScanner;
 import lombok.Data;
@@ -13,6 +15,7 @@ import java.util.Map;
 @Data
 public class SampleController implements IController {
     private Map<String, Sampler> samplers;
+    private Sampler unknown;
 
     @Override
     public String getName() {
@@ -20,7 +23,9 @@ public class SampleController implements IController {
     }
 
     public Sampler getSampler(String id) {
-        return samplers.get(id);
+        Sampler s = samplers.get(id);
+
+        return s == null ? unknown : s;
     }
 
     @Override
@@ -48,10 +53,11 @@ public class SampleController implements IController {
                         samplers.put(i.getId(), i);
                     }
                 });
-            samplers = samplers.unmodifiable();
         } catch(IOException e) {
             throw new RuntimeException(e);
         }
+
+        samplers.put(SamplerUnknown.ID, new SamplerUnknown());
     }
 
     public void postStart()
@@ -67,12 +73,12 @@ public class SampleController implements IController {
 
     @Override
     public void tick() {
-
+        React.info("Tasks/s " + getSampler(SamplerReactTasksPerSecond.ID).sampleFormatted());
     }
 
     @Override
     public int getTickInterval() {
-        return 100000;
+        return 50;
     }
 
     @Override

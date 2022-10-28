@@ -84,7 +84,12 @@ public class SamplerEntities extends ReactCachedSampler implements Listener {
     }
 
     @Override
-    public String format(double t) {
-        return Form.f(entities.get()) + " Entities";
+    public String formattedValue(double t) {
+        return Form.f(t);
+    }
+
+    @Override
+    public String formattedSuffix(double t) {
+        return "ENT";
     }
 }

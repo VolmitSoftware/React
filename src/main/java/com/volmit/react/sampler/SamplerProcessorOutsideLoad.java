@@ -16,7 +16,12 @@ public class SamplerProcessorOutsideLoad extends ReactCachedSampler {
     }
 
     @Override
-    public String format(double t) {
-        return Form.pc(t, 0) + " CPU";
+    public String formattedValue(double t) {
+        return Form.pc(t, 0);
+    }
+
+    @Override
+    public String formattedSuffix(double t) {
+        return "CPU";
     }
 }

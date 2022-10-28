@@ -95,7 +95,7 @@ public class RollingSequence extends Average {
         dirtyExtremes = 0;
     }
 
-    public void put(double i) {
+    public synchronized void put(double i) {
         super.put(i);
         dirtyMedian = true;
         dirtyExtremes++;

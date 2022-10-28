@@ -20,6 +20,7 @@ import com.volmit.react.util.J;
 import com.volmit.react.util.VolmitPlugin;
 import com.volmit.react.util.tick.Ticker;
 import lombok.Getter;
+import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -28,7 +29,10 @@ import org.bukkit.event.player.PlayerJoinEvent;
 public class React extends VolmitPlugin {
     @Instance
     public static React instance;
-    private Ticker ticker;
+    public static Thread serverThread;
+    public static Ticker ticker;
+    public static MultiBurst burst;
+    public static BukkitAudiences adventure;
 
     @Control
     private SampleController sampleController;
@@ -36,9 +40,21 @@ public class React extends VolmitPlugin {
     private PlayerController playerController;
 
     @Override
+    public void onLoad() {
+        if(Bukkit.isPrimaryThread()) {
+            serverThread = Thread.currentThread();
+        }
+    }
+
+    @Override
     public void onEnable() {
+        burst = new MultiBurst("React", Thread.MIN_PRIORITY);
+        if(Bukkit.isPrimaryThread()) {
+            serverThread = Thread.currentThread();
+        }
         instance = this;
-        ticker = new Ticker();
+        ticker = new Ticker(burst);
+        adventure = BukkitAudiences.create(this);
         super.onEnable();
     }
 
@@ -50,6 +66,7 @@ public class React extends VolmitPlugin {
     @Override
     public void stop() {
         ticker.close();
+        burst.close();
     }
 
     @Override
@@ -93,5 +110,9 @@ public class React extends VolmitPlugin {
 
     public static void debug(String string) {
         msg(C.DARK_PURPLE + string);
+    }
+
+    public Ticker getTicker() {
+        return ticker;
     }
 }

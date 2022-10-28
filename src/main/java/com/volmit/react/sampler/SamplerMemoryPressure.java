@@ -29,7 +29,12 @@ public class SamplerMemoryPressure extends ReactTickedSampler {
     }
 
     @Override
-    public String format(double t) {
-        return Form.memSize((long) t, 1) + "/s";
+    public String formattedValue(double t) {
+        return Form.memSizeSplit((long) t, 1)[0];
+    }
+
+    @Override
+    public String formattedSuffix(double t) {
+        return Form.memSizeSplit((long) t, 1)[1] + "/s";
     }
 }

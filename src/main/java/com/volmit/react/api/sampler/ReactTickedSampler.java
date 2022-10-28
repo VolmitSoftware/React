@@ -42,9 +42,6 @@ public abstract class ReactTickedSampler extends TickedObject implements Sampler
         return sequence.getAverage();
     }
 
-    @Override
-    public abstract String format(double t);
-
     private void setSleeping(boolean sleeping) {
         this.sleeping = sleeping;
         setInterval(sleeping ? 1000 : activeInterval);

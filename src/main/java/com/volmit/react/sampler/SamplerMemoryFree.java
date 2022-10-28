@@ -18,7 +18,12 @@ public class SamplerMemoryFree extends ReactCachedSampler {
     }
 
     @Override
-    public String format(double t) {
-        return Form.memSize((long) t, 1);
+    public String formattedValue(double t) {
+        return Form.memSizeSplit((long) t, 1)[0];
+    }
+
+    @Override
+    public String formattedSuffix(double t) {
+        return Form.memSizeSplit((long) t, 1)[1];
     }
 }

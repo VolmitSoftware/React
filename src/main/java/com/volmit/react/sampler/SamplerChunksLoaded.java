@@ -5,6 +5,9 @@ import com.volmit.react.api.sampler.ReactCachedSampler;
 import com.volmit.react.util.ChronoLatch;
 import com.volmit.react.util.Form;
 import com.volmit.react.util.J;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.TextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.event.EventHandler;
@@ -73,7 +76,12 @@ public class SamplerChunksLoaded extends ReactCachedSampler implements Listener 
     }
 
     @Override
-    public String format(double t) {
-        return Form.f(loadedChunks.get()) + " CHK";
+    public String formattedValue(double t) {
+        return Form.f(t);
+    }
+
+    @Override
+    public String formattedSuffix(double t) {
+        return "CHK";
     }
 }

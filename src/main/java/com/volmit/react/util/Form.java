@@ -82,7 +82,7 @@ public class Form {
         String src = Form.repeat(" ", viewport) + smx + Form.repeat(" ", viewport);
         int len = src.length();
         int walk = (int) (time % (len - viewport));
-        String base = src.substring(walk, M.min(walk + viewport, len - 1));
+        String base = src.substring(walk, Math.min(walk + viewport, len - 1));
         base = base.length() < viewport ? base + Form.repeat(" ", (viewport - base.length()) - 3) : base;
 
         return base;
@@ -666,6 +666,30 @@ public class Form {
         return Form.f(ms, prec) + "ms";
     }
 
+    public static String[] durationSplit(double ms, int prec) {
+        if(ms < 1000.0) {
+            return new String[]{Form.f(ms, prec), "ms"};
+        }
+
+        if(ms / 1000.0 < 60.0) {
+            return new String[]{Form.f(ms / 1000.0, prec), "s"};
+        }
+
+        if(ms / 1000.0 / 60.0 < 60.0) {
+            return new String[]{Form.f(ms / 1000.0 / 60.0, prec), "m"};
+        }
+
+        if(ms / 1000.0 / 60.0 / 60.0 < 24.0) {
+            return new String[]{Form.f(ms / 1000.0 / 60.0 / 60.0, prec), " hours"};
+        }
+
+        if(ms / 1000.0 / 60.0 / 60.0 / 24.0 < 7) {
+            return new String[]{Form.f(ms / 1000.0 / 60.0 / 24.0, prec), " days"};
+        }
+
+        return new String[]{Form.f(ms, prec), "ms"};
+    }
+
     public static String duration(long ms) {
         return duration(ms, 0);
     }
@@ -808,6 +832,10 @@ public class Form {
 
     public static String memSize(long s, int dec) {
         return ofSize(s, 1024, dec);
+    }
+
+    public static String[] memSizeSplit(long s, int dec) {
+        return memSize(s, dec).split("\\Q \\E");
     }
 
     /**
@@ -1031,7 +1059,7 @@ public class Form {
     /**
      * Get a formatted representation of the memory given in kilobytes
      *
-     * @param mb
+     * @param kb
      *     the kilobytes
      * @return the string representation with suffixes
      */
@@ -1295,7 +1323,7 @@ public class Form {
     /**
      * nanoseconds to seconds (double)
      *
-     * @param ms
+     * @param ns
      *     the nanoseconds
      * @return a formatted string to nanoseconds
      */
@@ -1306,7 +1334,7 @@ public class Form {
     /**
      * nanoseconds to seconds (double) custom decimals
      *
-     * @param ms
+     * @param ns
      *     the nanoseconds
      * @param p
      *     number of decimal points
@@ -1319,7 +1347,7 @@ public class Form {
     /**
      * nanoseconds to seconds (double) custom decimals
      *
-     * @param ms
+     * @param ns
      *     the nanoseconds
      * @param p
      *     number of decimal points
