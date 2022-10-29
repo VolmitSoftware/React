@@ -55,6 +55,11 @@ public class ReactConfiguration {
             .sampler(SamplerEventTime.ID)
             .sampler(SamplerEventListeners.ID)
             .build())
+        .group(MonitorGroup.builder()
+            .name("Other")
+            .color("#f2f202")
+            .sampler("some-sampler")
+            .build())
         .build();
 
     public static ReactConfiguration get() {

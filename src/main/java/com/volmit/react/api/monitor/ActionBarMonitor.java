@@ -69,6 +69,7 @@ public class ActionBarMonitor extends PlayerMonitor {
     public void stop() {
         getPlayer().getPlayer().spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(" "));
         super.stop();
+        unregister();
     }
 
     private Component writeHeaderTitle(MonitorGroup group) {
@@ -164,7 +165,9 @@ public class ActionBarMonitor extends PlayerMonitor {
                 : Style.style(TextColor.fromHexString(color)).font(Key.key("uniform"));
 
             int l = i.format(value).length();
-            maxLengths.compute(i, (k,v) -> Math.max(v == null ? 0 : v, l));
+            synchronized(maxLengths) {
+                maxLengths.compute(i, (k,v) -> Math.max(v == null ? 0 : v, l));
+            }
             builder.append(i.format(Component.text(i.formattedValue(value), s), Component.text(i.formattedSuffix(value), ss)));
 
             if(l < maxLengths.get(i)) {
@@ -211,7 +214,9 @@ public class ActionBarMonitor extends PlayerMonitor {
             Style ss = focus == i ? Style.style(TextColor.fromHexString(color), TextDecoration.UNDERLINED).font(Key.key("uniform"))
                 : Style.style(TextColor.fromHexString(color)).font(Key.key("uniform"));
             int l = head.format(value).length();
-            maxLengths.compute(head, (k,v) -> Math.max(v == null ? 0 : v, l));
+            synchronized(maxLengths) {
+                maxLengths.compute(head, (k,v) -> Math.max(v == null ? 0 : v, l));
+            }
             builder.append(head.format(Component.text(head.formattedValue(value), s), Component.text(head.formattedSuffix(value), ss)));
 
             if(l < maxLengths.get(head)) {

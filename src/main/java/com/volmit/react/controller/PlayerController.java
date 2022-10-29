@@ -87,4 +87,10 @@ public class PlayerController implements IController {
     public void v(Object l) {
 
     }
+
+    public void updateMonitors() {
+        for(ReactPlayer i : getPlayers().v()) {
+            i.updateMonitors();
+        }
+    }
 }

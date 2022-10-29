@@ -1,5 +1,6 @@
 package com.volmit.react.api.monitor;
 
+import com.volmit.react.React;
 import com.volmit.react.api.sampler.Sampler;
 import com.volmit.react.util.M;
 import com.volmit.react.util.PrecisionStopwatch;
@@ -60,20 +61,33 @@ public abstract class TickedMonitor extends TickedObject implements Monitor {
 
     @Override
     public void onTick() {
-        for(Sampler i : changers.k())
-        {
+        for(Sampler i : changers.k()) {
             changers.put(i, M.lerp(changers.get(i), 0, 0.1));
         }
 
         boolean flushable = false;
 
         for(Sampler i : visible.keySet()) {
+            if(i == null)
+            {
+                continue;
+            }
            if(visible.get(i) != null && visible.get(i)) {
-               Double old = getSamplers().put(i, i.sample());
-               double s = i.sample();
-               if(old == null || old != s) {
-                   changers.put(i, M.lerp(getChanger(i), 1, 0.333));
-                   flushable = true;
+
+               try
+               {
+                   Double old = getSamplers().put(i, i.sample());
+                   double s = i.sample();
+                   if(old == null || old != s) {
+                       changers.put(i, M.lerp(getChanger(i), 1, 0.333));
+                       flushable = true;
+                   }
+               }
+
+               catch(Throwable e)
+               {
+                   React.error("Failed to sample " + i.getId() + " for monitor " + getId());
+                   e.printStackTrace();
                }
            }
         }

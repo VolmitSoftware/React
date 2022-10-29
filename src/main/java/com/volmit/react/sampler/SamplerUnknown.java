@@ -10,6 +10,10 @@ public class SamplerUnknown extends ReactCachedSampler {
         super(ID, 30000);
     }
 
+    public SamplerUnknown(String id) {
+        super(id, 30000);
+    }
+
     @Override
     public double onSample() {
         return 0;

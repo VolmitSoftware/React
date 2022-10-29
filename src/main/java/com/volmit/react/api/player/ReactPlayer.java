@@ -1,5 +1,7 @@
 package com.volmit.react.api.player;
 
+import art.arcane.curse.Curse;
+import com.volmit.react.React;
 import com.volmit.react.api.monitor.ActionBarMonitor;
 import com.volmit.react.configuration.ReactConfiguration;
 import com.volmit.react.util.J;
@@ -156,6 +158,13 @@ public class ReactPlayer extends TickedObject {
     public void onTick() {
         if(getInterval() > ACTIVE_RATE && System.currentTimeMillis() - lastActive > INACTIVE_DELAY) {
             setInterval(INACTIVE_RATE);
+        }
+    }
+
+    public void updateMonitors() {
+        if(isMonitoring()) {
+            setActionBarMonitoring(false);
+            setActionBarMonitoring(true);
         }
     }
 }
