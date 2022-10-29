@@ -26,6 +26,6 @@ public class SamplerProcessorProcessLoad extends ReactCachedSampler {
 
     @Override
     public String formattedSuffix(double t) {
-        return "CPU";
+        return "pCPU";
     }
 }

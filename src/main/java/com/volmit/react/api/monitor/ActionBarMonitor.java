@@ -26,20 +26,33 @@ import java.awt.Color;
 import java.time.Duration;
 import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class ActionBarMonitor extends PlayerMonitor {
+    private int viewportIndex;
     private MonitorConfiguration configuration;
     private MonitorGroup focus;
+    private Map<MonitorGroup, Integer> viewportIndexes;
+    private Map<MonitorGroup, Sampler> focusedSamplers;
+    private Map<Sampler, Integer> maxLengths;
     private int focusUpAnimation = 0;
     private boolean focusDownAnimation = false;
     private boolean tickUp = false;
+    private boolean locked = false;
+    private int lockedPosition;
 
     public ActionBarMonitor(ReactPlayer player) {
         super("actionbar", player, 50);
         sleepDelay = 10;
+        viewportIndexes = new HashMap<>();
+        focusedSamplers = new HashMap<>();
+        maxLengths = new HashMap<>();
         sleepingRate = 1000;
+        viewportIndex = 0;
+        lockedPosition = 0;
     }
 
     public ActionBarMonitor sample(MonitorConfiguration configuration) {
@@ -81,11 +94,9 @@ public class ActionBarMonitor extends PlayerMonitor {
     {
         Color c = new Color(Integer.parseInt(color.substring(1), 16));
         float [] hsb = Color.RGBtoHSB(c.getRed(), c.getGreen(), c.getBlue(), null);
-
         hsb[0] = (float) (M.lerp(hsb[0], hsb[0] + 0.05, change));
         hsb[1] = (float) (M.lerp(hsb[1] * 0.8, 1, change));
         hsb[2] = (float) (M.lerp(hsb[2] * 0.8, 1, change));
-
         return "#" + Integer.toString(Color.getHSBColor(hsb[0], hsb[1], hsb[2]).getRGB(), 16);
     }
 
@@ -94,61 +105,143 @@ public class ActionBarMonitor extends PlayerMonitor {
         return "#" + Integer.toString(new Color(Integer.parseInt(color.substring(1), 16)).darker().getRGB(), 16);
     }
 
-    private Component writeSubSamplers(MonitorGroup group) {
+    private Sampler getFocusedSampler()
+    {
+        return getFocusedSampler(focus);
+    }
+
+    private Sampler getFocusedSampler(MonitorGroup g)
+    {
+        Sampler s = focusedSamplers.get(g);
+
+        if(s== null)
+        {
+            s = g.getHeadSampler();
+            focusedSamplers.put(g, s);
+        }
+
+        return s;
+    }
+
+    private Component writeSubSamplers() {
+        if(!viewportIndexes.containsKey(focus)) {
+            viewportIndexes.put(focus, 0);
+        }
+
+        int viewportLimit = Math.min(5, focus.getSamplers().size());
+        int index = focus.getSamplers().indexOf(getFocusedSampler().getId());
+        int viewportIndex = viewportIndexes.get(focus);
+
+        while(index+1 > viewportIndex + viewportLimit) {
+            viewportIndex++;
+        }
+
+        while(index < viewportIndex) {
+            viewportIndex--;
+        }
+
+        viewportIndexes.put(focus, viewportIndex);
+
         var builder = Component.text();
-
         boolean first = true;
+        for(int m = 0; m < viewportLimit; m++) {
+            Sampler i = React.instance.getSampleController().getSampler(focus.getSamplers().get((viewportIndexes.get(focus) + m) % focus.getSamplers().size()));
 
-        for(Sampler i : group.getSubSamplers()) {
-            if(!first)
-            {
+            setVisible(i, true);
+            if(!first) {
                 builder.append(Component.space());
             }
 
-            Style s = Style.style(TextColor.fromHexString(changify(group.getColor(), getChanger(i))));
-            Style ss = Style.style(TextColor.fromHexString(changify(group.getColor(), getChanger(i)))).font(Key.key("uniform"));
             first = false;
-            builder.append(Component.text(i.formattedValue(i.sample()), s)).append(Component.text(i.formattedSuffix(i.sample()), ss));
+            Double value = samplers.get(i);
+            value = value == null ? 0 : value;
+
+            String color = focus.getColor();
+
+            Style s = (locked && getPlayer().isSneaking() && getFocusedSampler() == i) ? Style.style(TextColor.fromHexString(color), TextDecoration.UNDERLINED)
+                : Style.style(TextColor.fromHexString(color));
+            Style ss = (locked && getPlayer().isSneaking() && getFocusedSampler() == i) ? Style.style(TextColor.fromHexString(color), TextDecoration.UNDERLINED).font(Key.key("uniform"))
+                : Style.style(TextColor.fromHexString(color)).font(Key.key("uniform"));
+
+            int l = i.format(value).length();
+            maxLengths.compute(i, (k,v) -> Math.max(v == null ? 0 : v, l));
+            builder.append(i.format(Component.text(i.formattedValue(value), s), Component.text(i.formattedSuffix(value), ss)));
+
+            if(l < maxLengths.get(i)) {
+                builder.append(Component.text(" ".repeat(maxLengths.get(i) - l)));
+            }
         }
 
         return builder.build();
     }
 
-    private Component writeHeader()
-    {
+    private Component writeHeader() {
+        int viewportLimit = Math.min(5, configuration.getGroups().size());
+        if(focus != null) {
+            int index = configuration.getGroups().indexOf(focus);
+
+            while(index+1 > viewportIndex + viewportLimit) {
+                viewportIndex++;
+            }
+
+            while(index < viewportIndex) {
+                viewportIndex--;
+            }
+        }
+
         var builder = Component.text();
         boolean first = true;
-        for(MonitorGroup i : configuration.getGroups())
-        {
-            if(!first)
-            {
+        for(int m = 0; m < viewportLimit; m++) {
+            MonitorGroup i = configuration.getGroups().get((viewportIndex + m) % configuration.getGroups().size());
+            setVisible(getFocusedSampler(i), true);
+
+            if(!first) {
                 builder.append(Component.space());
             }
 
             first = false;
-            Sampler head = i.getHeadSampler();
+            Sampler head = getFocusedSampler(i);
             Double value = samplers.get(head);
             value = value == null ? 0 : value;
 
-            String color = changify(i.getColor(), getChanger(head));
+            String color = i.getColor();
 
             Style s = focus == i ? Style.style(TextColor.fromHexString(color), TextDecoration.UNDERLINED)
                 : Style.style(TextColor.fromHexString(color));
             Style ss = focus == i ? Style.style(TextColor.fromHexString(color), TextDecoration.UNDERLINED).font(Key.key("uniform"))
                 : Style.style(TextColor.fromHexString(color)).font(Key.key("uniform"));
-
+            int l = head.format(value).length();
+            maxLengths.compute(head, (k,v) -> Math.max(v == null ? 0 : v, l));
             builder.append(head.format(Component.text(head.formattedValue(value), s), Component.text(head.formattedSuffix(value), ss)));
+
+            if(l < maxLengths.get(head)) {
+                builder.append(Component.text(" ".repeat(maxLengths.get(head) - l)));
+            }
         }
 
         return builder.build();
     }
 
+    MonitorGroup getFocusedHeaderGroup(){
+        return locked ? configuration.getGroups().get(lockedPosition) : getPlayer().isSneaking() ? configuration.getGroups().get(getPlayer().getScrollPosition(configuration.getGroups().size())) : null;
+    }
+
+    Sampler getNextFocusedSampler() {
+        return React.instance.getSampleController().getSampler(focus.getSamplers().get(getPlayer().getScrollPosition(focus.getSamplers().size())));
+    }
+
     @Override
     public void flush() {
         clearVisibility();
-
         MonitorGroup f = focus;
-        focus = getPlayer().isSneaking() ? configuration.getGroups().get(getPlayer().getScrollPosition(configuration.getGroups().size())) : null;
+
+        if(locked != getPlayer().isLocked())
+        {
+            locked = getPlayer().isLocked();
+            lockedPosition = getPlayer().getScrollPosition(configuration.getGroups().size());
+        }
+
+        focus = getFocusedHeaderGroup();
 
         if(focus != f) {
             if(focus != null) {
@@ -160,32 +253,29 @@ public class ActionBarMonitor extends PlayerMonitor {
             }
         }
 
-        for(MonitorGroup i : configuration.getGroups()) {
-            setVisible(i.getHeadSampler(), true);
-
-            if(focus == i) {
-                setVisible(i.getSubSamplers(), true);
-            }
-        }
-
-        React.adventure.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.TIMES, new Title.Times() {
-            @Override
-            public @NotNull Duration fadeIn() {
-                return Duration.ZERO;
-            }
-
-            @Override
-            public @NotNull Duration stay() {
-                return Duration.ofMillis(((int) ((getInterval() / 50) + 3)) * 50L);
-            }
-
-            @Override
-            public @NotNull Duration fadeOut() {
-                return Duration.ofMillis(20 * 50);
-            }
-        });
-
         if(focus != null) {
+            if(locked && getPlayer().isSneaking())
+            {
+                focusedSamplers.put(focus, getNextFocusedSampler());
+            }
+
+            React.adventure.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.TIMES, new Title.Times() {
+                @Override
+                public @NotNull Duration fadeIn() {
+                    return Duration.ZERO;
+                }
+
+                @Override
+                public @NotNull Duration stay() {
+                    return Duration.ofMillis(((int) ((getInterval() / 50) + 3)) * 50L);
+                }
+
+                @Override
+                public @NotNull Duration fadeOut() {
+                    return Duration.ofMillis(20 * 50);
+                }
+            });
+
             if(focusUpAnimation >= -10) {
                 if(focusUpAnimation > 0)
                 {
@@ -198,7 +288,7 @@ public class ActionBarMonitor extends PlayerMonitor {
                 focusUpAnimation--;
             }
 
-            React.adventure.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.SUBTITLE, writeSubSamplers(focus));
+            React.adventure.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.SUBTITLE, writeSubSamplers());
         }
 
         else if(focusDownAnimation) {

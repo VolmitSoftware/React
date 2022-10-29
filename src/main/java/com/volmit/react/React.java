@@ -2,6 +2,7 @@ package com.volmit.react;
 
 import art.arcane.multiburst.MultiBurst;
 import com.volmit.react.api.monitor.ActionBarMonitor;
+import com.volmit.react.controller.EventController;
 import com.volmit.react.controller.PlayerController;
 import com.volmit.react.controller.SampleController;
 import com.volmit.react.sampler.SamplerChunksLoaded;
@@ -38,6 +39,8 @@ public class React extends VolmitPlugin {
     private SampleController sampleController;
     @Control
     private PlayerController playerController;
+    @Control
+    private EventController eventController;
 
     @Override
     public void onLoad() {

@@ -22,6 +22,6 @@ public class SamplerProcessorOutsideLoad extends ReactCachedSampler {
 
     @Override
     public String formattedSuffix(double t) {
-        return "CPU";
+        return "xCPU";
     }
 }

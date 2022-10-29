@@ -68,7 +68,7 @@ public abstract class TickedMonitor extends TickedObject implements Monitor {
         boolean flushable = false;
 
         for(Sampler i : visible.keySet()) {
-           if(visible.get(i)) {
+           if(visible.get(i) != null && visible.get(i)) {
                Double old = getSamplers().put(i, i.sample());
                double s = i.sample();
                if(old == null || old != s) {

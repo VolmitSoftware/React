@@ -2,19 +2,27 @@ package com.volmit.react.sampler;
 
 import com.volmit.react.React;
 import com.volmit.react.api.sampler.ReactCachedSampler;
+import com.volmit.react.controller.EventController;
 import com.volmit.react.util.Form;
 import net.kyori.adventure.text.Component;
+import org.bukkit.event.Listener;
 
-public class SamplerReactTickTime extends ReactCachedSampler {
-    public static final String ID = "react-tick-time";
+public class SamplerEventTime extends ReactCachedSampler implements Listener {
+    public static final String ID = "event-time";
+    private EventController eventController;
 
-    public SamplerReactTickTime() {
-        super(ID, 50);
+    public SamplerEventTime() {
+        super(ID, 1000);
     }
 
     @Override
     public double onSample() {
-        return React.ticker.getTickTime();
+        return eventController.getTotalTime();
+    }
+
+    @Override
+    public void start() {
+        eventController = React.instance.getEventController();
     }
 
     @Override
@@ -34,6 +42,6 @@ public class SamplerReactTickTime extends ReactCachedSampler {
 
     @Override
     public String formattedSuffix(double t) {
-        return Form.durationSplit(t, 2)[1] + " RTT";
+        return Form.durationSplit(t, 2)[1] + " EVENT TIME";
     }
 }

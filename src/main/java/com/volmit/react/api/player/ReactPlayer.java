@@ -1,23 +1,18 @@
 package com.volmit.react.api.player;
 
 import com.volmit.react.api.monitor.ActionBarMonitor;
-import com.volmit.react.api.monitor.Monitor;
 import com.volmit.react.configuration.ReactConfiguration;
-import com.volmit.react.util.M;
+import com.volmit.react.util.J;
 import com.volmit.react.util.tick.TickedObject;
 import lombok.Data;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.block.Action;
-import org.bukkit.event.block.BlockCanBuildEvent;
-import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
-import org.bukkit.util.Vector;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 public class ReactPlayer extends TickedObject {
@@ -30,19 +25,21 @@ public class ReactPlayer extends TickedObject {
     private int scrollPosition;
     private long lastActive;
     private boolean sneaking;
-    private float realYaw;
-    private float realPitch;
+    private double yawPosition;
     private float yaw;
     private float pitch;
+    private long lastShift;
+    private boolean locked;
 
     public ReactPlayer(Player player) {
         this.player = player;
         scrollPosition = 0;
         setInterval(ACTIVE_RATE);
-        realYaw = 0f;
-        realPitch = 0f;
         yaw = 0f;
         pitch = 0f;
+        yawPosition = 0;
+        lastShift = 0;
+        locked = false;
     }
 
     public void wakeUp() {
@@ -71,23 +68,53 @@ public class ReactPlayer extends TickedObject {
 
     @EventHandler
     public void on(PlayerMoveEvent e) {
+        if(!e.getPlayer().equals(player))
+        {
+            return;
+        }
+
         wakeUp();
 
         if(e.getTo() != null) {
-           realYaw = e.getTo().getYaw();
-           realPitch = e.getTo().getPitch();
+
+           yaw = e.getTo().getYaw();
+           pitch = e.getTo().getPitch();
+           float v = ((e.getFrom().getYaw() + 600) - (yaw +  600)) / 5;
+           yawPosition += (v < 12 && v > 0.01) ? 1 : v > -12 && v < -0.01 ? -1 : 0;
+            if(yawPosition <= 0) {
+                yawPosition = 1000000;
+            }
         }
     }
 
     @EventHandler
     public void on(PlayerToggleSneakEvent e) {
+        if(!e.getPlayer().equals(player))
+        {
+            return;
+        }
         sneaking = e.isSneaking();
         wakeUp(true);
+
+        if(e.isSneaking()) {
+            long ls = lastShift;
+            lastShift = Math.ms();
+
+            if(lastShift - ls < 250) {
+                locked = !locked;
+                lastShift = 0;
+            }
+        }
     }
 
     @EventHandler
     public void on(PlayerItemHeldEvent e) {
-        scrollPosition += e.getNewSlot() - e.getPreviousSlot();
+        if(!e.getPlayer().equals(player) || !e.getPlayer().isSneaking())
+        {
+            return;
+        }
+
+        scrollPosition += (e.getNewSlot() + 19) - (e.getPreviousSlot() + 19);
         wakeUp(sneaking);
     }
 
@@ -130,8 +157,5 @@ public class ReactPlayer extends TickedObject {
         if(getInterval() > ACTIVE_RATE && System.currentTimeMillis() - lastActive > INACTIVE_DELAY) {
             setInterval(INACTIVE_RATE);
         }
-
-        yaw = (float) M.lerp(yaw, realYaw, 0.1d);
-        pitch = (float) M.lerp(pitch, realPitch, 0.1d);
     }
 }

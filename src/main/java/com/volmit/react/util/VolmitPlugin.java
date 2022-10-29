@@ -248,20 +248,12 @@ public abstract class VolmitPlugin extends JavaPlugin implements Listener {
     }
 
     private void tickControllers() {
-        if (bad) {
-            return;
-        }
-
         for (IController i : getControllers()) {
             tickController(i);
         }
     }
 
     private void tickController(IController i) {
-        if (bad) {
-            return;
-        }
-
         if (i.getTickInterval() < 0) {
             return;
         }

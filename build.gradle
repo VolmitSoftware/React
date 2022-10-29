@@ -134,6 +134,7 @@ dependencies {
     implementation 'net.kyori:adventure-platform-bukkit:4.1.2'
     implementation 'net.kyori:adventure-api:4.11.0'
     implementation 'xyz.xenondevs:particle:1.8.1'
+    implementation 'art.arcane:Curse:22.10.2'
 
     // Dynamically Loaded
     implementation 'com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru:1.4.2'

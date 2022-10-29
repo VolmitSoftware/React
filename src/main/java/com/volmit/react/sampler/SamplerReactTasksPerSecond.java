@@ -24,6 +24,6 @@ public class SamplerReactTasksPerSecond extends ReactCachedSampler {
 
     @Override
     public String formattedSuffix(double t) {
-        return "/s";
+        return "TASK/s";
     }
 }

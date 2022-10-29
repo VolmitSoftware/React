@@ -2,6 +2,7 @@ package com.volmit.react.api.sampler;
 
 import com.google.common.util.concurrent.AtomicDouble;
 import com.volmit.react.util.ChronoLatch;
+import net.kyori.adventure.text.Component;
 
 public abstract class ReactCachedSampler implements Sampler {
     private final ChronoLatch latch;

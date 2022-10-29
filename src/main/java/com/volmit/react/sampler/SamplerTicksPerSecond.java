@@ -48,7 +48,7 @@ public class SamplerTicksPerSecond extends ReactTickedSampler {
             return "20";
         }
 
-        return Form.f(t, 2);
+        return Form.f(Math.round(t), 0);
     }
 
     @Override
