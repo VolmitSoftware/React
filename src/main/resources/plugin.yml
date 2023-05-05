@@ -6,7 +6,12 @@ api-version: ${apiversion}
 libraries:
   - com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru:1.4.2
   - org.apache.commons:commons-lang3:3.12.0
-  - com.google.code.gson:gson:2.8.9
+  - com.google.code.gson:gson:2.10
+  - org.zeroturnaround:zt-zip:1.15
+  - org.bitbucket.mstrobel:procyon-core:0.6.0
+  - org.bitbucket.mstrobel:procyon-compilertools:0.6.0
+  - org.bitbucket.mstrobel:procyon-reflection:0.6.0
+  - fr.inria.gforge.spoon:spoon-core:10.2.0
 commands:
   react:
     aliases: [ re ]

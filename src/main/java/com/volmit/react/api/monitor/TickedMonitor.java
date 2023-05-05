@@ -2,17 +2,20 @@ package com.volmit.react.api.monitor;
 
 import com.volmit.react.React;
 import com.volmit.react.api.sampler.Sampler;
+import com.volmit.react.util.ApproachingValue;
 import com.volmit.react.util.M;
 import com.volmit.react.util.PrecisionStopwatch;
 import com.volmit.react.util.tick.TickedObject;
 import lombok.Getter;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public abstract class TickedMonitor extends TickedObject implements Monitor {
     protected final Map<Sampler, Double> samplers;
+    protected final Map<Sampler, ApproachingValue> approachers;
     protected final Map<Sampler, Double> changers;
     @Getter
     protected final Map<Sampler, Boolean> visible;
@@ -24,6 +27,7 @@ public abstract class TickedMonitor extends TickedObject implements Monitor {
     public TickedMonitor(String id, long interval) {
         super("monitor", id, interval);
         this.awakeInterval = interval;
+        this.approachers = new HashMap<>();
         this.visible = new HashMap<>();
         this.sleepingRate = interval * 2;
         this.sleepDelay = 35;
@@ -53,16 +57,15 @@ public abstract class TickedMonitor extends TickedObject implements Monitor {
         }
     }
 
-    public double getChanger(Sampler s)
-    {
+    public double getChanger(Sampler s) {
         Double d = changers.get(s);
         return d == null ? 0 : d;
     }
 
     @Override
     public void onTick() {
-        for(Sampler i : changers.k()) {
-            changers.put(i, M.lerp(changers.get(i), 0, 0.1));
+        for(Sampler i : new ArrayList<>(changers.keySet())) {
+            changers.put(i, M.lerp(getChanger(i), 0, 0.1));
         }
 
         boolean flushable = false;
@@ -76,8 +79,9 @@ public abstract class TickedMonitor extends TickedObject implements Monitor {
 
                try
                {
-                   Double old = getSamplers().put(i, i.sample());
-                   double s = i.sample();
+                   Double v = approachers.computeIfAbsent(i, k -> new ApproachingValue(0.25)).get(i.sample());
+                   Double old = getSamplers().put(i, v);
+                   double s = v;
                    if(old == null || old != s) {
                        changers.put(i, M.lerp(getChanger(i), 1, 0.333));
                        flushable = true;

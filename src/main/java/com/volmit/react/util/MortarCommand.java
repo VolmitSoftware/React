@@ -51,7 +51,7 @@ public abstract class MortarCommand implements ICommand {
         category = "";
         this.node = node;
         this.nodes = new ArrayList<>();
-        this.nodes.add(nodes);
+        this.nodes.addAll(List.of(nodes));
         requiredPermissions = new ArrayList<>();
         children = buildChildren();
         description = "No Description";
@@ -163,7 +163,9 @@ public abstract class MortarCommand implements ICommand {
 
     @Override
     public List<String> getAllNodes() {
-        return getNodes().copy().qadd(getNode());
+        List<String> s = new ArrayList<>(getNodes());
+        s.add(getNode());
+        return s;
     }
 
     @Override

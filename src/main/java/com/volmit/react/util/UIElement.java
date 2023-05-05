@@ -167,7 +167,11 @@ public class UIElement implements Element {
 
     @Override
     public Element addLore(String loreLine) {
-        getLore().add(wrapWordsWithFormatting(loreLine.replaceAll("\\Q\n\\E", " "), 52).split("\\Q\n\\E"));
+        for(String i : wrapWordsWithFormatting(loreLine.replaceAll("\\Q\n\\E", " "), 52).split("\\Q\n\\E"))
+        {
+            getLore().add(i);
+        }
+
         return this;
     }
 
@@ -221,7 +225,7 @@ public class UIElement implements Element {
             ItemStack is = new ItemStack(getMaterial().getMaterial(), getCount(), getEffectiveDurability());
             ItemMeta im = is.getItemMeta();
             im.setDisplayName(getName());
-            im.setLore(getLore().copy());
+            im.setLore(new ArrayList<>(getLore()));
 
             if(isEnchanted()) {
                 im.addEnchant(Enchantment.DURABILITY, 1, true);

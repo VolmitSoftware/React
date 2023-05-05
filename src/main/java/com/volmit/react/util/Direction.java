@@ -238,7 +238,10 @@ public enum Direction {
 
     public static List<Direction> news() {
         List<Direction> d = new ArrayList<>();
-        d.add(N, E, W, S);
+        d.add(N);
+        d.add(E);
+        d.add(W);
+        d.add(S);
         return d;
     }
 
@@ -256,7 +259,12 @@ public enum Direction {
 
     public static List<Direction> udnews() {
         List<Direction> d = new ArrayList<>();
-        d.add(U, D, N, E, W, S);
+d.add(U);
+d.add(D);
+        d.add(N);
+        d.add(E);
+        d.add(W);
+        d.add(S);
         return d;
     }
 

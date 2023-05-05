@@ -18,6 +18,7 @@
 
 package com.volmit.react.util;
 
+import art.arcane.curse.Curse;
 import art.arcane.multiburst.MultiBurst;
 import com.volmit.react.React;
 import org.bukkit.Bukkit;
@@ -25,7 +26,10 @@ import org.bukkit.Bukkit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -53,7 +57,7 @@ public class J {
     }
 
     public static <T> Future<T> a(Callable<T> a) {
-        return MultiBurst.burst.jailbreak().service.submit(a);
+        return ((ExecutorService)Curse.on(MultiBurst.burst).get("service")).submit(a);
     }
 
     public static void attemptAsync(NastyRunnable r) {
@@ -166,6 +170,27 @@ public class J {
         } else {
             afterStartupAsync.add(r);
         }
+    }
+
+    public static <T> T sResult(Supplier<T> t)
+    {
+        if(Bukkit.isPrimaryThread())
+        {
+            return t.get();
+        }
+
+        AtomicBoolean f = new AtomicBoolean(false);
+        AtomicReference<T> r = new AtomicReference<>();
+        J.s(() -> {
+            r.set(t.get());
+            f.set(true);
+        });
+
+        while(!f.get()) {
+            J.sleep(15);
+        }
+
+        return r.get();
     }
 
     /**

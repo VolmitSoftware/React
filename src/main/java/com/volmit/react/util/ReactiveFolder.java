@@ -18,8 +18,6 @@
 
 package com.volmit.react.util;
 
-import art.arcane.amulet.io.FolderWatcher;
-
 import java.io.File;
 import java.util.List;
 

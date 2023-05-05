@@ -19,6 +19,8 @@
 package com.volmit.react.util;
 
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 
 public class RollingSequence extends Average {
     private double median;
@@ -79,7 +81,13 @@ public class RollingSequence extends Average {
     }
 
     private void recalculateMedian() {
-        median = new ArrayList<Double>().forceAdd(values).sort().middleValue();
+        List<Double> l = new ArrayList<>();
+        for(double i : values) {
+            l.add(i);
+        }
+
+        l.sort(Comparator.comparing(d -> d));
+        median = l.get(l.size() / 2);
         dirtyMedian = false;
     }
 

@@ -19,6 +19,8 @@
 package com.volmit.react.util;
 
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 
 public class AtomicRollingSequence extends AtomicAverage {
     private double median;
@@ -84,7 +86,13 @@ public class AtomicRollingSequence extends AtomicAverage {
         {
             a[i] = values.get(i);
         }
-        median = new ArrayList<Double>().forceAdd(a).sort().middleValue();
+        List<Double> l = new ArrayList<Double>();
+        for(double i : a)
+        {
+            l.add(i);
+        }
+        l.sort(Comparator.comparing(d -> d));
+        median = l.get(l.size() / 2);
         dirtyMedian = false;
     }
 

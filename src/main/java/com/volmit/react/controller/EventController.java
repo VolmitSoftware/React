@@ -3,10 +3,7 @@ package com.volmit.react.controller;
 import art.arcane.curse.Curse;
 import com.volmit.react.React;
 import com.volmit.react.api.event.NaughtyRegisteredListener;
-import com.volmit.react.api.sampler.Sampler;
-import com.volmit.react.sampler.SamplerUnknown;
 import com.volmit.react.util.IController;
-import com.volmit.react.util.J;
 import lombok.Data;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
@@ -63,7 +60,7 @@ public class EventController implements IController {
                 if(r != null) {
                     for(int j = 0; j < r.length; j++) {
                         if(!(r[j] instanceof NaughtyRegisteredListener)) {
-                            r[j] = new NaughtyRegisteredListener(r[j].getListener(), r[j].jailbreak().executor,
+                            r[j] = new NaughtyRegisteredListener(r[j].getListener(), Curse.on(r[j]).get("executor"),
                                 r[j].getPriority(), r[j].getPlugin(), r[j].isIgnoringCancelled());
                             inj++;
                         }
@@ -82,7 +79,7 @@ public class EventController implements IController {
                     for(ArrayList<RegisteredListener> j : map.values()) {
                         for(int k = 0; k < j.size(); k++) {
                             if(!(j.get(k) instanceof NaughtyRegisteredListener)) {
-                                j.set(k, new NaughtyRegisteredListener(j.get(k).getListener(), j.get(k).jailbreak().executor,
+                                j.set(k, new NaughtyRegisteredListener(j.get(k).getListener(), Curse.on(j.get(k)).get("executor"),
                                     j.get(k).getPriority(), j.get(k).getPlugin(), j.get(k).isIgnoringCancelled()));
                                 inj++;
                             }
@@ -119,7 +116,7 @@ public class EventController implements IController {
             if(r != null) {
                 for(int j = 0; j < r.length; j++) {
                     if((r[j] instanceof NaughtyRegisteredListener)) {
-                        r[j] = new RegisteredListener(r[j].getListener(), r[j].jailbreak().executor,
+                        r[j] = new RegisteredListener(r[j].getListener(), Curse.on(r[j]).get("executor"),
                             r[j].getPriority(), r[j].getPlugin(), r[j].isIgnoringCancelled());
                         out++;
                     }
@@ -130,7 +127,7 @@ public class EventController implements IController {
                 for(ArrayList<RegisteredListener> j : map.values()) {
                     for(int k = 0; k < j.size(); k++) {
                         if((j.get(k) instanceof NaughtyRegisteredListener)) {
-                            j.set(k, new RegisteredListener(j.get(k).getListener(), j.get(k).jailbreak().executor,
+                            j.set(k, new RegisteredListener(j.get(k).getListener(), Curse.on(j.get(k)).get("executor"),
                                 j.get(k).getPriority(), j.get(k).getPlugin(), j.get(k).isIgnoringCancelled()));
                             out++;
                         }
@@ -145,15 +142,5 @@ public class EventController implements IController {
     @Override
     public int getTickInterval() {
         return 0;
-    }
-
-    @Override
-    public void l(Object l) {
-
-    }
-
-    @Override
-    public void v(Object l) {
-
     }
 }

@@ -3,8 +3,6 @@ package com.volmit.react.api.sampler;
 import com.volmit.react.React;
 import com.volmit.react.util.J;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.TextColor;
-import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
 
 import java.util.concurrent.atomic.AtomicReference;

@@ -7,6 +7,7 @@ import com.volmit.react.api.player.ReactPlayer;
 import com.volmit.react.api.sampler.Sampler;
 import com.volmit.react.util.C;
 import com.volmit.react.util.Form;
+import com.volmit.react.util.J;
 import com.volmit.react.util.M;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.key.Keyed;
@@ -38,6 +39,9 @@ public class ActionBarMonitor extends PlayerMonitor {
     private Map<MonitorGroup, Integer> viewportIndexes;
     private Map<MonitorGroup, Sampler> focusedSamplers;
     private Map<Sampler, Integer> maxLengths;
+    private Map<Sampler, Double> lastValue;
+    private Map<Sampler, Double> trends;
+    private Map<Sampler, Long> lastTimes;
     private int focusUpAnimation = 0;
     private boolean focusDownAnimation = false;
     private boolean tickUp = false;
@@ -49,7 +53,10 @@ public class ActionBarMonitor extends PlayerMonitor {
         sleepDelay = 10;
         viewportIndexes = new HashMap<>();
         focusedSamplers = new HashMap<>();
+        lastValue = new HashMap<>();
         maxLengths = new HashMap<>();
+        lastTimes = new HashMap<>();
+        trends = new HashMap<>();
         sleepingRate = 1000;
         viewportIndex = 0;
         lockedPosition = 0;
@@ -67,7 +74,9 @@ public class ActionBarMonitor extends PlayerMonitor {
 
     @Override
     public void stop() {
-        getPlayer().getPlayer().spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(" "));
+        J.s(() -> getPlayer().getPlayer().spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(" ")), 3);
+        J.s(() -> React.adventure.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.TITLE, Component.space()), 3);
+        J.s(() -> React.adventure.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.SUBTITLE, Component.space()), 3);
         super.stop();
         unregister();
     }
@@ -124,6 +133,95 @@ public class ActionBarMonitor extends PlayerMonitor {
         return s;
     }
 
+    private String colorActivity(String color, double activity) {
+        Color c = new Color(Integer.parseInt(color.substring(1), 16));
+        float[] hsb = Color.RGBtoHSB(c.getRed(), c.getGreen(), c.getBlue(), null);
+        hsb[2] = (float) (hsb[2] * (0.8 + (activity * 0.2)));
+        hsb[1] = (float) (hsb[1] * (0.7 + (activity * 0.3)));
+        return "#" + Integer.toString(Color.getHSBColor(hsb[0], hsb[1], hsb[2]).getRGB(), 16);
+    }
+
+    private String colorTrend(String color, double direction) {
+        Color c = new Color(Integer.parseInt(color.substring(1), 16));
+        float[] hsb = Color.RGBtoHSB(c.getRed(), c.getGreen(), c.getBlue(), null);
+        float red= 0;
+        float blue = 0.5f;
+        float h = hsb[0];
+
+        if(direction > 0)
+        {
+            h = (float)M.lerp(hsb[0], red, direction * 0.4);
+        }
+
+        else if(direction < 0)
+        {
+            direction = -direction;
+            h = (float)M.lerp(hsb[0], blue, direction * 0.4);
+        }
+
+        return "#" + Integer.toString(Color.getHSBColor(h, hsb[1], hsb[2]).getRGB(), 16);
+    }
+
+    private String darkerColor(String color) {
+        Color c = new Color(Integer.parseInt(color.substring(1), 16));
+        float[] hsb = Color.RGBtoHSB(c.getRed(), c.getGreen(), c.getBlue(), null);
+        hsb[2] = (float) (hsb[2] * 0.8);
+        hsb[1] = (float) (hsb[1] * 0.8);
+        return "#" + Integer.toString(Color.getHSBColor(hsb[0], hsb[1], hsb[2]).getRGB(), 16);
+    }
+
+    private Double getSamplerValue(Sampler s) {
+        Double value = samplers.get(s);
+
+        if(value == null) {
+            return value;
+        }
+
+
+        double trend = trends.getOrDefault(s, 0D);
+        if(lastValue.get(s) == null || !value.equals(lastValue.get(s))) {
+            if(lastValue.get(s) != null) {
+                double before = lastValue.get(s);
+                double after = value;
+                double percentChange = (after - before) / before;
+                trend =  (percentChange + (trend * 10)) / 11D;
+            }
+
+            else {
+                trend *=0.99D;
+            }
+
+            lastValue.put(s, value);
+            lastTimes.put(s, System.currentTimeMillis());
+
+        }
+        else {
+            trend *=0.99D;
+        }
+
+        trend = Double.isInfinite(trend) || Double.isNaN(trend) ? 0 : trend;
+        trends.put(s, trend);
+
+
+        return value;
+    }
+
+    private double getActivity(Sampler s, long span)
+    {
+        if(lastTimes.containsKey(s))
+        {
+            long time = System.currentTimeMillis() - span;
+            if(lastTimes.get(s) < time)
+            {
+                return 0;
+            }
+
+            return 1 - ((System.currentTimeMillis() - lastTimes.get(s)) / (double)span);
+        }
+
+        return 0;
+    }
+
     private Component writeSubSamplers() {
         if(!viewportIndexes.containsKey(focus)) {
             viewportIndexes.put(focus, 0);
@@ -154,15 +252,16 @@ public class ActionBarMonitor extends PlayerMonitor {
             }
 
             first = false;
-            Double value = samplers.get(i);
+            Double value = getSamplerValue(i);
             value = value == null ? 0 : value;
 
-            String color = focus.getColor();
+            String color = colorTrend(colorActivity(focus.getColor(), getActivity(i, 5000)), trends.getOrDefault(i, 0D));
+            String colorD = darkerColor(color);
 
-            Style s = (locked && getPlayer().isSneaking() && getFocusedSampler() == i) ? Style.style(TextColor.fromHexString(color), TextDecoration.UNDERLINED)
+            Style s = (locked && getPlayer().isMonitorSneaking() && getFocusedSampler() == i) ? Style.style(TextColor.fromHexString(color), TextDecoration.UNDERLINED)
                 : Style.style(TextColor.fromHexString(color));
-            Style ss = (locked && getPlayer().isSneaking() && getFocusedSampler() == i) ? Style.style(TextColor.fromHexString(color), TextDecoration.UNDERLINED).font(Key.key("uniform"))
-                : Style.style(TextColor.fromHexString(color)).font(Key.key("uniform"));
+            Style ss = (locked && getPlayer().isMonitorSneaking() && getFocusedSampler() == i) ? Style.style(TextColor.fromHexString(color), TextDecoration.UNDERLINED).font(Key.key("uniform"))
+                : Style.style(TextColor.fromHexString(colorD)).font(Key.key("uniform"));
 
             int l = i.format(value).length();
             synchronized(maxLengths) {
@@ -204,15 +303,16 @@ public class ActionBarMonitor extends PlayerMonitor {
 
             first = false;
             Sampler head = getFocusedSampler(i);
-            Double value = samplers.get(head);
+            Double value = getSamplerValue(head);
             value = value == null ? 0 : value;
 
-            String color = i.getColor();
+            String color = colorTrend(colorActivity(i.getColor(), getActivity(head, 5000)), trends.getOrDefault(head, 0D) );
+            String colorD = darkerColor(color);
 
             Style s = focus == i ? Style.style(TextColor.fromHexString(color), TextDecoration.UNDERLINED)
                 : Style.style(TextColor.fromHexString(color));
             Style ss = focus == i ? Style.style(TextColor.fromHexString(color), TextDecoration.UNDERLINED).font(Key.key("uniform"))
-                : Style.style(TextColor.fromHexString(color)).font(Key.key("uniform"));
+                : Style.style(TextColor.fromHexString(colorD)).font(Key.key("uniform"));
             int l = head.format(value).length();
             synchronized(maxLengths) {
                 maxLengths.compute(head, (k,v) -> Math.max(v == null ? 0 : v, l));
@@ -228,7 +328,7 @@ public class ActionBarMonitor extends PlayerMonitor {
     }
 
     MonitorGroup getFocusedHeaderGroup(){
-        return locked ? configuration.getGroups().get(lockedPosition) : getPlayer().isSneaking() ? configuration.getGroups().get(getPlayer().getScrollPosition(configuration.getGroups().size())) : null;
+        return locked ? configuration.getGroups().get(lockedPosition) : getPlayer().isMonitorSneaking() ? configuration.getGroups().get(getPlayer().getScrollPosition(configuration.getGroups().size())) : null;
     }
 
     Sampler getNextFocusedSampler() {
@@ -259,7 +359,7 @@ public class ActionBarMonitor extends PlayerMonitor {
         }
 
         if(focus != null) {
-            if(locked && getPlayer().isSneaking())
+            if(locked && getPlayer().isMonitorSneaking())
             {
                 focusedSamplers.put(focus, getNextFocusedSampler());
             }

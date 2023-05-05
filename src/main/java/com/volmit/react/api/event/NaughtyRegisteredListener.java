@@ -1,9 +1,6 @@
 package com.volmit.react.api.event;
 
-import com.volmit.react.React;
 import com.volmit.react.util.PrecisionStopwatch;
-import org.bukkit.Bukkit;
-import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventException;
 import org.bukkit.event.EventPriority;

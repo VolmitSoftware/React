@@ -20,11 +20,13 @@ package com.volmit.react.util;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class ShurikenQueue<T> implements Queue<T> {
     private List<T> queue;
     private boolean randomPop;
     private boolean reversePop;
+    private static final Random r = new Random();
 
     public ShurikenQueue() {
         clear();
@@ -48,7 +50,7 @@ public class ShurikenQueue<T> implements Queue<T> {
 
     @Override
     public ShurikenQueue<T> queue(List<T> t) {
-        queue.add(t);
+        queue.addAll(t);
         return this;
     }
 
@@ -64,7 +66,7 @@ public class ShurikenQueue<T> implements Queue<T> {
 
     @Override
     public T next() {
-        return reversePop ? queue.popLast() : randomPop ? queue.popRandom() : queue.pop();
+        return reversePop ? queue.remove(queue.size() - 1) : randomPop ? queue.remove(r.nextInt(queue.size())) : queue.remove(0);
     }
 
     @Override

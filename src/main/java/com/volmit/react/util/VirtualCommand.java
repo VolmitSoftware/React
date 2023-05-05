@@ -24,6 +24,7 @@ import org.bukkit.Sound;
 import org.bukkit.command.CommandSender;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -98,12 +99,12 @@ public class VirtualCommand {
 
         String nl = chain.get(0);
 
-        for(List<String> i : children.k()) {
+        for(List<String> i : new ArrayList<>(children.keySet())) {
             for(String j : i) {
                 if(j.equalsIgnoreCase(nl)) {
                     vs.setCommand(chain.get(0));
                     VirtualCommand cmd = children.get(i);
-                    List<String> c = chain.copy();
+                    List<String> c = new ArrayList<>(chain);
                     c.remove(0);
                     if(cmd.hit(sender, c, vs.getCommand())) {
                         if(vs.isPlayer()) {
@@ -140,12 +141,12 @@ public class VirtualCommand {
 
         String nl = chain.get(0);
 
-        for(List<String> i : children.k()) {
+        for(List<String> i : new ArrayList<>(children.keySet())) {
             for(String j : i) {
                 if(j.equalsIgnoreCase(nl)) {
                     vs.setCommand(chain.get(0));
                     VirtualCommand cmd = children.get(i);
-                    List<String> c = chain.copy();
+                    List<String> c = new ArrayList<>(chain);
                     c.remove(0);
                     List<String> v = cmd.hitTab(sender, c, vs.getCommand());
                     if(v != null) {

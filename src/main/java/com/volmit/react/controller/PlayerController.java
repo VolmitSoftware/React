@@ -14,7 +14,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.world.ChunkLoadEvent;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -26,6 +28,11 @@ public class PlayerController implements IController {
     @Override
     public String getName() {
         return "Player";
+    }
+
+    public ReactPlayer getPlayer(Player player)
+    {
+        return getPlayers().get(player);
     }
 
     @Override
@@ -41,7 +48,7 @@ public class PlayerController implements IController {
 
     @Override
     public void stop() {
-        for(Player i : getPlayers().k()) {
+        for(Player i : new ArrayList<>(getPlayers().keySet())) {
             quit(i);
         }
     }
@@ -75,21 +82,11 @@ public class PlayerController implements IController {
 
     @Override
     public int getTickInterval() {
-        return 1000;
-    }
-
-    @Override
-    public void l(Object l) {
-
-    }
-
-    @Override
-    public void v(Object l) {
-
+        return -1;
     }
 
     public void updateMonitors() {
-        for(ReactPlayer i : getPlayers().v()) {
+        for(ReactPlayer i : getPlayers().values()) {
             i.updateMonitors();
         }
     }

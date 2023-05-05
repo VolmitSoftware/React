@@ -135,16 +135,9 @@ public class Area {
      * @return the nearby entities matching the given type
      */
     public Entity[] getNearbyEntities(EntityType type) {
-        List<Entity> e = new ArrayList<>();
-        e.add(getNearbyEntities());
-
-        for(Entity i : e.copy()) {
-            if(!i.getType().equals(type)) {
-                e.remove(i);
-            }
-        }
-
-        return e.toArray(new Entity[e.size()]);
+        List<Entity> e = new ArrayList<>(List.of(getNearbyEntities()));
+        e.removeIf(i -> !i.getType().equals(type));
+        return e.toArray(new Entity[0]);
     }
 
     /**
@@ -155,14 +148,9 @@ public class Area {
      * @return the nearby entities assignable from the given class
      */
     public Entity[] getNearbyEntities(Class<? extends Entity> entityClass) {
-        List<Entity> e = new ArrayList<>();
-        e.add(getNearbyEntities());
+        List<Entity> e = new ArrayList<>(List.of(getNearbyEntities()));
 
-        for(Entity i : e.copy()) {
-            if(!i.getClass().isAssignableFrom(entityClass)) {
-                e.remove(i);
-            }
-        }
+        e.removeIf(i -> !i.getClass().isAssignableFrom(entityClass));
 
         return e.toArray(new Entity[0]);
     }

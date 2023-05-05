@@ -18,6 +18,7 @@
 
 package com.volmit.react.util;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 public class WeightMap<T> extends HashMap<T, Double> {
@@ -55,7 +56,7 @@ public class WeightMap<T> extends HashMap<T, Double> {
 
         modified = false;
         Shrinkwrap<Double> s = new Shrinkwrap<Double>(0D);
-        k().forEach((d) -> s.set(s.get() + 1));
+        new ArrayList<>(keySet()).forEach((d) -> s.set(s.get() + 1));
         lastWeight = s.get();
 
         return lastWeight;

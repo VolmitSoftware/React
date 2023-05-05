@@ -1,10 +1,7 @@
 package com.volmit.react.api.player;
 
-import art.arcane.curse.Curse;
-import com.volmit.react.React;
 import com.volmit.react.api.monitor.ActionBarMonitor;
 import com.volmit.react.configuration.ReactConfiguration;
-import com.volmit.react.util.J;
 import com.volmit.react.util.tick.TickedObject;
 import lombok.Data;
 import org.bukkit.entity.Player;
@@ -12,9 +9,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
-
-import java.util.ArrayList;
-import java.util.List;
+import org.bukkit.util.Vector;
 
 @Data
 public class ReactPlayer extends TickedObject {
@@ -32,8 +27,12 @@ public class ReactPlayer extends TickedObject {
     private float pitch;
     private long lastShift;
     private boolean locked;
+    private Vector velocity;
+    private boolean speedValidForMonitor;
+    private int speedTickCooldown;
 
     public ReactPlayer(Player player) {
+        super("react", player.getUniqueId().toString(), ACTIVE_RATE);
         this.player = player;
         scrollPosition = 0;
         setInterval(ACTIVE_RATE);
@@ -41,11 +40,19 @@ public class ReactPlayer extends TickedObject {
         pitch = 0f;
         yawPosition = 0;
         lastShift = 0;
+        speedTickCooldown = 0;
         locked = false;
+        velocity = new Vector(0, 0, 0);
+        speedValidForMonitor = true;
     }
 
     public void wakeUp() {
         wakeUp(false);
+    }
+
+    public boolean isMonitorSneaking()
+    {
+        return sneaking && isSpeedValidForMonitor() && speedTickCooldown <= 0;
     }
 
     public void wakeUp(boolean children) {
@@ -78,7 +85,6 @@ public class ReactPlayer extends TickedObject {
         wakeUp();
 
         if(e.getTo() != null) {
-
            yaw = e.getTo().getYaw();
            pitch = e.getTo().getPitch();
            float v = ((e.getFrom().getYaw() + 600) - (yaw +  600)) / 5;
@@ -86,23 +92,30 @@ public class ReactPlayer extends TickedObject {
             if(yawPosition <= 0) {
                 yawPosition = 1000000;
             }
+
+            if(e.getFrom().getWorld().getName().equals(e.getTo().getWorld().getName())) {
+                velocity = e.getTo().toVector().subtract(e.getFrom().toVector()).clone().add(velocity);
+            }
         }
     }
 
     @EventHandler
     public void on(PlayerToggleSneakEvent e) {
-        if(!e.getPlayer().equals(player))
-        {
+        if(!e.getPlayer().equals(player)) {
             return;
         }
         sneaking = e.isSneaking();
         wakeUp(true);
 
         if(e.isSneaking()) {
+            if(getPlayer().isFlying())
+            {
+                speedTickCooldown = 9;
+            }
             long ls = lastShift;
-            lastShift = Math.ms();
+            lastShift = System.currentTimeMillis();
 
-            if(lastShift - ls < 250) {
+            if(lastShift - ls < 250 && isMonitorSneaking()) {
                 locked = !locked;
                 lastShift = 0;
             }
@@ -121,19 +134,19 @@ public class ReactPlayer extends TickedObject {
     }
 
     public void onJoin() {
-        setActionBarMonitoring(true);
+
     }
 
     public void onQuit() {
         setActionBarMonitoring(false);
     }
 
-    public boolean isMonitoring() {
+    public boolean isActionBarMonitoring() {
         return actionBarMonitor != null;
     }
 
     public void setActionBarMonitoring(boolean monitoring) {
-        if(monitoring == isMonitoring()) {
+        if(monitoring == isActionBarMonitoring()) {
             return;
         }
 
@@ -159,12 +172,23 @@ public class ReactPlayer extends TickedObject {
         if(getInterval() > ACTIVE_RATE && System.currentTimeMillis() - lastActive > INACTIVE_DELAY) {
             setInterval(INACTIVE_RATE);
         }
+
+        velocity.multiply(0.75);
+        velocity.setX(velocity.getX() < 0.01 && velocity.getX() > -0.01 ? 0 : velocity.getX());
+        velocity.setY(velocity.getY() < 0.01 && velocity.getY() > -0.01 ? 0 : velocity.getY());
+        velocity.setZ(velocity.getZ() < 0.01 && velocity.getZ() > -0.01 ? 0 : velocity.getZ());
+        speedTickCooldown--;
+        speedValidForMonitor = velocity.getY() > -1;
     }
 
     public void updateMonitors() {
-        if(isMonitoring()) {
+        if(isActionBarMonitoring()) {
             setActionBarMonitoring(false);
             setActionBarMonitoring(true);
         }
+    }
+
+    public void toggleActionBar() {
+        setActionBarMonitoring(!isActionBarMonitoring());
     }
 }

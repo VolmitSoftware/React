@@ -20,25 +20,25 @@ public class SamplerTicksPerSecond extends ReactTickedSampler {
         this.ticks = new AtomicInteger(0);
         this.lastTickDuration = new AtomicLong(50);
         this.lastTickDurationSync = new AtomicLong(50);
-        this.lastTick = new AtomicLong(Math.ms());
+        this.lastTick = new AtomicLong(System.currentTimeMillis());
         stickid = J.sr(this::onSyncTick, 0);
     }
 
     private void onSyncTick() {
-        lastTick.set(Math.ms());
+        lastTick.set(System.currentTimeMillis());
         ticks.incrementAndGet();
-        lastTickDurationSync.set(Math.ms() - lastTick.get());
+        lastTickDurationSync.set(System.currentTimeMillis() - lastTick.get());
     }
 
     @Override
     public double onSample() {
-        lastTickDuration.set(Math.ms() - lastTick.get());
+        lastTickDuration.set(System.currentTimeMillis() - lastTick.get());
         return 1000D / Math.max(50D, Math.max((double)lastTickDuration.get(), (double)lastTickDurationSync.get()));
     }
 
     @Override
     public String formattedValue(double t) {
-        long dur = Math.ms() - lastTick.get();
+        long dur = System.currentTimeMillis() - lastTick.get();
 
         if(dur > 3000) {
             return Form.durationSplit(dur, 1)[0];
@@ -53,7 +53,7 @@ public class SamplerTicksPerSecond extends ReactTickedSampler {
 
     @Override
     public String formattedSuffix(double t) {
-        long dur = Math.ms() - lastTick.get();
+        long dur = System.currentTimeMillis() - lastTick.get();
 
         if(dur > 3000) {
             return Form.durationSplit(dur, 1)[1];

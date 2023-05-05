@@ -15,6 +15,7 @@ import lombok.Data;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
@@ -54,9 +55,7 @@ public class SampleController implements IController {
                 .map(i -> i.method("sample"))
                 .filter(i -> ((Method)i.getMember()).getReturnType() == double.class)
                 .filter(i -> i.isPublic() && !i.isStatic() && !i.isFinal() && !i.isAbstract() && !i.isSynchronized())
-
                 .filter(i -> Arrays.stream(i.getMember().getDeclaringClass().getDeclaredAnnotations())
-
                     .anyMatch(j -> j.annotationType().getSimpleName().equals("XReactSampler")
                         && Curse.on(j.annotationType()).optionalMethod("id").isPresent()
                         && ((Method)Curse.on(j.annotationType()).method("id").getMember()).getReturnType() == String.class
@@ -66,9 +65,15 @@ public class SampleController implements IController {
                         && ((Method)Curse.on(j.annotationType()).method("suffix").getMember()).getReturnType() == String.class
                     )).map(i -> Curse.on(i.getMember().getDeclaringClass()).construct())
                 .map(i -> new ExternalSampler(i, i.method("sample"),
-                    Curse.on(Arrays.stream(i.type().getDeclaredAnnotations()).where(j -> j.annotationType().getSimpleName().equals("XReactSampler")).findFirst().get()).method("id").invoke(),
-                    Curse.on(Arrays.stream(i.type().getDeclaredAnnotations()).where(j -> j.annotationType().getSimpleName().equals("XReactSampler")).findFirst().get()).method("interval").invoke(),
-                    Curse.on(Arrays.stream(i.type().getDeclaredAnnotations()).where(j -> j.annotationType().getSimpleName().equals("XReactSampler")).findFirst().get()).method("suffix").invoke())));
+                    Curse.on(Arrays.stream(i.type().getDeclaredAnnotations())
+                        .filter(j -> j.annotationType().getSimpleName().equals("XReactSampler")).findFirst()
+                        .get()).method("id").invoke(),
+                    Curse.on(Arrays.stream(i.type().getDeclaredAnnotations())
+                        .filter(j -> j.annotationType().getSimpleName().equals("XReactSampler")).findFirst()
+                        .get()).method("interval").invoke(),
+                    Curse.on(Arrays.stream(i.type().getDeclaredAnnotations())
+                        .filter(j -> j.annotationType().getSimpleName().equals("XReactSampler")).findFirst()
+                        .get()).method("suffix").invoke())));
         }
         AtomicInteger m = new AtomicInteger();
         samplers.forEach(i -> {
@@ -89,11 +94,14 @@ public class SampleController implements IController {
     public void start() {
         samplers = new HashMap<>();
         samplers.put(SamplerUnknown.ID, new SamplerUnknown());
-        JarScanner j = new JarScanner(React.instance.jar(), "com.volmit.react.sampler");
+        String p = React.instance.jar().getAbsolutePath();
+        p = p.replaceAll("\\Q.jar.jar\\E", ".jar");
+
+        JarScanner j = new JarScanner(new File(p), "com.volmit.react.sampler");
         try {
             j.scan();
             j.getClasses().stream()
-                .where(i -> i.isAssignableFrom(Sampler.class) || Sampler.class.isAssignableFrom(i))
+                .filter(i -> i.isAssignableFrom(Sampler.class) || Sampler.class.isAssignableFrom(i))
                 .map((i) -> {
                     try
                     {
@@ -115,13 +123,14 @@ public class SampleController implements IController {
             throw new RuntimeException(e);
         }
 
-        J.s(() -> React.burst.lazy(this::scanForExternalSamplers), 0);
+        //J.s(() -> React.burst.lazy(this::scanForExternalSamplers), 0);
     }
 
     public void postStart()
     {
         samplers.values().forEach(Sampler::start);
         React.info("Registered " + samplers.size() + " Samplers");
+        React.instance.getPlayerController().updateMonitors();
     }
 
     @Override
@@ -136,16 +145,6 @@ public class SampleController implements IController {
 
     @Override
     public int getTickInterval() {
-        return 1000;
-    }
-
-    @Override
-    public void l(Object l) {
-
-    }
-
-    @Override
-    public void v(Object l) {
-
+        return -1;
     }
 }

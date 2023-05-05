@@ -1,33 +1,33 @@
 package com.volmit.react;
 
 import art.arcane.multiburst.MultiBurst;
-import com.volmit.react.api.monitor.ActionBarMonitor;
+import com.volmit.react.action.ActionPurgeEntities;
+import com.volmit.react.api.model.AreaActionParams;
+import com.volmit.react.api.model.FilterParams;
+import com.volmit.react.command.CommandReact;
+import com.volmit.react.controller.ActionController;
 import com.volmit.react.controller.EventController;
 import com.volmit.react.controller.PlayerController;
 import com.volmit.react.controller.SampleController;
-import com.volmit.react.sampler.SamplerChunksLoaded;
-import com.volmit.react.sampler.SamplerEntities;
-import com.volmit.react.sampler.SamplerMemoryGarbage;
-import com.volmit.react.sampler.SamplerMemoryPressure;
-import com.volmit.react.sampler.SamplerMemoryUsed;
-import com.volmit.react.sampler.SamplerMemoryUsedAfterGC;
-import com.volmit.react.sampler.SamplerProcessorProcessLoad;
-import com.volmit.react.sampler.SamplerProcessorSystemLoad;
-import com.volmit.react.sampler.SamplerTicksPerSecond;
 import com.volmit.react.util.C;
+import com.volmit.react.util.Command;
 import com.volmit.react.util.Control;
+import com.volmit.react.util.ControllerTicker;
 import com.volmit.react.util.Instance;
-import com.volmit.react.util.J;
 import com.volmit.react.util.VolmitPlugin;
 import com.volmit.react.util.tick.Ticker;
 import lombok.Getter;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import org.bukkit.Bukkit;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.entity.EntityType;
+
+import java.io.File;
 
 @Getter
 public class React extends VolmitPlugin {
+    @Command
+    private CommandReact commandReact = new CommandReact();
+
     @Instance
     public static React instance;
     public static Thread serverThread;
@@ -41,24 +41,37 @@ public class React extends VolmitPlugin {
     private PlayerController playerController;
     @Control
     private EventController eventController;
+    @Control
+    private ActionController actionController;
+
+    public React() {
+         instance = this;
+    }
 
     @Override
     public void onLoad() {
+        instance = this;
         if(Bukkit.isPrimaryThread()) {
             serverThread = Thread.currentThread();
         }
+        super.onLoad();
     }
 
     @Override
     public void onEnable() {
+        instance = this;
         burst = new MultiBurst("React", Thread.MIN_PRIORITY);
         if(Bukkit.isPrimaryThread()) {
             serverThread = Thread.currentThread();
         }
-        instance = this;
         ticker = new Ticker(burst);
         adventure = BukkitAudiences.create(this);
         super.onEnable();
+        ticker.register(new ControllerTicker(actionController, 100));
+    }
+
+    public File jar() {
+        return getFile();
     }
 
     @Override
@@ -117,5 +130,10 @@ public class React extends VolmitPlugin {
 
     public Ticker getTicker() {
         return ticker;
+    }
+
+    public void reload() {
+        stop();
+        start();
     }
 }

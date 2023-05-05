@@ -5,6 +5,7 @@ import com.volmit.react.api.monitor.configuration.MonitorGroup;
 import com.volmit.react.sampler.SamplerEventListeners;
 import com.volmit.react.sampler.SamplerEventHandlesPerTick;
 import com.volmit.react.sampler.SamplerEventTime;
+import com.volmit.react.sampler.SamplerMemoryGarbage;
 import com.volmit.react.sampler.SamplerPlayers;
 import com.volmit.react.sampler.SamplerProcessorOutsideLoad;
 import com.volmit.react.sampler.SamplerChunksLoaded;
@@ -54,11 +55,6 @@ public class ReactConfiguration {
             .sampler(SamplerEventHandlesPerTick.ID)
             .sampler(SamplerEventTime.ID)
             .sampler(SamplerEventListeners.ID)
-            .build())
-        .group(MonitorGroup.builder()
-            .name("Other")
-            .color("#f2f202")
-            .sampler("some-sampler")
             .build())
         .build();
 

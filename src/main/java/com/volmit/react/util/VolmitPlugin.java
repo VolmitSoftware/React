@@ -40,6 +40,7 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -197,7 +198,7 @@ public abstract class VolmitPlugin extends JavaPlugin implements Listener {
             }
         }
 
-        return g.withoutDuplicates();
+        return new ArrayList<>(new HashSet<>(g));
     }
 
     private List<org.bukkit.permissions.Permission> computePermissions(MortarPermission p) {
@@ -296,7 +297,7 @@ public abstract class VolmitPlugin extends JavaPlugin implements Listener {
             }
         }
 
-        cachedControllers = controllers.v();
+        cachedControllers = new ArrayList<>(controllers.values());
     }
 
     public IController getController(Class<? extends IController> c) {
@@ -393,12 +394,12 @@ public abstract class VolmitPlugin extends JavaPlugin implements Listener {
             chain.add(i.trim());
         }
 
-        for (List<String> i : commands.k()) {
+        for (List<String> i : new ArrayList<>(commands.keySet())) {
             for (String j : i) {
                 if (j.equalsIgnoreCase(alias)) {
                     VirtualCommand cmd = commands.get(i);
 
-                    List<String> v = cmd.hitTab(sender, chain.copy(), alias);
+                    List<String> v = cmd.hitTab(sender, new ArrayList<>(chain), alias);
                     if (v != null) {
                         return v;
                     }
@@ -415,15 +416,14 @@ public abstract class VolmitPlugin extends JavaPlugin implements Listener {
             return false;
         }
 
-        List<String> chain = new ArrayList<>();
-        chain.add(args);
+        List<String> chain = new ArrayList<>(List.of(args));
 
-        for (List<String> i : commands.k()) {
+        for (List<String> i : new ArrayList<>(commands.keySet())) {
             for (String j : i) {
                 if (j.equalsIgnoreCase(label)) {
                     VirtualCommand cmd = commands.get(i);
 
-                    if (cmd.hit(sender, chain.copy(), label)) {
+                    if (cmd.hit(sender, new ArrayList<>(chain), label)) {
                         return true;
                     }
                 }
@@ -436,15 +436,14 @@ public abstract class VolmitPlugin extends JavaPlugin implements Listener {
     public boolean lecternCommand(CommandSender sender, String[] args) {
         String label = args.length > 0 ? args[0] : "nosdfdgsdf";
         args = args.length > 0 ? Arrays.copyOfRange(args, 1, args.length) : args;
-        List<String> chain = new ArrayList<>();
-        chain.add(args);
+        List<String> chain = new ArrayList<>(List.of(args));
 
-        for (List<String> i : commands.k()) {
+        for (List<String> i : new ArrayList<>(commands.keySet())) {
             for (String j : i) {
                 if (j.equalsIgnoreCase(label)) {
                     VirtualCommand cmd = commands.get(i);
 
-                    if (cmd.hit(sender, chain.copy(), label)) {
+                    if (cmd.hit(sender, new ArrayList<>(chain), label)) {
                         return true;
                     }
                 }
@@ -538,7 +537,7 @@ public abstract class VolmitPlugin extends JavaPlugin implements Listener {
         if (bad) {
             return;
         }
-        for (VirtualCommand i : commands.v()) {
+        for (VirtualCommand i : new ArrayList<>(commands.values())) {
             try {
                 unregisterCommand(i.getCommand());
             } catch (Throwable ignored) {
@@ -558,7 +557,7 @@ public abstract class VolmitPlugin extends JavaPlugin implements Listener {
     }
 
     private void stopControllers() {
-        for (IController i : controllers.v()) {
+        for (IController i : new ArrayList<>(controllers.values())) {
             try {
                 unregisterListener(i);
                 i.stop();
@@ -571,18 +570,16 @@ public abstract class VolmitPlugin extends JavaPlugin implements Listener {
     }
 
     public File getDataFile(String... strings) {
-        List<String> s = new ArrayList<>();
-        s.add(strings);
-        File f = new File(getDataFolder(), s.toString(File.separator));
+        List<String> s = new ArrayList<>(List.of(strings));
+        File f = new File(getDataFolder(), String.join(File.separator, s));
         f.getParentFile().mkdirs();
         return f;
     }
 
     public File getDataFileList(String pre, String[] strings) {
-        List<String> v = new ArrayList<>();
-        v.add(strings);
+        List<String> v = new ArrayList<>(List.of(strings));
         v.add(0, pre);
-        File f = new File(getDataFolder(), v.toString(File.separator));
+        File f = new File(getDataFolder(), String.join(File.separator, v));
         f.getParentFile().mkdirs();
         return f;
     }
@@ -592,19 +589,17 @@ public abstract class VolmitPlugin extends JavaPlugin implements Listener {
             return super.getDataFolder();
         }
 
-        List<String> s = new ArrayList<>();
-        s.add(strings);
-        File f = new File(getDataFolder(), s.toString(File.separator));
+        List<String> s = new ArrayList<>(List.of(strings));
+        File f = new File(getDataFolder(), String.join(File.separator, s));
         f.mkdirs();
 
         return f;
     }
 
     public File getDataFolderList(String pre, String[] strings) {
-        List<String> v = new ArrayList<>();
-        v.add(strings);
+        List<String> v = new ArrayList<>(List.of(strings));
         v.add(0, pre);
-        File f = new File(getDataFolder(), v.toString(File.separator));
+        File f = new File(getDataFolder(), String.join(File.separator, v));
         f.mkdirs();
 
         return f;

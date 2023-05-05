@@ -35,7 +35,7 @@ public class O<T> implements Observable<T> {
         T x = t;
         this.t = t;
 
-        if(observers != null && observers.isNotEmpty()) {
+        if(observers != null && !observers.isEmpty()) {
             observers.forEach((o) -> o.onChanged(x, t));
         }
 

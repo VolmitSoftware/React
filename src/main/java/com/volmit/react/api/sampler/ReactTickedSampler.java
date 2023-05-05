@@ -33,7 +33,7 @@ public abstract class ReactTickedSampler extends TickedObject implements Sampler
 
     @Override
     public double sample() {
-        lastSample.set(Math.ms());
+        lastSample.set(System.currentTimeMillis());
 
         if(sleeping) {
             setSleeping(false);
@@ -56,7 +56,7 @@ public abstract class ReactTickedSampler extends TickedObject implements Sampler
             return;
         }
 
-        if(Math.ms() - lastSample.get() > 1000) {
+        if(System.currentTimeMillis() - lastSample.get() > 1000) {
             setSleeping(true);
         }
 

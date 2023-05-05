@@ -1,9 +1,9 @@
 package com.volmit.react.sampler;
 
-import art.arcane.amulet.util.Platform;
 import com.volmit.react.api.sampler.ReactCachedSampler;
 import com.volmit.react.util.AsyncRequest;
 import com.volmit.react.util.Form;
+import com.volmit.react.util.Platform;
 
 public class SamplerProcessorSystemLoad extends ReactCachedSampler {
     public static final String ID = "processor-system-load";

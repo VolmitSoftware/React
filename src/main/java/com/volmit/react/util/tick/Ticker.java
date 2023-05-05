@@ -32,14 +32,15 @@ import com.volmit.react.util.J;
 import com.volmit.react.util.Looper;
 import com.volmit.react.util.PrecisionStopwatch;
 import com.volmit.react.util.RollingSequence;
-import manifold.ext.rt.api.Self;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.DoubleConsumer;
 
 public class Ticker {
+    private final Random random;
     private final List<Ticked> ticklist;
     private final List<Ticked> newTicks;
     private final List<String> removeTicks;
@@ -51,6 +52,7 @@ public class Ticker {
     private final Looper looper;
 
     public Ticker(MultiBurst burst) {
+        random = new Random();
         this.burst = burst;
         this.closed = false;
         this.ticklist = new ArrayList<>(4096);
@@ -131,20 +133,20 @@ public class Ticker {
 
         e.complete();
 
-        synchronized(newTicks) {
-            while(newTicks.isNotEmpty()) {
+        synchronized (newTicks) {
+            while (!newTicks.isEmpty()) {
                 tc.incrementAndGet();
-                ticklist.add(newTicks.popRandom());
+                ticklist.add(newTicks.remove(random.nextInt(newTicks.size())));
             }
         }
 
-        synchronized(removeTicks) {
-            while(removeTicks.isNotEmpty()) {
+        synchronized (removeTicks) {
+            while (!removeTicks.isEmpty()) {
                 tc.incrementAndGet();
-                String id = removeTicks.popRandom();
+                String id = removeTicks.remove(random.nextInt(removeTicks.size()));
 
-                for(int i = 0; i < ticklist.size(); i++) {
-                    if(ticklist.get(i).getId().equals(id)) {
+                for (int i = 0; i < ticklist.size(); i++) {
+                    if (ticklist.get(i).getId().equals(id)) {
                         ticklist.remove(i);
                         break;
                     }

@@ -17,7 +17,7 @@ import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
 
 import java.util.concurrent.atomic.AtomicInteger;
-
+//
 public class SamplerChunksLoaded extends ReactCachedSampler implements Listener {
     public static final String ID = "chunks-loaded";
     private final ChronoLatch realCheckUpdate;
@@ -77,7 +77,7 @@ public class SamplerChunksLoaded extends ReactCachedSampler implements Listener 
 
     @Override
     public String formattedValue(double t) {
-        return Form.f(t);
+        return Form.f(Math.round(t));
     }
 
     @Override
