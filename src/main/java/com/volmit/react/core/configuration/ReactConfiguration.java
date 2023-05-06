@@ -1,0 +1,94 @@
+package com.volmit.react.core.configuration;
+
+import com.google.gson.Gson;
+import com.volmit.react.React;
+import com.volmit.react.api.monitor.configuration.MonitorConfiguration;
+import com.volmit.react.api.monitor.configuration.MonitorGroup;
+import com.volmit.react.content.sampler.SamplerEventListeners;
+import com.volmit.react.content.sampler.SamplerEventHandlesPerTick;
+import com.volmit.react.content.sampler.SamplerEventTime;
+import com.volmit.react.content.sampler.SamplerPlayers;
+import com.volmit.react.content.sampler.SamplerProcessorOutsideLoad;
+import com.volmit.react.content.sampler.SamplerChunksLoaded;
+import com.volmit.react.content.sampler.SamplerEntities;
+import com.volmit.react.content.sampler.SamplerMemoryPressure;
+import com.volmit.react.content.sampler.SamplerMemoryUsedAfterGC;
+import com.volmit.react.content.sampler.SamplerProcessorProcessLoad;
+import com.volmit.react.content.sampler.SamplerProcessorSystemLoad;
+import com.volmit.react.content.sampler.SamplerReactTasksPerSecond;
+import com.volmit.react.content.sampler.SamplerReactTickTime;
+import com.volmit.react.content.sampler.SamplerTickTime;
+import com.volmit.react.content.sampler.SamplerTicksPerSecond;
+import com.volmit.react.util.IO;
+import com.volmit.react.util.JSONObject;
+import lombok.Data;
+
+import java.io.File;
+import java.io.IOException;
+
+@Data
+public class ReactConfiguration {
+    private static ReactConfiguration configuration;
+
+    private boolean verbose = false;
+    private MonitorConfiguration monitorConfiguration = MonitorConfiguration.builder()
+        .group(MonitorGroup.builder()
+            .name("CPU")
+            .color("#00ff73")
+            .sampler(SamplerTicksPerSecond.ID)
+            .sampler(SamplerTickTime.ID)
+            .sampler(SamplerProcessorProcessLoad.ID)
+            .sampler(SamplerProcessorSystemLoad.ID)
+            .sampler(SamplerProcessorOutsideLoad.ID)
+            .sampler(SamplerReactTickTime.ID)
+            .sampler(SamplerReactTasksPerSecond.ID)
+            .build())
+        .group(MonitorGroup.builder()
+            .name("Memory")
+            .color("#ee00ff")
+            .sampler(SamplerMemoryUsedAfterGC.ID)
+            .sampler(SamplerMemoryPressure.ID)
+            .build())
+        .group(MonitorGroup.builder()
+            .name("World")
+            .color("#42cbf5")
+            .sampler(SamplerChunksLoaded.ID)
+            .sampler(SamplerEntities.ID)
+            .sampler(SamplerPlayers.ID)
+            .build())
+        .group(MonitorGroup.builder()
+            .name("Bukkit")
+            .color("#f25a02")
+            .sampler(SamplerEventHandlesPerTick.ID)
+            .sampler(SamplerEventTime.ID)
+            .sampler(SamplerEventListeners.ID)
+            .build())
+        .build();
+
+    public static ReactConfiguration get() {
+        if (configuration == null) {
+            ReactConfiguration dummy = new ReactConfiguration();
+            File l = React.instance.getDataFile("config.json");
+
+            if (!l.exists()) {
+                try {
+                    IO.writeAll(l, new JSONObject(new Gson().toJson(dummy)).toString(4));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    configuration = dummy;
+                    return dummy;
+                }
+            }
+
+            try {
+                configuration = new Gson().fromJson(IO.readAll(l), ReactConfiguration.class);
+                IO.writeAll(l, new JSONObject(new Gson().toJson(configuration)).toString(4));
+            } catch (IOException e) {
+                e.printStackTrace();
+                configuration = new ReactConfiguration();
+            }
+        }
+
+        return configuration;
+    }
+}

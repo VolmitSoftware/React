@@ -1,8 +1,10 @@
 package com.volmit.react.api.player;
 
+import com.volmit.react.React;
 import com.volmit.react.api.monitor.ActionBarMonitor;
-import com.volmit.react.configuration.PlayerSettings;
-import com.volmit.react.configuration.ReactConfiguration;
+import com.volmit.react.core.configuration.PlayerSettings;
+import com.volmit.react.core.configuration.ReactConfiguration;
+import com.volmit.react.util.MortarSender;
 import com.volmit.react.util.tick.TickedObject;
 import lombok.Data;
 import org.bukkit.entity.Player;
@@ -47,10 +49,15 @@ public class ReactPlayer extends TickedObject {
         locked = false;
         velocity = new Vector(0, 0, 0);
         speedValidForMonitor = true;
+
+        if(settings.isActionBarMonitoring()) {
+            setActionBarMonitoring(true);
+            new MortarSender(getPlayer(), React.instance.getTag()).sendMessage("Monitor Enabled");
+        }
     }
 
     public void saveSettings() {
-
+        PlayerSettings.saveSettings(player.getUniqueId(), settings);
     }
 
     public void wakeUp() {
@@ -167,6 +174,9 @@ public class ReactPlayer extends TickedObject {
                 .sample(ReactConfiguration.get().getMonitorConfiguration());
             actionBarMonitor.start();
         }
+
+        getSettings().setActionBarMonitoring(isActionBarMonitoring());
+        saveSettings();
     }
 
     @Override

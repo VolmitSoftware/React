@@ -76,9 +76,7 @@ public abstract class TickedMonitor extends TickedObject implements Monitor {
                 continue;
             }
            if(visible.get(i) != null && visible.get(i)) {
-
-               try
-               {
+               try {
                    Double v = approachers.computeIfAbsent(i, k -> new ApproachingValue(0.25)).get(i.sample());
                    Double old = getSamplers().put(i, v);
                    double s = v;

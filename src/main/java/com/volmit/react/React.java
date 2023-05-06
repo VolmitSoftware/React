@@ -1,14 +1,11 @@
 package com.volmit.react;
 
 import art.arcane.multiburst.MultiBurst;
-import com.volmit.react.action.ActionPurgeEntities;
-import com.volmit.react.api.model.AreaActionParams;
-import com.volmit.react.api.model.FilterParams;
-import com.volmit.react.command.CommandReact;
-import com.volmit.react.controller.ActionController;
-import com.volmit.react.controller.EventController;
-import com.volmit.react.controller.PlayerController;
-import com.volmit.react.controller.SampleController;
+import com.volmit.react.core.command.CommandReact;
+import com.volmit.react.core.controller.ActionController;
+import com.volmit.react.core.controller.EventController;
+import com.volmit.react.core.controller.PlayerController;
+import com.volmit.react.core.controller.SampleController;
 import com.volmit.react.util.C;
 import com.volmit.react.util.Command;
 import com.volmit.react.util.Control;
@@ -19,7 +16,6 @@ import com.volmit.react.util.tick.Ticker;
 import lombok.Getter;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import org.bukkit.Bukkit;
-import org.bukkit.entity.EntityType;
 
 import java.io.File;
 
