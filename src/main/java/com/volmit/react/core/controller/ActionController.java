@@ -57,7 +57,7 @@ public class ActionController implements IController {
         String p = React.instance.jar().getAbsolutePath();
         p = p.replaceAll("\\Q.jar.jar\\E", ".jar");
 
-        JarScanner j = new JarScanner(new File(p), "com.volmit.react.action");
+        JarScanner j = new JarScanner(new File(p), "com.volmit.react.content.action");
         try {
             j.scan();
             j.getClasses().stream()

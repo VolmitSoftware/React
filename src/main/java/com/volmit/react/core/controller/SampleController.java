@@ -92,7 +92,7 @@ public class SampleController implements IController {
         String p = React.instance.jar().getAbsolutePath();
         p = p.replaceAll("\\Q.jar.jar\\E", ".jar");
 
-        JarScanner j = new JarScanner(new File(p), "com.volmit.react.sampler");
+        JarScanner j = new JarScanner(new File(p), "com.volmit.react.content.sampler");
         try {
             j.scan();
             j.getClasses().stream()
