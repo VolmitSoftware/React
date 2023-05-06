@@ -4,12 +4,19 @@ import com.volmit.react.React;
 import com.volmit.react.util.J;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.bukkit.inventory.ItemStack;
 
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 public interface Sampler {
     double sample();
+
+    default Material getIcon()
+    {
+        return Material.SLIME_BALL;
+    }
 
     default String format(double t) {
         return formattedValue(t) + " " + formattedSuffix(t);

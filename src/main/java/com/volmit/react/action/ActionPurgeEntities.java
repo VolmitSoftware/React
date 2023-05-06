@@ -56,6 +56,7 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
             for(Chunk i : c) {
                 purge(i, ticket.getParams());
             }
+
             ticket.addWork(c.size());
         }
     }

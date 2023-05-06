@@ -110,8 +110,6 @@ public class ActionController implements IController {
 
     @Override
     public void tick() {
-        React.info("Action Queue: " + ticketQueue.size() + " Queued, " + ticketRuntime.size() + " Running");
-
        synchronized(ticketQueue) {
            if(!ticketQueue.isEmpty() && ticketRuntime.size() < Math.max(3, Runtime.getRuntime().availableProcessors()/4)) {
                ActionTicket<?> t = ticketQueue.remove(0);

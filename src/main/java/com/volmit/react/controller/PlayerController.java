@@ -30,8 +30,7 @@ public class PlayerController implements IController {
         return "Player";
     }
 
-    public ReactPlayer getPlayer(Player player)
-    {
+    public ReactPlayer getPlayer(Player player) {
         return getPlayers().get(player);
     }
 
@@ -64,12 +63,20 @@ public class PlayerController implements IController {
     }
 
     public void join(Player e) {
+        if(!e.hasPermission("react.use")) {
+            return;
+        }
+
         ReactPlayer p = new ReactPlayer(e);
         players.put(e, p);
         p.onJoin();
     }
 
     public void quit(Player e) {
+        if(!e.hasPermission("react.use")) {
+            return;
+        }
+
         ReactPlayer p = players.remove(e);
         p.onQuit();
         p.unregister();

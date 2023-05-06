@@ -1,6 +1,7 @@
 package com.volmit.react.api.player;
 
 import com.volmit.react.api.monitor.ActionBarMonitor;
+import com.volmit.react.configuration.PlayerSettings;
 import com.volmit.react.configuration.ReactConfiguration;
 import com.volmit.react.util.tick.TickedObject;
 import lombok.Data;
@@ -17,6 +18,7 @@ public class ReactPlayer extends TickedObject {
     private static final int INACTIVE_RATE = 1000;
     private static final int INACTIVE_DELAY = 10000;
 
+    private PlayerSettings settings;
     private final Player player;
     private ActionBarMonitor actionBarMonitor;
     private int scrollPosition;
@@ -33,6 +35,7 @@ public class ReactPlayer extends TickedObject {
 
     public ReactPlayer(Player player) {
         super("react", player.getUniqueId().toString(), ACTIVE_RATE);
+        settings = PlayerSettings.get(player.getUniqueId());
         this.player = player;
         scrollPosition = 0;
         setInterval(ACTIVE_RATE);
@@ -44,6 +47,10 @@ public class ReactPlayer extends TickedObject {
         locked = false;
         velocity = new Vector(0, 0, 0);
         speedValidForMonitor = true;
+    }
+
+    public void saveSettings() {
+
     }
 
     public void wakeUp() {

@@ -85,7 +85,7 @@ public class SamplerEntities extends ReactCachedSampler implements Listener {
 
     @Override
     public String formattedValue(double t) {
-        return Form.f(t);
+        return Form.f(Math.round(t));
     }
 
     @Override

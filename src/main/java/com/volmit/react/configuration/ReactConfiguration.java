@@ -1,5 +1,7 @@
 package com.volmit.react.configuration;
 
+import com.google.gson.Gson;
+import com.volmit.react.React;
 import com.volmit.react.api.monitor.configuration.MonitorConfiguration;
 import com.volmit.react.api.monitor.configuration.MonitorGroup;
 import com.volmit.react.sampler.SamplerEventListeners;
@@ -18,12 +20,18 @@ import com.volmit.react.sampler.SamplerReactTasksPerSecond;
 import com.volmit.react.sampler.SamplerReactTickTime;
 import com.volmit.react.sampler.SamplerTickTime;
 import com.volmit.react.sampler.SamplerTicksPerSecond;
+import com.volmit.react.util.IO;
+import com.volmit.react.util.JSONObject;
 import lombok.Data;
+
+import java.io.File;
+import java.io.IOException;
 
 @Data
 public class ReactConfiguration {
     private static ReactConfiguration configuration;
 
+    private boolean verbose = false;
     private MonitorConfiguration monitorConfiguration = MonitorConfiguration.builder()
         .group(MonitorGroup.builder()
             .name("CPU")
@@ -59,8 +67,27 @@ public class ReactConfiguration {
         .build();
 
     public static ReactConfiguration get() {
-        if(configuration == null) {
-            configuration = new ReactConfiguration();
+        if (configuration == null) {
+            ReactConfiguration dummy = new ReactConfiguration();
+            File l = React.instance.getDataFile("config.json");
+
+            if (!l.exists()) {
+                try {
+                    IO.writeAll(l, new JSONObject(new Gson().toJson(dummy)).toString(4));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    configuration = dummy;
+                    return dummy;
+                }
+            }
+
+            try {
+                configuration = new Gson().fromJson(IO.readAll(l), ReactConfiguration.class);
+                IO.writeAll(l, new JSONObject(new Gson().toJson(configuration)).toString(4));
+            } catch (IOException e) {
+                e.printStackTrace();
+                configuration = new ReactConfiguration();
+            }
         }
 
         return configuration;
