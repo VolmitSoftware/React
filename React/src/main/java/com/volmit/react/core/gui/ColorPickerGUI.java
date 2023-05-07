@@ -1,12 +1,12 @@
 package com.volmit.react.core.gui;
 
+import com.volmit.react.util.data.MaterialBlock;
 import com.volmit.react.util.inventorygui.CustomUIElement;
+import com.volmit.react.util.inventorygui.UIElement;
+import com.volmit.react.util.inventorygui.UIStaticDecorator;
+import com.volmit.react.util.inventorygui.UIWindow;
+import com.volmit.react.util.inventorygui.WindowResolution;
 import com.volmit.react.util.scheduling.J;
-import com.volmit.react.legacyutil.MaterialBlock;
-import com.volmit.react.legacyutil.UIElement;
-import com.volmit.react.legacyutil.UIStaticDecorator;
-import com.volmit.react.legacyutil.UIWindow;
-import com.volmit.react.legacyutil.WindowResolution;
 import com.volmit.react.util.data.TinyColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;

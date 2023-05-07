@@ -1,6 +1,6 @@
 package com.volmit.react.api.event;
 
-import com.volmit.react.legacyutil.PrecisionStopwatch;
+import art.arcane.chrono.PrecisionStopwatch;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventException;
 import org.bukkit.event.EventPriority;

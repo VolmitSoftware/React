@@ -3,8 +3,8 @@ package com.volmit.react.model;
 import art.arcane.chrono.ChronoLatch;
 import com.volmit.react.React;
 import com.volmit.react.api.monitor.ActionBarMonitor;
-import com.volmit.react.legacyutil.MortarSender;
-import com.volmit.react.legacyutil.TickedObject;
+import com.volmit.react.util.plugin.VolmitSender;
+import com.volmit.react.util.scheduling.TickedObject;
 import lombok.Data;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -154,7 +154,7 @@ public class ReactPlayer extends TickedObject {
 
         if (settings.isActionBarMonitoring()) {
             setActionBarMonitoring(true);
-            new MortarSender(getPlayer(), React.instance.getTag()).sendMessage("Monitor Enabled");
+            new VolmitSender(getPlayer(), React.instance.getTag()).sendMessage("Monitor Enabled");
         } else {
             player.sendMessage("Not wasnt monitoring");
         }

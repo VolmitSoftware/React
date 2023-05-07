@@ -51,6 +51,34 @@ public class Form {
         }
     }
 
+    public static String[] durationSplit(double ms, int prec) {
+        if (ms < 1000.0) {
+            return new String[]{Form.f(ms, prec), "ms"};
+        }
+
+        if (ms / 1000.0 < 60.0) {
+            return new String[]{Form.f(ms / 1000.0, prec), "s"};
+        }
+
+        if (ms / 1000.0 / 60.0 < 60.0) {
+            return new String[]{Form.f(ms / 1000.0 / 60.0, prec), "m"};
+        }
+
+        if (ms / 1000.0 / 60.0 / 60.0 < 24.0) {
+            return new String[]{Form.f(ms / 1000.0 / 60.0 / 60.0, prec), " hours"};
+        }
+
+        if (ms / 1000.0 / 60.0 / 60.0 / 24.0 < 7) {
+            return new String[]{Form.f(ms / 1000.0 / 60.0 / 24.0, prec), " days"};
+        }
+
+        return new String[]{Form.f(ms, prec), "ms"};
+    }
+
+    public static String[] memSizeSplit(long s, int dec) {
+        return memSize(s, dec).split("\\Q \\E");
+    }
+
     public static String getNumberSuffixThStRd(int day) {
         if (day >= 11 && day <= 13) {
             return Form.f(day) + "th";

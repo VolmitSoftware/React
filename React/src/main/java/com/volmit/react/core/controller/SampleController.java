@@ -5,8 +5,9 @@ import com.volmit.react.React;
 import com.volmit.react.api.sampler.ExternalSampler;
 import com.volmit.react.api.sampler.Sampler;
 import com.volmit.react.content.sampler.SamplerUnknown;
-import com.volmit.react.legacyutil.IController;
-import com.volmit.react.legacyutil.JarScanner;
+import com.volmit.react.util.io.JarScanner;
+import com.volmit.react.util.plugin.IController;
+import com.volmit.react.util.scheduling.TickedObject;
 import lombok.Data;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
@@ -21,9 +22,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 @Data
-public class SampleController implements IController {
+public class SampleController extends TickedObject implements IController {
     private Map<String, Sampler> samplers;
     private Sampler unknown;
+    public SampleController() {
+        super("react", "sample", 30000);
+        start();
+    }
+
+    @Override
+    public void onTick() {
+
+    }
 
     @Override
     public String getName() {
@@ -127,15 +137,5 @@ public class SampleController implements IController {
     @Override
     public void stop() {
         samplers.values().forEach(Sampler::stop);
-    }
-
-    @Override
-    public void tick() {
-
-    }
-
-    @Override
-    public int getTickInterval() {
-        return -1;
     }
 }

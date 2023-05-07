@@ -3,7 +3,8 @@ package com.volmit.react.core.controller;
 import art.arcane.curse.Curse;
 import com.volmit.react.React;
 import com.volmit.react.api.event.NaughtyRegisteredListener;
-import com.volmit.react.legacyutil.IController;
+import com.volmit.react.util.plugin.IController;
+import com.volmit.react.util.scheduling.TickedObject;
 import lombok.Data;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
@@ -14,11 +15,16 @@ import java.util.EnumMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Data
-public class EventController implements IController {
+public class EventController extends TickedObject implements IController {
     private int listenerCount;
     private double totalTime;
     private int calls;
     private AtomicBoolean running = new AtomicBoolean(false);
+
+    public EventController() {
+        super("react", "event", 50);
+        start();
+    }
 
     @Override
     public String getName() {
@@ -36,7 +42,7 @@ public class EventController implements IController {
     }
 
     @Override
-    public void tick() {
+    public void onTick() {
         updateHandlerListInjections();
     }
 
@@ -134,10 +140,5 @@ public class EventController implements IController {
         }
 
         React.verbose("Pulled out " + out + " event listener spies.");
-    }
-
-    @Override
-    public int getTickInterval() {
-        return 0;
     }
 }

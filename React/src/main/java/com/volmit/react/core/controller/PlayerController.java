@@ -1,7 +1,8 @@
 package com.volmit.react.core.controller;
 
 import com.volmit.react.model.ReactPlayer;
-import com.volmit.react.legacyutil.IController;
+import com.volmit.react.util.plugin.IController;
+import com.volmit.react.util.scheduling.TickedObject;
 import lombok.Data;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -14,8 +15,18 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Data
-public class PlayerController implements IController {
+public class PlayerController extends TickedObject implements IController {
     private final Map<Player, ReactPlayer> players = new HashMap<>();
+
+    public PlayerController() {
+        super("react", "player", 30000);
+        start();
+    }
+
+    @Override
+    public void onTick() {
+
+    }
 
     @Override
     public String getName() {
@@ -75,16 +86,6 @@ public class PlayerController implements IController {
             p.onQuit();
             p.unregister();
         }
-    }
-
-    @Override
-    public void tick() {
-
-    }
-
-    @Override
-    public int getTickInterval() {
-        return -1;
     }
 
     public void updateMonitors() {

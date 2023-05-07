@@ -2,7 +2,11 @@ package com.volmit.react.core.gui;
 
 import com.volmit.react.React;
 import com.volmit.react.api.sampler.Sampler;
-import com.volmit.react.legacyutil.*;
+import com.volmit.react.util.data.MaterialBlock;
+import com.volmit.react.util.inventorygui.UIElement;
+import com.volmit.react.util.inventorygui.UIStaticDecorator;
+import com.volmit.react.util.inventorygui.UIWindow;
+import com.volmit.react.util.inventorygui.WindowResolution;
 import com.volmit.react.util.scheduling.J;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;

@@ -254,26 +254,6 @@ public abstract class VolmitPlugin extends JavaPlugin implements Listener {
         unregisterAll();
     }
 
-    private void tickController(IController i) {
-        if (bad) {
-            return;
-        }
-
-        if (i.getTickInterval() < 0) {
-            return;
-        }
-
-        M.tick++;
-        if (M.interval(i.getTickInterval())) {
-            try {
-                i.tick();
-            } catch (Throwable e) {
-                w("Failed to tick controller " + i.getName());
-                e.printStackTrace();
-                e.printStackTrace();
-            }
-        }
-    }
 
     private void registerInstance() {
         if (bad) {

@@ -18,7 +18,8 @@
 
 package com.volmit.react.util.scheduling;
 
-import com.volmit.react.legacyutil.CancellableTask;
+
+import com.volmit.react.util.plugin.CancellableTask;
 
 public abstract class SR implements Runnable, CancellableTask {
     private int id = 0;

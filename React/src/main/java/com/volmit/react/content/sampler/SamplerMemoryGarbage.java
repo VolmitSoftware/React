@@ -2,7 +2,7 @@ package com.volmit.react.content.sampler;
 
 import com.volmit.react.api.sampler.ReactCachedSampler;
 import com.volmit.react.api.sampler.Sampler;
-import com.volmit.react.legacyutil.Form;
+import com.volmit.react.util.format.Form;
 
 public class SamplerMemoryGarbage extends ReactCachedSampler {
     public static final String ID = "memory-garbage";

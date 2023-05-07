@@ -39,26 +39,6 @@ public abstract class Controller implements IController {
     }
 
     @Override
-    public void l(Object l) {
-        React.info("[" + getName() + "]: " + l);
-    }
-
-    @Override
-    public void w(Object l) {
-        React.warn("[" + getName() + "]: " + l);
-    }
-
-    @Override
-    public void f(Object l) {
-        React.error("[" + getName() + "]: " + l);
-    }
-
-    @Override
-    public void v(Object l) {
-        React.verbose("[" + getName() + "]: " + l);
-    }
-
-    @Override
     public String getName() {
         return name;
     }

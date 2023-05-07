@@ -18,25 +18,48 @@
 
 package com.volmit.react.util.scheduling;
 
-import com.volmit.react.util.plugin.CancellableTask;
+import com.volmit.react.util.math.M;
 
-public abstract class AR implements Runnable, CancellableTask {
-    private int id = 0;
-
-    public AR() {
-        this(0);
+public interface Ticked {
+    default void retick() {
+        burst(1);
     }
 
-    public AR(int interval) {
-        id = J.ar(this, interval);
+    default void skip() {
+        skip(1);
     }
 
-    @Override
-    public void cancel() {
-        J.car(id);
-    }
+    void unregister();
 
-    public int getId() {
-        return id;
+    boolean isBursting();
+
+    boolean isSkipping();
+
+    void stopBursting();
+
+    void stopSkipping();
+
+    long getTickCount();
+
+    long getAge();
+
+    void burst(int ticks);
+
+    void skip(int ticks);
+
+    long getLastTick();
+
+    long getInterval();
+
+    void setInterval(long ms);
+
+    void tick();
+
+    String getGroup();
+
+    String getId();
+
+    default boolean shouldTick() {
+        return M.ms() - getLastTick() > getInterval();
     }
 }

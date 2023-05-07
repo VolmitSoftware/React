@@ -1,8 +1,8 @@
 package com.volmit.react.api.sampler;
 
+import art.arcane.chrono.RollingSequence;
 import com.volmit.react.React;
-import com.volmit.react.legacyutil.RollingSequence;
-import com.volmit.react.legacyutil.TickedObject;
+import com.volmit.react.util.scheduling.TickedObject;
 
 import java.util.concurrent.atomic.AtomicLong;
 

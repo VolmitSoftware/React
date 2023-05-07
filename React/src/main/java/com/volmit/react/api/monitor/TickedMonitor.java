@@ -3,8 +3,8 @@ package com.volmit.react.api.monitor;
 import com.volmit.react.React;
 import com.volmit.react.api.sampler.Sampler;
 import com.volmit.react.util.math.ApproachingValue;
-import com.volmit.react.legacyutil.M;
-import com.volmit.react.legacyutil.TickedObject;
+import com.volmit.react.util.math.M;
+import com.volmit.react.util.scheduling.TickedObject;
 import lombok.Getter;
 
 import java.util.ArrayList;

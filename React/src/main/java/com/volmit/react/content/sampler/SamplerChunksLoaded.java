@@ -3,7 +3,7 @@ package com.volmit.react.content.sampler;
 import art.arcane.chrono.ChronoLatch;
 import com.volmit.react.React;
 import com.volmit.react.api.sampler.ReactCachedSampler;
-import com.volmit.react.legacyutil.Form;
+import com.volmit.react.util.format.Form;
 import com.volmit.react.util.scheduling.J;
 import org.bukkit.Bukkit;
 import org.bukkit.World;

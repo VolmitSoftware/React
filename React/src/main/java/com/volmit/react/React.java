@@ -5,10 +5,12 @@ import com.volmit.react.core.controller.ActionController;
 import com.volmit.react.core.controller.EventController;
 import com.volmit.react.core.controller.PlayerController;
 import com.volmit.react.core.controller.SampleController;
-import com.volmit.react.legacyutil.*;
-import com.volmit.react.legacyutil.Ticker;
 import com.volmit.react.util.collection.KList;
+import com.volmit.react.util.format.C;
+import com.volmit.react.util.io.JarScanner;
+import com.volmit.react.util.plugin.VolmitPlugin;
 import com.volmit.react.util.scheduling.J;
+import com.volmit.react.util.scheduling.Ticker;
 import lombok.Getter;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import org.bukkit.Bukkit;
@@ -20,20 +22,13 @@ import java.lang.annotation.Annotation;
 @Getter
 public class React extends VolmitPlugin {
     public static BukkitAudiences audiences;
-    @Instance
     public static React instance;
     public static Thread serverThread;
     public static Ticker ticker;
-    public static MultiBurst burst;
     public static BukkitAudiences adventure;
-
-    @Control
     private SampleController sampleController;
-    @Control
     private PlayerController playerController;
-    @Control
     private EventController eventController;
-    @Control
     private ActionController actionController;
 
     public React() {
@@ -91,38 +86,30 @@ public class React extends VolmitPlugin {
         super.onLoad();
     }
 
-    @Override
-    public void onEnable() {
-        instance = this;
-        burst = new MultiBurst("React", Thread.MIN_PRIORITY);
-        if (Bukkit.isPrimaryThread()) {
-            serverThread = Thread.currentThread();
-        }
-        ticker = new Ticker(burst);
-        adventure = BukkitAudiences.create(this);
-        super.onEnable();
-        ticker.register(new ControllerTicker(actionController, 100));
-    }
-
-    @Override
-    public void onDisable() {
-        stop();
-        super.onDisable();
-    }
-
     public File jar() {
         return getFile();
     }
 
     @Override
     public void start() {
+        instance = this;
+        ticker = new Ticker();
+        adventure = BukkitAudiences.create(this);
+        eventController = new EventController();
+        playerController = new PlayerController();
+        sampleController = new SampleController();
+        actionController = new ActionController();
         sampleController.postStart();
     }
 
     @Override
     public void stop() {
+        ticker.clear();
         ticker.close();
-        burst.close();
+        eventController.stop();
+        playerController.stop();
+        sampleController.stop();
+        actionController.stop();
     }
 
     @Override
@@ -135,8 +122,8 @@ public class React extends VolmitPlugin {
     }
 
     public void reload() {
-        stop();
-        start();
+        onDisable();
+        onEnable();
     }
 
     public static KList<Object> initialize(String s) {

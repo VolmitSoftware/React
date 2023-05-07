@@ -6,9 +6,10 @@ import com.volmit.react.api.action.Action;
 import com.volmit.react.api.action.ActionParams;
 import com.volmit.react.api.action.ActionTicket;
 import com.volmit.react.content.action.ActionUnknown;
-import com.volmit.react.legacyutil.Form;
-import com.volmit.react.legacyutil.IController;
-import com.volmit.react.legacyutil.JarScanner;
+import com.volmit.react.util.format.Form;
+import com.volmit.react.util.io.JarScanner;
+import com.volmit.react.util.plugin.IController;
+import com.volmit.react.util.scheduling.TickedObject;
 import lombok.Data;
 
 import java.io.File;
@@ -19,12 +20,17 @@ import java.util.List;
 import java.util.Map;
 
 @Data
-public class ActionController implements IController {
+public class ActionController extends TickedObject implements IController {
     private final List<ActionTicket<?>> ticketQueue = new ArrayList<>();
     private final List<ActionTicket<?>> ticketRuntime = new ArrayList<>();
     private Map<String, Action<?>> actions;
     private Action<?> unknown;
     private int actionSpeedMultiplier;
+
+    public ActionController() {
+        super("react", "action", 100);
+        start();
+    }
 
     @Override
     public String getName() {
@@ -97,7 +103,7 @@ public class ActionController implements IController {
     }
 
     @Override
-    public void tick() {
+    public void onTick() {
         synchronized (ticketQueue) {
             if (!ticketQueue.isEmpty() && ticketRuntime.size() < Math.max(3, Runtime.getRuntime().availableProcessors() / 4)) {
                 ActionTicket<?> t = ticketQueue.remove(0);
@@ -122,10 +128,5 @@ public class ActionController implements IController {
                 }
             }
         }
-    }
-
-    @Override
-    public int getTickInterval() {
-        return -1;
     }
 }

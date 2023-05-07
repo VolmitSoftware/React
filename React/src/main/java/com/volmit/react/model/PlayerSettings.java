@@ -3,8 +3,8 @@ package com.volmit.react.model;
 import com.google.gson.Gson;
 import com.volmit.react.React;
 import com.volmit.react.api.monitor.configuration.MonitorConfiguration;
-import com.volmit.react.legacyutil.IO;
-import com.volmit.react.legacyutil.JSONObject;
+import com.volmit.react.util.io.IO;
+import com.volmit.react.util.json.JSONObject;
 import lombok.Data;
 
 import java.io.File;
