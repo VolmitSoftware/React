@@ -10,6 +10,8 @@ import com.volmit.react.util.Form;
 import com.volmit.react.util.IController;
 import com.volmit.react.util.JarScanner;
 import lombok.Data;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 
 import java.io.File;
 import java.io.IOException;
@@ -35,6 +37,36 @@ public class ActionController implements IController {
     public void queueAction(ActionTicket<?> ticket) {
         synchronized (ticketQueue) {
             ticketQueue.add(ticket);
+        }
+    }
+
+    @EventHandler
+    public void on(PlayerCommandPreprocessEvent e) {
+        String m = e.getMessage();
+
+        if(m.startsWith("/")) {
+            m = m.substring(1);
+        }
+
+        if(m.toLowerCase().startsWith("react ") || m.toLowerCase().startsWith("re ")) {
+            String[] ar = m.split(" ");
+            List<String> args = new ArrayList<>(Arrays.asList(ar));
+
+            if(args.size() > 2) {
+
+                String n = args.remove(0);
+
+                if(n.equalsIgnoreCase("act")) {
+                    String action = args.remove(0);
+                    String[] a = args.toArray(new String[args.size()]);
+                    try {
+                        callAction(action, a);
+                    } catch(Exception ex) {
+                        throw new RuntimeException(ex);
+                    }
+                    e.setCancelled(true);
+                }
+            }
         }
     }
 
