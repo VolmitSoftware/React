@@ -19,9 +19,18 @@ public class MonitorGroup {
 
     @Singular
     private List<String> samplers;
+    private String head;
 
     public Sampler getHeadSampler() {
-        return React.instance.getSampleController().getSampler(samplers.get(0));
+        if(head == null) {
+         head = samplers.get(0);
+        }
+
+        return React.instance.getSampleController().getSampler(head);
+    }
+
+    public void setHeadSampler(String s) {
+       head = s;
     }
 
     public List<Sampler> getSubSamplers() {

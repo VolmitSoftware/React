@@ -29,7 +29,6 @@ public class ActionBarMonitor extends PlayerMonitor {
     private MonitorConfiguration configuration;
     private MonitorGroup focus;
     private Map<MonitorGroup, Integer> viewportIndexes;
-    private Map<MonitorGroup, Sampler> focusedSamplers;
     private Map<Sampler, Integer> maxLengths;
     private Map<Sampler, Double> lastValue;
     private Map<Sampler, Double> trends;
@@ -44,7 +43,6 @@ public class ActionBarMonitor extends PlayerMonitor {
         super("actionbar", player, 50);
         sleepDelay = 10;
         viewportIndexes = new HashMap<>();
-        focusedSamplers = new HashMap<>();
         lastValue = new HashMap<>();
         maxLengths = new HashMap<>();
         lastTimes = new HashMap<>();
@@ -119,15 +117,7 @@ public class ActionBarMonitor extends PlayerMonitor {
 
     private Sampler getFocusedSampler(MonitorGroup g)
     {
-        Sampler s = focusedSamplers.get(g);
-
-        if(s== null)
-        {
-            s = g.getHeadSampler();
-            focusedSamplers.put(g, s);
-        }
-
-        return s;
+        return g.getHeadSampler();
     }
 
     private String colorActivity(String color, double activity) {
@@ -356,9 +346,8 @@ public class ActionBarMonitor extends PlayerMonitor {
         }
 
         if(focus != null) {
-            if(locked && getPlayer().isMonitorSneaking())
-            {
-                focusedSamplers.put(focus, getNextFocusedSampler());
+            if(locked && getPlayer().isMonitorSneaking()) {
+                focus.setHeadSampler(getNextFocusedSampler().getId());
             }
 
             React.adventure.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.TIMES, new Title.Times() {

@@ -161,10 +161,14 @@ public class ReactPlayer extends TickedObject {
             setActionBarMonitoring(true);
             new MortarSender(getPlayer(), React.instance.getTag()).sendMessage("Monitor Enabled");
         }
+
+        else {
+            player.sendMessage("Not wasnt monitoring");
+        }
     }
 
     public void onQuit() {
-        setActionBarMonitoring(false);
+        setActionBarMonitoring(false, false);
         saveSettings(true);
     }
 
@@ -173,6 +177,10 @@ public class ReactPlayer extends TickedObject {
     }
 
     public void setActionBarMonitoring(boolean monitoring) {
+        setActionBarMonitoring(monitoring, true);
+    }
+
+    public void setActionBarMonitoring(boolean monitoring, boolean saveSetting) {
         if(monitoring == isActionBarMonitoring()) {
             return;
         }
@@ -187,8 +195,10 @@ public class ReactPlayer extends TickedObject {
             actionBarMonitor.start();
         }
 
-        getSettings().setActionBarMonitoring(isActionBarMonitoring());
-        saveSettings();
+        if(saveSetting) {
+            getSettings().setActionBarMonitoring(isActionBarMonitoring());
+            saveSettings();
+        }
     }
 
     @Override

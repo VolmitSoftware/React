@@ -77,13 +77,15 @@ public abstract class TickedMonitor extends TickedObject implements Monitor {
             }
            if(visible.get(i) != null && visible.get(i)) {
                try {
-                   Double v = approachers.computeIfAbsent(i, k -> new ApproachingValue(0.25)).get(i.sample());
-                   Double old = getSamplers().put(i, v);
-                   double s = v;
-                   if(old == null || old != s) {
-                       changers.put(i, M.lerp(getChanger(i), 1, 0.333));
-                       flushable = true;
-                   }
+                  synchronized(approachers) {
+                      Double v = approachers.computeIfAbsent(i, k -> new ApproachingValue(0.25)).get(i.sample());
+                      Double old = getSamplers().put(i, v);
+                      double s = v;
+                      if(old == null || old != s) {
+                          changers.put(i, M.lerp(getChanger(i), 1, 0.333));
+                          flushable = true;
+                      }
+                  }
                }
 
                catch(Throwable e)
