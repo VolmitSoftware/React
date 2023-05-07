@@ -237,7 +237,7 @@ public class NBTWorld {
 
             return getBlockData(tag);
         } catch (Throwable e) {
-            Iris.reportError(e);
+            e.printStackTrace();
 
         }
         return AIR;

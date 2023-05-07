@@ -583,7 +583,7 @@ public abstract class Tuple3f implements java.io.Serializable, Cloneable {
         try {
             return super.clone();
         } catch (CloneNotSupportedException e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             // this shouldn't happen, since we are Cloneable
             throw new InternalError();
         }

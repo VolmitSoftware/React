@@ -331,7 +331,7 @@ public class XML {
                     return value;
                 }
             } catch (Exception e) {
-                Iris.reportError(e);
+                e.printStackTrace();
             }
         }
         return string;

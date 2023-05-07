@@ -90,7 +90,7 @@ public class GroupedExecutor {
             try {
                 r.run();
             } catch (Throwable e) {
-                Iris.reportError(e);
+                e.printStackTrace();
                 e.printStackTrace();
             }
 

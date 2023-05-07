@@ -53,7 +53,7 @@ public class IrisLock {
         try {
             lock.unlock();
         } catch (Throwable e) {
-            Iris.reportError(e);
+            e.printStackTrace();
 
         }
     }

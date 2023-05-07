@@ -130,7 +130,7 @@ public class IO {
             MessageDigest d = MessageDigest.getInstance("SHA-256");
             return bytesToHex(d.digest(b.getBytes(StandardCharsets.UTF_8)));
         } catch (NoSuchAlgorithmException e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             e.printStackTrace();
         }
 
@@ -145,7 +145,7 @@ public class IO {
             din.close();
             return bytesToHex(din.getMessageDigest().digest());
         } catch (Throwable e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             e.printStackTrace();
         }
 
@@ -395,7 +395,7 @@ public class IO {
         try {
             fr = new FileReader(f);
         } catch (IOException e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             throw e;
         }
         BufferedReader bu = new BufferedReader(fr);
@@ -551,7 +551,7 @@ public class IO {
                 input.close();
             }
         } catch (IOException e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             // ignore
         }
     }
@@ -570,7 +570,7 @@ public class IO {
                 output.close();
             }
         } catch (IOException e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             // ignore
         }
     }
@@ -589,7 +589,7 @@ public class IO {
                 input.close();
             }
         } catch (IOException e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             // ignore
         }
     }
@@ -611,7 +611,7 @@ public class IO {
                 output.close();
             }
         } catch (IOException e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             // ignore
         }
     }

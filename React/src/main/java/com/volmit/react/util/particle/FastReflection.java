@@ -67,7 +67,7 @@ public final class FastReflection {
         try {
             return Optional.of(Class.forName(className));
         } catch (ClassNotFoundException e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             return Optional.empty();
         }
     }

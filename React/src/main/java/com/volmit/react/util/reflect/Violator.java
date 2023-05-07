@@ -114,7 +114,7 @@ public class Violator {
                 f.setAccessible(true);
                 p(id(c, null) + "." + name, f);
             } catch (NoSuchFieldException e) {
-                Iris.reportError(e);
+                e.printStackTrace();
                 Class s = c.getSuperclass();
                 if (null == s) {
                     throw e;
@@ -136,7 +136,7 @@ public class Violator {
                 f.setAccessible(true);
                 p(id(c, null) + "." + name, f);
             } catch (NoSuchFieldException e) {
-                Iris.reportError(e);
+                e.printStackTrace();
                 Class s = c.getSuperclass();
                 if (null == s) {
                     throw e;
@@ -182,7 +182,7 @@ public class Violator {
             Constructor<?> co = getConstructor(c, cv.toArray(new Class<?>[0]));
             return (T) co.newInstance(parameters);
         } catch (Exception e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             e.printStackTrace();
         }
 

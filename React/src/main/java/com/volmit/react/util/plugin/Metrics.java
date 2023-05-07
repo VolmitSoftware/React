@@ -142,7 +142,7 @@ public class Metrics {
             try {
                 config.save(configFile);
             } catch (IOException e) {
-                Iris.reportError(e);
+                e.printStackTrace();
             }
         }
 
@@ -162,7 +162,7 @@ public class Metrics {
                     found = true; // We aren't the first
                     break;
                 } catch (NoSuchFieldException e) {
-                    Iris.reportError(e);
+                    e.printStackTrace();
                 }
             }
             // Register our service
@@ -330,7 +330,7 @@ public class Metrics {
                     ? ((Collection<?>) onlinePlayersMethod.invoke(Bukkit.getServer())).size()
                     : ((Player[]) onlinePlayersMethod.invoke(Bukkit.getServer())).length;
         } catch (Exception e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             playerAmount = Bukkit.getOnlinePlayers().size(); // Just use the new method if the Reflection failed
         }
         int onlineMode = Bukkit.getOnlineMode() ? 1 : 0;
@@ -390,7 +390,7 @@ public class Metrics {
                                     pluginData.add(object);
                                 }
                             } catch (ClassNotFoundException e) {
-                                Iris.reportError(e);
+                                e.printStackTrace();
                                 // minecraft version 1.14+
 
                                 if (logFailedRequests) {
@@ -404,7 +404,7 @@ public class Metrics {
                     }
                 }
             } catch (NoSuchFieldException e) {
-                Iris.reportError(e);
+                e.printStackTrace();
             }
         }
 
@@ -416,7 +416,7 @@ public class Metrics {
                 // Send the data
                 sendData(plugin, data);
             } catch (Exception e) {
-                Iris.reportError(e);
+                e.printStackTrace();
                 // Something went wrong! :(
                 if (logFailedRequests) {
                     plugin.getLogger().log(Level.WARNING, "Could not submit plugin stats of " + plugin.getName(), e);

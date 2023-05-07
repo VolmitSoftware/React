@@ -36,10 +36,10 @@ public abstract class Looper extends Thread {
                 //noinspection BusyWait
                 Thread.sleep(m);
             } catch (InterruptedException e) {
-                Iris.reportError(e);
+                e.printStackTrace();
                 break;
             } catch (Throwable e) {
-                Iris.reportError(e);
+                e.printStackTrace();
                 e.printStackTrace();
             }
         }

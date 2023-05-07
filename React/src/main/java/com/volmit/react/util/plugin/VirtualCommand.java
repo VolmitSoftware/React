@@ -59,7 +59,7 @@ public class VirtualCommand {
                     new V(command, true, true).set(i.getName(), cmd);
                     children.put(cmd.getAllNodes(), new VirtualCommand(cmd, cc.value().trim().isEmpty() ? tag : cc.value().trim()));
                 } catch (Exception e) {
-                    Iris.reportError(e);
+                    e.printStackTrace();
                     e.printStackTrace();
                 }
             }

@@ -1,7 +1,7 @@
 package com.volmit.react.api.sampler;
 
+import art.arcane.chrono.ChronoLatch;
 import com.google.common.util.concurrent.AtomicDouble;
-import com.volmit.react.legacyutil.ChronoLatch;
 
 public abstract class ReactCachedSampler implements Sampler {
     private final ChronoLatch latch;

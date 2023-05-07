@@ -115,7 +115,7 @@ public class HyperLock {
         try {
             return getLock(x, z).tryLock(timeout, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
-            Iris.reportError(e);
+            e.printStackTrace();
         }
 
         return false;

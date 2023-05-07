@@ -75,7 +75,7 @@ interface ParticleSender {
             try {
                 return Particle.valueOf(particle.toString());
             } catch (IllegalArgumentException e) {
-                Iris.reportError(e);
+                e.printStackTrace();
                 return null;
             }
         }

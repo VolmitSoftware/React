@@ -53,7 +53,7 @@ public class V {
         try {
             return local ? Violator.getDeclaredAnnotation(o.getClass(), t) : Violator.getAnnotation(o.getClass(), t);
         } catch (Throwable e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             if (!suppress) {
                 e.printStackTrace();
             }
@@ -66,7 +66,7 @@ public class V {
         try {
             return local ? Violator.getDeclaredAnnotation(Violator.getDeclaredMethod(o.getClass(), mn, pars), t) : Violator.getAnnotation(Violator.getMethod(o.getClass(), mn, pars), t);
         } catch (Throwable e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             if (!suppress) {
                 e.printStackTrace();
             }
@@ -79,7 +79,7 @@ public class V {
         try {
             return local ? Violator.getDeclaredAnnotation(Violator.getDeclaredField(o.getClass(), mn), t) : Violator.getAnnotation(Violator.getField(o.getClass(), mn), t);
         } catch (Throwable e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             if (!suppress) {
                 e.printStackTrace();
             }
@@ -93,7 +93,7 @@ public class V {
         try {
             return (T) (local ? Violator.getDeclaredField(o.getClass(), field) : Violator.getField(o.getClass(), field)).get(o);
         } catch (Throwable e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             if (!suppress) {
                 e.printStackTrace();
             }
@@ -116,7 +116,7 @@ public class V {
         try {
             return (local ? Violator.getDeclaredMethod(o.getClass(), method, par.toArray(new Class<?>[0])) : Violator.getMethod(o.getClass(), method, par.toArray(new Class<?>[0]))).invoke(o, parameters);
         } catch (Throwable e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             if (!suppress) {
                 e.printStackTrace();
             }
@@ -130,7 +130,7 @@ public class V {
             // https://github.com/VolmitSoftware/Mortar/issues/5
             (local ? Violator.getDeclaredField(o.getClass(), field) : Violator.getField(o.getClass(), field)).set(o, value);
         } catch (Throwable e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             if (!suppress) {
                 e.printStackTrace();
             }

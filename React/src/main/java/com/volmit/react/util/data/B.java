@@ -386,7 +386,7 @@ public class B {
         try {
             return Material.valueOf(bdx.trim().toUpperCase());
         } catch (Throwable e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             if (clw.flip()) {
                 Iris.warn("Unknown Material: " + bdx);
             }
@@ -437,7 +437,7 @@ public class B {
 
             return bdx;
         } catch (Throwable e) {
-            Iris.reportError(e);
+            e.printStackTrace();
 
             if (clw.flip()) {
                 Iris.warn("Unknown Block Data '" + bdxf + "'");

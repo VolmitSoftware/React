@@ -1,8 +1,8 @@
 package com.volmit.react.content.sampler;
 
+import art.arcane.chrono.ChronoLatch;
 import com.volmit.react.React;
 import com.volmit.react.api.sampler.ReactCachedSampler;
-import com.volmit.react.legacyutil.ChronoLatch;
 import com.volmit.react.legacyutil.Form;
 import com.volmit.react.legacyutil.J;
 import org.bukkit.Bukkit;

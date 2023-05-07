@@ -148,7 +148,7 @@ public class JSONTokener {
             try {
                 c = this.reader.read();
             } catch (IOException e) {
-                Iris.reportError(e);
+                e.printStackTrace();
                 throw new JSONException(e);
             }
 
@@ -403,7 +403,7 @@ public class JSONTokener {
                 }
             } while (c != to);
         } catch (IOException e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             throw new JSONException(e);
         }
         this.back();

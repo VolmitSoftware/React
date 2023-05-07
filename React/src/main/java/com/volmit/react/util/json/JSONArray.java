@@ -224,7 +224,7 @@ public class JSONArray implements Iterable<Object> {
         try {
             return object instanceof Number ? ((Number) object).doubleValue() : Double.parseDouble((String) object);
         } catch (Exception e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             throw new JSONException("JSONArray[" + index + "] is not a number.");
         }
     }
@@ -262,7 +262,7 @@ public class JSONArray implements Iterable<Object> {
         try {
             return new BigDecimal(object.toString());
         } catch (Exception e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             throw new JSONException("JSONArray[" + index + "] could not convert to BigDecimal.");
         }
     }
@@ -280,7 +280,7 @@ public class JSONArray implements Iterable<Object> {
         try {
             return new BigInteger(object.toString());
         } catch (Exception e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             throw new JSONException("JSONArray[" + index + "] could not convert to BigInteger.");
         }
     }
@@ -297,7 +297,7 @@ public class JSONArray implements Iterable<Object> {
         try {
             return object instanceof Number ? ((Number) object).intValue() : Integer.parseInt((String) object);
         } catch (Exception e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             throw new JSONException("JSONArray[" + index + "] is not a number.");
         }
     }
@@ -347,7 +347,7 @@ public class JSONArray implements Iterable<Object> {
         try {
             return object instanceof Number ? ((Number) object).longValue() : Long.parseLong((String) object);
         } catch (Exception e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             throw new JSONException("JSONArray[" + index + "] is not a number.");
         }
     }
@@ -443,7 +443,7 @@ public class JSONArray implements Iterable<Object> {
         try {
             return this.getBoolean(index);
         } catch (Exception e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             return defaultValue;
         }
     }
@@ -473,7 +473,7 @@ public class JSONArray implements Iterable<Object> {
         try {
             return this.getDouble(index);
         } catch (Exception e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             return defaultValue;
         }
     }
@@ -503,7 +503,7 @@ public class JSONArray implements Iterable<Object> {
         try {
             return this.getInt(index);
         } catch (Exception e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             return defaultValue;
         }
     }
@@ -542,10 +542,10 @@ public class JSONArray implements Iterable<Object> {
             }
             return Enum.valueOf(clazz, val.toString());
         } catch (IllegalArgumentException e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             return defaultValue;
         } catch (NullPointerException e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             return defaultValue;
         }
     }
@@ -563,7 +563,7 @@ public class JSONArray implements Iterable<Object> {
         try {
             return this.getBigInteger(index);
         } catch (Exception e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             return defaultValue;
         }
     }
@@ -581,7 +581,7 @@ public class JSONArray implements Iterable<Object> {
         try {
             return this.getBigDecimal(index);
         } catch (Exception e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             return defaultValue;
         }
     }
@@ -636,7 +636,7 @@ public class JSONArray implements Iterable<Object> {
         try {
             return this.getLong(index);
         } catch (Exception e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             return defaultValue;
         }
     }
@@ -950,7 +950,7 @@ public class JSONArray implements Iterable<Object> {
         try {
             return this.toString(0);
         } catch (Exception e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             return null;
         }
     }

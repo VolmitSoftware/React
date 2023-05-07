@@ -110,7 +110,7 @@ public class BurstExecutor {
 
                 futures.clear();
             } catch (InterruptedException | ExecutionException e) {
-                Iris.reportError(e);
+                e.printStackTrace();
             }
         }
     }

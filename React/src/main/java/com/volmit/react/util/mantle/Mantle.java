@@ -367,7 +367,7 @@ public class Mantle {
         try {
             b.complete();
         } catch (Throwable e) {
-            Iris.reportError(e);
+            e.printStackTrace();
         }
 
         loadedRegions.clear();
@@ -444,10 +444,10 @@ public class Mantle {
             return getSafe(x, z).get();
         } catch (InterruptedException e) {
             Iris.warn("Failed to get Tectonic Plate " + x + " " + z + " Due to a thread intterruption (hotload?)");
-            Iris.reportError(e);
+            e.printStackTrace();
         } catch (ExecutionException e) {
             Iris.warn("Failed to get Tectonic Plate " + x + " " + z + " Due to a thread execution exception (engine close?)");
-            Iris.reportError(e);
+            e.printStackTrace();
         }
 
         Iris.warn("Retrying to get " + x + " " + z + " Mantle Region");
@@ -495,7 +495,7 @@ public class Mantle {
                     Iris.debug("Loaded Tectonic Plate " + C.DARK_GREEN + x + " " + z + C.DARK_AQUA + " " + file.getName());
                 } catch (Throwable e) {
                     Iris.error("Failed to read Tectonic Plate " + file.getAbsolutePath() + " creating a new chunk instead.");
-                    Iris.reportError(e);
+                    e.printStackTrace();
                     if (!(e instanceof EOFException)) {
                         e.printStackTrace();
                     }

@@ -435,7 +435,7 @@ public enum C {
             C c = BY_CHAR.get(code);
             return c == null ? C.WHITE : c;
         } catch (Exception e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             return C.WHITE;
         }
     }
@@ -454,7 +454,7 @@ public enum C {
 
             return BY_CHAR.get(code.charAt(0));
         } catch (Exception e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             return C.WHITE;
         }
     }

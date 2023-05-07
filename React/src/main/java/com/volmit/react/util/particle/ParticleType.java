@@ -146,7 +146,7 @@ public enum ParticleType {
         try {
             return ParticleType.valueOf(particleName.toUpperCase());
         } catch (IllegalArgumentException e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             for (ParticleType particle : values()) {
                 if (particle.getName().equalsIgnoreCase(particleName)) {
                     return particle;

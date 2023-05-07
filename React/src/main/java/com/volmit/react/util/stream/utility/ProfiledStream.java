@@ -133,7 +133,7 @@ public class ProfiledStream<T> extends BasicStream<T> {
         try {
             metrics.put(p.getMilliseconds());
         } catch (Throwable e) {
-            Iris.reportError(e);
+            e.printStackTrace();
         }
 
         return t;
@@ -146,7 +146,7 @@ public class ProfiledStream<T> extends BasicStream<T> {
         try {
             metrics.put(p.getMilliseconds());
         } catch (Throwable e) {
-            Iris.reportError(e);
+            e.printStackTrace();
         }
 
         return t;

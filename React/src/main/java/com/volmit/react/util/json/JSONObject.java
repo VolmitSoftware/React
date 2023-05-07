@@ -125,7 +125,7 @@ public class JSONObject {
             try {
                 this.putOnce(names[i], jo.opt(names[i]));
             } catch (Exception e) {
-                Iris.reportError(e);
+                e.printStackTrace();
             }
         }
     }
@@ -248,7 +248,7 @@ public class JSONObject {
             try {
                 this.putOpt(name, c.getField(name).get(object));
             } catch (Exception e) {
-                Iris.reportError(e);
+                e.printStackTrace();
             }
         }
     }
@@ -418,7 +418,7 @@ public class JSONObject {
             try {
                 return quote(string, sw).toString();
             } catch (IOException e) {
-                Iris.reportError(e);
+                e.printStackTrace();
                 // will never happen - we are writing to a string writer
                 return "";
             }
@@ -529,7 +529,7 @@ public class JSONObject {
                     }
                 }
             } catch (Exception e) {
-                Iris.reportError(e);
+                e.printStackTrace();
             }
         }
         return string;
@@ -586,7 +586,7 @@ public class JSONObject {
             try {
                 object = ((JSONString) value).toJSONString();
             } catch (Exception e) {
-                Iris.reportError(e);
+                e.printStackTrace();
                 throw new JSONException(e);
             }
             if (object instanceof String) {
@@ -656,7 +656,7 @@ public class JSONObject {
             }
             return new JSONObject(object);
         } catch (Exception e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             return null;
         }
     }
@@ -687,7 +687,7 @@ public class JSONObject {
             try {
                 o = ((JSONString) value).toJSONString();
             } catch (Exception e) {
-                Iris.reportError(e);
+                e.printStackTrace();
                 throw new JSONException(e);
             }
             writer.write(o != null ? o.toString() : quote(value.toString()));
@@ -826,7 +826,7 @@ public class JSONObject {
         try {
             return new BigInteger(object.toString());
         } catch (Exception e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             throw new JSONException("JSONObject[" + quote(key) + "] could not be converted to BigInteger.");
         }
     }
@@ -844,7 +844,7 @@ public class JSONObject {
         try {
             return new BigDecimal(object.toString());
         } catch (Exception e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             throw new JSONException("JSONObject[" + quote(key) + "] could not be converted to BigDecimal.");
         }
     }
@@ -862,7 +862,7 @@ public class JSONObject {
         try {
             return object instanceof Number ? ((Number) object).doubleValue() : Double.parseDouble((String) object);
         } catch (Exception e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             throw new JSONException("JSONObject[" + quote(key) + "] is not a number.");
         }
     }
@@ -880,7 +880,7 @@ public class JSONObject {
         try {
             return object instanceof Number ? ((Number) object).intValue() : Integer.parseInt((String) object);
         } catch (Exception e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             throw new JSONException("JSONObject[" + quote(key) + "] is not an int.");
         }
     }
@@ -928,7 +928,7 @@ public class JSONObject {
         try {
             return object instanceof Number ? ((Number) object).longValue() : Long.parseLong((String) object);
         } catch (Exception e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             throw new JSONException("JSONObject[" + quote(key) + "] is not a long.");
         }
     }
@@ -1089,10 +1089,10 @@ public class JSONObject {
             }
             return Enum.valueOf(clazz, val.toString());
         } catch (IllegalArgumentException e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             return defaultValue;
         } catch (NullPointerException e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             return defaultValue;
         }
     }
@@ -1121,7 +1121,7 @@ public class JSONObject {
         try {
             return this.getBoolean(key);
         } catch (Exception e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             return defaultValue;
         }
     }
@@ -1151,7 +1151,7 @@ public class JSONObject {
         try {
             return this.getBigInteger(key);
         } catch (Exception e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             return defaultValue;
         }
     }
@@ -1169,7 +1169,7 @@ public class JSONObject {
         try {
             return this.getBigDecimal(key);
         } catch (Exception e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             return defaultValue;
         }
     }
@@ -1187,7 +1187,7 @@ public class JSONObject {
         try {
             return this.getDouble(key);
         } catch (Exception e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             return defaultValue;
         }
     }
@@ -1217,7 +1217,7 @@ public class JSONObject {
         try {
             return this.getInt(key);
         } catch (Exception e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             return defaultValue;
         }
     }
@@ -1271,7 +1271,7 @@ public class JSONObject {
         try {
             return this.getLong(key);
         } catch (Exception e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             return defaultValue;
         }
     }
@@ -1338,7 +1338,7 @@ public class JSONObject {
                     }
                 }
             } catch (Exception e) {
-                Iris.reportError(e);
+                e.printStackTrace();
             }
         }
     }
@@ -1530,7 +1530,7 @@ public class JSONObject {
             }
             return true;
         } catch (Throwable e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             return false;
         }
     }
@@ -1571,7 +1571,7 @@ public class JSONObject {
         try {
             return this.toString(0);
         } catch (Exception e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             return null;
         }
     }
@@ -1657,7 +1657,7 @@ public class JSONObject {
             writer.write('}');
             return writer;
         } catch (IOException e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             throw new JSONException(e);
         }
     }

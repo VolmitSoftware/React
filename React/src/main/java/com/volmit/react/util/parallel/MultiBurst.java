@@ -170,7 +170,7 @@ public class MultiBurst {
                 }
             } catch (Throwable e) {
                 e.printStackTrace();
-                Iris.reportError(e);
+                e.printStackTrace();
             }
         }
     }

@@ -1,6 +1,13 @@
 package com.volmit.react.core.gui;
 
-import com.volmit.react.legacyutil.*;
+import com.volmit.react.legacyutil.CustomUIElement;
+import com.volmit.react.legacyutil.J;
+import com.volmit.react.legacyutil.MaterialBlock;
+import com.volmit.react.legacyutil.UIElement;
+import com.volmit.react.legacyutil.UIStaticDecorator;
+import com.volmit.react.legacyutil.UIWindow;
+import com.volmit.react.legacyutil.WindowResolution;
+import com.volmit.react.util.data.TinyColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;

@@ -1,8 +1,8 @@
 package com.volmit.react.model;
 
+import art.arcane.chrono.ChronoLatch;
 import com.volmit.react.React;
 import com.volmit.react.api.monitor.ActionBarMonitor;
-import com.volmit.react.legacyutil.ChronoLatch;
 import com.volmit.react.legacyutil.MortarSender;
 import com.volmit.react.legacyutil.TickedObject;
 import lombok.Data;

@@ -723,7 +723,7 @@ public abstract class Tuple4d implements java.io.Serializable, Cloneable {
         try {
             return super.clone();
         } catch (CloneNotSupportedException e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             // this shouldn't happen, since we are Cloneable
             throw new InternalError();
         }

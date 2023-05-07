@@ -66,7 +66,7 @@ public class JarScanner {
                         Class<?> clazz = Class.forName(c);
                         classes.add(clazz);
                     } catch (ClassNotFoundException e) {
-                        Iris.reportError(e);
+                        e.printStackTrace();
                         e.printStackTrace();
                     }
                 }

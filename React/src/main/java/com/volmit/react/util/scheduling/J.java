@@ -55,7 +55,7 @@ public class J {
                 return true;
             }
         } catch (NullPointerException e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             // TODO: Fix this because this is just a suppression for an NPE on g
             return false;
         }
@@ -68,7 +68,7 @@ public class J {
             try {
                 a.run();
             } catch (Throwable e) {
-                Iris.reportError(e);
+                e.printStackTrace();
                 Iris.error("Failed to run async task");
                 e.printStackTrace();
             }
@@ -80,7 +80,7 @@ public class J {
             try {
                 a.run();
             } catch (Throwable e) {
-                Iris.reportError(e);
+                e.printStackTrace();
                 Iris.error("Failed to run async task");
                 e.printStackTrace();
             }
@@ -106,7 +106,7 @@ public class J {
         try {
             return r.run();
         } catch (Throwable e) {
-            Iris.reportError(e);
+            e.printStackTrace();
 
         }
 
@@ -117,7 +117,7 @@ public class J {
         try {
             return r.run(param);
         } catch (Throwable e) {
-            Iris.reportError(e);
+            e.printStackTrace();
 
         }
 
@@ -154,7 +154,7 @@ public class J {
         try {
             return t.get();
         } catch (Throwable e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             return i;
         }
     }
@@ -275,7 +275,7 @@ public class J {
             }
             Bukkit.getScheduler().scheduleSyncDelayedTask(Iris.instance, r, delay);
         } catch (Throwable e) {
-            Iris.reportError(e);
+            e.printStackTrace();
         }
     }
 

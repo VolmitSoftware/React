@@ -83,7 +83,7 @@ public class GridLock {
         try {
             return locks.get(x, 0, z).tryLock(timeout, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
-            Iris.reportError(e);
+            e.printStackTrace();
         }
 
         return false;

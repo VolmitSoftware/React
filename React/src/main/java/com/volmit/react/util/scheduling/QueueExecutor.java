@@ -39,7 +39,7 @@ public class QueueExecutor extends Looper {
             try {
                 queue.next().run();
             } catch (Throwable e) {
-                Iris.reportError(e);
+                e.printStackTrace();
                 e.printStackTrace();
             }
         }

@@ -1,4 +1,5 @@
-package com.volmit.react.legacyutil;
+
+package com.volmit.react.util.data;
 
 import java.awt.Color;
 

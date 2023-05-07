@@ -409,7 +409,7 @@ public class CNG {
         try {
             return v.get(fit(0, v.size() - 1, dim));
         } catch (Throwable e) {
-            Iris.reportError(e);
+            e.printStackTrace();
         }
 
         return v.get(0);

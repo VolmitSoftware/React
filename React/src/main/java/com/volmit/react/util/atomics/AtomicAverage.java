@@ -19,8 +19,7 @@
 package com.volmit.react.util.atomics;
 
 import com.google.common.util.concurrent.AtomicDoubleArray;
-import com.volmit.iris.Iris;
-import com.volmit.iris.util.data.DoubleArrayUtils;
+import com.volmit.react.util.data.DoubleArrayUtils;
 
 /**
  * Provides an incredibly fast averaging object. It swaps values from a sum
@@ -74,7 +73,7 @@ public class AtomicAverage {
             values.set(cursor, i);
             cursor = cursor + 1 < size() ? cursor + 1 : 0;
         } catch (Throwable e) {
-            Iris.reportError(e);
+            e.printStackTrace();
 
         }
     }

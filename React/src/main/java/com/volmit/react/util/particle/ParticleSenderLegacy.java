@@ -130,7 +130,7 @@ class ParticleSenderLegacy implements ParticleSender {
                 SEND_PACKET.invoke(playerConnection, packet);
             }
         } catch (ReflectiveOperationException e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             throw new RuntimeException(e);
         }
     }
@@ -149,7 +149,7 @@ class ParticleSenderLegacy implements ParticleSender {
         try {
             return getEnumParticle(particle);
         } catch (IllegalArgumentException e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             return null;
         }
     }

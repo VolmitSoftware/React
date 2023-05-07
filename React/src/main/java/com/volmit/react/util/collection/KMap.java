@@ -72,7 +72,7 @@ public class KMap<K, V> extends ConcurrentHashMap<K, V> {
 
             s.get(k).add(vs);
         } catch (Throwable e) {
-            Iris.reportError(e);
+            e.printStackTrace();
 
         }
 

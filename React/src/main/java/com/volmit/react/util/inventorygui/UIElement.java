@@ -164,10 +164,10 @@ public class UIElement implements Element {
                 }
             }
         } catch (NullPointerException e) {
-            Iris.reportError(e);
+            e.printStackTrace();
 
         } catch (Throwable e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             e.printStackTrace();
         }
 
@@ -218,7 +218,7 @@ public class UIElement implements Element {
             is.setItemMeta(im);
             return is;
         } catch (Throwable e) {
-            Iris.reportError(e);
+            e.printStackTrace();
             e.printStackTrace();
         }
 
