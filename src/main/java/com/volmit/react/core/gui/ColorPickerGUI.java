@@ -225,6 +225,23 @@ public class ColorPickerGUI {
                     J.a(() -> pickCustomColor(p, picked, result));
                 }));
 
+            window.setElement(1, 2, new UIElement("hexcode")
+                .setName("Enter Hex Code")
+                    .setMaterial(new MaterialBlock(Material.WRITABLE_BOOK))
+                .addLore("* Left Click to enter a hex code")
+                .onLeftClick((e) -> {
+                    refresh.set(true);
+
+                    J.a(() -> {
+                        p.sendMessage("<Enter a hex code with or without the #>");
+                        String c = TextInputGui.captureText(p);
+                        if(c != null) {
+                            result.set(new TinyColor(c).getColor());
+                        }
+                        J.a(() -> pickCustomColor(p, picked, result));
+                    });
+                }));
+
             window.open();
             window.onClosed((w) -> {
                 if(!refresh.get()) {
