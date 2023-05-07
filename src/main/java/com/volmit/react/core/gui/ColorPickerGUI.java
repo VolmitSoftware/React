@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class ColorPickerGUI {
-    private static final List<Color> presetColors = List.of(
+    public static final List<Color> presetColors = List.of(
             new Color(0x48F06F),
             new Color(0xF0C842),
             new Color(0x4158F0),
@@ -225,7 +225,7 @@ public class ColorPickerGUI {
                     J.a(() -> pickCustomColor(p, picked, result));
                 }));
 
-            window.setElement(1, 2, new UIElement("hexcode")
+            window.setElement(0, 2, new UIElement("hexcode")
                 .setName("Enter Hex Code")
                     .setMaterial(new MaterialBlock(Material.WRITABLE_BOOK))
                 .addLore("* Left Click to enter a hex code")
@@ -233,7 +233,7 @@ public class ColorPickerGUI {
                     refresh.set(true);
 
                     J.a(() -> {
-                        p.sendMessage("<Enter a hex code with or without the #>");
+                        p.sendMessage("<Enter a hex code with or without the # in chat>");
                         String c = TextInputGui.captureText(p);
                         if(c != null) {
                             result.set(new TinyColor(c).getColor());

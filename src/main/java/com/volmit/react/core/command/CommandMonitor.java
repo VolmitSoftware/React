@@ -37,13 +37,8 @@ public class CommandMonitor implements RCommand {
     @Permission("react.monitor.edit")
     public static void monitorConfig(CommandSender sender) {
         if (sender instanceof Player p) {
-            J.a(() -> {
-                MonitorConfigGUI.editMonitorConfiguration(p, React.instance.getPlayerController().getPlayer(p).getSettings().getMonitorConfiguration(), (c) -> {
-                    React.instance.getPlayerController().getPlayer(p).saveSettings(false);
-                    p.sendMessage("Saved Conf");
-                });
-                p.sendMessage("Got a config back!");
-            });
+            J.a(() -> MonitorConfigGUI.editMonitorConfiguration(p, React.instance.getPlayerController().getPlayer(p).getSettings().getMonitorConfiguration(),
+                (c) -> React.instance.getPlayerController().getPlayer(p).saveSettings(false)));
         } else {
             RConst.error("You must be a player to use this command.");
         }

@@ -19,6 +19,7 @@ import org.bukkit.entity.Player;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -30,6 +31,7 @@ public class MonitorConfigGUI {
         }
 
         J.s(() -> {
+            group.setSamplers(new ArrayList<>(group.getSamplers()));
             UIWindow window = new UIWindow(p);
             window.setTitle(group.getName() + " Group");
             window.setResolution(WindowResolution.W9_H6);
@@ -37,6 +39,7 @@ public class MonitorConfigGUI {
             AtomicBoolean refresh = new AtomicBoolean(false);
             int rp = 0;
             String head = group.getHeadOrSomething();
+
             for (String ii : group.getSamplers()) {
                 int h = window.getRow(rp);
                 int w = window.getPosition(rp);
@@ -180,6 +183,35 @@ public class MonitorConfigGUI {
                     .onLeftClick((e) -> J.a(() -> editMonitorConfigurationGroup(p, configuration, i, saver)))
                 );
             }
+
+            window.setElement(0, 2, new UIElement("creategroup")
+                .setName("Create Group")
+                .addLore("* Left Click to create a group")
+                .setMaterial(new MaterialBlock(Material.EMERALD))
+                .onLeftClick((e) ->{
+                    J.a(() -> {
+                        J.s(window::close);
+                        p.sendMessage("<Enter a name for this monitor group in chat>");
+                        String name = TextInputGui.captureText(p);
+                        Color c = ColorPickerGUI.presetColors.get(new Random().nextInt(ColorPickerGUI.presetColors.size()));
+                        if(name != null){
+                            MonitorGroup g = MonitorGroup.builder()
+                                .name(name)
+                                .color("#" + Integer.toHexString(c.getRGB()).substring(2))
+                                .build();
+                            configuration.getGroups().add(g);
+                            saver.accept(configuration);
+                            J.a(() -> editMonitorConfigurationGroup(p, configuration, g, saver));
+                        }
+
+                        else {
+                            p.sendMessage("Invalid Name?");
+                            J.a(() -> editMonitorConfiguration(p, configuration, saver));
+                        }
+                    });
+                })
+            );
+
 
             window.open();
             window.onClosed((w) -> {

@@ -2,6 +2,7 @@ package com.volmit.react.api.monitor.configuration;
 
 import com.volmit.react.React;
 import com.volmit.react.api.sampler.Sampler;
+import com.volmit.react.content.sampler.SamplerUnknown;
 import lombok.Builder;
 import lombok.Data;
 import lombok.Singular;
@@ -26,19 +27,17 @@ public class MonitorGroup {
             if(samplers.size() > 0) {
                 head = samplers.get(0);
             }
+
+            else {
+                head = SamplerUnknown.ID;
+            }
         }
 
         return head;
     }
 
     public Sampler getHeadSampler() {
-        if (head == null) {
-            if(samplers.size() > 0) {
-                head = samplers.get(0);
-            }
-        }
-
-        return React.instance.getSampleController().getSampler(head);
+        return React.instance.getSampleController().getSampler(getHeadOrSomething());
     }
 
     public void setHeadSampler(String s) {
