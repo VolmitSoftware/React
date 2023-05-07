@@ -3,14 +3,24 @@ package com.volmit.react.core.gui;
 import com.volmit.react.React;
 import com.volmit.react.api.sampler.Sampler;
 import com.volmit.react.util.*;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class SamplerGUI {
     public static Sampler pickSampler(Player p) {
+        return pickSampler(p, null);
+    }
+
+    public static Sampler pickSampler(Player p, List<String> without) {
+        if(Bukkit.isPrimaryThread()) {
+            throw new RuntimeException("Cannot open gui on main thread");
+        }
+
         AtomicBoolean picked = new AtomicBoolean(false);
         AtomicReference<Sampler> result = new AtomicReference<>();
 
@@ -18,10 +28,14 @@ public class SamplerGUI {
             UIWindow window = new UIWindow(p);
             window.setTitle("React Samplers");
             window.setResolution(WindowResolution.W9_H6);
-            window.setDecorator(new UIStaticDecorator(new UIElement("bg").setMaterial(new MaterialBlock(Material.CYAN_STAINED_GLASS_PANE))));
+            window.setDecorator(new UIStaticDecorator(new UIElement("bg").setMaterial(new MaterialBlock(Material.BLACK_STAINED_GLASS_PANE))));
 
             int rp = 0;
             for (Sampler i : React.instance.getSampleController().getSamplers().values()) {
+                if(without != null && without.contains(i.getId())) {
+                    continue;
+                }
+
                 int h = window.getRow(rp);
                 int w = window.getPosition(rp);
                 rp++;

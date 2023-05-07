@@ -3,7 +3,9 @@ package com.volmit.react.core.command;
 import com.volmit.react.React;
 import com.volmit.react.api.command.RCommand;
 import com.volmit.react.api.command.RConst;
+import com.volmit.react.api.monitor.configuration.MonitorConfiguration;
 import com.volmit.react.api.sampler.Sampler;
+import com.volmit.react.core.gui.MonitorConfigGUI;
 import com.volmit.react.core.gui.SamplerGUI;
 import com.volmit.react.util.J;
 import dev.jorel.commandapi.annotations.Alias;
@@ -33,11 +35,14 @@ public class CommandMonitor implements RCommand {
 
     @Subcommand({"monitoredit", "monedit", "medit", "med"})
     @Permission("react.monitor.edit")
-    public static void monitorCongig(CommandSender sender) {
+    public static void monitorConfig(CommandSender sender) {
         if (sender instanceof Player p) {
             J.a(() -> {
-                Sampler s = SamplerGUI.pickSampler(p);
-                System.out.println("Picked " + (s == null ? "NONE" : s.getId()));
+                MonitorConfigGUI.editMonitorConfiguration(p, React.instance.getPlayerController().getPlayer(p).getSettings().getMonitorConfiguration(), (c) -> {
+                    React.instance.getPlayerController().getPlayer(p).saveSettings(false);
+                    p.sendMessage("Saved Conf");
+                });
+                p.sendMessage("Got a config back!");
             });
         } else {
             RConst.error("You must be a player to use this command.");

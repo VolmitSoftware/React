@@ -104,7 +104,6 @@ public class React extends VolmitPlugin {
         super.onEnable();
         ticker.register(new ControllerTicker(actionController, 100));
         registerCommand(new CommandReact());
-        registerCommand(new CommandColor());
         registerCommand(new CommandReload());
         registerCommand(new CommandMonitor());
         registerCommand(new CommandAction());

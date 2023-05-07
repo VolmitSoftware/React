@@ -1,6 +1,7 @@
 package com.volmit.react.util;
 
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
 public class CustomUIElement extends UIElement {
     private final ItemStack itemStack;
@@ -16,6 +17,10 @@ public class CustomUIElement extends UIElement {
         try {
             ItemStack is = itemStack.clone();
             is.setAmount(getCount());
+            ItemMeta meta = is.getItemMeta();
+            meta.setDisplayName(getName());
+            meta.setLore(getLore());
+            is.setItemMeta(meta);
 
             return is;
         } catch (Throwable e) {

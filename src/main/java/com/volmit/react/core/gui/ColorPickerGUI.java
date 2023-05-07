@@ -1,12 +1,15 @@
 package com.volmit.react.core.gui;
 
+import com.volmit.react.api.sampler.Sampler;
 import com.volmit.react.util.*;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.LeatherArmorMeta;
 
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -34,42 +37,58 @@ public class ColorPickerGUI {
             new Color(0xF05F8D)
     );
 
-    private static ItemStack generateColorIcon(Color color) {
-        ItemStack is = new ItemStack(Material.LEATHER_CHESTPLATE);
-        LeatherArmorMeta meta = (LeatherArmorMeta) is.getItemMeta();
-        meta.setColor(org.bukkit.Color.fromRGB(color.getRed(), color.getGreen(), color.getBlue()));
-        meta.setDisplayName("#" + Integer.toHexString(color.getRGB()).substring(2));
-        is.setItemMeta(meta);
-
-        return is;
+    public static Color pickColor(Player p) {
+        return pickColor(p, null);
     }
 
-    public static Color pickColor(Player p) {
+    public static Color pickColor(Player p, Color initial) {
+        if(Bukkit.isPrimaryThread()) {
+            throw new RuntimeException("Cannot open color picker on main thread");
+        }
+
         AtomicBoolean picked = new AtomicBoolean(false);
-        AtomicReference<Color> result = new AtomicReference<>();
+        AtomicReference<Color> result = new AtomicReference<>(initial);
 
         J.s(() -> {
             UIWindow window = new UIWindow(p);
             window.setTitle("Color Picker");
             window.setResolution(WindowResolution.W9_H6);
-            window.setDecorator(new UIStaticDecorator(new UIElement("bg").setMaterial(new MaterialBlock(Material.CYAN_STAINED_GLASS_PANE))));
+            window.setDecorator(new UIStaticDecorator(new UIElement("bg").setMaterial(new MaterialBlock(Material.BLACK_STAINED_GLASS_PANE))));
 
             int rp = 0;
             for (Color i : presetColors) {
                 int h = window.getRow(rp);
                 int w = window.getPosition(rp);
                 rp++;
-                window.setElement(w, h, new CustomUIElement("color-" + i.getRGB(), generateColorIcon(i))
-                        .onLeftClick((e) -> {
-                            result.set(i);
-                            picked.set(true);
-                            window.close();
-                        })
+                window.setElement(w, h, new CustomUIElement("color-" + i.getRGB(), Guis.generateColorIcon("#" + Integer.toHexString(i.getRGB()).substring(2), i))
+                    .onLeftClick((e) -> {
+                        result.set(i);
+                        picked.set(true);
+                        window.close();
+                    })
                 );
             }
 
+            AtomicBoolean refresh = new AtomicBoolean(false);
+
+            window.setElement(0, 2, new UIElement("custom")
+                .setName("Custom Color")
+                .addLore("* Left Click to pick a custom color")
+                .setMaterial(new MaterialBlock(Material.WRITABLE_BOOK))
+                .onLeftClick((e) ->{
+                    refresh.set(true);
+                    J.a(() -> {
+                        pickCustomColor(p, picked, result);
+                    });
+                })
+            );
+
             window.open();
-            window.onClosed((w) -> picked.set(true));
+            window.onClosed((w) -> {
+                if(!refresh.get()) {
+                    picked.set(true);
+                }
+            });
         });
 
         while (!picked.get()) {
@@ -77,5 +96,141 @@ public class ColorPickerGUI {
         }
 
         return result.get();
+    }
+
+    public static void pickCustomColor(Player p, AtomicBoolean picked, AtomicReference<Color> result) {
+        if(Bukkit.isPrimaryThread()) {
+            throw new RuntimeException("Cannot open color picker on main thread");
+        }
+
+        AtomicBoolean refresh = new AtomicBoolean(false);
+        J.s(() -> {
+            if(result.get() == null) {
+                result.set(new Color(0xBB6666));
+            }
+            UIWindow window = new UIWindow(p);
+            window.setTitle("Color Picker");
+            window.setResolution(WindowResolution.W3_H3);
+            window.setDecorator(new UIStaticDecorator(new UIElement("bg").setMaterial(new MaterialBlock(Material.BLACK_STAINED_GLASS_PANE))));
+
+            window.setElement(0, 1, new CustomUIElement("buf", Guis.generateColorIcon("#" + Integer.toHexString(result.get().getRGB())
+                .substring(2), result.get()))
+                    .setName("Current Color")
+                    .addLore("* Left Click to use this color")
+                    .addLore("* You can also just hit escape to use this color")
+                .onLeftClick((e) -> {
+                    refresh.set(true);
+                    picked.set(true);
+                    window.close();
+                })
+            );
+
+            window.setElement(-1, 1, new CustomUIElement("darken",
+                Guis.generateColorIcon("Darken", new TinyColor(result.get()).darken(15).getColor()))
+                    .setName("Darken")
+                    .addLore("Brightness: " + (Math.round(new TinyColor(result.get()).getBrightness() * 100)) + "%")
+                .addLore("* Left Click to darken 5%")
+                .addLore("* Shift Left Click to darken 15%")
+                .onLeftClick((e) -> {
+                    refresh.set(true);
+                    result.set(new TinyColor(result.get()).darken(5).getColor());
+                    J.a(() -> pickCustomColor(p, picked, result));
+                })
+                .onShiftLeftClick((e) -> {
+                    refresh.set(true);
+                    result.set(new TinyColor(result.get()).darken(15).getColor());
+                    J.a(() -> pickCustomColor(p, picked, result));
+                }));
+
+            window.setElement(1, 1, new CustomUIElement("brighten",
+                Guis.generateColorIcon("Brighten", new TinyColor(result.get()).brighten(15).getColor()))
+                .setName("Brighten")
+                .addLore("Brightness: " + (Math.round(new TinyColor(result.get()).getBrightness() * 100)) + "%")
+                .addLore("* Left Click to brighten 5%")
+                .addLore("* Shift Left Click to brighten 15%")
+                .onLeftClick((e) -> {
+                    refresh.set(true);
+                    result.set(new TinyColor(result.get()).brighten(5).getColor());
+                    J.a(() -> pickCustomColor(p, picked, result));
+                })
+                .onShiftLeftClick((e) -> {
+                    refresh.set(true);
+                    result.set(new TinyColor(result.get()).brighten(15).getColor());
+                    J.a(() -> pickCustomColor(p, picked, result));
+                }));
+
+            window.setElement(1, 0, new CustomUIElement("saturate",
+                Guis.generateColorIcon("Saturate", new TinyColor(result.get()).saturate(15).getColor()))
+                .setName("Saturate")
+                .addLore("Saturation: " + (Math.round(new TinyColor(result.get()).getSaturation() * 100)) + "%")
+                .addLore("* Left Click to saturate 5%")
+                .addLore("* Shift Left Click to saturate 15%")
+                .onLeftClick((e) -> {
+                    refresh.set(true);
+                    result.set(new TinyColor(result.get()).saturate(5).getColor());
+                    J.a(() -> pickCustomColor(p, picked, result));
+                })
+                .onShiftLeftClick((e) -> {
+                    refresh.set(true);
+                    result.set(new TinyColor(result.get()).saturate(15).getColor());
+                    J.a(() -> pickCustomColor(p, picked, result));
+                }));
+
+            window.setElement(-1, 0, new CustomUIElement("desaturate",
+                Guis.generateColorIcon("Desaturate", new TinyColor(result.get()).desaturate(15).getColor()))
+                .setName("Desaturate")
+                .addLore("Saturation: " + (Math.round(new TinyColor(result.get()).getSaturation() * 100)) + "%")
+                .addLore("* Left Click to desaturate 5%")
+                .addLore("* Shift Left Click to desaturate 15%")
+                .onLeftClick((e) -> {
+                    refresh.set(true);
+                    result.set(new TinyColor(result.get()).desaturate(5).getColor());
+                    J.a(() -> pickCustomColor(p, picked, result));
+                })
+                .onShiftLeftClick((e) -> {
+                    refresh.set(true);
+                    result.set(new TinyColor(result.get()).desaturate(15).getColor());
+                    J.a(() -> pickCustomColor(p, picked, result));
+                }));
+
+            window.setElement(-1, 2, new CustomUIElement("spinleft",
+                Guis.generateColorIcon("Spin Left", new TinyColor(result.get()).spin(-15).getColor()))
+                .setName("Spin Left")
+                .addLore("* Left Click to spin left 5 deg")
+                .addLore("* Shift Left Click to spin left 15 deg")
+                .onLeftClick((e) -> {
+                    refresh.set(true);
+                    result.set(new TinyColor(result.get()).spin(-5).getColor());
+                    J.a(() -> pickCustomColor(p, picked, result));
+                })
+                .onShiftLeftClick((e) -> {
+                    refresh.set(true);
+                    result.set(new TinyColor(result.get()).spin(-15).getColor());
+                    J.a(() -> pickCustomColor(p, picked, result));
+                }));
+
+            window.setElement(1, 2, new CustomUIElement("spinright",
+                Guis.generateColorIcon("Spin Right", new TinyColor(result.get()).spin(15).getColor()))
+                .setName("Spin Right")
+                .addLore("* Left Click to spin right 5 deg")
+                .addLore("* Shift Left Click to spin right 15 deg")
+                .onLeftClick((e) -> {
+                    refresh.set(true);
+                    result.set(new TinyColor(result.get()).spin(5).getColor());
+                    J.a(() -> pickCustomColor(p, picked, result));
+                })
+                .onShiftLeftClick((e) -> {
+                    refresh.set(true);
+                    result.set(new TinyColor(result.get()).spin(15).getColor());
+                    J.a(() -> pickCustomColor(p, picked, result));
+                }));
+
+            window.open();
+            window.onClosed((w) -> {
+                if(!refresh.get()) {
+                    picked.set(true);
+                }
+            });
+        });
     }
 }

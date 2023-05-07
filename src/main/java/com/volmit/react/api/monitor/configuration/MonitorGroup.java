@@ -20,9 +20,22 @@ public class MonitorGroup {
     private List<String> samplers;
     private String head;
 
+    public String getHeadOrSomething()
+    {
+        if (head == null) {
+            if(samplers.size() > 0) {
+                head = samplers.get(0);
+            }
+        }
+
+        return head;
+    }
+
     public Sampler getHeadSampler() {
         if (head == null) {
-            head = samplers.get(0);
+            if(samplers.size() > 0) {
+                head = samplers.get(0);
+            }
         }
 
         return React.instance.getSampleController().getSampler(head);
