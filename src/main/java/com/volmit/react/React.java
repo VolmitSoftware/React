@@ -1,12 +1,12 @@
 package com.volmit.react;
 
 import art.arcane.multiburst.MultiBurst;
+import com.volmit.react.core.command.*;
 import com.volmit.react.core.controller.ActionController;
 import com.volmit.react.core.controller.EventController;
 import com.volmit.react.core.controller.PlayerController;
 import com.volmit.react.core.controller.SampleController;
 import com.volmit.react.util.C;
-import com.volmit.react.util.Command;
 import com.volmit.react.util.Control;
 import com.volmit.react.util.ControllerTicker;
 import com.volmit.react.util.Instance;
@@ -55,7 +55,7 @@ public class React extends VolmitPlugin {
 
     @Override
     public void onLoad() {
-        CommandAPI.onLoad(new CommandAPIConfig().verboseOutput(false));
+        CommandAPI.onLoad(new CommandAPIConfig().verboseOutput(true));
         instance = this;
         if(Bukkit.isPrimaryThread()) {
             serverThread = Thread.currentThread();
@@ -66,6 +66,7 @@ public class React extends VolmitPlugin {
     @Override
     public void onEnable() {
         instance = this;
+        CommandAPI.onEnable(this);
         burst = new MultiBurst("React", Thread.MIN_PRIORITY);
         if(Bukkit.isPrimaryThread()) {
             serverThread = Thread.currentThread();
@@ -74,8 +75,19 @@ public class React extends VolmitPlugin {
         adventure = BukkitAudiences.create(this);
         super.onEnable();
         ticker.register(new ControllerTicker(actionController, 100));
-        CommandAPI.onEnable(this);
-        registerCommands();
+        registerCommand(new CommandReact());
+        registerCommand(new CommandColor());
+        registerCommand(new CommandReload());
+        registerCommand(new CommandMonitor());
+//        registerCommand(new CommandAction());
+
+    }
+
+    @Override
+    public void onDisable() {
+        stop();
+        super.onDisable();
+        CommandAPI.onDisable();
     }
 
     public File jar() {
@@ -150,51 +162,5 @@ public class React extends VolmitPlugin {
         start();
     }
 
-    @SneakyThrows
-    public void registerCommands() {
-        try {
-            // Get the package name
-            String packageName = "commands";
-            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-            String path = packageName.replace('.', '/');
-            Enumeration<URL> resources = classLoader.getResources(path);
-            List<File> dirs = new ArrayList<>();
-            while (resources.hasMoreElements()) {
-                URL resource = resources.nextElement();
-                dirs.add(new File(resource.getFile()));
-            }
-
-            for (File directory : dirs) {
-                registerCommandsInDirectory(directory, packageName);
-            }
-        } catch (IOException | ClassNotFoundException | IllegalAccessException | InstantiationException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void registerCommandsInDirectory(File directory, String packageName)
-            throws ClassNotFoundException, IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException {
-        if (!directory.exists()) {
-            return;
-        }
-
-        File[] files = directory.listFiles();
-        if (files == null) {
-            return;
-        }
-
-        for (File file : files) {
-            if (file.isDirectory()) {
-                registerCommandsInDirectory(file, packageName + "." + file.getName());
-            } else if (file.getName().endsWith(".class")) {
-                String className = packageName + '.' + file.getName().substring(0, file.getName().length() - 6);
-                Class<?> clazz = Class.forName(className);
-                if (RCommand.class.isAssignableFrom(clazz)) {
-                    RCommand command = (RCommand) clazz.getDeclaredConstructor().newInstance();
-                    registerCommand(command);
-                }
-            }
-        }
-    }
 
 }

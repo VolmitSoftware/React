@@ -12,7 +12,3 @@ libraries:
   - org.bitbucket.mstrobel:procyon-compilertools:0.6.0
   - org.bitbucket.mstrobel:procyon-reflection:0.6.0
   - fr.inria.gforge.spoon:spoon-core:10.2.0
-commands:
-  react:
-    aliases: [ re ]
-    permission: op

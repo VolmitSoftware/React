@@ -6,19 +6,19 @@ import com.volmit.react.core.gui.ColorPickerGUI;
 import com.volmit.react.util.J;
 import dev.jorel.commandapi.annotations.Alias;
 import dev.jorel.commandapi.annotations.Command;
-import dev.jorel.commandapi.annotations.Default;
 import dev.jorel.commandapi.annotations.Permission;
+import dev.jorel.commandapi.annotations.Subcommand;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import java.awt.*;
 
-@Command("editmonitor")
-@Alias({"editmon", "emon"})
-@Permission("react.monitor.edit")
+@Command("react")
+@Alias({"re", "ract"})
+@Permission("react.main")
 public class CommandColor implements RCommand {
-    @Default
-    @Permission("react.monitor.edit")
+    @Subcommand("color")
+    @Permission("react.color")
     public static void monitor(CommandSender sender) {
         if (sender instanceof Player p) {
             J.a(() -> {
@@ -29,5 +29,4 @@ public class CommandColor implements RCommand {
             RConst.error("You must be a player to use this command.");
         }
     }
-
 }
