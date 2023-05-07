@@ -7,15 +7,21 @@ import com.volmit.react.api.action.ReactAction;
 import com.volmit.react.api.arguments.Argument;
 import com.volmit.react.api.model.AreaActionParams;
 import com.volmit.react.api.model.FilterParams;
+import com.volmit.react.api.model.RChunk;
 import com.volmit.react.util.J;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
+import org.bukkit.World;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.LivingEntity;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -28,15 +34,30 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
     }
 
     List<Chunk> pullChunks(ActionTicket<Params> ticket, int max) {
+        if(ticket.getParams().getQueue() == null || ticket.getParams().getQueue().isEmpty()) {
+           List<Chunk> c = new ArrayList<>();
+
+           if(ticket.getParams().getWorld() != null) {
+               c.addAll(Arrays.asList(J.sResult(() -> Bukkit.getWorld(ticket.getParams().getWorld()).getLoadedChunks())));
+           }
+
+           else {
+               for(World i : Bukkit.getWorlds()) {
+                   c.addAll(Arrays.asList(J.sResult(i::getLoadedChunks)));
+               }
+           }
+
+           ticket.getParams().setQueue(c);
+        }
+
         List<Chunk> c = new ArrayList<>();
 
-        for (int i = 0; i < max; i++) {
-            Chunk cc = J.sResult(() -> ticket.getParams().getArea().popChunk());
-            if (cc == null) {
+        for(int i = 0; i < max; i++) {
+            if(ticket.getParams().getQueue().isEmpty()) {
                 break;
             }
 
-            c.add(cc);
+            c.add(ticket.getParams().getQueue().remove(0));
         }
 
         return c;
@@ -47,7 +68,7 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
         List<Chunk> c = pullChunks(ticket, React.instance.getActionController().getActionSpeedMultiplier());
 
         if (ticket.getTotalWork() <= 1) {
-            ticket.setTotalWork(ticket.getParams().getArea().getChunks().size() + c.size());
+            ticket.setTotalWork(ticket.getParams().getQueue().size());
         }
 
         if (c.isEmpty()) {
@@ -66,8 +87,29 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
         return Params.builder().build();
     }
 
-    private void purge(Chunk c, Params purgeEntitiesParams) {
+    private void purge(Entity entity, Params purgeEntitiesParams) {
+        J.s(entity::remove, 20 + (int)(100 * Math.random()));
+        J.s(() -> {
+            entity.setFreezeTicks(entity.getMaxFreezeTicks());
+            entity.setGravity(false);
+            entity.setPersistent(false);
+            entity.setInvulnerable(true);
+            entity.setSilent(true);
 
+            if(entity instanceof LivingEntity le) {
+                le.setAI(false);
+                le.setCollidable(false);
+                le.setInvisible(true);
+            }
+        });
+    }
+
+    private void purge(Chunk c, Params purgeEntitiesParams) {
+        for(Entity i : c.getEntities()) {
+            if(purgeEntitiesParams.canPurge(i.getType())) {
+                purge(i, purgeEntitiesParams);
+            }
+        }
     }
 
     @Override
@@ -80,12 +122,7 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
     @AllArgsConstructor
     @NoArgsConstructor
     public static class Params implements ActionParams {
-        @Argument(
-            name = "radius",
-            shortCode = "r",
-            description = "Radius in chunks around you to purge entities in")
-        @Builder.Default
-        int radius = -1;
+        private transient List<Chunk> queue;
 
         @Argument(
             name = "world",
@@ -109,7 +146,20 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
             description = "Purge all entity types ignoring the following",
             listType = EntityType.class
         )
+
         @Builder.Default
         Set<EntityType> except = new HashSet<>();
+
+        public boolean canPurge(EntityType entity) {
+            if(only != null && !only.isEmpty()) {
+                return only.contains(entity);
+            }
+
+            if(except != null && !except.isEmpty()) {
+                return !except.contains(entity);
+            }
+
+            return true;
+        }
     }
 }
