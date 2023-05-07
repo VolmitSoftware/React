@@ -1,19 +1,33 @@
 package com.volmit.react.core.command;
 
-import com.volmit.react.api.command.RCommand;
-import dev.jorel.commandapi.annotations.Alias;
-import dev.jorel.commandapi.annotations.Command;
-import dev.jorel.commandapi.annotations.Default;
-import dev.jorel.commandapi.annotations.Permission;
+import dev.jorel.commandapi.CommandAPICommand;
+import dev.jorel.commandapi.executors.CommandExecutor;
 import org.bukkit.command.CommandSender;
 
-@Command("react")
-@Alias({"re", "ract"})
-@Permission("react.main")
-public class CommandReact implements RCommand {
+public class CommandReact {
 
-    @Default
-    public static void react(CommandSender sender) {
+    private static CommandAPICommand reactCommand;
+
+    public static void register() {
+        reactCommand = new CommandAPICommand("react")
+                .withAliases("re", "ract")
+                .withPermission("react.main")
+                .executes((CommandExecutor) (sender, args) -> react(sender, args));
+
+        reactCommand.register();
+
+        CommandAction.register();
+        CommandMonitor.register();
+        CommandReload.register();
+    }
+
+    public static void addSubcommands(CommandAPICommand... subcommands) {
+        for (CommandAPICommand subcommand : subcommands) {
+            reactCommand.withSubcommand(subcommand);
+        }
+    }
+
+    public static void react(CommandSender sender, Object[] args) {
         sender.sendMessage("--== [ React Help Page ] ==--");
         sender.sendMessage("/react - Show this page");
         sender.sendMessage("/react reload - Reload React");

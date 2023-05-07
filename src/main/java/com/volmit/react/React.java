@@ -103,11 +103,7 @@ public class React extends VolmitPlugin {
         adventure = BukkitAudiences.create(this);
         super.onEnable();
         ticker.register(new ControllerTicker(actionController, 100));
-        registerCommand(new CommandReact());
-        registerCommand(new CommandReload());
-        registerCommand(new CommandMonitor());
-        registerCommand(new CommandAction());
-
+        CommandReact.register();
     }
 
     @Override
