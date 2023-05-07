@@ -91,8 +91,11 @@ shadowJar {
     relocate 'art.arcane', 'com.volmit.react.util.arcane'
     relocate 'io.papermc.lib', 'com.volmit.react.util.paper'
     relocate 'net.kyori', 'com.volmit.react.util.kyori'
+    relocate 'dev.jorel.commandapi', 'com.volmit.react.util.commandapi'
+
     dependencies {
         include(dependency('io.papermc:paperlib'))
+        include(dependency('dev.jorel:commandapi-shade:'))
         include(dependency('net.kyori:'))
         include(dependency('xyz.xenondevs:'))
         include(dependency('art.arcane:'))
@@ -121,6 +124,9 @@ dependencies {
     implementation 'art.arcane:Curse:23.4.6'
     implementation 'art.arcane:MultiBurst:22.9.2'
     implementation 'art.arcane:Chrono:22.9.10'
+    implementation "dev.jorel:commandapi-shade:8.8.0"
+    implementation "dev.jorel:commandapi-annotations:8.8.0"
+    annotationProcessor "dev.jorel:commandapi-annotations:8.8.0"
 
     // Dynamically Loaded
     implementation 'com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru:1.4.2'

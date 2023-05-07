@@ -1,30 +1,21 @@
 package com.volmit.react.core.command;
 
 import com.volmit.react.React;
-import com.volmit.react.util.MortarCommand;
-import com.volmit.react.util.MortarSender;
+import com.volmit.react.api.command.RCommand;
+import dev.jorel.commandapi.annotations.Alias;
+import dev.jorel.commandapi.annotations.Command;
+import dev.jorel.commandapi.annotations.Default;
+import dev.jorel.commandapi.annotations.Permission;
+import org.bukkit.command.CommandSender;
 
-import java.util.List;
-
-public class CommandReload extends MortarCommand {
-    public CommandReload() {
-        super("reload");
-    }
-
-    @Override
-    public boolean handle(MortarSender sender, String[] args) {
+@Command("reload")
+@Alias({"rl", "restart"})
+@Permission("react.reload")
+public class CommandReload implements RCommand {
+    @Default
+    @Permission("react.reload")
+    public static void reload(CommandSender sender) {
         React.instance.reload();
         sender.sendMessage("React Reloaded");
-        return true;
-    }
-
-    @Override
-    public void addTabOptions(MortarSender sender, String[] args, List<String> list) {
-
-    }
-
-    @Override
-    protected String getArgsUsage() {
-        return null;
     }
 }

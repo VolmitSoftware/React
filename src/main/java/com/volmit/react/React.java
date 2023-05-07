@@ -1,7 +1,6 @@
 package com.volmit.react;
 
 import art.arcane.multiburst.MultiBurst;
-import com.volmit.react.core.command.CommandReact;
 import com.volmit.react.core.controller.ActionController;
 import com.volmit.react.core.controller.EventController;
 import com.volmit.react.core.controller.PlayerController;
@@ -12,17 +11,27 @@ import com.volmit.react.util.Control;
 import com.volmit.react.util.ControllerTicker;
 import com.volmit.react.util.Instance;
 import com.volmit.react.util.VolmitPlugin;
+import com.volmit.react.api.command.RCommand;
 import com.volmit.react.util.tick.Ticker;
+import dev.jorel.commandapi.CommandAPI;
+import dev.jorel.commandapi.CommandAPIConfig;
 import lombok.Getter;
+import lombok.SneakyThrows;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import org.bukkit.Bukkit;
-
 import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.List;
+
 
 @Getter
 public class React extends VolmitPlugin {
-    @Command
-    private CommandReact commandReact = new CommandReact();
+    private final List<RCommand> commands = new ArrayList<>();
+    public static BukkitAudiences audiences;
 
     @Instance
     public static React instance;
@@ -46,6 +55,7 @@ public class React extends VolmitPlugin {
 
     @Override
     public void onLoad() {
+        CommandAPI.onLoad(new CommandAPIConfig().verboseOutput(false));
         instance = this;
         if(Bukkit.isPrimaryThread()) {
             serverThread = Thread.currentThread();
@@ -64,6 +74,8 @@ public class React extends VolmitPlugin {
         adventure = BukkitAudiences.create(this);
         super.onEnable();
         ticker.register(new ControllerTicker(actionController, 100));
+        CommandAPI.onEnable(this);
+        registerCommands();
     }
 
     public File jar() {
@@ -79,6 +91,11 @@ public class React extends VolmitPlugin {
     public void stop() {
         ticker.close();
         burst.close();
+    }
+
+    private void registerCommand(RCommand command) {
+        commands.add(command);
+        CommandAPI.registerCommand(command.getClass());
     }
 
     @Override
@@ -132,4 +149,52 @@ public class React extends VolmitPlugin {
         stop();
         start();
     }
+
+    @SneakyThrows
+    public void registerCommands() {
+        try {
+            // Get the package name
+            String packageName = "commands";
+            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+            String path = packageName.replace('.', '/');
+            Enumeration<URL> resources = classLoader.getResources(path);
+            List<File> dirs = new ArrayList<>();
+            while (resources.hasMoreElements()) {
+                URL resource = resources.nextElement();
+                dirs.add(new File(resource.getFile()));
+            }
+
+            for (File directory : dirs) {
+                registerCommandsInDirectory(directory, packageName);
+            }
+        } catch (IOException | ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void registerCommandsInDirectory(File directory, String packageName)
+            throws ClassNotFoundException, IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException {
+        if (!directory.exists()) {
+            return;
+        }
+
+        File[] files = directory.listFiles();
+        if (files == null) {
+            return;
+        }
+
+        for (File file : files) {
+            if (file.isDirectory()) {
+                registerCommandsInDirectory(file, packageName + "." + file.getName());
+            } else if (file.getName().endsWith(".class")) {
+                String className = packageName + '.' + file.getName().substring(0, file.getName().length() - 6);
+                Class<?> clazz = Class.forName(className);
+                if (RCommand.class.isAssignableFrom(clazz)) {
+                    RCommand command = (RCommand) clazz.getDeclaredConstructor().newInstance();
+                    registerCommand(command);
+                }
+            }
+        }
+    }
+
 }

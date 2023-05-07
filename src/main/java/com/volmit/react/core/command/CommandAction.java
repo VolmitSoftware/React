@@ -2,45 +2,46 @@ package com.volmit.react.core.command;
 
 import com.volmit.react.React;
 import com.volmit.react.api.action.Action;
-import com.volmit.react.util.MortarCommand;
-import com.volmit.react.util.MortarSender;
+import com.volmit.react.api.command.RCommand;
+import com.volmit.react.api.command.RConst;
+import dev.jorel.commandapi.CommandAPICommand;
+import dev.jorel.commandapi.arguments.GreedyStringArgument;
+import dev.jorel.commandapi.executors.CommandExecutor;
+import org.bukkit.command.CommandSender;
 
-import java.util.List;
+import java.util.Map;
+public class CommandAction implements CommandExecutor, RCommand {
 
-public class CommandAction extends MortarCommand {
     public CommandAction() {
-        super("action", "act");
+        new CommandAPICommand("action")
+                .withAliases("act", "a")
+                .withPermission("react.action")
+                .withArguments(new GreedyStringArgument("args"))
+                .executes(this)
+                .register();
     }
 
     @Override
-    public boolean handle(MortarSender sender, String[] args) {
-        if(args.length == 0) {
-            for(Action<?> i : React.instance.getActionController().getActions().values())
-            {
-                sender.sendMessage(i.getId());
+    public void run(CommandSender sender, Object[] args) {
+        String argString = (String) args[0];
+        String[] argsArray = argString.split(" ");
+
+        if (argsArray.length == 0) {
+            for (Action<?> i : React.instance.getActionController().getActions().values()) {
+                RConst.success(i.getId());
             }
-            return true;
-        }
-
-        else {
-            Action<?> action = React.instance.getActionController().getAction(args[0]);
+        } else {
+            Action<?> action = React.instance.getActionController().getAction(argsArray[0]);
             action.create()
-                .onStart(() -> sender.sendMessage("Started " + action.getId()))
-                .onComplete(() -> sender.sendMessage("Completed " + action.getId()))
-                .queue();
-            sender.sendMessage("Queued " + action.getId());
+                    .onStart(() -> sender.sendMessage("Started " + action.getId()))
+                    .onComplete(() -> sender.sendMessage("Completed " + action.getId()))
+                    .queue();
+            RConst.success("Queued " + action.getId());
         }
-
-        return true;
     }
 
-    @Override
-    public void addTabOptions(MortarSender sender, String[] args, List<String> list) {
-
-    }
-
-    @Override
-    protected String getArgsUsage() {
-        return null;
+    public static String[] getActionKeys() {
+        Map<String, Action<?>> actions = React.instance.getActionController().getActions();
+        return actions.keySet().toArray(new String[0]);
     }
 }

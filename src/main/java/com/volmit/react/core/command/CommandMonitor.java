@@ -1,40 +1,28 @@
 package com.volmit.react.core.command;
 
 import com.volmit.react.React;
-import com.volmit.react.util.Command;
-import com.volmit.react.util.MortarCommand;
-import com.volmit.react.util.MortarSender;
+import com.volmit.react.api.command.RCommand;
+import com.volmit.react.api.command.RConst;
+import dev.jorel.commandapi.annotations.Alias;
+import dev.jorel.commandapi.annotations.Command;
+import dev.jorel.commandapi.annotations.Default;
+import dev.jorel.commandapi.annotations.Permission;
+import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 
-import java.util.List;
-
-public class CommandMonitor extends MortarCommand {
-    @Command
-    private CommandMonitorConfigure configure = new CommandMonitorConfigure();
-
-    public CommandMonitor() {
-        super("monitor", "mon");
-    }
-
-    @Override
-    public boolean handle(MortarSender sender, String[] args) {
-        if(sender.isPlayer()) {
-            React.instance.getPlayerController().getPlayer(sender.player()).toggleActionBar();
-            sender.sendMessage("Monitor " + (React.instance.getPlayerController().getPlayer(sender.player()).isActionBarMonitoring() ? "Enabled" : "Disabled"));
+@Command("editmonitor")
+@Alias({"editmon", "emon"})
+@Permission("react.monitor.edit")
+public class CommandMonitor implements RCommand {
+    @Default
+    @Permission("react.monitor.edit")
+    public static void monitor(CommandSender sender) {
+        if (sender instanceof Player p) {
+            React.instance.getPlayerController().getPlayer(p).toggleActionBar();
+            RConst.success("Monitor " + (React.instance.getPlayerController().getPlayer(p).isActionBarMonitoring() ? "Enabled" : "Disabled"));
+        } else {
+            RConst.error("You must be a player to use this command.");
         }
-
-        else {
-            sender.sendMessage("You must be a player to use this command.");
-        }
-        return true;
     }
 
-    @Override
-    public void addTabOptions(MortarSender sender, String[] args, List<String> list) {
-
-    }
-
-    @Override
-    protected String getArgsUsage() {
-        return null;
-    }
 }
