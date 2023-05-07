@@ -2,7 +2,7 @@ package com.volmit.react.api.monitor;
 
 import com.volmit.react.React;
 import com.volmit.react.api.sampler.Sampler;
-import com.volmit.react.legacyutil.ApproachingValue;
+import com.volmit.react.util.math.ApproachingValue;
 import com.volmit.react.legacyutil.M;
 import com.volmit.react.legacyutil.TickedObject;
 import lombok.Getter;

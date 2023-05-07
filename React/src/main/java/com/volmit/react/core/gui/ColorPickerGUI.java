@@ -1,6 +1,6 @@
 package com.volmit.react.core.gui;
 
-import com.volmit.react.legacyutil.CustomUIElement;
+import com.volmit.react.util.inventorygui.CustomUIElement;
 import com.volmit.react.util.scheduling.J;
 import com.volmit.react.legacyutil.MaterialBlock;
 import com.volmit.react.legacyutil.UIElement;

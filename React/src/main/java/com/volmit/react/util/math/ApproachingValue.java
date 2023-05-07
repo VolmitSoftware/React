@@ -1,4 +1,6 @@
-package com.volmit.react.legacyutil;
+package com.volmit.react.util.math;
+
+import com.volmit.react.legacyutil.M;
 
 public class ApproachingValue {
     private final double percent;

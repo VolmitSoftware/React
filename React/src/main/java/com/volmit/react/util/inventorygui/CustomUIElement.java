@@ -1,4 +1,4 @@
-package com.volmit.react.legacyutil;
+package com.volmit.react.util.inventorygui;
 
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;

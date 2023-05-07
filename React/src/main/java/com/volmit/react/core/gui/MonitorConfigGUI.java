@@ -4,7 +4,7 @@ import com.volmit.react.React;
 import com.volmit.react.api.monitor.configuration.MonitorConfiguration;
 import com.volmit.react.api.monitor.configuration.MonitorGroup;
 import com.volmit.react.api.sampler.Sampler;
-import com.volmit.react.legacyutil.CustomUIElement;
+import com.volmit.react.util.inventorygui.CustomUIElement;
 import com.volmit.react.util.scheduling.J;
 import com.volmit.react.legacyutil.MaterialBlock;
 import com.volmit.react.legacyutil.UIElement;
