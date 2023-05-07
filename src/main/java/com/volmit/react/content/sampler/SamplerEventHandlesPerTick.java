@@ -3,8 +3,8 @@ package com.volmit.react.content.sampler;
 import com.volmit.react.React;
 import com.volmit.react.api.sampler.ReactCachedSampler;
 import com.volmit.react.core.controller.EventController;
-import com.volmit.react.util.Form;
-import com.volmit.react.util.RollingSequence;
+import com.volmit.react.legacyutil.Form;
+import com.volmit.react.legacyutil.RollingSequence;
 import org.bukkit.event.Listener;
 
 public class SamplerEventHandlesPerTick extends ReactCachedSampler implements Listener {

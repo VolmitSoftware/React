@@ -2,8 +2,8 @@ package com.volmit.react.content.sampler;
 
 import com.volmit.react.React;
 import com.volmit.react.api.sampler.ReactCachedSampler;
-import com.volmit.react.util.Form;
-import com.volmit.react.util.ThreadUtilizationMonitor;
+import com.volmit.react.legacyutil.Form;
+import com.volmit.react.legacyutil.ThreadUtilizationMonitor;
 import net.kyori.adventure.text.Component;
 
 public class SamplerTickTime extends ReactCachedSampler {

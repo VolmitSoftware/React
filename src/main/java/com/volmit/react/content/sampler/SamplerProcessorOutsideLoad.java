@@ -1,7 +1,7 @@
 package com.volmit.react.content.sampler;
 
 import com.volmit.react.api.sampler.ReactCachedSampler;
-import com.volmit.react.util.Form;
+import com.volmit.react.legacyutil.Form;
 
 public class SamplerProcessorOutsideLoad extends ReactCachedSampler {
     public static final String ID = "cpu-outside";

@@ -1,9 +1,9 @@
 package com.volmit.react.content.sampler;
 
 import com.volmit.react.api.sampler.ReactCachedSampler;
-import com.volmit.react.util.AsyncRequest;
-import com.volmit.react.util.Form;
-import com.volmit.react.util.Platform;
+import com.volmit.react.legacyutil.AsyncRequest;
+import com.volmit.react.legacyutil.Form;
+import com.volmit.react.legacyutil.Platform;
 
 public class SamplerProcessorProcessLoad extends ReactCachedSampler {
     public static final String ID = "processor-process-load";

@@ -3,7 +3,7 @@ package com.volmit.react.core.controller;
 import art.arcane.curse.Curse;
 import com.volmit.react.React;
 import com.volmit.react.api.event.NaughtyRegisteredListener;
-import com.volmit.react.util.IController;
+import com.volmit.react.legacyutil.IController;
 import lombok.Data;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;

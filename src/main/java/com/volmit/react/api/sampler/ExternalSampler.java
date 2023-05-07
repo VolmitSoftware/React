@@ -2,7 +2,7 @@ package com.volmit.react.api.sampler;
 
 import art.arcane.curse.model.CursedComponent;
 import art.arcane.curse.model.CursedMethod;
-import com.volmit.react.util.Form;
+import com.volmit.react.legacyutil.Form;
 
 public class ExternalSampler extends ReactCachedSampler {
     private final CursedComponent component;

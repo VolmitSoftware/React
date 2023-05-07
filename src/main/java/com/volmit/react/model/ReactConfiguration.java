@@ -5,8 +5,8 @@ import com.volmit.react.React;
 import com.volmit.react.api.monitor.configuration.MonitorConfiguration;
 import com.volmit.react.api.monitor.configuration.MonitorGroup;
 import com.volmit.react.content.sampler.*;
-import com.volmit.react.util.IO;
-import com.volmit.react.util.JSONObject;
+import com.volmit.react.legacyutil.IO;
+import com.volmit.react.legacyutil.JSONObject;
 import lombok.Data;
 
 import java.io.File;
@@ -15,7 +15,7 @@ import java.io.IOException;
 @Data
 public class ReactConfiguration {
     private static ReactConfiguration configuration;
-
+    private boolean customColors = true;
     private boolean verbose = false;
     private MonitorConfiguration monitorConfiguration = MonitorConfiguration.builder()
             .group(MonitorGroup.builder()

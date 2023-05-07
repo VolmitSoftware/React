@@ -1,7 +1,7 @@
 package com.volmit.react.core.controller;
 
 import com.volmit.react.model.ReactPlayer;
-import com.volmit.react.util.IController;
+import com.volmit.react.legacyutil.IController;
 import lombok.Data;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;

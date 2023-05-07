@@ -2,9 +2,9 @@ package com.volmit.react.model;
 
 import com.volmit.react.React;
 import com.volmit.react.api.monitor.ActionBarMonitor;
-import com.volmit.react.util.ChronoLatch;
-import com.volmit.react.util.MortarSender;
-import com.volmit.react.util.tick.TickedObject;
+import com.volmit.react.legacyutil.ChronoLatch;
+import com.volmit.react.legacyutil.MortarSender;
+import com.volmit.react.legacyutil.TickedObject;
 import lombok.Data;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;

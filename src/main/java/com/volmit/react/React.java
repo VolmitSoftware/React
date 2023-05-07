@@ -1,15 +1,13 @@
 package com.volmit.react;
 
 import art.arcane.multiburst.MultiBurst;
-import com.volmit.react.api.action.Action;
 import com.volmit.react.api.command.RCommand;
-import com.volmit.react.core.command.*;
 import com.volmit.react.core.controller.ActionController;
 import com.volmit.react.core.controller.EventController;
 import com.volmit.react.core.controller.PlayerController;
 import com.volmit.react.core.controller.SampleController;
-import com.volmit.react.util.*;
-import com.volmit.react.util.tick.Ticker;
+import com.volmit.react.legacyutil.*;
+import com.volmit.react.legacyutil.Ticker;
 import dev.jorel.commandapi.CommandAPI;
 import dev.jorel.commandapi.CommandAPIConfig;
 import lombok.Getter;
@@ -18,7 +16,6 @@ import org.bukkit.Bukkit;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 
@@ -32,6 +29,7 @@ public class React extends VolmitPlugin {
     public static MultiBurst burst;
     public static BukkitAudiences adventure;
     private final List<RCommand> commands = new ArrayList<>();
+
     @Control
     private SampleController sampleController;
     @Control
@@ -96,7 +94,7 @@ public class React extends VolmitPlugin {
     @Override
     public void onEnable() {
         instance = this;
-        CommandAPI.onEnable(this);
+        //CommandAPI.onEnable(this);
         burst = new MultiBurst("React", Thread.MIN_PRIORITY);
         if (Bukkit.isPrimaryThread()) {
             serverThread = Thread.currentThread();
@@ -105,7 +103,7 @@ public class React extends VolmitPlugin {
         adventure = BukkitAudiences.create(this);
         super.onEnable();
         ticker.register(new ControllerTicker(actionController, 100));
-        CommandReact.register();
+        //CommandReact.register();
     }
 
     @Override
@@ -130,11 +128,6 @@ public class React extends VolmitPlugin {
         burst.close();
     }
 
-    private void registerCommand(RCommand command) {
-        commands.add(command);
-        CommandAPI.registerCommand(command.getClass());
-    }
-
     @Override
     public String getTag(String subTag) {
         return C.BOLD + "" + C.DARK_GRAY + "[" + C.BOLD + "" + C.AQUA + "React" + C.BOLD + C.DARK_GRAY + "]" + C.RESET + "" + C.GRAY + ": ";
@@ -148,6 +141,4 @@ public class React extends VolmitPlugin {
         stop();
         start();
     }
-
-
 }

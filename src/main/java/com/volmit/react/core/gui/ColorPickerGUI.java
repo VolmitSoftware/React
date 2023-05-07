@@ -1,15 +1,11 @@
 package com.volmit.react.core.gui;
 
-import com.volmit.react.api.sampler.Sampler;
-import com.volmit.react.util.*;
+import com.volmit.react.legacyutil.*;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.LeatherArmorMeta;
 
 import java.awt.*;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;

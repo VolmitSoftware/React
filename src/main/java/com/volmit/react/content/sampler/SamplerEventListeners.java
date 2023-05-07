@@ -2,7 +2,7 @@ package com.volmit.react.content.sampler;
 
 import com.volmit.react.React;
 import com.volmit.react.api.sampler.ReactCachedSampler;
-import com.volmit.react.util.Form;
+import com.volmit.react.legacyutil.Form;
 import org.bukkit.event.Listener;
 
 public class SamplerEventListeners extends ReactCachedSampler implements Listener {

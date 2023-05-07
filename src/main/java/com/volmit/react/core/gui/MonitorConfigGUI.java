@@ -1,27 +1,24 @@
 package com.volmit.react.core.gui;
 
-import com.google.gson.Gson;
 import com.volmit.react.React;
 import com.volmit.react.api.monitor.configuration.MonitorConfiguration;
 import com.volmit.react.api.monitor.configuration.MonitorGroup;
 import com.volmit.react.api.sampler.Sampler;
-import com.volmit.react.util.CustomUIElement;
-import com.volmit.react.util.J;
-import com.volmit.react.util.MaterialBlock;
-import com.volmit.react.util.UIElement;
-import com.volmit.react.util.UIStaticDecorator;
-import com.volmit.react.util.UIWindow;
-import com.volmit.react.util.WindowResolution;
+import com.volmit.react.legacyutil.CustomUIElement;
+import com.volmit.react.legacyutil.J;
+import com.volmit.react.legacyutil.MaterialBlock;
+import com.volmit.react.legacyutil.UIElement;
+import com.volmit.react.legacyutil.UIStaticDecorator;
+import com.volmit.react.legacyutil.UIWindow;
+import com.volmit.react.legacyutil.WindowResolution;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 
 import java.awt.Color;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 public class MonitorConfigGUI {
