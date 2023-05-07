@@ -19,9 +19,9 @@
 package com.volmit.react.util.scheduling;
 
 import com.volmit.iris.Iris;
-import com.volmit.iris.util.collection.KList;
-import com.volmit.iris.util.function.NastyRunnable;
-import com.volmit.iris.util.math.M;
+import com.volmit.react.util.collection.KList;
+import com.volmit.react.util.function.NastyRunnable;
+import com.volmit.react.util.math.M;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;

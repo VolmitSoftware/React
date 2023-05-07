@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.io;
 
-import com.volmit.iris.util.math.RNG;
+import com.volmit.react.util.math.RNG;
 
 import java.io.File;
 import java.io.IOException;

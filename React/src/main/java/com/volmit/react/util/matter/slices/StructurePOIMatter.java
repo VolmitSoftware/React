@@ -1,7 +1,7 @@
 package com.volmit.react.util.matter.slices;
 
-import com.volmit.iris.util.data.palette.Palette;
-import com.volmit.iris.util.matter.MatterStructurePOI;
+import com.volmit.react.util.data.palette.Palette;
+import com.volmit.react.util.matter.MatterStructurePOI;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;

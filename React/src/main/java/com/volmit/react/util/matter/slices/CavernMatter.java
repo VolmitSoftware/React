@@ -18,9 +18,9 @@
 
 package com.volmit.react.util.matter.slices;
 
-import com.volmit.iris.util.data.palette.Palette;
-import com.volmit.iris.util.matter.MatterCavern;
-import com.volmit.iris.util.matter.Sliced;
+import com.volmit.react.util.data.palette.Palette;
+import com.volmit.react.util.matter.MatterCavern;
+import com.volmit.react.util.matter.Sliced;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;

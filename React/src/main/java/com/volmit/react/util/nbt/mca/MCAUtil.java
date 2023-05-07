@@ -18,8 +18,8 @@
 
 package com.volmit.react.util.nbt.mca;
 
-import com.volmit.iris.util.collection.KList;
-import com.volmit.iris.util.math.Position2;
+import com.volmit.react.util.collection.KList;
+import com.volmit.react.util.math.Position2;
 
 import java.io.File;
 import java.io.IOException;

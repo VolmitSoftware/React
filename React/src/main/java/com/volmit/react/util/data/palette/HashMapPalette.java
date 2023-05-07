@@ -19,7 +19,7 @@
 package com.volmit.react.util.data.palette;
 
 import com.volmit.iris.Iris;
-import com.volmit.iris.util.collection.KMap;
+import com.volmit.react.util.collection.KMap;
 
 import java.util.List;
 

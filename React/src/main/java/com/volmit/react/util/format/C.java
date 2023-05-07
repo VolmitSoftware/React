@@ -19,7 +19,7 @@
 package com.volmit.react.util.format;
 
 import com.volmit.iris.Iris;
-import com.volmit.iris.util.plugin.VolmitSender;
+import com.volmit.react.util.plugin.VolmitSender;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.apache.commons.lang.Validate;

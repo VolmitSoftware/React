@@ -18,8 +18,8 @@
 
 package com.volmit.react.util.io;
 
-import com.volmit.iris.util.collection.KList;
-import com.volmit.iris.util.function.Consumer3;
+import com.volmit.react.util.collection.KList;
+import com.volmit.react.util.function.Consumer3;
 
 import java.io.File;
 

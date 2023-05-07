@@ -18,9 +18,9 @@
 
 package com.volmit.react.util.matter.slices;
 
-import com.volmit.iris.util.data.palette.Palette;
-import com.volmit.iris.util.nbt.io.NBTUtil;
-import com.volmit.iris.util.nbt.tag.Tag;
+import com.volmit.react.util.data.palette.Palette;
+import com.volmit.react.util.nbt.io.NBTUtil;
+import com.volmit.react.util.nbt.tag.Tag;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;

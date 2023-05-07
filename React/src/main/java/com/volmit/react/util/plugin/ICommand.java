@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.plugin;
 
-import com.volmit.iris.util.collection.KList;
+import com.volmit.react.util.collection.KList;
 
 /**
  * Represents a pawn command

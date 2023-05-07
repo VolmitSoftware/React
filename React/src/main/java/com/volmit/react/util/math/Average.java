@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.math;
 
-import com.volmit.iris.util.data.DoubleArrayUtils;
+import com.volmit.react.util.data.DoubleArrayUtils;
 
 /**
  * Provides an incredibly fast averaging object. It swaps values from a sum

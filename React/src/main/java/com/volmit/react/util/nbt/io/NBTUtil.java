@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.nbt.io;
 
-import com.volmit.iris.util.nbt.tag.Tag;
+import com.volmit.react.util.nbt.tag.Tag;
 
 import java.io.File;
 import java.io.FileInputStream;

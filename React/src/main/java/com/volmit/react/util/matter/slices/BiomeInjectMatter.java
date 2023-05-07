@@ -18,9 +18,9 @@
 
 package com.volmit.react.util.matter.slices;
 
-import com.volmit.iris.util.data.palette.Palette;
-import com.volmit.iris.util.matter.MatterBiomeInject;
-import com.volmit.iris.util.matter.Sliced;
+import com.volmit.react.util.data.palette.Palette;
+import com.volmit.react.util.matter.MatterBiomeInject;
+import com.volmit.react.util.matter.Sliced;
 import org.bukkit.block.Biome;
 
 import java.io.DataInputStream;

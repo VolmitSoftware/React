@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.scheduling.jobs;
 
-import com.volmit.iris.util.collection.KList;
+import com.volmit.react.util.collection.KList;
 
 public class JobCollection implements Job {
     private final String name;

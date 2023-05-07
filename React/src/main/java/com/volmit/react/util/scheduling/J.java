@@ -19,13 +19,13 @@
 package com.volmit.react.util.scheduling;
 
 import com.volmit.iris.Iris;
-import com.volmit.iris.util.collection.KList;
-import com.volmit.iris.util.function.NastyFunction;
-import com.volmit.iris.util.function.NastyFuture;
-import com.volmit.iris.util.function.NastyRunnable;
-import com.volmit.iris.util.function.NastySupplier;
-import com.volmit.iris.util.math.FinalInteger;
-import com.volmit.iris.util.parallel.MultiBurst;
+import com.volmit.react.util.collection.KList;
+import com.volmit.react.util.function.NastyFunction;
+import com.volmit.react.util.function.NastyFuture;
+import com.volmit.react.util.function.NastyRunnable;
+import com.volmit.react.util.function.NastySupplier;
+import com.volmit.react.util.math.FinalInteger;
+import com.volmit.react.util.parallel.MultiBurst;
 import org.bukkit.Bukkit;
 
 import java.util.concurrent.Callable;

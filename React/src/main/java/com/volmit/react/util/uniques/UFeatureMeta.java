@@ -1,10 +1,10 @@
 package com.volmit.react.util.uniques;
 
 import com.volmit.iris.engine.object.NoiseStyle;
-import com.volmit.iris.util.collection.KList;
-import com.volmit.iris.util.collection.KMap;
-import com.volmit.iris.util.interpolation.InterpolationMethod;
-import com.volmit.iris.util.noise.CNG;
+import com.volmit.react.util.collection.KList;
+import com.volmit.react.util.collection.KMap;
+import com.volmit.react.util.interpolation.InterpolationMethod;
+import com.volmit.react.util.noise.CNG;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

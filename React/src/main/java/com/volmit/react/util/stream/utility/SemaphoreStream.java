@@ -18,8 +18,8 @@
 
 package com.volmit.react.util.stream.utility;
 
-import com.volmit.iris.util.stream.BasicStream;
-import com.volmit.iris.util.stream.ProceduralStream;
+import com.volmit.react.util.stream.BasicStream;
+import com.volmit.react.util.stream.ProceduralStream;
 
 import java.util.concurrent.Semaphore;
 

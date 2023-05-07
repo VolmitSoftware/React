@@ -18,8 +18,8 @@
 
 package com.volmit.react.util.decree.context;
 
-import com.volmit.iris.util.decree.DecreeContextHandler;
-import com.volmit.iris.util.plugin.VolmitSender;
+import com.volmit.react.util.decree.DecreeContextHandler;
+import com.volmit.react.util.plugin.VolmitSender;
 import org.bukkit.World;
 
 public class WorldContextHandler implements DecreeContextHandler<World> {

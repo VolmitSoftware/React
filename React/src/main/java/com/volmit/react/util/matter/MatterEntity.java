@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.matter;
 
-import com.volmit.iris.util.nbt.tag.CompoundTag;
+import com.volmit.react.util.nbt.tag.CompoundTag;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 

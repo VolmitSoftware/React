@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.scheduling;
 
-import com.volmit.iris.util.collection.KList;
+import com.volmit.react.util.collection.KList;
 
 public class ShurikenQueue<T> implements Queue<T> {
     private KList<T> queue;

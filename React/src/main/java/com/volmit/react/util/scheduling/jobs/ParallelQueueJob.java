@@ -18,9 +18,9 @@
 
 package com.volmit.react.util.scheduling.jobs;
 
-import com.volmit.iris.util.collection.KList;
-import com.volmit.iris.util.parallel.BurstExecutor;
-import com.volmit.iris.util.parallel.MultiBurst;
+import com.volmit.react.util.collection.KList;
+import com.volmit.react.util.parallel.BurstExecutor;
+import com.volmit.react.util.parallel.MultiBurst;
 
 public abstract class ParallelQueueJob<T> extends QueueJob<T> {
     @Override

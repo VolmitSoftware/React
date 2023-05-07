@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.noise;
 
-import com.volmit.iris.util.interpolation.InterpolationMethod;
+import com.volmit.react.util.interpolation.InterpolationMethod;
 
 public enum NoiseType {
     WHITE(WhiteNoise::new),

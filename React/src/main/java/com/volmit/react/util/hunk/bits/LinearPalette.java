@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.hunk.bits;
 
-import com.volmit.iris.util.function.Consumer2;
+import com.volmit.react.util.function.Consumer2;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;

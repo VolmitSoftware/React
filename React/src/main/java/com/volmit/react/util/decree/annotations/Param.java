@@ -18,8 +18,8 @@
 
 package com.volmit.react.util.decree.annotations;
 
-import com.volmit.iris.util.decree.DecreeParameterHandler;
-import com.volmit.iris.util.decree.specialhandlers.DummyHandler;
+import com.volmit.react.util.decree.DecreeParameterHandler;
+import com.volmit.react.util.decree.specialhandlers.DummyHandler;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

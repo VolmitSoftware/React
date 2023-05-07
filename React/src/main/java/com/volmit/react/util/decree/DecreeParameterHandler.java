@@ -18,8 +18,8 @@
 
 package com.volmit.react.util.decree;
 
-import com.volmit.iris.util.collection.KList;
-import com.volmit.iris.util.decree.exceptions.DecreeParsingException;
+import com.volmit.react.util.collection.KList;
+import com.volmit.react.util.decree.exceptions.DecreeParsingException;
 
 import java.util.concurrent.atomic.AtomicReference;
 

@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.hunk.view;
 
-import com.volmit.iris.util.hunk.Hunk;
+import com.volmit.react.util.hunk.Hunk;
 
 public class HunkView<T> implements Hunk<T> {
     private final int ox;

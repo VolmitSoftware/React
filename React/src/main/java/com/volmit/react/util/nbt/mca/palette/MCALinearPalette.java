@@ -18,8 +18,8 @@
 
 package com.volmit.react.util.nbt.mca.palette;
 
-import com.volmit.iris.util.nbt.tag.CompoundTag;
-import com.volmit.iris.util.nbt.tag.ListTag;
+import com.volmit.react.util.nbt.tag.CompoundTag;
+import com.volmit.react.util.nbt.tag.ListTag;
 
 import java.util.function.Function;
 import java.util.function.Predicate;

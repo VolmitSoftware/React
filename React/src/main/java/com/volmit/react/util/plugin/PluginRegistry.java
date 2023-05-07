@@ -18,8 +18,8 @@
 
 package com.volmit.react.util.plugin;
 
-import com.volmit.iris.util.collection.KList;
-import com.volmit.iris.util.collection.KMap;
+import com.volmit.react.util.collection.KList;
+import com.volmit.react.util.collection.KMap;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 

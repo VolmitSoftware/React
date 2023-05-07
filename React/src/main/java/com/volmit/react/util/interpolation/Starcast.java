@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.interpolation;
 
-import com.volmit.iris.util.function.NoiseProvider;
+import com.volmit.react.util.function.NoiseProvider;
 
 public class Starcast {
     private static final double F3C0 = 1;

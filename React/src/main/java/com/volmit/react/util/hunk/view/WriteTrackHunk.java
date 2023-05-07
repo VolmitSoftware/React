@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.hunk.view;
 
-import com.volmit.iris.util.hunk.Hunk;
+import com.volmit.react.util.hunk.Hunk;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 

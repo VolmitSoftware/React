@@ -18,9 +18,9 @@
 
 package com.volmit.react.util.network;
 
-import com.volmit.iris.util.collection.KSet;
-import com.volmit.iris.util.io.IO;
-import com.volmit.iris.util.scheduling.ChronoLatch;
+import com.volmit.react.util.collection.KSet;
+import com.volmit.react.util.io.IO;
+import com.volmit.react.util.scheduling.ChronoLatch;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;

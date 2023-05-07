@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.inventorygui;
 
-import com.volmit.iris.util.scheduling.Callback;
+import com.volmit.react.util.scheduling.Callback;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 

@@ -20,10 +20,10 @@ package com.volmit.react.util.plugin;
 
 import com.volmit.iris.Iris;
 import com.volmit.iris.core.IrisSettings;
-import com.volmit.iris.util.collection.KList;
-import com.volmit.iris.util.collection.KMap;
-import com.volmit.iris.util.format.C;
-import com.volmit.iris.util.reflect.V;
+import com.volmit.react.util.collection.KList;
+import com.volmit.react.util.collection.KMap;
+import com.volmit.react.util.format.C;
+import com.volmit.react.util.reflect.V;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.command.CommandSender;

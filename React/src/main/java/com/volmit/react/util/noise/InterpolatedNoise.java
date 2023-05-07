@@ -18,9 +18,9 @@
 
 package com.volmit.react.util.noise;
 
-import com.volmit.iris.util.function.NoiseProvider;
-import com.volmit.iris.util.interpolation.InterpolationMethod;
-import com.volmit.iris.util.interpolation.IrisInterpolation;
+import com.volmit.react.util.function.NoiseProvider;
+import com.volmit.react.util.interpolation.InterpolationMethod;
+import com.volmit.react.util.interpolation.IrisInterpolation;
 
 public class InterpolatedNoise implements NoiseGenerator {
     private final InterpolationMethod method;

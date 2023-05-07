@@ -19,10 +19,10 @@
 package com.volmit.react.util.nbt.mca;
 
 import com.volmit.iris.core.nms.INMS;
-import com.volmit.iris.util.nbt.mca.palette.MCAPaletteAccess;
-import com.volmit.iris.util.nbt.tag.ByteArrayTag;
-import com.volmit.iris.util.nbt.tag.CompoundTag;
-import com.volmit.iris.util.nbt.tag.ListTag;
+import com.volmit.react.util.nbt.mca.palette.MCAPaletteAccess;
+import com.volmit.react.util.nbt.tag.ByteArrayTag;
+import com.volmit.react.util.nbt.tag.CompoundTag;
+import com.volmit.react.util.nbt.tag.ListTag;
 
 
 public class Section {

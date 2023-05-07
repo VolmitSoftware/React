@@ -1,8 +1,8 @@
 package com.volmit.react.util.uniques;
 
 import com.google.gson.GsonBuilder;
-import com.volmit.iris.util.collection.KMap;
-import com.volmit.iris.util.io.IO;
+import com.volmit.react.util.collection.KMap;
+import com.volmit.react.util.io.IO;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 

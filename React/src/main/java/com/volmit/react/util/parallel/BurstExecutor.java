@@ -19,7 +19,7 @@
 package com.volmit.react.util.parallel;
 
 import com.volmit.iris.Iris;
-import com.volmit.iris.util.collection.KList;
+import com.volmit.react.util.collection.KList;
 import lombok.Getter;
 import lombok.Setter;
 

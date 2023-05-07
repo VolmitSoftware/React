@@ -1,6 +1,6 @@
 package com.volmit.react.util.cache;
 
-import com.volmit.iris.util.function.Function2;
+import com.volmit.react.util.function.Function2;
 
 import java.util.concurrent.atomic.AtomicReferenceArray;
 

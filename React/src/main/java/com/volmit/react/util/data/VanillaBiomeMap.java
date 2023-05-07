@@ -18,10 +18,10 @@
 
 package com.volmit.react.util.data;
 
-import com.volmit.iris.util.collection.KMap;
-import com.volmit.iris.util.inventorygui.RandomColor.Color;
-import com.volmit.iris.util.inventorygui.RandomColor.Luminosity;
-import com.volmit.iris.util.inventorygui.RandomColor.SaturationType;
+import com.volmit.react.util.collection.KMap;
+import com.volmit.react.util.inventorygui.RandomColor.Color;
+import com.volmit.react.util.inventorygui.RandomColor.Luminosity;
+import com.volmit.react.util.inventorygui.RandomColor.SaturationType;
 import org.bukkit.block.Biome;
 
 public class VanillaBiomeMap {

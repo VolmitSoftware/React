@@ -19,8 +19,8 @@
 package com.volmit.react.util.decree;
 
 import com.volmit.iris.Iris;
-import com.volmit.iris.util.collection.KMap;
-import com.volmit.iris.util.plugin.VolmitSender;
+import com.volmit.react.util.collection.KMap;
+import com.volmit.react.util.plugin.VolmitSender;
 
 public interface DecreeContextHandler<T> {
     KMap<Class<?>, DecreeContextHandler<?>> contextHandlers = buildContextHandlers();

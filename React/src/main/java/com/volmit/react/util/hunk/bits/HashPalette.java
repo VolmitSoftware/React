@@ -18,8 +18,8 @@
 
 package com.volmit.react.util.hunk.bits;
 
-import com.volmit.iris.util.collection.KMap;
-import com.volmit.iris.util.function.Consumer2;
+import com.volmit.react.util.collection.KMap;
+import com.volmit.react.util.function.Consumer2;
 
 import java.util.LinkedHashMap;
 import java.util.concurrent.atomic.AtomicInteger;

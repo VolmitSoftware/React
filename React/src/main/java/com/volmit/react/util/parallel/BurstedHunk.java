@@ -19,7 +19,7 @@
 package com.volmit.react.util.parallel;
 
 
-import com.volmit.iris.util.hunk.Hunk;
+import com.volmit.react.util.hunk.Hunk;
 
 public interface BurstedHunk<T> extends Hunk<T> {
     int getOffsetX();

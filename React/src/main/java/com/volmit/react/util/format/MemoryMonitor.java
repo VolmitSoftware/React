@@ -18,9 +18,9 @@
 
 package com.volmit.react.util.format;
 
-import com.volmit.iris.util.math.RollingSequence;
-import com.volmit.iris.util.scheduling.ChronoLatch;
-import com.volmit.iris.util.scheduling.Looper;
+import com.volmit.react.util.math.RollingSequence;
+import com.volmit.react.util.scheduling.ChronoLatch;
+import com.volmit.react.util.scheduling.Looper;
 
 public class MemoryMonitor {
     private final ChronoLatch cl;

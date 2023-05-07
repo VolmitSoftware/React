@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.stream;
 
-import com.volmit.iris.util.collection.KList;
+import com.volmit.react.util.collection.KList;
 
 public interface Significance<T> {
     KList<T> getFactorTypes();

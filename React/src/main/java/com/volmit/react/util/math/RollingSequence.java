@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.math;
 
-import com.volmit.iris.util.collection.KList;
+import com.volmit.react.util.collection.KList;
 
 public class RollingSequence extends Average {
     private double median;

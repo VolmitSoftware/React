@@ -19,9 +19,9 @@
 package com.volmit.react.util.collection;
 
 import com.google.common.util.concurrent.AtomicDoubleArray;
-import com.volmit.iris.util.json.JSONArray;
-import com.volmit.iris.util.math.M;
-import com.volmit.iris.util.math.RNG;
+import com.volmit.react.util.json.JSONArray;
+import com.volmit.react.util.math.M;
+import com.volmit.react.util.math.RNG;
 
 import java.util.ArrayList;
 import java.util.Collection;

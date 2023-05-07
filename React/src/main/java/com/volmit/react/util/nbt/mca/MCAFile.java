@@ -18,10 +18,10 @@
 
 package com.volmit.react.util.nbt.mca;
 
-import com.volmit.iris.util.collection.KList;
-import com.volmit.iris.util.math.Position2;
-import com.volmit.iris.util.nbt.tag.CompoundTag;
-import com.volmit.iris.util.scheduling.J;
+import com.volmit.react.util.collection.KList;
+import com.volmit.react.util.math.Position2;
+import com.volmit.react.util.nbt.tag.CompoundTag;
+import com.volmit.react.util.scheduling.J;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;

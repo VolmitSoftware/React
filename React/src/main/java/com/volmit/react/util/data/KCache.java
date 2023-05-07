@@ -22,7 +22,7 @@ import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.volmit.iris.engine.framework.MeteredCache;
-import com.volmit.iris.util.math.RollingSequence;
+import com.volmit.react.util.math.RollingSequence;
 
 public class KCache<K, V> implements MeteredCache {
     private final long max;

@@ -18,8 +18,8 @@
 
 package com.volmit.react.util.stream.interpolation;
 
-import com.volmit.iris.util.interpolation.InterpolationMethod;
-import com.volmit.iris.util.stream.ProceduralStream;
+import com.volmit.react.util.interpolation.InterpolationMethod;
+import com.volmit.react.util.stream.ProceduralStream;
 
 @SuppressWarnings("ClassCanBeRecord")
 public class InterpolatorFactory<T> {

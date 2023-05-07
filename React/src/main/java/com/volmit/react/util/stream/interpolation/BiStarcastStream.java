@@ -18,8 +18,8 @@
 
 package com.volmit.react.util.stream.interpolation;
 
-import com.volmit.iris.util.stream.BasicStream;
-import com.volmit.iris.util.stream.ProceduralStream;
+import com.volmit.react.util.stream.BasicStream;
+import com.volmit.react.util.stream.ProceduralStream;
 
 public class BiStarcastStream<T> extends BasicStream<T> implements Interpolator<T> {
     private final int rad;

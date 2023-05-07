@@ -18,9 +18,9 @@
 
 package com.volmit.react.util.decree.handlers;
 
-import com.volmit.iris.util.collection.KList;
-import com.volmit.iris.util.decree.DecreeParameterHandler;
-import com.volmit.iris.util.decree.exceptions.DecreeParsingException;
+import com.volmit.react.util.collection.KList;
+import com.volmit.react.util.decree.DecreeParameterHandler;
+import com.volmit.react.util.decree.exceptions.DecreeParsingException;
 
 /**
  * Abstraction can sometimes breed stupidity

@@ -18,12 +18,12 @@
 
 package com.volmit.react.util.matter.slices;
 
-import com.volmit.iris.util.collection.KMap;
-import com.volmit.iris.util.hunk.storage.MappedHunk;
-import com.volmit.iris.util.hunk.storage.PaletteOrHunk;
-import com.volmit.iris.util.matter.MatterReader;
-import com.volmit.iris.util.matter.MatterSlice;
-import com.volmit.iris.util.matter.MatterWriter;
+import com.volmit.react.util.collection.KMap;
+import com.volmit.react.util.hunk.storage.MappedHunk;
+import com.volmit.react.util.hunk.storage.PaletteOrHunk;
+import com.volmit.react.util.matter.MatterReader;
+import com.volmit.react.util.matter.MatterSlice;
+import com.volmit.react.util.matter.MatterWriter;
 import lombok.Getter;
 
 import java.io.DataInputStream;

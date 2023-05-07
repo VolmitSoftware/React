@@ -1,9 +1,9 @@
 package com.volmit.react.util.uniques;
 
-import com.volmit.iris.util.function.NoiseInjector;
-import com.volmit.iris.util.interpolation.InterpolationMethod;
-import com.volmit.iris.util.math.RNG;
-import com.volmit.iris.util.noise.CNG;
+import com.volmit.react.util.function.NoiseInjector;
+import com.volmit.react.util.interpolation.InterpolationMethod;
+import com.volmit.react.util.math.RNG;
+import com.volmit.react.util.noise.CNG;
 
 import java.awt.Color;
 import java.util.List;

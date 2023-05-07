@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.noise;
 
-import com.volmit.iris.util.math.RNG;
+import com.volmit.react.util.math.RNG;
 
 public class SimplexNoise implements NoiseGenerator, OctaveNoise {
     private final FastNoiseDouble n;

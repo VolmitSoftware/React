@@ -19,8 +19,8 @@
 package com.volmit.react.util.scheduling;
 
 import com.volmit.iris.Iris;
-import com.volmit.iris.util.collection.KMap;
-import com.volmit.iris.util.function.NastyRunnable;
+import com.volmit.react.util.collection.KMap;
+import com.volmit.react.util.function.NastyRunnable;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;

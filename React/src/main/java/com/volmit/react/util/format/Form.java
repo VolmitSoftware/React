@@ -18,8 +18,8 @@
 
 package com.volmit.react.util.format;
 
-import com.volmit.iris.util.math.M;
-import com.volmit.iris.util.math.RollingSequence;
+import com.volmit.react.util.math.M;
+import com.volmit.react.util.math.RollingSequence;
 
 import java.math.BigInteger;
 import java.text.DecimalFormat;

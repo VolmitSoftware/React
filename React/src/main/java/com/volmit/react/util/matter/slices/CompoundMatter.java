@@ -18,8 +18,8 @@
 
 package com.volmit.react.util.matter.slices;
 
-import com.volmit.iris.util.matter.Sliced;
-import com.volmit.iris.util.nbt.tag.CompoundTag;
+import com.volmit.react.util.matter.Sliced;
+import com.volmit.react.util.nbt.tag.CompoundTag;
 
 @Sliced
 public class CompoundMatter extends NBTMatter<CompoundTag> {

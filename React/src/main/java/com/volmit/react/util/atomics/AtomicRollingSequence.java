@@ -18,8 +18,9 @@
 
 package com.volmit.react.util.atomics;
 
-import com.volmit.iris.util.collection.KList;
-import com.volmit.iris.util.math.M;
+
+import com.volmit.react.util.collection.KList;
+import com.volmit.react.util.math.M;
 
 public class AtomicRollingSequence extends AtomicAverage {
     private double median;

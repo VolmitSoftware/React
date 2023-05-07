@@ -19,7 +19,7 @@
 package com.volmit.react.util.noise;
 
 import com.volmit.iris.engine.object.IrisExpression;
-import com.volmit.iris.util.math.RNG;
+import com.volmit.react.util.math.RNG;
 
 public class ExpressionNoise implements NoiseGenerator {
     private final RNG rng;

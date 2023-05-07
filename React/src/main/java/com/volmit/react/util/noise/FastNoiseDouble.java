@@ -17,8 +17,8 @@
  */
 package com.volmit.react.util.noise;
 
-import com.volmit.iris.util.math.Vector2f;
-import com.volmit.iris.util.math.Vector3f;
+import com.volmit.react.util.math.Vector2f;
+import com.volmit.react.util.math.Vector3f;
 
 public class FastNoiseDouble {
     private static final Double2[] GRAD_2D = {new Double2(-1, -1), new Double2(1, -1), new Double2(-1, 1), new Double2(1, 1), new Double2(0, -1), new Double2(-1, 0), new Double2(0, 1), new Double2(1, 0),

@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.board;
 
-import com.volmit.iris.util.format.C;
+import com.volmit.react.util.format.C;
 import lombok.Getter;
 import org.apache.commons.lang.StringUtils;
 

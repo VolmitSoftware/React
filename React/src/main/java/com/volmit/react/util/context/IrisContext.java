@@ -22,8 +22,8 @@ import com.volmit.iris.Iris;
 import com.volmit.iris.core.loader.IrisData;
 import com.volmit.iris.engine.IrisComplex;
 import com.volmit.iris.engine.framework.Engine;
-import com.volmit.iris.util.collection.KMap;
-import com.volmit.iris.util.scheduling.ChronoLatch;
+import com.volmit.react.util.collection.KMap;
+import com.volmit.react.util.scheduling.ChronoLatch;
 import lombok.Data;
 
 @Data

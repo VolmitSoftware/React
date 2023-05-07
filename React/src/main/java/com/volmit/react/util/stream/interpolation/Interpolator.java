@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.stream.interpolation;
 
-import com.volmit.iris.util.stream.ProceduralStream;
+import com.volmit.react.util.stream.ProceduralStream;
 
 public interface Interpolator<T> {
     @SuppressWarnings("unchecked")

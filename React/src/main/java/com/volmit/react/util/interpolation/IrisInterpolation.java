@@ -20,14 +20,14 @@ package com.volmit.react.util.interpolation;
 
 import com.google.common.util.concurrent.AtomicDouble;
 import com.volmit.iris.engine.object.NoiseStyle;
-import com.volmit.iris.util.format.Form;
-import com.volmit.iris.util.function.Consumer2;
-import com.volmit.iris.util.function.NoiseProvider;
-import com.volmit.iris.util.function.NoiseProvider3;
-import com.volmit.iris.util.hunk.Hunk;
-import com.volmit.iris.util.math.RNG;
-import com.volmit.iris.util.noise.CNG;
-import com.volmit.iris.util.scheduling.PrecisionStopwatch;
+import com.volmit.react.util.format.Form;
+import com.volmit.react.util.function.Consumer2;
+import com.volmit.react.util.function.NoiseProvider;
+import com.volmit.react.util.function.NoiseProvider3;
+import com.volmit.react.util.hunk.Hunk;
+import com.volmit.react.util.math.RNG;
+import com.volmit.react.util.noise.CNG;
+import com.volmit.react.util.scheduling.PrecisionStopwatch;
 
 import java.math.BigDecimal;
 import java.util.HashMap;

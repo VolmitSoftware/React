@@ -19,7 +19,7 @@
 package com.volmit.react.util.io;
 
 import com.volmit.iris.Iris;
-import com.volmit.iris.util.collection.KSet;
+import com.volmit.react.util.collection.KSet;
 
 import java.io.File;
 import java.io.FileInputStream;

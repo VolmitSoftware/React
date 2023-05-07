@@ -19,7 +19,7 @@
 package com.volmit.react.util.nbt.io;
 
 import com.volmit.iris.engine.data.io.Deserializer;
-import com.volmit.iris.util.nbt.tag.Tag;
+import com.volmit.react.util.nbt.tag.Tag;
 
 import java.io.IOException;
 import java.io.InputStream;

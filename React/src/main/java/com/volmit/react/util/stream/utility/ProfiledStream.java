@@ -19,12 +19,12 @@
 package com.volmit.react.util.stream.utility;
 
 import com.volmit.iris.Iris;
-import com.volmit.iris.util.collection.KList;
-import com.volmit.iris.util.format.Form;
-import com.volmit.iris.util.math.RollingSequence;
-import com.volmit.iris.util.scheduling.PrecisionStopwatch;
-import com.volmit.iris.util.stream.BasicStream;
-import com.volmit.iris.util.stream.ProceduralStream;
+import com.volmit.react.util.collection.KList;
+import com.volmit.react.util.format.Form;
+import com.volmit.react.util.math.RollingSequence;
+import com.volmit.react.util.scheduling.PrecisionStopwatch;
+import com.volmit.react.util.stream.BasicStream;
+import com.volmit.react.util.stream.ProceduralStream;
 import lombok.Data;
 
 import java.util.concurrent.atomic.AtomicInteger;

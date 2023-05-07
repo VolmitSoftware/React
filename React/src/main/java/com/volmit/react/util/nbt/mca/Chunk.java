@@ -20,13 +20,13 @@ package com.volmit.react.util.nbt.mca;
 
 import com.volmit.iris.Iris;
 import com.volmit.iris.core.nms.INMS;
-import com.volmit.iris.util.collection.KMap;
-import com.volmit.iris.util.nbt.io.NBTDeserializer;
-import com.volmit.iris.util.nbt.io.NBTSerializer;
-import com.volmit.iris.util.nbt.io.NamedTag;
-import com.volmit.iris.util.nbt.mca.palette.MCABiomeContainer;
-import com.volmit.iris.util.nbt.tag.CompoundTag;
-import com.volmit.iris.util.nbt.tag.ListTag;
+import com.volmit.react.util.collection.KMap;
+import com.volmit.react.util.nbt.io.NBTDeserializer;
+import com.volmit.react.util.nbt.io.NBTSerializer;
+import com.volmit.react.util.nbt.io.NamedTag;
+import com.volmit.react.util.nbt.mca.palette.MCABiomeContainer;
+import com.volmit.react.util.nbt.tag.CompoundTag;
+import com.volmit.react.util.nbt.tag.ListTag;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;

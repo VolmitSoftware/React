@@ -18,8 +18,8 @@
 
 package com.volmit.react.util.stream.arithmetic;
 
-import com.volmit.iris.util.stream.BasicStream;
-import com.volmit.iris.util.stream.ProceduralStream;
+import com.volmit.react.util.stream.BasicStream;
+import com.volmit.react.util.stream.ProceduralStream;
 
 public class OffsetStream<T> extends BasicStream<T> implements ProceduralStream<T> {
     private final double ox;

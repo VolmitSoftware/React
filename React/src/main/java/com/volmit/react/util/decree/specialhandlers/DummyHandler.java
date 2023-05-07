@@ -18,9 +18,9 @@
 
 package com.volmit.react.util.decree.specialhandlers;
 
-import com.volmit.iris.util.collection.KList;
-import com.volmit.iris.util.decree.DecreeParameterHandler;
-import com.volmit.iris.util.decree.exceptions.DecreeParsingException;
+import com.volmit.react.util.collection.KList;
+import com.volmit.react.util.decree.DecreeParameterHandler;
+import com.volmit.react.util.decree.exceptions.DecreeParsingException;
 
 public class DummyHandler implements DecreeParameterHandler<Object> {
     @Override

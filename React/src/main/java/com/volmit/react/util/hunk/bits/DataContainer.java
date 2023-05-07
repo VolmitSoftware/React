@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.hunk.bits;
 
-import com.volmit.iris.util.data.Varint;
+import com.volmit.react.util.data.Varint;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;

@@ -18,10 +18,10 @@
 
 package com.volmit.react.util.matter.slices;
 
-import com.volmit.iris.util.collection.KMap;
-import com.volmit.iris.util.data.palette.Palette;
-import com.volmit.iris.util.matter.MatterMarker;
-import com.volmit.iris.util.matter.Sliced;
+import com.volmit.react.util.collection.KMap;
+import com.volmit.react.util.data.palette.Palette;
+import com.volmit.react.util.matter.MatterMarker;
+import com.volmit.react.util.matter.Sliced;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;

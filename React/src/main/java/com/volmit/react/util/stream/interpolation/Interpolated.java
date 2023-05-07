@@ -20,9 +20,9 @@ package com.volmit.react.util.stream.interpolation;
 
 import com.volmit.iris.Iris;
 import com.volmit.iris.engine.object.CaveResult;
-import com.volmit.iris.util.collection.KList;
-import com.volmit.iris.util.math.RNG;
-import com.volmit.iris.util.stream.ProceduralStream;
+import com.volmit.react.util.collection.KList;
+import com.volmit.react.util.math.RNG;
+import com.volmit.react.util.stream.ProceduralStream;
 import org.bukkit.block.data.BlockData;
 
 import java.util.UUID;

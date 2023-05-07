@@ -18,9 +18,9 @@
 
 package com.volmit.react.util.stream.convert;
 
-import com.volmit.iris.util.function.Function3;
-import com.volmit.iris.util.stream.BasicStream;
-import com.volmit.iris.util.stream.ProceduralStream;
+import com.volmit.react.util.function.Function3;
+import com.volmit.react.util.stream.BasicStream;
+import com.volmit.react.util.stream.ProceduralStream;
 
 public class AwareConversionStream2D<T, V> extends BasicStream<V> {
     private final ProceduralStream<T> stream;

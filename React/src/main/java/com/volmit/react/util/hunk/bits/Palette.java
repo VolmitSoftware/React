@@ -18,9 +18,9 @@
 
 package com.volmit.react.util.hunk.bits;
 
-import com.volmit.iris.util.collection.KList;
-import com.volmit.iris.util.function.Consumer2;
-import com.volmit.iris.util.function.Consumer2IO;
+import com.volmit.react.util.collection.KList;
+import com.volmit.react.util.function.Consumer2;
+import com.volmit.react.util.function.Consumer2IO;
 
 import java.io.DataInputStream;
 import java.io.IOException;

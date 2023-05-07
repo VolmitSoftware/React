@@ -18,8 +18,8 @@
 
 package com.volmit.react.util.stream.arithmetic;
 
-import com.volmit.iris.util.stream.BasicStream;
-import com.volmit.iris.util.stream.ProceduralStream;
+import com.volmit.react.util.stream.BasicStream;
+import com.volmit.react.util.stream.ProceduralStream;
 
 public class RoundingDoubleStream extends BasicStream<Double> {
     private final ProceduralStream<?> stream;

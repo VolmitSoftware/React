@@ -19,7 +19,7 @@
 package com.volmit.react.util.math;
 
 import com.volmit.iris.engine.object.IrisPosition;
-import com.volmit.iris.util.data.Cuboid;
+import com.volmit.react.util.data.Cuboid;
 import org.bukkit.World;
 import org.bukkit.util.BlockVector;
 

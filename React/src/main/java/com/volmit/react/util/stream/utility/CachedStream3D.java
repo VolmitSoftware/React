@@ -22,10 +22,10 @@ import com.volmit.iris.Iris;
 import com.volmit.iris.core.service.PreservationSVC;
 import com.volmit.iris.engine.framework.Engine;
 import com.volmit.iris.engine.framework.MeteredCache;
-import com.volmit.iris.util.data.KCache;
-import com.volmit.iris.util.math.BlockPosition;
-import com.volmit.iris.util.stream.BasicStream;
-import com.volmit.iris.util.stream.ProceduralStream;
+import com.volmit.react.util.data.KCache;
+import com.volmit.react.util.math.BlockPosition;
+import com.volmit.react.util.stream.BasicStream;
+import com.volmit.react.util.stream.ProceduralStream;
 
 public class CachedStream3D<T> extends BasicStream<T> implements ProceduralStream<T>, MeteredCache {
     private final ProceduralStream<T> stream;

@@ -1,8 +1,8 @@
 package com.volmit.react.util.cache;
 
 import com.volmit.iris.engine.data.cache.Cache;
-import com.volmit.iris.util.data.KCache;
-import com.volmit.iris.util.function.Function2;
+import com.volmit.react.util.data.KCache;
+import com.volmit.react.util.function.Function2;
 
 public class WorldCache2D<T> {
     private final KCache<Long, ChunkCache2D<T>> chunks;

@@ -19,7 +19,7 @@
 package com.volmit.react.util.data;
 
 import com.volmit.iris.engine.data.cache.Cache;
-import com.volmit.iris.util.collection.KMap;
+import com.volmit.react.util.collection.KMap;
 
 public class ComplexCache<T> {
     private final KMap<Long, ChunkCache<T>> chunks;

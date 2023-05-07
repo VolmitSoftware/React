@@ -18,9 +18,9 @@
 
 package com.volmit.react.util.noise;
 
-import com.volmit.iris.util.math.Vector2f;
-import com.volmit.iris.util.math.Vector3f;
-import com.volmit.iris.util.stream.ProceduralStream;
+import com.volmit.react.util.math.Vector2f;
+import com.volmit.react.util.math.Vector3f;
+import com.volmit.react.util.stream.ProceduralStream;
 
 public class FastNoise {
     private static final Float2[] GRAD_2D = {new Float2(-1, -1), new Float2(1, -1), new Float2(-1, 1), new Float2(1, 1), new Float2(0, -1), new Float2(-1, 0), new Float2(0, 1), new Float2(1, 0),

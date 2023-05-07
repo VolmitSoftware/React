@@ -18,9 +18,9 @@
 
 package com.volmit.react.util.stream.sources;
 
-import com.volmit.iris.util.noise.CNG;
-import com.volmit.iris.util.stream.BasicLayer;
-import com.volmit.iris.util.stream.ProceduralStream;
+import com.volmit.react.util.noise.CNG;
+import com.volmit.react.util.stream.BasicLayer;
+import com.volmit.react.util.stream.ProceduralStream;
 
 public class CNGStream extends BasicLayer implements ProceduralStream<Double> {
     private final CNG cng;

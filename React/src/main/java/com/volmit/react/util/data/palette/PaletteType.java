@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.data.palette;
 
-import com.volmit.iris.util.data.Varint;
+import com.volmit.react.util.data.Varint;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;

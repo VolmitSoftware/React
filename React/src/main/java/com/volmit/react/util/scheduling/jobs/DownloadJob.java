@@ -18,8 +18,8 @@
 
 package com.volmit.react.util.scheduling.jobs;
 
-import com.volmit.iris.util.network.DL;
-import com.volmit.iris.util.network.DownloadMonitor;
+import com.volmit.react.util.network.DL;
+import com.volmit.react.util.network.DownloadMonitor;
 
 import java.io.File;
 import java.io.IOException;

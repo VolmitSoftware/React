@@ -1,20 +1,20 @@
 package com.volmit.react.util.uniques;
 
 import com.volmit.iris.engine.object.NoiseStyle;
-import com.volmit.iris.util.collection.KList;
-import com.volmit.iris.util.collection.KMap;
-import com.volmit.iris.util.format.Form;
-import com.volmit.iris.util.function.NoiseProvider;
-import com.volmit.iris.util.interpolation.InterpolationMethod;
-import com.volmit.iris.util.interpolation.IrisInterpolation;
-import com.volmit.iris.util.math.RNG;
-import com.volmit.iris.util.noise.CNG;
-import com.volmit.iris.util.parallel.BurstExecutor;
-import com.volmit.iris.util.scheduling.ChronoLatch;
-import com.volmit.iris.util.scheduling.J;
-import com.volmit.iris.util.scheduling.PrecisionStopwatch;
-import com.volmit.iris.util.stream.ProceduralStream;
-import com.volmit.iris.util.uniques.features.*;
+import com.volmit.react.util.collection.KList;
+import com.volmit.react.util.collection.KMap;
+import com.volmit.react.util.format.Form;
+import com.volmit.react.util.function.NoiseProvider;
+import com.volmit.react.util.interpolation.InterpolationMethod;
+import com.volmit.react.util.interpolation.IrisInterpolation;
+import com.volmit.react.util.math.RNG;
+import com.volmit.react.util.noise.CNG;
+import com.volmit.react.util.parallel.BurstExecutor;
+import com.volmit.react.util.scheduling.ChronoLatch;
+import com.volmit.react.util.scheduling.J;
+import com.volmit.react.util.scheduling.PrecisionStopwatch;
+import com.volmit.react.util.stream.ProceduralStream;
+import com.volmit.react.util.uniques.features.*;
 
 import java.awt.image.BufferedImage;
 import java.io.File;

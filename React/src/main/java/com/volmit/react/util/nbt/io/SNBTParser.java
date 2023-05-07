@@ -20,7 +20,7 @@ package com.volmit.react.util.nbt.io;
 
 import com.volmit.iris.Iris;
 import com.volmit.iris.engine.data.io.MaxDepthIO;
-import com.volmit.iris.util.nbt.tag.*;
+import com.volmit.react.util.nbt.tag.*;
 
 import java.util.ArrayList;
 import java.util.List;

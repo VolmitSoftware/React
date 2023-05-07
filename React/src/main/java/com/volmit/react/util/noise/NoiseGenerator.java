@@ -18,8 +18,8 @@
 
 package com.volmit.react.util.noise;
 
-import com.volmit.iris.util.stream.ProceduralStream;
-import com.volmit.iris.util.stream.interpolation.Interpolated;
+import com.volmit.react.util.stream.ProceduralStream;
+import com.volmit.react.util.stream.interpolation.Interpolated;
 
 public interface NoiseGenerator {
     double noise(double x);

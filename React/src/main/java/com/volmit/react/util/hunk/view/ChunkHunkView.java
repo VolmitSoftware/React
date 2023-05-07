@@ -20,7 +20,7 @@ package com.volmit.react.util.hunk.view;
 
 import com.volmit.iris.Iris;
 import com.volmit.iris.core.service.EditSVC;
-import com.volmit.iris.util.hunk.Hunk;
+import com.volmit.react.util.hunk.Hunk;
 import org.bukkit.Chunk;
 import org.bukkit.block.data.BlockData;
 

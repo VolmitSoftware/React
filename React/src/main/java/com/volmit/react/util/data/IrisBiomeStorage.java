@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.data;
 
-import com.volmit.iris.util.math.IrisMathHelper;
+import com.volmit.react.util.math.IrisMathHelper;
 import org.bukkit.block.Biome;
 import org.bukkit.generator.ChunkGenerator.BiomeGrid;
 import org.jetbrains.annotations.NotNull;

@@ -18,9 +18,9 @@
 
 package com.volmit.react.util.decree;
 
-import com.volmit.iris.util.collection.KList;
-import com.volmit.iris.util.decree.annotations.Decree;
-import com.volmit.iris.util.decree.annotations.Param;
+import com.volmit.react.util.collection.KList;
+import com.volmit.react.util.decree.annotations.Decree;
+import com.volmit.react.util.decree.annotations.Param;
 import lombok.Data;
 
 import java.lang.reflect.Method;

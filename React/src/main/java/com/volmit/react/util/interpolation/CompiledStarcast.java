@@ -1,6 +1,6 @@
 package com.volmit.react.util.interpolation;
 
-import com.volmit.iris.util.function.NoiseProvider;
+import com.volmit.react.util.function.NoiseProvider;
 
 public class CompiledStarcast {
     private static final float[] MAGIC = {0.0F, 1.0F, 1.2246469E-16F, -1.0F

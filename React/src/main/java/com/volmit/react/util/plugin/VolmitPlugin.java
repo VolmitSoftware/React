@@ -19,12 +19,12 @@
 package com.volmit.react.util.plugin;
 
 import com.volmit.iris.Iris;
-import com.volmit.iris.util.collection.KList;
-import com.volmit.iris.util.collection.KMap;
-import com.volmit.iris.util.io.IO;
-import com.volmit.iris.util.math.M;
-import com.volmit.iris.util.reflect.V;
-import com.volmit.iris.util.scheduling.J;
+import com.volmit.react.util.collection.KList;
+import com.volmit.react.util.collection.KMap;
+import com.volmit.react.util.io.IO;
+import com.volmit.react.util.math.M;
+import com.volmit.react.util.reflect.V;
+import com.volmit.react.util.scheduling.J;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandMap;

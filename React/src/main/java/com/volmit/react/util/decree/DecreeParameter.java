@@ -19,10 +19,10 @@
 package com.volmit.react.util.decree;
 
 import com.volmit.iris.engine.data.cache.AtomicCache;
-import com.volmit.iris.util.collection.KList;
-import com.volmit.iris.util.decree.annotations.Param;
-import com.volmit.iris.util.decree.exceptions.DecreeParsingException;
-import com.volmit.iris.util.decree.specialhandlers.DummyHandler;
+import com.volmit.react.util.collection.KList;
+import com.volmit.react.util.decree.annotations.Param;
+import com.volmit.react.util.decree.exceptions.DecreeParsingException;
+import com.volmit.react.util.decree.specialhandlers.DummyHandler;
 import lombok.Data;
 
 import java.lang.reflect.Parameter;

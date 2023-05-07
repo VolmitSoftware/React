@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.decree.annotations;
 
-import com.volmit.iris.util.decree.DecreeOrigin;
+import com.volmit.react.util.decree.DecreeOrigin;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

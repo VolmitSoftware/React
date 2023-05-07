@@ -18,8 +18,8 @@
 
 package com.volmit.react.util.plugin;
 
-import com.volmit.iris.util.collection.KList;
-import com.volmit.iris.util.collection.KMap;
+import com.volmit.react.util.collection.KList;
+import com.volmit.react.util.collection.KMap;
 
 public class PluginRegistryGroup<T> {
     private final KMap<String, PluginRegistry<T>> registries = new KMap<>();

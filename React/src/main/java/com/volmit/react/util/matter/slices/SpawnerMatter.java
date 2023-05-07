@@ -19,7 +19,7 @@
 package com.volmit.react.util.matter.slices;
 
 import com.volmit.iris.engine.object.IrisSpawner;
-import com.volmit.iris.util.matter.Sliced;
+import com.volmit.react.util.matter.Sliced;
 
 @Sliced
 public class SpawnerMatter extends RegistryMatter<IrisSpawner> {

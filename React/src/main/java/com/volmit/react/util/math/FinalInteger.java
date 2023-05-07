@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.math;
 
-import com.volmit.iris.util.scheduling.Wrapper;
+import com.volmit.react.util.scheduling.Wrapper;
 
 /**
  * Represents a number that can be finalized and be changed

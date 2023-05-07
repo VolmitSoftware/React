@@ -1,10 +1,10 @@
 package com.volmit.react.util.stream.utility;
 
-import com.volmit.iris.util.context.ChunkContext;
-import com.volmit.iris.util.context.IrisContext;
-import com.volmit.iris.util.function.Function3;
-import com.volmit.iris.util.stream.BasicStream;
-import com.volmit.iris.util.stream.ProceduralStream;
+import com.volmit.react.util.context.ChunkContext;
+import com.volmit.react.util.context.IrisContext;
+import com.volmit.react.util.function.Function3;
+import com.volmit.react.util.stream.BasicStream;
+import com.volmit.react.util.stream.ProceduralStream;
 
 public class ContextInjectingStream<T> extends BasicStream<T> {
     private final Function3<ChunkContext, Integer, Integer, T> contextAccessor;

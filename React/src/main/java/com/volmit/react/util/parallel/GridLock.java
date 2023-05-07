@@ -19,9 +19,9 @@
 package com.volmit.react.util.parallel;
 
 import com.volmit.iris.Iris;
-import com.volmit.iris.util.function.NastyRunnable;
-import com.volmit.iris.util.hunk.Hunk;
-import com.volmit.iris.util.io.IORunnable;
+import com.volmit.react.util.function.NastyRunnable;
+import com.volmit.react.util.hunk.Hunk;
+import com.volmit.react.util.io.IORunnable;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;

@@ -21,9 +21,9 @@ package com.volmit.react.util.parallel;
 import com.volmit.iris.Iris;
 import com.volmit.iris.core.IrisSettings;
 import com.volmit.iris.core.service.PreservationSVC;
-import com.volmit.iris.util.collection.KList;
-import com.volmit.iris.util.math.M;
-import com.volmit.iris.util.scheduling.PrecisionStopwatch;
+import com.volmit.react.util.collection.KList;
+import com.volmit.react.util.math.M;
+import com.volmit.react.util.scheduling.PrecisionStopwatch;
 
 import java.util.List;
 import java.util.concurrent.Callable;

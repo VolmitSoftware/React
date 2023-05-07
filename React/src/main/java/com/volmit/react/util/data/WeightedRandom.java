@@ -18,8 +18,8 @@
 
 package com.volmit.react.util.data;
 
-import com.volmit.iris.util.collection.KList;
-import com.volmit.iris.util.collection.KeyPair;
+import com.volmit.react.util.collection.KList;
+import com.volmit.react.util.collection.KeyPair;
 
 import java.util.Random;
 

@@ -20,8 +20,8 @@ package com.volmit.react.util.decree.context;
 
 import com.volmit.iris.core.tools.IrisToolbelt;
 import com.volmit.iris.engine.object.IrisDimension;
-import com.volmit.iris.util.decree.DecreeContextHandler;
-import com.volmit.iris.util.plugin.VolmitSender;
+import com.volmit.react.util.decree.DecreeContextHandler;
+import com.volmit.react.util.plugin.VolmitSender;
 
 public class DimensionContextHandler implements DecreeContextHandler<IrisDimension> {
     public Class<IrisDimension> getType() {

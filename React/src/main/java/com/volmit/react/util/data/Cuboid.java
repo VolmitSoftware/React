@@ -18,8 +18,8 @@
 
 package com.volmit.react.util.data;
 
-import com.volmit.iris.util.collection.KList;
-import com.volmit.iris.util.math.Direction;
+import com.volmit.react.util.collection.KList;
+import com.volmit.react.util.math.Direction;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;

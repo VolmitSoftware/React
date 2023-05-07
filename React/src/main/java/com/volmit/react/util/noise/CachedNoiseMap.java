@@ -18,10 +18,10 @@
 
 package com.volmit.react.util.noise;
 
-import com.volmit.iris.util.hunk.bits.Writable;
-import com.volmit.iris.util.matter.IrisMatter;
-import com.volmit.iris.util.matter.Matter;
-import com.volmit.iris.util.matter.MatterSlice;
+import com.volmit.react.util.hunk.bits.Writable;
+import com.volmit.react.util.matter.IrisMatter;
+import com.volmit.react.util.matter.Matter;
+import com.volmit.react.util.matter.MatterSlice;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;

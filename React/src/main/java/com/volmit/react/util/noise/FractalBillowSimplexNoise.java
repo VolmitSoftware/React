@@ -18,8 +18,8 @@
 
 package com.volmit.react.util.noise;
 
-import com.volmit.iris.util.math.RNG;
-import com.volmit.iris.util.noise.FastNoiseDouble.FractalType;
+import com.volmit.react.util.math.RNG;
+import com.volmit.react.util.noise.FastNoiseDouble.FractalType;
 
 public class FractalBillowSimplexNoise implements NoiseGenerator, OctaveNoise {
     private final FastNoiseDouble n;

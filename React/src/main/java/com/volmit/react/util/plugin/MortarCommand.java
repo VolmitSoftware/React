@@ -20,8 +20,8 @@ package com.volmit.react.util.plugin;
 
 import com.volmit.iris.Iris;
 import com.volmit.iris.core.IrisSettings;
-import com.volmit.iris.util.collection.KList;
-import com.volmit.iris.util.format.C;
+import com.volmit.react.util.collection.KList;
+import com.volmit.react.util.format.C;
 import org.bukkit.Sound;
 
 import java.lang.reflect.Field;

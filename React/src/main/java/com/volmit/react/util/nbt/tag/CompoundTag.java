@@ -19,7 +19,7 @@
 package com.volmit.react.util.nbt.tag;
 
 import com.volmit.iris.engine.data.io.MaxDepthIO;
-import com.volmit.iris.util.collection.KMap;
+import com.volmit.react.util.collection.KMap;
 
 import java.util.Collection;
 import java.util.Iterator;

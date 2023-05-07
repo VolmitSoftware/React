@@ -18,8 +18,8 @@
 
 package com.volmit.react.util.stream.convert;
 
-import com.volmit.iris.util.stream.BasicLayer;
-import com.volmit.iris.util.stream.ProceduralStream;
+import com.volmit.react.util.stream.BasicLayer;
+import com.volmit.react.util.stream.ProceduralStream;
 
 import java.util.function.Function;
 

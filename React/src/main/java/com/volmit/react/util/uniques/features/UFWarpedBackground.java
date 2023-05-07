@@ -1,10 +1,10 @@
 package com.volmit.react.util.uniques.features;
 
-import com.volmit.iris.util.math.RNG;
-import com.volmit.iris.util.noise.CNG;
-import com.volmit.iris.util.uniques.UFeature;
-import com.volmit.iris.util.uniques.UFeatureMeta;
-import com.volmit.iris.util.uniques.UImage;
+import com.volmit.react.util.math.RNG;
+import com.volmit.react.util.noise.CNG;
+import com.volmit.react.util.uniques.UFeature;
+import com.volmit.react.util.uniques.UFeatureMeta;
+import com.volmit.react.util.uniques.UImage;
 
 import java.util.function.Consumer;
 

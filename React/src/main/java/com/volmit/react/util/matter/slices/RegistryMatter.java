@@ -19,8 +19,8 @@
 package com.volmit.react.util.matter.slices;
 
 import com.volmit.iris.core.loader.IrisRegistrant;
-import com.volmit.iris.util.context.IrisContext;
-import com.volmit.iris.util.data.palette.Palette;
+import com.volmit.react.util.context.IrisContext;
+import com.volmit.react.util.data.palette.Palette;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;

@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.scheduling;
 
-import com.volmit.iris.util.collection.KList;
+import com.volmit.react.util.collection.KList;
 
 @SuppressWarnings("ALL")
 public interface Queue<T> {

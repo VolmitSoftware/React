@@ -18,8 +18,8 @@
 
 package com.volmit.react.util.noise;
 
-import com.volmit.iris.util.math.M;
-import com.volmit.iris.util.math.RNG;
+import com.volmit.react.util.math.M;
+import com.volmit.react.util.math.RNG;
 
 public class CellHeightNoise implements NoiseGenerator {
     private final FastNoiseDouble n;

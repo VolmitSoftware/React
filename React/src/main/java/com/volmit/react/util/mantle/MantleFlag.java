@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.mantle;
 
-import com.volmit.iris.util.collection.StateList;
+import com.volmit.react.util.collection.StateList;
 
 public enum MantleFlag {
     OBJECT,

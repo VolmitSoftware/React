@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.inventorygui;
 
-import com.volmit.iris.util.data.MaterialBlock;
+import com.volmit.react.util.data.MaterialBlock;
 import org.bukkit.Material;
 
 @SuppressWarnings("ClassCanBeRecord")

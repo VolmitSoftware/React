@@ -21,10 +21,10 @@ package com.volmit.react.util.matter.slices;
 import com.volmit.iris.Iris;
 import com.volmit.iris.core.nms.INMS;
 import com.volmit.iris.engine.object.TileData;
-import com.volmit.iris.util.data.palette.Palette;
-import com.volmit.iris.util.matter.Sliced;
-import com.volmit.iris.util.matter.TileWrapper;
-import com.volmit.iris.util.nbt.tag.CompoundTag;
+import com.volmit.react.util.data.palette.Palette;
+import com.volmit.react.util.matter.Sliced;
+import com.volmit.react.util.matter.TileWrapper;
+import com.volmit.react.util.nbt.tag.CompoundTag;
 import org.bukkit.Location;
 import org.bukkit.World;
 

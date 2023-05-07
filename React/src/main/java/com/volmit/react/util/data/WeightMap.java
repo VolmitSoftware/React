@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.data;
 
-import com.volmit.iris.util.collection.KMap;
+import com.volmit.react.util.collection.KMap;
 
 public class WeightMap<T> extends KMap<T, Double> {
     private static final long serialVersionUID = 87558033900969389L;
