@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.data;
 
-import com.volmit.iris.engine.data.cache.Cache;
+import com.volmit.react.util.cache.Cache;
 import com.volmit.react.util.collection.KMap;
 
 public class ComplexCache<T> {

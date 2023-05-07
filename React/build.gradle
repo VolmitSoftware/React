@@ -132,6 +132,7 @@ dependencies {
     implementation 'org.bitbucket.mstrobel:procyon-compilertools:0.6.0'
     implementation 'org.bitbucket.mstrobel:procyon-reflection:0.6.0'
     implementation 'fr.inria.gforge.spoon:spoon-core:10.2.0'
+    implementation 'com.github.ben-manes.caffeine:caffeine:3.0.6'
 }
 
 if (JavaVersion.current().toString() != "17") {

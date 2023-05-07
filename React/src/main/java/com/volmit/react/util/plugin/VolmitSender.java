@@ -19,7 +19,7 @@
 package com.volmit.react.util.plugin;
 
 
-import com.volmit.iris.core.IrisSettings;
+import com.volmit.react.React;
 import com.volmit.react.util.collection.KList;
 import com.volmit.react.util.collection.KMap;
 import com.volmit.react.util.decree.DecreeParameter;
@@ -225,7 +225,7 @@ public class VolmitSender implements CommandSender {
     }
 
     public void sendTitle(String title, String subtitle, int i, int s, int o) {
-        Iris.audiences.player(player()).showTitle(Title.title(
+        React.audiences.player(player()).showTitle(Title.title(
                 createComponent(title),
                 createComponent(subtitle),
                 Title.Times.times(Duration.ofMillis(i), Duration.ofMillis(s), Duration.ofMillis(o))));
@@ -247,28 +247,39 @@ public class VolmitSender implements CommandSender {
     }
 
     public void sendAction(String action) {
-        Iris.audiences.player(player()).sendActionBar(createNoPrefixComponent(action));
+        React.audiences.player(player()).sendActionBar(createNoPrefixComponent(action));
     }
 
     public void sendActionNoProcessing(String action) {
-        Iris.audiences.player(player()).sendActionBar(createNoPrefixComponentNoProcessing(action));
+        React.audiences.player(player()).sendActionBar(createNoPrefixComponentNoProcessing(action));
     }
 
     public void sendTitle(String subtitle, int i, int s, int o) {
-        Iris.audiences.player(player()).showTitle(Title.title(
+        React.audiences.player(player()).showTitle(Title.title(
                 createNoPrefixComponent(" "),
                 createNoPrefixComponent(subtitle),
                 Title.Times.times(Duration.ofMillis(i), Duration.ofMillis(s), Duration.ofMillis(o))));
     }
 
+    public boolean useConsoleCustomColors = true;
+    public boolean useCustomColorsIngame = true;
+    public int spinh = -20;
+    public int spins = 7;
+    public int spinb = 8;
+
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
+    public boolean canUseCustomColors(VolmitSender volmitSender) {
+        return volmitSender.isPlayer() ? useCustomColorsIngame : useConsoleCustomColors;
+    }
+
     private Component createNoPrefixComponent(String message) {
-        if (!IrisSettings.get().getGeneral().canUseCustomColors(this)) {
+        if (!canUseCustomColors(this)) {
             String t = C.translateAlternateColorCodes('&', MiniMessage.miniMessage().stripTags(message));
             return MiniMessage.miniMessage().deserialize(t);
         }
 
         String t = C.translateAlternateColorCodes('&', message);
-        String a = C.aura(t, IrisSettings.get().getGeneral().getSpinh(), IrisSettings.get().getGeneral().getSpins(), IrisSettings.get().getGeneral().getSpinb(), 0.36);
+        String a = C.aura(t, spinh, spins, spinb, 0.36);
         return MiniMessage.miniMessage().deserialize(a);
     }
 
@@ -277,18 +288,18 @@ public class VolmitSender implements CommandSender {
     }
 
     private Component createComponent(String message) {
-        if (!IrisSettings.get().getGeneral().canUseCustomColors(this)) {
+        if (!canUseCustomColors(this)) {
             String t = C.translateAlternateColorCodes('&', MiniMessage.miniMessage().stripTags(getTag() + message));
             return MiniMessage.miniMessage().deserialize(t);
         }
 
         String t = C.translateAlternateColorCodes('&', getTag() + message);
-        String a = C.aura(t, IrisSettings.get().getGeneral().getSpinh(), IrisSettings.get().getGeneral().getSpins(), IrisSettings.get().getGeneral().getSpinb());
+        String a = C.aura(t, spinh, spins, spinb);
         return MiniMessage.miniMessage().deserialize(a);
     }
 
     private Component createComponentRaw(String message) {
-        if (!IrisSettings.get().getGeneral().canUseCustomColors(this)) {
+        if (!canUseCustomColors(this)) {
             String t = C.translateAlternateColorCodes('&', MiniMessage.miniMessage().stripTags(getTag() + message));
             return MiniMessage.miniMessage().deserialize(t);
         }
@@ -327,7 +338,7 @@ public class VolmitSender implements CommandSender {
             return;
         }
 
-        if ((!IrisSettings.get().getGeneral().isUseCustomColorsIngame() && s instanceof Player) || !IrisSettings.get().getGeneral().isUseConsoleCustomColors()) {
+        if ((!useCustomColorsIngame && s instanceof Player) || !useConsoleCustomColors) {
             s.sendMessage(C.translateAlternateColorCodes('&', getTag() + message));
             return;
         }
@@ -338,12 +349,12 @@ public class VolmitSender implements CommandSender {
         }
 
         try {
-            Iris.audiences.sender(s).sendMessage(createComponent(message));
+            React.audiences.sender(s).sendMessage(createComponent(message));
         } catch (Throwable e) {
             String t = C.translateAlternateColorCodes('&', getTag() + message);
-            String a = C.aura(t, IrisSettings.get().getGeneral().getSpinh(), IrisSettings.get().getGeneral().getSpins(), IrisSettings.get().getGeneral().getSpinb());
+            String a = C.aura(t, spinh, spins, spinb);
 
-            Iris.debug("<NOMINI>Failure to parse " + a);
+            React.debug("<NOMINI>Failure to parse " + a);
             s.sendMessage(C.translateAlternateColorCodes('&', getTag() + message));
         }
     }
@@ -357,7 +368,7 @@ public class VolmitSender implements CommandSender {
             return;
         }
 
-        if ((!IrisSettings.get().getGeneral().isUseCustomColorsIngame() && s instanceof Player) || !IrisSettings.get().getGeneral().isUseConsoleCustomColors()) {
+        if ((!useCustomColorsIngame && s instanceof Player) || !useConsoleCustomColors) {
             s.sendMessage(C.translateAlternateColorCodes('&', message));
             return;
         }
@@ -368,12 +379,12 @@ public class VolmitSender implements CommandSender {
         }
 
         try {
-            Iris.audiences.sender(s).sendMessage(createComponentRaw(message));
+            React.audiences.sender(s).sendMessage(createComponentRaw(message));
         } catch (Throwable e) {
             String t = C.translateAlternateColorCodes('&', getTag() + message);
-            String a = C.aura(t, IrisSettings.get().getGeneral().getSpinh(), IrisSettings.get().getGeneral().getSpins(), IrisSettings.get().getGeneral().getSpinb());
+            String a = C.aura(t, spinh, spins, spinb);
 
-            Iris.debug("<NOMINI>Failure to parse " + a);
+            React.debug("<NOMINI>Failure to parse " + a);
             s.sendMessage(C.translateAlternateColorCodes('&', getTag() + message));
         }
     }
@@ -541,7 +552,7 @@ public class VolmitSender implements CommandSender {
                         String nDescription = "<#3fe05a>✎ <#6ad97d><font:minecraft:uniform>" + p.getDescription();
                         String nUsage;
                         String fullTitle;
-                        Iris.debug("Contextual: " + p.isContextual() + " / player: " + isPlayer());
+                        React.debug("Contextual: " + p.isContextual() + " / player: " + isPlayer());
                         if (p.isContextual() && (isPlayer() || s instanceof CommandDummy)) {
                             fullTitle = "<#ffcc00>[" + nTitle + "<#ffcc00>] ";
                             nUsage = "<#ff9900>➱ <#ffcc00><font:minecraft:uniform>The value may be derived from environment context.";

@@ -21,10 +21,9 @@ package com.volmit.react.util.data;
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
-import com.volmit.iris.engine.framework.MeteredCache;
 import com.volmit.react.util.math.RollingSequence;
 
-public class KCache<K, V> implements MeteredCache {
+public class KCache<K, V> {
     private final long max;
     private final LoadingCache<K, V> cache;
     private final boolean fastDump;
@@ -67,22 +66,18 @@ public class KCache<K, V> implements MeteredCache {
         return cache.get(k);
     }
 
-    @Override
     public long getSize() {
         return cache.estimatedSize();
     }
 
-    @Override
     public KCache<?, ?> getRawCache() {
         return this;
     }
 
-    @Override
     public long getMaxSize() {
         return max;
     }
 
-    @Override
     public boolean isClosed() {
         return false;
     }

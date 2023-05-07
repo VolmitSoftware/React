@@ -19,11 +19,10 @@
 package com.volmit.react.util.data;
 
 
-import com.volmit.iris.core.IrisSettings;
-import com.volmit.iris.core.service.ExternalDataSVC;
+import art.arcane.chrono.ChronoLatch;
+import com.volmit.react.React;
 import com.volmit.react.util.collection.KList;
 import com.volmit.react.util.collection.KMap;
-import com.volmit.react.util.scheduling.ChronoLatch;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
@@ -388,7 +387,7 @@ public class B {
         } catch (Throwable e) {
             e.printStackTrace();
             if (clw.flip()) {
-                Iris.warn("Unknown Material: " + bdx);
+                React.warn("Unknown Material: " + bdx);
             }
             return null;
         }
@@ -430,7 +429,7 @@ public class B {
 
             if (bdx == null) {
                 if (clw.flip()) {
-                    Iris.warn("Unknown Block Data '" + bd + "'");
+                    React.warn("Unknown Block Data '" + bd + "'");
                 }
                 return AIR;
             }
@@ -440,7 +439,7 @@ public class B {
             e.printStackTrace();
 
             if (clw.flip()) {
-                Iris.warn("Unknown Block Data '" + bdxf + "'");
+                React.warn("Unknown Block Data '" + bdxf + "'");
             }
         }
 
@@ -466,20 +465,13 @@ public class B {
             }
         }
 
-        Iris.error("Can't find block data for " + s);
+        React.error("Can't find block data for " + s);
         return null;
     }
 
     private static BlockData parseBlockData(String ix) {
         try {
             BlockData bx = null;
-
-            if (!ix.startsWith("minecraft:") && ix.contains(":")) {
-                NamespacedKey key = NamespacedKey.fromString(ix);
-                Optional<BlockData> bd = Iris.service(ExternalDataSVC.class).getBlockData(key);
-                if (bd.isPresent())
-                    bx = bd.get();
-            }
 
             if (bx == null) {
                 try {
@@ -509,16 +501,14 @@ public class B {
                 return null;
             }
 
-            if (bx instanceof Leaves && IrisSettings.get().getGenerator().isPreventLeafDecay()) {
-                ((Leaves) bx).setPersistent(true);
-            } else if (bx instanceof Leaves) {
+            if (bx instanceof Leaves) {
                 ((Leaves) bx).setPersistent(false);
             }
 
             return bx;
         } catch (Throwable e) {
             if (clw.flip()) {
-                Iris.warn("Unknown Block Data: " + ix);
+                React.warn("Unknown Block Data: " + ix);
             }
 
             String block = ix.contains(":") ? ix.split(":")[1].toLowerCase() : ix.toLowerCase();
@@ -562,12 +552,12 @@ public class B {
             state = newStates.entrySet().stream().map(entry -> entry.getKey() + "=" + entry.getValue()).collect(Collectors.joining(","));
             if (!state.equals("")) state = "[" + state + "]";
             String newBlock = block + state;
-            Iris.debug("Converting " + ix + " to " + newBlock);
+            React.debug("Converting " + ix + " to " + newBlock);
 
             try {
                 return createBlockData(newBlock);
             } catch (Throwable e1) {
-                Iris.reportError(e1);
+                e1.printStackTrace();
             }
 
             return null;
@@ -650,10 +640,6 @@ public class B {
                 bt.add(v);
             }
         }
-
-        for (NamespacedKey id : Iris.service(ExternalDataSVC.class).getAllIdentifiers())
-            bt.add(id.toString());
-        bt.addAll(custom.k());
 
         return bt.toArray(new String[0]);
     }

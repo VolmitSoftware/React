@@ -1,6 +1,5 @@
 package com.volmit.react.util.cache;
 
-import com.volmit.iris.engine.data.cache.Cache;
 import com.volmit.react.util.data.KCache;
 import com.volmit.react.util.function.Function2;
 

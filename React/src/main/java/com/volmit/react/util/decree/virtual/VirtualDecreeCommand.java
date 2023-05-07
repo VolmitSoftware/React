@@ -19,7 +19,8 @@
 package com.volmit.react.util.decree.virtual;
 
 
-import com.volmit.iris.core.IrisSettings;
+import art.arcane.chrono.ChronoLatch;
+import com.volmit.react.React;
 import com.volmit.react.util.collection.KList;
 import com.volmit.react.util.collection.KMap;
 import com.volmit.react.util.collection.KSet;
@@ -33,7 +34,6 @@ import com.volmit.react.util.format.C;
 import com.volmit.react.util.format.Form;
 import com.volmit.react.util.plugin.CommandDummy;
 import com.volmit.react.util.plugin.VolmitSender;
-import com.volmit.react.util.scheduling.ChronoLatch;
 import com.volmit.react.util.scheduling.J;
 import lombok.Data;
 
@@ -140,10 +140,6 @@ public class VirtualDecreeCommand {
         return isNode() ? getNode().getName() : getType().getDeclaredAnnotation(Decree.class).name();
     }
 
-    private boolean isStudio() {
-        return isNode() ? getNode().getDecree().studio() : getType().getDeclaredAnnotation(Decree.class).studio();
-    }
-
     public String getDescription() {
         return isNode() ? getNode().getDescription() : getType().getDeclaredAnnotation(Decree.class).description();
     }
@@ -181,10 +177,6 @@ public class VirtualDecreeCommand {
     }
 
     private boolean invokeTabComplete(KList<String> args, KList<Integer> skip, KList<String> tabs, String raw) {
-        if (isStudio() && !IrisSettings.get().getStudio().isStudio()) {
-            return false;
-        }
-
         if (isNode()) {
             tab(args, tabs);
             skip.add(hashCode());
@@ -327,7 +319,7 @@ public class VirtualDecreeCommand {
 
             //Still failed to find, error them
             if (param == null) {
-                Iris.debug("Can't find parameter key for " + key + "=" + value + " in " + getPath());
+                React.debug("Can't find parameter key for " + key + "=" + value + " in " + getPath());
                 sender.sendMessage(C.YELLOW + "Unknown Parameter: " + key);
                 unknownInputs.add(value); //Add the value to the unknowns and see if we can assume it later
                 continue;
@@ -338,7 +330,7 @@ public class VirtualDecreeCommand {
             try {
                 data.put(key, param.getHandler().parse(value, nowhich.contains(original))); //Parse and put
             } catch (DecreeParsingException e) {
-                Iris.debug("Can't parse parameter value for " + key + "=" + value + " in " + getPath() + " using handler " + param.getHandler().getClass().getSimpleName());
+                React.debug("Can't parse parameter value for " + key + "=" + value + " in " + getPath() + " using handler " + param.getHandler().getClass().getSimpleName());
                 sender.sendMessage(C.RED + "Cannot convert \"" + value + "\" into a " + param.getType().getSimpleName());
                 e.printStackTrace();
                 return null;
@@ -358,7 +350,7 @@ public class VirtualDecreeCommand {
                 try {
                     data.put(par.getName(), par.getHandler().parse(stringParam, nowhich.contains(original)));
                 } catch (DecreeParsingException e) {
-                    Iris.debug("Can't parse parameter value for " + par.getName() + "=" + stringParam + " in " + getPath() + " using handler " + par.getHandler().getClass().getSimpleName());
+                    React.debug("Can't parse parameter value for " + par.getName() + "=" + stringParam + " in " + getPath() + " using handler " + par.getHandler().getClass().getSimpleName());
                     sender.sendMessage(C.RED + "Cannot convert \"" + stringParam + "\" into a " + par.getType().getSimpleName());
                     e.printStackTrace();
                     return null;
@@ -376,14 +368,9 @@ public class VirtualDecreeCommand {
     }
 
     public boolean invoke(VolmitSender sender, KList<String> args, KList<Integer> skip) {
-        if (isStudio() && !IrisSettings.get().getStudio().isStudio()) {
-            sender.sendMessage(C.RED + "To use Iris Studio Commands, please enable studio in Iris/settings.json (settings auto-reload)");
-            return false;
-        }
-
-        Iris.debug("@ " + getPath() + " with " + args.toString(", "));
+        React.debug("@ " + getPath() + " with " + args.toString(", "));
         if (isNode()) {
-            Iris.debug("Invoke " + getPath() + "(" + args.toString(",") + ") at ");
+            React.debug("Invoke " + getPath() + "(" + args.toString(",") + ") at ");
             if (invokeNode(sender, map(sender, args))) {
                 return true;
             }
@@ -433,31 +420,31 @@ public class VirtualDecreeCommand {
                     value = i.getDefaultValue();
                 }
             } catch (DecreeParsingException e) {
-                Iris.debug("Can't parse parameter value for " + i.getName() + "=" + i.getParam().defaultValue() + " in " + getPath() + " using handler " + i.getHandler().getClass().getSimpleName());
+                React.debug("Can't parse parameter value for " + i.getName() + "=" + i.getParam().defaultValue() + " in " + getPath() + " using handler " + i.getHandler().getClass().getSimpleName());
                 sender.sendMessage(C.RED + "Cannot convert \"" + i.getParam().defaultValue() + "\" into a " + i.getType().getSimpleName());
                 return false;
             }
 
             if (sender.isPlayer() && i.isContextual() && value == null) {
-                Iris.debug("Contextual!");
+                React.debug("Contextual!");
                 DecreeContextHandler<?> ch = DecreeContextHandler.contextHandlers.get(i.getType());
 
                 if (ch != null) {
                     value = ch.handle(sender);
 
                     if (value != null) {
-                        Iris.debug("Parameter \"" + i.getName() + "\" derived a value of \"" + i.getHandler().toStringForce(value) + "\" from " + ch.getClass().getSimpleName());
+                        React.debug("Parameter \"" + i.getName() + "\" derived a value of \"" + i.getHandler().toStringForce(value) + "\" from " + ch.getClass().getSimpleName());
                     } else {
-                        Iris.debug("Parameter \"" + i.getName() + "\" could not derive a value from \"" + ch.getClass().getSimpleName());
+                        React.debug("Parameter \"" + i.getName() + "\" could not derive a value from \"" + ch.getClass().getSimpleName());
                     }
                 } else {
-                    Iris.debug("Parameter \"" + i.getName() + "\" is contextual but has no context handler for \"" + i.getType().getCanonicalName() + "\"");
+                    React.debug("Parameter \"" + i.getName() + "\" is contextual but has no context handler for \"" + i.getType().getCanonicalName() + "\"");
                 }
             }
 
             if (i.hasDefault() && value == null) {
                 try {
-                    Iris.debug("Parameter \"" + i.getName() + "\" is using default value \"" + i.getParam().defaultValue() + "\"");
+                    React.debug("Parameter \"" + i.getName() + "\" is using default value \"" + i.getParam().defaultValue() + "\"");
                     value = i.getDefaultValue();
                 } catch (Throwable e) {
                     e.printStackTrace();
