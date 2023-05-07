@@ -1,45 +1,43 @@
-/*
- * Iris is a World Generator for Minecraft Bukkit Servers
- * Copyright (c) 2022 Arcane Arts (Volmit Software)
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
+/*------------------------------------------------------------------------------
+ -   Adapt is a Skill/Integration plugin  for Minecraft Bukkit Servers
+ -   Copyright (c) 2022 Arcane Arts (Volmit Software)
+ -
+ -   This program is free software: you can redistribute it and/or modify
+ -   it under the terms of the GNU General Public License as published by
+ -   the Free Software Foundation, either version 3 of the License, or
+ -   (at your option) any later version.
+ -
+ -   This program is distributed in the hope that it will be useful,
+ -   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ -   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ -   GNU General Public License for more details.
+ -
+ -   You should have received a copy of the GNU General Public License
+ -   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ -----------------------------------------------------------------------------*/
 
 package com.volmit.react.util.scheduling;
 
-
-import com.volmit.react.util.collection.KList;
-import com.volmit.react.util.function.NastyFunction;
-import com.volmit.react.util.function.NastyFuture;
-import com.volmit.react.util.function.NastyRunnable;
-import com.volmit.react.util.function.NastySupplier;
-import com.volmit.react.util.math.FinalInteger;
-import com.volmit.react.util.parallel.MultiBurst;
+import art.arcane.curse.Curse;
+import art.arcane.multiburst.MultiBurst;
+import com.volmit.react.React;
 import org.bukkit.Bukkit;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-@SuppressWarnings("ALL")
 public class J {
-    private static int tid = 0;
-    private static KList<Runnable> afterStartup = new KList<>();
-    private static KList<Runnable> afterStartupAsync = new KList<>();
+    private static final int tid = 0;
+    private static List<Runnable> afterStartup = new ArrayList<>();
+    private static List<Runnable> afterStartupAsync = new ArrayList<>();
     private static boolean started = false;
 
     public static void dofor(int a, Function<Integer, Boolean> c, int ch, Consumer<Integer> d) {
@@ -49,53 +47,20 @@ public class J {
     }
 
     public static boolean doif(Supplier<Boolean> c, Runnable g) {
-        try {
-            if (c.get()) {
-                g.run();
-                return true;
-            }
-        } catch (NullPointerException e) {
-            e.printStackTrace();
-            // TODO: Fix this because this is just a suppression for an NPE on g
-            return false;
+        if (c.get()) {
+            g.run();
+            return true;
         }
 
         return false;
     }
 
-    public static void arun(Runnable a) {
-        MultiBurst.burst.lazy(() -> {
-            try {
-                a.run();
-            } catch (Throwable e) {
-                e.printStackTrace();
-                Iris.error("Failed to run async task");
-                e.printStackTrace();
-            }
-        });
-    }
-
     public static void a(Runnable a) {
-        MultiBurst.burst.lazy(() -> {
-            try {
-                a.run();
-            } catch (Throwable e) {
-                e.printStackTrace();
-                Iris.error("Failed to run async task");
-                e.printStackTrace();
-            }
-        });
-    }
-
-    public static void aBukkit(Runnable a) {
-        if (!Bukkit.getPluginManager().isPluginEnabled(Iris.instance)) {
-            return;
-        }
-        Bukkit.getScheduler().scheduleAsyncDelayedTask(Iris.instance, a);
+        MultiBurst.burst.lazy(a);
     }
 
     public static <T> Future<T> a(Callable<T> a) {
-        return MultiBurst.burst.lazySubmit(a);
+        return ((ExecutorService) Curse.on(MultiBurst.burst).get("service")).submit(a);
     }
 
     public static void attemptAsync(NastyRunnable r) {
@@ -107,7 +72,6 @@ public class J {
             return r.run();
         } catch (Throwable e) {
             e.printStackTrace();
-
         }
 
         return onError;
@@ -117,7 +81,6 @@ public class J {
         try {
             return r.run(param);
         } catch (Throwable e) {
-            e.printStackTrace();
 
         }
 
@@ -130,14 +93,6 @@ public class J {
 
     public static boolean attempt(NastyRunnable r) {
         return attemptCatch(r) == null;
-    }
-
-    public static <T> T attemptResult(NastySupplier<T> r) {
-        try {
-            return r.get();
-        } catch (Throwable e) {
-            return null;
-        }
     }
 
     public static Throwable attemptCatch(NastyRunnable r) {
@@ -154,7 +109,6 @@ public class J {
         try {
             return t.get();
         } catch (Throwable e) {
-            e.printStackTrace();
             return i;
         }
     }
@@ -215,51 +169,32 @@ public class J {
         }
     }
 
+    public static <T> T sResult(Supplier<T> t) {
+        if (Bukkit.isPrimaryThread()) {
+            return t.get();
+        }
+
+        AtomicBoolean f = new AtomicBoolean(false);
+        AtomicReference<T> r = new AtomicReference<>();
+        J.s(() -> {
+            r.set(t.get());
+            f.set(true);
+        });
+
+        while (!f.get()) {
+            J.sleep(15);
+        }
+
+        return r.get();
+    }
+
     /**
      * Queue a sync task
      *
      * @param r the runnable
      */
     public static void s(Runnable r) {
-        if (!Bukkit.getPluginManager().isPluginEnabled(Iris.instance)) {
-            return;
-        }
-        Bukkit.getScheduler().scheduleSyncDelayedTask(Iris.instance, r);
-    }
-
-    public static CompletableFuture sfut(Runnable r) {
-        CompletableFuture f = new CompletableFuture();
-
-        if (!Bukkit.getPluginManager().isPluginEnabled(Iris.instance)) {
-            return null;
-        }
-        Bukkit.getScheduler().scheduleSyncDelayedTask(Iris.instance, () -> {
-            r.run();
-            f.complete(null);
-        });
-        return f;
-    }
-
-    public static CompletableFuture sfut(Runnable r, int delay) {
-        CompletableFuture f = new CompletableFuture();
-
-        if (!Bukkit.getPluginManager().isPluginEnabled(Iris.instance)) {
-            return null;
-        }
-        Bukkit.getScheduler().scheduleSyncDelayedTask(Iris.instance, () -> {
-            r.run();
-            f.complete(null);
-        }, delay);
-        return f;
-    }
-
-    public static CompletableFuture afut(Runnable r) {
-        CompletableFuture f = new CompletableFuture();
-        J.a(() -> {
-            r.run();
-            f.complete(null);
-        });
-        return f;
+        Bukkit.getScheduler().scheduleSyncDelayedTask(React.instance, r);
     }
 
     /**
@@ -269,14 +204,7 @@ public class J {
      * @param delay the delay to wait in ticks before running
      */
     public static void s(Runnable r, int delay) {
-        try {
-            if (!Bukkit.getPluginManager().isPluginEnabled(Iris.instance)) {
-                return;
-            }
-            Bukkit.getScheduler().scheduleSyncDelayedTask(Iris.instance, r, delay);
-        } catch (Throwable e) {
-            e.printStackTrace();
-        }
+        Bukkit.getScheduler().scheduleSyncDelayedTask(React.instance, r, delay);
     }
 
     /**
@@ -296,10 +224,7 @@ public class J {
      * @return the task id
      */
     public static int sr(Runnable r, int interval) {
-        if (!Bukkit.getPluginManager().isPluginEnabled(Iris.instance)) {
-            return -1;
-        }
-        return Bukkit.getScheduler().scheduleSyncRepeatingTask(Iris.instance, r, 0, interval);
+        return Bukkit.getScheduler().scheduleSyncRepeatingTask(React.instance, r, 0, interval);
     }
 
     /**
@@ -333,9 +258,7 @@ public class J {
      */
     @SuppressWarnings("deprecation")
     public static void a(Runnable r, int delay) {
-        if (Bukkit.getPluginManager().isPluginEnabled(Iris.instance)) {
-            Bukkit.getScheduler().scheduleAsyncDelayedTask(Iris.instance, r, delay);
-        }
+        Bukkit.getScheduler().scheduleAsyncDelayedTask(React.instance, r, delay);
     }
 
     /**
@@ -356,10 +279,7 @@ public class J {
      */
     @SuppressWarnings("deprecation")
     public static int ar(Runnable r, int interval) {
-        if (!Bukkit.getPluginManager().isPluginEnabled(Iris.instance)) {
-            return -1;
-        }
-        return Bukkit.getScheduler().scheduleAsyncRepeatingTask(Iris.instance, r, 0, interval);
+        return Bukkit.getScheduler().scheduleAsyncRepeatingTask(React.instance, r, 0, interval);
     }
 
     /**
