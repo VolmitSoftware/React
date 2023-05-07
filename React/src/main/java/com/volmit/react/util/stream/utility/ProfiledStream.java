@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.stream.utility;
 
-import com.volmit.iris.Iris;
+
 import com.volmit.react.util.collection.KList;
 import com.volmit.react.util.format.Form;
 import com.volmit.react.util.math.RollingSequence;

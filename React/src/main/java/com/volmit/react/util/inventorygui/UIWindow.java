@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.inventorygui;
 
-import com.volmit.iris.Iris;
+
 import com.volmit.react.util.collection.KMap;
 import com.volmit.react.util.collection.KSet;
 import com.volmit.react.util.scheduling.Callback;

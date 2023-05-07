@@ -18,6 +18,7 @@
 
 package com.volmit.react.legacyutil;
 
+import art.arcane.chrono.ChronoLatch;
 import com.volmit.react.React;
 
 /**

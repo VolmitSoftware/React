@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.particle;
 
-import com.volmit.iris.Iris;
+
 import org.bukkit.Color;
 import org.bukkit.World;
 import org.bukkit.entity.Player;

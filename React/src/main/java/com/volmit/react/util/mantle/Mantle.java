@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.mantle;
 
-import com.volmit.iris.Iris;
+
 import com.volmit.iris.core.IrisSettings;
 import com.volmit.iris.core.tools.IrisToolbelt;
 import com.volmit.iris.engine.data.cache.Cache;

@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.decree.handlers;
 
-import com.volmit.iris.Iris;
+
 import com.volmit.iris.core.IrisSettings;
 import com.volmit.iris.core.loader.IrisData;
 import com.volmit.iris.engine.object.IrisDimension;

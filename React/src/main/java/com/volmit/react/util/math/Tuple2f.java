@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.math;
 
-import com.volmit.iris.Iris;
+
 
 /**
  * A generic 2-element tuple that is represented by single-precision

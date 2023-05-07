@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.matter.slices;
 
-import com.volmit.iris.Iris;
+
 import com.volmit.iris.core.nms.INMS;
 import com.volmit.iris.engine.object.TileData;
 import com.volmit.react.util.data.palette.Palette;

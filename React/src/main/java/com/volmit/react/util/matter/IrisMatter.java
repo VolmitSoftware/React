@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.matter;
 
-import com.volmit.iris.Iris;
+
 import com.volmit.iris.core.loader.IrisRegistrant;
 import com.volmit.react.util.collection.KMap;
 import com.volmit.react.util.json.JSONObject;

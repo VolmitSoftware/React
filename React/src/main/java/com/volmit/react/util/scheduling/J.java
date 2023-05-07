@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.scheduling;
 
-import com.volmit.iris.Iris;
+
 import com.volmit.react.util.collection.KList;
 import com.volmit.react.util.function.NastyFunction;
 import com.volmit.react.util.function.NastyFuture;

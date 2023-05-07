@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.scheduling;
 
-import com.volmit.iris.Iris;
+
 import com.volmit.iris.core.service.PreservationSVC;
 
 public abstract class Looper extends Thread {

@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.scheduling;
 
-import com.volmit.iris.Iris;
+
 
 public class QueueExecutor extends Looper {
     private final Queue<Runnable> queue;

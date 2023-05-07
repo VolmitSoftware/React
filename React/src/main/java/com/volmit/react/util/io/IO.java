@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.io;
 
-import com.volmit.iris.Iris;
+
 import com.volmit.react.util.format.Form;
 
 import java.io.BufferedInputStream;

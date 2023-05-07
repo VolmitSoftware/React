@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.mantle;
 
-import com.volmit.iris.Iris;
+
 import com.volmit.iris.engine.EnginePanic;
 import com.volmit.iris.engine.data.cache.Cache;
 import com.volmit.react.util.documentation.ChunkCoordinates;

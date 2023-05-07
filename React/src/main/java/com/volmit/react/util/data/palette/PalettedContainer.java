@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.data.palette;
 
-import com.volmit.iris.Iris;
+
 import com.volmit.react.util.math.M;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 

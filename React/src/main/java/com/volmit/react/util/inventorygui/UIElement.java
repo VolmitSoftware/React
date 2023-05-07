@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.inventorygui;
 
-import com.volmit.iris.Iris;
+
 import com.volmit.react.util.collection.KList;
 import com.volmit.react.util.data.MaterialBlock;
 import com.volmit.react.util.scheduling.Callback;

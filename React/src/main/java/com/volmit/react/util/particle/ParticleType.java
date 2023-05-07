@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.particle;
 
-import com.volmit.iris.Iris;
+
 import org.bukkit.Color;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.material.MaterialData;

@@ -1,15 +1,12 @@
 package com.volmit.react;
 
 import art.arcane.multiburst.MultiBurst;
-import com.volmit.react.api.command.RCommand;
 import com.volmit.react.core.controller.ActionController;
 import com.volmit.react.core.controller.EventController;
 import com.volmit.react.core.controller.PlayerController;
 import com.volmit.react.core.controller.SampleController;
 import com.volmit.react.legacyutil.*;
 import com.volmit.react.legacyutil.Ticker;
-import dev.jorel.commandapi.CommandAPI;
-import dev.jorel.commandapi.CommandAPIConfig;
 import lombok.Getter;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import org.bukkit.Bukkit;
@@ -28,7 +25,6 @@ public class React extends VolmitPlugin {
     public static Ticker ticker;
     public static MultiBurst burst;
     public static BukkitAudiences adventure;
-    private final List<RCommand> commands = new ArrayList<>();
 
     @Control
     private SampleController sampleController;
@@ -83,7 +79,6 @@ public class React extends VolmitPlugin {
 
     @Override
     public void onLoad() {
-        CommandAPI.onLoad(new CommandAPIConfig().verboseOutput(false));
         instance = this;
         if (Bukkit.isPrimaryThread()) {
             serverThread = Thread.currentThread();
@@ -94,7 +89,6 @@ public class React extends VolmitPlugin {
     @Override
     public void onEnable() {
         instance = this;
-        //CommandAPI.onEnable(this);
         burst = new MultiBurst("React", Thread.MIN_PRIORITY);
         if (Bukkit.isPrimaryThread()) {
             serverThread = Thread.currentThread();
@@ -103,14 +97,12 @@ public class React extends VolmitPlugin {
         adventure = BukkitAudiences.create(this);
         super.onEnable();
         ticker.register(new ControllerTicker(actionController, 100));
-        //CommandReact.register();
     }
 
     @Override
     public void onDisable() {
         stop();
         super.onDisable();
-        CommandAPI.onDisable();
     }
 
     public File jar() {

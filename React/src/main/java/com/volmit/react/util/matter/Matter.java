@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.matter;
 
-import com.volmit.iris.Iris;
+
 import com.volmit.iris.engine.object.IrisObject;
 import com.volmit.iris.engine.object.IrisPosition;
 import com.volmit.react.util.collection.KSet;

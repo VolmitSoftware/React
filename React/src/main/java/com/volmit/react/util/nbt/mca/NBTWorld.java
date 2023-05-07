@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.nbt.mca;
 
-import com.volmit.iris.Iris;
+
 import com.volmit.iris.core.nms.INMS;
 import com.volmit.iris.engine.data.cache.Cache;
 import com.volmit.react.util.collection.KMap;

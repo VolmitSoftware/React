@@ -18,7 +18,6 @@
 
 package com.volmit.react.util.plugin;
 
-import com.volmit.iris.Iris;
 import com.volmit.react.util.collection.KList;
 import org.bukkit.command.CommandSender;
 

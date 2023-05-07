@@ -18,7 +18,6 @@
 
 package com.volmit.react.util.collection;
 
-import com.volmit.iris.Iris;
 import com.volmit.react.util.function.Consumer2;
 import com.volmit.react.util.function.Consumer3;
 import com.volmit.react.util.scheduling.Queue;

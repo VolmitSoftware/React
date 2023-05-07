@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.stream;
 
-import com.volmit.iris.Iris;
+
 import com.volmit.iris.core.loader.IrisData;
 import com.volmit.iris.engine.data.cache.Cache;
 import com.volmit.iris.engine.framework.Engine;

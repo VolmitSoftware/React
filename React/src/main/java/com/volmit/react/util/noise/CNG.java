@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.noise;
 
-import com.volmit.iris.Iris;
+
 import com.volmit.iris.engine.object.IRare;
 import com.volmit.iris.engine.object.NoiseStyle;
 import com.volmit.react.util.cache.FloatCache;

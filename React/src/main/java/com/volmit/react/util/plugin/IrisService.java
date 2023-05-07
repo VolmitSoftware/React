@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.plugin;
 
-import com.volmit.iris.Iris;
+
 import org.bukkit.event.Listener;
 
 public interface IrisService extends Listener {

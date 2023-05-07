@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.nbt.io;
 
-import com.volmit.iris.Iris;
+
 import com.volmit.iris.engine.data.io.MaxDepthIO;
 import com.volmit.react.util.nbt.tag.*;
 

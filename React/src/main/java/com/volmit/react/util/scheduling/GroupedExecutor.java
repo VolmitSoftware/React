@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.scheduling;
 
-import com.volmit.iris.Iris;
+
 import com.volmit.react.util.collection.KMap;
 import com.volmit.react.util.function.NastyRunnable;
 

@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.parallel;
 
-import com.volmit.iris.Iris;
+
 import com.volmit.react.util.function.NastyRunnable;
 import com.volmit.react.util.hunk.Hunk;
 import com.volmit.react.util.io.IORunnable;

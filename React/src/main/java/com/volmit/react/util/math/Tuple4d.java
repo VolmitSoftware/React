@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.math;
 
-import com.volmit.iris.Iris;
+
 
 /**
  * A 4 element tuple represented by double precision floating point
