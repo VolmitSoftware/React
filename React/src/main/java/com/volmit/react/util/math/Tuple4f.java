@@ -19,6 +19,7 @@
 package com.volmit.react.util.math;
 
 
+import com.volmit.react.React;
 
 /**
  * A 4-element tuple represented by single-precision floating point x,y,z,w
@@ -359,7 +360,7 @@ public abstract class Tuple4f implements java.io.Serializable, Cloneable {
             return (this.x == t1.x && this.y == t1.y && this.z == t1.z
                     && this.w == t1.w);
         } catch (NullPointerException e2) {
-            Iris.reportError(e2);
+            React.reportError(e2);
             return false;
         }
     }
@@ -378,7 +379,7 @@ public abstract class Tuple4f implements java.io.Serializable, Cloneable {
             return (this.x == t2.x && this.y == t2.y &&
                     this.z == t2.z && this.w == t2.w);
         } catch (NullPointerException | ClassCastException e2) {
-            Iris.reportError(e2);
+            React.reportError(e2);
             return false;
         }
     }

@@ -19,6 +19,7 @@
 package com.volmit.react.util.scheduling;
 
 
+import com.volmit.react.React;
 import com.volmit.react.util.collection.KList;
 import com.volmit.react.util.function.NastyRunnable;
 import com.volmit.react.util.math.M;
@@ -195,9 +196,9 @@ public class TaskExecutor {
                     task.run();
                     state = TaskState.COMPLETED;
                 } catch (Throwable ex) {
-                    Iris.reportError(ex);
+                    React.reportError(ex);
                     ex.printStackTrace();
-                    Iris.reportError(ex);
+                    React.reportError(ex);
                     state = TaskState.FAILED;
                 }
             });

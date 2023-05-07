@@ -18,8 +18,8 @@
 
 package com.volmit.react.util.format;
 
+import art.arcane.chrono.ChronoLatch;
 import com.volmit.react.util.math.RollingSequence;
-import com.volmit.react.util.scheduling.ChronoLatch;
 import com.volmit.react.util.scheduling.Looper;
 
 public class MemoryMonitor {

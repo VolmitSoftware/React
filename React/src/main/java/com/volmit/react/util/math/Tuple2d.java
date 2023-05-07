@@ -19,6 +19,7 @@
 package com.volmit.react.util.math;
 
 
+import com.volmit.react.React;
 
 /**
  * A generic 2-element tuple that is represented by double-precision
@@ -296,7 +297,7 @@ public abstract class Tuple2d implements java.io.Serializable, Cloneable {
         try {
             return (this.x == t1.x && this.y == t1.y);
         } catch (NullPointerException e2) {
-            Iris.reportError(e2);
+            React.reportError(e2);
             return false;
         }
 
@@ -315,7 +316,7 @@ public abstract class Tuple2d implements java.io.Serializable, Cloneable {
             Tuple2d t2 = (Tuple2d) t1;
             return (this.x == t2.x && this.y == t2.y);
         } catch (NullPointerException | ClassCastException e2) {
-            Iris.reportError(e2);
+            React.reportError(e2);
             return false;
         }
 

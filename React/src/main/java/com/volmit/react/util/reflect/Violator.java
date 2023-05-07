@@ -19,6 +19,7 @@
 package com.volmit.react.util.reflect;
 
 
+import com.volmit.react.React;
 import com.volmit.react.util.collection.KList;
 
 import java.lang.annotation.Annotation;
@@ -265,7 +266,7 @@ public class Violator {
             T f = c.getDeclaredAnnotation(a);
             p(id(f, c), f);
 
-            Iris.debug("Set as " + id(f, c) + " as " + ("@" + a.getCanonicalName() + "[" + id(c, null) + "]"));
+            React.debug("Set as " + id(f, c) + " as " + ("@" + a.getCanonicalName() + "[" + id(c, null) + "]"));
         }
 
         return (T) g("@" + a.getCanonicalName() + "[" + id(c, null) + "]");

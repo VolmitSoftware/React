@@ -5,7 +5,7 @@ import com.volmit.react.api.action.ActionParams;
 import com.volmit.react.api.action.ActionTicket;
 import com.volmit.react.api.action.ReactAction;
 import com.volmit.react.api.arguments.Argument;
-import com.volmit.react.legacyutil.J;
+import com.volmit.react.util.scheduling.J;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

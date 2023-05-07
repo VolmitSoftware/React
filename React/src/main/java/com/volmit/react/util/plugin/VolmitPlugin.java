@@ -19,6 +19,7 @@
 package com.volmit.react.util.plugin;
 
 
+import com.volmit.react.React;
 import com.volmit.react.util.collection.KList;
 import com.volmit.react.util.collection.KMap;
 import com.volmit.react.util.io.IO;
@@ -59,19 +60,19 @@ public abstract class VolmitPlugin extends JavaPlugin implements Listener {
     }
 
     public void l(Object l) {
-        Iris.info("[" + getName() + "]: " + l);
+        React.info("[" + getName() + "]: " + l);
     }
 
     public void w(Object l) {
-        Iris.warn("[" + getName() + "]: " + l);
+        React.warn("[" + getName() + "]: " + l);
     }
 
     public void f(Object l) {
-        Iris.error("[" + getName() + "]: " + l);
+        React.error("[" + getName() + "]: " + l);
     }
 
     public void v(Object l) {
-        Iris.verbose("[" + getName() + "]: " + l);
+        React.verbose("[" + getName() + "]: " + l);
     }
 
     public void onEnable() {
@@ -320,11 +321,11 @@ public abstract class VolmitPlugin extends JavaPlugin implements Listener {
         commandCache = new KList<>();
 
         for (Field i : getClass().getDeclaredFields()) {
-            if (i.isAnnotationPresent(com.volmit.iris.util.plugin.Command.class)) {
+            if (i.isAnnotationPresent(com.volmit.react.util.plugin.Command.class)) {
                 try {
                     i.setAccessible(true);
                     MortarCommand pc = (MortarCommand) i.getType().getConstructor().newInstance();
-                    com.volmit.iris.util.plugin.Command c = i.getAnnotation(com.volmit.iris.util.plugin.Command.class);
+                    com.volmit.react.util.plugin.Command c = i.getAnnotation(com.volmit.react.util.plugin.Command.class);
                     registerCommand(pc, c.value());
                     commandCache.add(pc);
                     v("Registered Commands /" + pc.getNode() + " (" + i.getName() + ")");
@@ -453,12 +454,12 @@ public abstract class VolmitPlugin extends JavaPlugin implements Listener {
     }
 
     public void registerListener(Listener l) {
-        Iris.debug("Register Listener " + l.getClass().getSimpleName());
+        React.debug("Register Listener " + l.getClass().getSimpleName());
         Bukkit.getPluginManager().registerEvents(l, this);
     }
 
     public void unregisterListener(Listener l) {
-        Iris.debug("Register Listener " + l.getClass().getSimpleName());
+        React.debug("Register Listener " + l.getClass().getSimpleName());
         HandlerList.unregisterAll(l);
     }
 

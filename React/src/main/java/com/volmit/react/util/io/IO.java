@@ -360,7 +360,7 @@ public class IO {
                 }
             }
         } catch (Exception ex) {
-            Iris.reportError(ex);
+            ex.printStackTrace();
             x = ex.getCause();
         } finally {
             file.close();

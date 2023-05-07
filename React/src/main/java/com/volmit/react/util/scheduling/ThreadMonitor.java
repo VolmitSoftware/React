@@ -19,6 +19,8 @@
 package com.volmit.react.util.scheduling;
 
 
+import art.arcane.chrono.ChronoLatch;
+import com.volmit.react.React;
 import com.volmit.react.util.format.Form;
 import com.volmit.react.util.math.RollingSequence;
 
@@ -64,7 +66,7 @@ public class ThreadMonitor extends Thread {
                 lastState = s;
 
                 if (cl.flip()) {
-                    Iris.info("Cycles: " + Form.f(cycles) + " (" + Form.duration(sq.getAverage(), 2) + ")");
+                    React.info("Cycles: " + Form.f(cycles) + " (" + Form.duration(sq.getAverage(), 2) + ")");
                 }
             } catch (Throwable e) {
                 e.printStackTrace();

@@ -7,13 +7,14 @@ import com.volmit.react.core.controller.PlayerController;
 import com.volmit.react.core.controller.SampleController;
 import com.volmit.react.legacyutil.*;
 import com.volmit.react.legacyutil.Ticker;
+import com.volmit.react.util.collection.KList;
+import com.volmit.react.util.scheduling.J;
 import lombok.Getter;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import org.bukkit.Bukkit;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
+import java.lang.annotation.Annotation;
 
 
 @Getter
@@ -77,6 +78,10 @@ public class React extends VolmitPlugin {
         msg(C.DARK_PURPLE + string);
     }
 
+    public static void reportError(Throwable e) {
+        e.printStackTrace();
+    }
+
     @Override
     public void onLoad() {
         instance = this;
@@ -132,5 +137,26 @@ public class React extends VolmitPlugin {
     public void reload() {
         stop();
         start();
+    }
+
+    public static KList<Object> initialize(String s) {
+        return initialize(s, null);
+    }
+
+    public static KList<Object> initialize(String s, Class<? extends Annotation> slicedClass) {
+        JarScanner js = new JarScanner(instance.jar(), s);
+        KList<Object> v = new KList<>();
+        J.attempt(js::scan);
+        for (Class<?> i : js.getClasses()) {
+            if (slicedClass == null || i.isAnnotationPresent(slicedClass)) {
+                try {
+                    v.add(i.getDeclaredConstructor().newInstance());
+                } catch (Throwable ignored) {
+
+                }
+            }
+        }
+
+        return v;
     }
 }

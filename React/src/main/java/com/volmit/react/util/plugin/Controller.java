@@ -19,6 +19,7 @@
 package com.volmit.react.util.plugin;
 
 
+import com.volmit.react.React;
 
 public abstract class Controller implements IController {
     private final String name;
@@ -39,22 +40,22 @@ public abstract class Controller implements IController {
 
     @Override
     public void l(Object l) {
-        Iris.info("[" + getName() + "]: " + l);
+        React.info("[" + getName() + "]: " + l);
     }
 
     @Override
     public void w(Object l) {
-        Iris.warn("[" + getName() + "]: " + l);
+        React.warn("[" + getName() + "]: " + l);
     }
 
     @Override
     public void f(Object l) {
-        Iris.error("[" + getName() + "]: " + l);
+        React.error("[" + getName() + "]: " + l);
     }
 
     @Override
     public void v(Object l) {
-        Iris.verbose("[" + getName() + "]: " + l);
+        React.verbose("[" + getName() + "]: " + l);
     }
 
     @Override

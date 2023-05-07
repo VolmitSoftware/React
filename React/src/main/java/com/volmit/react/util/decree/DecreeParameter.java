@@ -18,7 +18,7 @@
 
 package com.volmit.react.util.decree;
 
-import com.volmit.iris.engine.data.cache.AtomicCache;
+import com.volmit.react.util.cache.AtomicCache;
 import com.volmit.react.util.collection.KList;
 import com.volmit.react.util.decree.annotations.Param;
 import com.volmit.react.util.decree.exceptions.DecreeParsingException;

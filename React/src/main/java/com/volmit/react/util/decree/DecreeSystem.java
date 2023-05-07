@@ -19,13 +19,13 @@
 package com.volmit.react.util.decree;
 
 
-import com.volmit.iris.core.IrisSettings;
+import com.volmit.react.React;
+import com.volmit.react.util.scheduling.J;
 import com.volmit.react.util.collection.KList;
 import com.volmit.react.util.decree.virtual.VirtualDecreeCommand;
 import com.volmit.react.util.format.C;
 import com.volmit.react.util.math.RNG;
 import com.volmit.react.util.plugin.VolmitSender;
-import com.volmit.react.util.scheduling.J;
 import org.bukkit.Sound;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -38,7 +38,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 public interface DecreeSystem extends CommandExecutor, TabCompleter {
-    KList<DecreeParameterHandler<?>> handlers = Iris.initialize("com.volmit.iris.util.decree.handlers", null).convert((i) -> (DecreeParameterHandler<?>) i);
+    KList<DecreeParameterHandler<?>> handlers = React.initialize("com.volmit.react.util.decree.handlers", null).convert((i) -> (DecreeParameterHandler<?>) i);
 
     static KList<String> enhanceArgs(String[] args) {
         return enhanceArgs(args, true);
@@ -122,7 +122,7 @@ public interface DecreeSystem extends CommandExecutor, TabCompleter {
                 return i;
             }
         }
-        Iris.error("Unhandled type in Decree Parameter: " + type.getName() + ". This is bad!");
+        React.error("Unhandled type in Decree Parameter: " + type.getName() + ". This is bad!");
         return null;
     }
 
@@ -144,9 +144,7 @@ public interface DecreeSystem extends CommandExecutor, TabCompleter {
         v.removeDuplicates();
 
         if (sender instanceof Player) {
-            if (IrisSettings.get().getGeneral().isCommandSounds()) {
-                ((Player) sender).playSound(((Player) sender).getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.25f, RNG.r.f(0.125f, 1.95f));
-            }
+            ((Player) sender).playSound(((Player) sender).getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.25f, RNG.r.f(0.125f, 1.95f));
         }
 
         return v;
@@ -159,23 +157,19 @@ public interface DecreeSystem extends CommandExecutor, TabCompleter {
             return true;
         }
 
-        J.aBukkit(() -> {
+        J.a(() -> {
             if (!call(new VolmitSender(sender), args)) {
 
-                if (IrisSettings.get().getGeneral().isCommandSounds()) {
-                    if (sender instanceof Player) {
-                        ((Player) sender).playSound(((Player) sender).getLocation(), Sound.BLOCK_AMETHYST_CLUSTER_BREAK, 0.77f, 0.25f);
-                        ((Player) sender).playSound(((Player) sender).getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 0.2f, 0.45f);
-                    }
+                if (sender instanceof Player) {
+                    ((Player) sender).playSound(((Player) sender).getLocation(), Sound.BLOCK_AMETHYST_CLUSTER_BREAK, 0.77f, 0.25f);
+                    ((Player) sender).playSound(((Player) sender).getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 0.2f, 0.45f);
                 }
 
                 sender.sendMessage(C.RED + "Unknown Iris Command");
             } else {
-                if (IrisSettings.get().getGeneral().isCommandSounds()) {
-                    if (sender instanceof Player) {
-                        ((Player) sender).playSound(((Player) sender).getLocation(), Sound.BLOCK_AMETHYST_CLUSTER_BREAK, 0.77f, 1.65f);
-                        ((Player) sender).playSound(((Player) sender).getLocation(), Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 0.125f, 2.99f);
-                    }
+                if (sender instanceof Player) {
+                    ((Player) sender).playSound(((Player) sender).getLocation(), Sound.BLOCK_AMETHYST_CLUSTER_BREAK, 0.77f, 1.65f);
+                    ((Player) sender).playSound(((Player) sender).getLocation(), Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 0.125f, 2.99f);
                 }
             }
         });

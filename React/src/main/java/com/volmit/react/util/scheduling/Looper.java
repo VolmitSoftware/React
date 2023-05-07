@@ -18,13 +18,11 @@
 
 package com.volmit.react.util.scheduling;
 
-
-import com.volmit.iris.core.service.PreservationSVC;
+import com.volmit.react.React;
 
 public abstract class Looper extends Thread {
     @SuppressWarnings("BusyWait")
     public void run() {
-        Iris.service(PreservationSVC.class).register(this);
         while (!interrupted()) {
             try {
                 long m = loop();
@@ -44,7 +42,7 @@ public abstract class Looper extends Thread {
             }
         }
 
-        Iris.debug("Iris Thread " + getName() + " Shutdown.");
+        React.debug("React Thread " + getName() + " Shutdown.");
     }
 
     protected abstract long loop();

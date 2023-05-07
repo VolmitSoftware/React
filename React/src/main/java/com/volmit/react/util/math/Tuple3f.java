@@ -19,6 +19,7 @@
 package com.volmit.react.util.math;
 
 
+import com.volmit.react.React;
 
 /**
  * A generic 3-element tuple that is represented by single precision-floating
@@ -332,7 +333,7 @@ public abstract class Tuple3f implements java.io.Serializable, Cloneable {
         try {
             return (this.x == t1.x && this.y == t1.y && this.z == t1.z);
         } catch (NullPointerException e2) {
-            Iris.reportError(e2);
+            React.reportError(e2);
             return false;
         }
     }
@@ -350,7 +351,7 @@ public abstract class Tuple3f implements java.io.Serializable, Cloneable {
             Tuple3f t2 = (Tuple3f) t1;
             return (this.x == t2.x && this.y == t2.y && this.z == t2.z);
         } catch (NullPointerException | ClassCastException e2) {
-            Iris.reportError(e2);
+            React.reportError(e2);
             return false;
         }
     }

@@ -1,7 +1,7 @@
 package com.volmit.react.api.sampler;
 
 import com.volmit.react.React;
-import com.volmit.react.legacyutil.J;
+import com.volmit.react.util.scheduling.J;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;

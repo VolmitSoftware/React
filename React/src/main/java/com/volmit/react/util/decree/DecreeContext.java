@@ -18,9 +18,9 @@
 
 package com.volmit.react.util.decree;
 
+import art.arcane.chrono.ChronoLatch;
 import com.volmit.react.util.collection.KMap;
 import com.volmit.react.util.plugin.VolmitSender;
-import com.volmit.react.util.scheduling.ChronoLatch;
 
 public class DecreeContext {
     private static final ChronoLatch cl = new ChronoLatch(60000);

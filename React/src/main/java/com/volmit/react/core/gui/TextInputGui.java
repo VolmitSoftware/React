@@ -1,7 +1,7 @@
 package com.volmit.react.core.gui;
 
 import com.volmit.react.React;
-import com.volmit.react.legacyutil.J;
+import com.volmit.react.util.scheduling.J;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;

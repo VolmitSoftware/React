@@ -16,7 +16,9 @@
  -   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  -----------------------------------------------------------------------------*/
 
-package com.volmit.react.legacyutil;
+package com.volmit.react.util.scheduling;
+
+import com.volmit.react.legacyutil.CancellableTask;
 
 public abstract class SR implements Runnable, CancellableTask {
     private int id = 0;

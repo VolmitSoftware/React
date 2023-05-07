@@ -19,6 +19,7 @@
 package com.volmit.react.util.inventorygui;
 
 
+import com.volmit.react.React;
 import com.volmit.react.util.collection.KMap;
 import com.volmit.react.util.collection.KSet;
 import com.volmit.react.util.scheduling.Callback;
@@ -229,7 +230,7 @@ public class UIWindow implements Window, Listener {
         }
 
         if (visible) {
-            Bukkit.getPluginManager().registerEvents(this, Iris.instance);
+            Bukkit.getPluginManager().registerEvents(this, React.instance);
 
             if (getResolution().getType().equals(InventoryType.CHEST)) {
                 inventory = Bukkit.createInventory(null, getViewportHeight() * 9, getTitle());

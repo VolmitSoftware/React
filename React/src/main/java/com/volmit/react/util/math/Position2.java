@@ -18,7 +18,6 @@
 
 package com.volmit.react.util.math;
 
-import com.volmit.iris.engine.object.IrisPosition;
 import org.bukkit.util.Vector;
 
 public class Position2 {
@@ -89,9 +88,5 @@ public class Position2 {
 
     public Position2 blockToChunk() {
         return new Position2(x >> 4, z >> 4);
-    }
-
-    public IrisPosition toIris() {
-        return new IrisPosition(x, 23, z);
     }
 }

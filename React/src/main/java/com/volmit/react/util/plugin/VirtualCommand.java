@@ -19,7 +19,7 @@
 package com.volmit.react.util.plugin;
 
 
-import com.volmit.iris.core.IrisSettings;
+import com.volmit.react.React;
 import com.volmit.react.util.collection.KList;
 import com.volmit.react.util.collection.KMap;
 import com.volmit.react.util.format.C;
@@ -108,7 +108,7 @@ public class VirtualCommand {
                     KList<String> c = chain.copy();
                     c.remove(0);
                     if (cmd.hit(sender, c, vs.getCommand())) {
-                        if (vs.isPlayer() && IrisSettings.get().getGeneral().isCommandSounds()) {
+                        if (vs.isPlayer()) {
                             vs.player().getWorld().playSound(vs.player().getLocation(), Sound.ITEM_AXE_STRIP, 0.35f, 1.8f);
                         }
 
@@ -171,7 +171,7 @@ public class VirtualCommand {
         for (String i : command.getRequiredPermissions()) {
             if (!sender.hasPermission(i)) {
                 failed = true;
-                Bukkit.getScheduler().scheduleSyncDelayedTask(Iris.instance, () -> sender.sendMessage("- " + C.WHITE + i), 0);
+                Bukkit.getScheduler().scheduleSyncDelayedTask(React.instance, () -> sender.sendMessage("- " + C.WHITE + i), 0);
             }
         }
 

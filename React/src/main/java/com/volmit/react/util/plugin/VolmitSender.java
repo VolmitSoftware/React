@@ -20,6 +20,7 @@ package com.volmit.react.util.plugin;
 
 
 import com.volmit.react.React;
+import com.volmit.react.util.scheduling.J;
 import com.volmit.react.util.collection.KList;
 import com.volmit.react.util.collection.KMap;
 import com.volmit.react.util.decree.DecreeParameter;
@@ -28,7 +29,6 @@ import com.volmit.react.util.format.C;
 import com.volmit.react.util.format.Form;
 import com.volmit.react.util.math.M;
 import com.volmit.react.util.math.RNG;
-import com.volmit.react.util.scheduling.J;
 import lombok.Getter;
 import lombok.Setter;
 import net.kyori.adventure.text.Component;

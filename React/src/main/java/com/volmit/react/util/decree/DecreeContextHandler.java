@@ -19,6 +19,7 @@
 package com.volmit.react.util.decree;
 
 
+import com.volmit.react.React;
 import com.volmit.react.util.collection.KMap;
 import com.volmit.react.util.plugin.VolmitSender;
 
@@ -29,7 +30,7 @@ public interface DecreeContextHandler<T> {
         KMap<Class<?>, DecreeContextHandler<?>> contextHandlers = new KMap<>();
 
         try {
-            Iris.initialize("com.volmit.iris.util.decree.context").forEach((i)
+            React.initialize("com.volmit.react.util.decree.context").forEach((i)
                     -> contextHandlers.put(((DecreeContextHandler<?>) i).getType(), (DecreeContextHandler<?>) i));
         } catch (Throwable e) {
             e.printStackTrace();

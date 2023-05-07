@@ -324,7 +324,6 @@ public class XML {
                 }
             }
         } catch (Exception ignore) {
-            Iris.reportError(ignore);
             try {
                 Double value = Double.valueOf(string);
                 if (value.toString().equals(string)) {

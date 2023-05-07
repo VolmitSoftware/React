@@ -23,6 +23,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 
+import com.volmit.react.React;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -400,7 +401,7 @@ public class Metrics {
                         }
                     } catch (NullPointerException | NoSuchMethodException | IllegalAccessException |
                              InvocationTargetException ignored) {
-                        Iris.reportError(ignored);
+                        React.reportError(ignored);
                     }
                 }
             } catch (NoSuchFieldException e) {
@@ -456,7 +457,7 @@ public class Metrics {
                 }
                 chart.add("data", data);
             } catch (Throwable t) {
-                Iris.reportError(t);
+                React.reportError(t);
                 if (logFailedRequests) {
                     Bukkit.getLogger().log(Level.WARNING, "Failed to get data for custom chart with id " + chartId, t);
                 }

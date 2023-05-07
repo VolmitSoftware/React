@@ -19,6 +19,7 @@
 package com.volmit.react.util.math;
 
 
+import com.volmit.react.React;
 
 /**
  * A generic 3-element tuple that is represented by double-precision
@@ -348,7 +349,7 @@ public abstract class Tuple3d implements java.io.Serializable, Cloneable {
         try {
             return (this.x == t1.x && this.y == t1.y && this.z == t1.z);
         } catch (NullPointerException e2) {
-            Iris.reportError(e2);
+            React.reportError(e2);
             return false;
         }
     }
@@ -366,7 +367,7 @@ public abstract class Tuple3d implements java.io.Serializable, Cloneable {
             Tuple3d t2 = (Tuple3d) t1;
             return (this.x == t2.x && this.y == t2.y && this.z == t2.z);
         } catch (ClassCastException | NullPointerException e1) {
-            Iris.reportError(e1);
+            React.reportError(e1);
             return false;
         }
 

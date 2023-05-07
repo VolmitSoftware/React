@@ -22,6 +22,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import com.volmit.react.React;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -370,7 +371,7 @@ public class MetricsLite {
                         }
                     } catch (NullPointerException | NoSuchMethodException | IllegalAccessException |
                              InvocationTargetException ignored) {
-                        Iris.reportError(ignored);
+                        React.reportError(ignored);
                     }
                 }
             } catch (NoSuchFieldException e) {

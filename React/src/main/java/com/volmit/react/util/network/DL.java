@@ -18,9 +18,9 @@
 
 package com.volmit.react.util.network;
 
+import art.arcane.chrono.ChronoLatch;
 import com.volmit.react.util.collection.KSet;
 import com.volmit.react.util.io.IO;
-import com.volmit.react.util.scheduling.ChronoLatch;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;

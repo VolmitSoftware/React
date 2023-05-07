@@ -21,6 +21,10 @@ package com.volmit.react.util.scheduling;
 import art.arcane.curse.Curse;
 import art.arcane.multiburst.MultiBurst;
 import com.volmit.react.React;
+import com.volmit.react.legacyutil.FinalInteger;
+import com.volmit.react.legacyutil.NastyFunction;
+import com.volmit.react.legacyutil.NastyFuture;
+import com.volmit.react.legacyutil.NastyRunnable;
 import org.bukkit.Bukkit;
 
 import java.util.ArrayList;
