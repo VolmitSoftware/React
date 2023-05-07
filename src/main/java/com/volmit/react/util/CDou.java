@@ -19,8 +19,8 @@
 package com.volmit.react.util;
 
 public class CDou {
-    private double number;
     private final double max;
+    private double number;
 
     public CDou(double max) {
         number = 0;
@@ -50,7 +50,7 @@ public class CDou {
     }
 
     public void circ() {
-        if(number < 0) {
+        if (number < 0) {
             number = max - (Math.abs(number) > max ? max : Math.abs(number));
         }
 

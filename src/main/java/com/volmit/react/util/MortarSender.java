@@ -49,8 +49,7 @@ public class MortarSender implements CommandSender {
     /**
      * Wrap a command sender
      *
-     * @param s
-     *     the command sender
+     * @param s the command sender
      */
     public MortarSender(CommandSender s) {
         tag = "";
@@ -63,22 +62,21 @@ public class MortarSender implements CommandSender {
     }
 
     /**
-     * Set a command tag (prefix for sendMessage)
-     *
-     * @param tag
-     *     the tag
-     */
-    public void setTag(String tag) {
-        this.tag = tag;
-    }
-
-    /**
      * Get the command tag
      *
      * @return the command tag
      */
     public String getTag() {
         return tag;
+    }
+
+    /**
+     * Set a command tag (prefix for sendMessage)
+     *
+     * @param tag the tag
+     */
+    public void setTag(String tag) {
+        this.tag = tag;
     }
 
     /**
@@ -184,7 +182,7 @@ public class MortarSender implements CommandSender {
 
     @Override
     public void sendMessage(String[] messages) {
-        for(String str : messages)
+        for (String str : messages)
             s.sendMessage(C.translateAlternateColorCodes('&', getTag() + str));
     }
 

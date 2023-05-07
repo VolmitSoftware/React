@@ -39,40 +39,36 @@ public class Area {
     private Location location;
     private Double radius;
 
-    public static boolean within(Location center, Location target, double rad) {
-        return new Area(center, rad).isWithin(target);
-    }
-
     /**
      * Used to instantiate a new "area" in which you can check if entities are
      * within this area.
      *
-     * @param location
-     *     The center location of the area
-     * @param radius
-     *     The radius used as a double.
+     * @param location The center location of the area
+     * @param radius   The radius used as a double.
      */
     public Area(Location location, Double radius) {
         this.location = location;
         this.radius = radius;
     }
 
-    public Cuboid toCuboid() {
-        return new Cuboid(location.clone().add(radius, radius, radius), location.clone().subtract(radius, radius, radius));
-    }
-
     /**
      * Used to instantiate a new "area" in which you can check if entities are
      * within this area.
      *
-     * @param location
-     *     The center location of the area
-     * @param radius
-     *     The radius used as an int.
+     * @param location The center location of the area
+     * @param radius   The radius used as an int.
      */
     public Area(Location location, Integer radius) {
         this.location = location;
         this.radius = (double) radius;
+    }
+
+    public static boolean within(Location center, Location target, double rad) {
+        return new Area(center, rad).isWithin(target);
+    }
+
+    public Cuboid toCuboid() {
+        return new Cuboid(location.clone().add(radius, radius, radius), location.clone().subtract(radius, radius, radius));
     }
 
     /**
@@ -81,15 +77,14 @@ public class Area {
      * be careful on how accurate you need this. As it is meant for FAST
      * calculations with minimal load.</STRONG>
      *
-     * @param location
-     *     The given location to calculate a distance from the center.
+     * @param location The given location to calculate a distance from the center.
      * @return Returns the distance of location from the center.
      */
     public Double distance(Location location) {
         double c = this.location.distanceSquared(location);
         double t = c;
 
-        for(int i = 0; i < 3; i++) {
+        for (int i = 0; i < 3; i++) {
             t = (c / t + t) / 2.0;
         }
 
@@ -101,8 +96,7 @@ public class Area {
      * area, to the given location <STRONG>WARNING: This uses the sqrt function,
      * be careful on how heavy you call this.</STRONG>
      *
-     * @param location
-     *     The given location to calculate a distance from the center.
+     * @param location The given location to calculate a distance from the center.
      * @return Returns the distance of location from the center.
      */
     public Double slowDistance(Location location) {
@@ -112,8 +106,7 @@ public class Area {
     /**
      * Check to see weather a location is within the area
      *
-     * @param location
-     *     The location to measure from the center.
+     * @param location The location to measure from the center.
      * @return Returns True if within; False if not.
      */
     public boolean isWithin(Location location) {
@@ -130,8 +123,7 @@ public class Area {
     /**
      * Get all nearby entities matching the given entity type
      *
-     * @param type
-     *     the entity type
+     * @param type the entity type
      * @return the nearby entities matching the given type
      */
     public Entity[] getNearbyEntities(EntityType type) {
@@ -143,8 +135,7 @@ public class Area {
     /**
      * Get nearby entities which match the following class
      *
-     * @param entityClass
-     *     the entity class
+     * @param entityClass the entity class
      * @return the nearby entities assignable from the given class
      */
     public Entity[] getNearbyEntities(Class<? extends Entity> entityClass) {
@@ -166,12 +157,12 @@ public class Area {
             int chunkRadius = (int) (radius < 16 ? 1 : (radius - (radius % 16)) / 16);
             HashSet<Entity> radiusEntities = new HashSet<Entity>();
 
-            for(int chX = 0 - chunkRadius; chX <= chunkRadius; chX++) {
-                for(int chZ = 0 - chunkRadius; chZ <= chunkRadius; chZ++) {
+            for (int chX = 0 - chunkRadius; chX <= chunkRadius; chX++) {
+                for (int chZ = 0 - chunkRadius; chZ <= chunkRadius; chZ++) {
                     int x = (int) location.getX(), y = (int) location.getY(), z = (int) location.getZ();
 
-                    for(Entity e : new Location(location.getWorld(), x + (chX * 16), y, z + (chZ * 16)).getChunk().getEntities()) {
-                        if(e.getLocation().distanceSquared(location) <= radius * radius && e.getLocation().getBlock() != location.getBlock()) {
+                    for (Entity e : new Location(location.getWorld(), x + (chX * 16), y, z + (chZ * 16)).getChunk().getEntities()) {
+                        if (e.getLocation().distanceSquared(location) <= radius * radius && e.getLocation().getBlock() != location.getBlock()) {
                             radiusEntities.add(e);
                         }
                     }
@@ -179,7 +170,7 @@ public class Area {
             }
 
             return radiusEntities.toArray(new Entity[radiusEntities.size()]);
-        } catch(Exception e) {
+        } catch (Exception e) {
             return new ArrayList<Entity>().toArray(new Entity[0]);
         }
     }
@@ -192,8 +183,8 @@ public class Area {
     public Player[] getNearbyPlayers() {
         List<Player> px = new ArrayList<>();
 
-        for(Entity i : getNearbyEntities()) {
-            if(i.getType().equals(EntityType.PLAYER)) {
+        for (Entity i : getNearbyEntities()) {
+            if (i.getType().equals(EntityType.PLAYER)) {
                 px.add((Player) i);
             }
         }
@@ -213,8 +204,7 @@ public class Area {
     /**
      * Set the defined center location
      *
-     * @param location
-     *     The new location to be set
+     * @param location The new location to be set
      */
     public void setLocation(Location location) {
         this.location = location;
@@ -232,8 +222,7 @@ public class Area {
     /**
      * Set the area's radius
      *
-     * @param radius
-     *     The new radius to be set
+     * @param radius The new radius to be set
      */
     public void setRadius(Double radius) {
         this.radius = radius;

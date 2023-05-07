@@ -26,16 +26,16 @@ public class PrecisionStopwatch {
     private double time;
     private boolean profiling;
 
+    public PrecisionStopwatch() {
+        reset();
+        profiling = false;
+    }
+
     public static PrecisionStopwatch start() {
         PrecisionStopwatch p = new PrecisionStopwatch();
         p.begin();
 
         return p;
-    }
-
-    public PrecisionStopwatch() {
-        reset();
-        profiling = false;
     }
 
     public void begin() {
@@ -45,7 +45,7 @@ public class PrecisionStopwatch {
     }
 
     public void end() {
-        if(!profiling) {
+        if (!profiling) {
             return;
         }
 

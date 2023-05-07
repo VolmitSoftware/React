@@ -1,7 +1,6 @@
 package com.volmit.react.content.sampler;
 
 import com.volmit.react.api.sampler.ReactCachedSampler;
-import com.volmit.react.util.Form;
 
 public class SamplerUnknown extends ReactCachedSampler {
     public static final String ID = "unknown";

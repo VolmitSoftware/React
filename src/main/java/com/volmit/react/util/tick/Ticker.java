@@ -38,9 +38,9 @@ public class Ticker {
     private final RollingSequence tasksPerSecond;
     private final RollingSequence tickTime;
     private final MultiBurst burst;
+    private final Looper looper;
     private volatile boolean ticking;
     private boolean closed;
-    private final Looper looper;
 
     public Ticker(MultiBurst burst) {
         random = new Random();
@@ -56,19 +56,19 @@ public class Ticker {
             PrecisionStopwatch p = PrecisionStopwatch.start();
             int tps = 0;
             int tv = 0;
+
             @Override
             protected long loop() {
-                if(closed)
-                {
+                if (closed) {
                     return 100;
                 }
 
-                if(!ticking) {
+                if (!ticking) {
                     p = PrecisionStopwatch.start();
-                    tps+=tick();
+                    tps += tick();
                     tickTime.put(p.getMilliseconds());
                     tv++;
-                    if(tv >= 20) {
+                    if (tv >= 20) {
                         tv = 0;
                         tasksPerSecond.put(tps);
                         tps = 0;
@@ -82,13 +82,13 @@ public class Ticker {
     }
 
     public void register(Ticked ticked) {
-        synchronized(newTicks) {
+        synchronized (newTicks) {
             newTicks.add(ticked);
         }
     }
 
     public void unregister(Ticked ticked) {
-        synchronized(removeTicks) {
+        synchronized (removeTicks) {
             removeTicks.add(ticked.getId());
         }
     }
@@ -98,24 +98,23 @@ public class Ticker {
         int ix = 0;
         AtomicInteger tc = new AtomicInteger(0);
         BurstExecutor e = burst.burst(ticklist.size());
-        for(int i = 0; i < ticklist.size(); i++) {
+        for (int i = 0; i < ticklist.size(); i++) {
             int ii = i;
             ix++;
             e.queue(() -> {
                 Ticked t = ticklist.get(ii);
 
-                if(t != null && t.shouldTick()) {
+                if (t != null && t.shouldTick()) {
                     tc.incrementAndGet();
                     try {
                         PrecisionStopwatch p = PrecisionStopwatch.start();
                         t.tick();
                         p.end();
 
-                        if(p.getMilliseconds() > 50)
-                        {
+                        if (p.getMilliseconds() > 50) {
                             System.out.println("Tick " + t.getId() + " took " + p.getMilliseconds() + "ms");
                         }
-                    } catch(Throwable exxx) {
+                    } catch (Throwable exxx) {
                         exxx.printStackTrace();
                     }
                 }

@@ -18,8 +18,8 @@ public interface ReactComponent {
     }
 
     default boolean isRanged(ItemStack it) {
-        if(isItem(it)) {
-            return switch(it.getType()) {
+        if (isItem(it)) {
+            return switch (it.getType()) {
                 case BOW, CROSSBOW -> true;
                 default -> false;
             };
@@ -29,8 +29,8 @@ public interface ReactComponent {
     }
 
     default boolean isSword(ItemStack it) {
-        if(isItem(it)) {
-            return switch(it.getType()) {
+        if (isItem(it)) {
+            return switch (it.getType()) {
                 case DIAMOND_SWORD, GOLDEN_SWORD, IRON_SWORD, NETHERITE_SWORD, STONE_SWORD, WOODEN_SWORD -> true;
                 default -> false;
             };
@@ -40,8 +40,8 @@ public interface ReactComponent {
     }
 
     default boolean isAxe(ItemStack it) {
-        if(isItem(it)) {
-            return switch(it.getType()) {
+        if (isItem(it)) {
+            return switch (it.getType()) {
                 case DIAMOND_AXE, GOLDEN_AXE, IRON_AXE, NETHERITE_AXE, STONE_AXE, WOODEN_AXE -> true;
                 default -> false;
             };
@@ -51,9 +51,10 @@ public interface ReactComponent {
     }
 
     default boolean isPickaxe(ItemStack it) {
-        if(isItem(it)) {
-            return switch(it.getType()) {
-                case DIAMOND_PICKAXE, GOLDEN_PICKAXE, IRON_PICKAXE, NETHERITE_PICKAXE, STONE_PICKAXE, WOODEN_PICKAXE -> true;
+        if (isItem(it)) {
+            return switch (it.getType()) {
+                case DIAMOND_PICKAXE, GOLDEN_PICKAXE, IRON_PICKAXE, NETHERITE_PICKAXE, STONE_PICKAXE, WOODEN_PICKAXE ->
+                        true;
                 default -> false;
             };
         }
@@ -91,7 +92,7 @@ public interface ReactComponent {
     default boolean isLeaves(ItemStack it) {
         if (isItem(it)) {
             return switch (it.getType()) {
-                case OAK_LEAVES, SPRUCE_LEAVES, BIRCH_LEAVES, JUNGLE_LEAVES, ACACIA_LEAVES, DARK_OAK_LEAVES,MANGROVE_LEAVES, AZALEA_LEAVES, FLOWERING_AZALEA_LEAVES->
+                case OAK_LEAVES, SPRUCE_LEAVES, BIRCH_LEAVES, JUNGLE_LEAVES, ACACIA_LEAVES, DARK_OAK_LEAVES, MANGROVE_LEAVES, AZALEA_LEAVES, FLOWERING_AZALEA_LEAVES ->
                         true;
                 default -> false;
             };
@@ -112,9 +113,10 @@ public interface ReactComponent {
     }
 
     default boolean isHelmet(ItemStack it) {
-        if(isItem(it)) {
-            return switch(it.getType()) {
-                case CHAINMAIL_HELMET, DIAMOND_HELMET, GOLDEN_HELMET, IRON_HELMET, LEATHER_HELMET, NETHERITE_HELMET, TURTLE_HELMET -> true;
+        if (isItem(it)) {
+            return switch (it.getType()) {
+                case CHAINMAIL_HELMET, DIAMOND_HELMET, GOLDEN_HELMET, IRON_HELMET, LEATHER_HELMET, NETHERITE_HELMET, TURTLE_HELMET ->
+                        true;
                 default -> false;
             };
         }
@@ -123,9 +125,10 @@ public interface ReactComponent {
     }
 
     default boolean isLeggings(ItemStack it) {
-        if(isItem(it)) {
-            return switch(it.getType()) {
-                case DIAMOND_LEGGINGS, GOLDEN_LEGGINGS, IRON_LEGGINGS, NETHERITE_LEGGINGS, CHAINMAIL_LEGGINGS, LEATHER_LEGGINGS -> true;
+        if (isItem(it)) {
+            return switch (it.getType()) {
+                case DIAMOND_LEGGINGS, GOLDEN_LEGGINGS, IRON_LEGGINGS, NETHERITE_LEGGINGS, CHAINMAIL_LEGGINGS, LEATHER_LEGGINGS ->
+                        true;
                 default -> false;
             };
         }
@@ -134,9 +137,10 @@ public interface ReactComponent {
     }
 
     default boolean isChestplate(ItemStack it) {
-        if(isItem(it)) {
-            return switch(it.getType()) {
-                case DIAMOND_CHESTPLATE, GOLDEN_CHESTPLATE, IRON_CHESTPLATE, NETHERITE_CHESTPLATE, CHAINMAIL_CHESTPLATE, LEATHER_CHESTPLATE -> true;
+        if (isItem(it)) {
+            return switch (it.getType()) {
+                case DIAMOND_CHESTPLATE, GOLDEN_CHESTPLATE, IRON_CHESTPLATE, NETHERITE_CHESTPLATE, CHAINMAIL_CHESTPLATE, LEATHER_CHESTPLATE ->
+                        true;
                 default -> false;
             };
         }
@@ -145,8 +149,8 @@ public interface ReactComponent {
     }
 
     default boolean isHoe(ItemStack it) {
-        if(isItem(it)) {
-            return switch(it.getType()) {
+        if (isItem(it)) {
+            return switch (it.getType()) {
                 case DIAMOND_HOE, GOLDEN_HOE, IRON_HOE, NETHERITE_HOE, STONE_HOE, WOODEN_HOE -> true;
                 default -> false;
             };
@@ -156,40 +160,41 @@ public interface ReactComponent {
     }
 
     default boolean isOre(BlockData b) {
-        return switch(b.getMaterial()) {
-            case COPPER_ORE, DEEPSLATE_COPPER_ORE, COAL_ORE, GOLD_ORE, IRON_ORE, DIAMOND_ORE, LAPIS_ORE, EMERALD_ORE, NETHER_QUARTZ_ORE, NETHER_GOLD_ORE, REDSTONE_ORE, DEEPSLATE_COAL_ORE, DEEPSLATE_IRON_ORE, DEEPSLATE_GOLD_ORE, DEEPSLATE_LAPIS_ORE, DEEPSLATE_DIAMOND_ORE, DEEPSLATE_EMERALD_ORE, DEEPSLATE_REDSTONE_ORE -> true;
+        return switch (b.getMaterial()) {
+            case COPPER_ORE, DEEPSLATE_COPPER_ORE, COAL_ORE, GOLD_ORE, IRON_ORE, DIAMOND_ORE, LAPIS_ORE, EMERALD_ORE, NETHER_QUARTZ_ORE, NETHER_GOLD_ORE, REDSTONE_ORE, DEEPSLATE_COAL_ORE, DEEPSLATE_IRON_ORE, DEEPSLATE_GOLD_ORE, DEEPSLATE_LAPIS_ORE, DEEPSLATE_DIAMOND_ORE, DEEPSLATE_EMERALD_ORE, DEEPSLATE_REDSTONE_ORE ->
+                    true;
             default -> false;
         };
     }
 
     default boolean isStorage(BlockData b) {
-        return switch(b.getMaterial()) {
+        return switch (b.getMaterial()) {
             case CHEST,
-                SMOKER,
-                TRAPPED_CHEST,
-                SHULKER_BOX,
-                WHITE_SHULKER_BOX,
-                ORANGE_SHULKER_BOX,
-                MAGENTA_SHULKER_BOX,
-                LIGHT_BLUE_SHULKER_BOX,
-                YELLOW_SHULKER_BOX,
-                LIME_SHULKER_BOX,
-                PINK_SHULKER_BOX,
-                GRAY_SHULKER_BOX,
-                LIGHT_GRAY_SHULKER_BOX,
-                CYAN_SHULKER_BOX,
-                PURPLE_SHULKER_BOX,
-                BLUE_SHULKER_BOX,
-                BROWN_SHULKER_BOX,
-                GREEN_SHULKER_BOX,
-                RED_SHULKER_BOX,
-                BLACK_SHULKER_BOX,
-                BARREL,
-                DISPENSER,
-                DROPPER,
-                FURNACE,
-                BLAST_FURNACE,
-                HOPPER -> true;
+                    SMOKER,
+                    TRAPPED_CHEST,
+                    SHULKER_BOX,
+                    WHITE_SHULKER_BOX,
+                    ORANGE_SHULKER_BOX,
+                    MAGENTA_SHULKER_BOX,
+                    LIGHT_BLUE_SHULKER_BOX,
+                    YELLOW_SHULKER_BOX,
+                    LIME_SHULKER_BOX,
+                    PINK_SHULKER_BOX,
+                    GRAY_SHULKER_BOX,
+                    LIGHT_GRAY_SHULKER_BOX,
+                    CYAN_SHULKER_BOX,
+                    PURPLE_SHULKER_BOX,
+                    BLUE_SHULKER_BOX,
+                    BROWN_SHULKER_BOX,
+                    GREEN_SHULKER_BOX,
+                    RED_SHULKER_BOX,
+                    BLACK_SHULKER_BOX,
+                    BARREL,
+                    DISPENSER,
+                    DROPPER,
+                    FURNACE,
+                    BLAST_FURNACE,
+                    HOPPER -> true;
             default -> false;
         };
     }

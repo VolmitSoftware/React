@@ -1,8 +1,8 @@
 package com.volmit.react.api.monitor;
 
 import com.volmit.react.api.graph.RollingGraph;
-import com.volmit.react.model.ReactPlayer;
 import com.volmit.react.api.sampler.Sampler;
+import com.volmit.react.model.ReactPlayer;
 
 import java.util.Map;
 
@@ -21,21 +21,19 @@ public class GraphMonitor extends PlayerMonitor {
     }
 
     @Override
-    public void start()
-    {
+    public void start() {
         super.start();
     }
 
     @Override
-    public void stop()
-    {
+    public void stop() {
         super.stop();
     }
 
     @Override
     public void flush() {
-        for(Sampler i : getSamplers().keySet()) {
-            if(!graphs.containsKey(i)) {
+        for (Sampler i : getSamplers().keySet()) {
+            if (!graphs.containsKey(i)) {
                 graphs.put(i, new RollingGraph(history));
             }
         }

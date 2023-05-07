@@ -5,7 +5,6 @@ import com.volmit.react.util.J;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.inventory.ItemStack;
 
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -13,8 +12,7 @@ import java.util.function.Supplier;
 public interface Sampler {
     double sample();
 
-    default Material getIcon()
-    {
+    default Material getIcon() {
         return Material.SLIME_BALL;
     }
 
@@ -22,8 +20,7 @@ public interface Sampler {
         return formattedValue(t) + " " + formattedSuffix(t);
     }
 
-    default Component format(Component value, Component suffix)
-    {
+    default Component format(Component value, Component suffix) {
         return Component.empty().append(value).append(suffix);
     }
 
@@ -37,15 +34,15 @@ public interface Sampler {
 
     String getId();
 
-    default <T> T  executeSync(Supplier<T> executor) {
-        if(Bukkit.isPrimaryThread()) {
+    default <T> T executeSync(Supplier<T> executor) {
+        if (Bukkit.isPrimaryThread()) {
             return executor.get();
         }
 
         AtomicReference<T> result = new AtomicReference<>();
         J.s(() -> result.set(executor.get()));
 
-        while(result.get() == null) {
+        while (result.get() == null) {
             J.sleep(5);
         }
 
@@ -56,7 +53,7 @@ public interface Sampler {
         return React.instance.getSampleController().getSamplers().get(id);
     }
 
-    default String sampleFormatted(){
+    default String sampleFormatted() {
         return format(sample());
     }
 }

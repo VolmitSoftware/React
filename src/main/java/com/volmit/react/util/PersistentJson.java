@@ -34,7 +34,7 @@ public class PersistentJson {
     private static <T> T fromJSON(PersistentDataContainer c, String key, Class<T> type) {
         String s = c.get(new NamespacedKey(React.instance, key), PersistentDataType.STRING);
 
-        if(s == null) {
+        if (s == null) {
             return gson.fromJson(s, type);
         }
 

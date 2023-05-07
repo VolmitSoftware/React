@@ -33,15 +33,15 @@ public class QueueExecutor extends Looper {
 
     @Override
     protected long loop() {
-        while(queue.hasNext()) {
+        while (queue.hasNext()) {
             try {
                 queue.next().run();
-            } catch(Throwable e) {
+            } catch (Throwable e) {
                 e.printStackTrace();
             }
         }
 
-        if(shutdown && !queue.hasNext()) {
+        if (shutdown && !queue.hasNext()) {
             interrupt();
             return -1;
         }

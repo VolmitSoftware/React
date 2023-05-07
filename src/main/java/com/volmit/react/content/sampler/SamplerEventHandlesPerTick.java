@@ -18,13 +18,13 @@ public class SamplerEventHandlesPerTick extends ReactCachedSampler implements Li
 
     @Override
     public double onSample() {
-        r.put( eventController.getCalls());
+        r.put(eventController.getCalls());
         return r.getAverage();
     }
 
     @Override
     public void start() {
-       eventController = React.instance.getEventController();
+        eventController = React.instance.getEventController();
     }
 
     @Override

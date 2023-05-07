@@ -54,10 +54,10 @@ public class ChunkPosition {
 
     @Override
     public boolean equals(Object obj) {
-        if(this == obj) {
+        if (this == obj) {
             return true;
         }
-        if(!(obj instanceof ChunkPosition)) {
+        if (!(obj instanceof ChunkPosition)) {
             return false;
         }
         ChunkPosition other = (ChunkPosition) obj;

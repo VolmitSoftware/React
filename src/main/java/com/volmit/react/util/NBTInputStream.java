@@ -56,8 +56,7 @@ public final class NBTInputStream implements Closeable {
     /**
      * Create a new <code>NBTInputStream</code>, which will source its data from the specified input stream.
      *
-     * @param is
-     *     The output stream
+     * @param is The output stream
      */
     public NBTInputStream(DataInputStream is) {
         this.is = is;
@@ -67,10 +66,8 @@ public final class NBTInputStream implements Closeable {
      * Creates a new <code>NBTInputStream</code>, which will source its data from the specified input stream.
      * The stream will be decompressed using GZIP.
      *
-     * @param is
-     *     The input stream.
-     * @throws IOException
-     *     if an I/O error occurs.
+     * @param is The input stream.
+     * @throws IOException if an I/O error occurs.
      */
     public NBTInputStream(InputStream is) throws IOException {
         this.is = new DataInputStream(new GZIPInputStream(is));
@@ -80,8 +77,7 @@ public final class NBTInputStream implements Closeable {
      * Reads an NBT tag from the stream.
      *
      * @return The tag that was read.
-     * @throws IOException
-     *     if an I/O error occurs.
+     * @throws IOException if an I/O error occurs.
      */
     public Tag readTag() throws IOException {
         return readTag(0);
@@ -90,17 +86,15 @@ public final class NBTInputStream implements Closeable {
     /**
      * Reads an NBT from the stream.
      *
-     * @param depth
-     *     The depth of this tag.
+     * @param depth The depth of this tag.
      * @return The tag that was read.
-     * @throws IOException
-     *     if an I/O error occurs.
+     * @throws IOException if an I/O error occurs.
      */
     private Tag readTag(int depth) throws IOException {
         int type = is.readByte() & 0xFF;
 
         String name;
-        if(type != NBTConstants.TYPE_END) {
+        if (type != NBTConstants.TYPE_END) {
             int nameLength = is.readShort() & 0xFFFF;
             byte[] nameBytes = new byte[nameLength];
             is.readFully(nameBytes);
@@ -115,20 +109,16 @@ public final class NBTInputStream implements Closeable {
     /**
      * Reads the payload of a tag, given the name and type.
      *
-     * @param type
-     *     The type.
-     * @param name
-     *     The name.
-     * @param depth
-     *     The depth.
+     * @param type  The type.
+     * @param name  The name.
+     * @param depth The depth.
      * @return The tag.
-     * @throws IOException
-     *     if an I/O error occurs.
+     * @throws IOException if an I/O error occurs.
      */
     private Tag readTagPayload(int type, String name, int depth) throws IOException {
-        switch(type) {
+        switch (type) {
             case NBTConstants.TYPE_END:
-                if(depth == 0) {
+                if (depth == 0) {
                     throw new IOException("TAG_End found without a TAG_Compound/TAG_List tag preceding it.");
                 } else {
                     return new EndTag();
@@ -160,9 +150,9 @@ public final class NBTInputStream implements Closeable {
                 length = is.readInt();
 
                 List<Tag> tagList = new ArrayList<Tag>();
-                for(int i = 0; i < length; i++) {
+                for (int i = 0; i < length; i++) {
                     Tag tag = readTagPayload(childType, "", depth + 1);
-                    if(tag instanceof EndTag) {
+                    if (tag instanceof EndTag) {
                         throw new IOException("TAG_End not permitted in a list.");
                     }
                     tagList.add(tag);
@@ -171,9 +161,9 @@ public final class NBTInputStream implements Closeable {
                 return new ListTag(name, NBTUtils.getTypeClass(childType), tagList);
             case NBTConstants.TYPE_COMPOUND:
                 Map<String, Tag> tagMap = new HashMap<String, Tag>();
-                while(true) {
+                while (true) {
                     Tag tag = readTag(depth + 1);
-                    if(tag instanceof EndTag) {
+                    if (tag instanceof EndTag) {
                         break;
                     } else {
                         tagMap.put(tag.getName(), tag);
@@ -184,7 +174,7 @@ public final class NBTInputStream implements Closeable {
             case NBTConstants.TYPE_INT_ARRAY:
                 length = is.readInt();
                 int[] value = new int[length];
-                for(int i = 0; i < length; i++) {
+                for (int i = 0; i < length; i++) {
                     value[i] = is.readInt();
                 }
                 return new IntArrayTag(name, value);

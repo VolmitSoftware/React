@@ -36,15 +36,18 @@ import java.util.function.Supplier;
 
 public class J {
     private static final int tid = 0;
+    private static List<Runnable> afterStartup = new ArrayList<>();
+    private static List<Runnable> afterStartupAsync = new ArrayList<>();
+    private static boolean started = false;
 
     public static void dofor(int a, Function<Integer, Boolean> c, int ch, Consumer<Integer> d) {
-        for(int i = a; c.apply(i); i += ch) {
+        for (int i = a; c.apply(i); i += ch) {
             c.apply(i);
         }
     }
 
     public static boolean doif(Supplier<Boolean> c, Runnable g) {
-        if(c.get()) {
+        if (c.get()) {
             g.run();
             return true;
         }
@@ -57,7 +60,7 @@ public class J {
     }
 
     public static <T> Future<T> a(Callable<T> a) {
-        return ((ExecutorService)Curse.on(MultiBurst.burst).get("service")).submit(a);
+        return ((ExecutorService) Curse.on(MultiBurst.burst).get("service")).submit(a);
     }
 
     public static void attemptAsync(NastyRunnable r) {
@@ -67,7 +70,7 @@ public class J {
     public static <R> R attemptResult(NastyFuture<R> r, R onError) {
         try {
             return r.run();
-        } catch(Throwable e) {
+        } catch (Throwable e) {
             e.printStackTrace();
         }
 
@@ -77,7 +80,7 @@ public class J {
     public static <T, R> R attemptFunction(NastyFunction<T, R> r, T param, R onError) {
         try {
             return r.run(param);
-        } catch(Throwable e) {
+        } catch (Throwable e) {
 
         }
 
@@ -95,7 +98,7 @@ public class J {
     public static Throwable attemptCatch(NastyRunnable r) {
         try {
             r.run();
-        } catch(Throwable e) {
+        } catch (Throwable e) {
             return e;
         }
 
@@ -105,30 +108,26 @@ public class J {
     public static <T> T attempt(Supplier<T> t, T i) {
         try {
             return t.get();
-        } catch(Throwable e) {
+        } catch (Throwable e) {
             return i;
         }
     }
-
-    private static List<Runnable> afterStartup = new ArrayList<>();
-    private static List<Runnable> afterStartupAsync = new ArrayList<>();
-    private static boolean started = false;
 
     /**
      * Dont call this unless you know what you are doing!
      */
     public static void executeAfterStartupQueue() {
-        if(started) {
+        if (started) {
             return;
         }
 
         started = true;
 
-        for(Runnable r : afterStartup) {
+        for (Runnable r : afterStartup) {
             s(r);
         }
 
-        for(Runnable r : afterStartupAsync) {
+        for (Runnable r : afterStartupAsync) {
             a(r);
         }
 
@@ -143,11 +142,10 @@ public class J {
      * If you dont know if you should queue this or not, do so, it's pretty
      * forgiving.
      *
-     * @param r
-     *     the runnable
+     * @param r the runnable
      */
     public static void ass(Runnable r) {
-        if(started) {
+        if (started) {
             s(r);
         } else {
             afterStartup.add(r);
@@ -161,21 +159,18 @@ public class J {
      * If you dont know if you should queue this or not, do so, it's pretty
      * forgiving.
      *
-     * @param r
-     *     the runnable
+     * @param r the runnable
      */
     public static void asa(Runnable r) {
-        if(started) {
+        if (started) {
             a(r);
         } else {
             afterStartupAsync.add(r);
         }
     }
 
-    public static <T> T sResult(Supplier<T> t)
-    {
-        if(Bukkit.isPrimaryThread())
-        {
+    public static <T> T sResult(Supplier<T> t) {
+        if (Bukkit.isPrimaryThread()) {
             return t.get();
         }
 
@@ -186,7 +181,7 @@ public class J {
             f.set(true);
         });
 
-        while(!f.get()) {
+        while (!f.get()) {
             J.sleep(15);
         }
 
@@ -196,8 +191,7 @@ public class J {
     /**
      * Queue a sync task
      *
-     * @param r
-     *     the runnable
+     * @param r the runnable
      */
     public static void s(Runnable r) {
         Bukkit.getScheduler().scheduleSyncDelayedTask(React.instance, r);
@@ -206,10 +200,8 @@ public class J {
     /**
      * Queue a sync task
      *
-     * @param r
-     *     the runnable
-     * @param delay
-     *     the delay to wait in ticks before running
+     * @param r     the runnable
+     * @param delay the delay to wait in ticks before running
      */
     public static void s(Runnable r, int delay) {
         Bukkit.getScheduler().scheduleSyncDelayedTask(React.instance, r, delay);
@@ -218,8 +210,7 @@ public class J {
     /**
      * Cancel a sync repeating task
      *
-     * @param id
-     *     the task id
+     * @param id the task id
      */
     public static void csr(int id) {
         Bukkit.getScheduler().cancelTask(id);
@@ -228,10 +219,8 @@ public class J {
     /**
      * Start a sync repeating task
      *
-     * @param r
-     *     the runnable
-     * @param interval
-     *     the interval
+     * @param r        the runnable
+     * @param interval the interval
      * @return the task id
      */
     public static int sr(Runnable r, int interval) {
@@ -241,12 +230,9 @@ public class J {
     /**
      * Start a sync repeating task for a limited amount of ticks
      *
-     * @param r
-     *     the runnable
-     * @param interval
-     *     the interval in ticks
-     * @param intervals
-     *     the maximum amount of intervals to run
+     * @param r         the runnable
+     * @param interval  the interval in ticks
+     * @param intervals the maximum amount of intervals to run
      */
     public static void sr(Runnable r, int interval, int intervals) {
         FinalInteger fi = new FinalInteger(0);
@@ -257,7 +243,7 @@ public class J {
                 fi.add(1);
                 r.run();
 
-                if(fi.get() >= intervals) {
+                if (fi.get() >= intervals) {
                     cancel();
                 }
             }
@@ -267,10 +253,8 @@ public class J {
     /**
      * Call an async task dealyed
      *
-     * @param r
-     *     the runnable
-     * @param delay
-     *     the delay to wait before running
+     * @param r     the runnable
+     * @param delay the delay to wait before running
      */
     @SuppressWarnings("deprecation")
     public static void a(Runnable r, int delay) {
@@ -280,8 +264,7 @@ public class J {
     /**
      * Cancel an async repeat task
      *
-     * @param id
-     *     the id
+     * @param id the id
      */
     public static void car(int id) {
         Bukkit.getScheduler().cancelTask(id);
@@ -290,10 +273,8 @@ public class J {
     /**
      * Start an async repeat task
      *
-     * @param r
-     *     the runnable
-     * @param interval
-     *     the interval in ticks
+     * @param r        the runnable
+     * @param interval the interval in ticks
      * @return the task id
      */
     @SuppressWarnings("deprecation")
@@ -304,12 +285,9 @@ public class J {
     /**
      * Start an async repeating task for a limited time
      *
-     * @param r
-     *     the runnable
-     * @param interval
-     *     the interval
-     * @param intervals
-     *     the intervals to run
+     * @param r         the runnable
+     * @param interval  the interval
+     * @param intervals the intervals to run
      */
     public static void ar(Runnable r, int interval, int intervals) {
         FinalInteger fi = new FinalInteger(0);
@@ -320,7 +298,7 @@ public class J {
                 fi.add(1);
                 r.run();
 
-                if(fi.get() >= intervals) {
+                if (fi.get() >= intervals) {
                     cancel();
                 }
             }

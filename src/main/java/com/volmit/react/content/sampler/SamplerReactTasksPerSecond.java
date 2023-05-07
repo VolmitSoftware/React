@@ -3,7 +3,6 @@ package com.volmit.react.content.sampler;
 import com.volmit.react.React;
 import com.volmit.react.api.sampler.ReactCachedSampler;
 import com.volmit.react.util.Form;
-import com.volmit.react.util.ThreadUtilizationMonitor;
 
 public class SamplerReactTasksPerSecond extends ReactCachedSampler {
     public static final String ID = "react-tasks-per-second";

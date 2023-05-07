@@ -7,6 +7,18 @@ import java.lang.management.ManagementFactory;
 
 @SuppressWarnings("restriction")
 public class Platform {
+    public static String getVersion() {
+        return getSystem().getVersion();
+    }
+
+    public static String getName() {
+        return getSystem().getName();
+    }
+
+    private static OperatingSystemMXBean getSystem() {
+        return (OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
+    }
+
     public static class ENVIRONMENT {
         public static boolean canRunBatch() {
             return getSystem().getName().toLowerCase().contains("windows");
@@ -129,17 +141,5 @@ public class Platform {
         public static String getArchitecture() {
             return getSystem().getArch();
         }
-    }
-
-    public static String getVersion() {
-        return getSystem().getVersion();
-    }
-
-    public static String getName() {
-        return getSystem().getName();
-    }
-
-    private static OperatingSystemMXBean getSystem() {
-        return (OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
     }
 }

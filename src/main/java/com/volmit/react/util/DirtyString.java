@@ -34,7 +34,7 @@ public class DirtyString {
     }
 
     public static boolean has(String data) {
-        if(!HiddenStringUtils.hasHiddenString(data)) {
+        if (!HiddenStringUtils.hasHiddenString(data)) {
             React.info("Not has in " + data.replaceAll("\\Q" + ChatColor.COLOR_CHAR + "\\E", "&"));
         }
         return HiddenStringUtils.hasHiddenString(data);

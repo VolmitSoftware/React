@@ -34,8 +34,7 @@ public class Items {
     /**
      * Is the item an item (not null or air)
      *
-     * @param is
-     *     the item
+     * @param is the item
      * @return true if it is
      */
     public static boolean is(ItemStack is) {
@@ -45,10 +44,8 @@ public class Items {
     /**
      * Is the item a certain material
      *
-     * @param is
-     *     the item
-     * @param material
-     *     the material
+     * @param is       the item
+     * @param material the material
      * @return true if it is
      */
     public static boolean is(ItemStack is, Material material) {
@@ -58,10 +55,8 @@ public class Items {
     /**
      * Is the item a certain material and metadata
      *
-     * @param is
-     *     the item
-     * @param mb
-     *     the materialblock
+     * @param is the item
+     * @param mb the materialblock
      * @return true if it is
      */
     @SuppressWarnings("deprecation")
@@ -72,12 +67,9 @@ public class Items {
     /**
      * Is the item a given material and data
      *
-     * @param is
-     *     the item
-     * @param material
-     *     the material
-     * @param data
-     *     the data
+     * @param is       the item
+     * @param material the material
+     * @param data     the data
      * @return true if it is
      */
     public static boolean is(ItemStack is, Material material, byte data) {
@@ -87,12 +79,9 @@ public class Items {
     /**
      * Is the item a given material and data
      *
-     * @param is
-     *     the item
-     * @param material
-     *     the material
-     * @param data
-     *     the data
+     * @param is       the item
+     * @param material the material
+     * @param data     the data
      * @return true if it is
      */
     public static boolean is(ItemStack is, Material material, int data) {
@@ -102,8 +91,7 @@ public class Items {
     /**
      * Does the item have meta
      *
-     * @param is
-     *     the item
+     * @param is the item
      * @return true if it does
      */
     public static boolean hasMeta(ItemStack is) {
@@ -113,8 +101,7 @@ public class Items {
     /**
      * Does the item have a custom name
      *
-     * @param is
-     *     the item
+     * @param is the item
      * @return true if it has a name
      */
     public static boolean hasName(ItemStack is) {
@@ -124,8 +111,7 @@ public class Items {
     /**
      * Does the item have any lore?
      *
-     * @param is
-     *     the item
+     * @param is the item
      * @return true if it does
      */
     public static boolean hasLore(ItemStack is) {
@@ -135,10 +121,8 @@ public class Items {
     /**
      * Does the item have the given name (color matters)
      *
-     * @param is
-     *     the item
-     * @param name
-     *     the name
+     * @param is   the item
+     * @param name the name
      * @return true if it has the name
      */
     public static boolean hasName(ItemStack is, String name) {
@@ -149,10 +133,8 @@ public class Items {
     /**
      * Does the item have the given enchantment
      *
-     * @param is
-     *     the item
-     * @param e
-     *     the enchantment
+     * @param is the item
+     * @param e  the enchantment
      * @return true if it does
      */
     public static boolean hasEnchantment(ItemStack is, Enchantment e) {
@@ -162,16 +144,13 @@ public class Items {
     /**
      * Does the item have the enchantment at the given level
      *
-     * @param is
-     *     the item
-     * @param e
-     *     the enchantment
-     * @param level
-     *     the level
+     * @param is    the item
+     * @param e     the enchantment
+     * @param level the level
      * @return true if it does
      */
     public static boolean hasEnchantment(ItemStack is, Enchantment e, int level) {
-        if(!is(is)) {
+        if (!is(is)) {
             return false;
         }
 
@@ -181,12 +160,11 @@ public class Items {
     /**
      * Does the item have any enchantments
      *
-     * @param is
-     *     the item
+     * @param is the item
      * @return true if it does
      */
     public static boolean hasEnchantments(ItemStack is) {
-        if(!is(is)) {
+        if (!is(is)) {
             return false;
         }
 
@@ -196,13 +174,12 @@ public class Items {
     /**
      * Get a materialblock representation of this item
      *
-     * @param is
-     *     the item
+     * @param is the item
      * @return the materialblock or null if the item is null
      */
     @SuppressWarnings("deprecation")
     public static MaterialBlock toMaterialBlock(ItemStack is) {
-        if(is != null) {
+        if (is != null) {
             return new MaterialBlock(is.getType(), is.getData().getData());
         }
 
@@ -212,8 +189,7 @@ public class Items {
     /**
      * Should the itemstack be broken?
      *
-     * @param is
-     *     the itemStack
+     * @param is the itemStack
      * @return true if it should be broken
      */
     public static boolean isBroken(ItemStack is) {
@@ -223,8 +199,7 @@ public class Items {
     /**
      * Does this item have durability
      *
-     * @param is
-     *     the item
+     * @param is the item
      * @return true if it does
      */
     public static boolean hasDurability(ItemStack is) {
@@ -234,16 +209,15 @@ public class Items {
     /**
      * Get the durability percent
      *
-     * @param is
-     *     the itemstack
+     * @param is the itemstack
      * @return the percent
      */
     public static double getDurabilityPercent(ItemStack is) {
-        if(!is(is)) {
+        if (!is(is)) {
             return 0.0;
         }
 
-        if(getMaxDurability(is) == 0) {
+        if (getMaxDurability(is) == 0) {
             return 1.0;
         }
 
@@ -253,19 +227,17 @@ public class Items {
     /**
      * Set the durability percent
      *
-     * @param is
-     *     the itemStack
-     * @param pc
-     *     the percent
+     * @param is the itemStack
+     * @param pc the percent
      */
     public static void setDurabilityPercent(ItemStack is, double pc) {
-        if(!is(is)) {
+        if (!is(is)) {
             return;
         }
 
         pc = (pc > 1.0 ? 1.0 : (pc < 0.0 ? 0.0 : pc));
 
-        if(getDurability(is) == 0) {
+        if (getDurability(is) == 0) {
             return;
         }
 
@@ -275,12 +247,11 @@ public class Items {
     /**
      * Get the max durability
      *
-     * @param is
-     *     the item
+     * @param is the item
      * @return the item type's max durability
      */
     public static short getMaxDurability(ItemStack is) {
-        if(!is(is)) {
+        if (!is(is)) {
             return 0;
         }
 
@@ -290,12 +261,11 @@ public class Items {
     /**
      * Get the durability
      *
-     * @param is
-     *     the item
+     * @param is the item
      * @return the item durability
      */
     public static short getDurability(ItemStack is) {
-        if(!is(is)) {
+        if (!is(is)) {
             return 0;
         }
 
@@ -305,13 +275,11 @@ public class Items {
     /**
      * Set the durability (if higher than max, it will be set to the max)
      *
-     * @param is
-     *     the item
-     * @param dmg
-     *     the durability
+     * @param is  the item
+     * @param dmg the durability
      */
     public static void setDurability(ItemStack is, short dmg) {
-        if(!is(is)) {
+        if (!is(is)) {
             return;
         }
 
@@ -321,13 +289,11 @@ public class Items {
     /**
      * Set the durability (if higher than max, it will be set to the max)
      *
-     * @param is
-     *     the item
-     * @param dmg
-     *     the durability
+     * @param is  the item
+     * @param dmg the durability
      */
     public static void setDurability(ItemStack is, int dmg) {
-        if(!is(is)) {
+        if (!is(is)) {
             return;
         }
 
@@ -337,13 +303,11 @@ public class Items {
     /**
      * Damage an itemstack
      *
-     * @param is
-     *     the item
-     * @param amt
-     *     the amount to damage
+     * @param is  the item
+     * @param amt the amount to damage
      */
     public static void damage(ItemStack is, int amt) {
-        if(!is(is)) {
+        if (!is(is)) {
             return;
         }
 
@@ -353,37 +317,35 @@ public class Items {
     /**
      * Can the item a be stacked onto the item b (following max stack size)
      *
-     * @param a
-     *     the item a
-     * @param b
-     *     the item b
+     * @param a the item a
+     * @param b the item b
      * @return true if they can be merged
      */
     @SuppressWarnings("deprecation")
     public static boolean isMergable(ItemStack a, ItemStack b) {
-        if(is(a) && is(b)) {
-            if(!a.getType().equals(b.getType())) {
+        if (is(a) && is(b)) {
+            if (!a.getType().equals(b.getType())) {
                 return false;
             }
 
-            if(a.getData().getData() != b.getData().getData()) {
+            if (a.getData().getData() != b.getData().getData()) {
                 return false;
             }
 
-            if(a.hasItemMeta() != b.hasItemMeta()) {
+            if (a.hasItemMeta() != b.hasItemMeta()) {
                 return false;
             }
 
-            if(a.getDurability() != b.getDurability()) {
+            if (a.getDurability() != b.getDurability()) {
                 return false;
             }
 
-            if(a.hasItemMeta()) {
-                if(!a.getItemMeta().getDisplayName().equals(b.getItemMeta().getDisplayName())) {
+            if (a.hasItemMeta()) {
+                if (!a.getItemMeta().getDisplayName().equals(b.getItemMeta().getDisplayName())) {
                     return false;
                 }
 
-                if(!new ArrayList<String>(a.getItemMeta().getLore()).equals(new ArrayList<>(b.getItemMeta().getLore()))) {
+                if (!new ArrayList<String>(a.getItemMeta().getLore()).equals(new ArrayList<>(b.getItemMeta().getLore()))) {
                     return false;
                 }
             }

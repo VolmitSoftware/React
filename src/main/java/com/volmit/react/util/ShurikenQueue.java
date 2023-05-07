@@ -23,10 +23,10 @@ import java.util.List;
 import java.util.Random;
 
 public class ShurikenQueue<T> implements Queue<T> {
+    private static final Random r = new Random();
     private List<T> queue;
     private boolean randomPop;
     private boolean reversePop;
-    private static final Random r = new Random();
 
     public ShurikenQueue() {
         clear();
@@ -73,8 +73,8 @@ public class ShurikenQueue<T> implements Queue<T> {
     public List<T> next(int amt) {
         List<T> t = new ArrayList<>();
 
-        for(int i = 0; i < amt; i++) {
-            if(!hasNext()) {
+        for (int i = 0; i < amt; i++) {
+            if (!hasNext()) {
                 break;
             }
 

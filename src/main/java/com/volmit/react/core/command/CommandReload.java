@@ -12,7 +12,7 @@ import org.bukkit.command.CommandSender;
 @Alias({"re", "ract"})
 @Permission("react.main")
 public class CommandReload implements RCommand {
-    @Subcommand("reload")
+    @Subcommand({"reload", "rl"})
     @Permission("react.reload")
     public static void reload(CommandSender sender) {
         React.instance.reload();

@@ -33,18 +33,18 @@ public class SamplerTicksPerSecond extends ReactTickedSampler {
     @Override
     public double onSample() {
         lastTickDuration.set(System.currentTimeMillis() - lastTick.get());
-        return 1000D / Math.max(50D, Math.max((double)lastTickDuration.get(), (double)lastTickDurationSync.get()));
+        return 1000D / Math.max(50D, Math.max((double) lastTickDuration.get(), (double) lastTickDurationSync.get()));
     }
 
     @Override
     public String formattedValue(double t) {
         long dur = System.currentTimeMillis() - lastTick.get();
 
-        if(dur > 3000) {
+        if (dur > 3000) {
             return Form.durationSplit(dur, 1)[0];
         }
 
-        if(t > 19.85) {
+        if (t > 19.85) {
             return "20";
         }
 
@@ -55,7 +55,7 @@ public class SamplerTicksPerSecond extends ReactTickedSampler {
     public String formattedSuffix(double t) {
         long dur = System.currentTimeMillis() - lastTick.get();
 
-        if(dur > 3000) {
+        if (dur > 3000) {
             return Form.durationSplit(dur, 1)[1];
         }
 

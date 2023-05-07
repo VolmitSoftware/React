@@ -113,6 +113,11 @@ public class PhantomInventory implements PhantomInventoryWrapper {
     }
 
     @Override
+    public void setContents(ItemStack[] arg0) throws IllegalArgumentException {
+        i.setContents(arg0);
+    }
+
+    @Override
     public InventoryHolder getHolder() {
         return i.getHolder();
     }
@@ -125,6 +130,11 @@ public class PhantomInventory implements PhantomInventoryWrapper {
     @Override
     public int getMaxStackSize() {
         return i.getMaxStackSize();
+    }
+
+    @Override
+    public void setMaxStackSize(int arg0) {
+        i.setMaxStackSize(arg0);
     }
 
     @Override
@@ -168,18 +178,8 @@ public class PhantomInventory implements PhantomInventoryWrapper {
     }
 
     @Override
-    public void setContents(ItemStack[] arg0) throws IllegalArgumentException {
-        i.setContents(arg0);
-    }
-
-    @Override
     public void setItem(int arg0, ItemStack arg1) {
         i.setItem(arg0, arg1);
-    }
-
-    @Override
-    public void setMaxStackSize(int arg0) {
-        i.setMaxStackSize(arg0);
     }
 
     @Override
@@ -191,8 +191,8 @@ public class PhantomInventory implements PhantomInventoryWrapper {
     public int getSlotsLeft() {
         int x = 0;
 
-        for(ItemStack i : getContents()) {
-            if(i == null || i.getType().equals(Material.AIR)) {
+        for (ItemStack i : getContents()) {
+            if (i == null || i.getType().equals(Material.AIR)) {
                 x++;
             }
         }

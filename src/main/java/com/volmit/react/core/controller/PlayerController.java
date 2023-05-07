@@ -28,7 +28,7 @@ public class PlayerController implements IController {
 
     @Override
     public void start() {
-        for(Player i : Bukkit.getOnlinePlayers()) {
+        for (Player i : Bukkit.getOnlinePlayers()) {
             join(i);
         }
     }
@@ -39,7 +39,7 @@ public class PlayerController implements IController {
 
     @Override
     public void stop() {
-        for(Player i : new ArrayList<>(getPlayers().keySet())) {
+        for (Player i : new ArrayList<>(getPlayers().keySet())) {
             quit(i);
         }
     }
@@ -55,7 +55,7 @@ public class PlayerController implements IController {
     }
 
     public void join(Player e) {
-        if(!e.hasPermission("react.use")) {
+        if (!e.hasPermission("react.use")) {
             return;
         }
 
@@ -65,13 +65,13 @@ public class PlayerController implements IController {
     }
 
     public void quit(Player e) {
-        if(!e.hasPermission("react.use")) {
+        if (!e.hasPermission("react.use")) {
             return;
         }
 
         ReactPlayer p = players.remove(e);
 
-        if(p != null) {
+        if (p != null) {
             p.onQuit();
             p.unregister();
         }
@@ -88,7 +88,7 @@ public class PlayerController implements IController {
     }
 
     public void updateMonitors() {
-        for(ReactPlayer i : getPlayers().values()) {
+        for (ReactPlayer i : getPlayers().values()) {
             i.updateMonitors();
         }
     }

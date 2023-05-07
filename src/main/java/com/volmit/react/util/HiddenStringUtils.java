@@ -33,7 +33,7 @@ public class HiddenStringUtils {
     }
 
     public static boolean hasHiddenString(String input) {
-        if(input == null) return false;
+        if (input == null) return false;
 
         return input.indexOf(SEQUENCE_HEADER) > -1 && input.indexOf(SEQUENCE_FOOTER) > -1;
     }
@@ -44,12 +44,12 @@ public class HiddenStringUtils {
 
 
     public static String replaceHiddenString(String input, String hiddenString) {
-        if(input == null) return null;
+        if (input == null) return null;
 
         int start = input.indexOf(SEQUENCE_HEADER);
         int end = input.indexOf(SEQUENCE_FOOTER);
 
-        if(start < 0 || end < 0) {
+        if (start < 0 || end < 0) {
             return null;
         }
 
@@ -60,17 +60,17 @@ public class HiddenStringUtils {
      * Internal stuff.
      */
     private static String quote(String input) {
-        if(input == null) return null;
+        if (input == null) return null;
         return SEQUENCE_HEADER + input + SEQUENCE_FOOTER;
     }
 
     private static String extract(String input) {
-        if(input == null) return null;
+        if (input == null) return null;
 
         int start = input.indexOf(SEQUENCE_HEADER);
         int end = input.indexOf(SEQUENCE_FOOTER);
 
-        if(start < 0 || end < 0) {
+        if (start < 0 || end < 0) {
             return null;
         }
 
@@ -78,12 +78,12 @@ public class HiddenStringUtils {
     }
 
     private static String stringToColors(String normal) {
-        if(normal == null) return null;
+        if (normal == null) return null;
 
         byte[] bytes = normal.getBytes(StandardCharsets.UTF_8);
         char[] chars = new char[bytes.length * 4];
 
-        for(int i = 0; i < bytes.length; i++) {
+        for (int i = 0; i < bytes.length; i++) {
             char[] hex = byteToHex(bytes[i]);
             chars[i * 4] = ChatColor.COLOR_CHAR;
             chars[i * 4 + 1] = hex[0];
@@ -95,18 +95,18 @@ public class HiddenStringUtils {
     }
 
     private static String colorsToString(String colors) {
-        if(colors == null) return null;
+        if (colors == null) return null;
 
         colors = colors.toLowerCase().replace("" + ChatColor.COLOR_CHAR, "");
 
-        if(colors.length() % 2 != 0) {
+        if (colors.length() % 2 != 0) {
             colors = colors.substring(0, (colors.length() / 2) * 2);
         }
 
         char[] chars = colors.toCharArray();
         byte[] bytes = new byte[chars.length / 2];
 
-        for(int i = 0; i < chars.length; i += 2) {
+        for (int i = 0; i < chars.length; i += 2) {
             bytes[i / 2] = hexToByte(chars[i], chars[i + 1]);
         }
 
@@ -114,9 +114,9 @@ public class HiddenStringUtils {
     }
 
     private static int hexToUnsignedInt(char c) {
-        if(c >= '0' && c <= '9') {
+        if (c >= '0' && c <= '9') {
             return c - 48;
-        } else if(c >= 'a' && c <= 'f') {
+        } else if (c >= 'a' && c <= 'f') {
             return c - 87;
         } else {
             throw new IllegalArgumentException("Invalid hex char: out of range");
@@ -124,9 +124,9 @@ public class HiddenStringUtils {
     }
 
     private static char unsignedIntToHex(int i) {
-        if(i >= 0 && i <= 9) {
+        if (i >= 0 && i <= 9) {
             return (char) (i + 48);
-        } else if(i >= 10 && i <= 15) {
+        } else if (i >= 10 && i <= 15) {
             return (char) (i + 87);
         } else {
             throw new IllegalArgumentException("Invalid hex int: out of range");
@@ -139,7 +139,7 @@ public class HiddenStringUtils {
 
     private static char[] byteToHex(byte b) {
         int unsignedByte = (int) b - Byte.MIN_VALUE;
-        return new char[] {unsignedIntToHex((unsignedByte >> 4) & 0xf), unsignedIntToHex(unsignedByte & 0xf)};
+        return new char[]{unsignedIntToHex((unsignedByte >> 4) & 0xf), unsignedIntToHex(unsignedByte & 0xf)};
     }
 
 }

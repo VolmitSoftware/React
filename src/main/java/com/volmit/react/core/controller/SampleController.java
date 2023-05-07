@@ -35,7 +35,7 @@ public class SampleController implements IController {
 
         s = s == null ? unknown : s;
 
-        if(s == null) {
+        if (s == null) {
             s = new SamplerUnknown();
         }
 
@@ -44,42 +44,42 @@ public class SampleController implements IController {
 
     public void scanForExternalSamplers() {
         Stream<ExternalSampler> samplers = Stream.of();
-        for(Plugin plugin : Bukkit.getPluginManager().getPlugins()) {
+        for (Plugin plugin : Bukkit.getPluginManager().getPlugins()) {
             samplers = Stream.concat(samplers, Curse.annotatedName(plugin.getClass(), "XReactSampler")
-                .filter(i -> i.optionalMethod("sample").isPresent())
-                .map(i -> i.method("sample"))
-                .filter(i -> ((Method)i.getMember()).getReturnType() == double.class)
-                .filter(i -> i.isPublic() && !i.isStatic() && !i.isFinal() && !i.isAbstract() && !i.isSynchronized())
-                .filter(i -> Arrays.stream(i.getMember().getDeclaringClass().getDeclaredAnnotations())
-                    .anyMatch(j -> j.annotationType().getSimpleName().equals("XReactSampler")
-                        && Curse.on(j.annotationType()).optionalMethod("id").isPresent()
-                        && ((Method)Curse.on(j.annotationType()).method("id").getMember()).getReturnType() == String.class
-                        && Curse.on(j.annotationType()).optionalMethod("interval").isPresent()
-                        && ((Method)Curse.on(j.annotationType()).method("interval").getMember()).getReturnType() == int.class
-                        && Curse.on(j.annotationType()).optionalMethod("suffix").isPresent()
-                        && ((Method)Curse.on(j.annotationType()).method("suffix").getMember()).getReturnType() == String.class
-                    )).map(i -> Curse.on(i.getMember().getDeclaringClass()).construct())
-                .map(i -> new ExternalSampler(i, i.method("sample"),
-                    Curse.on(Arrays.stream(i.type().getDeclaredAnnotations())
-                        .filter(j -> j.annotationType().getSimpleName().equals("XReactSampler")).findFirst()
-                        .get()).method("id").invoke(),
-                    Curse.on(Arrays.stream(i.type().getDeclaredAnnotations())
-                        .filter(j -> j.annotationType().getSimpleName().equals("XReactSampler")).findFirst()
-                        .get()).method("interval").invoke(),
-                    Curse.on(Arrays.stream(i.type().getDeclaredAnnotations())
-                        .filter(j -> j.annotationType().getSimpleName().equals("XReactSampler")).findFirst()
-                        .get()).method("suffix").invoke())));
+                    .filter(i -> i.optionalMethod("sample").isPresent())
+                    .map(i -> i.method("sample"))
+                    .filter(i -> ((Method) i.getMember()).getReturnType() == double.class)
+                    .filter(i -> i.isPublic() && !i.isStatic() && !i.isFinal() && !i.isAbstract() && !i.isSynchronized())
+                    .filter(i -> Arrays.stream(i.getMember().getDeclaringClass().getDeclaredAnnotations())
+                            .anyMatch(j -> j.annotationType().getSimpleName().equals("XReactSampler")
+                                    && Curse.on(j.annotationType()).optionalMethod("id").isPresent()
+                                    && ((Method) Curse.on(j.annotationType()).method("id").getMember()).getReturnType() == String.class
+                                    && Curse.on(j.annotationType()).optionalMethod("interval").isPresent()
+                                    && ((Method) Curse.on(j.annotationType()).method("interval").getMember()).getReturnType() == int.class
+                                    && Curse.on(j.annotationType()).optionalMethod("suffix").isPresent()
+                                    && ((Method) Curse.on(j.annotationType()).method("suffix").getMember()).getReturnType() == String.class
+                            )).map(i -> Curse.on(i.getMember().getDeclaringClass()).construct())
+                    .map(i -> new ExternalSampler(i, i.method("sample"),
+                            Curse.on(Arrays.stream(i.type().getDeclaredAnnotations())
+                                    .filter(j -> j.annotationType().getSimpleName().equals("XReactSampler")).findFirst()
+                                    .get()).method("id").invoke(),
+                            Curse.on(Arrays.stream(i.type().getDeclaredAnnotations())
+                                    .filter(j -> j.annotationType().getSimpleName().equals("XReactSampler")).findFirst()
+                                    .get()).method("interval").invoke(),
+                            Curse.on(Arrays.stream(i.type().getDeclaredAnnotations())
+                                    .filter(j -> j.annotationType().getSimpleName().equals("XReactSampler")).findFirst()
+                                    .get()).method("suffix").invoke())));
         }
         AtomicInteger m = new AtomicInteger();
         samplers.forEach(i -> {
             m.getAndIncrement();
-            if(!this.samplers.containsKey(i.getId())) {
+            if (!this.samplers.containsKey(i.getId())) {
                 this.samplers.put(i.getId(), i);
                 i.start();
             }
         });
 
-        if(m.get() > 0) {
+        if (m.get() > 0) {
             React.info("Registered " + m.get() + " External Sampler(s)");
             React.instance.getPlayerController().updateMonitors();
         }
@@ -96,33 +96,29 @@ public class SampleController implements IController {
         try {
             j.scan();
             j.getClasses().stream()
-                .filter(i -> i.isAssignableFrom(Sampler.class) || Sampler.class.isAssignableFrom(i))
-                .map((i) -> {
-                    try
-                    {
-                        return (Sampler) i.getConstructor().newInstance();
-                    }
-                    catch(Throwable e)
-                    {
-                        e.printStackTrace();
-                    }
+                    .filter(i -> i.isAssignableFrom(Sampler.class) || Sampler.class.isAssignableFrom(i))
+                    .map((i) -> {
+                        try {
+                            return (Sampler) i.getConstructor().newInstance();
+                        } catch (Throwable e) {
+                            e.printStackTrace();
+                        }
 
-                    return null;
-                })
-                .forEach((i) -> {
-                    if(i != null) {
-                        samplers.put(i.getId(), i);
-                    }
-                });
-        } catch(IOException e) {
+                        return null;
+                    })
+                    .forEach((i) -> {
+                        if (i != null) {
+                            samplers.put(i.getId(), i);
+                        }
+                    });
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
 
         //J.s(() -> React.burst.lazy(this::scanForExternalSamplers), 0);
     }
 
-    public void postStart()
-    {
+    public void postStart() {
         samplers.values().forEach(Sampler::start);
         React.info("Registered " + samplers.size() + " Samplers");
         React.instance.getPlayerController().updateMonitors();

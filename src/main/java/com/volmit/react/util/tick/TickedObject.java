@@ -88,7 +88,7 @@ public abstract class TickedObject implements Ticked, Listener {
 
     @Override
     public long getInterval() {
-        if(burst.get() > 0) {
+        if (burst.get() > 0) {
             return 0;
         }
 
@@ -102,11 +102,11 @@ public abstract class TickedObject implements Ticked, Listener {
 
     @Override
     public void tick() {
-        if(skip.getAndDecrement() > 0) {
+        if (skip.getAndDecrement() > 0) {
             return;
         }
 
-        if(die.get() && dieIn.decrementAndGet() <= 0) {
+        if (die.get() && dieIn.decrementAndGet() <= 0) {
             unregister();
             return;
         }
@@ -145,7 +145,7 @@ public abstract class TickedObject implements Ticked, Listener {
 
     @Override
     public void burst(int ticks) {
-        if(burst.get() < 0) {
+        if (burst.get() < 0) {
             burst.set(ticks);
             return;
         }
@@ -170,7 +170,7 @@ public abstract class TickedObject implements Ticked, Listener {
 
     @Override
     public void skip(int ticks) {
-        if(skip.get() < 0) {
+        if (skip.get() < 0) {
             skip.set(ticks);
             return;
         }

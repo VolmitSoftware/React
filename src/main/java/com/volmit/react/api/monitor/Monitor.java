@@ -1,7 +1,6 @@
 package com.volmit.react.api.monitor;
 
 import com.volmit.react.React;
-import com.volmit.react.api.monitor.configuration.MonitorConfiguration;
 import com.volmit.react.api.sampler.Sampler;
 import com.volmit.react.util.tick.Ticked;
 import org.bukkit.event.Listener;
@@ -20,7 +19,7 @@ public interface Monitor extends Ticked, Listener {
         return sample(React.instance.getSampleController().getSampler(samplerId));
     }
 
-    default boolean isAlwaysFlushing(){
+    default boolean isAlwaysFlushing() {
         return false;
     }
 

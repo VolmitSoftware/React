@@ -15,7 +15,7 @@ public class RollingGraph {
     public void push(double value) {
         values.add(0, value);
 
-        while(values.size() > maxLength) {
+        while (values.size() > maxLength) {
             values.remove(values.size() - 1);
         }
     }

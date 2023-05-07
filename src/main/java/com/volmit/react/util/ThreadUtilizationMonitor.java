@@ -25,26 +25,22 @@ public class ThreadUtilizationMonitor extends Thread {
         boolean lastActive = false;
         PrecisionStopwatch p = PrecisionStopwatch.start();
 
-        while(!isInterrupted()) {
+        while (!isInterrupted()) {
             lastActive = active;
             active = target.getState() == State.RUNNABLE;
 
-            if(lastActive != active) {
-                if(active) {
+            if (lastActive != active) {
+                if (active) {
                     p.reset();
                     p.begin();
-                }
-
-                else {
+                } else {
                     average.put(p.getMilliseconds());
                 }
             }
 
             try {
                 Thread.sleep(M.ms() - lastAccess > 1000 ? 333 : 1);
-            }
-
-            catch(Throwable e) {
+            } catch (Throwable e) {
                 break;
             }
         }

@@ -41,23 +41,23 @@ public class AtomicRollingSequence extends AtomicAverage {
     public double addLast(int amt) {
         double f = 0;
 
-        for(int i = 0; i < Math.min(values.length(), amt); i++) {
+        for (int i = 0; i < Math.min(values.length(), amt); i++) {
             f += values.get(i);
         }
 
         return f;
     }
 
-    public void setPrecision(boolean p) {
-        this.precision = p;
-    }
-
     public boolean isPrecision() {
         return precision;
     }
 
+    public void setPrecision(boolean p) {
+        this.precision = p;
+    }
+
     public double getMin() {
-        if(dirtyExtremes > (isPrecision() ? 0 : values.length())) {
+        if (dirtyExtremes > (isPrecision() ? 0 : values.length())) {
             resetExtremes();
         }
 
@@ -65,7 +65,7 @@ public class AtomicRollingSequence extends AtomicAverage {
     }
 
     public double getMax() {
-        if(dirtyExtremes > (isPrecision() ? 0 : values.length())) {
+        if (dirtyExtremes > (isPrecision() ? 0 : values.length())) {
             resetExtremes();
         }
 
@@ -73,7 +73,7 @@ public class AtomicRollingSequence extends AtomicAverage {
     }
 
     public double getMedian() {
-        if(dirtyMedian) {
+        if (dirtyMedian) {
             recalculateMedian();
         }
 
@@ -82,13 +82,11 @@ public class AtomicRollingSequence extends AtomicAverage {
 
     private void recalculateMedian() {
         double[] a = new double[values.length()];
-        for(int i = 0; i < a.length; i++)
-        {
+        for (int i = 0; i < a.length; i++) {
             a[i] = values.get(i);
         }
         List<Double> l = new ArrayList<Double>();
-        for(double i : a)
-        {
+        for (double i : a) {
             l.add(i);
         }
         l.sort(Comparator.comparing(d -> d));
@@ -100,7 +98,7 @@ public class AtomicRollingSequence extends AtomicAverage {
         max = Integer.MIN_VALUE;
         min = Integer.MAX_VALUE;
 
-        for(int i = 0; i < values.length(); i++) {
+        for (int i = 0; i < values.length(); i++) {
             double v = values.get(i);
             max = M.max(max, v);
             min = M.min(min, v);

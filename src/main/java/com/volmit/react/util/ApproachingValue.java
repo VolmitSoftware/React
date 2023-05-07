@@ -1,11 +1,8 @@
 package com.volmit.react.util;
 
-import java.util.concurrent.atomic.AtomicReference;
-
-public class ApproachingValue
-{
-    private double value;
+public class ApproachingValue {
     private final double percent;
+    private double value;
 
     public ApproachingValue(double percent) {
         this.value = 0;
@@ -13,7 +10,7 @@ public class ApproachingValue
     }
 
     public double get(Double realValue) {
-        if(realValue == null) {
+        if (realValue == null) {
             return value;
         }
 

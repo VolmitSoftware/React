@@ -31,13 +31,13 @@ import java.util.concurrent.ForkJoinPool.ForkJoinWorkerThreadFactory;
 import java.util.concurrent.ForkJoinWorkerThread;
 
 public class TaskExecutor {
-    private int xc;
     private final ExecutorService service;
+    private int xc;
 
     public TaskExecutor(int threadLimit, int priority, String name) {
         xc = 1;
 
-        if(threadLimit == 1) {
+        if (threadLimit == 1) {
             service = Executors.newSingleThreadExecutor((r) ->
             {
                 Thread t = new Thread(r);
@@ -46,7 +46,7 @@ public class TaskExecutor {
 
                 return t;
             });
-        } else if(threadLimit > 1) {
+        } else if (threadLimit > 1) {
             final ForkJoinWorkerThreadFactory factory = new ForkJoinWorkerThreadFactory() {
                 @Override
                 public ForkJoinWorkerThread newThread(ForkJoinPool pool) {
@@ -86,6 +86,13 @@ public class TaskExecutor {
         service.shutdown();
     }
 
+    public enum TaskState {
+        QUEUED,
+        RUNNING,
+        COMPLETED,
+        FAILED
+    }
+
     public static class TaskGroup {
         private final List<AssignedTask> tasks;
         private final TaskExecutor e;
@@ -96,7 +103,7 @@ public class TaskExecutor {
         }
 
         public TaskGroup queue(NastyRunnable... r) {
-            for(NastyRunnable i : r) {
+            for (NastyRunnable i : r) {
                 tasks.add(new AssignedTask(i));
             }
 
@@ -104,7 +111,7 @@ public class TaskExecutor {
         }
 
         public TaskGroup queue(List<NastyRunnable> r) {
-            for(NastyRunnable i : r) {
+            for (NastyRunnable i : r) {
                 tasks.add(new AssignedTask(i));
             }
 
@@ -120,23 +127,23 @@ public class TaskExecutor {
             long msv = M.ns();
 
             waiting:
-            while(true) {
+            while (true) {
                 try {
                     Thread.sleep(0);
-                } catch(InterruptedException e1) {
+                } catch (InterruptedException e1) {
 
                 }
 
-                for(AssignedTask i : tasks) {
-                    if(i.state.equals(TaskState.QUEUED) || i.state.equals(TaskState.RUNNING)) {
+                for (AssignedTask i : tasks) {
+                    if (i.state.equals(TaskState.QUEUED) || i.state.equals(TaskState.RUNNING)) {
                         continue waiting;
                     }
                 }
 
                 timeElapsed = (double) (M.ns() - msv) / 1000000D;
 
-                for(AssignedTask i : tasks) {
-                    if(i.state.equals(TaskState.COMPLETED)) {
+                for (AssignedTask i : tasks) {
+                    if (i.state.equals(TaskState.COMPLETED)) {
                         tasksCompleted++;
                     } else {
                         tasksFailed++;
@@ -154,33 +161,24 @@ public class TaskExecutor {
 
     @ToString
     public static class TaskResult {
+        public final double timeElapsed;
+        public final int tasksExecuted;
+        public final int tasksFailed;
+        public final int tasksCompleted;
         public TaskResult(double timeElapsed, int tasksExecuted, int tasksFailed, int tasksCompleted) {
             this.timeElapsed = timeElapsed;
             this.tasksExecuted = tasksExecuted;
             this.tasksFailed = tasksFailed;
             this.tasksCompleted = tasksCompleted;
         }
-
-        public final double timeElapsed;
-        public final int tasksExecuted;
-        public final int tasksFailed;
-        public final int tasksCompleted;
-    }
-
-    public enum TaskState {
-        QUEUED,
-        RUNNING,
-        COMPLETED,
-        FAILED
     }
 
     public static class AssignedTask {
         @Getter
+        private final NastyRunnable task;
+        @Getter
         @Setter
         private TaskState state;
-
-        @Getter
-        private final NastyRunnable task;
 
         public AssignedTask(NastyRunnable task) {
             this.task = task;
@@ -194,7 +192,7 @@ public class TaskExecutor {
                 try {
                     task.run();
                     state = TaskState.COMPLETED;
-                } catch(Throwable ex) {
+                } catch (Throwable ex) {
                     ex.printStackTrace();
                     state = TaskState.FAILED;
                 }

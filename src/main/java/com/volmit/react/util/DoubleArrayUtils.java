@@ -25,7 +25,7 @@ import java.util.Arrays;
 
 public class DoubleArrayUtils {
     public static void shiftRight(double[] values, double push) {
-        for(int index = values.length - 2; index >= 0; index--) {
+        for (int index = values.length - 2; index >= 0; index--) {
             values[index + 1] = values[index];
         }
 
@@ -42,7 +42,7 @@ public class DoubleArrayUtils {
     }
 
     public static void fill(AtomicDoubleArray values, double value) {
-        for(int i = 0; i < values.length(); i++) {
+        for (int i = 0; i < values.length(); i++) {
             values.set(i, value);
         }
     }

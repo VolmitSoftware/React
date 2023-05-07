@@ -1,7 +1,6 @@
 package com.volmit.react.api.action;
 
-public interface Action<T extends ActionParams>
-{
+public interface Action<T extends ActionParams> {
     ActionTicket<T> create(T params);
 
     default ActionTicket<T> create() {

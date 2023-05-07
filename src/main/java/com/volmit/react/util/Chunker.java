@@ -25,10 +25,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 public class Chunker<T> {
+    private final List<T> q;
     private ExecutorService executor;
     private int threads;
     private int workload;
-    private final List<T> q;
 
     public Chunker(List<T> q) {
         this.q = q;
@@ -51,7 +51,7 @@ public class Chunker<T> {
         int length = q.size();
         int remaining = length;
 
-        while(remaining > 0) {
+        while (remaining > 0) {
             int at = remaining;
             remaining -= (remaining > workload ? workload : remaining);
             int to = remaining;

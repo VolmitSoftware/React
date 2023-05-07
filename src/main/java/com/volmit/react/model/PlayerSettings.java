@@ -15,15 +15,8 @@ import java.util.UUID;
 public class PlayerSettings {
     private MonitorConfiguration monitorConfiguration;
     private boolean actionBarMonitoring = false;
- 
-    public void init() {
-        if(monitorConfiguration == null) {
-            monitorConfiguration = new Gson().fromJson(new Gson().toJson(ReactConfiguration.get().getMonitorConfiguration()), MonitorConfiguration.class);
-        }
-    }
 
-    public static void saveSettings(UUID player, PlayerSettings s)
-    {
+    public static void saveSettings(UUID player, PlayerSettings s) {
         File l = React.instance.getDataFile("player-settings", player.toString() + ".json");
 
         try {
@@ -57,5 +50,11 @@ public class PlayerSettings {
         }
 
         return configuration;
+    }
+
+    public void init() {
+        if (monitorConfiguration == null) {
+            monitorConfiguration = new Gson().fromJson(new Gson().toJson(ReactConfiguration.get().getMonitorConfiguration()), MonitorConfiguration.class);
+        }
     }
 }

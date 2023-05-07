@@ -238,13 +238,9 @@ public enum C {
      * need to dynamically convert colour codes from your custom format.
      */
     public static final char COLOR_CHAR = '\u00A7';
+    public final static C[] COLORCYCLE = new C[]{C.GOLD, C.YELLOW, C.GREEN, C.AQUA, C.LIGHT_PURPLE, C.AQUA, C.GREEN, C.YELLOW, C.GOLD, C.RED};
     private static final Pattern STRIP_COLOR_PATTERN = Pattern.compile("(?i)" + COLOR_CHAR + "[0-9A-FK-OR]");
-    public final static C[] COLORCYCLE = new C[] {C.GOLD, C.YELLOW, C.GREEN, C.AQUA, C.LIGHT_PURPLE, C.AQUA, C.GREEN, C.YELLOW, C.GOLD, C.RED};
-    private final static C[] COLORS = new C[] {C.BLACK, C.DARK_BLUE, C.DARK_GREEN, C.DARK_AQUA, C.DARK_RED, C.DARK_PURPLE, C.GOLD, C.GRAY, C.DARK_GRAY, C.BLUE, C.GREEN, C.AQUA, C.RED, C.LIGHT_PURPLE, C.YELLOW, C.WHITE};
-    private final int intCode;
-    private final char code;
-    private final boolean isFormat;
-    private final String toString;
+    private final static C[] COLORS = new C[]{C.BLACK, C.DARK_BLUE, C.DARK_GREEN, C.DARK_AQUA, C.DARK_RED, C.DARK_PURPLE, C.GOLD, C.GRAY, C.DARK_GRAY, C.BLUE, C.GREEN, C.AQUA, C.RED, C.LIGHT_PURPLE, C.YELLOW, C.WHITE};
     private final static Map<Integer, C> BY_ID = new HashMap<Integer, C>();
     private final static Map<Character, C> BY_CHAR = new HashMap<Character, C>();
     private final static Map<DyeColor, C> dyeChatMap = new HashMap<DyeColor, C>();
@@ -302,6 +298,18 @@ public enum C {
         dyeHexMap.put(DyeColor.YELLOW, "#c2b51c");
     }
 
+    static {
+        for (C color : values()) {
+            BY_ID.put(color.intCode, color);
+            BY_CHAR.put(color.code, color);
+        }
+    }
+
+    private final int intCode;
+    private final char code;
+    private final boolean isFormat;
+    private final String toString;
+
     C(char code, int intCode) {
         this(code, intCode, false);
     }
@@ -310,7 +318,221 @@ public enum C {
         this.code = code;
         this.intCode = intCode;
         this.isFormat = isFormat;
-        this.toString = new String(new char[] {COLOR_CHAR, code});
+        this.toString = new String(new char[]{COLOR_CHAR, code});
+    }
+
+    /**
+     * Gets the color represented by the specified color code
+     *
+     * @param code Code to check
+     * @return Associative {@link ChatColor} with the given code, or null
+     * if it doesn't exist
+     */
+    public static C getByChar(char code) {
+        try {
+            return BY_CHAR.get(code);
+        } catch (Exception e) {
+            return C.WHITE;
+        }
+    }
+
+    /**
+     * Gets the color represented by the specified color code
+     *
+     * @param code Code to check
+     * @return Associative {@link ChatColor} with the given code, or null
+     * if it doesn't exist
+     */
+    public static C getByChar(String code) {
+        try {
+            Validate.notNull(code, "Code cannot be null");
+            Validate.isTrue(code.length() > 0, "Code must have at least one char");
+
+            return BY_CHAR.get(code.charAt(0));
+        } catch (Exception e) {
+            return C.WHITE;
+        }
+    }
+
+    /**
+     * Strips the given message of all color codes
+     *
+     * @param input String to strip of color
+     * @return A copy of the input string, without any coloring
+     */
+    public static String stripColor(final String input) {
+        if (input == null) {
+            return null;
+        }
+
+        return STRIP_COLOR_PATTERN.matcher(input).replaceAll("");
+    }
+
+    /**
+     * DyeColor to ChatColor
+     *
+     * @param dclr the dye color
+     * @return the color
+     */
+    public static C dyeToChat(DyeColor dclr) {
+        if (dyeChatMap.containsKey(dclr)) {
+            return dyeChatMap.get(dclr);
+        }
+
+        return C.MAGIC;
+    }
+
+    public static DyeColor chatToDye(ChatColor color) {
+        for (DyeColor i : dyeChatMap.keySet()) {
+            if (dyeChatMap.get(i).toString().equals(color.toString())) {
+                return i;
+            }
+        }
+
+        return DyeColor.BLACK;
+    }
+
+    @SuppressWarnings("unlikely-arg-type")
+    public static String chatToHex(ChatColor clr) {
+        if (chatHexMap.containsKey(clr)) {
+            return chatHexMap.get(clr);
+        }
+
+        return "#000";
+    }
+
+    public static String dyeToHex(DyeColor clr) {
+        if (dyeHexMap.containsKey(clr)) {
+            return dyeHexMap.get(clr);
+        }
+
+        return "#000";
+    }
+
+    public static Color hexToColor(String hex) {
+        if (hex.startsWith("#")) {
+            hex = hex.substring(1);
+        }
+
+        if (hex.indexOf("x") != -1) {
+            hex = hex.substring(hex.indexOf("x"));
+        }
+
+        if (hex.length() != 6 && hex.length() != 3) {
+            return null;
+        }
+        int sz = hex.length() / 3, mult = 1 << ((2 - sz) * 4), x = 0;
+
+        for (int i = 0, z = 0; z < hex.length(); ++i, z += sz) {
+            x |= (mult * Integer.parseInt(hex.substring(z, z + sz), 16)) << (i * 8);
+        }
+
+        return Color.fromBGR(x & 0xffffff);
+    }
+
+    public static Color rgbToColor(String rgb) {
+        String[] parts = rgb.split("[^0-9]+");
+        if (parts.length < 3) {
+            return null;
+        }
+
+        int x = 0, i;
+
+        for (i = 0; i < 3; ++i) {
+            x |= Integer.parseInt(parts[i]) << (i * 8);
+        }
+
+        return Color.fromBGR(x & 0xffffff);
+    }
+
+    public static String generateColorTable() {
+        StringBuilder str = new StringBuilder();
+
+        str.append("<table><tr><td>Chat Color</td><td>Color</td></tr>");
+
+        for (Map.Entry<C, String> e : chatHexMap.entrySet()) {
+            str.append(String.format("<tr><td style='color: %2$s;'>%1$s</td>" + "<td style='color: %2$s;'>Test String</td></tr>", e.getKey().name(), e.getValue()));
+        }
+
+        str.append("</table>");
+        str.append("<table><tr><td>Dye Color</td><td>Color</td></tr>");
+        for (Map.Entry<DyeColor, String> e : dyeHexMap.entrySet()) {
+            str.append(String.format("<tr><td style='color: %2$s;'>%1$s</td>" + "<td style='color: %2$s;'>Test String</td></tr>", e.getKey().name(), e.getValue()));
+        }
+
+        str.append("</table>");
+
+        return str.toString();
+    }
+
+    /**
+     * Translates a string using an alternate color code character into a string
+     * that uses the internal ChatColor.COLOR_CODE color code character. The
+     * alternate color code character will only be replaced if it is immediately
+     * followed by 0-9, A-F, a-f, K-O, k-o, R or r.
+     *
+     * @param altColorChar    The alternate color code character to replace. Ex: {@literal &}
+     * @param textToTranslate Text containing the alternate color code character.
+     * @return Text containing the ChatColor.COLOR_CODE color code character.
+     */
+    public static String translateAlternateColorCodes(char altColorChar, String textToTranslate) {
+        if (textToTranslate == null) {
+            return null;
+        }
+
+        char[] b = textToTranslate.toCharArray();
+        for (int i = 0; i < b.length - 1; i++) {
+            if (b[i] == altColorChar && "0123456789AaBbCcDdEeFfKkLlMmNnOoRr".indexOf(b[i + 1]) > -1) {
+                b[i] = C.COLOR_CHAR;
+                b[i + 1] = Character.toLowerCase(b[i + 1]);
+            }
+        }
+        return new String(b);
+    }
+
+    public static C fromItemMeta(byte c) {
+        for (C i : C.values()) {
+            if (i.getItemMeta() == c) {
+                return i;
+            }
+        }
+
+        return null;
+    }
+
+    public static C randomColor() {
+        return COLORS[(int) (Math.random() * (COLORS.length - 1))];
+    }
+
+    /**
+     * Gets the ChatColors used at the end of the given input string.
+     *
+     * @param input Input string to retrieve the colors from.
+     * @return Any remaining ChatColors to pass onto the next line.
+     */
+    public static String getLastColors(String input) {
+        String result = "";
+        int length = input.length();
+
+        // Search backwards from the end as it is faster
+        for (int index = length - 1; index > -1; index--) {
+            char section = input.charAt(index);
+            if (section == COLOR_CHAR && index < length - 1) {
+                char c = input.charAt(index + 1);
+                C color = getByChar(c);
+
+                if (color != null) {
+                    result = color + result;
+
+                    // Once we find a color or reset we can stop searching
+                    if (color.isColor() || color.equals(RESET)) {
+                        break;
+                    }
+                }
+            }
+        }
+
+        return result;
     }
 
     public net.md_5.bungee.api.ChatColor asBungee() {
@@ -361,199 +583,14 @@ public enum C {
     }
 
     /**
-     * Gets the color represented by the specified color code
-     *
-     * @param code
-     *     Code to check
-     * @return Associative {@link ChatColor} with the given code, or null
-     * if it doesn't exist
-     */
-    public static C getByChar(char code) {
-        try {
-            return BY_CHAR.get(code);
-        } catch(Exception e) {
-            return C.WHITE;
-        }
-    }
-
-    /**
-     * Gets the color represented by the specified color code
-     *
-     * @param code
-     *     Code to check
-     * @return Associative {@link ChatColor} with the given code, or null
-     * if it doesn't exist
-     */
-    public static C getByChar(String code) {
-        try {
-            Validate.notNull(code, "Code cannot be null");
-            Validate.isTrue(code.length() > 0, "Code must have at least one char");
-
-            return BY_CHAR.get(code.charAt(0));
-        } catch(Exception e) {
-            return C.WHITE;
-        }
-    }
-
-    /**
-     * Strips the given message of all color codes
-     *
-     * @param input
-     *     String to strip of color
-     * @return A copy of the input string, without any coloring
-     */
-    public static String stripColor(final String input) {
-        if(input == null) {
-            return null;
-        }
-
-        return STRIP_COLOR_PATTERN.matcher(input).replaceAll("");
-    }
-
-    /**
-     * DyeColor to ChatColor
-     *
-     * @param dclr
-     *     the dye color
-     * @return the color
-     */
-    public static C dyeToChat(DyeColor dclr) {
-        if(dyeChatMap.containsKey(dclr)) {
-            return dyeChatMap.get(dclr);
-        }
-
-        return C.MAGIC;
-    }
-
-    public static DyeColor chatToDye(ChatColor color) {
-        for(DyeColor i : dyeChatMap.keySet()) {
-            if(dyeChatMap.get(i).toString().equals(color.toString())) {
-                return i;
-            }
-        }
-
-        return DyeColor.BLACK;
-    }
-
-    @SuppressWarnings("unlikely-arg-type")
-    public static String chatToHex(ChatColor clr) {
-        if(chatHexMap.containsKey(clr)) {
-            return chatHexMap.get(clr);
-        }
-
-        return "#000";
-    }
-
-    public static String dyeToHex(DyeColor clr) {
-        if(dyeHexMap.containsKey(clr)) {
-            return dyeHexMap.get(clr);
-        }
-
-        return "#000";
-    }
-
-    public static Color hexToColor(String hex) {
-        if(hex.startsWith("#")) {
-            hex = hex.substring(1);
-        }
-
-        if(hex.indexOf("x") != -1) {
-            hex = hex.substring(hex.indexOf("x"));
-        }
-
-        if(hex.length() != 6 && hex.length() != 3) {
-            return null;
-        }
-        int sz = hex.length() / 3, mult = 1 << ((2 - sz) * 4), x = 0;
-
-        for(int i = 0, z = 0; z < hex.length(); ++i, z += sz) {
-            x |= (mult * Integer.parseInt(hex.substring(z, z + sz), 16)) << (i * 8);
-        }
-
-        return Color.fromBGR(x & 0xffffff);
-    }
-
-    public static Color rgbToColor(String rgb) {
-        String[] parts = rgb.split("[^0-9]+");
-        if(parts.length < 3) {
-            return null;
-        }
-
-        int x = 0, i;
-
-        for(i = 0; i < 3; ++i) {
-            x |= Integer.parseInt(parts[i]) << (i * 8);
-        }
-
-        return Color.fromBGR(x & 0xffffff);
-    }
-
-    public static String generateColorTable() {
-        StringBuilder str = new StringBuilder();
-
-        str.append("<table><tr><td>Chat Color</td><td>Color</td></tr>");
-
-        for(Map.Entry<C, String> e : chatHexMap.entrySet()) {
-            str.append(String.format("<tr><td style='color: %2$s;'>%1$s</td>" + "<td style='color: %2$s;'>Test String</td></tr>", e.getKey().name(), e.getValue()));
-        }
-
-        str.append("</table>");
-        str.append("<table><tr><td>Dye Color</td><td>Color</td></tr>");
-        for(Map.Entry<DyeColor, String> e : dyeHexMap.entrySet()) {
-            str.append(String.format("<tr><td style='color: %2$s;'>%1$s</td>" + "<td style='color: %2$s;'>Test String</td></tr>", e.getKey().name(), e.getValue()));
-        }
-
-        str.append("</table>");
-
-        return str.toString();
-    }
-
-    /**
      * Get the ChatColor enum instance instead of C
      */
     public ChatColor chatColor() {
         return ChatColor.getByChar(code);
     }
 
-    /**
-     * Translates a string using an alternate color code character into a string
-     * that uses the internal ChatColor.COLOR_CODE color code character. The
-     * alternate color code character will only be replaced if it is immediately
-     * followed by 0-9, A-F, a-f, K-O, k-o, R or r.
-     *
-     * @param altColorChar
-     *     The alternate color code character to replace. Ex: {@literal &}
-     * @param textToTranslate
-     *     Text containing the alternate color code character.
-     * @return Text containing the ChatColor.COLOR_CODE color code character.
-     */
-    public static String translateAlternateColorCodes(char altColorChar, String textToTranslate) {
-        if(textToTranslate == null) {
-            return null;
-        }
-
-        char[] b = textToTranslate.toCharArray();
-        for(int i = 0; i < b.length - 1; i++) {
-            if(b[i] == altColorChar && "0123456789AaBbCcDdEeFfKkLlMmNnOoRr".indexOf(b[i + 1]) > -1) {
-                b[i] = C.COLOR_CHAR;
-                b[i + 1] = Character.toLowerCase(b[i + 1]);
-            }
-        }
-        return new String(b);
-    }
-
-    public static C fromItemMeta(byte c) {
-        for(C i : C.values()) {
-            if(i.getItemMeta() == c) {
-                return i;
-            }
-        }
-
-        return null;
-    }
-
     public byte getMeta() {
-        switch(this) {
+        switch (this) {
             case AQUA:
                 return 11;
             case BLACK:
@@ -604,7 +641,7 @@ public enum C {
     }
 
     public byte getItemMeta() {
-        switch(this) {
+        switch (this) {
             case AQUA:
                 return 9;
             case BLACK:
@@ -651,49 +688,6 @@ public enum C {
                 return 4;
             default:
                 return -1;
-        }
-    }
-
-    public static C randomColor() {
-        return COLORS[(int) (Math.random() * (COLORS.length - 1))];
-    }
-
-    /**
-     * Gets the ChatColors used at the end of the given input string.
-     *
-     * @param input
-     *     Input string to retrieve the colors from.
-     * @return Any remaining ChatColors to pass onto the next line.
-     */
-    public static String getLastColors(String input) {
-        String result = "";
-        int length = input.length();
-
-        // Search backwards from the end as it is faster
-        for(int index = length - 1; index > -1; index--) {
-            char section = input.charAt(index);
-            if(section == COLOR_CHAR && index < length - 1) {
-                char c = input.charAt(index + 1);
-                C color = getByChar(c);
-
-                if(color != null) {
-                    result = color + result;
-
-                    // Once we find a color or reset we can stop searching
-                    if(color.isColor() || color.equals(RESET)) {
-                        break;
-                    }
-                }
-            }
-        }
-
-        return result;
-    }
-
-    static {
-        for(C color : values()) {
-            BY_ID.put(color.intCode, color);
-            BY_CHAR.put(color.code, color);
         }
     }
 }

@@ -41,23 +41,23 @@ public class RollingSequence extends Average {
     public double addLast(int amt) {
         double f = 0;
 
-        for(int i = 0; i < Math.min(values.length, amt); i++) {
+        for (int i = 0; i < Math.min(values.length, amt); i++) {
             f += values[i];
         }
 
         return f;
     }
 
-    public void setPrecision(boolean p) {
-        this.precision = p;
-    }
-
     public boolean isPrecision() {
         return precision;
     }
 
+    public void setPrecision(boolean p) {
+        this.precision = p;
+    }
+
     public double getMin() {
-        if(dirtyExtremes > (isPrecision() ? 0 : values.length)) {
+        if (dirtyExtremes > (isPrecision() ? 0 : values.length)) {
             resetExtremes();
         }
 
@@ -65,7 +65,7 @@ public class RollingSequence extends Average {
     }
 
     public double getMax() {
-        if(dirtyExtremes > (isPrecision() ? 0 : values.length)) {
+        if (dirtyExtremes > (isPrecision() ? 0 : values.length)) {
             resetExtremes();
         }
 
@@ -73,7 +73,7 @@ public class RollingSequence extends Average {
     }
 
     public double getMedian() {
-        if(dirtyMedian) {
+        if (dirtyMedian) {
             recalculateMedian();
         }
 
@@ -82,7 +82,7 @@ public class RollingSequence extends Average {
 
     private void recalculateMedian() {
         List<Double> l = new ArrayList<>();
-        for(double i : values) {
+        for (double i : values) {
             l.add(i);
         }
 
@@ -95,7 +95,7 @@ public class RollingSequence extends Average {
         max = Integer.MIN_VALUE;
         min = Integer.MAX_VALUE;
 
-        for(double i : values) {
+        for (double i : values) {
             max = M.max(max, i);
             min = M.min(min, i);
         }

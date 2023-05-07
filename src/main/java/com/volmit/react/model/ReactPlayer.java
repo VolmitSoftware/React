@@ -19,8 +19,8 @@ public class ReactPlayer extends TickedObject {
     private static final int INACTIVE_RATE = 1000;
     private static final int INACTIVE_DELAY = 10000;
     private final ChronoLatch saveLatch;
-    private PlayerSettings settings;
     private final Player player;
+    private PlayerSettings settings;
     private ActionBarMonitor actionBarMonitor;
     private int scrollPosition;
     private long lastActive;
@@ -59,7 +59,7 @@ public class ReactPlayer extends TickedObject {
     }
 
     public void saveSettings(boolean force) {
-        if(force || lastHash != settings.hashCode()) {
+        if (force || lastHash != settings.hashCode()) {
             PlayerSettings.saveSettings(player.getUniqueId(), settings);
             React.verbose("Saved " + player.getName() + "'s settings");
         }
@@ -71,8 +71,7 @@ public class ReactPlayer extends TickedObject {
         wakeUp(false);
     }
 
-    public boolean isMonitorSneaking()
-    {
+    public boolean isMonitorSneaking() {
         return sneaking && isSpeedValidForMonitor() && speedTickCooldown <= 0;
     }
 
@@ -80,16 +79,15 @@ public class ReactPlayer extends TickedObject {
         lastActive = System.currentTimeMillis();
         setInterval(ACTIVE_RATE);
 
-        if(children && actionBarMonitor != null) {
+        if (children && actionBarMonitor != null) {
             actionBarMonitor.wakeUp();
         }
     }
 
-    public int getScrollPosition(int maxRemainder)
-    {
+    public int getScrollPosition(int maxRemainder) {
         int pos = scrollPosition;
 
-        if(scrollPosition < 0) {
+        if (scrollPosition < 0) {
             pos += ((-scrollPosition / maxRemainder) * maxRemainder) + maxRemainder + maxRemainder;
         }
 
@@ -98,23 +96,22 @@ public class ReactPlayer extends TickedObject {
 
     @EventHandler
     public void on(PlayerMoveEvent e) {
-        if(!e.getPlayer().equals(player))
-        {
+        if (!e.getPlayer().equals(player)) {
             return;
         }
 
         wakeUp();
 
-        if(e.getTo() != null) {
-           yaw = e.getTo().getYaw();
-           pitch = e.getTo().getPitch();
-           float v = ((e.getFrom().getYaw() + 600) - (yaw +  600)) / 5;
-           yawPosition += (v < 12 && v > 0.01) ? 1 : v > -12 && v < -0.01 ? -1 : 0;
-            if(yawPosition <= 0) {
+        if (e.getTo() != null) {
+            yaw = e.getTo().getYaw();
+            pitch = e.getTo().getPitch();
+            float v = ((e.getFrom().getYaw() + 600) - (yaw + 600)) / 5;
+            yawPosition += (v < 12 && v > 0.01) ? 1 : v > -12 && v < -0.01 ? -1 : 0;
+            if (yawPosition <= 0) {
                 yawPosition = 1000000;
             }
 
-            if(e.getFrom().getWorld().getName().equals(e.getTo().getWorld().getName())) {
+            if (e.getFrom().getWorld().getName().equals(e.getTo().getWorld().getName())) {
                 velocity = e.getTo().toVector().subtract(e.getFrom().toVector()).clone().add(velocity);
             }
         }
@@ -122,21 +119,20 @@ public class ReactPlayer extends TickedObject {
 
     @EventHandler
     public void on(PlayerToggleSneakEvent e) {
-        if(!e.getPlayer().equals(player)) {
+        if (!e.getPlayer().equals(player)) {
             return;
         }
         sneaking = e.isSneaking();
         wakeUp(true);
 
-        if(e.isSneaking()) {
-            if(getPlayer().isFlying())
-            {
+        if (e.isSneaking()) {
+            if (getPlayer().isFlying()) {
                 speedTickCooldown = 9;
             }
             long ls = lastShift;
             lastShift = System.currentTimeMillis();
 
-            if(lastShift - ls < 250 && isMonitorSneaking()) {
+            if (lastShift - ls < 250 && isMonitorSneaking()) {
                 locked = !locked;
                 lastShift = 0;
             }
@@ -145,8 +141,7 @@ public class ReactPlayer extends TickedObject {
 
     @EventHandler
     public void on(PlayerItemHeldEvent e) {
-        if(!e.getPlayer().equals(player) || !e.getPlayer().isSneaking())
-        {
+        if (!e.getPlayer().equals(player) || !e.getPlayer().isSneaking()) {
             return;
         }
 
@@ -157,12 +152,10 @@ public class ReactPlayer extends TickedObject {
     public void onJoin() {
         settings.init();
 
-        if(settings.isActionBarMonitoring()) {
+        if (settings.isActionBarMonitoring()) {
             setActionBarMonitoring(true);
             new MortarSender(getPlayer(), React.instance.getTag()).sendMessage("Monitor Enabled");
-        }
-
-        else {
+        } else {
             player.sendMessage("Not wasnt monitoring");
         }
     }
@@ -181,21 +174,19 @@ public class ReactPlayer extends TickedObject {
     }
 
     public void setActionBarMonitoring(boolean monitoring, boolean saveSetting) {
-        if(monitoring == isActionBarMonitoring()) {
+        if (monitoring == isActionBarMonitoring()) {
             return;
         }
 
-        if(!monitoring) {
+        if (!monitoring) {
             actionBarMonitor.stop();
             actionBarMonitor = null;
-        }
-
-        else{
+        } else {
             actionBarMonitor = new ActionBarMonitor(this);
             actionBarMonitor.start();
         }
 
-        if(saveSetting) {
+        if (saveSetting) {
             getSettings().setActionBarMonitoring(isActionBarMonitoring());
             saveSettings();
         }
@@ -208,7 +199,7 @@ public class ReactPlayer extends TickedObject {
 
     @Override
     public void onTick() {
-        if(getInterval() > ACTIVE_RATE && System.currentTimeMillis() - lastActive > INACTIVE_DELAY) {
+        if (getInterval() > ACTIVE_RATE && System.currentTimeMillis() - lastActive > INACTIVE_DELAY) {
             setInterval(INACTIVE_RATE);
         }
 
@@ -218,13 +209,13 @@ public class ReactPlayer extends TickedObject {
         velocity.setZ(velocity.getZ() < 0.01 && velocity.getZ() > -0.01 ? 0 : velocity.getZ());
         speedTickCooldown--;
         speedValidForMonitor = velocity.getY() > -1;
-        if(saveLatch.flip()) {
+        if (saveLatch.flip()) {
             saveSettings();
         }
     }
 
     public void updateMonitors() {
-        if(isActionBarMonitoring()) {
+        if (isActionBarMonitoring()) {
             setActionBarMonitoring(false);
             setActionBarMonitoring(true);
         }

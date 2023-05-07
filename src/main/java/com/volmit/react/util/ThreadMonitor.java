@@ -28,12 +28,12 @@ import com.volmit.react.React;
  */
 public class ThreadMonitor extends Thread {
     private final Thread monitor;
+    private final ChronoLatch cl;
+    private final RollingSequence sq = new RollingSequence(3);
+    int cycles = 0;
     private boolean running;
     private State lastState;
-    private final ChronoLatch cl;
     private PrecisionStopwatch st;
-    int cycles = 0;
-    private final RollingSequence sq = new RollingSequence(3);
 
     private ThreadMonitor(Thread monitor) {
         running = true;
@@ -44,22 +44,26 @@ public class ThreadMonitor extends Thread {
         start();
     }
 
+    public static ThreadMonitor bind(Thread monitor) {
+        return new ThreadMonitor(monitor);
+    }
+
     public void run() {
-        while(running) {
+        while (running) {
             try {
                 Thread.sleep(0);
                 State s = monitor.getState();
-                if(lastState != s) {
+                if (lastState != s) {
                     cycles++;
                     pushState(s);
                 }
 
                 lastState = s;
 
-                if(cl.flip()) {
+                if (cl.flip()) {
                     React.info("Cycles: " + Form.f(cycles) + " (" + Form.duration(sq.getAverage(), 2) + ")");
                 }
-            } catch(Throwable e) {
+            } catch (Throwable e) {
                 running = false;
                 break;
             }
@@ -67,8 +71,8 @@ public class ThreadMonitor extends Thread {
     }
 
     public void pushState(State s) {
-        if(s != State.RUNNABLE) {
-            if(st != null) {
+        if (s != State.RUNNABLE) {
+            if (st != null) {
                 sq.put(st.getMilliseconds());
             }
         } else {
@@ -79,9 +83,5 @@ public class ThreadMonitor extends Thread {
 
     public void unbind() {
         running = false;
-    }
-
-    public static ThreadMonitor bind(Thread monitor) {
-        return new ThreadMonitor(monitor);
     }
 }

@@ -28,19 +28,16 @@ public class ActionTicket<T extends ActionParams> {
         totalWork = 1;
     }
 
-    public void addWork(int w)
-    {
-        	totalWork += w;
+    public void addWork(int w) {
+        totalWork += w;
     }
 
-    public void addWork()
-    {
-            	totalWork++;
+    public void addWork() {
+        totalWork++;
     }
 
-    public double getProgress()
-    {
-        return getWork() / (double)getTotalWork();
+    public double getProgress() {
+        return getWork() / (double) getTotalWork();
     }
 
     public ActionTicket<T> onComplete(Runnable r) {
@@ -53,8 +50,7 @@ public class ActionTicket<T extends ActionParams> {
         return this;
     }
 
-    public void queue()
-    {
+    public void queue() {
         React.instance.getActionController().queueAction(this);
     }
 
@@ -65,7 +61,7 @@ public class ActionTicket<T extends ActionParams> {
     }
 
     public void complete() {
-        if(done) {
+        if (done) {
             return;
         }
 

@@ -141,12 +141,29 @@ public enum ParticleType {
         this.minimumVersion = minimumVersion;
     }
 
+    public static ParticleType getParticle(String particleName) {
+        try {
+            return ParticleType.valueOf(particleName.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            for (ParticleType particle : values()) {
+                if (particle.getName().equalsIgnoreCase(particleName)) {
+                    return particle;
+                }
+
+                if (particle.hasLegacyName() && particle.getLegacyName().equalsIgnoreCase(particleName)) {
+                    return particle;
+                }
+            }
+        }
+        return null;
+    }
+
     public boolean hasLegacyName() {
         return legacyName != null;
     }
 
     public String getLegacyName() {
-        if(!hasLegacyName()) {
+        if (!hasLegacyName()) {
             throw new IllegalStateException("Particle " + name() + " don't have legacy name");
         }
         return legacyName;
@@ -161,7 +178,7 @@ public enum ParticleType {
     }
 
     public Class<?> getDataType() {
-        switch(this) {
+        switch (this) {
             case ITEM_CRACK:
                 return ItemStack.class;
             case BLOCK_CRACK:
@@ -174,22 +191,5 @@ public enum ParticleType {
             default:
                 return Void.class;
         }
-    }
-
-    public static ParticleType getParticle(String particleName) {
-        try {
-            return ParticleType.valueOf(particleName.toUpperCase());
-        } catch(IllegalArgumentException e) {
-            for(ParticleType particle : values()) {
-                if(particle.getName().equalsIgnoreCase(particleName)) {
-                    return particle;
-                }
-
-                if(particle.hasLegacyName() && particle.getLegacyName().equalsIgnoreCase(particleName)) {
-                    return particle;
-                }
-            }
-        }
-        return null;
     }
 }

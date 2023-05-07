@@ -2,7 +2,6 @@ package com.volmit.react.api.sampler;
 
 import com.google.common.util.concurrent.AtomicDouble;
 import com.volmit.react.util.ChronoLatch;
-import net.kyori.adventure.text.Component;
 
 public abstract class ReactCachedSampler implements Sampler {
     private final ChronoLatch latch;
@@ -31,7 +30,7 @@ public abstract class ReactCachedSampler implements Sampler {
     public double sample() {
         double t = last.get();
 
-        if(latch.flip()) {
+        if (latch.flip()) {
             t = onSample();
             last.set(t);
         }

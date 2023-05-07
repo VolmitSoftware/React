@@ -41,7 +41,7 @@ public class EventController implements IController {
     }
 
     public void updateHandlerListInjections() {
-        if(running.get()) {
+        if (running.get()) {
             return;
         }
 
@@ -54,17 +54,16 @@ public class EventController implements IController {
             int inj = 0;
             ArrayList<HandlerList> h = Curse.on(HandlerList.class).get("allLists");
 
-            for(HandlerList i : h) {
+            for (HandlerList i : h) {
                 RegisteredListener[] r = Curse.on(i).get("handlers");
                 EnumMap<EventPriority, ArrayList<RegisteredListener>> map = Curse.on(i).get("handlerslots");
-                if(r != null) {
-                    for(int j = 0; j < r.length; j++) {
-                        if(!(r[j] instanceof NaughtyRegisteredListener)) {
+                if (r != null) {
+                    for (int j = 0; j < r.length; j++) {
+                        if (!(r[j] instanceof NaughtyRegisteredListener)) {
                             r[j] = new NaughtyRegisteredListener(r[j].getListener(), Curse.on(r[j]).get("executor"),
-                                r[j].getPriority(), r[j].getPlugin(), r[j].isIgnoringCancelled());
+                                    r[j].getPriority(), r[j].getPlugin(), r[j].isIgnoringCancelled());
                             inj++;
-                        }
-                        else {
+                        } else {
                             totalTime += ((NaughtyRegisteredListener) r[j]).time;
                             ((NaughtyRegisteredListener) r[j]).time = 0;
                             calls += ((NaughtyRegisteredListener) r[j]).calls;
@@ -75,19 +74,18 @@ public class EventController implements IController {
                     m += r.length;
                 }
 
-                if(map != null) {
-                    for(ArrayList<RegisteredListener> j : map.values()) {
-                        for(int k = 0; k < j.size(); k++) {
-                            if(!(j.get(k) instanceof NaughtyRegisteredListener)) {
+                if (map != null) {
+                    for (ArrayList<RegisteredListener> j : map.values()) {
+                        for (int k = 0; k < j.size(); k++) {
+                            if (!(j.get(k) instanceof NaughtyRegisteredListener)) {
                                 j.set(k, new NaughtyRegisteredListener(j.get(k).getListener(), Curse.on(j.get(k)).get("executor"),
-                                    j.get(k).getPriority(), j.get(k).getPlugin(), j.get(k).isIgnoringCancelled()));
+                                        j.get(k).getPriority(), j.get(k).getPlugin(), j.get(k).isIgnoringCancelled()));
                                 inj++;
-                            }
-                            else {
-                                totalTime += ((NaughtyRegisteredListener)j.get(k)).time;
-                                ((NaughtyRegisteredListener)j.get(k)).time = 0;
-                                calls += ((NaughtyRegisteredListener)j.get(k)).calls;
-                                ((NaughtyRegisteredListener)j.get(k)).calls = 0;
+                            } else {
+                                totalTime += ((NaughtyRegisteredListener) j.get(k)).time;
+                                ((NaughtyRegisteredListener) j.get(k)).time = 0;
+                                calls += ((NaughtyRegisteredListener) j.get(k)).calls;
+                                ((NaughtyRegisteredListener) j.get(k)).calls = 0;
                             }
                         }
 
@@ -96,8 +94,7 @@ public class EventController implements IController {
                 }
             }
 
-            if(inj > 0)
-            {
+            if (inj > 0) {
                 React.verbose("Injected " + inj + " event listener spies.");
             }
 
@@ -110,25 +107,25 @@ public class EventController implements IController {
         int out = 0;
         ArrayList<HandlerList> h = Curse.on(HandlerList.class).get("allLists");
 
-        for(HandlerList i : h) {
+        for (HandlerList i : h) {
             RegisteredListener[] r = Curse.on(i).get("handlers");
             EnumMap<EventPriority, ArrayList<RegisteredListener>> map = Curse.on(i).get("handlerslots");
-            if(r != null) {
-                for(int j = 0; j < r.length; j++) {
-                    if((r[j] instanceof NaughtyRegisteredListener)) {
+            if (r != null) {
+                for (int j = 0; j < r.length; j++) {
+                    if ((r[j] instanceof NaughtyRegisteredListener)) {
                         r[j] = new RegisteredListener(r[j].getListener(), Curse.on(r[j]).get("executor"),
-                            r[j].getPriority(), r[j].getPlugin(), r[j].isIgnoringCancelled());
+                                r[j].getPriority(), r[j].getPlugin(), r[j].isIgnoringCancelled());
                         out++;
                     }
                 }
             }
 
-            if(map != null) {
-                for(ArrayList<RegisteredListener> j : map.values()) {
-                    for(int k = 0; k < j.size(); k++) {
-                        if((j.get(k) instanceof NaughtyRegisteredListener)) {
+            if (map != null) {
+                for (ArrayList<RegisteredListener> j : map.values()) {
+                    for (int k = 0; k < j.size(); k++) {
+                        if ((j.get(k) instanceof NaughtyRegisteredListener)) {
                             j.set(k, new RegisteredListener(j.get(k).getListener(), Curse.on(j.get(k)).get("executor"),
-                                j.get(k).getPriority(), j.get(k).getPlugin(), j.get(k).isIgnoringCancelled()));
+                                    j.get(k).getPriority(), j.get(k).getPlugin(), j.get(k).isIgnoringCancelled()));
                             out++;
                         }
                     }

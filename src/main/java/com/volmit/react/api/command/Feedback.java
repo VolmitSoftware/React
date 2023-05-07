@@ -29,7 +29,7 @@ public class Feedback {
         }
 
         for (TextComponent i : messages) {
-            String prefix =  C.GRAY + "[" + C.GOLD + "Foundation" + C.GRAY + "]:" ;
+            String prefix = C.GRAY + "[" + C.GOLD + "Foundation" + C.GRAY + "]:";
             React.audiences.sender(serverOrPlayer).sendMessage(i.content(prefix + " " + i.content()));
         }
     }

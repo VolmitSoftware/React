@@ -27,13 +27,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class UIElement implements Element {
+    private final String id;
+    private final List<String> lore;
     private MaterialBlock material;
     private boolean enchanted;
-    private final String id;
     private String name;
     private double progress;
     private boolean bg;
-    private final List<String> lore;
     private Callback<Element> eLeft;
     private Callback<Element> eRight;
     private Callback<Element> eShiftLeft;
@@ -55,14 +55,14 @@ public class UIElement implements Element {
         return material;
     }
 
-    public Double clip(double value, double min, double max) {
-        return Double.valueOf(Math.min(max, Math.max(min, value)));
-    }
-
     @Override
     public UIElement setMaterial(MaterialBlock material) {
         this.material = material;
         return this;
+    }
+
+    public Double clip(double value, double min, double max) {
+        return Double.valueOf(Math.min(max, Math.max(min, value)));
     }
 
     @Override
@@ -136,7 +136,7 @@ public class UIElement implements Element {
     @Override
     public Element call(ElementEvent event, Element context) {
         try {
-            switch(event) {
+            switch (event) {
                 case DRAG_INTO:
                     eDraggedInto.run(context);
                     return this;
@@ -156,9 +156,9 @@ public class UIElement implements Element {
                     eShiftRight.run(context);
                     return this;
             }
-        } catch(NullPointerException e) {
+        } catch (NullPointerException e) {
 
-        } catch(Throwable e) {
+        } catch (Throwable e) {
             e.printStackTrace();
         }
 
@@ -167,26 +167,20 @@ public class UIElement implements Element {
 
     @Override
     public Element addLore(String loreLine) {
-        for(String i : wrapWordsWithFormatting(loreLine.replaceAll("\\Q\n\\E", " "), 52).split("\\Q\n\\E"))
-        {
+        for (String i : wrapWordsWithFormatting(loreLine.replaceAll("\\Q\n\\E", " "), 52).split("\\Q\n\\E")) {
             getLore().add(i);
         }
 
         return this;
     }
 
-    public String wrapWordsWithFormatting(String f, int l)
-    {
+    public String wrapWordsWithFormatting(String f, int l) {
         StringBuilder sb = new StringBuilder();
         String last = null;
-        for(String i : Form.wrapWords(f, l).split("\\Q\n\\E"))
-        {
-            if(last != null)
-            {
+        for (String i : Form.wrapWords(f, l).split("\\Q\n\\E")) {
+            if (last != null) {
                 sb.append("\n").append(C.getLastColors(last)).append(i);
-            }
-
-            else {
+            } else {
                 sb.append("\n").append(i);
             }
 
@@ -227,13 +221,13 @@ public class UIElement implements Element {
             im.setDisplayName(getName());
             im.setLore(new ArrayList<>(getLore()));
 
-            if(isEnchanted()) {
+            if (isEnchanted()) {
                 im.addEnchant(Enchantment.DURABILITY, 1, true);
             }
 
             is.setItemMeta(im);
             return is;
-        } catch(Throwable e) {
+        } catch (Throwable e) {
             e.printStackTrace();
         }
 
@@ -253,11 +247,11 @@ public class UIElement implements Element {
 
     @Override
     public short getEffectiveDurability() {
-        if(progress == 1D) {
+        if (progress == 1D) {
             return 0;
         }
 
-        if(getMaterial().getMaterial().getMaxDurability() == 0) {
+        if (getMaterial().getMaterial().getMaxDurability() == 0) {
             return 0;
         } else {
             int prog = (int) ((double) getMaterial().getMaterial().getMaxDurability() * (1D - getProgress()));

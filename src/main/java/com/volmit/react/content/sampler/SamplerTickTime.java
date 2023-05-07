@@ -2,17 +2,9 @@ package com.volmit.react.content.sampler;
 
 import com.volmit.react.React;
 import com.volmit.react.api.sampler.ReactCachedSampler;
-import com.volmit.react.api.sampler.ReactTickedSampler;
 import com.volmit.react.util.Form;
-import com.volmit.react.util.J;
-import com.volmit.react.util.M;
-import com.volmit.react.util.PrecisionStopwatch;
 import com.volmit.react.util.ThreadUtilizationMonitor;
 import net.kyori.adventure.text.Component;
-import org.bukkit.Bukkit;
-
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 public class SamplerTickTime extends ReactCachedSampler {
     public static final String ID = "tick-time";
@@ -23,15 +15,14 @@ public class SamplerTickTime extends ReactCachedSampler {
     }
 
     @Override
-    public void start()
-    {
+    public void start() {
         super.start();
         monitor = new ThreadUtilizationMonitor(React.serverThread, 100);
         monitor.start();
     }
 
     @Override
-    public void stop(){
+    public void stop() {
         monitor.interrupt();
         super.stop();
     }

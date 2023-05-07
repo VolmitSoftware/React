@@ -29,17 +29,16 @@ import com.google.common.util.concurrent.AtomicDoubleArray;
  */
 public class AtomicAverage {
     protected AtomicDoubleArray values;
+    protected int cursor;
     private double average;
     private double lastSum;
     private boolean dirty;
-    protected int cursor;
     private boolean brandNew;
 
     /**
      * Create an average holder
      *
-     * @param size
-     *     the size of entries to keep
+     * @param size the size of entries to keep
      */
     public AtomicAverage(int size) {
         values = new AtomicDoubleArray(size);
@@ -54,14 +53,13 @@ public class AtomicAverage {
     /**
      * Put a value into the average (rolls over if full)
      *
-     * @param i
-     *     the value
+     * @param i the value
      */
     public void put(double i) {
 
         dirty = true;
 
-        if(brandNew) {
+        if (brandNew) {
             DoubleArrayUtils.fill(values, i);
             lastSum = size() * i;
             brandNew = false;
@@ -80,7 +78,7 @@ public class AtomicAverage {
      * @return the average
      */
     public double getAverage() {
-        if(dirty) {
+        if (dirty) {
             calculateAverage();
             return getAverage();
         }

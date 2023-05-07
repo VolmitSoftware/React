@@ -2,10 +2,10 @@ package com.volmit.react.core.controller;
 
 import art.arcane.curse.Curse;
 import com.volmit.react.React;
-import com.volmit.react.content.action.ActionUnknown;
 import com.volmit.react.api.action.Action;
 import com.volmit.react.api.action.ActionParams;
 import com.volmit.react.api.action.ActionTicket;
+import com.volmit.react.content.action.ActionUnknown;
 import com.volmit.react.util.Form;
 import com.volmit.react.util.IController;
 import com.volmit.react.util.JarScanner;
@@ -20,10 +20,10 @@ import java.util.Map;
 
 @Data
 public class ActionController implements IController {
-    private Map<String, Action<?>> actions;
-    private Action<?> unknown;
     private final List<ActionTicket<?>> ticketQueue = new ArrayList<>();
     private final List<ActionTicket<?>> ticketRuntime = new ArrayList<>();
+    private Map<String, Action<?>> actions;
+    private Action<?> unknown;
     private int actionSpeedMultiplier;
 
     @Override
@@ -32,7 +32,7 @@ public class ActionController implements IController {
     }
 
     public void queueAction(ActionTicket<?> ticket) {
-        synchronized(ticketQueue) {
+        synchronized (ticketQueue) {
             ticketQueue.add(ticket);
         }
     }
@@ -42,7 +42,7 @@ public class ActionController implements IController {
 
         s = s == null ? unknown : s;
 
-        if(s == null) {
+        if (s == null) {
             s = new ActionUnknown();
         }
 
@@ -61,25 +61,22 @@ public class ActionController implements IController {
         try {
             j.scan();
             j.getClasses().stream()
-                .filter(i -> i.isAssignableFrom(Action.class) || Action.class.isAssignableFrom(i))
-                .map((i) -> {
-                    try
-                    {
-                        return (Action<?>) i.getConstructor().newInstance();
-                    }
-                    catch(Throwable e)
-                    {
-                        e.printStackTrace();
-                    }
+                    .filter(i -> i.isAssignableFrom(Action.class) || Action.class.isAssignableFrom(i))
+                    .map((i) -> {
+                        try {
+                            return (Action<?>) i.getConstructor().newInstance();
+                        } catch (Throwable e) {
+                            e.printStackTrace();
+                        }
 
-                    return null;
-                })
-                .forEach((i) -> {
-                    if(i != null) {
-                        actions.put(i.getId(), i);
-                    }
-                });
-        } catch(IOException e) {
+                        return null;
+                    })
+                    .forEach((i) -> {
+                        if (i != null) {
+                            actions.put(i.getId(), i);
+                        }
+                    });
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
@@ -96,23 +93,23 @@ public class ActionController implements IController {
 
     @Override
     public void tick() {
-       synchronized(ticketQueue) {
-           if(!ticketQueue.isEmpty() && ticketRuntime.size() < Math.max(3, Runtime.getRuntime().availableProcessors()/4)) {
-               ActionTicket<?> t = ticketQueue.remove(0);
-               t.start();
-               ticketRuntime.add(t);
-               React.info("Action " + t.getAction().getId() + " started");
-           }
-       }
+        synchronized (ticketQueue) {
+            if (!ticketQueue.isEmpty() && ticketRuntime.size() < Math.max(3, Runtime.getRuntime().availableProcessors() / 4)) {
+                ActionTicket<?> t = ticketQueue.remove(0);
+                t.start();
+                ticketRuntime.add(t);
+                React.info("Action " + t.getAction().getId() + " started");
+            }
+        }
 
-        synchronized(ticketRuntime) {
-            if(!ticketRuntime.isEmpty()) {
-                for(ActionTicket<?> i : new ArrayList<>(ticketRuntime)) {
+        synchronized (ticketRuntime) {
+            if (!ticketRuntime.isEmpty()) {
+                for (ActionTicket<?> i : new ArrayList<>(ticketRuntime)) {
                     Curse.on(i.getAction()).method("workOn", ActionTicket.class).invoke(i);
                 }
 
-                for(ActionTicket<?> i : new ArrayList<>(ticketRuntime)) {
-                    if(i.isDone()) {
+                for (ActionTicket<?> i : new ArrayList<>(ticketRuntime)) {
+                    if (i.isDone()) {
                         long runtime = System.currentTimeMillis() - i.getStartedAt();
                         ticketRuntime.remove(i);
                         React.success("Action " + i.getAction().getId() + " completed in " + Form.duration(runtime, 1));

@@ -4,44 +4,34 @@ import com.volmit.react.React;
 import com.volmit.react.api.action.Action;
 import com.volmit.react.api.command.RCommand;
 import com.volmit.react.api.command.RConst;
-import dev.jorel.commandapi.CommandAPICommand;
-import dev.jorel.commandapi.arguments.GreedyStringArgument;
-import dev.jorel.commandapi.executors.CommandExecutor;
+import dev.jorel.commandapi.annotations.*;
+import dev.jorel.commandapi.annotations.arguments.AMultiLiteralArgument;
 import org.bukkit.command.CommandSender;
 
-import java.util.Map;
-public class CommandAction implements CommandExecutor, RCommand {
+@Command("react")
+@Alias({"re", "ract"})
+@Permission("react.main")
+public class CommandAction implements RCommand {
 
-    public CommandAction() {
-        new CommandAPICommand("action")
-                .withAliases("act", "a")
-                .withPermission("react.action")
-                .withArguments(new GreedyStringArgument("args"))
-                .executes(this)
-                .register();
-    }
-
-    @Override
-    public void run(CommandSender sender, Object[] args) {
-        String argString = (String) args[0];
-        String[] argsArray = argString.split(" ");
-
-        if (argsArray.length == 0) {
-            for (Action<?> i : React.instance.getActionController().getActions().values()) {
-                RConst.success(i.getId());
-            }
-        } else {
-            Action<?> action = React.instance.getActionController().getAction(argsArray[0]);
-            action.create()
-                    .onStart(() -> sender.sendMessage("Started " + action.getId()))
-                    .onComplete(() -> sender.sendMessage("Completed " + action.getId()))
-                    .queue();
-            RConst.success("Queued " + action.getId());
+    @Subcommand({"action", "act"})
+    @Permission("react.actions")
+    @Default
+    public static void action(CommandSender sender) {
+        for (Action<?> i : React.instance.getActionController().getActions().values()) {
+            sender.sendMessage(i.getId());
+            RConst.success(i.getId());
         }
     }
 
-    public static String[] getActionKeys() {
-        Map<String, Action<?>> actions = React.instance.getActionController().getActions();
-        return actions.keySet().toArray(new String[0]);
+
+    @Subcommand({"action", "act"})
+    @Permission("react.actions")
+    public static void action(CommandSender sender, @AMultiLiteralArgument({"purge-entities", "unknown"}) String args) {
+        Action<?> action = React.instance.getActionController().getAction(args);
+        action.create()
+                .onStart(() -> sender.sendMessage("Started " + action.getId()))
+                .onComplete(() -> sender.sendMessage("Completed " + action.getId()))
+                .queue();
+        RConst.success("Queued " + action.getId());
     }
 }

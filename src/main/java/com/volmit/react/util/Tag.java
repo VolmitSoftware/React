@@ -33,8 +33,7 @@ public abstract class Tag {
     /**
      * Creates the tag with the specified name.
      *
-     * @param name
-     *     The name.
+     * @param name The name.
      */
     public Tag(String name) {
         this.name = name;

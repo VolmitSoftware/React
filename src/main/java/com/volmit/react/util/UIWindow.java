@@ -37,11 +37,11 @@ import java.util.Map;
 import java.util.Set;
 
 public class UIWindow implements Window, Listener {
-    private WindowDecorator decorator;
     private final Player viewer;
+    private final Map<Integer, Element> elements;
+    private WindowDecorator decorator;
     private Callback<Window> eClose;
     private WindowResolution resolution;
-    private final Map<Integer, Element> elements;
     private String title;
     private boolean visible;
     private int viewportPosition;
@@ -65,31 +65,31 @@ public class UIWindow implements Window, Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void on(InventoryClickEvent e) {
-        if(!e.getWhoClicked().equals(viewer)) {
+        if (!e.getWhoClicked().equals(viewer)) {
             return;
         }
 
-        if(!isVisible()) {
+        if (!isVisible()) {
             return;
         }
 
         // 1.14 bukkit api change, removed getTitle() and getName() from Inventory.class
-        if(!viewer.getOpenInventory().getTitle().equals(title)) {
+        if (!viewer.getOpenInventory().getTitle().equals(title)) {
             return;
         }
 
-        if(e.getClickedInventory() == null) {
+        if (e.getClickedInventory() == null) {
             return;
         }
 
-        if(!e.getView().getType().equals(getResolution().getType())) {
+        if (!e.getView().getType().equals(getResolution().getType())) {
             return;
         }
 
-        if(e.getClickedInventory().getType().equals(getResolution().getType())) {
+        if (e.getClickedInventory().getType().equals(getResolution().getType())) {
             Element element = getElement(getLayoutPosition(e.getSlot()), getLayoutRow(e.getSlot()));
 
-            switch(e.getAction()) {
+            switch (e.getAction()) {
                 case CLONE_STACK:
                     break;
                 case COLLECT_TO_CURSOR:
@@ -130,7 +130,7 @@ public class UIWindow implements Window, Listener {
                     break;
             }
 
-            switch(e.getClick()) {
+            switch (e.getClick()) {
                 case CONTROL_DROP:
                     break;
                 case CREATIVE:
@@ -144,21 +144,21 @@ public class UIWindow implements Window, Listener {
 
                     clickcheck++;
 
-                    if(clickcheck == 1) {
+                    if (clickcheck == 1) {
                         J.s(() ->
                         {
-                            if(clickcheck == 1) {
+                            if (clickcheck == 1) {
                                 clickcheck = 0;
 
-                                if(element != null) {
+                                if (element != null) {
                                     element.call(ElementEvent.LEFT, element);
                                 }
                             }
                         });
-                    } else if(clickcheck == 2) {
+                    } else if (clickcheck == 2) {
                         J.s(() ->
                         {
-                            if(doubleclicked) {
+                            if (doubleclicked) {
                                 doubleclicked = false;
                             } else {
                                 scroll(1);
@@ -174,19 +174,19 @@ public class UIWindow implements Window, Listener {
                 case NUMBER_KEY:
                     break;
                 case RIGHT:
-                    if(element != null) {
+                    if (element != null) {
                         element.call(ElementEvent.RIGHT, element);
                     } else {
                         scroll(-1);
                     }
                     break;
                 case SHIFT_LEFT:
-                    if(element != null) {
+                    if (element != null) {
                         element.call(ElementEvent.SHIFT_LEFT, element);
                     }
                     break;
                 case SHIFT_RIGHT:
-                    if(element != null) {
+                    if (element != null) {
                         element.call(ElementEvent.SHIFT_RIGHT, element);
                     }
                     break;
@@ -209,29 +209,29 @@ public class UIWindow implements Window, Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void on(InventoryCloseEvent e) {
-        if(!e.getPlayer().equals(viewer)) {
+        if (!e.getPlayer().equals(viewer)) {
             return;
         }
 
-        if(!e.getPlayer().getOpenInventory().getTitle().equals(title)) {
+        if (!e.getPlayer().getOpenInventory().getTitle().equals(title)) {
             return;
         }
 
-        if(isVisible()) {
+        if (isVisible()) {
             close();
             callClosed();
         }
     }
 
     @Override
-    public UIWindow setDecorator(WindowDecorator decorator) {
-        this.decorator = decorator;
-        return this;
+    public WindowDecorator getDecorator() {
+        return decorator;
     }
 
     @Override
-    public WindowDecorator getDecorator() {
-        return decorator;
+    public UIWindow setDecorator(WindowDecorator decorator) {
+        this.decorator = decorator;
+        return this;
     }
 
     @Override
@@ -247,15 +247,20 @@ public class UIWindow implements Window, Listener {
     }
 
     @Override
+    public boolean isVisible() {
+        return visible;
+    }
+
+    @Override
     public UIWindow setVisible(boolean visible) {
-        if(isVisible() == visible) {
+        if (isVisible() == visible) {
             return this;
         }
 
-        if(visible) {
+        if (visible) {
             Bukkit.getPluginManager().registerEvents(this, React.instance);
 
-            if(getResolution().getType().equals(InventoryType.CHEST)) {
+            if (getResolution().getType().equals(InventoryType.CHEST)) {
                 inventory = Bukkit.createInventory(null, getViewportHeight() * 9, getTitle());
             } else {
                 inventory = Bukkit.createInventory(null, getResolution().getType(), getTitle());
@@ -272,11 +277,6 @@ public class UIWindow implements Window, Listener {
 
         this.visible = visible;
         return this;
-    }
-
-    @Override
-    public boolean isVisible() {
-        return visible;
     }
 
     @Override
@@ -315,7 +315,7 @@ public class UIWindow implements Window, Listener {
     public UIWindow setViewportHeight(int height) {
         viewportSize = (int) clip(height, 1, getResolution().getMaxHeight()).doubleValue();
 
-        if(isVisible()) {
+        if (isVisible()) {
             reopen();
         }
 
@@ -331,7 +331,7 @@ public class UIWindow implements Window, Listener {
     public UIWindow setTitle(String title) {
         this.title = title;
 
-        if(isVisible()) {
+        if (isVisible()) {
             reopen();
         }
 
@@ -340,7 +340,7 @@ public class UIWindow implements Window, Listener {
 
     @Override
     public UIWindow setElement(int position, int row, Element e) {
-        if(row > highestRow) {
+        if (row > highestRow) {
             highestRow = row;
         }
 
@@ -402,7 +402,7 @@ public class UIWindow implements Window, Listener {
 
     @Override
     public Window callClosed() {
-        if(eClose != null) {
+        if (eClose != null) {
             eClose.run(this);
         }
 
@@ -441,23 +441,23 @@ public class UIWindow implements Window, Listener {
 
     @Override
     public Window updateInventory() {
-        if(isVisible()) {
+        if (isVisible()) {
             ItemStack[] is = inventory.getContents();
             Set<ItemStack> isf = new HashSet<>();
 
-            for(int i = 0; i < is.length; i++) {
+            for (int i = 0; i < is.length; i++) {
                 ItemStack isc = is[i];
                 ItemStack isx = computeItemStack(i);
                 int layoutRow = getLayoutRow(i);
                 int layoutPosition = getLayoutPosition(i);
 
-                if(isx != null && !hasElement(layoutPosition, layoutRow)) {
+                if (isx != null && !hasElement(layoutPosition, layoutRow)) {
                     ItemStack gg = isx.clone();
                     gg.setAmount(gg.getAmount() + 1);
                     isf.add(gg);
                 }
 
-                if(((isc == null) != (isx == null)) || isx != null && isc != null && !isc.equals(isx)) {
+                if (((isc == null) != (isx == null)) || isx != null && isc != null && !isc.equals(isx)) {
                     inventory.setItem(i, isx);
                 }
             }
@@ -472,7 +472,7 @@ public class UIWindow implements Window, Listener {
         int layoutPosition = getLayoutPosition(viewportSlot);
         Element e = hasElement(layoutPosition, layoutRow) ? getElement(layoutPosition, layoutRow) : getDecorator().onDecorateBackground(this, layoutPosition, layoutRow);
 
-        if(e != null) {
+        if (e != null) {
             return e.computeItemStack();
         }
 

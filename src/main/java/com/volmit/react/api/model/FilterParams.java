@@ -1,10 +1,7 @@
 package com.volmit.react.api.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.Singular;
+import lombok.*;
+
 import java.util.Set;
 
 @Data
@@ -19,11 +16,11 @@ public class FilterParams<T> {
     protected boolean blacklist = false;
 
     public boolean allows(T t) {
-        if(types == null || types.isEmpty()) {
+        if (types == null || types.isEmpty()) {
             return blacklist;
         }
 
-        if(blacklist) {
+        if (blacklist) {
             return !types.contains(t);
         }
 

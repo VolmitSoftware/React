@@ -13,7 +13,9 @@ public abstract class ReactAction<T extends ActionParams> implements Action<T> {
     @Override
     public ActionTicket<T> create(T params) {
         return new ActionTicket<>(this, params)
-            .onStart(() -> {})
-            .onComplete(() -> {});
+                .onStart(() -> {
+                })
+                .onComplete(() -> {
+                });
     }
 }

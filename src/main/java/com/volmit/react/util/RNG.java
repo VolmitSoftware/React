@@ -23,9 +23,9 @@ import java.util.Random;
 import java.util.UUID;
 
 public class RNG extends Random {
+    public static final RNG r = new RNG();
     private static final char[] CHARGEN = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-=!@#$%^&*()_+`~[];',./<>?:\\\"{}|\\\\".toCharArray();
     private static final long serialVersionUID = 5222938581174415179L;
-    public static final RNG r = new RNG();
     private final long sx;
 
     public RNG() {
@@ -41,8 +41,7 @@ public class RNG extends Random {
     /**
      * Creates a seed (long) from the hash of the seed string
      *
-     * @param seed
-     *     the seed (string)
+     * @param seed the seed (string)
      */
     public RNG(String seed) {
         this(UUID.nameUUIDFromBytes(seed.getBytes(StandardCharsets.UTF_8)).getLeastSignificantBits() + UUID.nameUUIDFromBytes(seed.getBytes(StandardCharsets.UTF_8)).getMostSignificantBits() + (seed.length() * 32564));
@@ -63,7 +62,7 @@ public class RNG extends Random {
     public String s(int length) {
         StringBuilder sb = new StringBuilder();
 
-        for(int i = 0; i < length; i++) {
+        for (int i = 0; i < length; i++) {
             sb.append(c());
         }
 
@@ -77,8 +76,7 @@ public class RNG extends Random {
     /**
      * Pick a random enum
      *
-     * @param t
-     *     the enum class
+     * @param t the enum class
      * @return the enum
      */
     public <T> T e(Class<T> t) {

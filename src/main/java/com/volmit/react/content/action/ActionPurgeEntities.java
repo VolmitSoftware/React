@@ -24,13 +24,12 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
         super(ID);
     }
 
-    List<Chunk> pullChunks(ActionTicket<Params> ticket, int max)
-    {
+    List<Chunk> pullChunks(ActionTicket<Params> ticket, int max) {
         List<Chunk> c = new ArrayList<>();
 
-        for(int i = 0; i < max; i++) {
+        for (int i = 0; i < max; i++) {
             Chunk cc = J.sResult(() -> ticket.getParams().getArea().popChunk());
-            if(cc == null) {
+            if (cc == null) {
                 break;
             }
 
@@ -44,16 +43,14 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
     public void workOn(ActionTicket<Params> ticket) {
         List<Chunk> c = pullChunks(ticket, React.instance.getActionController().getActionSpeedMultiplier());
 
-        if(ticket.getTotalWork() <= 1) {
-            ticket.setTotalWork(ticket.getParams().getArea().getChunks().size()+c.size());
+        if (ticket.getTotalWork() <= 1) {
+            ticket.setTotalWork(ticket.getParams().getArea().getChunks().size() + c.size());
         }
 
-        if(c.isEmpty()) {
+        if (c.isEmpty()) {
             ticket.complete();
-        }
-
-        else {
-            for(Chunk i : c) {
+        } else {
+            for (Chunk i : c) {
                 purge(i, ticket.getParams());
             }
 
@@ -64,11 +61,11 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
     @Override
     public Params getDefaultParams() {
         return Params.builder()
-            .area(AreaActionParams.builder()
-                .allChunks(true)
-                .world("world")
-                .build())
-            .build();
+                .area(AreaActionParams.builder()
+                        .allChunks(true)
+                        .world("world")
+                        .build())
+                .build();
     }
 
     private void purge(Chunk c, Params purgeEntitiesParams) {

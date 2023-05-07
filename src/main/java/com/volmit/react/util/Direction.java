@@ -48,8 +48,15 @@ public enum Direction {
     private final int z;
     private final CuboidDirection f;
 
+    Direction(int x, int y, int z, CuboidDirection f) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.f = f;
+    }
+
     public static Direction getDirection(BlockFace f) {
-        switch(f) {
+        switch (f) {
             case DOWN:
                 return D;
             case EAST:
@@ -93,9 +100,208 @@ public enum Direction {
         return D;
     }
 
+    public static Direction closest(Vector v) {
+        double m = Double.MAX_VALUE;
+        Direction s = null;
+
+        for (Direction i : values()) {
+            Vector x = i.toVector();
+            double g = x.dot(v);
+
+            if (g < m) {
+                m = g;
+                s = i;
+            }
+        }
+
+        return s;
+    }
+
+    public static Direction closest(Vector v, Direction... d) {
+        double m = Double.MAX_VALUE;
+        Direction s = null;
+
+        for (Direction i : d) {
+            Vector x = i.toVector();
+            double g = x.distance(v);
+
+            if (g < m) {
+                m = g;
+                s = i;
+            }
+        }
+
+        return s;
+    }
+
+    public static Direction closest(Vector v, List<Direction> d) {
+        double m = Double.MAX_VALUE;
+        Direction s = null;
+
+        for (Direction i : d) {
+            Vector x = i.toVector();
+            double g = x.distance(v);
+
+            if (g < m) {
+                m = g;
+                s = i;
+            }
+        }
+
+        return s;
+    }
+
+    public static List<Direction> news() {
+        List<Direction> d = new ArrayList<>();
+        d.add(N);
+        d.add(E);
+        d.add(W);
+        d.add(S);
+        return d;
+    }
+
+    public static Direction getDirection(Vector v) {
+        Vector k = VectorMath.triNormalize(v.clone().normalize());
+
+        for (Direction i : udnews()) {
+            if (i.x == k.getBlockX() && i.y == k.getBlockY() && i.z == k.getBlockZ()) {
+                return i;
+            }
+        }
+
+        return Direction.N;
+    }
+
+    public static List<Direction> udnews() {
+        List<Direction> d = new ArrayList<>();
+        d.add(U);
+        d.add(D);
+        d.add(N);
+        d.add(E);
+        d.add(W);
+        d.add(S);
+        return d;
+    }
+
+    /**
+     * Get the directional value from the given byte from common directional blocks
+     * (MUST BE BETWEEN 0 and 5 INCLUSIVE)
+     *
+     * @param b the byte
+     * @return the direction or null if the byte is outside of the inclusive range
+     * 0-5
+     */
+    public static Direction fromByte(byte b) {
+        if (b > 5 || b < 0) {
+            return null;
+        }
+
+        if (b == 0) {
+            return D;
+        } else if (b == 1) {
+            return U;
+        } else if (b == 2) {
+            return N;
+        } else if (b == 3) {
+            return S;
+        } else if (b == 4) {
+            return W;
+        } else {
+            return E;
+        }
+    }
+
+    public static void calculatePermutations() {
+        if (permute != null) {
+            return;
+        }
+
+        permute = new HashMap<>();
+
+        for (Direction i : udnews()) {
+            for (Direction j : udnews()) {
+                GBiset<Direction, Direction> b = new GBiset<Direction, Direction>(i, j);
+
+                if (i.equals(j)) {
+                    permute.put(b, new DOP("DIRECT") {
+                        @Override
+                        public Vector op(Vector v) {
+                            return v;
+                        }
+                    });
+                } else if (i.reverse().equals(j)) {
+                    if (i.isVertical()) {
+                        permute.put(b, new DOP("R180CCZ") {
+                            @Override
+                            public Vector op(Vector v) {
+                                return VectorMath.rotate90CCZ(VectorMath.rotate90CCZ(v));
+                            }
+                        });
+                    } else {
+                        permute.put(b, new DOP("R180CCY") {
+                            @Override
+                            public Vector op(Vector v) {
+                                return VectorMath.rotate90CCY(VectorMath.rotate90CCY(v));
+                            }
+                        });
+                    }
+                } else if (getDirection(VectorMath.rotate90CX(i.toVector())).equals(j)) {
+                    permute.put(b, new DOP("R90CX") {
+                        @Override
+                        public Vector op(Vector v) {
+                            return VectorMath.rotate90CX(v);
+                        }
+                    });
+                } else if (getDirection(VectorMath.rotate90CCX(i.toVector())).equals(j)) {
+                    permute.put(b, new DOP("R90CCX") {
+                        @Override
+                        public Vector op(Vector v) {
+                            return VectorMath.rotate90CCX(v);
+                        }
+                    });
+                } else if (getDirection(VectorMath.rotate90CY(i.toVector())).equals(j)) {
+                    permute.put(b, new DOP("R90CY") {
+                        @Override
+                        public Vector op(Vector v) {
+                            return VectorMath.rotate90CY(v);
+                        }
+                    });
+                } else if (getDirection(VectorMath.rotate90CCY(i.toVector())).equals(j)) {
+                    permute.put(b, new DOP("R90CCY") {
+                        @Override
+                        public Vector op(Vector v) {
+                            return VectorMath.rotate90CCY(v);
+                        }
+                    });
+                } else if (getDirection(VectorMath.rotate90CZ(i.toVector())).equals(j)) {
+                    permute.put(b, new DOP("R90CZ") {
+                        @Override
+                        public Vector op(Vector v) {
+                            return VectorMath.rotate90CZ(v);
+                        }
+                    });
+                } else if (getDirection(VectorMath.rotate90CCZ(i.toVector())).equals(j)) {
+                    permute.put(b, new DOP("R90CCZ") {
+                        @Override
+                        public Vector op(Vector v) {
+                            return VectorMath.rotate90CCZ(v);
+                        }
+                    });
+                } else {
+                    permute.put(b, new DOP("FAIL") {
+                        @Override
+                        public Vector op(Vector v) {
+                            return v;
+                        }
+                    });
+                }
+            }
+        }
+    }
+
     @Override
     public String toString() {
-        switch(this) {
+        switch (this) {
             case D:
                 return "Down";
             case E:
@@ -117,81 +323,23 @@ public enum Direction {
         return equals(D) || equals(U);
     }
 
-    public static Direction closest(Vector v) {
-        double m = Double.MAX_VALUE;
-        Direction s = null;
-
-        for(Direction i : values()) {
-            Vector x = i.toVector();
-            double g = x.dot(v);
-
-            if(g < m) {
-                m = g;
-                s = i;
-            }
-        }
-
-        return s;
-    }
-
-    public static Direction closest(Vector v, Direction... d) {
-        double m = Double.MAX_VALUE;
-        Direction s = null;
-
-        for(Direction i : d) {
-            Vector x = i.toVector();
-            double g = x.distance(v);
-
-            if(g < m) {
-                m = g;
-                s = i;
-            }
-        }
-
-        return s;
-    }
-
-    public static Direction closest(Vector v, List<Direction> d) {
-        double m = Double.MAX_VALUE;
-        Direction s = null;
-
-        for(Direction i : d) {
-            Vector x = i.toVector();
-            double g = x.distance(v);
-
-            if(g < m) {
-                m = g;
-                s = i;
-            }
-        }
-
-        return s;
-    }
-
     public Vector toVector() {
         return new Vector(x, y, z);
     }
 
     public boolean isCrooked(Direction to) {
-        if(equals(to.reverse())) {
+        if (equals(to.reverse())) {
             return false;
         }
 
         return !equals(to);
     }
 
-    Direction(int x, int y, int z, CuboidDirection f) {
-        this.x = x;
-        this.y = y;
-        this.z = z;
-        this.f = f;
-    }
-
     public Vector angle(Vector initial, Direction d) {
         calculatePermutations();
 
-        for(GBiset<Direction, Direction> i : permute.keySet()) {
-            if(i.getA().equals(this) && i.getB().equals(d)) {
+        for (GBiset<Direction, Direction> i : permute.keySet()) {
+            if (i.getA().equals(this) && i.getB().equals(d)) {
                 return permute.get(i).op(initial);
             }
         }
@@ -200,7 +348,7 @@ public enum Direction {
     }
 
     public Direction reverse() {
-        switch(this) {
+        switch (this) {
             case D:
                 return U;
             case E:
@@ -236,74 +384,13 @@ public enum Direction {
         return f;
     }
 
-    public static List<Direction> news() {
-        List<Direction> d = new ArrayList<>();
-        d.add(N);
-        d.add(E);
-        d.add(W);
-        d.add(S);
-        return d;
-    }
-
-    public static Direction getDirection(Vector v) {
-        Vector k = VectorMath.triNormalize(v.clone().normalize());
-
-        for(Direction i : udnews()) {
-            if(i.x == k.getBlockX() && i.y == k.getBlockY() && i.z == k.getBlockZ()) {
-                return i;
-            }
-        }
-
-        return Direction.N;
-    }
-
-    public static List<Direction> udnews() {
-        List<Direction> d = new ArrayList<>();
-d.add(U);
-d.add(D);
-        d.add(N);
-        d.add(E);
-        d.add(W);
-        d.add(S);
-        return d;
-    }
-
-    /**
-     * Get the directional value from the given byte from common directional blocks
-     * (MUST BE BETWEEN 0 and 5 INCLUSIVE)
-     *
-     * @param b
-     *     the byte
-     * @return the direction or null if the byte is outside of the inclusive range
-     * 0-5
-     */
-    public static Direction fromByte(byte b) {
-        if(b > 5 || b < 0) {
-            return null;
-        }
-
-        if(b == 0) {
-            return D;
-        } else if(b == 1) {
-            return U;
-        } else if(b == 2) {
-            return N;
-        } else if(b == 3) {
-            return S;
-        } else if(b == 4) {
-            return W;
-        } else {
-            return E;
-        }
-    }
-
     /**
      * Get the byte value represented in some directional blocks
      *
      * @return the byte value
      */
     public byte byteValue() {
-        switch(this) {
+        switch (this) {
             case D:
                 return 0;
             case E:
@@ -323,96 +410,8 @@ d.add(D);
         return -1;
     }
 
-    public static void calculatePermutations() {
-        if(permute != null) {
-            return;
-        }
-
-        permute = new HashMap<>();
-
-        for(Direction i : udnews()) {
-            for(Direction j : udnews()) {
-                GBiset<Direction, Direction> b = new GBiset<Direction, Direction>(i, j);
-
-                if(i.equals(j)) {
-                    permute.put(b, new DOP("DIRECT") {
-                        @Override
-                        public Vector op(Vector v) {
-                            return v;
-                        }
-                    });
-                } else if(i.reverse().equals(j)) {
-                    if(i.isVertical()) {
-                        permute.put(b, new DOP("R180CCZ") {
-                            @Override
-                            public Vector op(Vector v) {
-                                return VectorMath.rotate90CCZ(VectorMath.rotate90CCZ(v));
-                            }
-                        });
-                    } else {
-                        permute.put(b, new DOP("R180CCY") {
-                            @Override
-                            public Vector op(Vector v) {
-                                return VectorMath.rotate90CCY(VectorMath.rotate90CCY(v));
-                            }
-                        });
-                    }
-                } else if(getDirection(VectorMath.rotate90CX(i.toVector())).equals(j)) {
-                    permute.put(b, new DOP("R90CX") {
-                        @Override
-                        public Vector op(Vector v) {
-                            return VectorMath.rotate90CX(v);
-                        }
-                    });
-                } else if(getDirection(VectorMath.rotate90CCX(i.toVector())).equals(j)) {
-                    permute.put(b, new DOP("R90CCX") {
-                        @Override
-                        public Vector op(Vector v) {
-                            return VectorMath.rotate90CCX(v);
-                        }
-                    });
-                } else if(getDirection(VectorMath.rotate90CY(i.toVector())).equals(j)) {
-                    permute.put(b, new DOP("R90CY") {
-                        @Override
-                        public Vector op(Vector v) {
-                            return VectorMath.rotate90CY(v);
-                        }
-                    });
-                } else if(getDirection(VectorMath.rotate90CCY(i.toVector())).equals(j)) {
-                    permute.put(b, new DOP("R90CCY") {
-                        @Override
-                        public Vector op(Vector v) {
-                            return VectorMath.rotate90CCY(v);
-                        }
-                    });
-                } else if(getDirection(VectorMath.rotate90CZ(i.toVector())).equals(j)) {
-                    permute.put(b, new DOP("R90CZ") {
-                        @Override
-                        public Vector op(Vector v) {
-                            return VectorMath.rotate90CZ(v);
-                        }
-                    });
-                } else if(getDirection(VectorMath.rotate90CCZ(i.toVector())).equals(j)) {
-                    permute.put(b, new DOP("R90CCZ") {
-                        @Override
-                        public Vector op(Vector v) {
-                            return VectorMath.rotate90CCZ(v);
-                        }
-                    });
-                } else {
-                    permute.put(b, new DOP("FAIL") {
-                        @Override
-                        public Vector op(Vector v) {
-                            return v;
-                        }
-                    });
-                }
-            }
-        }
-    }
-
     public BlockFace getFace() {
-        switch(this) {
+        switch (this) {
             case D:
                 return BlockFace.DOWN;
             case E:
@@ -431,7 +430,7 @@ d.add(D);
     }
 
     public Axis getAxis() {
-        switch(this) {
+        switch (this) {
             case D:
                 return Axis.Y;
             case E:

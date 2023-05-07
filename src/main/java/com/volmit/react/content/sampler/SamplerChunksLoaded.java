@@ -5,9 +5,6 @@ import com.volmit.react.api.sampler.ReactCachedSampler;
 import com.volmit.react.util.ChronoLatch;
 import com.volmit.react.util.Form;
 import com.volmit.react.util.J;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.TextColor;
-import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.event.EventHandler;
@@ -17,6 +14,7 @@ import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
 
 import java.util.concurrent.atomic.AtomicInteger;
+
 //
 public class SamplerChunksLoaded extends ReactCachedSampler implements Listener {
     public static final String ID = "chunks-loaded";
@@ -33,7 +31,7 @@ public class SamplerChunksLoaded extends ReactCachedSampler implements Listener 
         return executeSync(() -> {
             int m = 0;
 
-            for(World i : Bukkit.getWorlds()) {
+            for (World i : Bukkit.getWorlds()) {
                 m += i.getLoadedChunks().length;
             }
 
@@ -68,7 +66,7 @@ public class SamplerChunksLoaded extends ReactCachedSampler implements Listener 
 
     @Override
     public double onSample() {
-        if(realCheckUpdate.flip() || loadedChunks.get() < 0) {
+        if (realCheckUpdate.flip() || loadedChunks.get() < 0) {
             J.a(() -> loadedChunks.set(getRealCheck()));
         }
 

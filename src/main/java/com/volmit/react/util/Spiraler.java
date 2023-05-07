@@ -19,9 +19,9 @@
 package com.volmit.react.util;
 
 public class Spiraler {
+    private final Spiraled spiraled;
     int x, z, dx, dz, sizeX, sizeZ, t, maxI, i;
     int ox, oz;
-    private final Spiraled spiraled;
 
     public Spiraler(int sizeX, int sizeZ, Spiraled spiraled) {
         ox = 0;
@@ -30,14 +30,14 @@ public class Spiraler {
         retarget(sizeX, sizeZ);
     }
 
-    public void drain() {
-        while(hasNext()) {
-            next();
-        }
-    }
-
     static void Spiral(int X, int Y) {
 
+    }
+
+    public void drain() {
+        while (hasNext()) {
+            next();
+        }
     }
 
     public Spiraler setOffset(int ox, int oz) {
@@ -61,11 +61,11 @@ public class Spiraler {
     }
 
     public void next() {
-        if((-sizeX / 2 <= x) && (x <= sizeX / 2) && (-sizeZ / 2 <= z) && (z <= sizeZ / 2)) {
+        if ((-sizeX / 2 <= x) && (x <= sizeX / 2) && (-sizeZ / 2 <= z) && (z <= sizeZ / 2)) {
             spiraled.on(x + ox, z + ox);
         }
 
-        if((x == z) || ((x < 0) && (x == -z)) || ((x > 0) && (x == 1 - z))) {
+        if ((x == z) || ((x < 0) && (x == -z)) || ((x > 0) && (x == 1 - z))) {
             t = dx;
             dx = -dz;
             dz = t;

@@ -35,10 +35,8 @@ public final class IntArrayTag extends Tag {
     /**
      * Creates the tag.
      *
-     * @param name
-     *     The name.
-     * @param value
-     *     The value.
+     * @param name  The name.
+     * @param value The value.
      */
     public IntArrayTag(String name, int[] value) {
         super(name);
@@ -54,7 +52,7 @@ public final class IntArrayTag extends Tag {
     public String toString() {
         String name = getName();
         String append = "";
-        if(name != null && !name.equals("")) {
+        if (name != null && !name.equals("")) {
             append = "(\"" + this.getName() + "\")";
         }
         return "TAG_Int_Array" + append + ": " + Arrays.toString(value);

@@ -9,8 +9,8 @@ import java.util.concurrent.atomic.AtomicLong;
 public abstract class ReactTickedSampler extends TickedObject implements Sampler {
     private final RollingSequence sequence;
     private final AtomicLong lastSample;
-    private boolean sleeping;
     private final long activeInterval;
+    private boolean sleeping;
 
     public ReactTickedSampler(String id, long tickInterval, int memory) {
         super("sampler", id, tickInterval);
@@ -35,7 +35,7 @@ public abstract class ReactTickedSampler extends TickedObject implements Sampler
     public double sample() {
         lastSample.set(System.currentTimeMillis());
 
-        if(sleeping) {
+        if (sleeping) {
             setSleeping(false);
         }
 
@@ -45,18 +45,18 @@ public abstract class ReactTickedSampler extends TickedObject implements Sampler
     private void setSleeping(boolean sleeping) {
         this.sleeping = sleeping;
         setInterval(sleeping ? 1000 : activeInterval);
-        if(!this.sleeping && sleeping) {
+        if (!this.sleeping && sleeping) {
             sequence.resetExtremes();
         }
     }
 
     @Override
     public void onTick() {
-        if(sleeping) {
+        if (sleeping) {
             return;
         }
 
-        if(System.currentTimeMillis() - lastSample.get() > 1000) {
+        if (System.currentTimeMillis() - lastSample.get() > 1000) {
             setSleeping(true);
         }
 

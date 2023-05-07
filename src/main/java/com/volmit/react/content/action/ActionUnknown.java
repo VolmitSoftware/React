@@ -6,8 +6,7 @@ import com.volmit.react.api.action.ReactAction;
 import lombok.Builder;
 import lombok.Data;
 
-public class ActionUnknown extends ReactAction<ActionUnknown.Params>
-{
+public class ActionUnknown extends ReactAction<ActionUnknown.Params> {
     public static final String ID = "unknown";
 
     public ActionUnknown() {

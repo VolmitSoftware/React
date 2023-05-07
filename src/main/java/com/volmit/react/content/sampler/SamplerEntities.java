@@ -31,7 +31,7 @@ public class SamplerEntities extends ReactCachedSampler implements Listener {
     public int getRealCheck() {
         return executeSync(() -> {
             int m = 0;
-            for(World i : Bukkit.getWorlds()) {
+            for (World i : Bukkit.getWorlds()) {
                 m += i.getEntities().size();
             }
 
@@ -76,7 +76,7 @@ public class SamplerEntities extends ReactCachedSampler implements Listener {
 
     @Override
     public double onSample() {
-        if(realEntityUpdate.flip() || entities.get() < 0) {
+        if (realEntityUpdate.flip() || entities.get() < 0) {
             J.a(() -> entities.set(getRealCheck()));
         }
 

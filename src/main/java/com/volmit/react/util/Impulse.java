@@ -27,10 +27,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Impulse {
+    private final List<Entity> ignore;
     private double radius;
     private double forceMax;
     private double forceMin;
-    private final List<Entity> ignore;
     private double damageMin;
     private double damageMax;
 
@@ -73,8 +73,8 @@ public class Impulse {
     public void punch(Location at) {
         Area a = new Area(at, radius);
 
-        for(Entity i : a.getNearbyEntities()) {
-            if(ignore.contains(i)) {
+        for (Entity i : a.getNearbyEntities()) {
+            if (ignore.contains(i)) {
                 continue;
             }
 
@@ -82,21 +82,21 @@ public class Impulse {
             double damage = 0;
             double distance = i.getLocation().distance(at);
 
-            if(forceMin < forceMax) {
+            if (forceMin < forceMax) {
                 force.clone().multiply(((1D - (distance / radius)) * (forceMax - forceMin)) + forceMin);
             }
 
-            if(damageMin < damageMax) {
+            if (damageMin < damageMax) {
                 damage = ((1D - (distance / radius)) * (damageMax - damageMin)) + damageMin;
             }
 
             try {
-                if(i instanceof LivingEntity && damage > 0) {
+                if (i instanceof LivingEntity && damage > 0) {
                     ((LivingEntity) i).damage(damage);
                 }
 
                 i.setVelocity(i.getVelocity().add(force));
-            } catch(Exception e) {
+            } catch (Exception e) {
 
             }
         }

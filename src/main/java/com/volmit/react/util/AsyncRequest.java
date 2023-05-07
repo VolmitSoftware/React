@@ -1,15 +1,12 @@
 package com.volmit.react.util;
 
-import art.arcane.multiburst.MultiBurst;
 import com.volmit.react.React;
 
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
-public class AsyncRequest<T>
-{
+public class AsyncRequest<T> {
     private final Supplier<T> supplier;
     private final AtomicReference<T> value;
     private final AtomicBoolean active;
@@ -21,8 +18,7 @@ public class AsyncRequest<T>
     }
 
     public synchronized T request() {
-        if(!active.get())
-        {
+        if (!active.get()) {
             active.set(true);
             React.burst.lazy(() -> {
                 value.set(supplier.get());

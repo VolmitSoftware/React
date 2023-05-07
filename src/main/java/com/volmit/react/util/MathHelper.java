@@ -27,21 +27,29 @@ public class MathHelper {
     public static final float a = MathHelper.c(2.0f);
     private static final float[] b = (float[]) a((Object) new float[65536], var0 ->
     {
-        for(int var1 = 0; var1 < ((float[]) var0).length; ++var1) {
+        for (int var1 = 0; var1 < ((float[]) var0).length; ++var1) {
             ((float[]) var0)[var1] = (float) Math.sin((double) var1 * 3.141592653589793 * 2.0 / 65536.0);
         }
     });
+    private static final Random c = new Random();
+    private static final int[] d = new int[]{0, 1, 28, 2, 29, 14, 24, 3, 30, 22, 20, 15, 25, 17, 4, 8, 31, 27, 13, 23, 21, 19, 16, 7, 26, 12, 18, 6, 11, 5, 10, 9};
+    private static final double e = Double.longBitsToDouble(4805340802404319232L);
+    private static final double[] f = new double[257];
+    private static final double[] g = new double[257];
+
+    static {
+        for (int var02 = 0; var02 < 257; ++var02) {
+            double var1 = (double) var02 / 256.0;
+            double var3 = Math.asin(var1);
+            MathHelper.g[var02] = Math.cos(var3);
+            MathHelper.f[var02] = var3;
+        }
+    }
 
     public static <T> T a(T var0, Consumer<T> var1) {
         var1.accept(var0);
         return var0;
     }
-
-    private static final Random c = new Random();
-    private static final int[] d = new int[] {0, 1, 28, 2, 29, 14, 24, 3, 30, 22, 20, 15, 25, 17, 4, 8, 31, 27, 13, 23, 21, 19, 16, 7, 26, 12, 18, 6, 11, 5, 10, 9};
-    private static final double e = Double.longBitsToDouble(4805340802404319232L);
-    private static final double[] f = new double[257];
-    private static final double[] g = new double[257];
 
     public static float sin(float var0) {
         return b[(int) (var0 * 10430.378f) & 65535];
@@ -93,50 +101,50 @@ public class MathHelper {
     }
 
     public static int clamp(int var0, int var1, int var2) {
-        if(var0 < var1) {
+        if (var0 < var1) {
             return var1;
         }
-        if(var0 > var2) {
+        if (var0 > var2) {
             return var2;
         }
         return var0;
     }
 
     public static float a(float var0, float var1, float var2) {
-        if(var0 < var1) {
+        if (var0 < var1) {
             return var1;
         }
-        if(var0 > var2) {
+        if (var0 > var2) {
             return var2;
         }
         return var0;
     }
 
     public static double a(double var0, double var2, double var4) {
-        if(var0 < var2) {
+        if (var0 < var2) {
             return var2;
         }
-        if(var0 > var4) {
+        if (var0 > var4) {
             return var4;
         }
         return var0;
     }
 
     public static double b(double var0, double var2, double var4) {
-        if(var4 < 0.0) {
+        if (var4 < 0.0) {
             return var0;
         }
-        if(var4 > 1.0) {
+        if (var4 > 1.0) {
             return var2;
         }
         return MathHelper.d(var4, var0, var2);
     }
 
     public static double a(double var0, double var2) {
-        if(var0 < 0.0) {
+        if (var0 < 0.0) {
             var0 = -var0;
         }
-        if(var2 < 0.0) {
+        if (var2 < 0.0) {
             var2 = -var2;
         }
         return var0 > var2 ? var0 : var2;
@@ -147,21 +155,21 @@ public class MathHelper {
     }
 
     public static int nextInt(Random var0, int var1, int var2) {
-        if(var1 >= var2) {
+        if (var1 >= var2) {
             return var1;
         }
         return var0.nextInt(var2 - var1 + 1) + var1;
     }
 
     public static float a(Random var0, float var1, float var2) {
-        if(var1 >= var2) {
+        if (var1 >= var2) {
             return var1;
         }
         return var0.nextFloat() * (var2 - var1) + var1;
     }
 
     public static double a(Random var0, double var1, double var3) {
-        if(var1 >= var3) {
+        if (var1 >= var3) {
             return var1;
         }
         return var0.nextDouble() * (var3 - var1) + var1;
@@ -169,7 +177,7 @@ public class MathHelper {
 
     public static double a(long[] var0) {
         long var1 = 0L;
-        for(long var6 : var0) {
+        for (long var6 : var0) {
             var1 += var6;
         }
         return (double) var1 / (double) var0.length;
@@ -185,10 +193,10 @@ public class MathHelper {
 
     public static float g(float var0) {
         float var1 = var0 % 360.0f;
-        if(var1 >= 180.0f) {
+        if (var1 >= 180.0f) {
             var1 -= 360.0f;
         }
-        if(var1 < -180.0f) {
+        if (var1 < -180.0f) {
             var1 += 360.0f;
         }
         return var1;
@@ -196,10 +204,10 @@ public class MathHelper {
 
     public static double g(double var0) {
         double var2 = var0 % 360.0;
-        if(var2 >= 180.0) {
+        if (var2 >= 180.0) {
             var2 -= 360.0;
         }
-        if(var2 < -180.0) {
+        if (var2 < -180.0) {
             var2 += 360.0;
         }
         return var2;
@@ -221,7 +229,7 @@ public class MathHelper {
 
     public static float c(float var0, float var1, float var2) {
         var2 = MathHelper.e(var2);
-        if(var0 < var1) {
+        if (var0 < var1) {
             return MathHelper.a(var0 + var2, var0, var1);
         }
         return MathHelper.a(var0 - var2, var1, var0);
@@ -257,16 +265,16 @@ public class MathHelper {
 
     public static int c(int var0, int var1) {
         int var2;
-        if(var1 == 0) {
+        if (var1 == 0) {
             return 0;
         }
-        if(var0 == 0) {
+        if (var0 == 0) {
             return var1;
         }
-        if(var0 < 0) {
+        if (var0 < 0) {
             var1 *= -1;
         }
-        if((var2 = var0 % var1) == 0) {
+        if ((var2 = var0 % var1) == 0) {
             return var0;
         }
         return var0 + var1 - var2;
@@ -310,22 +318,22 @@ public class MathHelper {
         boolean var7;
         boolean var8;
         double var4 = var2 * var2 + var0 * var0;
-        if(Double.isNaN(var4)) {
+        if (Double.isNaN(var4)) {
             return Double.NaN;
         }
         @SuppressWarnings("unused")
         boolean bl = var6 = var0 < 0.0;
-        if(var6) {
+        if (var6) {
             var0 = -var0;
         }
         @SuppressWarnings("unused")
         boolean bl2 = var7 = var2 < 0.0;
-        if(var7) {
+        if (var7) {
             var2 = -var2;
         }
         @SuppressWarnings("unused")
         boolean bl3 = var8 = var0 > var2;
-        if(var8) {
+        if (var8) {
             var9 = var2;
             var2 = var0;
             var0 = var9;
@@ -339,13 +347,13 @@ public class MathHelper {
         double var20 = var0 * var16 - (var2 *= var9) * var18;
         double var22 = (6.0 + var20 * var20) * var20 * 0.16666666666666666;
         double var24 = var14 + var22;
-        if(var8) {
+        if (var8) {
             var24 = 1.5707963267948966 - var24;
         }
-        if(var7) {
+        if (var7) {
             var24 = 3.141592653589793 - var24;
         }
-        if(var6) {
+        if (var6) {
             var24 = -var24;
         }
         return var24;
@@ -369,7 +377,7 @@ public class MathHelper {
         float var5 = var2 * (1.0f - var1);
         float var6 = var2 * (1.0f - var4 * var1);
         float var7 = var2 * (1.0f - (1.0f - var4) * var1);
-        switch(var3) {
+        switch (var3) {
             case 0: {
                 var8 = var2;
                 var9 = var7;
@@ -427,10 +435,10 @@ public class MathHelper {
 
     public static int a(int var0, int var1, IntPredicate var2) {
         int var3 = var1 - var0;
-        while(var3 > 0) {
+        while (var3 > 0) {
             int var4 = var3 / 2;
             int var5 = var0 + var4;
-            if(var2.test(var5)) {
+            if (var2.test(var5)) {
                 var3 = var4;
                 continue;
             }
@@ -461,7 +469,7 @@ public class MathHelper {
     }
 
     public static int k(double var0) {
-        if(var0 == 0.0) {
+        if (var0 == 0.0) {
             return 0;
         }
         return var0 > 0.0 ? 1 : -1;
@@ -470,9 +478,9 @@ public class MathHelper {
     @Deprecated
     public static float j(float var0, float var1, float var2) {
         float var3;
-        for(var3 = var1 - var0; var3 < -180.0f; var3 += 360.0f) {
+        for (var3 = var1 - var0; var3 < -180.0f; var3 += 360.0f) {
         }
-        while(var3 >= 180.0f) {
+        while (var3 >= 180.0f) {
             var3 -= 360.0f;
         }
         return var0 + var2 * var3;
@@ -480,14 +488,5 @@ public class MathHelper {
 
     public static float k(float var0) {
         return var0 * var0;
-    }
-
-    static {
-        for(int var02 = 0; var02 < 257; ++var02) {
-            double var1 = (double) var02 / 256.0;
-            double var3 = Math.asin(var1);
-            MathHelper.g[var02] = Math.cos(var3);
-            MathHelper.f[var02] = var3;
-        }
     }
 }

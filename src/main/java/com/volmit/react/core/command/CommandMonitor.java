@@ -6,7 +6,10 @@ import com.volmit.react.api.command.RConst;
 import com.volmit.react.api.sampler.Sampler;
 import com.volmit.react.core.gui.SamplerGUI;
 import com.volmit.react.util.J;
-import dev.jorel.commandapi.annotations.*;
+import dev.jorel.commandapi.annotations.Alias;
+import dev.jorel.commandapi.annotations.Command;
+import dev.jorel.commandapi.annotations.Permission;
+import dev.jorel.commandapi.annotations.Subcommand;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
@@ -16,9 +19,10 @@ import org.bukkit.entity.Player;
 @Permission("react.main")
 public class CommandMonitor implements RCommand {
 
-
-    @Subcommand("monitor")
-    @Permission("react.monitor")    public static void monitor(CommandSender sender) {
+    //    @Alias({"mon", "m"}) //Not implemented by CommandAPI yet, Bigsad
+    @Subcommand({"monitor", "mon", "m"})
+    @Permission("react.monitor")
+    public static void monitor(CommandSender sender) {
         if (sender instanceof Player p) {
             React.instance.getPlayerController().getPlayer(p).toggleActionBar();
             RConst.success("Monitor " + (React.instance.getPlayerController().getPlayer(p).isActionBarMonitoring() ? "Enabled" : "Disabled"));
@@ -27,10 +31,9 @@ public class CommandMonitor implements RCommand {
         }
     }
 
-
-    @Subcommand("monitoredit")
+    @Subcommand({"monitoredit", "monedit", "medit", "med"})
     @Permission("react.monitor.edit")
-    public static void monConf(CommandSender sender) {
+    public static void monitorCongig(CommandSender sender) {
         if (sender instanceof Player p) {
             J.a(() -> {
                 Sampler s = SamplerGUI.pickSampler(p);

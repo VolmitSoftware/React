@@ -41,12 +41,9 @@ public final class ListTag extends Tag {
     /**
      * Creates the tag.
      *
-     * @param name
-     *     The name.
-     * @param type
-     *     The type of item in the list.
-     * @param value
-     *     The value.
+     * @param name  The name.
+     * @param type  The type of item in the list.
+     * @param value The value.
      */
     public ListTag(String name, Class<? extends Tag> type, List<Tag> value) {
         super(name);
@@ -72,12 +69,12 @@ public final class ListTag extends Tag {
     public String toString() {
         String name = getName();
         String append = "";
-        if(name != null && !name.equals("")) {
+        if (name != null && !name.equals("")) {
             append = "(\"" + this.getName() + "\")";
         }
         StringBuilder bldr = new StringBuilder();
         bldr.append("TAG_List" + append + ": " + value.size() + " entries of type " + NBTUtils.getTypeName(type) + "\r\n{\r\n");
-        for(Tag t : value) {
+        for (Tag t : value) {
             bldr.append("   " + t.toString().replaceAll("\r\n", "\r\n   ") + "\r\n");
         }
         bldr.append("}");

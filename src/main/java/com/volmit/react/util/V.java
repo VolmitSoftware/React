@@ -51,8 +51,8 @@ public class V {
     public <T extends Annotation> T get(Class<? extends T> t) {
         try {
             return local ? Violator.getDeclaredAnnotation(o.getClass(), t) : Violator.getAnnotation(o.getClass(), t);
-        } catch(Throwable e) {
-            if(!suppress) {
+        } catch (Throwable e) {
+            if (!suppress) {
                 e.printStackTrace();
             }
         }
@@ -63,8 +63,8 @@ public class V {
     public <T extends Annotation> T get(Class<? extends T> t, String mn, Class<?>... pars) {
         try {
             return local ? Violator.getDeclaredAnnotation(Violator.getDeclaredMethod(o.getClass(), mn, pars), t) : Violator.getAnnotation(Violator.getMethod(o.getClass(), mn, pars), t);
-        } catch(Throwable e) {
-            if(!suppress) {
+        } catch (Throwable e) {
+            if (!suppress) {
                 e.printStackTrace();
             }
         }
@@ -75,8 +75,8 @@ public class V {
     public <T extends Annotation> T get(Class<? extends T> t, String mn) {
         try {
             return local ? Violator.getDeclaredAnnotation(Violator.getDeclaredField(o.getClass(), mn), t) : Violator.getAnnotation(Violator.getField(o.getClass(), mn), t);
-        } catch(Throwable e) {
-            if(!suppress) {
+        } catch (Throwable e) {
+            if (!suppress) {
                 e.printStackTrace();
             }
         }
@@ -88,8 +88,8 @@ public class V {
     public <T> T get(String field) {
         try {
             return (T) (local ? Violator.getDeclaredField(o.getClass(), field) : Violator.getField(o.getClass(), field)).get(o);
-        } catch(Throwable e) {
-            if(!suppress) {
+        } catch (Throwable e) {
+            if (!suppress) {
                 e.printStackTrace();
             }
         }
@@ -100,14 +100,14 @@ public class V {
     public Object invoke(String method, Object... parameters) {
         List<Class<?>> par = new ArrayList<>();
 
-        for(Object i : parameters) {
+        for (Object i : parameters) {
             par.add(i.getClass());
         }
 
         try {
             return (local ? Violator.getDeclaredMethod(o.getClass(), method, par.toArray(new Class<?>[par.size()])) : Violator.getMethod(o.getClass(), method, par.toArray(new Class<?>[par.size()]))).invoke(o, parameters);
-        } catch(Throwable e) {
-            if(!suppress) {
+        } catch (Throwable e) {
+            if (!suppress) {
                 e.printStackTrace();
             }
         }
@@ -119,8 +119,8 @@ public class V {
         try {
             // https://github.com/VolmitSoftware/Mortar/issues/5
             (local ? Violator.getDeclaredField(o.getClass(), field) : Violator.getField(o.getClass(), field)).set(o, value);
-        } catch(Throwable e) {
-            if(!suppress) {
+        } catch (Throwable e) {
+            if (!suppress) {
                 e.printStackTrace();
             }
         }

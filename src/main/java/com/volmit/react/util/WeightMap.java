@@ -27,7 +27,7 @@ public class WeightMap<T> extends HashMap<T, Double> {
     private double lastWeight = 0;
 
     public double getPercentChance(T t) {
-        if(totalWeight() <= 0) {
+        if (totalWeight() <= 0) {
             return 0;
         }
 
@@ -50,7 +50,7 @@ public class WeightMap<T> extends HashMap<T, Double> {
     }
 
     public double totalWeight() {
-        if(!modified) {
+        if (!modified) {
             return lastWeight;
         }
 

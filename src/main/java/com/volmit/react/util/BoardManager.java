@@ -33,15 +33,12 @@ import java.util.concurrent.ConcurrentHashMap;
 public class BoardManager {
     @DontObfuscate
     private final JavaPlugin plugin;
-
-    @DontObfuscate
-    private BoardSettings boardSettings;
-
     @DontObfuscate
     private final Map<UUID, Board> scoreboards;
-
     @DontObfuscate
     private final BukkitTask updateTask;
+    @DontObfuscate
+    private BoardSettings boardSettings;
 
     @DontObfuscate
     public BoardManager(JavaPlugin plugin, BoardSettings boardSettings) {
