@@ -1,9 +1,7 @@
 package com.volmit.react.api.monitor;
 
-import com.volmit.react.api.player.ReactPlayer;
-import lombok.Data;
+import com.volmit.react.model.ReactPlayer;
 import lombok.Getter;
-import org.bukkit.entity.Player;
 
 public abstract class PlayerMonitor extends TickedMonitor {
     @Getter

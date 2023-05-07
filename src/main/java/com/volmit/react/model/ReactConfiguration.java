@@ -1,4 +1,4 @@
-package com.volmit.react.core.configuration;
+package com.volmit.react.model;
 
 import com.google.gson.Gson;
 import com.volmit.react.React;

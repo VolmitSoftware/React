@@ -1,7 +1,7 @@
 package com.volmit.react.api.monitor;
 
 import com.volmit.react.api.graph.RollingGraph;
-import com.volmit.react.api.player.ReactPlayer;
+import com.volmit.react.model.ReactPlayer;
 import com.volmit.react.api.sampler.Sampler;
 
 import java.util.Map;

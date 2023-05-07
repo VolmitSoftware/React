@@ -1,6 +1,6 @@
 package com.volmit.react.core.controller;
 
-import com.volmit.react.api.player.ReactPlayer;
+import com.volmit.react.model.ReactPlayer;
 import com.volmit.react.util.IController;
 import lombok.Data;
 import org.bukkit.Bukkit;
@@ -70,8 +70,11 @@ public class PlayerController implements IController {
         }
 
         ReactPlayer p = players.remove(e);
-        p.onQuit();
-        p.unregister();
+
+        if(p != null) {
+            p.onQuit();
+            p.unregister();
+        }
     }
 
     @Override

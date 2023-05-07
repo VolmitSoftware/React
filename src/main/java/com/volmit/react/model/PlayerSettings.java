@@ -1,4 +1,4 @@
-package com.volmit.react.core.configuration;
+package com.volmit.react.model;
 
 import com.google.gson.Gson;
 import com.volmit.react.React;
@@ -15,6 +15,12 @@ import java.util.UUID;
 public class PlayerSettings {
     private MonitorConfiguration monitorConfiguration;
     private boolean actionBarMonitoring = false;
+ 
+    public void init() {
+        if(monitorConfiguration == null) {
+            monitorConfiguration = new Gson().fromJson(new Gson().toJson(ReactConfiguration.get().getMonitorConfiguration()), MonitorConfiguration.class);
+        }
+    }
 
     public static void saveSettings(UUID player, PlayerSettings s)
     {

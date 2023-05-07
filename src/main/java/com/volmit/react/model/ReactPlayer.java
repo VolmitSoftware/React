@@ -1,9 +1,8 @@
-package com.volmit.react.api.player;
+package com.volmit.react.model;
 
 import com.volmit.react.React;
 import com.volmit.react.api.monitor.ActionBarMonitor;
-import com.volmit.react.core.configuration.PlayerSettings;
-import com.volmit.react.core.configuration.ReactConfiguration;
+import com.volmit.react.util.ChronoLatch;
 import com.volmit.react.util.MortarSender;
 import com.volmit.react.util.tick.TickedObject;
 import lombok.Data;
@@ -19,7 +18,7 @@ public class ReactPlayer extends TickedObject {
     private static final int ACTIVE_RATE = 50;
     private static final int INACTIVE_RATE = 1000;
     private static final int INACTIVE_DELAY = 10000;
-
+    private final ChronoLatch saveLatch;
     private PlayerSettings settings;
     private final Player player;
     private ActionBarMonitor actionBarMonitor;
@@ -34,11 +33,14 @@ public class ReactPlayer extends TickedObject {
     private Vector velocity;
     private boolean speedValidForMonitor;
     private int speedTickCooldown;
+    private int lastHash = 0;
 
     public ReactPlayer(Player player) {
         super("react", player.getUniqueId().toString(), ACTIVE_RATE);
         settings = PlayerSettings.get(player.getUniqueId());
+        lastHash = settings.hashCode();
         this.player = player;
+        saveLatch = new ChronoLatch(60000);
         scrollPosition = 0;
         setInterval(ACTIVE_RATE);
         yaw = 0f;
@@ -49,15 +51,20 @@ public class ReactPlayer extends TickedObject {
         locked = false;
         velocity = new Vector(0, 0, 0);
         speedValidForMonitor = true;
-
-        if(settings.isActionBarMonitoring()) {
-            setActionBarMonitoring(true);
-            new MortarSender(getPlayer(), React.instance.getTag()).sendMessage("Monitor Enabled");
-        }
     }
 
+
     public void saveSettings() {
-        PlayerSettings.saveSettings(player.getUniqueId(), settings);
+        saveSettings(false);
+    }
+
+    public void saveSettings(boolean force) {
+        if(force || lastHash != settings.hashCode()) {
+            PlayerSettings.saveSettings(player.getUniqueId(), settings);
+            React.verbose("Saved " + player.getName() + "'s settings");
+        }
+
+        lastHash = settings.hashCode();
     }
 
     public void wakeUp() {
@@ -148,11 +155,17 @@ public class ReactPlayer extends TickedObject {
     }
 
     public void onJoin() {
+        settings.init();
 
+        if(settings.isActionBarMonitoring()) {
+            setActionBarMonitoring(true);
+            new MortarSender(getPlayer(), React.instance.getTag()).sendMessage("Monitor Enabled");
+        }
     }
 
     public void onQuit() {
         setActionBarMonitoring(false);
+        saveSettings(true);
     }
 
     public boolean isActionBarMonitoring() {
@@ -170,8 +183,7 @@ public class ReactPlayer extends TickedObject {
         }
 
         else{
-            actionBarMonitor = new ActionBarMonitor(this)
-                .sample(ReactConfiguration.get().getMonitorConfiguration());
+            actionBarMonitor = new ActionBarMonitor(this);
             actionBarMonitor.start();
         }
 
@@ -196,6 +208,9 @@ public class ReactPlayer extends TickedObject {
         velocity.setZ(velocity.getZ() < 0.01 && velocity.getZ() > -0.01 ? 0 : velocity.getZ());
         speedTickCooldown--;
         speedValidForMonitor = velocity.getY() > -1;
+        if(saveLatch.flip()) {
+            saveSettings();
+        }
     }
 
     public void updateMonitors() {

@@ -3,34 +3,26 @@ package com.volmit.react.api.monitor;
 import com.volmit.react.React;
 import com.volmit.react.api.monitor.configuration.MonitorConfiguration;
 import com.volmit.react.api.monitor.configuration.MonitorGroup;
-import com.volmit.react.api.player.ReactPlayer;
+import com.volmit.react.model.ReactPlayer;
 import com.volmit.react.api.sampler.Sampler;
-import com.volmit.react.util.C;
-import com.volmit.react.util.Form;
 import com.volmit.react.util.J;
 import com.volmit.react.util.M;
 import net.kyori.adventure.key.Key;
-import net.kyori.adventure.key.Keyed;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.Style;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.title.Title;
 import net.kyori.adventure.title.TitlePart;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
-import org.bukkit.Location;
+import org.bukkit.plugin.IllegalPluginAccessException;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.Color;
 import java.time.Duration;
-import java.time.temporal.TemporalUnit;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 public class ActionBarMonitor extends PlayerMonitor {
     private int viewportIndex;
@@ -60,12 +52,7 @@ public class ActionBarMonitor extends PlayerMonitor {
         sleepingRate = 1000;
         viewportIndex = 0;
         lockedPosition = 0;
-    }
-
-    public ActionBarMonitor sample(MonitorConfiguration configuration) {
-        this.configuration = configuration;
-
-        return this;
+        configuration = player.getSettings().getMonitorConfiguration();
     }
 
     public boolean isAlwaysFlushing(){
@@ -74,9 +61,19 @@ public class ActionBarMonitor extends PlayerMonitor {
 
     @Override
     public void stop() {
-        J.s(() -> getPlayer().getPlayer().spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(" ")), 3);
-        J.s(() -> React.adventure.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.TITLE, Component.space()), 3);
-        J.s(() -> React.adventure.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.SUBTITLE, Component.space()), 3);
+        try
+        {
+            J.s(() -> getPlayer().getPlayer().spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(" ")), 3);
+            J.s(() -> React.adventure.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.TITLE, Component.space()), 3);
+            J.s(() -> React.adventure.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.SUBTITLE, Component.space()), 3);
+        }
+
+        catch(IllegalPluginAccessException e) {
+            getPlayer().getPlayer().spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(" "));
+            React.adventure.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.TITLE, Component.space());
+            React.adventure.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.SUBTITLE, Component.space());
+        }
+
         super.stop();
         unregister();
     }
