@@ -4,6 +4,7 @@ import com.volmit.react.React;
 import com.volmit.react.api.action.ActionParams;
 import com.volmit.react.api.action.ActionTicket;
 import com.volmit.react.api.action.ReactAction;
+import com.volmit.react.api.arguments.Argument;
 import com.volmit.react.api.model.AreaActionParams;
 import com.volmit.react.api.model.FilterParams;
 import com.volmit.react.util.J;
@@ -15,7 +16,9 @@ import org.bukkit.Chunk;
 import org.bukkit.entity.EntityType;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params> {
     public static final String ID = "purge-entities";
@@ -60,12 +63,7 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
 
     @Override
     public Params getDefaultParams() {
-        return Params.builder()
-                .area(AreaActionParams.builder()
-                        .allChunks(true)
-                        .world("world")
-                        .build())
-                .build();
+        return Params.builder().build();
     }
 
     private void purge(Chunk c, Params purgeEntitiesParams) {
@@ -77,20 +75,41 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
 
     }
 
-    public static class Derp {
-        private Integer radius;
-        private List<EntityType> filter;
-        private boolean blacklist = false;
-    }
-
     @Builder
     @Data
     @AllArgsConstructor
     @NoArgsConstructor
     public static class Params implements ActionParams {
+        @Argument(
+            name = "radius",
+            shortCode = "r",
+            description = "Radius in chunks around you to purge entities in")
         @Builder.Default
-        private AreaActionParams area = new AreaActionParams();
+        int radius = -1;
+
+        @Argument(
+            name = "world",
+            shortCode = "w",
+            description = "World to purge entities in"
+        )
+        String world;
+
+        @Argument(
+            name = "only",
+            shortCode = "o",
+            description = "Purge only the following entity types",
+            listType = EntityType.class
+        )
         @Builder.Default
-        private FilterParams<EntityType> filter = new FilterParams<>();
+        Set<EntityType> only = new HashSet<>();
+
+        @Argument(
+            name = "ignore",
+            shortCode = "i",
+            description = "Purge all entity types ignoring the following",
+            listType = EntityType.class
+        )
+        @Builder.Default
+        Set<EntityType> except = new HashSet<>();
     }
 }

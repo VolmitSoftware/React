@@ -24,7 +24,7 @@ public @interface Argument
     String name();
     String shortCode();
     String description();
-    Class<?> listType();
+    Class<?> listType() default Object.class;
 
     public static class ArgumentProcessor {
         private static Object mapToType(Class<?> type, Class<?> listType, String input) throws Throwable {
@@ -78,8 +78,8 @@ public @interface Argument
             throw new RuntimeException("Cannot parse type " + type.getName());
         }
 
-        public static <T> T process(Class<T> clazz, String[] args) throws Exception {
-            CursedComponent c = Curse.on(clazz).construct();
+        public static Object process(Object t, String[] args) throws Exception {
+            CursedComponent c = Curse.on(t);
             List<CapturedArgument> arguments = c.instanceFields()
                 .filter(i -> i.isAnnotated(Argument.class))
                 .map((i) -> new CapturedArgument(i.annotated(Argument.class), i, c))

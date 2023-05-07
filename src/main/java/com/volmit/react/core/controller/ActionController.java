@@ -14,6 +14,7 @@ import lombok.Data;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,6 +48,11 @@ public class ActionController implements IController {
         }
 
         return (Action<T>) s;
+    }
+
+    public void callAction(String actionId, String[] arguments) throws Exception {
+        Action<?> action = React.instance.getActionController().getAction(actionId);
+        action.createForceful(action.toParams(arguments)).queue();
     }
 
     @Override
