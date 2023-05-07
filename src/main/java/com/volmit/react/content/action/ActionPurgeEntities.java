@@ -77,6 +77,12 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
 
     }
 
+    public static class Derp {
+        private Integer radius;
+        private List<EntityType> filter;
+        private boolean blacklist = false;
+    }
+
     @Builder
     @Data
     @AllArgsConstructor
