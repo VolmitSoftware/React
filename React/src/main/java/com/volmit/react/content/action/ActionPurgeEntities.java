@@ -6,11 +6,14 @@ import com.volmit.react.api.action.ActionTicket;
 import com.volmit.react.api.action.ReactAction;
 import com.volmit.react.model.AreaActionParams;
 import com.volmit.react.model.FilterParams;
+import com.volmit.react.util.decree.DecreeExecutor;
+import com.volmit.react.util.math.Spiraler;
 import com.volmit.react.util.scheduling.J;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.Accessors;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.World;
@@ -32,8 +35,15 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
     }
 
     List<Chunk> pullChunks(ActionTicket<Params> ticket, int max) {
-
         List<Chunk> c = new ArrayList<>();
+
+        for(int i = 0; i < max; i++) {
+            Chunk cc = ticket.getParams().getArea().popChunk();
+
+            if(cc == null) {
+                break;
+            }
+        }
 
         return c;
     }
@@ -43,7 +53,7 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
         List<Chunk> c = pullChunks(ticket, React.instance.getActionController().getActionSpeedMultiplier());
 
         if (ticket.getTotalWork() <= 1) {
-            //ticket.setTotalWork(ticket.getParams().getQueue().size());
+            ticket.setTotalWork(ticket.getParams().getArea().getChunks().size());
         }
 
         if (c.isEmpty()) {
@@ -94,6 +104,9 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
 
     @Builder
     @Data
+    @Accessors(
+        chain = true
+    )
     @AllArgsConstructor
     @NoArgsConstructor
     public static class Params implements ActionParams {
@@ -106,5 +119,18 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
             .type(EntityType.DROPPED_ITEM)
             .type(EntityType.EXPERIENCE_ORB)
             .build();
+
+        public Params withWorld(World world) {
+            area.setWorld(world.getName());
+            return this;
+        }
+
+        public Params addRadius(World world, int x, int z, int radius) {
+            area.setChunks(area.getChunks() == null ? new ArrayList<>() : new ArrayList<>(area.getChunks()));
+            new Spiraler(radius * 2, radius * 2, (xx, zz) -> {
+                area.getChunks().add(world.getChunkAt(x + xx, z + zz));
+            }).drain();
+            return this;
+        }
     }
 }
