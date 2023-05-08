@@ -4,6 +4,7 @@ import com.volmit.react.React;
 import com.volmit.react.api.sampler.ReactCachedSampler;
 import com.volmit.react.util.format.Form;
 import com.volmit.react.util.math.M;
+import com.volmit.react.util.math.RollingSequence;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.BlockData;
@@ -20,6 +21,7 @@ public class SamplerRedstonePerTick extends ReactCachedSampler implements Listen
     public static final String ID = "redstone";
     private final AtomicInteger redstoneInteractions;
     private final Set<Material> redstoneComponents;
+    private final RollingSequence avg = new RollingSequence(20);
     private long lastSample = 0L;
     private static final double D1_OVER_TICKS = 1.0/50D;
 
@@ -45,8 +47,8 @@ public class SamplerRedstonePerTick extends ReactCachedSampler implements Listen
         React.instance.unregisterListener(this);
     }
 
-    @EventHandler // Redstone wire only
-    public void onRedstoneUpdate(BlockRedstoneEvent event) {
+    @EventHandler
+    public void on(BlockRedstoneEvent event) {
         Block block = event.getBlock();
         BlockData blockData = block.getBlockData();
 
@@ -64,8 +66,9 @@ public class SamplerRedstonePerTick extends ReactCachedSampler implements Listen
         int r = redstoneInteractions.getAndSet(0);
         long dur = Math.max(M.ms() - lastSample, 50);
         lastSample = M.ms();
+        avg.put( r / (dur*D1_OVER_TICKS));
 
-        return r / (dur*D1_OVER_TICKS);
+        return avg.getAverage();
     }
 
     @Override
