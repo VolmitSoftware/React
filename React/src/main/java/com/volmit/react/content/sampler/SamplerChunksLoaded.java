@@ -19,8 +19,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 //
 public class SamplerChunksLoaded extends ReactCachedSampler implements Listener {
     public static final String ID = "chunks-loaded";
-    private final ChronoLatch realCheckUpdate;
-    private final AtomicInteger loadedChunks;
+    private transient ChronoLatch realCheckUpdate;
+    private transient final AtomicInteger loadedChunks;
+    private int realityCheckMS = 10000;
 
     @Override
     public Material getIcon() {
@@ -30,7 +31,7 @@ public class SamplerChunksLoaded extends ReactCachedSampler implements Listener 
     public SamplerChunksLoaded() {
         super(ID, 50);
         loadedChunks = new AtomicInteger(0);
-        realCheckUpdate = new ChronoLatch(10000);
+        realCheckUpdate = new ChronoLatch(realityCheckMS);
     }
 
     public int getRealCheck() {
@@ -48,6 +49,7 @@ public class SamplerChunksLoaded extends ReactCachedSampler implements Listener 
     @Override
     public void start() {
         React.instance.registerListener(this);
+        realCheckUpdate = new ChronoLatch(realityCheckMS);
     }
 
     @Override

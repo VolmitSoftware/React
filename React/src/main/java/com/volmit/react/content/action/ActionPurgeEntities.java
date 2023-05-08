@@ -30,6 +30,14 @@ import java.util.Set;
 
 public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params> {
     public static final String ID = "purge-entities";
+    private List<EntityType> defaultEntityList = new ArrayList<>(List.of(
+        EntityType.ARMOR_STAND,
+        EntityType.PLAYER,
+        EntityType.ITEM_FRAME,
+        EntityType.DROPPED_ITEM,
+        EntityType.EXPERIENCE_ORB
+    ));
+    private boolean defaultBlacklist = true;
 
     public ActionPurgeEntities() {
         super(ID);
@@ -77,7 +85,12 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
 
     @Override
     public Params getDefaultParams() {
-        return Params.builder().build();
+        return Params.builder()
+            .entityFilter(FilterParams.<EntityType>builder()
+                .types(defaultEntityList)
+                .blacklist(defaultBlacklist)
+                .build())
+            .build();
     }
 
     private void purge(Entity entity, ActionTicket<Params> ticket) {
@@ -109,14 +122,7 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
         @Builder.Default
         private AreaActionParams area = AreaActionParams.builder().build();
         @Builder.Default
-        private FilterParams<EntityType> entityFilter = FilterParams.<EntityType>builder()
-            .blacklist(true)
-            .type(EntityType.ARMOR_STAND)
-            .type(EntityType.PLAYER)
-            .type(EntityType.ITEM_FRAME)
-            .type(EntityType.DROPPED_ITEM)
-            .type(EntityType.EXPERIENCE_ORB)
-            .build();
+        private FilterParams<EntityType> entityFilter = FilterParams.<EntityType>builder().build();
 
         public Params withWorld(World world) {
             area.setWorld(world.getName());

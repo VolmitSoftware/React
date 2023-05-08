@@ -42,7 +42,7 @@ public class ReactPlayer extends TickedObject {
         this.player = player;
         saveLatch = new ChronoLatch(60000);
         scrollPosition = 0;
-        setInterval(ACTIVE_RATE);
+        setTinterval(ACTIVE_RATE);
         yaw = 0f;
         pitch = 0f;
         yawPosition = 0;
@@ -77,7 +77,7 @@ public class ReactPlayer extends TickedObject {
 
     public void wakeUp(boolean children) {
         lastActive = System.currentTimeMillis();
-        setInterval(ACTIVE_RATE);
+        setTinterval(ACTIVE_RATE);
 
         if (children && actionBarMonitor != null) {
             actionBarMonitor.wakeUp();
@@ -197,8 +197,8 @@ public class ReactPlayer extends TickedObject {
 
     @Override
     public void onTick() {
-        if (getInterval() > ACTIVE_RATE && System.currentTimeMillis() - lastActive > INACTIVE_DELAY) {
-            setInterval(INACTIVE_RATE);
+        if (getTinterval() > ACTIVE_RATE && System.currentTimeMillis() - lastActive > INACTIVE_DELAY) {
+            setTinterval(INACTIVE_RATE);
         }
 
         velocity.multiply(0.75);

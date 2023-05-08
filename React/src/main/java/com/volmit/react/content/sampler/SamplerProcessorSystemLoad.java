@@ -8,7 +8,7 @@ import org.bukkit.Material;
 
 public class SamplerProcessorSystemLoad extends ReactCachedSampler {
     public static final String ID = "processor-system-load";
-    private final AsyncRequest<Double> poller;
+    private transient final AsyncRequest<Double> poller;
 
     public SamplerProcessorSystemLoad() {
         super(ID, 100);

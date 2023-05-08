@@ -95,7 +95,7 @@ public class Ticker {
 
     public void unregister(Ticked ticked) {
         synchronized (removeTicks) {
-            removeTicks.add(ticked.getId());
+            removeTicks.add(ticked.getTid());
         }
     }
 
@@ -149,7 +149,7 @@ public class Ticker {
                 String id = removeTicks.popRandom();
 
                 for (int i = 0; i < ticklist.size(); i++) {
-                    if (ticklist.get(i).getId().equals(id)) {
+                    if (ticklist.get(i).getTid().equals(id)) {
                         ticklist.remove(i);
                         break;
                     }

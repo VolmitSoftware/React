@@ -4,14 +4,14 @@ import art.arcane.chrono.ChronoLatch;
 import com.google.common.util.concurrent.AtomicDouble;
 
 public abstract class ReactCachedSampler implements Sampler {
-    private final ChronoLatch latch;
-    private final AtomicDouble last;
-    private final String id;
+    private transient final ChronoLatch slatch;
+    private transient final AtomicDouble slast;
+    private transient final String sid;
 
     public ReactCachedSampler(String id, long sampleDelay) {
-        this.id = id;
-        this.latch = new ChronoLatch(sampleDelay, true);
-        this.last = new AtomicDouble();
+        this.sid = id;
+        this.slatch = new ChronoLatch(sampleDelay, true);
+        this.slast = new AtomicDouble();
     }
 
     @Override
@@ -28,17 +28,17 @@ public abstract class ReactCachedSampler implements Sampler {
 
     @Override
     public double sample() {
-        double t = last.get();
+        double t = slast.get();
 
-        if (latch.flip()) {
+        if (slatch.flip()) {
             t = onSample();
-            last.set(t);
+            slast.set(t);
         }
 
         return t;
     }
 
     public String getId() {
-        return id;
+        return sid;
     }
 }

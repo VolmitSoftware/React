@@ -6,7 +6,7 @@ import org.bukkit.Material;
 
 public class SamplerMemoryFree extends ReactCachedSampler {
     public static final String ID = "memory-free";
-    private final Runtime runtime;
+    private transient final Runtime runtime;
 
     public SamplerMemoryFree() {
         super(ID, 50);

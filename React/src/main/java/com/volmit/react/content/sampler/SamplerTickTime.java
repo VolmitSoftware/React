@@ -9,7 +9,7 @@ import org.bukkit.Material;
 
 public class SamplerTickTime extends ReactCachedSampler {
     public static final String ID = "tick-time";
-    private ThreadUtilizationMonitor monitor;
+    private transient ThreadUtilizationMonitor monitor;
 
     public SamplerTickTime() {
         super(ID, 50);

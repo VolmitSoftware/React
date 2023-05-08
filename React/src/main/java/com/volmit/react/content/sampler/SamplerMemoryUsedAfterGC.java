@@ -8,9 +8,9 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class SamplerMemoryUsedAfterGC extends ReactTickedSampler {
     public static final String ID = "memory-used-after-gc";
-    private final AtomicLong lastMemory;
-    private final AtomicLong lastMemoryPostGC;
-    private final Runtime runtime;
+    private transient final AtomicLong lastMemory;
+    private transient final AtomicLong lastMemoryPostGC;
+    private transient final Runtime runtime;
 
     public SamplerMemoryUsedAfterGC() {
         super(ID, 50, 20);

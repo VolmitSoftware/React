@@ -7,17 +7,17 @@ import com.volmit.react.util.scheduling.TickedObject;
 import java.util.concurrent.atomic.AtomicLong;
 
 public abstract class ReactTickedSampler extends TickedObject implements Sampler {
-    private final RollingSequence sequence;
-    private final AtomicLong lastSample;
-    private final long activeInterval;
-    private boolean sleeping;
+    private transient final RollingSequence ssequence;
+    private transient final AtomicLong slastSample;
+    private transient final long sactiveInterval;
+    private transient boolean ssleeping;
 
     public ReactTickedSampler(String id, long tickInterval, int memory) {
         super("sampler", id, tickInterval);
-        this.sequence = new RollingSequence(memory);
-        this.activeInterval = tickInterval;
-        this.lastSample = new AtomicLong(0);
-        this.sleeping = true;
+        this.ssequence = new RollingSequence(memory);
+        this.sactiveInterval = tickInterval;
+        this.slastSample = new AtomicLong(0);
+        this.ssleeping = true;
     }
 
     @Override
@@ -33,37 +33,37 @@ public abstract class ReactTickedSampler extends TickedObject implements Sampler
 
     @Override
     public double sample() {
-        lastSample.set(System.currentTimeMillis());
+        slastSample.set(System.currentTimeMillis());
 
-        if (sleeping) {
-            setSleeping(false);
+        if (ssleeping) {
+            setSsleeping(false);
         }
 
-        return sequence.getAverage();
+        return ssequence.getAverage();
     }
 
-    private void setSleeping(boolean sleeping) {
-        this.sleeping = sleeping;
-        setInterval(sleeping ? 1000 : activeInterval);
-        if (!this.sleeping && sleeping) {
-            sequence.resetExtremes();
+    private void setSsleeping(boolean ssleeping) {
+        this.ssleeping = ssleeping;
+        setTinterval(ssleeping ? 1000 : sactiveInterval);
+        if (!this.ssleeping && ssleeping) {
+            ssequence.resetExtremes();
         }
     }
 
     @Override
     public void onTick() {
-        if (sleeping) {
+        if (ssleeping) {
             return;
         }
 
-        if (System.currentTimeMillis() - lastSample.get() > 1000) {
-            setSleeping(true);
+        if (System.currentTimeMillis() - slastSample.get() > 1000) {
+            setSsleeping(true);
         }
 
-        sequence.put(onSample());
+        ssequence.put(onSample());
     }
 
     public String getId() {
-        return super.getId();
+        return super.getTid();
     }
 }

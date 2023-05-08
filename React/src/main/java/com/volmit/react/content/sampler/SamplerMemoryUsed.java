@@ -6,7 +6,7 @@ import org.bukkit.Material;
 
 public class SamplerMemoryUsed extends ReactCachedSampler {
     public static final String ID = "memory-used";
-    private final Runtime runtime;
+    private transient final Runtime runtime;
 
     public SamplerMemoryUsed() {
         super(ID, 50);

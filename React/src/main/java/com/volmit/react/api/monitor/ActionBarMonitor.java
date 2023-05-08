@@ -335,7 +335,7 @@ public class ActionBarMonitor extends PlayerMonitor {
 
                 @Override
                 public @NotNull Duration stay() {
-                    return Duration.ofMillis(((int) ((getInterval() / 50) + 3)) * 50L);
+                    return Duration.ofMillis(((int) ((getTinterval() / 50) + 3)) * 50L);
                 }
 
                 @Override
@@ -356,7 +356,7 @@ public class ActionBarMonitor extends PlayerMonitor {
 
             React.audiences.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.SUBTITLE, writeSubSamplers());
         } else if (focusDownAnimation) {
-            getPlayer().getPlayer().sendTitle(" ", "  ", 0, (int) ((getInterval() / 50) + 1), 17);
+            getPlayer().getPlayer().sendTitle(" ", "  ", 0, (int) ((getTinterval() / 50) + 1), 17);
         }
 
         React.audiences.player(getPlayer().getPlayer()).sendActionBar(writeHeader());

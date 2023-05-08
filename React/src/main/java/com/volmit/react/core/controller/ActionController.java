@@ -90,7 +90,10 @@ public class ActionController extends TickedObject implements IController {
     }
 
     public void postStart() {
-        actions.values().forEach(Action::onInit);
+        actions.values().forEach((i) -> {
+            i.loadConfiguration();
+            i.onInit();
+        });
         React.info("Registered " + actions.size() + " Actions");
     }
 

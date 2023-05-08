@@ -7,8 +7,8 @@ import org.bukkit.Material;
 
 public class SamplerMemoryGarbage extends ReactCachedSampler {
     public static final String ID = "memory-garbage";
-    private Sampler memoryUsedAfterGC;
-    private Sampler memoryUsed;
+    private transient Sampler memoryUsedAfterGC;
+    private transient Sampler memoryUsed;
 
     public SamplerMemoryGarbage() {
         super(ID, 50);

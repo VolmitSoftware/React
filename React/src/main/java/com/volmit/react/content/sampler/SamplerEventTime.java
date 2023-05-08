@@ -10,7 +10,7 @@ import org.bukkit.event.Listener;
 
 public class SamplerEventTime extends ReactCachedSampler implements Listener {
     public static final String ID = "event-time";
-    private EventController eventController;
+    private transient EventController eventController;
 
     public SamplerEventTime() {
         super(ID, 1000);

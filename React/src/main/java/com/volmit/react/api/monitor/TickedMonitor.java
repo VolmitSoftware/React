@@ -37,7 +37,7 @@ public abstract class TickedMonitor extends TickedObject implements Monitor {
 
     public void wakeUp() {
         currentSleepDelay = sleepDelay;
-        setInterval(awakeInterval);
+        setTinterval(awakeInterval);
     }
 
     public void setVisible(Sampler sampler, boolean visible) {
@@ -85,14 +85,14 @@ public abstract class TickedMonitor extends TickedObject implements Monitor {
                         }
                     }
                 } catch (Throwable e) {
-                    React.error("Failed to sample " + i.getId() + " for monitor " + getId());
+                    React.error("Failed to sample " + i.getId() + " for monitor " + getTid());
                     e.printStackTrace();
                 }
             }
         }
 
         currentSleepDelay = flushable ? sleepDelay : currentSleepDelay - 1;
-        setInterval(currentSleepDelay <= 0 ? sleepingRate : awakeInterval);
+        setTinterval(currentSleepDelay <= 0 ? sleepingRate : awakeInterval);
 
         if (flushable || isAlwaysFlushing()) {
             flush();

@@ -2,6 +2,7 @@ package com.volmit.react.api.action;
 
 import art.arcane.curse.Curse;
 import art.arcane.curse.model.FuzzyMethod;
+import com.volmit.react.api.ReactComponent;
 import com.volmit.react.util.format.Form;
 import com.volmit.react.util.plugin.VolmitSender;
 
@@ -9,16 +10,16 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public interface Action<T extends ActionParams> {
+public interface Action<T extends ActionParams> extends ReactComponent {
     ActionTicket<T> create(T params);
 
-    default String getCompletedMessage(ActionTicket<T> ticket)
-    {
+    default String getCompletedMessage(ActionTicket<T> ticket) {
         return "Completed " + getName() + " in " + Form.duration(ticket.getDuration(), 1);
     }
 
-    default String getName() {
-        return Form.capitalizeWords(getId().replace("-", " "));
+    @Override
+    default String getConfigCategory() {
+        return "action";
     }
 
     default ActionTicket<T> create(T params, VolmitSender sender) {
@@ -37,8 +38,6 @@ public interface Action<T extends ActionParams> {
     }
 
     void workOn(ActionTicket<T> ticket);
-
-    String getId();
 
     T getDefaultParams();
 

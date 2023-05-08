@@ -9,9 +9,11 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntitySpawnEvent;
+import org.bukkit.event.entity.ItemMergeEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
@@ -20,8 +22,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class SamplerEntities extends ReactCachedSampler implements Listener {
     public static final String ID = "entities";
-    private final ChronoLatch realEntityUpdate;
-    private final AtomicInteger entities;
+    private transient ChronoLatch realEntityUpdate;
+    private transient final AtomicInteger entities;
+    private int realityCheckMS = 10000;
 
     @Override
     public Material getIcon() {
@@ -31,7 +34,7 @@ public class SamplerEntities extends ReactCachedSampler implements Listener {
     public SamplerEntities() {
         super(ID, 50);
         entities = new AtomicInteger(0);
-        realEntityUpdate = new ChronoLatch(10000);
+        realEntityUpdate = new ChronoLatch(realityCheckMS);
     }
 
     public int getRealCheck() {
@@ -48,6 +51,7 @@ public class SamplerEntities extends ReactCachedSampler implements Listener {
     @Override
     public void start() {
         React.instance.registerListener(this);
+        realEntityUpdate = new ChronoLatch(realityCheckMS);
     }
 
     @Override
@@ -55,27 +59,32 @@ public class SamplerEntities extends ReactCachedSampler implements Listener {
         React.instance.unregisterListener(this);
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void on(EntitySpawnEvent e) {
         entities.incrementAndGet();
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void on(ChunkLoadEvent e) {
         entities.addAndGet(e.getChunk().getEntities().length);
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void on(ItemMergeEvent e) {
+        entities.addAndGet(-1);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void on(ChunkUnloadEvent e) {
         entities.addAndGet(-e.getChunk().getEntities().length);
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void on(WorldUnloadEvent e) {
         entities.addAndGet(-e.getWorld().getEntities().size());
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void on(EntityDeathEvent e) {
         entities.decrementAndGet();
     }

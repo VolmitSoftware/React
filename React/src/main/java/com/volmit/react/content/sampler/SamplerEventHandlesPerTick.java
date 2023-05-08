@@ -10,8 +10,8 @@ import org.bukkit.event.Listener;
 
 public class SamplerEventHandlesPerTick extends ReactCachedSampler implements Listener {
     public static final String ID = "event-handles-per-tick";
-    private EventController eventController;
-    private RollingSequence r = new RollingSequence(36);
+    private transient EventController eventController;
+    private transient RollingSequence r = new RollingSequence(36);
 
     public SamplerEventHandlesPerTick() {
         super(ID, 50);

@@ -10,11 +10,12 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class SamplerTicksPerSecond extends ReactTickedSampler {
     public static final String ID = "ticks-per-second";
-    private final AtomicInteger ticks;
-    private final AtomicLong lastTick;
-    private final AtomicLong lastTickDuration;
-    private final AtomicLong lastTickDurationSync;
-    private final int stickid;
+    private transient final AtomicInteger ticks;
+    private transient final AtomicLong lastTick;
+    private transient final AtomicLong lastTickDuration;
+    private transient final AtomicLong lastTickDurationSync;
+    private transient final int stickid;
+    private int countUpTickTimeThresholdMS = 3000;
 
     public SamplerTicksPerSecond() {
         super(ID, 50, 7);
@@ -46,7 +47,7 @@ public class SamplerTicksPerSecond extends ReactTickedSampler {
     public String formattedValue(double t) {
         long dur = System.currentTimeMillis() - lastTick.get();
 
-        if (dur > 3000) {
+        if (dur > countUpTickTimeThresholdMS) {
             return Form.durationSplit(dur, 1)[0];
         }
 
@@ -61,7 +62,7 @@ public class SamplerTicksPerSecond extends ReactTickedSampler {
     public String formattedSuffix(double t) {
         long dur = System.currentTimeMillis() - lastTick.get();
 
-        if (dur > 3000) {
+        if (dur > countUpTickTimeThresholdMS) {
             return Form.durationSplit(dur, 1)[1];
         }
 

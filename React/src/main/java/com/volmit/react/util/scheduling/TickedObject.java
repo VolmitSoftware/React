@@ -28,23 +28,23 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 public abstract class TickedObject implements Ticked, Listener {
-    private final AtomicLong lastTick;
-    private final AtomicLong interval;
-    private final AtomicInteger skip;
-    private final AtomicInteger burst;
-    private final AtomicLong ticks;
-    private final AtomicInteger dieIn;
-    private final AtomicBoolean die;
-    private final long start;
-    private final String group;
-    private final String id;
+    private transient final AtomicLong tlastTick;
+    private transient final AtomicLong tinterval;
+    private transient final AtomicInteger tskip;
+    private transient final AtomicInteger tburst;
+    private transient final AtomicLong tticks;
+    private transient final AtomicInteger tdieIn;
+    private transient final AtomicBoolean tdie;
+    private transient final long tstart;
+    private transient final String tgroup;
+    private transient final String tid;
 
     public TickedObject() {
         this("null");
     }
 
-    public TickedObject(String group, String id) {
-        this(group, id, 1000);
+    public TickedObject(String group, String tid) {
+        this(group, tid, 1000);
     }
 
     public TickedObject(String group) {
@@ -55,24 +55,24 @@ public abstract class TickedObject implements Ticked, Listener {
         this(group, UUID.randomUUID().toString(), interval);
     }
 
-    public TickedObject(String group, String id, long interval) {
-        this.group = group;
-        this.id = id;
-        this.die = new AtomicBoolean(false);
-        this.dieIn = new AtomicInteger(0);
-        this.interval = new AtomicLong(interval);
-        this.lastTick = new AtomicLong(M.ms());
-        this.burst = new AtomicInteger(0);
-        this.skip = new AtomicInteger(0);
-        this.ticks = new AtomicLong(0);
-        this.start = M.ms();
+    public TickedObject(String group, String tid, long interval) {
+        this.tgroup = group;
+        this.tid = tid;
+        this.tdie = new AtomicBoolean(false);
+        this.tdieIn = new AtomicInteger(0);
+        this.tinterval = new AtomicLong(interval);
+        this.tlastTick = new AtomicLong(M.ms());
+        this.tburst = new AtomicInteger(0);
+        this.tskip = new AtomicInteger(0);
+        this.tticks = new AtomicLong(0);
+        this.tstart = M.ms();
         React.instance.getTicker().register(this);
         React.instance.registerListener(this);
     }
 
     public void dieAfter(int ticks) {
-        dieIn.set(ticks);
-        die.set(true);
+        tdieIn.set(ticks);
+        tdie.set(true);
     }
 
     @Override
@@ -82,99 +82,99 @@ public abstract class TickedObject implements Ticked, Listener {
     }
 
     @Override
-    public long getLastTick() {
-        return lastTick.get();
+    public long getTlastTick() {
+        return tlastTick.get();
     }
 
     @Override
-    public long getInterval() {
-        if (burst.get() > 0) {
+    public long getTinterval() {
+        if (tburst.get() > 0) {
             return 0;
         }
 
-        return interval.get();
+        return tinterval.get();
     }
 
     @Override
-    public void setInterval(long ms) {
-        interval.set(ms);
+    public void setTinterval(long ms) {
+        tinterval.set(ms);
     }
 
     @Override
     public void tick() {
-        if (skip.getAndDecrement() > 0) {
+        if (tskip.getAndDecrement() > 0) {
             return;
         }
 
-        if (die.get() && dieIn.decrementAndGet() <= 0) {
+        if (tdie.get() && tdieIn.decrementAndGet() <= 0) {
             unregister();
             return;
         }
 
-        lastTick.set(M.ms());
-        burst.decrementAndGet();
+        tlastTick.set(M.ms());
+        tburst.decrementAndGet();
         onTick();
     }
 
     public abstract void onTick();
 
     @Override
-    public String getGroup() {
-        return group;
+    public String getTgroup() {
+        return tgroup;
     }
 
     @Override
-    public String getId() {
-        return id;
+    public String getTid() {
+        return tid;
     }
 
     @Override
     public long getTickCount() {
-        return ticks.get();
+        return tticks.get();
     }
 
     @Override
     public long getAge() {
-        return M.ms() - start;
+        return M.ms() - tstart;
     }
 
     @Override
     public boolean isBursting() {
-        return burst.get() > 0;
+        return tburst.get() > 0;
     }
 
     @Override
     public void burst(int ticks) {
-        if (burst.get() < 0) {
-            burst.set(ticks);
+        if (tburst.get() < 0) {
+            tburst.set(ticks);
             return;
         }
 
-        burst.addAndGet(ticks);
+        tburst.addAndGet(ticks);
     }
 
     @Override
     public boolean isSkipping() {
-        return skip.get() > 0;
+        return tskip.get() > 0;
     }
 
     @Override
     public void stopBursting() {
-        burst.set(0);
+        tburst.set(0);
     }
 
     @Override
     public void stopSkipping() {
-        skip.set(0);
+        tskip.set(0);
     }
 
     @Override
     public void skip(int ticks) {
-        if (skip.get() < 0) {
-            skip.set(ticks);
+        if (tskip.get() < 0) {
+            tskip.set(ticks);
             return;
         }
 
-        skip.addAndGet(ticks);
+        tskip.addAndGet(ticks);
     }
 }

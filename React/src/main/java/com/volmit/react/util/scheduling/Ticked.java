@@ -47,19 +47,19 @@ public interface Ticked {
 
     void skip(int ticks);
 
-    long getLastTick();
+    long getTlastTick();
 
-    long getInterval();
+    long getTinterval();
 
-    void setInterval(long ms);
+    void setTinterval(long ms);
 
     void tick();
 
-    String getGroup();
+    String getTgroup();
 
-    String getId();
+    String getTid();
 
     default boolean shouldTick() {
-        return M.ms() - getLastTick() > getInterval();
+        return M.ms() - getTlastTick() > getTinterval();
     }
 }

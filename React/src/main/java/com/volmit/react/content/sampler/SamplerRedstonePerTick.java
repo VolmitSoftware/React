@@ -19,10 +19,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class SamplerRedstonePerTick extends ReactCachedSampler implements Listener {
     public static final String ID = "redstone";
-    private final AtomicInteger redstoneInteractions;
-    private final Set<Material> redstoneComponents;
-    private final RollingSequence avg = new RollingSequence(20);
-    private long lastSample = 0L;
+    private transient final AtomicInteger redstoneInteractions;
+    private transient final Set<Material> redstoneComponents;
+    private transient final RollingSequence avg = new RollingSequence(20);
+    private transient long lastSample = 0L;
     private static final double D1_OVER_TICKS = 1.0/50D;
 
     public SamplerRedstonePerTick() {

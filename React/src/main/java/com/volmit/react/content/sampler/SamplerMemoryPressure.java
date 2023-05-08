@@ -8,8 +8,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class SamplerMemoryPressure extends ReactTickedSampler {
     public static final String ID = "memory-pressure";
-    private final AtomicLong lastMemory;
-    private final Runtime runtime;
+    private transient final AtomicLong lastMemory;
+    private transient final Runtime runtime;
 
     public SamplerMemoryPressure() {
         super(ID, 50, 20);
@@ -28,7 +28,7 @@ public class SamplerMemoryPressure extends ReactTickedSampler {
         long allocated = mem - lastMemory.get();
         lastMemory.set(mem);
         if (allocated >= 0) {
-            return allocated * (1000D / getInterval());
+            return allocated * (1000D / getTinterval());
         }
 
         return 0;
