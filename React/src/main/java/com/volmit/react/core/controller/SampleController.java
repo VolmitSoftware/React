@@ -9,6 +9,7 @@ import com.volmit.react.util.io.JarScanner;
 import com.volmit.react.util.plugin.IController;
 import com.volmit.react.util.scheduling.TickedObject;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
 
@@ -21,6 +22,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
 public class SampleController extends TickedObject implements IController {
     private Map<String, Sampler> samplers;

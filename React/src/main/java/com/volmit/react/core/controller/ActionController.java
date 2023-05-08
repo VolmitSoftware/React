@@ -11,6 +11,7 @@ import com.volmit.react.util.io.JarScanner;
 import com.volmit.react.util.plugin.IController;
 import com.volmit.react.util.scheduling.TickedObject;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.io.File;
 import java.io.IOException;
@@ -19,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
 public class ActionController extends TickedObject implements IController {
     private final List<ActionTicket<?>> ticketQueue = new ArrayList<>();

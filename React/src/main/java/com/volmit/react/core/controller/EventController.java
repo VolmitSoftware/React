@@ -6,6 +6,7 @@ import com.volmit.react.api.event.NaughtyRegisteredListener;
 import com.volmit.react.util.plugin.IController;
 import com.volmit.react.util.scheduling.TickedObject;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.RegisteredListener;
@@ -14,6 +15,7 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
 public class EventController extends TickedObject implements IController {
     private int listenerCount;
