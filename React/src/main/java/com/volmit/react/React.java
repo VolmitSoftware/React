@@ -26,6 +26,7 @@ public class React extends VolmitPlugin {
     public static Thread serverThread;
     public static Ticker ticker;
     public static BukkitAudiences adventure;
+    public static MultiBurst burst;
     private SampleController sampleController;
     private PlayerController playerController;
     private EventController eventController;
@@ -93,6 +94,7 @@ public class React extends VolmitPlugin {
     @Override
     public void start() {
         instance = this;
+        burst = new MultiBurst("React", Thread.MIN_PRIORITY);
         ticker = new Ticker();
         adventure = BukkitAudiences.create(this);
         eventController = new EventController();
@@ -104,6 +106,7 @@ public class React extends VolmitPlugin {
 
     @Override
     public void stop() {
+        burst.close();
         ticker.clear();
         ticker.close();
         eventController.stop();

@@ -48,12 +48,4 @@ public abstract class Controller implements IController {
 
     @Override
     public abstract void stop();
-
-    @Override
-    public abstract void tick();
-
-    @Override
-    public int getTickInterval() {
-        return tickRate;
-    }
 }
