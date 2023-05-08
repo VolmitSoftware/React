@@ -14,6 +14,7 @@ import com.volmit.react.util.format.C;
 )
 public class CommandReact implements DecreeExecutor {
     private CommandConfig config;
+    private CommandAction action;
 
     @Decree(
         name = "monitor",

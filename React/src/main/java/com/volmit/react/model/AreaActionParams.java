@@ -1,5 +1,6 @@
 package com.volmit.react.model;
 
+import com.volmit.react.React;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

@@ -7,6 +7,7 @@ import com.volmit.react.api.action.ReactAction;
 import com.volmit.react.model.AreaActionParams;
 import com.volmit.react.model.FilterParams;
 import com.volmit.react.util.decree.DecreeExecutor;
+import com.volmit.react.util.format.Form;
 import com.volmit.react.util.math.Spiraler;
 import com.volmit.react.util.scheduling.J;
 import lombok.AllArgsConstructor;
@@ -43,9 +44,16 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
             if(cc == null) {
                 break;
             }
+
+            c.add(cc);
         }
 
         return c;
+    }
+
+    @Override
+    public String getCompletedMessage(ActionTicket<Params> ticket) {
+        return "Purged " + ticket.getCount() + " Entities across " + ticket.getTotalWork() + " chunks in " + Form.duration(ticket.getDuration(), 1);
     }
 
     @Override
@@ -60,7 +68,7 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
             ticket.complete();
         } else {
             for (Chunk i : c) {
-                purge(i, ticket.getParams());
+                purge(i, ticket);
             }
 
             ticket.addWork(c.size());
@@ -72,27 +80,15 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
         return Params.builder().build();
     }
 
-    private void purge(Entity entity, Params purgeEntitiesParams) {
-        J.s(entity::remove, 20 + (int)(100 * Math.random()));
-        J.s(() -> {
-            entity.setFreezeTicks(entity.getMaxFreezeTicks());
-            entity.setGravity(false);
-            entity.setPersistent(false);
-            entity.setInvulnerable(true);
-            entity.setSilent(true);
-
-            if(entity instanceof LivingEntity le) {
-                le.setAI(false);
-                le.setCollidable(false);
-                le.setInvisible(true);
-            }
-        });
+    private void purge(Entity entity, ActionTicket<Params> ticket) {
+        J.s(entity::remove, (int)(20 * Math.random()));
+        ticket.addCount();
     }
 
-    private void purge(Chunk c, Params purgeEntitiesParams) {
+    private void purge(Chunk c,  ActionTicket<Params> ticket) {
         for(Entity i : c.getEntities()) {
-            if(purgeEntitiesParams.entityFilter.allows(i.getType())) {
-                purge(i, purgeEntitiesParams);
+            if(ticket.getParams().entityFilter.allows(i.getType())) {
+                purge(i, ticket);
             }
         }
     }
@@ -110,7 +106,9 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
     @AllArgsConstructor
     @NoArgsConstructor
     public static class Params implements ActionParams {
-        private AreaActionParams area = new AreaActionParams();
+        @Builder.Default
+        private AreaActionParams area = AreaActionParams.builder().build();
+        @Builder.Default
         private FilterParams<EntityType> entityFilter = FilterParams.<EntityType>builder()
             .blacklist(true)
             .type(EntityType.ARMOR_STAND)
@@ -122,6 +120,7 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
 
         public Params withWorld(World world) {
             area.setWorld(world.getName());
+            area.setAllChunks(true);
             return this;
         }
 

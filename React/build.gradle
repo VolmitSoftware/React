@@ -170,17 +170,6 @@ compileJava {
     options.encoding = "UTF-8"
 }
 
-task react(type: Copy)
-{
-    group "react"
-    from ssJar
-    into buildDir
-    rename { String fileName ->
-        fileName.replace('React-' + version + '-all.jar', "React-" + version + ".jar")
-    }
-    dependsOn(shadowJar)
-}
-
 def registerCustomOutputTask(name, path) {
     if (!System.properties['os.name'].toLowerCase().contains('windows')) {
         return
@@ -189,11 +178,11 @@ def registerCustomOutputTask(name, path) {
     tasks.register('build' + name, Copy) {
         group('development')
         outputs.upToDateWhen { false }
-        dependsOn(react)
-        from(new File(buildDir, "React-" + version + "-all.jar"))
+        dependsOn(shadowJar)
+        from(new File(buildDir, "libs/React-" + version + "-all.jar"))
         into(file(path))
         rename { String fileName ->
-            fileName.replace("React-" + version + "-all.jar", "React-" + version + ".jar")
+            fileName.replace("React-" + version + "-all.jar", "React.jar")
         }
     }
 }
@@ -206,11 +195,11 @@ def registerCustomOutputTaskUnix(name, path) {
     tasks.register('build' + name, Copy) {
         group('development')
         outputs.upToDateWhen { false }
-        dependsOn(react)
-        from(new File(buildDir, "React-" + version + "-all.jar"))
+        dependsOn(shadowJar)
+        from(new File(buildDir, "libs/React-" + version + "-all.jar"))
         into(file(path))
         rename { String fileName ->
-            fileName.replace("React-" + version + "-all.jar", "React-" + version + ".jar")
+            fileName.replace("React-" + version + "-all.jar", "React.jar")
         }
     }
 }
