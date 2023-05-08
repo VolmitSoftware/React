@@ -2,6 +2,7 @@ package com.volmit.react.content.command;
 
 import com.volmit.react.React;
 import com.volmit.react.api.action.Action;
+import com.volmit.react.content.action.ActionCollectGarbage;
 import com.volmit.react.content.action.ActionPurgeEntities;
 import com.volmit.react.core.gui.MonitorConfigGUI;
 import com.volmit.react.util.decree.DecreeExecutor;
@@ -58,6 +59,17 @@ public class CommandAction implements DecreeExecutor {
             }
         }
 
+        pe.create(p, sender()).queue();
+    }
+
+    @Decree(
+        name = "collect-garbage",
+        aliases = {"gc"},
+        description = "Run system gc"
+    )
+    public void collectGarbage() {
+        Action<ActionCollectGarbage.Params> pe = React.instance.getActionController().getAction("collect-garbage");
+        ActionCollectGarbage.Params p = pe.getDefaultParams();
         pe.create(p, sender()).queue();
     }
 }
