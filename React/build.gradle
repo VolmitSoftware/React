@@ -24,11 +24,11 @@ plugins {
 }
 
 
-version '8.0.0-1.19.2' // Needs to be version specific
-def nmsVersion = "1.19.2"
+version '8.0.0-1.19.4' // Needs to be version specific
+def nmsVersion = "1.19.4" //[NMS]
 def apiVersion = '1.19'
 def specialSourceVersion = '1.11.0'
-def spigotJarVersion = '1.19.2-R0.1-SNAPSHOT'
+def spigotJarVersion = '1.19.4-R0.1-SNAPSHOT' //[NMS]
 def name = getRootProject().getName() // Defined in settings.gradle
 def main = 'com.volmit.react.React'
 
@@ -110,9 +110,9 @@ dependencies {
     // Provided or Classpath
     compileOnly 'org.projectlombok:lombok:1.18.24'
     annotationProcessor 'org.projectlombok:lombok:1.18.24'
-    implementation 'org.spigotmc:spigot-api:1.19.2-R0.1-SNAPSHOT'
+    implementation 'org.spigotmc:spigot-api:1.19.4-R0.1-SNAPSHOT'
     implementation 'me.clip:placeholderapi:2.11.1'
-    implementation 'org.bukkit:craftbukkit:1.19.2-R0.1-SNAPSHOT:remapped-mojang'
+    implementation 'org.bukkit:craftbukkit:1.19.4-R0.1-SNAPSHOT:remapped-mojang'
 
     // Shaded
     implementation 'io.papermc:paperlib:1.0.5'
