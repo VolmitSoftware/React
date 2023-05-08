@@ -236,12 +236,12 @@ public class VolmitSender implements CommandSender {
         if (percent < 0) {
             int l = 44;
             int g = (int) (1D * l);
-            sendTitle(C.IRIS + thing + " ", 0, 500, 250);
+            sendTitle(C.REACT + thing + " ", 0, 500, 250);
             sendActionNoProcessing("" + "" + pulse("#00ff80", "#00373d", 1D) + "<underlined> " + Form.repeat(" ", g) + "<reset>" + Form.repeat(" ", l - g));
         } else {
             int l = 44;
             int g = (int) (percent * l);
-            sendTitle(C.IRIS + thing + " " + C.BLUE + "<font:minecraft:uniform>" + Form.pc(percent, 0), 0, 500, 250);
+            sendTitle(C.REACT + thing + " " + C.BLUE + "<font:minecraft:uniform>" + Form.pc(percent, 0), 0, 500, 250);
             sendActionNoProcessing("" + "" + pulse("#00ff80", "#00373d", 1D) + "<underlined> " + Form.repeat(" ", g) + "<reset>" + Form.repeat(" ", l - g));
         }
     }
@@ -351,6 +351,13 @@ public class VolmitSender implements CommandSender {
         try {
             React.audiences.sender(s).sendMessage(createComponent(message));
         } catch (Throwable e) {
+            System.out.println("=============================================");
+            e.printStackTrace();
+            if(e.getCause() != null)
+            {
+                e.getCause().printStackTrace();
+            }
+            System.out.println("=============================================");
             String t = C.translateAlternateColorCodes('&', getTag() + message);
             String a = C.aura(t, spinh, spins, spinb);
 
@@ -384,6 +391,13 @@ public class VolmitSender implements CommandSender {
             String t = C.translateAlternateColorCodes('&', getTag() + message);
             String a = C.aura(t, spinh, spins, spinb);
 
+            System.out.println("=============================================");
+            e.printStackTrace();
+            if(e.getCause() != null)
+            {
+                e.getCause().printStackTrace();
+            }
+            System.out.println("=============================================");
             React.debug("<NOMINI>Failure to parse " + a);
             s.sendMessage(C.translateAlternateColorCodes('&', getTag() + message));
         }
@@ -459,7 +473,7 @@ public class VolmitSender implements CommandSender {
     }
 
     public void sendHeader(String name) {
-        sendHeader(name, 44);
+        sendHeader(name, 40);
     }
 
     public void sendDecreeHelp(VirtualDecreeCommand v) {

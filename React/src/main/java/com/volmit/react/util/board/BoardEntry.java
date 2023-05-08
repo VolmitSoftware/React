@@ -20,7 +20,7 @@ package com.volmit.react.util.board;
 
 import com.volmit.react.util.format.C;
 import lombok.Getter;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * @author Missionary (missionarymc@gmail.com)

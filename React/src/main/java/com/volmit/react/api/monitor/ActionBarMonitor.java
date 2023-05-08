@@ -61,12 +61,12 @@ public class ActionBarMonitor extends PlayerMonitor {
     public void stop() {
         try {
             J.s(() -> getPlayer().getPlayer().spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(" ")), 3);
-            J.s(() -> React.adventure.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.TITLE, Component.space()), 3);
-            J.s(() -> React.adventure.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.SUBTITLE, Component.space()), 3);
+            J.s(() -> React.audiences.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.TITLE, Component.space()), 3);
+            J.s(() -> React.audiences.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.SUBTITLE, Component.space()), 3);
         } catch (IllegalPluginAccessException e) {
             getPlayer().getPlayer().spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(" "));
-            React.adventure.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.TITLE, Component.space());
-            React.adventure.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.SUBTITLE, Component.space());
+            React.audiences.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.TITLE, Component.space());
+            React.audiences.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.SUBTITLE, Component.space());
         }
 
         super.stop();
@@ -327,7 +327,7 @@ public class ActionBarMonitor extends PlayerMonitor {
                 focus.setHeadSampler(getNextFocusedSampler().getId());
             }
 
-            React.adventure.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.TIMES, new Title.Times() {
+            React.audiences.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.TIMES, new Title.Times() {
                 @Override
                 public @NotNull Duration fadeIn() {
                     return Duration.ZERO;
@@ -346,19 +346,19 @@ public class ActionBarMonitor extends PlayerMonitor {
 
             if (focusUpAnimation >= -10) {
                 if (focusUpAnimation > 0) {
-                    React.adventure.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.TITLE, writeHeaderTitle(focus));
+                    React.audiences.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.TITLE, writeHeaderTitle(focus));
                 } else {
-                    React.adventure.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.TITLE, Component.space());
+                    React.audiences.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.TITLE, Component.space());
                 }
 
                 focusUpAnimation--;
             }
 
-            React.adventure.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.SUBTITLE, writeSubSamplers());
+            React.audiences.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.SUBTITLE, writeSubSamplers());
         } else if (focusDownAnimation) {
             getPlayer().getPlayer().sendTitle(" ", "  ", 0, (int) ((getInterval() / 50) + 1), 17);
         }
 
-        React.adventure.player(getPlayer().getPlayer()).sendActionBar(writeHeader());
+        React.audiences.player(getPlayer().getPlayer()).sendActionBar(writeHeader());
     }
 }

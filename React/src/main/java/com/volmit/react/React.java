@@ -2,6 +2,7 @@ package com.volmit.react;
 
 import art.arcane.multiburst.MultiBurst;
 import com.volmit.react.core.controller.ActionController;
+import com.volmit.react.core.controller.CommandController;
 import com.volmit.react.core.controller.EventController;
 import com.volmit.react.core.controller.PlayerController;
 import com.volmit.react.core.controller.SampleController;
@@ -25,12 +26,12 @@ public class React extends VolmitPlugin {
     public static React instance;
     public static Thread serverThread;
     public static Ticker ticker;
-    public static BukkitAudiences adventure;
     public static MultiBurst burst;
     private SampleController sampleController;
     private PlayerController playerController;
     private EventController eventController;
     private ActionController actionController;
+    private CommandController commandController;
 
     public React() {
         instance = this;
@@ -96,11 +97,12 @@ public class React extends VolmitPlugin {
         instance = this;
         burst = new MultiBurst("React", Thread.MIN_PRIORITY);
         ticker = new Ticker();
-        adventure = BukkitAudiences.create(this);
+        audiences = BukkitAudiences.create(this);
         eventController = new EventController();
         playerController = new PlayerController();
         sampleController = new SampleController();
         actionController = new ActionController();
+        commandController = new CommandController();
         sampleController.postStart();
     }
 
@@ -113,6 +115,7 @@ public class React extends VolmitPlugin {
         playerController.stop();
         sampleController.stop();
         actionController.stop();
+        commandController.stop();
     }
 
     @Override

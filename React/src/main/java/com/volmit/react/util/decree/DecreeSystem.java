@@ -152,20 +152,19 @@ public interface DecreeSystem extends CommandExecutor, TabCompleter {
 
     @Override
     default boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
-        if (!sender.hasPermission("iris.all")) {
-            sender.sendMessage("You lack the Permission 'iris.all'");
+        if (!sender.hasPermission("react.use")) {
+            sender.sendMessage("You lack the Permission 'react.use'");
             return true;
         }
 
         J.a(() -> {
             if (!call(new VolmitSender(sender), args)) {
-
                 if (sender instanceof Player) {
                     ((Player) sender).playSound(((Player) sender).getLocation(), Sound.BLOCK_AMETHYST_CLUSTER_BREAK, 0.77f, 0.25f);
                     ((Player) sender).playSound(((Player) sender).getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 0.2f, 0.45f);
                 }
 
-                sender.sendMessage(C.RED + "Unknown Iris Command");
+                sender.sendMessage(C.RED + "Unknown React Command");
             } else {
                 if (sender instanceof Player) {
                     ((Player) sender).playSound(((Player) sender).getLocation(), Sound.BLOCK_AMETHYST_CLUSTER_BREAK, 0.77f, 1.65f);

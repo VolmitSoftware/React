@@ -22,7 +22,7 @@ package com.volmit.react.util.format;
 import com.volmit.react.util.plugin.VolmitSender;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.TextComponent;
-import org.apache.commons.lang.Validate;
+import org.apache.commons.lang3.Validate;
 import org.bukkit.ChatColor;
 import org.bukkit.Color;
 import org.bukkit.DyeColor;
@@ -138,10 +138,10 @@ public enum C {
         }
     },
 
-    IRIS("<#1bb19e>", 'a', 0xA) {
+    REACT("<#2118d9>", 'b', 0xB) {
         @Override
         public net.md_5.bungee.api.ChatColor asBungee() {
-            return net.md_5.bungee.api.ChatColor.GREEN;
+            return net.md_5.bungee.api.ChatColor.AQUA;
         }
     },
 
@@ -266,7 +266,7 @@ public enum C {
     static {
         chatHexMap.put(C.BLACK, "#000000");
         chatHexMap.put(C.DARK_BLUE, "#0000AA");
-        chatHexMap.put(C.IRIS, "#1bb19e");
+        chatHexMap.put(C.REACT, "#1bb19e");
         chatHexMap.put(C.DARK_GREEN, "#00AA00");
         chatHexMap.put(C.DARK_AQUA, "#00AAAA");
         chatHexMap.put(C.DARK_RED, "#AA0000");

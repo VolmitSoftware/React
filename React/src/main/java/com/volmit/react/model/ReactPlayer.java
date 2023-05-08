@@ -155,8 +155,6 @@ public class ReactPlayer extends TickedObject {
         if (settings.isActionBarMonitoring()) {
             setActionBarMonitoring(true);
             new VolmitSender(getPlayer(), React.instance.getTag()).sendMessage("Monitor Enabled");
-        } else {
-            player.sendMessage("Not wasnt monitoring");
         }
     }
 
