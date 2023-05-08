@@ -57,11 +57,6 @@ public class ActionController extends TickedObject implements IController {
         return (Action<T>) s;
     }
 
-    public void callAction(String actionId, String[] arguments) throws Exception {
-        Action<?> action = React.instance.getActionController().getAction(actionId);
-        action.createForceful(action.toParams(arguments)).queue();
-    }
-
     @Override
     public void start() {
         actionSpeedMultiplier = 128;

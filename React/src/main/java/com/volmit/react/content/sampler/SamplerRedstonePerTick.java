@@ -1,8 +1,9 @@
 package com.volmit.react.content.sampler;
 
 import com.volmit.react.React;
-import com.volmit.react.api.sampler.ReactTickedSampler;
+import com.volmit.react.api.sampler.ReactCachedSampler;
 import com.volmit.react.util.format.Form;
+import com.volmit.react.util.math.M;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.BlockData;
@@ -15,13 +16,15 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class SamplerRedstone extends ReactTickedSampler implements Listener {
+public class SamplerRedstonePerTick extends ReactCachedSampler implements Listener {
     public static final String ID = "redstone";
     private final AtomicInteger redstoneInteractions;
     private final Set<Material> redstoneComponents;
+    private long lastSample = 0L;
+    private static final double D1_OVER_TICKS = 1.0/50D;
 
-    public SamplerRedstone() {
-        super(ID, 50, 1); // 1 tick interval for higher accuracy
+    public SamplerRedstonePerTick() {
+        super(ID, 50); // 1 tick interval for higher accuracy
         redstoneInteractions = new AtomicInteger(0);
         redstoneComponents = new HashSet<>();
         redstoneComponents.add(Material.REDSTONE_WIRE);
@@ -58,8 +61,15 @@ public class SamplerRedstone extends ReactTickedSampler implements Listener {
 
     @Override
     public double onSample() {
-        int interactions = redstoneInteractions.getAndSet(0);
-        return interactions;
+        if(lastSample == 0) {
+            lastSample = M.ms();
+        }
+
+        int r = redstoneInteractions.getAndSet(0);
+        long dur = Math.max(M.ms() - lastSample, 50);
+        lastSample = M.ms();
+
+        return r / (dur*D1_OVER_TICKS);
     }
 
     @Override

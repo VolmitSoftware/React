@@ -4,7 +4,8 @@ import com.volmit.react.React;
 import com.volmit.react.api.action.ActionParams;
 import com.volmit.react.api.action.ActionTicket;
 import com.volmit.react.api.action.ReactAction;
-import com.volmit.react.api.arguments.Argument;
+import com.volmit.react.model.AreaActionParams;
+import com.volmit.react.model.FilterParams;
 import com.volmit.react.util.scheduling.J;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -31,31 +32,8 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
     }
 
     List<Chunk> pullChunks(ActionTicket<Params> ticket, int max) {
-        if(ticket.getParams().getQueue() == null || ticket.getParams().getQueue().isEmpty()) {
-           List<Chunk> c = new ArrayList<>();
-
-           if(ticket.getParams().getWorld() != null) {
-               c.addAll(Arrays.asList(J.sResult(() -> Bukkit.getWorld(ticket.getParams().getWorld()).getLoadedChunks())));
-           }
-
-           else {
-               for(World i : Bukkit.getWorlds()) {
-                   c.addAll(Arrays.asList(J.sResult(i::getLoadedChunks)));
-               }
-           }
-
-           ticket.getParams().setQueue(c);
-        }
 
         List<Chunk> c = new ArrayList<>();
-
-        for(int i = 0; i < max; i++) {
-            if(ticket.getParams().getQueue().isEmpty()) {
-                break;
-            }
-
-            c.add(ticket.getParams().getQueue().remove(0));
-        }
 
         return c;
     }
@@ -65,7 +43,7 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
         List<Chunk> c = pullChunks(ticket, React.instance.getActionController().getActionSpeedMultiplier());
 
         if (ticket.getTotalWork() <= 1) {
-            ticket.setTotalWork(ticket.getParams().getQueue().size());
+            //ticket.setTotalWork(ticket.getParams().getQueue().size());
         }
 
         if (c.isEmpty()) {
@@ -103,7 +81,7 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
 
     private void purge(Chunk c, Params purgeEntitiesParams) {
         for(Entity i : c.getEntities()) {
-            if(purgeEntitiesParams.canPurge(i.getType())) {
+            if(purgeEntitiesParams.entityFilter.allows(i.getType())) {
                 purge(i, purgeEntitiesParams);
             }
         }
@@ -119,44 +97,14 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
     @AllArgsConstructor
     @NoArgsConstructor
     public static class Params implements ActionParams {
-        private transient List<Chunk> queue;
-
-        @Argument(
-            name = "world",
-            shortCode = "w",
-            description = "World to purge entities in"
-        )
-        String world;
-
-        @Argument(
-            name = "only",
-            shortCode = "o",
-            description = "Purge only the following entity types",
-            listType = EntityType.class
-        )
-        @Builder.Default
-        Set<EntityType> only = new HashSet<>();
-
-        @Argument(
-            name = "ignore",
-            shortCode = "i",
-            description = "Purge all entity types ignoring the following",
-            listType = EntityType.class
-        )
-
-        @Builder.Default
-        Set<EntityType> except = new HashSet<>();
-
-        public boolean canPurge(EntityType entity) {
-            if(only != null && !only.isEmpty()) {
-                return only.contains(entity);
-            }
-
-            if(except != null && !except.isEmpty()) {
-                return !except.contains(entity);
-            }
-
-            return true;
-        }
+        private AreaActionParams area = new AreaActionParams();
+        private FilterParams<EntityType> entityFilter = FilterParams.<EntityType>builder()
+            .blacklist(true)
+            .type(EntityType.ARMOR_STAND)
+            .type(EntityType.PLAYER)
+            .type(EntityType.ITEM_FRAME)
+            .type(EntityType.DROPPED_ITEM)
+            .type(EntityType.EXPERIENCE_ORB)
+            .build();
     }
 }

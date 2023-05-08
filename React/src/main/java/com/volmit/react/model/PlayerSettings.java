@@ -54,7 +54,7 @@ public class PlayerSettings {
 
     public void init() {
         if (monitorConfiguration == null) {
-            monitorConfiguration = new Gson().fromJson(new Gson().toJson(ReactConfiguration.get().getMonitorConfiguration()), MonitorConfiguration.class);
+            monitorConfiguration = new Gson().fromJson(new Gson().toJson(ReactConfiguration.get().getMonitoring().getMonitorConfiguration()), MonitorConfiguration.class);
         }
     }
 }
