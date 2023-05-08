@@ -6,6 +6,7 @@ import com.volmit.react.api.sampler.ReactCachedSampler;
 import com.volmit.react.util.format.Form;
 import com.volmit.react.util.scheduling.J;
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -21,6 +22,11 @@ public class SamplerEntities extends ReactCachedSampler implements Listener {
     public static final String ID = "entities";
     private final ChronoLatch realEntityUpdate;
     private final AtomicInteger entities;
+
+    @Override
+    public Material getIcon() {
+        return Material.CHICKEN_SPAWN_EGG;
+    }
 
     public SamplerEntities() {
         super(ID, 50);

@@ -5,6 +5,7 @@ import com.volmit.react.React;
 import com.volmit.react.api.sampler.ReactCachedSampler;
 import com.volmit.react.core.controller.EventController;
 import com.volmit.react.util.format.Form;
+import org.bukkit.Material;
 import org.bukkit.event.Listener;
 
 public class SamplerEventHandlesPerTick extends ReactCachedSampler implements Listener {
@@ -14,6 +15,11 @@ public class SamplerEventHandlesPerTick extends ReactCachedSampler implements Li
 
     public SamplerEventHandlesPerTick() {
         super(ID, 50);
+    }
+
+    @Override
+    public Material getIcon() {
+        return Material.HEART_OF_THE_SEA;
     }
 
     @Override

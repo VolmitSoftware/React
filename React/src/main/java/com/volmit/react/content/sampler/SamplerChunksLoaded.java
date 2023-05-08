@@ -6,6 +6,7 @@ import com.volmit.react.api.sampler.ReactCachedSampler;
 import com.volmit.react.util.format.Form;
 import com.volmit.react.util.scheduling.J;
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -20,6 +21,11 @@ public class SamplerChunksLoaded extends ReactCachedSampler implements Listener 
     public static final String ID = "chunks-loaded";
     private final ChronoLatch realCheckUpdate;
     private final AtomicInteger loadedChunks;
+
+    @Override
+    public Material getIcon() {
+        return Material.CHEST_MINECART;
+    }
 
     public SamplerChunksLoaded() {
         super(ID, 50);

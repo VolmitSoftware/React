@@ -2,6 +2,7 @@ package com.volmit.react.content.sampler;
 
 import com.volmit.react.api.sampler.ReactTickedSampler;
 import com.volmit.react.util.format.Form;
+import org.bukkit.Material;
 
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -16,6 +17,11 @@ public class SamplerMemoryUsedAfterGC extends ReactTickedSampler {
         this.runtime = Runtime.getRuntime();
         this.lastMemory = new AtomicLong(runtime.totalMemory() - runtime.freeMemory());
         this.lastMemoryPostGC = new AtomicLong(lastMemory.get());
+    }
+
+    @Override
+    public Material getIcon() {
+        return Material.GREEN_DYE;
     }
 
     @Override

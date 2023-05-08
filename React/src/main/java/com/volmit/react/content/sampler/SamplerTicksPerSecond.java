@@ -3,6 +3,7 @@ package com.volmit.react.content.sampler;
 import com.volmit.react.api.sampler.ReactTickedSampler;
 import com.volmit.react.util.format.Form;
 import com.volmit.react.util.scheduling.J;
+import org.bukkit.Material;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -22,6 +23,11 @@ public class SamplerTicksPerSecond extends ReactTickedSampler {
         this.lastTickDurationSync = new AtomicLong(50);
         this.lastTick = new AtomicLong(System.currentTimeMillis());
         stickid = J.sr(this::onSyncTick, 0);
+    }
+
+    @Override
+    public Material getIcon() {
+        return Material.NETHER_STAR;
     }
 
     private void onSyncTick() {

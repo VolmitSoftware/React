@@ -2,12 +2,18 @@ package com.volmit.react.content.sampler;
 
 import com.volmit.react.api.sampler.ReactCachedSampler;
 import com.volmit.react.util.format.Form;
+import org.bukkit.Material;
 
 public class SamplerProcessorOutsideLoad extends ReactCachedSampler {
     public static final String ID = "cpu-outside";
 
     public SamplerProcessorOutsideLoad() {
         super(ID, 250);
+    }
+
+    @Override
+    public Material getIcon() {
+        return Material.GREEN_CANDLE;
     }
 
     @Override

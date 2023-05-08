@@ -5,6 +5,7 @@ import com.volmit.react.api.sampler.ReactCachedSampler;
 import com.volmit.react.util.format.Form;
 import com.volmit.react.util.reflect.ThreadUtilizationMonitor;
 import net.kyori.adventure.text.Component;
+import org.bukkit.Material;
 
 public class SamplerTickTime extends ReactCachedSampler {
     public static final String ID = "tick-time";
@@ -12,6 +13,11 @@ public class SamplerTickTime extends ReactCachedSampler {
 
     public SamplerTickTime() {
         super(ID, 50);
+    }
+
+    @Override
+    public Material getIcon() {
+        return Material.ITEM_FRAME;
     }
 
     @Override

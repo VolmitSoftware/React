@@ -4,6 +4,7 @@ import com.volmit.react.api.sampler.ReactCachedSampler;
 import com.volmit.react.util.atomics.AsyncRequest;
 import com.volmit.react.util.format.Form;
 import com.volmit.react.util.reflect.Platform;
+import org.bukkit.Material;
 
 public class SamplerProcessorProcessLoad extends ReactCachedSampler {
     public static final String ID = "processor-process-load";
@@ -12,6 +13,11 @@ public class SamplerProcessorProcessLoad extends ReactCachedSampler {
     public SamplerProcessorProcessLoad() {
         super(ID, 100);
         poller = new AsyncRequest<>(Platform.CPU::getLiveProcessCPULoad, 0D);
+    }
+
+    @Override
+    public Material getIcon() {
+        return Material.BLUE_CANDLE;
     }
 
     @Override
