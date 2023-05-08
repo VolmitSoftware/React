@@ -4,6 +4,7 @@ import com.volmit.react.React;
 import com.volmit.react.api.sampler.ReactCachedSampler;
 import com.volmit.react.util.format.Form;
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.event.Listener;
 
 public class SamplerPlayers extends ReactCachedSampler implements Listener {
@@ -11,6 +12,11 @@ public class SamplerPlayers extends ReactCachedSampler implements Listener {
 
     public SamplerPlayers() {
         super(ID, 250);
+    }
+
+    @Override
+    public Material getIcon() {
+        return Material.TOTEM_OF_UNDYING;
     }
 
     @Override

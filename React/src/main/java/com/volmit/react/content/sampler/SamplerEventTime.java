@@ -5,6 +5,7 @@ import com.volmit.react.api.sampler.ReactCachedSampler;
 import com.volmit.react.core.controller.EventController;
 import com.volmit.react.util.format.Form;
 import net.kyori.adventure.text.Component;
+import org.bukkit.Material;
 import org.bukkit.event.Listener;
 
 public class SamplerEventTime extends ReactCachedSampler implements Listener {
@@ -13,6 +14,11 @@ public class SamplerEventTime extends ReactCachedSampler implements Listener {
 
     public SamplerEventTime() {
         super(ID, 1000);
+    }
+
+    @Override
+    public Material getIcon() {
+        return Material.ENDER_EYE;
     }
 
     @Override

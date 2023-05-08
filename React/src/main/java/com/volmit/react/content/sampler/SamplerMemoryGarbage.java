@@ -3,6 +3,7 @@ package com.volmit.react.content.sampler;
 import com.volmit.react.api.sampler.ReactCachedSampler;
 import com.volmit.react.api.sampler.Sampler;
 import com.volmit.react.util.format.Form;
+import org.bukkit.Material;
 
 public class SamplerMemoryGarbage extends ReactCachedSampler {
     public static final String ID = "memory-garbage";
@@ -11,6 +12,11 @@ public class SamplerMemoryGarbage extends ReactCachedSampler {
 
     public SamplerMemoryGarbage() {
         super(ID, 50);
+    }
+
+    @Override
+    public Material getIcon() {
+        return Material.BROWN_DYE;
     }
 
     @Override

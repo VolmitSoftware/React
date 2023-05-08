@@ -2,6 +2,7 @@ package com.volmit.react.content.sampler;
 
 import com.volmit.react.api.sampler.ReactCachedSampler;
 import com.volmit.react.util.format.Form;
+import org.bukkit.Material;
 
 public class SamplerMemoryUsed extends ReactCachedSampler {
     public static final String ID = "memory-used";
@@ -10,6 +11,11 @@ public class SamplerMemoryUsed extends ReactCachedSampler {
     public SamplerMemoryUsed() {
         super(ID, 50);
         this.runtime = Runtime.getRuntime();
+    }
+
+    @Override
+    public Material getIcon() {
+        return Material.LIME_DYE;
     }
 
     @Override
