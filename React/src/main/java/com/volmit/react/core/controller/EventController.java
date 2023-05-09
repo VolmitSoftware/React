@@ -3,12 +3,20 @@ package com.volmit.react.core.controller;
 import art.arcane.curse.Curse;
 import com.volmit.react.React;
 import com.volmit.react.api.event.NaughtyRegisteredListener;
+import com.volmit.react.api.event.layer.MinecartSpawnEvent;
 import com.volmit.react.util.plugin.IController;
 import com.volmit.react.util.scheduling.TickedObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.bukkit.event.Event;
+import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
+import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockDispenseEvent;
+import org.bukkit.event.entity.EntityPlaceEvent;
 import org.bukkit.plugin.RegisteredListener;
 
 import java.util.ArrayList;
@@ -17,7 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class EventController extends TickedObject implements IController {
+public class EventController extends TickedObject implements IController, Listener {
     private int listenerCount;
     private double totalTime;
     private int calls;
@@ -35,17 +43,50 @@ public class EventController extends TickedObject implements IController {
 
     @Override
     public void start() {
-
+        React.instance.registerListener(this);
     }
 
     @Override
     public void stop() {
+        React.instance.unregisterListener(this);
         pullOut();
     }
 
     @Override
     public void onTick() {
         updateHandlerListInjections();
+    }
+
+    public void call(Event event) {
+        Bukkit.getServer().getPluginManager().callEvent(event);
+    }
+
+    @EventHandler(priority = EventPriority.HIGH)
+    public void on(BlockDispenseEvent e) {
+        if(e.getItem().getType().equals(Material.MINECART)
+            ||e.getItem().getType().equals(Material.CHEST_MINECART)
+            ||e.getItem().getType().equals(Material.TNT_MINECART)
+            ||e.getItem().getType().equals(Material.HOPPER_MINECART)
+            ||e.getItem().getType().equals(Material.FURNACE_MINECART)
+            ||e.getItem().getType().equals(Material.COMMAND_BLOCK_MINECART)) {
+            MinecartSpawnEvent s = new MinecartSpawnEvent(e.getBlock().getLocation());
+            call(s);
+            if(s.isCancelled()) {
+                e.setCancelled(true);
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH)
+    public void on(EntityPlaceEvent e) {
+        if(e.getEntityType().name().startsWith("MINECART")) {
+            MinecartSpawnEvent s = new MinecartSpawnEvent(e.getEntity().getLocation(), e.getPlayer());
+            call(s);
+
+            if(s.isCancelled()) {
+                e.setCancelled(true);
+            }
+        }
     }
 
     public void updateHandlerListInjections() {
