@@ -1,24 +1,16 @@
 package com.volmit.react.api.sampler;
 
 import com.volmit.react.React;
+import com.volmit.react.api.ReactComponent;
 import com.volmit.react.util.scheduling.J;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
 
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 public interface Sampler extends ReactComponent {
     double sample();
-
-    default Material getIcon() {
-        return Material.SLIME_BALL;
-    }
-
-    default String displayName() {
-        return Form.capitalizeWords(getId());
-    }
 
     default String format(double t) {
         return formattedValue(t) + " " + formattedSuffix(t);

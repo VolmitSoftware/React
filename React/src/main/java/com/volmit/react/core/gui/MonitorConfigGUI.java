@@ -45,7 +45,7 @@ public class MonitorConfigGUI {
                 Sampler i = React.instance.getSampleController().getSampler(ii);
                 window.setElement(w, h, new UIElement("sample-" + i.getId())
                     .setMaterial(new MaterialBlock(i.getIcon()))
-                    .setName(i.displayName())
+                    .setName(i.getName())
                     .addLore(i.format(i.sample()))
                     .setEnchanted(head.equals(ii))
                     .addLore("* Left Click to set as header")

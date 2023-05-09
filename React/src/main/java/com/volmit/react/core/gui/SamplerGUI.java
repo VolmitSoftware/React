@@ -48,7 +48,7 @@ public class SamplerGUI {
                 rp++;
                 window.setElement(w, h, new UIElement("sample-" + i.getId())
                         .setMaterial(new MaterialBlock(i.getIcon()))
-                        .setName(i.displayName())
+                        .setName(i.getName())
                         .addLore(i.format(i.sample()))
                         .onLeftClick((e) -> {
                             result.set(i);
