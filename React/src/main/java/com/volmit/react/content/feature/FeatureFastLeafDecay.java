@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-public class FastLeafDecay extends ReactFeature implements Listener {
+public class FeatureFastLeafDecay extends ReactFeature implements Listener {
     public static final String ID = "fast-leaf-decay";
     private final transient List<Block> search = new ArrayList<>();
     private transient Cache<IChunk, ChunkSnapshot> snapshot;
@@ -39,7 +39,7 @@ public class FastLeafDecay extends ReactFeature implements Listener {
     private boolean playSounds = true;
     private Sound decaySound = Sound.BLOCK_AZALEA_LEAVES_FALL;
 
-    public FastLeafDecay() {
+    public FeatureFastLeafDecay() {
         super(ID);
     }
 

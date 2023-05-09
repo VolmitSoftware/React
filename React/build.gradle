@@ -131,6 +131,12 @@ dependencies {
     implementation 'org.bitbucket.mstrobel:procyon-reflection:0.6.0'
     implementation 'fr.inria.gforge.spoon:spoon-core:10.2.0'
     implementation 'com.github.ben-manes.caffeine:caffeine:3.0.6'
+    implementation 'org.eclipse.jetty:jetty-server:11.0.15'
+    implementation 'org.eclipse.jetty.websocket:websocket-server:9.4.51.v20230217'
+    implementation 'org.eclipse.jetty.websocket:websocket-api:9.4.51.v20230217'
+    implementation 'javax.websocket:javax.websocket-api:1.1'
+
+
 }
 
 if (JavaVersion.current().toString() != "17") {
