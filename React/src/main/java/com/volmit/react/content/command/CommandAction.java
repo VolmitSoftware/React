@@ -2,10 +2,7 @@ package com.volmit.react.content.command;
 
 import com.volmit.react.React;
 import com.volmit.react.api.action.Action;
-import com.volmit.react.content.action.ActionCollectGarbage;
-import com.volmit.react.content.action.ActionPurgeChunks;
-import com.volmit.react.content.action.ActionPurgeDroppedItems;
-import com.volmit.react.content.action.ActionPurgeEntities;
+import com.volmit.react.content.action.*;
 import com.volmit.react.util.decree.DecreeExecutor;
 import com.volmit.react.util.decree.DecreeOrigin;
 import com.volmit.react.util.decree.annotations.Decree;
@@ -101,47 +98,6 @@ public class CommandAction implements DecreeExecutor {
         pe.create(p, sender()).queue();
     }
 
-//
-//    @Decree(
-//            name = "disable-mob-ai",
-//            aliases = {"ai", "mob-ai"},
-//            description = "Temporarily disable mob ai in the area"
-//    )
-//    public void disableMobAi(
-//            @Param(
-//                    name = "radius",
-//                    description = "The chunk radius around you to disable the ai for entities. 0 is all chunks.",
-//                    defaultValue = "0",
-//                    aliases = {"r"}
-//            )
-//            int radius,
-//
-//            @Param(
-//                    name = "world",
-//                    description = "The world to disable ai on entities from.",
-//                    customHandler = OptionalWorldHandler.class,
-//                    defaultValue = "ALL",
-//                    aliases = {"w"}
-//            )
-//            String world
-//    ) {
-//        Action<ActionDisableMobAI.Params> pe = React.instance.getActionController().getAction("disable-mob-ai");
-//        ActionDisableMobAI.Params p = pe.getDefaultParams();
-//
-//        if (!world.equals("ALL")) {
-//            p.withWorld(Bukkit.getWorld(world));
-//        }
-//
-//        if (sender().isPlayer()) {
-//            if (radius > 0) {
-//                Chunk c = player().getLocation().getChunk();
-//                p.addRadius(c.getWorld(), c.getX(), c.getZ(), Math.min(radius, 10));
-//            }
-//        }
-//
-//        pe.create(p, sender()).queue();
-//    }
-
     @Decree(
             name = "purge-chunks",
             aliases = {"pc", "chunks"},
@@ -167,6 +123,94 @@ public class CommandAction implements DecreeExecutor {
         pc.create(p, sender()).queue();
     }
 
+    @Decree(
+            name = "redstone-halt",
+            aliases = {"rh", "halt"},
+            description = "Halt redstone activity in the area"
+    )
+    public void haltRedstone(
+            @Param(
+                    name = "radius",
+                    description = "The chunk radius around you to halt redstone activity. 0 is all chunks.",
+                    defaultValue = "0",
+                    aliases = {"r"}
+            )
+            int radius,
+
+            @Param(
+                    name = "world",
+                    description = "The world to halt redstone activity.",
+                    customHandler = OptionalWorldHandler.class,
+                    defaultValue = "ALL",
+                    aliases = {"w"}
+            )
+            String world,
+
+            @Param(
+                    name = "seconds",
+                    description = "Duration to halt redstone activity. 0 is forever.",
+                    defaultValue = "0",
+                    aliases = {"s", "sec"}
+            )
+            int seconds
+    ) {
+        Action<ActionRedstoneHalt.Params> rh = React.instance.getActionController().getAction("redstone-halt");
+        ActionRedstoneHalt.Params p = rh.getDefaultParams();
+
+        if (!world.equals("ALL")) {
+            p.withWorld(Bukkit.getWorld(world));
+        }
+
+        if (sender().isPlayer()) {
+            if (radius > 0) {
+                Chunk c = player().getLocation().getChunk();
+                p.addRadius(c.getWorld(), c.getX(), c.getZ(), Math.min(radius, 10));
+            }
+        }
+
+        p.setDuration(seconds);
+        rh.create(p, sender()).queue();
+    }
+
+    @Decree(
+            name = "redstone-resume",
+            aliases = {"rr", "resume"},
+            description = "Resume redstone activity in the area"
+    )
+    public void resumeRedstone(
+            @Param(
+                    name = "radius",
+                    description = "The chunk radius around you to resume redstone activity. 0 is all chunks.",
+                    defaultValue = "0",
+                    aliases = {"r"}
+            )
+            int radius,
+
+            @Param(
+                    name = "world",
+                    description = "The world to resume redstone activity.",
+                    customHandler = OptionalWorldHandler.class,
+                    defaultValue = "ALL",
+                    aliases = {"w"}
+            )
+            String world
+    ) {
+        Action<ActionRedstoneResume.Params> rr = React.instance.getActionController().getAction("redstone-resume");
+        ActionRedstoneResume.Params p = rr.getDefaultParams();
+
+        if (!world.equals("ALL")) {
+            p.withWorld(Bukkit.getWorld(world));
+        }
+
+        if (sender().isPlayer()) {
+            if (radius > 0) {
+                Chunk c = player().getLocation().getChunk();
+                p.addRadius(c.getWorld(), c.getX(), c.getZ(), Math.min(radius, 10));
+            }
+        }
+
+        rr.create(p, sender()).queue();
+    }
 
     @Decree(
             name = "collect-garbage",
