@@ -33,10 +33,10 @@ public class ActionPurgeDroppedItems extends ReactAction<ActionPurgeDroppedItems
     List<Chunk> pullChunks(ActionTicket<Params> ticket, int max) {
         List<Chunk> c = new ArrayList<>();
 
-        for(int i = 0; i < max; i++) {
+        for (int i = 0; i < max; i++) {
             Chunk cc = ticket.getParams().getArea().popChunk();
 
-            if(cc == null) {
+            if (cc == null) {
                 break;
             }
 
@@ -80,13 +80,13 @@ public class ActionPurgeDroppedItems extends ReactAction<ActionPurgeDroppedItems
     }
 
     private void purge(Entity entity, ActionTicket<Params> ticket) {
-        J.s(entity::remove, (int)(20 * Math.random()));
+        J.s(entity::remove, (int) (20 * Math.random()));
         ticket.addCount();
     }
 
-    private void purge(Chunk c,  ActionTicket<Params> ticket) {
-        for(Entity i : c.getEntities()) {
-            if(ticket.getParams().entityFilter.allows(i.getType())) {
+    private void purge(Chunk c, ActionTicket<Params> ticket) {
+        for (Entity i : c.getEntities()) {
+            if (ticket.getParams().entityFilter.allows(i.getType())) {
                 purge(i, ticket);
             }
         }

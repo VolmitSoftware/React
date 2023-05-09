@@ -22,19 +22,19 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class SamplerEntities extends ReactCachedSampler implements Listener {
     public static final String ID = "entities";
-    private transient ChronoLatch realEntityUpdate;
     private transient final AtomicInteger entities;
+    private transient ChronoLatch realEntityUpdate;
     private int realityCheckMS = 10000;
-
-    @Override
-    public Material getIcon() {
-        return Material.CHICKEN_SPAWN_EGG;
-    }
 
     public SamplerEntities() {
         super(ID, 50);
         entities = new AtomicInteger(0);
         realEntityUpdate = new ChronoLatch(realityCheckMS);
+    }
+
+    @Override
+    public Material getIcon() {
+        return Material.CHICKEN_SPAWN_EGG;
     }
 
     public int getRealCheck() {

@@ -22,7 +22,7 @@ public class SamplerGUI {
     }
 
     public static Sampler pickSampler(Player p, List<String> without) {
-        if(Bukkit.isPrimaryThread()) {
+        if (Bukkit.isPrimaryThread()) {
             throw new RuntimeException("Cannot open gui on main thread");
         }
 
@@ -39,7 +39,7 @@ public class SamplerGUI {
 
             int rp = 0;
             for (Sampler i : samplers) {
-                if(without != null && without.contains(i.getId())) {
+                if (without != null && without.contains(i.getId())) {
                     continue;
                 }
 

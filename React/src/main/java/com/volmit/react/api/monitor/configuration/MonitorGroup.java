@@ -21,14 +21,11 @@ public class MonitorGroup {
     private List<String> samplers;
     private String head;
 
-    public String getHeadOrSomething()
-    {
+    public String getHeadOrSomething() {
         if (head == null) {
-            if(samplers.size() > 0) {
+            if (samplers.size() > 0) {
                 head = samplers.get(0);
-            }
-
-            else {
+            } else {
                 head = SamplerUnknown.ID;
             }
         }

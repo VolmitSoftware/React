@@ -16,10 +16,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class SamplerRedstoneUpdatesPerTick extends ReactCachedSampler implements Listener {
     public static final String ID = "redstone";
+    private static final double D1_OVER_TICKS = 1.0 / 50D;
     private transient final AtomicInteger redstoneInteractions;
     private transient final RollingSequence avg = new RollingSequence(20);
     private transient long lastSample = 0L;
-    private static final double D1_OVER_TICKS = 1.0/50D;
 
     public SamplerRedstoneUpdatesPerTick() {
         super(ID, 50); // 1 tick interval for higher accuracy
@@ -58,14 +58,14 @@ public class SamplerRedstoneUpdatesPerTick extends ReactCachedSampler implements
 
     @Override
     public double onSample() {
-        if(lastSample == 0) {
+        if (lastSample == 0) {
             lastSample = M.ms();
         }
 
         int r = redstoneInteractions.getAndSet(0);
         long dur = Math.max(M.ms() - lastSample, 50);
         lastSample = M.ms();
-        avg.put( r / (dur*D1_OVER_TICKS));
+        avg.put(r / (dur * D1_OVER_TICKS));
 
         return avg.getAverage();
     }

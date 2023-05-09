@@ -6,10 +6,8 @@ import com.volmit.react.api.action.ActionTicket;
 import com.volmit.react.api.action.ReactAction;
 import com.volmit.react.content.sampler.SamplerMemoryUsed;
 import com.volmit.react.util.format.Form;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
 public class ActionCollectGarbage extends ReactAction<ActionCollectGarbage.Params> {
@@ -30,7 +28,7 @@ public class ActionCollectGarbage extends ReactAction<ActionCollectGarbage.Param
         System.gc();
         int bytesAfter = (int) React.instance.getSampleController().getSampler(SamplerMemoryUsed.ID).sample();
 
-        if(bytesBefore > bytesAfter) {
+        if (bytesBefore > bytesAfter) {
             ticket.setCount(bytesBefore - bytesAfter);
         }
 

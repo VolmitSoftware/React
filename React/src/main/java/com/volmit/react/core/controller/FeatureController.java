@@ -23,6 +23,7 @@ public class FeatureController extends TickedObject implements IController {
     private Map<String, ReactTickedFeature> tickedFeatures;
 
     private Feature unknown;
+
     public FeatureController() {
         super("react", "feature", 50);
         start();
@@ -51,11 +52,11 @@ public class FeatureController extends TickedObject implements IController {
     }
 
     public void activateFeature(Feature feature) {
-        if(!activeFeatures.containsKey(feature.getId())) {
+        if (!activeFeatures.containsKey(feature.getId())) {
             activeFeatures.put(feature.getId(), feature);
             feature.onActivate();
 
-            if(feature.getTickInterval()> 0) {
+            if (feature.getTickInterval() > 0) {
                 tickedFeatures.put(feature.getId(), new ReactTickedFeature(feature));
             }
 
@@ -67,12 +68,13 @@ public class FeatureController extends TickedObject implements IController {
         activeFeatures.remove(feature.getId());
         ReactTickedFeature t = tickedFeatures.remove(feature.getId());
 
-        if(t != null) {
+        if (t != null) {
             t.unregister();
         }
 
         feature.onDeactivate()
-        ;React.verbose("Deactivated Feature: " + feature.getName());
+        ;
+        React.verbose("Deactivated Feature: " + feature.getName());
     }
 
     @Override
@@ -111,11 +113,11 @@ public class FeatureController extends TickedObject implements IController {
     public void postStart() {
         React.info("Registered " + features.size() + " Features");
 
-        for(String i : features.keySet()) {
+        for (String i : features.keySet()) {
             Feature f = features.get(i);
             f.loadConfiguration();
 
-            if(f.isEnabled()) {
+            if (f.isEnabled()) {
                 activateFeature(f);
             }
         }

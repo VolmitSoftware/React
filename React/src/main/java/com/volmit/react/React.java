@@ -1,12 +1,7 @@
 package com.volmit.react;
 
 import art.arcane.multiburst.MultiBurst;
-import com.volmit.react.core.controller.ActionController;
-import com.volmit.react.core.controller.CommandController;
-import com.volmit.react.core.controller.EventController;
-import com.volmit.react.core.controller.FeatureController;
-import com.volmit.react.core.controller.PlayerController;
-import com.volmit.react.core.controller.SampleController;
+import com.volmit.react.core.controller.*;
 import com.volmit.react.util.collection.KList;
 import com.volmit.react.util.format.C;
 import com.volmit.react.util.io.JarScanner;
@@ -82,6 +77,27 @@ public class React extends VolmitPlugin {
         e.printStackTrace();
     }
 
+    public static KList<Object> initialize(String s) {
+        return initialize(s, null);
+    }
+
+    public static KList<Object> initialize(String s, Class<? extends Annotation> slicedClass) {
+        JarScanner js = new JarScanner(instance.jar(), s);
+        KList<Object> v = new KList<>();
+        J.attempt(js::scan);
+        for (Class<?> i : js.getClasses()) {
+            if (slicedClass == null || i.isAnnotationPresent(slicedClass)) {
+                try {
+                    v.add(i.getDeclaredConstructor().newInstance());
+                } catch (Throwable ignored) {
+
+                }
+            }
+        }
+
+        return v;
+    }
+
     @Override
     public void onLoad() {
         instance = this;
@@ -138,26 +154,5 @@ public class React extends VolmitPlugin {
     public void reload() {
         onDisable();
         onEnable();
-    }
-
-    public static KList<Object> initialize(String s) {
-        return initialize(s, null);
-    }
-
-    public static KList<Object> initialize(String s, Class<? extends Annotation> slicedClass) {
-        JarScanner js = new JarScanner(instance.jar(), s);
-        KList<Object> v = new KList<>();
-        J.attempt(js::scan);
-        for (Class<?> i : js.getClasses()) {
-            if (slicedClass == null || i.isAnnotationPresent(slicedClass)) {
-                try {
-                    v.add(i.getDeclaredConstructor().newInstance());
-                } catch (Throwable ignored) {
-
-                }
-            }
-        }
-
-        return v;
     }
 }

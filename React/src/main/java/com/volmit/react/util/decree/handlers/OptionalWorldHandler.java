@@ -24,8 +24,6 @@ import com.volmit.react.util.decree.exceptions.DecreeParsingException;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 
-import java.util.stream.Collectors;
-
 public class OptionalWorldHandler implements DecreeParameterHandler<String> {
     @Override
     public KList<String> getPossibilities() {

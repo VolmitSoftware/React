@@ -48,9 +48,9 @@ public class FastLeafDecay extends ReactFeature implements Listener {
         search.clear();
         React.instance.registerListener(this);
         snapshot = Caffeine.newBuilder()
-            .expireAfterAccess(10, TimeUnit.SECONDS)
-            .refreshAfterWrite(1, TimeUnit.SECONDS)
-            .build((k) -> k.chunk().getChunkSnapshot(true, false, false));
+                .expireAfterAccess(10, TimeUnit.SECONDS)
+                .refreshAfterWrite(1, TimeUnit.SECONDS)
+                .build((k) -> k.chunk().getChunkSnapshot(true, false, false));
     }
 
     @Override
@@ -78,8 +78,8 @@ public class FastLeafDecay extends ReactFeature implements Listener {
 
     public boolean shouldDecay(BlockData block) {
         return isLeaf(block)
-            && (forceDecayPersistent || !((Leaves) block).isPersistent())
-            && ((Leaves) block).getDistance() >= getLeafDecayDistance();
+                && (forceDecayPersistent || !((Leaves) block).isPersistent())
+                && ((Leaves) block).getDistance() >= getLeafDecayDistance();
     }
 
     public void addBlockForDecay(IBlock block, BlockData data) {
@@ -87,14 +87,14 @@ public class FastLeafDecay extends ReactFeature implements Listener {
         J.s(() -> {
             Block b = block.block();
 
-            if(shouldDecay(b.getBlockData())) {
-                if(playSounds && Math.random() < soundChance) {
-                    b.getWorld().playSound(b.getLocation(), decaySound, (float)soundVolume, (float)soundPitch);
+            if (shouldDecay(b.getBlockData())) {
+                if (playSounds && Math.random() < soundChance) {
+                    b.getWorld().playSound(b.getLocation(), decaySound, (float) soundVolume, (float) soundPitch);
                 }
 
                 b.breakNaturally();
             }
-        },(int) (Math.random() * decayTickSpread));
+        }, (int) (Math.random() * decayTickSpread));
     }
 
     public ChunkSnapshot snap(Chunk c) {
@@ -102,17 +102,17 @@ public class FastLeafDecay extends ReactFeature implements Listener {
     }
 
     public BlockData data(World world, int x, int y, int z) {
-        return snap(world.getChunkAt(x>>4, z>>4)).getBlockData(x & 15, y, z & 15);
+        return snap(world.getChunkAt(x >> 4, z >> 4)).getBlockData(x & 15, y, z & 15);
     }
 
     public void decay(Block block) {
-        synchronized(search){
+        synchronized (search) {
             search.add(block);
         }
     }
 
     public void checkDecay(Block block) {
-        if(isLeaf(block.getBlockData())) {
+        if (isLeaf(block.getBlockData())) {
             decay(block);
         }
     }
@@ -124,15 +124,15 @@ public class FastLeafDecay extends ReactFeature implements Listener {
 
     @Override
     public void onTick() {
-        synchronized(search) {
-            int i,j,k;
-            for(Block block : search) {
+        synchronized (search) {
+            int i, j, k;
+            for (Block block : search) {
                 BlockData d;
-                for(i = block.getX() - getLeafDecayRadius(); i < block.getX() + getLeafDecayRadius(); i++) {
-                    for(j = block.getY() - getLeafDecayRadius(); j < block.getY() + getLeafDecayRadius(); j++) {
-                        for(k = block.getZ() - getLeafDecayRadius(); k < block.getZ() + getLeafDecayRadius(); k++) {
+                for (i = block.getX() - getLeafDecayRadius(); i < block.getX() + getLeafDecayRadius(); i++) {
+                    for (j = block.getY() - getLeafDecayRadius(); j < block.getY() + getLeafDecayRadius(); j++) {
+                        for (k = block.getZ() - getLeafDecayRadius(); k < block.getZ() + getLeafDecayRadius(); k++) {
                             d = data(block.getWorld(), i, j, k);
-                            if(shouldDecay(d)) {
+                            if (shouldDecay(d)) {
                                 addBlockForDecay(new IBlock(block.getWorld(), i, j, k), d);
                             }
                         }
@@ -158,7 +158,7 @@ public class FastLeafDecay extends ReactFeature implements Listener {
         }
 
         public IChunk chunk() {
-            return new IChunk(world, x>>4, z>>4);
+            return new IChunk(world, x >> 4, z >> 4);
         }
     }
 

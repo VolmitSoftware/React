@@ -37,14 +37,12 @@ public class ActionTicket<T extends ActionParams> {
         count = 0;
     }
 
-    public void addCount(int c)
-    {
-        	count += c;
+    public void addCount(int c) {
+        count += c;
     }
 
-    public void addCount()
-    {
-        	count++;
+    public void addCount() {
+        count++;
     }
 
     public void addWork(int w) {

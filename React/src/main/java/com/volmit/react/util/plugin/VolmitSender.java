@@ -20,7 +20,6 @@ package com.volmit.react.util.plugin;
 
 
 import com.volmit.react.React;
-import com.volmit.react.util.scheduling.J;
 import com.volmit.react.util.collection.KList;
 import com.volmit.react.util.collection.KMap;
 import com.volmit.react.util.decree.DecreeParameter;
@@ -29,6 +28,7 @@ import com.volmit.react.util.format.C;
 import com.volmit.react.util.format.Form;
 import com.volmit.react.util.math.M;
 import com.volmit.react.util.math.RNG;
+import com.volmit.react.util.scheduling.J;
 import lombok.Getter;
 import lombok.Setter;
 import net.kyori.adventure.text.Component;
@@ -61,6 +61,11 @@ public class VolmitSender implements CommandSender {
     @Getter
     private static final KMap<String, String> helpCache = new KMap<>();
     private final CommandSender s;
+    public boolean useConsoleCustomColors = true;
+    public boolean useCustomColorsIngame = true;
+    public int spinh = -20;
+    public int spins = 7;
+    public int spinb = 8;
     private String tag;
     @Getter
     @Setter
@@ -261,12 +266,6 @@ public class VolmitSender implements CommandSender {
                 Title.Times.times(Duration.ofMillis(i), Duration.ofMillis(s), Duration.ofMillis(o))));
     }
 
-    public boolean useConsoleCustomColors = true;
-    public boolean useCustomColorsIngame = true;
-    public int spinh = -20;
-    public int spins = 7;
-    public int spinb = 8;
-
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean canUseCustomColors(VolmitSender volmitSender) {
         return volmitSender.isPlayer() ? useCustomColorsIngame : useConsoleCustomColors;
@@ -353,8 +352,7 @@ public class VolmitSender implements CommandSender {
         } catch (Throwable e) {
             System.out.println("=============================================");
             e.printStackTrace();
-            if(e.getCause() != null)
-            {
+            if (e.getCause() != null) {
                 e.getCause().printStackTrace();
             }
             System.out.println("=============================================");
@@ -393,8 +391,7 @@ public class VolmitSender implements CommandSender {
 
             System.out.println("=============================================");
             e.printStackTrace();
-            if(e.getCause() != null)
-            {
+            if (e.getCause() != null) {
                 e.getCause().printStackTrace();
             }
             System.out.println("=============================================");

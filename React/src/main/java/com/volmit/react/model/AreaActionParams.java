@@ -1,11 +1,6 @@
 package com.volmit.react.model;
 
-import com.volmit.react.React;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.Singular;
+import lombok.*;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.World;
@@ -28,11 +23,11 @@ public class AreaActionParams {
     private void addChunksFor(String world) {
         World w = Bukkit.getWorld(world);
 
-        if(w == null) {
+        if (w == null) {
             return;
         }
 
-        if(chunks == null) {
+        if (chunks == null) {
             chunks = new ArrayList<>();
         }
 
@@ -41,14 +36,12 @@ public class AreaActionParams {
     }
 
     public Chunk popChunk() {
-        if(chunks == null || chunks.isEmpty()) {
-            if(allChunks) {
-                if(world != null) {
+        if (chunks == null || chunks.isEmpty()) {
+            if (allChunks) {
+                if (world != null) {
                     addChunksFor(world);
-                }
-
-                else {
-                    for(World i : Bukkit.getWorlds()) {
+                } else {
+                    for (World i : Bukkit.getWorlds()) {
                         addChunksFor(i.getName());
                     }
                 }
@@ -56,7 +49,7 @@ public class AreaActionParams {
                 allChunks = false;
             }
 
-            if(chunks == null || chunks.isEmpty()) {
+            if (chunks == null || chunks.isEmpty()) {
                 return null;
             }
         }

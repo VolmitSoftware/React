@@ -21,7 +21,6 @@ package com.volmit.react.util.decree;
 import com.volmit.react.util.plugin.VolmitSender;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
-import org.eclipse.jdt.internal.codeassist.impl.Engine;
 
 public interface DecreeExecutor {
     default VolmitSender sender() {

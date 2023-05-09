@@ -19,43 +19,6 @@ public class ReactConfiguration {
     private boolean verbose = false;
     private Monitoring monitoring = new Monitoring();
 
-    @Data
-    public static class Monitoring {
-        private MonitorConfiguration monitorConfiguration = MonitorConfiguration.builder()
-            .group(MonitorGroup.builder()
-                .name("CPU")
-                .color("#00ff73")
-                .sampler(SamplerTicksPerSecond.ID)
-                .sampler(SamplerTickTime.ID)
-                .sampler(SamplerProcessorProcessLoad.ID)
-                .sampler(SamplerProcessorSystemLoad.ID)
-                .sampler(SamplerProcessorOutsideLoad.ID)
-                .sampler(SamplerReactTickTime.ID)
-                .sampler(SamplerReactTasksPerSecond.ID)
-                .build())
-            .group(MonitorGroup.builder()
-                .name("Memory")
-                .color("#ee00ff")
-                .sampler(SamplerMemoryUsedAfterGC.ID)
-                .sampler(SamplerMemoryPressure.ID)
-                .build())
-            .group(MonitorGroup.builder()
-                .name("World")
-                .color("#42cbf5")
-                .sampler(SamplerChunksLoaded.ID)
-                .sampler(SamplerEntities.ID)
-                .sampler(SamplerPlayers.ID)
-                .build())
-            .group(MonitorGroup.builder()
-                .name("Bukkit")
-                .color("#f25a02")
-                .sampler(SamplerEventHandlesPerTick.ID)
-                .sampler(SamplerEventTime.ID)
-                .sampler(SamplerEventListeners.ID)
-                .build())
-            .build();
-    }
-
     public static ReactConfiguration get() {
         if (configuration == null) {
             ReactConfiguration dummy = new ReactConfiguration();
@@ -81,5 +44,42 @@ public class ReactConfiguration {
         }
 
         return configuration;
+    }
+
+    @Data
+    public static class Monitoring {
+        private MonitorConfiguration monitorConfiguration = MonitorConfiguration.builder()
+                .group(MonitorGroup.builder()
+                        .name("CPU")
+                        .color("#00ff73")
+                        .sampler(SamplerTicksPerSecond.ID)
+                        .sampler(SamplerTickTime.ID)
+                        .sampler(SamplerProcessorProcessLoad.ID)
+                        .sampler(SamplerProcessorSystemLoad.ID)
+                        .sampler(SamplerProcessorOutsideLoad.ID)
+                        .sampler(SamplerReactTickTime.ID)
+                        .sampler(SamplerReactTasksPerSecond.ID)
+                        .build())
+                .group(MonitorGroup.builder()
+                        .name("Memory")
+                        .color("#ee00ff")
+                        .sampler(SamplerMemoryUsedAfterGC.ID)
+                        .sampler(SamplerMemoryPressure.ID)
+                        .build())
+                .group(MonitorGroup.builder()
+                        .name("World")
+                        .color("#42cbf5")
+                        .sampler(SamplerChunksLoaded.ID)
+                        .sampler(SamplerEntities.ID)
+                        .sampler(SamplerPlayers.ID)
+                        .build())
+                .group(MonitorGroup.builder()
+                        .name("Bukkit")
+                        .color("#f25a02")
+                        .sampler(SamplerEventHandlesPerTick.ID)
+                        .sampler(SamplerEventTime.ID)
+                        .sampler(SamplerEventListeners.ID)
+                        .build())
+                .build();
     }
 }

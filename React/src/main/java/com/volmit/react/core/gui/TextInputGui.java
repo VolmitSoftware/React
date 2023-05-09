@@ -22,8 +22,22 @@ public class TextInputGui implements Listener {
         response = null;
     }
 
+    public static String captureText(Player p) {
+        if (Bukkit.isPrimaryThread()) {
+            throw new RuntimeException("Cannot open gui on main thread");
+        }
+
+        TextInputGui gui = new TextInputGui(p);
+
+        while (!gui.responded) {
+            J.sleep(50);
+        }
+
+        return gui.response;
+    }
+
     public void on(PlayerQuitEvent e) {
-        if(e.getPlayer().equals(player)) {
+        if (e.getPlayer().equals(player)) {
             responded = true;
             response = null;
             HandlerList.unregisterAll(this);
@@ -32,25 +46,11 @@ public class TextInputGui implements Listener {
 
     @EventHandler(ignoreCancelled = false, priority = org.bukkit.event.EventPriority.HIGHEST)
     public void on(AsyncPlayerChatEvent e) {
-        if(e.getPlayer().equals(player)) {
+        if (e.getPlayer().equals(player)) {
             e.setCancelled(true);
             response = e.getMessage();
             responded = true;
             HandlerList.unregisterAll(this);
         }
-    }
-
-    public static String captureText(Player p) {
-        if(Bukkit.isPrimaryThread()) {
-            throw new RuntimeException("Cannot open gui on main thread");
-        }
-
-        TextInputGui gui = new TextInputGui(p);
-
-        while(!gui.responded) {
-            J.sleep(50);
-        }
-
-        return gui.response;
     }
 }

@@ -19,7 +19,6 @@
 package com.volmit.react.util.scheduling;
 
 
-
 public class QueueExecutor extends Looper {
     private final Queue<Runnable> queue;
     private boolean shutdown;

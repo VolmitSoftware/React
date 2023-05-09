@@ -1,32 +1,27 @@
-
 package com.volmit.react.util.data;
 
-import java.awt.Color;
+import java.awt.*;
 
 public class TinyColor {
     private int r;
     private int g;
     private int b;
 
-    public TinyColor(int color)
-    {
+    public TinyColor(int color) {
         this.r = (color >> 16) & 0xFF;
         this.g = (color >> 8) & 0xFF;
         this.b = color & 0xFF;
     }
 
-    public TinyColor(Color color)
-    {
+    public TinyColor(Color color) {
         this(color.getRGB());
     }
 
-    public TinyColor(String c)
-    {
+    public TinyColor(String c) {
         this(Color.decode(c));
     }
 
-    public TinyColor(org.bukkit.Color c)
-    {
+    public TinyColor(org.bukkit.Color c) {
         this(c.asRGB());
     }
 
@@ -37,25 +32,22 @@ public class TinyColor {
     }
 
     public TinyColor(double h, double s, double b) {
-        this(Color.getHSBColor((float)h, (float)s, (float)b));
+        this(Color.getHSBColor((float) h, (float) s, (float) b));
     }
 
     public TinyColor(float h, float s, float b) {
         this(Color.getHSBColor(h, s, b));
     }
 
-    public TinyColor brightness(float brightness)
-    {
+    public TinyColor brightness(float brightness) {
         return new TinyColor(getHue(), getSaturation(), brightness);
     }
 
-    public TinyColor saturation(float saturation)
-    {
+    public TinyColor saturation(float saturation) {
         return new TinyColor(getHue(), saturation, getBrightness());
     }
 
-    public TinyColor hue(float hue)
-    {
+    public TinyColor hue(float hue) {
         return new TinyColor(hue, getSaturation(), getBrightness());
     }
 
@@ -72,9 +64,9 @@ public class TinyColor {
     }
 
     public TinyColor spin(int amount) {
-        int h = (int)Math.round(getHue() * 360);
+        int h = (int) Math.round(getHue() * 360);
         h = (h + amount) % 360;
-        return hue((float)h / 360.0f);
+        return hue((float) h / 360.0f);
     }
 
     public int toRGB() {
@@ -94,7 +86,7 @@ public class TinyColor {
     }
 
     public String toHex(boolean hash) {
-        if(hash) {
+        if (hash) {
             return toHex();
         }
 
@@ -118,7 +110,7 @@ public class TinyColor {
     }
 
     public TinyColor saturate(int amount) {
-        return saturation(fclamp(getSaturation() + ((float)amount / 100.0f), 0.0f, 1.0f));
+        return saturation(fclamp(getSaturation() + ((float) amount / 100.0f), 0.0f, 1.0f));
     }
 
     public TinyColor desaturate(int amount) {
@@ -126,7 +118,7 @@ public class TinyColor {
     }
 
     public TinyColor brighten(int amount) {
-        return brightness(fclamp(getBrightness() + ((float)amount / 100.0f), 0.0f, 1.0f));
+        return brightness(fclamp(getBrightness() + ((float) amount / 100.0f), 0.0f, 1.0f));
     }
 
     public TinyColor darken(int amount) {

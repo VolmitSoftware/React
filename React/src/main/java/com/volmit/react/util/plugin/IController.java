@@ -18,8 +18,6 @@
 
 package com.volmit.react.util.plugin;
 
-import org.bukkit.event.Listener;
-
 @SuppressWarnings("EmptyMethod")
 public interface IController {
     String getName();

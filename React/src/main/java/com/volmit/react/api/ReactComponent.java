@@ -30,11 +30,11 @@ public interface ReactComponent {
 
     default void loadConfiguration() {
         File configFile = React.instance.getDataFile(getConfigCategory(), getId() + ".json");
-        if(!configFile.exists()) {
+        if (!configFile.exists()) {
             try {
                 IO.writeAll(configFile, new Gson().toJson(this));
                 React.verbose("Creating a default config for " + getName() + " in " + configFile.getPath());
-            } catch(IOException e) {
+            } catch (IOException e) {
                 e.printStackTrace();
             }
         }
@@ -46,20 +46,18 @@ public interface ReactComponent {
                 CursedField from = loaded.field(self.field().getName());
                 Object oFrom = from.get();
 
-                if(oFrom != null) {
+                if (oFrom != null) {
                     self.set(oFrom);
                 }
             });
             React.verbose("Loaded config for " + getName() + " in " + configFile.getPath());
-        }
-
-        catch(Throwable e) {
+        } catch (Throwable e) {
             e.printStackTrace();
         }
 
         try {
             IO.writeAll(configFile, new GsonBuilder().setPrettyPrinting().create().toJson(this));
-        } catch(IOException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }

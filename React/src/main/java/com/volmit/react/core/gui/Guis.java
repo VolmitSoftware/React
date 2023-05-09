@@ -4,7 +4,7 @@ import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.LeatherArmorMeta;
 
-import java.awt.Color;
+import java.awt.*;
 
 public class Guis {
     public static ItemStack generateColorIcon(String title, Color color) {

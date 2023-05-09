@@ -6,7 +6,6 @@ import com.volmit.react.api.action.ActionTicket;
 import com.volmit.react.api.action.ReactAction;
 import com.volmit.react.model.AreaActionParams;
 import com.volmit.react.util.format.Form;
-import com.volmit.react.util.math.Spiraler;
 import com.volmit.react.util.scheduling.J;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,6 +17,7 @@ import org.bukkit.World;
 
 import java.util.ArrayList;
 import java.util.List;
+
 public class ActionPurgeChunks extends ReactAction<ActionPurgeChunks.Params> {
     public static final String ID = "purge-chunks";
 
@@ -28,10 +28,10 @@ public class ActionPurgeChunks extends ReactAction<ActionPurgeChunks.Params> {
     List<Chunk> pullChunks(ActionTicket<Params> ticket, int max) {
         List<Chunk> c = new ArrayList<>();
 
-        for(int i = 0; i < max; i++) {
+        for (int i = 0; i < max; i++) {
             Chunk cc = ticket.getParams().getArea().popChunk();
 
-            if(cc == null) {
+            if (cc == null) {
                 break;
             }
 
@@ -70,11 +70,11 @@ public class ActionPurgeChunks extends ReactAction<ActionPurgeChunks.Params> {
         return Params.builder().build();
     }
 
-    private void purge(Chunk c,  ActionTicket<Params> ticket) {
+    private void purge(Chunk c, ActionTicket<Params> ticket) {
 //        World w = c.getWorld();
 //        w.unloadChunk(c);
         J.s(c::unload);
-        if (!c.isLoaded()){
+        if (!c.isLoaded()) {
             ticket.addCount();
         }
     }

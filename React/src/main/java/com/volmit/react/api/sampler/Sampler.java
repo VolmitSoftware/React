@@ -17,8 +17,7 @@ public interface Sampler extends ReactComponent {
     }
 
     @Override
-    default String getConfigCategory()
-    {
+    default String getConfigCategory() {
         return "sampler";
     }
 

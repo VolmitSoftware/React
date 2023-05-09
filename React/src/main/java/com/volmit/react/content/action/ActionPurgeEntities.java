@@ -25,11 +25,11 @@ import java.util.List;
 public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params> {
     public static final String ID = "purge-entities";
     private List<EntityType> defaultEntityList = new ArrayList<>(List.of(
-        EntityType.ARMOR_STAND,
-        EntityType.PLAYER,
-        EntityType.ITEM_FRAME,
-        EntityType.DROPPED_ITEM,
-        EntityType.EXPERIENCE_ORB
+            EntityType.ARMOR_STAND,
+            EntityType.PLAYER,
+            EntityType.ITEM_FRAME,
+            EntityType.DROPPED_ITEM,
+            EntityType.EXPERIENCE_ORB
     ));
     private boolean defaultBlacklist = true;
 
@@ -40,10 +40,10 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
     List<Chunk> pullChunks(ActionTicket<Params> ticket, int max) {
         List<Chunk> c = new ArrayList<>();
 
-        for(int i = 0; i < max; i++) {
+        for (int i = 0; i < max; i++) {
             Chunk cc = ticket.getParams().getArea().popChunk();
 
-            if(cc == null) {
+            if (cc == null) {
                 break;
             }
 
@@ -80,21 +80,21 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
     @Override
     public Params getDefaultParams() {
         return Params.builder()
-            .entityFilter(FilterParams.<EntityType>builder()
-                .types(defaultEntityList)
-                .blacklist(defaultBlacklist)
-                .build())
-            .build();
+                .entityFilter(FilterParams.<EntityType>builder()
+                        .types(defaultEntityList)
+                        .blacklist(defaultBlacklist)
+                        .build())
+                .build();
     }
 
     private void purge(Entity entity, ActionTicket<Params> ticket) {
-        J.s(entity::remove, (int)(20 * Math.random()));
+        J.s(entity::remove, (int) (20 * Math.random()));
         ticket.addCount();
     }
 
-    private void purge(Chunk c,  ActionTicket<Params> ticket) {
-        for(Entity i : c.getEntities()) {
-            if(ticket.getParams().entityFilter.allows(i.getType())) {
+    private void purge(Chunk c, ActionTicket<Params> ticket) {
+        for (Entity i : c.getEntities()) {
+            if (ticket.getParams().entityFilter.allows(i.getType())) {
                 purge(i, ticket);
             }
         }
@@ -108,7 +108,7 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
     @Builder
     @Data
     @Accessors(
-        chain = true
+            chain = true
     )
     @AllArgsConstructor
     @NoArgsConstructor

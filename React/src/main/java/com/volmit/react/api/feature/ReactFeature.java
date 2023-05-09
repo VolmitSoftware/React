@@ -11,8 +11,7 @@ public abstract class ReactFeature implements Feature {
     private transient final String name;
     private boolean enabled = true;
 
-    public ReactFeature(String id)
-    {
+    public ReactFeature(String id) {
         this.id = id;
         this.name = Form.capitalizeWords(id.replace("-", " "));
     }

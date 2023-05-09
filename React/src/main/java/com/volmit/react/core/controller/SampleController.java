@@ -19,6 +19,7 @@ import java.util.Map;
 public class SampleController extends TickedObject implements IController {
     private Map<String, Sampler> samplers;
     private Sampler unknown;
+
     public SampleController() {
         super("react", "sample", 30000);
         start();

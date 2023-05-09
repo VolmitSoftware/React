@@ -19,19 +19,19 @@ import java.util.concurrent.atomic.AtomicInteger;
 //
 public class SamplerChunksLoaded extends ReactCachedSampler implements Listener {
     public static final String ID = "chunks-loaded";
-    private transient ChronoLatch realCheckUpdate;
     private transient final AtomicInteger loadedChunks;
+    private transient ChronoLatch realCheckUpdate;
     private int realityCheckMS = 10000;
-
-    @Override
-    public Material getIcon() {
-        return Material.CHEST_MINECART;
-    }
 
     public SamplerChunksLoaded() {
         super(ID, 50);
         loadedChunks = new AtomicInteger(0);
         realCheckUpdate = new ChronoLatch(realityCheckMS);
+    }
+
+    @Override
+    public Material getIcon() {
+        return Material.CHEST_MINECART;
     }
 
     public int getRealCheck() {
