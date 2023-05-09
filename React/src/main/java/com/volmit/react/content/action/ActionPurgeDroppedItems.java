@@ -22,18 +22,11 @@ import org.bukkit.entity.EntityType;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params> {
-    public static final String ID = "purge-entities";
-    private List<EntityType> defaultEntityList = new ArrayList<>(List.of(
-        EntityType.ARMOR_STAND,
-        EntityType.PLAYER,
-        EntityType.ITEM_FRAME,
-        EntityType.DROPPED_ITEM,
-        EntityType.EXPERIENCE_ORB
-    ));
-    private boolean defaultBlacklist = true;
+public class ActionPurgeDroppedItems extends ReactAction<ActionPurgeDroppedItems.Params> {
+    public static final String ID = "purge-dropped-items";
+    private List<EntityType> defaultEntityList = new ArrayList<>(List.of(EntityType.DROPPED_ITEM));
 
-    public ActionPurgeEntities() {
+    public ActionPurgeDroppedItems() {
         super(ID);
     }
 
@@ -55,7 +48,7 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
 
     @Override
     public String getCompletedMessage(ActionTicket<Params> ticket) {
-        return "Purged " + ticket.getCount() + " Entities across " + ticket.getTotalWork() + " chunks in " + Form.duration(ticket.getDuration(), 1);
+        return "Purged " + ticket.getCount() + " dropped items across " + ticket.getTotalWork() + " chunks in " + Form.duration(ticket.getDuration(), 1);
     }
 
     @Override
@@ -80,11 +73,10 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
     @Override
     public Params getDefaultParams() {
         return Params.builder()
-            .entityFilter(FilterParams.<EntityType>builder()
-                .types(defaultEntityList)
-                .blacklist(defaultBlacklist)
-                .build())
-            .build();
+                .entityFilter(FilterParams.<EntityType>builder()
+                        .types(defaultEntityList)
+                        .build())
+                .build();
     }
 
     private void purge(Entity entity, ActionTicket<Params> ticket) {
@@ -108,7 +100,7 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
     @Builder
     @Data
     @Accessors(
-        chain = true
+            chain = true
     )
     @AllArgsConstructor
     @NoArgsConstructor

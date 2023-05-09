@@ -5,8 +5,6 @@ import com.volmit.react.api.action.ActionParams;
 import com.volmit.react.api.action.ActionTicket;
 import com.volmit.react.api.action.ReactAction;
 import com.volmit.react.model.AreaActionParams;
-import com.volmit.react.model.FilterParams;
-import com.volmit.react.util.format.Form;
 import com.volmit.react.util.math.Spiraler;
 import com.volmit.react.util.scheduling.J;
 import lombok.AllArgsConstructor;
@@ -17,33 +15,27 @@ import lombok.experimental.Accessors;
 import org.bukkit.Chunk;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Mob;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
-public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params> {
-    public static final String ID = "purge-entities";
-    private List<EntityType> defaultEntityList = new ArrayList<>(List.of(
-        EntityType.ARMOR_STAND,
-        EntityType.PLAYER,
-        EntityType.ITEM_FRAME,
-        EntityType.DROPPED_ITEM,
-        EntityType.EXPERIENCE_ORB
-    ));
-    private boolean defaultBlacklist = true;
+public class ActionDisableMobAI extends ReactAction<ActionDisableMobAI.Params> {
+    public static final String ID = "disable-mob-ai";
 
-    public ActionPurgeEntities() {
+    public ActionDisableMobAI() {
         super(ID);
     }
 
     List<Chunk> pullChunks(ActionTicket<Params> ticket, int max) {
         List<Chunk> c = new ArrayList<>();
 
-        for(int i = 0; i < max; i++) {
+        for (int i = 0; i < max; i++) {
             Chunk cc = ticket.getParams().getArea().popChunk();
 
-            if(cc == null) {
+            if (cc == null) {
                 break;
             }
 
@@ -55,49 +47,50 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
 
     @Override
     public String getCompletedMessage(ActionTicket<Params> ticket) {
-        return "Purged " + ticket.getCount() + " Entities across " + ticket.getTotalWork() + " chunks in " + Form.duration(ticket.getDuration(), 1);
+        return "Disabled AI for " + ticket.getCount() + " mobs";// for " + ticket.getParams().getDisableDuration() + " seconds";
     }
 
     @Override
     public void workOn(ActionTicket<Params> ticket) {
-        List<Chunk> c = pullChunks(ticket, React.instance.getActionController().getActionSpeedMultiplier());
+        List<Chunk> chunks = pullChunks(ticket, React.instance.getActionController().getActionSpeedMultiplier());
 
-        if (ticket.getTotalWork() <= 1) {
+        if (ticket.getTotalWork() <= 0) {
             ticket.setTotalWork(ticket.getParams().getArea().getChunks().size());
         }
 
-        if (c.isEmpty()) {
+        if (chunks.isEmpty()) {
             ticket.complete();
         } else {
-            for (Chunk i : c) {
-                purge(i, ticket);
-            }
-
-            ticket.addWork(c.size());
+            chunks.forEach(chunk -> disableAI(chunk, ticket));
+            ticket.addWork(chunks.size());
         }
     }
 
     @Override
     public Params getDefaultParams() {
         return Params.builder()
-            .entityFilter(FilterParams.<EntityType>builder()
-                .types(defaultEntityList)
-                .blacklist(defaultBlacklist)
-                .build())
-            .build();
+                .build();
     }
 
-    private void purge(Entity entity, ActionTicket<Params> ticket) {
-        J.s(entity::remove, (int)(20 * Math.random()));
-        ticket.addCount();
-    }
+    private void disableAI(Chunk chunk, ActionTicket<Params> ticket) {
+        List<Entity> entities = Arrays.stream(chunk.getEntities())
+                .filter(entity -> entity instanceof Mob)
+                .toList();
 
-    private void purge(Chunk c,  ActionTicket<Params> ticket) {
-        for(Entity i : c.getEntities()) {
-            if(ticket.getParams().entityFilter.allows(i.getType())) {
-                purge(i, ticket);
-            }
-        }
+        entities.forEach(entity -> {
+            LivingEntity livingEntity = (LivingEntity) entity;
+            livingEntity.setAI(false);
+            livingEntity.setCollidable(false);
+            livingEntity.setCanPickupItems(false);
+            livingEntity.setRotation(0, 0);
+//            J.s(() -> {
+//                livingEntity.setAI(true);
+//                livingEntity.setCollidable(true);
+//                livingEntity.setCanPickupItems(true);
+//                livingEntity.setInvisible(false);
+//            }, 20 * ticket.getParams().getDisableDuration());  // Convert seconds to ticks
+            ticket.addCount();
+        });
     }
 
     @Override
@@ -107,16 +100,13 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
 
     @Builder
     @Data
-    @Accessors(
-        chain = true
-    )
+    @Accessors(chain = true)
     @AllArgsConstructor
     @NoArgsConstructor
     public static class Params implements ActionParams {
         @Builder.Default
         private AreaActionParams area = AreaActionParams.builder().build();
-        @Builder.Default
-        private FilterParams<EntityType> entityFilter = FilterParams.<EntityType>builder().build();
+        private int disableDuration = 10;
 
         public Params withWorld(World world) {
             area.setWorld(world.getName());

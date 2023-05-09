@@ -5,7 +5,6 @@ import com.volmit.react.api.action.ActionParams;
 import com.volmit.react.api.action.ActionTicket;
 import com.volmit.react.api.action.ReactAction;
 import com.volmit.react.model.AreaActionParams;
-import com.volmit.react.model.FilterParams;
 import com.volmit.react.util.format.Form;
 import com.volmit.react.util.math.Spiraler;
 import com.volmit.react.util.scheduling.J;
@@ -16,24 +15,13 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import org.bukkit.Chunk;
 import org.bukkit.World;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
 
 import java.util.ArrayList;
 import java.util.List;
+public class ActionPurgeChunks extends ReactAction<ActionPurgeChunks.Params> {
+    public static final String ID = "purge-chunks";
 
-public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params> {
-    public static final String ID = "purge-entities";
-    private List<EntityType> defaultEntityList = new ArrayList<>(List.of(
-        EntityType.ARMOR_STAND,
-        EntityType.PLAYER,
-        EntityType.ITEM_FRAME,
-        EntityType.DROPPED_ITEM,
-        EntityType.EXPERIENCE_ORB
-    ));
-    private boolean defaultBlacklist = true;
-
-    public ActionPurgeEntities() {
+    public ActionPurgeChunks() {
         super(ID);
     }
 
@@ -55,7 +43,7 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
 
     @Override
     public String getCompletedMessage(ActionTicket<Params> ticket) {
-        return "Purged " + ticket.getCount() + " Entities across " + ticket.getTotalWork() + " chunks in " + Form.duration(ticket.getDuration(), 1);
+        return "Purged " + ticket.getCount() + " Chunks in " + Form.duration(ticket.getDuration(), 1);
     }
 
     @Override
@@ -79,24 +67,15 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
 
     @Override
     public Params getDefaultParams() {
-        return Params.builder()
-            .entityFilter(FilterParams.<EntityType>builder()
-                .types(defaultEntityList)
-                .blacklist(defaultBlacklist)
-                .build())
-            .build();
-    }
-
-    private void purge(Entity entity, ActionTicket<Params> ticket) {
-        J.s(entity::remove, (int)(20 * Math.random()));
-        ticket.addCount();
+        return Params.builder().build();
     }
 
     private void purge(Chunk c,  ActionTicket<Params> ticket) {
-        for(Entity i : c.getEntities()) {
-            if(ticket.getParams().entityFilter.allows(i.getType())) {
-                purge(i, ticket);
-            }
+//        World w = c.getWorld();
+//        w.unloadChunk(c);
+        J.s(c::unload);
+        if (!c.isLoaded()){
+            ticket.addCount();
         }
     }
 
@@ -108,27 +87,17 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
     @Builder
     @Data
     @Accessors(
-        chain = true
+            chain = true
     )
     @AllArgsConstructor
     @NoArgsConstructor
     public static class Params implements ActionParams {
         @Builder.Default
         private AreaActionParams area = AreaActionParams.builder().build();
-        @Builder.Default
-        private FilterParams<EntityType> entityFilter = FilterParams.<EntityType>builder().build();
 
         public Params withWorld(World world) {
             area.setWorld(world.getName());
             area.setAllChunks(true);
-            return this;
-        }
-
-        public Params addRadius(World world, int x, int z, int radius) {
-            area.setChunks(area.getChunks() == null ? new ArrayList<>() : new ArrayList<>(area.getChunks()));
-            new Spiraler(radius * 2, radius * 2, (xx, zz) -> {
-                area.getChunks().add(world.getChunkAt(x + xx, z + zz));
-            }).drain();
             return this;
         }
     }
