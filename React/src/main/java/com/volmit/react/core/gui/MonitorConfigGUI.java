@@ -17,6 +17,7 @@ import org.bukkit.entity.Player;
 
 import java.awt.Color;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -44,7 +45,7 @@ public class MonitorConfigGUI {
                 Sampler i = React.instance.getSampleController().getSampler(ii);
                 window.setElement(w, h, new UIElement("sample-" + i.getId())
                     .setMaterial(new MaterialBlock(i.getIcon()))
-                    .setName(i.getId())
+                    .setName(i.displayName())
                     .addLore(i.format(i.sample()))
                     .setEnchanted(head.equals(ii))
                     .addLore("* Left Click to set as header")

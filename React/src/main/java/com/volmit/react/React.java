@@ -10,6 +10,7 @@ import com.volmit.react.core.controller.SampleController;
 import com.volmit.react.util.collection.KList;
 import com.volmit.react.util.format.C;
 import com.volmit.react.util.io.JarScanner;
+import com.volmit.react.util.plugin.SplashScreen;
 import com.volmit.react.util.plugin.VolmitPlugin;
 import com.volmit.react.util.scheduling.J;
 import com.volmit.react.util.scheduling.Ticker;
@@ -109,6 +110,7 @@ public class React extends VolmitPlugin {
         sampleController.postStart();
         featureController.postStart();
         actionController.postStart();
+        info(SplashScreen.splash);
     }
 
     @Override

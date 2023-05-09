@@ -34,9 +34,11 @@ public class SamplerGUI {
             window.setTitle("React Samplers");
             window.setResolution(WindowResolution.W9_H6);
             window.setDecorator(new UIStaticDecorator(new UIElement("bg").setMaterial(new MaterialBlock(Material.BLACK_STAINED_GLASS_PANE))));
+            //Sorted Samplers
+            List<Sampler> samplers = React.instance.getSampleController().getSamplers().values().stream().sorted((a, b) -> a.getId().compareToIgnoreCase(b.getId())).toList();
 
             int rp = 0;
-            for (Sampler i : React.instance.getSampleController().getSamplers().values()) {
+            for (Sampler i : samplers) {
                 if(without != null && without.contains(i.getId())) {
                     continue;
                 }
@@ -46,7 +48,7 @@ public class SamplerGUI {
                 rp++;
                 window.setElement(w, h, new UIElement("sample-" + i.getId())
                         .setMaterial(new MaterialBlock(i.getIcon()))
-                        .setName(i.getId())
+                        .setName(i.displayName())
                         .addLore(i.format(i.sample()))
                         .onLeftClick((e) -> {
                             result.set(i);
