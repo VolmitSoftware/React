@@ -1,68 +1,60 @@
 package com.volmit.react.content.action;
 
-import com.volmit.react.React;
 import com.volmit.react.api.action.ActionParams;
 import com.volmit.react.api.action.ActionTicket;
 import com.volmit.react.api.action.ReactAction;
 import com.volmit.react.model.AreaActionParams;
+import com.volmit.react.model.FilterParams;
 import com.volmit.react.util.format.Form;
-import com.volmit.react.util.scheduling.J;
+import com.volmit.react.util.math.Spiraler;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import org.bukkit.Chunk;
+import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.entity.EntityType;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class ActionPurgeChunks extends ReactAction<ActionPurgeChunks.Params> {
-    public static final String ID = "purge-chunks";
 
-    public ActionPurgeChunks() {
+public class ActionRedstoneResume extends ReactAction<ActionRedstoneResume.Params> {
+    public static final String ID = "redstone-resume";
+
+    public ActionRedstoneResume() {
         super(ID);
-    }
-
-    List<Chunk> pullChunks(ActionTicket<Params> ticket, int max) {
-        List<Chunk> c = new ArrayList<>();
-
-        for (int i = 0; i < max; i++) {
-            Chunk cc = ticket.getParams().getArea().popChunk();
-
-            if (cc == null) {
-                break;
-            }
-
-            c.add(cc);
-        }
-
-        return c;
     }
 
     @Override
     public String getCompletedMessage(ActionTicket<Params> ticket) {
-        return "Purged " + ticket.getCount() + " Chunks in " + Form.duration(ticket.getDuration(), 1);
+        return "Resumed redstone in " + ticket.getCount() + " chunks after " + Form.duration(ticket.getDuration(), 1);
     }
 
     @Override
     public void workOn(ActionTicket<Params> ticket) {
-        List<Chunk> c = pullChunks(ticket, React.instance.getActionController().getActionSpeedMultiplier());
+        List<Chunk> c = ticket.getParams().getArea().getChunks();
 
         if (ticket.getTotalWork() <= 1) {
-            ticket.setTotalWork(ticket.getParams().getArea().getChunks().size());
+            ticket.setTotalWork(c.size());
         }
 
         if (c.isEmpty()) {
             ticket.complete();
         } else {
             for (Chunk i : c) {
-                purge(i, ticket);
+                resume(i, ticket);
             }
 
             ticket.addWork(c.size());
         }
+    }
+
+    private void resume(Chunk c, ActionTicket<Params> ticket) {
+        ActionRedstoneHalt.haltedChunks.remove(c);
+        ticket.addCount();
     }
 
     @Override
@@ -75,31 +67,30 @@ public class ActionPurgeChunks extends ReactAction<ActionPurgeChunks.Params> {
 
     }
 
-    private void purge(Chunk c, ActionTicket<Params> ticket) {
-//        World w = c.getWorld();
-//        w.unloadChunk(c);
-        J.s(c::unload);
-        if (!c.isLoaded()) {
-            ticket.addCount();
-        }
-    }
-
-
     @Builder
     @Data
-    @Accessors(
-            chain = true
-    )
+    @Accessors(chain = true)
     @AllArgsConstructor
     @NoArgsConstructor
     public static class Params implements ActionParams {
         @Builder.Default
         private AreaActionParams area = AreaActionParams.builder().build();
+        private int radius = 0;
+        private Location center = null;
 
         public Params withWorld(World world) {
             area.setWorld(world.getName());
-            area.setAllChunks(true);
+            area.setAllChunks(radius <= 0);
+            return this;
+        }
+
+        public Params addRadius(World world, int x, int z, int radius) {
+            this.radius = radius;
+            this.center = new Location(world, x * 16, 0, z * 16);
+            area.setAllChunks(false);
             return this;
         }
     }
 }
+
+
