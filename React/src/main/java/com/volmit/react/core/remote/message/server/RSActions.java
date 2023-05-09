@@ -5,12 +5,15 @@ import com.volmit.react.core.remote.message.ReactMessage;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.experimental.Accessors;
 
 import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
-@Builder
 @Data
+@Accessors(
+    chain = true
+)
 public class RSActions extends ReactMessage {
     private List<String> actions;
 

@@ -11,7 +11,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 @EqualsAndHashCode(callSuper = true)
-@Builder
 @Data
 public class RCAuthenticate extends ReactMessage {
     private String user;

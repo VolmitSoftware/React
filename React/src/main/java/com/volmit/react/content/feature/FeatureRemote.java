@@ -78,7 +78,7 @@ public class FeatureRemote extends ReactFeature {
 
             if(i.canSample()) {
                 if(data == null) {
-                    data = RSSampleData.builder().build();
+                    data = new RSSampleData();
 
                     for(Sampler j : React.instance.getSampleController().getSamplers().values()) {
                         data.sample(j);
@@ -104,11 +104,13 @@ public class FeatureRemote extends ReactFeature {
 
         J.a(() -> {
             if(socket.canSample()) {
-                socket.send(RSSamplers.builder().samplers(new ArrayList<>(React.instance.getSampleController().getSamplers().keySet())).build());
+                socket.send(new RSSamplers()
+                    .setSamplers(new ArrayList<>(React.instance.getSampleController().getSamplers().keySet())));
             }
 
             if(socket.canActions()) {
-                socket.send(RSActions.builder().actions(new ArrayList<>(React.instance.getActionController().getActions().keySet())).build());
+                socket.send(new RSActions()
+                    .setActions(new ArrayList<>(React.instance.getActionController().getActions().keySet())));
             }
         });
     }

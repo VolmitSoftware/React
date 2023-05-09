@@ -7,12 +7,9 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 @EqualsAndHashCode(callSuper = true)
-@Builder
 @Data
 public class ROK extends ReactMessage {
-    @Builder.Default
     private boolean ok = true;
-    @Builder.Default
     private String error = null;
 
     public ROK() {

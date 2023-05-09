@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.Map;
 
 @EqualsAndHashCode(callSuper = true)
-@Builder
 @Data
 public class RSSampleData extends ReactMessage {
     private Map<String, Double> values;
