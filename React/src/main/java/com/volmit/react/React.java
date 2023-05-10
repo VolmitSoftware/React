@@ -30,6 +30,7 @@ public class React extends VolmitPlugin {
     private EventController eventController;
     private ActionController actionController;
     private CommandController commandController;
+    private ObserverController observerController;
 
     public React() {
         instance = this;
@@ -123,6 +124,7 @@ public class React extends VolmitPlugin {
         sampleController = new SampleController();
         actionController = new ActionController();
         featureController = new FeatureController();
+        observerController = new ObserverController();
         sampleController.postStart();
         featureController.postStart();
         actionController.postStart();
