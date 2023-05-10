@@ -110,11 +110,9 @@ dependencies {
     implementation 'art.arcane:Chrono:22.9.10'
 
     // Dynamically Loaded
-    implementation 'me.clip:placeholderapi:2.11.1'
     implementation 'net.kyori:adventure-text-minimessage:4.13.1'
     implementation 'net.kyori:adventure-platform-bukkit:4.3.0'
     implementation 'net.kyori:adventure-api:4.13.1'
-    implementation 'io.papermc:paperlib:1.0.7'
     implementation 'io.timeandspace:smoothie-map:2.0.2'
     implementation 'it.unimi.dsi:fastutil:8.5.8'
     implementation 'com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru:1.4.2'
@@ -126,10 +124,7 @@ dependencies {
     implementation 'org.bitbucket.mstrobel:procyon-reflection:0.6.0'
     implementation 'fr.inria.gforge.spoon:spoon-core:10.2.0'
     implementation 'com.github.ben-manes.caffeine:caffeine:3.0.6'
-    implementation 'org.eclipse.jetty:jetty-server:11.0.15'
-    implementation 'org.eclipse.jetty:jetty-servlets:11.0.15'
-    implementation 'org.eclipse.jetty.websocket:websocket-jetty-api:11.0.15'
-    implementation 'org.eclipse.jetty.websocket:websocket-jetty-server:11.0.15'
+    implementation 'org.java-websocket:Java-WebSocket:1.5.3'
 }
 
 if (JavaVersion.current().toString() != "17") {
