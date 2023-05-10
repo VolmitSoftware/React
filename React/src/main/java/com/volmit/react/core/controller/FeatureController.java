@@ -12,6 +12,7 @@ import lombok.EqualsAndHashCode;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -127,6 +128,6 @@ public class FeatureController extends TickedObject implements IController {
 
     @Override
     public void stop() {
-        features.values().forEach(Feature::onDeactivate);
+        new ArrayList<>(activeFeatures.values()).forEach(this::deactivateFeature);
     }
 }

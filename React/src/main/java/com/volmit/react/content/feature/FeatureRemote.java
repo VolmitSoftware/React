@@ -60,7 +60,9 @@ public class FeatureRemote extends ReactFeature {
 
     @Override
     public void onDeactivate() {
-        server.stop();
+        if(server != null) {
+            server.stop();
+        }
     }
 
     @Override

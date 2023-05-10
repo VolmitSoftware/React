@@ -7,7 +7,6 @@ import com.volmit.react.core.remote.message.ReactMessage;
 import com.volmit.react.model.ReactRemoteUser;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 
