@@ -7,10 +7,14 @@ commands:
   react:
     aliases: [ re ]
 libraries:
-  - com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru:1.4.2
+  - me.clip:placeholderapi:2.11.1
+  - net.kyori:adventure-text-minimessage:4.13.1
+  - net.kyori:adventure-platform-bukkit:4.3.0
+  - net.kyori:adventure-api:4.13.1
+  - io.papermc:paperlib:1.0.7
   - io.timeandspace:smoothie-map:2.0.2
-  - com.github.ben-manes.caffeine:caffeine:3.0.5
   - it.unimi.dsi:fastutil:8.5.8
+  - com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru:1.4.2
   - org.apache.commons:commons-lang3:3.12.0
   - com.google.code.gson:gson:2.10
   - org.zeroturnaround:zt-zip:1.15
@@ -18,7 +22,8 @@ libraries:
   - org.bitbucket.mstrobel:procyon-compilertools:0.6.0
   - org.bitbucket.mstrobel:procyon-reflection:0.6.0
   - fr.inria.gforge.spoon:spoon-core:10.2.0
+  - com.github.ben-manes.caffeine:caffeine:3.0.6
   - org.eclipse.jetty:jetty-server:11.0.15
+  - org.eclipse.jetty:jetty-servlets:11.0.15
   - org.eclipse.jetty.websocket:websocket-jetty-api:11.0.15
   - org.eclipse.jetty.websocket:websocket-jetty-server:11.0.15
-  - org.eclipse.jetty:jetty-servlets:11.0.15
