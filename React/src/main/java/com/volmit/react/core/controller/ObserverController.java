@@ -1,7 +1,8 @@
 package com.volmit.react.core.controller;
 
 import com.volmit.react.React;
-import com.volmit.react.core.controller.data.ChunkStatistic;
+import com.volmit.react.model.SampledServer;
+import com.volmit.react.model.SampledWorld;
 import com.volmit.react.util.plugin.IController;
 import com.volmit.react.util.scheduling.TickedObject;
 import lombok.Data;
@@ -9,6 +10,7 @@ import lombok.EqualsAndHashCode;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.BlockPhysicsEvent;
@@ -25,10 +27,11 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class ObserverController extends TickedObject implements IController {
-    private Map<String, Map<Chunk, ChunkStatistic>> worldStatistics = new HashMap<>();
+    private final SampledServer sampled;
 
     public ObserverController() {
         super("react", "observer", 250);
+        sampled = new SampledServer();
         start();
     }
 
@@ -43,17 +46,8 @@ public class ObserverController extends TickedObject implements IController {
         return "Observer";
     }
 
-    public ChunkStatistic getChunkStatistic(Chunk chunk) {
-        return worldStatistics.get(chunk.getWorld().getName()).get(chunk);
-    }
-
     @Override
     public void start() {
-        Bukkit.getWorlds().forEach(world -> {
-            Map<Chunk, ChunkStatistic> chunkStatistics = new HashMap<>();
-            Arrays.stream(world.getLoadedChunks()).forEach(chunk -> chunkStatistics.put(chunk, new ChunkStatistic()));
-            worldStatistics.put(world.getName(), chunkStatistics);
-        });
         React.instance.registerListener(this);
     }
 
@@ -64,38 +58,31 @@ public class ObserverController extends TickedObject implements IController {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void on(BlockRedstoneEvent event) {
-        ChunkStatistic chunkStatistic = getChunkStatistic(event.getBlock().getChunk());
-        chunkStatistic.setRedstoneInteractions(chunkStatistic.getRedstoneInteractions() + 1);
+        sampled.getChunk(event.getBlock().getChunk()).getRedstoneInteractions().incrementAndGet();
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void on(BlockPhysicsEvent event) {
-        if (event.getChangedType() == Material.WATER) {
-            ChunkStatistic chunkStatistic = getChunkStatistic(event.getBlock().getChunk());
-            chunkStatistic.setWaterUpdates(chunkStatistic.getWaterUpdates() + 1);
-        }
+        sampled.getChunk(event.getBlock().getChunk()).getWaterUpdates().incrementAndGet();
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void on(BlockPistonExtendEvent event) {
-        ChunkStatistic chunkStatistic = getChunkStatistic(event.getBlock().getChunk());
-        chunkStatistic.setPistonInteractions(chunkStatistic.getPistonInteractions() + event.getBlocks().size());
+        sampled.getChunk(event.getBlock().getChunk()).getPistonInteractions().incrementAndGet();
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void on(BlockPistonRetractEvent event) {
-        ChunkStatistic chunkStatistic = getChunkStatistic(event.getBlock().getChunk());
-        chunkStatistic.setPistonInteractions(chunkStatistic.getPistonInteractions() + event.getBlocks().size());
+        sampled.getChunk(event.getBlock().getChunk()).getPistonInteractions().incrementAndGet();
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void on(ChunkUnloadEvent event) {
-        worldStatistics.get(event.getWorld().getName()).remove(event.getChunk());
+        sampled.removeChunk(event.getChunk());
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void on(WorldUnloadEvent event) {
-        worldStatistics.remove(event.getWorld().getName());
+        sampled.removeWorld(event.getWorld());
     }
-
 }
