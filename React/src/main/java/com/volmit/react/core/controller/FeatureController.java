@@ -7,6 +7,7 @@ import com.volmit.react.content.feature.FeatureRedstoneMirari;
 import com.volmit.react.content.feature.FeatureUnknown;
 import com.volmit.react.util.io.JarScanner;
 import com.volmit.react.util.plugin.IController;
+import com.volmit.react.util.scheduling.J;
 import com.volmit.react.util.scheduling.TickedObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -84,7 +85,6 @@ public class FeatureController extends TickedObject implements IController {
         activeFeatures = new HashMap<>();
         tickedFeatures = new HashMap<>();
         features = new HashMap<>();
-        features.put(FeatureRedstoneMirari.ID, new FeatureRedstoneMirari());
         features.put(FeatureUnknown.ID, new FeatureUnknown());
         String p = React.instance.jar().getAbsolutePath();
         p = p.replaceAll("\\Q.jar.jar\\E", ".jar");
