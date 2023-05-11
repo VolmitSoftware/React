@@ -1,6 +1,8 @@
 package com.volmit.react.core.controller;
 
+import com.google.common.util.concurrent.AtomicDouble;
 import com.volmit.react.React;
+import com.volmit.react.api.sampler.Sampler;
 import com.volmit.react.model.SampledServer;
 import com.volmit.react.model.SampledWorld;
 import com.volmit.react.util.plugin.IController;
@@ -11,6 +13,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.BlockPhysicsEvent;
@@ -20,9 +23,7 @@ import org.bukkit.event.block.BlockRedstoneEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Optional;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -30,14 +31,13 @@ public class ObserverController extends TickedObject implements IController {
     private final SampledServer sampled;
 
     public ObserverController() {
-        super("react", "observer", 250);
+        super("react", "observer", 1000);
         sampled = new SampledServer();
         start();
     }
 
     @Override
     public void onTick() {
-        //Clear the contents of the world statistics
 
     }
 
@@ -56,24 +56,16 @@ public class ObserverController extends TickedObject implements IController {
         React.instance.unregisterListener(this);
     }
 
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void on(BlockRedstoneEvent event) {
-        sampled.getChunk(event.getBlock().getChunk()).getRedstoneInteractions().incrementAndGet();
+    public AtomicDouble get(Block b, Sampler sampler) {
+        return get(b.getChunk(), sampler);
     }
 
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void on(BlockPhysicsEvent event) {
-        sampled.getChunk(event.getBlock().getChunk()).getWaterUpdates().incrementAndGet();
+    public AtomicDouble get(Chunk c, Sampler sampler) {
+        return sampled.getChunk(c).get(sampler.getId());
     }
 
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void on(BlockPistonExtendEvent event) {
-        sampled.getChunk(event.getBlock().getChunk()).getPistonInteractions().incrementAndGet();
-    }
-
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void on(BlockPistonRetractEvent event) {
-        sampled.getChunk(event.getBlock().getChunk()).getPistonInteractions().incrementAndGet();
+    public Optional<Double> sample(Chunk c, Sampler s) {
+        return sampled.optionalChunk(c).flatMap(i -> i.optional(s.getId())).map(AtomicDouble::get);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

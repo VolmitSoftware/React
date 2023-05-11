@@ -8,21 +8,19 @@ import com.volmit.react.util.math.RollingSequence;
 import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.BlockPistonExtendEvent;
-import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockRedstoneEvent;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class SamplerRedstoneUpdatesPerTick extends ReactCachedSampler implements Listener {
+public class SamplerRedstoneUpdates extends ReactCachedSampler implements Listener {
     public static final String ID = "redstone";
-    private static final double D1_OVER_TICKS = 1.0 / 50D;
+    private static final double D1_OVER_SECONDS = 1.0 / 1000D;
     private transient final AtomicInteger redstoneInteractions;
-    private transient final RollingSequence avg = new RollingSequence(20);
+    private transient final RollingSequence avg = new RollingSequence(5);
     private transient long lastSample = 0L;
 
-    public SamplerRedstoneUpdatesPerTick() {
-        super(ID, 50); // 1 tick interval for higher accuracy
+    public SamplerRedstoneUpdates() {
+        super(ID, 1000); // 1 tick interval for higher accuracy
         redstoneInteractions = new AtomicInteger(0);
     }
 
@@ -42,18 +40,9 @@ public class SamplerRedstoneUpdatesPerTick extends ReactCachedSampler implements
     }
 
     @EventHandler
-    public void on(BlockRedstoneEvent event) { // Get any block that is powered by redstone, and update the counter
+    public void on(BlockRedstoneEvent event) {
         redstoneInteractions.incrementAndGet();
-    }
-
-    @EventHandler
-    public void on(BlockPistonExtendEvent event) { // Get the Piston block, and update the counter for each block it pushes, and the piston itself
-        redstoneInteractions.addAndGet(event.getBlocks().size() + 2); // (the 2 is for the piston itself and the block it pushes into)
-    }
-
-    @EventHandler
-    public void on(BlockPistonRetractEvent event) { // Get the Piston block, and update the counter for each block it pulls, and the piston itself
-        redstoneInteractions.addAndGet(event.getBlocks().size() + 2); // (the 2 is for the piston itself and the block it pulls from)
+        getChunkCounter(event.getBlock()).addAndGet(1D);
     }
 
     @Override
@@ -63,9 +52,9 @@ public class SamplerRedstoneUpdatesPerTick extends ReactCachedSampler implements
         }
 
         int r = redstoneInteractions.getAndSet(0);
-        long dur = Math.max(M.ms() - lastSample, 50);
+        long dur = Math.max(M.ms() - lastSample, 1000);
         lastSample = M.ms();
-        avg.put(r / (dur * D1_OVER_TICKS));
+        avg.put(r / (dur * D1_OVER_SECONDS));
 
         return avg.getAverage();
     }
@@ -77,6 +66,6 @@ public class SamplerRedstoneUpdatesPerTick extends ReactCachedSampler implements
 
     @Override
     public String formattedSuffix(double t) {
-        return "RI/t";
+        return "RED/s";
     }
 }

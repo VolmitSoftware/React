@@ -1,31 +1,56 @@
 package com.volmit.react.model;
 
+import art.arcane.chrono.ChronoLatch;
 import com.google.common.util.concurrent.AtomicDouble;
+import com.volmit.react.util.cache.Cache;
 import lombok.Data;
 import org.bukkit.Chunk;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Optional;
+import java.util.function.DoubleUnaryOperator;
 
 @Data
 public class SampledChunk {
+    private static final DoubleUnaryOperator HALF = (v) -> v * 0.5D;
     private final Chunk chunk;
     private final SampledWorld world;
-
-    private Map<String, AtomicInteger> values;
-
-    private AtomicInteger redstoneInteractions = new AtomicInteger(0);
-    private AtomicInteger waterUpdates = new AtomicInteger(0);
-    private AtomicInteger pistonInteractions = new AtomicInteger(0);
+    private final ChronoLatch cleaner;
+    private Map<String, AtomicDouble> values;
 
     public SampledChunk(Chunk chunk, SampledWorld world) {
         this.chunk = chunk;
         this.world = world;
         this.values = new HashMap<>();
+        this.cleaner = new ChronoLatch(1000);
     }
 
-    public AtomicInteger get(String key) {
-        return values.computeIfAbsent(key, (k) -> new AtomicInteger(0));
+    public Optional<AtomicDouble> optional(String key) {
+        return values.containsKey(key) ? Optional.of(values.get(key)) : Optional.empty();
+    }
+
+    public AtomicDouble get(String key) {
+        if(cleaner.flip()) {
+            cleanup();
+        }
+
+        return values.computeIfAbsent(key, (k) -> new AtomicDouble(0D));
+    }
+
+    private void cleanup() {
+        String remove = null;
+
+        for(String i : values.keySet()) {
+            double v = values.get(i).updateAndGet(HALF);
+
+            if(remove == null && v <= 1) {
+                remove = i;
+            }
+        }
+
+        if(remove != null) {
+            values.remove(remove);
+        }
     }
 }
