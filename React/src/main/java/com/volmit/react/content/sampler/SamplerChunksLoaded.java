@@ -16,7 +16,6 @@ import org.bukkit.event.world.WorldUnloadEvent;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-//
 public class SamplerChunksLoaded extends ReactCachedSampler implements Listener {
     public static final String ID = "chunks-loaded";
     private transient final AtomicInteger loadedChunks;
