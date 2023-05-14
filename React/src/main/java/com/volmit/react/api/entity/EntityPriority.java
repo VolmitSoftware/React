@@ -1,22 +1,38 @@
 package com.volmit.react.api.entity;
 
+import com.volmit.react.util.math.M;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.entity.Ageable;
+import org.bukkit.entity.Breedable;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Monster;
+import org.bukkit.entity.Player;
+import org.bukkit.entity.Tameable;
+import org.bukkit.util.Vector;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class EntityPriority {
+    private static final double baseline = 100;
+    private int consideredNewTicks = 20 * 60 * 5; // 5 minutes
+    private double oldMultiplier = 0.85;
+    private double newMultiplier = 2.5;
     private double consumableMultiplier = 10;
     private double mechanicMultiplier = 25;
-    private double livingMultiplier = 5;
     private double lowTickMultiplier = 2;
     private double bossMultiplier = 20;
+    private double movingMultiplier = 2.5;
     private double stationaryMultiplier = 3;
     private double highValueMultiplier = 7;
     private double ephemeralMultiplier = 30;
     private double lowValueMultiplier = 0.65;
     private double tameableMultiplier = 2.5;
+    private double tamedMultiplier = 15;
+    private double babyMultiplier = 1.4;
+    private double adultMultiplier = 0.9;
     private double ambientMultiplier = 0.5;
     private double waterMultiplier = 0.75;
     private double projectileMultiplier = 1.5;
@@ -24,21 +40,32 @@ public class EntityPriority {
     private double monsterMultiplier = 1.25;
     private double passiveMultiplier = 1.15;
     private double villageMultiplier = 6.5;
+    private double livingMultiplier = 5;
+    private double fullHealthMultiplier = 0.75;
+    private double lowHealthMultiplier = 1.35;
     private Map<EntityType, Double> entityTypePriority = new HashMap<>();
+
+    public EntityPriority() {
+        entityTypePriority = buildPriority();
+    }
+
+    public void rebuildPriority() {
+        entityTypePriority = buildPriority();
+    }
 
     private Map<EntityType, Double> buildPriority() {
         Map<EntityType, Double> p = new HashMap<>();
 
         for(EntityType i : EntityType.values()) {
-            double v = 1000;
+            double v = baseline;
             switch(i) {
                 case DROPPED_ITEM -> v *= consumableMultiplier;
-                case EXPERIENCE_ORB -> v *= consumableMultiplier * lowValueMultiplier;
+                case EXPERIENCE_ORB, EGG -> v *= consumableMultiplier * lowValueMultiplier;
                 case AREA_EFFECT_CLOUD -> v *= ambientMultiplier * lowTickMultiplier * ephemeralMultiplier;
                 case ELDER_GUARDIAN -> v *= bossMultiplier * monsterMultiplier;
-                case WITHER_SKELETON -> v *= monsterMultiplier;
-                case STRAY -> v *= monsterMultiplier;
-                case EGG -> v *= consumableMultiplier * lowValueMultiplier;
+                case WITHER_SKELETON, WARDEN, ALLAY, PIGLIN_BRUTE, ZOGLIN, PIGLIN, HOGLIN, RAVAGER, PILLAGER, SHULKER, GUARDIAN,
+                    ENDERMITE, WITCH, MAGMA_CUBE, BLAZE, SILVERFISH, CAVE_SPIDER, ENDERMAN, ZOMBIFIED_PIGLIN, GHAST, SLIME, ZOMBIE,
+                    GIANT, SPIDER, SKELETON, CREEPER, ILLUSIONER, VINDICATOR, VEX, EVOKER, HUSK, STRAY -> v *= monsterMultiplier;
                 case LEASH_HITCH -> v *= mechanicMultiplier * lowTickMultiplier * stationaryMultiplier;
                 case PAINTING -> v *= lowTickMultiplier * stationaryMultiplier * mechanicMultiplier;
                 case ARROW -> v *= projectileMultiplier * lowValueMultiplier;
@@ -54,108 +81,61 @@ public class EntityPriority {
                 case PRIMED_TNT -> v *= projectileMultiplier * ephemeralMultiplier;
                 case FALLING_BLOCK -> v *= projectileMultiplier * ephemeralMultiplier * mechanicMultiplier;
                 case FIREWORK -> v *= projectileMultiplier * ephemeralMultiplier * ephemeralMultiplier;
-                case HUSK -> v *= monsterMultiplier;
                 case SPECTRAL_ARROW -> v *= projectileMultiplier * ephemeralMultiplier;
                 case SHULKER_BULLET -> v *= projectileMultiplier * ephemeralMultiplier;
-                case DRAGON_FIREBALL -> v *= 1;
-                case ZOMBIE_VILLAGER -> v *= 1;
-                case SKELETON_HORSE -> v *= 1;
-                case ZOMBIE_HORSE -> v *= 1;
-                case ARMOR_STAND -> v *= 1;
-                case DONKEY -> v *= 1;
-                case MULE -> v *= 1;
-                case EVOKER_FANGS -> v *= 1;
-                case EVOKER -> v *= 1;
-                case VEX -> v *= 1;
-                case VINDICATOR -> v *= 1;
-                case ILLUSIONER -> v *= 1;
-                case MINECART_COMMAND -> v *= 1;
-                case BOAT -> v *= 1;
-                case MINECART -> v *= 1;
-                case MINECART_CHEST -> v *= 1;
-                case MINECART_FURNACE -> v *= 1;
-                case MINECART_TNT -> v *= 1;
-                case MINECART_HOPPER -> v *= 1;
-                case MINECART_MOB_SPAWNER -> v *= 1;
-                case CREEPER -> v *= 1;
-                case SKELETON -> v *= 1;
-                case SPIDER -> v *= 1;
-                case GIANT -> v *= 1;
-                case ZOMBIE -> v *= 1;
-                case SLIME -> v *= 1;
-                case GHAST -> v *= 1;
-                case ZOMBIFIED_PIGLIN -> v *= 1;
-                case ENDERMAN -> v *= 1;
-                case CAVE_SPIDER -> v *= 1;
-                case SILVERFISH -> v *= 1;
-                case BLAZE -> v *= 1;
-                case MAGMA_CUBE -> v *= 1;
-                case ENDER_DRAGON -> v *= 1;
-                case WITHER -> v *= 1;
-                case BAT -> v *= 1;
-                case WITCH -> v *= 1;
-                case ENDERMITE -> v *= 1;
-                case GUARDIAN -> v *= 1;
-                case SHULKER -> v *= 1;
-                case PIG -> v *= 1;
-                case SHEEP -> v *= 1;
-                case COW -> v *= 1;
-                case CHICKEN -> v *= 1;
-                case SQUID -> v *= 1;
-                case WOLF -> v *= 1;
-                case MUSHROOM_COW -> v *= 1;
-                case SNOWMAN -> v *= 1;
-                case OCELOT -> v *= 1;
-                case IRON_GOLEM -> v *= 1;
-                case HORSE -> v *= 1;
-                case RABBIT -> v *= 1;
-                case POLAR_BEAR -> v *= 1;
-                case LLAMA -> v *= 1;
-                case LLAMA_SPIT -> v *= 1;
-                case PARROT -> v *= 1;
-                case VILLAGER -> v *= 1;
-                case ENDER_CRYSTAL -> v *= 1;
-                case TURTLE -> v *= 1;
-                case PHANTOM -> v *= 1;
-                case TRIDENT -> v *= 1;
-                case COD -> v *= 1;
-                case SALMON -> v *= 1;
-                case PUFFERFISH -> v *= 1;
-                case TROPICAL_FISH -> v *= 1;
-                case DROWNED -> v *= 1;
-                case DOLPHIN -> v *= 1;
-                case CAT -> v *= 1;
-                case PANDA -> v *= 1;
-                case PILLAGER -> v *= 1;
-                case RAVAGER -> v *= 1;
-                case TRADER_LLAMA -> v *= 1;
-                case WANDERING_TRADER -> v *= 1;
-                case FOX -> v *= 1;
-                case BEE -> v *= 1;
-                case HOGLIN -> v *= 1;
-                case PIGLIN -> v *= 1;
-                case STRIDER -> v *= 1;
-                case ZOGLIN -> v *= 1;
-                case PIGLIN_BRUTE -> v *= 1;
-                case AXOLOTL -> v *= 1;
-                case GLOW_ITEM_FRAME -> v *= 1;
-                case GLOW_SQUID -> v *= 1;
-                case GOAT -> v *= 1;
-                case MARKER -> v *= 1;
-                case ALLAY -> v *= 1;
-                case CHEST_BOAT -> v *= 1;
-                case FROG -> v *= 1;
-                case TADPOLE -> v *= 1;
-                case WARDEN -> v *= 1;
-                case CAMEL -> v *= 1;
-                case BLOCK_DISPLAY -> v *= 1;
-                case INTERACTION -> v *= 1;
-                case ITEM_DISPLAY -> v *= 1;
-                case SNIFFER -> v *= 1;
-                case TEXT_DISPLAY -> v *= 1;
-                case FISHING_HOOK -> v *= 1;
-                case LIGHTNING -> v *= 1;
-                case PLAYER -> v *= 1;
+                case DRAGON_FIREBALL -> v *= projectileMultiplier * ephemeralMultiplier;
+                case ZOMBIE_VILLAGER -> v *= monsterMultiplier * villageMultiplier;
+                case SKELETON_HORSE -> v *= monsterMultiplier * vehicleMultiplier;
+                case ZOMBIE_HORSE -> v *= monsterMultiplier * vehicleMultiplier;
+                case ARMOR_STAND -> v *= lowTickMultiplier * stationaryMultiplier * mechanicMultiplier;
+                case DONKEY, MINECART, BOAT, MULE -> v *= vehicleMultiplier;
+                case EVOKER_FANGS -> v *= projectileMultiplier * ephemeralMultiplier;
+                case MINECART_COMMAND -> v *= vehicleMultiplier * mechanicMultiplier;
+                case MINECART_CHEST -> v *= vehicleMultiplier * highValueMultiplier * mechanicMultiplier;
+                case MINECART_FURNACE -> v *= vehicleMultiplier * mechanicMultiplier * highValueMultiplier;
+                case MINECART_TNT -> v *= vehicleMultiplier * mechanicMultiplier;
+                case MINECART_HOPPER -> v *= vehicleMultiplier * highValueMultiplier * mechanicMultiplier;
+                case MINECART_MOB_SPAWNER -> v *= vehicleMultiplier * mechanicMultiplier;
+                case ENDER_DRAGON, WITHER -> v *= bossMultiplier;
+                case BAT -> v *= ambientMultiplier;
+                case PIG, SNIFFER, CAMEL, FROG, GOAT, BEE, PANDA, TURTLE, POLAR_BEAR,
+                    RABBIT, SNOWMAN, MUSHROOM_COW, CHICKEN, COW, SHEEP -> v *= passiveMultiplier;
+                case SQUID -> v *= passiveMultiplier * waterMultiplier;
+                case WOLF -> v *= passiveMultiplier * tameableMultiplier;
+                case OCELOT -> v *= passiveMultiplier * tameableMultiplier;
+                case IRON_GOLEM -> v *= passiveMultiplier * villageMultiplier;
+                case HORSE -> v *= passiveMultiplier * vehicleMultiplier;
+                case LLAMA -> v *= passiveMultiplier * vehicleMultiplier;
+                case LLAMA_SPIT -> v *= projectileMultiplier * ephemeralMultiplier;
+                case PARROT -> v *= passiveMultiplier * tameableMultiplier;
+                case VILLAGER -> v *= passiveMultiplier * villageMultiplier;
+                case ENDER_CRYSTAL -> v *= bossMultiplier * lowTickMultiplier * mechanicMultiplier;
+                case PHANTOM -> v *= monsterMultiplier * mechanicMultiplier;
+                case TRIDENT -> v *= projectileMultiplier * highValueMultiplier * ephemeralMultiplier * lowTickMultiplier;
+                case COD -> v *= passiveMultiplier * waterMultiplier;
+                case SALMON -> v *= passiveMultiplier * waterMultiplier;
+                case PUFFERFISH -> v *= passiveMultiplier * waterMultiplier;
+                case TROPICAL_FISH -> v *= passiveMultiplier * waterMultiplier;
+                case DROWNED -> v *= monsterMultiplier * waterMultiplier;
+                case DOLPHIN -> v *= passiveMultiplier * waterMultiplier * tameableMultiplier;
+                case CAT -> v *= passiveMultiplier * tameableMultiplier;
+                case TRADER_LLAMA -> v *= passiveMultiplier * vehicleMultiplier * villageMultiplier * mechanicMultiplier;
+                case WANDERING_TRADER -> v *= passiveMultiplier * villageMultiplier * mechanicMultiplier;
+                case FOX -> v *= passiveMultiplier * tameableMultiplier;
+                case STRIDER -> v *= passiveMultiplier * waterMultiplier;
+                case AXOLOTL -> v *= passiveMultiplier * waterMultiplier;
+                case GLOW_ITEM_FRAME -> v *= lowTickMultiplier * stationaryMultiplier * mechanicMultiplier;
+                case GLOW_SQUID -> v *= passiveMultiplier * waterMultiplier * highValueMultiplier;
+                case MARKER -> v *= lowTickMultiplier * stationaryMultiplier * mechanicMultiplier;
+                case CHEST_BOAT -> v *= vehicleMultiplier * highValueMultiplier;
+                case TADPOLE -> v *= passiveMultiplier * lowValueMultiplier;
+                case BLOCK_DISPLAY -> v *= lowTickMultiplier * stationaryMultiplier * mechanicMultiplier;
+                case INTERACTION -> v *= lowTickMultiplier * stationaryMultiplier * mechanicMultiplier;
+                case ITEM_DISPLAY -> v *= lowTickMultiplier * stationaryMultiplier * mechanicMultiplier;
+                case TEXT_DISPLAY -> v *= lowTickMultiplier * stationaryMultiplier * mechanicMultiplier;
+                case FISHING_HOOK -> v *= projectileMultiplier * ephemeralMultiplier * mechanicMultiplier;
+                case LIGHTNING -> v *= mechanicMultiplier * ephemeralMultiplier;
+                case PLAYER -> v *= mechanicMultiplier * ephemeralMultiplier;
                 case UNKNOWN -> v *= 1;
             }
         }
@@ -163,9 +143,69 @@ public class EntityPriority {
         return p;
     }
 
-    public static double getPriority(Entity e) {
-        double buf = 0;
+    public double getAgeMultipler(int ticksLived)
+    {
+        if(ticksLived > consideredNewTicks) {
+            return oldMultiplier;
+        }
 
-        return 0;
+        return M.lerp(newMultiplier, oldMultiplier, ticksLived / (double) consideredNewTicks);
+    }
+
+    public double getPriority(Entity e) {
+        double buf = entityTypePriority.getOrDefault(e.getType(), baseline);
+        buf *= getAgeMultipler(e.getTicksLived());
+
+        if(e instanceof Player) {
+            return -1;
+        }
+
+
+        if(e instanceof LivingEntity l) {
+            double d = Math.abs(l.getVelocity().length());
+
+            if(d < 1) {
+                buf *= M.lerp(1, movingMultiplier, d);
+            }
+        }
+
+        if(e instanceof LivingEntity l) {
+            buf *= livingMultiplier;
+
+            double maxHealth = l.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue();
+            double h = l.getHealth();
+
+            if(h >= maxHealth) {
+                buf *= fullHealthMultiplier;
+            }
+
+            else if(h <= 0){
+                buf *= lowHealthMultiplier;
+            }
+
+            else {
+                buf *= M.lerp(lowHealthMultiplier, fullHealthMultiplier, h / maxHealth);
+            }
+        }
+
+        if(e instanceof Tameable t) {
+            buf *= tameableMultiplier;
+
+            if(t.isTamed()) {
+                buf *= tamedMultiplier;
+            }
+        }
+
+        if(e instanceof Breedable a ) {
+            if(a.getAgeLock() || a.isAdult()) {
+                buf *= adultMultiplier;
+            }
+
+            else if(!a.isAdult()) {
+                buf *= babyMultiplier;
+            }
+        }
+
+        return buf;
     }
 }
