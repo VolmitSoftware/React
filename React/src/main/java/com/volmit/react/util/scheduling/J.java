@@ -241,7 +241,7 @@ public class J {
     public static void sr(Runnable r, int interval, int intervals) {
         FinalInteger fi = new FinalInteger(0);
 
-        new SR() {
+        new SR(interval) {
             @Override
             public void run() {
                 fi.add(1);

@@ -5,6 +5,7 @@ import com.volmit.react.React;
 import com.volmit.react.api.sampler.ReactCachedSampler;
 import com.volmit.react.util.format.Form;
 import com.volmit.react.util.scheduling.J;
+import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -22,6 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class SamplerEntities extends ReactCachedSampler implements Listener {
     public static final String ID = "entities";
+    @Getter
     private transient final AtomicInteger entities;
     private transient ChronoLatch realEntityUpdate;
     private int realityCheckMS = 10000;

@@ -3,7 +3,6 @@ package com.volmit.react.core.controller;
 import com.volmit.react.React;
 import com.volmit.react.api.feature.Feature;
 import com.volmit.react.api.feature.ReactTickedFeature;
-import com.volmit.react.content.feature.FeatureRedstoneMirari;
 import com.volmit.react.content.feature.FeatureUnknown;
 import com.volmit.react.util.io.JarScanner;
 import com.volmit.react.util.plugin.IController;

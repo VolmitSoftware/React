@@ -1,30 +1,33 @@
 package com.volmit.react.api.entity;
 
+import com.volmit.react.React;
+import com.volmit.react.util.format.Form;
 import com.volmit.react.util.math.M;
+import com.volmit.react.util.scheduling.J;
+import org.bukkit.Bukkit;
 import org.bukkit.attribute.Attribute;
-import org.bukkit.entity.Ageable;
 import org.bukkit.entity.Breedable;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Tameable;
-import org.bukkit.util.Vector;
+import org.bukkit.metadata.FixedMetadataValue;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class EntityPriority {
     private static final double baseline = 100;
-    private int consideredNewTicks = 20 * 60 * 5; // 5 minutes
-    private double oldMultiplier = 0.85;
+    private int consideredNewTicks = 20 * 5; // 1 minute
+    private double oldMultiplier = 0.75;
+    private double crowdMultiplier = 0.9;
     private double newMultiplier = 2.5;
     private double consumableMultiplier = 10;
     private double mechanicMultiplier = 25;
     private double lowTickMultiplier = 2;
     private double bossMultiplier = 20;
-    private double movingMultiplier = 2.5;
+    private double movingMultiplier = 1.1;
     private double stationaryMultiplier = 3;
     private double highValueMultiplier = 7;
     private double ephemeralMultiplier = 30;
@@ -36,14 +39,15 @@ public class EntityPriority {
     private double ambientMultiplier = 0.5;
     private double waterMultiplier = 0.75;
     private double projectileMultiplier = 1.5;
-    private double vehicleMultiplier = 2.5;
+    private double vehicleMultiplier = 4.5;
+    private double rideMultiplier = 1.08;
     private double monsterMultiplier = 1.25;
     private double passiveMultiplier = 1.15;
     private double villageMultiplier = 6.5;
     private double livingMultiplier = 5;
     private double fullHealthMultiplier = 0.75;
     private double lowHealthMultiplier = 1.35;
-    private Map<EntityType, Double> entityTypePriority = new HashMap<>();
+    private transient Map<EntityType, Double> entityTypePriority = new HashMap<>();
 
     public EntityPriority() {
         entityTypePriority = buildPriority();
@@ -51,6 +55,60 @@ public class EntityPriority {
 
     public void rebuildPriority() {
         entityTypePriority = buildPriority();
+    }
+
+    public void setLastCrowd(Entity e) {
+        e.setMetadata("react-crowd-last", new FixedMetadataValue(React.instance, M.ms()));
+    }
+
+    public long getLastCrowd(Entity e) {
+        if(e.hasMetadata("react-crowd-last")) {
+            return e.getMetadata("react-crowd-last").get(0).asLong();
+        }
+
+        return 0;
+    }
+
+    public double getCrowd(Entity e) {
+        if(e.hasMetadata("react-crowd")) {
+            return e.getMetadata("react-crowd").get(0).asDouble();
+        }
+
+        return 1;
+    }
+
+    public void setCrowd(Entity e) {
+        if(M.ms() - getLastCrowd(e) > 10000) {
+            e.setMetadata("react-crowd", new FixedMetadataValue(React.instance, computeCrowd(e)));
+            setLastCrowd(e);
+        }
+    }
+
+    private double computeCrowd(Entity e) {
+        if(!Bukkit.isPrimaryThread()) {
+            return J.sResult(() -> computeCrowd(e));
+        }
+
+        double priority = getPriority(e);
+        double minPriority = priority * 0.25;
+        double maxPriority = priority * 1.15;
+        double count = 1;
+
+        for(Entity i : e.getNearbyEntities(8,8,8)) {
+            if(i.getUniqueId().equals(e.getUniqueId())) {
+                continue;
+            }
+
+            priority = getPriority(i);
+
+            if(priority < minPriority || priority > maxPriority) {
+                continue;
+            }
+
+            count += M.lerp(1.2, 0.8, M.lerpInverse(minPriority, maxPriority, priority));
+        }
+
+        return count;
     }
 
     private Map<EntityType, Double> buildPriority() {
@@ -63,7 +121,7 @@ public class EntityPriority {
                 case EXPERIENCE_ORB, EGG -> v *= consumableMultiplier * lowValueMultiplier;
                 case AREA_EFFECT_CLOUD -> v *= ambientMultiplier * lowTickMultiplier * ephemeralMultiplier;
                 case ELDER_GUARDIAN -> v *= bossMultiplier * monsterMultiplier;
-                case WITHER_SKELETON, WARDEN, ALLAY, PIGLIN_BRUTE, ZOGLIN, PIGLIN, HOGLIN, RAVAGER, PILLAGER, SHULKER, GUARDIAN,
+                case WITHER_SKELETON, ALLAY, PIGLIN_BRUTE, ZOGLIN, HOGLIN, RAVAGER, PILLAGER, SHULKER, GUARDIAN,
                     ENDERMITE, WITCH, MAGMA_CUBE, BLAZE, SILVERFISH, CAVE_SPIDER, ENDERMAN, ZOMBIFIED_PIGLIN, GHAST, SLIME, ZOMBIE,
                     GIANT, SPIDER, SKELETON, CREEPER, ILLUSIONER, VINDICATOR, VEX, EVOKER, HUSK, STRAY -> v *= monsterMultiplier;
                 case LEASH_HITCH -> v *= mechanicMultiplier * lowTickMultiplier * stationaryMultiplier;
@@ -84,11 +142,12 @@ public class EntityPriority {
                 case SPECTRAL_ARROW -> v *= projectileMultiplier * ephemeralMultiplier;
                 case SHULKER_BULLET -> v *= projectileMultiplier * ephemeralMultiplier;
                 case DRAGON_FIREBALL -> v *= projectileMultiplier * ephemeralMultiplier;
+                case PIGLIN -> v *= villageMultiplier * monsterMultiplier * lowValueMultiplier;
                 case ZOMBIE_VILLAGER -> v *= monsterMultiplier * villageMultiplier;
-                case SKELETON_HORSE -> v *= monsterMultiplier * vehicleMultiplier;
-                case ZOMBIE_HORSE -> v *= monsterMultiplier * vehicleMultiplier;
+                case SKELETON_HORSE -> v *= monsterMultiplier * rideMultiplier;
+                case ZOMBIE_HORSE -> v *= monsterMultiplier * rideMultiplier;
                 case ARMOR_STAND -> v *= lowTickMultiplier * stationaryMultiplier * mechanicMultiplier;
-                case DONKEY, MINECART, BOAT, MULE -> v *= vehicleMultiplier;
+                case MINECART, BOAT -> v *= vehicleMultiplier * rideMultiplier * mechanicMultiplier;
                 case EVOKER_FANGS -> v *= projectileMultiplier * ephemeralMultiplier;
                 case MINECART_COMMAND -> v *= vehicleMultiplier * mechanicMultiplier;
                 case MINECART_CHEST -> v *= vehicleMultiplier * highValueMultiplier * mechanicMultiplier;
@@ -96,7 +155,7 @@ public class EntityPriority {
                 case MINECART_TNT -> v *= vehicleMultiplier * mechanicMultiplier;
                 case MINECART_HOPPER -> v *= vehicleMultiplier * highValueMultiplier * mechanicMultiplier;
                 case MINECART_MOB_SPAWNER -> v *= vehicleMultiplier * mechanicMultiplier;
-                case ENDER_DRAGON, WITHER -> v *= bossMultiplier;
+                case ENDER_DRAGON, WITHER, WARDEN -> v *= bossMultiplier * monsterMultiplier * highValueMultiplier;
                 case BAT -> v *= ambientMultiplier;
                 case PIG, SNIFFER, CAMEL, FROG, GOAT, BEE, PANDA, TURTLE, POLAR_BEAR,
                     RABBIT, SNOWMAN, MUSHROOM_COW, CHICKEN, COW, SHEEP -> v *= passiveMultiplier;
@@ -104,8 +163,7 @@ public class EntityPriority {
                 case WOLF -> v *= passiveMultiplier * tameableMultiplier;
                 case OCELOT -> v *= passiveMultiplier * tameableMultiplier;
                 case IRON_GOLEM -> v *= passiveMultiplier * villageMultiplier;
-                case HORSE -> v *= passiveMultiplier * vehicleMultiplier;
-                case LLAMA -> v *= passiveMultiplier * vehicleMultiplier;
+                case HORSE, LLAMA, DONKEY, MULE -> v *= passiveMultiplier * rideMultiplier;
                 case LLAMA_SPIT -> v *= projectileMultiplier * ephemeralMultiplier;
                 case PARROT -> v *= passiveMultiplier * tameableMultiplier;
                 case VILLAGER -> v *= passiveMultiplier * villageMultiplier;
@@ -135,16 +193,17 @@ public class EntityPriority {
                 case TEXT_DISPLAY -> v *= lowTickMultiplier * stationaryMultiplier * mechanicMultiplier;
                 case FISHING_HOOK -> v *= projectileMultiplier * ephemeralMultiplier * mechanicMultiplier;
                 case LIGHTNING -> v *= mechanicMultiplier * ephemeralMultiplier;
-                case PLAYER -> v *= mechanicMultiplier * ephemeralMultiplier;
+                case PLAYER -> v = -1;
                 case UNKNOWN -> v *= 1;
             }
+
+            p.put(i, v);
         }
 
         return p;
     }
 
-    public double getAgeMultipler(int ticksLived)
-    {
+    public double getAgeMultipler(int ticksLived) {
         if(ticksLived > consideredNewTicks) {
             return oldMultiplier;
         }
@@ -152,8 +211,34 @@ public class EntityPriority {
         return M.lerp(newMultiplier, oldMultiplier, ticksLived / (double) consideredNewTicks);
     }
 
+
+    public double getPriority(EntityType e) {
+        return entityTypePriority.getOrDefault(e, baseline);
+    }
+
+    public double getPriorityWithCrowd(Entity e) {
+        double c = getCrowd(e);
+        double p = getPriority(e);
+
+        if(c <= 1) {
+            return p;
+        }
+
+        c-=1;
+
+        if(c < 1) {
+            return p * crowdMultiplier;
+        }
+
+        if(c > 1) {
+            return p * Math.pow(crowdMultiplier, c);
+        }
+
+        return p * crowdMultiplier;
+    }
+
     public double getPriority(Entity e) {
-        double buf = entityTypePriority.getOrDefault(e.getType(), baseline);
+        double buf = getPriority(e.getType());
         buf *= getAgeMultipler(e.getTicksLived());
 
         if(e instanceof Player) {

@@ -2,9 +2,11 @@ package com.volmit.react;
 
 import art.arcane.multiburst.MultiBurst;
 import com.volmit.react.core.controller.*;
+import com.volmit.react.util.EntityKiller;
 import com.volmit.react.util.collection.KList;
 import com.volmit.react.util.format.C;
 import com.volmit.react.util.io.JarScanner;
+import com.volmit.react.util.math.M;
 import com.volmit.react.util.plugin.SplashScreen;
 import com.volmit.react.util.plugin.VolmitPlugin;
 import com.volmit.react.util.scheduling.J;
@@ -12,6 +14,7 @@ import com.volmit.react.util.scheduling.Ticker;
 import lombok.Getter;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Entity;
 
 import java.io.File;
 import java.lang.annotation.Annotation;
@@ -46,6 +49,10 @@ public class React extends VolmitPlugin {
 
     public static void verbose(String string) {
         msg(C.LIGHT_PURPLE + string);
+    }
+
+    public static void kill(Entity e) {
+        new EntityKiller(e, 3);
     }
 
     public static void msg(String string) {

@@ -88,7 +88,7 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
     }
 
     private void purge(Entity entity, ActionTicket<Params> ticket) {
-        J.s(entity::remove, (int) (20 * Math.random()));
+        J.s(() -> React.kill(entity), (int) (20 * Math.random()));
         ticket.addCount();
     }
 
