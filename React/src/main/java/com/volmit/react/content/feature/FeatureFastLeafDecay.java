@@ -128,7 +128,7 @@ public class FeatureFastLeafDecay extends ReactFeature implements Listener {
         synchronized (search) {
             int i, j, k;
             for (Block block : search) {
-                BlockData d; 
+                BlockData d;
                 for (i = block.getX() - getLeafDecayRadius(); i < block.getX() + getLeafDecayRadius(); i++) {
                     for (j = block.getY() - getLeafDecayRadius(); j < block.getY() + getLeafDecayRadius(); j++) {
                         for (k = block.getZ() - getLeafDecayRadius(); k < block.getZ() + getLeafDecayRadius(); k++) {
