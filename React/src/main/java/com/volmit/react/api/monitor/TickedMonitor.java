@@ -4,6 +4,7 @@ import com.volmit.react.React;
 import com.volmit.react.api.sampler.Sampler;
 import com.volmit.react.util.math.ApproachingValue;
 import com.volmit.react.util.math.M;
+import com.volmit.react.util.scheduling.TickedMonitorObject;
 import com.volmit.react.util.scheduling.TickedObject;
 import lombok.Getter;
 
@@ -12,7 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public abstract class TickedMonitor extends TickedObject implements Monitor {
+public abstract class TickedMonitor extends TickedMonitorObject implements Monitor {
     protected final Map<Sampler, Double> samplers;
     protected final Map<Sampler, ApproachingValue> approachers;
     protected final Map<Sampler, Double> changers;

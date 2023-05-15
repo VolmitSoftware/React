@@ -2,6 +2,7 @@ package com.volmit.react.model;
 
 import com.google.gson.Gson;
 import com.volmit.react.React;
+import com.volmit.react.api.entity.EntityPriority;
 import com.volmit.react.api.monitor.configuration.MonitorConfiguration;
 import com.volmit.react.api.monitor.configuration.MonitorGroup;
 import com.volmit.react.content.sampler.*;
@@ -15,6 +16,7 @@ import java.io.IOException;
 @Data
 public class ReactConfiguration {
     private static ReactConfiguration configuration;
+    private EntityPriority priority = new EntityPriority();
     private boolean customColors = true;
     private boolean verbose = false;
     private Monitoring monitoring = new Monitoring();
@@ -58,7 +60,7 @@ public class ReactConfiguration {
                         .sampler(SamplerProcessorSystemLoad.ID)
                         .sampler(SamplerProcessorOutsideLoad.ID)
                         .sampler(SamplerReactTickTime.ID)
-                        .sampler(SamplerReactTasksPerSecond.ID)
+                        .sampler(SamplerReactJobsQueue.ID)
                         .build())
                 .group(MonitorGroup.builder()
                         .name("Memory")

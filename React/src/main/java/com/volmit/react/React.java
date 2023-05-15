@@ -6,7 +6,6 @@ import com.volmit.react.util.EntityKiller;
 import com.volmit.react.util.collection.KList;
 import com.volmit.react.util.format.C;
 import com.volmit.react.util.io.JarScanner;
-import com.volmit.react.util.math.M;
 import com.volmit.react.util.plugin.SplashScreen;
 import com.volmit.react.util.plugin.VolmitPlugin;
 import com.volmit.react.util.scheduling.J;
@@ -26,6 +25,7 @@ public class React extends VolmitPlugin {
     public static React instance;
     public static Thread serverThread;
     public static Ticker ticker;
+    public static Ticker monitorTicker;
     public static MultiBurst burst;
     private SampleController sampleController;
     private PlayerController playerController;
@@ -34,6 +34,8 @@ public class React extends VolmitPlugin {
     private ActionController actionController;
     private CommandController commandController;
     private ObserverController observerController;
+    private EntityController entityController;
+    private JobController jobController;
 
     public React() {
         instance = this;
@@ -52,7 +54,7 @@ public class React extends VolmitPlugin {
     }
 
     public static void kill(Entity e) {
-        new EntityKiller(e, 3);
+        new EntityKiller(e, 5);
     }
 
     public static void msg(String string) {
@@ -124,7 +126,9 @@ public class React extends VolmitPlugin {
         instance = this;
         burst = new MultiBurst("React", Thread.MIN_PRIORITY);
         ticker = new Ticker();
+        monitorTicker = new Ticker();
         audiences = BukkitAudiences.create(this);
+        jobController = new JobController();
         commandController = new CommandController();
         eventController = new EventController();
         playerController = new PlayerController();
@@ -132,6 +136,7 @@ public class React extends VolmitPlugin {
         actionController = new ActionController();
         featureController = new FeatureController();
         observerController = new ObserverController();
+        entityController = new EntityController();
         sampleController.postStart();
         featureController.postStart();
         actionController.postStart();
@@ -142,13 +147,17 @@ public class React extends VolmitPlugin {
     public void stop() {
         burst.close();
         ticker.clear();
+        monitorTicker.clear();
         ticker.close();
+        monitorTicker.close();
         eventController.stop();
         playerController.stop();
         sampleController.stop();
         actionController.stop();
         commandController.stop();
         featureController.stop();
+        entityController.stop();
+        jobController.stop();
     }
 
     @Override
@@ -158,6 +167,10 @@ public class React extends VolmitPlugin {
 
     public Ticker getTicker() {
         return ticker;
+    }
+
+    public Ticker getMonitorTicker() {
+        return monitorTicker;
     }
 
     public void reload() {

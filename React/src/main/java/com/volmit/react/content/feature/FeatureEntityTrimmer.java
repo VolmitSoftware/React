@@ -9,6 +9,8 @@ import com.volmit.react.React;
 import com.volmit.react.api.entity.EntityPriority;
 import com.volmit.react.api.feature.ReactFeature;
 import com.volmit.react.content.sampler.SamplerChunksLoaded;
+import com.volmit.react.model.ReactConfiguration;
+import com.volmit.react.model.ReactEntity;
 import com.volmit.react.util.format.Form;
 import com.volmit.react.util.math.M;
 import com.volmit.react.util.scheduling.J;
@@ -17,48 +19,54 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
-import org.bukkit.ChunkSnapshot;
-import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.block.data.BlockData;
-import org.bukkit.block.data.type.Leaves;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.LeavesDecayEvent;
-import org.bukkit.event.entity.EntityBreedEvent;
-import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.entity.EntityInteractEvent;
-import org.bukkit.event.entity.EntityPoseChangeEvent;
-import org.bukkit.event.entity.EntityRegainHealthEvent;
-import org.bukkit.event.entity.EntitySpawnEvent;
-import org.bukkit.event.entity.EntityTargetEvent;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 public class FeatureEntityTrimmer extends ReactFeature implements Listener {
     public static final String ID = "entity-trimmer";
     private transient double maxPriority = -1;
     private transient int cooldown = 0;
-    private EntityPriority priority = new EntityPriority();
-    private int softMaxEntitiesPerChunk = 10;
-    private int softMaxEntitiesPerPlayer = 60;
+
+    /**
+     * Calculates total chunks * softMax to see if we are exceeding
+     */
+    private int softMaxEntitiesPerChunk = 11;
+
+    /**
+     * Calculates players * softMax to see if we are exceeding
+     */
+    private int softMaxEntitiesPerPlayer = 100;
+
+    /**
+     * Calculates worlds * softMax to see if we are exceeding
+     */
     private int softMaxEntitiesPerWorld = 1000;
+
+    /**
+     * Use the lowest X percent of entities by priority. Anything higher than the cutoff wont be touched
+     */
     private double priorityPercentCutoff = 0.1;
+
+    /**
+     * How often to tick in ms
+     */
     private int tickIntervalMS = 1000;
-    private double opporunityThreshold = 0.1;
-    private double maxCrowdCalculationMS = 1;
-    private int minKillBatchSize = 25;
+
+    /**
+     * Will only run if it can take away X percent of entities. Wont take more per tick either
+     */
+    private double opporunityThreshold = 0.25;
+
+    /**
+     * The minimum amount of entities to kill per cycle. Lower than this it wont run
+     */
+    private int minKillBatchSize = 50;
 
     public FeatureEntityTrimmer() {
         super(ID);
@@ -67,12 +75,11 @@ public class FeatureEntityTrimmer extends ReactFeature implements Listener {
     @Override
     public void onActivate() {
         React.instance.registerListener(this);
-        priority.rebuildPriority();
         double maxPriority = -1;
         double minPriority = Double.MAX_VALUE;
 
         for(EntityType i : EntityType.values()) {
-            double p = priority.getPriority(i);
+            double p = ReactConfiguration.get().getPriority().getPriority(i);
             if(p > maxPriority) {
                 maxPriority = p;
             }
@@ -95,48 +102,6 @@ public class FeatureEntityTrimmer extends ReactFeature implements Listener {
         return tickIntervalMS;
     }
 
-    @EventHandler
-    public void on(EntitySpawnEvent e) {
-        priority.setCrowd(e.getEntity());
-    }
-
-
-    @EventHandler
-    public void on(EntityDamageEvent e) {
-        priority.setCrowd(e.getEntity());
-    }
-
-    @EventHandler
-    public void on(EntityTargetEvent e) {
-        priority.setCrowd(e.getEntity());
-
-        if(e.getTarget() != null) {
-            priority.setCrowd(e.getTarget());
-        }
-    }
-
-    @EventHandler
-    public void on(EntityInteractEvent e) {
-        priority.setCrowd(e.getEntity());
-    }
-
-    @EventHandler
-    public void on(EntityPoseChangeEvent e) {
-        priority.setCrowd(e.getEntity());
-    }
-
-    @EventHandler
-    public void on(EntityRegainHealthEvent e) {
-        priority.setCrowd(e.getEntity());
-    }
-
-    @EventHandler
-    public void on(EntityBreedEvent e) {
-        priority.setCrowd(e.getMother());
-        priority.setCrowd(e.getFather());
-        priority.setCrowd(e.getEntity());
-    }
-
     @Override
     public void onTick() {
         if(cooldown-- > 0) {
@@ -153,8 +118,8 @@ public class FeatureEntityTrimmer extends ReactFeature implements Listener {
         }
 
         shitlist.sort((a, b) -> {
-            double pa = priority.getPriorityWithCrowd(a);
-            double pb = priority.getPriorityWithCrowd(b);
+            double pa = ReactEntity.getPriority(a);
+            double pb = ReactEntity.getPriority(b);
             return Double.compare(pa, pb);
         });
 
@@ -166,27 +131,12 @@ public class FeatureEntityTrimmer extends ReactFeature implements Listener {
 
         for(int i = shitlist.size() - 1; i >= 0; i--) {
             e = shitlist.get(i);
-            pri = priority.getPriorityWithCrowd(e);
+            pri = ReactEntity.getPriority(e);
 
             if(pri > maxPriority || pri < 0) {
                 shitlist.remove(i);
             }
         }
-
-        J.s(() -> {
-            PrecisionStopwatch p = PrecisionStopwatch.start();
-            int m = 0;
-            for(Entity i : shitlist) {
-                if(M.r(0.1)) {
-                    priority.setCrowd(i);
-                    m++;
-                }
-
-                if(p.getMilliseconds() > maxCrowdCalculationMS) {
-                    break;
-                }
-            }
-        });
 
         int maxKill = (int) (ec * opporunityThreshold);
 

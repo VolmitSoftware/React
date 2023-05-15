@@ -8,21 +8,31 @@ import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.entity.Entity;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class EntityKiller {
+    private static Set<Entity> killing = new HashSet<>();
+
     private Entity entity;
     private int seconds;
     private int tt;
 
     public EntityKiller(Entity e, int seconds) {
+        if(killing.contains(e)) {
+            return;
+        }
+
         this.entity = e;
         this.seconds = seconds;
         this.tt = seconds;
         J.sr(this::tick, 20, seconds);
+        killing.add(entity);
     }
 
     private void tick() {
-        if(entity.isDead())
-        {
+        if(entity.isDead()) {
+            killing.remove(entity);
             return;
         }
 
@@ -36,8 +46,8 @@ public class EntityKiller {
     }
 
     public void kill() {
-        if(entity.isDead())
-        {
+        killing.remove(entity);
+        if(entity.isDead()) {
             return;
         }
 

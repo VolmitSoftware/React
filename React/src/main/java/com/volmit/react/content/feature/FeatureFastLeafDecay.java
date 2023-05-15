@@ -1,15 +1,18 @@
 package com.volmit.react.content.feature;
 
+import art.arcane.chrono.ChronoLatch;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.volmit.react.React;
 import com.volmit.react.api.feature.ReactFeature;
+import com.volmit.react.util.data.B;
 import com.volmit.react.util.scheduling.J;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.bukkit.Chunk;
 import org.bukkit.ChunkSnapshot;
+import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -23,15 +26,18 @@ import org.bukkit.event.block.LeavesDecayEvent;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
 public class FeatureFastLeafDecay extends ReactFeature implements Listener {
     public static final String ID = "fast-leaf-decay";
-    private final transient List<Block> search = new ArrayList<>();
+    private final transient List<Block> search = new CopyOnWriteArrayList<>();
     private transient Cache<IChunk, ChunkSnapshot> snapshot;
+    private transient ChronoLatch cooldownLatch;
     private int leafDecayDistance = 6;
     private int leafDecayRadius = 6;
     private int tickIntervalMS = 250;
+    private int decayTriggerCooldownMS = 50;
     private int decayTickSpread = 20;
     private double soundChance = 0.25;
     private double soundVolume = 0.26;
@@ -52,6 +58,7 @@ public class FeatureFastLeafDecay extends ReactFeature implements Listener {
                 .expireAfterAccess(10, TimeUnit.SECONDS)
                 .refreshAfterWrite(1, TimeUnit.SECONDS)
                 .build((k) -> k.chunk().getChunkSnapshot(true, false, false));
+        cooldownLatch = new ChronoLatch(decayTriggerCooldownMS);
     }
 
     @Override
@@ -84,7 +91,6 @@ public class FeatureFastLeafDecay extends ReactFeature implements Listener {
     }
 
     public void addBlockForDecay(IBlock block, BlockData data) {
-        int d = ((Leaves) data).getDistance();
         J.s(() -> {
             Block b = block.block();
 
@@ -93,9 +99,10 @@ public class FeatureFastLeafDecay extends ReactFeature implements Listener {
                     b.getWorld().playSound(b.getLocation(), decaySound, (float) soundVolume, (float) soundPitch);
                 }
 
-                b.breakNaturally();
+                b.getDrops().forEach((i) -> b.getWorld().dropItemNaturally(b.getLocation(), i));
+                b.setBlockData(B.getAir(), false);
             }
-        }, (int) (Math.random() * decayTickSpread));
+        });
     }
 
     public ChunkSnapshot snap(Chunk c) {
@@ -107,9 +114,7 @@ public class FeatureFastLeafDecay extends ReactFeature implements Listener {
     }
 
     public void decay(Block block) {
-        synchronized (search) {
-            search.add(block);
-        }
+        search.add(block);
     }
 
     public void checkDecay(Block block) {
@@ -120,12 +125,14 @@ public class FeatureFastLeafDecay extends ReactFeature implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void on(LeavesDecayEvent e) {
-        checkDecay(e.getBlock());
+        if(cooldownLatch.flip()) {
+            checkDecay(e.getBlock());
+        }
     }
 
     @Override
     public void onTick() {
-        synchronized (search) {
+        try {
             int i, j, k;
             for (Block block : search) {
                 BlockData d;
@@ -142,6 +149,10 @@ public class FeatureFastLeafDecay extends ReactFeature implements Listener {
             }
 
             search.clear();
+        }
+
+        catch(Throwable e) {
+
         }
     }
 

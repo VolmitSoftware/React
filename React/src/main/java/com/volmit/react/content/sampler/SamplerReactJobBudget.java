@@ -6,26 +6,21 @@ import com.volmit.react.util.format.Form;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 
-public class SamplerReactTickTime extends ReactCachedSampler {
-    public static final String ID = "react-tick-time";
+public class SamplerReactJobBudget extends ReactCachedSampler {
+    public static final String ID = "react-job-budget";
 
-    public SamplerReactTickTime() {
+    public SamplerReactJobBudget() {
         super(ID, 50);
     }
 
     @Override
     public Material getIcon() {
-        return Material.GLOW_ITEM_FRAME;
+        return Material.GLOWSTONE_DUST;
     }
 
     @Override
     public double onSample() {
-        return React.ticker.getTickTime() + React.instance.getJobController().getUsage().getAverage();
-    }
-
-    @Override
-    public String format(double t) {
-        return formattedValue(t) + formattedSuffix(t);
+        return React.instance.getJobController().getOverBudget();
     }
 
     @Override
@@ -40,6 +35,6 @@ public class SamplerReactTickTime extends ReactCachedSampler {
 
     @Override
     public String formattedSuffix(double t) {
-        return Form.durationSplit(t, 2)[1] + " RTT";
+        return Form.durationSplit(t, 2)[1] + " OVER";
     }
 }

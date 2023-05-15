@@ -5,10 +5,10 @@ import com.volmit.react.api.sampler.ReactCachedSampler;
 import com.volmit.react.util.format.Form;
 import org.bukkit.Material;
 
-public class SamplerReactTasksPerSecond extends ReactCachedSampler {
-    public static final String ID = "react-tasks-per-second";
+public class SamplerReactJobsQueue extends ReactCachedSampler {
+    public static final String ID = "react-jobs-queue";
 
-    public SamplerReactTasksPerSecond() {
+    public SamplerReactJobsQueue() {
         super(ID, 50);
     }
 
@@ -19,7 +19,7 @@ public class SamplerReactTasksPerSecond extends ReactCachedSampler {
 
     @Override
     public double onSample() {
-        return React.ticker.getTasksPerSecond();
+        return React.instance.getJobController().getJobs().size();
     }
 
     @Override
@@ -29,6 +29,6 @@ public class SamplerReactTasksPerSecond extends ReactCachedSampler {
 
     @Override
     public String formattedSuffix(double t) {
-        return "TASK/s";
+        return "JOBS";
     }
 }

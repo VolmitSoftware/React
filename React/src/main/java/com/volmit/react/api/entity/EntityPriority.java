@@ -1,7 +1,6 @@
 package com.volmit.react.api.entity;
 
 import com.volmit.react.React;
-import com.volmit.react.util.format.Form;
 import com.volmit.react.util.math.M;
 import com.volmit.react.util.scheduling.J;
 import org.bukkit.Bukkit;
@@ -18,7 +17,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class EntityPriority {
-    private static final double baseline = 100;
+    public static final double BASELINE = 100;
     private int consideredNewTicks = 20 * 5; // 1 minute
     private double oldMultiplier = 0.75;
     private double crowdMultiplier = 0.9;
@@ -57,34 +56,7 @@ public class EntityPriority {
         entityTypePriority = buildPriority();
     }
 
-    public void setLastCrowd(Entity e) {
-        e.setMetadata("react-crowd-last", new FixedMetadataValue(React.instance, M.ms()));
-    }
-
-    public long getLastCrowd(Entity e) {
-        if(e.hasMetadata("react-crowd-last")) {
-            return e.getMetadata("react-crowd-last").get(0).asLong();
-        }
-
-        return 0;
-    }
-
-    public double getCrowd(Entity e) {
-        if(e.hasMetadata("react-crowd")) {
-            return e.getMetadata("react-crowd").get(0).asDouble();
-        }
-
-        return 1;
-    }
-
-    public void setCrowd(Entity e) {
-        if(M.ms() - getLastCrowd(e) > 10000) {
-            e.setMetadata("react-crowd", new FixedMetadataValue(React.instance, computeCrowd(e)));
-            setLastCrowd(e);
-        }
-    }
-
-    private double computeCrowd(Entity e) {
+    public double computeCrowd(Entity e) {
         if(!Bukkit.isPrimaryThread()) {
             return J.sResult(() -> computeCrowd(e));
         }
@@ -115,7 +87,7 @@ public class EntityPriority {
         Map<EntityType, Double> p = new HashMap<>();
 
         for(EntityType i : EntityType.values()) {
-            double v = baseline;
+            double v = BASELINE;
             switch(i) {
                 case DROPPED_ITEM -> v *= consumableMultiplier;
                 case EXPERIENCE_ORB, EGG -> v *= consumableMultiplier * lowValueMultiplier;
@@ -213,11 +185,10 @@ public class EntityPriority {
 
 
     public double getPriority(EntityType e) {
-        return entityTypePriority.getOrDefault(e, baseline);
+        return entityTypePriority.getOrDefault(e, BASELINE);
     }
 
-    public double getPriorityWithCrowd(Entity e) {
-        double c = getCrowd(e);
+    public double getPriorityWithCrowd(Entity e, double c) {
         double p = getPriority(e);
 
         if(c <= 1) {

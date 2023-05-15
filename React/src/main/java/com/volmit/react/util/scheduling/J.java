@@ -198,7 +198,7 @@ public class J {
      * @param r the runnable
      */
     public static void s(Runnable r) {
-        Bukkit.getScheduler().scheduleSyncDelayedTask(React.instance, r);
+        React.instance.getJobController().queue(r);
     }
 
     /**
@@ -208,7 +208,7 @@ public class J {
      * @param delay the delay to wait in ticks before running
      */
     public static void s(Runnable r, int delay) {
-        Bukkit.getScheduler().scheduleSyncDelayedTask(React.instance, r, delay);
+        Bukkit.getScheduler().scheduleSyncDelayedTask(React.instance, () -> React.instance.getJobController().queue(r), delay);
     }
 
     /**
