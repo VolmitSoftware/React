@@ -1,21 +1,27 @@
 package com.volmit.react.api.entity;
 
 import com.volmit.react.React;
+import com.volmit.react.model.ReactConfiguration;
 import com.volmit.react.util.math.M;
 import com.volmit.react.util.scheduling.J;
+import com.volmit.react.util.value.MaterialValue;
+import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Breedable;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Tameable;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
 
 import java.util.HashMap;
 import java.util.Map;
 
+@Getter
 public class EntityPriority {
     public static final double BASELINE = 100;
     private int consideredNewTicks = 20 * 5; // 1 minute
@@ -46,6 +52,8 @@ public class EntityPriority {
     private double livingMultiplier = 5;
     private double fullHealthMultiplier = 0.75;
     private double lowHealthMultiplier = 1.35;
+    private double itemStackValueMultiplier = 1.5;
+    private boolean useItemStackValueSystem = true;
     private transient Map<EntityType, Double> entityTypePriority = new HashMap<>();
 
     public EntityPriority() {
@@ -216,6 +224,11 @@ public class EntityPriority {
             return -1;
         }
 
+        if(ReactConfiguration.get().getPriority().isUseItemStackValueSystem() && e instanceof Item it) {
+            ItemStack is = it.getItemStack();
+            double s = MaterialValue.getValue(is.getType()) * is.getAmount() * ReactConfiguration.get().getPriority().itemStackValueMultiplier;
+            buf += s;
+        }
 
         if(e instanceof LivingEntity l) {
             double d = Math.abs(l.getVelocity().length());

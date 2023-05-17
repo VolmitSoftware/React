@@ -27,7 +27,7 @@ public class JobController implements IController {
     private transient final List<Runnable> jobs;
     private transient ChronoLatch spikeLatch;
     private transient int code;
-    private transient double overBudget = 0; 
+    private transient double overBudget = 0;
 
     public JobController() {
         usageCyclePercent = new RollingSequence(20);

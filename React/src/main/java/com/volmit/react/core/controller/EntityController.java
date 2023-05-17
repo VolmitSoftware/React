@@ -1,5 +1,6 @@
 package com.volmit.react.core.controller;
 
+import art.arcane.chrono.ChronoLatch;
 import com.volmit.react.React;
 import com.volmit.react.api.entity.EntityPriority;
 import com.volmit.react.model.ReactConfiguration;
@@ -9,6 +10,7 @@ import com.volmit.react.util.plugin.IController;
 import com.volmit.react.util.scheduling.J;
 import com.volmit.react.util.scheduling.Looper;
 import com.volmit.react.util.scheduling.TickedObject;
+import com.volmit.react.util.value.MaterialValue;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.bukkit.Bukkit;
@@ -41,6 +43,7 @@ import java.util.function.Consumer;
 public class EntityController implements IController, Listener {
     private int perWorldUpdatesPerTick = 10;
     private Looper looper;
+    private ChronoLatch valueSaver = new ChronoLatch(60000);
     private Map<EntityType, List<Consumer<Entity>>> entityTickListeners;
 
     public EntityController() {
@@ -158,20 +161,26 @@ public class EntityController implements IController, Listener {
     }
 
     public void onTick() {
-        Entity ee;
+        if(valueSaver.flip() && ReactConfiguration.get().getPriority().isUseItemStackValueSystem()) {
+            MaterialValue.save();
+        }
 
         for(World i : Bukkit.getWorlds()) {
-            List<Entity> e = J.sResult(i::getEntities);
+            J.s(() -> {
+                List<Entity> e = i.getEntities();
 
-            if(e.size() < 3) {
-                continue;
-            }
+                if(e.size() < 3) {
+                    return;
+                }
 
-            for(int j = 0; j < perWorldUpdatesPerTick; j++) {
-                ee = e.get(M.irand(0, e.size() - 1));
-                ReactEntity.tick(ee, ReactConfiguration.get().getPriority());
-                tickEntity(ee);
-            }
+                for(int j = 0; j < perWorldUpdatesPerTick; j++) {
+                    Entity ee = e.get(M.irand(0, e.size() - 1));
+                    J.s(() -> {
+                        ReactEntity.tick(ee, ReactConfiguration.get().getPriority());
+                        tickEntity(ee);
+                    });
+                }
+            });
         }
     }
 }

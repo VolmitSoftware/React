@@ -9,14 +9,19 @@ import com.volmit.react.content.sampler.*;
 import com.volmit.react.util.io.IO;
 import com.volmit.react.util.json.JSONObject;
 import lombok.Data;
+import lombok.Getter;
+import org.bukkit.Material;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 @Data
 public class ReactConfiguration {
     private static ReactConfiguration configuration;
     private EntityPriority priority = new EntityPriority();
+    private ValueConfig value = new ValueConfig();
     private boolean customColors = true;
     private boolean verbose = false;
     private Monitoring monitoring = new Monitoring();
@@ -46,6 +51,52 @@ public class ReactConfiguration {
         }
 
         return configuration;
+    }
+
+    @Getter
+    public static class ValueConfig {
+        private double baseValue = 100;
+        private int maxRecipeListPrecaution = 50;
+        private Map<String, Double> valueMutlipliers = defaultValueMultipliersOverrides();
+
+        private Map<String, Double> defaultValueMultipliersOverrides() {
+            Map<String, Double> f = new HashMap<>();
+            f.put(Material.BLAZE_ROD.name(), 50D);
+            f.put(Material.ENDER_PEARL.name(), 75D);
+            f.put(Material.GHAST_TEAR.name(), 100D);
+            f.put(Material.LEATHER.name(), 1.5D);
+            f.put(Material.BEEF.name(), 1.125D);
+            f.put(Material.PORKCHOP.name(), 1.125D);
+            f.put(Material.EGG.name(), 1.335D);
+            f.put(Material.CHICKEN.name(), 1.13D);
+            f.put(Material.MUTTON.name(), 1.125D);
+            f.put(Material.WHEAT.name(), 1.25D);
+            f.put(Material.BEETROOT.name(), 1.25D);
+            f.put(Material.CARROT.name(), 1.25D);
+            f.put(Material.FLINT.name(), 1.35D);
+            f.put(Material.IRON_ORE.name(), 1.75D);
+            f.put(Material.DIAMOND_ORE.name(), 7D);
+            f.put(Material.DIAMOND.name(), 25D);
+            f.put(Material.NETHER_STAR.name(), 125D);
+            f.put(Material.NETHERITE_INGOT.name(), 75D);
+            f.put(Material.GOLD_ORE.name(), 4D);
+            f.put(Material.LAPIS_ORE.name(), 3.5D);
+            f.put(Material.COAL_ORE.name(), 1.35D);
+            f.put(Material.REDSTONE_ORE.name(), 4.5D);
+            f.put(Material.NETHER_GOLD_ORE.name(), 4.5D);
+            f.put(Material.NETHER_QUARTZ_ORE.name(), 1.11D);
+            f.put(Material.OAK_LOG.name(), 0.25D);
+            f.put(Material.DARK_OAK_LOG.name(), 0.1D);
+            f.put(Material.ACACIA_LOG.name(), 0.1D);
+            f.put(Material.BIRCH_LOG.name(), 0.1D);
+            f.put(Material.JUNGLE_LOG.name(), 0.1D);
+            f.put(Material.SPRUCE_LOG.name(), 0.1D);
+            f.put(Material.MANGROVE_LOG.name(), 0.1D);
+            f.put(Material.COBBLESTONE.name(), 0.1D);
+            f.put(Material.DIRT.name(), 0.01D);
+
+            return f;
+        }
     }
 
     @Data
