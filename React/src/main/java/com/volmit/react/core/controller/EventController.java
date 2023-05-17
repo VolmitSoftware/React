@@ -4,7 +4,9 @@ import art.arcane.curse.Curse;
 import com.volmit.react.React;
 import com.volmit.react.api.event.NaughtyRegisteredListener;
 import com.volmit.react.api.event.layer.MinecartSpawnEvent;
+import com.volmit.react.api.event.layer.ServerTickEvent;
 import com.volmit.react.util.plugin.IController;
+import com.volmit.react.util.scheduling.J;
 import com.volmit.react.util.scheduling.TickedObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -29,7 +31,9 @@ public class EventController extends TickedObject implements IController, Listen
     private int listenerCount;
     private double totalTime;
     private int calls;
+    private final ServerTickEvent ste = new ServerTickEvent();
     private AtomicBoolean running = new AtomicBoolean(false);
+    private int steTicker;
 
     public EventController() {
         super("react", "event", 50);
@@ -43,6 +47,7 @@ public class EventController extends TickedObject implements IController, Listen
 
     @Override
     public void start() {
+        steTicker = J.sr(() -> Bukkit.getPluginManager().callEvent(ste), 0);
         React.instance.registerListener(this);
     }
 
@@ -50,6 +55,7 @@ public class EventController extends TickedObject implements IController, Listen
     public void stop() {
         React.instance.unregisterListener(this);
         pullOut();
+        J.csr(steTicker);
     }
 
     @Override

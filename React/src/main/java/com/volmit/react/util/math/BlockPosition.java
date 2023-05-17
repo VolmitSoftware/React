@@ -37,6 +37,10 @@ public class BlockPosition {
     private int y;
     private int z;
 
+    public BlockPosition(Block block) {
+        this(block.getX(), block.getY(), block.getZ());
+    }
+
     public BlockPosition(int x, int y, int z) {
         this.x = x;
         this.y = y;
