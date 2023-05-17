@@ -14,6 +14,7 @@ import lombok.EqualsAndHashCode;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityBreedEvent;
@@ -30,12 +31,17 @@ import org.bukkit.event.entity.ItemMergeEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
 
 @Data
 public class EntityController implements IController, Listener {
     private int perWorldUpdatesPerTick = 10;
     private Looper looper;
+    private Map<EntityType, List<Consumer<Entity>>> entityTickListeners;
 
     public EntityController() {
         looper = new Looper() {
@@ -48,6 +54,10 @@ public class EntityController implements IController, Listener {
         start();
     }
 
+    public void registerEntityTickListener(EntityType type, Consumer<Entity> listener) {
+        entityTickListeners.computeIfAbsent(type, (t) -> new ArrayList<>()).add(listener);
+    }
+
     @Override
     public String getName() {
         return "Event";
@@ -55,16 +65,26 @@ public class EntityController implements IController, Listener {
 
     @Override
     public void start() {
+        entityTickListeners = new HashMap<>();
         ReactConfiguration.get().getPriority().rebuildPriority();
         React.instance.registerListener(this);
         looper.start();
+    }
+
+    public void tickEntity(Entity e) {
+        List<Consumer<Entity>> tickers = entityTickListeners.get(e.getType());
+
+        if(tickers != null) {
+            for(Consumer<Entity> i : tickers) {
+                i.accept(e);
+            }
+        }
     }
 
     @EventHandler
     public void on(EntitySpawnEvent e) {
         ReactEntity.tick(e.getEntity(), ReactConfiguration.get().getPriority());
     }
-
 
     @EventHandler
     public void on(EntityDamageEvent e) {
@@ -138,6 +158,8 @@ public class EntityController implements IController, Listener {
     }
 
     public void onTick() {
+        Entity ee;
+
         for(World i : Bukkit.getWorlds()) {
             List<Entity> e = J.sResult(i::getEntities);
 
@@ -146,7 +168,9 @@ public class EntityController implements IController, Listener {
             }
 
             for(int j = 0; j < perWorldUpdatesPerTick; j++) {
-                ReactEntity.tick(e.get(M.irand(0, e.size() - 1)), ReactConfiguration.get().getPriority());
+                ee = e.get(M.irand(0, e.size() - 1));
+                ReactEntity.tick(ee, ReactConfiguration.get().getPriority());
+                tickEntity(ee);
             }
         }
     }

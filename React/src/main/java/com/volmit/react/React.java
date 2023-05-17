@@ -13,7 +13,9 @@ import com.volmit.react.util.scheduling.Ticker;
 import lombok.Getter;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
 
 import java.io.File;
 import java.lang.annotation.Annotation;
@@ -39,6 +41,16 @@ public class React extends VolmitPlugin {
 
     public React() {
         instance = this;
+    }
+
+    public static boolean hasNearbyPlayer(Location l, double blocks) {
+        for(Player i : l.getWorld().getPlayers()) {
+            if(i.getLocation().distanceSquared(l) <= blocks * blocks) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public static void warn(String string) {

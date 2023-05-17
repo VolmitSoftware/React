@@ -2,6 +2,7 @@ package com.volmit.react.model;
 
 import com.volmit.react.React;
 import com.volmit.react.api.entity.EntityPriority;
+import lombok.Getter;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
