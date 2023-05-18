@@ -173,13 +173,16 @@ public class EntityController implements IController, Listener {
                     return;
                 }
 
-                for(int j = 0; j < perWorldUpdatesPerTick; j++) {
-                    Entity ee = e.get(M.irand(0, e.size() - 1));
-                    J.s(() -> {
-                        ReactEntity.tick(ee, ReactConfiguration.get().getPriority());
-                        tickEntity(ee);
-                    });
-                }
+                J.a(() -> {
+                    for(int j = 0; j < perWorldUpdatesPerTick; j++) {
+                        Entity ee = e.get(M.irand(0, e.size() - 1));
+                        if(ReactEntity.tick(ee, ReactConfiguration.get().getPriority())) {
+                            J.s(() -> {
+                                tickEntity(ee);
+                            });
+                        }
+                    }
+                });
             });
         }
     }

@@ -55,6 +55,7 @@ public class CommandConfig implements DecreeExecutor {
 
                 player().sendMessage("Priority: " + Form.f((int)ReactEntity.getPriority(j)));
                 player().sendMessage("Crowding: " + Form.f((int)ReactEntity.getCrowding(j)));
+                player().sendMessage("Player N: " + Form.f(ReactEntity.getNearestPlayer(j), 1));
                 player().sendMessage("Updated : " + Form.duration(ReactEntity.getStaleness(j), 0) + " ago");
                 break ray;
             }

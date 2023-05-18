@@ -11,31 +11,36 @@ import org.bukkit.persistence.PersistentDataType;
 import java.util.UUID;
 
 public class ReactEntity {
-    private static final long maxTickInterval = 10000;
+    private static final long maxTickInterval = 30000;
     private static final NamespacedKey nsPriority = new NamespacedKey(React.instance, "react-priority");
     private static final NamespacedKey nsLastTick = new NamespacedKey(React.instance, "react-last-tick");
     private static final NamespacedKey nsPaused = new NamespacedKey(React.instance, "react-paused");
     private static final NamespacedKey nsCrowding = new NamespacedKey(React.instance, "react-crowding");
+    private static final NamespacedKey nsDistancePlayer = new NamespacedKey(React.instance, "react-player-distance");
 
     public static long getStaleness(Entity entity) {
         return System.currentTimeMillis() - getLastTick(entity);
     }
 
-    public static void tick(Entity entity, EntityPriority p) {
+    public static boolean tick(Entity entity, EntityPriority p) {
         if(entity.isDead()) {
-            return;
+            return false;
         }
 
         if(getStaleness(entity) > maxTickInterval) {
-            double c = p.computeCrowd(entity);
-            setCrowding(entity, c);
-            setPriority(entity, p.getPriorityWithCrowd(entity, c));
+            p.updateCrowd(entity);
+            p.updateDistanceToPlayer(entity);
+            setPriority(entity, p.getPriorityWithCrowd(entity, getCrowding(entity)));
             setLastTick(entity, System.currentTimeMillis());
 
             if(isPaused(entity)) {
                 setPaused(entity, false);
             }
+
+            return true;
         }
+
+        return false;
     }
 
     public static long getLastTick(Entity entity) {
@@ -63,6 +68,15 @@ public class ReactEntity {
 
     public static void setCrowding(Entity entity, double crowding) {
         entity.getPersistentDataContainer().set(nsCrowding, PersistentDataType.DOUBLE, crowding);
+    }
+
+    public static double getNearestPlayer(Entity entity) {
+        Double d = entity.getPersistentDataContainer().get(nsDistancePlayer, PersistentDataType.DOUBLE);
+        return d == null ? 1 : d;
+    }
+
+    public static void setNearestPlayer(Entity entity, double d) {
+        entity.getPersistentDataContainer().set(nsDistancePlayer, PersistentDataType.DOUBLE, d);
     }
 
     public static boolean isPaused(Entity entity) {

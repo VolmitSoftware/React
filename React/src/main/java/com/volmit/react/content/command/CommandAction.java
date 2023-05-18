@@ -122,7 +122,7 @@ public class CommandAction implements DecreeExecutor {
 
         pc.create(p, sender()).queue();
     }
-    
+
 
     @Decree(
             name = "collect-garbage",

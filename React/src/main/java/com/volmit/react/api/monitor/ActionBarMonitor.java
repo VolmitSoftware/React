@@ -60,9 +60,9 @@ public class ActionBarMonitor extends PlayerMonitor {
     @Override
     public void stop() {
         try {
-            J.s(() -> getPlayer().getPlayer().spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(" ")), 3);
-            J.s(() -> React.audiences.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.TITLE, Component.space()), 3);
-            J.s(() -> React.audiences.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.SUBTITLE, Component.space()), 3);
+            J.ss(() -> getPlayer().getPlayer().spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(" ")), 3);
+            J.ss(() -> React.audiences.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.TITLE, Component.space()), 3);
+            J.ss(() -> React.audiences.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.SUBTITLE, Component.space()), 3);
         } catch (IllegalPluginAccessException e) {
             getPlayer().getPlayer().spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(" "));
             React.audiences.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.TITLE, Component.space());

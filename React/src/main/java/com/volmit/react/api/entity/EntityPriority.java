@@ -2,11 +2,13 @@ package com.volmit.react.api.entity;
 
 import com.volmit.react.React;
 import com.volmit.react.model.ReactConfiguration;
+import com.volmit.react.model.ReactEntity;
 import com.volmit.react.util.math.M;
 import com.volmit.react.util.scheduling.J;
 import com.volmit.react.util.value.MaterialValue;
 import lombok.Getter;
 import org.bukkit.Bukkit;
+import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Breedable;
 import org.bukkit.entity.Entity;
@@ -19,15 +21,16 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Getter
 public class EntityPriority {
     public static final double BASELINE = 100;
-    private int consideredNewTicks = 20 * 5; // 1 minute
-    private double oldMultiplier = 0.75;
+    private int consideredNewTicks = 20 * 60; // 1 minute
+    private double oldMultiplier = 0.6;
     private double crowdMultiplier = 0.9;
-    private double newMultiplier = 2.5;
+    private double newMultiplier = 1.15;
     private double consumableMultiplier = 10;
     private double mechanicMultiplier = 25;
     private double lowTickMultiplier = 2;
@@ -52,6 +55,9 @@ public class EntityPriority {
     private double livingMultiplier = 5;
     private double fullHealthMultiplier = 0.75;
     private double lowHealthMultiplier = 1.35;
+    private double nearbyPlayerMaxDistance = 64;
+    private double nearbyPlayerMultiplier = 1.65;
+    private double farPlayerMultiplier = 0.7;
     private double itemStackValueMultiplier = 1.5;
     private boolean useItemStackValueSystem = true;
     private transient Map<EntityType, Double> entityTypePriority = new HashMap<>();
@@ -64,31 +70,53 @@ public class EntityPriority {
         entityTypePriority = buildPriority();
     }
 
-    public double computeCrowd(Entity e) {
-        if(!Bukkit.isPrimaryThread()) {
-            return J.sResult(() -> computeCrowd(e));
+    public void updateDistanceToPlayer(Entity e) {
+        double distance = Double.MAX_VALUE;
+        double d;
+        for(Player i : e.getWorld().getPlayers()) {
+            d = i.getLocation().distanceSquared(e.getLocation());
+
+            if(d < distance) {
+                distance = d;
+            }
         }
 
-        double priority = getPriority(e);
-        double minPriority = priority * 0.25;
-        double maxPriority = priority * 1.15;
-        double count = 1;
-
-        for(Entity i : e.getNearbyEntities(8,8,8)) {
-            if(i.getUniqueId().equals(e.getUniqueId())) {
-                continue;
-            }
-
-            priority = getPriority(i);
-
-            if(priority < minPriority || priority > maxPriority) {
-                continue;
-            }
-
-            count += M.lerp(1.2, 0.8, M.lerpInverse(minPriority, maxPriority, priority));
+        d = farPlayerMultiplier;
+        if(distance < nearbyPlayerMaxDistance * nearbyPlayerMaxDistance) {
+            d = M.lerp(nearbyPlayerMultiplier, farPlayerMultiplier, M.lerpInverse(0, nearbyPlayerMaxDistance * nearbyPlayerMaxDistance, distance));
         }
 
-        return count;
+
+        ReactEntity.setNearestPlayer(e, Math.max(Math.min(d, nearbyPlayerMultiplier), farPlayerMultiplier));
+    }
+
+    public void updateCrowd(Entity e) {
+        J.s(() -> {
+            List<Entity> ees = e.getNearbyEntities(8,8,8);
+
+            J.a(() -> {
+                double priority = getPriority(e);
+                double minPriority = priority * 0.25;
+                double maxPriority = priority * 1.15;
+                double count = 1;
+
+                for(Entity i : ees) {
+                    if(i.getUniqueId().equals(e.getUniqueId())) {
+                        continue;
+                    }
+
+                    priority = getPriority(i);
+
+                    if(priority < minPriority || priority > maxPriority) {
+                        continue;
+                    }
+
+                    count += M.lerp(1.2, 0.8, M.lerpInverse(minPriority, maxPriority, priority));
+                }
+
+                ReactEntity.setCrowding(e, count);
+            });
+        });
     }
 
     private Map<EntityType, Double> buildPriority() {
@@ -197,7 +225,7 @@ public class EntityPriority {
     }
 
     public double getPriorityWithCrowd(Entity e, double c) {
-        double p = getPriority(e);
+        double p = getPriority(e) * ReactEntity.getNearestPlayer(e);
 
         if(c <= 1) {
             return p;

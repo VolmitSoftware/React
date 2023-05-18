@@ -5,6 +5,7 @@ import art.arcane.chrono.PrecisionStopwatch;
 import com.volmit.react.React;
 import com.volmit.react.util.format.Form;
 import com.volmit.react.util.math.M;
+import com.volmit.react.util.math.RNG;
 import com.volmit.react.util.math.RollingSequence;
 import com.volmit.react.util.plugin.IController;
 import com.volmit.react.util.scheduling.J;
@@ -88,7 +89,13 @@ public class JobController implements IController {
                 }
 
                 try {
-                    jobs.remove(0).run();
+                    if(jobs.size() > 50) {
+                        jobs.remove(RNG.r.i(jobs.size()-1)).run();
+                    }
+
+                    else {
+                        jobs.remove(0).run();
+                    }
                 }
 
                 catch(Throwable e) {
