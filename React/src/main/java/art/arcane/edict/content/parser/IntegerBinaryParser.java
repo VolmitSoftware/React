@@ -4,6 +4,12 @@ import art.arcane.edict.api.Confidence;
 import art.arcane.edict.api.parser.EdictParser;
 import art.arcane.edict.api.parser.EdictValue;
 
+/**
+ * The IntegerBinaryParser is a parser that parses binary string representations into integers.
+ * It implements the EdictParser interface and its generic type is Integer.
+ *
+ * @see EdictParser
+ */
 public class IntegerBinaryParser implements EdictParser<Integer> {
     @Override
     public EdictValue<Integer> parse(String s) {

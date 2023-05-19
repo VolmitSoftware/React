@@ -20,6 +20,12 @@ import java.util.List;
  * @param <T> The type of the enum that the implemented parser should support.
  */
 public interface Enumerated<T extends Enum<T>> extends EdictParser<T>, Suggestive {
+    /**
+     * Parses the input string to map it to an appropriate enum constant.
+     *
+     * @param s the input string to be parsed
+     * @return an EdictValue instance which encapsulates the parsed enum constant and an associated confidence level
+     */
     @SuppressWarnings("unchecked")
     default EdictValue<T> parse(String s) {
         return Arrays
@@ -34,14 +40,16 @@ public interface Enumerated<T extends Enum<T>> extends EdictParser<T>, Suggestiv
     }
 
     /**
-     * Get the class of the enum
-     * @return the enum class to use
+     * Returns the class of the enum that this parser supports.
+     *
+     * @return the enum class that this parser supports
      */
     Class<? extends Enum<T>> getEnumType();
 
     /**
-     * Return a list of suggestions for this input
-     * @return the list of suggestions. This can be immutable (List.of() is fine)
+     * Returns a list of suggestions for input, based on the enum constants.
+     *
+     * @return a list of input suggestions
      */
     default List<String> getOptions() {
         return Arrays
@@ -53,15 +61,22 @@ public interface Enumerated<T extends Enum<T>> extends EdictParser<T>, Suggestiv
     }
 
     /**
-     * Is this list rigid in the sense that the input must match one of the suggestions? If so, the parser can do a better job at matching
-     * to your list of suggestions instead of trying to figure out if the input is a "custom" result or if it "partially" matches one of the
-     * suggestions.
-     * @return true if the list is rigid, false otherwise
+     * Returns whether the input should strictly match one of the suggested inputs.
+     *
+     * @return true if the input should match one of the suggestions, false otherwise
      */
     default boolean isMandatory() {
         return true;
     }
 
+    /**
+     * Calculates the similarity between the enum constant name and the input string.
+     * The similarity is determined by the Levenshtein distance between the two strings.
+     *
+     * @param enumConstantName the name of the enum constant
+     * @param targetString the input string
+     * @return the similarity between the enum constant name and the input string
+     */
     private static int calculateSimilarity(String enumConstantName, String targetString) {
         return Edict.calculateLevenshteinDistance(enumConstantName, targetString);
     }

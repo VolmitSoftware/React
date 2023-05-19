@@ -20,6 +20,16 @@ import lombok.Data;
 @AllArgsConstructor
 @Builder
 public class EdictValue<T> {
+    /**
+     * The parsed value of type T.
+     * This is the output produced by an EdictParser after parsing an input string.
+     */
     private final T value;
+
+    /**
+     * The confidence associated with the parsed value.
+     * It indicates how certain the parser is that the value was parsed correctly or is appropriate in the context it was used.
+     * The confidence is of type Confidence, which is an enum with levels INVALID, LOW, and HIGH.
+     */
     private final Confidence confidence;
 }
