@@ -55,7 +55,7 @@ public class FeatureItemSuperStacker extends ReactFeature implements Listener {
 
         return List.of(m);
     }
- 
+
     public void effectMerge(Item item, Item into) {
         Location buf = item.getLocation().clone();
         item.getWorld().spawnParticle(Particle.ITEM_CRACK, item.getLocation(), 7, 0.1, 0.1, 0.1, 0.1, item.getItemStack());
