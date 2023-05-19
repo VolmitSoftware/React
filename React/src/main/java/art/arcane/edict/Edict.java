@@ -23,6 +23,10 @@ import lombok.Data;
 import lombok.Singular;
 import org.bukkit.command.CommandSender;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -567,5 +571,11 @@ public class Edict {
      */
     public void register(EdictEndpoint... endpoints) {
         this.endpoints.addAll(Arrays.asList(endpoints));
+    }
+
+    @Target(ElementType.METHOD)
+    @Retention(RetentionPolicy.RUNTIME)
+    public @interface Command {
+        String value();
     }
 }
