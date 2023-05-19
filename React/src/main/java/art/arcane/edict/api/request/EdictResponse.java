@@ -18,7 +18,9 @@ public class EdictResponse {
     private List<EdictFieldResponse> fields;
 
     public int getScoreOffset() {
-        return fields.stream().mapToInt(i -> ((Confidence.values().length - i.getConfidence().ordinal()))).sum()
-            + Math.abs(request.getInputs().size() - endpoint.getFields().size()) + matchScore;
+        int actualMatch = 0;
+
+        return (Math.abs(fields.stream().mapToInt(i -> ((Confidence.values().length - i.getConfidence().ordinal()))).sum() * 5)
+            + Math.abs(request.getInputs().size() - endpoint.getFields().size()) + matchScore);
     }
 }

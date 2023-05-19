@@ -13,7 +13,7 @@ import art.arcane.edict.api.parser.EdictValue;
 import art.arcane.edict.api.request.EdictFieldResponse;
 import art.arcane.edict.api.request.EdictRequest;
 import art.arcane.edict.api.request.EdictResponse;
-import com.volmit.react.api.action.ReactAction;
+import com.volmit.react.React;
 import lombok.Builder;
 import lombok.Singular;
 
@@ -26,6 +26,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Builder
@@ -36,10 +37,36 @@ public class Edict {
     @Singular
     private final Set<EdictParser<?>> parsers = defaultParsers();
 
+    /**
+     * Creates a new instance of edict. From here you can register commands by calling the register method
+     */
     public Edict() {
         parsers.addAll(defaultParsers());
+        React.verbose("Edict Parsers: " + parsers.size());
+        React.verbose("Edict Initialized");
     }
 
+    /**
+     * This method splits a string into a list of arguments. It divides the input string on spaces
+     * and removes any empty strings from the result.
+     *
+     * @param args The string to be split into arguments. This should be a space-separated string.
+     * @return A list of strings, each of which is a non-empty argument from the input string.
+     */
+    public static List<String> toArgs(String args) {
+        return Arrays.stream(args.split("\\Q \\E")).filter(s -> !s.isEmpty()).collect(Collectors.toList());
+    }
+
+    /**
+     * This method processes an EdictRequest and generates a Stream of EdictResponses. Each response is based on one of the
+     * available endpoints. The request is mapped to each endpoint, and if the mapping is successful, a response is generated.
+     * The responses are streamed, meaning they are generated and processed one at a time, which can be more efficient for
+     * large numbers of endpoints.
+     *
+     * @param request The EdictRequest object containing the inputs to be mapped.
+     * @return A Stream of EdictResponse objects. Each response corresponds to a different endpoint and contains information
+     *         about how the inputs from the request map to the fields in the endpoint.
+     */
     public Stream<EdictResponse> streamResponses(EdictRequest request){
         return endpoints.stream().map(i -> new EdictRequest(request).pathMatch(i))
             .filter(Objects::nonNull)
@@ -47,9 +74,26 @@ public class Edict {
     }
 
     public Optional<EdictResponse> respond(EdictRequest request) {
-        return streamResponses(request).min(Comparator.comparingInt(EdictResponse::getScoreOffset));
+        return streamResponses(request)
+            .map((i) -> {
+                React.verbose("Request on " + i.getEndpoint().getCommand() + ": " + i.getScoreOffset());
+                return i;
+            }).min(Comparator.comparingInt((i) -> Math.abs(i.getScoreOffset())));
     }
 
+    /**
+     * This method processes an EdictRequest and generates an EdictResponse based on the provided EdictEndpoint.
+     * It maps the inputs of the request to the fields in the endpoint, then generates an EdictFieldResponse for each field.
+     * The EdictFieldResponses are generated based on the confidence level of the match between the input and the field.
+     * The input is removed from the input list once a match is found.
+     * If no input matches a field, an EdictFieldResponse with INVALID confidence is added.
+     *
+     * @param request The EdictRequest object containing the inputs to be mapped.
+     * @param endpoint The EdictEndpoint object containing the fields to which the inputs are to be mapped.
+     * @return An EdictResponse object containing the original request, the endpoint, a match score,
+     *         and a list of EdictFieldResponses. Each EdictFieldResponse corresponds to a field in the endpoint,
+     *         and contains information about the matching input and the confidence level of the match.
+     */
     public EdictResponse respond(EdictRequest request, EdictEndpoint endpoint) {
         List<EdictInput> inputs = new ArrayList<>(request.getInputs());
         List<EdictFieldResponse> responseFields = new ArrayList<>();
@@ -81,13 +125,17 @@ public class Edict {
                             return k;
                         })).orElse(null))
                     .field(i)
-                    .nameDrift(input instanceof MappedInput ? i.getNames().stream().mapToInt(k -> k.compareToIgnoreCase(((MappedInput) input).getKey())).min().orElse(j) : j)
+                    .nameDrift(input instanceof MappedInput ? i.getNames()
+                        .stream()
+                        .mapToInt(k -> calculateLevenshteinDistance(k, ((MappedInput) input).getKey()))
+                        .min()
+                        .orElse(j) : j)
                     .inputPosition(j)
                     .confidence(confidence.get())
                     .build());
             }
 
-            fields.stream().min(Comparator.comparingInt(a -> Confidence.values().length - ((EdictFieldResponse) a).getConfidence().ordinal())
+            fields.stream().min(Comparator.comparingInt(a -> Math.abs(Confidence.values().length - ((EdictFieldResponse) a).getConfidence().ordinal()))
                 .thenComparingInt((a) -> ((EdictFieldResponse) a).getNameDrift()))
                 .map(a -> {
                     inputs.remove(a.getInputPosition());
@@ -107,18 +155,50 @@ public class Edict {
             .build();
     }
 
+    /**
+     * This method generates an EdictRequest object from a string of arguments. The string is split into individual
+     * arguments based on spaces.
+     *
+     * @param args A string of space-separated arguments to be included in the request.
+     * @return An EdictRequest object with the arguments split from the input string.
+     */
     public EdictRequest request(String args) {
         return EdictRequest.of(this, args);
     }
 
+    /**
+     * This method generates an EdictRequest object from an array of arguments.
+     *
+     * @param args An array of arguments to be included in the request.
+     * @return An EdictRequest object with the arguments taken from the input array.
+     */
     public EdictRequest request(String[] args) {
         return EdictRequest.of(this, args);
     }
 
+    /**
+     * This method generates an EdictRequest object from a list of arguments.
+     *
+     * @param args A list of arguments to be included in the request.
+     * @return An EdictRequest object with the arguments taken from the input list.
+     */
     public EdictRequest request(List<String> args) {
         return EdictRequest.of(this, args);
     }
 
+    /**
+     * Parses the given input string into an EdictInput. If the string contains an "=" character, it is split into a key and
+     * a value, and a MappedEdictInputHolder is returned. If not, a PositionalEdictInputHolder is returned, which holds
+     * the original string and the positional index.
+     *
+     * @param var The input string to be parsed into an EdictInput. If it contains "=", it is treated as a key-value pair.
+     * @param positionalIndex The position of the input string in the original sequence of arguments.
+     *        This is used when creating a PositionalEdictInputHolder.
+     * @param realIndex The index of the input in the overall sequence, considering all inputs, not just the positional ones.
+     *        This is also used when creating a PositionalEdictInputHolder.
+     * @return A new EdictInput, which can be either a MappedEdictInputHolder if the input string contains "=", or
+     *         a PositionalEdictInputHolder otherwise.
+     */
     public EdictInput parseInput(String var, int positionalIndex, int realIndex) {
         if(var.contains("=")) {
             String key = var.split("\\Q=\\E")[0];
@@ -131,6 +211,15 @@ public class Edict {
         }
     }
 
+    /**
+     * Parses the given input string into a list of EdictValue objects. Each object in the list is generated
+     * by one of the parsers available in the parsers list. This means the input string is parsed multiple times,
+     * once for each parser.
+     *
+     * @param value The input string to be parsed into EdictValue objects.
+     * @return A list of EdictValue objects. Each object represents a possible parsing of the input string,
+     *         based on one of the available parsers.
+     */
     public List<EdictValue<?>> parse(String value) {
         List<EdictValue<?>> values = new ArrayList<>();
         for(EdictParser<?> i : parsers) {
@@ -140,23 +229,59 @@ public class Edict {
         return values;
     }
 
-    private static Set<EdictParser<?>> defaultParsers() {
+    /**
+     * This method creates a set of default parsers by dynamically instantiating all implementations of
+     * the EdictParser interface found in the "art.arcane.edict.content.parser" package. These parsers are
+     * typically used to parse input strings into EdictValue objects. This method uses reflection to discover
+     * and instantiate the parsers, hence any failure in the instantiation process is silently ignored.
+     *
+     * @return A set of EdictParser objects, each one an instance of a different implementation of the
+     *         EdictParser interface found in the "art.arcane.edict.content.parser" package.
+     */
+    public static Set<EdictParser<?>> defaultParsers() {
         Set<EdictParser<?>> parsers = new HashSet<>();
-        Curse.implemented(Edict.class, EdictParser.class)
-            .forEach(parser -> parsers.add((EdictParser<?>) parser.construct()));
+        Curse.implementedInPackage(Edict.class, EdictParser.class, "art.arcane.edict.content.parser")
+            .forEach(parser -> {
+                try {
+                    parsers.add(parser.construct().instance());
+                }
+
+                catch(Throwable ignored) {
+
+                }
+            });
 
         return parsers;
     }
 
-
+    /**
+     * Enhances the provided list of arguments by applying a series of transformations, specifically:
+     * processing quotes and enhancing mappings.
+     *
+     * @param args The list of arguments to be enhanced.
+     * @return A new list of enhanced arguments.
+     */
     public static List<String> enhance(List<String> args) {
         return enhanceMappings(enhanceQuotes(args, true));
     }
 
+    /**
+     * Enhances the provided list of arguments by processing quotes and optionally trimming whitespace.
+     *
+     * @param args The list of arguments to be enhanced.
+     * @return A new list of enhanced arguments.
+     */
     public static List<String> enhanceQuotes(List<String> args) {
         return enhanceQuotes(args, true);
     }
 
+    /**
+     * Enhances the provided list of arguments by processing quotes, with the option to trim whitespace.
+     *
+     * @param args The list of arguments to be enhanced.
+     * @param trim A flag to indicate if whitespace should be trimmed.
+     * @return A new list of enhanced arguments.
+     */
     public static List<String> enhanceQuotes(List<String> args, boolean trim) {
         List<String> a = new ArrayList<>();
 
@@ -225,14 +350,26 @@ public class Edict {
         return a;
     }
 
+    /**
+     * Enhances the provided list of arguments by transforming argument mappings.
+     *
+     * @param args The list of arguments to be enhanced.
+     * @return A new list of enhanced arguments.
+     */
     public static List<String> enhanceMappings(List<String> args) {
         List<String> newArgs = new ArrayList<>();
         for (int i = 0; i < args.size(); i++) {
             String arg = args.get(i);
-            if (arg.startsWith("--")) {
-                if (i + 1 < args.size()) {
+            if(arg.startsWith("--") && arg.contains("=")) {
+                newArgs.add(arg.substring(2));
+            } else if(arg.startsWith("-") && arg.contains("=")) {
+                newArgs.add(arg.substring(1));
+            } else if (arg.startsWith("--")) {
+                if (i + 1 < args.size() && !args.get(i + 1).startsWith("-")) {
                     newArgs.add(arg.substring(2) + "=" + args.get(i + 1));
                     i++;
+                } else {
+                    newArgs.add(arg.substring(2) + "=true");
                 }
             } else if (arg.startsWith("-")) {
                 if (i + 1 < args.size() && !args.get(i + 1).startsWith("-")) {
@@ -251,22 +388,55 @@ public class Edict {
         return newArgs;
     }
 
-    public void register(EdictEndpoint... endpoints) {
-        this.endpoints.addAll(Arrays.asList(endpoints));
+    /**
+     * Calculates the Levenshtein distance between two strings, which is a measure of the minimum number of
+     * single-character edits (insertions, deletions, or substitutions) needed to change one string into the other.
+     *
+     * @param x The first string to be compared.
+     * @param y The second string to be compared.
+     * @return The Levenshtein distance between the two strings.
+     */
+    public static int calculateLevenshteinDistance(String x, String y) {
+        int[][] dp = new int[x.length() + 1][y.length() + 1];
+
+        for (int i = 0; i <= x.length(); i++) {
+            for (int j = 0; j <= y.length(); j++) {
+                if (i == 0) {
+                    dp[i][j] = j;
+                }
+                else if (j == 0) {
+                    dp[i][j] = i;
+                }
+                else {
+                    dp[i][j] = Math.min(Math.min(dp[i - 1][j - 1]
+                                + costOfSubstitution(x.charAt(i - 1), y.charAt(j - 1)),
+                            dp[i - 1][j] + 1),
+                        dp[i][j - 1] + 1);
+                }
+            }
+        }
+
+        return dp[x.length()][y.length()];
     }
 
-    public static void test(){
-//        Edict edict = new Edict();
-//        edict.register(EdictEndpoint.builder()
-//                .command("react monitor")
-//                .field(EdictField.builder().name("configure").name("edit").type(Boolean.class).defaults(false).build())
-//            .build());
-//
-//        for(ReactAction i : actions) {
-//            edict.register(EdictEndpoint.builder()
-//                .command("react action " + i.getName())
-//                .fields(i.getCommandFields())
-//                .build());
-//        }
+    /**
+     * Calculates the cost of substituting one character for another in a string. The cost is zero if the characters are
+     * the same, and one otherwise.
+     *
+     * @param a The first character.
+     * @param b The second character.
+     * @return The substitution cost, as an integer.
+     */
+    public static int costOfSubstitution(char a, char b) {
+        return a == b ? 0 : 1;
+    }
+
+    /**
+     * Registers one or more endpoints to this instance.
+     *
+     * @param endpoints The endpoints to be registered.
+     */
+    public void register(EdictEndpoint... endpoints) {
+        this.endpoints.addAll(Arrays.asList(endpoints));
     }
 }

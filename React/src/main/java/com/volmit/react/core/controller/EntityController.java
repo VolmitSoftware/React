@@ -1,6 +1,8 @@
 package com.volmit.react.core.controller;
 
 import art.arcane.chrono.ChronoLatch;
+import art.arcane.edict.Edict;
+import art.arcane.edict.api.endpoint.EdictEndpoint;
 import com.volmit.react.React;
 import com.volmit.react.api.entity.EntityPriority;
 import com.volmit.react.model.ReactConfiguration;
@@ -30,6 +32,7 @@ import org.bukkit.event.entity.EntitySpawnEvent;
 import org.bukkit.event.entity.EntityTameEvent;
 import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.event.entity.ItemMergeEvent;
+import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 
@@ -45,8 +48,13 @@ public class EntityController implements IController, Listener {
     private Looper looper;
     private ChronoLatch valueSaver = new ChronoLatch(60000);
     private Map<EntityType, List<Consumer<Entity>>> entityTickListeners;
+    private Edict edict;
 
     public EntityController() {
+        edict = new Edict();
+        edict.register(EdictEndpoint.builder().command("some command a").build());
+        edict.register(EdictEndpoint.builder().command("some command b").build());
+        edict.register(EdictEndpoint.builder().command("some command c").build());
         looper = new Looper() {
             @Override
             protected long loop() {
@@ -72,6 +80,18 @@ public class EntityController implements IController, Listener {
         ReactConfiguration.get().getPriority().rebuildPriority();
         React.instance.registerListener(this);
         looper.start();
+    }
+
+    @EventHandler(ignoreCancelled = false)
+    public void on(AsyncPlayerChatEvent e) {
+        e.setCancelled(true);
+        e.getPlayer().sendMessage(String.join(" ", Edict.enhance(Edict.toArgs(e.getMessage()))));
+        edict.respond(edict.request(e.getMessage())).ifPresentOrElse(i -> {
+            e.getPlayer().sendMessage("Least Inaccuracy: " + i.getScoreOffset());
+            e.getPlayer().sendMessage("HIT: " + i.getEndpoint().getCommand());
+        }, () -> {
+            e.getPlayer().sendMessage("No response");
+        });
     }
 
     public void tickEntity(Entity e) {
