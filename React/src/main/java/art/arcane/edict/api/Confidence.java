@@ -1,28 +1,43 @@
 package art.arcane.edict.api;
 
 /**
- * Used to determine the confidence of a parsed value.
- * Higher confidence means that the value returned is guaranteed to be what the string represents.
- * Lower confidence means that the value returned is not guaranteed to be what the string represents and was likely guessed based
- * off of the input. This is useful because if we expect multi-type plugging, we will choose higher confidence results over lower
- * confidence results when both types would be accepted.
+ * An enumeration used to express the level of confidence in the interpretation of a parsed value.
+ * Higher levels of confidence imply a greater certainty that the value accurately represents the
+ * intended input, whereas lower levels suggest a higher degree of uncertainty and the likelihood
+ * that the value was guessed based on the input.
+ * <p>
+ * The `Confidence` enum is typically used when multiple types can be inferred from a given input,
+ * allowing higher confidence results to be favored over lower confidence ones.
  */
 public enum Confidence {
+
     /**
-     * For example if its an integer and the input is "*". This cant be converted to hex at all. In this case the native
-     * default is used (0) with an invalid confidence.
+     * This is the lowest level of confidence, indicating that the value cannot be accurately
+     * inferred from the input.
+     * <p>
+     * For example, consider an integer parser and an input of "*". This cannot be converted to
+     * an integer, hence an INVALID confidence is returned. In this case, a default value (like 0)
+     * may be used instead.
      */
     INVALID,
 
     /**
-     * For example if it's an enum of {APPLE, ORANGE, PINEAPPLE} and they input "ange" then we can be pretty sure they meant
-     * ORANGE however this would be a low confidence result. Another example would be if they type 'F' for an integer parser...
-     * It could be assumed as 16 in hex? But its probably wrong.
+     * This is a low level of confidence, indicating that the value could potentially be inferred from the input,
+     * but it's uncertain.
+     * <p>
+     * For example, consider an enumeration of {APPLE, ORANGE, PINEAPPLE} and an input of "ange". It could
+     * be inferred that the user intended to input "ORANGE", but this would be considered a LOW confidence result.
+     * Another example would be an input of 'F' for an integer parser - it could potentially represent the number 16
+     * in hexadecimal, but it's likely to be incorrect.
      */
     LOW,
 
     /**
-     * Only use high confidence if the calling toString on the object would result in the input string or very close to it (case)
+     * This is the highest level of confidence, indicating that the parsed value is almost certainly an accurate
+     * representation of the intended input.
+     * <p>
+     * HIGH confidence should only be used when calling `toString()` on the object would result in the original
+     * input string or something very close to it (ignoring case).
      */
     HIGH,
 }

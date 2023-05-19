@@ -3,8 +3,14 @@ package art.arcane.edict.api.parser;
 import art.arcane.edict.api.Confidence;
 
 /**
- * Represents a parser which can take text and parse it into an object of a specific type
- * @param <T> the type of object to parse into
+ * Functional interface that defines the contract for a parser in the Edict command handling system.
+ * <p>
+ * An implementation of this interface is responsible for parsing a String into an object of type T, and
+ * producing an {@link EdictValue} that encapsulates both the parsed object and an associated confidence level.
+ * The interface provides several default methods to conveniently produce EdictValue instances with
+ * specific confidence levels.
+ *
+ * @param <T> The type of the object that the parser is expected to parse into.
  */
 @FunctionalInterface
 public interface EdictParser<T> {

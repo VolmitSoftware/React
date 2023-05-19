@@ -3,20 +3,30 @@ package art.arcane.edict.api.parser;
 import java.util.List;
 
 /**
- * Implement this to a parser to allow for suggestions. You can also use this to force an input to match to one of the suggested parsers.
+ * Interface that should be implemented by parsers designed to support suggestion functionality.
+ * <p>
+ * The implemented parser can generate a list of possible options or suggestions for the input.
+ * Additionally, it can specify whether the input must strictly match one of these suggested options,
+ * or whether partial or custom matches are allowed. This can help in guiding the user input
+ * or increasing the accuracy of the parser.
+ *
  */
 public interface Suggestive {
+
     /**
-     * Return a list of suggestions for this input
-     * @return the list of suggestions. This can be immutable (List.of() is fine)
+     * Provides a list of options or suggestions for the input.
+     *
+     * @return A list of suggestions. This list can be immutable (List.of() is fine).
      */
     List<String> getOptions();
 
     /**
-     * Is this list rigid in the sense that the input must match one of the suggestions? If so, the parser can do a better job at matching
-     * to your list of suggestions instead of trying to figure out if the input is a "custom" result or if it "partially" matches one of the
-     * suggestions.
-     * @return true if the list is rigid, false otherwise
+     * Specifies whether the input must strictly match one of the options provided by getOptions().
+     * If true, the parser can focus on matching the input to one of the suggested options instead of
+     * trying to parse it as a custom or partially matching input.
+     *
+     * @return True if the list of options is rigid and the input must match one of the options.
+     *         False if custom or partial matches are allowed.
      */
     boolean isMandatory();
 }

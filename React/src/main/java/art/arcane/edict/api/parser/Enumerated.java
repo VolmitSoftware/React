@@ -1,11 +1,23 @@
 package art.arcane.edict.api.parser;
 
+import art.arcane.edict.Edict;
+
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
 /**
- * Implement this to a parser to support an enum
+ * Interface that should be implemented by parsers intended to support enum types.
+ * <p>
+ * The implemented parser can process input strings and map them to appropriate enum constants.
+ * The parse method is designed to take into account different possible formatting of the input strings
+ * (such as lower case, upper case, dashes or underscores), and tries to find the enum constant that
+ * best matches the input string.
+ * <p>
+ * Furthermore, the implemented parser is able to suggest possible inputs based on the enum constants,
+ * and also to declare whether the input should strictly be one of these suggested inputs.
+ *
+ * @param <T> The type of the enum that the implemented parser should support.
  */
 public interface Enumerated<T extends Enum<T>> extends EdictParser<T>, Suggestive {
     @SuppressWarnings("unchecked")
@@ -51,6 +63,6 @@ public interface Enumerated<T extends Enum<T>> extends EdictParser<T>, Suggestiv
     }
 
     private static int calculateSimilarity(String enumConstantName, String targetString) {
-        return enumConstantName.compareToIgnoreCase(targetString);
+        return Edict.calculateLevenshteinDistance(enumConstantName, targetString);
     }
 }
