@@ -6,6 +6,7 @@ import com.volmit.react.util.math.RNG;
 import org.bukkit.GameMode;
 import org.bukkit.Sound;
 import org.bukkit.entity.Item;
+import org.bukkit.entity.Minecart;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -28,6 +29,7 @@ public class FeatureFastDrops extends ReactFeature implements Listener {
     private boolean teleportBlockXP = true;
     private boolean teleportEntityDrops = true;
     private boolean teleportEntityXP = true;
+    private boolean allowContainerDrops = false;
     private boolean ignoreDistanceKills = true;
 
     public FeatureFastDrops() {
@@ -82,6 +84,10 @@ public class FeatureFastDrops extends ReactFeature implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void on(BlockDropItemEvent e) {
+        if(!allowContainerDrops && e.getBlock().getState() instanceof InventoryHolder) {
+            return;
+        }
+
         if(!e.getPlayer().getGameMode().equals(GameMode.SURVIVAL)) {
             return;
         }
