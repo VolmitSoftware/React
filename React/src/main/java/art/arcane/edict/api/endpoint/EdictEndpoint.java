@@ -1,5 +1,6 @@
 package art.arcane.edict.api.endpoint;
 
+import art.arcane.edict.api.context.EdictContext;
 import art.arcane.edict.api.field.EdictField;
 import art.arcane.edict.api.request.EdictResponse;
 import lombok.AllArgsConstructor;
@@ -32,7 +33,7 @@ public class EdictEndpoint {
     /**
      * The action to be performed when this command is executed.
      */
-    private Consumer<EdictResponse> executor;
+    private Consumer<EdictContext> executor;
 
     /**
      * The list of fields which can be populated with input values when the command is executed.

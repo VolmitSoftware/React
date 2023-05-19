@@ -1,7 +1,10 @@
 package art.arcane.edict;
 
+import art.arcane.chrono.PrecisionStopwatch;
 import art.arcane.curse.Curse;
 import art.arcane.edict.api.Confidence;
+import art.arcane.edict.api.context.EdictContext;
+import art.arcane.edict.api.context.EdictContextResolver;
 import art.arcane.edict.api.endpoint.EdictEndpoint;
 import art.arcane.edict.api.field.EdictField;
 import art.arcane.edict.api.input.EdictInput;
@@ -14,8 +17,11 @@ import art.arcane.edict.api.request.EdictFieldResponse;
 import art.arcane.edict.api.request.EdictRequest;
 import art.arcane.edict.api.request.EdictResponse;
 import com.volmit.react.React;
+import com.volmit.react.util.format.Form;
 import lombok.Builder;
+import lombok.Data;
 import lombok.Singular;
+import org.bukkit.command.CommandSender;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,10 +35,20 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+@Data
 @Builder
 public class Edict {
+    @Builder.Default
+    private final List<String> parserPackages = new ArrayList<>();
+
+    @Builder.Default
+    private final List<String> contextResolverPackages = new ArrayList<>();
+
     @Singular
     private final List<EdictEndpoint> endpoints = new ArrayList<>();
+
+    @Singular
+    private final Set<EdictContextResolver<?>> contextResolvers = defaultContextResolvers();
 
     @Singular
     private final Set<EdictParser<?>> parsers = defaultParsers();
@@ -41,9 +57,13 @@ public class Edict {
      * Creates a new instance of edict. From here you can register commands by calling the register method
      */
     public Edict() {
-        parsers.addAll(defaultParsers());
+        PrecisionStopwatch p = PrecisionStopwatch.start();
+        parsers.addAll(defaultParsers(parserPackages));
+        contextResolvers.addAll(defaultContextResolvers(contextResolverPackages));
+        React.verbose("Edict Endpoints: " + endpoints.size());
         React.verbose("Edict Parsers: " + parsers.size());
-        React.verbose("Edict Initialized");
+        React.verbose("Edict Context Resolvers: " + contextResolvers.size());
+        React.verbose("Edict Initialized in " + Form.f(p.getMilliseconds(), 2) + "ms");
     }
 
     /**
@@ -55,6 +75,18 @@ public class Edict {
      */
     public static List<String> toArgs(String args) {
         return Arrays.stream(args.split("\\Q \\E")).filter(s -> !s.isEmpty()).collect(Collectors.toList());
+    }
+
+    public static String getEdictRootPackage() {
+        return Edict.class.getPackageName();
+    }
+
+    public static String getEdictPackage(String sub) {
+        if(!sub.startsWith(".")) {
+            sub = "." + sub;
+        }
+
+        return getEdictRootPackage() + sub;
     }
 
     /**
@@ -73,12 +105,24 @@ public class Edict {
             .map(i -> respond(i, i.getPair()));
     }
 
+    public Optional<EdictResponse> execute(CommandSender sender, String command) {
+        return respond(request(command)).map(i -> {
+            EdictContext c = EdictContext.builder()
+                .sender(sender)
+                .response(i)
+                .endpoint(i.getEndpoint())
+                .request(i.getRequest())
+                .build();
+            EdictContext.put(c);
+            i.getEndpoint().getExecutor().accept(c);
+            return i;
+        });
+    }
+
     public Optional<EdictResponse> respond(EdictRequest request) {
         return streamResponses(request)
-            .map((i) -> {
-                React.verbose("Request on " + i.getEndpoint().getCommand() + ": " + i.getScoreOffset());
-                return i;
-            }).min(Comparator.comparingInt((i) -> Math.abs(i.getScoreOffset())));
+            .peek((i) -> React.verbose("Request on " + i.getEndpoint().getCommand() + ": " + i.getScoreOffset()))
+            .min(Comparator.comparingInt((i) -> Math.abs(i.getScoreOffset())));
     }
 
     /**
@@ -239,8 +283,23 @@ public class Edict {
      *         EdictParser interface found in the "art.arcane.edict.content.parser" package.
      */
     public static Set<EdictParser<?>> defaultParsers() {
+        return defaultParsers(null);
+    }
+
+    /**
+     * This method creates a set of default parsers by dynamically instantiating all implementations of
+     * the EdictParser interface found in the "art.arcane.edict.content.parser" package. These parsers are
+     * typically used to parse input strings into EdictValue objects. This method uses reflection to discover
+     * and instantiate the parsers, hence any failure in the instantiation process is silently ignored.
+     *
+     * @param and A list of additional packages to for more parsers.
+     *
+     * @return A set of EdictParser objects, each one an instance of a different implementation of the
+     *         EdictParser interface found in the "art.arcane.edict.content.parser" package.
+     */
+    public static Set<EdictParser<?>> defaultParsers(List<String> and) {
         Set<EdictParser<?>> parsers = new HashSet<>();
-        Curse.implementedInPackage(Edict.class, EdictParser.class, "art.arcane.edict.content.parser")
+        Curse.implementedInPackage(Edict.class, EdictParser.class, Edict.getEdictPackage("content.parser"))
             .forEach(parser -> {
                 try {
                     parsers.add(parser.construct().instance());
@@ -251,7 +310,77 @@ public class Edict {
                 }
             });
 
+        if(and != null) {
+            for(String i : and) {
+                Curse.implementedInPackage(Edict.class, EdictParser.class, i)
+                    .forEach(parser -> {
+                        try {
+                            parsers.add(parser.construct().instance());
+                        }
+
+                        catch(Throwable ignored) {
+
+                        }
+                    });
+            }
+        }
+
         return parsers;
+    }
+
+    /**
+     * This method creates a set of default context resolvers by dynamically instantiating all implementations of
+     * the EdictParser interface found in the "art.arcane.edict.content.context" package. These resolvers are
+     * typically used to resolve what objects are related to the sender. This method uses reflection to discover
+     * and instantiate the parsers, hence any failure in the instantiation process is silently ignored.
+     *
+     * @return A set of EdictContextResolver objects, each one an instance of a different implementation of the
+     *         EdictContextResolver interface found in the "art.arcane.edict.content.context" package.
+     */
+    public static Set<EdictContextResolver<?>> defaultContextResolvers() {
+        return defaultContextResolvers(null);
+    }
+
+    /**
+     * This method creates a set of default context resolvers by dynamically instantiating all implementations of
+     * the EdictParser interface found in the "art.arcane.edict.content.context" package. These resolvers are
+     * typically used to resolve what objects are related to the sender. This method uses reflection to discover
+     * and instantiate the parsers, hence any failure in the instantiation process is silently ignored.
+     *
+     * @param and A list of additional packages to search for more context resolvers.
+     *
+     * @return A set of EdictContextResolver objects, each one an instance of a different implementation of the
+     *         EdictContextResolver interface found in the "art.arcane.edict.content.context" package.
+     */
+    public static Set<EdictContextResolver<?>> defaultContextResolvers(List<String> and) {
+        Set<EdictContextResolver<?>> resolvers = new HashSet<>();
+        Curse.implementedInPackage(Edict.class, EdictContextResolver.class, Edict.getEdictPackage("content.context"))
+            .forEach(parser -> {
+                try {
+                    resolvers.add(parser.construct().instance());
+                }
+
+                catch(Throwable ignored) {
+
+                }
+            });
+
+        if(and != null) {
+            for(String i : and) {
+                Curse.implementedInPackage(Edict.class, EdictContextResolver.class, i)
+                    .forEach(parser -> {
+                        try {
+                            resolvers.add(parser.construct().instance());
+                        }
+
+                        catch(Throwable ignored) {
+
+                        }
+                    });
+            }
+        }
+
+        return resolvers;
     }
 
     /**
