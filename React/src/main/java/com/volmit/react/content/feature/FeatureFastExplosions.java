@@ -164,8 +164,6 @@ public class FeatureFastExplosions extends ReactFeature implements Listener {
 
     @Override
     public void onTick() {
-        System.out.println("Primes: " + primes);
-        System.out.println("Preprimes: " + preprimes);
         primes = 0;
         preprimes = 0;
         explosionChains = 0;
