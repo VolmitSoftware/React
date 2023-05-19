@@ -14,5 +14,5 @@ public class ReactRemoteUser {
     @Builder.Default
     private boolean console = false;
     @Builder.Default
-    private boolean files = false;
+    private boolean files = false; 
 }

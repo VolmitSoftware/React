@@ -11,7 +11,7 @@ import org.bukkit.persistence.PersistentDataType;
 import java.util.UUID;
 
 public class ReactEntity {
-    private static final long maxTickInterval = 30000;
+    private static final long maxTickInterval = 10000;
     private static final NamespacedKey nsPriority = new NamespacedKey(React.instance, "react-priority");
     private static final NamespacedKey nsLastTick = new NamespacedKey(React.instance, "react-last-tick");
     private static final NamespacedKey nsPaused = new NamespacedKey(React.instance, "react-paused");

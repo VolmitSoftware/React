@@ -39,7 +39,7 @@ import java.util.function.Consumer;
 
 @Data
 public class EntityController implements IController, Listener {
-    private int perWorldUpdatesPerTick = 10;
+    private int perWorldUpdatesPerTick = 15;
     private Looper looper;
     private ChronoLatch valueSaver = new ChronoLatch(60000);
     private Map<EntityType, List<Consumer<Entity>>> entityTickListeners;

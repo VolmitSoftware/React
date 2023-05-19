@@ -1,9 +1,8 @@
 package com.volmit.react;
 
-import art.arcane.edict.Edict;
 import art.arcane.multiburst.MultiBurst;
 import com.volmit.react.core.controller.*;
-import com.volmit.react.util.EntityKiller;
+import com.volmit.react.util.world.EntityKiller;
 import com.volmit.react.util.collection.KList;
 import com.volmit.react.util.format.C;
 import com.volmit.react.util.io.JarScanner;

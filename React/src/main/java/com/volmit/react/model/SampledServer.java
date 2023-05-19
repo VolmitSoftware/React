@@ -29,7 +29,7 @@ public class SampledServer {
         return worlds.containsKey(world);
     }
 
-    public boolean hasWorld(World world) {
+    public boolean  hasWorld(World world) {
         return hasWorld(world.getName());
     }
 

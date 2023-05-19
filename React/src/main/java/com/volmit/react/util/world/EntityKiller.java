@@ -1,4 +1,4 @@
-package com.volmit.react.util;
+package com.volmit.react.util.world;
 
 import com.volmit.react.React;
 import com.volmit.react.content.sampler.SamplerEntities;
@@ -20,13 +20,13 @@ public class EntityKiller {
 
     public EntityKiller(Entity e, int seconds) {
         if(killing.contains(e)) {
-            return;
+            return; 
         }
 
         this.entity = e;
         this.seconds = seconds;
         this.tt = seconds;
-        J.sr(this::tick, 20, seconds);
+        J.sr(this::tick, 20 , seconds);
         killing.add(entity);
     }
 
