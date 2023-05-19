@@ -2,6 +2,8 @@ package art.arcane.edict;
 
 import art.arcane.chrono.PrecisionStopwatch;
 import art.arcane.curse.Curse;
+import art.arcane.curse.model.CursedComponent;
+import art.arcane.curse.model.CursedMethod;
 import art.arcane.edict.api.Confidence;
 import art.arcane.edict.api.SenderType;
 import art.arcane.edict.api.context.EdictContext;
@@ -19,16 +21,20 @@ import art.arcane.edict.api.request.EdictRequest;
 import art.arcane.edict.api.request.EdictResponse;
 import com.volmit.react.React;
 import com.volmit.react.util.format.Form;
+import com.volmit.react.util.scheduling.J;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.Singular;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -634,7 +640,108 @@ public class Edict {
      * @param endpoints The endpoints to be registered.
      */
     public void register(EdictEndpoint... endpoints) {
-        this.endpoints.addAll(Arrays.asList(endpoints));
+        for(EdictEndpoint i : endpoints)
+        {
+            this.endpoints.add(i);
+            React.verbose("Registered Command " + i.getUsage());
+        }
+    }
+
+    /**
+     * Registers one or more endpoints in all classes in a package parent.
+     *
+     * @param superPackage The package the class must at least start with to check
+     */
+    public void registerPackage(String superPackage) {
+        Curse.whereInPackage(getClass(), (c) -> Arrays.stream(c.getMethods())
+            .anyMatch(i -> Modifier.isStatic(i.getModifiers()) && !Modifier.isNative(i.getModifiers())
+                && i.isAnnotationPresent(Edict.Command.class)), superPackage).forEach(this::registerClass);
+    }
+
+    /**
+     * Register a cursed component (class) as an endpoint using annotations checks all static methods for @Command annotations
+     * @param component The component to register
+     */
+    public void registerClass(CursedComponent component) {
+        component.declaredMethods().filter(m -> m.isStatic() && !m.isNative() && m.isAnnotated(Edict.Command.class)).forEach(this::registerMethod);
+    }
+
+    /**
+     * Register a cursed method as an endpoint using annotations
+     * @param method The method to register
+     */
+    public void registerMethod(CursedMethod method) {
+        if(!method.isStatic()) {
+            throw new RuntimeException("Cannot register non-static method " + method.method().getName() + " as an endpoint.");
+        }
+
+        if(method.isNative()) {
+            throw new RuntimeException("Cannot register native method " + method.method().getName() + " as an endpoint.");
+        }
+
+        if(!method.isAnnotated(Edict.Command.class)) {
+            throw new RuntimeException("Cannot register method " + method.method().getName() + " as an endpoint because it is not annotated with @Edict.Command.");
+        }
+
+        EdictEndpoint.EdictEndpointBuilder builder = EdictEndpoint.builder();
+        builder.command(method.annotated(Edict.Command.class).value());
+        boolean allRequiredFields = false;
+
+        if(method.isAnnotated(Edict.Aliases.class)) {
+            builder.aliases(List.of(method.annotated(Edict.Aliases.class).value()));
+        }
+
+        if(method.isAnnotated(Edict.Permission.class)){
+            builder.permissions(List.of(method.annotated(Edict.Permission.class).value()));
+        }
+
+        if(method.isAnnotated(Edict.PlayerOnly.class)) {
+            builder.senderType(SenderType.PLAYER);
+        } else if(method.isAnnotated(Edict.ConsoleOnly.class)) {
+            builder.senderType(SenderType.CONSOLE);
+        }
+
+        if(method.isAnnotated(Edict.Description.class)) {
+            builder.description(method.annotated(Edict.Description.class).value());
+        }
+
+        if(method.isAnnotated(Edict.Required.class)) {
+            allRequiredFields = true;
+        }
+
+        for(Parameter i : method.method().getParameters()) {
+            EdictField.EdictFieldBuilder fbuilder = EdictField.builder();
+            fbuilder.name(i.getName());
+            fbuilder.required(allRequiredFields);
+
+            if(i.isAnnotationPresent(Edict.Required.class)) {
+                fbuilder.required(true);
+            } else if(i.isAnnotationPresent(Edict.NotRequired.class)) {
+                fbuilder.required(false);
+            }
+
+            if(i.isAnnotationPresent(Edict.Default.class)) {
+                fbuilder.defaultValue(i.getAnnotation(Edict.Default.class).value());
+            }
+
+            if(i.isAnnotationPresent(Edict.Description.class)) {
+                fbuilder.description(i.getAnnotation(Edict.Description.class).value());
+            }
+
+            if(i.isAnnotationPresent(Edict.Aliases.class)) {
+                for(String j : i.getAnnotation(Edict.Aliases.class).value()) {
+                    fbuilder.name(j);
+                }
+            }
+
+            if(i.isAnnotationPresent(Edict.Permission.class)) {
+                fbuilder.permissions(List.of(i.getAnnotation(Edict.Permission.class).value()));
+            }
+
+            builder.field(fbuilder.build());
+        }
+
+        register(builder.build());
     }
 
     /**
@@ -664,11 +771,19 @@ public class Edict {
 
     /**
      * Require a permission for the command to be executed.
+     * <br><br>
+     * Parameter Edge Cases for when using this annotation on method parameters:
+     * <ul>
+     *     <li>If the parameter is contextual, it will be null if they lack the parameter even if there is a context</li>
+     *     <li>If the parameter is required, this command will fail the permission check OR fail the required check. Do not do this.</li>
+     *     <li>If the parameter is non-null but the confidence is INVALID, it will be set to null and be allowed</li>
+     *     <li>If the parameter is non-null, LOW OR HIGH, permission error will happen and it wont run</li>
+     * </ul>
      */
-    @Target(ElementType.METHOD)
+    @Target({ElementType.METHOD, ElementType.PARAMETER})
     @Retention(RetentionPolicy.RUNTIME)
     public @interface Permission {
-        String value();
+        String[] value();
     }
 
     /**

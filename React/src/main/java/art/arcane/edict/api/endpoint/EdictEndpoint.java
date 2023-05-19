@@ -1,5 +1,6 @@
 package art.arcane.edict.api.endpoint;
 
+import art.arcane.edict.api.SenderType;
 import art.arcane.edict.api.context.EdictContext;
 import art.arcane.edict.api.field.EdictField;
 import art.arcane.edict.api.request.EdictResponse;
@@ -8,6 +9,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.Singular;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
@@ -26,9 +28,35 @@ import java.util.stream.Collectors;
 @Data
 public class EdictEndpoint {
     /**
-     * The command to be executed.
+     * The command to be executed. Format just the header not the parameters such as
+     * "/plugin subcommand"
      */
     private String command;
+
+    /**
+     * The description of the command. This is used in the help command.
+     */
+    @Builder.Default
+    private String description = "No Description";
+
+    /**
+     * Additional command references as aliases. These still require the full command format
+     * such as "/plugin altcommand"
+     */
+    @Singular
+    private List<String> aliases;
+
+    /**
+     * Who is allowed to execute this command. Players or Consoles. Defaults to ANY
+     */
+    @Builder.Default
+    private SenderType senderType = SenderType.ANY;
+
+    /**
+     * The permission node(s) required to execute this command.
+     */
+    @Singular
+    private List<String> permissions;
 
     /**
      * The action to be performed when this command is executed.
@@ -69,5 +97,9 @@ public class EdictEndpoint {
      */
     public List<String> getPath() {
         return Arrays.stream(command.split("\\Q \\E")).filter(s -> !s.isEmpty()).collect(Collectors.toList());
+    }
+
+    public String getUsage() {
+        return getCommand() + " " + getFields().stream().map(EdictField::getUsage).collect(Collectors.joining(" "));
     }
 }
