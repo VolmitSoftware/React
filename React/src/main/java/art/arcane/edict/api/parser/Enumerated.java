@@ -8,12 +8,12 @@ import java.util.List;
 
 /**
  * Interface that should be implemented by parsers intended to support enum types.
- * <p>
+ * <br><br>
  * The implemented parser can process input strings and map them to appropriate enum constants.
  * The parse method is designed to take into account different possible formatting of the input strings
  * (such as lower case, upper case, dashes or underscores), and tries to find the enum constant that
  * best matches the input string.
- * <p>
+ * <br><br>
  * Furthermore, the implemented parser is able to suggest possible inputs based on the enum constants,
  * and also to declare whether the input should strictly be one of these suggested inputs.
  *

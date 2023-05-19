@@ -24,7 +24,7 @@ import org.bukkit.entity.Player;
 
 /**
  * Simple Bukkit Particles API with 1.7 to 1.13.2 support !
- * <p>
+ * <br><br>
  * You can find the project on <a href="https://github.com/MrMicky-FR/FastParticles">GitHub</a>
  *
  * @author MrMicky

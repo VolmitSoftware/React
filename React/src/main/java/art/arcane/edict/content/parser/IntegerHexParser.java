@@ -7,7 +7,7 @@ import art.arcane.edict.api.parser.EdictValue;
 /**
  * The IntegerHexParser class is an implementation of the EdictParser interface that specifically
  * handles the parsing of hexadecimal string representations into Integer objects.
- * <p>
+ * <br><br>
  * If the provided string is a valid hexadecimal representation (optionally starting with "0x" or "#"),
  * the parser will return an EdictValue with the parsed integer and high confidence.
  * If the parsing fails due to a NumberFormatException, it returns an EdictValue with a default value of 0

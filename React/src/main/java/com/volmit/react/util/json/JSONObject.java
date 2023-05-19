@@ -46,21 +46,21 @@ import java.util.Map.Entry;
  * returns a value if one can be found, and throws an exception if one cannot be
  * found. An <code>opt</code> method returns a default value instead of throwing
  * an exception, and so is useful for obtaining optional values.
- * <p>
+ * <br><br>
  * The generic <code>get()</code> and <code>opt()</code> methods return an
  * object, which you can cast or query for type. There are also typed
  * <code>get</code> and <code>opt</code> methods that do type checking and type
  * coercion for you. The opt methods differ from the get methods in that they do
  * not throw. Instead, they return a specified value, such as null.
- * <p>
+ * <br><br>
  * The <code>put</code> methods add or replace values in an object. For example,
  *
  * <pre>
  * myString = new JSONObject().put(&quot;JSON&quot;, &quot;Hello, World!&quot;).toString();
  * </pre>
- * <p>
+ * <br><br>
  * produces the string <code>{"JSON": "Hello, World"}</code>.
- * <p>
+ * <br><br>
  * The texts produced by the <code>toString</code> methods strictly conform to
  * the JSON syntax rules. The constructors are more forgiving in the texts they
  * will accept:
@@ -202,11 +202,11 @@ public class JSONObject {
      * <code>"is"</code> followed by an uppercase letter, the method is invoked,
      * and a key and the value returned from the getter method are put into the
      * new JSONObject.
-     * <p>
+     * <br><br>
      * The key is formed by removing the <code>"get"</code> or <code>"is"</code>
      * prefix. If the second remaining character is not upper case, then the
      * first character is converted to lower case.
-     * <p>
+     * <br><br>
      * For example, if an object has a method named <code>"getName"</code>, and
      * if the result of calling <code>object.getName()</code> is
      * <code>"Larry Fine"</code>, then the JSONObject will contain
@@ -559,7 +559,7 @@ public class JSONObject {
      * called. Otherwise, the value's toString method will be called, and the
      * result will be quoted.
      *
-     * <p>
+     * <br><br>
      * Warning: This method assumes that the data structure is acyclical.
      *
      * @param value The value to be serialized.
@@ -701,7 +701,7 @@ public class JSONObject {
      * is stored under the key to hold all of the accumulated values. If there
      * is already a JSONArray, then the new value is appended to it. In
      * contrast, the put method replaces the previous value.
-     * <p>
+     * <br><br>
      * If only one value is accumulated that is not a JSONArray, then the result
      * will be the same as using put. But if multiple values are accumulated,
      * then the result will be like append.
@@ -1551,7 +1551,7 @@ public class JSONObject {
      * Make a JSON text of this JSONObject. For compactness, no whitespace is
      * added. If this would not result in a syntactically correct JSON text,
      * then null will be returned instead.
-     * <p>
+     * <br><br>
      * Warning: This method assumes that the data structure is acyclical.
      *
      * @return a printable, displayable, portable, transmittable representation
@@ -1570,7 +1570,7 @@ public class JSONObject {
 
     /**
      * Make a prettyprinted JSON text of this JSONObject.
-     * <p>
+     * <br><br>
      * Warning: This method assumes that the data structure is acyclical.
      *
      * @param indentFactor The number of spaces to add to each level of indentation.
@@ -1590,7 +1590,7 @@ public class JSONObject {
     /**
      * Write the contents of the JSONObject as JSON text to a writer. For
      * compactness, no whitespace is added.
-     * <p>
+     * <br><br>
      * Warning: This method assumes that the data structure is acyclical.
      *
      * @return The writer.
@@ -1602,7 +1602,7 @@ public class JSONObject {
     /**
      * Write the contents of the JSONObject as JSON text to a writer. For
      * compactness, no whitespace is added.
-     * <p>
+     * <br><br>
      * Warning: This method assumes that the data structure is acyclical.
      *
      * @return The writer.

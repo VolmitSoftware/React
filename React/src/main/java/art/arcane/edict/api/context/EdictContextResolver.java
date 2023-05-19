@@ -6,7 +6,7 @@ import java.util.Optional;
  * The `EdictContextResolver` is a functional interface used for resolving objects of a certain type
  * within a given `EdictContext`. An implementation of this interface should provide logic to extract or
  * create the desired object from the provided context.
- * <p>
+ * <br><br>
  * This interface can be used to provide a flexible mechanism for retrieving or creating contextual objects
  * in an `Edict` operation.
  *

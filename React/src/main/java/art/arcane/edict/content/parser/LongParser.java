@@ -6,10 +6,10 @@ import art.arcane.edict.api.parser.EdictValue;
 /**
  * The LongParser class is an implementation of the EdictParser interface that handles the parsing of
  * string representations into Long objects.
- * <p>
+ * <br><br>
  * It overrides the parse method from the EdictParser interface. If the string to be parsed ends with 'l'
  * (in a case-insensitive manner), this character is removed before the parsing attempt.
- * <p>
+ * <br><br>
  * If the parsing is successful, it returns an EdictValue containing the parsed long and high confidence.
  * In the event of a NumberFormatException, it returns an EdictValue with a default value of 0L and low
  * confidence, indicating a less certain or incorrect parsing.

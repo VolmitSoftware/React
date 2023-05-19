@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * The MappedEdictInputHolder class implements both the EdictInput and MappedInput interfaces,
  * representing a type of EdictInput that is mapped to a key in the Edict command handling system.
- * <p>
+ * <br><br>
  * Each instance of this class holds the key to which the input is mapped and a list of parsed
  * values, which are the results of parsing the input string with respect to the command's requirements.
  */

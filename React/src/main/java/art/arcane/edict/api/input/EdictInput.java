@@ -9,7 +9,7 @@ import java.util.Optional;
 /**
  * The EdictInput interface represents an input provided to an Edict command in the Edict command handling system.
  * The input can hold multiple parsed values, each with an associated level of confidence about its validity.
- * <p>
+ * <br><br>
  * The interface provides methods to retrieve these parsed values either in their entirety or with a minimum
  * confidence level, and to convert the input into a specified type, given a minimum confidence level.
  */

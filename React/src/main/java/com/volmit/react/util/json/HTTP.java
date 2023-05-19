@@ -45,7 +45,7 @@ public class HTTP {
      *    "HTTP-Version": "HTTP/1.1" (for example)
      * }
      * </pre>
-     * <p>
+     * <br><br>
      * A response header will contain
      *
      * <pre>
@@ -55,7 +55,7 @@ public class HTTP {
      *    "Reason-Phrase": "OK" (for example)
      * }
      * </pre>
-     * <p>
+     * <br><br>
      * In addition, the other parameters in the header will be captured, using
      * the HTTP field names as JSON names, so that
      *
@@ -64,7 +64,7 @@ public class HTTP {
      *    Cookie: Q=q2=PPEAsg--; B=677gi6ouf29bn&b=2&f=s
      *    Cache-Control: no-cache
      * </pre>
-     * <p>
+     * <br><br>
      * become
      *
      * <pre>
@@ -74,7 +74,7 @@ public class HTTP {
      *    "Cache-Control": "no-cache",
      * ...}
      * </pre>
-     * <p>
+     * <br><br>
      * It does no further checking or conversion. It does not parse dates. It
      * does not do '%' transforms on URLs.
      *
@@ -127,7 +127,7 @@ public class HTTP {
      *    "HTTP-Version": "HTTP/1.1" (for example)
      * }
      * </pre>
-     * <p>
+     * <br><br>
      * A response header must contain
      *
      * <pre>
@@ -137,7 +137,7 @@ public class HTTP {
      *    "Reason-Phrase": "OK" (for example)
      * }
      * </pre>
-     * <p>
+     * <br><br>
      * Any other members of the JSONObject will be output as HTTP fields. The
      * result will end with two CRLF pairs.
      *

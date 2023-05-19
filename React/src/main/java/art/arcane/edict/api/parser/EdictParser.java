@@ -4,7 +4,7 @@ import art.arcane.edict.api.Confidence;
 
 /**
  * Functional interface that defines the contract for a parser in the Edict command handling system.
- * <p>
+ * <br><br>
  * An implementation of this interface is responsible for parsing a String into an object of type T, and
  * producing an {@link EdictValue} that encapsulates both the parsed object and an associated confidence level.
  * The interface provides several default methods to conveniently produce EdictValue instances with

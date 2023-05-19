@@ -4,7 +4,7 @@ import java.util.List;
 
 /**
  * Interface that should be implemented by parsers designed to support suggestion functionality.
- * <p>
+ * <br><br>
  * The implemented parser can generate a list of possible options or suggestions for the input.
  * Additionally, it can specify whether the input must strictly match one of these suggested options,
  * or whether partial or custom matches are allowed. This can help in guiding the user input

@@ -10,7 +10,7 @@ import java.util.Optional;
 /**
  * The ChunkContext class implements the EdictContextResolver interface for the type {@link Chunk}.
  * It provides functionality to resolve a {@link Chunk} object from the current {@link EdictContext}.
- * <p>
+ * <br><br>
  * This resolution is useful in scenarios where a command executor needs access to the Chunk associated
  * with the player issuing the command, as it provides an easy way to retrieve this Chunk in the context
  * of an Edict command execution.
@@ -19,7 +19,7 @@ public class ChunkContext implements EdictContextResolver<Chunk> {
 
     /**
      * Resolves a Chunk object from the provided EdictContext.
-     * <p>
+     * <br><br>
      * If the CommandSender within the context is a Player, the method returns an Optional containing the
      * Chunk where the Player is currently located. If the CommandSender is not a Player, the method returns
      * an empty Optional.
@@ -34,7 +34,7 @@ public class ChunkContext implements EdictContextResolver<Chunk> {
 
     /**
      * Provides a convenient way to retrieve the Chunk associated with the current EdictContext.
-     * <p>
+     * <br><br>
      * This static method returns an Optional containing the resolved Chunk if the CommandSender within
      * the current EdictContext is a Player, or an empty Optional otherwise.
      *

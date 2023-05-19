@@ -142,7 +142,7 @@ public class J {
     /**
      * Schedule a sync task to be run right after startup. If the server has already
      * started ticking, it will simply run it in a sync task.
-     * <p>
+     * <br><br>
      * If you dont know if you should queue this or not, do so, it's pretty
      * forgiving.
      *
@@ -159,7 +159,7 @@ public class J {
     /**
      * Schedule an async task to be run right after startup. If the server has
      * already started ticking, it will simply run it in an async task.
-     * <p>
+     * <br><br>
      * If you dont know if you should queue this or not, do so, it's pretty
      * forgiving.
      *

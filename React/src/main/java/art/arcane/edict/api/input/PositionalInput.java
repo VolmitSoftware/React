@@ -3,7 +3,7 @@ package art.arcane.edict.api.input;
 /**
  * The PositionalInput interface represents a specialized form of an EdictInput in the Edict command handling system
  * where the input is identified by its position in the command arguments.
- * <p>
+ * <br><br>
  * The interface provides methods to retrieve the real position and the positional position of the input. The real
  * position is the actual location of the input in the command string, while the positional position is calculated by
  * only counting positional inputs, ignoring any mapped parameters.

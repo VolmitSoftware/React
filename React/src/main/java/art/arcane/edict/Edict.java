@@ -3,6 +3,7 @@ package art.arcane.edict;
 import art.arcane.chrono.PrecisionStopwatch;
 import art.arcane.curse.Curse;
 import art.arcane.edict.api.Confidence;
+import art.arcane.edict.api.SenderType;
 import art.arcane.edict.api.context.EdictContext;
 import art.arcane.edict.api.context.EdictContextResolver;
 import art.arcane.edict.api.endpoint.EdictEndpoint;
@@ -33,6 +34,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -40,26 +42,59 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * Edict class represents the main processing and controlling entity of the Edict command handling system.
+ * It encapsulates the primary functionality of the system and holds all necessary components
+ * such as parserPackages, contextResolverPackages, endpoints, contextResolvers and parsers.
+ * <br><br>
+ * This class is equipped with initialization capabilities to load default parsers and context resolvers
+ * and to record detailed status information.
+ *
+ * @see EdictParser
+ * @see EdictEndpoint
+ * @see EdictContextResolver
+ */
 @Data
 @Builder
 @AllArgsConstructor
 public class Edict {
+    /**
+     * List of parser packages for the Edict system. The parsers in these packages are used to convert input strings into their corresponding objects.
+     * By default, this list is initialized as an empty ArrayList.
+     */
     @Builder.Default
     private final List<String> parserPackages = new ArrayList<>();
 
+    /**
+     * List of context resolver packages for the Edict system. The context resolvers in these packages are used to derive contextual data from input commands.
+     * By default, this list is initialized as an empty ArrayList.
+     */
     @Builder.Default
     private final List<String> contextResolverPackages = new ArrayList<>();
 
+    /**
+     * List of endpoints that represent the commands handled by the Edict system.
+     */
     @Singular
     private final List<EdictEndpoint> endpoints = new ArrayList<>();
 
+    /**
+     * Set of context resolvers for the Edict system. These resolvers are used to derive contextual data from input commands.
+     */
     @Singular
     private final Set<EdictContextResolver<?>> contextResolvers = defaultContextResolvers();
 
+    /**
+     * Set of parsers for the Edict system. These parsers are used to convert input strings into their corresponding objects.
+     */
     @Singular
     private final Set<EdictParser<?>> parsers = defaultParsers();
 
-    public void init() {
+    /**
+     * Initializes the Edict system by loading the default parsers and context resolvers.
+     * The detailed status of the system, including the number of endpoints, parsers, and context resolvers, is also reported.
+     */
+    public void initialize() {
         PrecisionStopwatch p = PrecisionStopwatch.start();
         parsers.addAll(defaultParsers(parserPackages));
         contextResolvers.addAll(defaultContextResolvers(contextResolverPackages));
@@ -80,10 +115,23 @@ public class Edict {
         return Arrays.stream(args.split("\\Q \\E")).filter(s -> !s.isEmpty()).collect(Collectors.toList());
     }
 
+    /**
+     * Returns the root package name where the Edict class resides.
+     *
+     * @return the root package name as a String.
+     */
     public static String getEdictRootPackage() {
         return Edict.class.getPackageName();
     }
 
+    /**
+     * Returns a specific sub-package name within the Edict root package.
+     * <br><br>
+     * If the sub-package name does not start with a dot (.), the method appends it at the beginning to form the correct structure.
+     *
+     * @param sub the name of the sub-package.
+     * @return the full package name as a String.
+     */
     public static String getEdictPackage(String sub) {
         if(!sub.startsWith(".")) {
             sub = "." + sub;
@@ -108,6 +156,15 @@ public class Edict {
             .map(i -> respond(i, i.getPair()));
     }
 
+    /**
+     * Executes a given command with a specific sender. This method creates an {@link EdictContext}
+     * for the execution and invokes the executor for the appropriate endpoint.
+     *
+     * @param sender  the originator of the command.
+     * @param command the command to be executed.
+     * @return an {@link Optional} that contains an {@link EdictResponse} if the command execution was successful;
+     *         otherwise, if there's no corresponding endpoint for the command, returns an empty Optional.
+     */
     public Optional<EdictResponse> execute(CommandSender sender, String command) {
         return respond(request(command)).map(i -> {
             EdictContext c = EdictContext.builder()
@@ -122,6 +179,14 @@ public class Edict {
         });
     }
 
+    /**
+     * Responds to an {@link EdictRequest}. This method finds the most suitable response to the request,
+     * which is determined by the minimum score offset.
+     *
+     * @param request the {@link EdictRequest} to respond to.
+     * @return an {@link Optional} that contains the most suitable {@link EdictResponse} if found;
+     *         otherwise, if no suitable response is found, returns an empty Optional.
+     */
     public Optional<EdictResponse> respond(EdictRequest request) {
         return streamResponses(request)
             .peek((i) -> React.verbose("Request on " + i.getEndpoint().getCommand() + ": " + i.getScoreOffset()))
@@ -572,9 +637,106 @@ public class Edict {
         this.endpoints.addAll(Arrays.asList(endpoints));
     }
 
+    /**
+     * Define the command header to match this method.
+     * This is the command that will be used to invoke the method. Do not specify arguments.
+     * If it's a root command simply type the command. You can use a slash, but it's not required.
+     */
     @Target(ElementType.METHOD)
     @Retention(RetentionPolicy.RUNTIME)
     public @interface Command {
+        String value();
+    }
+
+    /**
+     * Define a list of potential aliases for either the command or the parameters.
+     * For commands re-type out the command, for example if the @Command was /plugin monitor, a valid alias would be
+     * /plugin observe. Avoid adding aliases such as /plugin mon, because the matcher will already figure this out for you.
+     * Only use aliases for wildly different words that would not be matched by the matcher very well.
+     * <br><br>
+     * For parameters, the base name is captured by the method parameter name, but you can add aliases to it in the same way
+     */
+    @Target({ElementType.PARAMETER, ElementType.METHOD})
+    @Retention(RetentionPolicy.RUNTIME)
+    public @interface Aliases {
+        String[] value();
+    }
+
+    /**
+     * Require a permission for the command to be executed.
+     */
+    @Target(ElementType.METHOD)
+    @Retention(RetentionPolicy.RUNTIME)
+    public @interface Permission {
+        String value();
+    }
+
+    /**
+     * Indicate that this command can only be run by players. By default commands can be run by both players and the console.
+     */
+    @Target(ElementType.METHOD)
+    @Retention(RetentionPolicy.RUNTIME)
+    public @interface PlayerOnly {
+
+    }
+
+    /**
+     * Indicate that this command can only be run by the console. By default commands can be run by both players and the console.
+     */
+    @Target(ElementType.METHOD)
+    @Retention(RetentionPolicy.RUNTIME)
+    public @interface ConsoleOnly {
+
+    }
+
+    /**
+     * Denote that if this parameter is not specified in the command, a context grab will fill this parameter. For example:
+     * @Contextual Player p, ...
+     * This would grab the player that executed the command if it was a player.
+     */
+    @Target(ElementType.PARAMETER)
+    @Retention(RetentionPolicy.RUNTIME)
+    public @interface Contextual {
+
+    }
+
+    /**
+     * Denote that this parameter must be non-null and the confidence cannot be INVALID.
+     * If you specify this on a method, it will enforce that all parameters are required.
+     */
+    @Target({ElementType.PARAMETER, ElementType.METHOD})
+    @Retention(RetentionPolicy.RUNTIME)
+    public @interface Required {
+
+    }
+
+    /**
+     * All parameters are optional by default. This is only used if you specify @Required on a method for all
+     * parameters but have only one optional
+     */
+    @Target({ElementType.PARAMETER})
+    @Retention(RetentionPolicy.RUNTIME)
+    public @interface NotRequired {
+
+    }
+
+    /**
+     * Provide a default value to be parsed into this parameter if it's not specified in the command or if the
+     * confidence is INVALID
+     */
+    @Target(ElementType.PARAMETER)
+    @Retention(RetentionPolicy.RUNTIME)
+    public @interface Default {
+        String value();
+    }
+
+    /**
+     * Define a description for the command. This will be displayed in the help menu.
+     * You can also use this on parameters
+     */
+    @Target({ElementType.METHOD, ElementType.PARAMETER})
+    @Retention(RetentionPolicy.RUNTIME)
+    public @interface Description {
         String value();
     }
 }

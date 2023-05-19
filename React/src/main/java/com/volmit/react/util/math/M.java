@@ -65,7 +65,7 @@ public class M {
 
     /**
      * Get the percent (inverse lerp) from "from" to "to" where "at".
-     * <p>
+     * <br><br>
      * If from = 0 and to = 100 and at = 25 then it would return 0.25
      *
      * @param from the from

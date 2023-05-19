@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
  * The EdictEndpoint class represents a command endpoint in an Edict command handling system.
  * It encapsulates the command itself, a method to execute the command, and a list of fields
  * which can be populated with input values when the command is executed.
- * <p>
+ * <br><br>
  * The class also provides methods for getting the command path and the name of the command,
  * derived from the command string itself.
  */

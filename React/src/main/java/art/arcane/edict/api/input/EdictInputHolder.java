@@ -11,7 +11,7 @@ import java.util.List;
 /**
  * The EdictInputHolder class is an implementation of the EdictInput interface. It provides a concrete representation
  * for an input to an Edict command in the Edict command handling system.
- * <p>
+ * <br><br>
  * This class holds a list of parsed values which represent the interpreted values of the input. These parsed values
  * each have an associated level of confidence about their validity.
  */

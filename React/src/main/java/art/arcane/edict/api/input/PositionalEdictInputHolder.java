@@ -11,7 +11,7 @@ import java.util.List;
 /**
  * The PositionalEdictInputHolder class implements both the PositionalInput and EdictInput interfaces,
  * representing a type of EdictInput identified by its position in the Edict command handling system.
- * <p>
+ * <br><br>
  * Each instance of this class holds both the actual position of the input in the command string (real position)
  * and its ordinal position amongst positional inputs (position). It also stores a list of parsed values
  * that are the result of parsing the input string as per the requirements of the command.
