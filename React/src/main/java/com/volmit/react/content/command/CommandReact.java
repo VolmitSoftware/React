@@ -20,6 +20,7 @@ import org.bukkit.block.Block;
 public class CommandReact implements DecreeExecutor {
     private CommandConfig config;
     private CommandAction action;
+    private CommandBenchmark benchmark;
     private CommandChunk chunk;
 
     @Decree(
