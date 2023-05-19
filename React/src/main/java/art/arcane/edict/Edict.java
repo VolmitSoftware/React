@@ -18,6 +18,7 @@ import art.arcane.edict.api.request.EdictRequest;
 import art.arcane.edict.api.request.EdictResponse;
 import com.volmit.react.React;
 import com.volmit.react.util.format.Form;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.Singular;
@@ -41,6 +42,7 @@ import java.util.stream.Stream;
 
 @Data
 @Builder
+@AllArgsConstructor
 public class Edict {
     @Builder.Default
     private final List<String> parserPackages = new ArrayList<>();
@@ -57,10 +59,7 @@ public class Edict {
     @Singular
     private final Set<EdictParser<?>> parsers = defaultParsers();
 
-    /**
-     * Creates a new instance of edict. From here you can register commands by calling the register method
-     */
-    public Edict() {
+    public void init() {
         PrecisionStopwatch p = PrecisionStopwatch.start();
         parsers.addAll(defaultParsers(parserPackages));
         contextResolvers.addAll(defaultContextResolvers(contextResolverPackages));

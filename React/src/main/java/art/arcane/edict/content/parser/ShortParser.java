@@ -2,6 +2,8 @@ package art.arcane.edict.content.parser;
 
 import art.arcane.edict.api.parser.EdictParser;
 import art.arcane.edict.api.parser.EdictValue;
+import art.arcane.edict.content.context.LocationContext;
+import art.arcane.edict.content.context.WorldContext;
 
 public class ShortParser implements EdictParser<Short> {
     @Override
