@@ -19,6 +19,8 @@ import art.arcane.edict.api.parser.EdictValue;
 import art.arcane.edict.api.request.EdictFieldResponse;
 import art.arcane.edict.api.request.EdictRequest;
 import art.arcane.edict.api.request.EdictResponse;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.volmit.react.React;
 import com.volmit.react.util.format.Form;
 import com.volmit.react.util.scheduling.J;
@@ -26,8 +28,14 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.Singular;
+import org.bukkit.ChatColor;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -63,20 +71,20 @@ import java.util.stream.Stream;
 @Data
 @Builder
 @AllArgsConstructor
-public class Edict {
+public class Edict implements CommandExecutor, TabCompleter {
     /**
      * List of parser packages for the Edict system. The parsers in these packages are used to convert input strings into their corresponding objects.
      * By default, this list is initialized as an empty ArrayList.
      */
-    @Builder.Default
-    private final List<String> parserPackages = new ArrayList<>();
+    @Singular("parserPackage")
+    private final List<String> parserPackages;
 
     /**
      * List of context resolver packages for the Edict system. The context resolvers in these packages are used to derive contextual data from input commands.
      * By default, this list is initialized as an empty ArrayList.
      */
-    @Builder.Default
-    private final List<String> contextResolverPackages = new ArrayList<>();
+    @Singular("contextResolverPackage")
+    private final List<String> contextResolverPackages;
 
     /**
      * List of endpoints that represent the commands handled by the Edict system.
@@ -100,7 +108,7 @@ public class Edict {
      * Initializes the Edict system by loading the default parsers and context resolvers.
      * The detailed status of the system, including the number of endpoints, parsers, and context resolvers, is also reported.
      */
-    public void initialize() {
+    public Edict initialize(org.bukkit.command.PluginCommand command) {
         PrecisionStopwatch p = PrecisionStopwatch.start();
         parsers.addAll(defaultParsers(parserPackages));
         contextResolvers.addAll(defaultContextResolvers(contextResolverPackages));
@@ -108,6 +116,9 @@ public class Edict {
         React.verbose("Edict Parsers: " + parsers.size());
         React.verbose("Edict Context Resolvers: " + contextResolvers.size());
         React.verbose("Edict Initialized in " + Form.f(p.getMilliseconds(), 2) + "ms");
+        command.setExecutor(this);
+        command.setTabCompleter(this);
+        return this;
     }
 
     /**
@@ -230,7 +241,7 @@ public class Edict {
             for(int j = 0; j < inputs.size(); j++) {
                 EdictInput input = inputs.get(j);
                 AtomicReference<Confidence> confidence = new AtomicReference<>(Confidence.INVALID);
-                fields.add(EdictFieldResponse.builder()
+                EdictFieldResponse fr = EdictFieldResponse.builder()
                     .value(input.into(Confidence.HIGH)
                         .map(k -> {
                             confidence.set(Confidence.HIGH);
@@ -249,8 +260,15 @@ public class Edict {
                         .min()
                         .orElse(j) : j)
                     .inputPosition(j)
-                    .confidence(confidence.get())
-                    .build());
+                    .confidence(confidence.get()).build();
+
+                // todo: fix
+                if(i.getDefaultValue() != null && fr.getValue() == null || fr.getConfidence().equals(Confidence.INVALID)) {
+                    React.verbose("  Applying default value to " + i.getNames().get(0) + " -> " + i.getDefaultValue());
+                    fr.setValue(i.getDefaultValue());
+                }
+
+                fields.add(fr);
             }
 
             fields.stream().min(Comparator.comparingInt(a -> Math.abs(Confidence.values().length - ((EdictFieldResponse) a).getConfidence().ordinal()))
@@ -639,12 +657,13 @@ public class Edict {
      *
      * @param endpoints The endpoints to be registered.
      */
-    public void register(EdictEndpoint... endpoints) {
-        for(EdictEndpoint i : endpoints)
-        {
+    public Edict register(EdictEndpoint... endpoints) {
+        for(EdictEndpoint i : endpoints) {
             this.endpoints.add(i);
             React.verbose("Registered Command " + i.getUsage());
         }
+
+        return this;
     }
 
     /**
@@ -652,25 +671,28 @@ public class Edict {
      *
      * @param superPackage The package the class must at least start with to check
      */
-    public void registerPackage(String superPackage) {
+    public Edict registerPackage(String superPackage) {
         Curse.whereInPackage(getClass(), (c) -> Arrays.stream(c.getMethods())
             .anyMatch(i -> Modifier.isStatic(i.getModifiers()) && !Modifier.isNative(i.getModifiers())
                 && i.isAnnotationPresent(Edict.Command.class)), superPackage).forEach(this::registerClass);
+
+        return this;
     }
 
     /**
      * Register a cursed component (class) as an endpoint using annotations checks all static methods for @Command annotations
      * @param component The component to register
      */
-    public void registerClass(CursedComponent component) {
+    public Edict registerClass(CursedComponent component) {
         component.declaredMethods().filter(m -> m.isStatic() && !m.isNative() && m.isAnnotated(Edict.Command.class)).forEach(this::registerMethod);
+        return this;
     }
 
     /**
      * Register a cursed method as an endpoint using annotations
      * @param method The method to register
      */
-    public void registerMethod(CursedMethod method) {
+    public Edict registerMethod(CursedMethod method) {
         if(!method.isStatic()) {
             throw new RuntimeException("Cannot register non-static method " + method.method().getName() + " as an endpoint.");
         }
@@ -741,7 +763,47 @@ public class Edict {
             builder.field(fbuilder.build());
         }
 
-        register(builder.build());
+        return register(builder
+            .executor((i) -> {
+                React.verbose("Executed " + i.getEndpoint().getUsage());
+
+                Object[] o = new Object[method.method().getParameterCount()];
+                int m = 0;
+                for(EdictFieldResponse j : i.getResponse().getFields()) {
+                    try {
+                        o[m] = j.getValue();
+                    }
+
+                    catch(Throwable e) {
+                        if(j.getField().isRequired()) {
+                            i.getSender().sendMessage(ChatColor.RED + "Error: Parameter " + j.getField().getNames().get(0) + " is required!");
+                            i.getSender().sendMessage(ChatColor.YELLOW + "Usage: " + i.getEndpoint().getUsage());
+                            return;
+                        }
+                    }
+
+                    React.verbose(" par" + (m++) +  j.getField().getNames().get(0) + " -> " + j.getValue());
+                }
+
+                method.invoke(o);
+            })
+            .build());
+    }
+
+    @Override
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull org.bukkit.command.Command command, @NotNull String label, @NotNull String[] args) {
+        execute(sender, command.getName() + " " + String.join(" ", args)).ifPresentOrElse(i-> {
+            // When it went through
+        }, ()->{
+            sender.sendMessage(ChatColor.RED + "Unknown react command. Type \"/help\" for help.");
+        });
+        return true;
+    }
+
+    @Nullable
+    @Override
+    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull org.bukkit.command.Command command, @NotNull String label, @NotNull String[] args) {
+        return null;
     }
 
     /**

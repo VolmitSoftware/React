@@ -26,6 +26,14 @@ public class SampledChunk {
         this.cleaner = new ChronoLatch(1000);
     }
 
+    public double highestSubScore() {
+        return values.values().stream().mapToDouble(AtomicDouble::get).max().orElse(0);
+    }
+
+    public double totalScore() {
+        return values.values().stream().mapToDouble(AtomicDouble::get).sum();
+    }
+
     public Optional<AtomicDouble> optional(String key) {
         return values.containsKey(key) ? Optional.of(values.get(key)) : Optional.empty();
     }

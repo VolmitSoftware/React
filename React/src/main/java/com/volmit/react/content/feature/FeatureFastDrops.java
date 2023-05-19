@@ -5,12 +5,15 @@ import com.volmit.react.api.feature.ReactFeature;
 import com.volmit.react.util.math.RNG;
 import org.bukkit.GameMode;
 import org.bukkit.Sound;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockDropItemEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
@@ -31,7 +34,7 @@ public class FeatureFastDrops extends ReactFeature implements Listener {
         super(ID);
     }
 
-    @EventHandler(priority = EventPriority.MONITOR)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void on(EntityDeathEvent e) {
         if(!teleportEntityXP && !teleportEntityDrops) {
             return;
@@ -77,9 +80,32 @@ public class FeatureFastDrops extends ReactFeature implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.MONITOR)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void on(BlockDropItemEvent e) {
+        if(!e.getPlayer().getGameMode().equals(GameMode.SURVIVAL)) {
+            return;
+        }
+
+        if(teleportBlockDrops) {
+            e.setCancelled(true);
+
+            for(Item i : e.getItems()) {
+                boolean dropped = false;
+                for(ItemStack j : e.getPlayer().getInventory().addItem(i.getItemStack()).values()) {
+                    e.getPlayer().getWorld().dropItem(i.getLocation(), j);
+                    dropped = true;
+                }
+
+                if(!dropped) {
+                    e.getPlayer().playSound(e.getBlock().getLocation(), Sound.ENTITY_ITEM_PICKUP,0.7f, 1f+ RNG.r.f(-0.2f, 0.2f));
+                }
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void on(BlockBreakEvent e) {
-        if(!teleportBlockXP && !teleportBlockDrops) {
+        if(!teleportBlockXP) {
             return;
         }
 
@@ -87,35 +113,15 @@ public class FeatureFastDrops extends ReactFeature implements Listener {
             return;
         }
 
-        if(!e.isCancelled()) {
-            if(teleportBlockDrops) {
-                e.setDropItems(false);
-            }
+        int xp = teleportBlockXP ? e.getExpToDrop() : 0;
 
-            int xp = teleportBlockXP ? e.getExpToDrop() : 0;
+        if(teleportBlockXP) {
+            e.setExpToDrop(0);
+        }
 
-            if(teleportBlockXP) {
-                e.setExpToDrop(0);
-            }
-
-            if(xp > 0 && teleportEntityXP) {
-                e.getPlayer().giveExp(xp);
-                e.getPlayer().playSound(e.getBlock().getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP,0.7f, 1f + RNG.r.f(-0.2f, 0.2f));
-            }
-
-            if(teleportBlockDrops) {
-                for(ItemStack i : e.getBlock().getDrops(e.getPlayer().getInventory().getItemInMainHand(), e.getPlayer())) {
-                    boolean dropped = false;
-                    for(ItemStack j : e.getPlayer().getInventory().addItem(i).values()) {
-                        e.getPlayer().getWorld().dropItem(e.getPlayer().getLocation(), j);
-                        dropped = true;
-                    }
-
-                    if(!dropped) {
-                        e.getPlayer().playSound(e.getBlock().getLocation(), Sound.ENTITY_ITEM_PICKUP,0.7f, 1f+ RNG.r.f(-0.2f, 0.2f));
-                    }
-                }
-            }
+        if(xp > 0 && teleportEntityXP) {
+            e.getPlayer().giveExp(xp);
+            e.getPlayer().playSound(e.getBlock().getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP,0.7f, 1f + RNG.r.f(-0.2f, 0.2f));
         }
     }
 

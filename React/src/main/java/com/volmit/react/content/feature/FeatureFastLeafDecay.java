@@ -99,7 +99,7 @@ public class FeatureFastLeafDecay extends ReactFeature implements Listener {
             }
 
             b.getDrops().forEach((i) -> b.getWorld().dropItemNaturally(b.getLocation(), i));
-            b.setBlockData(B.getAir(), false);
+            b.setBlockData(B.getAir(),  false);
         }
     }
 

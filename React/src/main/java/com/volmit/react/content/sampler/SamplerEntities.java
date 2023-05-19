@@ -7,6 +7,7 @@ import com.volmit.react.util.format.Form;
 import com.volmit.react.util.scheduling.J;
 import lombok.Getter;
 import org.bukkit.Bukkit;
+import org.bukkit.Chunk;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.event.EventHandler;
@@ -43,7 +44,10 @@ public class SamplerEntities extends ReactCachedSampler implements Listener {
         return executeSync(() -> {
             int m = 0;
             for (World i : Bukkit.getWorlds()) {
-                m += i.getEntities().size();
+                for(Chunk j : i.getLoadedChunks()) {
+                    m += j.getEntities().length;
+                    getChunkCounter(j).set(j.getEntities().length);
+                }
             }
 
             return m;
@@ -64,16 +68,19 @@ public class SamplerEntities extends ReactCachedSampler implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void on(EntitySpawnEvent e) {
         entities.incrementAndGet();
+        getChunkCounter(e.getEntity().getLocation().getChunk()).addAndGet(1D);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void on(ChunkLoadEvent e) {
         entities.addAndGet(e.getChunk().getEntities().length);
+        getChunkCounter(e.getChunk()).addAndGet(e.getChunk().getEntities().length);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void on(ItemMergeEvent e) {
         entities.addAndGet(-1);
+        getChunkCounter(e.getEntity().getLocation().getChunk()).addAndGet(-1D);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -89,6 +96,7 @@ public class SamplerEntities extends ReactCachedSampler implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void on(EntityDeathEvent e) {
         entities.decrementAndGet();
+        getChunkCounter(e.getEntity().getLocation().getChunk()).addAndGet(-1D);
     }
 
     @Override

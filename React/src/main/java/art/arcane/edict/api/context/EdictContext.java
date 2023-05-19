@@ -39,17 +39,17 @@ public class EdictContext {
     /**
      * The `Edict` object associated with this context.
      */
-    private Edict edict;
+    private transient Edict edict;
 
     /**
      * The `EdictEndpoint` associated with this context.
      */
-    private EdictEndpoint endpoint;
+    private transient EdictEndpoint endpoint;
 
     /**
      * The `EdictRequest` associated with this context.
      */
-    private EdictRequest request;
+    private transient EdictRequest request;
 
     /**
      * The `EdictResponse` associated with this context.
@@ -59,7 +59,7 @@ public class EdictContext {
     /**
      * The `CommandSender` associated with this context.
      */
-    private CommandSender sender;
+    private transient CommandSender sender;
 
     /**
      * A map for storing resolved objects by their class types.

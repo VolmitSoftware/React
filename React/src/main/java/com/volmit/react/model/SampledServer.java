@@ -1,5 +1,6 @@
 package com.volmit.react.model;
 
+import lombok.Data;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.World;
@@ -8,6 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+@Data
 public class SampledServer {
     private final Map<String, SampledWorld> worlds;
 

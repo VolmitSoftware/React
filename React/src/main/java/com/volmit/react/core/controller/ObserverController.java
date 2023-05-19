@@ -3,6 +3,7 @@ package com.volmit.react.core.controller;
 import com.google.common.util.concurrent.AtomicDouble;
 import com.volmit.react.React;
 import com.volmit.react.api.sampler.Sampler;
+import com.volmit.react.model.SampledChunk;
 import com.volmit.react.model.SampledServer;
 import com.volmit.react.model.SampledWorld;
 import com.volmit.react.util.plugin.IController;
@@ -23,6 +24,7 @@ import org.bukkit.event.block.BlockRedstoneEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
 
+import java.util.Comparator;
 import java.util.Optional;
 
 @EqualsAndHashCode(callSuper = true)
@@ -54,6 +56,14 @@ public class ObserverController extends TickedObject implements IController {
     @Override
     public void stop() {
         React.instance.unregisterListener(this);
+    }
+
+    public SampledChunk absoluteWorst() {
+        return sampled.getWorlds().values().stream()
+            .flatMap(i -> i.getChunks().values().stream())
+            .max(Comparator.comparingDouble(SampledChunk::totalScore)
+                .thenComparingDouble(SampledChunk::highestSubScore))
+            .orElse(null);
     }
 
     public AtomicDouble get(Block b, Sampler sampler) {

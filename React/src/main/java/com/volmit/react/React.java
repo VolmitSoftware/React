@@ -1,5 +1,6 @@
 package com.volmit.react;
 
+import art.arcane.edict.Edict;
 import art.arcane.multiburst.MultiBurst;
 import com.volmit.react.core.controller.*;
 import com.volmit.react.util.EntityKiller;
@@ -153,6 +154,13 @@ public class React extends VolmitPlugin {
         featureController.postStart();
         actionController.postStart();
         info(SplashScreen.splash);
+
+//        Edict.builder()
+//            .parserPackage("com.volmit.react.testedict.parser")
+//            .contextResolverPackage("com.volmit.react.testedict.context")
+//            .build()
+//            .registerPackage("com.volmit.react.testedict.command")
+//            .initialize(getCommand("react"));
     }
 
     @Override
