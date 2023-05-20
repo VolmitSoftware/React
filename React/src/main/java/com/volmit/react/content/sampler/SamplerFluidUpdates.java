@@ -51,7 +51,7 @@ public class SamplerFluidUpdates extends ReactCachedSampler implements Listener 
         if (data instanceof Levelled l) {
             fluidInteractions.addAndGet(l.getLevel());
             getChunkCounter(event.getBlock()).addAndGet(1D);
-        } 
+        }
     }
 
     @Override
