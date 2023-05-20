@@ -12,6 +12,7 @@ import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockRedstoneEvent;
+import org.bukkit.event.inventory.HopperInventorySearchEvent;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -46,6 +47,12 @@ public class SamplerRedstoneUpdates extends ReactCachedSampler implements Listen
     public void on(BlockRedstoneEvent event) {
         redstoneInteractions.incrementAndGet();
         getChunkCounter(event.getBlock()).addAndGet(1D);
+    }
+
+    @EventHandler
+    public void on(HopperInventorySearchEvent event) {
+        redstoneInteractions.incrementAndGet();
+        getChunkCounter(event.getBlock()).addAndGet(2D);
     }
 
     @Override
