@@ -32,6 +32,7 @@ public class React extends VolmitPlugin {
     private SampleController sampleController;
     private PlayerController playerController;
     private FeatureController featureController;
+    private TweakController tweakController;
     private EventController eventController;
     private ActionController actionController;
     private CommandController commandController;
@@ -147,9 +148,11 @@ public class React extends VolmitPlugin {
         sampleController = new SampleController();
         actionController = new ActionController();
         featureController = new FeatureController();
+        tweakController = new TweakController();
         observerController = new ObserverController();
         entityController = new EntityController();
         sampleController.postStart();
+        tweakController.postStart();
         featureController.postStart();
         actionController.postStart();
         info(SplashScreen.splash);
@@ -176,6 +179,7 @@ public class React extends VolmitPlugin {
         commandController.stop();
         featureController.stop();
         entityController.stop();
+        tweakController.stop();
         jobController.stop();
     }
 

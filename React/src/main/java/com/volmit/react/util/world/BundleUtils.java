@@ -56,7 +56,9 @@ public class BundleUtils {
     }
 
     public static boolean isFlagged(ItemStack item) {
-        return item.getItemMeta().getPersistentDataContainer().has(new NamespacedKey(React.instance, "super-stack"), PersistentDataType.BYTE);
+        return item.getItemMeta().getLore() != null
+            && item.getItemMeta().getLore().size() == 1
+            && item.getItemMeta().getLore().get(0).equals("REACT SUPER STACK");
     }
 
     public static ItemStack merge(ItemStack item, ItemStack into, int maxBundle) {
@@ -71,7 +73,7 @@ public class BundleUtils {
         ItemStack is = new ItemStack(Material.BUNDLE);
         BundleMeta bm = (BundleMeta)is.getItemMeta();
         bm.setItems(compact(items));
-        bm.getPersistentDataContainer().set(new NamespacedKey(React.instance, "super-stack"), PersistentDataType.BYTE, (byte)1);
+        bm.setLore(List.of("REACT SUPER STACK"));
         is.setItemMeta(bm);
         return is;
     }
