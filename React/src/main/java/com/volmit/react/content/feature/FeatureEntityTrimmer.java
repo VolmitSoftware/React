@@ -35,9 +35,9 @@ public class FeatureEntityTrimmer extends ReactFeature implements Listener {
 
 
     /**
-     * List of blacklisted entities with the cow as a default value
+     * List of blacklisted entities with already blacklisted examples
      */
-    private List<EntityType> blacklist = List.of(EntityType.BLOCK_DISPLAY, EntityType.ITEM_DISPLAY, EntityType.INTERACTION);
+    private List<EntityType> blacklist = List.of(EntityType.BLOCK_DISPLAY, EntityType.ITEM_DISPLAY, EntityType.INTERACTION, EntityType.TEXT_DISPLAY);
 
     /**
      * Calculates total chunks * softMax to see if we are exceeding
