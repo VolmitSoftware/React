@@ -19,10 +19,10 @@ public class CommandReact implements DecreeExecutor {
     private CommandEnvironment environment;
 
     @Decree(
-        name = "monitor",
-        aliases = {"m", "mon"},
-        description = "Monitor the server via action bar",
-        origin = DecreeOrigin.PLAYER
+            name = "monitor",
+            aliases = {"m", "mon"},
+            description = "Monitor the server via action bar",
+            origin = DecreeOrigin.PLAYER
     )
     public void monitor() {
         React.instance.getPlayerController().getPlayer(player()).toggleActionBar();

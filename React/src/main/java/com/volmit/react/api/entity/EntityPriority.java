@@ -1,24 +1,14 @@
 package com.volmit.react.api.entity;
 
-import com.volmit.react.React;
 import com.volmit.react.model.ReactConfiguration;
 import com.volmit.react.model.ReactEntity;
 import com.volmit.react.util.math.M;
 import com.volmit.react.util.scheduling.J;
 import com.volmit.react.util.value.MaterialValue;
 import lombok.Getter;
-import org.bukkit.Bukkit;
-import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
-import org.bukkit.entity.Breedable;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.Item;
-import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Player;
-import org.bukkit.entity.Tameable;
+import org.bukkit.entity.*;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.metadata.FixedMetadataValue;
 
 import java.util.HashMap;
 import java.util.List;
@@ -73,16 +63,16 @@ public class EntityPriority {
     public void updateDistanceToPlayer(Entity e) {
         double distance = Double.MAX_VALUE;
         double d;
-        for(Player i : e.getWorld().getPlayers()) {
+        for (Player i : e.getWorld().getPlayers()) {
             d = i.getLocation().distanceSquared(e.getLocation());
 
-            if(d < distance) {
+            if (d < distance) {
                 distance = d;
             }
         }
 
         d = farPlayerMultiplier;
-        if(distance < nearbyPlayerMaxDistance * nearbyPlayerMaxDistance) {
+        if (distance < nearbyPlayerMaxDistance * nearbyPlayerMaxDistance) {
             d = M.lerp(nearbyPlayerMultiplier, farPlayerMultiplier, M.lerpInverse(0, nearbyPlayerMaxDistance * nearbyPlayerMaxDistance, distance));
         }
 
@@ -92,7 +82,7 @@ public class EntityPriority {
 
     public void updateCrowd(Entity e) {
         J.s(() -> {
-            List<Entity> ees = e.getNearbyEntities(8,8,8);
+            List<Entity> ees = e.getNearbyEntities(8, 8, 8);
 
             J.a(() -> {
                 double priority = getPriority(e);
@@ -100,14 +90,14 @@ public class EntityPriority {
                 double maxPriority = priority * 1.15;
                 double count = 1;
 
-                for(Entity i : ees) {
-                    if(i.getUniqueId().equals(e.getUniqueId())) {
+                for (Entity i : ees) {
+                    if (i.getUniqueId().equals(e.getUniqueId())) {
                         continue;
                     }
 
                     priority = getPriority(i);
 
-                    if(priority < minPriority || priority > maxPriority) {
+                    if (priority < minPriority || priority > maxPriority) {
                         continue;
                     }
 
@@ -122,16 +112,17 @@ public class EntityPriority {
     private Map<EntityType, Double> buildPriority() {
         Map<EntityType, Double> p = new HashMap<>();
 
-        for(EntityType i : EntityType.values()) {
+        for (EntityType i : EntityType.values()) {
             double v = BASELINE;
-            switch(i) {
+            switch (i) {
                 case DROPPED_ITEM -> v *= consumableMultiplier;
                 case EXPERIENCE_ORB, EGG -> v *= consumableMultiplier * lowValueMultiplier;
                 case AREA_EFFECT_CLOUD -> v *= ambientMultiplier * lowTickMultiplier * ephemeralMultiplier;
                 case ELDER_GUARDIAN -> v *= bossMultiplier * monsterMultiplier;
                 case WITHER_SKELETON, ALLAY, PIGLIN_BRUTE, ZOGLIN, HOGLIN, RAVAGER, PILLAGER, SHULKER, GUARDIAN,
-                    ENDERMITE, WITCH, MAGMA_CUBE, BLAZE, SILVERFISH, CAVE_SPIDER, ENDERMAN, ZOMBIFIED_PIGLIN, GHAST, SLIME, ZOMBIE,
-                    GIANT, SPIDER, SKELETON, CREEPER, ILLUSIONER, VINDICATOR, VEX, EVOKER, HUSK, STRAY -> v *= monsterMultiplier;
+                        ENDERMITE, WITCH, MAGMA_CUBE, BLAZE, SILVERFISH, CAVE_SPIDER, ENDERMAN, ZOMBIFIED_PIGLIN, GHAST, SLIME, ZOMBIE,
+                        GIANT, SPIDER, SKELETON, CREEPER, ILLUSIONER, VINDICATOR, VEX, EVOKER, HUSK, STRAY ->
+                        v *= monsterMultiplier;
                 case LEASH_HITCH -> v *= mechanicMultiplier * lowTickMultiplier * stationaryMultiplier;
                 case PAINTING -> v *= lowTickMultiplier * stationaryMultiplier * mechanicMultiplier;
                 case ARROW -> v *= projectileMultiplier * lowValueMultiplier;
@@ -166,7 +157,7 @@ public class EntityPriority {
                 case ENDER_DRAGON, WITHER, WARDEN -> v *= bossMultiplier * monsterMultiplier * highValueMultiplier;
                 case BAT -> v *= ambientMultiplier;
                 case PIG, SNIFFER, CAMEL, FROG, GOAT, BEE, PANDA, TURTLE, POLAR_BEAR,
-                    RABBIT, SNOWMAN, MUSHROOM_COW, CHICKEN, COW, SHEEP -> v *= passiveMultiplier;
+                        RABBIT, SNOWMAN, MUSHROOM_COW, CHICKEN, COW, SHEEP -> v *= passiveMultiplier;
                 case SQUID -> v *= passiveMultiplier * waterMultiplier;
                 case WOLF -> v *= passiveMultiplier * tameableMultiplier;
                 case OCELOT -> v *= passiveMultiplier * tameableMultiplier;
@@ -177,7 +168,8 @@ public class EntityPriority {
                 case VILLAGER -> v *= passiveMultiplier * villageMultiplier;
                 case ENDER_CRYSTAL -> v *= bossMultiplier * lowTickMultiplier * mechanicMultiplier;
                 case PHANTOM -> v *= monsterMultiplier * mechanicMultiplier;
-                case TRIDENT -> v *= projectileMultiplier * highValueMultiplier * ephemeralMultiplier * lowTickMultiplier;
+                case TRIDENT ->
+                        v *= projectileMultiplier * highValueMultiplier * ephemeralMultiplier * lowTickMultiplier;
                 case COD -> v *= passiveMultiplier * waterMultiplier;
                 case SALMON -> v *= passiveMultiplier * waterMultiplier;
                 case PUFFERFISH -> v *= passiveMultiplier * waterMultiplier;
@@ -185,7 +177,8 @@ public class EntityPriority {
                 case DROWNED -> v *= monsterMultiplier * waterMultiplier;
                 case DOLPHIN -> v *= passiveMultiplier * waterMultiplier * tameableMultiplier;
                 case CAT -> v *= passiveMultiplier * tameableMultiplier;
-                case TRADER_LLAMA -> v *= passiveMultiplier * vehicleMultiplier * villageMultiplier * mechanicMultiplier;
+                case TRADER_LLAMA ->
+                        v *= passiveMultiplier * vehicleMultiplier * villageMultiplier * mechanicMultiplier;
                 case WANDERING_TRADER -> v *= passiveMultiplier * villageMultiplier * mechanicMultiplier;
                 case FOX -> v *= passiveMultiplier * tameableMultiplier;
                 case STRIDER -> v *= passiveMultiplier * waterMultiplier;
@@ -195,13 +188,11 @@ public class EntityPriority {
                 case MARKER -> v *= lowTickMultiplier * stationaryMultiplier * mechanicMultiplier;
                 case CHEST_BOAT -> v *= vehicleMultiplier * highValueMultiplier;
                 case TADPOLE -> v *= passiveMultiplier * lowValueMultiplier;
-                case BLOCK_DISPLAY -> v *= lowTickMultiplier * stationaryMultiplier * mechanicMultiplier;
-                case INTERACTION -> v *= lowTickMultiplier * stationaryMultiplier * mechanicMultiplier;
-                case ITEM_DISPLAY -> v *= lowTickMultiplier * stationaryMultiplier * mechanicMultiplier;
-                case TEXT_DISPLAY -> v *= lowTickMultiplier * stationaryMultiplier * mechanicMultiplier;
                 case FISHING_HOOK -> v *= projectileMultiplier * ephemeralMultiplier * mechanicMultiplier;
                 case LIGHTNING -> v *= mechanicMultiplier * ephemeralMultiplier;
                 case PLAYER -> v = -1;
+                // Don't mess with technical entities, they are only for technical purposes, and should never be culled. (Only plugins can make and manipulate them)
+                case ITEM_DISPLAY, BLOCK_DISPLAY, TEXT_DISPLAY, INTERACTION-> v = -1;
                 case UNKNOWN -> v *= 1;
             }
 
@@ -212,7 +203,7 @@ public class EntityPriority {
     }
 
     public double getAgeMultipler(int ticksLived) {
-        if(ticksLived > consideredNewTicks) {
+        if (ticksLived > consideredNewTicks) {
             return oldMultiplier;
         }
 
@@ -227,17 +218,17 @@ public class EntityPriority {
     public double getPriorityWithCrowd(Entity e, double c) {
         double p = getPriority(e) * ReactEntity.getNearestPlayer(e);
 
-        if(c <= 1) {
+        if (c <= 1) {
             return p;
         }
 
-        c-=1;
+        c -= 1;
 
-        if(c < 1) {
+        if (c < 1) {
             return p * crowdMultiplier;
         }
 
-        if(c > 1) {
+        if (c > 1) {
             return p * Math.pow(crowdMultiplier, c);
         }
 
@@ -248,57 +239,51 @@ public class EntityPriority {
         double buf = getPriority(e.getType());
         buf *= getAgeMultipler(e.getTicksLived());
 
-        if(e instanceof Player) {
+        if (e instanceof Player) {
             return -1;
         }
 
-        if(ReactConfiguration.get().getPriority().isUseItemStackValueSystem() && e instanceof Item it) {
+        if (ReactConfiguration.get().getPriority().isUseItemStackValueSystem() && e instanceof Item it) {
             ItemStack is = it.getItemStack();
             double s = MaterialValue.getValue(is.getType()) * is.getAmount() * ReactConfiguration.get().getPriority().itemStackValueMultiplier;
             buf += s;
         }
 
-        if(e instanceof LivingEntity l) {
+        if (e instanceof LivingEntity l) {
             double d = Math.abs(l.getVelocity().length());
 
-            if(d < 1) {
+            if (d < 1) {
                 buf *= M.lerp(1, movingMultiplier, d);
             }
         }
 
-        if(e instanceof LivingEntity l) {
+        if (e instanceof LivingEntity l) {
             buf *= livingMultiplier;
 
             double maxHealth = l.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue();
             double h = l.getHealth();
 
-            if(h >= maxHealth) {
+            if (h >= maxHealth) {
                 buf *= fullHealthMultiplier;
-            }
-
-            else if(h <= 0){
+            } else if (h <= 0) {
                 buf *= lowHealthMultiplier;
-            }
-
-            else {
+            } else {
                 buf *= M.lerp(lowHealthMultiplier, fullHealthMultiplier, h / maxHealth);
             }
         }
 
-        if(e instanceof Tameable t) {
+        if (e instanceof Tameable t) {
             buf *= tameableMultiplier;
 
-            if(t.isTamed()) {
+            if (t.isTamed()) {
                 buf *= tamedMultiplier;
             }
         }
 
-        if(e instanceof Breedable a ) {
-            if(a.getAgeLock() || a.isAdult()) {
+        if (e instanceof Breedable a) {
+            if (a.getAgeLock() || a.isAdult()) {
                 buf *= adultMultiplier;
-            }
-
-            else if(!a.isAdult()) {
+            } else if (!a.isAdult()) {
                 buf *= babyMultiplier;
             }
         }

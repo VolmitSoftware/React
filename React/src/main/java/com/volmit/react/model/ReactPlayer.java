@@ -34,6 +34,7 @@ public class ReactPlayer extends TickedObject {
     private boolean speedValidForMonitor;
     private int speedTickCooldown;
     private int lastHash = 0;
+    private boolean running;
 
     public ReactPlayer(Player player) {
         super("react", player.getUniqueId().toString(), ACTIVE_RATE);
@@ -176,11 +177,13 @@ public class ReactPlayer extends TickedObject {
             return;
         }
 
-        if (!monitoring) {
+        if (!monitoring && actionBarMonitor != null) {
             actionBarMonitor.stop();
             actionBarMonitor = null;
-        } else {
-            actionBarMonitor = new ActionBarMonitor(this);
+        } else if (monitoring) {
+            if (actionBarMonitor == null) {
+                actionBarMonitor = new ActionBarMonitor(this);
+            }
             actionBarMonitor.start();
         }
 
@@ -189,6 +192,7 @@ public class ReactPlayer extends TickedObject {
             saveSettings();
         }
     }
+
 
     @Override
     public boolean shouldTick() {
@@ -220,6 +224,6 @@ public class ReactPlayer extends TickedObject {
     }
 
     public void toggleActionBar() {
-        setActionBarMonitoring(!isActionBarMonitoring());
+        setActionBarMonitoring(!isActionBarMonitoring() || actionBarMonitor == null);
     }
 }

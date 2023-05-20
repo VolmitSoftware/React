@@ -33,6 +33,17 @@ public class FeatureEntityTrimmer extends ReactFeature implements Listener {
     private transient double maxPriority = -1;
     private transient int cooldown = 0;
 
+
+    /**
+     * List of blacklisted entities with the cow as a default value
+     */
+    private List<EntityType> blacklist = List.of(EntityType.BLOCK_DISPLAY, EntityType.ITEM_DISPLAY, EntityType.INTERACTION);
+
+    /**
+     * Calculates total chunks * softMax to see if we are exceeding
+     */
+    private boolean printEntityPurgeSuccess = true;
+
     /**
      * Calculates total chunks * softMax to see if we are exceeding
      */
@@ -117,6 +128,9 @@ public class FeatureEntityTrimmer extends ReactFeature implements Listener {
             wc++;
         }
 
+        // Remove blacklisted entities
+        shitlist.removeIf(entity -> blacklist.contains(entity.getType()));
+
         shitlist.sort((a, b) -> {
             double pa = ReactEntity.getPriority(a);
             double pb = ReactEntity.getPriority(b);
@@ -150,7 +164,8 @@ public class FeatureEntityTrimmer extends ReactFeature implements Listener {
                 kill(shitlist.remove(0));
             }
 
-            React.success("Entity Trimmer: " + maxKill + " entities removed");
+            if (printEntityPurgeSuccess) // Prevent spam
+                React.success("Entity Trimmer: " + maxKill + " entities removed");
         }
     }
 

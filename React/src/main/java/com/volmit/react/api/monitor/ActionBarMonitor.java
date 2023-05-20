@@ -38,6 +38,7 @@ public class ActionBarMonitor extends PlayerMonitor {
     private boolean tickUp = false;
     private boolean locked = false;
     private int lockedPosition;
+    private boolean running;
 
     public ActionBarMonitor(ReactPlayer player) {
         super("actionbar", player, 50);
@@ -59,6 +60,7 @@ public class ActionBarMonitor extends PlayerMonitor {
 
     @Override
     public void stop() {
+        running = false;
         try {
             J.ss(() -> getPlayer().getPlayer().spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(" ")), 3);
             J.ss(() -> React.audiences.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.TITLE, Component.space()), 3);
@@ -71,6 +73,12 @@ public class ActionBarMonitor extends PlayerMonitor {
 
         super.stop();
         unregister();
+    }
+
+    @Override
+    public void start() {
+        running = true;
+        super.start();
     }
 
     private Component writeHeaderTitle(MonitorGroup group) {
@@ -304,6 +312,9 @@ public class ActionBarMonitor extends PlayerMonitor {
 
     @Override
     public void flush() {
+        if (!running) {
+            return;
+        }
         clearVisibility();
         MonitorGroup f = focus;
 
