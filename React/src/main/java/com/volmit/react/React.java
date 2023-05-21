@@ -1,6 +1,8 @@
 package com.volmit.react;
 
 import art.arcane.multiburst.MultiBurst;
+import art.arcane.spatial.matter.SpatialMatter;
+import com.volmit.react.content.tweak.matter.HopperIdentifierMatter;
 import com.volmit.react.core.controller.*;
 import com.volmit.react.core.nms.GlowingEntities;
 import com.volmit.react.util.world.EntityKiller;
@@ -158,6 +160,8 @@ public class React extends VolmitPlugin {
         tweakController.postStart();
         featureController.postStart();
         actionController.postStart();
+
+        SpatialMatter.registerSliceType(new HopperIdentifierMatter());
         info(SplashScreen.splash);
 
 //        Edict.builder()
