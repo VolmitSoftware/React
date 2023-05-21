@@ -72,14 +72,12 @@ public class MonitorConfigGUI {
                     .onLeftClick((e) -> {
                         refresh.set(true);
                         J.a(() -> {
-                            Sampler s = SamplerGUI.pickSampler(p, new ArrayList<>(group.getSamplers()));
-
-                            if (s != null) {
+                            SamplerGUI.pickSampler(p, (s) -> {
                                 group.getSamplers().add(s.getId());
                                 saver.accept(configuration);
                                 refresh.set(true);
                                 J.a(() -> editMonitorConfigurationGroup(p, configuration, group, saver));
-                            }
+                            }, new ArrayList<>(group.getSamplers()));
                         });
                     })
             );

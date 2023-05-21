@@ -3,6 +3,7 @@ package com.volmit.react.content.sampler;
 import com.volmit.react.React;
 import com.volmit.react.api.sampler.ReactCachedSampler;
 import com.volmit.react.core.nms.R194;
+import com.volmit.react.model.VisualizerType;
 import com.volmit.react.util.format.Form;
 import com.volmit.react.util.math.M;
 import com.volmit.react.util.math.RollingSequence;
@@ -51,6 +52,7 @@ public class SamplerFluidUpdates extends ReactCachedSampler implements Listener 
         if (data instanceof Levelled l) {
             fluidInteractions.addAndGet(l.getLevel());
             getChunkCounter(event.getBlock()).addAndGet(1D);
+            visualize(event.getBlock(), VisualizerType.FLUID);
         }
     }
 

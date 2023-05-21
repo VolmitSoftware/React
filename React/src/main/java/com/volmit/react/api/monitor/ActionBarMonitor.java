@@ -219,33 +219,40 @@ public class ActionBarMonitor extends PlayerMonitor {
         var builder = Component.text();
         boolean first = true;
         for (int m = 0; m < viewportLimit; m++) {
-            Sampler i = React.instance.getSampleController().getSampler(focus.getSamplers().get((viewportIndexes.get(focus) + m) % focus.getSamplers().size()));
+            try {
+                Sampler i = React.instance.getSampleController().getSampler(focus.getSamplers()
+                    .get((viewportIndexes.get(focus) + m) % focus.getSamplers().size()));
+                setVisible(i, true);
+                if (!first) {
+                    builder.append(Component.space());
+                }
 
-            setVisible(i, true);
-            if (!first) {
-                builder.append(Component.space());
-            }
+                first = false;
+                Double value = getSamplerValue(i);
+                value = value == null ? 0 : value;
 
-            first = false;
-            Double value = getSamplerValue(i);
-            value = value == null ? 0 : value;
+                String color = colorTrend(colorActivity(focus.getColor(), getActivity(i, 5000)), trends.getOrDefault(i, 0D));
+                String colorD = darkerColor(color);
 
-            String color = colorTrend(colorActivity(focus.getColor(), getActivity(i, 5000)), trends.getOrDefault(i, 0D));
-            String colorD = darkerColor(color);
-
-            Style s = (locked && getPlayer().isMonitorSneaking() && getFocusedSampler() == i) ? Style.style(TextColor.fromHexString(color), TextDecoration.UNDERLINED)
+                Style s = (locked && getPlayer().isMonitorSneaking() && getFocusedSampler() == i) ? Style.style(TextColor.fromHexString(color), TextDecoration.UNDERLINED)
                     : Style.style(TextColor.fromHexString(color));
-            Style ss = (locked && getPlayer().isMonitorSneaking() && getFocusedSampler() == i) ? Style.style(TextColor.fromHexString(color), TextDecoration.UNDERLINED).font(Key.key("uniform"))
+                Style ss = (locked && getPlayer().isMonitorSneaking() && getFocusedSampler() == i) ? Style.style(TextColor.fromHexString(color), TextDecoration.UNDERLINED).font(Key.key("uniform"))
                     : Style.style(TextColor.fromHexString(colorD)).font(Key.key("uniform"));
 
-            int l = i.format(value).length();
-            synchronized (maxLengths) {
-                maxLengths.compute(i, (k, v) -> Math.max(v == null ? 0 : v, l));
-            }
-            builder.append(i.format(Component.text(i.formattedValue(value), s), Component.text(i.formattedSuffix(value), ss)));
+                int l = i.format(value).length();
+                synchronized (maxLengths) {
+                    maxLengths.compute(i, (k, v) -> Math.max(v == null ? 0 : v, l));
+                }
+                builder.append(i.format(Component.text(i.formattedValue(value), s), Component.text(i.formattedSuffix(value), ss)));
 
-            if (l < maxLengths.get(i)) {
-                builder.append(Component.text(" ".repeat(maxLengths.get(i) - l)));
+                if (l < maxLengths.get(i)) {
+                    builder.append(Component.text(" ".repeat(maxLengths.get(i) - l)));
+                }
+            }
+
+            catch(Throwable e) {
+                e.printStackTrace();
+                viewportIndexes.put(focus, 0);
             }
         }
 

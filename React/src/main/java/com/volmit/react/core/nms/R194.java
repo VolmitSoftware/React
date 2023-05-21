@@ -63,7 +63,7 @@ public class R194 {
     public static void glow(Player player, org.bukkit.block.Block block, ChatColor color, int ticks) {
         BlockData rbd = block.getBlockData();
         player.sendBlockChange(block.getLocation(), B.get("barrier"));
-        BlockData b = block.getType().isAir() ? B.get("glass") : rbd;
+        BlockData b = (block.getType().isAir() || B.isFluid(rbd)) ? B.get("glass") : rbd;
         int id = sendFallingBlock(player, block.getLocation().add(0.5, 0, 0.5), b);
         UUID t = uuid(id);
         try {

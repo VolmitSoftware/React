@@ -8,10 +8,13 @@ import com.volmit.react.util.format.Form;
 import com.volmit.react.util.math.RollingSequence;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
+import org.bukkit.block.Hopper;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockRedstoneEvent;
 import org.bukkit.event.inventory.HopperInventorySearchEvent;
+import org.bukkit.event.inventory.InventoryMoveItemEvent;
 
 public class SamplerHopperTickTime extends ReactCachedSampler implements Listener {
     public static final String ID = "hopper-tick-time";
@@ -54,14 +57,16 @@ public class SamplerHopperTickTime extends ReactCachedSampler implements Listene
     }
 
     @EventHandler
-    public void on(HopperInventorySearchEvent e) {
-        if(!running) {
-            stopwatch.resetAndBegin();
-            running = true;
-        }
+    public void on(InventoryMoveItemEvent e) {
+        if((e.getSource().getHolder() instanceof Hopper) || (e.getDestination().getHolder() instanceof Hopper)) {
+            if(!running) {
+                stopwatch.resetAndBegin();
+                running = true;
+            }
 
-        else {
-            maxDuration = stopwatch.getMilliseconds();
+            else {
+                maxDuration = stopwatch.getMilliseconds();
+            }
         }
     }
 

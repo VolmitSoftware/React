@@ -2,14 +2,20 @@ package com.volmit.react.content.sampler;
 
 import com.volmit.react.React;
 import com.volmit.react.api.sampler.ReactCachedSampler;
+import com.volmit.react.model.VisualizerType;
 import com.volmit.react.util.format.Form;
 import com.volmit.react.util.math.M;
 import com.volmit.react.util.math.RollingSequence;
 import org.bukkit.Material;
+import org.bukkit.block.Hopper;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockPhysicsEvent;
 import org.bukkit.event.block.BlockRedstoneEvent;
 import org.bukkit.event.inventory.HopperInventorySearchEvent;
+import org.bukkit.event.inventory.InventoryMoveItemEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -40,10 +46,28 @@ public class SamplerHopperUpdates extends ReactCachedSampler implements Listener
         React.instance.unregisterListener(this);
     }
 
-    @EventHandler
-    public void on(HopperInventorySearchEvent event) {
-        hopperInteractions.incrementAndGet();
-        getChunkCounter(event.getBlock()).addAndGet(1D);
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void on(BlockPhysicsEvent e) {
+        if (e.getBlock().getType() == Material.HOPPER) {
+            hopperInteractions.incrementAndGet();
+            getChunkCounter(e.getBlock()).addAndGet(1D);
+            visualize(e.getBlock(), VisualizerType.HOPPER);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void on(InventoryMoveItemEvent e) {
+        if(e.getSource().getHolder() instanceof Hopper) {
+            hopperInteractions.incrementAndGet();
+            getChunkCounter(e.getSource().getLocation().getBlock()).addAndGet(1D);
+            visualize(e.getSource().getLocation().getBlock(), VisualizerType.HOPPER);
+        }
+
+        else if(e.getDestination().getHolder() instanceof Hopper){
+            hopperInteractions.incrementAndGet();
+            getChunkCounter(e.getDestination().getLocation().getBlock()).addAndGet(1D);
+            visualize(e.getDestination().getLocation().getBlock(), VisualizerType.HOPPER);
+        }
     }
 
     @Override

@@ -10,6 +10,7 @@ import com.volmit.react.util.format.Form;
 import com.volmit.react.util.scheduling.J;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
 @Decree(
@@ -26,8 +27,9 @@ public class CommandConfig implements DecreeExecutor {
             origin = DecreeOrigin.PLAYER
     )
     public void monitor() {
-        MonitorConfigGUI.editMonitorConfiguration(player(), React.instance.getPlayerController().getPlayer(player()).getSettings().getMonitorConfiguration(),
-                (c) -> React.instance.getPlayerController().getPlayer(player()).saveSettings());
+        Player player = player();
+        MonitorConfigGUI.editMonitorConfiguration(player, React.instance.getPlayerController().getPlayer(player).getSettings().getMonitorConfiguration(),
+                (c) -> React.instance.getPlayerController().getPlayer(player).saveSettings());
     }
 
     @Decree(

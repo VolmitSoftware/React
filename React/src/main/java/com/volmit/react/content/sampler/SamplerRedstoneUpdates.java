@@ -3,6 +3,7 @@ package com.volmit.react.content.sampler;
 import com.volmit.react.React;
 import com.volmit.react.api.sampler.ReactCachedSampler;
 import com.volmit.react.core.nms.R194;
+import com.volmit.react.model.VisualizerType;
 import com.volmit.react.util.format.Form;
 import com.volmit.react.util.math.M;
 import com.volmit.react.util.math.RollingSequence;
@@ -47,6 +48,7 @@ public class SamplerRedstoneUpdates extends ReactCachedSampler implements Listen
     public void on(BlockRedstoneEvent event) {
         redstoneInteractions.incrementAndGet();
         getChunkCounter(event.getBlock()).addAndGet(1D);
+        visualize(event.getBlock(), VisualizerType.REDSTONE);
     }
 
     @Override

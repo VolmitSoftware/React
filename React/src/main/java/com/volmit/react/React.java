@@ -2,8 +2,10 @@ package com.volmit.react;
 
 import art.arcane.multiburst.MultiBurst;
 import art.arcane.spatial.matter.SpatialMatter;
+import com.volmit.react.content.feature.FeatureBlockVisualization;
 import com.volmit.react.core.controller.*;
 import com.volmit.react.core.nms.GlowingEntities;
+import com.volmit.react.model.VisualizerType;
 import com.volmit.react.util.world.EntityKiller;
 import com.volmit.react.util.collection.KList;
 import com.volmit.react.util.format.C;
@@ -16,6 +18,7 @@ import lombok.Getter;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
@@ -187,6 +190,14 @@ public class React extends VolmitPlugin {
         tweakController.stop();
         jobController.stop();
         glowingEntities.disable();
+    }
+
+    public void visualize(Block block, VisualizerType type) {
+        FeatureBlockVisualization v = (FeatureBlockVisualization) getFeatureController().getFeature(FeatureBlockVisualization.ID);
+
+        if(v.isEnabled()) {
+            v.log(block, type);
+        }
     }
 
     @Override

@@ -15,19 +15,25 @@ import org.bukkit.entity.Player;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 public class SamplerGUI {
-    public static Sampler pickSampler(Player p) {
-        return pickSampler(p, null);
+    public static void pickSampler(Player p, Consumer<Sampler> onPicked, int page) {
+        pickSampler(p, onPicked, null, page);
     }
 
-    public static Sampler pickSampler(Player p, List<String> without) {
+    public static void pickSampler(Player p, Consumer<Sampler> onPicked,List<String> without) {
+        pickSampler(p,onPicked,  without, 0);
+    }
+
+    public static void pickSampler(Player p, Consumer<Sampler> onPicked) {
+        pickSampler(p, onPicked, null, 0);
+    }
+
+    public static void pickSampler(Player p, Consumer<Sampler> onPicked, List<String> without, int page) {
         if (Bukkit.isPrimaryThread()) {
             throw new RuntimeException("Cannot open gui on main thread");
         }
-
-        AtomicBoolean picked = new AtomicBoolean(false);
-        AtomicReference<Sampler> result = new AtomicReference<>();
 
         J.s(() -> {
             UIWindow window = new UIWindow(p);
@@ -35,7 +41,20 @@ public class SamplerGUI {
             window.setResolution(WindowResolution.W9_H6);
             window.setDecorator(new UIStaticDecorator(new UIElement("bg").setMaterial(new MaterialBlock(Material.BLACK_STAINED_GLASS_PANE))));
             //Sorted Samplers
-            List<Sampler> samplers = React.instance.getSampleController().getSamplers().values().stream().sorted((a, b) -> a.getId().compareToIgnoreCase(b.getId())).toList();
+            List<Sampler> samplers = React.instance.getSampleController()
+                .getSamplers()
+                .values()
+                .stream()
+                .sorted((a, b) -> a.getId().compareToIgnoreCase(b.getId()))
+                .toList();
+            boolean hasMore = samplers.size() > (9*2) * (page + 1);
+            int pge = page;
+            if(samplers.size() <= pge * (9*2)) {
+                pge = 0;
+                React.warn("Pagination Issue!");
+            }
+
+            samplers = samplers.subList(pge * (9*2), Math.min(samplers.size(), (pge + 1) * (9*2)));
 
             int rp = 0;
             for (Sampler i : samplers) {
@@ -51,21 +70,37 @@ public class SamplerGUI {
                         .setName(i.getName())
                         .addLore(i.format(i.sample()))
                         .onLeftClick((e) -> {
-                            result.set(i);
-                            picked.set(true);
+                            onPicked.accept(i);
                             window.close();
                         })
                 );
             }
 
+            int pg = pge;
+
+            if(pg > 0) {
+                window.setElement(-4, 2, new UIElement("page-back")
+                    .setMaterial(new MaterialBlock(Material.ARROW))
+                    .setName("Previous Page")
+                    .onLeftClick((e) -> {
+                        window.close();
+                        J.a(() -> pickSampler(p, onPicked, without, pg - 1));
+                    })
+                );
+            }
+
+            if(hasMore) {
+                window.setElement(4, 2, new UIElement("page-forward")
+                    .setMaterial(new MaterialBlock(Material.ARROW))
+                    .setName("Next Page")
+                    .onLeftClick((e) -> {
+                        window.close();
+                        J.a(() -> pickSampler(p, onPicked, without, pg + 1));
+                    })
+                );
+            }
+
             window.open();
-            window.onClosed((w) -> picked.set(true));
         });
-
-        while (!picked.get()) {
-            J.sleep(250);
-        }
-
-        return result.get();
     }
 }

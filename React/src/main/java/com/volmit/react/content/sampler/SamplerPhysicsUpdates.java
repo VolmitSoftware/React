@@ -2,12 +2,16 @@ package com.volmit.react.content.sampler;
 
 import com.volmit.react.React;
 import com.volmit.react.api.sampler.ReactCachedSampler;
+import com.volmit.react.model.VisualizerType;
 import com.volmit.react.util.format.Form;
 import com.volmit.react.util.math.M;
 import com.volmit.react.util.math.RollingSequence;
+import com.volmit.react.util.scheduling.J;
 import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockPhysicsEvent;
 import org.bukkit.event.block.BlockPistonExtendEvent;
 import org.bukkit.event.block.BlockPistonRetractEvent;
 
@@ -45,6 +49,12 @@ public class SamplerPhysicsUpdates extends ReactCachedSampler implements Listene
         int b = event.getBlocks().size() + 2;
         physicsInteractions.addAndGet(b);
         getChunkCounter(event.getBlock()).addAndGet(b);
+    }
+
+    @EventHandler(priority = EventPriority.LOW)
+    public void on(BlockPhysicsEvent event) {
+        physicsInteractions.addAndGet(1);
+        getChunkCounter(event.getBlock()).addAndGet(1);
     }
 
     @EventHandler
