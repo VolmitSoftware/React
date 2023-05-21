@@ -15,7 +15,7 @@ public class SamplerReactJobBudget extends ReactCachedSampler {
 
     @Override
     public Material getIcon() {
-        return Material.GLOWSTONE_DUST;
+        return Material.MUSIC_DISC_5;
     }
 
     @Override

@@ -10,7 +10,6 @@ import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.BlockPhysicsEvent;
 import org.bukkit.event.block.BlockRedstoneEvent;
 
 public class SamplerRedstoneTickTime extends ReactCachedSampler implements Listener {
@@ -43,7 +42,7 @@ public class SamplerRedstoneTickTime extends ReactCachedSampler implements Liste
 
     @Override
     public Material getIcon() {
-        return Material.GLOW_ITEM_FRAME;
+        return Material.REDSTONE;
     }
 
     @EventHandler
@@ -55,12 +54,10 @@ public class SamplerRedstoneTickTime extends ReactCachedSampler implements Liste
 
     @EventHandler
     public void on(BlockRedstoneEvent e) {
-        if(!running) {
+        if (!running) {
             stopwatch.resetAndBegin();
             running = true;
-        }
-
-        else {
+        } else {
             maxDuration = stopwatch.getMilliseconds();
         }
     }

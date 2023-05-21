@@ -17,7 +17,7 @@ public class SamplerTickTime extends ReactCachedSampler {
 
     @Override
     public Material getIcon() {
-        return Material.ITEM_FRAME;
+        return Material.HEART_OF_THE_SEA;
     }
 
     @Override

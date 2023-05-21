@@ -28,7 +28,7 @@ public class SamplerTicksPerSecond extends ReactTickedSampler {
 
     @Override
     public Material getIcon() {
-        return Material.NETHER_STAR;
+        return Material.NAUTILUS_SHELL;
     }
 
     private void onSyncTick() {

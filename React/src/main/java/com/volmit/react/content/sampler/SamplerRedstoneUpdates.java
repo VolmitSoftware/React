@@ -2,19 +2,11 @@ package com.volmit.react.content.sampler;
 
 import com.volmit.react.React;
 import com.volmit.react.api.sampler.ReactCachedRateSampler;
-import com.volmit.react.api.sampler.ReactCachedSampler;
 import com.volmit.react.util.format.Form;
-import com.volmit.react.util.math.M;
-import com.volmit.react.util.math.RollingSequence;
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockRedstoneEvent;
-import org.bukkit.event.inventory.HopperInventorySearchEvent;
-
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class SamplerRedstoneUpdates extends ReactCachedRateSampler implements Listener {
     public static final String ID = "redstone";

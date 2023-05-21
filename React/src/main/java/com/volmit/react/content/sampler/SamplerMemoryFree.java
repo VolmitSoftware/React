@@ -15,7 +15,7 @@ public class SamplerMemoryFree extends ReactCachedSampler {
 
     @Override
     public Material getIcon() {
-        return Material.CYAN_DYE;
+        return Material.WATER_BUCKET;
     }
 
     @Override

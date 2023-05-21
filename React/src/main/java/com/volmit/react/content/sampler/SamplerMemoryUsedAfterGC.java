@@ -21,7 +21,7 @@ public class SamplerMemoryUsedAfterGC extends ReactTickedSampler {
 
     @Override
     public Material getIcon() {
-        return Material.GREEN_DYE;
+        return Material.WATER_BUCKET;
     }
 
     @Override

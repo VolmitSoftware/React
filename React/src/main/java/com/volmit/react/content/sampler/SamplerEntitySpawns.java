@@ -13,7 +13,7 @@ import org.bukkit.event.entity.EntitySpawnEvent;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class SamplerEntitySpawns extends ReactCachedSampler implements Listener {
-    public static final String ID = "entity-spawns";
+    public static final String ID = "entities-spawns";
     private static final double D1_OVER_SECONDS = 1.0 / 1000D;
     private transient final AtomicInteger generated;
     private transient final RollingSequence avg = new RollingSequence(5);
@@ -26,7 +26,7 @@ public class SamplerEntitySpawns extends ReactCachedSampler implements Listener 
 
     @Override
     public Material getIcon() {
-        return Material.REDSTONE;
+        return Material.SHULKER_SPAWN_EGG;
     }
 
     @Override

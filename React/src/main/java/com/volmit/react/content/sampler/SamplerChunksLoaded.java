@@ -26,7 +26,7 @@ public class SamplerChunksLoaded extends ReactCachedSampler implements Listener 
 
     @Override
     public Material getIcon() {
-        return Material.REDSTONE;
+        return Material.COMMAND_BLOCK_MINECART;
     }
 
     @Override

@@ -15,7 +15,7 @@ public class SamplerReactTickTime extends ReactCachedSampler {
 
     @Override
     public Material getIcon() {
-        return Material.GLOW_ITEM_FRAME;
+        return Material.MUSIC_DISC_5;
     }
 
     @Override

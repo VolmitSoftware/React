@@ -19,7 +19,7 @@ public class SamplerMemoryPressure extends ReactTickedSampler {
 
     @Override
     public Material getIcon() {
-        return Material.PURPLE_DYE;
+        return Material.WATER_BUCKET;
     }
 
     @Override

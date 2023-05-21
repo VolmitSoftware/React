@@ -5,19 +5,13 @@ import com.volmit.react.React;
 import com.volmit.react.api.event.layer.ServerTickEvent;
 import com.volmit.react.api.sampler.ReactCachedSampler;
 import com.volmit.react.util.format.Form;
-import com.volmit.react.util.math.M;
 import com.volmit.react.util.math.RollingSequence;
-import com.volmit.react.util.scheduling.J;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
-import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Levelled;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockFromToEvent;
-import org.bukkit.event.block.BlockPhysicsEvent;
-
-import java.util.logging.Level;
 
 public class SamplerFluidTickTime extends ReactCachedSampler implements Listener {
     public static final String ID = "fluid-tick-time";
@@ -62,12 +56,10 @@ public class SamplerFluidTickTime extends ReactCachedSampler implements Listener
     @EventHandler
     public void on(BlockFromToEvent e) {
         if (e.getBlock().getBlockData() instanceof Levelled || e.getToBlock().getBlockData() instanceof Levelled) {
-            if(!running) {
+            if (!running) {
                 stopwatch.resetAndBegin();
                 running = true;
-            }
-
-            else {
+            } else {
                 maxDuration = stopwatch.getMilliseconds();
             }
         }
