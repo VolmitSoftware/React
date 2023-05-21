@@ -43,7 +43,7 @@ public class SamplerFluidTickTime extends ReactCachedSampler implements Listener
 
     @Override
     public Material getIcon() {
-        return Material.WATER_BUCKET;
+        return Material.MILK_BUCKET;
     }
 
     @EventHandler
