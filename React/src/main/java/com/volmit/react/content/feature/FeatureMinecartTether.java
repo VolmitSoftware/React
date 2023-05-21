@@ -2,26 +2,10 @@ package com.volmit.react.content.feature;
 
 import com.volmit.react.React;
 import com.volmit.react.api.feature.ReactFeature;
-import com.volmit.react.content.sampler.SamplerChunksLoaded;
-import com.volmit.react.model.ReactConfiguration;
-import com.volmit.react.model.ReactEntity;
-import com.volmit.react.util.math.M;
-import com.volmit.react.util.scheduling.J;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import org.bukkit.Bukkit;
-import org.bukkit.Chunk;
-import org.bukkit.World;
-import org.bukkit.block.Block;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Minecart;
 import org.bukkit.event.Listener;
 import org.bukkit.util.Vector;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class FeatureMinecartTether extends ReactFeature implements Listener {
     public static final String ID = "minecart-tether";

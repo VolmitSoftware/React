@@ -8,18 +8,18 @@ import com.volmit.react.util.math.RollingSequence;
 import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.world.ChunkLoadEvent;
+import org.bukkit.event.entity.EntitySpawnEvent;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class SamplerChunksLoaded extends ReactCachedSampler implements Listener {
-    public static final String ID = "chunks-generated";
+public class SamplerEntitySpawns extends ReactCachedSampler implements Listener {
+    public static final String ID = "entity-spawns";
     private static final double D1_OVER_SECONDS = 1.0 / 1000D;
     private transient final AtomicInteger generated;
     private transient final RollingSequence avg = new RollingSequence(5);
     private transient long lastSample = 0L;
 
-    public SamplerChunksLoaded() {
+    public SamplerEntitySpawns() {
         super(ID, 1000); // 1 tick interval for higher accuracy
         generated = new AtomicInteger(0);
     }
@@ -40,7 +40,7 @@ public class SamplerChunksLoaded extends ReactCachedSampler implements Listener 
     }
 
     @EventHandler
-    public void on(ChunkLoadEvent event) {
+    public void on(EntitySpawnEvent event) {
         generated.incrementAndGet();
     }
 
@@ -65,6 +65,6 @@ public class SamplerChunksLoaded extends ReactCachedSampler implements Listener 
 
     @Override
     public String formattedSuffix(double t) {
-        return "LOADS/s";
+        return "SPAWN/s";
     }
 }

@@ -1,17 +1,10 @@
 package com.volmit.react.content.feature;
 
-import art.arcane.chrono.ChronoLatch;
-import art.arcane.chrono.PrecisionStopwatch;
-import art.arcane.chrono.Profiler;
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
 import com.volmit.react.React;
-import com.volmit.react.api.entity.EntityPriority;
 import com.volmit.react.api.feature.ReactFeature;
-import com.volmit.react.content.sampler.SamplerChunksLoaded;
+import com.volmit.react.content.sampler.SamplerChunks;
 import com.volmit.react.model.ReactConfiguration;
 import com.volmit.react.model.ReactEntity;
-import com.volmit.react.util.format.Form;
 import com.volmit.react.util.math.M;
 import com.volmit.react.util.scheduling.J;
 import lombok.AllArgsConstructor;
@@ -120,7 +113,7 @@ public class FeatureEntityTrimmer extends ReactFeature implements Listener {
         }
 
         List<Entity> shitlist = new ArrayList<>();
-        int tc = (int) Math.round(Math.ceil(React.instance.getSampleController().getSampler(SamplerChunksLoaded.ID).sample()));
+        int tc = (int) Math.round(Math.ceil(React.instance.getSampleController().getSampler(SamplerChunks.ID).sample()));
         int wc = 0;
 
         for(World i : Bukkit.getWorlds()) {

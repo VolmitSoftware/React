@@ -62,7 +62,7 @@ public class SamplerRedstoneUpdates extends ReactCachedSampler implements Listen
         lastSample = M.ms();
         avg.put(r / (dur * D1_OVER_SECONDS));
 
-        return avg.getAverage();
+        return Math.max(0, avg.getAverage());
     }
 
     @Override

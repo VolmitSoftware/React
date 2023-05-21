@@ -122,7 +122,7 @@ public class ReactConfiguration {
                 .group(MonitorGroup.builder()
                         .name("World")
                         .color("#42cbf5")
-                        .sampler(SamplerChunksLoaded.ID)
+                        .sampler(SamplerChunks.ID)
                         .sampler(SamplerEntities.ID)
                         .sampler(SamplerPlayers.ID)
                         .build())

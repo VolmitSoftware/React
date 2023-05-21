@@ -67,7 +67,7 @@ public class SamplerFluidUpdates extends ReactCachedSampler implements Listener 
         lastSample = M.ms();
         avg.put(r / (dur * D1_OVER_SECONDS));
 
-        return avg.getAverage();
+        return Math.max(0, avg.getAverage());
     }
 
     @Override
