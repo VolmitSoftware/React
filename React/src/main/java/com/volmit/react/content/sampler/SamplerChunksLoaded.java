@@ -13,7 +13,7 @@ import org.bukkit.event.world.ChunkLoadEvent;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class SamplerChunksLoaded extends ReactCachedSampler implements Listener {
-    public static final String ID = "chunks-generated";
+    public static final String ID = "chunks-loaded";
     private static final double D1_OVER_SECONDS = 1.0 / 1000D;
     private transient final AtomicInteger generated;
     private transient final RollingSequence avg = new RollingSequence(5);
