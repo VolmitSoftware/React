@@ -12,6 +12,7 @@ import java.util.UUID;
 
 public class ReactEntity {
     private static final long maxTickInterval = 10000;
+    private static final NamespacedKey nsStackCount = new NamespacedKey(React.instance, "react-stack-count");
     private static final NamespacedKey nsPriority = new NamespacedKey(React.instance, "react-priority");
     private static final NamespacedKey nsLastTick = new NamespacedKey(React.instance, "react-last-tick");
     private static final NamespacedKey nsPaused = new NamespacedKey(React.instance, "react-paused");
@@ -59,6 +60,15 @@ public class ReactEntity {
 
     public static void setPriority(Entity entity, double priority) {
         entity.getPersistentDataContainer().set(nsPriority, PersistentDataType.DOUBLE, priority);
+    }
+
+    public static int getStackCount(Entity entity) {
+        Integer d = entity.getPersistentDataContainer().get(nsStackCount, PersistentDataType.INTEGER);
+        return d == null ? 1 : d;
+    }
+
+    public static void setStackCount(Entity entity, int stackCount) {
+        entity.getPersistentDataContainer().set(nsStackCount, PersistentDataType.INTEGER, stackCount);
     }
 
     public static double getCrowding(Entity entity) {

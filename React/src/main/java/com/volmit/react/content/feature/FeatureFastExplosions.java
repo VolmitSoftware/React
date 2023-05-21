@@ -47,7 +47,7 @@ public class FeatureFastExplosions extends ReactFeature implements Listener {
     private int maxExplosionChainsPerTick = 3;
     private boolean fastBlockUpdates = true;
     private boolean disableEntityChainReactions = false;
-    private boolean explosionChainReactions = false;
+    private boolean explosionChainReactions = false ;
     private transient int primes = 0;
     private transient int preprimes = 0;
     private transient int explosionChains = 0;

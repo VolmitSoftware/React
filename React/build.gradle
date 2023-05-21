@@ -103,6 +103,8 @@ dependencies {
     compileOnly 'org.projectlombok:lombok:1.18.24'
     annotationProcessor 'org.projectlombok:lombok:1.18.24'
     implementation 'org.spigotmc:spigot-api:1.19.4-R0.1-SNAPSHOT'
+    implementation 'craftbukkit:craftbukkit193R2:nms'
+
 
     // Shaded
     implementation 'art.arcane:Curse:23.4.6'

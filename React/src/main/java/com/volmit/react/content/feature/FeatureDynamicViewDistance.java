@@ -73,6 +73,8 @@ public class FeatureDynamicViewDistance extends ReactFeature implements Listener
 
     @Override
     public void onActivate() {
+        viewDistance.setMax(Math.min(viewDistance.getMax(), Bukkit.getServer().getViewDistance()));
+        simulationDistance.setMax(Math.min(simulationDistance.getMax(), Bukkit.getServer().getSimulationDistance()));
         ttAvg = new RollingSequence(10);
         ttAvg.put(0);
         lastUpdate = new HashMap<>();
