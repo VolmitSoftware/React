@@ -3,10 +3,8 @@ package com.volmit.react.api.sampler;
 import com.google.common.util.concurrent.AtomicDouble;
 import com.volmit.react.React;
 import com.volmit.react.api.ReactComponent;
-import com.volmit.react.model.VisualizerType;
 import com.volmit.react.util.scheduling.J;
 import net.kyori.adventure.text.Component;
-import net.minecraft.network.protocol.game.PacketPlayOutEntityEffect;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.block.Block;
@@ -28,10 +26,6 @@ public interface Sampler extends ReactComponent {
 
     default AtomicDouble getChunkCounter(Chunk c) {
         return React.instance.getObserverController().get(c, this);
-    }
-
-    default void visualize(Block block, VisualizerType type) {
-        React.instance.visualize(block, type);
     }
 
     default AtomicDouble getChunkCounter(Block b) {

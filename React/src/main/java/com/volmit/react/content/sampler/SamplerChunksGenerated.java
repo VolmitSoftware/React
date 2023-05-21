@@ -2,7 +2,6 @@ package com.volmit.react.content.sampler;
 
 import com.volmit.react.React;
 import com.volmit.react.api.sampler.ReactCachedSampler;
-import com.volmit.react.model.VisualizerType;
 import com.volmit.react.util.format.Form;
 import com.volmit.react.util.math.M;
 import com.volmit.react.util.math.RollingSequence;
