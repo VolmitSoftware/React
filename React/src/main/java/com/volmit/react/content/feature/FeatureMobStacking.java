@@ -42,6 +42,8 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
     private double maxHealth = 100;
     private Set<EntityType> stackableTypes = defaultStackableTypes();
     private boolean customNames = true;
+    private double searchRadius = 6;
+    private boolean vacuumEffect = true;
 
     public FeatureMobStacking() {
         super(ID);
@@ -104,25 +106,29 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
         onDamage(e);
     }
 
-    public void merge(Entity a, Entity into) {
+    public boolean merge(Entity a, Entity into) {
         if(canMerge(a, into)) {
-            try {
-                NMS.sendPacket(into, 32, NMS.collectPacket(a.getEntityId(), into.getEntityId(), 1));
+            setStackCount(into, getStackCount(into) + getStackCount(a));
+            if(vacuumEffect) {
+                try {
+                    NMS.sendPacket(a, 32, NMS.collectPacket(a.getEntityId(), into.getEntityId(), 1));
+                } catch(Throwable e) {
+                    e.printStackTrace();
+                }
             }
-
-            catch(Throwable e) {
-                e.printStackTrace();
-            }
-
-            J.ss(() ->
-                {a.remove();
-                    setStackCount(into, getStackCount(into) + getStackCount(a));}
-, 1);
+            a.remove();
+            return true;
         }
+
+        return false;
     }
 
     public boolean canMerge(Entity a, Entity into) {
         if(a instanceof Player) {
+            return false;
+        }
+
+        if(into instanceof Player) {
             return false;
         }
 
@@ -168,8 +174,10 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
     }
 
     public void onTick(Entity entity) {
-        for(Entity i : entity.getNearbyEntities(3, 3, 3)) {
-            merge(i, entity);
+        for(Entity i : entity.getNearbyEntities(searchRadius, searchRadius, searchRadius)) {
+            if(merge(entity, i)) {
+                break;
+            }
         }
     }
 
