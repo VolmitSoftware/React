@@ -8,6 +8,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.event.Listener;
@@ -48,8 +49,10 @@ public class TweakEntityBubbler extends ReactTweak implements Listener {
         //purge the entity if its crowding factor is higher than the maxEntityCrowding
         if (crowdingFactor >= maxEntityCrowding) {
             kill(entity);
-        } else if (preventEntityBubbling) {
+        }
+        if (preventEntityBubbling) {
             // If the entity is being bubbled, kill it
+            React.info("" + isEntityBubbled(entity));
             if (isEntityBubbled(entity)) {
                 kill(entity);
             }
@@ -60,14 +63,15 @@ public class TweakEntityBubbler extends ReactTweak implements Listener {
     public boolean isEntityBubbled(Entity entity) {
         Location location = entity.getLocation();
         World world = location.getWorld();
-        int x = location.getBlockX();
-        int z = location.getBlockZ();
-        int y = location.getBlockY();
-
-        for (int i = y; i >= 0; i--) {
-            Block block = world.getBlockAt(x, i, z);
-            if (block.getType() != Material.AIR && block.getType() != Material.WATER && block.getType() != Material.SEAGRASS && block.getType() != Material.TALL_SEAGRASS) {
-                return block.getType() == Material.SOUL_SAND || block.getType() == Material.MAGMA_BLOCK;
+        if (world == null)
+            return false;
+        Block block = world.getBlockAt(location);
+        Block blockBelow = block.getRelative(BlockFace.DOWN);
+        if (blockBelow.isLiquid() || block.isLiquid()) {
+            if (block.getType().equals(Material.BUBBLE_COLUMN) || blockBelow.getType().equals(Material.BUBBLE_COLUMN)) {
+                return true;
+            } else if (block.getType().equals(Material.SOUL_SAND) || blockBelow.getType().equals(Material.SOUL_SAND)) {
+                return true;
             }
         }
         return false;
