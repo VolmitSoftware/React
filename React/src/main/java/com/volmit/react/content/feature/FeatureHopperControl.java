@@ -3,13 +3,10 @@ package com.volmit.react.content.feature;
 import com.volmit.react.React;
 import com.volmit.react.api.feature.ReactFeature;
 import com.volmit.react.util.scheduling.J;
-import org.bukkit.Color;
 import org.bukkit.Material;
-import org.bukkit.Particle;
 import org.bukkit.block.*;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
-import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Minecart;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -23,7 +20,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class FeatureHopperControl extends ReactFeature implements Listener {
     public static final String ID = "feature-hopper-control";
-    private transient Map<Hopper, Boolean> matterSystem;
+    private transient Map<Hopper, Boolean> watchedHoppers;
+    private int hopperTickTime = 1000;
+    private double hopperEntityYOffset = 0.5;
+    private double hopperEntityXZOffset = 0.5;
 
     public FeatureHopperControl() {
         super(ID);
@@ -31,7 +31,7 @@ public class FeatureHopperControl extends ReactFeature implements Listener {
 
     @Override
     public void onActivate() {
-        matterSystem = new ConcurrentHashMap<>();
+        watchedHoppers = new ConcurrentHashMap<>();
         React.instance.registerListener(this);
     }
 
@@ -41,7 +41,7 @@ public class FeatureHopperControl extends ReactFeature implements Listener {
         hopper.setEnabled(status);
         bs.setBlockData(hopper);
         bs.update(true);
-        matterSystem.put(h, status);
+        watchedHoppers.put(h, status);
     }
 
     @EventHandler
@@ -56,7 +56,7 @@ public class FeatureHopperControl extends ReactFeature implements Listener {
     public void on(BlockPhysicsEvent e) {
         if (e.getBlock().getType() == Material.HOPPER) {
             Hopper h = (Hopper) e.getBlock().getState();
-            if (matterSystem.containsKey(h)) {
+            if (watchedHoppers.containsKey(h)) {
                 e.setCancelled(true);
             } else {
                 setHopperStatus(h, false);
@@ -66,7 +66,7 @@ public class FeatureHopperControl extends ReactFeature implements Listener {
 
     @EventHandler
     public void on(InventoryMoveItemEvent e) {
-        if (e.getDestination().getHolder() instanceof Hopper h && !matterSystem.containsKey(h)) {
+        if (e.getDestination().getHolder() instanceof Hopper h && !watchedHoppers.containsKey(h)) {
             setHopperStatus(h, false);
         }
     }
@@ -78,31 +78,25 @@ public class FeatureHopperControl extends ReactFeature implements Listener {
 
     @Override
     public int getTickInterval() {
-        return 1000;
+        return hopperTickTime;
     }
 
     @Override
     public void onTick() {
-        var hoppers = new ArrayList<>(matterSystem.keySet());
+        var hoppers = new ArrayList<>(watchedHoppers.keySet());
         hoppers.forEach(this::handleHopperState);
     }
 
     private void handleHopperState(Hopper h) {
         if (!h.getBlock().getType().equals(Material.HOPPER)) {
-            matterSystem.remove(h);
+            watchedHoppers.remove(h);
             return;
         }
 
-        J.s(() -> {
+        J.ss(() -> {
             boolean hasItems = hasItemsOrNeighbourHasItems(h);
             if (hasItems != isHopperEnabled(h)) {
                 setHopperStatus(h, hasItems);
-                h.getWorld().spawnParticle(
-                        Particle.REDSTONE,
-                        h.getBlock().getLocation().add(0.5, 1.5, 0.5),
-                        1, 0, 0, 0, 0,
-                        new Particle.DustOptions(hasItems ? Color.GREEN : Color.RED, 1)
-                );
             }
         });
     }
@@ -112,7 +106,6 @@ public class FeatureHopperControl extends ReactFeature implements Listener {
             return true;
         }
 
-        //check the neighbours for items too
         for (BlockFace face : BlockFace.values()) {
             Block relative = h.getBlock().getRelative(face);
             if (relative.getType() == Material.HOPPER) {
@@ -125,9 +118,8 @@ public class FeatureHopperControl extends ReactFeature implements Listener {
             }
         }
 
-        //Check the top of the hopper for any dropped item entities
         Block top = h.getBlock().getRelative(BlockFace.UP);
-        for (Entity entity : top.getWorld().getNearbyEntities(top.getLocation().add(0.5, 0, 0.5), 0.5, 0.5, 0.5)) {
+        for (Entity entity : top.getWorld().getNearbyEntities(top.getLocation().add(0.5, 0, 0.5), hopperEntityXZOffset, hopperEntityYOffset , hopperEntityXZOffset)) {
             if (entity instanceof Item || entity instanceof Minecart) {
                 return true;
             }
@@ -137,6 +129,6 @@ public class FeatureHopperControl extends ReactFeature implements Listener {
     }
 
     private boolean isHopperEnabled(Hopper h) {
-        return matterSystem.getOrDefault(h, false);
+        return watchedHoppers.getOrDefault(h, false);
     }
 }

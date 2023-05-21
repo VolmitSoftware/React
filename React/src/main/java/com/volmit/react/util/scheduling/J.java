@@ -215,6 +215,10 @@ public class J {
         Bukkit.getScheduler().scheduleSyncDelayedTask(React.instance, r, delay);
     }
 
+    public static void ss(Runnable r) {
+        J.ss(r, 0);
+    }
+
     /**
      * Cancel a sync repeating task
      *

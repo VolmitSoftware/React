@@ -190,9 +190,7 @@ public class EntityPriority {
                 case TADPOLE -> v *= passiveMultiplier * lowValueMultiplier;
                 case FISHING_HOOK -> v *= projectileMultiplier * ephemeralMultiplier * mechanicMultiplier;
                 case LIGHTNING -> v *= mechanicMultiplier * ephemeralMultiplier;
-                case PLAYER -> v = -1;
-                // Don't mess with technical entities, they are only for technical purposes, and should never be culled. (Only plugins can make and manipulate them)
-                case ITEM_DISPLAY, BLOCK_DISPLAY, TEXT_DISPLAY, INTERACTION-> v = -1;
+                case PLAYER, ITEM_DISPLAY, BLOCK_DISPLAY, TEXT_DISPLAY, INTERACTION -> v = -1;
                 case UNKNOWN -> v *= 1;
             }
 
