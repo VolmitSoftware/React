@@ -1,7 +1,7 @@
-package com.volmit.react.content.tweak;
+package com.volmit.react.content.feature;
 
 import com.volmit.react.React;
-import com.volmit.react.api.tweak.ReactTweak;
+import com.volmit.react.api.feature.ReactFeature;
 import com.volmit.react.util.scheduling.J;
 import org.bukkit.Color;
 import org.bukkit.Material;
@@ -16,17 +16,17 @@ import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class TweakHoppers extends ReactTweak implements Listener {
-    public static final String ID = "tweak-hoppers";
-    private ConcurrentHashMap<Hopper, Boolean> matterSystem;
+public class FeatureHopperControl extends ReactFeature implements Listener {
+    public static final String ID = "feature-hopper-control";
+    private transient ConcurrentHashMap<Hopper, Boolean> matterSystem;
 
-    public TweakHoppers() {
+    public FeatureHopperControl() {
         super(ID);
-        matterSystem = new ConcurrentHashMap<>();
     }
 
     @Override
     public void onActivate() {
+        matterSystem = new ConcurrentHashMap<>();
         React.instance.registerListener(this);
     }
 
