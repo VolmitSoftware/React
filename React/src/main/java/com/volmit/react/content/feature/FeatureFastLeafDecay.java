@@ -161,7 +161,7 @@ public class FeatureFastLeafDecay extends ReactFeature implements Listener {
             search.clear();
         }
 
-        catch(Throwable e) {
+        catch(Throwable ignored) {
 
         }
     }
