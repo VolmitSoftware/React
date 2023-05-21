@@ -1,13 +1,12 @@
 package com.volmit.react.content.command;
 
+import art.arcane.curse.Curse;
 import com.volmit.react.React;
-import com.volmit.react.model.VisualizerType;
 import com.volmit.react.util.decree.DecreeExecutor;
 import com.volmit.react.util.decree.DecreeOrigin;
 import com.volmit.react.util.decree.annotations.Decree;
 import com.volmit.react.util.decree.annotations.Param;
 import com.volmit.react.util.format.C;
-import com.volmit.react.util.format.Form;
 
 @Decree(
         name = "react",
@@ -42,5 +41,19 @@ public class CommandReact implements DecreeExecutor {
         React.instance.getPlayerController().getPlayer(player()).getSettings().toggleVisualizing();
         sender().sendMessage(C.REACT + "Visualize "
             + (React.instance.getPlayerController().getPlayer(player()).getSettings().isVisualizing() ? "enabled" : "disabled"));
+    }
+
+    @Decree(
+        name = "vd",
+        description = "Visualize the via glow blocks",
+        origin = DecreeOrigin.PLAYER
+    )
+    public void vd(
+        @Param(
+            name = "distance"
+        )
+        int d) {
+        Curse.on(player().getWorld()).method("setViewDistance", int.class).invoke(d);
+        Curse.on(player().getWorld()).method("setSimulationDistance", int.class).invoke(d);
     }
 }

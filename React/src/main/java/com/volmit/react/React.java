@@ -1,11 +1,7 @@
 package com.volmit.react;
 
 import art.arcane.multiburst.MultiBurst;
-import art.arcane.spatial.matter.SpatialMatter;
-import com.volmit.react.content.feature.FeatureBlockVisualization;
 import com.volmit.react.core.controller.*;
-import com.volmit.react.core.nms.GlowingEntities;
-import com.volmit.react.model.VisualizerType;
 import com.volmit.react.util.world.EntityKiller;
 import com.volmit.react.util.collection.KList;
 import com.volmit.react.util.format.C;
@@ -34,7 +30,6 @@ public class React extends VolmitPlugin {
     public static Ticker ticker;
     public static Ticker monitorTicker;
     public static MultiBurst burst;
-    private GlowingEntities glowingEntities;
     private SampleController sampleController;
     private PlayerController playerController;
     private FeatureController featureController;
@@ -146,7 +141,6 @@ public class React extends VolmitPlugin {
         burst = new MultiBurst("React", Thread.MIN_PRIORITY);
         ticker = new Ticker();
         monitorTicker = new Ticker();
-        glowingEntities = new GlowingEntities(this);
         audiences = BukkitAudiences.create(this);
         jobController = new JobController();
         commandController = new CommandController();
@@ -189,15 +183,6 @@ public class React extends VolmitPlugin {
         entityController.stop();
         tweakController.stop();
         jobController.stop();
-        glowingEntities.disable();
-    }
-
-    public void visualize(Block block, VisualizerType type) {
-        FeatureBlockVisualization v = (FeatureBlockVisualization) getFeatureController().getFeature(FeatureBlockVisualization.ID);
-
-        if(v.isEnabled()) {
-            v.log(block, type);
-        }
     }
 
     @Override

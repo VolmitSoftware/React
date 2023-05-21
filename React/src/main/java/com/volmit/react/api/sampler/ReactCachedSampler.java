@@ -7,9 +7,11 @@ public abstract class ReactCachedSampler implements Sampler {
     private transient final ChronoLatch slatch;
     private transient final AtomicDouble slast;
     private transient final String sid;
+    protected transient final long sampleDelay;
 
     public ReactCachedSampler(String id, long sampleDelay) {
         this.sid = id;
+        this.sampleDelay = sampleDelay;
         this.slatch = new ChronoLatch(sampleDelay, true);
         this.slast = new AtomicDouble();
     }
