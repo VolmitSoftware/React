@@ -16,8 +16,9 @@ public class SamplerChunksLoaded extends ReactCachedSampler implements Listener 
     public static final String ID = "chunks-loaded";
     private static final double D1_OVER_SECONDS = 1.0 / 1000D;
     private transient final AtomicInteger generated;
-    private transient final RollingSequence avg = new RollingSequence(5);
+    private transient RollingSequence avg;
     private transient long lastSample = 0L;
+    private int sequenceAverageLength = 5;
 
     public SamplerChunksLoaded() {
         super(ID, 1000); // 1 tick interval for higher accuracy
@@ -32,6 +33,7 @@ public class SamplerChunksLoaded extends ReactCachedSampler implements Listener 
     @Override
     public void start() {
         React.instance.registerListener(this);
+        avg = new RollingSequence(sequenceAverageLength);
     }
 
     @Override

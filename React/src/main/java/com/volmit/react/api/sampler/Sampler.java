@@ -40,7 +40,7 @@ public interface Sampler extends Registered, ReactRenderer {
             int v = (int) M.lerp(127, 0, M.lerpInverse(pmin, pmax, g.get(i)));
 
             for(int igx = v; igx < 128; igx++) {
-                set(ig, igx, new TinyColor(255, 255, 255));
+                set(ig, igx, new TinyColor((128-(igx))+127, (128-(igx))+127, (128-(igx))+127));
             }
         }
 
