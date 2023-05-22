@@ -36,7 +36,7 @@ public class EventController extends TickedObject implements IController, Listen
     private transient int steTicker;
 
     public EventController() {
-        super("react", "event", 50);
+        super("react", "event", 5000);
         start();
     }
 
