@@ -22,7 +22,7 @@ public class FeatureCircuitManager extends ReactFeature implements Listener {
      */
     private double maxCircuitMS = 15;
     private transient CircuitServer circuitServer;
- 
+
     public FeatureCircuitManager() {
         super(ID);
     }
