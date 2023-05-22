@@ -15,7 +15,7 @@ import java.io.IOException;
 
 public interface Registered {
     default String getConfigCategory() {
-        return "component";
+        return "core";
     }
 
     default String getName() {

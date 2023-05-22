@@ -219,21 +219,6 @@ public class MapController extends TickedObject implements IController, Listener
     public void start() {
         renderers = new HashMap<>();
         renderers.put(FeatureUnknown.ID, new RendererUnknown());
-        for(Sampler i : React.controller(SampleController.class).getSamplers().all()) {
-            renderers.put(i.getId(), i);
-        }
-
-        for(Feature i : React.controller(FeatureController.class).getFeatures().all()) {
-            if(i instanceof ReactRenderer f) {
-                renderers.put(i.getId(), f);
-            }
-        }
-
-        for(Player i : Bukkit.getOnlinePlayers()) {
-            J.s(() -> join(i));
-        }
-
-        React.instance.registerListener(this);
     }
 
     private void scanForRenderers(String pkg) {
@@ -270,7 +255,21 @@ public class MapController extends TickedObject implements IController, Listener
 
     @Override
     public void postStart() {
+        for(Sampler i : React.controller(SampleController.class).getSamplers().all()) {
+            renderers.put(i.getId(), i);
+        }
 
+        for(Feature i : React.controller(FeatureController.class).getFeatures().all()) {
+            if(i instanceof ReactRenderer f) {
+                renderers.put(i.getId(), f);
+            }
+        }
+
+        for(Player i : Bukkit.getOnlinePlayers()) {
+            J.s(() -> join(i));
+        }
+
+        React.instance.registerListener(this);
     }
 
     @Override
