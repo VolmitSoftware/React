@@ -16,7 +16,7 @@ public class SamplerMemoryGarbage extends ReactCachedSampler {
 
     @Override
     public Material getIcon() {
-        return Material.BROWN_DYE;
+        return Material.WATER_BUCKET;
     }
 
     @Override

@@ -44,7 +44,7 @@ public class SamplerEntities extends ReactCachedSampler implements Listener {
         return executeSync(() -> {
             int m = 0;
             for (World i : Bukkit.getWorlds()) {
-                for(Chunk j : i.getLoadedChunks()) {
+                for (Chunk j : i.getLoadedChunks()) {
                     m += j.getEntities().length;
                     getChunkCounter(j).set(j.getEntities().length);
                 }

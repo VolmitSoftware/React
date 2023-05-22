@@ -8,7 +8,6 @@ import com.volmit.react.util.math.RollingSequence;
 import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.BlockRedstoneEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -27,7 +26,7 @@ public class SamplerChunksGenerated extends ReactCachedSampler implements Listen
 
     @Override
     public Material getIcon() {
-        return Material.REDSTONE;
+        return Material.FURNACE_MINECART;
     }
 
     @Override
@@ -42,7 +41,7 @@ public class SamplerChunksGenerated extends ReactCachedSampler implements Listen
 
     @EventHandler
     public void on(ChunkLoadEvent event) {
-        if(event.isNewChunk()) {
+        if (event.isNewChunk()) {
             generated.incrementAndGet();
         }
     }

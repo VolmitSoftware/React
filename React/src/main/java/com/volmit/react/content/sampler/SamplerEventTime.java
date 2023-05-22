@@ -18,7 +18,7 @@ public class SamplerEventTime extends ReactCachedSampler implements Listener {
 
     @Override
     public Material getIcon() {
-        return Material.ENDER_EYE;
+        return Material.HEART_OF_THE_SEA;
     }
 
     @Override

@@ -5,7 +5,6 @@ import com.volmit.react.React;
 import com.volmit.react.api.event.layer.ServerTickEvent;
 import com.volmit.react.api.sampler.ReactCachedSampler;
 import com.volmit.react.util.format.Form;
-import com.volmit.react.util.math.M;
 import com.volmit.react.util.math.RollingSequence;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
@@ -43,7 +42,7 @@ public class SamplerPhysicsTickTime extends ReactCachedSampler implements Listen
 
     @Override
     public Material getIcon() {
-        return Material.GLOW_ITEM_FRAME;
+        return Material.MUSHROOM_STEW;
     }
 
     @EventHandler
@@ -55,12 +54,10 @@ public class SamplerPhysicsTickTime extends ReactCachedSampler implements Listen
 
     @EventHandler
     public void on(BlockPhysicsEvent e) {
-        if(!running) {
+        if (!running) {
             stopwatch.resetAndBegin();
             running = true;
-        }
-
-        else {
+        } else {
             maxDuration = stopwatch.getMilliseconds();
         }
     }

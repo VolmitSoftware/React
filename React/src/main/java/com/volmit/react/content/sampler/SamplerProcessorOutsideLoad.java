@@ -5,7 +5,7 @@ import com.volmit.react.util.format.Form;
 import org.bukkit.Material;
 
 public class SamplerProcessorOutsideLoad extends ReactCachedSampler {
-    public static final String ID = "cpu-outside";
+    public static final String ID = "processor-outside";
 
     public SamplerProcessorOutsideLoad() {
         super(ID, 250);

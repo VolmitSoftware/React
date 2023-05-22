@@ -15,7 +15,7 @@ public class SamplerEventListeners extends ReactCachedSampler implements Listene
 
     @Override
     public Material getIcon() {
-        return Material.ENDER_PEARL;
+        return Material.HEART_OF_THE_SEA;
     }
 
     @Override

@@ -22,12 +22,12 @@ import java.util.Map;
 
 public class FeatureDynamicViewDistance extends ReactFeature implements Listener {
     public static final String ID = "dynamic-view-distance";
-    private MinMax viewDistance = new MinMax(2, 10);
-    private MinMax simulationDistance = new MinMax(2, 6);
+    private MinMax viewDistance = new MinMax(2, 16);
+    private MinMax simulationDistance = new MinMax(2, 10);
     private MinMax lerpTickTime = new MinMax(10, 100);
     private MinMax lerpPlayersOnline = new MinMax(3, 100);
     private transient RollingSequence ttAvg;
-    public int updateCooldownSeconds = 60;
+    public int updateCooldownSeconds = 120;
     private Map<World, Long> lastUpdate;
 
     public FeatureDynamicViewDistance() {
