@@ -32,7 +32,9 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 
 @Getter
@@ -41,12 +43,15 @@ public class React extends VolmitPlugin {
     public static React instance;
     public static Thread serverThread;
     public static Ticker ticker;
-    public static Ticker monitorTicker;
     public static MultiBurst burst;
+    private List<Runnable> startupTasks;
+    private List<Runnable> prejobs;
     private Registry<IController> controllerRegistry;
+    private boolean ready;
 
     public React() {
         instance = this;
+        ready = false;
     }
 
     public static boolean hasNearbyPlayer(Location l, double blocks) {
@@ -141,17 +146,30 @@ public class React extends VolmitPlugin {
 
     @Override
     public void start() {
-        PrecisionStopwatch psw = PrecisionStopwatch.start();
         instance = this;
+        PrecisionStopwatch psw = PrecisionStopwatch.start();
+        startupTasks = new CopyOnWriteArrayList<>();
+        prejobs = new CopyOnWriteArrayList<>();
         burst = new MultiBurst("React", Thread.MIN_PRIORITY);
         ticker = new Ticker();
-        monitorTicker = new Ticker();
         audiences = BukkitAudiences.create(this);
         controllerRegistry = new Registry<>(IController.class, "com.volmit.react.core.controller");
+
+        for(Runnable i : startupTasks) {
+            i.run();
+        }
+
+        startupTasks.clear();
 
         for(IController i : controllerRegistry.all()) {
             i.start();
         }
+
+        for(Runnable i : startupTasks) {
+            i.run();
+        }
+
+        startupTasks.clear();
 
         info(SplashScreen.splash);
 
@@ -159,7 +177,13 @@ public class React extends VolmitPlugin {
             i.postStart();
         }
 
-        React.info("React Started in " + Form.f(psw.getMilliseconds(), 0));
+        ready = true;
+
+        for(Runnable i : prejobs) {
+            controller(JobController.class).queue(i);
+        }
+
+        React.info("React Started in " + Form.duration(psw.getMilliseconds(), 0));
     }
 
     @Override
@@ -167,9 +191,7 @@ public class React extends VolmitPlugin {
         controllerRegistry.all().forEach(IController::stop);
         burst.close();
         ticker.clear();
-        monitorTicker.clear();
         ticker.close();
-        monitorTicker.close();
     }
 
     @Override
@@ -179,10 +201,6 @@ public class React extends VolmitPlugin {
 
     public Ticker getTicker() {
         return ticker;
-    }
-
-    public Ticker getMonitorTicker() {
-        return monitorTicker;
     }
 
     public void reload() {

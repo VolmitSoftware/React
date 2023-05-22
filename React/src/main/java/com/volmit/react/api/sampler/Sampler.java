@@ -39,13 +39,8 @@ public interface Sampler extends Registered, ReactRenderer {
             int i = 127 - ig;
             int v = (int) M.lerp(127, 0, M.lerpInverse(pmin, pmax, g.get(i)));
 
-            if(i > 0) {
-                int ov = (int) M.lerp(127, 0, M.lerpInverse(pmin, pmax, g.get(i-1)));
-                line(ig, ov, ig, v, new TinyColor(255, 255, 255));
-            }
-
-            else {
-                set(ig, v, new TinyColor(255, 255, 255));
+            for(int igx = v; igx < 128; igx++) {
+                set(ig, igx, new TinyColor(255, 255, 255));
             }
         }
 

@@ -12,41 +12,45 @@ import java.util.Map;
 import java.util.Set;
 
 public class Registry<T extends Registered> {
-    private final Map<String, T> idRegistry;
-    private final Map<Class<?>, T> classRegistry;
+    private Map<String, T> idRegistry;
+    private Map<Class<?>, T> classRegistry;
 
     public Registry(Class<?> type, String packageName) {
-        Map<String, T> idRegistry = new HashMap<>();
-        Map<Class<?>, T> classRegistry = new HashMap<>();
-        String p = React.instance.jar().getAbsolutePath();
-        p = p.replaceAll("\\Q.jar.jar\\E", ".jar");
-        JarScanner j = new JarScanner(new File(p), packageName);
-        try {
-            j.scan();
-            j.getClasses().stream()
-                .filter(i -> i.isAssignableFrom(type) || type.isAssignableFrom(i))
-                .map((i) -> {
-                    try {
-                        return (T) i.getConstructor().newInstance();
-                    } catch (Throwable e) {
-                        e.printStackTrace();
-                    }
+        idRegistry = new HashMap<>();
+        classRegistry = new HashMap<>();
+        React.instance.getStartupTasks().add(() -> {
+            React.verbose("Registering " + type.getSimpleName() + "s" + " in " + packageName);
+            String p = React.instance.jar().getAbsolutePath();
+            p = p.replaceAll("\\Q.jar.jar\\E", ".jar");
+            JarScanner j = new JarScanner(new File(p), packageName);
+            try {
+                j.scan();
+                j.getClasses().stream()
+                    .filter(i -> i.isAssignableFrom(type) || type.isAssignableFrom(i))
+                    .map((i) -> {
+                        try {
+                            return (T) i.getConstructor().newInstance();
+                        } catch (Throwable e) {
+                            e.printStackTrace();
+                        }
 
-                    return null;
-                })
-                .forEach((i) -> {
-                    if (i != null) {
-                        i.loadConfiguration();
-                        idRegistry.put(i.getId(), i);
-                        classRegistry.put(i.getClass(), i);
-                    }
-                });
+                        return null;
+                    })
+                    .forEach((i) -> {
+                        if (i != null) {
+                            i.loadConfiguration();
+                            idRegistry.put(i.getId(), i);
+                            classRegistry.put(i.getClass(), i);
+                            React.verbose("Register " + i.getConfigCategory() + " " + i.getId() + " (" + i.getClass().getSimpleName() + ")");
+                        }
+                    });
 
-            this.idRegistry = Collections.unmodifiableMap(idRegistry);
-            this.classRegistry = Collections.unmodifiableMap(classRegistry);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+                this.idRegistry = Collections.unmodifiableMap(idRegistry);
+                this.classRegistry = Collections.unmodifiableMap(classRegistry);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     public Set<Class<?>> classes() {

@@ -199,6 +199,11 @@ public class J {
      * @param r the runnable
      */
     public static void s(Runnable r) {
+        if(!React.instance.isReady()) {
+            React.instance.getPrejobs().add(r);
+            return;
+        }
+
         React.controller(JobController.class).queue(r);
     }
 

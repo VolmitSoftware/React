@@ -43,7 +43,7 @@ public class ThreadUtilizationMonitor extends Thread {
             }
 
             try {
-                Thread.sleep(M.ms() - lastAccess > 1000 ? 333 : 1);
+                Thread.sleep(M.ms() - lastAccess > 1000 ? 50 : 0);
             } catch (Throwable e) {
                 break;
             }

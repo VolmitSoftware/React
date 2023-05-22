@@ -45,13 +45,6 @@ public class EntityController implements IController, Listener {
     private transient Map<EntityType, List<Consumer<Entity>>> entityTickListeners;
 
     public EntityController() {
-        looper = new Looper() {
-            @Override
-            protected long loop() {
-                onTick();
-                return 50;
-            }
-        };
         start();
     }
 
@@ -74,7 +67,17 @@ public class EntityController implements IController, Listener {
         entityTickListeners = new HashMap<>();
         ReactConfiguration.get().getPriority().rebuildPriority();
         React.instance.registerListener(this);
-        looper.start();
+        looper = new Looper() {
+            @Override
+            protected long loop() {
+                if(!React.instance.isReady()) {
+                    return 100;
+                }
+
+                onTick();
+                return 50;
+            }
+        };
     }
 
     public void tickEntity(Entity e) {
@@ -165,7 +168,7 @@ public class EntityController implements IController, Listener {
 
     @Override
     public void postStart() {
-
+        looper.start();
     }
 
     public void onTick() {
