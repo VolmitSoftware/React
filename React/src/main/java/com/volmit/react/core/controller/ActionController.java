@@ -30,7 +30,7 @@ public class ActionController extends TickedObject implements IController {
     private int actionSpeedMultiplier;
 
     public ActionController() {
-        super("react", "action", 100);
+        super("react", "action",  100);
         start();
     }
 

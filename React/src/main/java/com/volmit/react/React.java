@@ -31,6 +31,7 @@ public class React extends VolmitPlugin {
     public static Ticker monitorTicker;
     public static MultiBurst burst;
     private SampleController sampleController;
+    private MapController mapController;
     private PlayerController playerController;
     private FeatureController featureController;
     private TweakController tweakController;
@@ -141,21 +142,22 @@ public class React extends VolmitPlugin {
         burst = new MultiBurst("React", Thread.MIN_PRIORITY);
         ticker = new Ticker();
         monitorTicker = new Ticker();
-        audiences = BukkitAudiences.create(this);
         jobController = new JobController();
-        commandController = new CommandController();
+        audiences = BukkitAudiences.create(this);
         eventController = new EventController();
-        playerController = new PlayerController();
         sampleController = new SampleController();
+        sampleController.postStart();
+        playerController = new PlayerController();
         actionController = new ActionController();
         featureController = new FeatureController();
         tweakController = new TweakController();
         observerController = new ObserverController();
         entityController = new EntityController();
-        sampleController.postStart();
         tweakController.postStart();
         featureController.postStart();
         actionController.postStart();
+        mapController = new MapController();
+        commandController = new CommandController();
 
         info(SplashScreen.splash);
 
@@ -173,6 +175,7 @@ public class React extends VolmitPlugin {
         ticker.clear();
         monitorTicker.clear();
         ticker.close();
+        mapController.stop();
         monitorTicker.close();
         eventController.stop();
         playerController.stop();

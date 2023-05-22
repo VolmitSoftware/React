@@ -72,7 +72,13 @@ public class BundleUtils {
 
         ItemStack is = new ItemStack(Material.BUNDLE);
         BundleMeta bm = (BundleMeta)is.getItemMeta();
-        bm.setItems(compact(items));
+        try {
+            bm.setItems(compact(items));
+        }
+
+        catch(Throwable e) {
+            return null;
+        }
         bm.setLore(List.of("REACT SUPER STACK"));
         is.setItemMeta(bm);
         return is;

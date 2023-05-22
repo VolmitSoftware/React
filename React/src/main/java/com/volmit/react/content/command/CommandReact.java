@@ -2,10 +2,12 @@ package com.volmit.react.content.command;
 
 import art.arcane.curse.Curse;
 import com.volmit.react.React;
+import com.volmit.react.api.rendering.ReactRenderer;
 import com.volmit.react.util.decree.DecreeExecutor;
 import com.volmit.react.util.decree.DecreeOrigin;
 import com.volmit.react.util.decree.annotations.Decree;
 import com.volmit.react.util.decree.annotations.Param;
+import com.volmit.react.util.decree.handlers.ReactRendererHandler;
 import com.volmit.react.util.format.C;
 
 @Decree(
@@ -55,5 +57,20 @@ public class CommandReact implements DecreeExecutor {
         int d) {
         Curse.on(player().getWorld()).method("setViewDistance", int.class).invoke(d);
         Curse.on(player().getWorld()).method("setSimulationDistance", int.class).invoke(d);
+    }
+
+    @Decree(
+        name = "map",
+        description = "Visualize the via glow blocks",
+        origin = DecreeOrigin.PLAYER
+    )
+    public void map(
+        @Param(
+            name = "renderer",
+            defaultValue = "unknown",
+            customHandler = ReactRendererHandler.class
+        )ReactRenderer renderer
+        ) {
+        React.instance.getMapController().openRenderer(player(), renderer);
     }
 }

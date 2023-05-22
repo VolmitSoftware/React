@@ -1,10 +1,12 @@
 package com.volmit.react.core.controller;
 
+import art.arcane.chrono.PrecisionStopwatch;
 import com.volmit.react.React;
 import com.volmit.react.api.sampler.Sampler;
 import com.volmit.react.content.sampler.SamplerUnknown;
 import com.volmit.react.util.io.JarScanner;
 import com.volmit.react.util.plugin.IController;
+import com.volmit.react.util.scheduling.J;
 import com.volmit.react.util.scheduling.TickedObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -21,7 +23,7 @@ public class SampleController extends TickedObject implements IController {
     private Sampler unknown;
 
     public SampleController() {
-        super("react", "sample", 30000);
+        super("react", "sample", 3000);
         start();
     }
 
@@ -86,7 +88,9 @@ public class SampleController extends TickedObject implements IController {
             i.start();
         });
         React.info("Registered " + samplers.size() + " Samplers");
-        React.instance.getPlayerController().updateMonitors();
+        J.s(() -> {
+            React.instance.getPlayerController().updateMonitors();
+        });
     }
 
     @Override

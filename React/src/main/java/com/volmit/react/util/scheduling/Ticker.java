@@ -23,6 +23,7 @@ import art.arcane.chrono.PrecisionStopwatch;
 import art.arcane.chrono.RollingSequence;
 import art.arcane.multiburst.BurstExecutor;
 import art.arcane.multiburst.MultiBurst;
+import com.volmit.react.React;
 import com.volmit.react.util.collection.KList;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -126,7 +127,12 @@ public class Ticker {
                 if (t != null && t.shouldTick()) {
                     tc.incrementAndGet();
                     try {
+                        long ms = System.currentTimeMillis();
                         t.tick();
+                        if(System.currentTimeMillis() - ms > 50)
+                        {
+                            React.warn(t.getTgroup() + ":" + t.getTid() + " took " + (System.currentTimeMillis() - ms) + "ms");
+                        }
                     } catch (Throwable exxx) {
                         exxx.printStackTrace();
                     }

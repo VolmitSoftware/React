@@ -3,6 +3,10 @@ package com.volmit.react.api.sampler;
 import com.google.common.util.concurrent.AtomicDouble;
 import com.volmit.react.React;
 import com.volmit.react.api.ReactComponent;
+import com.volmit.react.api.rendering.Graph;
+import com.volmit.react.api.rendering.ReactRenderer;
+import com.volmit.react.util.data.TinyColor;
+import com.volmit.react.util.math.M;
 import com.volmit.react.util.scheduling.J;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
@@ -13,11 +17,41 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
-public interface Sampler extends ReactComponent {
+public interface Sampler extends ReactComponent, ReactRenderer {
     double sample();
 
     default double sample(Chunk c) {
         return React.instance.getObserverController().sample(c, this).orElse(0D);
+    }
+
+    default void render() {
+        clear(new TinyColor(0,0,0));
+        Graph g = Graph.of(this);
+        double min = g.getMin();
+        double max = g.getMax();
+        double pmax = g.getPaddedMax(0.15);
+        double pmin = g.getPaddedMin(0.15);
+
+        for(int ig = 0; ig < 128; ig++) {
+            int i = 127 - ig;
+            int v = (int) M.lerp(127, 0, M.lerpInverse(pmin, pmax, g.get(i)));
+
+            if(i > 0) {
+                int ov = (int) M.lerp(127, 0, M.lerpInverse(pmin, pmax, g.get(i-1)));
+                line(ig, ov, ig, v, new TinyColor(255, 255, 255));
+            }
+
+            else {
+                set(ig, v, new TinyColor(255, 255, 255));
+            }
+        }
+
+        String s = format(g.get(0));
+        String smin = format(min);
+        String smax = format(max);
+        textNear((127+textWidth(s))/2, (127+textHeight())/2, s);
+        textNear(0,127, smin);
+        textNear(0, 0, smax);
     }
 
     default String format(double t) {

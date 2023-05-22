@@ -3,12 +3,14 @@ package com.volmit.react.content.feature;
 import art.arcane.curse.Curse;
 import com.volmit.react.React;
 import com.volmit.react.api.feature.ReactFeature;
+import com.volmit.react.content.sampler.SamplerEntities;
 import com.volmit.react.content.sampler.SamplerTickTime;
 import com.volmit.react.core.NMS;
 import com.volmit.react.model.MinMax;
 import com.volmit.react.model.ReactEntity;
 import com.volmit.react.util.format.Form;
 import com.volmit.react.util.math.M;
+import com.volmit.react.util.math.RNG;
 import com.volmit.react.util.math.RollingSequence;
 import com.volmit.react.util.scheduling.J;
 import net.minecraft.server.level.EntityPlayer;
@@ -22,11 +24,13 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByBlockEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.EntitySpawnEvent;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
@@ -117,6 +121,7 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
                 }
             }
             a.remove();
+            ((SamplerEntities) React.instance.getSampleController().getSampler(SamplerEntities.ID)).getEntities().decrementAndGet();
             return true;
         }
 
@@ -171,6 +176,13 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
 
     public int getStackCount(Entity e) {
         return ReactEntity.getStackCount(e);
+    }
+
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
+    public void on(EntitySpawnEvent e) {
+        if(stackableTypes.contains(e.getEntityType())) {
+            J.s(() -> onTick(e.getEntity()));
+        }
     }
 
     public void onTick(Entity entity) {

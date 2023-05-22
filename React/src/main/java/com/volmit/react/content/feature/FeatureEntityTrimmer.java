@@ -1,5 +1,6 @@
 package com.volmit.react.content.feature;
 
+import art.arcane.chrono.PrecisionStopwatch;
 import com.volmit.react.React;
 import com.volmit.react.api.feature.ReactFeature;
 import com.volmit.react.content.sampler.SamplerChunks;
@@ -70,7 +71,8 @@ public class FeatureEntityTrimmer extends ReactFeature implements Listener {
     /**
      * The minimum amount of entities to kill per cycle. Lower than this it wont run
      */
-    private int minKillBatchSize = 50;
+    private int minKillBatchSize = 100;
+    private transient List<Entity> lastEntities = new ArrayList<>();
 
     public FeatureEntityTrimmer() {
         super(ID);
@@ -108,21 +110,23 @@ public class FeatureEntityTrimmer extends ReactFeature implements Listener {
 
     @Override
     public void onTick() {
+        J.s(() -> {
+            for(World i : Bukkit.getWorlds()) {
+                lastEntities.addAll(i.getEntities());
+            }
+        });
+
         if(cooldown-- > 0) {
             return;
         }
 
-        List<Entity> shitlist = new ArrayList<>();
+        List<Entity> shitlist = new ArrayList<>(lastEntities);
+        lastEntities.clear();
         int tc = (int) Math.round(Math.ceil(React.instance.getSampleController().getSampler(SamplerChunks.ID).sample()));
         int wc = 0;
 
-        for(World i : Bukkit.getWorlds()) {
-            shitlist.addAll(J.sResult(i::getEntities));
-            wc++;
-        }
-
         // Remove blacklisted entities
-        shitlist.removeIf(entity -> blacklist.contains(entity.getType()));
+        shitlist.removeIf(entity -> blacklist.contains(entity.getType()) || entity.getTicksLived() < 400);
 
         shitlist.sort((a, b) -> {
             double pa = ReactEntity.getPriority(a);

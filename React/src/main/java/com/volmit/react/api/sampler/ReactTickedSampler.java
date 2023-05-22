@@ -60,7 +60,13 @@ public abstract class ReactTickedSampler extends TickedObject implements Sampler
             setSsleeping(true);
         }
 
-        ssequence.put(onSample());
+        try {
+            ssequence.put(onSample());
+        }
+
+        catch(Throwable e) {
+
+        }
     }
 
     public String getId() {
