@@ -10,7 +10,6 @@ import com.volmit.react.util.scheduling.J;
 import com.volmit.react.util.scheduling.Looper;
 import com.volmit.react.util.value.MaterialValue;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
@@ -189,6 +188,7 @@ public class EntityController implements IController, Listener {
                         Entity ee = e.get(M.irand(0, e.size() - 1));
                         if(ReactEntity.tick(ee, ReactConfiguration.get().getPriority())) {
                             J.s(() -> {
+                                React.info("TICKING " + ee.getUniqueId() + " (" + ee.getType()  + ")");
                                 tickEntity(ee);
                             });
                         }
