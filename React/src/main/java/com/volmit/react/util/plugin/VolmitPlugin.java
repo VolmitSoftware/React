@@ -40,9 +40,11 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @SuppressWarnings("EmptyMethod")
 public abstract class VolmitPlugin extends JavaPlugin implements Listener {
@@ -50,6 +52,7 @@ public abstract class VolmitPlugin extends JavaPlugin implements Listener {
     private KMap<KList<String>, VirtualCommand> commands;
     private KList<MortarCommand> commandCache;
     private KList<MortarPermission> permissionCache;
+    private Set<Listener> registeredListeners;
 
     public File getJarFile() {
         return getFile();
@@ -72,6 +75,7 @@ public abstract class VolmitPlugin extends JavaPlugin implements Listener {
     }
 
     public void onEnable() {
+        registeredListeners = new HashSet<>();
         registerInstance();
         registerPermissions();
         registerCommands();
@@ -430,11 +434,16 @@ public abstract class VolmitPlugin extends JavaPlugin implements Listener {
     }
 
     public void registerListener(Listener l) {
+        if(registeredListeners.contains(l.getClass().getSimpleName())) {
+            return;
+        }
+
         React.debug("Register Listener " + l.getClass().getSimpleName());
         Bukkit.getPluginManager().registerEvents(l, this);
     }
 
     public void unregisterListener(Listener l) {
+        registeredListeners.remove(l);
         React.debug("Register Listener " + l.getClass().getSimpleName());
         HandlerList.unregisterAll(l);
     }
