@@ -37,7 +37,7 @@ public class MonitorConfigGUI {
                 int h = window.getRow(rp);
                 int w = window.getPosition(rp);
                 rp++;
-                Sampler i = React.instance.getSampleController().getSampler(ii);
+                Sampler i = React.sampler(ii);
                 window.setElement(w, h, new UIElement("sample-" + i.getId())
                         .setMaterial(new MaterialBlock(i.getIcon()))
                         .setName(i.getName())

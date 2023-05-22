@@ -21,6 +21,7 @@ package com.volmit.react.util.scheduling;
 import art.arcane.curse.Curse;
 import art.arcane.multiburst.MultiBurst;
 import com.volmit.react.React;
+import com.volmit.react.core.controller.JobController;
 import com.volmit.react.util.function.NastyFunction;
 import com.volmit.react.util.function.NastyFuture;
 import com.volmit.react.util.function.NastyRunnable;
@@ -198,7 +199,7 @@ public class J {
      * @param r the runnable
      */
     public static void s(Runnable r) {
-        React.instance.getJobController().queue(r);
+        React.controller(JobController.class).queue(r);
     }
 
     /**
@@ -208,7 +209,7 @@ public class J {
      * @param delay the delay to wait in ticks before running
      */
     public static void s(Runnable r, int delay) {
-        Bukkit.getScheduler().scheduleSyncDelayedTask(React.instance, () -> React.instance.getJobController().queue(r), delay);
+        Bukkit.getScheduler().scheduleSyncDelayedTask(React.instance, () -> React.controller(JobController.class).queue(r), delay);
     }
 
     public static void ss(Runnable r, int delay) {

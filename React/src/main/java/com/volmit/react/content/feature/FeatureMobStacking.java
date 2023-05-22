@@ -6,6 +6,7 @@ import com.volmit.react.api.feature.ReactFeature;
 import com.volmit.react.content.sampler.SamplerEntities;
 import com.volmit.react.content.sampler.SamplerTickTime;
 import com.volmit.react.core.NMS;
+import com.volmit.react.core.controller.EntityController;
 import com.volmit.react.model.MinMax;
 import com.volmit.react.model.ReactEntity;
 import com.volmit.react.util.format.Form;
@@ -58,7 +59,7 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
         React.instance.registerListener(this);
 
         for(EntityType i : stackableTypes) {
-            React.instance.getEntityController().registerEntityTickListener(i, this::onTick);
+            React.controller(EntityController.class).registerEntityTickListener(i, this::onTick);
         }
     }
 
@@ -121,7 +122,7 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
                 }
             }
             a.remove();
-            ((SamplerEntities) React.instance.getSampleController().getSampler(SamplerEntities.ID)).getEntities().decrementAndGet();
+            ((SamplerEntities) React.sampler(SamplerEntities.ID)).getEntities().decrementAndGet();
             return true;
         }
 

@@ -2,6 +2,7 @@ package com.volmit.react.api.rendering;
 
 import com.volmit.react.util.data.TinyColor;
 import com.volmit.react.util.format.C;
+import com.volmit.react.util.registry.Registered;
 import org.bukkit.DyeColor;
 import org.bukkit.entity.Player;
 import org.bukkit.map.MapCanvas;

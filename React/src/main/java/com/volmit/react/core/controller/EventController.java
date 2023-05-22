@@ -28,12 +28,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class EventController extends TickedObject implements IController, Listener {
-    private int listenerCount;
-    private double totalTime;
-    private int calls;
-    private final ServerTickEvent ste = new ServerTickEvent();
-    private AtomicBoolean running = new AtomicBoolean(false);
-    private int steTicker;
+    private transient int listenerCount;
+    private transient double totalTime;
+    private transient int calls;
+    private transient final ServerTickEvent ste = new ServerTickEvent();
+    private transient AtomicBoolean running = new AtomicBoolean(false);
+    private transient int steTicker;
 
     public EventController() {
         super("react", "event", 50);
@@ -56,6 +56,11 @@ public class EventController extends TickedObject implements IController, Listen
         React.instance.unregisterListener(this);
         pullOut();
         J.csr(steTicker);
+    }
+
+    @Override
+    public void postStart() {
+
     }
 
     @Override

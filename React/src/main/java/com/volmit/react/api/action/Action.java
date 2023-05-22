@@ -1,11 +1,11 @@
 package com.volmit.react.api.action;
 
 import art.arcane.curse.Curse;
-import com.volmit.react.api.ReactComponent;
 import com.volmit.react.util.format.Form;
 import com.volmit.react.util.plugin.VolmitSender;
+import com.volmit.react.util.registry.Registered;
 
-public interface Action<T extends ActionParams> extends ReactComponent {
+public interface Action<T extends ActionParams> extends Registered {
     ActionTicket<T> create(T params);
 
     default String getCompletedMessage(ActionTicket<T> ticket) {

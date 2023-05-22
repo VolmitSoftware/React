@@ -19,14 +19,14 @@ public class ActionCollectGarbage extends ReactAction<ActionCollectGarbage.Param
 
     @Override
     public String getCompletedMessage(ActionTicket<Params> ticket) {
-        return "Freed " + React.instance.getSampleController().getSampler(SamplerMemoryUsed.ID).format(ticket.getCount()) + " in " + Form.duration(ticket.getDuration(), 1);
+        return "Freed " + React.sampler(SamplerMemoryUsed.ID).format(ticket.getCount()) + " in " + Form.duration(ticket.getDuration(), 1);
     }
 
     @Override
     public void workOn(ActionTicket<Params> ticket) {
-        int bytesBefore = (int) React.instance.getSampleController().getSampler(SamplerMemoryUsed.ID).sample();
+        int bytesBefore = (int) React.sampler(SamplerMemoryUsed.ID).sample();
         System.gc();
-        int bytesAfter = (int) React.instance.getSampleController().getSampler(SamplerMemoryUsed.ID).sample();
+        int bytesAfter = (int) React.sampler(SamplerMemoryUsed.ID).sample();
 
         if (bytesBefore > bytesAfter) {
             ticket.setCount(bytesBefore - bytesAfter);

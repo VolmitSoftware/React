@@ -6,6 +6,7 @@ import com.volmit.react.api.sampler.Sampler;
 import com.volmit.react.content.sampler.SamplerUnknown;
 import com.volmit.react.util.io.JarScanner;
 import com.volmit.react.util.plugin.IController;
+import com.volmit.react.util.registry.Registry;
 import com.volmit.react.util.scheduling.J;
 import com.volmit.react.util.scheduling.TickedObject;
 import lombok.Data;
@@ -19,8 +20,7 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class SampleController extends TickedObject implements IController {
-    private Map<String, Sampler> samplers;
-    private Sampler unknown;
+    private transient Registry<Sampler> samplers;
 
     public SampleController() {
         super("react", "sample", 3000);
@@ -38,63 +38,22 @@ public class SampleController extends TickedObject implements IController {
     }
 
     public Sampler getSampler(String id) {
-        Sampler s = samplers.get(id);
-
-        s = s == null ? unknown : s;
-
-        if (s == null) {
-            s = new SamplerUnknown();
-        }
-
-        return s;
+        return samplers.get(id);
     }
 
     @Override
     public void start() {
-        samplers = new HashMap<>();
-        samplers.put(SamplerUnknown.ID, new SamplerUnknown());
-        String p = React.instance.jar().getAbsolutePath();
-        p = p.replaceAll("\\Q.jar.jar\\E", ".jar");
-
-        JarScanner j = new JarScanner(new File(p), "com.volmit.react.content.sampler");
-        try {
-            j.scan();
-            j.getClasses().stream()
-                    .filter(i -> i.isAssignableFrom(Sampler.class) || Sampler.class.isAssignableFrom(i))
-                    .map((i) -> {
-                        try {
-                            return (Sampler) i.getConstructor().newInstance();
-                        } catch (Throwable e) {
-                            e.printStackTrace();
-                        }
-
-                        return null;
-                    })
-                    .forEach((i) -> {
-                        if (i != null) {
-                            samplers.put(i.getId(), i);
-                        }
-                    });
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        //J.s(() -> React.burst.lazy(this::scanForExternalSamplers), 0);
+        samplers = new Registry<>(Sampler.class, "com.volmit.react.content.sampler");
     }
 
     public void postStart() {
-        samplers.values().forEach((i) -> {
-            i.loadConfiguration();
-            i.start();
-        });
+        samplers.all().forEach(Sampler::start);
         React.info("Registered " + samplers.size() + " Samplers");
-        J.s(() -> {
-            React.instance.getPlayerController().updateMonitors();
-        });
+        J.s(() -> React.controller(PlayerController.class).updateMonitors());
     }
 
     @Override
     public void stop() {
-        samplers.values().forEach(Sampler::stop);
+        samplers.all().forEach(Sampler::stop);
     }
 }

@@ -47,7 +47,7 @@ public class FeatureCircuitManager extends ReactFeature implements Listener {
     public void onTick() {
         J.s(() -> circuitServer.tick());
 
-        if (React.instance.getSampleController().getSampler(SamplerRedstoneTickTime.ID).sample() > maxCircuitMS) {
+        if (React.sampler(SamplerRedstoneTickTime.ID).sample() > maxCircuitMS) {
             Circuit c = circuitServer.worst();
 
             if (c != null) {

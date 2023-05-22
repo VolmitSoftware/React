@@ -54,6 +54,6 @@ public class EntityKiller {
         entity.getWorld().spawnParticle(Particle.FLASH, entity.getLocation(), 1);
         entity.getWorld().playSound(entity.getLocation(), Sound.PARTICLE_SOUL_ESCAPE, 0.5f, 0.9f);
         entity.remove();
-        ((SamplerEntities)React.instance.getSampleController().getSampler(SamplerEntities.ID)).getEntities().decrementAndGet();
+        ((SamplerEntities)React.sampler(SamplerEntities.ID)).getEntities().decrementAndGet();
     }
 }

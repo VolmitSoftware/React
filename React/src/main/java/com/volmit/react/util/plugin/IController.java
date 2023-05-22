@@ -18,11 +18,12 @@
 
 package com.volmit.react.util.plugin;
 
-@SuppressWarnings("EmptyMethod")
-public interface IController {
-    String getName();
+import com.volmit.react.util.registry.Registered;
 
+public interface IController extends Registered {
     void start();
 
     void stop();
+
+    void postStart();
 }

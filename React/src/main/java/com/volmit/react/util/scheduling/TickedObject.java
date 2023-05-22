@@ -20,6 +20,7 @@ package com.volmit.react.util.scheduling;
 
 import com.volmit.react.React;
 import com.volmit.react.util.math.M;
+import com.volmit.react.util.registry.Registered;
 import org.bukkit.event.Listener;
 
 import java.util.UUID;
@@ -27,7 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-public abstract class TickedObject implements Ticked, Listener {
+public abstract class TickedObject implements Ticked, Listener, Registered {
     private transient final AtomicLong tlastTick;
     private transient final AtomicLong tinterval;
     private transient final AtomicInteger tskip;
@@ -68,6 +69,10 @@ public abstract class TickedObject implements Ticked, Listener {
         this.tstart = M.ms();
         React.instance.getTicker().register(this);
         React.instance.registerListener(this);
+    }
+
+    public String getId() {
+        return tid;
     }
 
     public void dieAfter(int ticks) {

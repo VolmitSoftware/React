@@ -2,6 +2,7 @@ package com.volmit.react.content.sampler;
 
 import com.volmit.react.React;
 import com.volmit.react.api.sampler.ReactCachedSampler;
+import com.volmit.react.core.controller.JobController;
 import com.volmit.react.util.format.Form;
 import org.bukkit.Material;
 
@@ -19,7 +20,7 @@ public class SamplerReactJobsQueue extends ReactCachedSampler {
 
     @Override
     public double onSample() {
-        return React.instance.getJobController().getJobs().size();
+        return React.controller(JobController.class).getJobs().size();
     }
 
     @Override

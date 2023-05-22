@@ -28,7 +28,7 @@ public class SamplerEventTime extends ReactCachedSampler implements Listener {
 
     @Override
     public void start() {
-        eventController = React.instance.getEventController();
+        eventController = React.controller(EventController.class);
     }
 
     @Override

@@ -4,6 +4,7 @@ import com.volmit.react.React;
 import com.volmit.react.api.action.ActionParams;
 import com.volmit.react.api.action.ActionTicket;
 import com.volmit.react.api.action.ReactAction;
+import com.volmit.react.core.controller.ActionController;
 import com.volmit.react.model.AreaActionParams;
 import com.volmit.react.model.FilterParams;
 import com.volmit.react.util.format.Form;
@@ -60,7 +61,7 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
 
     @Override
     public void workOn(ActionTicket<Params> ticket) {
-        List<Chunk> c = pullChunks(ticket, React.instance.getActionController().getActionSpeedMultiplier());
+        List<Chunk> c = pullChunks(ticket, React.controller(ActionController.class).getActionSpeedMultiplier());
 
         if (ticket.getTotalWork() <= 1) {
             ticket.setTotalWork(ticket.getParams().getArea().getChunks().size());

@@ -6,6 +6,7 @@ import com.volmit.react.api.feature.ReactTickedFeature;
 import com.volmit.react.content.feature.FeatureUnknown;
 import com.volmit.react.util.io.JarScanner;
 import com.volmit.react.util.plugin.IController;
+import com.volmit.react.util.registry.Registry;
 import com.volmit.react.util.scheduling.J;
 import com.volmit.react.util.scheduling.TickedObject;
 import lombok.Data;
@@ -20,9 +21,9 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class FeatureController extends TickedObject implements IController {
-    private Map<String, Feature> features;
-    private Map<String, Feature> activeFeatures;
-    private Map<String, ReactTickedFeature> tickedFeatures;
+    private transient Registry<Feature> features;
+    private transient Map<String, Feature> activeFeatures;
+    private transient Map<String, ReactTickedFeature> tickedFeatures;
 
     private Feature unknown;
 
@@ -83,48 +84,21 @@ public class FeatureController extends TickedObject implements IController {
     public void start() {
         activeFeatures = new HashMap<>();
         tickedFeatures = new HashMap<>();
-        features = new HashMap<>();
-        features.put(FeatureUnknown.ID, new FeatureUnknown());
-        String p = React.instance.jar().getAbsolutePath();
-        p = p.replaceAll("\\Q.jar.jar\\E", ".jar");
-
-        JarScanner j = new JarScanner(new File(p), "com.volmit.react.content.feature");
-        try {
-            j.scan();
-            j.getClasses().stream()
-                    .filter(i -> i.isAssignableFrom(Feature.class) || Feature.class.isAssignableFrom(i))
-                    .map((i) -> {
-                        try {
-                            return (Feature) i.getConstructor().newInstance();
-                        } catch (Throwable e) {
-                            e.printStackTrace();
-                        }
-
-                        return null;
-                    })
-                    .forEach((i) -> {
-                        if (i != null) {
-                            features.put(i.getId(), i);
-                        }
-                    });
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        features = new Registry<>(Feature.class, "com.volmit.react.content.feature");
     }
 
     public void postStart() {
         React.info("Registered " + features.size() + " Features");
 
-        for (String i : features.keySet()) {
+        for (String i : features.ids()) {
             Feature f = features.get(i);
-            f.loadConfiguration();
 
             if (f.isEnabled()) {
                 activateFeature(f);
             }
         }
 
-        React.info("Activated " + features.size() + " Features");
+        React.info("Activated " + activeFeatures.size() + " Features");
     }
 
     @Override

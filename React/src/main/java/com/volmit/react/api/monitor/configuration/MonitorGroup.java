@@ -34,7 +34,7 @@ public class MonitorGroup {
     }
 
     public Sampler getHeadSampler() {
-        return React.instance.getSampleController().getSampler(getHeadOrSomething());
+        return React.sampler(getHeadOrSomething());
     }
 
     public void setHeadSampler(String s) {
@@ -42,7 +42,7 @@ public class MonitorGroup {
     }
 
     public List<Sampler> getSubSamplers() {
-        return samplers.stream().skip(1).map(i -> React.instance.getSampleController().getSampler(i)).collect(Collectors.toList());
+        return samplers.stream().skip(1).map(i -> (Sampler)React.sampler(i)).collect(Collectors.toList());
     }
 
     public int getColorValue() {

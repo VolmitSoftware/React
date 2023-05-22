@@ -18,7 +18,7 @@ public class MonitorConfiguration {
     public List<Sampler> getAllSamplers() {
         return groups.stream()
                 .flatMap(group -> group.getSamplers().stream())
-                .map(i -> React.instance.getSampleController().getSampler(i))
+                .map(i -> (Sampler) React.sampler(i))
                 .collect(Collectors.toList());
     }
 }

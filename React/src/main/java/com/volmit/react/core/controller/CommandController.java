@@ -19,9 +19,9 @@ import java.util.concurrent.CompletableFuture;
 
 @Data
 public class CommandController implements IController, DecreeSystem, Listener {
-    private final KMap<String, CompletableFuture<String>> futures = new KMap<>();
-    private final transient AtomicCache<VirtualDecreeCommand> commandCache = new AtomicCache<>();
-    private CompletableFuture<String> consoleFuture = null;
+    private transient final KMap<String, CompletableFuture<String>> futures = new KMap<>();
+    private transient final AtomicCache<VirtualDecreeCommand> commandCache = new AtomicCache<>();
+    private transient CompletableFuture<String> consoleFuture = null;
 
     public CommandController() {
         start();
@@ -33,6 +33,11 @@ public class CommandController implements IController, DecreeSystem, Listener {
     }
 
     @Override
+    public String getId() {
+        return "command";
+    }
+
+    @Override
     public void start() {
         React.instance.registerListener(this);
         React.instance.getCommand("react").setExecutor(this);
@@ -41,6 +46,11 @@ public class CommandController implements IController, DecreeSystem, Listener {
 
     @Override
     public void stop() {
+
+    }
+
+    @Override
+    public void postStart() {
 
     }
 

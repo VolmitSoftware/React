@@ -2,6 +2,7 @@ package com.volmit.react.content.sampler;
 
 import com.volmit.react.React;
 import com.volmit.react.api.sampler.ReactCachedSampler;
+import com.volmit.react.core.controller.EventController;
 import com.volmit.react.util.format.Form;
 import org.bukkit.Material;
 import org.bukkit.event.Listener;
@@ -20,7 +21,7 @@ public class SamplerEventListeners extends ReactCachedSampler implements Listene
 
     @Override
     public double onSample() {
-        return React.instance.getEventController().getListenerCount();
+        return React.controller(EventController.class).getListenerCount();
     }
 
     @Override

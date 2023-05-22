@@ -2,6 +2,7 @@ package com.volmit.react.api.action;
 
 import art.arcane.chrono.PrecisionStopwatch;
 import com.volmit.react.React;
+import com.volmit.react.core.controller.ActionController;
 import lombok.Data;
 
 import java.util.ArrayList;
@@ -68,7 +69,7 @@ public class ActionTicket<T extends ActionParams> {
     }
 
     public void queue() {
-        React.instance.getActionController().queueAction(this);
+        React.controller(ActionController.class).queueAction(this);
     }
 
     public void start() {
