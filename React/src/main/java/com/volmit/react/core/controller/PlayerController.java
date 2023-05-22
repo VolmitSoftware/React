@@ -21,7 +21,7 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class PlayerController extends TickedObject implements IController {
-    private final Map<Player, ReactPlayer> players = new HashMap<>();
+    private transient final Map<Player, ReactPlayer> players = new HashMap<>();
 
     public PlayerController() {
         super("react", "player", 30000);
@@ -58,6 +58,11 @@ public class PlayerController extends TickedObject implements IController {
         for (Player i : new ArrayList<>(getPlayers().keySet())) {
             quit(i);
         }
+    }
+
+    @Override
+    public void postStart() {
+
     }
 
     @EventHandler

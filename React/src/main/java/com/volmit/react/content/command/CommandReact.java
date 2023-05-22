@@ -3,6 +3,8 @@ package com.volmit.react.content.command;
 import art.arcane.curse.Curse;
 import com.volmit.react.React;
 import com.volmit.react.api.rendering.ReactRenderer;
+import com.volmit.react.core.controller.MapController;
+import com.volmit.react.core.controller.PlayerController;
 import com.volmit.react.util.decree.DecreeExecutor;
 import com.volmit.react.util.decree.DecreeOrigin;
 import com.volmit.react.util.decree.annotations.Decree;
@@ -29,8 +31,8 @@ public class CommandReact implements DecreeExecutor {
         origin = DecreeOrigin.PLAYER
     )
     public void monitor() {
-        React.instance.getPlayerController().getPlayer(player()).toggleActionBar();
-        sender().sendMessage(C.REACT + "Action bar monitor " + (React.instance.getPlayerController().getPlayer(player()).isActionBarMonitoring() ? "enabled" : "disabled"));
+        React.controller(PlayerController.class).getPlayer(player()).toggleActionBar();
+        sender().sendMessage(C.REACT + "Action bar monitor " + (React.controller(PlayerController.class).getPlayer(player()).isActionBarMonitoring() ? "enabled" : "disabled"));
     }
 
     @Decree(
@@ -40,9 +42,9 @@ public class CommandReact implements DecreeExecutor {
         origin = DecreeOrigin.PLAYER
     )
     public void visualize() {
-        React.instance.getPlayerController().getPlayer(player()).getSettings().toggleVisualizing();
+        React.controller(PlayerController.class).getPlayer(player()).getSettings().toggleVisualizing();
         sender().sendMessage(C.REACT + "Visualize "
-            + (React.instance.getPlayerController().getPlayer(player()).getSettings().isVisualizing() ? "enabled" : "disabled"));
+            + (React.controller(PlayerController.class).getPlayer(player()).getSettings().isVisualizing() ? "enabled" : "disabled"));
     }
 
     @Decree(
@@ -71,6 +73,6 @@ public class CommandReact implements DecreeExecutor {
             customHandler = ReactRendererHandler.class
         )ReactRenderer renderer
         ) {
-        React.instance.getMapController().openRenderer(player(), renderer);
+        React.controller(MapController.class).openRenderer(player(), renderer);
     }
 }

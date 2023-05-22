@@ -20,6 +20,7 @@ package com.volmit.react.util.decree.handlers;
 
 import com.volmit.react.React;
 import com.volmit.react.api.rendering.ReactRenderer;
+import com.volmit.react.core.controller.MapController;
 import com.volmit.react.util.collection.KList;
 import com.volmit.react.util.decree.DecreeParameterHandler;
 import com.volmit.react.util.decree.exceptions.DecreeParsingException;
@@ -32,7 +33,7 @@ public class ReactRendererHandler implements DecreeParameterHandler<ReactRendere
     @Override
     public KList<ReactRenderer> getPossibilities() {
         KList<ReactRenderer> options = new KList<>();
-        options.addAll(React.instance.getMapController().getRenderers().values());
+        options.addAll(React.controller(MapController.class).getRenderers().values());
         return options;
     }
 

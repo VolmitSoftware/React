@@ -1,8 +1,8 @@
 package com.volmit.react.api.feature;
 
-import com.volmit.react.api.ReactComponent;
+import com.volmit.react.util.registry.Registered;
 
-public interface Feature extends ReactComponent {
+public interface Feature extends Registered {
     void onActivate();
 
     boolean isEnabled();

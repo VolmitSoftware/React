@@ -31,7 +31,7 @@ import java.util.Optional;
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class ObserverController extends TickedObject implements IController {
-    private final SampledServer sampled;
+    private transient final SampledServer sampled;
 
     public ObserverController() {
         super("react", "observer", 1000);
@@ -57,6 +57,11 @@ public class ObserverController extends TickedObject implements IController {
     @Override
     public void stop() {
         React.instance.unregisterListener(this);
+    }
+
+    @Override
+    public void postStart() {
+
     }
 
     public SampledChunk absoluteWorst() {

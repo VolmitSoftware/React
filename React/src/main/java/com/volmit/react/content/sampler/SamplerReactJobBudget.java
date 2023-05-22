@@ -2,6 +2,7 @@ package com.volmit.react.content.sampler;
 
 import com.volmit.react.React;
 import com.volmit.react.api.sampler.ReactCachedSampler;
+import com.volmit.react.core.controller.JobController;
 import com.volmit.react.util.format.Form;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
@@ -20,7 +21,7 @@ public class SamplerReactJobBudget extends ReactCachedSampler {
 
     @Override
     public double onSample() {
-        return React.instance.getJobController().getOverBudget();
+        return React.controller(JobController.class).getOverBudget();
     }
 
     @Override

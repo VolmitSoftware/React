@@ -1,8 +1,8 @@
 package com.volmit.react.api.tweak;
 
-import com.volmit.react.api.ReactComponent;
+import com.volmit.react.util.registry.Registered;
 
-public interface Tweak extends ReactComponent {
+public interface Tweak extends Registered {
     void onActivate();
 
     boolean isEnabled();

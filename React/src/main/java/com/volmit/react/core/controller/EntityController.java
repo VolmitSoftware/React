@@ -40,9 +40,9 @@ import java.util.function.Consumer;
 @Data
 public class EntityController implements IController, Listener {
     private int perWorldUpdatesPerTick = 15;
-    private Looper looper;
-    private ChronoLatch valueSaver = new ChronoLatch(60000);
-    private Map<EntityType, List<Consumer<Entity>>> entityTickListeners;
+    private transient Looper looper;
+    private transient ChronoLatch valueSaver = new ChronoLatch(60000);
+    private transient Map<EntityType, List<Consumer<Entity>>> entityTickListeners;
 
     public EntityController() {
         looper = new Looper() {
@@ -62,6 +62,11 @@ public class EntityController implements IController, Listener {
     @Override
     public String getName() {
         return "Event";
+    }
+
+    @Override
+    public String getId() {
+        return "event";
     }
 
     @Override
@@ -156,6 +161,11 @@ public class EntityController implements IController, Listener {
     public void stop() {
         React.instance.unregisterListener(this);
         looper.interrupt();
+    }
+
+    @Override
+    public void postStart() {
+
     }
 
     public void onTick() {

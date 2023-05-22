@@ -42,6 +42,11 @@ public class JobController implements IController {
     }
 
     @Override
+    public String getId() {
+        return "job";
+    }
+
+    @Override
     public void start() {
         spikeLatch = new ChronoLatch(maxSpikeInterval);
         code = J.sr(this::execute, 0);
@@ -60,6 +65,11 @@ public class JobController implements IController {
                 e.printStackTrace();
             }
         }
+    }
+
+    @Override
+    public void postStart() {
+
     }
 
     public double getQueuedComputeTime() {

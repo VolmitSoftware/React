@@ -41,7 +41,7 @@ public class CommandAction implements DecreeExecutor {
             )
             String world
     ) {
-        Action<ActionPurgeEntities.Params> pe = React.instance.getActionController().getAction("purge-entities");
+        Action<ActionPurgeEntities.Params> pe = React.action("purge-entities");
         ActionPurgeEntities.Params p = pe.getDefaultParams();
 
         if (!world.equals("ALL")) {
@@ -81,7 +81,7 @@ public class CommandAction implements DecreeExecutor {
             )
             String world
     ) {
-        Action<ActionPurgeDroppedItems.Params> pe = React.instance.getActionController().getAction("purge-dropped-items");
+        Action<ActionPurgeDroppedItems.Params> pe = React.action("purge-dropped-items");
         ActionPurgeDroppedItems.Params p = pe.getDefaultParams();
 
         if (!world.equals("ALL")) {
@@ -113,7 +113,7 @@ public class CommandAction implements DecreeExecutor {
             )
             String world
     ) {
-        Action<ActionPurgeChunks.Params> pc = React.instance.getActionController().getAction("purge-chunks");
+        Action<ActionPurgeChunks.Params> pc = React.action("purge-chunks");
         ActionPurgeChunks.Params p = pc.getDefaultParams();
 
         if (!world.equals("ALL")) {
@@ -130,7 +130,7 @@ public class CommandAction implements DecreeExecutor {
             description = "Run system gc"
     )
     public void collectGarbage() {
-        Action<ActionCollectGarbage.Params> pe = React.instance.getActionController().getAction("collect-garbage");
+        Action<ActionCollectGarbage.Params> pe = React.action("collect-garbage");
         ActionCollectGarbage.Params p = pe.getDefaultParams();
         pe.create(p, sender()).queue();
     }

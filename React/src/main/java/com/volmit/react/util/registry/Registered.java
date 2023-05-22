@@ -1,4 +1,4 @@
-package com.volmit.react.api;
+package com.volmit.react.util.registry;
 
 import art.arcane.curse.Curse;
 import art.arcane.curse.model.CursedComponent;
@@ -13,7 +13,7 @@ import org.bukkit.Material;
 import java.io.File;
 import java.io.IOException;
 
-public interface ReactComponent {
+public interface Registered {
     default String getConfigCategory() {
         return "component";
     }

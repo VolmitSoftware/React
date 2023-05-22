@@ -13,7 +13,7 @@ import org.bukkit.event.world.WorldUnloadEvent;
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class MantleController extends TickedObject implements IController {
-    private final SampledServer sampled;
+    private transient final SampledServer sampled;
 
     public MantleController() {
         super("react", "mantle", 1000);
@@ -39,6 +39,11 @@ public class MantleController extends TickedObject implements IController {
     @Override
     public void stop() {
         React.instance.unregisterListener(this);
+    }
+
+    @Override
+    public void postStart() {
+
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

@@ -1,6 +1,7 @@
 package com.volmit.react.content.command;
 
 import com.volmit.react.React;
+import com.volmit.react.core.controller.PlayerController;
 import com.volmit.react.core.gui.MonitorConfigGUI;
 import com.volmit.react.model.ReactEntity;
 import com.volmit.react.util.decree.DecreeExecutor;
@@ -28,8 +29,8 @@ public class CommandConfig implements DecreeExecutor {
     )
     public void monitor() {
         Player player = player();
-        MonitorConfigGUI.editMonitorConfiguration(player, React.instance.getPlayerController().getPlayer(player).getSettings().getMonitorConfiguration(),
-                (c) -> React.instance.getPlayerController().getPlayer(player).saveSettings());
+        MonitorConfigGUI.editMonitorConfiguration(player, React.controller(PlayerController.class).getPlayer(player).getSettings().getMonitorConfiguration(),
+                (c) -> React.controller(PlayerController.class).getPlayer(player).saveSettings());
     }
 
     @Decree(

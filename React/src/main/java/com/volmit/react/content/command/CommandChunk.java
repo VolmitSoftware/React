@@ -2,6 +2,7 @@ package com.volmit.react.content.command;
 
 import com.volmit.react.React;
 import com.volmit.react.api.sampler.Sampler;
+import com.volmit.react.core.controller.ObserverController;
 import com.volmit.react.model.SampledChunk;
 import com.volmit.react.util.decree.DecreeExecutor;
 import com.volmit.react.util.decree.DecreeOrigin;
@@ -24,11 +25,11 @@ public class CommandChunk implements DecreeExecutor {
         origin = DecreeOrigin.PLAYER
     )
     public void sample() {
-        SampledChunk c = React.instance.getObserverController().getSampled().getChunk(player().getLocation().getChunk());
+        SampledChunk c = React.controller(ObserverController.class).getSampled().getChunk(player().getLocation().getChunk());
 
         if(c != null) {
             for(String i : c.getValues().keySet()) {
-                Sampler s = React.instance.getSampleController().getSampler(i);
+                Sampler s = React.sampler(i);
                 sender().sendMessage(s.getName() + ": " + s.format(c.getValues().get(i).get()));
             }
         }
@@ -44,7 +45,7 @@ public class CommandChunk implements DecreeExecutor {
         origin = DecreeOrigin.PLAYER
     )
     public void worst() {
-        SampledChunk c = React.instance.getObserverController().absoluteWorst();
+        SampledChunk c = React.instance.controller(ObserverController.class).absoluteWorst();
 
         if(c != null) {
             Block b=  c.getChunk().getBlock(8,0,8);
@@ -52,7 +53,7 @@ public class CommandChunk implements DecreeExecutor {
             J.s(() -> p.teleport(c.getChunk().getWorld().getHighestBlockAt(b.getX(), b.getY()).getLocation()));
 
             for(String i : c.getValues().keySet()) {
-                Sampler s = React.instance.getSampleController().getSampler(i);
+                Sampler s = React.sampler(i);
                 sender().sendMessage(s.getName() + ": " + s.format(c.getValues().get(i).get()));
             }
         }

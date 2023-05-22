@@ -16,7 +16,7 @@ public interface Monitor extends Ticked, Listener {
     void flush();
 
     default Monitor sample(String samplerId) {
-        return sample(React.instance.getSampleController().getSampler(samplerId));
+        return sample((Sampler) React.sampler(samplerId));
     }
 
     default boolean isAlwaysFlushing() {

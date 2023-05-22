@@ -1,7 +1,17 @@
 package com.volmit.react;
 
+import art.arcane.chrono.PrecisionStopwatch;
 import art.arcane.multiburst.MultiBurst;
+import com.volmit.react.api.action.Action;
+import com.volmit.react.api.feature.Feature;
+import com.volmit.react.api.sampler.Sampler;
+import com.volmit.react.api.tweak.Tweak;
+import com.volmit.react.content.sampler.SamplerMemoryUsed;
+import com.volmit.react.content.tweak.TweakUnknown;
 import com.volmit.react.core.controller.*;
+import com.volmit.react.util.format.Form;
+import com.volmit.react.util.plugin.IController;
+import com.volmit.react.util.registry.Registry;
 import com.volmit.react.util.world.EntityKiller;
 import com.volmit.react.util.collection.KList;
 import com.volmit.react.util.format.C;
@@ -19,7 +29,10 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.annotation.Annotation;
+import java.util.HashMap;
+import java.util.Map;
 
 
 @Getter
@@ -30,17 +43,7 @@ public class React extends VolmitPlugin {
     public static Ticker ticker;
     public static Ticker monitorTicker;
     public static MultiBurst burst;
-    private SampleController sampleController;
-    private MapController mapController;
-    private PlayerController playerController;
-    private FeatureController featureController;
-    private TweakController tweakController;
-    private EventController eventController;
-    private ActionController actionController;
-    private CommandController commandController;
-    private ObserverController observerController;
-    private EntityController entityController;
-    private JobController jobController;
+    private Registry<IController> controllerRegistry;
 
     public React() {
         instance = this;
@@ -138,54 +141,35 @@ public class React extends VolmitPlugin {
 
     @Override
     public void start() {
+        PrecisionStopwatch psw = PrecisionStopwatch.start();
         instance = this;
         burst = new MultiBurst("React", Thread.MIN_PRIORITY);
         ticker = new Ticker();
         monitorTicker = new Ticker();
-        jobController = new JobController();
         audiences = BukkitAudiences.create(this);
-        eventController = new EventController();
-        sampleController = new SampleController();
-        sampleController.postStart();
-        playerController = new PlayerController();
-        actionController = new ActionController();
-        featureController = new FeatureController();
-        tweakController = new TweakController();
-        observerController = new ObserverController();
-        entityController = new EntityController();
-        tweakController.postStart();
-        featureController.postStart();
-        actionController.postStart();
-        mapController = new MapController();
-        commandController = new CommandController();
+        controllerRegistry = new Registry<>(IController.class, "com.volmit.react.core.controller");
+
+        for(IController i : controllerRegistry.all()) {
+            i.start();
+        }
 
         info(SplashScreen.splash);
 
-//        Edict.builder()
-//            .parserPackage("com.volmit.react.testedict.parser")
-//            .contextResolverPackage("com.volmit.react.testedict.context")
-//            .build()
-//            .registerPackage("com.volmit.react.testedict.command")
-//            .initialize(getCommand("react"));
+        for(IController i : controllerRegistry.all()) {
+            i.postStart();
+        }
+
+        React.info("React Started in " + Form.f(psw.getMilliseconds(), 0));
     }
 
     @Override
     public void stop() {
+        controllerRegistry.all().forEach(IController::stop);
         burst.close();
         ticker.clear();
         monitorTicker.clear();
         ticker.close();
-        mapController.stop();
         monitorTicker.close();
-        eventController.stop();
-        playerController.stop();
-        sampleController.stop();
-        actionController.stop();
-        commandController.stop();
-        featureController.stop();
-        entityController.stop();
-        tweakController.stop();
-        jobController.stop();
     }
 
     @Override
@@ -204,5 +188,45 @@ public class React extends VolmitPlugin {
     public void reload() {
         onDisable();
         onEnable();
+    }
+
+    public static <T extends IController> T controller(Class<T> c) {
+        return instance.controllerRegistry.get(c);
+    }
+
+    public static <T extends Action<?>> T action(Class<T> c) {
+        return controller(ActionController.class).getActions().get(c);
+    }
+
+    public static <T extends Sampler> T sampler(Class<T> c) {
+        return controller(SampleController.class).getSamplers().get(c);
+    }
+
+    public static <T extends Tweak> T tweak(Class<T> c) {
+        return controller(TweakController.class).getTweaks().get(c);
+    }
+
+    public static <T extends Feature> T feature(Class<T> c) {
+        return controller(FeatureController.class).getFeatures().get(c);
+    }
+
+    public static <T extends IController> T controller(String c) {
+        return (T)instance.controllerRegistry.get(c);
+    }
+
+    public static <T extends Action<?>> T action(String c) {
+        return (T)controller(ActionController.class).getActions().get(c);
+    }
+
+    public static <T extends Sampler> T sampler(String c) {
+        return (T)controller(SampleController.class).getSamplers().get(c);
+    }
+
+    public static <T extends Tweak> T tweak(String c) {
+        return (T)controller(TweakController.class).getTweaks().get(c);
+    }
+
+    public static <T extends Feature> T feature(String c) {
+        return (T)controller(FeatureController.class).getFeatures().get(c);
     }
 }

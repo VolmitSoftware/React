@@ -2,6 +2,7 @@ package com.volmit.react.core.gui;
 
 import com.volmit.react.React;
 import com.volmit.react.api.sampler.Sampler;
+import com.volmit.react.core.controller.SampleController;
 import com.volmit.react.util.data.MaterialBlock;
 import com.volmit.react.util.inventorygui.UIElement;
 import com.volmit.react.util.inventorygui.UIStaticDecorator;
@@ -41,9 +42,9 @@ public class SamplerGUI {
             window.setResolution(WindowResolution.W9_H6);
             window.setDecorator(new UIStaticDecorator(new UIElement("bg").setMaterial(new MaterialBlock(Material.BLACK_STAINED_GLASS_PANE))));
             //Sorted Samplers
-            List<Sampler> samplers = React.instance.getSampleController()
+            List<Sampler> samplers = React.controller(SampleController.class)
                 .getSamplers()
-                .values()
+                .all()
                 .stream()
                 .sorted((a, b) -> a.getId().compareToIgnoreCase(b.getId()))
                 .toList();

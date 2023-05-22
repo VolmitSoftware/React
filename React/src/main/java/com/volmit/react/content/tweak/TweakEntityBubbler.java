@@ -2,6 +2,7 @@ package com.volmit.react.content.tweak;
 
 import com.volmit.react.React;
 import com.volmit.react.api.tweak.ReactTweak;
+import com.volmit.react.core.controller.EntityController;
 import com.volmit.react.model.ReactEntity;
 import com.volmit.react.util.scheduling.J;
 import org.bukkit.Location;
@@ -39,7 +40,7 @@ public class TweakEntityBubbler extends ReactTweak implements Listener {
     public void onActivate() {
         React.instance.registerListener(this);
         for (EntityType entityType : entityTypes) {
-            React.instance.getEntityController().registerEntityTickListener(entityType, this::onCrowdCheck);
+            React.controller(EntityController.class).registerEntityTickListener(entityType, this::onCrowdCheck);
         }
     }
 

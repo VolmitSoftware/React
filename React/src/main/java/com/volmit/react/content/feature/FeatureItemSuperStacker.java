@@ -3,6 +3,7 @@ package com.volmit.react.content.feature;
 import com.volmit.react.React;
 import com.volmit.react.api.feature.ReactFeature;
 import com.volmit.react.content.sampler.SamplerEntities;
+import com.volmit.react.core.controller.EntityController;
 import com.volmit.react.util.format.Form;
 import com.volmit.react.util.math.RNG;
 import com.volmit.react.util.world.BundleUtils;
@@ -51,7 +52,7 @@ public class FeatureItemSuperStacker extends ReactFeature implements Listener {
     public List<ItemStack> explode(Item item) {
         ItemStack m = item.getItemStack();
         item.remove();
-        ((SamplerEntities) React.instance.getSampleController().getSampler(SamplerEntities.ID)).getEntities().decrementAndGet();
+        ((SamplerEntities) React.sampler(SamplerEntities.ID)).getEntities().decrementAndGet();
 
         if(BundleUtils.isFlagged(m)) {
             return BundleUtils.explode(item.getItemStack());
@@ -85,7 +86,7 @@ public class FeatureItemSuperStacker extends ReactFeature implements Listener {
                 if(is != null) {
                     effectMerge(item, into);
                     item.remove();
-                    ((SamplerEntities) React.instance.getSampleController().getSampler(SamplerEntities.ID)).getEntities().decrementAndGet();
+                    ((SamplerEntities) React.sampler(SamplerEntities.ID)).getEntities().decrementAndGet();
                     into.setItemStack(is);
                     break;
                 }
@@ -115,7 +116,7 @@ public class FeatureItemSuperStacker extends ReactFeature implements Listener {
     @Override
     public void onActivate() {
         React.instance.registerListener(this);
-        React.instance.getEntityController().registerEntityTickListener(EntityType.DROPPED_ITEM, (i) -> mergeify((Item) i));
+        React.controller(EntityController.class).registerEntityTickListener(EntityType.DROPPED_ITEM, (i) -> mergeify((Item) i));
     }
 
     @Override

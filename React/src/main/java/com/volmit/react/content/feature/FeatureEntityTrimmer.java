@@ -122,7 +122,7 @@ public class FeatureEntityTrimmer extends ReactFeature implements Listener {
 
         List<Entity> shitlist = new ArrayList<>(lastEntities);
         lastEntities.clear();
-        int tc = (int) Math.round(Math.ceil(React.instance.getSampleController().getSampler(SamplerChunks.ID).sample()));
+        int tc = (int) Math.round(Math.ceil(React.sampler(SamplerChunks.ID).sample()));
         int wc = 0;
 
         // Remove blacklisted entities

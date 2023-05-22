@@ -220,7 +220,7 @@ public class ActionBarMonitor extends PlayerMonitor {
         boolean first = true;
         for (int m = 0; m < viewportLimit; m++) {
             try {
-                Sampler i = React.instance.getSampleController().getSampler(focus.getSamplers()
+                Sampler i = React.sampler(focus.getSamplers()
                     .get((viewportIndexes.get(focus) + m) % focus.getSamplers().size()));
                 setVisible(i, true);
                 if (!first) {
@@ -314,7 +314,7 @@ public class ActionBarMonitor extends PlayerMonitor {
     }
 
     Sampler getNextFocusedSampler() {
-        return React.instance.getSampleController().getSampler(focus.getSamplers().get(getPlayer().getScrollPosition(focus.getSamplers().size())));
+        return React.sampler(focus.getSamplers().get(getPlayer().getScrollPosition(focus.getSamplers().size())));
     }
 
     @Override

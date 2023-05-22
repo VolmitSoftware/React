@@ -8,6 +8,7 @@ import com.volmit.react.api.tweak.Tweak;
 import com.volmit.react.content.tweak.TweakUnknown;
 import com.volmit.react.util.io.JarScanner;
 import com.volmit.react.util.plugin.IController;
+import com.volmit.react.util.registry.Registry;
 import com.volmit.react.util.scheduling.TickedObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -21,9 +22,9 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class TweakController extends TickedObject implements IController {
-    private Map<String, Tweak> tweaks;
-    private Map<String, Tweak> activeTweaks;
-    private Map<String, ReactTickedTweak> tickedTweaks;
+    private transient Registry<Tweak> tweaks;
+    private transient Map<String, Tweak> activeTweaks;
+    private transient Map<String, ReactTickedTweak> tickedTweaks;
 
     private Tweak unknown;
 
@@ -43,15 +44,7 @@ public class TweakController extends TickedObject implements IController {
     }
 
     public Tweak getTweak(String id) {
-        Tweak s = tweaks.get(id);
-
-        s = s == null ? unknown : s;
-
-        if (s == null) {
-            s = new TweakUnknown();
-        }
-
-        return s;
+        return tweaks.get(id);
     }
 
     public void activateTweak(Tweak tweak) {
@@ -83,48 +76,21 @@ public class TweakController extends TickedObject implements IController {
     public void start() {
         activeTweaks = new HashMap<>();
         tickedTweaks = new HashMap<>();
-        tweaks = new HashMap<>();
-        tweaks.put(TweakUnknown.ID, new TweakUnknown());
-        String p = React.instance.jar().getAbsolutePath();
-        p = p.replaceAll("\\Q.jar.jar\\E", ".jar");
-
-        JarScanner j = new JarScanner(new File(p), "com.volmit.react.content.tweak");
-        try {
-            j.scan();
-            j.getClasses().stream()
-                    .filter(i -> i.isAssignableFrom(Tweak.class) || Tweak.class.isAssignableFrom(i))
-                    .map((i) -> {
-                        try {
-                            return (Tweak) i.getConstructor().newInstance();
-                        } catch (Throwable e) {
-                            e.printStackTrace();
-                        }
-
-                        return null;
-                    })
-                    .forEach((i) -> {
-                        if (i != null) {
-                            tweaks.put(i.getId(), i);
-                        }
-                    });
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        tweaks = new Registry<>(Tweak.class, "com.volmit.react.content.tweak");
     }
 
     public void postStart() {
         React.info("Registered " + tweaks.size() + " Tweaks");
 
-        for (String i : tweaks.keySet()) {
+        for (String i : tweaks.ids()) {
             Tweak f = tweaks.get(i);
-            f.loadConfiguration();
 
             if (f.isEnabled()) {
                 activateTweak(f);
             }
         }
 
-        React.info("Activated " + tweaks.size() + " Tweaks");
+        React.info("Activated " + activeTweaks.size() + " Tweaks");
     }
 
     @Override

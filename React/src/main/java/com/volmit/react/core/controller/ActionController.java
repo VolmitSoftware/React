@@ -5,10 +5,12 @@ import com.volmit.react.React;
 import com.volmit.react.api.action.Action;
 import com.volmit.react.api.action.ActionParams;
 import com.volmit.react.api.action.ActionTicket;
+import com.volmit.react.api.action.ReactAction;
 import com.volmit.react.content.action.ActionUnknown;
 import com.volmit.react.util.format.Form;
 import com.volmit.react.util.io.JarScanner;
 import com.volmit.react.util.plugin.IController;
+import com.volmit.react.util.registry.Registry;
 import com.volmit.react.util.scheduling.TickedObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -23,10 +25,9 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class ActionController extends TickedObject implements IController {
-    private final List<ActionTicket<?>> ticketQueue = new ArrayList<>();
-    private final List<ActionTicket<?>> ticketRuntime = new ArrayList<>();
-    private Map<String, Action<?>> actions;
-    private Action<?> unknown;
+    private transient final List<ActionTicket<?>> ticketQueue = new ArrayList<>();
+    private transient final List<ActionTicket<?>> ticketRuntime = new ArrayList<>();
+    private transient Registry<Action<?>> actions;
     private int actionSpeedMultiplier;
 
     public ActionController() {
@@ -46,54 +47,17 @@ public class ActionController extends TickedObject implements IController {
     }
 
     public <T extends ActionParams> Action<T> getAction(String id) {
-        Action<?> s = actions.get(id);
-
-        s = s == null ? unknown : s;
-
-        if (s == null) {
-            s = new ActionUnknown();
-        }
-
-        return (Action<T>) s;
+        return actions.get(id);
     }
 
     @Override
     public void start() {
         actionSpeedMultiplier = 128;
-        actions = new HashMap<>();
-        actions.put(ActionUnknown.ID, new ActionUnknown());
-        String p = React.instance.jar().getAbsolutePath();
-        p = p.replaceAll("\\Q.jar.jar\\E", ".jar");
-
-        JarScanner j = new JarScanner(new File(p), "com.volmit.react.content.action");
-        try {
-            j.scan();
-            j.getClasses().stream()
-                    .filter(i -> i.isAssignableFrom(Action.class) || Action.class.isAssignableFrom(i))
-                    .map((i) -> {
-                        try {
-                            return (Action<?>) i.getConstructor().newInstance();
-                        } catch (Throwable e) {
-                            e.printStackTrace();
-                        }
-
-                        return null;
-                    })
-                    .forEach((i) -> {
-                        if (i != null) {
-                            actions.put(i.getId(), i);
-                        }
-                    });
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        actions = new Registry<>(Action.class, "com.volmit.react.content.action");
     }
 
     public void postStart() {
-        actions.values().forEach((i) -> {
-            i.loadConfiguration();
-            i.onInit();
-        });
+        actions.all().forEach(Action::onInit);
         React.info("Registered " + actions.size() + " Actions");
     }
 

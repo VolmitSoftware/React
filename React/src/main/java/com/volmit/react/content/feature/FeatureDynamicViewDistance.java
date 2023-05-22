@@ -93,7 +93,7 @@ public class FeatureDynamicViewDistance extends ReactFeature implements Listener
 
     @Override
     public void onTick() {
-        ttAvg.put(React.instance.getSampleController().getSampler(SamplerTickTime.ID).sample());
+        ttAvg.put(React.sampler(SamplerTickTime.ID).sample());
         for(World i : Bukkit.getWorlds()) {
             if(lastUpdate.getOrDefault(i, 0L) < System.currentTimeMillis() - (updateCooldownSeconds * 1000L)) {
                 if(updateWorld(i)) {

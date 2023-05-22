@@ -2,6 +2,7 @@ package com.volmit.react.content.feature;
 
 import com.volmit.react.React;
 import com.volmit.react.api.feature.ReactFeature;
+import com.volmit.react.core.controller.EntityController;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Minecart;
 import org.bukkit.event.Listener;
@@ -18,13 +19,13 @@ public class FeatureMinecartTether extends ReactFeature implements Listener {
     @Override
     public void onActivate() {
         React.instance.registerListener(this);
-        React.instance.getEntityController().registerEntityTickListener(EntityType.MINECART, (e) -> onMinecart((Minecart) e));
-        React.instance.getEntityController().registerEntityTickListener(EntityType.MINECART_CHEST, (e) -> onMinecart((Minecart) e));
-        React.instance.getEntityController().registerEntityTickListener(EntityType.MINECART_FURNACE, (e) -> onMinecart((Minecart) e));
-        React.instance.getEntityController().registerEntityTickListener(EntityType.MINECART_COMMAND, (e) -> onMinecart((Minecart) e));
-        React.instance.getEntityController().registerEntityTickListener(EntityType.MINECART_HOPPER, (e) -> onMinecart((Minecart) e));
-        React.instance.getEntityController().registerEntityTickListener(EntityType.MINECART_TNT, (e) -> onMinecart((Minecart) e));
-        React.instance.getEntityController().registerEntityTickListener(EntityType.MINECART_MOB_SPAWNER, (e) -> onMinecart((Minecart) e));
+        React.controller(EntityController.class).registerEntityTickListener(EntityType.MINECART, (e) -> onMinecart((Minecart) e));
+        React.controller(EntityController.class).registerEntityTickListener(EntityType.MINECART_CHEST, (e) -> onMinecart((Minecart) e));
+        React.controller(EntityController.class).registerEntityTickListener(EntityType.MINECART_FURNACE, (e) -> onMinecart((Minecart) e));
+        React.controller(EntityController.class).registerEntityTickListener(EntityType.MINECART_COMMAND, (e) -> onMinecart((Minecart) e));
+        React.controller(EntityController.class).registerEntityTickListener(EntityType.MINECART_HOPPER, (e) -> onMinecart((Minecart) e));
+        React.controller(EntityController.class).registerEntityTickListener(EntityType.MINECART_TNT, (e) -> onMinecart((Minecart) e));
+        React.controller(EntityController.class).registerEntityTickListener(EntityType.MINECART_MOB_SPAWNER, (e) -> onMinecart((Minecart) e));
     }
 
     public void onMinecart(Minecart entity) {

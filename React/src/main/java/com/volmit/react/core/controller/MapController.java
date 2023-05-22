@@ -39,7 +39,7 @@ import java.util.Map;
 public class MapController extends TickedObject implements IController, Listener {
     private static final NamespacedKey nsReact = new NamespacedKey(React.instance, "react");
     private static final NamespacedKey nsRenderer = new NamespacedKey(React.instance, "react-renderer");
-    private Map<String, ReactRenderer> renderers;
+    private transient Map<String, ReactRenderer> renderers;
 
     public MapController() {
         super("react", "map", 1000);
@@ -219,11 +219,11 @@ public class MapController extends TickedObject implements IController, Listener
     public void start() {
         renderers = new HashMap<>();
         renderers.put(FeatureUnknown.ID, new RendererUnknown());
-        for(Sampler i : React.instance.getSampleController().getSamplers().values()) {
+        for(Sampler i : React.controller(SampleController.class).getSamplers().all()) {
             renderers.put(i.getId(), i);
         }
 
-        for(Feature i : React.instance.getFeatureController().getFeatures().values()) {
+        for(Feature i : React.controller(FeatureController.class).getFeatures().all()) {
             if(i instanceof ReactRenderer f) {
                 renderers.put(i.getId(), f);
             }
@@ -266,6 +266,11 @@ public class MapController extends TickedObject implements IController, Listener
     @Override
     public void stop() {
         React.instance.unregisterListener(this);
+    }
+
+    @Override
+    public void postStart() {
+
     }
 
     @Override

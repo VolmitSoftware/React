@@ -2,12 +2,15 @@ package com.volmit.react.api.sampler;
 
 import com.google.common.util.concurrent.AtomicDouble;
 import com.volmit.react.React;
-import com.volmit.react.api.ReactComponent;
 import com.volmit.react.api.rendering.Graph;
 import com.volmit.react.api.rendering.ReactRenderer;
+import com.volmit.react.core.controller.ObserverController;
+import com.volmit.react.core.controller.SampleController;
 import com.volmit.react.util.data.TinyColor;
 import com.volmit.react.util.math.M;
+import com.volmit.react.util.registry.Registered;
 import com.volmit.react.util.scheduling.J;
+import com.volmit.react.util.scheduling.Observable;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
@@ -17,11 +20,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
-public interface Sampler extends ReactComponent, ReactRenderer {
+public interface Sampler extends Registered, ReactRenderer {
     double sample();
 
     default double sample(Chunk c) {
-        return React.instance.getObserverController().sample(c, this).orElse(0D);
+        return React.controller(ObserverController.class).sample(c, this).orElse(0D);
     }
 
     default void render() {
@@ -59,11 +62,11 @@ public interface Sampler extends ReactComponent, ReactRenderer {
     }
 
     default AtomicDouble getChunkCounter(Chunk c) {
-        return React.instance.getObserverController().get(c, this);
+        return React.controller(ObserverController.class).get(c, this);
     }
 
     default AtomicDouble getChunkCounter(Block b) {
-        return React.instance.getObserverController().get(b, this);
+        return React.controller(ObserverController.class).get(b, this);
     }
 
     @Override
@@ -99,7 +102,7 @@ public interface Sampler extends ReactComponent, ReactRenderer {
     }
 
     default Sampler getSampler(String id) {
-        return React.instance.getSampleController().getSamplers().get(id);
+        return React.controller(SampleController.class).getSamplers().get(id);
     }
 
     default String sampleFormatted() {
