@@ -9,8 +9,6 @@ import lombok.Data;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.UUID;
 
 @Data
@@ -31,7 +29,9 @@ public class PlayerSettings {
         File l = React.instance.getDataFile("player-settings", player.toString() + ".json");
 
         try {
-            IO.writeAll(l, new JSONObject(new Gson().toJson(s)).toString(4));
+            JSONObject json = new JSONObject(new Gson().toJson(s));
+            json.put("visualizing", s.isVisualizing()); // add the value of the visualizing field to the JSON object
+            IO.writeAll(l, json.toString(4));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -53,8 +53,15 @@ public class PlayerSettings {
         }
 
         try {
-            configuration = new Gson().fromJson(IO.readAll(l), PlayerSettings.class);
-            IO.writeAll(l, new JSONObject(new Gson().toJson(configuration)).toString(4));
+            JSONObject json = new JSONObject(IO.readAll(l));
+            configuration = new Gson().fromJson(json.toString(), PlayerSettings.class);
+            if (json.has("visualizing")) { // check if the JSON object has the visualizing field
+                configuration.setVisualizing(json.getBoolean("visualizing")); // set the value of the visualizing field
+            }
+            if (configuration.isVisualizing()) {
+                configuration.toggleVisualizing();
+                saveSettings(player, configuration);
+            }
         } catch (IOException e) {
             e.printStackTrace();
             configuration = new PlayerSettings();
