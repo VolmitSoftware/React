@@ -26,33 +26,6 @@ import java.net.URL;
         description = "The benchmark command"
 )
 public class CommandEnvironment implements DecreeExecutor {
-    @Decree(
-            name = "info",
-            aliases = {"info", "i"},
-            description = "Print the environment details!"
-    )
-    public void enviornment() {
-        sender().sendMessage(String.valueOf(C.BOLD) + C.DARK_AQUA + " -- == React Info == -- ");
-        sender().sendMessage(C.GOLD + "React Version Version: " + React.instance.getDescription().getVersion());
-        sender().sendMessage(C.GOLD + "Server Type: " + Bukkit.getVersion());
-        sender().sendMessage(String.valueOf(C.BOLD) + C.DARK_AQUA + " -- == Platform Overview == -- ");
-        sender().sendMessage(C.GOLD + "Version: " + Platform.getVersion() + " - Platform: " + Platform.getName());
-        sender().sendMessage(C.GOLD + "Java Vendor: " + Platform.ENVIRONMENT.getJavaVendor() + " - Java Version: " + Platform.ENVIRONMENT.getJavaVersion());
-        sender().sendMessage(String.valueOf(C.BOLD) + C.DARK_AQUA + " -- == Storage Information == -- ");
-        sender().sendMessage(C.GOLD + "Total Space: " + Form.memSize(Platform.STORAGE.getTotalSpace()));
-        sender().sendMessage(C.GOLD + "Free Space: " + Form.memSize(Platform.STORAGE.getFreeSpace()));
-        sender().sendMessage(C.GOLD + "Used Space: " + Form.memSize(Platform.STORAGE.getUsedSpace()));
-        sender().sendMessage(String.valueOf(C.BOLD) + C.DARK_AQUA + " -- == Memory Information == -- ");
-        sender().sendMessage(C.GOLD + "Physical Memory - Total: " + Form.memSize(Platform.MEMORY.PHYSICAL.getTotalMemory()) + " Free: " + Form.memSize(Platform.MEMORY.PHYSICAL.getFreeMemory()) + " Used: " + Form.memSize(Platform.MEMORY.PHYSICAL.getUsedMemory()));
-        sender().sendMessage(C.GOLD + "Virtual Memory - Total: " + Form.memSize(Platform.MEMORY.VIRTUAL.getTotalMemory()) + " Free: " + Form.memSize(Platform.MEMORY.VIRTUAL.getFreeMemory()) + " Used: " + Form.memSize(Platform.MEMORY.VIRTUAL.getUsedMemory()));
-        sender().sendMessage(String.valueOf(C.BOLD) + C.DARK_AQUA + " -- == CPU Overview == -- ");
-        sender().sendMessage(C.GOLD + "CPU Architecture: " + Platform.CPU.getArchitecture() + " Available Processors: " + Platform.CPU.getAvailableProcessors());
-        sender().sendMessage(C.GOLD + "CPU Load: " + Form.pc(Platform.CPU.getCPULoad()) + " CPU Live Process Load: " + Form.pc(Platform.CPU.getLiveProcessCPULoad()));
-        Hastebin.enviornment(sender());
-
-    }
-
-
 
     @Decree(
             name = "cpu-benchmark",

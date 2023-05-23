@@ -14,7 +14,7 @@ import org.bukkit.entity.Player;
 
 @Decree(
         name = "chunk",
-        aliases = {"chk", "ch", "c"},
+        aliases = {"c"},
         origin = DecreeOrigin.BOTH,
         description = "The chunk command"
 )

@@ -2,6 +2,7 @@ package com.volmit.react.content.command;
 
 import art.arcane.curse.Curse;
 import com.volmit.react.React;
+import com.volmit.react.api.benchmark.Hastebin;
 import com.volmit.react.api.rendering.ReactRenderer;
 import com.volmit.react.core.controller.MapController;
 import com.volmit.react.core.controller.PlayerController;
@@ -11,6 +12,9 @@ import com.volmit.react.util.decree.annotations.Decree;
 import com.volmit.react.util.decree.annotations.Param;
 import com.volmit.react.util.decree.handlers.ReactRendererHandler;
 import com.volmit.react.util.format.C;
+import com.volmit.react.util.format.Form;
+import com.volmit.react.util.reflect.Platform;
+import org.bukkit.Bukkit;
 
 @Decree(
         name = "react",
@@ -25,10 +29,10 @@ public class CommandReact implements DecreeExecutor {
     private CommandEnvironment environment;
 
     @Decree(
-        name = "monitor",
-        aliases = {"m", "mon"},
-        description = "Monitor the server via action bar",
-        origin = DecreeOrigin.PLAYER
+            name = "monitor",
+            aliases = {"m", "mon"},
+            description = "Monitor the server via action bar",
+            origin = DecreeOrigin.PLAYER
     )
     public void monitor() {
         React.controller(PlayerController.class).getPlayer(player()).toggleActionBar();
@@ -36,43 +40,56 @@ public class CommandReact implements DecreeExecutor {
     }
 
     @Decree(
-        name = "visualize",
-        aliases = {"v", "see"},
-        description = "Visualize the via glow blocks",
-        origin = DecreeOrigin.PLAYER
+            name = "info",
+            aliases = {"info", "i"},
+            description = "Print the environment details!"
     )
-    public void visualize() {
-        React.controller(PlayerController.class).getPlayer(player()).getSettings().toggleVisualizing();
-        sender().sendMessage(C.REACT + "Visualize "
-            + (React.controller(PlayerController.class).getPlayer(player()).getSettings().isVisualizing() ? "enabled" : "disabled"));
+    public void enviornment() {
+        sender().sendMessage(String.valueOf(C.BOLD) + C.DARK_AQUA + " -- == React Info == -- ");
+        sender().sendMessage(C.GOLD + "React Version Version: " + React.instance.getDescription().getVersion());
+        sender().sendMessage(C.GOLD + "Server Type: " + Bukkit.getVersion());
+        sender().sendMessage(String.valueOf(C.BOLD) + C.DARK_AQUA + " -- == Platform Overview == -- ");
+        sender().sendMessage(C.GOLD + "Version: " + Platform.getVersion() + " - Platform: " + Platform.getName());
+        sender().sendMessage(C.GOLD + "Java Vendor: " + Platform.ENVIRONMENT.getJavaVendor() + " - Java Version: " + Platform.ENVIRONMENT.getJavaVersion());
+        sender().sendMessage(String.valueOf(C.BOLD) + C.DARK_AQUA + " -- == Storage Information == -- ");
+        sender().sendMessage(C.GOLD + "Total Space: " + Form.memSize(Platform.STORAGE.getTotalSpace()));
+        sender().sendMessage(C.GOLD + "Free Space: " + Form.memSize(Platform.STORAGE.getFreeSpace()));
+        sender().sendMessage(C.GOLD + "Used Space: " + Form.memSize(Platform.STORAGE.getUsedSpace()));
+        sender().sendMessage(String.valueOf(C.BOLD) + C.DARK_AQUA + " -- == Memory Information == -- ");
+        sender().sendMessage(C.GOLD + "Physical Memory - Total: " + Form.memSize(Platform.MEMORY.PHYSICAL.getTotalMemory()) + " Free: " + Form.memSize(Platform.MEMORY.PHYSICAL.getFreeMemory()) + " Used: " + Form.memSize(Platform.MEMORY.PHYSICAL.getUsedMemory()));
+        sender().sendMessage(C.GOLD + "Virtual Memory - Total: " + Form.memSize(Platform.MEMORY.VIRTUAL.getTotalMemory()) + " Free: " + Form.memSize(Platform.MEMORY.VIRTUAL.getFreeMemory()) + " Used: " + Form.memSize(Platform.MEMORY.VIRTUAL.getUsedMemory()));
+        sender().sendMessage(String.valueOf(C.BOLD) + C.DARK_AQUA + " -- == CPU Overview == -- ");
+        sender().sendMessage(C.GOLD + "CPU Architecture: " + Platform.CPU.getArchitecture() + " Available Processors: " + Platform.CPU.getAvailableProcessors());
+        sender().sendMessage(C.GOLD + "CPU Load: " + Form.pc(Platform.CPU.getCPULoad()) + " CPU Live Process Load: " + Form.pc(Platform.CPU.getLiveProcessCPULoad()));
+        Hastebin.enviornment(sender());
+
     }
 
     @Decree(
-        name = "vd",
-        description = "Visualize the via glow blocks",
-        origin = DecreeOrigin.PLAYER
+            name = "set-player-view-distance",
+            aliases = {"vd", "view-distance"},
+            description = "Visualize the via glow blocks",
+            origin = DecreeOrigin.PLAYER
     )
     public void vd(
-        @Param(
-            name = "distance"
-        )
-        int d) {
+            @Param(name = "distance")
+            int d) {
         Curse.on(player().getWorld()).method("setViewDistance", int.class).invoke(d);
         Curse.on(player().getWorld()).method("setSimulationDistance", int.class).invoke(d);
     }
 
     @Decree(
-        name = "map",
-        description = "Visualize the via glow blocks",
-        origin = DecreeOrigin.PLAYER
+            name = "map",
+            description = "Visualize the via glow blocks",
+            origin = DecreeOrigin.PLAYER
     )
     public void map(
-        @Param(
-            name = "renderer",
-            defaultValue = "unknown",
-            customHandler = ReactRendererHandler.class
-        )ReactRenderer renderer
-        ) {
+            @Param(
+                    name = "renderer",
+                    defaultValue = "unknown",
+                    customHandler = ReactRendererHandler.class
+            ) ReactRenderer renderer
+    ) {
         React.controller(MapController.class).openRenderer(player(), renderer);
     }
 }

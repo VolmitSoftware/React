@@ -22,11 +22,11 @@ public class TweakEntityBubbler extends ReactTweak implements Listener {
     /**
      * The maximum crowding factor an entity can have before it is purged
      */
-    private int maxEntityCrowding = 15;
+    private int maxEntityCrowding = 10;
     /**
      * List of entity types to check for crowding
      */
-    private List<EntityType> entityTypes = Arrays.asList(EntityType.ARROW, EntityType.ARMOR_STAND);
+    private List<EntityType> entityTypes = Arrays.asList(EntityType.ARROW, EntityType.ARMOR_STAND, EntityType.MINECART);
     /**
      * Prevents the entity from existing if its being suspended by the soulsand bubble column
      */
@@ -52,7 +52,6 @@ public class TweakEntityBubbler extends ReactTweak implements Listener {
         }
         if (preventEntityBubbling) {
             // If the entity is being bubbled, kill it
-            React.info("" + isEntityBubbled(entity));
             if (isEntityBubbled(entity)) {
                 kill(entity);
             }
