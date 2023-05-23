@@ -1,36 +1,27 @@
 package com.volmit.react.content.feature;
 
+import art.arcane.chrono.ChronoLatch;
 import com.volmit.react.React;
 import com.volmit.react.api.feature.ReactFeature;
 import com.volmit.react.content.sampler.SamplerEntities;
 import com.volmit.react.core.controller.EntityController;
-import com.volmit.react.util.format.Form;
 import com.volmit.react.util.math.RNG;
 import com.volmit.react.util.world.BundleUtils;
-import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
-import org.bukkit.entity.Enderman;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
-import org.bukkit.entity.FallingBlock;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockDropItemEvent;
-import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
-import org.bukkit.event.entity.ItemMergeEvent;
 import org.bukkit.event.entity.ItemSpawnEvent;
-import org.bukkit.event.player.PlayerPickupItemEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -40,6 +31,7 @@ public class FeatureItemSuperStacker extends ReactFeature implements Listener {
     public static final String ID = "item-super-stacker";
     private int maxItemsPerBundle = 64;
     private double searchRadius = 3;
+    private transient ChronoLatch cl = new ChronoLatch(10);
 
     public FeatureItemSuperStacker() {
         super(ID);
@@ -71,13 +63,19 @@ public class FeatureItemSuperStacker extends ReactFeature implements Listener {
             item.getWorld().spawnParticle(Particle.ITEM_CRACK, buf, 3, 0, 0, 0, 0, item.getItemStack());
         }
 
-        item.getWorld().playSound(item.getLocation(), Sound.ITEM_BUNDLE_INSERT, 0.5f, 1.2f + RNG.r.f(-0.1f, 0.1f));
+        if(cl.flip()) {
+            item.getWorld().playSound(item.getLocation(), Sound.ITEM_BUNDLE_INSERT, 0.5f, 1.2f + RNG.r.f(-0.1f, 0.1f));
+        }
     }
 
-    public void mergeify(Item item) {
+    public void mergeWithNearbyItems(Item item) {
+        if(item.isDead()) {
+            return;
+        }
+
         for(Entity i : item.getWorld().getNearbyEntities(item.getLocation(), searchRadius, searchRadius, searchRadius)) {
             if(i instanceof Item into) {
-                if(into.getUniqueId().equals(item.getUniqueId())) {
+                if(into.isDead() || into.getUniqueId().equals(item.getUniqueId())) {
                     continue;
                 }
 
@@ -103,19 +101,21 @@ public class FeatureItemSuperStacker extends ReactFeature implements Listener {
                     p.getInventory().addItem(i).values().forEach((g) -> p.getWorld().dropItem(p.getLocation(), g));
                 }
 
-                p.getWorld().playSound(e.getItem().getLocation(), Sound.ITEM_BUNDLE_DROP_CONTENTS, 1f, 0.85f + RNG.r.f(-0.1f, 0.1f));
+                if(cl.flip()) {
+                    p.getWorld().playSound(e.getItem().getLocation(), Sound.ITEM_BUNDLE_DROP_CONTENTS, 1f, 0.85f + RNG.r.f(-0.1f, 0.1f));
+                }
             }
         }
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void on(ItemSpawnEvent e) {
-       mergeify(e.getEntity());
+       mergeWithNearbyItems(e.getEntity());
     }
 
     @Override
     public void onActivate() {
-        React.controller(EntityController.class).registerEntityTickListener(EntityType.DROPPED_ITEM, (i) -> mergeify((Item) i));
+        React.controller(EntityController.class).registerEntityTickListener(EntityType.DROPPED_ITEM, (i) -> mergeWithNearbyItems((Item) i));
     }
 
     @Override
