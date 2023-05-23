@@ -17,7 +17,6 @@ import java.util.List;
 @Data
 public class JobController implements IController {
     private double maxComputeTime = 1;
-    private double maxSpikeComputeTime = 5;
     private long maxSpikeInterval = 250;
     private double currentComputeTarget = 0.01;
     private double highUtilizationThresholdPercent = 0.75;
@@ -31,7 +30,7 @@ public class JobController implements IController {
     private transient double overBudget = 0;
 
     public JobController() {
-        usageCyclePercent = new RollingSequence(20);
+        usageCyclePercent = new RollingSequence(7);
         jobs = new ArrayList<>();
         start();
     }
@@ -80,6 +79,7 @@ public class JobController implements IController {
         if(overBudget > maxComputeTime) {
             overBudget -= maxComputeTime;
             overBudget = overBudget < 0 ? 0 : overBudget;
+            usage.put(0);
             return;
         }
 
@@ -91,15 +91,13 @@ public class JobController implements IController {
             int executed = 0;
             PrecisionStopwatch p = PrecisionStopwatch.start();
 
-            boolean spiking = jobs.size() > 1000 && spikeLatch.couldFlip() && (getQueuedComputeTime() > maxComputeTime * 3) && spikeLatch.flip();
-
-            while(p.getMilliseconds() < (spiking ? maxSpikeComputeTime : currentComputeTarget)) {
+            while(p.getMilliseconds() < (currentComputeTarget)) {
                 if(jobs.isEmpty()) {
                     break;
                 }
 
                 try {
-                    if(jobs.size() > 50) {
+                    if(jobs.size() > 5) {
                         jobs.remove(RNG.r.i(jobs.size()-1)).run();
                     }
 
@@ -117,29 +115,23 @@ public class JobController implements IController {
 
             double timeUsed = p.getMilliseconds();
             usage.put(timeUsed);
-            if(!spiking) {
-                if(timeUsed > currentComputeTarget) {
-                    overBudget += timeUsed - currentComputeTarget;
-                }
-
-                else {
-                    overBudget -= currentComputeTarget - timeUsed;
-                    overBudget = overBudget < 0 ? 0 : overBudget;
-                }
-
-                costPerJob = timeUsed / (double)executed;
-                usageCyclePercent.put(timeUsed / currentComputeTarget);
-
-                if(usageCyclePercent.getAverage() > highUtilizationThresholdPercent) {
-                    currentComputeTarget = M.lerp(currentComputeTarget, maxComputeTime, 0.01);
-                }
-
-                else if(usageCyclePercent.getAverage() < lowUtilizationThresholdPercent) {
-                    currentComputeTarget = M.lerp(currentComputeTarget, 0.01, 0.01);
-                }
-
-                currentComputeTarget = M.clip(currentComputeTarget, 0.01, maxComputeTime);
+            if(timeUsed > currentComputeTarget) {
+                overBudget += timeUsed - currentComputeTarget;
             }
+
+            costPerJob = timeUsed / (double)executed;
+            usageCyclePercent.put(timeUsed / currentComputeTarget);
+
+            if(usageCyclePercent.getAverage() > highUtilizationThresholdPercent) {
+                currentComputeTarget = M.lerp(currentComputeTarget, maxComputeTime, 0.01);
+            }
+
+            else if(usageCyclePercent.getAverage() < lowUtilizationThresholdPercent) {
+                currentComputeTarget = M.lerp(currentComputeTarget, 0.01, 0.01);
+            }
+
+            currentComputeTarget = M.clip(currentComputeTarget, 0.01, maxComputeTime);
+            React.verbose("CCT: " + currentComputeTarget);
         }
     }
 
