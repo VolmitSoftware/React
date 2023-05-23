@@ -26,7 +26,7 @@ public class TweakEntityBubbler extends ReactTweak implements Listener {
     /**
      * List of entity types to check for crowding
      */
-    private List<EntityType> entityTypes = Arrays.asList(EntityType.ARROW, EntityType.ARMOR_STAND, EntityType.MINECART, EntityType.BOAT);
+    private List<EntityType> entityTypes = Arrays.asList(EntityType.ARROW, EntityType.ARMOR_STAND, EntityType.MINECART, EntityType.BOAT, EntityType.SNOWBALL);
     /**
      * Prevents the entity from existing if its being suspended by the soulsand bubble column
      */
