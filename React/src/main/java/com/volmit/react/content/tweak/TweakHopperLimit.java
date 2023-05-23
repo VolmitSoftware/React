@@ -22,7 +22,6 @@ public class TweakHopperLimit extends ReactTweak implements Listener {
     };
     public static final String ID = "hopper-limit";
     private double maxHopperTickTime = 0.75;
-    private boolean optimizeHopperTransfers = true;
 
     public TweakHopperLimit() {
         super(ID);
@@ -52,27 +51,6 @@ public class TweakHopperLimit extends ReactTweak implements Listener {
 
     @EventHandler
     public void on(InventoryMoveItemEvent e) {
-        if(optimizeHopperTransfers) {
-            boolean skip = true;
-            if(e.getSource().getHolder() instanceof Container a) {
-                if(e.getDestination().getHolder() instanceof Container b) {
-                    for(BlockFace i : directions) {
-                        if(shouldCompare(b.getBlock().getRelative(i)) || shouldCompare(a.getBlock().getRelative(i))) {
-                            skip = false;
-                            break;
-                        }
-                    }
-
-                    if(skip) {
-                        e.setCancelled(true);
-                        e.getSource().remove(e.getItem());
-                        e.getDestination().addItem(e.getItem());
-                        return;
-                    }
-                }
-            }
-        }
-
         if (e.getDestination().getHolder() instanceof Hopper h) {
             if(React.sampler(SamplerHopperTickTime.class).sample() > maxHopperTickTime) {
                 e.setCancelled(true);
