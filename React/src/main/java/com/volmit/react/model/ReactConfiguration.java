@@ -127,11 +127,13 @@ public class ReactConfiguration {
                         .sampler(SamplerPlayers.ID)
                         .build())
                 .group(MonitorGroup.builder()
-                        .name("Bukkit")
+                        .name("Physics")
                         .color("#f25a02")
-                        .sampler(SamplerEventHandlesPerTick.ID)
-                        .sampler(SamplerEventTime.ID)
-                        .sampler(SamplerEventListeners.ID)
+                        .head(SamplerPhysicsTickTime.ID)
+                        .sampler(SamplerPhysicsTickTime.ID)
+                        .sampler(SamplerRedstoneTickTime.ID)
+                        .sampler(SamplerFluidTickTime.ID)
+                        .sampler(SamplerHopperTickTime.ID)
                         .build())
                 .build();
     }
