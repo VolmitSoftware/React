@@ -36,7 +36,6 @@ public class ObserverController extends TickedObject implements IController {
     public ObserverController() {
         super("react", "observer", 1000);
         sampled = new SampledServer();
-        start();
     }
 
     @Override

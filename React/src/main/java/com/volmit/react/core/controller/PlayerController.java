@@ -22,7 +22,6 @@ public class PlayerController extends TickedObject implements IController {
 
     public PlayerController() {
         super("react", "player", 30000);
-        start();
     }
 
     @Override
@@ -79,6 +78,13 @@ public class PlayerController extends TickedObject implements IController {
 
         ReactPlayer p = new ReactPlayer(e);
         players.put(e, p);
+        try {
+            throw new RuntimeException("YOU!");
+        }
+
+        catch(Throwable ex) {
+            ex.printStackTrace();
+        }
         p.onJoin();
     }
 

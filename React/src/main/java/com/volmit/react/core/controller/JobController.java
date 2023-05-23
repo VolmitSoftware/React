@@ -35,7 +35,6 @@ public class JobController implements IController {
     public JobController() {
         usageCyclePercent = new RollingSequence(7);
         jobs = new ArrayList<>();
-        start();
     }
 
     @Override

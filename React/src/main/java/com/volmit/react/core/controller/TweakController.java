@@ -30,7 +30,6 @@ public class TweakController extends TickedObject implements IController {
 
     public TweakController() {
         super("react", "tweak", 50);
-        start();
     }
 
     @Override

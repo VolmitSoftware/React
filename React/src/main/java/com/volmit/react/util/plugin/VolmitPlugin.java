@@ -44,6 +44,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 @SuppressWarnings("EmptyMethod")
@@ -434,10 +435,11 @@ public abstract class VolmitPlugin extends JavaPlugin implements Listener {
     }
 
     public void registerListener(Listener l) {
-        if(registeredListeners.contains(l.getClass().getSimpleName())) {
+        if(registeredListeners.contains(l)) {
             return;
         }
 
+        registeredListeners.add(l);
         React.debug("Register Listener " + l.getClass().getSimpleName());
         Bukkit.getPluginManager().registerEvents(l, this);
     }

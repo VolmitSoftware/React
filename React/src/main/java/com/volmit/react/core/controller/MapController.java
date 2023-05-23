@@ -43,7 +43,6 @@ public class MapController extends TickedObject implements IController, Listener
 
     public MapController() {
         super("react", "map", 1000);
-        start();
     }
 
     public void updateMapView(MapView view, ReactRenderer newRenderer) {

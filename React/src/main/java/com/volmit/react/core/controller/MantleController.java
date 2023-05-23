@@ -18,7 +18,6 @@ public class MantleController extends TickedObject implements IController {
     public MantleController() {
         super("react", "mantle", 1000);
         sampled = new SampledServer();
-        start();
     }
 
     @Override

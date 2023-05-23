@@ -29,7 +29,6 @@ public class FeatureController extends TickedObject implements IController {
 
     public FeatureController() {
         super("react", "feature", 50);
-        start();
     }
 
     @Override

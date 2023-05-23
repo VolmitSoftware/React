@@ -24,7 +24,6 @@ public class SampleController extends TickedObject implements IController {
 
     public SampleController() {
         super("react", "sample", 3000);
-        start();
     }
 
     @Override

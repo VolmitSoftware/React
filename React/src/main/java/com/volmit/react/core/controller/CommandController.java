@@ -23,10 +23,6 @@ public class CommandController implements IController, DecreeSystem, Listener {
     private transient final AtomicCache<VirtualDecreeCommand> commandCache = new AtomicCache<>();
     private transient CompletableFuture<String> consoleFuture = null;
 
-    public CommandController() {
-        start();
-    }
-
     @Override
     public String getName() {
         return "Command";

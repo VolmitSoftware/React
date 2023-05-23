@@ -43,10 +43,6 @@ public class EntityController implements IController, Listener {
     private transient ChronoLatch valueSaver = new ChronoLatch(60000);
     private transient Map<EntityType, List<Consumer<Entity>>> entityTickListeners;
 
-    public EntityController() {
-        start();
-    }
-
     public void registerEntityTickListener(EntityType type, Consumer<Entity> listener) {
         entityTickListeners.computeIfAbsent(type, (t) -> new ArrayList<>()).add(listener);
     }

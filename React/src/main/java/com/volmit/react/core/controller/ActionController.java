@@ -32,7 +32,6 @@ public class ActionController extends TickedObject implements IController {
 
     public ActionController() {
         super("react", "action",  100);
-        start();
     }
 
     @Override
