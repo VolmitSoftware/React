@@ -2,6 +2,7 @@ package com.volmit.react.model;
 
 import com.volmit.react.React;
 import com.volmit.react.api.entity.EntityPriority;
+import com.volmit.react.util.scheduling.J;
 import lombok.Getter;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Entity;
@@ -37,6 +38,10 @@ public class ReactEntity {
             if(isPaused(entity)) {
                 setPaused(entity, false);
             }
+
+            entity.setGlowing(true);
+
+            J.s(() -> entity.setGlowing(false), 20);
 
             return true;
         }

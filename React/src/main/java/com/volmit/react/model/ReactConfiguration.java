@@ -110,7 +110,7 @@ public class ReactConfiguration {
                         .sampler(SamplerProcessorProcessLoad.ID)
                         .sampler(SamplerProcessorSystemLoad.ID)
                         .sampler(SamplerProcessorOutsideLoad.ID)
-                        .sampler(SamplerReactTickTime.ID)
+                        .sampler(SamplerAsyncReactTickTime.ID)
                         .sampler(SamplerReactJobsQueue.ID)
                         .build())
                 .group(MonitorGroup.builder()
