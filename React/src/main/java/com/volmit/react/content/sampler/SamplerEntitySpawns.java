@@ -29,16 +29,6 @@ public class SamplerEntitySpawns extends ReactCachedSampler implements Listener 
         return Material.SHULKER_SPAWN_EGG;
     }
 
-    @Override
-    public void start() {
-        React.instance.registerListener(this);
-    }
-
-    @Override
-    public void stop() {
-        React.instance.unregisterListener(this);
-    }
-
     @EventHandler
     public void on(EntitySpawnEvent event) {
         generated.incrementAndGet();

@@ -29,7 +29,7 @@ public class TweakBlocks extends ReactTweak implements Listener {
 
     @Override
     public void onActivate() {
-        React.instance.registerListener(this);
+
     }
 
     public String blockName(BlockData d)
@@ -69,7 +69,7 @@ public class TweakBlocks extends ReactTweak implements Listener {
 
     @Override
     public void onDeactivate() {
-        React.instance.unregisterListener(this);
+
     }
 
     @Override

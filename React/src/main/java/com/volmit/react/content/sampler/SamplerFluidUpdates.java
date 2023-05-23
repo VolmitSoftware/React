@@ -22,18 +22,6 @@ public class SamplerFluidUpdates extends ReactCachedRateSampler implements Liste
         return Material.MILK_BUCKET;
     }
 
-    @Override
-    public void start() {
-        super.start();
-        React.instance.registerListener(this);
-    }
-
-    @Override
-    public void stop() {
-        super.stop();
-        React.instance.unregisterListener(this);
-    }
-
     @EventHandler
     public void onBlockFromTo(BlockFromToEvent event) {
         BlockData data = event.getBlock().getBlockData();

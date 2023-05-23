@@ -32,13 +32,8 @@ public class SamplerChunksGenerated extends ReactCachedSampler implements Listen
 
     @Override
     public void start() {
-        React.instance.registerListener(this);
+        super.start();
         avg = new RollingSequence(sequenceAverageLength);
-    }
-
-    @Override
-    public void stop() {
-        React.instance.unregisterListener(this);
     }
 
     @EventHandler

@@ -30,6 +30,7 @@ public class SamplerEventHandlesPerTick extends ReactCachedSampler implements Li
 
     @Override
     public void start() {
+        super.start();
         eventController = React.controller(EventController.class);
     }
 

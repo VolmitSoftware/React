@@ -49,19 +49,18 @@ public class EntityController implements IController, Listener {
 
     @Override
     public String getName() {
-        return "Event";
+        return "Entity";
     }
 
     @Override
     public String getId() {
-        return "event";
+        return "entity";
     }
 
     @Override
     public void start() {
         entityTickListeners = new HashMap<>();
         ReactConfiguration.get().getPriority().rebuildPriority();
-        React.instance.registerListener(this);
         looper = new Looper() {
             @Override
             protected long loop() {
@@ -159,7 +158,6 @@ public class EntityController implements IController, Listener {
 
     @Override
     public void stop() {
-        React.instance.unregisterListener(this);
         looper.interrupt();
     }
 

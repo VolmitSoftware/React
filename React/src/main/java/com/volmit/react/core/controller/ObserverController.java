@@ -50,12 +50,12 @@ public class ObserverController extends TickedObject implements IController {
 
     @Override
     public void start() {
-        React.instance.registerListener(this);
+
     }
 
     @Override
     public void stop() {
-        React.instance.unregisterListener(this);
+
     }
 
     @Override

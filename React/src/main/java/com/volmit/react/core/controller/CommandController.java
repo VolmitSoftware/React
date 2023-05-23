@@ -35,7 +35,6 @@ public class CommandController implements IController, DecreeSystem, Listener {
 
     @Override
     public void start() {
-        React.instance.registerListener(this);
         React.instance.getCommand("react").setExecutor(this);
         J.a(() -> getRoot().cacheAll());
     }

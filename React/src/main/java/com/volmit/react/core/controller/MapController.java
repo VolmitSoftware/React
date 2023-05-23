@@ -249,7 +249,7 @@ public class MapController extends TickedObject implements IController, Listener
 
     @Override
     public void stop() {
-        React.instance.unregisterListener(this);
+
     }
 
     @Override
@@ -267,8 +267,6 @@ public class MapController extends TickedObject implements IController, Listener
         for(Player i : Bukkit.getOnlinePlayers()) {
             J.s(() -> join(i));
         }
-
-        React.instance.registerListener(this);
     }
 
     @Override

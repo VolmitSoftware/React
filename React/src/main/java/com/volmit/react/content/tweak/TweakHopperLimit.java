@@ -29,11 +29,11 @@ public class TweakHopperLimit extends ReactTweak implements Listener {
 
     @Override
     public void onActivate() {
-        React.instance.registerListener(this);
+
     }
     @Override
     public void onDeactivate() {
-        React.instance.unregisterListener(this);
+
     }
 
     @Override

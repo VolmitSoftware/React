@@ -32,7 +32,7 @@ public class TweakCombat extends ReactTweak implements Listener {
 
     @Override
     public void onActivate() {
-        React.instance.registerListener(this);
+
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -58,7 +58,7 @@ public class TweakCombat extends ReactTweak implements Listener {
 
     @Override
     public void onDeactivate() {
-        React.instance.unregisterListener(this);
+
     }
 
     @Override

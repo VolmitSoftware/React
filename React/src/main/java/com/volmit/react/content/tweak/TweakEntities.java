@@ -28,7 +28,7 @@ public class TweakEntities extends ReactTweak implements Listener {
 
     @Override
     public void onActivate() {
-        React.instance.registerListener(this);
+
     }
 
 
@@ -43,7 +43,7 @@ public class TweakEntities extends ReactTweak implements Listener {
 
     @Override
     public void onDeactivate() {
-        React.instance.unregisterListener(this);
+
     }
 
     @Override

@@ -47,13 +47,8 @@ public class SamplerChunks extends ReactCachedSampler implements Listener {
 
     @Override
     public void start() {
-        React.instance.registerListener(this);
+        super.start();
         realCheckUpdate = new ChronoLatch(realityCheckMS);
-    }
-
-    @Override
-    public void stop() {
-        React.instance.unregisterListener(this);
     }
 
     @EventHandler

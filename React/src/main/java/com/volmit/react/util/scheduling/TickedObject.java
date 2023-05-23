@@ -68,7 +68,6 @@ public abstract class TickedObject implements Ticked, Listener, Registered {
         this.tticks = new AtomicLong(0);
         this.tstart = M.ms();
         React.instance.getTicker().register(this);
-        React.instance.registerListener(this);
     }
 
     public String getId() {
@@ -83,7 +82,6 @@ public abstract class TickedObject implements Ticked, Listener, Registered {
     @Override
     public void unregister() {
         React.instance.getTicker().unregister(this);
-        React.instance.unregisterListener(this);
     }
 
     @Override

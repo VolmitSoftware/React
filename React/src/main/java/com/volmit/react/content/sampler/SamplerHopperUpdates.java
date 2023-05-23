@@ -23,18 +23,6 @@ public class SamplerHopperUpdates extends ReactCachedRateSampler implements List
         return Material.HOPPER;
     }
 
-    @Override
-    public void start() {
-        super.start();
-        React.instance.registerListener(this);
-    }
-
-    @Override
-    public void stop() {
-        super.stop();
-        React.instance.unregisterListener(this);
-    }
-
     @EventHandler(priority = EventPriority.MONITOR)
     public void on(BlockPhysicsEvent e) {
         if (e.getBlock().getType() == Material.HOPPER) {

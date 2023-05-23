@@ -38,7 +38,6 @@ public class TweakEntityBubbler extends ReactTweak implements Listener {
 
     @Override
     public void onActivate() {
-        React.instance.registerListener(this);
         for (EntityType entityType : entityTypes) {
             React.controller(EntityController.class).registerEntityTickListener(entityType, this::onCrowdCheck);
         }
@@ -85,7 +84,7 @@ public class TweakEntityBubbler extends ReactTweak implements Listener {
 
     @Override
     public void onDeactivate() {
-        React.instance.unregisterListener(this);
+
     }
 
     @Override

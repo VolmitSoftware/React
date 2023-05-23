@@ -56,13 +56,8 @@ public class SamplerEntities extends ReactCachedSampler implements Listener {
 
     @Override
     public void start() {
-        React.instance.registerListener(this);
+        super.start();
         realEntityUpdate = new ChronoLatch(realityCheckMS);
-    }
-
-    @Override
-    public void stop() {
-        React.instance.unregisterListener(this);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

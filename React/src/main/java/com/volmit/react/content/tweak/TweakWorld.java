@@ -36,8 +36,6 @@ public class TweakWorld extends ReactTweak implements Listener {
 
     @Override
     public void onActivate() {
-        React.instance.registerListener(this);
-
         if(hasGravityTweak()) {
             perEntityGravityAmount = new HashMap<>();
             gravityAmount = new Vector(0, -0.1 * gravityMultiplier, 0);
@@ -79,7 +77,6 @@ public class TweakWorld extends ReactTweak implements Listener {
 
     @Override
     public void onDeactivate() {
-        React.instance.unregisterListener(this);
         if(hasGravityTweak()) {
             J.csr(gravityTick);
         }
