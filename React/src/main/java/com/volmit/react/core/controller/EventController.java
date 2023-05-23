@@ -31,13 +31,10 @@ public class EventController extends TickedObject implements IController, Listen
     private transient int listenerCount;
     private transient double totalTime;
     private transient int calls;
-    private transient final ServerTickEvent ste = new ServerTickEvent();
     private transient AtomicBoolean running = new AtomicBoolean(false);
-    private transient int steTicker;
 
     public EventController() {
         super("react", "event", 5000);
-        start();
     }
 
     @Override
@@ -47,7 +44,6 @@ public class EventController extends TickedObject implements IController, Listen
 
     @Override
     public void start() {
-        steTicker = J.sr(() -> Bukkit.getPluginManager().callEvent(ste), 0);
         React.instance.registerListener(this);
     }
 
@@ -55,7 +51,6 @@ public class EventController extends TickedObject implements IController, Listen
     public void stop() {
         React.instance.unregisterListener(this);
         pullOut();
-        J.csr(steTicker);
     }
 
     @Override
