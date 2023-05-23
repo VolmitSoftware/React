@@ -4,12 +4,8 @@ import com.volmit.react.React;
 import com.volmit.react.api.sampler.ReactCachedSampler;
 import com.volmit.react.util.format.Form;
 import com.volmit.react.util.reflect.ThreadUtilizationMonitor;
-import io.netty.util.internal.ConcurrentSet;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
-
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class SamplerTickTime extends ReactCachedSampler {
     public static final String ID = "tick-time";

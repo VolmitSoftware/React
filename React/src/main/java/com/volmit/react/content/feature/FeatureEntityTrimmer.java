@@ -1,6 +1,5 @@
 package com.volmit.react.content.feature;
 
-import art.arcane.chrono.PrecisionStopwatch;
 import com.volmit.react.React;
 import com.volmit.react.api.feature.ReactFeature;
 import com.volmit.react.content.sampler.SamplerChunks;

@@ -3,16 +3,12 @@ package com.volmit.react.content.feature;
 import art.arcane.curse.Curse;
 import com.volmit.react.React;
 import com.volmit.react.api.feature.ReactFeature;
-import com.volmit.react.content.sampler.SamplerChunks;
-import com.volmit.react.content.sampler.SamplerChunksGenerated;
 import com.volmit.react.content.sampler.SamplerTickTime;
 import com.volmit.react.model.MinMax;
-import com.volmit.react.model.ReactEntity;
 import com.volmit.react.util.math.M;
 import com.volmit.react.util.math.RollingSequence;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
-import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 
 import java.util.ArrayList;

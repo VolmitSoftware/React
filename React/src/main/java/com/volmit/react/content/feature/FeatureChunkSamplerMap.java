@@ -3,36 +3,14 @@ package com.volmit.react.content.feature;
 import com.volmit.react.React;
 import com.volmit.react.api.feature.ReactFeature;
 import com.volmit.react.api.rendering.ReactRenderer;
-import com.volmit.react.content.sampler.SamplerEntities;
-import com.volmit.react.core.NMS;
-import com.volmit.react.core.controller.EntityController;
 import com.volmit.react.core.controller.ObserverController;
-import com.volmit.react.model.ReactEntity;
 import com.volmit.react.model.SampledChunk;
 import com.volmit.react.util.data.TinyColor;
-import com.volmit.react.util.format.Form;
-import com.volmit.react.util.math.RNG;
-import com.volmit.react.util.scheduling.J;
-import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
-import org.bukkit.attribute.Attribute;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.EntityDamageByBlockEvent;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.entity.EntitySpawnEvent;
-import org.bukkit.map.MapPalette;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 public class FeatureChunkSamplerMap extends ReactFeature implements Listener, ReactRenderer {
     public static final String ID = "chunk-sampler-map";
