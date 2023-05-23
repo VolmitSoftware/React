@@ -6,21 +6,19 @@ import com.volmit.react.content.sampler.SamplerHopperTickTime;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.block.Container;
 import org.bukkit.block.Hopper;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
-import org.bukkit.inventory.Inventory;
 
 public class TweakHopperLimit extends ReactTweak implements Listener {
-    private static final BlockFace[] directions = new BlockFace[] {
+    public static final String ID = "hopper-limit";
+    private static final BlockFace[] directions = new BlockFace[]{
             BlockFace.NORTH,
             BlockFace.EAST,
             BlockFace.SOUTH,
             BlockFace.WEST
     };
-    public static final String ID = "hopper-limit";
     private double maxHopperTickTime = 0.75;
 
     public TweakHopperLimit() {
@@ -31,6 +29,7 @@ public class TweakHopperLimit extends ReactTweak implements Listener {
     public void onActivate() {
 
     }
+
     @Override
     public void onDeactivate() {
 
@@ -41,18 +40,10 @@ public class TweakHopperLimit extends ReactTweak implements Listener {
         return -1;
     }
 
-    public boolean shouldCompare(Block b) {
-        if(b.getType().equals(Material.COMPARATOR)) {
-            return true;
-        }
-
-        return false;
-    }
-
     @EventHandler
     public void on(InventoryMoveItemEvent e) {
         if (e.getDestination().getHolder() instanceof Hopper h) {
-            if(React.sampler(SamplerHopperTickTime.class).sample() > maxHopperTickTime) {
+            if (React.sampler(SamplerHopperTickTime.class).sample() > maxHopperTickTime) {
                 e.setCancelled(true);
             }
         }

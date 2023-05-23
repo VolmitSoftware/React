@@ -1,16 +1,10 @@
 package com.volmit.react.content.tweak;
 
-import com.volmit.react.React;
 import com.volmit.react.api.tweak.ReactTweak;
-import com.volmit.react.util.data.B;
 import com.volmit.react.util.math.M;
-import org.bukkit.attribute.Attribute;
 import org.bukkit.block.data.BlockData;
-import org.bukkit.entity.EntityType;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.EntitySpawnEvent;
-import org.bukkit.event.player.PlayerHarvestBlockEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -32,11 +26,10 @@ public class TweakBlocks extends ReactTweak implements Listener {
 
     }
 
-    public String blockName(BlockData d)
-    {
+    public String blockName(BlockData d) {
         String s = d.getAsString(true).split("\\Q:\\E")[1];
 
-        if(s.contains("[")){
+        if (s.contains("[")) {
             s = s.split("\\Q[\\E")[0];
         }
 
@@ -45,22 +38,20 @@ public class TweakBlocks extends ReactTweak implements Listener {
 
     @EventHandler
     public void on(PlayerInteractEvent e) {
-        if(e.getClickedBlock() != null) {
-            double m = hardnessMultipliers.getOrDefault(blockName(e.getClickedBlock().getBlockData()),  1.0) * globalHardnessMultiplier;
-            if(m != 1.0) {
+        if (e.getClickedBlock() != null) {
+            double m = hardnessMultipliers.getOrDefault(blockName(e.getClickedBlock().getBlockData()), 1.0) * globalHardnessMultiplier;
+            if (m != 1.0) {
                 e.getPlayer().removePotionEffect(PotionEffectType.FAST_DIGGING);
                 e.getPlayer().removePotionEffect(PotionEffectType.SLOW_DIGGING);
-                if(m > 1.0) {
+                if (m > 1.0) {
                     e.getPlayer().addPotionEffect(new PotionEffect(
-                        PotionEffectType.FAST_DIGGING, (int)M.lerp(0, 200, m-1), (int)M.lerp(0, 3, m-1),
-                        true, false, false
+                            PotionEffectType.FAST_DIGGING, (int) M.lerp(0, 200, m - 1), (int) M.lerp(0, 3, m - 1),
+                            true, false, false
                     ));
-                }
-
-                else {
+                } else {
                     e.getPlayer().addPotionEffect(new PotionEffect(
-                        PotionEffectType.SLOW_DIGGING, (int)M.lerp(200, 0, m), (int)M.lerp(2, 0, m),
-                        true, false, false
+                            PotionEffectType.SLOW_DIGGING, (int) M.lerp(200, 0, m), (int) M.lerp(2, 0, m),
+                            true, false, false
                     ));
                 }
             }
