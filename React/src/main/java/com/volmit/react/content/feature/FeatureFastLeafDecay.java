@@ -100,8 +100,7 @@ public class FeatureFastLeafDecay extends ReactFeature implements Listener {
                 b.getWorld().playSound(b.getLocation(), decaySound, (float) soundVolume, (float) soundPitch);
             }
 
-            b.getDrops().forEach((i) -> b.getWorld().dropItemNaturally(b.getLocation(), i));
-            b.setBlockData(B.getAir(),  false);
+            b.breakNaturally();
         }
     }
 
@@ -144,17 +143,17 @@ public class FeatureFastLeafDecay extends ReactFeature implements Listener {
                 }
 
                 J.s(() -> {
-                for (i.set(block.getX() - getLeafDecayRadius()); i.get() < block.getX() + getLeafDecayRadius(); i.getAndIncrement()) {
-                    for (j.set(block.getY() - getLeafDecayRadius()); j.get() < block.getY() + getLeafDecayRadius(); j.getAndIncrement()) {
-                        for (k.set(block.getZ() - getLeafDecayRadius()); k.get() < block.getZ() + getLeafDecayRadius(); k.getAndIncrement()) {
+                    for (i.set(block.getX() - getLeafDecayRadius()); i.get() < block.getX() + getLeafDecayRadius(); i.getAndIncrement()) {
+                        for (j.set(block.getY() - getLeafDecayRadius()); j.get() < block.getY() + getLeafDecayRadius(); j.getAndIncrement()) {
+                            for (k.set(block.getZ() - getLeafDecayRadius()); k.get() < block.getZ() + getLeafDecayRadius(); k.getAndIncrement()) {
                                 BlockData d = data(block.getWorld(), i.get(), j.get(), k.get());
                                 if (shouldDecay(d)) {
                                     addBlockForDecay(new IBlock(block.getWorld(), i.get(), j.get(), k.get()), d);
                                 }
-                        }
+                            }
 
+                        }
                     }
-                }
                 });
             }
 

@@ -7,10 +7,10 @@ import com.volmit.react.util.format.Form;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 
-public class SamplerReactTickTime extends ReactCachedSampler {
-    public static final String ID = "react-tick-time";
+public class SamplerReactSyncTickTime extends ReactCachedSampler {
+    public static final String ID = "react-sync-tick-time";
 
-    public SamplerReactTickTime() {
+    public SamplerReactSyncTickTime() {
         super(ID, 50);
     }
 
@@ -21,7 +21,7 @@ public class SamplerReactTickTime extends ReactCachedSampler {
 
     @Override
     public double onSample() {
-        return React.ticker.getTickTime() + React.controller(JobController.class).getUsage().getAverage();
+        return React.controller(JobController.class).getUsage().getAverage();
     }
 
     @Override

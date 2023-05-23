@@ -80,83 +80,85 @@ public class EntityController implements IController, Listener {
     }
 
     public void tickEntity(Entity e) {
-        List<Consumer<Entity>> tickers = entityTickListeners.get(e.getType());
+        if(ReactEntity.tick(e, ReactConfiguration.get().getPriority())) {
+            List<Consumer<Entity>> tickers = entityTickListeners.get(e.getType());
 
-        if(tickers != null) {
-            for(Consumer<Entity> i : tickers) {
-                i.accept(e);
+            if(tickers != null) {
+                for(Consumer<Entity> i : tickers) {
+                    J.s(() -> i.accept(e));
+                }
             }
         }
     }
 
     @EventHandler
     public void on(EntitySpawnEvent e) {
-        ReactEntity.tick(e.getEntity(), ReactConfiguration.get().getPriority());
+        tickEntity(e.getEntity());
     }
 
     @EventHandler
     public void on(EntityDamageEvent e) {
-        ReactEntity.tick(e.getEntity(), ReactConfiguration.get().getPriority());
+        tickEntity(e.getEntity());
     }
 
     @EventHandler
     public void on(EntityTargetEvent e) {
-        ReactEntity.tick(e.getEntity(), ReactConfiguration.get().getPriority());
+        tickEntity(e.getEntity());
 
         if(e.getTarget() != null) {
-            ReactEntity.tick(e.getTarget(), ReactConfiguration.get().getPriority());
+            tickEntity(e.getTarget());
         }
     }
 
     @EventHandler
     public void on(EntityInteractEvent e) {
-        ReactEntity.tick(e.getEntity(), ReactConfiguration.get().getPriority());
+        tickEntity(e.getEntity());
     }
 
     @EventHandler
     public void on(PlayerInteractAtEntityEvent e) {
-        ReactEntity.tick(e.getRightClicked(), ReactConfiguration.get().getPriority());
+        tickEntity(e.getRightClicked());
     }
 
     @EventHandler
     public void on(EntityPoseChangeEvent e) {
-        ReactEntity.tick(e.getEntity(), ReactConfiguration.get().getPriority());
+        tickEntity(e.getEntity());
     }
 
     @EventHandler
     public void on(EntityRegainHealthEvent e) {
-        ReactEntity.tick(e.getEntity(), ReactConfiguration.get().getPriority());
+        tickEntity(e.getEntity());
     }
 
     @EventHandler
     public void on(EntityTameEvent e) {
-        ReactEntity.tick(e.getEntity(), ReactConfiguration.get().getPriority());
+        tickEntity(e.getEntity());
     }
 
     @EventHandler
     public void on(EntityPlaceEvent e) {
-        ReactEntity.tick(e.getEntity(), ReactConfiguration.get().getPriority());
+        tickEntity(e.getEntity());
     }
 
     @EventHandler
     public void on(EntityDropItemEvent e) {
-        ReactEntity.tick(e.getEntity(), ReactConfiguration.get().getPriority());
+        tickEntity(e.getEntity());
     }
 
     @EventHandler
     public void on(PlayerDropItemEvent e) {
-        ReactEntity.tick(e.getItemDrop(), ReactConfiguration.get().getPriority());
+        tickEntity(e.getItemDrop());
     }
 
     @EventHandler
     public void on(ItemMergeEvent e) {
-        ReactEntity.tick(e.getTarget(), ReactConfiguration.get().getPriority());
+        tickEntity(e.getTarget());
     }
 
     @EventHandler
     public void on(EntityBreedEvent e) {
-        ReactEntity.tick(e.getMother(), ReactConfiguration.get().getPriority());
-        ReactEntity.tick(e.getFather(), ReactConfiguration.get().getPriority());
+        tickEntity(e.getMother());
+        tickEntity(e.getFather());
     }
 
     @Override
@@ -186,9 +188,7 @@ public class EntityController implements IController, Listener {
                 J.a(() -> {
                     for(int j = 0; j < perWorldUpdatesPerTick; j++) {
                         Entity ee = e.get(M.irand(0, e.size() - 1));
-                        if(ReactEntity.tick(ee, ReactConfiguration.get().getPriority())) {
-                            J.s(() -> tickEntity(ee));
-                        }
+                        tickEntity(ee);
                     }
                 });
             });
