@@ -157,11 +157,14 @@ public class ReactPlayer extends TickedObject {
             setActionBarMonitoring(true);
             new VolmitSender(getPlayer(), React.instance.getTag()).sendMessage("Monitor Enabled");
         }
+
+        React.instance.registerListener(this);
     }
 
     public void onQuit() {
         setActionBarMonitoring(false, false);
         saveSettings(true);
+        React.instance.unregisterListener(this);
     }
 
     public boolean isActionBarMonitoring() {

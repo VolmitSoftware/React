@@ -39,10 +39,6 @@ public class ReactEntity {
                 setPaused(entity, false);
             }
 
-            entity.setGlowing(true);
-
-            J.s(() -> entity.setGlowing(false), 20);
-
             return true;
         }
 
