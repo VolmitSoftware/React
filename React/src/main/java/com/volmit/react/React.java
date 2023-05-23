@@ -22,6 +22,8 @@ import com.volmit.react.util.scheduling.J;
 import com.volmit.react.util.scheduling.Ticker;
 import lombok.Getter;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
+import net.minecraft.world.level.block.BlockHopper;
+import net.minecraft.world.level.block.entity.TileEntityHopper;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.block.Block;

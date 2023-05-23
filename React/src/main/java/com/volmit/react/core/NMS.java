@@ -3,16 +3,37 @@ package com.volmit.react.core;
 import art.arcane.curse.Curse;
 import art.arcane.curse.model.CursedComponent;
 import art.arcane.curse.model.FuzzyMethod;
+import com.volmit.react.React;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
+import java.util.Iterator;
+import java.util.List;
+
 public class NMS {
     public static Object getHandle(Player p) {
         return Curse.on(p).get("handle");
+    }
+
+    public static Object blockPosition(int x, int y, int z) {
+        return curse("net.minecraft.core.BlockPosition").construct(x,y,z);
+    }
+
+    public static Object blockPosition(Block block){
+        return blockPosition(block.getX(), block.getY(), block.getZ());
+    }
+
+    public static List<?> getTickList(World world) {
+        return Curse.on(getWorldServer(world)).get("o");
+    }
+
+    public static Object getWorldServer(World world) {
+        return Curse.on(world).get("handle");
     }
 
     public static Object getConnection(Player player) {

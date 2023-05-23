@@ -131,7 +131,6 @@ public class JobController implements IController {
             }
 
             currentComputeTarget = M.clip(currentComputeTarget, 0.01, maxComputeTime);
-            React.verbose("CCT: " + currentComputeTarget);
         }
     }
 
