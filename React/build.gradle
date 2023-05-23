@@ -129,6 +129,10 @@ dependencies {
     implementation 'com.github.ben-manes.caffeine:caffeine:3.0.6'
     implementation 'org.java-websocket:Java-WebSocket:1.5.3'
     implementation 'io.netty:netty-transport:4.1.92.Final'
+
+    // DEV TEMP
+    //implementation fileTree(dir: 'libs', include: ['*.jar'])
+
 }
 
 if (JavaVersion.current().toString() != "17") {
