@@ -11,6 +11,7 @@ import com.volmit.react.util.scheduling.J;
 import com.volmit.react.util.scheduling.TickedObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.bukkit.event.Listener;
 
 import java.io.File;
 import java.io.IOException;
@@ -57,6 +58,9 @@ public class FeatureController extends TickedObject implements IController {
         if (!activeFeatures.containsKey(feature.getId())) {
             activeFeatures.put(feature.getId(), feature);
             feature.onActivate();
+            if(feature instanceof Listener l) {
+                React.instance.registerListener(l);
+            }
 
             if (feature.getTickInterval() > 0) {
                 tickedFeatures.put(feature.getId(), new ReactTickedFeature(feature));
@@ -67,13 +71,15 @@ public class FeatureController extends TickedObject implements IController {
     }
 
     public void deactivateFeature(Feature feature) {
+        if(feature instanceof Listener l) {
+            React.instance.unregisterListener(l);
+        }
         activeFeatures.remove(feature.getId());
         ReactTickedFeature t = tickedFeatures.remove(feature.getId());
 
         if (t != null) {
             t.unregister();
         }
-
         feature.onDeactivate()
         ;
         React.verbose("Deactivated Feature: " + feature.getName());

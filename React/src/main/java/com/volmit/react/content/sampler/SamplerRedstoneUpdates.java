@@ -20,17 +20,6 @@ public class SamplerRedstoneUpdates extends ReactCachedRateSampler implements Li
         return Material.REDSTONE;
     }
 
-    @Override
-    public void start() {
-        super.start();
-        React.instance.registerListener(this);
-    }
-
-    @Override
-    public void stop() {
-        super.stop();
-        React.instance.unregisterListener(this);
-    }
 
     @EventHandler
     public void on(BlockRedstoneEvent event) {

@@ -56,7 +56,6 @@ public class FeatureFastLeafDecay extends ReactFeature implements Listener {
     @Override
     public void onActivate() {
         search.clear();
-        React.instance.registerListener(this);
         snapshot = Caffeine.newBuilder()
                 .expireAfterAccess(10, TimeUnit.SECONDS)
                 .refreshAfterWrite(1, TimeUnit.SECONDS)
@@ -67,7 +66,6 @@ public class FeatureFastLeafDecay extends ReactFeature implements Listener {
     @Override
     public void onDeactivate() {
         search.clear();
-        React.instance.unregisterListener(this);
     }
 
     @Override

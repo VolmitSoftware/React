@@ -18,7 +18,6 @@ public class FeatureMinecartTether extends ReactFeature implements Listener {
 
     @Override
     public void onActivate() {
-        React.instance.registerListener(this);
         React.controller(EntityController.class).registerEntityTickListener(EntityType.MINECART, (e) -> onMinecart((Minecart) e));
         React.controller(EntityController.class).registerEntityTickListener(EntityType.MINECART_CHEST, (e) -> onMinecart((Minecart) e));
         React.controller(EntityController.class).registerEntityTickListener(EntityType.MINECART_FURNACE, (e) -> onMinecart((Minecart) e));
@@ -43,7 +42,7 @@ public class FeatureMinecartTether extends ReactFeature implements Listener {
 
     @Override
     public void onDeactivate() {
-        React.instance.unregisterListener(this);
+
     }
 
     @Override

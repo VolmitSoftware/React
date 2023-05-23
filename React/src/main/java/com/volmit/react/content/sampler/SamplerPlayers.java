@@ -20,16 +20,6 @@ public class SamplerPlayers extends ReactCachedSampler implements Listener {
     }
 
     @Override
-    public void start() {
-        React.instance.registerListener(this);
-    }
-
-    @Override
-    public void stop() {
-        React.instance.unregisterListener(this);
-    }
-
-    @Override
     public double onSample() {
         return Bukkit.getServer().getOnlinePlayers().size();
     }

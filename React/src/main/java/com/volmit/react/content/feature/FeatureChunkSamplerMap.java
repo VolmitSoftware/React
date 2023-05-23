@@ -108,13 +108,13 @@ public class FeatureChunkSamplerMap extends ReactFeature implements Listener, Re
 
     @Override
     public void onActivate() {
-        React.instance.registerListener(this);
+
     }
 
 
     @Override
     public void onDeactivate() {
-        React.instance.unregisterListener(this);
+
     }
 
     @Override

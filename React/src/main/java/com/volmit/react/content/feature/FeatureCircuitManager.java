@@ -30,12 +30,12 @@ public class FeatureCircuitManager extends ReactFeature implements Listener {
     @Override
     public void onActivate() {
         circuitServer = new CircuitServer();
-        React.instance.registerListener(this);
+
     }
 
     @Override
     public void onDeactivate() {
-        React.instance.unregisterListener(this);
+
     }
 
     @Override

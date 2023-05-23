@@ -14,6 +14,7 @@ import com.volmit.react.util.registry.Registry;
 import com.volmit.react.util.scheduling.TickedObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.bukkit.event.Listener;
 
 import java.io.File;
 import java.io.IOException;
@@ -57,12 +58,21 @@ public class ActionController extends TickedObject implements IController {
 
     public void postStart() {
         actions.all().forEach(Action::onInit);
+        actions.all().forEach(((a) -> {
+            if(a instanceof Listener l) {
+                React.instance.registerListener(l);
+            }
+        }));
         React.info("Registered " + actions.size() + " Actions");
     }
 
     @Override
     public void stop() {
-
+        actions.all().forEach(((a) -> {
+            if(a instanceof Listener l) {
+                React.instance.unregisterListener(l);
+            }
+        }));
     }
 
     @Override

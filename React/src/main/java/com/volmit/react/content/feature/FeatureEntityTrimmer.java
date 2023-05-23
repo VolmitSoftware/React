@@ -80,7 +80,6 @@ public class FeatureEntityTrimmer extends ReactFeature implements Listener {
 
     @Override
     public void onActivate() {
-        React.instance.registerListener(this);
         double maxPriority = -1;
         double minPriority = Double.MAX_VALUE;
 
@@ -100,7 +99,7 @@ public class FeatureEntityTrimmer extends ReactFeature implements Listener {
 
     @Override
     public void onDeactivate() {
-        React.instance.unregisterListener(this);
+
     }
 
     @Override

@@ -12,6 +12,7 @@ import com.volmit.react.util.registry.Registry;
 import com.volmit.react.util.scheduling.TickedObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.bukkit.event.Listener;
 
 import java.io.File;
 import java.io.IOException;
@@ -50,6 +51,9 @@ public class TweakController extends TickedObject implements IController {
         if (!activeTweaks.containsKey(tweak.getId())) {
             activeTweaks.put(tweak.getId(), tweak);
             tweak.onActivate();
+            if(tweak instanceof Listener l) {
+                React.instance.registerListener(l);
+            }
 
             if (tweak.getTickInterval() > 0) {
                 tickedTweaks.put(tweak.getId(), new ReactTickedTweak(tweak));
@@ -65,6 +69,10 @@ public class TweakController extends TickedObject implements IController {
 
         if (t != null) {
             t.unregister();
+        }
+
+        if(tweak instanceof Listener l) {
+            React.instance.unregisterListener(l);
         }
 
         tweak.onDeactivate();

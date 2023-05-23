@@ -434,7 +434,7 @@ public abstract class VolmitPlugin extends JavaPlugin implements Listener {
         return getTag("");
     }
 
-    public void registerListenerX(Listener l) {
+    public void registerListener(Listener l) {
         if(registeredListeners.contains(l)) {
             return;
         }
@@ -444,7 +444,7 @@ public abstract class VolmitPlugin extends JavaPlugin implements Listener {
         Bukkit.getPluginManager().registerEvents(l, this);
     }
 
-    public void unregisterListenerX(Listener l) {
+    public void unregisterListener(Listener l) {
         registeredListeners.remove(l);
         React.debug("Register Listener " + l.getClass().getSimpleName());
         HandlerList.unregisterAll(l);

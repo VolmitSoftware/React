@@ -23,18 +23,6 @@ public class SamplerPhysicsUpdates extends ReactCachedRateSampler implements Lis
         return Material.SUSPICIOUS_STEW;
     }
 
-    @Override
-    public void start() {
-        super.start();
-        React.instance.registerListener(this);
-    }
-
-    @Override
-    public void stop() {
-        super.stop();
-        React.instance.unregisterListener(this);
-    }
-
     @EventHandler
     public void on(BlockPistonExtendEvent event) {
         int b = event.getBlocks().size() + 2;

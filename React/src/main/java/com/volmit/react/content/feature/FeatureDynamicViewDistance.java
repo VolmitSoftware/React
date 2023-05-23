@@ -78,12 +78,10 @@ public class FeatureDynamicViewDistance extends ReactFeature implements Listener
         ttAvg = new RollingSequence(10);
         ttAvg.put(0);
         lastUpdate = new HashMap<>();
-        React.instance.registerListener(this);
     }
 
     @Override
     public void onDeactivate() {
-        React.instance.unregisterListener(this);
     }
 
     @Override

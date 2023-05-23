@@ -58,12 +58,12 @@ public class FeatureFastExplosions extends ReactFeature implements Listener {
 
     @Override
     public void onActivate() {
-        React.instance.registerListener(this);
+
     }
 
     @Override
     public void onDeactivate() {
-        React.instance.unregisterListener(this);
+
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

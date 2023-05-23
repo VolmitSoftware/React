@@ -57,8 +57,6 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
 
     @Override
     public void onActivate() {
-        React.instance.registerListener(this);
-
         for(EntityType i : stackableTypes) {
             React.controller(EntityController.class).registerEntityTickListener(i, this::onTick);
         }
@@ -197,7 +195,7 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
 
     @Override
     public void onDeactivate() {
-        React.instance.unregisterListener(this);
+
     }
 
     @Override

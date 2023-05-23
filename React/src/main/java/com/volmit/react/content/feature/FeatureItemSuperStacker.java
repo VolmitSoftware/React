@@ -115,13 +115,12 @@ public class FeatureItemSuperStacker extends ReactFeature implements Listener {
 
     @Override
     public void onActivate() {
-        React.instance.registerListener(this);
         React.controller(EntityController.class).registerEntityTickListener(EntityType.DROPPED_ITEM, (i) -> mergeify((Item) i));
     }
 
     @Override
     public void onDeactivate() {
-        React.instance.unregisterListener(this);
+
     }
 
     @Override

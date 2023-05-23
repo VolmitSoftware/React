@@ -31,13 +31,6 @@ public class SamplerPhysicsTickTime extends ReactCachedSampler implements Listen
         stopwatch = new PrecisionStopwatch();
         running = false;
         maxDuration = 0;
-        React.instance.registerListener(this);
-    }
-
-    @Override
-    public void stop() {
-        super.stop();
-        React.instance.unregisterListener(this);
     }
 
     @Override

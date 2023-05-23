@@ -11,6 +11,7 @@ import com.volmit.react.util.scheduling.J;
 import com.volmit.react.util.scheduling.TickedObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.bukkit.event.Listener;
 
 import java.io.File;
 import java.io.IOException;
@@ -47,12 +48,22 @@ public class SampleController extends TickedObject implements IController {
 
     public void postStart() {
         samplers.all().forEach(Sampler::start);
+        samplers.all().forEach(((a) -> {
+            if(a instanceof Listener l) {
+                React.instance.registerListener(l);
+            }
+        }));
         React.info("Registered " + samplers.size() + " Samplers");
         J.s(() -> React.controller(PlayerController.class).updateMonitors());
     }
 
     @Override
     public void stop() {
+        samplers.all().forEach(((a) -> {
+            if(a instanceof Listener l) {
+                React.instance.unregisterListener(l);
+            }
+        }));
         samplers.all().forEach(Sampler::stop);
     }
 }

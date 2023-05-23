@@ -180,6 +180,10 @@ public class React extends VolmitPlugin {
 
         for(IController i : controllerRegistry.all()) {
             i.postStart();
+
+            if(i instanceof Listener l) {
+                registerListener(l);
+            }
         }
 
         ready = true;
