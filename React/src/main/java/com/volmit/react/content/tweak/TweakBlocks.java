@@ -36,6 +36,10 @@ public class TweakBlocks extends ReactTweak implements Listener {
         return s;
     }
 
+    /**
+     * This is the method that is called when a player interacts with a block.
+     * Used to apply the hardness multiplier to the player's digging speed.
+     */
     @EventHandler
     public void on(PlayerInteractEvent e) {
         if (e.getClickedBlock() != null) {

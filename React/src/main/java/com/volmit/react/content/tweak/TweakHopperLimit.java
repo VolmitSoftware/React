@@ -40,6 +40,10 @@ public class TweakHopperLimit extends ReactTweak implements Listener {
         return -1;
     }
 
+    /**
+     * This is the method that is called when a hopper moves an item.
+     * and it denies the hopper from moving the item if the tick time is too high.
+     */
     @EventHandler
     public void on(InventoryMoveItemEvent e) {
         if (e.getDestination().getHolder() instanceof Hopper h) {

@@ -28,6 +28,10 @@ public class TweakCombat extends ReactTweak implements Listener {
 
     }
 
+    /**
+     * This is the main method that handles damage and knockback.
+     * Sets the damage to the damage, and the Knockback to the knockback.
+     */
     @EventHandler(priority = EventPriority.LOWEST)
     public void on(EntityDamageEvent e) {
         e.setDamage(e.getDamage() * globalDamageMultiplier * perEntityDamageMultiplier.getOrDefault(e.getEntityType(), 1.0));

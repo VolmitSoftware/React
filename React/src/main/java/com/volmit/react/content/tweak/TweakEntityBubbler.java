@@ -26,7 +26,7 @@ public class TweakEntityBubbler extends ReactTweak implements Listener {
     /**
      * List of entity types to check for crowding
      */
-    private List<EntityType> entityTypes = Arrays.asList(EntityType.ARROW, EntityType.ARMOR_STAND, EntityType.MINECART);
+    private List<EntityType> entityTypes = Arrays.asList(EntityType.ARROW, EntityType.ARMOR_STAND, EntityType.MINECART, EntityType.BOAT);
     /**
      * Prevents the entity from existing if its being suspended by the soulsand bubble column
      */
@@ -43,6 +43,9 @@ public class TweakEntityBubbler extends ReactTweak implements Listener {
         }
     }
 
+    /**
+     * Checks if the entity is crowded
+     */
     public void onCrowdCheck(Entity entity) {
         // Get the crowding factor of the entity when its ticked
         double crowdingFactor = ReactEntity.getCrowding(entity);
@@ -59,6 +62,9 @@ public class TweakEntityBubbler extends ReactTweak implements Listener {
 
     }
 
+    /**
+     * Checks if the entity is being bubbled
+     */
     public boolean isEntityBubbled(Entity entity) {
         Location location = entity.getLocation();
         World world = location.getWorld();

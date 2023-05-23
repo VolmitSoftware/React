@@ -22,7 +22,10 @@ public class TweakEntities extends ReactTweak implements Listener {
 
     }
 
-
+    /**
+     * This tweaks the spawn rate of entities.
+     * If the random Spawn is less than the spawn cancel chance, the entity is cancelled.
+     */
     @EventHandler
     public void on(EntitySpawnEvent e) {
         if (spawnCancelChance.getOrDefault(e.getEntityType(), 0.0) > 0.0) {
