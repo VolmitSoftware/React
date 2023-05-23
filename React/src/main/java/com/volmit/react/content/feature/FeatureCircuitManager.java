@@ -88,18 +88,4 @@ public class FeatureCircuitManager extends ReactFeature implements Listener {
             e.setNewCurrent(e.getOldCurrent());
         }
     }
-
-    @EventHandler
-    public void on(HopperInventorySearchEvent e) {
-        Circuit r = circuitServer.event(e.getBlock());
-        Circuit s = circuitServer.event(e.getBlock());
-
-        if (r != null && r.getStop().get()) {
-            e.setInventory(null);
-        }
-
-        if (s != null && s.getStop().get()) {
-            e.setInventory(null);
-        }
-    }
 }

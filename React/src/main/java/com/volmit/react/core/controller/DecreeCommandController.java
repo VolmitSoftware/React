@@ -1,7 +1,7 @@
 package com.volmit.react.core.controller;
 
 import com.volmit.react.React;
-import com.volmit.react.content.command.CommandReact;
+import com.volmit.react.content.decreecommand.CommandReact;
 import com.volmit.react.util.cache.AtomicCache;
 import com.volmit.react.util.collection.KMap;
 import com.volmit.react.util.decree.DecreeSystem;
@@ -18,10 +18,15 @@ import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 
 @Data
-public class CommandController implements IController, DecreeSystem, Listener {
+public class DecreeCommandController implements IController, DecreeSystem, Listener {
     private transient final KMap<String, CompletableFuture<String>> futures = new KMap<>();
     private transient final AtomicCache<VirtualDecreeCommand> commandCache = new AtomicCache<>();
     private transient CompletableFuture<String> consoleFuture = null;
+
+    @Override
+    public boolean autoRegister() {
+        return false;
+    }
 
     @Override
     public String getName() {

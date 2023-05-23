@@ -19,7 +19,7 @@ import java.util.List;
  *
  * @param <T> The type of the enum that the implemented parser should support.
  */
-public interface Enumerated<T extends Enum<T>> extends EdictParser<T>, Suggestive {
+public interface EnumeratedParser<T extends Enum<T>> extends EdictParser<T>, Suggestive {
     /**
      * Parses the input string to map it to an appropriate enum constant.
      *

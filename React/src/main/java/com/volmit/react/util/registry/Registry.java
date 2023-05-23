@@ -37,7 +37,7 @@ public class Registry<T extends Registered> {
                         return null;
                     })
                     .forEach((i) -> {
-                        if (i != null) {
+                        if (i != null && i.autoRegister()) {
                             i.loadConfiguration();
                             idRegistry.put(i.getId(), i);
                             classRegistry.put(i.getClass(), i);

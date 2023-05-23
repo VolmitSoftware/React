@@ -1,6 +1,8 @@
 package art.arcane.edict.api.request;
 
 import art.arcane.edict.Edict;
+import art.arcane.edict.api.context.EdictContext;
+import art.arcane.edict.api.context.EdictContextual;
 import art.arcane.edict.api.endpoint.EdictEndpoint;
 import art.arcane.edict.api.field.EdictField;
 import art.arcane.edict.api.input.EdictInput;
@@ -81,7 +83,13 @@ public class EdictRequest {
             Optional<String> p = inputs.remove(0).into();
 
             if(p.isPresent()) {
-                matchOffset += Edict.calculateLevenshteinDistance(p.get(), i);
+               try {
+                   matchOffset += Edict.calculateLevenshteinDistance(p.get(), i);
+               }
+
+               catch(Throwable e) {
+                   return null;
+               }
             }
 
             else {
@@ -141,7 +149,7 @@ public class EdictRequest {
         var m = EdictRequest.builder()
             .inputs(edictInputs)
             .build();
-        React.verbose("Request Built for " + String.join(" ", a) + " -> " + new Gson().toJson(m));
+        React.verbose("Request Built for " + String.join(" ", a));
 
         return m;
     }

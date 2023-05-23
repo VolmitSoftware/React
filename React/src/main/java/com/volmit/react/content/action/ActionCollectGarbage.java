@@ -1,6 +1,10 @@
 package com.volmit.react.content.action;
 
+import art.arcane.edict.Edict;
+import art.arcane.edict.api.context.EdictContext;
+import art.arcane.edict.api.context.EdictContextual;
 import com.volmit.react.React;
+import com.volmit.react.api.action.Action;
 import com.volmit.react.api.action.ActionParams;
 import com.volmit.react.api.action.ActionTicket;
 import com.volmit.react.api.action.ReactAction;
@@ -15,6 +19,14 @@ public class ActionCollectGarbage extends ReactAction<ActionCollectGarbage.Param
 
     public ActionCollectGarbage() {
         super(ID);
+    }
+
+    @Edict.Command("/react action collect-garbage")
+    @Edict.Aliases("/react action gc")
+    public static void command() {
+        Action<Params> pe = React.action("collect-garbage");
+        ActionCollectGarbage.Params p = pe.getDefaultParams();
+        pe.create(p, EdictContext.get().getSender()).queue();
     }
 
     @Override

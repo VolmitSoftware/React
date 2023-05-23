@@ -422,19 +422,12 @@ public class B {
             BlockData bdx = parseBlockData(bd);
 
             if (bdx == null) {
-                if (clw.flip()) {
-                    React.warn("Unknown Block Data '" + bd + "'");
-                }
                 return AIR;
             }
 
             return bdx;
         } catch (Throwable e) {
             e.printStackTrace();
-
-            if (clw.flip()) {
-                React.warn("Unknown Block Data '" + bdxf + "'");
-            }
         }
 
         return null;
@@ -459,7 +452,6 @@ public class B {
             }
         }
 
-        React.error("Can't find block data for " + s);
         return null;
     }
 
@@ -501,10 +493,6 @@ public class B {
 
             return bx;
         } catch (Throwable e) {
-            if (clw.flip()) {
-                React.warn("Unknown Block Data: " + ix);
-            }
-
             String block = ix.contains(":") ? ix.split(":")[1].toLowerCase() : ix.toLowerCase();
             String state = block.contains("[") ? block.split("\\Q[\\E")[1].split("\\Q]\\E")[0] : "";
             Map<String, String> stateMap = new HashMap<>();

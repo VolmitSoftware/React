@@ -1,4 +1,4 @@
-package com.volmit.react.content.command;
+package com.volmit.react.content.decreecommand;
 
 import com.volmit.react.React;
 import com.volmit.react.core.controller.PlayerController;

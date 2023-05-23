@@ -14,6 +14,10 @@ import java.io.File;
 import java.io.IOException;
 
 public interface Registered {
+    default boolean autoRegister() {
+        return true;
+    }
+
     default String getConfigCategory() {
         return "core";
     }

@@ -672,9 +672,10 @@ public class Edict implements CommandExecutor, TabCompleter {
      * @param superPackage The package the class must at least start with to check
      */
     public Edict registerPackage(String superPackage) {
-        Curse.whereInPackage(getClass(), (c) -> Arrays.stream(c.getMethods())
-            .anyMatch(i -> Modifier.isStatic(i.getModifiers()) && !Modifier.isNative(i.getModifiers())
-                && i.isAnnotationPresent(Edict.Command.class)), superPackage).forEach(this::registerClass);
+        Curse.whereInPackage(getClass(), (c) -> true, superPackage)
+            .filter((c) -> c.declaredMethods().anyMatch(i -> i.isStatic() && !i.isNative() && i.isAnnotated(Edict.Command.class)))
+            .peek(i -> React.verbose("?? Command " + i.toString()))
+            .forEach(this::registerClass);
 
         return this;
     }
@@ -684,7 +685,15 @@ public class Edict implements CommandExecutor, TabCompleter {
      * @param component The component to register
      */
     public Edict registerClass(CursedComponent component) {
-        component.declaredMethods().filter(m -> m.isStatic() && !m.isNative() && m.isAnnotated(Edict.Command.class)).forEach(this::registerMethod);
+        try
+        {
+            component.declaredMethods().filter(m -> m.isStatic() && !m.isNative() && m.isAnnotated(Edict.Command.class)).forEach(this::registerMethod);
+        }
+
+        catch(Throwable e)
+        {
+            e.printStackTrace();
+        }
         return this;
     }
 

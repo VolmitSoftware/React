@@ -1,23 +1,11 @@
-package com.volmit.react.content.command;
+package com.volmit.react.content.decreecommand;
 
-import com.volmit.react.React;
 import com.volmit.react.api.benchmark.CPUBenchmark;
 import com.volmit.react.api.benchmark.DriveBenchmark;
-import com.volmit.react.api.benchmark.Hastebin;
 import com.volmit.react.api.benchmark.MemoryBenchmark;
 import com.volmit.react.util.decree.DecreeExecutor;
 import com.volmit.react.util.decree.DecreeOrigin;
 import com.volmit.react.util.decree.annotations.Decree;
-import com.volmit.react.util.format.C;
-import com.volmit.react.util.format.Form;
-import com.volmit.react.util.reflect.Platform;
-import org.bukkit.Bukkit;
-
-import java.io.BufferedReader;
-import java.io.DataOutputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 
 @Decree(
         name = "environment",
