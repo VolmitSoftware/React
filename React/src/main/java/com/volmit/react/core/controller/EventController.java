@@ -45,6 +45,7 @@ public class EventController extends TickedObject implements IController, Listen
     @Override
     public void start() {
         React.instance.registerListener(this);
+        pullOut();
     }
 
     @Override
