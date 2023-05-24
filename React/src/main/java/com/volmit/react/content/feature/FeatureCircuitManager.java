@@ -13,7 +13,6 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPistonExtendEvent;
 import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockRedstoneEvent;
-import org.bukkit.event.inventory.HopperInventorySearchEvent;
 
 public class FeatureCircuitManager extends ReactFeature implements Listener {
     public static final String ID = "circuit-manager";

@@ -1,12 +1,10 @@
 package com.volmit.react.content.feature;
 
-import com.volmit.react.React;
 import com.volmit.react.api.feature.ReactFeature;
 import com.volmit.react.util.math.RNG;
 import org.bukkit.GameMode;
 import org.bukkit.Sound;
 import org.bukkit.entity.Item;
-import org.bukkit.entity.Minecart;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;

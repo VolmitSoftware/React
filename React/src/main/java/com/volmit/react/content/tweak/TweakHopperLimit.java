@@ -3,8 +3,6 @@ package com.volmit.react.content.tweak;
 import com.volmit.react.React;
 import com.volmit.react.api.tweak.ReactTweak;
 import com.volmit.react.content.sampler.SamplerHopperTickTime;
-import org.bukkit.Material;
-import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Hopper;
 import org.bukkit.event.EventHandler;
