@@ -19,6 +19,7 @@ import art.arcane.edict.api.parser.EdictValue;
 import art.arcane.edict.api.request.EdictFieldResponse;
 import art.arcane.edict.api.request.EdictRequest;
 import art.arcane.edict.api.request.EdictResponse;
+import art.arcane.edict.api.request.Node;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.volmit.react.React;
@@ -47,6 +48,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -157,16 +159,6 @@ public class Edict implements CommandExecutor, TabCompleter {
         return getEdictRootPackage() + sub;
     }
 
-    /**
-     * This method processes an EdictRequest and generates a Stream of EdictResponses. Each response is based on one of the
-     * available endpoints. The request is mapped to each endpoint, and if the mapping is successful, a response is generated.
-     * The responses are streamed, meaning they are generated and processed one at a time, which can be more efficient for
-     * large numbers of endpoints.
-     *
-     * @param request The EdictRequest object containing the inputs to be mapped.
-     * @return A Stream of EdictResponse objects. Each response corresponds to a different endpoint and contains information
-     *         about how the inputs from the request map to the fields in the endpoint.
-     */
     public Stream<EdictResponse> streamResponses(EdictRequest request){
         return streamResponses(request, false);
     }
@@ -182,9 +174,42 @@ public class Edict implements CommandExecutor, TabCompleter {
      *         about how the inputs from the request map to the fields in the endpoint.
      */
     public Stream<EdictResponse> streamResponses(EdictRequest request, boolean soft){
-        return endpoints.stream().map(i -> new EdictRequest(request).pathMatch(i, soft))
+        List<EdictResponse> responses = endpoints.stream().map(i -> request.pathMatch(i, soft))
             .filter(Objects::nonNull)
-            .map(i -> respond(i, i.getPair()));
+            .map(i -> respond(i, i.getPair())).collect(Collectors.toList());
+
+        if(responses.isEmpty()) {
+            return Stream.empty();
+        }
+
+        List<String> header = request.getHeaderPath();
+        List<Node> bestNodes = new ArrayList<>();
+
+        if(soft && request.shouldTrim()) {
+            header.add("");
+        }
+
+        React.verbose("HEADER: " + header);
+        React.verbose("RAW: " + request.getRawArgs());
+        React.verbose("ENDPOINT: " + responses.get(0).getEndpoint().getNodes());
+
+        for(int ii = 0; ii < header.size() - 1; ii++) {
+            int ix = ii;
+            String i = header.get(ii);
+            responses.stream().min(Comparator.comparingInt(a -> a.getEndpoint().getNodes().get(ix).getDistance(i)))
+                .ifPresent(p -> bestNodes.add(p.getEndpoint().getNodes().get(ix)));
+
+            responses.removeIf(j -> {
+                if(!j.getEndpoint().getNodes().get(ix).matches(bestNodes.get(ix)))
+                {
+                    React.verbose("BUF: " + String.join(" ", header) + " DROP " + j.getEndpoint().getNodes().stream().map(ff -> ff.toString()).collect(Collectors.joining(" ")) + " because enode " + j.getEndpoint().getNodes().get(ix).toString() + " doesnt match " + bestNodes.get(ix).toString());
+                    return true;
+                }
+                return false;
+            });
+        }
+
+        return responses.stream();
     }
 
     /**
@@ -501,6 +526,11 @@ public class Edict implements CommandExecutor, TabCompleter {
         return enhanceMappings(enhanceQuotes(args, true));
     }
 
+
+    public static List<String> enhance(List<String> args, boolean trim) {
+        return enhanceMappings(enhanceQuotes(args, trim));
+    }
+
     /**
      * Enhances the provided list of arguments by processing quotes and optionally trimming whitespace.
      *
@@ -655,6 +685,10 @@ public class Edict implements CommandExecutor, TabCompleter {
         return dp[x.length()][y.length()];
     }
 
+    public Stream<EdictEndpoint> searchEndpoints(EdictRequest request) {
+        return null;
+    }
+
     /**
      * Calculates the cost of substituting one character for another in a string. The cost is zero if the characters are
      * the same, and one otherwise.
@@ -664,7 +698,15 @@ public class Edict implements CommandExecutor, TabCompleter {
      * @return The substitution cost, as an integer.
      */
     public static int costOfSubstitution(char a, char b) {
-        return a == b ? 0 : 1;
+        if(a == b) {
+            return 0;
+        }
+
+        if(Character.toLowerCase(a) == Character.toLowerCase(b)) {
+            return 1;
+        }
+
+        return 4;
     }
 
     /**
@@ -825,13 +867,13 @@ public class Edict implements CommandExecutor, TabCompleter {
     @Nullable
     @Override
     public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull org.bukkit.command.Command command, @NotNull String label, @NotNull String[] args) {
-        EdictRequest r = request(String.join(" ", args));
+        List<String> s = new ArrayList<>();
+        s.add(command.getName());
+        s.addAll(Arrays.asList(args));
+        React.verbose(s.toString());
+        EdictRequest r = request(s);
         List<String> options = new ArrayList<>();
-        List<EdictResponse> possible = streamResponses(r, false).sorted(Comparator.comparingInt(EdictResponse::getScoreOffset)).toList();
-
-        if(possible.isEmpty()) {
-            possible = streamResponses(r, true).sorted(Comparator.comparingInt(EdictResponse::getScoreOffset)).toList();
-        }
+        List<EdictResponse> possible = streamResponses(r, true).sorted(Comparator.comparingInt(EdictResponse::getScoreOffset)).toList();
 
         for(EdictResponse i : possible) {
             List<String> path = i.getEndpoint().getPath();

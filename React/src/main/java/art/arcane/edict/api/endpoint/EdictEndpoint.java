@@ -4,6 +4,7 @@ import art.arcane.edict.api.SenderType;
 import art.arcane.edict.api.context.EdictContext;
 import art.arcane.edict.api.field.EdictField;
 import art.arcane.edict.api.request.EdictResponse;
+import art.arcane.edict.api.request.Node;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -97,6 +98,23 @@ public class EdictEndpoint {
      */
     public List<String> getPath() {
         return getPath(getCommand());
+    }
+
+    public List<Node> getNodes() {
+        List<Node> nodes = new ArrayList<>();
+
+        for(int i = 0; i < getPath().size(); i++) {
+            List<String> s = new ArrayList<>();
+            s.add(getPath().get(i));
+
+            for(String j : getAliases()) {
+                s.add(getPath(j).get(i));
+            }
+
+            nodes.add(new Node(s));
+        }
+
+        return nodes;
     }
 
     public List<String> getPath(String c) {

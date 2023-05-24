@@ -14,6 +14,7 @@ import lombok.Data;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * The `EdictRequest` class represents a request processed by the Edict system.
@@ -42,6 +43,11 @@ public class EdictRequest {
     private EdictEndpoint pair;
 
     /**
+     * The raw arguments of the request.
+     */
+    private List<String> rawArgs;
+
+    /**
      * Constructs a new EdictRequest from another EdictRequest.
      * This is a copy constructor.
      *
@@ -50,7 +56,28 @@ public class EdictRequest {
     public EdictRequest(EdictRequest r) {
         this(new ArrayList<>(r.getInputs()));
         this.matchOffset = r.matchOffset;
+        this.rawArgs = new ArrayList<>(r.rawArgs);
         this.pair = r.pair;
+    }
+
+    public boolean shouldTrim() {
+        return Edict.enhance(rawArgs).size() != rawArgs.size();
+    }
+
+    public List<String> getHeaderPath() {
+        List<String> path = new ArrayList<>();
+
+        for(EdictInput i : getInputs()){
+            try {
+                path.add(i.into(String.class).orElseThrow());
+            }
+
+            catch(Throwable e) {
+                break;
+            }
+        }
+
+        return path;
     }
 
     /**
@@ -62,14 +89,47 @@ public class EdictRequest {
         this.inputs = edictInputs;
     }
 
+
+    public EdictRequest pathMatch(EdictEndpoint endpoint) {
+        return pathMatch(endpoint, false);
+    }
+
     /**
      * Tries to match the path of the provided EdictEndpoint to the inputs of this EdictRequest.
      *
      * @param endpoint the EdictEndpoint to match.
      * @return this EdictRequest if a match is found, or null otherwise.
      */
-    public EdictRequest pathMatch(EdictEndpoint endpoint) {
-        return pathMatch(endpoint, false);
+    public EdictRequest pathMatch(EdictEndpoint endpoint, boolean soft) {
+        List<Node> nodes = endpoint.getNodes();
+        List<EdictInput> inputs = new ArrayList<>(getInputs());
+        int offset = 0;
+        int multiplier = nodes.size() + 1;
+
+        while(!nodes.isEmpty() && !inputs.isEmpty()) {
+            try {
+                String next = inputs.remove(0).into(String.class).orElseThrow();
+                Node node = nodes.remove(0);
+                offset += node.getDistance(next) * multiplier--;
+            }
+
+            catch(Throwable e) {
+                // Couldn't cast endpoint path node to string!
+                // This usually means its a parameter for another command with less nodes
+                return null;
+            }
+        }
+
+        if(!soft && !nodes.isEmpty()) {
+            return null;
+        }
+
+        EdictRequest paired = new EdictRequest(this);
+        paired.setPair(endpoint);
+        paired.setMatchOffset(offset);
+        paired.trimFor(endpoint);
+
+        return paired;
     }
 
     public void trimFor(EdictEndpoint endpoint) {
@@ -80,79 +140,6 @@ public class EdictRequest {
 
             inputs.remove(0);
         }
-    }
-
-    /**
-     * Tries to match the path of the provided EdictEndpoint to the inputs of this EdictRequest.
-     *
-     * @param endpoint the EdictEndpoint to match.
-     * @return this EdictRequest if a match is found, or null otherwise.
-     */
-    public EdictRequest pathMatch(EdictEndpoint endpoint, boolean soft) {
-        List<String> matched = endpoint.getPath();
-        int best = Integer.MAX_VALUE;
-        for(List<String> i : endpoint.getPaths()) {
-            Integer g = pathMatchAlias(endpoint, i, soft);
-            if(g != null && g < best) {
-                best = g;
-                matched = i;
-            }
-        }
-
-        if(best < Integer.MAX_VALUE) {
-            matchOffset = best;
-            React.verbose("Best for " + String.join(" ",  endpoint.getPath()) + " is " + String.join(" ", matched) + " with " +best + " offset");
-            return this;
-        }
-
-        return null;
-    }
-
-    public Integer pathMatchAlias(EdictEndpoint endpoint, List<String> path, boolean soft) {
-        int g = 0;
-        List<EdictInput> inputs = new ArrayList<>(this.inputs);
-        if(!soft && inputs.size() < path.size()) {
-            React.verbose(String.join(" ", path) + " Against " + inputs.size() + " is too low");
-            return null;
-        }
-
-        for(String i : path) {
-            if(!soft && inputs.isEmpty()) {
-                return null;
-            }
-
-            try {
-                Optional<String> p = inputs.remove(0).into(String.class);
-
-                if(p.isPresent()) {
-                    try {
-                        g += Edict.calculateLevenshteinDistance(p.get(), i);
-                    }
-
-                    catch(Throwable e) {
-                        if(!soft) {
-                            return null;
-                        }
-                    }
-                }
-
-                else {
-                    if(!soft) {
-                        return null;
-                    }
-                }
-            }
-
-            catch(Throwable e) {
-                if(!soft) {
-                    return null;
-                }
-            }
-        }
-
-        pair = endpoint;
-        React.info("Match " + String.join(" ", path) + " for " + g);
-        return g;
     }
 
     /**
@@ -202,8 +189,8 @@ public class EdictRequest {
 
         var m = EdictRequest.builder()
             .inputs(edictInputs)
+            .rawArgs(a)
             .build();
-        React.verbose("Request Built for " + String.join(" ", a));
 
         return m;
     }
