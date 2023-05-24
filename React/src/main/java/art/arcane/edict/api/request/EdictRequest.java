@@ -2,7 +2,6 @@ package art.arcane.edict.api.request;
 
 import art.arcane.edict.Edict;
 import art.arcane.edict.api.context.EdictContext;
-import art.arcane.edict.api.context.EdictContextual;
 import art.arcane.edict.api.endpoint.EdictEndpoint;
 import art.arcane.edict.api.field.EdictField;
 import art.arcane.edict.api.input.EdictInput;
@@ -70,35 +69,90 @@ public class EdictRequest {
      * @return this EdictRequest if a match is found, or null otherwise.
      */
     public EdictRequest pathMatch(EdictEndpoint endpoint) {
-        if(inputs.size() < endpoint.getPath().size()) {
-            React.verbose(endpoint.getCommand() + " Against " + inputs.size() + " is too low");
+        return pathMatch(endpoint, false);
+    }
+
+    public void trimFor(EdictEndpoint endpoint) {
+        for(String i : endpoint.getPath()) {
+            if(inputs.isEmpty()) {
+                return;
+            }
+
+            inputs.remove(0);
+        }
+    }
+
+    /**
+     * Tries to match the path of the provided EdictEndpoint to the inputs of this EdictRequest.
+     *
+     * @param endpoint the EdictEndpoint to match.
+     * @return this EdictRequest if a match is found, or null otherwise.
+     */
+    public EdictRequest pathMatch(EdictEndpoint endpoint, boolean soft) {
+        List<String> matched = endpoint.getPath();
+        int best = Integer.MAX_VALUE;
+        for(List<String> i : endpoint.getPaths()) {
+            Integer g = pathMatchAlias(endpoint, i, soft);
+            if(g != null && g < best) {
+                best = g;
+                matched = i;
+            }
+        }
+
+        if(best < Integer.MAX_VALUE) {
+            matchOffset = best;
+            React.verbose("Best for " + String.join(" ",  endpoint.getPath()) + " is " + String.join(" ", matched) + " with " +best + " offset");
+            return this;
+        }
+
+        return null;
+    }
+
+    public Integer pathMatchAlias(EdictEndpoint endpoint, List<String> path, boolean soft) {
+        int g = 0;
+        List<EdictInput> inputs = new ArrayList<>(this.inputs);
+        if(!soft && inputs.size() < path.size()) {
+            React.verbose(String.join(" ", path) + " Against " + inputs.size() + " is too low");
             return null;
         }
 
-        for(String i : endpoint.getPath()) {
-            if(inputs.isEmpty()) {
+        for(String i : path) {
+            if(!soft && inputs.isEmpty()) {
                 return null;
             }
 
-            Optional<String> p = inputs.remove(0).into();
+            try {
+                Optional<String> p = inputs.remove(0).into(String.class);
 
-            if(p.isPresent()) {
-               try {
-                   matchOffset += Edict.calculateLevenshteinDistance(p.get(), i);
-               }
+                if(p.isPresent()) {
+                    try {
+                        g += Edict.calculateLevenshteinDistance(p.get(), i);
+                    }
 
-               catch(Throwable e) {
-                   return null;
-               }
+                    catch(Throwable e) {
+                        if(!soft) {
+                            return null;
+                        }
+                    }
+                }
+
+                else {
+                    if(!soft) {
+                        return null;
+                    }
+                }
             }
 
-            else {
-                return null;
+            catch(Throwable e) {
+                if(!soft) {
+                    return null;
+                }
             }
         }
 
         pair = endpoint;
-        return this;
+        React.info("Match " + String.join(" ", path) + " for " + g);
+        return g;
     }
 
     /**

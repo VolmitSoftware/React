@@ -1,11 +1,17 @@
 package com.volmit.react.content.action;
 
+import art.arcane.edict.Edict;
+import art.arcane.edict.api.context.EdictContext;
 import com.volmit.react.React;
+import com.volmit.react.api.action.Action;
 import com.volmit.react.api.action.ActionParams;
 import com.volmit.react.api.action.ActionTicket;
 import com.volmit.react.api.action.ReactAction;
 import com.volmit.react.core.controller.ActionController;
 import com.volmit.react.model.AreaActionParams;
+import com.volmit.react.util.decree.annotations.Decree;
+import com.volmit.react.util.decree.annotations.Param;
+import com.volmit.react.util.decree.handlers.OptionalWorldHandler;
 import com.volmit.react.util.format.Form;
 import com.volmit.react.util.scheduling.J;
 import lombok.AllArgsConstructor;
@@ -13,6 +19,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
+import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.World;
 
@@ -21,9 +28,27 @@ import java.util.List;
 
 public class ActionPurgeChunks extends ReactAction<ActionPurgeChunks.Params> {
     public static final String ID = "purge-chunks";
+    public static final String SHORT = "pc";
 
     public ActionPurgeChunks() {
         super(ID);
+    }
+
+    @Edict.Command("/react action " + ID)
+    @Edict.Aliases({"/react action " + SHORT, "/react a " + SHORT, "/react a " + ID})
+    public static void command() {
+        Action<ActionPurgeChunks.Params> pe = React.action(ID);
+        ActionPurgeChunks.Params p = pe.getDefaultParams();
+        pe.create(p, EdictContext.get().getSender()).queue();
+    }
+
+    @Edict.PlayerOnly
+    @Edict.Command("/react action " + ID)
+    @Edict.Aliases({"/react action " + SHORT, "/react a " + SHORT, "/react a " + ID})
+    public static void command(World world) {
+        Action<ActionPurgeChunks.Params> pe = React.action(ID);
+        ActionPurgeChunks.Params p = pe.getDefaultParams().withWorld(world);
+        pe.create(p, EdictContext.get().getSender()).queue();
     }
 
     List<Chunk> pullChunks(ActionTicket<Params> ticket, int max) {
@@ -77,8 +102,6 @@ public class ActionPurgeChunks extends ReactAction<ActionPurgeChunks.Params> {
     }
 
     private void purge(Chunk c, ActionTicket<Params> ticket) {
-//        World w = c.getWorld();
-//        w.unloadChunk(c);
         J.s(c::unload);
         if (!c.isLoaded()) {
             ticket.addCount();

@@ -62,4 +62,38 @@ public interface EdictInput {
 
         return Optional.empty();
     }
+
+    /**
+     * Attempts to convert the input into a specified type with a minimum confidence level of LOW.
+     *
+     * @return An optional containing the converted input if successful, otherwise an empty optional.
+     */
+    default <T> Optional<T> into(Class<T> type){
+        return into(type, Confidence.LOW);
+    }
+
+    /**
+     * Attempts to convert the input into a specified type, given a minimum confidence level.
+     *
+     * @param minimumConfidence The minimum confidence level.
+     * @return An optional containing the converted input if successful, otherwise an empty optional.
+     */
+    @SuppressWarnings("unchecked")
+    default <T> Optional<T> into(Class<T> type, Confidence minimumConfidence) {
+        for(EdictValue<?> edictValue : getParsedValues(minimumConfidence)) {
+            if(edictValue.getConfidence() == Confidence.HIGH) {
+                if(edictValue.getValue().getClass().equals(type)) {
+                    try {
+                        return Optional.of((T) edictValue.getValue());
+                    }
+
+                    catch(Throwable ignored) {
+
+                    }
+                }
+            }
+        }
+
+        return Optional.empty();
+    }
 }

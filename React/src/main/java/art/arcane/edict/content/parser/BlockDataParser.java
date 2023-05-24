@@ -1,6 +1,5 @@
 package art.arcane.edict.content.parser;
 
-import art.arcane.edict.api.context.EdictContextual;
 import art.arcane.edict.api.parser.EdictParser;
 import art.arcane.edict.api.parser.EdictValue;
 import art.arcane.edict.api.parser.SelectionParser;

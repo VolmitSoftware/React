@@ -2,7 +2,6 @@ package com.volmit.react.content.action;
 
 import art.arcane.edict.Edict;
 import art.arcane.edict.api.context.EdictContext;
-import art.arcane.edict.api.context.EdictContextual;
 import com.volmit.react.React;
 import com.volmit.react.api.action.Action;
 import com.volmit.react.api.action.ActionParams;
@@ -16,15 +15,16 @@ import lombok.experimental.Accessors;
 
 public class ActionCollectGarbage extends ReactAction<ActionCollectGarbage.Params> {
     public static final String ID = "collect-garbage";
+    public static final String SHORT = "gc";
 
     public ActionCollectGarbage() {
         super(ID);
     }
 
-    @Edict.Command("/react action collect-garbage")
-    @Edict.Aliases("/react action gc")
+    @Edict.Command("/react action " + ID)
+    @Edict.Aliases({"/react action " + SHORT, "/react a " + SHORT, "/react a " + ID})
     public static void command() {
-        Action<Params> pe = React.action("collect-garbage");
+        Action<ActionCollectGarbage.Params> pe = React.action(ID);
         ActionCollectGarbage.Params p = pe.getDefaultParams();
         pe.create(p, EdictContext.get().getSender()).queue();
     }

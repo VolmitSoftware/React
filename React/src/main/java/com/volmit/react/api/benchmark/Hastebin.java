@@ -8,6 +8,7 @@ import com.volmit.react.util.reflect.Platform;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
+import org.bukkit.command.CommandSender;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
@@ -17,7 +18,7 @@ import java.net.URL;
 
 public class Hastebin {
 
-    public static void enviornment(VolmitSender sender) {
+    public static void enviornment(CommandSender sender) {
         // Construct the server information
         StringBuilder sb = new StringBuilder();
         sb.append(" -- == React Info == -- \n");

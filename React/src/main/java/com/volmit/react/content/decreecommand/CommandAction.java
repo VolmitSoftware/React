@@ -59,46 +59,6 @@ public class CommandAction implements DecreeExecutor {
     }
 
     @Decree(
-            name = "purge-dropped-items",
-            aliases = {"pd", "drops"},
-            description = "Purge dropped items in the area"
-    )
-    public void purgeDroppedItems(
-            @Param(
-                    name = "radius",
-                    description = "The chunk radius around you to purge dropped items from. 0 is all chunks.",
-                    defaultValue = "0",
-                    aliases = {"r"}
-            )
-            int radius,
-
-            @Param(
-                    name = "world",
-                    description = "The world to purge dropped items from.",
-                    customHandler = OptionalWorldHandler.class,
-                    defaultValue = "ALL",
-                    aliases = {"w"}
-            )
-            String world
-    ) {
-        Action<ActionPurgeDroppedItems.Params> pe = React.action("purge-dropped-items");
-        ActionPurgeDroppedItems.Params p = pe.getDefaultParams();
-
-        if (!world.equals("ALL")) {
-            p.withWorld(Bukkit.getWorld(world));
-        }
-
-        if (sender().isPlayer()) {
-            if (radius > 0) {
-                Chunk c = player().getLocation().getChunk();
-                p.addRadius(c.getWorld(), c.getX(), c.getZ(), Math.min(radius, 10));
-            }
-        }
-
-        pe.create(p, sender()).queue();
-    }
-
-    @Decree(
             name = "purge-chunks",
             aliases = {"pc", "chunks"},
             description = "UNloads the chunks in the world"

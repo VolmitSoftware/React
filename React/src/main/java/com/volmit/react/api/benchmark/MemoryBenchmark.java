@@ -3,14 +3,15 @@ package com.volmit.react.api.benchmark;
 import com.volmit.react.util.plugin.VolmitSender;
 import com.volmit.react.util.scheduling.J;
 import org.bukkit.ChatColor;
+import org.bukkit.command.CommandSender;
 
 import java.nio.ByteBuffer;
 import java.util.TreeMap;
 
 public class MemoryBenchmark implements Runnable {
-    private VolmitSender sender;
+    private CommandSender sender;
 
-    public MemoryBenchmark(VolmitSender sender) {
+    public MemoryBenchmark(CommandSender sender) {
         this.sender = sender;
     }
 

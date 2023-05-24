@@ -168,7 +168,21 @@ public class Edict implements CommandExecutor, TabCompleter {
      *         about how the inputs from the request map to the fields in the endpoint.
      */
     public Stream<EdictResponse> streamResponses(EdictRequest request){
-        return endpoints.stream().map(i -> new EdictRequest(request).pathMatch(i))
+        return streamResponses(request, false);
+    }
+
+    /**
+     * This method processes an EdictRequest and generates a Stream of EdictResponses. Each response is based on one of the
+     * available endpoints. The request is mapped to each endpoint, and if the mapping is successful, a response is generated.
+     * The responses are streamed, meaning they are generated and processed one at a time, which can be more efficient for
+     * large numbers of endpoints.
+     *
+     * @param request The EdictRequest object containing the inputs to be mapped.
+     * @return A Stream of EdictResponse objects. Each response corresponds to a different endpoint and contains information
+     *         about how the inputs from the request map to the fields in the endpoint.
+     */
+    public Stream<EdictResponse> streamResponses(EdictRequest request, boolean soft){
+        return endpoints.stream().map(i -> new EdictRequest(request).pathMatch(i, soft))
             .filter(Objects::nonNull)
             .map(i -> respond(i, i.getPair()));
     }
@@ -224,6 +238,7 @@ public class Edict implements CommandExecutor, TabCompleter {
      *         and contains information about the matching input and the confidence level of the match.
      */
     public EdictResponse respond(EdictRequest request, EdictEndpoint endpoint) {
+        request.trimFor(endpoint);
         List<EdictInput> inputs = new ArrayList<>(request.getInputs());
         List<EdictFieldResponse> responseFields = new ArrayList<>();
 
@@ -803,16 +818,30 @@ public class Edict implements CommandExecutor, TabCompleter {
     public boolean onCommand(@NotNull CommandSender sender, @NotNull org.bukkit.command.Command command, @NotNull String label, @NotNull String[] args) {
         execute(sender, command.getName() + " " + String.join(" ", args)).ifPresentOrElse(i-> {
             // When it went through
-        }, ()->{
-            sender.sendMessage(ChatColor.RED + "Unknown react command. Type \"/help\" for help.");
-        });
+        }, () -> sender.sendMessage(ChatColor.RED + "Unknown react command. Type \"/help\" for help."));
         return true;
     }
 
     @Nullable
     @Override
     public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull org.bukkit.command.Command command, @NotNull String label, @NotNull String[] args) {
-        return null;
+        EdictRequest r = request(String.join(" ", args));
+        List<String> options = new ArrayList<>();
+        List<EdictResponse> possible = streamResponses(r, false).sorted(Comparator.comparingInt(EdictResponse::getScoreOffset)).toList();
+
+        if(possible.isEmpty()) {
+            possible = streamResponses(r, true).sorted(Comparator.comparingInt(EdictResponse::getScoreOffset)).toList();
+        }
+
+        for(EdictResponse i : possible) {
+            List<String> path = i.getEndpoint().getPath();
+
+            if(path.size() > args.length) {
+                options.add(path.get(args.length));
+            }
+        }
+
+        return options;
     }
 
     /**

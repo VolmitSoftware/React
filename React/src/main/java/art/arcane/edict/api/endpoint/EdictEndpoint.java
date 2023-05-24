@@ -96,7 +96,24 @@ public class EdictEndpoint {
      * @return A list of command segments.
      */
     public List<String> getPath() {
-        return Arrays.stream(command.split("\\Q \\E")).filter(s -> !s.isEmpty()).collect(Collectors.toList());
+        return getPath(getCommand());
+    }
+
+    public List<String> getPath(String c) {
+        return Arrays.stream(c.split("\\Q \\E")).filter(s -> !s.isEmpty()).collect(Collectors.toList());
+    }
+
+    public List<List<String>> getPaths() {
+        List<List<String>> l = new ArrayList<>();
+        l.add(getPath());
+
+        if(getAliases() != null) {
+            for(String i : getAliases()) {
+                l.add(getPath(i));
+            }
+        }
+
+        return l;
     }
 
     public String getUsage() {

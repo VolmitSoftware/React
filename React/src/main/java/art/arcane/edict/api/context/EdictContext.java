@@ -112,4 +112,12 @@ public class EdictContext {
     public static EdictContext get() {
         return threadContext.get(Thread.currentThread().getId());
     }
+
+    public static CommandSender sender() {
+        return get().getSender();
+    }
+
+    public static Player player() {
+        return get().getPlayer();
+    }
 }
