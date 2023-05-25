@@ -17,6 +17,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityDamageByBlockEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
@@ -98,7 +99,7 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
             setStackCount(into, getStackCount(into) + getStackCount(a));
             if(vacuumEffect) {
                 try {
-                    NMS.sendPacket(a, 32, NMS.collectPacket(a.getEntityId(), into.getEntityId(), 1));
+                    NMS.sendPacket(a, 64, NMS.collectPacket(a.getEntityId(), into.getEntityId(), 1));
                 } catch(Throwable e) {
                     e.printStackTrace();
                 }
@@ -112,6 +113,14 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
     }
 
     public boolean canMerge(Entity a, Entity into) {
+        if(a.isDead() || into.isDead()) {
+            return false;
+        }
+
+        if(a.getUniqueId().equals(into.getUniqueId())) {
+            return false;
+        }
+
         if(a instanceof Player) {
             return false;
         }
@@ -143,6 +152,14 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
         }
 
         return true;
+    }
+
+    public int getTheoreticalMaxStackCount(Entity entityAsType) {
+        if(entityAsType instanceof LivingEntity le) {
+            return Math.min((int) Math.ceil(Math.floor(maxHealth / le.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue())), maxStackSize);
+        }
+
+        return maxStackSize;
     }
 
     public void setStackCount(Entity e, int i) {
@@ -202,6 +219,9 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
 
         e.remove(EntityType.PLAYER);
         e.remove(EntityType.ARMOR_STAND);
+        e.remove(EntityType.VILLAGER);
+        e.remove(EntityType.WANDERING_TRADER);
+        e.remove(EntityType.FALLING_BLOCK);
 
         return e;
     }

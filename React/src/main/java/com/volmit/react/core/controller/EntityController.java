@@ -9,6 +9,7 @@ import com.volmit.react.util.plugin.IController;
 import com.volmit.react.util.scheduling.J;
 import com.volmit.react.util.scheduling.Looper;
 import com.volmit.react.util.value.MaterialValue;
+import com.volmit.react.util.world.EntityKiller;
 import lombok.Data;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
@@ -16,6 +17,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityBreedEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDropItemEvent;
@@ -29,11 +31,14 @@ import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.event.entity.ItemMergeEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
+import org.bukkit.event.world.WorldEvent;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 
 @Data
@@ -42,6 +47,8 @@ public class EntityController implements IController, Listener {
     private transient Looper looper;
     private transient ChronoLatch valueSaver = new ChronoLatch(60000);
     private transient Map<EntityType, List<Consumer<Entity>>> entityTickListeners;
+    private transient Set<EntityKiller> killers = new HashSet<>();
+    private transient Set<Entity> killing = new HashSet<>();
 
     public void registerEntityTickListener(EntityType type, Consumer<Entity> listener) {
         entityTickListeners.computeIfAbsent(type, (t) -> new ArrayList<>()).add(listener);
@@ -159,6 +166,13 @@ public class EntityController implements IController, Listener {
     @Override
     public void stop() {
         looper.interrupt();
+
+        for(EntityKiller i : new HashSet<>(killers)) {
+            i.stop();
+        }
+
+        killers.clear();
+        killing.clear();
     }
 
     @Override

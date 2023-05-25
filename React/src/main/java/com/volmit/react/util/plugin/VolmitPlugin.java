@@ -440,13 +440,11 @@ public abstract class VolmitPlugin extends JavaPlugin implements Listener {
         }
 
         registeredListeners.add(l);
-        React.debug("Register Listener " + l.getClass().getSimpleName());
         Bukkit.getPluginManager().registerEvents(l, this);
     }
 
     public void unregisterListener(Listener l) {
         registeredListeners.remove(l);
-        React.debug("Register Listener " + l.getClass().getSimpleName());
         HandlerList.unregisterAll(l);
     }
 

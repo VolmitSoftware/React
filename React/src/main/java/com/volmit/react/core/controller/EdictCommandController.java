@@ -11,6 +11,11 @@ public class EdictCommandController implements IController {
     private transient Edict edict;
 
     @Override
+    public boolean autoRegister() {
+        return false;
+    }
+
+    @Override
     public void start() {
 
     }

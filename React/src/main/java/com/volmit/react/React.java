@@ -82,7 +82,7 @@ public class React extends VolmitPlugin {
     }
 
     public static void kill(Entity e) {
-        new EntityKiller(e, 5);
+        new EntityKiller(e, 10);
     }
 
     public static void msg(String string) {

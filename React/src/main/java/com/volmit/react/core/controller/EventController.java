@@ -148,10 +148,6 @@ public class EventController extends TickedObject implements IController, Listen
                 }
             }
 
-            if (inj > 0) {
-                React.verbose("Injected " + inj + " event listener spies.");
-            }
-
             listenerCount = m;
             running.set(false);
         });

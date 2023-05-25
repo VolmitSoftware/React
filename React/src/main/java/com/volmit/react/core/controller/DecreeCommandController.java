@@ -24,11 +24,6 @@ public class DecreeCommandController implements IController, DecreeSystem, Liste
     private transient CompletableFuture<String> consoleFuture = null;
 
     @Override
-    public boolean autoRegister() {
-        return false;
-    }
-
-    @Override
     public String getName() {
         return "Command";
     }
