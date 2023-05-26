@@ -29,7 +29,7 @@ public class TweakFastEntityIncineration extends ReactTweak implements Listener 
     }
 
     @Override
-    public void onActivate() {
+    public void onActivate() { 
 
     }
 

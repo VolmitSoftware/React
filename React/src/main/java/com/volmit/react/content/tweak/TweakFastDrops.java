@@ -1,9 +1,12 @@
-package com.volmit.react.content.feature;
+package com.volmit.react.content.tweak;
 
 import com.volmit.react.api.feature.ReactFeature;
+import com.volmit.react.api.tweak.ReactTweak;
 import com.volmit.react.util.math.RNG;
 import org.bukkit.GameMode;
+import org.bukkit.Location;
 import org.bukkit.Sound;
+import org.bukkit.entity.ExperienceOrb;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -21,7 +24,7 @@ import java.util.List;
 /**
  * Reduces entity spawns / garbage by teleporting drops and xp from blocks and entities directly into your inventory
  */
-public class FeatureFastDrops extends ReactFeature implements Listener {
+public class TweakFastDrops extends ReactTweak implements Listener {
     public static final String ID = "fast-drops";
     private boolean teleportBlockDrops = true;
     private boolean teleportBlockXP = true;
@@ -30,7 +33,7 @@ public class FeatureFastDrops extends ReactFeature implements Listener {
     private boolean allowContainerDrops = false;
     private boolean ignoreDistanceKills = true;
 
-    public FeatureFastDrops() {
+    public TweakFastDrops() {
         super(ID);
     }
 
@@ -68,7 +71,7 @@ public class FeatureFastDrops extends ReactFeature implements Listener {
                 for(ItemStack i : drops) {
                     boolean dropped = false;
                     for(ItemStack j : p.getInventory().addItem(i).values()) {
-                        p.getWorld().dropItem(p.getLocation(), j);
+                        p.getWorld().dropItemNaturally(p.getLocation(), j);
                         dropped = true;
                     }
 
@@ -96,7 +99,7 @@ public class FeatureFastDrops extends ReactFeature implements Listener {
             for(Item i : e.getItems()) {
                 boolean dropped = false;
                 for(ItemStack j : e.getPlayer().getInventory().addItem(i.getItemStack()).values()) {
-                    e.getPlayer().getWorld().dropItem(i.getLocation(), j);
+                    e.getPlayer().getWorld().dropItemNaturally(i.getLocation(), j);
                     dropped = true;
                 }
 
@@ -126,6 +129,40 @@ public class FeatureFastDrops extends ReactFeature implements Listener {
         if(xp > 0 && teleportEntityXP) {
             e.getPlayer().giveExp(xp);
             e.getPlayer().playSound(e.getBlock().getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP,0.7f, 1f + RNG.r.f(-0.2f, 0.2f));
+        }
+    }
+
+    public void giveXP(Location at, Player player, int xp) {
+        if(player.getGameMode().equals(GameMode.CREATIVE)) {
+            return;
+        }
+
+        if(isEnabled()) {
+            player.giveExp(xp);
+            player.playSound(at, Sound.ENTITY_EXPERIENCE_ORB_PICKUP,0.7f, 1f + RNG.r.f(-0.2f, 0.2f));
+        } else {
+            ExperienceOrb orb = (ExperienceOrb) at.getWorld().spawnEntity(at, org.bukkit.entity.EntityType.EXPERIENCE_ORB);
+            orb.setExperience(xp);
+        }
+    }
+
+    public void giveItem(Location at, Player player, ItemStack item) {
+        if(player.getGameMode().equals(GameMode.CREATIVE)) {
+            return;
+        }
+
+        if(isEnabled()) {
+            boolean dropped = false;
+            for(ItemStack j : player.getInventory().addItem(item).values()) {
+                player.getWorld().dropItemNaturally(at, j);
+                dropped = true;
+            }
+
+            if(!dropped) {
+                player.playSound(at, Sound.ENTITY_ITEM_PICKUP,0.7f, 1f+ RNG.r.f(-0.2f, 0.2f));
+            }
+        } else {
+            player.getWorld().dropItemNaturally(at, item);
         }
     }
 

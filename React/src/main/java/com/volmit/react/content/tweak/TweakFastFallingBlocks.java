@@ -1,7 +1,6 @@
 package com.volmit.react.content.tweak;
 
 import art.arcane.chrono.PrecisionStopwatch;
-import com.volmit.react.React;
 import com.volmit.react.api.tweak.ReactTweak;
 import com.volmit.react.util.data.B;
 import com.volmit.react.util.math.RNG;
@@ -11,15 +10,10 @@ import org.bukkit.Particle;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.BlockData;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
 import org.bukkit.entity.FallingBlock;
-import org.bukkit.entity.Monster;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
-import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.entity.EntitySpawnEvent;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
@@ -27,14 +21,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class TweakInstantFallingBlocks extends ReactTweak implements Listener {
-    public static final String ID = "instant-falling-blocks";
+public class TweakFastFallingBlocks extends ReactTweak implements Listener {
+    public static final String ID = "fast-falling-blocks";
     private transient List<Runnable> jobs;
     private transient Set<Block> queued;
     private transient int ticker;
     private double maxFallMS = 1.5;
 
-    public TweakInstantFallingBlocks() {
+    public TweakFastFallingBlocks() {
         super(ID);
     }
 

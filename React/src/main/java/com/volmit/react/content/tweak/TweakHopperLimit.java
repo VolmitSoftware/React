@@ -42,9 +42,9 @@ public class TweakHopperLimit extends ReactTweak implements Listener {
      * This is the method that is called when a hopper moves an item.
      * and it denies the hopper from moving the item if the tick time is too high.
      */
-    @EventHandler
+    @EventHandler(priority = org.bukkit.event.EventPriority.LOW, ignoreCancelled = true)
     public void on(InventoryMoveItemEvent e) {
-        if (e.getDestination().getHolder() instanceof Hopper h) {
+        if (e.getDestination().getHolder() instanceof Hopper) {
             if (React.sampler(SamplerHopperTickTime.class).sample() > maxHopperTickTime) {
                 e.setCancelled(true);
             }
