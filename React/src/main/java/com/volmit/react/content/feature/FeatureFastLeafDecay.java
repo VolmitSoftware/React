@@ -5,12 +5,15 @@ import art.arcane.chrono.PrecisionStopwatch;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.volmit.react.api.feature.ReactFeature;
+import com.volmit.react.util.data.B;
+import com.volmit.react.util.math.Direction;
 import com.volmit.react.util.scheduling.J;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.bukkit.Chunk;
 import org.bukkit.ChunkSnapshot;
+import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -20,6 +23,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.LeavesDecayEvent;
+import org.bukkit.inventory.ItemStack;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -43,6 +47,7 @@ public class FeatureFastLeafDecay extends ReactFeature implements Listener {
     private double soundPitch = 0.2;
     private boolean forceDecayPersistent = false;
     private boolean playSounds = true;
+    private boolean fastBlockChanges = true;
     private Sound decaySound = Sound.BLOCK_AZALEA_LEAVES_FALL;
 
     public FeatureFastLeafDecay() {
@@ -95,7 +100,28 @@ public class FeatureFastLeafDecay extends ReactFeature implements Listener {
                 b.getWorld().playSound(b.getLocation(), decaySound, (float) soundVolume, (float) soundPitch);
             }
 
-            b.breakNaturally();
+            boolean fast = fastBlockChanges;
+
+            if(fast) {
+                for(Direction i : Direction.udnews()) {
+                    BlockData m = b.getRelative(i.getFace()).getBlockData();
+                    if(!(m instanceof Leaves) && !B.isAir(m) && !B.isSolid(m)) {
+                        fast = false;
+                    }
+                }
+            }
+
+            if(fast) {
+                for(ItemStack i : b.getDrops()) {
+                    b.getWorld().dropItemNaturally(b.getLocation(), i);
+                }
+
+                b.setBlockData(B.getAir(), false);
+            }
+
+            else {
+                b.breakNaturally();
+            }
         }
     }
 

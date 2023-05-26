@@ -54,6 +54,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -91,8 +92,8 @@ public class Edict implements CommandExecutor, TabCompleter {
     /**
      * List of endpoints that represent the commands handled by the Edict system.
      */
-    @Singular
-    private final List<EdictEndpoint> endpoints = new ArrayList<>();
+    @Builder.Default
+    private List<EdictEndpoint> endpoints = new CopyOnWriteArrayList<>();
 
     /**
      * Set of context resolvers for the Edict system. These resolvers are used to derive contextual data from input commands.
