@@ -32,7 +32,7 @@ public class TweakInstantFallingBlocks extends ReactTweak implements Listener {
     private transient List<Runnable> jobs;
     private transient Set<Block> queued;
     private transient int ticker;
-    private double maxFallMS = 5;
+    private double maxFallMS = 1.5;
 
     public TweakInstantFallingBlocks() {
         super(ID);

@@ -8,6 +8,7 @@ import com.volmit.react.api.feature.ReactFeature;
 import com.volmit.react.util.data.B;
 import com.volmit.react.util.math.Direction;
 import com.volmit.react.util.scheduling.J;
+import com.volmit.react.util.world.FastWorld;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -100,23 +101,8 @@ public class FeatureFastLeafDecay extends ReactFeature implements Listener {
                 b.getWorld().playSound(b.getLocation(), decaySound, (float) soundVolume, (float) soundPitch);
             }
 
-            boolean fast = fastBlockChanges;
-
-            if(fast) {
-                for(Direction i : Direction.udnews()) {
-                    BlockData m = b.getRelative(i.getFace()).getBlockData();
-                    if(!(m instanceof Leaves) && !B.isAir(m) && !B.isSolid(m)) {
-                        fast = false;
-                    }
-                }
-            }
-
-            if(fast) {
-                for(ItemStack i : b.getDrops()) {
-                    b.getWorld().dropItemNaturally(b.getLocation(), i);
-                }
-
-                b.setBlockData(B.getAir(), false);
+            if(fastBlockChanges) {
+                FastWorld.breakNaturally(b);
             }
 
             else {

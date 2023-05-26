@@ -4,6 +4,7 @@ import com.volmit.react.api.feature.ReactFeature;
 import com.volmit.react.util.data.B;
 import com.volmit.react.util.math.M;
 import com.volmit.react.util.scheduling.J;
+import com.volmit.react.util.world.FastWorld;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -77,7 +78,7 @@ public class FeatureFastExplosions extends ReactFeature implements Listener {
             for(Block i :b) {
                 if(i.getType().equals(Material.TNT)) {
                     if(explosionChainReactions) {
-                        i.setBlockData(B.getAir(), !fastBlockUpdates);
+                        FastWorld.set(i, B.getAir(), fastBlockUpdates);
 
                         if(maxExplosionChainsPerTick > explosionChains++) {
                             J.s(() -> i.getWorld().createExplosion(i.getLocation(), 4f, false, true));
@@ -91,7 +92,7 @@ public class FeatureFastExplosions extends ReactFeature implements Listener {
                     i.getDrops(null).forEach((f) -> i.getLocation().getWorld().dropItem(i.getLocation(), f));
                 }
 
-                i.setBlockData(B.getAir(), !fastBlockUpdates);
+                FastWorld.set(i, B.getAir(), fastBlockUpdates);
             }
         });
     }
@@ -119,7 +120,8 @@ public class FeatureFastExplosions extends ReactFeature implements Listener {
             for(Block i :b) {
                 if(i.getType().equals(Material.TNT)) {
                     if(explosionChainReactions) {
-                        i.setBlockData(B.getAir(), !fastBlockUpdates);
+                        FastWorld.set(i, B.getAir(), fastBlockUpdates);
+
                         if(maxExplosionChainsPerTick > explosionChains++) {
                             J.s(() -> i.getWorld().createExplosion(i.getLocation(), 4f, false, true));
                         }
@@ -132,13 +134,9 @@ public class FeatureFastExplosions extends ReactFeature implements Listener {
                     i.getDrops(null).forEach((f) -> i.getLocation().getWorld().dropItem(i.getLocation(), f));
                 }
 
-                i.setBlockData(B.getAir(), !fastBlockUpdates);
+                FastWorld.set(i, B.getAir(), fastBlockUpdates);
             }
         });
-    }
-
-    public void fastExplosion(Location at, float yield) {
-
     }
 
     @Override
