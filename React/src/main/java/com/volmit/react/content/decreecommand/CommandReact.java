@@ -13,8 +13,15 @@ import com.volmit.react.util.decree.annotations.Param;
 import com.volmit.react.util.decree.handlers.ReactRendererHandler;
 import com.volmit.react.util.format.C;
 import com.volmit.react.util.format.Form;
+import com.volmit.react.util.math.RNG;
 import com.volmit.react.util.reflect.Platform;
+import com.volmit.react.util.scheduling.J;
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.bukkit.entity.Allay;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 
 @Decree(
         name = "react",
@@ -29,14 +36,33 @@ public class CommandReact implements DecreeExecutor {
     private CommandEnvironment environment;
 
     @Decree(
-            name = "monitor",
-            aliases = {"m", "mon"},
-            description = "Monitor the server via action bar",
-            origin = DecreeOrigin.PLAYER
+        name = "monitor",
+        aliases = {"m", "mon"},
+        description = "Monitor the server via action bar",
+        origin = DecreeOrigin.PLAYER
     )
     public void monitor() {
         React.controller(PlayerController.class).getPlayer(player()).toggleActionBar();
         sender().sendMessage(C.REACT + "Action bar monitor " + (React.controller(PlayerController.class).getPlayer(player()).isActionBarMonitoring() ? "enabled" : "disabled"));
+    }
+
+    @Decree(
+        name = "allaytest",
+        aliases = {"at"},
+        description = "Monitor the server via action bar",
+        origin = DecreeOrigin.PLAYER
+    )
+    public void allaytest() {
+        J.s(() -> {
+            for(int i = 0; i < 100; i++) {
+                for(Player j : Bukkit.getOnlinePlayers()) {
+                    Allay a = (Allay) j.getWorld().spawnEntity(j.getEyeLocation().clone().add(RNG.r.d(-10, 10), RNG.r.d(-10, 10), RNG.r.d(-10, 10)), EntityType.ALLAY);
+                    a.getInventory().setItem(0, new ItemStack(Material.KELP));
+                    a.setCanDuplicate(true);
+                    a.setLeashHolder(j);
+                }
+            }
+        });
     }
 
     @Decree(

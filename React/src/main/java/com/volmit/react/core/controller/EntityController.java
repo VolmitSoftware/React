@@ -47,11 +47,16 @@ public class EntityController implements IController, Listener {
     private transient Looper looper;
     private transient ChronoLatch valueSaver = new ChronoLatch(60000);
     private transient Map<EntityType, List<Consumer<Entity>>> entityTickListeners;
+    private transient List<Consumer<Entity>> allEntityTickListeners;
     private transient Set<EntityKiller> killers = new HashSet<>();
     private transient Set<Entity> killing = new HashSet<>();
 
     public void registerEntityTickListener(EntityType type, Consumer<Entity> listener) {
         entityTickListeners.computeIfAbsent(type, (t) -> new ArrayList<>()).add(listener);
+    }
+
+    public void registerEntityTickListener(Consumer<Entity> listener) {
+        allEntityTickListeners.add(listener);
     }
 
     @Override
@@ -66,6 +71,7 @@ public class EntityController implements IController, Listener {
 
     @Override
     public void start() {
+        allEntityTickListeners = new ArrayList<>();
         entityTickListeners = new HashMap<>();
         ReactConfiguration.get().getPriority().rebuildPriority();
         looper = new Looper() {
@@ -84,6 +90,10 @@ public class EntityController implements IController, Listener {
     public void tickEntity(Entity e) {
         if(ReactEntity.tick(e, ReactConfiguration.get().getPriority())) {
             List<Consumer<Entity>> tickers = entityTickListeners.get(e.getType());
+
+            for(Consumer<Entity> i : allEntityTickListeners) {
+                J.s(() -> i.accept(e));
+            }
 
             if(tickers != null) {
                 for(Consumer<Entity> i : tickers) {

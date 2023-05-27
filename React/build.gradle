@@ -69,6 +69,7 @@ repositories {
         }
     }
     maven { url "https://arcanearts.jfrog.io/artifactory/archives" }
+    maven { url "https://repo.aikar.co/nexus/content/groups/aikar/"}
     mavenCentral()
 }
 
@@ -129,10 +130,8 @@ dependencies {
     implementation 'com.github.ben-manes.caffeine:caffeine:3.0.6'
     implementation 'org.java-websocket:Java-WebSocket:1.5.3'
     implementation 'io.netty:netty-transport:4.1.92.Final'
-
-    // DEV TEMP
-    //implementation fileTree(dir: 'libs', include: ['*.jar'])
-
+    implementation "io.papermc:paperlib:1.0.7"
+    implementation "co.aikar:minecraft-timings:1.0.4"
 }
 
 if (JavaVersion.current().toString() != "17") {
