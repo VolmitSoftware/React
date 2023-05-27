@@ -4,8 +4,6 @@ import com.volmit.react.api.tweak.ReactTweak;
 import com.volmit.react.util.scheduling.J;
 import com.volmit.react.util.world.ChainedColumn;
 import org.bukkit.Material;
-import org.bukkit.block.Block;
-import org.bukkit.block.data.type.Bamboo;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;

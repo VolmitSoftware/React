@@ -17,7 +17,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityDamageByBlockEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
@@ -41,13 +40,13 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
 
     @Override
     public void onActivate() {
-        for(EntityType i : stackableTypes) {
+        for (EntityType i : stackableTypes) {
             React.controller(EntityController.class).registerEntityTickListener(i, this::onTick);
         }
     }
 
     public void onDamage(EntityDamageEvent e) {
-        if(getStackCount(e.getEntity()) > 1 && e.getEntity() instanceof LivingEntity l && l.getHealth() - e.getFinalDamage() <= 0) {
+        if (getStackCount(e.getEntity()) > 1 && e.getEntity() instanceof LivingEntity l && l.getHealth() - e.getFinalDamage() <= 0) {
             int s = getStackCount(l) - 1;
             LivingEntity next = (LivingEntity) l.getWorld().spawnEntity(l.getLocation(), l.getType());
             next.setSwimming(l.isSwimming());
@@ -95,12 +94,12 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
     }
 
     public boolean merge(Entity a, Entity into) {
-        if(canMerge(a, into)) {
+        if (canMerge(a, into)) {
             setStackCount(into, getStackCount(into) + getStackCount(a));
-            if(vacuumEffect) {
+            if (vacuumEffect) {
                 try {
                     NMS.sendPacket(a, 64, NMS.collectPacket(a.getEntityId(), into.getEntityId(), 1));
-                } catch(Throwable e) {
+                } catch (Throwable e) {
                     e.printStackTrace();
                 }
             }
@@ -113,49 +112,47 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
     }
 
     public boolean canMerge(Entity a, Entity into) {
-        if(a.isDead() || into.isDead()) {
+        if (a.isDead() || into.isDead()) {
             return false;
         }
 
-        if(a.getUniqueId().equals(into.getUniqueId())) {
+        if (a.getUniqueId().equals(into.getUniqueId())) {
             return false;
         }
 
-        if(a instanceof Player) {
+        if (a instanceof Player) {
             return false;
         }
 
-        if(into instanceof Player) {
+        if (into instanceof Player) {
             return false;
         }
 
-        if(!(a instanceof LivingEntity)) {
+        if (!(a instanceof LivingEntity la)) {
             return false;
         }
 
-        if(!a.getType().equals(into.getType())) {
+        if (!a.getType().equals(into.getType())) {
             return false;
         }
 
-        if(!stackableTypes.contains(a.getType())) {
+        if (!stackableTypes.contains(a.getType())) {
             return false;
         }
 
-        if(getStackCount(into) + getStackCount(a) > maxStackSize) {
+        if (getStackCount(into) + getStackCount(a) > maxStackSize) {
             return false;
         }
 
-        if(a instanceof LivingEntity la && into instanceof LivingEntity li) {
-            if(la.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue() + li.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue() > maxHealth) {
-                return false;
-            }
+        if (into instanceof LivingEntity li) {
+            return !(la.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue() + li.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue() > maxHealth);
         }
 
         return true;
     }
 
     public int getTheoreticalMaxStackCount(Entity entityAsType) {
-        if(entityAsType instanceof LivingEntity le) {
+        if (entityAsType instanceof LivingEntity le) {
             return Math.min((int) Math.ceil(Math.floor(maxHealth / le.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue())), maxStackSize);
         }
 
@@ -165,12 +162,12 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
     public void setStackCount(Entity e, int i) {
         ReactEntity.setStackCount(e, i);
 
-        if(i > 1) {
-            e.setCustomName(ChatColor.BOLD + "" + getStackCount(e) + "x " + ChatColor.RESET + ChatColor.GRAY + "" + Form.capitalizeWords(e.getType().name().toLowerCase().replaceAll("\\Q_\\E", " ")));
-        }
-
-        else {
-            e.setCustomName(null);
+        if (customNames) {
+            if (i > 1) {
+                e.setCustomName(ChatColor.BOLD + "" + getStackCount(e) + "x " + ChatColor.RESET + ChatColor.GRAY + "" + Form.capitalizeWords(e.getType().name().toLowerCase().replaceAll("\\Q_\\E", " ")));
+            } else {
+                e.setCustomName(null);
+            }
         }
     }
 
@@ -180,14 +177,14 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void on(EntitySpawnEvent e) {
-        if(stackableTypes.contains(e.getEntityType())) {
+        if (stackableTypes.contains(e.getEntityType())) {
             J.s(() -> onTick(e.getEntity()));
         }
     }
 
     public void onTick(Entity entity) {
-        for(Entity i : entity.getNearbyEntities(searchRadius, searchRadius, searchRadius)) {
-            if(merge(entity, i)) {
+        for (Entity i : entity.getNearbyEntities(searchRadius, searchRadius, searchRadius)) {
+            if (merge(entity, i)) {
                 break;
             }
         }
@@ -211,8 +208,8 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
     public static Set<EntityType> defaultStackableTypes() {
         Set<EntityType> e = new HashSet<>();
 
-        for(EntityType i : EntityType.values()) {
-            if(i.isAlive() && i.isSpawnable()) {
+        for (EntityType i : EntityType.values()) {
+            if (i.isAlive() && i.isSpawnable()) {
                 e.add(i);
             }
         }
