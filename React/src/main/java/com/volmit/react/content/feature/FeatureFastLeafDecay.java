@@ -5,8 +5,6 @@ import art.arcane.chrono.PrecisionStopwatch;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.volmit.react.api.feature.ReactFeature;
-import com.volmit.react.util.data.B;
-import com.volmit.react.util.math.Direction;
 import com.volmit.react.util.scheduling.J;
 import com.volmit.react.util.world.FastWorld;
 import lombok.AllArgsConstructor;
@@ -14,7 +12,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.bukkit.Chunk;
 import org.bukkit.ChunkSnapshot;
-import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -23,8 +20,8 @@ import org.bukkit.block.data.type.Leaves;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.LeavesDecayEvent;
-import org.bukkit.inventory.ItemStack;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -129,10 +126,27 @@ public class FeatureFastLeafDecay extends ReactFeature implements Listener {
         }
     }
 
+    /**
+     * Check for leaf decay on leaf decay event
+     */
     @EventHandler(priority = EventPriority.MONITOR)
     public void on(LeavesDecayEvent e) {
         if(cooldownLatch.flip()) {
             checkDecay(e.getBlock());
+        }
+    }
+
+    /**
+     * Check for leaf decay on block break
+     */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onBlockBreak(BlockBreakEvent e) {
+        Block block = e.getBlock();
+        BlockData blockData = block.getBlockData();
+        if (blockData instanceof Leaves leaves) {
+            if (leaves.isPersistent()) {
+                checkDecay(e.getBlock());
+            }
         }
     }
 

@@ -24,8 +24,7 @@ public class SamplerFluidUpdates extends ReactCachedRateSampler implements Liste
     @EventHandler
     public void onBlockFromTo(BlockFromToEvent event) {
         BlockData data = event.getBlock().getBlockData();
-
-        if (data instanceof Levelled l) {
+        if (data instanceof Levelled) {
             increment();
             getChunkCounter(event.getBlock()).addAndGet(1D);
         }

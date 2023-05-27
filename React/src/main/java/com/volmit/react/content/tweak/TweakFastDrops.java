@@ -1,6 +1,5 @@
 package com.volmit.react.content.tweak;
 
-import com.volmit.react.api.feature.ReactFeature;
 import com.volmit.react.api.tweak.ReactTweak;
 import com.volmit.react.util.math.RNG;
 import org.bukkit.GameMode;

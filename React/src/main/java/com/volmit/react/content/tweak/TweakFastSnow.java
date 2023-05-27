@@ -1,18 +1,13 @@
 package com.volmit.react.content.tweak;
 
 import com.volmit.react.api.tweak.ReactTweak;
-import com.volmit.react.util.data.B;
 import com.volmit.react.util.scheduling.J;
 import com.volmit.react.util.world.FastWorld;
-import org.bukkit.Material;
-import org.bukkit.block.Block;
-import org.bukkit.block.data.type.Bamboo;
 import org.bukkit.block.data.type.Snow;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockFadeEvent;
 import org.bukkit.event.block.BlockFormEvent;
-import org.bukkit.inventory.ItemStack;
 
 public class TweakFastSnow extends ReactTweak implements Listener {
     public static final String ID = "fast-snow";

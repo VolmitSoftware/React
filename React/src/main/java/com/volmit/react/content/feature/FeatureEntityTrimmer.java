@@ -133,7 +133,7 @@ public class FeatureEntityTrimmer extends ReactFeature implements Listener {
         });
 
         int ec = shitlist.size();
-        int theoreticalMax = Math.min(Bukkit.getOnlinePlayers().size() * softMaxEntitiesPerPlayer, Math.max(softMaxEntitiesPerWorld * wc, softMaxEntitiesPerChunk * tc));
+//        int theoreticalMax = Math.min(Bukkit.getOnlinePlayers().size() * softMaxEntitiesPerPlayer, Math.max(softMaxEntitiesPerWorld * wc, softMaxEntitiesPerChunk * tc));
 
         double pri = -1;
         Entity e;
