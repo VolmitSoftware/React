@@ -7,6 +7,7 @@ import com.volmit.react.model.ReactConfiguration;
 import com.volmit.react.model.ReactEntity;
 import com.volmit.react.util.math.M;
 import com.volmit.react.util.scheduling.J;
+import com.volmit.react.util.world.CustomMobChecker;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -25,7 +26,7 @@ public class FeatureEntityTrimmer extends ReactFeature implements Listener {
     public static final String ID = "entity-trimmer";
     private transient double maxPriority = -1;
     private transient int cooldown = 0;
-
+    private boolean skipCustomMobs = false;
 
     /**
      * List of blacklisted entities with already blacklisted examples
@@ -143,6 +144,8 @@ public class FeatureEntityTrimmer extends ReactFeature implements Listener {
             pri = ReactEntity.getPriority(e);
 
             if(pri > maxPriority || pri < 0) {
+                shitlist.remove(i);
+            } else if(skipCustomMobs && CustomMobChecker.isCustom(e)) {
                 shitlist.remove(i);
             }
         }

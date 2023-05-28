@@ -8,6 +8,7 @@ import com.volmit.react.core.controller.EntityController;
 import com.volmit.react.model.ReactEntity;
 import com.volmit.react.util.format.Form;
 import com.volmit.react.util.scheduling.J;
+import com.volmit.react.util.world.CustomMobChecker;
 import org.bukkit.ChatColor;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Entity;
@@ -33,6 +34,7 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
     private boolean customNames = true;
     private double searchRadius = 6;
     private boolean vacuumEffect = true;
+    private boolean skipCustomMobs = true;
 
     public FeatureMobStacking() {
         super(ID);
@@ -112,6 +114,10 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
     }
 
     public boolean canMerge(Entity a, Entity into) {
+        if(skipCustomMobs && (CustomMobChecker.isCustom(a) || CustomMobChecker.isCustom(into))) {
+            return false;
+        }
+
         if (a.isDead() || into.isDead()) {
             return false;
         }

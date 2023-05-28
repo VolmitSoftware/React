@@ -69,7 +69,7 @@ repositories {
         }
     }
     maven { url "https://arcanearts.jfrog.io/artifactory/archives" }
-    maven { url "https://repo.aikar.co/nexus/content/groups/aikar/"}
+    maven { url "https://mvn.lumine.io/repository/maven-public/" }
     mavenCentral()
 }
 
@@ -105,7 +105,7 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok:1.18.24'
     implementation 'org.spigotmc:spigot-api:1.19.4-R0.1-SNAPSHOT'
     implementation 'craftbukkit:craftbukkit193R2:nms'
-
+    implementation "io.papermc:paperlib:1.0.7"
 
     // Shaded
     implementation 'art.arcane:Curse:23.5.2'
@@ -130,8 +130,6 @@ dependencies {
     implementation 'com.github.ben-manes.caffeine:caffeine:3.0.6'
     implementation 'org.java-websocket:Java-WebSocket:1.5.3'
     implementation 'io.netty:netty-transport:4.1.92.Final'
-    implementation "io.papermc:paperlib:1.0.7"
-    implementation "co.aikar:minecraft-timings:1.0.4"
 }
 
 if (JavaVersion.current().toString() != "17") {
