@@ -40,12 +40,7 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 @SuppressWarnings("EmptyMethod")
 public abstract class VolmitPlugin extends JavaPlugin implements Listener {
@@ -435,7 +430,7 @@ public abstract class VolmitPlugin extends JavaPlugin implements Listener {
     }
 
     public void registerListener(Listener l) {
-        if(registeredListeners.contains(l)) {
+        if (registeredListeners.contains(l)) {
             return;
         }
 

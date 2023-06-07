@@ -13,7 +13,7 @@ public class BooleanParser implements EdictParser<Boolean> {
     public EdictValue<Boolean> parse(String s) {
         boolean v = s.equalsIgnoreCase("true");
 
-        if(v || s.equalsIgnoreCase("false")) {
+        if (v || s.equalsIgnoreCase("false")) {
             return high(v);
         }
 

@@ -83,12 +83,12 @@ public class FeatureEntityTrimmer extends ReactFeature implements Listener {
         double maxPriority = -1;
         double minPriority = Double.MAX_VALUE;
 
-        for(EntityType i : EntityType.values()) {
+        for (EntityType i : EntityType.values()) {
             double p = ReactConfiguration.get().getPriority().getPriority(i);
-            if(p > maxPriority) {
+            if (p > maxPriority) {
                 maxPriority = p;
             }
-            if(p < minPriority) {
+            if (p < minPriority) {
                 minPriority = p;
             }
         }
@@ -110,12 +110,12 @@ public class FeatureEntityTrimmer extends ReactFeature implements Listener {
     @Override
     public void onTick() {
         J.s(() -> {
-            for(World i : Bukkit.getWorlds()) {
+            for (World i : Bukkit.getWorlds()) {
                 lastEntities.addAll(i.getEntities());
             }
         });
 
-        if(cooldown-- > 0) {
+        if (cooldown-- > 0) {
             return;
         }
 
@@ -139,26 +139,26 @@ public class FeatureEntityTrimmer extends ReactFeature implements Listener {
         double pri = -1;
         Entity e;
 
-        for(int i = shitlist.size() - 1; i >= 0; i--) {
+        for (int i = shitlist.size() - 1; i >= 0; i--) {
             e = shitlist.get(i);
             pri = ReactEntity.getPriority(e);
 
-            if(pri > maxPriority || pri < 0) {
+            if (pri > maxPriority || pri < 0) {
                 shitlist.remove(i);
-            } else if(skipCustomMobs && CustomMobChecker.isCustom(e)) {
+            } else if (skipCustomMobs && CustomMobChecker.isCustom(e)) {
                 shitlist.remove(i);
             }
         }
 
         int maxKill = (int) (ec * opporunityThreshold);
 
-        if(maxKill < minKillBatchSize) {
-            cooldown+= 3;
+        if (maxKill < minKillBatchSize) {
+            cooldown += 3;
             return;
         }
 
-        if(maxKill > 0 && shitlist.size() >= maxKill) {
-            for(int i = 0; i < maxKill; i++) {
+        if (maxKill > 0 && shitlist.size() >= maxKill) {
+            for (int i = 0; i < maxKill; i++) {
                 kill(shitlist.remove(0));
             }
 

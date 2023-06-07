@@ -2,7 +2,9 @@ package com.volmit.react.content.decreecommand;
 
 import com.volmit.react.React;
 import com.volmit.react.api.action.Action;
-import com.volmit.react.content.action.*;
+import com.volmit.react.content.action.ActionCollectGarbage;
+import com.volmit.react.content.action.ActionPurgeChunks;
+import com.volmit.react.content.action.ActionPurgeEntities;
 import com.volmit.react.util.decree.DecreeExecutor;
 import com.volmit.react.util.decree.DecreeOrigin;
 import com.volmit.react.util.decree.annotations.Decree;

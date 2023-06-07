@@ -15,14 +15,14 @@ public class CommandMonitor {
     @Edict.Command("/react monitor")
     @Edict.Aliases("/react mon")
     public static void monitor(
-        @Edict.Default("false")
-        @Edict.Aliases({"config", "c", "edit", "e"})
-        boolean configure
+            @Edict.Default("false")
+            @Edict.Aliases({"config", "c", "edit", "e"})
+            boolean configure
     ) {
-        if(configure) {
+        if (configure) {
             Player player = EdictContext.player();
             MonitorConfigGUI.editMonitorConfiguration(player, React.controller(PlayerController.class).getPlayer(player).getSettings().getMonitorConfiguration(),
-                (c) -> React.controller(PlayerController.class).getPlayer(player).saveSettings());
+                    (c) -> React.controller(PlayerController.class).getPlayer(player).saveSettings());
             return;
         }
 
@@ -34,7 +34,7 @@ public class CommandMonitor {
     @Edict.Command("/react map")
     @Edict.Aliases({"/react renderer", "/react render"})
     public static void map(
-        ReactRenderer renderer
+            ReactRenderer renderer
     ) {
         React.controller(MapController.class).openRenderer(EdictContext.player(), renderer);
     }

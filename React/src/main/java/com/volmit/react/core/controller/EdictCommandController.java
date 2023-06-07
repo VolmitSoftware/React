@@ -28,14 +28,14 @@ public class EdictCommandController implements IController {
     @Override
     public void postStart() {
         edict = Edict.builder()
-            .parserPackage(CONTENT + "command.parser")
-            .contextResolverPackage(CONTENT + "command.context")
-            .build().registerPackage(CONTENT + "command")
-            .registerPackage(CONTENT + "action")
-            .registerPackage(CONTENT + "feature")
-            .registerPackage(CONTENT + "tweak")
-            .registerPackage(CORE + "controller")
-            .initialize(React.instance.getCommand("react"));
+                .parserPackage(CONTENT + "command.parser")
+                .contextResolverPackage(CONTENT + "command.context")
+                .build().registerPackage(CONTENT + "command")
+                .registerPackage(CONTENT + "action")
+                .registerPackage(CONTENT + "feature")
+                .registerPackage(CONTENT + "tweak")
+                .registerPackage(CORE + "controller")
+                .initialize(React.instance.getCommand("react"));
     }
 
     @Override

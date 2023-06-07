@@ -2,14 +2,10 @@ package com.volmit.react.model;
 
 import com.volmit.react.React;
 import com.volmit.react.api.entity.EntityPriority;
-import com.volmit.react.util.scheduling.J;
-import lombok.Getter;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.persistence.PersistentDataType;
-
-import java.util.UUID;
 
 public class ReactEntity {
     private static final long maxTickInterval = 10000;
@@ -25,17 +21,17 @@ public class ReactEntity {
     }
 
     public static boolean tick(Entity entity, EntityPriority p) {
-        if(entity.isDead()) {
+        if (entity.isDead()) {
             return false;
         }
 
-        if(getStaleness(entity) > maxTickInterval) {
+        if (getStaleness(entity) > maxTickInterval) {
             p.updateCrowd(entity);
             p.updateDistanceToPlayer(entity);
             setPriority(entity, p.getPriorityWithCrowd(entity, getCrowding(entity)));
             setLastTick(entity, System.currentTimeMillis());
 
-            if(isPaused(entity)) {
+            if (isPaused(entity)) {
                 setPaused(entity, false);
             }
 
@@ -98,11 +94,9 @@ public class ReactEntity {
     public static void setPaused(Entity entity, boolean paused) {
         entity.getPersistentDataContainer().set(nsPaused, PersistentDataType.BYTE, (byte) (paused ? 1 : 0));
 
-        if(paused && entity instanceof LivingEntity le) {
+        if (paused && entity instanceof LivingEntity le) {
             le.setAI(false);
-        }
-
-        else if(!paused && entity instanceof LivingEntity le) {
+        } else if (!paused && entity instanceof LivingEntity le) {
             le.setAI(true);
         }
     }

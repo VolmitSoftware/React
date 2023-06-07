@@ -1,22 +1,15 @@
 package com.volmit.react.model;
 
-import art.arcane.chrono.ChronoLatch;
 import com.volmit.react.util.math.BlockPosition;
 import com.volmit.react.util.math.M;
-import com.volmit.react.util.math.RNG;
 import lombok.Data;
-import org.bukkit.Color;
-import org.bukkit.Location;
-import org.bukkit.Particle;
 import org.bukkit.block.Block;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 
 @Data
 public class Circuit {
@@ -56,7 +49,7 @@ public class Circuit {
 
     public void tick() {
         events.set(eventBuffer.getAndSet(0));
-        if(M.ms() - lastEvent.get() > 10000) {
+        if (M.ms() - lastEvent.get() > 10000) {
             positions.clear();
         }
     }

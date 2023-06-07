@@ -13,14 +13,12 @@ public class FloatParser implements EdictParser<Float> {
     @Override
     public EdictValue<Float> parse(String s) {
         try {
-            if(s.toLowerCase().endsWith("d")) {
+            if (s.toLowerCase().endsWith("d")) {
                 s = s.substring(0, s.length() - 1);
             }
 
             return high(Float.parseFloat(s));
-        }
-
-        catch(NumberFormatException e) {
+        } catch (NumberFormatException e) {
             return low(0F);
         }
     }

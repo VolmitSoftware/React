@@ -221,7 +221,7 @@ public class ActionBarMonitor extends PlayerMonitor {
         for (int m = 0; m < viewportLimit; m++) {
             try {
                 Sampler i = React.sampler(focus.getSamplers()
-                    .get((viewportIndexes.get(focus) + m) % focus.getSamplers().size()));
+                        .get((viewportIndexes.get(focus) + m) % focus.getSamplers().size()));
                 setVisible(i, true);
                 if (!first) {
                     builder.append(Component.space());
@@ -235,9 +235,9 @@ public class ActionBarMonitor extends PlayerMonitor {
                 String colorD = darkerColor(color);
 
                 Style s = (locked && getPlayer().isMonitorSneaking() && getFocusedSampler() == i) ? Style.style(TextColor.fromHexString(color), TextDecoration.UNDERLINED)
-                    : Style.style(TextColor.fromHexString(color));
+                        : Style.style(TextColor.fromHexString(color));
                 Style ss = (locked && getPlayer().isMonitorSneaking() && getFocusedSampler() == i) ? Style.style(TextColor.fromHexString(color), TextDecoration.UNDERLINED).font(Key.key("uniform"))
-                    : Style.style(TextColor.fromHexString(colorD)).font(Key.key("uniform"));
+                        : Style.style(TextColor.fromHexString(colorD)).font(Key.key("uniform"));
 
                 int l = i.format(value).length();
                 synchronized (maxLengths) {
@@ -248,9 +248,7 @@ public class ActionBarMonitor extends PlayerMonitor {
                 if (l < maxLengths.get(i)) {
                     builder.append(Component.text(" ".repeat(maxLengths.get(i) - l)));
                 }
-            }
-
-            catch(Throwable e) {
+            } catch (Throwable e) {
                 e.printStackTrace();
                 viewportIndexes.put(focus, 0);
             }

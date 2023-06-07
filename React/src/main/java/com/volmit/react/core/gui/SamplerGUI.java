@@ -14,8 +14,6 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 public class SamplerGUI {
@@ -23,8 +21,8 @@ public class SamplerGUI {
         pickSampler(p, onPicked, null, page);
     }
 
-    public static void pickSampler(Player p, Consumer<Sampler> onPicked,List<String> without) {
-        pickSampler(p,onPicked,  without, 0);
+    public static void pickSampler(Player p, Consumer<Sampler> onPicked, List<String> without) {
+        pickSampler(p, onPicked, without, 0);
     }
 
     public static void pickSampler(Player p, Consumer<Sampler> onPicked) {
@@ -43,19 +41,19 @@ public class SamplerGUI {
             window.setDecorator(new UIStaticDecorator(new UIElement("bg").setMaterial(new MaterialBlock(Material.BLACK_STAINED_GLASS_PANE))));
             //Sorted Samplers
             List<Sampler> samplers = React.controller(SampleController.class)
-                .getSamplers()
-                .all()
-                .stream()
-                .sorted((a, b) -> a.getId().compareToIgnoreCase(b.getId()))
-                .toList();
-            boolean hasMore = samplers.size() > (9*2) * (page + 1);
+                    .getSamplers()
+                    .all()
+                    .stream()
+                    .sorted((a, b) -> a.getId().compareToIgnoreCase(b.getId()))
+                    .toList();
+            boolean hasMore = samplers.size() > (9 * 2) * (page + 1);
             int pge = page;
-            if(samplers.size() <= pge * (9*2)) {
+            if (samplers.size() <= pge * (9 * 2)) {
                 pge = 0;
                 React.warn("Pagination Issue!");
             }
 
-            samplers = samplers.subList(pge * (9*2), Math.min(samplers.size(), (pge + 1) * (9*2)));
+            samplers = samplers.subList(pge * (9 * 2), Math.min(samplers.size(), (pge + 1) * (9 * 2)));
 
             int rp = 0;
             for (Sampler i : samplers) {
@@ -79,25 +77,25 @@ public class SamplerGUI {
 
             int pg = pge;
 
-            if(pg > 0) {
+            if (pg > 0) {
                 window.setElement(-4, 2, new UIElement("page-back")
-                    .setMaterial(new MaterialBlock(Material.ARROW))
-                    .setName("Previous Page")
-                    .onLeftClick((e) -> {
-                        window.close();
-                        J.a(() -> pickSampler(p, onPicked, without, pg - 1));
-                    })
+                        .setMaterial(new MaterialBlock(Material.ARROW))
+                        .setName("Previous Page")
+                        .onLeftClick((e) -> {
+                            window.close();
+                            J.a(() -> pickSampler(p, onPicked, without, pg - 1));
+                        })
                 );
             }
 
-            if(hasMore) {
+            if (hasMore) {
                 window.setElement(4, 2, new UIElement("page-forward")
-                    .setMaterial(new MaterialBlock(Material.ARROW))
-                    .setName("Next Page")
-                    .onLeftClick((e) -> {
-                        window.close();
-                        J.a(() -> pickSampler(p, onPicked, without, pg + 1));
-                    })
+                        .setMaterial(new MaterialBlock(Material.ARROW))
+                        .setName("Next Page")
+                        .onLeftClick((e) -> {
+                            window.close();
+                            J.a(() -> pickSampler(p, onPicked, without, pg + 1));
+                        })
                 );
             }
 

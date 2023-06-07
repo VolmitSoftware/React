@@ -1,9 +1,7 @@
 package com.volmit.react.api.action;
 
 import art.arcane.curse.Curse;
-import art.arcane.edict.api.SenderType;
 import com.volmit.react.util.format.Form;
-import com.volmit.react.util.plugin.VolmitSender;
 import com.volmit.react.util.registry.Registered;
 import org.bukkit.command.CommandSender;
 

@@ -6,11 +6,15 @@ import java.util.Comparator;
 import java.util.List;
 
 public interface SelectionParser<T> extends EdictParser<T>, Suggestive {
+    private static int calculateSimilarity(String enumConstantName, String targetString) {
+        return Edict.calculateLevenshteinDistance(enumConstantName, targetString);
+    }
+
     default EdictValue<T> parse(String s) {
         return getSelectionOptions().stream()
-            .min(Comparator.comparingInt(enumConstant -> calculateSimilarity(getName(enumConstant), s.trim())))
-            .map(this::high)
-            .orElse(low(getDefault()));
+                .min(Comparator.comparingInt(enumConstant -> calculateSimilarity(getName(enumConstant), s.trim())))
+                .map(this::high)
+                .orElse(low(getDefault()));
     }
 
     List<T> getSelectionOptions();
@@ -23,15 +27,11 @@ public interface SelectionParser<T> extends EdictParser<T>, Suggestive {
 
     default List<String> getOptions() {
         return getSelectionOptions().stream()
-            .map(this::getName)
-            .toList();
+                .map(this::getName)
+                .toList();
     }
 
     default boolean isMandatory() {
         return true;
-    }
-
-    private static int calculateSimilarity(String enumConstantName, String targetString) {
-        return Edict.calculateLevenshteinDistance(enumConstantName, targetString);
     }
 }

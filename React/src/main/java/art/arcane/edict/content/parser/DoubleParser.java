@@ -13,14 +13,12 @@ public class DoubleParser implements EdictParser<Double> {
     @Override
     public EdictValue<Double> parse(String s) {
         try {
-            if(s.toLowerCase().endsWith("d")) {
+            if (s.toLowerCase().endsWith("d")) {
                 s = s.substring(0, s.length() - 1);
             }
 
             return high(Double.parseDouble(s));
-        }
-
-        catch(NumberFormatException e) {
+        } catch (NumberFormatException e) {
             return low(0D);
         }
     }

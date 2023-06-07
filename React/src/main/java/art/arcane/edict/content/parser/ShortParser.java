@@ -2,8 +2,6 @@ package art.arcane.edict.content.parser;
 
 import art.arcane.edict.api.parser.EdictParser;
 import art.arcane.edict.api.parser.EdictValue;
-import art.arcane.edict.content.context.LocationContext;
-import art.arcane.edict.content.context.WorldContext;
 
 /**
  * The ShortParser class is an implementation of the EdictParser interface designed to handle the parsing of
@@ -22,14 +20,12 @@ public class ShortParser implements EdictParser<Short> {
     @Override
     public EdictValue<Short> parse(String s) {
         try {
-            if(s.toLowerCase().endsWith("s")) {
+            if (s.toLowerCase().endsWith("s")) {
                 s = s.substring(0, s.length() - 1);
             }
 
             return high(Short.parseShort(s));
-        }
-
-        catch(NumberFormatException e) {
+        } catch (NumberFormatException e) {
             return low((short) 0);
         }
     }

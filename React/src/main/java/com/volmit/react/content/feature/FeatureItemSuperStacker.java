@@ -46,7 +46,7 @@ public class FeatureItemSuperStacker extends ReactFeature implements Listener {
         item.remove();
         ((SamplerEntities) React.sampler(SamplerEntities.ID)).getEntities().decrementAndGet();
 
-        if(BundleUtils.isFlagged(m)) {
+        if (BundleUtils.isFlagged(m)) {
             return BundleUtils.explode(item.getItemStack());
         }
 
@@ -58,30 +58,30 @@ public class FeatureItemSuperStacker extends ReactFeature implements Listener {
         item.getWorld().spawnParticle(Particle.ITEM_CRACK, item.getLocation(), 7, 0.1, 0.1, 0.1, 0.1, item.getItemStack());
 
         Vector j = into.getLocation().clone().subtract(item.getLocation()).toVector().normalize().multiply(into.getLocation().clone().distance(item.getLocation()) / (searchRadius * 2));
-        for(int i = 0; i < searchRadius * 2; i++) {
+        for (int i = 0; i < searchRadius * 2; i++) {
             buf = buf.clone().add(j);
             item.getWorld().spawnParticle(Particle.ITEM_CRACK, buf, 3, 0, 0, 0, 0, item.getItemStack());
         }
 
-        if(cl.flip()) {
+        if (cl.flip()) {
             item.getWorld().playSound(item.getLocation(), Sound.ITEM_BUNDLE_INSERT, 0.5f, 1.2f + RNG.r.f(-0.1f, 0.1f));
         }
     }
 
     public void mergeWithNearbyItems(Item item) {
-        if(item.isDead()) {
+        if (item.isDead()) {
             return;
         }
 
-        for(Entity i : item.getWorld().getNearbyEntities(item.getLocation(), searchRadius, searchRadius, searchRadius)) {
-            if(i instanceof Item into) {
-                if(into.isDead() || into.getUniqueId().equals(item.getUniqueId())) {
+        for (Entity i : item.getWorld().getNearbyEntities(item.getLocation(), searchRadius, searchRadius, searchRadius)) {
+            if (i instanceof Item into) {
+                if (into.isDead() || into.getUniqueId().equals(item.getUniqueId())) {
                     continue;
                 }
 
                 ItemStack is = BundleUtils.merge(item.getItemStack(), into.getItemStack(), maxItemsPerBundle);
 
-                if(is != null) {
+                if (is != null) {
                     effectMerge(item, into);
                     item.remove();
                     ((SamplerEntities) React.sampler(SamplerEntities.ID)).getEntities().decrementAndGet();
@@ -94,14 +94,14 @@ public class FeatureItemSuperStacker extends ReactFeature implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void on(EntityPickupItemEvent e) {
-        if(e.getEntity() instanceof Player p){
-            if(isSuperStack(e.getItem())) {
+        if (e.getEntity() instanceof Player p) {
+            if (isSuperStack(e.getItem())) {
                 e.setCancelled(true);
-                for(ItemStack i : explode(e.getItem())) {
+                for (ItemStack i : explode(e.getItem())) {
                     p.getInventory().addItem(i).values().forEach((g) -> p.getWorld().dropItem(p.getLocation(), g));
                 }
 
-                if(cl.flip()) {
+                if (cl.flip()) {
                     p.getWorld().playSound(e.getItem().getLocation(), Sound.ITEM_BUNDLE_DROP_CONTENTS, 1f, 0.85f + RNG.r.f(-0.1f, 0.1f));
                 }
             }
@@ -110,7 +110,7 @@ public class FeatureItemSuperStacker extends ReactFeature implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void on(ItemSpawnEvent e) {
-       mergeWithNearbyItems(e.getEntity());
+        mergeWithNearbyItems(e.getEntity());
     }
 
     @Override

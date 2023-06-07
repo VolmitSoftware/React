@@ -9,8 +9,6 @@ import lombok.Data;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.UUID;
 
 @Data
@@ -18,14 +16,6 @@ public class PlayerSettings {
     private MonitorConfiguration monitorConfiguration;
     private boolean actionBarMonitoring = false;
     private boolean visualizing = false;
-
-    public void toggleVisualizing() {
-        visualizing = !visualizing;
-    }
-
-    public boolean isVisualizing() {
-        return visualizing;
-    }
 
     public static void saveSettings(UUID player, PlayerSettings s) {
         File l = React.instance.getDataFile("player-settings", player.toString() + ".json");
@@ -61,6 +51,14 @@ public class PlayerSettings {
         }
 
         return configuration;
+    }
+
+    public void toggleVisualizing() {
+        visualizing = !visualizing;
+    }
+
+    public boolean isVisualizing() {
+        return visualizing;
     }
 
     public void init() {

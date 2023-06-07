@@ -21,14 +21,12 @@ public class IntegerParser implements EdictParser<Integer> {
     @Override
     public EdictValue<Integer> parse(String s) {
         try {
-            if(s.toLowerCase().endsWith("i")) {
+            if (s.toLowerCase().endsWith("i")) {
                 s = s.substring(0, s.length() - 1);
             }
 
             return high(Integer.parseInt(s));
-        }
-
-        catch(NumberFormatException e) {
+        } catch (NumberFormatException e) {
             return low(0);
         }
     }

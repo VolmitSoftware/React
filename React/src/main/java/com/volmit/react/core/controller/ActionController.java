@@ -5,10 +5,7 @@ import com.volmit.react.React;
 import com.volmit.react.api.action.Action;
 import com.volmit.react.api.action.ActionParams;
 import com.volmit.react.api.action.ActionTicket;
-import com.volmit.react.api.action.ReactAction;
-import com.volmit.react.content.action.ActionUnknown;
 import com.volmit.react.util.format.Form;
-import com.volmit.react.util.io.JarScanner;
 import com.volmit.react.util.plugin.IController;
 import com.volmit.react.util.registry.Registry;
 import com.volmit.react.util.scheduling.TickedObject;
@@ -16,12 +13,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.bukkit.event.Listener;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -32,7 +25,7 @@ public class ActionController extends TickedObject implements IController {
     private int actionSpeedMultiplier;
 
     public ActionController() {
-        super("react", "action",  100);
+        super("react", "action", 100);
     }
 
     @Override
@@ -59,7 +52,7 @@ public class ActionController extends TickedObject implements IController {
     public void postStart() {
         actions.all().forEach(Action::onInit);
         actions.all().forEach(((a) -> {
-            if(a instanceof Listener l) {
+            if (a instanceof Listener l) {
                 React.instance.registerListener(l);
             }
         }));
@@ -69,7 +62,7 @@ public class ActionController extends TickedObject implements IController {
     @Override
     public void stop() {
         actions.all().forEach(((a) -> {
-            if(a instanceof Listener l) {
+            if (a instanceof Listener l) {
                 React.instance.unregisterListener(l);
             }
         }));

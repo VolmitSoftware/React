@@ -4,19 +4,13 @@ import art.arcane.curse.Curse;
 import com.volmit.react.React;
 import com.volmit.react.api.event.NaughtyRegisteredListener;
 import com.volmit.react.api.event.layer.MinecartSpawnEvent;
-import com.volmit.react.api.event.layer.ServerTickEvent;
 import com.volmit.react.util.plugin.IController;
-import com.volmit.react.util.scheduling.J;
 import com.volmit.react.util.scheduling.TickedObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.event.Event;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.HandlerList;
-import org.bukkit.event.Listener;
+import org.bukkit.event.*;
 import org.bukkit.event.block.BlockDispenseEvent;
 import org.bukkit.event.entity.EntityPlaceEvent;
 import org.bukkit.plugin.RegisteredListener;
@@ -68,15 +62,15 @@ public class EventController extends TickedObject implements IController, Listen
 
     @EventHandler(priority = EventPriority.HIGH)
     public void on(BlockDispenseEvent e) {
-        if(e.getItem().getType().equals(Material.MINECART)
-            ||e.getItem().getType().equals(Material.CHEST_MINECART)
-            ||e.getItem().getType().equals(Material.TNT_MINECART)
-            ||e.getItem().getType().equals(Material.HOPPER_MINECART)
-            ||e.getItem().getType().equals(Material.FURNACE_MINECART)
-            ||e.getItem().getType().equals(Material.COMMAND_BLOCK_MINECART)) {
+        if (e.getItem().getType().equals(Material.MINECART)
+                || e.getItem().getType().equals(Material.CHEST_MINECART)
+                || e.getItem().getType().equals(Material.TNT_MINECART)
+                || e.getItem().getType().equals(Material.HOPPER_MINECART)
+                || e.getItem().getType().equals(Material.FURNACE_MINECART)
+                || e.getItem().getType().equals(Material.COMMAND_BLOCK_MINECART)) {
             MinecartSpawnEvent s = new MinecartSpawnEvent(e.getBlock().getLocation());
             call(s);
-            if(s.isCancelled()) {
+            if (s.isCancelled()) {
                 e.setCancelled(true);
             }
         }
@@ -84,11 +78,11 @@ public class EventController extends TickedObject implements IController, Listen
 
     @EventHandler(priority = EventPriority.HIGH)
     public void on(EntityPlaceEvent e) {
-        if(e.getEntityType().name().startsWith("MINECART")) {
+        if (e.getEntityType().name().startsWith("MINECART")) {
             MinecartSpawnEvent s = new MinecartSpawnEvent(e.getEntity().getLocation(), e.getPlayer());
             call(s);
 
-            if(s.isCancelled()) {
+            if (s.isCancelled()) {
                 e.setCancelled(true);
             }
         }

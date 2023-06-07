@@ -32,43 +32,43 @@ public class TweakFastColumns extends ReactTweak implements Listener {
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void on(BlockBreakEvent e) {
-        if(bamboo.is(e.getBlock())) {
+        if (bamboo.is(e.getBlock())) {
             bamboo.trigger(e.getPlayer(), e.getBlock(), maxColumnSize);
-        }else if(sugarCane.is(e.getBlock())) {
+        } else if (sugarCane.is(e.getBlock())) {
             sugarCane.trigger(e.getPlayer(), e.getBlock(), maxColumnSize);
-        }else if(cactus.is(e.getBlock())) {
+        } else if (cactus.is(e.getBlock())) {
             cactus.trigger(e.getPlayer(), e.getBlock(), maxColumnSize);
-        }else if(kelp.is(e.getBlock())) {
+        } else if (kelp.is(e.getBlock())) {
             kelp.trigger(e.getPlayer(), e.getBlock(), maxColumnSize);
         }
     }
 
     @EventHandler
     public void on(BlockPhysicsEvent e) {
-        if(bamboo.is(e.getBlock())) {
+        if (bamboo.is(e.getBlock())) {
             J.ss(() -> {
-                if(bamboo.isEmpty(e.getBlock())) {
+                if (bamboo.isEmpty(e.getBlock())) {
                     bamboo.trigger(e.getBlock(), maxColumnSize);
                 }
-            },2);
-        } else if(sugarCane.is(e.getBlock())) {
+            }, 2);
+        } else if (sugarCane.is(e.getBlock())) {
             J.ss(() -> {
-                if(sugarCane.isEmpty(e.getBlock())) {
+                if (sugarCane.isEmpty(e.getBlock())) {
                     sugarCane.trigger(e.getBlock(), maxColumnSize);
                 }
-            },2);
-        }else if(cactus.is(e.getBlock())) {
+            }, 2);
+        } else if (cactus.is(e.getBlock())) {
             J.ss(() -> {
-                if(cactus.isEmpty(e.getBlock())) {
+                if (cactus.isEmpty(e.getBlock())) {
                     cactus.trigger(e.getBlock(), maxColumnSize);
                 }
-            },2);
-        }else if(kelp.is(e.getBlock())) {
+            }, 2);
+        } else if (kelp.is(e.getBlock())) {
             J.ss(() -> {
-                if(kelp.isEmpty(e.getBlock())) {
+                if (kelp.isEmpty(e.getBlock())) {
                     kelp.trigger(e.getBlock(), maxColumnSize);
                 }
-            },2);
+            }, 2);
         }
     }
 

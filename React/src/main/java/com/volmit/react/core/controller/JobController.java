@@ -2,9 +2,7 @@ package com.volmit.react.core.controller;
 
 import art.arcane.chrono.ChronoLatch;
 import art.arcane.chrono.PrecisionStopwatch;
-import com.volmit.react.React;
 import com.volmit.react.api.event.layer.ServerTickEvent;
-import com.volmit.react.util.format.Form;
 import com.volmit.react.util.math.M;
 import com.volmit.react.util.math.RNG;
 import com.volmit.react.util.math.RollingSequence;
@@ -18,6 +16,8 @@ import java.util.List;
 
 @Data
 public class JobController implements IController {
+    private transient final RollingSequence usageCyclePercent;
+    private transient final List<Runnable> jobs;
     private double maxComputeTime = 1;
     private long maxSpikeInterval = 250;
     private double currentComputeTarget = 0.01;
@@ -26,8 +26,6 @@ public class JobController implements IController {
     private transient ServerTickEvent ste = new ServerTickEvent();
     private transient RollingSequence usage = new RollingSequence(20);
     private transient double costPerJob = 0.1;
-    private transient final RollingSequence usageCyclePercent;
-    private transient final List<Runnable> jobs;
     private transient ChronoLatch spikeLatch;
     private transient int code;
     private transient double overBudget = 0;
@@ -57,12 +55,10 @@ public class JobController implements IController {
     public void stop() {
         J.csr(code);
 
-        for(Runnable i : jobs) {
+        for (Runnable i : jobs) {
             try {
                 i.run();
-            }
-
-            catch(Throwable e) {
+            } catch (Throwable e) {
                 e.printStackTrace();
             }
         }
@@ -79,37 +75,33 @@ public class JobController implements IController {
 
     public void execute() {
         Bukkit.getPluginManager().callEvent(ste);
-        if(overBudget > maxComputeTime) {
+        if (overBudget > maxComputeTime) {
             overBudget -= maxComputeTime;
             overBudget = overBudget < 0 ? 0 : overBudget;
             usage.put(0);
             return;
         }
 
-        synchronized(jobs) {
-            if(jobs.isEmpty()) {
+        synchronized (jobs) {
+            if (jobs.isEmpty()) {
                 return;
             }
 
             int executed = 0;
             PrecisionStopwatch p = PrecisionStopwatch.start();
 
-            while(p.getMilliseconds() < (currentComputeTarget)) {
-                if(jobs.isEmpty()) {
+            while (p.getMilliseconds() < (currentComputeTarget)) {
+                if (jobs.isEmpty()) {
                     break;
                 }
 
                 try {
-                    if(jobs.size() > 5) {
-                        jobs.remove(RNG.r.i(jobs.size()-1)).run();
-                    }
-
-                    else {
+                    if (jobs.size() > 5) {
+                        jobs.remove(RNG.r.i(jobs.size() - 1)).run();
+                    } else {
                         jobs.remove(0).run();
                     }
-                }
-
-                catch(Throwable e) {
+                } catch (Throwable e) {
                     e.printStackTrace();
                 }
 
@@ -118,18 +110,16 @@ public class JobController implements IController {
 
             double timeUsed = p.getMilliseconds();
             usage.put(timeUsed);
-            if(timeUsed > currentComputeTarget) {
+            if (timeUsed > currentComputeTarget) {
                 overBudget += timeUsed - currentComputeTarget;
             }
 
-            costPerJob = timeUsed / (double)executed;
+            costPerJob = timeUsed / (double) executed;
             usageCyclePercent.put(timeUsed / currentComputeTarget);
 
-            if(usageCyclePercent.getAverage() > highUtilizationThresholdPercent) {
+            if (usageCyclePercent.getAverage() > highUtilizationThresholdPercent) {
                 currentComputeTarget = M.lerp(currentComputeTarget, maxComputeTime, 0.01);
-            }
-
-            else if(usageCyclePercent.getAverage() < lowUtilizationThresholdPercent) {
+            } else if (usageCyclePercent.getAverage() < lowUtilizationThresholdPercent) {
                 currentComputeTarget = M.lerp(currentComputeTarget, 0.01, 0.01);
             }
 
@@ -138,7 +128,7 @@ public class JobController implements IController {
     }
 
     public void queue(Runnable r) {
-        synchronized(jobs){
+        synchronized (jobs) {
             jobs.add(r);
         }
     }

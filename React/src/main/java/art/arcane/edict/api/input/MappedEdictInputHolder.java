@@ -4,7 +4,6 @@ import art.arcane.edict.api.parser.EdictValue;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.Singular;
 
 import java.util.List;
@@ -19,7 +18,7 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @Builder
-public class MappedEdictInputHolder implements EdictInput,MappedInput {
+public class MappedEdictInputHolder implements EdictInput, MappedInput {
 
     /**
      * The 'key' field represents the unique identifier to which the input is mapped.

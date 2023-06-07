@@ -6,28 +6,22 @@ import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
 import it.unimi.dsi.fastutil.doubles.DoubleList;
 import lombok.Getter;
 
-import java.awt.GradientPaint;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @Getter
 public class Graph {
     private static Map<String, Graph> graphs = new HashMap<>();
+    private final DoubleList sequence;
+    private final RollingSequence rs = new RollingSequence(3);
+    public Graph() {
+        sequence = new DoubleArrayList();
+    }
 
     public static Graph of(Sampler sampler) {
         Graph g = graphs.computeIfAbsent(sampler.getName(), (k) -> new Graph());
         g.push(sampler.sample());
         return g;
-    }
-
-    private final DoubleList sequence;
-    private final RollingSequence rs = new RollingSequence(3);
-
-    public Graph() {
-        sequence = new DoubleArrayList();
     }
 
     public double get(int index) {
@@ -37,7 +31,7 @@ public class Graph {
     public void push(double v) {
         rs.put(v);
         sequence.add(0, rs.getAverage());
-        while(sequence.size() > 128) {
+        while (sequence.size() > 128) {
             sequence.removeDouble(sequence.size() - 1);
         }
     }

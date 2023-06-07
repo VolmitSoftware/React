@@ -6,39 +6,29 @@ import com.volmit.react.api.action.Action;
 import com.volmit.react.api.feature.Feature;
 import com.volmit.react.api.sampler.Sampler;
 import com.volmit.react.api.tweak.Tweak;
-import com.volmit.react.content.sampler.SamplerMemoryUsed;
-import com.volmit.react.content.tweak.TweakUnknown;
 import com.volmit.react.core.controller.*;
-import com.volmit.react.util.format.Form;
-import com.volmit.react.util.plugin.IController;
-import com.volmit.react.util.registry.Registry;
-import com.volmit.react.util.world.EntityKiller;
 import com.volmit.react.util.collection.KList;
 import com.volmit.react.util.format.C;
+import com.volmit.react.util.format.Form;
 import com.volmit.react.util.io.JarScanner;
+import com.volmit.react.util.plugin.IController;
 import com.volmit.react.util.plugin.SplashScreen;
 import com.volmit.react.util.plugin.VolmitPlugin;
+import com.volmit.react.util.registry.Registry;
 import com.volmit.react.util.scheduling.J;
 import com.volmit.react.util.scheduling.Ticker;
+import com.volmit.react.util.world.EntityKiller;
 import lombok.Getter;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
-import net.minecraft.world.level.block.BlockHopper;
-import net.minecraft.world.level.block.entity.TileEntityHopper;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 
 import java.io.File;
-import java.io.IOException;
 import java.lang.annotation.Annotation;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 
@@ -60,8 +50,8 @@ public class React extends VolmitPlugin {
     }
 
     public static boolean hasNearbyPlayer(Location l, double blocks) {
-        for(Player i : l.getWorld().getPlayers()) {
-            if(i.getLocation().distanceSquared(l) <= blocks * blocks) {
+        for (Player i : l.getWorld().getPlayers()) {
+            if (i.getLocation().distanceSquared(l) <= blocks * blocks) {
                 return true;
             }
         }
@@ -136,6 +126,46 @@ public class React extends VolmitPlugin {
         return v;
     }
 
+    public static <T extends IController> T controller(Class<T> c) {
+        return instance.controllerRegistry.get(c);
+    }
+
+    public static <T extends Action<?>> T action(Class<T> c) {
+        return controller(ActionController.class).getActions().get(c);
+    }
+
+    public static <T extends Sampler> T sampler(Class<T> c) {
+        return controller(SampleController.class).getSamplers().get(c);
+    }
+
+    public static <T extends Tweak> T tweak(Class<T> c) {
+        return controller(TweakController.class).getTweaks().get(c);
+    }
+
+    public static <T extends Feature> T feature(Class<T> c) {
+        return controller(FeatureController.class).getFeatures().get(c);
+    }
+
+    public static <T extends IController> T controller(String c) {
+        return (T) instance.controllerRegistry.get(c);
+    }
+
+    public static <T extends Action<?>> T action(String c) {
+        return (T) controller(ActionController.class).getActions().get(c);
+    }
+
+    public static <T extends Sampler> T sampler(String c) {
+        return (T) controller(SampleController.class).getSamplers().get(c);
+    }
+
+    public static <T extends Tweak> T tweak(String c) {
+        return (T) controller(TweakController.class).getTweaks().get(c);
+    }
+
+    public static <T extends Feature> T feature(String c) {
+        return (T) controller(FeatureController.class).getFeatures().get(c);
+    }
+
     @Override
     public void onLoad() {
         instance = this;
@@ -160,17 +190,17 @@ public class React extends VolmitPlugin {
         audiences = BukkitAudiences.create(this);
         controllerRegistry = new Registry<>(IController.class, "com.volmit.react.core.controller");
 
-        for(Runnable i : startupTasks) {
+        for (Runnable i : startupTasks) {
             i.run();
         }
 
         startupTasks.clear();
 
-        for(IController i : controllerRegistry.all()) {
+        for (IController i : controllerRegistry.all()) {
             i.start();
         }
 
-        for(Runnable i : startupTasks) {
+        for (Runnable i : startupTasks) {
             i.run();
         }
 
@@ -178,17 +208,17 @@ public class React extends VolmitPlugin {
 
         info(SplashScreen.splash);
 
-        for(IController i : controllerRegistry.all()) {
+        for (IController i : controllerRegistry.all()) {
             i.postStart();
 
-            if(i instanceof Listener l) {
+            if (i instanceof Listener l) {
                 registerListener(l);
             }
         }
 
         ready = true;
 
-        for(Runnable i : prejobs) {
+        for (Runnable i : prejobs) {
             controller(JobController.class).queue(i);
         }
 
@@ -215,45 +245,5 @@ public class React extends VolmitPlugin {
     public void reload() {
         onDisable();
         onEnable();
-    }
-
-    public static <T extends IController> T controller(Class<T> c) {
-        return instance.controllerRegistry.get(c);
-    }
-
-    public static <T extends Action<?>> T action(Class<T> c) {
-        return controller(ActionController.class).getActions().get(c);
-    }
-
-    public static <T extends Sampler> T sampler(Class<T> c) {
-        return controller(SampleController.class).getSamplers().get(c);
-    }
-
-    public static <T extends Tweak> T tweak(Class<T> c) {
-        return controller(TweakController.class).getTweaks().get(c);
-    }
-
-    public static <T extends Feature> T feature(Class<T> c) {
-        return controller(FeatureController.class).getFeatures().get(c);
-    }
-
-    public static <T extends IController> T controller(String c) {
-        return (T)instance.controllerRegistry.get(c);
-    }
-
-    public static <T extends Action<?>> T action(String c) {
-        return (T)controller(ActionController.class).getActions().get(c);
-    }
-
-    public static <T extends Sampler> T sampler(String c) {
-        return (T)controller(SampleController.class).getSamplers().get(c);
-    }
-
-    public static <T extends Tweak> T tweak(String c) {
-        return (T)controller(TweakController.class).getTweaks().get(c);
-    }
-
-    public static <T extends Feature> T feature(String c) {
-        return (T)controller(FeatureController.class).getFeatures().get(c);
     }
 }

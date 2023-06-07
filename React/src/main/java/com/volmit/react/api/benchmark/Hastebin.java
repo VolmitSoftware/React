@@ -3,7 +3,6 @@ package com.volmit.react.api.benchmark;
 import com.volmit.react.React;
 import com.volmit.react.util.format.C;
 import com.volmit.react.util.format.Form;
-import com.volmit.react.util.plugin.VolmitSender;
 import com.volmit.react.util.reflect.Platform;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.TextComponent;
@@ -74,7 +73,6 @@ public class Hastebin {
 
         return "https://paste.bytecode.ninja/" + response.split("\"")[3];
     }
-
 
 
 }

@@ -37,7 +37,7 @@ public class SampledWorld {
     }
 
     public SampledChunk getChunk(int x, int z) {
-       return chunks.computeIfAbsent(Cache.key(x, z), (k) -> new SampledChunk(world.getChunkAt(x, z), this));
+        return chunks.computeIfAbsent(Cache.key(x, z), (k) -> new SampledChunk(world.getChunkAt(x, z), this));
     }
 }
 

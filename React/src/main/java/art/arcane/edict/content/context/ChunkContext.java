@@ -18,6 +18,18 @@ import java.util.Optional;
 public class ChunkContext implements EdictContextResolver<Chunk> {
 
     /**
+     * Provides a convenient way to retrieve the Chunk associated with the current EdictContext.
+     * <br><br>
+     * This static method returns an Optional containing the resolved Chunk if the CommandSender within
+     * the current EdictContext is a Player, or an empty Optional otherwise.
+     *
+     * @return an Optional containing the resolved Chunk if the CommandSender within the current EdictContext is a Player, or an empty Optional otherwise
+     */
+    public static Optional<Chunk> get() {
+        return EdictContext.get().resolve(ChunkContext.class);
+    }
+
+    /**
      * Resolves a Chunk object from the provided EdictContext.
      * <br><br>
      * If the CommandSender within the context is a Player, the method returns an Optional containing the
@@ -30,17 +42,5 @@ public class ChunkContext implements EdictContextResolver<Chunk> {
     @Override
     public Optional<Chunk> resolve(EdictContext context) {
         return context.getSender() instanceof Player p ? Optional.of(p.getLocation().getChunk()) : Optional.empty();
-    }
-
-    /**
-     * Provides a convenient way to retrieve the Chunk associated with the current EdictContext.
-     * <br><br>
-     * This static method returns an Optional containing the resolved Chunk if the CommandSender within
-     * the current EdictContext is a Player, or an empty Optional otherwise.
-     *
-     * @return an Optional containing the resolved Chunk if the CommandSender within the current EdictContext is a Player, or an empty Optional otherwise
-     */
-    public static Optional<Chunk> get() {
-        return EdictContext.get().resolve(ChunkContext.class);
     }
 }

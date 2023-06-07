@@ -20,20 +20,22 @@ import java.util.List;
 @Data
 public class EdictField {
     /**
-     * The description of the command. This is used in the help command.
-     */
-    @Builder.Default
-    private String description = "No Description";
-
-    @Builder.Default
-    private boolean contextual = false;
-
-    /**
      * The names by which this field can be identified. The field can be referred to by any of these names.
      */
     @Singular
     private final List<String> names;
-
+    /**
+     * The type of data that this field can hold. By default, it is a String.
+     */
+    @Builder.Default
+    private final Class<?> type = String.class;
+    /**
+     * The description of the command. This is used in the help command.
+     */
+    @Builder.Default
+    private String description = "No Description";
+    @Builder.Default
+    private boolean contextual = false;
     /**
      * Require a permission for the command to be executed.
      * <br><br>
@@ -47,25 +49,17 @@ public class EdictField {
      */
     @Singular
     private List<String> permissions;
-
     /**
      * The default string to parse into the command if no input is provided.
      */
     private String defaultValue;
-
     /**
      * Whether or not this field is required. If it is, the command will fail if no input is provided. Defaults to false
      */
     @Builder.Default
     private boolean required = false;
 
-    /**
-     * The type of data that this field can hold. By default, it is a String.
-     */
-    @Builder.Default
-    private final Class<?> type = String.class;
-
     public String getUsage() {
-        return (required ? "<" : "[") + getType().getSimpleName()+" " + names.stream().findFirst().orElse("") + (required ? ">" : "]");
+        return (required ? "<" : "[") + getType().getSimpleName() + " " + names.stream().findFirst().orElse("") + (required ? ">" : "]");
     }
 }

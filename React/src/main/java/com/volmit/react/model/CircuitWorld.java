@@ -12,11 +12,7 @@ import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Powerable;
 import org.bukkit.block.data.type.Repeater;
 
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @Data
 public class CircuitWorld {
@@ -32,8 +28,8 @@ public class CircuitWorld {
 
     public Circuit worst() {
         return circuits.values().stream()
-            .max(Comparator.comparingInt(a -> a.getEvents().get()))
-            .orElse(null);
+                .max(Comparator.comparingInt(a -> a.getEvents().get()))
+                .orElse(null);
     }
 
     public void writeCircuit(Block block, long id) {
@@ -41,16 +37,13 @@ public class CircuitWorld {
         BlockData b = block.getBlockData();
         writeCircuitDirect(block.getRelative(BlockFace.DOWN), id);
 
-        if(b instanceof Powerable) {
-            if(b instanceof Repeater r) {
+        if (b instanceof Powerable) {
+            if (b instanceof Repeater r) {
                 writeCircuitDirect(block.getRelative(r.getFacing()), id);
-            }
-
-            else {
+            } else {
                 writeCircuitDirect(block.getRelative(BlockFace.DOWN), id);
             }
-        }
-        else {
+        } else {
             writeCircuitDirect(block.getRelative(BlockFace.DOWN), id);
             writeCircuitDirect(block.getRelative(BlockFace.UP), id);
         }
@@ -62,7 +55,7 @@ public class CircuitWorld {
     }
 
     public long getBiggestCircuit(Set<Long> s) {
-        if(s.isEmpty()) {
+        if (s.isEmpty()) {
             throw new RuntimeException();
         }
 
@@ -70,11 +63,11 @@ public class CircuitWorld {
         long winner = -1;
         int z;
 
-        for(Long i : s) {
+        for (Long i : s) {
             Circuit c = getCircuit(i);
-            if(c != null) {
+            if (c != null) {
                 z = c.countBlocks();
-                if(z > size) {
+                if (z > size) {
                     size = z;
                     winner = i;
                 }
@@ -89,31 +82,29 @@ public class CircuitWorld {
         Long id = getCircuitId(block);
         Set<Long> conflict = new HashSet<>();
 
-        if(id != null){
+        if (id != null) {
             conflict.add(id);
         }
 
-        for(Direction i : Direction.udnews()) {
+        for (Direction i : Direction.udnews()) {
             neighbor = block.getRelative(i.getFace());
             id = getCircuitId(neighbor);
 
-            if(id != null) {
+            if (id != null) {
                 conflict.add(id);
             }
         }
 
-        if(conflict.isEmpty()) {
+        if (conflict.isEmpty()) {
             id = RNG.r.lmax();
             conflict.add(id);
             writeCircuit(block, id);
         }
 
-        if(conflict.size() > 1) {
+        if (conflict.size() > 1) {
             id = getBiggestCircuit(conflict);
             writeCircuit(block, id);
-        }
-
-        else {
+        } else {
             id = conflict.stream().findFirst().get();
             writeCircuit(block, id);
         }
@@ -124,7 +115,7 @@ public class CircuitWorld {
     public Circuit getCircuitAt(BlockPosition p) {
         Long id = getCircuitId(p);
 
-        if(id != null) {
+        if (id != null) {
             return getCircuit(id);
         }
 
@@ -156,7 +147,7 @@ public class CircuitWorld {
     public Circuit getOrCreateCircuit(long id) {
         Circuit c = getCircuit(id);
 
-        if(c == null) {
+        if (c == null) {
             c = createCircuit(id);
         }
 
@@ -174,10 +165,10 @@ public class CircuitWorld {
     public void remove(BlockPosition block) {
         Long id = blocks.remove(block);
 
-        if(id != null) {
+        if (id != null) {
             Circuit c = getCircuit(id);
 
-            if(c != null) {
+            if (c != null) {
                 c.remove(block);
             }
         }
@@ -190,10 +181,10 @@ public class CircuitWorld {
         });
 
         blocks.entrySet().removeIf(i -> {
-            if(M.r(0.05)) {
+            if (M.r(0.05)) {
                 Circuit c = circuits.get(i.getValue());
 
-                if(c != null){
+                if (c != null) {
                     c.remove(i.getKey());
                 }
 

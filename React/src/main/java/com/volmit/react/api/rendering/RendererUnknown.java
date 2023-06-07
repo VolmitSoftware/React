@@ -1,6 +1,5 @@
 package com.volmit.react.api.rendering;
 
-import com.volmit.react.api.rendering.ReactRenderer;
 import com.volmit.react.util.data.TinyColor;
 
 public class RendererUnknown implements ReactRenderer {

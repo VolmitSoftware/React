@@ -34,21 +34,22 @@ public class CommandConfig implements DecreeExecutor {
     }
 
     @Decree(
-        name = "entity-data",
-        aliases = {"edata"},
-        description = "Show Entity Data for the entity looked at",
-        origin = DecreeOrigin.PLAYER,
-        sync = true
+            name = "entity-data",
+            aliases = {"edata"},
+            description = "Show Entity Data for the entity looked at",
+            origin = DecreeOrigin.PLAYER,
+            sync = true
     )
     public void entityData() {
         Vector look = player().getLocation().getDirection().multiply(1);
         Location buf = player().getLocation().clone().add(look);
 
-        ray: for(int i = 0; i < 16; i++) {
+        ray:
+        for (int i = 0; i < 16; i++) {
             buf.add(look);
 
-            for(Entity j : buf.getWorld().getNearbyEntities(buf, 2, 2, 2)) {
-                if(j.equals(player())) {
+            for (Entity j : buf.getWorld().getNearbyEntities(buf, 2, 2, 2)) {
+                if (j.equals(player())) {
                     continue;
                 }
 
@@ -56,8 +57,8 @@ public class CommandConfig implements DecreeExecutor {
 
                 J.s(() -> j.setGlowing(false), 1);
 
-                player().sendMessage("Priority: " + Form.f((int)ReactEntity.getPriority(j)));
-                player().sendMessage("Crowding: " + Form.f((int)ReactEntity.getCrowding(j)));
+                player().sendMessage("Priority: " + Form.f((int) ReactEntity.getPriority(j)));
+                player().sendMessage("Crowding: " + Form.f((int) ReactEntity.getCrowding(j)));
                 player().sendMessage("Player N: " + Form.f(ReactEntity.getNearestPlayer(j), 1));
                 player().sendMessage("Updated : " + Form.duration(ReactEntity.getStaleness(j), 0) + " ago");
                 break ray;

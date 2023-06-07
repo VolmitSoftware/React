@@ -36,30 +36,26 @@ public class ChainedColumn {
         int d = 0;
         boolean latched = false;
 
-        int maxh = Math.min(block.getWorld().getMaxHeight(), block.getY()+max)-1;
-        for(int i = block.getY(); i < maxh; i++) {
+        int maxh = Math.min(block.getWorld().getMaxHeight(), block.getY() + max) - 1;
+        for (int i = block.getY(); i < maxh; i++) {
             Block b = block.getWorld().getBlockAt(block.getX(), i, block.getZ());
-            if(b.getType().equals(type)) {
+            if (b.getType().equals(type)) {
                 latched = true;
                 d++;
-                Block next = block.getWorld().getBlockAt(block.getX(), i+1, block.getZ());
+                Block next = block.getWorld().getBlockAt(block.getX(), i + 1, block.getZ());
                 boolean hasNext = next.getType().equals(type);
-                b.setType(underwater ? Material.WATER : Material.AIR, !hasNext || i == maxh-1);
-            }
-
-            else if(latched) {
+                b.setType(underwater ? Material.WATER : Material.AIR, !hasNext || i == maxh - 1);
+            } else if (latched) {
                 break;
             }
         }
 
-        if(d > 0) {
+        if (d > 0) {
             ItemStack item = new ItemStack(drops, d);
 
-            if(player != null) {
+            if (player != null) {
                 fastDrops.giveItem(block.getLocation().add(0.5, 0.5, 0.5), player, item);
-            }
-
-            else {
+            } else {
                 block.getWorld().dropItemNaturally(block.getLocation().add(0.5, 0, 0.5), item);
             }
         }

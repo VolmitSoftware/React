@@ -29,12 +29,12 @@ public class SampledServer {
         return worlds.containsKey(world);
     }
 
-    public boolean  hasWorld(World world) {
+    public boolean hasWorld(World world) {
         return hasWorld(world.getName());
     }
 
     public void removeChunk(Chunk chunk) {
-        if(hasWorld(chunk.getWorld())) {
+        if (hasWorld(chunk.getWorld())) {
             getWorld(chunk.getWorld()).remove(chunk);
         }
     }

@@ -36,10 +36,10 @@ public class CommandReact implements DecreeExecutor {
     private CommandEnvironment environment;
 
     @Decree(
-        name = "monitor",
-        aliases = {"m", "mon"},
-        description = "Monitor the server via action bar",
-        origin = DecreeOrigin.PLAYER
+            name = "monitor",
+            aliases = {"m", "mon"},
+            description = "Monitor the server via action bar",
+            origin = DecreeOrigin.PLAYER
     )
     public void monitor() {
         React.controller(PlayerController.class).getPlayer(player()).toggleActionBar();
@@ -47,15 +47,15 @@ public class CommandReact implements DecreeExecutor {
     }
 
     @Decree(
-        name = "allaytest",
-        aliases = {"at"},
-        description = "Monitor the server via action bar",
-        origin = DecreeOrigin.PLAYER
+            name = "allaytest",
+            aliases = {"at"},
+            description = "Monitor the server via action bar",
+            origin = DecreeOrigin.PLAYER
     )
     public void allaytest() {
         J.s(() -> {
-            for(int i = 0; i < 100; i++) {
-                for(Player j : Bukkit.getOnlinePlayers()) {
+            for (int i = 0; i < 100; i++) {
+                for (Player j : Bukkit.getOnlinePlayers()) {
                     Allay a = (Allay) j.getWorld().spawnEntity(j.getEyeLocation().clone().add(RNG.r.d(-10, 10), RNG.r.d(-10, 10), RNG.r.d(-10, 10)), EntityType.ALLAY);
                     a.getInventory().setItem(0, new ItemStack(Material.KELP));
                     a.setCanDuplicate(true);

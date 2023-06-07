@@ -4,7 +4,6 @@ import art.arcane.edict.Edict;
 import art.arcane.edict.api.endpoint.EdictEndpoint;
 import art.arcane.edict.api.request.EdictRequest;
 import art.arcane.edict.api.request.EdictResponse;
-import it.unimi.dsi.fastutil.Hash;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -68,39 +67,12 @@ public class EdictContext {
     private Map<Class<?>, Object> resolved = new HashMap<>();
 
     /**
-     * Returns the player associated with the context, if any.
-     *
-     * @return the associated player or null if the sender is not a player.
-     */
-    public Player getPlayer() {
-        return sender instanceof Player p ? p : null;
-    }
-
-    /**
-     * Resolves an object of the given class type using context resolvers.
-     *
-     * @param resolver The class of the object to resolve.
-     * @return The resolved object or null if no resolver could be found for the given class.
-     */
-    @SuppressWarnings("unchecked")
-    public <T> T resolve(Class<?> resolver) {
-        Object o = resolved.get(resolver);
-
-        if(o != null) {
-            return (T) o;
-        }
-
-        return (T) edict.getContextResolvers().stream().filter((e) -> e.getClass().equals(resolver)).findFirst()
-            .map(i -> resolved.computeIfAbsent(i.getClass(), (e) -> i.resolve(this))).orElse(null);
-    }
-
-    /**
      * Associates the given `EdictContext` with the current thread.
      *
      * @param c The `EdictContext` to associate with the current thread.
      * @return The previous `EdictContext` associated with the current thread, or null if there was none.
      */
-    public static EdictContext put(EdictContext c){
+    public static EdictContext put(EdictContext c) {
         return threadContext.put(Thread.currentThread().getId(), c);
     }
 
@@ -119,5 +91,32 @@ public class EdictContext {
 
     public static Player player() {
         return get().getPlayer();
+    }
+
+    /**
+     * Returns the player associated with the context, if any.
+     *
+     * @return the associated player or null if the sender is not a player.
+     */
+    public Player getPlayer() {
+        return sender instanceof Player p ? p : null;
+    }
+
+    /**
+     * Resolves an object of the given class type using context resolvers.
+     *
+     * @param resolver The class of the object to resolve.
+     * @return The resolved object or null if no resolver could be found for the given class.
+     */
+    @SuppressWarnings("unchecked")
+    public <T> T resolve(Class<?> resolver) {
+        Object o = resolved.get(resolver);
+
+        if (o != null) {
+            return (T) o;
+        }
+
+        return (T) edict.getContextResolvers().stream().filter((e) -> e.getClass().equals(resolver)).findFirst()
+                .map(i -> resolved.computeIfAbsent(i.getClass(), (e) -> i.resolve(this))).orElse(null);
     }
 }

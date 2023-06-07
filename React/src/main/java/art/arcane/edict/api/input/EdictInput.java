@@ -36,7 +36,7 @@ public interface EdictInput {
      *
      * @return An optional containing the converted input if successful, otherwise an empty optional.
      */
-    default <T> Optional<T> into(){
+    default <T> Optional<T> into() {
         return into(Confidence.LOW);
     }
 
@@ -48,13 +48,11 @@ public interface EdictInput {
      */
     @SuppressWarnings("unchecked")
     default <T> Optional<T> into(Confidence minimumConfidence) {
-        for(EdictValue<?> edictValue : getParsedValues(minimumConfidence)) {
-            if(edictValue.getConfidence() == Confidence.HIGH) {
+        for (EdictValue<?> edictValue : getParsedValues(minimumConfidence)) {
+            if (edictValue.getConfidence() == Confidence.HIGH) {
                 try {
                     return Optional.of((T) edictValue.getValue());
-                }
-
-                catch(Throwable ignored) {
+                } catch (Throwable ignored) {
 
                 }
             }
@@ -68,7 +66,7 @@ public interface EdictInput {
      *
      * @return An optional containing the converted input if successful, otherwise an empty optional.
      */
-    default <T> Optional<T> into(Class<T> type){
+    default <T> Optional<T> into(Class<T> type) {
         return into(type, Confidence.LOW);
     }
 
@@ -80,14 +78,12 @@ public interface EdictInput {
      */
     @SuppressWarnings("unchecked")
     default <T> Optional<T> into(Class<T> type, Confidence minimumConfidence) {
-        for(EdictValue<?> edictValue : getParsedValues(minimumConfidence)) {
-            if(edictValue.getConfidence() == Confidence.HIGH) {
-                if(edictValue.getValue().getClass().equals(type)) {
+        for (EdictValue<?> edictValue : getParsedValues(minimumConfidence)) {
+            if (edictValue.getConfidence() == Confidence.HIGH) {
+                if (edictValue.getValue().getClass().equals(type)) {
                     try {
                         return Optional.of((T) edictValue.getValue());
-                    }
-
-                    catch(Throwable ignored) {
+                    } catch (Throwable ignored) {
 
                     }
                 }

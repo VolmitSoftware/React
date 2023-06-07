@@ -3,7 +3,6 @@ package art.arcane.edict.api.request;
 import art.arcane.edict.Edict;
 import lombok.Getter;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class Node {

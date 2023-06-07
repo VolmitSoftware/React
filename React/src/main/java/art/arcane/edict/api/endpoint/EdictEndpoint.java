@@ -3,7 +3,6 @@ package art.arcane.edict.api.endpoint;
 import art.arcane.edict.api.SenderType;
 import art.arcane.edict.api.context.EdictContext;
 import art.arcane.edict.api.field.EdictField;
-import art.arcane.edict.api.request.EdictResponse;
 import art.arcane.edict.api.request.Node;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -86,7 +85,7 @@ public class EdictEndpoint {
      *
      * @return The name of the command.
      */
-    public String getName(){
+    public String getName() {
         List<String> path = getPath();
         return path.get(path.size() - 1);
     }
@@ -103,11 +102,11 @@ public class EdictEndpoint {
     public List<Node> getNodes() {
         List<Node> nodes = new ArrayList<>();
 
-        for(int i = 0; i < getPath().size(); i++) {
+        for (int i = 0; i < getPath().size(); i++) {
             List<String> s = new ArrayList<>();
             s.add(getPath().get(i));
 
-            for(String j : getAliases()) {
+            for (String j : getAliases()) {
                 s.add(getPath(j).get(i));
             }
 
@@ -125,8 +124,8 @@ public class EdictEndpoint {
         List<List<String>> l = new ArrayList<>();
         l.add(getPath());
 
-        if(getAliases() != null) {
-            for(String i : getAliases()) {
+        if (getAliases() != null) {
+            for (String i : getAliases()) {
                 l.add(getPath(i));
             }
         }

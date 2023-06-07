@@ -2,7 +2,6 @@ package art.arcane.edict.content.context;
 
 import art.arcane.edict.api.context.EdictContext;
 import art.arcane.edict.api.context.EdictContextResolver;
-import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
@@ -19,6 +18,18 @@ import java.util.Optional;
 public class LocationContext implements EdictContextResolver<Location> {
 
     /**
+     * Provides a convenient way to retrieve the Location associated with the current EdictContext.
+     * <br><br>
+     * This static method returns an Optional containing the resolved Location if the CommandSender within
+     * the current EdictContext is a Player, or an empty Optional otherwise.
+     *
+     * @return an Optional containing the resolved Location if the CommandSender within the current EdictContext is a Player, or an empty Optional otherwise
+     */
+    public static Optional<Location> get() {
+        return EdictContext.get().resolve(LocationContext.class);
+    }
+
+    /**
      * Resolves a Location object from the provided EdictContext.
      * <br><br>
      * If the CommandSender within the context is a Player, the method returns an Optional containing the
@@ -31,17 +42,5 @@ public class LocationContext implements EdictContextResolver<Location> {
     @Override
     public Optional<Location> resolve(EdictContext context) {
         return context.getSender() instanceof Player p ? Optional.of(p.getLocation()) : Optional.empty();
-    }
-
-    /**
-     * Provides a convenient way to retrieve the Location associated with the current EdictContext.
-     * <br><br>
-     * This static method returns an Optional containing the resolved Location if the CommandSender within
-     * the current EdictContext is a Player, or an empty Optional otherwise.
-     *
-     * @return an Optional containing the resolved Location if the CommandSender within the current EdictContext is a Player, or an empty Optional otherwise
-     */
-    public static Optional<Location> get() {
-        return EdictContext.get().resolve(LocationContext.class);
     }
 }

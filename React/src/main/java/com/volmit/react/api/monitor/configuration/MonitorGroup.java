@@ -42,7 +42,7 @@ public class MonitorGroup {
     }
 
     public List<Sampler> getSubSamplers() {
-        return samplers.stream().skip(1).map(i -> (Sampler)React.sampler(i)).collect(Collectors.toList());
+        return samplers.stream().skip(1).map(i -> (Sampler) React.sampler(i)).collect(Collectors.toList());
     }
 
     public int getColorValue() {

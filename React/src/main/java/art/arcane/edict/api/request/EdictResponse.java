@@ -51,6 +51,6 @@ public class EdictResponse {
      */
     public int getScoreOffset() {
         return (Math.abs(fields.stream().mapToInt(i -> ((Confidence.values().length - i.getConfidence().ordinal()))).sum() * 5)
-            + Math.abs(request.getInputs().size() - endpoint.getFields().size()) + matchScore);
+                + Math.abs(request.getInputs().size() - endpoint.getFields().size()) + matchScore);
     }
 }

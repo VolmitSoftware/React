@@ -2,7 +2,6 @@ package com.volmit.react.model;
 
 import art.arcane.chrono.ChronoLatch;
 import com.google.common.util.concurrent.AtomicDouble;
-import com.volmit.react.util.cache.Cache;
 import lombok.Data;
 import org.bukkit.Chunk;
 
@@ -39,7 +38,7 @@ public class SampledChunk {
     }
 
     public AtomicDouble get(String key) {
-        if(cleaner.flip()) {
+        if (cleaner.flip()) {
             cleanup();
         }
 
@@ -49,15 +48,15 @@ public class SampledChunk {
     private void cleanup() {
         String remove = null;
 
-        for(String i : values.keySet()) {
+        for (String i : values.keySet()) {
             double v = values.get(i).updateAndGet(HALF);
 
-            if(remove == null && v <= 1) {
+            if (remove == null && v <= 1) {
                 remove = i;
             }
         }
 
-        if(remove != null) {
+        if (remove != null) {
             values.remove(remove);
         }
     }

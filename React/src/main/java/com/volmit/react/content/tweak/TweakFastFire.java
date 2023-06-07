@@ -24,7 +24,7 @@ public class TweakFastFire extends ReactTweak implements Listener {
 
     @EventHandler
     public void on(BlockSpreadEvent e) {
-        if(e.getBlock().getBlockData() instanceof Fire f) {
+        if (e.getBlock().getBlockData() instanceof Fire f) {
             e.setCancelled(true);
             J.s(() -> FastWorld.set(e.getBlock(), f));
         }
@@ -32,7 +32,7 @@ public class TweakFastFire extends ReactTweak implements Listener {
 
     @EventHandler
     public void on(BlockFadeEvent e) {
-        if(e.getBlock().getBlockData() instanceof Fire) {
+        if (e.getBlock().getBlockData() instanceof Fire) {
             e.setCancelled(true);
             J.s(() -> FastWorld.breakNaturally(e.getBlock()));
         }

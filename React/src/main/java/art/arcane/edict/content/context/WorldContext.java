@@ -18,6 +18,18 @@ import java.util.Optional;
 public class WorldContext implements EdictContextResolver<World> {
 
     /**
+     * Provides a convenient way to retrieve the World associated with the current EdictContext.
+     * <br><br>
+     * This static method returns an Optional containing the resolved World if the CommandSender within
+     * the current EdictContext is a Player, or an empty Optional otherwise.
+     *
+     * @return an Optional containing the resolved World if the CommandSender within the current EdictContext is a Player, or an empty Optional otherwise
+     */
+    public static Optional<World> get() {
+        return EdictContext.get().resolve(WorldContext.class);
+    }
+
+    /**
      * Resolves a World object from the provided EdictContext.
      * <br><br>
      * If the CommandSender within the context is a Player, the method returns an Optional containing the
@@ -30,17 +42,5 @@ public class WorldContext implements EdictContextResolver<World> {
     @Override
     public Optional<World> resolve(EdictContext context) {
         return context.getSender() instanceof Player p ? Optional.of(p.getWorld()) : Optional.empty();
-    }
-
-    /**
-     * Provides a convenient way to retrieve the World associated with the current EdictContext.
-     * <br><br>
-     * This static method returns an Optional containing the resolved World if the CommandSender within
-     * the current EdictContext is a Player, or an empty Optional otherwise.
-     *
-     * @return an Optional containing the resolved World if the CommandSender within the current EdictContext is a Player, or an empty Optional otherwise
-     */
-    public static Optional<World> get() {
-        return EdictContext.get().resolve(WorldContext.class);
     }
 }

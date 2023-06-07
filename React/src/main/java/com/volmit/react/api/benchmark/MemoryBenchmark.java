@@ -1,6 +1,5 @@
 package com.volmit.react.api.benchmark;
 
-import com.volmit.react.util.plugin.VolmitSender;
 import com.volmit.react.util.scheduling.J;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;

@@ -3,7 +3,6 @@ package art.arcane.edict.content.parser;
 import art.arcane.edict.api.parser.SelectionParser;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
-import org.bukkit.entity.Player;
 
 import java.util.List;
 

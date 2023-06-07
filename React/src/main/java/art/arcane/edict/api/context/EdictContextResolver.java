@@ -11,7 +11,6 @@ import java.util.Optional;
  * in an `Edict` operation.
  *
  * @param <T> the type of object to resolve from the context
- *
  * @see EdictContext
  */
 @FunctionalInterface

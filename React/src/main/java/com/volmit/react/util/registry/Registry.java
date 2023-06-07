@@ -5,11 +5,7 @@ import com.volmit.react.util.io.JarScanner;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class Registry<T extends Registered> {
     private Map<String, T> idRegistry;
@@ -26,24 +22,24 @@ public class Registry<T extends Registered> {
             try {
                 j.scan();
                 j.getClasses().stream()
-                    .filter(i -> i.isAssignableFrom(type) || type.isAssignableFrom(i))
-                    .map((i) -> {
-                        try {
-                            return (T) i.getConstructor().newInstance();
-                        } catch (Throwable e) {
-                            e.printStackTrace();
-                        }
+                        .filter(i -> i.isAssignableFrom(type) || type.isAssignableFrom(i))
+                        .map((i) -> {
+                            try {
+                                return (T) i.getConstructor().newInstance();
+                            } catch (Throwable e) {
+                                e.printStackTrace();
+                            }
 
-                        return null;
-                    })
-                    .forEach((i) -> {
-                        if (i != null && i.autoRegister()) {
-                            i.loadConfiguration();
-                            idRegistry.put(i.getId(), i);
-                            classRegistry.put(i.getClass(), i);
-                            React.verbose("Register " + i.getConfigCategory() + " " + i.getId() + " (" + i.getClass().getSimpleName() + ")");
-                        }
-                    });
+                            return null;
+                        })
+                        .forEach((i) -> {
+                            if (i != null && i.autoRegister()) {
+                                i.loadConfiguration();
+                                idRegistry.put(i.getId(), i);
+                                classRegistry.put(i.getClass(), i);
+                                React.verbose("Register " + i.getConfigCategory() + " " + i.getId() + " (" + i.getClass().getSimpleName() + ")");
+                            }
+                        });
 
                 this.idRegistry = Collections.unmodifiableMap(idRegistry);
                 this.classRegistry = Collections.unmodifiableMap(classRegistry);
@@ -78,10 +74,10 @@ public class Registry<T extends Registered> {
     }
 
     public <X extends T> X get() {
-        for(T i : classRegistry.values()) {
+        for (T i : classRegistry.values()) {
             try {
                 return (X) i;
-            } catch(Throwable e) {
+            } catch (Throwable e) {
 
             }
         }

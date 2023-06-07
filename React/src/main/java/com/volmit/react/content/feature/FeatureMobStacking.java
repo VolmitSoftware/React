@@ -40,6 +40,24 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
         super(ID);
     }
 
+    public static Set<EntityType> defaultStackableTypes() {
+        Set<EntityType> e = new HashSet<>();
+
+        for (EntityType i : EntityType.values()) {
+            if (i.isAlive() && i.isSpawnable()) {
+                e.add(i);
+            }
+        }
+
+        e.remove(EntityType.PLAYER);
+        e.remove(EntityType.ARMOR_STAND);
+        e.remove(EntityType.VILLAGER);
+        e.remove(EntityType.WANDERING_TRADER);
+        e.remove(EntityType.FALLING_BLOCK);
+
+        return e;
+    }
+
     @Override
     public void onActivate() {
         for (EntityType i : stackableTypes) {
@@ -114,7 +132,7 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
     }
 
     public boolean canMerge(Entity a, Entity into) {
-        if(skipCustomMobs && (CustomMobChecker.isCustom(a) || CustomMobChecker.isCustom(into))) {
+        if (skipCustomMobs && (CustomMobChecker.isCustom(a) || CustomMobChecker.isCustom(into))) {
             return false;
         }
 
@@ -209,23 +227,5 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
     @Override
     public void onTick() {
 
-    }
-
-    public static Set<EntityType> defaultStackableTypes() {
-        Set<EntityType> e = new HashSet<>();
-
-        for (EntityType i : EntityType.values()) {
-            if (i.isAlive() && i.isSpawnable()) {
-                e.add(i);
-            }
-        }
-
-        e.remove(EntityType.PLAYER);
-        e.remove(EntityType.ARMOR_STAND);
-        e.remove(EntityType.VILLAGER);
-        e.remove(EntityType.WANDERING_TRADER);
-        e.remove(EntityType.FALLING_BLOCK);
-
-        return e;
     }
 }

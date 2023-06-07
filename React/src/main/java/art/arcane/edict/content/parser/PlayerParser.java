@@ -9,7 +9,7 @@ import java.util.List;
 public class PlayerParser implements SelectionParser<Player> {
     @Override
     public List<Player> getSelectionOptions() {
-        return Bukkit.getOnlinePlayers().stream().map(i -> (Player)i).toList();
+        return Bukkit.getOnlinePlayers().stream().map(i -> (Player) i).toList();
     }
 
     @Override

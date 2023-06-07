@@ -5,7 +5,7 @@ import com.volmit.react.util.math.RollingSequence;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-public abstract class ReactCachedRateSampler extends ReactCachedSampler{
+public abstract class ReactCachedRateSampler extends ReactCachedSampler {
     private static final double D1_OVER_SECONDS = 1.0 / 1000D;
     private transient AtomicInteger hits;
     private transient RollingSequence avg;
@@ -25,7 +25,7 @@ public abstract class ReactCachedRateSampler extends ReactCachedSampler{
 
         long t = M.ms();
 
-        if(t - lastHit > sampleDelay) {
+        if (t - lastHit > sampleDelay) {
             avg.put(0);
             lastHit = t;
         }

@@ -4,17 +4,13 @@ import com.volmit.react.React;
 import com.volmit.react.api.feature.Feature;
 import com.volmit.react.api.feature.ReactTickedFeature;
 import com.volmit.react.content.feature.FeatureUnknown;
-import com.volmit.react.util.io.JarScanner;
 import com.volmit.react.util.plugin.IController;
 import com.volmit.react.util.registry.Registry;
-import com.volmit.react.util.scheduling.J;
 import com.volmit.react.util.scheduling.TickedObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.bukkit.event.Listener;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -58,7 +54,7 @@ public class FeatureController extends TickedObject implements IController {
         if (!activeFeatures.containsKey(feature.getId())) {
             activeFeatures.put(feature.getId(), feature);
             feature.onActivate();
-            if(feature instanceof Listener l) {
+            if (feature instanceof Listener l) {
                 React.instance.registerListener(l);
             }
 
@@ -71,7 +67,7 @@ public class FeatureController extends TickedObject implements IController {
     }
 
     public void deactivateFeature(Feature feature) {
-        if(feature instanceof Listener l) {
+        if (feature instanceof Listener l) {
             React.instance.unregisterListener(l);
         }
         activeFeatures.remove(feature.getId());

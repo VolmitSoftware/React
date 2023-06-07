@@ -129,8 +129,7 @@ public class Ticker {
                     try {
                         long ms = System.currentTimeMillis();
                         t.tick();
-                        if(System.currentTimeMillis() - ms > 50)
-                        {
+                        if (System.currentTimeMillis() - ms > 50) {
                             React.warn(t.getTgroup() + ":" + t.getTid() + " took " + (System.currentTimeMillis() - ms) + "ms");
                         }
                     } catch (Throwable exxx) {

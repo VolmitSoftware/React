@@ -62,9 +62,7 @@ public abstract class ReactTickedSampler extends TickedObject implements Sampler
 
         try {
             ssequence.put(onSample());
-        }
-
-        catch(Throwable e) {
+        } catch (Throwable e) {
 
         }
     }

@@ -24,10 +24,6 @@ import com.volmit.react.core.controller.MapController;
 import com.volmit.react.util.collection.KList;
 import com.volmit.react.util.decree.DecreeParameterHandler;
 import com.volmit.react.util.decree.exceptions.DecreeParsingException;
-import org.bukkit.Bukkit;
-import org.bukkit.World;
-
-import java.util.stream.Collectors;
 
 public class ReactRendererHandler implements DecreeParameterHandler<ReactRenderer> {
     @Override

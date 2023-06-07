@@ -98,11 +98,9 @@ public class FeatureFastLeafDecay extends ReactFeature implements Listener {
                 b.getWorld().playSound(b.getLocation(), decaySound, (float) soundVolume, (float) soundPitch);
             }
 
-            if(fastBlockChanges) {
+            if (fastBlockChanges) {
                 FastWorld.breakNaturally(b);
-            }
-
-            else {
+            } else {
                 b.breakNaturally();
             }
         }
@@ -131,7 +129,7 @@ public class FeatureFastLeafDecay extends ReactFeature implements Listener {
      */
     @EventHandler(priority = EventPriority.MONITOR)
     public void on(LeavesDecayEvent e) {
-        if(cooldownLatch.flip()) {
+        if (cooldownLatch.flip()) {
             checkDecay(e.getBlock());
         }
     }
@@ -159,7 +157,7 @@ public class FeatureFastLeafDecay extends ReactFeature implements Listener {
             AtomicInteger j = new AtomicInteger();
             AtomicInteger k = new AtomicInteger();
             for (Block block : search) {
-                if(p.getMilliseconds() > maxAsyncMS) {
+                if (p.getMilliseconds() > maxAsyncMS) {
                     break;
                 }
 
@@ -168,7 +166,7 @@ public class FeatureFastLeafDecay extends ReactFeature implements Listener {
                     for (i.set(block.getX() - getLeafDecayRadius()); i.get() < block.getX() + getLeafDecayRadius(); i.getAndIncrement()) {
                         for (j.set(block.getY() - getLeafDecayRadius()); j.get() < block.getY() + getLeafDecayRadius(); j.getAndIncrement()) {
                             for (k.set(block.getZ() - getLeafDecayRadius()); k.get() < block.getZ() + getLeafDecayRadius(); k.getAndIncrement()) {
-                                if(px.getMilliseconds()>maxSyncSpikeMS) {
+                                if (px.getMilliseconds() > maxSyncSpikeMS) {
                                     return;
                                 }
 
@@ -184,9 +182,7 @@ public class FeatureFastLeafDecay extends ReactFeature implements Listener {
             }
 
             search.clear();
-        }
-
-        catch(Throwable ignored) {
+        } catch (Throwable ignored) {
 
         }
     }

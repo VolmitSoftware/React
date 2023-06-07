@@ -17,28 +17,11 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.CreatureSpawnEvent;
-import org.bukkit.event.entity.EntityBreedEvent;
-import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.entity.EntityDropItemEvent;
-import org.bukkit.event.entity.EntityInteractEvent;
-import org.bukkit.event.entity.EntityPlaceEvent;
-import org.bukkit.event.entity.EntityPoseChangeEvent;
-import org.bukkit.event.entity.EntityRegainHealthEvent;
-import org.bukkit.event.entity.EntitySpawnEvent;
-import org.bukkit.event.entity.EntityTameEvent;
-import org.bukkit.event.entity.EntityTargetEvent;
-import org.bukkit.event.entity.ItemMergeEvent;
+import org.bukkit.event.entity.*;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
-import org.bukkit.event.world.WorldEvent;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
 
 @Data
@@ -77,7 +60,7 @@ public class EntityController implements IController, Listener {
         looper = new Looper() {
             @Override
             protected long loop() {
-                if(!React.instance.isReady()) {
+                if (!React.instance.isReady()) {
                     return 100;
                 }
 
@@ -88,15 +71,15 @@ public class EntityController implements IController, Listener {
     }
 
     public void tickEntity(Entity e) {
-        if(ReactEntity.tick(e, ReactConfiguration.get().getPriority())) {
+        if (ReactEntity.tick(e, ReactConfiguration.get().getPriority())) {
             List<Consumer<Entity>> tickers = entityTickListeners.get(e.getType());
 
-            for(Consumer<Entity> i : allEntityTickListeners) {
+            for (Consumer<Entity> i : allEntityTickListeners) {
                 J.s(() -> i.accept(e));
             }
 
-            if(tickers != null) {
-                for(Consumer<Entity> i : tickers) {
+            if (tickers != null) {
+                for (Consumer<Entity> i : tickers) {
                     J.s(() -> i.accept(e));
                 }
             }
@@ -117,7 +100,7 @@ public class EntityController implements IController, Listener {
     public void on(EntityTargetEvent e) {
         tickEntity(e.getEntity());
 
-        if(e.getTarget() != null) {
+        if (e.getTarget() != null) {
             tickEntity(e.getTarget());
         }
     }
@@ -177,7 +160,7 @@ public class EntityController implements IController, Listener {
     public void stop() {
         looper.interrupt();
 
-        for(EntityKiller i : new HashSet<>(killers)) {
+        for (EntityKiller i : new HashSet<>(killers)) {
             i.stop();
         }
 
@@ -191,20 +174,20 @@ public class EntityController implements IController, Listener {
     }
 
     public void onTick() {
-        if(valueSaver.flip() && ReactConfiguration.get().getPriority().isUseItemStackValueSystem()) {
+        if (valueSaver.flip() && ReactConfiguration.get().getPriority().isUseItemStackValueSystem()) {
             MaterialValue.save();
         }
 
-        for(World i : Bukkit.getWorlds()) {
+        for (World i : Bukkit.getWorlds()) {
             J.s(() -> {
                 List<Entity> e = i.getEntities();
 
-                if(e.size() < 3) {
+                if (e.size() < 3) {
                     return;
                 }
 
                 J.a(() -> {
-                    for(int j = 0; j < perWorldUpdatesPerTick; j++) {
+                    for (int j = 0; j < perWorldUpdatesPerTick; j++) {
                         Entity ee = e.get(M.irand(0, e.size() - 1));
                         tickEntity(ee);
                     }

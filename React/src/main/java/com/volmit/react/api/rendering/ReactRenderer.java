@@ -1,23 +1,19 @@
 package com.volmit.react.api.rendering;
 
 import com.volmit.react.util.data.TinyColor;
-import com.volmit.react.util.format.C;
-import com.volmit.react.util.registry.Registered;
-import org.bukkit.DyeColor;
 import org.bukkit.entity.Player;
 import org.bukkit.map.MapCanvas;
-import org.bukkit.map.MapFont;
 import org.bukkit.map.MapView;
 import org.bukkit.map.MinecraftFont;
 
-import java.awt.Color;
+import java.awt.*;
 
 public interface ReactRenderer {
     default void render(MapView map, MapCanvas canvas, Player player) {
         ReactRenderContext.push(ReactRenderContext.builder()
                 .view(map).canvas(canvas).player(player)
                 .width(128).height(128)
-            .build());
+                .build());
         render();
     }
 
@@ -48,29 +44,28 @@ public interface ReactRenderer {
         int y = y1;
 
         for (int i = 0; i <= steps; i++) {
-            if(x < 0 || y < 0 || x >= width() || y >= height()) {
+            if (x < 0 || y < 0 || x >= width() || y >= height()) {
                 break;
             }
 
-            if(i > 256)
-            {
+            if (i > 256) {
                 break;
             }
 
             set(x, y, color);
             int e2 = 2 * err;
 
-            if(e2 > -dy) {
+            if (e2 > -dy) {
                 err -= dy;
                 x += sx;
             }
 
-            if(e2 < dx) {
+            if (e2 < dx) {
                 err += dx;
                 y += sy;
             }
 
-            if(x == x2 && y == y2) {
+            if (x == x2 && y == y2) {
                 break;
             }
         }
@@ -85,11 +80,11 @@ public interface ReactRenderer {
     }
 
     default int x(int x) {
-        return Math.max(4, Math.min(width() - 1, x-4));
+        return Math.max(4, Math.min(width() - 1, x - 4));
     }
 
     default int y(int y) {
-        return Math.max(4, Math.min(height() - 1, y-4));
+        return Math.max(4, Math.min(height() - 1, y - 4));
     }
 
     default void textNear(int x, int y, String text) {
@@ -112,7 +107,7 @@ public interface ReactRenderer {
         return ReactRenderContext.of().getView();
     }
 
-    default Player player(){
+    default Player player() {
         return ReactRenderContext.of().getPlayer();
     }
 
@@ -125,16 +120,16 @@ public interface ReactRenderer {
     }
 
     default void set(int x, int y, int w, int h, TinyColor c) {
-        for(int i = x; i < x + w; i++) {
-            for(int j = y; j < y + h; j++) {
+        for (int i = x; i < x + w; i++) {
+            for (int j = y; j < y + h; j++) {
                 set(i, j, c);
             }
         }
     }
 
     default void clear(TinyColor color) {
-        for(int i = 0; i < width(); i++) {
-            for(int j = 0; j < height(); j++) {
+        for (int i = 0; i < width(); i++) {
+            for (int j = 0; j < height(); j++) {
                 set(i, j, color);
             }
         }

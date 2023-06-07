@@ -21,6 +21,18 @@ import java.util.List;
  */
 public interface EnumeratedParser<T extends Enum<T>> extends EdictParser<T>, Suggestive {
     /**
+     * Calculates the similarity between the enum constant name and the input string.
+     * The similarity is determined by the Levenshtein distance between the two strings.
+     *
+     * @param enumConstantName the name of the enum constant
+     * @param targetString     the input string
+     * @return the similarity between the enum constant name and the input string
+     */
+    private static int calculateSimilarity(String enumConstantName, String targetString) {
+        return Edict.calculateLevenshteinDistance(enumConstantName, targetString);
+    }
+
+    /**
      * Parses the input string to map it to an appropriate enum constant.
      *
      * @param s the input string to be parsed
@@ -29,14 +41,14 @@ public interface EnumeratedParser<T extends Enum<T>> extends EdictParser<T>, Sug
     @SuppressWarnings("unchecked")
     default EdictValue<T> parse(String s) {
         return Arrays
-            .stream(getEnumType().getEnumConstants())
-            .min(Comparator.comparingInt(enumConstant -> calculateSimilarity(enumConstant.name(), s.toUpperCase().trim()
-                .replaceAll("\\Q-\\E", "_")
-                .replaceAll("\\Q \\E", "_")
-                .replaceAll("\\Q/\\E", "_")
-                .replaceAll("\\Q.\\E", "_"))))
-            .map(i -> high((T) i))
-            .orElse(low((T) getEnumType().getEnumConstants()[0]));
+                .stream(getEnumType().getEnumConstants())
+                .min(Comparator.comparingInt(enumConstant -> calculateSimilarity(enumConstant.name(), s.toUpperCase().trim()
+                        .replaceAll("\\Q-\\E", "_")
+                        .replaceAll("\\Q \\E", "_")
+                        .replaceAll("\\Q/\\E", "_")
+                        .replaceAll("\\Q.\\E", "_"))))
+                .map(i -> high((T) i))
+                .orElse(low((T) getEnumType().getEnumConstants()[0]));
     }
 
     /**
@@ -53,11 +65,11 @@ public interface EnumeratedParser<T extends Enum<T>> extends EdictParser<T>, Sug
      */
     default List<String> getOptions() {
         return Arrays
-            .stream(getEnumType().getEnumConstants())
-            .map(Enum::name)
-            .map(String::toLowerCase)
-            .map(i -> i.replaceAll("\\Q_\\E", "-"))
-            .toList();
+                .stream(getEnumType().getEnumConstants())
+                .map(Enum::name)
+                .map(String::toLowerCase)
+                .map(i -> i.replaceAll("\\Q_\\E", "-"))
+                .toList();
     }
 
     /**
@@ -67,17 +79,5 @@ public interface EnumeratedParser<T extends Enum<T>> extends EdictParser<T>, Sug
      */
     default boolean isMandatory() {
         return true;
-    }
-
-    /**
-     * Calculates the similarity between the enum constant name and the input string.
-     * The similarity is determined by the Levenshtein distance between the two strings.
-     *
-     * @param enumConstantName the name of the enum constant
-     * @param targetString the input string
-     * @return the similarity between the enum constant name and the input string
-     */
-    private static int calculateSimilarity(String enumConstantName, String targetString) {
-        return Edict.calculateLevenshteinDistance(enumConstantName, targetString);
     }
 }

@@ -28,14 +28,14 @@ public class FeatureMinecartTether extends ReactFeature implements Listener {
     }
 
     public void onMinecart(Minecart entity) {
-        if(entity.getVelocity().getX() != 0 || entity.getVelocity().getY() != 0 || entity.getVelocity().getZ() != 0
-            ||entity.getFlyingVelocityMod().getX() != 0 || entity.getFlyingVelocityMod().getY() != 0 || entity.getFlyingVelocityMod().getZ() != 0
-            ||entity.getDerailedVelocityMod().getX() != 0 || entity.getDerailedVelocityMod().getY() != 0 || entity.getDerailedVelocityMod().getZ() != 0
+        if (entity.getVelocity().getX() != 0 || entity.getVelocity().getY() != 0 || entity.getVelocity().getZ() != 0
+                || entity.getFlyingVelocityMod().getX() != 0 || entity.getFlyingVelocityMod().getY() != 0 || entity.getFlyingVelocityMod().getZ() != 0
+                || entity.getDerailedVelocityMod().getX() != 0 || entity.getDerailedVelocityMod().getY() != 0 || entity.getDerailedVelocityMod().getZ() != 0
         ) {
-            if(!React.hasNearbyPlayer(entity.getLocation(), maxBlockDistance)) {
-                entity.setVelocity(new Vector(0,0,0));
-                entity.setDerailedVelocityMod(new Vector(0,0,0));
-                entity.setFlyingVelocityMod(new Vector(0,0,0));
+            if (!React.hasNearbyPlayer(entity.getLocation(), maxBlockDistance)) {
+                entity.setVelocity(new Vector(0, 0, 0));
+                entity.setDerailedVelocityMod(new Vector(0, 0, 0));
+                entity.setFlyingVelocityMod(new Vector(0, 0, 0));
             }
         }
     }

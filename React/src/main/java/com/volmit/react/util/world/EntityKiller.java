@@ -20,7 +20,7 @@ public class EntityKiller implements Listener {
     private int tt;
 
     public EntityKiller(Entity e, int seconds) {
-        if(React.controller(EntityController.class).getKilling().contains(e)) {
+        if (React.controller(EntityController.class).getKilling().contains(e)) {
             return;
         }
 
@@ -30,7 +30,7 @@ public class EntityKiller implements Listener {
         this.entity = e;
         this.seconds = seconds;
         this.tt = seconds;
-       tt = J.sr(this::tick, 20);
+        tt = J.sr(this::tick, 20);
     }
 
     public void stop() {
@@ -43,13 +43,13 @@ public class EntityKiller implements Listener {
     }
 
     private void tick() {
-        if(entity.isDead()) {
+        if (entity.isDead()) {
             stop();
             return;
         }
 
         seconds--;
-        if(seconds == 0) {
+        if (seconds == 0) {
             kill();
             React.instance.unregisterListener(this);
         }
@@ -59,7 +59,7 @@ public class EntityKiller implements Listener {
     }
 
     public void kill() {
-        if(entity.isDead()) {
+        if (entity.isDead()) {
             return;
         }
 
@@ -67,13 +67,13 @@ public class EntityKiller implements Listener {
         entity.getWorld().spawnParticle(Particle.FLASH, entity.getLocation(), 1);
         entity.getWorld().playSound(entity.getLocation(), Sound.PARTICLE_SOUL_ESCAPE, 0.5f, 0.9f);
         entity.remove();
-        ((SamplerEntities)React.sampler(SamplerEntities.ID)).getEntities().decrementAndGet();
+        ((SamplerEntities) React.sampler(SamplerEntities.ID)).getEntities().decrementAndGet();
     }
 
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void on(EntityPickupItemEvent e) {
-        if(e.getItem().equals(entity)) {
+        if (e.getItem().equals(entity)) {
             stop();
         }
     }

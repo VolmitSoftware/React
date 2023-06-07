@@ -10,13 +10,11 @@ import com.volmit.react.util.data.TinyColor;
 import com.volmit.react.util.math.M;
 import com.volmit.react.util.registry.Registered;
 import com.volmit.react.util.scheduling.J;
-import com.volmit.react.util.scheduling.Observable;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.block.Block;
 
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
@@ -28,27 +26,27 @@ public interface Sampler extends Registered, ReactRenderer {
     }
 
     default void render() {
-        clear(new TinyColor(0,0,0));
+        clear(new TinyColor(0, 0, 0));
         Graph g = Graph.of(this);
         double min = g.getMin();
         double max = g.getMax();
         double pmax = g.getPaddedMax(0.15);
         double pmin = g.getPaddedMin(0.15);
 
-        for(int ig = 0; ig < 128; ig++) {
+        for (int ig = 0; ig < 128; ig++) {
             int i = 127 - ig;
             int v = (int) M.lerp(127, 0, M.lerpInverse(pmin, pmax, g.get(i)));
 
-            for(int igx = v; igx < 128; igx++) {
-                set(ig, igx, new TinyColor((128-(igx))+127, (128-(igx))+127, (128-(igx))+127));
+            for (int igx = v; igx < 128; igx++) {
+                set(ig, igx, new TinyColor((128 - (igx)) + 127, (128 - (igx)) + 127, (128 - (igx)) + 127));
             }
         }
 
         String s = format(g.get(0));
         String smin = format(min);
         String smax = format(max);
-        textNear((127+textWidth(s))/2, (127+textHeight())/2, s);
-        textNear(0,127, smin);
+        textNear((127 + textWidth(s)) / 2, (127 + textHeight()) / 2, s);
+        textNear(0, 127, smin);
         textNear(0, 0, smax);
     }
 

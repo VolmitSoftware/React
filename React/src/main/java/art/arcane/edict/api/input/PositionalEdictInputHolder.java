@@ -19,7 +19,7 @@ import java.util.List;
 @Data
 @Builder
 @AllArgsConstructor
-public class PositionalEdictInputHolder implements PositionalInput, EdictInput  {
+public class PositionalEdictInputHolder implements PositionalInput, EdictInput {
 
     /**
      * The 'position' field represents the ordinal position of the input amongst positional inputs.

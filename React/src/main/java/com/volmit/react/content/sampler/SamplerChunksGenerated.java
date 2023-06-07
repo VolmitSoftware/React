@@ -18,7 +18,7 @@ public class SamplerChunksGenerated extends ReactCachedSampler implements Listen
     private transient RollingSequence avg;
     private transient long lastSample = 0L;
     private int sequenceAverageLength = 5;
- 
+
     public SamplerChunksGenerated() {
         super(ID, 1000); // 1 tick interval for higher accuracy
         generated = new AtomicInteger(0);

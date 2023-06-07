@@ -9,7 +9,6 @@ import java.util.List;
  * Additionally, it can specify whether the input must strictly match one of these suggested options,
  * or whether partial or custom matches are allowed. This can help in guiding the user input
  * or increasing the accuracy of the parser.
- *
  */
 public interface Suggestive {
 
@@ -26,7 +25,7 @@ public interface Suggestive {
      * trying to parse it as a custom or partially matching input.
      *
      * @return True if the list of options is rigid and the input must match one of the options.
-     *         False if custom or partial matches are allowed.
+     * False if custom or partial matches are allowed.
      */
     boolean isMandatory();
 }

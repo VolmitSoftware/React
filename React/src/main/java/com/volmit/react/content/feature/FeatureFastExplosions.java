@@ -27,7 +27,7 @@ public class FeatureFastExplosions extends ReactFeature implements Listener {
     private int maxExplosionChainsPerTick = 3;
     private boolean fastBlockUpdates = true;
     private boolean disableEntityChainReactions = false;
-    private boolean explosionChainReactions = false ;
+    private boolean explosionChainReactions = false;
     private transient int primes = 0;
     private transient int preprimes = 0;
     private transient int explosionChains = 0;
@@ -48,7 +48,7 @@ public class FeatureFastExplosions extends ReactFeature implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void on(EntitySpawnEvent e) {
-        if(spreadPrimedFuseTicks > 0 && e.getEntity() instanceof TNTPrimed tnt) {
+        if (spreadPrimedFuseTicks > 0 && e.getEntity() instanceof TNTPrimed tnt) {
             tnt.setFuseTicks((primes * spreadPrimedFuseTicks) + tnt.getFuseTicks());
         }
         primes++;
@@ -58,28 +58,26 @@ public class FeatureFastExplosions extends ReactFeature implements Listener {
     public void on(BlockExplodeEvent e) {
         var b = new ArrayList<>(e.blockList());
 
-        if(disableEntityChainReactions) {
+        if (disableEntityChainReactions) {
             e.blockList().clear();
-        }
-
-        else {
+        } else {
             e.blockList().removeIf((i) -> !i.getType().equals(Material.TNT));
         }
 
-        preprimes+= e.blockList().size();
+        preprimes += e.blockList().size();
 
-        while(preprimes > maxPrimesPerTick && e.blockList().size() > 0) {
+        while (preprimes > maxPrimesPerTick && e.blockList().size() > 0) {
             e.blockList().remove(0);
             preprimes--;
         }
 
         J.s(() -> {
-            for(Block i :b) {
-                if(i.getType().equals(Material.TNT)) {
-                    if(explosionChainReactions) {
+            for (Block i : b) {
+                if (i.getType().equals(Material.TNT)) {
+                    if (explosionChainReactions) {
                         FastWorld.set(i, B.getAir(), fastBlockUpdates);
 
-                        if(maxExplosionChainsPerTick > explosionChains++) {
+                        if (maxExplosionChainsPerTick > explosionChains++) {
                             J.s(() -> i.getWorld().createExplosion(i.getLocation(), 4f, false, true));
                         }
                     }
@@ -87,7 +85,7 @@ public class FeatureFastExplosions extends ReactFeature implements Listener {
                     continue;
                 }
 
-                if(M.r((double)e.getYield())) {
+                if (M.r((double) e.getYield())) {
                     i.getDrops(null).forEach((f) -> i.getLocation().getWorld().dropItem(i.getLocation(), f));
                 }
 
@@ -100,28 +98,26 @@ public class FeatureFastExplosions extends ReactFeature implements Listener {
     public void on(EntityExplodeEvent e) {
         var b = new ArrayList<>(e.blockList());
 
-        if(disableEntityChainReactions) {
+        if (disableEntityChainReactions) {
             e.blockList().clear();
-        }
-
-        else {
+        } else {
             e.blockList().removeIf((i) -> !i.getType().equals(Material.TNT));
         }
 
-        preprimes+= e.blockList().size();
+        preprimes += e.blockList().size();
 
-        while(preprimes > maxPrimesPerTick && e.blockList().size() > 0) {
+        while (preprimes > maxPrimesPerTick && e.blockList().size() > 0) {
             e.blockList().remove(0);
             preprimes--;
         }
 
         J.s(() -> {
-            for(Block i :b) {
-                if(i.getType().equals(Material.TNT)) {
-                    if(explosionChainReactions) {
+            for (Block i : b) {
+                if (i.getType().equals(Material.TNT)) {
+                    if (explosionChainReactions) {
                         FastWorld.set(i, B.getAir(), fastBlockUpdates);
 
-                        if(maxExplosionChainsPerTick > explosionChains++) {
+                        if (maxExplosionChainsPerTick > explosionChains++) {
                             J.s(() -> i.getWorld().createExplosion(i.getLocation(), 4f, false, true));
                         }
                     }
@@ -129,7 +125,7 @@ public class FeatureFastExplosions extends ReactFeature implements Listener {
                     continue;
                 }
 
-                if(M.r((double)e.getYield())) {
+                if (M.r((double) e.getYield())) {
                     i.getDrops(null).forEach((f) -> i.getLocation().getWorld().dropItem(i.getLocation(), f));
                 }
 

@@ -14,20 +14,18 @@ public class IntegerBinaryParser implements EdictParser<Integer> {
     @Override
     public EdictValue<Integer> parse(String s) {
         Confidence c = Confidence.LOW;
-        if(s.toLowerCase().endsWith("i")) {
+        if (s.toLowerCase().endsWith("i")) {
             s = s.substring(0, s.length() - 1);
         }
 
-        if(s.toLowerCase().startsWith("0b")) {
+        if (s.toLowerCase().startsWith("0b")) {
             s = s.substring(2);
             c = Confidence.HIGH;
         }
 
         try {
             return of(Integer.parseInt(s, 2), c);
-        }
-
-        catch(NumberFormatException e) {
+        } catch (NumberFormatException e) {
             return low(0);
         }
     }

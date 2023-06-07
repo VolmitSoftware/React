@@ -18,12 +18,12 @@ import java.util.Map;
 
 public class FeatureDynamicViewDistance extends ReactFeature implements Listener {
     public static final String ID = "dynamic-view-distance";
+    public int updateCooldownSeconds = 120;
     private MinMax viewDistance = new MinMax(2, 16);
     private MinMax simulationDistance = new MinMax(2, 10);
     private MinMax lerpTickTime = new MinMax(10, 100);
     private MinMax lerpPlayersOnline = new MinMax(3, 100);
     private transient RollingSequence ttAvg;
-    public int updateCooldownSeconds = 120;
     private Map<World, Long> lastUpdate;
 
     public FeatureDynamicViewDistance() {
@@ -37,23 +37,23 @@ public class FeatureDynamicViewDistance extends ReactFeature implements Listener
         double gps = ttAvg.getAverage();
 
         int newVD = M.min(lerp(lerpTickTime, viewDistance, gps),
-                        lerp(lerpPlayersOnline, viewDistance, players)).intValue();
+                lerp(lerpPlayersOnline, viewDistance, players)).intValue();
         int newSD = M.min(lerp(lerpTickTime, simulationDistance, gps),
-                        lerp(lerpPlayersOnline, simulationDistance, players)).intValue();
+                lerp(lerpPlayersOnline, simulationDistance, players)).intValue();
         newSD = Math.min(newSD, newVD);
 
         List<String> m = new ArrayList<>();
-        if(vd != newVD) {
+        if (vd != newVD) {
             m.add("View Distance: " + vd + " -> " + newVD);
             Curse.on(world).method("setViewDistance", int.class).invoke(newVD);
         }
 
-        if(sd != newSD) {
+        if (sd != newSD) {
             m.add("Simulation Distance: " + sd + " -> " + newSD);
             Curse.on(world).method("setSimulationDistance", int.class).invoke(newSD);
         }
 
-        if(!m.isEmpty()) {
+        if (!m.isEmpty()) {
             React.verbose(world.getName() + ": " + String.join(" ", m));
             return true;
         }
@@ -63,8 +63,8 @@ public class FeatureDynamicViewDistance extends ReactFeature implements Listener
 
     public double lerp(MinMax range, MinMax output, double inRange) {
         return Math.max(Math.min(output.getMax(),
-            M.lerp(output.getMax(), output.getMin(), M.lerpInverse(range.getMin(), range.getMax(), inRange))),
-            output.getMin());
+                        M.lerp(output.getMax(), output.getMin(), M.lerpInverse(range.getMin(), range.getMax(), inRange))),
+                output.getMin());
     }
 
     @Override
@@ -88,9 +88,9 @@ public class FeatureDynamicViewDistance extends ReactFeature implements Listener
     @Override
     public void onTick() {
         ttAvg.put(React.sampler(SamplerTickTime.ID).sample());
-        for(World i : Bukkit.getWorlds()) {
-            if(lastUpdate.getOrDefault(i, 0L) < System.currentTimeMillis() - (updateCooldownSeconds * 1000L)) {
-                if(updateWorld(i)) {
+        for (World i : Bukkit.getWorlds()) {
+            if (lastUpdate.getOrDefault(i, 0L) < System.currentTimeMillis() - (updateCooldownSeconds * 1000L)) {
+                if (updateWorld(i)) {
                     lastUpdate.put(i, System.currentTimeMillis());
                 }
             }

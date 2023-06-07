@@ -1,20 +1,14 @@
 package com.volmit.react.model;
 
-import com.volmit.react.util.data.B;
 import com.volmit.react.util.math.BlockPosition;
-import com.volmit.react.util.scheduling.J;
 import lombok.Data;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.block.data.BlockData;
-import org.checkerframework.checker.units.qual.A;
 
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Data
@@ -28,9 +22,9 @@ public class CircuitServer {
 
     public Circuit worst() {
         return circuitWorlds.values().stream().map(CircuitWorld::worst)
-            .filter(Objects::nonNull)
-            .max(Comparator.comparingInt(i -> i.getEvents().get()))
-            .orElse(null);
+                .filter(Objects::nonNull)
+                .max(Comparator.comparingInt(i -> i.getEvents().get()))
+                .orElse(null);
     }
 
     public Circuit event(Block block) {
@@ -42,7 +36,7 @@ public class CircuitServer {
     public void remove(Block block) {
         CircuitWorld w = getWorld(block.getWorld());
 
-        if(w != null) {
+        if (w != null) {
             w.remove(new BlockPosition(block));
         }
     }
@@ -55,13 +49,13 @@ public class CircuitServer {
     }
 
     public Circuit getCircuitAt(Block block) {
-       CircuitWorld world = getWorld(block.getWorld());
+        CircuitWorld world = getWorld(block.getWorld());
 
-       if(world != null) {
-           return world.getCircuitAt(new BlockPosition(block));
-       }
+        if (world != null) {
+            return world.getCircuitAt(new BlockPosition(block));
+        }
 
-       return null;
+        return null;
     }
 
     private void writeCircuit(Block block, long id) {
@@ -71,7 +65,7 @@ public class CircuitServer {
     public CircuitWorld getOrCreateWorld(World world) {
         CircuitWorld cw = getWorld(world);
 
-        if(cw == null) {
+        if (cw == null) {
             cw = new CircuitWorld(world);
             getCircuitWorlds().put(world, cw);
         }
@@ -86,8 +80,8 @@ public class CircuitServer {
     public int countCircuits() {
         int c = 0;
 
-        for(CircuitWorld i : circuitWorlds.values()) {
-            c+= i.countCircuits();
+        for (CircuitWorld i : circuitWorlds.values()) {
+            c += i.countCircuits();
         }
 
         return c;
@@ -96,8 +90,8 @@ public class CircuitServer {
     public int countBlocks() {
         int c = 0;
 
-        for(CircuitWorld i : circuitWorlds.values()) {
-            c+= i.countBlocks();
+        for (CircuitWorld i : circuitWorlds.values()) {
+            c += i.countBlocks();
         }
 
         return c;

@@ -199,7 +199,7 @@ public class J {
      * @param r the runnable
      */
     public static void s(Runnable r) {
-        if(!React.instance.isReady()) {
+        if (!React.instance.isReady()) {
             React.instance.getPrejobs().add(r);
             return;
         }

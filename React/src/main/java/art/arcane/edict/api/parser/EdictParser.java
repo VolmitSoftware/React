@@ -37,14 +37,14 @@ public interface EdictParser<T> {
      * Creates an EdictValue for the given object with a specified confidence level.
      *
      * @param value the object to be encapsulated in an EdictValue
-     * @param c the confidence level associated with the value
+     * @param c     the confidence level associated with the value
      * @return an EdictValue encapsulating the object with a specified confidence level
      */
     default EdictValue<T> of(T value, Confidence c) {
         return EdictValue.<T>builder()
-            .value(value)
-            .confidence(c)
-            .build();
+                .value(value)
+                .confidence(c)
+                .build();
     }
 
     /**

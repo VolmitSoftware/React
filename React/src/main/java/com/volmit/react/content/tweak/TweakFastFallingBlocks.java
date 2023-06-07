@@ -37,19 +37,16 @@ public class TweakFastFallingBlocks extends ReactTweak implements Listener {
         jobs = new ArrayList<>();
         queued = new HashSet<>();
         ticker = J.sr(() -> {
-            if(jobs.isEmpty()) {
+            if (jobs.isEmpty()) {
                 return;
             }
 
             PrecisionStopwatch p = PrecisionStopwatch.start();
 
-            while(p.getMilliseconds() < maxFallMS && !jobs.isEmpty()) {
-                if(jobs.size() > 3)
-                {
-                    jobs.remove(RNG.r.i(jobs.size()-1)).run();
-                }
-
-                else {
+            while (p.getMilliseconds() < maxFallMS && !jobs.isEmpty()) {
+                if (jobs.size() > 3) {
+                    jobs.remove(RNG.r.i(jobs.size() - 1)).run();
+                } else {
                     jobs.remove(0).run();
                 }
             }
@@ -68,38 +65,36 @@ public class TweakFastFallingBlocks extends ReactTweak implements Listener {
 
     @EventHandler(ignoreCancelled = true, priority = org.bukkit.event.EventPriority.MONITOR)
     public void on(EntityChangeBlockEvent e) {
-        if(e.getEntity() instanceof FallingBlock f) {
+        if (e.getEntity() instanceof FallingBlock f) {
             e.setCancelled(true);
             BlockData d = f.getBlockData();
             Block b = e.getBlock().getLocation().getBlock();
             int bonusx = 0;
 
-            for(int i = b.getY()+1; i < b.getWorld().getMaxHeight()-1; i++) {
-                if(b.getWorld().getBlockAt(b.getX(), i, b.getZ()).getBlockData().equals(d)) {
+            for (int i = b.getY() + 1; i < b.getWorld().getMaxHeight() - 1; i++) {
+                if (b.getWorld().getBlockAt(b.getX(), i, b.getZ()).getBlockData().equals(d)) {
                     bonusx++;
-                }
-
-                else {
+                } else {
                     break;
                 }
             }
 
-            if(queued.contains(b)) {
+            if (queued.contains(b)) {
                 return;
             }
 
             int bonus = bonusx;
             queued.add(b);
             jobs.add(() -> {
-                if(!b.getBlockData().equals(d)) {
+                if (!b.getBlockData().equals(d)) {
                     return;
                 }
 
                 b.setBlockData(B.getAir());
 
-                for(int i = 0; i < bonus; i++) {
-                    Block bx = b.getWorld().getBlockAt(b.getX(), b.getY()+1+i, b.getZ());
-                    if(!bx.getBlockData().equals(d)) {
+                for (int i = 0; i < bonus; i++) {
+                    Block bx = b.getWorld().getBlockAt(b.getX(), b.getY() + 1 + i, b.getZ());
+                    if (!bx.getBlockData().equals(d)) {
                         return;
                     }
 
@@ -108,12 +103,12 @@ public class TweakFastFallingBlocks extends ReactTweak implements Listener {
 
                 queued.remove(b);
                 fallEffect(e.getBlock().getLocation(), d);
-                for(int i = b.getY(); i > b.getWorld().getMinHeight()+1; i--) {
+                for (int i = b.getY(); i > b.getWorld().getMinHeight() + 1; i--) {
                     Block bb = b.getWorld().getBlockAt(b.getX(), i, b.getZ());
 
-                    if(bb.getRelative(BlockFace.DOWN).getType().isSolid()) {
-                        for(int j = 0; j < bonus; j++) {
-                            bb.getWorld().getBlockAt(bb.getX(), bb.getY()+1+j, bb.getZ()).setBlockData(d, false);
+                    if (bb.getRelative(BlockFace.DOWN).getType().isSolid()) {
+                        for (int j = 0; j < bonus; j++) {
+                            bb.getWorld().getBlockAt(bb.getX(), bb.getY() + 1 + j, bb.getZ()).setBlockData(d, false);
                         }
 
                         bb.setBlockData(d, false);
@@ -121,8 +116,8 @@ public class TweakFastFallingBlocks extends ReactTweak implements Listener {
                         break;
                     }
 
-                    if(!bb.isEmpty() && bb.isPassable() && !B.isFluid(bb.getBlockData())) {
-                        bb.getWorld().dropItemNaturally(bb.getLocation(), new ItemStack(d.getMaterial(), 1+bonus));
+                    if (!bb.isEmpty() && bb.isPassable() && !B.isFluid(bb.getBlockData())) {
+                        bb.getWorld().dropItemNaturally(bb.getLocation(), new ItemStack(d.getMaterial(), 1 + bonus));
                         break;
                     }
                 }
@@ -132,7 +127,7 @@ public class TweakFastFallingBlocks extends ReactTweak implements Listener {
 
     @Override
     public void onDeactivate() {
-        for(Runnable i : jobs) {
+        for (Runnable i : jobs) {
             i.run();
         }
     }
