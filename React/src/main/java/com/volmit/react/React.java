@@ -6,6 +6,7 @@ import com.volmit.react.api.action.Action;
 import com.volmit.react.api.feature.Feature;
 import com.volmit.react.api.sampler.Sampler;
 import com.volmit.react.api.tweak.Tweak;
+import com.volmit.react.content.PAPI.PapiExpansion;
 import com.volmit.react.core.controller.*;
 import com.volmit.react.util.collection.KList;
 import com.volmit.react.util.format.C;
@@ -223,6 +224,9 @@ public class React extends VolmitPlugin {
         }
 
         React.info("React Started in " + Form.duration(psw.getMilliseconds(), 0));
+        if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
+            new PapiExpansion().register();
+        }
     }
 
     @Override

@@ -18,10 +18,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.EntityDamageByBlockEvent;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.entity.EntitySpawnEvent;
+import org.bukkit.event.entity.*;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -112,6 +109,21 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
     public void on(EntityDamageByBlockEvent e) {
         onDamage(e);
     }
+
+    // prevent the spam in the console that happens when a mob is killed by non-living damage
+    @EventHandler
+    public void onEntityDeath(EntityDeathEvent event) {
+        LivingEntity entity = event.getEntity();
+        if (getStackCount(entity) > 1 && !(entity.getLastDamageCause() instanceof EntityDamageByEntityEvent)) {
+            entity.setCustomName(null);
+        } else if (getStackCount(entity) > 1) {
+            EntityDamageByEntityEvent damageEvent = (EntityDamageByEntityEvent) entity.getLastDamageCause();
+            if (!(damageEvent.getDamager() instanceof LivingEntity)) {
+                entity.setCustomName(null);
+            }
+        }
+    }
+
 
     public boolean merge(Entity a, Entity into) {
         if (canMerge(a, into)) {

@@ -70,6 +70,7 @@ repositories {
     }
     maven { url "https://arcanearts.jfrog.io/artifactory/archives" }
     maven { url "https://mvn.lumine.io/repository/maven-public/" }
+    maven { url = 'https://repo.extendedclip.com/content/repositories/placeholderapi/' }
     mavenCentral()
 }
 
@@ -112,6 +113,10 @@ dependencies {
     implementation 'art.arcane:MultiBurst:22.9.2'
     implementation 'art.arcane:Chrono:22.9.10'
     implementation 'art.arcane:Spatial:22.11.1'
+
+    //Random API's
+    implementation 'me.clip:placeholderapi:2.11.2'
+
 
     // Dynamically Loaded
     implementation 'net.kyori:adventure-text-minimessage:4.13.1'

@@ -77,7 +77,7 @@ public class Registry<T extends Registered> {
         for (T i : classRegistry.values()) {
             try {
                 return (X) i;
-            } catch (Throwable e) {
+            } catch (Throwable ignored) {
 
             }
         }
