@@ -51,7 +51,7 @@ public class SamplerTicksPerSecond extends ReactTickedSampler {
             return Form.durationSplit(dur, 1)[0];
         }
 
-        if (t > 19.90) {
+        if (t > 19.98) {
             return "20";
         }
 

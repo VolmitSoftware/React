@@ -41,6 +41,6 @@ public class SamplerReactSyncTickTime extends ReactCachedSampler {
 
     @Override
     public String formattedSuffix(double t) {
-        return Form.durationSplit(t, 2)[1] + " RTT";
+        return Form.durationSplit(t, 2)[1] + " RSTT";
     }
 }
