@@ -2,7 +2,6 @@ package com.volmit.react.content.feature;
 
 import com.volmit.react.React;
 import com.volmit.react.api.feature.ReactFeature;
-import com.volmit.react.content.sampler.SamplerChunks;
 import com.volmit.react.model.ReactConfiguration;
 import com.volmit.react.model.ReactEntity;
 import com.volmit.react.util.math.M;
@@ -17,16 +16,20 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class FeatureEntityTrimmer extends ReactFeature implements Listener {
     public static final String ID = "entity-trimmer";
     private transient double maxPriority = -1;
     private transient int cooldown = 0;
     private boolean skipCustomMobs = false;
+    private int playerMobBlockDistance = 32;
 
     /**
      * List of blacklisted entities with already blacklisted examples
@@ -119,14 +122,51 @@ public class FeatureEntityTrimmer extends ReactFeature implements Listener {
             return;
         }
 
+        List<Entity> entitiesToRemove = new ArrayList<>();
+        Map<Chunk, List<Entity>> entitiesPerChunk = new HashMap<>();
+        Map<World, List<Entity>> entitiesPerWorld = new HashMap<>();
+        Map<Player, List<Entity>> entitiesPerPlayer = new HashMap<>();
+
+        List<Entity> tempEntities = new ArrayList<>(lastEntities);
+        for (Entity entity : tempEntities) {
+            Chunk chunk = entity.getLocation().getChunk();
+            World world = entity.getWorld();
+            entitiesPerChunk.computeIfAbsent(chunk, k -> new ArrayList<>()).add(entity);
+            entitiesPerWorld.computeIfAbsent(world, k -> new ArrayList<>()).add(entity);
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                if (player.getWorld().equals(world) && player.getLocation().distance(entity.getLocation()) < playerMobBlockDistance) {
+                    entitiesPerPlayer.computeIfAbsent(player, k -> new ArrayList<>()).add(entity);
+                }
+            }
+        }
+
+
+        // Kill excess entities per chunk, player, world
+        entitiesPerChunk.forEach((chunk, entities) -> {
+            if (entities.size() > softMaxEntitiesPerChunk) {
+                addEntitiesToRemove(entitiesToRemove, entities, softMaxEntitiesPerChunk);
+            }
+        });
+        entitiesPerPlayer.forEach((player, entities) -> {
+            if (entities.size() > softMaxEntitiesPerPlayer) {
+                addEntitiesToRemove(entitiesToRemove, entities, softMaxEntitiesPerPlayer);
+            }
+        });
+        entitiesPerWorld.forEach((world, entities) -> {
+            if (entities.size() > softMaxEntitiesPerWorld) {
+                addEntitiesToRemove(entitiesToRemove, entities, softMaxEntitiesPerWorld);
+            }
+        });
+
+        lastEntities.clear();
+        lastEntities.addAll(entitiesToRemove);
+
+        // Sorting, filtering, opportunity threshold, and killing.
         List<Entity> shitlist = new ArrayList<>(lastEntities);
         lastEntities.clear();
-        int tc = (int) Math.round(Math.ceil(React.sampler(SamplerChunks.ID).sample()));
-        int wc = 0;
 
-        // Remove blacklisted entities
+        // Remove blacklisted entities and sort the list.
         shitlist.removeIf(entity -> blacklist.contains(entity.getType()) || entity.getTicksLived() < 400);
-
         shitlist.sort((a, b) -> {
             double pa = ReactEntity.getPriority(a);
             double pb = ReactEntity.getPriority(b);
@@ -134,7 +174,6 @@ public class FeatureEntityTrimmer extends ReactFeature implements Listener {
         });
 
         int ec = shitlist.size();
-//        int theoreticalMax = Math.min(Bukkit.getOnlinePlayers().size() * softMaxEntitiesPerPlayer, Math.max(softMaxEntitiesPerWorld * wc, softMaxEntitiesPerChunk * tc));
 
         double pri = -1;
         Entity e;
@@ -166,6 +205,23 @@ public class FeatureEntityTrimmer extends ReactFeature implements Listener {
                 React.success("Entity Trimmer: " + maxKill + " entities removed");
         }
     }
+
+    private void addEntitiesToRemove(List<Entity> entitiesToRemove, List<Entity> entities, int maxEntities) {
+        entities.sort((a, b) -> {
+            double pa = ReactEntity.getPriority(a);
+            double pb = ReactEntity.getPriority(b);
+            return Double.compare(pa, pb);
+        });
+
+        for (int i = maxEntities; i < entities.size(); i++) {
+            Entity entity = entities.get(i);
+            if (!entitiesToRemove.contains(entity) && !blacklist.contains(entity.getType()) &&
+                    !(skipCustomMobs && CustomMobChecker.isCustom(entity)) && entity.getTicksLived() >= 400) {
+                entitiesToRemove.add(entity);
+            }
+        }
+    }
+
 
     private void kill(Entity entity) {
         J.s(() -> React.kill(entity), (int) (20 * Math.random()));

@@ -46,24 +46,24 @@ public class CommandReact implements DecreeExecutor {
         sender().sendMessage(C.REACT + "Action bar monitor " + (React.controller(PlayerController.class).getPlayer(player()).isActionBarMonitoring() ? "enabled" : "disabled"));
     }
 
-    @Decree(
-            name = "allaytest",
-            aliases = {"at"},
-            description = "Monitor the server via action bar",
-            origin = DecreeOrigin.PLAYER
-    )
-    public void allaytest() {
-        J.s(() -> {
-            for (int i = 0; i < 100; i++) {
-                for (Player j : Bukkit.getOnlinePlayers()) {
-                    Allay a = (Allay) j.getWorld().spawnEntity(j.getEyeLocation().clone().add(RNG.r.d(-10, 10), RNG.r.d(-10, 10), RNG.r.d(-10, 10)), EntityType.ALLAY);
-                    a.getInventory().setItem(0, new ItemStack(Material.KELP));
-                    a.setCanDuplicate(true);
-                    a.setLeashHolder(j);
-                }
-            }
-        });
-    }
+//    @Decree(
+//            name = "allaytest",
+//            aliases = {"at"},
+//            description = "Monitor the server via action bar",
+//            origin = DecreeOrigin.PLAYER
+//    )
+//    public void allaytest() {
+//        J.s(() -> {
+//            for (int i = 0; i < 100; i++) {
+//                for (Player j : Bukkit.getOnlinePlayers()) {
+//                    Allay a = (Allay) j.getWorld().spawnEntity(j.getEyeLocation().clone().add(RNG.r.d(-10, 10), RNG.r.d(-10, 10), RNG.r.d(-10, 10)), EntityType.ALLAY);
+//                    a.getInventory().setItem(0, new ItemStack(Material.KELP));
+//                    a.setCanDuplicate(true);
+//                    a.setLeashHolder(j);
+//                }
+//            }
+//        });
+//    }
 
     @Decree(
             name = "info",
@@ -100,6 +100,9 @@ public class CommandReact implements DecreeExecutor {
     public void vd(
             @Param(name = "distance")
             int d) {
+        if (d > 32)
+            d = 32;
+
         Curse.on(player().getWorld()).method("setViewDistance", int.class).invoke(d);
         Curse.on(player().getWorld()).method("setSimulationDistance", int.class).invoke(d);
     }

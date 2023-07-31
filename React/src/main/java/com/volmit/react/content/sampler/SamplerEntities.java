@@ -77,7 +77,7 @@ public class SamplerEntities extends ReactCachedSampler implements Listener {
         getChunkCounter(e.getEntity().getLocation().getChunk()).addAndGet(-1D);
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.MONITOR)
     public void on(ChunkUnloadEvent e) {
         entities.addAndGet(-e.getChunk().getEntities().length);
     }

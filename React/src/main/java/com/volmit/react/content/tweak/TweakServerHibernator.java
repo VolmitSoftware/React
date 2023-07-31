@@ -36,11 +36,6 @@ public class TweakServerHibernator extends ReactTweak implements Listener {
                 }
                 this.firstRun = true;
             }
-            for (World world : Bukkit.getWorlds()) {
-                for (Chunk chunk : world.getLoadedChunks()) {
-                    chunk.unload(true);
-                }
-            }
 
         }, 0L, 1L);
 

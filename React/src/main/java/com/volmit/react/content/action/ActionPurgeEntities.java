@@ -25,6 +25,7 @@ import org.bukkit.entity.EntityType;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params> {
     public static final String ID = "purge-entities";
@@ -35,6 +36,11 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
             EntityType.ITEM_FRAME
     ));
     private boolean defaultBlacklist = true;
+    private int secondsToPurge = 5;
+
+    private transient int lowerBound = secondsToPurge - 1;
+    private transient int upperBound = secondsToPurge + 2;
+    private transient int randomDelay = new Random().nextInt(upperBound - lowerBound) + lowerBound;
 
     public ActionPurgeEntities() {
         super(ID);
@@ -98,8 +104,11 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
                 .build();
     }
 
+
+
+
     private void purge(Entity entity, ActionTicket<Params> ticket) {
-        J.s(() -> React.kill(entity), (int) (20 * Math.random()));
+        J.s(() -> React.kill(entity, randomDelay), (int) (20 * Math.random()));
         ticket.addCount();
     }
 
@@ -137,9 +146,7 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
 
         public Params addRadius(World world, int x, int z, int radius) {
             area.setChunks(area.getChunks() == null ? new ArrayList<>() : new ArrayList<>(area.getChunks()));
-            new Spiraler(radius * 2, radius * 2, (xx, zz) -> {
-                area.getChunks().add(world.getChunkAt(x + xx, z + zz));
-            }).drain();
+            new Spiraler(radius * 2, radius * 2, (xx, zz) -> area.getChunks().add(world.getChunkAt(x + xx, z + zz))).drain();
             return this;
         }
     }

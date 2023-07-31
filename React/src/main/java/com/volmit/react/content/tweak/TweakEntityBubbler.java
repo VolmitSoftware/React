@@ -84,7 +84,7 @@ public class TweakEntityBubbler extends ReactTweak implements Listener {
 
 
     private void kill(Entity entity) {
-        J.s(() -> React.kill(entity), (int) (20 * Math.random()));
+        J.s(() -> React.kill(entity, 3), (int) (20 * Math.random()));
     }
 
     @Override

@@ -11,14 +11,14 @@ import com.volmit.react.util.scheduling.J;
 import com.volmit.react.util.world.CustomMobChecker;
 import org.bukkit.ChatColor;
 import org.bukkit.attribute.Attribute;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Player;
+import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.*;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.metadata.FixedMetadataValue;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -32,6 +32,7 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
     private double searchRadius = 6;
     private boolean vacuumEffect = true;
     private boolean skipCustomMobs = true;
+    private boolean onlySpawnerMobs = false;
 
     public FeatureMobStacking() {
         super(ID);
@@ -65,7 +66,24 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
     public void onDamage(EntityDamageEvent e) {
         if (getStackCount(e.getEntity()) > 1 && e.getEntity() instanceof LivingEntity l && l.getHealth() - e.getFinalDamage() <= 0) {
             int s = getStackCount(l) - 1;
-            LivingEntity next = (LivingEntity) l.getWorld().spawnEntity(l.getLocation(), l.getType());
+
+            LivingEntity next;
+            if (l instanceof Slime) {
+                Slime oldSlime = (Slime) l;
+                next = (LivingEntity) l.getWorld().spawnEntity(l.getLocation(), l.getType());
+                if (oldSlime.getSize() > 1) { // This is to ensure no infinite loop of slime spawning
+                    ((Slime) next).setSize(oldSlime.getSize() / 2); // setting the new size
+                } else {
+                    ((Slime) next).setSize(oldSlime.getSize());
+                }
+            } else if (l instanceof Sheep) {
+                Sheep oldSheep = (Sheep) l;
+                next = (LivingEntity) l.getWorld().spawnEntity(l.getLocation(), l.getType());
+                ((Sheep) next).setColor(oldSheep.getColor()); // setting the new sheep color
+            } else {
+                next = (LivingEntity) l.getWorld().spawnEntity(l.getLocation(), l.getType());
+            }
+
             next.setSwimming(l.isSwimming());
             next.setAI(l.hasAI());
             next.setCollidable(l.isCollidable());
@@ -110,6 +128,61 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
         onDamage(e);
     }
 
+    @EventHandler
+    public void onPlayerInteractEntity(PlayerInteractEntityEvent event) {
+        // Check for sneak and right click
+        if (event.getPlayer().isSneaking() && event.getHand().equals(EquipmentSlot.HAND)) {
+            Entity clickedEntity = event.getRightClicked();
+
+
+            // Check if entity is stackable and has more than 1 in the stack
+            if (stackableTypes.contains(clickedEntity.getType()) && getStackCount(clickedEntity) > 1) {
+                // Calculate new stack counts for split entities
+                int newStackCount = getStackCount(clickedEntity) / 2;
+                int remainingStackCount = getStackCount(clickedEntity) - newStackCount;
+
+                // Create new entity with half of the original stack count
+                LivingEntity newEntity;
+                if (clickedEntity instanceof Sheep) {
+                    Sheep oldSheep = (Sheep) clickedEntity;
+                    newEntity = (LivingEntity) clickedEntity.getWorld().spawnEntity(clickedEntity.getLocation().add(0, 0.5, 0), clickedEntity.getType());
+                    ((Sheep) newEntity).setColor(oldSheep.getColor()); // setting the new sheep color
+                } else if (clickedEntity instanceof Slime) {
+                    Slime oldSlime = (Slime) clickedEntity;
+                    newEntity = (LivingEntity) clickedEntity.getWorld().spawnEntity(clickedEntity.getLocation().add(0, 0.5, 0), clickedEntity.getType());
+                    if (oldSlime.getSize() > 1) { // This is to ensure no infinite loop of slime spawning
+                        ((Slime) newEntity).setSize(oldSlime.getSize() / 2); // setting the new size
+                    } else {
+                        ((Slime) newEntity).setSize(oldSlime.getSize());
+                    }
+                } else {
+                    newEntity = (LivingEntity) clickedEntity.getWorld().spawnEntity(clickedEntity.getLocation().add(0, 0.5, 0), clickedEntity.getType());
+                }
+                setStackCount(newEntity, newStackCount);
+                newEntity.setMetadata("DoNotStack", new FixedMetadataValue(React.instance, true));
+                newEntity.setMetadata("UniqueMobStack", new FixedMetadataValue(React.instance, true));
+                updateEntityCustomName(newEntity);
+
+                // Update original entity with the remaining stack count
+                setStackCount(clickedEntity, remainingStackCount);
+                clickedEntity.setMetadata("DoNotStack", new FixedMetadataValue(React.instance, true));
+                clickedEntity.setMetadata("UniqueMobStack", new FixedMetadataValue(React.instance, true));
+                updateEntityCustomName(clickedEntity);
+            }
+        }
+    }
+
+    // Method to update entity custom name based on its stack count
+    public void updateEntityCustomName(Entity e) {
+        int count = getStackCount(e);
+        if (count > 1) {
+            e.setCustomName(ChatColor.BOLD + "" + count + "x " + ChatColor.RESET + ChatColor.GRAY + "" + Form.capitalizeWords(e.getType().name().toLowerCase().replaceAll("\\Q_\\E", " ")));
+        } else {
+            e.setCustomName(ChatColor.GOLD + "" + count + "x UNIQUE" + ChatColor.RESET + ChatColor.GRAY + "" + Form.capitalizeWords(e.getType().name().toLowerCase().replaceAll("\\Q_\\E", " ")));
+        }
+    }
+
+
     // prevent the spam in the console that happens when a mob is killed by non-living damage
     @EventHandler
     public void onEntityDeath(EntityDeathEvent event) {
@@ -121,6 +194,9 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
             if (!(damageEvent.getDamager() instanceof LivingEntity)) {
                 entity.setCustomName(null);
             }
+        }
+        if (entity.hasMetadata("UniqueMobStack")) {
+            entity.setCustomName(null);
         }
     }
 
@@ -144,48 +220,92 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
     }
 
     public boolean canMerge(Entity a, Entity into) {
+        // Check if entities are stackable via config
         if (skipCustomMobs && (CustomMobChecker.isCustom(a) || CustomMobChecker.isCustom(into))) {
             return false;
         }
 
+        // Check if entities are marked as non-stackable
+        if (a.hasMetadata("DoNotStack") || into.hasMetadata("DoNotStack")) {
+            return false;
+        }
+
+        // Check if entities are stackable via spawn reason
+        if (onlySpawnerMobs && (!a.hasMetadata("SpawnedBySpawner") || !into.hasMetadata("SpawnedBySpawner"))) {
+            return false;
+        }
+
+        // Check if entities are dead
         if (a.isDead() || into.isDead()) {
             return false;
         }
 
+        // Check if entities are the same literal entity
         if (a.getUniqueId().equals(into.getUniqueId())) {
             return false;
         }
 
-        if (a instanceof Player) {
+        // Check if entities are a player
+        if (a instanceof Player || into instanceof Player) {
             return false;
         }
 
-        if (into instanceof Player) {
-            return false;
-        }
-
+        // Check if entities == living entities
         if (!(a instanceof LivingEntity la)) {
             return false;
         }
 
+        // Check if entities are the same type
         if (!a.getType().equals(into.getType())) {
             return false;
         }
 
+        // Check if entities are Slimes or Magma Cubes and if their sizes match
+        if ((a instanceof Slime || a instanceof MagmaCube) && (into instanceof Slime || into instanceof MagmaCube)) {
+            if (((Slime) a).getSize() != ((Slime) into).getSize()) {
+                return false;
+            }
+        }
+
+        // Check if entities are ageable and if both are adults or babies
+        if ((a instanceof Ageable && into instanceof Ageable)) {
+            if (((Ageable) a).isAdult() != ((Ageable) into).isAdult()) {
+                return false;
+            }
+        }
+
+        // Check if entities are Sheep and if their color matches
+        if ((a instanceof Sheep && into instanceof Sheep)) {
+            if (((Sheep) a).getColor() != ((Sheep) into).getColor()) {
+                return false;
+            }
+        }
+
+        // Check if entities are Villagers and if their professions match
+        if ((a instanceof Villager && into instanceof Villager)) {
+            if (((Villager) a).getProfession() != ((Villager) into).getProfession()) {
+                return false;
+            }
+        }
+
+        // types that can stack
         if (!stackableTypes.contains(a.getType())) {
             return false;
         }
 
+        // Check stack count
         if (getStackCount(into) + getStackCount(a) > maxStackSize) {
             return false;
         }
 
+        // Check health
         if (into instanceof LivingEntity li) {
             return !(la.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue() + li.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue() > maxHealth);
         }
 
         return true;
     }
+
 
     public int getTheoreticalMaxStackCount(Entity entityAsType) {
         if (entityAsType instanceof LivingEntity le) {
@@ -215,6 +335,13 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
     public void on(EntitySpawnEvent e) {
         if (stackableTypes.contains(e.getEntityType())) {
             J.s(() -> onTick(e.getEntity()));
+        }
+    }
+
+    @EventHandler
+    public void onCreatureSpawn(CreatureSpawnEvent event) {
+        if (event.getSpawnReason() == CreatureSpawnEvent.SpawnReason.SPAWNER) {
+            event.getEntity().setMetadata("SpawnedBySpawner", new FixedMetadataValue(React.instance, true));
         }
     }
 
