@@ -1,3 +1,22 @@
+/*
+ *  Copyright (c) 2016-2025 Arcane Arts (Volmit Software)
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ *
+ */
+
 package com.volmit.react.content.decreecommand;
 
 import art.arcane.curse.Curse;
@@ -13,15 +32,8 @@ import com.volmit.react.util.decree.annotations.Param;
 import com.volmit.react.util.decree.handlers.ReactRendererHandler;
 import com.volmit.react.util.format.C;
 import com.volmit.react.util.format.Form;
-import com.volmit.react.util.math.RNG;
 import com.volmit.react.util.reflect.Platform;
-import com.volmit.react.util.scheduling.J;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
-import org.bukkit.entity.Allay;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
 
 @Decree(
         name = "react",

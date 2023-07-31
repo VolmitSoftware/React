@@ -1,3 +1,22 @@
+/*
+ *  Copyright (c) 2016-2025 Arcane Arts (Volmit Software)
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ *
+ */
+
 package com.volmit.react.content.feature;
 
 import com.volmit.react.api.feature.ReactFeature;
@@ -7,6 +26,7 @@ import com.volmit.react.util.scheduling.J;
 import com.volmit.react.util.world.FastWorld;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.block.Container;
 import org.bukkit.entity.TNTPrimed;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -14,6 +34,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.EntitySpawnEvent;
+import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
 
@@ -86,8 +107,20 @@ public class FeatureFastExplosions extends ReactFeature implements Listener {
                 }
 
                 if (M.r((double) e.getYield())) {
-                    i.getDrops(null).forEach((f) -> i.getLocation().getWorld().dropItem(i.getLocation(), f));
+                    if (i.getState() instanceof Container) {
+                        Container container = (Container) i.getState();
+                        ItemStack[] contents = container.getInventory().getContents();
+                        for (ItemStack item : contents) {
+                            if (item != null) {
+                                i.getWorld().dropItemNaturally(i.getLocation(), item);
+                            }
+                        }
+                        container.getInventory().clear();
+                    } else {
+                        i.getDrops(null).forEach((f) -> i.getWorld().dropItemNaturally(i.getLocation(), f));
+                    }
                 }
+
 
                 FastWorld.set(i, B.getAir(), fastBlockUpdates);
             }
@@ -126,8 +159,20 @@ public class FeatureFastExplosions extends ReactFeature implements Listener {
                 }
 
                 if (M.r((double) e.getYield())) {
-                    i.getDrops(null).forEach((f) -> i.getLocation().getWorld().dropItem(i.getLocation(), f));
+                    if (i.getState() instanceof Container) {
+                        Container container = (Container) i.getState();
+                        ItemStack[] contents = container.getInventory().getContents();
+                        for (ItemStack item : contents) {
+                            if (item != null) {
+                                i.getWorld().dropItemNaturally(i.getLocation(), item);
+                            }
+                        }
+                        container.getInventory().clear();
+                    } else {
+                        i.getDrops(null).forEach((f) -> i.getWorld().dropItemNaturally(i.getLocation(), f));
+                    }
                 }
+
 
                 FastWorld.set(i, B.getAir(), fastBlockUpdates);
             }
