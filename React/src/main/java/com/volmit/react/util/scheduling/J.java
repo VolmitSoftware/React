@@ -150,7 +150,7 @@ public class J {
      *
      * @param r the runnable
      */
-    public static void ass(Runnable r) {
+    public static void scheduleSyncTaskAfterStartup(Runnable r) {
         if (started) {
             s(r);
         } else {
@@ -167,7 +167,7 @@ public class J {
      *
      * @param r the runnable
      */
-    public static void asa(Runnable r) {
+    public static void scheduleAsyncTaskAfterStartup(Runnable r) {
         if (started) {
             a(r);
         } else {
