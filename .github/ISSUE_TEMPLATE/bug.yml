@@ -1,19 +1,19 @@
-name: Adapt Bug Report
-description: File a bug report for Adapt
+name: React Bug Report
+description: File a bug report for React
 labels: [ bug ]
 body:
   - type: markdown
     attributes:
       value: |
         Thank you for taking the time to fill this out!
-        If this does not work for you, feel free to use the [blank](https://github.com/VolmitSoftware/Adapt/issues/new) format.
+        If this does not work for you, feel free to use the [blank](https://github.com/VolmitSoftware/React/issues/new) format.
   - type: textarea
     id: how
     attributes:
       label: Problem
       description: Please give a text description of how you reached the problem
       value: |
-        1. Install Adapt...
+        1. Install React...
         2. Do this...
         3. Do that...
         4. Observe the error...
@@ -41,10 +41,10 @@ body:
     validations:
       required: true
   - type: input
-    id: Adaptversion
+    id: Reactversion
     attributes:
-      label: Adapt Version
-      description: What version of Adapt are you running?
+      label: React Version
+      description: What version of React are you running?
       placeholder: DO NOT SAY "LATEST"
     validations:
       required: true
