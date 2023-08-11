@@ -1,12 +1,12 @@
-name: Adapt Feature Request
-description: File a feature request for Adapt. Keep in mind that more descriptions are better, but the features are NOT intended to replace other plugins (though, i would not mind doing it) all features should feel effortless on the player to be using.
+name: React Feature Request
+description: File a feature request for React.
 labels: [ feature ]
 body:
   - type: markdown
     attributes:
       value: |
         Thank you for taking the time to fill this out!
-        If this does not work for you, feel free to use the [blank](https://github.com/VolmitSoftware/Adapt/issues/new) format.
+        If this does not work for you, feel free to use the [blank](https://github.com/VolmitSoftware/React/issues/new) format.
   - type: dropdown
     id: arc
     attributes:
