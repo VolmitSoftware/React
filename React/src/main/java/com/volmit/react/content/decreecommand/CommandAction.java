@@ -36,18 +36,18 @@ import org.bukkit.Chunk;
         name = "action",
         aliases = {"act", "a"},
         origin = DecreeOrigin.BOTH,
-        description = "The action command"
+        description = "This is the root action command, it contains all current actions"
 )
 public class CommandAction implements DecreeExecutor {
     @Decree(
             name = "purge-entities",
-            aliases = {"pe", "kill"},
-            description = "Purge entities in the area"
+            aliases = {"pe"},
+            description = "this Kills/Deletes all entities in the specified region"
     )
     public void purgeEntities(
             @Param(
                     name = "radius",
-                    description = "The chunk radius around you to purge entities from. 0 is all chunks.",
+                    description = "The chunk radius around you to purge entities from. 0/Blank is all chunks.",
                     defaultValue = "0",
                     aliases = {"r"}
             )
@@ -81,8 +81,8 @@ public class CommandAction implements DecreeExecutor {
 
     @Decree(
             name = "purge-chunks",
-            aliases = {"pc", "chunks"},
-            description = "UNloads the chunks in the world"
+            aliases = {"pc"},
+            description = "this unloads chunks in the specified region, if applicable in the specified world"
     )
     public void purgeChunks(
             @Param(
@@ -108,7 +108,7 @@ public class CommandAction implements DecreeExecutor {
     @Decree(
             name = "collect-garbage",
             aliases = {"gc"},
-            description = "Run system gc"
+            description = "Run a system gc, unnecessary on most systems, but may help on some. use with caution."
     )
     public void collectGarbage() {
         Action<ActionCollectGarbage.Params> pe = React.action("collect-garbage");

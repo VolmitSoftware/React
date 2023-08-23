@@ -32,6 +32,7 @@ import com.volmit.react.util.scheduling.J;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 
+//THIS IS A DUMMY CLASS FOR EDICT WHENEVER ITS DONE use @decree instead of @edict
 public class CommandReact {
     @Edict.Command("/react version")
     @Edict.Aliases("/react v")

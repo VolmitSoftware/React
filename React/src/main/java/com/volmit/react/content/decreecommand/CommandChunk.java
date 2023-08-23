@@ -35,12 +35,12 @@ import org.bukkit.entity.Player;
         name = "chunk",
         aliases = {"c"},
         origin = DecreeOrigin.BOTH,
-        description = "The chunk command"
+        description = "This is the root chunk command, it contains all current chunk commands"
 )
 public class CommandChunk implements DecreeExecutor {
     @Decree(
             name = "sample",
-            description = "Get the current chunk samples",
+            description = "Get the current player-chunk sampled data",
             origin = DecreeOrigin.PLAYER
     )
     public void sample() {
@@ -58,7 +58,8 @@ public class CommandChunk implements DecreeExecutor {
 
     @Decree(
             name = "worst",
-            description = "Get the worst chunk",
+            aliases = {"w"},
+            description = "Get the worst chunk on the server/world",
             origin = DecreeOrigin.PLAYER
     )
     public void worst() {

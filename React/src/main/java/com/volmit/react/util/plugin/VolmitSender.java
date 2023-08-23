@@ -243,12 +243,12 @@ public class VolmitSender implements CommandSender {
             int l = 44;
             int g = (int) (1D * l);
             sendTitle(C.REACT + thing + " ", 0, 500, 250);
-            sendActionNoProcessing("" + "" + pulse("#00ff80", "#00373d", 1D) + "<underlined> " + Form.repeat(" ", g) + "<reset>" + Form.repeat(" ", l - g));
+            sendActionNoProcessing("" + "" + pulse("#00BFFF", "#003366", 1D) + "<underlined> " + Form.repeat(" ", g) + "<reset>" + Form.repeat(" ", l - g));
         } else {
             int l = 44;
             int g = (int) (percent * l);
             sendTitle(C.REACT + thing + " " + C.BLUE + "<font:minecraft:uniform>" + Form.pc(percent, 0), 0, 500, 250);
-            sendActionNoProcessing("" + "" + pulse("#00ff80", "#00373d", 1D) + "<underlined> " + Form.repeat(" ", g) + "<reset>" + Form.repeat(" ", l - g));
+            sendActionNoProcessing("" + "" + pulse("#00BFFF", "#003366", 1D) + "<underlined> " + Form.repeat(" ", g) + "<reset>" + Form.repeat(" ", l - g));
         }
     }
 
@@ -437,14 +437,14 @@ public class VolmitSender implements CommandSender {
         for (int ix = 0; ix < max; ix++) {
             m.add((i.isNode()
                     ? (i.getNode().getParameters().isNotEmpty())
-                    ? "<#aebef2>✦ <#5ef288>"
+                    ? "<#B0E0E6>✦ <#00FA9A>"
                     + i.getParentPath()
-                    + " <#42ecf5>"
+                    + " <#00CED1>"
                     + i.getName() + " "
                     + i.getNode().getParameters().shuffleCopy(RNG.r).convert((f)
                             -> (f.isRequired() || RNG.r.b(0.5)
                             ? "<#f2e15e>" + f.getNames().getRandom() + "="
-                            + "<#d665f0>" + f.example()
+                            + "<#9370DB>" + f.example()
                             : ""))
                     .toString(" ")
                     : ""
@@ -464,9 +464,9 @@ public class VolmitSender implements CommandSender {
         String se = "]";
 
         if (name.trim().isEmpty()) {
-            sendMessageRaw("<font:minecraft:uniform><strikethrough><gradient:#34eb6b:#32bfad>" + sf + s + "<reset><font:minecraft:uniform><strikethrough><gradient:#32bfad:#34eb6b>" + s + se);
+            sendMessageRaw("<font:minecraft:uniform><strikethrough><gradient:#00BFFF:#003366>" + sf + s + "<reset><font:minecraft:uniform><strikethrough><gradient:#003366:#00BFFF>" + s + se);
         } else {
-            sendMessageRaw("<font:minecraft:uniform><strikethrough><gradient:#34eb6b:#32bfad>" + sf + s + si + "<reset> <gradient:#3299bf:#323bbf>" + name + "<reset> <font:minecraft:uniform><strikethrough><gradient:#32bfad:#34eb6b>" + so + s + se);
+            sendMessageRaw("<font:minecraft:uniform><strikethrough><gradient:#00BFFF:#003366>" + sf + s + si + "<reset> <gradient:#323bbf:#3299bf>" + name + "<reset> <font:minecraft:uniform><strikethrough><gradient:#003366:#00BFFF>" + so + s + se);
         }
     }
 
@@ -494,7 +494,7 @@ public class VolmitSender implements CommandSender {
         if (v.getNodes().isNotEmpty()) {
             sendHeader(v.getPath() + (page > 0 ? (" {" + (page + 1) + "}") : ""));
             if (isPlayer() && v.getParent() != null) {
-                sendMessageRaw("<hover:show_text:'" + "<#b54b38>Click to go back to <#3299bf>" + Form.capitalize(v.getParent().getName()) + " Help" + "'><click:run_command:" + v.getParent().getPath() + "><font:minecraft:uniform><#f58571>〈 Back</click></hover>");
+                sendMessageRaw("<hover:show_text:'" + "<#8B4513>Click to go back to <#4682B4>" + Form.capitalize(v.getParent().getName()) + " Help" + "'><click:run_command:" + v.getParent().getPath() + "><font:minecraft:uniform><#B30000>〈 Back</click></hover>");
             }
 
             AtomicBoolean next = new AtomicBoolean(false);
@@ -506,13 +506,13 @@ public class VolmitSender implements CommandSender {
             int l = 75 - (page > 0 ? 10 : 0) - (next.get() ? 10 : 0);
 
             if (page > 0) {
-                s += "<hover:show_text:'<green>Click to go back to page " + page + "'><click:run_command:" + v.getPath() + " help=" + page + "><gradient:#27b84d:#2770b8>〈 Page " + page + "</click></hover><reset> ";
+                s += "<hover:show_text:'<green>Click to go back to page " + page + "'><click:run_command:" + v.getPath() + " help=" + page + "><gradient:#2770b8:#27b84d>〈 Page " + page + "</click></hover><reset> ";
             }
 
-            s += "<reset><font:minecraft:uniform><strikethrough><gradient:#32bfad:#34eb6b>" + Form.repeat(" ", l) + "<reset>";
+            s += "<reset><font:minecraft:uniform><strikethrough><gradient:#323bbf:#3299bf>" + Form.repeat(" ", l) + "<reset>";
 
             if (next.get()) {
-                s += " <hover:show_text:'<green>Click to go to back to page " + (page + 2) + "'><click:run_command:" + v.getPath() + " help=" + (page + 2) + "><gradient:#2770b8:#27b84d>Page " + (page + 2) + " ❭</click></hover>";
+                s += " <hover:show_text:'<green>Click to go to back to page " + (page + 2) + "'><click:run_command:" + v.getPath() + " help=" + (page + 2) + "><gradient:#4169E1:#228B22>Page " + (page + 2) + " ❭</click></hover>";
             }
 
             sendMessageRaw(s);
@@ -528,10 +528,11 @@ public class VolmitSender implements CommandSender {
 
                 /// Command
                 // Contains main command & aliases
-                String realText = i.getPath() + " >" + "<#46826a>⇀<gradient:#42ecf5:#428df5> " + i.getName();
-                String hoverTitle = i.getNames().copy().reverse().convert((f) -> "<#42ecf5>" + f).toString(", ");
+                String realText = i.getPath() + " >" + "<#E6F2FF>⇀<gradient:#00BFFF:#003366> " + i.getName();
+                String hoverTitle = i.getNames().copy().reverse().convert((f) -> "<#00BFFF>" + f).toString(", ");
                 String description = "<#3fe05a>✎ <#6ad97d><font:minecraft:uniform>" + i.getDescription();
-                String usage = "<#bbe03f>✒ <#a8e0a2><font:minecraft:uniform>";
+                String usage = "<#FF0000>✒ <#A52A2A><font:minecraft:uniform>";
+
                 String onClick;
                 if (i.isNode()) {
                     if (i.getNode().getParameters().isEmpty()) {
@@ -549,8 +550,8 @@ public class VolmitSender implements CommandSender {
                 String suggestion = "";
                 String suggestions = "";
                 if (i.isNode() && i.getNode().getParameters().isNotEmpty()) {
-                    suggestion += newline + "<#aebef2>✦ <#5ef288><font:minecraft:uniform>" + i.getParentPath() + " <#42ecf5>" + i.getName() + " "
-                            + i.getNode().getParameters().convert((f) -> "<#d665f0>" + f.example()).toString(" ");
+                    suggestion += newline + "<#B0E0E6>✦ <#00FA9A><font:minecraft:uniform>" + i.getParentPath() + " <#00CED1>" + i.getName() + " "
+                            + i.getNode().getParameters().convert((f) -> "<#9370DB>" + f.example()).toString(" ");
                     suggestions += newline + "<font:minecraft:uniform>" + pickRandoms(Math.min(i.getNode().getParameters().size() + 1, 5), i);
                 }
 
@@ -559,24 +560,24 @@ public class VolmitSender implements CommandSender {
                 if (i.isNode()) {
                     for (DecreeParameter p : i.getNode().getParameters()) {
 
-                        String nTitle = "<gradient:#d665f0:#a37feb>" + p.getName();
-                        String nHoverTitle = p.getNames().convert((ff) -> "<#d665f0>" + ff).toString(", ");
-                        String nDescription = "<#3fe05a>✎ <#6ad97d><font:minecraft:uniform>" + p.getDescription();
+                        String nTitle = "<gradient:#9370DB:#BA55D3>" + p.getName();
+                        String nHoverTitle = p.getNames().convert((ff) -> "<#ff9900>" + ff).toString(", ");
+                        String nDescription = "<#2E8B57>✎ <#3CB371><font:minecraft:uniform>" + p.getDescription();
                         String nUsage;
                         String fullTitle;
                         React.debug("Contextual: " + p.isContextual() + " / player: " + isPlayer());
                         if (p.isContextual() && (isPlayer() || s instanceof CommandDummy)) {
-                            fullTitle = "<#ffcc00>[" + nTitle + "<#ffcc00>] ";
-                            nUsage = "<#ff9900>➱ <#ffcc00><font:minecraft:uniform>The value may be derived from environment context.";
+                            fullTitle = "<#FFD700>[" + nTitle + "<#FFD700>] ";
+                            nUsage = "<#ff9900>➱ <#FFD700><font:minecraft:uniform>The value may be derived from environment context.";
                         } else if (p.isRequired()) {
                             fullTitle = "<red>[" + nTitle + "<red>] ";
-                            nUsage = "<#db4321>⚠ <#faa796><font:minecraft:uniform>This parameter is required.";
+                            nUsage = "<#CD5C5C>⚠ <#F08080><font:minecraft:uniform>This parameter is required.";
                         } else if (p.hasDefault()) {
-                            fullTitle = "<#4f4f4f>⊰" + nTitle + "<#4f4f4f>⊱";
-                            nUsage = "<#2181db>✔ <#78dcf0><font:minecraft:uniform>Defaults to \"" + p.getParam().defaultValue() + "\" if undefined.";
+                            fullTitle = "<#F7F7F7>⊰" + nTitle + "<#F7F7F7>⊱";
+                            nUsage = "<#1E90FF>✔ <#87CEEB><font:minecraft:uniform>Defaults to \"" + p.getParam().defaultValue() + "\" if undefined.";
                         } else {
-                            fullTitle = "<#4f4f4f>⊰" + nTitle + "<#4f4f4f>⊱";
-                            nUsage = "<#a73abd>✔ <#78dcf0><font:minecraft:uniform>This parameter is optional.";
+                            fullTitle = "<#F7F7F7>⊰" + nTitle + "<#F7F7F7>⊱";
+                            nUsage = "<#8A2BE2>✔ <#87CEEB><font:minecraft:uniform>This parameter is optional.";
                         }
                         String type = "<#cc00ff>✢ <#ff33cc><font:minecraft:uniform>This parameter is of type " + p.getType().getSimpleName() + ".";
 
@@ -591,7 +592,7 @@ public class VolmitSender implements CommandSender {
                                 .append("</hover>");
                     }
                 } else {
-                    nodes = new StringBuilder("<gradient:#afe3d3:#a2dae0> - Category of Commands");
+                    nodes = new StringBuilder("<gradient:#AFEEEE:#B0E0E6> - Category of Commands");
                 }
 
                 /// Wrapper
