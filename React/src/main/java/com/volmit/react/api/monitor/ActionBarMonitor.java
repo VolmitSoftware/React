@@ -239,8 +239,11 @@ public class ActionBarMonitor extends PlayerMonitor {
         boolean first = true;
         for (int m = 0; m < viewportLimit; m++) {
             try {
-                Sampler i = React.sampler(focus.getSamplers()
-                        .get((viewportIndexes.get(focus) + m) % focus.getSamplers().size()));
+                int calculatedIndex = (viewportIndexes.get(focus) + m) % focus.getSamplers().size();
+                if (calculatedIndex < 0) {
+                    calculatedIndex += focus.getSamplers().size();
+                }
+                Sampler i = React.sampler(focus.getSamplers().get(calculatedIndex));
                 setVisible(i, true);
                 if (!first) {
                     builder.append(Component.space());
@@ -275,6 +278,7 @@ public class ActionBarMonitor extends PlayerMonitor {
 
         return builder.build();
     }
+
 
     private Component writeHeader() {
         int viewportLimit = Math.min(5, configuration.getGroups().size());
