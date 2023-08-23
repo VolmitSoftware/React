@@ -19,22 +19,16 @@
 
 package com.volmit.react.core.controller;
 
-import art.arcane.edict.Edict;
-import art.arcane.edict.api.context.EdictContext;
 import com.google.common.util.concurrent.AtomicDouble;
-import com.volmit.react.React;
 import com.volmit.react.api.sampler.Sampler;
 import com.volmit.react.model.SampledChunk;
 import com.volmit.react.model.SampledServer;
-import com.volmit.react.util.format.C;
 import com.volmit.react.util.plugin.IController;
-import com.volmit.react.util.scheduling.J;
 import com.volmit.react.util.scheduling.TickedObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.bukkit.Chunk;
 import org.bukkit.block.Block;
-import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.world.ChunkUnloadEvent;
@@ -53,41 +47,6 @@ public class ObserverController extends TickedObject implements IController {
         sampled = new SampledServer();
     }
 
-    @Edict.PlayerOnly
-    @Edict.Command("/react chunk")
-    @Edict.Aliases("/react c")
-    public static void commandChunkSample() {
-        SampledChunk c = React.controller(ObserverController.class).getSampled().getChunk(EdictContext.player().getLocation().getChunk());
-
-        if (c != null) {
-            for (String i : c.getValues().keySet()) {
-                Sampler s = React.sampler(i);
-                EdictContext.sender().sendMessage(s.getName() + ": " + s.format(c.getValues().get(i).get()));
-            }
-        } else {
-            EdictContext.sender().sendMessage(C.RED + "This chunk is not sampled yet. Check back in a second!");
-        }
-    }
-
-    @Edict.PlayerOnly
-    @Edict.Command("/react chunk worst")
-    @Edict.Aliases({"/react c worst", "/react c w"})
-    public static void commandChunkWorst() {
-        SampledChunk c = React.controller(ObserverController.class).absoluteWorst();
-
-        if (c != null) {
-            Block b = c.getChunk().getBlock(8, 0, 8);
-            Player p = EdictContext.player();
-            J.s(() -> p.teleport(c.getChunk().getWorld().getHighestBlockAt(b.getX(), b.getY()).getLocation()));
-
-            for (String i : c.getValues().keySet()) {
-                Sampler s = React.sampler(i);
-                EdictContext.sender().sendMessage(s.getName() + ": " + s.format(c.getValues().get(i).get()));
-            }
-        } else {
-            EdictContext.sender().sendMessage(C.RED + "No chunks are sampled yet. Check back in a second!");
-        }
-    }
 
     @Override
     public void onTick() {

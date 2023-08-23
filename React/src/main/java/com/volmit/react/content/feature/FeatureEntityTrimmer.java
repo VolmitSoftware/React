@@ -53,7 +53,15 @@ public class FeatureEntityTrimmer extends ReactFeature implements Listener {
     /**
      * List of blacklisted entities with already blacklisted examples
      */
-    private List<EntityType> blacklist = List.of();
+    private List<EntityType> blacklist = List.of(
+            EntityType.ARMOR_STAND, EntityType.ITEM_FRAME, EntityType.PAINTING, EntityType.LEASH_HITCH,
+            EntityType.MINECART, EntityType.MINECART_CHEST, EntityType.MINECART_COMMAND, EntityType.MINECART_FURNACE,
+            EntityType.MINECART_HOPPER, EntityType.MINECART_MOB_SPAWNER, EntityType.MINECART_TNT, EntityType.BOAT,
+            EntityType.FALLING_BLOCK, EntityType.DROPPED_ITEM, EntityType.EXPERIENCE_ORB, EntityType.FISHING_HOOK,
+            EntityType.PRIMED_TNT, EntityType.SPLASH_POTION, EntityType.THROWN_EXP_BOTTLE, EntityType.ENDER_PEARL,
+            EntityType.ENDER_SIGNAL, EntityType.FIREWORK, EntityType.LIGHTNING, EntityType.SHULKER_BULLET,
+            EntityType.SMALL_FIREBALL, EntityType.SNOWBALL, EntityType.SPECTRAL_ARROW, EntityType.SPLASH_POTION,
+            EntityType.THROWN_EXP_BOTTLE);
 
     /**
      * Calculates total chunks * softMax to see if we are exceeding
