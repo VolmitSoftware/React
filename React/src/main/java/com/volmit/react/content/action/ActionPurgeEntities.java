@@ -19,10 +19,7 @@
 
 package com.volmit.react.content.action;
 
-import art.arcane.edict.Edict;
-import art.arcane.edict.api.context.EdictContext;
 import com.volmit.react.React;
-import com.volmit.react.api.action.Action;
 import com.volmit.react.api.action.ActionParams;
 import com.volmit.react.api.action.ActionTicket;
 import com.volmit.react.api.action.ReactAction;
@@ -49,10 +46,15 @@ import java.util.Random;
 public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params> {
     public static final String ID = "purge-entities";
     public static final String SHORT = "pe";
-    private List<EntityType> defaultEntityList = new ArrayList<>(List.of(
-            EntityType.ARMOR_STAND,
-            EntityType.PLAYER,
-            EntityType.ITEM_FRAME
+    private List<EntityType> blacklist = new ArrayList<>(List.of(
+            EntityType.ITEM_DISPLAY, EntityType.PLAYER, EntityType.ARMOR_STAND, EntityType.ITEM_FRAME, EntityType.PAINTING, EntityType.LEASH_HITCH,
+            EntityType.MINECART, EntityType.MINECART_CHEST, EntityType.MINECART_COMMAND, EntityType.MINECART_FURNACE,
+            EntityType.MINECART_HOPPER, EntityType.MINECART_MOB_SPAWNER, EntityType.MINECART_TNT, EntityType.BOAT,
+            EntityType.FALLING_BLOCK, EntityType.DROPPED_ITEM, EntityType.EXPERIENCE_ORB, EntityType.FISHING_HOOK,
+            EntityType.PRIMED_TNT, EntityType.SPLASH_POTION, EntityType.THROWN_EXP_BOTTLE, EntityType.ENDER_PEARL,
+            EntityType.ENDER_SIGNAL, EntityType.FIREWORK, EntityType.LIGHTNING, EntityType.SHULKER_BULLET,
+            EntityType.SMALL_FIREBALL, EntityType.SNOWBALL, EntityType.SPECTRAL_ARROW, EntityType.SPLASH_POTION,
+            EntityType.THROWN_EXP_BOTTLE
     ));
     private boolean defaultBlacklist = true;
     private int secondsToPurge = 5;
@@ -63,14 +65,6 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
 
     public ActionPurgeEntities() {
         super(ID);
-    }
-
-    @Edict.Command("/react action " + ID)
-    @Edict.Aliases({"/react action " + SHORT, "/react a " + SHORT, "/react a " + ID})
-    public static void command() {
-        Action<ActionPurgeEntities.Params> pe = React.action(ID);
-        ActionPurgeEntities.Params p = pe.getDefaultParams();
-        pe.create(p, EdictContext.get().getSender()).queue();
     }
 
     List<Chunk> pullChunks(ActionTicket<Params> ticket, int max) {
@@ -117,7 +111,7 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
     public Params getDefaultParams() {
         return Params.builder()
                 .entityFilter(FilterParams.<EntityType>builder()
-                        .types(defaultEntityList)
+                        .types(blacklist)
                         .blacklist(defaultBlacklist)
                         .build())
                 .build();

@@ -365,11 +365,13 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
     }
 
     public void onTick(Entity entity) {
-        for (Entity i : entity.getNearbyEntities(searchRadius, searchRadius, searchRadius)) {
-            if (merge(entity, i)) {
-                break;
+        J.a(() -> J.s(() -> {
+            for (Entity i : entity.getNearbyEntities(searchRadius, searchRadius, searchRadius)) {
+                if (merge(entity, i)) {
+                    break;
+                }
             }
-        }
+        }));
     }
 
     @Override

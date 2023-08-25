@@ -19,10 +19,7 @@
 
 package com.volmit.react.content.action;
 
-import art.arcane.edict.Edict;
-import art.arcane.edict.api.context.EdictContext;
 import com.volmit.react.React;
-import com.volmit.react.api.action.Action;
 import com.volmit.react.api.action.ActionParams;
 import com.volmit.react.api.action.ActionTicket;
 import com.volmit.react.api.action.ReactAction;
@@ -47,23 +44,6 @@ public class ActionPurgeChunks extends ReactAction<ActionPurgeChunks.Params> {
 
     public ActionPurgeChunks() {
         super(ID);
-    }
-
-    @Edict.Command("/react action " + ID)
-    @Edict.Aliases({"/react action " + SHORT, "/react a " + SHORT, "/react a " + ID})
-    public static void command() {
-        Action<ActionPurgeChunks.Params> pe = React.action(ID);
-        ActionPurgeChunks.Params p = pe.getDefaultParams();
-        pe.create(p, EdictContext.get().getSender()).queue();
-    }
-
-    @Edict.PlayerOnly
-    @Edict.Command("/react action " + ID)
-    @Edict.Aliases({"/react action " + SHORT, "/react a " + SHORT, "/react a " + ID})
-    public static void command(World world) {
-        Action<ActionPurgeChunks.Params> pe = React.action(ID);
-        ActionPurgeChunks.Params p = pe.getDefaultParams().withWorld(world);
-        pe.create(p, EdictContext.get().getSender()).queue();
     }
 
     List<Chunk> pullChunks(ActionTicket<Params> ticket, int max) {

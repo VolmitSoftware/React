@@ -49,7 +49,6 @@ public class TweakFastDrops extends ReactTweak implements Listener {
     private boolean teleportEntityDrops = true;
     private boolean teleportEntityXP = true;
     private boolean allowContainerDrops = false;
-    private boolean ignoreDistanceKills = true;
 
     public TweakFastDrops() {
         super(ID);
