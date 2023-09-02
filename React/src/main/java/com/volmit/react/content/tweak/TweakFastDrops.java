@@ -54,7 +54,7 @@ public class TweakFastDrops extends ReactTweak implements Listener {
         super(ID);
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.MONITOR)
     public void on(EntityDeathEvent e) {
         if (!teleportEntityXP && !teleportEntityDrops) {
             return;
@@ -100,7 +100,7 @@ public class TweakFastDrops extends ReactTweak implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.MONITOR)
     public void on(BlockDropItemEvent e) {
         if (!allowContainerDrops && e.getBlock().getState() instanceof InventoryHolder) {
             return;
@@ -127,7 +127,7 @@ public class TweakFastDrops extends ReactTweak implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.MONITOR)
     public void on(BlockBreakEvent e) {
         if (!teleportBlockXP) {
             return;
@@ -148,6 +148,8 @@ public class TweakFastDrops extends ReactTweak implements Listener {
             e.getPlayer().playSound(e.getBlock().getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.7f, 1f + RNG.r.f(-0.2f, 0.2f));
         }
     }
+
+
 
     public void giveXP(Location at, Player player, int xp) {
         if (player.getGameMode().equals(GameMode.CREATIVE)) {

@@ -27,6 +27,7 @@ import org.bukkit.event.Listener;
 public class TweakServerHibernator extends ReactTweak implements Listener {
     public static final String ID = "server-hibernator";
     private transient boolean firstRun = true;
+    private boolean imACloudServerEnableMe = false;
     private double secondsPerTick = 1.0;
 
 
@@ -36,6 +37,10 @@ public class TweakServerHibernator extends ReactTweak implements Listener {
 
     @Override
     public void onActivate() {
+        if (!imACloudServerEnableMe) {
+            React.info("React Server Hibernator Disabled. Enable imACloudServerEnableMe in the config, if you know what you are doing.");
+            return;
+        }
         Bukkit.getScheduler().scheduleSyncRepeatingTask(React.instance, () -> {
             if (Bukkit.getOnlinePlayers().size() == 0) {
                 if (this.firstRun) {
@@ -60,8 +65,11 @@ public class TweakServerHibernator extends ReactTweak implements Listener {
 
     @Override
     public void onDeactivate() {
+        if (!imACloudServerEnableMe) {
+            React.info("React Server Hibernator Disabled. Enable imACloudServerEnableMe in the config, if you know what you are doing.");
+            return;
+        }
         Bukkit.getScheduler().cancelTasks(React.instance);
-
     }
 
     @Override
