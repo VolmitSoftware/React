@@ -24,6 +24,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 
 import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
 
 public class CPUBenchmark implements Runnable {
     private CommandSender sender;
@@ -40,25 +41,45 @@ public class CPUBenchmark implements Runnable {
     public void run() {
         int score = doCPUBenchmark();
         String result = CPUResult.getSpeedLabel(score);
-        sender.sendMessage(ChatColor.GREEN + "Benchmark result: " + result + " (" + score + ")");
+        sender.sendMessage(ChatColor.GREEN + "Benchmark result: " + result + " (" + score + " Miliseconds)");
     }
 
     private int doCPUBenchmark() {
         long startTime = System.nanoTime();
         sender.sendMessage(ChatColor.DARK_RED + "Benchmarking CPU...");
 
-        double result = 0.01;
+        // Arithmetic Operations
+        long resultInt = 1;
+        for (long i = 1; i <= 1000000; i++) {
+            resultInt *= i;
+            resultInt /= (i != 0 ? i : 1);
+        }
+
+        // Floating-Point Operations
+        double resultDouble = 0.01;
         for (int i = 0; i < 1000000; i++) {
-            for (int j = 0; j < 100; j++) {
-                result *= 1.000001;
-            }
+            resultDouble *= 1.000001;
+            resultDouble /= 1.000001;
+        }
+
+        // Logical Operations
+        int resultLogical = 0x55555555;
+        for (int i = 0; i < 1000000; i++) {
+            resultLogical = resultLogical & 0xAAAAAAAA;
+            resultLogical = resultLogical | 0x55555555;
+        }
+
+        // Trigonometric Calculations
+        double resultTrig = 0;
+        for (int i = 0; i < 1000000; i++) {
+            resultTrig = Math.sin(i) + Math.cos(i) + Math.tan(i);
         }
 
         long endTime = System.nanoTime();
         long duration = (endTime - startTime);
 
-        sender.sendMessage(ChatColor.YELLOW + "Benchmark complete.");
-        return (((int) (1000000000.0 / (duration / 1000000.0))) / 10000);
+        sender.sendMessage(ChatColor.YELLOW + "Benchmark complete. (Lower = Better)");
+        return (int) (TimeUnit.MILLISECONDS.convert(duration, TimeUnit.NANOSECONDS));
     }
 
     private enum CPUResult {
@@ -73,14 +94,14 @@ public class CPUBenchmark implements Runnable {
 
         public static String getSpeedLabel(int s) {
             TreeMap<Integer, CPUResult> speedMap = new TreeMap<>();
-            speedMap.put(4000, INSANELY_FAST);
-            speedMap.put(2000, ULTRA_FAST);
-            speedMap.put(1500, VERY_FAST);
-            speedMap.put(1000, FAST);
-            speedMap.put(800, GOOD);
-            speedMap.put(500, AVERAGE);
-            speedMap.put(300, SLOW);
-            speedMap.put(100, VERY_SLOW);
+            speedMap.put(10, INSANELY_FAST);
+            speedMap.put(30, ULTRA_FAST);
+            speedMap.put(50, VERY_FAST);
+            speedMap.put(80, FAST);
+            speedMap.put(100, GOOD);
+            speedMap.put(150, AVERAGE);
+            speedMap.put(200, SLOW);
+            speedMap.put(400, VERY_SLOW);
 
             for (int speedThreshold : speedMap.descendingKeySet()) {
                 if (s > speedThreshold) {
