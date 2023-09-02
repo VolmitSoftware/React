@@ -270,7 +270,11 @@ public class React extends VolmitPlugin {
     }
 
     public void reload() {
-        onDisable();
-        onEnable();
+        try {
+            onDisable();
+            onEnable();
+        } catch (Throwable ignored) { // threads break, i dont care
+        }
+
     }
 }

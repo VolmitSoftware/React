@@ -43,7 +43,7 @@ public class CommandReact {
     @Edict.Command("/react reload")
     @Edict.Aliases("/react rl")
     public static void reload() {
-        EdictContext.get().getSender().sendMessage("Reloading React");
+        EdictContext.get().getSender().sendMessage("Reloading React, Beware this breaks PAPI Placeholders");
         React.instance.reload();
         EdictContext.get().getSender().sendMessage("React v" + React.instance.getDescription().getVersion() + " Reloaded!");
     }

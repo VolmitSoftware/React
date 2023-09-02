@@ -94,7 +94,7 @@ public class CommandReact implements DecreeExecutor {
             aliases = {"rl"},
             description = "Reload React")
     public void reload() {
-        sender().sendMessage("Reloading React");
+        sender().sendMessage("Reloading React, YOu may see errors in the console, this is OKAY! Its the threads we are sampling being killed.");
         React.instance.reload();
         sender().sendMessage("React v" + React.instance.getDescription().getVersion() + " Reloaded!");
     }
