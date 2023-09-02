@@ -72,7 +72,9 @@ public class BundleUtils {
     }
 
     public static boolean isFlagged(ItemStack item) {
-        return item.getItemMeta().getLore() != null
+
+        return item.getItemMeta() != null
+                && item.getItemMeta().getLore() != null
                 && item.getItemMeta().getLore().size() == 1
                 && item.getItemMeta().getLore().get(0).equals("REACT SUPER STACK");
     }

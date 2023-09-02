@@ -27,6 +27,7 @@ import com.volmit.react.core.controller.EntityController;
 import com.volmit.react.util.math.RNG;
 import com.volmit.react.util.world.BundleUtils;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.entity.Entity;
@@ -38,6 +39,10 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.ItemSpawnEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryMoveItemEvent;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
@@ -92,6 +97,8 @@ public class FeatureItemSuperStacker extends ReactFeature implements Listener {
             return;
         }
 
+
+
         for (Entity i : item.getWorld().getNearbyEntities(item.getLocation(), searchRadius, searchRadius, searchRadius)) {
             if (i instanceof Item into) {
                 if (into.isDead() || into.getUniqueId().equals(item.getUniqueId())) {
@@ -128,8 +135,44 @@ public class FeatureItemSuperStacker extends ReactFeature implements Listener {
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void on(InventoryClickEvent e){
+        if (e.getWhoClicked() instanceof Player p) {
+            if (e.getCurrentItem() != null && BundleUtils.isFlagged(e.getCurrentItem())) {
+                ItemStack i = e.getCurrentItem();
+                List<ItemStack> items = BundleUtils.explode(i);
+                e.setCurrentItem(null);
+                for (ItemStack j : items) {
+                    p.getInventory().addItem(j).values().forEach((g) -> p.getWorld().dropItem(p.getLocation(), g));
+                }
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void on(ItemSpawnEvent e) {
         mergeWithNearbyItems(e.getEntity());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onInventoryMoveItemEvent(InventoryMoveItemEvent event) {
+        InventoryHolder holder = event.getDestination().getHolder();
+
+        if (holder instanceof org.bukkit.block.Hopper) {
+            ItemStack i = event.getItem();
+
+
+            if (BundleUtils.isFlagged(i)) {
+                List<ItemStack> individualItems = BundleUtils.explode(i);
+                Inventory destinationInventory = event.getDestination();
+                i.setAmount(0);
+                i.setType(Material.AIR);
+                i.setData(null);
+
+                for (ItemStack item : individualItems) {
+                    destinationInventory.addItem(item).values().forEach((leftover) -> event.getSource().addItem(leftover));
+                }
+            }
+        }
     }
 
     @Override
