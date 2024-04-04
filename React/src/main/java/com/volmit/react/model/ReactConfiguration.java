@@ -25,6 +25,7 @@ import com.volmit.react.api.entity.EntityPriority;
 import com.volmit.react.api.monitor.configuration.MonitorConfiguration;
 import com.volmit.react.api.monitor.configuration.MonitorGroup;
 import com.volmit.react.content.sampler.*;
+import com.volmit.react.util.data.B;
 import com.volmit.react.util.io.IO;
 import com.volmit.react.util.json.JSONObject;
 import lombok.Data;
@@ -43,6 +44,7 @@ public class ReactConfiguration {
     private ValueConfig value = new ValueConfig();
     private boolean customColors = true;
     private boolean verbose = false;
+    private boolean debug = false;
     private Monitoring monitoring = new Monitoring();
 
     public static ReactConfiguration get() {
