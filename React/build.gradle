@@ -36,6 +36,7 @@ registerCustomOutputTask('Psycho', 'C://Dan/MinecraftDevelopment/server/plugins'
 registerCustomOutputTask('ArcaneArts', 'C://Users/arcane/Documents/development/server/plugins')
 registerCustomOutputTask('Vatuu', 'D://Minecraft/Servers/1.19/plugins')
 registerCustomOutputTask('Nowhere', 'E://Desktop/server/plugins')
+registerCustomOutputTask('Pixel', 'C://Users//repix//Iris Dimension Engine//1.20.4 - Development/plugins')
 // ========================== UNIX ==============================
 registerCustomOutputTaskUnix('CyberpwnLT', '/Users/danielmills/development/server/plugins')
 registerCustomOutputTaskUnix('PsychoLT', '/Users/brianfopiano/Desktop/REMOTES/RemoteMinecraft/plugins')
@@ -120,8 +121,9 @@ dependencies {
 
     // Dynamically Loaded
     implementation 'net.kyori:adventure-text-minimessage:4.13.1'
-    implementation 'net.kyori:adventure-platform-bukkit:4.3.0'
-    implementation 'net.kyori:adventure-api:4.13.1'
+    implementation 'net.kyori:adventure-platform-bukkit:4.3.2'
+    implementation 'net.kyori:adventure-api:4.3.2'
+    implementation 'com.github.oshi:oshi-core:5.8.5'
     implementation 'io.timeandspace:smoothie-map:2.0.2'
     implementation 'it.unimi.dsi:fastutil:8.5.8'
     implementation 'com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru:1.4.2'
