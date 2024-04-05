@@ -27,6 +27,7 @@ import com.volmit.react.api.sampler.Sampler;
 import com.volmit.react.api.tweak.Tweak;
 import com.volmit.react.content.PAPI.PapiExpansion;
 import com.volmit.react.core.controller.*;
+import com.volmit.react.model.ReactConfiguration;
 import com.volmit.react.util.collection.KList;
 import com.volmit.react.util.format.C;
 import com.volmit.react.util.format.Form;
@@ -88,7 +89,9 @@ public class React extends VolmitPlugin {
     }
 
     public static void verbose(String string) {
-        msg(C.LIGHT_PURPLE + string);
+        if (ReactConfiguration.get().isVerbose()) {
+            msg(C.LIGHT_PURPLE + string);
+        }
     }
 
     public static void kill(Entity e) {
