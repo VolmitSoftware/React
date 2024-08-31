@@ -119,7 +119,7 @@ public class EventController extends TickedObject implements IController, Listen
             calls = 0;
             int m = 0;
             int inj = 0;
-            ArrayList<HandlerList> h = Curse.on(HandlerList.class).get("allLists");
+            ArrayList<HandlerList> h = new ArrayList<>(Curse.on(HandlerList.class).get("allLists"));
 
             for (HandlerList i : h) {
                 RegisteredListener[] r = Curse.on(i).get("handlers");
@@ -168,7 +168,7 @@ public class EventController extends TickedObject implements IController, Listen
 
     public void pullOut() {
         int out = 0;
-        ArrayList<HandlerList> h = Curse.on(HandlerList.class).get("allLists");
+        ArrayList<HandlerList> h = new ArrayList<>(Curse.on(HandlerList.class).get("allLists"));
 
         for (HandlerList i : h) {
             RegisteredListener[] r = Curse.on(i).get("handlers");
