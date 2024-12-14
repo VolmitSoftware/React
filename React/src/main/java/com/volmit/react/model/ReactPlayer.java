@@ -25,6 +25,7 @@ import com.volmit.react.api.monitor.ActionBarMonitor;
 import com.volmit.react.util.plugin.VolmitSender;
 import com.volmit.react.util.scheduling.TickedObject;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerItemHeldEvent;
@@ -33,6 +34,7 @@ import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.util.Vector;
 
 @Data
+@EqualsAndHashCode(callSuper = false)
 public class ReactPlayer extends TickedObject {
     private static final int ACTIVE_RATE = 50;
     private static final int INACTIVE_RATE = 1000;
@@ -52,7 +54,7 @@ public class ReactPlayer extends TickedObject {
     private Vector velocity;
     private boolean speedValidForMonitor;
     private int speedTickCooldown;
-    private int lastHash = 0;
+    private int lastHash;
     private boolean running;
 
     public ReactPlayer(Player player) {

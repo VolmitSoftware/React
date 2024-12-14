@@ -18,9 +18,7 @@
 plugins {
     id 'java'
     id 'java-library'
-    id "io.freefair.lombok" version "6.3.0"
-    id "com.github.johnrengelman.shadow" version "7.1.2"
-    id "de.undercouch.download" version "5.0.1"
+    id "com.gradleup.shadow" version "8.3.5"
 }
 
 
@@ -37,6 +35,7 @@ registerCustomOutputTask('ArcaneArts', 'C://Users/arcane/Documents/development/s
 registerCustomOutputTask('Vatuu', 'D://Minecraft/Servers/1.19/plugins')
 registerCustomOutputTask('Nowhere', 'E://Desktop/server/plugins')
 registerCustomOutputTask('Pixel', 'C://Users//repix//Iris Dimension Engine//1.20.4 - Development/plugins')
+registerCustomOutputTask('CrazyDev22', 'C:\\Users\\Julian\\Desktop\\server\\plugins')
 // ========================== UNIX ==============================
 registerCustomOutputTaskUnix('CyberpwnLT', '/Users/danielmills/development/server/plugins')
 registerCustomOutputTaskUnix('PsychoLT', '/Users/brianfopiano/Desktop/REMOTES/RemoteMinecraft/plugins')
@@ -63,16 +62,11 @@ processResources {
 }
 
 repositories {
-    mavenLocal {
-        content {
-            includeGroup("org.bukkit")
-            includeGroup("org.spigotmc")
-        }
-    }
-    maven { url "https://arcanearts.jfrog.io/artifactory/archives" }
-    maven { url "https://mvn.lumine.io/repository/maven-public/" }
-    maven { url = 'https://repo.extendedclip.com/content/repositories/placeholderapi/' }
     mavenCentral()
+    maven { url 'https://www.jitpack.io' }
+    maven { url "https://repo.papermc.io/repository/maven-public/"}
+    maven { url "https://mvn.lumine.io/repository/maven-public/" }
+    maven { url 'https://repo.extendedclip.com/content/repositories/placeholderapi/' }
 }
 
 /**
@@ -88,11 +82,12 @@ compileJava {
 shadowJar {
     minimize()
     append("plugin.yml")
-    relocate 'art.arcane', 'com.volmit.react.util.arcane'
-
     dependencies {
-        include(dependency('art.arcane:'))
+        include(dependency('com.github.VolmitDev:'))
     }
+
+    archiveClassifier = null
+    relocate("art.arcane", "com.volmit.react.util.arcane")
 }
 
 configurations.all {
@@ -105,66 +100,38 @@ dependencies {
     // Provided or Classpath
     compileOnly 'org.projectlombok:lombok:1.18.24'
     annotationProcessor 'org.projectlombok:lombok:1.18.24'
-    implementation 'org.spigotmc:spigot-api:1.19.4-R0.1-SNAPSHOT'
-    implementation 'craftbukkit:craftbukkit193R2:nms'
-    implementation "io.papermc:paperlib:1.0.7"
+    compileOnly 'org.spigotmc:spigot-api:1.19.4-R0.1-SNAPSHOT'
+    compileOnly "io.papermc:paperlib:1.0.7"
 
     // Shaded
-    implementation 'art.arcane:Curse:23.5.2'
-    implementation 'art.arcane:MultiBurst:22.9.2'
-    implementation 'art.arcane:Chrono:22.9.10'
-    implementation 'art.arcane:Spatial:22.11.1'
+    implementation 'com.github.VolmitDev:Curse:23.4.3'
+    implementation 'com.github.VolmitDev:MultiBurst:22.9.2'
+    implementation 'com.github.VolmitDev:Chrono:22.9.10'
+    implementation 'com.github.VolmitDev:Spatial:22.11.1'
 
     //Random API's
-    implementation 'me.clip:placeholderapi:2.11.2'
+    compileOnly 'me.clip:placeholderapi:2.11.6'
 
 
     // Dynamically Loaded
-    implementation 'net.kyori:adventure-text-minimessage:4.13.1'
-    implementation 'net.kyori:adventure-platform-bukkit:4.3.2'
-    implementation 'net.kyori:adventure-api:4.3.2'
-    implementation 'com.github.oshi:oshi-core:5.8.5'
-    implementation 'io.timeandspace:smoothie-map:2.0.2'
-    implementation 'it.unimi.dsi:fastutil:8.5.8'
-    implementation 'com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru:1.4.2'
-    implementation 'org.apache.commons:commons-lang3:3.12.0'
-    implementation 'com.google.code.gson:gson:2.10'
-    implementation 'org.zeroturnaround:zt-zip:1.15'
-    implementation 'org.bitbucket.mstrobel:procyon-core:0.6.0'
-    implementation 'org.bitbucket.mstrobel:procyon-compilertools:0.6.0'
-    implementation 'org.bitbucket.mstrobel:procyon-reflection:0.6.0'
-    implementation 'fr.inria.gforge.spoon:spoon-core:10.2.0'
-    implementation 'com.github.ben-manes.caffeine:caffeine:3.0.6'
-    implementation 'org.java-websocket:Java-WebSocket:1.5.3'
-    implementation 'io.netty:netty-transport:4.1.92.Final'
+    compileOnly 'net.kyori:adventure-text-minimessage:4.13.1'
+    compileOnly 'net.kyori:adventure-platform-bukkit:4.3.2'
+    compileOnly 'net.kyori:adventure-api:4.3.2'
+    compileOnly 'com.github.oshi:oshi-core:5.8.5'
+    compileOnly 'io.timeandspace:smoothie-map:2.0.2'
+    compileOnly 'it.unimi.dsi:fastutil:8.5.8'
+    compileOnly 'com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru:1.4.2'
+    compileOnly 'org.apache.commons:commons-lang3:3.12.0'
+    compileOnly 'com.google.code.gson:gson:2.10'
+    compileOnly 'org.zeroturnaround:zt-zip:1.15'
+    compileOnly 'org.bitbucket.mstrobel:procyon-core:0.6.0'
+    compileOnly 'org.bitbucket.mstrobel:procyon-compilertools:0.6.0'
+    compileOnly 'org.bitbucket.mstrobel:procyon-reflection:0.6.0'
+    compileOnly 'fr.inria.gforge.spoon:spoon-core:10.2.0'
+    compileOnly 'com.github.ben-manes.caffeine:caffeine:3.0.6'
+    compileOnly 'org.java-websocket:Java-WebSocket:1.5.3'
+    compileOnly 'io.netty:netty-transport:4.1.92.Final'
 }
-
-if (JavaVersion.current().toString() != "17") {
-    System.err.println()
-    System.err.println("=========================================================================================================")
-    System.err.println("You must run gradle on Java 17. You are using " + JavaVersion.current())
-    System.err.println()
-    System.err.println("=== For IDEs ===")
-    System.err.println("1. Configure the project for Java 17")
-    System.err.println("2. Configure the bundled gradle to use Java 17 in settings")
-    System.err.println()
-    System.err.println("=== For Command Line (gradlew) ===")
-    System.err.println("1. Install JDK 17 from https://www.oracle.com/java/technologies/javase/jdk17-archive-downloads.html")
-    System.err.println("2. Set JAVA_HOME environment variable to the new jdk installation folder such as C:\\Program Files\\Java\\jdk-17.0.1")
-    System.err.println("3. Open a new command prompt window to get the new environment variables if need be.")
-    System.err.println("=========================================================================================================")
-    System.err.println()
-    System.exit(69)
-}
-
-
-def outputShadeJar = new File(buildDir, "libs/React-" + version + "-all.jar")
-def ssiJar = new File(buildDir, "specialsource/React-" + version + "-all.jar")
-def ssobfJar = new File(buildDir, "specialsource/React-" + version + "-rmo.jar")
-def ssJar = new File(buildDir, "specialsource/React-" + version + "-rma.jar")
-def homePath = System.properties['user.home']
-def m2 = new File(homePath + "/.m2/repository")
-def m2s = m2.getAbsolutePath()
 
 java {
     toolchain {
@@ -176,6 +143,8 @@ compileJava {
     options.encoding = "UTF-8"
 }
 
+def buildFile = layout.buildDirectory.file("libs/React-${version}.jar")
+
 def registerCustomOutputTask(name, path) {
     if (!System.properties['os.name'].toLowerCase().contains('windows')) {
         return
@@ -185,10 +154,10 @@ def registerCustomOutputTask(name, path) {
         group('development')
         outputs.upToDateWhen { false }
         dependsOn(shadowJar)
-        from(new File(buildDir, "libs/React-" + version + "-all.jar"))
+        from(buildFile)
         into(file(path))
         rename { String fileName ->
-            fileName.replace("React-" + version + "-all.jar", "React.jar")
+            fileName.replace("React-" + version + ".jar", "React.jar")
         }
     }
 }
@@ -202,10 +171,10 @@ def registerCustomOutputTaskUnix(name, path) {
         group('development')
         outputs.upToDateWhen { false }
         dependsOn(shadowJar)
-        from(new File(buildDir, "libs/React-" + version + "-all.jar"))
+        from(buildFile)
         into(file(path))
         rename { String fileName ->
-            fileName.replace("React-" + version + "-all.jar", "React.jar")
+            fileName.replace("React-" + version + ".jar", "React.jar")
         }
     }
 }

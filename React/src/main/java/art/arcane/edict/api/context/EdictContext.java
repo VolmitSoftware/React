@@ -83,6 +83,7 @@ public class EdictContext {
      * A map for storing resolved objects by their class types.
      * It's used in the `resolve` method to cache and reuse resolved objects.
      */
+    @Builder.Default
     private Map<Class<?>, Object> resolved = new HashMap<>();
 
     /**

@@ -48,6 +48,7 @@ public class EdictRequest {
     /**
      * An offset used in the matching process of an EdictEndpoint.
      */
+    @Builder.Default
     private int matchOffset = 0;
 
     /**
