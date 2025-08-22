@@ -28,6 +28,7 @@ import com.volmit.react.React;
 import com.volmit.react.util.format.Form;
 import com.volmit.react.util.io.IO;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 
 import java.io.File;
 import java.io.IOException;
@@ -55,7 +56,8 @@ public interface Registered {
         File configFile = React.instance.getDataFile(getConfigCategory(), getId() + ".json");
         if (!configFile.exists()) {
             try {
-                IO.writeAll(configFile, new Gson().toJson(this));
+                Gson gson = new GsonBuilder().registerTypeAdapter(Sound.class, new SoundTypeAdapter()).create();
+                IO.writeAll(configFile, gson.toJson(this));
                 React.verbose("Creating a default config for " + getName() + " in " + configFile.getPath());
             } catch (IOException e) {
                 e.printStackTrace();
@@ -63,7 +65,8 @@ public interface Registered {
         }
 
         try {
-            CursedComponent loaded = Curse.on(new Gson().fromJson(IO.readAll(configFile), getClass()));
+            Gson gson = new GsonBuilder().registerTypeAdapter(Sound.class, new SoundTypeAdapter()).create();
+            CursedComponent loaded = Curse.on(gson.fromJson(IO.readAll(configFile), getClass()));
             CursedComponent c = Curse.on(this);
             c.instanceFields().filter(i -> !i.isFinal() && !i.isTransient()).forEach((self) -> {
                 CursedField from = loaded.field(self.field().getName());
@@ -79,7 +82,9 @@ public interface Registered {
         }
 
         try {
-            IO.writeAll(configFile, new GsonBuilder().setPrettyPrinting().create().toJson(this));
+            Gson gson = new GsonBuilder().registerTypeAdapter(Sound.class, new SoundTypeAdapter()).setPrettyPrinting()
+                    .create();
+            IO.writeAll(configFile, gson.toJson(this));
         } catch (IOException e) {
             e.printStackTrace();
         }

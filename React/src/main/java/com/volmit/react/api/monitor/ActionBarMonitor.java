@@ -25,6 +25,7 @@ import com.volmit.react.api.monitor.configuration.MonitorGroup;
 import com.volmit.react.api.sampler.Sampler;
 import com.volmit.react.model.ReactPlayer;
 import com.volmit.react.util.math.M;
+import com.volmit.react.util.messaging.ActionBarHelper;
 import com.volmit.react.util.scheduling.J;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
@@ -82,12 +83,12 @@ public class ActionBarMonitor extends PlayerMonitor {
         running = false;
         try {
             J.ss(() -> getPlayer().getPlayer().spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(" ")), 3);
-            J.ss(() -> React.audiences.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.TITLE, Component.space()), 3);
-            J.ss(() -> React.audiences.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.SUBTITLE, Component.space()), 3);
+            J.ss(() -> ActionBarHelper.sendTitlePart(getPlayer().getPlayer(), TitlePart.TITLE, Component.space()), 3);
+            J.ss(() -> ActionBarHelper.sendTitlePart(getPlayer().getPlayer(), TitlePart.SUBTITLE, Component.space()), 3);
         } catch (IllegalPluginAccessException e) {
             getPlayer().getPlayer().spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(" "));
-            React.audiences.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.TITLE, Component.space());
-            React.audiences.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.SUBTITLE, Component.space());
+            ActionBarHelper.sendTitlePart(getPlayer().getPlayer(), TitlePart.TITLE, Component.space());
+            ActionBarHelper.sendTitlePart(getPlayer().getPlayer(), TitlePart.SUBTITLE, Component.space());
         }
 
         super.stop();
@@ -366,7 +367,7 @@ public class ActionBarMonitor extends PlayerMonitor {
                 focus.setHeadSampler(getNextFocusedSampler().getId());
             }
 
-            React.audiences.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.TIMES, new Title.Times() {
+            ActionBarHelper.sendTitlePart(getPlayer().getPlayer(), TitlePart.TIMES, new Title.Times() {
                 @Override
                 public @NotNull Duration fadeIn() {
                     return Duration.ZERO;
@@ -385,19 +386,19 @@ public class ActionBarMonitor extends PlayerMonitor {
 
             if (focusUpAnimation >= -10) {
                 if (focusUpAnimation > 0) {
-                    React.audiences.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.TITLE, writeHeaderTitle(focus));
+                    ActionBarHelper.sendTitlePart(getPlayer().getPlayer(), TitlePart.TITLE, writeHeaderTitle(focus));
                 } else {
-                    React.audiences.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.TITLE, Component.space());
+                    ActionBarHelper.sendTitlePart(getPlayer().getPlayer(), TitlePart.TITLE, Component.space());
                 }
 
                 focusUpAnimation--;
             }
 
-            React.audiences.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.SUBTITLE, writeSubSamplers());
+            ActionBarHelper.sendTitlePart(getPlayer().getPlayer(), TitlePart.SUBTITLE, writeSubSamplers());
         } else if (focusDownAnimation) {
             getPlayer().getPlayer().sendTitle(" ", "  ", 0, (int) ((getTinterval() / 50) + 1), 17);
         }
 
-        React.audiences.player(getPlayer().getPlayer()).sendActionBar(writeHeader());
+        ActionBarHelper.sendActionBar(getPlayer().getPlayer(), writeHeader());
     }
 }
