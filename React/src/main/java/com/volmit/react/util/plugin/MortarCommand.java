@@ -20,9 +20,11 @@
 package com.volmit.react.util.plugin;
 
 
+import com.volmit.react.React;
 import com.volmit.react.util.collection.KList;
 import com.volmit.react.util.format.C;
-import org.bukkit.Sound;
+import net.kyori.adventure.key.Key;
+import net.kyori.adventure.sound.Sound;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -73,7 +75,12 @@ public abstract class MortarCommand implements ICommand {
         }
 
         if (sender.isPlayer()) {
-            sender.playSound(Sound.ENTITY_ITEM_FRAME_ROTATE_ITEM, 0.25f, 1.7f);
+            React.audiences.player(sender.player()).playSound(Sound.sound(
+                    Key.key("minecraft:entity.item_frame.rotate_item"),
+                    Sound.Source.PLAYER,
+                    0.25f,
+                    1.7f
+            ));
         }
 
         return v;
@@ -100,8 +107,18 @@ public abstract class MortarCommand implements ICommand {
         }
 
         if (sender.isPlayer()) {
-            sender.playSound(Sound.ITEM_BOOK_PAGE_TURN, 0.28f, 1.4f);
-            sender.playSound(Sound.ITEM_AXE_STRIP, 0.35f, 1.7f);
+            React.audiences.player(sender.player()).playSound(Sound.sound(
+                    Key.key("minecraft:item.book.page_turn"),
+                    Sound.Source.PLAYER,
+                    0.28f,
+                    1.4f
+            ));
+            React.audiences.player(sender.player()).playSound(Sound.sound(
+                    Key.key("minecraft:item.axe.strip"),
+                    Sound.Source.PLAYER,
+                    0.35f,
+                    1.7f
+            ));
         }
     }
 

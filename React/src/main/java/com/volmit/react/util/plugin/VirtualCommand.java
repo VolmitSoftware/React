@@ -25,8 +25,9 @@ import com.volmit.react.util.collection.KList;
 import com.volmit.react.util.collection.KMap;
 import com.volmit.react.util.format.C;
 import com.volmit.react.util.reflect.V;
+import net.kyori.adventure.key.Key;
+import net.kyori.adventure.sound.Sound;
 import org.bukkit.Bukkit;
-import org.bukkit.Sound;
 import org.bukkit.command.CommandSender;
 
 import java.lang.reflect.Field;
@@ -110,7 +111,12 @@ public class VirtualCommand {
                     c.remove(0);
                     if (cmd.hit(sender, c, vs.getCommand())) {
                         if (vs.isPlayer()) {
-                            vs.player().getWorld().playSound(vs.player().getLocation(), Sound.ITEM_AXE_STRIP, 0.35f, 1.8f);
+                            React.audiences.player(vs.player()).playSound(Sound.sound(
+                                    Key.key("minecraft:item.axe.strip"),
+                                    Sound.Source.PLAYER,
+                                    0.35f,
+                                    1.8f
+                            ));
                         }
 
                         return true;

@@ -27,7 +27,8 @@ import com.volmit.react.util.format.C;
 import com.volmit.react.util.math.RNG;
 import com.volmit.react.util.plugin.VolmitSender;
 import com.volmit.react.util.scheduling.J;
-import org.bukkit.Sound;
+import net.kyori.adventure.key.Key;
+import net.kyori.adventure.sound.Sound;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -145,7 +146,12 @@ public interface DecreeSystem extends CommandExecutor, TabCompleter {
         v.removeDuplicates();
 
         if (sender instanceof Player) {
-            ((Player) sender).playSound(((Player) sender).getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.25f, RNG.r.f(0.125f, 1.95f));
+            React.audiences.sender(sender).playSound(Sound.sound(
+                    Key.key("minecraft:block.amethyst_block.chime"),
+                    Sound.Source.PLAYER,
+                    0.25f,
+                    RNG.r.f(0.125f, 1.95f)
+            ));
         }
 
         return v;
@@ -161,15 +167,35 @@ public interface DecreeSystem extends CommandExecutor, TabCompleter {
         J.a(() -> {
             if (!call(new VolmitSender(sender), args)) {
                 if (sender instanceof Player) {
-                    ((Player) sender).playSound(((Player) sender).getLocation(), Sound.BLOCK_RESPAWN_ANCHOR_DEPLETE, 0.77f, 0.25f);
-                    ((Player) sender).playSound(((Player) sender).getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 0.2f, 0.45f);
+                    React.audiences.sender(sender).playSound(Sound.sound(
+                            Key.key("minecraft:block.respawn_anchor.deplete"),
+                            Sound.Source.PLAYER,
+                            0.77f,
+                            0.25f
+                    ));
+                    React.audiences.sender(sender).playSound(Sound.sound(
+                            Key.key("minecraft:block.beacon.deactivate"),
+                            Sound.Source.PLAYER,
+                            0.2f,
+                            0.45f
+                    ));
                 }
 
                 sender.sendMessage(C.RED + "Unknown React Command");
             } else {
                 if (sender instanceof Player) {
-                    ((Player) sender).playSound(((Player) sender).getLocation(), Sound.BLOCK_AMETHYST_CLUSTER_BREAK, 0.77f, 1.65f);
-                    ((Player) sender).playSound(((Player) sender).getLocation(), Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 0.125f, 2.99f);
+                    React.audiences.sender(sender).playSound(Sound.sound(
+                            Key.key("minecraft:block.amethyst_cluster.break"),
+                            Sound.Source.PLAYER,
+                            0.77f,
+                            1.65f
+                    ));
+                    React.audiences.sender(sender).playSound(Sound.sound(
+                            Key.key("minecraft:block.respawn_anchor.charge"),
+                            Sound.Source.PLAYER,
+                            0.125f,
+                            2.99f
+                    ));
                 }
             }
         });
