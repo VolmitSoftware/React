@@ -7,9 +7,9 @@ commands:
   react:
     aliases: [ re ]
 libraries:
-  - net.kyori:adventure-text-minimessage:4.13.1
-  - net.kyori:adventure-platform-bukkit:4.3.0
-  - net.kyori:adventure-api:4.13.1
+  - net.kyori:adventure-text-minimessage:4.24.0
+  - net.kyori:adventure-platform-bukkit:4.4.1
+  - net.kyori:adventure-api:4.9.3
   - io.timeandspace:smoothie-map:2.0.2
   - it.unimi.dsi:fastutil:8.5.8
   - com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru:1.4.2
