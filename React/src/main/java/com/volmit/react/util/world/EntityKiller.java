@@ -24,8 +24,9 @@ import com.volmit.react.content.sampler.SamplerEntities;
 import com.volmit.react.core.controller.EntityController;
 import com.volmit.react.util.format.C;
 import com.volmit.react.util.scheduling.J;
+import net.kyori.adventure.key.Key;
+import net.kyori.adventure.sound.Sound;
 import org.bukkit.Particle;
-import org.bukkit.Sound;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -84,7 +85,14 @@ public class EntityKiller implements Listener {
 
         stop();
         entity.getWorld().spawnParticle(Particle.FLASH, entity.getLocation(), 1);
-        entity.getWorld().playSound(entity.getLocation(), Sound.PARTICLE_SOUL_ESCAPE, 0.5f, 0.9f);
+        entity.getWorld().getPlayers().forEach(player -> 
+                React.audiences.player(player).playSound(Sound.sound(
+                        Key.key("minecraft:particle.soul_escape"),
+                        Sound.Source.NEUTRAL,
+                        0.5f,
+                        0.9f
+                ), entity.getLocation().getX(), entity.getLocation().getY(), entity.getLocation().getZ())
+        );
         entity.remove();
         ((SamplerEntities) React.sampler(SamplerEntities.ID)).getEntities().decrementAndGet();
     }

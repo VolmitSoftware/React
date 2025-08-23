@@ -29,9 +29,11 @@ import com.volmit.react.util.world.FastWorld;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import com.volmit.react.React;
+import net.kyori.adventure.key.Key;
+import net.kyori.adventure.sound.Sound;
 import org.bukkit.Chunk;
 import org.bukkit.ChunkSnapshot;
-import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.BlockData;
@@ -65,7 +67,7 @@ public class FeatureFastLeafDecay extends ReactFeature implements Listener {
     private boolean forceDecayPersistent = false;
     private boolean playSounds = true;
     private boolean fastBlockChanges = true;
-    private Sound decaySound = Sound.BLOCK_AZALEA_LEAVES_FALL;
+    private String decaySound = "minecraft:block.azalea_leaves.fall";
 
     public FeatureFastLeafDecay() {
         super(ID);
@@ -114,7 +116,14 @@ public class FeatureFastLeafDecay extends ReactFeature implements Listener {
 
         if (shouldDecay(b.getBlockData())) {
             if (playSounds && Math.random() < soundChance) {
-                b.getWorld().playSound(b.getLocation(), decaySound, (float) soundVolume, (float) soundPitch);
+                b.getWorld().getPlayers().forEach(player -> 
+                        React.audiences.player(player).playSound(Sound.sound(
+                                Key.key(decaySound),
+                                Sound.Source.BLOCK,
+                                (float) soundVolume,
+                                (float) soundPitch
+                        ), b.getLocation().getX(), b.getLocation().getY(), b.getLocation().getZ())
+                );
             }
 
             if (fastBlockChanges) {

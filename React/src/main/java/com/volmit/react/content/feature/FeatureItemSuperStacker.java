@@ -26,10 +26,11 @@ import com.volmit.react.content.sampler.SamplerEntities;
 import com.volmit.react.core.controller.EntityController;
 import com.volmit.react.util.math.RNG;
 import com.volmit.react.util.world.BundleUtils;
+import net.kyori.adventure.key.Key;
+import net.kyori.adventure.sound.Sound;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
-import org.bukkit.Sound;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Item;
@@ -88,7 +89,14 @@ public class FeatureItemSuperStacker extends ReactFeature implements Listener {
         }
 
         if (cl.flip()) {
-            item.getWorld().playSound(item.getLocation(), Sound.ITEM_BUNDLE_INSERT, 0.5f, 1.2f + RNG.r.f(-0.1f, 0.1f));
+            item.getWorld().getPlayers().forEach(player -> 
+                    React.audiences.player(player).playSound(Sound.sound(
+                            Key.key("minecraft:item.bundle.insert"),
+                            Sound.Source.NEUTRAL,
+                            0.5f,
+                            1.2f + RNG.r.f(-0.1f, 0.1f)
+                    ), item.getLocation().getX(), item.getLocation().getY(), item.getLocation().getZ())
+            );
         }
     }
 
@@ -128,7 +136,12 @@ public class FeatureItemSuperStacker extends ReactFeature implements Listener {
                 }
 
                 if (cl.flip()) {
-                    p.getWorld().playSound(e.getItem().getLocation(), Sound.ITEM_BUNDLE_DROP_CONTENTS, 1f, 0.85f + RNG.r.f(-0.1f, 0.1f));
+                    React.audiences.player(p).playSound(Sound.sound(
+                            Key.key("minecraft:item.bundle.drop_contents"),
+                            Sound.Source.PLAYER,
+                            1f,
+                            0.85f + RNG.r.f(-0.1f, 0.1f)
+                    ), e.getItem().getLocation().getX(), e.getItem().getLocation().getY(), e.getItem().getLocation().getZ());
                 }
             }
         }

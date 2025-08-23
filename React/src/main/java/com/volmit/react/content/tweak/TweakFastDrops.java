@@ -19,11 +19,13 @@
 
 package com.volmit.react.content.tweak;
 
+import com.volmit.react.React;
 import com.volmit.react.api.tweak.ReactTweak;
 import com.volmit.react.util.math.RNG;
+import net.kyori.adventure.key.Key;
+import net.kyori.adventure.sound.Sound;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
-import org.bukkit.Sound;
 import org.bukkit.entity.ExperienceOrb;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
@@ -78,7 +80,12 @@ public class TweakFastDrops extends ReactTweak implements Listener {
 
                 if (xp > 0) {
                     p.giveExp(xp);
-                    p.playSound(e.getEntity().getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.7f, 1f + RNG.r.f(-0.2f, 0.2f));
+                    React.audiences.player(p).playSound(Sound.sound(
+                            Key.key("minecraft:entity.experience_orb.pickup"),
+                            Sound.Source.PLAYER,
+                            0.7f,
+                            1f + RNG.r.f(-0.2f, 0.2f)
+                    ));
                 }
             }
 
@@ -93,7 +100,12 @@ public class TweakFastDrops extends ReactTweak implements Listener {
                     }
 
                     if (!dropped) {
-                        p.playSound(e.getEntity(), Sound.ENTITY_ITEM_PICKUP, 0.7f, 1f + RNG.r.f(-0.2f, 0.2f));
+                        React.audiences.player(p).playSound(Sound.sound(
+                                Key.key("minecraft:entity.item.pickup"),
+                                Sound.Source.PLAYER,
+                                0.7f,
+                                1f + RNG.r.f(-0.2f, 0.2f)
+                        ));
                     }
                 }
             }
@@ -121,7 +133,12 @@ public class TweakFastDrops extends ReactTweak implements Listener {
                 }
 
                 if (!dropped) {
-                    e.getPlayer().playSound(e.getBlock().getLocation(), Sound.ENTITY_ITEM_PICKUP, 0.7f, 1f + RNG.r.f(-0.2f, 0.2f));
+                    React.audiences.player(e.getPlayer()).playSound(Sound.sound(
+                            Key.key("minecraft:entity.item.pickup"),
+                            Sound.Source.PLAYER,
+                            0.7f,
+                            1f + RNG.r.f(-0.2f, 0.2f)
+                    ));
                 }
             }
         }
@@ -145,7 +162,12 @@ public class TweakFastDrops extends ReactTweak implements Listener {
 
         if (xp > 0 && teleportEntityXP) {
             e.getPlayer().giveExp(xp);
-            e.getPlayer().playSound(e.getBlock().getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.7f, 1f + RNG.r.f(-0.2f, 0.2f));
+            React.audiences.player(e.getPlayer()).playSound(Sound.sound(
+                    Key.key("minecraft:entity.experience_orb.pickup"),
+                    Sound.Source.PLAYER,
+                    0.7f,
+                    1f + RNG.r.f(-0.2f, 0.2f)
+            ));
         }
     }
 
@@ -158,7 +180,12 @@ public class TweakFastDrops extends ReactTweak implements Listener {
 
         if (isEnabled()) {
             player.giveExp(xp);
-            player.playSound(at, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.7f, 1f + RNG.r.f(-0.2f, 0.2f));
+            React.audiences.player(player).playSound(Sound.sound(
+                    Key.key("minecraft:entity.experience_orb.pickup"),
+                    Sound.Source.PLAYER,
+                    0.7f,
+                    1f + RNG.r.f(-0.2f, 0.2f)
+            ));
         } else {
             ExperienceOrb orb = (ExperienceOrb) at.getWorld().spawnEntity(at, org.bukkit.entity.EntityType.EXPERIENCE_ORB);
             orb.setExperience(xp);
@@ -178,7 +205,12 @@ public class TweakFastDrops extends ReactTweak implements Listener {
             }
 
             if (!dropped) {
-                player.playSound(at, Sound.ENTITY_ITEM_PICKUP, 0.7f, 1f + RNG.r.f(-0.2f, 0.2f));
+                React.audiences.player(player).playSound(Sound.sound(
+                        Key.key("minecraft:entity.item.pickup"),
+                        Sound.Source.PLAYER,
+                        0.7f,
+                        1f + RNG.r.f(-0.2f, 0.2f)
+                ));
             }
         } else {
             player.getWorld().dropItemNaturally(at, item);
