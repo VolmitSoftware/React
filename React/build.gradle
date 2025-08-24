@@ -22,7 +22,7 @@ plugins {
 }
 
 
-version '1.0.3' // Needs to be version specific
+version '1.0.3' // Needs to be version specific 
 def apiVersion = '1.19'
 def name = getRootProject().getName() // Defined in settings.gradle
 def main = 'com.volmit.react.React'
