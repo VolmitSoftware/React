@@ -28,6 +28,7 @@ import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Container;
 import org.bukkit.entity.TNTPrimed;
+import org.bukkit.entity.WindCharge;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -77,6 +78,10 @@ public class FeatureFastExplosions extends ReactFeature implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void on(BlockExplodeEvent e) {
+        if (e.getBlock().getType() == Material.AIR) {
+            return;
+        }
+
         var b = new ArrayList<>(e.blockList());
 
         if (disableEntityChainReactions) {
@@ -129,6 +134,10 @@ public class FeatureFastExplosions extends ReactFeature implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void on(EntityExplodeEvent e) {
+        if(e.getEntity() instanceof WindCharge){
+            return;
+        }
+
         var b = new ArrayList<>(e.blockList());
 
         if (disableEntityChainReactions) {

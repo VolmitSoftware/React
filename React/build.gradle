@@ -23,7 +23,7 @@ plugins {
 
 
 version '1.0.3' // Needs to be version specific 
-def apiVersion = '1.19'
+def apiVersion = '1.20'
 def name = getRootProject().getName() // Defined in settings.gradle
 def main = 'com.volmit.react.React'
 
@@ -36,6 +36,7 @@ registerCustomOutputTask('Vatuu', 'D://Minecraft/Servers/1.19/plugins')
 registerCustomOutputTask('Nowhere', 'E://Desktop/server/plugins')
 registerCustomOutputTask('Pixel', 'C://Users//repix//Iris Dimension Engine//1.20.4 - Development/plugins')
 registerCustomOutputTask('CrazyDev22', 'C:\\Users\\Julian\\Desktop\\server\\plugins')
+registerCustomOutputTask('NeroBuddy1313', 'E:\\Data\\Server\\1.21.8\\plugins')
 // ========================== UNIX ==============================
 registerCustomOutputTaskUnix('CyberpwnLT', '/Users/danielmills/development/server/plugins')
 registerCustomOutputTaskUnix('PsychoLT', '/Users/brianfopiano/Desktop/REMOTES/RemoteMinecraft/plugins')
@@ -83,7 +84,10 @@ shadowJar {
     minimize()
     append("plugin.yml")
     dependencies {
-        include(dependency('com.github.VolmitDev:'))
+        include(dependency('com.github.VolmitDev:Curse:.*'))
+        include(dependency('com.github.VolmitDev:MultiBurst:.*'))
+        include(dependency('com.github.VolmitDev:Chrono:.*'))
+        include(dependency('com.github.VolmitDev:Spatial:.*'))
     }
 
     archiveClassifier = null
@@ -100,7 +104,7 @@ dependencies {
     // Provided or Classpath
     compileOnly 'org.projectlombok:lombok:1.18.24'
     annotationProcessor 'org.projectlombok:lombok:1.18.24'
-    compileOnly 'org.spigotmc:spigot-api:1.19.4-R0.1-SNAPSHOT'
+    compileOnly 'org.spigotmc:spigot-api:1.20.3-R0.1-SNAPSHOT'
     compileOnly "io.papermc:paperlib:1.0.7"
 
     // Shaded

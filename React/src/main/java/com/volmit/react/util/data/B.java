@@ -82,7 +82,7 @@ public class B {
                 WHITE_TULIP,
                 FERN,
                 LARGE_FERN,
-                GRASS,
+                SHORT_GRASS,
                 TALL_GRASS
         }).forEach((i) -> b.add(i.ordinal()));
 
@@ -140,7 +140,7 @@ public class B {
     private static IntSet buildDecorantCache() {
         IntSet b = new IntOpenHashSet();
         Arrays.stream(new Material[]{
-                GRASS,
+                SHORT_GRASS,
                 TALL_GRASS,
                 FERN,
                 LARGE_FERN,
