@@ -564,7 +564,6 @@ public class VolmitSender implements CommandSender {
                         String nDescription = "<#2E8B57>✎ <#3CB371><font:minecraft:uniform>" + p.getDescription();
                         String nUsage;
                         String fullTitle;
-                        React.debug("Contextual: " + p.isContextual() + " / player: " + isPlayer());
                         if (p.isContextual() && (isPlayer() || s instanceof CommandDummy)) {
                             fullTitle = "<#FFD700>[" + nTitle + "<#FFD700>] ";
                             nUsage = "<#ff9900>➱ <#FFD700><font:minecraft:uniform>The value may be derived from environment context.";

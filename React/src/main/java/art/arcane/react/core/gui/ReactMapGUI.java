@@ -165,6 +165,15 @@ public final class ReactMapGUI {
         if (renderer instanceof Sampler sampler && sampler.getIcon() != null) {
             return sampler.getIcon();
         }
+
+        String id = renderer == null ? "" : Objects.toString(renderer.getId(), "");
+        if (id.startsWith("iris-")) {
+            return Material.GRASS_BLOCK;
+        }
+        if (id.startsWith("adapt-")) {
+            return Material.COMPASS;
+        }
+
         return Material.FILLED_MAP;
     }
 

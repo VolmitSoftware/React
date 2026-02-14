@@ -434,7 +434,6 @@ public class VirtualDecreeCommand {
             }
 
             if (sender.isPlayer() && i.isContextual() && value == null) {
-                React.debug("Contextual!");
                 DecreeContextHandler<?> ch = DecreeContextHandler.contextHandlers.get(i.getType());
 
                 if (ch != null) {

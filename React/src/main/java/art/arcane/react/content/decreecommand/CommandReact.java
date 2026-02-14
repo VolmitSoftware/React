@@ -45,6 +45,7 @@ public class CommandReact implements DecreeExecutor {
     private CommandEnvironment environment;
     private CommandBenchmark benchmark;
     private CommandDebug debug;
+    private CommandIntegration integration;
 
 
     @Decree(

@@ -20,11 +20,15 @@
 package art.arcane.react.core.controller;
 
 import art.arcane.react.React;
+import art.arcane.react.api.feature.CapabilityGatedFeature;
 import art.arcane.react.api.feature.Feature;
 import art.arcane.react.api.feature.ReactTickedFeature;
 import art.arcane.react.content.feature.FeatureUnknown;
+import art.arcane.react.core.integration.IntegrationCapabilitySupport;
+import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.util.plugin.IController;
 import art.arcane.react.util.registry.Registry;
+import art.arcane.react.util.scheduling.J;
 import art.arcane.react.util.scheduling.TickedObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -33,13 +37,18 @@ import org.bukkit.event.Listener;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class FeatureController extends TickedObject implements IController {
+    private static final long GATE_RECONCILE_INTERVAL_MS = 2000L;
+
     private transient Registry<Feature> features;
     private transient Map<String, Feature> activeFeatures;
     private transient Map<String, ReactTickedFeature> tickedFeatures;
+    private transient final AtomicBoolean gateReconcileQueued = new AtomicBoolean(false);
+    private transient long lastGateReconcileMS;
 
     private Feature unknown;
 
@@ -49,7 +58,23 @@ public class FeatureController extends TickedObject implements IController {
 
     @Override
     public void onTick() {
+        long now = System.currentTimeMillis();
+        if (now - lastGateReconcileMS < GATE_RECONCILE_INTERVAL_MS) {
+            return;
+        }
 
+        lastGateReconcileMS = now;
+        if (!gateReconcileQueued.compareAndSet(false, true)) {
+            return;
+        }
+
+        J.s(() -> {
+            try {
+                reconcileFeatureGates();
+            } finally {
+                gateReconcileQueued.set(false);
+            }
+        });
     }
 
     @Override
@@ -105,6 +130,7 @@ public class FeatureController extends TickedObject implements IController {
         activeFeatures = new HashMap<>();
         tickedFeatures = new HashMap<>();
         features = new Registry<>(Feature.class, "art.arcane.react.content.feature");
+        lastGateReconcileMS = 0L;
     }
 
     public void postStart() {
@@ -113,8 +139,10 @@ public class FeatureController extends TickedObject implements IController {
         for (String i : features.ids()) {
             Feature f = features.get(i);
 
-            if (f.isEnabled()) {
+            if (shouldActivateFeature(f)) {
                 activateFeature(f);
+            } else if (f instanceof CapabilityGatedFeature gated) {
+                React.verbose("Skipped gated feature " + f.getId() + " requires=" + gated.requirementLabel());
             }
         }
 
@@ -124,5 +152,51 @@ public class FeatureController extends TickedObject implements IController {
     @Override
     public void stop() {
         new ArrayList<>(activeFeatures.values()).forEach(this::deactivateFeature);
+    }
+
+    private void reconcileFeatureGates() {
+        if (features == null || activeFeatures == null) {
+            return;
+        }
+
+        for (Feature feature : features.all()) {
+            if (feature == null) {
+                continue;
+            }
+
+            boolean active = activeFeatures.containsKey(feature.getId());
+            boolean shouldBeActive = shouldActivateFeature(feature);
+            if (shouldBeActive && !active) {
+                activateFeature(feature);
+                continue;
+            }
+
+            if (!shouldBeActive && active) {
+                deactivateFeature(feature);
+            }
+        }
+    }
+
+    private boolean shouldActivateFeature(Feature feature) {
+        if (feature == null || !feature.isEnabled()) {
+            return false;
+        }
+
+        if (!(feature instanceof CapabilityGatedFeature gated)) {
+            return true;
+        }
+
+        if (gated.isSecretBundle() && !ReactConfiguration.get().isIntegrationSecretsEnabled()) {
+            return false;
+        }
+
+        IntegrationController integration = React.controller(IntegrationController.class);
+        for (String capability : gated.requiredCapabilities()) {
+            if (!IntegrationCapabilitySupport.hasCapability(integration, capability)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

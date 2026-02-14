@@ -57,6 +57,9 @@ public class ReactConfiguration {
     @ConfigDoc(value = "Enables debug logging and additional diagnostics.", impact = "Use during debugging sessions; disable for normal production runtime.")
     private boolean debug = false;
 
+    @ConfigDoc(value = "Enables plugin-gated secret integration features.", impact = "Disabled by default. Enable to allow Iris/Adapt secret bundles when dependencies are present.")
+    private boolean integrationSecretsEnabled = false;
+
     @ConfigDoc(value = "Default monitor layout shown to players.", impact = "Changes affect the baseline monitoring dashboard composition and sampler grouping.")
     private Monitoring monitoring = new Monitoring();
 
@@ -190,6 +193,22 @@ public class ReactConfiguration {
                         .sampler(SamplerRedstoneTickTime.ID)
                         .sampler(SamplerFluidTickTime.ID)
                         .sampler(SamplerHopperTickTime.ID)
+                        .build())
+                .group(MonitorGroup.builder()
+                        .name("Iris")
+                        .color("#35d68f")
+                        .head(SamplerIrisChunkStreamMS.ID)
+                        .sampler(SamplerIrisChunkStreamMS.ID)
+                        .sampler(SamplerIrisPregenQueue.ID)
+                        .sampler(SamplerIrisBiomeCacheHitRate.ID)
+                        .build())
+                .group(MonitorGroup.builder()
+                        .name("Adapt")
+                        .color("#f8b84f")
+                        .head(SamplerAdaptSessionLoad.ID)
+                        .sampler(SamplerAdaptSessionLoad.ID)
+                        .sampler(SamplerAdaptAbilityOps.ID)
+                        .sampler(SamplerAdaptWorldPolicyLatency.ID)
                         .build())
                 .build();
     }

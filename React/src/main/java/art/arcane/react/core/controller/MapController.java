@@ -21,11 +21,14 @@ package art.arcane.react.core.controller;
 
 import art.arcane.react.React;
 import art.arcane.react.api.feature.Feature;
+import art.arcane.react.api.rendering.RendererAdaptMetrics;
+import art.arcane.react.api.rendering.RendererIrisMetrics;
 import art.arcane.react.api.rendering.MapRendererPipe;
 import art.arcane.react.api.rendering.ReactRenderer;
 import art.arcane.react.api.rendering.RendererUnknown;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.content.feature.FeatureUnknown;
+import art.arcane.react.core.integration.IntegrationCapabilitySupport;
 import art.arcane.volmlib.util.io.JarScanner;
 import art.arcane.react.util.plugin.IController;
 import art.arcane.react.util.scheduling.J;
@@ -49,8 +52,8 @@ import org.bukkit.persistence.PersistentDataType;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -58,6 +61,8 @@ public class MapController extends TickedObject implements IController, Listener
     private static final NamespacedKey nsReact = new NamespacedKey(React.instance, "react");
     private static final NamespacedKey nsRenderer = new NamespacedKey(React.instance, "react-renderer");
     private transient Map<String, ReactRenderer> renderers;
+    private transient ReactRenderer irisMetricsRenderer;
+    private transient ReactRenderer adaptMetricsRenderer;
 
     public MapController() {
         super("react", "map", 1000);
@@ -232,8 +237,10 @@ public class MapController extends TickedObject implements IController, Listener
 
     @Override
     public void start() {
-        renderers = new HashMap<>();
+        renderers = new ConcurrentHashMap<>();
         renderers.put(FeatureUnknown.ID, new RendererUnknown());
+        irisMetricsRenderer = new RendererIrisMetrics();
+        adaptMetricsRenderer = new RendererAdaptMetrics();
     }
 
     private void scanForRenderers(String pkg) {
@@ -280,6 +287,8 @@ public class MapController extends TickedObject implements IController, Listener
             }
         }
 
+        syncIntegrationRenderers();
+
         for (Player i : Bukkit.getOnlinePlayers()) {
             J.s(() -> join(i));
         }
@@ -287,6 +296,28 @@ public class MapController extends TickedObject implements IController, Listener
 
     @Override
     public void onTick() {
+        syncIntegrationRenderers();
+    }
 
+    private void syncIntegrationRenderers() {
+        syncIntegrationRenderer("iris", irisMetricsRenderer);
+        syncIntegrationRenderer("adapt", adaptMetricsRenderer);
+    }
+
+    private void syncIntegrationRenderer(String capability, ReactRenderer renderer) {
+        if (renderers == null || renderer == null) {
+            return;
+        }
+
+        boolean available = IntegrationCapabilitySupport.hasCapability(
+                React.controller(IntegrationController.class),
+                capability
+        );
+
+        if (available) {
+            renderers.put(renderer.getId(), renderer);
+        } else {
+            renderers.remove(renderer.getId());
+        }
     }
 }
