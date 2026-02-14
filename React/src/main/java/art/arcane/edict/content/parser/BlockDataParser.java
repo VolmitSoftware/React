@@ -22,7 +22,7 @@ package art.arcane.edict.content.parser;
 import art.arcane.edict.api.parser.EdictParser;
 import art.arcane.edict.api.parser.EdictValue;
 import art.arcane.edict.api.parser.Suggestive;
-import com.volmit.react.util.data.B;
+import art.arcane.react.util.data.B;
 import org.bukkit.Material;
 import org.bukkit.block.data.BlockData;
 
