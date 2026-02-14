@@ -46,8 +46,7 @@ public class SamplerFluidTickTime extends ReactCachedSampler implements Listener
     @Override
     public void start() {
         super.start();
-        average = new RollingSequence(tickAverage);
-        stopwatch = new PrecisionStopwatch();
+        ensureRuntime();
         running = false;
         maxDuration = 0;
     }
@@ -59,6 +58,7 @@ public class SamplerFluidTickTime extends ReactCachedSampler implements Listener
 
     @EventHandler
     public void on(ServerTickEvent e) {
+        ensureRuntime();
         average.put(maxDuration);
         running = false;
         maxDuration = 0;
@@ -66,6 +66,7 @@ public class SamplerFluidTickTime extends ReactCachedSampler implements Listener
 
     @EventHandler
     public void on(BlockFromToEvent e) {
+        ensureRuntime();
         if (e.getBlock().getBlockData() instanceof Levelled || e.getToBlock().getBlockData() instanceof Levelled) {
             if (!running) {
                 stopwatch.resetAndBegin();
@@ -78,7 +79,8 @@ public class SamplerFluidTickTime extends ReactCachedSampler implements Listener
 
     @Override
     public double onSample() {
-        return average.getAverage();
+        ensureRuntime();
+        return average == null ? 0D : average.getAverage();
     }
 
     @Override
@@ -99,5 +101,14 @@ public class SamplerFluidTickTime extends ReactCachedSampler implements Listener
     @Override
     public String formattedSuffix(double t) {
         return Form.durationSplit(t, 2)[1] + " FLU";
+    }
+
+    private synchronized void ensureRuntime() {
+        if (average == null) {
+            average = new RollingSequence(Math.max(1, tickAverage));
+        }
+        if (stopwatch == null) {
+            stopwatch = new PrecisionStopwatch();
+        }
     }
 }

@@ -26,6 +26,7 @@ public abstract class ReactCachedSampler implements Sampler {
     protected transient final long sampleDelay;
     private transient final ChronoLatch slatch;
     private transient final AtomicDouble slast;
+    private transient final Object sampleLock;
     private transient final String sid;
 
     public ReactCachedSampler(String id, long sampleDelay) {
@@ -33,6 +34,7 @@ public abstract class ReactCachedSampler implements Sampler {
         this.sampleDelay = sampleDelay;
         this.slatch = new ChronoLatch(sampleDelay, true);
         this.slast = new AtomicDouble();
+        this.sampleLock = new Object();
     }
 
     @Override
@@ -49,14 +51,16 @@ public abstract class ReactCachedSampler implements Sampler {
 
     @Override
     public double sample() {
-        double t = slast.get();
-
-        if (slatch.flip()) {
-            t = onSample();
-            slast.set(t);
+        if (!slatch.couldFlip()) {
+            return slast.get();
         }
 
-        return t;
+        synchronized (sampleLock) {
+            if (slatch.flip()) {
+                slast.set(onSample());
+            }
+            return slast.get();
+        }
     }
 
     public String getId() {

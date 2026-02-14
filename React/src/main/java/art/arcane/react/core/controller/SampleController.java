@@ -29,10 +29,15 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.bukkit.event.Listener;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class SampleController extends TickedObject implements IController {
     private transient Registry<Sampler> samplers;
+    private transient final Map<String, SamplerState> samplerStates = new ConcurrentHashMap<>();
+    private transient final Map<String, Object> samplerLocks = new ConcurrentHashMap<>();
 
     public SampleController() {
         super("react", "sample", 3000);
@@ -55,10 +60,12 @@ public class SampleController extends TickedObject implements IController {
     @Override
     public void start() {
         samplers = new Registry<>(Sampler.class, "art.arcane.react.content.sampler");
+        samplerStates.clear();
+        samplerLocks.clear();
     }
 
     public void postStart() {
-        samplers.all().forEach(Sampler::start);
+        samplers.all().forEach(this::startSamplerRuntime);
         samplers.all().forEach(((a) -> {
             if (a instanceof Listener l) {
                 React.instance.registerListener(l);
@@ -75,6 +82,88 @@ public class SampleController extends TickedObject implements IController {
                 React.instance.unregisterListener(l);
             }
         }));
-        samplers.all().forEach(Sampler::stop);
+        samplers.all().forEach(this::stopSamplerRuntime);
+        samplerStates.clear();
+        samplerLocks.clear();
+    }
+
+    public boolean canSample(Sampler sampler) {
+        if (sampler == null) {
+            return false;
+        }
+
+        SamplerState state = samplerStates.get(sampler.getId());
+        return state == SamplerState.STARTED;
+    }
+
+    public boolean reloadSamplerConfig(String id) {
+        if (id == null || id.isBlank() || samplers == null) {
+            return false;
+        }
+
+        Sampler sampler = samplers.get(id);
+        if (sampler == null) {
+            return false;
+        }
+
+        Object lock = samplerLocks.computeIfAbsent(id, k -> new Object());
+        synchronized (lock) {
+            setSamplerState(id, SamplerState.RELOADING);
+            try {
+                sampler.loadConfiguration();
+                stopSamplerRuntime(sampler);
+                startSamplerRuntime(sampler);
+                return canSample(sampler);
+            } catch (Throwable e) {
+                setSamplerState(id, SamplerState.STOPPED);
+                React.warn("Failed to reload sampler " + id + ": " + e.getMessage());
+                return false;
+            }
+        }
+    }
+
+    private void startSamplerRuntime(Sampler sampler) {
+        if (sampler == null) {
+            return;
+        }
+
+        setSamplerState(sampler.getId(), SamplerState.STARTING);
+        try {
+            sampler.start();
+            setSamplerState(sampler.getId(), SamplerState.STARTED);
+        } catch (Throwable e) {
+            setSamplerState(sampler.getId(), SamplerState.STOPPED);
+            React.warn("Failed to start sampler " + sampler.getId() + ": " + e.getMessage());
+        }
+    }
+
+    private void stopSamplerRuntime(Sampler sampler) {
+        if (sampler == null) {
+            return;
+        }
+
+        setSamplerState(sampler.getId(), SamplerState.STOPPING);
+        try {
+            sampler.stop();
+        } catch (Throwable e) {
+            React.warn("Failed to stop sampler " + sampler.getId() + ": " + e.getMessage());
+        } finally {
+            setSamplerState(sampler.getId(), SamplerState.STOPPED);
+        }
+    }
+
+    private void setSamplerState(String id, SamplerState state) {
+        if (id == null || id.isBlank() || state == null) {
+            return;
+        }
+        samplerStates.put(id, state);
+    }
+
+    private enum SamplerState {
+        STARTING,
+        STARTED,
+        RELOADING,
+        STOPPING,
+        STOPPED
     }
 }

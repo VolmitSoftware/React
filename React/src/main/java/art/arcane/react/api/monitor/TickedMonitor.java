@@ -21,6 +21,7 @@ package art.arcane.react.api.monitor;
 
 import art.arcane.react.React;
 import art.arcane.react.api.sampler.Sampler;
+import art.arcane.react.core.controller.SampleController;
 import art.arcane.react.util.math.ApproachingValue;
 import art.arcane.volmlib.util.math.M;
 import art.arcane.react.util.scheduling.TickedObject;
@@ -87,12 +88,16 @@ public abstract class TickedMonitor extends TickedObject implements Monitor {
         }
 
         boolean flushable = false;
+        SampleController sampleController = React.controller(SampleController.class);
 
         for (Sampler i : visible.keySet()) {
             if (i == null) {
                 continue;
             }
             if (visible.get(i) != null && visible.get(i)) {
+                if (sampleController != null && !sampleController.canSample(i)) {
+                    continue;
+                }
                 try {
                     synchronized (approachers) {
                         Double v = approachers.computeIfAbsent(i, k -> new ApproachingValue(0.25)).get(i.sample());

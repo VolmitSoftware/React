@@ -73,6 +73,22 @@ public class ActionBarMonitor extends PlayerMonitor {
         configuration = player.getSettings().getMonitorConfiguration();
     }
 
+    public void refreshConfiguration() {
+        configuration = getPlayer().getSettings().getMonitorConfiguration();
+        focus = null;
+        viewportIndex = 0;
+        lockedPosition = 0;
+        focusUpAnimation = 0;
+        focusDownAnimation = false;
+        viewportIndexes.clear();
+        maxLengths.clear();
+        lastValue.clear();
+        trends.clear();
+        lastTimes.clear();
+        clearVisibility();
+        wakeUp();
+    }
+
     public boolean isAlwaysFlushing() {
         return true;
     }
@@ -134,6 +150,9 @@ public class ActionBarMonitor extends PlayerMonitor {
     }
 
     private Sampler getFocusedSampler(MonitorGroup g) {
+        if (g == null) {
+            return null;
+        }
         return g.getHeadSampler();
     }
 
@@ -217,12 +236,20 @@ public class ActionBarMonitor extends PlayerMonitor {
     }
 
     private Component writeSubSamplers() {
+        if (focus == null || focus.getSamplers() == null || focus.getSamplers().isEmpty()) {
+            return Component.space();
+        }
+
         if (!viewportIndexes.containsKey(focus)) {
             viewportIndexes.put(focus, 0);
         }
 
         int viewportLimit = Math.min(5, focus.getSamplers().size());
-        int index = focus.getSamplers().indexOf(getFocusedSampler().getId());
+        Sampler focusedSampler = getFocusedSampler();
+        int index = focusedSampler == null ? 0 : focus.getSamplers().indexOf(focusedSampler.getId());
+        if (index < 0) {
+            index = 0;
+        }
         int viewportIndex = viewportIndexes.get(focus);
 
         while (index + 1 > viewportIndex + viewportLimit) {
@@ -244,6 +271,9 @@ public class ActionBarMonitor extends PlayerMonitor {
                     calculatedIndex += focus.getSamplers().size();
                 }
                 Sampler i = React.sampler(focus.getSamplers().get(calculatedIndex));
+                if (i == null) {
+                    continue;
+                }
                 setVisible(i, true);
                 if (!first) {
                     builder.append(Component.space());
@@ -281,6 +311,10 @@ public class ActionBarMonitor extends PlayerMonitor {
 
 
     private Component writeHeader() {
+        if (configuration == null || configuration.getGroups() == null || configuration.getGroups().isEmpty()) {
+            return Component.space();
+        }
+
         int viewportLimit = Math.min(5, configuration.getGroups().size());
         if (focus != null) {
             int index = configuration.getGroups().indexOf(focus);
@@ -298,14 +332,19 @@ public class ActionBarMonitor extends PlayerMonitor {
         boolean first = true;
         for (int m = 0; m < viewportLimit; m++) {
             MonitorGroup i = configuration.getGroups().get((viewportIndex + m) % configuration.getGroups().size());
-            setVisible(getFocusedSampler(i), true);
+            Sampler headerSampler = getFocusedSampler(i);
+            if (headerSampler == null) {
+                continue;
+            }
+
+            setVisible(headerSampler, true);
 
             if (!first) {
                 builder.append(Component.space());
             }
 
             first = false;
-            Sampler head = getFocusedSampler(i);
+            Sampler head = headerSampler;
             Double value = getSamplerValue(head);
             value = value == null ? 0 : value;
 
@@ -331,10 +370,16 @@ public class ActionBarMonitor extends PlayerMonitor {
     }
 
     MonitorGroup getFocusedHeaderGroup() {
+        if (configuration == null || configuration.getGroups() == null || configuration.getGroups().isEmpty()) {
+            return null;
+        }
         return locked ? configuration.getGroups().get(lockedPosition) : getPlayer().isMonitorSneaking() ? configuration.getGroups().get(getPlayer().getScrollPosition(configuration.getGroups().size())) : null;
     }
 
     Sampler getNextFocusedSampler() {
+        if (focus == null || focus.getSamplers() == null || focus.getSamplers().isEmpty()) {
+            return null;
+        }
         return React.sampler(focus.getSamplers().get(getPlayer().getScrollPosition(focus.getSamplers().size())));
     }
 
@@ -348,7 +393,9 @@ public class ActionBarMonitor extends PlayerMonitor {
 
         if (locked != getPlayer().isLocked()) {
             locked = getPlayer().isLocked();
-            lockedPosition = getPlayer().getScrollPosition(configuration.getGroups().size());
+            if (configuration != null && configuration.getGroups() != null && !configuration.getGroups().isEmpty()) {
+                lockedPosition = getPlayer().getScrollPosition(configuration.getGroups().size());
+            }
         }
 
         focus = getFocusedHeaderGroup();
@@ -363,7 +410,10 @@ public class ActionBarMonitor extends PlayerMonitor {
 
         if (focus != null) {
             if (locked && getPlayer().isMonitorSneaking()) {
-                focus.setHeadSampler(getNextFocusedSampler().getId());
+                Sampler nextFocusedSampler = getNextFocusedSampler();
+                if (nextFocusedSampler != null) {
+                    focus.setHeadSampler(nextFocusedSampler.getId());
+                }
             }
 
             React.audiences.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.TIMES, new Title.Times() {

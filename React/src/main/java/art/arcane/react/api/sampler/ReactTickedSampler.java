@@ -30,6 +30,7 @@ public abstract class ReactTickedSampler extends TickedObject implements Sampler
     private transient final AtomicLong slastSample;
     private transient final long sactiveInterval;
     private transient boolean ssleeping;
+    private transient boolean sregistered;
 
     public ReactTickedSampler(String id, long tickInterval, int memory) {
         super("sampler", id, tickInterval);
@@ -37,15 +38,26 @@ public abstract class ReactTickedSampler extends TickedObject implements Sampler
         this.sactiveInterval = tickInterval;
         this.slastSample = new AtomicLong(0);
         this.ssleeping = true;
+        this.sregistered = true;
     }
 
     @Override
     public void start() {
+        if (sregistered) {
+            return;
+        }
+
         React.instance.getTicker().register(this);
+        sregistered = true;
     }
 
     public void stop() {
+        if (!sregistered) {
+            return;
+        }
+
         unregister();
+        sregistered = false;
     }
 
     public abstract double onSample();

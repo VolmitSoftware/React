@@ -71,7 +71,7 @@ public class SampledServer {
     }
 
     public Optional<SampledWorld> optionalWorld(World world) {
-        return hasWorld(world) ? Optional.of(getWorld(world)) : Optional.empty();
+        return Optional.ofNullable(worlds.get(world.getName()));
     }
 
     public SampledWorld getWorld(String name) {

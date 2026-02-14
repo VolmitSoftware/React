@@ -45,6 +45,9 @@ public class EventController extends TickedObject implements IController, Listen
     private transient double totalTime;
     private transient int calls;
     private transient AtomicBoolean running = new AtomicBoolean(false);
+    private transient boolean spiesInjected = false;
+    private transient long lastSamplerActivity = 0;
+    private long samplerActivityWindowMS = 15000;
 
     public EventController() {
         super("react", "event", 5000);
@@ -58,11 +61,18 @@ public class EventController extends TickedObject implements IController, Listen
     @Override
     public void start() {
         pullOut();
+        spiesInjected = false;
+        lastSamplerActivity = 0;
     }
 
     @Override
     public void stop() {
         pullOut();
+        spiesInjected = false;
+    }
+
+    public void markSamplerActivity() {
+        lastSamplerActivity = System.currentTimeMillis();
     }
 
     @Override
@@ -72,6 +82,23 @@ public class EventController extends TickedObject implements IController, Listen
 
     @Override
     public void onTick() {
+        if (running.get()) {
+            return;
+        }
+
+        if (System.currentTimeMillis() - lastSamplerActivity > samplerActivityWindowMS) {
+            if (spiesInjected) {
+                pullOut();
+                spiesInjected = false;
+            }
+
+            listenerCount = 0;
+            totalTime = 0;
+            calls = 0;
+            return;
+        }
+
+        spiesInjected = true;
         updateHandlerListInjections();
     }
 
@@ -115,54 +142,54 @@ public class EventController extends TickedObject implements IController, Listen
         running.set(true);
 
         React.burst.lazy(() -> {
-            totalTime = 0;
-            calls = 0;
-            int m = 0;
-            int inj = 0;
-            ArrayList<HandlerList> h = new ArrayList<>(Curse.on(HandlerList.class).get("allLists"));
+            try {
+                totalTime = 0;
+                calls = 0;
+                int m = 0;
+                ArrayList<HandlerList> h = new ArrayList<>(Curse.on(HandlerList.class).get("allLists"));
 
-            for (HandlerList i : h) {
-                RegisteredListener[] r = Curse.on(i).get("handlers");
-                EnumMap<EventPriority, ArrayList<RegisteredListener>> map = Curse.on(i).get("handlerslots");
-                if (r != null) {
-                    for (int j = 0; j < r.length; j++) {
-                        if (!(r[j] instanceof NaughtyRegisteredListener)) {
-                            r[j] = new NaughtyRegisteredListener(r[j].getListener(), Curse.on(r[j]).get("executor"),
-                                    r[j].getPriority(), r[j].getPlugin(), r[j].isIgnoringCancelled());
-                            inj++;
-                        } else {
-                            totalTime += ((NaughtyRegisteredListener) r[j]).time;
-                            ((NaughtyRegisteredListener) r[j]).time = 0;
-                            calls += ((NaughtyRegisteredListener) r[j]).calls;
-                            ((NaughtyRegisteredListener) r[j]).calls = 0;
-                        }
-                    }
-
-                    m += r.length;
-                }
-
-                if (map != null) {
-                    for (ArrayList<RegisteredListener> j : map.values()) {
-                        for (int k = 0; k < j.size(); k++) {
-                            if (!(j.get(k) instanceof NaughtyRegisteredListener)) {
-                                j.set(k, new NaughtyRegisteredListener(j.get(k).getListener(), Curse.on(j.get(k)).get("executor"),
-                                        j.get(k).getPriority(), j.get(k).getPlugin(), j.get(k).isIgnoringCancelled()));
-                                inj++;
+                for (HandlerList i : h) {
+                    RegisteredListener[] r = Curse.on(i).get("handlers");
+                    EnumMap<EventPriority, ArrayList<RegisteredListener>> map = Curse.on(i).get("handlerslots");
+                    if (r != null) {
+                        for (int j = 0; j < r.length; j++) {
+                            if (!(r[j] instanceof NaughtyRegisteredListener)) {
+                                r[j] = new NaughtyRegisteredListener(r[j].getListener(), Curse.on(r[j]).get("executor"),
+                                        r[j].getPriority(), r[j].getPlugin(), r[j].isIgnoringCancelled());
                             } else {
-                                totalTime += ((NaughtyRegisteredListener) j.get(k)).time;
-                                ((NaughtyRegisteredListener) j.get(k)).time = 0;
-                                calls += ((NaughtyRegisteredListener) j.get(k)).calls;
-                                ((NaughtyRegisteredListener) j.get(k)).calls = 0;
+                                totalTime += ((NaughtyRegisteredListener) r[j]).time;
+                                ((NaughtyRegisteredListener) r[j]).time = 0;
+                                calls += ((NaughtyRegisteredListener) r[j]).calls;
+                                ((NaughtyRegisteredListener) r[j]).calls = 0;
                             }
                         }
 
-                        m += j.size();
+                        m += r.length;
+                    }
+
+                    if (map != null) {
+                        for (ArrayList<RegisteredListener> j : map.values()) {
+                            for (int k = 0; k < j.size(); k++) {
+                                if (!(j.get(k) instanceof NaughtyRegisteredListener)) {
+                                    j.set(k, new NaughtyRegisteredListener(j.get(k).getListener(), Curse.on(j.get(k)).get("executor"),
+                                            j.get(k).getPriority(), j.get(k).getPlugin(), j.get(k).isIgnoringCancelled()));
+                                } else {
+                                    totalTime += ((NaughtyRegisteredListener) j.get(k)).time;
+                                    ((NaughtyRegisteredListener) j.get(k)).time = 0;
+                                    calls += ((NaughtyRegisteredListener) j.get(k)).calls;
+                                    ((NaughtyRegisteredListener) j.get(k)).calls = 0;
+                                }
+                            }
+
+                            m += j.size();
+                        }
                     }
                 }
-            }
 
-            listenerCount = m;
-            running.set(false);
+                listenerCount = m;
+            } finally {
+                running.set(false);
+            }
         });
     }
 

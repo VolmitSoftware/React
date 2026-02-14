@@ -28,13 +28,13 @@ import art.arcane.react.core.controller.SampleController;
 import art.arcane.react.util.data.TinyColor;
 import art.arcane.volmlib.util.math.M;
 import art.arcane.react.util.registry.Registered;
-import art.arcane.react.util.scheduling.J;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.block.Block;
 
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.function.Supplier;
 
 public interface Sampler extends Registered, ReactRenderer {
@@ -103,14 +103,16 @@ public interface Sampler extends Registered, ReactRenderer {
             return executor.get();
         }
 
-        AtomicReference<T> result = new AtomicReference<>();
-        J.s(() -> result.set(executor.get()));
-
-        while (result.get() == null) {
-            J.sleep(5);
+        Future<T> future = Bukkit.getScheduler().callSyncMethod(React.instance, executor::get);
+        try {
+            return future.get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+            throw new RuntimeException(cause == null ? e : cause);
         }
-
-        return result.get();
     }
 
     default Sampler getSampler(String id) {

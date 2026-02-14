@@ -23,30 +23,34 @@ import art.arcane.react.React;
 import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.model.ReactEntity;
-import art.arcane.volmlib.util.math.M;
 import art.arcane.react.util.scheduling.J;
 import art.arcane.react.util.world.CustomMobChecker;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import art.arcane.volmlib.util.math.M;
 import org.bukkit.Bukkit;
-import org.bukkit.Chunk;
+import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class FeatureEntityTrimmer extends ReactFeature implements Listener {
     public static final String ID = "entity-trimmer";
     private transient double maxPriority = -1;
     private transient int cooldown = 0;
+    private transient boolean trimQueued = false;
     private boolean skipCustomMobs = false;
     private int playerMobBlockDistance = 32;
 
@@ -102,7 +106,6 @@ public class FeatureEntityTrimmer extends ReactFeature implements Listener {
      * The minimum amount of entities to kill per cycle. Lower than this it wont run
      */
     private int minKillBatchSize = 100;
-    private transient List<Entity> lastEntities = new ArrayList<>();
 
     public FeatureEntityTrimmer() {
         super(ID);
@@ -110,20 +113,22 @@ public class FeatureEntityTrimmer extends ReactFeature implements Listener {
 
     @Override
     public void onActivate() {
-        double maxPriority = -1;
-        double minPriority = Double.MAX_VALUE;
+        trimQueued = false;
+        double highestPriority = -1;
+        double lowestPriority = Double.MAX_VALUE;
 
-        for (EntityType i : EntityType.values()) {
-            double p = ReactConfiguration.get().getPriority().getPriority(i);
-            if (p > maxPriority) {
-                maxPriority = p;
+        for (EntityType entityType : EntityType.values()) {
+            double priority = ReactConfiguration.get().getPriority().getPriority(entityType);
+            if (priority > highestPriority) {
+                highestPriority = priority;
             }
-            if (p < minPriority) {
-                minPriority = p;
+
+            if (priority < lowestPriority) {
+                lowestPriority = priority;
             }
         }
 
-        this.maxPriority = M.lerp(Math.max(minPriority, 0), maxPriority, priorityPercentCutoff);
+        maxPriority = M.lerp(Math.max(lowestPriority, 0), highestPriority, priorityPercentCutoff);
         React.verbose("Entity Trimmer Priority Cutoff: " + maxPriority + " or lower");
     }
 
@@ -139,149 +144,238 @@ public class FeatureEntityTrimmer extends ReactFeature implements Listener {
 
     @Override
     public void onTick() {
-        J.s(() -> {
-            for (World i : Bukkit.getWorlds()) {
-                lastEntities.addAll(i.getEntities());
-            }
-        });
-
-        if (cooldown-- > 0) {
+        if (cooldown-- > 0 || trimQueued) {
             return;
         }
 
-        List<Entity> entitiesToRemove = new ArrayList<>();
-        Map<Chunk, List<Entity>> entitiesPerChunk = new HashMap<>();
+        trimQueued = true;
+        J.s(() -> {
+            try {
+                trimEntities();
+            } finally {
+                trimQueued = false;
+            }
+        });
+    }
+
+    private void trimEntities() {
+        List<Entity> entities = collectEntities();
+        if (entities.isEmpty()) {
+            return;
+        }
+
+        int chunkRadius = Math.max(0, (playerMobBlockDistance + 15) >> 4);
+        long maxPlayerDistanceSquared = (long) playerMobBlockDistance * playerMobBlockDistance;
+        Map<ChunkKey, List<PlayerSnapshot>> playersByChunk = indexPlayersByChunk(chunkRadius);
+
+        Map<ChunkKey, List<Entity>> entitiesPerChunk = new HashMap<>();
         Map<World, List<Entity>> entitiesPerWorld = new HashMap<>();
         Map<Player, List<Entity>> entitiesPerPlayer = new HashMap<>();
+        Map<Entity, Double> priorityCache = new IdentityHashMap<>(entities.size());
 
-        List<Entity> tempEntities = new ArrayList<>(lastEntities);
-        for (Entity entity : tempEntities) {
-            Chunk chunk = entity.getLocation().getChunk();
-            World world = entity.getWorld();
-            entitiesPerChunk.computeIfAbsent(chunk, k -> new ArrayList<>()).add(entity);
+        for (Entity entity : entities) {
+            if (entity == null || entity.isDead()) {
+                continue;
+            }
+
+            Location location = entity.getLocation();
+            World world = location.getWorld();
+            if (world == null) {
+                continue;
+            }
+
+            ChunkKey key = ChunkKey.of(world, location.getBlockX() >> 4, location.getBlockZ() >> 4);
+            entitiesPerChunk.computeIfAbsent(key, k -> new ArrayList<>()).add(entity);
             entitiesPerWorld.computeIfAbsent(world, k -> new ArrayList<>()).add(entity);
-            for (Player player : Bukkit.getOnlinePlayers()) {
-                if (player.getWorld().equals(world) && player.getLocation().distance(entity.getLocation()) < playerMobBlockDistance) {
-                    entitiesPerPlayer.computeIfAbsent(player, k -> new ArrayList<>()).add(entity);
+
+            List<PlayerSnapshot> nearbyPlayers = playersByChunk.get(key);
+            if (nearbyPlayers == null || nearbyPlayers.isEmpty()) {
+                continue;
+            }
+
+            for (PlayerSnapshot playerSnapshot : nearbyPlayers) {
+                if (playerSnapshot.location.distanceSquared(location) <= maxPlayerDistanceSquared) {
+                    entitiesPerPlayer.computeIfAbsent(playerSnapshot.player, k -> new ArrayList<>()).add(entity);
                 }
             }
         }
 
+        Comparator<Entity> byPriority = Comparator.comparingDouble(entity -> priorityOf(entity, priorityCache));
+        Set<Entity> candidates = new LinkedHashSet<>();
+        addEntitiesToRemove(candidates, entitiesPerChunk.values(), softMaxEntitiesPerChunk, byPriority);
+        addEntitiesToRemove(candidates, entitiesPerPlayer.values(), softMaxEntitiesPerPlayer, byPriority);
+        addEntitiesToRemove(candidates, entitiesPerWorld.values(), softMaxEntitiesPerWorld, byPriority);
 
-        // Kill excess entities per chunk, player, world
-        entitiesPerChunk.forEach((chunk, entities) -> {
-            if (entities.size() > softMaxEntitiesPerChunk) {
-                addEntitiesToRemove(entitiesToRemove, entities, softMaxEntitiesPerChunk);
-            }
-        });
-        entitiesPerPlayer.forEach((player, entities) -> {
-            if (entities.size() > softMaxEntitiesPerPlayer) {
-                addEntitiesToRemove(entitiesToRemove, entities, softMaxEntitiesPerPlayer);
-            }
-        });
-        entitiesPerWorld.forEach((world, entities) -> {
-            if (entities.size() > softMaxEntitiesPerWorld) {
-                addEntitiesToRemove(entitiesToRemove, entities, softMaxEntitiesPerWorld);
-            }
-        });
-
-        lastEntities.clear();
-        lastEntities.addAll(entitiesToRemove);
-
-        // Sorting, filtering, opportunity threshold, and killing.
-        List<Entity> shitlist = new ArrayList<>(lastEntities);
-        lastEntities.clear();
-
-        // Remove blacklisted entities and sort the list.
-        shitlist.removeIf(entity -> blacklist.contains(entity.getType()) || entity.getTicksLived() < 400);
-        shitlist.sort((a, b) -> {
-            double pa = ReactEntity.getPriority(a);
-            double pb = ReactEntity.getPriority(b);
-            return Double.compare(pa, pb);
-        });
-
-        int ec = shitlist.size();
-
-        double pri = -1;
-        Entity e;
-
-        for (int i = shitlist.size() - 1; i >= 0; i--) {
-            e = shitlist.get(i);
-            pri = ReactEntity.getPriority(e);
-
-            if (pri > maxPriority || pri < 0) {
-                shitlist.remove(i);
-            } else if (skipCustomMobs && CustomMobChecker.isCustom(e)) {
-                shitlist.remove(i);
-            }
+        if (candidates.isEmpty()) {
+            return;
         }
 
-        int maxKill = (int) (ec * opporunityThreshold);
+        List<EntityCandidate> killList = new ArrayList<>(candidates.size());
+        for (Entity entity : candidates) {
+            if (!isValidTarget(entity)) {
+                continue;
+            }
+
+            double priority = priorityOf(entity, priorityCache);
+            if (priority < 0 || priority > maxPriority) {
+                continue;
+            }
+
+            killList.add(new EntityCandidate(entity, priority));
+        }
+
+        if (killList.isEmpty()) {
+            return;
+        }
+
+        killList.sort(Comparator.comparingDouble(EntityCandidate::priority));
+        int maxKill = Math.min(killList.size(), (int) (killList.size() * opporunityThreshold));
 
         if (maxKill < minKillBatchSize) {
             cooldown += 3;
             return;
         }
 
-        if (maxKill > 0 && shitlist.size() >= maxKill) {
-            for (int i = 0; i < maxKill; i++) {
-                kill(shitlist.remove(0));
-            }
+        for (int i = 0; i < maxKill; i++) {
+            kill(killList.get(i).entity);
+        }
 
-            if (printEntityPurgeSuccess) // Prevent spam
-                React.success("Entity Trimmer: " + maxKill + " entities removed");
+        if (printEntityPurgeSuccess) {
+            React.success("Entity Trimmer: " + maxKill + " entities removed");
         }
     }
 
-    private void addEntitiesToRemove(List<Entity> entitiesToRemove, List<Entity> entities, int maxEntities) {
-        entities.sort((a, b) -> {
-            double pa = ReactEntity.getPriority(a);
-            double pb = ReactEntity.getPriority(b);
-            return Double.compare(pa, pb);
-        });
+    private List<Entity> collectEntities() {
+        List<Entity> entities = new ArrayList<>();
+        for (World world : Bukkit.getWorlds()) {
+            entities.addAll(world.getEntities());
+        }
 
-        for (int i = maxEntities; i < entities.size(); i++) {
-            Entity entity = entities.get(i);
-            if (!entitiesToRemove.contains(entity) && !blacklist.contains(entity.getType()) &&
-                    !(skipCustomMobs && CustomMobChecker.isCustom(entity)) && entity.getTicksLived() >= 400) {
-                entitiesToRemove.add(entity);
+        return entities;
+    }
+
+    private Map<ChunkKey, List<PlayerSnapshot>> indexPlayersByChunk(int chunkRadius) {
+        Map<ChunkKey, List<PlayerSnapshot>> chunks = new HashMap<>();
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            Location playerLocation = player.getLocation();
+            World world = playerLocation.getWorld();
+            if (world == null) {
+                continue;
+            }
+
+            PlayerSnapshot snapshot = new PlayerSnapshot(player, playerLocation.clone());
+            int playerChunkX = playerLocation.getBlockX() >> 4;
+            int playerChunkZ = playerLocation.getBlockZ() >> 4;
+
+            for (int x = playerChunkX - chunkRadius; x <= playerChunkX + chunkRadius; x++) {
+                for (int z = playerChunkZ - chunkRadius; z <= playerChunkZ + chunkRadius; z++) {
+                    chunks.computeIfAbsent(ChunkKey.of(world, x, z), k -> new ArrayList<>()).add(snapshot);
+                }
+            }
+        }
+
+        return chunks;
+    }
+
+    private boolean isValidTarget(Entity entity) {
+        if (entity == null || entity.isDead()) {
+            return false;
+        }
+
+        if (entity.getTicksLived() < 400) {
+            return false;
+        }
+
+        if (blacklist.contains(entity.getType())) {
+            return false;
+        }
+
+        return !skipCustomMobs || !CustomMobChecker.isCustom(entity);
+    }
+
+    private double priorityOf(Entity entity, Map<Entity, Double> cache) {
+        return cache.computeIfAbsent(entity, ReactEntity::getPriority);
+    }
+
+    private void addEntitiesToRemove(Set<Entity> entitiesToRemove, Collection<List<Entity>> groups, int maxEntities, Comparator<Entity> byPriority) {
+        if (maxEntities < 0) {
+            return;
+        }
+
+        for (List<Entity> entities : groups) {
+            if (entities.size() <= maxEntities) {
+                continue;
+            }
+
+            entities.sort(byPriority);
+            for (int i = maxEntities; i < entities.size(); i++) {
+                entitiesToRemove.add(entities.get(i));
             }
         }
     }
-
 
     private void kill(Entity entity) {
-        J.s(() -> React.kill(entity), (int) (20 * Math.random()));
+        J.s(() -> React.kill(entity), ThreadLocalRandom.current().nextInt(20));
     }
 
-    @EqualsAndHashCode
-    @AllArgsConstructor
-    @Data
-    public static class IBlock {
-        private final World world;
-        private final int x;
-        private final int y;
-        private final int z;
+    private static final class PlayerSnapshot {
+        private final Player player;
+        private final Location location;
 
-        public Block block() {
-            return world.getBlockAt(x, y, z);
-        }
-
-        public IChunk chunk() {
-            return new IChunk(world, x >> 4, z >> 4);
+        private PlayerSnapshot(Player player, Location location) {
+            this.player = player;
+            this.location = location;
         }
     }
 
-    @EqualsAndHashCode
-    @AllArgsConstructor
-    @Data
-    public static class IChunk {
-        private final World world;
+    private static final class EntityCandidate {
+        private final Entity entity;
+        private final double priority;
+
+        private EntityCandidate(Entity entity, double priority) {
+            this.entity = entity;
+            this.priority = priority;
+        }
+
+        private double priority() {
+            return priority;
+        }
+    }
+
+    private static final class ChunkKey {
+        private final UUID world;
         private final int x;
         private final int z;
 
-        public Chunk chunk() {
-            return world.getChunkAt(x, z);
+        private ChunkKey(UUID world, int x, int z) {
+            this.world = world;
+            this.x = x;
+            this.z = z;
+        }
+
+        private static ChunkKey of(World world, int x, int z) {
+            return new ChunkKey(world.getUID(), x, z);
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+
+            if (!(obj instanceof ChunkKey key)) {
+                return false;
+            }
+
+            return x == key.x && z == key.z && world.equals(key.world);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = world.hashCode();
+            result = 31 * result + x;
+            result = 31 * result + z;
+            return result;
         }
     }
 }

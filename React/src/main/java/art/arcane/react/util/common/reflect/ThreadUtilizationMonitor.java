@@ -24,6 +24,8 @@ import art.arcane.chrono.RollingSequence;
 import art.arcane.volmlib.util.math.M;
 
 public class ThreadUtilizationMonitor extends Thread {
+    private static final long ACTIVE_POLL_MS = 2L;
+    private static final long IDLE_POLL_MS = 50L;
     private final Thread target;
     private final RollingSequence average;
     private long lastAccess;
@@ -62,7 +64,7 @@ public class ThreadUtilizationMonitor extends Thread {
             }
 
             try {
-                Thread.sleep(M.ms() - lastAccess > 1000 ? 50 : 0);
+                Thread.sleep(M.ms() - lastAccess > 1000 ? IDLE_POLL_MS : ACTIVE_POLL_MS);
             } catch (Throwable e) {
                 break;
             }

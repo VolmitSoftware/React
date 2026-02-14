@@ -42,6 +42,7 @@ public class SamplerEventTime extends ReactCachedSampler implements Listener {
 
     @Override
     public double onSample() {
+        eventController.markSamplerActivity();
         return eventController.getTotalTime();
     }
 

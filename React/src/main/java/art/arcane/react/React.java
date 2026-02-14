@@ -28,6 +28,7 @@ import art.arcane.react.api.tweak.Tweak;
 import art.arcane.react.content.PAPI.PapiExpansion;
 import art.arcane.react.core.controller.*;
 import art.arcane.react.model.ReactConfiguration;
+import art.arcane.react.util.config.ConfigMigrationManager;
 import art.arcane.volmlib.util.collection.KList;
 import art.arcane.react.util.format.C;
 import art.arcane.volmlib.util.format.Form;
@@ -60,6 +61,7 @@ public class React extends VolmitPlugin {
     public static Thread serverThread;
     public static Ticker ticker;
     public static MultiBurst burst;
+    private static final ThreadLocal<Location> NEARBY_PLAYER_SCRATCH = ThreadLocal.withInitial(() -> new Location(null, 0, 0, 0));
     private List<Runnable> startupTasks;
     private List<Runnable> prejobs;
     private Registry<IController> controllerRegistry;
@@ -71,8 +73,35 @@ public class React extends VolmitPlugin {
     }
 
     public static boolean hasNearbyPlayer(Location l, double blocks) {
-        for (Player i : l.getWorld().getPlayers()) {
-            if (i.getLocation().distanceSquared(l) <= blocks * blocks) {
+        if (l == null || l.getWorld() == null || blocks <= 0) {
+            return false;
+        }
+
+        double radiusSquared = blocks * blocks;
+        double lx = l.getX();
+        double ly = l.getY();
+        double lz = l.getZ();
+        Location scratch = NEARBY_PLAYER_SCRATCH.get();
+        scratch.setWorld(l.getWorld());
+
+        for (Player player : l.getWorld().getPlayers()) {
+            player.getLocation(scratch);
+            double dx = scratch.getX() - lx;
+            if (dx > blocks || dx < -blocks) {
+                continue;
+            }
+
+            double dy = scratch.getY() - ly;
+            if (dy > blocks || dy < -blocks) {
+                continue;
+            }
+
+            double dz = scratch.getZ() - lz;
+            if (dz > blocks || dz < -blocks) {
+                continue;
+            }
+
+            if ((dx * dx) + (dy * dy) + (dz * dz) <= radiusSquared) {
                 return true;
             }
         }
@@ -182,7 +211,11 @@ public class React extends VolmitPlugin {
     }
 
     public static <T extends Sampler> T sampler(String c) {
-        return (T) controller(SampleController.class).getSamplers().get(c);
+        SampleController sampleController = controller(SampleController.class);
+        if (sampleController == null || sampleController.getSamplers() == null) {
+            return null;
+        }
+        return (T) sampleController.getSamplers().get(c);
     }
 
     public static <T extends Tweak> T tweak(String c) {
@@ -210,6 +243,7 @@ public class React extends VolmitPlugin {
     public void start() {
         instance = this;
         PrecisionStopwatch psw = PrecisionStopwatch.start();
+        ConfigMigrationManager.backupLegacyJsonConfigsOnce();
         startupTasks = new CopyOnWriteArrayList<>();
         prejobs = new CopyOnWriteArrayList<>();
         burst = new MultiBurst("React", Thread.MIN_PRIORITY);
@@ -247,6 +281,11 @@ public class React extends VolmitPlugin {
 
         for (Runnable i : prejobs) {
             controller(JobController.class).queue(i);
+        }
+
+        int deletedLegacyJson = ConfigMigrationManager.deleteMigratedLegacyJsonFiles();
+        if (deletedLegacyJson > 0) {
+            React.info("Deleted " + deletedLegacyJson + " migrated legacy JSON config files.");
         }
 
         React.info("React Started in " + Form.duration(psw.getMilliseconds(), 0));

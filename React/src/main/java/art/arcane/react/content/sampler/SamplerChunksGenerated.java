@@ -58,6 +58,7 @@ public class SamplerChunksGenerated extends ReactCachedSampler implements Listen
     public void on(ChunkLoadEvent event) {
         if (event.isNewChunk()) {
             generated.incrementAndGet();
+            getChunkCounter(event.getChunk()).addAndGet(1D);
         }
     }
 

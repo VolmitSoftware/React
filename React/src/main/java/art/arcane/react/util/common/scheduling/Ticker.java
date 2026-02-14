@@ -28,8 +28,6 @@ import art.arcane.react.React;
 import art.arcane.volmlib.util.collection.KList;
 import art.arcane.volmlib.util.scheduling.Looper;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
 public class Ticker {
     private final KList<Ticked> ticklist;
     private final KList<Ticked> newTicks;
@@ -91,6 +89,10 @@ public class Ticker {
     }
 
     public void register(Ticked ticked) {
+        if (ticked == null) {
+            return;
+        }
+
         synchronized (newTicks) {
             newTicks.add(ticked);
         }
@@ -117,55 +119,81 @@ public class Ticker {
 
     private int tick() {
         ticking = true;
-        int ix = 0;
-        AtomicInteger tc = new AtomicInteger(0);
-        BurstExecutor e = MultiBurst.burst.burst(ticklist.size());
-        for (int i = 0; i < ticklist.size(); i++) {
-            int ii = i;
-            ix++;
-            e.queue(() -> {
-                Ticked t = ticklist.get(ii);
-
-                if (t != null && t.shouldTick()) {
-                    tc.incrementAndGet();
-                    try {
-                        long ms = System.currentTimeMillis();
-                        t.tick();
-                        if (System.currentTimeMillis() - ms > 50) {
-                            React.warn(t.getTgroup() + ":" + t.getTid() + " took " + (System.currentTimeMillis() - ms) + "ms");
-                        }
-                    } catch (Throwable exxx) {
-                        exxx.printStackTrace();
-                    }
+        int ix = ticklist.size();
+        if (ix > 0) {
+            BurstExecutor e = MultiBurst.burst.burst(ix);
+            for (int i = 0; i < ix; i++) {
+                Ticked ticked = ticklist.get(i);
+                if (ticked == null || !ticked.shouldTick()) {
+                    continue;
                 }
-            });
-        }
 
-        e.complete();
+                e.queue(() -> executeTick(ticked));
+            }
+            e.complete();
+        }
 
         synchronized (newTicks) {
             while (!newTicks.isEmpty()) {
-                tc.incrementAndGet();
-                ticklist.add(newTicks.popRandom());
+                Ticked ticked = newTicks.remove(0);
+                if (ticked == null) {
+                    continue;
+                }
+
+                if (containsTickId(ticked.getTid())) {
+                    continue;
+                }
+
+                ticklist.add(ticked);
             }
         }
 
         synchronized (removeTicks) {
             while (removeTicks.isNotEmpty()) {
-                tc.incrementAndGet();
-                String id = removeTicks.popRandom();
-
-                for (int i = 0; i < ticklist.size(); i++) {
-                    if (ticklist.get(i).getTid().equals(id)) {
-                        ticklist.remove(i);
-                        break;
-                    }
-                }
+                removeTickById(removeTicks.remove(0));
             }
         }
 
         ticking = false;
-        tc.get();
         return ix;
+    }
+
+    private void executeTick(Ticked ticked) {
+        try {
+            long start = System.nanoTime();
+            ticked.tick();
+            long elapsedMS = (System.nanoTime() - start) / 1_000_000L;
+            if (elapsedMS > 50) {
+                React.warn(ticked.getTgroup() + ":" + ticked.getTid() + " took " + elapsedMS + "ms");
+            }
+        } catch (Throwable exxx) {
+            exxx.printStackTrace();
+        }
+    }
+
+    private boolean containsTickId(String id) {
+        if (id == null) {
+            return false;
+        }
+
+        for (int i = 0; i < ticklist.size(); i++) {
+            if (id.equals(ticklist.get(i).getTid())) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void removeTickById(String id) {
+        if (id == null) {
+            return;
+        }
+
+        for (int i = ticklist.size() - 1; i >= 0; i--) {
+            if (id.equals(ticklist.get(i).getTid())) {
+                ticklist.remove(i);
+            }
+        }
     }
 }

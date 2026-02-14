@@ -19,15 +19,14 @@
 
 package art.arcane.react.model;
 
-import com.google.gson.Gson;
 import art.arcane.react.React;
 import art.arcane.react.api.entity.EntityPriority;
 import art.arcane.react.api.monitor.configuration.MonitorConfiguration;
 import art.arcane.react.api.monitor.configuration.MonitorGroup;
 import art.arcane.react.content.sampler.*;
-import art.arcane.react.util.data.B;
-import art.arcane.volmlib.util.io.IO;
-import art.arcane.volmlib.util.json.JSONObject;
+import art.arcane.react.util.config.ConfigDescription;
+import art.arcane.react.util.config.ConfigDoc;
+import art.arcane.react.util.config.ConfigFileSupport;
 import lombok.Data;
 import lombok.Getter;
 import org.bukkit.Material;
@@ -38,46 +37,80 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Data
+@ConfigDescription("Global React configuration. Controls default monitoring layout, value model tuning, and diagnostics behavior.")
 public class ReactConfiguration {
     private static ReactConfiguration configuration;
+    private static final Object CONFIG_LOCK = new Object();
+
+    @ConfigDoc(value = "Entity priority model used by multiple React subsystems.", impact = "Changing these weights can alter culling, queueing, and visibility behavior.")
     private EntityPriority priority = new EntityPriority();
+
+    @ConfigDoc(value = "Material value tuning used for recipe/value analysis.", impact = "Higher values can increase the influence of expensive items in calculations.")
     private ValueConfig value = new ValueConfig();
+
+    @ConfigDoc(value = "Enables custom color styling in monitor views.", impact = "Set to false to keep output closer to vanilla/default color behavior.")
     private boolean customColors = true;
+
+    @ConfigDoc(value = "Enables verbose console output for React internals.", impact = "Useful for troubleshooting but can create a lot of log noise.")
     private boolean verbose = false;
+
+    @ConfigDoc(value = "Enables debug logging and additional diagnostics.", impact = "Use during debugging sessions; disable for normal production runtime.")
     private boolean debug = false;
+
+    @ConfigDoc(value = "Default monitor layout shown to players.", impact = "Changes affect the baseline monitoring dashboard composition and sampler grouping.")
     private Monitoring monitoring = new Monitoring();
 
     public static ReactConfiguration get() {
-        if (configuration == null) {
-            ReactConfiguration dummy = new ReactConfiguration();
-            File l = React.instance.getDataFile("config.json");
-
-            if (!l.exists()) {
+        synchronized (CONFIG_LOCK) {
+            if (configuration == null) {
                 try {
-                    IO.writeAll(l, new JSONObject(new Gson().toJson(dummy)).toString(4));
-                } catch (IOException e) {
+                    configuration = loadConfig(new ReactConfiguration(), true);
+                } catch (Throwable e) {
                     e.printStackTrace();
-                    configuration = dummy;
-                    return dummy;
+                    configuration = new ReactConfiguration();
                 }
             }
 
+            return configuration;
+        }
+    }
+
+    public static boolean reload() {
+        synchronized (CONFIG_LOCK) {
             try {
-                configuration = new Gson().fromJson(IO.readAll(l), ReactConfiguration.class);
-                IO.writeAll(l, new JSONObject(new Gson().toJson(configuration)).toString(4));
-            } catch (IOException e) {
-                e.printStackTrace();
-                configuration = new ReactConfiguration();
+                configuration = loadConfig(configuration == null ? new ReactConfiguration() : configuration, false);
+                return true;
+            } catch (Throwable e) {
+                React.warn("Failed to reload config.toml: " + e.getMessage());
+                return false;
             }
         }
+    }
 
-        return configuration;
+    private static ReactConfiguration loadConfig(ReactConfiguration fallback, boolean overwriteOnFailure) throws IOException {
+        File canonicalFile = React.instance.getDataFile("config.toml");
+        File legacyFile = React.instance.getDataFile("config.json");
+        return ConfigFileSupport.load(
+                canonicalFile,
+                legacyFile,
+                ReactConfiguration.class,
+                fallback,
+                overwriteOnFailure,
+                "main-config",
+                "Created missing config [config.toml] from defaults."
+        );
     }
 
     @Getter
+    @ConfigDescription("Material value configuration for React's value and weighting calculations.")
     public static class ValueConfig {
+        @ConfigDoc(value = "Base value for materials before recipe and override adjustments.", impact = "Higher values raise baseline valuation globally.")
         private double baseValue = 100;
+
+        @ConfigDoc(value = "Safety cap to prevent deep or cyclic recipe traversal from spiraling.", impact = "Higher values allow deeper recipe exploration but can increase processing cost.")
         private int maxRecipeListPrecaution = 50;
+
+        @ConfigDoc(value = "Per-material multipliers overriding default valuation behavior.", impact = "Higher multipliers make specific materials more influential in value calculations.")
         private Map<String, Double> valueMutlipliers = defaultValueMultipliersOverrides();
 
         private Map<String, Double> defaultValueMultipliersOverrides() {
@@ -121,7 +154,9 @@ public class ReactConfiguration {
     }
 
     @Data
+    @ConfigDescription("Default player monitor dashboard configuration.")
     public static class Monitoring {
+        @ConfigDoc(value = "Default monitor groups and samplers shown to players.", impact = "Changing this alters the baseline monitor panel structure for new settings.")
         private MonitorConfiguration monitorConfiguration = MonitorConfiguration.builder()
                 .group(MonitorGroup.builder()
                         .name("CPU")

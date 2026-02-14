@@ -45,8 +45,7 @@ public class SamplerPhysicsTickTime extends ReactCachedSampler implements Listen
     @Override
     public void start() {
         super.start();
-        average = new RollingSequence(tickAverage);
-        stopwatch = new PrecisionStopwatch();
+        ensureRuntime();
         running = false;
         maxDuration = 0;
     }
@@ -58,6 +57,7 @@ public class SamplerPhysicsTickTime extends ReactCachedSampler implements Listen
 
     @EventHandler
     public void on(ServerTickEvent e) {
+        ensureRuntime();
         average.put(maxDuration);
         running = false;
         maxDuration = 0;
@@ -65,6 +65,7 @@ public class SamplerPhysicsTickTime extends ReactCachedSampler implements Listen
 
     @EventHandler
     public void on(BlockPhysicsEvent e) {
+        ensureRuntime();
         if (!running) {
             stopwatch.resetAndBegin();
             running = true;
@@ -75,7 +76,8 @@ public class SamplerPhysicsTickTime extends ReactCachedSampler implements Listen
 
     @Override
     public double onSample() {
-        return average.getAverage();
+        ensureRuntime();
+        return average == null ? 0D : average.getAverage();
     }
 
     @Override
@@ -96,5 +98,14 @@ public class SamplerPhysicsTickTime extends ReactCachedSampler implements Listen
     @Override
     public String formattedSuffix(double t) {
         return Form.durationSplit(t, 2)[1] + " PHY";
+    }
+
+    private synchronized void ensureRuntime() {
+        if (average == null) {
+            average = new RollingSequence(Math.max(1, tickAverage));
+        }
+        if (stopwatch == null) {
+            stopwatch = new PrecisionStopwatch();
+        }
     }
 }

@@ -45,15 +45,26 @@ public class SampledChunk {
     }
 
     public double highestSubScore() {
-        return values.values().stream().mapToDouble(AtomicDouble::get).max().orElse(0);
+        double max = 0D;
+        for (AtomicDouble value : values.values()) {
+            double score = value.get();
+            if (score > max) {
+                max = score;
+            }
+        }
+        return max;
     }
 
     public double totalScore() {
-        return values.values().stream().mapToDouble(AtomicDouble::get).sum();
+        double total = 0D;
+        for (AtomicDouble value : values.values()) {
+            total += value.get();
+        }
+        return total;
     }
 
     public Optional<AtomicDouble> optional(String key) {
-        return values.containsKey(key) ? Optional.of(values.get(key)) : Optional.empty();
+        return Optional.ofNullable(values.get(key));
     }
 
     public AtomicDouble get(String key) {
@@ -67,11 +78,11 @@ public class SampledChunk {
     private void cleanup() {
         String remove = null;
 
-        for (String i : values.keySet()) {
-            double v = values.get(i).updateAndGet(HALF);
+        for (Map.Entry<String, AtomicDouble> entry : values.entrySet()) {
+            double v = entry.getValue().updateAndGet(HALF);
 
             if (remove == null && v <= 1) {
-                remove = i;
+                remove = entry.getKey();
             }
         }
 

@@ -23,7 +23,6 @@ import art.arcane.chrono.ChronoLatch;
 import art.arcane.react.React;
 import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.model.ReactEntity;
-import art.arcane.volmlib.util.math.M;
 import art.arcane.react.util.plugin.IController;
 import art.arcane.react.util.scheduling.J;
 import art.arcane.volmlib.util.scheduling.Looper;
@@ -41,6 +40,9 @@ import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 
 @Data
@@ -54,10 +56,18 @@ public class EntityController implements IController, Listener {
     private transient Set<Entity> killing = new HashSet<>();
 
     public void registerEntityTickListener(EntityType type, Consumer<Entity> listener) {
-        entityTickListeners.computeIfAbsent(type, (t) -> new ArrayList<>()).add(listener);
+        if (listener == null) {
+            return;
+        }
+
+        entityTickListeners.computeIfAbsent(type, (t) -> new CopyOnWriteArrayList<>()).add(listener);
     }
 
     public void registerEntityTickListener(Consumer<Entity> listener) {
+        if (listener == null) {
+            return;
+        }
+
         allEntityTickListeners.add(listener);
     }
 
@@ -73,8 +83,8 @@ public class EntityController implements IController, Listener {
 
     @Override
     public void start() {
-        allEntityTickListeners = new ArrayList<>();
-        entityTickListeners = new HashMap<>();
+        allEntityTickListeners = new CopyOnWriteArrayList<>();
+        entityTickListeners = new ConcurrentHashMap<>();
         ReactConfiguration.get().getPriority().rebuildPriority();
         looper = new Looper() {
             @Override
@@ -90,17 +100,41 @@ public class EntityController implements IController, Listener {
     }
 
     public void tickEntity(Entity e) {
-        if (ReactEntity.tick(e, ReactConfiguration.get().getPriority())) {
-            List<Consumer<Entity>> tickers = entityTickListeners.get(e.getType());
+        if (e == null) {
+            return;
+        }
 
-            for (Consumer<Entity> i : allEntityTickListeners) {
-                J.s(() -> i.accept(e));
+        if (!Bukkit.isPrimaryThread()) {
+            J.s(() -> tickEntity(e));
+            return;
+        }
+
+        if (!hasRegisteredTickListeners()) {
+            return;
+        }
+
+        if (!ReactEntity.tick(e, ReactConfiguration.get().getPriority())) {
+            return;
+        }
+
+        for (Consumer<Entity> listener : allEntityTickListeners) {
+            try {
+                listener.accept(e);
+            } catch (Throwable ex) {
+                React.reportError(ex);
             }
+        }
 
-            if (tickers != null) {
-                for (Consumer<Entity> i : tickers) {
-                    J.s(() -> i.accept(e));
-                }
+        List<Consumer<Entity>> typeListeners = entityTickListeners.get(e.getType());
+        if (typeListeners == null || typeListeners.isEmpty()) {
+            return;
+        }
+
+        for (Consumer<Entity> listener : typeListeners) {
+            try {
+                listener.accept(e);
+            } catch (Throwable ex) {
+                React.reportError(ex);
             }
         }
     }
@@ -197,21 +231,41 @@ public class EntityController implements IController, Listener {
             MaterialValue.save();
         }
 
-        for (World i : Bukkit.getWorlds()) {
-            J.s(() -> {
-                List<Entity> e = i.getEntities();
+        if (!hasRegisteredTickListeners()) {
+            return;
+        }
 
-                if (e.size() < 3) {
-                    return;
+        J.s(() -> {
+            ThreadLocalRandom random = ThreadLocalRandom.current();
+
+            for (World world : Bukkit.getWorlds()) {
+                List<Entity> entities = world.getEntities();
+                int entityCount = entities.size();
+
+                if (entityCount < 3) {
+                    continue;
                 }
 
-                J.a(() -> {
-                    for (int j = 0; j < perWorldUpdatesPerTick; j++) {
-                        Entity ee = e.get(M.irand(0, e.size() - 1));
-                        tickEntity(ee);
-                    }
-                });
-            });
+                int sampleCount = Math.min(perWorldUpdatesPerTick, entityCount);
+
+                for (int j = 0; j < sampleCount; j++) {
+                    tickEntity(entities.get(random.nextInt(entityCount)));
+                }
+            }
+        });
+    }
+
+    private boolean hasRegisteredTickListeners() {
+        if (!allEntityTickListeners.isEmpty()) {
+            return true;
         }
+
+        for (List<Consumer<Entity>> listeners : entityTickListeners.values()) {
+            if (listeners != null && !listeners.isEmpty()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

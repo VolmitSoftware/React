@@ -40,6 +40,7 @@ public class SamplerMemoryGarbage extends ReactCachedSampler {
 
     @Override
     public void start() {
+        super.start();
         memoryUsedAfterGC = getSampler(SamplerMemoryUsedAfterGC.ID);
         memoryUsed = getSampler(SamplerMemoryUsed.ID);
     }

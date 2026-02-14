@@ -1,0 +1,310 @@
+/*
+ *  Copyright (c) 2016-2025 Arcane Arts (Volmit Software)
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ *
+ */
+
+package art.arcane.react.content.action;
+
+import art.arcane.react.React;
+import art.arcane.react.api.action.ActionParams;
+import art.arcane.react.api.action.ActionTicket;
+import art.arcane.react.api.action.ReactAction;
+import art.arcane.react.core.controller.ActionController;
+import art.arcane.react.core.controller.ObserverController;
+import art.arcane.react.model.SampledChunk;
+import art.arcane.react.model.SampledWorld;
+import art.arcane.volmlib.util.format.Form;
+import art.arcane.react.util.scheduling.J;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.Accessors;
+import org.bukkit.Bukkit;
+import org.bukkit.Chunk;
+import org.bukkit.Location;
+import org.bukkit.World;
+import org.bukkit.entity.EnderDragon;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
+import org.bukkit.entity.Tameable;
+import org.bukkit.entity.Villager;
+import org.bukkit.entity.Warden;
+import org.bukkit.entity.Wither;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ThreadLocalRandom;
+
+public class ActionQuarantineHotChunks extends ReactAction<ActionQuarantineHotChunks.Params> {
+    public static final String ID = "action-quarantine-hot-chunks";
+    public static final String SHORT = "aqhc";
+
+    public ActionQuarantineHotChunks() {
+        super(ID);
+    }
+
+    @Override
+    public String getCompletedMessage(ActionTicket<Params> ticket) {
+        Params p = ticket.getParams();
+        return "Quarantined " + p.getChunksQuarantined() + " chunks, culled " + p.getEntitiesCulled() + " entities in " + Form.duration(ticket.getDuration(), 1);
+    }
+
+    @Override
+    public void workOn(ActionTicket<Params> ticket) {
+        Params params = ticket.getParams();
+        if (!params.isPrepared()) {
+            prepare(params);
+            ticket.setWork(0);
+            ticket.setTotalWork(Math.max(1, params.getQueue().size()));
+        }
+
+        if (params.getQueue().isEmpty()) {
+            ticket.setCount(params.getChunksQuarantined());
+            ticket.complete();
+            return;
+        }
+
+        int budget = Math.max(1, React.controller(ActionController.class).getActionSpeedMultiplier() / 8);
+        int worked = 0;
+
+        while (worked < budget && !params.getQueue().isEmpty()) {
+            ChunkRef target = params.getQueue().remove(0);
+            QuarantineResult result = J.sResult(() -> quarantine(target, params));
+            if (result != null) {
+                params.setEntitiesCulled(params.getEntitiesCulled() + result.entitiesCulled());
+                if (result.chunkUnloaded()) {
+                    params.setChunksQuarantined(params.getChunksQuarantined() + 1);
+                }
+            }
+
+            worked++;
+        }
+
+        ticket.setWork(Math.min(ticket.getTotalWork(), ticket.getWork() + worked));
+        ticket.setCount(params.getChunksQuarantined());
+
+        if (params.getQueue().isEmpty()) {
+            ticket.complete();
+        }
+    }
+
+    @Override
+    public Params getDefaultParams() {
+        return Params.builder().build();
+    }
+
+    @Override
+    public void onInit() {
+
+    }
+
+    private void prepare(Params params) {
+        params.setPrepared(true);
+        params.setQueue(new ArrayList<>());
+
+        ObserverController observer = React.controller(ObserverController.class);
+        if (observer == null || observer.getSampled() == null) {
+            return;
+        }
+
+        Map<ChunkRef, Double> weighted = new HashMap<>();
+        for (SampledWorld sampledWorld : observer.getSampled().getWorlds().values()) {
+            World world = sampledWorld.getWorld();
+            if (world == null) {
+                continue;
+            }
+
+            if (params.getWorld() != null && !params.getWorld().isBlank() && !world.getName().equalsIgnoreCase(params.getWorld())) {
+                continue;
+            }
+
+            for (SampledChunk sampledChunk : sampledWorld.getChunks().values()) {
+                Chunk chunk = sampledChunk.getChunk();
+                if (chunk == null || chunk.getWorld() == null || !chunk.isLoaded()) {
+                    continue;
+                }
+
+                double score = sampledChunk.totalScore();
+                if (score < params.getMinimumChunkScore()) {
+                    continue;
+                }
+
+                ChunkRef ref = ChunkRef.of(chunk);
+                weighted.merge(ref, score, Math::max);
+
+                if (params.isIncludeNeighborRing()) {
+                    for (int dx = -1; dx <= 1; dx++) {
+                        for (int dz = -1; dz <= 1; dz++) {
+                            if (dx == 0 && dz == 0) {
+                                continue;
+                            }
+
+                            ChunkRef neighbor = new ChunkRef(world.getName(), chunk.getX() + dx, chunk.getZ() + dz);
+                            weighted.merge(neighbor, score * 0.55D, Math::max);
+                        }
+                    }
+                }
+            }
+        }
+
+        weighted.entrySet().stream()
+                .filter(i -> i.getValue() >= params.getMinimumChunkScore() * 0.35D)
+                .sorted(Map.Entry.<ChunkRef, Double>comparingByValue(Comparator.reverseOrder()))
+                .limit(Math.max(1, params.getMaxChunks()))
+                .map(Map.Entry::getKey)
+                .forEach(params.getQueue()::add);
+    }
+
+    private QuarantineResult quarantine(ChunkRef ref, Params params) {
+        World world = Bukkit.getWorld(ref.world());
+        if (world == null) {
+            return new QuarantineResult(false, 0);
+        }
+
+        if (hasNearbyPlayer(world, ref.x(), ref.z(), params.getUnsafePlayerRadius())) {
+            return new QuarantineResult(false, 0);
+        }
+
+        if (!world.isChunkLoaded(ref.x(), ref.z())) {
+            return new QuarantineResult(false, 0);
+        }
+
+        Chunk chunk = world.getChunkAt(ref.x(), ref.z());
+        int culled = 0;
+        if (params.isCullEntities()) {
+            for (Entity entity : chunk.getEntities()) {
+                if (!canCull(entity, params)) {
+                    continue;
+                }
+
+                React.kill(entity, 4 + ThreadLocalRandom.current().nextInt(8));
+                culled++;
+            }
+        }
+
+        boolean unloaded = false;
+        if (params.isUnloadChunk() && world.isChunkLoaded(ref.x(), ref.z())) {
+            chunk.unload(true);
+            unloaded = !world.isChunkLoaded(ref.x(), ref.z());
+        }
+
+        return new QuarantineResult(unloaded, culled);
+    }
+
+    private boolean canCull(Entity entity, Params params) {
+        if (entity == null || entity.isDead() || entity instanceof Player) {
+            return false;
+        }
+
+        if (entity.getTicksLived() < params.getMinEntityAgeTicks()) {
+            return false;
+        }
+
+        if (params.isProtectNamed() && entity.getCustomName() != null && !entity.getCustomName().isBlank()) {
+            return false;
+        }
+
+        if (params.isProtectTamed() && entity instanceof Tameable tameable && tameable.isTamed()) {
+            return false;
+        }
+
+        if (entity instanceof Villager) {
+            return false;
+        }
+
+        if (params.isProtectBosses() && (entity instanceof EnderDragon || entity instanceof Wither || entity instanceof Warden)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private boolean hasNearbyPlayer(World world, int chunkX, int chunkZ, double radiusBlocks) {
+        double centerX = (chunkX << 4) + 8.0;
+        double centerZ = (chunkZ << 4) + 8.0;
+        double radiusSquared = radiusBlocks * radiusBlocks;
+        for (Player player : world.getPlayers()) {
+            Location location = player.getLocation();
+            double dx = location.getX() - centerX;
+            double dz = location.getZ() - centerZ;
+            if ((dx * dx) + (dz * dz) <= radiusSquared) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private record QuarantineResult(boolean chunkUnloaded, int entitiesCulled) {
+    }
+
+    private record ChunkRef(String world, int x, int z) {
+        private static ChunkRef of(Chunk chunk) {
+            Objects.requireNonNull(chunk.getWorld(), "chunk.world");
+            return new ChunkRef(chunk.getWorld().getName(), chunk.getX(), chunk.getZ());
+        }
+    }
+
+    @Builder
+    @Data
+    @Accessors(chain = true)
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class Params implements ActionParams {
+        private String world;
+        @Builder.Default
+        private int maxChunks = 24;
+        @Builder.Default
+        private double minimumChunkScore = 90D;
+        @Builder.Default
+        private double unsafePlayerRadius = 56D;
+        @Builder.Default
+        private boolean unloadChunk = true;
+        @Builder.Default
+        private boolean cullEntities = true;
+        @Builder.Default
+        private boolean includeNeighborRing = true;
+        @Builder.Default
+        private int minEntityAgeTicks = 200;
+        @Builder.Default
+        private boolean protectNamed = true;
+        @Builder.Default
+        private boolean protectTamed = true;
+        @Builder.Default
+        private boolean protectBosses = true;
+        @Builder.Default
+        private transient boolean prepared = false;
+        @Builder.Default
+        private transient List<ChunkRef> queue = new ArrayList<>();
+        @Builder.Default
+        private transient int chunksQuarantined = 0;
+        @Builder.Default
+        private transient int entitiesCulled = 0;
+
+        public Params withWorld(World world) {
+            if (world != null) {
+                this.world = world.getName();
+            }
+            return this;
+        }
+    }
+}

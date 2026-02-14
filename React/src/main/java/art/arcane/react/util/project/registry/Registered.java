@@ -22,15 +22,12 @@ package art.arcane.react.util.registry;
 import art.arcane.curse.Curse;
 import art.arcane.curse.model.CursedComponent;
 import art.arcane.curse.model.CursedField;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import art.arcane.react.React;
+import art.arcane.react.util.config.ConfigFileSupport;
 import art.arcane.volmlib.util.format.Form;
-import art.arcane.volmlib.util.io.IO;
 import org.bukkit.Material;
 
 import java.io.File;
-import java.io.IOException;
 
 public interface Registered {
     default boolean autoRegister() {
@@ -51,21 +48,25 @@ public interface Registered {
 
     String getId();
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     default void loadConfiguration() {
-        File configFile = React.instance.getDataFile(getConfigCategory(), getId() + ".json");
-        if (!configFile.exists()) {
-            try {
-                IO.writeAll(configFile, new Gson().toJson(this));
-                React.verbose("Creating a default config for " + getName() + " in " + configFile.getPath());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+        File canonicalFile = React.instance.getDataFile(getConfigCategory(), getId() + ".toml");
+        File legacyFile = React.instance.getDataFile(getConfigCategory(), getId() + ".json");
 
         try {
-            CursedComponent loaded = Curse.on(new Gson().fromJson(IO.readAll(configFile), getClass()));
-            CursedComponent c = Curse.on(this);
-            c.instanceFields().filter(i -> !i.isFinal() && !i.isTransient()).forEach((self) -> {
+            Object loadedObject = ConfigFileSupport.load(
+                    canonicalFile,
+                    legacyFile,
+                    (Class) getClass(),
+                    this,
+                    true,
+                    getConfigCategory() + ":" + getId(),
+                    "Created missing config [" + getConfigCategory() + "/" + getId() + ".toml] from defaults."
+            );
+
+            CursedComponent loaded = Curse.on(loadedObject);
+            CursedComponent current = Curse.on(this);
+            current.instanceFields().filter(i -> !i.isFinal() && !i.isTransient()).forEach((self) -> {
                 CursedField from = loaded.field(self.field().getName());
                 Object oFrom = from.get();
 
@@ -73,15 +74,9 @@ public interface Registered {
                     self.set(oFrom);
                 }
             });
-            React.verbose("Loaded config for " + getName() + " in " + configFile.getPath());
+            React.verbose("Loaded config for " + getName() + " in " + canonicalFile.getPath());
         } catch (Throwable e) {
-            e.printStackTrace();
-        }
-
-        try {
-            IO.writeAll(configFile, new GsonBuilder().setPrettyPrinting().create().toJson(this));
-        } catch (IOException e) {
-            e.printStackTrace();
+            React.warn("Failed to load config for " + getName() + ": " + e.getMessage());
         }
     }
 }

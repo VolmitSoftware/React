@@ -23,6 +23,7 @@ import com.google.common.util.concurrent.AtomicDouble;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.model.SampledChunk;
 import art.arcane.react.model.SampledServer;
+import art.arcane.react.model.SampledWorld;
 import art.arcane.react.util.plugin.IController;
 import art.arcane.react.util.scheduling.TickedObject;
 import lombok.Data;
@@ -34,7 +35,6 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
 
-import java.util.Comparator;
 import java.util.Optional;
 
 @EqualsAndHashCode(callSuper = true)
@@ -74,11 +74,23 @@ public class ObserverController extends TickedObject implements IController {
     }
 
     public SampledChunk absoluteWorst() {
-        return sampled.getWorlds().values().stream()
-                .flatMap(i -> i.getChunks().values().stream())
-                .max(Comparator.comparingDouble(SampledChunk::totalScore)
-                        .thenComparingDouble(SampledChunk::highestSubScore))
-                .orElse(null);
+        SampledChunk worst = null;
+        double worstTotal = Double.NEGATIVE_INFINITY;
+        double worstSub = Double.NEGATIVE_INFINITY;
+
+        for (SampledWorld world : sampled.getWorlds().values()) {
+            for (SampledChunk chunk : world.getChunks().values()) {
+                double total = chunk.totalScore();
+                double sub = chunk.highestSubScore();
+                if (total > worstTotal || (total == worstTotal && sub > worstSub)) {
+                    worst = chunk;
+                    worstTotal = total;
+                    worstSub = sub;
+                }
+            }
+        }
+
+        return worst;
     }
 
     public AtomicDouble get(Block b, Sampler sampler) {

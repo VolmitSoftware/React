@@ -131,6 +131,7 @@ dependencies {
     implementation("com.github.VolmitDev:MultiBurst:22.9.2")
     implementation("com.github.VolmitDev:Chrono:22.9.10")
     implementation("com.github.VolmitDev:Spatial:22.11.1")
+    implementation("com.moandjiezana.toml:toml4j:0.7.2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
 
     // Random API's
@@ -173,13 +174,20 @@ tasks.compileJava {
 
 tasks.named<ShadowJar>("shadowJar") {
     // Configure React for shading
-    minimize()
+    // React/Curse rely on reflection/decompiler internals; minimization strips required classes.
+    // minimize()
     append("plugin.yml")
     dependencies {
         include(dependency("com.github.VolmitDev:"))
+        include(dependency("com.moandjiezana.toml:.*"))
+        include(dependency("org.bitbucket.mstrobel:.*"))
     }
     archiveClassifier.set("")
-    relocate("art.arcane", "art.arcane.react.util.arcane")
+    relocate("art.arcane.chrono", "art.arcane.react.util.arcane.chrono")
+    relocate("art.arcane.curse", "art.arcane.react.util.arcane.curse")
+    relocate("art.arcane.edict", "art.arcane.react.util.arcane.edict")
+    relocate("art.arcane.multiburst", "art.arcane.react.util.arcane.multiburst")
+    relocate("art.arcane.volmlib", "art.arcane.react.util.arcane.volmlib")
 }
 
 tasks.named("build") {

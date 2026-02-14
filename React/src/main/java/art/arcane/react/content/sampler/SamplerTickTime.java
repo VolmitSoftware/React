@@ -42,19 +42,23 @@ public class SamplerTickTime extends ReactCachedSampler {
     @Override
     public void start() {
         super.start();
-        monitor = new ThreadUtilizationMonitor(React.serverThread, 50);
-        monitor.start();
+        ensureMonitor();
     }
 
     @Override
     public void stop() {
-        monitor.interrupt();
+        ThreadUtilizationMonitor local = monitor;
+        monitor = null;
+        if (local != null) {
+            local.interrupt();
+        }
         super.stop();
     }
 
     @Override
     public double onSample() {
-        return monitor.getAverage();
+        ensureMonitor();
+        return monitor == null ? 0D : monitor.getAverage();
     }
 
     @Override
@@ -75,5 +79,19 @@ public class SamplerTickTime extends ReactCachedSampler {
     @Override
     public String formattedSuffix(double t) {
         return Form.durationSplit(t, 0)[1];
+    }
+
+    private synchronized void ensureMonitor() {
+        if (monitor != null) {
+            return;
+        }
+
+        Thread target = React.serverThread == null ? Thread.currentThread() : React.serverThread;
+        try {
+            monitor = new ThreadUtilizationMonitor(target, 50);
+            monitor.start();
+        } catch (Throwable e) {
+            monitor = null;
+        }
     }
 }

@@ -22,7 +22,9 @@ package art.arcane.react.content.decreecommand;
 import art.arcane.react.React;
 import art.arcane.react.core.controller.PlayerController;
 import art.arcane.react.core.gui.MonitorConfigGUI;
+import art.arcane.react.core.gui.ReactConfigGUI;
 import art.arcane.react.util.decree.DecreeExecutor;
+import art.arcane.react.util.format.C;
 import art.arcane.volmlib.util.decree.DecreeOrigin;
 import art.arcane.volmlib.util.decree.annotations.Decree;
 import org.bukkit.entity.Player;
@@ -34,6 +36,22 @@ import org.bukkit.entity.Player;
         description = "This is the place to configure Itemized Settings."
 )
 public class CommandConfig implements DecreeExecutor {
+    @Decree(
+            name = "gui",
+            aliases = {"menu", "editor"},
+            description = "Open the React TOML config editor.",
+            origin = DecreeOrigin.PLAYER
+    )
+    public void gui() {
+        Player player = player();
+        if (!ReactConfigGUI.canConfigure(player)) {
+            sender().sendMessage(C.RED + "You do not have permission to open the config editor.");
+            return;
+        }
+
+        ReactConfigGUI.open(player);
+    }
+
     @Decree(
             name = "monitor",
             aliases = {"m", "mon"},

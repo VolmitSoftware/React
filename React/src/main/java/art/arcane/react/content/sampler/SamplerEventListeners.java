@@ -28,6 +28,7 @@ import org.bukkit.event.Listener;
 
 public class SamplerEventListeners extends ReactCachedSampler implements Listener {
     public static final String ID = "events-listeners";
+    private transient EventController eventController;
 
     public SamplerEventListeners() {
         super(ID, 50);
@@ -40,7 +41,14 @@ public class SamplerEventListeners extends ReactCachedSampler implements Listene
 
     @Override
     public double onSample() {
-        return React.controller(EventController.class).getListenerCount();
+        eventController.markSamplerActivity();
+        return eventController.getListenerCount();
+    }
+
+    @Override
+    public void start() {
+        super.start();
+        eventController = React.controller(EventController.class);
     }
 
     @Override

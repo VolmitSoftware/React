@@ -22,6 +22,8 @@ package art.arcane.react.util.registry;
 import art.arcane.react.React;
 import art.arcane.volmlib.util.io.JarScanner;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Modifier;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
@@ -42,6 +44,8 @@ public class Registry<T extends Registered> {
                 j.scan();
                 j.getClasses().stream()
                         .filter(i -> i.isAssignableFrom(type) || type.isAssignableFrom(i))
+                        .filter(i -> !i.isInterface() && !Modifier.isAbstract(i.getModifiers()))
+                        .filter(Registry::hasNoArgConstructor)
                         .map((i) -> {
                             try {
                                 return (T) i.getConstructor().newInstance();
@@ -66,6 +70,15 @@ public class Registry<T extends Registered> {
                 throw new RuntimeException(e);
             }
         });
+    }
+
+    private static boolean hasNoArgConstructor(Class<?> clazz) {
+        try {
+            Constructor<?> constructor = clazz.getConstructor();
+            return Modifier.isPublic(constructor.getModifiers());
+        } catch (Throwable ignored) {
+            return false;
+        }
     }
 
     public Set<Class<?>> classes() {

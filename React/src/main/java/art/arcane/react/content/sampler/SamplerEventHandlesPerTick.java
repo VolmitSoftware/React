@@ -43,6 +43,7 @@ public class SamplerEventHandlesPerTick extends ReactCachedSampler implements Li
 
     @Override
     public double onSample() {
+        eventController.markSamplerActivity();
         r.put(eventController.getCalls());
         return r.getAverage();
     }

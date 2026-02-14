@@ -28,6 +28,7 @@ import art.arcane.react.model.ReactEntity;
 import art.arcane.volmlib.util.format.Form;
 import art.arcane.react.util.scheduling.J;
 import art.arcane.react.util.world.CustomMobChecker;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.*;
@@ -365,13 +366,28 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
     }
 
     public void onTick(Entity entity) {
-        J.a(() -> J.s(() -> {
-            for (Entity i : entity.getNearbyEntities(searchRadius, searchRadius, searchRadius)) {
-                if (merge(entity, i)) {
-                    break;
+        if (entity == null || entity.isDead()) {
+            return;
+        }
+
+        Runnable tick = () -> {
+            if (entity.isDead()) {
+                return;
+            }
+
+            for (Entity nearby : entity.getNearbyEntities(searchRadius, searchRadius, searchRadius)) {
+                if (merge(entity, nearby)) {
+                    return;
                 }
             }
-        }));
+        };
+
+        if (Bukkit.isPrimaryThread()) {
+            tick.run();
+            return;
+        }
+
+        J.s(tick);
     }
 
     @Override

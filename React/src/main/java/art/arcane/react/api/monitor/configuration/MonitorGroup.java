@@ -27,6 +27,7 @@ import lombok.Data;
 import lombok.Singular;
 
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -53,7 +54,22 @@ public class MonitorGroup {
     }
 
     public Sampler getHeadSampler() {
-        return React.sampler(getHeadOrSomething());
+        Sampler sampler = React.sampler(getHeadOrSomething());
+        if (sampler != null) {
+            return sampler;
+        }
+
+        if (samplers != null) {
+            for (String samplerId : new ArrayList<>(samplers)) {
+                Sampler candidate = React.sampler(samplerId);
+                if (candidate != null) {
+                    head = samplerId;
+                    return candidate;
+                }
+            }
+        }
+
+        return React.sampler(SamplerUnknown.ID);
     }
 
     public void setHeadSampler(String s) {
@@ -61,7 +77,10 @@ public class MonitorGroup {
     }
 
     public List<Sampler> getSubSamplers() {
-        return samplers.stream().skip(1).map(i -> (Sampler) React.sampler(i)).collect(Collectors.toList());
+        if (samplers == null) {
+            return List.of();
+        }
+        return samplers.stream().skip(1).map(i -> (Sampler) React.sampler(i)).filter(i -> i != null).collect(Collectors.toList());
     }
 
     public int getColorValue() {

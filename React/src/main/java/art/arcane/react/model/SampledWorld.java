@@ -48,7 +48,7 @@ public class SampledWorld {
 
     public Optional<SampledChunk> optionalChunk(Chunk c) {
         long k = Cache.key(c.getX(), c.getZ());
-        return chunks.containsKey(k) ? Optional.of(chunks.get(k)) : Optional.empty();
+        return Optional.ofNullable(chunks.get(k));
     }
 
     public SampledChunk getChunk(Chunk c) {
@@ -59,5 +59,4 @@ public class SampledWorld {
         return chunks.computeIfAbsent(Cache.key(x, z), (k) -> new SampledChunk(world.getChunkAt(x, z), this));
     }
 }
-
 

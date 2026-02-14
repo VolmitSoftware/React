@@ -24,6 +24,7 @@ import art.arcane.react.React;
 import art.arcane.react.api.rendering.ReactRenderer;
 import art.arcane.react.core.controller.MapController;
 import art.arcane.react.core.controller.PlayerController;
+import art.arcane.react.core.gui.ReactMapGUI;
 import art.arcane.react.util.decree.DecreeExecutor;
 import art.arcane.volmlib.util.decree.DecreeOrigin;
 import art.arcane.volmlib.util.decree.annotations.Decree;
@@ -86,6 +87,11 @@ public class CommandReact implements DecreeExecutor {
                     customHandler = ReactRendererHandler.class
             ) ReactRenderer renderer
     ) {
+        if (renderer == null || "unknown".equalsIgnoreCase(renderer.getId())) {
+            ReactMapGUI.open(player());
+            return;
+        }
+
         React.controller(MapController.class).openRenderer(player(), renderer);
     }
 

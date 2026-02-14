@@ -241,9 +241,8 @@ public class ReactPlayer extends TickedObject {
     }
 
     public void updateMonitors() {
-        if (isActionBarMonitoring()) {
-            setActionBarMonitoring(false);
-            setActionBarMonitoring(true);
+        if (actionBarMonitor != null) {
+            actionBarMonitor.refreshConfiguration();
         }
     }
 

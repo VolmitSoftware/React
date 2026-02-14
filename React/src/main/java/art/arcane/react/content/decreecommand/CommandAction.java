@@ -22,8 +22,13 @@ package art.arcane.react.content.decreecommand;
 import art.arcane.react.React;
 import art.arcane.react.api.action.Action;
 import art.arcane.react.content.action.ActionCollectGarbage;
+import art.arcane.react.content.action.ActionHopperNetworkNormalize;
+import art.arcane.react.content.action.ActionIncidentPlaybook;
+import art.arcane.react.content.action.ActionPrewarmCriticalChunks;
 import art.arcane.react.content.action.ActionPurgeChunks;
 import art.arcane.react.content.action.ActionPurgeEntities;
+import art.arcane.react.content.action.ActionQuarantineHotChunks;
+import art.arcane.react.content.action.ActionTrimEntitiesByAgePriority;
 import art.arcane.react.util.decree.DecreeExecutor;
 import art.arcane.volmlib.util.decree.DecreeOrigin;
 import art.arcane.volmlib.util.decree.annotations.Decree;
@@ -114,5 +119,222 @@ public class CommandAction implements DecreeExecutor {
         Action<ActionCollectGarbage.Params> pe = React.action("collect-garbage");
         ActionCollectGarbage.Params p = pe.getDefaultParams();
         pe.create(p, sender()).queue();
+    }
+
+    @Decree(
+            name = "quarantine-hot-chunks",
+            aliases = {"aqhc"},
+            description = "Temporarily isolate the hottest sampled chunks"
+    )
+    public void quarantineHotChunks(
+            @Param(
+                    name = "max-chunks",
+                    description = "Maximum amount of hot chunks to quarantine",
+                    defaultValue = "24",
+                    aliases = {"m"}
+            )
+            int maxChunks,
+
+            @Param(
+                    name = "min-score",
+                    description = "Minimum sampled chunk score to consider",
+                    defaultValue = "90",
+                    aliases = {"s"}
+            )
+            double minScore,
+
+            @Param(
+                    name = "world",
+                    description = "The world to quarantine hot chunks in.",
+                    customHandler = OptionalWorldHandler.class,
+                    defaultValue = "ALL",
+                    aliases = {"w"}
+            )
+            String world
+    ) {
+        Action<ActionQuarantineHotChunks.Params> action = React.action(ActionQuarantineHotChunks.ID);
+        ActionQuarantineHotChunks.Params p = action.getDefaultParams()
+                .setMaxChunks(Math.max(1, Math.min(maxChunks, 256)))
+                .setMinimumChunkScore(Math.max(0D, minScore));
+
+        if (!world.equals("ALL")) {
+            p.withWorld(Bukkit.getWorld(world));
+        }
+
+        action.create(p, sender()).queue();
+    }
+
+    @Decree(
+            name = "trim-entities-by-age-priority",
+            aliases = {"ateap"},
+            description = "Trim old low-priority entities with safety guards"
+    )
+    public void trimEntitiesByAgePriority(
+            @Param(
+                    name = "max-entities",
+                    description = "Maximum entities to trim in this action",
+                    defaultValue = "600",
+                    aliases = {"m"}
+            )
+            int maxEntities,
+
+            @Param(
+                    name = "min-age-seconds",
+                    description = "Minimum age in seconds before entities are eligible",
+                    defaultValue = "300",
+                    aliases = {"age"}
+            )
+            int minAgeSeconds,
+
+            @Param(
+                    name = "world",
+                    description = "The world to trim entities in.",
+                    customHandler = OptionalWorldHandler.class,
+                    defaultValue = "ALL",
+                    aliases = {"w"}
+            )
+            String world
+    ) {
+        Action<ActionTrimEntitiesByAgePriority.Params> action = React.action(ActionTrimEntitiesByAgePriority.ID);
+        ActionTrimEntitiesByAgePriority.Params p = action.getDefaultParams()
+                .setMaxTrim(Math.max(1, Math.min(maxEntities, 10_000)))
+                .setMinEntityAgeTicks(Math.max(1, minAgeSeconds) * 20);
+
+        if (!world.equals("ALL")) {
+            p.withWorld(Bukkit.getWorld(world));
+        }
+
+        action.create(p, sender()).queue();
+    }
+
+    @Decree(
+            name = "hopper-network-normalize",
+            aliases = {"ahnn"},
+            description = "Normalize hopper hotspots by merging nearby transfer items"
+    )
+    public void hopperNetworkNormalize(
+            @Param(
+                    name = "max-chunks",
+                    description = "Maximum hotspot chunks to normalize",
+                    defaultValue = "20",
+                    aliases = {"m"}
+            )
+            int maxChunks,
+
+            @Param(
+                    name = "min-hopper-updates",
+                    description = "Minimum hopper updates per chunk to be considered hot",
+                    defaultValue = "25",
+                    aliases = {"u"}
+            )
+            double minHopperUpdates,
+
+            @Param(
+                    name = "world",
+                    description = "The world to normalize hopper networks in.",
+                    customHandler = OptionalWorldHandler.class,
+                    defaultValue = "ALL",
+                    aliases = {"w"}
+            )
+            String world
+    ) {
+        Action<ActionHopperNetworkNormalize.Params> action = React.action(ActionHopperNetworkNormalize.ID);
+        ActionHopperNetworkNormalize.Params p = action.getDefaultParams()
+                .setMaxChunks(Math.max(1, Math.min(maxChunks, 256)))
+                .setMinimumHopperUpdatesPerChunk(Math.max(1D, minHopperUpdates));
+
+        if (!world.equals("ALL")) {
+            p.withWorld(Bukkit.getWorld(world));
+        }
+
+        action.create(p, sender()).queue();
+    }
+
+    @Decree(
+            name = "prewarm-critical-chunks",
+            aliases = {"apcc"},
+            description = "Preload the most critical sampled chunks and neighbors"
+    )
+    public void prewarmCriticalChunks(
+            @Param(
+                    name = "max-chunks",
+                    description = "Maximum chunks to prewarm",
+                    defaultValue = "40",
+                    aliases = {"m"}
+            )
+            int maxChunks,
+
+            @Param(
+                    name = "neighbor-radius",
+                    description = "Neighbor radius around each critical chunk",
+                    defaultValue = "1",
+                    aliases = {"r"}
+            )
+            int neighborRadius,
+
+            @Param(
+                    name = "world",
+                    description = "The world to prewarm chunks in.",
+                    customHandler = OptionalWorldHandler.class,
+                    defaultValue = "ALL",
+                    aliases = {"w"}
+            )
+            String world
+    ) {
+        Action<ActionPrewarmCriticalChunks.Params> action = React.action(ActionPrewarmCriticalChunks.ID);
+        ActionPrewarmCriticalChunks.Params p = action.getDefaultParams()
+                .setMaxChunks(Math.max(1, Math.min(maxChunks, 512)))
+                .setNeighborRadius(Math.max(0, Math.min(neighborRadius, 4)));
+
+        if (!world.equals("ALL")) {
+            p.withWorld(Bukkit.getWorld(world));
+        }
+
+        action.create(p, sender()).queue();
+    }
+
+    @Decree(
+            name = "incident-playbook",
+            aliases = {"aip"},
+            description = "Queue a full lag-incident mitigation action sequence"
+    )
+    public void incidentPlaybook(
+            @Param(
+                    name = "include-gc",
+                    description = "Whether to include a garbage collection step",
+                    defaultValue = "true",
+                    aliases = {"gc"}
+            )
+            boolean includeGC,
+
+            @Param(
+                    name = "tier",
+                    description = "Force tier: -1 auto, 0 mild, 1 medium, 2 severe",
+                    defaultValue = "-1",
+                    aliases = {"t"}
+            )
+            int tier,
+
+            @Param(
+                    name = "world",
+                    description = "Optional world filter for sub-actions.",
+                    customHandler = OptionalWorldHandler.class,
+                    defaultValue = "ALL",
+                    aliases = {"w"}
+            )
+            String world
+    ) {
+        Action<ActionIncidentPlaybook.Params> action = React.action(ActionIncidentPlaybook.ID);
+        ActionIncidentPlaybook.Params p = action.getDefaultParams()
+                .setIncludeGarbageCollection(includeGC)
+                .setTierOverride(Math.max(-1, Math.min(2, tier)));
+
+        if (!world.equals("ALL")) {
+            if (Bukkit.getWorld(world) != null) {
+                p.setWorld(Bukkit.getWorld(world).getName());
+            }
+        }
+
+        action.create(p, sender()).queue();
     }
 }
