@@ -296,6 +296,7 @@ public class React extends VolmitPlugin {
 
     @Override
     public void stop() {
+        ready = false;
         controllerRegistry.all().forEach(IController::stop);
         burst.close();
         ticker.clear();

@@ -73,18 +73,8 @@ public class JobController implements IController {
     @Override
     public void stop() {
         J.csr(code);
-
-        List<Runnable> jobsCopy;
         synchronized (jobs) {
-            jobsCopy = new ArrayList<>(jobs);
-        }
-
-        for (Runnable i : jobsCopy) {
-            try {
-                i.run();
-            } catch (Throwable e) {
-                e.printStackTrace();
-            }
+            jobs.clear();
         }
     }
 

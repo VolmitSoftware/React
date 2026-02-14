@@ -36,14 +36,18 @@ import art.arcane.react.util.scheduling.TickedObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.bukkit.Bukkit;
+import org.bukkit.Chunk;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.MapMeta;
 import org.bukkit.map.MapRenderer;
@@ -56,6 +60,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 @EqualsAndHashCode(callSuper = true)
@@ -63,6 +68,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class MapController extends TickedObject implements IController, Listener {
     private static final NamespacedKey nsReact = new NamespacedKey(React.instance, "react");
     private static final NamespacedKey nsRenderer = new NamespacedKey(React.instance, "react-renderer");
+    private static final NamespacedKey nsMapToken = new NamespacedKey(React.instance, "react-map-token");
     private transient Map<String, ReactRenderer> renderers;
     private transient ReactRenderer irisMetricsRenderer;
     private transient ReactRenderer adaptMetricsRenderer;
@@ -186,12 +192,11 @@ public class MapController extends TickedObject implements IController, Listener
     }
 
     public void openRenderer(Player player, ReactRenderer renderer) {
-        if (hasReactMap(player)) {
-            switchToMap(player);
-            setRenderer(player, renderer);
-        } else {
-            giveMap(player, renderer);
+        if (renderer == null) {
+            return;
         }
+
+        giveMap(player, renderer);
     }
 
     public void giveMap(Player player, ReactRenderer renderer) {
@@ -233,30 +238,8 @@ public class MapController extends TickedObject implements IController, Listener
                 continue;
             }
 
-            if (isReactMap(item)) {
-                MapMeta meta = (MapMeta) item.getItemMeta();
-                if (meta == null) {
-                    continue;
-                }
-
-                ReactRenderer renderer = getRenderer(item);
-                if (renderer == null) {
-                    renderer = renderers.get(FeatureUnknown.ID);
-                }
-
-                boolean mapViewChanged = force
-                        || meta.getMapView() == null
-                        || meta.getMapView().getWorld() == null
-                        || !meta.getMapView().getWorld().equals(world);
-                if (mapViewChanged) {
-                    meta.setMapView(createView(world, renderer));
-                }
-
-                boolean metadataChanged = applyRendererMetadata(meta, renderer);
-                if (mapViewChanged || metadataChanged) {
-                    item.setItemMeta(meta);
-                    updated = true;
-                }
+            if (repairMapItem(item, world, force)) {
+                updated = true;
             }
         }
 
@@ -283,6 +266,11 @@ public class MapController extends TickedObject implements IController, Listener
         if (!e.getFrom().getWorld().equals(e.getTo().getWorld())) {
             updateMapViews(e.getPlayer(), e.getTo().getWorld(), false);
         }
+    }
+
+    @EventHandler
+    public void on(ChunkLoadEvent e) {
+        refreshChunkItemFrames(e.getChunk(), true);
     }
 
     public ItemStack createMap(World world, ReactRenderer renderer) {
@@ -361,6 +349,8 @@ public class MapController extends TickedObject implements IController, Listener
         for (Player i : Bukkit.getOnlinePlayers()) {
             J.s(() -> join(i));
         }
+
+        J.s(this::refreshLoadedItemFrames);
     }
 
     @Override
@@ -468,7 +458,125 @@ public class MapController extends TickedObject implements IController, Listener
             changed = true;
         }
 
+        String token = meta.getPersistentDataContainer().get(nsMapToken, PersistentDataType.STRING);
+        if (token == null || token.isBlank()) {
+            meta.getPersistentDataContainer().set(nsMapToken, PersistentDataType.STRING, UUID.randomUUID().toString());
+            changed = true;
+        }
+
         return changed;
+    }
+
+    private boolean repairMapItem(ItemStack item, World worldHint, boolean forceRendererUpdate) {
+        if (!isReactMap(item)) {
+            return false;
+        }
+
+        MapMeta meta = (MapMeta) item.getItemMeta();
+        if (meta == null) {
+            return false;
+        }
+
+        ReactRenderer renderer = getRenderer(item);
+        if (renderer == null && renderers != null) {
+            renderer = renderers.get(FeatureUnknown.ID);
+        }
+        if (renderer == null) {
+            return false;
+        }
+
+        MapView view = meta.getMapView();
+        World world = worldHint;
+        if (world == null && view != null && view.getWorld() != null) {
+            world = view.getWorld();
+        }
+        if (world == null && !Bukkit.getWorlds().isEmpty()) {
+            world = Bukkit.getWorlds().get(0);
+        }
+
+        boolean mapViewChanged = view == null || view.getWorld() == null || (world != null && !view.getWorld().equals(world));
+        if (mapViewChanged) {
+            if (world != null) {
+                meta.setMapView(createView(world, renderer));
+            }
+        } else {
+            ensureMapRenderer(view, renderer, forceRendererUpdate);
+        }
+
+        boolean metadataChanged = applyRendererMetadata(meta, renderer);
+        if (mapViewChanged || metadataChanged) {
+            item.setItemMeta(meta);
+            return true;
+        }
+
+        return false;
+    }
+
+    private void ensureMapRenderer(MapView view, ReactRenderer renderer, boolean forceRendererUpdate) {
+        if (view == null || renderer == null) {
+            return;
+        }
+
+        if (forceRendererUpdate || !hasExpectedMapRenderer(view, renderer)) {
+            updateMapView(view, renderer);
+        }
+    }
+
+    private boolean hasExpectedMapRenderer(MapView view, ReactRenderer renderer) {
+        if (view == null || renderer == null) {
+            return false;
+        }
+
+        List<MapRenderer> mapRenderers = view.getRenderers();
+        if (mapRenderers.size() != 1) {
+            return false;
+        }
+
+        MapRenderer current = mapRenderers.get(0);
+        if (!(current instanceof MapRendererPipe pipe) || pipe.getRenderer() == null) {
+            return false;
+        }
+
+        String currentId = normalizeRendererId(pipe.getRenderer().getId());
+        String expectedId = normalizeRendererId(renderer.getId());
+        return currentId.equals(expectedId);
+    }
+
+    private void refreshLoadedItemFrames() {
+        for (World world : Bukkit.getWorlds()) {
+            for (Chunk chunk : world.getLoadedChunks()) {
+                refreshChunkItemFrames(chunk, true);
+            }
+        }
+    }
+
+    private void refreshChunkItemFrames(Chunk chunk, boolean forceRendererUpdate) {
+        if (chunk == null) {
+            return;
+        }
+
+        for (Entity entity : chunk.getEntities()) {
+            if (entity instanceof ItemFrame frame) {
+                refreshItemFrame(frame, forceRendererUpdate);
+            }
+        }
+    }
+
+    private void refreshItemFrame(ItemFrame frame, boolean forceRendererUpdate) {
+        if (frame == null) {
+            return;
+        }
+
+        ItemStack item = frame.getItem();
+        if (!isReactMap(item)) {
+            return;
+        }
+
+        ItemStack updated = item.clone();
+        boolean metadataChanged = repairMapItem(updated, frame.getWorld(), forceRendererUpdate);
+        if (metadataChanged) {
+            frame.setItem(updated);
+        }
     }
 
     private String rendererScope(String normalizedRendererId) {

@@ -30,7 +30,12 @@ public class ReactRendererHandler implements DecreeParameterHandler<ReactRendere
     @Override
     public KList<ReactRenderer> getPossibilities() {
         KList<ReactRenderer> options = new KList<>();
-        options.addAll(React.controller(MapController.class).getRenderers().values());
+        MapController controller = React.controller(MapController.class);
+        if (controller == null || controller.getRenderers() == null) {
+            return options;
+        }
+
+        options.addAll(controller.getRenderers().values());
         return options;
     }
 

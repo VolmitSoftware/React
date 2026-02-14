@@ -58,6 +58,10 @@ public class FeatureController extends TickedObject implements IController {
 
     @Override
     public void onTick() {
+        if (!React.instance.isEnabled() || !React.instance.isReady()) {
+            return;
+        }
+
         long now = System.currentTimeMillis();
         if (now - lastGateReconcileMS < GATE_RECONCILE_INTERVAL_MS) {
             return;
@@ -70,6 +74,9 @@ public class FeatureController extends TickedObject implements IController {
 
         J.s(() -> {
             try {
+                if (!React.instance.isEnabled() || !React.instance.isReady()) {
+                    return;
+                }
                 reconcileFeatureGates();
             } finally {
                 gateReconcileQueued.set(false);
@@ -95,6 +102,10 @@ public class FeatureController extends TickedObject implements IController {
     }
 
     public void activateFeature(Feature feature) {
+        if (!React.instance.isEnabled() || !React.instance.isReady()) {
+            return;
+        }
+
         if (!activeFeatures.containsKey(feature.getId())) {
             activeFeatures.put(feature.getId(), feature);
             feature.onActivate();
@@ -155,6 +166,10 @@ public class FeatureController extends TickedObject implements IController {
     }
 
     private void reconcileFeatureGates() {
+        if (!React.instance.isEnabled() || !React.instance.isReady()) {
+            return;
+        }
+
         if (features == null || activeFeatures == null) {
             return;
         }
