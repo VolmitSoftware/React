@@ -31,6 +31,7 @@ import org.bukkit.event.Listener;
 import java.util.HashMap;
 import java.util.Map;
 
+@art.arcane.react.util.config.ConfigDescription("Configuration for Chunk Sampler Map feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureChunkSamplerMap extends ReactFeature implements Listener, ReactRenderer {
     public static final String ID = "chunk-sampler-map";
 

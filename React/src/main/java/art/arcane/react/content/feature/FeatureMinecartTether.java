@@ -27,8 +27,10 @@ import org.bukkit.entity.Minecart;
 import org.bukkit.event.Listener;
 import org.bukkit.util.Vector;
 
+@art.arcane.react.util.config.ConfigDescription("Configuration for Minecart Tether feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureMinecartTether extends ReactFeature implements Listener {
     public static final String ID = "minecart-tether";
+    @art.arcane.react.util.config.ConfigDoc(value = "Maximum block distance allowed by minecart tether.", impact = "Higher values allow more throughput before intervention; lower values make mitigation more aggressive.")
     private double maxBlockDistance = 32;
 
     public FeatureMinecartTether() {

@@ -32,9 +32,12 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
+@art.arcane.react.util.config.ConfigDescription("Configuration for Player Impact Overlay feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeaturePlayerImpactOverlay extends FeatureChunkHeatmapBase {
     public static final String ID = "player-impact-overlay";
+    @art.arcane.react.util.config.ConfigDoc(value = "Maximum players drawn allowed by player impact overlay.", impact = "Higher values allow more throughput before intervention; lower values make mitigation more aggressive.")
     private int maxPlayersDrawn = 24;
+    @art.arcane.react.util.config.ConfigDoc(value = "Controls whether player impact overlay renders show player initials on map output.", impact = "Enable to show this visual layer; disable for a cleaner map and slightly lower render cost.")
     private boolean showPlayerInitials = true;
 
     public FeaturePlayerImpactOverlay() {

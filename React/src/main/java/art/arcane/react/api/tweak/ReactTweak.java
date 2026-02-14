@@ -19,6 +19,7 @@
 
 package art.arcane.react.api.tweak;
 
+import art.arcane.react.util.config.ConfigDoc;
 import art.arcane.volmlib.util.format.Form;
 import lombok.Getter;
 import lombok.Setter;
@@ -28,6 +29,10 @@ import lombok.Setter;
 public abstract class ReactTweak implements Tweak {
     private transient final String id;
     private transient final String name;
+    @ConfigDoc(
+            value = "Enables or disables this tweak.",
+            impact = "Set to false to stop this tweak from activating while keeping its config file."
+    )
     private boolean enabled = true;
 
     public ReactTweak(String id) {

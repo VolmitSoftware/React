@@ -74,8 +74,37 @@ public final class ConfigDocumentation {
             lines.add("Effect: " + impact);
         }
 
+        String options = optionHints(field, value);
+        if (!options.isBlank()) {
+            lines.add("Options: " + options);
+        }
+
         lines.addAll(rangeHints(field));
         return lines;
+    }
+
+    public static String buildRootDescription(String sourceTag, Class<?> rootType) {
+        if (sourceTag != null && sourceTag.startsWith("feature:")) {
+            return "Configuration for the " + sourceTag.substring("feature:".length()) + " feature.";
+        }
+        if (sourceTag != null && sourceTag.startsWith("tweak:")) {
+            return "Configuration for the " + sourceTag.substring("tweak:".length()) + " tweak.";
+        }
+        if (sourceTag != null && sourceTag.startsWith("action:")) {
+            return "Configuration for the " + sourceTag.substring("action:".length()) + " action.";
+        }
+        if (sourceTag != null && sourceTag.startsWith("sampler:")) {
+            return "Configuration for the " + sourceTag.substring("sampler:".length()) + " sampler.";
+        }
+        if (sourceTag != null && sourceTag.startsWith("core:")) {
+            return "Configuration for the " + sourceTag.substring("core:".length()) + " core controller.";
+        }
+
+        if (rootType != null) {
+            return "Configuration for " + humanize(rootType.getSimpleName()) + ".";
+        }
+
+        return "React configuration.";
     }
 
     public static boolean shouldExposeField(String sourceTag, String path, Field field, Object value) {
@@ -244,6 +273,46 @@ public final class ConfigDocumentation {
         }
         if (value instanceof Map<?, ?>) {
             return "Edit keys to define targeted overrides for this behavior.";
+        }
+
+        return "";
+    }
+
+    private static String optionHints(Field field, Object value) {
+        if (field == null) {
+            return "";
+        }
+
+        Class<?> type = field.getType();
+        if (type == boolean.class || type == Boolean.class) {
+            return "true | false";
+        }
+        if (type.isEnum()) {
+            Object[] constants = type.getEnumConstants();
+            if (constants == null || constants.length == 0) {
+                return "";
+            }
+
+            StringBuilder builder = new StringBuilder();
+            for (int i = 0; i < constants.length; i++) {
+                if (i > 0) {
+                    builder.append(", ");
+                }
+                builder.append(constants[i]);
+            }
+            return builder.toString();
+        }
+        if (Number.class.isAssignableFrom(type) || (type.isPrimitive() && type != boolean.class && type != char.class)) {
+            return "Numeric value.";
+        }
+        if (type == String.class || type == char.class || type == Character.class) {
+            return "Text value.";
+        }
+        if (value instanceof List<?>) {
+            return "TOML array, for example: [\"value-a\", \"value-b\"]";
+        }
+        if (value instanceof Map<?, ?>) {
+            return "TOML key/value table entries.";
         }
 
         return "";

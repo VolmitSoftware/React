@@ -35,15 +35,24 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 
+@art.arcane.react.util.config.ConfigDescription("Configuration for Projectile Limiter tweak. Applies per-player and per-chunk projectile burst caps to prevent projectile spam spikes.")
 public class TweakProjectileLimiter extends ReactTweak implements Listener {
     public static final String ID = "projectile-limiter";
+    @art.arcane.react.util.config.ConfigDoc(value = "Rolling window length for player checks (milliseconds).", impact = "Longer windows smooth bursts but react slower; shorter windows react faster but are more sensitive.")
     private int playerWindowMS = 1000;
+    @art.arcane.react.util.config.ConfigDoc(value = "Rolling window length for chunk checks (milliseconds).", impact = "Longer windows smooth bursts but react slower; shorter windows react faster but are more sensitive.")
     private int chunkWindowMS = 1000;
+    @art.arcane.react.util.config.ConfigDoc(value = "Maximum projectiles allowed per player window in projectile limiter.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
     private int maxProjectilesPerPlayerWindow = 40;
+    @art.arcane.react.util.config.ConfigDoc(value = "Maximum projectiles allowed per chunk window in projectile limiter.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
     private int maxProjectilesPerChunkWindow = 160;
+    @art.arcane.react.util.config.ConfigDoc(value = "Main evaluation interval for projectile limiter in milliseconds.", impact = "Lower values react faster but consume more CPU; higher values reduce overhead but react later.")
     private int cleanupIntervalMS = 5000;
+    @art.arcane.react.util.config.ConfigDoc(value = "Controls whether projectile limiter applies limit player projectiles.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
     private boolean limitPlayerProjectiles = true;
+    @art.arcane.react.util.config.ConfigDoc(value = "Controls whether projectile limiter applies limit chunk projectiles.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
     private boolean limitChunkProjectiles = true;
+    @art.arcane.react.util.config.ConfigDoc(value = "Permission node string checked before projectile limiter enforcement.", impact = "Change this to match your permission model for bypass behavior.")
     private String bypassPermission = "react.bypass.projectile-limit";
     private transient Map<UUID, BurstWindow> playerBursts = new HashMap<>();
     private transient Map<ChunkKey, BurstWindow> chunkBursts = new HashMap<>();
@@ -130,8 +139,11 @@ public class TweakProjectileLimiter extends ReactTweak implements Listener {
     }
 
     private static final class BurstWindow {
+        @art.arcane.react.util.config.ConfigDoc(value = "Internal timestamp used by projectile limiter to track timing windows and decay.", impact = "Primarily runtime state; changing this manually can distort cooldown or throttling behavior.")
         private long start;
+        @art.arcane.react.util.config.ConfigDoc(value = "Internal timestamp used by projectile limiter to track timing windows and decay.", impact = "Primarily runtime state; changing this manually can distort cooldown or throttling behavior.")
         private long lastHit;
+        @art.arcane.react.util.config.ConfigDoc(value = "Internal counter used by projectile limiter while tracking burst activity.", impact = "Primarily runtime state; React updates this automatically during live evaluation.")
         private int count;
 
         private BurstWindow(long now) {
@@ -157,8 +169,11 @@ public class TweakProjectileLimiter extends ReactTweak implements Listener {
     }
 
     private static final class ChunkKey {
+        @art.arcane.react.util.config.ConfigDoc(value = "World identifier used by projectile limiter internal tracking.", impact = "This is runtime identity data and should normally be left to automatic updates.")
         private final UUID world;
+        @art.arcane.react.util.config.ConfigDoc(value = "X-axis coordinate used by projectile limiter internal tracking.", impact = "This is internal state data and should not normally be changed manually.")
         private final int x;
+        @art.arcane.react.util.config.ConfigDoc(value = "Z-axis coordinate used by projectile limiter internal tracking.", impact = "This is internal state data and should not normally be changed manually.")
         private final int z;
 
         private ChunkKey(UUID world, int x, int z) {

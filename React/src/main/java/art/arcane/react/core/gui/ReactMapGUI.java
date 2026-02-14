@@ -99,16 +99,22 @@ public final class ReactMapGUI {
             int rowCount = Math.min(9, end - rowStart);
             for (int i = 0; i < rowCount; i++) {
                 ReactRenderer renderer = renderers.get(rowStart + i);
+                String normalizedId = normalizeRendererId(renderer);
+                String scopeTag = rendererScopeTag(normalizedId);
                 int w = centeredPosition(i, rowCount);
                 int h = row;
-                window.setElement(w, h, new UIElement("map-renderer-" + renderer.getId())
+                UIElement element = new UIElement("map-renderer-" + renderer.getId())
                         .setMaterial(new MaterialBlock(materialFor(renderer)))
-                        .setName(C.WHITE + displayName(renderer.getId()))
-                        .onLeftClick((e) -> {
-                            controller.openRenderer(player, renderer);
-                            player.sendMessage(C.GREEN + "Selected map: " + C.WHITE + renderer.getId());
-                            player.closeInventory();
-                        }));
+                        .setName(C.WHITE + displayName(renderer.getId()) + C.DARK_GRAY + " [" + scopeTag + "]");
+                for (String loreLine : loreFor(renderer)) {
+                    element.addLore(loreLine);
+                }
+
+                window.setElement(w, h, element.onLeftClick((e) -> {
+                    controller.openRenderer(player, renderer);
+                    player.sendMessage(C.GREEN + "Selected map: " + C.WHITE + displayName(renderer.getId()) + C.DARK_GRAY + " [" + scopeTag + "]");
+                    player.closeInventory();
+                }));
             }
         }
 
@@ -223,6 +229,219 @@ public final class ReactMapGUI {
             return key;
         }
         return Character.toUpperCase(spaced.charAt(0)) + spaced.substring(1);
+    }
+
+    private static List<String> loreFor(ReactRenderer renderer) {
+        List<String> lore = new ArrayList<>();
+        String id = renderer == null ? "unknown" : Objects.toString(renderer.getId(), "unknown");
+        String normalizedId = normalizeRendererId(renderer);
+        lore.add(C.DARK_GRAY + "Scope: " + C.GOLD + rendererScopeLabel(normalizedId));
+        lore.add(C.DARK_GRAY + "Type: " + C.AQUA + rendererType(renderer, normalizedId));
+        lore.add(C.GRAY + rendererSummary(renderer, normalizedId));
+        String detail = rendererDetail(renderer, normalizedId);
+        if (detail != null && !detail.isBlank()) {
+            lore.add(C.DARK_GRAY + detail);
+        }
+        lore.add(C.DARK_GRAY + "ID: " + C.GRAY + id);
+        lore.add(C.GREEN + "Left Click: " + C.GRAY + "Select this monitor");
+        return lore;
+    }
+
+    private static String rendererType(ReactRenderer renderer, String normalizedId) {
+        if (renderer instanceof Sampler) {
+            return "Sampler Trend";
+        }
+        if ("iris-metrics".equals(normalizedId) || "adapt-metrics".equals(normalizedId)) {
+            return "Integration Metrics";
+        }
+        if (normalizedId.endsWith("-map") || normalizedId.endsWith("-heatmap") || normalizedId.endsWith("-overlay")) {
+            return "World Overlay";
+        }
+        return "Renderer";
+    }
+
+    private static String rendererSummary(ReactRenderer renderer, String normalizedId) {
+        if (renderer instanceof Sampler) {
+            return samplerSummary(normalizedId);
+        }
+
+        return switch (normalizedId) {
+            case "chunk-sampler-map" -> "Chunk heatmap of React observer cost around your current position.";
+            case "entity-pressure-heatmap" -> "Chunk heatmap of entity pressure; hotter chunks carry heavier mob or item load.";
+            case "redstone-activity-heatmap" -> "Chunk heatmap of redstone update pressure and clock-heavy circuitry.";
+            case "chunk-load-gen-cost-map" -> "Chunk heatmap of load and generation cost using load/gen rate and ms pressure.";
+            case "hopper-container-throughput-map" -> "Chunk heatmap of hopper transfer throughput to locate transport bottlenecks.";
+            case "player-impact-overlay" -> "Composite pressure map with per-player markers showing likely world impact.";
+            case "tick-spike-origin-replay-map" -> "Replay map of recent spike origins with decaying heat over nearby chunks.";
+            case "iris-generation-pressure-overlay" -> "Iris-aware pressure overlay using pregen queue and chunk stream latency.";
+            case "adapt-runtime-pressure-overlay" -> "Adapt-aware pressure overlay using session load and ability operation rate.";
+            case "iris-metrics" -> "Iris integration panel for pregen queue depth, stream latency, and biome-cache hit rate.";
+            case "adapt-metrics" -> "Adapt integration panel for session load, ability ops/min, and world policy latency.";
+            case "unknown" -> "Fallback renderer shown when a specific monitor cannot be resolved.";
+            default -> {
+                if (normalizedId.startsWith("iris-")) {
+                    yield "Iris integration renderer for " + displayName(normalizedId) + ".";
+                }
+                if (normalizedId.startsWith("adapt-")) {
+                    yield "Adapt integration renderer for " + displayName(normalizedId) + ".";
+                }
+                yield "Map renderer for " + displayName(normalizedId) + ".";
+            }
+        };
+    }
+
+    private static String rendererDetail(ReactRenderer renderer, String normalizedId) {
+        if (renderer instanceof Sampler) {
+            return "Live graph with current, minimum, and maximum values.";
+        }
+
+        return switch (normalizedId) {
+            case "chunk-sampler-map",
+                 "entity-pressure-heatmap",
+                 "redstone-activity-heatmap",
+                 "chunk-load-gen-cost-map",
+                 "hopper-container-throughput-map",
+                 "player-impact-overlay",
+                 "tick-spike-origin-replay-map",
+                 "iris-generation-pressure-overlay",
+                 "adapt-runtime-pressure-overlay" -> "Hotter colors indicate more pressure in the sampled chunk.";
+            case "iris-metrics" -> "Monitors: queue backlog, stream ms, biome cache efficiency.";
+            case "adapt-metrics" -> "Monitors: session load, ability throughput, policy latency.";
+            default -> null;
+        };
+    }
+
+    private static String samplerSummary(String normalizedId) {
+        return switch (normalizedId) {
+            case "tick-time" -> "Average server MSPT (milliseconds per tick) across recent samples.";
+            case "ticks-per-second" -> "Effective TPS trend from the live server tick loop.";
+            case "tick-ms-p50" -> "Median tick time to show normal baseline server load.";
+            case "tick-ms-p95" -> "95th percentile tick time to expose high-tail latency spikes.";
+            case "tick-ms-p99" -> "99th percentile tick time for worst-case tick latency outliers.";
+            case "tick-spike-rate" -> "Rate of severe tick spikes crossing critical tick-time thresholds.";
+            case "incident-score" -> "Composite incident score built from multiple pressure samplers.";
+            case "memory-used" -> "Current JVM heap memory usage.";
+            case "memory-free" -> "Available JVM heap memory before further growth.";
+            case "memory-pressure" -> "Heap pressure ratio used by React to detect memory saturation.";
+            case "memory-garbage" -> "Estimated reclaimable heap memory pending garbage collection.";
+            case "memory-used-after-gc" -> "Post-GC heap footprint trend after recent collections.";
+            case "gc-time-percent" -> "Percent of time spent in GC relative to runtime.";
+            case "gc-pause-p95" -> "95th percentile garbage collection pause duration.";
+            case "player-ping-p95" -> "95th percentile player ping to reveal network latency tails.";
+            case "ping-jitter" -> "Player ping jitter showing latency instability over time.";
+            case "players" -> "Online player count over time.";
+            case "entities" -> "Tracked loaded-entity pressure across active chunks.";
+            case "entities-spawns" -> "Entity spawn rate observed from creature spawn events.";
+            case "entity-ai-active-count" -> "Approximate count of entities actively running AI logic.";
+            case "chunks" -> "Loaded chunk count trend.";
+            case "chunks-loaded" -> "Chunk-load event rate.";
+            case "chunks-generated" -> "Chunk-generation event rate.";
+            case "chunk-load-ms" -> "Chunk load latency in milliseconds.";
+            case "chunk-gen-ms" -> "Chunk generation latency in milliseconds.";
+            case "top-chunk-cost" -> "Highest observed per-chunk cost from React chunk sampling.";
+            case "top-world-mspt" -> "Worst world-level MSPT observed across loaded worlds.";
+            case "redstone" -> "Redstone update activity rate.";
+            case "redstone-burst-rate" -> "Burst intensity of redstone transitions over short windows.";
+            case "redstone-tick-time" -> "Tick time spent inside redstone processing paths.";
+            case "hopper" -> "Hopper transfer/update activity rate.";
+            case "hopper-tick-time" -> "Tick time spent in hopper processing paths.";
+            case "fluid" -> "Fluid update activity rate.";
+            case "fluid-tick-time" -> "Tick time spent in fluid simulation paths.";
+            case "physics" -> "Physics update activity rate.";
+            case "physics-tick-time" -> "Tick time spent in physics simulation paths.";
+            case "event-time" -> "Total time spent processing server events.";
+            case "event-handles-per-tick" -> "Event-handler invocation count per tick.";
+            case "events-listeners" -> "Registered event-listener count on the server.";
+            case "scheduler-backlog" -> "Scheduler backlog depth waiting for execution.";
+            case "backlog-growth-rate" -> "Rate at which scheduler backlog is growing or shrinking.";
+            case "react-jobs-queue" -> "Queued React jobs waiting to be processed.";
+            case "react-job-budget" -> "Remaining React job budget available per processing cycle.";
+            case "react-job-queue-time" -> "Time jobs spend waiting in React queues.";
+            case "react-sync-tick-time" -> "Time React spends on synchronous work per tick.";
+            case "react-async-tick-time" -> "Time React spends on asynchronous work per cycle.";
+            case "processor-system-load" -> "Host system CPU load trend.";
+            case "processor-process-load" -> "JVM process CPU load trend.";
+            case "processor-outside" -> "Non-React external process load pressure.";
+            case "iris-pregen-queue" -> "Iris remote pregen queue depth.";
+            case "iris-chunk-stream-ms" -> "Iris chunk-stream latency from integration metrics.";
+            case "iris-biome-cache-hit-rate" -> "Iris biome-cache hit ratio.";
+            case "adapt-session-load" -> "Adapt runtime session load percentage.";
+            case "adapt-ability-ops" -> "Adapt ability operations per minute (mode selected by config adaptAbilityOpsMetricMode).";
+            case "adapt-world-policy-latency" -> "Adapt world-policy evaluation latency.";
+            default -> samplerSummaryByKeyword(normalizedId);
+        };
+    }
+
+    private static String samplerSummaryByKeyword(String normalizedId) {
+        if (normalizedId.contains("tick")) {
+            return "Server tick-path timing and spike behavior.";
+        }
+        if (normalizedId.contains("memory") || normalizedId.contains("gc")) {
+            return "JVM memory pressure and garbage-collection behavior.";
+        }
+        if (normalizedId.contains("chunk")) {
+            return "Chunk activity, latency, and load pressure.";
+        }
+        if (normalizedId.contains("entity")) {
+            return "Entity population, spawn activity, or AI pressure.";
+        }
+        if (normalizedId.contains("player") || normalizedId.contains("ping")) {
+            return "Player activity and network latency quality.";
+        }
+        if (normalizedId.contains("redstone")) {
+            return "Redstone transition activity and processing cost.";
+        }
+        if (normalizedId.contains("hopper")) {
+            return "Hopper transfer activity and processing cost.";
+        }
+        if (normalizedId.contains("fluid")) {
+            return "Fluid update activity and simulation cost.";
+        }
+        if (normalizedId.contains("physics")) {
+            return "Physics update activity and simulation cost.";
+        }
+        if (normalizedId.contains("event")) {
+            return "Server event volume and processing cost.";
+        }
+        if (normalizedId.contains("react") || normalizedId.contains("job") || normalizedId.contains("queue") || normalizedId.contains("backlog")) {
+            return "React scheduler queue depth and execution pressure.";
+        }
+        if (normalizedId.contains("processor") || normalizedId.contains("load")) {
+            return "CPU and host load pressure around the server runtime.";
+        }
+        if (normalizedId.startsWith("iris-")) {
+            return "Iris integration metric exposed through the remote sampler bridge.";
+        }
+        if (normalizedId.startsWith("adapt-")) {
+            return "Adapt integration metric exposed through the remote sampler bridge.";
+        }
+        return "Live sampler trend for this monitor.";
+    }
+
+    private static String normalizeRendererId(ReactRenderer renderer) {
+        return Objects.toString(renderer == null ? null : renderer.getId(), "")
+                .toLowerCase(Locale.ROOT)
+                .trim();
+    }
+
+    private static String rendererScopeLabel(String normalizedId) {
+        if (normalizedId.startsWith("iris-")) {
+            return "Iris Integration";
+        }
+        if (normalizedId.startsWith("adapt-")) {
+            return "Adapt Integration";
+        }
+        return "React Core";
+    }
+
+    private static String rendererScopeTag(String normalizedId) {
+        if (normalizedId.startsWith("iris-")) {
+            return "IRIS";
+        }
+        if (normalizedId.startsWith("adapt-")) {
+            return "ADAPT";
+        }
+        return "CORE";
     }
 
     private static String normalizeSortKey(String input) {

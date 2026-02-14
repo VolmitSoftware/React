@@ -66,11 +66,11 @@ public class ActionTicket<T extends ActionParams> {
     }
 
     public void addWork(int w) {
-        totalWork += w;
+        work += w;
     }
 
     public void addWork() {
-        totalWork++;
+        work++;
     }
 
     public double getProgress() {

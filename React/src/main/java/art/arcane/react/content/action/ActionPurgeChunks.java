@@ -38,6 +38,7 @@ import org.bukkit.World;
 import java.util.ArrayList;
 import java.util.List;
 
+@art.arcane.react.util.config.ConfigDescription("Configuration for Purge Chunks action. This action performs targeted remediation when React decides intervention is needed.")
 public class ActionPurgeChunks extends ReactAction<ActionPurgeChunks.Params> {
     public static final String ID = "purge-chunks";
     public static final String SHORT = "pc";
@@ -113,6 +114,7 @@ public class ActionPurgeChunks extends ReactAction<ActionPurgeChunks.Params> {
     @NoArgsConstructor
     public static class Params implements ActionParams {
         @Builder.Default
+        @art.arcane.react.util.config.ConfigDoc(value = "Area selection used by purge chunks when choosing target chunks or entities.", impact = "Choose a tighter area for safer, local actions or a wider area for broader remediation.")
         private AreaActionParams area = AreaActionParams.builder().build();
 
         public Params withWorld(World world) {

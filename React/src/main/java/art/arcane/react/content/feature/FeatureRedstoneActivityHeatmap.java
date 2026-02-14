@@ -23,6 +23,7 @@ import art.arcane.react.content.sampler.SamplerRedstoneUpdates;
 import art.arcane.react.util.data.TinyColor;
 import org.bukkit.Chunk;
 
+@art.arcane.react.util.config.ConfigDescription("Configuration for Redstone Activity Heatmap feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureRedstoneActivityHeatmap extends FeatureChunkHeatmapBase {
     public static final String ID = "redstone-activity-heatmap";
 

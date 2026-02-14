@@ -36,7 +36,16 @@ public interface Action<T extends ActionParams> extends Registered {
         return "action";
     }
 
+    default boolean isEnabled() {
+        return true;
+    }
+
     default ActionTicket<T> create(T params, CommandSender sender) {
+        if (!isEnabled()) {
+            sender.sendMessage(getName() + " is disabled in config.");
+            return create(params);
+        }
+
         sender.sendMessage("Queued " + getName());
         return create(params)
                 .onStart((i) -> sender.sendMessage("Starting " + getName()))

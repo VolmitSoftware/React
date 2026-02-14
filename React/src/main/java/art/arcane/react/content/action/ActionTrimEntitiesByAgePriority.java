@@ -50,13 +50,16 @@ import org.bukkit.entity.Warden;
 import org.bukkit.entity.Wither;
 
 import java.util.ArrayList;
+import java.util.ArrayDeque;
 import java.util.Comparator;
+import java.util.Deque;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
+@art.arcane.react.util.config.ConfigDescription("Configuration for Trim Entities By Age Priority action. This action performs targeted remediation when React decides intervention is needed.")
 public class ActionTrimEntitiesByAgePriority extends ReactAction<ActionTrimEntitiesByAgePriority.Params> {
     public static final String ID = "action-trim-entities-by-age-priority";
     public static final String SHORT = "ateap";
@@ -96,7 +99,8 @@ public class ActionTrimEntitiesByAgePriority extends ReactAction<ActionTrimEntit
     public void workOn(ActionTicket<Params> ticket) {
         Params params = ticket.getParams();
         if (!params.isPrepared()) {
-            params.setQueue(J.sResult(() -> buildQueueSync(params)));
+            List<ChunkRef> queue = J.sResult(() -> buildQueueSync(params));
+            params.setQueue(new ArrayDeque<>(queue == null ? List.of() : queue));
             params.setPrepared(true);
             ticket.setWork(0);
             ticket.setTotalWork(Math.max(1, params.getQueue().size()));
@@ -111,7 +115,10 @@ public class ActionTrimEntitiesByAgePriority extends ReactAction<ActionTrimEntit
         int chunkBudget = Math.max(1, React.controller(ActionController.class).getActionSpeedMultiplier() / 10);
         int worked = 0;
         while (worked < chunkBudget && !params.getQueue().isEmpty() && params.getTrimmed() < params.getMaxTrim()) {
-            ChunkRef next = params.getQueue().remove(0);
+            ChunkRef next = params.getQueue().pollFirst();
+            if (next == null) {
+                break;
+            }
             int remaining = Math.max(0, params.getMaxTrim() - params.getTrimmed());
             int removed = J.sResult(() -> trimChunkSync(next, params, remaining));
             params.setTrimmed(params.getTrimmed() + removed);
@@ -289,35 +296,48 @@ public class ActionTrimEntitiesByAgePriority extends ReactAction<ActionTrimEntit
     @AllArgsConstructor
     @NoArgsConstructor
     public static class Params implements ActionParams {
+        @art.arcane.react.util.config.ConfigDoc(value = "World name filter for trim entities by age priority operations.", impact = "Set a world name to scope actions there, or leave blank to include all worlds.")
         private String world;
         @Builder.Default
+        @art.arcane.react.util.config.ConfigDoc(value = "Maximum trim allowed by trim entities by age priority.", impact = "Higher values allow more throughput before intervention; lower values make mitigation more aggressive.")
         private int maxTrim = 600;
         @Builder.Default
+        @art.arcane.react.util.config.ConfigDoc(value = "Maximum trim allowed per chunk in trim entities by age priority.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
         private int maxTrimPerChunk = 12;
         @Builder.Default
+        @art.arcane.react.util.config.ConfigDoc(value = "Minimum entity age ticks required by trim entities by age priority.", impact = "Higher values require stronger signals before action; lower values make this condition easier to satisfy.")
         private int minEntityAgeTicks = 20 * 60 * 5;
         @Builder.Default
+        @art.arcane.react.util.config.ConfigDoc(value = "Protects named from trim entities by age priority enforcement.", impact = "Enable this to keep matching targets safe; disable it to make them eligible for handling.")
         private boolean protectNamed = true;
         @Builder.Default
+        @art.arcane.react.util.config.ConfigDoc(value = "Protects tamed from trim entities by age priority enforcement.", impact = "Enable this to keep matching targets safe; disable it to make them eligible for handling.")
         private boolean protectTamed = true;
         @Builder.Default
+        @art.arcane.react.util.config.ConfigDoc(value = "Protects villagers from trim entities by age priority enforcement.", impact = "Enable this to keep matching targets safe; disable it to make them eligible for handling.")
         private boolean protectVillagers = true;
         @Builder.Default
+        @art.arcane.react.util.config.ConfigDoc(value = "Protects bosses from trim entities by age priority enforcement.", impact = "Enable this to keep matching targets safe; disable it to make them eligible for handling.")
         private boolean protectBosses = true;
         @Builder.Default
+        @art.arcane.react.util.config.ConfigDoc(value = "Protects near players from trim entities by age priority enforcement.", impact = "Enable this to keep matching targets safe; disable it to make them eligible for handling.")
         private boolean protectNearPlayers = true;
         @Builder.Default
+        @art.arcane.react.util.config.ConfigDoc(value = "Player radius used by trim entities by age priority (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
         private double playerProtectRadius = 24D;
         @Builder.Default
+        @art.arcane.react.util.config.ConfigDoc(value = "Allows items in trim entities by age priority.", impact = "Enable this to permit the behavior; disable it to block or throttle that path.")
         private boolean allowItems = true;
         @Builder.Default
+        @art.arcane.react.util.config.ConfigDoc(value = "Allows monsters in trim entities by age priority.", impact = "Enable this to permit the behavior; disable it to block or throttle that path.")
         private boolean allowMonsters = true;
         @Builder.Default
+        @art.arcane.react.util.config.ConfigDoc(value = "Allows non living in trim entities by age priority.", impact = "Enable this to permit the behavior; disable it to block or throttle that path.")
         private boolean allowNonLiving = false;
         @Builder.Default
         private transient boolean prepared = false;
         @Builder.Default
-        private transient List<ChunkRef> queue = new ArrayList<>();
+        private transient Deque<ChunkRef> queue = new ArrayDeque<>();
         @Builder.Default
         private transient int trimmed = 0;
         @Builder.Default

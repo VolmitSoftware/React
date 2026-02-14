@@ -27,10 +27,14 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntitySpawnEvent;
 
+@art.arcane.react.util.config.ConfigDescription("Configuration for Experience Orb Merge tweak. Merges nearby XP orbs into larger stacks to reduce orb entity count and pickup overhead.")
 public class TweakExperienceOrbMerge extends ReactTweak implements Listener {
     public static final String ID = "experience-orb-merge";
+    @art.arcane.react.util.config.ConfigDoc(value = "Merge radius used by experience orb merge (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
     private double mergeRadius = 2.75;
+    @art.arcane.react.util.config.ConfigDoc(value = "Maximum nearby orbs allowed per merge in experience orb merge.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
     private int maxNearbyOrbsPerMerge = 24;
+    @art.arcane.react.util.config.ConfigDoc(value = "Maximum experience allowed per orb in experience orb merge.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
     private int maxExperiencePerOrb = 10000;
 
     public TweakExperienceOrbMerge() {

@@ -7,7 +7,7 @@ import art.arcane.volmlib.util.format.Form;
 
 abstract class RemoteIntegrationSampler extends ReactCachedSampler {
     private final String pluginId;
-    private final String metricKey;
+    private final String defaultMetricKey;
     private final int decimals;
     private final String suffix;
 
@@ -20,7 +20,7 @@ abstract class RemoteIntegrationSampler extends ReactCachedSampler {
     ) {
         super(id, 1000);
         this.pluginId = pluginId;
-        this.metricKey = metricKey;
+        this.defaultMetricKey = metricKey;
         this.decimals = Math.max(0, decimals);
         this.suffix = suffix == null ? "" : suffix;
     }
@@ -32,7 +32,7 @@ abstract class RemoteIntegrationSampler extends ReactCachedSampler {
             return 0D;
         }
 
-        return controller.getRemoteSamplerBridge().valueOr(pluginId, metricKey, 0D);
+        return controller.getRemoteSamplerBridge().valueOr(pluginId, metricKey(), 0D);
     }
 
     @Override
@@ -57,6 +57,10 @@ abstract class RemoteIntegrationSampler extends ReactCachedSampler {
             return false;
         }
 
-        return controller.getRemoteSamplerBridge().isAvailable(pluginId, metricKey);
+        return controller.getRemoteSamplerBridge().isAvailable(pluginId, metricKey());
+    }
+
+    protected String metricKey() {
+        return defaultMetricKey;
     }
 }

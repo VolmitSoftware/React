@@ -34,16 +34,26 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
+@art.arcane.react.util.config.ConfigDescription("Configuration for Item Backpressure feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureItemBackpressure extends ReactFeature {
     public static final String ID = "item-backpressure";
+    @art.arcane.react.util.config.ConfigDoc(value = "Main evaluation interval for item backpressure in milliseconds.", impact = "Lower values react faster but consume more CPU; higher values reduce overhead but react later.")
     private int tickIntervalMS = 1000;
+    @art.arcane.react.util.config.ConfigDoc(value = "Tick-time threshold for trigger time in item backpressure (milliseconds).", impact = "Higher values delay activation or exit; lower values make this threshold easier to cross.")
     private double triggerTickTimeMS = 60;
+    @art.arcane.react.util.config.ConfigDoc(value = "Trigger threshold for trigger entity count in item backpressure.", impact = "Higher values trigger mitigation later; lower values trigger earlier and more aggressively.")
     private int triggerEntityCount = 5000;
+    @art.arcane.react.util.config.ConfigDoc(value = "Maximum items scanned allowed per world in item backpressure.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
     private int maxItemsScannedPerWorld = 220;
+    @art.arcane.react.util.config.ConfigDoc(value = "Maximum items removed allowed per cycle in item backpressure.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
     private int maxItemsRemovedPerCycle = 90;
+    @art.arcane.react.util.config.ConfigDoc(value = "Minimum item age ticks required by item backpressure.", impact = "Higher values require stronger signals before action; lower values make this condition easier to satisfy.")
     private int minimumItemAgeTicks = 200;
+    @art.arcane.react.util.config.ConfigDoc(value = "No player radius used by item backpressure (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
     private double noPlayerRadius = 40;
+    @art.arcane.react.util.config.ConfigDoc(value = "Protects named items from item backpressure enforcement.", impact = "Enable this to keep matching targets safe; disable it to make them eligible for handling.")
     private boolean protectNamedItems = true;
+    @art.arcane.react.util.config.ConfigDoc(value = "Protects valuables from item backpressure enforcement.", impact = "Enable this to keep matching targets safe; disable it to make them eligible for handling.")
     private boolean protectValuables = true;
     private Set<Material> valuables = Set.of(
             Material.NETHERITE_INGOT,

@@ -25,6 +25,7 @@ import art.arcane.react.api.action.ReactAction;
 import lombok.Builder;
 import lombok.Data;
 
+@art.arcane.react.util.config.ConfigDescription("Configuration for Unknown action. This action performs targeted remediation when React decides intervention is needed.")
 public class ActionUnknown extends ReactAction<ActionUnknown.Params> {
     public static final String ID = "unknown";
 
@@ -45,6 +46,11 @@ public class ActionUnknown extends ReactAction<ActionUnknown.Params> {
     @Override
     public void onInit() {
 
+    }
+
+    @Override
+    public boolean autoRegister() {
+        return false;
     }
 
     @Builder

@@ -46,12 +46,15 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
+@art.arcane.react.util.config.ConfigDescription("Configuration for Entity Trimmer feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureEntityTrimmer extends ReactFeature implements Listener {
     public static final String ID = "entity-trimmer";
     private transient double maxPriority = -1;
     private transient int cooldown = 0;
     private transient boolean trimQueued = false;
+    @art.arcane.react.util.config.ConfigDoc(value = "Skips skip custom mobs when entity trimmer evaluates targets.", impact = "Enable this to exclude matching cases; disable it to include them in enforcement.")
     private boolean skipCustomMobs = false;
+    @art.arcane.react.util.config.ConfigDoc(value = "Player mob block radius used by entity trimmer (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
     private int playerMobBlockDistance = 32;
 
     /**
@@ -70,41 +73,49 @@ public class FeatureEntityTrimmer extends ReactFeature implements Listener {
     /**
      * Calculates total chunks * softMax to see if we are exceeding
      */
+    @art.arcane.react.util.config.ConfigDoc(value = "Enables extra logging for print entity purge success in entity trimmer.", impact = "Enable for diagnostics; disable to reduce chat or log noise.")
     private boolean printEntityPurgeSuccess = true;
 
     /**
      * Calculates total chunks * softMax to see if we are exceeding
      */
+    @art.arcane.react.util.config.ConfigDoc(value = "Maximum entities allowed per chunk in entity trimmer.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
     private int softMaxEntitiesPerChunk = 11;
 
     /**
      * Calculates players * softMax to see if we are exceeding
      */
+    @art.arcane.react.util.config.ConfigDoc(value = "Maximum entities allowed per player in entity trimmer.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
     private int softMaxEntitiesPerPlayer = 100;
 
     /**
      * Calculates worlds * softMax to see if we are exceeding
      */
+    @art.arcane.react.util.config.ConfigDoc(value = "Maximum entities allowed per world in entity trimmer.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
     private int softMaxEntitiesPerWorld = 1000;
 
     /**
      * Use the lowest X percent of entities by priority. Anything higher than the cutoff wont be touched
      */
+    @art.arcane.react.util.config.ConfigDoc(value = "Priority value used when entity trimmer orders targets.", impact = "Higher values move entries earlier in processing; lower values push them later.")
     private double priorityPercentCutoff = 0.1;
 
     /**
      * How often to tick in ms
      */
+    @art.arcane.react.util.config.ConfigDoc(value = "Main evaluation interval for entity trimmer in milliseconds.", impact = "Lower values react faster but consume more CPU; higher values reduce overhead but react later.")
     private int tickIntervalMS = 1000;
 
     /**
      * Will only run if it can take away X percent of entities. Wont take more per tick either
      */
+    @art.arcane.react.util.config.ConfigDoc(value = "Trigger threshold for opporunity in entity trimmer.", impact = "Higher values trigger mitigation later; lower values trigger earlier and more aggressively.")
     private double opporunityThreshold = 0.25;
 
     /**
      * The minimum amount of entities to kill per cycle. Lower than this it wont run
      */
+    @art.arcane.react.util.config.ConfigDoc(value = "Minimum kill batch size required by entity trimmer.", impact = "Higher values require stronger signals before action; lower values make this condition easier to satisfy.")
     private int minKillBatchSize = 100;
 
     public FeatureEntityTrimmer() {
@@ -319,7 +330,9 @@ public class FeatureEntityTrimmer extends ReactFeature implements Listener {
     }
 
     private static final class PlayerSnapshot {
+        @art.arcane.react.util.config.ConfigDoc(value = "Runtime reference field for player used by entity trimmer.", impact = "This value is typically populated from live game objects and not intended for manual editing.")
         private final Player player;
+        @art.arcane.react.util.config.ConfigDoc(value = "Runtime reference field for location used by entity trimmer.", impact = "This value is typically populated from live game objects and not intended for manual editing.")
         private final Location location;
 
         private PlayerSnapshot(Player player, Location location) {
@@ -329,7 +342,9 @@ public class FeatureEntityTrimmer extends ReactFeature implements Listener {
     }
 
     private static final class EntityCandidate {
+        @art.arcane.react.util.config.ConfigDoc(value = "Runtime reference field for entity used by entity trimmer.", impact = "This value is typically populated from live game objects and not intended for manual editing.")
         private final Entity entity;
+        @art.arcane.react.util.config.ConfigDoc(value = "Priority value used when entity trimmer orders targets.", impact = "Higher values move entries earlier in processing; lower values push them later.")
         private final double priority;
 
         private EntityCandidate(Entity entity, double priority) {
@@ -343,8 +358,11 @@ public class FeatureEntityTrimmer extends ReactFeature implements Listener {
     }
 
     private static final class ChunkKey {
+        @art.arcane.react.util.config.ConfigDoc(value = "World identifier used by entity trimmer internal tracking.", impact = "This is runtime identity data and should normally be left to automatic updates.")
         private final UUID world;
+        @art.arcane.react.util.config.ConfigDoc(value = "X-axis coordinate used by entity trimmer internal tracking.", impact = "This is internal state data and should not normally be changed manually.")
         private final int x;
+        @art.arcane.react.util.config.ConfigDoc(value = "Z-axis coordinate used by entity trimmer internal tracking.", impact = "This is internal state data and should not normally be changed manually.")
         private final int z;
 
         private ChunkKey(UUID world, int x, int z) {

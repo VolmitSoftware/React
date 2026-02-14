@@ -47,13 +47,16 @@ import org.bukkit.entity.Warden;
 import org.bukkit.entity.Wither;
 
 import java.util.ArrayList;
+import java.util.ArrayDeque;
 import java.util.Comparator;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
+@art.arcane.react.util.config.ConfigDescription("Configuration for Quarantine Hot Chunks action. This action performs targeted remediation when React decides intervention is needed.")
 public class ActionQuarantineHotChunks extends ReactAction<ActionQuarantineHotChunks.Params> {
     public static final String ID = "action-quarantine-hot-chunks";
     public static final String SHORT = "aqhc";
@@ -87,7 +90,10 @@ public class ActionQuarantineHotChunks extends ReactAction<ActionQuarantineHotCh
         int worked = 0;
 
         while (worked < budget && !params.getQueue().isEmpty()) {
-            ChunkRef target = params.getQueue().remove(0);
+            ChunkRef target = params.getQueue().pollFirst();
+            if (target == null) {
+                break;
+            }
             QuarantineResult result = J.sResult(() -> quarantine(target, params));
             if (result != null) {
                 params.setEntitiesCulled(params.getEntitiesCulled() + result.entitiesCulled());
@@ -119,7 +125,7 @@ public class ActionQuarantineHotChunks extends ReactAction<ActionQuarantineHotCh
 
     private void prepare(Params params) {
         params.setPrepared(true);
-        params.setQueue(new ArrayList<>());
+        params.setQueue(new ArrayDeque<>());
 
         ObserverController observer = React.controller(ObserverController.class);
         if (observer == null || observer.getSampled() == null) {
@@ -270,31 +276,42 @@ public class ActionQuarantineHotChunks extends ReactAction<ActionQuarantineHotCh
     @AllArgsConstructor
     @NoArgsConstructor
     public static class Params implements ActionParams {
+        @art.arcane.react.util.config.ConfigDoc(value = "World name filter for quarantine hot chunks operations.", impact = "Set a world name to scope actions there, or leave blank to include all worlds.")
         private String world;
         @Builder.Default
+        @art.arcane.react.util.config.ConfigDoc(value = "Maximum chunks allowed by quarantine hot chunks.", impact = "Higher values allow more throughput before intervention; lower values make mitigation more aggressive.")
         private int maxChunks = 24;
         @Builder.Default
+        @art.arcane.react.util.config.ConfigDoc(value = "Minimum chunk score required by quarantine hot chunks.", impact = "Higher values require stronger signals before action; lower values make this condition easier to satisfy.")
         private double minimumChunkScore = 90D;
         @Builder.Default
+        @art.arcane.react.util.config.ConfigDoc(value = "Unsafe player radius used by quarantine hot chunks (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
         private double unsafePlayerRadius = 56D;
         @Builder.Default
+        @art.arcane.react.util.config.ConfigDoc(value = "Controls whether quarantine hot chunks applies unload chunk.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
         private boolean unloadChunk = true;
         @Builder.Default
+        @art.arcane.react.util.config.ConfigDoc(value = "Controls whether quarantine hot chunks applies cull entities.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
         private boolean cullEntities = true;
         @Builder.Default
+        @art.arcane.react.util.config.ConfigDoc(value = "Includes neighbor ring in quarantine hot chunks processing.", impact = "Enable this to add those targets to processing; disable it to leave them out.")
         private boolean includeNeighborRing = true;
         @Builder.Default
+        @art.arcane.react.util.config.ConfigDoc(value = "Minimum entity age ticks required by quarantine hot chunks.", impact = "Higher values require stronger signals before action; lower values make this condition easier to satisfy.")
         private int minEntityAgeTicks = 200;
         @Builder.Default
+        @art.arcane.react.util.config.ConfigDoc(value = "Protects named from quarantine hot chunks enforcement.", impact = "Enable this to keep matching targets safe; disable it to make them eligible for handling.")
         private boolean protectNamed = true;
         @Builder.Default
+        @art.arcane.react.util.config.ConfigDoc(value = "Protects tamed from quarantine hot chunks enforcement.", impact = "Enable this to keep matching targets safe; disable it to make them eligible for handling.")
         private boolean protectTamed = true;
         @Builder.Default
+        @art.arcane.react.util.config.ConfigDoc(value = "Protects bosses from quarantine hot chunks enforcement.", impact = "Enable this to keep matching targets safe; disable it to make them eligible for handling.")
         private boolean protectBosses = true;
         @Builder.Default
         private transient boolean prepared = false;
         @Builder.Default
-        private transient List<ChunkRef> queue = new ArrayList<>();
+        private transient Deque<ChunkRef> queue = new ArrayDeque<>();
         @Builder.Default
         private transient int chunksQuarantined = 0;
         @Builder.Default

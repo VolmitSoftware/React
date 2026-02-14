@@ -29,7 +29,12 @@ import java.util.List;
 public class ActionParser implements SelectionParser<Action<?>> {
     @Override
     public List<Action<?>> getSelectionOptions() {
-        return React.controller(ActionController.class).getActions().all().stream().toList();
+        return React.controller(ActionController.class)
+                .getActions()
+                .all()
+                .stream()
+                .filter(Action::isEnabled)
+                .toList();
     }
 
     @Override

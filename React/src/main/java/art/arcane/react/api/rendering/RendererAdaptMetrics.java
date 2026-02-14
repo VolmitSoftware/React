@@ -19,6 +19,7 @@
 
 package art.arcane.react.api.rendering;
 
+import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.util.data.TinyColor;
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
 
@@ -26,12 +27,6 @@ import java.util.List;
 
 public class RendererAdaptMetrics extends RendererIntegrationMetricsBase {
     public static final String ID = "adapt-metrics";
-
-    private static final List<MetricLine> METRICS = List.of(
-            new MetricLine(IntegrationMetricSchema.ADAPT_SESSION_LOAD, "Session", 1, " %"),
-            new MetricLine(IntegrationMetricSchema.ADAPT_ABILITY_OPS, "Ability", 0, " op/m"),
-            new MetricLine(IntegrationMetricSchema.ADAPT_WORLD_POLICY_LATENCY, "Policy", 2, " ms")
-    );
 
     @Override
     public String getId() {
@@ -60,6 +55,10 @@ public class RendererAdaptMetrics extends RendererIntegrationMetricsBase {
 
     @Override
     protected List<MetricLine> metricLines() {
-        return METRICS;
+        return List.of(
+                new MetricLine(IntegrationMetricSchema.ADAPT_SESSION_LOAD, "Session", 1, " %"),
+                new MetricLine(ReactConfiguration.adaptAbilityOpsMetricKey(), "Ability (" + ReactConfiguration.adaptAbilityOpsMetricLabel() + ")", 0, " op/m"),
+                new MetricLine(IntegrationMetricSchema.ADAPT_WORLD_POLICY_LATENCY, "Policy", 2, " ms")
+        );
     }
 }

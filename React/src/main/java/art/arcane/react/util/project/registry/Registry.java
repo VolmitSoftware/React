@@ -33,8 +33,8 @@ public class Registry<T extends Registered> {
     private Map<Class<?>, T> classRegistry;
 
     public Registry(Class<?> type, String packageName) {
-        idRegistry = new HashMap<>();
-        classRegistry = new HashMap<>();
+        idRegistry = new LinkedHashMap<>();
+        classRegistry = new LinkedHashMap<>();
         React.instance.getStartupTasks().add(() -> {
             React.verbose("Registering " + type.getSimpleName() + "s" + " in " + packageName);
             String p = React.instance.jar().getAbsolutePath();
@@ -43,26 +43,9 @@ public class Registry<T extends Registered> {
             try {
                 j.scan();
                 j.getClasses().stream()
-                        .filter(i -> i.isAssignableFrom(type) || type.isAssignableFrom(i))
-                        .filter(i -> !i.isInterface() && !Modifier.isAbstract(i.getModifiers()))
-                        .filter(Registry::hasNoArgConstructor)
-                        .map((i) -> {
-                            try {
-                                return (T) i.getConstructor().newInstance();
-                            } catch (Throwable e) {
-                                e.printStackTrace();
-                            }
-
-                            return null;
-                        })
-                        .forEach((i) -> {
-                            if (i != null && i.autoRegister()) {
-                                i.loadConfiguration();
-                                idRegistry.put(i.getId(), i);
-                                classRegistry.put(i.getClass(), i);
-                                React.verbose("Register " + i.getConfigCategory() + " " + i.getId() + " (" + i.getClass().getSimpleName() + ")");
-                            }
-                        });
+                        .filter(type::isAssignableFrom)
+                        .sorted(Comparator.comparing(Class::getName))
+                        .forEach(candidate -> registerCandidate(type, candidate));
 
                 this.idRegistry = Collections.unmodifiableMap(idRegistry);
                 this.classRegistry = Collections.unmodifiableMap(classRegistry);
@@ -70,6 +53,44 @@ public class Registry<T extends Registered> {
                 throw new RuntimeException(e);
             }
         });
+    }
+
+    private void registerCandidate(Class<?> type, Class<?> candidate) {
+        if (candidate.isInterface() || Modifier.isAbstract(candidate.getModifiers())) {
+            return;
+        }
+
+        if (!hasNoArgConstructor(candidate)) {
+            React.warn("Skipped " + type.getSimpleName() + " " + candidate.getName() + " because it has no public no-arg constructor.");
+            return;
+        }
+
+        T instance;
+        try {
+            instance = (T) candidate.getConstructor().newInstance();
+        } catch (Throwable e) {
+            React.warn("Failed to instantiate " + type.getSimpleName() + " " + candidate.getName() + ": " + e.getMessage());
+            return;
+        }
+
+        if (instance == null) {
+            return;
+        }
+
+        if (!instance.autoRegister()) {
+            React.verbose("Skipped " + instance.getConfigCategory() + " " + instance.getId() + " (" + candidate.getSimpleName() + ") due to autoRegister=false");
+            return;
+        }
+
+        instance.loadConfiguration();
+        if (idRegistry.containsKey(instance.getId())) {
+            React.warn("Duplicate " + type.getSimpleName() + " id " + instance.getId() + " found in " + candidate.getName() + ". Keeping the first registration.");
+            return;
+        }
+
+        idRegistry.put(instance.getId(), instance);
+        classRegistry.put(instance.getClass(), instance);
+        React.verbose("Register " + instance.getConfigCategory() + " " + instance.getId() + " (" + candidate.getSimpleName() + ")");
     }
 
     private static boolean hasNoArgConstructor(Class<?> clazz) {

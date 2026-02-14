@@ -19,6 +19,7 @@
 
 package art.arcane.react.api.feature;
 
+import art.arcane.react.util.config.ConfigDoc;
 import art.arcane.volmlib.util.format.Form;
 import lombok.Getter;
 import lombok.Setter;
@@ -28,6 +29,10 @@ import lombok.Setter;
 public abstract class ReactFeature implements Feature {
     private transient final String id;
     private transient final String name;
+    @ConfigDoc(
+            value = "Enables or disables this feature.",
+            impact = "Set to false to stop this feature from activating while keeping its config file."
+    )
     private boolean enabled = true;
 
     public ReactFeature(String id) {

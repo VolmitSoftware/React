@@ -31,16 +31,26 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+@art.arcane.react.util.config.ConfigDescription("Configuration for Tick Spike Origin Replay Map feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureTickSpikeOriginReplayMap extends FeatureChunkHeatmapBase {
     public static final String ID = "tick-spike-origin-replay-map";
+    @art.arcane.react.util.config.ConfigDoc(value = "Main evaluation interval for tick spike origin replay map in milliseconds.", impact = "Lower values react faster but consume more CPU; higher values reduce overhead but react later.")
     private int tickIntervalMS = 250;
+    @art.arcane.react.util.config.ConfigDoc(value = "Trigger threshold for spike in tick spike origin replay map.", impact = "Higher values trigger mitigation later; lower values trigger earlier and more aggressively.")
     private double spikeThresholdMS = 50;
+    @art.arcane.react.util.config.ConfigDoc(value = "Cooldown for spike capture cooldown in tick spike origin replay map (milliseconds).", impact = "Higher values reduce repeat frequency; lower values allow reactions more often.")
     private int spikeCaptureCooldownMS = 350;
+    @art.arcane.react.util.config.ConfigDoc(value = "Capture chunks radius used by tick spike origin replay map (chunks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
     private int captureRadiusChunks = 3;
+    @art.arcane.react.util.config.ConfigDoc(value = "Maximum tracked chunks allowed by tick spike origin replay map.", impact = "Higher values allow more throughput before intervention; lower values make mitigation more aggressive.")
     private int maxTrackedChunks = 4096;
+    @art.arcane.react.util.config.ConfigDoc(value = "Stale chunk duration used by tick spike origin replay map (milliseconds).", impact = "Higher values keep state active longer; lower values expire or apply changes sooner.")
     private int staleChunkMS = 120000;
+    @art.arcane.react.util.config.ConfigDoc(value = "Cadence for decay every updates in tick spike origin replay map (milliseconds).", impact = "Lower values update more frequently; higher values update less often with lower overhead.")
     private int decayEveryMS = 500;
+    @art.arcane.react.util.config.ConfigDoc(value = "Scaling factor applied to decay factor in tick spike origin replay map.", impact = "Higher values amplify this influence; lower values reduce its contribution.")
     private double decayFactor = 0.90;
+    @art.arcane.react.util.config.ConfigDoc(value = "Minimum heat required by tick spike origin replay map.", impact = "Higher values require stronger signals before action; lower values make this condition easier to satisfy.")
     private double minimumHeat = 0.15;
     private transient Map<ChunkKey, HeatCell> replayHeat = new ConcurrentHashMap<>();
     private transient volatile long lastCaptureMS;
@@ -174,13 +184,18 @@ public class FeatureTickSpikeOriginReplayMap extends FeatureChunkHeatmapBase {
     }
 
     private static final class HeatCell {
+        @art.arcane.react.util.config.ConfigDoc(value = "Accumulated heat score tracked by tick spike origin replay map for hotspot replay.", impact = "Higher values mark stronger spike contribution and decay over time as configured.")
         private double heat = 0D;
+        @art.arcane.react.util.config.ConfigDoc(value = "Internal timestamp used by tick spike origin replay map to track timing windows and decay.", impact = "Primarily runtime state; changing this manually can distort cooldown or throttling behavior.")
         private long lastSeenMS = 0L;
     }
 
     private static final class ChunkKey {
+        @art.arcane.react.util.config.ConfigDoc(value = "World identifier used by tick spike origin replay map internal tracking.", impact = "This is runtime identity data and should normally be left to automatic updates.")
         private final UUID world;
+        @art.arcane.react.util.config.ConfigDoc(value = "X-axis coordinate used by tick spike origin replay map internal tracking.", impact = "This is internal state data and should not normally be changed manually.")
         private final int x;
+        @art.arcane.react.util.config.ConfigDoc(value = "Z-axis coordinate used by tick spike origin replay map internal tracking.", impact = "This is internal state data and should not normally be changed manually.")
         private final int z;
 
         private ChunkKey(UUID world, int x, int z) {

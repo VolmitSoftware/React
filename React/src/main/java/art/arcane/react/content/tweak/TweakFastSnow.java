@@ -28,6 +28,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockFadeEvent;
 import org.bukkit.event.block.BlockFormEvent;
 
+@art.arcane.react.util.config.ConfigDescription("Configuration for Fast Snow tweak. Short-circuits snow form and melt updates into fast world operations to reduce weather-block churn.")
 public class TweakFastSnow extends ReactTweak implements Listener {
     public static final String ID = "fast-snow";
 

@@ -28,6 +28,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 
+@art.arcane.react.util.config.ConfigDescription("Configuration for Hopper Limit tweak. Cancels hopper transfers when hopper tick-time pressure exceeds the configured threshold.")
 public class TweakHopperLimit extends ReactTweak implements Listener {
     public static final String ID = "hopper-limit";
     private static final BlockFace[] directions = new BlockFace[]{
@@ -36,6 +37,7 @@ public class TweakHopperLimit extends ReactTweak implements Listener {
             BlockFace.SOUTH,
             BlockFace.WEST
     };
+    @art.arcane.react.util.config.ConfigDoc(value = "Maximum hopper tick time allowed by hopper limit.", impact = "Higher values allow more throughput before intervention; lower values make mitigation more aggressive.")
     private double maxHopperTickTime = 0.75;
 
     public TweakHopperLimit() {

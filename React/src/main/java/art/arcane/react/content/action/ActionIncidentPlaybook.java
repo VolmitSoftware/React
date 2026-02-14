@@ -34,6 +34,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
+@art.arcane.react.util.config.ConfigDescription("Configuration for Incident Playbook action. This action performs targeted remediation when React decides intervention is needed.")
 public class ActionIncidentPlaybook extends ReactAction<ActionIncidentPlaybook.Params> {
     public static final String ID = "action-incident-playbook";
     public static final String SHORT = "aip";
@@ -193,10 +194,13 @@ public class ActionIncidentPlaybook extends ReactAction<ActionIncidentPlaybook.P
     @AllArgsConstructor
     @NoArgsConstructor
     public static class Params implements ActionParams {
+        @art.arcane.react.util.config.ConfigDoc(value = "World name filter for incident playbook operations.", impact = "Set a world name to scope actions there, or leave blank to include all worlds.")
         private String world;
         @Builder.Default
+        @art.arcane.react.util.config.ConfigDoc(value = "Includes garbage collection in incident playbook processing.", impact = "Enable this to add those targets to processing; disable it to leave them out.")
         private boolean includeGarbageCollection = true;
         @Builder.Default
+        @art.arcane.react.util.config.ConfigDoc(value = "Override tier used by incident playbook when selecting mitigation intensity.", impact = "Higher tiers generally choose more aggressive responses; lower tiers keep interventions lighter.")
         private int tierOverride = -1;
         @Builder.Default
         private transient boolean prepared = false;

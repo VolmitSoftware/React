@@ -1,12 +1,16 @@
 package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
+import art.arcane.react.api.feature.CapabilityGatedFeature;
 import art.arcane.react.core.controller.IntegrationController;
 import art.arcane.react.util.data.TinyColor;
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
 import org.bukkit.Chunk;
 
-public class FeatureIrisGenerationPressureOverlay extends FeatureChunkHeatmapBase {
+import java.util.Set;
+
+@art.arcane.react.util.config.ConfigDescription("Configuration for Iris Generation Pressure Overlay feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
+public class FeatureIrisGenerationPressureOverlay extends FeatureChunkHeatmapBase implements CapabilityGatedFeature {
     public static final String ID = "iris-generation-pressure-overlay";
 
     public FeatureIrisGenerationPressureOverlay() {
@@ -37,6 +41,11 @@ public class FeatureIrisGenerationPressureOverlay extends FeatureChunkHeatmapBas
     @Override
     protected TinyColor colorFor(double normalized, double rawScore) {
         return gradient(normalized, new TinyColor(40, 110, 80), new TinyColor(255, 180, 60));
+    }
+
+    @Override
+    public Set<String> requiredCapabilities() {
+        return Set.of("iris");
     }
 
     private double metricOr(String key, double fallback) {

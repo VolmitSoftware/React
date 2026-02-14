@@ -27,6 +27,7 @@ import art.arcane.react.content.sampler.*;
 import art.arcane.react.util.config.ConfigDescription;
 import art.arcane.react.util.config.ConfigDoc;
 import art.arcane.react.util.config.ConfigFileSupport;
+import art.arcane.volmlib.integration.IntegrationMetricSchema;
 import lombok.Data;
 import lombok.Getter;
 import org.bukkit.Material;
@@ -59,6 +60,12 @@ public class ReactConfiguration {
 
     @ConfigDoc(value = "Enables plugin-gated secret integration features.", impact = "Disabled by default. Enable to allow Iris/Adapt secret bundles when dependencies are present.")
     private boolean integrationSecretsEnabled = false;
+
+    @ConfigDoc(
+            value = "Selects which Adapt ability ops metric React uses for displays and thresholds. Options: SUCCESSFUL_CHECKS, ALL_CHECKS.",
+            impact = "SUCCESSFUL_CHECKS tracks only allowed checks. ALL_CHECKS includes denied checks too and will usually read higher."
+    )
+    private AdaptAbilityOpsMetricMode adaptAbilityOpsMetricMode = AdaptAbilityOpsMetricMode.SUCCESSFUL_CHECKS;
 
     @ConfigDoc(value = "Default monitor layout shown to players.", impact = "Changes affect the baseline monitoring dashboard composition and sampler grouping.")
     private Monitoring monitoring = new Monitoring();
@@ -102,6 +109,35 @@ public class ReactConfiguration {
                 "main-config",
                 "Created missing config [config.toml] from defaults."
         );
+    }
+
+    public static String adaptAbilityOpsMetricKey() {
+        return get().getAdaptAbilityOpsMetricMode().metricKey();
+    }
+
+    public static String adaptAbilityOpsMetricLabel() {
+        return get().getAdaptAbilityOpsMetricMode().displayLabel();
+    }
+
+    public enum AdaptAbilityOpsMetricMode {
+        SUCCESSFUL_CHECKS(IntegrationMetricSchema.ADAPT_ABILITY_OPS, "successful"),
+        ALL_CHECKS(IntegrationMetricSchema.ADAPT_ABILITY_CHECK_OPS, "all");
+
+        private final String metricKey;
+        private final String displayLabel;
+
+        AdaptAbilityOpsMetricMode(String metricKey, String displayLabel) {
+            this.metricKey = metricKey;
+            this.displayLabel = displayLabel;
+        }
+
+        public String metricKey() {
+            return metricKey;
+        }
+
+        public String displayLabel() {
+            return displayLabel;
+        }
     }
 
     @Getter

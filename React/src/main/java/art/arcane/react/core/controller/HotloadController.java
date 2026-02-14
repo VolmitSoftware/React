@@ -312,7 +312,11 @@ public class HotloadController extends TickedObject implements IController {
         }
 
         return runSync(() -> {
+            boolean wasEnabled = action.isEnabled();
             action.loadConfiguration();
+            if (!wasEnabled && action.isEnabled()) {
+                action.onInit();
+            }
             return true;
         });
     }

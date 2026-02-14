@@ -19,7 +19,6 @@
 
 package art.arcane.react.core.controller;
 
-import art.arcane.curse.Curse;
 import art.arcane.react.React;
 import art.arcane.react.api.action.Action;
 import art.arcane.react.api.action.ActionParams;
@@ -32,13 +31,16 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.bukkit.event.Listener;
 
-import java.util.ArrayList;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.Iterator;
 import java.util.List;
+import java.util.ArrayList;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class ActionController extends TickedObject implements IController {
-    private transient final List<ActionTicket<?>> ticketQueue = new ArrayList<>();
+    private transient final Deque<ActionTicket<?>> ticketQueue = new ArrayDeque<>();
     private transient final List<ActionTicket<?>> ticketRuntime = new ArrayList<>();
     private transient Registry<Action<?>> actions;
     private int actionSpeedMultiplier;
@@ -53,8 +55,17 @@ public class ActionController extends TickedObject implements IController {
     }
 
     public void queueAction(ActionTicket<?> ticket) {
+        if (ticket == null || ticket.getAction() == null) {
+            return;
+        }
+
+        if (!ticket.getAction().isEnabled()) {
+            React.verbose("Ignored queue request for disabled action: " + ticket.getAction().getId());
+            return;
+        }
+
         synchronized (ticketQueue) {
-            ticketQueue.add(ticket);
+            ticketQueue.addLast(ticket);
         }
     }
 
@@ -69,13 +80,22 @@ public class ActionController extends TickedObject implements IController {
     }
 
     public void postStart() {
-        actions.all().forEach(Action::onInit);
-        actions.all().forEach(((a) -> {
-            if (a instanceof Listener l) {
+        int enabledActions = 0;
+        for (Action<?> action : actions.all()) {
+            if (!action.isEnabled()) {
+                React.verbose("Action disabled by config: " + action.getId());
+                continue;
+            }
+
+            action.onInit();
+            if (action instanceof Listener l) {
                 React.instance.registerListener(l);
             }
-        }));
-        React.info("Registered " + actions.size() + " Actions");
+
+            enabledActions++;
+        }
+
+        React.info("Registered " + actions.size() + " Actions (" + enabledActions + " enabled)");
     }
 
     @Override
@@ -89,29 +109,51 @@ public class ActionController extends TickedObject implements IController {
 
     @Override
     public void onTick() {
+        ActionTicket<?> next = null;
         synchronized (ticketQueue) {
-            if (!ticketQueue.isEmpty() && ticketRuntime.size() < Math.max(3, Runtime.getRuntime().availableProcessors() / 4)) {
-                ActionTicket<?> t = ticketQueue.remove(0);
-                t.start();
-                ticketRuntime.add(t);
-                React.info("Action " + t.getAction().getId() + " started");
+            if (!ticketQueue.isEmpty() && ticketRuntime.size() < maxRuntimeActions()) {
+                next = ticketQueue.pollFirst();
+            }
+        }
+
+        if (next != null) {
+            if (!next.getAction().isEnabled()) {
+                React.verbose("Skipping queued action because it is now disabled: " + next.getAction().getId());
+            } else {
+                next.start();
+                synchronized (ticketRuntime) {
+                    ticketRuntime.add(next);
+                }
+                React.info("Action " + next.getAction().getId() + " started");
             }
         }
 
         synchronized (ticketRuntime) {
-            if (!ticketRuntime.isEmpty()) {
-                for (ActionTicket<?> i : new ArrayList<>(ticketRuntime)) {
-                    Curse.on(i.getAction()).method("workOn", ActionTicket.class).invoke(i);
-                }
+            if (ticketRuntime.isEmpty()) {
+                return;
+            }
 
-                for (ActionTicket<?> i : new ArrayList<>(ticketRuntime)) {
-                    if (i.isDone()) {
-                        long runtime = System.currentTimeMillis() - i.getStartedAt();
-                        ticketRuntime.remove(i);
-                        React.success("Action " + i.getAction().getId() + " completed in " + Form.duration(runtime, 1));
-                    }
+            Iterator<ActionTicket<?>> iterator = ticketRuntime.iterator();
+            while (iterator.hasNext()) {
+                ActionTicket<?> ticket = iterator.next();
+                invoke(ticket);
+
+                if (ticket.isDone()) {
+                    long runtime = System.currentTimeMillis() - ticket.getStartedAt();
+                    iterator.remove();
+                    React.success("Action " + ticket.getAction().getId() + " completed in " + Form.duration(runtime, 1));
                 }
             }
         }
+    }
+
+    private int maxRuntimeActions() {
+        return Math.max(3, Runtime.getRuntime().availableProcessors() / 4);
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private void invoke(ActionTicket<?> ticket) {
+        Action action = ticket.getAction();
+        action.workOn((ActionTicket) ticket);
     }
 }

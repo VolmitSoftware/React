@@ -40,23 +40,40 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 
+@art.arcane.react.util.config.ConfigDescription("Configuration for Chunk Quarantine feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureChunkQuarantine extends ReactFeature implements Listener {
     public static final String ID = "chunk-quarantine";
+    @art.arcane.react.util.config.ConfigDoc(value = "Main evaluation interval for chunk quarantine in milliseconds.", impact = "Lower values react faster but consume more CPU; higher values reduce overhead but react later.")
     private int tickIntervalMS = 2500;
+    @art.arcane.react.util.config.ConfigDoc(value = "Rolling enforcement window length used by chunk quarantine (milliseconds).", impact = "Longer windows smooth bursts but react slower; shorter windows react faster but are more sensitive.")
     private int windowMS = 1600;
+    @art.arcane.react.util.config.ConfigDoc(value = "How long a chunk remains quarantined after crossing thresholds in chunk quarantine (milliseconds).", impact = "Higher values keep hot chunks constrained longer; lower values release them sooner.")
     private int quarantineMS = 12000;
+    @art.arcane.react.util.config.ConfigDoc(value = "Trigger threshold for score trigger in chunk quarantine.", impact = "Higher values trigger mitigation later; lower values trigger earlier and more aggressively.")
     private double scoreTrigger = 145;
+    @art.arcane.react.util.config.ConfigDoc(value = "Maximum tracked chunks allowed by chunk quarantine.", impact = "Higher values allow more throughput before intervention; lower values make mitigation more aggressive.")
     private int maxTrackedChunks = 4096;
+    @art.arcane.react.util.config.ConfigDoc(value = "Controls whether chunk quarantine applies only during pressure.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
     private boolean onlyDuringPressure = true;
+    @art.arcane.react.util.config.ConfigDoc(value = "Trigger threshold for pressure incident score in chunk quarantine.", impact = "Higher values trigger mitigation later; lower values trigger earlier and more aggressively.")
     private double pressureIncidentScore = 48;
+    @art.arcane.react.util.config.ConfigDoc(value = "Tick-time threshold for pressure in chunk quarantine (milliseconds).", impact = "Higher values delay activation or exit; lower values make this threshold easier to cross.")
     private double pressureTickMS = 58;
+    @art.arcane.react.util.config.ConfigDoc(value = "Bypasses chunk quarantine handling for bypass near players.", impact = "Enable this to skip enforcement in matching situations; disable it for strict handling.")
     private boolean bypassNearPlayers = true;
+    @art.arcane.react.util.config.ConfigDoc(value = "Bypass player radius used by chunk quarantine (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
     private double bypassPlayerRadius = 18;
+    @art.arcane.react.util.config.ConfigDoc(value = "Controls whether chunk quarantine applies track natural spawns.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
     private boolean trackNaturalSpawns = true;
+    @art.arcane.react.util.config.ConfigDoc(value = "Controls whether chunk quarantine applies track spawner spawns.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
     private boolean trackSpawnerSpawns = true;
+    @art.arcane.react.util.config.ConfigDoc(value = "Controls whether chunk quarantine applies track redstone.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
     private boolean trackRedstone = true;
+    @art.arcane.react.util.config.ConfigDoc(value = "Controls whether chunk quarantine applies track physics.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
     private boolean trackPhysics = true;
+    @art.arcane.react.util.config.ConfigDoc(value = "Sampling cadence used by chunk quarantine when counting expensive events.", impact = "Lower values sample more frequently for accuracy; higher values reduce overhead with coarser sampling.")
     private int samplePhysicsEveryN = 3;
+    @art.arcane.react.util.config.ConfigDoc(value = "Controls whether chunk quarantine applies track hoppers.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
     private boolean trackHoppers = true;
     private transient Map<ChunkKey, ChunkState> states = new ConcurrentHashMap<>();
     private transient volatile boolean pressure;
@@ -245,9 +262,13 @@ public class FeatureChunkQuarantine extends ReactFeature implements Listener {
     }
 
     private static final class ChunkState {
+        @art.arcane.react.util.config.ConfigDoc(value = "Internal timestamp used by chunk quarantine to track timing windows and decay.", impact = "Primarily runtime state; changing this manually can distort cooldown or throttling behavior.")
         private long start;
+        @art.arcane.react.util.config.ConfigDoc(value = "Internal timestamp used by chunk quarantine to track timing windows and decay.", impact = "Primarily runtime state; changing this manually can distort cooldown or throttling behavior.")
         private long lastHit;
+        @art.arcane.react.util.config.ConfigDoc(value = "Internal timestamp used by chunk quarantine to track timing windows and decay.", impact = "Primarily runtime state; changing this manually can distort cooldown or throttling behavior.")
         private long quarantinedUntil;
+        @art.arcane.react.util.config.ConfigDoc(value = "Trigger threshold for score in chunk quarantine.", impact = "Higher values trigger mitigation later; lower values trigger earlier and more aggressively.")
         private double score;
 
         private ChunkState(long now) {
@@ -268,8 +289,11 @@ public class FeatureChunkQuarantine extends ReactFeature implements Listener {
     }
 
     private static final class ChunkKey {
+        @art.arcane.react.util.config.ConfigDoc(value = "World identifier used by chunk quarantine internal tracking.", impact = "This is runtime identity data and should normally be left to automatic updates.")
         private final UUID world;
+        @art.arcane.react.util.config.ConfigDoc(value = "X-axis coordinate used by chunk quarantine internal tracking.", impact = "This is internal state data and should not normally be changed manually.")
         private final int x;
+        @art.arcane.react.util.config.ConfigDoc(value = "Z-axis coordinate used by chunk quarantine internal tracking.", impact = "This is internal state data and should not normally be changed manually.")
         private final int z;
 
         private ChunkKey(UUID world, int x, int z) {

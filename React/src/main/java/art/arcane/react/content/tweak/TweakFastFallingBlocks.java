@@ -40,11 +40,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+@art.arcane.react.util.config.ConfigDescription("Configuration for Fast Falling Blocks tweak. Accelerates long-lived falling-block entities when fall processing starts causing measurable tick cost.")
 public class TweakFastFallingBlocks extends ReactTweak implements Listener {
     public static final String ID = "fast-falling-blocks";
     private transient List<Runnable> jobs;
     private transient Set<Block> queued;
     private transient int ticker;
+    @art.arcane.react.util.config.ConfigDoc(value = "Maximum fall ms allowed by fast falling blocks.", impact = "Higher values allow more throughput before intervention; lower values make mitigation more aggressive.")
     private double maxFallMS = 1.5;
 
     public TweakFastFallingBlocks() {

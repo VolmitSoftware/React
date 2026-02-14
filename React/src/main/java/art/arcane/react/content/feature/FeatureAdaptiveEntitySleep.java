@@ -41,18 +41,30 @@ import org.bukkit.event.entity.EntityTargetEvent;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
+@art.arcane.react.util.config.ConfigDescription("Configuration for Adaptive Entity Sleep feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureAdaptiveEntitySleep extends ReactFeature implements Listener {
     public static final String ID = "adaptive-entity-sleep";
+    @art.arcane.react.util.config.ConfigDoc(value = "Main evaluation interval for adaptive entity sleep in milliseconds.", impact = "Lower values react faster but consume more CPU; higher values reduce overhead but react later.")
     private int tickIntervalMS = 1000;
+    @art.arcane.react.util.config.ConfigDoc(value = "Maximum entities sampled allowed per cycle in adaptive entity sleep.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
     private int maxEntitiesSampledPerCycle = 320;
+    @art.arcane.react.util.config.ConfigDoc(value = "Minimum entity age ticks required by adaptive entity sleep.", impact = "Higher values require stronger signals before action; lower values make this condition easier to satisfy.")
     private int minimumEntityAgeTicks = 200;
+    @art.arcane.react.util.config.ConfigDoc(value = "Distance from players required before adaptive entity sleep puts entities into sleep mode (blocks).", impact = "Higher values sleep entities farther away; lower values keep more entities active near players.")
     private double sleepBeyondNearestPlayer = 48;
+    @art.arcane.react.util.config.ConfigDoc(value = "Skips named entities when adaptive entity sleep evaluates targets.", impact = "Enable this to exclude matching cases; disable it to include them in enforcement.")
     private boolean ignoreNamedEntities = true;
+    @art.arcane.react.util.config.ConfigDoc(value = "Skips tamed entities when adaptive entity sleep evaluates targets.", impact = "Enable this to exclude matching cases; disable it to include them in enforcement.")
     private boolean ignoreTamedEntities = true;
+    @art.arcane.react.util.config.ConfigDoc(value = "Skips persistent entities when adaptive entity sleep evaluates targets.", impact = "Enable this to exclude matching cases; disable it to include them in enforcement.")
     private boolean ignorePersistentEntities = true;
+    @art.arcane.react.util.config.ConfigDoc(value = "Skips villagers when adaptive entity sleep evaluates targets.", impact = "Enable this to exclude matching cases; disable it to include them in enforcement.")
     private boolean ignoreVillagers = true;
+    @art.arcane.react.util.config.ConfigDoc(value = "Skips bosses when adaptive entity sleep evaluates targets.", impact = "Enable this to exclude matching cases; disable it to include them in enforcement.")
     private boolean ignoreBosses = true;
+    @art.arcane.react.util.config.ConfigDoc(value = "Controls whether adaptive entity sleep applies wake on damage.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
     private boolean wakeOnDamage = true;
+    @art.arcane.react.util.config.ConfigDoc(value = "Controls whether adaptive entity sleep applies wake on target.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
     private boolean wakeOnTarget = true;
 
     public FeatureAdaptiveEntitySleep() {

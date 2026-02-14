@@ -40,11 +40,14 @@ import org.bukkit.World;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
+import java.util.ArrayDeque;
 import java.util.Comparator;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@art.arcane.react.util.config.ConfigDescription("Configuration for Prewarm Critical Chunks action. This action performs targeted remediation when React decides intervention is needed.")
 public class ActionPrewarmCriticalChunks extends ReactAction<ActionPrewarmCriticalChunks.Params> {
     public static final String ID = "action-prewarm-critical-chunks";
     public static final String SHORT = "apcc";
@@ -63,7 +66,8 @@ public class ActionPrewarmCriticalChunks extends ReactAction<ActionPrewarmCritic
     public void workOn(ActionTicket<Params> ticket) {
         Params params = ticket.getParams();
         if (!params.isPrepared()) {
-            params.setQueue(J.sResult(() -> buildQueueSync(params)));
+            List<ChunkRef> queue = J.sResult(() -> buildQueueSync(params));
+            params.setQueue(new ArrayDeque<>(queue == null ? List.of() : queue));
             params.setPrepared(true);
             ticket.setWork(0);
             ticket.setTotalWork(Math.max(1, params.getQueue().size()));
@@ -78,7 +82,10 @@ public class ActionPrewarmCriticalChunks extends ReactAction<ActionPrewarmCritic
         int chunkBudget = Math.max(1, React.controller(ActionController.class).getActionSpeedMultiplier() / 16);
         int worked = 0;
         while (worked < chunkBudget && !params.getQueue().isEmpty()) {
-            ChunkRef target = params.getQueue().remove(0);
+            ChunkRef target = params.getQueue().pollFirst();
+            if (target == null) {
+                break;
+            }
             PrewarmResult result = J.sResult(() -> prewarmSync(target, params));
             if (result != null && result.warmed()) {
                 params.setChunksWarmed(params.getChunksWarmed() + 1);
@@ -232,23 +239,30 @@ public class ActionPrewarmCriticalChunks extends ReactAction<ActionPrewarmCritic
     @AllArgsConstructor
     @NoArgsConstructor
     public static class Params implements ActionParams {
+        @art.arcane.react.util.config.ConfigDoc(value = "World name filter for prewarm critical chunks operations.", impact = "Set a world name to scope actions there, or leave blank to include all worlds.")
         private String world;
         @Builder.Default
+        @art.arcane.react.util.config.ConfigDoc(value = "Maximum chunks allowed by prewarm critical chunks.", impact = "Higher values allow more throughput before intervention; lower values make mitigation more aggressive.")
         private int maxChunks = 40;
         @Builder.Default
+        @art.arcane.react.util.config.ConfigDoc(value = "Neighbor radius used by prewarm critical chunks (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
         private int neighborRadius = 1;
         @Builder.Default
+        @art.arcane.react.util.config.ConfigDoc(value = "Includes player chunks in prewarm critical chunks processing.", impact = "Enable this to add those targets to processing; disable it to leave them out.")
         private boolean includePlayerChunks = true;
         @Builder.Default
+        @art.arcane.react.util.config.ConfigDoc(value = "Player chunk radius used by prewarm critical chunks (chunks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
         private int playerChunkRadius = 1;
         @Builder.Default
+        @art.arcane.react.util.config.ConfigDoc(value = "Controls whether prewarm critical chunks applies generate missing chunks.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
         private boolean generateMissingChunks = true;
         @Builder.Default
+        @art.arcane.react.util.config.ConfigDoc(value = "Controls whether prewarm critical chunks applies touch chunk snapshot.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
         private boolean touchChunkSnapshot = true;
         @Builder.Default
         private transient boolean prepared = false;
         @Builder.Default
-        private transient List<ChunkRef> queue = new ArrayList<>();
+        private transient Deque<ChunkRef> queue = new ArrayDeque<>();
         @Builder.Default
         private transient int chunksWarmed = 0;
         @Builder.Default

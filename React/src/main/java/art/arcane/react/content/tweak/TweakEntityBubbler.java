@@ -35,11 +35,13 @@ import org.bukkit.event.Listener;
 import java.util.Arrays;
 import java.util.List;
 
+@art.arcane.react.util.config.ConfigDescription("Configuration for Entity Bubbler tweak. Prevents selected projectile or utility entities from being suspended indefinitely in bubble columns.")
 public class TweakEntityBubbler extends ReactTweak implements Listener {
     public static final String ID = "entity-bubbler";
     /**
      * List of entity types to check for crowding
      */
+    @art.arcane.react.util.config.ConfigDoc(value = "Entity types that are removed when detected inside bubble-column or soul-sand bubble lift paths.", impact = "Add more types to aggressively clean bubble elevators, or remove types to allow those entities to travel in water columns.")
     private List<EntityType> entitiedToPreventFromBeingBubbled = Arrays.asList(
             EntityType.ARROW,
             EntityType.ARMOR_STAND,

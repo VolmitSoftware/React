@@ -52,7 +52,10 @@ import org.bukkit.persistence.PersistentDataType;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 @EqualsAndHashCode(callSuper = true)
@@ -85,24 +88,59 @@ public class MapController extends TickedObject implements IController, Listener
     }
 
     public ReactRenderer getRenderer(ItemStack item) {
-        if (isReactMap(item)) {
-            return renderers.getOrDefault(item.getItemMeta().getPersistentDataContainer().getOrDefault(nsRenderer, PersistentDataType.STRING, "unknown"), renderers.get(FeatureUnknown.ID));
+        if (renderers == null) {
+            return null;
         }
 
-        return renderers.get(FeatureUnknown.ID);
+        ReactRenderer unknown = renderers.get(FeatureUnknown.ID);
+        if (isReactMap(item)) {
+            MapMeta meta = (MapMeta) item.getItemMeta();
+            if (meta == null) {
+                return unknown;
+            }
+
+            String rendererId = meta.getPersistentDataContainer().getOrDefault(nsRenderer, PersistentDataType.STRING, FeatureUnknown.ID);
+            return renderers.getOrDefault(rendererId, unknown);
+        }
+
+        return unknown;
     }
 
     public void setRenderer(Player player, ReactRenderer renderer) {
         if (hasReactMap(player)) {
-            setRenderer(getReactMap(player), renderer);
+            setRenderer(getReactMap(player), renderer, player.getWorld());
         }
     }
 
     public void setRenderer(ItemStack map, ReactRenderer renderer) {
-        if (isReactMap(map)) {
-            MapMeta meta = (MapMeta) map.getItemMeta();
-            updateMapView(meta.getMapView(), renderer);
+        setRenderer(map, renderer, null);
+    }
+
+    private void setRenderer(ItemStack map, ReactRenderer renderer, World worldHint) {
+        if (renderer == null || !isReactMap(map)) {
+            return;
         }
+
+        MapMeta meta = (MapMeta) map.getItemMeta();
+        if (meta == null) {
+            return;
+        }
+
+        MapView view = meta.getMapView();
+        if (view != null && view.getWorld() != null) {
+            updateMapView(view, renderer);
+        } else {
+            World world = worldHint;
+            if (world == null && !Bukkit.getWorlds().isEmpty()) {
+                world = Bukkit.getWorlds().get(0);
+            }
+            if (world != null) {
+                meta.setMapView(createView(world, renderer));
+            }
+        }
+
+        applyRendererMetadata(meta, renderer);
+        map.setItemMeta(meta);
     }
 
     public boolean hasReactMap(Player player) {
@@ -169,8 +207,16 @@ public class MapController extends TickedObject implements IController, Listener
     }
 
     public boolean isReactMap(ItemStack item) {
-        return item != null && item.getType().equals(Material.FILLED_MAP)
-                && item.getItemMeta().getPersistentDataContainer().getOrDefault(nsReact, PersistentDataType.BYTE, (byte) 0) == 1;
+        if (item == null || !item.getType().equals(Material.FILLED_MAP)) {
+            return false;
+        }
+
+        MapMeta meta = (MapMeta) item.getItemMeta();
+        if (meta == null) {
+            return false;
+        }
+
+        return meta.getPersistentDataContainer().getOrDefault(nsReact, PersistentDataType.BYTE, (byte) 0) == 1;
     }
 
     public void updateMapViews(Player player, boolean force) {
@@ -189,8 +235,25 @@ public class MapController extends TickedObject implements IController, Listener
 
             if (isReactMap(item)) {
                 MapMeta meta = (MapMeta) item.getItemMeta();
-                if (force || meta.getMapView() == null || meta.getMapView().getWorld() == null || !meta.getMapView().getWorld().equals(world)) {
-                    meta.setMapView(createView(world, getRenderer(item)));
+                if (meta == null) {
+                    continue;
+                }
+
+                ReactRenderer renderer = getRenderer(item);
+                if (renderer == null) {
+                    renderer = renderers.get(FeatureUnknown.ID);
+                }
+
+                boolean mapViewChanged = force
+                        || meta.getMapView() == null
+                        || meta.getMapView().getWorld() == null
+                        || !meta.getMapView().getWorld().equals(world);
+                if (mapViewChanged) {
+                    meta.setMapView(createView(world, renderer));
+                }
+
+                boolean metadataChanged = applyRendererMetadata(meta, renderer);
+                if (mapViewChanged || metadataChanged) {
                     item.setItemMeta(meta);
                     updated = true;
                 }
@@ -213,7 +276,11 @@ public class MapController extends TickedObject implements IController, Listener
 
     @EventHandler
     public void on(PlayerTeleportEvent e) {
-        if (e.getFrom().getWorld().equals(e.getTo().getWorld())) {
+        if (e.getTo() == null || e.getFrom() == null || e.getFrom().getWorld() == null || e.getTo().getWorld() == null) {
+            return;
+        }
+
+        if (!e.getFrom().getWorld().equals(e.getTo().getWorld())) {
             updateMapViews(e.getPlayer(), e.getTo().getWorld(), false);
         }
     }
@@ -221,10 +288,12 @@ public class MapController extends TickedObject implements IController, Listener
     public ItemStack createMap(World world, ReactRenderer renderer) {
         ItemStack item = new ItemStack(Material.FILLED_MAP);
         MapMeta meta = (MapMeta) item.getItemMeta();
+        if (meta == null) {
+            return item;
+        }
+
         meta.setMapView(createView(world, renderer));
-        meta.setDisplayName("React Monitor");
-        meta.getPersistentDataContainer().set(nsReact, PersistentDataType.BYTE, (byte) 1);
-        meta.getPersistentDataContainer().set(nsRenderer, PersistentDataType.STRING, renderer.getId());
+        applyRendererMetadata(meta, renderer);
         item.setItemMeta(meta);
 
         return item;
@@ -302,6 +371,8 @@ public class MapController extends TickedObject implements IController, Listener
     private void syncIntegrationRenderers() {
         syncIntegrationRenderer("iris", irisMetricsRenderer);
         syncIntegrationRenderer("adapt", adaptMetricsRenderer);
+        syncIntegrationCapabilityRenderers("iris");
+        syncIntegrationCapabilityRenderers("adapt");
     }
 
     private void syncIntegrationRenderer(String capability, ReactRenderer renderer) {
@@ -319,5 +390,115 @@ public class MapController extends TickedObject implements IController, Listener
         } else {
             renderers.remove(renderer.getId());
         }
+    }
+
+    private void syncIntegrationCapabilityRenderers(String capability) {
+        if (renderers == null || capability == null || capability.isBlank()) {
+            return;
+        }
+
+        String prefix = capability.toLowerCase(Locale.ROOT).trim() + "-";
+        boolean available = IntegrationCapabilitySupport.hasCapability(
+                React.controller(IntegrationController.class),
+                capability
+        );
+
+        if (!available) {
+            renderers.keySet().removeIf(id -> normalizeRendererId(id).startsWith(prefix));
+            return;
+        }
+
+        SampleController sampleController = React.controller(SampleController.class);
+        if (sampleController != null && sampleController.getSamplers() != null) {
+            for (Sampler sampler : sampleController.getSamplers().all()) {
+                if (sampler == null || !normalizeRendererId(sampler.getId()).startsWith(prefix)) {
+                    continue;
+                }
+                renderers.put(sampler.getId(), sampler);
+            }
+        }
+
+        FeatureController featureController = React.controller(FeatureController.class);
+        if (featureController != null && featureController.getFeatures() != null) {
+            for (Feature feature : featureController.getFeatures().all()) {
+                if (!(feature instanceof ReactRenderer reactRenderer) || !normalizeRendererId(feature.getId()).startsWith(prefix)) {
+                    continue;
+                }
+                renderers.put(feature.getId(), reactRenderer);
+            }
+        }
+    }
+
+    private boolean applyRendererMetadata(MapMeta meta, ReactRenderer renderer) {
+        if (meta == null || renderer == null) {
+            return false;
+        }
+
+        String rendererId = Objects.toString(renderer.getId(), FeatureUnknown.ID);
+        String normalized = normalizeRendererId(rendererId);
+        String scope = rendererScope(normalized);
+        String rendererName = rendererDisplayName(rendererId);
+        String displayName = "React Monitor [" + scope + "]";
+        List<String> lore = List.of(
+                "Renderer: " + rendererName,
+                "Scope: " + scope,
+                "ID: " + rendererId
+        );
+
+        boolean changed = false;
+        if (!Objects.equals(meta.getDisplayName(), displayName)) {
+            meta.setDisplayName(displayName);
+            changed = true;
+        }
+
+        if (!Objects.equals(meta.getLore(), lore)) {
+            meta.setLore(lore);
+            changed = true;
+        }
+
+        byte flag = meta.getPersistentDataContainer().getOrDefault(nsReact, PersistentDataType.BYTE, (byte) 0);
+        if (flag != 1) {
+            meta.getPersistentDataContainer().set(nsReact, PersistentDataType.BYTE, (byte) 1);
+            changed = true;
+        }
+
+        String storedId = meta.getPersistentDataContainer().get(nsRenderer, PersistentDataType.STRING);
+        if (!rendererId.equalsIgnoreCase(Objects.toString(storedId, ""))) {
+            meta.getPersistentDataContainer().set(nsRenderer, PersistentDataType.STRING, rendererId);
+            changed = true;
+        }
+
+        return changed;
+    }
+
+    private String rendererScope(String normalizedRendererId) {
+        if (normalizedRendererId.startsWith("iris-")) {
+            return "Iris";
+        }
+        if (normalizedRendererId.startsWith("adapt-")) {
+            return "Adapt";
+        }
+        return "Core";
+    }
+
+    private String rendererDisplayName(String rendererId) {
+        if (rendererId == null || rendererId.isBlank()) {
+            return "Unknown";
+        }
+
+        String spaced = rendererId
+                .replace('_', ' ')
+                .replace('-', ' ')
+                .replaceAll("([a-z])([A-Z])", "$1 $2")
+                .trim();
+        if (spaced.isBlank()) {
+            return rendererId;
+        }
+
+        return Character.toUpperCase(spaced.charAt(0)) + spaced.substring(1);
+    }
+
+    private String normalizeRendererId(String rendererId) {
+        return Objects.toString(rendererId, "").toLowerCase(Locale.ROOT).trim();
     }
 }

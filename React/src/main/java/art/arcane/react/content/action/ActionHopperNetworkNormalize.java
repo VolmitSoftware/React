@@ -45,9 +45,12 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
+import java.util.ArrayDeque;
 import java.util.Comparator;
+import java.util.Deque;
 import java.util.List;
 
+@art.arcane.react.util.config.ConfigDescription("Configuration for Hopper Network Normalize action. This action performs targeted remediation when React decides intervention is needed.")
 public class ActionHopperNetworkNormalize extends ReactAction<ActionHopperNetworkNormalize.Params> {
     public static final String ID = "action-hopper-network-normalize";
     public static final String SHORT = "ahnn";
@@ -66,7 +69,8 @@ public class ActionHopperNetworkNormalize extends ReactAction<ActionHopperNetwor
     public void workOn(ActionTicket<Params> ticket) {
         Params params = ticket.getParams();
         if (!params.isPrepared()) {
-            params.setQueue(J.sResult(() -> buildQueueSync(params)));
+            List<ChunkTarget> queue = J.sResult(() -> buildQueueSync(params));
+            params.setQueue(new ArrayDeque<>(queue == null ? List.of() : queue));
             params.setPrepared(true);
             ticket.setWork(0);
             ticket.setTotalWork(Math.max(1, params.getQueue().size()));
@@ -81,7 +85,10 @@ public class ActionHopperNetworkNormalize extends ReactAction<ActionHopperNetwor
         int chunkBudget = Math.max(1, React.controller(ActionController.class).getActionSpeedMultiplier() / 12);
         int worked = 0;
         while (worked < chunkBudget && !params.getQueue().isEmpty()) {
-            ChunkTarget target = params.getQueue().remove(0);
+            ChunkTarget target = params.getQueue().pollFirst();
+            if (target == null) {
+                break;
+            }
             NormalizeResult result = J.sResult(() -> normalizeChunkSync(target, params));
             if (result != null) {
                 params.setHoppersNormalized(params.getHoppersNormalized() + result.hoppersNormalized());
@@ -262,23 +269,30 @@ public class ActionHopperNetworkNormalize extends ReactAction<ActionHopperNetwor
     @AllArgsConstructor
     @NoArgsConstructor
     public static class Params implements ActionParams {
+        @art.arcane.react.util.config.ConfigDoc(value = "World name filter for hopper network normalize operations.", impact = "Set a world name to scope actions there, or leave blank to include all worlds.")
         private String world;
         @Builder.Default
+        @art.arcane.react.util.config.ConfigDoc(value = "Maximum chunks allowed by hopper network normalize.", impact = "Higher values allow more throughput before intervention; lower values make mitigation more aggressive.")
         private int maxChunks = 20;
         @Builder.Default
+        @art.arcane.react.util.config.ConfigDoc(value = "Minimum hopper updates per chunk required by hopper network normalize.", impact = "Higher values require stronger signals before action; lower values make this condition easier to satisfy.")
         private double minimumHopperUpdatesPerChunk = 25D;
         @Builder.Default
+        @art.arcane.react.util.config.ConfigDoc(value = "Unsafe player radius used by hopper network normalize (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
         private double unsafePlayerRadius = 24D;
         @Builder.Default
+        @art.arcane.react.util.config.ConfigDoc(value = "Item merge radius used by hopper network normalize (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
         private double itemMergeRadius = 2D;
         @Builder.Default
+        @art.arcane.react.util.config.ConfigDoc(value = "Maximum merged item entities allowed per chunk in hopper network normalize.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
         private int maxMergedItemEntitiesPerChunk = 48;
         @Builder.Default
+        @art.arcane.react.util.config.ConfigDoc(value = "Controls whether hopper network normalize applies unload idle hot chunks.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
         private boolean unloadIdleHotChunks = true;
         @Builder.Default
         private transient boolean prepared = false;
         @Builder.Default
-        private transient List<ChunkTarget> queue = new ArrayList<>();
+        private transient Deque<ChunkTarget> queue = new ArrayDeque<>();
         @Builder.Default
         private transient int hoppersNormalized = 0;
         @Builder.Default

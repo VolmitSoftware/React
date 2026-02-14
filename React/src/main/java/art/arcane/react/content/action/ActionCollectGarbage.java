@@ -29,6 +29,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
+@art.arcane.react.util.config.ConfigDescription("Configuration for Collect Garbage action. This action performs targeted remediation when React decides intervention is needed.")
 public class ActionCollectGarbage extends ReactAction<ActionCollectGarbage.Params> {
     public static final String ID = "collect-garbage";
     public static final String SHORT = "gc";

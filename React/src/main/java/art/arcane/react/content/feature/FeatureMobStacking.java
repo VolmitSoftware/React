@@ -43,15 +43,24 @@ import org.bukkit.metadata.FixedMetadataValue;
 import java.util.HashSet;
 import java.util.Set;
 
+@art.arcane.react.util.config.ConfigDescription("Configuration for Mob Stacking feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureMobStacking extends ReactFeature implements Listener {
     public static final String ID = "mob-stacking";
+    @art.arcane.react.util.config.ConfigDoc(value = "Maximum stack size allowed by mob stacking.", impact = "Higher values allow more throughput before intervention; lower values make mitigation more aggressive.")
     private int maxStackSize = 10;
+    @art.arcane.react.util.config.ConfigDoc(value = "Maximum health allowed by mob stacking.", impact = "Higher values allow more throughput before intervention; lower values make mitigation more aggressive.")
     private double maxHealth = 100;
+    @art.arcane.react.util.config.ConfigDoc(value = "Filter definition for stackable types used by mob stacking.", impact = "Narrow this list to target fewer cases, or broaden it to include more matching entries.")
     private Set<EntityType> stackableTypes = defaultStackableTypes();
+    @art.arcane.react.util.config.ConfigDoc(value = "Controls whether mob stacking applies custom names.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
     private boolean customNames = true;
+    @art.arcane.react.util.config.ConfigDoc(value = "Search radius used by mob stacking (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
     private double searchRadius = 6;
+    @art.arcane.react.util.config.ConfigDoc(value = "Controls whether mob stacking applies vacuum effect.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
     private boolean vacuumEffect = true;
+    @art.arcane.react.util.config.ConfigDoc(value = "Skips skip custom mobs when mob stacking evaluates targets.", impact = "Enable this to exclude matching cases; disable it to include them in enforcement.")
     private boolean skipCustomMobs = true;
+    @art.arcane.react.util.config.ConfigDoc(value = "Controls whether mob stacking applies only spawner mobs.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
     private boolean onlySpawnerMobs = false;
 
     public FeatureMobStacking() {

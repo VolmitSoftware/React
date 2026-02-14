@@ -48,6 +48,12 @@ public final class ConfigFileSupport {
                         ConfigRewriteReporter.reportRewrite(canonicalFile, sourceTag, raw, canonical);
                         IO.writeAll(canonicalFile, canonical);
                     }
+                } else if (shouldBackfillCanonicalComments(sourceTag, raw)) {
+                    String canonical = serialize(loaded, canonicalFile, sourceTag);
+                    if (!normalize(canonical).equals(normalize(raw))) {
+                        ConfigRewriteReporter.reportRewrite(canonicalFile, sourceTag, raw, canonical);
+                        IO.writeAll(canonicalFile, canonical);
+                    }
                 }
 
                 deleteLegacyFileIfMigrated(canonicalFile, legacyFile, sourceTag);
@@ -255,6 +261,28 @@ public final class ConfigFileSupport {
         }
 
         return true;
+    }
+
+    private static boolean shouldBackfillCanonicalComments(String sourceTag, String raw) {
+        if (sourceTag == null || raw == null) {
+            return false;
+        }
+
+        boolean componentConfig = sourceTag.startsWith("feature:")
+                || sourceTag.startsWith("tweak:")
+                || sourceTag.startsWith("action:")
+                || sourceTag.startsWith("sampler:");
+        if (!componentConfig) {
+            return false;
+        }
+
+        String normalized = normalize(raw);
+        if (normalized.isBlank()) {
+            return true;
+        }
+
+        return !normalized.startsWith("# React configuration -")
+                || !normalized.contains("# Docs schema: 2");
     }
 
     private static String reason(String prefix, Throwable error) {

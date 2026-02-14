@@ -73,10 +73,14 @@ public final class TomlCodec {
 
             out.append("# React configuration - ").append(sourceTag).append('\n');
             out.append("# This file is canonicalized on load. Comments and key order may refresh automatically.\n");
+            out.append("# Docs schema: 2\n");
             ConfigDescription desc = root.getClass().getAnnotation(ConfigDescription.class);
-            if (desc != null && !desc.value().isBlank()) {
+            String rootDescription = desc != null && !desc.value().isBlank()
+                    ? desc.value().strip()
+                    : ConfigDocumentation.buildRootDescription(sourceTag, root.getClass());
+            if (rootDescription != null && !rootDescription.isBlank()) {
                 out.append("#\n");
-                out.append("# ").append(desc.value().strip()).append('\n');
+                out.append("# ").append(rootDescription).append('\n');
             }
             out.append('\n');
             writePojoSection("", root);

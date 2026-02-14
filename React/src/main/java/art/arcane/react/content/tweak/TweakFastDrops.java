@@ -44,12 +44,18 @@ import java.util.List;
 /**
  * Reduces entity spawns / garbage by teleporting drops and xp from blocks and entities directly into your inventory
  */
+@art.arcane.react.util.config.ConfigDescription("Configuration for Fast Drops tweak. Routes drops and XP directly to players to reduce ground-item buildup and pickup churn.")
 public class TweakFastDrops extends ReactTweak implements Listener {
     public static final String ID = "fast-drops";
+    @art.arcane.react.util.config.ConfigDoc(value = "Controls whether fast drops applies teleport block drops.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
     private boolean teleportBlockDrops = true;
+    @art.arcane.react.util.config.ConfigDoc(value = "Controls whether fast drops applies teleport block xp.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
     private boolean teleportBlockXP = true;
+    @art.arcane.react.util.config.ConfigDoc(value = "Controls whether fast drops applies teleport entity drops.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
     private boolean teleportEntityDrops = true;
+    @art.arcane.react.util.config.ConfigDoc(value = "Controls whether fast drops applies teleport entity xp.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
     private boolean teleportEntityXP = true;
+    @art.arcane.react.util.config.ConfigDoc(value = "Allows container drops in fast drops.", impact = "Enable this to permit the behavior; disable it to block or throttle that path.")
     private boolean allowContainerDrops = false;
 
     public TweakFastDrops() {

@@ -380,7 +380,7 @@ public class IntegrationController extends TickedObject implements IController {
     private void evaluateThresholds(long now) {
         double irisQueue = remoteSamplerBridge.valueOr("iris", IntegrationMetricSchema.IRIS_PREGEN_QUEUE, -1D);
         double adaptSessionLoad = remoteSamplerBridge.valueOr("adapt", IntegrationMetricSchema.ADAPT_SESSION_LOAD, -1D);
-        double adaptAbilityOps = remoteSamplerBridge.valueOr("adapt", IntegrationMetricSchema.ADAPT_ABILITY_OPS, -1D);
+        double adaptAbilityOps = remoteSamplerBridge.valueOr("adapt", ReactConfiguration.adaptAbilityOpsMetricKey(), -1D);
 
         evaluateThreshold(
                 "iris.queue.high",

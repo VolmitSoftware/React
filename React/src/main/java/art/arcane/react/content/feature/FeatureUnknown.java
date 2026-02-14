@@ -21,6 +21,7 @@ package art.arcane.react.content.feature;
 
 import art.arcane.react.api.feature.ReactFeature;
 
+@art.arcane.react.util.config.ConfigDescription("Configuration for Unknown feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureUnknown extends ReactFeature {
     public static final String ID = "unknown";
 
@@ -46,5 +47,10 @@ public class FeatureUnknown extends ReactFeature {
     @Override
     public void onTick() {
 
+    }
+
+    @Override
+    public boolean autoRegister() {
+        return false;
     }
 }

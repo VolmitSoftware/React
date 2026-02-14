@@ -29,6 +29,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPhysicsEvent;
 
+@art.arcane.react.util.config.ConfigDescription("Configuration for Fast Columns tweak. Collapses plant columns in chained updates to reduce repeated per-block physics churn.")
 public class TweakFastColumns extends ReactTweak implements Listener {
     public static final String ID = "fast-columns";
     private transient ChainedColumn bamboo;

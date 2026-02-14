@@ -28,8 +28,10 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
 
+@art.arcane.react.util.config.ConfigDescription("Configuration for Fast Entity Incineration tweak. Removes burning monsters under configured proximity rules to cut lingering fire-tick cost.")
 public class TweakFastEntityIncineration extends ReactTweak implements Listener {
     public static final String ID = "fast-entity-incineration";
+    @art.arcane.react.util.config.ConfigDoc(value = "Distance from players before fast entity incineration applies incineration behavior (blocks).", impact = "Higher values allow cleanup farther from players; lower values keep cleanup closer to active players.")
     private double incinerationBeyondNearestPlayer = 32;
 
     public TweakFastEntityIncineration() {

@@ -33,11 +33,13 @@ import org.bukkit.event.block.BlockPistonExtendEvent;
 import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockRedstoneEvent;
 
+@art.arcane.react.util.config.ConfigDescription("Configuration for Circuit Manager feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureCircuitManager extends ReactFeature implements Listener {
     public static final String ID = "circuit-manager";
     /**
      * Stop the biggest circuit when the redstone milliseconds exceeds this value
      */
+    @art.arcane.react.util.config.ConfigDoc(value = "Maximum circuit ms allowed by circuit manager.", impact = "Higher values allow more throughput before intervention; lower values make mitigation more aggressive.")
     private double maxCircuitMS = 15;
     private transient CircuitServer circuitServer;
 

@@ -32,16 +32,26 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 
+@art.arcane.react.util.config.ConfigDescription("Configuration for Spawn Burst Limiter feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureSpawnBurstLimiter extends ReactFeature implements Listener {
     public static final String ID = "spawn-burst-limiter";
+    @art.arcane.react.util.config.ConfigDoc(value = "Main evaluation interval for spawn burst limiter in milliseconds.", impact = "Lower values react faster but consume more CPU; higher values reduce overhead but react later.")
     private int tickIntervalMS = 5000;
+    @art.arcane.react.util.config.ConfigDoc(value = "Rolling enforcement window length used by spawn burst limiter (milliseconds).", impact = "Longer windows smooth bursts but react slower; shorter windows react faster but are more sensitive.")
     private int windowMS = 1200;
+    @art.arcane.react.util.config.ConfigDoc(value = "Maximum spawns allowed per chunk window in spawn burst limiter.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
     private int maxSpawnsPerChunkWindow = 22;
+    @art.arcane.react.util.config.ConfigDoc(value = "Maximum spawner spawns allowed per chunk window in spawn burst limiter.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
     private int maxSpawnerSpawnsPerChunkWindow = 10;
+    @art.arcane.react.util.config.ConfigDoc(value = "Maximum monster spawns allowed per chunk window in spawn burst limiter.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
     private int maxMonsterSpawnsPerChunkWindow = 15;
+    @art.arcane.react.util.config.ConfigDoc(value = "Controls whether spawn burst limiter applies enforce natural spawns.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
     private boolean enforceNaturalSpawns = true;
+    @art.arcane.react.util.config.ConfigDoc(value = "Controls whether spawn burst limiter applies enforce spawner spawns.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
     private boolean enforceSpawnerSpawns = true;
+    @art.arcane.react.util.config.ConfigDoc(value = "Controls whether spawn burst limiter applies enforce monster spawns.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
     private boolean enforceMonsterSpawns = true;
+    @art.arcane.react.util.config.ConfigDoc(value = "Skips named entities when spawn burst limiter evaluates targets.", impact = "Enable this to exclude matching cases; disable it to include them in enforcement.")
     private boolean ignoreNamedEntities = true;
     private transient Map<ChunkKey, SpawnWindow> windows = new HashMap<>();
 
@@ -136,10 +146,15 @@ public class FeatureSpawnBurstLimiter extends ReactFeature implements Listener {
     }
 
     private static final class SpawnWindow {
+        @art.arcane.react.util.config.ConfigDoc(value = "Internal timestamp used by spawn burst limiter to track timing windows and decay.", impact = "Primarily runtime state; changing this manually can distort cooldown or throttling behavior.")
         private long start;
+        @art.arcane.react.util.config.ConfigDoc(value = "Internal timestamp used by spawn burst limiter to track timing windows and decay.", impact = "Primarily runtime state; changing this manually can distort cooldown or throttling behavior.")
         private long lastHit;
+        @art.arcane.react.util.config.ConfigDoc(value = "Internal counter used by spawn burst limiter while tracking burst activity.", impact = "Primarily runtime state; React updates this automatically during live evaluation.")
         private int total;
+        @art.arcane.react.util.config.ConfigDoc(value = "Internal counter used by spawn burst limiter while tracking burst activity.", impact = "Primarily runtime state; React updates this automatically during live evaluation.")
         private int spawner;
+        @art.arcane.react.util.config.ConfigDoc(value = "Internal counter used by spawn burst limiter while tracking burst activity.", impact = "Primarily runtime state; React updates this automatically during live evaluation.")
         private int monster;
 
         private SpawnWindow(long now) {
@@ -160,8 +175,11 @@ public class FeatureSpawnBurstLimiter extends ReactFeature implements Listener {
     }
 
     private static final class ChunkKey {
+        @art.arcane.react.util.config.ConfigDoc(value = "World identifier used by spawn burst limiter internal tracking.", impact = "This is runtime identity data and should normally be left to automatic updates.")
         private final UUID world;
+        @art.arcane.react.util.config.ConfigDoc(value = "X-axis coordinate used by spawn burst limiter internal tracking.", impact = "This is internal state data and should not normally be changed manually.")
         private final int x;
+        @art.arcane.react.util.config.ConfigDoc(value = "Z-axis coordinate used by spawn burst limiter internal tracking.", impact = "This is internal state data and should not normally be changed manually.")
         private final int z;
 
         private ChunkKey(UUID world, int x, int z) {

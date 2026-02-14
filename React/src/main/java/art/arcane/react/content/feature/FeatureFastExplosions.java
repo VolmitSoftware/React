@@ -41,13 +41,20 @@ import java.util.ArrayList;
 /**
  * Reduces entity spawns / garbage by teleporting drops and xp from blocks and entities directly into your inventory
  */
+@art.arcane.react.util.config.ConfigDescription("Configuration for Fast Explosions feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureFastExplosions extends ReactFeature implements Listener {
     public static final String ID = "fast-explosions";
+    @art.arcane.react.util.config.ConfigDoc(value = "Maximum primes allowed per tick in fast explosions.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
     private int maxPrimesPerTick = 3;
+    @art.arcane.react.util.config.ConfigDoc(value = "Fuse spread added between chained primed TNT entities in fast explosions (ticks).", impact = "Higher values stagger explosions more; lower values keep chain timing tighter.")
     private int spreadPrimedFuseTicks = 7;
+    @art.arcane.react.util.config.ConfigDoc(value = "Maximum explosion chains allowed per tick in fast explosions.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
     private int maxExplosionChainsPerTick = 3;
+    @art.arcane.react.util.config.ConfigDoc(value = "Controls whether fast explosions applies fast block updates.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
     private boolean fastBlockUpdates = true;
+    @art.arcane.react.util.config.ConfigDoc(value = "Controls whether fast explosions applies disable entity chain reactions.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
     private boolean disableEntityChainReactions = false;
+    @art.arcane.react.util.config.ConfigDoc(value = "Controls whether fast explosions applies explosion chain reactions.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
     private boolean explosionChainReactions = false;
     private transient int primes = 0;
     private transient int preprimes = 0;
@@ -87,9 +94,11 @@ public class FeatureFastExplosions extends ReactFeature implements Listener {
 
         preprimes += e.blockList().size();
 
-        while (preprimes > maxPrimesPerTick && e.blockList().size() > 0) {
-            e.blockList().remove(0);
-            preprimes--;
+        int overflow = preprimes - maxPrimesPerTick;
+        if (overflow > 0 && !e.blockList().isEmpty()) {
+            int removeCount = Math.min(overflow, e.blockList().size());
+            e.blockList().subList(0, removeCount).clear();
+            preprimes -= removeCount;
         }
 
         J.s(() -> {
@@ -139,9 +148,11 @@ public class FeatureFastExplosions extends ReactFeature implements Listener {
 
         preprimes += e.blockList().size();
 
-        while (preprimes > maxPrimesPerTick && e.blockList().size() > 0) {
-            e.blockList().remove(0);
-            preprimes--;
+        int overflow = preprimes - maxPrimesPerTick;
+        if (overflow > 0 && !e.blockList().isEmpty()) {
+            int removeCount = Math.min(overflow, e.blockList().size());
+            e.blockList().subList(0, removeCount).clear();
+            preprimes -= removeCount;
         }
 
         J.s(() -> {

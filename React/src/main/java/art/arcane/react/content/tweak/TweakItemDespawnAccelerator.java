@@ -30,12 +30,18 @@ import org.bukkit.event.entity.ItemSpawnEvent;
 
 import java.util.List;
 
+@art.arcane.react.util.config.ConfigDescription("Configuration for Item Despawn Accelerator tweak. Pushes eligible dropped items toward despawn when no players are nearby.")
 public class TweakItemDespawnAccelerator extends ReactTweak implements Listener {
     public static final String ID = "item-despawn-accelerator";
+    @art.arcane.react.util.config.ConfigDoc(value = "Ticks-lived value forced onto eligible items to accelerate vanilla despawn timing.", impact = "Higher values push items closer to despawn immediately; lower values keep more natural lifetime.")
     private int targetTicksLived = 5600;
+    @art.arcane.react.util.config.ConfigDoc(value = "No player radius used by item despawn accelerator (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
     private double noPlayerRadius = 48;
+    @art.arcane.react.util.config.ConfigDoc(value = "Skips named items when item despawn accelerator evaluates targets.", impact = "Enable this to exclude matching cases; disable it to include them in enforcement.")
     private boolean ignoreNamedItems = true;
+    @art.arcane.react.util.config.ConfigDoc(value = "Skips valuables when item despawn accelerator evaluates targets.", impact = "Enable this to exclude matching cases; disable it to include them in enforcement.")
     private boolean ignoreValuables = true;
+    @art.arcane.react.util.config.ConfigDoc(value = "Material list treated as valuables and excluded when `ignoreValuables` is enabled.", impact = "Add materials to protect more items from accelerated despawn, or remove materials to allow faster cleanup.")
     private List<Material> valuableItems = List.of(
             Material.NETHERITE_INGOT,
             Material.NETHERITE_SCRAP,
