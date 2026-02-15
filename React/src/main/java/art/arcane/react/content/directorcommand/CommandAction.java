@@ -17,7 +17,7 @@
  *
  */
 
-package art.arcane.react.content.decreecommand;
+package art.arcane.react.content.directorcommand;
 
 import art.arcane.react.React;
 import art.arcane.react.api.action.Action;
@@ -29,6 +29,8 @@ import art.arcane.react.content.action.ActionPurgeChunks;
 import art.arcane.react.content.action.ActionPurgeEntities;
 import art.arcane.react.content.action.ActionQuarantineHotChunks;
 import art.arcane.react.content.action.ActionTrimEntitiesByAgePriority;
+import art.arcane.react.core.controller.ActionController;
+import art.arcane.react.util.config.ConfigDescription;
 import art.arcane.react.util.decree.DecreeExecutor;
 import art.arcane.volmlib.util.decree.DecreeOrigin;
 import art.arcane.volmlib.util.decree.annotations.Decree;
@@ -37,17 +39,19 @@ import art.arcane.react.util.decree.handlers.OptionalWorldHandler;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 
+import java.util.Comparator;
+
 @Decree(
         name = "action",
         aliases = {"act", "a"},
         origin = DecreeOrigin.BOTH,
-        description = "This is the root action command, it contains all current actions"
+        description = "Action utilities for mitigation, cleanup, and operational diagnostics."
 )
 public class CommandAction implements DecreeExecutor {
     @Decree(
             name = "purge-entities",
             aliases = {"pe"},
-            description = "this Kills/Deletes all entities in the specified region"
+            description = "Remove matching entities in the selected world/chunk radius."
     )
     public void purgeEntities(
             @Param(
@@ -87,7 +91,7 @@ public class CommandAction implements DecreeExecutor {
     @Decree(
             name = "purge-chunks",
             aliases = {"pc"},
-            description = "this unloads chunks in the specified region, if applicable in the specified world"
+            description = "Attempt to unload chunks in the selected world."
     )
     public void purgeChunks(
             @Param(
@@ -113,7 +117,7 @@ public class CommandAction implements DecreeExecutor {
     @Decree(
             name = "collect-garbage",
             aliases = {"gc"},
-            description = "Run a system gc, unnecessary on most systems, but may help on some. use with caution."
+            description = "Request JVM garbage collection and report immediate reclaimed heap."
     )
     public void collectGarbage() {
         Action<ActionCollectGarbage.Params> pe = React.action("collect-garbage");
@@ -336,5 +340,29 @@ public class CommandAction implements DecreeExecutor {
         }
 
         action.create(p, sender()).queue();
+    }
+
+    @Decree(
+            name = "audit",
+            aliases = {"list", "ls"},
+            description = "List all registered actions, enabled state, and current behavior summary."
+    )
+    public void audit() {
+        ActionController controller = React.controller(ActionController.class);
+        if (controller == null || controller.getActions() == null) {
+            sender().sendMessage("Action controller is unavailable.");
+            return;
+        }
+
+        sender().sendMessage("React action audit:");
+        controller.getActions().all().stream()
+                .sorted(Comparator.comparing(Action::getId))
+                .forEach(action -> {
+                    ConfigDescription description = action.getClass().getAnnotation(ConfigDescription.class);
+                    String summary = description == null ? "No action description provided." : description.value();
+                    sender().sendMessage("- " + action.getId()
+                            + " [" + (action.isEnabled() ? "enabled" : "disabled") + "] "
+                            + summary);
+                });
     }
 }

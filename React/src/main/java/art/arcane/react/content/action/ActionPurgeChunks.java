@@ -38,7 +38,7 @@ import org.bukkit.World;
 import java.util.ArrayList;
 import java.util.List;
 
-@art.arcane.react.util.config.ConfigDescription("Configuration for Purge Chunks action. This action performs targeted remediation when React decides intervention is needed.")
+@art.arcane.react.util.config.ConfigDescription("Configuration for Purge Chunks action. Attempts to unload selected chunks to reduce active chunk pressure.")
 public class ActionPurgeChunks extends ReactAction<ActionPurgeChunks.Params> {
     public static final String ID = "purge-chunks";
     public static final String SHORT = "pc";
@@ -98,8 +98,15 @@ public class ActionPurgeChunks extends ReactAction<ActionPurgeChunks.Params> {
     }
 
     private void purge(Chunk c, ActionTicket<Params> ticket) {
-        J.s(c::unload);
-        if (!c.isLoaded()) {
+        boolean unloaded = J.sResult(() -> {
+            if (!c.isLoaded()) {
+                return true;
+            }
+
+            return c.unload(true);
+        });
+
+        if (unloaded) {
             ticket.addCount();
         }
     }

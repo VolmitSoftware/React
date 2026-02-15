@@ -17,7 +17,7 @@
  *
  */
 
-package art.arcane.react.content.decreecommand;
+package art.arcane.react.content.directorcommand;
 
 import art.arcane.react.React;
 import art.arcane.react.api.sampler.Sampler;

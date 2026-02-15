@@ -59,7 +59,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
-@art.arcane.react.util.config.ConfigDescription("Configuration for Trim Entities By Age Priority action. This action performs targeted remediation when React decides intervention is needed.")
+@art.arcane.react.util.config.ConfigDescription("Configuration for Trim Entities By Age Priority action. Scores and trims old low-priority entities with safety guards.")
 public class ActionTrimEntitiesByAgePriority extends ReactAction<ActionTrimEntitiesByAgePriority.Params> {
     public static final String ID = "action-trim-entities-by-age-priority";
     public static final String SHORT = "ateap";

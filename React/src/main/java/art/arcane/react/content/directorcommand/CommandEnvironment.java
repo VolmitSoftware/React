@@ -17,7 +17,7 @@
  *
  */
 
-package art.arcane.react.content.decreecommand;
+package art.arcane.react.content.directorcommand;
 
 import art.arcane.edict.api.context.EdictContext;
 import art.arcane.react.React;

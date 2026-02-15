@@ -43,7 +43,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-@art.arcane.react.util.config.ConfigDescription("Configuration for Purge Entities action. This action performs targeted remediation when React decides intervention is needed.")
+@art.arcane.react.util.config.ConfigDescription("Configuration for Purge Entities action. Removes matching entities from selected chunks or worlds.")
 public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params> {
     public static final String ID = "purge-entities";
     public static final String SHORT = "pe";

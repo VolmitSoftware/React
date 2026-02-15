@@ -25,8 +25,10 @@ import art.arcane.chrono.RollingSequence;
 import art.arcane.multiburst.BurstExecutor;
 import art.arcane.multiburst.MultiBurst;
 import art.arcane.react.React;
+import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.api.feature.ReactTickedFeature;
 import art.arcane.react.api.tweak.ReactTickedTweak;
+import art.arcane.react.model.ReactConfiguration;
 import art.arcane.volmlib.util.collection.KList;
 import art.arcane.volmlib.util.scheduling.Looper;
 
@@ -191,24 +193,134 @@ public class Ticker {
         long ageMS = safeLong(ticked == null ? null : ticked.getAge(), 0L);
         long overMS = Math.max(0L, elapsedMS - SLOW_TICK_WARN_THRESHOLD_MS);
         String context = slowTickContext(ticked);
-        String suffix = context.isBlank() ? "" : " " + context;
-        React.warn(
-                "Slow tick detected [" + slowSeverity(elapsedMS) + "]: " + describeTicked(ticked)
-                        + " took " + elapsedMS + "ms"
-                        + " (threshold=" + SLOW_TICK_WARN_THRESHOLD_MS + "ms, over=" + overMS + "ms, ratio=" + ratioLabel(elapsedMS, SLOW_TICK_WARN_THRESHOLD_MS)
-                        + ", interval=" + intervalMS + "ms, budget=" + budgetLabel(elapsedMS, intervalMS) + ", age=" + ageMS + "ms)."
-                        + suffix
-        );
-        React.warn(
-                "Slow tick blame: owner=" + slowTickOwner(ticked)
-                        + " method=" + slowTickMethod(ticked)
-                        + " recurrence=" + snapshot.slowRuns + "/" + snapshot.runs + " slow"
-                        + " (consecutive=" + snapshot.consecutiveSlowRuns
-                        + ", last30s=" + snapshot.slowRunsLastWindow
-                        + ", avgSlow=" + formatMs(snapshot.averageSlowMS)
-                        + "ms, max=" + snapshot.maxSlowMS + "ms)."
-                        + " Cause: " + slowTickCause(ticked)
-        );
+        String cause = slowTickCause(ticked);
+        String source = slowTickLikelySource(ticked);
+        ReactConfiguration.SlowTickLogMode mode = ReactConfiguration.get().getSlowTickLogMode();
+        if (mode == ReactConfiguration.SlowTickLogMode.SHORT) {
+            React.warn(buildShortSlowTickMessage(ticked, elapsedMS, overMS));
+        } else if (mode == ReactConfiguration.SlowTickLogMode.BLAME) {
+            React.warn(buildBlameSlowTickMessage(ticked, elapsedMS, overMS, cause, source));
+        } else {
+            React.warn(buildDetailedSlowTickMessage(
+                    ticked,
+                    elapsedMS,
+                    intervalMS,
+                    ageMS,
+                    overMS,
+                    slowTickOwner(ticked),
+                    slowTickMethod(ticked),
+                    source,
+                    cause,
+                    snapshot
+            ));
+        }
+        if (ReactConfiguration.get().isVerbose() && !context.isBlank()) {
+            React.verbose("Slow tick context: " + context);
+        }
+    }
+
+    private String buildShortSlowTickMessage(Ticked ticked, long elapsedMS, long overMS) {
+        return "Slow tick [" + slowSeverity(elapsedMS) + "]: "
+                + shortTickLabel(ticked)
+                + " took " + elapsedMS + "ms"
+                + " (+" + overMS + "ms over " + SLOW_TICK_WARN_THRESHOLD_MS + "ms).";
+    }
+
+    private String buildBlameSlowTickMessage(Ticked ticked,
+                                             long elapsedMS,
+                                             long overMS,
+                                             String cause,
+                                             String source) {
+        return "Slow tick [" + slowSeverity(elapsedMS) + "]: "
+                + shortTickLabel(ticked)
+                + " took " + elapsedMS + "ms"
+                + " (+" + overMS + "ms over " + SLOW_TICK_WARN_THRESHOLD_MS + "ms)."
+                + " Blame: " + slowTickBlameTarget(source)
+                + " caused " + compactPhrase(cause)
+                + "; pressure=" + trimSentence(source) + ".";
+    }
+
+    private String buildDetailedSlowTickMessage(Ticked ticked,
+                                                long elapsedMS,
+                                                long intervalMS,
+                                                long ageMS,
+                                                long overMS,
+                                                String owner,
+                                                String method,
+                                                String source,
+                                                String cause,
+                                                SlowTickSnapshot snapshot) {
+        return "Slow tick detected [" + slowSeverity(elapsedMS) + "]: " + describeTicked(ticked)
+                + " took " + elapsedMS + "ms"
+                + " (threshold=" + SLOW_TICK_WARN_THRESHOLD_MS + "ms, over=" + overMS + "ms, ratio=" + ratioLabel(elapsedMS, SLOW_TICK_WARN_THRESHOLD_MS)
+                + ", interval=" + intervalMS + "ms, budget=" + budgetLabel(elapsedMS, intervalMS) + ", age=" + ageMS + "ms)."
+                + " owner=" + owner
+                + " method=" + method
+                + " source=" + source
+                + " cause=" + cause
+                + " recurrence=" + snapshot.slowRuns + "/" + snapshot.runs + " slow"
+                + " (consecutive=" + snapshot.consecutiveSlowRuns
+                + ", last30s=" + snapshot.slowRunsLastWindow
+                + ", avgSlow=" + formatMs(snapshot.averageSlowMS)
+                + "ms, max=" + snapshot.maxSlowMS + "ms).";
+    }
+
+    private String shortTickLabel(Ticked ticked) {
+        if (ticked == null) {
+            return "unknown-task";
+        }
+
+        if (ticked instanceof ReactTickedFeature featureTicked && featureTicked.getComponent() != null) {
+            return "feature:" + featureTicked.getComponent().getId();
+        }
+        if (ticked instanceof ReactTickedTweak tweakTicked && tweakTicked.getComponent() != null) {
+            return "tweak:" + tweakTicked.getComponent().getId();
+        }
+
+        String group = ticked.getTgroup() == null ? "unknown-group" : ticked.getTgroup();
+        String id = ticked.getTid() == null ? "unknown-id" : ticked.getTid();
+        return "task:" + group + ":" + id;
+    }
+
+    private String slowTickBlameTarget(String source) {
+        if (source == null) {
+            return "React";
+        }
+
+        String lower = source.toLowerCase(Locale.ROOT);
+        if (lower.startsWith("iris ")) {
+            return "Iris";
+        }
+        if (lower.startsWith("adapt ")) {
+            return "Adapt";
+        }
+        if (lower.startsWith("chunk generation/load")) {
+            return "Minecraft";
+        }
+        if (lower.startsWith("react ")) {
+            return "React";
+        }
+        return "React";
+    }
+
+    private String trimSentence(String value) {
+        if (value == null) {
+            return "unknown workload";
+        }
+        String trimmed = value.trim();
+        while (trimmed.endsWith(".")) {
+            trimmed = trimmed.substring(0, trimmed.length() - 1).trim();
+        }
+        return trimmed.isEmpty() ? "unknown workload" : trimmed;
+    }
+
+    private String compactPhrase(String value) {
+        String trimmed = trimSentence(value);
+        int detailStart = trimmed.indexOf(" (");
+        if (detailStart > 0) {
+            return trimmed.substring(0, detailStart).trim();
+        }
+        return trimmed;
     }
 
     private String describeTicked(Ticked ticked) {
@@ -389,6 +501,65 @@ public class Ticker {
             return "Action scheduler workload while processing queued action work.";
         }
         return "Scheduled task workload inside this controller.";
+    }
+
+    private String slowTickLikelySource(Ticked ticked) {
+        double irisQueue = sampleSampler("iris-pregen-queue", -1D);
+        double irisStreamMs = sampleSampler("iris-chunk-stream-ms", -1D);
+        if (irisQueue > 0D || irisStreamMs >= 12D) {
+            return String.format(
+                    Locale.ROOT,
+                    "Iris generation pressure (queue=%.0f, stream=%.1fms)",
+                    Math.max(0D, irisQueue),
+                    Math.max(0D, irisStreamMs)
+            );
+        }
+
+        double chunkGenMs = sampleSampler("chunk-gen-ms", -1D);
+        double chunkLoadMs = sampleSampler("chunk-load-ms", -1D);
+        if (chunkGenMs >= 8D || chunkLoadMs >= 8D) {
+            return String.format(
+                    Locale.ROOT,
+                    "Chunk generation/load pressure (gen=%.1fms, load=%.1fms)",
+                    Math.max(0D, chunkGenMs),
+                    Math.max(0D, chunkLoadMs)
+            );
+        }
+
+        double reactSyncMs = sampleSampler("react-sync-tick-time", -1D);
+        double reactJobs = sampleSampler("react-jobs-queue", -1D);
+        double schedulerBacklog = sampleSampler("scheduler-backlog", -1D);
+        if (reactSyncMs >= 8D || reactJobs >= 64D || schedulerBacklog >= 64D) {
+            return String.format(
+                    Locale.ROOT,
+                    "React scheduler pressure (sync=%.1fms, jobs=%.0f, backlog=%.0f)",
+                    Math.max(0D, reactSyncMs),
+                    Math.max(0D, reactJobs),
+                    Math.max(0D, schedulerBacklog)
+            );
+        }
+
+        if (ticked instanceof ReactTickedFeature) {
+            return "React feature workload";
+        }
+        if (ticked instanceof ReactTickedTweak) {
+            return "React tweak workload";
+        }
+        return "React scheduled task";
+    }
+
+    private double sampleSampler(String samplerId, double fallback) {
+        try {
+            Sampler sampler = React.sampler(samplerId);
+            if (sampler == null) {
+                return fallback;
+            }
+
+            double value = sampler.sample();
+            return Double.isFinite(value) ? value : fallback;
+        } catch (Throwable ignored) {
+            return fallback;
+        }
     }
 
     private long safeLong(Long value, long fallback) {

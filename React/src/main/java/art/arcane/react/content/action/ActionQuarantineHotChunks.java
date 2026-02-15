@@ -56,7 +56,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
-@art.arcane.react.util.config.ConfigDescription("Configuration for Quarantine Hot Chunks action. This action performs targeted remediation when React decides intervention is needed.")
+@art.arcane.react.util.config.ConfigDescription("Configuration for Quarantine Hot Chunks action. Isolates high-score chunks and optionally culls old entities away from players.")
 public class ActionQuarantineHotChunks extends ReactAction<ActionQuarantineHotChunks.Params> {
     public static final String ID = "action-quarantine-hot-chunks";
     public static final String SHORT = "aqhc";

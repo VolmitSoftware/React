@@ -17,7 +17,7 @@
  *
  */
 
-package art.arcane.react.content.decreecommand;
+package art.arcane.react.content.directorcommand;
 
 import art.arcane.curse.Curse;
 import art.arcane.react.React;
@@ -26,6 +26,7 @@ import art.arcane.react.core.controller.MapController;
 import art.arcane.react.core.controller.PlayerController;
 import art.arcane.react.core.gui.ReactMapGUI;
 import art.arcane.react.util.decree.DecreeExecutor;
+import art.arcane.react.util.world.WorldDistanceSupport;
 import art.arcane.volmlib.util.decree.DecreeOrigin;
 import art.arcane.volmlib.util.decree.annotations.Decree;
 import art.arcane.volmlib.util.decree.annotations.Param;
@@ -69,6 +70,11 @@ public class CommandReact implements DecreeExecutor {
     public void vd(
             @Param(name = "distance")
             int d) {
+        if (!WorldDistanceSupport.supportsWorldDistanceSetters()) {
+            sender().sendMessage(C.REACT + "This command requires Paper/Purpur. Spigot does not expose world view/simulation distance setters.");
+            return;
+        }
+
         if (d > 32)
             d = 32;
 

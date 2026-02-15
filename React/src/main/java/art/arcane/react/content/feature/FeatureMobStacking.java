@@ -30,6 +30,7 @@ import art.arcane.react.util.scheduling.J;
 import art.arcane.react.util.world.CustomMobChecker;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
@@ -92,71 +93,6 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
         }
     }
 
-    public void onDamage(EntityDamageEvent e) {
-        if (getStackCount(e.getEntity()) > 1 && e.getEntity() instanceof LivingEntity l && l.getHealth() - e.getFinalDamage() <= 0) {
-            int s = getStackCount(l) - 1;
-
-            LivingEntity next;
-            if (l instanceof Slime) {
-                Slime oldSlime = (Slime) l;
-                next = (LivingEntity) l.getWorld().spawnEntity(l.getLocation(), l.getType());
-                if (oldSlime.getSize() > 1) { // This is to ensure no infinite loop of slime spawning
-                    ((Slime) next).setSize(oldSlime.getSize() / 2); // setting the new size
-                } else {
-                    ((Slime) next).setSize(oldSlime.getSize());
-                }
-            } else if (l instanceof Sheep) {
-                Sheep oldSheep = (Sheep) l;
-                next = (LivingEntity) l.getWorld().spawnEntity(l.getLocation(), l.getType());
-                ((Sheep) next).setColor(oldSheep.getColor()); // setting the new sheep color
-            } else {
-                next = (LivingEntity) l.getWorld().spawnEntity(l.getLocation(), l.getType());
-            }
-
-            next.setSwimming(l.isSwimming());
-            next.setAI(l.hasAI());
-            next.setCollidable(l.isCollidable());
-            next.setCustomName(l.getCustomName());
-            next.setCustomNameVisible(l.isCustomNameVisible());
-            next.setGlowing(l.isGlowing());
-            next.setGravity(l.hasGravity());
-            next.setInvulnerable(l.isInvulnerable());
-            next.setSilent(l.isSilent());
-            next.setRemoveWhenFarAway(l.getRemoveWhenFarAway());
-            next.setPersistent(l.isPersistent());
-            next.setCanPickupItems(l.getCanPickupItems());
-            next.setArrowsInBody(l.getArrowsInBody());
-            next.setArrowCooldown(l.getArrowCooldown());
-            next.setFreezeTicks(l.getFreezeTicks());
-            next.setTicksLived(l.getTicksLived());
-            next.setLastDamage(l.getLastDamage());
-            next.setLastDamageCause(l.getLastDamageCause());
-            next.setAbsorptionAmount(l.getAbsorptionAmount());
-            next.setFireTicks(l.getFireTicks());
-            next.setPortalCooldown(l.getPortalCooldown());
-            next.setRotation(l.getEyeLocation().getYaw(), l.getEyeLocation().getPitch());
-            next.setVelocity(l.getVelocity());
-            next.setFallDistance(l.getFallDistance());
-            next.setRemainingAir(l.getRemainingAir());
-            next.setNoDamageTicks(l.getNoDamageTicks());
-            setStackCount(l, 1);
-            l.setCollidable(false);
-            l.setInvisible(true);
-            l.setAI(false);
-            setStackCount(next, s);
-        }
-    }
-
-    @EventHandler
-    public void on(EntityDamageByEntityEvent e) {
-        onDamage(e);
-    }
-
-    @EventHandler
-    public void on(EntityDamageByBlockEvent e) {
-        onDamage(e);
-    }
-
     @EventHandler
     public void onPlayerInteractEntity(PlayerInteractEntityEvent event) {
         // Check for sneak and right click
@@ -213,19 +149,80 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
 
 
     // prevent the spam in the console that happens when a mob is killed by non-living damage
-    @EventHandler
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void onEntityDeath(EntityDeathEvent event) {
         LivingEntity entity = event.getEntity();
-        if (getStackCount(entity) > 1 && !(entity.getLastDamageCause() instanceof EntityDamageByEntityEvent)) {
+        int currentStack = getStackCount(entity);
+
+        if (currentStack > 1) {
+            spawnReplacement(entity, currentStack - 1);
+        }
+
+        if (currentStack > 1 || entity.hasMetadata("UniqueMobStack")) {
             entity.setCustomName(null);
-        } else if (getStackCount(entity) > 1) {
-            EntityDamageByEntityEvent damageEvent = (EntityDamageByEntityEvent) entity.getLastDamageCause();
-            if (!(damageEvent.getDamager() instanceof LivingEntity)) {
-                entity.setCustomName(null);
+        }
+    }
+
+    private void spawnReplacement(LivingEntity source, int nextStackCount) {
+        if (nextStackCount <= 0 || source.getWorld() == null) {
+            return;
+        }
+
+        Location spawnLocation = source.getLocation();
+        Entity created = source.getWorld().spawnEntity(spawnLocation, source.getType());
+        if (!(created instanceof LivingEntity replacement)) {
+            created.remove();
+            return;
+        }
+
+        copyState(source, replacement);
+        setStackCount(replacement, nextStackCount);
+    }
+
+    private void copyState(LivingEntity source, LivingEntity target) {
+        if (source instanceof Slime sourceSlime && target instanceof Slime targetSlime) {
+            targetSlime.setSize(Math.max(1, sourceSlime.getSize()));
+        }
+
+        if (source instanceof Sheep sourceSheep && target instanceof Sheep targetSheep) {
+            targetSheep.setColor(sourceSheep.getColor());
+        }
+
+        if (source instanceof Ageable sourceAgeable && target instanceof Ageable targetAgeable) {
+            if (sourceAgeable.isAdult()) {
+                targetAgeable.setAdult();
+            } else {
+                targetAgeable.setBaby();
             }
         }
-        if (entity.hasMetadata("UniqueMobStack")) {
-            entity.setCustomName(null);
+
+        target.setAI(source.hasAI());
+        target.setCollidable(source.isCollidable());
+        target.setCustomNameVisible(source.isCustomNameVisible());
+        target.setGlowing(source.isGlowing());
+        target.setGravity(source.hasGravity());
+        target.setInvulnerable(source.isInvulnerable());
+        target.setSilent(source.isSilent());
+        target.setRemoveWhenFarAway(source.getRemoveWhenFarAway());
+        target.setPersistent(source.isPersistent());
+        target.setCanPickupItems(source.getCanPickupItems());
+        target.setFireTicks(source.getFireTicks());
+        target.setPortalCooldown(source.getPortalCooldown());
+        target.setVelocity(source.getVelocity());
+        target.setFallDistance(source.getFallDistance());
+        target.setRemainingAir(source.getRemainingAir());
+        target.setNoDamageTicks(source.getNoDamageTicks());
+
+        if (source.hasMetadata("SpawnedBySpawner")) {
+            target.setMetadata("SpawnedBySpawner", new FixedMetadataValue(React.instance, true));
+        }
+
+        if (source.hasMetadata("DoNotStack")) {
+            target.setMetadata("DoNotStack", new FixedMetadataValue(React.instance, true));
+        }
+
+        if (source.hasMetadata("UniqueMobStack")) {
+            target.setMetadata("UniqueMobStack", new FixedMetadataValue(React.instance, true));
         }
     }
 

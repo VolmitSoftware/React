@@ -58,6 +58,12 @@ public class ReactConfiguration {
     @ConfigDoc(value = "Enables debug logging and additional diagnostics.", impact = "Use during debugging sessions; disable for normal production runtime.")
     private boolean debug = false;
 
+    @ConfigDoc(
+            value = "Controls how slow tick warnings are logged. Options: BLAME, SHORT, DETAILED.",
+            impact = "BLAME highlights likely plugin/workload responsibility. SHORT logs minimal timing only. DETAILED logs the full diagnostic payload."
+    )
+    private SlowTickLogMode slowTickLogMode = SlowTickLogMode.BLAME;
+
     @ConfigDoc(value = "Enables plugin-gated secret integration features.", impact = "Disabled by default. Enable to allow Iris/Adapt secret bundles when dependencies are present.")
     private boolean integrationSecretsEnabled = false;
 
@@ -138,6 +144,12 @@ public class ReactConfiguration {
         public String displayLabel() {
             return displayLabel;
         }
+    }
+
+    public enum SlowTickLogMode {
+        BLAME,
+        SHORT,
+        DETAILED
     }
 
     @Getter

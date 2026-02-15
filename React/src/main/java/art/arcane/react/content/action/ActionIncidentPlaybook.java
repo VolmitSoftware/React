@@ -34,7 +34,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
-@art.arcane.react.util.config.ConfigDescription("Configuration for Incident Playbook action. This action performs targeted remediation when React decides intervention is needed.")
+@art.arcane.react.util.config.ConfigDescription("Configuration for Incident Playbook action. Queues a tiered set of mitigation actions based on current incident severity.")
 public class ActionIncidentPlaybook extends ReactAction<ActionIncidentPlaybook.Params> {
     public static final String ID = "action-incident-playbook";
     public static final String SHORT = "aip";
@@ -69,7 +69,7 @@ public class ActionIncidentPlaybook extends ReactAction<ActionIncidentPlaybook.P
         queued += queueHopperNormalize(params, tier) ? 1 : 0;
         queued += queuePrewarm(params, tier) ? 1 : 0;
         if (params.isIncludeGarbageCollection()) {
-            queued += queueAction(ActionCollectGarbage.ID, new ActionCollectGarbage.Params()) ? 1 : 0;
+            queued += queueAction(ActionCollectGarbage.ID, ActionCollectGarbage.Params.builder().build()) ? 1 : 0;
         }
 
         params.setQueuedActions(queued);

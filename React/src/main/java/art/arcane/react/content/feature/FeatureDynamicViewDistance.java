@@ -26,6 +26,7 @@ import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.model.MinMax;
 import art.arcane.volmlib.util.math.M;
 import art.arcane.volmlib.util.math.RollingSequence;
+import art.arcane.react.util.world.WorldDistanceSupport;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.event.Listener;
@@ -51,6 +52,8 @@ public class FeatureDynamicViewDistance extends ReactFeature implements Listener
     private transient RollingSequence ttAvg;
     @art.arcane.react.util.config.ConfigDoc(value = "Internal timestamp used by dynamic view distance to track timing windows and decay.", impact = "Primarily runtime state; changing this manually can distort cooldown or throttling behavior.")
     private Map<World, Long> lastUpdate;
+    private transient boolean supportsWorldDistanceSetters;
+    private transient boolean warnedRuntimeFailure;
 
     public FeatureDynamicViewDistance() {
         super(ID);
@@ -95,6 +98,13 @@ public class FeatureDynamicViewDistance extends ReactFeature implements Listener
 
     @Override
     public void onActivate() {
+        supportsWorldDistanceSetters = WorldDistanceSupport.supportsWorldDistanceSetters();
+        warnedRuntimeFailure = false;
+        if (!supportsWorldDistanceSetters) {
+            setEnabled(false);
+            React.warn("Dynamic View Distance disabled: this server software does not expose world distance setters. Use Paper/Purpur to enable this feature.");
+            return;
+        }
         viewDistance.setMax(Math.min(viewDistance.getMax(), Bukkit.getServer().getViewDistance()));
         simulationDistance.setMax(Math.min(simulationDistance.getMax(), Bukkit.getServer().getSimulationDistance()));
         ttAvg = new RollingSequence(10);
@@ -104,22 +114,35 @@ public class FeatureDynamicViewDistance extends ReactFeature implements Listener
 
     @Override
     public void onDeactivate() {
+        supportsWorldDistanceSetters = false;
     }
 
     @Override
     public int getTickInterval() {
-        return 1000;
+        return supportsWorldDistanceSetters ? 1000 : 0;
     }
 
     @Override
     public void onTick() {
+        if (!supportsWorldDistanceSetters || ttAvg == null || lastUpdate == null) {
+            return;
+        }
         ttAvg.put(React.sampler(SamplerTickTime.ID).sample());
         long now = System.currentTimeMillis();
         long cooldownMs = Math.max(1L, updateCooldownSeconds) * 1000L;
         for (World i : Bukkit.getWorlds()) {
             if (lastUpdate.getOrDefault(i, 0L) < now - cooldownMs) {
-                if (updateWorld(i)) {
-                    lastUpdate.put(i, now);
+                try {
+                    if (updateWorld(i)) {
+                        lastUpdate.put(i, now);
+                    }
+                } catch (Throwable e) {
+                    if (!warnedRuntimeFailure) {
+                        warnedRuntimeFailure = true;
+                        setEnabled(false);
+                        React.warn("Dynamic View Distance disabled due to runtime incompatibility: " + e.getClass().getSimpleName() + ": " + e.getMessage());
+                    }
+                    return;
                 }
             }
         }

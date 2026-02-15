@@ -26,6 +26,7 @@ import art.arcane.react.util.format.C;
 import art.arcane.react.util.scheduling.J;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.sound.Sound;
+import org.bukkit.Color;
 import org.bukkit.Particle;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.EventHandler;
@@ -84,7 +85,7 @@ public class EntityKiller implements Listener {
         }
 
         stop();
-        entity.getWorld().spawnParticle(Particle.FLASH, entity.getLocation(), 1);
+        entity.getWorld().spawnParticle(Particle.FLASH, entity.getLocation(), 1, Color.WHITE);
         entity.getWorld().getPlayers().forEach(player -> 
                 React.audiences.player(player).playSound(Sound.sound(
                         Key.key("minecraft:particle.soul_escape"),

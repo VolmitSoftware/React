@@ -20,11 +20,10 @@
 package art.arcane.react.core.controller;
 
 import art.arcane.react.React;
-import art.arcane.react.content.decreecommand.CommandReact;
+import art.arcane.react.content.directorcommand.CommandReact;
 import art.arcane.react.util.cache.AtomicCache;
 import art.arcane.react.util.decree.DecreeContext;
 import art.arcane.react.util.decree.DecreeContextHandler;
-import art.arcane.react.util.decree.DecreeSystem;
 import art.arcane.react.util.format.C;
 import art.arcane.react.util.plugin.IController;
 import art.arcane.react.util.plugin.VolmitSender;
@@ -56,7 +55,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public class DecreeCommandController implements IController, CommandExecutor, TabCompleter, DirectorInvocationHook {
+public class DirectorCommandController implements IController, CommandExecutor, TabCompleter, DirectorInvocationHook {
     private static final String ROOT_COMMAND = "react";
     private static final String ROOT_PERMISSION = "react.use";
 
@@ -103,7 +102,7 @@ public class DecreeCommandController implements IController, CommandExecutor, Ta
                 buildDirectorContexts(),
                 this::dispatchDirector,
                 this,
-                DecreeSystem.handlers
+                List.of()
         ));
     }
 
@@ -210,7 +209,7 @@ public class DecreeCommandController implements IController, CommandExecutor, Ta
         }
 
         VolmitSender volmitSender = new VolmitSender(sender);
-        volmitSender.sendDecreeHelp(request.get().command(), request.get().page());
+        volmitSender.sendDirectorHelp(request.get().command(), request.get().page());
         return true;
     }
 

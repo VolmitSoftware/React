@@ -50,7 +50,7 @@ import java.util.Comparator;
 import java.util.Deque;
 import java.util.List;
 
-@art.arcane.react.util.config.ConfigDescription("Configuration for Hopper Network Normalize action. This action performs targeted remediation when React decides intervention is needed.")
+@art.arcane.react.util.config.ConfigDescription("Configuration for Hopper Network Normalize action. Targets hopper hotspots, merges item entities, and can unload idle hot chunks.")
 public class ActionHopperNetworkNormalize extends ReactAction<ActionHopperNetworkNormalize.Params> {
     public static final String ID = "action-hopper-network-normalize";
     public static final String SHORT = "ahnn";
