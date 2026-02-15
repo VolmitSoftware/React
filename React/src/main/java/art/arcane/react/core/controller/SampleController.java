@@ -116,7 +116,13 @@ public class SampleController extends TickedObject implements IController {
                 return canSample(sampler);
             } catch (Throwable e) {
                 setSamplerState(id, SamplerState.STOPPED);
-                React.warn("Failed to reload sampler " + id + ": " + e.getMessage());
+                React.warn(
+                        "Sampler reload failed: id=" + id
+                                + " class=" + sampler.getClass().getSimpleName()
+                                + " state=" + samplerStates.get(id)
+                                + " cause=" + summarizeThrowable(e)
+                                + " config=/plugins/React/sampler/" + id + ".toml"
+                );
                 return false;
             }
         }
@@ -133,7 +139,12 @@ public class SampleController extends TickedObject implements IController {
             setSamplerState(sampler.getId(), SamplerState.STARTED);
         } catch (Throwable e) {
             setSamplerState(sampler.getId(), SamplerState.STOPPED);
-            React.warn("Failed to start sampler " + sampler.getId() + ": " + e.getMessage());
+            React.warn(
+                    "Sampler start failed: id=" + sampler.getId()
+                            + " class=" + sampler.getClass().getSimpleName()
+                            + " cause=" + summarizeThrowable(e)
+                            + " config=/plugins/React/sampler/" + sampler.getId() + ".toml"
+            );
         }
     }
 
@@ -146,10 +157,32 @@ public class SampleController extends TickedObject implements IController {
         try {
             sampler.stop();
         } catch (Throwable e) {
-            React.warn("Failed to stop sampler " + sampler.getId() + ": " + e.getMessage());
+            React.warn(
+                    "Sampler stop failed: id=" + sampler.getId()
+                            + " class=" + sampler.getClass().getSimpleName()
+                            + " cause=" + summarizeThrowable(e)
+            );
         } finally {
             setSamplerState(sampler.getId(), SamplerState.STOPPED);
         }
+    }
+
+    private String summarizeThrowable(Throwable throwable) {
+        if (throwable == null) {
+            return "unknown";
+        }
+
+        Throwable root = throwable;
+        while (root.getCause() != null && root.getCause() != root) {
+            root = root.getCause();
+        }
+
+        String message = root.getMessage();
+        if (message == null || message.isBlank()) {
+            return root.getClass().getSimpleName();
+        }
+
+        return root.getClass().getSimpleName() + ": " + message;
     }
 
     private void setSamplerState(String id, SamplerState state) {

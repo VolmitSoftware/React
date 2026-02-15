@@ -11,11 +11,13 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Locale;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public final class ConfigFileSupport {
     private static final Gson PRETTY_JSON = new GsonBuilder().setPrettyPrinting().create();
     private static final long MAX_CONFIG_BYTES_DEFAULT = 2L * 1024L * 1024L;
     private static final long MAX_CONFIG_BYTES_COMPONENT = 256L * 1024L;
+    private static final AtomicInteger CREATED_MISSING_CONFIGS = new AtomicInteger();
 
     private ConfigFileSupport() {
     }
@@ -96,10 +98,21 @@ public final class ConfigFileSupport {
         }
 
         IO.writeAll(canonicalFile, serialize(fallback, canonicalFile, sourceTag));
-        if (createdMessage != null && !createdMessage.isBlank()) {
-            React.info(createdMessage);
-        }
+        recordMissingConfigCreated();
         return fallback;
+    }
+
+    public static void recordMissingConfigCreated() {
+        CREATED_MISSING_CONFIGS.incrementAndGet();
+    }
+
+    public static void flushCreatedConfigSummary() {
+        int created = CREATED_MISSING_CONFIGS.getAndSet(0);
+        if (created <= 0) {
+            return;
+        }
+
+        React.info("Created " + created + " missing config " + (created == 1 ? "entry" : "entries") + " from defaults.");
     }
 
     public static String normalize(String text) {

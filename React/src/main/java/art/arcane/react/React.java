@@ -29,6 +29,7 @@ import art.arcane.react.content.PAPI.PapiExpansion;
 import art.arcane.react.core.controller.*;
 import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.util.config.ConfigMigrationManager;
+import art.arcane.react.util.config.ConfigFileSupport;
 import art.arcane.volmlib.util.collection.KList;
 import art.arcane.react.util.format.C;
 import art.arcane.volmlib.util.format.Form;
@@ -288,6 +289,7 @@ public class React extends VolmitPlugin {
             React.info("Deleted " + deletedLegacyJson + " migrated legacy JSON config files.");
         }
 
+        ConfigFileSupport.flushCreatedConfigSummary();
         React.info("React Started in " + Form.duration(psw.getMilliseconds(), 0));
         if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
             new PapiExpansion().register();

@@ -65,6 +65,11 @@ public class MapRendererPipe extends MapRenderer {
     @Override
     public void render(@NotNull MapView map, @NotNull MapCanvas canvas, @NotNull Player player) {
         try {
+            MapController controller = React.controller(MapController.class);
+            if (controller != null && !controller.shouldRenderForPlayer(map, player)) {
+                return;
+            }
+
             ReactRenderContext.push(ReactRenderContext.builder()
                     .player(player)
                     .view(map)

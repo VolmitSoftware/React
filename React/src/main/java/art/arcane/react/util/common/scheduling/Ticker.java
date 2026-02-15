@@ -25,10 +25,13 @@ import art.arcane.chrono.RollingSequence;
 import art.arcane.multiburst.BurstExecutor;
 import art.arcane.multiburst.MultiBurst;
 import art.arcane.react.React;
+import art.arcane.react.api.feature.ReactTickedFeature;
+import art.arcane.react.api.tweak.ReactTickedTweak;
 import art.arcane.volmlib.util.collection.KList;
 import art.arcane.volmlib.util.scheduling.Looper;
 
 public class Ticker {
+    private static final long SLOW_TICK_WARN_THRESHOLD_MS = 50L;
     private final KList<Ticked> ticklist;
     private final KList<Ticked> newTicks;
     private final KList<String> removeTicks;
@@ -163,12 +166,99 @@ public class Ticker {
             long start = System.nanoTime();
             ticked.tick();
             long elapsedMS = (System.nanoTime() - start) / 1_000_000L;
-            if (elapsedMS > 50) {
-                React.warn(ticked.getTgroup() + ":" + ticked.getTid() + " took " + elapsedMS + "ms");
+            if (elapsedMS > SLOW_TICK_WARN_THRESHOLD_MS) {
+                warnSlowTick(ticked, elapsedMS);
             }
         } catch (Throwable exxx) {
+            React.warn("Tick task crashed: " + describeTicked(ticked) + " cause=" + summarizeThrowable(exxx));
             exxx.printStackTrace();
         }
+    }
+
+    private void warnSlowTick(Ticked ticked, long elapsedMS) {
+        long intervalMS = safeLong(ticked == null ? null : ticked.getTinterval(), 0L);
+        long ageMS = safeLong(ticked == null ? null : ticked.getAge(), 0L);
+        String context = slowTickContext(ticked);
+        String suffix = context.isBlank() ? "" : " " + context;
+        React.warn(
+                "Slow tick detected: " + describeTicked(ticked)
+                        + " took " + elapsedMS + "ms"
+                        + " (threshold=" + SLOW_TICK_WARN_THRESHOLD_MS + "ms, interval=" + intervalMS + "ms, age=" + ageMS + "ms)."
+                        + suffix
+        );
+    }
+
+    private String describeTicked(Ticked ticked) {
+        if (ticked == null) {
+            return "unknown-task";
+        }
+
+        String schedulerId = ticked.getTgroup() + ":" + ticked.getTid();
+        if (ticked instanceof ReactTickedFeature featureTicked && featureTicked.getComponent() != null) {
+            var component = featureTicked.getComponent();
+            return "feature name=\"" + component.getName()
+                    + "\" id=" + component.getId()
+                    + " scheduler=" + schedulerId
+                    + " class=" + component.getClass().getSimpleName();
+        }
+
+        if (ticked instanceof ReactTickedTweak tweakTicked && tweakTicked.getComponent() != null) {
+            var component = tweakTicked.getComponent();
+            return "tweak name=\"" + component.getName()
+                    + "\" id=" + component.getId()
+                    + " scheduler=" + schedulerId
+                    + " class=" + component.getClass().getSimpleName();
+        }
+
+        return "task scheduler=" + schedulerId + " class=" + ticked.getClass().getSimpleName();
+    }
+
+    private String slowTickContext(Ticked ticked) {
+        if (ticked == null) {
+            return "";
+        }
+
+        if (ticked instanceof ReactTickedFeature featureTicked && featureTicked.getComponent() != null) {
+            String id = featureTicked.getComponent().getId();
+            return "Context: executing feature onTick for /plugins/React/feature/" + id + ".toml (tickIntervalMS controls schedule cadence).";
+        }
+
+        if (ticked instanceof ReactTickedTweak tweakTicked && tweakTicked.getComponent() != null) {
+            String id = tweakTicked.getComponent().getId();
+            return "Context: executing tweak onTick for /plugins/React/tweak/" + id + ".toml (tickIntervalMS controls schedule cadence).";
+        }
+
+        String tid = ticked.getTid() == null ? "" : ticked.getTid();
+        if ("map".equalsIgnoreCase(tid)) {
+            return "Context: executing map maintenance/update work from /plugins/React/core/map.toml frame-map settings.";
+        }
+
+        return "Context: executing scheduled task id=" + tid + " class=" + ticked.getClass().getSimpleName() + ".";
+    }
+
+    private long safeLong(Long value, long fallback) {
+        if (value == null) {
+            return fallback;
+        }
+        return Math.max(0L, value);
+    }
+
+    private String summarizeThrowable(Throwable throwable) {
+        if (throwable == null) {
+            return "unknown";
+        }
+
+        Throwable root = throwable;
+        while (root.getCause() != null && root.getCause() != root) {
+            root = root.getCause();
+        }
+
+        String message = root.getMessage();
+        if (message == null || message.isBlank()) {
+            return root.getClass().getSimpleName();
+        }
+
+        return root.getClass().getSimpleName() + ": " + message;
     }
 
     private boolean containsTickId(String id) {
