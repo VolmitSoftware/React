@@ -21,7 +21,6 @@ package art.arcane.react.core.controller;
 
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import art.arcane.react.React;
 import art.arcane.react.api.action.Action;
 import art.arcane.react.api.feature.Feature;
@@ -36,28 +35,23 @@ import art.arcane.react.util.format.C;
 import art.arcane.react.util.plugin.IController;
 import art.arcane.react.util.scheduling.J;
 import art.arcane.react.util.scheduling.TickedObject;
-import art.arcane.volmlib.util.io.FolderWatcher;
+import art.arcane.volmlib.util.hotload.ConfigHotloadEngine;
 import art.arcane.volmlib.util.io.IO;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.io.File;
 import java.nio.file.Files;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
 
 @ConfigDescription("Watches React config files and hot-applies changes without requiring a full /react reload.")
 public class HotloadController extends TickedObject implements IController {
-    private static final String MISSING = "<missing>";
-    private static final String REMOVED = "<removed>";
+    private static final String[] MANAGED_CATEGORIES = {"core", "feature", "tweak", "action", "sampler"};
 
     @ConfigDoc(value = "Enables live hotloading for React managed configs.", impact = "Set to false to disable file watching and require manual reloads.")
     private boolean enabled = true;
@@ -71,12 +65,15 @@ public class HotloadController extends TickedObject implements IController {
     @ConfigDoc(value = "Sends hotload change summaries to online operators.", impact = "Disable if you only want console logs and no in-game notifications.")
     private boolean notifyOperators = true;
 
-    private transient FolderWatcher configWatcher;
     private transient File dataFolder;
     private transient File configToml;
     private transient File configLegacyJson;
-    private final transient Map<String, String> knownSignatures = new HashMap<>();
-    private final transient Map<String, String> knownContents = new HashMap<>();
+    private final transient ConfigHotloadEngine hotloadEngine = new ConfigHotloadEngine(
+            this::isManagedConfigFile,
+            this::listKnownConfigFiles,
+            this::readFileContent,
+            this::normalizeContent
+    );
 
     public HotloadController() {
         super("react", "hotload", 500);
@@ -97,9 +94,7 @@ public class HotloadController extends TickedObject implements IController {
 
     @Override
     public void stop() {
-        configWatcher = null;
-        knownSignatures.clear();
-        knownContents.clear();
+        hotloadEngine.clear();
     }
 
     @Override
@@ -113,11 +108,10 @@ public class HotloadController extends TickedObject implements IController {
     }
 
     private void reconfigureWatcher() {
-        setTinterval(Math.max(100, pollIntervalMs));
+        long effectivePollInterval = Math.max(100, pollIntervalMs);
+        setTinterval(effectivePollInterval);
         if (!enabled) {
-            configWatcher = null;
-            knownSignatures.clear();
-            knownContents.clear();
+            hotloadEngine.clear();
             return;
         }
 
@@ -125,12 +119,24 @@ public class HotloadController extends TickedObject implements IController {
             dataFolder = React.instance.getDataFolder();
         }
 
-        if (configWatcher == null) {
-            configWatcher = new FolderWatcher(dataFolder);
-            configWatcher.checkModified();
-            primeKnownSnapshots();
-            React.info("Config hotload watcher enabled for config.toml and managed component configs.");
+        if (configToml == null) {
+            configToml = React.instance.getDataFile("config.toml");
         }
+        if (configLegacyJson == null) {
+            configLegacyJson = React.instance.getDataFile("config.json");
+        }
+
+        List<File> watchedFiles = new ArrayList<>();
+        watchedFiles.add(configToml);
+        watchedFiles.add(configLegacyJson);
+        List<File> watchedDirectories = new ArrayList<>();
+        for (String category : MANAGED_CATEGORIES) {
+            File categoryFolder = React.instance.getDataFolderNoCreate(category);
+            watchedDirectories.add(categoryFolder);
+        }
+
+        hotloadEngine.configure(effectivePollInterval, watchedFiles, watchedDirectories);
+        React.info("Config hotload watcher enabled for config.toml and managed component configs.");
     }
 
     public void refreshAfterConfigReload() {
@@ -138,50 +144,18 @@ public class HotloadController extends TickedObject implements IController {
     }
 
     private void pollConfigChanges() {
-        if (!enabled || configWatcher == null) {
+        if (!enabled) {
             return;
         }
 
-        Set<File> touched = new HashSet<>();
-        if (configWatcher.checkModified()) {
-            touched.addAll(configWatcher.getCreated());
-            touched.addAll(configWatcher.getChanged());
-            touched.addAll(configWatcher.getDeleted());
-        }
-        touched.addAll(scanForMissedChanges());
+        Set<File> touched = hotloadEngine.pollTouchedFiles();
         if (touched.isEmpty()) {
             return;
         }
 
         for (File file : touched) {
-            if (!isManagedConfigFile(file)) {
-                continue;
-            }
-
-            processConfigChange(file);
+            hotloadEngine.processFileChange(file, this::applyConfigChange, delta -> notifyOps(file, delta.before(), delta.after()));
         }
-    }
-
-    private boolean processConfigChange(File file) {
-        String path = file.getAbsolutePath();
-        String before = knownContents.get(path);
-        String nowRaw = readFileContent(file);
-        String now = normalizeContent(nowRaw);
-
-        if (Objects.equals(before, now)) {
-            updateKnownSnapshot(file, now);
-            return false;
-        }
-
-        boolean applied = applyConfigChange(file);
-        String after = normalizeContent(readFileContent(file));
-        updateKnownSnapshot(file, after);
-        if (!applied) {
-            return false;
-        }
-
-        notifyOps(file, before, after);
-        return true;
     }
 
     private boolean applyConfigChange(File file) {
@@ -419,11 +393,16 @@ public class HotloadController extends TickedObject implements IController {
     }
 
     private boolean isManagedCategory(String category) {
-        return "core".equals(category)
-                || "feature".equals(category)
-                || "tweak".equals(category)
-                || "action".equals(category)
-                || "sampler".equals(category);
+        if (category == null) {
+            return false;
+        }
+
+        for (String managedCategory : MANAGED_CATEGORIES) {
+            if (managedCategory.equals(category)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean isMainConfigFile(File file) {
@@ -469,41 +448,6 @@ public class HotloadController extends TickedObject implements IController {
         return a != null && b != null && a.getAbsoluteFile().equals(b.getAbsoluteFile());
     }
 
-    private void primeKnownSnapshots() {
-        knownSignatures.clear();
-        knownContents.clear();
-        for (File file : listKnownConfigFiles()) {
-            updateKnownSnapshot(file, normalizeContent(readFileContent(file)));
-        }
-    }
-
-    private Set<File> scanForMissedChanges() {
-        Set<File> changed = new HashSet<>();
-        Set<String> seenPaths = new HashSet<>();
-        for (File file : listKnownConfigFiles()) {
-            String path = file.getAbsolutePath();
-            seenPaths.add(path);
-            String now = signature(file);
-            String previous = knownSignatures.put(path, now);
-            if (previous != null && !previous.equals(now)) {
-                changed.add(file);
-            }
-        }
-
-        for (String path : new HashSet<>(knownSignatures.keySet())) {
-            if (seenPaths.contains(path)) {
-                continue;
-            }
-
-            String previous = knownSignatures.put(path, "missing");
-            if (previous != null && !"missing".equals(previous)) {
-                changed.add(new File(path));
-            }
-        }
-
-        return changed;
-    }
-
     private List<File> listKnownConfigFiles() {
         List<File> files = new ArrayList<>();
         Set<String> added = new HashSet<>();
@@ -511,26 +455,23 @@ public class HotloadController extends TickedObject implements IController {
         addIfConfig(files, added, configToml);
         addIfConfig(files, added, configLegacyJson);
 
+        if (dataFolder == null) {
+            dataFolder = React.instance == null ? null : React.instance.getDataFolder();
+        }
+
         if (dataFolder == null || !dataFolder.exists() || !dataFolder.isDirectory()) {
             return files;
         }
 
-        ArrayDeque<File> queue = new ArrayDeque<>();
-        queue.add(dataFolder);
-        while (!queue.isEmpty()) {
-            File next = queue.removeFirst();
-            File[] children = next.listFiles();
+        for (String category : MANAGED_CATEGORIES) {
+            File categoryFolder = new File(dataFolder, category);
+            File[] children = categoryFolder.listFiles();
             if (children == null || children.length == 0) {
                 continue;
             }
 
             for (File child : children) {
-                if (child == null) {
-                    continue;
-                }
-
-                if (child.isDirectory()) {
-                    queue.add(child);
+                if (child == null || !child.isFile()) {
                     continue;
                 }
 
@@ -554,14 +495,6 @@ public class HotloadController extends TickedObject implements IController {
         out.add(file);
     }
 
-    private String signature(File file) {
-        if (file == null || !file.exists()) {
-            return "missing";
-        }
-
-        return file.lastModified() + ":" + file.length();
-    }
-
     private String readFileContent(File file) {
         if (file == null || !file.exists() || !file.isFile()) {
             return null;
@@ -571,20 +504,6 @@ public class HotloadController extends TickedObject implements IController {
             return Files.readString(file.toPath());
         } catch (Throwable e) {
             return null;
-        }
-    }
-
-    private void updateKnownSnapshot(File file, String normalizedContent) {
-        if (file == null) {
-            return;
-        }
-
-        String path = file.getAbsolutePath();
-        knownSignatures.put(path, signature(file));
-        if (normalizedContent == null) {
-            knownContents.remove(path);
-        } else {
-            knownContents.put(path, normalizedContent);
         }
     }
 
@@ -608,7 +527,11 @@ public class HotloadController extends TickedObject implements IController {
             return;
         }
 
-        List<DiffEntry> diffs = computeDiff(before, after);
+        List<ConfigHotloadEngine.DiffEntry> diffs = ConfigHotloadEngine.computeStructuredDiff(
+                before,
+                after,
+                raw -> parseStructured(raw, null)
+        );
         if (diffs.isEmpty()) {
             return;
         }
@@ -617,8 +540,8 @@ public class HotloadController extends TickedObject implements IController {
         List<String> messages = new ArrayList<>();
         int shown = Math.min(Math.max(1, maxDiffMessagesPerFile), diffs.size());
         for (int i = 0; i < shown; i++) {
-            DiffEntry diff = diffs.get(i);
-            messages.add(formatHotloadMessage(relative, diff.key, diff.oldValue, diff.newValue));
+            ConfigHotloadEngine.DiffEntry diff = diffs.get(i);
+            messages.add(formatHotloadMessage(relative, diff.key(), diff.oldValue(), diff.newValue()));
         }
 
         if (diffs.size() > shown) {
@@ -637,79 +560,6 @@ public class HotloadController extends TickedObject implements IController {
         });
     }
 
-    private List<DiffEntry> computeDiff(String before, String after) {
-        Map<String, String> left = flattenForDiff(before);
-        Map<String, String> right = flattenForDiff(after);
-        Set<String> keys = new HashSet<>(left.keySet());
-        keys.addAll(right.keySet());
-
-        List<String> ordered = new ArrayList<>(keys);
-        ordered.sort(String::compareTo);
-
-        List<DiffEntry> changes = new ArrayList<>();
-        for (String key : ordered) {
-            boolean inLeft = left.containsKey(key);
-            boolean inRight = right.containsKey(key);
-            String oldValue = inLeft ? left.get(key) : MISSING;
-            String newValue = inRight ? right.get(key) : REMOVED;
-            if (Objects.equals(oldValue, newValue)) {
-                continue;
-            }
-            changes.add(new DiffEntry(key, oldValue, newValue));
-        }
-
-        return changes;
-    }
-
-    private Map<String, String> flattenForDiff(String raw) {
-        JsonElement element = parseStructured(raw, null);
-        if (element == null) {
-            Map<String, String> fallback = new HashMap<>();
-            if (raw != null && !raw.isBlank()) {
-                fallback.put("$", formatValue(raw));
-            }
-            return fallback;
-        }
-
-        Map<String, String> out = new HashMap<>();
-        flattenJson("$", element, out);
-        return out;
-    }
-
-    private void flattenJson(String path, JsonElement element, Map<String, String> out) {
-        if (element == null || element.isJsonNull()) {
-            out.put(path, "null");
-            return;
-        }
-
-        if (element.isJsonPrimitive()) {
-            out.put(path, element.toString());
-            return;
-        }
-
-        if (element.isJsonArray()) {
-            if (element.getAsJsonArray().size() == 0) {
-                out.put(path, "[]");
-                return;
-            }
-
-            for (int i = 0; i < element.getAsJsonArray().size(); i++) {
-                flattenJson(path + "[" + i + "]", element.getAsJsonArray().get(i), out);
-            }
-            return;
-        }
-
-        JsonObject object = element.getAsJsonObject();
-        if (object.entrySet().isEmpty()) {
-            out.put(path, "{}");
-            return;
-        }
-
-        for (Map.Entry<String, JsonElement> entry : object.entrySet()) {
-            flattenJson(path + "." + entry.getKey(), entry.getValue(), out);
-        }
-    }
-
     private String formatHotloadMessage(String file, String key, String oldValue, String newValue) {
         return C.GRAY + "[" + C.AQUA + "React" + C.GRAY + "]: "
                 + C.GREEN + "Config Hotloaded: "
@@ -719,15 +569,7 @@ public class HotloadController extends TickedObject implements IController {
     }
 
     private String formatValue(String value) {
-        if (value == null) {
-            return "null";
-        }
-
-        String compact = value.replace("\r", "\\r").replace("\n", "\\n");
-        if (compact.length() > 120) {
-            return compact.substring(0, 117) + "...";
-        }
-        return compact;
+        return ConfigHotloadEngine.compactValue(value, 120);
     }
 
     private String relativizeToDataFolder(File file) {
@@ -739,8 +581,5 @@ public class HotloadController extends TickedObject implements IController {
     }
 
     private record ManagedConfig(String category, String id) {
-    }
-
-    private record DiffEntry(String key, String oldValue, String newValue) {
     }
 }

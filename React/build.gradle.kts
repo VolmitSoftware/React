@@ -28,7 +28,7 @@ plugins {
     id("org.jetbrains.kotlin.jvm") version "2.2.0"
 }
 
-version = "1.0.3" // Needs to be version specific
+version = "1.5.0-Dev1" // Needs to be version specific
 val apiVersion = "1.19"
 val pluginName = rootProject.name // Defined in settings.gradle.kts
 val mainClass = "art.arcane.react.React"
