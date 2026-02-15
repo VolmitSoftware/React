@@ -12,6 +12,6 @@ public class SamplerAdaptSessionLoad extends RemoteIntegrationSampler {
 
     @Override
     public Material getIcon() {
-        return Material.COMPASS;
+        return Material.BOOKSHELF;
     }
 }

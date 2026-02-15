@@ -19,6 +19,8 @@
 
 package art.arcane.react.api.rendering;
 
+import art.arcane.react.React;
+import art.arcane.react.core.controller.IntegrationController;
 import art.arcane.react.util.data.TinyColor;
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
 
@@ -27,11 +29,10 @@ import java.util.List;
 public class RendererIrisMetrics extends RendererIntegrationMetricsBase {
     public static final String ID = "iris-metrics";
 
-    private static final List<MetricLine> METRICS = List.of(
-            new MetricLine(IntegrationMetricSchema.IRIS_PREGEN_QUEUE, "Queue", 0, " ch"),
-            new MetricLine(IntegrationMetricSchema.IRIS_CHUNK_STREAM_MS, "Stream", 2, " ms"),
-            new MetricLine(IntegrationMetricSchema.IRIS_BIOME_CACHE_HIT_RATE, "BiomeHit", 3, "")
-    );
+    private static final MetricLine METRIC_QUEUE = new MetricLine(IntegrationMetricSchema.IRIS_PREGEN_QUEUE, "Queue", 0, " ch");
+    private static final MetricLine METRIC_STREAM = new MetricLine(IntegrationMetricSchema.IRIS_CHUNK_STREAM_MS, "Stream", 2, " ms");
+    private static final List<MetricLine> METRICS_IDLE = List.of(METRIC_QUEUE);
+    private static final List<MetricLine> METRICS_PREGEN = List.of(METRIC_QUEUE, METRIC_STREAM);
 
     @Override
     public String getId() {
@@ -60,6 +61,20 @@ public class RendererIrisMetrics extends RendererIntegrationMetricsBase {
 
     @Override
     protected List<MetricLine> metricLines() {
-        return METRICS;
+        return isPregenActive() ? METRICS_PREGEN : METRICS_IDLE;
+    }
+
+    private boolean isPregenActive() {
+        IntegrationController controller = React.controller(IntegrationController.class);
+        if (controller == null || controller.getRemoteSamplerBridge() == null) {
+            return false;
+        }
+
+        var bridge = controller.getRemoteSamplerBridge();
+        if (!bridge.isAvailable("iris", IntegrationMetricSchema.IRIS_PREGEN_QUEUE)) {
+            return false;
+        }
+
+        return bridge.valueOr("iris", IntegrationMetricSchema.IRIS_PREGEN_QUEUE, 0D) > 0D;
     }
 }

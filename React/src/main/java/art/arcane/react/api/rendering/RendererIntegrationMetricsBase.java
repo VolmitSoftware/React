@@ -31,27 +31,28 @@ abstract class RendererIntegrationMetricsBase implements ReactRenderer {
     @Override
     public void render() {
         clear(backgroundColor());
-        set(0, 0, width(), 11, accentColor());
+        set(0, 0, width(), 12, accentColor());
         text(4, 2, title());
 
         IntegrationController controller = React.controller(IntegrationController.class);
         if (controller == null || controller.getRemoteSamplerBridge() == null) {
-            text(4, 14, "Status: OFFLINE");
-            text(4, 24, "Bridge unavailable");
+            text(4, 18, "Status: OFFLINE");
+            text(4, 30, "Bridge unavailable");
             return;
         }
 
         IntegrationController.IntegrationStatus status = controller.statusFor(pluginId());
         String health = status == null ? "MISSING" : status.health().name();
-        text(4, 14, "Status: " + health);
+        set(2, 14, 124, 9, healthColor(health));
+        text(4, 15, "Status: " + health);
 
-        int y = 24;
+        int y = 28;
         long newestSampleMs = 0L;
         for (MetricLine metric : metricLines()) {
             IntegrationMetricSample sample = controller.getRemoteSamplerBridge().getSample(pluginId(), metric.key());
             newestSampleMs = Math.max(newestSampleMs, sample == null ? 0L : sample.sampledAtMs());
-            text(4, y, metric.label() + ": " + formatSample(metric, sample));
-            y += 10;
+            drawMetricRow(metric, sample, y);
+            y += 14;
             if (y > 116) {
                 return;
             }
@@ -59,7 +60,7 @@ abstract class RendererIntegrationMetricsBase implements ReactRenderer {
 
         if (status != null && status.message() != null && !status.message().isBlank()) {
             text(4, y, trim("Msg: " + status.message(), 24));
-            y += 10;
+            y += 12;
             if (y > 116) {
                 return;
             }
@@ -81,7 +82,10 @@ abstract class RendererIntegrationMetricsBase implements ReactRenderer {
 
     protected abstract List<MetricLine> metricLines();
 
-    protected record MetricLine(String key, String label, int decimals, String unitSuffix) {
+    protected record MetricLine(String key, String label, int decimals, String unitSuffix, double scale) {
+        protected MetricLine(String key, String label, int decimals, String unitSuffix) {
+            this(key, label, decimals, unitSuffix, 1D);
+        }
     }
 
     private String formatSample(MetricLine metric, IntegrationMetricSample sample) {
@@ -89,9 +93,59 @@ abstract class RendererIntegrationMetricsBase implements ReactRenderer {
             return "n/a";
         }
 
-        double value = sample.valueOr(0D);
+        double value = scaledValue(metric, sample);
         String suffix = metric.unitSuffix() == null ? "" : metric.unitSuffix();
         return Form.f(value, Math.max(0, metric.decimals())) + suffix;
+    }
+
+    private double scaledValue(MetricLine metric, IntegrationMetricSample sample) {
+        if (sample == null) {
+            return 0D;
+        }
+        return sample.valueOr(0D) * metric.scale();
+    }
+
+    private void drawMetricRow(MetricLine metric, IntegrationMetricSample sample, int y) {
+        String line = metric.label() + ": " + formatSample(metric, sample);
+        text(4, y, trim(line, 24));
+
+        if (sample == null || !sample.available()) {
+            set(4, y + 8, 118, 3, new TinyColor(42, 42, 42));
+            return;
+        }
+
+        double value = Math.abs(scaledValue(metric, sample));
+        double normalized = 1D - (1D / (1D + value));
+        int width = (int) Math.round(118D * Math.max(0D, Math.min(1D, normalized)));
+
+        set(4, y + 8, 118, 3, new TinyColor(22, 28, 34));
+        if (width <= 0) {
+            return;
+        }
+
+        TinyColor color = gradient(normalized, new TinyColor(58, 170, 214), new TinyColor(255, 110, 58));
+        set(4, y + 8, width, 3, color);
+    }
+
+    private TinyColor healthColor(String health) {
+        if (health == null) {
+            return new TinyColor(90, 90, 90);
+        }
+
+        return switch (health.toUpperCase()) {
+            case "HEALTHY", "ONLINE", "OK" -> new TinyColor(46, 136, 88);
+            case "DEGRADED", "WARN" -> new TinyColor(158, 116, 48);
+            case "UNAVAILABLE", "MISSING", "OFFLINE", "ERROR" -> new TinyColor(148, 62, 52);
+            default -> new TinyColor(90, 90, 90);
+        };
+    }
+
+    private TinyColor gradient(double normalized, TinyColor low, TinyColor high) {
+        double n = Math.max(0D, Math.min(1D, normalized));
+        int r = (int) Math.round((low.getColor().getRed() * (1D - n)) + (high.getColor().getRed() * n));
+        int g = (int) Math.round((low.getColor().getGreen() * (1D - n)) + (high.getColor().getGreen() * n));
+        int b = (int) Math.round((low.getColor().getBlue() * (1D - n)) + (high.getColor().getBlue() * n));
+        return new TinyColor(r, g, b);
     }
 
     private String trim(String text, int maxChars) {

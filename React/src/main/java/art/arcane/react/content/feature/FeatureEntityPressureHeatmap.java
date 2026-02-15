@@ -37,6 +37,11 @@ public class FeatureEntityPressureHeatmap extends FeatureChunkHeatmapBase {
     }
 
     @Override
+    protected TinyColor headerColor() {
+        return new TinyColor(150, 104, 46);
+    }
+
+    @Override
     protected TinyColor backgroundColor() {
         return new TinyColor(5, 7, 14);
     }

@@ -24,6 +24,11 @@ public class FeatureAdaptRuntimePressureOverlay extends FeatureChunkHeatmapBase 
     }
 
     @Override
+    protected TinyColor headerColor() {
+        return new TinyColor(152, 82, 138);
+    }
+
+    @Override
     protected TinyColor backgroundColor() {
         return new TinyColor(10, 8, 18);
     }

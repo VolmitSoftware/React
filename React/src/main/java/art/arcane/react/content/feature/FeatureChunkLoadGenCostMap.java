@@ -40,6 +40,11 @@ public class FeatureChunkLoadGenCostMap extends FeatureChunkHeatmapBase {
     }
 
     @Override
+    protected TinyColor headerColor() {
+        return new TinyColor(118, 84, 176);
+    }
+
+    @Override
     protected TinyColor backgroundColor() {
         return new TinyColor(10, 10, 16);
     }

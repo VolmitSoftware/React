@@ -12,6 +12,6 @@ public class SamplerIrisPregenQueue extends RemoteIntegrationSampler {
 
     @Override
     public Material getIcon() {
-        return Material.CHEST;
+        return Material.OAK_SAPLING;
     }
 }

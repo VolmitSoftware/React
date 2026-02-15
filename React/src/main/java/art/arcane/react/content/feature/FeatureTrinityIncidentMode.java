@@ -106,17 +106,25 @@ public class FeatureTrinityIncidentMode extends ReactCapabilityFeature {
     }
 
     private boolean isSevereIncident() {
-        double incidentScore = sample(SamplerIncidentScore.ID);
         double tickMS = sample(SamplerTickTime.ID);
         double irisQueue = metricOr("iris", IntegrationMetricSchema.IRIS_PREGEN_QUEUE, -1D);
         double adaptSessionLoad = metricOr("adapt", IntegrationMetricSchema.ADAPT_SESSION_LOAD, -1D);
         double adaptAbilityOps = metricOr("adapt", ReactConfiguration.adaptAbilityOpsMetricKey(), -1D);
 
-        boolean coreIncident = incidentScore >= enterIncidentScore || tickMS >= enterTickMS;
         boolean irisPressure = irisQueue >= 0D && irisQueue >= enterIrisQueue;
         boolean adaptPressure = (adaptSessionLoad >= 0D && adaptSessionLoad >= enterAdaptSessionLoad)
                 || (adaptAbilityOps >= 0D && adaptAbilityOps >= enterAdaptAbilityOps);
-        return coreIncident && (irisPressure || adaptPressure);
+        boolean externalPressure = irisPressure || adaptPressure;
+        if (!externalPressure) {
+            return false;
+        }
+
+        if (tickMS >= enterTickMS) {
+            return true;
+        }
+
+        double incidentScore = sample(SamplerIncidentScore.ID);
+        return incidentScore >= enterIncidentScore;
     }
 
     private void coordinateMitigation(long now) {

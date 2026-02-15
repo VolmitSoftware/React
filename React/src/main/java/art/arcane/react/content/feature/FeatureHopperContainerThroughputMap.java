@@ -37,6 +37,11 @@ public class FeatureHopperContainerThroughputMap extends FeatureChunkHeatmapBase
     }
 
     @Override
+    protected TinyColor headerColor() {
+        return new TinyColor(46, 132, 140);
+    }
+
+    @Override
     protected TinyColor backgroundColor() {
         return new TinyColor(4, 12, 14);
     }

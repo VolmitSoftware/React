@@ -22,11 +22,13 @@ package art.arcane.react.content.feature;
 import art.arcane.react.React;
 import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.api.rendering.ReactRenderer;
+import art.arcane.react.core.controller.MapController;
 import art.arcane.react.core.controller.ObserverController;
 import art.arcane.react.model.SampledChunk;
 import art.arcane.react.util.data.TinyColor;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 
 import java.util.HashMap;
@@ -72,19 +74,42 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
     @Override
     public void render() {
         Player viewer = player();
-        if (viewer == null || viewer.getWorld() == null) {
+        MapController mapController = React.controller(MapController.class);
+        Location anchor = mapController == null ? (viewer == null ? null : viewer.getLocation().clone()) : mapController.resolveMapAnchor(view(), viewer);
+        World mapWorld = view() != null && view().getWorld() != null
+                ? view().getWorld()
+                : anchor == null ? (viewer == null ? null : viewer.getWorld()) : anchor.getWorld();
+
+        if (mapWorld == null) {
             return;
         }
 
-        clear(backgroundColor());
+        if (anchor == null || anchor.getWorld() == null) {
+            anchor = mapWorld.getSpawnLocation().clone();
+        } else if (!mapWorld.equals(anchor.getWorld())) {
+            anchor = new Location(
+                    mapWorld,
+                    anchor.getX(),
+                    Math.max(mapWorld.getMinHeight(), Math.min(mapWorld.getMaxHeight() - 1, anchor.getY())),
+                    anchor.getZ(),
+                    anchor.getYaw(),
+                    anchor.getPitch()
+            );
+        }
 
-        Chunk center = viewer.getLocation().getChunk();
-        int radius = mapRadiusChunks > 0 ? mapRadiusChunks : Math.max(2, viewer.getWorld().getViewDistance() * 2);
+        boolean frameAnchored = mapController != null && mapController.hasFrameAnchor(view());
+
+        clear(backgroundColor());
+        set(0, 0, width(), 10, headerColor(frameAnchored));
+        set(120, 2, 5, 5, frameAnchored ? new TinyColor(96, 188, 255) : new TinyColor(88, 230, 140));
+
+        Chunk center = anchor.getChunk();
+        int radius = mapRadiusChunks > 0 ? mapRadiusChunks : Math.max(2, mapWorld.getViewDistance() * 2);
         int zoom = Math.max(1, chunkPixelSize);
         double pixelsPerBlock = zoom / 16D;
 
-        int localX = Math.floorMod(viewer.getLocation().getBlockX(), 16);
-        int localZ = Math.floorMod(viewer.getLocation().getBlockZ(), 16);
+        int localX = Math.floorMod(anchor.getBlockX(), 16);
+        int localZ = Math.floorMod(anchor.getBlockZ(), 16);
         double ox = -(localX * pixelsPerBlock);
         double oz = -(localZ * pixelsPerBlock);
 
@@ -92,7 +117,7 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
         double max = 0D;
         double min = Double.MAX_VALUE;
 
-        for (Chunk chunk : viewer.getWorld().getLoadedChunks()) {
+        for (Chunk chunk : mapWorld.getLoadedChunks()) {
             if (!within(center, chunk, radius)) {
                 continue;
             }
@@ -107,7 +132,7 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
             min = Math.min(min, value);
         }
 
-        double yaw = rotateWithPlayer ? ((-viewer.getLocation().getYaw()) + 180D) : 0D;
+        double yaw = rotateWithPlayer && !frameAnchored && viewer != null ? ((-viewer.getLocation().getYaw()) + 180D) : 0D;
         double radians = Math.toRadians(yaw);
         double cos = Math.cos(radians);
         double sin = Math.sin(radians);
@@ -131,7 +156,7 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
         }
 
         if (drawCenterMarker) {
-            TinyColor centerColor = new TinyColor(0, 255, 90);
+            TinyColor centerColor = frameAnchored ? new TinyColor(102, 180, 255) : new TinyColor(0, 255, 90);
             set(63, 63, centerColor);
             set(62, 63, centerColor);
             set(64, 63, centerColor);
@@ -139,18 +164,32 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
             set(63, 64, centerColor);
         }
 
+        drawLegend(min, max);
+
         renderOverlay(score, min, max);
 
         if (drawLabel) {
             String label = mapLabel();
             if (label != null && !label.isBlank()) {
-                text(3, 3, label);
+                text(3, 2, label);
             }
         }
     }
 
     protected TinyColor backgroundColor() {
         return new TinyColor(6, 8, 12);
+    }
+
+    protected TinyColor headerColor(boolean frameAnchored) {
+        TinyColor base = headerColor();
+        if (!frameAnchored) {
+            return base;
+        }
+        return tint(base, 1.12D);
+    }
+
+    protected TinyColor headerColor() {
+        return new TinyColor(68, 122, 176);
     }
 
     protected String mapLabel() {
@@ -160,7 +199,10 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
     protected abstract double chunkScore(Chunk chunk);
 
     protected TinyColor colorFor(double normalized, double rawScore) {
-        return gradient(normalized, new TinyColor(20, 80, 220), new TinyColor(255, 70, 20));
+        if (normalized < 0.5D) {
+            return gradient(normalized * 2D, new TinyColor(16, 78, 180), new TinyColor(60, 175, 235));
+        }
+        return gradient((normalized - 0.5D) * 2D, new TinyColor(60, 175, 235), new TinyColor(255, 98, 42));
     }
 
     protected void renderOverlay(Map<Chunk, Double> score, double min, double max) {
@@ -189,6 +231,17 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
         return new TinyColor(r, g, b);
     }
 
+    private TinyColor tint(TinyColor color, double factor) {
+        int r = (int) Math.round(color.getColor().getRed() * factor);
+        int g = (int) Math.round(color.getColor().getGreen() * factor);
+        int b = (int) Math.round(color.getColor().getBlue() * factor);
+        return new TinyColor(
+                Math.max(0, Math.min(255, r)),
+                Math.max(0, Math.min(255, g)),
+                Math.max(0, Math.min(255, b))
+        );
+    }
+
     protected Pixel projectBlockDelta(Location viewerLocation, Location targetLocation) {
         double dxBlocks = targetLocation.getX() - viewerLocation.getX();
         double dzBlocks = targetLocation.getZ() - viewerLocation.getZ();
@@ -202,6 +255,42 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
         int rx = rotateWithPlayer ? (int) Math.round((cos * a) - (sin * b)) : (int) Math.round(a);
         int rz = rotateWithPlayer ? (int) Math.round((sin * a) + (cos * b)) : (int) Math.round(b);
         return new Pixel(63 + rx, 63 + rz);
+    }
+
+    private void drawLegend(double min, double max) {
+        int x0 = 4;
+        int x1 = 90;
+        int y0 = 118;
+        int y1 = 124;
+
+        double range = Math.max(0.0001D, max - min);
+        for (int x = x0; x <= x1; x++) {
+            double n = (x - x0) / (double) Math.max(1, (x1 - x0));
+            double raw = min + (range * n);
+            TinyColor c = colorFor(n, raw);
+            for (int y = y0; y <= y1; y++) {
+                set(x, y, c);
+            }
+        }
+
+        text(3, 108, "L:" + compact(min));
+        text(94, 108, "H:" + compact(max));
+    }
+
+    private String compact(double value) {
+        if (!Double.isFinite(value)) {
+            return "0";
+        }
+        if (Math.abs(value) >= 1000D) {
+            return String.format("%.1fk", value / 1000D);
+        }
+        if (Math.abs(value) >= 100D) {
+            return String.format("%.0f", value);
+        }
+        if (Math.abs(value) >= 10D) {
+            return String.format("%.1f", value);
+        }
+        return String.format("%.2f", value);
     }
 
     private boolean within(Chunk a, Chunk b, int radius) {

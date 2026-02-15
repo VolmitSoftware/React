@@ -38,6 +38,10 @@ public abstract class ReactCachedRateSampler extends ReactCachedSampler {
 
     @Override
     public double onSample() {
+        if (hits == null || avg == null) {
+            return 0D;
+        }
+
         if (lastSample == 0) {
             lastSample = M.ms();
         }
@@ -59,15 +63,33 @@ public abstract class ReactCachedRateSampler extends ReactCachedSampler {
 
     @Override
     public void start() {
+        super.start();
         avg = new RollingSequence(rollingAverageSamples);
         hits = new AtomicInteger(0);
+        lastHit = 0L;
+        lastSample = 0L;
+    }
+
+    @Override
+    public void stop() {
+        super.stop();
+        avg = null;
+        hits = null;
+        lastHit = 0L;
+        lastSample = 0L;
     }
 
     public void increment(int amount) {
-        hits.addAndGet(amount);
+        AtomicInteger local = hits;
+        if (local != null) {
+            local.addAndGet(amount);
+        }
     }
 
     public void increment() {
-        hits.incrementAndGet();
+        AtomicInteger local = hits;
+        if (local != null) {
+            local.incrementAndGet();
+        }
     }
 }

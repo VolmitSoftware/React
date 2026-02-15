@@ -12,6 +12,6 @@ public class SamplerAdaptWorldPolicyLatency extends RemoteIntegrationSampler {
 
     @Override
     public Material getIcon() {
-        return Material.SHIELD;
+        return Material.BOOKSHELF;
     }
 }

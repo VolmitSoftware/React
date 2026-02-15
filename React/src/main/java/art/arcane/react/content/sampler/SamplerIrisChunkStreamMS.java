@@ -12,6 +12,6 @@ public class SamplerIrisChunkStreamMS extends RemoteIntegrationSampler {
 
     @Override
     public Material getIcon() {
-        return Material.CLOCK;
+        return Material.OAK_SAPLING;
     }
 }

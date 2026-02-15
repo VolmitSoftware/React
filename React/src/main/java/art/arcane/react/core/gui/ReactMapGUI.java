@@ -20,8 +20,8 @@
 package art.arcane.react.core.gui;
 
 import art.arcane.react.React;
-import art.arcane.react.api.feature.Feature;
 import art.arcane.react.api.rendering.ReactRenderer;
+import art.arcane.react.api.rendering.RendererUnknown;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.core.controller.MapController;
 import art.arcane.react.util.format.C;
@@ -110,11 +110,20 @@ public final class ReactMapGUI {
                     element.addLore(loreLine);
                 }
 
-                window.setElement(w, h, element.onLeftClick((e) -> {
-                    controller.openRenderer(player, renderer);
-                    player.sendMessage(C.GREEN + "Selected map: " + C.WHITE + displayName(renderer.getId()) + C.DARK_GRAY + " [" + scopeTag + "]");
-                    player.closeInventory();
-                }));
+                window.setElement(w, h, element
+                        .onLeftClick((e) -> {
+                            controller.openRenderer(player, renderer);
+                            player.sendMessage(C.GREEN + "Selected map: " + C.WHITE + displayName(renderer.getId()) + C.DARK_GRAY + " [" + scopeTag + "]");
+                            player.closeInventory();
+                        })
+                        .onShiftLeftClick((e) -> {
+                            controller.giveMapToInventory(player, renderer);
+                            player.sendMessage(C.GREEN + "Added map: " + C.WHITE + displayName(renderer.getId()) + C.DARK_GRAY + " [" + scopeTag + "]");
+                        })
+                        .onShiftRightClick((e) -> {
+                            controller.giveMapToInventory(player, renderer);
+                            player.sendMessage(C.GREEN + "Added map: " + C.WHITE + displayName(renderer.getId()) + C.DARK_GRAY + " [" + scopeTag + "]");
+                        }));
             }
         }
 
@@ -156,31 +165,32 @@ public final class ReactMapGUI {
             if (renderer == null || renderer.getId() == null || renderer.getId().isBlank()) {
                 continue;
             }
+
+            if (normalizeRendererId(renderer).equals(RendererUnknown.ID)) {
+                continue;
+            }
+
             unique.putIfAbsent(renderer.getId(), renderer);
         }
 
         List<ReactRenderer> renderers = new ArrayList<>(unique.values());
-        renderers.sort(Comparator.comparing(i -> normalizeSortKey(i.getId())));
+        renderers.sort((a, b) -> {
+            String aNormalized = normalizeRendererId(a);
+            String bNormalized = normalizeRendererId(b);
+            RendererGroup aGroup = rendererGroup(a, aNormalized);
+            RendererGroup bGroup = rendererGroup(b, bNormalized);
+            int groupCompare = Integer.compare(aGroup.order(), bGroup.order());
+            if (groupCompare != 0) {
+                return groupCompare;
+            }
+            return normalizeSortKey(a.getId()).compareTo(normalizeSortKey(b.getId()));
+        });
         return renderers;
     }
 
     private static Material materialFor(ReactRenderer renderer) {
-        if (renderer instanceof Feature feature && feature.getIcon() != null) {
-            return feature.getIcon();
-        }
-        if (renderer instanceof Sampler sampler && sampler.getIcon() != null) {
-            return sampler.getIcon();
-        }
-
-        String id = renderer == null ? "" : Objects.toString(renderer.getId(), "");
-        if (id.startsWith("iris-")) {
-            return Material.GRASS_BLOCK;
-        }
-        if (id.startsWith("adapt-")) {
-            return Material.COMPASS;
-        }
-
-        return Material.FILLED_MAP;
+        String normalizedId = normalizeRendererId(renderer);
+        return rendererGroup(renderer, normalizedId).icon();
     }
 
     private static int clampPage(int page, int pageCount) {
@@ -235,7 +245,9 @@ public final class ReactMapGUI {
         List<String> lore = new ArrayList<>();
         String id = renderer == null ? "unknown" : Objects.toString(renderer.getId(), "unknown");
         String normalizedId = normalizeRendererId(renderer);
+        RendererGroup group = rendererGroup(renderer, normalizedId);
         lore.add(C.DARK_GRAY + "Scope: " + C.GOLD + rendererScopeLabel(normalizedId));
+        lore.add(C.DARK_GRAY + "Group: " + C.YELLOW + group.label());
         lore.add(C.DARK_GRAY + "Type: " + C.AQUA + rendererType(renderer, normalizedId));
         lore.add(C.GRAY + rendererSummary(renderer, normalizedId));
         String detail = rendererDetail(renderer, normalizedId);
@@ -244,6 +256,7 @@ public final class ReactMapGUI {
         }
         lore.add(C.DARK_GRAY + "ID: " + C.GRAY + id);
         lore.add(C.GREEN + "Left Click: " + C.GRAY + "Select this monitor");
+        lore.add(C.GREEN + "Shift + Click: " + C.GRAY + "Add map and keep menu open");
         return lore;
     }
 
@@ -251,8 +264,14 @@ public final class ReactMapGUI {
         if (renderer instanceof Sampler) {
             return "Sampler Trend";
         }
-        if ("iris-metrics".equals(normalizedId) || "adapt-metrics".equals(normalizedId)) {
+        if ("iris-metrics".equals(normalizedId) || "adapt-metrics".equals(normalizedId) || "react-metrics".equals(normalizedId)) {
             return "Integration Metrics";
+        }
+        if (normalizedId.contains("-list-map")) {
+            return "Ranked List";
+        }
+        if (normalizedId.contains("-pie-map")) {
+            return "Pie Chart";
         }
         if (normalizedId.endsWith("-map") || normalizedId.endsWith("-heatmap") || normalizedId.endsWith("-overlay")) {
             return "World Overlay";
@@ -275,8 +294,13 @@ public final class ReactMapGUI {
             case "tick-spike-origin-replay-map" -> "Replay map of recent spike origins with decaying heat over nearby chunks.";
             case "iris-generation-pressure-overlay" -> "Iris-aware pressure overlay using pregen queue and chunk stream latency.";
             case "adapt-runtime-pressure-overlay" -> "Adapt-aware pressure overlay using session load and ability operation rate.";
-            case "iris-metrics" -> "Iris integration panel for pregen queue depth, stream latency, and biome-cache hit rate.";
+            case "iris-world-chunk-share-pie-map" -> "Pie chart showing chunk-share distribution across all loaded server worlds.";
+            case "iris-biome-chunk-share-pie-map" -> "Pie chart showing chunk-share distribution across biomes in the map world.";
+            case "plugin-event-impact-pie-map" -> "Pie chart showing rolling plugin event-impact share over time.";
+            case "plugin-event-impact-list-map" -> "Ranked list of plugins by rolling event-impact score.";
+            case "iris-metrics" -> "Iris integration panel for pregen queue depth and active stream latency.";
             case "adapt-metrics" -> "Adapt integration panel for session load, ability ops/min, and world policy latency.";
+            case "react-metrics" -> "React local metrics panel for TPS, tick latency, incident pressure, and queue health.";
             case "unknown" -> "Fallback renderer shown when a specific monitor cannot be resolved.";
             default -> {
                 if (normalizedId.startsWith("iris-")) {
@@ -284,6 +308,9 @@ public final class ReactMapGUI {
                 }
                 if (normalizedId.startsWith("adapt-")) {
                     yield "Adapt integration renderer for " + displayName(normalizedId) + ".";
+                }
+                if (normalizedId.startsWith("react-")) {
+                    yield "React local metrics renderer for " + displayName(normalizedId) + ".";
                 }
                 yield "Map renderer for " + displayName(normalizedId) + ".";
             }
@@ -305,8 +332,13 @@ public final class ReactMapGUI {
                  "tick-spike-origin-replay-map",
                  "iris-generation-pressure-overlay",
                  "adapt-runtime-pressure-overlay" -> "Hotter colors indicate more pressure in the sampled chunk.";
-            case "iris-metrics" -> "Monitors: queue backlog, stream ms, biome cache efficiency.";
+            case "iris-metrics" -> "Monitors: queue backlog; stream ms appears only while Iris pregen is active.";
             case "adapt-metrics" -> "Monitors: session load, ability throughput, policy latency.";
+            case "react-metrics" -> "Monitors: TPS, tick ms, incident score, jobs queue, scheduler backlog.";
+            case "iris-world-chunk-share-pie-map" -> "Each slice represents the percent of loaded chunks per world.";
+            case "iris-biome-chunk-share-pie-map" -> "Each slice represents the percent of loaded chunks per biome (Iris custom names when available).";
+            case "plugin-event-impact-pie-map" -> "Each slice represents the rolling share of plugin event cost over recent windows.";
+            case "plugin-event-impact-list-map" -> "Rows are ordered from highest rolling plugin impact to lowest.";
             default -> null;
         };
     }
@@ -431,6 +463,9 @@ public final class ReactMapGUI {
         if (normalizedId.startsWith("adapt-")) {
             return "Adapt Integration";
         }
+        if (normalizedId.startsWith("react-")) {
+            return "React Integration";
+        }
         return "React Core";
     }
 
@@ -441,7 +476,82 @@ public final class ReactMapGUI {
         if (normalizedId.startsWith("adapt-")) {
             return "ADAPT";
         }
+        if (normalizedId.startsWith("react-")) {
+            return "REACT";
+        }
         return "CORE";
+    }
+
+    private static RendererGroup rendererGroup(ReactRenderer renderer, String normalizedId) {
+        if (normalizedId.startsWith("adapt-")) {
+            return new RendererGroup(0, "Adapt Integration", Material.BOOKSHELF);
+        }
+        if (normalizedId.startsWith("iris-")) {
+            return new RendererGroup(1, "Iris Integration", Material.OAK_SAPLING);
+        }
+        if (normalizedId.startsWith("react-")) {
+            return new RendererGroup(2, "React Integration", Material.REDSTONE_TORCH);
+        }
+
+        if (containsAny(normalizedId, "tick", "tps", "mspt", "incident", "spike")) {
+            return new RendererGroup(10, "Tick & Stability", Material.CLOCK);
+        }
+        if (containsAny(normalizedId, "memory", "gc")) {
+            return new RendererGroup(11, "Memory & GC", Material.EXPERIENCE_BOTTLE);
+        }
+        if (containsAny(normalizedId, "player", "ping")) {
+            return new RendererGroup(12, "Players & Network", Material.PLAYER_HEAD);
+        }
+        if (containsAny(normalizedId, "entity", "spawn")) {
+            return new RendererGroup(13, "Entities & Spawns", Material.ZOMBIE_HEAD);
+        }
+        if (containsAny(normalizedId, "chunk", "world")) {
+            return new RendererGroup(14, "Chunks & World", Material.MAP);
+        }
+        if (containsAny(normalizedId, "redstone")) {
+            return new RendererGroup(15, "Redstone", Material.REDSTONE);
+        }
+        if (containsAny(normalizedId, "hopper")) {
+            return new RendererGroup(16, "Hoppers", Material.HOPPER);
+        }
+        if (containsAny(normalizedId, "fluid")) {
+            return new RendererGroup(17, "Fluids", Material.WATER_BUCKET);
+        }
+        if (containsAny(normalizedId, "physics")) {
+            return new RendererGroup(18, "Physics", Material.ANVIL);
+        }
+        if (containsAny(normalizedId, "event", "listener")) {
+            return new RendererGroup(19, "Events", Material.NOTE_BLOCK);
+        }
+        if (containsAny(normalizedId, "react", "job", "queue", "backlog")) {
+            return new RendererGroup(20, "React Scheduler", Material.COMPARATOR);
+        }
+        if (containsAny(normalizedId, "processor", "load", "cpu")) {
+            return new RendererGroup(21, "CPU & Host", Material.BLAST_FURNACE);
+        }
+        if (renderer instanceof Sampler) {
+            return new RendererGroup(22, "Sampler Trends", Material.COMPASS);
+        }
+        if (normalizedId.endsWith("-map") || normalizedId.endsWith("-heatmap") || normalizedId.endsWith("-overlay")) {
+            return new RendererGroup(30, "World Overlays", Material.CARTOGRAPHY_TABLE);
+        }
+        if ("unknown".equals(normalizedId)) {
+            return new RendererGroup(98, "Fallback", Material.BARRIER);
+        }
+        return new RendererGroup(99, "Misc", Material.FILLED_MAP);
+    }
+
+    private static boolean containsAny(String value, String... keys) {
+        if (value == null || keys == null) {
+            return false;
+        }
+
+        for (String key : keys) {
+            if (key != null && !key.isBlank() && value.contains(key)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static String normalizeSortKey(String input) {
@@ -468,6 +578,13 @@ public final class ReactMapGUI {
             int pageCount,
             boolean pagination,
             int controlRow
+    ) {
+    }
+
+    private record RendererGroup(
+            int order,
+            String label,
+            Material icon
     ) {
     }
 }

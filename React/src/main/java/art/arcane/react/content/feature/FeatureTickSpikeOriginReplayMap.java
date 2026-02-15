@@ -100,6 +100,11 @@ public class FeatureTickSpikeOriginReplayMap extends FeatureChunkHeatmapBase {
     }
 
     @Override
+    protected TinyColor headerColor() {
+        return new TinyColor(168, 86, 34);
+    }
+
+    @Override
     protected TinyColor backgroundColor() {
         return new TinyColor(18, 9, 5);
     }

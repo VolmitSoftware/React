@@ -50,6 +50,11 @@ public class FeaturePlayerImpactOverlay extends FeatureChunkHeatmapBase {
     }
 
     @Override
+    protected TinyColor headerColor() {
+        return new TinyColor(138, 78, 168);
+    }
+
+    @Override
     protected TinyColor backgroundColor() {
         return new TinyColor(8, 10, 20);
     }
@@ -65,7 +70,7 @@ public class FeaturePlayerImpactOverlay extends FeatureChunkHeatmapBase {
 
     @Override
     protected TinyColor colorFor(double normalized, double rawScore) {
-        return gradient(normalized, new TinyColor(20, 45, 120), new TinyColor(90, 180, 255));
+        return gradient(normalized, new TinyColor(74, 56, 160), new TinyColor(255, 122, 198));
     }
 
     @Override

@@ -19,6 +19,9 @@
 
 package art.arcane.react.api.rendering;
 
+import art.arcane.react.React;
+import art.arcane.react.content.feature.FeatureUnknown;
+import art.arcane.react.core.controller.MapController;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.bukkit.entity.Player;
@@ -30,7 +33,34 @@ import org.jetbrains.annotations.NotNull;
 @Getter
 @AllArgsConstructor
 public class MapRendererPipe extends MapRenderer {
-    private final ReactRenderer renderer;
+    private volatile ReactRenderer renderer;
+    private final String rendererId;
+
+    public MapRendererPipe(ReactRenderer renderer) {
+        this.renderer = renderer;
+        this.rendererId = renderer == null ? FeatureUnknown.ID : renderer.getId();
+    }
+
+    private ReactRenderer resolveRenderer() {
+        try {
+            MapController controller = React.controller(MapController.class);
+            if (controller != null) {
+                ReactRenderer resolved = controller.getRendererById(rendererId);
+                if (resolved != null) {
+                    renderer = resolved;
+                    return resolved;
+                }
+            }
+        } catch (Throwable ignored) {
+            // Fall back to the last known renderer reference.
+        }
+
+        if (renderer == null) {
+            renderer = new RendererUnknown();
+        }
+
+        return renderer;
+    }
 
     @Override
     public void render(@NotNull MapView map, @NotNull MapCanvas canvas, @NotNull Player player) {
@@ -42,7 +72,7 @@ public class MapRendererPipe extends MapRenderer {
                     .width(128)
                     .height(128)
                     .build());
-            renderer.render(map, canvas, player);
+            resolveRenderer().render(map, canvas, player);
         } catch (Throwable e) {
             e.printStackTrace();
         }

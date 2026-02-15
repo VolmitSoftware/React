@@ -32,6 +32,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -63,7 +64,10 @@ public class SamplerGUI {
                     .getSamplers()
                     .all()
                     .stream()
-                    .sorted((a, b) -> a.getId().compareToIgnoreCase(b.getId()))
+                    .sorted(Comparator
+                            .comparingInt((Sampler i) -> ReactGuiTaxonomy.groupOrder(i.getId()))
+                            .thenComparing(i -> ReactGuiTaxonomy.normalizeSortKey(i.getName()))
+                            .thenComparing(i -> ReactGuiTaxonomy.normalizeSortKey(i.getId())))
                     .toList();
             boolean hasMore = samplers.size() > (9 * 2) * (page + 1);
             int pge = page;
@@ -84,8 +88,9 @@ public class SamplerGUI {
                 int w = window.getPosition(rp);
                 rp++;
                 window.setElement(w, h, new UIElement("sample-" + i.getId())
-                        .setMaterial(new MaterialBlock(i.getIcon()))
+                        .setMaterial(new MaterialBlock(ReactGuiTaxonomy.iconForId(i.getId())))
                         .setName(i.getName())
+                        .addLore("Group: " + ReactGuiTaxonomy.groupLabel(i.getId()))
                         .addLore(i.format(i.sample()))
                         .onLeftClick((e) -> {
                             onPicked.accept(i);

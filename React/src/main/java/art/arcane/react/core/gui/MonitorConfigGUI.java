@@ -61,9 +61,13 @@ public class MonitorConfigGUI {
                 int w = window.getPosition(rp);
                 rp++;
                 Sampler i = React.sampler(ii);
+                if (i == null) {
+                    continue;
+                }
                 window.setElement(w, h, new UIElement("sample-" + i.getId())
-                        .setMaterial(new MaterialBlock(i.getIcon()))
+                        .setMaterial(new MaterialBlock(ReactGuiTaxonomy.iconForId(i.getId())))
                         .setName(i.getName())
+                        .addLore("Group: " + ReactGuiTaxonomy.groupLabel(i.getId()))
                         .addLore(i.format(i.sample()))
                         .setEnchanted(head.equals(ii))
                         .addLore("* Left Click to set as header")

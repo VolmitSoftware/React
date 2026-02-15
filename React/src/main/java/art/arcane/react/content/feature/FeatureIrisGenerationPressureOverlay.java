@@ -23,6 +23,11 @@ public class FeatureIrisGenerationPressureOverlay extends FeatureChunkHeatmapBas
     }
 
     @Override
+    protected TinyColor headerColor() {
+        return new TinyColor(62, 136, 96);
+    }
+
+    @Override
     protected TinyColor backgroundColor() {
         return new TinyColor(6, 14, 12);
     }

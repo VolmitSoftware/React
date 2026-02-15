@@ -18,6 +18,6 @@ public class SamplerAdaptAbilityOps extends RemoteIntegrationSampler {
 
     @Override
     public Material getIcon() {
-        return Material.BLAZE_POWDER;
+        return Material.BOOKSHELF;
     }
 }

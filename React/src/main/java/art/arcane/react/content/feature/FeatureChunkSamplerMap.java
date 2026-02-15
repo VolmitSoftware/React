@@ -20,109 +20,48 @@
 package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
-import art.arcane.react.api.feature.ReactFeature;
-import art.arcane.react.api.rendering.ReactRenderer;
 import art.arcane.react.core.controller.ObserverController;
 import art.arcane.react.model.SampledChunk;
 import art.arcane.react.util.data.TinyColor;
 import org.bukkit.Chunk;
-import org.bukkit.event.Listener;
-
-import java.util.HashMap;
-import java.util.Map;
 
 @art.arcane.react.util.config.ConfigDescription("Configuration for Chunk Sampler Map feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
-public class FeatureChunkSamplerMap extends ReactFeature implements Listener, ReactRenderer {
+public class FeatureChunkSamplerMap extends FeatureChunkHeatmapBase {
     public static final String ID = "chunk-sampler-map";
 
     public FeatureChunkSamplerMap() {
         super(ID);
     }
 
-    public double distanceSquared(Chunk a, Chunk b) {
-        return Math.pow(a.getX() - b.getX(), 2) + Math.pow(a.getZ() - b.getZ(), 2);
-    }
-
-    public boolean within(Chunk a, Chunk b, double radius) {
-        return distanceSquared(a, b) <= Math.pow(radius, 2);
+    @Override
+    protected String mapLabel() {
+        return "Chunk Cost Heat";
     }
 
     @Override
-    public void render() {
-        int zoom = 5;
-        int bpp = (16 / zoom);
-        clear(new TinyColor(0, 0, 0));
-        Chunk center = player().getLocation().getChunk();
+    protected TinyColor headerColor() {
+        return new TinyColor(84, 114, 146);
+    }
 
-        int ox = -((player().getLocation().getBlockX() % 16) / bpp);
-        int oz = -((player().getLocation().getBlockZ() % 16) / bpp);
-        Map<Chunk, Double> score = new HashMap<>();
-        for (Chunk i : player().getWorld().getLoadedChunks()) {
-            if (within(i, center, player().getWorld().getViewDistance() * 2)) {
-                SampledChunk sc = React.controller(ObserverController.class).getSampled().getChunk(i);
-                score.put(i, sc.totalScore());
-            }
+    @Override
+    protected double chunkScore(Chunk chunk) {
+        ObserverController observer = React.controller(ObserverController.class);
+        if (observer == null || observer.getSampled() == null || chunk == null) {
+            return 0D;
         }
 
-        double max = score.values().stream().mapToDouble(i -> i).max().orElse(0);
-        double min = score.values().stream().mapToDouble(i -> i).min().orElse(0);
-        double yaw = (-player().getLocation().getYaw()) + 180;
+        SampledChunk sampledChunk = observer.getSampled().getChunk(chunk);
+        return sampledChunk == null ? 0D : Math.max(0D, sampledChunk.totalScore());
+    }
 
-        score.replaceAll((k, v) -> (v - min) / (max - min));
-
-        for (Chunk i : player().getWorld().getLoadedChunks()) {
-            if (within(i, center, player().getWorld().getViewDistance() * 2)) {
-                int x = (i.getX() - center.getX()) * zoom;
-                int z = (i.getZ() - center.getZ()) * zoom;
-
-                TinyColor c = new TinyColor((int) (score.get(i) * 255), (int) (score.get(i) * 255), (int) (score.get(i) * 255));
-
-                for (int dx = 0; dx < zoom; dx++) {
-                    for (int dz = 0; dz < zoom; dz++) {
-                        // calculate the position of this pixel relative to the player
-                        int a = x + dx + ox;
-                        int b = z + dz + oz;
-
-                        // Rotate each pixel in the chunk
-                        int rotatedA = (int) (Math.cos(Math.toRadians(yaw)) * a - Math.sin(Math.toRadians(yaw)) * b);
-                        int rotatedB = (int) (Math.sin(Math.toRadians(yaw)) * a + Math.cos(Math.toRadians(yaw)) * b);
-
-                        // Draw the rotated pixel
-                        set(63 + rotatedA, 63 + rotatedB, c);
-                        set(63 + rotatedA + 1, 63 + rotatedB + 1, c);
-                        set(63 + rotatedA - 1, 63 + rotatedB + 1, c);
-                        set(63 + rotatedA + 1, 63 + rotatedB - 1, c);
-                        set(63 + rotatedA, 63 + rotatedB - 1, c);
-                        set(63 + rotatedA, 63 + rotatedB + 1, c);
-                        set(63 + rotatedA - 1, 63 + rotatedB, c);
-                        set(63 + rotatedA + 1, 63 + rotatedB, c);
-                    }
-                }
-            }
+    @Override
+    protected TinyColor colorFor(double normalized, double rawScore) {
+        if (normalized < 0.33D) {
+            return gradient(normalized / 0.33D, new TinyColor(22, 84, 190), new TinyColor(52, 182, 214));
         }
-
-        set(63, 63, new TinyColor(0, 255, 0));
-    }
-
-    @Override
-    public void onActivate() {
-
-    }
-
-
-    @Override
-    public void onDeactivate() {
-
-    }
-
-    @Override
-    public int getTickInterval() {
-        return -1;
-    }
-
-    @Override
-    public void onTick() {
-
+        if (normalized < 0.66D) {
+            return gradient((normalized - 0.33D) / 0.33D, new TinyColor(52, 182, 214), new TinyColor(245, 184, 74));
+        }
+        return gradient((normalized - 0.66D) / 0.34D, new TinyColor(245, 184, 74), new TinyColor(255, 82, 44));
     }
 }
-

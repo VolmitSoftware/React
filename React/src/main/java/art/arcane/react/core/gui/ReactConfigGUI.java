@@ -373,8 +373,10 @@ public final class ReactConfigGUI {
                 entries.add(new SectionIndexEntry(
                         ROOT_FEATURE + "." + feature.getId(),
                         C.stripColor(feature.getName()),
-                        feature.getIcon(),
-                        (active ? "Active" : "Inactive") + " | feature/" + feature.getId() + ".toml",
+                        ReactGuiTaxonomy.iconForId(feature.getId()),
+                        (active ? "Active" : "Inactive")
+                                + " | Group: " + ReactGuiTaxonomy.groupLabel(feature.getId())
+                                + " | feature/" + feature.getId() + ".toml",
                         active,
                         ROOT_FEATURE + "." + feature.getId() + ".enabled",
                         feature.isEnabled()
@@ -382,7 +384,7 @@ public final class ReactConfigGUI {
             }
         }
 
-        entries.sort(Comparator.comparing(e -> normalizeSortKey(e.displayName())));
+        entries.sort(groupedIndexComparator(ROOT_FEATURE));
         openSectionIndex(player, ROOT_FEATURE, page, "Configure: features", entries);
     }
 
@@ -399,8 +401,10 @@ public final class ReactConfigGUI {
                 entries.add(new SectionIndexEntry(
                         ROOT_TWEAK + "." + tweak.getId(),
                         C.stripColor(tweak.getName()),
-                        tweak.getIcon(),
-                        (active ? "Active" : "Inactive") + " | tweak/" + tweak.getId() + ".toml",
+                        ReactGuiTaxonomy.iconForId(tweak.getId()),
+                        (active ? "Active" : "Inactive")
+                                + " | Group: " + ReactGuiTaxonomy.groupLabel(tweak.getId())
+                                + " | tweak/" + tweak.getId() + ".toml",
                         active,
                         ROOT_TWEAK + "." + tweak.getId() + ".enabled",
                         tweak.isEnabled()
@@ -408,7 +412,7 @@ public final class ReactConfigGUI {
             }
         }
 
-        entries.sort(Comparator.comparing(e -> normalizeSortKey(e.displayName())));
+        entries.sort(groupedIndexComparator(ROOT_TWEAK));
         openSectionIndex(player, ROOT_TWEAK, page, "Configure: tweaks", entries);
     }
 
@@ -424,13 +428,14 @@ public final class ReactConfigGUI {
                 entries.add(new SectionIndexEntry(
                         ROOT_ACTION + "." + action.getId(),
                         C.stripColor(action.getName()),
-                        action.getIcon(),
-                        "Configure action/" + action.getId() + ".toml"
+                        ReactGuiTaxonomy.iconForId(action.getId()),
+                        "Group: " + ReactGuiTaxonomy.groupLabel(action.getId())
+                                + " | action/" + action.getId() + ".toml"
                 ));
             }
         }
 
-        entries.sort(Comparator.comparing(e -> normalizeSortKey(e.displayName())));
+        entries.sort(groupedIndexComparator(ROOT_ACTION));
         openSectionIndex(player, ROOT_ACTION, page, "Configure: actions", entries);
     }
 
@@ -446,13 +451,14 @@ public final class ReactConfigGUI {
                 entries.add(new SectionIndexEntry(
                         ROOT_SAMPLER + "." + sampler.getId(),
                         C.stripColor(sampler.getName()),
-                        sampler.getIcon(),
-                        "Configure sampler/" + sampler.getId() + ".toml"
+                        ReactGuiTaxonomy.iconForId(sampler.getId()),
+                        "Group: " + ReactGuiTaxonomy.groupLabel(sampler.getId())
+                                + " | sampler/" + sampler.getId() + ".toml"
                 ));
             }
         }
 
-        entries.sort(Comparator.comparing(e -> normalizeSortKey(e.displayName())));
+        entries.sort(groupedIndexComparator(ROOT_SAMPLER));
         openSectionIndex(player, ROOT_SAMPLER, page, "Configure: samplers", entries);
     }
 
@@ -490,11 +496,16 @@ public final class ReactConfigGUI {
                     UIElement element = new UIElement("cfg-index-" + entry.path())
                             .setMaterial(new MaterialBlock(entry.material()))
                             .setName(displayName);
+                    if (entry.lore() != null && !entry.lore().isBlank()) {
+                        element.addLore(C.GRAY + entry.lore());
+                    }
+                    element.addLore(C.DARK_GRAY + "Path: " + entry.path());
                     element.onLeftClick((e) -> navigateTo(player, entry.path(), 0));
                     if (entry.highlighted()) {
                         element.setEnchanted(true);
                     }
                     if (entry.quickTogglePath() != null && entry.quickToggleValue() != null) {
+                        element.addLore(C.GREEN + "Right Click: " + C.GRAY + "Toggle enabled");
                         element.onRightClick((e) -> confirmAndApply(
                                 player,
                                 safePath,
@@ -1724,6 +1735,22 @@ public final class ReactConfigGUI {
 
     private static String normalizeSortKey(String input) {
         return C.stripColor(input == null ? "" : input).toLowerCase(Locale.ROOT).replace(" ", "");
+    }
+
+    private static Comparator<SectionIndexEntry> groupedIndexComparator(String rootPrefix) {
+        return Comparator
+                .comparingInt((SectionIndexEntry entry) -> ReactGuiTaxonomy.groupOrder(indexEntryId(entry.path(), rootPrefix)))
+                .thenComparing(entry -> normalizeSortKey(entry.displayName()));
+    }
+
+    private static String indexEntryId(String path, String rootPrefix) {
+        String payload = stripPrefix(path, rootPrefix);
+        if (payload.isBlank()) {
+            return "";
+        }
+
+        String[] parts = payload.split("\\Q.\\E", 2);
+        return parts.length == 0 ? "" : parts[0];
     }
 
     private record PageLayout(

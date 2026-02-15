@@ -20,6 +20,8 @@
 package art.arcane.react.api.sampler;
 
 import art.arcane.chrono.ChronoLatch;
+import art.arcane.react.React;
+import art.arcane.react.core.controller.SampleController;
 import com.google.common.util.concurrent.AtomicDouble;
 
 public abstract class ReactCachedSampler implements Sampler {
@@ -28,6 +30,7 @@ public abstract class ReactCachedSampler implements Sampler {
     private transient final AtomicDouble slast;
     private transient final Object sampleLock;
     private transient final String sid;
+    private transient volatile boolean runtimeStarted;
 
     public ReactCachedSampler(String id, long sampleDelay) {
         this.sid = id;
@@ -35,23 +38,24 @@ public abstract class ReactCachedSampler implements Sampler {
         this.slatch = new ChronoLatch(sampleDelay, true);
         this.slast = new AtomicDouble();
         this.sampleLock = new Object();
+        this.runtimeStarted = false;
     }
 
     @Override
     public void start() {
-
+        runtimeStarted = true;
     }
 
     @Override
     public void stop() {
-
+        runtimeStarted = false;
     }
 
     public abstract double onSample();
 
     @Override
     public double sample() {
-        if (!slatch.couldFlip()) {
+        if (!canSampleNow() || !slatch.couldFlip()) {
             return slast.get();
         }
 
@@ -65,5 +69,18 @@ public abstract class ReactCachedSampler implements Sampler {
 
     public String getId() {
         return sid;
+    }
+
+    private boolean canSampleNow() {
+        if (!runtimeStarted) {
+            return false;
+        }
+
+        try {
+            SampleController controller = React.controller(SampleController.class);
+            return controller == null || controller.canSample(this);
+        } catch (Throwable ignored) {
+            return runtimeStarted;
+        }
     }
 }

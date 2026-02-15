@@ -36,6 +36,9 @@ import org.bukkit.plugin.RegisteredListener;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @EqualsAndHashCode(callSuper = true)
@@ -44,6 +47,8 @@ public class EventController extends TickedObject implements IController, Listen
     private transient int listenerCount;
     private transient double totalTime;
     private transient int calls;
+    private transient Map<String, Double> pluginEventTimeMS = new ConcurrentHashMap<>();
+    private transient Map<String, Integer> pluginEventCalls = new ConcurrentHashMap<>();
     private transient AtomicBoolean running = new AtomicBoolean(false);
     private transient boolean spiesInjected = false;
     private transient long lastSamplerActivity = 0;
@@ -95,6 +100,8 @@ public class EventController extends TickedObject implements IController, Listen
             listenerCount = 0;
             totalTime = 0;
             calls = 0;
+            pluginEventTimeMS.clear();
+            pluginEventCalls.clear();
             return;
         }
 
@@ -146,6 +153,8 @@ public class EventController extends TickedObject implements IController, Listen
                 totalTime = 0;
                 calls = 0;
                 int m = 0;
+                Map<String, Double> pluginTime = new HashMap<>();
+                Map<String, Integer> pluginCalls = new HashMap<>();
                 ArrayList<HandlerList> h = new ArrayList<>(Curse.on(HandlerList.class).get("allLists"));
 
                 for (HandlerList i : h) {
@@ -157,10 +166,16 @@ public class EventController extends TickedObject implements IController, Listen
                                 r[j] = new NaughtyRegisteredListener(r[j].getListener(), Curse.on(r[j]).get("executor"),
                                         r[j].getPriority(), r[j].getPlugin(), r[j].isIgnoringCancelled());
                             } else {
-                                totalTime += ((NaughtyRegisteredListener) r[j]).time;
-                                ((NaughtyRegisteredListener) r[j]).time = 0;
-                                calls += ((NaughtyRegisteredListener) r[j]).calls;
-                                ((NaughtyRegisteredListener) r[j]).calls = 0;
+                                NaughtyRegisteredListener naughty = (NaughtyRegisteredListener) r[j];
+                                String pluginName = pluginName(naughty);
+                                double listenerTime = naughty.time;
+                                int listenerCalls = naughty.calls;
+                                totalTime += listenerTime;
+                                calls += listenerCalls;
+                                pluginTime.merge(pluginName, listenerTime, Double::sum);
+                                pluginCalls.merge(pluginName, listenerCalls, Integer::sum);
+                                naughty.time = 0;
+                                naughty.calls = 0;
                             }
                         }
 
@@ -174,10 +189,16 @@ public class EventController extends TickedObject implements IController, Listen
                                     j.set(k, new NaughtyRegisteredListener(j.get(k).getListener(), Curse.on(j.get(k)).get("executor"),
                                             j.get(k).getPriority(), j.get(k).getPlugin(), j.get(k).isIgnoringCancelled()));
                                 } else {
-                                    totalTime += ((NaughtyRegisteredListener) j.get(k)).time;
-                                    ((NaughtyRegisteredListener) j.get(k)).time = 0;
-                                    calls += ((NaughtyRegisteredListener) j.get(k)).calls;
-                                    ((NaughtyRegisteredListener) j.get(k)).calls = 0;
+                                    NaughtyRegisteredListener naughty = (NaughtyRegisteredListener) j.get(k);
+                                    String pluginName = pluginName(naughty);
+                                    double listenerTime = naughty.time;
+                                    int listenerCalls = naughty.calls;
+                                    totalTime += listenerTime;
+                                    calls += listenerCalls;
+                                    pluginTime.merge(pluginName, listenerTime, Double::sum);
+                                    pluginCalls.merge(pluginName, listenerCalls, Integer::sum);
+                                    naughty.time = 0;
+                                    naughty.calls = 0;
                                 }
                             }
 
@@ -187,6 +208,10 @@ public class EventController extends TickedObject implements IController, Listen
                 }
 
                 listenerCount = m;
+                pluginEventTimeMS.clear();
+                pluginEventTimeMS.putAll(pluginTime);
+                pluginEventCalls.clear();
+                pluginEventCalls.putAll(pluginCalls);
             } finally {
                 running.set(false);
             }
@@ -224,5 +249,22 @@ public class EventController extends TickedObject implements IController, Listen
         }
 
         React.verbose("Pulled out " + out + " event listener spies.");
+    }
+
+    public Map<String, Double> snapshotPluginEventTimeMS() {
+        return new HashMap<>(pluginEventTimeMS);
+    }
+
+    public Map<String, Integer> snapshotPluginEventCalls() {
+        return new HashMap<>(pluginEventCalls);
+    }
+
+    private String pluginName(RegisteredListener listener) {
+        if (listener == null || listener.getPlugin() == null || listener.getPlugin().getName() == null) {
+            return "Unknown";
+        }
+
+        String plugin = listener.getPlugin().getName().trim();
+        return plugin.isBlank() ? "Unknown" : plugin;
     }
 }

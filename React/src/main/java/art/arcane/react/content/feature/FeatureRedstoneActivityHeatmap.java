@@ -37,6 +37,11 @@ public class FeatureRedstoneActivityHeatmap extends FeatureChunkHeatmapBase {
     }
 
     @Override
+    protected TinyColor headerColor() {
+        return new TinyColor(162, 46, 38);
+    }
+
+    @Override
     protected TinyColor backgroundColor() {
         return new TinyColor(14, 4, 4);
     }
