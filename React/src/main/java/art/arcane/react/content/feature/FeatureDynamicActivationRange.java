@@ -35,8 +35,10 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityTargetEvent;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @art.arcane.react.util.config.ConfigDescription("Configuration for Dynamic Activation Range feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureDynamicActivationRange extends ReactFeature implements Listener {
@@ -85,6 +87,12 @@ public class FeatureDynamicActivationRange extends ReactFeature implements Liste
     public void onTick() {
         double tickTime = React.sampler(SamplerTickTime.ID).sample();
         tuneRange(tickTime);
+
+        if (J.isFoliaThreading()) {
+            applyFoliaActivationRange();
+            return;
+        }
+
         J.s(this::applyActivationRange);
     }
 
@@ -128,7 +136,57 @@ public class FeatureDynamicActivationRange extends ReactFeature implements Liste
         }
     }
 
+    private void applyFoliaActivationRange() {
+        List<Player> players = new ArrayList<>(Bukkit.getOnlinePlayers());
+        if (players.isEmpty()) {
+            return;
+        }
+
+        AtomicInteger remaining = new AtomicInteger(Math.max(1, maxEntitiesSampledPerCycle));
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        int playerSamples = Math.min(players.size(), Math.max(1, remaining.get() / 8));
+        for (int i = 0; i < playerSamples && remaining.get() > 0; i++) {
+            Player player = players.get(random.nextInt(players.size()));
+            J.runEntity(player, () -> sampleAroundPlayer(player, remaining));
+        }
+    }
+
+    private void sampleAroundPlayer(Player player, AtomicInteger remaining) {
+        if (player == null || !player.isOnline() || !J.isOwnedByCurrentRegion(player)) {
+            return;
+        }
+
+        List<Entity> nearby = player.getNearbyEntities(
+                currentActivationRange + 16,
+                Math.max(32, currentActivationRange),
+                currentActivationRange + 16
+        );
+        if (nearby.isEmpty()) {
+            return;
+        }
+
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        int sample = Math.min(nearby.size(), Math.max(1, remaining.get() / 2));
+        for (int i = 0; i < sample; i++) {
+            if (remaining.getAndDecrement() <= 0) {
+                return;
+            }
+
+            Entity entity = nearby.get(random.nextInt(nearby.size()));
+            manage(entity);
+        }
+    }
+
     private void manage(Entity entity) {
+        if (entity == null) {
+            return;
+        }
+
+        if (J.isFoliaThreading() && !J.isOwnedByCurrentRegion(entity)) {
+            J.runEntity(entity, () -> manage(entity));
+            return;
+        }
+
         if (!canManage(entity)) {
             wake(entity);
             return;

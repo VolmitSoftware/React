@@ -27,12 +27,15 @@ import art.arcane.react.util.scheduling.J;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
+import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @art.arcane.react.util.config.ConfigDescription("Configuration for Item Backpressure feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureItemBackpressure extends ReactFeature {
@@ -89,6 +92,11 @@ public class FeatureItemBackpressure extends ReactFeature {
             return;
         }
 
+        if (J.isFoliaThreading()) {
+            removeRemoteItemsFolia();
+            return;
+        }
+
         J.s(this::removeRemoteItems);
     }
 
@@ -132,7 +140,62 @@ public class FeatureItemBackpressure extends ReactFeature {
         }
     }
 
+    private void removeRemoteItemsFolia() {
+        List<Player> players = new ArrayList<>(Bukkit.getOnlinePlayers());
+        if (players.isEmpty()) {
+            return;
+        }
+
+        AtomicInteger budget = new AtomicInteger(Math.max(1, maxItemsRemovedPerCycle));
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        int playerSamples = Math.min(players.size(), Math.max(1, maxItemsScannedPerWorld / 16));
+
+        for (int i = 0; i < playerSamples && budget.get() > 0; i++) {
+            Player player = players.get(random.nextInt(players.size()));
+            J.runEntity(player, () -> removeAroundPlayer(player, budget));
+        }
+    }
+
+    private void removeAroundPlayer(Player player, AtomicInteger budget) {
+        if (player == null || !player.isOnline() || !J.isOwnedByCurrentRegion(player)) {
+            return;
+        }
+
+        List<Entity> nearby = player.getNearbyEntities(noPlayerRadius + 24, Math.max(32, noPlayerRadius), noPlayerRadius + 24);
+        if (nearby.isEmpty()) {
+            return;
+        }
+
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        int scan = Math.min(maxItemsScannedPerWorld, nearby.size());
+        for (int i = 0; i < scan; i++) {
+            if (budget.get() <= 0) {
+                return;
+            }
+
+            Entity sampled = nearby.get(random.nextInt(nearby.size()));
+            if (!(sampled instanceof Item item)) {
+                continue;
+            }
+
+            if (!canRemove(item)) {
+                continue;
+            }
+
+            item.remove();
+            budget.decrementAndGet();
+        }
+    }
+
     private boolean canRemove(Item item) {
+        if (item == null) {
+            return false;
+        }
+
+        if (J.isFoliaThreading() && !J.isOwnedByCurrentRegion(item)) {
+            return false;
+        }
+
         if (item.isDead() || item.getTicksLived() < minimumItemAgeTicks) {
             return false;
         }

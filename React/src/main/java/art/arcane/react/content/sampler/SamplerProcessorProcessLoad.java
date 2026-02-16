@@ -41,16 +41,32 @@ public class SamplerProcessorProcessLoad extends ReactCachedSampler {
 
     @Override
     public double onSample() {
-        return poller.request();
+        return normalizeCpuLoad(poller.request());
     }
 
     @Override
     public String formattedValue(double t) {
-        return Form.pc(t, 0);
+        return Form.pc(normalizeCpuLoad(t), 0);
     }
 
     @Override
     public String formattedSuffix(double t) {
         return "pCPU";
+    }
+
+    private static double normalizeCpuLoad(double raw) {
+        if (!Double.isFinite(raw) || raw <= 0D) {
+            return 0D;
+        }
+
+        if (raw <= 1D) {
+            return raw;
+        }
+
+        if (raw <= 100D) {
+            return raw / 100D;
+        }
+
+        return 1D;
     }
 }

@@ -26,6 +26,7 @@ import art.arcane.react.api.action.ReactAction;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.content.sampler.SamplerHopperUpdates;
 import art.arcane.react.core.controller.ActionController;
+import art.arcane.react.core.controller.ObserverController;
 import art.arcane.volmlib.util.format.Form;
 import art.arcane.react.util.scheduling.J;
 import lombok.AllArgsConstructor;
@@ -69,7 +70,7 @@ public class ActionHopperNetworkNormalize extends ReactAction<ActionHopperNetwor
     public void workOn(ActionTicket<Params> ticket) {
         Params params = ticket.getParams();
         if (!params.isPrepared()) {
-            List<ChunkTarget> queue = J.sResult(() -> buildQueueSync(params));
+            List<ChunkTarget> queue = buildQueue(params);
             params.setQueue(new ArrayDeque<>(queue == null ? List.of() : queue));
             params.setPrepared(true);
             ticket.setWork(0);
@@ -82,14 +83,16 @@ public class ActionHopperNetworkNormalize extends ReactAction<ActionHopperNetwor
             return;
         }
 
-        int chunkBudget = Math.max(1, React.controller(ActionController.class).getActionSpeedMultiplier() / 12);
+        int chunkBudget = J.isFoliaThreading()
+                ? 1
+                : Math.max(1, React.controller(ActionController.class).getActionSpeedMultiplier() / 12);
         int worked = 0;
         while (worked < chunkBudget && !params.getQueue().isEmpty()) {
             ChunkTarget target = params.getQueue().pollFirst();
             if (target == null) {
                 break;
             }
-            NormalizeResult result = J.sResult(() -> normalizeChunkSync(target, params));
+            NormalizeResult result = normalizeChunk(target, params);
             if (result != null) {
                 params.setHoppersNormalized(params.getHoppersNormalized() + result.hoppersNormalized());
                 params.setItemsMerged(params.getItemsMerged() + result.itemsMerged());
@@ -119,6 +122,14 @@ public class ActionHopperNetworkNormalize extends ReactAction<ActionHopperNetwor
 
     }
 
+    private List<ChunkTarget> buildQueue(Params params) {
+        if (J.isFoliaThreading()) {
+            return buildQueueSync(params);
+        }
+
+        return J.sResult(() -> buildQueueSync(params));
+    }
+
     private List<ChunkTarget> buildQueueSync(Params params) {
         List<ChunkTarget> targets = new ArrayList<>();
         Sampler hopperSampler = React.sampler(SamplerHopperUpdates.ID);
@@ -126,7 +137,13 @@ public class ActionHopperNetworkNormalize extends ReactAction<ActionHopperNetwor
             return targets;
         }
 
-        for (World world : Bukkit.getWorlds()) {
+        ObserverController observer = React.controller(ObserverController.class);
+        if (observer == null || observer.getSampled() == null) {
+            return targets;
+        }
+
+        for (var sampledWorld : observer.getSampled().getWorlds().values()) {
+            World world = sampledWorld.getWorld();
             if (world == null) {
                 continue;
             }
@@ -135,7 +152,12 @@ public class ActionHopperNetworkNormalize extends ReactAction<ActionHopperNetwor
                 continue;
             }
 
-            for (Chunk chunk : world.getLoadedChunks()) {
+            for (var sampledChunk : sampledWorld.getChunks().values()) {
+                Chunk chunk = sampledChunk.getChunk();
+                if (chunk == null || chunk.getWorld() == null) {
+                    continue;
+                }
+
                 double rate = hopperSampler.sample(chunk);
                 if (rate < params.getMinimumHopperUpdatesPerChunk()) {
                     continue;
@@ -152,6 +174,19 @@ public class ActionHopperNetworkNormalize extends ReactAction<ActionHopperNetwor
         }
 
         return targets;
+    }
+
+    private NormalizeResult normalizeChunk(ChunkTarget target, Params params) {
+        if (!J.isFoliaThreading()) {
+            return J.sResult(() -> normalizeChunkSync(target, params));
+        }
+
+        World world = Bukkit.getWorld(target.world());
+        if (world == null) {
+            return new NormalizeResult(0, 0, false);
+        }
+
+        return J.runChunkResult(world, target.x(), target.z(), () -> normalizeChunkSync(target, params), new NormalizeResult(0, 0, false));
     }
 
     private NormalizeResult normalizeChunkSync(ChunkTarget target, Params params) {

@@ -71,7 +71,7 @@ registerCustomOutputTask("Pixel", "C://Users//repix//Iris Dimension Engine//1.20
 registerCustomOutputTask("CrazyDev22", "C:\\Users\\Julian\\Desktop\\server\\plugins")
 // ========================== UNIX ==============================
 registerCustomOutputTaskUnix("CyberpwnLT", "/Users/danielmills/development/server/plugins")
-registerCustomOutputTaskUnix("PsychoLT", "/Users/brianfopiano/Developer/RemoteGit/[Minecraft Server]/plugins")
+registerCustomOutputTaskUnix("PsychoLT", "/Users/brianfopiano/Developer/RemoteGit/[Minecraft Server]/plugin-jars")
 // ==============================================================
 
 /**

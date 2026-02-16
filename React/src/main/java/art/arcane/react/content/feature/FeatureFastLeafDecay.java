@@ -46,13 +46,14 @@ import org.bukkit.event.block.LeavesDecayEvent;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @art.arcane.react.util.config.ConfigDescription("Configuration for Fast Leaf Decay feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureFastLeafDecay extends ReactFeature implements Listener {
     public static final String ID = "fast-leaf-decay";
-    private final transient Set<Block> search = new HashSet<>();
+    private final transient Set<Block> search = ConcurrentHashMap.newKeySet();
     private transient Cache<IChunk, ChunkSnapshot> snapshot;
     private transient ChronoLatch cooldownLatch;
     @art.arcane.react.util.config.ConfigDoc(value = "Leaf decay radius used by fast leaf decay (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
@@ -204,29 +205,33 @@ public class FeatureFastLeafDecay extends ReactFeature implements Listener {
                     break;
                 }
 
-                J.s(() -> {
+                var location = block.getLocation().clone();
+                J.s(location, () -> {
+                    Block root = location.getBlock();
                     PrecisionStopwatch px = PrecisionStopwatch.start();
-                    for (i.set(block.getX() - getLeafDecayRadius()); i.get() < block.getX() + getLeafDecayRadius(); i.getAndIncrement()) {
-                        for (j.set(block.getY() - getLeafDecayRadius()); j.get() < block.getY() + getLeafDecayRadius(); j.getAndIncrement()) {
-                            for (k.set(block.getZ() - getLeafDecayRadius()); k.get() < block.getZ() + getLeafDecayRadius(); k.getAndIncrement()) {
+                    for (i.set(root.getX() - getLeafDecayRadius()); i.get() < root.getX() + getLeafDecayRadius(); i.getAndIncrement()) {
+                        for (j.set(root.getY() - getLeafDecayRadius()); j.get() < root.getY() + getLeafDecayRadius(); j.getAndIncrement()) {
+                            for (k.set(root.getZ() - getLeafDecayRadius()); k.get() < root.getZ() + getLeafDecayRadius(); k.getAndIncrement()) {
                                 if (px.getMilliseconds() > maxSyncSpikeMS) {
                                     return;
                                 }
 
-                                BlockData d = data(block.getWorld(), i.get(), j.get(), k.get());
+                                BlockData d = data(root.getWorld(), i.get(), j.get(), k.get());
                                 if (shouldDecay(d)) {
-                                    addBlockForDecay(new IBlock(block.getWorld(), i.get(), j.get(), k.get()), d);
+                                    addBlockForDecay(new IBlock(root.getWorld(), i.get(), j.get(), k.get()), d);
                                 }
                             }
 
                         }
                     }
-                });
+                }, 0);
             }
 
             search.clear();
-        } catch (Throwable ignored) {
-
+        } catch (Throwable ex) {
+            search.clear();
+            React.warn("Fast leaf decay scan failed: " + ex.getClass().getSimpleName() + (ex.getMessage() == null ? "" : " - " + ex.getMessage()));
+            React.reportError(ex);
         }
     }
 

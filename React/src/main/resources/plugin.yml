@@ -1,11 +1,21 @@
 name: ${name}
 main: art.arcane.react.React
 version: ${version}
+folia-supported: true
 authors: [ NextdoorPsycho, Cyberpwn ]
 api-version: ${apiversion}
 commands:
   react:
     aliases: [ re ]
+permissions:
+  react.use:
+    description: Allows using the /react command root.
+    default: op
+  react.*:
+    description: Allows using all /react commands.
+    default: op
+    children:
+      react.use: true
 libraries:
   - net.kyori:adventure-text-minimessage:4.24.0
   - net.kyori:adventure-platform-bukkit:4.4.1

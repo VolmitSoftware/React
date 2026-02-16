@@ -143,13 +143,14 @@ public class FeaturePortalTrafficSmoother extends ReactFeature implements Listen
         delayed.put(id, now + 10000L);
         Location to = destination.clone();
         int delay = Math.max(1, playerDelayTicks);
-        J.ss(() -> {
-            Player online = Bukkit.getPlayer(id);
-            if (online != null && online.isOnline() && !online.isDead()) {
-                online.teleport(to, PlayerTeleportEvent.TeleportCause.PLUGIN);
+        if (!J.runEntity(player, () -> {
+            if (player.isOnline() && !player.isDead()) {
+                player.teleport(to, PlayerTeleportEvent.TeleportCause.PLUGIN);
             }
             delayed.remove(id);
-        }, delay);
+        }, delay)) {
+            delayed.remove(id);
+        }
     }
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
@@ -188,13 +189,14 @@ public class FeaturePortalTrafficSmoother extends ReactFeature implements Listen
         delayed.put(id, now + 10000L);
         Location to = destination.clone();
         int delay = Math.max(1, entityDelayTicks);
-        J.ss(() -> {
-            Entity live = Bukkit.getEntity(id);
-            if (live != null && live.isValid() && !live.isDead()) {
-                live.teleport(to);
+        if (!J.runEntity(entity, () -> {
+            if (entity.isValid() && !entity.isDead()) {
+                entity.teleport(to);
             }
             delayed.remove(id);
-        }, delay);
+        }, delay)) {
+            delayed.remove(id);
+        }
     }
 
     private boolean shouldManage(Location location) {

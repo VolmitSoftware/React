@@ -85,7 +85,11 @@ public class FeatureTickSpikeOriginReplayMap extends FeatureChunkHeatmapBase {
 
         if (tickMS >= spikeThresholdMS && now - lastCaptureMS >= spikeCaptureCooldownMS) {
             lastCaptureMS = now;
-            J.s(() -> captureSpike(now, tickMS));
+            if (J.isFoliaThreading()) {
+                captureSpikeFolia(now, tickMS);
+            } else {
+                J.s(() -> captureSpike(now, tickMS));
+            }
         }
 
         if (now - lastDecayMS >= decayEveryMS) {
@@ -157,12 +161,58 @@ public class FeatureTickSpikeOriginReplayMap extends FeatureChunkHeatmapBase {
         addHeat(origin, spikePressure * 1.8D, now);
     }
 
+    private void captureSpikeFolia(long now, double tickMS) {
+        ObserverController observer = React.controller(ObserverController.class);
+        if (observer == null) {
+            return;
+        }
+
+        SampledChunk worst = observer.absoluteWorst();
+        if (worst == null || worst.getChunk() == null || worst.getChunk().getWorld() == null) {
+            return;
+        }
+
+        Chunk origin = worst.getChunk();
+        int y = Math.max(origin.getWorld().getMinHeight() + 1, 64);
+        J.s(origin.getBlock(8, y, 8).getLocation(), () -> captureSpikeAroundOrigin(origin, now, tickMS), 0);
+    }
+
+    private void captureSpikeAroundOrigin(Chunk origin, long now, double tickMS) {
+        if (origin == null || origin.getWorld() == null) {
+            return;
+        }
+
+        int radius = Math.max(0, captureRadiusChunks);
+        double spikePressure = Math.max(1D, tickMS - spikeThresholdMS + 1D);
+        UUID world = origin.getWorld().getUID();
+        int originX = origin.getX();
+        int originZ = origin.getZ();
+
+        for (int dx = -radius; dx <= radius; dx++) {
+            for (int dz = -radius; dz <= radius; dz++) {
+                double distance = Math.sqrt((dx * dx) + (dz * dz));
+                double distanceWeight = 1D / (1D + distance);
+                addHeat(world, originX + dx, originZ + dz, spikePressure * distanceWeight, now);
+            }
+        }
+
+        addHeat(world, originX, originZ, spikePressure * 1.8D, now);
+    }
+
     private void addHeat(Chunk chunk, double heat, long now) {
         if (chunk == null || chunk.getWorld() == null || heat <= 0D) {
             return;
         }
 
-        ChunkKey key = new ChunkKey(chunk.getWorld().getUID(), chunk.getX(), chunk.getZ());
+        addHeat(chunk.getWorld().getUID(), chunk.getX(), chunk.getZ(), heat, now);
+    }
+
+    private void addHeat(UUID worldId, int chunkX, int chunkZ, double heat, long now) {
+        if (worldId == null || heat <= 0D) {
+            return;
+        }
+
+        ChunkKey key = new ChunkKey(worldId, chunkX, chunkZ);
         HeatCell cell = replayHeat.computeIfAbsent(key, k -> replayHeat.size() >= maxTrackedChunks ? null : new HeatCell());
         if (cell == null) {
             return;

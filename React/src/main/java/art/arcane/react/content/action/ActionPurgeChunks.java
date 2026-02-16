@@ -37,6 +37,7 @@ import org.bukkit.World;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @art.arcane.react.util.config.ConfigDescription("Configuration for Purge Chunks action. Attempts to unload selected chunks to reduce active chunk pressure.")
 public class ActionPurgeChunks extends ReactAction<ActionPurgeChunks.Params> {
@@ -70,6 +71,11 @@ public class ActionPurgeChunks extends ReactAction<ActionPurgeChunks.Params> {
 
     @Override
     public void workOn(ActionTicket<Params> ticket) {
+        if (J.isFoliaThreading()) {
+            workOnFolia(ticket);
+            return;
+        }
+
         List<Chunk> c = pullChunks(ticket, React.controller(ActionController.class).getActionSpeedMultiplier());
 
         if (ticket.getTotalWork() <= 1) {
@@ -87,6 +93,27 @@ public class ActionPurgeChunks extends ReactAction<ActionPurgeChunks.Params> {
         }
     }
 
+    private void workOnFolia(ActionTicket<Params> ticket) {
+        List<Chunk> chunks = pullChunks(ticket, React.controller(ActionController.class).getActionSpeedMultiplier());
+
+        if (ticket.getTotalWork() <= 1 && ticket.getParams().getArea().getChunks() != null) {
+            ticket.setTotalWork(Math.max(1, ticket.getParams().getArea().getChunks().size() + chunks.size()));
+        }
+
+        if (!chunks.isEmpty()) {
+            for (Chunk chunk : chunks) {
+                purgeFolia(chunk, ticket.getParams());
+            }
+
+            ticket.addWork(chunks.size());
+        }
+
+        ticket.setCount(ticket.getParams().getPurgedChunks().get());
+        if (chunks.isEmpty() && ticket.getParams().getInFlightChunks().get() <= 0) {
+            ticket.complete();
+        }
+    }
+
     @Override
     public Params getDefaultParams() {
         return Params.builder().build();
@@ -98,16 +125,44 @@ public class ActionPurgeChunks extends ReactAction<ActionPurgeChunks.Params> {
     }
 
     private void purge(Chunk c, ActionTicket<Params> ticket) {
-        boolean unloaded = J.sResult(() -> {
+        if (c == null || c.getWorld() == null) {
+            return;
+        }
+
+        boolean unloaded = J.runChunkResult(c.getWorld(), c.getX(), c.getZ(), () -> {
             if (!c.isLoaded()) {
                 return true;
             }
 
             return c.unload(true);
-        });
+        }, false);
 
         if (unloaded) {
             ticket.addCount();
+        }
+    }
+
+    private void purgeFolia(Chunk chunk, Params params) {
+        if (chunk == null || chunk.getWorld() == null || params == null) {
+            return;
+        }
+
+        World world = chunk.getWorld();
+        int chunkX = chunk.getX();
+        int chunkZ = chunk.getZ();
+        params.getInFlightChunks().incrementAndGet();
+        boolean scheduled = J.runChunk(world, chunkX, chunkZ, () -> {
+            try {
+                if (!world.isChunkLoaded(chunkX, chunkZ) || world.unloadChunk(chunkX, chunkZ, true)) {
+                    params.getPurgedChunks().incrementAndGet();
+                }
+            } finally {
+                params.getInFlightChunks().decrementAndGet();
+            }
+        });
+
+        if (!scheduled) {
+            params.getInFlightChunks().decrementAndGet();
         }
     }
 
@@ -123,6 +178,10 @@ public class ActionPurgeChunks extends ReactAction<ActionPurgeChunks.Params> {
         @Builder.Default
         @art.arcane.react.util.config.ConfigDoc(value = "Area selection used by purge chunks when choosing target chunks or entities.", impact = "Choose a tighter area for safer, local actions or a wider area for broader remediation.")
         private AreaActionParams area = AreaActionParams.builder().build();
+        @Builder.Default
+        private transient AtomicInteger inFlightChunks = new AtomicInteger(0);
+        @Builder.Default
+        private transient AtomicInteger purgedChunks = new AtomicInteger(0);
 
         public Params withWorld(World world) {
             area.setWorld(world.getName());

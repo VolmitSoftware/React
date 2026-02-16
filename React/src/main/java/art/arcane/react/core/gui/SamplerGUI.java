@@ -21,6 +21,7 @@ package art.arcane.react.core.gui;
 
 import art.arcane.react.React;
 import art.arcane.react.api.sampler.Sampler;
+import art.arcane.react.content.sampler.SamplerUnknown;
 import art.arcane.react.core.controller.SampleController;
 import art.arcane.volmlib.util.data.MaterialBlock;
 import art.arcane.volmlib.util.inventorygui.UIElement;
@@ -28,7 +29,6 @@ import art.arcane.volmlib.util.inventorygui.UIWindow;
 import art.arcane.volmlib.util.inventorygui.WindowResolution;
 import art.arcane.react.util.inventorygui.UIStaticDecorator;
 import art.arcane.react.util.scheduling.J;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 
@@ -50,11 +50,11 @@ public class SamplerGUI {
     }
 
     public static void pickSampler(Player p, Consumer<Sampler> onPicked, List<String> without, int page) {
-        if (Bukkit.isPrimaryThread()) {
-            throw new RuntimeException("Cannot open gui on main thread");
+        if (p == null) {
+            return;
         }
 
-        J.s(() -> {
+        if (!J.runEntity(p, () -> {
             UIWindow window = new UIWindow(React.instance, p);
             window.setTitle("React Samplers");
             window.setResolution(WindowResolution.W9_H6);
@@ -64,6 +64,7 @@ public class SamplerGUI {
                     .getSamplers()
                     .all()
                     .stream()
+                    .filter(i -> i != null && !SamplerUnknown.ID.equalsIgnoreCase(i.getId()))
                     .sorted(Comparator
                             .comparingInt((Sampler i) -> ReactGuiTaxonomy.groupOrder(i.getId()))
                             .thenComparing(i -> ReactGuiTaxonomy.normalizeSortKey(i.getName()))
@@ -124,6 +125,8 @@ public class SamplerGUI {
             }
 
             window.open();
-        });
+        })) {
+            React.warn("Failed to schedule sampler picker UI for " + p.getName());
+        }
     }
 }

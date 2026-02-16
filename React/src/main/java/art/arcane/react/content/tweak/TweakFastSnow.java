@@ -45,7 +45,8 @@ public class TweakFastSnow extends ReactTweak implements Listener {
     public void on(BlockFormEvent e) {
         if (e.getBlock().getBlockData() instanceof Snow s) {
             e.setCancelled(true);
-            J.s(() -> FastWorld.set(e.getBlock(), s));
+            var location = e.getBlock().getLocation().clone();
+            J.s(location, () -> FastWorld.set(location.getBlock(), s), 0);
         }
     }
 
@@ -53,7 +54,8 @@ public class TweakFastSnow extends ReactTweak implements Listener {
     public void on(BlockFadeEvent e) {
         if (e.getBlock().getBlockData() instanceof Snow s) {
             e.setCancelled(true);
-            J.s(() -> FastWorld.breakNaturally(e.getBlock()));
+            var location = e.getBlock().getLocation().clone();
+            J.s(location, () -> FastWorld.breakNaturally(location.getBlock()), 0);
         }
     }
 

@@ -44,6 +44,7 @@ import org.bukkit.permissions.PermissionAttachmentInfo;
 import org.bukkit.plugin.Plugin;
 
 import java.time.Duration;
+import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -443,7 +444,7 @@ public class VolmitSender implements CommandSender {
                     + i.getNode().getParameters().shuffleCopy(RNG.r).convert((f)
                             -> (f.isRequired() || RNG.r.b(0.5)
                             ? "<#f2e15e>" + f.getNames().getRandom() + "="
-                            + "<#6f9cff>" + f.example()
+                            + "<#6f9cff>" + parameterExample(f)
                             : ""))
                     .toString(" ")
                     : ""
@@ -546,7 +547,7 @@ public class VolmitSender implements CommandSender {
                 String suggestions = "";
                 if (i.isNode() && i.getNode().getParameters().isNotEmpty()) {
                     suggestion += newline + "<#9bb8e8>✦ <#4f7fd6><font:minecraft:uniform>" + i.getParentPath() + " <#67a2ff>" + i.getName() + " "
-                            + i.getNode().getParameters().convert((f) -> "<#6f9cff>" + f.example()).toString(" ");
+                            + i.getNode().getParameters().convert((f) -> "<#6f9cff>" + parameterExample(f)).toString(" ");
                     suggestions += newline + "<font:minecraft:uniform>" + pickRandoms(Math.min(i.getNode().getParameters().size() + 1, 5), i);
                 }
 
@@ -606,6 +607,127 @@ public class VolmitSender implements CommandSender {
         } else {
             sendMessage(i.getPath());
         }
+    }
+
+    private String parameterExample(DirectorVisualParameter parameter) {
+        if (parameter == null) {
+            return "value";
+        }
+
+        String explicit = normalizeExample(parameter.example());
+        if (!explicit.isEmpty()) {
+            return explicit;
+        }
+
+        if (parameter.hasDefault() && parameter.getParam() != null) {
+            String defaultValue = normalizeExample(parameter.getParam().defaultValue());
+            if (!defaultValue.isEmpty()) {
+                return defaultValue;
+            }
+        }
+
+        return inferExample(parameter);
+    }
+
+    private String normalizeExample(String value) {
+        if (value == null) {
+            return "";
+        }
+
+        String normalized = value.trim();
+        if (normalized.isEmpty()) {
+            return "";
+        }
+
+        String lower = normalized.toLowerCase(Locale.ROOT);
+        if (lower.equals("noexample")
+                || lower.equals("no_example")
+                || lower.equals("no-example")
+                || lower.equals("none")
+                || lower.equals("null")
+                || lower.equals("n/a")) {
+            return "";
+        }
+
+        return normalized;
+    }
+
+    private String inferExample(DirectorVisualParameter parameter) {
+        Class<?> type = parameter.getType();
+        if (type != null) {
+            if (type.isEnum()) {
+                Object[] constants = type.getEnumConstants();
+                if (constants != null && constants.length > 0) {
+                    return constants[0].toString().toLowerCase(Locale.ROOT);
+                }
+            }
+
+            if (type == Boolean.class || type == boolean.class) {
+                return "true";
+            }
+
+            if (type == Integer.class || type == int.class) {
+                return "10";
+            }
+
+            if (type == Long.class || type == long.class) {
+                return "120";
+            }
+
+            if (type == Double.class || type == double.class || type == Float.class || type == float.class) {
+                return "1.5";
+            }
+
+            if (type == Short.class || type == short.class || type == Byte.class || type == byte.class) {
+                return "1";
+            }
+        }
+
+        String names = parameter.getNames() == null ? "" : String.join(" ", parameter.getNames());
+        String key = (parameter.getName() == null ? "" : parameter.getName()) + " " + names;
+        String lowered = key.toLowerCase(Locale.ROOT);
+
+        if (lowered.contains("world")) {
+            return "world";
+        }
+
+        if (lowered.contains("player") || lowered.contains("user") || lowered.contains("target") || lowered.equals("u")) {
+            return "player";
+        }
+
+        if (lowered.contains("radius") || lowered.contains("range") || lowered.contains("distance")) {
+            return "8";
+        }
+
+        if (lowered.contains("seed")) {
+            return "1337";
+        }
+
+        if (lowered.contains("dimension") || lowered.contains("dim") || lowered.contains("pack") || lowered.contains("type")) {
+            return "overworld";
+        }
+
+        if (lowered.contains("url")) {
+            return "https://example.com";
+        }
+
+        if (lowered.contains("path") || lowered.contains("file")) {
+            return "config.toml";
+        }
+
+        if (lowered.contains("time") || lowered.contains("delay") || lowered.contains("interval") || lowered.contains("timeout")) {
+            return "30";
+        }
+
+        if (lowered.contains("name")) {
+            return "example";
+        }
+
+        if (lowered.contains("id")) {
+            return "example-id";
+        }
+
+        return "value";
     }
 
 }

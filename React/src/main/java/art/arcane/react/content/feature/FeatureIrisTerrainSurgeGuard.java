@@ -2,6 +2,7 @@ package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
 import art.arcane.react.api.feature.ReactCapabilityFeature;
+import art.arcane.react.content.sampler.SamplerIrisChunkStreamMS;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.core.controller.IntegrationController;
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
@@ -172,7 +173,10 @@ public class FeatureIrisTerrainSurgeGuard extends ReactCapabilityFeature impleme
     private boolean isSurging() {
         double tickMS = sample(SamplerTickTime.ID);
         double pregenQueue = metricOr(IntegrationMetricSchema.IRIS_PREGEN_QUEUE, -1D);
-        double chunkStreamMS = metricOr(IntegrationMetricSchema.IRIS_CHUNK_STREAM_MS, -1D);
+        double chunkStreamMS = SamplerIrisChunkStreamMS.normalizeStreamMetric(
+                metricOr(IntegrationMetricSchema.IRIS_CHUNK_STREAM_MS, -1D),
+                pregenQueue
+        );
 
         return tickMS >= triggerTickMS
                 || (pregenQueue >= 0D && pregenQueue >= triggerIrisPregenQueue)

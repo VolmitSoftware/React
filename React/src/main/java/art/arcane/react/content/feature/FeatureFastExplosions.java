@@ -24,6 +24,7 @@ import art.arcane.react.util.data.B;
 import art.arcane.volmlib.util.math.M;
 import art.arcane.react.util.scheduling.J;
 import art.arcane.react.util.world.FastWorld;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Container;
@@ -101,39 +102,7 @@ public class FeatureFastExplosions extends ReactFeature implements Listener {
             preprimes -= removeCount;
         }
 
-        J.s(() -> {
-            for (Block i : b) {
-                if (i.getType().equals(Material.TNT)) {
-                    if (explosionChainReactions) {
-                        FastWorld.set(i, B.getAir(), fastBlockUpdates);
-
-                        if (maxExplosionChainsPerTick > explosionChains++) {
-                            J.s(() -> i.getWorld().createExplosion(i.getLocation(), 4f, false, true));
-                        }
-                    }
-
-                    continue;
-                }
-
-                if (M.r((double) e.getYield())) {
-                    if (i.getState() instanceof Container) {
-                        Container container = (Container) i.getState();
-                        ItemStack[] contents = container.getInventory().getContents();
-                        for (ItemStack item : contents) {
-                            if (item != null) {
-                                i.getWorld().dropItemNaturally(i.getLocation(), item);
-                            }
-                        }
-                        container.getInventory().clear();
-                    } else {
-                        i.getDrops(null).forEach((f) -> i.getWorld().dropItemNaturally(i.getLocation(), f));
-                    }
-                }
-
-
-                FastWorld.set(i, B.getAir(), fastBlockUpdates);
-            }
-        });
+        processExplosionBlocks(b, e.getYield());
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -155,39 +124,51 @@ public class FeatureFastExplosions extends ReactFeature implements Listener {
             preprimes -= removeCount;
         }
 
-        J.s(() -> {
-            for (Block i : b) {
-                if (i.getType().equals(Material.TNT)) {
-                    if (explosionChainReactions) {
-                        FastWorld.set(i, B.getAir(), fastBlockUpdates);
+        processExplosionBlocks(b, e.getYield());
+    }
 
-                        if (maxExplosionChainsPerTick > explosionChains++) {
-                            J.s(() -> i.getWorld().createExplosion(i.getLocation(), 4f, false, true));
-                        }
-                    }
-
-                    continue;
-                }
-
-                if (M.r((double) e.getYield())) {
-                    if (i.getState() instanceof Container) {
-                        Container container = (Container) i.getState();
-                        ItemStack[] contents = container.getInventory().getContents();
-                        for (ItemStack item : contents) {
-                            if (item != null) {
-                                i.getWorld().dropItemNaturally(i.getLocation(), item);
-                            }
-                        }
-                        container.getInventory().clear();
-                    } else {
-                        i.getDrops(null).forEach((f) -> i.getWorld().dropItemNaturally(i.getLocation(), f));
-                    }
-                }
-
-
-                FastWorld.set(i, B.getAir(), fastBlockUpdates);
+    private void processExplosionBlocks(Iterable<Block> blocks, float yield) {
+        for (Block block : blocks) {
+            if (block == null) {
+                continue;
             }
-        });
+
+            Location location = block.getLocation().clone();
+            J.s(location, () -> processExplosionBlock(location, yield), 0);
+        }
+    }
+
+    private void processExplosionBlock(Location location, float yield) {
+        if (location == null || location.getWorld() == null) {
+            return;
+        }
+
+        Block block = location.getBlock();
+        if (block.getType().equals(Material.TNT)) {
+            if (explosionChainReactions) {
+                FastWorld.set(block, B.getAir(), fastBlockUpdates);
+                if (maxExplosionChainsPerTick > explosionChains++) {
+                    block.getWorld().createExplosion(block.getLocation(), 4f, false, true);
+                }
+            }
+            return;
+        }
+
+        if (M.r((double) yield)) {
+            if (block.getState() instanceof Container container) {
+                ItemStack[] contents = container.getInventory().getContents();
+                for (ItemStack item : contents) {
+                    if (item != null) {
+                        block.getWorld().dropItemNaturally(block.getLocation(), item);
+                    }
+                }
+                container.getInventory().clear();
+            } else {
+                block.getDrops(null).forEach(drop -> block.getWorld().dropItemNaturally(block.getLocation(), drop));
+            }
+        }
+
+        FastWorld.set(block, B.getAir(), fastBlockUpdates);
     }
 
     @Override

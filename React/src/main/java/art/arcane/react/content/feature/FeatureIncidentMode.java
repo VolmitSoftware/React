@@ -34,6 +34,8 @@ import org.bukkit.event.entity.EntityPortalEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 @art.arcane.react.util.config.ConfigDescription("Configuration for Incident Mode feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureIncidentMode extends ReactFeature implements Listener {
     public static final String ID = "incident-mode";
@@ -75,6 +77,7 @@ public class FeatureIncidentMode extends ReactFeature implements Listener {
     private transient int portalEvents;
     private transient int hopperMoves;
     private transient int redstoneTransitions;
+    private transient final AtomicBoolean evaluationQueued = new AtomicBoolean(false);
 
     public FeatureIncidentMode() {
         super(ID);
@@ -91,6 +94,7 @@ public class FeatureIncidentMode extends ReactFeature implements Listener {
         portalEvents = 0;
         hopperMoves = 0;
         redstoneTransitions = 0;
+        evaluationQueued.set(false);
     }
 
     @Override
@@ -105,6 +109,20 @@ public class FeatureIncidentMode extends ReactFeature implements Listener {
 
     @Override
     public void onTick() {
+        if (!evaluationQueued.compareAndSet(false, true)) {
+            return;
+        }
+
+        art.arcane.react.util.scheduling.J.s(() -> {
+            try {
+                evaluateIncident();
+            } finally {
+                evaluationQueued.set(false);
+            }
+        });
+    }
+
+    private void evaluateIncident() {
         double tickMS = sample(SamplerTickTime.ID);
         long now = System.currentTimeMillis();
 

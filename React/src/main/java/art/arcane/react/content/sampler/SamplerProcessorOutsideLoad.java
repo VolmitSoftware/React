@@ -37,16 +37,34 @@ public class SamplerProcessorOutsideLoad extends ReactCachedSampler {
 
     @Override
     public double onSample() {
-        return Math.max(0, getSampler(SamplerProcessorSystemLoad.ID).sample() - getSampler(SamplerProcessorProcessLoad.ID).sample());
+        double systemLoad = normalizeCpuLoad(getSampler(SamplerProcessorSystemLoad.ID).sample());
+        double processLoad = normalizeCpuLoad(getSampler(SamplerProcessorProcessLoad.ID).sample());
+        return Math.max(0D, systemLoad - processLoad);
     }
 
     @Override
     public String formattedValue(double t) {
-        return Form.pc(t, 0);
+        return Form.pc(normalizeCpuLoad(t), 0);
     }
 
     @Override
     public String formattedSuffix(double t) {
         return "xCPU";
+    }
+
+    private static double normalizeCpuLoad(double raw) {
+        if (!Double.isFinite(raw) || raw <= 0D) {
+            return 0D;
+        }
+
+        if (raw <= 1D) {
+            return raw;
+        }
+
+        if (raw <= 100D) {
+            return raw / 100D;
+        }
+
+        return 1D;
     }
 }

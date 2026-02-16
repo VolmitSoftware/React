@@ -102,6 +102,11 @@ public class FeatureFarmBurstSmoother extends ReactFeature implements Listener {
     @Override
     public void onTick() {
         pruneOverflow();
+        if (J.isFoliaThreading()) {
+            applyPendingGrowthFolia();
+            return;
+        }
+
         J.s(this::applyPendingGrowth);
     }
 
@@ -233,6 +238,86 @@ public class FeatureFarmBurstSmoother extends ReactFeature implements Listener {
         for (BlockKey key : remove) {
             pending.remove(key);
         }
+    }
+
+    private void applyPendingGrowthFolia() {
+        if (pending.isEmpty()) {
+            return;
+        }
+
+        long now = System.currentTimeMillis();
+        int scheduled = 0;
+        int scanned = 0;
+        int maxApplies = Math.max(1, maxAppliesPerCycle);
+        int maxScan = Math.max(maxApplies * 8, 96);
+        List<BlockKey> remove = new ArrayList<>();
+
+        for (Map.Entry<BlockKey, PendingGrowth> entry : pending.entrySet()) {
+            if (scanned++ >= maxScan) {
+                break;
+            }
+
+            BlockKey key = entry.getKey();
+            PendingGrowth growth = entry.getValue();
+            if (now - growth.createdAtMS > stalePendingMS) {
+                remove.add(key);
+                continue;
+            }
+
+            if (growth.applyAtMS > now) {
+                continue;
+            }
+
+            World world = Bukkit.getWorld(growth.world);
+            if (world == null) {
+                remove.add(key);
+                continue;
+            }
+
+            Location location = new Location(world, growth.x, growth.y, growth.z);
+            J.s(location, () -> applyPendingGrowthAt(key, growth), 0);
+            scheduled++;
+            if (scheduled >= maxApplies) {
+                break;
+            }
+        }
+
+        for (BlockKey key : remove) {
+            pending.remove(key);
+        }
+    }
+
+    private void applyPendingGrowthAt(BlockKey key, PendingGrowth growth) {
+        PendingGrowth current = pending.get(key);
+        if (current != growth) {
+            return;
+        }
+
+        long now = System.currentTimeMillis();
+        if (now - growth.createdAtMS > stalePendingMS) {
+            pending.remove(key, growth);
+            return;
+        }
+
+        World world = Bukkit.getWorld(growth.world);
+        if (world == null) {
+            pending.remove(key, growth);
+            return;
+        }
+
+        Block block = world.getBlockAt(growth.x, growth.y, growth.z);
+        if (block.getType() != growth.expectedType) {
+            pending.remove(key, growth);
+            return;
+        }
+
+        if (bypassNearPlayers && React.hasNearbyPlayer(block.getLocation(), bypassPlayerRadius)) {
+            growth.applyAtMS = now + 200L;
+            return;
+        }
+
+        block.setBlockData(growth.targetData, false);
+        pending.remove(key, growth);
     }
 
     private void pruneOverflow() {

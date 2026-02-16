@@ -80,6 +80,15 @@ public class EntityPriority {
     }
 
     public void updateDistanceToPlayer(Entity e) {
+        if (e == null) {
+            return;
+        }
+
+        if (J.isFoliaThreading() && !J.isOwnedByCurrentRegion(e)) {
+            J.runEntity(e, () -> updateDistanceToPlayer(e));
+            return;
+        }
+
         double distance = Double.MAX_VALUE;
         double d;
         for (Player i : e.getWorld().getPlayers()) {
@@ -100,32 +109,40 @@ public class EntityPriority {
     }
 
     public void updateCrowd(Entity e) {
-        J.s(() -> {
-            List<Entity> ees = e.getNearbyEntities(8, 8, 8);
+        if (e == null) {
+            return;
+        }
 
-            J.a(() -> {
-                double priority = getPriority(e);
-                double minPriority = priority * 0.25;
-                double maxPriority = priority * 1.15;
-                double count = 1;
+        if (J.isFoliaThreading() && !J.isOwnedByCurrentRegion(e)) {
+            J.runEntity(e, () -> updateCrowd(e));
+            return;
+        }
 
-                for (Entity i : ees) {
-                    if (i.getUniqueId().equals(e.getUniqueId())) {
-                        continue;
-                    }
+        List<Entity> ees = e.getNearbyEntities(8, 8, 8);
+        double priority = getPriority(e);
+        double minPriority = priority * 0.25;
+        double maxPriority = priority * 1.15;
+        double count = 1;
 
-                    priority = getPriority(i);
+        for (Entity i : ees) {
+            if (i == null || i.getUniqueId().equals(e.getUniqueId())) {
+                continue;
+            }
 
-                    if (priority < minPriority || priority > maxPriority) {
-                        continue;
-                    }
+            if (J.isFoliaThreading() && !J.isOwnedByCurrentRegion(i)) {
+                continue;
+            }
 
-                    count += M.lerp(1.2, 0.8, M.lerpInverse(minPriority, maxPriority, priority));
-                }
+            priority = getPriority(i);
 
-                ReactEntity.setCrowding(e, count);
-            });
-        });
+            if (priority < minPriority || priority > maxPriority) {
+                continue;
+            }
+
+            count += M.lerp(1.2, 0.8, M.lerpInverse(minPriority, maxPriority, priority));
+        }
+
+        ReactEntity.setCrowding(e, count);
     }
 
     private Map<EntityType, Double> buildPriority() {
@@ -253,6 +270,14 @@ public class EntityPriority {
     }
 
     public double getPriority(Entity e) {
+        if (e == null) {
+            return BASELINE;
+        }
+
+        if (J.isFoliaThreading() && !J.isOwnedByCurrentRegion(e)) {
+            return getPriority(e.getType());
+        }
+
         double buf = getPriority(e.getType());
         buf *= getAgeMultipler(e.getTicksLived());
 
@@ -276,6 +301,10 @@ public class EntityPriority {
 
         if (e instanceof LivingEntity l) {
             buf *= livingMultiplier;
+
+            if (l.getAttribute(Attribute.GENERIC_MAX_HEALTH) == null) {
+                return buf;
+            }
 
             double maxHealth = l.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue();
             double h = l.getHealth();

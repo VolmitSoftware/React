@@ -23,6 +23,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import art.arcane.react.React;
+import art.arcane.react.util.scheduling.J;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -171,7 +172,7 @@ public class MetricsLite {
         if (data == null) {
             throw new IllegalArgumentException("Data cannot be null!");
         }
-        if (Bukkit.isPrimaryThread()) {
+        if (J.isPrimaryThread()) {
             throw new IllegalAccessException("This method must not be called from the main thread!");
         }
         if (logSentData) {
@@ -253,7 +254,7 @@ public class MetricsLite {
                 // use the Bukkit scheduler
                 // Don't be afraid! The connection to the bStats server is still async, only the
                 // stats collection is sync ;)
-                Bukkit.getScheduler().runTask(plugin, () -> submitData());
+                J.s(() -> submitData());
             }
         }, 1000 * 60 * 5, 1000 * 60 * 30);
         // Submit the data every 30 minutes, first time after 5 minutes to give other

@@ -81,7 +81,10 @@ public class TweakEntityCrowdPrevention extends ReactTweak implements Listener {
     }
 
     private void kill(Entity entity) {
-        J.s(() -> React.kill(entity, 3), (int) (20 * Math.random()));
+        int delay = (int) (20 * Math.random());
+        if (!J.runEntity(entity, () -> React.kill(entity, 3), delay)) {
+            React.kill(entity, 3);
+        }
     }
 
     @Override

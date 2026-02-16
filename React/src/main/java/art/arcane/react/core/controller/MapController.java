@@ -537,7 +537,7 @@ public class MapController extends TickedObject implements IController, Listener
         }
 
         if (maintenanceTickQueued != null && maintenanceTickQueued.compareAndSet(false, true)) {
-            J.ss(maintenanceTick);
+            J.sync(maintenanceTick);
         }
     }
 
@@ -895,7 +895,10 @@ public class MapController extends TickedObject implements IController, Listener
             Entity entity;
             try {
                 entity = Bukkit.getEntity(tracked.frameId);
-            } catch (Throwable ignored) {
+            } catch (Throwable ex) {
+                React.verbose("Failed to resolve tracked map frame entity " + tracked.frameId + ": "
+                        + ex.getClass().getSimpleName()
+                        + (ex.getMessage() == null ? "" : " - " + ex.getMessage()));
                 entity = null;
             }
 
@@ -1096,8 +1099,10 @@ public class MapController extends TickedObject implements IController, Listener
             try {
                 player.sendMap(view);
                 frameMapPushMsByViewerKey.put(pushKey, now);
-            } catch (Throwable ignored) {
-                // Keep map healing resilient across server flavors.
+            } catch (Throwable ex) {
+                React.verbose("Failed to push map " + mapId + " to player " + player.getName() + ": "
+                        + ex.getClass().getSimpleName()
+                        + (ex.getMessage() == null ? "" : " - " + ex.getMessage()));
             }
         }
     }
@@ -1109,7 +1114,9 @@ public class MapController extends TickedObject implements IController, Listener
 
         try {
             return view.getId();
-        } catch (Throwable ignored) {
+        } catch (Throwable ex) {
+            React.verbose("Failed to read map view id: " + ex.getClass().getSimpleName()
+                    + (ex.getMessage() == null ? "" : " - " + ex.getMessage()));
             return null;
         }
     }
@@ -1215,7 +1222,10 @@ public class MapController extends TickedObject implements IController, Listener
             itemFrameSetItemSilentMethodResolved = true;
             try {
                 itemFrameSetItemSilentMethod = ItemFrame.class.getMethod("setItem", ItemStack.class, boolean.class);
-            } catch (Throwable ignored) {
+            } catch (Throwable ex) {
+                React.verbose("Silent ItemFrame#setItem(ItemStack, boolean) not available: "
+                        + ex.getClass().getSimpleName()
+                        + (ex.getMessage() == null ? "" : " - " + ex.getMessage()));
                 itemFrameSetItemSilentMethod = null;
             }
         }
@@ -1224,8 +1234,10 @@ public class MapController extends TickedObject implements IController, Listener
             try {
                 itemFrameSetItemSilentMethod.invoke(frame, item, false);
                 return;
-            } catch (Throwable ignored) {
-                // Fall through to legacy setter.
+            } catch (Throwable ex) {
+                React.verbose("Failed invoking silent ItemFrame setter, falling back: "
+                        + ex.getClass().getSimpleName()
+                        + (ex.getMessage() == null ? "" : " - " + ex.getMessage()));
             }
         }
 

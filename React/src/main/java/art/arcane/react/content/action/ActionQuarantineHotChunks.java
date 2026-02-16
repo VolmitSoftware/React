@@ -86,7 +86,9 @@ public class ActionQuarantineHotChunks extends ReactAction<ActionQuarantineHotCh
             return;
         }
 
-        int budget = Math.max(1, React.controller(ActionController.class).getActionSpeedMultiplier() / 8);
+        int budget = J.isFoliaThreading()
+                ? 1
+                : Math.max(1, React.controller(ActionController.class).getActionSpeedMultiplier() / 8);
         int worked = 0;
 
         while (worked < budget && !params.getQueue().isEmpty()) {
@@ -94,7 +96,7 @@ public class ActionQuarantineHotChunks extends ReactAction<ActionQuarantineHotCh
             if (target == null) {
                 break;
             }
-            QuarantineResult result = J.sResult(() -> quarantine(target, params));
+            QuarantineResult result = quarantineChunk(target, params);
             if (result != null) {
                 params.setEntitiesCulled(params.getEntitiesCulled() + result.entitiesCulled());
                 if (result.chunkUnloaded()) {
@@ -145,7 +147,7 @@ public class ActionQuarantineHotChunks extends ReactAction<ActionQuarantineHotCh
 
             for (SampledChunk sampledChunk : sampledWorld.getChunks().values()) {
                 Chunk chunk = sampledChunk.getChunk();
-                if (chunk == null || chunk.getWorld() == null || !chunk.isLoaded()) {
+                if (chunk == null || chunk.getWorld() == null) {
                     continue;
                 }
 
@@ -178,6 +180,19 @@ public class ActionQuarantineHotChunks extends ReactAction<ActionQuarantineHotCh
                 .limit(Math.max(1, params.getMaxChunks()))
                 .map(Map.Entry::getKey)
                 .forEach(params.getQueue()::add);
+    }
+
+    private QuarantineResult quarantineChunk(ChunkRef ref, Params params) {
+        if (!J.isFoliaThreading()) {
+            return J.sResult(() -> quarantine(ref, params));
+        }
+
+        World world = Bukkit.getWorld(ref.world());
+        if (world == null) {
+            return new QuarantineResult(false, 0);
+        }
+
+        return J.runChunkResult(world, ref.x(), ref.z(), () -> quarantine(ref, params), new QuarantineResult(false, 0));
     }
 
     private QuarantineResult quarantine(ChunkRef ref, Params params) {

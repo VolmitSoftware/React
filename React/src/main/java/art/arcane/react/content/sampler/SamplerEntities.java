@@ -20,6 +20,7 @@
 package art.arcane.react.content.sampler;
 
 import art.arcane.chrono.ChronoLatch;
+import art.arcane.react.React;
 import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.volmlib.util.format.Form;
 import art.arcane.react.util.scheduling.J;
@@ -28,6 +29,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -38,6 +40,13 @@ import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class SamplerEntities extends ReactCachedSampler implements Listener {
@@ -59,6 +68,10 @@ public class SamplerEntities extends ReactCachedSampler implements Listener {
     }
 
     public int getRealCheck() {
+        if (J.isFoliaThreading()) {
+            return getFoliaApproximateRealCheck();
+        }
+
         return executeSync(() -> {
             int m = 0;
             for (World i : Bukkit.getWorlds()) {
@@ -70,6 +83,44 @@ public class SamplerEntities extends ReactCachedSampler implements Listener {
 
             return m;
         });
+    }
+
+    private int getFoliaApproximateRealCheck() {
+        List<Player> players = new ArrayList<>(Bukkit.getOnlinePlayers());
+        if (players.isEmpty()) {
+            return Math.max(0, entities.get());
+        }
+
+        Set<UUID> seen = ConcurrentHashMap.newKeySet();
+        CountDownLatch latch = new CountDownLatch(players.size());
+        for (Player player : players) {
+            boolean scheduled = J.runEntity(player, () -> {
+                try {
+                    if (player == null || !player.isOnline() || !J.isOwnedByCurrentRegion(player)) {
+                        return;
+                    }
+
+                    for (org.bukkit.entity.Entity entity : player.getNearbyEntities(96, 64, 96)) {
+                        seen.add(entity.getUniqueId());
+                    }
+                } finally {
+                    latch.countDown();
+                }
+            });
+
+            if (!scheduled) {
+                latch.countDown();
+            }
+        }
+
+        try {
+            latch.await(250, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            React.verbose("SamplerEntities wait interrupted while gathering Folia approximation.");
+        }
+
+        return seen.size();
     }
 
     @Override
@@ -103,7 +154,7 @@ public class SamplerEntities extends ReactCachedSampler implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void on(WorldUnloadEvent e) {
-        entities.addAndGet(-e.getWorld().getEntities().size());
+        entities.set(Math.max(0, entities.get()));
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

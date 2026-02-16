@@ -21,6 +21,7 @@ package art.arcane.react.model;
 
 import art.arcane.react.React;
 import art.arcane.react.api.entity.EntityPriority;
+import art.arcane.react.util.scheduling.J;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
@@ -40,6 +41,15 @@ public class ReactEntity {
     }
 
     public static boolean tick(Entity entity, EntityPriority p) {
+        if (entity == null) {
+            return false;
+        }
+
+        if (J.isFoliaThreading() && !J.isOwnedByCurrentRegion(entity)) {
+            J.runEntity(entity, () -> tick(entity, p));
+            return false;
+        }
+
         if (entity.isDead()) {
             return false;
         }

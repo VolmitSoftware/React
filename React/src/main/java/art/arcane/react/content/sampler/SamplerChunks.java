@@ -20,18 +20,26 @@
 package art.arcane.react.content.sampler;
 
 import art.arcane.chrono.ChronoLatch;
+import art.arcane.react.React;
 import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.volmlib.util.format.Form;
 import art.arcane.react.util.scheduling.J;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class SamplerChunks extends ReactCachedSampler implements Listener {
@@ -52,6 +60,10 @@ public class SamplerChunks extends ReactCachedSampler implements Listener {
     }
 
     public int getRealCheck() {
+        if (J.isFoliaThreading()) {
+            return getFoliaApproximateRealCheck();
+        }
+
         return executeSync(() -> {
             int m = 0;
 
@@ -61,6 +73,51 @@ public class SamplerChunks extends ReactCachedSampler implements Listener {
 
             return m;
         });
+    }
+
+    private int getFoliaApproximateRealCheck() {
+        List<Player> players = new ArrayList<>(Bukkit.getOnlinePlayers());
+        if (players.isEmpty()) {
+            return Math.max(0, loadedChunks.get());
+        }
+
+        Set<String> chunks = ConcurrentHashMap.newKeySet();
+        CountDownLatch latch = new CountDownLatch(players.size());
+        int radius = 6;
+
+        for (Player player : players) {
+            boolean scheduled = J.runEntity(player, () -> {
+                try {
+                    if (player == null || !player.isOnline() || !J.isOwnedByCurrentRegion(player)) {
+                        return;
+                    }
+
+                    int chunkX = player.getLocation().getBlockX() >> 4;
+                    int chunkZ = player.getLocation().getBlockZ() >> 4;
+                    String world = player.getWorld().getUID().toString();
+                    for (int x = chunkX - radius; x <= chunkX + radius; x++) {
+                        for (int z = chunkZ - radius; z <= chunkZ + radius; z++) {
+                            chunks.add(world + ":" + x + ":" + z);
+                        }
+                    }
+                } finally {
+                    latch.countDown();
+                }
+            });
+
+            if (!scheduled) {
+                latch.countDown();
+            }
+        }
+
+        try {
+            latch.await(200, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            React.verbose("SamplerChunks wait interrupted while gathering Folia approximation.");
+        }
+
+        return chunks.size();
     }
 
     @Override
@@ -76,7 +133,7 @@ public class SamplerChunks extends ReactCachedSampler implements Listener {
 
     @EventHandler
     public void on(WorldUnloadEvent e) {
-        loadedChunks.addAndGet(-e.getWorld().getLoadedChunks().length);
+        loadedChunks.set(Math.max(0, loadedChunks.get()));
     }
 
     @EventHandler

@@ -33,6 +33,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.*;
@@ -104,7 +105,12 @@ public class EntityController implements IController, Listener {
             return;
         }
 
-        if (!Bukkit.isPrimaryThread()) {
+        if (J.isFoliaThreading()) {
+            if (!J.isOwnedByCurrentRegion(e)) {
+                J.runEntity(e, () -> tickEntity(e));
+                return;
+            }
+        } else if (!J.isPrimaryThread()) {
             J.s(() -> tickEntity(e));
             return;
         }
@@ -235,6 +241,11 @@ public class EntityController implements IController, Listener {
             return;
         }
 
+        if (J.isFoliaThreading()) {
+            onFoliaTick();
+            return;
+        }
+
         J.s(() -> {
             ThreadLocalRandom random = ThreadLocalRandom.current();
 
@@ -253,6 +264,41 @@ public class EntityController implements IController, Listener {
                 }
             }
         });
+    }
+
+    private void onFoliaTick() {
+        List<Player> players = new ArrayList<>(Bukkit.getOnlinePlayers());
+        if (players.isEmpty()) {
+            return;
+        }
+
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        int samples = Math.min(players.size(), Math.max(1, perWorldUpdatesPerTick));
+
+        for (int i = 0; i < samples; i++) {
+            Player player = players.get(random.nextInt(players.size()));
+            J.runEntity(player, () -> sampleAroundPlayer(player));
+        }
+    }
+
+    private void sampleAroundPlayer(Player player) {
+        if (player == null || !player.isOnline() || !J.isOwnedByCurrentRegion(player)) {
+            return;
+        }
+
+        List<Entity> nearby = player.getNearbyEntities(48, 32, 48);
+        if (nearby == null || nearby.isEmpty()) {
+            return;
+        }
+
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        int samples = Math.min(Math.max(1, perWorldUpdatesPerTick / 2), nearby.size());
+        for (int i = 0; i < samples; i++) {
+            Entity sampled = nearby.get(random.nextInt(nearby.size()));
+            if (sampled != null) {
+                tickEntity(sampled);
+            }
+        }
     }
 
     private boolean hasRegisteredTickListeners() {

@@ -38,8 +38,10 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityTargetEvent;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @art.arcane.react.util.config.ConfigDescription("Configuration for Adaptive Entity Sleep feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureAdaptiveEntitySleep extends ReactFeature implements Listener {
@@ -88,6 +90,11 @@ public class FeatureAdaptiveEntitySleep extends ReactFeature implements Listener
 
     @Override
     public void onTick() {
+        if (J.isFoliaThreading()) {
+            applyFoliaSleepScan();
+            return;
+        }
+
         J.s(this::applySleepScan);
     }
 
@@ -118,7 +125,58 @@ public class FeatureAdaptiveEntitySleep extends ReactFeature implements Listener
         }
     }
 
+    private void applyFoliaSleepScan() {
+        List<Player> players = new ArrayList<>(Bukkit.getOnlinePlayers());
+        if (players.isEmpty()) {
+            return;
+        }
+
+        AtomicInteger remaining = new AtomicInteger(Math.max(1, maxEntitiesSampledPerCycle));
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        int playerSamples = Math.min(players.size(), Math.max(1, remaining.get() / 8));
+
+        for (int i = 0; i < playerSamples && remaining.get() > 0; i++) {
+            Player player = players.get(random.nextInt(players.size()));
+            J.runEntity(player, () -> sampleAroundPlayer(player, remaining));
+        }
+    }
+
+    private void sampleAroundPlayer(Player player, AtomicInteger remaining) {
+        if (player == null || !player.isOnline() || !J.isOwnedByCurrentRegion(player)) {
+            return;
+        }
+
+        List<Entity> nearby = player.getNearbyEntities(
+                sleepBeyondNearestPlayer + 16,
+                Math.max(32, sleepBeyondNearestPlayer),
+                sleepBeyondNearestPlayer + 16
+        );
+        if (nearby.isEmpty()) {
+            return;
+        }
+
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        int samples = Math.min(nearby.size(), Math.max(1, remaining.get() / 2));
+        for (int i = 0; i < samples; i++) {
+            if (remaining.getAndDecrement() <= 0) {
+                return;
+            }
+
+            Entity entity = nearby.get(random.nextInt(nearby.size()));
+            manageEntity(entity);
+        }
+    }
+
     private void manageEntity(Entity entity) {
+        if (entity == null) {
+            return;
+        }
+
+        if (J.isFoliaThreading() && !J.isOwnedByCurrentRegion(entity)) {
+            J.runEntity(entity, () -> manageEntity(entity));
+            return;
+        }
+
         if (!canManage(entity)) {
             wake(entity);
             return;

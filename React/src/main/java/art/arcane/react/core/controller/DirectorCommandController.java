@@ -129,7 +129,9 @@ public class DirectorCommandController implements IController, CommandExecutor, 
 
     private void dispatchDirector(DirectorExecutionMode mode, Runnable runnable) {
         if (mode == DirectorExecutionMode.SYNC) {
-            J.s(runnable);
+            // Command execution already runs on the correct server thread context.
+            // Re-queueing it can break Folia region ownership and make commands appear non-responsive.
+            runnable.run();
         } else {
             runnable.run();
         }
@@ -174,12 +176,12 @@ public class DirectorCommandController implements IController, CommandExecutor, 
             return false;
         }
 
-        if (!sender.hasPermission(ROOT_PERMISSION)) {
+        if (!sender.hasPermission(ROOT_PERMISSION) && !sender.hasPermission("react.*") && !sender.isOp()) {
             sender.sendMessage("You lack the Permission '" + ROOT_PERMISSION + "'");
             return true;
         }
 
-        J.a(() -> executeCommand(sender, label, args));
+        executeCommand(sender, label, args);
         return true;
     }
 
@@ -203,6 +205,12 @@ public class DirectorCommandController implements IController, CommandExecutor, 
     }
 
     private boolean sendHelpIfRequested(CommandSender sender, String[] args) {
+        if (args.length == 0) {
+            VolmitSender volmitSender = new VolmitSender(sender);
+            volmitSender.sendDirectorHelp(getHelpRoot(), 0);
+            return true;
+        }
+
         Optional<DirectorVisualCommand.HelpRequest> request = DirectorVisualCommand.resolveHelp(getHelpRoot(), Arrays.asList(args));
         if (request.isEmpty()) {
             return false;
@@ -222,6 +230,7 @@ public class DirectorCommandController implements IController, CommandExecutor, 
             return getDirector().execute(new DirectorInvocation(new BukkitDirectorSender(sender), label, Arrays.asList(args)));
         } catch (Throwable e) {
             React.warn("Director command execution failed: " + e.getClass().getSimpleName() + " " + e.getMessage());
+            React.reportError(e);
             return DirectorExecutionResult.notHandled();
         }
     }

@@ -53,7 +53,7 @@ public class CommandDebug implements DecreeExecutor {
                     continue;
                 }
                 j.setGlowing(true);
-                J.s(() -> j.setGlowing(false), 1);
+                J.runEntity(j, () -> j.setGlowing(false), 1);
                 player().sendMessage("Priority: " + Form.f((int) ReactEntity.getPriority(j)));
                 player().sendMessage("Crowding: " + Form.f((int) ReactEntity.getCrowding(j)));
                 player().sendMessage("Player N: " + Form.f(ReactEntity.getNearestPlayer(j), 1));

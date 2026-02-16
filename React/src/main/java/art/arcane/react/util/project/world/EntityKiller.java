@@ -55,24 +55,76 @@ public class EntityKiller implements Listener {
     }
 
     public void stop() {
-        entity.setCustomNameVisible(false);
-        entity.setCustomName(null);
-        React.instance.unregisterListener(this);
-        React.controller(EntityController.class).getKilling().remove(entity);
-        React.controller(EntityController.class).getKillers().remove(this);
-        J.csr(tt);
+        Entity target = entity;
+        if (target == null) {
+            cleanup();
+            return;
+        }
+
+        if (J.runEntity(target, () -> {
+            target.setCustomNameVisible(false);
+            target.setCustomName(null);
+            cleanup();
+        })) {
+            return;
+        }
+
+        cleanup();
+    }
+
+    private void cleanup() {
+        if (React.instance != null) {
+            React.instance.unregisterListener(this);
+        }
+
+        EntityController controller = null;
+        try {
+            controller = React.controller(EntityController.class);
+        } catch (Throwable ex) {
+            if (React.instance != null && React.instance.isEnabled()) {
+                React.warn("EntityKiller cleanup failed to resolve EntityController: "
+                        + ex.getClass().getSimpleName()
+                        + (ex.getMessage() == null ? "" : " - " + ex.getMessage()));
+                React.reportError(ex);
+            }
+        }
+
+        if (controller != null && entity != null) {
+            controller.getKilling().remove(entity);
+        }
+
+        if (controller != null) {
+            controller.getKillers().remove(this);
+        }
+
+        if (tt != 0) {
+            J.csr(tt);
+            tt = 0;
+        }
     }
 
     private void tick() {
+        Entity target = entity;
+        if (target == null) {
+            stop();
+            return;
+        }
+
+        if (!J.runEntity(target, this::tickOwned)) {
+            stop();
+        }
+    }
+
+    private void tickOwned() {
         if (entity.isDead()) {
             stop();
             return;
         }
 
         seconds--;
-        if (seconds == 0) {
+        if (seconds <= 0) {
             kill();
-            React.instance.unregisterListener(this);
+            return;
         }
 
         entity.setCustomName(C.RED + "" + seconds + "s");
@@ -80,6 +132,18 @@ public class EntityKiller implements Listener {
     }
 
     public void kill() {
+        Entity target = entity;
+        if (target == null) {
+            stop();
+            return;
+        }
+
+        if (!J.runEntity(target, this::killOwned)) {
+            stop();
+        }
+    }
+
+    private void killOwned() {
         if (entity.isDead()) {
             return;
         }
@@ -101,18 +165,22 @@ public class EntityKiller implements Listener {
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void on(EntityPickupItemEvent e) {
-        if (e.getItem().equals(entity)) {
+        if (entity != null && e.getItem().equals(entity)) {
             stop();
         }
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void on(PlayerInteractEntityEvent event) {
+        if (entity == null) {
+            return;
+        }
+
         Entity clickedEntity = event.getRightClicked();
         if (!entity.equals(clickedEntity)) {
             return;
         }
-        React.verbose("EntityKiller: " + entity.getCustomName() + " was cancelled by player " + event.getPlayer().getName());
+        React.verbose("EntityKiller: countdown cancelled by player " + event.getPlayer().getName());
         stop();
     }
 }

@@ -40,6 +40,11 @@ import java.util.concurrent.ConcurrentHashMap;
 public class Ticker {
     private static final long SLOW_TICK_WARN_THRESHOLD_MS = 50L;
     private static final long SLOW_TICK_RECENCY_WINDOW_MS = 30_000L;
+    private static final long SLOW_TICK_LOG_INTERVAL_MS = 10_000L;
+    private static final long SLOW_TICK_ESCALATION_LOG_INTERVAL_MS = 2_500L;
+    private static final long SLOW_TICK_CRITICAL_LOG_INTERVAL_MS = 1_000L;
+    private static final long[] FOLIA_BACKOFF_STEPS_MS = new long[]{0L, 1000L, 5000L, 15000L, 60000L};
+    private static final long CLOSE_JOIN_TIMEOUT_MS = 250L;
     private final KList<Ticked> ticklist;
     private final KList<Ticked> newTicks;
     private final KList<String> removeTicks;
@@ -47,8 +52,10 @@ public class Ticker {
     private final RollingSequence tickTime;
     private final Looper looper;
     private final Map<String, SlowTickStats> slowTickStats;
+    private final Map<String, SlowTickLogState> slowTickLogStates;
+    private final Map<String, FoliaViolationState> foliaViolationStates;
     private volatile boolean ticking;
-    private boolean closed;
+    private volatile boolean closed;
 
     public Ticker() {
         this.closed = false;
@@ -58,6 +65,8 @@ public class Ticker {
         tasksPerSecond = new RollingSequence(20);
         tickTime = new RollingSequence(10);
         slowTickStats = new ConcurrentHashMap<>();
+        slowTickLogStates = new ConcurrentHashMap<>();
+        foliaViolationStates = new ConcurrentHashMap<>();
         ticking = false;
         looper = new Looper() {
             PrecisionStopwatch p = PrecisionStopwatch.start();
@@ -67,7 +76,7 @@ public class Ticker {
             @Override
             protected long loop() {
                 if (closed) {
-                    return 100;
+                    return -1;
                 }
 
                 if (!ticking) {
@@ -90,7 +99,14 @@ public class Ticker {
 
     public void close() {
         closed = true;
+        clear();
         looper.interrupt();
+        try {
+            looper.join(CLOSE_JOIN_TIMEOUT_MS);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            React.verbose("Ticker close wait interrupted.");
+        }
     }
 
     public double getTasksPerSecond() {
@@ -128,11 +144,18 @@ public class Ticker {
             newTicks.clear();
         }
         slowTickStats.clear();
+        slowTickLogStates.clear();
+        foliaViolationStates.clear();
 
     }
 
     private int tick() {
         ticking = true;
+        if (closed) {
+            ticking = false;
+            return 0;
+        }
+
         int ix = ticklist.size();
         if (ix > 0) {
             BurstExecutor e = MultiBurst.burst.burst(ix);
@@ -144,7 +167,17 @@ public class Ticker {
 
                 e.queue(() -> executeTick(ticked));
             }
-            e.complete();
+            try {
+                e.complete();
+            } catch (Throwable throwable) {
+                if (isInterruptedFailure(throwable) || closed) {
+                    Thread.currentThread().interrupt();
+                    ticking = false;
+                    return ix;
+                }
+
+                throw new RuntimeException("Ticker burst execution failed", throwable);
+            }
         }
 
         synchronized (newTicks) {
@@ -173,22 +206,114 @@ public class Ticker {
     }
 
     private void executeTick(Ticked ticked) {
+        if (shouldBackoffTick(ticked)) {
+            return;
+        }
+
         try {
             long start = System.nanoTime();
             ticked.tick();
+            clearFoliaViolation(ticked);
             long elapsedMS = (System.nanoTime() - start) / 1_000_000L;
             boolean slow = elapsedMS > SLOW_TICK_WARN_THRESHOLD_MS;
             SlowTickSnapshot snapshot = recordSlowTick(ticked, elapsedMS, slow);
             if (slow) {
                 warnSlowTick(ticked, elapsedMS, snapshot);
+            } else {
+                clearSlowTickLogState(ticked);
             }
         } catch (Throwable exxx) {
-            React.warn("Tick task crashed: " + describeTicked(ticked) + " cause=" + summarizeThrowable(exxx));
-            exxx.printStackTrace();
+            if (closed || React.instance == null || !React.instance.isReady()) {
+                return;
+            }
+
+            if (J.isThreadOwnershipViolation(exxx)) {
+                handleFoliaViolation(ticked, exxx);
+                return;
+            }
+
+            if (isInterruptedFailure(exxx)) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+
+            try {
+                React.warn("Tick task crashed: " + describeTicked(ticked) + " cause=" + summarizeThrowable(exxx));
+                exxx.printStackTrace();
+            } catch (Throwable logFailure) {
+                System.err.println("[React] Failed to emit tick crash log: " + logFailure.getClass().getSimpleName()
+                        + (logFailure.getMessage() == null ? "" : " - " + logFailure.getMessage()));
+            }
         }
     }
 
+    private boolean shouldBackoffTick(Ticked ticked) {
+        if (ticked == null || !J.isFoliaThreading()) {
+            return false;
+        }
+
+        FoliaViolationState state = foliaViolationStates.get(slowTickKey(ticked));
+        if (state == null) {
+            return false;
+        }
+
+        return state.isBackoffActive(System.currentTimeMillis());
+    }
+
+    private void clearFoliaViolation(Ticked ticked) {
+        if (ticked == null) {
+            return;
+        }
+
+        foliaViolationStates.remove(slowTickKey(ticked));
+    }
+
+    private void handleFoliaViolation(Ticked ticked, Throwable throwable) {
+        if (ticked == null) {
+            return;
+        }
+
+        String key = slowTickKey(ticked);
+        FoliaViolationState state = foliaViolationStates.computeIfAbsent(key, ignored -> new FoliaViolationState());
+        FoliaViolationSnapshot snapshot = state.record(System.currentTimeMillis());
+
+        if (!snapshot.shouldLog) {
+            return;
+        }
+
+        try {
+            React.warn(
+                    "Folia region ownership violation: " + describeTicked(ticked)
+                            + " paused=" + snapshot.backoffMS + "ms"
+                            + " failures=" + snapshot.failures
+                            + " cause=" + summarizeThrowable(throwable)
+                            + " owner=" + slowTickOwner(ticked)
+            );
+        } catch (Throwable logFailure) {
+            System.err.println("[React] Failed to emit Folia ownership violation log: " + logFailure.getClass().getSimpleName()
+                    + (logFailure.getMessage() == null ? "" : " - " + logFailure.getMessage()));
+        }
+    }
+
+    private boolean isInterruptedFailure(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (current instanceof InterruptedException) {
+                return true;
+            }
+
+            current = current.getCause();
+        }
+
+        return false;
+    }
+
     private void warnSlowTick(Ticked ticked, long elapsedMS, SlowTickSnapshot snapshot) {
+        SlowTickLogDecision logDecision = shouldLogSlowTick(ticked, elapsedMS);
+        if (!logDecision.shouldLog) {
+            return;
+        }
+
         long intervalMS = safeLong(ticked == null ? null : ticked.getTinterval(), 0L);
         long ageMS = safeLong(ticked == null ? null : ticked.getAge(), 0L);
         long overMS = Math.max(0L, elapsedMS - SLOW_TICK_WARN_THRESHOLD_MS);
@@ -196,12 +321,13 @@ public class Ticker {
         String cause = slowTickCause(ticked);
         String source = slowTickLikelySource(ticked);
         ReactConfiguration.SlowTickLogMode mode = ReactConfiguration.get().getSlowTickLogMode();
+        String message;
         if (mode == ReactConfiguration.SlowTickLogMode.SHORT) {
-            React.warn(buildShortSlowTickMessage(ticked, elapsedMS, overMS));
+            message = buildShortSlowTickMessage(ticked, elapsedMS, overMS);
         } else if (mode == ReactConfiguration.SlowTickLogMode.BLAME) {
-            React.warn(buildBlameSlowTickMessage(ticked, elapsedMS, overMS, cause, source));
+            message = buildBlameSlowTickMessage(ticked, elapsedMS, overMS, cause, source);
         } else {
-            React.warn(buildDetailedSlowTickMessage(
+            message = buildDetailedSlowTickMessage(
                     ticked,
                     elapsedMS,
                     intervalMS,
@@ -212,8 +338,15 @@ public class Ticker {
                     source,
                     cause,
                     snapshot
-            ));
+            );
         }
+
+        if (logDecision.suppressed > 0L) {
+            message += " Suppressed " + logDecision.suppressed + " similar warnings over " + logDecision.windowMS + "ms.";
+        }
+
+        React.warn(message);
+
         if (ReactConfiguration.get().isVerbose() && !context.isBlank()) {
             React.verbose("Slow tick context: " + context);
         }
@@ -506,6 +639,10 @@ public class Ticker {
     private String slowTickLikelySource(Ticked ticked) {
         double irisQueue = sampleSampler("iris-pregen-queue", -1D);
         double irisStreamMs = sampleSampler("iris-chunk-stream-ms", -1D);
+        if (irisStreamMs >= 20_000D && irisQueue <= 0D) {
+            irisStreamMs = -1D;
+        }
+
         if (irisQueue > 0D || irisStreamMs >= 12D) {
             return String.format(
                     Locale.ROOT,
@@ -557,7 +694,9 @@ public class Ticker {
 
             double value = sampler.sample();
             return Double.isFinite(value) ? value : fallback;
-        } catch (Throwable ignored) {
+        } catch (Throwable ex) {
+            React.verbose("Failed to sample '" + samplerId + "': " + ex.getClass().getSimpleName()
+                    + (ex.getMessage() == null ? "" : " - " + ex.getMessage()));
             return fallback;
         }
     }
@@ -567,6 +706,62 @@ public class Ticker {
             return fallback;
         }
         return Math.max(0L, value);
+    }
+
+    private SlowTickLogDecision shouldLogSlowTick(Ticked ticked, long elapsedMS) {
+        if (ticked == null) {
+            return new SlowTickLogDecision(true, 0L, 0L);
+        }
+
+        String key = slowTickKey(ticked);
+        SlowTickLogState state = slowTickLogStates.computeIfAbsent(key, ignored -> new SlowTickLogState());
+        long now = System.currentTimeMillis();
+        int severityRank = slowSeverityRank(elapsedMS);
+
+        synchronized (state) {
+            if (state.lastLogMS <= 0L) {
+                state.lastLogMS = now;
+                state.lastSeverityRank = severityRank;
+                state.suppressed = 0L;
+                return new SlowTickLogDecision(true, 0L, 0L);
+            }
+
+            long sinceLastLog = Math.max(0L, now - state.lastLogMS);
+            long threshold = severityRank >= 3 ? SLOW_TICK_CRITICAL_LOG_INTERVAL_MS : SLOW_TICK_LOG_INTERVAL_MS;
+            boolean severityEscalated = severityRank > state.lastSeverityRank && sinceLastLog >= SLOW_TICK_ESCALATION_LOG_INTERVAL_MS;
+            if (severityEscalated || sinceLastLog >= threshold) {
+                long suppressed = state.suppressed;
+                state.suppressed = 0L;
+                state.lastLogMS = now;
+                state.lastSeverityRank = severityRank;
+                return new SlowTickLogDecision(true, suppressed, sinceLastLog);
+            }
+
+            state.suppressed++;
+            state.lastSeverityRank = Math.max(state.lastSeverityRank, severityRank);
+            return new SlowTickLogDecision(false, 0L, sinceLastLog);
+        }
+    }
+
+    private void clearSlowTickLogState(Ticked ticked) {
+        if (ticked == null) {
+            return;
+        }
+
+        slowTickLogStates.remove(slowTickKey(ticked));
+    }
+
+    private int slowSeverityRank(long elapsedMS) {
+        if (elapsedMS >= 120L || elapsedMS >= SLOW_TICK_WARN_THRESHOLD_MS * 2L) {
+            return 3;
+        }
+        if (elapsedMS >= 90L || elapsedMS * 10L >= SLOW_TICK_WARN_THRESHOLD_MS * 16L) {
+            return 2;
+        }
+        if (elapsedMS >= 65L || elapsedMS * 10L >= SLOW_TICK_WARN_THRESHOLD_MS * 13L) {
+            return 1;
+        }
+        return 0;
     }
 
     private String summarizeThrowable(Throwable throwable) {
@@ -674,6 +869,53 @@ public class Ticker {
             this.slowRunsLastWindow = slowRunsLastWindow;
             this.maxSlowMS = maxSlowMS;
             this.averageSlowMS = averageSlowMS;
+        }
+    }
+
+    private static final class SlowTickLogState {
+        private long lastLogMS;
+        private int lastSeverityRank;
+        private long suppressed;
+    }
+
+    private static final class SlowTickLogDecision {
+        private final boolean shouldLog;
+        private final long suppressed;
+        private final long windowMS;
+
+        private SlowTickLogDecision(boolean shouldLog, long suppressed, long windowMS) {
+            this.shouldLog = shouldLog;
+            this.suppressed = suppressed;
+            this.windowMS = windowMS;
+        }
+    }
+
+    private static final class FoliaViolationState {
+        private long failures;
+        private long backoffUntilMS;
+
+        private synchronized FoliaViolationSnapshot record(long nowMS) {
+            failures++;
+            long backoffMS = FOLIA_BACKOFF_STEPS_MS[(int) Math.min(FOLIA_BACKOFF_STEPS_MS.length - 1, Math.max(0L, failures - 1))];
+            backoffUntilMS = nowMS + backoffMS;
+            boolean shouldLog = failures <= 2 || failures == 3 || failures % 10 == 0;
+            return new FoliaViolationSnapshot(failures, backoffMS, shouldLog);
+        }
+
+        private synchronized boolean isBackoffActive(long nowMS) {
+            return nowMS < backoffUntilMS;
+        }
+    }
+
+    private static final class FoliaViolationSnapshot {
+        private final long failures;
+        private final long backoffMS;
+        private final boolean shouldLog;
+
+        private FoliaViolationSnapshot(long failures, long backoffMS, boolean shouldLog) {
+            this.failures = failures;
+            this.backoffMS = backoffMS;
+            this.shouldLog = shouldLog;
         }
     }
 }

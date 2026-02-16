@@ -78,6 +78,10 @@ public class React extends VolmitPlugin {
             return false;
         }
 
+        if (J.isFoliaThreading() && !J.isOwnedByCurrentRegion(l)) {
+            return false;
+        }
+
         double radiusSquared = blocks * blocks;
         double lx = l.getX();
         double ly = l.getY();
@@ -174,8 +178,9 @@ public class React extends VolmitPlugin {
             if (slicedClass == null || i.isAnnotationPresent(slicedClass)) {
                 try {
                     v.add(i.getDeclaredConstructor().newInstance());
-                } catch (Throwable ignored) {
-
+                } catch (Throwable ex) {
+                    verbose("Skipping initialization for " + i.getName() + ": " + ex.getClass().getSimpleName()
+                            + (ex.getMessage() == null ? "" : " - " + ex.getMessage()));
                 }
             }
         }
@@ -299,10 +304,15 @@ public class React extends VolmitPlugin {
     @Override
     public void stop() {
         ready = false;
-        controllerRegistry.all().forEach(IController::stop);
-        burst.close();
-        ticker.clear();
-        ticker.close();
+        if (ticker != null) {
+            ticker.close();
+        }
+        if (controllerRegistry != null) {
+            controllerRegistry.all().forEach(IController::stop);
+        }
+        if (burst != null) {
+            burst.close();
+        }
     }
 
     @Override
@@ -318,7 +328,9 @@ public class React extends VolmitPlugin {
         try {
             onDisable();
             onEnable();
-        } catch (Throwable ignored) { // threads break, i dont care
+        } catch (Throwable ex) {
+            error("React reload failed: " + ex.getClass().getSimpleName() + (ex.getMessage() == null ? "" : " - " + ex.getMessage()));
+            reportError(ex);
         }
 
     }

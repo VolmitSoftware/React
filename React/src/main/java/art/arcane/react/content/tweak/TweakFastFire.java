@@ -46,7 +46,8 @@ public class TweakFastFire extends ReactTweak implements Listener {
     public void on(BlockSpreadEvent e) {
         if (e.getBlock().getBlockData() instanceof Fire f) {
             e.setCancelled(true);
-            J.s(() -> FastWorld.set(e.getBlock(), f));
+            var location = e.getBlock().getLocation().clone();
+            J.s(location, () -> FastWorld.set(location.getBlock(), f), 0);
         }
     }
 
@@ -54,14 +55,16 @@ public class TweakFastFire extends ReactTweak implements Listener {
     public void on(BlockFadeEvent e) {
         if (e.getBlock().getBlockData() instanceof Fire) {
             e.setCancelled(true);
-            J.s(() -> FastWorld.breakNaturally(e.getBlock()));
+            var location = e.getBlock().getLocation().clone();
+            J.s(location, () -> FastWorld.breakNaturally(location.getBlock()), 0);
         }
     }
 
     @EventHandler
     public void on(BlockBurnEvent e) {
         e.setCancelled(true);
-        J.s(() -> FastWorld.breakNaturally(e.getBlock()));
+        var location = e.getBlock().getLocation().clone();
+        J.s(location, () -> FastWorld.breakNaturally(location.getBlock()), 0);
     }
 
     @Override

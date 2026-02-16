@@ -159,6 +159,11 @@ public class FeatureEntityTrimmer extends ReactFeature implements Listener {
             return;
         }
 
+        if (J.isFoliaThreading()) {
+            trimEntitiesFolia();
+            return;
+        }
+
         trimQueued = true;
         J.s(() -> {
             try {
@@ -256,6 +261,64 @@ public class FeatureEntityTrimmer extends ReactFeature implements Listener {
         }
     }
 
+    private void trimEntitiesFolia() {
+        trimQueued = true;
+        try {
+            List<Player> players = new ArrayList<>(Bukkit.getOnlinePlayers());
+            if (players.isEmpty()) {
+                return;
+            }
+
+            ThreadLocalRandom random = ThreadLocalRandom.current();
+            int sampleCount = Math.min(players.size(), Math.max(1, Math.min(24, softMaxEntitiesPerWorld / Math.max(1, softMaxEntitiesPerPlayer))));
+            for (int i = 0; i < sampleCount; i++) {
+                Player player = players.get(random.nextInt(players.size()));
+                J.runEntity(player, () -> trimAroundPlayer(player));
+            }
+        } finally {
+            trimQueued = false;
+        }
+    }
+
+    private void trimAroundPlayer(Player player) {
+        if (player == null || !player.isOnline() || !J.isOwnedByCurrentRegion(player)) {
+            return;
+        }
+
+        int radius = Math.max(8, playerMobBlockDistance);
+        List<Entity> nearby = player.getNearbyEntities(radius, Math.max(24, radius), radius);
+        if (nearby.isEmpty()) {
+            return;
+        }
+
+        List<EntityCandidate> killList = new ArrayList<>();
+        for (Entity entity : nearby) {
+            if (entity == null || !J.isOwnedByCurrentRegion(entity) || !isValidTarget(entity)) {
+                continue;
+            }
+
+            double priority = ReactEntity.getPriority(entity);
+            if (priority < 0D || priority > maxPriority) {
+                continue;
+            }
+
+            killList.add(new EntityCandidate(entity, priority));
+        }
+
+        int softCap = Math.max(1, softMaxEntitiesPerPlayer);
+        if (killList.size() <= softCap) {
+            return;
+        }
+
+        killList.sort(Comparator.comparingDouble(EntityCandidate::priority));
+        int overflow = killList.size() - softCap;
+        int maxKill = Math.max(1, (int) Math.floor(killList.size() * opporunityThreshold));
+        maxKill = Math.min(maxKill, overflow);
+        for (int i = 0; i < maxKill; i++) {
+            kill(killList.get(i).entity);
+        }
+    }
+
     private List<Entity> collectEntities() {
         List<Entity> entities = new ArrayList<>();
         for (World world : Bukkit.getWorlds()) {
@@ -326,7 +389,10 @@ public class FeatureEntityTrimmer extends ReactFeature implements Listener {
     }
 
     private void kill(Entity entity) {
-        J.s(() -> React.kill(entity), ThreadLocalRandom.current().nextInt(20));
+        int delay = ThreadLocalRandom.current().nextInt(20);
+        if (!J.runEntity(entity, () -> React.kill(entity), delay)) {
+            React.kill(entity);
+        }
     }
 
     private static final class PlayerSnapshot {

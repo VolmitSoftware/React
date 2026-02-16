@@ -22,7 +22,9 @@ package art.arcane.react.content.tweak;
 import art.arcane.react.api.tweak.ReactTweak;
 import art.arcane.react.util.scheduling.J;
 import art.arcane.react.util.world.ChainedColumn;
+import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -65,30 +67,23 @@ public class TweakFastColumns extends ReactTweak implements Listener {
 
     @EventHandler
     public void on(BlockPhysicsEvent e) {
-        if (bamboo.is(e.getBlock())) {
-            J.ss(() -> {
-                if (bamboo.isEmpty(e.getBlock())) {
-                    bamboo.trigger(e.getBlock(), maxColumnSize);
-                }
-            }, 2);
-        } else if (sugarCane.is(e.getBlock())) {
-            J.ss(() -> {
-                if (sugarCane.isEmpty(e.getBlock())) {
-                    sugarCane.trigger(e.getBlock(), maxColumnSize);
-                }
-            }, 2);
-        } else if (cactus.is(e.getBlock())) {
-            J.ss(() -> {
-                if (cactus.isEmpty(e.getBlock())) {
-                    cactus.trigger(e.getBlock(), maxColumnSize);
-                }
-            }, 2);
-        } else if (kelp.is(e.getBlock())) {
-            J.ss(() -> {
-                if (kelp.isEmpty(e.getBlock())) {
-                    kelp.trigger(e.getBlock(), maxColumnSize);
-                }
-            }, 2);
+        Block block = e.getBlock();
+        Location location = block.getLocation();
+        if (bamboo.is(block)) {
+            J.s(location, () -> triggerIfEmpty(location, bamboo), 2);
+        } else if (sugarCane.is(block)) {
+            J.s(location, () -> triggerIfEmpty(location, sugarCane), 2);
+        } else if (cactus.is(block)) {
+            J.s(location, () -> triggerIfEmpty(location, cactus), 2);
+        } else if (kelp.is(block)) {
+            J.s(location, () -> triggerIfEmpty(location, kelp), 2);
+        }
+    }
+
+    private void triggerIfEmpty(Location location, ChainedColumn column) {
+        Block block = location.getBlock();
+        if (column.isEmpty(block)) {
+            column.trigger(block, maxColumnSize);
         }
     }
 

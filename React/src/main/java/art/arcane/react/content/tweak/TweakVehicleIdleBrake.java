@@ -27,6 +27,7 @@ import org.bukkit.World;
 import org.bukkit.entity.Boat;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Minecart;
+import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
@@ -73,6 +74,11 @@ public class TweakVehicleIdleBrake extends ReactTweak {
 
     @Override
     public void onTick() {
+        if (J.isFoliaThreading()) {
+            scanPlayersFolia();
+            return;
+        }
+
         J.s(this::scanWorlds);
     }
 
@@ -86,6 +92,52 @@ public class TweakVehicleIdleBrake extends ReactTweak {
                 sampleAndBrake(world.getEntitiesByClass(Boat.class));
             }
         }
+    }
+
+    private void scanPlayersFolia() {
+        List<Player> players = new ArrayList<>(Bukkit.getOnlinePlayers());
+        if (players.isEmpty()) {
+            return;
+        }
+
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        int samples = Math.min(players.size(), Math.max(1, maxVehiclesSampledPerWorld / 12));
+        for (int i = 0; i < samples; i++) {
+            Player player = players.get(random.nextInt(players.size()));
+            J.runEntity(player, () -> sampleAndBrakeAroundPlayer(player));
+        }
+    }
+
+    private void sampleAndBrakeAroundPlayer(Player player) {
+        if (player == null || !player.isOnline() || !J.isOwnedByCurrentRegion(player)) {
+            return;
+        }
+
+        List<Entity> nearby = player.getNearbyEntities(
+                maxDistanceWithoutPlayer + 24,
+                Math.max(32, maxDistanceWithoutPlayer),
+                maxDistanceWithoutPlayer + 24
+        );
+        if (nearby.isEmpty()) {
+            return;
+        }
+
+        if (brakeMinecarts) {
+            sampleAndBrake(filterVehicles(nearby, Minecart.class));
+        }
+        if (brakeBoats) {
+            sampleAndBrake(filterVehicles(nearby, Boat.class));
+        }
+    }
+
+    private <T extends Entity> List<T> filterVehicles(List<Entity> nearby, Class<T> type) {
+        List<T> filtered = new ArrayList<>();
+        for (Entity entity : nearby) {
+            if (type.isInstance(entity)) {
+                filtered.add(type.cast(entity));
+            }
+        }
+        return filtered;
     }
 
     private <T extends Entity> void sampleAndBrake(Collection<T> vehicleCollection) {
@@ -112,6 +164,10 @@ public class TweakVehicleIdleBrake extends ReactTweak {
     }
 
     private boolean shouldBrake(Entity vehicle) {
+        if (J.isFoliaThreading() && !J.isOwnedByCurrentRegion(vehicle)) {
+            return false;
+        }
+
         if (vehicle.isDead()) {
             return false;
         }

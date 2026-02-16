@@ -207,6 +207,12 @@ public class ReactConfiguration {
     @Data
     @ConfigDescription("Default player monitor dashboard configuration.")
     public static class Monitoring {
+        @ConfigDoc(value = "Maximum number of monitor groups shown in the action bar at once.", impact = "Higher values reduce horizontal paging, but can make entries harder to read if labels are long.")
+        private int actionBarHeaderSlots = 6;
+
+        @ConfigDoc(value = "Maximum number of samplers shown in the focused action bar row at once.", impact = "Higher values reduce paging inside a group, but can compress readability on small displays.")
+        private int actionBarSamplerSlots = 6;
+
         @ConfigDoc(value = "Default monitor groups and samplers shown to players.", impact = "Changing this alters the baseline monitor panel structure for new settings.")
         private MonitorConfiguration monitorConfiguration = MonitorConfiguration.builder()
                 .group(MonitorGroup.builder()

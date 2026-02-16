@@ -39,6 +39,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @art.arcane.react.util.config.ConfigDescription("Configuration for Chunk Quarantine feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureChunkQuarantine extends ReactFeature implements Listener {
@@ -75,8 +76,16 @@ public class FeatureChunkQuarantine extends ReactFeature implements Listener {
     private int samplePhysicsEveryN = 3;
     @art.arcane.react.util.config.ConfigDoc(value = "Controls whether chunk quarantine applies track hoppers.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
     private boolean trackHoppers = true;
+    @art.arcane.react.util.config.ConfigDoc(value = "Maximum stale chunk-state entries removed per maintenance cycle in chunk quarantine.", impact = "Higher values clean old state faster but can cause burst CPU; lower values smooth CPU with slower cleanup.")
+    private int maxExpiryRemovalsPerCycle = 192;
+    @art.arcane.react.util.config.ConfigDoc(value = "Maximum chunk-state entries inspected per maintenance cycle in chunk quarantine.", impact = "Higher values clean stale state faster with higher CPU bursts; lower values smooth CPU with slower cleanup of old entries.")
+    private int maxExpiryScansPerCycle = 1024;
+    @art.arcane.react.util.config.ConfigDoc(value = "Maintenance cadence used by chunk quarantine for pressure checks and stale-state cleanup (milliseconds).", impact = "Lower values respond and clean faster with more overhead; higher values reduce overhead but react/clean slower.")
+    private int maintenanceIntervalMS = 1000;
     private transient Map<ChunkKey, ChunkState> states = new ConcurrentHashMap<>();
     private transient volatile boolean pressure;
+    private transient final AtomicBoolean maintenanceQueued = new AtomicBoolean(false);
+    private transient volatile long lastMaintenanceMS;
 
     public FeatureChunkQuarantine() {
         super(ID);
@@ -86,12 +95,16 @@ public class FeatureChunkQuarantine extends ReactFeature implements Listener {
     public void onActivate() {
         states = new ConcurrentHashMap<>();
         pressure = false;
+        maintenanceQueued.set(false);
+        lastMaintenanceMS = 0L;
     }
 
     @Override
     public void onDeactivate() {
         states.clear();
         pressure = false;
+        maintenanceQueued.set(false);
+        lastMaintenanceMS = 0L;
     }
 
     @Override
@@ -101,14 +114,57 @@ public class FeatureChunkQuarantine extends ReactFeature implements Listener {
 
     @Override
     public void onTick() {
-        pressure = !onlyDuringPressure || isPressure();
+        if (maintenanceIntervalMS > 0 && System.currentTimeMillis() - lastMaintenanceMS < maintenanceIntervalMS) {
+            return;
+        }
+
+        if (!maintenanceQueued.compareAndSet(false, true)) {
+            return;
+        }
+
+        try {
+            art.arcane.react.util.scheduling.J.s(() -> {
+                try {
+                    runMaintenance();
+                } finally {
+                    maintenanceQueued.set(false);
+                }
+            });
+        } catch (Throwable ex) {
+            maintenanceQueued.set(false);
+            React.warn("Failed to schedule chunk quarantine maintenance: " + ex.getClass().getSimpleName()
+                    + (ex.getMessage() == null ? "" : " - " + ex.getMessage()));
+            React.reportError(ex);
+        }
+    }
+
+    private void runMaintenance() {
         long now = System.currentTimeMillis();
+        if (maintenanceIntervalMS > 0 && now - lastMaintenanceMS < maintenanceIntervalMS) {
+            return;
+        }
+
+        lastMaintenanceMS = now;
+        pressure = !onlyDuringPressure || isPressure();
         long expiry = Math.max(windowMS * 8L, quarantineMS * 2L);
+        int maxRemovals = Math.max(16, maxExpiryRemovalsPerCycle);
+        int maxScans = Math.max(maxRemovals, maxExpiryScansPerCycle);
+        int removed = 0;
+        int scanned = 0;
 
         for (Map.Entry<ChunkKey, ChunkState> entry : states.entrySet()) {
+            if (scanned++ >= maxScans) {
+                break;
+            }
+
             ChunkState state = entry.getValue();
             if (now - state.lastHit > expiry && now >= state.quarantinedUntil) {
-                states.remove(entry.getKey(), state);
+                if (states.remove(entry.getKey(), state)) {
+                    removed++;
+                    if (removed >= maxRemovals) {
+                        break;
+                    }
+                }
             }
         }
     }

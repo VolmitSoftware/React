@@ -22,7 +22,6 @@ package art.arcane.react.content.tweak;
 import art.arcane.chrono.PrecisionStopwatch;
 import art.arcane.react.api.tweak.ReactTweak;
 import art.arcane.react.util.data.B;
-import art.arcane.volmlib.util.math.RNG;
 import art.arcane.react.util.scheduling.J;
 import org.bukkit.Location;
 import org.bukkit.Particle;
@@ -58,18 +57,19 @@ public class TweakFastFallingBlocks extends ReactTweak implements Listener {
         jobs = new ArrayList<>();
         queued = new HashSet<>();
         ticker = J.sr(() -> {
-            if (jobs.isEmpty()) {
-                return;
-            }
-
             PrecisionStopwatch p = PrecisionStopwatch.start();
 
-            while (p.getMilliseconds() < maxFallMS && !jobs.isEmpty()) {
-                if (jobs.size() > 3) {
-                    jobs.remove(RNG.r.i(jobs.size() - 1)).run();
-                } else {
-                    jobs.remove(0).run();
+            while (p.getMilliseconds() < maxFallMS) {
+                Runnable job;
+                synchronized (jobs) {
+                    if (jobs.isEmpty()) {
+                        return;
+                    }
+
+                    job = jobs.remove(0);
                 }
+
+                job.run();
             }
         }, 0);
     }
@@ -100,56 +100,83 @@ public class TweakFastFallingBlocks extends ReactTweak implements Listener {
                 }
             }
 
-            if (queued.contains(b)) {
-                return;
-            }
-
-            int bonus = bonusx;
-            queued.add(b);
-            jobs.add(() -> {
-                if (!b.getBlockData().equals(d)) {
+            synchronized (queued) {
+                if (queued.contains(b)) {
                     return;
                 }
 
-                b.setBlockData(B.getAir());
+                queued.add(b);
+            }
 
-                for (int i = 0; i < bonus; i++) {
-                    Block bx = b.getWorld().getBlockAt(b.getX(), b.getY() + 1 + i, b.getZ());
-                    if (!bx.getBlockData().equals(d)) {
-                        return;
-                    }
+            int bonus = bonusx;
+            Location blockLocation = b.getLocation().clone();
+            synchronized (jobs) {
+                jobs.add(() -> {
+                    J.s(blockLocation, () -> {
+                        try {
+                            Block target = blockLocation.getBlock();
+                            if (!target.getBlockData().equals(d)) {
+                                return;
+                            }
 
-                    bx.setBlockData(B.getAir(), false);
-                }
+                            target.setBlockData(B.getAir());
 
-                queued.remove(b);
-                fallEffect(e.getBlock().getLocation(), d);
-                for (int i = b.getY(); i > b.getWorld().getMinHeight() + 1; i--) {
-                    Block bb = b.getWorld().getBlockAt(b.getX(), i, b.getZ());
+                            for (int i = 0; i < bonus; i++) {
+                                Block bx = target.getWorld().getBlockAt(target.getX(), target.getY() + 1 + i, target.getZ());
+                                if (!bx.getBlockData().equals(d)) {
+                                    return;
+                                }
 
-                    if (bb.getRelative(BlockFace.DOWN).getType().isSolid()) {
-                        for (int j = 0; j < bonus; j++) {
-                            bb.getWorld().getBlockAt(bb.getX(), bb.getY() + 1 + j, bb.getZ()).setBlockData(d, false);
+                                bx.setBlockData(B.getAir(), false);
+                            }
+
+                            fallEffect(blockLocation, d);
+                            for (int i = target.getY(); i > target.getWorld().getMinHeight() + 1; i--) {
+                                Block bb = target.getWorld().getBlockAt(target.getX(), i, target.getZ());
+
+                                if (bb.getRelative(BlockFace.DOWN).getType().isSolid()) {
+                                    for (int j = 0; j < bonus; j++) {
+                                        bb.getWorld().getBlockAt(bb.getX(), bb.getY() + 1 + j, bb.getZ()).setBlockData(d, false);
+                                    }
+
+                                    bb.setBlockData(d, false);
+                                    landEffect(bb.getLocation(), d);
+                                    break;
+                                }
+
+                                if (!bb.isEmpty() && bb.isPassable() && !B.isFluid(bb.getBlockData())) {
+                                    bb.getWorld().dropItemNaturally(bb.getLocation(), new ItemStack(d.getMaterial(), 1 + bonus));
+                                    break;
+                                }
+                            }
+                        } finally {
+                            synchronized (queued) {
+                                queued.remove(b);
+                            }
                         }
-
-                        bb.setBlockData(d, false);
-                        landEffect(bb.getLocation(), d);
-                        break;
-                    }
-
-                    if (!bb.isEmpty() && bb.isPassable() && !B.isFluid(bb.getBlockData())) {
-                        bb.getWorld().dropItemNaturally(bb.getLocation(), new ItemStack(d.getMaterial(), 1 + bonus));
-                        break;
-                    }
-                }
-            });
+                    }, 0);
+                });
+            }
         }
     }
 
     @Override
     public void onDeactivate() {
-        for (Runnable i : jobs) {
-            i.run();
+        if (ticker != 0) {
+            J.csr(ticker);
+            ticker = 0;
+        }
+
+        if (jobs != null) {
+            synchronized (jobs) {
+                jobs.clear();
+            }
+        }
+
+        if (queued != null) {
+            synchronized (queued) {
+                queued.clear();
+            }
         }
     }
 

@@ -30,7 +30,6 @@ import art.arcane.volmlib.util.inventorygui.WindowResolution;
 import art.arcane.react.util.inventorygui.CustomUIElement;
 import art.arcane.react.util.inventorygui.UIStaticDecorator;
 import art.arcane.react.util.scheduling.J;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 
@@ -42,11 +41,11 @@ import java.util.function.Consumer;
 
 public class MonitorConfigGUI {
     public static void editMonitorConfigurationGroup(Player p, MonitorConfiguration configuration, MonitorGroup group, Consumer<MonitorConfiguration> saver) {
-        if (Bukkit.isPrimaryThread()) {
-            throw new RuntimeException("Cannot open gui on main thread");
+        if (p == null) {
+            return;
         }
 
-        J.s(() -> {
+        if (!J.runEntity(p, () -> {
             group.setSamplers(new ArrayList<>(group.getSamplers()));
             UIWindow window = new UIWindow(React.instance, p);
             window.setTitle(group.getName() + " Group");
@@ -169,15 +168,17 @@ public class MonitorConfigGUI {
                     J.a(() -> editMonitorConfiguration(p, configuration, saver));
                 }
             });
-        });
+        })) {
+            React.warn("Failed to schedule monitor group config UI for " + p.getName());
+        }
     }
 
     public static void editMonitorConfiguration(Player p, MonitorConfiguration configuration, Consumer<MonitorConfiguration> saver) {
-        if (Bukkit.isPrimaryThread()) {
-            throw new RuntimeException("Cannot open gui on main thread");
+        if (p == null) {
+            return;
         }
 
-        J.s(() -> {
+        if (!J.runEntity(p, () -> {
             UIWindow window = new UIWindow(React.instance, p);
             window.setTitle("Monitor Configuration");
             window.setResolution(WindowResolution.W9_H6);
@@ -233,6 +234,8 @@ public class MonitorConfigGUI {
             window.onClosed((w) -> {
                 saver.accept(configuration);
             });
-        });
+        })) {
+            React.warn("Failed to schedule monitor config UI for " + p.getName());
+        }
     }
 }

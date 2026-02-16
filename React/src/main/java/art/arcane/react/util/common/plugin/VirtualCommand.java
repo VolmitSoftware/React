@@ -24,6 +24,7 @@ import art.arcane.react.React;
 import art.arcane.volmlib.util.collection.KList;
 import art.arcane.volmlib.util.collection.KMap;
 import art.arcane.react.util.format.C;
+import art.arcane.react.util.scheduling.J;
 import art.arcane.volmlib.util.reflect.V;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.sound.Sound;
@@ -178,7 +179,7 @@ public class VirtualCommand {
         for (String i : command.getRequiredPermissions()) {
             if (!sender.hasPermission(i)) {
                 failed = true;
-                Bukkit.getScheduler().scheduleSyncDelayedTask(React.instance, () -> sender.sendMessage("- " + C.WHITE + i), 0);
+                J.s(() -> sender.sendMessage("- " + C.WHITE + i));
             }
         }
 

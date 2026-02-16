@@ -42,6 +42,7 @@ import org.bukkit.entity.EntityType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @art.arcane.react.util.config.ConfigDescription("Configuration for Purge Entities action. Removes matching entities from selected chunks or worlds.")
 public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params> {
@@ -93,6 +94,11 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
 
     @Override
     public void workOn(ActionTicket<Params> ticket) {
+        if (J.isFoliaThreading()) {
+            workOnFolia(ticket);
+            return;
+        }
+
         List<Chunk> c = pullChunks(ticket, React.controller(ActionController.class).getActionSpeedMultiplier());
 
         if (ticket.getTotalWork() <= 1) {
@@ -110,6 +116,26 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
         }
     }
 
+    private void workOnFolia(ActionTicket<Params> ticket) {
+        List<Chunk> chunks = pullChunks(ticket, React.controller(ActionController.class).getActionSpeedMultiplier());
+
+        if (ticket.getTotalWork() <= 1 && ticket.getParams().getArea().getChunks() != null) {
+            ticket.setTotalWork(Math.max(1, ticket.getParams().getArea().getChunks().size() + chunks.size()));
+        }
+
+        if (!chunks.isEmpty()) {
+            for (Chunk chunk : chunks) {
+                purgeChunkFolia(chunk, ticket.getParams());
+            }
+            ticket.addWork(chunks.size());
+        }
+
+        ticket.setCount(ticket.getParams().getPurgedEntities().get());
+        if (chunks.isEmpty() && ticket.getParams().getInFlightChunks().get() <= 0) {
+            ticket.complete();
+        }
+    }
+
     @Override
     public Params getDefaultParams() {
         return Params.builder()
@@ -121,16 +147,70 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
     }
 
 
-    private void purge(Entity entity, ActionTicket<Params> ticket) {
-        J.s(() -> React.kill(entity, randomDelay), (int) (20 * Math.random()));
-        ticket.addCount();
+    private void purge(Entity entity) {
+        int delay = (int) (20 * Math.random());
+        if (!J.runEntity(entity, () -> React.kill(entity, randomDelay), delay)) {
+            React.kill(entity, randomDelay);
+        }
     }
 
     private void purge(Chunk c, ActionTicket<Params> ticket) {
-        for (Entity i : c.getEntities()) {
-            if (ticket.getParams().entityFilter.allows(i.getType())) {
-                purge(i, ticket);
+        if (c == null || c.getWorld() == null) {
+            return;
+        }
+
+        Integer purged = J.runChunkResult(c.getWorld(), c.getX(), c.getZ(), () -> {
+            int removed = 0;
+            for (Entity entity : c.getEntities()) {
+                if (!ticket.getParams().entityFilter.allows(entity.getType())) {
+                    continue;
+                }
+
+                purge(entity);
+                removed++;
             }
+            return removed;
+        }, 0);
+
+        ticket.addCount(Math.max(0, purged == null ? 0 : purged));
+    }
+
+    private void purgeChunkFolia(Chunk chunk, Params params) {
+        if (chunk == null || chunk.getWorld() == null || params == null) {
+            return;
+        }
+
+        World world = chunk.getWorld();
+        int chunkX = chunk.getX();
+        int chunkZ = chunk.getZ();
+        params.getInFlightChunks().incrementAndGet();
+        boolean scheduled = J.runChunk(world, chunkX, chunkZ, () -> {
+            try {
+                if (!world.isChunkLoaded(chunkX, chunkZ)) {
+                    return;
+                }
+
+                Chunk loadedChunk = world.getChunkAt(chunkX, chunkZ);
+                int removed = 0;
+                for (Entity entity : loadedChunk.getEntities()) {
+                    if (!params.getEntityFilter().allows(entity.getType())) {
+                        continue;
+                    }
+
+                    purge(entity);
+                    removed++;
+                }
+
+                if (removed > 0) {
+                    params.getPurgedEntities().addAndGet(removed);
+                }
+            } finally {
+                params.getInFlightChunks().decrementAndGet();
+            }
+        });
+
+        if (!scheduled) {
+            params.getInFlightChunks().decrementAndGet();
         }
     }
 
@@ -153,6 +233,10 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
         @Builder.Default
         @art.arcane.react.util.config.ConfigDoc(value = "Filter definition for entity filter used by purge entities.", impact = "Narrow this list to target fewer cases, or broaden it to include more matching entries.")
         private FilterParams<EntityType> entityFilter = FilterParams.<EntityType>builder().build();
+        @Builder.Default
+        private transient AtomicInteger inFlightChunks = new AtomicInteger(0);
+        @Builder.Default
+        private transient AtomicInteger purgedEntities = new AtomicInteger(0);
 
         public Params withWorld(World world) {
             area.setWorld(world.getName());

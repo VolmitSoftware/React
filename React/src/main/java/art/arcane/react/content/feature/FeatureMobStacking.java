@@ -360,7 +360,11 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void on(EntitySpawnEvent e) {
         if (stackableTypes.contains(e.getEntityType())) {
-            J.s(() -> onTick(e.getEntity()));
+            if (J.isFoliaThreading()) {
+                J.runEntity(e.getEntity(), () -> onTick(e.getEntity()));
+            } else {
+                J.s(() -> onTick(e.getEntity()));
+            }
         }
     }
 
@@ -387,6 +391,15 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
                 }
             }
         };
+
+        if (J.isFoliaThreading()) {
+            if (J.isOwnedByCurrentRegion(entity)) {
+                tick.run();
+            } else {
+                J.runEntity(entity, () -> onTick(entity));
+            }
+            return;
+        }
 
         if (Bukkit.isPrimaryThread()) {
             tick.run();

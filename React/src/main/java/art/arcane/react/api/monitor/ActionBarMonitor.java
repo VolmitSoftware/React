@@ -23,6 +23,7 @@ import art.arcane.react.React;
 import art.arcane.react.api.monitor.configuration.MonitorConfiguration;
 import art.arcane.react.api.monitor.configuration.MonitorGroup;
 import art.arcane.react.api.sampler.Sampler;
+import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.model.ReactPlayer;
 import art.arcane.volmlib.util.math.M;
 import art.arcane.react.util.scheduling.J;
@@ -36,6 +37,7 @@ import net.kyori.adventure.title.TitlePart;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.plugin.IllegalPluginAccessException;
+import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
@@ -58,6 +60,8 @@ public class ActionBarMonitor extends PlayerMonitor {
     private boolean locked = false;
     private int lockedPosition;
     private boolean running;
+    private int headerViewportSlots;
+    private int samplerViewportSlots;
 
     public ActionBarMonitor(ReactPlayer player) {
         super("actionbar", player, 50);
@@ -71,10 +75,12 @@ public class ActionBarMonitor extends PlayerMonitor {
         viewportIndex = 0;
         lockedPosition = 0;
         configuration = player.getSettings().getMonitorConfiguration();
+        refreshViewportSettings();
     }
 
     public void refreshConfiguration() {
         configuration = getPlayer().getSettings().getMonitorConfiguration();
+        refreshViewportSettings();
         focus = null;
         viewportIndex = 0;
         lockedPosition = 0;
@@ -89,6 +95,12 @@ public class ActionBarMonitor extends PlayerMonitor {
         wakeUp();
     }
 
+    private void refreshViewportSettings() {
+        ReactConfiguration.Monitoring monitoring = ReactConfiguration.get().getMonitoring();
+        headerViewportSlots = Math.max(1, monitoring.getActionBarHeaderSlots());
+        samplerViewportSlots = Math.max(1, monitoring.getActionBarSamplerSlots());
+    }
+
     public boolean isAlwaysFlushing() {
         return true;
     }
@@ -96,14 +108,23 @@ public class ActionBarMonitor extends PlayerMonitor {
     @Override
     public void stop() {
         running = false;
+        Player player = getPlayer().getPlayer();
+        Runnable clearUi = () -> {
+            player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(" "));
+            React.audiences.player(player).sendTitlePart(TitlePart.TITLE, Component.space());
+            React.audiences.player(player).sendTitlePart(TitlePart.SUBTITLE, Component.space());
+        };
+
         try {
-            J.ss(() -> getPlayer().getPlayer().spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(" ")), 3);
-            J.ss(() -> React.audiences.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.TITLE, Component.space()), 3);
-            J.ss(() -> React.audiences.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.SUBTITLE, Component.space()), 3);
+            if (J.isFoliaThreading()) {
+                if (!J.runEntity(player, clearUi, 3)) {
+                    J.runEntity(player, clearUi);
+                }
+            } else {
+                J.sync(clearUi, 3);
+            }
         } catch (IllegalPluginAccessException e) {
-            getPlayer().getPlayer().spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(" "));
-            React.audiences.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.TITLE, Component.space());
-            React.audiences.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.SUBTITLE, Component.space());
+            clearUi.run();
         }
 
         super.stop();
@@ -244,7 +265,7 @@ public class ActionBarMonitor extends PlayerMonitor {
             viewportIndexes.put(focus, 0);
         }
 
-        int viewportLimit = Math.min(5, focus.getSamplers().size());
+        int viewportLimit = Math.min(samplerViewportSlots, focus.getSamplers().size());
         Sampler focusedSampler = getFocusedSampler();
         int index = focusedSampler == null ? 0 : focus.getSamplers().indexOf(focusedSampler.getId());
         if (index < 0) {
@@ -315,7 +336,7 @@ public class ActionBarMonitor extends PlayerMonitor {
             return Component.space();
         }
 
-        int viewportLimit = Math.min(5, configuration.getGroups().size());
+        int viewportLimit = Math.min(headerViewportSlots, configuration.getGroups().size());
         if (focus != null) {
             int index = configuration.getGroups().indexOf(focus);
 
@@ -388,6 +409,12 @@ public class ActionBarMonitor extends PlayerMonitor {
         if (!running) {
             return;
         }
+
+        if (J.isFoliaThreading() && !J.isOwnedByCurrentRegion(getPlayer().getPlayer())) {
+            J.runEntity(getPlayer().getPlayer(), this::flush);
+            return;
+        }
+
         clearVisibility();
         MonitorGroup f = focus;
 

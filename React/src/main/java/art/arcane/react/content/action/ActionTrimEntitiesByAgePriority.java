@@ -56,8 +56,10 @@ import java.util.Deque;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @art.arcane.react.util.config.ConfigDescription("Configuration for Trim Entities By Age Priority action. Scores and trims old low-priority entities with safety guards.")
 public class ActionTrimEntitiesByAgePriority extends ReactAction<ActionTrimEntitiesByAgePriority.Params> {
@@ -99,11 +101,22 @@ public class ActionTrimEntitiesByAgePriority extends ReactAction<ActionTrimEntit
     public void workOn(ActionTicket<Params> ticket) {
         Params params = ticket.getParams();
         if (!params.isPrepared()) {
-            List<ChunkRef> queue = J.sResult(() -> buildQueueSync(params));
+            List<ChunkRef> queue = buildQueue(params);
             params.setQueue(new ArrayDeque<>(queue == null ? List.of() : queue));
+            params.setTrimmed(0);
+            params.setChunksProcessed(0);
+            params.getTrimmedAtomic().set(0);
+            params.getChunksProcessedAtomic().set(0);
+            params.getInFlightChunks().set(0);
+            params.getRemainingTrimBudget().set(Math.max(0, params.getMaxTrim()));
             params.setPrepared(true);
             ticket.setWork(0);
             ticket.setTotalWork(Math.max(1, params.getQueue().size()));
+        }
+
+        if (J.isFoliaThreading()) {
+            workOnFolia(ticket, params);
+            return;
         }
 
         if (params.getQueue().isEmpty() || params.getTrimmed() >= params.getMaxTrim()) {
@@ -112,7 +125,9 @@ public class ActionTrimEntitiesByAgePriority extends ReactAction<ActionTrimEntit
             return;
         }
 
-        int chunkBudget = Math.max(1, React.controller(ActionController.class).getActionSpeedMultiplier() / 10);
+        int chunkBudget = J.isFoliaThreading()
+                ? 1
+                : Math.max(1, React.controller(ActionController.class).getActionSpeedMultiplier() / 10);
         int worked = 0;
         while (worked < chunkBudget && !params.getQueue().isEmpty() && params.getTrimmed() < params.getMaxTrim()) {
             ChunkRef next = params.getQueue().pollFirst();
@@ -120,7 +135,7 @@ public class ActionTrimEntitiesByAgePriority extends ReactAction<ActionTrimEntit
                 break;
             }
             int remaining = Math.max(0, params.getMaxTrim() - params.getTrimmed());
-            int removed = J.sResult(() -> trimChunkSync(next, params, remaining));
+            int removed = trimChunk(next, params, remaining);
             params.setTrimmed(params.getTrimmed() + removed);
             params.setChunksProcessed(params.getChunksProcessed() + 1);
             worked++;
@@ -130,6 +145,46 @@ public class ActionTrimEntitiesByAgePriority extends ReactAction<ActionTrimEntit
         ticket.setCount(params.getTrimmed());
 
         if (params.getQueue().isEmpty() || params.getTrimmed() >= params.getMaxTrim()) {
+            ticket.complete();
+        }
+    }
+
+    private void workOnFolia(ActionTicket<Params> ticket, Params params) {
+        int trimmed = params.getTrimmedAtomic().get();
+        params.setTrimmed(trimmed);
+        params.setChunksProcessed(params.getChunksProcessedAtomic().get());
+        ticket.setCount(trimmed);
+        ticket.setWork(Math.min(ticket.getTotalWork(), params.getChunksProcessed()));
+
+        if ((params.getQueue().isEmpty() && params.getInFlightChunks().get() <= 0)
+                || (params.getRemainingTrimBudget().get() <= 0 && params.getInFlightChunks().get() <= 0)) {
+            ticket.complete();
+            return;
+        }
+
+        int chunkBudget = Math.max(1, React.controller(ActionController.class).getActionSpeedMultiplier() / 8);
+        int maxInFlight = Math.max(4, chunkBudget * 2);
+        int dispatched = 0;
+        while (dispatched < chunkBudget
+                && !params.getQueue().isEmpty()
+                && params.getRemainingTrimBudget().get() > 0
+                && params.getInFlightChunks().get() < maxInFlight) {
+            ChunkRef next = params.getQueue().pollFirst();
+            if (next == null) {
+                break;
+            }
+
+            dispatchChunkTrim(next, params);
+            dispatched++;
+        }
+
+        params.setTrimmed(params.getTrimmedAtomic().get());
+        params.setChunksProcessed(params.getChunksProcessedAtomic().get());
+        ticket.setCount(params.getTrimmed());
+        ticket.setWork(Math.min(ticket.getTotalWork(), params.getChunksProcessed()));
+
+        if ((params.getQueue().isEmpty() && params.getInFlightChunks().get() <= 0)
+                || (params.getRemainingTrimBudget().get() <= 0 && params.getInFlightChunks().get() <= 0)) {
             ticket.complete();
         }
     }
@@ -144,6 +199,14 @@ public class ActionTrimEntitiesByAgePriority extends ReactAction<ActionTrimEntit
 
     }
 
+    private List<ChunkRef> buildQueue(Params params) {
+        if (J.isFoliaThreading()) {
+            return buildQueueSync(params);
+        }
+
+        return J.sResult(() -> buildQueueSync(params));
+    }
+
     private List<ChunkRef> buildQueueSync(Params params) {
         List<ChunkRef> refs = new ArrayList<>();
         ObserverController observer = React.controller(ObserverController.class);
@@ -152,7 +215,8 @@ public class ActionTrimEntitiesByAgePriority extends ReactAction<ActionTrimEntit
         }
 
         List<Map.Entry<ChunkRef, Double>> weighted = new ArrayList<>();
-        for (World world : Bukkit.getWorlds()) {
+        for (var sampledWorld : observer.getSampled().getWorlds().values()) {
+            World world = sampledWorld.getWorld();
             if (world == null) {
                 continue;
             }
@@ -161,9 +225,13 @@ public class ActionTrimEntitiesByAgePriority extends ReactAction<ActionTrimEntit
                 continue;
             }
 
-            for (Chunk chunk : world.getLoadedChunks()) {
-                double score = observer.getSampled().optionalChunk(chunk).map(i -> i.totalScore()).orElse(0D);
-                weighted.add(Map.entry(ChunkRef.of(chunk), score));
+            for (var sampledChunk : sampledWorld.getChunks().values()) {
+                Chunk chunk = sampledChunk.getChunk();
+                if (chunk == null || chunk.getWorld() == null) {
+                    continue;
+                }
+
+                weighted.add(Map.entry(ChunkRef.of(chunk), sampledChunk.totalScore()));
             }
         }
 
@@ -175,6 +243,73 @@ public class ActionTrimEntitiesByAgePriority extends ReactAction<ActionTrimEntit
         return refs;
     }
 
+    private int trimChunk(ChunkRef ref, Params params, int remaining) {
+        if (!J.isFoliaThreading()) {
+            return J.sResult(() -> trimChunkSync(ref, params, remaining));
+        }
+
+        World world = Bukkit.getWorld(ref.world());
+        if (world == null) {
+            return 0;
+        }
+
+        return J.runChunkResult(world, ref.x(), ref.z(), () -> trimChunkSync(ref, params, remaining), 0);
+    }
+
+    private void dispatchChunkTrim(ChunkRef ref, Params params) {
+        World world = Bukkit.getWorld(ref.world());
+        if (world == null) {
+            params.getChunksProcessedAtomic().incrementAndGet();
+            return;
+        }
+
+        int reserved = reserveTrimBudget(params);
+        if (reserved <= 0) {
+            params.getChunksProcessedAtomic().incrementAndGet();
+            return;
+        }
+
+        params.getInFlightChunks().incrementAndGet();
+        boolean scheduled = J.runChunk(world, ref.x(), ref.z(), () -> {
+            try {
+                int removed = trimChunkSync(ref, params, reserved);
+                if (removed > 0) {
+                    params.getTrimmedAtomic().addAndGet(removed);
+                }
+
+                int unused = reserved - removed;
+                if (unused > 0) {
+                    params.getRemainingTrimBudget().addAndGet(unused);
+                }
+            } finally {
+                params.getChunksProcessedAtomic().incrementAndGet();
+                params.getInFlightChunks().decrementAndGet();
+            }
+        });
+
+        if (!scheduled) {
+            params.getRemainingTrimBudget().addAndGet(reserved);
+            params.getChunksProcessedAtomic().incrementAndGet();
+            params.getInFlightChunks().decrementAndGet();
+        }
+    }
+
+    private int reserveTrimBudget(Params params) {
+        int perChunkCap = Math.max(1, params.getMaxTrimPerChunk());
+        AtomicInteger remainingBudget = params.getRemainingTrimBudget();
+        while (true) {
+            int current = remainingBudget.get();
+            if (current <= 0) {
+                return 0;
+            }
+
+            int reserved = Math.min(perChunkCap, current);
+            if (remainingBudget.compareAndSet(current, current - reserved)) {
+                return reserved;
+            }
+        }
+    }
+
     private int trimChunkSync(ChunkRef ref, Params params, int remaining) {
         World world = Bukkit.getWorld(ref.world());
         if (world == null || !world.isChunkLoaded(ref.x(), ref.z()) || remaining <= 0) {
@@ -182,7 +317,13 @@ public class ActionTrimEntitiesByAgePriority extends ReactAction<ActionTrimEntit
         }
 
         Chunk chunk = world.getChunkAt(ref.x(), ref.z());
-        List<EntityCandidate> candidates = new ArrayList<>();
+        int maxByChunk = Math.max(1, params.getMaxTrimPerChunk());
+        int budget = Math.min(maxByChunk, remaining);
+        if (budget <= 0) {
+            return 0;
+        }
+
+        PriorityQueue<EntityCandidate> candidates = new PriorityQueue<>(budget, Comparator.comparingDouble(EntityCandidate::score));
         for (Entity entity : chunk.getEntities()) {
             if (!canTrim(entity, params)) {
                 continue;
@@ -193,16 +334,30 @@ public class ActionTrimEntitiesByAgePriority extends ReactAction<ActionTrimEntit
                 continue;
             }
 
-            candidates.add(new EntityCandidate(entity, score));
+            EntityCandidate candidate = new EntityCandidate(entity, score);
+            if (candidates.size() < budget) {
+                candidates.offer(candidate);
+                continue;
+            }
+
+            EntityCandidate weakest = candidates.peek();
+            if (weakest != null && candidate.score() > weakest.score()) {
+                candidates.poll();
+                candidates.offer(candidate);
+            }
         }
 
-        candidates.sort(Comparator.comparingDouble(EntityCandidate::score).reversed());
-        int maxByChunk = Math.max(1, params.getMaxTrimPerChunk());
-        int budget = Math.min(Math.min(candidates.size(), maxByChunk), remaining);
+        if (candidates.isEmpty()) {
+            return 0;
+        }
+
+        List<EntityCandidate> ordered = new ArrayList<>(candidates);
+        ordered.sort(Comparator.comparingDouble(EntityCandidate::score).reversed());
+        budget = Math.min(ordered.size(), budget);
         int removed = 0;
 
         for (int i = 0; i < budget; i++) {
-            Entity target = candidates.get(i).entity();
+            Entity target = ordered.get(i).entity();
             if (target == null || target.isDead()) {
                 continue;
             }
@@ -342,6 +497,14 @@ public class ActionTrimEntitiesByAgePriority extends ReactAction<ActionTrimEntit
         private transient int trimmed = 0;
         @Builder.Default
         private transient int chunksProcessed = 0;
+        @Builder.Default
+        private transient AtomicInteger inFlightChunks = new AtomicInteger(0);
+        @Builder.Default
+        private transient AtomicInteger trimmedAtomic = new AtomicInteger(0);
+        @Builder.Default
+        private transient AtomicInteger chunksProcessedAtomic = new AtomicInteger(0);
+        @Builder.Default
+        private transient AtomicInteger remainingTrimBudget = new AtomicInteger(0);
 
         public Params withWorld(World world) {
             if (world != null) {

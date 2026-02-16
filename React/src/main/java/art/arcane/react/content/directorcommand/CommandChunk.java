@@ -68,7 +68,7 @@ public class CommandChunk implements DecreeExecutor {
         if (c != null) {
             Block b = c.getChunk().getBlock(8, 0, 8);
             Player p = player();
-            J.s(() -> p.teleport(c.getChunk().getWorld().getHighestBlockAt(b.getX(), b.getY()).getLocation()));
+            J.runEntity(p, () -> p.teleport(c.getChunk().getWorld().getHighestBlockAt(b.getX(), b.getZ()).getLocation()));
 
             for (String i : c.getValues().keySet()) {
                 Sampler s = React.sampler(i);
