@@ -29,7 +29,7 @@ import art.arcane.react.util.plugin.IController;
 import art.arcane.react.util.plugin.VolmitSender;
 import art.arcane.react.util.scheduling.J;
 import art.arcane.volmlib.util.math.RNG;
-import art.arcane.volmlib.util.director.compat.DirectorDecreeEngineFactory;
+import art.arcane.volmlib.util.director.compat.DirectorEngineFactory;
 import art.arcane.volmlib.util.director.context.DirectorContextRegistry;
 import art.arcane.volmlib.util.director.runtime.DirectorExecutionMode;
 import art.arcane.volmlib.util.director.runtime.DirectorExecutionResult;
@@ -96,7 +96,7 @@ public class DirectorCommandController implements IController, CommandExecutor, 
     }
 
     public DirectorRuntimeEngine getDirector() {
-        return directorCache.aquireNastyPrint(() -> DirectorDecreeEngineFactory.create(
+        return directorCache.aquireNastyPrint(() -> DirectorEngineFactory.create(
                 new CommandReact(),
                 null,
                 buildDirectorContexts(),

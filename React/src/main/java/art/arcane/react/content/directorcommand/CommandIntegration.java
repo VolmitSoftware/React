@@ -5,21 +5,21 @@ import art.arcane.react.core.controller.IntegrationController;
 import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.util.decree.DecreeExecutor;
 import art.arcane.react.util.format.C;
-import art.arcane.volmlib.util.decree.DecreeOrigin;
-import art.arcane.volmlib.util.decree.annotations.Decree;
+import art.arcane.volmlib.util.director.DirectorOrigin;
+import art.arcane.volmlib.util.director.annotations.Director;
 import art.arcane.volmlib.util.format.Form;
 
-@Decree(
+@Director(
         name = "integration",
         aliases = {"int"},
-        origin = DecreeOrigin.BOTH,
+        origin = DirectorOrigin.BOTH,
         description = "Cross-plugin integration status"
 )
 public class CommandIntegration implements DecreeExecutor {
-    @Decree(
+    @Director(
             name = "status",
             aliases = {"s"},
-            origin = DecreeOrigin.BOTH,
+            origin = DirectorOrigin.BOTH,
             description = "Show Iris/Adapt integration health, protocol and heartbeat status"
     )
     public void status() {

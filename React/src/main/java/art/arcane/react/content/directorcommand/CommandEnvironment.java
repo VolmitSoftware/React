@@ -24,8 +24,8 @@ import art.arcane.react.React;
 import art.arcane.react.api.benchmark.Hastebin;
 import art.arcane.volmlib.util.collection.KList;
 import art.arcane.react.util.decree.DecreeExecutor;
-import art.arcane.volmlib.util.decree.DecreeOrigin;
-import art.arcane.volmlib.util.decree.annotations.Decree;
+import art.arcane.volmlib.util.director.DirectorOrigin;
+import art.arcane.volmlib.util.director.annotations.Director;
 import art.arcane.react.util.format.C;
 import art.arcane.volmlib.util.format.Form;
 import art.arcane.react.util.hardware.getHardware;
@@ -33,15 +33,15 @@ import art.arcane.react.util.reflect.Platform;
 import org.bukkit.Bukkit;
 import oshi.SystemInfo;
 
-@Decree(
+@Director(
         name = "environment",
         aliases = {"env"},
-        origin = DecreeOrigin.BOTH,
+        origin = DirectorOrigin.BOTH,
         description = "This is the place to benchmark your system and get information about your system."
 )
 public class CommandEnvironment implements DecreeExecutor {
 
-    @Decree(
+    @Director(
             name = "info",
             aliases = {"i"},
             description = "Print the environment details!"

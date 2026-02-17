@@ -381,6 +381,7 @@ public class IntegrationController extends TickedObject implements IController {
         double irisQueue = remoteSamplerBridge.valueOr("iris", IntegrationMetricSchema.IRIS_PREGEN_QUEUE, -1D);
         double adaptSessionLoad = remoteSamplerBridge.valueOr("adapt", IntegrationMetricSchema.ADAPT_SESSION_LOAD, -1D);
         double adaptAbilityOps = remoteSamplerBridge.valueOr("adapt", ReactConfiguration.adaptAbilityOpsMetricKey(), -1D);
+        String adaptAbilityOpsMode = ReactConfiguration.adaptAbilityOpsMetricLabel();
 
         evaluateThreshold(
                 "iris.queue.high",
@@ -399,8 +400,8 @@ public class IntegrationController extends TickedObject implements IController {
         evaluateThreshold(
                 "adapt.ability.ops.high",
                 adaptAbilityOps >= 240D,
-                String.format(Locale.ROOT, "Adapt ability ops elevated (%.0f ops/min)", adaptAbilityOps),
-                String.format(Locale.ROOT, "Adapt ability ops normalized (%.0f ops/min)", Math.max(0D, adaptAbilityOps)),
+                String.format(Locale.ROOT, "Adapt ability ops elevated [%s checks] (%.0f ops/min)", adaptAbilityOpsMode, adaptAbilityOps),
+                String.format(Locale.ROOT, "Adapt ability ops normalized [%s checks] (%.0f ops/min)", adaptAbilityOpsMode, Math.max(0D, adaptAbilityOps)),
                 now
         );
     }

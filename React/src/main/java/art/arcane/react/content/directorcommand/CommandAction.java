@@ -32,23 +32,23 @@ import art.arcane.react.content.action.ActionTrimEntitiesByAgePriority;
 import art.arcane.react.core.controller.ActionController;
 import art.arcane.react.util.config.ConfigDescription;
 import art.arcane.react.util.decree.DecreeExecutor;
-import art.arcane.volmlib.util.decree.DecreeOrigin;
-import art.arcane.volmlib.util.decree.annotations.Decree;
-import art.arcane.volmlib.util.decree.annotations.Param;
+import art.arcane.volmlib.util.director.DirectorOrigin;
+import art.arcane.volmlib.util.director.annotations.Director;
+import art.arcane.volmlib.util.director.annotations.Param;
 import art.arcane.react.util.decree.handlers.OptionalWorldHandler;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 
 import java.util.Comparator;
 
-@Decree(
+@Director(
         name = "action",
         aliases = {"act", "a"},
-        origin = DecreeOrigin.BOTH,
+        origin = DirectorOrigin.BOTH,
         description = "Action utilities for mitigation, cleanup, and operational diagnostics."
 )
 public class CommandAction implements DecreeExecutor {
-    @Decree(
+    @Director(
             name = "purge-entities",
             aliases = {"pe"},
             description = "Remove matching entities in the selected world/chunk radius."
@@ -88,7 +88,7 @@ public class CommandAction implements DecreeExecutor {
         pe.create(p, sender()).queue();
     }
 
-    @Decree(
+    @Director(
             name = "purge-chunks",
             aliases = {"pc"},
             description = "Attempt to unload chunks in the selected world."
@@ -114,7 +114,7 @@ public class CommandAction implements DecreeExecutor {
     }
 
 
-    @Decree(
+    @Director(
             name = "collect-garbage",
             aliases = {"gc"},
             description = "Request JVM garbage collection and report immediate reclaimed heap."
@@ -125,7 +125,7 @@ public class CommandAction implements DecreeExecutor {
         pe.create(p, sender()).queue();
     }
 
-    @Decree(
+    @Director(
             name = "quarantine-hot-chunks",
             aliases = {"aqhc"},
             description = "Temporarily isolate the hottest sampled chunks"
@@ -168,7 +168,7 @@ public class CommandAction implements DecreeExecutor {
         action.create(p, sender()).queue();
     }
 
-    @Decree(
+    @Director(
             name = "trim-entities-by-age-priority",
             aliases = {"ateap"},
             description = "Trim old low-priority entities with safety guards"
@@ -211,7 +211,7 @@ public class CommandAction implements DecreeExecutor {
         action.create(p, sender()).queue();
     }
 
-    @Decree(
+    @Director(
             name = "hopper-network-normalize",
             aliases = {"ahnn"},
             description = "Normalize hopper hotspots by merging nearby transfer items"
@@ -254,7 +254,7 @@ public class CommandAction implements DecreeExecutor {
         action.create(p, sender()).queue();
     }
 
-    @Decree(
+    @Director(
             name = "prewarm-critical-chunks",
             aliases = {"apcc"},
             description = "Preload the most critical sampled chunks and neighbors"
@@ -297,7 +297,7 @@ public class CommandAction implements DecreeExecutor {
         action.create(p, sender()).queue();
     }
 
-    @Decree(
+    @Director(
             name = "incident-playbook",
             aliases = {"aip"},
             description = "Queue a full lag-incident mitigation action sequence"
@@ -342,7 +342,7 @@ public class CommandAction implements DecreeExecutor {
         action.create(p, sender()).queue();
     }
 
-    @Decree(
+    @Director(
             name = "audit",
             aliases = {"list", "ls"},
             description = "List all registered actions, enabled state, and current behavior summary."

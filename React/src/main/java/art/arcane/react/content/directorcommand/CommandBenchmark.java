@@ -23,18 +23,18 @@ import art.arcane.react.api.benchmark.CPUBenchmark;
 import art.arcane.react.api.benchmark.DriveBenchmark;
 import art.arcane.react.api.benchmark.MemoryBenchmark;
 import art.arcane.react.util.decree.DecreeExecutor;
-import art.arcane.volmlib.util.decree.DecreeOrigin;
-import art.arcane.volmlib.util.decree.annotations.Decree;
+import art.arcane.volmlib.util.director.DirectorOrigin;
+import art.arcane.volmlib.util.director.annotations.Director;
 
-@Decree(
+@Director(
         name = "benchmark",
         aliases = {"bench"},
-        origin = DecreeOrigin.BOTH,
+        origin = DirectorOrigin.BOTH,
         description = "These are the benchmark commands, please note that the numbers are never accurate and are only meant to be used as a relative comparison."
 )
 public class CommandBenchmark implements DecreeExecutor {
 
-    @Decree(
+    @Director(
             name = "cpu-benchmark",
             aliases = {"cpu"},
             description = "Benchmark the CPU"
@@ -44,7 +44,7 @@ public class CommandBenchmark implements DecreeExecutor {
     }
 
 
-    @Decree(
+    @Director(
             name = "drive-benchmark",
             aliases = {"drive"},
             description = "Benchmark the Hard-Drive"
@@ -54,7 +54,7 @@ public class CommandBenchmark implements DecreeExecutor {
     }
 
 
-    @Decree(
+    @Director(
             name = "memory-benchmark",
             aliases = {"mem"},
             description = "Benchmark the Memory"

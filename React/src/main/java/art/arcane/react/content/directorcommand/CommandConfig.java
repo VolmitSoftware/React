@@ -25,22 +25,22 @@ import art.arcane.react.core.gui.MonitorConfigGUI;
 import art.arcane.react.core.gui.ReactConfigGUI;
 import art.arcane.react.util.decree.DecreeExecutor;
 import art.arcane.react.util.format.C;
-import art.arcane.volmlib.util.decree.DecreeOrigin;
-import art.arcane.volmlib.util.decree.annotations.Decree;
+import art.arcane.volmlib.util.director.DirectorOrigin;
+import art.arcane.volmlib.util.director.annotations.Director;
 import org.bukkit.entity.Player;
 
-@Decree(
+@Director(
         name = "config",
         aliases = {"cfg", "c"},
-        origin = DecreeOrigin.BOTH,
+        origin = DirectorOrigin.BOTH,
         description = "This is the place to configure Itemized Settings."
 )
 public class CommandConfig implements DecreeExecutor {
-    @Decree(
+    @Director(
             name = "gui",
             aliases = {"menu", "editor"},
             description = "Open the React TOML config editor.",
-            origin = DecreeOrigin.PLAYER
+            origin = DirectorOrigin.PLAYER
     )
     public void gui() {
         Player player = player();
@@ -52,11 +52,11 @@ public class CommandConfig implements DecreeExecutor {
         ReactConfigGUI.open(player);
     }
 
-    @Decree(
+    @Director(
             name = "monitor",
             aliases = {"m", "mon"},
             description = "Configure the monitor",
-            origin = DecreeOrigin.PLAYER
+            origin = DirectorOrigin.PLAYER
     )
     public void monitor() {
         Player player = player();

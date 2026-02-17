@@ -24,9 +24,9 @@ import lombok.Data;
 import org.bukkit.Chunk;
 import org.bukkit.World;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Data
 public class SampledWorld {
@@ -35,7 +35,7 @@ public class SampledWorld {
 
     public SampledWorld(World world) {
         this.world = world;
-        chunks = new HashMap<>();
+        chunks = new ConcurrentHashMap<>();
     }
 
     public void remove(Chunk c) {
@@ -59,4 +59,3 @@ public class SampledWorld {
         return chunks.computeIfAbsent(Cache.key(x, z), (k) -> new SampledChunk(world.getChunkAt(x, z), this));
     }
 }
-

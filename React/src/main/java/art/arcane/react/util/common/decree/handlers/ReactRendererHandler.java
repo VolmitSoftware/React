@@ -23,10 +23,10 @@ import art.arcane.react.React;
 import art.arcane.react.api.rendering.ReactRenderer;
 import art.arcane.react.core.controller.MapController;
 import art.arcane.volmlib.util.collection.KList;
-import art.arcane.react.util.decree.DecreeParameterHandler;
-import art.arcane.volmlib.util.decree.exceptions.DecreeParsingException;
+import art.arcane.react.util.decree.DirectorParameterHandler;
+import art.arcane.volmlib.util.director.exceptions.DirectorParsingException;
 
-public class ReactRendererHandler implements DecreeParameterHandler<ReactRenderer> {
+public class ReactRendererHandler implements DirectorParameterHandler<ReactRenderer> {
     @Override
     public KList<ReactRenderer> getPossibilities() {
         KList<ReactRenderer> options = new KList<>();
@@ -45,16 +45,16 @@ public class ReactRendererHandler implements DecreeParameterHandler<ReactRendere
     }
 
     @Override
-    public ReactRenderer parse(String in, boolean force) throws DecreeParsingException {
+    public ReactRenderer parse(String in, boolean force) throws DirectorParsingException {
         KList<ReactRenderer> options = getPossibilities(in);
 
         if (options.isEmpty()) {
-            throw new DecreeParsingException("Unable to find Renderer \"" + in + "\"");
+            throw new DirectorParsingException("Unable to find Renderer \"" + in + "\"");
         }
         try {
             return options.stream().filter((i) -> toString(i).equalsIgnoreCase(in)).toList().get(0);
         } catch (Throwable e) {
-            throw new DecreeParsingException("Unable to filter which Renderer \"" + in + "\"");
+            throw new DirectorParsingException("Unable to filter which Renderer \"" + in + "\"");
         }
     }
 

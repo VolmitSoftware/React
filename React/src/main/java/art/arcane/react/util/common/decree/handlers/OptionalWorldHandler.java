@@ -19,10 +19,10 @@
 
 package art.arcane.react.util.decree.handlers;
 
-import art.arcane.volmlib.util.decree.handlers.base.OptionalWorldHandlerBase;
-import art.arcane.react.util.decree.DecreeParameterHandler;
+import art.arcane.volmlib.util.director.handlers.base.OptionalWorldHandlerBase;
+import art.arcane.react.util.decree.DirectorParameterHandler;
 
-public class OptionalWorldHandler extends OptionalWorldHandlerBase implements DecreeParameterHandler<String> {
+public class OptionalWorldHandler extends OptionalWorldHandlerBase implements DirectorParameterHandler<String> {
     @Override
     protected String excludedPrefix() {
         return "iris/";

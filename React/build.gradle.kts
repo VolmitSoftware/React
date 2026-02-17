@@ -16,7 +16,6 @@
  */
 
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import kotlin.system.exitProcess
@@ -32,6 +31,9 @@ version = "1.5.0-Dev1" // Needs to be version specific
 val apiVersion = "1.19"
 val pluginName = rootProject.name // Defined in settings.gradle.kts
 val mainClass = "art.arcane.react.React"
+val volmLibCoordinate: String = providers.gradleProperty("volmLibCoordinate")
+    .orElse("com.github.VolmitSoftware:VolmLib:master-SNAPSHOT")
+    .get()
 
 fun registerCustomOutputTask(name: String, path: String) {
     if (!System.getProperty("os.name").lowercase().contains("windows")) {
@@ -96,16 +98,6 @@ tasks.processResources {
     }
 }
 
-extensions.configure<SourceSetContainer> {
-    named("main") {
-        java.srcDir("../../VolmLib/shared/src/main/java")
-    }
-}
-
-kotlin.sourceSets.named("main") {
-    kotlin.srcDir("../../VolmLib/shared/src/main/kotlin")
-}
-
 repositories {
     mavenCentral()
     maven("https://www.jitpack.io")
@@ -115,8 +107,8 @@ repositories {
 }
 
 configurations.configureEach {
-    resolutionStrategy.cacheChangingModulesFor(60, "minutes")
-    resolutionStrategy.cacheDynamicVersionsFor(60, "minutes")
+    resolutionStrategy.cacheChangingModulesFor(0, "seconds")
+    resolutionStrategy.cacheDynamicVersionsFor(0, "seconds")
 }
 
 dependencies {
@@ -131,6 +123,10 @@ dependencies {
     implementation("com.github.VolmitDev:MultiBurst:22.9.2")
     implementation("com.github.VolmitDev:Chrono:22.9.10")
     implementation("com.github.VolmitDev:Spatial:22.11.1")
+    implementation(volmLibCoordinate) {
+        isChanging = true
+        isTransitive = false
+    }
     implementation("com.moandjiezana.toml:toml4j:0.7.2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
 
@@ -177,11 +173,6 @@ tasks.named<ShadowJar>("shadowJar") {
     // React/Curse rely on reflection/decompiler internals; minimization strips required classes.
     // minimize()
     append("plugin.yml")
-    dependencies {
-        include(dependency("com.github.VolmitDev:"))
-        include(dependency("com.moandjiezana.toml:.*"))
-        include(dependency("org.bitbucket.mstrobel:.*"))
-    }
     archiveClassifier.set("")
     relocate("art.arcane.chrono", "art.arcane.react.util.arcane.chrono")
     relocate("art.arcane.curse", "art.arcane.react.util.arcane.curse")

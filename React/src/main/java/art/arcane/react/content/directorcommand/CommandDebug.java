@@ -21,25 +21,25 @@ package art.arcane.react.content.directorcommand;
 
 import art.arcane.react.model.ReactEntity;
 import art.arcane.react.util.decree.DecreeExecutor;
-import art.arcane.volmlib.util.decree.DecreeOrigin;
-import art.arcane.volmlib.util.decree.annotations.Decree;
+import art.arcane.volmlib.util.director.DirectorOrigin;
+import art.arcane.volmlib.util.director.annotations.Director;
 import art.arcane.volmlib.util.format.Form;
 import art.arcane.react.util.scheduling.J;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.util.Vector;
 
-@Decree(
+@Director(
         name = "debug",
-        origin = DecreeOrigin.BOTH,
+        origin = DirectorOrigin.BOTH,
         description = "This is the Debugging command for Various things."
 )
 public class CommandDebug implements DecreeExecutor {
-    @Decree(
+    @Director(
             name = "entity-data",
             aliases = {"ed"},
             description = "Show Entity Data for the entity looked at",
-            origin = DecreeOrigin.PLAYER,
+            origin = DirectorOrigin.PLAYER,
             sync = true
     )
     public void entityData() {

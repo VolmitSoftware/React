@@ -19,11 +19,11 @@
 
 package art.arcane.react.util.decree;
 
-import art.arcane.volmlib.util.decree.DecreeExecutorBase;
+import art.arcane.volmlib.util.director.DirectorExecutorBase;
 import art.arcane.react.util.plugin.VolmitSender;
 import org.bukkit.entity.Player;
 
-public interface DecreeExecutor extends DecreeExecutorBase {
+public interface DecreeExecutor extends DirectorExecutorBase {
     default VolmitSender sender() {
         return DecreeContext.get();
     }

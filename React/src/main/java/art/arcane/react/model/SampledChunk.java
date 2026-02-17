@@ -24,9 +24,9 @@ import com.google.common.util.concurrent.AtomicDouble;
 import lombok.Data;
 import org.bukkit.Chunk;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.DoubleUnaryOperator;
 
 @Data
@@ -40,7 +40,7 @@ public class SampledChunk {
     public SampledChunk(Chunk chunk, SampledWorld world) {
         this.chunk = chunk;
         this.world = world;
-        this.values = new HashMap<>();
+        this.values = new ConcurrentHashMap<>();
         this.cleaner = new ChronoLatch(1000);
     }
 

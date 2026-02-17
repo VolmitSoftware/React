@@ -27,16 +27,16 @@ import art.arcane.react.core.controller.PlayerController;
 import art.arcane.react.core.gui.ReactMapGUI;
 import art.arcane.react.util.decree.DecreeExecutor;
 import art.arcane.react.util.world.WorldDistanceSupport;
-import art.arcane.volmlib.util.decree.DecreeOrigin;
-import art.arcane.volmlib.util.decree.annotations.Decree;
-import art.arcane.volmlib.util.decree.annotations.Param;
+import art.arcane.volmlib.util.director.DirectorOrigin;
+import art.arcane.volmlib.util.director.annotations.Director;
+import art.arcane.volmlib.util.director.annotations.Param;
 import art.arcane.react.util.decree.handlers.ReactRendererHandler;
 import art.arcane.react.util.format.C;
 
-@Decree(
+@Director(
         name = "react",
         aliases = {"re"},
-        origin = DecreeOrigin.BOTH,
+        origin = DirectorOrigin.BOTH,
         description = "The root react command"
 )
 public class CommandReact implements DecreeExecutor {
@@ -49,11 +49,11 @@ public class CommandReact implements DecreeExecutor {
     private CommandIntegration integration;
 
 
-    @Decree(
+    @Director(
             name = "monitor",
             aliases = {"m", "mon"},
             description = "Monitor the server via action bar",
-            origin = DecreeOrigin.PLAYER
+            origin = DirectorOrigin.PLAYER
     )
     public void monitor() {
         React.controller(PlayerController.class).getPlayer(player()).toggleActionBar();
@@ -61,11 +61,11 @@ public class CommandReact implements DecreeExecutor {
     }
 
 
-    @Decree(
+    @Director(
             name = "set-player-view-distance",
             aliases = {"vd", "view-distance"},
             description = "Visualize the via glow blocks",
-            origin = DecreeOrigin.PLAYER
+            origin = DirectorOrigin.PLAYER
     )
     public void vd(
             @Param(name = "distance")
@@ -82,10 +82,10 @@ public class CommandReact implements DecreeExecutor {
         Curse.on(player().getWorld()).method("setSimulationDistance", int.class).invoke(d);
     }
 
-    @Decree(
+    @Director(
             name = "map",
             description = "Visualize the via glow blocks",
-            origin = DecreeOrigin.PLAYER
+            origin = DirectorOrigin.PLAYER
     )
     public void map(
             @Param(
@@ -102,7 +102,7 @@ public class CommandReact implements DecreeExecutor {
         React.controller(MapController.class).openRenderer(player(), renderer);
     }
 
-    @Decree(
+    @Director(
             name = "reload",
             aliases = {"rl"},
             description = "Reload React")
@@ -112,7 +112,7 @@ public class CommandReact implements DecreeExecutor {
         sender().sendMessage("React v" + React.instance.getDescription().getVersion() + " Reloaded!");
     }
 
-    @Decree(
+    @Director(
             name = "version",
             description = "Get React version")
     public void version() {

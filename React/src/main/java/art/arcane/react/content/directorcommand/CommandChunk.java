@@ -24,24 +24,24 @@ import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.core.controller.ObserverController;
 import art.arcane.react.model.SampledChunk;
 import art.arcane.react.util.decree.DecreeExecutor;
-import art.arcane.volmlib.util.decree.DecreeOrigin;
-import art.arcane.volmlib.util.decree.annotations.Decree;
+import art.arcane.volmlib.util.director.DirectorOrigin;
+import art.arcane.volmlib.util.director.annotations.Director;
 import art.arcane.react.util.format.C;
 import art.arcane.react.util.scheduling.J;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 
-@Decree(
+@Director(
         name = "chunk",
         aliases = {"c"},
-        origin = DecreeOrigin.BOTH,
+        origin = DirectorOrigin.BOTH,
         description = "This is the root chunk command, it contains all current chunk commands"
 )
 public class CommandChunk implements DecreeExecutor {
-    @Decree(
+    @Director(
             name = "sample",
             description = "Get the current player-chunk sampled data",
-            origin = DecreeOrigin.PLAYER
+            origin = DirectorOrigin.PLAYER
     )
     public void sample() {
         SampledChunk c = React.controller(ObserverController.class).getSampled().getChunk(player().getLocation().getChunk());
@@ -56,11 +56,11 @@ public class CommandChunk implements DecreeExecutor {
         }
     }
 
-    @Decree(
+    @Director(
             name = "worst",
             aliases = {"w"},
             description = "Get the worst chunk on the server/world",
-            origin = DecreeOrigin.PLAYER
+            origin = DirectorOrigin.PLAYER
     )
     public void worst() {
         SampledChunk c = React.instance.controller(ObserverController.class).absoluteWorst();

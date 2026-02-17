@@ -24,16 +24,16 @@ import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.World;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Data
 public class SampledServer {
     private final Map<String, SampledWorld> worlds;
 
     public SampledServer() {
-        worlds = new HashMap<>();
+        worlds = new ConcurrentHashMap<>();
     }
 
     public SampledChunk getChunk(Chunk chunk) {

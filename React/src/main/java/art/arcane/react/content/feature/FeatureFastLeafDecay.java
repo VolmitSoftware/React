@@ -92,10 +92,16 @@ public class FeatureFastLeafDecay extends ReactFeature implements Listener {
     @Override
     public void onActivate() {
         search.clear();
-        snapshot = Caffeine.newBuilder()
-                .expireAfterAccess(10, TimeUnit.SECONDS)
-                .refreshAfterWrite(1, TimeUnit.SECONDS)
-                .build((k) -> k.chunk().getChunkSnapshot(true, false, false));
+        if (J.isFoliaThreading()) {
+            snapshot = Caffeine.newBuilder()
+                    .expireAfterAccess(10, TimeUnit.SECONDS)
+                    .build((k) -> k.chunk().getChunkSnapshot(true, false, false));
+        } else {
+            snapshot = Caffeine.newBuilder()
+                    .expireAfterAccess(10, TimeUnit.SECONDS)
+                    .refreshAfterWrite(1, TimeUnit.SECONDS)
+                    .build((k) -> k.chunk().getChunkSnapshot(true, false, false));
+        }
         cooldownLatch = new ChronoLatch(decayTriggerCooldownMS);
     }
 
