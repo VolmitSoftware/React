@@ -22,7 +22,7 @@ package art.arcane.react.content.directorcommand;
 import art.arcane.react.api.benchmark.CPUBenchmark;
 import art.arcane.react.api.benchmark.DriveBenchmark;
 import art.arcane.react.api.benchmark.MemoryBenchmark;
-import art.arcane.react.util.decree.DecreeExecutor;
+import art.arcane.react.util.director.DirectorExecutor;
 import art.arcane.volmlib.util.director.DirectorOrigin;
 import art.arcane.volmlib.util.director.annotations.Director;
 
@@ -32,7 +32,7 @@ import art.arcane.volmlib.util.director.annotations.Director;
         origin = DirectorOrigin.BOTH,
         description = "These are the benchmark commands, please note that the numbers are never accurate and are only meant to be used as a relative comparison."
 )
-public class CommandBenchmark implements DecreeExecutor {
+public class CommandBenchmark implements DirectorExecutor {
 
     @Director(
             name = "cpu-benchmark",

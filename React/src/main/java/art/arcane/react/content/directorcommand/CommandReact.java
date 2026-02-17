@@ -25,12 +25,12 @@ import art.arcane.react.api.rendering.ReactRenderer;
 import art.arcane.react.core.controller.MapController;
 import art.arcane.react.core.controller.PlayerController;
 import art.arcane.react.core.gui.ReactMapGUI;
-import art.arcane.react.util.decree.DecreeExecutor;
+import art.arcane.react.util.director.DirectorExecutor;
 import art.arcane.react.util.world.WorldDistanceSupport;
 import art.arcane.volmlib.util.director.DirectorOrigin;
 import art.arcane.volmlib.util.director.annotations.Director;
 import art.arcane.volmlib.util.director.annotations.Param;
-import art.arcane.react.util.decree.handlers.ReactRendererHandler;
+import art.arcane.react.util.director.handlers.ReactRendererHandler;
 import art.arcane.react.util.format.C;
 
 @Director(
@@ -39,7 +39,7 @@ import art.arcane.react.util.format.C;
         origin = DirectorOrigin.BOTH,
         description = "The root react command"
 )
-public class CommandReact implements DecreeExecutor {
+public class CommandReact implements DirectorExecutor {
     private CommandConfig config;
     private CommandAction action;
     private CommandChunk chunk;

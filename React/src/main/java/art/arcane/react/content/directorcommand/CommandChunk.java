@@ -23,7 +23,7 @@ import art.arcane.react.React;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.core.controller.ObserverController;
 import art.arcane.react.model.SampledChunk;
-import art.arcane.react.util.decree.DecreeExecutor;
+import art.arcane.react.util.director.DirectorExecutor;
 import art.arcane.volmlib.util.director.DirectorOrigin;
 import art.arcane.volmlib.util.director.annotations.Director;
 import art.arcane.react.util.format.C;
@@ -37,7 +37,7 @@ import org.bukkit.entity.Player;
         origin = DirectorOrigin.BOTH,
         description = "This is the root chunk command, it contains all current chunk commands"
 )
-public class CommandChunk implements DecreeExecutor {
+public class CommandChunk implements DirectorExecutor {
     @Director(
             name = "sample",
             description = "Get the current player-chunk sampled data",

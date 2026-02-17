@@ -17,13 +17,13 @@
  *
  */
 
-package art.arcane.react.util.decree.handlers;
+package art.arcane.react.util.director.handlers;
 
 import art.arcane.react.React;
 import art.arcane.react.api.rendering.ReactRenderer;
 import art.arcane.react.core.controller.MapController;
 import art.arcane.volmlib.util.collection.KList;
-import art.arcane.react.util.decree.DirectorParameterHandler;
+import art.arcane.react.util.director.DirectorParameterHandler;
 import art.arcane.volmlib.util.director.exceptions.DirectorParsingException;
 
 public class ReactRendererHandler implements DirectorParameterHandler<ReactRenderer> {

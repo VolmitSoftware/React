@@ -23,7 +23,7 @@ import art.arcane.edict.api.context.EdictContext;
 import art.arcane.react.React;
 import art.arcane.react.api.benchmark.Hastebin;
 import art.arcane.volmlib.util.collection.KList;
-import art.arcane.react.util.decree.DecreeExecutor;
+import art.arcane.react.util.director.DirectorExecutor;
 import art.arcane.volmlib.util.director.DirectorOrigin;
 import art.arcane.volmlib.util.director.annotations.Director;
 import art.arcane.react.util.format.C;
@@ -39,7 +39,7 @@ import oshi.SystemInfo;
         origin = DirectorOrigin.BOTH,
         description = "This is the place to benchmark your system and get information about your system."
 )
-public class CommandEnvironment implements DecreeExecutor {
+public class CommandEnvironment implements DirectorExecutor {
 
     @Director(
             name = "info",

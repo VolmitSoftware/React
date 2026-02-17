@@ -23,7 +23,7 @@ import art.arcane.react.React;
 import art.arcane.react.core.controller.PlayerController;
 import art.arcane.react.core.gui.MonitorConfigGUI;
 import art.arcane.react.core.gui.ReactConfigGUI;
-import art.arcane.react.util.decree.DecreeExecutor;
+import art.arcane.react.util.director.DirectorExecutor;
 import art.arcane.react.util.format.C;
 import art.arcane.volmlib.util.director.DirectorOrigin;
 import art.arcane.volmlib.util.director.annotations.Director;
@@ -35,7 +35,7 @@ import org.bukkit.entity.Player;
         origin = DirectorOrigin.BOTH,
         description = "This is the place to configure Itemized Settings."
 )
-public class CommandConfig implements DecreeExecutor {
+public class CommandConfig implements DirectorExecutor {
     @Director(
             name = "gui",
             aliases = {"menu", "editor"},

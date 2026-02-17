@@ -3,7 +3,7 @@ package art.arcane.react.content.directorcommand;
 import art.arcane.react.React;
 import art.arcane.react.core.controller.IntegrationController;
 import art.arcane.react.model.ReactConfiguration;
-import art.arcane.react.util.decree.DecreeExecutor;
+import art.arcane.react.util.director.DirectorExecutor;
 import art.arcane.react.util.format.C;
 import art.arcane.volmlib.util.director.DirectorOrigin;
 import art.arcane.volmlib.util.director.annotations.Director;
@@ -15,7 +15,7 @@ import art.arcane.volmlib.util.format.Form;
         origin = DirectorOrigin.BOTH,
         description = "Cross-plugin integration status"
 )
-public class CommandIntegration implements DecreeExecutor {
+public class CommandIntegration implements DirectorExecutor {
     @Director(
             name = "status",
             aliases = {"s"},

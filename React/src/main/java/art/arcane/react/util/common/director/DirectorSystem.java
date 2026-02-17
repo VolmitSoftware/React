@@ -17,17 +17,17 @@
  *
  */
 
-package art.arcane.react.util.decree;
+package art.arcane.react.util.director;
 
 
 import art.arcane.react.React;
 import art.arcane.volmlib.util.collection.KList;
 import art.arcane.volmlib.util.director.DirectorSystemSupport;
 
-public final class DecreeSystem {
-    public static final KList<DirectorParameterHandler<?>> handlers = React.initialize("art.arcane.react.util.decree.handlers", null).convert((i) -> (DirectorParameterHandler<?>) i);
+public final class DirectorSystem {
+    public static final KList<DirectorParameterHandler<?>> handlers = React.initialize("art.arcane.react.util.director.handlers", null).convert((i) -> (DirectorParameterHandler<?>) i);
 
-    private DecreeSystem() {
+    private DirectorSystem() {
     }
 
     /**

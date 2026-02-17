@@ -22,8 +22,8 @@ package art.arcane.react.core.controller;
 import art.arcane.react.React;
 import art.arcane.react.content.directorcommand.CommandReact;
 import art.arcane.react.util.cache.AtomicCache;
-import art.arcane.react.util.decree.DecreeContext;
-import art.arcane.react.util.decree.DecreeContextHandler;
+import art.arcane.react.util.director.DirectorContext;
+import art.arcane.react.util.director.DirectorContextHandler;
 import art.arcane.react.util.format.C;
 import art.arcane.react.util.plugin.IController;
 import art.arcane.react.util.plugin.VolmitSender;
@@ -109,7 +109,7 @@ public class DirectorCommandController implements IController, CommandExecutor, 
     private DirectorContextRegistry buildDirectorContexts() {
         DirectorContextRegistry contexts = new DirectorContextRegistry();
 
-        for (Map.Entry<Class<?>, DecreeContextHandler<?>> entry : DecreeContextHandler.contextHandlers.entrySet()) {
+        for (Map.Entry<Class<?>, DirectorContextHandler<?>> entry : DirectorContextHandler.contextHandlers.entrySet()) {
             registerContextHandler(contexts, entry.getKey(), entry.getValue());
         }
 
@@ -117,10 +117,10 @@ public class DirectorCommandController implements IController, CommandExecutor, 
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
-    private void registerContextHandler(DirectorContextRegistry contexts, Class<?> type, DecreeContextHandler<?> handler) {
+    private void registerContextHandler(DirectorContextRegistry contexts, Class<?> type, DirectorContextHandler<?> handler) {
         contexts.register((Class) type, (invocation, map) -> {
             if (invocation.getSender() instanceof BukkitDirectorSender sender) {
-                return ((DecreeContextHandler) handler).handle(new VolmitSender(sender.sender()));
+                return ((DirectorContextHandler) handler).handle(new VolmitSender(sender.sender()));
             }
 
             return null;
@@ -140,13 +140,13 @@ public class DirectorCommandController implements IController, CommandExecutor, 
     @Override
     public void beforeInvoke(DirectorInvocation invocation, DirectorRuntimeNode node) {
         if (invocation.getSender() instanceof BukkitDirectorSender sender) {
-            DecreeContext.touch(new VolmitSender(sender.sender()));
+            DirectorContext.touch(new VolmitSender(sender.sender()));
         }
     }
 
     @Override
     public void afterInvoke(DirectorInvocation invocation, DirectorRuntimeNode node) {
-        DecreeContext.remove();
+        DirectorContext.remove();
     }
 
     @Nullable

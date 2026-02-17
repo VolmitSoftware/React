@@ -1,9 +1,9 @@
-package art.arcane.react.util.decree;
+package art.arcane.react.util.director;
 
 import art.arcane.volmlib.util.director.context.DirectorContextBase;
 import art.arcane.react.util.plugin.VolmitSender;
 
-public class DecreeContext {
+public class DirectorContext {
     private static final DirectorContextBase<VolmitSender> context = new DirectorContextBase<>();
 
     public static VolmitSender get() {

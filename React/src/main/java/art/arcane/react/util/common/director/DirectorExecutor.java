@@ -17,15 +17,15 @@
  *
  */
 
-package art.arcane.react.util.decree;
+package art.arcane.react.util.director;
 
 import art.arcane.volmlib.util.director.DirectorExecutorBase;
 import art.arcane.react.util.plugin.VolmitSender;
 import org.bukkit.entity.Player;
 
-public interface DecreeExecutor extends DirectorExecutorBase {
+public interface DirectorExecutor extends DirectorExecutorBase {
     default VolmitSender sender() {
-        return DecreeContext.get();
+        return DirectorContext.get();
     }
 
     default Player player() {

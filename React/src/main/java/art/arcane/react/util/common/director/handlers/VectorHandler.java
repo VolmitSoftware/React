@@ -1,8 +1,8 @@
-package art.arcane.react.util.decree.handlers;
+package art.arcane.react.util.director.handlers;
 
-import art.arcane.react.util.decree.DecreeContext;
-import art.arcane.react.util.decree.DirectorParameterHandler;
-import art.arcane.react.util.decree.DecreeSystem;
+import art.arcane.react.util.director.DirectorContext;
+import art.arcane.react.util.director.DirectorParameterHandler;
+import art.arcane.react.util.director.DirectorSystem;
 import art.arcane.volmlib.util.director.handlers.base.VectorHandlerBase;
 import art.arcane.volmlib.util.format.Form;
 import org.bukkit.FluidCollisionMode;
@@ -14,22 +14,22 @@ import java.util.List;
 public class VectorHandler extends VectorHandlerBase implements DirectorParameterHandler<Vector> {
     @Override
     protected boolean isSenderPlayer() {
-        return DecreeContext.get().isPlayer();
+        return DirectorContext.get().isPlayer();
     }
 
     @Override
     protected Vector getSenderVector() {
-        return DecreeContext.get().player().getLocation().toVector();
+        return DirectorContext.get().player().getLocation().toVector();
     }
 
     @Override
     protected Vector getLookVector() {
-        return DecreeContext.get().player().getTargetBlockExact(256, FluidCollisionMode.NEVER).getLocation().toVector();
+        return DirectorContext.get().player().getTargetBlockExact(256, FluidCollisionMode.NEVER).getLocation().toVector();
     }
 
     @Override
     protected List<?> playerPossibilities(String query) {
-        return DecreeSystem.getHandler(Player.class).getPossibilities(query);
+        return DirectorSystem.getHandler(Player.class).getPossibilities(query);
     }
 
     @Override

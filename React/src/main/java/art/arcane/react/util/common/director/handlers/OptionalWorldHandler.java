@@ -17,11 +17,14 @@
  *
  */
 
-package art.arcane.react.util.decree.handlers;
+package art.arcane.react.util.director.handlers;
 
-import art.arcane.volmlib.util.director.handlers.base.BukkitPlayerHandlerBase;
-import art.arcane.react.util.decree.DirectorParameterHandler;
-import org.bukkit.entity.Player;
+import art.arcane.volmlib.util.director.handlers.base.OptionalWorldHandlerBase;
+import art.arcane.react.util.director.DirectorParameterHandler;
 
-public class PlayerHandler extends BukkitPlayerHandlerBase implements DirectorParameterHandler<Player> {
+public class OptionalWorldHandler extends OptionalWorldHandlerBase implements DirectorParameterHandler<String> {
+    @Override
+    protected String excludedPrefix() {
+        return "iris/";
+    }
 }

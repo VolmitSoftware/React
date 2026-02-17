@@ -20,7 +20,7 @@
 package art.arcane.react.content.directorcommand;
 
 import art.arcane.react.model.ReactEntity;
-import art.arcane.react.util.decree.DecreeExecutor;
+import art.arcane.react.util.director.DirectorExecutor;
 import art.arcane.volmlib.util.director.DirectorOrigin;
 import art.arcane.volmlib.util.director.annotations.Director;
 import art.arcane.volmlib.util.format.Form;
@@ -34,7 +34,7 @@ import org.bukkit.util.Vector;
         origin = DirectorOrigin.BOTH,
         description = "This is the Debugging command for Various things."
 )
-public class CommandDebug implements DecreeExecutor {
+public class CommandDebug implements DirectorExecutor {
     @Director(
             name = "entity-data",
             aliases = {"ed"},

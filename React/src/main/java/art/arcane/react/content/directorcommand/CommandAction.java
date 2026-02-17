@@ -31,11 +31,11 @@ import art.arcane.react.content.action.ActionQuarantineHotChunks;
 import art.arcane.react.content.action.ActionTrimEntitiesByAgePriority;
 import art.arcane.react.core.controller.ActionController;
 import art.arcane.react.util.config.ConfigDescription;
-import art.arcane.react.util.decree.DecreeExecutor;
+import art.arcane.react.util.director.DirectorExecutor;
 import art.arcane.volmlib.util.director.DirectorOrigin;
 import art.arcane.volmlib.util.director.annotations.Director;
 import art.arcane.volmlib.util.director.annotations.Param;
-import art.arcane.react.util.decree.handlers.OptionalWorldHandler;
+import art.arcane.react.util.director.handlers.OptionalWorldHandler;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 
@@ -47,7 +47,7 @@ import java.util.Comparator;
         origin = DirectorOrigin.BOTH,
         description = "Action utilities for mitigation, cleanup, and operational diagnostics."
 )
-public class CommandAction implements DecreeExecutor {
+public class CommandAction implements DirectorExecutor {
     @Director(
             name = "purge-entities",
             aliases = {"pe"},
