@@ -40,90 +40,90 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class SamplerEntityAiActiveCount extends ReactCachedSampler {
-    public static final String ID = "entity-ai-active-count";
+  public static final String ID = "entity-ai-active-count";
 
-    public SamplerEntityAiActiveCount() {
-        super(ID, 2000);
+  public SamplerEntityAiActiveCount() {
+    super(ID, 2000);
+  }
+
+  @Override
+  public Material getIcon() {
+    return Material.ZOMBIE_SPAWN_EGG;
+  }
+
+  @Override
+  public double onSample() {
+    if (J.isFoliaThreading()) {
+      return sampleFoliaApproximation();
     }
 
-    @Override
-    public Material getIcon() {
-        return Material.ZOMBIE_SPAWN_EGG;
+    return executeSync(() -> {
+      int active = 0;
+      for (World world : Bukkit.getWorlds()) {
+        for (Entity entity : world.getEntities()) {
+          if (entity instanceof LivingEntity living && !(entity instanceof Player) && !living.isDead() && living.hasAI()) {
+            active++;
+          }
+        }
+      }
+
+      return (double) active;
+    });
+  }
+
+  private double sampleFoliaApproximation() {
+    List<Player> players = new ArrayList<>(Bukkit.getOnlinePlayers());
+    if (players.isEmpty()) {
+      return 0D;
     }
 
-    @Override
-    public double onSample() {
-        if (J.isFoliaThreading()) {
-            return sampleFoliaApproximation();
-        }
+    AtomicInteger active = new AtomicInteger();
+    Set<UUID> seen = ConcurrentHashMap.newKeySet();
+    CountDownLatch latch = new CountDownLatch(players.size());
 
-        return executeSync(() -> {
-            int active = 0;
-            for (World world : Bukkit.getWorlds()) {
-                for (Entity entity : world.getEntities()) {
-                    if (entity instanceof LivingEntity living && !(entity instanceof Player) && !living.isDead() && living.hasAI()) {
-                        active++;
-                    }
-                }
-            }
-
-            return (double) active;
-        });
-    }
-
-    private double sampleFoliaApproximation() {
-        List<Player> players = new ArrayList<>(Bukkit.getOnlinePlayers());
-        if (players.isEmpty()) {
-            return 0D;
-        }
-
-        AtomicInteger active = new AtomicInteger();
-        Set<UUID> seen = ConcurrentHashMap.newKeySet();
-        CountDownLatch latch = new CountDownLatch(players.size());
-
-        for (Player player : players) {
-            boolean scheduled = J.runEntity(player, () -> {
-                try {
-                    if (player == null || !player.isOnline() || !J.isOwnedByCurrentRegion(player)) {
-                        return;
-                    }
-
-                    for (Entity entity : player.getNearbyEntities(80, 48, 80)) {
-                        if (!(entity instanceof LivingEntity living) || entity instanceof Player || living.isDead() || !living.hasAI()) {
-                            continue;
-                        }
-
-                        if (seen.add(entity.getUniqueId())) {
-                            active.incrementAndGet();
-                        }
-                    }
-                } finally {
-                    latch.countDown();
-                }
-            });
-
-            if (!scheduled) {
-                latch.countDown();
-            }
-        }
-
+    for (Player player : players) {
+      boolean scheduled = J.runEntity(player, () -> {
         try {
-            latch.await(200, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException ex) {
-            Thread.currentThread().interrupt();
-            React.verbose("SamplerEntityAiActiveCount wait interrupted while gathering Folia approximation.");
+          if (player == null || !player.isOnline() || !J.isOwnedByCurrentRegion(player)) {
+            return;
+          }
+
+          for (Entity entity : player.getNearbyEntities(80, 48, 80)) {
+            if (!(entity instanceof LivingEntity living) || entity instanceof Player || living.isDead() || !living.hasAI()) {
+              continue;
+            }
+
+            if (seen.add(entity.getUniqueId())) {
+              active.incrementAndGet();
+            }
+          }
+        } finally {
+          latch.countDown();
         }
+      });
 
-        return active.get();
+      if (!scheduled) {
+        latch.countDown();
+      }
     }
 
-    @Override
-    public String formattedValue(double t) {
-        return Form.f(Math.round(t));
+    try {
+      latch.await(200, TimeUnit.MILLISECONDS);
+    } catch (InterruptedException ex) {
+      Thread.currentThread().interrupt();
+      React.verbose("SamplerEntityAiActiveCount wait interrupted while gathering Folia approximation.");
     }
 
-    @Override
-    public String formattedSuffix(double t) {
-        return "AI";
-    }
+    return active.get();
+  }
+
+  @Override
+  public String formattedValue(double t) {
+    return Form.f(Math.round(t));
+  }
+
+  @Override
+  public String formattedSuffix(double t) {
+    return "AI";
+  }
 }

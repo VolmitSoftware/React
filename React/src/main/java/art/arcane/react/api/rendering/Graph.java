@@ -30,49 +30,49 @@ import java.util.Map;
 
 @Getter
 public class Graph {
-    private static Map<String, Graph> graphs = new HashMap<>();
-    private final DoubleList sequence;
-    private final RollingSequence rs = new RollingSequence(3);
+  private static Map<String, Graph> graphs = new HashMap<>();
+  private final DoubleList sequence;
+  private final RollingSequence rs = new RollingSequence(3);
 
-    public Graph() {
-        sequence = new DoubleArrayList();
-    }
+  public Graph() {
+    sequence = new DoubleArrayList();
+  }
 
-    public static Graph of(Sampler sampler) {
-        Graph g = graphs.computeIfAbsent(sampler.getName(), (k) -> new Graph());
-        g.push(sampler.sample());
-        return g;
-    }
+  public static Graph of(Sampler sampler) {
+    Graph g = graphs.computeIfAbsent(sampler.getName(), (k) -> new Graph());
+    g.push(sampler.sample());
+    return g;
+  }
 
-    public double get(int index) {
-        return sequence.size() > index ? sequence.getDouble(index) : 0;
-    }
+  public double get(int index) {
+    return sequence.size() > index ? sequence.getDouble(index) : 0;
+  }
 
-    public void push(double v) {
-        rs.put(v);
-        sequence.add(0, rs.getAverage());
-        while (sequence.size() > 128) {
-            sequence.removeDouble(sequence.size() - 1);
-        }
+  public void push(double v) {
+    rs.put(v);
+    sequence.add(0, rs.getAverage());
+    while (sequence.size() > 128) {
+      sequence.removeDouble(sequence.size() - 1);
     }
+  }
 
-    public double getPaddedMax(double percent) {
-        return getMax() + ((getMax() - getMin()) * percent);
-    }
+  public double getPaddedMax(double percent) {
+    return getMax() + ((getMax() - getMin()) * percent);
+  }
 
-    public double getPaddedMin(double percent) {
-        return getMin() - ((getMax() - getMin()) * percent);
-    }
+  public double getPaddedMin(double percent) {
+    return getMin() - ((getMax() - getMin()) * percent);
+  }
 
-    public double getRange() {
-        return getMax() - getMin();
-    }
+  public double getRange() {
+    return getMax() - getMin();
+  }
 
-    public double getMax() {
-        return sequence.doubleStream().max().orElse(0);
-    }
+  public double getMax() {
+    return sequence.doubleStream().max().orElse(0);
+  }
 
-    public double getMin() {
-        return sequence.doubleStream().min().orElse(0);
-    }
+  public double getMin() {
+    return sequence.doubleStream().min().orElse(0);
+  }
 }

@@ -27,18 +27,18 @@ import art.arcane.react.core.controller.ActionController;
 import java.util.List;
 
 public class ActionParser implements SelectionParser<Action<?>> {
-    @Override
-    public List<Action<?>> getSelectionOptions() {
-        return React.controller(ActionController.class)
-                .getActions()
-                .all()
-                .stream()
-                .filter(Action::isEnabled)
-                .toList();
-    }
+  @Override
+  public List<Action<?>> getSelectionOptions() {
+    return React.controller(ActionController.class)
+        .getActions()
+        .all()
+        .stream()
+        .filter(Action::isEnabled)
+        .toList();
+  }
 
-    @Override
-    public String getName(Action<?> a) {
-        return a.getId();
-    }
+  @Override
+  public String getName(Action<?> a) {
+    return a.getId();
+  }
 }

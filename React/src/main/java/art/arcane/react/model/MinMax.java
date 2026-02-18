@@ -29,6 +29,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 public class MinMax {
-    private double min;
-    private double max;
+  private double min;
+  private double max;
 }

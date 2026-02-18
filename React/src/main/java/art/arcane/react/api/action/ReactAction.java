@@ -23,29 +23,29 @@ import art.arcane.react.util.config.ConfigDoc;
 import lombok.Getter;
 
 public abstract class ReactAction<T extends ActionParams> implements Action<T> {
-    @Getter
-    private transient final String aid;
-    @ConfigDoc(
-            value = "Enables or disables this action.",
-            impact = "Set to false to hide this action from normal execution queues without deleting its config."
-    )
-    private boolean enabled = true;
+  @Getter
+  private transient final String aid;
+  @ConfigDoc(
+      value = "Enables or disables this action.",
+      impact = "Set to false to hide this action from normal execution queues without deleting its config."
+  )
+  private boolean enabled = true;
 
-    public ReactAction(String id) {
-        this.aid = id;
-    }
+  public ReactAction(String id) {
+    this.aid = id;
+  }
 
-    @Override
-    public ActionTicket<T> create(T params) {
-        return new ActionTicket<>(this, params);
-    }
+  @Override
+  public ActionTicket<T> create(T params) {
+    return new ActionTicket<>(this, params);
+  }
 
-    public String getId() {
-        return aid;
-    }
+  public String getId() {
+    return aid;
+  }
 
-    @Override
-    public boolean isEnabled() {
-        return enabled;
-    }
+  @Override
+  public boolean isEnabled() {
+    return enabled;
+  }
 }

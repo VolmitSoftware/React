@@ -27,33 +27,33 @@ import org.bukkit.event.Listener;
 import java.util.Map;
 
 public interface Monitor extends Ticked, Listener {
-    Map<Sampler, Double> getSamplers();
+  Map<Sampler, Double> getSamplers();
 
-    /**
-     * Called when a sampler has changed
-     */
-    void flush();
+  /**
+   * Called when a sampler has changed
+   */
+  void flush();
 
-    default Monitor sample(String samplerId) {
-        return sample((Sampler) React.sampler(samplerId));
-    }
+  default Monitor sample(String samplerId) {
+    return sample((Sampler) React.sampler(samplerId));
+  }
 
-    default boolean isAlwaysFlushing() {
-        return false;
-    }
+  default boolean isAlwaysFlushing() {
+    return false;
+  }
 
-    default Monitor sample(Sampler sampler) {
-        getSamplers().put(sampler, sampler.sample());
-        return this;
-    }
+  default Monitor sample(Sampler sampler) {
+    getSamplers().put(sampler, sampler.sample());
+    return this;
+  }
 
-    default void start() {
-        React.instance.getTicker().register(this);
-        React.instance.registerListener(this);
-    }
+  default void start() {
+    React.instance.getTicker().register(this);
+    React.instance.registerListener(this);
+  }
 
-    default void stop() {
-        unregister();
-        React.instance.unregisterListener(this);
-    }
+  default void stop() {
+    unregister();
+    React.instance.unregisterListener(this);
+  }
 }

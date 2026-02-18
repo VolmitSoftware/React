@@ -3,41 +3,41 @@ package art.arcane.react.util.inventorygui;
 import org.bukkit.event.inventory.InventoryType;
 
 public enum WindowResolution {
-    W9_H6(9, 6, InventoryType.CHEST),
-    W5_H1(5, 1, InventoryType.HOPPER),
-    W3_H3(3, 3, InventoryType.DROPPER);
+  W9_H6(9, 6, InventoryType.CHEST),
+  W5_H1(5, 1, InventoryType.HOPPER),
+  W3_H3(3, 3, InventoryType.DROPPER);
 
-    private final int width;
-    private final int maxHeight;
-    private final InventoryType type;
+  private final int width;
+  private final int maxHeight;
+  private final InventoryType type;
 
-    WindowResolution(int w, int h, InventoryType type) {
-        this.width = w;
-        this.maxHeight = h;
-        this.type = type;
-    }
+  WindowResolution(int w, int h, InventoryType type) {
+    this.width = w;
+    this.maxHeight = h;
+    this.type = type;
+  }
 
-    public int getMaxWidthOffset() {
-        return (getWidth() - 1) / 2;
-    }
+  public static WindowResolution fromShared(art.arcane.volmlib.util.inventorygui.WindowResolution resolution) {
+    return valueOf(resolution.name());
+  }
 
-    public int getWidth() {
-        return width;
-    }
+  public int getMaxWidthOffset() {
+    return (getWidth() - 1) / 2;
+  }
 
-    public int getMaxHeight() {
-        return maxHeight;
-    }
+  public int getWidth() {
+    return width;
+  }
 
-    public InventoryType getType() {
-        return type;
-    }
+  public int getMaxHeight() {
+    return maxHeight;
+  }
 
-    public art.arcane.volmlib.util.inventorygui.WindowResolution toShared() {
-        return art.arcane.volmlib.util.inventorygui.WindowResolution.valueOf(name());
-    }
+  public InventoryType getType() {
+    return type;
+  }
 
-    public static WindowResolution fromShared(art.arcane.volmlib.util.inventorygui.WindowResolution resolution) {
-        return valueOf(resolution.name());
-    }
+  public art.arcane.volmlib.util.inventorygui.WindowResolution toShared() {
+    return art.arcane.volmlib.util.inventorygui.WindowResolution.valueOf(name());
+  }
 }

@@ -25,43 +25,43 @@ import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Material;
 
 public class SamplerMemoryGarbage extends ReactCachedSampler {
-    public static final String ID = "memory-garbage";
-    private transient Sampler memoryUsedAfterGC;
-    private transient Sampler memoryUsed;
+  public static final String ID = "memory-garbage";
+  private transient Sampler memoryUsedAfterGC;
+  private transient Sampler memoryUsed;
 
-    public SamplerMemoryGarbage() {
-        super(ID, 50);
-    }
+  public SamplerMemoryGarbage() {
+    super(ID, 50);
+  }
 
-    @Override
-    public Material getIcon() {
-        return Material.WATER_BUCKET;
-    }
+  @Override
+  public Material getIcon() {
+    return Material.WATER_BUCKET;
+  }
 
-    @Override
-    public void start() {
-        super.start();
-        memoryUsedAfterGC = getSampler(SamplerMemoryUsedAfterGC.ID);
-        memoryUsed = getSampler(SamplerMemoryUsed.ID);
-    }
+  @Override
+  public void start() {
+    super.start();
+    memoryUsedAfterGC = getSampler(SamplerMemoryUsedAfterGC.ID);
+    memoryUsed = getSampler(SamplerMemoryUsed.ID);
+  }
 
-    @Override
-    public double onSample() {
-        return Math.max(memoryUsed.sample() - memoryUsedAfterGC.sample(), 0);
-    }
+  @Override
+  public double onSample() {
+    return Math.max(memoryUsed.sample() - memoryUsedAfterGC.sample(), 0);
+  }
 
-    @Override
-    public String formattedValue(double t) {
-        String[] s = Form.memSizeSplit((long) t, 1);
-        if (s[1].equalsIgnoreCase("mb")) {
-            return Form.memSizeSplit((long) t, 0)[0];
-        } else {
-            return s[0];
-        }
+  @Override
+  public String formattedValue(double t) {
+    String[] s = Form.memSizeSplit((long) t, 1);
+    if (s[1].equalsIgnoreCase("mb")) {
+      return Form.memSizeSplit((long) t, 0)[0];
+    } else {
+      return s[0];
     }
+  }
 
-    @Override
-    public String formattedSuffix(double t) {
-        return Form.memSizeSplit((long) t, 1)[1];
-    }
+  @Override
+  public String formattedSuffix(double t) {
+    return Form.memSizeSplit((long) t, 1)[1];
+  }
 }

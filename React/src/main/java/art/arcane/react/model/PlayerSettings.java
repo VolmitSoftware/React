@@ -19,11 +19,11 @@
 
 package art.arcane.react.model;
 
-import com.google.gson.Gson;
 import art.arcane.react.React;
 import art.arcane.react.api.monitor.configuration.MonitorConfiguration;
 import art.arcane.volmlib.util.io.IO;
 import art.arcane.volmlib.util.json.JSONObject;
+import com.google.gson.Gson;
 import lombok.Data;
 
 import java.io.File;
@@ -32,57 +32,57 @@ import java.util.UUID;
 
 @Data
 public class PlayerSettings {
-    private MonitorConfiguration monitorConfiguration;
-    private boolean actionBarMonitoring = false;
-    private boolean visualizing = false;
+  private MonitorConfiguration monitorConfiguration;
+  private boolean actionBarMonitoring = false;
+  private boolean visualizing = false;
 
-    public static void saveSettings(UUID player, PlayerSettings s) {
-        File l = React.instance.getDataFile("player-settings", player.toString() + ".json");
+  public static void saveSettings(UUID player, PlayerSettings s) {
+    File l = React.instance.getDataFile("player-settings", player.toString() + ".json");
 
-        try {
-            IO.writeAll(l, new JSONObject(new Gson().toJson(s)).toString(4));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    try {
+      IO.writeAll(l, new JSONObject(new Gson().toJson(s)).toString(4));
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
+  public static PlayerSettings get(UUID player) {
+    PlayerSettings dummy = new PlayerSettings();
+    PlayerSettings configuration = null;
+    File l = React.instance.getDataFile("player-settings", player.toString() + ".json");
+
+    if (!l.exists()) {
+      try {
+        IO.writeAll(l, new JSONObject(new Gson().toJson(dummy)).toString(4));
+      } catch (IOException e) {
+        e.printStackTrace();
+        configuration = dummy;
+        return dummy;
+      }
     }
 
-    public static PlayerSettings get(UUID player) {
-        PlayerSettings dummy = new PlayerSettings();
-        PlayerSettings configuration = null;
-        File l = React.instance.getDataFile("player-settings", player.toString() + ".json");
-
-        if (!l.exists()) {
-            try {
-                IO.writeAll(l, new JSONObject(new Gson().toJson(dummy)).toString(4));
-            } catch (IOException e) {
-                e.printStackTrace();
-                configuration = dummy;
-                return dummy;
-            }
-        }
-
-        try {
-            configuration = new Gson().fromJson(IO.readAll(l), PlayerSettings.class);
-            IO.writeAll(l, new JSONObject(new Gson().toJson(configuration)).toString(4));
-        } catch (IOException e) {
-            e.printStackTrace();
-            configuration = new PlayerSettings();
-        }
-
-        return configuration;
+    try {
+      configuration = new Gson().fromJson(IO.readAll(l), PlayerSettings.class);
+      IO.writeAll(l, new JSONObject(new Gson().toJson(configuration)).toString(4));
+    } catch (IOException e) {
+      e.printStackTrace();
+      configuration = new PlayerSettings();
     }
 
-    public void toggleVisualizing() {
-        visualizing = !visualizing;
-    }
+    return configuration;
+  }
 
-    public boolean isVisualizing() {
-        return visualizing;
-    }
+  public void toggleVisualizing() {
+    visualizing = !visualizing;
+  }
 
-    public void init() {
-        if (monitorConfiguration == null) {
-            monitorConfiguration = new Gson().fromJson(new Gson().toJson(ReactConfiguration.get().getMonitoring().getMonitorConfiguration()), MonitorConfiguration.class);
-        }
+  public boolean isVisualizing() {
+    return visualizing;
+  }
+
+  public void init() {
+    if (monitorConfiguration == null) {
+      monitorConfiguration = new Gson().fromJson(new Gson().toJson(ReactConfiguration.get().getMonitoring().getMonitorConfiguration()), MonitorConfiguration.class);
     }
+  }
 }

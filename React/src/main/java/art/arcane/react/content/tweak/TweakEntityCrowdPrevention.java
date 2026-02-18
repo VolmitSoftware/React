@@ -33,72 +33,73 @@ import java.util.List;
 
 @art.arcane.react.util.config.ConfigDescription("Configuration for Entity Crowd Prevention tweak. Trims overcrowded livestock-style entity clusters before they create sustained tick pressure.")
 public class TweakEntityCrowdPrevention extends ReactTweak implements Listener {
-    public static final String ID = "entity-crowd-prevention";
-    /**
-     * The maximum crowding factor an entity can have before it is purged
-     */
-    @art.arcane.react.util.config.ConfigDoc(value = "Maximum entities allowed per cluster crowd in entity crowd prevention.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
-    private int maxEntitiesPerClusterCrowd = 10;
-    /**
-     * List of entity types to check for crowding
-     */
-    @art.arcane.react.util.config.ConfigDoc(value = "Entity types monitored for local crowding pressure and eligible for pruning.", impact = "Narrow this list to protect more mobs, or broaden it to enforce anti-crowding on additional entity types.")
-    private List<EntityType> mobsToPreventFromCrowding = Arrays.asList(
-            EntityType.COW,
-            EntityType.CHICKEN,
-            EntityType.PIG,
-            EntityType.SHEEP,
-            EntityType.PIG
-            );
-    /**
-     * Prevents the entity from existing if its being suspended by the soulsand bubble column
-     */
-    @art.arcane.react.util.config.ConfigDoc(value = "Controls whether entity crowd prevention applies prevent entity bubbling.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
-    private boolean preventEntityBubbling = true;
+  public static final String ID = "entity-crowd-prevention";
+  /**
+   * The maximum crowding factor an entity can have before it is purged
+   */
+  @art.arcane.react.util.config.ConfigDoc(value = "Maximum entities allowed per cluster crowd in entity crowd prevention.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
+  private int maxEntitiesPerClusterCrowd = 10;
+  /**
+   * List of entity types to check for crowding
+   */
+  @art.arcane.react.util.config.ConfigDoc(value = "Entity types monitored for local crowding pressure and eligible for pruning.", impact = "Narrow this list to protect more mobs, or broaden it to enforce anti-crowding on additional entity types.")
+  private List<EntityType> mobsToPreventFromCrowding = Arrays.asList(
+      EntityType.COW,
+      EntityType.CHICKEN,
+      EntityType.PIG,
+      EntityType.SHEEP,
+      EntityType.PIG
+  );
+  /**
+   * Prevents the entity from existing if its being suspended by the soulsand
+   * bubble column
+   */
+  @art.arcane.react.util.config.ConfigDoc(value = "Controls whether entity crowd prevention applies prevent entity bubbling.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
+  private boolean preventEntityBubbling = true;
 
-    public TweakEntityCrowdPrevention() {
-        super(ID);
+  public TweakEntityCrowdPrevention() {
+    super(ID);
+  }
+
+  @Override
+  public void onActivate() {
+    for (EntityType entityType : mobsToPreventFromCrowding) {
+      React.controller(EntityController.class).registerEntityTickListener(entityType, this::onCrowdCheck);
+    }
+  }
+
+  /**
+   * Checks if the entity is crowded
+   */
+  public void onCrowdCheck(Entity entity) {
+    // Get the crowding factor of the entity when its ticked
+    double crowdingFactor = ReactEntity.getCrowding(entity);
+    //purge the entity if its crowding factor is higher than the maxEntityCrowding
+    if (crowdingFactor >= maxEntitiesPerClusterCrowd) {
+      kill(entity);
     }
 
-    @Override
-    public void onActivate() {
-        for (EntityType entityType : mobsToPreventFromCrowding) {
-            React.controller(EntityController.class).registerEntityTickListener(entityType, this::onCrowdCheck);
-        }
+  }
+
+  private void kill(Entity entity) {
+    int delay = (int) (20 * Math.random());
+    if (!J.runEntity(entity, () -> React.kill(entity, 3), delay)) {
+      React.kill(entity, 3);
     }
+  }
 
-    /**
-     * Checks if the entity is crowded
-     */
-    public void onCrowdCheck(Entity entity) {
-        // Get the crowding factor of the entity when its ticked
-        double crowdingFactor = ReactEntity.getCrowding(entity);
-        //purge the entity if its crowding factor is higher than the maxEntityCrowding
-        if (crowdingFactor >= maxEntitiesPerClusterCrowd) {
-            kill(entity);
-        }
+  @Override
+  public void onDeactivate() {
 
-    }
+  }
 
-    private void kill(Entity entity) {
-        int delay = (int) (20 * Math.random());
-        if (!J.runEntity(entity, () -> React.kill(entity, 3), delay)) {
-            React.kill(entity, 3);
-        }
-    }
+  @Override
+  public int getTickInterval() {
+    return -1;
+  }
 
-    @Override
-    public void onDeactivate() {
+  @Override
+  public void onTick() {
 
-    }
-
-    @Override
-    public int getTickInterval() {
-        return -1;
-    }
-
-    @Override
-    public void onTick() {
-
-    }
+  }
 }

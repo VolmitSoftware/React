@@ -30,71 +30,71 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SamplerPlayerPingP95 extends ReactCachedSampler {
-    public static final String ID = "player-ping-p95";
-    private transient Method getPingMethod;
-    private transient boolean resolvedGetPing = false;
+  public static final String ID = "player-ping-p95";
+  private transient Method getPingMethod;
+  private transient boolean resolvedGetPing = false;
 
-    public SamplerPlayerPingP95() {
-        super(ID, 1000);
-    }
+  public SamplerPlayerPingP95() {
+    super(ID, 1000);
+  }
 
-    @Override
-    public Material getIcon() {
-        return Material.CLOCK;
-    }
+  @Override
+  public Material getIcon() {
+    return Material.CLOCK;
+  }
 
-    @Override
-    public double onSample() {
-        return executeSync(() -> {
-            List<Double> pings = new ArrayList<>();
-            for (Player player : Bukkit.getOnlinePlayers()) {
-                Integer ping = readPing(player);
-                if (ping != null) {
-                    pings.add((double) Math.max(0, ping));
-                }
-            }
-
-            return SamplerMath.percentile(pings, 0.95D);
-        });
-    }
-
-    protected Integer readPing(Player player) {
-        if (!resolvedGetPing) {
-            resolvedGetPing = true;
-            try {
-                getPingMethod = Player.class.getMethod("getPing");
-            } catch (Throwable ignored) {
-                getPingMethod = null;
-            }
+  @Override
+  public double onSample() {
+    return executeSync(() -> {
+      List<Double> pings = new ArrayList<>();
+      for (Player player : Bukkit.getOnlinePlayers()) {
+        Integer ping = readPing(player);
+        if (ping != null) {
+          pings.add((double) Math.max(0, ping));
         }
+      }
 
-        if (getPingMethod != null) {
-            try {
-                return (Integer) getPingMethod.invoke(player);
-            } catch (Throwable ignored) {
-            }
-        }
+      return SamplerMath.percentile(pings, 0.95D);
+    });
+  }
 
-        try {
-            Object spigot = player.spigot();
-            Method method = spigot.getClass().getMethod("getPing");
-            Object ping = method.invoke(spigot);
-            if (ping instanceof Number n) {
-                return n.intValue();
-            }
-        } catch (Throwable ignored) {
-        }
-
-        return null;
+  protected Integer readPing(Player player) {
+    if (!resolvedGetPing) {
+      resolvedGetPing = true;
+      try {
+        getPingMethod = Player.class.getMethod("getPing");
+      } catch (Throwable ignored) {
+        getPingMethod = null;
+      }
     }
 
-    @Override
-    public String formattedValue(double t) {
-        return Form.f(t, 1);
+    if (getPingMethod != null) {
+      try {
+        return (Integer) getPingMethod.invoke(player);
+      } catch (Throwable ignored) {
+      }
     }
 
-    @Override
-    public String formattedSuffix(double t) {
-        return "ms P95PING";
+    try {
+      Object spigot = player.spigot();
+      Method method = spigot.getClass().getMethod("getPing");
+      Object ping = method.invoke(spigot);
+      if (ping instanceof Number n) {
+        return n.intValue();
+      }
+    } catch (Throwable ignored) {
     }
+
+    return null;
+  }
+
+  @Override
+  public String formattedValue(double t) {
+    return Form.f(t, 1);
+  }
+
+  @Override
+  public String formattedSuffix(double t) {
+    return "ms P95PING";
+  }
 }

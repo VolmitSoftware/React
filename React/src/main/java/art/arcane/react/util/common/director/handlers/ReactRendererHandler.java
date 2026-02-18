@@ -22,49 +22,49 @@ package art.arcane.react.util.director.handlers;
 import art.arcane.react.React;
 import art.arcane.react.api.rendering.ReactRenderer;
 import art.arcane.react.core.controller.MapController;
-import art.arcane.volmlib.util.collection.KList;
 import art.arcane.react.util.director.DirectorParameterHandler;
+import art.arcane.volmlib.util.collection.KList;
 import art.arcane.volmlib.util.director.exceptions.DirectorParsingException;
 
 public class ReactRendererHandler implements DirectorParameterHandler<ReactRenderer> {
-    @Override
-    public KList<ReactRenderer> getPossibilities() {
-        KList<ReactRenderer> options = new KList<>();
-        MapController controller = React.controller(MapController.class);
-        if (controller == null || controller.getRenderers() == null) {
-            return options;
-        }
-
-        options.addAll(controller.getRenderers().values());
-        return options;
+  @Override
+  public KList<ReactRenderer> getPossibilities() {
+    KList<ReactRenderer> options = new KList<>();
+    MapController controller = React.controller(MapController.class);
+    if (controller == null || controller.getRenderers() == null) {
+      return options;
     }
 
-    @Override
-    public String toString(ReactRenderer world) {
-        return world.getId();
-    }
+    options.addAll(controller.getRenderers().values());
+    return options;
+  }
 
-    @Override
-    public ReactRenderer parse(String in, boolean force) throws DirectorParsingException {
-        KList<ReactRenderer> options = getPossibilities(in);
+  @Override
+  public String toString(ReactRenderer world) {
+    return world.getId();
+  }
 
-        if (options.isEmpty()) {
-            throw new DirectorParsingException("Unable to find Renderer \"" + in + "\"");
-        }
-        try {
-            return options.stream().filter((i) -> toString(i).equalsIgnoreCase(in)).toList().get(0);
-        } catch (Throwable e) {
-            throw new DirectorParsingException("Unable to filter which Renderer \"" + in + "\"");
-        }
-    }
+  @Override
+  public ReactRenderer parse(String in, boolean force) throws DirectorParsingException {
+    KList<ReactRenderer> options = getPossibilities(in);
 
-    @Override
-    public boolean supports(Class<?> type) {
-        return type.equals(ReactRenderer.class);
+    if (options.isEmpty()) {
+      throw new DirectorParsingException("Unable to find Renderer \"" + in + "\"");
     }
+    try {
+      return options.stream().filter((i) -> toString(i).equalsIgnoreCase(in)).toList().get(0);
+    } catch (Throwable e) {
+      throw new DirectorParsingException("Unable to filter which Renderer \"" + in + "\"");
+    }
+  }
 
-    @Override
-    public String getRandomDefault() {
-        return "unknown";
-    }
+  @Override
+  public boolean supports(Class<?> type) {
+    return type.equals(ReactRenderer.class);
+  }
+
+  @Override
+  public String getRandomDefault() {
+    return "unknown";
+  }
 }

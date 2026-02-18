@@ -26,13 +26,13 @@ import org.bukkit.entity.Player;
 import java.util.List;
 
 public class PlayerParser implements SelectionParser<Player> {
-    @Override
-    public List<Player> getSelectionOptions() {
-        return Bukkit.getOnlinePlayers().stream().map(i -> (Player) i).toList();
-    }
+  @Override
+  public List<Player> getSelectionOptions() {
+    return Bukkit.getOnlinePlayers().stream().map(i -> (Player) i).toList();
+  }
 
-    @Override
-    public String getName(Player player) {
-        return player.getName();
-    }
+  @Override
+  public String getName(Player player) {
+    return player.getName();
+  }
 }

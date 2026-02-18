@@ -37,85 +37,86 @@ import java.util.List;
 
 @art.arcane.react.util.config.ConfigDescription("Configuration for Entity Bubbler tweak. Prevents selected projectile or utility entities from being suspended indefinitely in bubble columns.")
 public class TweakEntityBubbler extends ReactTweak implements Listener {
-    public static final String ID = "entity-bubbler";
-    /**
-     * List of entity types to check for crowding
-     */
-    @art.arcane.react.util.config.ConfigDoc(value = "Entity types that are removed when detected inside bubble-column or soul-sand bubble lift paths.", impact = "Add more types to aggressively clean bubble elevators, or remove types to allow those entities to travel in water columns.")
-    private List<EntityType> entitiedToPreventFromBeingBubbled = Arrays.asList(
-            EntityType.ARROW,
-            EntityType.ARMOR_STAND,
-            EntityType.MINECART,
-            EntityType.ENDER_PEARL,
-            EntityType.SNOWBALL
-    );
+  public static final String ID = "entity-bubbler";
+  /**
+   * List of entity types to check for crowding
+   */
+  @art.arcane.react.util.config.ConfigDoc(value = "Entity types that are removed when detected inside bubble-column or soul-sand bubble lift paths.", impact = "Add more types to aggressively clean bubble elevators, or remove types to allow those entities to travel in water columns.")
+  private List<EntityType> entitiedToPreventFromBeingBubbled = Arrays.asList(
+      EntityType.ARROW,
+      EntityType.ARMOR_STAND,
+      EntityType.MINECART,
+      EntityType.ENDER_PEARL,
+      EntityType.SNOWBALL
+  );
 
-    /**
-     * Prevents the entity from existing if its being suspended by the soulsand bubble column
-     */
+  /**
+   * Prevents the entity from existing if its being suspended by the soulsand
+   * bubble column
+   */
 
-    public TweakEntityBubbler() {
-        super(ID);
+  public TweakEntityBubbler() {
+    super(ID);
+  }
+
+  @Override
+  public void onActivate() {
+    for (EntityType entityType : entitiedToPreventFromBeingBubbled) {
+      React.controller(EntityController.class).registerEntityTickListener(entityType, this::onCrowdCheck);
     }
+  }
 
-    @Override
-    public void onActivate() {
-        for (EntityType entityType : entitiedToPreventFromBeingBubbled) {
-            React.controller(EntityController.class).registerEntityTickListener(entityType, this::onCrowdCheck);
-        }
+  /**
+   * Checks if the entity is crowded
+   */
+  public void onCrowdCheck(Entity entity) {
+    // Get the crowding factor of the entity when its ticked
+    // If the entity is being bubbled, kill it
+    if (isEntityBubbled(entity)) {
+      kill(entity);
     }
+  }
 
-    /**
-     * Checks if the entity is crowded
-     */
-    public void onCrowdCheck(Entity entity) {
-        // Get the crowding factor of the entity when its ticked
-        // If the entity is being bubbled, kill it
-        if (isEntityBubbled(entity)) {
-            kill(entity);
-        }
+  /**
+   * Checks if the entity is being bubbled
+   */
+  public boolean isEntityBubbled(Entity entity) {
+    Location location = entity.getLocation();
+    World world = location.getWorld();
+    if (world == null)
+      return false;
+    Block block = world.getBlockAt(location);
+    Block blockBelow = block.getRelative(BlockFace.DOWN);
+    if (blockBelow.isLiquid() || block.isLiquid()) {
+      if (block.getType().equals(Material.BUBBLE_COLUMN) || blockBelow.getType().equals(Material.BUBBLE_COLUMN)) {
+        return true;
+      } else if (block.getType().equals(Material.SOUL_SAND) || blockBelow.getType().equals(Material.SOUL_SAND)) {
+        return true;
+      }
     }
+    return false;
+  }
 
-    /**
-     * Checks if the entity is being bubbled
-     */
-    public boolean isEntityBubbled(Entity entity) {
-        Location location = entity.getLocation();
-        World world = location.getWorld();
-        if (world == null)
-            return false;
-        Block block = world.getBlockAt(location);
-        Block blockBelow = block.getRelative(BlockFace.DOWN);
-        if (blockBelow.isLiquid() || block.isLiquid()) {
-            if (block.getType().equals(Material.BUBBLE_COLUMN) || blockBelow.getType().equals(Material.BUBBLE_COLUMN)) {
-                return true;
-            } else if (block.getType().equals(Material.SOUL_SAND) || blockBelow.getType().equals(Material.SOUL_SAND)) {
-                return true;
-            }
-        }
-        return false;
+
+  private void kill(Entity entity) {
+    int delay = (int) (20 * Math.random());
+    if (!J.runEntity(entity, () -> React.kill(entity, 3), delay)) {
+      React.kill(entity, 3);
     }
+  }
 
+  @Override
+  public void onDeactivate() {
 
-    private void kill(Entity entity) {
-        int delay = (int) (20 * Math.random());
-        if (!J.runEntity(entity, () -> React.kill(entity, 3), delay)) {
-            React.kill(entity, 3);
-        }
-    }
+  }
 
-    @Override
-    public void onDeactivate() {
+  @Override
+  public int getTickInterval() {
+    return -1;
+  }
 
-    }
+  @Override
+  public void onTick() {
 
-    @Override
-    public int getTickInterval() {
-        return -1;
-    }
-
-    @Override
-    public void onTick() {
-
-    }
+  }
 }

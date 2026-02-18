@@ -22,28 +22,28 @@ package art.arcane.react.content.sampler;
 import art.arcane.react.api.sampler.ReactCachedSampler;
 
 public class SamplerUnknown extends ReactCachedSampler {
-    public static final String ID = "unknown";
+  public static final String ID = "unknown";
 
-    public SamplerUnknown() {
-        super(ID, 30000);
-    }
+  public SamplerUnknown() {
+    super(ID, 30000);
+  }
 
-    public SamplerUnknown(String id) {
-        super(id, 30000);
-    }
+  public SamplerUnknown(String id) {
+    super(id, 30000);
+  }
 
-    @Override
-    public double onSample() {
-        return 0;
-    }
+  @Override
+  public double onSample() {
+    return 0;
+  }
 
-    @Override
-    public String formattedValue(double t) {
-        return "---";
-    }
+  @Override
+  public String formattedValue(double t) {
+    return "---";
+  }
 
-    @Override
-    public String formattedSuffix(double t) {
-        return "";
-    }
+  @Override
+  public String formattedSuffix(double t) {
+    return "";
+  }
 }

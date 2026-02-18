@@ -31,62 +31,62 @@ import org.bukkit.event.block.BlockRedstoneEvent;
 import java.util.ArrayDeque;
 
 public class SamplerRedstoneBurstRate extends ReactCachedSampler implements Listener {
-    public static final String ID = "redstone-burst-rate";
-    private transient final ArrayDeque<Long> bursts = new ArrayDeque<>();
-    private transient int tickUpdates = 0;
-    private int burstThresholdPerTick = 64;
-    private int windowMS = 60000;
+  public static final String ID = "redstone-burst-rate";
+  private transient final ArrayDeque<Long> bursts = new ArrayDeque<>();
+  private transient int tickUpdates = 0;
+  private int burstThresholdPerTick = 64;
+  private int windowMS = 60000;
 
-    public SamplerRedstoneBurstRate() {
-        super(ID, 1000);
-    }
+  public SamplerRedstoneBurstRate() {
+    super(ID, 1000);
+  }
 
-    @Override
-    public Material getIcon() {
-        return Material.REPEATER;
-    }
+  @Override
+  public Material getIcon() {
+    return Material.REPEATER;
+  }
 
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void on(BlockRedstoneEvent event) {
-        synchronized (bursts) {
-            tickUpdates++;
-        }
+  @EventHandler(priority = EventPriority.MONITOR)
+  public void on(BlockRedstoneEvent event) {
+    synchronized (bursts) {
+      tickUpdates++;
     }
+  }
 
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void on(ServerTickEvent event) {
-        long now = System.currentTimeMillis();
-        synchronized (bursts) {
-            if (tickUpdates >= burstThresholdPerTick) {
-                bursts.addLast(now);
-            }
-            tickUpdates = 0;
-            cleanup(now);
-        }
+  @EventHandler(priority = EventPriority.MONITOR)
+  public void on(ServerTickEvent event) {
+    long now = System.currentTimeMillis();
+    synchronized (bursts) {
+      if (tickUpdates >= burstThresholdPerTick) {
+        bursts.addLast(now);
+      }
+      tickUpdates = 0;
+      cleanup(now);
     }
+  }
 
-    @Override
-    public double onSample() {
-        long now = System.currentTimeMillis();
-        synchronized (bursts) {
-            cleanup(now);
-            return bursts.size() * (60000D / Math.max(1000D, windowMS));
-        }
+  @Override
+  public double onSample() {
+    long now = System.currentTimeMillis();
+    synchronized (bursts) {
+      cleanup(now);
+      return bursts.size() * (60000D / Math.max(1000D, windowMS));
     }
+  }
 
-    private void cleanup(long now) {
-        while (!bursts.isEmpty() && now - bursts.peekFirst() > windowMS) {
-            bursts.removeFirst();
-        }
+  private void cleanup(long now) {
+    while (!bursts.isEmpty() && now - bursts.peekFirst() > windowMS) {
+      bursts.removeFirst();
     }
+  }
 
-    @Override
-    public String formattedValue(double t) {
-        return Form.f(t, 2);
-    }
+  @Override
+  public String formattedValue(double t) {
+    return Form.f(t, 2);
+  }
 
-    @Override
-    public String formattedSuffix(double t) {
-        return "RBURST/m";
-    }
+  @Override
+  public String formattedSuffix(double t) {
+    return "RBURST/m";
+  }
 }

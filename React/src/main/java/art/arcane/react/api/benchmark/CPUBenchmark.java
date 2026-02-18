@@ -27,89 +27,89 @@ import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 
 public class CPUBenchmark implements Runnable {
-    private CommandSender sender;
+  private CommandSender sender;
 
-    public CPUBenchmark(CommandSender sender) {
-        this.sender = sender;
+  public CPUBenchmark(CommandSender sender) {
+    this.sender = sender;
+  }
+
+  public void BenchmarkCPU() {
+    J.a(this);
+  }
+
+  @Override
+  public void run() {
+    int score = doCPUBenchmark();
+    String result = CPUResult.getSpeedLabel(score);
+    sender.sendMessage(ChatColor.GREEN + "Benchmark result: " + result + " (" + score + " Miliseconds)");
+  }
+
+  private int doCPUBenchmark() {
+    long startTime = System.nanoTime();
+    sender.sendMessage(ChatColor.DARK_RED + "Benchmarking CPU...");
+
+    // Arithmetic Operations
+    long resultInt = 1;
+    for (long i = 1; i <= 1000000; i++) {
+      resultInt *= i;
+      resultInt /= (i != 0 ? i : 1);
     }
 
-    public void BenchmarkCPU() {
-        J.a(this);
+    // Floating-Point Operations
+    double resultDouble = 0.01;
+    for (int i = 0; i < 1000000; i++) {
+      resultDouble *= 1.000001;
+      resultDouble /= 1.000001;
     }
 
-    @Override
-    public void run() {
-        int score = doCPUBenchmark();
-        String result = CPUResult.getSpeedLabel(score);
-        sender.sendMessage(ChatColor.GREEN + "Benchmark result: " + result + " (" + score + " Miliseconds)");
+    // Logical Operations
+    int resultLogical = 0x55555555;
+    for (int i = 0; i < 1000000; i++) {
+      resultLogical = resultLogical & 0xAAAAAAAA;
+      resultLogical = resultLogical | 0x55555555;
     }
 
-    private int doCPUBenchmark() {
-        long startTime = System.nanoTime();
-        sender.sendMessage(ChatColor.DARK_RED + "Benchmarking CPU...");
-
-        // Arithmetic Operations
-        long resultInt = 1;
-        for (long i = 1; i <= 1000000; i++) {
-            resultInt *= i;
-            resultInt /= (i != 0 ? i : 1);
-        }
-
-        // Floating-Point Operations
-        double resultDouble = 0.01;
-        for (int i = 0; i < 1000000; i++) {
-            resultDouble *= 1.000001;
-            resultDouble /= 1.000001;
-        }
-
-        // Logical Operations
-        int resultLogical = 0x55555555;
-        for (int i = 0; i < 1000000; i++) {
-            resultLogical = resultLogical & 0xAAAAAAAA;
-            resultLogical = resultLogical | 0x55555555;
-        }
-
-        // Trigonometric Calculations
-        double resultTrig = 0;
-        for (int i = 0; i < 1000000; i++) {
-            resultTrig = Math.sin(i) + Math.cos(i) + Math.tan(i);
-        }
-
-        long endTime = System.nanoTime();
-        long duration = (endTime - startTime);
-
-        sender.sendMessage(ChatColor.YELLOW + "Benchmark complete. (Lower = Better)");
-        return (int) (TimeUnit.MILLISECONDS.convert(duration, TimeUnit.NANOSECONDS));
+    // Trigonometric Calculations
+    double resultTrig = 0;
+    for (int i = 0; i < 1000000; i++) {
+      resultTrig = Math.sin(i) + Math.cos(i) + Math.tan(i);
     }
 
-    private enum CPUResult {
-        ULTRA_SLOW("Ultra Slow!"), VERY_SLOW("Very Slow!"), SLOW("Slow!"), AVERAGE("Average."),
-        GOOD("Good!"), FAST("Fast!"), VERY_FAST("Very fast!"), ULTRA_FAST("Ultra Fast"), INSANELY_FAST("Insanely Fast!");
+    long endTime = System.nanoTime();
+    long duration = (endTime - startTime);
 
-        private final String m;
+    sender.sendMessage(ChatColor.YELLOW + "Benchmark complete. (Lower = Better)");
+    return (int) (TimeUnit.MILLISECONDS.convert(duration, TimeUnit.NANOSECONDS));
+  }
 
-        CPUResult(String m) {
-            this.m = m;
-        }
+  private enum CPUResult {
+    ULTRA_SLOW("Ultra Slow!"), VERY_SLOW("Very Slow!"), SLOW("Slow!"), AVERAGE("Average."),
+    GOOD("Good!"), FAST("Fast!"), VERY_FAST("Very fast!"), ULTRA_FAST("Ultra Fast"), INSANELY_FAST("Insanely Fast!");
 
-        public static String getSpeedLabel(int s) {
-            TreeMap<Integer, CPUResult> speedMap = new TreeMap<>();
-            speedMap.put(10, INSANELY_FAST);
-            speedMap.put(30, ULTRA_FAST);
-            speedMap.put(50, VERY_FAST);
-            speedMap.put(80, FAST);
-            speedMap.put(100, GOOD);
-            speedMap.put(150, AVERAGE);
-            speedMap.put(200, SLOW);
-            speedMap.put(400, VERY_SLOW);
+    private final String m;
 
-            for (int speedThreshold : speedMap.descendingKeySet()) {
-                if (s > speedThreshold) {
-                    return speedMap.get(speedThreshold).m;
-                }
-            }
-
-            return ULTRA_SLOW.m;
-        }
+    CPUResult(String m) {
+      this.m = m;
     }
+
+    public static String getSpeedLabel(int s) {
+      TreeMap<Integer, CPUResult> speedMap = new TreeMap<>();
+      speedMap.put(10, INSANELY_FAST);
+      speedMap.put(30, ULTRA_FAST);
+      speedMap.put(50, VERY_FAST);
+      speedMap.put(80, FAST);
+      speedMap.put(100, GOOD);
+      speedMap.put(150, AVERAGE);
+      speedMap.put(200, SLOW);
+      speedMap.put(400, VERY_SLOW);
+
+      for (int speedThreshold : speedMap.descendingKeySet()) {
+        if (s > speedThreshold) {
+          return speedMap.get(speedThreshold).m;
+        }
+      }
+
+      return ULTRA_SLOW.m;
+    }
+  }
 }

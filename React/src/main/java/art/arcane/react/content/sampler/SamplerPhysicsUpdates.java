@@ -30,44 +30,44 @@ import org.bukkit.event.block.BlockPistonExtendEvent;
 import org.bukkit.event.block.BlockPistonRetractEvent;
 
 public class SamplerPhysicsUpdates extends ReactCachedRateSampler implements Listener {
-    public static final String ID = "physics";
+  public static final String ID = "physics";
 
-    public SamplerPhysicsUpdates() {
-        super(ID, 1000);
-    }
+  public SamplerPhysicsUpdates() {
+    super(ID, 1000);
+  }
 
-    @Override
-    public Material getIcon() {
-        return Material.SUSPICIOUS_STEW;
-    }
+  @Override
+  public Material getIcon() {
+    return Material.SUSPICIOUS_STEW;
+  }
 
-    @EventHandler
-    public void on(BlockPistonExtendEvent event) {
-        int b = event.getBlocks().size() + 2;
-        increment(b);
-        getChunkCounter(event.getBlock()).addAndGet(b);
-    }
+  @EventHandler
+  public void on(BlockPistonExtendEvent event) {
+    int b = event.getBlocks().size() + 2;
+    increment(b);
+    getChunkCounter(event.getBlock()).addAndGet(b);
+  }
 
-    @EventHandler(priority = EventPriority.LOW)
-    public void on(BlockPhysicsEvent event) {
-        increment();
-        getChunkCounter(event.getBlock()).addAndGet(1);
-    }
+  @EventHandler(priority = EventPriority.LOW)
+  public void on(BlockPhysicsEvent event) {
+    increment();
+    getChunkCounter(event.getBlock()).addAndGet(1);
+  }
 
-    @EventHandler
-    public void on(BlockPistonRetractEvent event) {
-        int b = event.getBlocks().size() + 2;
-        increment(b);
-        getChunkCounter(event.getBlock()).addAndGet(b);
-    }
+  @EventHandler
+  public void on(BlockPistonRetractEvent event) {
+    int b = event.getBlocks().size() + 2;
+    increment(b);
+    getChunkCounter(event.getBlock()).addAndGet(b);
+  }
 
-    @Override
-    public String formattedValue(double t) {
-        return Form.f(Math.round(t));
-    }
+  @Override
+  public String formattedValue(double t) {
+    return Form.f(Math.round(t));
+  }
 
-    @Override
-    public String formattedSuffix(double t) {
-        return "PHY/s";
-    }
+  @Override
+  public String formattedSuffix(double t) {
+    return "PHY/s";
+  }
 }

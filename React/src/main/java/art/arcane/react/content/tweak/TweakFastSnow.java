@@ -30,47 +30,47 @@ import org.bukkit.event.block.BlockFormEvent;
 
 @art.arcane.react.util.config.ConfigDescription("Configuration for Fast Snow tweak. Short-circuits snow form and melt updates into fast world operations to reduce weather-block churn.")
 public class TweakFastSnow extends ReactTweak implements Listener {
-    public static final String ID = "fast-snow";
+  public static final String ID = "fast-snow";
 
-    public TweakFastSnow() {
-        super(ID);
+  public TweakFastSnow() {
+    super(ID);
+  }
+
+  @Override
+  public void onActivate() {
+
+  }
+
+  @EventHandler
+  public void on(BlockFormEvent e) {
+    if (e.getBlock().getBlockData() instanceof Snow s) {
+      e.setCancelled(true);
+      var location = e.getBlock().getLocation().clone();
+      J.s(location, () -> FastWorld.set(location.getBlock(), s), 0);
     }
+  }
 
-    @Override
-    public void onActivate() {
-
+  @EventHandler
+  public void on(BlockFadeEvent e) {
+    if (e.getBlock().getBlockData() instanceof Snow s) {
+      e.setCancelled(true);
+      var location = e.getBlock().getLocation().clone();
+      J.s(location, () -> FastWorld.breakNaturally(location.getBlock()), 0);
     }
+  }
 
-    @EventHandler
-    public void on(BlockFormEvent e) {
-        if (e.getBlock().getBlockData() instanceof Snow s) {
-            e.setCancelled(true);
-            var location = e.getBlock().getLocation().clone();
-            J.s(location, () -> FastWorld.set(location.getBlock(), s), 0);
-        }
-    }
+  @Override
+  public void onDeactivate() {
 
-    @EventHandler
-    public void on(BlockFadeEvent e) {
-        if (e.getBlock().getBlockData() instanceof Snow s) {
-            e.setCancelled(true);
-            var location = e.getBlock().getLocation().clone();
-            J.s(location, () -> FastWorld.breakNaturally(location.getBlock()), 0);
-        }
-    }
+  }
 
-    @Override
-    public void onDeactivate() {
+  @Override
+  public int getTickInterval() {
+    return -1;
+  }
 
-    }
+  @Override
+  public void onTick() {
 
-    @Override
-    public int getTickInterval() {
-        return -1;
-    }
-
-    @Override
-    public void onTick() {
-
-    }
+  }
 }

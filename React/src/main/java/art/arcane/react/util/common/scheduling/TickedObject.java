@@ -20,8 +20,8 @@
 package art.arcane.react.util.scheduling;
 
 import art.arcane.react.React;
-import art.arcane.volmlib.util.math.M;
 import art.arcane.react.util.registry.Registered;
+import art.arcane.volmlib.util.math.M;
 import org.bukkit.event.Listener;
 
 import java.util.UUID;
@@ -30,156 +30,156 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 public abstract class TickedObject implements Ticked, Listener, Registered {
-    private transient final AtomicLong tlastTick;
-    private transient final AtomicLong tinterval;
-    private transient final AtomicInteger tskip;
-    private transient final AtomicInteger tburst;
-    private transient final AtomicLong tticks;
-    private transient final AtomicInteger tdieIn;
-    private transient final AtomicBoolean tdie;
-    private transient final long tstart;
-    private transient final String tgroup;
-    private transient final String tid;
+  private transient final AtomicLong tlastTick;
+  private transient final AtomicLong tinterval;
+  private transient final AtomicInteger tskip;
+  private transient final AtomicInteger tburst;
+  private transient final AtomicLong tticks;
+  private transient final AtomicInteger tdieIn;
+  private transient final AtomicBoolean tdie;
+  private transient final long tstart;
+  private transient final String tgroup;
+  private transient final String tid;
 
-    public TickedObject() {
-        this("null");
+  public TickedObject() {
+    this("null");
+  }
+
+  public TickedObject(String group, String tid) {
+    this(group, tid, 1000);
+  }
+
+  public TickedObject(String group) {
+    this(group, UUID.randomUUID().toString(), 1000);
+  }
+
+  public TickedObject(String group, long interval) {
+    this(group, UUID.randomUUID().toString(), interval);
+  }
+
+  public TickedObject(String group, String tid, long interval) {
+    this.tgroup = group;
+    this.tid = tid;
+    this.tdie = new AtomicBoolean(false);
+    this.tdieIn = new AtomicInteger(0);
+    this.tinterval = new AtomicLong(interval);
+    this.tlastTick = new AtomicLong(M.ms());
+    this.tburst = new AtomicInteger(0);
+    this.tskip = new AtomicInteger(0);
+    this.tticks = new AtomicLong(0);
+    this.tstart = M.ms();
+    React.instance.getTicker().register(this);
+  }
+
+  public String getId() {
+    return tid;
+  }
+
+  public void dieAfter(int ticks) {
+    tdieIn.set(ticks);
+    tdie.set(true);
+  }
+
+  @Override
+  public void unregister() {
+    React.instance.getTicker().unregister(this);
+  }
+
+  @Override
+  public long getTlastTick() {
+    return tlastTick.get();
+  }
+
+  @Override
+  public long getTinterval() {
+    if (tburst.get() > 0) {
+      return 0;
     }
 
-    public TickedObject(String group, String tid) {
-        this(group, tid, 1000);
+    return tinterval.get();
+  }
+
+  @Override
+  public void setTinterval(long ms) {
+    tinterval.set(ms);
+  }
+
+
+  @Override
+  public void tick() {
+    if (tskip.getAndDecrement() > 0) {
+      return;
     }
 
-    public TickedObject(String group) {
-        this(group, UUID.randomUUID().toString(), 1000);
+    if (tdie.get() && tdieIn.decrementAndGet() <= 0) {
+      unregister();
+      return;
     }
 
-    public TickedObject(String group, long interval) {
-        this(group, UUID.randomUUID().toString(), interval);
+    tlastTick.set(M.ms());
+    tburst.decrementAndGet();
+    onTick();
+  }
+
+  public abstract void onTick();
+
+  @Override
+  public String getTgroup() {
+    return tgroup;
+  }
+
+  @Override
+  public String getTid() {
+    return tid;
+  }
+
+  @Override
+  public long getTickCount() {
+    return tticks.get();
+  }
+
+  @Override
+  public long getAge() {
+    return M.ms() - tstart;
+  }
+
+  @Override
+  public boolean isBursting() {
+    return tburst.get() > 0;
+  }
+
+  @Override
+  public void burst(int ticks) {
+    if (tburst.get() < 0) {
+      tburst.set(ticks);
+      return;
     }
 
-    public TickedObject(String group, String tid, long interval) {
-        this.tgroup = group;
-        this.tid = tid;
-        this.tdie = new AtomicBoolean(false);
-        this.tdieIn = new AtomicInteger(0);
-        this.tinterval = new AtomicLong(interval);
-        this.tlastTick = new AtomicLong(M.ms());
-        this.tburst = new AtomicInteger(0);
-        this.tskip = new AtomicInteger(0);
-        this.tticks = new AtomicLong(0);
-        this.tstart = M.ms();
-        React.instance.getTicker().register(this);
+    tburst.addAndGet(ticks);
+  }
+
+  @Override
+  public boolean isSkipping() {
+    return tskip.get() > 0;
+  }
+
+  @Override
+  public void stopBursting() {
+    tburst.set(0);
+  }
+
+  @Override
+  public void stopSkipping() {
+    tskip.set(0);
+  }
+
+  @Override
+  public void skip(int ticks) {
+    if (tskip.get() < 0) {
+      tskip.set(ticks);
+      return;
     }
 
-    public String getId() {
-        return tid;
-    }
-
-    public void dieAfter(int ticks) {
-        tdieIn.set(ticks);
-        tdie.set(true);
-    }
-
-    @Override
-    public void unregister() {
-        React.instance.getTicker().unregister(this);
-    }
-
-    @Override
-    public long getTlastTick() {
-        return tlastTick.get();
-    }
-
-    @Override
-    public long getTinterval() {
-        if (tburst.get() > 0) {
-            return 0;
-        }
-
-        return tinterval.get();
-    }
-
-    @Override
-    public void setTinterval(long ms) {
-        tinterval.set(ms);
-    }
-
-
-    @Override
-    public void tick() {
-        if (tskip.getAndDecrement() > 0) {
-            return;
-        }
-
-        if (tdie.get() && tdieIn.decrementAndGet() <= 0) {
-            unregister();
-            return;
-        }
-
-        tlastTick.set(M.ms());
-        tburst.decrementAndGet();
-        onTick();
-    }
-
-    public abstract void onTick();
-
-    @Override
-    public String getTgroup() {
-        return tgroup;
-    }
-
-    @Override
-    public String getTid() {
-        return tid;
-    }
-
-    @Override
-    public long getTickCount() {
-        return tticks.get();
-    }
-
-    @Override
-    public long getAge() {
-        return M.ms() - tstart;
-    }
-
-    @Override
-    public boolean isBursting() {
-        return tburst.get() > 0;
-    }
-
-    @Override
-    public void burst(int ticks) {
-        if (tburst.get() < 0) {
-            tburst.set(ticks);
-            return;
-        }
-
-        tburst.addAndGet(ticks);
-    }
-
-    @Override
-    public boolean isSkipping() {
-        return tskip.get() > 0;
-    }
-
-    @Override
-    public void stopBursting() {
-        tburst.set(0);
-    }
-
-    @Override
-    public void stopSkipping() {
-        tskip.set(0);
-    }
-
-    @Override
-    public void skip(int ticks) {
-        if (tskip.get() < 0) {
-            tskip.set(ticks);
-            return;
-        }
-
-        tskip.addAndGet(ticks);
-    }
+    tskip.addAndGet(ticks);
+  }
 }

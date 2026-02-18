@@ -26,14 +26,14 @@ import org.bukkit.map.MapView;
 import org.jetbrains.annotations.NotNull;
 
 public class MapMonitor extends MapRenderer {
-    private MapView view;
+  private MapView view;
 
-    public MapMonitor(MapView view) {
-        view.addRenderer(this);
-    }
+  public MapMonitor(MapView view) {
+    view.addRenderer(this);
+  }
 
-    @Override
-    public void render(@NotNull MapView map, @NotNull MapCanvas canvas, @NotNull Player player) {
+  @Override
+  public void render(@NotNull MapView map, @NotNull MapCanvas canvas, @NotNull Player player) {
 
-    }
+  }
 }

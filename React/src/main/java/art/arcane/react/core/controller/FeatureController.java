@@ -42,176 +42,175 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class FeatureController extends TickedObject implements IController {
-    private static final long GATE_RECONCILE_INTERVAL_MS = 2000L;
+  private static final long GATE_RECONCILE_INTERVAL_MS = 2000L;
+  private transient final AtomicBoolean gateReconcileQueued = new AtomicBoolean(false);
+  private transient Registry<Feature> features;
+  private transient Map<String, Feature> activeFeatures;
+  private transient Map<String, ReactTickedFeature> tickedFeatures;
+  private transient long lastGateReconcileMS;
 
-    private transient Registry<Feature> features;
-    private transient Map<String, Feature> activeFeatures;
-    private transient Map<String, ReactTickedFeature> tickedFeatures;
-    private transient final AtomicBoolean gateReconcileQueued = new AtomicBoolean(false);
-    private transient long lastGateReconcileMS;
+  private Feature unknown;
 
-    private Feature unknown;
+  public FeatureController() {
+    super("react", "feature", 50);
+  }
 
-    public FeatureController() {
-        super("react", "feature", 50);
+  @Override
+  public void onTick() {
+    if (!React.instance.isEnabled() || !React.instance.isReady()) {
+      return;
     }
 
-    @Override
-    public void onTick() {
+    long now = System.currentTimeMillis();
+    if (now - lastGateReconcileMS < GATE_RECONCILE_INTERVAL_MS) {
+      return;
+    }
+
+    lastGateReconcileMS = now;
+    if (!gateReconcileQueued.compareAndSet(false, true)) {
+      return;
+    }
+
+    J.s(() -> {
+      try {
         if (!React.instance.isEnabled() || !React.instance.isReady()) {
-            return;
+          return;
         }
+        reconcileFeatureGates();
+      } finally {
+        gateReconcileQueued.set(false);
+      }
+    });
+  }
 
-        long now = System.currentTimeMillis();
-        if (now - lastGateReconcileMS < GATE_RECONCILE_INTERVAL_MS) {
-            return;
-        }
+  @Override
+  public String getName() {
+    return "Feature";
+  }
 
-        lastGateReconcileMS = now;
-        if (!gateReconcileQueued.compareAndSet(false, true)) {
-            return;
-        }
+  public Feature getFeature(String id) {
+    Feature s = features.get(id);
 
-        J.s(() -> {
-            try {
-                if (!React.instance.isEnabled() || !React.instance.isReady()) {
-                    return;
-                }
-                reconcileFeatureGates();
-            } finally {
-                gateReconcileQueued.set(false);
-            }
-        });
+    s = s == null ? unknown : s;
+
+    if (s == null) {
+      s = new FeatureUnknown();
     }
 
-    @Override
-    public String getName() {
-        return "Feature";
+    return s;
+  }
+
+  public void activateFeature(Feature feature) {
+    if (!React.instance.isEnabled() || !React.instance.isReady()) {
+      return;
     }
 
-    public Feature getFeature(String id) {
-        Feature s = features.get(id);
+    if (!activeFeatures.containsKey(feature.getId())) {
+      activeFeatures.put(feature.getId(), feature);
+      feature.onActivate();
+      if (feature instanceof Listener l) {
+        React.instance.registerListener(l);
+      }
 
-        s = s == null ? unknown : s;
+      if (feature.getTickInterval() > 0) {
+        tickedFeatures.put(feature.getId(), new ReactTickedFeature(feature));
+      }
 
-        if (s == null) {
-            s = new FeatureUnknown();
-        }
+      React.verbose("Activated Feature: " + feature.getName());
+    }
+  }
 
-        return s;
+  public void deactivateFeature(Feature feature) {
+    if (feature instanceof Listener l) {
+      React.instance.unregisterListener(l);
+    }
+    activeFeatures.remove(feature.getId());
+    ReactTickedFeature t = tickedFeatures.remove(feature.getId());
+
+    if (t != null) {
+      t.unregister();
+    }
+    feature.onDeactivate()
+    ;
+    React.verbose("Deactivated Feature: " + feature.getName());
+  }
+
+  @Override
+  public void start() {
+    activeFeatures = new HashMap<>();
+    tickedFeatures = new HashMap<>();
+    features = new Registry<>(Feature.class, "art.arcane.react.content.feature");
+    lastGateReconcileMS = 0L;
+  }
+
+  public void postStart() {
+    React.info("Registered " + features.size() + " Features");
+
+    for (String i : features.ids()) {
+      Feature f = features.get(i);
+
+      if (shouldActivateFeature(f)) {
+        activateFeature(f);
+      } else if (f instanceof CapabilityGatedFeature gated) {
+        React.verbose("Skipped gated feature " + f.getId() + " requires=" + gated.requirementLabel());
+      }
     }
 
-    public void activateFeature(Feature feature) {
-        if (!React.instance.isEnabled() || !React.instance.isReady()) {
-            return;
-        }
+    React.info("Activated " + activeFeatures.size() + " Features");
+  }
 
-        if (!activeFeatures.containsKey(feature.getId())) {
-            activeFeatures.put(feature.getId(), feature);
-            feature.onActivate();
-            if (feature instanceof Listener l) {
-                React.instance.registerListener(l);
-            }
+  @Override
+  public void stop() {
+    new ArrayList<>(activeFeatures.values()).forEach(this::deactivateFeature);
+  }
 
-            if (feature.getTickInterval() > 0) {
-                tickedFeatures.put(feature.getId(), new ReactTickedFeature(feature));
-            }
-
-            React.verbose("Activated Feature: " + feature.getName());
-        }
+  private void reconcileFeatureGates() {
+    if (!React.instance.isEnabled() || !React.instance.isReady()) {
+      return;
     }
 
-    public void deactivateFeature(Feature feature) {
-        if (feature instanceof Listener l) {
-            React.instance.unregisterListener(l);
-        }
-        activeFeatures.remove(feature.getId());
-        ReactTickedFeature t = tickedFeatures.remove(feature.getId());
-
-        if (t != null) {
-            t.unregister();
-        }
-        feature.onDeactivate()
-        ;
-        React.verbose("Deactivated Feature: " + feature.getName());
+    if (features == null || activeFeatures == null) {
+      return;
     }
 
-    @Override
-    public void start() {
-        activeFeatures = new HashMap<>();
-        tickedFeatures = new HashMap<>();
-        features = new Registry<>(Feature.class, "art.arcane.react.content.feature");
-        lastGateReconcileMS = 0L;
+    for (Feature feature : features.all()) {
+      if (feature == null) {
+        continue;
+      }
+
+      boolean active = activeFeatures.containsKey(feature.getId());
+      boolean shouldBeActive = shouldActivateFeature(feature);
+      if (shouldBeActive && !active) {
+        activateFeature(feature);
+        continue;
+      }
+
+      if (!shouldBeActive && active) {
+        deactivateFeature(feature);
+      }
+    }
+  }
+
+  private boolean shouldActivateFeature(Feature feature) {
+    if (feature == null || !feature.isEnabled()) {
+      return false;
     }
 
-    public void postStart() {
-        React.info("Registered " + features.size() + " Features");
-
-        for (String i : features.ids()) {
-            Feature f = features.get(i);
-
-            if (shouldActivateFeature(f)) {
-                activateFeature(f);
-            } else if (f instanceof CapabilityGatedFeature gated) {
-                React.verbose("Skipped gated feature " + f.getId() + " requires=" + gated.requirementLabel());
-            }
-        }
-
-        React.info("Activated " + activeFeatures.size() + " Features");
+    if (!(feature instanceof CapabilityGatedFeature gated)) {
+      return true;
     }
 
-    @Override
-    public void stop() {
-        new ArrayList<>(activeFeatures.values()).forEach(this::deactivateFeature);
+    if (gated.isSecretBundle() && !ReactConfiguration.get().isIntegrationSecretsEnabled()) {
+      return false;
     }
 
-    private void reconcileFeatureGates() {
-        if (!React.instance.isEnabled() || !React.instance.isReady()) {
-            return;
-        }
-
-        if (features == null || activeFeatures == null) {
-            return;
-        }
-
-        for (Feature feature : features.all()) {
-            if (feature == null) {
-                continue;
-            }
-
-            boolean active = activeFeatures.containsKey(feature.getId());
-            boolean shouldBeActive = shouldActivateFeature(feature);
-            if (shouldBeActive && !active) {
-                activateFeature(feature);
-                continue;
-            }
-
-            if (!shouldBeActive && active) {
-                deactivateFeature(feature);
-            }
-        }
+    IntegrationController integration = React.controller(IntegrationController.class);
+    for (String capability : gated.requiredCapabilities()) {
+      if (!IntegrationCapabilitySupport.hasCapability(integration, capability)) {
+        return false;
+      }
     }
 
-    private boolean shouldActivateFeature(Feature feature) {
-        if (feature == null || !feature.isEnabled()) {
-            return false;
-        }
-
-        if (!(feature instanceof CapabilityGatedFeature gated)) {
-            return true;
-        }
-
-        if (gated.isSecretBundle() && !ReactConfiguration.get().isIntegrationSecretsEnabled()) {
-            return false;
-        }
-
-        IntegrationController integration = React.controller(IntegrationController.class);
-        for (String capability : gated.requiredCapabilities()) {
-            if (!IntegrationCapabilitySupport.hasCapability(integration, capability)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
+    return true;
+  }
 }

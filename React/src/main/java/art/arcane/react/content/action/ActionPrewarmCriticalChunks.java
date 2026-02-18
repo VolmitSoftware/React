@@ -27,8 +27,8 @@ import art.arcane.react.core.controller.ActionController;
 import art.arcane.react.core.controller.ObserverController;
 import art.arcane.react.model.SampledChunk;
 import art.arcane.react.model.SampledWorld;
-import art.arcane.volmlib.util.format.Form;
 import art.arcane.react.util.scheduling.J;
+import art.arcane.volmlib.util.format.Form;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -39,346 +39,340 @@ import org.bukkit.Chunk;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 
-import java.util.ArrayList;
-import java.util.ArrayDeque;
-import java.util.Comparator;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @art.arcane.react.util.config.ConfigDescription("Configuration for Prewarm Critical Chunks action. Preloads high-risk chunks and neighbors to reduce stutter spikes.")
 public class ActionPrewarmCriticalChunks extends ReactAction<ActionPrewarmCriticalChunks.Params> {
-    public static final String ID = "action-prewarm-critical-chunks";
-    public static final String SHORT = "apcc";
+  public static final String ID = "action-prewarm-critical-chunks";
+  public static final String SHORT = "apcc";
 
-    public ActionPrewarmCriticalChunks() {
-        super(ID);
+  public ActionPrewarmCriticalChunks() {
+    super(ID);
+  }
+
+  @Override
+  public String getCompletedMessage(ActionTicket<Params> ticket) {
+    Params p = ticket.getParams();
+    return "Prewarmed " + p.getChunksWarmed() + " chunks (" + p.getChunksLoaded() + " newly loaded) in " + Form.duration(ticket.getDuration(), 1);
+  }
+
+  @Override
+  public void workOn(ActionTicket<Params> ticket) {
+    Params params = ticket.getParams();
+    if (!params.isPrepared()) {
+      List<ChunkRef> queue = buildQueue(params);
+      params.setQueue(new ArrayDeque<>(queue == null ? List.of() : queue));
+      params.setChunksWarmed(0);
+      params.setChunksLoaded(0);
+      params.getChunksWarmedAtomic().set(0);
+      params.getChunksLoadedAtomic().set(0);
+      params.getChunksProcessedAtomic().set(0);
+      params.getInFlightChunks().set(0);
+      params.setPrepared(true);
+      ticket.setWork(0);
+      ticket.setTotalWork(Math.max(1, params.getQueue().size()));
     }
 
-    @Override
-    public String getCompletedMessage(ActionTicket<Params> ticket) {
-        Params p = ticket.getParams();
-        return "Prewarmed " + p.getChunksWarmed() + " chunks (" + p.getChunksLoaded() + " newly loaded) in " + Form.duration(ticket.getDuration(), 1);
+    if (J.isFoliaThreading()) {
+      workOnFolia(ticket, params);
+      return;
     }
 
-    @Override
-    public void workOn(ActionTicket<Params> ticket) {
-        Params params = ticket.getParams();
-        if (!params.isPrepared()) {
-            List<ChunkRef> queue = buildQueue(params);
-            params.setQueue(new ArrayDeque<>(queue == null ? List.of() : queue));
-            params.setChunksWarmed(0);
-            params.setChunksLoaded(0);
-            params.getChunksWarmedAtomic().set(0);
-            params.getChunksLoadedAtomic().set(0);
-            params.getChunksProcessedAtomic().set(0);
-            params.getInFlightChunks().set(0);
-            params.setPrepared(true);
-            ticket.setWork(0);
-            ticket.setTotalWork(Math.max(1, params.getQueue().size()));
-        }
-
-        if (J.isFoliaThreading()) {
-            workOnFolia(ticket, params);
-            return;
-        }
-
-        if (params.getQueue().isEmpty()) {
-            ticket.setCount(params.getChunksWarmed());
-            ticket.complete();
-            return;
-        }
-
-        int chunkBudget = J.isFoliaThreading()
-                ? 1
-                : Math.max(1, React.controller(ActionController.class).getActionSpeedMultiplier() / 16);
-        int worked = 0;
-        while (worked < chunkBudget && !params.getQueue().isEmpty()) {
-            ChunkRef target = params.getQueue().pollFirst();
-            if (target == null) {
-                break;
-            }
-            PrewarmResult result = prewarm(target, params);
-            if (result != null && result.warmed()) {
-                params.setChunksWarmed(params.getChunksWarmed() + 1);
-                if (result.newlyLoaded()) {
-                    params.setChunksLoaded(params.getChunksLoaded() + 1);
-                }
-            }
-
-            worked++;
-        }
-
-        ticket.setWork(Math.min(ticket.getTotalWork(), ticket.getWork() + worked));
-        ticket.setCount(params.getChunksWarmed());
-
-        if (params.getQueue().isEmpty()) {
-            ticket.complete();
-        }
+    if (params.getQueue().isEmpty()) {
+      ticket.setCount(params.getChunksWarmed());
+      ticket.complete();
+      return;
     }
 
-    private void workOnFolia(ActionTicket<Params> ticket, Params params) {
-        params.setChunksWarmed(params.getChunksWarmedAtomic().get());
-        params.setChunksLoaded(params.getChunksLoadedAtomic().get());
-        ticket.setCount(params.getChunksWarmed());
-        ticket.setWork(Math.min(ticket.getTotalWork(), params.getChunksProcessedAtomic().get()));
-
-        if (params.getQueue().isEmpty() && params.getInFlightChunks().get() <= 0) {
-            ticket.complete();
-            return;
+    int chunkBudget = J.isFoliaThreading()
+        ? 1
+        : Math.max(1, React.controller(ActionController.class).getActionSpeedMultiplier() / 16);
+    int worked = 0;
+    while (worked < chunkBudget && !params.getQueue().isEmpty()) {
+      ChunkRef target = params.getQueue().pollFirst();
+      if (target == null) {
+        break;
+      }
+      PrewarmResult result = prewarm(target, params);
+      if (result != null && result.warmed()) {
+        params.setChunksWarmed(params.getChunksWarmed() + 1);
+        if (result.newlyLoaded()) {
+          params.setChunksLoaded(params.getChunksLoaded() + 1);
         }
+      }
 
-        int chunkBudget = Math.max(1, React.controller(ActionController.class).getActionSpeedMultiplier() / 8);
-        int maxInFlight = Math.max(4, chunkBudget * 2);
-        int dispatched = 0;
-        while (dispatched < chunkBudget && !params.getQueue().isEmpty() && params.getInFlightChunks().get() < maxInFlight) {
-            ChunkRef target = params.getQueue().pollFirst();
-            if (target == null) {
-                break;
-            }
-
-            dispatchPrewarm(target, params);
-            dispatched++;
-        }
-
-        params.setChunksWarmed(params.getChunksWarmedAtomic().get());
-        params.setChunksLoaded(params.getChunksLoadedAtomic().get());
-        ticket.setCount(params.getChunksWarmed());
-        ticket.setWork(Math.min(ticket.getTotalWork(), params.getChunksProcessedAtomic().get()));
-
-        if (params.getQueue().isEmpty() && params.getInFlightChunks().get() <= 0) {
-            ticket.complete();
-        }
+      worked++;
     }
 
-    @Override
-    public Params getDefaultParams() {
-        return Params.builder().build();
+    ticket.setWork(Math.min(ticket.getTotalWork(), ticket.getWork() + worked));
+    ticket.setCount(params.getChunksWarmed());
+
+    if (params.getQueue().isEmpty()) {
+      ticket.complete();
+    }
+  }
+
+  private void workOnFolia(ActionTicket<Params> ticket, Params params) {
+    params.setChunksWarmed(params.getChunksWarmedAtomic().get());
+    params.setChunksLoaded(params.getChunksLoadedAtomic().get());
+    ticket.setCount(params.getChunksWarmed());
+    ticket.setWork(Math.min(ticket.getTotalWork(), params.getChunksProcessedAtomic().get()));
+
+    if (params.getQueue().isEmpty() && params.getInFlightChunks().get() <= 0) {
+      ticket.complete();
+      return;
     }
 
-    @Override
-    public void onInit() {
+    int chunkBudget = Math.max(1, React.controller(ActionController.class).getActionSpeedMultiplier() / 8);
+    int maxInFlight = Math.max(4, chunkBudget * 2);
+    int dispatched = 0;
+    while (dispatched < chunkBudget && !params.getQueue().isEmpty() && params.getInFlightChunks().get() < maxInFlight) {
+      ChunkRef target = params.getQueue().pollFirst();
+      if (target == null) {
+        break;
+      }
 
+      dispatchPrewarm(target, params);
+      dispatched++;
     }
 
-    private List<ChunkRef> buildQueue(Params params) {
-        if (J.isFoliaThreading()) {
-            return buildQueueSync(params);
-        }
+    params.setChunksWarmed(params.getChunksWarmedAtomic().get());
+    params.setChunksLoaded(params.getChunksLoadedAtomic().get());
+    ticket.setCount(params.getChunksWarmed());
+    ticket.setWork(Math.min(ticket.getTotalWork(), params.getChunksProcessedAtomic().get()));
 
-        return J.sResult(() -> buildQueueSync(params));
+    if (params.getQueue().isEmpty() && params.getInFlightChunks().get() <= 0) {
+      ticket.complete();
+    }
+  }
+
+  @Override
+  public Params getDefaultParams() {
+    return Params.builder().build();
+  }
+
+  @Override
+  public void onInit() {
+
+  }
+
+  private List<ChunkRef> buildQueue(Params params) {
+    if (J.isFoliaThreading()) {
+      return buildQueueSync(params);
     }
 
-    private List<ChunkRef> buildQueueSync(Params params) {
-        Map<ChunkRef, Double> weighted = new HashMap<>();
-        ObserverController observer = React.controller(ObserverController.class);
-        if (observer != null && observer.getSampled() != null) {
-            for (SampledWorld sampledWorld : observer.getSampled().getWorlds().values()) {
-                World world = sampledWorld.getWorld();
-                if (world == null) {
-                    continue;
-                }
+    return J.sResult(() -> buildQueueSync(params));
+  }
 
-                if (params.getWorld() != null && !params.getWorld().isBlank() && !world.getName().equalsIgnoreCase(params.getWorld())) {
-                    continue;
-                }
-
-                for (SampledChunk sampledChunk : sampledWorld.getChunks().values()) {
-                    Chunk chunk = sampledChunk.getChunk();
-                    if (chunk == null || chunk.getWorld() == null) {
-                        continue;
-                    }
-
-                    double score = sampledChunk.totalScore();
-                    if (score <= 0D) {
-                        continue;
-                    }
-
-                    addWeighted(weighted, ChunkRef.of(chunk), score);
-                    for (int dx = -params.getNeighborRadius(); dx <= params.getNeighborRadius(); dx++) {
-                        for (int dz = -params.getNeighborRadius(); dz <= params.getNeighborRadius(); dz++) {
-                            if (dx == 0 && dz == 0) {
-                                continue;
-                            }
-
-                            double dist = Math.sqrt((dx * dx) + (dz * dz));
-                            addWeighted(weighted, new ChunkRef(world.getName(), chunk.getX() + dx, chunk.getZ() + dz), score * (0.7D / (1D + dist)));
-                        }
-                    }
-                }
-            }
-        }
-
-        if (params.isIncludePlayerChunks() && !J.isFoliaThreading()) {
-            for (Player player : Bukkit.getOnlinePlayers()) {
-                World world = player.getWorld();
-                if (world == null) {
-                    continue;
-                }
-
-                if (params.getWorld() != null && !params.getWorld().isBlank() && !world.getName().equalsIgnoreCase(params.getWorld())) {
-                    continue;
-                }
-
-                Chunk origin = player.getLocation().getChunk();
-                for (int dx = -params.getPlayerChunkRadius(); dx <= params.getPlayerChunkRadius(); dx++) {
-                    for (int dz = -params.getPlayerChunkRadius(); dz <= params.getPlayerChunkRadius(); dz++) {
-                        double dist = Math.sqrt((dx * dx) + (dz * dz));
-                        addWeighted(weighted, new ChunkRef(world.getName(), origin.getX() + dx, origin.getZ() + dz), 180D / (1D + dist));
-                    }
-                }
-            }
-        }
-
-        List<Map.Entry<ChunkRef, Double>> sorted = new ArrayList<>(weighted.entrySet());
-        sorted.sort(Map.Entry.<ChunkRef, Double>comparingByValue(Comparator.reverseOrder()));
-
-        int limit = Math.max(1, params.getMaxChunks());
-        List<ChunkRef> refs = new ArrayList<>();
-        for (Map.Entry<ChunkRef, Double> entry : sorted) {
-            refs.add(entry.getKey());
-            if (refs.size() >= limit) {
-                break;
-            }
-        }
-
-        return refs;
-    }
-
-    private void addWeighted(Map<ChunkRef, Double> weighted, ChunkRef ref, double value) {
-        if (value <= 0D) {
-            return;
-        }
-
-        weighted.merge(ref, value, Math::max);
-    }
-
-    private PrewarmResult prewarmSync(ChunkRef ref, Params params) {
-        World world = Bukkit.getWorld(ref.world());
+  private List<ChunkRef> buildQueueSync(Params params) {
+    Map<ChunkRef, Double> weighted = new HashMap<>();
+    ObserverController observer = React.controller(ObserverController.class);
+    if (observer != null && observer.getSampled() != null) {
+      for (SampledWorld sampledWorld : observer.getSampled().getWorlds().values()) {
+        World world = sampledWorld.getWorld();
         if (world == null) {
-            return new PrewarmResult(false, false);
+          continue;
         }
 
-        boolean wasLoaded = world.isChunkLoaded(ref.x(), ref.z());
-        if (!wasLoaded) {
-            world.loadChunk(ref.x(), ref.z(), params.isGenerateMissingChunks());
-            if (!world.isChunkLoaded(ref.x(), ref.z())) {
-                return new PrewarmResult(false, false);
+        if (params.getWorld() != null && !params.getWorld().isBlank() && !world.getName().equalsIgnoreCase(params.getWorld())) {
+          continue;
+        }
+
+        for (SampledChunk sampledChunk : sampledWorld.getChunks().values()) {
+          Chunk chunk = sampledChunk.getChunk();
+          if (chunk == null || chunk.getWorld() == null) {
+            continue;
+          }
+
+          double score = sampledChunk.totalScore();
+          if (score <= 0D) {
+            continue;
+          }
+
+          addWeighted(weighted, ChunkRef.of(chunk), score);
+          for (int dx = -params.getNeighborRadius(); dx <= params.getNeighborRadius(); dx++) {
+            for (int dz = -params.getNeighborRadius(); dz <= params.getNeighborRadius(); dz++) {
+              if (dx == 0 && dz == 0) {
+                continue;
+              }
+
+              double dist = Math.sqrt((dx * dx) + (dz * dz));
+              addWeighted(weighted, new ChunkRef(world.getName(), chunk.getX() + dx, chunk.getZ() + dz), score * (0.7D / (1D + dist)));
             }
+          }
         }
-
-        Chunk chunk = world.getChunkAt(ref.x(), ref.z());
-        if (params.isTouchChunkSnapshot()) {
-            chunk.getChunkSnapshot(false, false, false);
-        }
-
-        // Touching entities helps prime internal chunk/entity structures.
-        chunk.getEntities();
-
-        return new PrewarmResult(true, !wasLoaded);
+      }
     }
 
-    private PrewarmResult prewarm(ChunkRef ref, Params params) {
-        if (!J.isFoliaThreading()) {
-            return J.sResult(() -> prewarmSync(ref, params));
-        }
-
-        World world = Bukkit.getWorld(ref.world());
+    if (params.isIncludePlayerChunks() && !J.isFoliaThreading()) {
+      for (Player player : Bukkit.getOnlinePlayers()) {
+        World world = player.getWorld();
         if (world == null) {
-            return new PrewarmResult(false, false);
+          continue;
         }
 
-        return J.runChunkResult(world, ref.x(), ref.z(), () -> prewarmSync(ref, params), new PrewarmResult(false, false));
-    }
-
-    private void dispatchPrewarm(ChunkRef ref, Params params) {
-        World world = Bukkit.getWorld(ref.world());
-        if (world == null) {
-            params.getChunksProcessedAtomic().incrementAndGet();
-            return;
+        if (params.getWorld() != null && !params.getWorld().isBlank() && !world.getName().equalsIgnoreCase(params.getWorld())) {
+          continue;
         }
 
-        params.getInFlightChunks().incrementAndGet();
-        boolean scheduled = J.runChunk(world, ref.x(), ref.z(), () -> {
-            try {
-                PrewarmResult result = prewarmSync(ref, params);
-                if (result != null && result.warmed()) {
-                    params.getChunksWarmedAtomic().incrementAndGet();
-                    if (result.newlyLoaded()) {
-                        params.getChunksLoadedAtomic().incrementAndGet();
-                    }
-                }
-            } finally {
-                params.getChunksProcessedAtomic().incrementAndGet();
-                params.getInFlightChunks().decrementAndGet();
-            }
-        });
-
-        if (!scheduled) {
-            params.getChunksProcessedAtomic().incrementAndGet();
-            params.getInFlightChunks().decrementAndGet();
+        Chunk origin = player.getLocation().getChunk();
+        for (int dx = -params.getPlayerChunkRadius(); dx <= params.getPlayerChunkRadius(); dx++) {
+          for (int dz = -params.getPlayerChunkRadius(); dz <= params.getPlayerChunkRadius(); dz++) {
+            double dist = Math.sqrt((dx * dx) + (dz * dz));
+            addWeighted(weighted, new ChunkRef(world.getName(), origin.getX() + dx, origin.getZ() + dz), 180D / (1D + dist));
+          }
         }
+      }
     }
 
-    private record ChunkRef(String world, int x, int z) {
-        private static ChunkRef of(Chunk chunk) {
-            return new ChunkRef(chunk.getWorld().getName(), chunk.getX(), chunk.getZ());
+    List<Map.Entry<ChunkRef, Double>> sorted = new ArrayList<>(weighted.entrySet());
+    sorted.sort(Map.Entry.<ChunkRef, Double>comparingByValue(Comparator.reverseOrder()));
+
+    int limit = Math.max(1, params.getMaxChunks());
+    List<ChunkRef> refs = new ArrayList<>();
+    for (Map.Entry<ChunkRef, Double> entry : sorted) {
+      refs.add(entry.getKey());
+      if (refs.size() >= limit) {
+        break;
+      }
+    }
+
+    return refs;
+  }
+
+  private void addWeighted(Map<ChunkRef, Double> weighted, ChunkRef ref, double value) {
+    if (value <= 0D) {
+      return;
+    }
+
+    weighted.merge(ref, value, Math::max);
+  }
+
+  private PrewarmResult prewarmSync(ChunkRef ref, Params params) {
+    World world = Bukkit.getWorld(ref.world());
+    if (world == null) {
+      return new PrewarmResult(false, false);
+    }
+
+    boolean wasLoaded = world.isChunkLoaded(ref.x(), ref.z());
+    if (!wasLoaded) {
+      world.loadChunk(ref.x(), ref.z(), params.isGenerateMissingChunks());
+      if (!world.isChunkLoaded(ref.x(), ref.z())) {
+        return new PrewarmResult(false, false);
+      }
+    }
+
+    Chunk chunk = world.getChunkAt(ref.x(), ref.z());
+    if (params.isTouchChunkSnapshot()) {
+      chunk.getChunkSnapshot(false, false, false);
+    }
+
+    // Touching entities helps prime internal chunk/entity structures.
+    chunk.getEntities();
+
+    return new PrewarmResult(true, !wasLoaded);
+  }
+
+  private PrewarmResult prewarm(ChunkRef ref, Params params) {
+    if (!J.isFoliaThreading()) {
+      return J.sResult(() -> prewarmSync(ref, params));
+    }
+
+    World world = Bukkit.getWorld(ref.world());
+    if (world == null) {
+      return new PrewarmResult(false, false);
+    }
+
+    return J.runChunkResult(world, ref.x(), ref.z(), () -> prewarmSync(ref, params), new PrewarmResult(false, false));
+  }
+
+  private void dispatchPrewarm(ChunkRef ref, Params params) {
+    World world = Bukkit.getWorld(ref.world());
+    if (world == null) {
+      params.getChunksProcessedAtomic().incrementAndGet();
+      return;
+    }
+
+    params.getInFlightChunks().incrementAndGet();
+    boolean scheduled = J.runChunk(world, ref.x(), ref.z(), () -> {
+      try {
+        PrewarmResult result = prewarmSync(ref, params);
+        if (result != null && result.warmed()) {
+          params.getChunksWarmedAtomic().incrementAndGet();
+          if (result.newlyLoaded()) {
+            params.getChunksLoadedAtomic().incrementAndGet();
+          }
         }
-    }
+      } finally {
+        params.getChunksProcessedAtomic().incrementAndGet();
+        params.getInFlightChunks().decrementAndGet();
+      }
+    });
 
-    private record PrewarmResult(boolean warmed, boolean newlyLoaded) {
+    if (!scheduled) {
+      params.getChunksProcessedAtomic().incrementAndGet();
+      params.getInFlightChunks().decrementAndGet();
     }
+  }
 
-    @Builder
-    @Data
-    @Accessors(chain = true)
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class Params implements ActionParams {
-        @art.arcane.react.util.config.ConfigDoc(value = "World name filter for prewarm critical chunks operations.", impact = "Set a world name to scope actions there, or leave blank to include all worlds.")
-        private String world;
-        @Builder.Default
-        @art.arcane.react.util.config.ConfigDoc(value = "Maximum chunks allowed by prewarm critical chunks.", impact = "Higher values allow more throughput before intervention; lower values make mitigation more aggressive.")
-        private int maxChunks = 40;
-        @Builder.Default
-        @art.arcane.react.util.config.ConfigDoc(value = "Neighbor radius used by prewarm critical chunks (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
-        private int neighborRadius = 1;
-        @Builder.Default
-        @art.arcane.react.util.config.ConfigDoc(value = "Includes player chunks in prewarm critical chunks processing.", impact = "Enable this to add those targets to processing; disable it to leave them out.")
-        private boolean includePlayerChunks = true;
-        @Builder.Default
-        @art.arcane.react.util.config.ConfigDoc(value = "Player chunk radius used by prewarm critical chunks (chunks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
-        private int playerChunkRadius = 1;
-        @Builder.Default
-        @art.arcane.react.util.config.ConfigDoc(value = "Controls whether prewarm critical chunks applies generate missing chunks.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
-        private boolean generateMissingChunks = true;
-        @Builder.Default
-        @art.arcane.react.util.config.ConfigDoc(value = "Controls whether prewarm critical chunks applies touch chunk snapshot.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
-        private boolean touchChunkSnapshot = true;
-        @Builder.Default
-        private transient boolean prepared = false;
-        @Builder.Default
-        private transient Deque<ChunkRef> queue = new ArrayDeque<>();
-        @Builder.Default
-        private transient int chunksWarmed = 0;
-        @Builder.Default
-        private transient int chunksLoaded = 0;
-        @Builder.Default
-        private transient AtomicInteger inFlightChunks = new AtomicInteger(0);
-        @Builder.Default
-        private transient AtomicInteger chunksWarmedAtomic = new AtomicInteger(0);
-        @Builder.Default
-        private transient AtomicInteger chunksLoadedAtomic = new AtomicInteger(0);
-        @Builder.Default
-        private transient AtomicInteger chunksProcessedAtomic = new AtomicInteger(0);
-
-        public Params withWorld(World world) {
-            if (world != null) {
-                this.world = world.getName();
-            }
-            return this;
-        }
+  private record ChunkRef(String world, int x, int z) {
+    private static ChunkRef of(Chunk chunk) {
+      return new ChunkRef(chunk.getWorld().getName(), chunk.getX(), chunk.getZ());
     }
+  }
+
+  private record PrewarmResult(boolean warmed, boolean newlyLoaded) {
+  }
+
+  @Builder
+  @Data
+  @Accessors(chain = true)
+  @AllArgsConstructor
+  @NoArgsConstructor
+  public static class Params implements ActionParams {
+    @art.arcane.react.util.config.ConfigDoc(value = "World name filter for prewarm critical chunks operations.", impact = "Set a world name to scope actions there, or leave blank to include all worlds.")
+    private String world;
+    @Builder.Default
+    @art.arcane.react.util.config.ConfigDoc(value = "Maximum chunks allowed by prewarm critical chunks.", impact = "Higher values allow more throughput before intervention; lower values make mitigation more aggressive.")
+    private int maxChunks = 40;
+    @Builder.Default
+    @art.arcane.react.util.config.ConfigDoc(value = "Neighbor radius used by prewarm critical chunks (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
+    private int neighborRadius = 1;
+    @Builder.Default
+    @art.arcane.react.util.config.ConfigDoc(value = "Includes player chunks in prewarm critical chunks processing.", impact = "Enable this to add those targets to processing; disable it to leave them out.")
+    private boolean includePlayerChunks = true;
+    @Builder.Default
+    @art.arcane.react.util.config.ConfigDoc(value = "Player chunk radius used by prewarm critical chunks (chunks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
+    private int playerChunkRadius = 1;
+    @Builder.Default
+    @art.arcane.react.util.config.ConfigDoc(value = "Controls whether prewarm critical chunks applies generate missing chunks.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
+    private boolean generateMissingChunks = true;
+    @Builder.Default
+    @art.arcane.react.util.config.ConfigDoc(value = "Controls whether prewarm critical chunks applies touch chunk snapshot.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
+    private boolean touchChunkSnapshot = true;
+    @Builder.Default
+    private transient boolean prepared = false;
+    @Builder.Default
+    private transient Deque<ChunkRef> queue = new ArrayDeque<>();
+    @Builder.Default
+    private transient int chunksWarmed = 0;
+    @Builder.Default
+    private transient int chunksLoaded = 0;
+    @Builder.Default
+    private transient AtomicInteger inFlightChunks = new AtomicInteger(0);
+    @Builder.Default
+    private transient AtomicInteger chunksWarmedAtomic = new AtomicInteger(0);
+    @Builder.Default
+    private transient AtomicInteger chunksLoadedAtomic = new AtomicInteger(0);
+    @Builder.Default
+    private transient AtomicInteger chunksProcessedAtomic = new AtomicInteger(0);
+
+    public Params withWorld(World world) {
+      if (world != null) {
+        this.world = world.getName();
+      }
+      return this;
+    }
+  }
 }

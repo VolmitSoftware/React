@@ -33,87 +33,87 @@ import java.util.Iterator;
 import java.util.Map;
 
 abstract class SamplerChunkEventDurationBase extends ReactCachedSampler implements Listener {
-    private final RollingSequence average;
-    private final Map<Integer, Long> starts;
-    private final Map<Integer, Long> startCreated;
-    private int maxHistory = 48;
-    private int staleStartMS = 10000;
+  private final RollingSequence average;
+  private final Map<Integer, Long> starts;
+  private final Map<Integer, Long> startCreated;
+  private int maxHistory = 48;
+  private int staleStartMS = 10000;
 
-    protected SamplerChunkEventDurationBase(String id) {
-        super(id, 1000);
-        this.average = new RollingSequence(maxHistory);
-        this.starts = new HashMap<>();
-        this.startCreated = new HashMap<>();
+  protected SamplerChunkEventDurationBase(String id) {
+    super(id, 1000);
+    this.average = new RollingSequence(maxHistory);
+    this.starts = new HashMap<>();
+    this.startCreated = new HashMap<>();
+  }
+
+  @Override
+  public Material getIcon() {
+    return Material.COMPASS;
+  }
+
+  @EventHandler(priority = EventPriority.LOWEST)
+  public void onStart(ChunkLoadEvent event) {
+    if (!include(event)) {
+      return;
     }
 
-    @Override
-    public Material getIcon() {
-        return Material.COMPASS;
+    int key = System.identityHashCode(event);
+    long now = System.currentTimeMillis();
+    synchronized (starts) {
+      starts.put(key, System.nanoTime());
+      startCreated.put(key, now);
+    }
+  }
+
+  @EventHandler(priority = EventPriority.MONITOR)
+  public void onEnd(ChunkLoadEvent event) {
+    if (!include(event)) {
+      return;
     }
 
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onStart(ChunkLoadEvent event) {
-        if (!include(event)) {
-            return;
-        }
-
-        int key = System.identityHashCode(event);
-        long now = System.currentTimeMillis();
-        synchronized (starts) {
-            starts.put(key, System.nanoTime());
-            startCreated.put(key, now);
-        }
+    int key = System.identityHashCode(event);
+    Long started;
+    synchronized (starts) {
+      started = starts.remove(key);
+      startCreated.remove(key);
     }
 
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void onEnd(ChunkLoadEvent event) {
-        if (!include(event)) {
-            return;
-        }
-
-        int key = System.identityHashCode(event);
-        Long started;
-        synchronized (starts) {
-            started = starts.remove(key);
-            startCreated.remove(key);
-        }
-
-        if (started == null) {
-            return;
-        }
-
-        double durationMS = Math.max(0D, (System.nanoTime() - started) / 1_000_000D);
-        getChunkCounter(event.getChunk()).addAndGet(durationMS);
-        synchronized (average) {
-            average.put(durationMS);
-        }
+    if (started == null) {
+      return;
     }
 
-    @Override
-    public double onSample() {
-        cleanupStarts(System.currentTimeMillis());
-        synchronized (average) {
-            return average.getAverage();
+    double durationMS = Math.max(0D, (System.nanoTime() - started) / 1_000_000D);
+    getChunkCounter(event.getChunk()).addAndGet(durationMS);
+    synchronized (average) {
+      average.put(durationMS);
+    }
+  }
+
+  @Override
+  public double onSample() {
+    cleanupStarts(System.currentTimeMillis());
+    synchronized (average) {
+      return average.getAverage();
+    }
+  }
+
+  private void cleanupStarts(long now) {
+    synchronized (starts) {
+      Iterator<Map.Entry<Integer, Long>> iterator = startCreated.entrySet().iterator();
+      while (iterator.hasNext()) {
+        Map.Entry<Integer, Long> entry = iterator.next();
+        if (now - entry.getValue() > staleStartMS) {
+          starts.remove(entry.getKey());
+          iterator.remove();
         }
+      }
     }
+  }
 
-    private void cleanupStarts(long now) {
-        synchronized (starts) {
-            Iterator<Map.Entry<Integer, Long>> iterator = startCreated.entrySet().iterator();
-            while (iterator.hasNext()) {
-                Map.Entry<Integer, Long> entry = iterator.next();
-                if (now - entry.getValue() > staleStartMS) {
-                    starts.remove(entry.getKey());
-                    iterator.remove();
-                }
-            }
-        }
-    }
+  protected abstract boolean include(ChunkLoadEvent event);
 
-    protected abstract boolean include(ChunkLoadEvent event);
-
-    @Override
-    public String formattedValue(double t) {
-        return Form.f(t, 2);
-    }
+  @Override
+  public String formattedValue(double t) {
+    return Form.f(t, 2);
+  }
 }

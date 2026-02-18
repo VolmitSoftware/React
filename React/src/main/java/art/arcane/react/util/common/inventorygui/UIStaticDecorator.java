@@ -19,23 +19,21 @@
 
 package art.arcane.react.util.inventorygui;
 
-import art.arcane.volmlib.util.inventorygui.WindowDecorator;
-
-import art.arcane.volmlib.util.inventorygui.Element;
-
 import art.arcane.volmlib.util.data.MaterialBlock;
+import art.arcane.volmlib.util.inventorygui.Element;
+import art.arcane.volmlib.util.inventorygui.WindowDecorator;
 import org.bukkit.Material;
 
 @SuppressWarnings("ClassCanBeRecord")
 public class UIStaticDecorator implements WindowDecorator {
-    private final Element element;
+  private final Element element;
 
-    public UIStaticDecorator(Element element) {
-        this.element = element == null ? new art.arcane.volmlib.util.inventorygui.UIElement("bg").setMaterial(new MaterialBlock(Material.AIR)) : element;
-    }
+  public UIStaticDecorator(Element element) {
+    this.element = element == null ? new art.arcane.volmlib.util.inventorygui.UIElement("bg").setMaterial(new MaterialBlock(Material.AIR)) : element;
+  }
 
-    @Override
-    public Element onDecorateBackground(art.arcane.volmlib.util.inventorygui.Window window, int position, int row) {
-        return element;
-    }
+  @Override
+  public Element onDecorateBackground(art.arcane.volmlib.util.inventorygui.Window window, int position, int row) {
+    return element;
+  }
 }

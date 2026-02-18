@@ -31,13 +31,13 @@ import java.util.stream.Collectors;
 @Data
 @Builder
 public class MonitorConfiguration {
-    @Singular
-    private List<MonitorGroup> groups;
+  @Singular
+  private List<MonitorGroup> groups;
 
-    public List<Sampler> getAllSamplers() {
-        return groups.stream()
-                .flatMap(group -> group.getSamplers().stream())
-                .map(i -> (Sampler) React.sampler(i))
-                .collect(Collectors.toList());
-    }
+  public List<Sampler> getAllSamplers() {
+    return groups.stream()
+        .flatMap(group -> group.getSamplers().stream())
+        .map(i -> (Sampler) React.sampler(i))
+        .collect(Collectors.toList());
+  }
 }

@@ -25,71 +25,71 @@ import art.arcane.volmlib.util.math.RollingSequence;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class ReactCachedRateSampler extends ReactCachedSampler {
-    private static final double D1_OVER_SECONDS = 1.0 / 1000D;
-    private transient AtomicInteger hits;
-    private transient RollingSequence avg;
-    private transient long lastHit = 0L;
-    private transient long lastSample = 0L;
-    private int rollingAverageSamples = 5;
+  private static final double D1_OVER_SECONDS = 1.0 / 1000D;
+  private transient AtomicInteger hits;
+  private transient RollingSequence avg;
+  private transient long lastHit = 0L;
+  private transient long lastSample = 0L;
+  private int rollingAverageSamples = 5;
 
-    public ReactCachedRateSampler(String id, long sampleDelay) {
-        super(id, sampleDelay);
+  public ReactCachedRateSampler(String id, long sampleDelay) {
+    super(id, sampleDelay);
+  }
+
+  @Override
+  public double onSample() {
+    if (hits == null || avg == null) {
+      return 0D;
     }
 
-    @Override
-    public double onSample() {
-        if (hits == null || avg == null) {
-            return 0D;
-        }
-
-        if (lastSample == 0) {
-            lastSample = M.ms();
-        }
-
-        long t = M.ms();
-
-        if (t - lastHit > sampleDelay) {
-            avg.put(0);
-            lastHit = t;
-        }
-
-        int r = hits.getAndSet(0);
-        long dur = Math.max(M.ms() - lastSample, 1000);
-        lastSample = t;
-        avg.put(r / (dur * D1_OVER_SECONDS));
-
-        return Math.max(0, avg.getAverage());
+    if (lastSample == 0) {
+      lastSample = M.ms();
     }
 
-    @Override
-    public void start() {
-        super.start();
-        avg = new RollingSequence(rollingAverageSamples);
-        hits = new AtomicInteger(0);
-        lastHit = 0L;
-        lastSample = 0L;
+    long t = M.ms();
+
+    if (t - lastHit > sampleDelay) {
+      avg.put(0);
+      lastHit = t;
     }
 
-    @Override
-    public void stop() {
-        super.stop();
-        avg = null;
-        hits = null;
-        lastHit = 0L;
-        lastSample = 0L;
-    }
+    int r = hits.getAndSet(0);
+    long dur = Math.max(M.ms() - lastSample, 1000);
+    lastSample = t;
+    avg.put(r / (dur * D1_OVER_SECONDS));
 
-    public void increment(int amount) {
-        AtomicInteger local = hits;
-        if (local != null) {
-            local.addAndGet(amount);
-        }
-    }
+    return Math.max(0, avg.getAverage());
+  }
 
-    public void increment() {
-        AtomicInteger local = hits;
-        if (local != null) {
-            local.incrementAndGet();
-        }
+  @Override
+  public void start() {
+    super.start();
+    avg = new RollingSequence(rollingAverageSamples);
+    hits = new AtomicInteger(0);
+    lastHit = 0L;
+    lastSample = 0L;
+  }
+
+  @Override
+  public void stop() {
+    super.stop();
+    avg = null;
+    hits = null;
+    lastHit = 0L;
+    lastSample = 0L;
+  }
+
+  public void increment(int amount) {
+    AtomicInteger local = hits;
+    if (local != null) {
+      local.addAndGet(amount);
     }
+  }
+
+  public void increment() {
+    AtomicInteger local = hits;
+    if (local != null) {
+      local.incrementAndGet();
+    }
+  }
 }

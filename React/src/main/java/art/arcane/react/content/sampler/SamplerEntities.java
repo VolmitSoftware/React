@@ -22,8 +22,8 @@ package art.arcane.react.content.sampler;
 import art.arcane.chrono.ChronoLatch;
 import art.arcane.react.React;
 import art.arcane.react.api.sampler.ReactCachedSampler;
-import art.arcane.volmlib.util.format.Form;
 import art.arcane.react.util.scheduling.J;
+import art.arcane.volmlib.util.format.Form;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
@@ -50,135 +50,135 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class SamplerEntities extends ReactCachedSampler implements Listener {
-    public static final String ID = "entities";
-    @Getter
-    private transient final AtomicInteger entities;
-    private transient ChronoLatch realEntityUpdate;
-    private int realityCheckMS = 10000;
+  public static final String ID = "entities";
+  @Getter
+  private transient final AtomicInteger entities;
+  private transient ChronoLatch realEntityUpdate;
+  private int realityCheckMS = 10000;
 
-    public SamplerEntities() {
-        super(ID, 50);
-        entities = new AtomicInteger(0);
-        realEntityUpdate = new ChronoLatch(realityCheckMS);
+  public SamplerEntities() {
+    super(ID, 50);
+    entities = new AtomicInteger(0);
+    realEntityUpdate = new ChronoLatch(realityCheckMS);
+  }
+
+  @Override
+  public Material getIcon() {
+    return Material.CHICKEN_SPAWN_EGG;
+  }
+
+  public int getRealCheck() {
+    if (J.isFoliaThreading()) {
+      return getFoliaApproximateRealCheck();
     }
 
-    @Override
-    public Material getIcon() {
-        return Material.CHICKEN_SPAWN_EGG;
+    return executeSync(() -> {
+      int m = 0;
+      for (World i : Bukkit.getWorlds()) {
+        for (Chunk j : i.getLoadedChunks()) {
+          m += j.getEntities().length;
+          getChunkCounter(j).set(j.getEntities().length);
+        }
+      }
+
+      return m;
+    });
+  }
+
+  private int getFoliaApproximateRealCheck() {
+    List<Player> players = new ArrayList<>(Bukkit.getOnlinePlayers());
+    if (players.isEmpty()) {
+      return Math.max(0, entities.get());
     }
 
-    public int getRealCheck() {
-        if (J.isFoliaThreading()) {
-            return getFoliaApproximateRealCheck();
-        }
-
-        return executeSync(() -> {
-            int m = 0;
-            for (World i : Bukkit.getWorlds()) {
-                for (Chunk j : i.getLoadedChunks()) {
-                    m += j.getEntities().length;
-                    getChunkCounter(j).set(j.getEntities().length);
-                }
-            }
-
-            return m;
-        });
-    }
-
-    private int getFoliaApproximateRealCheck() {
-        List<Player> players = new ArrayList<>(Bukkit.getOnlinePlayers());
-        if (players.isEmpty()) {
-            return Math.max(0, entities.get());
-        }
-
-        Set<UUID> seen = ConcurrentHashMap.newKeySet();
-        CountDownLatch latch = new CountDownLatch(players.size());
-        for (Player player : players) {
-            boolean scheduled = J.runEntity(player, () -> {
-                try {
-                    if (player == null || !player.isOnline() || !J.isOwnedByCurrentRegion(player)) {
-                        return;
-                    }
-
-                    for (org.bukkit.entity.Entity entity : player.getNearbyEntities(96, 64, 96)) {
-                        seen.add(entity.getUniqueId());
-                    }
-                } finally {
-                    latch.countDown();
-                }
-            });
-
-            if (!scheduled) {
-                latch.countDown();
-            }
-        }
-
+    Set<UUID> seen = ConcurrentHashMap.newKeySet();
+    CountDownLatch latch = new CountDownLatch(players.size());
+    for (Player player : players) {
+      boolean scheduled = J.runEntity(player, () -> {
         try {
-            latch.await(250, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException ex) {
-            Thread.currentThread().interrupt();
-            React.verbose("SamplerEntities wait interrupted while gathering Folia approximation.");
+          if (player == null || !player.isOnline() || !J.isOwnedByCurrentRegion(player)) {
+            return;
+          }
+
+          for (org.bukkit.entity.Entity entity : player.getNearbyEntities(96, 64, 96)) {
+            seen.add(entity.getUniqueId());
+          }
+        } finally {
+          latch.countDown();
         }
+      });
 
-        return seen.size();
+      if (!scheduled) {
+        latch.countDown();
+      }
     }
 
-    @Override
-    public void start() {
-        super.start();
-        realEntityUpdate = new ChronoLatch(realityCheckMS);
+    try {
+      latch.await(250, TimeUnit.MILLISECONDS);
+    } catch (InterruptedException ex) {
+      Thread.currentThread().interrupt();
+      React.verbose("SamplerEntities wait interrupted while gathering Folia approximation.");
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void on(EntitySpawnEvent e) {
-        entities.incrementAndGet();
-        getChunkCounter(e.getEntity().getLocation().getChunk()).addAndGet(1D);
+    return seen.size();
+  }
+
+  @Override
+  public void start() {
+    super.start();
+    realEntityUpdate = new ChronoLatch(realityCheckMS);
+  }
+
+  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+  public void on(EntitySpawnEvent e) {
+    entities.incrementAndGet();
+    getChunkCounter(e.getEntity().getLocation().getChunk()).addAndGet(1D);
+  }
+
+  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+  public void on(ChunkLoadEvent e) {
+    entities.addAndGet(e.getChunk().getEntities().length);
+    getChunkCounter(e.getChunk()).addAndGet(e.getChunk().getEntities().length);
+  }
+
+  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+  public void on(ItemMergeEvent e) {
+    entities.addAndGet(-1);
+    getChunkCounter(e.getEntity().getLocation().getChunk()).addAndGet(-1D);
+  }
+
+  @EventHandler(priority = EventPriority.MONITOR)
+  public void on(ChunkUnloadEvent e) {
+    entities.addAndGet(-e.getChunk().getEntities().length);
+  }
+
+  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+  public void on(WorldUnloadEvent e) {
+    entities.set(Math.max(0, entities.get()));
+  }
+
+  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+  public void on(EntityDeathEvent e) {
+    entities.decrementAndGet();
+    getChunkCounter(e.getEntity().getLocation().getChunk()).addAndGet(-1D);
+  }
+
+  @Override
+  public double onSample() {
+    if (realEntityUpdate.flip() || entities.get() < 0) {
+      J.a(() -> entities.set(getRealCheck()));
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void on(ChunkLoadEvent e) {
-        entities.addAndGet(e.getChunk().getEntities().length);
-        getChunkCounter(e.getChunk()).addAndGet(e.getChunk().getEntities().length);
-    }
+    return entities.get();
+  }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void on(ItemMergeEvent e) {
-        entities.addAndGet(-1);
-        getChunkCounter(e.getEntity().getLocation().getChunk()).addAndGet(-1D);
-    }
+  @Override
+  public String formattedValue(double t) {
+    return Form.f(Math.round(t));
+  }
 
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void on(ChunkUnloadEvent e) {
-        entities.addAndGet(-e.getChunk().getEntities().length);
-    }
-
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void on(WorldUnloadEvent e) {
-        entities.set(Math.max(0, entities.get()));
-    }
-
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void on(EntityDeathEvent e) {
-        entities.decrementAndGet();
-        getChunkCounter(e.getEntity().getLocation().getChunk()).addAndGet(-1D);
-    }
-
-    @Override
-    public double onSample() {
-        if (realEntityUpdate.flip() || entities.get() < 0) {
-            J.a(() -> entities.set(getRealCheck()));
-        }
-
-        return entities.get();
-    }
-
-    @Override
-    public String formattedValue(double t) {
-        return Form.f(Math.round(t));
-    }
-
-    @Override
-    public String formattedSuffix(double t) {
-        return "ENT";
-    }
+  @Override
+  public String formattedSuffix(double t) {
+    return "ENT";
+  }
 }

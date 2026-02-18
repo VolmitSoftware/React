@@ -29,40 +29,40 @@ import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 
 @art.arcane.react.util.config.ConfigDescription("Configuration for Reload Confirm tweak. Rewrites `/reload` to `/reload confirm` for privileged users to prevent accidental unsafe reloads.")
 public class TweakReloadConfirm extends ReactTweak implements Listener {
-    public static final String ID = "reload-confirm";
+  public static final String ID = "reload-confirm";
 
 
-    public TweakReloadConfirm() {
-        super(ID);
+  public TweakReloadConfirm() {
+    super(ID);
+  }
+
+  @EventHandler
+  public void on(PlayerCommandPreprocessEvent event) {
+    String command = event.getMessage().split(" ")[0];
+    if (command.equalsIgnoreCase("/reload")) {
+      Player player = event.getPlayer();
+      CommandSender sender = event.getPlayer();
+      if (player.isOp() || player.hasPermission("*")) {
+        React.info("Reloading the server with the Shorthand!");
+        event.setMessage("/reload confirm");
+      }
     }
-
-    @EventHandler
-    public void on(PlayerCommandPreprocessEvent event) {
-        String command = event.getMessage().split(" ")[0];
-        if (command.equalsIgnoreCase("/reload")) {
-            Player player = event.getPlayer();
-            CommandSender sender = event.getPlayer();
-            if (player.isOp() || player.hasPermission("*")) {
-                React.info("Reloading the server with the Shorthand!");
-                event.setMessage("/reload confirm");
-            }
-        }
-    }
+  }
 
 
-    @Override
-    public void onActivate() {
-    }
+  @Override
+  public void onActivate() {
+  }
 
-    public void onDeactivate() {
-    }
+  public void onDeactivate() {
+  }
 
-    @Override
-    public int getTickInterval() {
-        return -1;
-    }
+  @Override
+  public int getTickInterval() {
+    return -1;
+  }
 
-    @Override
-    public void onTick() {
-    }
+  @Override
+  public void onTick() {
+  }
 }

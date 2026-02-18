@@ -36,85 +36,85 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class TweakController extends TickedObject implements IController {
-    private transient Registry<Tweak> tweaks;
-    private transient Map<String, Tweak> activeTweaks;
-    private transient Map<String, ReactTickedTweak> tickedTweaks;
+  private transient Registry<Tweak> tweaks;
+  private transient Map<String, Tweak> activeTweaks;
+  private transient Map<String, ReactTickedTweak> tickedTweaks;
 
-    private Tweak unknown;
+  private Tweak unknown;
 
-    public TweakController() {
-        super("react", "tweak", 50);
+  public TweakController() {
+    super("react", "tweak", 50);
+  }
+
+  @Override
+  public void onTick() {
+
+  }
+
+  @Override
+  public String getName() {
+    return "Tweaks";
+  }
+
+  public Tweak getTweak(String id) {
+    return tweaks.get(id);
+  }
+
+  public void activateTweak(Tweak tweak) {
+    if (!activeTweaks.containsKey(tweak.getId())) {
+      activeTweaks.put(tweak.getId(), tweak);
+      tweak.onActivate();
+      if (tweak instanceof Listener l) {
+        React.instance.registerListener(l);
+      }
+
+      if (tweak.getTickInterval() > 0) {
+        tickedTweaks.put(tweak.getId(), new ReactTickedTweak(tweak));
+      }
+
+      React.verbose("Activated Tweak: " + tweak.getName());
+    }
+  }
+
+  public void deactivateTweak(Tweak tweak) {
+    activeTweaks.remove(tweak.getId());
+    ReactTickedTweak t = tickedTweaks.remove(tweak.getId());
+
+    if (t != null) {
+      t.unregister();
     }
 
-    @Override
-    public void onTick() {
-
+    if (tweak instanceof Listener l) {
+      React.instance.unregisterListener(l);
     }
 
-    @Override
-    public String getName() {
-        return "Tweaks";
+    tweak.onDeactivate();
+    React.verbose("Deactivated Tweak: " + tweak.getName());
+  }
+
+  @Override
+  public void start() {
+    activeTweaks = new HashMap<>();
+    tickedTweaks = new HashMap<>();
+    tweaks = new Registry<>(Tweak.class, "art.arcane.react.content.tweak");
+  }
+
+  public void postStart() {
+    React.info("Registered " + tweaks.size() + " Tweaks");
+
+    for (String i : tweaks.ids()) {
+      Tweak f = tweaks.get(i);
+
+      if (f.isEnabled()) {
+        activateTweak(f);
+      }
     }
 
-    public Tweak getTweak(String id) {
-        return tweaks.get(id);
-    }
+    React.info("Activated " + activeTweaks.size() + " Tweaks");
+  }
 
-    public void activateTweak(Tweak tweak) {
-        if (!activeTweaks.containsKey(tweak.getId())) {
-            activeTweaks.put(tweak.getId(), tweak);
-            tweak.onActivate();
-            if (tweak instanceof Listener l) {
-                React.instance.registerListener(l);
-            }
-
-            if (tweak.getTickInterval() > 0) {
-                tickedTweaks.put(tweak.getId(), new ReactTickedTweak(tweak));
-            }
-
-            React.verbose("Activated Tweak: " + tweak.getName());
-        }
-    }
-
-    public void deactivateTweak(Tweak tweak) {
-        activeTweaks.remove(tweak.getId());
-        ReactTickedTweak t = tickedTweaks.remove(tweak.getId());
-
-        if (t != null) {
-            t.unregister();
-        }
-
-        if (tweak instanceof Listener l) {
-            React.instance.unregisterListener(l);
-        }
-
-        tweak.onDeactivate();
-        React.verbose("Deactivated Tweak: " + tweak.getName());
-    }
-
-    @Override
-    public void start() {
-        activeTweaks = new HashMap<>();
-        tickedTweaks = new HashMap<>();
-        tweaks = new Registry<>(Tweak.class, "art.arcane.react.content.tweak");
-    }
-
-    public void postStart() {
-        React.info("Registered " + tweaks.size() + " Tweaks");
-
-        for (String i : tweaks.ids()) {
-            Tweak f = tweaks.get(i);
-
-            if (f.isEnabled()) {
-                activateTweak(f);
-            }
-        }
-
-        React.info("Activated " + activeTweaks.size() + " Tweaks");
-    }
-
-    @Override
-    public void stop() {
-        new ArrayList<>(activeTweaks.values()).forEach(this::deactivateTweak);
-    }
+  @Override
+  public void stop() {
+    new ArrayList<>(activeTweaks.values()).forEach(this::deactivateTweak);
+  }
 }

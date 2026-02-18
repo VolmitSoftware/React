@@ -27,54 +27,54 @@ import art.arcane.volmlib.integration.IntegrationMetricSchema;
 import java.util.List;
 
 public class RendererIrisMetrics extends RendererIntegrationMetricsBase {
-    public static final String ID = "iris-metrics";
+  public static final String ID = "iris-metrics";
 
-    private static final MetricLine METRIC_QUEUE = new MetricLine(IntegrationMetricSchema.IRIS_PREGEN_QUEUE, "Queue", 0, " ch");
-    private static final MetricLine METRIC_STREAM = new MetricLine(IntegrationMetricSchema.IRIS_CHUNK_STREAM_MS, "Stream", 2, " ms");
-    private static final List<MetricLine> METRICS_IDLE = List.of(METRIC_QUEUE);
-    private static final List<MetricLine> METRICS_PREGEN = List.of(METRIC_QUEUE, METRIC_STREAM);
+  private static final MetricLine METRIC_QUEUE = new MetricLine(IntegrationMetricSchema.IRIS_PREGEN_QUEUE, "Queue", 0, " ch");
+  private static final MetricLine METRIC_STREAM = new MetricLine(IntegrationMetricSchema.IRIS_CHUNK_STREAM_MS, "Stream", 2, " ms");
+  private static final List<MetricLine> METRICS_IDLE = List.of(METRIC_QUEUE);
+  private static final List<MetricLine> METRICS_PREGEN = List.of(METRIC_QUEUE, METRIC_STREAM);
 
-    @Override
-    public String getId() {
-        return ID;
+  @Override
+  public String getId() {
+    return ID;
+  }
+
+  @Override
+  protected String pluginId() {
+    return "iris";
+  }
+
+  @Override
+  protected String title() {
+    return "Iris Metrics";
+  }
+
+  @Override
+  protected TinyColor backgroundColor() {
+    return new TinyColor(10, 22, 18);
+  }
+
+  @Override
+  protected TinyColor accentColor() {
+    return new TinyColor(55, 145, 100);
+  }
+
+  @Override
+  protected List<MetricLine> metricLines() {
+    return isPregenActive() ? METRICS_PREGEN : METRICS_IDLE;
+  }
+
+  private boolean isPregenActive() {
+    IntegrationController controller = React.controller(IntegrationController.class);
+    if (controller == null || controller.getRemoteSamplerBridge() == null) {
+      return false;
     }
 
-    @Override
-    protected String pluginId() {
-        return "iris";
+    var bridge = controller.getRemoteSamplerBridge();
+    if (!bridge.isAvailable("iris", IntegrationMetricSchema.IRIS_PREGEN_QUEUE)) {
+      return false;
     }
 
-    @Override
-    protected String title() {
-        return "Iris Metrics";
-    }
-
-    @Override
-    protected TinyColor backgroundColor() {
-        return new TinyColor(10, 22, 18);
-    }
-
-    @Override
-    protected TinyColor accentColor() {
-        return new TinyColor(55, 145, 100);
-    }
-
-    @Override
-    protected List<MetricLine> metricLines() {
-        return isPregenActive() ? METRICS_PREGEN : METRICS_IDLE;
-    }
-
-    private boolean isPregenActive() {
-        IntegrationController controller = React.controller(IntegrationController.class);
-        if (controller == null || controller.getRemoteSamplerBridge() == null) {
-            return false;
-        }
-
-        var bridge = controller.getRemoteSamplerBridge();
-        if (!bridge.isAvailable("iris", IntegrationMetricSchema.IRIS_PREGEN_QUEUE)) {
-            return false;
-        }
-
-        return bridge.valueOr("iris", IntegrationMetricSchema.IRIS_PREGEN_QUEUE, 0D) > 0D;
-    }
+    return bridge.valueOr("iris", IntegrationMetricSchema.IRIS_PREGEN_QUEUE, 0D) > 0D;
+  }
 }

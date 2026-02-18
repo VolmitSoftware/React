@@ -26,79 +26,79 @@ import art.arcane.react.util.scheduling.TickedObject;
 import java.util.concurrent.atomic.AtomicLong;
 
 public abstract class ReactTickedSampler extends TickedObject implements Sampler {
-    private transient final RollingSequence ssequence;
-    private transient final AtomicLong slastSample;
-    private transient final long sactiveInterval;
-    private transient boolean ssleeping;
-    private transient boolean sregistered;
+  private transient final RollingSequence ssequence;
+  private transient final AtomicLong slastSample;
+  private transient final long sactiveInterval;
+  private transient boolean ssleeping;
+  private transient boolean sregistered;
 
-    public ReactTickedSampler(String id, long tickInterval, int memory) {
-        super("sampler", id, tickInterval);
-        this.ssequence = new RollingSequence(memory);
-        this.sactiveInterval = tickInterval;
-        this.slastSample = new AtomicLong(0);
-        this.ssleeping = true;
-        this.sregistered = true;
+  public ReactTickedSampler(String id, long tickInterval, int memory) {
+    super("sampler", id, tickInterval);
+    this.ssequence = new RollingSequence(memory);
+    this.sactiveInterval = tickInterval;
+    this.slastSample = new AtomicLong(0);
+    this.ssleeping = true;
+    this.sregistered = true;
+  }
+
+  @Override
+  public void start() {
+    if (sregistered) {
+      return;
     }
 
-    @Override
-    public void start() {
-        if (sregistered) {
-            return;
-        }
+    React.instance.getTicker().register(this);
+    sregistered = true;
+  }
 
-        React.instance.getTicker().register(this);
-        sregistered = true;
+  public void stop() {
+    if (!sregistered) {
+      return;
     }
 
-    public void stop() {
-        if (!sregistered) {
-            return;
-        }
+    unregister();
+    sregistered = false;
+  }
 
-        unregister();
-        sregistered = false;
+  public abstract double onSample();
+
+  @Override
+  public double sample() {
+    slastSample.set(System.currentTimeMillis());
+
+    if (ssleeping) {
+      setSsleeping(false);
     }
 
-    public abstract double onSample();
+    return ssequence.getAverage();
+  }
 
-    @Override
-    public double sample() {
-        slastSample.set(System.currentTimeMillis());
+  private void setSsleeping(boolean ssleeping) {
+    this.ssleeping = ssleeping;
+    setTinterval(ssleeping ? 1000 : sactiveInterval);
+    if (!this.ssleeping && ssleeping) {
+      ssequence.resetExtremes();
+    }
+  }
 
-        if (ssleeping) {
-            setSsleeping(false);
-        }
-
-        return ssequence.getAverage();
+  @Override
+  public void onTick() {
+    if (ssleeping) {
+      return;
     }
 
-    private void setSsleeping(boolean ssleeping) {
-        this.ssleeping = ssleeping;
-        setTinterval(ssleeping ? 1000 : sactiveInterval);
-        if (!this.ssleeping && ssleeping) {
-            ssequence.resetExtremes();
-        }
+    if (System.currentTimeMillis() - slastSample.get() > 1000) {
+      setSsleeping(true);
     }
 
-    @Override
-    public void onTick() {
-        if (ssleeping) {
-            return;
-        }
+    try {
+      ssequence.put(onSample());
+    } catch (Throwable e) {
 
-        if (System.currentTimeMillis() - slastSample.get() > 1000) {
-            setSsleeping(true);
-        }
-
-        try {
-            ssequence.put(onSample());
-        } catch (Throwable e) {
-
-        }
     }
+  }
 
-    public String getId() {
-        return super.getTid();
-    }
+  public String getId() {
+    return super.getTid();
+  }
 }

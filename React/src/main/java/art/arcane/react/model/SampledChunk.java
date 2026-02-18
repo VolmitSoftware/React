@@ -31,63 +31,63 @@ import java.util.function.DoubleUnaryOperator;
 
 @Data
 public class SampledChunk {
-    private static final DoubleUnaryOperator HALF = (v) -> v * 0.5D;
-    private final Chunk chunk;
-    private final SampledWorld world;
-    private final ChronoLatch cleaner;
-    private Map<String, AtomicDouble> values;
+  private static final DoubleUnaryOperator HALF = (v) -> v * 0.5D;
+  private final Chunk chunk;
+  private final SampledWorld world;
+  private final ChronoLatch cleaner;
+  private Map<String, AtomicDouble> values;
 
-    public SampledChunk(Chunk chunk, SampledWorld world) {
-        this.chunk = chunk;
-        this.world = world;
-        this.values = new ConcurrentHashMap<>();
-        this.cleaner = new ChronoLatch(1000);
+  public SampledChunk(Chunk chunk, SampledWorld world) {
+    this.chunk = chunk;
+    this.world = world;
+    this.values = new ConcurrentHashMap<>();
+    this.cleaner = new ChronoLatch(1000);
+  }
+
+  public double highestSubScore() {
+    double max = 0D;
+    for (AtomicDouble value : values.values()) {
+      double score = value.get();
+      if (score > max) {
+        max = score;
+      }
+    }
+    return max;
+  }
+
+  public double totalScore() {
+    double total = 0D;
+    for (AtomicDouble value : values.values()) {
+      total += value.get();
+    }
+    return total;
+  }
+
+  public Optional<AtomicDouble> optional(String key) {
+    return Optional.ofNullable(values.get(key));
+  }
+
+  public AtomicDouble get(String key) {
+    if (cleaner.flip()) {
+      cleanup();
     }
 
-    public double highestSubScore() {
-        double max = 0D;
-        for (AtomicDouble value : values.values()) {
-            double score = value.get();
-            if (score > max) {
-                max = score;
-            }
-        }
-        return max;
+    return values.computeIfAbsent(key, (k) -> new AtomicDouble(0D));
+  }
+
+  private void cleanup() {
+    String remove = null;
+
+    for (Map.Entry<String, AtomicDouble> entry : values.entrySet()) {
+      double v = entry.getValue().updateAndGet(HALF);
+
+      if (remove == null && v <= 1) {
+        remove = entry.getKey();
+      }
     }
 
-    public double totalScore() {
-        double total = 0D;
-        for (AtomicDouble value : values.values()) {
-            total += value.get();
-        }
-        return total;
+    if (remove != null) {
+      values.remove(remove);
     }
-
-    public Optional<AtomicDouble> optional(String key) {
-        return Optional.ofNullable(values.get(key));
-    }
-
-    public AtomicDouble get(String key) {
-        if (cleaner.flip()) {
-            cleanup();
-        }
-
-        return values.computeIfAbsent(key, (k) -> new AtomicDouble(0D));
-    }
-
-    private void cleanup() {
-        String remove = null;
-
-        for (Map.Entry<String, AtomicDouble> entry : values.entrySet()) {
-            double v = entry.getValue().updateAndGet(HALF);
-
-            if (remove == null && v <= 1) {
-                remove = entry.getKey();
-            }
-        }
-
-        if (remove != null) {
-            values.remove(remove);
-        }
-    }
+  }
 }

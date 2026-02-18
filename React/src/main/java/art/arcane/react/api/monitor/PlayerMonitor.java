@@ -23,14 +23,14 @@ import art.arcane.react.model.ReactPlayer;
 import lombok.Getter;
 
 public abstract class PlayerMonitor extends TickedMonitor {
-    @Getter
-    protected final ReactPlayer player;
+  @Getter
+  protected final ReactPlayer player;
 
-    public PlayerMonitor(String type, ReactPlayer player, long interval) {
-        super(player.getPlayer().getUniqueId() + ":" + type, interval);
-        this.player = player;
-    }
+  public PlayerMonitor(String type, ReactPlayer player, long interval) {
+    super(player.getPlayer().getUniqueId() + ":" + type, interval);
+    this.player = player;
+  }
 
-    @Override
-    public abstract void flush();
+  @Override
+  public abstract void flush();
 }

@@ -26,45 +26,45 @@ import org.bukkit.Material;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class SamplerMemoryPressure extends ReactTickedSampler {
-    public static final String ID = "memory-pressure";
-    private transient final AtomicLong lastMemory;
-    private transient final Runtime runtime;
+  public static final String ID = "memory-pressure";
+  private transient final AtomicLong lastMemory;
+  private transient final Runtime runtime;
 
-    public SamplerMemoryPressure() {
-        super(ID, 50, 20);
-        this.runtime = Runtime.getRuntime();
-        this.lastMemory = new AtomicLong(runtime.totalMemory() - runtime.freeMemory());
+  public SamplerMemoryPressure() {
+    super(ID, 50, 20);
+    this.runtime = Runtime.getRuntime();
+    this.lastMemory = new AtomicLong(runtime.totalMemory() - runtime.freeMemory());
+  }
+
+  @Override
+  public Material getIcon() {
+    return Material.WATER_BUCKET;
+  }
+
+  @Override
+  public double onSample() {
+    long mem = runtime.totalMemory() - runtime.freeMemory();
+    long allocated = mem - lastMemory.get();
+    lastMemory.set(mem);
+    if (allocated >= 0) {
+      return allocated * (1000D / getTinterval());
     }
 
-    @Override
-    public Material getIcon() {
-        return Material.WATER_BUCKET;
-    }
+    return 0;
+  }
 
-    @Override
-    public double onSample() {
-        long mem = runtime.totalMemory() - runtime.freeMemory();
-        long allocated = mem - lastMemory.get();
-        lastMemory.set(mem);
-        if (allocated >= 0) {
-            return allocated * (1000D / getTinterval());
-        }
-
-        return 0;
+  @Override
+  public String formattedValue(double t) {
+    String[] s = Form.memSizeSplit((long) t, 1);
+    if (s[1].equalsIgnoreCase("mb")) {
+      return Form.memSizeSplit((long) t, 0)[0];
+    } else {
+      return s[0];
     }
+  }
 
-    @Override
-    public String formattedValue(double t) {
-        String[] s = Form.memSizeSplit((long) t, 1);
-        if (s[1].equalsIgnoreCase("mb")) {
-            return Form.memSizeSplit((long) t, 0)[0];
-        } else {
-            return s[0];
-        }
-    }
-
-    @Override
-    public String formattedSuffix(double t) {
-        return Form.memSizeSplit((long) t, 1)[1] + "/s";
-    }
+  @Override
+  public String formattedSuffix(double t) {
+    return Form.memSizeSplit((long) t, 1)[1] + "/s";
+  }
 }

@@ -1,84 +1,82 @@
 package art.arcane.react.util.inventorygui;
 
-import art.arcane.volmlib.util.inventorygui.WindowDecorator;
-
 import art.arcane.volmlib.util.inventorygui.Element;
-
+import art.arcane.volmlib.util.inventorygui.WindowDecorator;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 public interface Window {
-    WindowDecorator getDecorator();
+  WindowDecorator getDecorator();
 
-    Window setDecorator(WindowDecorator decorator);
+  Window setDecorator(WindowDecorator decorator);
 
-    art.arcane.volmlib.util.inventorygui.WindowResolution getResolution();
+  art.arcane.volmlib.util.inventorygui.WindowResolution getResolution();
 
-    Window setResolution(art.arcane.volmlib.util.inventorygui.WindowResolution resolution);
+  Window setResolution(art.arcane.volmlib.util.inventorygui.WindowResolution resolution);
 
-    default Window setResolution(WindowResolution resolution) {
-        return setResolution(resolution.toShared());
-    }
+  default Window setResolution(WindowResolution resolution) {
+    return setResolution(resolution.toShared());
+  }
 
-    default WindowResolution getLocalResolution() {
-        return WindowResolution.fromShared(getResolution());
-    }
+  default WindowResolution getLocalResolution() {
+    return WindowResolution.fromShared(getResolution());
+  }
 
-    Window clearElements();
+  Window clearElements();
 
-    Window close();
+  Window close();
 
-    Window open();
+  Window open();
 
-    Window callClosed();
+  Window callClosed();
 
-    Window updateInventory();
+  Window updateInventory();
 
-    ItemStack computeItemStack(int viewportSlot);
+  ItemStack computeItemStack(int viewportSlot);
 
-    int getLayoutRow(int viewportSlottedPosition);
+  int getLayoutRow(int viewportSlottedPosition);
 
-    int getLayoutPosition(int viewportSlottedPosition);
+  int getLayoutPosition(int viewportSlottedPosition);
 
-    int getRealLayoutPosition(int viewportSlottedPosition);
+  int getRealLayoutPosition(int viewportSlottedPosition);
 
-    int getRealPosition(int position, int row);
+  int getRealPosition(int position, int row);
 
-    int getRow(int realPosition);
+  int getRow(int realPosition);
 
-    int getPosition(int realPosition);
+  int getPosition(int realPosition);
 
-    boolean isVisible();
+  boolean isVisible();
 
-    Window setVisible(boolean visible);
+  Window setVisible(boolean visible);
 
-    int getViewportPosition();
+  int getViewportPosition();
 
-    Window setViewportPosition(int position);
+  Window setViewportPosition(int position);
 
-    int getViewportSlots();
+  int getViewportSlots();
 
-    int getMaxViewportPosition();
+  int getMaxViewportPosition();
 
-    Window scroll(int direction);
+  Window scroll(int direction);
 
-    int getViewportHeight();
+  int getViewportHeight();
 
-    Window setViewportHeight(int height);
+  Window setViewportHeight(int height);
 
-    String getTitle();
+  String getTitle();
 
-    Window setTitle(String title);
+  Window setTitle(String title);
 
-    boolean hasElement(int position, int row);
+  boolean hasElement(int position, int row);
 
-    Window setElement(int position, int row, Element e);
+  Window setElement(int position, int row, Element e);
 
-    Element getElement(int position, int row);
+  Element getElement(int position, int row);
 
-    Player getViewer();
+  Player getViewer();
 
-    Window reopen();
+  Window reopen();
 
-    Window onClosed(art.arcane.volmlib.util.scheduling.Callback<art.arcane.volmlib.util.inventorygui.Window> window);
+  Window onClosed(art.arcane.volmlib.util.scheduling.Callback<art.arcane.volmlib.util.inventorygui.Window> window);
 }

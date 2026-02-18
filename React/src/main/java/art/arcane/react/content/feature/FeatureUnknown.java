@@ -23,34 +23,34 @@ import art.arcane.react.api.feature.ReactFeature;
 
 @art.arcane.react.util.config.ConfigDescription("Configuration for Unknown feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureUnknown extends ReactFeature {
-    public static final String ID = "unknown";
+  public static final String ID = "unknown";
 
-    public FeatureUnknown() {
-        super(ID);
-    }
+  public FeatureUnknown() {
+    super(ID);
+  }
 
-    @Override
-    public void onActivate() {
+  @Override
+  public void onActivate() {
 
-    }
+  }
 
-    @Override
-    public void onDeactivate() {
+  @Override
+  public void onDeactivate() {
 
-    }
+  }
 
-    @Override
-    public int getTickInterval() {
-        return -1;
-    }
+  @Override
+  public int getTickInterval() {
+    return -1;
+  }
 
-    @Override
-    public void onTick() {
+  @Override
+  public void onTick() {
 
-    }
+  }
 
-    @Override
-    public boolean autoRegister() {
-        return false;
-    }
+  @Override
+  public boolean autoRegister() {
+    return false;
+  }
 }

@@ -27,13 +27,13 @@ import art.arcane.react.core.controller.SampleController;
 import java.util.List;
 
 public class SamplerParser implements SelectionParser<Sampler> {
-    @Override
-    public List<Sampler> getSelectionOptions() {
-        return React.controller(SampleController.class).getSamplers().all().stream().toList();
-    }
+  @Override
+  public List<Sampler> getSelectionOptions() {
+    return React.controller(SampleController.class).getSamplers().all().stream().toList();
+  }
 
-    @Override
-    public String getName(Sampler sampler) {
-        return sampler.getId();
-    }
+  @Override
+  public String getName(Sampler sampler) {
+    return sampler.getId();
+  }
 }

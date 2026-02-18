@@ -30,50 +30,50 @@ import org.bukkit.event.inventory.InventoryMoveItemEvent;
 
 @art.arcane.react.util.config.ConfigDescription("Configuration for Hopper Limit tweak. Cancels hopper transfers when hopper tick-time pressure exceeds the configured threshold.")
 public class TweakHopperLimit extends ReactTweak implements Listener {
-    public static final String ID = "hopper-limit";
-    private static final BlockFace[] directions = new BlockFace[]{
-            BlockFace.NORTH,
-            BlockFace.EAST,
-            BlockFace.SOUTH,
-            BlockFace.WEST
-    };
-    @art.arcane.react.util.config.ConfigDoc(value = "Maximum hopper tick time allowed by hopper limit.", impact = "Higher values allow more throughput before intervention; lower values make mitigation more aggressive.")
-    private double maxHopperTickTime = 0.75;
+  public static final String ID = "hopper-limit";
+  private static final BlockFace[] directions = new BlockFace[]{
+      BlockFace.NORTH,
+      BlockFace.EAST,
+      BlockFace.SOUTH,
+      BlockFace.WEST
+  };
+  @art.arcane.react.util.config.ConfigDoc(value = "Maximum hopper tick time allowed by hopper limit.", impact = "Higher values allow more throughput before intervention; lower values make mitigation more aggressive.")
+  private double maxHopperTickTime = 0.75;
 
-    public TweakHopperLimit() {
-        super(ID);
+  public TweakHopperLimit() {
+    super(ID);
+  }
+
+  @Override
+  public void onActivate() {
+
+  }
+
+  @Override
+  public void onDeactivate() {
+
+  }
+
+  @Override
+  public int getTickInterval() {
+    return -1;
+  }
+
+  /**
+   * This is the method that is called when a hopper moves an item. and it
+   * denies the hopper from moving the item if the tick time is too high.
+   */
+  @EventHandler(priority = org.bukkit.event.EventPriority.LOW, ignoreCancelled = true)
+  public void on(InventoryMoveItemEvent e) {
+    if (e.getDestination().getHolder() instanceof Hopper) {
+      if (React.sampler(SamplerHopperTickTime.class).sample() > maxHopperTickTime) {
+        e.setCancelled(true);
+      }
     }
+  }
 
-    @Override
-    public void onActivate() {
+  @Override
+  public void onTick() {
 
-    }
-
-    @Override
-    public void onDeactivate() {
-
-    }
-
-    @Override
-    public int getTickInterval() {
-        return -1;
-    }
-
-    /**
-     * This is the method that is called when a hopper moves an item.
-     * and it denies the hopper from moving the item if the tick time is too high.
-     */
-    @EventHandler(priority = org.bukkit.event.EventPriority.LOW, ignoreCancelled = true)
-    public void on(InventoryMoveItemEvent e) {
-        if (e.getDestination().getHolder() instanceof Hopper) {
-            if (React.sampler(SamplerHopperTickTime.class).sample() > maxHopperTickTime) {
-                e.setCancelled(true);
-            }
-        }
-    }
-
-    @Override
-    public void onTick() {
-
-    }
+  }
 }

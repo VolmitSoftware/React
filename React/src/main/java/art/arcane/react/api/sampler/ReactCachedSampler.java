@@ -25,62 +25,62 @@ import art.arcane.react.core.controller.SampleController;
 import com.google.common.util.concurrent.AtomicDouble;
 
 public abstract class ReactCachedSampler implements Sampler {
-    protected transient final long sampleDelay;
-    private transient final ChronoLatch slatch;
-    private transient final AtomicDouble slast;
-    private transient final Object sampleLock;
-    private transient final String sid;
-    private transient volatile boolean runtimeStarted;
+  protected transient final long sampleDelay;
+  private transient final ChronoLatch slatch;
+  private transient final AtomicDouble slast;
+  private transient final Object sampleLock;
+  private transient final String sid;
+  private transient volatile boolean runtimeStarted;
 
-    public ReactCachedSampler(String id, long sampleDelay) {
-        this.sid = id;
-        this.sampleDelay = sampleDelay;
-        this.slatch = new ChronoLatch(sampleDelay, true);
-        this.slast = new AtomicDouble();
-        this.sampleLock = new Object();
-        this.runtimeStarted = false;
+  public ReactCachedSampler(String id, long sampleDelay) {
+    this.sid = id;
+    this.sampleDelay = sampleDelay;
+    this.slatch = new ChronoLatch(sampleDelay, true);
+    this.slast = new AtomicDouble();
+    this.sampleLock = new Object();
+    this.runtimeStarted = false;
+  }
+
+  @Override
+  public void start() {
+    runtimeStarted = true;
+  }
+
+  @Override
+  public void stop() {
+    runtimeStarted = false;
+  }
+
+  public abstract double onSample();
+
+  @Override
+  public double sample() {
+    if (!canSampleNow() || !slatch.couldFlip()) {
+      return slast.get();
     }
 
-    @Override
-    public void start() {
-        runtimeStarted = true;
+    synchronized (sampleLock) {
+      if (slatch.flip()) {
+        slast.set(onSample());
+      }
+      return slast.get();
+    }
+  }
+
+  public String getId() {
+    return sid;
+  }
+
+  private boolean canSampleNow() {
+    if (!runtimeStarted) {
+      return false;
     }
 
-    @Override
-    public void stop() {
-        runtimeStarted = false;
+    try {
+      SampleController controller = React.controller(SampleController.class);
+      return controller == null || controller.canSample(this);
+    } catch (Throwable ignored) {
+      return runtimeStarted;
     }
-
-    public abstract double onSample();
-
-    @Override
-    public double sample() {
-        if (!canSampleNow() || !slatch.couldFlip()) {
-            return slast.get();
-        }
-
-        synchronized (sampleLock) {
-            if (slatch.flip()) {
-                slast.set(onSample());
-            }
-            return slast.get();
-        }
-    }
-
-    public String getId() {
-        return sid;
-    }
-
-    private boolean canSampleNow() {
-        if (!runtimeStarted) {
-            return false;
-        }
-
-        try {
-            SampleController controller = React.controller(SampleController.class);
-            return controller == null || controller.canSample(this);
-        } catch (Throwable ignored) {
-            return runtimeStarted;
-        }
-    }
+  }
 }

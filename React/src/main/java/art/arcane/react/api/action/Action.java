@@ -20,49 +20,49 @@
 package art.arcane.react.api.action;
 
 import art.arcane.curse.Curse;
-import art.arcane.volmlib.util.format.Form;
 import art.arcane.react.util.registry.Registered;
+import art.arcane.volmlib.util.format.Form;
 import org.bukkit.command.CommandSender;
 
 public interface Action<T extends ActionParams> extends Registered {
-    ActionTicket<T> create(T params);
+  ActionTicket<T> create(T params);
 
-    default String getCompletedMessage(ActionTicket<T> ticket) {
-        return "Completed " + getName() + " in " + Form.duration(ticket.getDuration(), 1);
+  default String getCompletedMessage(ActionTicket<T> ticket) {
+    return "Completed " + getName() + " in " + Form.duration(ticket.getDuration(), 1);
+  }
+
+  @Override
+  default String getConfigCategory() {
+    return "action";
+  }
+
+  default boolean isEnabled() {
+    return true;
+  }
+
+  default ActionTicket<T> create(T params, CommandSender sender) {
+    if (!isEnabled()) {
+      sender.sendMessage(getName() + " is disabled in config.");
+      return create(params);
     }
 
-    @Override
-    default String getConfigCategory() {
-        return "action";
-    }
+    sender.sendMessage("Queued " + getName());
+    return create(params)
+        .onStart((i) -> sender.sendMessage("Starting " + getName()))
+        .onComplete((i) -> sender.sendMessage(getCompletedMessage(i)));
+  }
 
-    default boolean isEnabled() {
-        return true;
-    }
+  default ActionTicket<?> createForceful(Object params) {
+    return Curse.on(this).method("create", Object.class).invoke(params);
+  }
 
-    default ActionTicket<T> create(T params, CommandSender sender) {
-        if (!isEnabled()) {
-            sender.sendMessage(getName() + " is disabled in config.");
-            return create(params);
-        }
+  default ActionTicket<T> create() {
+    return create(getDefaultParams());
+  }
 
-        sender.sendMessage("Queued " + getName());
-        return create(params)
-                .onStart((i) -> sender.sendMessage("Starting " + getName()))
-                .onComplete((i) -> sender.sendMessage(getCompletedMessage(i)));
-    }
+  void workOn(ActionTicket<T> ticket);
 
-    default ActionTicket<?> createForceful(Object params) {
-        return Curse.on(this).method("create", Object.class).invoke(params);
-    }
+  T getDefaultParams();
 
-    default ActionTicket<T> create() {
-        return create(getDefaultParams());
-    }
-
-    void workOn(ActionTicket<T> ticket);
-
-    T getDefaultParams();
-
-    void onInit();
+  void onInit();
 }

@@ -28,44 +28,44 @@ import org.bukkit.Chunk;
 
 @art.arcane.react.util.config.ConfigDescription("Configuration for Chunk Load Gen Cost Map feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureChunkLoadGenCostMap extends FeatureChunkHeatmapBase {
-    public static final String ID = "chunk-load-gen-cost-map";
+  public static final String ID = "chunk-load-gen-cost-map";
 
-    public FeatureChunkLoadGenCostMap() {
-        super(ID);
+  public FeatureChunkLoadGenCostMap() {
+    super(ID);
+  }
+
+  @Override
+  protected String mapLabel() {
+    return "Chunk Load/Gen Cost";
+  }
+
+  @Override
+  protected TinyColor headerColor() {
+    return new TinyColor(118, 84, 176);
+  }
+
+  @Override
+  protected TinyColor backgroundColor() {
+    return new TinyColor(10, 10, 16);
+  }
+
+  @Override
+  protected double chunkScore(Chunk chunk) {
+    double loadMS = chunkSample(chunk, SamplerChunkLoadMS.ID);
+    double genMS = chunkSample(chunk, SamplerChunkGenMS.ID);
+    double loadRate = chunkSample(chunk, SamplerChunksLoaded.ID);
+    double genRate = chunkSample(chunk, SamplerChunksGenerated.ID);
+
+    // Generation spikes are usually more expensive than plain chunk loads.
+    return (loadMS * 1.00D) + (genMS * 1.35D) + (loadRate * 0.4D) + (genRate * 0.7D);
+  }
+
+  @Override
+  protected TinyColor colorFor(double normalized, double rawScore) {
+    if (normalized < 0.5D) {
+      return gradient(normalized * 2D, new TinyColor(40, 60, 180), new TinyColor(80, 180, 255));
     }
 
-    @Override
-    protected String mapLabel() {
-        return "Chunk Load/Gen Cost";
-    }
-
-    @Override
-    protected TinyColor headerColor() {
-        return new TinyColor(118, 84, 176);
-    }
-
-    @Override
-    protected TinyColor backgroundColor() {
-        return new TinyColor(10, 10, 16);
-    }
-
-    @Override
-    protected double chunkScore(Chunk chunk) {
-        double loadMS = chunkSample(chunk, SamplerChunkLoadMS.ID);
-        double genMS = chunkSample(chunk, SamplerChunkGenMS.ID);
-        double loadRate = chunkSample(chunk, SamplerChunksLoaded.ID);
-        double genRate = chunkSample(chunk, SamplerChunksGenerated.ID);
-
-        // Generation spikes are usually more expensive than plain chunk loads.
-        return (loadMS * 1.00D) + (genMS * 1.35D) + (loadRate * 0.4D) + (genRate * 0.7D);
-    }
-
-    @Override
-    protected TinyColor colorFor(double normalized, double rawScore) {
-        if (normalized < 0.5D) {
-            return gradient(normalized * 2D, new TinyColor(40, 60, 180), new TinyColor(80, 180, 255));
-        }
-
-        return gradient((normalized - 0.5D) * 2D, new TinyColor(80, 180, 255), new TinyColor(255, 90, 20));
-    }
+    return gradient((normalized - 0.5D) * 2D, new TinyColor(80, 180, 255), new TinyColor(255, 90, 20));
+  }
 }

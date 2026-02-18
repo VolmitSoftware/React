@@ -23,31 +23,31 @@ import art.arcane.volmlib.util.cache.CacheKey;
 import org.bukkit.Chunk;
 
 public interface Cache<V> {
-    static long key(Chunk chunk) {
-        return CacheKey.key(chunk);
-    }
+  static long key(Chunk chunk) {
+    return CacheKey.key(chunk);
+  }
 
-    static long key(int x, int z) {
-        return CacheKey.key(x, z);
-    }
+  static long key(int x, int z) {
+    return CacheKey.key(x, z);
+  }
 
-    static int keyX(long key) {
-        return CacheKey.keyX(key);
-    }
+  static int keyX(long key) {
+    return CacheKey.keyX(key);
+  }
 
-    static int keyZ(long key) {
-        return CacheKey.keyZ(key);
-    }
+  static int keyZ(long key) {
+    return CacheKey.keyZ(key);
+  }
 
-    static int to1D(int x, int y, int z, int w, int h) {
-        return CacheKey.to1D(x, y, z, w, h);
-    }
+  static int to1D(int x, int y, int z, int w, int h) {
+    return CacheKey.to1D(x, y, z, w, h);
+  }
 
-    static int[] to3D(int idx, int w, int h) {
-        return CacheKey.to3D(idx, w, h);
-    }
+  static int[] to3D(int idx, int w, int h) {
+    return CacheKey.to3D(idx, w, h);
+  }
 
-    int getId();
+  int getId();
 
-    V get(int x, int z);
+  V get(int x, int z);
 }

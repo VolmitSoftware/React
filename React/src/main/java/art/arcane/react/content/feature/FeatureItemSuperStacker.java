@@ -24,8 +24,8 @@ import art.arcane.react.React;
 import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.content.sampler.SamplerEntities;
 import art.arcane.react.core.controller.EntityController;
-import art.arcane.volmlib.util.math.RNG;
 import art.arcane.react.util.world.BundleUtils;
+import art.arcane.volmlib.util.math.RNG;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.sound.Sound;
 import org.bukkit.Location;
@@ -54,160 +54,159 @@ import java.util.List;
  */
 @art.arcane.react.util.config.ConfigDescription("Configuration for Item Super Stacker feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureItemSuperStacker extends ReactFeature implements Listener {
-    public static final String ID = "item-super-stacker";
-    @art.arcane.react.util.config.ConfigDoc(value = "Maximum items allowed per bundle in item super stacker.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
-    private int maxItemsPerBundle = 64;
-    @art.arcane.react.util.config.ConfigDoc(value = "Search radius used by item super stacker (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
-    private double searchRadius = 3;
-    private transient ChronoLatch cl = new ChronoLatch(10);
+  public static final String ID = "item-super-stacker";
+  @art.arcane.react.util.config.ConfigDoc(value = "Maximum items allowed per bundle in item super stacker.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
+  private int maxItemsPerBundle = 64;
+  @art.arcane.react.util.config.ConfigDoc(value = "Search radius used by item super stacker (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
+  private double searchRadius = 3;
+  private transient ChronoLatch cl = new ChronoLatch(10);
 
-    public FeatureItemSuperStacker() {
-        super(ID);
+  public FeatureItemSuperStacker() {
+    super(ID);
+  }
+
+  public boolean isSuperStack(Item item) {
+    return BundleUtils.isBundle(item.getItemStack()) && BundleUtils.isFlagged(item.getItemStack());
+  }
+
+  public List<ItemStack> explode(Item item) {
+    ItemStack m = item.getItemStack();
+    item.remove();
+    ((SamplerEntities) React.sampler(SamplerEntities.ID)).getEntities().decrementAndGet();
+
+    if (BundleUtils.isFlagged(m)) {
+      return BundleUtils.explode(item.getItemStack());
     }
 
-    public boolean isSuperStack(Item item) {
-        return BundleUtils.isBundle(item.getItemStack()) && BundleUtils.isFlagged(item.getItemStack());
+    return List.of(m);
+  }
+
+  public void effectMerge(Item item, Item into) {
+    Location buf = item.getLocation().clone();
+    item.getWorld().spawnParticle(Particle.ITEM_CRACK, item.getLocation(), 7, 0.1, 0.1, 0.1, 0.1, item.getItemStack());
+
+    Vector j = into.getLocation().clone().subtract(item.getLocation()).toVector().normalize().multiply(into.getLocation().clone().distance(item.getLocation()) / (searchRadius * 2));
+    for (int i = 0; i < searchRadius * 2; i++) {
+      buf = buf.clone().add(j);
+      item.getWorld().spawnParticle(Particle.ITEM_CRACK, buf, 3, 0, 0, 0, 0, item.getItemStack());
     }
 
-    public List<ItemStack> explode(Item item) {
-        ItemStack m = item.getItemStack();
-        item.remove();
-        ((SamplerEntities) React.sampler(SamplerEntities.ID)).getEntities().decrementAndGet();
+    if (cl.flip()) {
+      item.getWorld().getPlayers().forEach(player ->
+          React.audiences.player(player).playSound(Sound.sound(
+              Key.key("minecraft:item.bundle.insert"),
+              Sound.Source.NEUTRAL,
+              0.5f,
+              1.2f + RNG.r.f(-0.1f, 0.1f)
+          ), item.getLocation().getX(), item.getLocation().getY(), item.getLocation().getZ())
+      );
+    }
+  }
 
-        if (BundleUtils.isFlagged(m)) {
-            return BundleUtils.explode(item.getItemStack());
+  public void mergeWithNearbyItems(Item item) {
+    if (item.isDead()) {
+      return;
+    }
+
+
+    for (Entity i : item.getWorld().getNearbyEntities(item.getLocation(), searchRadius, searchRadius, searchRadius)) {
+      if (i instanceof Item into) {
+        if (into.isDead() || into.getUniqueId().equals(item.getUniqueId())) {
+          continue;
         }
 
-        return List.of(m);
+        ItemStack is = BundleUtils.merge(item.getItemStack(), into.getItemStack(), maxItemsPerBundle);
+
+        if (is != null) {
+          effectMerge(item, into);
+          item.remove();
+          ((SamplerEntities) React.sampler(SamplerEntities.ID)).getEntities().decrementAndGet();
+          into.setItemStack(is);
+          break;
+        }
+      }
     }
+  }
 
-    public void effectMerge(Item item, Item into) {
-        Location buf = item.getLocation().clone();
-        item.getWorld().spawnParticle(Particle.ITEM_CRACK, item.getLocation(), 7, 0.1, 0.1, 0.1, 0.1, item.getItemStack());
-
-        Vector j = into.getLocation().clone().subtract(item.getLocation()).toVector().normalize().multiply(into.getLocation().clone().distance(item.getLocation()) / (searchRadius * 2));
-        for (int i = 0; i < searchRadius * 2; i++) {
-            buf = buf.clone().add(j);
-            item.getWorld().spawnParticle(Particle.ITEM_CRACK, buf, 3, 0, 0, 0, 0, item.getItemStack());
+  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+  public void on(EntityPickupItemEvent e) {
+    if (e.getEntity() instanceof Player p) {
+      if (isSuperStack(e.getItem())) {
+        e.setCancelled(true);
+        for (ItemStack i : explode(e.getItem())) {
+          p.getInventory().addItem(i).values().forEach((g) -> p.getWorld().dropItem(p.getLocation(), g));
         }
 
         if (cl.flip()) {
-            item.getWorld().getPlayers().forEach(player -> 
-                    React.audiences.player(player).playSound(Sound.sound(
-                            Key.key("minecraft:item.bundle.insert"),
-                            Sound.Source.NEUTRAL,
-                            0.5f,
-                            1.2f + RNG.r.f(-0.1f, 0.1f)
-                    ), item.getLocation().getX(), item.getLocation().getY(), item.getLocation().getZ())
-            );
+          React.audiences.player(p).playSound(Sound.sound(
+              Key.key("minecraft:item.bundle.drop_contents"),
+              Sound.Source.PLAYER,
+              1f,
+              0.85f + RNG.r.f(-0.1f, 0.1f)
+          ), e.getItem().getLocation().getX(), e.getItem().getLocation().getY(), e.getItem().getLocation().getZ());
         }
+      }
     }
+  }
 
-    public void mergeWithNearbyItems(Item item) {
-        if (item.isDead()) {
-            return;
+  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+  public void on(InventoryClickEvent e) {
+    if (e.getWhoClicked() instanceof Player p) {
+      if (e.getCurrentItem() != null && BundleUtils.isFlagged(e.getCurrentItem())) {
+        ItemStack i = e.getCurrentItem();
+        List<ItemStack> items = BundleUtils.explode(i);
+        e.setCurrentItem(null);
+        for (ItemStack j : items) {
+          p.getInventory().addItem(j).values().forEach((g) -> p.getWorld().dropItem(p.getLocation(), g));
         }
+      }
+    }
+  }
+
+  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+  public void on(ItemSpawnEvent e) {
+    mergeWithNearbyItems(e.getEntity());
+  }
+
+  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+  public void onInventoryMoveItemEvent(InventoryMoveItemEvent event) {
+    InventoryHolder holder = event.getDestination().getHolder();
+
+    if (holder instanceof org.bukkit.block.Hopper) {
+      ItemStack i = event.getItem();
 
 
+      if (BundleUtils.isFlagged(i)) {
+        List<ItemStack> individualItems = BundleUtils.explode(i);
+        Inventory destinationInventory = event.getDestination();
+        i.setAmount(0);
+        i.setType(Material.AIR);
+        i.setData(null);
 
-        for (Entity i : item.getWorld().getNearbyEntities(item.getLocation(), searchRadius, searchRadius, searchRadius)) {
-            if (i instanceof Item into) {
-                if (into.isDead() || into.getUniqueId().equals(item.getUniqueId())) {
-                    continue;
-                }
-
-                ItemStack is = BundleUtils.merge(item.getItemStack(), into.getItemStack(), maxItemsPerBundle);
-
-                if (is != null) {
-                    effectMerge(item, into);
-                    item.remove();
-                    ((SamplerEntities) React.sampler(SamplerEntities.ID)).getEntities().decrementAndGet();
-                    into.setItemStack(is);
-                    break;
-                }
-            }
+        for (ItemStack item : individualItems) {
+          destinationInventory.addItem(item).values().forEach((leftover) -> event.getSource().addItem(leftover));
         }
+      }
     }
+  }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void on(EntityPickupItemEvent e) {
-        if (e.getEntity() instanceof Player p) {
-            if (isSuperStack(e.getItem())) {
-                e.setCancelled(true);
-                for (ItemStack i : explode(e.getItem())) {
-                    p.getInventory().addItem(i).values().forEach((g) -> p.getWorld().dropItem(p.getLocation(), g));
-                }
+  @Override
+  public void onActivate() {
+    React.controller(EntityController.class).registerEntityTickListener(EntityType.DROPPED_ITEM, (i) -> mergeWithNearbyItems((Item) i));
+  }
 
-                if (cl.flip()) {
-                    React.audiences.player(p).playSound(Sound.sound(
-                            Key.key("minecraft:item.bundle.drop_contents"),
-                            Sound.Source.PLAYER,
-                            1f,
-                            0.85f + RNG.r.f(-0.1f, 0.1f)
-                    ), e.getItem().getLocation().getX(), e.getItem().getLocation().getY(), e.getItem().getLocation().getZ());
-                }
-            }
-        }
-    }
+  @Override
+  public void onDeactivate() {
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void on(InventoryClickEvent e){
-        if (e.getWhoClicked() instanceof Player p) {
-            if (e.getCurrentItem() != null && BundleUtils.isFlagged(e.getCurrentItem())) {
-                ItemStack i = e.getCurrentItem();
-                List<ItemStack> items = BundleUtils.explode(i);
-                e.setCurrentItem(null);
-                for (ItemStack j : items) {
-                    p.getInventory().addItem(j).values().forEach((g) -> p.getWorld().dropItem(p.getLocation(), g));
-                }
-            }
-        }
-    }
+  }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void on(ItemSpawnEvent e) {
-        mergeWithNearbyItems(e.getEntity());
-    }
+  @Override
+  public int getTickInterval() {
+    return -1;
+  }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onInventoryMoveItemEvent(InventoryMoveItemEvent event) {
-        InventoryHolder holder = event.getDestination().getHolder();
+  @Override
+  public void onTick() {
 
-        if (holder instanceof org.bukkit.block.Hopper) {
-            ItemStack i = event.getItem();
-
-
-            if (BundleUtils.isFlagged(i)) {
-                List<ItemStack> individualItems = BundleUtils.explode(i);
-                Inventory destinationInventory = event.getDestination();
-                i.setAmount(0);
-                i.setType(Material.AIR);
-                i.setData(null);
-
-                for (ItemStack item : individualItems) {
-                    destinationInventory.addItem(item).values().forEach((leftover) -> event.getSource().addItem(leftover));
-                }
-            }
-        }
-    }
-
-    @Override
-    public void onActivate() {
-        React.controller(EntityController.class).registerEntityTickListener(EntityType.DROPPED_ITEM, (i) -> mergeWithNearbyItems((Item) i));
-    }
-
-    @Override
-    public void onDeactivate() {
-
-    }
-
-    @Override
-    public int getTickInterval() {
-        return -1;
-    }
-
-    @Override
-    public void onTick() {
-
-    }
+  }
 }

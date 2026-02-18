@@ -34,93 +34,93 @@ import java.util.Map;
 
 @art.arcane.react.util.config.ConfigDescription("Configuration for Entity Hardstop tweak. Hard-caps per-chunk entity population by cancelling new additions once limits are exceeded.")
 public class TweakEntityHardstop extends ReactTweak implements Listener {
-    public static final String ID = "entity-hardstop";
+  public static final String ID = "entity-hardstop";
 
-    @art.arcane.react.util.config.ConfigDoc(value = "Maximum entities allowed per chunk in entity hardstop.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
-    private int maxEntitiesPerChunk = 100;
-    @art.arcane.react.util.config.ConfigDoc(value = "Allows natural and player-dropped item entities to bypass the hardstop cap checks.", impact = "Enable to keep dropped items flowing even in crowded chunks; disable for stricter hard-capping.")
-    private boolean allowItemDrops = true; // set to false to deny item drops
-    @art.arcane.react.util.config.ConfigDoc(value = "Cache duration for chunks recently rejected by hardstop before re-checking entity counts (ticks).", impact = "Higher values reduce repeated counting overhead but can deny spawns longer; lower values re-check sooner with more overhead.")
-    private int cacheIntervalTicks = 10 * 20; // cache for 10 seconds (20 ticks per second)
-    private transient Map<Chunk, Long> chunks = new HashMap<>();
+  @art.arcane.react.util.config.ConfigDoc(value = "Maximum entities allowed per chunk in entity hardstop.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
+  private int maxEntitiesPerChunk = 100;
+  @art.arcane.react.util.config.ConfigDoc(value = "Allows natural and player-dropped item entities to bypass the hardstop cap checks.", impact = "Enable to keep dropped items flowing even in crowded chunks; disable for stricter hard-capping.")
+  private boolean allowItemDrops = true; // set to false to deny item drops
+  @art.arcane.react.util.config.ConfigDoc(value = "Cache duration for chunks recently rejected by hardstop before re-checking entity counts (ticks).", impact = "Higher values reduce repeated counting overhead but can deny spawns longer; lower values re-check sooner with more overhead.")
+  private int cacheIntervalTicks = 10 * 20; // cache for 10 seconds (20 ticks per second)
+  private transient Map<Chunk, Long> chunks = new HashMap<>();
 
-    public TweakEntityHardstop() {
-        super(ID);
+  public TweakEntityHardstop() {
+    super(ID);
+  }
+
+  @Override
+  public void onActivate() {
+  }
+
+  @EventHandler
+  public void onEntitySpawn(EntitySpawnEvent event) {
+    Entity entity = event.getEntity();
+    Chunk chunk = entity.getLocation().getChunk();
+    // check if its a dropped item and if item drops are allowed
+    if (entity instanceof org.bukkit.entity.Item && allowItemDrops) {
+      return;
     }
-
-    @Override
-    public void onActivate() {
+    if (!canSpawnEntity(chunk)) {
+      event.setCancelled(true);
     }
+  }
 
-    @EventHandler
-    public void onEntitySpawn(EntitySpawnEvent event) {
-        Entity entity = event.getEntity();
-        Chunk chunk = entity.getLocation().getChunk();
-        // check if its a dropped item and if item drops are allowed
-        if (entity instanceof org.bukkit.entity.Item && allowItemDrops) {
-            return;
-        }
-        if (!canSpawnEntity(chunk)) {
-            event.setCancelled(true);
-        }
+  @EventHandler
+  public void onCreatureSpawn(CreatureSpawnEvent event) {
+    Chunk chunk = event.getLocation().getChunk();
+    if (!canSpawnEntity(chunk)) {
+      event.setCancelled(true);
     }
+  }
 
-    @EventHandler
-    public void onCreatureSpawn(CreatureSpawnEvent event) {
-        Chunk chunk = event.getLocation().getChunk();
-        if (!canSpawnEntity(chunk)) {
-            event.setCancelled(true);
-        }
+  @EventHandler
+  public void onPlayerDropItem(PlayerDropItemEvent event) {
+    Chunk chunk = event.getPlayer().getLocation().getChunk();
+    if (!allowItemDrops && !canSpawnEntity(chunk)) {
+      event.setCancelled(true);
     }
+  }
 
-    @EventHandler
-    public void onPlayerDropItem(PlayerDropItemEvent event) {
-        Chunk chunk = event.getPlayer().getLocation().getChunk();
-        if (!allowItemDrops && !canSpawnEntity(chunk)) {
-            event.setCancelled(true);
-        }
+  @EventHandler
+  public void onEntityBreed(EntityBreedEvent event) {
+    Chunk chunk = event.getEntity().getLocation().getChunk();
+    if (!canSpawnEntity(chunk)) {
+      event.setCancelled(true);
     }
+  }
 
-    @EventHandler
-    public void onEntityBreed(EntityBreedEvent event) {
-        Chunk chunk = event.getEntity().getLocation().getChunk();
-        if (!canSpawnEntity(chunk)) {
-            event.setCancelled(true);
-        }
+
+  private boolean canSpawnEntity(Chunk chunk) {
+    long currentTime = System.currentTimeMillis();
+    Long lastChecked = chunks.get(chunk);
+    if (lastChecked != null && currentTime - lastChecked <= cacheIntervalTicks) {
+      return false;
     }
-
-
-    private boolean canSpawnEntity(Chunk chunk) {
-        long currentTime = System.currentTimeMillis();
-        Long lastChecked = chunks.get(chunk);
-        if (lastChecked != null && currentTime - lastChecked <= cacheIntervalTicks) {
-            return false;
-        }
-        Entity[] entitiesInChunk = chunk.getEntities();
-        int entityCount = 0;
-        for (Entity entity : entitiesInChunk) {
-            if (!(entity instanceof org.bukkit.entity.Item) || !allowItemDrops) {
-                entityCount++;
-            }
-        }
-        if (entityCount >= maxEntitiesPerChunk) {
-            chunks.put(chunk, currentTime);
-            return false;
-        }
-        return true;
+    Entity[] entitiesInChunk = chunk.getEntities();
+    int entityCount = 0;
+    for (Entity entity : entitiesInChunk) {
+      if (!(entity instanceof org.bukkit.entity.Item) || !allowItemDrops) {
+        entityCount++;
+      }
     }
-
-
-    @Override
-    public void onDeactivate() {
+    if (entityCount >= maxEntitiesPerChunk) {
+      chunks.put(chunk, currentTime);
+      return false;
     }
+    return true;
+  }
 
-    @Override
-    public int getTickInterval() {
-        return -1;
-    }
 
-    @Override
-    public void onTick() {
-    }
+  @Override
+  public void onDeactivate() {
+  }
+
+  @Override
+  public int getTickInterval() {
+    return -1;
+  }
+
+  @Override
+  public void onTick() {
+  }
 }

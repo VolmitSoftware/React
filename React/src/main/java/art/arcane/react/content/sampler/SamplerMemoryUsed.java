@@ -24,36 +24,36 @@ import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Material;
 
 public class SamplerMemoryUsed extends ReactCachedSampler {
-    public static final String ID = "memory-used";
-    private transient final Runtime runtime;
+  public static final String ID = "memory-used";
+  private transient final Runtime runtime;
 
-    public SamplerMemoryUsed() {
-        super(ID, 50);
-        this.runtime = Runtime.getRuntime();
-    }
+  public SamplerMemoryUsed() {
+    super(ID, 50);
+    this.runtime = Runtime.getRuntime();
+  }
 
-    @Override
-    public Material getIcon() {
-        return Material.WATER_BUCKET;
-    }
+  @Override
+  public Material getIcon() {
+    return Material.WATER_BUCKET;
+  }
 
-    @Override
-    public double onSample() {
-        return runtime.totalMemory() - runtime.freeMemory();
-    }
+  @Override
+  public double onSample() {
+    return runtime.totalMemory() - runtime.freeMemory();
+  }
 
-    @Override
-    public String formattedValue(double t) {
-        String[] s = Form.memSizeSplit((long) t, 1);
-        if (s[1].equalsIgnoreCase("mb")) {
-            return Form.memSizeSplit((long) t, 0)[0];
-        } else {
-            return s[0];
-        }
+  @Override
+  public String formattedValue(double t) {
+    String[] s = Form.memSizeSplit((long) t, 1);
+    if (s[1].equalsIgnoreCase("mb")) {
+      return Form.memSizeSplit((long) t, 0)[0];
+    } else {
+      return s[0];
     }
+  }
 
-    @Override
-    public String formattedSuffix(double t) {
-        return Form.memSizeSplit((long) t, 1)[1];
-    }
+  @Override
+  public String formattedSuffix(double t) {
+    return Form.memSizeSplit((long) t, 1)[1];
+  }
 }

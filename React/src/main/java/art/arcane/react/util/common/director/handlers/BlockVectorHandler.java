@@ -12,28 +12,28 @@ import org.bukkit.util.BlockVector;
 import java.util.List;
 
 public class BlockVectorHandler extends BlockVectorHandlerBase implements DirectorParameterHandler<BlockVector> {
-    @Override
-    protected boolean isSenderPlayer() {
-        return DirectorContext.get().isPlayer();
-    }
+  @Override
+  protected boolean isSenderPlayer() {
+    return DirectorContext.get().isPlayer();
+  }
 
-    @Override
-    protected BlockVector getSenderBlockVector() {
-        return DirectorContext.get().player().getLocation().toVector().toBlockVector();
-    }
+  @Override
+  protected BlockVector getSenderBlockVector() {
+    return DirectorContext.get().player().getLocation().toVector().toBlockVector();
+  }
 
-    @Override
-    protected BlockVector getLookBlockVector() {
-        return DirectorContext.get().player().getTargetBlockExact(256, FluidCollisionMode.NEVER).getLocation().toVector().toBlockVector();
-    }
+  @Override
+  protected BlockVector getLookBlockVector() {
+    return DirectorContext.get().player().getTargetBlockExact(256, FluidCollisionMode.NEVER).getLocation().toVector().toBlockVector();
+  }
 
-    @Override
-    protected List<?> playerPossibilities(String query) {
-        return DirectorSystem.getHandler(Player.class).getPossibilities(query);
-    }
+  @Override
+  protected List<?> playerPossibilities(String query) {
+    return DirectorSystem.getHandler(Player.class).getPossibilities(query);
+  }
 
-    @Override
-    protected String format(double value) {
-        return Form.f(value, 2);
-    }
+  @Override
+  protected String format(double value) {
+    return Form.f(value, 2);
+  }
 }

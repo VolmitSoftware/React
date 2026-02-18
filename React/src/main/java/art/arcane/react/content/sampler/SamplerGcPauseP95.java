@@ -24,41 +24,41 @@ import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Material;
 
 public class SamplerGcPauseP95 extends ReactCachedSampler {
-    public static final String ID = "gc-pause-p95";
+  public static final String ID = "gc-pause-p95";
 
-    public SamplerGcPauseP95() {
-        super(ID, 1000);
-    }
+  public SamplerGcPauseP95() {
+    super(ID, 1000);
+  }
 
-    @Override
-    public void start() {
-        super.start();
-        GCStatsTracker.acquire();
-    }
+  @Override
+  public void start() {
+    super.start();
+    GCStatsTracker.acquire();
+  }
 
-    @Override
-    public void stop() {
-        GCStatsTracker.release();
-        super.stop();
-    }
+  @Override
+  public void stop() {
+    GCStatsTracker.release();
+    super.stop();
+  }
 
-    @Override
-    public Material getIcon() {
-        return Material.EXPERIENCE_BOTTLE;
-    }
+  @Override
+  public Material getIcon() {
+    return Material.EXPERIENCE_BOTTLE;
+  }
 
-    @Override
-    public double onSample() {
-        return SamplerMath.percentile(GCStatsTracker.snapshotPauses(), 0.95D);
-    }
+  @Override
+  public double onSample() {
+    return SamplerMath.percentile(GCStatsTracker.snapshotPauses(), 0.95D);
+  }
 
-    @Override
-    public String formattedValue(double t) {
-        return Form.f(t, 2);
-    }
+  @Override
+  public String formattedValue(double t) {
+    return Form.f(t, 2);
+  }
 
-    @Override
-    public String formattedSuffix(double t) {
-        return "ms GCP95";
-    }
+  @Override
+  public String formattedSuffix(double t) {
+    return "ms GCP95";
+  }
 }

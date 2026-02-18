@@ -29,63 +29,63 @@ import org.bukkit.Material;
 import java.util.List;
 
 public class SamplerBacklogGrowthRate extends ReactCachedSampler {
-    public static final String ID = "backlog-growth-rate";
-    private transient RollingSequence avg;
-    private transient int lastSize = 0;
-    private transient long lastSampleMS = 0;
-    private int averagingSamples = 12;
+  public static final String ID = "backlog-growth-rate";
+  private transient RollingSequence avg;
+  private transient int lastSize = 0;
+  private transient long lastSampleMS = 0;
+  private int averagingSamples = 12;
 
-    public SamplerBacklogGrowthRate() {
-        super(ID, 1000);
+  public SamplerBacklogGrowthRate() {
+    super(ID, 1000);
+  }
+
+  @Override
+  public void start() {
+    super.start();
+    avg = new RollingSequence(averagingSamples);
+    lastSize = 0;
+    lastSampleMS = 0;
+  }
+
+  @Override
+  public Material getIcon() {
+    return Material.COMPARATOR;
+  }
+
+  @Override
+  public double onSample() {
+    int currentSize = getQueueSize();
+    long now = System.currentTimeMillis();
+    if (lastSampleMS == 0) {
+      lastSampleMS = now;
+      lastSize = currentSize;
+      return 0;
     }
 
-    @Override
-    public void start() {
-        super.start();
-        avg = new RollingSequence(averagingSamples);
-        lastSize = 0;
-        lastSampleMS = 0;
-    }
+    long elapsedMS = Math.max(1L, now - lastSampleMS);
+    double elapsedSeconds = elapsedMS / 1000D;
+    double growthPerSecond = (currentSize - lastSize) / elapsedSeconds;
+    avg.put(growthPerSecond);
+    lastSampleMS = now;
+    lastSize = currentSize;
+    return avg.getAverage();
+  }
 
-    @Override
-    public Material getIcon() {
-        return Material.COMPARATOR;
+  private int getQueueSize() {
+    JobController controller = React.controller(JobController.class);
+    List<Runnable> jobs = controller.getJobs();
+    synchronized (jobs) {
+      return jobs.size();
     }
+  }
 
-    @Override
-    public double onSample() {
-        int currentSize = getQueueSize();
-        long now = System.currentTimeMillis();
-        if (lastSampleMS == 0) {
-            lastSampleMS = now;
-            lastSize = currentSize;
-            return 0;
-        }
+  @Override
+  public String formattedValue(double t) {
+    return Form.f(t, 2);
+  }
 
-        long elapsedMS = Math.max(1L, now - lastSampleMS);
-        double elapsedSeconds = elapsedMS / 1000D;
-        double growthPerSecond = (currentSize - lastSize) / elapsedSeconds;
-        avg.put(growthPerSecond);
-        lastSampleMS = now;
-        lastSize = currentSize;
-        return avg.getAverage();
-    }
-
-    private int getQueueSize() {
-        JobController controller = React.controller(JobController.class);
-        List<Runnable> jobs = controller.getJobs();
-        synchronized (jobs) {
-            return jobs.size();
-        }
-    }
-
-    @Override
-    public String formattedValue(double t) {
-        return Form.f(t, 2);
-    }
-
-    @Override
-    public String formattedSuffix(double t) {
-        return "BACKLOG/s";
-    }
+  @Override
+  public String formattedSuffix(double t) {
+    return "BACKLOG/s";
+  }
 }

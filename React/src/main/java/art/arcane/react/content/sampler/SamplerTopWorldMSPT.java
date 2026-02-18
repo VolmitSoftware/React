@@ -29,38 +29,38 @@ import org.bukkit.Material;
 import java.util.Map;
 
 public class SamplerTopWorldMSPT extends ReactCachedSampler {
-    public static final String ID = "top-world-mspt";
+  public static final String ID = "top-world-mspt";
 
-    public SamplerTopWorldMSPT() {
-        super(ID, 1000);
-    }
+  public SamplerTopWorldMSPT() {
+    super(ID, 1000);
+  }
 
-    @Override
-    public Material getIcon() {
-        return Material.CLOCK;
-    }
+  @Override
+  public Material getIcon() {
+    return Material.CLOCK;
+  }
 
-    @Override
-    public double onSample() {
-        return executeSync(() -> {
-            Map<String, SampledWorld> worlds = React.controller(ObserverController.class).getSampled().getWorlds();
-            SampledCostMath.CostSnapshot snapshot = SampledCostMath.snapshot(worlds);
-            if (snapshot.total() <= 0D) {
-                return 0D;
-            }
+  @Override
+  public double onSample() {
+    return executeSync(() -> {
+      Map<String, SampledWorld> worlds = React.controller(ObserverController.class).getSampled().getWorlds();
+      SampledCostMath.CostSnapshot snapshot = SampledCostMath.snapshot(worlds);
+      if (snapshot.total() <= 0D) {
+        return 0D;
+      }
 
-            double tickMS = React.sampler(SamplerTickTime.ID).sample();
-            return Math.max(0D, (snapshot.maxWorld() / snapshot.total()) * tickMS);
-        });
-    }
+      double tickMS = React.sampler(SamplerTickTime.ID).sample();
+      return Math.max(0D, (snapshot.maxWorld() / snapshot.total()) * tickMS);
+    });
+  }
 
-    @Override
-    public String formattedValue(double t) {
-        return Form.f(t, 2);
-    }
+  @Override
+  public String formattedValue(double t) {
+    return Form.f(t, 2);
+  }
 
-    @Override
-    public String formattedSuffix(double t) {
-        return "ms TOPW";
-    }
+  @Override
+  public String formattedSuffix(double t) {
+    return "ms TOPW";
+  }
 }

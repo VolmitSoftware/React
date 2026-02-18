@@ -36,151 +36,151 @@ import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 
 public class EntityKiller implements Listener {
-    private Entity entity;
-    private int seconds;
-    private int tt;
+  private Entity entity;
+  private int seconds;
+  private int tt;
 
-    public EntityKiller(Entity e, int seconds) {
-        if (React.controller(EntityController.class).getKilling().contains(e)) {
-            return;
-        }
-
-        React.controller(EntityController.class).getKilling().add(e);
-        React.controller(EntityController.class).getKillers().add(this);
-        React.instance.registerListener(this);
-        this.entity = e;
-        this.seconds = seconds;
-        this.tt = seconds;
-        tt = J.sr(this::tick, 20);
+  public EntityKiller(Entity e, int seconds) {
+    if (React.controller(EntityController.class).getKilling().contains(e)) {
+      return;
     }
 
-    public void stop() {
-        Entity target = entity;
-        if (target == null) {
-            cleanup();
-            return;
-        }
+    React.controller(EntityController.class).getKilling().add(e);
+    React.controller(EntityController.class).getKillers().add(this);
+    React.instance.registerListener(this);
+    this.entity = e;
+    this.seconds = seconds;
+    this.tt = seconds;
+    tt = J.sr(this::tick, 20);
+  }
 
-        if (J.runEntity(target, () -> {
-            target.setCustomNameVisible(false);
-            target.setCustomName(null);
-            cleanup();
-        })) {
-            return;
-        }
-
-        cleanup();
+  public void stop() {
+    Entity target = entity;
+    if (target == null) {
+      cleanup();
+      return;
     }
 
-    private void cleanup() {
-        if (React.instance != null) {
-            React.instance.unregisterListener(this);
-        }
-
-        EntityController controller = null;
-        try {
-            controller = React.controller(EntityController.class);
-        } catch (Throwable ex) {
-            if (React.instance != null && React.instance.isEnabled()) {
-                React.warn("EntityKiller cleanup failed to resolve EntityController: "
-                        + ex.getClass().getSimpleName()
-                        + (ex.getMessage() == null ? "" : " - " + ex.getMessage()));
-                React.reportError(ex);
-            }
-        }
-
-        if (controller != null && entity != null) {
-            controller.getKilling().remove(entity);
-        }
-
-        if (controller != null) {
-            controller.getKillers().remove(this);
-        }
-
-        if (tt != 0) {
-            J.csr(tt);
-            tt = 0;
-        }
+    if (J.runEntity(target, () -> {
+      target.setCustomNameVisible(false);
+      target.setCustomName(null);
+      cleanup();
+    })) {
+      return;
     }
 
-    private void tick() {
-        Entity target = entity;
-        if (target == null) {
-            stop();
-            return;
-        }
+    cleanup();
+  }
 
-        if (!J.runEntity(target, this::tickOwned)) {
-            stop();
-        }
+  private void cleanup() {
+    if (React.instance != null) {
+      React.instance.unregisterListener(this);
     }
 
-    private void tickOwned() {
-        if (entity.isDead()) {
-            stop();
-            return;
-        }
-
-        seconds--;
-        if (seconds <= 0) {
-            kill();
-            return;
-        }
-
-        entity.setCustomName(C.RED + "" + seconds + "s");
-        entity.setCustomNameVisible(true);
+    EntityController controller = null;
+    try {
+      controller = React.controller(EntityController.class);
+    } catch (Throwable ex) {
+      if (React.instance != null && React.instance.isEnabled()) {
+        React.warn("EntityKiller cleanup failed to resolve EntityController: "
+            + ex.getClass().getSimpleName()
+            + (ex.getMessage() == null ? "" : " - " + ex.getMessage()));
+        React.reportError(ex);
+      }
     }
 
-    public void kill() {
-        Entity target = entity;
-        if (target == null) {
-            stop();
-            return;
-        }
-
-        if (!J.runEntity(target, this::killOwned)) {
-            stop();
-        }
+    if (controller != null && entity != null) {
+      controller.getKilling().remove(entity);
     }
 
-    private void killOwned() {
-        if (entity.isDead()) {
-            return;
-        }
-
-        stop();
-        entity.getWorld().spawnParticle(Particle.FLASH, entity.getLocation(), 1, Color.WHITE);
-        entity.getWorld().getPlayers().forEach(player -> 
-                React.audiences.player(player).playSound(Sound.sound(
-                        Key.key("minecraft:particle.soul_escape"),
-                        Sound.Source.NEUTRAL,
-                        0.5f,
-                        0.9f
-                ), entity.getLocation().getX(), entity.getLocation().getY(), entity.getLocation().getZ())
-        );
-        entity.remove();
-        ((SamplerEntities) React.sampler(SamplerEntities.ID)).getEntities().decrementAndGet();
+    if (controller != null) {
+      controller.getKillers().remove(this);
     }
 
+    if (tt != 0) {
+      J.csr(tt);
+      tt = 0;
+    }
+  }
 
-    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-    public void on(EntityPickupItemEvent e) {
-        if (entity != null && e.getItem().equals(entity)) {
-            stop();
-        }
+  private void tick() {
+    Entity target = entity;
+    if (target == null) {
+      stop();
+      return;
     }
 
-    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-    public void on(PlayerInteractEntityEvent event) {
-        if (entity == null) {
-            return;
-        }
-
-        Entity clickedEntity = event.getRightClicked();
-        if (!entity.equals(clickedEntity)) {
-            return;
-        }
-        React.verbose("EntityKiller: countdown cancelled by player " + event.getPlayer().getName());
-        stop();
+    if (!J.runEntity(target, this::tickOwned)) {
+      stop();
     }
+  }
+
+  private void tickOwned() {
+    if (entity.isDead()) {
+      stop();
+      return;
+    }
+
+    seconds--;
+    if (seconds <= 0) {
+      kill();
+      return;
+    }
+
+    entity.setCustomName(C.RED + "" + seconds + "s");
+    entity.setCustomNameVisible(true);
+  }
+
+  public void kill() {
+    Entity target = entity;
+    if (target == null) {
+      stop();
+      return;
+    }
+
+    if (!J.runEntity(target, this::killOwned)) {
+      stop();
+    }
+  }
+
+  private void killOwned() {
+    if (entity.isDead()) {
+      return;
+    }
+
+    stop();
+    entity.getWorld().spawnParticle(Particle.FLASH, entity.getLocation(), 1, Color.WHITE);
+    entity.getWorld().getPlayers().forEach(player ->
+        React.audiences.player(player).playSound(Sound.sound(
+            Key.key("minecraft:particle.soul_escape"),
+            Sound.Source.NEUTRAL,
+            0.5f,
+            0.9f
+        ), entity.getLocation().getX(), entity.getLocation().getY(), entity.getLocation().getZ())
+    );
+    entity.remove();
+    ((SamplerEntities) React.sampler(SamplerEntities.ID)).getEntities().decrementAndGet();
+  }
+
+
+  @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
+  public void on(EntityPickupItemEvent e) {
+    if (entity != null && e.getItem().equals(entity)) {
+      stop();
+    }
+  }
+
+  @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
+  public void on(PlayerInteractEntityEvent event) {
+    if (entity == null) {
+      return;
+    }
+
+    Entity clickedEntity = event.getRightClicked();
+    if (!entity.equals(clickedEntity)) {
+      return;
+    }
+    React.verbose("EntityKiller: countdown cancelled by player " + event.getPlayer().getName());
+    stop();
+  }
 }

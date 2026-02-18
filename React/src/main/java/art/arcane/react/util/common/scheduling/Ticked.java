@@ -22,45 +22,45 @@ package art.arcane.react.util.scheduling;
 import art.arcane.volmlib.util.math.M;
 
 public interface Ticked {
-    default void retick() {
-        burst(1);
-    }
+  default void retick() {
+    burst(1);
+  }
 
-    default void skip() {
-        skip(1);
-    }
+  default void skip() {
+    skip(1);
+  }
 
-    void unregister();
+  void unregister();
 
-    boolean isBursting();
+  boolean isBursting();
 
-    boolean isSkipping();
+  boolean isSkipping();
 
-    void stopBursting();
+  void stopBursting();
 
-    void stopSkipping();
+  void stopSkipping();
 
-    long getTickCount();
+  long getTickCount();
 
-    long getAge();
+  long getAge();
 
-    void burst(int ticks);
+  void burst(int ticks);
 
-    void skip(int ticks);
+  void skip(int ticks);
 
-    long getTlastTick();
+  long getTlastTick();
 
-    long getTinterval();
+  long getTinterval();
 
-    void setTinterval(long ms);
+  void setTinterval(long ms);
 
-    void tick();
+  void tick();
 
-    String getTgroup();
+  String getTgroup();
 
-    String getTid();
+  String getTid();
 
-    default boolean shouldTick() {
-        return M.ms() - getTlastTick() > getTinterval();
-    }
+  default boolean shouldTick() {
+    return M.ms() - getTlastTick() > getTinterval();
+  }
 }

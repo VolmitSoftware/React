@@ -25,39 +25,39 @@ import java.util.Collections;
 import java.util.List;
 
 final class SamplerMath {
-    private SamplerMath() {
+  private SamplerMath() {
+  }
+
+  static double percentile(Collection<Double> values, double percentile) {
+    if (values == null || values.isEmpty()) {
+      return 0;
     }
 
-    static double percentile(Collection<Double> values, double percentile) {
-        if (values == null || values.isEmpty()) {
-            return 0;
-        }
-
-        List<Double> sorted = new ArrayList<>(values.size());
-        for (Double value : values) {
-            if (value != null && Double.isFinite(value)) {
-                sorted.add(value);
-            }
-        }
-
-        if (sorted.isEmpty()) {
-            return 0;
-        }
-
-        Collections.sort(sorted);
-        double p = clip(percentile, 0, 1);
-        double rank = p * (sorted.size() - 1);
-        int low = (int) Math.floor(rank);
-        int high = (int) Math.ceil(rank);
-        if (low == high) {
-            return sorted.get(low);
-        }
-
-        double weight = rank - low;
-        return (sorted.get(low) * (1D - weight)) + (sorted.get(high) * weight);
+    List<Double> sorted = new ArrayList<>(values.size());
+    for (Double value : values) {
+      if (value != null && Double.isFinite(value)) {
+        sorted.add(value);
+      }
     }
 
-    static double clip(double value, double min, double max) {
-        return Math.max(min, Math.min(max, value));
+    if (sorted.isEmpty()) {
+      return 0;
     }
+
+    Collections.sort(sorted);
+    double p = clip(percentile, 0, 1);
+    double rank = p * (sorted.size() - 1);
+    int low = (int) Math.floor(rank);
+    int high = (int) Math.ceil(rank);
+    if (low == high) {
+      return sorted.get(low);
+    }
+
+    double weight = rank - low;
+    return (sorted.get(low) * (1D - weight)) + (sorted.get(high) * weight);
+  }
+
+  static double clip(double value, double min, double max) {
+    return Math.max(min, Math.min(max, value));
+  }
 }

@@ -1,6 +1,7 @@
 package art.arcane.react.core.controller;
 
 import art.arcane.react.React;
+import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.core.integration.ReactIntegrationService;
 import art.arcane.react.core.integration.ReflectiveIntegrationProviderAdapter;
@@ -42,6 +43,10 @@ public class IntegrationController extends TickedObject implements IController {
     private static final long STALE_HEARTBEAT_TIMEOUT_MS = 15_000L;
     private static final long CORRELATION_COOLDOWN_MS = 10_000L;
     private static final long TIMELINE_RETENTION_MS = 180_000L;
+    private static final double ADAPT_SESSION_LOAD_THRESHOLD = 65D;
+    private static final double ADAPT_ABILITY_OPS_THRESHOLD = 240D;
+    private static final int ADAPT_ABILITY_OPS_SUSTAINED_SAMPLES = 3;
+    private static final double ADAPT_ABILITY_OPS_MSPT_GATE = 50D;
     private static final Set<String> PRIMARY_PLUGINS = Set.of("iris", "adapt");
 
     private final transient AtomicBoolean syncTickQueued = new AtomicBoolean(false);
@@ -54,6 +59,7 @@ public class IntegrationController extends TickedObject implements IController {
     private transient long lastCorrelationLogMs;
     private transient double previousIrisQueue;
     private transient String lastCorrelationMessage;
+    private transient int adaptAbilityOpsSampleStreak;
 
     public IntegrationController() {
         super("react", "integration", 1000);
@@ -78,6 +84,7 @@ public class IntegrationController extends TickedObject implements IController {
         lastCorrelationLogMs = 0L;
         previousIrisQueue = -1D;
         lastCorrelationMessage = "";
+        adaptAbilityOpsSampleStreak = 0;
         nodes.clear();
         timeline.clear();
         activeThresholds.clear();
@@ -92,6 +99,7 @@ public class IntegrationController extends TickedObject implements IController {
         nodes.clear();
         timeline.clear();
         activeThresholds.clear();
+        adaptAbilityOpsSampleStreak = 0;
     }
 
     @Override
@@ -382,6 +390,7 @@ public class IntegrationController extends TickedObject implements IController {
         double adaptSessionLoad = remoteSamplerBridge.valueOr("adapt", IntegrationMetricSchema.ADAPT_SESSION_LOAD, -1D);
         double adaptAbilityOps = remoteSamplerBridge.valueOr("adapt", ReactConfiguration.adaptAbilityOpsMetricKey(), -1D);
         String adaptAbilityOpsMode = ReactConfiguration.adaptAbilityOpsMetricLabel();
+        double tickMs = sampleTickMs();
 
         evaluateThreshold(
                 "iris.queue.high",
@@ -392,25 +401,64 @@ public class IntegrationController extends TickedObject implements IController {
         );
         evaluateThreshold(
                 "adapt.session.load.high",
-                adaptSessionLoad >= 65D,
+                adaptSessionLoad >= ADAPT_SESSION_LOAD_THRESHOLD,
                 String.format(Locale.ROOT, "Adapt session load high (%.1f%%)", adaptSessionLoad),
                 String.format(Locale.ROOT, "Adapt session load recovered (%.1f%%)", Math.max(0D, adaptSessionLoad)),
                 now
         );
+        boolean rawAbilityOpsHigh = adaptAbilityOps >= ADAPT_ABILITY_OPS_THRESHOLD;
+        if (rawAbilityOpsHigh) {
+            adaptAbilityOpsSampleStreak = Math.min(Integer.MAX_VALUE, adaptAbilityOpsSampleStreak + 1);
+        } else {
+            adaptAbilityOpsSampleStreak = 0;
+        }
+
+        evaluateThreshold(
+                "adapt.ability.ops.raw.high",
+                rawAbilityOpsHigh,
+                String.format(Locale.ROOT, "Adapt ability ops high [%s checks] (%.0f ops/min)", adaptAbilityOpsMode, adaptAbilityOps),
+                String.format(Locale.ROOT, "Adapt ability ops raw recovered [%s checks] (%.0f ops/min)", adaptAbilityOpsMode, Math.max(0D, adaptAbilityOps)),
+                now,
+                false
+        );
+
+        boolean stressGate = adaptSessionLoad >= ADAPT_SESSION_LOAD_THRESHOLD
+                || tickMs >= ADAPT_ABILITY_OPS_MSPT_GATE;
+        boolean sustainedGate = adaptAbilityOpsSampleStreak >= ADAPT_ABILITY_OPS_SUSTAINED_SAMPLES;
+        boolean gatedAbilityOpsHigh = rawAbilityOpsHigh && sustainedGate && stressGate;
+        String gateMode = resolveAdaptOpsGateMode(adaptSessionLoad, tickMs);
+
         evaluateThreshold(
                 "adapt.ability.ops.high",
-                adaptAbilityOps >= 240D,
-                String.format(Locale.ROOT, "Adapt ability ops elevated [%s checks] (%.0f ops/min)", adaptAbilityOpsMode, adaptAbilityOps),
-                String.format(Locale.ROOT, "Adapt ability ops normalized [%s checks] (%.0f ops/min)", adaptAbilityOpsMode, Math.max(0D, adaptAbilityOps)),
+                gatedAbilityOpsHigh,
+                String.format(
+                        Locale.ROOT,
+                        "Adapt ability ops elevated [%s checks] (%.0f ops/min, streak=%d, gate=%s)",
+                        adaptAbilityOpsMode,
+                        adaptAbilityOps,
+                        adaptAbilityOpsSampleStreak,
+                        gateMode
+                ),
+                String.format(
+                        Locale.ROOT,
+                        "Adapt ability ops normalized [%s checks] (%.0f ops/min, streak=%d)",
+                        adaptAbilityOpsMode,
+                        Math.max(0D, adaptAbilityOps),
+                        adaptAbilityOpsSampleStreak
+                ),
                 now
         );
     }
 
     private void evaluateThreshold(String key, boolean tripped, String tripMessage, String recoverMessage, long now) {
+        evaluateThreshold(key, tripped, tripMessage, recoverMessage, now, true);
+    }
+
+    private void evaluateThreshold(String key, boolean tripped, String tripMessage, String recoverMessage, long now, boolean severeTrip) {
         boolean wasActive = activeThresholds.getOrDefault(key, false);
         if (tripped && !wasActive) {
             activeThresholds.put(key, true);
-            addTimeline(tripMessage, now, true);
+            addTimeline(tripMessage, now, severeTrip);
             return;
         }
 
@@ -418,6 +466,29 @@ public class IntegrationController extends TickedObject implements IController {
             activeThresholds.put(key, false);
             addTimeline(recoverMessage, now, false);
         }
+    }
+
+    private double sampleTickMs() {
+        Sampler tickSampler = React.sampler(SamplerTickTime.ID);
+        if (tickSampler == null) {
+            return -1D;
+        }
+        return tickSampler.sample();
+    }
+
+    private String resolveAdaptOpsGateMode(double adaptSessionLoad, double tickMs) {
+        boolean loadGate = adaptSessionLoad >= ADAPT_SESSION_LOAD_THRESHOLD;
+        boolean msptGate = tickMs >= ADAPT_ABILITY_OPS_MSPT_GATE;
+        if (loadGate && msptGate) {
+            return "session+mspt";
+        }
+        if (loadGate) {
+            return "session";
+        }
+        if (msptGate) {
+            return "mspt";
+        }
+        return "none";
     }
 
     private void trimTimeline(long now) {

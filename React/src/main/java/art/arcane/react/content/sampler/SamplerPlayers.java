@@ -26,29 +26,29 @@ import org.bukkit.Material;
 import org.bukkit.event.Listener;
 
 public class SamplerPlayers extends ReactCachedSampler implements Listener {
-    public static final String ID = "players";
+  public static final String ID = "players";
 
-    public SamplerPlayers() {
-        super(ID, 250);
-    }
+  public SamplerPlayers() {
+    super(ID, 250);
+  }
 
-    @Override
-    public Material getIcon() {
-        return Material.TOTEM_OF_UNDYING;
-    }
+  @Override
+  public Material getIcon() {
+    return Material.TOTEM_OF_UNDYING;
+  }
 
-    @Override
-    public double onSample() {
-        return Bukkit.getServer().getOnlinePlayers().size();
-    }
+  @Override
+  public double onSample() {
+    return Bukkit.getServer().getOnlinePlayers().size();
+  }
 
-    @Override
-    public String formattedValue(double t) {
-        return Form.f(Math.round(t));
-    }
+  @Override
+  public String formattedValue(double t) {
+    return Form.f(Math.round(t));
+  }
 
-    @Override
-    public String formattedSuffix(double t) {
-        return "PLR";
-    }
+  @Override
+  public String formattedSuffix(double t) {
+    return "PLR";
+  }
 }

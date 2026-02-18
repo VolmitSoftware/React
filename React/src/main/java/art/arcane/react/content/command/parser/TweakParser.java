@@ -27,13 +27,13 @@ import art.arcane.react.core.controller.TweakController;
 import java.util.List;
 
 public class TweakParser implements SelectionParser<Tweak> {
-    @Override
-    public List<Tweak> getSelectionOptions() {
-        return React.controller(TweakController.class).getTweaks().all().stream().toList();
-    }
+  @Override
+  public List<Tweak> getSelectionOptions() {
+    return React.controller(TweakController.class).getTweaks().all().stream().toList();
+  }
 
-    @Override
-    public String getName(Tweak tweak) {
-        return tweak.getId();
-    }
+  @Override
+  public String getName(Tweak tweak) {
+    return tweak.getId();
+  }
 }

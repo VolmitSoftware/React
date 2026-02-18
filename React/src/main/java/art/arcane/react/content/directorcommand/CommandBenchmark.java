@@ -27,41 +27,41 @@ import art.arcane.volmlib.util.director.DirectorOrigin;
 import art.arcane.volmlib.util.director.annotations.Director;
 
 @Director(
-        name = "benchmark",
-        aliases = {"bench"},
-        origin = DirectorOrigin.BOTH,
-        description = "These are the benchmark commands, please note that the numbers are never accurate and are only meant to be used as a relative comparison."
+    name = "benchmark",
+    aliases = {"bench"},
+    origin = DirectorOrigin.BOTH,
+    description = "These are the benchmark commands, please note that the numbers are never accurate and are only meant to be used as a relative comparison."
 )
 public class CommandBenchmark implements DirectorExecutor {
 
-    @Director(
-            name = "cpu-benchmark",
-            aliases = {"cpu"},
-            description = "Benchmark the CPU"
-    )
-    public void cpuBenchmark() {
-        new CPUBenchmark(sender()).run();
-    }
+  @Director(
+      name = "cpu-benchmark",
+      aliases = {"cpu"},
+      description = "Benchmark the CPU"
+  )
+  public void cpuBenchmark() {
+    new CPUBenchmark(sender()).run();
+  }
 
 
-    @Director(
-            name = "drive-benchmark",
-            aliases = {"drive"},
-            description = "Benchmark the Hard-Drive"
-    )
-    public void driveBenchmark() {
-        new DriveBenchmark(sender()).run();
-    }
+  @Director(
+      name = "drive-benchmark",
+      aliases = {"drive"},
+      description = "Benchmark the Hard-Drive"
+  )
+  public void driveBenchmark() {
+    new DriveBenchmark(sender()).run();
+  }
 
 
-    @Director(
-            name = "memory-benchmark",
-            aliases = {"mem"},
-            description = "Benchmark the Memory"
-    )
-    public void memoryBenchmark() {
-        new MemoryBenchmark(sender()).run();
-    }
+  @Director(
+      name = "memory-benchmark",
+      aliases = {"mem"},
+      description = "Benchmark the Memory"
+  )
+  public void memoryBenchmark() {
+    new MemoryBenchmark(sender()).run();
+  }
 
 
 }

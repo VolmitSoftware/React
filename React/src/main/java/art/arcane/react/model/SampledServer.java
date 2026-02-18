@@ -30,51 +30,51 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Data
 public class SampledServer {
-    private final Map<String, SampledWorld> worlds;
+  private final Map<String, SampledWorld> worlds;
 
-    public SampledServer() {
-        worlds = new ConcurrentHashMap<>();
-    }
+  public SampledServer() {
+    worlds = new ConcurrentHashMap<>();
+  }
 
-    public SampledChunk getChunk(Chunk chunk) {
-        return getWorld(chunk.getWorld()).getChunk(chunk);
-    }
+  public SampledChunk getChunk(Chunk chunk) {
+    return getWorld(chunk.getWorld()).getChunk(chunk);
+  }
 
-    public Optional<SampledChunk> optionalChunk(Chunk c) {
-        return optionalWorld(c.getWorld()).flatMap((w) -> w.optionalChunk(c));
-    }
+  public Optional<SampledChunk> optionalChunk(Chunk c) {
+    return optionalWorld(c.getWorld()).flatMap((w) -> w.optionalChunk(c));
+  }
 
-    public boolean hasWorld(String world) {
-        return worlds.containsKey(world);
-    }
+  public boolean hasWorld(String world) {
+    return worlds.containsKey(world);
+  }
 
-    public boolean hasWorld(World world) {
-        return hasWorld(world.getName());
-    }
+  public boolean hasWorld(World world) {
+    return hasWorld(world.getName());
+  }
 
-    public void removeChunk(Chunk chunk) {
-        if (hasWorld(chunk.getWorld())) {
-            getWorld(chunk.getWorld()).remove(chunk);
-        }
+  public void removeChunk(Chunk chunk) {
+    if (hasWorld(chunk.getWorld())) {
+      getWorld(chunk.getWorld()).remove(chunk);
     }
+  }
 
-    public void removeWorld(World world) {
-        removeWorld(world.getName());
-    }
+  public void removeWorld(World world) {
+    removeWorld(world.getName());
+  }
 
-    public void removeWorld(String name) {
-        worlds.remove(name);
-    }
+  public void removeWorld(String name) {
+    worlds.remove(name);
+  }
 
-    public SampledWorld getWorld(World world) {
-        return getWorld(world.getName());
-    }
+  public SampledWorld getWorld(World world) {
+    return getWorld(world.getName());
+  }
 
-    public Optional<SampledWorld> optionalWorld(World world) {
-        return Optional.ofNullable(worlds.get(world.getName()));
-    }
+  public Optional<SampledWorld> optionalWorld(World world) {
+    return Optional.ofNullable(worlds.get(world.getName()));
+  }
 
-    public SampledWorld getWorld(String name) {
-        return worlds.computeIfAbsent(name, (k) -> new SampledWorld(Bukkit.getWorld(name)));
-    }
+  public SampledWorld getWorld(String name) {
+    return worlds.computeIfAbsent(name, (k) -> new SampledWorld(Bukkit.getWorld(name)));
+  }
 }

@@ -34,56 +34,56 @@ import java.util.stream.Collectors;
 @Builder
 @Data
 public class MonitorGroup {
-    private String color;
-    private String name;
+  private String color;
+  private String name;
 
-    @Singular
-    private List<String> samplers;
-    private String head;
+  @Singular
+  private List<String> samplers;
+  private String head;
 
-    public String getHeadOrSomething() {
-        if (head == null) {
-            if (samplers.size() > 0) {
-                head = samplers.get(0);
-            } else {
-                head = SamplerUnknown.ID;
-            }
+  public String getHeadOrSomething() {
+    if (head == null) {
+      if (samplers.size() > 0) {
+        head = samplers.get(0);
+      } else {
+        head = SamplerUnknown.ID;
+      }
+    }
+
+    return head;
+  }
+
+  public Sampler getHeadSampler() {
+    Sampler sampler = React.sampler(getHeadOrSomething());
+    if (sampler != null) {
+      return sampler;
+    }
+
+    if (samplers != null) {
+      for (String samplerId : new ArrayList<>(samplers)) {
+        Sampler candidate = React.sampler(samplerId);
+        if (candidate != null) {
+          head = samplerId;
+          return candidate;
         }
-
-        return head;
+      }
     }
 
-    public Sampler getHeadSampler() {
-        Sampler sampler = React.sampler(getHeadOrSomething());
-        if (sampler != null) {
-            return sampler;
-        }
+    return React.sampler(SamplerUnknown.ID);
+  }
 
-        if (samplers != null) {
-            for (String samplerId : new ArrayList<>(samplers)) {
-                Sampler candidate = React.sampler(samplerId);
-                if (candidate != null) {
-                    head = samplerId;
-                    return candidate;
-                }
-            }
-        }
+  public void setHeadSampler(String s) {
+    head = s;
+  }
 
-        return React.sampler(SamplerUnknown.ID);
+  public List<Sampler> getSubSamplers() {
+    if (samplers == null) {
+      return List.of();
     }
+    return samplers.stream().skip(1).map(i -> (Sampler) React.sampler(i)).filter(i -> i != null).collect(Collectors.toList());
+  }
 
-    public void setHeadSampler(String s) {
-        head = s;
-    }
-
-    public List<Sampler> getSubSamplers() {
-        if (samplers == null) {
-            return List.of();
-        }
-        return samplers.stream().skip(1).map(i -> (Sampler) React.sampler(i)).filter(i -> i != null).collect(Collectors.toList());
-    }
-
-    public int getColorValue() {
-        return Color.decode(color).getRGB();
-    }
+  public int getColorValue() {
+    return Color.decode(color).getRGB();
+  }
 }

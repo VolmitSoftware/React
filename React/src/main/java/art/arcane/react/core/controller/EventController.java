@@ -44,227 +44,227 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class EventController extends TickedObject implements IController, Listener {
-    private transient int listenerCount;
-    private transient double totalTime;
-    private transient int calls;
-    private transient Map<String, Double> pluginEventTimeMS = new ConcurrentHashMap<>();
-    private transient Map<String, Integer> pluginEventCalls = new ConcurrentHashMap<>();
-    private transient AtomicBoolean running = new AtomicBoolean(false);
-    private transient boolean spiesInjected = false;
-    private transient long lastSamplerActivity = 0;
-    private long samplerActivityWindowMS = 15000;
+  private transient int listenerCount;
+  private transient double totalTime;
+  private transient int calls;
+  private transient Map<String, Double> pluginEventTimeMS = new ConcurrentHashMap<>();
+  private transient Map<String, Integer> pluginEventCalls = new ConcurrentHashMap<>();
+  private transient AtomicBoolean running = new AtomicBoolean(false);
+  private transient boolean spiesInjected = false;
+  private transient long lastSamplerActivity = 0;
+  private long samplerActivityWindowMS = 15000;
 
-    public EventController() {
-        super("react", "event", 5000);
+  public EventController() {
+    super("react", "event", 5000);
+  }
+
+  @Override
+  public String getName() {
+    return "Event";
+  }
+
+  @Override
+  public void start() {
+    pullOut();
+    spiesInjected = false;
+    lastSamplerActivity = 0;
+  }
+
+  @Override
+  public void stop() {
+    pullOut();
+    spiesInjected = false;
+  }
+
+  public void markSamplerActivity() {
+    lastSamplerActivity = System.currentTimeMillis();
+  }
+
+  @Override
+  public void postStart() {
+
+  }
+
+  @Override
+  public void onTick() {
+    if (running.get()) {
+      return;
     }
 
-    @Override
-    public String getName() {
-        return "Event";
-    }
-
-    @Override
-    public void start() {
+    if (System.currentTimeMillis() - lastSamplerActivity > samplerActivityWindowMS) {
+      if (spiesInjected) {
         pullOut();
         spiesInjected = false;
-        lastSamplerActivity = 0;
+      }
+
+      listenerCount = 0;
+      totalTime = 0;
+      calls = 0;
+      pluginEventTimeMS.clear();
+      pluginEventCalls.clear();
+      return;
     }
 
-    @Override
-    public void stop() {
-        pullOut();
-        spiesInjected = false;
+    spiesInjected = true;
+    updateHandlerListInjections();
+  }
+
+  public void call(Event event) {
+    Bukkit.getServer().getPluginManager().callEvent(event);
+  }
+
+  @EventHandler(priority = EventPriority.HIGH)
+  public void on(BlockDispenseEvent e) {
+    if (e.getItem().getType().equals(Material.MINECART)
+        || e.getItem().getType().equals(Material.CHEST_MINECART)
+        || e.getItem().getType().equals(Material.TNT_MINECART)
+        || e.getItem().getType().equals(Material.HOPPER_MINECART)
+        || e.getItem().getType().equals(Material.FURNACE_MINECART)
+        || e.getItem().getType().equals(Material.COMMAND_BLOCK_MINECART)) {
+      MinecartSpawnEvent s = new MinecartSpawnEvent(e.getBlock().getLocation());
+      call(s);
+      if (s.isCancelled()) {
+        e.setCancelled(true);
+      }
+    }
+  }
+
+  @EventHandler(priority = EventPriority.HIGH)
+  public void on(EntityPlaceEvent e) {
+    if (e.getEntityType().name().startsWith("MINECART")) {
+      MinecartSpawnEvent s = new MinecartSpawnEvent(e.getEntity().getLocation(), e.getPlayer());
+      call(s);
+
+      if (s.isCancelled()) {
+        e.setCancelled(true);
+      }
+    }
+  }
+
+  public void updateHandlerListInjections() {
+    if (running.get()) {
+      return;
     }
 
-    public void markSamplerActivity() {
-        lastSamplerActivity = System.currentTimeMillis();
-    }
+    running.set(true);
 
-    @Override
-    public void postStart() {
-
-    }
-
-    @Override
-    public void onTick() {
-        if (running.get()) {
-            return;
-        }
-
-        if (System.currentTimeMillis() - lastSamplerActivity > samplerActivityWindowMS) {
-            if (spiesInjected) {
-                pullOut();
-                spiesInjected = false;
-            }
-
-            listenerCount = 0;
-            totalTime = 0;
-            calls = 0;
-            pluginEventTimeMS.clear();
-            pluginEventCalls.clear();
-            return;
-        }
-
-        spiesInjected = true;
-        updateHandlerListInjections();
-    }
-
-    public void call(Event event) {
-        Bukkit.getServer().getPluginManager().callEvent(event);
-    }
-
-    @EventHandler(priority = EventPriority.HIGH)
-    public void on(BlockDispenseEvent e) {
-        if (e.getItem().getType().equals(Material.MINECART)
-                || e.getItem().getType().equals(Material.CHEST_MINECART)
-                || e.getItem().getType().equals(Material.TNT_MINECART)
-                || e.getItem().getType().equals(Material.HOPPER_MINECART)
-                || e.getItem().getType().equals(Material.FURNACE_MINECART)
-                || e.getItem().getType().equals(Material.COMMAND_BLOCK_MINECART)) {
-            MinecartSpawnEvent s = new MinecartSpawnEvent(e.getBlock().getLocation());
-            call(s);
-            if (s.isCancelled()) {
-                e.setCancelled(true);
-            }
-        }
-    }
-
-    @EventHandler(priority = EventPriority.HIGH)
-    public void on(EntityPlaceEvent e) {
-        if (e.getEntityType().name().startsWith("MINECART")) {
-            MinecartSpawnEvent s = new MinecartSpawnEvent(e.getEntity().getLocation(), e.getPlayer());
-            call(s);
-
-            if (s.isCancelled()) {
-                e.setCancelled(true);
-            }
-        }
-    }
-
-    public void updateHandlerListInjections() {
-        if (running.get()) {
-            return;
-        }
-
-        running.set(true);
-
-        React.burst.lazy(() -> {
-            try {
-                totalTime = 0;
-                calls = 0;
-                int m = 0;
-                Map<String, Double> pluginTime = new HashMap<>();
-                Map<String, Integer> pluginCalls = new HashMap<>();
-                ArrayList<HandlerList> h = new ArrayList<>(Curse.on(HandlerList.class).get("allLists"));
-
-                for (HandlerList i : h) {
-                    RegisteredListener[] r = Curse.on(i).get("handlers");
-                    EnumMap<EventPriority, ArrayList<RegisteredListener>> map = Curse.on(i).get("handlerslots");
-                    if (r != null) {
-                        for (int j = 0; j < r.length; j++) {
-                            if (!(r[j] instanceof NaughtyRegisteredListener)) {
-                                r[j] = new NaughtyRegisteredListener(r[j].getListener(), Curse.on(r[j]).get("executor"),
-                                        r[j].getPriority(), r[j].getPlugin(), r[j].isIgnoringCancelled());
-                            } else {
-                                NaughtyRegisteredListener naughty = (NaughtyRegisteredListener) r[j];
-                                String pluginName = pluginName(naughty);
-                                double listenerTime = naughty.time;
-                                int listenerCalls = naughty.calls;
-                                totalTime += listenerTime;
-                                calls += listenerCalls;
-                                pluginTime.merge(pluginName, listenerTime, Double::sum);
-                                pluginCalls.merge(pluginName, listenerCalls, Integer::sum);
-                                naughty.time = 0;
-                                naughty.calls = 0;
-                            }
-                        }
-
-                        m += r.length;
-                    }
-
-                    if (map != null) {
-                        for (ArrayList<RegisteredListener> j : map.values()) {
-                            for (int k = 0; k < j.size(); k++) {
-                                if (!(j.get(k) instanceof NaughtyRegisteredListener)) {
-                                    j.set(k, new NaughtyRegisteredListener(j.get(k).getListener(), Curse.on(j.get(k)).get("executor"),
-                                            j.get(k).getPriority(), j.get(k).getPlugin(), j.get(k).isIgnoringCancelled()));
-                                } else {
-                                    NaughtyRegisteredListener naughty = (NaughtyRegisteredListener) j.get(k);
-                                    String pluginName = pluginName(naughty);
-                                    double listenerTime = naughty.time;
-                                    int listenerCalls = naughty.calls;
-                                    totalTime += listenerTime;
-                                    calls += listenerCalls;
-                                    pluginTime.merge(pluginName, listenerTime, Double::sum);
-                                    pluginCalls.merge(pluginName, listenerCalls, Integer::sum);
-                                    naughty.time = 0;
-                                    naughty.calls = 0;
-                                }
-                            }
-
-                            m += j.size();
-                        }
-                    }
-                }
-
-                listenerCount = m;
-                pluginEventTimeMS.clear();
-                pluginEventTimeMS.putAll(pluginTime);
-                pluginEventCalls.clear();
-                pluginEventCalls.putAll(pluginCalls);
-            } finally {
-                running.set(false);
-            }
-        });
-    }
-
-    public void pullOut() {
-        int out = 0;
+    React.burst.lazy(() -> {
+      try {
+        totalTime = 0;
+        calls = 0;
+        int m = 0;
+        Map<String, Double> pluginTime = new HashMap<>();
+        Map<String, Integer> pluginCalls = new HashMap<>();
         ArrayList<HandlerList> h = new ArrayList<>(Curse.on(HandlerList.class).get("allLists"));
 
         for (HandlerList i : h) {
-            RegisteredListener[] r = Curse.on(i).get("handlers");
-            EnumMap<EventPriority, ArrayList<RegisteredListener>> map = Curse.on(i).get("handlerslots");
-            if (r != null) {
-                for (int j = 0; j < r.length; j++) {
-                    if ((r[j] instanceof NaughtyRegisteredListener)) {
-                        r[j] = new RegisteredListener(r[j].getListener(), Curse.on(r[j]).get("executor"),
-                                r[j].getPriority(), r[j].getPlugin(), r[j].isIgnoringCancelled());
-                        out++;
-                    }
-                }
+          RegisteredListener[] r = Curse.on(i).get("handlers");
+          EnumMap<EventPriority, ArrayList<RegisteredListener>> map = Curse.on(i).get("handlerslots");
+          if (r != null) {
+            for (int j = 0; j < r.length; j++) {
+              if (!(r[j] instanceof NaughtyRegisteredListener)) {
+                r[j] = new NaughtyRegisteredListener(r[j].getListener(), Curse.on(r[j]).get("executor"),
+                    r[j].getPriority(), r[j].getPlugin(), r[j].isIgnoringCancelled());
+              } else {
+                NaughtyRegisteredListener naughty = (NaughtyRegisteredListener) r[j];
+                String pluginName = pluginName(naughty);
+                double listenerTime = naughty.time;
+                int listenerCalls = naughty.calls;
+                totalTime += listenerTime;
+                calls += listenerCalls;
+                pluginTime.merge(pluginName, listenerTime, Double::sum);
+                pluginCalls.merge(pluginName, listenerCalls, Integer::sum);
+                naughty.time = 0;
+                naughty.calls = 0;
+              }
             }
 
-            if (map != null) {
-                for (ArrayList<RegisteredListener> j : map.values()) {
-                    for (int k = 0; k < j.size(); k++) {
-                        if ((j.get(k) instanceof NaughtyRegisteredListener)) {
-                            j.set(k, new RegisteredListener(j.get(k).getListener(), Curse.on(j.get(k)).get("executor"),
-                                    j.get(k).getPriority(), j.get(k).getPlugin(), j.get(k).isIgnoringCancelled()));
-                            out++;
-                        }
-                    }
+            m += r.length;
+          }
+
+          if (map != null) {
+            for (ArrayList<RegisteredListener> j : map.values()) {
+              for (int k = 0; k < j.size(); k++) {
+                if (!(j.get(k) instanceof NaughtyRegisteredListener)) {
+                  j.set(k, new NaughtyRegisteredListener(j.get(k).getListener(), Curse.on(j.get(k)).get("executor"),
+                      j.get(k).getPriority(), j.get(k).getPlugin(), j.get(k).isIgnoringCancelled()));
+                } else {
+                  NaughtyRegisteredListener naughty = (NaughtyRegisteredListener) j.get(k);
+                  String pluginName = pluginName(naughty);
+                  double listenerTime = naughty.time;
+                  int listenerCalls = naughty.calls;
+                  totalTime += listenerTime;
+                  calls += listenerCalls;
+                  pluginTime.merge(pluginName, listenerTime, Double::sum);
+                  pluginCalls.merge(pluginName, listenerCalls, Integer::sum);
+                  naughty.time = 0;
+                  naughty.calls = 0;
                 }
+              }
+
+              m += j.size();
             }
+          }
         }
 
-        React.verbose("Pulled out " + out + " event listener spies.");
-    }
+        listenerCount = m;
+        pluginEventTimeMS.clear();
+        pluginEventTimeMS.putAll(pluginTime);
+        pluginEventCalls.clear();
+        pluginEventCalls.putAll(pluginCalls);
+      } finally {
+        running.set(false);
+      }
+    });
+  }
 
-    public Map<String, Double> snapshotPluginEventTimeMS() {
-        return new HashMap<>(pluginEventTimeMS);
-    }
+  public void pullOut() {
+    int out = 0;
+    ArrayList<HandlerList> h = new ArrayList<>(Curse.on(HandlerList.class).get("allLists"));
 
-    public Map<String, Integer> snapshotPluginEventCalls() {
-        return new HashMap<>(pluginEventCalls);
-    }
-
-    private String pluginName(RegisteredListener listener) {
-        if (listener == null || listener.getPlugin() == null || listener.getPlugin().getName() == null) {
-            return "Unknown";
+    for (HandlerList i : h) {
+      RegisteredListener[] r = Curse.on(i).get("handlers");
+      EnumMap<EventPriority, ArrayList<RegisteredListener>> map = Curse.on(i).get("handlerslots");
+      if (r != null) {
+        for (int j = 0; j < r.length; j++) {
+          if ((r[j] instanceof NaughtyRegisteredListener)) {
+            r[j] = new RegisteredListener(r[j].getListener(), Curse.on(r[j]).get("executor"),
+                r[j].getPriority(), r[j].getPlugin(), r[j].isIgnoringCancelled());
+            out++;
+          }
         }
+      }
 
-        String plugin = listener.getPlugin().getName().trim();
-        return plugin.isBlank() ? "Unknown" : plugin;
+      if (map != null) {
+        for (ArrayList<RegisteredListener> j : map.values()) {
+          for (int k = 0; k < j.size(); k++) {
+            if ((j.get(k) instanceof NaughtyRegisteredListener)) {
+              j.set(k, new RegisteredListener(j.get(k).getListener(), Curse.on(j.get(k)).get("executor"),
+                  j.get(k).getPriority(), j.get(k).getPlugin(), j.get(k).isIgnoringCancelled()));
+              out++;
+            }
+          }
+        }
+      }
     }
+
+    React.verbose("Pulled out " + out + " event listener spies.");
+  }
+
+  public Map<String, Double> snapshotPluginEventTimeMS() {
+    return new HashMap<>(pluginEventTimeMS);
+  }
+
+  public Map<String, Integer> snapshotPluginEventCalls() {
+    return new HashMap<>(pluginEventCalls);
+  }
+
+  private String pluginName(RegisteredListener listener) {
+    if (listener == null || listener.getPlugin() == null || listener.getPlugin().getName() == null) {
+      return "Unknown";
+    }
+
+    String plugin = listener.getPlugin().getName().trim();
+    return plugin.isBlank() ? "Unknown" : plugin;
+  }
 }

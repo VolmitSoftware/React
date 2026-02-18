@@ -21,77 +21,77 @@ package art.arcane.react.content.sampler;
 
 import art.arcane.react.React;
 import art.arcane.react.api.sampler.ReactCachedSampler;
-import art.arcane.volmlib.util.format.Form;
 import art.arcane.react.util.reflect.ThreadUtilizationMonitor;
+import art.arcane.volmlib.util.format.Form;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 
 public class SamplerTickTime extends ReactCachedSampler {
-    public static final String ID = "tick-time";
-    private transient ThreadUtilizationMonitor monitor;
+  public static final String ID = "tick-time";
+  private transient ThreadUtilizationMonitor monitor;
 
-    public SamplerTickTime() {
-        super(ID, 50);
+  public SamplerTickTime() {
+    super(ID, 50);
+  }
+
+  @Override
+  public Material getIcon() {
+    return Material.NAUTILUS_SHELL;
+  }
+
+  @Override
+  public void start() {
+    super.start();
+    ensureMonitor();
+  }
+
+  @Override
+  public void stop() {
+    ThreadUtilizationMonitor local = monitor;
+    monitor = null;
+    if (local != null) {
+      local.interrupt();
+    }
+    super.stop();
+  }
+
+  @Override
+  public double onSample() {
+    ensureMonitor();
+    return monitor == null ? 0D : monitor.getAverage();
+  }
+
+  @Override
+  public String format(double t) {
+    return formattedValue(t) + formattedSuffix(t);
+  }
+
+  @Override
+  public Component format(Component value, Component suffix) {
+    return Component.empty().append(value).append(suffix);
+  }
+
+  @Override
+  public String formattedValue(double t) {
+    return Form.durationSplit(t, 0)[0];
+  }
+
+  @Override
+  public String formattedSuffix(double t) {
+    return Form.durationSplit(t, 0)[1];
+  }
+
+  private synchronized void ensureMonitor() {
+    if (monitor != null) {
+      return;
     }
 
-    @Override
-    public Material getIcon() {
-        return Material.NAUTILUS_SHELL;
+    Thread target = React.serverThread == null ? Thread.currentThread() : React.serverThread;
+    try {
+      monitor = new ThreadUtilizationMonitor(target, 50);
+      monitor.start();
+    } catch (Throwable e) {
+      monitor = null;
     }
-
-    @Override
-    public void start() {
-        super.start();
-        ensureMonitor();
-    }
-
-    @Override
-    public void stop() {
-        ThreadUtilizationMonitor local = monitor;
-        monitor = null;
-        if (local != null) {
-            local.interrupt();
-        }
-        super.stop();
-    }
-
-    @Override
-    public double onSample() {
-        ensureMonitor();
-        return monitor == null ? 0D : monitor.getAverage();
-    }
-
-    @Override
-    public String format(double t) {
-        return formattedValue(t) + formattedSuffix(t);
-    }
-
-    @Override
-    public Component format(Component value, Component suffix) {
-        return Component.empty().append(value).append(suffix);
-    }
-
-    @Override
-    public String formattedValue(double t) {
-        return Form.durationSplit(t, 0)[0];
-    }
-
-    @Override
-    public String formattedSuffix(double t) {
-        return Form.durationSplit(t, 0)[1];
-    }
-
-    private synchronized void ensureMonitor() {
-        if (monitor != null) {
-            return;
-        }
-
-        Thread target = React.serverThread == null ? Thread.currentThread() : React.serverThread;
-        try {
-            monitor = new ThreadUtilizationMonitor(target, 50);
-            monitor.start();
-        } catch (Throwable e) {
-            monitor = null;
-        }
-    }
+  }
 }

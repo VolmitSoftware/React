@@ -26,29 +26,29 @@ import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Material;
 
 public class SamplerReactJobsQueue extends ReactCachedSampler {
-    public static final String ID = "react-jobs-queue";
+  public static final String ID = "react-jobs-queue";
 
-    public SamplerReactJobsQueue() {
-        super(ID, 50);
-    }
+  public SamplerReactJobsQueue() {
+    super(ID, 50);
+  }
 
-    @Override
-    public Material getIcon() {
-        return Material.MUSIC_DISC_5;
-    }
+  @Override
+  public Material getIcon() {
+    return Material.MUSIC_DISC_5;
+  }
 
-    @Override
-    public double onSample() {
-        return React.controller(JobController.class).getJobs().size();
-    }
+  @Override
+  public double onSample() {
+    return React.controller(JobController.class).getJobs().size();
+  }
 
-    @Override
-    public String formattedValue(double t) {
-        return Form.f(Math.ceil(t));
-    }
+  @Override
+  public String formattedValue(double t) {
+    return Form.f(Math.ceil(t));
+  }
 
-    @Override
-    public String formattedSuffix(double t) {
-        return "JOBS";
-    }
+  @Override
+  public String formattedSuffix(double t) {
+    return "JOBS";
+  }
 }

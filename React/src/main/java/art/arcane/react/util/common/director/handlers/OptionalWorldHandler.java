@@ -19,12 +19,12 @@
 
 package art.arcane.react.util.director.handlers;
 
-import art.arcane.volmlib.util.director.handlers.base.OptionalWorldHandlerBase;
 import art.arcane.react.util.director.DirectorParameterHandler;
+import art.arcane.volmlib.util.director.handlers.base.OptionalWorldHandlerBase;
 
 public class OptionalWorldHandler extends OptionalWorldHandlerBase implements DirectorParameterHandler<String> {
-    @Override
-    protected String excludedPrefix() {
-        return "iris/";
-    }
+  @Override
+  protected String excludedPrefix() {
+    return "iris/";
+  }
 }

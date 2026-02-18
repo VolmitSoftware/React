@@ -29,33 +29,33 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockFromToEvent;
 
 public class SamplerFluidUpdates extends ReactCachedRateSampler implements Listener {
-    public static final String ID = "fluid";
+  public static final String ID = "fluid";
 
-    public SamplerFluidUpdates() {
-        super(ID, 1000);
-    }
+  public SamplerFluidUpdates() {
+    super(ID, 1000);
+  }
 
-    @Override
-    public Material getIcon() {
-        return Material.MILK_BUCKET;
-    }
+  @Override
+  public Material getIcon() {
+    return Material.MILK_BUCKET;
+  }
 
-    @EventHandler
-    public void onBlockFromTo(BlockFromToEvent event) {
-        BlockData data = event.getBlock().getBlockData();
-        if (data instanceof Levelled) {
-            increment();
-            getChunkCounter(event.getBlock()).addAndGet(1D);
-        }
+  @EventHandler
+  public void onBlockFromTo(BlockFromToEvent event) {
+    BlockData data = event.getBlock().getBlockData();
+    if (data instanceof Levelled) {
+      increment();
+      getChunkCounter(event.getBlock()).addAndGet(1D);
     }
+  }
 
-    @Override
-    public String formattedValue(double t) {
-        return Form.f(Math.round(t));
-    }
+  @Override
+  public String formattedValue(double t) {
+    return Form.f(Math.round(t));
+  }
 
-    @Override
-    public String formattedSuffix(double t) {
-        return "FLOW/s";
-    }
+  @Override
+  public String formattedSuffix(double t) {
+    return "FLOW/s";
+  }
 }

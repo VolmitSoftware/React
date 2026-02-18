@@ -30,37 +30,37 @@ import art.arcane.volmlib.util.director.annotations.Director;
 import org.bukkit.entity.Player;
 
 @Director(
-        name = "config",
-        aliases = {"cfg", "c"},
-        origin = DirectorOrigin.BOTH,
-        description = "This is the place to configure Itemized Settings."
+    name = "config",
+    aliases = {"cfg", "c"},
+    origin = DirectorOrigin.BOTH,
+    description = "This is the place to configure Itemized Settings."
 )
 public class CommandConfig implements DirectorExecutor {
-    @Director(
-            name = "gui",
-            aliases = {"menu", "editor"},
-            description = "Open the React TOML config editor.",
-            origin = DirectorOrigin.PLAYER
-    )
-    public void gui() {
-        Player player = player();
-        if (!ReactConfigGUI.canConfigure(player)) {
-            sender().sendMessage(C.RED + "You do not have permission to open the config editor.");
-            return;
-        }
-
-        ReactConfigGUI.open(player);
+  @Director(
+      name = "gui",
+      aliases = {"menu", "editor"},
+      description = "Open the React TOML config editor.",
+      origin = DirectorOrigin.PLAYER
+  )
+  public void gui() {
+    Player player = player();
+    if (!ReactConfigGUI.canConfigure(player)) {
+      sender().sendMessage(C.RED + "You do not have permission to open the config editor.");
+      return;
     }
 
-    @Director(
-            name = "monitor",
-            aliases = {"m", "mon"},
-            description = "Configure the monitor",
-            origin = DirectorOrigin.PLAYER
-    )
-    public void monitor() {
-        Player player = player();
-        MonitorConfigGUI.editMonitorConfiguration(player, React.controller(PlayerController.class).getPlayer(player).getSettings().getMonitorConfiguration(),
-                (c) -> React.controller(PlayerController.class).getPlayer(player).saveSettings());
-    }
+    ReactConfigGUI.open(player);
+  }
+
+  @Director(
+      name = "monitor",
+      aliases = {"m", "mon"},
+      description = "Configure the monitor",
+      origin = DirectorOrigin.PLAYER
+  )
+  public void monitor() {
+    Player player = player();
+    MonitorConfigGUI.editMonitorConfiguration(player, React.controller(PlayerController.class).getPlayer(player).getSettings().getMonitorConfiguration(),
+        (c) -> React.controller(PlayerController.class).getPlayer(player).saveSettings());
+  }
 }

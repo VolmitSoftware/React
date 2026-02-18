@@ -42,204 +42,204 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Reduces entity spawns / garbage by teleporting drops and xp from blocks and entities directly into your inventory
+ * Reduces entity spawns / garbage by teleporting drops and xp from blocks and
+ * entities directly into your inventory
  */
 @art.arcane.react.util.config.ConfigDescription("Configuration for Fast Drops tweak. Routes drops and XP directly to players to reduce ground-item buildup and pickup churn.")
 public class TweakFastDrops extends ReactTweak implements Listener {
-    public static final String ID = "fast-drops";
-    @art.arcane.react.util.config.ConfigDoc(value = "Controls whether fast drops applies teleport block drops.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
-    private boolean teleportBlockDrops = true;
-    @art.arcane.react.util.config.ConfigDoc(value = "Controls whether fast drops applies teleport block xp.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
-    private boolean teleportBlockXP = true;
-    @art.arcane.react.util.config.ConfigDoc(value = "Controls whether fast drops applies teleport entity drops.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
-    private boolean teleportEntityDrops = true;
-    @art.arcane.react.util.config.ConfigDoc(value = "Controls whether fast drops applies teleport entity xp.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
-    private boolean teleportEntityXP = true;
-    @art.arcane.react.util.config.ConfigDoc(value = "Allows container drops in fast drops.", impact = "Enable this to permit the behavior; disable it to block or throttle that path.")
-    private boolean allowContainerDrops = false;
+  public static final String ID = "fast-drops";
+  @art.arcane.react.util.config.ConfigDoc(value = "Controls whether fast drops applies teleport block drops.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
+  private boolean teleportBlockDrops = true;
+  @art.arcane.react.util.config.ConfigDoc(value = "Controls whether fast drops applies teleport block xp.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
+  private boolean teleportBlockXP = true;
+  @art.arcane.react.util.config.ConfigDoc(value = "Controls whether fast drops applies teleport entity drops.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
+  private boolean teleportEntityDrops = true;
+  @art.arcane.react.util.config.ConfigDoc(value = "Controls whether fast drops applies teleport entity xp.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
+  private boolean teleportEntityXP = true;
+  @art.arcane.react.util.config.ConfigDoc(value = "Allows container drops in fast drops.", impact = "Enable this to permit the behavior; disable it to block or throttle that path.")
+  private boolean allowContainerDrops = false;
 
-    public TweakFastDrops() {
-        super(ID);
+  public TweakFastDrops() {
+    super(ID);
+  }
+
+  @EventHandler(priority = EventPriority.MONITOR)
+  public void on(EntityDeathEvent e) {
+    if (!teleportEntityXP && !teleportEntityDrops) {
+      return;
     }
 
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void on(EntityDeathEvent e) {
-        if (!teleportEntityXP && !teleportEntityDrops) {
-            return;
+    Player p = e.getEntity().getKiller();
+
+    if (p != null) {
+      if (p.getGameMode().equals(GameMode.CREATIVE)) {
+        return;
+      }
+
+      if (p.getLocation().distanceSquared(e.getEntity().getLocation()) > 7 * 7) {
+        return;
+      }
+
+      int xp = teleportEntityXP ? e.getDroppedExp() : 0;
+
+      if (teleportEntityDrops) {
+        e.setDroppedExp(0);
+
+        if (xp > 0) {
+          p.giveExp(xp);
+          React.audiences.player(p).playSound(Sound.sound(
+              Key.key("minecraft:entity.experience_orb.pickup"),
+              Sound.Source.PLAYER,
+              0.7f,
+              1f + RNG.r.f(-0.2f, 0.2f)
+          ));
         }
+      }
 
-        Player p = e.getEntity().getKiller();
+      if (teleportBlockDrops) {
+        List<ItemStack> drops = new ArrayList<>(e.getDrops());
+        e.getDrops().clear();
+        for (ItemStack i : drops) {
+          boolean dropped = false;
+          for (ItemStack j : p.getInventory().addItem(i).values()) {
+            p.getWorld().dropItemNaturally(p.getLocation(), j);
+            dropped = true;
+          }
 
-        if (p != null) {
-            if (p.getGameMode().equals(GameMode.CREATIVE)) {
-                return;
-            }
-
-            if (p.getLocation().distanceSquared(e.getEntity().getLocation()) > 7 * 7) {
-                return;
-            }
-
-            int xp = teleportEntityXP ? e.getDroppedExp() : 0;
-
-            if (teleportEntityDrops) {
-                e.setDroppedExp(0);
-
-                if (xp > 0) {
-                    p.giveExp(xp);
-                    React.audiences.player(p).playSound(Sound.sound(
-                            Key.key("minecraft:entity.experience_orb.pickup"),
-                            Sound.Source.PLAYER,
-                            0.7f,
-                            1f + RNG.r.f(-0.2f, 0.2f)
-                    ));
-                }
-            }
-
-            if (teleportBlockDrops) {
-                List<ItemStack> drops = new ArrayList<>(e.getDrops());
-                e.getDrops().clear();
-                for (ItemStack i : drops) {
-                    boolean dropped = false;
-                    for (ItemStack j : p.getInventory().addItem(i).values()) {
-                        p.getWorld().dropItemNaturally(p.getLocation(), j);
-                        dropped = true;
-                    }
-
-                    if (!dropped) {
-                        React.audiences.player(p).playSound(Sound.sound(
-                                Key.key("minecraft:entity.item.pickup"),
-                                Sound.Source.PLAYER,
-                                0.7f,
-                                1f + RNG.r.f(-0.2f, 0.2f)
-                        ));
-                    }
-                }
-            }
-        }
-    }
-
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void on(BlockDropItemEvent e) {
-        if (!allowContainerDrops && e.getBlock().getState() instanceof InventoryHolder) {
-            return;
-        }
-
-        if (!e.getPlayer().getGameMode().equals(GameMode.SURVIVAL)) {
-            return;
-        }
-
-        if (teleportBlockDrops) {
-            e.setCancelled(true);
-
-            for (Item i : e.getItems()) {
-                boolean dropped = false;
-                for (ItemStack j : e.getPlayer().getInventory().addItem(i.getItemStack()).values()) {
-                    e.getPlayer().getWorld().dropItemNaturally(i.getLocation(), j);
-                    dropped = true;
-                }
-
-                if (!dropped) {
-                    React.audiences.player(e.getPlayer()).playSound(Sound.sound(
-                            Key.key("minecraft:entity.item.pickup"),
-                            Sound.Source.PLAYER,
-                            0.7f,
-                            1f + RNG.r.f(-0.2f, 0.2f)
-                    ));
-                }
-            }
-        }
-    }
-
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void on(BlockBreakEvent e) {
-        if (!teleportBlockXP) {
-            return;
-        }
-
-        if (!e.getPlayer().getGameMode().equals(GameMode.SURVIVAL)) {
-            return;
-        }
-
-        int xp = teleportBlockXP ? e.getExpToDrop() : 0;
-
-        if (teleportBlockXP) {
-            e.setExpToDrop(0);
-        }
-
-        if (xp > 0 && teleportEntityXP) {
-            e.getPlayer().giveExp(xp);
-            React.audiences.player(e.getPlayer()).playSound(Sound.sound(
-                    Key.key("minecraft:entity.experience_orb.pickup"),
-                    Sound.Source.PLAYER,
-                    0.7f,
-                    1f + RNG.r.f(-0.2f, 0.2f)
+          if (!dropped) {
+            React.audiences.player(p).playSound(Sound.sound(
+                Key.key("minecraft:entity.item.pickup"),
+                Sound.Source.PLAYER,
+                0.7f,
+                1f + RNG.r.f(-0.2f, 0.2f)
             ));
+          }
         }
+      }
+    }
+  }
+
+  @EventHandler(priority = EventPriority.MONITOR)
+  public void on(BlockDropItemEvent e) {
+    if (!allowContainerDrops && e.getBlock().getState() instanceof InventoryHolder) {
+      return;
     }
 
-
-
-    public void giveXP(Location at, Player player, int xp) {
-        if (player.getGameMode().equals(GameMode.CREATIVE)) {
-            return;
-        }
-
-        if (isEnabled()) {
-            player.giveExp(xp);
-            React.audiences.player(player).playSound(Sound.sound(
-                    Key.key("minecraft:entity.experience_orb.pickup"),
-                    Sound.Source.PLAYER,
-                    0.7f,
-                    1f + RNG.r.f(-0.2f, 0.2f)
-            ));
-        } else {
-            ExperienceOrb orb = (ExperienceOrb) at.getWorld().spawnEntity(at, org.bukkit.entity.EntityType.EXPERIENCE_ORB);
-            orb.setExperience(xp);
-        }
+    if (!e.getPlayer().getGameMode().equals(GameMode.SURVIVAL)) {
+      return;
     }
 
-    public void giveItem(Location at, Player player, ItemStack item) {
-        if (player.getGameMode().equals(GameMode.CREATIVE)) {
-            return;
+    if (teleportBlockDrops) {
+      e.setCancelled(true);
+
+      for (Item i : e.getItems()) {
+        boolean dropped = false;
+        for (ItemStack j : e.getPlayer().getInventory().addItem(i.getItemStack()).values()) {
+          e.getPlayer().getWorld().dropItemNaturally(i.getLocation(), j);
+          dropped = true;
         }
 
-        if (isEnabled()) {
-            boolean dropped = false;
-            for (ItemStack j : player.getInventory().addItem(item).values()) {
-                player.getWorld().dropItemNaturally(at, j);
-                dropped = true;
-            }
-
-            if (!dropped) {
-                React.audiences.player(player).playSound(Sound.sound(
-                        Key.key("minecraft:entity.item.pickup"),
-                        Sound.Source.PLAYER,
-                        0.7f,
-                        1f + RNG.r.f(-0.2f, 0.2f)
-                ));
-            }
-        } else {
-            player.getWorld().dropItemNaturally(at, item);
+        if (!dropped) {
+          React.audiences.player(e.getPlayer()).playSound(Sound.sound(
+              Key.key("minecraft:entity.item.pickup"),
+              Sound.Source.PLAYER,
+              0.7f,
+              1f + RNG.r.f(-0.2f, 0.2f)
+          ));
         }
+      }
+    }
+  }
+
+  @EventHandler(priority = EventPriority.MONITOR)
+  public void on(BlockBreakEvent e) {
+    if (!teleportBlockXP) {
+      return;
     }
 
-    @Override
-    public void onActivate() {
-
+    if (!e.getPlayer().getGameMode().equals(GameMode.SURVIVAL)) {
+      return;
     }
 
-    @Override
-    public void onDeactivate() {
+    int xp = teleportBlockXP ? e.getExpToDrop() : 0;
 
+    if (teleportBlockXP) {
+      e.setExpToDrop(0);
     }
 
-    @Override
-    public int getTickInterval() {
-        return -1;
+    if (xp > 0 && teleportEntityXP) {
+      e.getPlayer().giveExp(xp);
+      React.audiences.player(e.getPlayer()).playSound(Sound.sound(
+          Key.key("minecraft:entity.experience_orb.pickup"),
+          Sound.Source.PLAYER,
+          0.7f,
+          1f + RNG.r.f(-0.2f, 0.2f)
+      ));
+    }
+  }
+
+
+  public void giveXP(Location at, Player player, int xp) {
+    if (player.getGameMode().equals(GameMode.CREATIVE)) {
+      return;
     }
 
-    @Override
-    public void onTick() {
-
+    if (isEnabled()) {
+      player.giveExp(xp);
+      React.audiences.player(player).playSound(Sound.sound(
+          Key.key("minecraft:entity.experience_orb.pickup"),
+          Sound.Source.PLAYER,
+          0.7f,
+          1f + RNG.r.f(-0.2f, 0.2f)
+      ));
+    } else {
+      ExperienceOrb orb = (ExperienceOrb) at.getWorld().spawnEntity(at, org.bukkit.entity.EntityType.EXPERIENCE_ORB);
+      orb.setExperience(xp);
     }
+  }
+
+  public void giveItem(Location at, Player player, ItemStack item) {
+    if (player.getGameMode().equals(GameMode.CREATIVE)) {
+      return;
+    }
+
+    if (isEnabled()) {
+      boolean dropped = false;
+      for (ItemStack j : player.getInventory().addItem(item).values()) {
+        player.getWorld().dropItemNaturally(at, j);
+        dropped = true;
+      }
+
+      if (!dropped) {
+        React.audiences.player(player).playSound(Sound.sound(
+            Key.key("minecraft:entity.item.pickup"),
+            Sound.Source.PLAYER,
+            0.7f,
+            1f + RNG.r.f(-0.2f, 0.2f)
+        ));
+      }
+    } else {
+      player.getWorld().dropItemNaturally(at, item);
+    }
+  }
+
+  @Override
+  public void onActivate() {
+
+  }
+
+  @Override
+  public void onDeactivate() {
+
+  }
+
+  @Override
+  public int getTickInterval() {
+    return -1;
+  }
+
+  @Override
+  public void onTick() {
+
+  }
 }

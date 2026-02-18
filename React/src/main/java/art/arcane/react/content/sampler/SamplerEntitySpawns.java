@@ -31,48 +31,48 @@ import org.bukkit.event.entity.EntitySpawnEvent;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class SamplerEntitySpawns extends ReactCachedSampler implements Listener {
-    public static final String ID = "entities-spawns";
-    private static final double D1_OVER_SECONDS = 1.0 / 1000D;
-    private transient final AtomicInteger generated;
-    private transient final RollingSequence avg = new RollingSequence(5);
-    private transient long lastSample = 0L;
+  public static final String ID = "entities-spawns";
+  private static final double D1_OVER_SECONDS = 1.0 / 1000D;
+  private transient final AtomicInteger generated;
+  private transient final RollingSequence avg = new RollingSequence(5);
+  private transient long lastSample = 0L;
 
-    public SamplerEntitySpawns() {
-        super(ID, 1000); // 1 tick interval for higher accuracy
-        generated = new AtomicInteger(0);
+  public SamplerEntitySpawns() {
+    super(ID, 1000); // 1 tick interval for higher accuracy
+    generated = new AtomicInteger(0);
+  }
+
+  @Override
+  public Material getIcon() {
+    return Material.SHULKER_SPAWN_EGG;
+  }
+
+  @EventHandler
+  public void on(EntitySpawnEvent event) {
+    generated.incrementAndGet();
+  }
+
+  @Override
+  public double onSample() {
+    if (lastSample == 0) {
+      lastSample = M.ms();
     }
 
-    @Override
-    public Material getIcon() {
-        return Material.SHULKER_SPAWN_EGG;
-    }
+    int r = generated.getAndSet(0);
+    long dur = Math.max(M.ms() - lastSample, 1000);
+    lastSample = M.ms();
+    avg.put(r / (dur * D1_OVER_SECONDS));
 
-    @EventHandler
-    public void on(EntitySpawnEvent event) {
-        generated.incrementAndGet();
-    }
+    return avg.getAverage();
+  }
 
-    @Override
-    public double onSample() {
-        if (lastSample == 0) {
-            lastSample = M.ms();
-        }
+  @Override
+  public String formattedValue(double t) {
+    return Form.f(Math.round(t));
+  }
 
-        int r = generated.getAndSet(0);
-        long dur = Math.max(M.ms() - lastSample, 1000);
-        lastSample = M.ms();
-        avg.put(r / (dur * D1_OVER_SECONDS));
-
-        return avg.getAverage();
-    }
-
-    @Override
-    public String formattedValue(double t) {
-        return Form.f(Math.round(t));
-    }
-
-    @Override
-    public String formattedSuffix(double t) {
-        return "SPAWN/s";
-    }
+  @Override
+  public String formattedSuffix(double t) {
+    return "SPAWN/s";
+  }
 }

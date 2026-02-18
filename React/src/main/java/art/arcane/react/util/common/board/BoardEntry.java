@@ -1,21 +1,21 @@
 package art.arcane.react.util.board;
 
 public class BoardEntry {
-    private final art.arcane.volmlib.util.board.BoardEntry delegate;
+  private final art.arcane.volmlib.util.board.BoardEntry delegate;
 
-    private BoardEntry(art.arcane.volmlib.util.board.BoardEntry delegate) {
-        this.delegate = delegate;
-    }
+  private BoardEntry(art.arcane.volmlib.util.board.BoardEntry delegate) {
+    this.delegate = delegate;
+  }
 
-    public String getPrefix() {
-        return delegate.getPrefix();
-    }
+  public static BoardEntry translateToEntry(String input) {
+    return new BoardEntry(art.arcane.volmlib.util.board.BoardEntry.translateToEntry(input));
+  }
 
-    public String getSuffix() {
-        return delegate.getSuffix();
-    }
+  public String getPrefix() {
+    return delegate.getPrefix();
+  }
 
-    public static BoardEntry translateToEntry(String input) {
-        return new BoardEntry(art.arcane.volmlib.util.board.BoardEntry.translateToEntry(input));
-    }
+  public String getSuffix() {
+    return delegate.getSuffix();
+  }
 }

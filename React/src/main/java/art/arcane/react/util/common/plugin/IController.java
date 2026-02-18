@@ -22,9 +22,9 @@ package art.arcane.react.util.plugin;
 import art.arcane.react.util.registry.Registered;
 
 public interface IController extends Registered {
-    void start();
+  void start();
 
-    void stop();
+  void stop();
 
-    void postStart();
+  void postStart();
 }

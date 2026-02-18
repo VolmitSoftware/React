@@ -26,39 +26,40 @@ import art.arcane.volmlib.integration.IntegrationMetricSchema;
 import java.util.List;
 
 public class RendererAdaptMetrics extends RendererIntegrationMetricsBase {
-    public static final String ID = "adapt-metrics";
+  public static final String ID = "adapt-metrics";
 
-    @Override
-    public String getId() {
-        return ID;
-    }
+  @Override
+  public String getId() {
+    return ID;
+  }
 
-    @Override
-    protected String pluginId() {
-        return "adapt";
-    }
+  @Override
+  protected String pluginId() {
+    return "adapt";
+  }
 
-    @Override
-    protected String title() {
-        return "Adapt Metrics";
-    }
+  @Override
+  protected String title() {
+    return "Adapt Metrics";
+  }
 
-    @Override
-    protected TinyColor backgroundColor() {
-        return new TinyColor(18, 12, 24);
-    }
+  @Override
+  protected TinyColor backgroundColor() {
+    return new TinyColor(18, 12, 24);
+  }
 
-    @Override
-    protected TinyColor accentColor() {
-        return new TinyColor(160, 80, 70);
-    }
+  @Override
+  protected TinyColor accentColor() {
+    return new TinyColor(160, 80, 70);
+  }
 
-    @Override
-    protected List<MetricLine> metricLines() {
-        return List.of(
-                new MetricLine(IntegrationMetricSchema.ADAPT_SESSION_LOAD, "Session", 1, " %"),
-                new MetricLine(ReactConfiguration.adaptAbilityOpsMetricKey(), "Ability (" + ReactConfiguration.adaptAbilityOpsMetricLabel() + ")", 0, " op/m"),
-                new MetricLine(IntegrationMetricSchema.ADAPT_WORLD_POLICY_LATENCY, "Policy", 2, " ms")
-        );
-    }
+  @Override
+  protected List<MetricLine> metricLines() {
+    return List.of(
+        new MetricLine(IntegrationMetricSchema.ADAPT_SESSION_LOAD, "Session", 1, " %"),
+        new MetricLine(ReactConfiguration.adaptAbilityOpsMetricKey(), "Ability (" + ReactConfiguration.adaptAbilityOpsMetricLabel() + ")", 0, " op/m"),
+        new MetricLine(IntegrationMetricSchema.ADAPT_ABILITY_CHECK_OPS_TICK, "All/tick", 3, " op/t"),
+        new MetricLine(IntegrationMetricSchema.ADAPT_WORLD_POLICY_LATENCY, "Policy", 2, " ms")
+    );
+  }
 }

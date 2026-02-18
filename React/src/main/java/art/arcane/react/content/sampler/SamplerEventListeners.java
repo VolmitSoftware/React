@@ -27,37 +27,37 @@ import org.bukkit.Material;
 import org.bukkit.event.Listener;
 
 public class SamplerEventListeners extends ReactCachedSampler implements Listener {
-    public static final String ID = "events-listeners";
-    private transient EventController eventController;
+  public static final String ID = "events-listeners";
+  private transient EventController eventController;
 
-    public SamplerEventListeners() {
-        super(ID, 50);
-    }
+  public SamplerEventListeners() {
+    super(ID, 50);
+  }
 
-    @Override
-    public Material getIcon() {
-        return Material.HEART_OF_THE_SEA;
-    }
+  @Override
+  public Material getIcon() {
+    return Material.HEART_OF_THE_SEA;
+  }
 
-    @Override
-    public double onSample() {
-        eventController.markSamplerActivity();
-        return eventController.getListenerCount();
-    }
+  @Override
+  public double onSample() {
+    eventController.markSamplerActivity();
+    return eventController.getListenerCount();
+  }
 
-    @Override
-    public void start() {
-        super.start();
-        eventController = React.controller(EventController.class);
-    }
+  @Override
+  public void start() {
+    super.start();
+    eventController = React.controller(EventController.class);
+  }
 
-    @Override
-    public String formattedValue(double t) {
-        return Form.f(Math.round(t));
-    }
+  @Override
+  public String formattedValue(double t) {
+    return Form.f(Math.round(t));
+  }
 
-    @Override
-    public String formattedSuffix(double t) {
-        return "LISTENERS";
-    }
+  @Override
+  public String formattedSuffix(double t) {
+    return "LISTENERS";
+  }
 }

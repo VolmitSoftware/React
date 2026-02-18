@@ -25,45 +25,45 @@ import art.arcane.react.model.SampledWorld;
 import java.util.Map;
 
 final class SampledCostMath {
-    private SampledCostMath() {
-    }
+  private SampledCostMath() {
+  }
 
-    static CostSnapshot snapshot(Map<String, SampledWorld> worlds) {
-        double total = 0D;
-        double maxChunk = 0D;
-        double maxWorld = 0D;
+  static CostSnapshot snapshot(Map<String, SampledWorld> worlds) {
+    double total = 0D;
+    double maxChunk = 0D;
+    double maxWorld = 0D;
 
-        for (SampledWorld world : worlds.values()) {
-            double worldScore = 0D;
-            for (SampledChunk chunk : world.getChunks().values()) {
-                double chunkScore = chunk.totalScore();
-                worldScore += chunkScore;
-                total += chunkScore;
-                if (chunkScore > maxChunk) {
-                    maxChunk = chunkScore;
-                }
-            }
-
-            if (worldScore > maxWorld) {
-                maxWorld = worldScore;
-            }
+    for (SampledWorld world : worlds.values()) {
+      double worldScore = 0D;
+      for (SampledChunk chunk : world.getChunks().values()) {
+        double chunkScore = chunk.totalScore();
+        worldScore += chunkScore;
+        total += chunkScore;
+        if (chunkScore > maxChunk) {
+          maxChunk = chunkScore;
         }
+      }
 
-        return new CostSnapshot(total, maxChunk, maxWorld);
+      if (worldScore > maxWorld) {
+        maxWorld = worldScore;
+      }
     }
 
-    static double totalScore(Map<String, SampledWorld> worlds) {
-        return snapshot(worlds).total();
-    }
+    return new CostSnapshot(total, maxChunk, maxWorld);
+  }
 
-    static double maxWorldScore(Map<String, SampledWorld> worlds) {
-        return snapshot(worlds).maxWorld();
-    }
+  static double totalScore(Map<String, SampledWorld> worlds) {
+    return snapshot(worlds).total();
+  }
 
-    static double maxChunkScore(Map<String, SampledWorld> worlds) {
-        return snapshot(worlds).maxChunk();
-    }
+  static double maxWorldScore(Map<String, SampledWorld> worlds) {
+    return snapshot(worlds).maxWorld();
+  }
 
-    record CostSnapshot(double total, double maxChunk, double maxWorld) {
-    }
+  static double maxChunkScore(Map<String, SampledWorld> worlds) {
+    return snapshot(worlds).maxChunk();
+  }
+
+  record CostSnapshot(double total, double maxChunk, double maxWorld) {
+  }
 }

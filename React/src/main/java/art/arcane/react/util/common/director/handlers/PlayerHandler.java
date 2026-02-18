@@ -19,8 +19,8 @@
 
 package art.arcane.react.util.director.handlers;
 
-import art.arcane.volmlib.util.director.handlers.base.BukkitPlayerHandlerBase;
 import art.arcane.react.util.director.DirectorParameterHandler;
+import art.arcane.volmlib.util.director.handlers.base.BukkitPlayerHandlerBase;
 import org.bukkit.entity.Player;
 
 public class PlayerHandler extends BukkitPlayerHandlerBase implements DirectorParameterHandler<Player> {

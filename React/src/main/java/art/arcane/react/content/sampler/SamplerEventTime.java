@@ -28,47 +28,47 @@ import org.bukkit.Material;
 import org.bukkit.event.Listener;
 
 public class SamplerEventTime extends ReactCachedSampler implements Listener {
-    public static final String ID = "event-time";
-    private transient EventController eventController;
+  public static final String ID = "event-time";
+  private transient EventController eventController;
 
-    public SamplerEventTime() {
-        super(ID, 1000);
-    }
+  public SamplerEventTime() {
+    super(ID, 1000);
+  }
 
-    @Override
-    public Material getIcon() {
-        return Material.HEART_OF_THE_SEA;
-    }
+  @Override
+  public Material getIcon() {
+    return Material.HEART_OF_THE_SEA;
+  }
 
-    @Override
-    public double onSample() {
-        eventController.markSamplerActivity();
-        return eventController.getTotalTime();
-    }
+  @Override
+  public double onSample() {
+    eventController.markSamplerActivity();
+    return eventController.getTotalTime();
+  }
 
-    @Override
-    public void start() {
-        super.start();
-        eventController = React.controller(EventController.class);
-    }
+  @Override
+  public void start() {
+    super.start();
+    eventController = React.controller(EventController.class);
+  }
 
-    @Override
-    public String format(double t) {
-        return formattedValue(t) + formattedSuffix(t);
-    }
+  @Override
+  public String format(double t) {
+    return formattedValue(t) + formattedSuffix(t);
+  }
 
-    @Override
-    public Component format(Component value, Component suffix) {
-        return Component.empty().append(value).append(suffix);
-    }
+  @Override
+  public Component format(Component value, Component suffix) {
+    return Component.empty().append(value).append(suffix);
+  }
 
-    @Override
-    public String formattedValue(double t) {
-        return Form.durationSplit(t, 2)[0];
-    }
+  @Override
+  public String formattedValue(double t) {
+    return Form.durationSplit(t, 2)[0];
+  }
 
-    @Override
-    public String formattedSuffix(double t) {
-        return Form.durationSplit(t, 2)[1] + " EVENT TIME";
-    }
+  @Override
+  public String formattedSuffix(double t) {
+    return Form.durationSplit(t, 2)[1] + " EVENT TIME";
+  }
 }

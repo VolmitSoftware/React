@@ -22,19 +22,19 @@ package art.arcane.react.content.sampler;
 import org.bukkit.event.world.ChunkLoadEvent;
 
 public class SamplerChunkGenMS extends SamplerChunkEventDurationBase {
-    public static final String ID = "chunk-gen-ms";
+  public static final String ID = "chunk-gen-ms";
 
-    public SamplerChunkGenMS() {
-        super(ID);
-    }
+  public SamplerChunkGenMS() {
+    super(ID);
+  }
 
-    @Override
-    protected boolean include(ChunkLoadEvent event) {
-        return event.isNewChunk();
-    }
+  @Override
+  protected boolean include(ChunkLoadEvent event) {
+    return event.isNewChunk();
+  }
 
-    @Override
-    public String formattedSuffix(double t) {
-        return "ms CHGEN";
-    }
+  @Override
+  public String formattedSuffix(double t) {
+    return "ms CHGEN";
+  }
 }

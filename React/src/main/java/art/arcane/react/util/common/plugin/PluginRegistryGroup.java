@@ -23,38 +23,38 @@ import art.arcane.volmlib.util.collection.KList;
 import art.arcane.volmlib.util.collection.KMap;
 
 public class PluginRegistryGroup<T> {
-    private final KMap<String, PluginRegistry<T>> registries = new KMap<>();
+  private final KMap<String, PluginRegistry<T>> registries = new KMap<>();
 
-    public T resolve(String namespace, String id) {
-        if (registries.isEmpty()) {
-            return null;
-        }
-
-        PluginRegistry<T> r = registries.get(namespace);
-        if (r == null) {
-            return null;
-        }
-
-        return r.resolve(id);
+  public T resolve(String namespace, String id) {
+    if (registries.isEmpty()) {
+      return null;
     }
 
-    public void clearRegistries() {
-        registries.clear();
+    PluginRegistry<T> r = registries.get(namespace);
+    if (r == null) {
+      return null;
     }
 
-    public void removeRegistry(String namespace) {
-        registries.remove(namespace);
-    }
+    return r.resolve(id);
+  }
 
-    public PluginRegistry<T> getRegistry(String namespace) {
-        return registries.computeIfAbsent(namespace, PluginRegistry::new);
-    }
+  public void clearRegistries() {
+    registries.clear();
+  }
 
-    public KList<String> compile() {
-        KList<String> l = new KList<>();
-        registries.values().forEach((i)
-                -> i.getRegistries().forEach((j)
-                -> l.add(i.getNamespace() + ":" + j)));
-        return l;
-    }
+  public void removeRegistry(String namespace) {
+    registries.remove(namespace);
+  }
+
+  public PluginRegistry<T> getRegistry(String namespace) {
+    return registries.computeIfAbsent(namespace, PluginRegistry::new);
+  }
+
+  public KList<String> compile() {
+    KList<String> l = new KList<>();
+    registries.values().forEach((i)
+        -> i.getRegistries().forEach((j)
+        -> l.add(i.getNamespace() + ":" + j)));
+    return l;
+  }
 }

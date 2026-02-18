@@ -32,83 +32,83 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockFromToEvent;
 
 public class SamplerFluidTickTime extends ReactCachedSampler implements Listener {
-    public static final String ID = "fluid-tick-time";
-    private int tickAverage = 15;
-    private transient double maxDuration;
-    private transient PrecisionStopwatch stopwatch;
-    private transient RollingSequence average;
-    private transient boolean running;
+  public static final String ID = "fluid-tick-time";
+  private int tickAverage = 15;
+  private transient double maxDuration;
+  private transient PrecisionStopwatch stopwatch;
+  private transient RollingSequence average;
+  private transient boolean running;
 
-    public SamplerFluidTickTime() {
-        super(ID, 50);
-    }
+  public SamplerFluidTickTime() {
+    super(ID, 50);
+  }
 
-    @Override
-    public void start() {
-        super.start();
-        ensureRuntime();
-        running = false;
-        maxDuration = 0;
-    }
+  @Override
+  public void start() {
+    super.start();
+    ensureRuntime();
+    running = false;
+    maxDuration = 0;
+  }
 
-    @Override
-    public Material getIcon() {
-        return Material.MILK_BUCKET;
-    }
+  @Override
+  public Material getIcon() {
+    return Material.MILK_BUCKET;
+  }
 
-    @EventHandler
-    public void on(ServerTickEvent e) {
-        ensureRuntime();
-        average.put(maxDuration);
-        running = false;
-        maxDuration = 0;
-    }
+  @EventHandler
+  public void on(ServerTickEvent e) {
+    ensureRuntime();
+    average.put(maxDuration);
+    running = false;
+    maxDuration = 0;
+  }
 
-    @EventHandler
-    public void on(BlockFromToEvent e) {
-        ensureRuntime();
-        if (e.getBlock().getBlockData() instanceof Levelled || e.getToBlock().getBlockData() instanceof Levelled) {
-            if (!running) {
-                stopwatch.resetAndBegin();
-                running = true;
-            } else {
-                maxDuration = stopwatch.getMilliseconds();
-            }
-        }
+  @EventHandler
+  public void on(BlockFromToEvent e) {
+    ensureRuntime();
+    if (e.getBlock().getBlockData() instanceof Levelled || e.getToBlock().getBlockData() instanceof Levelled) {
+      if (!running) {
+        stopwatch.resetAndBegin();
+        running = true;
+      } else {
+        maxDuration = stopwatch.getMilliseconds();
+      }
     }
+  }
 
-    @Override
-    public double onSample() {
-        ensureRuntime();
-        return average == null ? 0D : average.getAverage();
-    }
+  @Override
+  public double onSample() {
+    ensureRuntime();
+    return average == null ? 0D : average.getAverage();
+  }
 
-    @Override
-    public String format(double t) {
-        return formattedValue(t) + formattedSuffix(t);
-    }
+  @Override
+  public String format(double t) {
+    return formattedValue(t) + formattedSuffix(t);
+  }
 
-    @Override
-    public Component format(Component value, Component suffix) {
-        return Component.empty().append(value).append(suffix);
-    }
+  @Override
+  public Component format(Component value, Component suffix) {
+    return Component.empty().append(value).append(suffix);
+  }
 
-    @Override
-    public String formattedValue(double t) {
-        return Form.durationSplit(t, 2)[0];
-    }
+  @Override
+  public String formattedValue(double t) {
+    return Form.durationSplit(t, 2)[0];
+  }
 
-    @Override
-    public String formattedSuffix(double t) {
-        return Form.durationSplit(t, 2)[1] + " FLU";
-    }
+  @Override
+  public String formattedSuffix(double t) {
+    return Form.durationSplit(t, 2)[1] + " FLU";
+  }
 
-    private synchronized void ensureRuntime() {
-        if (average == null) {
-            average = new RollingSequence(Math.max(1, tickAverage));
-        }
-        if (stopwatch == null) {
-            stopwatch = new PrecisionStopwatch();
-        }
+  private synchronized void ensureRuntime() {
+    if (average == null) {
+      average = new RollingSequence(Math.max(1, tickAverage));
     }
+    if (stopwatch == null) {
+      stopwatch = new PrecisionStopwatch();
+    }
+  }
 }

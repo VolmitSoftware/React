@@ -27,13 +27,13 @@ import art.arcane.react.core.controller.MapController;
 import java.util.List;
 
 public class RendererParser implements SelectionParser<ReactRenderer> {
-    @Override
-    public List<ReactRenderer> getSelectionOptions() {
-        return React.controller(MapController.class).getRenderers().values().stream().toList();
-    }
+  @Override
+  public List<ReactRenderer> getSelectionOptions() {
+    return React.controller(MapController.class).getRenderers().values().stream().toList();
+  }
 
-    @Override
-    public String getName(ReactRenderer renderer) {
-        return renderer.getId();
-    }
+  @Override
+  public String getName(ReactRenderer renderer) {
+    return renderer.getId();
+  }
 }

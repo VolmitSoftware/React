@@ -24,20 +24,20 @@ import org.bukkit.World;
 import java.lang.reflect.Method;
 
 public final class WorldDistanceSupport {
-    private WorldDistanceSupport() {
-    }
+  private WorldDistanceSupport() {
+  }
 
-    public static boolean supportsWorldDistanceSetters() {
-        return hasMethod(World.class, "setViewDistance", int.class)
-                && hasMethod(World.class, "setSimulationDistance", int.class);
-    }
+  public static boolean supportsWorldDistanceSetters() {
+    return hasMethod(World.class, "setViewDistance", int.class)
+        && hasMethod(World.class, "setSimulationDistance", int.class);
+  }
 
-    private static boolean hasMethod(Class<?> type, String name, Class<?>... params) {
-        try {
-            Method ignored = type.getMethod(name, params);
-            return true;
-        } catch (Throwable ignored) {
-            return false;
-        }
+  private static boolean hasMethod(Class<?> type, String name, Class<?>... params) {
+    try {
+      Method ignored = type.getMethod(name, params);
+      return true;
+    } catch (Throwable ignored) {
+      return false;
     }
+  }
 }

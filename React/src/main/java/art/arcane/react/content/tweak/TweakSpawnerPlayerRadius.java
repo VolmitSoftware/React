@@ -29,56 +29,56 @@ import org.bukkit.event.entity.CreatureSpawnEvent;
 
 @art.arcane.react.util.config.ConfigDescription("Configuration for Spawner Player Radius tweak. Blocks spawner and trial-spawner spawns when players are outside the required activation distance.")
 public class TweakSpawnerPlayerRadius extends ReactTweak implements Listener {
-    public static final String ID = "spawner-player-radius";
-    @art.arcane.react.util.config.ConfigDoc(value = "Required player radius used by spawner player radius (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
-    private double requiredPlayerDistance = 32;
-    @art.arcane.react.util.config.ConfigDoc(value = "Controls whether spawner player radius applies only monsters.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
-    private boolean onlyMonsters = true;
-    @art.arcane.react.util.config.ConfigDoc(value = "Controls whether spawner player radius applies enforce spawner spawns.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
-    private boolean enforceSpawnerSpawns = true;
-    @art.arcane.react.util.config.ConfigDoc(value = "Controls whether spawner player radius applies enforce trial spawner spawns.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
-    private boolean enforceTrialSpawnerSpawns = true;
+  public static final String ID = "spawner-player-radius";
+  @art.arcane.react.util.config.ConfigDoc(value = "Required player radius used by spawner player radius (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
+  private double requiredPlayerDistance = 32;
+  @art.arcane.react.util.config.ConfigDoc(value = "Controls whether spawner player radius applies only monsters.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
+  private boolean onlyMonsters = true;
+  @art.arcane.react.util.config.ConfigDoc(value = "Controls whether spawner player radius applies enforce spawner spawns.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
+  private boolean enforceSpawnerSpawns = true;
+  @art.arcane.react.util.config.ConfigDoc(value = "Controls whether spawner player radius applies enforce trial spawner spawns.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
+  private boolean enforceTrialSpawnerSpawns = true;
 
-    public TweakSpawnerPlayerRadius() {
-        super(ID);
+  public TweakSpawnerPlayerRadius() {
+    super(ID);
+  }
+
+  @Override
+  public void onActivate() {
+
+  }
+
+  @Override
+  public void onDeactivate() {
+
+  }
+
+  @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+  public void on(CreatureSpawnEvent event) {
+    CreatureSpawnEvent.SpawnReason reason = event.getSpawnReason();
+    boolean spawnerReason = (reason == CreatureSpawnEvent.SpawnReason.SPAWNER && enforceSpawnerSpawns)
+        || ("TRIAL_SPAWNER".equals(reason.name()) && enforceTrialSpawnerSpawns);
+
+    if (!spawnerReason) {
+      return;
     }
 
-    @Override
-    public void onActivate() {
-
+    if (onlyMonsters && !(event.getEntity() instanceof Monster)) {
+      return;
     }
 
-    @Override
-    public void onDeactivate() {
-
+    if (!React.hasNearbyPlayer(event.getLocation(), requiredPlayerDistance)) {
+      event.setCancelled(true);
     }
+  }
 
-    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
-    public void on(CreatureSpawnEvent event) {
-        CreatureSpawnEvent.SpawnReason reason = event.getSpawnReason();
-        boolean spawnerReason = (reason == CreatureSpawnEvent.SpawnReason.SPAWNER && enforceSpawnerSpawns)
-                || ("TRIAL_SPAWNER".equals(reason.name()) && enforceTrialSpawnerSpawns);
+  @Override
+  public int getTickInterval() {
+    return -1;
+  }
 
-        if (!spawnerReason) {
-            return;
-        }
+  @Override
+  public void onTick() {
 
-        if (onlyMonsters && !(event.getEntity() instanceof Monster)) {
-            return;
-        }
-
-        if (!React.hasNearbyPlayer(event.getLocation(), requiredPlayerDistance)) {
-            event.setCancelled(true);
-        }
-    }
-
-    @Override
-    public int getTickInterval() {
-        return -1;
-    }
-
-    @Override
-    public void onTick() {
-
-    }
+  }
 }

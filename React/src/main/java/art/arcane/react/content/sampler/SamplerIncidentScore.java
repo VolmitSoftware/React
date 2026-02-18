@@ -25,64 +25,64 @@ import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Material;
 
 public class SamplerIncidentScore extends ReactCachedSampler {
-    public static final String ID = "incident-score";
+  public static final String ID = "incident-score";
 
-    public SamplerIncidentScore() {
-        super(ID, 1000);
+  public SamplerIncidentScore() {
+    super(ID, 1000);
+  }
+
+  @Override
+  public Material getIcon() {
+    return Material.TOTEM_OF_UNDYING;
+  }
+
+  @Override
+  public double onSample() {
+    return executeSync(this::computeScore);
+  }
+
+  private double computeScore() {
+    double tickP95 = sample(SamplerTickMsP95.ID);
+    double tickSpikeRate = sample(SamplerTickSpikeRate.ID);
+    double gcPercent = sample(SamplerGcTimePercent.ID);
+    double backlog = sample(SamplerSchedulerBacklog.ID);
+    double backlogGrowth = Math.max(0D, sample(SamplerBacklogGrowthRate.ID));
+    double pingP95 = sample(SamplerPlayerPingP95.ID);
+    double topChunkCost = sample(SamplerTopChunkCost.ID);
+    double redstoneBurstRate = sample(SamplerRedstoneBurstRate.ID);
+
+    double score = 0;
+    score += norm(tickP95, 50, 150) * 0.30;
+    score += norm(tickSpikeRate, 5, 120) * 0.15;
+    score += norm(gcPercent, 2, 25) * 0.10;
+    score += norm(backlog, 10, 300) * 0.12;
+    score += norm(backlogGrowth, 1, 80) * 0.08;
+    score += norm(pingP95, 80, 350) * 0.10;
+    score += norm(topChunkCost, 2, 25) * 0.08;
+    score += norm(redstoneBurstRate, 2, 80) * 0.07;
+    return SamplerMath.clip(score * 100D, 0, 100);
+  }
+
+  private double sample(String id) {
+    Sampler sampler = getSampler(id);
+    return sampler == null ? 0D : sampler.sample();
+  }
+
+  private double norm(double value, double min, double max) {
+    if (max <= min) {
+      return 0;
     }
 
-    @Override
-    public Material getIcon() {
-        return Material.TOTEM_OF_UNDYING;
-    }
+    return SamplerMath.clip((value - min) / (max - min), 0, 1);
+  }
 
-    @Override
-    public double onSample() {
-        return executeSync(this::computeScore);
-    }
+  @Override
+  public String formattedValue(double t) {
+    return Form.f(t, 1);
+  }
 
-    private double computeScore() {
-        double tickP95 = sample(SamplerTickMsP95.ID);
-        double tickSpikeRate = sample(SamplerTickSpikeRate.ID);
-        double gcPercent = sample(SamplerGcTimePercent.ID);
-        double backlog = sample(SamplerSchedulerBacklog.ID);
-        double backlogGrowth = Math.max(0D, sample(SamplerBacklogGrowthRate.ID));
-        double pingP95 = sample(SamplerPlayerPingP95.ID);
-        double topChunkCost = sample(SamplerTopChunkCost.ID);
-        double redstoneBurstRate = sample(SamplerRedstoneBurstRate.ID);
-
-        double score = 0;
-        score += norm(tickP95, 50, 150) * 0.30;
-        score += norm(tickSpikeRate, 5, 120) * 0.15;
-        score += norm(gcPercent, 2, 25) * 0.10;
-        score += norm(backlog, 10, 300) * 0.12;
-        score += norm(backlogGrowth, 1, 80) * 0.08;
-        score += norm(pingP95, 80, 350) * 0.10;
-        score += norm(topChunkCost, 2, 25) * 0.08;
-        score += norm(redstoneBurstRate, 2, 80) * 0.07;
-        return SamplerMath.clip(score * 100D, 0, 100);
-    }
-
-    private double sample(String id) {
-        Sampler sampler = getSampler(id);
-        return sampler == null ? 0D : sampler.sample();
-    }
-
-    private double norm(double value, double min, double max) {
-        if (max <= min) {
-            return 0;
-        }
-
-        return SamplerMath.clip((value - min) / (max - min), 0, 1);
-    }
-
-    @Override
-    public String formattedValue(double t) {
-        return Form.f(t, 1);
-    }
-
-    @Override
-    public String formattedSuffix(double t) {
-        return "INCIDENT";
-    }
+  @Override
+  public String formattedSuffix(double t) {
+    return "INCIDENT";
+  }
 }

@@ -27,12 +27,12 @@ import org.bukkit.entity.Player;
 import java.util.Optional;
 
 public class TargetBlockContext implements EdictContextResolver<Block> {
-    public static Optional<Block> get() {
-        return EdictContext.get().resolve(TargetBlockContext.class);
-    }
+  public static Optional<Block> get() {
+    return EdictContext.get().resolve(TargetBlockContext.class);
+  }
 
-    @Override
-    public Optional<Block> resolve(EdictContext context) {
-        return context.getSender() instanceof Player p ? Optional.of(p.getTargetBlockExact(5)) : Optional.empty();
-    }
+  @Override
+  public Optional<Block> resolve(EdictContext context) {
+    return context.getSender() instanceof Player p ? Optional.of(p.getTargetBlockExact(5)) : Optional.empty();
+  }
 }

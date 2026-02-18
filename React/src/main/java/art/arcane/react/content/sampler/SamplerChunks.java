@@ -22,8 +22,8 @@ package art.arcane.react.content.sampler;
 import art.arcane.chrono.ChronoLatch;
 import art.arcane.react.React;
 import art.arcane.react.api.sampler.ReactCachedSampler;
-import art.arcane.volmlib.util.format.Form;
 import art.arcane.react.util.scheduling.J;
+import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -43,120 +43,120 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class SamplerChunks extends ReactCachedSampler implements Listener {
-    public static final String ID = "chunks";
-    private transient final AtomicInteger loadedChunks;
-    private transient ChronoLatch realCheckUpdate;
-    private int realityCheckMS = 10000;
+  public static final String ID = "chunks";
+  private transient final AtomicInteger loadedChunks;
+  private transient ChronoLatch realCheckUpdate;
+  private int realityCheckMS = 10000;
 
-    public SamplerChunks() {
-        super(ID, 50);
-        loadedChunks = new AtomicInteger(0);
-        realCheckUpdate = new ChronoLatch(realityCheckMS);
+  public SamplerChunks() {
+    super(ID, 50);
+    loadedChunks = new AtomicInteger(0);
+    realCheckUpdate = new ChronoLatch(realityCheckMS);
+  }
+
+  @Override
+  public Material getIcon() {
+    return Material.CHEST_MINECART;
+  }
+
+  public int getRealCheck() {
+    if (J.isFoliaThreading()) {
+      return getFoliaApproximateRealCheck();
     }
 
-    @Override
-    public Material getIcon() {
-        return Material.CHEST_MINECART;
+    return executeSync(() -> {
+      int m = 0;
+
+      for (World i : Bukkit.getWorlds()) {
+        m += i.getLoadedChunks().length;
+      }
+
+      return m;
+    });
+  }
+
+  private int getFoliaApproximateRealCheck() {
+    List<Player> players = new ArrayList<>(Bukkit.getOnlinePlayers());
+    if (players.isEmpty()) {
+      return Math.max(0, loadedChunks.get());
     }
 
-    public int getRealCheck() {
-        if (J.isFoliaThreading()) {
-            return getFoliaApproximateRealCheck();
-        }
+    Set<String> chunks = ConcurrentHashMap.newKeySet();
+    CountDownLatch latch = new CountDownLatch(players.size());
+    int radius = 6;
 
-        return executeSync(() -> {
-            int m = 0;
-
-            for (World i : Bukkit.getWorlds()) {
-                m += i.getLoadedChunks().length;
-            }
-
-            return m;
-        });
-    }
-
-    private int getFoliaApproximateRealCheck() {
-        List<Player> players = new ArrayList<>(Bukkit.getOnlinePlayers());
-        if (players.isEmpty()) {
-            return Math.max(0, loadedChunks.get());
-        }
-
-        Set<String> chunks = ConcurrentHashMap.newKeySet();
-        CountDownLatch latch = new CountDownLatch(players.size());
-        int radius = 6;
-
-        for (Player player : players) {
-            boolean scheduled = J.runEntity(player, () -> {
-                try {
-                    if (player == null || !player.isOnline() || !J.isOwnedByCurrentRegion(player)) {
-                        return;
-                    }
-
-                    int chunkX = player.getLocation().getBlockX() >> 4;
-                    int chunkZ = player.getLocation().getBlockZ() >> 4;
-                    String world = player.getWorld().getUID().toString();
-                    for (int x = chunkX - radius; x <= chunkX + radius; x++) {
-                        for (int z = chunkZ - radius; z <= chunkZ + radius; z++) {
-                            chunks.add(world + ":" + x + ":" + z);
-                        }
-                    }
-                } finally {
-                    latch.countDown();
-                }
-            });
-
-            if (!scheduled) {
-                latch.countDown();
-            }
-        }
-
+    for (Player player : players) {
+      boolean scheduled = J.runEntity(player, () -> {
         try {
-            latch.await(200, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException ex) {
-            Thread.currentThread().interrupt();
-            React.verbose("SamplerChunks wait interrupted while gathering Folia approximation.");
+          if (player == null || !player.isOnline() || !J.isOwnedByCurrentRegion(player)) {
+            return;
+          }
+
+          int chunkX = player.getLocation().getBlockX() >> 4;
+          int chunkZ = player.getLocation().getBlockZ() >> 4;
+          String world = player.getWorld().getUID().toString();
+          for (int x = chunkX - radius; x <= chunkX + radius; x++) {
+            for (int z = chunkZ - radius; z <= chunkZ + radius; z++) {
+              chunks.add(world + ":" + x + ":" + z);
+            }
+          }
+        } finally {
+          latch.countDown();
         }
+      });
 
-        return chunks.size();
+      if (!scheduled) {
+        latch.countDown();
+      }
     }
 
-    @Override
-    public void start() {
-        super.start();
-        realCheckUpdate = new ChronoLatch(realityCheckMS);
+    try {
+      latch.await(200, TimeUnit.MILLISECONDS);
+    } catch (InterruptedException ex) {
+      Thread.currentThread().interrupt();
+      React.verbose("SamplerChunks wait interrupted while gathering Folia approximation.");
     }
 
-    @EventHandler
-    public void on(ChunkLoadEvent e) {
-        loadedChunks.incrementAndGet();
+    return chunks.size();
+  }
+
+  @Override
+  public void start() {
+    super.start();
+    realCheckUpdate = new ChronoLatch(realityCheckMS);
+  }
+
+  @EventHandler
+  public void on(ChunkLoadEvent e) {
+    loadedChunks.incrementAndGet();
+  }
+
+  @EventHandler
+  public void on(WorldUnloadEvent e) {
+    loadedChunks.set(Math.max(0, loadedChunks.get()));
+  }
+
+  @EventHandler
+  public void on(ChunkUnloadEvent e) {
+    loadedChunks.decrementAndGet();
+  }
+
+  @Override
+  public double onSample() {
+    if (realCheckUpdate.flip() || loadedChunks.get() < 0) {
+      J.a(() -> loadedChunks.set(getRealCheck()));
     }
 
-    @EventHandler
-    public void on(WorldUnloadEvent e) {
-        loadedChunks.set(Math.max(0, loadedChunks.get()));
-    }
+    return loadedChunks.get();
+  }
 
-    @EventHandler
-    public void on(ChunkUnloadEvent e) {
-        loadedChunks.decrementAndGet();
-    }
+  @Override
+  public String formattedValue(double t) {
+    return Form.f(Math.round(t));
+  }
 
-    @Override
-    public double onSample() {
-        if (realCheckUpdate.flip() || loadedChunks.get() < 0) {
-            J.a(() -> loadedChunks.set(getRealCheck()));
-        }
-
-        return loadedChunks.get();
-    }
-
-    @Override
-    public String formattedValue(double t) {
-        return Form.f(Math.round(t));
-    }
-
-    @Override
-    public String formattedSuffix(double t) {
-        return "CHK";
-    }
+  @Override
+  public String formattedSuffix(double t) {
+    return "CHK";
+  }
 }

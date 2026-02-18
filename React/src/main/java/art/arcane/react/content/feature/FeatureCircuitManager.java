@@ -35,77 +35,77 @@ import org.bukkit.event.block.BlockRedstoneEvent;
 
 @art.arcane.react.util.config.ConfigDescription("Configuration for Circuit Manager feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureCircuitManager extends ReactFeature implements Listener {
-    public static final String ID = "circuit-manager";
-    /**
-     * Stop the biggest circuit when the redstone milliseconds exceeds this value
-     */
-    @art.arcane.react.util.config.ConfigDoc(value = "Maximum circuit ms allowed by circuit manager.", impact = "Higher values allow more throughput before intervention; lower values make mitigation more aggressive.")
-    private double maxCircuitMS = 15;
-    private transient CircuitServer circuitServer;
+  public static final String ID = "circuit-manager";
+  /**
+   * Stop the biggest circuit when the redstone milliseconds exceeds this value
+   */
+  @art.arcane.react.util.config.ConfigDoc(value = "Maximum circuit ms allowed by circuit manager.", impact = "Higher values allow more throughput before intervention; lower values make mitigation more aggressive.")
+  private double maxCircuitMS = 15;
+  private transient CircuitServer circuitServer;
 
-    public FeatureCircuitManager() {
-        super(ID);
+  public FeatureCircuitManager() {
+    super(ID);
+  }
+
+  @Override
+  public void onActivate() {
+    circuitServer = new CircuitServer();
+
+  }
+
+  @Override
+  public void onDeactivate() {
+
+  }
+
+  @Override
+  public int getTickInterval() {
+    return 1000;
+  }
+
+  @Override
+  public void onTick() {
+    J.s(() -> circuitServer.tick());
+
+    if (React.sampler(SamplerRedstoneTickTime.ID).sample() > maxCircuitMS) {
+      Circuit c = circuitServer.worst();
+
+      if (c != null) {
+        c.stop();
+        React.warn("Stopping Circuit " + c.getId());
+      }
     }
+  }
 
-    @Override
-    public void onActivate() {
-        circuitServer = new CircuitServer();
+  @EventHandler
+  public void on(BlockBreakEvent e) {
+    circuitServer.remove(e.getBlock());
+  }
 
+  @EventHandler
+  public void on(BlockPistonExtendEvent e) {
+    circuitServer.event(e.getBlock());
+
+    for (Block i : e.getBlocks()) {
+      circuitServer.event(i);
     }
+  }
 
-    @Override
-    public void onDeactivate() {
+  @EventHandler
+  public void on(BlockPistonRetractEvent e) {
+    circuitServer.event(e.getBlock());
 
+    for (Block i : e.getBlocks()) {
+      circuitServer.event(i);
     }
+  }
 
-    @Override
-    public int getTickInterval() {
-        return 1000;
+  @EventHandler
+  public void on(BlockRedstoneEvent e) {
+    Circuit c = circuitServer.event(e.getBlock());
+
+    if (c != null && c.getStop().get()) {
+      e.setNewCurrent(e.getOldCurrent());
     }
-
-    @Override
-    public void onTick() {
-        J.s(() -> circuitServer.tick());
-
-        if (React.sampler(SamplerRedstoneTickTime.ID).sample() > maxCircuitMS) {
-            Circuit c = circuitServer.worst();
-
-            if (c != null) {
-                c.stop();
-                React.warn("Stopping Circuit " + c.getId());
-            }
-        }
-    }
-
-    @EventHandler
-    public void on(BlockBreakEvent e) {
-        circuitServer.remove(e.getBlock());
-    }
-
-    @EventHandler
-    public void on(BlockPistonExtendEvent e) {
-        circuitServer.event(e.getBlock());
-
-        for (Block i : e.getBlocks()) {
-            circuitServer.event(i);
-        }
-    }
-
-    @EventHandler
-    public void on(BlockPistonRetractEvent e) {
-        circuitServer.event(e.getBlock());
-
-        for (Block i : e.getBlocks()) {
-            circuitServer.event(i);
-        }
-    }
-
-    @EventHandler
-    public void on(BlockRedstoneEvent e) {
-        Circuit c = circuitServer.event(e.getBlock());
-
-        if (c != null && c.getStop().get()) {
-            e.setNewCurrent(e.getOldCurrent());
-        }
-    }
+  }
 }

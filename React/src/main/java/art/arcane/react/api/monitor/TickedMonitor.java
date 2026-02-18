@@ -23,8 +23,8 @@ import art.arcane.react.React;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.core.controller.SampleController;
 import art.arcane.react.util.math.ApproachingValue;
-import art.arcane.volmlib.util.math.M;
 import art.arcane.react.util.scheduling.TickedObject;
+import art.arcane.volmlib.util.math.M;
 import lombok.Getter;
 
 import java.util.ArrayList;
@@ -33,101 +33,101 @@ import java.util.List;
 import java.util.Map;
 
 public abstract class TickedMonitor extends TickedObject implements Monitor {
-    protected final Map<Sampler, Double> samplers;
-    protected final Map<Sampler, ApproachingValue> approachers;
-    protected final Map<Sampler, Double> changers;
-    @Getter
-    protected final Map<Sampler, Boolean> visible;
-    private final long awakeInterval;
-    protected long sleepingRate;
-    protected int sleepDelay;
-    protected int currentSleepDelay;
+  protected final Map<Sampler, Double> samplers;
+  protected final Map<Sampler, ApproachingValue> approachers;
+  protected final Map<Sampler, Double> changers;
+  @Getter
+  protected final Map<Sampler, Boolean> visible;
+  private final long awakeInterval;
+  protected long sleepingRate;
+  protected int sleepDelay;
+  protected int currentSleepDelay;
 
-    public TickedMonitor(String id, long interval) {
-        super("monitor", id, interval);
-        this.awakeInterval = interval;
-        this.approachers = new HashMap<>();
-        this.visible = new HashMap<>();
-        this.sleepingRate = interval * 2;
-        this.sleepDelay = 35;
-        this.currentSleepDelay = 20;
-        this.changers = new HashMap<>();
-        this.samplers = new HashMap<>();
+  public TickedMonitor(String id, long interval) {
+    super("monitor", id, interval);
+    this.awakeInterval = interval;
+    this.approachers = new HashMap<>();
+    this.visible = new HashMap<>();
+    this.sleepingRate = interval * 2;
+    this.sleepDelay = 35;
+    this.currentSleepDelay = 20;
+    this.changers = new HashMap<>();
+    this.samplers = new HashMap<>();
+  }
+
+  public void wakeUp() {
+    currentSleepDelay = sleepDelay;
+    setTinterval(awakeInterval);
+  }
+
+  public void setVisible(Sampler sampler, boolean visible) {
+    this.visible.put(sampler, visible);
+  }
+
+  public void setVisible(List<Sampler> sampler, boolean visible) {
+    for (Sampler i : sampler) {
+      setVisible(i, visible);
+    }
+  }
+
+  public void clearVisibility() {
+    for (Sampler i : visible.keySet()) {
+      visible.put(i, false);
+    }
+  }
+
+  public double getChanger(Sampler s) {
+    Double d = changers.get(s);
+    return d == null ? 0 : d;
+  }
+
+  @Override
+  public void onTick() {
+    for (Sampler i : new ArrayList<>(changers.keySet())) {
+      changers.put(i, M.lerp(getChanger(i), 0, 0.1));
     }
 
-    public void wakeUp() {
-        currentSleepDelay = sleepDelay;
-        setTinterval(awakeInterval);
-    }
+    boolean flushable = false;
+    SampleController sampleController = React.controller(SampleController.class);
 
-    public void setVisible(Sampler sampler, boolean visible) {
-        this.visible.put(sampler, visible);
-    }
-
-    public void setVisible(List<Sampler> sampler, boolean visible) {
-        for (Sampler i : sampler) {
-            setVisible(i, visible);
+    for (Sampler i : visible.keySet()) {
+      if (i == null) {
+        continue;
+      }
+      if (visible.get(i) != null && visible.get(i)) {
+        if (sampleController != null && !sampleController.canSample(i)) {
+          continue;
         }
-    }
-
-    public void clearVisibility() {
-        for (Sampler i : visible.keySet()) {
-            visible.put(i, false);
-        }
-    }
-
-    public double getChanger(Sampler s) {
-        Double d = changers.get(s);
-        return d == null ? 0 : d;
-    }
-
-    @Override
-    public void onTick() {
-        for (Sampler i : new ArrayList<>(changers.keySet())) {
-            changers.put(i, M.lerp(getChanger(i), 0, 0.1));
-        }
-
-        boolean flushable = false;
-        SampleController sampleController = React.controller(SampleController.class);
-
-        for (Sampler i : visible.keySet()) {
-            if (i == null) {
-                continue;
+        try {
+          synchronized (approachers) {
+            Double v = approachers.computeIfAbsent(i, k -> new ApproachingValue(0.25)).get(i.sample());
+            Double old = getSamplers().put(i, v);
+            double s = v;
+            if (old == null || old != s) {
+              changers.put(i, M.lerp(getChanger(i), 1, 0.333));
+              flushable = true;
             }
-            if (visible.get(i) != null && visible.get(i)) {
-                if (sampleController != null && !sampleController.canSample(i)) {
-                    continue;
-                }
-                try {
-                    synchronized (approachers) {
-                        Double v = approachers.computeIfAbsent(i, k -> new ApproachingValue(0.25)).get(i.sample());
-                        Double old = getSamplers().put(i, v);
-                        double s = v;
-                        if (old == null || old != s) {
-                            changers.put(i, M.lerp(getChanger(i), 1, 0.333));
-                            flushable = true;
-                        }
-                    }
-                } catch (Throwable e) {
-                    React.error("Failed to sample " + i.getId() + " for monitor " + getTid());
-                    e.printStackTrace();
-                }
-            }
+          }
+        } catch (Throwable e) {
+          React.error("Failed to sample " + i.getId() + " for monitor " + getTid());
+          e.printStackTrace();
         }
-
-        currentSleepDelay = flushable ? sleepDelay : currentSleepDelay - 1;
-        setTinterval(currentSleepDelay <= 0 ? sleepingRate : awakeInterval);
-
-        if (flushable || isAlwaysFlushing()) {
-            flush();
-        }
+      }
     }
 
-    @Override
-    public Map<Sampler, Double> getSamplers() {
-        return samplers;
-    }
+    currentSleepDelay = flushable ? sleepDelay : currentSleepDelay - 1;
+    setTinterval(currentSleepDelay <= 0 ? sleepingRate : awakeInterval);
 
-    @Override
-    public abstract void flush();
+    if (flushable || isAlwaysFlushing()) {
+      flush();
+    }
+  }
+
+  @Override
+  public Map<Sampler, Double> getSamplers() {
+    return samplers;
+  }
+
+  @Override
+  public abstract void flush();
 }

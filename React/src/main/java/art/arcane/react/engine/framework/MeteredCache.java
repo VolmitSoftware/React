@@ -22,15 +22,15 @@ package art.arcane.react.engine.framework;
 import art.arcane.volmlib.util.data.KCache;
 
 public interface MeteredCache {
-    long getSize();
+  long getSize();
 
-    KCache<?, ?> getRawCache();
+  KCache<?, ?> getRawCache();
 
-    long getMaxSize();
+  long getMaxSize();
 
-    default double getUsage() {
-        return (double) getSize() / (double) getMaxSize();
-    }
+  default double getUsage() {
+    return (double) getSize() / (double) getMaxSize();
+  }
 
-    boolean isClosed();
+  boolean isClosed();
 }

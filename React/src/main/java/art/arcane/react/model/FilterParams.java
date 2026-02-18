@@ -28,21 +28,21 @@ import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
 public class FilterParams<T> {
-    @Singular
-    protected Set<T> types;
+  @Singular
+  protected Set<T> types;
 
-    @Builder.Default
-    protected boolean blacklist = false;
+  @Builder.Default
+  protected boolean blacklist = false;
 
-    public boolean allows(T t) {
-        if (types == null || types.isEmpty()) {
-            return blacklist;
-        }
-
-        if (blacklist) {
-            return !types.contains(t);
-        }
-
-        return types.contains(t);
+  public boolean allows(T t) {
+    if (types == null || types.isEmpty()) {
+      return blacklist;
     }
+
+    if (blacklist) {
+      return !types.contains(t);
+    }
+
+    return types.contains(t);
+  }
 }

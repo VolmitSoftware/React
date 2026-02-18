@@ -30,46 +30,46 @@ import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
 public class TextInputGui implements Listener {
-    private final Player player;
-    private String response;
-    private boolean responded;
+  private final Player player;
+  private String response;
+  private boolean responded;
 
-    public TextInputGui(Player player) {
-        this.player = player;
-        Bukkit.getPluginManager().registerEvents(this, React.instance);
-        responded = false;
-        response = null;
+  public TextInputGui(Player player) {
+    this.player = player;
+    Bukkit.getPluginManager().registerEvents(this, React.instance);
+    responded = false;
+    response = null;
+  }
+
+  public static String captureText(Player p) {
+    if (Bukkit.isPrimaryThread()) {
+      throw new RuntimeException("Cannot open gui on main thread");
     }
 
-    public static String captureText(Player p) {
-        if (Bukkit.isPrimaryThread()) {
-            throw new RuntimeException("Cannot open gui on main thread");
-        }
+    TextInputGui gui = new TextInputGui(p);
 
-        TextInputGui gui = new TextInputGui(p);
-
-        while (!gui.responded) {
-            J.sleep(50);
-        }
-
-        return gui.response;
+    while (!gui.responded) {
+      J.sleep(50);
     }
 
-    public void on(PlayerQuitEvent e) {
-        if (e.getPlayer().equals(player)) {
-            responded = true;
-            response = null;
-            HandlerList.unregisterAll(this);
-        }
-    }
+    return gui.response;
+  }
 
-    @EventHandler(ignoreCancelled = false, priority = org.bukkit.event.EventPriority.HIGHEST)
-    public void on(AsyncPlayerChatEvent e) {
-        if (e.getPlayer().equals(player)) {
-            e.setCancelled(true);
-            response = e.getMessage();
-            responded = true;
-            HandlerList.unregisterAll(this);
-        }
+  public void on(PlayerQuitEvent e) {
+    if (e.getPlayer().equals(player)) {
+      responded = true;
+      response = null;
+      HandlerList.unregisterAll(this);
     }
+  }
+
+  @EventHandler(ignoreCancelled = false, priority = org.bukkit.event.EventPriority.HIGHEST)
+  public void on(AsyncPlayerChatEvent e) {
+    if (e.getPlayer().equals(player)) {
+      e.setCancelled(true);
+      response = e.getMessage();
+      responded = true;
+      HandlerList.unregisterAll(this);
+    }
+  }
 }

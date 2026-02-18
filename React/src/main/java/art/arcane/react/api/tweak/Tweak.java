@@ -22,19 +22,19 @@ package art.arcane.react.api.tweak;
 import art.arcane.react.util.registry.Registered;
 
 public interface Tweak extends Registered {
-    void onActivate();
+  void onActivate();
 
-    boolean isEnabled();
+  boolean isEnabled();
 
-    void onDeactivate();
+  void onDeactivate();
 
-    int getTickInterval();
+  int getTickInterval();
 
-    void onTick();
+  void onTick();
 
-    @Override
-    default String getConfigCategory() {
-        return "tweak";
-    }
+  @Override
+  default String getConfigCategory() {
+    return "tweak";
+  }
 }
 

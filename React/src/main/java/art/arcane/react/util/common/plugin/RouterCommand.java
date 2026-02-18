@@ -29,37 +29,37 @@ import org.bukkit.command.CommandSender;
  * @author cyberpwn
  */
 public class RouterCommand extends Command {
-    private final CommandExecutor ex;
-    private String usage;
+  private final CommandExecutor ex;
+  private String usage;
 
-    /**
-     * The router command routes commands to bukkit executors
-     *
-     * @param realCommand the real command
-     * @param ex          the executor
-     */
-    public RouterCommand(ICommand realCommand, CommandExecutor ex) {
-        super(realCommand.getNode().toLowerCase());
-        setAliases(realCommand.getNodes());
+  /**
+   * The router command routes commands to bukkit executors
+   *
+   * @param realCommand the real command
+   * @param ex          the executor
+   */
+  public RouterCommand(ICommand realCommand, CommandExecutor ex) {
+    super(realCommand.getNode().toLowerCase());
+    setAliases(realCommand.getNodes());
 
-        this.ex = ex;
-    }
-
-
-    @Override
-    public Command setUsage(String u) {
-        this.usage = u;
-        return this;
-    }
+    this.ex = ex;
+  }
 
 
-    @Override
-    public String getUsage() {
-        return usage;
-    }
+  @Override
+  public Command setUsage(String u) {
+    this.usage = u;
+    return this;
+  }
 
-    @Override
-    public boolean execute(CommandSender sender, String commandLabel, String[] args) {
-        return ex.onCommand(sender, this, commandLabel, args);
-    }
+
+  @Override
+  public String getUsage() {
+    return usage;
+  }
+
+  @Override
+  public boolean execute(CommandSender sender, String commandLabel, String[] args) {
+    return ex.onCommand(sender, this, commandLabel, args);
+  }
 }

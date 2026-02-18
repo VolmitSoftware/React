@@ -22,18 +22,18 @@ package art.arcane.react.api.feature;
 import art.arcane.react.util.registry.Registered;
 
 public interface Feature extends Registered {
-    void onActivate();
+  void onActivate();
 
-    boolean isEnabled();
+  boolean isEnabled();
 
-    void onDeactivate();
+  void onDeactivate();
 
-    int getTickInterval();
+  int getTickInterval();
 
-    void onTick();
+  void onTick();
 
-    @Override
-    default String getConfigCategory() {
-        return "feature";
-    }
+  @Override
+  default String getConfigCategory() {
+    return "feature";
+  }
 }

@@ -19,13 +19,12 @@
 
 package art.arcane.react.util.inventorygui;
 
+import art.arcane.volmlib.util.inventorygui.Element;
 import art.arcane.volmlib.util.inventorygui.WindowDecorator;
 
-import art.arcane.volmlib.util.inventorygui.Element;
-
 public class UIVoidDecorator implements WindowDecorator {
-    @Override
-    public Element onDecorateBackground(art.arcane.volmlib.util.inventorygui.Window window, int position, int row) {
-        return null;
-    }
+  @Override
+  public Element onDecorateBackground(art.arcane.volmlib.util.inventorygui.Window window, int position, int row) {
+    return null;
+  }
 }

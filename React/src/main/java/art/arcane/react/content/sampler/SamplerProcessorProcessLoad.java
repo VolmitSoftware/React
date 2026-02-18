@@ -21,52 +21,52 @@ package art.arcane.react.content.sampler;
 
 import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.react.util.atomics.AsyncRequest;
-import art.arcane.volmlib.util.format.Form;
 import art.arcane.react.util.reflect.Platform;
+import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Material;
 
 public class SamplerProcessorProcessLoad extends ReactCachedSampler {
-    public static final String ID = "processor-process-load";
-    private transient final AsyncRequest<Double> poller;
+  public static final String ID = "processor-process-load";
+  private transient final AsyncRequest<Double> poller;
 
-    public SamplerProcessorProcessLoad() {
-        super(ID, 100);
-        poller = new AsyncRequest<>(Platform.CPU::getLiveProcessCPULoad, 0D);
+  public SamplerProcessorProcessLoad() {
+    super(ID, 100);
+    poller = new AsyncRequest<>(Platform.CPU::getLiveProcessCPULoad, 0D);
+  }
+
+  private static double normalizeCpuLoad(double raw) {
+    if (!Double.isFinite(raw) || raw <= 0D) {
+      return 0D;
     }
 
-    @Override
-    public Material getIcon() {
-        return Material.BLUE_CANDLE;
+    if (raw <= 1D) {
+      return raw;
     }
 
-    @Override
-    public double onSample() {
-        return normalizeCpuLoad(poller.request());
+    if (raw <= 100D) {
+      return raw / 100D;
     }
 
-    @Override
-    public String formattedValue(double t) {
-        return Form.pc(normalizeCpuLoad(t), 0);
-    }
+    return 1D;
+  }
 
-    @Override
-    public String formattedSuffix(double t) {
-        return "pCPU";
-    }
+  @Override
+  public Material getIcon() {
+    return Material.BLUE_CANDLE;
+  }
 
-    private static double normalizeCpuLoad(double raw) {
-        if (!Double.isFinite(raw) || raw <= 0D) {
-            return 0D;
-        }
+  @Override
+  public double onSample() {
+    return normalizeCpuLoad(poller.request());
+  }
 
-        if (raw <= 1D) {
-            return raw;
-        }
+  @Override
+  public String formattedValue(double t) {
+    return Form.pc(normalizeCpuLoad(t), 0);
+  }
 
-        if (raw <= 100D) {
-            return raw / 100D;
-        }
-
-        return 1D;
-    }
+  @Override
+  public String formattedSuffix(double t) {
+    return "pCPU";
+  }
 }

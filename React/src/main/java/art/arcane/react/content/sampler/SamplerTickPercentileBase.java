@@ -32,61 +32,61 @@ import java.util.ArrayList;
 import java.util.List;
 
 abstract class SamplerTickPercentileBase extends ReactCachedSampler implements Listener {
-    private final ArrayDeque<Double> tickDurations = new ArrayDeque<>();
-    private final double percentile;
-    private final String suffix;
-    private int historyTicks = 1200;
-    private transient long lastTickMS = 0;
+  private final ArrayDeque<Double> tickDurations = new ArrayDeque<>();
+  private final double percentile;
+  private final String suffix;
+  private int historyTicks = 1200;
+  private transient long lastTickMS = 0;
 
-    protected SamplerTickPercentileBase(String id, double percentile, String suffix) {
-        super(id, 250);
-        this.percentile = percentile;
-        this.suffix = suffix;
-    }
+  protected SamplerTickPercentileBase(String id, double percentile, String suffix) {
+    super(id, 250);
+    this.percentile = percentile;
+    this.suffix = suffix;
+  }
 
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void on(ServerTickEvent event) {
-        long now = System.currentTimeMillis();
-        if (lastTickMS > 0) {
-            double tickMS = Math.max(0D, now - lastTickMS);
-            synchronized (tickDurations) {
-                tickDurations.addLast(tickMS);
-                while (tickDurations.size() > historyTicks) {
-                    tickDurations.removeFirst();
-                }
-            }
-
-            onTickDuration(tickMS, now);
+  @EventHandler(priority = EventPriority.MONITOR)
+  public void on(ServerTickEvent event) {
+    long now = System.currentTimeMillis();
+    if (lastTickMS > 0) {
+      double tickMS = Math.max(0D, now - lastTickMS);
+      synchronized (tickDurations) {
+        tickDurations.addLast(tickMS);
+        while (tickDurations.size() > historyTicks) {
+          tickDurations.removeFirst();
         }
+      }
 
-        lastTickMS = now;
+      onTickDuration(tickMS, now);
     }
 
-    protected void onTickDuration(double tickMS, long atMS) {
+    lastTickMS = now;
+  }
+
+  protected void onTickDuration(double tickMS, long atMS) {
+  }
+
+  @Override
+  public Material getIcon() {
+    return Material.CLOCK;
+  }
+
+  @Override
+  public double onSample() {
+    List<Double> snapshot;
+    synchronized (tickDurations) {
+      snapshot = new ArrayList<>(tickDurations);
     }
 
-    @Override
-    public Material getIcon() {
-        return Material.CLOCK;
-    }
+    return SamplerMath.percentile(snapshot, percentile);
+  }
 
-    @Override
-    public double onSample() {
-        List<Double> snapshot;
-        synchronized (tickDurations) {
-            snapshot = new ArrayList<>(tickDurations);
-        }
+  @Override
+  public String formattedValue(double t) {
+    return Form.f(t, 2);
+  }
 
-        return SamplerMath.percentile(snapshot, percentile);
-    }
-
-    @Override
-    public String formattedValue(double t) {
-        return Form.f(t, 2);
-    }
-
-    @Override
-    public String formattedSuffix(double t) {
-        return suffix;
-    }
+  @Override
+  public String formattedSuffix(double t) {
+    return suffix;
+  }
 }

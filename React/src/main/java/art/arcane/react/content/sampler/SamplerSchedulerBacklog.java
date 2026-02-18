@@ -28,33 +28,33 @@ import org.bukkit.Material;
 import java.util.List;
 
 public class SamplerSchedulerBacklog extends ReactCachedSampler {
-    public static final String ID = "scheduler-backlog";
+  public static final String ID = "scheduler-backlog";
 
-    public SamplerSchedulerBacklog() {
-        super(ID, 250);
-    }
+  public SamplerSchedulerBacklog() {
+    super(ID, 250);
+  }
 
-    @Override
-    public Material getIcon() {
-        return Material.COMPARATOR;
-    }
+  @Override
+  public Material getIcon() {
+    return Material.COMPARATOR;
+  }
 
-    @Override
-    public double onSample() {
-        JobController controller = React.controller(JobController.class);
-        List<Runnable> jobs = controller.getJobs();
-        synchronized (jobs) {
-            return jobs.size();
-        }
+  @Override
+  public double onSample() {
+    JobController controller = React.controller(JobController.class);
+    List<Runnable> jobs = controller.getJobs();
+    synchronized (jobs) {
+      return jobs.size();
     }
+  }
 
-    @Override
-    public String formattedValue(double t) {
-        return Form.f(Math.ceil(t));
-    }
+  @Override
+  public String formattedValue(double t) {
+    return Form.f(Math.ceil(t));
+  }
 
-    @Override
-    public String formattedSuffix(double t) {
-        return "BACKLOG";
-    }
+  @Override
+  public String formattedSuffix(double t) {
+    return "BACKLOG";
+  }
 }

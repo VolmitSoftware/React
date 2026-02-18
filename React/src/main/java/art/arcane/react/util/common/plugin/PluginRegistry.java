@@ -26,39 +26,39 @@ import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 public class PluginRegistry<T> {
-    private final KMap<String, T> registry = new KMap<>();
-    @Getter
-    private final String namespace;
+  private final KMap<String, T> registry = new KMap<>();
+  @Getter
+  private final String namespace;
 
-    public void unregisterAll() {
-        registry.clear();
+  public void unregisterAll() {
+    registry.clear();
+  }
+
+  public KList<String> getRegistries() {
+    return registry.k();
+  }
+
+  public T get(String s) {
+    if (!registry.containsKey(s)) {
+      return null;
     }
 
-    public KList<String> getRegistries() {
-        return registry.k();
+    return registry.get(s);
+  }
+
+  public void register(String s, T t) {
+    registry.put(s, t);
+  }
+
+  public void unregister(String s) {
+    registry.remove(s);
+  }
+
+  public T resolve(String id) {
+    if (registry.isEmpty()) {
+      return null;
     }
 
-    public T get(String s) {
-        if (!registry.containsKey(s)) {
-            return null;
-        }
-
-        return registry.get(s);
-    }
-
-    public void register(String s, T t) {
-        registry.put(s, t);
-    }
-
-    public void unregister(String s) {
-        registry.remove(s);
-    }
-
-    public T resolve(String id) {
-        if (registry.isEmpty()) {
-            return null;
-        }
-
-        return registry.get(id);
-    }
+    return registry.get(id);
+  }
 }

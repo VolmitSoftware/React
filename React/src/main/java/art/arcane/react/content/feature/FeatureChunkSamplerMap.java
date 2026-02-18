@@ -27,41 +27,41 @@ import org.bukkit.Chunk;
 
 @art.arcane.react.util.config.ConfigDescription("Configuration for Chunk Sampler Map feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureChunkSamplerMap extends FeatureChunkHeatmapBase {
-    public static final String ID = "chunk-sampler-map";
+  public static final String ID = "chunk-sampler-map";
 
-    public FeatureChunkSamplerMap() {
-        super(ID);
+  public FeatureChunkSamplerMap() {
+    super(ID);
+  }
+
+  @Override
+  protected String mapLabel() {
+    return "Chunk Cost Heat";
+  }
+
+  @Override
+  protected TinyColor headerColor() {
+    return new TinyColor(84, 114, 146);
+  }
+
+  @Override
+  protected double chunkScore(Chunk chunk) {
+    ObserverController observer = React.controller(ObserverController.class);
+    if (observer == null || observer.getSampled() == null || chunk == null) {
+      return 0D;
     }
 
-    @Override
-    protected String mapLabel() {
-        return "Chunk Cost Heat";
-    }
+    SampledChunk sampledChunk = observer.getSampled().getChunk(chunk);
+    return sampledChunk == null ? 0D : Math.max(0D, sampledChunk.totalScore());
+  }
 
-    @Override
-    protected TinyColor headerColor() {
-        return new TinyColor(84, 114, 146);
+  @Override
+  protected TinyColor colorFor(double normalized, double rawScore) {
+    if (normalized < 0.33D) {
+      return gradient(normalized / 0.33D, new TinyColor(22, 84, 190), new TinyColor(52, 182, 214));
     }
-
-    @Override
-    protected double chunkScore(Chunk chunk) {
-        ObserverController observer = React.controller(ObserverController.class);
-        if (observer == null || observer.getSampled() == null || chunk == null) {
-            return 0D;
-        }
-
-        SampledChunk sampledChunk = observer.getSampled().getChunk(chunk);
-        return sampledChunk == null ? 0D : Math.max(0D, sampledChunk.totalScore());
+    if (normalized < 0.66D) {
+      return gradient((normalized - 0.33D) / 0.33D, new TinyColor(52, 182, 214), new TinyColor(245, 184, 74));
     }
-
-    @Override
-    protected TinyColor colorFor(double normalized, double rawScore) {
-        if (normalized < 0.33D) {
-            return gradient(normalized / 0.33D, new TinyColor(22, 84, 190), new TinyColor(52, 182, 214));
-        }
-        if (normalized < 0.66D) {
-            return gradient((normalized - 0.33D) / 0.33D, new TinyColor(52, 182, 214), new TinyColor(245, 184, 74));
-        }
-        return gradient((normalized - 0.66D) / 0.34D, new TinyColor(245, 184, 74), new TinyColor(255, 82, 44));
-    }
+    return gradient((normalized - 0.66D) / 0.34D, new TinyColor(245, 184, 74), new TinyColor(255, 82, 44));
+  }
 }

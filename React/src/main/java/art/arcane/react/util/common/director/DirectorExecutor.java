@@ -19,16 +19,16 @@
 
 package art.arcane.react.util.director;
 
-import art.arcane.volmlib.util.director.DirectorExecutorBase;
 import art.arcane.react.util.plugin.VolmitSender;
+import art.arcane.volmlib.util.director.DirectorExecutorBase;
 import org.bukkit.entity.Player;
 
 public interface DirectorExecutor extends DirectorExecutorBase {
-    default VolmitSender sender() {
-        return DirectorContext.get();
-    }
+  default VolmitSender sender() {
+    return DirectorContext.get();
+  }
 
-    default Player player() {
-        return sender().player();
-    }
+  default Player player() {
+    return sender().player();
+  }
 }

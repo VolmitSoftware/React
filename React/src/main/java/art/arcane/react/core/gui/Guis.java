@@ -26,13 +26,13 @@ import org.bukkit.inventory.meta.LeatherArmorMeta;
 import java.awt.*;
 
 public class Guis {
-    public static ItemStack generateColorIcon(String title, Color color) {
-        ItemStack is = new ItemStack(Material.LEATHER_CHESTPLATE);
-        LeatherArmorMeta meta = (LeatherArmorMeta) is.getItemMeta();
-        meta.setColor(org.bukkit.Color.fromRGB(color.getRed(), color.getGreen(), color.getBlue()));
-        meta.setDisplayName(title);
-        is.setItemMeta(meta);
+  public static ItemStack generateColorIcon(String title, Color color) {
+    ItemStack is = new ItemStack(Material.LEATHER_CHESTPLATE);
+    LeatherArmorMeta meta = (LeatherArmorMeta) is.getItemMeta();
+    meta.setColor(org.bukkit.Color.fromRGB(color.getRed(), color.getGreen(), color.getBlue()));
+    meta.setDisplayName(title);
+    is.setItemMeta(meta);
 
-        return is;
-    }
+    return is;
+  }
 }

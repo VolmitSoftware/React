@@ -26,96 +26,96 @@ import art.arcane.react.core.controller.MapController;
 import art.arcane.react.core.controller.PlayerController;
 import art.arcane.react.core.gui.ReactMapGUI;
 import art.arcane.react.util.director.DirectorExecutor;
+import art.arcane.react.util.director.handlers.ReactRendererHandler;
+import art.arcane.react.util.format.C;
 import art.arcane.react.util.world.WorldDistanceSupport;
 import art.arcane.volmlib.util.director.DirectorOrigin;
 import art.arcane.volmlib.util.director.annotations.Director;
 import art.arcane.volmlib.util.director.annotations.Param;
-import art.arcane.react.util.director.handlers.ReactRendererHandler;
-import art.arcane.react.util.format.C;
 
 @Director(
-        name = "react",
-        aliases = {"re"},
-        origin = DirectorOrigin.BOTH,
-        description = "The root react command"
+    name = "react",
+    aliases = {"re"},
+    origin = DirectorOrigin.BOTH,
+    description = "The root react command"
 )
 public class CommandReact implements DirectorExecutor {
-    private CommandConfig config;
-    private CommandAction action;
-    private CommandChunk chunk;
-    private CommandEnvironment environment;
-    private CommandBenchmark benchmark;
-    private CommandDebug debug;
-    private CommandIntegration integration;
+  private CommandConfig config;
+  private CommandAction action;
+  private CommandChunk chunk;
+  private CommandEnvironment environment;
+  private CommandBenchmark benchmark;
+  private CommandDebug debug;
+  private CommandIntegration integration;
 
 
-    @Director(
-            name = "monitor",
-            aliases = {"m", "mon"},
-            description = "Monitor the server via action bar",
-            origin = DirectorOrigin.PLAYER
-    )
-    public void monitor() {
-        React.controller(PlayerController.class).getPlayer(player()).toggleActionBar();
-        sender().sendMessage(C.REACT + "Action bar monitor " + (React.controller(PlayerController.class).getPlayer(player()).isActionBarMonitoring() ? "enabled" : "disabled"));
+  @Director(
+      name = "monitor",
+      aliases = {"m", "mon"},
+      description = "Monitor the server via action bar",
+      origin = DirectorOrigin.PLAYER
+  )
+  public void monitor() {
+    React.controller(PlayerController.class).getPlayer(player()).toggleActionBar();
+    sender().sendMessage(C.REACT + "Action bar monitor " + (React.controller(PlayerController.class).getPlayer(player()).isActionBarMonitoring() ? "enabled" : "disabled"));
+  }
+
+
+  @Director(
+      name = "set-player-view-distance",
+      aliases = {"vd", "view-distance"},
+      description = "Visualize the via glow blocks",
+      origin = DirectorOrigin.PLAYER
+  )
+  public void vd(
+      @Param(name = "distance")
+      int d) {
+    if (!WorldDistanceSupport.supportsWorldDistanceSetters()) {
+      sender().sendMessage(C.REACT + "This command requires Paper/Purpur. Spigot does not expose world view/simulation distance setters.");
+      return;
     }
 
+    if (d > 32)
+      d = 32;
 
-    @Director(
-            name = "set-player-view-distance",
-            aliases = {"vd", "view-distance"},
-            description = "Visualize the via glow blocks",
-            origin = DirectorOrigin.PLAYER
-    )
-    public void vd(
-            @Param(name = "distance")
-            int d) {
-        if (!WorldDistanceSupport.supportsWorldDistanceSetters()) {
-            sender().sendMessage(C.REACT + "This command requires Paper/Purpur. Spigot does not expose world view/simulation distance setters.");
-            return;
-        }
+    Curse.on(player().getWorld()).method("setViewDistance", int.class).invoke(d);
+    Curse.on(player().getWorld()).method("setSimulationDistance", int.class).invoke(d);
+  }
 
-        if (d > 32)
-            d = 32;
-
-        Curse.on(player().getWorld()).method("setViewDistance", int.class).invoke(d);
-        Curse.on(player().getWorld()).method("setSimulationDistance", int.class).invoke(d);
+  @Director(
+      name = "map",
+      description = "Visualize the via glow blocks",
+      origin = DirectorOrigin.PLAYER
+  )
+  public void map(
+      @Param(
+          name = "renderer",
+          defaultValue = "unknown",
+          customHandler = ReactRendererHandler.class
+      ) ReactRenderer renderer
+  ) {
+    if (renderer == null || "unknown".equalsIgnoreCase(renderer.getId())) {
+      ReactMapGUI.open(player());
+      return;
     }
 
-    @Director(
-            name = "map",
-            description = "Visualize the via glow blocks",
-            origin = DirectorOrigin.PLAYER
-    )
-    public void map(
-            @Param(
-                    name = "renderer",
-                    defaultValue = "unknown",
-                    customHandler = ReactRendererHandler.class
-            ) ReactRenderer renderer
-    ) {
-        if (renderer == null || "unknown".equalsIgnoreCase(renderer.getId())) {
-            ReactMapGUI.open(player());
-            return;
-        }
+    React.controller(MapController.class).openRenderer(player(), renderer);
+  }
 
-        React.controller(MapController.class).openRenderer(player(), renderer);
-    }
+  @Director(
+      name = "reload",
+      aliases = {"rl"},
+      description = "Reload React")
+  public void reload() {
+    sender().sendMessage("Reloading React, YOu may see errors in the console, this is OKAY! Its the threads we are sampling being killed.");
+    React.instance.reload();
+    sender().sendMessage("React v" + React.instance.getDescription().getVersion() + " Reloaded!");
+  }
 
-    @Director(
-            name = "reload",
-            aliases = {"rl"},
-            description = "Reload React")
-    public void reload() {
-        sender().sendMessage("Reloading React, YOu may see errors in the console, this is OKAY! Its the threads we are sampling being killed.");
-        React.instance.reload();
-        sender().sendMessage("React v" + React.instance.getDescription().getVersion() + " Reloaded!");
-    }
-
-    @Director(
-            name = "version",
-            description = "Get React version")
-    public void version() {
-        sender().sendMessage("React " + React.instance.getDescription().getVersion());
-    }
+  @Director(
+      name = "version",
+      description = "Get React version")
+  public void version() {
+    sender().sendMessage("React " + React.instance.getDescription().getVersion());
+  }
 }

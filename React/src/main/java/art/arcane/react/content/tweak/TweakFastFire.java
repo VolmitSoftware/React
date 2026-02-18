@@ -31,54 +31,54 @@ import org.bukkit.event.block.BlockSpreadEvent;
 
 @art.arcane.react.util.config.ConfigDescription("Configuration for Fast Fire tweak. Short-circuits fire spread and burnout updates into fast world operations to lower fire-physics overhead.")
 public class TweakFastFire extends ReactTweak implements Listener {
-    public static final String ID = "fast-fire";
+  public static final String ID = "fast-fire";
 
-    public TweakFastFire() {
-        super(ID);
+  public TweakFastFire() {
+    super(ID);
+  }
+
+  @Override
+  public void onActivate() {
+
+  }
+
+  @EventHandler
+  public void on(BlockSpreadEvent e) {
+    if (e.getBlock().getBlockData() instanceof Fire f) {
+      e.setCancelled(true);
+      var location = e.getBlock().getLocation().clone();
+      J.s(location, () -> FastWorld.set(location.getBlock(), f), 0);
     }
+  }
 
-    @Override
-    public void onActivate() {
-
+  @EventHandler
+  public void on(BlockFadeEvent e) {
+    if (e.getBlock().getBlockData() instanceof Fire) {
+      e.setCancelled(true);
+      var location = e.getBlock().getLocation().clone();
+      J.s(location, () -> FastWorld.breakNaturally(location.getBlock()), 0);
     }
+  }
 
-    @EventHandler
-    public void on(BlockSpreadEvent e) {
-        if (e.getBlock().getBlockData() instanceof Fire f) {
-            e.setCancelled(true);
-            var location = e.getBlock().getLocation().clone();
-            J.s(location, () -> FastWorld.set(location.getBlock(), f), 0);
-        }
-    }
+  @EventHandler
+  public void on(BlockBurnEvent e) {
+    e.setCancelled(true);
+    var location = e.getBlock().getLocation().clone();
+    J.s(location, () -> FastWorld.breakNaturally(location.getBlock()), 0);
+  }
 
-    @EventHandler
-    public void on(BlockFadeEvent e) {
-        if (e.getBlock().getBlockData() instanceof Fire) {
-            e.setCancelled(true);
-            var location = e.getBlock().getLocation().clone();
-            J.s(location, () -> FastWorld.breakNaturally(location.getBlock()), 0);
-        }
-    }
+  @Override
+  public void onDeactivate() {
 
-    @EventHandler
-    public void on(BlockBurnEvent e) {
-        e.setCancelled(true);
-        var location = e.getBlock().getLocation().clone();
-        J.s(location, () -> FastWorld.breakNaturally(location.getBlock()), 0);
-    }
+  }
 
-    @Override
-    public void onDeactivate() {
+  @Override
+  public int getTickInterval() {
+    return -1;
+  }
 
-    }
+  @Override
+  public void onTick() {
 
-    @Override
-    public int getTickInterval() {
-        return -1;
-    }
-
-    @Override
-    public void onTick() {
-
-    }
+  }
 }

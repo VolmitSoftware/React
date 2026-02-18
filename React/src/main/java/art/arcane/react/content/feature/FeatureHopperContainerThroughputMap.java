@@ -25,38 +25,38 @@ import org.bukkit.Chunk;
 
 @art.arcane.react.util.config.ConfigDescription("Configuration for Hopper Container Throughput Map feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureHopperContainerThroughputMap extends FeatureChunkHeatmapBase {
-    public static final String ID = "hopper-container-throughput-map";
+  public static final String ID = "hopper-container-throughput-map";
 
-    public FeatureHopperContainerThroughputMap() {
-        super(ID);
+  public FeatureHopperContainerThroughputMap() {
+    super(ID);
+  }
+
+  @Override
+  protected String mapLabel() {
+    return "Hopper Throughput";
+  }
+
+  @Override
+  protected TinyColor headerColor() {
+    return new TinyColor(46, 132, 140);
+  }
+
+  @Override
+  protected TinyColor backgroundColor() {
+    return new TinyColor(4, 12, 14);
+  }
+
+  @Override
+  protected double chunkScore(Chunk chunk) {
+    return chunkSample(chunk, SamplerHopperUpdates.ID);
+  }
+
+  @Override
+  protected TinyColor colorFor(double normalized, double rawScore) {
+    if (normalized < 0.5D) {
+      return gradient(normalized * 2D, new TinyColor(0, 90, 120), new TinyColor(40, 200, 220));
     }
 
-    @Override
-    protected String mapLabel() {
-        return "Hopper Throughput";
-    }
-
-    @Override
-    protected TinyColor headerColor() {
-        return new TinyColor(46, 132, 140);
-    }
-
-    @Override
-    protected TinyColor backgroundColor() {
-        return new TinyColor(4, 12, 14);
-    }
-
-    @Override
-    protected double chunkScore(Chunk chunk) {
-        return chunkSample(chunk, SamplerHopperUpdates.ID);
-    }
-
-    @Override
-    protected TinyColor colorFor(double normalized, double rawScore) {
-        if (normalized < 0.5D) {
-            return gradient(normalized * 2D, new TinyColor(0, 90, 120), new TinyColor(40, 200, 220));
-        }
-
-        return gradient((normalized - 0.5D) * 2D, new TinyColor(40, 200, 220), new TinyColor(255, 200, 40));
-    }
+    return gradient((normalized - 0.5D) * 2D, new TinyColor(40, 200, 220), new TinyColor(255, 200, 40));
+  }
 }

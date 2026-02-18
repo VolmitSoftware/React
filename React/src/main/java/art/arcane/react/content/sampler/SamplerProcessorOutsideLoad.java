@@ -24,47 +24,47 @@ import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Material;
 
 public class SamplerProcessorOutsideLoad extends ReactCachedSampler {
-    public static final String ID = "processor-outside";
+  public static final String ID = "processor-outside";
 
-    public SamplerProcessorOutsideLoad() {
-        super(ID, 250);
+  public SamplerProcessorOutsideLoad() {
+    super(ID, 250);
+  }
+
+  private static double normalizeCpuLoad(double raw) {
+    if (!Double.isFinite(raw) || raw <= 0D) {
+      return 0D;
     }
 
-    @Override
-    public Material getIcon() {
-        return Material.GREEN_CANDLE;
+    if (raw <= 1D) {
+      return raw;
     }
 
-    @Override
-    public double onSample() {
-        double systemLoad = normalizeCpuLoad(getSampler(SamplerProcessorSystemLoad.ID).sample());
-        double processLoad = normalizeCpuLoad(getSampler(SamplerProcessorProcessLoad.ID).sample());
-        return Math.max(0D, systemLoad - processLoad);
+    if (raw <= 100D) {
+      return raw / 100D;
     }
 
-    @Override
-    public String formattedValue(double t) {
-        return Form.pc(normalizeCpuLoad(t), 0);
-    }
+    return 1D;
+  }
 
-    @Override
-    public String formattedSuffix(double t) {
-        return "xCPU";
-    }
+  @Override
+  public Material getIcon() {
+    return Material.GREEN_CANDLE;
+  }
 
-    private static double normalizeCpuLoad(double raw) {
-        if (!Double.isFinite(raw) || raw <= 0D) {
-            return 0D;
-        }
+  @Override
+  public double onSample() {
+    double systemLoad = normalizeCpuLoad(getSampler(SamplerProcessorSystemLoad.ID).sample());
+    double processLoad = normalizeCpuLoad(getSampler(SamplerProcessorProcessLoad.ID).sample());
+    return Math.max(0D, systemLoad - processLoad);
+  }
 
-        if (raw <= 1D) {
-            return raw;
-        }
+  @Override
+  public String formattedValue(double t) {
+    return Form.pc(normalizeCpuLoad(t), 0);
+  }
 
-        if (raw <= 100D) {
-            return raw / 100D;
-        }
-
-        return 1D;
-    }
+  @Override
+  public String formattedSuffix(double t) {
+    return "xCPU";
+  }
 }

@@ -16,21 +16,24 @@
  */
 
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import io.github.slimjar.func.slimjarHelper
+import io.github.slimjar.resolver.data.Mirror
 import org.gradle.jvm.toolchain.JavaLanguageVersion
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.net.URI
 import kotlin.system.exitProcess
 
 plugins {
     java
     `java-library`
-    id("com.gradleup.shadow") version "8.3.5"
-    id("org.jetbrains.kotlin.jvm") version "2.2.0"
+    id("com.gradleup.shadow") version "9.0.0-rc3"
+    id("de.crazydev22.slimjar") version "2.1.8"
 }
 
 version = "2.0.0-Dev1" // Needs to be version specific
 val apiVersion = "1.19"
 val pluginName = rootProject.name // Defined in settings.gradle.kts
 val mainClass = "art.arcane.react.React"
+val lib = "art.arcane.react.util.arcane"
 val volmLibCoordinate: String = providers.gradleProperty("volmLibCoordinate")
     .orElse("com.github.VolmitSoftware:VolmLib:master-SNAPSHOT")
     .get()
@@ -73,13 +76,8 @@ registerCustomOutputTask("Pixel", "C://Users//repix//Iris Dimension Engine//1.20
 registerCustomOutputTask("CrazyDev22", "C:\\Users\\Julian\\Desktop\\server\\plugins")
 // ========================== UNIX ==============================
 registerCustomOutputTaskUnix("CyberpwnLT", "/Users/danielmills/development/server/plugins")
-registerCustomOutputTaskUnix("PsychoLT", "/Users/brianfopiano/Developer/RemoteGit/[Minecraft Server]/plugin-jars")
+registerCustomOutputTaskUnix("PsychoLT", "/Users/brianfopiano/Developer/RemoteGit/[Minecraft Server]/consumers/plugin-consumers/dropins/plugins")
 // ==============================================================
-
-/**
- * Gradle is weird sometimes, we need to delete the plugin yml from the build folder to actually filter properly.
- */
-layout.buildDirectory.file("resources/main/plugin.yml").get().asFile.delete()
 
 /**
  * Expand properties into plugin yml
@@ -119,16 +117,17 @@ dependencies {
     compileOnly("io.papermc:paperlib:1.0.7")
 
     // Shaded
-    implementation("com.github.VolmitDev:Curse:23.4.3")
-    implementation("com.github.VolmitDev:MultiBurst:22.9.2")
-    implementation("com.github.VolmitDev:Chrono:22.9.10")
-    implementation("com.github.VolmitDev:Spatial:22.11.1")
+    implementation(slimjarHelper("spigot"))
     implementation(volmLibCoordinate) {
         isChanging = true
         isTransitive = false
     }
-    implementation("com.moandjiezana.toml:toml4j:0.7.2")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+    slim("com.github.VolmitDev:Curse:23.4.3")
+    slim("com.github.VolmitDev:MultiBurst:22.9.2")
+    slim("com.github.VolmitDev:Chrono:22.9.10")
+    slim("com.github.VolmitDev:Spatial:22.11.1")
+    slim("com.moandjiezana.toml:toml4j:0.7.2")
+    slim("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
 
     // Random API's
     compileOnly("me.clip:placeholderapi:2.11.6")
@@ -148,16 +147,20 @@ dependencies {
     compileOnly("io.netty:netty-transport:4.1.92.Final")
 }
 
+slimJar {
+    mirrors = listOf(Mirror(
+        URI.create("https://maven-central.storage-download.googleapis.com/maven2").toURL(),
+        URI.create("https://repo.maven.apache.org/maven2/").toURL()
+    ))
+    relocate("art.arcane.chrono", "$lib.chrono")
+    relocate("art.arcane.curse", "$lib.curse")
+    relocate("art.arcane.edict", "$lib.edict")
+    relocate("art.arcane.multiburst", "$lib.multiburst")
+}
+
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(21))
-    }
-}
-
-kotlin {
-    jvmToolchain(21)
-    compilerOptions {
-        jvmTarget.set(JvmTarget.JVM_21)
     }
 }
 
@@ -172,13 +175,15 @@ tasks.named<ShadowJar>("shadowJar") {
     // Configure React for shading
     // React/Curse rely on reflection/decompiler internals; minimization strips required classes.
     // minimize()
-    append("plugin.yml")
+    dependsOn(tasks.processResources)
+    from(sourceSets.main.get().output)
     archiveClassifier.set("")
-    relocate("art.arcane.chrono", "art.arcane.react.util.arcane.chrono")
-    relocate("art.arcane.curse", "art.arcane.react.util.arcane.curse")
-    relocate("art.arcane.edict", "art.arcane.react.util.arcane.edict")
-    relocate("art.arcane.multiburst", "art.arcane.react.util.arcane.multiburst")
-    relocate("art.arcane.volmlib", "art.arcane.react.util.arcane.volmlib")
+    relocate("io.github.slimjar", "$lib.slimjar")
+    relocate("art.arcane.chrono", "$lib.chrono")
+    relocate("art.arcane.curse", "$lib.curse")
+    relocate("art.arcane.edict", "$lib.edict")
+    relocate("art.arcane.multiburst", "$lib.multiburst")
+    relocate("art.arcane.volmlib", "$lib.volmlib")
 }
 
 tasks.named("build") {

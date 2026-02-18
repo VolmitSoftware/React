@@ -21,30 +21,30 @@ package art.arcane.react.util.plugin;
 
 
 public abstract class Controller implements IController {
-    private final String name;
-    private int tickRate;
+  private final String name;
+  private int tickRate;
 
-    public Controller() {
-        name = getClass().getSimpleName().replaceAll("Controller", "") + " Controller";
-        tickRate = -1;
-    }
+  public Controller() {
+    name = getClass().getSimpleName().replaceAll("Controller", "") + " Controller";
+    tickRate = -1;
+  }
 
-    protected void setTickRate(@SuppressWarnings("SameParameterValue") int rate) {
-        this.tickRate = rate;
-    }
+  protected void setTickRate(@SuppressWarnings("SameParameterValue") int rate) {
+    this.tickRate = rate;
+  }
 
-    protected void disableTicking() {
-        setTickRate(-1);
-    }
+  protected void disableTicking() {
+    setTickRate(-1);
+  }
 
-    @Override
-    public String getName() {
-        return name;
-    }
+  @Override
+  public String getName() {
+    return name;
+  }
 
-    @Override
-    public abstract void start();
+  @Override
+  public abstract void start();
 
-    @Override
-    public abstract void stop();
+  @Override
+  public abstract void stop();
 }

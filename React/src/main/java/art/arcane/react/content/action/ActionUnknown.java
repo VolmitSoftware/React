@@ -27,35 +27,35 @@ import lombok.Data;
 
 @art.arcane.react.util.config.ConfigDescription("Configuration for Unknown action. Disabled placeholder used as a guard when action resolution fails.")
 public class ActionUnknown extends ReactAction<ActionUnknown.Params> {
-    public static final String ID = "unknown";
+  public static final String ID = "unknown";
 
-    public ActionUnknown() {
-        super(ID);
-    }
+  public ActionUnknown() {
+    super(ID);
+  }
 
-    @Override
-    public Params getDefaultParams() {
-        return new Params();
-    }
+  @Override
+  public Params getDefaultParams() {
+    return new Params();
+  }
 
-    @Override
-    public void workOn(ActionTicket<Params> ticket) {
+  @Override
+  public void workOn(ActionTicket<Params> ticket) {
 
-    }
+  }
 
-    @Override
-    public void onInit() {
+  @Override
+  public void onInit() {
 
-    }
+  }
 
-    @Override
-    public boolean autoRegister() {
-        return false;
-    }
+  @Override
+  public boolean autoRegister() {
+    return false;
+  }
 
-    @Builder
-    @Data
-    public static class Params implements ActionParams {
+  @Builder
+  @Data
+  public static class Params implements ActionParams {
 
-    }
+  }
 }

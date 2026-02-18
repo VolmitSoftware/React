@@ -20,9 +20,9 @@
 package art.arcane.react.content.sampler;
 
 public class SamplerTickMsP50 extends SamplerTickPercentileBase {
-    public static final String ID = "tick-ms-p50";
+  public static final String ID = "tick-ms-p50";
 
-    public SamplerTickMsP50() {
-        super(ID, 0.50D, "ms P50");
-    }
+  public SamplerTickMsP50() {
+    super(ID, 0.50D, "ms P50");
+  }
 }

@@ -36,181 +36,181 @@ import lombok.experimental.Accessors;
 
 @art.arcane.react.util.config.ConfigDescription("Configuration for Incident Playbook action. Queues a tiered set of mitigation actions based on current incident severity.")
 public class ActionIncidentPlaybook extends ReactAction<ActionIncidentPlaybook.Params> {
-    public static final String ID = "action-incident-playbook";
-    public static final String SHORT = "aip";
+  public static final String ID = "action-incident-playbook";
+  public static final String SHORT = "aip";
 
-    public ActionIncidentPlaybook() {
-        super(ID);
+  public ActionIncidentPlaybook() {
+    super(ID);
+  }
+
+  @Override
+  public String getCompletedMessage(ActionTicket<Params> ticket) {
+    Params p = ticket.getParams();
+    return "Playbook tier " + p.getTier() + " queued " + p.getQueuedActions() + " mitigation actions in " + Form.duration(ticket.getDuration(), 1);
+  }
+
+  @Override
+  public void workOn(ActionTicket<Params> ticket) {
+    Params params = ticket.getParams();
+    if (params.isPrepared()) {
+      ticket.complete();
+      return;
     }
 
-    @Override
-    public String getCompletedMessage(ActionTicket<Params> ticket) {
-        Params p = ticket.getParams();
-        return "Playbook tier " + p.getTier() + " queued " + p.getQueuedActions() + " mitigation actions in " + Form.duration(ticket.getDuration(), 1);
+    params.setPrepared(true);
+    params.setIncidentScore(sample(SamplerIncidentScore.ID));
+    params.setTickMS(sample(SamplerTickTime.ID));
+    int tier = params.getTierOverride() >= 0 ? Math.max(0, Math.min(2, params.getTierOverride())) : inferTier(params.getIncidentScore(), params.getTickMS());
+    params.setTier(tier);
+
+    int queued = 0;
+    queued += queueQuarantine(params, tier) ? 1 : 0;
+    queued += queueTrim(params, tier) ? 1 : 0;
+    queued += queueHopperNormalize(params, tier) ? 1 : 0;
+    queued += queuePrewarm(params, tier) ? 1 : 0;
+    if (params.isIncludeGarbageCollection()) {
+      queued += queueAction(ActionCollectGarbage.ID, ActionCollectGarbage.Params.builder().build()) ? 1 : 0;
     }
 
-    @Override
-    public void workOn(ActionTicket<Params> ticket) {
-        Params params = ticket.getParams();
-        if (params.isPrepared()) {
-            ticket.complete();
-            return;
-        }
+    params.setQueuedActions(queued);
+    ticket.setCount(queued);
+    ticket.complete();
+  }
 
-        params.setPrepared(true);
-        params.setIncidentScore(sample(SamplerIncidentScore.ID));
-        params.setTickMS(sample(SamplerTickTime.ID));
-        int tier = params.getTierOverride() >= 0 ? Math.max(0, Math.min(2, params.getTierOverride())) : inferTier(params.getIncidentScore(), params.getTickMS());
-        params.setTier(tier);
+  @Override
+  public Params getDefaultParams() {
+    return Params.builder().build();
+  }
 
-        int queued = 0;
-        queued += queueQuarantine(params, tier) ? 1 : 0;
-        queued += queueTrim(params, tier) ? 1 : 0;
-        queued += queueHopperNormalize(params, tier) ? 1 : 0;
-        queued += queuePrewarm(params, tier) ? 1 : 0;
-        if (params.isIncludeGarbageCollection()) {
-            queued += queueAction(ActionCollectGarbage.ID, ActionCollectGarbage.Params.builder().build()) ? 1 : 0;
-        }
+  @Override
+  public void onInit() {
 
-        params.setQueuedActions(queued);
-        ticket.setCount(queued);
-        ticket.complete();
+  }
+
+  private boolean queueQuarantine(Params params, int tier) {
+    ActionQuarantineHotChunks.Params quarantine = ActionQuarantineHotChunks.Params.builder().build();
+    if (params.getWorld() != null && !params.getWorld().isBlank()) {
+      quarantine.setWorld(params.getWorld());
     }
 
-    @Override
-    public Params getDefaultParams() {
-        return Params.builder().build();
+    if (tier == 0) {
+      quarantine.setMaxChunks(16).setMinimumChunkScore(100D).setUnsafePlayerRadius(64D);
+    } else if (tier == 1) {
+      quarantine.setMaxChunks(28).setMinimumChunkScore(80D).setUnsafePlayerRadius(56D);
+    } else {
+      quarantine.setMaxChunks(42).setMinimumChunkScore(60D).setUnsafePlayerRadius(48D);
     }
 
-    @Override
-    public void onInit() {
+    return queueAction(ActionQuarantineHotChunks.ID, quarantine);
+  }
 
+  private boolean queueTrim(Params params, int tier) {
+    ActionTrimEntitiesByAgePriority.Params trim = ActionTrimEntitiesByAgePriority.Params.builder().build();
+    if (params.getWorld() != null && !params.getWorld().isBlank()) {
+      trim.setWorld(params.getWorld());
     }
 
-    private boolean queueQuarantine(Params params, int tier) {
-        ActionQuarantineHotChunks.Params quarantine = ActionQuarantineHotChunks.Params.builder().build();
-        if (params.getWorld() != null && !params.getWorld().isBlank()) {
-            quarantine.setWorld(params.getWorld());
-        }
-
-        if (tier == 0) {
-            quarantine.setMaxChunks(16).setMinimumChunkScore(100D).setUnsafePlayerRadius(64D);
-        } else if (tier == 1) {
-            quarantine.setMaxChunks(28).setMinimumChunkScore(80D).setUnsafePlayerRadius(56D);
-        } else {
-            quarantine.setMaxChunks(42).setMinimumChunkScore(60D).setUnsafePlayerRadius(48D);
-        }
-
-        return queueAction(ActionQuarantineHotChunks.ID, quarantine);
+    if (tier == 0) {
+      trim.setMaxTrim(300).setMaxTrimPerChunk(8).setMinEntityAgeTicks(20 * 60 * 8);
+    } else if (tier == 1) {
+      trim.setMaxTrim(600).setMaxTrimPerChunk(12).setMinEntityAgeTicks(20 * 60 * 5);
+    } else {
+      trim.setMaxTrim(1000).setMaxTrimPerChunk(16).setMinEntityAgeTicks(20 * 60 * 3);
     }
 
-    private boolean queueTrim(Params params, int tier) {
-        ActionTrimEntitiesByAgePriority.Params trim = ActionTrimEntitiesByAgePriority.Params.builder().build();
-        if (params.getWorld() != null && !params.getWorld().isBlank()) {
-            trim.setWorld(params.getWorld());
-        }
+    return queueAction(ActionTrimEntitiesByAgePriority.ID, trim);
+  }
 
-        if (tier == 0) {
-            trim.setMaxTrim(300).setMaxTrimPerChunk(8).setMinEntityAgeTicks(20 * 60 * 8);
-        } else if (tier == 1) {
-            trim.setMaxTrim(600).setMaxTrimPerChunk(12).setMinEntityAgeTicks(20 * 60 * 5);
-        } else {
-            trim.setMaxTrim(1000).setMaxTrimPerChunk(16).setMinEntityAgeTicks(20 * 60 * 3);
-        }
-
-        return queueAction(ActionTrimEntitiesByAgePriority.ID, trim);
+  private boolean queueHopperNormalize(Params params, int tier) {
+    ActionHopperNetworkNormalize.Params normalize = ActionHopperNetworkNormalize.Params.builder().build();
+    if (params.getWorld() != null && !params.getWorld().isBlank()) {
+      normalize.setWorld(params.getWorld());
     }
 
-    private boolean queueHopperNormalize(Params params, int tier) {
-        ActionHopperNetworkNormalize.Params normalize = ActionHopperNetworkNormalize.Params.builder().build();
-        if (params.getWorld() != null && !params.getWorld().isBlank()) {
-            normalize.setWorld(params.getWorld());
-        }
-
-        if (tier == 0) {
-            normalize.setMaxChunks(12).setMinimumHopperUpdatesPerChunk(30D).setMaxMergedItemEntitiesPerChunk(36);
-        } else if (tier == 1) {
-            normalize.setMaxChunks(20).setMinimumHopperUpdatesPerChunk(25D).setMaxMergedItemEntitiesPerChunk(48);
-        } else {
-            normalize.setMaxChunks(32).setMinimumHopperUpdatesPerChunk(18D).setMaxMergedItemEntitiesPerChunk(64);
-        }
-
-        return queueAction(ActionHopperNetworkNormalize.ID, normalize);
+    if (tier == 0) {
+      normalize.setMaxChunks(12).setMinimumHopperUpdatesPerChunk(30D).setMaxMergedItemEntitiesPerChunk(36);
+    } else if (tier == 1) {
+      normalize.setMaxChunks(20).setMinimumHopperUpdatesPerChunk(25D).setMaxMergedItemEntitiesPerChunk(48);
+    } else {
+      normalize.setMaxChunks(32).setMinimumHopperUpdatesPerChunk(18D).setMaxMergedItemEntitiesPerChunk(64);
     }
 
-    private boolean queuePrewarm(Params params, int tier) {
-        ActionPrewarmCriticalChunks.Params prewarm = ActionPrewarmCriticalChunks.Params.builder().build();
-        if (params.getWorld() != null && !params.getWorld().isBlank()) {
-            prewarm.setWorld(params.getWorld());
-        }
+    return queueAction(ActionHopperNetworkNormalize.ID, normalize);
+  }
 
-        if (tier == 0) {
-            prewarm.setMaxChunks(20).setNeighborRadius(1).setPlayerChunkRadius(1);
-        } else if (tier == 1) {
-            prewarm.setMaxChunks(32).setNeighborRadius(1).setPlayerChunkRadius(1);
-        } else {
-            prewarm.setMaxChunks(48).setNeighborRadius(2).setPlayerChunkRadius(2);
-        }
-
-        return queueAction(ActionPrewarmCriticalChunks.ID, prewarm);
+  private boolean queuePrewarm(Params params, int tier) {
+    ActionPrewarmCriticalChunks.Params prewarm = ActionPrewarmCriticalChunks.Params.builder().build();
+    if (params.getWorld() != null && !params.getWorld().isBlank()) {
+      prewarm.setWorld(params.getWorld());
     }
 
-    private boolean queueAction(String id, ActionParams params) {
-        Action<?> action = React.action(id);
-        if (action == null) {
-            React.warn("Incident playbook missing action: " + id);
-            return false;
-        }
-
-        try {
-            action.createForceful(params).queue();
-            return true;
-        } catch (Throwable e) {
-            React.warn("Incident playbook failed to queue action " + id + ": " + e.getMessage());
-            return false;
-        }
+    if (tier == 0) {
+      prewarm.setMaxChunks(20).setNeighborRadius(1).setPlayerChunkRadius(1);
+    } else if (tier == 1) {
+      prewarm.setMaxChunks(32).setNeighborRadius(1).setPlayerChunkRadius(1);
+    } else {
+      prewarm.setMaxChunks(48).setNeighborRadius(2).setPlayerChunkRadius(2);
     }
 
-    private int inferTier(double incident, double tickMS) {
-        if (incident >= 70D || tickMS >= 75D) {
-            return 2;
-        }
+    return queueAction(ActionPrewarmCriticalChunks.ID, prewarm);
+  }
 
-        if (incident >= 45D || tickMS >= 58D) {
-            return 1;
-        }
-
-        return 0;
+  private boolean queueAction(String id, ActionParams params) {
+    Action<?> action = React.action(id);
+    if (action == null) {
+      React.warn("Incident playbook missing action: " + id);
+      return false;
     }
 
-    private double sample(String samplerId) {
-        Sampler sampler = React.sampler(samplerId);
-        return sampler == null ? 0D : sampler.sample();
+    try {
+      action.createForceful(params).queue();
+      return true;
+    } catch (Throwable e) {
+      React.warn("Incident playbook failed to queue action " + id + ": " + e.getMessage());
+      return false;
+    }
+  }
+
+  private int inferTier(double incident, double tickMS) {
+    if (incident >= 70D || tickMS >= 75D) {
+      return 2;
     }
 
-    @Builder
-    @Data
-    @Accessors(chain = true)
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class Params implements ActionParams {
-        @art.arcane.react.util.config.ConfigDoc(value = "World name filter for incident playbook operations.", impact = "Set a world name to scope actions there, or leave blank to include all worlds.")
-        private String world;
-        @Builder.Default
-        @art.arcane.react.util.config.ConfigDoc(value = "Includes garbage collection in incident playbook processing.", impact = "Enable this to add those targets to processing; disable it to leave them out.")
-        private boolean includeGarbageCollection = true;
-        @Builder.Default
-        @art.arcane.react.util.config.ConfigDoc(value = "Override tier used by incident playbook when selecting mitigation intensity.", impact = "Higher tiers generally choose more aggressive responses; lower tiers keep interventions lighter.")
-        private int tierOverride = -1;
-        @Builder.Default
-        private transient boolean prepared = false;
-        @Builder.Default
-        private transient int queuedActions = 0;
-        @Builder.Default
-        private transient int tier = 0;
-        @Builder.Default
-        private transient double incidentScore = 0D;
-        @Builder.Default
-        private transient double tickMS = 0D;
+    if (incident >= 45D || tickMS >= 58D) {
+      return 1;
     }
+
+    return 0;
+  }
+
+  private double sample(String samplerId) {
+    Sampler sampler = React.sampler(samplerId);
+    return sampler == null ? 0D : sampler.sample();
+  }
+
+  @Builder
+  @Data
+  @Accessors(chain = true)
+  @AllArgsConstructor
+  @NoArgsConstructor
+  public static class Params implements ActionParams {
+    @art.arcane.react.util.config.ConfigDoc(value = "World name filter for incident playbook operations.", impact = "Set a world name to scope actions there, or leave blank to include all worlds.")
+    private String world;
+    @Builder.Default
+    @art.arcane.react.util.config.ConfigDoc(value = "Includes garbage collection in incident playbook processing.", impact = "Enable this to add those targets to processing; disable it to leave them out.")
+    private boolean includeGarbageCollection = true;
+    @Builder.Default
+    @art.arcane.react.util.config.ConfigDoc(value = "Override tier used by incident playbook when selecting mitigation intensity.", impact = "Higher tiers generally choose more aggressive responses; lower tiers keep interventions lighter.")
+    private int tierOverride = -1;
+    @Builder.Default
+    private transient boolean prepared = false;
+    @Builder.Default
+    private transient int queuedActions = 0;
+    @Builder.Default
+    private transient int tier = 0;
+    @Builder.Default
+    private transient double incidentScore = 0D;
+    @Builder.Default
+    private transient double tickMS = 0D;
+  }
 }

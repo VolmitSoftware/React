@@ -21,8 +21,8 @@ package art.arcane.react.util.plugin;
 
 
 import art.arcane.react.React;
-import art.arcane.volmlib.util.collection.KList;
 import art.arcane.react.util.format.C;
+import art.arcane.volmlib.util.collection.KList;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.sound.Sound;
 
@@ -36,201 +36,203 @@ import java.util.Comparator;
  * @author cyberpwn
  */
 public abstract class MortarCommand implements ICommand {
-    private final KList<MortarCommand> children;
-    private final KList<String> nodes;
-    private final KList<String> requiredPermissions;
-    private final String node;
-    private String category;
-    private String description;
+  private final KList<MortarCommand> children;
+  private final KList<String> nodes;
+  private final KList<String> requiredPermissions;
+  private final String node;
+  private String category;
+  private String description;
 
-    /**
-     * Override this with a super constructor as most commands shouldn't change
-     * these parameters
-     *
-     * @param node  the node (primary node) i.e. volume
-     * @param nodes the aliases. i.e. v, vol, bile
-     */
-    public MortarCommand(String node, String... nodes) {
-        category = "";
-        this.node = node;
-        this.nodes = new KList<>(nodes);
-        requiredPermissions = new KList<>();
-        children = buildChildren();
-        description = "No Description";
+  /**
+   * Override this with a super constructor as most commands shouldn't change
+   * these parameters
+   *
+   * @param node  the node (primary node) i.e. volume
+   * @param nodes the aliases. i.e. v, vol, bile
+   */
+  public MortarCommand(String node, String... nodes) {
+    category = "";
+    this.node = node;
+    this.nodes = new KList<>(nodes);
+    requiredPermissions = new KList<>();
+    children = buildChildren();
+    description = "No Description";
+  }
+
+  @Override
+  public KList<String> handleTab(VolmitSender sender, String[] args) {
+    KList<String> v = new KList<>();
+    if (args.length == 0) {
+      for (MortarCommand i : getChildren()) {
+        v.add(i.getNode());
+      }
     }
 
-    @Override
-    public KList<String> handleTab(VolmitSender sender, String[] args) {
-        KList<String> v = new KList<>();
-        if (args.length == 0) {
-            for (MortarCommand i : getChildren()) {
-                v.add(i.getNode());
-            }
+    addTabOptions(sender, args, v);
+
+    if (v.isEmpty()) {
+      return null;
+    }
+
+    if (sender.isPlayer()) {
+      React.audiences.player(sender.player()).playSound(Sound.sound(
+          Key.key("minecraft:entity.item_frame.rotate_item"),
+          Sound.Source.PLAYER,
+          0.25f,
+          1.7f
+      ));
+    }
+
+    return v;
+  }
+
+  public abstract void addTabOptions(VolmitSender sender, String[] args, KList<String> list);
+
+  public void printHelp(VolmitSender sender) {
+    boolean b = false;
+
+    for (MortarCommand i : getChildren()) {
+      for (String j : i.getRequiredPermissions()) {
+        if (!sender.hasPermission(j)) {
         }
+      }
 
-        addTabOptions(sender, args, v);
+      b = true;
 
-        if (v.isEmpty()) {
-            return null;
+      sender.sendMessage("" + C.GREEN + i.getNode() + " " + "<font:minecraft:uniform>" + (getArgsUsage().trim().isEmpty() ? "" : (C.WHITE + i.getArgsUsage())) + C.GRAY + " - " + i.getDescription());
+    }
+
+    if (!b) {
+      sender.sendMessage("There are either no sub-commands or you do not have permission to use them.");
+    }
+
+    if (sender.isPlayer()) {
+      React.audiences.player(sender.player()).playSound(Sound.sound(
+          Key.key("minecraft:item.book.page_turn"),
+          Sound.Source.PLAYER,
+          0.28f,
+          1.4f
+      ));
+      React.audiences.player(sender.player()).playSound(Sound.sound(
+          Key.key("minecraft:item.axe.strip"),
+          Sound.Source.PLAYER,
+          0.35f,
+          1.7f
+      ));
+    }
+  }
+
+  protected abstract String getArgsUsage();
+
+  public String getDescription() {
+    return description;
+  }
+
+  protected void setDescription(String description) {
+    this.description = description;
+  }
+
+  protected void requiresPermission(MortarPermission node) {
+    if (node == null) {
+      return;
+    }
+
+    requiresPermission(node.toString());
+  }
+
+  protected void requiresPermission(String node) {
+    if (node == null) {
+      return;
+    }
+
+    requiredPermissions.add(node);
+  }
+
+  public void rejectAny(int past, VolmitSender sender, String[] a) {
+    if (a.length > past) {
+      int p = past;
+
+      StringBuilder m = new StringBuilder();
+
+      for (String i : a) {
+        p--;
+        if (p < 0) {
+          m.append(i).append(", ");
         }
+      }
 
-        if (sender.isPlayer()) {
-            React.audiences.player(sender.player()).playSound(Sound.sound(
-                    Key.key("minecraft:entity.item_frame.rotate_item"),
-                    Sound.Source.PLAYER,
-                    0.25f,
-                    1.7f
-            ));
+      if (!m.toString().trim().isEmpty()) {
+        sender.sendMessage("Parameters Ignored: " + m);
+      }
+    }
+  }
+
+  @Override
+  public String getNode() {
+    return node;
+  }
+
+  @Override
+  public KList<String> getNodes() {
+    return nodes;
+  }
+
+  @Override
+  public KList<String> getAllNodes() {
+    return getNodes().copy().qadd(getNode());
+  }
+
+  @Override
+  public void addNode(String node) {
+    getNodes().add(node);
+  }
+
+  public KList<MortarCommand> getChildren() {
+    return children;
+  }
+
+  private KList<MortarCommand> buildChildren() {
+    KList<MortarCommand> p = new KList<>();
+
+    for (Field i : getClass().getDeclaredFields()) {
+      if (i.isAnnotationPresent(Command.class)) {
+        try {
+          i.setAccessible(true);
+          MortarCommand pc = (MortarCommand) i.getType().getConstructor().newInstance();
+          Command c = i.getAnnotation(Command.class);
+
+          if (!c.value().trim().isEmpty()) {
+            pc.setCategory(c.value().trim());
+          } else {
+            pc.setCategory(getCategory());
+          }
+
+          p.add(pc);
+        } catch (IllegalArgumentException | IllegalAccessException |
+                 InstantiationException |
+                 InvocationTargetException | NoSuchMethodException |
+                 SecurityException e) {
+          e.printStackTrace();
+          e.printStackTrace();
         }
-
-        return v;
+      }
     }
 
-    public abstract void addTabOptions(VolmitSender sender, String[] args, KList<String> list);
+    p.sort(Comparator.comparing(MortarCommand::getNode));
 
-    public void printHelp(VolmitSender sender) {
-        boolean b = false;
+    return p;
+  }
 
-        for (MortarCommand i : getChildren()) {
-            for (String j : i.getRequiredPermissions()) {
-                if (!sender.hasPermission(j)) {
-                }
-            }
+  @Override
+  public KList<String> getRequiredPermissions() {
+    return requiredPermissions;
+  }
 
-            b = true;
+  public String getCategory() {
+    return category;
+  }
 
-            sender.sendMessage("" + C.GREEN + i.getNode() + " " + "<font:minecraft:uniform>" + (getArgsUsage().trim().isEmpty() ? "" : (C.WHITE + i.getArgsUsage())) + C.GRAY + " - " + i.getDescription());
-        }
-
-        if (!b) {
-            sender.sendMessage("There are either no sub-commands or you do not have permission to use them.");
-        }
-
-        if (sender.isPlayer()) {
-            React.audiences.player(sender.player()).playSound(Sound.sound(
-                    Key.key("minecraft:item.book.page_turn"),
-                    Sound.Source.PLAYER,
-                    0.28f,
-                    1.4f
-            ));
-            React.audiences.player(sender.player()).playSound(Sound.sound(
-                    Key.key("minecraft:item.axe.strip"),
-                    Sound.Source.PLAYER,
-                    0.35f,
-                    1.7f
-            ));
-        }
-    }
-
-    protected abstract String getArgsUsage();
-
-    public String getDescription() {
-        return description;
-    }
-
-    protected void setDescription(String description) {
-        this.description = description;
-    }
-
-    protected void requiresPermission(MortarPermission node) {
-        if (node == null) {
-            return;
-        }
-
-        requiresPermission(node.toString());
-    }
-
-    protected void requiresPermission(String node) {
-        if (node == null) {
-            return;
-        }
-
-        requiredPermissions.add(node);
-    }
-
-    public void rejectAny(int past, VolmitSender sender, String[] a) {
-        if (a.length > past) {
-            int p = past;
-
-            StringBuilder m = new StringBuilder();
-
-            for (String i : a) {
-                p--;
-                if (p < 0) {
-                    m.append(i).append(", ");
-                }
-            }
-
-            if (!m.toString().trim().isEmpty()) {
-                sender.sendMessage("Parameters Ignored: " + m);
-            }
-        }
-    }
-
-    @Override
-    public String getNode() {
-        return node;
-    }
-
-    @Override
-    public KList<String> getNodes() {
-        return nodes;
-    }
-
-    @Override
-    public KList<String> getAllNodes() {
-        return getNodes().copy().qadd(getNode());
-    }
-
-    @Override
-    public void addNode(String node) {
-        getNodes().add(node);
-    }
-
-    public KList<MortarCommand> getChildren() {
-        return children;
-    }
-
-    private KList<MortarCommand> buildChildren() {
-        KList<MortarCommand> p = new KList<>();
-
-        for (Field i : getClass().getDeclaredFields()) {
-            if (i.isAnnotationPresent(Command.class)) {
-                try {
-                    i.setAccessible(true);
-                    MortarCommand pc = (MortarCommand) i.getType().getConstructor().newInstance();
-                    Command c = i.getAnnotation(Command.class);
-
-                    if (!c.value().trim().isEmpty()) {
-                        pc.setCategory(c.value().trim());
-                    } else {
-                        pc.setCategory(getCategory());
-                    }
-
-                    p.add(pc);
-                } catch (IllegalArgumentException | IllegalAccessException | InstantiationException |
-                         InvocationTargetException | NoSuchMethodException | SecurityException e) {
-                    e.printStackTrace();
-                    e.printStackTrace();
-                }
-            }
-        }
-
-        p.sort(Comparator.comparing(MortarCommand::getNode));
-
-        return p;
-    }
-
-    @Override
-    public KList<String> getRequiredPermissions() {
-        return requiredPermissions;
-    }
-
-    public String getCategory() {
-        return category;
-    }
-
-    public void setCategory(String category) {
-        this.category = category;
-    }
+  public void setCategory(String category) {
+    this.category = category;
+  }
 }

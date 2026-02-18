@@ -26,15 +26,15 @@ import org.bukkit.entity.Player;
 
 @Getter
 public class MinecartSpawnEvent extends ReactCancellableEvent {
-    private final Location at;
-    private final Player player;
+  private final Location at;
+  private final Player player;
 
-    public MinecartSpawnEvent(Location at, Player player) {
-        this.player = player;
-        this.at = at;
-    }
+  public MinecartSpawnEvent(Location at, Player player) {
+    this.player = player;
+    this.at = at;
+  }
 
-    public MinecartSpawnEvent(Location at) {
-        this(at, null);
-    }
+  public MinecartSpawnEvent(Location at) {
+    this(at, null);
+  }
 }

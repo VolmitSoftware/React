@@ -24,41 +24,41 @@ import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Material;
 
 public class SamplerGcTimePercent extends ReactCachedSampler {
-    public static final String ID = "gc-time-percent";
+  public static final String ID = "gc-time-percent";
 
-    public SamplerGcTimePercent() {
-        super(ID, 1000);
-    }
+  public SamplerGcTimePercent() {
+    super(ID, 1000);
+  }
 
-    @Override
-    public void start() {
-        super.start();
-        GCStatsTracker.acquire();
-    }
+  @Override
+  public void start() {
+    super.start();
+    GCStatsTracker.acquire();
+  }
 
-    @Override
-    public void stop() {
-        GCStatsTracker.release();
-        super.stop();
-    }
+  @Override
+  public void stop() {
+    GCStatsTracker.release();
+    super.stop();
+  }
 
-    @Override
-    public Material getIcon() {
-        return Material.EXPERIENCE_BOTTLE;
-    }
+  @Override
+  public Material getIcon() {
+    return Material.EXPERIENCE_BOTTLE;
+  }
 
-    @Override
-    public double onSample() {
-        return GCStatsTracker.sampleGcTimePercent();
-    }
+  @Override
+  public double onSample() {
+    return GCStatsTracker.sampleGcTimePercent();
+  }
 
-    @Override
-    public String formattedValue(double t) {
-        return Form.f(t, 2);
-    }
+  @Override
+  public String formattedValue(double t) {
+    return Form.f(t, 2);
+  }
 
-    @Override
-    public String formattedSuffix(double t) {
-        return "% GC";
-    }
+  @Override
+  public String formattedSuffix(double t) {
+    return "% GC";
+  }
 }

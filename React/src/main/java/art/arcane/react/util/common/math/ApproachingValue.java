@@ -22,20 +22,20 @@ package art.arcane.react.util.math;
 import art.arcane.volmlib.util.math.M;
 
 public class ApproachingValue {
-    private final double percent;
-    private double value;
+  private final double percent;
+  private double value;
 
-    public ApproachingValue(double percent) {
-        this.value = 0;
-        this.percent = percent;
+  public ApproachingValue(double percent) {
+    this.value = 0;
+    this.percent = percent;
+  }
+
+  public double get(Double realValue) {
+    if (realValue == null) {
+      return value;
     }
 
-    public double get(Double realValue) {
-        if (realValue == null) {
-            return value;
-        }
-
-        value = M.lerp(this.value, realValue, percent);
-        return value;
-    }
+    value = M.lerp(this.value, realValue, percent);
+    return value;
+  }
 }

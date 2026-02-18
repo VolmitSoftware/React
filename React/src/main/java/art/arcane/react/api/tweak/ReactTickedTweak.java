@@ -26,15 +26,15 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class ReactTickedTweak extends TickedObject {
-    private final Tweak component;
+  private final Tweak component;
 
-    public ReactTickedTweak(Tweak component) {
-        super("react", "tweak-" + component.getId(), component.getTickInterval());
-        this.component = component;
-    }
+  public ReactTickedTweak(Tweak component) {
+    super("react", "tweak-" + component.getId(), component.getTickInterval());
+    this.component = component;
+  }
 
-    @Override
-    public void onTick() {
-        component.onTick();
-    }
+  @Override
+  public void onTick() {
+    component.onTick();
+  }
 }

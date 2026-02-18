@@ -29,65 +29,65 @@ import org.bukkit.event.entity.EntitySpawnEvent;
 
 @art.arcane.react.util.config.ConfigDescription("Configuration for Experience Orb Merge tweak. Merges nearby XP orbs into larger stacks to reduce orb entity count and pickup overhead.")
 public class TweakExperienceOrbMerge extends ReactTweak implements Listener {
-    public static final String ID = "experience-orb-merge";
-    @art.arcane.react.util.config.ConfigDoc(value = "Merge radius used by experience orb merge (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
-    private double mergeRadius = 2.75;
-    @art.arcane.react.util.config.ConfigDoc(value = "Maximum nearby orbs allowed per merge in experience orb merge.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
-    private int maxNearbyOrbsPerMerge = 24;
-    @art.arcane.react.util.config.ConfigDoc(value = "Maximum experience allowed per orb in experience orb merge.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
-    private int maxExperiencePerOrb = 10000;
+  public static final String ID = "experience-orb-merge";
+  @art.arcane.react.util.config.ConfigDoc(value = "Merge radius used by experience orb merge (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
+  private double mergeRadius = 2.75;
+  @art.arcane.react.util.config.ConfigDoc(value = "Maximum nearby orbs allowed per merge in experience orb merge.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
+  private int maxNearbyOrbsPerMerge = 24;
+  @art.arcane.react.util.config.ConfigDoc(value = "Maximum experience allowed per orb in experience orb merge.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
+  private int maxExperiencePerOrb = 10000;
 
-    public TweakExperienceOrbMerge() {
-        super(ID);
+  public TweakExperienceOrbMerge() {
+    super(ID);
+  }
+
+  @Override
+  public void onActivate() {
+
+  }
+
+  @Override
+  public void onDeactivate() {
+
+  }
+
+  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+  public void on(EntitySpawnEvent event) {
+    if (!(event.getEntity() instanceof ExperienceOrb orb) || orb.isDead()) {
+      return;
     }
 
-    @Override
-    public void onActivate() {
+    int merges = 0;
+    int totalExperience = orb.getExperience();
 
-    }
+    for (Entity nearby : orb.getNearbyEntities(mergeRadius, mergeRadius, mergeRadius)) {
+      if (nearby.isDead() || nearby.getUniqueId().equals(orb.getUniqueId())) {
+        continue;
+      }
 
-    @Override
-    public void onDeactivate() {
+      if (nearby instanceof ExperienceOrb other) {
+        totalExperience += Math.max(0, other.getExperience());
+        other.remove();
+        merges++;
 
-    }
-
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void on(EntitySpawnEvent event) {
-        if (!(event.getEntity() instanceof ExperienceOrb orb) || orb.isDead()) {
-            return;
+        if (merges >= maxNearbyOrbsPerMerge) {
+          break;
         }
-
-        int merges = 0;
-        int totalExperience = orb.getExperience();
-
-        for (Entity nearby : orb.getNearbyEntities(mergeRadius, mergeRadius, mergeRadius)) {
-            if (nearby.isDead() || nearby.getUniqueId().equals(orb.getUniqueId())) {
-                continue;
-            }
-
-            if (nearby instanceof ExperienceOrb other) {
-                totalExperience += Math.max(0, other.getExperience());
-                other.remove();
-                merges++;
-
-                if (merges >= maxNearbyOrbsPerMerge) {
-                    break;
-                }
-            }
-        }
-
-        if (merges > 0) {
-            orb.setExperience(Math.min(maxExperiencePerOrb, Math.max(1, totalExperience)));
-        }
+      }
     }
 
-    @Override
-    public int getTickInterval() {
-        return -1;
+    if (merges > 0) {
+      orb.setExperience(Math.min(maxExperiencePerOrb, Math.max(1, totalExperience)));
     }
+  }
 
-    @Override
-    public void onTick() {
+  @Override
+  public int getTickInterval() {
+    return -1;
+  }
 
-    }
+  @Override
+  public void onTick() {
+
+  }
 }

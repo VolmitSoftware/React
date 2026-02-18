@@ -35,18 +35,18 @@ import java.util.Map;
 @NoArgsConstructor
 @Data
 public class ReactRenderContext {
-    private static Map<Long, ReactRenderContext> contexts = new HashMap<>();
-    private Player player;
-    private MapView view;
-    private MapCanvas canvas;
-    private int width;
-    private int height;
+  private static Map<Long, ReactRenderContext> contexts = new HashMap<>();
+  private Player player;
+  private MapView view;
+  private MapCanvas canvas;
+  private int width;
+  private int height;
 
-    public static void push(ReactRenderContext context) {
-        contexts.put(Thread.currentThread().getId(), context);
-    }
+  public static void push(ReactRenderContext context) {
+    contexts.put(Thread.currentThread().getId(), context);
+  }
 
-    public static ReactRenderContext of() {
-        return contexts.get(Thread.currentThread().getId());
-    }
+  public static ReactRenderContext of() {
+    return contexts.get(Thread.currentThread().getId());
+  }
 }
