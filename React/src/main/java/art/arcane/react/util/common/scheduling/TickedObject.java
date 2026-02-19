@@ -17,10 +17,10 @@
  *
  */
 
-package art.arcane.react.util.scheduling;
+package art.arcane.react.util.common.scheduling;
 
 import art.arcane.react.React;
-import art.arcane.react.util.registry.Registered;
+import art.arcane.react.util.project.registry.Registered;
 import art.arcane.volmlib.util.math.M;
 import org.bukkit.event.Listener;
 

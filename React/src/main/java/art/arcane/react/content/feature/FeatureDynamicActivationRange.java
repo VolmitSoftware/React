@@ -23,7 +23,7 @@ import art.arcane.react.React;
 import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.model.ReactEntity;
-import art.arcane.react.util.scheduling.J;
+import art.arcane.react.util.common.scheduling.J;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
@@ -40,28 +40,28 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 
-@art.arcane.react.util.config.ConfigDescription("Configuration for Dynamic Activation Range feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
+@art.arcane.react.util.project.config.ConfigDescription("Configuration for Dynamic Activation Range feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureDynamicActivationRange extends ReactFeature implements Listener {
   public static final String ID = "dynamic-activation-range";
-  @art.arcane.react.util.config.ConfigDoc(value = "Main evaluation interval for dynamic activation range in milliseconds.", impact = "Lower values react faster but consume more CPU; higher values reduce overhead but react later.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Main evaluation interval for dynamic activation range in milliseconds.", impact = "Lower values react faster but consume more CPU; higher values reduce overhead but react later.")
   private int tickIntervalMS = 1000;
-  @art.arcane.react.util.config.ConfigDoc(value = "Maximum entities sampled allowed per cycle in dynamic activation range.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum entities sampled allowed per cycle in dynamic activation range.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
   private int maxEntitiesSampledPerCycle = 240;
-  @art.arcane.react.util.config.ConfigDoc(value = "Minimum activation range required by dynamic activation range.", impact = "Higher values require stronger signals before action; lower values make this condition easier to satisfy.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Minimum activation range required by dynamic activation range.", impact = "Higher values require stronger signals before action; lower values make this condition easier to satisfy.")
   private double minimumActivationRange = 18;
-  @art.arcane.react.util.config.ConfigDoc(value = "Maximum activation range allowed by dynamic activation range.", impact = "Higher values allow more throughput before intervention; lower values make mitigation more aggressive.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum activation range allowed by dynamic activation range.", impact = "Higher values allow more throughput before intervention; lower values make mitigation more aggressive.")
   private double maximumActivationRange = 64;
-  @art.arcane.react.util.config.ConfigDoc(value = "Activation radius used by dynamic activation range (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Activation radius used by dynamic activation range (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
   private double currentActivationRange = maximumActivationRange;
-  @art.arcane.react.util.config.ConfigDoc(value = "Tick-time threshold for target tick ms in dynamic activation range (milliseconds).", impact = "Higher values delay activation or exit; lower values make this threshold easier to cross.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Tick-time threshold for target tick ms in dynamic activation range (milliseconds).", impact = "Higher values delay activation or exit; lower values make this threshold easier to cross.")
   private double targetTickMS = 45;
-  @art.arcane.react.util.config.ConfigDoc(value = "Tick-time threshold for critical in dynamic activation range (milliseconds).", impact = "Higher values delay activation or exit; lower values make this threshold easier to cross.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Tick-time threshold for critical in dynamic activation range (milliseconds).", impact = "Higher values delay activation or exit; lower values make this threshold easier to cross.")
   private double criticalTickMS = 70;
-  @art.arcane.react.util.config.ConfigDoc(value = "Minimum entity age ticks required by dynamic activation range.", impact = "Higher values require stronger signals before action; lower values make this condition easier to satisfy.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Minimum entity age ticks required by dynamic activation range.", impact = "Higher values require stronger signals before action; lower values make this condition easier to satisfy.")
   private double minimumEntityAgeTicks = 100;
-  @art.arcane.react.util.config.ConfigDoc(value = "Skips tamed entities when dynamic activation range evaluates targets.", impact = "Enable this to exclude matching cases; disable it to include them in enforcement.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Skips tamed entities when dynamic activation range evaluates targets.", impact = "Enable this to exclude matching cases; disable it to include them in enforcement.")
   private boolean ignoreTamedEntities = true;
-  @art.arcane.react.util.config.ConfigDoc(value = "Skips named entities when dynamic activation range evaluates targets.", impact = "Enable this to exclude matching cases; disable it to include them in enforcement.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Skips named entities when dynamic activation range evaluates targets.", impact = "Enable this to exclude matching cases; disable it to include them in enforcement.")
   private boolean ignoreNamedEntities = true;
 
   public FeatureDynamicActivationRange() {

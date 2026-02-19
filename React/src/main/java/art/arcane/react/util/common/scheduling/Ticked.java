@@ -17,7 +17,7 @@
  *
  */
 
-package art.arcane.react.util.scheduling;
+package art.arcane.react.util.common.scheduling;
 
 import art.arcane.volmlib.util.math.M;
 

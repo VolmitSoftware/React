@@ -24,7 +24,7 @@ import art.arcane.react.model.SampledChunk;
 import art.arcane.react.model.SampledServer;
 import art.arcane.react.model.SampledWorld;
 import art.arcane.react.util.plugin.IController;
-import art.arcane.react.util.scheduling.TickedObject;
+import art.arcane.react.util.common.scheduling.TickedObject;
 import com.google.common.util.concurrent.AtomicDouble;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

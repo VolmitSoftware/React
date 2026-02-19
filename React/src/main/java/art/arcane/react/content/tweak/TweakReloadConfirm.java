@@ -27,7 +27,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 
-@art.arcane.react.util.config.ConfigDescription("Configuration for Reload Confirm tweak. Rewrites `/reload` to `/reload confirm` for privileged users to prevent accidental unsafe reloads.")
+@art.arcane.react.util.project.config.ConfigDescription("Configuration for Reload Confirm tweak. Rewrites `/reload` to `/reload confirm` for privileged users to prevent accidental unsafe reloads.")
 public class TweakReloadConfirm extends ReactTweak implements Listener {
   public static final String ID = "reload-confirm";
 

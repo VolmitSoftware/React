@@ -22,7 +22,7 @@ package art.arcane.react.content.tweak;
 import art.arcane.chrono.PrecisionStopwatch;
 import art.arcane.react.api.tweak.ReactTweak;
 import art.arcane.react.util.data.B;
-import art.arcane.react.util.scheduling.J;
+import art.arcane.react.util.common.scheduling.J;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.block.Block;
@@ -39,13 +39,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-@art.arcane.react.util.config.ConfigDescription("Configuration for Fast Falling Blocks tweak. Accelerates long-lived falling-block entities when fall processing starts causing measurable tick cost.")
+@art.arcane.react.util.project.config.ConfigDescription("Configuration for Fast Falling Blocks tweak. Accelerates long-lived falling-block entities when fall processing starts causing measurable tick cost.")
 public class TweakFastFallingBlocks extends ReactTweak implements Listener {
   public static final String ID = "fast-falling-blocks";
   private transient List<Runnable> jobs;
   private transient Set<Block> queued;
   private transient int ticker;
-  @art.arcane.react.util.config.ConfigDoc(value = "Maximum fall ms allowed by fast falling blocks.", impact = "Higher values allow more throughput before intervention; lower values make mitigation more aggressive.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum fall ms allowed by fast falling blocks.", impact = "Higher values allow more throughput before intervention; lower values make mitigation more aggressive.")
   private double maxFallMS = 1.5;
 
   public TweakFastFallingBlocks() {

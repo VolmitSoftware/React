@@ -28,12 +28,12 @@ import art.arcane.volmlib.util.format.Form;
 
 import java.util.List;
 
-@art.arcane.react.util.config.ConfigDescription("Configuration for Plugin Event Impact List Map feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
+@art.arcane.react.util.project.config.ConfigDescription("Configuration for Plugin Event Impact List Map feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeaturePluginEventImpactListMap extends ReactFeature implements ReactRenderer {
   public static final String ID = "plugin-event-impact-list-map";
-  @art.arcane.react.util.config.ConfigDoc(value = "Maximum entries shown by plugin event impact list map.", impact = "Higher values show more plugins but reduce per-row readability.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum entries shown by plugin event impact list map.", impact = "Higher values show more plugins but reduce per-row readability.")
   private int maxEntries = 7;
-  @art.arcane.react.util.config.ConfigDoc(value = "Maximum entries shown when plugin event impact list map is placed in item-frames.", impact = "Lower values improve readability from distance; higher values show more rows with denser text.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum entries shown when plugin event impact list map is placed in item-frames.", impact = "Lower values improve readability from distance; higher values show more rows with denser text.")
   private int frameMaxEntries = 5;
 
   public FeaturePluginEventImpactListMap() {

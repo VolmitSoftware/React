@@ -19,7 +19,7 @@
 
 package art.arcane.react.api.benchmark;
 
-import art.arcane.react.util.scheduling.J;
+import art.arcane.react.util.common.scheduling.J;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 

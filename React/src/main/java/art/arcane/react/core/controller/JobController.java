@@ -23,7 +23,7 @@ import art.arcane.chrono.ChronoLatch;
 import art.arcane.chrono.PrecisionStopwatch;
 import art.arcane.react.api.event.layer.ServerTickEvent;
 import art.arcane.react.util.plugin.IController;
-import art.arcane.react.util.scheduling.J;
+import art.arcane.react.util.common.scheduling.J;
 import art.arcane.volmlib.util.math.M;
 import art.arcane.volmlib.util.math.RNG;
 import art.arcane.volmlib.util.math.RollingSequence;

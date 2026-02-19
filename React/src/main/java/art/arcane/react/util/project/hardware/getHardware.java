@@ -1,4 +1,4 @@
-package art.arcane.react.util.hardware;
+package art.arcane.react.util.project.hardware;
 
 import art.arcane.react.util.format.C;
 import art.arcane.volmlib.util.collection.KList;

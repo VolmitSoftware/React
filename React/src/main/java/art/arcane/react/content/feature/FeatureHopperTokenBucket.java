@@ -34,20 +34,20 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 
-@art.arcane.react.util.config.ConfigDescription("Configuration for Hopper Token Bucket feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
+@art.arcane.react.util.project.config.ConfigDescription("Configuration for Hopper Token Bucket feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureHopperTokenBucket extends ReactFeature implements Listener {
   public static final String ID = "hopper-token-bucket";
-  @art.arcane.react.util.config.ConfigDoc(value = "Main evaluation interval for hopper token bucket in milliseconds.", impact = "Lower values react faster but consume more CPU; higher values reduce overhead but react later.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Main evaluation interval for hopper token bucket in milliseconds.", impact = "Lower values react faster but consume more CPU; higher values reduce overhead but react later.")
   private int tickIntervalMS = 3000;
-  @art.arcane.react.util.config.ConfigDoc(value = "Bucket capacity limit used by hopper token bucket.", impact = "Higher values increase buffered work or burst allowance; lower values tighten throttling.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Bucket capacity limit used by hopper token bucket.", impact = "Higher values increase buffered work or burst allowance; lower values tighten throttling.")
   private double bucketCapacity = 120;
-  @art.arcane.react.util.config.ConfigDoc(value = "Token refill rate used by hopper token bucket.", impact = "Higher values replenish budget faster; lower values enforce stricter sustained throttling.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Token refill rate used by hopper token bucket.", impact = "Higher values replenish budget faster; lower values enforce stricter sustained throttling.")
   private double refillPerSecond = 55;
-  @art.arcane.react.util.config.ConfigDoc(value = "Token cost charged per hopper move in hopper token bucket.", impact = "Higher values drain budget faster and throttle sooner; lower values allow more moves before throttling.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Token cost charged per hopper move in hopper token bucket.", impact = "Higher values drain budget faster and throttle sooner; lower values allow more moves before throttling.")
   private double costPerMove = 1;
-  @art.arcane.react.util.config.ConfigDoc(value = "Bypasses hopper token bucket handling for bypass when nearby players.", impact = "Enable this to skip enforcement in matching situations; disable it for strict handling.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Bypasses hopper token bucket handling for bypass when nearby players.", impact = "Enable this to skip enforcement in matching situations; disable it for strict handling.")
   private boolean bypassWhenNearbyPlayers = true;
-  @art.arcane.react.util.config.ConfigDoc(value = "Bypass player radius used by hopper token bucket (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Bypass player radius used by hopper token bucket (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
   private double bypassPlayerRadius = 16;
   private transient Map<ChunkKey, Bucket> buckets = new HashMap<>();
 
@@ -117,11 +117,11 @@ public class FeatureHopperTokenBucket extends ReactFeature implements Listener {
   }
 
   private static final class Bucket {
-    @art.arcane.react.util.config.ConfigDoc(value = "Tokens limit used by hopper token bucket.", impact = "Higher values increase buffered work or burst allowance; lower values tighten throttling.")
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Tokens limit used by hopper token bucket.", impact = "Higher values increase buffered work or burst allowance; lower values tighten throttling.")
     private double tokens;
-    @art.arcane.react.util.config.ConfigDoc(value = "Internal timestamp used by hopper token bucket to track timing windows and decay.", impact = "Primarily runtime state; changing this manually can distort cooldown or throttling behavior.")
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Internal timestamp used by hopper token bucket to track timing windows and decay.", impact = "Primarily runtime state; changing this manually can distort cooldown or throttling behavior.")
     private long lastRefill;
-    @art.arcane.react.util.config.ConfigDoc(value = "Internal timestamp used by hopper token bucket to track timing windows and decay.", impact = "Primarily runtime state; changing this manually can distort cooldown or throttling behavior.")
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Internal timestamp used by hopper token bucket to track timing windows and decay.", impact = "Primarily runtime state; changing this manually can distort cooldown or throttling behavior.")
     private long lastUse;
 
     private Bucket(long now, double capacity) {
@@ -148,11 +148,11 @@ public class FeatureHopperTokenBucket extends ReactFeature implements Listener {
   }
 
   private static final class ChunkKey {
-    @art.arcane.react.util.config.ConfigDoc(value = "World identifier used by hopper token bucket internal tracking.", impact = "This is runtime identity data and should normally be left to automatic updates.")
+    @art.arcane.react.util.project.config.ConfigDoc(value = "World identifier used by hopper token bucket internal tracking.", impact = "This is runtime identity data and should normally be left to automatic updates.")
     private final UUID world;
-    @art.arcane.react.util.config.ConfigDoc(value = "X-axis coordinate used by hopper token bucket internal tracking.", impact = "This is internal state data and should not normally be changed manually.")
+    @art.arcane.react.util.project.config.ConfigDoc(value = "X-axis coordinate used by hopper token bucket internal tracking.", impact = "This is internal state data and should not normally be changed manually.")
     private final int x;
-    @art.arcane.react.util.config.ConfigDoc(value = "Z-axis coordinate used by hopper token bucket internal tracking.", impact = "This is internal state data and should not normally be changed manually.")
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Z-axis coordinate used by hopper token bucket internal tracking.", impact = "This is internal state data and should not normally be changed manually.")
     private final int z;
 
     private ChunkKey(UUID world, int x, int z) {

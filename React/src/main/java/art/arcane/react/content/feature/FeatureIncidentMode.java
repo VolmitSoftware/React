@@ -36,39 +36,39 @@ import org.bukkit.event.player.PlayerPortalEvent;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-@art.arcane.react.util.config.ConfigDescription("Configuration for Incident Mode feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
+@art.arcane.react.util.project.config.ConfigDescription("Configuration for Incident Mode feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureIncidentMode extends ReactFeature implements Listener {
   public static final String ID = "incident-mode";
   private transient final AtomicBoolean evaluationQueued = new AtomicBoolean(false);
-  @art.arcane.react.util.config.ConfigDoc(value = "Main evaluation interval for incident mode in milliseconds.", impact = "Lower values react faster but consume more CPU; higher values reduce overhead but react later.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Main evaluation interval for incident mode in milliseconds.", impact = "Lower values react faster but consume more CPU; higher values reduce overhead but react later.")
   private int tickIntervalMS = 1000;
-  @art.arcane.react.util.config.ConfigDoc(value = "Trigger threshold for enter incident score in incident mode.", impact = "Higher values trigger mitigation later; lower values trigger earlier and more aggressively.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Trigger threshold for enter incident score in incident mode.", impact = "Higher values trigger mitigation later; lower values trigger earlier and more aggressively.")
   private double enterIncidentScore = 58;
-  @art.arcane.react.util.config.ConfigDoc(value = "Trigger threshold for exit incident score in incident mode.", impact = "Higher values trigger mitigation later; lower values trigger earlier and more aggressively.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Trigger threshold for exit incident score in incident mode.", impact = "Higher values trigger mitigation later; lower values trigger earlier and more aggressively.")
   private double exitIncidentScore = 35;
-  @art.arcane.react.util.config.ConfigDoc(value = "Tick-time threshold for enter in incident mode (milliseconds).", impact = "Higher values delay activation or exit; lower values make this threshold easier to cross.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Tick-time threshold for enter in incident mode (milliseconds).", impact = "Higher values delay activation or exit; lower values make this threshold easier to cross.")
   private double enterTickMS = 60;
-  @art.arcane.react.util.config.ConfigDoc(value = "Tick-time threshold for exit in incident mode (milliseconds).", impact = "Higher values delay activation or exit; lower values make this threshold easier to cross.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Tick-time threshold for exit in incident mode (milliseconds).", impact = "Higher values delay activation or exit; lower values make this threshold easier to cross.")
   private double exitTickMS = 46;
-  @art.arcane.react.util.config.ConfigDoc(value = "Minimum incident duration ms required by incident mode.", impact = "Higher values require stronger signals before action; lower values make this condition easier to satisfy.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Minimum incident duration ms required by incident mode.", impact = "Higher values require stronger signals before action; lower values make this condition easier to satisfy.")
   private int minimumIncidentDurationMS = 8000;
-  @art.arcane.react.util.config.ConfigDoc(value = "Rolling window length for rate checks (milliseconds).", impact = "Longer windows smooth bursts but react slower; shorter windows react faster but are more sensitive.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Rolling window length for rate checks (milliseconds).", impact = "Longer windows smooth bursts but react slower; shorter windows react faster but are more sensitive.")
   private int rateWindowMS = 1000;
-  @art.arcane.react.util.config.ConfigDoc(value = "Maximum spawner spawns allowed per window in incident mode.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum spawner spawns allowed per window in incident mode.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
   private int maxSpawnerSpawnsPerWindow = 28;
-  @art.arcane.react.util.config.ConfigDoc(value = "Maximum natural spawns allowed per window in incident mode.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum natural spawns allowed per window in incident mode.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
   private int maxNaturalSpawnsPerWindow = 70;
-  @art.arcane.react.util.config.ConfigDoc(value = "Maximum portal events allowed per window in incident mode.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum portal events allowed per window in incident mode.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
   private int maxPortalEventsPerWindow = 18;
-  @art.arcane.react.util.config.ConfigDoc(value = "Maximum hopper moves allowed per window in incident mode.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum hopper moves allowed per window in incident mode.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
   private int maxHopperMovesPerWindow = 120;
-  @art.arcane.react.util.config.ConfigDoc(value = "Maximum redstone transitions allowed per window in incident mode.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum redstone transitions allowed per window in incident mode.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
   private int maxRedstoneTransitionsPerWindow = 220;
-  @art.arcane.react.util.config.ConfigDoc(value = "Bypasses incident mode handling for bypass near players.", impact = "Enable this to skip enforcement in matching situations; disable it for strict handling.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Bypasses incident mode handling for bypass near players.", impact = "Enable this to skip enforcement in matching situations; disable it for strict handling.")
   private boolean bypassNearPlayers = true;
-  @art.arcane.react.util.config.ConfigDoc(value = "Bypass player radius used by incident mode (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Bypass player radius used by incident mode (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
   private double bypassPlayerRadius = 14;
-  @art.arcane.react.util.config.ConfigDoc(value = "Enables extra logging for verbose transitions in incident mode.", impact = "Enable for diagnostics; disable to reduce chat or log noise.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Enables extra logging for verbose transitions in incident mode.", impact = "Enable for diagnostics; disable to reduce chat or log noise.")
   private boolean verboseTransitions = true;
   private transient volatile boolean incident;
   private transient volatile long incidentSince;
@@ -113,7 +113,7 @@ public class FeatureIncidentMode extends ReactFeature implements Listener {
       return;
     }
 
-    art.arcane.react.util.scheduling.J.s(() -> {
+    art.arcane.react.util.common.scheduling.J.s(() -> {
       try {
         evaluateIncident();
       } finally {

@@ -17,7 +17,7 @@
  *
  */
 
-package art.arcane.react.util.world;
+package art.arcane.react.util.project.world;
 
 import art.arcane.react.util.data.B;
 import lombok.AllArgsConstructor;

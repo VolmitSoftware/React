@@ -27,7 +27,7 @@ import art.arcane.react.core.controller.FeatureController;
 import art.arcane.react.core.controller.SampleController;
 import art.arcane.react.core.controller.TweakController;
 import art.arcane.react.util.reflect.Platform;
-import art.arcane.react.util.registry.Registry;
+import art.arcane.react.util.project.registry.Registry;
 import art.arcane.volmlib.util.format.Form;
 import com.google.common.collect.Maps;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;

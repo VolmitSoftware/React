@@ -23,7 +23,7 @@ import art.arcane.react.content.sampler.SamplerEntities;
 import art.arcane.react.util.data.TinyColor;
 import org.bukkit.Chunk;
 
-@art.arcane.react.util.config.ConfigDescription("Configuration for Entity Pressure Heatmap feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
+@art.arcane.react.util.project.config.ConfigDescription("Configuration for Entity Pressure Heatmap feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureEntityPressureHeatmap extends FeatureChunkHeatmapBase {
   public static final String ID = "entity-pressure-heatmap";
 

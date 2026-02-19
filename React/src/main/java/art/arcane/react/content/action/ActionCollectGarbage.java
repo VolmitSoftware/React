@@ -24,13 +24,13 @@ import art.arcane.react.api.action.ActionParams;
 import art.arcane.react.api.action.ActionTicket;
 import art.arcane.react.api.action.ReactAction;
 import art.arcane.react.content.sampler.SamplerMemoryUsed;
-import art.arcane.react.util.config.ConfigDoc;
+import art.arcane.react.util.project.config.ConfigDoc;
 import art.arcane.volmlib.util.format.Form;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
-@art.arcane.react.util.config.ConfigDescription("Configuration for Collect Garbage action. Requests JVM garbage collection and reports immediate heap reclaimed.")
+@art.arcane.react.util.project.config.ConfigDescription("Configuration for Collect Garbage action. Requests JVM garbage collection and reports immediate heap reclaimed.")
 public class ActionCollectGarbage extends ReactAction<ActionCollectGarbage.Params> {
   public static final String ID = "collect-garbage";
   public static final String SHORT = "gc";

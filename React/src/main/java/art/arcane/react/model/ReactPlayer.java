@@ -23,7 +23,7 @@ import art.arcane.chrono.ChronoLatch;
 import art.arcane.react.React;
 import art.arcane.react.api.monitor.ActionBarMonitor;
 import art.arcane.react.util.plugin.VolmitSender;
-import art.arcane.react.util.scheduling.TickedObject;
+import art.arcane.react.util.common.scheduling.TickedObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.bukkit.entity.Player;

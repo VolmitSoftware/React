@@ -24,7 +24,7 @@ import art.arcane.react.React;
 import art.arcane.react.api.event.NaughtyRegisteredListener;
 import art.arcane.react.api.event.layer.MinecartSpawnEvent;
 import art.arcane.react.util.plugin.IController;
-import art.arcane.react.util.scheduling.TickedObject;
+import art.arcane.react.util.common.scheduling.TickedObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.bukkit.Bukkit;

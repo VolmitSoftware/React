@@ -19,7 +19,7 @@
 
 package art.arcane.react.api.action;
 
-import art.arcane.react.util.config.ConfigDoc;
+import art.arcane.react.util.project.config.ConfigDoc;
 import lombok.Getter;
 
 public abstract class ReactAction<T extends ActionParams> implements Action<T> {

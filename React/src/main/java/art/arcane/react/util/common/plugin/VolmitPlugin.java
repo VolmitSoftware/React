@@ -21,7 +21,7 @@ package art.arcane.react.util.plugin;
 
 
 import art.arcane.react.React;
-import art.arcane.react.util.scheduling.J;
+import art.arcane.react.util.common.scheduling.J;
 import art.arcane.volmlib.util.collection.KList;
 import art.arcane.volmlib.util.collection.KMap;
 import art.arcane.volmlib.util.io.IO;

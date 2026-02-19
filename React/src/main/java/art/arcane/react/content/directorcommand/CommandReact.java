@@ -28,7 +28,7 @@ import art.arcane.react.core.gui.ReactMapGUI;
 import art.arcane.react.util.director.DirectorExecutor;
 import art.arcane.react.util.director.handlers.ReactRendererHandler;
 import art.arcane.react.util.format.C;
-import art.arcane.react.util.world.WorldDistanceSupport;
+import art.arcane.react.util.project.world.WorldDistanceSupport;
 import art.arcane.volmlib.util.director.DirectorOrigin;
 import art.arcane.volmlib.util.director.annotations.Director;
 import art.arcane.volmlib.util.director.annotations.Param;

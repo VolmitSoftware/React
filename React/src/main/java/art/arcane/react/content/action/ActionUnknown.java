@@ -25,7 +25,7 @@ import art.arcane.react.api.action.ReactAction;
 import lombok.Builder;
 import lombok.Data;
 
-@art.arcane.react.util.config.ConfigDescription("Configuration for Unknown action. Disabled placeholder used as a guard when action resolution fails.")
+@art.arcane.react.util.project.config.ConfigDescription("Configuration for Unknown action. Disabled placeholder used as a guard when action resolution fails.")
 public class ActionUnknown extends ReactAction<ActionUnknown.Params> {
   public static final String ID = "unknown";
 

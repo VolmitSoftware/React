@@ -21,7 +21,7 @@ package art.arcane.react.content.tweak;
 
 import art.arcane.react.api.tweak.ReactTweak;
 
-@art.arcane.react.util.config.ConfigDescription("Configuration for Unknown tweak. Placeholder tweak used when a requested tweak ID is missing or unavailable.")
+@art.arcane.react.util.project.config.ConfigDescription("Configuration for Unknown tweak. Placeholder tweak used when a requested tweak ID is missing or unavailable.")
 public class TweakUnknown extends ReactTweak {
   public static final String ID = "unknown";
 

@@ -27,16 +27,16 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 
-@art.arcane.react.util.config.ConfigDescription("Configuration for Spawner Player Radius tweak. Blocks spawner and trial-spawner spawns when players are outside the required activation distance.")
+@art.arcane.react.util.project.config.ConfigDescription("Configuration for Spawner Player Radius tweak. Blocks spawner and trial-spawner spawns when players are outside the required activation distance.")
 public class TweakSpawnerPlayerRadius extends ReactTweak implements Listener {
   public static final String ID = "spawner-player-radius";
-  @art.arcane.react.util.config.ConfigDoc(value = "Required player radius used by spawner player radius (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Required player radius used by spawner player radius (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
   private double requiredPlayerDistance = 32;
-  @art.arcane.react.util.config.ConfigDoc(value = "Controls whether spawner player radius applies only monsters.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Controls whether spawner player radius applies only monsters.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
   private boolean onlyMonsters = true;
-  @art.arcane.react.util.config.ConfigDoc(value = "Controls whether spawner player radius applies enforce spawner spawns.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Controls whether spawner player radius applies enforce spawner spawns.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
   private boolean enforceSpawnerSpawns = true;
-  @art.arcane.react.util.config.ConfigDoc(value = "Controls whether spawner player radius applies enforce trial spawner spawns.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Controls whether spawner player radius applies enforce trial spawner spawns.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
   private boolean enforceTrialSpawnerSpawns = true;
 
   public TweakSpawnerPlayerRadius() {

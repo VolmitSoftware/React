@@ -1,4 +1,4 @@
-package art.arcane.react.util.config;
+package art.arcane.react.util.project.config;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;

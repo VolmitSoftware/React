@@ -19,7 +19,7 @@
 
 package art.arcane.react.api.tweak;
 
-import art.arcane.react.util.registry.Registered;
+import art.arcane.react.util.project.registry.Registered;
 
 public interface Tweak extends Registered {
   void onActivate();

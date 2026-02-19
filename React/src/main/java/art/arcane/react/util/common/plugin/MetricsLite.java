@@ -20,7 +20,7 @@
 package art.arcane.react.util.plugin;
 
 import art.arcane.react.React;
-import art.arcane.react.util.scheduling.J;
+import art.arcane.react.util.common.scheduling.J;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;

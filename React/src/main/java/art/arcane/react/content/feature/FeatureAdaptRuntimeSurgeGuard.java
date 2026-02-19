@@ -22,29 +22,29 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-@art.arcane.react.util.config.ConfigDescription("Configuration for Adapt Runtime Surge Guard feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
+@art.arcane.react.util.project.config.ConfigDescription("Configuration for Adapt Runtime Surge Guard feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureAdaptRuntimeSurgeGuard extends ReactCapabilityFeature implements Listener {
   public static final String ID = "feature-adapt-runtime-surge-guard";
 
-  @art.arcane.react.util.config.ConfigDoc(value = "Main evaluation interval for adapt runtime surge guard in milliseconds.", impact = "Lower values react faster but consume more CPU; higher values reduce overhead but react later.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Main evaluation interval for adapt runtime surge guard in milliseconds.", impact = "Lower values react faster but consume more CPU; higher values reduce overhead but react later.")
   private int tickIntervalMS = 1000;
-  @art.arcane.react.util.config.ConfigDoc(value = "Tick-time threshold for trigger in adapt runtime surge guard (milliseconds).", impact = "Higher values delay activation or exit; lower values make this threshold easier to cross.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Tick-time threshold for trigger in adapt runtime surge guard (milliseconds).", impact = "Higher values delay activation or exit; lower values make this threshold easier to cross.")
   private double triggerTickMS = 58D;
-  @art.arcane.react.util.config.ConfigDoc(value = "Trigger threshold for trigger session load percent in adapt runtime surge guard.", impact = "Higher values trigger mitigation later; lower values trigger earlier and more aggressively.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Trigger threshold for trigger session load percent in adapt runtime surge guard.", impact = "Higher values trigger mitigation later; lower values trigger earlier and more aggressively.")
   private double triggerSessionLoadPercent = 70D;
-  @art.arcane.react.util.config.ConfigDoc(value = "Trigger threshold for trigger ability ops minute in adapt runtime surge guard.", impact = "Higher values trigger mitigation later; lower values trigger earlier and more aggressively.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Trigger threshold for trigger ability ops minute in adapt runtime surge guard.", impact = "Higher values trigger mitigation later; lower values trigger earlier and more aggressively.")
   private double triggerAbilityOpsPerMinute = 260D;
-  @art.arcane.react.util.config.ConfigDoc(value = "Rolling enforcement window length used by adapt runtime surge guard (milliseconds).", impact = "Longer windows smooth bursts but react slower; shorter windows react faster but are more sensitive.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Rolling enforcement window length used by adapt runtime surge guard (milliseconds).", impact = "Longer windows smooth bursts but react slower; shorter windows react faster but are more sensitive.")
   private int windowMS = 1800;
-  @art.arcane.react.util.config.ConfigDoc(value = "Maximum interactions allowed per window in adapt runtime surge guard.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum interactions allowed per window in adapt runtime surge guard.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
   private int maxInteractionsPerWindow = 8;
-  @art.arcane.react.util.config.ConfigDoc(value = "Maximum combat ops allowed per window in adapt runtime surge guard.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum combat ops allowed per window in adapt runtime surge guard.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
   private int maxCombatOpsPerWindow = 10;
-  @art.arcane.react.util.config.ConfigDoc(value = "Maximum consume ops allowed per window in adapt runtime surge guard.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum consume ops allowed per window in adapt runtime surge guard.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
   private int maxConsumeOpsPerWindow = 4;
-  @art.arcane.react.util.config.ConfigDoc(value = "Message rate-limit cooldown for adapt runtime surge guard notifications (milliseconds).", impact = "Higher values reduce repeated chat spam; lower values allow status messages more often.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Message rate-limit cooldown for adapt runtime surge guard notifications (milliseconds).", impact = "Higher values reduce repeated chat spam; lower values allow status messages more often.")
   private long messageCooldownMS = 2200L;
-  @art.arcane.react.util.config.ConfigDoc(value = "Permission node string checked before adapt runtime surge guard enforcement.", impact = "Change this to match your permission model for bypass behavior.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Permission node string checked before adapt runtime surge guard enforcement.", impact = "Change this to match your permission model for bypass behavior.")
   private String bypassPermission = "react.secret.adapt.bypass";
 
   private transient volatile boolean surge;
@@ -229,9 +229,9 @@ public class FeatureAdaptRuntimeSurgeGuard extends ReactCapabilityFeature implem
   }
 
   private static final class WindowCounter {
-    @art.arcane.react.util.config.ConfigDoc(value = "Internal timestamp used by adapt runtime surge guard to track timing windows and decay.", impact = "Primarily runtime state; changing this manually can distort cooldown or throttling behavior.")
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Internal timestamp used by adapt runtime surge guard to track timing windows and decay.", impact = "Primarily runtime state; changing this manually can distort cooldown or throttling behavior.")
     private long windowStart;
-    @art.arcane.react.util.config.ConfigDoc(value = "Internal counter used by adapt runtime surge guard while tracking burst activity.", impact = "Primarily runtime state; React updates this automatically during live evaluation.")
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Internal counter used by adapt runtime surge guard while tracking burst activity.", impact = "Primarily runtime state; React updates this automatically during live evaluation.")
     private int ops;
 
     private WindowCounter(long now) {

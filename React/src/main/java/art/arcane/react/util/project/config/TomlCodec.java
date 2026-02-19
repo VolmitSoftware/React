@@ -1,4 +1,4 @@
-package art.arcane.react.util.config;
+package art.arcane.react.util.project.config;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;

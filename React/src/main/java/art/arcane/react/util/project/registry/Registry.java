@@ -17,7 +17,7 @@
  *
  */
 
-package art.arcane.react.util.registry;
+package art.arcane.react.util.project.registry;
 
 import art.arcane.react.React;
 import art.arcane.volmlib.util.io.JarScanner;

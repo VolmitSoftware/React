@@ -20,10 +20,10 @@
 package art.arcane.react.core.controller;
 
 import art.arcane.react.core.gui.ReactConfigGUI;
-import art.arcane.react.util.config.ConfigDoc;
+import art.arcane.react.util.project.config.ConfigDoc;
 import art.arcane.react.util.format.C;
 import art.arcane.react.util.plugin.IController;
-import art.arcane.react.util.scheduling.J;
+import art.arcane.react.util.common.scheduling.J;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;

@@ -26,7 +26,7 @@ import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.core.controller.MapController;
 import art.arcane.react.util.format.C;
 import art.arcane.react.util.inventorygui.UIStaticDecorator;
-import art.arcane.react.util.scheduling.J;
+import art.arcane.react.util.common.scheduling.J;
 import art.arcane.volmlib.util.data.MaterialBlock;
 import art.arcane.volmlib.util.inventorygui.UIElement;
 import art.arcane.volmlib.util.inventorygui.UIWindow;

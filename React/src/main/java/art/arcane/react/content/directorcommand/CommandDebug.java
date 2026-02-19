@@ -21,7 +21,7 @@ package art.arcane.react.content.directorcommand;
 
 import art.arcane.react.model.ReactEntity;
 import art.arcane.react.util.director.DirectorExecutor;
-import art.arcane.react.util.scheduling.J;
+import art.arcane.react.util.common.scheduling.J;
 import art.arcane.volmlib.util.director.DirectorOrigin;
 import art.arcane.volmlib.util.director.annotations.Director;
 import art.arcane.volmlib.util.format.Form;

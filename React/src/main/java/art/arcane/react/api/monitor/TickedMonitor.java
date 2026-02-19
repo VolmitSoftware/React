@@ -23,7 +23,7 @@ import art.arcane.react.React;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.core.controller.SampleController;
 import art.arcane.react.util.math.ApproachingValue;
-import art.arcane.react.util.scheduling.TickedObject;
+import art.arcane.react.util.common.scheduling.TickedObject;
 import art.arcane.volmlib.util.math.M;
 import lombok.Getter;
 

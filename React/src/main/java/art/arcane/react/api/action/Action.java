@@ -20,7 +20,7 @@
 package art.arcane.react.api.action;
 
 import art.arcane.curse.Curse;
-import art.arcane.react.util.registry.Registered;
+import art.arcane.react.util.project.registry.Registered;
 import art.arcane.volmlib.util.format.Form;
 import org.bukkit.command.CommandSender;
 

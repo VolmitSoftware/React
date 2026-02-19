@@ -20,7 +20,7 @@
 package art.arcane.react.content.sampler;
 
 import art.arcane.react.api.sampler.ReactTickedSampler;
-import art.arcane.react.util.scheduling.J;
+import art.arcane.react.util.common.scheduling.J;
 import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Material;
 

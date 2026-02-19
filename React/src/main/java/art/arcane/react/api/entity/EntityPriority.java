@@ -21,8 +21,8 @@ package art.arcane.react.api.entity;
 
 import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.model.ReactEntity;
-import art.arcane.react.util.scheduling.J;
-import art.arcane.react.util.value.MaterialValue;
+import art.arcane.react.util.common.scheduling.J;
+import art.arcane.react.util.project.value.MaterialValue;
 import art.arcane.volmlib.util.math.M;
 import lombok.Getter;
 import org.bukkit.attribute.Attribute;

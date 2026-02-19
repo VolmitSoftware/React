@@ -25,7 +25,7 @@ import art.arcane.react.api.monitor.configuration.MonitorGroup;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.model.ReactPlayer;
-import art.arcane.react.util.scheduling.J;
+import art.arcane.react.util.common.scheduling.J;
 import art.arcane.volmlib.util.math.M;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;

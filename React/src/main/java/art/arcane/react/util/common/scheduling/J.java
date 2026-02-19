@@ -15,7 +15,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package art.arcane.react.util.scheduling;
+package art.arcane.react.util.common.scheduling;
 
 import art.arcane.curse.Curse;
 import art.arcane.multiburst.MultiBurst;

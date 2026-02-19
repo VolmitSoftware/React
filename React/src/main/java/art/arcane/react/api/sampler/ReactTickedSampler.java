@@ -21,7 +21,7 @@ package art.arcane.react.api.sampler;
 
 import art.arcane.chrono.RollingSequence;
 import art.arcane.react.React;
-import art.arcane.react.util.scheduling.TickedObject;
+import art.arcane.react.util.common.scheduling.TickedObject;
 
 import java.util.concurrent.atomic.AtomicLong;
 

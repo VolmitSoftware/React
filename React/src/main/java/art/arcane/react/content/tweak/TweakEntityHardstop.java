@@ -32,15 +32,15 @@ import org.bukkit.event.player.PlayerDropItemEvent;
 import java.util.HashMap;
 import java.util.Map;
 
-@art.arcane.react.util.config.ConfigDescription("Configuration for Entity Hardstop tweak. Hard-caps per-chunk entity population by cancelling new additions once limits are exceeded.")
+@art.arcane.react.util.project.config.ConfigDescription("Configuration for Entity Hardstop tweak. Hard-caps per-chunk entity population by cancelling new additions once limits are exceeded.")
 public class TweakEntityHardstop extends ReactTweak implements Listener {
   public static final String ID = "entity-hardstop";
 
-  @art.arcane.react.util.config.ConfigDoc(value = "Maximum entities allowed per chunk in entity hardstop.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum entities allowed per chunk in entity hardstop.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
   private int maxEntitiesPerChunk = 100;
-  @art.arcane.react.util.config.ConfigDoc(value = "Allows natural and player-dropped item entities to bypass the hardstop cap checks.", impact = "Enable to keep dropped items flowing even in crowded chunks; disable for stricter hard-capping.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Allows natural and player-dropped item entities to bypass the hardstop cap checks.", impact = "Enable to keep dropped items flowing even in crowded chunks; disable for stricter hard-capping.")
   private boolean allowItemDrops = true; // set to false to deny item drops
-  @art.arcane.react.util.config.ConfigDoc(value = "Cache duration for chunks recently rejected by hardstop before re-checking entity counts (ticks).", impact = "Higher values reduce repeated counting overhead but can deny spawns longer; lower values re-check sooner with more overhead.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Cache duration for chunks recently rejected by hardstop before re-checking entity counts (ticks).", impact = "Higher values reduce repeated counting overhead but can deny spawns longer; lower values re-check sooner with more overhead.")
   private int cacheIntervalTicks = 10 * 20; // cache for 10 seconds (20 ticks per second)
   private transient Map<Chunk, Long> chunks = new HashMap<>();
 

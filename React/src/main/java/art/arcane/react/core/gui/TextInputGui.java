@@ -20,7 +20,7 @@
 package art.arcane.react.core.gui;
 
 import art.arcane.react.React;
-import art.arcane.react.util.scheduling.J;
+import art.arcane.react.util.common.scheduling.J;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;

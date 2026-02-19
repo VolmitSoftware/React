@@ -19,7 +19,7 @@
 
 package art.arcane.react.api.tweak;
 
-import art.arcane.react.util.scheduling.TickedObject;
+import art.arcane.react.util.common.scheduling.TickedObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 

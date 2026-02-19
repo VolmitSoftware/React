@@ -19,7 +19,7 @@
 
 package art.arcane.react.api.feature;
 
-import art.arcane.react.util.config.ConfigDoc;
+import art.arcane.react.util.project.config.ConfigDoc;
 import art.arcane.volmlib.util.format.Form;
 import lombok.Getter;
 import lombok.Setter;

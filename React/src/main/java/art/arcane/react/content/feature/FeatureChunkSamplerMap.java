@@ -25,7 +25,7 @@ import art.arcane.react.model.SampledChunk;
 import art.arcane.react.util.data.TinyColor;
 import org.bukkit.Chunk;
 
-@art.arcane.react.util.config.ConfigDescription("Configuration for Chunk Sampler Map feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
+@art.arcane.react.util.project.config.ConfigDescription("Configuration for Chunk Sampler Map feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureChunkSamplerMap extends FeatureChunkHeatmapBase {
   public static final String ID = "chunk-sampler-map";
 

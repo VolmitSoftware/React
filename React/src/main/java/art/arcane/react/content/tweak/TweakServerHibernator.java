@@ -21,18 +21,18 @@ package art.arcane.react.content.tweak;
 
 import art.arcane.react.React;
 import art.arcane.react.api.tweak.ReactTweak;
-import art.arcane.react.util.scheduling.J;
+import art.arcane.react.util.common.scheduling.J;
 import org.bukkit.Bukkit;
 import org.bukkit.event.Listener;
 
-@art.arcane.react.util.config.ConfigDescription("Configuration for Server Hibernator tweak. Experimental empty-server hibernation mode that sleeps between ticks when no players are online.")
+@art.arcane.react.util.project.config.ConfigDescription("Configuration for Server Hibernator tweak. Experimental empty-server hibernation mode that sleeps between ticks when no players are online.")
 public class TweakServerHibernator extends ReactTweak implements Listener {
   public static final String ID = "server-hibernator";
   private transient boolean firstRun = true;
   private transient int taskId = -1;
-  @art.arcane.react.util.config.ConfigDoc(value = "Safety gate for the experimental server hibernation path.", impact = "Keep this false unless you explicitly want React to sleep ticks while the server is empty.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Safety gate for the experimental server hibernation path.", impact = "Keep this false unless you explicitly want React to sleep ticks while the server is empty.")
   private boolean imACloudServerEnableMe = false;
-  @art.arcane.react.util.config.ConfigDoc(value = "Seconds of delay applied per tick by server hibernator.", impact = "Higher values slow the loop more aggressively; lower values keep the server more responsive.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Seconds of delay applied per tick by server hibernator.", impact = "Higher values slow the loop more aggressively; lower values keep the server more responsive.")
   private double secondsPerTick = 1.0;
 
 

@@ -17,13 +17,13 @@
  *
  */
 
-package art.arcane.react.util.registry;
+package art.arcane.react.util.project.registry;
 
 import art.arcane.curse.Curse;
 import art.arcane.curse.model.CursedComponent;
 import art.arcane.curse.model.CursedField;
 import art.arcane.react.React;
-import art.arcane.react.util.config.ConfigFileSupport;
+import art.arcane.react.util.project.config.ConfigFileSupport;
 import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Material;
 

@@ -23,7 +23,7 @@ import art.arcane.react.React;
 import art.arcane.react.api.action.Action;
 import art.arcane.react.content.action.*;
 import art.arcane.react.core.controller.ActionController;
-import art.arcane.react.util.config.ConfigDescription;
+import art.arcane.react.util.project.config.ConfigDescription;
 import art.arcane.react.util.director.DirectorExecutor;
 import art.arcane.react.util.director.handlers.OptionalWorldHandler;
 import art.arcane.volmlib.util.director.DirectorOrigin;

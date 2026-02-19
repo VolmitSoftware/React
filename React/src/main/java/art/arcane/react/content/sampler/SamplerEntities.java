@@ -22,7 +22,7 @@ package art.arcane.react.content.sampler;
 import art.arcane.chrono.ChronoLatch;
 import art.arcane.react.React;
 import art.arcane.react.api.sampler.ReactCachedSampler;
-import art.arcane.react.util.scheduling.J;
+import art.arcane.react.util.common.scheduling.J;
 import art.arcane.volmlib.util.format.Form;
 import lombok.Getter;
 import org.bukkit.Bukkit;

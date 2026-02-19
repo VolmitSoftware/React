@@ -23,8 +23,8 @@ import art.arcane.chrono.ChronoLatch;
 import art.arcane.chrono.PrecisionStopwatch;
 import art.arcane.react.React;
 import art.arcane.react.api.feature.ReactFeature;
-import art.arcane.react.util.scheduling.J;
-import art.arcane.react.util.world.FastWorld;
+import art.arcane.react.util.common.scheduling.J;
+import art.arcane.react.util.project.world.FastWorld;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.AllArgsConstructor;
@@ -49,39 +49,39 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-@art.arcane.react.util.config.ConfigDescription("Configuration for Fast Leaf Decay feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
+@art.arcane.react.util.project.config.ConfigDescription("Configuration for Fast Leaf Decay feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureFastLeafDecay extends ReactFeature implements Listener {
   public static final String ID = "fast-leaf-decay";
   private final transient Set<Block> search = ConcurrentHashMap.newKeySet();
   private transient Cache<IChunk, ChunkSnapshot> snapshot;
   private transient ChronoLatch cooldownLatch;
-  @art.arcane.react.util.config.ConfigDoc(value = "Leaf decay radius used by fast leaf decay (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Leaf decay radius used by fast leaf decay (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
   private int leafDecayDistance = 6;
-  @art.arcane.react.util.config.ConfigDoc(value = "Leaf decay radius used by fast leaf decay (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Leaf decay radius used by fast leaf decay (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
   private int leafDecayRadius = 5;
-  @art.arcane.react.util.config.ConfigDoc(value = "Maximum async ms allowed by fast leaf decay.", impact = "Higher values allow more throughput before intervention; lower values make mitigation more aggressive.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum async ms allowed by fast leaf decay.", impact = "Higher values allow more throughput before intervention; lower values make mitigation more aggressive.")
   private double maxAsyncMS = 10;
-  @art.arcane.react.util.config.ConfigDoc(value = "Maximum sync spike ms allowed by fast leaf decay.", impact = "Higher values allow more throughput before intervention; lower values make mitigation more aggressive.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum sync spike ms allowed by fast leaf decay.", impact = "Higher values allow more throughput before intervention; lower values make mitigation more aggressive.")
   private double maxSyncSpikeMS = 10;
-  @art.arcane.react.util.config.ConfigDoc(value = "Main evaluation interval for fast leaf decay in milliseconds.", impact = "Lower values react faster but consume more CPU; higher values reduce overhead but react later.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Main evaluation interval for fast leaf decay in milliseconds.", impact = "Lower values react faster but consume more CPU; higher values reduce overhead but react later.")
   private int tickIntervalMS = 250;
-  @art.arcane.react.util.config.ConfigDoc(value = "Cooldown for decay trigger cooldown in fast leaf decay (milliseconds).", impact = "Higher values reduce repeat frequency; lower values allow reactions more often.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Cooldown for decay trigger cooldown in fast leaf decay (milliseconds).", impact = "Higher values reduce repeat frequency; lower values allow reactions more often.")
   private int decayTriggerCooldownMS = 250;
-  @art.arcane.react.util.config.ConfigDoc(value = "Per-tick spread used to stagger leaf decay work in fast leaf decay.", impact = "Higher values spread work across more ticks; lower values process decay in tighter bursts.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Per-tick spread used to stagger leaf decay work in fast leaf decay.", impact = "Higher values spread work across more ticks; lower values process decay in tighter bursts.")
   private int decayTickSpread = 20;
-  @art.arcane.react.util.config.ConfigDoc(value = "Probability setting for sound chance in fast leaf decay.", impact = "Higher values make this effect occur more often; lower values make it rarer.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Probability setting for sound chance in fast leaf decay.", impact = "Higher values make this effect occur more often; lower values make it rarer.")
   private double soundChance = 0.25;
-  @art.arcane.react.util.config.ConfigDoc(value = "Audio tuning value for sound volume in fast leaf decay.", impact = "Adjust this to balance audibility and tone for player feedback events.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Audio tuning value for sound volume in fast leaf decay.", impact = "Adjust this to balance audibility and tone for player feedback events.")
   private double soundVolume = 0.26;
-  @art.arcane.react.util.config.ConfigDoc(value = "Audio tuning value for sound pitch in fast leaf decay.", impact = "Adjust this to balance audibility and tone for player feedback events.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Audio tuning value for sound pitch in fast leaf decay.", impact = "Adjust this to balance audibility and tone for player feedback events.")
   private double soundPitch = 0.2;
-  @art.arcane.react.util.config.ConfigDoc(value = "Controls whether fast leaf decay applies force decay persistent.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Controls whether fast leaf decay applies force decay persistent.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
   private boolean forceDecayPersistent = false;
-  @art.arcane.react.util.config.ConfigDoc(value = "Controls whether fast leaf decay applies play sounds.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Controls whether fast leaf decay applies play sounds.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
   private boolean playSounds = true;
-  @art.arcane.react.util.config.ConfigDoc(value = "Controls whether fast leaf decay applies fast block changes.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Controls whether fast leaf decay applies fast block changes.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
   private boolean fastBlockChanges = true;
-  @art.arcane.react.util.config.ConfigDoc(value = "Text value for decay sound used by fast leaf decay.", impact = "Adjust this to match your naming, routing, or permission conventions.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Text value for decay sound used by fast leaf decay.", impact = "Adjust this to match your naming, routing, or permission conventions.")
   private String decaySound = "minecraft:block.azalea_leaves.fall";
 
   public FeatureFastLeafDecay() {
@@ -244,13 +244,13 @@ public class FeatureFastLeafDecay extends ReactFeature implements Listener {
   @AllArgsConstructor
   @Data
   public static class IBlock {
-    @art.arcane.react.util.config.ConfigDoc(value = "Runtime reference field for world used by fast leaf decay.", impact = "This value is typically populated from live game objects and not intended for manual editing.")
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Runtime reference field for world used by fast leaf decay.", impact = "This value is typically populated from live game objects and not intended for manual editing.")
     private final World world;
-    @art.arcane.react.util.config.ConfigDoc(value = "X-axis coordinate used by fast leaf decay internal tracking.", impact = "This is internal state data and should not normally be changed manually.")
+    @art.arcane.react.util.project.config.ConfigDoc(value = "X-axis coordinate used by fast leaf decay internal tracking.", impact = "This is internal state data and should not normally be changed manually.")
     private final int x;
-    @art.arcane.react.util.config.ConfigDoc(value = "Y-axis coordinate used by fast leaf decay internal tracking.", impact = "This is internal state data and should not normally be changed manually.")
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Y-axis coordinate used by fast leaf decay internal tracking.", impact = "This is internal state data and should not normally be changed manually.")
     private final int y;
-    @art.arcane.react.util.config.ConfigDoc(value = "Z-axis coordinate used by fast leaf decay internal tracking.", impact = "This is internal state data and should not normally be changed manually.")
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Z-axis coordinate used by fast leaf decay internal tracking.", impact = "This is internal state data and should not normally be changed manually.")
     private final int z;
 
     public Block block() {
@@ -266,11 +266,11 @@ public class FeatureFastLeafDecay extends ReactFeature implements Listener {
   @AllArgsConstructor
   @Data
   public static class IChunk {
-    @art.arcane.react.util.config.ConfigDoc(value = "Runtime reference field for world used by fast leaf decay.", impact = "This value is typically populated from live game objects and not intended for manual editing.")
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Runtime reference field for world used by fast leaf decay.", impact = "This value is typically populated from live game objects and not intended for manual editing.")
     private final World world;
-    @art.arcane.react.util.config.ConfigDoc(value = "X-axis coordinate used by fast leaf decay internal tracking.", impact = "This is internal state data and should not normally be changed manually.")
+    @art.arcane.react.util.project.config.ConfigDoc(value = "X-axis coordinate used by fast leaf decay internal tracking.", impact = "This is internal state data and should not normally be changed manually.")
     private final int x;
-    @art.arcane.react.util.config.ConfigDoc(value = "Z-axis coordinate used by fast leaf decay internal tracking.", impact = "This is internal state data and should not normally be changed manually.")
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Z-axis coordinate used by fast leaf decay internal tracking.", impact = "This is internal state data and should not normally be changed manually.")
     private final int z;
 
     public Chunk chunk() {

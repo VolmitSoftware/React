@@ -22,7 +22,7 @@ package art.arcane.react.core.gui;
 import art.arcane.react.util.data.TinyColor;
 import art.arcane.react.util.inventorygui.CustomUIElement;
 import art.arcane.react.util.inventorygui.UIStaticDecorator;
-import art.arcane.react.util.scheduling.J;
+import art.arcane.react.util.common.scheduling.J;
 import art.arcane.volmlib.util.data.MaterialBlock;
 import art.arcane.volmlib.util.inventorygui.UIElement;
 import art.arcane.volmlib.util.inventorygui.UIWindow;

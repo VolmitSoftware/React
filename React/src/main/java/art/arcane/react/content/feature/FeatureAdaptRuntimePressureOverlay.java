@@ -10,7 +10,7 @@ import org.bukkit.Chunk;
 
 import java.util.Set;
 
-@art.arcane.react.util.config.ConfigDescription("Configuration for Adapt Runtime Pressure Overlay feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
+@art.arcane.react.util.project.config.ConfigDescription("Configuration for Adapt Runtime Pressure Overlay feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureAdaptRuntimePressureOverlay extends FeatureChunkHeatmapBase implements CapabilityGatedFeature {
   public static final String ID = "adapt-runtime-pressure-overlay";
 

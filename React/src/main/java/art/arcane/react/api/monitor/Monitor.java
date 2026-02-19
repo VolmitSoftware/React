@@ -21,7 +21,7 @@ package art.arcane.react.api.monitor;
 
 import art.arcane.react.React;
 import art.arcane.react.api.sampler.Sampler;
-import art.arcane.react.util.scheduling.Ticked;
+import art.arcane.react.util.common.scheduling.Ticked;
 import org.bukkit.event.Listener;
 
 import java.util.Map;

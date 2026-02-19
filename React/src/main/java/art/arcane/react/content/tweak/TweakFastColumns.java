@@ -20,8 +20,8 @@
 package art.arcane.react.content.tweak;
 
 import art.arcane.react.api.tweak.ReactTweak;
-import art.arcane.react.util.scheduling.J;
-import art.arcane.react.util.world.ChainedColumn;
+import art.arcane.react.util.common.scheduling.J;
+import art.arcane.react.util.project.world.ChainedColumn;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -31,7 +31,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPhysicsEvent;
 
-@art.arcane.react.util.config.ConfigDescription("Configuration for Fast Columns tweak. Collapses plant columns in chained updates to reduce repeated per-block physics churn.")
+@art.arcane.react.util.project.config.ConfigDescription("Configuration for Fast Columns tweak. Collapses plant columns in chained updates to reduce repeated per-block physics churn.")
 public class TweakFastColumns extends ReactTweak implements Listener {
   public static final String ID = "fast-columns";
   private transient ChainedColumn bamboo;

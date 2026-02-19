@@ -10,32 +10,32 @@ import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.core.controller.FeatureController;
 import art.arcane.react.core.controller.IntegrationController;
 import art.arcane.react.model.ReactConfiguration;
-import art.arcane.react.util.scheduling.J;
+import art.arcane.react.util.common.scheduling.J;
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
 
 import java.util.Set;
 
-@art.arcane.react.util.config.ConfigDescription("Configuration for Trinity Incident Mode feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
+@art.arcane.react.util.project.config.ConfigDescription("Configuration for Trinity Incident Mode feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureTrinityIncidentMode extends ReactCapabilityFeature {
   public static final String ID = "feature-trinity-incident-mode";
 
-  @art.arcane.react.util.config.ConfigDoc(value = "Main evaluation interval for trinity incident mode in milliseconds.", impact = "Lower values react faster but consume more CPU; higher values reduce overhead but react later.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Main evaluation interval for trinity incident mode in milliseconds.", impact = "Lower values react faster but consume more CPU; higher values reduce overhead but react later.")
   private int tickIntervalMS = 1000;
-  @art.arcane.react.util.config.ConfigDoc(value = "Trigger threshold for enter incident score in trinity incident mode.", impact = "Higher values trigger mitigation later; lower values trigger earlier and more aggressively.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Trigger threshold for enter incident score in trinity incident mode.", impact = "Higher values trigger mitigation later; lower values trigger earlier and more aggressively.")
   private double enterIncidentScore = 62D;
-  @art.arcane.react.util.config.ConfigDoc(value = "Tick-time threshold for enter in trinity incident mode (milliseconds).", impact = "Higher values delay activation or exit; lower values make this threshold easier to cross.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Tick-time threshold for enter in trinity incident mode (milliseconds).", impact = "Higher values delay activation or exit; lower values make this threshold easier to cross.")
   private double enterTickMS = 62D;
-  @art.arcane.react.util.config.ConfigDoc(value = "Enter iris queue limit used by trinity incident mode.", impact = "Higher values increase buffered work or burst allowance; lower values tighten throttling.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Enter iris queue limit used by trinity incident mode.", impact = "Higher values increase buffered work or burst allowance; lower values tighten throttling.")
   private double enterIrisQueue = 340D;
-  @art.arcane.react.util.config.ConfigDoc(value = "Adapt session load threshold that can trigger incident handling in trinity incident mode (percent).", impact = "Higher values trigger later during heavier load; lower values trigger earlier.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Adapt session load threshold that can trigger incident handling in trinity incident mode (percent).", impact = "Higher values trigger later during heavier load; lower values trigger earlier.")
   private double enterAdaptSessionLoad = 72D;
-  @art.arcane.react.util.config.ConfigDoc(value = "Adapt ability-operations threshold that can trigger incident handling in trinity incident mode (ops/min).", impact = "Higher values trigger later during heavier ability traffic; lower values trigger earlier.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Adapt ability-operations threshold that can trigger incident handling in trinity incident mode (ops/min).", impact = "Higher values trigger later during heavier ability traffic; lower values trigger earlier.")
   private double enterAdaptAbilityOps = 280D;
-  @art.arcane.react.util.config.ConfigDoc(value = "Minimum engage ms required by trinity incident mode.", impact = "Higher values require stronger signals before action; lower values make this condition easier to satisfy.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Minimum engage ms required by trinity incident mode.", impact = "Higher values require stronger signals before action; lower values make this condition easier to satisfy.")
   private int minimumEngageMS = 12000;
-  @art.arcane.react.util.config.ConfigDoc(value = "Cooldown for playbook cooldown in trinity incident mode (milliseconds).", impact = "Higher values reduce repeat frequency; lower values allow reactions more often.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Cooldown for playbook cooldown in trinity incident mode (milliseconds).", impact = "Higher values reduce repeat frequency; lower values allow reactions more often.")
   private int playbookCooldownMS = 20000;
-  @art.arcane.react.util.config.ConfigDoc(value = "Enables extra logging for verbose transitions in trinity incident mode.", impact = "Enable for diagnostics; disable to reduce chat or log noise.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Enables extra logging for verbose transitions in trinity incident mode.", impact = "Enable for diagnostics; disable to reduce chat or log noise.")
   private boolean verboseTransitions = true;
 
   private transient volatile boolean engaged;

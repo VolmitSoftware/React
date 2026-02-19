@@ -34,17 +34,17 @@ import org.bukkit.entity.Player;
 import java.util.HashMap;
 import java.util.Map;
 
-@art.arcane.react.util.config.ConfigDescription("Configuration for Chunk Heatmap Base feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
+@art.arcane.react.util.project.config.ConfigDescription("Configuration for Chunk Heatmap Base feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRenderer {
-  @art.arcane.react.util.config.ConfigDoc(value = "Pixel scale used when chunk heatmap base draws each chunk on the map.", impact = "Higher values make chunks larger and reduce visible radius; lower values show more area with finer detail.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Pixel scale used when chunk heatmap base draws each chunk on the map.", impact = "Higher values make chunks larger and reduce visible radius; lower values show more area with finer detail.")
   private int chunkPixelSize = 5;
-  @art.arcane.react.util.config.ConfigDoc(value = "Map chunks radius used by chunk heatmap base (chunks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Map chunks radius used by chunk heatmap base (chunks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
   private int mapRadiusChunks = 0;
-  @art.arcane.react.util.config.ConfigDoc(value = "Controls whether chunk heatmap base rotates map output with player heading.", impact = "Enable for orientation-aware maps; disable for fixed north-up rendering.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Controls whether chunk heatmap base rotates map output with player heading.", impact = "Enable for orientation-aware maps; disable for fixed north-up rendering.")
   private boolean rotateWithPlayer = true;
-  @art.arcane.react.util.config.ConfigDoc(value = "Controls whether chunk heatmap base renders draw center marker on map output.", impact = "Enable to show this visual layer; disable for a cleaner map and slightly lower render cost.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Controls whether chunk heatmap base renders draw center marker on map output.", impact = "Enable to show this visual layer; disable for a cleaner map and slightly lower render cost.")
   private boolean drawCenterMarker = true;
-  @art.arcane.react.util.config.ConfigDoc(value = "Controls whether chunk heatmap base renders draw label on map output.", impact = "Enable to show this visual layer; disable for a cleaner map and slightly lower render cost.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Controls whether chunk heatmap base renders draw label on map output.", impact = "Enable to show this visual layer; disable for a cleaner map and slightly lower render cost.")
   private boolean drawLabel = true;
 
   protected FeatureChunkHeatmapBase(String id) {
@@ -308,9 +308,9 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
   }
 
   protected static final class Pixel {
-    @art.arcane.react.util.config.ConfigDoc(value = "X-axis coordinate used by chunk heatmap base internal tracking.", impact = "This is internal state data and should not normally be changed manually.")
+    @art.arcane.react.util.project.config.ConfigDoc(value = "X-axis coordinate used by chunk heatmap base internal tracking.", impact = "This is internal state data and should not normally be changed manually.")
     private final int x;
-    @art.arcane.react.util.config.ConfigDoc(value = "Y-axis coordinate used by chunk heatmap base internal tracking.", impact = "This is internal state data and should not normally be changed manually.")
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Y-axis coordinate used by chunk heatmap base internal tracking.", impact = "This is internal state data and should not normally be changed manually.")
     private final int y;
 
     private Pixel(int x, int y) {

@@ -7,7 +7,7 @@ import org.bukkit.entity.Player;
 
 import java.util.Map;
 
-@art.arcane.react.util.config.ConfigDescription("Configuration for Iris World Chunk Share Pie Map feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
+@art.arcane.react.util.project.config.ConfigDescription("Configuration for Iris World Chunk Share Pie Map feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureIrisWorldChunkSharePieMap extends FeatureIrisChunkSharePieBase {
   public static final String ID = "iris-world-chunk-share-pie-map";
 

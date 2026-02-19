@@ -17,7 +17,7 @@
  *
  */
 
-package art.arcane.react.util.world;
+package art.arcane.react.util.project.world;
 
 import org.bukkit.World;
 

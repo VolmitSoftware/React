@@ -5,7 +5,7 @@ import org.bukkit.entity.Player;
 
 import java.util.Map;
 
-@art.arcane.react.util.config.ConfigDescription("Configuration for Plugin Event Impact Pie Map feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
+@art.arcane.react.util.project.config.ConfigDescription("Configuration for Plugin Event Impact Pie Map feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeaturePluginEventImpactPieMap extends FeatureIrisChunkSharePieBase {
   public static final String ID = "plugin-event-impact-pie-map";
 

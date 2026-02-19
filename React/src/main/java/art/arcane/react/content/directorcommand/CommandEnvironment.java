@@ -23,7 +23,7 @@ import art.arcane.react.React;
 import art.arcane.react.api.benchmark.Hastebin;
 import art.arcane.react.util.director.DirectorExecutor;
 import art.arcane.react.util.format.C;
-import art.arcane.react.util.hardware.getHardware;
+import art.arcane.react.util.project.hardware.getHardware;
 import art.arcane.react.util.reflect.Platform;
 import art.arcane.volmlib.util.collection.KList;
 import art.arcane.volmlib.util.director.DirectorOrigin;

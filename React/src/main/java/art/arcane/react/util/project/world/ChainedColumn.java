@@ -17,7 +17,7 @@
  *
  */
 
-package art.arcane.react.util.world;
+package art.arcane.react.util.project.world;
 
 import art.arcane.react.React;
 import art.arcane.react.content.tweak.TweakFastDrops;

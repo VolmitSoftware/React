@@ -24,7 +24,7 @@ import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.content.sampler.SamplerRedstoneTickTime;
 import art.arcane.react.model.Circuit;
 import art.arcane.react.model.CircuitServer;
-import art.arcane.react.util.scheduling.J;
+import art.arcane.react.util.common.scheduling.J;
 import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -33,13 +33,13 @@ import org.bukkit.event.block.BlockPistonExtendEvent;
 import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockRedstoneEvent;
 
-@art.arcane.react.util.config.ConfigDescription("Configuration for Circuit Manager feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
+@art.arcane.react.util.project.config.ConfigDescription("Configuration for Circuit Manager feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureCircuitManager extends ReactFeature implements Listener {
   public static final String ID = "circuit-manager";
   /**
    * Stop the biggest circuit when the redstone milliseconds exceeds this value
    */
-  @art.arcane.react.util.config.ConfigDoc(value = "Maximum circuit ms allowed by circuit manager.", impact = "Higher values allow more throughput before intervention; lower values make mitigation more aggressive.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum circuit ms allowed by circuit manager.", impact = "Higher values allow more throughput before intervention; lower values make mitigation more aggressive.")
   private double maxCircuitMS = 15;
   private transient CircuitServer circuitServer;
 

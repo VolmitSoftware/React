@@ -26,7 +26,7 @@ import art.arcane.react.api.action.ReactAction;
 import art.arcane.react.core.controller.ActionController;
 import art.arcane.react.model.AreaActionParams;
 import art.arcane.react.model.FilterParams;
-import art.arcane.react.util.scheduling.J;
+import art.arcane.react.util.common.scheduling.J;
 import art.arcane.volmlib.util.format.Form;
 import art.arcane.volmlib.util.math.Spiraler;
 import lombok.AllArgsConstructor;
@@ -44,7 +44,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
-@art.arcane.react.util.config.ConfigDescription("Configuration for Purge Entities action. Removes matching entities from selected chunks or worlds.")
+@art.arcane.react.util.project.config.ConfigDescription("Configuration for Purge Entities action. Removes matching entities from selected chunks or worlds.")
 public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params> {
   public static final String ID = "purge-entities";
   public static final String SHORT = "pe";
@@ -58,9 +58,9 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
       EntityType.SMALL_FIREBALL, EntityType.SNOWBALL, EntityType.SPECTRAL_ARROW, EntityType.SPLASH_POTION,
       EntityType.THROWN_EXP_BOTTLE
   ));
-  @art.arcane.react.util.config.ConfigDoc(value = "Controls whether purge entities applies default blacklist.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Controls whether purge entities applies default blacklist.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
   private boolean defaultBlacklist = true;
-  @art.arcane.react.util.config.ConfigDoc(value = "Minimum age in seconds before purge entities removes matching entities.", impact = "Lower values purge newer entities sooner; higher values allow entities to remain longer.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Minimum age in seconds before purge entities removes matching entities.", impact = "Lower values purge newer entities sooner; higher values allow entities to remain longer.")
   private int secondsToPurge = 5;
 
   private transient int lowerBound = secondsToPurge - 1;
@@ -228,10 +228,10 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
   @NoArgsConstructor
   public static class Params implements ActionParams {
     @Builder.Default
-    @art.arcane.react.util.config.ConfigDoc(value = "Area selection used by purge entities when choosing target chunks or entities.", impact = "Choose a tighter area for safer, local actions or a wider area for broader remediation.")
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Area selection used by purge entities when choosing target chunks or entities.", impact = "Choose a tighter area for safer, local actions or a wider area for broader remediation.")
     private AreaActionParams area = AreaActionParams.builder().build();
     @Builder.Default
-    @art.arcane.react.util.config.ConfigDoc(value = "Filter definition for entity filter used by purge entities.", impact = "Narrow this list to target fewer cases, or broaden it to include more matching entries.")
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Filter definition for entity filter used by purge entities.", impact = "Narrow this list to target fewer cases, or broaden it to include more matching entries.")
     private FilterParams<EntityType> entityFilter = FilterParams.<EntityType>builder().build();
     @Builder.Default
     private transient AtomicInteger inFlightChunks = new AtomicInteger(0);

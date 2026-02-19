@@ -27,7 +27,7 @@ import art.arcane.react.core.controller.ActionController;
 import art.arcane.react.core.controller.ObserverController;
 import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.model.ReactEntity;
-import art.arcane.react.util.scheduling.J;
+import art.arcane.react.util.common.scheduling.J;
 import art.arcane.volmlib.util.format.Form;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -43,7 +43,7 @@ import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 
-@art.arcane.react.util.config.ConfigDescription("Configuration for Trim Entities By Age Priority action. Scores and trims old low-priority entities with safety guards.")
+@art.arcane.react.util.project.config.ConfigDescription("Configuration for Trim Entities By Age Priority action. Scores and trims old low-priority entities with safety guards.")
 public class ActionTrimEntitiesByAgePriority extends ReactAction<ActionTrimEntitiesByAgePriority.Params> {
   public static final String ID = "action-trim-entities-by-age-priority";
   public static final String SHORT = "ateap";
@@ -433,43 +433,43 @@ public class ActionTrimEntitiesByAgePriority extends ReactAction<ActionTrimEntit
   @AllArgsConstructor
   @NoArgsConstructor
   public static class Params implements ActionParams {
-    @art.arcane.react.util.config.ConfigDoc(value = "World name filter for trim entities by age priority operations.", impact = "Set a world name to scope actions there, or leave blank to include all worlds.")
+    @art.arcane.react.util.project.config.ConfigDoc(value = "World name filter for trim entities by age priority operations.", impact = "Set a world name to scope actions there, or leave blank to include all worlds.")
     private String world;
     @Builder.Default
-    @art.arcane.react.util.config.ConfigDoc(value = "Maximum trim allowed by trim entities by age priority.", impact = "Higher values allow more throughput before intervention; lower values make mitigation more aggressive.")
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum trim allowed by trim entities by age priority.", impact = "Higher values allow more throughput before intervention; lower values make mitigation more aggressive.")
     private int maxTrim = 600;
     @Builder.Default
-    @art.arcane.react.util.config.ConfigDoc(value = "Maximum trim allowed per chunk in trim entities by age priority.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum trim allowed per chunk in trim entities by age priority.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
     private int maxTrimPerChunk = 12;
     @Builder.Default
-    @art.arcane.react.util.config.ConfigDoc(value = "Minimum entity age ticks required by trim entities by age priority.", impact = "Higher values require stronger signals before action; lower values make this condition easier to satisfy.")
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Minimum entity age ticks required by trim entities by age priority.", impact = "Higher values require stronger signals before action; lower values make this condition easier to satisfy.")
     private int minEntityAgeTicks = 20 * 60 * 5;
     @Builder.Default
-    @art.arcane.react.util.config.ConfigDoc(value = "Protects named from trim entities by age priority enforcement.", impact = "Enable this to keep matching targets safe; disable it to make them eligible for handling.")
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Protects named from trim entities by age priority enforcement.", impact = "Enable this to keep matching targets safe; disable it to make them eligible for handling.")
     private boolean protectNamed = true;
     @Builder.Default
-    @art.arcane.react.util.config.ConfigDoc(value = "Protects tamed from trim entities by age priority enforcement.", impact = "Enable this to keep matching targets safe; disable it to make them eligible for handling.")
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Protects tamed from trim entities by age priority enforcement.", impact = "Enable this to keep matching targets safe; disable it to make them eligible for handling.")
     private boolean protectTamed = true;
     @Builder.Default
-    @art.arcane.react.util.config.ConfigDoc(value = "Protects villagers from trim entities by age priority enforcement.", impact = "Enable this to keep matching targets safe; disable it to make them eligible for handling.")
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Protects villagers from trim entities by age priority enforcement.", impact = "Enable this to keep matching targets safe; disable it to make them eligible for handling.")
     private boolean protectVillagers = true;
     @Builder.Default
-    @art.arcane.react.util.config.ConfigDoc(value = "Protects bosses from trim entities by age priority enforcement.", impact = "Enable this to keep matching targets safe; disable it to make them eligible for handling.")
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Protects bosses from trim entities by age priority enforcement.", impact = "Enable this to keep matching targets safe; disable it to make them eligible for handling.")
     private boolean protectBosses = true;
     @Builder.Default
-    @art.arcane.react.util.config.ConfigDoc(value = "Protects near players from trim entities by age priority enforcement.", impact = "Enable this to keep matching targets safe; disable it to make them eligible for handling.")
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Protects near players from trim entities by age priority enforcement.", impact = "Enable this to keep matching targets safe; disable it to make them eligible for handling.")
     private boolean protectNearPlayers = true;
     @Builder.Default
-    @art.arcane.react.util.config.ConfigDoc(value = "Player radius used by trim entities by age priority (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Player radius used by trim entities by age priority (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
     private double playerProtectRadius = 24D;
     @Builder.Default
-    @art.arcane.react.util.config.ConfigDoc(value = "Allows items in trim entities by age priority.", impact = "Enable this to permit the behavior; disable it to block or throttle that path.")
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Allows items in trim entities by age priority.", impact = "Enable this to permit the behavior; disable it to block or throttle that path.")
     private boolean allowItems = true;
     @Builder.Default
-    @art.arcane.react.util.config.ConfigDoc(value = "Allows monsters in trim entities by age priority.", impact = "Enable this to permit the behavior; disable it to block or throttle that path.")
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Allows monsters in trim entities by age priority.", impact = "Enable this to permit the behavior; disable it to block or throttle that path.")
     private boolean allowMonsters = true;
     @Builder.Default
-    @art.arcane.react.util.config.ConfigDoc(value = "Allows non living in trim entities by age priority.", impact = "Enable this to permit the behavior; disable it to block or throttle that path.")
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Allows non living in trim entities by age priority.", impact = "Enable this to permit the behavior; disable it to block or throttle that path.")
     private boolean allowNonLiving = false;
     @Builder.Default
     private transient boolean prepared = false;

@@ -17,7 +17,7 @@
  *
  */
 
-package art.arcane.react.util.value;
+package art.arcane.react.util.project.value;
 
 import art.arcane.chrono.PrecisionStopwatch;
 import art.arcane.react.React;

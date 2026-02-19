@@ -19,7 +19,7 @@
 
 package art.arcane.react.util.plugin;
 
-import art.arcane.react.util.registry.Registered;
+import art.arcane.react.util.project.registry.Registered;
 
 public interface IController extends Registered {
   void start();

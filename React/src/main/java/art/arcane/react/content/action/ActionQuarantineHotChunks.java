@@ -27,7 +27,7 @@ import art.arcane.react.core.controller.ActionController;
 import art.arcane.react.core.controller.ObserverController;
 import art.arcane.react.model.SampledChunk;
 import art.arcane.react.model.SampledWorld;
-import art.arcane.react.util.scheduling.J;
+import art.arcane.react.util.common.scheduling.J;
 import art.arcane.volmlib.util.format.Form;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -43,7 +43,7 @@ import org.bukkit.entity.*;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
-@art.arcane.react.util.config.ConfigDescription("Configuration for Quarantine Hot Chunks action. Isolates high-score chunks and optionally culls old entities away from players.")
+@art.arcane.react.util.project.config.ConfigDescription("Configuration for Quarantine Hot Chunks action. Isolates high-score chunks and optionally culls old entities away from players.")
 public class ActionQuarantineHotChunks extends ReactAction<ActionQuarantineHotChunks.Params> {
   public static final String ID = "action-quarantine-hot-chunks";
   public static final String SHORT = "aqhc";
@@ -278,37 +278,37 @@ public class ActionQuarantineHotChunks extends ReactAction<ActionQuarantineHotCh
   @AllArgsConstructor
   @NoArgsConstructor
   public static class Params implements ActionParams {
-    @art.arcane.react.util.config.ConfigDoc(value = "World name filter for quarantine hot chunks operations.", impact = "Set a world name to scope actions there, or leave blank to include all worlds.")
+    @art.arcane.react.util.project.config.ConfigDoc(value = "World name filter for quarantine hot chunks operations.", impact = "Set a world name to scope actions there, or leave blank to include all worlds.")
     private String world;
     @Builder.Default
-    @art.arcane.react.util.config.ConfigDoc(value = "Maximum chunks allowed by quarantine hot chunks.", impact = "Higher values allow more throughput before intervention; lower values make mitigation more aggressive.")
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum chunks allowed by quarantine hot chunks.", impact = "Higher values allow more throughput before intervention; lower values make mitigation more aggressive.")
     private int maxChunks = 24;
     @Builder.Default
-    @art.arcane.react.util.config.ConfigDoc(value = "Minimum chunk score required by quarantine hot chunks.", impact = "Higher values require stronger signals before action; lower values make this condition easier to satisfy.")
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Minimum chunk score required by quarantine hot chunks.", impact = "Higher values require stronger signals before action; lower values make this condition easier to satisfy.")
     private double minimumChunkScore = 90D;
     @Builder.Default
-    @art.arcane.react.util.config.ConfigDoc(value = "Unsafe player radius used by quarantine hot chunks (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Unsafe player radius used by quarantine hot chunks (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
     private double unsafePlayerRadius = 56D;
     @Builder.Default
-    @art.arcane.react.util.config.ConfigDoc(value = "Controls whether quarantine hot chunks applies unload chunk.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Controls whether quarantine hot chunks applies unload chunk.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
     private boolean unloadChunk = true;
     @Builder.Default
-    @art.arcane.react.util.config.ConfigDoc(value = "Controls whether quarantine hot chunks applies cull entities.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Controls whether quarantine hot chunks applies cull entities.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
     private boolean cullEntities = true;
     @Builder.Default
-    @art.arcane.react.util.config.ConfigDoc(value = "Includes neighbor ring in quarantine hot chunks processing.", impact = "Enable this to add those targets to processing; disable it to leave them out.")
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Includes neighbor ring in quarantine hot chunks processing.", impact = "Enable this to add those targets to processing; disable it to leave them out.")
     private boolean includeNeighborRing = true;
     @Builder.Default
-    @art.arcane.react.util.config.ConfigDoc(value = "Minimum entity age ticks required by quarantine hot chunks.", impact = "Higher values require stronger signals before action; lower values make this condition easier to satisfy.")
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Minimum entity age ticks required by quarantine hot chunks.", impact = "Higher values require stronger signals before action; lower values make this condition easier to satisfy.")
     private int minEntityAgeTicks = 200;
     @Builder.Default
-    @art.arcane.react.util.config.ConfigDoc(value = "Protects named from quarantine hot chunks enforcement.", impact = "Enable this to keep matching targets safe; disable it to make them eligible for handling.")
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Protects named from quarantine hot chunks enforcement.", impact = "Enable this to keep matching targets safe; disable it to make them eligible for handling.")
     private boolean protectNamed = true;
     @Builder.Default
-    @art.arcane.react.util.config.ConfigDoc(value = "Protects tamed from quarantine hot chunks enforcement.", impact = "Enable this to keep matching targets safe; disable it to make them eligible for handling.")
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Protects tamed from quarantine hot chunks enforcement.", impact = "Enable this to keep matching targets safe; disable it to make them eligible for handling.")
     private boolean protectTamed = true;
     @Builder.Default
-    @art.arcane.react.util.config.ConfigDoc(value = "Protects bosses from quarantine hot chunks enforcement.", impact = "Enable this to keep matching targets safe; disable it to make them eligible for handling.")
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Protects bosses from quarantine hot chunks enforcement.", impact = "Enable this to keep matching targets safe; disable it to make them eligible for handling.")
     private boolean protectBosses = true;
     @Builder.Default
     private transient boolean prepared = false;
