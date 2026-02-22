@@ -30,7 +30,10 @@ import lombok.EqualsAndHashCode;
 import org.bukkit.event.Listener;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @EqualsAndHashCode(callSuper = true)
@@ -58,6 +61,16 @@ public class TweakController extends TickedObject implements IController {
 
   public Tweak getTweak(String id) {
     return tweaks.get(id);
+  }
+
+  public String describeControllerLoadForSlowTick() {
+    Map<String, Tweak> active = activeTweaks;
+    Map<String, ReactTickedTweak> scheduled = tickedTweaks;
+    int activeCount = active == null ? 0 : active.size();
+    int scheduledCount = scheduled == null ? 0 : scheduled.size();
+    Collection<String> ids = scheduled == null ? List.of() : scheduled.keySet();
+    String preview = previewIds(ids, 5);
+    return "activeTweaks=" + activeCount + ", scheduledTicks=" + scheduledCount + ", scheduledIds=" + preview;
   }
 
   public void activateTweak(Tweak tweak) {
@@ -116,5 +129,27 @@ public class TweakController extends TickedObject implements IController {
   @Override
   public void stop() {
     new ArrayList<>(activeTweaks.values()).forEach(this::deactivateTweak);
+  }
+
+  private String previewIds(Collection<String> ids, int limit) {
+    if (ids == null || ids.isEmpty()) {
+      return "none";
+    }
+
+    List<String> ordered = new ArrayList<>(ids);
+    Collections.sort(ordered);
+    int safeLimit = Math.max(1, limit);
+    int shown = Math.min(safeLimit, ordered.size());
+    List<String> shownIds = new ArrayList<>(shown);
+    for (int i = 0; i < shown; i++) {
+      shownIds.add(ordered.get(i));
+    }
+
+    int remaining = ordered.size() - shown;
+    if (remaining <= 0) {
+      return String.join(", ", shownIds);
+    }
+
+    return String.join(", ", shownIds) + ", +" + remaining + " more";
   }
 }

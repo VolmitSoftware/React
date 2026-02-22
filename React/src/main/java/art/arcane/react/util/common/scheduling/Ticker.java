@@ -25,12 +25,18 @@ import art.arcane.chrono.RollingSequence;
 import art.arcane.multiburst.BurstExecutor;
 import art.arcane.multiburst.MultiBurst;
 import art.arcane.react.React;
+import art.arcane.react.api.feature.Feature;
 import art.arcane.react.api.feature.ReactTickedFeature;
 import art.arcane.react.api.sampler.Sampler;
+import art.arcane.react.api.tweak.Tweak;
 import art.arcane.react.api.tweak.ReactTickedTweak;
+import art.arcane.react.core.controller.HotloadController;
+import art.arcane.react.core.controller.TweakController;
 import art.arcane.react.model.ReactConfiguration;
+import art.arcane.react.model.ReactPlayer;
 import art.arcane.volmlib.util.collection.KList;
 import art.arcane.volmlib.util.scheduling.Looper;
+import org.bukkit.entity.Player;
 
 import java.util.ArrayDeque;
 import java.util.Locale;
@@ -364,13 +370,19 @@ public class Ticker {
                                            long overMS,
                                            String cause,
                                            String source) {
-    return "Slow tick [" + slowSeverity(elapsedMS) + "]: "
+    String message = "Slow tick [" + slowSeverity(elapsedMS) + "]: "
         + shortTickLabel(ticked)
         + " took " + elapsedMS + "ms"
         + " (+" + overMS + "ms over " + SLOW_TICK_WARN_THRESHOLD_MS + "ms)."
         + " Blame: " + slowTickBlameTarget(source)
         + " caused " + compactPhrase(cause)
         + "; pressure=" + trimSentence(source) + ".";
+    String detail = slowTickDetail(ticked);
+    if (!detail.isBlank()) {
+      message += " detail=" + trimSentence(detail) + ".";
+    }
+
+    return message;
   }
 
   private String buildDetailedSlowTickMessage(Ticked ticked,
@@ -383,7 +395,7 @@ public class Ticker {
                                               String source,
                                               String cause,
                                               SlowTickSnapshot snapshot) {
-    return "Slow tick detected [" + slowSeverity(elapsedMS) + "]: " + describeTicked(ticked)
+    String message = "Slow tick detected [" + slowSeverity(elapsedMS) + "]: " + describeTicked(ticked)
         + " took " + elapsedMS + "ms"
         + " (threshold=" + SLOW_TICK_WARN_THRESHOLD_MS + "ms, over=" + overMS + "ms, ratio=" + ratioLabel(elapsedMS, SLOW_TICK_WARN_THRESHOLD_MS)
         + ", interval=" + intervalMS + "ms, budget=" + budgetLabel(elapsedMS, intervalMS) + ", age=" + ageMS + "ms)."
@@ -396,6 +408,12 @@ public class Ticker {
         + ", last30s=" + snapshot.slowRunsLastWindow
         + ", avgSlow=" + formatMs(snapshot.averageSlowMS)
         + "ms, max=" + snapshot.maxSlowMS + "ms).";
+    String detail = slowTickDetail(ticked);
+    if (!detail.isBlank()) {
+      message += " detail=" + detail + ".";
+    }
+
+    return message;
   }
 
   private String shortTickLabel(Ticked ticked) {
@@ -409,9 +427,16 @@ public class Ticker {
     if (ticked instanceof ReactTickedTweak tweakTicked && tweakTicked.getComponent() != null) {
       return "tweak:" + tweakTicked.getComponent().getId();
     }
+    if (ticked instanceof ReactPlayer reactPlayer && reactPlayer.getPlayer() != null) {
+      Player player = reactPlayer.getPlayer();
+      return "player:" + player.getName() + "/" + player.getUniqueId();
+    }
 
     String group = ticked.getTgroup() == null ? "unknown-group" : ticked.getTgroup();
     String id = ticked.getTid() == null ? "unknown-id" : ticked.getTid();
+    if ("react".equalsIgnoreCase(group) && ("tweak".equalsIgnoreCase(id) || "hotload".equalsIgnoreCase(id))) {
+      return "controller:" + id;
+    }
     return "task:" + group + ":" + id;
   }
 
@@ -463,7 +488,7 @@ public class Ticker {
 
     String schedulerId = ticked.getTgroup() + ":" + ticked.getTid();
     if (ticked instanceof ReactTickedFeature featureTicked && featureTicked.getComponent() != null) {
-      var component = featureTicked.getComponent();
+      Feature component = featureTicked.getComponent();
       return "feature name=\"" + component.getName()
           + "\" id=" + component.getId()
           + " scheduler=" + schedulerId
@@ -471,7 +496,7 @@ public class Ticker {
     }
 
     if (ticked instanceof ReactTickedTweak tweakTicked && tweakTicked.getComponent() != null) {
-      var component = tweakTicked.getComponent();
+      Tweak component = tweakTicked.getComponent();
       return "tweak name=\"" + component.getName()
           + "\" id=" + component.getId()
           + " scheduler=" + schedulerId
@@ -495,8 +520,19 @@ public class Ticker {
       String id = tweakTicked.getComponent().getId();
       return "Context: executing tweak onTick for /plugins/React/tweak/" + id + ".toml (tickIntervalMS controls schedule cadence).";
     }
+    if (ticked instanceof ReactPlayer reactPlayer && reactPlayer.getPlayer() != null) {
+      Player player = reactPlayer.getPlayer();
+      return "Context: executing React player runtime tick for " + player.getName()
+          + " (" + player.getUniqueId() + ").";
+    }
 
     String tid = ticked.getTid() == null ? "" : ticked.getTid();
+    if ("hotload".equalsIgnoreCase(tid)) {
+      return "Context: executing config hotload watcher for /plugins/React; " + describeHotloadWorkload() + ".";
+    }
+    if ("tweak".equalsIgnoreCase(tid)) {
+      return "Context: executing tweak controller heartbeat; " + describeTweakControllerWorkload() + ".";
+    }
     if ("map".equalsIgnoreCase(tid)) {
       return "Context: executing map maintenance/update work from /plugins/React/core/map.toml frame-map settings.";
     }
@@ -568,6 +604,9 @@ public class Ticker {
     if ("map".equalsIgnoreCase(tid)) {
       return "/plugins/React/core/map.toml";
     }
+    if ("tweak".equalsIgnoreCase(tid)) {
+      return "/plugins/React/core/tweak.toml";
+    }
     if ("hotload".equalsIgnoreCase(tid)) {
       return "/plugins/React/core/hotload.toml";
     }
@@ -617,15 +656,23 @@ public class Ticker {
     }
 
     if (ticked instanceof ReactTickedTweak tweakTicked && tweakTicked.getComponent() != null) {
-      return "Tweak-specific onTick workload in this component.";
+      String id = tweakTicked.getComponent().getId();
+      return "Tweak-specific onTick workload in tweak '" + id + "' (/plugins/React/tweak/" + id + ".toml).";
+    }
+    if (ticked instanceof ReactPlayer reactPlayer && reactPlayer.getPlayer() != null) {
+      Player player = reactPlayer.getPlayer();
+      return "Player runtime workload for " + player.getName() + " (UI monitor and settings state updates).";
     }
 
     String tid = ticked.getTid() == null ? "" : ticked.getTid().toLowerCase(Locale.ROOT);
     if ("map".equals(tid)) {
       return "Map controller maintenance workload (map metadata repair and frame-map push/update work).";
     }
+    if ("tweak".equals(tid)) {
+      return "Tweak controller workload (" + describeTweakControllerWorkload() + ").";
+    }
     if ("hotload".equals(tid)) {
-      return "Config hotload workload (watcher scan, diff/canonicalization, and reload apply path).";
+      return "Config hotload workload (" + describeHotloadWorkload() + ").";
     }
     if (tid.contains("feature")) {
       return "Feature scheduler workload in this task.";
@@ -682,7 +729,84 @@ public class Ticker {
     if (ticked instanceof ReactTickedTweak) {
       return "React tweak workload";
     }
+    if (ticked instanceof ReactPlayer) {
+      return "React player monitor workload";
+    }
+    String tid = ticked == null || ticked.getTid() == null ? "" : ticked.getTid().toLowerCase(Locale.ROOT);
+    if ("hotload".equals(tid)) {
+      return "React config hotload";
+    }
+    if ("tweak".equals(tid)) {
+      return "React tweak controller";
+    }
     return "React scheduled task";
+  }
+
+  private String slowTickDetail(Ticked ticked) {
+    if (ticked == null) {
+      return "";
+    }
+
+    if (ticked instanceof ReactTickedFeature featureTicked && featureTicked.getComponent() != null) {
+      String id = featureTicked.getComponent().getId();
+      return "file=/plugins/React/feature/" + id + ".toml"
+          + " method=" + featureTicked.getComponent().getClass().getSimpleName() + "#onTick";
+    }
+    if (ticked instanceof ReactTickedTweak tweakTicked && tweakTicked.getComponent() != null) {
+      String id = tweakTicked.getComponent().getId();
+      return "file=/plugins/React/tweak/" + id + ".toml"
+          + " method=" + tweakTicked.getComponent().getClass().getSimpleName() + "#onTick";
+    }
+    if (ticked instanceof ReactPlayer reactPlayer && reactPlayer.getPlayer() != null) {
+      Player player = reactPlayer.getPlayer();
+      return "player=" + player.getName() + " uuid=" + player.getUniqueId();
+    }
+
+    String tid = ticked.getTid() == null ? "" : ticked.getTid().toLowerCase(Locale.ROOT);
+    if ("hotload".equals(tid)) {
+      return describeHotloadWorkload();
+    }
+    if ("tweak".equals(tid)) {
+      return describeTweakControllerWorkload();
+    }
+
+    return "";
+  }
+
+  private String describeHotloadWorkload() {
+    try {
+      HotloadController controller = React.controller(HotloadController.class);
+      if (controller == null) {
+        return "poll=unavailable";
+      }
+
+      String summary = controller.describeLastPollForSlowTick();
+      if (summary == null || summary.isBlank()) {
+        return "poll=unavailable";
+      }
+
+      return summary;
+    } catch (Throwable ignored) {
+      return "poll=unavailable";
+    }
+  }
+
+  private String describeTweakControllerWorkload() {
+    try {
+      TweakController controller = React.controller(TweakController.class);
+      if (controller == null) {
+        return "activeTweaks=unavailable";
+      }
+
+      String summary = controller.describeControllerLoadForSlowTick();
+      if (summary == null || summary.isBlank()) {
+        return "activeTweaks=unavailable";
+      }
+
+      return summary;
+    } catch (Throwable ignored) {
+      return "activeTweaks=unavailable";
+    }
   }
 
   private double sampleSampler(String samplerId, double fallback) {

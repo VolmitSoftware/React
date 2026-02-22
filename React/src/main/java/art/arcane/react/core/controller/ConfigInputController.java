@@ -104,7 +104,7 @@ public class ConfigInputController implements IController, Listener {
 
     if (pending.isExpired()) {
       sessions.remove(player.getUniqueId());
-      J.s(() -> {
+      J.runEntity(player, () -> {
         player.sendMessage(C.RED + "Config input timed out.");
         ReactConfigGUI.open(player, pending.returnSectionPath(), pending.returnPage());
       });
@@ -114,7 +114,7 @@ public class ConfigInputController implements IController, Listener {
     String message = event.getMessage() == null ? "" : event.getMessage();
     if (message.equalsIgnoreCase("cancel")) {
       sessions.remove(player.getUniqueId());
-      J.s(() -> {
+      J.runEntity(player, () -> {
         player.sendMessage(C.YELLOW + "Config edit cancelled.");
         ReactConfigGUI.open(player, pending.returnSectionPath(), pending.returnPage());
       });
@@ -123,7 +123,7 @@ public class ConfigInputController implements IController, Listener {
 
     ReactConfigGUI.ParseResult parsed = ReactConfigGUI.parseInputValue(pending.targetType(), message);
     if (!parsed.success()) {
-      J.s(() -> {
+      J.runEntity(player, () -> {
         player.sendMessage(C.RED + parsed.error());
         player.sendMessage(C.GRAY + "Try again or type " + C.WHITE + "cancel");
       });
@@ -132,7 +132,7 @@ public class ConfigInputController implements IController, Listener {
 
     sessions.remove(player.getUniqueId());
     Object value = parsed.value();
-    J.s(() -> ReactConfigGUI.confirmAndApply(player, pending.returnSectionPath(), pending.returnPage(), pending.valuePath(), value));
+    J.runEntity(player, () -> ReactConfigGUI.confirmAndApply(player, pending.returnSectionPath(), pending.returnPage(), pending.valuePath(), value));
   }
 
   @EventHandler

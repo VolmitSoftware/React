@@ -94,7 +94,7 @@ public final class ReactConfigGUI {
     if (!Bukkit.isPrimaryThread()) {
       String path = sectionPath;
       int targetPage = page;
-      J.s(() -> open(player, path, targetPage));
+      J.runEntity(player, () -> open(player, path, targetPage));
       return;
     }
 

@@ -29,6 +29,7 @@ import art.arcane.volmlib.util.reflect.V;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.sound.Sound;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 
 import java.lang.reflect.Field;
 
@@ -178,7 +179,12 @@ public class VirtualCommand {
     for (String i : command.getRequiredPermissions()) {
       if (!sender.hasPermission(i)) {
         failed = true;
-        J.s(() -> sender.sendMessage("- " + C.WHITE + i));
+        if (sender instanceof Player) {
+          Player player = (Player) sender;
+          J.runEntity(player, () -> sender.sendMessage("- " + C.WHITE + i));
+        } else {
+          J.s(() -> sender.sendMessage("- " + C.WHITE + i));
+        }
       }
     }
 

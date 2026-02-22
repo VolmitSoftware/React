@@ -55,7 +55,7 @@ public final class ReactMapGUI {
 
     if (!Bukkit.isPrimaryThread()) {
       int safePage = page;
-      J.s(() -> open(player, safePage));
+      J.runEntity(player, () -> open(player, safePage));
       return;
     }
 

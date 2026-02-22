@@ -63,6 +63,7 @@ public class HotloadController extends TickedObject implements IController {
   private transient File dataFolder;
   private transient File configToml;
   private transient File configLegacyJson;
+  private transient volatile String lastSlowTickPollSummary = "poll=not-run";
   private final transient ConfigHotloadEngine hotloadEngine = new ConfigHotloadEngine(
       this::isManagedConfigFile,
       this::listKnownConfigFiles,
@@ -90,6 +91,7 @@ public class HotloadController extends TickedObject implements IController {
   @Override
   public void stop() {
     hotloadEngine.clear();
+    lastSlowTickPollSummary = "poll=stopped";
   }
 
   @Override
@@ -107,6 +109,7 @@ public class HotloadController extends TickedObject implements IController {
     setTinterval(effectivePollInterval);
     if (!enabled) {
       hotloadEngine.clear();
+      lastSlowTickPollSummary = "poll=disabled";
       return;
     }
 
@@ -138,19 +141,73 @@ public class HotloadController extends TickedObject implements IController {
     reconfigureWatcher();
   }
 
+  public String describeLastPollForSlowTick() {
+    String summary = lastSlowTickPollSummary;
+    if (summary == null || summary.isBlank()) {
+      return "poll=unavailable";
+    }
+
+    return summary;
+  }
+
   private void pollConfigChanges() {
     if (!enabled) {
+      lastSlowTickPollSummary = "poll=disabled";
       return;
     }
 
+    long pollStartNs = System.nanoTime();
     Set<File> touched = hotloadEngine.pollTouchedFiles();
     if (touched.isEmpty()) {
+      long pollMs = (System.nanoTime() - pollStartNs) / 1_000_000L;
+      lastSlowTickPollSummary = "poll=" + pollMs + "ms touched=0 applied=0 skipped=0 files=none";
       return;
     }
 
-    for (File file : touched) {
-      hotloadEngine.processFileChange(file, this::applyConfigChange, delta -> notifyOps(file, delta.before(), delta.after()));
+    List<File> orderedTouched = new ArrayList<>(touched);
+    orderedTouched.sort(Comparator.comparing(this::diagnosticRelativePath));
+    List<String> touchedPreview = new ArrayList<>();
+    List<String> appliedPreview = new ArrayList<>();
+    int appliedCount = 0;
+    long slowestApplyMs = 0L;
+    String slowestFile = "";
+
+    for (File file : orderedTouched) {
+      String relative = diagnosticRelativePath(file);
+      addPreviewEntry(touchedPreview, relative, 5);
+      long applyStartNs = System.nanoTime();
+      boolean applied = hotloadEngine.processFileChange(
+          file,
+          this::applyConfigChange,
+          delta -> notifyOps(file, delta.before(), delta.after())
+      );
+      long applyMs = (System.nanoTime() - applyStartNs) / 1_000_000L;
+      if (applyMs > slowestApplyMs) {
+        slowestApplyMs = applyMs;
+        slowestFile = relative;
+      }
+
+      if (applied) {
+        appliedCount++;
+        addPreviewEntry(appliedPreview, relative, 5);
+      }
     }
+
+    long pollMs = (System.nanoTime() - pollStartNs) / 1_000_000L;
+    int touchedCount = orderedTouched.size();
+    int skippedCount = Math.max(0, touchedCount - appliedCount);
+    String summary = "poll=" + pollMs + "ms touched=" + touchedCount
+        + " applied=" + appliedCount
+        + " skipped=" + skippedCount
+        + " files=" + formatPreview(touchedPreview, touchedCount);
+    if (appliedCount > 0) {
+      summary += " appliedFiles=" + formatPreview(appliedPreview, appliedCount);
+    }
+    if (slowestApplyMs > 0L && !slowestFile.isBlank()) {
+      summary += " slowest=" + slowestFile + ":" + slowestApplyMs + "ms";
+    }
+
+    lastSlowTickPollSummary = summary;
   }
 
   private boolean applyConfigChange(File file) {
@@ -507,6 +564,40 @@ public class HotloadController extends TickedObject implements IController {
       return null;
     }
     return ConfigFileSupport.normalize(text);
+  }
+
+  private String diagnosticRelativePath(File file) {
+    return relativizeToDataFolder(file).replace('\\', '/');
+  }
+
+  private void addPreviewEntry(List<String> preview, String value, int limit) {
+    if (preview == null || value == null || value.isBlank()) {
+      return;
+    }
+
+    if (preview.size() >= Math.max(1, limit)) {
+      return;
+    }
+
+    preview.add(value);
+  }
+
+  private String formatPreview(List<String> preview, int total) {
+    if (total <= 0) {
+      return "none";
+    }
+
+    if (preview == null || preview.isEmpty()) {
+      return "+" + total + " files";
+    }
+
+    int remaining = Math.max(0, total - preview.size());
+    String base = String.join(", ", preview);
+    if (remaining <= 0) {
+      return base;
+    }
+
+    return base + ", +" + remaining + " more";
   }
 
   private JsonElement parseStructured(String raw, File file) {
