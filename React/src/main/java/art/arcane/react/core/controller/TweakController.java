@@ -22,19 +22,14 @@ package art.arcane.react.core.controller;
 import art.arcane.react.React;
 import art.arcane.react.api.tweak.ReactTickedTweak;
 import art.arcane.react.api.tweak.Tweak;
+import art.arcane.react.util.common.scheduling.TickedObject;
 import art.arcane.react.util.plugin.IController;
 import art.arcane.react.util.project.registry.Registry;
-import art.arcane.react.util.common.scheduling.TickedObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.bukkit.event.Listener;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @EqualsAndHashCode(callSuper = true)
 @Data

@@ -25,11 +25,11 @@ import art.arcane.react.api.rendering.*;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.content.feature.FeatureUnknown;
 import art.arcane.react.core.integration.IntegrationCapabilitySupport;
-import art.arcane.react.util.project.config.ConfigDescription;
-import art.arcane.react.util.project.config.ConfigDoc;
-import art.arcane.react.util.plugin.IController;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.common.scheduling.TickedObject;
+import art.arcane.react.util.plugin.IController;
+import art.arcane.react.util.project.config.ConfigDescription;
+import art.arcane.react.util.project.config.ConfigDoc;
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
 import art.arcane.volmlib.util.io.JarScanner;
 import lombok.Data;
@@ -389,7 +389,7 @@ public class MapController extends TickedObject implements IController, Listener
 
   @EventHandler
   public void on(ChunkLoadEvent e) {
-    refreshChunkItemFrames(e.getChunk(), true);
+    refreshChunkItemFrames(e.getChunk(), true, null);
   }
 
   public ItemStack createMap(World world, ReactRenderer renderer) {
@@ -503,10 +503,11 @@ public class MapController extends TickedObject implements IController, Listener
     applyMaintenanceTickInterval();
     Runnable maintenanceTick = () -> {
       try {
+        FrameMapViewerSnapshot viewerSnapshot = buildFrameMapViewerSnapshot();
         syncIntegrationRenderers();
         repairOneOnlinePlayerInventory();
-        pushTrackedFrameMaps();
-        repairOneLoadedChunkItemFrames();
+        pushTrackedFrameMaps(viewerSnapshot);
+        repairOneLoadedChunkItemFrames(viewerSnapshot);
       } finally {
         if (maintenanceTickQueued != null) {
           maintenanceTickQueued.set(false);
@@ -778,24 +779,29 @@ public class MapController extends TickedObject implements IController, Listener
   private void refreshLoadedItemFrames() {
     for (World world : Bukkit.getWorlds()) {
       for (Chunk chunk : world.getLoadedChunks()) {
-        refreshChunkItemFrames(chunk, true);
+        refreshChunkItemFrames(chunk, true, null);
       }
     }
   }
 
-  private void refreshChunkItemFrames(Chunk chunk, boolean forceRendererUpdate) {
+  private void refreshChunkItemFrames(Chunk chunk, boolean forceRendererUpdate, FrameMapViewerSnapshot viewerSnapshot) {
     if (chunk == null) {
       return;
     }
 
+    FrameMapViewerSnapshot activeViewerSnapshot = viewerSnapshot;
+    if (activeViewerSnapshot == null) {
+      activeViewerSnapshot = buildFrameMapViewerSnapshot();
+    }
+
     for (Entity entity : chunk.getEntities()) {
       if (entity instanceof ItemFrame frame) {
-        refreshItemFrame(frame, forceRendererUpdate);
+        refreshItemFrame(frame, forceRendererUpdate, activeViewerSnapshot);
       }
     }
   }
 
-  private void refreshItemFrame(ItemFrame frame, boolean forceRendererUpdate) {
+  private void refreshItemFrame(ItemFrame frame, boolean forceRendererUpdate, FrameMapViewerSnapshot viewerSnapshot) {
     if (frame == null) {
       return;
     }
@@ -819,7 +825,7 @@ public class MapController extends TickedObject implements IController, Listener
 
     MapView view = effectiveMeta.getMapView();
     trackFrameMap(frame, view);
-    pushFrameMapToNearbyPlayers(frame, view);
+    pushFrameMapToNearbyPlayers(frame, view, viewerSnapshot);
   }
 
   private void trackFrameMap(ItemFrame frame, MapView view) {
@@ -852,7 +858,7 @@ public class MapController extends TickedObject implements IController, Listener
     });
   }
 
-  private void pushTrackedFrameMaps() {
+  private void pushTrackedFrameMaps(FrameMapViewerSnapshot viewerSnapshot) {
     if (activeFrameMaps == null || activeFrameMaps.isEmpty()) {
       pruneFramePushState();
       return;
@@ -915,7 +921,7 @@ public class MapController extends TickedObject implements IController, Listener
       tracked.mapId = mapId;
       tracked.location = frame.getLocation();
       tracked.lastSeenMs = now;
-      pushMapToNearbyPlayers(frame, view);
+      pushMapToNearbyPlayers(frame, view, viewerSnapshot);
     }
 
     for (UUID frameId : stale) {
@@ -958,7 +964,7 @@ public class MapController extends TickedObject implements IController, Listener
     }
   }
 
-  private void repairOneLoadedChunkItemFrames() {
+  private void repairOneLoadedChunkItemFrames(FrameMapViewerSnapshot viewerSnapshot) {
     long now = System.currentTimeMillis();
     if (now - lastItemFrameRepairMs < effectiveItemFrameRepairCadenceMs()) {
       return;
@@ -973,7 +979,7 @@ public class MapController extends TickedObject implements IController, Listener
         return;
       }
 
-      refreshChunkItemFrames(chunk, forceRendererUpdate);
+      refreshChunkItemFrames(chunk, forceRendererUpdate, viewerSnapshot);
     }
   }
 
@@ -1018,57 +1024,81 @@ public class MapController extends TickedObject implements IController, Listener
     return null;
   }
 
-  private void pushFrameMapToNearbyPlayers(ItemFrame frame, MapView view) {
+  private void pushFrameMapToNearbyPlayers(ItemFrame frame, MapView view, FrameMapViewerSnapshot viewerSnapshot) {
     if (frame == null || frame.getWorld() == null || view == null) {
       return;
     }
 
-    pushMapToNearbyPlayers(frame, view);
+    pushMapToNearbyPlayers(frame, view, viewerSnapshot);
   }
 
-  private void pushMapToNearbyPlayers(ItemFrame frame, MapView view) {
+  private void pushMapToNearbyPlayers(ItemFrame frame, MapView view, FrameMapViewerSnapshot viewerSnapshot) {
     if (frame == null || frame.getWorld() == null || view == null || frameMapPushMsByViewerKey == null) {
       return;
     }
 
-    World world = frame.getWorld();
-    Location source = frame.getLocation();
     Integer mapId = mapIdOf(view);
     if (mapId == null) {
       return;
     }
 
+    FrameMapViewerSnapshot activeViewerSnapshot = viewerSnapshot;
+    if (activeViewerSnapshot == null) {
+      activeViewerSnapshot = buildFrameMapViewerSnapshot();
+    }
+    if (activeViewerSnapshot == null || activeViewerSnapshot.viewersByWorldChunk.isEmpty()) {
+      return;
+    }
+
+    World world = frame.getWorld();
+    UUID worldId = world.getUID();
+    Location source = frame.getLocation();
+    double sourceX = source.getX();
+    double sourceY = source.getY();
+    double sourceZ = source.getZ();
     long now = System.currentTimeMillis();
     double radiusSq = effectiveFrameMapPushRadiusSq();
     long activeInterval = effectiveFrameMapPushIntervalMs();
     long idleInterval = effectiveFrameMapIdlePushIntervalMs();
     boolean requireLineOfSight = frameMapRequireLineOfSight;
+    double lookDotThreshold = effectiveFrameMapLookDotThreshold();
+    Map<UUID, FrameMapViewer> candidates = collectFrameMapCandidates(activeViewerSnapshot, worldId, sourceX, sourceZ, mapId);
+    if (candidates.isEmpty()) {
+      return;
+    }
 
-    for (Player player : Bukkit.getOnlinePlayers()) {
-      if (player == null || player.getWorld() == null) {
+    for (FrameMapViewer viewer : candidates.values()) {
+      if (viewer == null) {
         continue;
       }
 
-      boolean holding = isHoldingMap(player, mapId);
+      Player player = Bukkit.getPlayer(viewer.playerId);
+      if (!isSnapshotPlayerValid(player, viewer)) {
+        continue;
+      }
+
+      boolean holding = viewer.isHoldingMap(mapId);
       boolean holdingBypassesRange = holding && frameMapPushOutsideRangeWhenHolding;
-      boolean sameWorld = player.getWorld().equals(world);
+      boolean sameWorld = worldId.equals(viewer.worldId);
       if (!holdingBypassesRange && !sameWorld) {
         continue;
       }
 
       boolean withinRadius = false;
       if (sameWorld) {
-        double distanceSq = player.getLocation().distanceSquared(source);
-        withinRadius = distanceSq <= radiusSq;
+        double dx = viewer.x - sourceX;
+        double dy = viewer.y - sourceY;
+        double dz = viewer.z - sourceZ;
+        withinRadius = ((dx * dx) + (dy * dy) + (dz * dz)) <= radiusSq;
       }
 
       if (!holdingBypassesRange && !withinRadius) {
         continue;
       }
 
-      boolean activelyWatching = holding || isLikelyLookingAtFrame(player, source);
+      boolean activelyWatching = holding || isLikelyLookingAtFrame(viewer, sourceX, sourceY, sourceZ, lookDotThreshold);
       long requiredInterval = activelyWatching ? activeInterval : idleInterval;
-      String pushKey = framePushKey(mapId, player.getUniqueId());
+      String pushKey = framePushKey(mapId, viewer.playerId);
       long seededLastPush = now - requiredInterval + initialPushOffsetMs(pushKey, requiredInterval);
       long lastPush = frameMapPushMsByViewerKey.getOrDefault(pushKey, seededLastPush);
       if (now - lastPush < requiredInterval) {
@@ -1088,6 +1118,48 @@ public class MapController extends TickedObject implements IController, Listener
             + (ex.getMessage() == null ? "" : " - " + ex.getMessage()));
       }
     }
+  }
+
+  private Map<UUID, FrameMapViewer> collectFrameMapCandidates(
+      FrameMapViewerSnapshot viewerSnapshot,
+      UUID worldId,
+      double sourceX,
+      double sourceZ,
+      int mapId
+  ) {
+    Map<UUID, FrameMapViewer> candidates = new HashMap<>();
+    Map<Long, List<FrameMapViewer>> worldBuckets = viewerSnapshot.viewersByWorldChunk.get(worldId);
+    if (worldBuckets != null && !worldBuckets.isEmpty()) {
+      double radiusBlocks = Math.max(1D, frameMapPushRadiusBlocks);
+      int minChunkX = chunkCoordinate(sourceX - radiusBlocks);
+      int maxChunkX = chunkCoordinate(sourceX + radiusBlocks);
+      int minChunkZ = chunkCoordinate(sourceZ - radiusBlocks);
+      int maxChunkZ = chunkCoordinate(sourceZ + radiusBlocks);
+
+      for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+        for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
+          List<FrameMapViewer> viewers = worldBuckets.get(chunkKey(chunkX, chunkZ));
+          if (viewers == null || viewers.isEmpty()) {
+            continue;
+          }
+
+          for (FrameMapViewer viewer : viewers) {
+            candidates.put(viewer.playerId, viewer);
+          }
+        }
+      }
+    }
+
+    if (frameMapPushOutsideRangeWhenHolding) {
+      List<FrameMapViewer> holders = viewerSnapshot.viewersHoldingMap.get(mapId);
+      if (holders != null && !holders.isEmpty()) {
+        for (FrameMapViewer viewer : holders) {
+          candidates.put(viewer.playerId, viewer);
+        }
+      }
+    }
+
+    return candidates;
   }
 
   private Integer mapIdOf(MapView view) {
@@ -1117,6 +1189,87 @@ public class MapController extends TickedObject implements IController, Listener
     return mapIdOf(meta.getMapView());
   }
 
+  private FrameMapViewerSnapshot buildFrameMapViewerSnapshot() {
+    Map<UUID, Map<Long, List<FrameMapViewer>>> viewersByWorldChunk = new HashMap<>();
+    Map<Integer, List<FrameMapViewer>> viewersHoldingMap = new HashMap<>();
+
+    for (Player player : Bukkit.getOnlinePlayers()) {
+      if (player == null || player.getWorld() == null) {
+        continue;
+      }
+
+      Location location = player.getLocation();
+      if (location.getWorld() == null) {
+        continue;
+      }
+
+      Location eyeLocation = player.getEyeLocation();
+      org.bukkit.util.Vector eyeDirection = eyeLocation.getDirection();
+      double directionX = eyeDirection.getX();
+      double directionY = eyeDirection.getY();
+      double directionZ = eyeDirection.getZ();
+      double directionLengthSquared = (directionX * directionX) + (directionY * directionY) + (directionZ * directionZ);
+      boolean hasDirection = directionLengthSquared > 1.0E-6D;
+      if (hasDirection) {
+        double inverseDirectionLength = 1.0D / Math.sqrt(directionLengthSquared);
+        directionX *= inverseDirectionLength;
+        directionY *= inverseDirectionLength;
+        directionZ *= inverseDirectionLength;
+      }
+
+      UUID worldId = location.getWorld().getUID();
+      int chunkX = chunkCoordinate(location.getX());
+      int chunkZ = chunkCoordinate(location.getZ());
+      int mainHandMapId = mapIdOrNegative(player.getInventory().getItemInMainHand());
+      int offHandMapId = mapIdOrNegative(player.getInventory().getItemInOffHand());
+      FrameMapViewer viewer = new FrameMapViewer(
+          player.getUniqueId(),
+          worldId,
+          location.getX(),
+          location.getY(),
+          location.getZ(),
+          eyeLocation.getX(),
+          eyeLocation.getY(),
+          eyeLocation.getZ(),
+          directionX,
+          directionY,
+          directionZ,
+          hasDirection,
+          mainHandMapId,
+          offHandMapId
+      );
+
+      Map<Long, List<FrameMapViewer>> worldBuckets = viewersByWorldChunk.computeIfAbsent(worldId, ignored -> new HashMap<>());
+      List<FrameMapViewer> chunkViewers = worldBuckets.computeIfAbsent(chunkKey(chunkX, chunkZ), ignored -> new ArrayList<>());
+      chunkViewers.add(viewer);
+
+      if (mainHandMapId >= 0) {
+        List<FrameMapViewer> holders = viewersHoldingMap.computeIfAbsent(mainHandMapId, ignored -> new ArrayList<>());
+        holders.add(viewer);
+      }
+
+      if (offHandMapId >= 0 && offHandMapId != mainHandMapId) {
+        List<FrameMapViewer> holders = viewersHoldingMap.computeIfAbsent(offHandMapId, ignored -> new ArrayList<>());
+        holders.add(viewer);
+      }
+    }
+
+    return new FrameMapViewerSnapshot(viewersByWorldChunk, viewersHoldingMap);
+  }
+
+  private boolean isSnapshotPlayerValid(Player player, FrameMapViewer viewer) {
+    if (player == null || !player.isOnline() || player.getWorld() == null || viewer == null) {
+      return false;
+    }
+
+    return player.getWorld().getUID().equals(viewer.worldId);
+  }
+
+  private int mapIdOrNegative(ItemStack item) {
+    Integer mapId = mapIdOf(item);
+    return mapId == null ? -1 : mapId;
+  }
+
   private boolean isHoldingMap(Player player, int mapId) {
     if (player == null) {
       return false;
@@ -1131,25 +1284,45 @@ public class MapController extends TickedObject implements IController, Listener
     return off != null && off == mapId;
   }
 
-  private boolean isLikelyLookingAtFrame(Player player, Location source) {
-    if (player == null || source == null) {
+  private boolean isLikelyLookingAtFrame(
+      FrameMapViewer viewer,
+      double sourceX,
+      double sourceY,
+      double sourceZ,
+      double lookDotThreshold
+  ) {
+    if (viewer == null) {
       return false;
     }
 
-    var eye = player.getEyeLocation();
-    var toFrame = source.toVector().subtract(eye.toVector());
-    if (toFrame.lengthSquared() <= 1.0E-6D) {
+    double toFrameX = sourceX - viewer.eyeX;
+    double toFrameY = sourceY - viewer.eyeY;
+    double toFrameZ = sourceZ - viewer.eyeZ;
+    double toFrameLengthSquared = (toFrameX * toFrameX) + (toFrameY * toFrameY) + (toFrameZ * toFrameZ);
+    if (toFrameLengthSquared <= 1.0E-6D) {
       return true;
     }
 
-    var direction = eye.getDirection();
-    if (direction.lengthSquared() <= 1.0E-6D) {
+    if (!viewer.hasDirection) {
       return false;
     }
 
-    toFrame.normalize();
-    direction.normalize();
-    return direction.dot(toFrame) >= effectiveFrameMapLookDotThreshold();
+    double inverseToFrameLength = 1.0D / Math.sqrt(toFrameLengthSquared);
+    double normalizedToFrameX = toFrameX * inverseToFrameLength;
+    double normalizedToFrameY = toFrameY * inverseToFrameLength;
+    double normalizedToFrameZ = toFrameZ * inverseToFrameLength;
+    double dot = (viewer.directionX * normalizedToFrameX)
+        + (viewer.directionY * normalizedToFrameY)
+        + (viewer.directionZ * normalizedToFrameZ);
+    return dot >= lookDotThreshold;
+  }
+
+  private int chunkCoordinate(double blockCoordinate) {
+    return (int) Math.floor(blockCoordinate / 16.0D);
+  }
+
+  private long chunkKey(int chunkX, int chunkZ) {
+    return (((long) chunkX) << 32) ^ (chunkZ & 0xffffffffL);
   }
 
   private String framePushKey(int mapId, UUID playerId) {
@@ -1626,6 +1799,72 @@ public class MapController extends TickedObject implements IController, Listener
 
   private double effectiveFrameMapLookDotThreshold() {
     return Math.max(0D, Math.min(0.999D, frameMapLookDotThreshold));
+  }
+
+  private static final class FrameMapViewerSnapshot {
+    private final Map<UUID, Map<Long, List<FrameMapViewer>>> viewersByWorldChunk;
+    private final Map<Integer, List<FrameMapViewer>> viewersHoldingMap;
+
+    private FrameMapViewerSnapshot(
+        Map<UUID, Map<Long, List<FrameMapViewer>>> viewersByWorldChunk,
+        Map<Integer, List<FrameMapViewer>> viewersHoldingMap
+    ) {
+      this.viewersByWorldChunk = viewersByWorldChunk;
+      this.viewersHoldingMap = viewersHoldingMap;
+    }
+  }
+
+  private static final class FrameMapViewer {
+    private final UUID playerId;
+    private final UUID worldId;
+    private final double x;
+    private final double y;
+    private final double z;
+    private final double eyeX;
+    private final double eyeY;
+    private final double eyeZ;
+    private final double directionX;
+    private final double directionY;
+    private final double directionZ;
+    private final boolean hasDirection;
+    private final int mainHandMapId;
+    private final int offHandMapId;
+
+    private FrameMapViewer(
+        UUID playerId,
+        UUID worldId,
+        double x,
+        double y,
+        double z,
+        double eyeX,
+        double eyeY,
+        double eyeZ,
+        double directionX,
+        double directionY,
+        double directionZ,
+        boolean hasDirection,
+        int mainHandMapId,
+        int offHandMapId
+    ) {
+      this.playerId = playerId;
+      this.worldId = worldId;
+      this.x = x;
+      this.y = y;
+      this.z = z;
+      this.eyeX = eyeX;
+      this.eyeY = eyeY;
+      this.eyeZ = eyeZ;
+      this.directionX = directionX;
+      this.directionY = directionY;
+      this.directionZ = directionZ;
+      this.hasDirection = hasDirection;
+      this.mainHandMapId = mainHandMapId;
+      this.offHandMapId = offHandMapId;
+    }
+
+    private boolean isHoldingMap(int mapId) {
+      return mainHandMapId == mapId || offHandMapId == mapId;
+    }
   }
 
   private static final class ActiveFrameMap {

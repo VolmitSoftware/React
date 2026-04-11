@@ -15,13 +15,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import io.github.slimjar.resolver.data.Mirror
-import org.gradle.api.tasks.Copy
-import org.gradle.api.tasks.compile.JavaCompile
-import org.gradle.jvm.toolchain.JavaLanguageVersion
-
-import java.net.URI
 
 plugins {
     id 'java'
@@ -30,14 +26,14 @@ plugins {
     id 'de.crazydev22.slimjar' version '2.1.8'
 }
 
-version = '2.0.0-Dev1' // Needs to be version specific
+version = '2.0.0' // Needs to be version specific
 def apiVersion = '1.19'
 def pluginName = rootProject.name // Defined in settings.gradle.kts
 String mainClass = 'art.arcane.react.React'
 String lib = 'art.arcane.react.util.arcane'
 String volmLibCoordinate = providers.gradleProperty('volmLibCoordinate')
-    .orElse('com.github.VolmitSoftware:VolmLib:master-SNAPSHOT')
-    .get()
+        .orElse('com.github.VolmitSoftware:VolmLib:master-SNAPSHOT')
+        .get()
 
 void registerCustomOutputTask(String name, String path) {
     if (!System.getProperty('os.name').toLowerCase().contains('windows')) {
@@ -84,10 +80,10 @@ registerCustomOutputTaskUnix('PsychoLT', '/Users/brianfopiano/Developer/RemoteGi
  * Expand properties into plugin yml
  */
 def pluginYmlProperties = [
-    name      : pluginName,
-    version   : version.toString(),
-    main      : mainClass,
-    apiversion: apiVersion,
+        name      : pluginName,
+        version   : version.toString(),
+        main      : mainClass,
+        apiversion: apiVersion,
 ]
 
 tasks.named('processResources').configure {
@@ -150,10 +146,10 @@ dependencies {
 
 slimJar {
     mirrors = [
-        new Mirror(
-            URI.create('https://maven-central.storage-download.googleapis.com/maven2').toURL(),
-            URI.create('https://repo.maven.apache.org/maven2/').toURL()
-        )
+            new Mirror(
+                    URI.create('https://maven-central.storage-download.googleapis.com/maven2').toURL(),
+                    URI.create('https://repo.maven.apache.org/maven2/').toURL()
+            )
     ]
     relocate('art.arcane.chrono', "${lib}.chrono")
     relocate('art.arcane.curse', "${lib}.curse")

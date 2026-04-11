@@ -25,8 +25,6 @@ import art.arcane.react.core.controller.JobController;
 import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Material;
 
-import java.util.List;
-
 public class SamplerSchedulerBacklog extends ReactCachedSampler {
   public static final String ID = "scheduler-backlog";
 
@@ -42,10 +40,7 @@ public class SamplerSchedulerBacklog extends ReactCachedSampler {
   @Override
   public double onSample() {
     JobController controller = React.controller(JobController.class);
-    List<Runnable> jobs = controller.getJobs();
-    synchronized (jobs) {
-      return jobs.size();
-    }
+    return controller.getQueueSize();
   }
 
   @Override

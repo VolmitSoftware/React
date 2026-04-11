@@ -932,6 +932,7 @@ public class Edict implements CommandExecutor, TabCompleter {
   /**
    * Define a list of potential aliases for either the command or the
    * parameters. For commands re-type out the command, for example if the
+   *
    * @Command was /plugin monitor, a valid alias would be /plugin observe. Avoid
    * adding aliases such as /plugin mon, because the matcher will already figure
    * this out for you. Only use aliases for wildly different words that would
@@ -1009,6 +1010,7 @@ public class Edict implements CommandExecutor, TabCompleter {
 
   /**
    * All parameters are optional by default. This is only used if you specify
+   *
    * @Required on a method for all parameters but have only one optional
    */
   @Target({ElementType.PARAMETER})

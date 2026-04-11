@@ -20,8 +20,8 @@
 package art.arcane.react.content.feature;
 
 import art.arcane.react.api.feature.ReactFeature;
-import art.arcane.react.util.data.B;
 import art.arcane.react.util.common.scheduling.J;
+import art.arcane.react.util.data.B;
 import art.arcane.react.util.project.world.FastWorld;
 import art.arcane.volmlib.util.math.M;
 import org.bukkit.Location;

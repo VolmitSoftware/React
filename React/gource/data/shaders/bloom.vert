@@ -1,4 +1,3 @@
-
 varying vec3 pos;
 
 void main()

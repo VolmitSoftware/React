@@ -20,8 +20,8 @@
 package art.arcane.react.core.controller;
 
 import art.arcane.react.model.ReactPlayer;
-import art.arcane.react.util.plugin.IController;
 import art.arcane.react.util.common.scheduling.TickedObject;
+import art.arcane.react.util.plugin.IController;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.bukkit.Bukkit;

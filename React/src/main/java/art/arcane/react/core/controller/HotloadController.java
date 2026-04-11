@@ -24,14 +24,14 @@ import art.arcane.react.api.action.Action;
 import art.arcane.react.api.feature.Feature;
 import art.arcane.react.api.tweak.Tweak;
 import art.arcane.react.model.ReactConfiguration;
+import art.arcane.react.util.common.scheduling.J;
+import art.arcane.react.util.common.scheduling.TickedObject;
+import art.arcane.react.util.format.C;
+import art.arcane.react.util.plugin.IController;
 import art.arcane.react.util.project.config.ConfigDescription;
 import art.arcane.react.util.project.config.ConfigDoc;
 import art.arcane.react.util.project.config.ConfigFileSupport;
 import art.arcane.react.util.project.config.ConfigRewriteReporter;
-import art.arcane.react.util.format.C;
-import art.arcane.react.util.plugin.IController;
-import art.arcane.react.util.common.scheduling.J;
-import art.arcane.react.util.common.scheduling.TickedObject;
 import art.arcane.volmlib.util.hotload.ConfigHotloadEngine;
 import art.arcane.volmlib.util.io.IO;
 import com.google.gson.GsonBuilder;
@@ -63,13 +63,13 @@ public class HotloadController extends TickedObject implements IController {
   private transient File dataFolder;
   private transient File configToml;
   private transient File configLegacyJson;
-  private transient volatile String lastSlowTickPollSummary = "poll=not-run";
   private final transient ConfigHotloadEngine hotloadEngine = new ConfigHotloadEngine(
       this::isManagedConfigFile,
       this::listKnownConfigFiles,
       this::readFileContent,
       this::normalizeContent
   );
+  private transient volatile String lastSlowTickPollSummary = "poll=not-run";
 
   public HotloadController() {
     super("react", "hotload", 500);

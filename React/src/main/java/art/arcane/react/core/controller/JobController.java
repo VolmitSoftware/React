@@ -22,21 +22,21 @@ package art.arcane.react.core.controller;
 import art.arcane.chrono.ChronoLatch;
 import art.arcane.chrono.PrecisionStopwatch;
 import art.arcane.react.api.event.layer.ServerTickEvent;
-import art.arcane.react.util.plugin.IController;
 import art.arcane.react.util.common.scheduling.J;
+import art.arcane.react.util.plugin.IController;
 import art.arcane.volmlib.util.math.M;
-import art.arcane.volmlib.util.math.RNG;
 import art.arcane.volmlib.util.math.RollingSequence;
 import lombok.Data;
 import org.bukkit.Bukkit;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Data
 public class JobController implements IController {
   private transient final RollingSequence usageCyclePercent;
-  private transient final List<Runnable> jobs;
+  private transient final ConcurrentLinkedDeque<Runnable> jobs;
+  private transient final AtomicInteger queueDepth;
   private double maxComputeTime = 1;
   private long maxSpikeInterval = 250;
   private double currentComputeTarget = 0.01;
@@ -48,10 +48,12 @@ public class JobController implements IController {
   private transient ChronoLatch spikeLatch;
   private transient int code;
   private transient double overBudget = 0;
+  private transient boolean pollFromTail = false;
 
   public JobController() {
     usageCyclePercent = new RollingSequence(7);
-    jobs = new ArrayList<>();
+    jobs = new ConcurrentLinkedDeque<>();
+    queueDepth = new AtomicInteger(0);
   }
 
   @Override
@@ -73,9 +75,8 @@ public class JobController implements IController {
   @Override
   public void stop() {
     J.csr(code);
-    synchronized (jobs) {
-      jobs.clear();
-    }
+    jobs.clear();
+    queueDepth.set(0);
   }
 
 
@@ -85,7 +86,11 @@ public class JobController implements IController {
   }
 
   public double getQueuedComputeTime() {
-    return jobs.size() * costPerJob;
+    return getQueueSize() * costPerJob;
+  }
+
+  public int getQueueSize() {
+    return queueDepth.get();
   }
 
   public void execute() {
@@ -97,54 +102,107 @@ public class JobController implements IController {
       return;
     }
 
-    synchronized (jobs) {
-      if (jobs.isEmpty()) {
-        return;
-      }
-
-      int executed = 0;
-      PrecisionStopwatch p = PrecisionStopwatch.start();
-
-      while (p.getMilliseconds() < (currentComputeTarget)) {
-        if (jobs.isEmpty()) {
-          break;
-        }
-
-        try {
-          if (jobs.size() > 5) {
-            jobs.remove(RNG.r.i(jobs.size() - 1)).run();
-          } else {
-            jobs.remove(0).run();
-          }
-        } catch (Throwable e) {
-          e.printStackTrace();
-        }
-
-        executed++;
-      }
-
-      double timeUsed = p.getMilliseconds();
-      usage.put(timeUsed);
-      if (timeUsed > currentComputeTarget) {
-        overBudget += timeUsed - currentComputeTarget;
-      }
-
-      costPerJob = timeUsed / (double) executed;
-      usageCyclePercent.put(timeUsed / currentComputeTarget);
-
-      if (usageCyclePercent.getAverage() > highUtilizationThresholdPercent) {
-        currentComputeTarget = M.lerp(currentComputeTarget, maxComputeTime, 0.01);
-      } else if (usageCyclePercent.getAverage() < lowUtilizationThresholdPercent) {
-        currentComputeTarget = M.lerp(currentComputeTarget, 0.01, 0.01);
-      }
-
-      currentComputeTarget = M.clip(currentComputeTarget, 0.01, maxComputeTime);
+    if (getQueueSize() <= 0) {
+      return;
     }
+
+    int executed = 0;
+    boolean alternatePoll = getQueueSize() > 5;
+    PrecisionStopwatch p = PrecisionStopwatch.start();
+
+    while (p.getMilliseconds() < currentComputeTarget) {
+      Runnable job = pollJob(alternatePoll);
+      if (job == null) {
+        break;
+      }
+
+      try {
+        job.run();
+      } catch (Throwable e) {
+        e.printStackTrace();
+      }
+
+      executed++;
+    }
+
+    double timeUsed = p.getMilliseconds();
+    usage.put(timeUsed);
+    if (timeUsed > currentComputeTarget) {
+      overBudget += timeUsed - currentComputeTarget;
+    }
+
+    if (executed > 0) {
+      costPerJob = timeUsed / (double) executed;
+    }
+    usageCyclePercent.put(timeUsed / currentComputeTarget);
+
+    if (usageCyclePercent.getAverage() > highUtilizationThresholdPercent) {
+      currentComputeTarget = M.lerp(currentComputeTarget, maxComputeTime, 0.01);
+    } else if (usageCyclePercent.getAverage() < lowUtilizationThresholdPercent) {
+      currentComputeTarget = M.lerp(currentComputeTarget, 0.01, 0.01);
+    }
+
+    currentComputeTarget = M.clip(currentComputeTarget, 0.01, maxComputeTime);
   }
 
   public void queue(Runnable r) {
-    synchronized (jobs) {
-      jobs.add(r);
+    if (r == null) {
+      return;
+    }
+
+    jobs.offerLast(r);
+    queueDepth.incrementAndGet();
+  }
+
+  private Runnable pollJob(boolean alternatePoll) {
+    Runnable job;
+    if (alternatePoll && pollFromTail) {
+      job = pollLast();
+      if (job == null) {
+        job = pollFirst();
+      }
+    } else {
+      job = pollFirst();
+      if (job == null && alternatePoll) {
+        job = pollLast();
+      }
+    }
+
+    if (alternatePoll && job != null) {
+      pollFromTail = !pollFromTail;
+    }
+
+    return job;
+  }
+
+  private Runnable pollFirst() {
+    Runnable job = jobs.pollFirst();
+    if (job != null) {
+      decrementQueueSize();
+    }
+
+    return job;
+  }
+
+  private Runnable pollLast() {
+    Runnable job = jobs.pollLast();
+    if (job != null) {
+      decrementQueueSize();
+    }
+
+    return job;
+  }
+
+  private void decrementQueueSize() {
+    while (true) {
+      int current = queueDepth.get();
+      if (current <= 0) {
+        return;
+      }
+
+      if (queueDepth.compareAndSet(current, current - 1)) {
+        return;
+      }
     }
   }
 }

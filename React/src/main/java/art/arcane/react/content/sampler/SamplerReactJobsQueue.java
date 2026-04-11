@@ -39,7 +39,7 @@ public class SamplerReactJobsQueue extends ReactCachedSampler {
 
   @Override
   public double onSample() {
-    return React.controller(JobController.class).getJobs().size();
+    return React.controller(JobController.class).getQueueSize();
   }
 
   @Override

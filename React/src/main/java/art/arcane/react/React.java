@@ -29,14 +29,14 @@ import art.arcane.react.content.PAPI.PapiExpansion;
 import art.arcane.react.core.controller.*;
 import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.util.common.plugin.SplashScreen;
-import art.arcane.react.util.project.config.ConfigFileSupport;
-import art.arcane.react.util.project.config.ConfigMigrationManager;
+import art.arcane.react.util.common.scheduling.J;
+import art.arcane.react.util.common.scheduling.Ticker;
 import art.arcane.react.util.format.C;
 import art.arcane.react.util.plugin.IController;
 import art.arcane.react.util.plugin.VolmitPlugin;
+import art.arcane.react.util.project.config.ConfigFileSupport;
+import art.arcane.react.util.project.config.ConfigMigrationManager;
 import art.arcane.react.util.project.registry.Registry;
-import art.arcane.react.util.common.scheduling.J;
-import art.arcane.react.util.common.scheduling.Ticker;
 import art.arcane.react.util.project.world.EntityKiller;
 import art.arcane.volmlib.util.collection.KList;
 import art.arcane.volmlib.util.format.Form;
@@ -60,7 +60,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class React extends VolmitPlugin {
   private static final boolean SLIMJAR_DEBUG = Boolean.getBoolean("react.debug-slimjar");
   private static final boolean DISABLE_REMAPPER = Boolean.getBoolean("react.disable-remapper");
-  private static final ThreadLocal<Location> NEARBY_PLAYER_SCRATCH = ThreadLocal.withInitial(() -> new Location(null, 0, 0, 0));
   public static BukkitAudiences audiences;
   public static React instance;
   public static Thread serverThread;
@@ -96,26 +95,29 @@ public class React extends VolmitPlugin {
       return false;
     }
 
+    NearbyPlayerIndexController controller = controller(NearbyPlayerIndexController.class);
+    if (controller != null) {
+      return controller.hasNearbyPlayer(l, blocks);
+    }
+
     double radiusSquared = blocks * blocks;
     double lx = l.getX();
     double ly = l.getY();
     double lz = l.getZ();
-    Location scratch = NEARBY_PLAYER_SCRATCH.get();
-    scratch.setWorld(l.getWorld());
 
     for (Player player : l.getWorld().getPlayers()) {
-      player.getLocation(scratch);
-      double dx = scratch.getX() - lx;
+      Location playerLocation = player.getLocation();
+      double dx = playerLocation.getX() - lx;
       if (dx > blocks || dx < -blocks) {
         continue;
       }
 
-      double dy = scratch.getY() - ly;
+      double dy = playerLocation.getY() - ly;
       if (dy > blocks || dy < -blocks) {
         continue;
       }
 
-      double dz = scratch.getZ() - lz;
+      double dz = playerLocation.getZ() - lz;
       if (dz > blocks || dz < -blocks) {
         continue;
       }
@@ -322,7 +324,17 @@ public class React extends VolmitPlugin {
       ticker.close();
     }
     if (controllerRegistry != null) {
-      controllerRegistry.all().forEach(IController::stop);
+      for (IController controller : controllerRegistry.all()) {
+        if (controller == null) {
+          continue;
+        }
+
+        try {
+          controller.stop();
+        } catch (Throwable throwable) {
+          React.reportError(throwable);
+        }
+      }
     }
     if (burst != null) {
       burst.close();

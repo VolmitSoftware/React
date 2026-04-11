@@ -26,8 +26,6 @@ import art.arcane.volmlib.util.format.Form;
 import art.arcane.volmlib.util.math.RollingSequence;
 import org.bukkit.Material;
 
-import java.util.List;
-
 public class SamplerBacklogGrowthRate extends ReactCachedSampler {
   public static final String ID = "backlog-growth-rate";
   private transient RollingSequence avg;
@@ -73,10 +71,7 @@ public class SamplerBacklogGrowthRate extends ReactCachedSampler {
 
   private int getQueueSize() {
     JobController controller = React.controller(JobController.class);
-    List<Runnable> jobs = controller.getJobs();
-    synchronized (jobs) {
-      return jobs.size();
-    }
+    return controller.getQueueSize();
   }
 
   @Override

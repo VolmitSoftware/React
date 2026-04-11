@@ -19,8 +19,8 @@
 
 package art.arcane.react.api.benchmark;
 
-import art.arcane.react.util.plugin.VolmitSender;
 import art.arcane.react.util.common.scheduling.J;
+import art.arcane.react.util.plugin.VolmitSender;
 import org.bukkit.ChatColor;
 
 import java.io.File;

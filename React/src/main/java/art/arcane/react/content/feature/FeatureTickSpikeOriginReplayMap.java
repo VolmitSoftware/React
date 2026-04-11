@@ -23,8 +23,8 @@ import art.arcane.react.React;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.core.controller.ObserverController;
 import art.arcane.react.model.SampledChunk;
-import art.arcane.react.util.data.TinyColor;
 import art.arcane.react.util.common.scheduling.J;
+import art.arcane.react.util.data.TinyColor;
 import org.bukkit.Chunk;
 
 import java.util.Map;

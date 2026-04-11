@@ -364,6 +364,11 @@ public class J {
       }
     };
 
+    if (isFoliaThreading()) {
+      retryDelayedSyncOnUnsupported(delayed, delay);
+      return;
+    }
+
     if (runGlobalDelayed(delayed, delay)) {
       return;
     }
@@ -377,11 +382,8 @@ public class J {
 
       throw new IllegalStateException("Failed to schedule delayed sync task while plugin is enabled.", e);
     } catch (UnsupportedOperationException e) {
-      a(() -> {
-        if (sleep(ticksToMilliseconds(delay))) {
-          delayed.run();
-        }
-      });
+      FoliaScheduler.forceFoliaThreading(Bukkit.getServer());
+      retryDelayedSyncOnUnsupported(delayed, delay);
     }
   }
 
@@ -391,6 +393,11 @@ public class J {
     }
 
     if (delay <= 0) {
+      if (isFoliaThreading()) {
+        retrySyncOnUnsupported(r);
+        return;
+      }
+
       if (!runGlobalImmediate(r)) {
         try {
           Bukkit.getScheduler().scheduleSyncDelayedTask(React.instance, r);
@@ -401,9 +408,15 @@ public class J {
 
           throw new IllegalStateException("Failed to schedule sync task while plugin is enabled.", e);
         } catch (UnsupportedOperationException e) {
-          throw new IllegalStateException("Failed to schedule sync task on this server.", e);
+          FoliaScheduler.forceFoliaThreading(Bukkit.getServer());
+          retrySyncOnUnsupported(r);
         }
       }
+      return;
+    }
+
+    if (isFoliaThreading()) {
+      retryDelayedSyncOnUnsupported(r, delay);
       return;
     }
 
@@ -420,7 +433,8 @@ public class J {
 
       throw new IllegalStateException("Failed to schedule delayed sync task while plugin is enabled.", e);
     } catch (UnsupportedOperationException e) {
-      throw new IllegalStateException("Failed to schedule delayed sync task on this server.", e);
+      FoliaScheduler.forceFoliaThreading(Bukkit.getServer());
+      retryDelayedSyncOnUnsupported(r, delay);
     }
   }
 
@@ -577,6 +591,35 @@ public class J {
     return id;
   }
 
+  private static void retrySyncOnUnsupported(Runnable runnable) {
+    if (runGlobalImmediate(runnable)) {
+      return;
+    }
+
+    if (isPrimaryThread()) {
+      runnable.run();
+      return;
+    }
+
+    a(() -> {
+      if (sleep(TICK_MS)) {
+        sync(runnable, 0);
+      }
+    });
+  }
+
+  private static void retryDelayedSyncOnUnsupported(Runnable runnable, int delayTicks) {
+    if (runGlobalDelayed(runnable, delayTicks)) {
+      return;
+    }
+
+    a(() -> {
+      if (sleep(ticksToMilliseconds(delayTicks))) {
+        sync(runnable, 0);
+      }
+    });
+  }
+
   private static void cancelRepeatingTask(int id) {
     Runnable cancelAction = REPEATING_CANCELLERS.remove(id);
     if (cancelAction != null) {
@@ -589,10 +632,19 @@ public class J {
   }
 
   private static boolean runGlobalImmediate(Runnable runnable) {
+    if (isFoliaThreading() && isPrimaryThread()) {
+      runnable.run();
+      return true;
+    }
+
     return FoliaScheduler.runGlobal(React.instance, runnable);
   }
 
   private static boolean runGlobalDelayed(Runnable runnable, int delayTicks) {
+    if (delayTicks <= 0) {
+      return runGlobalImmediate(runnable);
+    }
+
     return FoliaScheduler.runGlobal(React.instance, runnable, Math.max(0, delayTicks));
   }
 

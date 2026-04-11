@@ -38,13 +38,7 @@ import org.bukkit.event.block.FluidLevelChangeEvent;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Queue;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -68,11 +62,12 @@ public class TweakFastFluids extends ReactTweak implements Listener {
   private int extraVanillaTicksPerEvent = 2;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum extra vanilla fluid ticks allowed per server tick in fast fluids.", impact = "Higher values allow stronger acceleration bursts; lower values cap fluid burst cost more aggressively.")
   private int maxExtraVanillaTicksPerServerTick = 256;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum queued extra fluid ticks consumed for one block location during a single server tick flush.", impact = "Higher values collapse fluid chains faster into one tick for each location; lower values spread work more evenly across ticks.")
+  private int maxBurstTicksPerLocationPerServerTick = 16;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Controls whether fast fluids applies draining acceleration around active flow events.", impact = "Enable to accelerate fluid retract and empty behavior near flow updates; disable to accelerate only direct flow ticks.")
   private boolean accelerateDrain = true;
   private transient Map<FluidPulseKey, FluidPulse> pendingPulses;
   private transient Queue<FluidPulseKey> pulseOrder;
-  private transient Set<FluidPulseKey> processedThisTick;
   private transient VanillaFluidTickBridge fluidTickBridge;
   private transient int pulseTaskId;
   private transient boolean runtimeBridgeFailureWarned;
@@ -87,9 +82,9 @@ public class TweakFastFluids extends ReactTweak implements Listener {
   public void onActivate() {
     extraVanillaTicksPerEvent = clampInt(extraVanillaTicksPerEvent, 0, 4);
     maxExtraVanillaTicksPerServerTick = clampInt(maxExtraVanillaTicksPerServerTick, 16, 4096);
+    maxBurstTicksPerLocationPerServerTick = clampInt(maxBurstTicksPerLocationPerServerTick, 1, 16);
     pendingPulses = new ConcurrentHashMap<>();
     pulseOrder = new ConcurrentLinkedQueue<>();
-    processedThisTick = ConcurrentHashMap.newKeySet();
     runtimeBridgeFailureWarned = false;
     bridgeFailureCount = new AtomicInteger(0);
     bridgeFailureThreshold = clampInt(Integer.getInteger("react.fastfluids.bridgeFailureThreshold", 8), 1, 64);
@@ -171,9 +166,6 @@ public class TweakFastFluids extends ReactTweak implements Listener {
     if (pulseOrder != null) {
       pulseOrder.clear();
     }
-    if (processedThisTick != null) {
-      processedThisTick.clear();
-    }
     if (bridgeFailureCount != null) {
       bridgeFailureCount.set(0);
     }
@@ -200,13 +192,8 @@ public class TweakFastFluids extends ReactTweak implements Listener {
     if (pendingPulses == null || pendingPulses.isEmpty()) {
       return;
     }
-
-    if (processedThisTick == null) {
-      return;
-    }
-
-    processedThisTick.clear();
     int budget = clampInt(maxExtraVanillaTicksPerServerTick, 16, 4096);
+    int maxBurst = clampInt(maxBurstTicksPerLocationPerServerTick, 1, 16);
     int scanLimit = Math.max(budget * 8, 128);
     int scanned = 0;
     while (budget > 0 && scanned < scanLimit) {
@@ -221,18 +208,14 @@ public class TweakFastFluids extends ReactTweak implements Listener {
         continue;
       }
 
-      if (!processedThisTick.add(key)) {
-        pulseOrder.offer(key);
-        continue;
-      }
-
-      if (!pulse.consumeOne()) {
+      int burstTicks = pulse.consumeUpTo(Math.min(maxBurst, budget));
+      if (burstTicks <= 0) {
         pendingPulses.remove(key, pulse);
         continue;
       }
 
-      budget--;
-      schedulePulse(key, pulse);
+      budget -= burstTicks;
+      schedulePulse(key, pulse, burstTicks);
 
       if (pulse.hasRemaining()) {
         pulseOrder.offer(key);
@@ -242,7 +225,7 @@ public class TweakFastFluids extends ReactTweak implements Listener {
     }
   }
 
-  private void schedulePulse(FluidPulseKey key, FluidPulse pulse) {
+  private void schedulePulse(FluidPulseKey key, FluidPulse pulse, int burstTicks) {
     World world = Bukkit.getWorld(pulse.getWorldId());
     if (world == null) {
       pendingPulses.remove(key, pulse);
@@ -250,10 +233,10 @@ public class TweakFastFluids extends ReactTweak implements Listener {
     }
 
     Location location = new Location(world, pulse.getX(), pulse.getY(), pulse.getZ());
-    J.s(location, () -> runPulse(key, pulse), 0);
+    J.s(location, () -> runPulse(key, pulse, burstTicks), 0);
   }
 
-  private void runPulse(FluidPulseKey key, FluidPulse pulse) {
+  private void runPulse(FluidPulseKey key, FluidPulse pulse, int burstTicks) {
     if (fluidTickBridge == null || !fluidTickBridge.isAvailable()) {
       return;
     }
@@ -271,21 +254,31 @@ public class TweakFastFluids extends ReactTweak implements Listener {
     }
 
     Block block = world.getBlockAt(pulse.getX(), pulse.getY(), pulse.getZ());
-    TickResult result = fluidTickBridge.tickVanillaFluid(block, accelerateWater, accelerateLava);
-    if (result == TickResult.FAILED) {
-      int failures = bridgeFailureCount == null ? 1 : bridgeFailureCount.incrementAndGet();
-      if (failures < Math.max(1, bridgeFailureThreshold)) {
+    int safeBurstTicks = Math.max(1, burstTicks);
+    for (int i = 0; i < safeBurstTicks; i++) {
+      TickResult result = fluidTickBridge.tickVanillaFluid(block, accelerateWater, accelerateLava);
+      if (result == TickResult.SKIPPED) {
+        if (bridgeFailureCount != null) {
+          bridgeFailureCount.set(0);
+        }
         return;
       }
 
-      String failureReason = "Disabled after " + failures + " consecutive runtime bridge failures: " + fluidTickBridge.getFailureReason();
-      fluidTickBridge = fluidTickBridge.toUnavailable(failureReason);
-      if (!runtimeBridgeFailureWarned) {
-        runtimeBridgeFailureWarned = true;
-        React.warn("Fast Fluids acceleration is passive: " + fluidTickBridge.getFailureReason()
-            + " | " + fluidTickBridge.getResolutionSummary());
+      if (result == TickResult.FAILED) {
+        int failures = bridgeFailureCount == null ? 1 : bridgeFailureCount.incrementAndGet();
+        if (failures < Math.max(1, bridgeFailureThreshold)) {
+          return;
+        }
+
+        String failureReason = "Disabled after " + failures + " consecutive runtime bridge failures: " + fluidTickBridge.getFailureReason();
+        fluidTickBridge = fluidTickBridge.toUnavailable(failureReason);
+        if (!runtimeBridgeFailureWarned) {
+          runtimeBridgeFailureWarned = true;
+          React.warn("Fast Fluids acceleration is passive: " + fluidTickBridge.getFailureReason()
+              + " | " + fluidTickBridge.getResolutionSummary());
+        }
+        return;
       }
-      return;
     }
 
     if (bridgeFailureCount != null) {
@@ -433,6 +426,18 @@ public class TweakFastFluids extends ReactTweak implements Listener {
     return Math.max(min, Math.min(max, value));
   }
 
+  private enum TickResult {
+    TICKED,
+    SKIPPED,
+    FAILED
+  }
+
+  private enum FluidKind {
+    WATER,
+    LAVA,
+    OTHER
+  }
+
   private static final class FluidPulseKey {
     private final UUID worldId;
     private final int x;
@@ -532,14 +537,21 @@ public class TweakFastFluids extends ReactTweak implements Listener {
       remainingTicks.updateAndGet(value -> clamp(value + safeTicks, 0, 16));
     }
 
-    private boolean consumeOne() {
+    private int consumeUpTo(int maxTicks) {
+      int safeMaxTicks = Math.max(0, maxTicks);
+      if (safeMaxTicks <= 0) {
+        return 0;
+      }
+
       while (true) {
         int current = remainingTicks.get();
         if (current <= 0) {
-          return false;
+          return 0;
         }
-        if (remainingTicks.compareAndSet(current, current - 1)) {
-          return true;
+
+        int consume = Math.min(current, safeMaxTicks);
+        if (remainingTicks.compareAndSet(current, current - consume)) {
+          return consume;
         }
       }
     }
@@ -551,18 +563,6 @@ public class TweakFastFluids extends ReactTweak implements Listener {
     private int clamp(int value, int min, int max) {
       return Math.max(min, Math.min(max, value));
     }
-  }
-
-  private enum TickResult {
-    TICKED,
-    SKIPPED,
-    FAILED
-  }
-
-  private enum FluidKind {
-    WATER,
-    LAVA,
-    OTHER
   }
 
   private static final class VanillaFluidTickBridge {
@@ -707,155 +707,6 @@ public class TweakFastFluids extends ReactTweak implements Listener {
           false,
           reason
       );
-    }
-
-    private VanillaFluidTickBridge toUnavailable(String reason) {
-      return new VanillaFluidTickBridge(
-          serverLevelClass,
-          blockPosClass,
-          fluidStateClass,
-          fluidTypeClass,
-          blockPosConstructor,
-          getFluidStateMethod,
-          fluidStateIsEmptyMethod,
-          fluidStateGetTypeMethod,
-          worldFluidTickMethod,
-          fluidTypeTickMethod,
-          fluidStateTickMethod,
-          resolutionSummary,
-          false,
-          reason
-      );
-    }
-
-    private boolean isAvailable() {
-      return available;
-    }
-
-    private String getFailureReason() {
-      return failureReason == null || failureReason.isBlank() ? "No additional details." : failureReason;
-    }
-
-    private String getResolutionSummary() {
-      return resolutionSummary == null || resolutionSummary.isBlank() ? "resolution=unresolved" : resolutionSummary;
-    }
-
-    private TickResult tickVanillaFluid(Block block, boolean allowWater, boolean allowLava) {
-      if (!available || block == null || block.getWorld() == null) {
-        return TickResult.FAILED;
-      }
-
-      if (!allowWater && !allowLava) {
-        return TickResult.SKIPPED;
-      }
-
-      try {
-        int chunkX = block.getX() >> 4;
-        int chunkZ = block.getZ() >> 4;
-        World world = block.getWorld();
-        if (!world.isChunkLoaded(chunkX, chunkZ)) {
-          return TickResult.SKIPPED;
-        }
-        if (!isChunkNeighborhoodReady(world, block.getX(), block.getZ())) {
-          return TickResult.SKIPPED;
-        }
-
-        Method getHandleMethod = resolveWorldHandleMethod(world.getClass(), serverLevelClass);
-        if (getHandleMethod == null) {
-          failureReason = "World handle accessor method was not found.";
-          return TickResult.FAILED;
-        }
-
-        Object worldHandle = getHandleMethod.invoke(world);
-        if (worldHandle == null) {
-          failureReason = "World handle resolution returned null.";
-          return TickResult.FAILED;
-        }
-
-        if (serverLevelClass != null && !serverLevelClass.isInstance(worldHandle)) {
-          failureReason = "World handle type did not match expected ServerLevel class.";
-          return TickResult.FAILED;
-        }
-
-        Object blockPos = blockPosConstructor.newInstance(block.getX(), block.getY(), block.getZ());
-        Object fluidState = getFluidStateMethod.invoke(worldHandle, blockPos);
-        if (fluidState == null) {
-          return TickResult.SKIPPED;
-        }
-
-        if (fluidStateClass != null && !fluidStateClass.isInstance(fluidState)) {
-          return TickResult.SKIPPED;
-        }
-
-        if (fluidStateIsEmptyMethod != null) {
-          Object emptyValue = fluidStateIsEmptyMethod.invoke(fluidState);
-          if (emptyValue instanceof Boolean && (Boolean) emptyValue) {
-            return TickResult.SKIPPED;
-          }
-        }
-
-        Material blockMaterial = block.getType();
-        if (blockMaterial == Material.WATER && !allowWater) {
-          return TickResult.SKIPPED;
-        }
-        if (blockMaterial == Material.LAVA && !allowLava) {
-          return TickResult.SKIPPED;
-        }
-
-        Object fluidType = null;
-        if (fluidStateGetTypeMethod != null) {
-          fluidType = fluidStateGetTypeMethod.invoke(fluidState);
-        }
-        if (fluidType == null && fluidTypeClass != null && fluidTypeClass.isInstance(fluidState)) {
-          fluidType = fluidState;
-        }
-
-        if (blockMaterial != Material.WATER && blockMaterial != Material.LAVA) {
-          FluidKind kind = resolveFluidKind(fluidType, blockMaterial);
-          if (kind == FluidKind.WATER && !allowWater) {
-            return TickResult.SKIPPED;
-          }
-          if (kind == FluidKind.LAVA && !allowLava) {
-            return TickResult.SKIPPED;
-          }
-        }
-
-        if (worldFluidTickMethod != null) {
-          Object primaryFluidArgument = selectPrimaryFluidArgument(worldFluidTickMethod, fluidState, fluidType);
-          if (primaryFluidArgument != null) {
-            worldFluidTickMethod.invoke(worldHandle, blockPos, primaryFluidArgument);
-            return TickResult.TICKED;
-          }
-        }
-
-        if (fluidTypeTickMethod != null) {
-          Object fluidTypeReceiver = selectReceiver(fluidTypeTickMethod.getDeclaringClass(), fluidType, fluidState);
-          if (fluidTypeReceiver != null) {
-            Object[] fluidTypeArguments = buildInvocationArguments(fluidTypeTickMethod, worldHandle, blockPos, fluidState, fluidType);
-            if (fluidTypeArguments != null) {
-              fluidTypeTickMethod.invoke(fluidTypeReceiver, fluidTypeArguments);
-              return TickResult.TICKED;
-            }
-          }
-        }
-
-        if (fluidStateTickMethod != null) {
-          Object fluidStateReceiver = selectReceiver(fluidStateTickMethod.getDeclaringClass(), fluidState, fluidType);
-          if (fluidStateReceiver != null) {
-            Object[] fluidStateArguments = buildInvocationArguments(fluidStateTickMethod, worldHandle, blockPos, fluidState, fluidType);
-            if (fluidStateArguments != null) {
-              fluidStateTickMethod.invoke(fluidStateReceiver, fluidStateArguments);
-              return TickResult.TICKED;
-            }
-          }
-        }
-
-        failureReason = "Native fluid bridge could not satisfy any tick method argument shape.";
-        return TickResult.FAILED;
-      } catch (Throwable throwable) {
-        failureReason = "Native fluid bridge runtime failure: " + briefThrowable(throwable);
-        return TickResult.FAILED;
-      }
     }
 
     private static FluidKind resolveFluidKind(Object fluidType, Material blockMaterial) {
@@ -1451,6 +1302,155 @@ public class TweakFastFluids extends ReactTweak implements Listener {
       }
 
       return null;
+    }
+
+    private VanillaFluidTickBridge toUnavailable(String reason) {
+      return new VanillaFluidTickBridge(
+          serverLevelClass,
+          blockPosClass,
+          fluidStateClass,
+          fluidTypeClass,
+          blockPosConstructor,
+          getFluidStateMethod,
+          fluidStateIsEmptyMethod,
+          fluidStateGetTypeMethod,
+          worldFluidTickMethod,
+          fluidTypeTickMethod,
+          fluidStateTickMethod,
+          resolutionSummary,
+          false,
+          reason
+      );
+    }
+
+    private boolean isAvailable() {
+      return available;
+    }
+
+    private String getFailureReason() {
+      return failureReason == null || failureReason.isBlank() ? "No additional details." : failureReason;
+    }
+
+    private String getResolutionSummary() {
+      return resolutionSummary == null || resolutionSummary.isBlank() ? "resolution=unresolved" : resolutionSummary;
+    }
+
+    private TickResult tickVanillaFluid(Block block, boolean allowWater, boolean allowLava) {
+      if (!available || block == null || block.getWorld() == null) {
+        return TickResult.FAILED;
+      }
+
+      if (!allowWater && !allowLava) {
+        return TickResult.SKIPPED;
+      }
+
+      try {
+        int chunkX = block.getX() >> 4;
+        int chunkZ = block.getZ() >> 4;
+        World world = block.getWorld();
+        if (!world.isChunkLoaded(chunkX, chunkZ)) {
+          return TickResult.SKIPPED;
+        }
+        if (!isChunkNeighborhoodReady(world, block.getX(), block.getZ())) {
+          return TickResult.SKIPPED;
+        }
+
+        Method getHandleMethod = resolveWorldHandleMethod(world.getClass(), serverLevelClass);
+        if (getHandleMethod == null) {
+          failureReason = "World handle accessor method was not found.";
+          return TickResult.FAILED;
+        }
+
+        Object worldHandle = getHandleMethod.invoke(world);
+        if (worldHandle == null) {
+          failureReason = "World handle resolution returned null.";
+          return TickResult.FAILED;
+        }
+
+        if (serverLevelClass != null && !serverLevelClass.isInstance(worldHandle)) {
+          failureReason = "World handle type did not match expected ServerLevel class.";
+          return TickResult.FAILED;
+        }
+
+        Object blockPos = blockPosConstructor.newInstance(block.getX(), block.getY(), block.getZ());
+        Object fluidState = getFluidStateMethod.invoke(worldHandle, blockPos);
+        if (fluidState == null) {
+          return TickResult.SKIPPED;
+        }
+
+        if (fluidStateClass != null && !fluidStateClass.isInstance(fluidState)) {
+          return TickResult.SKIPPED;
+        }
+
+        if (fluidStateIsEmptyMethod != null) {
+          Object emptyValue = fluidStateIsEmptyMethod.invoke(fluidState);
+          if (emptyValue instanceof Boolean && (Boolean) emptyValue) {
+            return TickResult.SKIPPED;
+          }
+        }
+
+        Material blockMaterial = block.getType();
+        if (blockMaterial == Material.WATER && !allowWater) {
+          return TickResult.SKIPPED;
+        }
+        if (blockMaterial == Material.LAVA && !allowLava) {
+          return TickResult.SKIPPED;
+        }
+
+        Object fluidType = null;
+        if (fluidStateGetTypeMethod != null) {
+          fluidType = fluidStateGetTypeMethod.invoke(fluidState);
+        }
+        if (fluidType == null && fluidTypeClass != null && fluidTypeClass.isInstance(fluidState)) {
+          fluidType = fluidState;
+        }
+
+        if (blockMaterial != Material.WATER && blockMaterial != Material.LAVA) {
+          FluidKind kind = resolveFluidKind(fluidType, blockMaterial);
+          if (kind == FluidKind.WATER && !allowWater) {
+            return TickResult.SKIPPED;
+          }
+          if (kind == FluidKind.LAVA && !allowLava) {
+            return TickResult.SKIPPED;
+          }
+        }
+
+        if (worldFluidTickMethod != null) {
+          Object primaryFluidArgument = selectPrimaryFluidArgument(worldFluidTickMethod, fluidState, fluidType);
+          if (primaryFluidArgument != null) {
+            worldFluidTickMethod.invoke(worldHandle, blockPos, primaryFluidArgument);
+            return TickResult.TICKED;
+          }
+        }
+
+        if (fluidTypeTickMethod != null) {
+          Object fluidTypeReceiver = selectReceiver(fluidTypeTickMethod.getDeclaringClass(), fluidType, fluidState);
+          if (fluidTypeReceiver != null) {
+            Object[] fluidTypeArguments = buildInvocationArguments(fluidTypeTickMethod, worldHandle, blockPos, fluidState, fluidType);
+            if (fluidTypeArguments != null) {
+              fluidTypeTickMethod.invoke(fluidTypeReceiver, fluidTypeArguments);
+              return TickResult.TICKED;
+            }
+          }
+        }
+
+        if (fluidStateTickMethod != null) {
+          Object fluidStateReceiver = selectReceiver(fluidStateTickMethod.getDeclaringClass(), fluidState, fluidType);
+          if (fluidStateReceiver != null) {
+            Object[] fluidStateArguments = buildInvocationArguments(fluidStateTickMethod, worldHandle, blockPos, fluidState, fluidType);
+            if (fluidStateArguments != null) {
+              fluidStateTickMethod.invoke(fluidStateReceiver, fluidStateArguments);
+              return TickResult.TICKED;
+            }
+          }
+        }
+
+        failureReason = "Native fluid bridge could not satisfy any tick method argument shape.";
+        return TickResult.FAILED;
+      } catch (Throwable throwable) {
+        failureReason = "Native fluid bridge runtime failure: " + briefThrowable(throwable);
+        return TickResult.FAILED;
+      }
     }
   }
 }

@@ -21,10 +21,10 @@ package art.arcane.react.core.controller;
 
 import art.arcane.react.React;
 import art.arcane.react.api.sampler.Sampler;
-import art.arcane.react.util.plugin.IController;
-import art.arcane.react.util.project.registry.Registry;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.common.scheduling.TickedObject;
+import art.arcane.react.util.plugin.IController;
+import art.arcane.react.util.project.registry.Registry;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.bukkit.event.Listener;
@@ -54,6 +54,9 @@ public class SampleController extends TickedObject implements IController {
   }
 
   public Sampler getSampler(String id) {
+    if (samplers == null) {
+      return null;
+    }
     return samplers.get(id);
   }
 
@@ -65,6 +68,10 @@ public class SampleController extends TickedObject implements IController {
   }
 
   public void postStart() {
+    if (samplers == null) {
+      return;
+    }
+
     samplers.all().forEach(this::startSamplerRuntime);
     samplers.all().forEach(((a) -> {
       if (a instanceof Listener l) {
@@ -77,14 +84,22 @@ public class SampleController extends TickedObject implements IController {
 
   @Override
   public void stop() {
-    samplers.all().forEach(((a) -> {
+    Registry<Sampler> localSamplers = samplers;
+    if (localSamplers == null) {
+      samplerStates.clear();
+      samplerLocks.clear();
+      return;
+    }
+
+    localSamplers.all().forEach(((a) -> {
       if (a instanceof Listener l) {
         React.instance.unregisterListener(l);
       }
     }));
-    samplers.all().forEach(this::stopSamplerRuntime);
+    localSamplers.all().forEach(this::stopSamplerRuntime);
     samplerStates.clear();
     samplerLocks.clear();
+    samplers = null;
   }
 
   public boolean canSample(Sampler sampler) {
