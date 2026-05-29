@@ -33,11 +33,13 @@ import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.common.scheduling.Ticker;
 import art.arcane.react.util.format.C;
 import art.arcane.react.util.plugin.IController;
+import art.arcane.react.core.bridge.NmsBridgeRegistry;
 import art.arcane.react.util.plugin.VolmitPlugin;
 import art.arcane.react.util.project.config.ConfigFileSupport;
 import art.arcane.react.util.project.config.ConfigMigrationManager;
 import art.arcane.react.util.project.registry.Registry;
 import art.arcane.react.util.project.world.EntityKiller;
+import art.arcane.volmlib.integration.ReloadAware;
 import art.arcane.volmlib.util.collection.KList;
 import art.arcane.volmlib.util.format.Form;
 import art.arcane.volmlib.util.io.JarScanner;
@@ -54,10 +56,12 @@ import java.io.File;
 import java.lang.annotation.Annotation;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 @Getter
-public class React extends VolmitPlugin {
+public class React extends VolmitPlugin implements ReloadAware {
+  private final AtomicBoolean alreadyDrained = new AtomicBoolean(false);
   private static final boolean SLIMJAR_DEBUG = Boolean.getBoolean("react.debug-slimjar");
   private static final boolean DISABLE_REMAPPER = Boolean.getBoolean("react.disable-remapper");
   public static BukkitAudiences audiences;
@@ -68,6 +72,7 @@ public class React extends VolmitPlugin {
   private List<Runnable> startupTasks;
   private List<Runnable> prejobs;
   private Registry<IController> controllerRegistry;
+  private NmsBridgeRegistry bridgeRegistry;
   private boolean ready;
 
   public React() {
@@ -204,6 +209,10 @@ public class React extends VolmitPlugin {
     return v;
   }
 
+  public static NmsBridgeRegistry bridgeRegistry() {
+    return instance.bridgeRegistry;
+  }
+
   public static <T extends IController> T controller(Class<T> c) {
     return instance.controllerRegistry.get(c);
   }
@@ -255,6 +264,7 @@ public class React extends VolmitPlugin {
       serverThread = Thread.currentThread();
     }
     super.onLoad();
+    getDataFolder().mkdirs();
   }
 
   public File jar() {
@@ -271,6 +281,14 @@ public class React extends VolmitPlugin {
     burst = new MultiBurst("React", Thread.MIN_PRIORITY);
     ticker = new Ticker();
     audiences = BukkitAudiences.create(this);
+    bridgeRegistry = new NmsBridgeRegistry();
+    bridgeRegistry.setMappingsLoader(new art.arcane.react.core.bridge.MappingsLoader());
+    if (ReactConfiguration.get().isUnsafeBytecode()) {
+      art.arcane.react.core.bridge.BytecodeAgent.install();
+      if (art.arcane.react.core.bridge.BytecodeAgent.isInstalled()) {
+        info("Bytecode agent attached.");
+      }
+    }
     controllerRegistry = new Registry<>(IController.class, "art.arcane.react.core.controller");
 
     for (Runnable i : startupTasks) {
@@ -300,6 +318,7 @@ public class React extends VolmitPlugin {
     }
 
     ready = true;
+    bridgeRegistry.warnUnavailable(msg -> getLogger().warning(msg));
 
     for (Runnable i : prejobs) {
       controller(JobController.class).queue(i);
@@ -319,7 +338,14 @@ public class React extends VolmitPlugin {
 
   @Override
   public void stop() {
+    if (!alreadyDrained.compareAndSet(false, true)) {
+      return;
+    }
     ready = false;
+    if (bridgeRegistry != null) {
+      bridgeRegistry.clear();
+      bridgeRegistry = null;
+    }
     if (ticker != null) {
       ticker.close();
     }
@@ -339,6 +365,12 @@ public class React extends VolmitPlugin {
     if (burst != null) {
       burst.close();
     }
+  }
+
+  @Override
+  public void onPreUnload(ReloadAware.PreUnloadReason reason) {
+    React.info("BileTools pre-unload hook fired (" + reason + "). Shutting down React controllers.");
+    stop();
   }
 
   @Override

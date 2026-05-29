@@ -1,0 +1,243 @@
+package art.arcane.react.content.tweak;
+
+import art.arcane.react.React;
+import art.arcane.react.api.tweak.ReactTweak;
+import art.arcane.react.content.feature.FeatureHopperContainerThroughputMap;
+import art.arcane.react.content.feature.FeatureHopperItemIndex;
+import art.arcane.react.core.NMS;
+import art.arcane.react.core.bridge.BridgeKind;
+import art.arcane.react.core.bridge.NmsBridgeDescriptor;
+import art.arcane.react.core.bridge.NmsBridgeHandle;
+import art.arcane.react.core.controller.HopperItemIndex;
+import art.arcane.react.core.controller.HopperPositionIndex;
+import art.arcane.react.util.common.scheduling.J;
+import art.arcane.react.util.project.config.ConfigDescription;
+import org.bukkit.Bukkit;
+import org.bukkit.World;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Item;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+
+@ConfigDescription("Pre-ticks hoppers using a spatial item index to short-circuit vanilla's per-tick AABB entity scan. Fails closed to vanilla if any required NMS bridge is unavailable.")
+public class TweakHopperIndex extends ReactTweak {
+    public static final String ID = "hopper-index";
+    public static final String BRIDGE_ADD_ITEM = "HopperBlockEntity.addItem";
+    public static final String BRIDGE_COOLDOWN_TIME = "HopperBlockEntity.cooldownTime";
+    public static final String BRIDGE_GET_BLOCK_ENTITY = "Level.getBlockEntity";
+    public static final String BRIDGE_BLOCK_POS_CTOR = "BlockPos.constructor";
+
+    private static final int HOPPER_COOLDOWN_TICKS = 8;
+    private static final double COLLECTION_HALF_EXTENT_H = 0.6;
+    private static final double COLLECTION_Y_MIN_OFFSET = 0.9;
+    private static final double COLLECTION_Y_MAX_OFFSET = 2.1;
+
+    private transient NmsBridgeHandle bridgeAddItem;
+    private transient NmsBridgeHandle bridgeCooldownTime;
+    private transient NmsBridgeHandle bridgeGetBlockEntity;
+    private transient NmsBridgeHandle bridgeBlockPosCtor;
+    private transient boolean bridgesAvailable;
+    private transient int tickTaskId;
+
+    public TweakHopperIndex() {
+        super(ID);
+    }
+
+    public static List<NmsBridgeDescriptor> hopperBridgeDescriptors() {
+        List<String> hopperClasses = List.of(
+            "net.minecraft.world.level.block.entity.HopperBlockEntity",
+            "net.minecraft.world.level.block.entity.TileEntityHopper");
+        List<String> levelClasses = List.of(
+            "net.minecraft.world.level.Level",
+            "net.minecraft.world.level.World");
+        List<String> blockPosClasses = List.of(
+            "net.minecraft.core.BlockPos",
+            "net.minecraft.core.BlockPosition");
+        return List.of(
+            new NmsBridgeDescriptor(
+                BRIDGE_ADD_ITEM, BridgeKind.STATIC_METHOD, hopperClasses, "addItem",
+                List.of(
+                    List.of("net.minecraft.world.Container", "net.minecraft.world.entity.item.ItemEntity"),
+                    List.of("net.minecraft.world.IInventory", "net.minecraft.world.entity.item.EntityItem")),
+                "boolean",
+                Optional.of("HopperBlockEntity.addItem")),
+            new NmsBridgeDescriptor(
+                BRIDGE_COOLDOWN_TIME, BridgeKind.FIELD, hopperClasses, "cooldownTime",
+                List.of(),
+                "int",
+                Optional.of("HopperBlockEntity.cooldownTime")),
+            new NmsBridgeDescriptor(
+                BRIDGE_GET_BLOCK_ENTITY, BridgeKind.METHOD, levelClasses, "getBlockEntity",
+                List.of(
+                    List.of("net.minecraft.core.BlockPos"),
+                    List.of("net.minecraft.core.BlockPosition")),
+                "net.minecraft.world.level.block.entity.BlockEntity",
+                Optional.of("Level.getBlockEntity")),
+            new NmsBridgeDescriptor(
+                BRIDGE_BLOCK_POS_CTOR, BridgeKind.CONSTRUCTOR, blockPosClasses, "<init>",
+                List.of(List.of("int", "int", "int")),
+                blockPosClasses.get(0),
+                Optional.empty())
+        );
+    }
+
+    @Override
+    public void onActivate() {
+        List<NmsBridgeDescriptor> descriptors = hopperBridgeDescriptors();
+        bridgeAddItem = React.bridgeRegistry().resolve(descriptors.get(0));
+        bridgeCooldownTime = React.bridgeRegistry().resolve(descriptors.get(1));
+        bridgeGetBlockEntity = React.bridgeRegistry().resolve(descriptors.get(2));
+        bridgeBlockPosCtor = React.bridgeRegistry().resolve(descriptors.get(3));
+        bridgesAvailable = checkBridgesAvailable();
+        if (!bridgesAvailable) {
+            logUnavailableBridge();
+            return;
+        }
+        tickTaskId = J.sr(this::tickAllWorlds, 1);
+    }
+
+    @Override
+    public void onDeactivate() {
+        if (tickTaskId != 0) {
+            J.csr(tickTaskId);
+            tickTaskId = 0;
+        }
+        bridgesAvailable = false;
+    }
+
+    @Override
+    public int getTickInterval() {
+        return -1;
+    }
+
+    @Override
+    public void onTick() {
+    }
+
+    private boolean checkBridgesAvailable() {
+        return bridgeAddItem.available()
+            && bridgeCooldownTime.available()
+            && bridgeGetBlockEntity.available()
+            && bridgeBlockPosCtor.available();
+    }
+
+    private void logUnavailableBridge() {
+        String failing = "";
+        if (!bridgeAddItem.available()) {
+            failing = BRIDGE_ADD_ITEM;
+        } else if (!bridgeCooldownTime.available()) {
+            failing = BRIDGE_COOLDOWN_TIME;
+        } else if (!bridgeGetBlockEntity.available()) {
+            failing = BRIDGE_GET_BLOCK_ENTITY;
+        } else if (!bridgeBlockPosCtor.available()) {
+            failing = BRIDGE_BLOCK_POS_CTOR;
+        }
+        React.warn("Hopper index fast-path disabled: NMS bridge unavailable (" + failing + ")");
+    }
+
+    private void tickAllWorlds() {
+        if (!bridgesAvailable) {
+            return;
+        }
+        FeatureHopperItemIndex indexFeature = React.feature(FeatureHopperItemIndex.class);
+        if (indexFeature == null) {
+            return;
+        }
+        HopperItemIndex itemIndex = indexFeature.getItemIndex();
+        HopperPositionIndex positionIndex = indexFeature.getPositionIndex();
+        if (itemIndex == null || positionIndex == null) {
+            return;
+        }
+        for (World world : Bukkit.getWorlds()) {
+            UUID worldId = world.getUID();
+            positionIndex.forEachHopperInWorld(worldId, packed -> {
+                int x = HopperPositionIndex.unpackX(packed);
+                int y = HopperPositionIndex.unpackY(packed);
+                int z = HopperPositionIndex.unpackZ(packed);
+                int cx = x >> 4;
+                int cz = z >> 4;
+                if (!itemIndex.hasItemsAbove(worldId, cx, cz)) {
+                    FeatureHopperContainerThroughputMap.suckInItemsInvocations.incrementAndGet();
+                    return;
+                }
+                if (!J.isFoliaThreading()) {
+                    tryConsumeItemsAboveHopper(world, worldId, x, y, z, itemIndex);
+                } else {
+                    J.runChunk(world, cx, cz, () -> tryConsumeItemsAboveHopper(world, worldId, x, y, z, itemIndex));
+                }
+            });
+        }
+    }
+
+    private void tryConsumeItemsAboveHopper(World world, UUID worldId, int x, int y, int z,
+            HopperItemIndex itemIndex) {
+        if (!world.isChunkLoaded(x >> 4, z >> 4)) {
+            FeatureHopperContainerThroughputMap.suckInItemsInvocations.incrementAndGet();
+            return;
+        }
+        try {
+            Object worldHandle = NMS.getWorldServer(world);
+            if (worldHandle == null) {
+                FeatureHopperContainerThroughputMap.suckInItemsInvocations.incrementAndGet();
+                return;
+            }
+            Object blockPos = bridgeBlockPosCtor.methodHandle().invokeWithArguments(x, y, z);
+            if (blockPos == null) {
+                FeatureHopperContainerThroughputMap.suckInItemsInvocations.incrementAndGet();
+                return;
+            }
+            Object blockEntity = bridgeGetBlockEntity.methodHandle().invokeWithArguments(worldHandle, blockPos);
+            if (blockEntity == null) {
+                FeatureHopperContainerThroughputMap.suckInItemsInvocations.incrementAndGet();
+                return;
+            }
+            Set<UUID> itemIds = itemIndex.itemsInChunk(worldId, x >> 4, z >> 4);
+            double centerX = x + 0.5;
+            double centerZ = z + 0.5;
+            boolean anyConsumed = false;
+            for (UUID itemId : itemIds) {
+                Entity entity = Bukkit.getEntity(itemId);
+                if (!(entity instanceof Item item) || !item.isValid() || item.isDead()) {
+                    continue;
+                }
+                org.bukkit.Location itemLoc = item.getLocation();
+                double ix = itemLoc.getX();
+                double iy = itemLoc.getY();
+                double iz = itemLoc.getZ();
+                if (Math.abs(ix - centerX) > COLLECTION_HALF_EXTENT_H
+                        || iy < y + COLLECTION_Y_MIN_OFFSET
+                        || iy > y + COLLECTION_Y_MAX_OFFSET
+                        || Math.abs(iz - centerZ) > COLLECTION_HALF_EXTENT_H) {
+                    continue;
+                }
+                Object nmsItemEntity = getNmsHandle(entity);
+                if (nmsItemEntity == null) {
+                    continue;
+                }
+                Boolean consumed = (Boolean) bridgeAddItem.methodHandle()
+                    .invokeWithArguments(blockEntity, nmsItemEntity);
+                if (Boolean.TRUE.equals(consumed)) {
+                    anyConsumed = true;
+                }
+            }
+            if (anyConsumed) {
+                bridgeCooldownTime.varHandle().set(blockEntity, HOPPER_COOLDOWN_TICKS);
+            } else {
+                FeatureHopperContainerThroughputMap.suckInItemsInvocations.incrementAndGet();
+            }
+        } catch (Throwable t) {
+            FeatureHopperContainerThroughputMap.suckInItemsInvocations.incrementAndGet();
+        }
+    }
+
+    private Object getNmsHandle(Entity entity) {
+        try {
+            return entity.getClass().getMethod("getHandle").invoke(entity);
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+}

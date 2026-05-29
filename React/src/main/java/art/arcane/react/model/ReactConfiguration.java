@@ -66,6 +66,9 @@ public class ReactConfiguration {
   @ConfigDoc(value = "Enables plugin-gated secret integration features.", impact = "Disabled by default. Enable to allow Iris/Adapt secret bundles when dependencies are present.")
   private boolean integrationSecretsEnabled = false;
 
+  @ConfigDoc(value = "Enables the optional ByteBuddy bytecode agent for advanced runtime instrumentation.", impact = "Disabled by default. Once enabled and the agent attaches, it cannot be detached without restarting the JVM. No transformations are registered in the current release.")
+  private boolean unsafeBytecode = false;
+
   @ConfigDoc(
       value = "Selects which Adapt ability ops metric React uses for displays and thresholds. Options: SUCCESSFUL_CHECKS, ALL_CHECKS.",
       impact = "SUCCESSFUL_CHECKS tracks only allowed checks. ALL_CHECKS is kept only for legacy config compatibility and is normalized to SUCCESSFUL_CHECKS at runtime."

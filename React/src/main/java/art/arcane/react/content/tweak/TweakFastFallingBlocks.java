@@ -81,7 +81,11 @@ public class TweakFastFallingBlocks extends ReactTweak implements Listener {
 
   public void landEffect(Location at, BlockData item) {
     at.getWorld().playSound(at, item.getSoundGroup().getPlaceSound(), 1f, 1f);
-    at.getWorld().spawnParticle(Particle.ITEM_CRACK, at.getBlock().getLocation().add(0.5, -0.5, 0.5), 24, 0.6, 0.6, 0.6, 0.15, new ItemStack(item.getMaterial(), 1));
+    if (item.getMaterial().isItem()) {
+      at.getWorld().spawnParticle(Particle.ITEM_CRACK, at.getBlock().getLocation().add(0.5, -0.5, 0.5), 24, 0.6, 0.6, 0.6, 0.15, new ItemStack(item.getMaterial(), 1));
+    } else {
+      at.getWorld().spawnParticle(Particle.BLOCK_CRACK, at.getBlock().getLocation().add(0.5, -0.5, 0.5), 24, 0.6, 0.6, 0.6, 0.15, item);
+    }
   }
 
   @EventHandler(ignoreCancelled = true, priority = org.bukkit.event.EventPriority.MONITOR)
@@ -145,7 +149,9 @@ public class TweakFastFallingBlocks extends ReactTweak implements Listener {
                 }
 
                 if (!bb.isEmpty() && bb.isPassable() && !B.isFluid(bb.getBlockData())) {
-                  bb.getWorld().dropItemNaturally(bb.getLocation(), new ItemStack(d.getMaterial(), 1 + bonus));
+                  if (d.getMaterial().isItem()) {
+                    bb.getWorld().dropItemNaturally(bb.getLocation(), new ItemStack(d.getMaterial(), 1 + bonus));
+                  }
                   break;
                 }
               }

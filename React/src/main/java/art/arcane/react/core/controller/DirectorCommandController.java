@@ -25,6 +25,7 @@ import art.arcane.react.util.cache.AtomicCache;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.director.DirectorContext;
 import art.arcane.react.util.director.DirectorContextHandler;
+import art.arcane.react.util.director.DirectorSystem;
 import art.arcane.react.util.format.C;
 import art.arcane.react.util.plugin.IController;
 import art.arcane.react.util.plugin.VolmitSender;
@@ -92,7 +93,7 @@ public class DirectorCommandController implements IController, CommandExecutor, 
         buildDirectorContexts(),
         this::dispatchDirector,
         this,
-        List.of()
+        DirectorSystem.handlers
     ));
   }
 
@@ -171,7 +172,7 @@ public class DirectorCommandController implements IController, CommandExecutor, 
       return true;
     }
 
-    executeCommand(sender, label, args);
+    executeCommand(sender, label, normalizeLegacyArgs(args));
     return true;
   }
 
@@ -232,6 +233,23 @@ public class DirectorCommandController implements IController, CommandExecutor, 
       React.warn("Director tab completion failed: " + e.getClass().getSimpleName() + " " + e.getMessage());
       return List.of();
     }
+  }
+
+  static String[] normalizeLegacyArgs(String[] args) {
+    if (args == null || args.length != 1) {
+      return args;
+    }
+
+    String root = args[0];
+    if (root == null) {
+      return args;
+    }
+
+    if (root.equalsIgnoreCase("environment") || root.equalsIgnoreCase("env")) {
+      return new String[]{"environment", "info"};
+    }
+
+    return args;
   }
 
   private void playFailureSound(CommandSender sender) {

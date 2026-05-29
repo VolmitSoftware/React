@@ -21,6 +21,8 @@ package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
 import art.arcane.react.api.feature.ReactFeature;
+import art.arcane.react.util.project.config.ConfigDescription;
+import art.arcane.react.util.project.config.ConfigDoc;
 import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -32,22 +34,24 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 
-@art.arcane.react.util.project.config.ConfigDescription("Configuration for Redstone Clock Governor feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
+@ConfigDescription("Configuration for Redstone Clock Governor feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureRedstoneClockGovernor extends ReactFeature implements Listener {
   public static final String ID = "redstone-clock-governor";
-  @art.arcane.react.util.project.config.ConfigDoc(value = "Main evaluation interval for redstone clock governor in milliseconds.", impact = "Lower values react faster but consume more CPU; higher values reduce overhead but react later.")
+
+  @ConfigDoc(value = "Main evaluation interval for redstone clock governor in milliseconds.", impact = "Lower values react faster but consume more CPU; higher values reduce overhead but react later.")
   private int tickIntervalMS = 2000;
-  @art.arcane.react.util.project.config.ConfigDoc(value = "Rolling enforcement window length used by redstone clock governor (milliseconds).", impact = "Longer windows smooth bursts but react slower; shorter windows react faster but are more sensitive.")
+  @ConfigDoc(value = "Rolling enforcement window length used by redstone clock governor in milliseconds.", impact = "Longer windows smooth bursts but react slower; shorter windows react faster but are more sensitive.")
   private int windowMS = 1000;
-  @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum transitions allowed per window in redstone clock governor.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
+  @ConfigDoc(value = "Maximum transitions allowed per window in redstone clock governor.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
   private int maxTransitionsPerWindow = 12;
-  @art.arcane.react.util.project.config.ConfigDoc(value = "Cool-off period after throttling decisions in redstone clock governor (milliseconds).", impact = "Higher values keep throttles active longer; lower values let activity recover sooner.")
+  @ConfigDoc(value = "Cool-off period after throttling decisions in redstone clock governor in milliseconds.", impact = "Higher values keep throttles active longer; lower values let activity recover sooner.")
   private int cooloffMS = 6000;
-  @art.arcane.react.util.project.config.ConfigDoc(value = "Bypass within player radius used by redstone clock governor (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
+  @ConfigDoc(value = "Bypass radius for redstone clock governor around players in blocks.", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
   private double bypassWithinPlayerRadius = 16;
-  @art.arcane.react.util.project.config.ConfigDoc(value = "Controls whether redstone clock governor applies only throttle without nearby players.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
+  @ConfigDoc(value = "When true, redstone clock governor only throttles clocks that have no nearby players.", impact = "Enable to protect player-near contraptions; disable to enforce strictly.")
   private boolean onlyThrottleWithoutNearbyPlayers = true;
-  private transient Map<BlockKey, ClockWindow> windows = new HashMap<>();
+
+  private transient Map<BlockKey, ClockWindow> windows;
 
   public FeatureRedstoneClockGovernor() {
     super(ID);
@@ -60,7 +64,10 @@ public class FeatureRedstoneClockGovernor extends ReactFeature implements Listen
 
   @Override
   public void onDeactivate() {
-    windows.clear();
+    if (windows != null) {
+      windows.clear();
+      windows = null;
+    }
   }
 
   @Override
@@ -70,6 +77,10 @@ public class FeatureRedstoneClockGovernor extends ReactFeature implements Listen
 
   @Override
   public void onTick() {
+    if (windows == null) {
+      return;
+    }
+
     long now = System.currentTimeMillis();
     long expiry = Math.max(2000L, (long) cooloffMS * 2L);
     Iterator<Map.Entry<BlockKey, ClockWindow>> iterator = windows.entrySet().iterator();
@@ -82,14 +93,14 @@ public class FeatureRedstoneClockGovernor extends ReactFeature implements Listen
 
   @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
   public void on(BlockRedstoneEvent event) {
-    if (event.getOldCurrent() == event.getNewCurrent()) {
+    if (windows == null || event.getOldCurrent() == event.getNewCurrent()) {
       return;
     }
 
     long now = System.currentTimeMillis();
     Block block = event.getBlock();
     BlockKey key = new BlockKey(block.getWorld().getUID(), block.getX(), block.getY(), block.getZ());
-    ClockWindow window = windows.computeIfAbsent(key, k -> new ClockWindow(now));
+    ClockWindow window = windows.computeIfAbsent(key, ignored -> new ClockWindow(now));
     window.update(windowMS, now);
     window.transitions++;
 
@@ -111,13 +122,9 @@ public class FeatureRedstoneClockGovernor extends ReactFeature implements Listen
   }
 
   private static final class ClockWindow {
-    @art.arcane.react.util.project.config.ConfigDoc(value = "Internal timestamp used by redstone clock governor to track timing windows and decay.", impact = "Primarily runtime state; changing this manually can distort cooldown or throttling behavior.")
     private long start;
-    @art.arcane.react.util.project.config.ConfigDoc(value = "Internal timestamp used by redstone clock governor to track timing windows and decay.", impact = "Primarily runtime state; changing this manually can distort cooldown or throttling behavior.")
     private long lastHit;
-    @art.arcane.react.util.project.config.ConfigDoc(value = "Internal timestamp used by redstone clock governor to track timing windows and decay.", impact = "Primarily runtime state; changing this manually can distort cooldown or throttling behavior.")
     private long throttledUntil;
-    @art.arcane.react.util.project.config.ConfigDoc(value = "Internal counter used by redstone clock governor while tracking burst activity.", impact = "Primarily runtime state; React updates this automatically during live evaluation.")
     private int transitions;
 
     private ClockWindow(long now) {
@@ -138,13 +145,9 @@ public class FeatureRedstoneClockGovernor extends ReactFeature implements Listen
   }
 
   private static final class BlockKey {
-    @art.arcane.react.util.project.config.ConfigDoc(value = "World identifier used by redstone clock governor internal tracking.", impact = "This is runtime identity data and should normally be left to automatic updates.")
     private final UUID world;
-    @art.arcane.react.util.project.config.ConfigDoc(value = "X-axis coordinate used by redstone clock governor internal tracking.", impact = "This is internal state data and should not normally be changed manually.")
     private final int x;
-    @art.arcane.react.util.project.config.ConfigDoc(value = "Y-axis coordinate used by redstone clock governor internal tracking.", impact = "This is internal state data and should not normally be changed manually.")
     private final int y;
-    @art.arcane.react.util.project.config.ConfigDoc(value = "Z-axis coordinate used by redstone clock governor internal tracking.", impact = "This is internal state data and should not normally be changed manually.")
     private final int z;
 
     private BlockKey(UUID world, int x, int y, int z) {

@@ -233,11 +233,7 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
     if (canMerge(a, into)) {
       setStackCount(into, getStackCount(into) + getStackCount(a));
       if (vacuumEffect) {
-        try {
-          NMS.sendPacket(a, 64, NMS.collectPacket(a.getEntityId(), into.getEntityId(), 1));
-        } catch (Throwable e) {
-          e.printStackTrace();
-        }
+        NMS.sendCollectPacket(a, 64, a.getEntityId(), into.getEntityId(), 1);
       }
       a.remove();
       ((SamplerEntities) React.sampler(SamplerEntities.ID)).getEntities().decrementAndGet();

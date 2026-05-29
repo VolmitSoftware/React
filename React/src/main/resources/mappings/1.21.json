@@ -1,0 +1,61 @@
+{
+  "mcVersion": "1.21",
+  "members": {
+    "HopperBlockEntity.cooldownTime": {
+      "classNames": [
+        "net.minecraft.world.level.block.entity.HopperBlockEntity",
+        "net.minecraft.world.level.block.entity.TileEntityHopper"
+      ],
+      "memberName": "cooldownTime",
+      "kind": "FIELD"
+    },
+    "HopperBlockEntity.addItem": {
+      "classNames": [
+        "net.minecraft.world.level.block.entity.HopperBlockEntity",
+        "net.minecraft.world.level.block.entity.TileEntityHopper"
+      ],
+      "memberName": "addItem",
+      "kind": "STATIC_METHOD"
+    },
+    "HopperBlockEntity.suckInItems": {
+      "classNames": [
+        "net.minecraft.world.level.block.entity.HopperBlockEntity",
+        "net.minecraft.world.level.block.entity.TileEntityHopper"
+      ],
+      "memberName": "suckInItems",
+      "kind": "STATIC_METHOD"
+    },
+    "Level.getBlockEntity": {
+      "classNames": [
+        "net.minecraft.world.level.Level",
+        "net.minecraft.world.level.World"
+      ],
+      "memberName": "getBlockEntity",
+      "kind": "METHOD"
+    },
+    "ServerLevel.getFluidState": {
+      "classNames": [
+        "net.minecraft.server.level.ServerLevel",
+        "net.minecraft.world.level.WorldServer"
+      ],
+      "memberName": "getFluidState",
+      "kind": "METHOD"
+    },
+    "FluidState.isEmpty": {
+      "classNames": [
+        "net.minecraft.world.level.material.FluidState",
+        "net.minecraft.world.level.material.Fluid"
+      ],
+      "memberName": "isEmpty",
+      "kind": "METHOD"
+    },
+    "FluidState.getType": {
+      "classNames": [
+        "net.minecraft.world.level.material.FluidState",
+        "net.minecraft.world.level.material.Fluid"
+      ],
+      "memberName": "getType",
+      "kind": "METHOD"
+    }
+  }
+}

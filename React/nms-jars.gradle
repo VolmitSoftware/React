@@ -1,0 +1,160 @@
+import groovy.json.JsonSlurper
+
+// Edit this list to control which MC versions get downloaded.
+// Add versions here, then run: ./gradlew downloadNmsJars
+// To inspect what versions are available: ./gradlew listNmsJars
+def nmsVersions = ['1.19.4', '1.20.1', '1.20.4', '1.20.6', '1.21.1', '1.21.4', '1.21.5', '1.21.6', '1.21.7', '1.21.8', '1.21.9', '1.21.10', '1.21.11']
+
+// ---------------------------------------------------------------------------
+// HTTP helpers
+// ---------------------------------------------------------------------------
+
+def fetchText = { String rawUrl ->
+    try {
+        def conn = new URL(rawUrl).openConnection()
+        conn.connectTimeout = 15_000
+        conn.readTimeout = 30_000
+        conn.setRequestProperty('User-Agent', 'React-NMS-Tooling/1.0')
+        if (conn.responseCode == 200) {
+            return conn.inputStream.getText('UTF-8')
+        }
+    } catch (Exception e) {
+        logger.warn("HTTP GET failed: ${rawUrl} — ${e.message}")
+    }
+    return null
+}
+
+def fetchJson = { String rawUrl ->
+    def text = fetchText(rawUrl)
+    text ? new JsonSlurper().parseText(text) : null
+}
+
+// Returns [build: <int>, jarName: <String>] for the latest build of a PaperMC project,
+// or null if the version is not yet released.
+def paperLatestBuild = { String proj, String version ->
+    def versionMeta = fetchJson("https://api.papermc.io/v2/projects/${proj}/versions/${version}")
+    if (!versionMeta?.builds) return null
+    def latestBuild = (versionMeta.builds as List).last()
+    def buildMeta = fetchJson("https://api.papermc.io/v2/projects/${proj}/versions/${version}/builds/${latestBuild}")
+    def jarName = buildMeta?.downloads?.application?.name
+    jarName ? [build: latestBuild, jarName: jarName] : null
+}
+
+def downloadBinary = { String rawUrl, File dest ->
+    try {
+        def conn = new URL(rawUrl).openConnection()
+        conn.connectTimeout = 15_000
+        conn.readTimeout = 300_000
+        conn.setRequestProperty('User-Agent', 'React-NMS-Tooling/1.0')
+        if (conn.responseCode == 200) {
+            dest.parentFile.mkdirs()
+            dest.withOutputStream { out -> out << conn.inputStream }
+            return true
+        }
+    } catch (Exception e) {
+        logger.warn("Download failed: ${rawUrl} — ${e.message}")
+    }
+    return false
+}
+
+// ---------------------------------------------------------------------------
+// Tasks
+// ---------------------------------------------------------------------------
+
+tasks.register('listNmsJars') {
+    group = 'nms'
+    description = 'Lists recent NMS server jar versions available from Paper, Folia, and Purpur APIs.'
+    outputs.upToDateWhen { false }
+    doLast {
+        def nmsJarsDir = layout.buildDirectory.dir('nms-jars').get().asFile
+
+        ['paper', 'folia'].each { proj ->
+            println "\n=== ${proj.capitalize()} (api.papermc.io) ==="
+            def info = fetchJson("https://api.papermc.io/v2/projects/${proj}")
+            if (info?.versions) {
+                println((info.versions as List).reverse().take(20).join(', '))
+            } else {
+                println "  (could not reach API)"
+            }
+        }
+
+        println "\n=== Purpur (api.purpurmc.org) ==="
+        def purpur = fetchJson("https://api.purpurmc.org/v2/purpur")
+        if (purpur?.versions) {
+            println((purpur.versions as List).reverse().take(20).join(', '))
+        } else {
+            println "  (could not reach API)"
+        }
+
+        println """
+=== Spigot ===
+  Not auto-downloadable — Spigot requires BuildTools.
+  See: https://www.spigotmc.org/wiki/buildtools/
+  After building, drop spigot-<version>.jar into:
+    ${nmsJarsDir.absolutePath}
+
+Configured versions : ${nmsVersions.join(', ')}
+Download with       : ./gradlew downloadNmsJars
+"""
+    }
+}
+
+tasks.register('downloadNmsJars') {
+    group = 'nms'
+    description = 'Downloads NMS server jars for the versions listed in nmsVersions into build/nms-jars/.'
+    outputs.upToDateWhen { false }
+    doLast {
+        def nmsJarsDir = layout.buildDirectory.dir('nms-jars').get().asFile
+        nmsJarsDir.mkdirs()
+        def downloaded = []
+        def skipped = []
+        def notFound = []
+
+        nmsVersions.each { version ->
+            ['paper', 'folia'].each { proj ->
+                def dest = new File(nmsJarsDir, "${proj}-${version}.jar")
+                if (dest.exists()) {
+                    skipped << dest.name
+                    return
+                }
+                print "  ${proj} ${version}: fetching build info... "
+                def build = paperLatestBuild(proj, version)
+                if (!build) {
+                    println "not released yet — skipping"
+                    notFound << "${proj}-${version}"
+                    return
+                }
+                def dlUrl = "https://api.papermc.io/v2/projects/${proj}/versions/${version}/builds/${build.build}/downloads/${build.jarName}"
+                print "downloading ${build.jarName}... "
+                if (downloadBinary(dlUrl, dest)) {
+                    println "OK (${String.format('%.1f', dest.length() / 1_048_576.0)} MB)"
+                    downloaded << dest.name
+                } else {
+                    println "FAILED"
+                    notFound << "${proj}-${version}"
+                    if (dest.exists()) dest.delete()
+                }
+            }
+
+            def purpurDest = new File(nmsJarsDir, "purpur-${version}.jar")
+            if (purpurDest.exists()) {
+                skipped << purpurDest.name
+            } else {
+                print "  purpur ${version}: downloading... "
+                if (downloadBinary("https://api.purpurmc.org/v2/purpur/${version}/latest/download", purpurDest)) {
+                    println "OK (${String.format('%.1f', purpurDest.length() / 1_048_576.0)} MB)"
+                    downloaded << purpurDest.name
+                } else {
+                    println "not released yet — skipping"
+                    notFound << "purpur-${version}"
+                    if (purpurDest.exists()) purpurDest.delete()
+                }
+            }
+        }
+
+        println "\nJars directory : ${nmsJarsDir.absolutePath}"
+        if (downloaded) println "Downloaded     : ${downloaded.join(', ')}"
+        if (skipped)    println "Skipped        : ${skipped.join(', ')} (already present)"
+        if (notFound)   println "Not released   : ${notFound.join(', ')}"
+    }
+}

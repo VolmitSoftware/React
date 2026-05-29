@@ -46,7 +46,9 @@ public class CommandReact implements DirectorExecutor {
   private CommandEnvironment environment;
   private CommandBenchmark benchmark;
   private CommandDebug debug;
+  private CommandDev dev;
   private CommandIntegration integration;
+  private CommandBridge bridge;
 
 
   @Director(
@@ -114,6 +116,7 @@ public class CommandReact implements DirectorExecutor {
 
   @Director(
       name = "version",
+      aliases = {"v"},
       description = "Get React version")
   public void version() {
     sender().sendMessage("React " + React.instance.getDescription().getVersion());

@@ -3,20 +3,15 @@ description: React Remote App
 publish_to: 'none'
 version: 1.0.0+1
 environment:
-  sdk: '>=2.19.6 <3.0.0'
+  sdk: ^3.11.0
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.5
-  toxic: ^1.0.3
-  get: ^4.6.5
-  intl: ^0.18.1
-  hive_flutter: ^1.1.0
-  hive: ^2.2.3
-  tryhard: ^1.0.1
+  cupertino_icons: ^1.0.9
+  get: ^4.7.3
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^2.0.1
+  flutter_lints: ^6.0.0
 flutter:
   uses-material-design: true

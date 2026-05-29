@@ -36,7 +36,7 @@ public class CommandBenchmark implements DirectorExecutor {
 
   @Director(
       name = "cpu-benchmark",
-      aliases = {"cpu"},
+      aliases = {"cpu", "processor"},
       description = "Benchmark the CPU"
   )
   public void cpuBenchmark() {
@@ -56,7 +56,7 @@ public class CommandBenchmark implements DirectorExecutor {
 
   @Director(
       name = "memory-benchmark",
-      aliases = {"mem"},
+      aliases = {"mem", "memory", "ram"},
       description = "Benchmark the Memory"
   )
   public void memoryBenchmark() {

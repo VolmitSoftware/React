@@ -23,9 +23,12 @@ import art.arcane.react.content.sampler.SamplerHopperUpdates;
 import art.arcane.react.util.data.TinyColor;
 import org.bukkit.Chunk;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Hopper Container Throughput Map feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureHopperContainerThroughputMap extends FeatureChunkHeatmapBase {
   public static final String ID = "hopper-container-throughput-map";
+  public static final AtomicLong suckInItemsInvocations = new AtomicLong();
 
   public FeatureHopperContainerThroughputMap() {
     super(ID);

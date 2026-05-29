@@ -101,7 +101,7 @@ public class FeatureController extends TickedObject implements IController {
   }
 
   public void activateFeature(Feature feature) {
-    if (!React.instance.isEnabled() || !React.instance.isReady()) {
+    if (feature == null || !React.instance.isEnabled()) {
       return;
     }
 
