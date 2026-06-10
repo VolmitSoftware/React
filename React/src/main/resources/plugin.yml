@@ -16,9 +16,3 @@ permissions:
     default: op
     children:
       react.use: true
-libraries:
-  - net.kyori:adventure-text-minimessage:4.24.0
-  - net.kyori:adventure-platform-bukkit:4.4.1
-  - com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru:1.4.2
-  - com.github.ben-manes.caffeine:caffeine:3.0.6
-  - com.github.oshi:oshi-core:5.8.5
