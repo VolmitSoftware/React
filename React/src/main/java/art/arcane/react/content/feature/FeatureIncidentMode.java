@@ -52,6 +52,8 @@ public class FeatureIncidentMode extends ReactFeature implements Listener {
   private double exitTickMS = 46;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Minimum incident duration ms required by incident mode.", impact = "Higher values require stronger signals before action; lower values make this condition easier to satisfy.")
   private int minimumIncidentDurationMS = 8000;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Grace period after activation during which incident mode will not engage (milliseconds).", impact = "Higher values ignore startup and reload tick spikes longer; lower values let incident mode engage sooner after boot.")
+  private int startupGraceMS = 60000;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Rolling window length for rate checks (milliseconds).", impact = "Longer windows smooth bursts but react slower; shorter windows react faster but are more sensitive.")
   private int rateWindowMS = 1000;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum spawner spawns allowed per window in incident mode.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
@@ -72,6 +74,7 @@ public class FeatureIncidentMode extends ReactFeature implements Listener {
   private boolean verboseTransitions = true;
   private transient volatile boolean incident;
   private transient volatile long incidentSince;
+  private transient volatile long activatedAtMS;
   private transient long windowStartMS;
   private transient int spawnerSpawns;
   private transient int naturalSpawns;
@@ -88,6 +91,7 @@ public class FeatureIncidentMode extends ReactFeature implements Listener {
     long now = System.currentTimeMillis();
     incident = false;
     incidentSince = 0L;
+    activatedAtMS = now;
     windowStartMS = now;
     spawnerSpawns = 0;
     naturalSpawns = 0;
@@ -127,6 +131,10 @@ public class FeatureIncidentMode extends ReactFeature implements Listener {
     long now = System.currentTimeMillis();
 
     if (!incident) {
+      if (now - activatedAtMS < Math.max(0, startupGraceMS)) {
+        return;
+      }
+
       double incidentScore = sample(SamplerIncidentScore.ID);
       if (incidentScore >= enterIncidentScore || tickMS >= enterTickMS) {
         incident = true;

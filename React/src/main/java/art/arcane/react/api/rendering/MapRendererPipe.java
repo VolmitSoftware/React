@@ -85,14 +85,31 @@ public class MapRendererPipe extends MapRenderer {
         return;
       }
 
-      ReactRenderContext.push(ReactRenderContext.builder()
+      ReactRenderer resolved = resolveRenderer();
+      MegamapGrid.MegamapTile tile = controller == null ? null : controller.megamapTileFor(map);
+      ReactRenderContext.ReactRenderContextBuilder context = ReactRenderContext.builder()
           .player(player)
           .view(map)
-          .canvas(canvas)
-          .width(128)
-          .height(128)
-          .build());
-      resolveRenderer().render(map, canvas, player);
+          .canvas(canvas);
+      if (tile == null) {
+        context.width(ReactRenderer.CANVAS_SIZE).height(ReactRenderer.CANVAS_SIZE);
+      } else if (resolved.rendersNativeMegamap()) {
+        context.width(tile.gridWidth() * ReactRenderer.CANVAS_SIZE)
+            .height(tile.gridHeight() * ReactRenderer.CANVAS_SIZE)
+            .offsetX(tile.tileX() * ReactRenderer.CANVAS_SIZE)
+            .offsetY(tile.tileY() * ReactRenderer.CANVAS_SIZE)
+            .textScale(Math.max(1, Math.min(tile.gridWidth(), tile.gridHeight())));
+      } else {
+        context.width(ReactRenderer.CANVAS_SIZE)
+            .height(ReactRenderer.CANVAS_SIZE)
+            .offsetX(tile.tileX() * ReactRenderer.CANVAS_SIZE)
+            .offsetY(tile.tileY() * ReactRenderer.CANVAS_SIZE)
+            .scaleX(tile.gridWidth())
+            .scaleY(tile.gridHeight());
+      }
+
+      ReactRenderContext.push(context.build());
+      resolved.render();
     } catch (Throwable e) {
       e.printStackTrace();
     }

@@ -43,6 +43,11 @@ public interface Sampler extends Registered, ReactRenderer {
     return React.controller(ObserverController.class).sample(c, this).orElse(0D);
   }
 
+  @Override
+  default boolean rendersNativeMegamap() {
+    return true;
+  }
+
   default void render() {
     String normalizedId = normalizeSamplerId(getId());
     TinyColor[] palette = paletteFor(normalizedId);
@@ -78,18 +83,27 @@ public interface Sampler extends Registered, ReactRenderer {
       range = minSpan;
     }
 
-    int chartTop = 16;
-    int chartBottom = 110;
+    int w = width();
+    int h = height();
+    int s = uiScale();
+    int headerH = 14 * s;
+    int footerH = 12 * s;
+    int footerY = h - footerH;
+    int chartTop = headerH + (2 * s);
+    int chartBottom = h - (18 * s);
     int topRgb = backgroundTop.toRGB();
     int bottomRgb = backgroundBottom.toRGB();
-    for (int y = 14; y < 116; y++) {
-      double n = (y - 14) / 101D;
-      fillRgb(0, y, 128, 1, MapColors.lerpRgb(n, topRgb, bottomRgb));
+    int bgSpan = Math.max(1, footerY - headerH - 1);
+    int bgY0 = Math.max(headerH, clipY0());
+    int bgY1 = Math.min(footerY, clipY1());
+    for (int y = bgY0; y < bgY1; y++) {
+      double n = (y - headerH) / (double) bgSpan;
+      fillRgb(0, y, w, 1, MapColors.lerpRgb(n, topRgb, bottomRgb));
     }
 
     int gridRgb = MapColors.lerpRgb(0.16D, bottomRgb, line.toRGB());
-    for (int y = chartTop + 23; y < chartBottom; y += 24) {
-      for (int x = 0; x < 128; x += 4) {
+    for (int y = chartTop + (23 * s); y < chartBottom; y += 24 * s) {
+      for (int x = 0; x < w; x += 4) {
         setRgb(x, y, gridRgb);
       }
     }
@@ -97,18 +111,13 @@ public interface Sampler extends Registered, ReactRenderer {
     int fillLowRgb = fillLow.toRGB();
     int fillHighRgb = fillHigh.toRGB();
     int glowRgb = MapColors.lerpRgb(0.45D, bottomRgb, line.toRGB());
-    int chartSpan = chartBottom - chartTop;
+    int chartSpan = Math.max(1, chartBottom - chartTop);
+    int chartX0 = Math.max(0, clipX0() - 1);
+    int chartX1 = Math.min(w, clipX1() + 1);
     int prevX = -1;
     int prevY = -1;
-    for (int x = 0; x < 128; x++) {
-      double normalized = (g.get(127 - x) - pmin) / range;
-      if (!Double.isFinite(normalized)) {
-        normalized = 0.5D;
-      }
-      normalized = M.clip(normalized, 0D, 1D);
-      int y = (int) M.lerp(chartBottom, chartTop, normalized);
-      y = Math.max(chartTop, Math.min(chartBottom, y));
-
+    for (int x = chartX0; x < chartX1; x++) {
+      int y = chartYFor(g, x, w, pmin, range, chartTop, chartBottom);
       for (int fill = chartBottom; fill > y; fill--) {
         double depth = (chartBottom - (double) fill) / chartSpan;
         setRgb(x, fill, MapColors.lerpRgb(depth, fillLowRgb, fillHighRgb));
@@ -123,15 +132,8 @@ public interface Sampler extends Registered, ReactRenderer {
 
     prevX = -1;
     prevY = -1;
-    for (int x = 0; x < 128; x++) {
-      double normalized = (g.get(127 - x) - pmin) / range;
-      if (!Double.isFinite(normalized)) {
-        normalized = 0.5D;
-      }
-      normalized = M.clip(normalized, 0D, 1D);
-      int y = (int) M.lerp(chartBottom, chartTop, normalized);
-      y = Math.max(chartTop, Math.min(chartBottom, y));
-
+    for (int x = chartX0; x < chartX1; x++) {
+      int y = chartYFor(g, x, w, pmin, range, chartTop, chartBottom);
       if (prevX >= 0) {
         line(prevX, prevY, x, y, line);
       }
@@ -139,30 +141,41 @@ public interface Sampler extends Registered, ReactRenderer {
       prevY = y;
     }
 
-    if (prevX >= 0 && prevY >= 0) {
-      set(prevX, prevY, marker);
-      set(Math.max(0, prevX - 1), prevY, marker);
-      set(prevX, Math.max(chartTop, prevY - 1), marker);
-      set(prevX, Math.min(chartBottom, prevY + 1), marker);
-    }
+    int markerX = w - 1;
+    int markerY = chartYFor(g, markerX, w, pmin, range, chartTop, chartBottom);
+    set(markerX, markerY, marker);
+    set(Math.max(0, markerX - 1), markerY, marker);
+    set(markerX, Math.max(chartTop, markerY - 1), marker);
+    set(markerX, Math.min(chartBottom, markerY + 1), marker);
 
     String nowLabel = format(now);
     dashHeader(getName(), nowLabel, line, marker);
 
-    set(0, 116, 128, 12, FOOTER_BAND);
-    set(3, 119, 4, 4, marker);
-    text(10, 118, nowLabel, TEXT_BRIGHT);
+    set(0, footerY, w, footerH, FOOTER_BAND);
+    set(3 * s, footerY + (3 * s), 4 * s, 4 * s, marker);
+    text(10 * s, footerY + (2 * s), nowLabel, TEXT_BRIGHT);
     String lowLabel = "L " + formattedValue(min);
     String highLabel = "H " + formattedValue(max);
-    int highX = 125 - textWidth(highLabel);
-    int lowX = highX - 6 - textWidth(lowLabel);
-    int nowEnd = 10 + textWidth(nowLabel);
-    if (lowX > nowEnd + 4) {
-      text(lowX, 118, lowLabel, TEXT_DIM);
-      text(highX, 118, highLabel, TEXT_DIM);
-    } else if (highX > nowEnd + 4) {
-      text(highX, 118, highLabel, TEXT_DIM);
+    int highX = w - (3 * s) - textWidth(highLabel);
+    int lowX = highX - (6 * s) - textWidth(lowLabel);
+    int nowEnd = (10 * s) + textWidth(nowLabel);
+    if (lowX > nowEnd + (4 * s)) {
+      text(lowX, footerY + (2 * s), lowLabel, TEXT_DIM);
+      text(highX, footerY + (2 * s), highLabel, TEXT_DIM);
+    } else if (highX > nowEnd + (4 * s)) {
+      text(highX, footerY + (2 * s), highLabel, TEXT_DIM);
     }
+  }
+
+  private int chartYFor(Graph g, int x, int w, double pmin, double range, int chartTop, int chartBottom) {
+    int sampleIndex = 127 - ((x * 128) / Math.max(1, w));
+    double normalized = (g.get(sampleIndex) - pmin) / range;
+    if (!Double.isFinite(normalized)) {
+      normalized = 0.5D;
+    }
+    normalized = M.clip(normalized, 0D, 1D);
+    int y = (int) M.lerp(chartBottom, chartTop, normalized);
+    return Math.max(chartTop, Math.min(chartBottom, y));
   }
 
   private String normalizeSamplerId(String id) {

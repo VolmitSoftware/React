@@ -22,6 +22,8 @@ package art.arcane.react.api.rendering;
 import art.arcane.react.util.data.TinyColor;
 import org.bukkit.entity.Player;
 import org.bukkit.map.MapCanvas;
+import org.bukkit.map.MapFont;
+import org.bukkit.map.MapPalette;
 import org.bukkit.map.MapView;
 import org.bukkit.map.MinecraftFont;
 
@@ -32,36 +34,77 @@ public interface ReactRenderer {
   TinyColor TEXT_DIM = new TinyColor(128, 140, 152);
   TinyColor HEADER_BAND = new TinyColor(14, 18, 24);
   TinyColor FOOTER_BAND = new TinyColor(10, 13, 18);
-
-  default void render(MapView map, MapCanvas canvas, Player player) {
-    ReactRenderContext.push(ReactRenderContext.builder()
-        .view(map).canvas(canvas).player(player)
-        .width(128).height(128)
-        .build());
-    render();
-  }
+  int CANVAS_SIZE = 128;
 
   String getId();
 
   void render();
 
+  default boolean rendersNativeMegamap() {
+    return false;
+  }
+
+  default int uiScale() {
+    return Math.max(1, ReactRenderContext.of().getTextScale());
+  }
+
   default int textHeight() {
-    return MinecraftFont.Font.getHeight();
+    return MinecraftFont.Font.getHeight() * uiScale();
   }
 
   default int textWidth(String w) {
-    return MinecraftFont.Font.getWidth(w);
+    return MinecraftFont.Font.getWidth(w) * uiScale();
   }
 
   default void text(int x, int y, String text) {
-    canvas().drawText(x, y, MinecraftFont.Font, text);
+    drawGlyphs(x, y, text, defaultTextByte());
   }
 
   default void text(int x, int y, String text, TinyColor color) {
-    canvas().drawText(x, y, MinecraftFont.Font, MapColors.textPrefix(color) + text);
+    drawGlyphs(x, y, text, MapColors.byteFor(color.toRGB()));
   }
 
   @SuppressWarnings("deprecation")
+  private byte defaultTextByte() {
+    return MapPalette.DARK_GRAY;
+  }
+
+  private void drawGlyphs(int x, int y, String text, byte paletteByte) {
+    if (text == null || text.isEmpty()) {
+      return;
+    }
+
+    ReactRenderContext context = ReactRenderContext.of();
+    int scale = Math.max(1, context.getTextScale());
+    int fontHeight = MinecraftFont.Font.getHeight();
+    int cursorX = x;
+    int cursorY = y;
+    for (int i = 0; i < text.length(); i++) {
+      char ch = text.charAt(i);
+      if (ch == '\n') {
+        cursorX = x;
+        cursorY += (fontHeight + 1) * scale;
+        continue;
+      }
+
+      MapFont.CharacterSprite sprite = MinecraftFont.Font.getChar(ch);
+      if (sprite == null) {
+        continue;
+      }
+
+      int glyphWidth = sprite.getWidth();
+      for (int row = 0; row < fontHeight; row++) {
+        for (int col = 0; col < glyphWidth; col++) {
+          if (sprite.get(row, col)) {
+            blitRect(context, cursorX + (col * scale), cursorY + (row * scale), scale, scale, paletteByte);
+          }
+        }
+      }
+
+      cursorX += (glyphWidth + 1) * scale;
+    }
+  }
+
   default void line(int x1, int y1, int x2, int y2, TinyColor color) {
     int dx = Math.abs(x2 - x1);
     int dy = Math.abs(y2 - y1);
@@ -72,18 +115,20 @@ public interface ReactRenderer {
     int x = x1;
     int y = y1;
     byte paletteByte = MapColors.byteFor(color.toRGB());
-    MapCanvas canvas = canvas();
+    ReactRenderContext context = ReactRenderContext.of();
+    int width = context.getWidth();
+    int height = context.getHeight();
 
     for (int i = 0; i <= steps; i++) {
-      if (x < 0 || y < 0 || x >= width() || y >= height()) {
+      if (x < 0 || y < 0 || x >= width || y >= height) {
         break;
       }
 
-      if (i > 256) {
+      if (i > 4096) {
         break;
       }
 
-      canvas.setPixel(x, y, paletteByte);
+      blitRect(context, x, y, 1, 1, paletteByte);
       int e2 = 2 * err;
 
       if (e2 > -dy) {
@@ -102,9 +147,8 @@ public interface ReactRenderer {
     }
   }
 
-  @SuppressWarnings("deprecation")
   default void setRgb(int x, int y, int rgb) {
-    canvas().setPixel(x, y, MapColors.byteFor(rgb));
+    blitRect(ReactRenderContext.of(), x, y, 1, 1, MapColors.byteFor(rgb));
   }
 
   default void set(int x, int y, int rgb) {
@@ -155,16 +199,49 @@ public interface ReactRenderer {
     return ReactRenderContext.of().getHeight();
   }
 
+  default int clipX0() {
+    ReactRenderContext context = ReactRenderContext.of();
+    return Math.max(0, context.getOffsetX() / Math.max(1, context.getScaleX()));
+  }
+
+  default int clipX1() {
+    ReactRenderContext context = ReactRenderContext.of();
+    return Math.min(context.getWidth(), Math.ceilDiv(context.getOffsetX() + CANVAS_SIZE, Math.max(1, context.getScaleX())));
+  }
+
+  default int clipY0() {
+    ReactRenderContext context = ReactRenderContext.of();
+    return Math.max(0, context.getOffsetY() / Math.max(1, context.getScaleY()));
+  }
+
+  default int clipY1() {
+    ReactRenderContext context = ReactRenderContext.of();
+    return Math.min(context.getHeight(), Math.ceilDiv(context.getOffsetY() + CANVAS_SIZE, Math.max(1, context.getScaleY())));
+  }
+
   default void set(int x, int y, int w, int h, TinyColor c) {
     fillRgb(x, y, w, h, c.toRGB());
   }
 
-  @SuppressWarnings("deprecation")
   default void fillRgb(int x, int y, int w, int h, int rgb) {
-    byte paletteByte = MapColors.byteFor(rgb);
-    MapCanvas canvas = canvas();
-    for (int i = x; i < x + w; i++) {
-      for (int j = y; j < y + h; j++) {
+    blitRect(ReactRenderContext.of(), x, y, w, h, MapColors.byteFor(rgb));
+  }
+
+  @SuppressWarnings("deprecation")
+  private void blitRect(ReactRenderContext context, int x, int y, int w, int h, byte paletteByte) {
+    int scaleX = context.getScaleX();
+    int scaleY = context.getScaleY();
+    int x0 = Math.max(0, (x * scaleX) - context.getOffsetX());
+    int y0 = Math.max(0, (y * scaleY) - context.getOffsetY());
+    int x1 = Math.min(CANVAS_SIZE, ((x + w) * scaleX) - context.getOffsetX());
+    int y1 = Math.min(CANVAS_SIZE, ((y + h) * scaleY) - context.getOffsetY());
+    if (x0 >= x1 || y0 >= y1) {
+      return;
+    }
+
+    MapCanvas canvas = context.getCanvas();
+    for (int i = x0; i < x1; i++) {
+      for (int j = y0; j < y1; j++) {
         canvas.setPixel(i, j, paletteByte);
       }
     }
@@ -180,24 +257,25 @@ public interface ReactRenderer {
 
   default void dashHeader(String title, String value, TinyColor accent, TinyColor valueColor) {
     int w = width();
-    set(0, 0, w, 13, HEADER_BAND);
-    set(0, 0, 2, 13, accent);
+    int s = uiScale();
+    set(0, 0, w, 13 * s, HEADER_BAND);
+    set(0, 0, 2 * s, 13 * s, accent);
 
-    int titleLimit = w - 8;
+    int titleLimit = w - (8 * s);
     if (value != null && !value.isBlank()) {
-      int valueX = w - 3 - textWidth(value);
-      text(valueX, 3, value, valueColor == null ? accent : valueColor);
-      titleLimit = valueX - 9;
+      int valueX = w - (3 * s) - textWidth(value);
+      text(valueX, 3 * s, value, valueColor == null ? accent : valueColor);
+      titleLimit = valueX - (9 * s);
     }
 
     if (title != null && !title.isBlank()) {
       String fitted = fitText(title, titleLimit);
       if (!fitted.isBlank()) {
-        text(5, 3, fitted, TEXT_BRIGHT);
+        text(5 * s, 3 * s, fitted, TEXT_BRIGHT);
       }
     }
 
-    set(0, 13, w, 1, accent);
+    set(0, 13 * s, w, s, accent);
   }
 
   default void dashHeader(String title, String value, TinyColor accent) {

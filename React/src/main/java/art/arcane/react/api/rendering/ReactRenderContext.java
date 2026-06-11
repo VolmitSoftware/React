@@ -27,20 +27,30 @@ import org.bukkit.entity.Player;
 import org.bukkit.map.MapCanvas;
 import org.bukkit.map.MapView;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
 public class ReactRenderContext {
-  private static Map<Long, ReactRenderContext> contexts = new HashMap<>();
+  private static Map<Long, ReactRenderContext> contexts = new ConcurrentHashMap<>();
   private Player player;
   private MapView view;
   private MapCanvas canvas;
   private int width;
   private int height;
+  @Builder.Default
+  private int offsetX = 0;
+  @Builder.Default
+  private int offsetY = 0;
+  @Builder.Default
+  private int scaleX = 1;
+  @Builder.Default
+  private int scaleY = 1;
+  @Builder.Default
+  private int textScale = 1;
 
   public static void push(ReactRenderContext context) {
     contexts.put(Thread.currentThread().getId(), context);

@@ -19,7 +19,6 @@
 
 package art.arcane.react.api.rendering;
 
-import art.arcane.react.util.data.TinyColor;
 import org.bukkit.map.MapPalette;
 
 import java.awt.Color;
@@ -29,7 +28,6 @@ public final class MapColors {
   private static final int CACHE_SIZE = 4096;
   private static final long PRESENT = 1L << 40;
   private static final AtomicLongArray CACHE = new AtomicLongArray(CACHE_SIZE);
-  private static final String[] TEXT_PREFIXES = new String[256];
 
   private MapColors() {
   }
@@ -46,18 +44,6 @@ public final class MapColors {
     byte matched = MapPalette.matchColor(new Color(key));
     CACHE.set(slot, PRESENT | (((long) key) << 8) | (matched & 0xFFL));
     return matched;
-  }
-
-  public static String textPrefix(TinyColor color) {
-    byte paletteByte = byteFor(color.toRGB());
-    int index = paletteByte & 0xFF;
-    String prefix = TEXT_PREFIXES[index];
-    if (prefix == null) {
-      prefix = "§" + paletteByte + ";";
-      TEXT_PREFIXES[index] = prefix;
-    }
-
-    return prefix;
   }
 
   public static int lerpRgb(double normalized, int lowRgb, int highRgb) {

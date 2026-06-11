@@ -30,46 +30,55 @@ public class RendererUnknown implements ReactRenderer {
   }
 
   @Override
+  public boolean rendersNativeMegamap() {
+    return true;
+  }
+
+  @Override
   public void render() {
-    for (int y = 0; y < height(); y++) {
-      double n = y / (double) Math.max(1, height() - 1);
+    int h = height();
+    int s = uiScale();
+    int bgY0 = Math.max(0, clipY0());
+    int bgY1 = Math.min(h, clipY1());
+    for (int y = bgY0; y < bgY1; y++) {
+      double n = y / (double) Math.max(1, h - 1);
       TinyColor row = gradient(n, new TinyColor(12, 16, 20), new TinyColor(18, 26, 34));
       set(0, y, width(), 1, row);
     }
 
     dashHeader("React Map", null, new TinyColor(226, 102, 88));
-    text(4, 16, "Renderer unavailable", TEXT_DIM);
+    text(4 * s, 16 * s, "Renderer unavailable", TEXT_DIM);
 
-    int cx = 26;
-    int cy = 64;
-    drawWarningGlyph(cx, cy);
+    int cx = 26 * s;
+    int cy = 64 * s;
+    drawWarningGlyph(cx, cy, s);
 
-    text(46, 48, "This map was", TEXT_BRIGHT);
-    text(46, 58, "bound to a renderer", TEXT_BRIGHT);
-    text(46, 68, "that is missing", TEXT_BRIGHT);
-    text(46, 90, "Use /re map", TEXT_DIM);
-    text(46, 100, "to reselect.", TEXT_DIM);
+    text(46 * s, 48 * s, "This map was", TEXT_BRIGHT);
+    text(46 * s, 58 * s, "bound to a renderer", TEXT_BRIGHT);
+    text(46 * s, 68 * s, "that is missing", TEXT_BRIGHT);
+    text(46 * s, 90 * s, "Use /re map", TEXT_DIM);
+    text(46 * s, 100 * s, "to reselect.", TEXT_DIM);
   }
 
-  private void drawWarningGlyph(int cx, int cy) {
+  private void drawWarningGlyph(int cx, int cy, int s) {
     TinyColor border = new TinyColor(238, 180, 80);
     TinyColor fill = new TinyColor(74, 52, 26);
 
     for (int y = -15; y <= 15; y++) {
       int halfWidth = Math.max(0, 15 - Math.abs(y));
       for (int x = -halfWidth; x <= halfWidth; x++) {
-        int px = cx + x;
-        int py = cy + y;
+        int px = cx + (x * s);
+        int py = cy + (y * s);
         if (Math.abs(x) == halfWidth || y == -15 || y == 15) {
-          set(px, py, border);
+          set(px, py, s, s, border);
         } else {
-          set(px, py, fill);
+          set(px, py, s, s, fill);
         }
       }
     }
 
-    set(cx, cy - 6, 1, 9, new TinyColor(255, 222, 120));
-    set(cx, cy + 7, 1, 1, new TinyColor(255, 222, 120));
+    set(cx, cy - (6 * s), s, 9 * s, new TinyColor(255, 222, 120));
+    set(cx, cy + (7 * s), s, s, new TinyColor(255, 222, 120));
   }
 
   private TinyColor gradient(double normalized, TinyColor low, TinyColor high) {

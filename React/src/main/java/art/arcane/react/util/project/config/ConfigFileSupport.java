@@ -12,14 +12,28 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
 
 public final class ConfigFileSupport {
   private static final Gson PRETTY_JSON = new GsonBuilder().setPrettyPrinting().create();
   private static final long MAX_CONFIG_BYTES_DEFAULT = 2L * 1024L * 1024L;
   private static final long MAX_CONFIG_BYTES_COMPONENT = 256L * 1024L;
   private static final AtomicInteger CREATED_MISSING_CONFIGS = new AtomicInteger();
+  private static volatile BiConsumer<File, String> selfWriteListener;
 
   private ConfigFileSupport() {
+  }
+
+  public static void setSelfWriteListener(BiConsumer<File, String> listener) {
+    selfWriteListener = listener;
+  }
+
+  private static void writeConfig(File file, String content) throws IOException {
+    IO.writeAll(file, content);
+    BiConsumer<File, String> listener = selfWriteListener;
+    if (listener != null) {
+      listener.accept(file, content);
+    }
   }
 
   public static <T> T load(
@@ -48,13 +62,13 @@ public final class ConfigFileSupport {
           String canonical = serialize(loaded, canonicalFile, sourceTag);
           if (!normalize(canonical).equals(normalize(raw))) {
             ConfigRewriteReporter.reportRewrite(canonicalFile, sourceTag, raw, canonical);
-            IO.writeAll(canonicalFile, canonical);
+            writeConfig(canonicalFile, canonical);
           }
         } else if (shouldBackfillCanonicalComments(sourceTag, raw)) {
           String canonical = serialize(loaded, canonicalFile, sourceTag);
           if (!normalize(canonical).equals(normalize(raw))) {
             ConfigRewriteReporter.reportRewrite(canonicalFile, sourceTag, raw, canonical);
-            IO.writeAll(canonicalFile, canonical);
+            writeConfig(canonicalFile, canonical);
           }
         }
 
@@ -63,7 +77,7 @@ public final class ConfigFileSupport {
       } catch (Throwable e) {
         if (overwriteOnReadFailure) {
           ConfigRewriteReporter.reportFallbackRewrite(canonicalFile, sourceTag, reason("invalid config", e));
-          IO.writeAll(canonicalFile, serialize(fallback, canonicalFile, sourceTag));
+          writeConfig(canonicalFile, serialize(fallback, canonicalFile, sourceTag));
           return fallback;
         }
 
@@ -82,14 +96,14 @@ public final class ConfigFileSupport {
           throw new IOException("Config parser returned null.");
         }
 
-        IO.writeAll(canonicalFile, serialize(loaded, canonicalFile, sourceTag));
+        writeConfig(canonicalFile, serialize(loaded, canonicalFile, sourceTag));
         React.info("Migrated legacy config [" + legacyPath(legacyFile) + "] -> [" + legacyPath(canonicalFile) + "].");
         deleteLegacyFileIfMigrated(canonicalFile, legacyFile, sourceTag);
         return loaded;
       } catch (Throwable e) {
         if (overwriteOnReadFailure) {
           ConfigRewriteReporter.reportFallbackRewrite(canonicalFile, sourceTag, reason("invalid legacy config", e));
-          IO.writeAll(canonicalFile, serialize(fallback, canonicalFile, sourceTag));
+          writeConfig(canonicalFile, serialize(fallback, canonicalFile, sourceTag));
           return fallback;
         }
 
@@ -97,7 +111,7 @@ public final class ConfigFileSupport {
       }
     }
 
-    IO.writeAll(canonicalFile, serialize(fallback, canonicalFile, sourceTag));
+    writeConfig(canonicalFile, serialize(fallback, canonicalFile, sourceTag));
     recordMissingConfigCreated();
     return fallback;
   }

@@ -86,10 +86,12 @@ public class HotloadController extends TickedObject implements IController {
     configToml = React.instance.getDataFile("config.toml");
     configLegacyJson = React.instance.getDataFile("config.json");
     reconfigureWatcher();
+    ConfigFileSupport.setSelfWriteListener(hotloadEngine::noteSelfWrite);
   }
 
   @Override
   public void stop() {
+    ConfigFileSupport.setSelfWriteListener(null);
     hotloadEngine.clear();
     lastSlowTickPollSummary = "poll=stopped";
   }

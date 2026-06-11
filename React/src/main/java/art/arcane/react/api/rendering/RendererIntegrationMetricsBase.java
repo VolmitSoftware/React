@@ -29,45 +29,54 @@ import java.util.List;
 
 abstract class RendererIntegrationMetricsBase implements ReactRenderer {
   @Override
+  public boolean rendersNativeMegamap() {
+    return true;
+  }
+
+  @Override
   public void render() {
+    int w = width();
+    int h = height();
+    int s = uiScale();
     clear(backgroundColor());
     dashHeader(title(), null, accentColor());
 
     IntegrationController controller = React.controller(IntegrationController.class);
     if (controller == null || controller.getRemoteSamplerBridge() == null) {
-      text(4, 18, "Status: OFFLINE", TEXT_BRIGHT);
-      text(4, 30, "Bridge unavailable", TEXT_DIM);
+      text(4 * s, 18 * s, "Status: OFFLINE", TEXT_BRIGHT);
+      text(4 * s, 30 * s, "Bridge unavailable", TEXT_DIM);
       return;
     }
 
     IntegrationController.IntegrationStatus status = controller.statusFor(pluginId());
     String health = status == null ? "MISSING" : status.health().name();
-    set(2, 15, 124, 9, healthColor(health));
-    text(4, 16, "Status: " + health, TEXT_BRIGHT);
+    set(2 * s, 15 * s, w - (4 * s), 9 * s, healthColor(health));
+    text(4 * s, 16 * s, "Status: " + health, TEXT_BRIGHT);
 
-    int y = 28;
+    int y = 28 * s;
+    int cutoffY = h - (12 * s);
     long newestSampleMs = 0L;
     for (MetricLine metric : metricLines()) {
       IntegrationMetricSample sample = controller.getRemoteSamplerBridge().getSample(pluginId(), metric.key());
       newestSampleMs = Math.max(newestSampleMs, sample == null ? 0L : sample.sampledAtMs());
-      drawMetricRow(metric, sample, y);
-      y += 14;
-      if (y > 116) {
+      drawMetricRow(metric, sample, y, w, s);
+      y += 14 * s;
+      if (y > cutoffY) {
         return;
       }
     }
 
     if (status != null && status.message() != null && !status.message().isBlank()) {
-      text(4, y, trim("Msg: " + status.message(), 24), TEXT_DIM);
-      y += 12;
-      if (y > 116) {
+      text(4 * s, y, fitText("Msg: " + status.message(), w - (8 * s)), TEXT_DIM);
+      y += 12 * s;
+      if (y > cutoffY) {
         return;
       }
     }
 
     if (newestSampleMs > 0L) {
       double ageSeconds = Math.max(0D, (System.currentTimeMillis() - newestSampleMs) / 1000D);
-      text(4, y, "Age: " + Form.f(ageSeconds, 1) + "s", TEXT_DIM);
+      text(4 * s, y, "Age: " + Form.f(ageSeconds, 1) + "s", TEXT_DIM);
     }
   }
 
@@ -98,26 +107,27 @@ abstract class RendererIntegrationMetricsBase implements ReactRenderer {
     return sample.valueOr(0D) * metric.scale();
   }
 
-  private void drawMetricRow(MetricLine metric, IntegrationMetricSample sample, int y) {
+  private void drawMetricRow(MetricLine metric, IntegrationMetricSample sample, int y, int w, int s) {
     String line = metric.label() + ": " + formatSample(metric, sample);
-    text(4, y, trim(line, 24), TEXT_BRIGHT);
+    text(4 * s, y, fitText(line, w - (10 * s)), TEXT_BRIGHT);
 
+    int barWidth = w - (10 * s);
     if (sample == null || !sample.available()) {
-      set(4, y + 8, 118, 3, new TinyColor(42, 42, 42));
+      set(4 * s, y + (8 * s), barWidth, 3 * s, new TinyColor(42, 42, 42));
       return;
     }
 
     double value = Math.abs(scaledValue(metric, sample));
     double normalized = 1D - (1D / (1D + value));
-    int width = (int) Math.round(118D * Math.max(0D, Math.min(1D, normalized)));
+    int fillWidth = (int) Math.round(barWidth * Math.max(0D, Math.min(1D, normalized)));
 
-    set(4, y + 8, 118, 3, new TinyColor(22, 28, 34));
-    if (width <= 0) {
+    set(4 * s, y + (8 * s), barWidth, 3 * s, new TinyColor(22, 28, 34));
+    if (fillWidth <= 0) {
       return;
     }
 
     TinyColor color = gradient(normalized, new TinyColor(58, 170, 214), new TinyColor(255, 110, 58));
-    set(4, y + 8, width, 3, color);
+    set(4 * s, y + (8 * s), fillWidth, 3 * s, color);
   }
 
   private TinyColor healthColor(String health) {
@@ -136,19 +146,6 @@ abstract class RendererIntegrationMetricsBase implements ReactRenderer {
 
   private TinyColor gradient(double normalized, TinyColor low, TinyColor high) {
     return new TinyColor(gradientRgb(normalized, low, high));
-  }
-
-  private String trim(String text, int maxChars) {
-    if (text == null || text.isBlank()) {
-      return "";
-    }
-
-    int max = Math.max(4, maxChars);
-    if (text.length() <= max) {
-      return text;
-    }
-
-    return text.substring(0, max - 3) + "...";
   }
 
   protected record MetricLine(String key, String label, int decimals,

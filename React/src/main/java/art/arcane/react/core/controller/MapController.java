@@ -35,6 +35,7 @@ import art.arcane.volmlib.util.io.JarScanner;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.bukkit.*;
+import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Player;
@@ -107,6 +108,9 @@ public class MapController extends TickedObject implements IController, Listener
   private long frameMapRedrawIntervalMs = 300L;
   @ConfigDoc(value = "Interval between full item-stack revalidations of tracked frame maps in milliseconds.", impact = "Lower values detect swapped frame items sooner; higher values avoid repeated item metadata reads every maintenance tick.")
   private long frameMapValidateIntervalMs = 2_000L;
+  @ConfigDoc(value = "Combines adjacent item-frame React maps with the same renderer into one large tiled megamap display.", impact = "Disable to render every frame map as an independent 128x128 dashboard.")
+  private boolean megamapEnabled = true;
+  private transient volatile Map<Integer, MegamapGrid.MegamapTile> megamapTiles;
   private transient Map<String, ReactRenderer> renderers;
   private transient Map<FramePushKey, Long> frameMapPushMsByViewerKey;
   private transient Map<Integer, Long> frameMapLastSeenByMapId;
@@ -448,6 +452,7 @@ public class MapController extends TickedObject implements IController, Listener
     frameMapPushMsByViewerKey = new ConcurrentHashMap<>();
     frameMapLastSeenByMapId = new ConcurrentHashMap<>();
     activeFrameMaps = new ConcurrentHashMap<>();
+    megamapTiles = Map.of();
     maintenanceTickQueued = new AtomicBoolean(false);
     itemFrameSetItemSilentMethod = null;
     itemFrameSetItemSilentMethodResolved = false;
@@ -506,6 +511,7 @@ public class MapController extends TickedObject implements IController, Listener
     if (activeFrameMaps != null) {
       activeFrameMaps.clear();
     }
+    megamapTiles = Map.of();
   }
 
   @Override
@@ -524,7 +530,12 @@ public class MapController extends TickedObject implements IController, Listener
     syncIntegrationRenderers();
 
     for (Player i : Bukkit.getOnlinePlayers()) {
-      join(i);
+      if (!J.isFoliaThreading()) {
+        join(i);
+        continue;
+      }
+
+      J.runEntity(i, () -> join(i));
     }
 
     refreshLoadedItemFrames();
@@ -542,6 +553,7 @@ public class MapController extends TickedObject implements IController, Listener
         repairOneOnlinePlayerInventory();
         pushTrackedFrameMaps(viewerSnapshot);
         repairOneLoadedChunkItemFrames(viewerSnapshot);
+        rebuildMegamapTiles();
       } finally {
         if (maintenanceTickQueued != null) {
           maintenanceTickQueued.set(false);
@@ -826,11 +838,36 @@ public class MapController extends TickedObject implements IController, Listener
       return;
     }
 
-    for (Entity entity : chunk.getEntities()) {
-      if (entity instanceof ItemFrame frame) {
-        refreshItemFrame(frame, forceRendererUpdate, viewerSnapshot);
+    Runnable work = () -> {
+      for (Entity entity : chunk.getEntities()) {
+        if (entity instanceof ItemFrame frame) {
+          refreshItemFrame(frame, forceRendererUpdate, viewerSnapshot);
+        }
       }
+    };
+
+    if (!J.isFoliaThreading()) {
+      work.run();
+      return;
     }
+
+    World world = chunk.getWorld();
+    Location anchor = new Location(world, (chunk.getX() << 4) + 8.0D, 64.0D, (chunk.getZ() << 4) + 8.0D);
+    if (J.isOwnedByCurrentRegion(anchor)) {
+      work.run();
+      return;
+    }
+
+    J.runChunk(world, chunk.getX(), chunk.getZ(), work);
+  }
+
+  private void runFrameRegion(Entity anchor, Runnable work) {
+    if (!J.isFoliaThreading() || J.isOwnedByCurrentRegion(anchor)) {
+      work.run();
+      return;
+    }
+
+    J.runEntity(anchor, work);
   }
 
   private void refreshItemFrame(ItemFrame frame, boolean forceRendererUpdate, Supplier<FrameMapViewerSnapshot> viewerSnapshot) {
@@ -841,6 +878,10 @@ public class MapController extends TickedObject implements IController, Listener
     ItemStack item = frame.getItem();
     if (!isReactMap(item)) {
       return;
+    }
+
+    if (megamapEnabled && frame.getRotation() != Rotation.NONE) {
+      frame.setRotation(Rotation.NONE);
     }
 
     ItemStack updated = item.clone();
@@ -878,7 +919,7 @@ public class MapController extends TickedObject implements IController, Listener
       frameMapLastSeenByMapId.put(mapId, now);
     }
 
-    activeFrameMaps.compute(frameId, (id, existing) -> {
+    ActiveFrameMap tracked = activeFrameMaps.compute(frameId, (id, existing) -> {
       if (existing == null || !existing.worldId.equals(worldId)) {
         return new ActiveFrameMap(frameId, worldId, mapId, location, now);
       }
@@ -888,6 +929,63 @@ public class MapController extends TickedObject implements IController, Listener
       existing.lastSeenMs = now;
       return existing;
     });
+    captureFrameGridState(tracked, frame, view);
+  }
+
+  private void captureFrameGridState(ActiveFrameMap tracked, ItemFrame frame, MapView view) {
+    if (tracked == null || frame == null || tracked.location == null) {
+      return;
+    }
+
+    tracked.facing = frame.getFacing();
+    tracked.rotationAligned = frame.getRotation() == Rotation.NONE;
+    tracked.blockX = tracked.location.getBlockX();
+    tracked.blockY = tracked.location.getBlockY();
+    tracked.blockZ = tracked.location.getBlockZ();
+    tracked.rendererId = rendererIdFromView(view);
+  }
+
+  private void rebuildMegamapTiles() {
+    if (!megamapEnabled || activeFrameMaps == null || activeFrameMaps.isEmpty()) {
+      if (megamapTiles != null && !megamapTiles.isEmpty()) {
+        megamapTiles = Map.of();
+      }
+      return;
+    }
+
+    List<MegamapGrid.FrameCell> cells = new ArrayList<>(activeFrameMaps.size());
+    for (ActiveFrameMap tracked : activeFrameMaps.values()) {
+      if (tracked == null || tracked.facing == null || tracked.rendererId == null) {
+        continue;
+      }
+
+      cells.add(new MegamapGrid.FrameCell(
+          tracked.mapId,
+          tracked.worldId,
+          tracked.facing,
+          tracked.blockX,
+          tracked.blockY,
+          tracked.blockZ,
+          tracked.rendererId,
+          tracked.rotationAligned
+      ));
+    }
+
+    megamapTiles = MegamapGrid.solve(cells);
+  }
+
+  public MegamapGrid.MegamapTile megamapTileFor(MapView view) {
+    if (!megamapEnabled) {
+      return null;
+    }
+
+    Map<Integer, MegamapGrid.MegamapTile> tiles = megamapTiles;
+    if (tiles == null || tiles.isEmpty()) {
+      return null;
+    }
+
+    Integer mapId = mapIdOf(view);
+    return mapId == null ? null : tiles.get(mapId);
   }
 
   private void pushTrackedFrameMaps(Supplier<FrameMapViewerSnapshot> viewerSnapshot) {
@@ -896,20 +994,17 @@ public class MapController extends TickedObject implements IController, Listener
       return;
     }
 
-    List<UUID> stale = new ArrayList<>();
-    long now = System.currentTimeMillis();
-
     for (ActiveFrameMap tracked : activeFrameMaps.values()) {
       if (tracked == null || tracked.worldId == null) {
         if (tracked != null) {
-          stale.add(tracked.frameId);
+          activeFrameMaps.remove(tracked.frameId);
         }
         continue;
       }
 
       World world = Bukkit.getWorld(tracked.worldId);
       if (world == null) {
-        stale.add(tracked.frameId);
+        activeFrameMaps.remove(tracked.frameId);
         continue;
       }
 
@@ -923,60 +1018,68 @@ public class MapController extends TickedObject implements IController, Listener
         entity = null;
       }
 
-      if (!(entity instanceof ItemFrame frame)
-          || !frame.isValid()
-          || frame.getWorld() == null
-          || !tracked.worldId.equals(frame.getWorld().getUID())) {
-        stale.add(tracked.frameId);
+      if (entity == null) {
+        activeFrameMaps.remove(tracked.frameId);
         continue;
       }
 
-      // Reading the frame item clones the stack and its meta; only revalidate on a
-      // cadence and push through the cached view between validations.
-      if (tracked.view != null && now - tracked.lastValidatedMs < Math.max(0L, frameMapValidateIntervalMs)) {
-        tracked.lastSeenMs = now;
-        if (frameMapLastSeenByMapId != null) {
-          frameMapLastSeenByMapId.put(tracked.mapId, now);
-        }
-        pushMapToNearbyPlayers(frame, tracked.view, viewerSnapshot);
-        continue;
-      }
-
-      ItemStack frameItem = frame.getItem();
-      if (!isReactMap(frameItem)) {
-        stale.add(tracked.frameId);
-        continue;
-      }
-
-      MapMeta meta = (MapMeta) frameItem.getItemMeta();
-      if (meta == null || meta.getMapView() == null) {
-        stale.add(tracked.frameId);
-        continue;
-      }
-
-      MapView view = meta.getMapView();
-      Integer mapId = mapIdOf(view);
-      if (mapId == null) {
-        stale.add(tracked.frameId);
-        continue;
-      }
-
-      tracked.mapId = mapId;
-      tracked.location = frame.getLocation();
-      tracked.lastSeenMs = now;
-      tracked.lastValidatedMs = now;
-      tracked.view = view;
-      if (frameMapLastSeenByMapId != null) {
-        frameMapLastSeenByMapId.put(mapId, now);
-      }
-      pushMapToNearbyPlayers(frame, view, viewerSnapshot);
-    }
-
-    for (UUID frameId : stale) {
-      activeFrameMaps.remove(frameId);
+      Entity resolved = entity;
+      runFrameRegion(resolved, () -> validateAndPushTrackedFrame(tracked, resolved, viewerSnapshot));
     }
 
     pruneFramePushState();
+  }
+
+  private void validateAndPushTrackedFrame(ActiveFrameMap tracked, Entity entity, Supplier<FrameMapViewerSnapshot> viewerSnapshot) {
+    long now = System.currentTimeMillis();
+    if (!(entity instanceof ItemFrame frame)
+        || !frame.isValid()
+        || frame.getWorld() == null
+        || !tracked.worldId.equals(frame.getWorld().getUID())) {
+      activeFrameMaps.remove(tracked.frameId);
+      return;
+    }
+
+    // Reading the frame item clones the stack and its meta; only revalidate on a
+    // cadence and push through the cached view between validations.
+    if (tracked.view != null && now - tracked.lastValidatedMs < Math.max(0L, frameMapValidateIntervalMs)) {
+      tracked.lastSeenMs = now;
+      if (frameMapLastSeenByMapId != null) {
+        frameMapLastSeenByMapId.put(tracked.mapId, now);
+      }
+      pushMapToNearbyPlayers(frame, tracked.view, viewerSnapshot);
+      return;
+    }
+
+    ItemStack frameItem = frame.getItem();
+    if (!isReactMap(frameItem)) {
+      activeFrameMaps.remove(tracked.frameId);
+      return;
+    }
+
+    MapMeta meta = (MapMeta) frameItem.getItemMeta();
+    if (meta == null || meta.getMapView() == null) {
+      activeFrameMaps.remove(tracked.frameId);
+      return;
+    }
+
+    MapView view = meta.getMapView();
+    Integer mapId = mapIdOf(view);
+    if (mapId == null) {
+      activeFrameMaps.remove(tracked.frameId);
+      return;
+    }
+
+    tracked.mapId = mapId;
+    tracked.location = frame.getLocation();
+    tracked.lastSeenMs = now;
+    tracked.lastValidatedMs = now;
+    tracked.view = view;
+    captureFrameGridState(tracked, frame, view);
+    if (frameMapLastSeenByMapId != null) {
+      frameMapLastSeenByMapId.put(mapId, now);
+    }
+    pushMapToNearbyPlayers(frame, view, viewerSnapshot);
   }
 
   private void pruneFramePushState() {
@@ -1081,6 +1184,13 @@ public class MapController extends TickedObject implements IController, Listener
       return;
     }
 
+    // On regionized servers the global viewer snapshot would read player state across
+    // region threads; serve viewers region-locally from the frame's owning thread instead.
+    if (J.isFoliaThreading()) {
+      pushMapToNearbyPlayersRegionLocal(frame, view, mapId);
+      return;
+    }
+
     FrameMapViewerSnapshot activeViewerSnapshot = viewerSnapshot.get();
     if (activeViewerSnapshot == null || activeViewerSnapshot.viewersByWorldChunk.isEmpty()) {
       return;
@@ -1154,6 +1264,73 @@ public class MapController extends TickedObject implements IController, Listener
             + (ex.getMessage() == null ? "" : " - " + ex.getMessage()));
       }
     }
+  }
+
+  private void pushMapToNearbyPlayersRegionLocal(ItemFrame frame, MapView view, int mapId) {
+    Location source = frame.getLocation();
+    double radius = Math.max(1D, frameMapPushRadiusBlocks);
+    double radiusSq = radius * radius;
+    long now = System.currentTimeMillis();
+    long activeInterval = effectiveFrameMapPushIntervalMs();
+    long idleInterval = effectiveFrameMapIdlePushIntervalMs();
+    double lookDotThreshold = effectiveFrameMapLookDotThreshold();
+    for (Entity nearby : frame.getWorld().getNearbyEntities(source, radius, radius, radius)) {
+      if (!(nearby instanceof Player player) || !player.isOnline()) {
+        continue;
+      }
+
+      if (player.getLocation().distanceSquared(source) > radiusSq) {
+        continue;
+      }
+
+      boolean holding = isHoldingMap(player, mapId);
+      boolean activelyWatching = holding || isLikelyLookingAtFrame(player, source, lookDotThreshold);
+      long requiredInterval = activelyWatching ? activeInterval : idleInterval;
+      FramePushKey pushKey = new FramePushKey(mapId, player.getUniqueId());
+      long seededLastPush = now - requiredInterval + initialPushOffsetMs(pushKey, requiredInterval);
+      long lastPush = frameMapPushMsByViewerKey.getOrDefault(pushKey, seededLastPush);
+      if (now - lastPush < requiredInterval) {
+        continue;
+      }
+
+      boolean holdingBypassesRange = holding && frameMapPushOutsideRangeWhenHolding;
+      if (!holdingBypassesRange && frameMapRequireLineOfSight && !player.hasLineOfSight(frame)) {
+        continue;
+      }
+
+      try {
+        player.sendMap(view);
+        frameMapPushMsByViewerKey.put(pushKey, now);
+      } catch (Throwable ex) {
+        React.verbose("Failed to push map " + mapId + " to player " + player.getName() + ": "
+            + ex.getClass().getSimpleName()
+            + (ex.getMessage() == null ? "" : " - " + ex.getMessage()));
+      }
+    }
+  }
+
+  private boolean isLikelyLookingAtFrame(Player player, Location source, double lookDotThreshold) {
+    Location eye = player.getEyeLocation();
+    double toFrameX = source.getX() - eye.getX();
+    double toFrameY = source.getY() - eye.getY();
+    double toFrameZ = source.getZ() - eye.getZ();
+    double toFrameLengthSquared = (toFrameX * toFrameX) + (toFrameY * toFrameY) + (toFrameZ * toFrameZ);
+    if (toFrameLengthSquared <= 1.0E-6D) {
+      return true;
+    }
+
+    org.bukkit.util.Vector direction = eye.getDirection();
+    double directionLengthSquared = direction.lengthSquared();
+    if (directionLengthSquared <= 1.0E-6D) {
+      return false;
+    }
+
+    double inverseToFrameLength = 1.0D / Math.sqrt(toFrameLengthSquared);
+    double inverseDirectionLength = 1.0D / Math.sqrt(directionLengthSquared);
+    double dot = ((direction.getX() * inverseDirectionLength) * (toFrameX * inverseToFrameLength))
+        + ((direction.getY() * inverseDirectionLength) * (toFrameY * inverseToFrameLength))
+        + ((direction.getZ() * inverseDirectionLength) * (toFrameZ * inverseToFrameLength));
+    return dot >= lookDotThreshold;
   }
 
   private Map<UUID, FrameMapViewer> collectFrameMapCandidates(
@@ -1457,7 +1634,12 @@ public class MapController extends TickedObject implements IController, Listener
       }
 
       Player player = onlinePlayers.get(inventoryRepairCursor++);
-      updateMapViews(player, forceRendererUpdate);
+      if (!J.isFoliaThreading()) {
+        updateMapViews(player, forceRendererUpdate);
+        continue;
+      }
+
+      J.runEntity(player, () -> updateMapViews(player, forceRendererUpdate));
     }
   }
 
@@ -1914,6 +2096,12 @@ public class MapController extends TickedObject implements IController, Listener
     private long lastSeenMs;
     private long lastValidatedMs;
     private MapView view;
+    private BlockFace facing;
+    private boolean rotationAligned;
+    private int blockX;
+    private int blockY;
+    private int blockZ;
+    private String rendererId;
 
     private ActiveFrameMap(UUID frameId, UUID worldId, int mapId, Location location, long lastSeenMs) {
       this.frameId = frameId;
