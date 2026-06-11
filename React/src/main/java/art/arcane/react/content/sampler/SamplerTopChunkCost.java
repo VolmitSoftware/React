@@ -42,7 +42,7 @@ public class SamplerTopChunkCost extends ReactCachedSampler {
 
   @Override
   public double onSample() {
-    return executeSync(() -> {
+    return sampleOnMainThread(() -> {
       Map<String, SampledWorld> worlds = React.controller(ObserverController.class).getSampled().getWorlds();
       SampledCostMath.CostSnapshot snapshot = SampledCostMath.snapshot(worlds);
       if (snapshot.total() <= 0D) {

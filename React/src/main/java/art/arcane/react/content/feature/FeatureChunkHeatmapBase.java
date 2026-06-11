@@ -36,6 +36,13 @@ import java.util.Map;
 
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Chunk Heatmap Base feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRenderer {
+  private static final ThreadLocal<HashMap<Chunk, Double>> SCORE_SCRATCH = ThreadLocal.withInitial(HashMap::new);
+  private static final TinyColor FRAME_CENTER = new TinyColor(102, 180, 255);
+  private static final TinyColor HELD_CENTER = new TinyColor(0, 255, 90);
+  private static final TinyColor FRAME_VALUE = new TinyColor(126, 196, 255);
+  private static final TinyColor COOL_LOW = new TinyColor(16, 78, 180);
+  private static final TinyColor COOL_HIGH = new TinyColor(60, 175, 235);
+  private static final TinyColor HOT_HIGH = new TinyColor(255, 98, 42);
   @art.arcane.react.util.project.config.ConfigDoc(value = "Pixel scale used when chunk heatmap base draws each chunk on the map.", impact = "Higher values make chunks larger and reduce visible radius; lower values show more area with finer detail.")
   private int chunkPixelSize = 5;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Map chunks radius used by chunk heatmap base (chunks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
@@ -46,6 +53,8 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
   private boolean drawCenterMarker = true;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Controls whether chunk heatmap base renders draw label on map output.", impact = "Enable to show this visual layer; disable for a cleaner map and slightly lower render cost.")
   private boolean drawLabel = true;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Minimum peak chunk score required before the heatmap renders activity.", impact = "Below this the map shows an explicit quiet state instead of amplifying measurement noise into full-scale colors.")
+  private double minSignificantScore = 0.001;
 
   protected FeatureChunkHeatmapBase(String id) {
     super(id);
@@ -100,8 +109,6 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
     boolean frameAnchored = mapController != null && mapController.hasFrameAnchor(view());
 
     clear(backgroundColor());
-    set(0, 0, width(), 10, headerColor(frameAnchored));
-    set(120, 2, 5, 5, frameAnchored ? new TinyColor(96, 188, 255) : new TinyColor(88, 230, 140));
 
     Chunk center = anchor.getChunk();
     int radius = mapRadiusChunks > 0 ? mapRadiusChunks : Math.max(2, mapWorld.getViewDistance() * 2);
@@ -113,7 +120,8 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
     double ox = -(localX * pixelsPerBlock);
     double oz = -(localZ * pixelsPerBlock);
 
-    Map<Chunk, Double> score = new HashMap<>();
+    Map<Chunk, Double> score = SCORE_SCRATCH.get();
+    score.clear();
     double max = 0D;
     double min = Double.MAX_VALUE;
 
@@ -130,6 +138,16 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
       score.put(chunk, value);
       max = Math.max(max, value);
       min = Math.min(min, value);
+    }
+
+    if (score.isEmpty()) {
+      min = 0D;
+      max = 0D;
+    }
+
+    boolean quiet = max < minSignificantScore;
+    if (quiet) {
+      score.clear();
     }
 
     double yaw = rotateWithPlayer && !frameAnchored && viewer != null ? ((-viewer.getLocation().getYaw()) + 180D) : 0D;
@@ -156,7 +174,7 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
     }
 
     if (drawCenterMarker) {
-      TinyColor centerColor = frameAnchored ? new TinyColor(102, 180, 255) : new TinyColor(0, 255, 90);
+      TinyColor centerColor = frameAnchored ? FRAME_CENTER : HELD_CENTER;
       set(63, 63, centerColor);
       set(62, 63, centerColor);
       set(64, 63, centerColor);
@@ -164,16 +182,21 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
       set(63, 64, centerColor);
     }
 
-    drawLegend(min, max);
+    if (quiet) {
+      String message = "No activity nearby";
+      text(Math.max(2, 64 - (textWidth(message) / 2)), 74, message, TEXT_DIM);
+    }
 
     renderOverlay(score, min, max);
+    score.clear();
 
-    if (drawLabel) {
-      String label = mapLabel();
-      if (label != null && !label.isBlank()) {
-        text(3, 2, label);
-      }
-    }
+    dashHeader(
+        drawLabel ? mapLabel() : null,
+        frameAnchored ? "FRAME" : null,
+        headerColor(frameAnchored),
+        FRAME_VALUE
+    );
+    drawLegend(min, max, quiet);
   }
 
   protected TinyColor backgroundColor() {
@@ -200,9 +223,9 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
 
   protected TinyColor colorFor(double normalized, double rawScore) {
     if (normalized < 0.5D) {
-      return gradient(normalized * 2D, new TinyColor(16, 78, 180), new TinyColor(60, 175, 235));
+      return gradient(normalized * 2D, COOL_LOW, COOL_HIGH);
     }
-    return gradient((normalized - 0.5D) * 2D, new TinyColor(60, 175, 235), new TinyColor(255, 98, 42));
+    return gradient((normalized - 0.5D) * 2D, COOL_HIGH, HOT_HIGH);
   }
 
   protected void renderOverlay(Map<Chunk, Double> score, double min, double max) {
@@ -224,17 +247,13 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
   }
 
   protected TinyColor gradient(double normalized, TinyColor low, TinyColor high) {
-    double n = Math.max(0D, Math.min(1D, normalized));
-    int r = (int) Math.round((low.getColor().getRed() * (1D - n)) + (high.getColor().getRed() * n));
-    int g = (int) Math.round((low.getColor().getGreen() * (1D - n)) + (high.getColor().getGreen() * n));
-    int b = (int) Math.round((low.getColor().getBlue() * (1D - n)) + (high.getColor().getBlue() * n));
-    return new TinyColor(r, g, b);
+    return new TinyColor(gradientRgb(normalized, low, high));
   }
 
   private TinyColor tint(TinyColor color, double factor) {
-    int r = (int) Math.round(color.getColor().getRed() * factor);
-    int g = (int) Math.round(color.getColor().getGreen() * factor);
-    int b = (int) Math.round(color.getColor().getBlue() * factor);
+    int r = (int) Math.round(color.getRed() * factor);
+    int g = (int) Math.round(color.getGreen() * factor);
+    int b = (int) Math.round(color.getBlue() * factor);
     return new TinyColor(
         Math.max(0, Math.min(255, r)),
         Math.max(0, Math.min(255, g)),
@@ -257,11 +276,29 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
     return new Pixel(63 + rx, 63 + rz);
   }
 
-  private void drawLegend(double min, double max) {
-    int x0 = 4;
-    int x1 = 90;
+  private void drawLegend(double min, double max, boolean quiet) {
+    set(0, 115, width(), 13, FOOTER_BAND);
+
+    if (quiet) {
+      text(3, 117, "quiet", TEXT_DIM);
+      return;
+    }
+
+    String lowLabel = compact(min);
+    String highLabel = compact(max);
+    int lowEnd = 3 + textWidth(lowLabel);
+    int highX = 125 - textWidth(highLabel);
+    int x0 = lowEnd + 4;
+    int x1 = highX - 5;
     int y0 = 118;
-    int y1 = 124;
+    int y1 = 123;
+
+    text(3, 117, lowLabel, TEXT_DIM);
+    text(highX, 117, highLabel, TEXT_DIM);
+
+    if (x1 - x0 < 16) {
+      return;
+    }
 
     double range = Math.max(0.0001D, max - min);
     for (int x = x0; x <= x1; x++) {
@@ -272,9 +309,6 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
         set(x, y, c);
       }
     }
-
-    text(3, 108, "L:" + compact(min));
-    text(94, 108, "H:" + compact(max));
   }
 
   private String compact(double value) {
@@ -300,8 +334,10 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
   }
 
   private double normalize(double value, double min, double max) {
+    // With a single distinct score there is no relative scale; render mid-heat
+    // instead of painting trivial lone activity as maximum pressure.
     if (max <= min + 0.0001D) {
-      return value > 0D ? 1D : 0D;
+      return value > 0D ? 0.5D : 0D;
     }
 
     return Math.max(0D, Math.min(1D, (value - min) / (max - min)));

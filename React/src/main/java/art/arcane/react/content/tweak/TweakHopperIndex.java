@@ -29,18 +29,30 @@ public class TweakHopperIndex extends ReactTweak {
     public static final String BRIDGE_COOLDOWN_TIME = "HopperBlockEntity.cooldownTime";
     public static final String BRIDGE_GET_BLOCK_ENTITY = "Level.getBlockEntity";
     public static final String BRIDGE_BLOCK_POS_CTOR = "BlockPos.constructor";
+    public static final String BRIDGE_IS_EMPTY = "HopperBlockEntity.isEmpty";
 
     private static final int HOPPER_COOLDOWN_TICKS = 8;
     private static final double COLLECTION_HALF_EXTENT_H = 0.6;
     private static final double COLLECTION_Y_MIN_OFFSET = 0.9;
     private static final double COLLECTION_Y_MAX_OFFSET = 2.1;
 
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Stretches the transfer cooldown of empty, idle hoppers while the server is under load so vanilla skips re-polling them.", impact = "Enable to shed idle hopper tick cost on hopper-heavy servers; item pickup through the index fast-path stays instant.")
+    private boolean idleStretch = true;
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Cooldown in ticks applied to empty idle hoppers; bounds the worst-case delay before an idle hopper resumes pulling from a container.", impact = "Higher values skip more idle hopper work but delay transfer resumption longer.")
+    private int idleStretchTicks = 40;
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Number of tick passes each idle hopper probe is spread across.", impact = "Higher values probe each hopper less often (cheaper, slower to stretch); lower values stretch idle hoppers sooner.")
+    private int idleStretchSpreadPasses = 40;
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Average tick milliseconds required before idle hopper stretching engages.", impact = "Lower values stretch idle hoppers earlier; higher values reserve it for heavier load.")
+    private double idleStretchMinTickMs = 45;
+
     private transient NmsBridgeHandle bridgeAddItem;
     private transient NmsBridgeHandle bridgeCooldownTime;
     private transient NmsBridgeHandle bridgeGetBlockEntity;
     private transient NmsBridgeHandle bridgeBlockPosCtor;
+    private transient NmsBridgeHandle bridgeIsEmpty;
     private transient boolean bridgesAvailable;
     private transient int tickTaskId;
+    private transient int stretchPassCounter;
 
     public TweakHopperIndex() {
         super(ID);
@@ -80,7 +92,12 @@ public class TweakHopperIndex extends ReactTweak {
                 BRIDGE_BLOCK_POS_CTOR, BridgeKind.CONSTRUCTOR, blockPosClasses, "<init>",
                 List.of(List.of("int", "int", "int")),
                 blockPosClasses.get(0),
-                Optional.empty())
+                Optional.empty()),
+            new NmsBridgeDescriptor(
+                BRIDGE_IS_EMPTY, BridgeKind.METHOD, hopperClasses, "isEmpty",
+                List.of(List.of()),
+                "boolean",
+                Optional.of("HopperBlockEntity.isEmpty"))
         );
     }
 
@@ -91,6 +108,8 @@ public class TweakHopperIndex extends ReactTweak {
         bridgeCooldownTime = React.bridgeRegistry().resolve(descriptors.get(1));
         bridgeGetBlockEntity = React.bridgeRegistry().resolve(descriptors.get(2));
         bridgeBlockPosCtor = React.bridgeRegistry().resolve(descriptors.get(3));
+        bridgeIsEmpty = React.bridgeRegistry().resolve(descriptors.get(4));
+        stretchPassCounter = 0;
         bridgesAvailable = checkBridgesAvailable();
         if (!bridgesAvailable) {
             logUnavailableBridge();
@@ -151,6 +170,13 @@ public class TweakHopperIndex extends ReactTweak {
         if (itemIndex == null || positionIndex == null) {
             return;
         }
+        stretchPassCounter++;
+        int spread = Math.max(1, idleStretchSpreadPasses);
+        int stretchSlot = stretchPassCounter % spread;
+        boolean stretchEligible = idleStretch
+            && idleStretchTicks > HOPPER_COOLDOWN_TICKS
+            && bridgeIsEmpty.available()
+            && sampleTickMs() >= idleStretchMinTickMs;
         for (World world : Bukkit.getWorlds()) {
             UUID worldId = world.getUID();
             positionIndex.forEachHopperInWorld(worldId, packed -> {
@@ -161,6 +187,13 @@ public class TweakHopperIndex extends ReactTweak {
                 int cz = z >> 4;
                 if (!itemIndex.hasItemsAbove(worldId, cx, cz)) {
                     FeatureHopperContainerThroughputMap.suckInItemsInvocations.incrementAndGet();
+                    if (stretchEligible && Math.floorMod((int) (packed ^ (packed >>> 32)), spread) == stretchSlot) {
+                        if (!J.isFoliaThreading()) {
+                            stretchIdleHopper(world, x, y, z);
+                        } else {
+                            J.runChunk(world, cx, cz, () -> stretchIdleHopper(world, x, y, z));
+                        }
+                    }
                     return;
                 }
                 if (!J.isFoliaThreading()) {
@@ -169,6 +202,42 @@ public class TweakHopperIndex extends ReactTweak {
                     J.runChunk(world, cx, cz, () -> tryConsumeItemsAboveHopper(world, worldId, x, y, z, itemIndex));
                 }
             });
+        }
+    }
+
+    private void stretchIdleHopper(World world, int x, int y, int z) {
+        if (!world.isChunkLoaded(x >> 4, z >> 4)) {
+            return;
+        }
+        try {
+            Object worldHandle = NMS.getWorldServer(world);
+            if (worldHandle == null) {
+                return;
+            }
+            Object blockPos = bridgeBlockPosCtor.methodHandle().invokeWithArguments(x, y, z);
+            Object blockEntity = bridgeGetBlockEntity.methodHandle().invokeWithArguments(worldHandle, blockPos);
+            if (blockEntity == null) {
+                return;
+            }
+            Boolean empty = (Boolean) bridgeIsEmpty.methodHandle().invokeWithArguments(blockEntity);
+            if (!Boolean.TRUE.equals(empty)) {
+                return;
+            }
+            int cooldown = (int) bridgeCooldownTime.varHandle().get(blockEntity);
+            if (cooldown < idleStretchTicks) {
+                bridgeCooldownTime.varHandle().set(blockEntity, idleStretchTicks);
+            }
+        } catch (Throwable ignored) {
+            // Fail open: a hopper we cannot inspect simply keeps vanilla ticking.
+        }
+    }
+
+    private double sampleTickMs() {
+        try {
+            art.arcane.react.api.sampler.Sampler sampler = React.sampler(art.arcane.react.content.sampler.SamplerTickTime.ID);
+            return sampler == null ? 0D : sampler.sample();
+        } catch (Throwable ignored) {
+            return 0D;
         }
     }
 

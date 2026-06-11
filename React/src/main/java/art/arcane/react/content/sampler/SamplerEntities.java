@@ -76,8 +76,9 @@ public class SamplerEntities extends ReactCachedSampler implements Listener {
       int m = 0;
       for (World i : Bukkit.getWorlds()) {
         for (Chunk j : i.getLoadedChunks()) {
-          m += j.getEntities().length;
-          getChunkCounter(j).set(j.getEntities().length);
+          int count = j.getEntities().length;
+          m += count;
+          getChunkCounter(j).set(count);
         }
       }
 
@@ -137,8 +138,9 @@ public class SamplerEntities extends ReactCachedSampler implements Listener {
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void on(ChunkLoadEvent e) {
-    entities.addAndGet(e.getChunk().getEntities().length);
-    getChunkCounter(e.getChunk()).addAndGet(e.getChunk().getEntities().length);
+    int count = e.getChunk().getEntities().length;
+    entities.addAndGet(count);
+    getChunkCounter(e.getChunk()).addAndGet(count);
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

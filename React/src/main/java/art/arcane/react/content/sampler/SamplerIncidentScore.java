@@ -38,7 +38,7 @@ public class SamplerIncidentScore extends ReactCachedSampler {
 
   @Override
   public double onSample() {
-    return executeSync(this::computeScore);
+    return sampleOnMainThread(this::computeScore);
   }
 
   private double computeScore() {

@@ -55,7 +55,7 @@ public class SamplerPingJitter extends ReactCachedSampler {
 
   @Override
   public double onSample() {
-    return executeSync(() -> {
+    return sampleOnMainThread(() -> {
       int count = 0;
       double jitter = 0;
       Set<UUID> online = new HashSet<>();

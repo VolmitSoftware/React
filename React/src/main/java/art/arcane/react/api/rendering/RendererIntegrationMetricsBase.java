@@ -31,20 +31,19 @@ abstract class RendererIntegrationMetricsBase implements ReactRenderer {
   @Override
   public void render() {
     clear(backgroundColor());
-    set(0, 0, width(), 12, accentColor());
-    text(4, 2, title());
+    dashHeader(title(), null, accentColor());
 
     IntegrationController controller = React.controller(IntegrationController.class);
     if (controller == null || controller.getRemoteSamplerBridge() == null) {
-      text(4, 18, "Status: OFFLINE");
-      text(4, 30, "Bridge unavailable");
+      text(4, 18, "Status: OFFLINE", TEXT_BRIGHT);
+      text(4, 30, "Bridge unavailable", TEXT_DIM);
       return;
     }
 
     IntegrationController.IntegrationStatus status = controller.statusFor(pluginId());
     String health = status == null ? "MISSING" : status.health().name();
-    set(2, 14, 124, 9, healthColor(health));
-    text(4, 15, "Status: " + health);
+    set(2, 15, 124, 9, healthColor(health));
+    text(4, 16, "Status: " + health, TEXT_BRIGHT);
 
     int y = 28;
     long newestSampleMs = 0L;
@@ -59,7 +58,7 @@ abstract class RendererIntegrationMetricsBase implements ReactRenderer {
     }
 
     if (status != null && status.message() != null && !status.message().isBlank()) {
-      text(4, y, trim("Msg: " + status.message(), 24));
+      text(4, y, trim("Msg: " + status.message(), 24), TEXT_DIM);
       y += 12;
       if (y > 116) {
         return;
@@ -68,7 +67,7 @@ abstract class RendererIntegrationMetricsBase implements ReactRenderer {
 
     if (newestSampleMs > 0L) {
       double ageSeconds = Math.max(0D, (System.currentTimeMillis() - newestSampleMs) / 1000D);
-      text(4, y, "Age: " + Form.f(ageSeconds, 1) + "s");
+      text(4, y, "Age: " + Form.f(ageSeconds, 1) + "s", TEXT_DIM);
     }
   }
 
@@ -101,7 +100,7 @@ abstract class RendererIntegrationMetricsBase implements ReactRenderer {
 
   private void drawMetricRow(MetricLine metric, IntegrationMetricSample sample, int y) {
     String line = metric.label() + ": " + formatSample(metric, sample);
-    text(4, y, trim(line, 24));
+    text(4, y, trim(line, 24), TEXT_BRIGHT);
 
     if (sample == null || !sample.available()) {
       set(4, y + 8, 118, 3, new TinyColor(42, 42, 42));
@@ -136,11 +135,7 @@ abstract class RendererIntegrationMetricsBase implements ReactRenderer {
   }
 
   private TinyColor gradient(double normalized, TinyColor low, TinyColor high) {
-    double n = Math.max(0D, Math.min(1D, normalized));
-    int r = (int) Math.round((low.getColor().getRed() * (1D - n)) + (high.getColor().getRed() * n));
-    int g = (int) Math.round((low.getColor().getGreen() * (1D - n)) + (high.getColor().getGreen() * n));
-    int b = (int) Math.round((low.getColor().getBlue() * (1D - n)) + (high.getColor().getBlue() * n));
-    return new TinyColor(r, g, b);
+    return new TinyColor(gradientRgb(normalized, low, high));
   }
 
   private String trim(String text, int maxChars) {

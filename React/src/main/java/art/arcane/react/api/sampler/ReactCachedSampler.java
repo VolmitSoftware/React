@@ -22,7 +22,11 @@ package art.arcane.react.api.sampler;
 import art.arcane.chrono.ChronoLatch;
 import art.arcane.react.React;
 import art.arcane.react.core.controller.SampleController;
+import art.arcane.react.util.common.scheduling.J;
 import com.google.common.util.concurrent.AtomicDouble;
+
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
 public abstract class ReactCachedSampler implements Sampler {
   protected transient final long sampleDelay;
@@ -30,6 +34,8 @@ public abstract class ReactCachedSampler implements Sampler {
   private transient final AtomicDouble slast;
   private transient final Object sampleLock;
   private transient final String sid;
+  private transient final AtomicBoolean mainRefreshInFlight;
+  private transient volatile double mainRefreshValue;
   private transient volatile boolean runtimeStarted;
 
   public ReactCachedSampler(String id, long sampleDelay) {
@@ -38,7 +44,36 @@ public abstract class ReactCachedSampler implements Sampler {
     this.slatch = new ChronoLatch(sampleDelay, true);
     this.slast = new AtomicDouble();
     this.sampleLock = new Object();
+    this.mainRefreshInFlight = new AtomicBoolean(false);
     this.runtimeStarted = false;
+  }
+
+  // Refresh-behind main-thread sampling: returns the last computed value immediately
+  // and queues a single-flight recompute on the main thread. Never blocks the caller,
+  // unlike executeSync which sleep-polls until the main thread runs the job.
+  protected double sampleOnMainThread(Supplier<Double> compute) {
+    if (J.isPrimaryThread()) {
+      Double value = compute.get();
+      if (value != null) {
+        mainRefreshValue = value;
+      }
+      return mainRefreshValue;
+    }
+
+    if (mainRefreshInFlight.compareAndSet(false, true)) {
+      J.s(() -> {
+        try {
+          Double value = compute.get();
+          if (value != null) {
+            mainRefreshValue = value;
+          }
+        } finally {
+          mainRefreshInFlight.set(false);
+        }
+      });
+    }
+
+    return mainRefreshValue;
   }
 
   @Override

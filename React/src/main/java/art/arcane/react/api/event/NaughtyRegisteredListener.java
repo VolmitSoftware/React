@@ -19,7 +19,6 @@
 
 package art.arcane.react.api.event;
 
-import art.arcane.chrono.PrecisionStopwatch;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventException;
 import org.bukkit.event.EventPriority;
@@ -46,11 +45,11 @@ public class NaughtyRegisteredListener extends RegisteredListener {
    * @throws EventException If an event handler throws an exception.
    */
   public void callEvent(@NotNull final Event event) throws EventException {
-    PrecisionStopwatch p = PrecisionStopwatch.start();
+    long start = System.nanoTime();
     super.callEvent(event);
-    p.end();
-    time = p.getMilliseconds();
-    timeHighest = Math.max(timeHighest, time);
+    double elapsedMs = (System.nanoTime() - start) / 1.0E6D;
+    time = elapsedMs;
+    timeHighest = Math.max(timeHighest, elapsedMs);
     calls++;
   }
 }

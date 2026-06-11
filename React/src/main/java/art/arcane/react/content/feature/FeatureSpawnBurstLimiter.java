@@ -20,6 +20,12 @@
 package art.arcane.react.content.feature;
 
 import art.arcane.react.api.feature.ReactFeature;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.World;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
+import org.bukkit.block.CreatureSpawner;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Monster;
 import org.bukkit.event.EventHandler;
@@ -53,6 +59,10 @@ public class FeatureSpawnBurstLimiter extends ReactFeature implements Listener {
   private boolean enforceMonsterSpawns = true;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Skips named entities when spawn burst limiter evaluates targets.", impact = "Enable this to exclude matching cases; disable it to include them in enforcement.")
   private boolean ignoreNamedEntities = true;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Pushes back the next spawn attempt of spawners whose spawns get burst-limited.", impact = "Enable to stop limited spawners from wastefully re-attempting every cycle; disable to only cancel the spawn itself.")
+  private boolean spawnerBackoff = true;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Delay in ticks applied to a burst-limited spawner's next spawn attempt.", impact = "Higher values idle limited spawners longer, shedding more spawn-attempt work; lower values let grinders resume sooner.")
+  private int spawnerBackoffTicks = 600;
   private transient Map<ChunkKey, SpawnWindow> windows = new HashMap<>();
 
   public FeatureSpawnBurstLimiter() {
@@ -93,12 +103,15 @@ public class FeatureSpawnBurstLimiter extends ReactFeature implements Listener {
     }
 
     long now = System.currentTimeMillis();
-    ChunkKey key = new ChunkKey(event.getLocation().getWorld().getUID(), event.getLocation().getBlockX() >> 4, event.getLocation().getBlockZ() >> 4);
+    org.bukkit.Location location = event.getLocation();
+    ChunkKey key = new ChunkKey(location.getWorld().getUID(), location.getBlockX() >> 4, location.getBlockZ() >> 4);
     SpawnWindow window = windows.computeIfAbsent(key, k -> new SpawnWindow(now));
     window.rollover(windowMS, now);
     window.total++;
 
-    if (event.getSpawnReason() == CreatureSpawnEvent.SpawnReason.SPAWNER || "TRIAL_SPAWNER".equals(event.getSpawnReason().name())) {
+    boolean spawnerReason = event.getSpawnReason() == CreatureSpawnEvent.SpawnReason.SPAWNER
+        || "TRIAL_SPAWNER".equals(event.getSpawnReason().name());
+    if (spawnerReason) {
       window.spawner++;
     }
 
@@ -108,16 +121,63 @@ public class FeatureSpawnBurstLimiter extends ReactFeature implements Listener {
 
     if (window.total > maxSpawnsPerChunkWindow) {
       event.setCancelled(true);
+      if (spawnerReason) {
+        backoffNearbySpawners(location, window, now);
+      }
       return;
     }
 
     if (enforceSpawnerSpawns && window.spawner > maxSpawnerSpawnsPerChunkWindow) {
       event.setCancelled(true);
+      backoffNearbySpawners(location, window, now);
       return;
     }
 
     if (enforceMonsterSpawns && event.getEntity() instanceof Monster && window.monster > maxMonsterSpawnsPerChunkWindow) {
       event.setCancelled(true);
+    }
+  }
+
+  private void backoffNearbySpawners(Location location, SpawnWindow window, long now) {
+    if (!spawnerBackoff || spawnerBackoffTicks <= 0) {
+      return;
+    }
+
+    if (now - window.lastBackoffMs < Math.max(250, windowMS)) {
+      return;
+    }
+    window.lastBackoffMs = now;
+
+    World world = location.getWorld();
+    if (world == null) {
+      return;
+    }
+
+    // Spawners place mobs within 4 blocks horizontally and 1 vertically of themselves.
+    int blockX = location.getBlockX();
+    int blockY = location.getBlockY();
+    int blockZ = location.getBlockZ();
+    for (int y = -1; y <= 1; y++) {
+      for (int x = -4; x <= 4; x++) {
+        for (int z = -4; z <= 4; z++) {
+          int worldX = blockX + x;
+          int worldZ = blockZ + z;
+          if (!world.isChunkLoaded(worldX >> 4, worldZ >> 4)) {
+            continue;
+          }
+
+          Block block = world.getBlockAt(worldX, blockY + y, worldZ);
+          if (block.getType() != Material.SPAWNER) {
+            continue;
+          }
+
+          BlockState state = block.getState();
+          if (state instanceof CreatureSpawner spawner) {
+            spawner.setDelay(Math.max(spawner.getDelay(), spawnerBackoffTicks));
+            spawner.update(false, false);
+          }
+        }
+      }
     }
   }
 
@@ -157,6 +217,8 @@ public class FeatureSpawnBurstLimiter extends ReactFeature implements Listener {
     private int spawner;
     @art.arcane.react.util.project.config.ConfigDoc(value = "Internal counter used by spawn burst limiter while tracking burst activity.", impact = "Primarily runtime state; React updates this automatically during live evaluation.")
     private int monster;
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Internal timestamp used by spawn burst limiter to track timing windows and decay.", impact = "Primarily runtime state; changing this manually can distort cooldown or throttling behavior.")
+    private long lastBackoffMs;
 
     private SpawnWindow(long now) {
       start = now;

@@ -55,6 +55,7 @@ import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -100,8 +101,14 @@ public class MapController extends TickedObject implements IController, Listener
   private boolean frameMapRequireLineOfSight = true;
   @ConfigDoc(value = "Retention duration for frame-map push bookkeeping in milliseconds.", impact = "Higher values keep state longer with less churn; lower values prune bookkeeping more aggressively.")
   private long frameMapPushStateRetentionMs = 600_000L;
+  @ConfigDoc(value = "Minimum interval between canvas redraws for held React maps in milliseconds.", impact = "Lower values rotate and refresh held maps more smoothly; higher values cut render work when many players view the same map.")
+  private long heldMapRedrawIntervalMs = 150L;
+  @ConfigDoc(value = "Minimum interval between canvas redraws for item-frame React maps in milliseconds.", impact = "Lower values refresh frame dashboards faster; higher values collapse redundant per-viewer redraws on busy map walls.")
+  private long frameMapRedrawIntervalMs = 300L;
+  @ConfigDoc(value = "Interval between full item-stack revalidations of tracked frame maps in milliseconds.", impact = "Lower values detect swapped frame items sooner; higher values avoid repeated item metadata reads every maintenance tick.")
+  private long frameMapValidateIntervalMs = 2_000L;
   private transient Map<String, ReactRenderer> renderers;
-  private transient Map<String, Long> frameMapPushMsByViewerKey;
+  private transient Map<FramePushKey, Long> frameMapPushMsByViewerKey;
   private transient Map<Integer, Long> frameMapLastSeenByMapId;
   private transient Map<UUID, ActiveFrameMap> activeFrameMaps;
   private transient AtomicBoolean maintenanceTickQueued;
@@ -114,6 +121,7 @@ public class MapController extends TickedObject implements IController, Listener
   private transient int itemFrameChunkCursor;
   private transient ReactRenderer irisMetricsRenderer;
   private transient ReactRenderer adaptMetricsRenderer;
+  private transient ReactRenderer wormholesMetricsRenderer;
   private transient ReactRenderer reactMetricsRenderer;
   private transient long startupBoostUntilMs;
 
@@ -376,6 +384,15 @@ public class MapController extends TickedObject implements IController, Listener
     return findFrameAnchor(view) != null;
   }
 
+  public long redrawIntervalMsFor(MapView view) {
+    Integer mapId = mapIdOf(view);
+    if (mapId != null && isKnownFrameMap(mapId, System.currentTimeMillis())) {
+      return Math.max(0L, frameMapRedrawIntervalMs);
+    }
+
+    return Math.max(0L, heldMapRedrawIntervalMs);
+  }
+
   @EventHandler
   public void on(PlayerTeleportEvent e) {
     if (e.getTo() == null || e.getFrom() == null || e.getFrom().getWorld() == null || e.getTo().getWorld() == null) {
@@ -389,7 +406,21 @@ public class MapController extends TickedObject implements IController, Listener
 
   @EventHandler
   public void on(ChunkLoadEvent e) {
-    refreshChunkItemFrames(e.getChunk(), true, null);
+    refreshChunkItemFrames(e.getChunk(), true, memoizedViewerSnapshot());
+  }
+
+  private Supplier<FrameMapViewerSnapshot> memoizedViewerSnapshot() {
+    return new Supplier<>() {
+      private FrameMapViewerSnapshot snapshot;
+
+      @Override
+      public FrameMapViewerSnapshot get() {
+        if (snapshot == null) {
+          snapshot = buildFrameMapViewerSnapshot();
+        }
+        return snapshot;
+      }
+    };
   }
 
   public ItemStack createMap(World world, ReactRenderer renderer) {
@@ -428,6 +459,7 @@ public class MapController extends TickedObject implements IController, Listener
     renderers.put(FeatureUnknown.ID, new RendererUnknown());
     irisMetricsRenderer = new RendererIrisMetrics();
     adaptMetricsRenderer = new RendererAdaptMetrics();
+    wormholesMetricsRenderer = new RendererWormholesMetrics();
     reactMetricsRenderer = new RendererReactMetrics();
     startupBoostUntilMs = System.currentTimeMillis() + Math.max(0L, startupBoostDurationMs);
     applyMaintenanceTickInterval();
@@ -503,7 +535,9 @@ public class MapController extends TickedObject implements IController, Listener
     applyMaintenanceTickInterval();
     Runnable maintenanceTick = () -> {
       try {
-        FrameMapViewerSnapshot viewerSnapshot = buildFrameMapViewerSnapshot();
+        // Building the viewer snapshot touches every online player; memoize lazily so
+        // ticks with no frame-map work cost nothing per player.
+        Supplier<FrameMapViewerSnapshot> viewerSnapshot = memoizedViewerSnapshot();
         syncIntegrationRenderers();
         repairOneOnlinePlayerInventory();
         pushTrackedFrameMaps(viewerSnapshot);
@@ -528,9 +562,11 @@ public class MapController extends TickedObject implements IController, Listener
   private void syncIntegrationRenderers() {
     syncIntegrationRenderer("iris", irisMetricsRenderer);
     syncIntegrationRenderer("adapt", adaptMetricsRenderer);
+    syncIntegrationRenderer("wormholes", wormholesMetricsRenderer);
     syncIntegrationRenderer("react", reactMetricsRenderer);
     syncIntegrationCapabilityRenderers("iris");
     syncIntegrationCapabilityRenderers("adapt");
+    syncIntegrationCapabilityRenderers("wormholes");
   }
 
   private void syncIntegrationRenderer(String capability, ReactRenderer renderer) {
@@ -777,31 +813,27 @@ public class MapController extends TickedObject implements IController, Listener
   }
 
   private void refreshLoadedItemFrames() {
+    Supplier<FrameMapViewerSnapshot> viewerSnapshot = memoizedViewerSnapshot();
     for (World world : Bukkit.getWorlds()) {
       for (Chunk chunk : world.getLoadedChunks()) {
-        refreshChunkItemFrames(chunk, true, null);
+        refreshChunkItemFrames(chunk, true, viewerSnapshot);
       }
     }
   }
 
-  private void refreshChunkItemFrames(Chunk chunk, boolean forceRendererUpdate, FrameMapViewerSnapshot viewerSnapshot) {
+  private void refreshChunkItemFrames(Chunk chunk, boolean forceRendererUpdate, Supplier<FrameMapViewerSnapshot> viewerSnapshot) {
     if (chunk == null) {
       return;
     }
 
-    FrameMapViewerSnapshot activeViewerSnapshot = viewerSnapshot;
-    if (activeViewerSnapshot == null) {
-      activeViewerSnapshot = buildFrameMapViewerSnapshot();
-    }
-
     for (Entity entity : chunk.getEntities()) {
       if (entity instanceof ItemFrame frame) {
-        refreshItemFrame(frame, forceRendererUpdate, activeViewerSnapshot);
+        refreshItemFrame(frame, forceRendererUpdate, viewerSnapshot);
       }
     }
   }
 
-  private void refreshItemFrame(ItemFrame frame, boolean forceRendererUpdate, FrameMapViewerSnapshot viewerSnapshot) {
+  private void refreshItemFrame(ItemFrame frame, boolean forceRendererUpdate, Supplier<FrameMapViewerSnapshot> viewerSnapshot) {
     if (frame == null) {
       return;
     }
@@ -858,7 +890,7 @@ public class MapController extends TickedObject implements IController, Listener
     });
   }
 
-  private void pushTrackedFrameMaps(FrameMapViewerSnapshot viewerSnapshot) {
+  private void pushTrackedFrameMaps(Supplier<FrameMapViewerSnapshot> viewerSnapshot) {
     if (activeFrameMaps == null || activeFrameMaps.isEmpty()) {
       pruneFramePushState();
       return;
@@ -899,6 +931,17 @@ public class MapController extends TickedObject implements IController, Listener
         continue;
       }
 
+      // Reading the frame item clones the stack and its meta; only revalidate on a
+      // cadence and push through the cached view between validations.
+      if (tracked.view != null && now - tracked.lastValidatedMs < Math.max(0L, frameMapValidateIntervalMs)) {
+        tracked.lastSeenMs = now;
+        if (frameMapLastSeenByMapId != null) {
+          frameMapLastSeenByMapId.put(tracked.mapId, now);
+        }
+        pushMapToNearbyPlayers(frame, tracked.view, viewerSnapshot);
+        continue;
+      }
+
       ItemStack frameItem = frame.getItem();
       if (!isReactMap(frameItem)) {
         stale.add(tracked.frameId);
@@ -921,6 +964,11 @@ public class MapController extends TickedObject implements IController, Listener
       tracked.mapId = mapId;
       tracked.location = frame.getLocation();
       tracked.lastSeenMs = now;
+      tracked.lastValidatedMs = now;
+      tracked.view = view;
+      if (frameMapLastSeenByMapId != null) {
+        frameMapLastSeenByMapId.put(mapId, now);
+      }
       pushMapToNearbyPlayers(frame, view, viewerSnapshot);
     }
 
@@ -964,35 +1012,28 @@ public class MapController extends TickedObject implements IController, Listener
     }
   }
 
-  private void repairOneLoadedChunkItemFrames(FrameMapViewerSnapshot viewerSnapshot) {
+  private void repairOneLoadedChunkItemFrames(Supplier<FrameMapViewerSnapshot> viewerSnapshot) {
     long now = System.currentTimeMillis();
     if (now - lastItemFrameRepairMs < effectiveItemFrameRepairCadenceMs()) {
       return;
     }
     lastItemFrameRepairMs = now;
 
-    int batch = effectiveItemFrameChunkBatchSize();
-    boolean forceRendererUpdate = inStartupBoost();
-    for (int i = 0; i < batch; i++) {
-      Chunk chunk = nextLoadedChunkForRepair();
-      if (chunk == null) {
-        return;
-      }
-
-      refreshChunkItemFrames(chunk, forceRendererUpdate, viewerSnapshot);
-    }
-  }
-
-  private Chunk nextLoadedChunkForRepair() {
     List<World> worlds = Bukkit.getWorlds();
     if (worlds.isEmpty()) {
       itemFrameWorldCursor = 0;
       itemFrameChunkCursor = 0;
-      return null;
+      return;
     }
 
+    int remaining = effectiveItemFrameChunkBatchSize();
+    boolean forceRendererUpdate = inStartupBoost();
     int worldCount = worlds.size();
-    for (int i = 0; i < worldCount; i++) {
+    int worldsVisited = 0;
+
+    // getLoadedChunks() copies the full loaded-chunk array, so fetch it once per
+    // world per pass and serve the whole batch from it instead of per chunk.
+    while (remaining > 0 && worldsVisited < worldCount) {
       if (itemFrameWorldCursor >= worldCount) {
         itemFrameWorldCursor = 0;
         itemFrameChunkCursor = 0;
@@ -1000,31 +1041,29 @@ public class MapController extends TickedObject implements IController, Listener
 
       World world = worlds.get(itemFrameWorldCursor);
       Chunk[] loadedChunks = world.getLoadedChunks();
-      if (loadedChunks.length == 0) {
+      if (itemFrameChunkCursor >= loadedChunks.length) {
         itemFrameWorldCursor = (itemFrameWorldCursor + 1) % worldCount;
         itemFrameChunkCursor = 0;
+        worldsVisited++;
         continue;
       }
 
-      if (itemFrameChunkCursor >= loadedChunks.length) {
-        itemFrameChunkCursor = 0;
-        itemFrameWorldCursor = (itemFrameWorldCursor + 1) % worldCount;
-        continue;
+      int end = Math.min(loadedChunks.length, itemFrameChunkCursor + remaining);
+      for (int i = itemFrameChunkCursor; i < end; i++) {
+        refreshChunkItemFrames(loadedChunks[i], forceRendererUpdate, viewerSnapshot);
       }
 
-      Chunk next = loadedChunks[itemFrameChunkCursor++];
+      remaining -= end - itemFrameChunkCursor;
+      itemFrameChunkCursor = end;
       if (itemFrameChunkCursor >= loadedChunks.length) {
-        itemFrameChunkCursor = 0;
         itemFrameWorldCursor = (itemFrameWorldCursor + 1) % worldCount;
+        itemFrameChunkCursor = 0;
+        worldsVisited++;
       }
-
-      return next;
     }
-
-    return null;
   }
 
-  private void pushFrameMapToNearbyPlayers(ItemFrame frame, MapView view, FrameMapViewerSnapshot viewerSnapshot) {
+  private void pushFrameMapToNearbyPlayers(ItemFrame frame, MapView view, Supplier<FrameMapViewerSnapshot> viewerSnapshot) {
     if (frame == null || frame.getWorld() == null || view == null) {
       return;
     }
@@ -1032,7 +1071,7 @@ public class MapController extends TickedObject implements IController, Listener
     pushMapToNearbyPlayers(frame, view, viewerSnapshot);
   }
 
-  private void pushMapToNearbyPlayers(ItemFrame frame, MapView view, FrameMapViewerSnapshot viewerSnapshot) {
+  private void pushMapToNearbyPlayers(ItemFrame frame, MapView view, Supplier<FrameMapViewerSnapshot> viewerSnapshot) {
     if (frame == null || frame.getWorld() == null || view == null || frameMapPushMsByViewerKey == null) {
       return;
     }
@@ -1042,10 +1081,7 @@ public class MapController extends TickedObject implements IController, Listener
       return;
     }
 
-    FrameMapViewerSnapshot activeViewerSnapshot = viewerSnapshot;
-    if (activeViewerSnapshot == null) {
-      activeViewerSnapshot = buildFrameMapViewerSnapshot();
-    }
+    FrameMapViewerSnapshot activeViewerSnapshot = viewerSnapshot.get();
     if (activeViewerSnapshot == null || activeViewerSnapshot.viewersByWorldChunk.isEmpty()) {
       return;
     }
@@ -1098,7 +1134,7 @@ public class MapController extends TickedObject implements IController, Listener
 
       boolean activelyWatching = holding || isLikelyLookingAtFrame(viewer, sourceX, sourceY, sourceZ, lookDotThreshold);
       long requiredInterval = activelyWatching ? activeInterval : idleInterval;
-      String pushKey = framePushKey(mapId, viewer.playerId);
+      FramePushKey pushKey = new FramePushKey(mapId, viewer.playerId);
       long seededLastPush = now - requiredInterval + initialPushOffsetMs(pushKey, requiredInterval);
       long lastPush = frameMapPushMsByViewerKey.getOrDefault(pushKey, seededLastPush);
       if (now - lastPush < requiredInterval) {
@@ -1325,11 +1361,7 @@ public class MapController extends TickedObject implements IController, Listener
     return (((long) chunkX) << 32) ^ (chunkZ & 0xffffffffL);
   }
 
-  private String framePushKey(int mapId, UUID playerId) {
-    return mapId + ":" + playerId;
-  }
-
-  private long initialPushOffsetMs(String pushKey, long intervalMs) {
+  private long initialPushOffsetMs(FramePushKey pushKey, long intervalMs) {
     if (pushKey == null || intervalMs <= 1L) {
       return 0L;
     }
@@ -1533,6 +1565,10 @@ public class MapController extends TickedObject implements IController, Listener
       return adaptMetricsRenderer;
     }
 
+    if (requested.equals(RendererWormholesMetrics.ID) || requestedAlias.equals(RendererWormholesMetrics.ID)) {
+      return wormholesMetricsRenderer;
+    }
+
     return null;
   }
 
@@ -1700,6 +1736,9 @@ public class MapController extends TickedObject implements IController, Listener
     }
     if (normalizedRendererId.startsWith("adapt-")) {
       return "Adapt";
+    }
+    if (normalizedRendererId.startsWith("wormholes-")) {
+      return "Wormholes";
     }
     if (normalizedRendererId.startsWith("react-")) {
       return "React";
@@ -1873,6 +1912,8 @@ public class MapController extends TickedObject implements IController, Listener
     private int mapId;
     private Location location;
     private long lastSeenMs;
+    private long lastValidatedMs;
+    private MapView view;
 
     private ActiveFrameMap(UUID frameId, UUID worldId, int mapId, Location location, long lastSeenMs) {
       this.frameId = frameId;
@@ -1881,5 +1922,8 @@ public class MapController extends TickedObject implements IController, Listener
       this.location = location;
       this.lastSeenMs = lastSeenMs;
     }
+  }
+
+  private record FramePushKey(int mapId, UUID playerId) {
   }
 }

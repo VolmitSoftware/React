@@ -45,7 +45,7 @@ public class SamplerPlayerPingP95 extends ReactCachedSampler {
 
   @Override
   public double onSample() {
-    return executeSync(() -> {
+    return sampleOnMainThread(() -> {
       List<Double> pings = new ArrayList<>();
       for (Player player : Bukkit.getOnlinePlayers()) {
         Integer ping = readPing(player);

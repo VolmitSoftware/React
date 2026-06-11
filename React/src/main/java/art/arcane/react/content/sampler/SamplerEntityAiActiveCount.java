@@ -57,7 +57,7 @@ public class SamplerEntityAiActiveCount extends ReactCachedSampler {
       return sampleFoliaApproximation();
     }
 
-    return executeSync(() -> {
+    return sampleOnMainThread(() -> {
       int active = 0;
       for (World world : Bukkit.getWorlds()) {
         for (Entity entity : world.getEntities()) {

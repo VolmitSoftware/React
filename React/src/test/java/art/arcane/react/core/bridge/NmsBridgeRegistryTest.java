@@ -89,6 +89,42 @@ public class NmsBridgeRegistryTest {
   }
 
   @Test
+  public void resolveMethodInheritedFromSuperclass() throws Throwable {
+    // LinkedHashMap does not declare isEmpty(); it inherits it from HashMap.
+    NmsBridgeDescriptor descriptor = new NmsBridgeDescriptor(
+        "LinkedHashMap.isEmpty",
+        BridgeKind.METHOD,
+        List.of("java.util.LinkedHashMap"),
+        "isEmpty",
+        List.of(List.of()),
+        "boolean",
+        Optional.empty()
+    );
+    NmsBridgeHandle handle = registry.resolve(descriptor);
+    Assert.assertTrue(handle.available());
+    boolean empty = (boolean) handle.methodHandle().invokeWithArguments(new java.util.LinkedHashMap<String, String>());
+    Assert.assertTrue(empty);
+  }
+
+  @Test
+  public void resolveMethodDeclaredOnlyOnInterface() throws Throwable {
+    // ArrayList does not declare stream(); it is a default method on Collection.
+    NmsBridgeDescriptor descriptor = new NmsBridgeDescriptor(
+        "ArrayList.stream",
+        BridgeKind.METHOD,
+        List.of("java.util.ArrayList"),
+        "stream",
+        List.of(List.of()),
+        "java.util.stream.Stream",
+        Optional.empty()
+    );
+    NmsBridgeHandle handle = registry.resolve(descriptor);
+    Assert.assertTrue(handle.available());
+    Object stream = handle.methodHandle().invokeWithArguments((Object) new java.util.ArrayList<String>());
+    Assert.assertNotNull(stream);
+  }
+
+  @Test
   public void resolvePublicField() throws Throwable {
     NmsBridgeDescriptor descriptor = new NmsBridgeDescriptor(
         "Integer.MAX_VALUE",

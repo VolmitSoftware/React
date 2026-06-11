@@ -31,26 +31,24 @@ public class RendererUnknown implements ReactRenderer {
 
   @Override
   public void render() {
-    // Subtle vertical gradient background for the fallback card.
     for (int y = 0; y < height(); y++) {
       double n = y / (double) Math.max(1, height() - 1);
       TinyColor row = gradient(n, new TinyColor(12, 16, 20), new TinyColor(18, 26, 34));
       set(0, y, width(), 1, row);
     }
 
-    set(0, 0, width(), 12, new TinyColor(126, 62, 56));
-    text(4, 2, "React Map");
-    text(4, 14, "Renderer unavailable");
+    dashHeader("React Map", null, new TinyColor(226, 102, 88));
+    text(4, 16, "Renderer unavailable", TEXT_DIM);
 
     int cx = 26;
     int cy = 64;
     drawWarningGlyph(cx, cy);
 
-    text(46, 48, "This map was");
-    text(46, 58, "bound to a renderer");
-    text(46, 68, "that is missing");
-    text(46, 90, "Use /re map");
-    text(46, 100, "to reselect.");
+    text(46, 48, "This map was", TEXT_BRIGHT);
+    text(46, 58, "bound to a renderer", TEXT_BRIGHT);
+    text(46, 68, "that is missing", TEXT_BRIGHT);
+    text(46, 90, "Use /re map", TEXT_DIM);
+    text(46, 100, "to reselect.", TEXT_DIM);
   }
 
   private void drawWarningGlyph(int cx, int cy) {
@@ -75,10 +73,6 @@ public class RendererUnknown implements ReactRenderer {
   }
 
   private TinyColor gradient(double normalized, TinyColor low, TinyColor high) {
-    double n = Math.max(0D, Math.min(1D, normalized));
-    int r = (int) Math.round((low.getColor().getRed() * (1D - n)) + (high.getColor().getRed() * n));
-    int g = (int) Math.round((low.getColor().getGreen() * (1D - n)) + (high.getColor().getGreen() * n));
-    int b = (int) Math.round((low.getColor().getBlue() * (1D - n)) + (high.getColor().getBlue() * n));
-    return new TinyColor(r, g, b);
+    return new TinyColor(gradientRgb(normalized, low, high));
   }
 }

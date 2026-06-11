@@ -18,16 +18,25 @@ public class TweakHopperIndexTest {
         Assert.assertNotNull(TweakHopperIndex.BRIDGE_COOLDOWN_TIME);
         Assert.assertNotNull(TweakHopperIndex.BRIDGE_GET_BLOCK_ENTITY);
         Assert.assertNotNull(TweakHopperIndex.BRIDGE_BLOCK_POS_CTOR);
+        Assert.assertNotNull(TweakHopperIndex.BRIDGE_IS_EMPTY);
         Assert.assertFalse(TweakHopperIndex.BRIDGE_ADD_ITEM.isEmpty());
         Assert.assertFalse(TweakHopperIndex.BRIDGE_COOLDOWN_TIME.isEmpty());
         Assert.assertFalse(TweakHopperIndex.BRIDGE_GET_BLOCK_ENTITY.isEmpty());
         Assert.assertFalse(TweakHopperIndex.BRIDGE_BLOCK_POS_CTOR.isEmpty());
+        Assert.assertFalse(TweakHopperIndex.BRIDGE_IS_EMPTY.isEmpty());
     }
 
     @Test
-    public void hopperBridgeDescriptorsReturnsFourEntries() {
+    public void hopperBridgeDescriptorsReturnsFiveEntries() {
         List<NmsBridgeDescriptor> descriptors = TweakHopperIndex.hopperBridgeDescriptors();
-        Assert.assertEquals(4, descriptors.size());
+        Assert.assertEquals(5, descriptors.size());
+    }
+
+    @Test
+    public void isEmptyDescriptorIsMethodKind() {
+        NmsBridgeDescriptor d = descriptorById(TweakHopperIndex.BRIDGE_IS_EMPTY);
+        Assert.assertNotNull("isEmpty descriptor must be present", d);
+        Assert.assertEquals(BridgeKind.METHOD, d.kind());
     }
 
     @Test
@@ -72,7 +81,7 @@ public class TweakHopperIndexTest {
     public void allDescriptorsHaveUniqueLogicalIds() {
         List<NmsBridgeDescriptor> descriptors = TweakHopperIndex.hopperBridgeDescriptors();
         long uniqueIds = descriptors.stream().map(NmsBridgeDescriptor::logicalId).distinct().count();
-        Assert.assertEquals("All 4 descriptors must have unique logical IDs", 4, uniqueIds);
+        Assert.assertEquals("All 5 descriptors must have unique logical IDs", 5, uniqueIds);
     }
 
     @Test

@@ -46,11 +46,10 @@ public class RendererReactMetrics implements ReactRenderer {
   @Override
   public void render() {
     clear(new TinyColor(12, 16, 24));
-    set(0, 0, width(), 12, new TinyColor(70, 98, 156));
-    text(4, 2, "React Metrics");
+    dashHeader("React Metrics", null, new TinyColor(96, 148, 222));
 
-    set(2, 14, 124, 9, new TinyColor(52, 134, 96));
-    text(4, 15, "Status: LOCAL");
+    set(2, 15, 124, 9, new TinyColor(52, 134, 96));
+    text(4, 16, "Status: LOCAL", TEXT_BRIGHT);
 
     int y = 28;
     for (MetricLine metric : METRICS) {
@@ -65,7 +64,7 @@ public class RendererReactMetrics implements ReactRenderer {
   private void drawMetricRow(MetricLine metric, int y) {
     Double sampled = sample(metric.samplerId());
     String line = metric.label() + ": " + formatSample(metric, sampled);
-    text(4, y, trim(line, 24));
+    text(4, y, trim(line, 24), TEXT_BRIGHT);
 
     set(4, y + 8, 118, 3, new TinyColor(22, 28, 34));
     if (sampled == null) {
@@ -108,11 +107,7 @@ public class RendererReactMetrics implements ReactRenderer {
   }
 
   private TinyColor gradient(double normalized, TinyColor low, TinyColor high) {
-    double n = Math.max(0D, Math.min(1D, normalized));
-    int r = (int) Math.round((low.getColor().getRed() * (1D - n)) + (high.getColor().getRed() * n));
-    int g = (int) Math.round((low.getColor().getGreen() * (1D - n)) + (high.getColor().getGreen() * n));
-    int b = (int) Math.round((low.getColor().getBlue() * (1D - n)) + (high.getColor().getBlue() * n));
-    return new TinyColor(r, g, b);
+    return new TinyColor(gradientRgb(normalized, low, high));
   }
 
   private String trim(String text, int maxChars) {

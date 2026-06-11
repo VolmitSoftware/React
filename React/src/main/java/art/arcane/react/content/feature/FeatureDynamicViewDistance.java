@@ -19,7 +19,6 @@
 
 package art.arcane.react.content.feature;
 
-import art.arcane.curse.Curse;
 import art.arcane.react.React;
 import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.content.sampler.SamplerTickTime;
@@ -31,6 +30,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.event.Listener;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -54,12 +54,14 @@ public class FeatureDynamicViewDistance extends ReactFeature implements Listener
   private Map<World, Long> lastUpdate;
   private transient boolean supportsWorldDistanceSetters;
   private transient boolean warnedRuntimeFailure;
+  private transient Method setViewDistanceMethod;
+  private transient Method setSimulationDistanceMethod;
 
   public FeatureDynamicViewDistance() {
     super(ID);
   }
 
-  public boolean updateWorld(World world) {
+  public boolean updateWorld(World world) throws Exception {
     int vd = world.getViewDistance();
     int sd = world.getSimulationDistance();
     int players = Bukkit.getOnlinePlayers().size();
@@ -74,12 +76,12 @@ public class FeatureDynamicViewDistance extends ReactFeature implements Listener
     List<String> m = new ArrayList<>();
     if (vd != newVD) {
       m.add("View Distance: " + vd + " -> " + newVD);
-      Curse.on(world).method("setViewDistance", int.class).invoke(newVD);
+      setViewDistanceMethod.invoke(world, newVD);
     }
 
     if (sd != newSD) {
       m.add("Simulation Distance: " + sd + " -> " + newSD);
-      Curse.on(world).method("setSimulationDistance", int.class).invoke(newSD);
+      setSimulationDistanceMethod.invoke(world, newSD);
     }
 
     if (!m.isEmpty()) {
@@ -103,6 +105,15 @@ public class FeatureDynamicViewDistance extends ReactFeature implements Listener
     if (!supportsWorldDistanceSetters) {
       setEnabled(false);
       React.warn("Dynamic View Distance disabled: this server software does not expose world distance setters. Use Paper/Purpur to enable this feature.");
+      return;
+    }
+    try {
+      setViewDistanceMethod = World.class.getMethod("setViewDistance", int.class);
+      setSimulationDistanceMethod = World.class.getMethod("setSimulationDistance", int.class);
+    } catch (NoSuchMethodException e) {
+      supportsWorldDistanceSetters = false;
+      setEnabled(false);
+      React.warn("Dynamic View Distance disabled: world distance setters are not resolvable on this server software.");
       return;
     }
     viewDistance.setMax(Math.min(viewDistance.getMax(), Bukkit.getServer().getViewDistance()));

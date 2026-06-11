@@ -19,7 +19,6 @@
 
 package art.arcane.react.core.controller;
 
-import art.arcane.curse.Curse;
 import art.arcane.react.React;
 import art.arcane.react.api.event.NaughtyRegisteredListener;
 import art.arcane.react.api.event.layer.MinecartSpawnEvent;
@@ -32,8 +31,10 @@ import org.bukkit.Material;
 import org.bukkit.event.*;
 import org.bukkit.event.block.BlockDispenseEvent;
 import org.bukkit.event.entity.EntityPlaceEvent;
+import org.bukkit.plugin.EventExecutor;
 import org.bukkit.plugin.RegisteredListener;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -44,6 +45,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class EventController extends TickedObject implements IController, Listener {
+  private static volatile Field allListsField;
+  private static volatile Field handlersField;
+  private static volatile Field handlerSlotsField;
+  private static volatile Field executorField;
+  private static volatile boolean handlerFieldsResolved;
   private transient int listenerCount;
   private transient double totalTime;
   private transient int calls;
@@ -141,8 +147,74 @@ public class EventController extends TickedObject implements IController, Listen
     }
   }
 
+  private static boolean resolveHandlerFields() {
+    if (handlerFieldsResolved) {
+      return allListsField != null;
+    }
+
+    synchronized (EventController.class) {
+      if (handlerFieldsResolved) {
+        return allListsField != null;
+      }
+
+      try {
+        Field allLists = HandlerList.class.getDeclaredField("allLists");
+        Field handlers = HandlerList.class.getDeclaredField("handlers");
+        Field handlerSlots = HandlerList.class.getDeclaredField("handlerslots");
+        Field executor = RegisteredListener.class.getDeclaredField("executor");
+        allLists.setAccessible(true);
+        handlers.setAccessible(true);
+        handlerSlots.setAccessible(true);
+        executor.setAccessible(true);
+        allListsField = allLists;
+        handlersField = handlers;
+        handlerSlotsField = handlerSlots;
+        executorField = executor;
+      } catch (Throwable e) {
+        e.printStackTrace();
+      }
+
+      handlerFieldsResolved = true;
+      return allListsField != null;
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  private static ArrayList<HandlerList> allHandlerLists() {
+    try {
+      return (ArrayList<HandlerList>) allListsField.get(null);
+    } catch (IllegalAccessException e) {
+      throw new IllegalStateException(e);
+    }
+  }
+
+  private static RegisteredListener[] handlersOf(HandlerList list) {
+    try {
+      return (RegisteredListener[]) handlersField.get(list);
+    } catch (IllegalAccessException e) {
+      throw new IllegalStateException(e);
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  private static EnumMap<EventPriority, ArrayList<RegisteredListener>> handlerSlotsOf(HandlerList list) {
+    try {
+      return (EnumMap<EventPriority, ArrayList<RegisteredListener>>) handlerSlotsField.get(list);
+    } catch (IllegalAccessException e) {
+      throw new IllegalStateException(e);
+    }
+  }
+
+  private static EventExecutor executorOf(RegisteredListener listener) {
+    try {
+      return (EventExecutor) executorField.get(listener);
+    } catch (IllegalAccessException e) {
+      throw new IllegalStateException(e);
+    }
+  }
+
   public void updateHandlerListInjections() {
-    if (running.get()) {
+    if (running.get() || !resolveHandlerFields()) {
       return;
     }
 
@@ -155,15 +227,15 @@ public class EventController extends TickedObject implements IController, Listen
         int m = 0;
         Map<String, Double> pluginTime = new HashMap<>();
         Map<String, Integer> pluginCalls = new HashMap<>();
-        ArrayList<HandlerList> h = new ArrayList<>(Curse.on(HandlerList.class).get("allLists"));
+        ArrayList<HandlerList> h = new ArrayList<>(allHandlerLists());
 
         for (HandlerList i : h) {
-          RegisteredListener[] r = Curse.on(i).get("handlers");
-          EnumMap<EventPriority, ArrayList<RegisteredListener>> map = Curse.on(i).get("handlerslots");
+          RegisteredListener[] r = handlersOf(i);
+          EnumMap<EventPriority, ArrayList<RegisteredListener>> map = handlerSlotsOf(i);
           if (r != null) {
             for (int j = 0; j < r.length; j++) {
               if (!(r[j] instanceof NaughtyRegisteredListener)) {
-                r[j] = new NaughtyRegisteredListener(r[j].getListener(), Curse.on(r[j]).get("executor"),
+                r[j] = new NaughtyRegisteredListener(r[j].getListener(), executorOf(r[j]),
                     r[j].getPriority(), r[j].getPlugin(), r[j].isIgnoringCancelled());
               } else {
                 NaughtyRegisteredListener naughty = (NaughtyRegisteredListener) r[j];
@@ -186,7 +258,7 @@ public class EventController extends TickedObject implements IController, Listen
             for (ArrayList<RegisteredListener> j : map.values()) {
               for (int k = 0; k < j.size(); k++) {
                 if (!(j.get(k) instanceof NaughtyRegisteredListener)) {
-                  j.set(k, new NaughtyRegisteredListener(j.get(k).getListener(), Curse.on(j.get(k)).get("executor"),
+                  j.set(k, new NaughtyRegisteredListener(j.get(k).getListener(), executorOf(j.get(k)),
                       j.get(k).getPriority(), j.get(k).getPlugin(), j.get(k).isIgnoringCancelled()));
                 } else {
                   NaughtyRegisteredListener naughty = (NaughtyRegisteredListener) j.get(k);
@@ -219,16 +291,20 @@ public class EventController extends TickedObject implements IController, Listen
   }
 
   public void pullOut() {
+    if (!resolveHandlerFields()) {
+      return;
+    }
+
     int out = 0;
-    ArrayList<HandlerList> h = new ArrayList<>(Curse.on(HandlerList.class).get("allLists"));
+    ArrayList<HandlerList> h = new ArrayList<>(allHandlerLists());
 
     for (HandlerList i : h) {
-      RegisteredListener[] r = Curse.on(i).get("handlers");
-      EnumMap<EventPriority, ArrayList<RegisteredListener>> map = Curse.on(i).get("handlerslots");
+      RegisteredListener[] r = handlersOf(i);
+      EnumMap<EventPriority, ArrayList<RegisteredListener>> map = handlerSlotsOf(i);
       if (r != null) {
         for (int j = 0; j < r.length; j++) {
           if ((r[j] instanceof NaughtyRegisteredListener)) {
-            r[j] = new RegisteredListener(r[j].getListener(), Curse.on(r[j]).get("executor"),
+            r[j] = new RegisteredListener(r[j].getListener(), executorOf(r[j]),
                 r[j].getPriority(), r[j].getPlugin(), r[j].isIgnoringCancelled());
             out++;
           }
@@ -239,7 +315,7 @@ public class EventController extends TickedObject implements IController, Listen
         for (ArrayList<RegisteredListener> j : map.values()) {
           for (int k = 0; k < j.size(); k++) {
             if ((j.get(k) instanceof NaughtyRegisteredListener)) {
-              j.set(k, new RegisteredListener(j.get(k).getListener(), Curse.on(j.get(k)).get("executor"),
+              j.set(k, new RegisteredListener(j.get(k).getListener(), executorOf(j.get(k)),
                   j.get(k).getPriority(), j.get(k).getPlugin(), j.get(k).isIgnoringCancelled()));
               out++;
             }

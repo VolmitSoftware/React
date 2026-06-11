@@ -104,11 +104,16 @@ public final class NmsBridgeRegistry {
                 if (paramTypes == null) {
                     continue;
                 }
-                Method method = clazz.getDeclaredMethod(memberName, paramTypes);
+                Method method = findMethod(clazz, memberName, paramTypes);
+                if (method == null) {
+                    lastError = new NoSuchMethodException(clazz.getName() + "." + memberName
+                            + "(" + String.join(",", candidate) + ") on class, superclasses, or interfaces");
+                    continue;
+                }
                 method.setAccessible(true);
                 MethodHandles.Lookup methodLookup;
                 try {
-                    methodLookup = MethodHandles.privateLookupIn(clazz, MethodHandles.lookup());
+                    methodLookup = MethodHandles.privateLookupIn(method.getDeclaringClass(), MethodHandles.lookup());
                 } catch (IllegalAccessException ignored) {
                     methodLookup = MethodHandles.lookup();
                 }
@@ -127,6 +132,25 @@ public final class NmsBridgeRegistry {
                 ? lastError.getClass().getSimpleName() + ": " + lastError.getMessage()
                 : "no matching overload found";
         return unavailable(descriptor, "Method '" + memberName + "' not resolved on " + clazz.getName() + ": " + reason);
+    }
+
+    private Method findMethod(Class<?> clazz, String memberName, Class<?>[] paramTypes) {
+        Class<?> search = clazz;
+        while (search != null) {
+            try {
+                return search.getDeclaredMethod(memberName, paramTypes);
+            } catch (NoSuchMethodException ignored) {
+                search = search.getSuperclass();
+            }
+        }
+
+        try {
+            // Public methods declared only on interfaces are invisible to the
+            // declared-method superclass walk; getMethod resolves them.
+            return clazz.getMethod(memberName, paramTypes);
+        } catch (NoSuchMethodException ignored) {
+            return null;
+        }
     }
 
     private NmsBridgeHandle resolveField(NmsBridgeDescriptor descriptor, Class<?> clazz, String memberName) {

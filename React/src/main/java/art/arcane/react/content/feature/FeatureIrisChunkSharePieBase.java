@@ -26,6 +26,8 @@ abstract class FeatureIrisChunkSharePieBase extends ReactFeature implements List
   private static final TinyColor PANEL_BORDER = new TinyColor(32, 44, 56);
   private static final TinyColor EMPTY = new TinyColor(66, 66, 74);
   private static final TinyColor DONUT_CENTER = new TinyColor(14, 19, 24);
+  private static final TinyColor BACKDROP_DOT = new TinyColor(22, 30, 38);
+  private static final TinyColor DONUT_RING = new TinyColor(34, 44, 56);
   private static final TinyColor[] COLORS = new TinyColor[]{
       new TinyColor(78, 186, 132),
       new TinyColor(72, 140, 204),
@@ -57,8 +59,7 @@ abstract class FeatureIrisChunkSharePieBase extends ReactFeature implements List
   @Override
   public final void render() {
     drawBackdrop();
-    set(0, 0, width(), 12, headerColor());
-    text(4, 2, title());
+    dashHeader(title(), null, headerColor());
 
     Player viewer = player();
     if (viewer == null || !viewer.isOnline()) {
@@ -78,7 +79,7 @@ abstract class FeatureIrisChunkSharePieBase extends ReactFeature implements List
     long total = total(slices);
     drawPie(centerX, centerY, 27, 11, slices, total);
     drawLegend(62, 16, slices);
-    text(4, 116, "Total: " + compact(total) + " " + totalUnitLabel());
+    text(4, 116, "Total: " + compact(total) + " " + totalUnitLabel(), TEXT_DIM);
   }
 
   @Override
@@ -423,7 +424,7 @@ abstract class FeatureIrisChunkSharePieBase extends ReactFeature implements List
 
     for (int x = 0; x < width(); x += 6) {
       for (int y = 14; y < height(); y += 6) {
-        set(x, y, new TinyColor(22, 30, 38));
+        set(x, y, BACKDROP_DOT);
       }
     }
   }
@@ -450,24 +451,20 @@ abstract class FeatureIrisChunkSharePieBase extends ReactFeature implements List
 
         if (Math.abs(distSq - outerSq) < (outerRadius * 2)
             || Math.abs(distSq - innerSq) < (innerRadius * 2)) {
-          set(x, y, new TinyColor(34, 44, 56));
+          set(x, y, DONUT_RING);
         }
       }
     }
   }
 
   private TinyColor gradient(double normalized, TinyColor low, TinyColor high) {
-    double n = Math.max(0D, Math.min(1D, normalized));
-    int r = (int) Math.round((low.getColor().getRed() * (1D - n)) + (high.getColor().getRed() * n));
-    int g = (int) Math.round((low.getColor().getGreen() * (1D - n)) + (high.getColor().getGreen() * n));
-    int b = (int) Math.round((low.getColor().getBlue() * (1D - n)) + (high.getColor().getBlue() * n));
-    return new TinyColor(r, g, b);
+    return new TinyColor(gradientRgb(normalized, low, high));
   }
 
   private TinyColor shade(TinyColor base, double factor) {
-    int r = (int) Math.round(base.getColor().getRed() * factor);
-    int g = (int) Math.round(base.getColor().getGreen() * factor);
-    int b = (int) Math.round(base.getColor().getBlue() * factor);
+    int r = (int) Math.round(base.getRed() * factor);
+    int g = (int) Math.round(base.getGreen() * factor);
+    int b = (int) Math.round(base.getBlue() * factor);
     return new TinyColor(
         Math.max(0, Math.min(255, r)),
         Math.max(0, Math.min(255, g)),

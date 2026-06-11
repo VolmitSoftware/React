@@ -34,7 +34,7 @@ public class IntegrationController extends TickedObject implements IController {
   private static final double ADAPT_ABILITY_OPS_THRESHOLD = 240D;
   private static final int ADAPT_ABILITY_OPS_SUSTAINED_SAMPLES = 3;
   private static final double ADAPT_ABILITY_OPS_MSPT_GATE = 50D;
-  private static final Set<String> PRIMARY_PLUGINS = Set.of("iris", "adapt");
+  private static final Set<String> PRIMARY_PLUGINS = Set.of("iris", "adapt", "wormholes");
 
   private final transient AtomicBoolean syncTickQueued = new AtomicBoolean(false);
   private final transient Map<String, IntegrationNodeState> nodes = new ConcurrentHashMap<>();
@@ -525,6 +525,9 @@ public class IntegrationController extends TickedObject implements IController {
     }
     if ("adapt".equals(normalized)) {
       return IntegrationMetricSchema.adaptKeys();
+    }
+    if ("wormholes".equals(normalized)) {
+      return IntegrationMetricSchema.wormholesKeys();
     }
     return Set.of();
   }

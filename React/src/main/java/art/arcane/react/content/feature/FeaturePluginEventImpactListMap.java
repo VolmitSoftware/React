@@ -31,6 +31,8 @@ import java.util.List;
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Plugin Event Impact List Map feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeaturePluginEventImpactListMap extends ReactFeature implements ReactRenderer {
   public static final String ID = "plugin-event-impact-list-map";
+  private static final TinyColor ACCENT = new TinyColor(236, 142, 58);
+  private static final TinyColor FRAME_VALUE = new TinyColor(126, 196, 255);
   @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum entries shown by plugin event impact list map.", impact = "Higher values show more plugins but reduce per-row readability.")
   private int maxEntries = 7;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum entries shown when plugin event impact list map is placed in item-frames.", impact = "Lower values improve readability from distance; higher values show more rows with denser text.")
@@ -44,17 +46,13 @@ public class FeaturePluginEventImpactListMap extends ReactFeature implements Rea
   public void render() {
     boolean frameAnchored = isFrameAnchored();
     drawBackdrop();
-    set(0, 0, width(), 12, frameAnchored ? new TinyColor(164, 102, 46) : new TinyColor(146, 92, 40));
-    text(4, 2, frameAnchored ? "Plugin Impact" : "Plugin Impact Rank");
-    if (frameAnchored) {
-      text(97, 2, "Frame");
-    }
+    dashHeader("Plugin Impact", frameAnchored ? "FRAME" : null, ACCENT, FRAME_VALUE);
 
     PluginEventImpactSeries.Snapshot snapshot = PluginEventImpactSeries.snapshot();
     List<PluginEventImpactSeries.Entry> entries = snapshot.entries();
     if (entries.isEmpty()) {
-      text(4, 20, "No plugin event impact data");
-      text(4, 30, "Open this map for a few seconds");
+      text(4, 20, "No plugin event impact data", TEXT_BRIGHT);
+      text(4, 30, "Open this map for a few seconds", TEXT_DIM);
       return;
     }
 
@@ -125,12 +123,12 @@ public class FeaturePluginEventImpactListMap extends ReactFeature implements Rea
 
   private void drawStandardRow(int rank, int y, double normalized, double percent, PluginEventImpactSeries.Entry entry) {
     String rankLabel = "#" + (rank + 1);
-    text(4, y, rankLabel);
+    text(4, y, rankLabel, TEXT_DIM);
 
     int pluginX = 18;
     int barX = 74;
     int pluginMaxWidth = Math.max(10, barX - pluginX - 3);
-    text(pluginX, y, trimToWidth(entry.plugin(), pluginMaxWidth));
+    text(pluginX, y, trimToWidth(entry.plugin(), pluginMaxWidth), TEXT_BRIGHT);
 
     int barY = y + 2;
     int barW = 48;
@@ -141,16 +139,16 @@ public class FeaturePluginEventImpactListMap extends ReactFeature implements Rea
     }
 
     String line = Form.f(percent, 1) + "%  " + compact(entry.impact()) + " ms";
-    text(4, y + 8, line);
+    text(4, y + 8, line, TEXT_DIM);
   }
 
   private void drawFrameRow(int rank, int y, double normalized, double percent, PluginEventImpactSeries.Entry entry) {
-    text(4, y, "#" + (rank + 1));
+    text(4, y, "#" + (rank + 1), TEXT_DIM);
 
     String percentLabel = Form.f(percent, 1) + "%";
     int percentX = Math.max(78, 121 - textWidth(percentLabel) + 1);
-    text(20, y, trimToWidth(entry.plugin(), Math.max(10, percentX - 23)));
-    text(percentX, y, percentLabel);
+    text(20, y, trimToWidth(entry.plugin(), Math.max(10, percentX - 23)), TEXT_BRIGHT);
+    text(percentX, y, percentLabel, TEXT_DIM);
 
     int barX = 20;
     int barY = y + 8;
@@ -178,11 +176,7 @@ public class FeaturePluginEventImpactListMap extends ReactFeature implements Rea
   }
 
   private TinyColor gradient(double normalized, TinyColor low, TinyColor high) {
-    double n = Math.max(0D, Math.min(1D, normalized));
-    int r = (int) Math.round((low.getColor().getRed() * (1D - n)) + (high.getColor().getRed() * n));
-    int g = (int) Math.round((low.getColor().getGreen() * (1D - n)) + (high.getColor().getGreen() * n));
-    int b = (int) Math.round((low.getColor().getBlue() * (1D - n)) + (high.getColor().getBlue() * n));
-    return new TinyColor(r, g, b);
+    return new TinyColor(gradientRgb(normalized, low, high));
   }
 
   private String trimToWidth(String value, int maxWidth) {

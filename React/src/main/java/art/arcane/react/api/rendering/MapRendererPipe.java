@@ -22,7 +22,6 @@ package art.arcane.react.api.rendering;
 import art.arcane.react.React;
 import art.arcane.react.content.feature.FeatureUnknown;
 import art.arcane.react.core.controller.MapController;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.bukkit.entity.Player;
 import org.bukkit.map.MapCanvas;
@@ -30,10 +29,12 @@ import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 @Getter
-@AllArgsConstructor
 public class MapRendererPipe extends MapRenderer {
   private final String rendererId;
+  private final AtomicLong nextDrawAtMs = new AtomicLong(0L);
   private volatile ReactRenderer renderer;
 
   public MapRendererPipe(ReactRenderer renderer) {
@@ -67,6 +68,20 @@ public class MapRendererPipe extends MapRenderer {
     try {
       MapController controller = React.controller(MapController.class);
       if (controller != null && !controller.shouldRenderForPlayer(map, player)) {
+        return;
+      }
+
+      // The canvas is shared across all viewers; the renderer is invoked once per viewer per
+      // update by the server, so skipping within the redraw interval collapses N-viewer
+      // redraws to one without changing what any viewer sees.
+      long now = System.currentTimeMillis();
+      long nextDrawAt = nextDrawAtMs.get();
+      if (now < nextDrawAt) {
+        return;
+      }
+
+      long interval = controller == null ? 0L : controller.redrawIntervalMsFor(map);
+      if (!nextDrawAtMs.compareAndSet(nextDrawAt, now + interval)) {
         return;
       }
 

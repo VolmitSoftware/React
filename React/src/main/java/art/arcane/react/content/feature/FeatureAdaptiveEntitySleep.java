@@ -21,15 +21,19 @@ package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
 import art.arcane.react.api.feature.ReactFeature;
+import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.model.ReactEntity;
 import art.arcane.react.util.common.scheduling.J;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.NamespacedKey;
 import org.bukkit.World;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityTargetEvent;
+import org.bukkit.persistence.PersistentDataType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,6 +43,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Adaptive Entity Sleep feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureAdaptiveEntitySleep extends ReactFeature implements Listener {
   public static final String ID = "adaptive-entity-sleep";
+  private static final NamespacedKey nsDozing = new NamespacedKey(React.instance, "react-dozing");
   @art.arcane.react.util.project.config.ConfigDoc(value = "Main evaluation interval for adaptive entity sleep in milliseconds.", impact = "Lower values react faster but consume more CPU; higher values reduce overhead but react later.")
   private int tickIntervalMS = 1000;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum entities sampled allowed per cycle in adaptive entity sleep.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
@@ -61,6 +66,17 @@ public class FeatureAdaptiveEntitySleep extends ReactFeature implements Listener
   private boolean wakeOnDamage = true;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Controls whether adaptive entity sleep applies wake on target.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
   private boolean wakeOnTarget = true;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Duty-cycles mob awareness for mobs between the duty-cycle distance and the sleep distance while the server is under load.", impact = "Enable to shed mid-distance mob AI/pathfinding cost under load; disable to keep the original binary sleep behavior only.")
+  private boolean dutyCycleEnabled = true;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Distance from players where duty-cycling begins (blocks). Mobs closer than this always keep full AI.", impact = "Lower values duty-cycle mobs closer to players for more savings at the cost of visible AI hitches nearby.")
+  private double dutyCycleStartDistance = 24;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Number of rotating awareness slots; each duty-cycled mob is aware for one slot per rotation.", impact = "Higher values keep fewer mobs aware at once (more savings, slower mob reactions); lower values are gentler.")
+  private int dutyCycleSlots = 4;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Average tick milliseconds required before duty-cycling engages.", impact = "Lower values engage AI shedding earlier; higher values reserve it for heavier load.")
+  private double dutyCycleMinTickMs = 42;
+  private transient boolean dutyCycleSupported;
+  private transient int dutyCycleIndex;
+  private transient double lastTickMs;
 
   public FeatureAdaptiveEntitySleep() {
     super(ID);
@@ -68,12 +84,33 @@ public class FeatureAdaptiveEntitySleep extends ReactFeature implements Listener
 
   @Override
   public void onActivate() {
-
+    dutyCycleSupported = false;
+    dutyCycleIndex = 0;
+    lastTickMs = 0;
+    try {
+      Mob.class.getMethod("setAware", boolean.class);
+      Mob.class.getMethod("isAware");
+      dutyCycleSupported = true;
+    } catch (NoSuchMethodException e) {
+      React.verbose("Adaptive entity sleep duty-cycling unavailable: Mob#setAware not present on this server software.");
+    }
   }
 
   @Override
   public void onDeactivate() {
+    if (J.isFoliaThreading()) {
+      return;
+    }
 
+    J.s(() -> {
+      for (World world : Bukkit.getWorlds()) {
+        for (Entity entity : world.getEntities()) {
+          if (entity instanceof Mob mob) {
+            undoze(mob);
+          }
+        }
+      }
+    });
   }
 
   @Override
@@ -83,12 +120,24 @@ public class FeatureAdaptiveEntitySleep extends ReactFeature implements Listener
 
   @Override
   public void onTick() {
+    dutyCycleIndex++;
+    lastTickMs = sampleTickMs();
+
     if (J.isFoliaThreading()) {
       applyFoliaSleepScan();
       return;
     }
 
     J.s(this::applySleepScan);
+  }
+
+  private double sampleTickMs() {
+    try {
+      art.arcane.react.api.sampler.Sampler sampler = React.sampler(SamplerTickTime.ID);
+      return sampler == null ? 0D : sampler.sample();
+    } catch (Throwable ignored) {
+      return 0D;
+    }
   }
 
   private void applySleepScan() {
@@ -175,14 +224,70 @@ public class FeatureAdaptiveEntitySleep extends ReactFeature implements Listener
       return;
     }
 
-    if (React.hasNearbyPlayer(entity.getLocation(), sleepBeyondNearestPlayer)) {
+    Location location = entity.getLocation();
+    if (React.hasNearbyPlayer(location, dutyCycleStartDistance)) {
       wake(entity);
+      return;
+    }
+
+    if (React.hasNearbyPlayer(location, sleepBeyondNearestPlayer)) {
+      if (ReactEntity.isPaused(entity)) {
+        ReactEntity.setPaused(entity, false);
+      }
+      applyDutyCycle(entity);
       return;
     }
 
     if (!ReactEntity.isPaused(entity)) {
       ReactEntity.setPaused(entity, true);
     }
+  }
+
+  private void applyDutyCycle(Entity entity) {
+    if (!dutyCycleSupported || !dutyCycleEnabled || !(entity instanceof Mob mob)) {
+      return;
+    }
+
+    if (lastTickMs < dutyCycleMinTickMs) {
+      undoze(mob);
+      return;
+    }
+
+    int slots = Math.max(2, dutyCycleSlots);
+    boolean awakeSlot = Math.floorMod(mob.getEntityId() + dutyCycleIndex, slots) == 0;
+    if (awakeSlot) {
+      undoze(mob);
+    } else {
+      doze(mob);
+    }
+  }
+
+  private void doze(Mob mob) {
+    if (isDozing(mob)) {
+      return;
+    }
+
+    // A mob that is already unaware without our flag was set by vanilla or another
+    // plugin; leave external awareness state alone.
+    if (!mob.isAware()) {
+      return;
+    }
+
+    mob.getPersistentDataContainer().set(nsDozing, PersistentDataType.BYTE, (byte) 1);
+    mob.setAware(false);
+  }
+
+  private void undoze(Mob mob) {
+    if (!dutyCycleSupported || !isDozing(mob)) {
+      return;
+    }
+
+    mob.setAware(true);
+    mob.getPersistentDataContainer().remove(nsDozing);
+  }
+
+  private boolean isDozing(Mob mob) {
+    return mob.getPersistentDataContainer().getOrDefault(nsDozing, PersistentDataType.BYTE, (byte) 0) == 1;
   }
 
   private boolean canManage(Entity entity) {
@@ -222,8 +327,16 @@ public class FeatureAdaptiveEntitySleep extends ReactFeature implements Listener
   }
 
   private void wake(Entity entity) {
-    if (entity != null && !entity.isDead() && ReactEntity.isPaused(entity)) {
+    if (entity == null || entity.isDead()) {
+      return;
+    }
+
+    if (ReactEntity.isPaused(entity)) {
       ReactEntity.setPaused(entity, false);
+    }
+
+    if (entity instanceof Mob mob) {
+      undoze(mob);
     }
   }
 

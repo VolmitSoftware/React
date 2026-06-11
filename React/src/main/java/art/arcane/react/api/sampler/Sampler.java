@@ -21,6 +21,7 @@ package art.arcane.react.api.sampler;
 
 import art.arcane.react.React;
 import art.arcane.react.api.rendering.Graph;
+import art.arcane.react.api.rendering.MapColors;
 import art.arcane.react.api.rendering.ReactRenderer;
 import art.arcane.react.core.controller.ObserverController;
 import art.arcane.react.core.controller.SampleController;
@@ -45,7 +46,6 @@ public interface Sampler extends Registered, ReactRenderer {
   default void render() {
     String normalizedId = normalizeSamplerId(getId());
     TinyColor[] palette = paletteFor(normalizedId);
-    TinyColor header = palette[0];
     TinyColor fillLow = palette[1];
     TinyColor fillHigh = palette[2];
     TinyColor line = palette[3];
@@ -53,14 +53,8 @@ public interface Sampler extends Registered, ReactRenderer {
     TinyColor backgroundTop = palette[5];
     TinyColor backgroundBottom = palette[6];
 
-    for (int y = 0; y < height(); y++) {
-      double n = y / (double) Math.max(1, height() - 1);
-      set(0, y, 128, 1, gradient(n, backgroundTop, backgroundBottom));
-    }
-    set(0, 0, 128, 10, header);
-    text(3, 2, getName());
-
     Graph g = Graph.of(this);
+    double now = g.get(0);
     double min = g.getMin();
     double max = g.getMax();
     double pmax = g.getPaddedMax(0.15);
@@ -72,27 +66,71 @@ public interface Sampler extends Registered, ReactRenderer {
       pmin = min - 0.5D;
     }
 
-    for (int y = 16; y <= 112; y += 16) {
-      for (int x = 0; x < 128; x++) {
-        set(x, y, new TinyColor(18, 26, 34));
+    // Auto-scaling a near-flat series amplifies measurement jitter into full-height
+    // swings; enforce a minimum span relative to the value magnitude so steady
+    // readings render as a steady line.
+    double magnitude = Math.max(Math.abs(min), Math.abs(max));
+    double minSpan = magnitude * 0.25D;
+    if (minSpan > 0D && range < minSpan) {
+      double mid = (pmax + pmin) / 2D;
+      pmin = mid - (minSpan / 2D);
+      pmax = mid + (minSpan / 2D);
+      range = minSpan;
+    }
+
+    int chartTop = 16;
+    int chartBottom = 110;
+    int topRgb = backgroundTop.toRGB();
+    int bottomRgb = backgroundBottom.toRGB();
+    for (int y = 14; y < 116; y++) {
+      double n = (y - 14) / 101D;
+      fillRgb(0, y, 128, 1, MapColors.lerpRgb(n, topRgb, bottomRgb));
+    }
+
+    int gridRgb = MapColors.lerpRgb(0.16D, bottomRgb, line.toRGB());
+    for (int y = chartTop + 23; y < chartBottom; y += 24) {
+      for (int x = 0; x < 128; x += 4) {
+        setRgb(x, y, gridRgb);
       }
     }
 
+    int fillLowRgb = fillLow.toRGB();
+    int fillHighRgb = fillHigh.toRGB();
+    int glowRgb = MapColors.lerpRgb(0.45D, bottomRgb, line.toRGB());
+    int chartSpan = chartBottom - chartTop;
     int prevX = -1;
     int prevY = -1;
     for (int x = 0; x < 128; x++) {
-      double normalized = (g.get(x) - pmin) / range;
+      double normalized = (g.get(127 - x) - pmin) / range;
       if (!Double.isFinite(normalized)) {
         normalized = 0.5D;
       }
       normalized = M.clip(normalized, 0D, 1D);
-      int y = (int) M.lerp(116, 14, normalized);
-      y = Math.max(14, Math.min(116, y));
+      int y = (int) M.lerp(chartBottom, chartTop, normalized);
+      y = Math.max(chartTop, Math.min(chartBottom, y));
 
-      for (int fill = 116; fill >= y; fill--) {
-        double depth = (116D - fill) / 102D;
-        set(x, fill, gradient(depth, fillLow, fillHigh));
+      for (int fill = chartBottom; fill > y; fill--) {
+        double depth = (chartBottom - (double) fill) / chartSpan;
+        setRgb(x, fill, MapColors.lerpRgb(depth, fillLowRgb, fillHighRgb));
       }
+
+      if (prevX >= 0) {
+        line(prevX, Math.min(chartBottom, prevY + 1), x, Math.min(chartBottom, y + 1), new TinyColor(glowRgb));
+      }
+      prevX = x;
+      prevY = y;
+    }
+
+    prevX = -1;
+    prevY = -1;
+    for (int x = 0; x < 128; x++) {
+      double normalized = (g.get(127 - x) - pmin) / range;
+      if (!Double.isFinite(normalized)) {
+        normalized = 0.5D;
+      }
+      normalized = M.clip(normalized, 0D, 1D);
+      int y = (int) M.lerp(chartBottom, chartTop, normalized);
+      y = Math.max(chartTop, Math.min(chartBottom, y));
 
       if (prevX >= 0) {
         line(prevX, prevY, x, y, line);
@@ -104,21 +142,27 @@ public interface Sampler extends Registered, ReactRenderer {
     if (prevX >= 0 && prevY >= 0) {
       set(prevX, prevY, marker);
       set(Math.max(0, prevX - 1), prevY, marker);
-      set(prevX, Math.max(0, prevY - 1), marker);
+      set(prevX, Math.max(chartTop, prevY - 1), marker);
+      set(prevX, Math.min(chartBottom, prevY + 1), marker);
     }
 
-    String s = format(g.get(0));
-    text(3, 116, "Now: " + s);
-    text(3, 106, "Min: " + format(min));
-    text(3, 96, "Max: " + format(max));
-  }
+    String nowLabel = format(now);
+    dashHeader(getName(), nowLabel, line, marker);
 
-  private TinyColor gradient(double normalized, TinyColor low, TinyColor high) {
-    double n = M.clip(normalized, 0D, 1D);
-    int r = (int) Math.round((low.getColor().getRed() * (1D - n)) + (high.getColor().getRed() * n));
-    int g = (int) Math.round((low.getColor().getGreen() * (1D - n)) + (high.getColor().getGreen() * n));
-    int b = (int) Math.round((low.getColor().getBlue() * (1D - n)) + (high.getColor().getBlue() * n));
-    return new TinyColor(r, g, b);
+    set(0, 116, 128, 12, FOOTER_BAND);
+    set(3, 119, 4, 4, marker);
+    text(10, 118, nowLabel, TEXT_BRIGHT);
+    String lowLabel = "L " + formattedValue(min);
+    String highLabel = "H " + formattedValue(max);
+    int highX = 125 - textWidth(highLabel);
+    int lowX = highX - 6 - textWidth(lowLabel);
+    int nowEnd = 10 + textWidth(nowLabel);
+    if (lowX > nowEnd + 4) {
+      text(lowX, 118, lowLabel, TEXT_DIM);
+      text(highX, 118, highLabel, TEXT_DIM);
+    } else if (highX > nowEnd + 4) {
+      text(highX, 118, highLabel, TEXT_DIM);
+    }
   }
 
   private String normalizeSamplerId(String id) {
@@ -223,6 +267,17 @@ public interface Sampler extends Registered, ReactRenderer {
           new TinyColor(252, 220, 246),
           new TinyColor(18, 10, 18),
           new TinyColor(26, 14, 26)
+      );
+    }
+    if (containsAny(normalizedId, "wormhole")) {
+      return palette(
+          new TinyColor(110, 64, 190),
+          new TinyColor(50, 26, 92),
+          new TinyColor(150, 96, 235),
+          new TinyColor(200, 150, 255),
+          new TinyColor(236, 210, 255),
+          new TinyColor(12, 8, 20),
+          new TinyColor(20, 14, 32)
       );
     }
     if (containsAny(normalizedId, "processor", "cpu", "load", "react", "job", "queue", "backlog")) {

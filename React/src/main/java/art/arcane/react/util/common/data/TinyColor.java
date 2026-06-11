@@ -88,8 +88,20 @@ public class TinyColor {
     return hue((float) h / 360.0f);
   }
 
+  public int getRed() {
+    return r;
+  }
+
+  public int getGreen() {
+    return g;
+  }
+
+  public int getBlue() {
+    return b;
+  }
+
   public int toRGB() {
-    return new Color(r, g, b).getRGB();
+    return 0xFF000000 | (r << 16) | (g << 8) | b;
   }
 
   public Color getColor() {
