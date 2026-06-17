@@ -56,6 +56,10 @@ public class ReactRenderContext {
     contexts.put(Thread.currentThread().getId(), context);
   }
 
+  public static void pop() {
+    contexts.remove(Thread.currentThread().getId());
+  }
+
   public static ReactRenderContext of() {
     return contexts.get(Thread.currentThread().getId());
   }

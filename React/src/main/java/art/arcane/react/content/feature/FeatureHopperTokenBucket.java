@@ -29,10 +29,13 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 
-import java.util.HashMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectIterator;
+
 import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Hopper Token Bucket feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureHopperTokenBucket extends ReactFeature implements Listener {
@@ -49,7 +52,7 @@ public class FeatureHopperTokenBucket extends ReactFeature implements Listener {
   private boolean bypassWhenNearbyPlayers = true;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Bypass player radius used by hopper token bucket (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
   private double bypassPlayerRadius = 16;
-  private transient Map<ChunkKey, Bucket> buckets = new HashMap<>();
+  private transient Map<UUID, Long2ObjectOpenHashMap<Bucket>> buckets = new ConcurrentHashMap<>();
 
   public FeatureHopperTokenBucket() {
     super(ID);
@@ -57,7 +60,7 @@ public class FeatureHopperTokenBucket extends ReactFeature implements Listener {
 
   @Override
   public void onActivate() {
-    buckets = new HashMap<>();
+    buckets = new ConcurrentHashMap<>();
   }
 
   @Override
@@ -74,10 +77,17 @@ public class FeatureHopperTokenBucket extends ReactFeature implements Listener {
   public void onTick() {
     long now = System.currentTimeMillis();
     long expiry = 60000L;
-    Iterator<Map.Entry<ChunkKey, Bucket>> iterator = buckets.entrySet().iterator();
-    while (iterator.hasNext()) {
-      if (now - iterator.next().getValue().lastUse > expiry) {
-        iterator.remove();
+    Iterator<Map.Entry<UUID, Long2ObjectOpenHashMap<Bucket>>> worldIterator = buckets.entrySet().iterator();
+    while (worldIterator.hasNext()) {
+      Map.Entry<UUID, Long2ObjectOpenHashMap<Bucket>> worldEntry = worldIterator.next();
+      Long2ObjectOpenHashMap<Bucket> chunkMap = worldEntry.getValue();
+      synchronized (chunkMap) {
+        ObjectIterator<Long2ObjectOpenHashMap.Entry<Bucket>> chunkIterator = chunkMap.long2ObjectEntrySet().fastIterator();
+        while (chunkIterator.hasNext()) {
+          if (now - chunkIterator.next().getValue().lastUse > expiry) {
+            chunkIterator.remove();
+          }
+        }
       }
     }
   }
@@ -94,8 +104,17 @@ public class FeatureHopperTokenBucket extends ReactFeature implements Listener {
     }
 
     long now = System.currentTimeMillis();
-    ChunkKey key = new ChunkKey(location.getWorld().getUID(), location.getBlockX() >> 4, location.getBlockZ() >> 4);
-    Bucket bucket = buckets.computeIfAbsent(key, k -> new Bucket(now, bucketCapacity));
+    UUID worldId = location.getWorld().getUID();
+    long chunkKey = packChunk(location.getBlockX() >> 4, location.getBlockZ() >> 4);
+    Long2ObjectOpenHashMap<Bucket> chunkMap = buckets.computeIfAbsent(worldId, ignored -> new Long2ObjectOpenHashMap<>());
+    Bucket bucket;
+    synchronized (chunkMap) {
+      bucket = chunkMap.get(chunkKey);
+      if (bucket == null) {
+        bucket = new Bucket(now, bucketCapacity);
+        chunkMap.put(chunkKey, bucket);
+      }
+    }
 
     if (!bucket.consume(now, bucketCapacity, refillPerSecond, costPerMove)) {
       event.setCancelled(true);
@@ -147,39 +166,7 @@ public class FeatureHopperTokenBucket extends ReactFeature implements Listener {
     }
   }
 
-  private static final class ChunkKey {
-    @art.arcane.react.util.project.config.ConfigDoc(value = "World identifier used by hopper token bucket internal tracking.", impact = "This is runtime identity data and should normally be left to automatic updates.")
-    private final UUID world;
-    @art.arcane.react.util.project.config.ConfigDoc(value = "X-axis coordinate used by hopper token bucket internal tracking.", impact = "This is internal state data and should not normally be changed manually.")
-    private final int x;
-    @art.arcane.react.util.project.config.ConfigDoc(value = "Z-axis coordinate used by hopper token bucket internal tracking.", impact = "This is internal state data and should not normally be changed manually.")
-    private final int z;
-
-    private ChunkKey(UUID world, int x, int z) {
-      this.world = world;
-      this.x = x;
-      this.z = z;
-    }
-
-    @Override
-    public boolean equals(Object object) {
-      if (this == object) {
-        return true;
-      }
-
-      if (!(object instanceof ChunkKey key)) {
-        return false;
-      }
-
-      return x == key.x && z == key.z && world.equals(key.world);
-    }
-
-    @Override
-    public int hashCode() {
-      int result = world.hashCode();
-      result = 31 * result + x;
-      result = 31 * result + z;
-      return result;
-    }
+  private static long packChunk(int cx, int cz) {
+    return (((long) cx) << 32) ^ (cz & 0xFFFFFFFFL);
   }
 }

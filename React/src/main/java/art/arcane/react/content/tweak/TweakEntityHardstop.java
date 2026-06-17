@@ -20,8 +20,11 @@
 package art.arcane.react.content.tweak;
 
 import art.arcane.react.api.tweak.ReactTweak;
+import it.unimi.dsi.fastutil.longs.Long2LongMap;
+import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import org.bukkit.Chunk;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Item;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.CreatureSpawnEvent;
@@ -29,8 +32,7 @@ import org.bukkit.event.entity.EntityBreedEvent;
 import org.bukkit.event.entity.EntitySpawnEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Iterator;
 
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Entity Hardstop tweak. Hard-caps per-chunk entity population by cancelling new additions once limits are exceeded.")
 public class TweakEntityHardstop extends ReactTweak implements Listener {
@@ -42,7 +44,7 @@ public class TweakEntityHardstop extends ReactTweak implements Listener {
   private boolean allowItemDrops = true; // set to false to deny item drops
   @art.arcane.react.util.project.config.ConfigDoc(value = "Cache duration for chunks recently rejected by hardstop before re-checking entity counts (ticks).", impact = "Higher values reduce repeated counting overhead but can deny spawns longer; lower values re-check sooner with more overhead.")
   private int cacheIntervalTicks = 10 * 20; // cache for 10 seconds (20 ticks per second)
-  private transient Map<Chunk, Long> chunks = new HashMap<>();
+  private transient final Long2LongOpenHashMap chunks = new Long2LongOpenHashMap();
 
   public TweakEntityHardstop() {
     super(ID);
@@ -56,8 +58,7 @@ public class TweakEntityHardstop extends ReactTweak implements Listener {
   public void onEntitySpawn(EntitySpawnEvent event) {
     Entity entity = event.getEntity();
     Chunk chunk = entity.getLocation().getChunk();
-    // check if its a dropped item and if item drops are allowed
-    if (entity instanceof org.bukkit.entity.Item && allowItemDrops) {
+    if (entity instanceof Item && allowItemDrops) {
       return;
     }
     if (!canSpawnEntity(chunk)) {
@@ -92,22 +93,42 @@ public class TweakEntityHardstop extends ReactTweak implements Listener {
 
   private boolean canSpawnEntity(Chunk chunk) {
     long currentTime = System.currentTimeMillis();
-    Long lastChecked = chunks.get(chunk);
-    if (lastChecked != null && currentTime - lastChecked <= cacheIntervalTicks) {
-      return false;
+    long cacheWindowMs = (long) cacheIntervalTicks * 50L;
+    long key = chunkKey(chunk.getX(), chunk.getZ());
+    synchronized (chunks) {
+      evictExpired(currentTime, cacheWindowMs);
+      if (chunks.containsKey(key) && currentTime - chunks.get(key) <= cacheWindowMs) {
+        return false;
+      }
     }
     Entity[] entitiesInChunk = chunk.getEntities();
     int entityCount = 0;
     for (Entity entity : entitiesInChunk) {
-      if (!(entity instanceof org.bukkit.entity.Item) || !allowItemDrops) {
+      if (!(entity instanceof Item) || !allowItemDrops) {
         entityCount++;
       }
     }
     if (entityCount >= maxEntitiesPerChunk) {
-      chunks.put(chunk, currentTime);
+      synchronized (chunks) {
+        chunks.put(key, currentTime);
+      }
       return false;
     }
     return true;
+  }
+
+  private void evictExpired(long currentTime, long cacheWindowMs) {
+    Iterator<Long2LongMap.Entry> iterator = chunks.long2LongEntrySet().fastIterator();
+    while (iterator.hasNext()) {
+      Long2LongMap.Entry entry = iterator.next();
+      if (currentTime - entry.getLongValue() > cacheWindowMs) {
+        iterator.remove();
+      }
+    }
+  }
+
+  private static long chunkKey(int cx, int cz) {
+    return (long) cx << 32 | (cz & 0xffffffffL);
   }
 
 

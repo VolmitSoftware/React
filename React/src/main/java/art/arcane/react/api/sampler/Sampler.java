@@ -34,9 +34,13 @@ import net.kyori.adventure.text.Component;
 import org.bukkit.Chunk;
 import org.bukkit.block.Block;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 public interface Sampler extends Registered, ReactRenderer {
+  Map<String, TinyColor[]> PALETTE_CACHE = new ConcurrentHashMap<>();
+
   double sample();
 
   default double sample(Chunk c) {
@@ -183,6 +187,10 @@ public interface Sampler extends Registered, ReactRenderer {
   }
 
   private TinyColor[] paletteFor(String normalizedId) {
+    return PALETTE_CACHE.computeIfAbsent(normalizedId, this::computePalette);
+  }
+
+  private TinyColor[] computePalette(String normalizedId) {
     if (containsAny(normalizedId, "redstone")) {
       return palette(
           new TinyColor(156, 44, 36),

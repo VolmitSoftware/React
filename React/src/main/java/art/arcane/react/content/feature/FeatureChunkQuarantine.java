@@ -35,11 +35,16 @@ import org.bukkit.event.block.BlockRedstoneEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectIterator;
+
+import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Chunk Quarantine feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureChunkQuarantine extends ReactFeature implements Listener {
@@ -83,7 +88,8 @@ public class FeatureChunkQuarantine extends ReactFeature implements Listener {
   private int maxExpiryScansPerCycle = 1024;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Maintenance cadence used by chunk quarantine for pressure checks and stale-state cleanup (milliseconds).", impact = "Lower values respond and clean faster with more overhead; higher values reduce overhead but react/clean slower.")
   private int maintenanceIntervalMS = 1000;
-  private transient Map<ChunkKey, ChunkState> states = new ConcurrentHashMap<>();
+  private transient Map<UUID, Long2ObjectOpenHashMap<ChunkState>> states = new ConcurrentHashMap<>();
+  private transient final AtomicInteger trackedCount = new AtomicInteger(0);
   private transient volatile boolean pressure;
   private transient volatile long lastMaintenanceMS;
 
@@ -94,6 +100,7 @@ public class FeatureChunkQuarantine extends ReactFeature implements Listener {
   @Override
   public void onActivate() {
     states = new ConcurrentHashMap<>();
+    trackedCount.set(0);
     pressure = false;
     maintenanceQueued.set(false);
     lastMaintenanceMS = 0L;
@@ -102,6 +109,7 @@ public class FeatureChunkQuarantine extends ReactFeature implements Listener {
   @Override
   public void onDeactivate() {
     states.clear();
+    trackedCount.set(0);
     pressure = false;
     maintenanceQueued.set(false);
     lastMaintenanceMS = 0L;
@@ -152,17 +160,25 @@ public class FeatureChunkQuarantine extends ReactFeature implements Listener {
     int removed = 0;
     int scanned = 0;
 
-    for (Map.Entry<ChunkKey, ChunkState> entry : states.entrySet()) {
-      if (scanned++ >= maxScans) {
-        break;
-      }
-
-      ChunkState state = entry.getValue();
-      if (now - state.lastHit > expiry && now >= state.quarantinedUntil) {
-        if (states.remove(entry.getKey(), state)) {
-          removed++;
-          if (removed >= maxRemovals) {
-            break;
+    Iterator<Map.Entry<UUID, Long2ObjectOpenHashMap<ChunkState>>> worldIterator = states.entrySet().iterator();
+    outer:
+    while (worldIterator.hasNext()) {
+      Map.Entry<UUID, Long2ObjectOpenHashMap<ChunkState>> worldEntry = worldIterator.next();
+      Long2ObjectOpenHashMap<ChunkState> chunkMap = worldEntry.getValue();
+      synchronized (chunkMap) {
+        ObjectIterator<Long2ObjectOpenHashMap.Entry<ChunkState>> chunkIterator = chunkMap.long2ObjectEntrySet().fastIterator();
+        while (chunkIterator.hasNext()) {
+          if (scanned++ >= maxScans) {
+            break outer;
+          }
+          ChunkState state = chunkIterator.next().getValue();
+          if (now - state.lastHit > expiry && now >= state.quarantinedUntil) {
+            chunkIterator.remove();
+            trackedCount.decrementAndGet();
+            removed++;
+            if (removed >= maxRemovals) {
+              break outer;
+            }
           }
         }
       }
@@ -258,19 +274,20 @@ public class FeatureChunkQuarantine extends ReactFeature implements Listener {
       return false;
     }
 
-    ChunkKey key = new ChunkKey(location.getWorld().getUID(), location.getBlockX() >> 4, location.getBlockZ() >> 4);
-    ChunkState state = states.get(key);
+    UUID worldId = location.getWorld().getUID();
+    long chunkKey = packChunk(location.getBlockX() >> 4, location.getBlockZ() >> 4);
+    Long2ObjectOpenHashMap<ChunkState> chunkMap = states.computeIfAbsent(worldId, ignored -> new Long2ObjectOpenHashMap<>());
     long now = System.currentTimeMillis();
-
-    if (state == null) {
-      if (states.size() >= maxTrackedChunks) {
-        return false;
-      }
-
-      state = new ChunkState(now);
-      ChunkState existing = states.putIfAbsent(key, state);
-      if (existing != null) {
-        state = existing;
+    ChunkState state;
+    synchronized (chunkMap) {
+      state = chunkMap.get(chunkKey);
+      if (state == null) {
+        if (trackedCount.get() >= maxTrackedChunks) {
+          return false;
+        }
+        state = new ChunkState(now);
+        chunkMap.put(chunkKey, state);
+        trackedCount.incrementAndGet();
       }
     }
 
@@ -283,6 +300,10 @@ public class FeatureChunkQuarantine extends ReactFeature implements Listener {
     }
 
     return now < state.quarantinedUntil;
+  }
+
+  private static long packChunk(int cx, int cz) {
+    return (((long) cx) << 32) ^ (cz & 0xFFFFFFFFL);
   }
 
   private boolean shouldTrackSpawn(CreatureSpawnEvent.SpawnReason reason) {
@@ -345,39 +366,4 @@ public class FeatureChunkQuarantine extends ReactFeature implements Listener {
     }
   }
 
-  private static final class ChunkKey {
-    @art.arcane.react.util.project.config.ConfigDoc(value = "World identifier used by chunk quarantine internal tracking.", impact = "This is runtime identity data and should normally be left to automatic updates.")
-    private final UUID world;
-    @art.arcane.react.util.project.config.ConfigDoc(value = "X-axis coordinate used by chunk quarantine internal tracking.", impact = "This is internal state data and should not normally be changed manually.")
-    private final int x;
-    @art.arcane.react.util.project.config.ConfigDoc(value = "Z-axis coordinate used by chunk quarantine internal tracking.", impact = "This is internal state data and should not normally be changed manually.")
-    private final int z;
-
-    private ChunkKey(UUID world, int x, int z) {
-      this.world = world;
-      this.x = x;
-      this.z = z;
-    }
-
-    @Override
-    public boolean equals(Object object) {
-      if (this == object) {
-        return true;
-      }
-
-      if (!(object instanceof ChunkKey key)) {
-        return false;
-      }
-
-      return x == key.x && z == key.z && world.equals(key.world);
-    }
-
-    @Override
-    public int hashCode() {
-      int result = world.hashCode();
-      result = 31 * result + x;
-      result = 31 * result + z;
-      return result;
-    }
-  }
 }

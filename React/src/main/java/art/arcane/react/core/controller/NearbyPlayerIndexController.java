@@ -260,10 +260,20 @@ public class NearbyPlayerIndexController extends TickedObject implements IContro
     int chunkZ = chunkCoordinate(z);
     long chunkKey = chunkKey(chunkX, chunkZ);
     long now = System.currentTimeMillis();
-    PlayerSnapshot snapshot = new PlayerSnapshot(playerId, worldId, x, y, z, now);
-    snapshotsByPlayer.put(playerId, snapshot);
 
-    PlayerBucketRef previous = bucketByPlayer.put(playerId, new PlayerBucketRef(worldId, chunkKey));
+    PlayerBucketRef previous = bucketByPlayer.get(playerId);
+    boolean sameBucket = previous != null && previous.worldId.equals(worldId) && previous.chunkKey == chunkKey;
+
+    if (sameBucket) {
+      PlayerSnapshot existing = snapshotsByPlayer.get(playerId);
+      if (existing != null && worldId.equals(existing.worldId)) {
+        existing.update(x, y, z, now);
+        return;
+      }
+    }
+
+    snapshotsByPlayer.put(playerId, new PlayerSnapshot(playerId, worldId, x, y, z, now));
+    bucketByPlayer.put(playerId, new PlayerBucketRef(worldId, chunkKey));
     if (previous != null && (!previous.worldId.equals(worldId) || previous.chunkKey != chunkKey)) {
       removeFromBucket(playerId, previous.worldId, previous.chunkKey);
     }
@@ -371,14 +381,21 @@ public class NearbyPlayerIndexController extends TickedObject implements IContro
   private static final class PlayerSnapshot {
     private final UUID playerId;
     private final UUID worldId;
-    private final double x;
-    private final double y;
-    private final double z;
-    private final long lastUpdateMs;
+    private volatile double x;
+    private volatile double y;
+    private volatile double z;
+    private volatile long lastUpdateMs;
 
     private PlayerSnapshot(UUID playerId, UUID worldId, double x, double y, double z, long lastUpdateMs) {
       this.playerId = playerId;
       this.worldId = worldId;
+      this.x = x;
+      this.y = y;
+      this.z = z;
+      this.lastUpdateMs = lastUpdateMs;
+    }
+
+    private void update(double x, double y, double z, long lastUpdateMs) {
       this.x = x;
       this.y = y;
       this.z = z;

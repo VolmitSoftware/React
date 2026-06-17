@@ -128,7 +128,7 @@ public class FeatureItemSuperStacker extends ReactFeature implements Listener {
     }
   }
 
-  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+  @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
   public void on(EntityPickupItemEvent e) {
     if (e.getEntity() instanceof Player p) {
       if (isSuperStack(e.getItem())) {
@@ -149,7 +149,7 @@ public class FeatureItemSuperStacker extends ReactFeature implements Listener {
     }
   }
 
-  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+  @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
   public void on(InventoryClickEvent e) {
     if (e.getWhoClicked() instanceof Player p) {
       if (e.getCurrentItem() != null && BundleUtils.isFlagged(e.getCurrentItem())) {
@@ -168,7 +168,7 @@ public class FeatureItemSuperStacker extends ReactFeature implements Listener {
     mergeWithNearbyItems(e.getEntity());
   }
 
-  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+  @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
   public void onInventoryMoveItemEvent(InventoryMoveItemEvent event) {
     InventoryHolder holder = event.getDestination().getHolder();
 

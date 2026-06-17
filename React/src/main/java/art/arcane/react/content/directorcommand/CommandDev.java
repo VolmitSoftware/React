@@ -35,11 +35,18 @@ import art.arcane.react.content.action.ActionPurgeEntities;
 import art.arcane.react.content.action.ActionQuarantineHotChunks;
 import art.arcane.react.content.action.ActionTrimEntitiesByAgePriority;
 import art.arcane.react.content.action.ActionUnknown;
+import art.arcane.react.content.feature.FeatureCropFastForward;
+import art.arcane.react.content.feature.FeatureLazyGravity;
+import art.arcane.react.content.feature.FeatureWorldSaveStaggering;
+import art.arcane.react.core.bridge.BridgeHealthReport;
 import art.arcane.react.core.controller.ActionController;
 import art.arcane.react.core.controller.FeatureController;
 import art.arcane.react.core.controller.SampleController;
 import art.arcane.react.core.controller.TweakController;
 import art.arcane.react.model.AreaActionParams;
+import art.arcane.react.nms.NmsBridge;
+import art.arcane.react.nms.NmsBridges;
+import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.director.DirectorExecutor;
 import art.arcane.react.util.format.C;
 import art.arcane.react.util.plugin.VolmitSender;
@@ -47,15 +54,24 @@ import art.arcane.react.util.project.registry.Registry;
 import art.arcane.volmlib.util.director.DirectorOrigin;
 import art.arcane.volmlib.util.director.annotations.Director;
 import art.arcane.volmlib.util.director.annotations.Param;
+import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
+import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.block.Block;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.FallingBlock;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 @Director(
     name = "dev",
@@ -76,6 +92,16 @@ public class CommandDev implements DirectorExecutor {
   private static final Set<String> EXCLUDED_ACTION_IDS = Set.of(
       ActionIncidentPlaybook.ID,
       ActionUnknown.ID
+  );
+  private static final List<String> VERIFY_SAMPLER_IDS = List.of(
+      "crop-fast-forward",
+      "lazy-gravity-skipped",
+      "hopper-chain-coalescing",
+      "spawner-light-cache-skipped",
+      "pdc-write-batcher",
+      "explosion-packet-reduction",
+      "per-world-tick-time",
+      "world-save-duration"
   );
 
   @Director(
@@ -120,6 +146,228 @@ public class CommandDev implements DirectorExecutor {
     }
 
     queueStep(commandSender, steps, 0);
+  }
+
+  @Director(
+      name = "verify",
+      aliases = {"v", "selftest"},
+      origin = DirectorOrigin.BOTH,
+      sync = true,
+      description = "Self-verify the optimization-sweep fixes (bridge, samplers, lazy-gravity landing, autosave restore) and report PASS/FAIL."
+  )
+  public void verify() {
+    VolmitSender out = sender();
+    out.sendMessage(C.REACT + "React verify — optimization-sweep fix checks");
+    out.sendMessage("      " + C.GRAY + "platform: " + (J.isFoliaThreading()
+        ? C.GREEN + "Folia / region-threaded"
+        : C.YELLOW + "single-thread (Paper/Purpur) — Folia-only fixes can't fire here"));
+
+    verifyBridge(out);
+    verifySamplers(out);
+    verifyCropObservational(out);
+    verifyLazyGravity(out, () -> verifyWorldSave(out, () ->
+        out.sendMessage(C.REACT + "React verify — complete.")));
+  }
+
+  private void verifyBridge(VolmitSender out) {
+    NmsBridge bridge = NmsBridges.get();
+    if (bridge == null) {
+      out.sendMessage("  " + skipTag() + C.WHITE + "nms-bridge" + C.GRAY + " — unavailable: " + NmsBridges.failureReason());
+      return;
+    }
+
+    BridgeHealthReport report = React.bridgeRegistry().snapshotHealth();
+    boolean healthy = report.unavailableCount() == 0;
+    out.sendMessage("  " + passTag(healthy) + C.WHITE + "nms-bridge" + C.GRAY + " — "
+        + report.availableCount() + " available, " + report.unavailableCount() + " unavailable");
+    if (!healthy) {
+      for (BridgeHealthReport.BridgeHealthEntry entry : report.entries()) {
+        if (!entry.available()) {
+          out.sendMessage("      " + C.RED + entry.logicalId() + " " + entry.failureReason());
+        }
+      }
+    }
+
+    FeatureLazyGravity gravity = React.feature(FeatureLazyGravity.class);
+    if (gravity != null) {
+      boolean hookActive = !gravity.isMeasurementOnly();
+      out.sendMessage("  " + (hookActive ? passTag(true) : warnTag()) + C.WHITE + "nms-hooks" + C.GRAY
+          + " — falling-block hook " + (hookActive ? "installed" : "measurement-only (not installed)"));
+    }
+    out.sendMessage("      " + C.GRAY + "reset() uninstalls all 6 hooks incl. hopper (reload-leak fixed)");
+  }
+
+  private void verifySamplers(VolmitSender out) {
+    int missing = 0;
+    int invalid = 0;
+    StringBuilder values = new StringBuilder();
+    for (String id : VERIFY_SAMPLER_IDS) {
+      Sampler sampler = React.sampler(id);
+      if (sampler == null) {
+        missing++;
+        out.sendMessage("      " + C.RED + "missing sampler: " + id);
+        continue;
+      }
+
+      double value = sampler.sample();
+      if (Double.isNaN(value) || Double.isInfinite(value) || value < 0D) {
+        invalid++;
+        out.sendMessage("      " + C.RED + id + " returned " + value);
+        continue;
+      }
+
+      if (values.length() > 0) {
+        values.append(C.GRAY).append(", ");
+      }
+      values.append(C.WHITE).append(id).append("=").append(sampler.format(value));
+    }
+
+    boolean pass = missing == 0 && invalid == 0;
+    out.sendMessage("  " + passTag(pass) + C.WHITE + "samplers" + C.GRAY + " — "
+        + VERIFY_SAMPLER_IDS.size() + " checked, " + missing + " missing, " + invalid + " invalid");
+    if (values.length() > 0) {
+      out.sendMessage("      " + values);
+    }
+  }
+
+  private void verifyCropObservational(VolmitSender out) {
+    FeatureCropFastForward crop = React.feature(FeatureCropFastForward.class);
+    if (crop == null) {
+      out.sendMessage("  " + skipTag() + C.WHITE + "crop-fast-forward" + C.GRAY + " — feature not registered");
+      return;
+    }
+
+    Sampler sampler = React.sampler("crop-fast-forward");
+    String rate = sampler == null ? "n/a" : sampler.format(sampler.sample());
+    out.sendMessage("  " + infoTag() + C.WHITE + "crop-fast-forward" + C.GRAY
+        + " — enabled=" + crop.isEnabled() + ", rate=" + rate);
+    out.sendMessage("      " + C.GRAY + "single-step clamp removed (proportional growth). Fires on dormant->active wake; observe by leaving/returning to a planted area.");
+  }
+
+  private void verifyLazyGravity(VolmitSender out, Runnable onDone) {
+    FeatureLazyGravity gravity = React.feature(FeatureLazyGravity.class);
+    if (gravity == null) {
+      out.sendMessage("  " + skipTag() + C.WHITE + "lazy-gravity" + C.GRAY + " — feature not registered");
+      onDone.run();
+      return;
+    }
+    if (Bukkit.getWorlds().isEmpty()) {
+      out.sendMessage("  " + skipTag() + C.WHITE + "lazy-gravity" + C.GRAY + " — no worlds loaded");
+      onDone.run();
+      return;
+    }
+
+    World world = Bukkit.getWorlds().get(0);
+    Location base = world.getSpawnLocation();
+    int x = base.getBlockX();
+    int z = base.getBlockZ();
+    int groundY = world.getHighestBlockYAt(x, z);
+    int spawnY = Math.min(world.getMaxHeight() - 2, groundY + 20);
+    if (spawnY <= groundY + 2) {
+      out.sendMessage("  " + skipTag() + C.WHITE + "lazy-gravity" + C.GRAY + " — no headroom above y=" + groundY + " to drop a test block");
+      onDone.run();
+      return;
+    }
+
+    Location dropAt = new Location(world, x + 0.5D, spawnY, z + 0.5D);
+    FallingBlock falling = world.spawnFallingBlock(dropAt, Material.SAND.createBlockData());
+    UUID id = falling.getUniqueId();
+    out.sendMessage("  " + infoTag() + C.WHITE + "lazy-gravity" + C.GRAY
+        + " — dropped SAND y=" + spawnY + " over ground y=" + groundY + ", checking landing (5s)...");
+
+    J.s(() -> {
+      Entity entity = Bukkit.getEntity(id);
+      boolean landed = entity == null || entity.isDead() || !entity.isValid();
+      out.sendMessage("  " + passTag(landed) + C.WHITE + "lazy-gravity" + C.GRAY
+          + (landed
+              ? " — block landed within 5s (projection / un-skip / landing path OK)"
+              : " — block STILL FALLING after 5s (stuck mid-air)"));
+      if (!landed && entity != null) {
+        entity.remove();
+      }
+      Block landingBlock = world.getBlockAt(x, groundY + 1, z);
+      if (landingBlock.getType() == Material.SAND) {
+        landingBlock.setType(Material.AIR);
+      }
+      onDone.run();
+    }, 100);
+  }
+
+  private void verifyWorldSave(VolmitSender out, Runnable onDone) {
+    FeatureWorldSaveStaggering feature = React.feature(FeatureWorldSaveStaggering.class);
+    FeatureController featureController = React.controller(FeatureController.class);
+    if (feature == null || featureController == null) {
+      out.sendMessage("  " + skipTag() + C.WHITE + "world-save autosave-restore" + C.GRAY + " — feature/controller unavailable");
+      onDone.run();
+      return;
+    }
+
+    boolean wasActive = featureController.getActiveFeatures() != null
+        && featureController.getActiveFeatures().containsKey(feature.getId());
+
+    featureController.deactivateFeature(feature);
+    J.s(() -> {
+      Map<UUID, Boolean> baseline = new LinkedHashMap<>();
+      for (World world : Bukkit.getWorlds()) {
+        baseline.put(world.getUID(), world.isAutoSave());
+      }
+
+      featureController.activateFeature(feature);
+      J.s(() -> {
+        int baselineOn = 0;
+        int suppressed = 0;
+        for (World world : Bukkit.getWorlds()) {
+          if (Boolean.TRUE.equals(baseline.get(world.getUID()))) {
+            baselineOn++;
+            if (!world.isAutoSave()) {
+              suppressed++;
+            }
+          }
+        }
+
+        featureController.deactivateFeature(feature);
+        int restored = 0;
+        int total = 0;
+        for (World world : Bukkit.getWorlds()) {
+          Boolean was = baseline.get(world.getUID());
+          if (was == null) {
+            continue;
+          }
+          total++;
+          if (world.isAutoSave() == was) {
+            restored++;
+          }
+        }
+
+        if (wasActive) {
+          featureController.activateFeature(feature);
+        }
+
+        boolean restoreOk = total > 0 && restored == total;
+        boolean suppressionObserved = baselineOn > 0 && suppressed > 0;
+        out.sendMessage("  " + passTag(restoreOk) + C.WHITE + "world-save autosave-restore" + C.GRAY
+            + " — restored " + restored + "/" + total + " worlds after disable"
+            + (suppressionObserved ? "" : C.YELLOW + " (suppression not observed; suppressVanillaAutoSave may be off)"));
+        out.sendMessage("      " + C.GRAY + "data-loss fix: autosave is now restored unconditionally on disable");
+        onDone.run();
+      }, 20);
+    }, 5);
+  }
+
+  private String passTag(boolean pass) {
+    return pass ? C.GREEN + "[PASS] " : C.RED + "[FAIL] ";
+  }
+
+  private String warnTag() {
+    return C.YELLOW + "[WARN] ";
+  }
+
+  private String infoTag() {
+    return C.GRAY + "[INFO] ";
+  }
+
+  private String skipTag() {
+    return C.YELLOW + "[SKIP] ";
   }
 
   private void sendRuntimeAudit(VolmitSender commandSender, ActionController actionController) {

@@ -409,6 +409,8 @@ public final class ReactMapGUI {
           "Highest observed per-chunk cost from React chunk sampling.";
       case "top-world-mspt" ->
           "Worst world-level MSPT observed across loaded worlds.";
+      case "per-world-tick-time" ->
+          "Worst per-world rolling tick share used by the per-world tick budget hysteresis layer.";
       case "redstone" -> "Redstone update activity rate.";
       case "redstone-burst-rate" ->
           "Burst intensity of redstone transitions over short windows.";

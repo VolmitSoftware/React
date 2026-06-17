@@ -1,0 +1,133 @@
+package art.arcane.react.nms;
+
+import org.bukkit.Bukkit;
+
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+public final class NmsBridges {
+    private static final Logger LOG = Logger.getLogger("React-NMS");
+    private static volatile NmsBridge bridge;
+    private static volatile boolean attempted;
+    private static volatile String failureReason = "";
+
+    private NmsBridges() {}
+
+    public static NmsBridge get() {
+        if (attempted) {
+            return bridge;
+        }
+        synchronized (NmsBridges.class) {
+            if (attempted) {
+                return bridge;
+            }
+            attempted = true;
+            bridge = resolve();
+            return bridge;
+        }
+    }
+
+    public static String failureReason() {
+        return failureReason;
+    }
+
+    public static void reset() {
+        synchronized (NmsBridges.class) {
+            if (bridge != null) {
+                bridge.uninstallFurnaceTickHook();
+                bridge.uninstallBrewingTickHook();
+                bridge.uninstallFallingBlockTickHook();
+                bridge.uninstallExplosionHook();
+                bridge.uninstallExplosionPacketSuppressor();
+                bridge.uninstallHopperTickHook();
+            }
+            bridge = null;
+            attempted = false;
+            failureReason = "";
+        }
+    }
+
+    private static NmsBridge resolve() {
+        String detected = detectVersionTag();
+        if (detected.isEmpty()) {
+            failureReason = "Could not detect server NMS version tag";
+            LOG.log(Level.INFO, "[React] NMS bridge disabled: " + failureReason);
+            return null;
+        }
+
+        List<String> candidates = List.of(
+                "art.arcane.react.nms." + detected + ".NmsBridgeImpl"
+        );
+
+        for (String candidate : candidates) {
+            try {
+                Class<?> implClass = Class.forName(candidate);
+                Object instance = implClass.getDeclaredConstructor().newInstance();
+                if (instance instanceof NmsBridge resolved) {
+                    LOG.log(Level.INFO, "[React] NMS bridge active: " + candidate);
+                    return resolved;
+                }
+            } catch (ClassNotFoundException ignored) {
+            } catch (Throwable t) {
+                failureReason = t.getClass().getSimpleName() + ": " + t.getMessage();
+                LOG.log(Level.WARNING, "[React] NMS bridge load failed for " + candidate + " — " + failureReason, t);
+                return null;
+            }
+        }
+
+        failureReason = "No matching NMS bridge implementation for tag '" + detected + "'";
+        LOG.log(Level.INFO, "[React] " + failureReason + " — features remain measurement-only");
+        return null;
+    }
+
+    private static final Pattern MC_VERSION_PATTERN = Pattern.compile("^(\\d+)\\.(\\d+)(?:\\.(\\d+))?");
+
+    private static String detectVersionTag() {
+        try {
+            String bukkitVersion = Bukkit.getBukkitVersion();
+            if (bukkitVersion != null && !bukkitVersion.isEmpty()) {
+                String tag = tagFor(extractMcVersion(bukkitVersion));
+                if (!tag.isEmpty()) {
+                    return tag;
+                }
+            }
+            String serverVersion = Bukkit.getVersion();
+            if (serverVersion != null && !serverVersion.isEmpty()) {
+                String tag = tagFor(extractMcVersion(serverVersion));
+                if (!tag.isEmpty()) {
+                    return tag;
+                }
+            }
+            return "";
+        } catch (Throwable ignored) {
+            return "";
+        }
+    }
+
+    private static String extractMcVersion(String raw) {
+        Matcher matcher = MC_VERSION_PATTERN.matcher(raw);
+        if (!matcher.find()) {
+            return "";
+        }
+        String major = matcher.group(1);
+        String minor = matcher.group(2);
+        String patch = matcher.group(3);
+        if (patch == null) {
+            return major + "." + minor;
+        }
+        return major + "." + minor + "." + patch;
+    }
+
+    private static String tagFor(String mcVersion) {
+        if (mcVersion == null || mcVersion.isEmpty()) {
+            return "";
+        }
+        if (mcVersion.startsWith("26.1")) {
+            return "v26_1_R1";
+        }
+        return "";
+    }
+}

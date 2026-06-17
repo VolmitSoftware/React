@@ -71,29 +71,10 @@ public class ActionPurgeChunks extends ReactAction<ActionPurgeChunks.Params> {
 
   @Override
   public void workOn(ActionTicket<Params> ticket) {
-    if (J.isFoliaThreading()) {
-      workOnFolia(ticket);
-      return;
-    }
-
-    List<Chunk> c = pullChunks(ticket, React.controller(ActionController.class).getActionSpeedMultiplier());
-
-    if (ticket.getTotalWork() <= 1) {
-      ticket.setTotalWork(ticket.getParams().getArea().getChunks().size());
-    }
-
-    if (c.isEmpty()) {
-      ticket.complete();
-    } else {
-      for (Chunk i : c) {
-        purge(i, ticket);
-      }
-
-      ticket.addWork(c.size());
-    }
+    workOnAsync(ticket);
   }
 
-  private void workOnFolia(ActionTicket<Params> ticket) {
+  private void workOnAsync(ActionTicket<Params> ticket) {
     List<Chunk> chunks = pullChunks(ticket, React.controller(ActionController.class).getActionSpeedMultiplier());
 
     if (ticket.getTotalWork() <= 1 && ticket.getParams().getArea().getChunks() != null) {
@@ -122,24 +103,6 @@ public class ActionPurgeChunks extends ReactAction<ActionPurgeChunks.Params> {
   @Override
   public void onInit() {
 
-  }
-
-  private void purge(Chunk c, ActionTicket<Params> ticket) {
-    if (c == null || c.getWorld() == null) {
-      return;
-    }
-
-    boolean unloaded = J.runChunkResult(c.getWorld(), c.getX(), c.getZ(), () -> {
-      if (!c.isLoaded()) {
-        return true;
-      }
-
-      return c.unload(true);
-    }, false);
-
-    if (unloaded) {
-      ticket.addCount();
-    }
   }
 
   private void purgeFolia(Chunk chunk, Params params) {

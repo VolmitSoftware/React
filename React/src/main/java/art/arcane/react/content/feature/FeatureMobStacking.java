@@ -22,6 +22,8 @@ package art.arcane.react.content.feature;
 import art.arcane.react.React;
 import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.content.sampler.SamplerEntities;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import art.arcane.react.core.NMS;
 import art.arcane.react.core.controller.EntityController;
 import art.arcane.react.model.ReactEntity;
@@ -65,6 +67,9 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
   private boolean skipCustomMobs = true;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Controls whether mob stacking applies only spawner mobs.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
   private boolean onlySpawnerMobs = false;
+
+  private transient final Map<EntityType, String> formattedBaseNames = new ConcurrentHashMap<>();
+  private transient SamplerEntities entitiesSampler;
 
   public FeatureMobStacking() {
     super(ID);
@@ -236,7 +241,12 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
         NMS.sendCollectPacket(a, 64, a.getEntityId(), into.getEntityId(), 1);
       }
       a.remove();
-      ((SamplerEntities) React.sampler(SamplerEntities.ID)).getEntities().decrementAndGet();
+      if (entitiesSampler == null) {
+        entitiesSampler = React.sampler(SamplerEntities.ID);
+      }
+      if (entitiesSampler != null) {
+        entitiesSampler.getEntities().decrementAndGet();
+      }
       return true;
     }
 
@@ -244,33 +254,18 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
   }
 
   public boolean canMerge(Entity a, Entity into) {
-    // Check if entities are stackable via config
-    if (skipCustomMobs && (CustomMobChecker.isCustom(a) || CustomMobChecker.isCustom(into))) {
-      return false;
-    }
-
-    // Check if entities are marked as non-stackable
-    if (a.hasMetadata("DoNotStack") || into.hasMetadata("DoNotStack")) {
-      return false;
-    }
-
-    // Check if entities are stackable via spawn reason
-    if (onlySpawnerMobs && (!a.hasMetadata("SpawnedBySpawner") || !into.hasMetadata("SpawnedBySpawner"))) {
-      return false;
-    }
-
-    // Check if entities are dead
-    if (a.isDead() || into.isDead()) {
-      return false;
-    }
-
     // Check if entities are the same literal entity
-    if (a.getUniqueId().equals(into.getUniqueId())) {
+    if (a.getEntityId() == into.getEntityId()) {
       return false;
     }
 
-    // Check if entities are a player
-    if (a instanceof Player || into instanceof Player) {
+    // Check if entities are the same type
+    if (a.getType() != into.getType()) {
+      return false;
+    }
+
+    // types that can stack
+    if (!stackableTypes.contains(a.getType())) {
       return false;
     }
 
@@ -279,8 +274,13 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
       return false;
     }
 
-    // Check if entities are the same type
-    if (!a.getType().equals(into.getType())) {
+    // Check if entities are a player
+    if (a instanceof Player || into instanceof Player) {
+      return false;
+    }
+
+    // Check if entities are dead
+    if (a.isDead() || into.isDead()) {
       return false;
     }
 
@@ -312,8 +312,18 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
       }
     }
 
-    // types that can stack
-    if (!stackableTypes.contains(a.getType())) {
+    // Check if entities are stackable via config
+    if (skipCustomMobs && (CustomMobChecker.isCustom(a) || CustomMobChecker.isCustom(into))) {
+      return false;
+    }
+
+    // Check if entities are marked as non-stackable
+    if (a.hasMetadata("DoNotStack") || into.hasMetadata("DoNotStack")) {
+      return false;
+    }
+
+    // Check if entities are stackable via spawn reason
+    if (onlySpawnerMobs && (!a.hasMetadata("SpawnedBySpawner") || !into.hasMetadata("SpawnedBySpawner"))) {
       return false;
     }
 
@@ -344,7 +354,8 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
 
     if (customNames) {
       if (i > 1) {
-        e.setCustomName(ChatColor.BOLD + "" + getStackCount(e) + "x " + ChatColor.RESET + ChatColor.GRAY + "" + Form.capitalizeWords(e.getType().name().toLowerCase().replaceAll("\\Q_\\E", " ")));
+        String baseName = formattedBaseNames.computeIfAbsent(e.getType(), t -> Form.capitalizeWords(t.name().toLowerCase().replaceAll("\\Q_\\E", " ")));
+        e.setCustomName(ChatColor.BOLD + "" + i + "x " + ChatColor.RESET + ChatColor.GRAY + "" + baseName);
       } else {
         e.setCustomName(null);
       }

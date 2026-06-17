@@ -96,42 +96,10 @@ public class ActionTrimEntitiesByAgePriority extends ReactAction<ActionTrimEntit
       ticket.setTotalWork(Math.max(1, params.getQueue().size()));
     }
 
-    if (J.isFoliaThreading()) {
-      workOnFolia(ticket, params);
-      return;
-    }
-
-    if (params.getQueue().isEmpty() || params.getTrimmed() >= params.getMaxTrim()) {
-      ticket.setCount(params.getTrimmed());
-      ticket.complete();
-      return;
-    }
-
-    int chunkBudget = J.isFoliaThreading()
-        ? 1
-        : Math.max(1, React.controller(ActionController.class).getActionSpeedMultiplier() / 10);
-    int worked = 0;
-    while (worked < chunkBudget && !params.getQueue().isEmpty() && params.getTrimmed() < params.getMaxTrim()) {
-      ChunkRef next = params.getQueue().pollFirst();
-      if (next == null) {
-        break;
-      }
-      int remaining = Math.max(0, params.getMaxTrim() - params.getTrimmed());
-      int removed = trimChunk(next, params, remaining);
-      params.setTrimmed(params.getTrimmed() + removed);
-      params.setChunksProcessed(params.getChunksProcessed() + 1);
-      worked++;
-    }
-
-    ticket.setWork(Math.min(ticket.getTotalWork(), ticket.getWork() + worked));
-    ticket.setCount(params.getTrimmed());
-
-    if (params.getQueue().isEmpty() || params.getTrimmed() >= params.getMaxTrim()) {
-      ticket.complete();
-    }
+    workOnAsync(ticket, params);
   }
 
-  private void workOnFolia(ActionTicket<Params> ticket, Params params) {
+  private void workOnAsync(ActionTicket<Params> ticket, Params params) {
     int trimmed = params.getTrimmedAtomic().get();
     params.setTrimmed(trimmed);
     params.setChunksProcessed(params.getChunksProcessedAtomic().get());
@@ -182,11 +150,7 @@ public class ActionTrimEntitiesByAgePriority extends ReactAction<ActionTrimEntit
   }
 
   private List<ChunkRef> buildQueue(Params params) {
-    if (J.isFoliaThreading()) {
-      return buildQueueSync(params);
-    }
-
-    return J.sResult(() -> buildQueueSync(params));
+    return buildQueueSync(params);
   }
 
   private List<ChunkRef> buildQueueSync(Params params) {
@@ -223,19 +187,6 @@ public class ActionTrimEntitiesByAgePriority extends ReactAction<ActionTrimEntit
     }
 
     return refs;
-  }
-
-  private int trimChunk(ChunkRef ref, Params params, int remaining) {
-    if (!J.isFoliaThreading()) {
-      return J.sResult(() -> trimChunkSync(ref, params, remaining));
-    }
-
-    World world = Bukkit.getWorld(ref.world());
-    if (world == null) {
-      return 0;
-    }
-
-    return J.runChunkResult(world, ref.x(), ref.z(), () -> trimChunkSync(ref, params, remaining), 0);
   }
 
   private void dispatchChunkTrim(ChunkRef ref, Params params) {

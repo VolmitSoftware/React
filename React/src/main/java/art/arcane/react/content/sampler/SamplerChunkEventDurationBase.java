@@ -28,22 +28,22 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.world.ChunkLoadEvent;
 
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 abstract class SamplerChunkEventDurationBase extends ReactCachedSampler implements Listener {
   private final RollingSequence average;
-  private final Map<Integer, Long> starts;
-  private final Map<Integer, Long> startCreated;
+  private final ConcurrentHashMap<Integer, Long> starts;
+  private final ConcurrentHashMap<Integer, Long> startCreated;
   private int maxHistory = 48;
   private int staleStartMS = 10000;
 
   protected SamplerChunkEventDurationBase(String id) {
     super(id, 1000);
     this.average = new RollingSequence(maxHistory);
-    this.starts = new HashMap<>();
-    this.startCreated = new HashMap<>();
+    this.starts = new ConcurrentHashMap<>();
+    this.startCreated = new ConcurrentHashMap<>();
   }
 
   @Override
@@ -59,10 +59,8 @@ abstract class SamplerChunkEventDurationBase extends ReactCachedSampler implemen
 
     int key = System.identityHashCode(event);
     long now = System.currentTimeMillis();
-    synchronized (starts) {
-      starts.put(key, System.nanoTime());
-      startCreated.put(key, now);
-    }
+    starts.put(key, System.nanoTime());
+    startCreated.put(key, now);
   }
 
   @EventHandler(priority = EventPriority.MONITOR)
@@ -72,11 +70,8 @@ abstract class SamplerChunkEventDurationBase extends ReactCachedSampler implemen
     }
 
     int key = System.identityHashCode(event);
-    Long started;
-    synchronized (starts) {
-      started = starts.remove(key);
-      startCreated.remove(key);
-    }
+    Long started = starts.remove(key);
+    startCreated.remove(key);
 
     if (started == null) {
       return;
@@ -98,14 +93,12 @@ abstract class SamplerChunkEventDurationBase extends ReactCachedSampler implemen
   }
 
   private void cleanupStarts(long now) {
-    synchronized (starts) {
-      Iterator<Map.Entry<Integer, Long>> iterator = startCreated.entrySet().iterator();
-      while (iterator.hasNext()) {
-        Map.Entry<Integer, Long> entry = iterator.next();
-        if (now - entry.getValue() > staleStartMS) {
-          starts.remove(entry.getKey());
-          iterator.remove();
-        }
+    Iterator<Map.Entry<Integer, Long>> iterator = startCreated.entrySet().iterator();
+    while (iterator.hasNext()) {
+      Map.Entry<Integer, Long> entry = iterator.next();
+      if (now - entry.getValue() > staleStartMS) {
+        starts.remove(entry.getKey());
+        iterator.remove();
       }
     }
   }

@@ -15,6 +15,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.projectiles.ProjectileSource;
 
 import java.util.Map;
@@ -153,6 +154,15 @@ public class FeatureAdaptRuntimeSurgeGuard extends ReactCapabilityFeature implem
 
     event.setCancelled(true);
     notifyPlayer(player, "Adapt runtime surge guard smoothed item-consume burst.", now);
+  }
+
+  @EventHandler
+  public void on(PlayerQuitEvent event) {
+    UUID playerId = event.getPlayer().getUniqueId();
+    interactionOps.remove(playerId);
+    combatOps.remove(playerId);
+    consumeOps.remove(playerId);
+    lastMessageByPlayer.remove(playerId);
   }
 
   private Player resolvePlayerDamager(Entity damager) {

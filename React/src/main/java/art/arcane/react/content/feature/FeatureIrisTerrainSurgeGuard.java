@@ -13,6 +13,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 
 import java.util.Map;
@@ -148,6 +149,11 @@ public class FeatureIrisTerrainSurgeGuard extends ReactCapabilityFeature impleme
     if (event.getSpawnReason() == CreatureSpawnEvent.SpawnReason.CHUNK_GEN) {
       event.setCancelled(true);
     }
+  }
+
+  @EventHandler
+  public void on(PlayerQuitEvent event) {
+    lastMessageByPlayer.remove(event.getPlayer().getUniqueId());
   }
 
   private boolean sameChunk(Location from, Location to) {

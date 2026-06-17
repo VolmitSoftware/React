@@ -117,6 +117,12 @@ dependencies {
     compileOnly('io.papermc:paperlib:1.0.7')
     testImplementation('org.spigotmc:spigot-api:1.19.4-R0.1-SNAPSHOT')
 
+    // Bridge API interfaces shared with NMS submodule
+    implementation(project(':bridge-api'))
+
+    // NMS submodule (Mojang-mapped, shaded into final jar)
+    implementation(project(':nms:v26_1_R1'))
+
     // Shaded
     implementation('de.crazydev22.slimjar.helper:spigot:2.1.9')
     implementation(volmLibCoordinate) {
@@ -155,6 +161,7 @@ dependencies {
     compileOnly('io.netty:netty-transport:4.1.92.Final')
 
     testImplementation('junit:junit:4.13.2')
+    testImplementation('it.unimi.dsi:fastutil:8.5.8')
 }
 
 slimJar {

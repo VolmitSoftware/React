@@ -63,7 +63,7 @@ public class TweakFastDrops extends ReactTweak implements Listener {
     super(ID);
   }
 
-  @EventHandler(priority = EventPriority.MONITOR)
+  @EventHandler(priority = EventPriority.HIGHEST)
   public void on(EntityDeathEvent e) {
     if (!teleportEntityXP && !teleportEntityDrops) {
       return;
@@ -119,7 +119,7 @@ public class TweakFastDrops extends ReactTweak implements Listener {
     }
   }
 
-  @EventHandler(priority = EventPriority.MONITOR)
+  @EventHandler(priority = EventPriority.HIGHEST)
   public void on(BlockDropItemEvent e) {
     if (!allowContainerDrops && e.getBlock().getState() instanceof InventoryHolder) {
       return;
@@ -151,7 +151,7 @@ public class TweakFastDrops extends ReactTweak implements Listener {
     }
   }
 
-  @EventHandler(priority = EventPriority.MONITOR)
+  @EventHandler(priority = EventPriority.HIGHEST)
   public void on(BlockBreakEvent e) {
     if (!teleportBlockXP) {
       return;

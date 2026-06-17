@@ -109,7 +109,11 @@ public class MapRendererPipe extends MapRenderer {
       }
 
       ReactRenderContext.push(context.build());
-      resolved.render();
+      try {
+        resolved.render();
+      } finally {
+        ReactRenderContext.pop();
+      }
     } catch (Throwable e) {
       e.printStackTrace();
     }

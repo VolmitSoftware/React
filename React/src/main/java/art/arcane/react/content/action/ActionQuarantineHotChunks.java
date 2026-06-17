@@ -42,6 +42,7 @@ import org.bukkit.entity.*;
 
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Quarantine Hot Chunks action. Isolates high-score chunks and optionally culls old entities away from players.")
 public class ActionQuarantineHotChunks extends ReactAction<ActionQuarantineHotChunks.Params> {
@@ -63,41 +64,49 @@ public class ActionQuarantineHotChunks extends ReactAction<ActionQuarantineHotCh
     Params params = ticket.getParams();
     if (!params.isPrepared()) {
       prepare(params);
+      params.getChunksQuarantinedAtomic().set(0);
+      params.getEntitiesCulledAtomic().set(0);
+      params.getProcessedChunks().set(0);
+      params.getInFlightChunks().set(0);
       ticket.setWork(0);
       ticket.setTotalWork(Math.max(1, params.getQueue().size()));
     }
 
-    if (params.getQueue().isEmpty()) {
-      ticket.setCount(params.getChunksQuarantined());
+    workOnQuarantineAsync(ticket, params);
+  }
+
+  private void workOnQuarantineAsync(ActionTicket<Params> ticket, Params params) {
+    params.setChunksQuarantined(params.getChunksQuarantinedAtomic().get());
+    params.setEntitiesCulled(params.getEntitiesCulledAtomic().get());
+    ticket.setCount(params.getChunksQuarantined());
+    ticket.setWork(Math.min(ticket.getTotalWork(), params.getProcessedChunks().get()));
+
+    if (params.getQueue().isEmpty() && params.getInFlightChunks().get() <= 0) {
       ticket.complete();
       return;
     }
 
-    int budget = J.isFoliaThreading()
-        ? 1
-        : Math.max(1, React.controller(ActionController.class).getActionSpeedMultiplier() / 8);
-    int worked = 0;
-
-    while (worked < budget && !params.getQueue().isEmpty()) {
-      ChunkRef target = params.getQueue().pollFirst();
-      if (target == null) {
+    int chunkBudget = Math.max(1, React.controller(ActionController.class).getActionSpeedMultiplier() / 8);
+    int maxInFlight = Math.max(4, chunkBudget * 2);
+    int dispatched = 0;
+    while (dispatched < chunkBudget
+        && !params.getQueue().isEmpty()
+        && params.getInFlightChunks().get() < maxInFlight) {
+      ChunkRef next = params.getQueue().pollFirst();
+      if (next == null) {
         break;
       }
-      QuarantineResult result = quarantineChunk(target, params);
-      if (result != null) {
-        params.setEntitiesCulled(params.getEntitiesCulled() + result.entitiesCulled());
-        if (result.chunkUnloaded()) {
-          params.setChunksQuarantined(params.getChunksQuarantined() + 1);
-        }
-      }
 
-      worked++;
+      dispatchChunkQuarantine(next, params);
+      dispatched++;
     }
 
-    ticket.setWork(Math.min(ticket.getTotalWork(), ticket.getWork() + worked));
+    params.setChunksQuarantined(params.getChunksQuarantinedAtomic().get());
+    params.setEntitiesCulled(params.getEntitiesCulledAtomic().get());
     ticket.setCount(params.getChunksQuarantined());
+    ticket.setWork(Math.min(ticket.getTotalWork(), params.getProcessedChunks().get()));
 
-    if (params.getQueue().isEmpty()) {
+    if (params.getQueue().isEmpty() && params.getInFlightChunks().get() <= 0) {
       ticket.complete();
     }
   }
@@ -169,20 +178,38 @@ public class ActionQuarantineHotChunks extends ReactAction<ActionQuarantineHotCh
         .forEach(params.getQueue()::add);
   }
 
-  private QuarantineResult quarantineChunk(ChunkRef ref, Params params) {
-    if (!J.isFoliaThreading()) {
-      return J.sResult(() -> quarantine(ref, params));
-    }
-
+  private void dispatchChunkQuarantine(ChunkRef ref, Params params) {
     World world = Bukkit.getWorld(ref.world());
     if (world == null) {
-      return new QuarantineResult(false, 0);
+      params.getProcessedChunks().incrementAndGet();
+      return;
     }
 
-    return J.runChunkResult(world, ref.x(), ref.z(), () -> quarantine(ref, params), new QuarantineResult(false, 0));
+    params.getInFlightChunks().incrementAndGet();
+    boolean scheduled = J.runChunk(world, ref.x(), ref.z(), () -> {
+      try {
+        QuarantineResult result = quarantineChunkSync(ref, params);
+        if (result != null) {
+          if (result.entitiesCulled() > 0) {
+            params.getEntitiesCulledAtomic().addAndGet(result.entitiesCulled());
+          }
+          if (result.chunkUnloaded()) {
+            params.getChunksQuarantinedAtomic().incrementAndGet();
+          }
+        }
+      } finally {
+        params.getProcessedChunks().incrementAndGet();
+        params.getInFlightChunks().decrementAndGet();
+      }
+    });
+
+    if (!scheduled) {
+      params.getProcessedChunks().incrementAndGet();
+      params.getInFlightChunks().decrementAndGet();
+    }
   }
 
-  private QuarantineResult quarantine(ChunkRef ref, Params params) {
+  private QuarantineResult quarantineChunkSync(ChunkRef ref, Params params) {
     World world = Bukkit.getWorld(ref.world());
     if (world == null) {
       return new QuarantineResult(false, 0);
@@ -318,6 +345,14 @@ public class ActionQuarantineHotChunks extends ReactAction<ActionQuarantineHotCh
     private transient int chunksQuarantined = 0;
     @Builder.Default
     private transient int entitiesCulled = 0;
+    @Builder.Default
+    private transient AtomicInteger inFlightChunks = new AtomicInteger(0);
+    @Builder.Default
+    private transient AtomicInteger processedChunks = new AtomicInteger(0);
+    @Builder.Default
+    private transient AtomicInteger chunksQuarantinedAtomic = new AtomicInteger(0);
+    @Builder.Default
+    private transient AtomicInteger entitiesCulledAtomic = new AtomicInteger(0);
 
     public Params withWorld(World world) {
       if (world != null) {

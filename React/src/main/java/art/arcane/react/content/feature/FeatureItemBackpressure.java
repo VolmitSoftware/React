@@ -111,6 +111,7 @@ public class FeatureItemBackpressure extends ReactFeature {
 
   private void removeRemoteItems() {
     int budget = Math.max(1, maxItemsRemovedPerCycle);
+    int sampleCap = Math.max(1, maxItemsScannedPerWorld);
     ThreadLocalRandom random = ThreadLocalRandom.current();
 
     for (World world : Bukkit.getWorlds()) {
@@ -118,18 +119,16 @@ public class FeatureItemBackpressure extends ReactFeature {
         return;
       }
 
-      List<Item> items = new ArrayList<>(world.getEntitiesByClass(Item.class));
-      if (items.isEmpty()) {
+      List<Item> sampled = sampleItems(world, sampleCap, random);
+      if (sampled.isEmpty()) {
         continue;
       }
 
-      int scan = Math.min(items.size(), maxItemsScannedPerWorld);
-      for (int i = 0; i < scan; i++) {
+      for (Item item : sampled) {
         if (budget <= 0) {
           return;
         }
 
-        Item item = items.get(random.nextInt(items.size()));
         if (!canRemove(item)) {
           continue;
         }
@@ -138,6 +137,26 @@ public class FeatureItemBackpressure extends ReactFeature {
         budget--;
       }
     }
+  }
+
+  private List<Item> sampleItems(World world, int sampleCap, ThreadLocalRandom random) {
+    List<Item> reservoir = new ArrayList<>(Math.min(sampleCap, 64));
+    int seen = 0;
+
+    for (Item item : world.getEntitiesByClass(Item.class)) {
+      seen++;
+      if (reservoir.size() < sampleCap) {
+        reservoir.add(item);
+        continue;
+      }
+
+      int candidate = random.nextInt(seen);
+      if (candidate < sampleCap) {
+        reservoir.set(candidate, item);
+      }
+    }
+
+    return reservoir;
   }
 
   private void removeRemoteItemsFolia() {

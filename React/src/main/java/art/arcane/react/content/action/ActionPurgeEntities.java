@@ -94,29 +94,10 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
 
   @Override
   public void workOn(ActionTicket<Params> ticket) {
-    if (J.isFoliaThreading()) {
-      workOnFolia(ticket);
-      return;
-    }
-
-    List<Chunk> c = pullChunks(ticket, React.controller(ActionController.class).getActionSpeedMultiplier());
-
-    if (ticket.getTotalWork() <= 1) {
-      ticket.setTotalWork(ticket.getParams().getArea().getChunks().size());
-    }
-
-    if (c.isEmpty()) {
-      ticket.complete();
-    } else {
-      for (Chunk i : c) {
-        purge(i, ticket);
-      }
-
-      ticket.addWork(c.size());
-    }
+    workOnAsync(ticket);
   }
 
-  private void workOnFolia(ActionTicket<Params> ticket) {
+  private void workOnAsync(ActionTicket<Params> ticket) {
     List<Chunk> chunks = pullChunks(ticket, React.controller(ActionController.class).getActionSpeedMultiplier());
 
     if (ticket.getTotalWork() <= 1 && ticket.getParams().getArea().getChunks() != null) {
@@ -152,27 +133,6 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
     if (!J.runEntity(entity, () -> React.kill(entity, randomDelay), delay)) {
       React.kill(entity, randomDelay);
     }
-  }
-
-  private void purge(Chunk c, ActionTicket<Params> ticket) {
-    if (c == null || c.getWorld() == null) {
-      return;
-    }
-
-    Integer purged = J.runChunkResult(c.getWorld(), c.getX(), c.getZ(), () -> {
-      int removed = 0;
-      for (Entity entity : c.getEntities()) {
-        if (!ticket.getParams().entityFilter.allows(entity.getType())) {
-          continue;
-        }
-
-        purge(entity);
-        removed++;
-      }
-      return removed;
-    }, 0);
-
-    ticket.addCount(Math.max(0, purged == null ? 0 : purged));
   }
 
   private void purgeChunkFolia(Chunk chunk, Params params) {

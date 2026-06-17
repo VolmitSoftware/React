@@ -124,23 +124,54 @@ public class ActionController extends TickedObject implements IController {
       }
     }
 
+    List<ActionTicket<?>> snapshot;
     synchronized (ticketRuntime) {
       if (ticketRuntime.isEmpty()) {
         return;
       }
 
-      Iterator<ActionTicket<?>> iterator = ticketRuntime.iterator();
-      while (iterator.hasNext()) {
-        ActionTicket<?> ticket = iterator.next();
-        invoke(ticket);
+      snapshot = new ArrayList<>(ticketRuntime);
+    }
 
-        if (ticket.isDone()) {
+    List<ActionTicket<?>> completed = null;
+    for (ActionTicket<?> ticket : snapshot) {
+      if (ticket == null || !ticket.isRunning() || ticket.isDone()) {
+        continue;
+      }
+
+      invoke(ticket);
+
+      if (ticket.isDone()) {
+        if (completed == null) {
+          completed = new ArrayList<>();
+        }
+        completed.add(ticket);
+      }
+    }
+
+    if (completed == null) {
+      return;
+    }
+
+    synchronized (ticketRuntime) {
+      for (ActionTicket<?> ticket : completed) {
+        if (removeByIdentity(ticketRuntime, ticket)) {
           long runtime = System.currentTimeMillis() - ticket.getStartedAt();
-          iterator.remove();
           React.success("Action " + ticket.getAction().getId() + " completed in " + Form.duration(runtime, 1));
         }
       }
     }
+  }
+
+  private boolean removeByIdentity(List<ActionTicket<?>> list, ActionTicket<?> target) {
+    for (int i = 0; i < list.size(); i++) {
+      if (list.get(i) == target) {
+        list.remove(i);
+        return true;
+      }
+    }
+
+    return false;
   }
 
   private int maxRuntimeActions() {

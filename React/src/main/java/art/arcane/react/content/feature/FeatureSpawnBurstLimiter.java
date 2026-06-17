@@ -19,7 +19,9 @@
 
 package art.arcane.react.content.feature;
 
+import art.arcane.react.React;
 import art.arcane.react.api.feature.ReactFeature;
+import art.arcane.react.core.controller.PdcWriteBatcher;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -33,10 +35,13 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 
-import java.util.HashMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectIterator;
+
 import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Spawn Burst Limiter feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureSpawnBurstLimiter extends ReactFeature implements Listener {
@@ -63,7 +68,7 @@ public class FeatureSpawnBurstLimiter extends ReactFeature implements Listener {
   private boolean spawnerBackoff = true;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Delay in ticks applied to a burst-limited spawner's next spawn attempt.", impact = "Higher values idle limited spawners longer, shedding more spawn-attempt work; lower values let grinders resume sooner.")
   private int spawnerBackoffTicks = 600;
-  private transient Map<ChunkKey, SpawnWindow> windows = new HashMap<>();
+  private transient Map<UUID, Long2ObjectOpenHashMap<SpawnWindow>> windows = new ConcurrentHashMap<>();
 
   public FeatureSpawnBurstLimiter() {
     super(ID);
@@ -71,7 +76,7 @@ public class FeatureSpawnBurstLimiter extends ReactFeature implements Listener {
 
   @Override
   public void onActivate() {
-    windows = new HashMap<>();
+    windows = new ConcurrentHashMap<>();
   }
 
   @Override
@@ -88,10 +93,17 @@ public class FeatureSpawnBurstLimiter extends ReactFeature implements Listener {
   public void onTick() {
     long now = System.currentTimeMillis();
     long expiryMS = Math.max(1000L, windowMS * 4L);
-    Iterator<Map.Entry<ChunkKey, SpawnWindow>> iterator = windows.entrySet().iterator();
-    while (iterator.hasNext()) {
-      if (now - iterator.next().getValue().lastHit > expiryMS) {
-        iterator.remove();
+    Iterator<Map.Entry<UUID, Long2ObjectOpenHashMap<SpawnWindow>>> worldIterator = windows.entrySet().iterator();
+    while (worldIterator.hasNext()) {
+      Map.Entry<UUID, Long2ObjectOpenHashMap<SpawnWindow>> worldEntry = worldIterator.next();
+      Long2ObjectOpenHashMap<SpawnWindow> chunkMap = worldEntry.getValue();
+      synchronized (chunkMap) {
+        ObjectIterator<Long2ObjectOpenHashMap.Entry<SpawnWindow>> chunkIterator = chunkMap.long2ObjectEntrySet().fastIterator();
+        while (chunkIterator.hasNext()) {
+          if (now - chunkIterator.next().getValue().lastHit > expiryMS) {
+            chunkIterator.remove();
+          }
+        }
       }
     }
   }
@@ -104,8 +116,17 @@ public class FeatureSpawnBurstLimiter extends ReactFeature implements Listener {
 
     long now = System.currentTimeMillis();
     org.bukkit.Location location = event.getLocation();
-    ChunkKey key = new ChunkKey(location.getWorld().getUID(), location.getBlockX() >> 4, location.getBlockZ() >> 4);
-    SpawnWindow window = windows.computeIfAbsent(key, k -> new SpawnWindow(now));
+    UUID worldId = location.getWorld().getUID();
+    long chunkKey = packChunk(location.getBlockX() >> 4, location.getBlockZ() >> 4);
+    Long2ObjectOpenHashMap<SpawnWindow> chunkMap = windows.computeIfAbsent(worldId, ignored -> new Long2ObjectOpenHashMap<>());
+    SpawnWindow window;
+    synchronized (chunkMap) {
+      window = chunkMap.get(chunkKey);
+      if (window == null) {
+        window = new SpawnWindow(now);
+        chunkMap.put(chunkKey, window);
+      }
+    }
     window.rollover(windowMS, now);
     window.total++;
 
@@ -174,7 +195,12 @@ public class FeatureSpawnBurstLimiter extends ReactFeature implements Listener {
           BlockState state = block.getState();
           if (state instanceof CreatureSpawner spawner) {
             spawner.setDelay(Math.max(spawner.getDelay(), spawnerBackoffTicks));
-            spawner.update(false, false);
+            PdcWriteBatcher batcher = React.controller(PdcWriteBatcher.class);
+            if (batcher != null) {
+              batcher.enqueue(spawner, false, false);
+            } else {
+              spawner.update(false, false);
+            }
           }
         }
       }
@@ -237,39 +263,7 @@ public class FeatureSpawnBurstLimiter extends ReactFeature implements Listener {
     }
   }
 
-  private static final class ChunkKey {
-    @art.arcane.react.util.project.config.ConfigDoc(value = "World identifier used by spawn burst limiter internal tracking.", impact = "This is runtime identity data and should normally be left to automatic updates.")
-    private final UUID world;
-    @art.arcane.react.util.project.config.ConfigDoc(value = "X-axis coordinate used by spawn burst limiter internal tracking.", impact = "This is internal state data and should not normally be changed manually.")
-    private final int x;
-    @art.arcane.react.util.project.config.ConfigDoc(value = "Z-axis coordinate used by spawn burst limiter internal tracking.", impact = "This is internal state data and should not normally be changed manually.")
-    private final int z;
-
-    private ChunkKey(UUID world, int x, int z) {
-      this.world = world;
-      this.x = x;
-      this.z = z;
-    }
-
-    @Override
-    public boolean equals(Object object) {
-      if (this == object) {
-        return true;
-      }
-
-      if (!(object instanceof ChunkKey key)) {
-        return false;
-      }
-
-      return x == key.x && z == key.z && world.equals(key.world);
-    }
-
-    @Override
-    public int hashCode() {
-      int result = world.hashCode();
-      result = 31 * result + x;
-      result = 31 * result + z;
-      return result;
-    }
+  private static long packChunk(int cx, int cz) {
+    return (((long) cx) << 32) ^ (cz & 0xFFFFFFFFL);
   }
 }

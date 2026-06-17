@@ -47,3 +47,6 @@ if (useLocalVolmLib && localVolmLibDirectory != null) {
         }
     }
 }
+
+include(':bridge-api')
+include(':nms:v26_1_R1')

@@ -61,7 +61,7 @@ public class ActionPrewarmCriticalChunks extends ReactAction<ActionPrewarmCritic
   public void workOn(ActionTicket<Params> ticket) {
     Params params = ticket.getParams();
     if (!params.isPrepared()) {
-      List<ChunkRef> queue = buildQueue(params);
+      List<ChunkRef> queue = buildQueueSync(params);
       params.setQueue(new ArrayDeque<>(queue == null ? List.of() : queue));
       params.setChunksWarmed(0);
       params.setChunksLoaded(0);
@@ -74,46 +74,10 @@ public class ActionPrewarmCriticalChunks extends ReactAction<ActionPrewarmCritic
       ticket.setTotalWork(Math.max(1, params.getQueue().size()));
     }
 
-    if (J.isFoliaThreading()) {
-      workOnFolia(ticket, params);
-      return;
-    }
-
-    if (params.getQueue().isEmpty()) {
-      ticket.setCount(params.getChunksWarmed());
-      ticket.complete();
-      return;
-    }
-
-    int chunkBudget = J.isFoliaThreading()
-        ? 1
-        : Math.max(1, React.controller(ActionController.class).getActionSpeedMultiplier() / 16);
-    int worked = 0;
-    while (worked < chunkBudget && !params.getQueue().isEmpty()) {
-      ChunkRef target = params.getQueue().pollFirst();
-      if (target == null) {
-        break;
-      }
-      PrewarmResult result = prewarm(target, params);
-      if (result != null && result.warmed()) {
-        params.setChunksWarmed(params.getChunksWarmed() + 1);
-        if (result.newlyLoaded()) {
-          params.setChunksLoaded(params.getChunksLoaded() + 1);
-        }
-      }
-
-      worked++;
-    }
-
-    ticket.setWork(Math.min(ticket.getTotalWork(), ticket.getWork() + worked));
-    ticket.setCount(params.getChunksWarmed());
-
-    if (params.getQueue().isEmpty()) {
-      ticket.complete();
-    }
+    workOnAsync(ticket, params);
   }
 
-  private void workOnFolia(ActionTicket<Params> ticket, Params params) {
+  private void workOnAsync(ActionTicket<Params> ticket, Params params) {
     params.setChunksWarmed(params.getChunksWarmedAtomic().get());
     params.setChunksLoaded(params.getChunksLoadedAtomic().get());
     ticket.setCount(params.getChunksWarmed());
@@ -155,14 +119,6 @@ public class ActionPrewarmCriticalChunks extends ReactAction<ActionPrewarmCritic
   @Override
   public void onInit() {
 
-  }
-
-  private List<ChunkRef> buildQueue(Params params) {
-    if (J.isFoliaThreading()) {
-      return buildQueueSync(params);
-    }
-
-    return J.sResult(() -> buildQueueSync(params));
   }
 
   private List<ChunkRef> buildQueueSync(Params params) {
@@ -272,19 +228,6 @@ public class ActionPrewarmCriticalChunks extends ReactAction<ActionPrewarmCritic
     chunk.getEntities();
 
     return new PrewarmResult(true, !wasLoaded);
-  }
-
-  private PrewarmResult prewarm(ChunkRef ref, Params params) {
-    if (!J.isFoliaThreading()) {
-      return J.sResult(() -> prewarmSync(ref, params));
-    }
-
-    World world = Bukkit.getWorld(ref.world());
-    if (world == null) {
-      return new PrewarmResult(false, false);
-    }
-
-    return J.runChunkResult(world, ref.x(), ref.z(), () -> prewarmSync(ref, params), new PrewarmResult(false, false));
   }
 
   private void dispatchPrewarm(ChunkRef ref, Params params) {

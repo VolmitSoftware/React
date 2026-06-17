@@ -1,13 +1,16 @@
 package art.arcane.react.core.controller;
 
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongIterator;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 public class HopperPositionIndex {
-    private Map<UUID, Map<Long, Set<Long>>> hoppersByWorldChunk;
+    private Map<UUID, Long2ObjectOpenHashMap<LongOpenHashSet>> hoppersByWorldChunk;
 
     public HopperPositionIndex() {
         hoppersByWorldChunk = new ConcurrentHashMap<>();
@@ -18,9 +21,16 @@ public class HopperPositionIndex {
         int cz = z >> 4;
         long key = chunkKey(cx, cz);
         long packed = packPos(x, y, z);
-        Map<Long, Set<Long>> worldBuckets = hoppersByWorldChunk.computeIfAbsent(worldId, ignored -> new ConcurrentHashMap<>());
-        Set<Long> bucket = worldBuckets.computeIfAbsent(key, ignored -> ConcurrentHashMap.newKeySet());
-        bucket.add(packed);
+        Long2ObjectOpenHashMap<LongOpenHashSet> worldBuckets = hoppersByWorldChunk
+            .computeIfAbsent(worldId, ignored -> new Long2ObjectOpenHashMap<>());
+        synchronized (worldBuckets) {
+            LongOpenHashSet bucket = worldBuckets.get(key);
+            if (bucket == null) {
+                bucket = new LongOpenHashSet();
+                worldBuckets.put(key, bucket);
+            }
+            bucket.add(packed);
+        }
     }
 
     public void removeHopper(UUID worldId, int x, int y, int z) {
@@ -28,44 +38,57 @@ public class HopperPositionIndex {
         int cz = z >> 4;
         long key = chunkKey(cx, cz);
         long packed = packPos(x, y, z);
-        Map<Long, Set<Long>> worldBuckets = hoppersByWorldChunk.get(worldId);
+        Long2ObjectOpenHashMap<LongOpenHashSet> worldBuckets = hoppersByWorldChunk.get(worldId);
         if (worldBuckets == null) {
             return;
         }
-        Set<Long> bucket = worldBuckets.get(key);
-        if (bucket == null) {
-            return;
+        boolean worldEmpty;
+        synchronized (worldBuckets) {
+            LongOpenHashSet bucket = worldBuckets.get(key);
+            if (bucket == null) {
+                return;
+            }
+            bucket.remove(packed);
+            if (bucket.isEmpty()) {
+                worldBuckets.remove(key);
+            }
+            worldEmpty = worldBuckets.isEmpty();
         }
-        bucket.remove(packed);
-        if (bucket.isEmpty()) {
-            worldBuckets.remove(key, bucket);
-        }
-        if (worldBuckets.isEmpty()) {
+        if (worldEmpty) {
             hoppersByWorldChunk.remove(worldId, worldBuckets);
         }
     }
 
     public void forEachHopperInChunk(UUID worldId, int cx, int cz, Consumer<Long> consumer) {
-        Map<Long, Set<Long>> worldBuckets = hoppersByWorldChunk.get(worldId);
+        Long2ObjectOpenHashMap<LongOpenHashSet> worldBuckets = hoppersByWorldChunk.get(worldId);
         if (worldBuckets == null) {
             return;
         }
-        Set<Long> bucket = worldBuckets.get(chunkKey(cx, cz));
-        if (bucket == null || bucket.isEmpty()) {
-            return;
+        long key = chunkKey(cx, cz);
+        long[] snapshot;
+        synchronized (worldBuckets) {
+            LongOpenHashSet bucket = worldBuckets.get(key);
+            if (bucket == null || bucket.isEmpty()) {
+                return;
+            }
+            snapshot = bucket.toLongArray();
         }
-        for (Long pos : bucket) {
-            consumer.accept(pos);
+        for (int i = 0; i < snapshot.length; i++) {
+            consumer.accept(snapshot[i]);
         }
     }
 
     public void removeChunk(UUID worldId, int cx, int cz) {
-        Map<Long, Set<Long>> worldBuckets = hoppersByWorldChunk.get(worldId);
+        Long2ObjectOpenHashMap<LongOpenHashSet> worldBuckets = hoppersByWorldChunk.get(worldId);
         if (worldBuckets == null) {
             return;
         }
-        worldBuckets.remove(chunkKey(cx, cz));
-        if (worldBuckets.isEmpty()) {
+        boolean worldEmpty;
+        synchronized (worldBuckets) {
+            worldBuckets.remove(chunkKey(cx, cz));
+            worldEmpty = worldBuckets.isEmpty();
+        }
+        if (worldEmpty) {
             hoppersByWorldChunk.remove(worldId, worldBuckets);
         }
     }
@@ -75,14 +98,28 @@ public class HopperPositionIndex {
     }
 
     public void forEachHopperInWorld(UUID worldId, Consumer<Long> consumer) {
-        Map<Long, Set<Long>> worldBuckets = hoppersByWorldChunk.get(worldId);
+        Long2ObjectOpenHashMap<LongOpenHashSet> worldBuckets = hoppersByWorldChunk.get(worldId);
         if (worldBuckets == null) {
             return;
         }
-        for (Set<Long> bucket : worldBuckets.values()) {
-            for (Long pos : bucket) {
-                consumer.accept(pos);
+        long[] snapshot;
+        int total;
+        synchronized (worldBuckets) {
+            total = 0;
+            for (LongOpenHashSet bucket : worldBuckets.values()) {
+                total += bucket.size();
             }
+            snapshot = new long[total];
+            int index = 0;
+            for (LongOpenHashSet bucket : worldBuckets.values()) {
+                LongIterator iterator = bucket.iterator();
+                while (iterator.hasNext()) {
+                    snapshot[index++] = iterator.nextLong();
+                }
+            }
+        }
+        for (int i = 0; i < snapshot.length; i++) {
+            consumer.accept(snapshot[i]);
         }
     }
 

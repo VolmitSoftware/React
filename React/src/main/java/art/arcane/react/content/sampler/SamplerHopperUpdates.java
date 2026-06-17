@@ -51,12 +51,12 @@ public class SamplerHopperUpdates extends ReactCachedRateSampler implements List
 
   @EventHandler(priority = EventPriority.MONITOR)
   public void on(InventoryMoveItemEvent e) {
-    if (e.getSource().getHolder() instanceof Hopper) {
+    if (e.getSource().getHolder() instanceof Hopper source) {
       increment();
-      getChunkCounter(e.getSource().getLocation().getBlock()).addAndGet(1D);
-    } else if (e.getDestination().getHolder() instanceof Hopper) {
+      getChunkCounter(source.getChunk()).addAndGet(1D);
+    } else if (e.getDestination().getHolder() instanceof Hopper destination) {
       increment();
-      getChunkCounter(e.getDestination().getLocation().getBlock()).addAndGet(1D);
+      getChunkCounter(destination.getChunk()).addAndGet(1D);
     }
   }
 

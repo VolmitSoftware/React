@@ -45,6 +45,7 @@ import org.bukkit.entity.Item;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Hopper Network Normalize action. Targets hopper hotspots, merges item entities, and can unload idle hot chunks.")
 public class ActionHopperNetworkNormalize extends ReactAction<ActionHopperNetworkNormalize.Params> {
@@ -67,42 +68,56 @@ public class ActionHopperNetworkNormalize extends ReactAction<ActionHopperNetwor
     if (!params.isPrepared()) {
       List<ChunkTarget> queue = buildQueue(params);
       params.setQueue(new ArrayDeque<>(queue == null ? List.of() : queue));
+      params.setHoppersNormalized(0);
+      params.setItemsMerged(0);
+      params.setChunksUnloaded(0);
+      params.getHoppersNormalizedAtomic().set(0);
+      params.getItemsMergedAtomic().set(0);
+      params.getChunksUnloadedAtomic().set(0);
+      params.getProcessedChunks().set(0);
+      params.getInFlightChunks().set(0);
       params.setPrepared(true);
       ticket.setWork(0);
       ticket.setTotalWork(Math.max(1, params.getQueue().size()));
     }
 
-    if (params.getQueue().isEmpty()) {
-      ticket.setCount(params.getHoppersNormalized());
+    workOnNormalizeAsync(ticket, params);
+  }
+
+  private void workOnNormalizeAsync(ActionTicket<Params> ticket, Params params) {
+    params.setHoppersNormalized(params.getHoppersNormalizedAtomic().get());
+    params.setItemsMerged(params.getItemsMergedAtomic().get());
+    params.setChunksUnloaded(params.getChunksUnloadedAtomic().get());
+    ticket.setCount(params.getHoppersNormalized());
+    ticket.setWork(Math.min(ticket.getTotalWork(), params.getProcessedChunks().get()));
+
+    if (params.getQueue().isEmpty() && params.getInFlightChunks().get() <= 0) {
       ticket.complete();
       return;
     }
 
-    int chunkBudget = J.isFoliaThreading()
-        ? 1
-        : Math.max(1, React.controller(ActionController.class).getActionSpeedMultiplier() / 12);
-    int worked = 0;
-    while (worked < chunkBudget && !params.getQueue().isEmpty()) {
-      ChunkTarget target = params.getQueue().pollFirst();
-      if (target == null) {
+    int chunkBudget = Math.max(1, React.controller(ActionController.class).getActionSpeedMultiplier() / 12);
+    int maxInFlight = Math.max(4, chunkBudget * 2);
+    int dispatched = 0;
+    while (dispatched < chunkBudget
+        && !params.getQueue().isEmpty()
+        && params.getInFlightChunks().get() < maxInFlight) {
+      ChunkTarget next = params.getQueue().pollFirst();
+      if (next == null) {
         break;
       }
-      NormalizeResult result = normalizeChunk(target, params);
-      if (result != null) {
-        params.setHoppersNormalized(params.getHoppersNormalized() + result.hoppersNormalized());
-        params.setItemsMerged(params.getItemsMerged() + result.itemsMerged());
-        if (result.unloadedChunk()) {
-          params.setChunksUnloaded(params.getChunksUnloaded() + 1);
-        }
-      }
 
-      worked++;
+      dispatchChunkNormalize(next, params);
+      dispatched++;
     }
 
-    ticket.setWork(Math.min(ticket.getTotalWork(), ticket.getWork() + worked));
+    params.setHoppersNormalized(params.getHoppersNormalizedAtomic().get());
+    params.setItemsMerged(params.getItemsMergedAtomic().get());
+    params.setChunksUnloaded(params.getChunksUnloadedAtomic().get());
     ticket.setCount(params.getHoppersNormalized());
+    ticket.setWork(Math.min(ticket.getTotalWork(), params.getProcessedChunks().get()));
 
-    if (params.getQueue().isEmpty()) {
+    if (params.getQueue().isEmpty() && params.getInFlightChunks().get() <= 0) {
       ticket.complete();
     }
   }
@@ -118,11 +133,7 @@ public class ActionHopperNetworkNormalize extends ReactAction<ActionHopperNetwor
   }
 
   private List<ChunkTarget> buildQueue(Params params) {
-    if (J.isFoliaThreading()) {
-      return buildQueueSync(params);
-    }
-
-    return J.sResult(() -> buildQueueSync(params));
+    return buildQueueSync(params);
   }
 
   private List<ChunkTarget> buildQueueSync(Params params) {
@@ -171,17 +182,38 @@ public class ActionHopperNetworkNormalize extends ReactAction<ActionHopperNetwor
     return targets;
   }
 
-  private NormalizeResult normalizeChunk(ChunkTarget target, Params params) {
-    if (!J.isFoliaThreading()) {
-      return J.sResult(() -> normalizeChunkSync(target, params));
-    }
-
+  private void dispatchChunkNormalize(ChunkTarget target, Params params) {
     World world = Bukkit.getWorld(target.world());
     if (world == null) {
-      return new NormalizeResult(0, 0, false);
+      params.getProcessedChunks().incrementAndGet();
+      return;
     }
 
-    return J.runChunkResult(world, target.x(), target.z(), () -> normalizeChunkSync(target, params), new NormalizeResult(0, 0, false));
+    params.getInFlightChunks().incrementAndGet();
+    boolean scheduled = J.runChunk(world, target.x(), target.z(), () -> {
+      try {
+        NormalizeResult result = normalizeChunkSync(target, params);
+        if (result != null) {
+          if (result.hoppersNormalized() > 0) {
+            params.getHoppersNormalizedAtomic().addAndGet(result.hoppersNormalized());
+          }
+          if (result.itemsMerged() > 0) {
+            params.getItemsMergedAtomic().addAndGet(result.itemsMerged());
+          }
+          if (result.unloadedChunk()) {
+            params.getChunksUnloadedAtomic().incrementAndGet();
+          }
+        }
+      } finally {
+        params.getProcessedChunks().incrementAndGet();
+        params.getInFlightChunks().decrementAndGet();
+      }
+    });
+
+    if (!scheduled) {
+      params.getProcessedChunks().incrementAndGet();
+      params.getInFlightChunks().decrementAndGet();
+    }
   }
 
   private NormalizeResult normalizeChunkSync(ChunkTarget target, Params params) {
@@ -330,6 +362,16 @@ public class ActionHopperNetworkNormalize extends ReactAction<ActionHopperNetwor
     private transient int itemsMerged = 0;
     @Builder.Default
     private transient int chunksUnloaded = 0;
+    @Builder.Default
+    private transient AtomicInteger inFlightChunks = new AtomicInteger(0);
+    @Builder.Default
+    private transient AtomicInteger processedChunks = new AtomicInteger(0);
+    @Builder.Default
+    private transient AtomicInteger hoppersNormalizedAtomic = new AtomicInteger(0);
+    @Builder.Default
+    private transient AtomicInteger itemsMergedAtomic = new AtomicInteger(0);
+    @Builder.Default
+    private transient AtomicInteger chunksUnloadedAtomic = new AtomicInteger(0);
 
     public Params withWorld(World world) {
       if (world != null) {

@@ -29,10 +29,13 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockRedstoneEvent;
 
-import java.util.HashMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectIterator;
+
 import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 @ConfigDescription("Configuration for Redstone Clock Governor feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureRedstoneClockGovernor extends ReactFeature implements Listener {
@@ -51,7 +54,7 @@ public class FeatureRedstoneClockGovernor extends ReactFeature implements Listen
   @ConfigDoc(value = "When true, redstone clock governor only throttles clocks that have no nearby players.", impact = "Enable to protect player-near contraptions; disable to enforce strictly.")
   private boolean onlyThrottleWithoutNearbyPlayers = true;
 
-  private transient Map<BlockKey, ClockWindow> windows;
+  private transient Map<UUID, Long2ObjectOpenHashMap<ClockWindow>> windows;
 
   public FeatureRedstoneClockGovernor() {
     super(ID);
@@ -59,7 +62,7 @@ public class FeatureRedstoneClockGovernor extends ReactFeature implements Listen
 
   @Override
   public void onActivate() {
-    windows = new HashMap<>();
+    windows = new ConcurrentHashMap<>();
   }
 
   @Override
@@ -83,10 +86,17 @@ public class FeatureRedstoneClockGovernor extends ReactFeature implements Listen
 
     long now = System.currentTimeMillis();
     long expiry = Math.max(2000L, (long) cooloffMS * 2L);
-    Iterator<Map.Entry<BlockKey, ClockWindow>> iterator = windows.entrySet().iterator();
-    while (iterator.hasNext()) {
-      if (now - iterator.next().getValue().lastHit > expiry) {
-        iterator.remove();
+    Iterator<Map.Entry<UUID, Long2ObjectOpenHashMap<ClockWindow>>> worldIterator = windows.entrySet().iterator();
+    while (worldIterator.hasNext()) {
+      Map.Entry<UUID, Long2ObjectOpenHashMap<ClockWindow>> worldEntry = worldIterator.next();
+      Long2ObjectOpenHashMap<ClockWindow> blockMap = worldEntry.getValue();
+      synchronized (blockMap) {
+        ObjectIterator<Long2ObjectOpenHashMap.Entry<ClockWindow>> blockIterator = blockMap.long2ObjectEntrySet().fastIterator();
+        while (blockIterator.hasNext()) {
+          if (now - blockIterator.next().getValue().lastHit > expiry) {
+            blockIterator.remove();
+          }
+        }
       }
     }
   }
@@ -99,8 +109,17 @@ public class FeatureRedstoneClockGovernor extends ReactFeature implements Listen
 
     long now = System.currentTimeMillis();
     Block block = event.getBlock();
-    BlockKey key = new BlockKey(block.getWorld().getUID(), block.getX(), block.getY(), block.getZ());
-    ClockWindow window = windows.computeIfAbsent(key, ignored -> new ClockWindow(now));
+    UUID worldId = block.getWorld().getUID();
+    long blockKey = packBlock(block.getX(), block.getY(), block.getZ());
+    Long2ObjectOpenHashMap<ClockWindow> blockMap = windows.computeIfAbsent(worldId, ignored -> new Long2ObjectOpenHashMap<>());
+    ClockWindow window;
+    synchronized (blockMap) {
+      window = blockMap.get(blockKey);
+      if (window == null) {
+        window = new ClockWindow(now);
+        blockMap.put(blockKey, window);
+      }
+    }
     window.update(windowMS, now);
     window.transitions++;
 
@@ -144,39 +163,7 @@ public class FeatureRedstoneClockGovernor extends ReactFeature implements Listen
     }
   }
 
-  private static final class BlockKey {
-    private final UUID world;
-    private final int x;
-    private final int y;
-    private final int z;
-
-    private BlockKey(UUID world, int x, int y, int z) {
-      this.world = world;
-      this.x = x;
-      this.y = y;
-      this.z = z;
-    }
-
-    @Override
-    public boolean equals(Object object) {
-      if (this == object) {
-        return true;
-      }
-
-      if (!(object instanceof BlockKey key)) {
-        return false;
-      }
-
-      return x == key.x && y == key.y && z == key.z && world.equals(key.world);
-    }
-
-    @Override
-    public int hashCode() {
-      int result = world.hashCode();
-      result = 31 * result + x;
-      result = 31 * result + y;
-      result = 31 * result + z;
-      return result;
-    }
+  private static long packBlock(int x, int y, int z) {
+    return ((long)(x & 0x3FFFFFF) << 38) | ((long)(y & 0xFFF) << 26) | (z & 0x3FFFFFF);
   }
 }

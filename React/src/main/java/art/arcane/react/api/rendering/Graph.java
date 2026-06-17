@@ -21,8 +21,6 @@ package art.arcane.react.api.rendering;
 
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.volmlib.util.math.RollingSequence;
-import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
-import it.unimi.dsi.fastutil.doubles.DoubleList;
 import lombok.Getter;
 
 import java.util.Map;
@@ -33,17 +31,16 @@ public class Graph {
   // Pushing on a fixed cadence keeps the graph time-axis stable no matter how many
   // viewers trigger renders, and stops samplers from being polled per viewer.
   private static final long PUSH_INTERVAL_MS = 500L;
+  private static final int CAPACITY = 128;
   private static final Map<String, Graph> graphs = new ConcurrentHashMap<>();
-  private final DoubleList sequence;
+  private final double[] sequence = new double[CAPACITY];
+  private int head;
+  private int size;
   private final RollingSequence rs = new RollingSequence(3);
   private long lastPushMs;
   private double cachedMin;
   private double cachedMax;
   private boolean minMaxDirty = true;
-
-  public Graph() {
-    sequence = new DoubleArrayList();
-  }
 
   public static Graph of(Sampler sampler) {
     Graph g = graphs.computeIfAbsent(sampler.getName(), (k) -> new Graph());
@@ -58,14 +55,25 @@ public class Graph {
   }
 
   public synchronized double get(int index) {
-    return sequence.size() > index ? sequence.getDouble(index) : 0;
+    if (index < 0 || index >= size) {
+      return 0;
+    }
+
+    int slot = head - 1 - index;
+    slot %= CAPACITY;
+    if (slot < 0) {
+      slot += CAPACITY;
+    }
+
+    return sequence[slot];
   }
 
   public synchronized void push(double v) {
     rs.put(v);
-    sequence.add(0, rs.getAverage());
-    while (sequence.size() > 128) {
-      sequence.removeDouble(sequence.size() - 1);
+    sequence[head] = rs.getAverage();
+    head = (head + 1) % CAPACITY;
+    if (size < CAPACITY) {
+      size++;
     }
     minMaxDirty = true;
   }
@@ -99,12 +107,11 @@ public class Graph {
 
     double min = 0D;
     double max = 0D;
-    int size = sequence.size();
     if (size > 0) {
       min = Double.MAX_VALUE;
       max = -Double.MAX_VALUE;
       for (int i = 0; i < size; i++) {
-        double v = sequence.getDouble(i);
+        double v = get(i);
         min = Math.min(min, v);
         max = Math.max(max, v);
       }

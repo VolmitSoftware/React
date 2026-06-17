@@ -320,7 +320,13 @@ public class J {
       finished.set(true);
     });
 
+    long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(15);
     while (!finished.get()) {
+      if (System.nanoTime() >= deadline) {
+        React.warn("J.sResult timed out after 15s waiting for sync task; returning latest result (likely deadlock or shutdown).");
+        return result.get();
+      }
+
       J.sleep(15);
     }
 

@@ -1,0 +1,23 @@
+apply plugin: 'java'
+apply plugin: 'java-library'
+
+repositories {
+    mavenCentral()
+    maven { url = uri('https://repo.papermc.io/repository/maven-public/') }
+}
+
+dependencies {
+    compileOnly('org.spigotmc:spigot-api:1.19.4-R0.1-SNAPSHOT')
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+tasks.named('compileJava', JavaCompile).configure {
+    options.compilerArgs.add('-parameters')
+    options.encoding = 'UTF-8'
+    options.release.set(25)
+}
