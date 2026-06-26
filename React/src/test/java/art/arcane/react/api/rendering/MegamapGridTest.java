@@ -1,9 +1,14 @@
 package art.arcane.react.api.rendering;
 
+import net.jqwik.api.Assume;
+import net.jqwik.api.ForAll;
+import net.jqwik.api.Property;
+import net.jqwik.api.constraints.IntRange;
 import org.bukkit.block.BlockFace;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -19,7 +24,7 @@ public class MegamapGridTest {
     @Test
     public void singleFrameProducesNoTiles() {
         Map<Integer, MegamapGrid.MegamapTile> tiles = MegamapGrid.solve(List.of(cell(1, BlockFace.SOUTH, 10, 64, 5)));
-        Assert.assertTrue(tiles.isEmpty());
+        Assertions.assertTrue(tiles.isEmpty());
     }
 
     @Test
@@ -31,11 +36,11 @@ public class MegamapGridTest {
                 cell(4, BlockFace.SOUTH, 11, 64, 5)
         ));
 
-        Assert.assertEquals(4, tiles.size());
-        Assert.assertEquals(new MegamapGrid.MegamapTile(2, 2, 0, 0), tiles.get(1));
-        Assert.assertEquals(new MegamapGrid.MegamapTile(2, 2, 1, 0), tiles.get(2));
-        Assert.assertEquals(new MegamapGrid.MegamapTile(2, 2, 0, 1), tiles.get(3));
-        Assert.assertEquals(new MegamapGrid.MegamapTile(2, 2, 1, 1), tiles.get(4));
+        Assertions.assertEquals(4, tiles.size());
+        Assertions.assertEquals(new MegamapGrid.MegamapTile(2, 2, 0, 0), tiles.get(1));
+        Assertions.assertEquals(new MegamapGrid.MegamapTile(2, 2, 1, 0), tiles.get(2));
+        Assertions.assertEquals(new MegamapGrid.MegamapTile(2, 2, 0, 1), tiles.get(3));
+        Assertions.assertEquals(new MegamapGrid.MegamapTile(2, 2, 1, 1), tiles.get(4));
     }
 
     @Test
@@ -45,8 +50,8 @@ public class MegamapGridTest {
                 cell(2, BlockFace.NORTH, 11, 64, 5)
         ));
 
-        Assert.assertEquals(new MegamapGrid.MegamapTile(2, 1, 1, 0), tiles.get(1));
-        Assert.assertEquals(new MegamapGrid.MegamapTile(2, 1, 0, 0), tiles.get(2));
+        Assertions.assertEquals(new MegamapGrid.MegamapTile(2, 1, 1, 0), tiles.get(1));
+        Assertions.assertEquals(new MegamapGrid.MegamapTile(2, 1, 0, 0), tiles.get(2));
     }
 
     @Test
@@ -56,8 +61,8 @@ public class MegamapGridTest {
                 cell(2, BlockFace.EAST, 7, 64, 21)
         ));
 
-        Assert.assertEquals(new MegamapGrid.MegamapTile(2, 1, 1, 0), tiles.get(1));
-        Assert.assertEquals(new MegamapGrid.MegamapTile(2, 1, 0, 0), tiles.get(2));
+        Assertions.assertEquals(new MegamapGrid.MegamapTile(2, 1, 1, 0), tiles.get(1));
+        Assertions.assertEquals(new MegamapGrid.MegamapTile(2, 1, 0, 0), tiles.get(2));
     }
 
     @Test
@@ -67,8 +72,8 @@ public class MegamapGridTest {
                 cell(2, BlockFace.WEST, 7, 64, 21)
         ));
 
-        Assert.assertEquals(new MegamapGrid.MegamapTile(2, 1, 0, 0), tiles.get(1));
-        Assert.assertEquals(new MegamapGrid.MegamapTile(2, 1, 1, 0), tiles.get(2));
+        Assertions.assertEquals(new MegamapGrid.MegamapTile(2, 1, 0, 0), tiles.get(1));
+        Assertions.assertEquals(new MegamapGrid.MegamapTile(2, 1, 1, 0), tiles.get(2));
     }
 
     @Test
@@ -80,10 +85,10 @@ public class MegamapGridTest {
                 cell(4, BlockFace.UP, 1, 70, 1)
         ));
 
-        Assert.assertEquals(new MegamapGrid.MegamapTile(2, 2, 0, 0), tiles.get(1));
-        Assert.assertEquals(new MegamapGrid.MegamapTile(2, 2, 1, 0), tiles.get(2));
-        Assert.assertEquals(new MegamapGrid.MegamapTile(2, 2, 0, 1), tiles.get(3));
-        Assert.assertEquals(new MegamapGrid.MegamapTile(2, 2, 1, 1), tiles.get(4));
+        Assertions.assertEquals(new MegamapGrid.MegamapTile(2, 2, 0, 0), tiles.get(1));
+        Assertions.assertEquals(new MegamapGrid.MegamapTile(2, 2, 1, 0), tiles.get(2));
+        Assertions.assertEquals(new MegamapGrid.MegamapTile(2, 2, 0, 1), tiles.get(3));
+        Assertions.assertEquals(new MegamapGrid.MegamapTile(2, 2, 1, 1), tiles.get(4));
     }
 
     @Test
@@ -97,10 +102,10 @@ public class MegamapGridTest {
                 cell(6, BlockFace.SOUTH, 12, 64, 5)
         ));
 
-        Assert.assertEquals(6, tiles.size());
-        Assert.assertEquals(new MegamapGrid.MegamapTile(3, 2, 0, 0), tiles.get(1));
-        Assert.assertEquals(new MegamapGrid.MegamapTile(3, 2, 2, 0), tiles.get(3));
-        Assert.assertEquals(new MegamapGrid.MegamapTile(3, 2, 1, 1), tiles.get(5));
+        Assertions.assertEquals(6, tiles.size());
+        Assertions.assertEquals(new MegamapGrid.MegamapTile(3, 2, 0, 0), tiles.get(1));
+        Assertions.assertEquals(new MegamapGrid.MegamapTile(3, 2, 2, 0), tiles.get(3));
+        Assertions.assertEquals(new MegamapGrid.MegamapTile(3, 2, 1, 1), tiles.get(5));
     }
 
     @Test
@@ -111,7 +116,7 @@ public class MegamapGridTest {
                 cell(3, BlockFace.SOUTH, 10, 64, 5)
         ));
 
-        Assert.assertTrue(tiles.isEmpty());
+        Assertions.assertTrue(tiles.isEmpty());
     }
 
     @Test
@@ -127,7 +132,7 @@ public class MegamapGridTest {
                 cell(8, BlockFace.SOUTH, 12, 64, 5)
         ));
 
-        Assert.assertTrue(tiles.isEmpty());
+        Assertions.assertTrue(tiles.isEmpty());
     }
 
     @Test
@@ -137,7 +142,7 @@ public class MegamapGridTest {
                 cell(1, BlockFace.SOUTH, 11, 64, 5)
         ));
 
-        Assert.assertTrue(tiles.isEmpty());
+        Assertions.assertTrue(tiles.isEmpty());
     }
 
     @Test
@@ -148,10 +153,10 @@ public class MegamapGridTest {
                 new MegamapGrid.FrameCell(3, world, BlockFace.SOUTH, 12, 64, 5, "tick-time", true)
         ));
 
-        Assert.assertEquals(2, tiles.size());
-        Assert.assertEquals(new MegamapGrid.MegamapTile(2, 1, 0, 0), tiles.get(1));
-        Assert.assertEquals(new MegamapGrid.MegamapTile(2, 1, 1, 0), tiles.get(2));
-        Assert.assertNull(tiles.get(3));
+        Assertions.assertEquals(2, tiles.size());
+        Assertions.assertEquals(new MegamapGrid.MegamapTile(2, 1, 0, 0), tiles.get(1));
+        Assertions.assertEquals(new MegamapGrid.MegamapTile(2, 1, 1, 0), tiles.get(2));
+        Assertions.assertNull(tiles.get(3));
     }
 
     @Test
@@ -161,7 +166,7 @@ public class MegamapGridTest {
                 new MegamapGrid.FrameCell(2, world, BlockFace.SOUTH, 11, 64, 5, "tps", true)
         ));
 
-        Assert.assertEquals(2, tiles.size());
+        Assertions.assertEquals(2, tiles.size());
     }
 
     @Test
@@ -171,7 +176,7 @@ public class MegamapGridTest {
                 cell(2, BlockFace.SOUTH, 11, 64, 6)
         ));
 
-        Assert.assertTrue(tiles.isEmpty());
+        Assertions.assertTrue(tiles.isEmpty());
     }
 
     @Test
@@ -181,7 +186,7 @@ public class MegamapGridTest {
                 new MegamapGrid.FrameCell(2, UUID.randomUUID(), BlockFace.SOUTH, 11, 64, 5, "tps", true)
         ));
 
-        Assert.assertTrue(tiles.isEmpty());
+        Assertions.assertTrue(tiles.isEmpty());
     }
 
     @Test
@@ -191,7 +196,7 @@ public class MegamapGridTest {
                 cell(2, BlockFace.NORTH, 11, 64, 5)
         ));
 
-        Assert.assertTrue(tiles.isEmpty());
+        Assertions.assertTrue(tiles.isEmpty());
     }
 
     @Test
@@ -202,8 +207,8 @@ public class MegamapGridTest {
                 new MegamapGrid.FrameCell(3, world, BlockFace.SOUTH, 12, 64, 5, "tps", false)
         ));
 
-        Assert.assertEquals(2, tiles.size());
-        Assert.assertNull(tiles.get(3));
+        Assertions.assertEquals(2, tiles.size());
+        Assertions.assertNull(tiles.get(3));
     }
 
     @Test
@@ -215,9 +220,9 @@ public class MegamapGridTest {
                 cell(4, BlockFace.SOUTH, 21, 64, 5)
         ));
 
-        Assert.assertEquals(4, tiles.size());
-        Assert.assertEquals(new MegamapGrid.MegamapTile(2, 1, 0, 0), tiles.get(1));
-        Assert.assertEquals(new MegamapGrid.MegamapTile(2, 1, 0, 0), tiles.get(3));
+        Assertions.assertEquals(4, tiles.size());
+        Assertions.assertEquals(new MegamapGrid.MegamapTile(2, 1, 0, 0), tiles.get(1));
+        Assertions.assertEquals(new MegamapGrid.MegamapTile(2, 1, 0, 0), tiles.get(3));
     }
 
     @Test
@@ -227,8 +232,8 @@ public class MegamapGridTest {
                 cell(2, BlockFace.SOUTH, 10, 64, 5)
         ));
 
-        Assert.assertEquals(new MegamapGrid.MegamapTile(1, 2, 0, 0), tiles.get(1));
-        Assert.assertEquals(new MegamapGrid.MegamapTile(1, 2, 0, 1), tiles.get(2));
+        Assertions.assertEquals(new MegamapGrid.MegamapTile(1, 2, 0, 0), tiles.get(1));
+        Assertions.assertEquals(new MegamapGrid.MegamapTile(1, 2, 0, 1), tiles.get(2));
     }
 
     @Test
@@ -238,6 +243,59 @@ public class MegamapGridTest {
                 new MegamapGrid.FrameCell(2, world, BlockFace.SOUTH, 11, 64, 5, "", true)
         ));
 
-        Assert.assertTrue(tiles.isEmpty());
+        Assertions.assertTrue(tiles.isEmpty());
+    }
+
+    @Property
+    public void solverRejectsGridsWithInteriorHole(
+            @ForAll @IntRange(min = 3, max = 6) int width,
+            @ForAll @IntRange(min = 3, max = 6) int height,
+            @ForAll @IntRange(min = 1, max = 5) int holeCol,
+            @ForAll @IntRange(min = 1, max = 5) int holeRow) {
+        Assume.that(holeCol <= width - 2);
+        Assume.that(holeRow <= height - 2);
+
+        List<MegamapGrid.FrameCell> cells = new ArrayList<>();
+        int mapId = 1;
+        for (int row = 0; row < height; row++) {
+            for (int col = 0; col < width; col++) {
+                if (col == holeCol && row == holeRow) {
+                    continue;
+                }
+                cells.add(new MegamapGrid.FrameCell(mapId, world, BlockFace.SOUTH, 10 + col, 64 - row, 5, "tps", true));
+                mapId++;
+            }
+        }
+
+        Map<Integer, MegamapGrid.MegamapTile> tiles = MegamapGrid.solve(cells);
+        Assertions.assertTrue(tiles.isEmpty());
+    }
+
+    @Property
+    public void solverRejectsGridsWithDuplicateMapId(
+            @ForAll @IntRange(min = 1, max = 4) int width,
+            @ForAll @IntRange(min = 1, max = 4) int height,
+            @ForAll @IntRange(min = 0, max = 15) int duplicateSeed) {
+        int total = width * height;
+        Assume.that(total >= 2);
+
+        int duplicateIndex = duplicateSeed % total;
+        int partnerIndex = (duplicateIndex + 1) % total;
+        int sharedMapId = 5000;
+
+        List<MegamapGrid.FrameCell> cells = new ArrayList<>();
+        int mapId = 1;
+        int linear = 0;
+        for (int row = 0; row < height; row++) {
+            for (int col = 0; col < width; col++) {
+                int id = (linear == duplicateIndex || linear == partnerIndex) ? sharedMapId : mapId;
+                cells.add(new MegamapGrid.FrameCell(id, world, BlockFace.SOUTH, 10 + col, 64 - row, 5, "tps", true));
+                mapId++;
+                linear++;
+            }
+        }
+
+        Map<Integer, MegamapGrid.MegamapTile> tiles = MegamapGrid.solve(cells);
+        Assertions.assertTrue(tiles.isEmpty());
     }
 }

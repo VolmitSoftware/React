@@ -1,8 +1,8 @@
 package art.arcane.react.core.controller;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,7 +19,7 @@ public class HopperItemIndexTest {
     private UUID worldA;
     private UUID worldB;
 
-    @Before
+    @BeforeEach
     public void setup() {
         index = new HopperItemIndex();
         worldA = UUID.randomUUID();
@@ -31,8 +31,8 @@ public class HopperItemIndexTest {
         UUID item = UUID.randomUUID();
         index.addItem(worldA, 0, 0, item);
         Set<UUID> items = index.itemsInChunk(worldA, 0, 0);
-        Assert.assertNotNull(items);
-        Assert.assertTrue(items.contains(item));
+        Assertions.assertNotNull(items);
+        Assertions.assertTrue(items.contains(item));
     }
 
     @Test
@@ -41,25 +41,25 @@ public class HopperItemIndexTest {
         index.addItem(worldA, 0, 0, item);
         index.removeItem(item);
         Set<UUID> items = index.itemsInChunk(worldA, 0, 0);
-        Assert.assertFalse(items.contains(item));
+        Assertions.assertFalse(items.contains(item));
     }
 
     @Test
     public void hasItemsAboveReturnsTrueWhenItemPresent() {
         index.addItem(worldA, 3, 5, UUID.randomUUID());
-        Assert.assertTrue(index.hasItemsAbove(worldA, 3, 5));
+        Assertions.assertTrue(index.hasItemsAbove(worldA, 3, 5));
     }
 
     @Test
     public void hasItemsAboveReturnsFalseWhenEmpty() {
-        Assert.assertFalse(index.hasItemsAbove(worldA, 99, 99));
+        Assertions.assertFalse(index.hasItemsAbove(worldA, 99, 99));
     }
 
     @Test
     public void queryNeverPresentReturnsEmpty() {
         Set<UUID> items = index.itemsInChunk(worldA, 42, 42);
-        Assert.assertNotNull(items);
-        Assert.assertTrue(items.isEmpty());
+        Assertions.assertNotNull(items);
+        Assertions.assertTrue(items.isEmpty());
     }
 
     @Test
@@ -68,9 +68,9 @@ public class HopperItemIndexTest {
         index.addItem(worldA, 1, 1, UUID.randomUUID());
         index.addItem(worldB, 0, 0, UUID.randomUUID());
         index.removeWorld(worldA);
-        Assert.assertFalse(index.hasItemsAbove(worldA, 0, 0));
-        Assert.assertFalse(index.hasItemsAbove(worldA, 1, 1));
-        Assert.assertEquals(1, index.size());
+        Assertions.assertFalse(index.hasItemsAbove(worldA, 0, 0));
+        Assertions.assertFalse(index.hasItemsAbove(worldA, 1, 1));
+        Assertions.assertEquals(1, index.size());
     }
 
     @Test
@@ -78,8 +78,8 @@ public class HopperItemIndexTest {
         index.addItem(worldA, 0, 0, UUID.randomUUID());
         index.addItem(worldB, 2, 2, UUID.randomUUID());
         index.clear();
-        Assert.assertEquals(0, index.size());
-        Assert.assertFalse(index.hasItemsAbove(worldA, 0, 0));
+        Assertions.assertEquals(0, index.size());
+        Assertions.assertFalse(index.hasItemsAbove(worldA, 0, 0));
     }
 
     @Test
@@ -88,9 +88,9 @@ public class HopperItemIndexTest {
         index.addItem(worldA, 0, 0, item);
         index.removeItem(item);
         index.addItem(worldA, 5, 5, item);
-        Assert.assertFalse(index.hasItemsAbove(worldA, 0, 0));
-        Assert.assertTrue(index.hasItemsAbove(worldA, 5, 5));
-        Assert.assertTrue(index.itemsInChunk(worldA, 5, 5).contains(item));
+        Assertions.assertFalse(index.hasItemsAbove(worldA, 0, 0));
+        Assertions.assertTrue(index.hasItemsAbove(worldA, 5, 5));
+        Assertions.assertTrue(index.itemsInChunk(worldA, 5, 5).contains(item));
     }
 
     @Test
@@ -98,8 +98,8 @@ public class HopperItemIndexTest {
         UUID item = UUID.randomUUID();
         index.addItem(worldA, 0, 0, item);
         index.addItem(worldA, 0, 0, item);
-        Assert.assertEquals(1, index.itemsInChunk(worldA, 0, 0).size());
-        Assert.assertEquals(1, index.size());
+        Assertions.assertEquals(1, index.itemsInChunk(worldA, 0, 0).size());
+        Assertions.assertEquals(1, index.size());
     }
 
     @Test
@@ -108,7 +108,7 @@ public class HopperItemIndexTest {
         index.addItem(worldA, 0, 0, item);
         Set<UUID> snapshot = index.itemsInChunk(worldA, 0, 0);
         index.removeItem(item);
-        Assert.assertTrue(snapshot.contains(item));
+        Assertions.assertTrue(snapshot.contains(item));
     }
 
     @Test
@@ -120,11 +120,11 @@ public class HopperItemIndexTest {
         index.addItem(worldA, 0, 0, item2);
         index.addItem(worldA, 1, 0, item3);
         index.removeChunk(worldA, 0, 0);
-        Assert.assertFalse(index.hasItemsAbove(worldA, 0, 0));
-        Assert.assertFalse(index.itemsInChunk(worldA, 0, 0).contains(item1));
-        Assert.assertFalse(index.itemsInChunk(worldA, 0, 0).contains(item2));
-        Assert.assertTrue(index.hasItemsAbove(worldA, 1, 0));
-        Assert.assertEquals(1, index.size());
+        Assertions.assertFalse(index.hasItemsAbove(worldA, 0, 0));
+        Assertions.assertFalse(index.itemsInChunk(worldA, 0, 0).contains(item1));
+        Assertions.assertFalse(index.itemsInChunk(worldA, 0, 0).contains(item2));
+        Assertions.assertTrue(index.hasItemsAbove(worldA, 1, 0));
+        Assertions.assertEquals(1, index.size());
     }
 
     @Test
@@ -133,8 +133,8 @@ public class HopperItemIndexTest {
         index.addItem(worldA, 5, 5, item);
         index.removeChunk(worldA, 5, 5);
         index.addItem(worldA, 10, 10, item);
-        Assert.assertTrue(index.hasItemsAbove(worldA, 10, 10));
-        Assert.assertEquals(1, index.size());
+        Assertions.assertTrue(index.hasItemsAbove(worldA, 10, 10));
+        Assertions.assertEquals(1, index.size());
     }
 
     @Test
@@ -165,7 +165,7 @@ public class HopperItemIndexTest {
             });
         }
 
-        Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(10, TimeUnit.SECONDS));
         executor.shutdown();
     }
 }

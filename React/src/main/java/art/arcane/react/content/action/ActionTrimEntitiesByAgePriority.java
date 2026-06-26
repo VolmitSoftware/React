@@ -27,6 +27,8 @@ import art.arcane.react.core.controller.ActionController;
 import art.arcane.react.core.controller.ObserverController;
 import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.model.ReactEntity;
+import art.arcane.react.model.SampledChunk;
+import art.arcane.react.model.SampledWorld;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.volmlib.util.format.Form;
 import lombok.AllArgsConstructor;
@@ -52,17 +54,35 @@ public class ActionTrimEntitiesByAgePriority extends ReactAction<ActionTrimEntit
       EntityType.ARMOR_STAND,
       EntityType.ITEM_FRAME,
       EntityType.PAINTING,
-      EntityType.LEASH_HITCH,
+      EntityType.LEASH_KNOT,
       EntityType.MINECART,
-      EntityType.MINECART_CHEST,
-      EntityType.MINECART_COMMAND,
-      EntityType.MINECART_FURNACE,
-      EntityType.MINECART_HOPPER,
-      EntityType.MINECART_MOB_SPAWNER,
-      EntityType.MINECART_TNT,
-      EntityType.BOAT,
-      EntityType.CHEST_BOAT,
-      EntityType.FISHING_HOOK,
+      EntityType.CHEST_MINECART,
+      EntityType.COMMAND_BLOCK_MINECART,
+      EntityType.FURNACE_MINECART,
+      EntityType.HOPPER_MINECART,
+      EntityType.SPAWNER_MINECART,
+      EntityType.TNT_MINECART,
+      EntityType.ACACIA_BOAT,
+      EntityType.BAMBOO_RAFT,
+      EntityType.BIRCH_BOAT,
+      EntityType.CHERRY_BOAT,
+      EntityType.DARK_OAK_BOAT,
+      EntityType.JUNGLE_BOAT,
+      EntityType.MANGROVE_BOAT,
+      EntityType.OAK_BOAT,
+      EntityType.PALE_OAK_BOAT,
+      EntityType.SPRUCE_BOAT,
+      EntityType.ACACIA_CHEST_BOAT,
+      EntityType.BAMBOO_CHEST_RAFT,
+      EntityType.BIRCH_CHEST_BOAT,
+      EntityType.CHERRY_CHEST_BOAT,
+      EntityType.DARK_OAK_CHEST_BOAT,
+      EntityType.JUNGLE_CHEST_BOAT,
+      EntityType.MANGROVE_CHEST_BOAT,
+      EntityType.OAK_CHEST_BOAT,
+      EntityType.PALE_OAK_CHEST_BOAT,
+      EntityType.SPRUCE_CHEST_BOAT,
+      EntityType.FISHING_BOBBER,
       EntityType.ITEM_DISPLAY,
       EntityType.BLOCK_DISPLAY,
       EntityType.TEXT_DISPLAY,
@@ -161,7 +181,7 @@ public class ActionTrimEntitiesByAgePriority extends ReactAction<ActionTrimEntit
     }
 
     List<Map.Entry<ChunkRef, Double>> weighted = new ArrayList<>();
-    for (var sampledWorld : observer.getSampled().getWorlds().values()) {
+    for (SampledWorld sampledWorld : observer.getSampled().getWorlds().values()) {
       World world = sampledWorld.getWorld();
       if (world == null) {
         continue;
@@ -171,7 +191,7 @@ public class ActionTrimEntitiesByAgePriority extends ReactAction<ActionTrimEntit
         continue;
       }
 
-      for (var sampledChunk : sampledWorld.getChunks().values()) {
+      for (SampledChunk sampledChunk : sampledWorld.getChunks().values()) {
         Chunk chunk = sampledChunk.getChunk();
         if (chunk == null || chunk.getWorld() == null) {
           continue;

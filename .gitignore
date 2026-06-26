@@ -4,3 +4,5 @@
 React/libs/
 
 .codegraph/
+
+React/.jqwik-database

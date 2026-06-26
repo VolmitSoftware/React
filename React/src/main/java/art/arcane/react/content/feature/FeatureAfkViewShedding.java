@@ -38,6 +38,14 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Afk View Shedding feature. Idle players receive a reduced send view distance, cutting chunk packets and entity tracker fanout, and are restored instantly on activity.")
 public class FeatureAfkViewShedding extends ReactFeature implements Listener {
+  static long idleThresholdMs(int idleAfterSeconds) {
+    return Math.max(10_000L, idleAfterSeconds * 1000L);
+  }
+
+  static int pressureCap(int pressureSendViewDistanceCap) {
+    return Math.max(2, pressureSendViewDistanceCap);
+  }
+
   public static final String ID = "afk-view-shedding";
   @art.arcane.react.util.project.config.ConfigDoc(value = "Main evaluation interval for afk view shedding in milliseconds.", impact = "Lower values detect idle players sooner; higher values reduce overhead.")
   private int tickIntervalMS = 5000;
@@ -50,15 +58,18 @@ public class FeatureAfkViewShedding extends ReactFeature implements Listener {
   @art.arcane.react.util.project.config.ConfigDoc(value = "Caps every player's send view distance during sustained server pressure (simulation distance is untouched).", impact = "Enable to cut chunk packets and tracker fanout for all players during incidents; disable to only shed idle players.")
   private boolean pressureNotch = true;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Send view distance cap applied to all players while pressure is engaged (chunks).", impact = "Lower values shed more packet and tracker load during pressure windows at the cost of shorter visible range.")
-  private int pressureSendViewDistanceCap = 6;
+  private int pressureSendViewDistanceCap = 8;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Average tick milliseconds required before the pressure notch engages.", impact = "Lower values cap view distance earlier; higher values reserve it for heavier load.")
-  private double pressureEngageTickTimeMs = 60;
+  private double pressureEngageTickTimeMs = 70;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Average tick milliseconds the server must stay below before the pressure notch releases.", impact = "Lower values hold the cap longer for stability; higher values restore range sooner.")
   private double pressureReleaseTickTimeMs = 45;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Sustained pressure duration required before the notch engages (milliseconds).", impact = "Higher values ignore short spikes; lower values engage faster.")
-  private long pressureSustainEngageMs = 6000;
+  private long pressureSustainEngageMs = 12_000;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Sustained recovery duration required before the notch releases (milliseconds).", impact = "Higher values avoid flapping between states; lower values restore range sooner.")
   private long pressureSustainReleaseMs = 30_000;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Grace period after activation before the pressure notch can engage (seconds).", impact = "Prevents startup tick spikes from capping everyone's view distance before the server settles; raise it if your server takes longer to warm up.")
+  private int pressureWarmupSeconds = 45;
+  private transient long activatedAtMs;
   private transient Map<UUID, Long> lastActivityMs;
   private transient Map<UUID, Integer> originalSendViewDistance;
   private transient Map<UUID, Integer> pressureOriginal;
@@ -82,6 +93,7 @@ public class FeatureAfkViewShedding extends ReactFeature implements Listener {
     pressureEngaged = false;
     pressureSinceMs = 0;
     pressureCalmSinceMs = 0;
+    activatedAtMs = System.currentTimeMillis();
     warnedRuntimeFailure = false;
     supportsSendViewDistance = false;
     try {
@@ -135,7 +147,7 @@ public class FeatureAfkViewShedding extends ReactFeature implements Listener {
     }
 
     long now = System.currentTimeMillis();
-    long idleAfterMs = Math.max(10_000L, idleAfterSeconds * 1000L);
+    long idleAfterMs = idleThresholdMs(idleAfterSeconds);
     for (Player player : Bukkit.getOnlinePlayers()) {
       UUID playerId = player.getUniqueId();
       Long last = lastActivityMs.get(playerId);
@@ -157,6 +169,11 @@ public class FeatureAfkViewShedding extends ReactFeature implements Listener {
 
     long now = System.currentTimeMillis();
     if (!pressureEngaged) {
+      if (now - activatedAtMs < Math.max(0, pressureWarmupSeconds) * 1000L) {
+        pressureSinceMs = 0;
+        return;
+      }
+
       if (tickMs < pressureEngageTickTimeMs) {
         pressureSinceMs = 0;
         return;
@@ -193,7 +210,7 @@ public class FeatureAfkViewShedding extends ReactFeature implements Listener {
   }
 
   private void applyPressureCaps() {
-    int cap = Math.max(2, pressureSendViewDistanceCap);
+    int cap = pressureCap(pressureSendViewDistanceCap);
     for (Player player : Bukkit.getOnlinePlayers()) {
       if (pressureOriginal.containsKey(player.getUniqueId())) {
         continue;

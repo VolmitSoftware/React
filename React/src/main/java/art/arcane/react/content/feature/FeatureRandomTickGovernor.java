@@ -35,6 +35,14 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Random Tick Governor feature. Temporarily lowers the random tick speed gamerule while the server is under sustained pressure, restoring it once the server recovers. Crop, leaf, and similar random-tick growth slows only during the governed window.")
 public class FeatureRandomTickGovernor extends ReactFeature {
+  static boolean isUnderPressure(double tickMs, double engageTickTimeMs, double incident, double engageIncidentScore) {
+    return tickMs >= engageTickTimeMs || incident >= engageIncidentScore;
+  }
+
+  static boolean isCalm(double tickMs, double releaseTickTimeMs, double incident, double engageIncidentScore) {
+    return tickMs <= releaseTickTimeMs && incident < engageIncidentScore;
+  }
+
   public static final String ID = "random-tick-governor";
   @art.arcane.react.util.project.config.ConfigDoc(value = "Main evaluation interval for random tick governor in milliseconds.", impact = "Lower values react faster but consume more CPU; higher values reduce overhead but react later.")
   private int tickIntervalMS = 2000;
@@ -83,7 +91,7 @@ public class FeatureRandomTickGovernor extends ReactFeature {
   public void onTick() {
     double tickMs = sample(SamplerTickTime.ID);
     double incident = sample(SamplerIncidentScore.ID);
-    boolean pressure = tickMs >= engageTickTimeMs || incident >= engageIncidentScore;
+    boolean pressure = isUnderPressure(tickMs, engageTickTimeMs, incident, engageIncidentScore);
     long now = System.currentTimeMillis();
 
     if (!engaged) {
@@ -104,7 +112,7 @@ public class FeatureRandomTickGovernor extends ReactFeature {
       return;
     }
 
-    boolean calm = tickMs <= releaseTickTimeMs && incident < engageIncidentScore;
+    boolean calm = isCalm(tickMs, releaseTickTimeMs, incident, engageIncidentScore);
     if (!calm) {
       calmSinceMs = 0;
       return;

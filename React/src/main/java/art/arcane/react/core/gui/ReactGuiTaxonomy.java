@@ -3,11 +3,48 @@ package art.arcane.react.core.gui;
 import art.arcane.react.util.format.C;
 import org.bukkit.Material;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
 public final class ReactGuiTaxonomy {
   private ReactGuiTaxonomy() {
+  }
+
+  public static Category categoryForId(String id) {
+    String normalizedId = normalizeId(id);
+
+    if (containsAny(normalizedId, "map", "overlay", "heatmap", "-pie", "pie-", "replay", "impact")) {
+      return new Category(10, "diagnostics", "Diagnostics & HUD", Material.FILLED_MAP, "Live maps, overlays & heatmaps");
+    }
+    if (containsAny(normalizedId, "redstone", "circuit")) {
+      return new Category(20, "redstone", "Redstone & Circuits", Material.REDSTONE, "Redstone & circuit throttling");
+    }
+    if (containsAny(normalizedId, "hopper")) {
+      return new Category(30, "hoppers", "Hoppers & Storage", Material.HOPPER, "Hopper & container throughput");
+    }
+    if (containsAny(normalizedId, "entity", "mob", "spawn", "item", "drop", "projectile", "vehicle", "minecart", "orb", "despawn", "stack", "trim", "burst", "farm", "bubbler", "crowd")) {
+      return new Category(40, "entities", "Entities & Mobs", Material.ZOMBIE_HEAD, "Mob, item & spawn management");
+    }
+    if (containsAny(normalizedId, "chunk", "column", "gravity", "crop", "leaf", "portal", "explosion", "fluid", "snow", "fire", "falling", "quarantine", "block")) {
+      return new Category(50, "world", "World & Blocks", Material.GRASS_BLOCK, "Chunks, blocks & physics");
+    }
+    if (containsAny(normalizedId, "view", "tick", "tps", "mspt", "budget", "governor", "activation", "sleep", "surge", "incident", "hibernat", "save", "pathfinder", "tracker", "afk", "spike", "load")) {
+      return new Category(60, "performance", "Performance & Load", Material.CLOCK, "View distance, tick budgets & governors");
+    }
+
+    return new Category(99, "other", "Other", Material.CHEST, "Uncategorized");
+  }
+
+  public static List<Category> topLevelCategories() {
+    return List.of(
+        new Category(10, "diagnostics", "Diagnostics & HUD", Material.FILLED_MAP, "Live maps, overlays & heatmaps"),
+        new Category(20, "redstone", "Redstone & Circuits", Material.REDSTONE, "Redstone & circuit throttling"),
+        new Category(30, "hoppers", "Hoppers & Storage", Material.HOPPER, "Hopper & container throughput"),
+        new Category(40, "entities", "Entities & Mobs", Material.ZOMBIE_HEAD, "Mob, item & spawn management"),
+        new Category(50, "world", "World & Blocks", Material.GRASS_BLOCK, "Chunks, blocks & physics"),
+        new Category(60, "performance", "Performance & Load", Material.CLOCK, "View distance, tick budgets & governors")
+    );
   }
 
   public static EntryGroup groupForId(String id) {
@@ -100,6 +137,15 @@ public final class ReactGuiTaxonomy {
       int order,
       String label,
       Material icon
+  ) {
+  }
+
+  public record Category(
+      int order,
+      String key,
+      String label,
+      Material icon,
+      String description
   ) {
   }
 }

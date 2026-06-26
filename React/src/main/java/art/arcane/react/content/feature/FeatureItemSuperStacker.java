@@ -38,6 +38,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -83,12 +84,12 @@ public class FeatureItemSuperStacker extends ReactFeature implements Listener {
 
   public void effectMerge(Item item, Item into) {
     Location buf = item.getLocation().clone();
-    item.getWorld().spawnParticle(Particle.ITEM_CRACK, item.getLocation(), 7, 0.1, 0.1, 0.1, 0.1, item.getItemStack());
+    item.getWorld().spawnParticle(Particle.ITEM, item.getLocation(), 7, 0.1, 0.1, 0.1, 0.1, item.getItemStack());
 
     Vector j = into.getLocation().clone().subtract(item.getLocation()).toVector().normalize().multiply(into.getLocation().clone().distance(item.getLocation()) / (searchRadius * 2));
     for (int i = 0; i < searchRadius * 2; i++) {
       buf = buf.clone().add(j);
-      item.getWorld().spawnParticle(Particle.ITEM_CRACK, buf, 3, 0, 0, 0, 0, item.getItemStack());
+      item.getWorld().spawnParticle(Particle.ITEM, buf, 3, 0, 0, 0, 0, item.getItemStack());
     }
 
     if (cl.flip()) {
@@ -169,6 +170,21 @@ public class FeatureItemSuperStacker extends ReactFeature implements Listener {
   }
 
   @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+  public void on(EntityDamageEvent e) {
+    if (!(e.getEntity() instanceof Item item)) {
+      return;
+    }
+
+    if (e.getCause() == EntityDamageEvent.DamageCause.VOID) {
+      return;
+    }
+
+    if (isSuperStack(item)) {
+      e.setCancelled(true);
+    }
+  }
+
+  @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
   public void onInventoryMoveItemEvent(InventoryMoveItemEvent event) {
     InventoryHolder holder = event.getDestination().getHolder();
 
@@ -192,7 +208,7 @@ public class FeatureItemSuperStacker extends ReactFeature implements Listener {
 
   @Override
   public void onActivate() {
-    React.controller(EntityController.class).registerEntityTickListener(EntityType.DROPPED_ITEM, (i) -> mergeWithNearbyItems((Item) i));
+    React.controller(EntityController.class).registerEntityTickListener(EntityType.ITEM, (i) -> mergeWithNearbyItems((Item) i));
   }
 
   @Override

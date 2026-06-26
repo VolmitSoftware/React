@@ -82,9 +82,9 @@ public class TweakFastFallingBlocks extends ReactTweak implements Listener {
   public void landEffect(Location at, BlockData item) {
     at.getWorld().playSound(at, item.getSoundGroup().getPlaceSound(), 1f, 1f);
     if (item.getMaterial().isItem()) {
-      at.getWorld().spawnParticle(Particle.ITEM_CRACK, at.getBlock().getLocation().add(0.5, -0.5, 0.5), 24, 0.6, 0.6, 0.6, 0.15, new ItemStack(item.getMaterial(), 1));
+      at.getWorld().spawnParticle(Particle.ITEM, at.getBlock().getLocation().add(0.5, -0.5, 0.5), 24, 0.6, 0.6, 0.6, 0.15, new ItemStack(item.getMaterial(), 1));
     } else {
-      at.getWorld().spawnParticle(Particle.BLOCK_CRACK, at.getBlock().getLocation().add(0.5, -0.5, 0.5), 24, 0.6, 0.6, 0.6, 0.15, item);
+      at.getWorld().spawnParticle(Particle.BLOCK, at.getBlock().getLocation().add(0.5, -0.5, 0.5), 24, 0.6, 0.6, 0.6, 0.15, item);
     }
   }
 

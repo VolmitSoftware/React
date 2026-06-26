@@ -151,7 +151,7 @@ public class EntityPriority {
     for (EntityType i : EntityType.values()) {
       double v = BASELINE;
       switch (i) {
-        case DROPPED_ITEM -> v *= consumableMultiplier;
+        case ITEM -> v *= consumableMultiplier;
         case EXPERIENCE_ORB, EGG ->
             v *= consumableMultiplier * lowValueMultiplier;
         case AREA_EFFECT_CLOUD ->
@@ -163,7 +163,7 @@ public class EntityPriority {
              ENDERMAN, ZOMBIFIED_PIGLIN, GHAST, SLIME, ZOMBIE,
              GIANT, SPIDER, SKELETON, CREEPER, ILLUSIONER, VINDICATOR, VEX,
              EVOKER, HUSK, STRAY -> v *= monsterMultiplier;
-        case LEASH_HITCH ->
+        case LEASH_KNOT ->
             v *= mechanicMultiplier * lowTickMultiplier * stationaryMultiplier;
         case PAINTING ->
             v *= lowTickMultiplier * stationaryMultiplier * mechanicMultiplier;
@@ -173,19 +173,19 @@ public class EntityPriority {
         case SMALL_FIREBALL -> v *= projectileMultiplier * ephemeralMultiplier;
         case ENDER_PEARL ->
             v *= projectileMultiplier * consumableMultiplier * ephemeralMultiplier;
-        case ENDER_SIGNAL ->
+        case EYE_OF_ENDER ->
             v *= projectileMultiplier * mechanicMultiplier * ephemeralMultiplier;
         case SPLASH_POTION ->
             v *= projectileMultiplier * consumableMultiplier * ephemeralMultiplier;
-        case THROWN_EXP_BOTTLE ->
+        case EXPERIENCE_BOTTLE ->
             v *= projectileMultiplier * highValueMultiplier * ephemeralMultiplier;
         case ITEM_FRAME ->
             v *= mechanicMultiplier * lowTickMultiplier * stationaryMultiplier;
         case WITHER_SKULL -> v *= projectileMultiplier * ephemeralMultiplier;
-        case PRIMED_TNT -> v *= projectileMultiplier * ephemeralMultiplier;
+        case TNT -> v *= projectileMultiplier * ephemeralMultiplier;
         case FALLING_BLOCK ->
             v *= projectileMultiplier * ephemeralMultiplier * mechanicMultiplier;
-        case FIREWORK ->
+        case FIREWORK_ROCKET ->
             v *= projectileMultiplier * ephemeralMultiplier * ephemeralMultiplier;
         case SPECTRAL_ARROW -> v *= projectileMultiplier * ephemeralMultiplier;
         case SHULKER_BULLET -> v *= projectileMultiplier * ephemeralMultiplier;
@@ -197,24 +197,25 @@ public class EntityPriority {
         case ZOMBIE_HORSE -> v *= monsterMultiplier * rideMultiplier;
         case ARMOR_STAND ->
             v *= lowTickMultiplier * stationaryMultiplier * mechanicMultiplier;
-        case MINECART, BOAT ->
+        case MINECART, ACACIA_BOAT, BAMBOO_RAFT, BIRCH_BOAT, CHERRY_BOAT, DARK_OAK_BOAT,
+             JUNGLE_BOAT, MANGROVE_BOAT, OAK_BOAT, PALE_OAK_BOAT, SPRUCE_BOAT ->
             v *= vehicleMultiplier * rideMultiplier * mechanicMultiplier;
         case EVOKER_FANGS -> v *= projectileMultiplier * ephemeralMultiplier;
-        case MINECART_COMMAND -> v *= vehicleMultiplier * mechanicMultiplier;
-        case MINECART_CHEST ->
+        case COMMAND_BLOCK_MINECART -> v *= vehicleMultiplier * mechanicMultiplier;
+        case CHEST_MINECART ->
             v *= vehicleMultiplier * highValueMultiplier * mechanicMultiplier;
-        case MINECART_FURNACE ->
+        case FURNACE_MINECART ->
             v *= vehicleMultiplier * mechanicMultiplier * highValueMultiplier;
-        case MINECART_TNT -> v *= vehicleMultiplier * mechanicMultiplier;
-        case MINECART_HOPPER ->
+        case TNT_MINECART -> v *= vehicleMultiplier * mechanicMultiplier;
+        case HOPPER_MINECART ->
             v *= vehicleMultiplier * highValueMultiplier * mechanicMultiplier;
-        case MINECART_MOB_SPAWNER ->
+        case SPAWNER_MINECART ->
             v *= vehicleMultiplier * mechanicMultiplier;
         case ENDER_DRAGON, WITHER, WARDEN ->
             v *= bossMultiplier * monsterMultiplier * highValueMultiplier;
         case BAT -> v *= ambientMultiplier;
         case PIG, SNIFFER, CAMEL, FROG, GOAT, BEE, PANDA, TURTLE, POLAR_BEAR,
-             RABBIT, SNOWMAN, MUSHROOM_COW, CHICKEN, COW, SHEEP ->
+             RABBIT, SNOW_GOLEM, MOOSHROOM, CHICKEN, COW, SHEEP ->
             v *= passiveMultiplier;
         case SQUID -> v *= passiveMultiplier * waterMultiplier;
         case WOLF -> v *= passiveMultiplier * tameableMultiplier;
@@ -225,7 +226,7 @@ public class EntityPriority {
         case LLAMA_SPIT -> v *= projectileMultiplier * ephemeralMultiplier;
         case PARROT -> v *= passiveMultiplier * tameableMultiplier;
         case VILLAGER -> v *= passiveMultiplier * villageMultiplier;
-        case ENDER_CRYSTAL ->
+        case END_CRYSTAL ->
             v *= bossMultiplier * lowTickMultiplier * mechanicMultiplier;
         case PHANTOM -> v *= monsterMultiplier * mechanicMultiplier;
         case TRIDENT ->
@@ -251,11 +252,13 @@ public class EntityPriority {
             v *= passiveMultiplier * waterMultiplier * highValueMultiplier;
         case MARKER ->
             v *= lowTickMultiplier * stationaryMultiplier * mechanicMultiplier;
-        case CHEST_BOAT -> v *= vehicleMultiplier * highValueMultiplier;
+        case ACACIA_CHEST_BOAT, BAMBOO_CHEST_RAFT, BIRCH_CHEST_BOAT, CHERRY_CHEST_BOAT,
+             DARK_OAK_CHEST_BOAT, JUNGLE_CHEST_BOAT, MANGROVE_CHEST_BOAT, OAK_CHEST_BOAT,
+             PALE_OAK_CHEST_BOAT, SPRUCE_CHEST_BOAT -> v *= vehicleMultiplier * highValueMultiplier;
         case TADPOLE -> v *= passiveMultiplier * lowValueMultiplier;
-        case FISHING_HOOK ->
+        case FISHING_BOBBER ->
             v *= projectileMultiplier * ephemeralMultiplier * mechanicMultiplier;
-        case LIGHTNING -> v *= mechanicMultiplier * ephemeralMultiplier;
+        case LIGHTNING_BOLT -> v *= mechanicMultiplier * ephemeralMultiplier;
         case PLAYER, ITEM_DISPLAY, BLOCK_DISPLAY, TEXT_DISPLAY, INTERACTION ->
             v = -1;
         case UNKNOWN -> v *= 1;
@@ -333,11 +336,11 @@ public class EntityPriority {
     if (e instanceof LivingEntity l) {
       buf *= livingMultiplier;
 
-      if (l.getAttribute(Attribute.GENERIC_MAX_HEALTH) == null) {
+      if (l.getAttribute(Attribute.MAX_HEALTH) == null) {
         return buf;
       }
 
-      double maxHealth = l.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue();
+      double maxHealth = l.getAttribute(Attribute.MAX_HEALTH).getValue();
       double h = l.getHealth();
 
       if (h >= maxHealth) {

@@ -244,6 +244,14 @@ public class NearbyPlayerIndexController extends TickedObject implements IContro
     J.runEntity(player, () -> updateFromLocation(player.getUniqueId(), player.getLocation()));
   }
 
+  public void injectSynthetic(UUID syntheticId, Location location) {
+    updateFromLocation(syntheticId, location);
+  }
+
+  public void clearSynthetic(UUID syntheticId) {
+    removePlayer(syntheticId);
+  }
+
   private void updateFromLocation(UUID playerId, Location location) {
     if (playerId == null || location == null || location.getWorld() == null) {
       return;

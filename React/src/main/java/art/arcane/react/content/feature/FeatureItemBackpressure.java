@@ -39,6 +39,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Item Backpressure feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureItemBackpressure extends ReactFeature {
+  static boolean shouldThrottle(double tickTimeMs, double triggerTickTimeMs, double entityCount, double triggerEntityCount) {
+    return tickTimeMs >= triggerTickTimeMs || entityCount >= triggerEntityCount;
+  }
+
   public static final String ID = "item-backpressure";
   @art.arcane.react.util.project.config.ConfigDoc(value = "Main evaluation interval for item backpressure in milliseconds.", impact = "Lower values react faster but consume more CPU; higher values reduce overhead but react later.")
   private int tickIntervalMS = 1000;
@@ -106,7 +110,8 @@ public class FeatureItemBackpressure extends ReactFeature {
       return true;
     }
 
-    return React.sampler(SamplerEntities.ID).sample() >= triggerEntityCount;
+    double entityCount = React.sampler(SamplerEntities.ID).sample();
+    return shouldThrottle(tickTime, triggerTickTimeMS, entityCount, triggerEntityCount);
   }
 
   private void removeRemoteItems() {

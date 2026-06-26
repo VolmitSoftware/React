@@ -31,16 +31,30 @@ import art.arcane.react.util.plugin.IController;
 import art.arcane.react.util.plugin.VolmitSender;
 import art.arcane.volmlib.util.director.compat.DirectorEngineFactory;
 import art.arcane.volmlib.util.director.context.DirectorContextRegistry;
-import art.arcane.volmlib.util.director.runtime.*;
-import art.arcane.volmlib.util.director.visual.DirectorVisualCommand;
+import art.arcane.volmlib.util.director.help.DirectorMiniMenu;
+import art.arcane.volmlib.util.director.runtime.DirectorExecutionMode;
+import art.arcane.volmlib.util.director.runtime.DirectorExecutionResult;
+import art.arcane.volmlib.util.director.runtime.DirectorInvocation;
+import art.arcane.volmlib.util.director.runtime.DirectorInvocationHook;
+import art.arcane.volmlib.util.director.runtime.DirectorRuntimeEngine;
+import art.arcane.volmlib.util.director.runtime.DirectorRuntimeNode;
+import art.arcane.volmlib.util.director.runtime.DirectorSender;
 import art.arcane.volmlib.util.math.RNG;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.sound.Sound;
-import org.bukkit.command.*;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
+import org.bukkit.command.PluginCommand;
+import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -49,9 +63,11 @@ import java.util.Optional;
 public class DirectorCommandController implements IController, CommandExecutor, TabCompleter, DirectorInvocationHook {
   private static final String ROOT_COMMAND = "react";
   private static final String ROOT_PERMISSION = "react.use";
+  private static final int HELP_PAGE_SIZE = 9;
+  private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
+  private static final LegacyComponentSerializer LEGACY_SERIALIZER = LegacyComponentSerializer.legacySection();
 
   private final transient AtomicCache<DirectorRuntimeEngine> directorCache = new AtomicCache<>();
-  private final transient AtomicCache<DirectorVisualCommand> helpCache = new AtomicCache<>();
 
   @Override
   public String getName() {
@@ -196,24 +212,72 @@ public class DirectorCommandController implements IController, CommandExecutor, 
   }
 
   private boolean sendHelpIfRequested(CommandSender sender, String[] args) {
-    if (args.length == 0) {
-      VolmitSender volmitSender = new VolmitSender(sender);
-      volmitSender.sendDirectorHelp(getHelpRoot(), 0);
-      return true;
-    }
-
-    Optional<DirectorVisualCommand.HelpRequest> request = DirectorVisualCommand.resolveHelp(getHelpRoot(), Arrays.asList(args));
-    if (request.isEmpty()) {
+    Optional<DirectorMiniMenu.DirectorHelpPage> page = DirectorMiniMenu.resolveHelp(getDirector(), Arrays.asList(normalizeHelpArgs(args)), HELP_PAGE_SIZE);
+    if (page.isEmpty()) {
       return false;
     }
 
-    VolmitSender volmitSender = new VolmitSender(sender);
-    volmitSender.sendDirectorHelp(request.get().command(), request.get().page());
+    DirectorMiniMenu.Theme helpTheme = DirectorMiniMenu.Theme.reactBlue();
+    for (String line : DirectorMiniMenu.render(page.get(), helpTheme)) {
+      sendRich(sender, line);
+    }
     return true;
   }
 
-  private DirectorVisualCommand getHelpRoot() {
-    return helpCache.aquireNastyPrint(() -> DirectorVisualCommand.createRoot(getDirector()));
+  private String[] normalizeHelpArgs(String[] args) {
+    if (args == null || args.length == 0) {
+      return new String[0];
+    }
+
+    List<String> normalized = new ArrayList<>(args.length);
+    for (int i = 0; i < args.length; i++) {
+      String arg = args[i];
+      if (!isHelpWord(arg)) {
+        normalized.add(arg);
+        continue;
+      }
+
+      String page = "1";
+      if (i + 1 < args.length && isPageToken(args[i + 1])) {
+        page = args[i + 1].trim();
+        i++;
+      }
+      normalized.add("help=" + page);
+    }
+
+    return normalized.toArray(new String[0]);
+  }
+
+  private boolean isHelpWord(String value) {
+    return value != null && (value.equalsIgnoreCase("help") || value.equals("?"));
+  }
+
+  private boolean isPageToken(String value) {
+    if (value == null || value.isBlank()) {
+      return false;
+    }
+
+    try {
+      Integer.parseInt(value.trim());
+      return true;
+    } catch (NumberFormatException ignored) {
+      return false;
+    }
+  }
+
+  private void sendRich(CommandSender sender, String miniMessage) {
+    if (miniMessage == null || miniMessage.trim().isEmpty()) {
+      return;
+    }
+
+    try {
+      sender.getClass().getMethod("sendRichMessage", String.class).invoke(sender, miniMessage);
+      return;
+    } catch (Throwable ignored) {
+    }
+
+    Component component = MINI_MESSAGE.deserialize(miniMessage);
+    sender.sendMessage(LEGACY_SERIALIZER.serialize(component));
   }
 
   private DirectorExecutionResult runDirector(CommandSender sender, String label, String[] args) {

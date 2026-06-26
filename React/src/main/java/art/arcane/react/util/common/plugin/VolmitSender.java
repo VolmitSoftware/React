@@ -288,24 +288,40 @@ public class VolmitSender implements CommandSender {
   }
 
   private Component createComponent(String message) {
+    return MiniMessage.miniMessage().deserialize(createMiniMessage(message));
+  }
+
+  private String createMiniMessage(String message) {
     if (!canUseCustomColors(this)) {
       String t = C.translateAlternateColorCodes('&', MiniMessage.miniMessage().stripTags(getTag() + message));
-      return MiniMessage.miniMessage().deserialize(t);
+      return t;
     }
 
     String t = C.translateAlternateColorCodes('&', getTag() + message);
-    String a = C.aura(t, spinh, spins, spinb);
-    return MiniMessage.miniMessage().deserialize(a);
+    return C.aura(t, spinh, spins, spinb);
   }
 
   private Component createComponentRaw(String message) {
+    return MiniMessage.miniMessage().deserialize(createMiniMessageRaw(message));
+  }
+
+  private String createMiniMessageRaw(String message) {
     if (!canUseCustomColors(this)) {
       String t = C.translateAlternateColorCodes('&', MiniMessage.miniMessage().stripTags(getTag() + message));
-      return MiniMessage.miniMessage().deserialize(t);
+      return t;
     }
 
     String t = C.translateAlternateColorCodes('&', getTag() + message);
-    return MiniMessage.miniMessage().deserialize(t);
+    return t;
+  }
+
+  private boolean deliverRichMessage(String miniMessage) {
+    try {
+      s.getClass().getMethod("sendRichMessage", String.class).invoke(s, miniMessage);
+      return true;
+    } catch (Throwable ignored) {
+      return false;
+    }
   }
 
   public <T> void showWaiting(String passive, CompletableFuture<T> f) {
@@ -348,21 +364,11 @@ public class VolmitSender implements CommandSender {
       return;
     }
 
-    try {
-      React.audiences.sender(s).sendMessage(createComponent(message));
-    } catch (Throwable e) {
-      System.out.println("=============================================");
-      e.printStackTrace();
-      if (e.getCause() != null) {
-        e.getCause().printStackTrace();
-      }
-      System.out.println("=============================================");
-      String t = C.translateAlternateColorCodes('&', getTag() + message);
-      String a = C.aura(t, spinh, spins, spinb);
-
-      React.debug("<NOMINI>Failure to parse " + a);
-      s.sendMessage(C.translateAlternateColorCodes('&', getTag() + message));
+    if (deliverRichMessage(createMiniMessage(message))) {
+      return;
     }
+
+    s.sendMessage(C.translateAlternateColorCodes('&', getTag() + message));
   }
 
   public void sendMessageBasic(String message) {
@@ -384,21 +390,11 @@ public class VolmitSender implements CommandSender {
       return;
     }
 
-    try {
-      React.audiences.sender(s).sendMessage(createComponentRaw(message));
-    } catch (Throwable e) {
-      String t = C.translateAlternateColorCodes('&', getTag() + message);
-      String a = C.aura(t, spinh, spins, spinb);
-
-      System.out.println("=============================================");
-      e.printStackTrace();
-      if (e.getCause() != null) {
-        e.getCause().printStackTrace();
-      }
-      System.out.println("=============================================");
-      React.debug("<NOMINI>Failure to parse " + a);
-      s.sendMessage(C.translateAlternateColorCodes('&', getTag() + message));
+    if (deliverRichMessage(createMiniMessageRaw(message))) {
+      return;
     }
+
+    s.sendMessage(C.translateAlternateColorCodes('&', getTag() + message));
   }
 
   @Override

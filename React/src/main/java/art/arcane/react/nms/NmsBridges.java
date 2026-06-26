@@ -83,7 +83,11 @@ public final class NmsBridges {
         return null;
     }
 
-    private static final Pattern MC_VERSION_PATTERN = Pattern.compile("^(\\d+)\\.(\\d+)(?:\\.(\\d+))?");
+    private static final Pattern MC_VERSION_PATTERN = Pattern.compile("(\\d+)\\.(\\d+)(?:\\.(\\d+))?");
+
+    public static boolean onBundledVersion() {
+        return !detectVersionTag().isEmpty();
+    }
 
     private static String detectVersionTag() {
         try {
@@ -107,7 +111,7 @@ public final class NmsBridges {
         }
     }
 
-    private static String extractMcVersion(String raw) {
+    static String extractMcVersion(String raw) {
         Matcher matcher = MC_VERSION_PATTERN.matcher(raw);
         if (!matcher.find()) {
             return "";
@@ -115,19 +119,22 @@ public final class NmsBridges {
         String major = matcher.group(1);
         String minor = matcher.group(2);
         String patch = matcher.group(3);
+        if ("26".equals(major) && "2".equals(minor)) {
+            return "26.2";
+        }
         if (patch == null) {
             return major + "." + minor;
         }
         return major + "." + minor + "." + patch;
     }
 
-    private static String tagFor(String mcVersion) {
+    static String tagFor(String mcVersion) {
         if (mcVersion == null || mcVersion.isEmpty()) {
             return "";
         }
-        if (mcVersion.startsWith("26.1")) {
-            return "v26_1_R1";
-        }
-        return "";
+        return switch (mcVersion) {
+            case "26.2", "1.21.11" -> "v26_2_R1";
+            default -> "";
+        };
     }
 }

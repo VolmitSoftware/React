@@ -42,6 +42,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Adaptive Entity Sleep feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureAdaptiveEntitySleep extends ReactFeature implements Listener {
+  static boolean shouldDoze(double lastTickMs, double dutyCycleMinTickMs, int dutyCycleSlots, int entityId, int dutyCycleIndex) {
+    if (lastTickMs < dutyCycleMinTickMs) {
+      return false;
+    }
+
+    return Math.floorMod(entityId + dutyCycleIndex, Math.max(2, dutyCycleSlots)) != 0;
+  }
+
   public static final String ID = "adaptive-entity-sleep";
   private static final NamespacedKey nsDozing = new NamespacedKey(React.instance, "react-dozing");
   @art.arcane.react.util.project.config.ConfigDoc(value = "Main evaluation interval for adaptive entity sleep in milliseconds.", impact = "Lower values react faster but consume more CPU; higher values reduce overhead but react later.")
@@ -248,17 +256,10 @@ public class FeatureAdaptiveEntitySleep extends ReactFeature implements Listener
       return;
     }
 
-    if (lastTickMs < dutyCycleMinTickMs) {
-      undoze(mob);
-      return;
-    }
-
-    int slots = Math.max(2, dutyCycleSlots);
-    boolean awakeSlot = Math.floorMod(mob.getEntityId() + dutyCycleIndex, slots) == 0;
-    if (awakeSlot) {
-      undoze(mob);
-    } else {
+    if (shouldDoze(lastTickMs, dutyCycleMinTickMs, dutyCycleSlots, mob.getEntityId(), dutyCycleIndex)) {
       doze(mob);
+    } else {
+      undoze(mob);
     }
   }
 

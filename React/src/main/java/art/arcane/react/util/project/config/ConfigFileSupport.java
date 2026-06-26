@@ -10,6 +10,7 @@ import com.google.gson.JsonParser;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
@@ -77,6 +78,7 @@ public final class ConfigFileSupport {
       } catch (Throwable e) {
         if (overwriteOnReadFailure) {
           ConfigRewriteReporter.reportFallbackRewrite(canonicalFile, sourceTag, reason("invalid config", e));
+          backupUnreadableConfig(canonicalFile, sourceTag);
           writeConfig(canonicalFile, serialize(fallback, canonicalFile, sourceTag));
           return fallback;
         }
@@ -103,6 +105,7 @@ public final class ConfigFileSupport {
       } catch (Throwable e) {
         if (overwriteOnReadFailure) {
           ConfigRewriteReporter.reportFallbackRewrite(canonicalFile, sourceTag, reason("invalid legacy config", e));
+          backupUnreadableConfig(legacyFile, sourceTag);
           writeConfig(canonicalFile, serialize(fallback, canonicalFile, sourceTag));
           return fallback;
         }
@@ -114,6 +117,21 @@ public final class ConfigFileSupport {
     writeConfig(canonicalFile, serialize(fallback, canonicalFile, sourceTag));
     recordMissingConfigCreated();
     return fallback;
+  }
+
+  private static void backupUnreadableConfig(File file, String sourceTag) {
+    if (file == null || !file.exists() || !file.isFile()) {
+      return;
+    }
+
+    try {
+      File backup = new File(file.getParentFile(), file.getName() + ".bak");
+      Files.copy(file.toPath(), backup.toPath(), StandardCopyOption.REPLACE_EXISTING);
+      React.warn("Config [" + legacyPath(file) + "] for [" + (sourceTag == null ? "config" : sourceTag)
+          + "] could not be parsed and was reset to defaults. Your previous values are preserved in [" + legacyPath(backup) + "].");
+    } catch (Throwable e) {
+      React.warn("Config [" + legacyPath(file) + "] could not be parsed and the recovery backup also failed: " + e.getMessage());
+    }
   }
 
   public static void recordMissingConfigCreated() {

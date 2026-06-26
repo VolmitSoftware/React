@@ -58,6 +58,24 @@ public final class ReactConfigGUI {
   private static final String ROOT_TWEAK = "tweak";
   private static final String ROOT_ACTION = "action";
   private static final String ROOT_SAMPLER = "sampler";
+  private static final String ROOT_ADVANCED = "advanced";
+  private static final String ROOT_CATEGORY = "cat";
+
+  private static final String[] PRESET_MANAGED_IDS = {
+      "dynamic-view-distance",
+      "afk-view-shedding",
+      "per-world-tick-budget",
+      "world-save-staggering",
+      "random-tick-governor",
+      "tracker-range-governor",
+      "activation-range-governor",
+      "dynamic-activation-range",
+      "adaptive-entity-sleep",
+      "pathfinder-budget",
+      "mob-stacking",
+      "item-super-stacker",
+      "entity-trimmer"
+  };
 
   private static final int MIN_CONTENT_ROWS = 1;
   private static final int MAX_CONTENT_ROWS = 5;
@@ -132,6 +150,21 @@ public final class ReactConfigGUI {
 
     if (safePath.equals(ROOT_SAMPLER)) {
       openSamplerIndex(player, page);
+      return;
+    }
+
+    if (safePath.equals(ROOT_ADVANCED)) {
+      openAdvanced(player, page);
+      return;
+    }
+
+    if (safePath.equals(ROOT_CATEGORY)) {
+      openRoot(player, page);
+      return;
+    }
+
+    if (safePath.startsWith(ROOT_CATEGORY + ".")) {
+      openCategoryIndex(player, safePath.substring(ROOT_CATEGORY.length() + 1), page);
       return;
     }
 
@@ -294,7 +327,7 @@ public final class ReactConfigGUI {
     }
   }
 
-  private static void openRoot(Player player, int page) {
+  private static void openAdvanced(Player player, int page) {
     int coreCount = React.instance != null && React.instance.getControllerRegistry() != null
         ? React.instance.getControllerRegistry().size()
         : 0;
@@ -328,7 +361,330 @@ public final class ReactConfigGUI {
     entries.add(new SectionIndexEntry(ROOT_TWEAK, "Tweaks (" + activeTweakCount + "/" + tweakCount + ")", Material.BLAZE_POWDER, "", activeTweakCount > 0));
     entries.add(new SectionIndexEntry(ROOT_ACTION, "Actions (" + actionCount + ")", Material.ANVIL, "", actionCount > 0));
     entries.add(new SectionIndexEntry(ROOT_SAMPLER, "Samplers (" + samplerCount + ")", Material.CLOCK, "", samplerCount > 0));
-    openSectionIndex(player, "", page, "Configure React", entries);
+    openSectionIndex(player, ROOT_ADVANCED, page, "Configure: advanced", entries);
+  }
+
+  private static void openRoot(Player player, int page) {
+    Map<String, int[]> counts = new HashMap<>();
+    FeatureController featureController = React.controller(FeatureController.class);
+    if (featureController != null && featureController.getFeatures() != null) {
+      for (Feature feature : featureController.getFeatures().all()) {
+        if (feature == null) {
+          continue;
+        }
+        accumulateCategoryCount(counts, feature.getId(), feature.isEnabled());
+      }
+    }
+    TweakController tweakController = React.controller(TweakController.class);
+    if (tweakController != null && tweakController.getTweaks() != null) {
+      for (Tweak tweak : tweakController.getTweaks().all()) {
+        if (tweak == null) {
+          continue;
+        }
+        accumulateCategoryCount(counts, tweak.getId(), tweak.isEnabled());
+      }
+    }
+
+    UIWindow window = baseWindow(player, "Configure React", 6);
+
+    List<ReactGuiTaxonomy.Category> categories = new ArrayList<>();
+    for (ReactGuiTaxonomy.Category category : ReactGuiTaxonomy.topLevelCategories()) {
+      if (counts.containsKey(category.key())) {
+        categories.add(category);
+      }
+    }
+
+    int categoryRowCount = Math.min(9, categories.size());
+    int categoryRows = (int) Math.ceil(Math.max(1, categories.size()) / 9D);
+    for (int index = 0; index < categories.size(); index++) {
+      ReactGuiTaxonomy.Category category = categories.get(index);
+      int row = index / 9;
+      int columnCount = Math.min(9, categories.size() - (row * 9));
+      int w = centeredPosition(index % 9, columnCount);
+      int[] tally = counts.getOrDefault(category.key(), new int[]{0, 0});
+      int enabled = tally[0];
+      int total = tally[1];
+
+      UIElement element = new UIElement("cfg-cat-" + category.key())
+          .setMaterial(new MaterialBlock(category.icon()))
+          .setName(C.WHITE + category.label());
+      element.addLore(C.GRAY + category.description());
+      element.addLore(C.GREEN + String.valueOf(enabled) + C.GRAY + "/" + C.WHITE + total + C.GRAY + " on");
+      if (enabled > 0) {
+        element.setEnchanted(true);
+      }
+      element.onLeftClick((e) -> navigateTo(player, ROOT_CATEGORY + "." + category.key(), 0));
+      window.setElement(w, row, element);
+    }
+
+    if (categoryRowCount == 0) {
+      window.setElement(0, 0, new UIElement("cfg-empty")
+          .setMaterial(new MaterialBlock(Material.PAPER))
+          .setName(C.GRAY + "No modules available"));
+    }
+
+    int presetRow = Math.max(categoryRows, 3);
+
+    UIElement off = new UIElement("cfg-preset-off")
+        .setMaterial(new MaterialBlock(Material.GRAY_DYE))
+        .setName(C.AQUA + "Profile: Off");
+    off.addLore(C.GRAY + "Disable all managed load-management modules.");
+    off.onLeftClick((e) -> applyPreset(player, "off"));
+    window.setElement(-3, presetRow, off);
+
+    UIElement light = new UIElement("cfg-preset-light")
+        .setMaterial(new MaterialBlock(Material.LIME_DYE))
+        .setName(C.AQUA + "Profile: Light");
+    light.addLore(C.GRAY + "Gentle load management with relaxed");
+    light.addLore(C.GRAY + "view-distance aggression.");
+    light.onLeftClick((e) -> applyPreset(player, "light"));
+    window.setElement(-1, presetRow, light);
+
+    UIElement balanced = new UIElement("cfg-preset-balanced")
+        .setMaterial(new MaterialBlock(Material.GOLD_INGOT))
+        .setName(C.AQUA + "Profile: Balanced");
+    balanced.addLore(C.GRAY + "Recommended load management with");
+    balanced.addLore(C.GRAY + "moderate view-distance aggression.");
+    balanced.onLeftClick((e) -> applyPreset(player, "balanced"));
+    window.setElement(1, presetRow, balanced);
+
+    UIElement high = new UIElement("cfg-preset-high")
+        .setMaterial(new MaterialBlock(Material.BLAZE_POWDER))
+        .setName(C.AQUA + "Profile: High");
+    high.addLore(C.GRAY + "Aggressive load management with");
+    high.addLore(C.GRAY + "tight view-distance aggression.");
+    high.onLeftClick((e) -> applyPreset(player, "high"));
+    window.setElement(3, presetRow, high);
+
+    UIElement main = new UIElement("cfg-root-main")
+        .setMaterial(new MaterialBlock(Material.COMPARATOR))
+        .setName(C.WHITE + "Main Config");
+    main.addLore(C.GRAY + "Edit the global React configuration.");
+    main.onLeftClick((e) -> navigateTo(player, ROOT_MAIN, 0));
+    window.setElement(-1, 5, main);
+
+    UIElement advanced = new UIElement("cfg-root-advanced")
+        .setMaterial(new MaterialBlock(Material.COMMAND_BLOCK))
+        .setName(C.WHITE + "Advanced (all modules)");
+    advanced.addLore(C.GRAY + "Browse every core, feature, tweak,");
+    advanced.addLore(C.GRAY + "action and sampler module.");
+    advanced.onLeftClick((e) -> navigateTo(player, ROOT_ADVANCED, 0));
+    window.setElement(1, 5, advanced);
+
+    window.open();
+    ACTIVE_WINDOWS.put(player.getUniqueId(), window);
+  }
+
+  private static void accumulateCategoryCount(Map<String, int[]> counts, String id, boolean enabled) {
+    String key = ReactGuiTaxonomy.categoryForId(id).key();
+    int[] tally = counts.computeIfAbsent(key, (k) -> new int[]{0, 0});
+    tally[1]++;
+    if (enabled) {
+      tally[0]++;
+    }
+  }
+
+  private static void openCategoryIndex(Player player, String categoryKey, int page) {
+    String label = categoryKey;
+    for (ReactGuiTaxonomy.Category category : ReactGuiTaxonomy.topLevelCategories()) {
+      if (category.key().equals(categoryKey)) {
+        label = category.label();
+        break;
+      }
+    }
+
+    List<SectionIndexEntry> entries = new ArrayList<>();
+    FeatureController featureController = React.controller(FeatureController.class);
+    Registry<Feature> featureRegistry = featureController == null ? null : featureController.getFeatures();
+    if (featureRegistry != null) {
+      for (Feature feature : featureRegistry.all()) {
+        if (feature == null || !ReactGuiTaxonomy.categoryForId(feature.getId()).key().equals(categoryKey)) {
+          continue;
+        }
+        boolean active = featureController.getActiveFeatures() != null && featureController.getActiveFeatures().containsKey(feature.getId());
+        entries.add(new SectionIndexEntry(
+            ROOT_FEATURE + "." + feature.getId(),
+            C.stripColor(feature.getName()),
+            ReactGuiTaxonomy.iconForId(feature.getId()),
+            (active ? "Active" : "Inactive") + " | feature/" + feature.getId() + ".toml",
+            active,
+            ROOT_FEATURE + "." + feature.getId() + ".enabled",
+            feature.isEnabled()
+        ));
+      }
+    }
+
+    TweakController tweakController = React.controller(TweakController.class);
+    Registry<Tweak> tweakRegistry = tweakController == null ? null : tweakController.getTweaks();
+    if (tweakRegistry != null) {
+      for (Tweak tweak : tweakRegistry.all()) {
+        if (tweak == null || !ReactGuiTaxonomy.categoryForId(tweak.getId()).key().equals(categoryKey)) {
+          continue;
+        }
+        boolean active = tweakController.getActiveTweaks() != null && tweakController.getActiveTweaks().containsKey(tweak.getId());
+        entries.add(new SectionIndexEntry(
+            ROOT_TWEAK + "." + tweak.getId(),
+            C.stripColor(tweak.getName()),
+            ReactGuiTaxonomy.iconForId(tweak.getId()),
+            (active ? "Active" : "Inactive") + " | tweak/" + tweak.getId() + ".toml",
+            active,
+            ROOT_TWEAK + "." + tweak.getId() + ".enabled",
+            tweak.isEnabled()
+        ));
+      }
+    }
+
+    entries.sort(Comparator.comparing(e -> normalizeSortKey(e.displayName())));
+    openSectionIndex(player, ROOT_CATEGORY + "." + categoryKey, page, "Configure: " + label, entries);
+  }
+
+  private static void applyPreset(Player player, String preset) {
+    if (player == null) {
+      return;
+    }
+
+    String normalizedPreset = preset == null ? "" : preset.trim().toLowerCase(Locale.ROOT);
+    String presetName;
+    switch (normalizedPreset) {
+      case "off" -> presetName = "Off";
+      case "light" -> presetName = "Light";
+      case "balanced" -> presetName = "Balanced";
+      case "high" -> presetName = "High";
+      default -> {
+        player.sendMessage(C.RED + "Unknown React profile: " + C.WHITE + preset);
+        return;
+      }
+    }
+
+    int updated = 0;
+    boolean enable = !normalizedPreset.equals("off");
+    for (String id : PRESET_MANAGED_IDS) {
+      String enabledPath = managedEnabledPath(id);
+      if (enabledPath == null) {
+        continue;
+      }
+      if (applyAndSave(null, enabledPath, enable)) {
+        updated++;
+      }
+    }
+
+    if (enable && managedEnabledPath("dynamic-view-distance") != null) {
+      updated += applyViewDistanceProfile(normalizedPreset);
+    }
+
+    player.sendMessage(C.GREEN + "Applied React profile: " + C.WHITE + presetName
+        + C.GRAY + " (" + updated + " modules updated)");
+    openRoot(player, 0);
+  }
+
+  private static int applyViewDistanceProfile(String preset) {
+    int warmupSeconds;
+    double viewDistanceMin;
+    double viewDistanceMax;
+    double lerpTickTimeMin;
+    double lerpTickTimeMax;
+    int pressureSendViewDistanceCap;
+    double pressureEngageTickTimeMs;
+    long pressureSustainEngageMs;
+    int pressureWarmupSeconds;
+    int idleSendViewDistance;
+
+    switch (preset) {
+      case "light" -> {
+        warmupSeconds = 60;
+        viewDistanceMin = 10.0;
+        viewDistanceMax = 16.0;
+        lerpTickTimeMin = 50.0;
+        lerpTickTimeMax = 170.0;
+        pressureSendViewDistanceCap = 10;
+        pressureEngageTickTimeMs = 85.0;
+        pressureSustainEngageMs = 18000L;
+        pressureWarmupSeconds = 60;
+        idleSendViewDistance = 6;
+      }
+      case "balanced" -> {
+        warmupSeconds = 45;
+        viewDistanceMin = 6.0;
+        viewDistanceMax = 16.0;
+        lerpTickTimeMin = 45.0;
+        lerpTickTimeMax = 140.0;
+        pressureSendViewDistanceCap = 8;
+        pressureEngageTickTimeMs = 70.0;
+        pressureSustainEngageMs = 12000L;
+        pressureWarmupSeconds = 45;
+        idleSendViewDistance = 4;
+      }
+      case "high" -> {
+        warmupSeconds = 30;
+        viewDistanceMin = 4.0;
+        viewDistanceMax = 16.0;
+        lerpTickTimeMin = 35.0;
+        lerpTickTimeMax = 110.0;
+        pressureSendViewDistanceCap = 6;
+        pressureEngageTickTimeMs = 58.0;
+        pressureSustainEngageMs = 8000L;
+        pressureWarmupSeconds = 30;
+        idleSendViewDistance = 4;
+      }
+      default -> {
+        return 0;
+      }
+    }
+
+    int updated = 0;
+    if (applyAndSave(null, "feature.dynamic-view-distance.warmupSeconds", Integer.valueOf(warmupSeconds))) {
+      updated++;
+    }
+    if (applyAndSave(null, "feature.dynamic-view-distance.viewDistance.min", Double.valueOf(viewDistanceMin))) {
+      updated++;
+    }
+    if (applyAndSave(null, "feature.dynamic-view-distance.viewDistance.max", Double.valueOf(viewDistanceMax))) {
+      updated++;
+    }
+    if (applyAndSave(null, "feature.dynamic-view-distance.lerpTickTime.min", Double.valueOf(lerpTickTimeMin))) {
+      updated++;
+    }
+    if (applyAndSave(null, "feature.dynamic-view-distance.lerpTickTime.max", Double.valueOf(lerpTickTimeMax))) {
+      updated++;
+    }
+
+    if (managedEnabledPath("afk-view-shedding") != null) {
+      if (applyAndSave(null, "feature.afk-view-shedding.pressureSendViewDistanceCap", Integer.valueOf(pressureSendViewDistanceCap))) {
+        updated++;
+      }
+      if (applyAndSave(null, "feature.afk-view-shedding.pressureEngageTickTimeMs", Double.valueOf(pressureEngageTickTimeMs))) {
+        updated++;
+      }
+      if (applyAndSave(null, "feature.afk-view-shedding.pressureSustainEngageMs", Long.valueOf(pressureSustainEngageMs))) {
+        updated++;
+      }
+      if (applyAndSave(null, "feature.afk-view-shedding.pressureWarmupSeconds", Integer.valueOf(pressureWarmupSeconds))) {
+        updated++;
+      }
+      if (applyAndSave(null, "feature.afk-view-shedding.idleSendViewDistance", Integer.valueOf(idleSendViewDistance))) {
+        updated++;
+      }
+    }
+
+    return updated;
+  }
+
+  private static String managedEnabledPath(String id) {
+    if (id == null || id.isBlank()) {
+      return null;
+    }
+
+    FeatureController featureController = React.controller(FeatureController.class);
+    if (featureController != null && featureController.getFeatures() != null && featureController.getFeatures().get(id) != null) {
+      return ROOT_FEATURE + "." + id + ".enabled";
+    }
+
+    TweakController tweakController = React.controller(TweakController.class);
+    if (tweakController != null && tweakController.getTweaks() != null && tweakController.getTweaks().get(id) != null) {
+      return ROOT_TWEAK + "." + id + ".enabled";
+    }
+
+    return null;
   }
 
   private static void openMain(Player player, int page) {

@@ -19,7 +19,6 @@
 
 package art.arcane.react.api.action;
 
-import art.arcane.curse.Curse;
 import art.arcane.react.util.project.registry.Registered;
 import art.arcane.volmlib.util.format.Form;
 import org.bukkit.command.CommandSender;
@@ -52,8 +51,9 @@ public interface Action<T extends ActionParams> extends Registered {
         .onComplete((i) -> sender.sendMessage(getCompletedMessage(i)));
   }
 
+  @SuppressWarnings("unchecked")
   default ActionTicket<?> createForceful(Object params) {
-    return Curse.on(this).method("create", Object.class).invoke(params);
+    return create((T) params);
   }
 
   default ActionTicket<T> create() {

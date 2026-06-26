@@ -38,7 +38,6 @@ import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.IllegalPluginAccessException;
-import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
 import java.time.Duration;
@@ -283,7 +282,7 @@ public class ActionBarMonitor extends PlayerMonitor {
 
     viewportIndexes.put(focus, viewportIndex);
 
-    var builder = Component.text();
+    Component result = Component.empty();
     boolean first = true;
     for (int m = 0; m < viewportLimit; m++) {
       try {
@@ -297,7 +296,7 @@ public class ActionBarMonitor extends PlayerMonitor {
         }
         setVisible(i, true);
         if (!first) {
-          builder.append(Component.space());
+          result = result.append(Component.space());
         }
 
         first = false;
@@ -316,10 +315,10 @@ public class ActionBarMonitor extends PlayerMonitor {
         synchronized (maxLengths) {
           maxLengths.compute(i, (k, v) -> Math.max(v == null ? 0 : v, l));
         }
-        builder.append(i.format(Component.text(i.formattedValue(value), s), Component.text(i.formattedSuffix(value), ss)));
+        result = result.append(i.format(Component.text(i.formattedValue(value), s), Component.text(i.formattedSuffix(value), ss)));
 
         if (l < maxLengths.get(i)) {
-          builder.append(Component.text(" ".repeat(maxLengths.get(i) - l)));
+          result = result.append(Component.text(" ".repeat(maxLengths.get(i) - l)));
         }
       } catch (Throwable e) {
         e.printStackTrace();
@@ -327,7 +326,7 @@ public class ActionBarMonitor extends PlayerMonitor {
       }
     }
 
-    return builder.build();
+    return result;
   }
 
 
@@ -349,7 +348,7 @@ public class ActionBarMonitor extends PlayerMonitor {
       }
     }
 
-    var builder = Component.text();
+    Component result = Component.empty();
     boolean first = true;
     for (int m = 0; m < viewportLimit; m++) {
       MonitorGroup i = configuration.getGroups().get((viewportIndex + m) % configuration.getGroups().size());
@@ -361,7 +360,7 @@ public class ActionBarMonitor extends PlayerMonitor {
       setVisible(headerSampler, true);
 
       if (!first) {
-        builder.append(Component.space());
+        result = result.append(Component.space());
       }
 
       first = false;
@@ -380,14 +379,14 @@ public class ActionBarMonitor extends PlayerMonitor {
       synchronized (maxLengths) {
         maxLengths.compute(head, (k, v) -> Math.max(v == null ? 0 : v, l));
       }
-      builder.append(head.format(Component.text(head.formattedValue(value), s), Component.text(head.formattedSuffix(value), ss)));
+      result = result.append(head.format(Component.text(head.formattedValue(value), s), Component.text(head.formattedSuffix(value), ss)));
 
       if (l < maxLengths.get(head)) {
-        builder.append(Component.text(" ".repeat(maxLengths.get(head) - l)));
+        result = result.append(Component.text(" ".repeat(maxLengths.get(head) - l)));
       }
     }
 
-    return builder.build();
+    return result;
   }
 
   MonitorGroup getFocusedHeaderGroup() {
@@ -443,22 +442,9 @@ public class ActionBarMonitor extends PlayerMonitor {
         }
       }
 
-      React.audiences.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.TIMES, new Title.Times() {
-        @Override
-        public @NotNull Duration fadeIn() {
-          return Duration.ZERO;
-        }
-
-        @Override
-        public @NotNull Duration stay() {
-          return Duration.ofMillis(((int) ((getTinterval() / 50) + 3)) * 50L);
-        }
-
-        @Override
-        public @NotNull Duration fadeOut() {
-          return Duration.ofMillis(20 * 50);
-        }
-      });
+      Duration stay = Duration.ofMillis(((int) ((getTinterval() / 50) + 3)) * 50L);
+      Duration fadeOut = Duration.ofMillis(20 * 50);
+      React.audiences.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.TIMES, Title.Times.times(Duration.ZERO, stay, fadeOut));
 
       if (focusUpAnimation >= -10) {
         if (focusUpAnimation > 0) {

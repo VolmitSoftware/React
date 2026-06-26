@@ -48,6 +48,7 @@ public class FeatureController extends TickedObject implements IController {
   private transient Map<String, Feature> activeFeatures;
   private transient Map<String, ReactTickedFeature> tickedFeatures;
   private transient long lastGateReconcileMS;
+  private transient volatile boolean reconcilePaused;
 
   private Feature unknown;
 
@@ -58,6 +59,10 @@ public class FeatureController extends TickedObject implements IController {
   @Override
   public void onTick() {
     if (!React.instance.isEnabled() || !React.instance.isReady()) {
+      return;
+    }
+
+    if (reconcilePaused) {
       return;
     }
 

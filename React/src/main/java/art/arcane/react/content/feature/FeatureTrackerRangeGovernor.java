@@ -37,6 +37,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Tracker Range Governor feature. Temporarily scales down per-world entity tracking ranges (items, misc, displays, animals, monsters) while the server is under sustained pressure, shrinking entity-tracker and packet fanout. Changes apply to entities as they become tracked, so fast-churning entities like items react within seconds; ranges are restored once the server recovers.")
 public class FeatureTrackerRangeGovernor extends ReactFeature {
+  static int scaledRange(int base, double factor, int minimumRangeBlocks) {
+    return Math.max(Math.max(1, minimumRangeBlocks), (int) Math.round(base * factor));
+  }
+
   public static final String ID = "tracker-range-governor";
   private static final String[] GOVERNED_FIELDS = {
       "itemTrackingRange",
@@ -169,7 +173,7 @@ public class FeatureTrackerRangeGovernor extends ReactFeature {
             continue;
           }
 
-          int target = Math.max(Math.max(1, minimumRangeBlocks), (int) Math.round(base * factorFor(entry.getKey())));
+          int target = scaledRange(base, factorFor(entry.getKey()), minimumRangeBlocks);
           if (target >= base) {
             continue;
           }

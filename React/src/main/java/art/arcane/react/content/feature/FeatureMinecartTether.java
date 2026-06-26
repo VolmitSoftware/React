@@ -40,12 +40,12 @@ public class FeatureMinecartTether extends ReactFeature implements Listener {
   @Override
   public void onActivate() {
     React.controller(EntityController.class).registerEntityTickListener(EntityType.MINECART, (e) -> onMinecart((Minecart) e));
-    React.controller(EntityController.class).registerEntityTickListener(EntityType.MINECART_CHEST, (e) -> onMinecart((Minecart) e));
-    React.controller(EntityController.class).registerEntityTickListener(EntityType.MINECART_FURNACE, (e) -> onMinecart((Minecart) e));
-    React.controller(EntityController.class).registerEntityTickListener(EntityType.MINECART_COMMAND, (e) -> onMinecart((Minecart) e));
-    React.controller(EntityController.class).registerEntityTickListener(EntityType.MINECART_HOPPER, (e) -> onMinecart((Minecart) e));
-    React.controller(EntityController.class).registerEntityTickListener(EntityType.MINECART_TNT, (e) -> onMinecart((Minecart) e));
-    React.controller(EntityController.class).registerEntityTickListener(EntityType.MINECART_MOB_SPAWNER, (e) -> onMinecart((Minecart) e));
+    React.controller(EntityController.class).registerEntityTickListener(EntityType.CHEST_MINECART, (e) -> onMinecart((Minecart) e));
+    React.controller(EntityController.class).registerEntityTickListener(EntityType.FURNACE_MINECART, (e) -> onMinecart((Minecart) e));
+    React.controller(EntityController.class).registerEntityTickListener(EntityType.COMMAND_BLOCK_MINECART, (e) -> onMinecart((Minecart) e));
+    React.controller(EntityController.class).registerEntityTickListener(EntityType.HOPPER_MINECART, (e) -> onMinecart((Minecart) e));
+    React.controller(EntityController.class).registerEntityTickListener(EntityType.TNT_MINECART, (e) -> onMinecart((Minecart) e));
+    React.controller(EntityController.class).registerEntityTickListener(EntityType.SPAWNER_MINECART, (e) -> onMinecart((Minecart) e));
   }
 
   public void onMinecart(Minecart entity) {

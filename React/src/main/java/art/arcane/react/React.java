@@ -69,6 +69,9 @@ public class React extends VolmitPlugin implements ReloadAware {
   public static Thread serverThread;
   public static Ticker ticker;
   public static MultiBurst burst;
+  private static final int REPORTED_ERROR_HISTORY = 1024;
+  private static final java.util.concurrent.atomic.AtomicInteger reportedErrorCounter = new java.util.concurrent.atomic.AtomicInteger();
+  private static final java.util.ArrayDeque<Long> reportedErrorTimestamps = new java.util.ArrayDeque<Long>();
   private List<Runnable> startupTasks;
   private List<Runnable> prejobs;
   private Registry<IController> controllerRegistry;
@@ -184,7 +187,31 @@ public class React extends VolmitPlugin implements ReloadAware {
   }
 
   public static void reportError(Throwable e) {
+    reportedErrorCounter.incrementAndGet();
+    long now = System.currentTimeMillis();
+    synchronized (reportedErrorTimestamps) {
+      reportedErrorTimestamps.addLast(now);
+      while (reportedErrorTimestamps.size() > REPORTED_ERROR_HISTORY) {
+        reportedErrorTimestamps.removeFirst();
+      }
+    }
     e.printStackTrace();
+  }
+
+  public static int reportedErrorCount() {
+    return reportedErrorCounter.get();
+  }
+
+  public static int reportedErrorsSince(long sinceMillis) {
+    int total = 0;
+    synchronized (reportedErrorTimestamps) {
+      for (Long timestamp : reportedErrorTimestamps) {
+        if (timestamp != null && timestamp >= sinceMillis) {
+          total++;
+        }
+      }
+    }
+    return total;
   }
 
   public static KList<Object> initialize(String s) {

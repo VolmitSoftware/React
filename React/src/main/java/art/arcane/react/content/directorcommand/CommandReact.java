@@ -49,6 +49,7 @@ public class CommandReact implements DirectorExecutor {
   private CommandDev dev;
   private CommandIntegration integration;
   private CommandBridge bridge;
+  private CommandTest test;
 
 
   @Director(
@@ -77,11 +78,13 @@ public class CommandReact implements DirectorExecutor {
       return;
     }
 
-    if (d > 32)
+    if (d > 32) {
       d = 32;
+    }
 
     Curse.on(player().getWorld()).method("setViewDistance", int.class).invoke(d);
     Curse.on(player().getWorld()).method("setSimulationDistance", int.class).invoke(d);
+    sender().sendMessage(C.REACT + "Set " + player().getWorld().getName() + " view and simulation distance to " + d + ".");
   }
 
   @Director(

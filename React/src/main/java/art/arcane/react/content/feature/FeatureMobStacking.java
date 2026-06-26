@@ -50,6 +50,18 @@ import java.util.Set;
 
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Mob Stacking feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureMobStacking extends ReactFeature implements Listener {
+  static boolean exceedsStackLimit(int intoCount, int sourceCount, int maxStackSize) {
+    return intoCount + sourceCount > maxStackSize;
+  }
+
+  static boolean withinHealthLimit(double sourceMaxHealth, double intoMaxHealth, double maxHealth) {
+    return sourceMaxHealth + intoMaxHealth <= maxHealth;
+  }
+
+  static int theoreticalMaxStackCount(double maxHealth, double entityMaxHealth, int maxStackSize) {
+    return Math.min((int) Math.ceil(Math.floor(maxHealth / entityMaxHealth)), maxStackSize);
+  }
+
   public static final String ID = "mob-stacking";
   @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum stack size allowed by mob stacking.", impact = "Higher values allow more throughput before intervention; lower values make mitigation more aggressive.")
   private int maxStackSize = 10;
@@ -328,13 +340,13 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
     }
 
     // Check stack count
-    if (getStackCount(into) + getStackCount(a) > maxStackSize) {
+    if (exceedsStackLimit(getStackCount(into), getStackCount(a), maxStackSize)) {
       return false;
     }
 
     // Check health
     if (into instanceof LivingEntity li) {
-      return !(la.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue() + li.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue() > maxHealth);
+      return withinHealthLimit(la.getAttribute(Attribute.MAX_HEALTH).getValue(), li.getAttribute(Attribute.MAX_HEALTH).getValue(), maxHealth);
     }
 
     return true;
@@ -343,7 +355,7 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
 
   public int getTheoreticalMaxStackCount(Entity entityAsType) {
     if (entityAsType instanceof LivingEntity le) {
-      return Math.min((int) Math.ceil(Math.floor(maxHealth / le.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue())), maxStackSize);
+      return theoreticalMaxStackCount(maxHealth, le.getAttribute(Attribute.MAX_HEALTH).getValue(), maxStackSize);
     }
 
     return maxStackSize;

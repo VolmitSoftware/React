@@ -72,7 +72,7 @@ public class SamplerEntities extends ReactCachedSampler implements Listener {
       return getFoliaApproximateRealCheck();
     }
 
-    return executeSync(() -> {
+    Integer result = executeSync(() -> {
       int m = 0;
       for (World i : Bukkit.getWorlds()) {
         for (Chunk j : i.getLoadedChunks()) {
@@ -84,6 +84,7 @@ public class SamplerEntities extends ReactCachedSampler implements Listener {
 
       return m;
     });
+    return result == null ? entities.get() : result;
   }
 
   private int getFoliaApproximateRealCheck() {

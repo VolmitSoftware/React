@@ -52,14 +52,19 @@ public class FeatureEntityTrimmer extends ReactFeature implements Listener {
    * List of blacklisted entities with already blacklisted examples
    */
   private List<EntityType> blacklist = List.of(
-      EntityType.ITEM_DISPLAY, EntityType.PLAYER, EntityType.ARMOR_STAND, EntityType.ITEM_FRAME, EntityType.PAINTING, EntityType.LEASH_HITCH,
-      EntityType.MINECART, EntityType.MINECART_CHEST, EntityType.MINECART_COMMAND, EntityType.MINECART_FURNACE,
-      EntityType.MINECART_HOPPER, EntityType.MINECART_MOB_SPAWNER, EntityType.MINECART_TNT, EntityType.BOAT,
-      EntityType.FALLING_BLOCK, EntityType.DROPPED_ITEM, EntityType.EXPERIENCE_ORB, EntityType.FISHING_HOOK,
-      EntityType.PRIMED_TNT, EntityType.SPLASH_POTION, EntityType.THROWN_EXP_BOTTLE, EntityType.ENDER_PEARL,
-      EntityType.ENDER_SIGNAL, EntityType.FIREWORK, EntityType.LIGHTNING, EntityType.SHULKER_BULLET,
+      EntityType.ITEM_DISPLAY, EntityType.PLAYER, EntityType.ARMOR_STAND, EntityType.ITEM_FRAME, EntityType.PAINTING, EntityType.LEASH_KNOT,
+      EntityType.MINECART, EntityType.CHEST_MINECART, EntityType.COMMAND_BLOCK_MINECART, EntityType.FURNACE_MINECART,
+      EntityType.HOPPER_MINECART, EntityType.SPAWNER_MINECART, EntityType.TNT_MINECART,
+      EntityType.ACACIA_BOAT, EntityType.BAMBOO_RAFT, EntityType.BIRCH_BOAT, EntityType.CHERRY_BOAT, EntityType.DARK_OAK_BOAT,
+      EntityType.JUNGLE_BOAT, EntityType.MANGROVE_BOAT, EntityType.OAK_BOAT, EntityType.PALE_OAK_BOAT, EntityType.SPRUCE_BOAT,
+      EntityType.ACACIA_CHEST_BOAT, EntityType.BAMBOO_CHEST_RAFT, EntityType.BIRCH_CHEST_BOAT, EntityType.CHERRY_CHEST_BOAT,
+      EntityType.DARK_OAK_CHEST_BOAT, EntityType.JUNGLE_CHEST_BOAT, EntityType.MANGROVE_CHEST_BOAT, EntityType.OAK_CHEST_BOAT,
+      EntityType.PALE_OAK_CHEST_BOAT, EntityType.SPRUCE_CHEST_BOAT,
+      EntityType.FALLING_BLOCK, EntityType.ITEM, EntityType.EXPERIENCE_ORB, EntityType.FISHING_BOBBER,
+      EntityType.TNT, EntityType.SPLASH_POTION, EntityType.EXPERIENCE_BOTTLE, EntityType.ENDER_PEARL,
+      EntityType.EYE_OF_ENDER, EntityType.FIREWORK_ROCKET, EntityType.LIGHTNING_BOLT, EntityType.SHULKER_BULLET,
       EntityType.SMALL_FIREBALL, EntityType.SNOWBALL, EntityType.SPECTRAL_ARROW, EntityType.SPLASH_POTION,
-      EntityType.THROWN_EXP_BOTTLE);
+      EntityType.EXPERIENCE_BOTTLE);
 
   /**
    * Calculates total chunks * softMax to see if we are exceeding

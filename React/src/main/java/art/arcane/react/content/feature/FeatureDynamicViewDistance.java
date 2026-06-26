@@ -41,17 +41,19 @@ public class FeatureDynamicViewDistance extends ReactFeature implements Listener
   public static final String ID = "dynamic-view-distance";
   @art.arcane.react.util.project.config.ConfigDoc(value = "Cooldown for update cooldown in dynamic view distance (seconds).", impact = "Higher values reduce repeat frequency; lower values allow reactions more often.")
   public int updateCooldownSeconds = 120;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Grace period after activation before dynamic view distance touches any world (seconds).", impact = "Prevents startup tick spikes from slamming view distance to the floor before the server settles; raise it if your server takes longer to warm up.")
+  private int warmupSeconds = 45;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Interpolation range used by dynamic view distance to map observed load into target values.", impact = "Wider ranges allow broader adaptation; tighter ranges keep adjustments more conservative.")
-  private MinMax viewDistance = new MinMax(2, 16);
+  private MinMax viewDistance = new MinMax(6, 16);
   @art.arcane.react.util.project.config.ConfigDoc(value = "Interpolation range used by dynamic view distance to map observed load into target values.", impact = "Wider ranges allow broader adaptation; tighter ranges keep adjustments more conservative.")
-  private MinMax simulationDistance = new MinMax(2, 10);
+  private MinMax simulationDistance = new MinMax(4, 10);
   @art.arcane.react.util.project.config.ConfigDoc(value = "Interpolation range used by dynamic view distance to map observed load into target values.", impact = "Wider ranges allow broader adaptation; tighter ranges keep adjustments more conservative.")
-  private MinMax lerpTickTime = new MinMax(10, 100);
+  private MinMax lerpTickTime = new MinMax(45, 140);
   @art.arcane.react.util.project.config.ConfigDoc(value = "Interpolation range used by dynamic view distance to map observed load into target values.", impact = "Wider ranges allow broader adaptation; tighter ranges keep adjustments more conservative.")
   private MinMax lerpPlayersOnline = new MinMax(3, 100);
   private transient RollingSequence ttAvg;
-  @art.arcane.react.util.project.config.ConfigDoc(value = "Internal timestamp used by dynamic view distance to track timing windows and decay.", impact = "Primarily runtime state; changing this manually can distort cooldown or throttling behavior.")
-  private Map<World, Long> lastUpdate;
+  private transient long activatedAtMs;
+  private transient Map<World, Long> lastUpdate;
   private transient boolean supportsWorldDistanceSetters;
   private transient boolean warnedRuntimeFailure;
   private transient Method setViewDistanceMethod;
@@ -92,7 +94,7 @@ public class FeatureDynamicViewDistance extends ReactFeature implements Listener
     return false;
   }
 
-  public double lerp(MinMax range, MinMax output, double inRange) {
+  public static double lerp(MinMax range, MinMax output, double inRange) {
     return Math.max(Math.min(output.getMax(),
             M.lerp(output.getMax(), output.getMin(), M.lerpInverse(range.getMin(), range.getMax(), inRange))),
         output.getMin());
@@ -121,6 +123,7 @@ public class FeatureDynamicViewDistance extends ReactFeature implements Listener
     ttAvg = new RollingSequence(10);
     ttAvg.put(0);
     lastUpdate = new HashMap<>();
+    activatedAtMs = System.currentTimeMillis();
   }
 
   @Override
@@ -140,6 +143,9 @@ public class FeatureDynamicViewDistance extends ReactFeature implements Listener
     }
     ttAvg.put(React.sampler(SamplerTickTime.ID).sample());
     long now = System.currentTimeMillis();
+    if (now - activatedAtMs < Math.max(0, warmupSeconds) * 1000L) {
+      return;
+    }
     long cooldownMs = Math.max(1L, updateCooldownSeconds) * 1000L;
     for (World i : Bukkit.getWorlds()) {
       if (lastUpdate.getOrDefault(i, 0L) < now - cooldownMs) {

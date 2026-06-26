@@ -1,8 +1,11 @@
 package art.arcane.react.core.controller;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import net.jqwik.api.ForAll;
+import net.jqwik.api.Property;
+import net.jqwik.api.constraints.IntRange;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,7 +22,7 @@ public class HopperPositionIndexTest {
     private UUID worldA;
     private UUID worldB;
 
-    @Before
+    @BeforeEach
     public void setup() {
         index = new HopperPositionIndex();
         worldA = UUID.randomUUID();
@@ -31,7 +34,7 @@ public class HopperPositionIndexTest {
         index.addHopper(worldA, 16, 64, 16);
         List<long[]> found = new ArrayList<>();
         index.forEachHopperInChunk(worldA, 1, 1, pos -> found.add(new long[]{pos}));
-        Assert.assertEquals(1, found.size());
+        Assertions.assertEquals(1, found.size());
     }
 
     @Test
@@ -40,7 +43,7 @@ public class HopperPositionIndexTest {
         index.removeHopper(worldA, 16, 64, 16);
         List<Long> found = new ArrayList<>();
         index.forEachHopperInChunk(worldA, 1, 1, found::add);
-        Assert.assertTrue(found.isEmpty());
+        Assertions.assertTrue(found.isEmpty());
     }
 
     @Test
@@ -50,10 +53,10 @@ public class HopperPositionIndexTest {
         index.addHopper(worldA, 48, 64, 48);
         List<Long> chunkZeroZero = new ArrayList<>();
         index.forEachHopperInChunk(worldA, 0, 0, chunkZeroZero::add);
-        Assert.assertEquals(2, chunkZeroZero.size());
+        Assertions.assertEquals(2, chunkZeroZero.size());
         List<Long> chunkThreeThree = new ArrayList<>();
         index.forEachHopperInChunk(worldA, 3, 3, chunkThreeThree::add);
-        Assert.assertEquals(1, chunkThreeThree.size());
+        Assertions.assertEquals(1, chunkThreeThree.size());
     }
 
     @Test
@@ -63,7 +66,7 @@ public class HopperPositionIndexTest {
         index.removeChunk(worldA, 0, 0);
         List<Long> found = new ArrayList<>();
         index.forEachHopperInChunk(worldA, 0, 0, found::add);
-        Assert.assertTrue(found.isEmpty());
+        Assertions.assertTrue(found.isEmpty());
     }
 
     @Test
@@ -74,10 +77,10 @@ public class HopperPositionIndexTest {
         index.removeWorld(worldA);
         List<Long> foundA = new ArrayList<>();
         index.forEachHopperInChunk(worldA, 0, 0, foundA::add);
-        Assert.assertTrue(foundA.isEmpty());
+        Assertions.assertTrue(foundA.isEmpty());
         List<Long> foundB = new ArrayList<>();
         index.forEachHopperInChunk(worldB, 0, 0, foundB::add);
-        Assert.assertEquals(1, foundB.size());
+        Assertions.assertEquals(1, foundB.size());
     }
 
     @Test
@@ -87,14 +90,14 @@ public class HopperPositionIndexTest {
         index.clear();
         List<Long> foundA = new ArrayList<>();
         index.forEachHopperInChunk(worldA, 0, 0, foundA::add);
-        Assert.assertTrue(foundA.isEmpty());
+        Assertions.assertTrue(foundA.isEmpty());
     }
 
     @Test
     public void queryNeverPresentReturnsEmpty() {
         List<Long> found = new ArrayList<>();
         index.forEachHopperInChunk(worldA, 100, 100, found::add);
-        Assert.assertTrue(found.isEmpty());
+        Assertions.assertTrue(found.isEmpty());
     }
 
     @Test
@@ -103,7 +106,7 @@ public class HopperPositionIndexTest {
         index.addHopper(worldA, 0, 64, 0);
         List<Long> found = new ArrayList<>();
         index.forEachHopperInChunk(worldA, 0, 0, found::add);
-        Assert.assertEquals(1, found.size());
+        Assertions.assertEquals(1, found.size());
     }
 
     @Test
@@ -111,7 +114,7 @@ public class HopperPositionIndexTest {
         index.addHopper(worldA, -16, 64, -16);
         List<Long> found = new ArrayList<>();
         index.forEachHopperInChunk(worldA, -1, -1, found::add);
-        Assert.assertEquals(1, found.size());
+        Assertions.assertEquals(1, found.size());
     }
 
     @Test
@@ -131,13 +134,24 @@ public class HopperPositionIndexTest {
             });
         }
 
-        Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(10, TimeUnit.SECONDS));
         executor.shutdown();
 
         CopyOnWriteArrayList<Long> collected = new CopyOnWriteArrayList<>();
         for (int cx = 0; cx < count; cx++) {
             index.forEachHopperInChunk(worldA, cx, 0, collected::add);
         }
-        Assert.assertEquals(count, collected.size());
+        Assertions.assertEquals(count, collected.size());
+    }
+
+    @Property
+    public void packPosRoundTripsCoordinates(
+            @ForAll @IntRange(min = -33554432, max = 33554431) int x,
+            @ForAll @IntRange(min = -2048, max = 2047) int y,
+            @ForAll @IntRange(min = -33554432, max = 33554431) int z) {
+        long packed = HopperPositionIndex.packPos(x, y, z);
+        Assertions.assertEquals(x, HopperPositionIndex.unpackX(packed));
+        Assertions.assertEquals(y, HopperPositionIndex.unpackY(packed));
+        Assertions.assertEquals(z, HopperPositionIndex.unpackZ(packed));
     }
 }

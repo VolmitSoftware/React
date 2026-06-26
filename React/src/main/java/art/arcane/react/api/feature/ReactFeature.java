@@ -54,4 +54,8 @@ public abstract class ReactFeature implements Feature {
   public boolean isEnabled() {
     return enabled;
   }
+
+  public void setEnabled(boolean enabled) {
+    this.enabled = enabled;
+  }
 }

@@ -33,9 +33,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 abstract class SamplerChunkEventDurationBase extends ReactCachedSampler implements Listener {
-  private final RollingSequence average;
-  private final ConcurrentHashMap<Integer, Long> starts;
-  private final ConcurrentHashMap<Integer, Long> startCreated;
+  private final transient RollingSequence average;
+  private final transient ConcurrentHashMap<Integer, Long> starts;
+  private final transient ConcurrentHashMap<Integer, Long> startCreated;
   private int maxHistory = 48;
   private int staleStartMS = 10000;
 
