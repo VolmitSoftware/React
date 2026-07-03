@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["coverage|lib/coverage.dart","path|lib/path.dart","test_core|lib/src/util/package_config.dart","test_core|lib/src/runner/live_suite_controller.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["convert","io"],"hasMain":false}

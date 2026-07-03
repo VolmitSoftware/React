@@ -22,6 +22,8 @@ package art.arcane.react.content.feature;
 import art.arcane.react.React;
 import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.api.rendering.ReactRenderer;
+import art.arcane.react.api.sampler.Sampler;
+import art.arcane.react.api.web.heatmap.ChunkGridExporter;
 import art.arcane.react.core.controller.MapController;
 import art.arcane.react.core.controller.ObserverController;
 import art.arcane.react.model.SampledChunk;
@@ -35,7 +37,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Chunk Heatmap Base feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
-abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRenderer {
+abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRenderer, ChunkGridExporter {
   private static final ThreadLocal<HashMap<Chunk, Double>> SCORE_SCRATCH = ThreadLocal.withInitial(HashMap::new);
   private static final TinyColor FRAME_CENTER = new TinyColor(102, 180, 255);
   private static final TinyColor HELD_CENTER = new TinyColor(0, 255, 90);
@@ -58,6 +60,21 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
 
   protected FeatureChunkHeatmapBase(String id) {
     super(id);
+  }
+
+  @Override
+  public String heatmapId() {
+    return getId();
+  }
+
+  @Override
+  public String heatmapLabel() {
+    return mapLabel();
+  }
+
+  @Override
+  public double scoreChunk(Chunk chunk) {
+    return Math.max(0D, chunkScore(chunk));
   }
 
   @Override
@@ -233,7 +250,7 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
   }
 
   protected double chunkSample(Chunk chunk, String samplerId) {
-    var sampler = React.sampler(samplerId);
+    Sampler sampler = React.sampler(samplerId);
     return sampler == null ? 0D : Math.max(0D, sampler.sample(chunk));
   }
 

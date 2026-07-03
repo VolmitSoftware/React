@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["analyzer|lib/file_system/file_system.dart","analyzer|lib/src/util/uri.dart","package_config|lib/package_config_types.dart","pub_semver|lib/pub_semver.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

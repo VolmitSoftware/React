@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["mime|lib/src/default_extension_map.dart","mime|lib/src/magic_number.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

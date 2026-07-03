@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":[],"parts":[],"conditionalDeps":[{"$default":"jaspr|lib/src/dom/raw_text/raw_text_web.dart","dart.library.io":"jaspr|lib/src/dom/raw_text/raw_text_vm.dart"}],"sdkDeps":[],"hasMain":false}

@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["path|lib/path.dart","watcher|lib/src/event.dart","watcher|lib/src/watch_event.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["io"],"hasMain":false}

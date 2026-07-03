@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["analyzer|lib/file_system/file_system.dart","convert|lib/convert.dart","crypto|lib/crypto.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["convert","typed_data"],"hasMain":false}

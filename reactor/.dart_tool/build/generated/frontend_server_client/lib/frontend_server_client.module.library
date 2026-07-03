@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["frontend_server_client|lib/src/dartdevc_frontend_server_client.dart","frontend_server_client|lib/src/frontend_server_client.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

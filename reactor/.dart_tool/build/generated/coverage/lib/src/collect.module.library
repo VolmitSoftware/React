@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["vm_service|lib/vm_service.dart","coverage|lib/src/hitmap.dart","coverage|lib/src/isolate_paused_listener.dart","coverage|lib/src/util.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async","io"],"hasMain":false}

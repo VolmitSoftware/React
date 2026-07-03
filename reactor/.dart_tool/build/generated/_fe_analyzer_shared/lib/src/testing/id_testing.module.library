@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["_fe_analyzer_shared|lib/src/testing/annotated_code_helper.dart","_fe_analyzer_shared|lib/src/testing/id.dart","_fe_analyzer_shared|lib/src/testing/id_generation.dart","_fe_analyzer_shared|lib/src/util/colors.dart","_fe_analyzer_shared|lib/src/util/options.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["io"],"hasMain":false}

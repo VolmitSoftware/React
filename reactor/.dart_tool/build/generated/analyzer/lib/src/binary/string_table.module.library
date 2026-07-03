@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["_fe_analyzer_shared|lib/src/scanner/string_canonicalizer.dart","analyzer|lib/src/binary/binary_writer.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["typed_data"],"hasMain":false}

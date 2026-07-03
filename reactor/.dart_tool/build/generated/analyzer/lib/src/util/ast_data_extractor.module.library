@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["_fe_analyzer_shared|lib/src/testing/id.dart","analyzer|lib/dart/ast/ast.dart","analyzer|lib/dart/ast/visitor.dart","analyzer|lib/dart/element/element.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

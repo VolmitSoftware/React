@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["vm_service|lib/src/dart_io_extensions.dart","vm_service|lib/src/snapshot_graph.dart","vm_service|lib/src/vm_service.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["analyzer|lib/src/analysis_options/analysis_options_file.dart","analyzer|lib/src/util/yaml.dart","yaml|lib/yaml.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

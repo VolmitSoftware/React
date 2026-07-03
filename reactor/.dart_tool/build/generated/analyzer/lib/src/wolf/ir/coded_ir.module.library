@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["analyzer|lib/dart/element/type.dart","analyzer|lib/src/wolf/ir/call_descriptor.dart","analyzer|lib/src/wolf/ir/ir.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["convert"],"hasMain":false}

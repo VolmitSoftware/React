@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["analyzer|lib/dart/element/element.dart","analyzer|lib/dart/element/nullability_suffix.dart","analyzer|lib/dart/element/type_visitor.dart","analyzer|lib/src/dart/element/type.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

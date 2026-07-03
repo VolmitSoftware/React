@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["analyzer|lib/dart/ast/token.dart","analyzer|lib/src/summary2/unlinked_token_type.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

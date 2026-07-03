@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["arcane_jaspr|lib/component/card/card.dart","arcane_jaspr|lib/component/layout/flow.dart","arcane_jaspr|lib/component/typography/text.dart","arcane_jaspr|lib/component/view/static_table.dart","arcane_jaspr|lib/flutter.dart","arcane_jaspr|lib/util/arcane.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

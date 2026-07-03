@@ -21,6 +21,8 @@ package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
 import art.arcane.react.api.feature.ReactFeature;
+import art.arcane.react.api.sampler.Sampler;
+import art.arcane.react.api.web.IncidentTimeline;
 import art.arcane.react.content.sampler.SamplerIncidentScore;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import org.bukkit.Location;
@@ -106,6 +108,14 @@ public class FeatureIncidentMode extends ReactFeature implements Listener {
     incident = false;
   }
 
+  public boolean isIncidentActive() {
+    return incident;
+  }
+
+  public long getIncidentSince() {
+    return incidentSince;
+  }
+
   @Override
   public int getTickInterval() {
     return tickIntervalMS;
@@ -139,6 +149,7 @@ public class FeatureIncidentMode extends ReactFeature implements Listener {
       if (incidentScore >= enterIncidentScore || tickMS >= enterTickMS) {
         incident = true;
         incidentSince = now;
+        IncidentTimeline.global().record("incident-mode entered (score " + String.format("%.1f", incidentScore) + ", tick " + String.format("%.1f", tickMS) + "ms)");
         if (verboseTransitions) {
           React.warn("Incident mode enabled (score " + String.format("%.1f", incidentScore) + ", tick " + String.format("%.1f", tickMS) + "ms)");
         }
@@ -153,6 +164,7 @@ public class FeatureIncidentMode extends ReactFeature implements Listener {
     double incidentScore = sample(SamplerIncidentScore.ID);
     if (incidentScore <= exitIncidentScore) {
       incident = false;
+      IncidentTimeline.global().record("incident-mode exited (score " + String.format("%.1f", incidentScore) + ", tick " + String.format("%.1f", tickMS) + "ms)");
       if (verboseTransitions) {
         React.info("Incident mode disabled (score " + String.format("%.1f", incidentScore) + ", tick " + String.format("%.1f", tickMS) + "ms)");
       }
@@ -290,7 +302,7 @@ public class FeatureIncidentMode extends ReactFeature implements Listener {
   }
 
   private double sample(String id) {
-    var sampler = React.sampler(id);
+    Sampler sampler = React.sampler(id);
     return sampler == null ? 0D : sampler.sample();
   }
 }

@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["web|lib/web.dart","reactor|lib/state/fleet_manager.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

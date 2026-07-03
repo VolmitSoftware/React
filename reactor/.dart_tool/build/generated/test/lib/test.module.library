@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["matcher|lib/expect.dart","matcher|lib/src/expect/expect.dart","matcher|lib/src/expect/expect_async.dart","matcher|lib/src/expect/throws_matcher.dart","test_core|lib/test_core.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

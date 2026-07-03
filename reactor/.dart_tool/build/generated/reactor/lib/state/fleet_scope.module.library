@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["jaspr|lib/jaspr.dart","reactor|lib/model/server_credential.dart","reactor|lib/state/alert_store.dart","reactor|lib/state/connection_manager.dart","reactor|lib/state/fleet_manager.dart","reactor|lib/state/server_tags_store.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

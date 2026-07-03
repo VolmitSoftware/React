@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["web|lib/src/dom/credential_management.dart","web|lib/src/dom/fido.dart","web|lib/src/dom/secure_payment_confirmation.dart","web|lib/src/dom/webidl.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["js_interop"],"hasMain":false}

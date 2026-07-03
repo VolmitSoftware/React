@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["universal_web|lib/web.dart","jaspr|lib/jaspr.dart","jaspr|lib/src/dom/validator.dart","jaspr|lib/src/client/options.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async","convert"],"hasMain":false}

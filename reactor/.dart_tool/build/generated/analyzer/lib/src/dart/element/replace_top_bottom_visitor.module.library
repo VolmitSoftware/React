@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["_fe_analyzer_shared|lib/src/types/shared_type.dart","analyzer|lib/dart/element/type.dart","analyzer|lib/src/dart/element/extensions.dart","analyzer|lib/src/dart/element/type.dart","analyzer|lib/src/dart/element/type_system.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["web|lib/src/dom/dom.dart","web|lib/src/dom/fileapi.dart","web|lib/src/dom/hr_time.dart","web|lib/src/dom/html.dart","web|lib/src/dom/mediacapture_streams.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["js_interop"],"hasMain":false}

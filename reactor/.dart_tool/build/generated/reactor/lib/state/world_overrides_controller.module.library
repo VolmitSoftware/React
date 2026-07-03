@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["reactor|lib/model/world_settings.dart","reactor|lib/service/react_client.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

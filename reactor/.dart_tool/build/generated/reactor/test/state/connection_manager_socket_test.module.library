@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["test|lib/test.dart","reactor|lib/model/sampler_sample.dart","reactor|lib/model/server_snapshot.dart","reactor|lib/service/react_client.dart","reactor|lib/service/react_exceptions.dart","reactor|lib/service/react_socket.dart","reactor|lib/state/connection_manager.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async"],"hasMain":true}

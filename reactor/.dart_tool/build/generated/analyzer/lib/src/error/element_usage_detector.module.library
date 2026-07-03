@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["analyzer|lib/dart/ast/syntactic_entity.dart","analyzer|lib/dart/element/element.dart","analyzer|lib/dart/element/type.dart","analyzer|lib/src/dart/ast/ast.dart","analyzer|lib/src/dart/element/element.dart","analyzer|lib/workspace/workspace.dart","collection|lib/collection.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

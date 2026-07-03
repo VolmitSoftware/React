@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["analyzer|lib/src/util/platform_info.dart","path|lib/path.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

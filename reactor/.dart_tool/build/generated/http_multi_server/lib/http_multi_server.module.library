@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["async|lib/async.dart","http_multi_server|lib/src/multi_headers.dart","http_multi_server|lib/src/utils.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async","io"],"hasMain":false}

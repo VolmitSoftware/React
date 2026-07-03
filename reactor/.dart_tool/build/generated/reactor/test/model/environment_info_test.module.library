@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["test|lib/test.dart","reactor|lib/model/environment_info.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":true}

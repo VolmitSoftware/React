@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["watcher|lib/src/directory_watcher.dart","watcher|lib/src/resubscribable.dart","watcher|lib/src/watch_event.dart","watcher|lib/src/directory_watcher/recursive/isolate_recursive_directory_watcher.dart","watcher|lib/src/directory_watcher/recursive/watched_directory_tree.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async"],"hasMain":false}

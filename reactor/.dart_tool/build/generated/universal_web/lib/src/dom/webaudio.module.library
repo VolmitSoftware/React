@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["universal_web|lib/src/error.dart","universal_web|lib/src/js_interop.dart","universal_web|lib/src/dom/dom.dart","universal_web|lib/src/dom/hr_time.dart","universal_web|lib/src/dom/html.dart","universal_web|lib/src/dom/mediacapture_streams.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

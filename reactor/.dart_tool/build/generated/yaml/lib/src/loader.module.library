@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["source_span|lib/source_span.dart","yaml|lib/src/charcodes.dart","yaml|lib/src/equality.dart","yaml|lib/src/error_listener.dart","yaml|lib/src/event.dart","yaml|lib/src/parser.dart","yaml|lib/src/yaml_document.dart","yaml|lib/src/yaml_exception.dart","yaml|lib/src/yaml_node.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

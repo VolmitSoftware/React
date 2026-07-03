@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["test|lib/test.dart","jaspr_test|lib/src/finders.dart","jaspr_test|lib/src/matchers.dart","jaspr_test|lib/src/testers/component_tester.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

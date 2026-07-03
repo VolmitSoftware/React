@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["analyzer|lib/source/line_info.dart","analyzer|lib/source/source_range.dart","analyzer|lib/src/test_utilities/platform.dart","collection|lib/collection.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

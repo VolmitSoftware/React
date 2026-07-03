@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["analyzer|lib/file_system/file_system.dart","analyzer|lib/src/workspace/workspace.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

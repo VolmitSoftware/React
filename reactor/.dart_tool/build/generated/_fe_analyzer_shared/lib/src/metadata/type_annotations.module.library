@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["_fe_analyzer_shared|lib/src/metadata/expressions.dart","_fe_analyzer_shared|lib/src/metadata/formal_parameters.dart","_fe_analyzer_shared|lib/src/metadata/proto.dart","_fe_analyzer_shared|lib/src/metadata/references.dart","_fe_analyzer_shared|lib/src/metadata/util.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

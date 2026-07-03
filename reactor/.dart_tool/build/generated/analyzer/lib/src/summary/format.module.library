@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["analyzer|lib/src/summary/api_signature.dart","analyzer|lib/src/summary/flat_buffers.dart","analyzer|lib/src/summary/idl.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["convert","typed_data"],"hasMain":false}

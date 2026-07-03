@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["jaspr|lib/jaspr.dart","jaspr_test|lib/jaspr_test.dart","reactor|lib/chart/svg_fallback_chart.dart","reactor|lib/chart/timeseries_chart.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":true}

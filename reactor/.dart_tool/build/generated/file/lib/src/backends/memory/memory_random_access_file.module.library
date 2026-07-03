@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["file|lib/src/common.dart","file|lib/src/io.dart","file|lib/src/backends/memory/memory_file.dart","file|lib/src/backends/memory/node.dart","file|lib/src/backends/memory/utils.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["convert","math","typed_data"],"hasMain":false}

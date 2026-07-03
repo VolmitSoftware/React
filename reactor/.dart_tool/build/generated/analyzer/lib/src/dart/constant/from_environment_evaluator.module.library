@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["analyzer|lib/dart/analysis/declared_variables.dart","analyzer|lib/src/dart/constant/value.dart","analyzer|lib/src/dart/element/type_system.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

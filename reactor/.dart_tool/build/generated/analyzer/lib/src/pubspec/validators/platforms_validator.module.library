@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["analyzer|lib/src/diagnostic/diagnostic.dart","analyzer|lib/src/pubspec/pubspec_validator.dart","analyzer|lib/src/util/yaml.dart","yaml|lib/yaml.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

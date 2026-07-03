@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["jaspr|lib/src/dom/events.dart","jaspr|lib/src/dom/html/html.dart","jaspr|lib/src/dom/raw_text/raw_text.dart","jaspr|lib/src/dom/styles.dart","jaspr|lib/src/dom/view_transition.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

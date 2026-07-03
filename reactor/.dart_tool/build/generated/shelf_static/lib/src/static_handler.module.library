@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["convert|lib/convert.dart","http_parser|lib/http_parser.dart","mime|lib/mime.dart","path|lib/path.dart","shelf|lib/shelf.dart","shelf_static|lib/src/directory_listing.dart","shelf_static|lib/src/util.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async","io","math"],"hasMain":false}

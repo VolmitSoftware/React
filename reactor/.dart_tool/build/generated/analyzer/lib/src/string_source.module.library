@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["analyzer|lib/source/source.dart","analyzer|lib/src/generated/engine.dart","path|lib/path.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

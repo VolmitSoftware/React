@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["jaspr|lib/jaspr.dart","jaspr|lib/dom.dart","arcane_jaspr|lib/util/style_types/index.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

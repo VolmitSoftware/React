@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["analyzer|lib/dart/ast/ast.dart","analyzer|lib/src/dart/resolver/lexical_lookup.dart","analyzer|lib/src/generated/resolver.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

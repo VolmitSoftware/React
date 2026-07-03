@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["collection|lib/collection.dart","http_parser|lib/http_parser.dart","stack_trace|lib/stack_trace.dart","stream_channel|lib/stream_channel.dart","shelf|lib/shelf.dart","shelf|lib/src/util.dart","shelf|lib/src/io_server.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async","io"],"hasMain":false}

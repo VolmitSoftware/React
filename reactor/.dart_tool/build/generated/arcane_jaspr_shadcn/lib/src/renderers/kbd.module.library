@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["arcane_jaspr|lib/core/props/kbd_props.dart","arcane_jaspr|lib/core/rendering/base/kbd_render_base.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

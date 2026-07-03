@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["arcane_jaspr|lib/component/input/combobox.dart","arcane_jaspr|lib/flutter.dart","arcane_jaspr|lib/core/interaction/interaction.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

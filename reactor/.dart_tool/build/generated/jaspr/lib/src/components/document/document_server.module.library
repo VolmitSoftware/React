@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["html|lib/dom.dart","html|lib/parser.dart","jaspr|lib/dom.dart","jaspr|lib/server.dart","jaspr|lib/src/server/adapters/document_adapter.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async"],"hasMain":false}

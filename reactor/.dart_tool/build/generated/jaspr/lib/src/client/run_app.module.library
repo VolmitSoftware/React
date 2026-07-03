@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["jaspr|lib/src/framework/framework.dart","jaspr|lib/src/client/client_binding.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

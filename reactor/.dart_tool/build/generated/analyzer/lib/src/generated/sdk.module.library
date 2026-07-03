@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["analyzer|lib/dart/ast/ast.dart","analyzer|lib/dart/ast/visitor.dart","analyzer|lib/source/source.dart","pub_semver|lib/pub_semver.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["collection"],"hasMain":false}

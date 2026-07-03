@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["jaspr|lib/src/dom/styles/rules.dart","jaspr|lib/src/dom/styles/selector.dart","jaspr|lib/src/dom/styles/styles.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

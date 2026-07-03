@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["yaml|lib/src/error_listener.dart","yaml|lib/src/loader.dart","yaml|lib/src/style.dart","yaml|lib/src/yaml_document.dart","yaml|lib/src/yaml_exception.dart","yaml|lib/src/yaml_node.dart","yaml|lib/src/utils.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

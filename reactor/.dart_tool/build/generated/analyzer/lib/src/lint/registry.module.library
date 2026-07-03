@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["analyzer|lib/error/error.dart","analyzer|lib/src/analysis_rule/rule_context.dart","analyzer|lib/src/lint/config.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["collection"],"hasMain":false}

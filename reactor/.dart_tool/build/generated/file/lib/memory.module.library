@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["file|lib/src/backends/memory.dart","file|lib/src/backends/memory/operations.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

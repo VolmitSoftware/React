@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["file|lib/file.dart","file|lib/local.dart","glob|lib/glob.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

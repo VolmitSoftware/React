@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["meta|lib/meta.dart","http|lib/http.dart","http|lib/src/abortable.dart","http|lib/src/base_client.dart","http|lib/src/base_response.dart","http|lib/src/byte_stream.dart","http|lib/src/client.dart","http|lib/src/streamed_response.dart","http|lib/src/utils.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["collection"],"hasMain":false}

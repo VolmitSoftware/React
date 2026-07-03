@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["source_span|lib/source_span.dart","yaml|lib/yaml.dart","test_core|lib/src/runner/plugin/customizable_platform.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

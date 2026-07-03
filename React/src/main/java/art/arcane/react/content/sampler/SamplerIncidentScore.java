@@ -19,16 +19,29 @@
 
 package art.arcane.react.content.sampler;
 
+import art.arcane.react.React;
 import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.react.api.sampler.Sampler;
+import art.arcane.react.core.controller.SampleController;
 import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Material;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class SamplerIncidentScore extends ReactCachedSampler {
   public static final String ID = "incident-score";
 
+  public record Contribution(String name, double weight, double value) {}
+
   public SamplerIncidentScore() {
     super(ID, 1000);
+  }
+
+  @Override
+  public Sampler getSampler(String id) {
+    SampleController controller = React.controller(SampleController.class);
+    return controller == null ? null : controller.getSampler(id);
   }
 
   @Override
@@ -39,6 +52,28 @@ public class SamplerIncidentScore extends ReactCachedSampler {
   @Override
   public double onSample() {
     return sampleOnMainThread(this::computeScore);
+  }
+
+  public List<Contribution> contributions() {
+    double tickP95 = sample(SamplerTickMsP95.ID);
+    double tickSpikeRate = sample(SamplerTickSpikeRate.ID);
+    double gcPercent = sample(SamplerGcTimePercent.ID);
+    double backlog = sample(SamplerSchedulerBacklog.ID);
+    double backlogGrowth = Math.max(0D, sample(SamplerBacklogGrowthRate.ID));
+    double pingP95 = sample(SamplerPlayerPingP95.ID);
+    double topChunkCost = sample(SamplerTopChunkCost.ID);
+    double redstoneBurstRate = sample(SamplerRedstoneBurstRate.ID);
+
+    List<Contribution> list = new ArrayList<>(8);
+    list.add(new Contribution(SamplerTickMsP95.ID, 0.30, tickP95));
+    list.add(new Contribution(SamplerTickSpikeRate.ID, 0.15, tickSpikeRate));
+    list.add(new Contribution(SamplerGcTimePercent.ID, 0.10, gcPercent));
+    list.add(new Contribution(SamplerSchedulerBacklog.ID, 0.12, backlog));
+    list.add(new Contribution(SamplerBacklogGrowthRate.ID, 0.08, backlogGrowth));
+    list.add(new Contribution(SamplerPlayerPingP95.ID, 0.10, pingP95));
+    list.add(new Contribution(SamplerTopChunkCost.ID, 0.08, topChunkCost));
+    list.add(new Contribution(SamplerRedstoneBurstRate.ID, 0.07, redstoneBurstRate));
+    return list;
   }
 
   private double computeScore() {

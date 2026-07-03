@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["arcane_jaspr|lib/arcane_jaspr.dart","jaspr|lib/dom.dart","jaspr|lib/jaspr.dart","reactor|lib/model/sampler_sample.dart","reactor|lib/ui/reactor_ui.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

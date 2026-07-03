@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["shelf|lib/shelf_io.dart","shelf|lib/src/handler.dart","shelf|lib/src/server.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async","io"],"hasMain":false}

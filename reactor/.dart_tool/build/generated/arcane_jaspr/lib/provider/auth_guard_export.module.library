@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":[],"parts":[],"conditionalDeps":[{"$default":"arcane_jaspr|lib/provider/auth_guard_stub.dart","dart.library.js_interop":"arcane_jaspr|lib/provider/auth_guard.dart"}],"sdkDeps":[],"hasMain":false}

@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["web|lib/src/dom.dart","web|lib/src/helpers/enums.dart","web|lib/src/helpers/events/streams.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["js_interop","js_interop_unsafe"],"hasMain":false}

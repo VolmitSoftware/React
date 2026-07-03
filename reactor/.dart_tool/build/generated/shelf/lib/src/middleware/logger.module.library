@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["stack_trace|lib/stack_trace.dart","shelf|lib/src/hijack_exception.dart","shelf|lib/src/middleware.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async"],"hasMain":false}

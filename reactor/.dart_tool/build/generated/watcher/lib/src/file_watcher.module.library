@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["watcher|lib/watcher.dart","watcher|lib/src/custom_watcher_factory.dart","watcher|lib/src/file_watcher/native.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["io"],"hasMain":false}

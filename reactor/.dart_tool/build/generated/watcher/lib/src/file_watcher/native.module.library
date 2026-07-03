@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["watcher|lib/src/event.dart","watcher|lib/src/event_batching.dart","watcher|lib/src/file_watcher.dart","watcher|lib/src/resubscribable.dart","watcher|lib/src/watch_event.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async","io"],"hasMain":false}

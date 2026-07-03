@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["crypto|lib/crypto.dart","test|lib/test.dart","reactor|lib/service/relay_identity.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["convert"],"hasMain":true}

@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["analyzer|lib/dart/analysis/results.dart","analyzer|lib/dart/element/element.dart","analyzer|lib/src/dart/analysis/driver_based_analysis_context.dart","analyzer|lib/src/dart/analysis/file_state_filter.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async"],"hasMain":false}

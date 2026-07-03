@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["_fe_analyzer_shared|lib/src/base/analyzer_public_api.dart","_fe_analyzer_shared|lib/src/base/syntactic_entity.dart","_fe_analyzer_shared|lib/src/scanner/string_utilities.dart","_fe_analyzer_shared|lib/src/scanner/token_constants.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["collection"],"hasMain":false}

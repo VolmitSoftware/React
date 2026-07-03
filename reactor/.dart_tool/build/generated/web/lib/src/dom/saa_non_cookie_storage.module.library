@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["web|lib/src/dom/fetch.dart","web|lib/src/dom/fs.dart","web|lib/src/dom/html.dart","web|lib/src/dom/indexeddb.dart","web|lib/src/dom/service_workers.dart","web|lib/src/dom/storage.dart","web|lib/src/dom/web_locks.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["js_interop"],"hasMain":false}

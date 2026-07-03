@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["async|lib/async.dart","shelf|lib/src/handler.dart","shelf|lib/src/request.dart","shelf|lib/src/response.dart","shelf|lib/src/server.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async"],"hasMain":false}

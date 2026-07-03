@@ -142,6 +142,9 @@ dependencies {
     slim('org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2')
     slim('net.bytebuddy:byte-buddy:1.14.19')
     slim('net.bytebuddy:byte-buddy-agent:1.14.19')
+    compileOnly('io.javalin:javalin:6.4.0')
+    slim('io.javalin:javalin:6.4.0')
+    compileOnly('com.fasterxml.jackson.core:jackson-annotations:2.17.2')
 
     // Random API's
     compileOnly('me.clip:placeholderapi:2.11.6')
@@ -165,6 +168,7 @@ dependencies {
     compileOnly('com.google.code.gson:gson:2.10')
     compileOnly('io.netty:netty-transport:4.1.92.Final')
 
+    testImplementation('io.javalin:javalin:6.4.0')
     testImplementation('org.junit.jupiter:junit-jupiter:5.11.4')
     testRuntimeOnly('org.junit.platform:junit-platform-launcher:1.11.4')
     testImplementation('org.mockito:mockito-core:5.18.0')

@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["stream_channel|lib/stream_channel.dart","test_core|lib/src/runner/plugin/remote_platform_helpers.dart","test_core|lib/src/util/stack_trace_mapper.dart","test|lib/src/runner/browser/post_message_channel.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

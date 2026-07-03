@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["jaspr|lib/dom.dart","jaspr|lib/jaspr.dart","reactor|lib/chart/svg_fallback_chart.dart"],"parts":[],"conditionalDeps":[{"$default":"reactor|lib/chart/uplot_interop_stub.dart","dart.library.js_interop":"reactor|lib/chart/uplot_interop.dart"}],"sdkDeps":["async"],"hasMain":false}

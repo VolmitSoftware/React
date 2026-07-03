@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["test_api|lib/hooks.dart","matcher|lib/src/expect/util/placeholder.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

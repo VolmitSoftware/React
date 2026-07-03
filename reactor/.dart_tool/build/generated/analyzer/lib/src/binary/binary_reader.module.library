@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["_fe_analyzer_shared|lib/src/scanner/string_canonicalizer.dart","analyzer|lib/src/binary/binary_writer.dart","analyzer|lib/src/binary/string_table.dart","analyzer|lib/src/fine/manifest_id.dart","analyzer|lib/src/utilities/uri_cache.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["convert","typed_data"],"hasMain":false}

@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["http|lib/src/abortable.dart","http|lib/src/base_client.dart","http|lib/src/base_request.dart","http|lib/src/byte_stream.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async"],"hasMain":false}

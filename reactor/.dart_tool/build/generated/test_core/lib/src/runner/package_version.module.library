@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["package_config|lib/package_config.dart","path|lib/path.dart","test_core|lib/src/util/detaching_future.dart","test_core|lib/src/util/package_config.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

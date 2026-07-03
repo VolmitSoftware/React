@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["test|lib/test.dart","reactor|lib/model/heatmap.dart","reactor|lib/screen/heatmaps.dart","reactor|lib/service/react_client.dart","reactor|lib/service/react_exceptions.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":true}

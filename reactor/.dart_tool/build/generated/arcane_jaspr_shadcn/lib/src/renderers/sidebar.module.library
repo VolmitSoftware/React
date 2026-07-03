@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["jaspr|lib/jaspr.dart","jaspr|lib/dom.dart","arcane_jaspr|lib/component/view/icon.dart","arcane_jaspr|lib/core/props/sidebar_props.dart","arcane_jaspr|lib/core/rendering/base/sidebar_render_base.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["analyzer|lib/src/dart/analysis/file_state.dart","analyzer|lib/src/dart/analysis/performance_logger.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

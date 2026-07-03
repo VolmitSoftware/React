@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["arcane_jaspr|lib/arcane_jaspr.dart","jaspr|lib/jaspr.dart","reactor|lib/state/fleet_live_model.dart","reactor|lib/state/fleet_rollup.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

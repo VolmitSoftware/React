@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":[],"parts":[],"conditionalDeps":[{"$default":"file|lib/src/interface/error_codes_internal.dart","dart.library.io":"file|lib/src/interface/error_codes_dart_io.dart"}],"sdkDeps":[],"hasMain":false}

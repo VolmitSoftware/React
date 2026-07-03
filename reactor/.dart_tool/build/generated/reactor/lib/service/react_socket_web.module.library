@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["web|lib/web.dart","reactor|lib/model/server_credential.dart","reactor|lib/model/server_snapshot.dart","reactor|lib/service/react_socket_interface.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async","convert","js_interop"],"hasMain":false}

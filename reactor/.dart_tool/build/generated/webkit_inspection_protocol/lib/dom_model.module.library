@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["logging|lib/logging.dart","webkit_inspection_protocol|lib/webkit_inspection_protocol.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async","collection","mirrors"],"hasMain":false}

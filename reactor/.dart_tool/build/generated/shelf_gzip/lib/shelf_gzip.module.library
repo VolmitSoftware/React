@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["shelf_gzip|lib/src/gzip_encoding.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

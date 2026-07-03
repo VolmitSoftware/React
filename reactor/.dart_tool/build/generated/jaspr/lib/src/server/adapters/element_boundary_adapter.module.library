@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["jaspr|lib/src/framework/framework.dart","jaspr|lib/src/server/child_nodes.dart","jaspr|lib/src/server/markup_render_object.dart","jaspr|lib/src/server/server_binding.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async"],"hasMain":false}

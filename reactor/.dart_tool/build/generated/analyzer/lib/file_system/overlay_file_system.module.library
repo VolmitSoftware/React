@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["analyzer|lib/file_system/file_system.dart","path|lib/path.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["convert","typed_data"],"hasMain":false}

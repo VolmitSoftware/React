@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["source_map_stack_trace|lib/source_map_stack_trace.dart","source_maps|lib/source_maps.dart","test_api|lib/backend.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":[],"parts":[],"conditionalDeps":[{"$default":"web_socket|lib/src/connect_stub.dart","dart.library.js_interop":"web_socket|lib/src/browser_web_socket.dart","dart.library.io":"web_socket|lib/src/io_web_socket.dart"}],"sdkDeps":["typed_data"],"hasMain":false}

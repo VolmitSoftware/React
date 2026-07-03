@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["analyzer|lib/dart/ast/visitor.dart","analyzer|lib/dart/element/element.dart","analyzer|lib/src/dart/ast/ast.dart","analyzer|lib/src/dart/ast/element_locator.dart","analyzer|lib/src/dart/element/element.dart","analyzer|lib/src/utilities/extensions/element.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

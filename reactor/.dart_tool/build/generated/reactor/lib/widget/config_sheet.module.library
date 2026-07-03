@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["arcane_jaspr|lib/arcane_jaspr.dart","jaspr|lib/dom.dart","jaspr|lib/jaspr.dart","reactor|lib/model/control_item.dart","reactor|lib/model/knob.dart","reactor|lib/widget/knob_editor.dart","reactor|lib/widget/section_card.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

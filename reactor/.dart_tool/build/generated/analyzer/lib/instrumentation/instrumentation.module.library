@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["analyzer|lib/instrumentation/log_adapter.dart","analyzer|lib/instrumentation/logger.dart","analyzer|lib/instrumentation/multicast_service.dart","analyzer|lib/instrumentation/noop_service.dart","analyzer|lib/instrumentation/plugin_data.dart","analyzer|lib/instrumentation/service.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

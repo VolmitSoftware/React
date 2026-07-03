@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["analyzer|lib/src/fine/requirement_failure.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async"],"hasMain":false}

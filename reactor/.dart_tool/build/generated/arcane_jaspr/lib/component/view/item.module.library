@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["arcane_jaspr|lib/flutter.dart","arcane_jaspr|lib/core/theme_provider.dart","arcane_jaspr|lib/util/style_types/arcane_style_data.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

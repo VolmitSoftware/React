@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["shelf|lib/shelf.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async","io","math","typed_data"],"hasMain":false}

@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["async|lib/async.dart","file|lib/file.dart","path|lib/path.dart","glob|lib/src/ast.dart","glob|lib/src/utils.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async"],"hasMain":false}

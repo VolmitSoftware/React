@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["io|lib/src/copy_path.dart","io|lib/src/exit_code.dart","io|lib/src/permissions.dart","io|lib/src/process_manager.dart","io|lib/src/shared_stdin.dart","io|lib/src/shell_words.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

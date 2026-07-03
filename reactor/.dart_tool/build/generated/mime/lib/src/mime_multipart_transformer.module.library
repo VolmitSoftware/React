@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["mime|lib/src/bound_multipart_stream.dart","mime|lib/src/char_code.dart","mime|lib/src/mime_shared.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async","typed_data"],"hasMain":false}

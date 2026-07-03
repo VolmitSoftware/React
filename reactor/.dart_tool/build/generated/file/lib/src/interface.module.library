@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["file|lib/src/interface/directory.dart","file|lib/src/interface/error_codes.dart","file|lib/src/interface/file.dart","file|lib/src/interface/file_system.dart","file|lib/src/interface/file_system_entity.dart","file|lib/src/interface/link.dart","file|lib/src/io.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

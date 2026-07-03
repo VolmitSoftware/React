@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["jaspr|lib/jaspr.dart","jaspr_router|lib/src/configuration.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async"],"hasMain":false}

@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["coverage|lib/src/collect.dart","coverage|lib/src/util.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async","io"],"hasMain":false}

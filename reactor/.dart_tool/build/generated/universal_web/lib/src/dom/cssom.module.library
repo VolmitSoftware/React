@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["universal_web|lib/src/error.dart","universal_web|lib/src/js_interop.dart","universal_web|lib/src/dom/css_highlight_api.dart","universal_web|lib/src/dom/css_properties_values_api.dart","universal_web|lib/src/dom/css_typed_om.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

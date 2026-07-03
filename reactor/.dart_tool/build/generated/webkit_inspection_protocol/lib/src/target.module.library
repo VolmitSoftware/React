@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["webkit_inspection_protocol|lib/webkit_inspection_protocol.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async"],"hasMain":false}

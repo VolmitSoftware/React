@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["coverage|lib/src/chrome.dart","coverage|lib/src/collect.dart","coverage|lib/src/formatter.dart","coverage|lib/src/hitmap.dart","coverage|lib/src/resolver.dart","coverage|lib/src/run_and_collect.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

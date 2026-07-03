@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["collection|lib/collection.dart","pub_semver|lib/src/utils.dart","pub_semver|lib/src/version.dart","pub_semver|lib/src/version_constraint.dart","pub_semver|lib/src/version_range.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

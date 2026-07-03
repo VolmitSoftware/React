@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["_fe_analyzer_shared|lib/src/base/errors.dart","analyzer|lib/src/dart/error/lint_codes.dart","analyzer|lib/src/dart/error/todo_codes.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

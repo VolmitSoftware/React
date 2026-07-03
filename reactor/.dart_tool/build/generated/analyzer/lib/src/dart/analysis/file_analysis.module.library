@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["analyzer|lib/error/listener.dart","analyzer|lib/src/dart/analysis/file_state.dart","analyzer|lib/src/dart/ast/ast.dart","analyzer|lib/src/dart/element/element.dart","analyzer|lib/src/dart/element/scope.dart","analyzer|lib/src/ignore_comments/ignore_info.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":[],"parts":[],"conditionalDeps":[{"$default":"jaspr|lib/src/components/document/document_client.dart","dart.library.io":"jaspr|lib/src/components/document/document_server.dart"}],"sdkDeps":[],"hasMain":false}

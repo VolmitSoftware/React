@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["arcane_jaspr|lib/flutter.dart","arcane_jaspr|lib/core/interaction/interaction.dart","arcane_jaspr|lib/core/props/slider_props.dart","arcane_jaspr|lib/core/theme_provider.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

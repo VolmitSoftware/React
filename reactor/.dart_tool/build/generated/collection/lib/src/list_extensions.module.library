@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["collection|lib/src/algorithms.dart","collection|lib/src/equality.dart","collection|lib/src/utils.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["collection","math"],"hasMain":false}

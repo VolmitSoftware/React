@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":[],"parts":[],"conditionalDeps":[{"$default":"analyzer|lib/src/generated/utilities_collection_native.dart","dart.library.js":"analyzer|lib/src/generated/utilities_collection_js.dart"}],"sdkDeps":[],"hasMain":false}

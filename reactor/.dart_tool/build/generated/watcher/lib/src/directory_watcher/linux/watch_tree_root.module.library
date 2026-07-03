@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["watcher|lib/src/paths.dart","watcher|lib/src/testing.dart","watcher|lib/src/watch_event.dart","watcher|lib/src/directory_watcher/linux/watch_tree.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async"],"hasMain":false}

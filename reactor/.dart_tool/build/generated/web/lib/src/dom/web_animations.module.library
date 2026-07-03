@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["web|lib/src/dom/css_typed_om.dart","web|lib/src/dom/dom.dart","web|lib/src/dom/hr_time.dart","web|lib/src/dom/html.dart","web|lib/src/dom/web_animations_2.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["js_interop"],"hasMain":false}

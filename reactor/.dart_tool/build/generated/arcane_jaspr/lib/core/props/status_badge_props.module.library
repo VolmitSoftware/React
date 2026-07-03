@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["arcane_jaspr|lib/flutter.dart","arcane_jaspr|lib/core/shared/shared.dart","arcane_jaspr|lib/core/props/status_indicator_props.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

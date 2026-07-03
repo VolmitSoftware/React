@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["mime|lib/src/char_code.dart","mime|lib/src/mime_shared.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async","convert"],"hasMain":false}

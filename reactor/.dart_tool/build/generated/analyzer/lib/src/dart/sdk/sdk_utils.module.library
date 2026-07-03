@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["analyzer|lib/src/generated/sdk.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["math"],"hasMain":false}

@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["_fe_analyzer_shared|lib/src/util/dependency_walker.dart","analyzer|lib/dart/analysis/declared_variables.dart","analyzer|lib/dart/analysis/features.dart","analyzer|lib/src/dart/constant/evaluation.dart","analyzer|lib/src/dart/element/element.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

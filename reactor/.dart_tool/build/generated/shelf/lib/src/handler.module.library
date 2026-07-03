@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["shelf|lib/src/request.dart","shelf|lib/src/response.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async"],"hasMain":false}

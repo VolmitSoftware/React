@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["jaspr|lib/src/framework/framework.dart","jaspr|lib/src/foundation/scheduler.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

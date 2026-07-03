@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["arcane_jaspr|lib/theme/color_seed.dart","arcane_jaspr|lib/theme/palette.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["math"],"hasMain":false}

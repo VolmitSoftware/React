@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["_fe_analyzer_shared|lib/src/type_inference/type_analyzer.dart","analyzer|lib/dart/analysis/features.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["web|lib/src/dom/webgl1.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["js_interop"],"hasMain":false}

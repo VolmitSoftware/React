@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["http|lib/http.dart","shelf|lib/shelf.dart","shelf|lib/shelf_io.dart","jaspr|lib/server.dart","jaspr|lib/src/server/server_handler.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async","convert","io"],"hasMain":false}

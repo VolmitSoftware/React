@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["_fe_analyzer_shared|lib/src/debug_helpers/print.dart","_fe_analyzer_shared|lib/src/debug_helpers/stack_trace.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

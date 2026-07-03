@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["typed_data|lib/typed_data.dart","http_parser|lib/src/chunked_coding/charcodes.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async","convert","math","typed_data"],"hasMain":false}

@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["analyzer|lib/src/fine/lookup_name.dart","analyzer|lib/src/fine/manifest_id.dart","analyzer|lib/src/fine/manifest_item.dart","analyzer|lib/src/fine/requirements.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["typed_data"],"hasMain":false}

@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["_fe_analyzer_shared|lib/src/types/shared_type.dart","_fe_analyzer_shared|lib/src/flow_analysis/flow_analysis.dart","_fe_analyzer_shared|lib/src/flow_analysis/flow_analysis_operations.dart","_fe_analyzer_shared|lib/src/type_inference/type_analysis_result.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

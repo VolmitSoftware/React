@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["test|lib/test.dart","reactor|lib/model/alert.dart","reactor|lib/model/alert_thresholds.dart","reactor|lib/state/alert_store.dart","reactor|lib/state/memory_fleet_storage.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":true}

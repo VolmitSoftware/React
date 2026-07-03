@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["collection|lib/collection.dart"],"parts":["analyzer|lib/src/wolf/ir/ir.g.dart"],"conditionalDeps":[],"sdkDeps":["collection","convert"],"hasMain":false}

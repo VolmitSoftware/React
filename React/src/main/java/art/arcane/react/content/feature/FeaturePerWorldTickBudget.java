@@ -22,6 +22,7 @@ package art.arcane.react.content.feature;
 import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.content.feature.perworld.PerWorldPressure;
 import art.arcane.react.content.feature.perworld.ReactScopedPressure;
+import art.arcane.react.content.feature.perworld.WorldBudgetOverride;
 import art.arcane.react.content.sampler.SamplerPerWorldTickTime;
 import art.arcane.react.util.project.config.ConfigDescription;
 import art.arcane.react.util.project.config.ConfigDoc;
@@ -53,10 +54,48 @@ public class FeaturePerWorldTickBudget extends ReactFeature {
   @ConfigDoc(value ="Release threshold (milliseconds) the per-world mean must stay under to leave PRESSURE/PANIC, measured below budgetMs to avoid flapping.", impact = "Lower values hold the elevated mode longer for stability; higher values restore NORMAL sooner.")
   private double releaseMs = 28D;
 
+  @ConfigDoc(value = "Per-world threshold overrides keyed by world name. A world present here uses its own budget/panic/release instead of the global values.")
+  private Map<String, WorldBudgetOverride> worldOverrides = new ConcurrentHashMap<>();
+
   private transient final Map<UUID, WorldState> stateByWorld = new ConcurrentHashMap<>();
 
   public FeaturePerWorldTickBudget() {
     super(ID);
+  }
+
+  public double effectiveBudgetMsFor(String worldName) {
+    WorldBudgetOverride override = worldOverrides.get(worldName);
+    return override != null ? override.getBudgetMs() : budgetMs;
+  }
+
+  public double effectivePanicMsFor(String worldName) {
+    WorldBudgetOverride override = worldOverrides.get(worldName);
+    return override != null ? override.getPanicMs() : panicMs;
+  }
+
+  public double effectiveReleaseMsFor(String worldName) {
+    WorldBudgetOverride override = worldOverrides.get(worldName);
+    return override != null ? override.getReleaseMs() : releaseMs;
+  }
+
+  public WorldBudgetOverride setWorldOverride(String worldName, Double overrideBudgetMs, Double overridePanicMs, Double overrideReleaseMs) {
+    WorldBudgetOverride entry = worldOverrides.computeIfAbsent(worldName, ignored -> {
+      WorldBudgetOverride fresh = new WorldBudgetOverride();
+      fresh.setBudgetMs(budgetMs);
+      fresh.setPanicMs(panicMs);
+      fresh.setReleaseMs(releaseMs);
+      return fresh;
+    });
+    if (overrideBudgetMs != null) {
+      entry.setBudgetMs(overrideBudgetMs);
+    }
+    if (overridePanicMs != null) {
+      entry.setPanicMs(overridePanicMs);
+    }
+    if (overrideReleaseMs != null) {
+      entry.setReleaseMs(overrideReleaseMs);
+    }
+    return entry;
   }
 
   @Override
@@ -83,10 +122,11 @@ public class FeaturePerWorldTickBudget extends ReactFeature {
     Set<UUID> live = new HashSet<>();
     for (World world : Bukkit.getWorlds()) {
       UUID worldId = world.getUID();
+      String worldName = world.getName();
       live.add(worldId);
       WorldState state = stateByWorld.computeIfAbsent(worldId, ignored -> new WorldState());
       double meanMs = SamplerPerWorldTickTime.meanMsFor(world);
-      PerWorldPressure.Mode next = step(state, meanMs);
+      PerWorldPressure.Mode next = step(state, meanMs, effectiveBudgetMsFor(worldName), effectivePanicMsFor(worldName), effectiveReleaseMsFor(worldName));
       ReactScopedPressure.publish(world, new PerWorldPressure(next, meanMs));
     }
 
@@ -121,7 +161,7 @@ public class FeaturePerWorldTickBudget extends ReactFeature {
     return histogram;
   }
 
-  private PerWorldPressure.Mode step(WorldState state, double meanMs) {
+  private PerWorldPressure.Mode step(WorldState state, double meanMs, double budgetMs, double panicMs, double releaseMs) {
     boolean overPanic = meanMs >= panicMs;
     boolean overBudget = meanMs >= budgetMs;
     boolean underRelease = meanMs <= releaseMs;

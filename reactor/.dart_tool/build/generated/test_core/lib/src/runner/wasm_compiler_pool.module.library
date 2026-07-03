@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["path|lib/path.dart","test_core|lib/src/util/dart.dart","test_core|lib/src/util/io.dart","test_core|lib/src/util/package_config.dart","test_core|lib/src/runner/compiler_pool.dart","test_core|lib/src/runner/suite.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["convert","io"],"hasMain":false}

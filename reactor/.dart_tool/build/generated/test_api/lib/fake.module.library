@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["test_api|lib/src/frontend/fake.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

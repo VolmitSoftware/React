@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["analyzer|lib/src/dart/analysis/byte_store.dart","analyzer|lib/src/dart/analysis/fletcher16.dart","path|lib/path.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async","io","isolate","typed_data"],"hasMain":false}

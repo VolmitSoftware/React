@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["universal_web|lib/src/dom.dart","universal_web|lib/src/js_interop.dart","universal_web|lib/src/helpers/lists.dart","universal_web|lib/src/helpers/cross_origin.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["convert","math"],"hasMain":false}

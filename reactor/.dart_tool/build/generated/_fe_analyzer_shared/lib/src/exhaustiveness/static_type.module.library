@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["_fe_analyzer_shared|lib/src/exhaustiveness/dart_template_buffer.dart","_fe_analyzer_shared|lib/src/exhaustiveness/key.dart","_fe_analyzer_shared|lib/src/exhaustiveness/space.dart","_fe_analyzer_shared|lib/src/exhaustiveness/witness.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

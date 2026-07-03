@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["vm_service|lib/src/snapshot_graph.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async","convert","typed_data"],"hasMain":false}

@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["file|lib/file.dart","file|lib/src/backends/memory/operations.dart","file|lib/src/io.dart","file|lib/src/backends/memory/clock.dart","file|lib/src/backends/memory/common.dart","file|lib/src/backends/memory/memory_file_stat.dart","file|lib/src/backends/memory/style.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["typed_data"],"hasMain":false}

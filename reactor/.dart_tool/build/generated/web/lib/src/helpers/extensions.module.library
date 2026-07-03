@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["web|lib/src/dom.dart","web|lib/src/helpers/lists.dart","web|lib/src/helpers/cross_origin.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["convert","js_interop","math"],"hasMain":false}

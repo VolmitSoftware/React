@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["analyzer|lib/dart/ast/ast.dart","source_span|lib/source_span.dart","test_core|lib/src/util/package_config.dart","test_core|lib/src/util/string_literal_iterator.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["convert","io","isolate"],"hasMain":false}

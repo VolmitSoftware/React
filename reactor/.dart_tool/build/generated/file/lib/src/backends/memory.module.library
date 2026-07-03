@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["file|lib/src/backends/memory/memory_file_system.dart","file|lib/src/backends/memory/style.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

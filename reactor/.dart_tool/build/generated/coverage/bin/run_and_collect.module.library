@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["coverage|lib/src/run_and_collect.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async"],"hasMain":true}

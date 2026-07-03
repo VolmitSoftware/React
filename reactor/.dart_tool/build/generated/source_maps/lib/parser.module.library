@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["source_span|lib/source_span.dart","source_maps|lib/builder.dart","source_maps|lib/src/source_map_span.dart","source_maps|lib/src/utils.dart","source_maps|lib/src/vlq.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["convert"],"hasMain":false}

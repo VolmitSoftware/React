@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["source_span|lib/source_span.dart","yaml|lib/src/parser.dart","yaml|lib/src/style.dart","yaml|lib/src/yaml_document.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

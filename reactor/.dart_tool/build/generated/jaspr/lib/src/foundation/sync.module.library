@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["jaspr|lib/src/framework/framework.dart"],"parts":[],"conditionalDeps":[{"$default":"jaspr|lib/src/foundation/sync/sync_web.dart","dart.library.io":"jaspr|lib/src/foundation/sync/sync_vm.dart"}],"sdkDeps":[],"hasMain":false}

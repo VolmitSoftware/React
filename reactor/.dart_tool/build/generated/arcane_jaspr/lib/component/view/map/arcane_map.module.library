@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["arcane_jaspr|lib/flutter.dart","jaspr|lib/dom.dart","arcane_jaspr|lib/component/view/map/map_data.dart","arcane_jaspr|lib/component/view/map/map_projection.dart","arcane_jaspr|lib/component/view/map/map_style.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

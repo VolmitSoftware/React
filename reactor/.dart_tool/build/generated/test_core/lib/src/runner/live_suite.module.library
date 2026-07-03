@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["collection|lib/collection.dart","test_api|lib/src/backend/live_test.dart","test_core|lib/src/runner/runner_suite.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

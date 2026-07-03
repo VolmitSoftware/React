@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["analyzer|lib/dart/ast/doc_comment.dart","analyzer|lib/src/diagnostic/diagnostic.dart","analyzer|lib/src/error/listener.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["math"],"hasMain":false}

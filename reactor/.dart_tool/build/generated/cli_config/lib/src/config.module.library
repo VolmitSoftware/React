@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["cli_config|lib/src/cli_parser.dart","cli_config|lib/src/cli_source.dart","cli_config|lib/src/environment_parser.dart","cli_config|lib/src/environment_source.dart","cli_config|lib/src/file_parser.dart","cli_config|lib/src/file_source.dart","cli_config|lib/src/source.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["core","io"],"hasMain":false}

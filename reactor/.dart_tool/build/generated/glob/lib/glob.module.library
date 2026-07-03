@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["file|lib/file.dart","file|lib/memory.dart","path|lib/path.dart","glob|lib/src/ast.dart","glob|lib/src/list_tree.dart","glob|lib/src/parser.dart","glob|lib/src/utils.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

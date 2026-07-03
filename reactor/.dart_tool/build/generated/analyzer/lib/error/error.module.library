@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["_fe_analyzer_shared|lib/src/base/errors.dart","analyzer|lib/src/diagnostic/diagnostic_code_values.dart","analyzer|lib/src/dart/error/lint_codes.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["collection"],"hasMain":false}

@@ -538,22 +538,14 @@ public final class ReactConfigGUI {
     openSectionIndex(player, ROOT_CATEGORY + "." + categoryKey, page, "Configure: " + label, entries);
   }
 
-  private static void applyPreset(Player player, String preset) {
-    if (player == null) {
-      return;
-    }
-
+  public static int applyPresetHeadless(String preset) {
     String normalizedPreset = preset == null ? "" : preset.trim().toLowerCase(Locale.ROOT);
-    String presetName;
-    switch (normalizedPreset) {
-      case "off" -> presetName = "Off";
-      case "light" -> presetName = "Light";
-      case "balanced" -> presetName = "Balanced";
-      case "high" -> presetName = "High";
-      default -> {
-        player.sendMessage(C.RED + "Unknown React profile: " + C.WHITE + preset);
-        return;
-      }
+    boolean valid = switch (normalizedPreset) {
+      case "off", "light", "balanced", "high" -> true;
+      default -> false;
+    };
+    if (!valid) {
+      return -1;
     }
 
     int updated = 0;
@@ -571,6 +563,25 @@ public final class ReactConfigGUI {
     if (enable && managedEnabledPath("dynamic-view-distance") != null) {
       updated += applyViewDistanceProfile(normalizedPreset);
     }
+
+    return updated;
+  }
+
+  private static void applyPreset(Player player, String preset) {
+    int updated = applyPresetHeadless(preset);
+    if (updated < 0) {
+      player.sendMessage(C.RED + "Unknown React profile: " + C.WHITE + preset);
+      return;
+    }
+
+    String normalizedPreset = preset == null ? "" : preset.trim().toLowerCase(Locale.ROOT);
+    String presetName = switch (normalizedPreset) {
+      case "off" -> "Off";
+      case "light" -> "Light";
+      case "balanced" -> "Balanced";
+      case "high" -> "High";
+      default -> throw new AssertionError("unreachable: applyPresetHeadless validated preset");
+    };
 
     player.sendMessage(C.GREEN + "Applied React profile: " + C.WHITE + presetName
         + C.GRAY + " (" + updated + " modules updated)");

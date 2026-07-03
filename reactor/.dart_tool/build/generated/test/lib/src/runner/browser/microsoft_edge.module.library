@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["test_core|lib/src/runner/configuration.dart","test|lib/src/runner/executable_settings.dart","test|lib/src/runner/browser/browser.dart","test|lib/src/runner/browser/chromium.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

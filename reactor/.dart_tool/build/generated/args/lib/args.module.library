@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["args|lib/src/arg_parser.dart","args|lib/src/arg_parser_exception.dart","args|lib/src/arg_results.dart","args|lib/src/option.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

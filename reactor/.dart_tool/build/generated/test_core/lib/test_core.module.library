@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["test_api|lib/hooks.dart","test_core|lib/scaffolding.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

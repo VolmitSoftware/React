@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["path|lib/path.dart","source_maps|lib/source_maps.dart","stack_trace|lib/stack_trace.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

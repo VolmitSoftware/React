@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["async|lib/async.dart","collection|lib/collection.dart","test_api|lib/src/backend/live_test.dart","test_api|lib/src/backend/state.dart","test_core|lib/src/runner/live_suite.dart","test_core|lib/src/runner/runner_suite.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async"],"hasMain":false}

@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["analyzer|lib/dart/ast/ast.dart","analyzer|lib/src/util/comment.dart","analyzer|lib/src/utilities/extensions/object.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

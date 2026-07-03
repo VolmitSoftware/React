@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["jaspr|lib/server.dart","arcane_jaspr|lib/component/collection/card_carousel.dart","arcane_jaspr|lib/component/collection/infinite_carousel.dart","arcane_jaspr|lib/component/form/field.dart","arcane_jaspr|lib/component/view/avatar.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

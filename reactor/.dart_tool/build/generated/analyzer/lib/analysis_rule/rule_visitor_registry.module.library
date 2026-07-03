@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["analyzer|lib/dart/ast/ast.dart","analyzer|lib/src/analysis_rule/rule_context.dart","meta|lib/meta.dart"],"parts":["analyzer|lib/analysis_rule/rule_visitor_registry.g.dart"],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

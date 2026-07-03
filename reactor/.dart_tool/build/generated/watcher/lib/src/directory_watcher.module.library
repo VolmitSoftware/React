@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["watcher|lib/watcher.dart","watcher|lib/src/custom_watcher_factory.dart","watcher|lib/src/directory_watcher/linux/linux_directory_watcher.dart","watcher|lib/src/directory_watcher/recursive/recursive_directory_watcher.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["io"],"hasMain":false}

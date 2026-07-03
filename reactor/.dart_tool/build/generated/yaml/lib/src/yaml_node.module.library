@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["collection|lib/collection.dart","source_span|lib/source_span.dart","yaml|lib/src/event.dart","yaml|lib/src/null_span.dart","yaml|lib/src/style.dart","yaml|lib/src/yaml_node_wrapper.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["collection"],"hasMain":false}

@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["arcane_jaspr|lib/service/auth_state.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async"],"hasMain":false}

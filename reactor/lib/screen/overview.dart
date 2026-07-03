@@ -1,0 +1,180 @@
+library;
+
+import 'package:arcane_jaspr/arcane_jaspr.dart';
+import 'package:jaspr/dom.dart' as dom;
+import 'package:jaspr/jaspr.dart' show Component;
+
+import '../model/sampler_sample.dart';
+import '../state/server_scope.dart';
+import '../ui/reactor_ui.dart';
+import '../widget/gauge.dart';
+import '../widget/section_card.dart';
+import '../widget/stat_tile.dart';
+
+class OverviewScreen extends StatelessWidget {
+  const OverviewScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final ServerScope? scope = ServerScope.of(context);
+    final SamplerSample? tps = scope?.snapshot?.sampler('ticks-per-second');
+    final SamplerSample? incidentScore =
+        scope?.snapshot?.sampler('incident-score');
+    final SamplerSample? tickTime = scope?.snapshot?.sampler('tick-time');
+    final SamplerSample? players = scope?.snapshot?.sampler('players');
+    final SamplerSample? entities = scope?.snapshot?.sampler('entities');
+    final SamplerSample? chunks = scope?.snapshot?.sampler('chunks');
+    final SamplerSample? memoryUsed = scope?.snapshot?.sampler('memory-used');
+    final SamplerSample? gcTimePercent =
+        scope?.snapshot?.sampler('gc-time-percent');
+
+    return ReactorPage(
+      title: 'Overview',
+      subtitle: 'Live server health and key runtime telemetry',
+      children: <Widget>[
+        SectionPanel(
+          label: 'Vitals',
+          child: _gaugeRow(
+            tps: tps,
+            incidentScore: incidentScore,
+            tickTime: tickTime,
+          ),
+        ),
+        statGrid(<Widget>[
+          StatTile(label: 'Players', sample: players),
+          StatTile(label: 'Entities', sample: entities),
+          StatTile(label: 'Chunks', sample: chunks),
+          StatTile(label: 'Memory Used', sample: memoryUsed),
+          StatTile(label: 'GC Time', sample: gcTimePercent),
+        ]),
+        _IncidentStrip(incidentScore: incidentScore),
+      ],
+    );
+  }
+
+  static Widget _gaugeRow({
+    required SamplerSample? tps,
+    required SamplerSample? incidentScore,
+    required SamplerSample? tickTime,
+  }) {
+    return dom.div(
+      styles: const dom.Styles(raw: <String, String>{
+        'display': 'flex',
+        'flex-wrap': 'wrap',
+        'gap': '1.5rem',
+        'justify-content': 'space-around',
+        'align-items': 'flex-start',
+        'padding': '0.5rem 0',
+      }),
+      <Widget>[
+        Gauge(
+          label: 'TPS',
+          value: tps?.value ?? 0.0,
+          display: tps?.display,
+          max: 20.0,
+          thresholds: (5.0, 10.0),
+          invertStatus: true,
+        ),
+        Gauge(
+          label: 'Incident Score',
+          value: incidentScore?.value ?? 0.0,
+          display: incidentScore?.display,
+          max: 100.0,
+          thresholds: (40.0, 70.0),
+        ),
+        Gauge(
+          label: 'Tick Time',
+          value: tickTime?.value ?? 0.0,
+          display: tickTime?.display,
+          max: 50.0,
+          thresholds: (10.0, 16.7),
+        ),
+      ],
+    );
+  }
+}
+
+class _IncidentStrip extends StatelessWidget {
+  final SamplerSample? incidentScore;
+
+  const _IncidentStrip({required this.incidentScore});
+
+  @override
+  Widget build(BuildContext context) {
+    final List<double> history = incidentScore?.history ?? const <double>[];
+    final double currentScore = incidentScore?.value ?? 0.0;
+    final GaugeStatus gStatus = Gauge.statusFor(currentScore, (40.0, 70.0));
+    final ReactorStatus status = switch (gStatus) {
+      GaugeStatus.success => ReactorStatus.healthy,
+      GaugeStatus.warning => ReactorStatus.warning,
+      GaugeStatus.error => ReactorStatus.critical,
+    };
+    final String statusLabel = switch (gStatus) {
+      GaugeStatus.success => 'Normal',
+      GaugeStatus.warning => 'Elevated',
+      GaugeStatus.error => 'Critical',
+    };
+    final String barColor = reactorStatusColor(status);
+
+    final Widget body = history.isEmpty
+        ? dom.div(
+            styles: const dom.Styles(raw: <String, String>{
+              'font-size': '0.85rem',
+              'color': kReactorMuted,
+              'padding': '0.5rem 0',
+            }),
+            <Widget>[Component.text('No incident history yet')],
+          )
+        : dom.div(
+            styles: const dom.Styles(raw: <String, String>{
+              'display': 'flex',
+              'gap': '3px',
+              'height': '56px',
+              'align-items': 'flex-end',
+            }),
+            <Widget>[
+              for (final double v in history)
+                _IncidentBar(value: v, max: 100.0, color: barColor),
+            ],
+          );
+
+    return MetricCard(
+      title: 'Incident Pressure',
+      value: currentScore.toStringAsFixed(0),
+      status: status,
+      badge: reactorBadge(statusLabel, status),
+      child: body,
+    );
+  }
+}
+
+class _IncidentBar extends StatelessWidget {
+  final double value;
+  final double max;
+  final String color;
+
+  const _IncidentBar({
+    required this.value,
+    required this.max,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final double fraction = max > 0.0 ? (value / max).clamp(0.0, 1.0) : 0.0;
+    final int heightPct = (fraction * 100).round().clamp(5, 100);
+
+    return dom.div(
+      styles: dom.Styles(raw: <String, String>{
+        'flex': '1',
+        'min-width': '3px',
+        'height': '$heightPct%',
+        'background': 'linear-gradient(to top, $color, '
+            'color-mix(in srgb, $color 55%, transparent))',
+        'border-radius': '2px',
+        'transition': 'height 200ms ease',
+      }),
+      const <Widget>[],
+    );
+  }
+}

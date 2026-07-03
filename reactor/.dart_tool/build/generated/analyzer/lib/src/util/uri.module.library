@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["analyzer|lib/src/generated/source.dart","analyzer|lib/src/summary/package_bundle_reader.dart","path|lib/path.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

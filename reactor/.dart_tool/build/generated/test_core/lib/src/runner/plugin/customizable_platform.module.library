@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["test_api|lib/src/backend/runtime.dart","yaml|lib/yaml.dart","test_core|lib/src/runner/platform.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

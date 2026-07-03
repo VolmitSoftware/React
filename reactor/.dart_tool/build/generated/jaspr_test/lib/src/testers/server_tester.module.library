@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["html|lib/dom.dart","html|lib/parser.dart","jaspr|lib/server.dart","meta|lib/meta.dart","test|lib/fake.dart","test|lib/test.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async","io"],"hasMain":false}

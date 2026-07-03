@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["arcane_jaspr|lib/flutter.dart","arcane_jaspr|lib/component/view/floating.dart","arcane_jaspr|lib/core/props/floating_props.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

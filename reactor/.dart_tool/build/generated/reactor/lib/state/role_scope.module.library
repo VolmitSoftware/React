@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["arcane_jaspr|lib/arcane_jaspr.dart","jaspr|lib/jaspr.dart","reactor|lib/model/role_info.dart","reactor|lib/service/react_client.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

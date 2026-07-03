@@ -50,6 +50,7 @@ public class CommandReact implements DirectorExecutor {
   private CommandIntegration integration;
   private CommandBridge bridge;
   private CommandTest test;
+  private CommandWeb web;
 
 
   @Director(

@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["package_config|lib/src/discovery.dart","package_config|lib/src/errors.dart","package_config|lib/src/package_config.dart","package_config|lib/src/package_config_io.dart","package_config|lib/package_config_types.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["io","typed_data"],"hasMain":false}

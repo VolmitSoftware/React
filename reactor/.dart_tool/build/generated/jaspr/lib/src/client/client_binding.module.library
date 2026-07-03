@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["universal_web|lib/js_interop.dart","universal_web|lib/web.dart","jaspr|lib/src/foundation/basic_types.dart","jaspr|lib/src/foundation/binding.dart","jaspr|lib/src/framework/framework.dart","jaspr|lib/src/client/dom_render_object.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async"],"hasMain":false}

@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["file|lib/file.dart","file|lib/src/common.dart","file|lib/src/io.dart","file|lib/src/backends/local/local_file_system_entity.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

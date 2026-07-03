@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["convert|lib/src/charcodes.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["convert","typed_data"],"hasMain":false}

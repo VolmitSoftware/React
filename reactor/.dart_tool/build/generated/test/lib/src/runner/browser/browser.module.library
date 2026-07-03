@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["test_core|lib/src/runner/application_exception.dart","test_core|lib/src/util/errors.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async","convert","io"],"hasMain":false}

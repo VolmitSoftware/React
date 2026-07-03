@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["http_parser|lib/http_parser.dart","shelf|lib/src/message.dart","shelf|lib/src/util.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["convert"],"hasMain":false}

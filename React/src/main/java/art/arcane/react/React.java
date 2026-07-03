@@ -241,7 +241,8 @@ public class React extends VolmitPlugin implements ReloadAware {
   }
 
   public static <T extends IController> T controller(Class<T> c) {
-    return instance.controllerRegistry.get(c);
+    Registry<IController> reg = instance.controllerRegistry;
+    return reg == null ? null : reg.get(c);
   }
 
   public static <T extends Action<?>> T action(Class<T> c) {
@@ -261,7 +262,8 @@ public class React extends VolmitPlugin implements ReloadAware {
   }
 
   public static <T extends IController> T controller(String c) {
-    return (T) instance.controllerRegistry.get(c);
+    Registry<IController> reg = instance.controllerRegistry;
+    return reg == null ? null : (T) reg.get(c);
   }
 
   public static <T extends Action<?>> T action(String c) {

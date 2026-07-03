@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["test|lib/test.dart","reactor|lib/model/control_item.dart","reactor|lib/model/knob.dart","reactor|lib/model/world_settings.dart","reactor|lib/service/react_client.dart","reactor|lib/service/react_exceptions.dart","reactor|lib/state/control_list_controller.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async"],"hasMain":true}

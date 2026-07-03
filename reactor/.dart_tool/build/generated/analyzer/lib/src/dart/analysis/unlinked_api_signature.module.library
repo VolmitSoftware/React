@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["analyzer|lib/dart/ast/token.dart","analyzer|lib/src/dart/ast/ast.dart","analyzer|lib/src/dart/ast/invokes_super_self.dart","analyzer|lib/src/dart/ast/mixin_super_invoked_names.dart","analyzer|lib/src/summary/api_signature.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["typed_data"],"hasMain":false}

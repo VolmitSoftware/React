@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["args|lib/args.dart","coverage|lib/src/coverage_options.dart","coverage|lib/src/util.dart","meta|lib/meta.dart","path|lib/path.dart","coverage|bin/collect_coverage.dart","coverage|bin/format_coverage.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async","io"],"hasMain":true}

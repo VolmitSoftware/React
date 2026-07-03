@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["collection|lib/collection.dart","http_parser|lib/http_parser.dart","shelf|lib/src/body.dart","shelf|lib/src/headers.dart","shelf|lib/src/shelf_unmodifiable_map.dart","shelf|lib/src/util.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async","convert"],"hasMain":false}

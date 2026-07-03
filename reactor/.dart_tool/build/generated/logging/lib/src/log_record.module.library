@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["logging|lib/src/level.dart","logging|lib/src/logger.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async"],"hasMain":false}

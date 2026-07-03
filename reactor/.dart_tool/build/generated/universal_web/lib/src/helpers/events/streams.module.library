@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["universal_web|lib/src/dom.dart","universal_web|lib/src/helpers.dart","universal_web|lib/src/js_interop.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async"],"hasMain":false}

@@ -23,6 +23,26 @@ class CommandTreeTest {
     assertExactPath(root, "test", "loadtest");
   }
 
+  @Test  void reactDirectorTreeResolvesWebPath() {
+    DirectorRuntimeNode root = reactRoot();
+    assertExactPath(root, "web");
+  }
+
+  @Test  void reactDirectorTreeResolvesWebPairPath() {
+    DirectorRuntimeNode root = reactRoot();
+    assertExactPath(root, "web", "pair");
+  }
+
+  @Test  void reactDirectorTreeResolvesWebListPath() {
+    DirectorRuntimeNode root = reactRoot();
+    assertExactPath(root, "web", "list");
+  }
+
+  @Test  void reactDirectorTreeResolvesWebRevokePath() {
+    DirectorRuntimeNode root = reactRoot();
+    assertExactPath(root, "web", "revoke");
+  }
+
   private static DirectorRuntimeNode reactRoot() {
     DirectorRuntimeEngine engine = DirectorEngineFactory.create(new CommandReact());
     return engine.getRoot();

@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["analyzer|lib/instrumentation/noop_service.dart","analyzer|lib/instrumentation/plugin_data.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

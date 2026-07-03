@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["analyzer|lib/file_system/file_system.dart","analyzer|lib/file_system/physical_file_system.dart","analyzer|lib/instrumentation/service.dart","watcher|lib/watcher.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async","io","isolate","math"],"hasMain":false}

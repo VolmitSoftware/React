@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["_fe_analyzer_shared|lib/src/scanner/token.dart","_fe_analyzer_shared|lib/src/messages/codes.dart","_fe_analyzer_shared|lib/src/messages/conversions.dart","_fe_analyzer_shared|lib/src/messages/severity.dart"],"parts":["_fe_analyzer_shared|lib/src/messages/diagnostic.g.dart"],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

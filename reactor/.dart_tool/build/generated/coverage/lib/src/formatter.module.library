@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["glob|lib/glob.dart","path|lib/path.dart","coverage|lib/src/hitmap.dart","coverage|lib/src/resolver.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

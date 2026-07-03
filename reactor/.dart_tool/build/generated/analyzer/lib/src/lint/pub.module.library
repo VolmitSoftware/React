@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["analyzer|lib/analysis_rule/pubspec.dart","analyzer|lib/file_system/file_system.dart","analyzer|lib/file_system/physical_file_system.dart","analyzer|lib/source/file_source.dart","analyzer|lib/source/source.dart","source_span|lib/source_span.dart","yaml|lib/yaml.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

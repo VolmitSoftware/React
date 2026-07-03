@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["arcane_jaspr|lib/component/form/field.dart","arcane_jaspr|lib/component/form/field_wrapper.dart","arcane_jaspr|lib/component/form/provider.dart","arcane_jaspr|lib/component/input/text_input.dart","arcane_jaspr|lib/flutter.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

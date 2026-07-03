@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["analyzer|lib/src/dart/element/element.dart","analyzer|lib/src/summary2/combinator.dart","analyzer|lib/src/summary2/library_builder.dart","analyzer|lib/src/summary2/reference.dart","analyzer|lib/src/utilities/extensions/collection.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

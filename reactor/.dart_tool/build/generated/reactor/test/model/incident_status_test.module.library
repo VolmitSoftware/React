@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["test|lib/test.dart","reactor|lib/model/incident_status.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":true}

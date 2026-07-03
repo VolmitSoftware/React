@@ -1,0 +1,1 @@
+{"isEntrypoint":false,"deps":["analyzer|lib/dart/analysis/results.dart","analyzer|lib/dart/analysis/session.dart","analyzer|lib/dart/element/element.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

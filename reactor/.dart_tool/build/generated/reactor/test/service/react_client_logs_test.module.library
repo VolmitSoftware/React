@@ -1,0 +1,1 @@
+{"isEntrypoint":true,"deps":["http|lib/http.dart","http|lib/testing.dart","test|lib/test.dart","reactor|lib/model/server_credential.dart","reactor|lib/service/react_client.dart","reactor|lib/service/react_exceptions.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["convert"],"hasMain":true}
