@@ -28,6 +28,7 @@ import art.arcane.react.core.controller.ObserverController;
 import art.arcane.react.model.SampledChunk;
 import art.arcane.react.model.SampledWorld;
 import art.arcane.react.util.common.scheduling.J;
+import art.arcane.volmlib.util.entity.StackExclusion;
 import art.arcane.volmlib.util.format.Form;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -251,6 +252,10 @@ public class ActionQuarantineHotChunks extends ReactAction<ActionQuarantineHotCh
     }
 
     if (entity.getTicksLived() < params.getMinEntityAgeTicks()) {
+      return false;
+    }
+
+    if (StackExclusion.isExcluded(entity)) {
       return false;
     }
 

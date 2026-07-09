@@ -27,6 +27,7 @@ import art.arcane.react.core.controller.ActionController;
 import art.arcane.react.model.AreaActionParams;
 import art.arcane.react.model.FilterParams;
 import art.arcane.react.util.common.scheduling.J;
+import art.arcane.volmlib.util.entity.StackExclusion;
 import art.arcane.volmlib.util.format.Form;
 import art.arcane.volmlib.util.math.Spiraler;
 import lombok.AllArgsConstructor;
@@ -159,6 +160,10 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
         int removed = 0;
         for (Entity entity : loadedChunk.getEntities()) {
           if (!params.getEntityFilter().allows(entity.getType())) {
+            continue;
+          }
+
+          if (StackExclusion.isExcluded(entity)) {
             continue;
           }
 

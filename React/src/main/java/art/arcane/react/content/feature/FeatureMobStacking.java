@@ -29,6 +29,7 @@ import art.arcane.react.core.controller.EntityController;
 import art.arcane.react.model.ReactEntity;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.project.world.CustomMobChecker;
+import art.arcane.volmlib.util.entity.StackExclusion;
 import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -334,6 +335,10 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
       return false;
     }
 
+    if (StackExclusion.isExcluded(a) || StackExclusion.isExcluded(into)) {
+      return false;
+    }
+
     // Check if entities are stackable via spawn reason
     if (onlySpawnerMobs && (!a.hasMetadata("SpawnedBySpawner") || !into.hasMetadata("SpawnedBySpawner"))) {
       return false;
@@ -397,7 +402,7 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
   }
 
   public void onTick(Entity entity) {
-    if (entity == null || entity.isDead()) {
+    if (entity == null || entity.isDead() || StackExclusion.isExcluded(entity)) {
       return;
     }
 

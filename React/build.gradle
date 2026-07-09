@@ -103,10 +103,15 @@ tasks.named('processResources').configure {
 
 repositories {
     mavenCentral()
-    maven { url = uri('https://www.jitpack.io') }
+    maven {
+        url = uri('https://www.jitpack.io')
+        content { includeGroupByRegex 'com\\.github\\..*' }
+    }
     maven { url = uri('https://repo.papermc.io/repository/maven-public/') }
-    maven { url = uri('https://mvn.lumine.io/repository/maven-public/') }
-    maven { url = uri('https://repo.extendedclip.com/content/repositories/placeholderapi/') }
+    maven {
+        url = uri('https://repo.extendedclip.com/content/repositories/placeholderapi/')
+        content { includeGroup 'me.clip' }
+    }
 }
 
 configurations.configureEach {

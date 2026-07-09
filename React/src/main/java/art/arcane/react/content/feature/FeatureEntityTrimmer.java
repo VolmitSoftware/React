@@ -25,6 +25,7 @@ import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.model.ReactEntity;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.project.world.CustomMobChecker;
+import art.arcane.volmlib.util.entity.StackExclusion;
 import art.arcane.volmlib.util.math.M;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -360,6 +361,10 @@ public class FeatureEntityTrimmer extends ReactFeature implements Listener {
     }
 
     if (blacklist.contains(entity.getType())) {
+      return false;
+    }
+
+    if (StackExclusion.isExcluded(entity)) {
       return false;
     }
 

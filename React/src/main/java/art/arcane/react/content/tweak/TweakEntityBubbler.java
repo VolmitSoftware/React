@@ -23,6 +23,7 @@ import art.arcane.react.React;
 import art.arcane.react.api.tweak.ReactTweak;
 import art.arcane.react.core.controller.EntityController;
 import art.arcane.react.util.common.scheduling.J;
+import art.arcane.volmlib.util.entity.StackExclusion;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -70,6 +71,10 @@ public class TweakEntityBubbler extends ReactTweak implements Listener {
    * Checks if the entity is crowded
    */
   public void onCrowdCheck(Entity entity) {
+    if (StackExclusion.isExcluded(entity)) {
+      return;
+    }
+
     // Get the crowding factor of the entity when its ticked
     // If the entity is being bubbled, kill it
     if (isEntityBubbled(entity)) {

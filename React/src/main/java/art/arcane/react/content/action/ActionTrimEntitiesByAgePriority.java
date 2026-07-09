@@ -30,6 +30,7 @@ import art.arcane.react.model.ReactEntity;
 import art.arcane.react.model.SampledChunk;
 import art.arcane.react.model.SampledWorld;
 import art.arcane.react.util.common.scheduling.J;
+import art.arcane.volmlib.util.entity.StackExclusion;
 import art.arcane.volmlib.util.format.Form;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -332,6 +333,10 @@ public class ActionTrimEntitiesByAgePriority extends ReactAction<ActionTrimEntit
     }
 
     if (PROTECTED_TYPES.contains(entity.getType())) {
+      return false;
+    }
+
+    if (StackExclusion.isExcluded(entity)) {
       return false;
     }
 
