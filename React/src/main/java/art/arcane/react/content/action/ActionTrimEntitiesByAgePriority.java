@@ -30,6 +30,7 @@ import art.arcane.react.model.ReactEntity;
 import art.arcane.react.model.SampledChunk;
 import art.arcane.react.model.SampledWorld;
 import art.arcane.react.util.common.scheduling.J;
+import art.arcane.volmlib.util.bukkit.WorldIdentity;
 import art.arcane.volmlib.util.entity.StackExclusion;
 import art.arcane.volmlib.util.format.Form;
 import lombok.AllArgsConstructor;
@@ -188,7 +189,7 @@ public class ActionTrimEntitiesByAgePriority extends ReactAction<ActionTrimEntit
         continue;
       }
 
-      if (params.getWorld() != null && !params.getWorld().isBlank() && !world.getName().equalsIgnoreCase(params.getWorld())) {
+      if (params.getWorld() != null && !params.getWorld().isBlank() && !WorldIdentity.serialize(world).equals(params.getWorld())) {
         continue;
       }
 
@@ -211,7 +212,7 @@ public class ActionTrimEntitiesByAgePriority extends ReactAction<ActionTrimEntit
   }
 
   private void dispatchChunkTrim(ChunkRef ref, Params params) {
-    World world = Bukkit.getWorld(ref.world());
+    World world = WorldIdentity.resolve(ref.world()).orElse(null);
     if (world == null) {
       params.getChunksProcessedAtomic().incrementAndGet();
       return;
@@ -265,7 +266,7 @@ public class ActionTrimEntitiesByAgePriority extends ReactAction<ActionTrimEntit
   }
 
   private int trimChunkSync(ChunkRef ref, Params params, int remaining) {
-    World world = Bukkit.getWorld(ref.world());
+    World world = WorldIdentity.resolve(ref.world()).orElse(null);
     if (world == null || !world.isChunkLoaded(ref.x(), ref.z()) || remaining <= 0) {
       return 0;
     }
@@ -399,7 +400,7 @@ public class ActionTrimEntitiesByAgePriority extends ReactAction<ActionTrimEntit
 
   private record ChunkRef(String world, int x, int z) {
     private static ChunkRef of(Chunk chunk) {
-      return new ChunkRef(chunk.getWorld().getName(), chunk.getX(), chunk.getZ());
+      return new ChunkRef(WorldIdentity.serialize(chunk.getWorld()), chunk.getX(), chunk.getZ());
     }
   }
 
@@ -466,7 +467,7 @@ public class ActionTrimEntitiesByAgePriority extends ReactAction<ActionTrimEntit
 
     public Params withWorld(World world) {
       if (world != null) {
-        this.world = world.getName();
+        this.world = WorldIdentity.serialize(world);
       }
       return this;
     }

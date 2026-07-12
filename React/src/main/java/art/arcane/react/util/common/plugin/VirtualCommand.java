@@ -20,7 +20,6 @@
 package art.arcane.react.util.plugin;
 
 
-import art.arcane.react.React;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.format.C;
 import art.arcane.volmlib.util.collection.KList;
@@ -112,7 +111,7 @@ public class VirtualCommand {
           c.remove(0);
           if (cmd.hit(sender, c, vs.getCommand())) {
             if (vs.isPlayer()) {
-              React.audiences.player(vs.player()).playSound(Sound.sound(
+              vs.player().playSound(Sound.sound(
                   Key.key("minecraft:item.axe.strip"),
                   Sound.Source.PLAYER,
                   0.35f,

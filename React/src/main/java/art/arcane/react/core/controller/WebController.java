@@ -387,9 +387,9 @@ public class WebController implements IController {
                 if (config.isRequireTokenForReads()) {
                     javalin.before("/api/v1/worlds", auth);
                 }
-                javalin.before("/api/v1/worlds/{name}", auth);
+                javalin.before("/api/v1/worlds/update", auth);
                 javalin.get("/api/v1/worlds", worldResource::list);
-                javalin.put("/api/v1/worlds/{name}", worldResource::update);
+                javalin.put("/api/v1/worlds/update", worldResource::update);
                 if (auditLog == null) {
                     auditLog = new AuditLog(resolveDataFolder());
                 }

@@ -34,8 +34,6 @@ import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.title.Title;
 import net.kyori.adventure.title.TitlePart;
-import net.md_5.bungee.api.ChatMessageType;
-import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.IllegalPluginAccessException;
 
@@ -109,9 +107,9 @@ public class ActionBarMonitor extends PlayerMonitor {
     running = false;
     Player player = getPlayer().getPlayer();
     Runnable clearUi = () -> {
-      player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(" "));
-      React.audiences.player(player).sendTitlePart(TitlePart.TITLE, Component.space());
-      React.audiences.player(player).sendTitlePart(TitlePart.SUBTITLE, Component.space());
+      player.sendActionBar(Component.space());
+      player.sendTitlePart(TitlePart.TITLE, Component.space());
+      player.sendTitlePart(TitlePart.SUBTITLE, Component.space());
     };
 
     try {
@@ -444,23 +442,23 @@ public class ActionBarMonitor extends PlayerMonitor {
 
       Duration stay = Duration.ofMillis(((int) ((getTinterval() / 50) + 3)) * 50L);
       Duration fadeOut = Duration.ofMillis(20 * 50);
-      React.audiences.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.TIMES, Title.Times.times(Duration.ZERO, stay, fadeOut));
+      getPlayer().getPlayer().sendTitlePart(TitlePart.TIMES, Title.Times.times(Duration.ZERO, stay, fadeOut));
 
       if (focusUpAnimation >= -10) {
         if (focusUpAnimation > 0) {
-          React.audiences.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.TITLE, writeHeaderTitle(focus));
+          getPlayer().getPlayer().sendTitlePart(TitlePart.TITLE, writeHeaderTitle(focus));
         } else {
-          React.audiences.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.TITLE, Component.space());
+          getPlayer().getPlayer().sendTitlePart(TitlePart.TITLE, Component.space());
         }
 
         focusUpAnimation--;
       }
 
-      React.audiences.player(getPlayer().getPlayer()).sendTitlePart(TitlePart.SUBTITLE, writeSubSamplers());
+      getPlayer().getPlayer().sendTitlePart(TitlePart.SUBTITLE, writeSubSamplers());
     } else if (focusDownAnimation) {
       getPlayer().getPlayer().sendTitle(" ", "  ", 0, (int) ((getTinterval() / 50) + 1), 17);
     }
 
-    React.audiences.player(getPlayer().getPlayer()).sendActionBar(writeHeader());
+    getPlayer().getPlayer().sendActionBar(writeHeader());
   }
 }

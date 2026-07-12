@@ -20,7 +20,6 @@
 package art.arcane.react.util.plugin;
 
 
-import art.arcane.react.React;
 import art.arcane.react.util.format.C;
 import art.arcane.volmlib.util.collection.KList;
 import net.kyori.adventure.key.Key;
@@ -75,7 +74,7 @@ public abstract class MortarCommand implements ICommand {
     }
 
     if (sender.isPlayer()) {
-      React.audiences.player(sender.player()).playSound(Sound.sound(
+      sender.player().playSound(Sound.sound(
           Key.key("minecraft:entity.item_frame.rotate_item"),
           Sound.Source.PLAYER,
           0.25f,
@@ -107,13 +106,13 @@ public abstract class MortarCommand implements ICommand {
     }
 
     if (sender.isPlayer()) {
-      React.audiences.player(sender.player()).playSound(Sound.sound(
+      sender.player().playSound(Sound.sound(
           Key.key("minecraft:item.book.page_turn"),
           Sound.Source.PLAYER,
           0.28f,
           1.4f
       ));
-      React.audiences.player(sender.player()).playSound(Sound.sound(
+      sender.player().playSound(Sound.sound(
           Key.key("minecraft:item.axe.strip"),
           Sound.Source.PLAYER,
           0.35f,

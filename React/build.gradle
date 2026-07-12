@@ -123,9 +123,9 @@ dependencies {
     // Provided or Classpath
     compileOnly('org.projectlombok:lombok:1.18.44')
     annotationProcessor('org.projectlombok:lombok:1.18.44')
-    compileOnly('org.spigotmc:spigot-api:26.2-R0.1-SNAPSHOT')
+    compileOnly('io.papermc.paper:paper-api:26.2.build.60-beta')
     compileOnly('io.papermc:paperlib:1.0.7')
-    testImplementation('org.spigotmc:spigot-api:26.2-R0.1-SNAPSHOT')
+    testImplementation('io.papermc.paper:paper-api:26.2.build.60-beta')
 
     // Bridge API interfaces shared with NMS submodule
     implementation(project(':bridge-api'))
@@ -155,10 +155,6 @@ dependencies {
     compileOnly('me.clip:placeholderapi:2.11.6')
 
     // Dynamically loaded
-    compileOnly('net.kyori:adventure-text-minimessage:5.1.1')
-    slim('net.kyori:adventure-text-minimessage:5.1.1')
-    compileOnly('net.kyori:adventure-platform-bukkit:4.4.1')
-    slim('net.kyori:adventure-platform-bukkit:4.4.1')
     compileOnly('com.github.oshi:oshi-core:5.8.5')
     slim('com.github.oshi:oshi-core:5.8.5')
     compileOnly('com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru:1.4.2')
@@ -167,13 +163,14 @@ dependencies {
     slim('com.github.ben-manes.caffeine:caffeine:3.0.6')
 
     // Provided by Paper
-    compileOnly('net.kyori:adventure-api:5.1.1')
     compileOnly('it.unimi.dsi:fastutil:8.5.8')
     compileOnly('org.apache.commons:commons-lang3:3.12.0')
     compileOnly('com.google.code.gson:gson:2.10')
     compileOnly('io.netty:netty-transport:4.1.92.Final')
 
     testImplementation('io.javalin:javalin:6.4.0')
+    testImplementation('net.kyori:adventure-text-minimessage:5.1.1')
+    testImplementation('net.kyori:adventure-text-serializer-legacy:5.1.1')
     testImplementation('org.junit.jupiter:junit-jupiter:5.11.4')
     testRuntimeOnly('org.junit.platform:junit-platform-launcher:1.11.4')
     testImplementation('org.mockito:mockito-core:5.18.0')

@@ -44,6 +44,7 @@ import art.arcane.react.core.controller.FeatureController;
 import art.arcane.react.core.controller.SampleController;
 import art.arcane.react.core.controller.TweakController;
 import art.arcane.react.model.AreaActionParams;
+import art.arcane.volmlib.util.bukkit.WorldIdentity;
 import art.arcane.react.nms.NmsBridge;
 import art.arcane.react.nms.NmsBridges;
 import art.arcane.react.util.common.scheduling.J;
@@ -448,7 +449,7 @@ public class CommandDev implements DirectorExecutor {
         purgeEntitiesParams.setArea(area);
       }
 
-      area.setWorld(world.getName());
+      area.setWorld(WorldIdentity.serialize(world));
       area.setChunks(collectLoadedChunks(world, executingPlayer.getLocation().getChunk().getX(), executingPlayer.getLocation().getChunk().getZ(), radius));
       area.setAllChunks(false);
       return purgeEntitiesParams;
@@ -461,7 +462,7 @@ public class CommandDev implements DirectorExecutor {
         purgeChunksParams.setArea(area);
       }
 
-      area.setWorld(world.getName());
+      area.setWorld(WorldIdentity.serialize(world));
       area.setChunks(collectLoadedChunks(world, executingPlayer.getLocation().getChunk().getX(), executingPlayer.getLocation().getChunk().getZ(), radius));
       area.setAllChunks(false);
       return purgeChunksParams;

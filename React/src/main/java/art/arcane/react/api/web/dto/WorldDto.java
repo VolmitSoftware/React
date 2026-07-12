@@ -1,6 +1,7 @@
 package art.arcane.react.api.web.dto;
 
 public class WorldDto {
+    public String key;
     public String name;
     public String pressureMode;
     public double budgetMs;

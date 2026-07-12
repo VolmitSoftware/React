@@ -15,6 +15,7 @@ class AdaptiveSleepDecisionTest {
     if (React.instance == null) {
       React react = Mockito.mock(React.class);
       Mockito.when(react.getName()).thenReturn("react");
+      Mockito.when(react.namespace()).thenReturn("react");
       React.instance = react;
     }
   }

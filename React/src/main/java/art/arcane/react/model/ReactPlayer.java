@@ -19,6 +19,7 @@
 
 package art.arcane.react.model;
 
+import art.arcane.volmlib.util.bukkit.WorldIdentity;
 import art.arcane.chrono.ChronoLatch;
 import art.arcane.react.React;
 import art.arcane.react.api.monitor.ActionBarMonitor;
@@ -133,7 +134,7 @@ public class ReactPlayer extends TickedObject {
         yawPosition = 1000000;
       }
 
-      if (e.getFrom().getWorld().getName().equals(e.getTo().getWorld().getName())) {
+      if (WorldIdentity.key(e.getFrom().getWorld()).equals(WorldIdentity.key(e.getTo().getWorld()))) {
         velocity = e.getTo().toVector().subtract(e.getFrom().toVector()).clone().add(velocity);
       }
     }

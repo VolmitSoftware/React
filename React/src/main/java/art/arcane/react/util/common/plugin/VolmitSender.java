@@ -20,7 +20,6 @@
 package art.arcane.react.util.plugin;
 
 
-import art.arcane.react.React;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.format.C;
 import art.arcane.volmlib.util.collection.KList;
@@ -162,6 +161,11 @@ public class VolmitSender implements CommandSender {
   }
 
   @Override
+  public Component name() {
+    return s.name();
+  }
+
+  @Override
   public boolean isPermissionSet(String name) {
     return s.isPermissionSet(name);
   }
@@ -231,7 +235,7 @@ public class VolmitSender implements CommandSender {
   }
 
   public void sendTitle(String title, String subtitle, int i, int s, int o) {
-    React.audiences.player(player()).showTitle(Title.title(
+    player().showTitle(Title.title(
         createComponent(title),
         createComponent(subtitle),
         Title.Times.times(Duration.ofMillis(i), Duration.ofMillis(s), Duration.ofMillis(o))));
@@ -253,15 +257,15 @@ public class VolmitSender implements CommandSender {
   }
 
   public void sendAction(String action) {
-    React.audiences.player(player()).sendActionBar(createNoPrefixComponent(action));
+    player().sendActionBar(createNoPrefixComponent(action));
   }
 
   public void sendActionNoProcessing(String action) {
-    React.audiences.player(player()).sendActionBar(createNoPrefixComponentNoProcessing(action));
+    player().sendActionBar(createNoPrefixComponentNoProcessing(action));
   }
 
   public void sendTitle(String subtitle, int i, int s, int o) {
-    React.audiences.player(player()).showTitle(Title.title(
+    player().showTitle(Title.title(
         createNoPrefixComponent(" "),
         createNoPrefixComponent(subtitle),
         Title.Times.times(Duration.ofMillis(i), Duration.ofMillis(s), Duration.ofMillis(o))));

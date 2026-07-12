@@ -2,6 +2,7 @@ package art.arcane.react.testutil;
 
 import org.bukkit.Chunk;
 import org.bukkit.Location;
+import org.bukkit.NamespacedKey;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.mockito.Mockito;
@@ -16,6 +17,7 @@ public final class Fakes {
     World world = Mockito.mock(World.class);
     UUID uid = UUID.randomUUID();
     Mockito.when(world.getName()).thenReturn(name);
+    Mockito.when(world.getKey()).thenReturn(new NamespacedKey("test", name.toLowerCase().replaceAll("[^a-z0-9/._-]", "_")));
     Mockito.when(world.getUID()).thenReturn(uid);
     Mockito.when(world.isAutoSave()).thenReturn(true);
     return world;

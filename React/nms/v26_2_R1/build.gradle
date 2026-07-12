@@ -3,7 +3,7 @@ apply plugin: 'java'
 Class nmsTypeClass = Class.forName('NMSBinding$Type')
 def nmsConfig = new Config()
 nmsConfig.jvm = 25
-nmsConfig.version = '26.2.build.25-alpha'
+nmsConfig.version = '26.2.build.60-beta'
 nmsConfig.type = Enum.valueOf(nmsTypeClass, 'USER_DEV')
 extensions.extraProperties.set('nms', nmsConfig)
 plugins.apply(NMSBinding)

@@ -166,7 +166,7 @@ public class DirectorCommandController implements IController, CommandExecutor, 
     List<String> v = runDirectorTab(sender, alias, args);
 
     if (sender instanceof Player) {
-      React.audiences.sender(sender).playSound(Sound.sound(
+      sender.playSound(Sound.sound(
           Key.key("minecraft:block.amethyst_block.chime"),
           Sound.Source.PLAYER,
           0.25f,
@@ -318,13 +318,13 @@ public class DirectorCommandController implements IController, CommandExecutor, 
 
   private void playFailureSound(CommandSender sender) {
     if (sender instanceof Player) {
-      React.audiences.sender(sender).playSound(Sound.sound(
+      sender.playSound(Sound.sound(
           Key.key("minecraft:block.respawn_anchor.deplete"),
           Sound.Source.PLAYER,
           0.77f,
           0.25f
       ));
-      React.audiences.sender(sender).playSound(Sound.sound(
+      sender.playSound(Sound.sound(
           Key.key("minecraft:block.beacon.deactivate"),
           Sound.Source.PLAYER,
           0.2f,
@@ -335,13 +335,13 @@ public class DirectorCommandController implements IController, CommandExecutor, 
 
   private void playSuccessSound(CommandSender sender) {
     if (sender instanceof Player) {
-      React.audiences.sender(sender).playSound(Sound.sound(
+      sender.playSound(Sound.sound(
           Key.key("minecraft:block.amethyst_cluster.break"),
           Sound.Source.PLAYER,
           0.77f,
           1.65f
       ));
-      React.audiences.sender(sender).playSound(Sound.sound(
+      sender.playSound(Sound.sound(
           Key.key("minecraft:block.respawn_anchor.charge"),
           Sound.Source.PLAYER,
           0.125f,

@@ -45,7 +45,6 @@ import art.arcane.volmlib.util.format.Form;
 import art.arcane.volmlib.util.io.JarScanner;
 import io.github.slimjar.app.builder.SpigotApplicationBuilder;
 import lombok.Getter;
-import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
@@ -63,8 +62,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class React extends VolmitPlugin implements ReloadAware {
   private final AtomicBoolean alreadyDrained = new AtomicBoolean(false);
   private static final boolean SLIMJAR_DEBUG = Boolean.getBoolean("react.debug-slimjar");
-  private static final boolean DISABLE_REMAPPER = Boolean.getBoolean("react.disable-remapper");
-  public static BukkitAudiences audiences;
   public static React instance;
   public static Thread serverThread;
   public static Ticker ticker;
@@ -85,12 +82,8 @@ public class React extends VolmitPlugin implements ReloadAware {
     getLogger().info("Loading libraries...");
     new SpigotApplicationBuilder(this)
         .debug(SLIMJAR_DEBUG)
-        .remap(!DISABLE_REMAPPER)
         .build();
     long libraryLoadElapsed = System.currentTimeMillis() - libraryLoadStart;
-    if (DISABLE_REMAPPER) {
-      getLogger().warning("SlimJar remapper disabled via -Dreact.disable-remapper=true.");
-    }
     getLogger().info("Libraries loaded. (" + libraryLoadElapsed + "ms)");
   }
 
@@ -309,7 +302,6 @@ public class React extends VolmitPlugin implements ReloadAware {
     prejobs = new CopyOnWriteArrayList<>();
     burst = new MultiBurst("React", Thread.MIN_PRIORITY);
     ticker = new Ticker();
-    audiences = BukkitAudiences.create(this);
     bridgeRegistry = new NmsBridgeRegistry();
     bridgeRegistry.setMappingsLoader(new art.arcane.react.core.bridge.MappingsLoader());
     if (ReactConfiguration.get().isUnsafeBytecode()) {

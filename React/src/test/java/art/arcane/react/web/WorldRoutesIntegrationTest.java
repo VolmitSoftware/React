@@ -122,6 +122,7 @@ public class WorldRoutesIntegrationTest {
         assertEquals(fakeWorldBackend.list().size(), listData.size(),
             "data array length should match fake backend world count");
         JsonObject firstWorld = listData.get(0).getAsJsonObject();
+        assertTrue(firstWorld.has("key"), "world entry should have key");
         assertTrue(firstWorld.has("name"), "world entry should have name");
         assertTrue(firstWorld.has("pressureMode"), "world entry should have pressureMode");
         assertTrue(firstWorld.has("budgetMs"), "world entry should have budgetMs");
@@ -130,15 +131,15 @@ public class WorldRoutesIntegrationTest {
 
         long c1 = opCounter.incrementAndGet();
         HttpRequest putRequest = HttpRequest.newBuilder()
-            .uri(URI.create("http://127.0.0.1:" + port + "/api/v1/worlds/world"))
+            .uri(URI.create("http://127.0.0.1:" + port + "/api/v1/worlds/update"))
             .header("Authorization", "Bearer " + opBearer)
             .header("X-React-Counter", String.valueOf(c1))
             .header("Content-Type", "application/json")
-            .PUT(HttpRequest.BodyPublishers.ofString("{\"budgetMs\":40}"))
+            .PUT(HttpRequest.BodyPublishers.ofString("{\"worldKey\":\"test:world/path\",\"budgetMs\":40}"))
             .build();
         HttpResponse<String> putResponse = client.send(putRequest, HttpResponse.BodyHandlers.ofString());
         assertEquals(200, putResponse.statusCode(),
-            "PUT /api/v1/worlds/{name} with op token should return 200, body: " + putResponse.body());
+            "PUT /api/v1/worlds/update with op token should return 200, body: " + putResponse.body());
         JsonObject putRoot = JsonParser.parseString(putResponse.body()).getAsJsonObject();
         JsonObject putData = putRoot.getAsJsonObject("data");
         assertNotNull(putData, "Response should contain 'data' object");
@@ -148,39 +149,39 @@ public class WorldRoutesIntegrationTest {
 
         long c2 = opCounter.incrementAndGet();
         HttpRequest putUnknownRequest = HttpRequest.newBuilder()
-            .uri(URI.create("http://127.0.0.1:" + port + "/api/v1/worlds/no-such-world"))
+            .uri(URI.create("http://127.0.0.1:" + port + "/api/v1/worlds/update"))
             .header("Authorization", "Bearer " + opBearer)
             .header("X-React-Counter", String.valueOf(c2))
             .header("Content-Type", "application/json")
-            .PUT(HttpRequest.BodyPublishers.ofString("{\"budgetMs\":40}"))
+            .PUT(HttpRequest.BodyPublishers.ofString("{\"worldKey\":\"test:no/such/world\",\"budgetMs\":40}"))
             .build();
         HttpResponse<String> putUnknownResponse = client.send(putUnknownRequest, HttpResponse.BodyHandlers.ofString());
         assertEquals(404, putUnknownResponse.statusCode(),
-            "PUT /api/v1/worlds/{unknown} should return 404, body: " + putUnknownResponse.body());
+            "PUT /api/v1/worlds/update with an unknown key should return 404, body: " + putUnknownResponse.body());
         JsonObject notFoundBody = JsonParser.parseString(putUnknownResponse.body()).getAsJsonObject();
         assertTrue(notFoundBody.has("error"), "404 body must have 'error' object");
         assertNotNull(notFoundBody.getAsJsonObject("error").get("message"), "error must have 'message'");
 
         long c3 = opCounter.incrementAndGet();
         HttpRequest putReadRequest = HttpRequest.newBuilder()
-            .uri(URI.create("http://127.0.0.1:" + port + "/api/v1/worlds/world"))
+            .uri(URI.create("http://127.0.0.1:" + port + "/api/v1/worlds/update"))
             .header("Authorization", "Bearer " + readBearer)
             .header("X-React-Counter", String.valueOf(c3))
             .header("Content-Type", "application/json")
-            .PUT(HttpRequest.BodyPublishers.ofString("{\"budgetMs\":40}"))
+            .PUT(HttpRequest.BodyPublishers.ofString("{\"worldKey\":\"test:world/path\",\"budgetMs\":40}"))
             .build();
         HttpResponse<String> putReadResponse = client.send(putReadRequest, HttpResponse.BodyHandlers.ofString());
         assertEquals(403, putReadResponse.statusCode(),
-            "PUT /api/v1/worlds/{name} with read-only token should return 403, body: " + putReadResponse.body());
+            "PUT /api/v1/worlds/update with read-only token should return 403, body: " + putReadResponse.body());
         JsonObject forbiddenBody = JsonParser.parseString(putReadResponse.body()).getAsJsonObject();
         assertTrue(forbiddenBody.has("error"), "403 body must have 'error' object");
         assertNotNull(forbiddenBody.getAsJsonObject("error").get("message"), "error must have 'message'");
 
         HttpRequest noCounterRequest = HttpRequest.newBuilder()
-            .uri(URI.create("http://127.0.0.1:" + port + "/api/v1/worlds/world"))
+            .uri(URI.create("http://127.0.0.1:" + port + "/api/v1/worlds/update"))
             .header("Authorization", "Bearer " + opBearer)
             .header("Content-Type", "application/json")
-            .PUT(HttpRequest.BodyPublishers.ofString("{\"budgetMs\":40}"))
+            .PUT(HttpRequest.BodyPublishers.ofString("{\"worldKey\":\"test:world/path\",\"budgetMs\":40}"))
             .build();
         HttpResponse<String> noCounterResponse = client.send(noCounterRequest, HttpResponse.BodyHandlers.ofString());
         assertEquals(409, noCounterResponse.statusCode(),
@@ -196,6 +197,7 @@ public class WorldRoutesIntegrationTest {
 
         FakeWorldBackend() {
             WorldDto w = new WorldDto();
+            w.key = "test:world/path";
             w.name = "world";
             w.pressureMode = "NORMAL";
             w.budgetMs = 35.0;
@@ -210,9 +212,9 @@ public class WorldRoutesIntegrationTest {
         }
 
         @Override
-        public WorldDto update(String name, Double budgetMs, Double panicMs, Double releaseMs) {
+        public WorldDto update(String worldKey, Double budgetMs, Double panicMs, Double releaseMs) {
             for (WorldDto w : worlds) {
-                if (w.name.equals(name)) {
+                if (w.key.equals(worldKey)) {
                     if (budgetMs != null) {
                         w.budgetMs = budgetMs;
                     }

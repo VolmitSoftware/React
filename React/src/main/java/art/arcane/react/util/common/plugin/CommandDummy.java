@@ -19,6 +19,7 @@
 
 package art.arcane.react.util.plugin;
 
+import net.kyori.adventure.text.Component;
 import org.bukkit.Server;
 import org.bukkit.command.CommandSender;
 import org.bukkit.permissions.Permission;
@@ -32,6 +33,11 @@ import java.util.Set;
 import java.util.UUID;
 
 public class CommandDummy implements CommandSender {
+  @Override
+  public Component name() {
+    return Component.empty();
+  }
+
   @Override
   public void sendMessage(@NotNull String message) {
 

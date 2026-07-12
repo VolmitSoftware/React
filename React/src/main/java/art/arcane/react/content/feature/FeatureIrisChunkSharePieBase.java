@@ -2,6 +2,7 @@ package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
 import art.arcane.react.api.feature.ReactFeature;
+import art.arcane.volmlib.util.bukkit.WorldIdentity;
 import art.arcane.react.api.rendering.ReactRenderer;
 import art.arcane.react.core.controller.MapController;
 import art.arcane.react.util.data.TinyColor;
@@ -130,7 +131,7 @@ abstract class FeatureIrisChunkSharePieBase extends ReactFeature implements List
     } catch (Throwable ignored) {
     }
 
-    return world.getName() != null && world.getName().toLowerCase(Locale.ROOT).contains("iris");
+    return WorldIdentity.serialize(world).toLowerCase(Locale.ROOT).contains("iris");
   }
 
   protected World targetWorld(Player viewer) {

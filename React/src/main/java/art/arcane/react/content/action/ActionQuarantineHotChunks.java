@@ -28,6 +28,7 @@ import art.arcane.react.core.controller.ObserverController;
 import art.arcane.react.model.SampledChunk;
 import art.arcane.react.model.SampledWorld;
 import art.arcane.react.util.common.scheduling.J;
+import art.arcane.volmlib.util.bukkit.WorldIdentity;
 import art.arcane.volmlib.util.entity.StackExclusion;
 import art.arcane.volmlib.util.format.Form;
 import lombok.AllArgsConstructor;
@@ -138,7 +139,7 @@ public class ActionQuarantineHotChunks extends ReactAction<ActionQuarantineHotCh
         continue;
       }
 
-      if (params.getWorld() != null && !params.getWorld().isBlank() && !world.getName().equalsIgnoreCase(params.getWorld())) {
+      if (params.getWorld() != null && !params.getWorld().isBlank() && !WorldIdentity.serialize(world).equals(params.getWorld())) {
         continue;
       }
 
@@ -163,7 +164,7 @@ public class ActionQuarantineHotChunks extends ReactAction<ActionQuarantineHotCh
                 continue;
               }
 
-              ChunkRef neighbor = new ChunkRef(world.getName(), chunk.getX() + dx, chunk.getZ() + dz);
+              ChunkRef neighbor = new ChunkRef(WorldIdentity.serialize(world), chunk.getX() + dx, chunk.getZ() + dz);
               weighted.merge(neighbor, score * 0.55D, Math::max);
             }
           }
@@ -180,7 +181,7 @@ public class ActionQuarantineHotChunks extends ReactAction<ActionQuarantineHotCh
   }
 
   private void dispatchChunkQuarantine(ChunkRef ref, Params params) {
-    World world = Bukkit.getWorld(ref.world());
+    World world = WorldIdentity.resolve(ref.world()).orElse(null);
     if (world == null) {
       params.getProcessedChunks().incrementAndGet();
       return;
@@ -211,7 +212,7 @@ public class ActionQuarantineHotChunks extends ReactAction<ActionQuarantineHotCh
   }
 
   private QuarantineResult quarantineChunkSync(ChunkRef ref, Params params) {
-    World world = Bukkit.getWorld(ref.world());
+    World world = WorldIdentity.resolve(ref.world()).orElse(null);
     if (world == null) {
       return new QuarantineResult(false, 0);
     }
@@ -300,7 +301,7 @@ public class ActionQuarantineHotChunks extends ReactAction<ActionQuarantineHotCh
   private record ChunkRef(String world, int x, int z) {
     private static ChunkRef of(Chunk chunk) {
       Objects.requireNonNull(chunk.getWorld(), "chunk.world");
-      return new ChunkRef(chunk.getWorld().getName(), chunk.getX(), chunk.getZ());
+      return new ChunkRef(WorldIdentity.serialize(chunk.getWorld()), chunk.getX(), chunk.getZ());
     }
   }
 
@@ -361,7 +362,7 @@ public class ActionQuarantineHotChunks extends ReactAction<ActionQuarantineHotCh
 
     public Params withWorld(World world) {
       if (world != null) {
-        this.world = world.getName();
+        this.world = WorldIdentity.serialize(world);
       }
       return this;
     }

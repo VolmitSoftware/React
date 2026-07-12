@@ -26,6 +26,7 @@ import art.arcane.react.api.action.ReactAction;
 import art.arcane.react.core.controller.ActionController;
 import art.arcane.react.model.AreaActionParams;
 import art.arcane.react.util.common.scheduling.J;
+import art.arcane.volmlib.util.bukkit.WorldIdentity;
 import art.arcane.volmlib.util.format.Form;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -147,7 +148,7 @@ public class ActionPurgeChunks extends ReactAction<ActionPurgeChunks.Params> {
     private transient AtomicInteger purgedChunks = new AtomicInteger(0);
 
     public Params withWorld(World world) {
-      area.setWorld(world.getName());
+      area.setWorld(WorldIdentity.serialize(world));
       area.setAllChunks(true);
       return this;
     }

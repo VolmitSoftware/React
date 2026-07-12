@@ -28,6 +28,7 @@ import art.arcane.react.core.controller.ObserverController;
 import art.arcane.react.model.SampledChunk;
 import art.arcane.react.model.SampledWorld;
 import art.arcane.react.util.common.scheduling.J;
+import art.arcane.volmlib.util.bukkit.WorldIdentity;
 import art.arcane.volmlib.util.format.Form;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -131,7 +132,7 @@ public class ActionPrewarmCriticalChunks extends ReactAction<ActionPrewarmCritic
           continue;
         }
 
-        if (params.getWorld() != null && !params.getWorld().isBlank() && !world.getName().equalsIgnoreCase(params.getWorld())) {
+        if (params.getWorld() != null && !params.getWorld().isBlank() && !WorldIdentity.serialize(world).equals(params.getWorld())) {
           continue;
         }
 
@@ -154,7 +155,7 @@ public class ActionPrewarmCriticalChunks extends ReactAction<ActionPrewarmCritic
               }
 
               double dist = Math.sqrt((dx * dx) + (dz * dz));
-              addWeighted(weighted, new ChunkRef(world.getName(), chunk.getX() + dx, chunk.getZ() + dz), score * (0.7D / (1D + dist)));
+              addWeighted(weighted, new ChunkRef(WorldIdentity.serialize(world), chunk.getX() + dx, chunk.getZ() + dz), score * (0.7D / (1D + dist)));
             }
           }
         }
@@ -168,7 +169,7 @@ public class ActionPrewarmCriticalChunks extends ReactAction<ActionPrewarmCritic
           continue;
         }
 
-        if (params.getWorld() != null && !params.getWorld().isBlank() && !world.getName().equalsIgnoreCase(params.getWorld())) {
+        if (params.getWorld() != null && !params.getWorld().isBlank() && !WorldIdentity.serialize(world).equals(params.getWorld())) {
           continue;
         }
 
@@ -176,7 +177,7 @@ public class ActionPrewarmCriticalChunks extends ReactAction<ActionPrewarmCritic
         for (int dx = -params.getPlayerChunkRadius(); dx <= params.getPlayerChunkRadius(); dx++) {
           for (int dz = -params.getPlayerChunkRadius(); dz <= params.getPlayerChunkRadius(); dz++) {
             double dist = Math.sqrt((dx * dx) + (dz * dz));
-            addWeighted(weighted, new ChunkRef(world.getName(), origin.getX() + dx, origin.getZ() + dz), 180D / (1D + dist));
+            addWeighted(weighted, new ChunkRef(WorldIdentity.serialize(world), origin.getX() + dx, origin.getZ() + dz), 180D / (1D + dist));
           }
         }
       }
@@ -206,7 +207,7 @@ public class ActionPrewarmCriticalChunks extends ReactAction<ActionPrewarmCritic
   }
 
   private PrewarmResult prewarmSync(ChunkRef ref, Params params) {
-    World world = Bukkit.getWorld(ref.world());
+    World world = WorldIdentity.resolve(ref.world()).orElse(null);
     if (world == null) {
       return new PrewarmResult(false, false);
     }
@@ -231,7 +232,7 @@ public class ActionPrewarmCriticalChunks extends ReactAction<ActionPrewarmCritic
   }
 
   private void dispatchPrewarm(ChunkRef ref, Params params) {
-    World world = Bukkit.getWorld(ref.world());
+    World world = WorldIdentity.resolve(ref.world()).orElse(null);
     if (world == null) {
       params.getChunksProcessedAtomic().incrementAndGet();
       return;
@@ -261,7 +262,7 @@ public class ActionPrewarmCriticalChunks extends ReactAction<ActionPrewarmCritic
 
   private record ChunkRef(String world, int x, int z) {
     private static ChunkRef of(Chunk chunk) {
-      return new ChunkRef(chunk.getWorld().getName(), chunk.getX(), chunk.getZ());
+      return new ChunkRef(WorldIdentity.serialize(chunk.getWorld()), chunk.getX(), chunk.getZ());
     }
   }
 
@@ -313,7 +314,7 @@ public class ActionPrewarmCriticalChunks extends ReactAction<ActionPrewarmCritic
 
     public Params withWorld(World world) {
       if (world != null) {
-        this.world = world.getName();
+        this.world = WorldIdentity.serialize(world);
       }
       return this;
     }

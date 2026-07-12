@@ -67,6 +67,7 @@ public class WorldResourceTest {
         WorldResource.ListResponse response = (WorldResource.ListResponse) captor.getValue();
         assertNotNull(response);
         assertEquals(fakeBackend.list().size(), response.data().length);
+        assertEquals("test:world/path", response.data()[0].key);
         assertEquals("world", response.data()[0].name);
     }
 
@@ -74,8 +75,8 @@ public class WorldResourceTest {
     void update_with_op_token_invokes_backend_update_and_returns_envelope() {
         Context ctx = mock(Context.class);
         when(ctx.<PairingToken>attribute("token")).thenReturn(opToken);
-        when(ctx.pathParam("name")).thenReturn("world");
         Map<String, Object> body = new HashMap<>();
+        body.put("worldKey", "test:world/path");
         body.put("budgetMs", 40.0);
         when(ctx.bodyAsClass(Map.class)).thenReturn(body);
 
@@ -88,7 +89,7 @@ public class WorldResourceTest {
         assertNotNull(envelope.data());
         assertEquals("world", envelope.data().name);
 
-        assertEquals("world", fakeBackend.lastUpdateName);
+        assertEquals("test:world/path", fakeBackend.lastUpdateKey);
         assertEquals(40.0, fakeBackend.lastUpdateBudgetMs, 1e-9);
         assertNull(fakeBackend.lastUpdatePanicMs);
         assertNull(fakeBackend.lastUpdateReleaseMs);
@@ -98,8 +99,8 @@ public class WorldResourceTest {
     void update_unknown_world_backend_returns_null_throws_not_found() {
         Context ctx = mock(Context.class);
         when(ctx.<PairingToken>attribute("token")).thenReturn(opToken);
-        when(ctx.pathParam("name")).thenReturn("unknown-world");
         Map<String, Object> body = new HashMap<>();
+        body.put("worldKey", "test:unknown/world");
         body.put("budgetMs", 40.0);
         when(ctx.bodyAsClass(Map.class)).thenReturn(body);
 
@@ -110,7 +111,6 @@ public class WorldResourceTest {
     void update_with_read_only_token_throws_forbidden() {
         Context ctx = mock(Context.class);
         when(ctx.<PairingToken>attribute("token")).thenReturn(readToken);
-        when(ctx.pathParam("name")).thenReturn("world");
 
         assertThrows(ForbiddenResponse.class, () -> resource.update(ctx));
     }
@@ -119,10 +119,19 @@ public class WorldResourceTest {
     void update_with_non_numeric_budget_throws_bad_request() {
         Context ctx = mock(Context.class);
         when(ctx.<PairingToken>attribute("token")).thenReturn(opToken);
-        when(ctx.pathParam("name")).thenReturn("world");
         Map<String, Object> body = new HashMap<>();
+        body.put("worldKey", "test:world/path");
         body.put("budgetMs", "not-a-number");
         when(ctx.bodyAsClass(Map.class)).thenReturn(body);
+
+        assertThrows(BadRequestResponse.class, () -> resource.update(ctx));
+    }
+
+    @Test
+    void update_without_world_key_throws_bad_request() {
+        Context ctx = mock(Context.class);
+        when(ctx.<PairingToken>attribute("token")).thenReturn(opToken);
+        when(ctx.bodyAsClass(Map.class)).thenReturn(Map.of("budgetMs", 40.0));
 
         assertThrows(BadRequestResponse.class, () -> resource.update(ctx));
     }
@@ -130,13 +139,14 @@ public class WorldResourceTest {
     private static final class FakeWorldBackend implements WorldBackend {
 
         private final List<WorldDto> worlds = new ArrayList<>();
-        String lastUpdateName;
+        String lastUpdateKey;
         Double lastUpdateBudgetMs;
         Double lastUpdatePanicMs;
         Double lastUpdateReleaseMs;
 
         FakeWorldBackend() {
             WorldDto w = new WorldDto();
+            w.key = "test:world/path";
             w.name = "world";
             w.pressureMode = "NORMAL";
             w.budgetMs = 35.0;
@@ -151,13 +161,13 @@ public class WorldResourceTest {
         }
 
         @Override
-        public WorldDto update(String name, Double budgetMs, Double panicMs, Double releaseMs) {
-            lastUpdateName = name;
+        public WorldDto update(String worldKey, Double budgetMs, Double panicMs, Double releaseMs) {
+            lastUpdateKey = worldKey;
             lastUpdateBudgetMs = budgetMs;
             lastUpdatePanicMs = panicMs;
             lastUpdateReleaseMs = releaseMs;
             for (WorldDto w : worlds) {
-                if (w.name.equals(name)) {
+                if (w.key.equals(worldKey)) {
                     if (budgetMs != null) {
                         w.budgetMs = budgetMs;
                     }

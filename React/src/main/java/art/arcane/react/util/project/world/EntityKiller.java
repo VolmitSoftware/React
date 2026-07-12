@@ -151,7 +151,7 @@ public class EntityKiller implements Listener {
     stop();
     entity.getWorld().spawnParticle(Particle.FLASH, entity.getLocation(), 1, Color.WHITE);
     entity.getWorld().getPlayers().forEach(player ->
-        React.audiences.player(player).playSound(Sound.sound(
+        player.playSound(Sound.sound(
             Key.key("minecraft:particle.soul_escape"),
             Sound.Source.NEUTRAL,
             0.5f,

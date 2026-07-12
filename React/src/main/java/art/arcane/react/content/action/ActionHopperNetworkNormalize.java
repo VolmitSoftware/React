@@ -28,6 +28,7 @@ import art.arcane.react.content.sampler.SamplerHopperUpdates;
 import art.arcane.react.core.controller.ActionController;
 import art.arcane.react.core.controller.ObserverController;
 import art.arcane.react.util.common.scheduling.J;
+import art.arcane.volmlib.util.bukkit.WorldIdentity;
 import art.arcane.volmlib.util.format.Form;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -154,7 +155,7 @@ public class ActionHopperNetworkNormalize extends ReactAction<ActionHopperNetwor
         continue;
       }
 
-      if (params.getWorld() != null && !params.getWorld().isBlank() && !world.getName().equalsIgnoreCase(params.getWorld())) {
+      if (params.getWorld() != null && !params.getWorld().isBlank() && !WorldIdentity.serialize(world).equals(params.getWorld())) {
         continue;
       }
 
@@ -169,7 +170,7 @@ public class ActionHopperNetworkNormalize extends ReactAction<ActionHopperNetwor
           continue;
         }
 
-        targets.add(new ChunkTarget(world.getName(), chunk.getX(), chunk.getZ(), rate));
+        targets.add(new ChunkTarget(WorldIdentity.serialize(world), chunk.getX(), chunk.getZ(), rate));
       }
     }
 
@@ -183,7 +184,7 @@ public class ActionHopperNetworkNormalize extends ReactAction<ActionHopperNetwor
   }
 
   private void dispatchChunkNormalize(ChunkTarget target, Params params) {
-    World world = Bukkit.getWorld(target.world());
+    World world = WorldIdentity.resolve(target.world()).orElse(null);
     if (world == null) {
       params.getProcessedChunks().incrementAndGet();
       return;
@@ -217,7 +218,7 @@ public class ActionHopperNetworkNormalize extends ReactAction<ActionHopperNetwor
   }
 
   private NormalizeResult normalizeChunkSync(ChunkTarget target, Params params) {
-    World world = Bukkit.getWorld(target.world());
+    World world = WorldIdentity.resolve(target.world()).orElse(null);
     if (world == null || !world.isChunkLoaded(target.x(), target.z())) {
       return new NormalizeResult(0, 0, false);
     }
@@ -375,7 +376,7 @@ public class ActionHopperNetworkNormalize extends ReactAction<ActionHopperNetwor
 
     public Params withWorld(World world) {
       if (world != null) {
-        this.world = world.getName();
+        this.world = WorldIdentity.serialize(world);
       }
       return this;
     }

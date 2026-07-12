@@ -1,6 +1,7 @@
 package art.arcane.react.api.web.heatmap;
 
 import art.arcane.react.util.common.scheduling.J;
+import art.arcane.volmlib.util.bukkit.WorldIdentity;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
@@ -15,7 +16,11 @@ public class BukkitHeatmapChunkSampler implements HeatmapChunkSampler {
     public HeatmapScan scan(ChunkGridExporter exporter, String requestedWorld, Integer centerX, Integer centerZ, int radius) {
         World world;
         if (requestedWorld != null && !requestedWorld.isBlank()) {
-            world = Bukkit.getWorld(requestedWorld);
+            try {
+                world = WorldIdentity.resolve(requestedWorld).orElse(null);
+            } catch (IllegalArgumentException exception) {
+                return null;
+            }
         } else {
             List<World> worlds = Bukkit.getWorlds();
             world = worlds.isEmpty() ? null : worlds.get(0);
@@ -41,6 +46,6 @@ public class BukkitHeatmapChunkSampler implements HeatmapChunkSampler {
             }
             return result;
         }, List.of());
-        return new HeatmapScan(world.getName(), centerChunkX, centerChunkZ, cells);
+        return new HeatmapScan(WorldIdentity.serialize(world), centerChunkX, centerChunkZ, cells);
     }
 }

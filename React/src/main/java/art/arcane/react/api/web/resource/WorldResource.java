@@ -26,17 +26,25 @@ public class WorldResource {
 
     public void update(Context ctx) {
         WebAuth.requireScope(ctx, "op:execute");
-        String name = ctx.pathParam("name");
         @SuppressWarnings("unchecked")
         Map<String, Object> body = ctx.bodyAsClass(Map.class);
+        String worldKey = extractWorldKey(body);
         Double budgetMs = extractDouble(body, "budgetMs");
         Double panicMs = extractDouble(body, "panicMs");
         Double releaseMs = extractDouble(body, "releaseMs");
-        WorldDto dto = backend.update(name, budgetMs, panicMs, releaseMs);
+        WorldDto dto = backend.update(worldKey, budgetMs, panicMs, releaseMs);
         if (dto == null) {
-            throw new NotFoundResponse("Unknown world: " + name);
+            throw new NotFoundResponse("Unknown world: " + worldKey);
         }
         ctx.json(new Envelope<>(dto));
+    }
+
+    private static String extractWorldKey(Map<String, Object> body) {
+        Object rawWorldKey = body == null ? null : body.get("worldKey");
+        if (!(rawWorldKey instanceof String worldKey) || worldKey.isBlank()) {
+            throw new BadRequestResponse("Missing worldKey");
+        }
+        return worldKey;
     }
 
     private static Double extractDouble(Map<String, Object> body, String key) {

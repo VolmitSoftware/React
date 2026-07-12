@@ -7,5 +7,5 @@ import java.util.List;
 public interface WorldBackend {
     List<WorldDto> list();
 
-    WorldDto update(String name, Double budgetMs, Double panicMs, Double releaseMs);
+    WorldDto update(String worldKey, Double budgetMs, Double panicMs, Double releaseMs);
 }

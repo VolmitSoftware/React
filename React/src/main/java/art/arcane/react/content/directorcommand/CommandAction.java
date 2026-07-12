@@ -25,6 +25,7 @@ import art.arcane.react.content.action.*;
 import art.arcane.react.core.controller.ActionController;
 import art.arcane.react.util.director.DirectorExecutor;
 import art.arcane.react.util.director.handlers.OptionalWorldHandler;
+import art.arcane.volmlib.util.bukkit.WorldIdentity;
 import art.arcane.react.util.project.config.ConfigDescription;
 import art.arcane.volmlib.util.director.DirectorOrigin;
 import art.arcane.volmlib.util.director.annotations.Director;
@@ -68,7 +69,7 @@ public class CommandAction implements DirectorExecutor {
     ActionPurgeEntities.Params p = pe.getDefaultParams();
 
     if (!world.equals("ALL")) {
-      p.withWorld(Bukkit.getWorld(world));
+      p.withWorld(WorldIdentity.resolve(world).orElseThrow());
     }
 
     if (sender().isPlayer()) {
@@ -100,7 +101,7 @@ public class CommandAction implements DirectorExecutor {
     ActionPurgeChunks.Params p = pc.getDefaultParams();
 
     if (!world.equals("ALL")) {
-      p.withWorld(Bukkit.getWorld(world));
+      p.withWorld(WorldIdentity.resolve(world).orElseThrow());
     }
 
     pc.create(p, sender()).queue();
@@ -155,7 +156,7 @@ public class CommandAction implements DirectorExecutor {
         .setMinimumChunkScore(Math.max(0D, minScore));
 
     if (!world.equals("ALL")) {
-      p.withWorld(Bukkit.getWorld(world));
+      p.withWorld(WorldIdentity.resolve(world).orElseThrow());
     }
 
     action.create(p, sender()).queue();
@@ -198,7 +199,7 @@ public class CommandAction implements DirectorExecutor {
         .setMinEntityAgeTicks(Math.max(1, minAgeSeconds) * 20);
 
     if (!world.equals("ALL")) {
-      p.withWorld(Bukkit.getWorld(world));
+      p.withWorld(WorldIdentity.resolve(world).orElseThrow());
     }
 
     action.create(p, sender()).queue();
@@ -241,7 +242,7 @@ public class CommandAction implements DirectorExecutor {
         .setMinimumHopperUpdatesPerChunk(Math.max(1D, minHopperUpdates));
 
     if (!world.equals("ALL")) {
-      p.withWorld(Bukkit.getWorld(world));
+      p.withWorld(WorldIdentity.resolve(world).orElseThrow());
     }
 
     action.create(p, sender()).queue();
@@ -284,7 +285,7 @@ public class CommandAction implements DirectorExecutor {
         .setNeighborRadius(Math.max(0, Math.min(neighborRadius, 4)));
 
     if (!world.equals("ALL")) {
-      p.withWorld(Bukkit.getWorld(world));
+      p.withWorld(WorldIdentity.resolve(world).orElseThrow());
     }
 
     action.create(p, sender()).queue();
@@ -327,9 +328,7 @@ public class CommandAction implements DirectorExecutor {
         .setTierOverride(Math.max(-1, Math.min(2, tier)));
 
     if (!world.equals("ALL")) {
-      if (Bukkit.getWorld(world) != null) {
-        p.setWorld(Bukkit.getWorld(world).getName());
-      }
+      p.setWorld(WorldIdentity.parse(world).toString());
     }
 
     action.create(p, sender()).queue();

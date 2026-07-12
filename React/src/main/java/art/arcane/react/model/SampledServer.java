@@ -19,8 +19,8 @@
 
 package art.arcane.react.model;
 
+import art.arcane.volmlib.util.bukkit.WorldIdentity;
 import lombok.Data;
-import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.World;
 
@@ -49,7 +49,7 @@ public class SampledServer {
   }
 
   public boolean hasWorld(World world) {
-    return hasWorld(world.getName());
+    return hasWorld(WorldIdentity.serialize(world));
   }
 
   public void removeChunk(Chunk chunk) {
@@ -59,7 +59,7 @@ public class SampledServer {
   }
 
   public void removeWorld(World world) {
-    removeWorld(world.getName());
+    removeWorld(WorldIdentity.serialize(world));
   }
 
   public void removeWorld(String name) {
@@ -67,14 +67,18 @@ public class SampledServer {
   }
 
   public SampledWorld getWorld(World world) {
-    return getWorld(world.getName());
+    return getWorld(WorldIdentity.serialize(world));
   }
 
   public Optional<SampledWorld> optionalWorld(World world) {
-    return Optional.ofNullable(worlds.get(world.getName()));
+    return Optional.ofNullable(worlds.get(WorldIdentity.serialize(world)));
   }
 
-  public SampledWorld getWorld(String name) {
-    return worlds.computeIfAbsent(name, (k) -> new SampledWorld(Bukkit.getWorld(name)));
+  public SampledWorld getWorld(String worldKey) {
+    return worlds.computeIfAbsent(
+        worldKey,
+        key -> new SampledWorld(WorldIdentity.resolve(key).orElseThrow(() ->
+            new IllegalStateException("World is not loaded: " + key)))
+    );
   }
 }

@@ -15,6 +15,7 @@ import art.arcane.react.content.action.ActionQuarantineHotChunks;
 import art.arcane.react.content.action.ActionTrimEntitiesByAgePriority;
 import art.arcane.react.core.controller.ActionController;
 import art.arcane.react.model.AreaActionParams;
+import art.arcane.volmlib.util.bukkit.WorldIdentity;
 import art.arcane.react.util.project.registry.Registry;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
@@ -143,7 +144,7 @@ public class ActionSuiteCheck implements ReactAsyncSubsystemCheck {
         purgeEntitiesParams.setArea(area);
       }
 
-      area.setWorld(world.getName());
+      area.setWorld(WorldIdentity.serialize(world));
       area.setChunks(collectLoadedChunks(world, centerChunkX, centerChunkZ, PURGE_RADIUS));
       area.setAllChunks(false);
       return purgeEntitiesParams;
@@ -156,7 +157,7 @@ public class ActionSuiteCheck implements ReactAsyncSubsystemCheck {
         purgeChunksParams.setArea(area);
       }
 
-      area.setWorld(world.getName());
+      area.setWorld(WorldIdentity.serialize(world));
       area.setChunks(collectLoadedChunks(world, centerChunkX, centerChunkZ, PURGE_RADIUS));
       area.setAllChunks(false);
       return purgeChunksParams;

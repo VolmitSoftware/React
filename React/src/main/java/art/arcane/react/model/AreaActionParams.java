@@ -19,6 +19,7 @@
 
 package art.arcane.react.model;
 
+import art.arcane.volmlib.util.bukkit.WorldIdentity;
 import lombok.*;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
@@ -39,8 +40,8 @@ public class AreaActionParams {
   @Builder.Default
   protected boolean allChunks = true;
 
-  private void addChunksFor(String world) {
-    World w = Bukkit.getWorld(world);
+  private void addChunksFor(String worldKey) {
+    World w = WorldIdentity.resolve(worldKey).orElse(null);
 
     if (w == null) {
       return;
@@ -61,7 +62,7 @@ public class AreaActionParams {
           addChunksFor(world);
         } else {
           for (World i : Bukkit.getWorlds()) {
-            addChunksFor(i.getName());
+            addChunksFor(WorldIdentity.serialize(i));
           }
         }
 

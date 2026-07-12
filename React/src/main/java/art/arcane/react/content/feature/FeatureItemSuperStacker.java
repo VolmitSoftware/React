@@ -94,7 +94,7 @@ public class FeatureItemSuperStacker extends ReactFeature implements Listener {
 
     if (cl.flip()) {
       item.getWorld().getPlayers().forEach(player ->
-          React.audiences.player(player).playSound(Sound.sound(
+          player.playSound(Sound.sound(
               Key.key("minecraft:item.bundle.insert"),
               Sound.Source.NEUTRAL,
               0.5f,
@@ -139,7 +139,7 @@ public class FeatureItemSuperStacker extends ReactFeature implements Listener {
         }
 
         if (cl.flip()) {
-          React.audiences.player(p).playSound(Sound.sound(
+          p.playSound(Sound.sound(
               Key.key("minecraft:item.bundle.drop_contents"),
               Sound.Source.PLAYER,
               1f,
@@ -197,7 +197,6 @@ public class FeatureItemSuperStacker extends ReactFeature implements Listener {
         Inventory destinationInventory = event.getDestination();
         i.setAmount(0);
         i.setType(Material.AIR);
-        i.setData(null);
 
         for (ItemStack item : individualItems) {
           destinationInventory.addItem(item).values().forEach((leftover) -> event.getSource().addItem(leftover));

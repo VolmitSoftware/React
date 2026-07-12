@@ -138,7 +138,7 @@ public class FeatureFastLeafDecay extends ReactFeature implements Listener {
     if (shouldDecay(b.getBlockData())) {
       if (playSounds && Math.random() < soundChance) {
         b.getWorld().getPlayers().forEach(player ->
-            React.audiences.player(player).playSound(Sound.sound(
+            player.playSound(Sound.sound(
                 Key.key(decaySound),
                 Sound.Source.BLOCK,
                 (float) soundVolume,

@@ -27,6 +27,7 @@ import art.arcane.react.core.controller.ActionController;
 import art.arcane.react.model.AreaActionParams;
 import art.arcane.react.model.FilterParams;
 import art.arcane.react.util.common.scheduling.J;
+import art.arcane.volmlib.util.bukkit.WorldIdentity;
 import art.arcane.volmlib.util.entity.StackExclusion;
 import art.arcane.volmlib.util.format.Form;
 import art.arcane.volmlib.util.math.Spiraler;
@@ -209,7 +210,7 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
     private transient AtomicInteger purgedEntities = new AtomicInteger(0);
 
     public Params withWorld(World world) {
-      area.setWorld(world.getName());
+      area.setWorld(WorldIdentity.serialize(world));
       area.setAllChunks(true);
       return this;
     }
