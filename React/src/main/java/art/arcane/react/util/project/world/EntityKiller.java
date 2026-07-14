@@ -27,6 +27,7 @@ import art.arcane.react.util.format.C;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.sound.Sound;
 import org.bukkit.Color;
+import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.EventHandler;
@@ -34,11 +35,17 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.persistence.PersistentDataType;
+
+import java.util.Objects;
 
 public class EntityKiller implements Listener {
+  private static final NamespacedKey nsKillerCountdown = Objects.requireNonNull(NamespacedKey.fromString("react:react-killer-countdown"));
   private Entity entity;
   private int seconds;
   private int tt;
+  private boolean stamped;
 
   public EntityKiller(Entity e, int seconds) {
     if (React.controller(EntityController.class).getKilling().contains(e)) {
@@ -64,12 +71,24 @@ public class EntityKiller implements Listener {
     if (J.runEntity(target, () -> {
       target.setCustomNameVisible(false);
       target.setCustomName(null);
+      target.getPersistentDataContainer().remove(nsKillerCountdown);
       cleanup();
-    })) {
+    }, 0, this::cleanup)) {
       return;
     }
 
     cleanup();
+  }
+
+  public static void reconcile(Entity entity) {
+    PersistentDataContainer container = entity.getPersistentDataContainer();
+    if (!container.has(nsKillerCountdown, PersistentDataType.BYTE)) {
+      return;
+    }
+
+    container.remove(nsKillerCountdown);
+    entity.setCustomNameVisible(false);
+    entity.setCustomName(null);
   }
 
   private void cleanup() {
@@ -110,7 +129,7 @@ public class EntityKiller implements Listener {
       return;
     }
 
-    if (!J.runEntity(target, this::tickOwned)) {
+    if (!J.runEntity(target, this::tickOwned, 0, this::cleanup)) {
       stop();
     }
   }
@@ -127,8 +146,19 @@ public class EntityKiller implements Listener {
       return;
     }
 
+    stampCountdown();
     entity.setCustomName(C.RED + "" + seconds + "s");
     entity.setCustomNameVisible(true);
+  }
+
+  private void stampCountdown() {
+    if (stamped) {
+      return;
+    }
+
+    stamped = true;
+    byte hadCustomName = (byte) (entity.getCustomName() != null ? 1 : 0);
+    entity.getPersistentDataContainer().set(nsKillerCountdown, PersistentDataType.BYTE, hadCustomName);
   }
 
   public void kill() {
@@ -138,7 +168,7 @@ public class EntityKiller implements Listener {
       return;
     }
 
-    if (!J.runEntity(target, this::killOwned)) {
+    if (!J.runEntity(target, this::killOwned, 0, this::cleanup)) {
       stop();
     }
   }

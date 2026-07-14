@@ -140,31 +140,57 @@ public class J {
   }
 
   public static boolean runEntity(Entity entity, Runnable runnable, int delayTicks) {
+    return runEntity(entity, runnable, delayTicks, null);
+  }
+
+  public static boolean runEntity(Entity entity, Runnable runnable, int delayTicks, Runnable retired) {
     if (entity == null || runnable == null || !isPluginActive()) {
       return false;
     }
 
     int safeDelayTicks = Math.max(0, delayTicks);
+    Runnable guarded = guardEntityTask(entity, runnable, retired);
     if (!isFoliaThreading()) {
       if (safeDelayTicks <= 0) {
-        sync(runnable);
+        sync(guarded);
       } else {
-        sync(runnable, safeDelayTicks);
+        sync(guarded, safeDelayTicks);
       }
       return true;
     }
 
     if (safeDelayTicks <= 0 && isOwnedByCurrentRegion(entity)) {
-      runnable.run();
+      guarded.run();
       return true;
     }
 
-    if (FoliaScheduler.runEntity(React.instance, entity, runnable, safeDelayTicks)) {
+    if (FoliaScheduler.runEntity(React.instance, entity, runnable, safeDelayTicks, retired)) {
       return true;
     }
 
     Location location = safeEntityLocation(entity);
-    return location != null && runRegion(location, runnable, safeDelayTicks);
+    return location != null && runRegion(location, guarded, safeDelayTicks);
+  }
+
+  private static Runnable guardEntityTask(Entity entity, Runnable runnable, Runnable retired) {
+    if (retired == null) {
+      return runnable;
+    }
+
+    return () -> {
+      boolean active;
+      try {
+        active = entity.isValid();
+      } catch (Throwable ignored) {
+        active = false;
+      }
+
+      if (active) {
+        runnable.run();
+      } else {
+        retired.run();
+      }
+    };
   }
 
   public static <T> T runChunkResult(World world, int chunkX, int chunkZ, Supplier<T> supplier, T fallback) {

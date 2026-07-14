@@ -39,6 +39,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
+import org.bukkit.event.world.EntitiesLoadEvent;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -213,6 +214,13 @@ public class EntityController implements IController, Listener {
   public void on(EntityBreedEvent e) {
     tickEntity(e.getMother());
     tickEntity(e.getFather());
+  }
+
+  @EventHandler
+  public void on(EntitiesLoadEvent e) {
+    for (Entity entity : e.getEntities()) {
+      EntityKiller.reconcile(entity);
+    }
   }
 
   @Override

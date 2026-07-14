@@ -27,6 +27,9 @@ import art.arcane.volmlib.util.director.annotations.Director;
 import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 
 @Director(
@@ -52,8 +55,9 @@ public class CommandDebug implements DirectorExecutor {
         if (j.equals(player())) {
           continue;
         }
-        j.setGlowing(true);
-        J.runEntity(j, () -> j.setGlowing(false), 1);
+        if (j instanceof LivingEntity living) {
+          J.runEntity(living, () -> living.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 20, 0, false, false)));
+        }
         player().sendMessage("Priority: " + Form.f((int) ReactEntity.getPriority(j)));
         player().sendMessage("Crowding: " + Form.f((int) ReactEntity.getCrowding(j)));
         player().sendMessage("Player N: " + Form.f(ReactEntity.getNearestPlayer(j), 1));

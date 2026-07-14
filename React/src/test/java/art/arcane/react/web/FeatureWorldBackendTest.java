@@ -12,6 +12,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -35,7 +37,7 @@ public class FeatureWorldBackendTest {
              MockedStatic<React> react = Mockito.mockStatic(React.class)) {
             bukkit.when(Bukkit::getServer).thenReturn(null);
             bukkit.when(Bukkit::isPrimaryThread).thenReturn(true);
-            bukkit.when(() -> Bukkit.getWorld(worldKey)).thenReturn(world);
+            bukkit.when(Bukkit::getWorlds).thenReturn(List.of(world));
             react.when(() -> React.feature(FeaturePerWorldTickBudget.ID)).thenReturn(null);
 
             WorldDto result = backend.update(worldKey.toString(), 40.0, null, null);
