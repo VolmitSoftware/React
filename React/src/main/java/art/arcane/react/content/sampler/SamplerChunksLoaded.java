@@ -19,28 +19,18 @@
 
 package art.arcane.react.content.sampler;
 
-import art.arcane.react.api.sampler.ReactCachedSampler;
+import art.arcane.react.api.sampler.ReactCachedRateSampler;
 import art.arcane.volmlib.util.format.Form;
-import art.arcane.volmlib.util.math.M;
-import art.arcane.volmlib.util.math.RollingSequence;
 import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.world.ChunkLoadEvent;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
-public class SamplerChunksLoaded extends ReactCachedSampler implements Listener {
+public class SamplerChunksLoaded extends ReactCachedRateSampler implements Listener {
   public static final String ID = "chunks-loaded";
-  private static final double D1_OVER_SECONDS = 1.0 / 1000D;
-  private transient final AtomicInteger generated;
-  private transient RollingSequence avg;
-  private transient long lastSample = 0L;
-  private int sequenceAverageLength = 5;
 
   public SamplerChunksLoaded() {
-    super(ID, 1000); // 1 tick interval for higher accuracy
-    generated = new AtomicInteger(0);
+    super(ID, 1000);
   }
 
   @Override
@@ -48,30 +38,10 @@ public class SamplerChunksLoaded extends ReactCachedSampler implements Listener 
     return Material.COMMAND_BLOCK_MINECART;
   }
 
-  @Override
-  public void start() {
-    super.start();
-    avg = new RollingSequence(sequenceAverageLength);
-  }
-
   @EventHandler
   public void on(ChunkLoadEvent event) {
-    generated.incrementAndGet();
+    increment();
     getChunkCounter(event.getChunk()).addAndGet(1D);
-  }
-
-  @Override
-  public double onSample() {
-    if (lastSample == 0) {
-      lastSample = M.ms();
-    }
-
-    int r = generated.getAndSet(0);
-    long dur = Math.max(M.ms() - lastSample, 1000);
-    lastSample = M.ms();
-    avg.put(r / (dur * D1_OVER_SECONDS));
-
-    return avg.getAverage();
   }
 
   @Override

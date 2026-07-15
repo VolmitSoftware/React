@@ -86,19 +86,4 @@ public class TweakFastColumns extends ReactTweak implements Listener {
       column.trigger(block, maxColumnSize);
     }
   }
-
-  @Override
-  public void onDeactivate() {
-
-  }
-
-  @Override
-  public int getTickInterval() {
-    return -1;
-  }
-
-  @Override
-  public void onTick() {
-
-  }
 }

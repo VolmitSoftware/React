@@ -21,7 +21,6 @@ package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
 import art.arcane.react.api.feature.ReactFeature;
-import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.api.web.IncidentTimeline;
 import art.arcane.react.content.sampler.SamplerIncidentScore;
 import art.arcane.react.content.sampler.SamplerTickTime;
@@ -299,10 +298,5 @@ public class FeatureIncidentMode extends ReactFeature implements Listener {
     }
 
     return null;
-  }
-
-  private double sample(String id) {
-    Sampler sampler = React.sampler(id);
-    return sampler == null ? 0D : sampler.sample();
   }
 }

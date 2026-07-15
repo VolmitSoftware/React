@@ -92,19 +92,4 @@ public class TweakEntityCrowdPrevention extends ReactTweak implements Listener {
       React.kill(entity, 3);
     }
   }
-
-  @Override
-  public void onDeactivate() {
-
-  }
-
-  @Override
-  public int getTickInterval() {
-    return -1;
-  }
-
-  @Override
-  public void onTick() {
-
-  }
 }

@@ -198,11 +198,6 @@ public class FeatureAdaptRuntimeSurgeGuard extends ReactCapabilityFeature implem
     return integration.getRemoteSamplerBridge().valueOr("adapt", key, fallback);
   }
 
-  private double sample(String samplerId) {
-    var sampler = React.sampler(samplerId);
-    return sampler == null ? 0D : sampler.sample();
-  }
-
   private boolean allow(Map<UUID, WindowCounter> map, UUID playerId, int maxOps, long now) {
     if (playerId == null) {
       return true;

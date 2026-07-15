@@ -37,7 +37,6 @@ import lombok.experimental.Accessors;
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Incident Playbook action. Queues a tiered set of mitigation actions based on current incident severity.")
 public class ActionIncidentPlaybook extends ReactAction<ActionIncidentPlaybook.Params> {
   public static final String ID = "action-incident-playbook";
-  public static final String SHORT = "aip";
 
   public ActionIncidentPlaybook() {
     super(ID);

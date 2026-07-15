@@ -20,8 +20,8 @@
 package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
+import art.arcane.react.api.feature.PressureGate;
 import art.arcane.react.api.feature.ReactFeature;
-import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.content.sampler.SamplerIncidentScore;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.nms.ExplosionDecision;
@@ -79,15 +79,12 @@ public class FeatureExplosionPacketBatching extends ReactFeature implements List
   private transient final AtomicLong bypassedExplosions = new AtomicLong(0L);
   private transient final AtomicLong observedNmsExplosions = new AtomicLong(0L);
   private transient final AtomicLong mergedBroadcastsSent = new AtomicLong(0L);
-  @Getter
-  private transient volatile boolean engaged;
+  private transient final PressureGate gate = new PressureGate();
   @Getter
   private transient volatile boolean bridgeActive;
   @Getter
   private transient volatile boolean suppressorActive;
   private transient final AtomicLong suppressedPackets = new AtomicLong(0L);
-  private transient volatile long pressureSinceMs;
-  private transient volatile long calmSinceMs;
 
   public FeatureExplosionPacketBatching() {
     super(ID);
@@ -102,9 +99,7 @@ public class FeatureExplosionPacketBatching extends ReactFeature implements List
     observedNmsExplosions.set(0L);
     mergedBroadcastsSent.set(0L);
     suppressedPackets.set(0L);
-    engaged = false;
-    pressureSinceMs = 0L;
-    calmSinceMs = 0L;
+    gate.reset();
     installBridgeHook();
   }
 
@@ -150,7 +145,7 @@ public class FeatureExplosionPacketBatching extends ReactFeature implements List
     };
     bridgeActive = bridge.installExplosionHook(hook);
     ExplosionPacketSuppressor suppressor = (World world, double x, double y, double z, float radius) -> {
-      if (!engaged) {
+      if (!gate.isEngaged()) {
         return false;
       }
       if (world == null) {
@@ -389,52 +384,9 @@ public class FeatureExplosionPacketBatching extends ReactFeature implements List
     double tickMs = sample(SamplerTickTime.ID);
     double incident = sample(SamplerIncidentScore.ID);
     boolean pressure = tickMs >= engageTickTimeMs || incident >= engageIncidentScore;
-    long now = System.currentTimeMillis();
-
-    if (!engaged) {
-      if (!pressure) {
-        pressureSinceMs = 0L;
-        return;
-      }
-
-      if (pressureSinceMs == 0L) {
-        pressureSinceMs = now;
-        return;
-      }
-
-      if (now - pressureSinceMs >= Math.max(0L, sustainEngageMs)) {
-        engaged = true;
-        pressureSinceMs = 0L;
-        calmSinceMs = 0L;
-      }
-      return;
-    }
-
     boolean calm = tickMs <= releaseTickTimeMs && incident < engageIncidentScore;
-    if (!calm) {
-      calmSinceMs = 0L;
-      return;
-    }
-
-    if (calmSinceMs == 0L) {
-      calmSinceMs = now;
-      return;
-    }
-
-    if (now - calmSinceMs >= Math.max(0L, sustainReleaseMs)) {
-      engaged = false;
-      pressureSinceMs = 0L;
-      calmSinceMs = 0L;
-    }
-  }
-
-  private double sample(String samplerId) {
-    try {
-      Sampler sampler = React.sampler(samplerId);
-      return sampler == null ? 0D : sampler.sample();
-    } catch (Throwable ignored) {
-      return 0D;
-    }
+    long now = System.currentTimeMillis();
+    gate.update(now, pressure, calm, sustainEngageMs, sustainReleaseMs);
   }
 
   private static final class PendingExplosion {

@@ -48,21 +48,4 @@ public class TweakReloadConfirm extends ReactTweak implements Listener {
       }
     }
   }
-
-
-  @Override
-  public void onActivate() {
-  }
-
-  public void onDeactivate() {
-  }
-
-  @Override
-  public int getTickInterval() {
-    return -1;
-  }
-
-  @Override
-  public void onTick() {
-  }
 }

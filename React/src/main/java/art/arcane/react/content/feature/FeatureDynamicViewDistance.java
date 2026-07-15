@@ -141,7 +141,7 @@ public class FeatureDynamicViewDistance extends ReactFeature implements Listener
     if (!supportsWorldDistanceSetters || ttAvg == null || lastUpdate == null) {
       return;
     }
-    ttAvg.put(React.sampler(SamplerTickTime.ID).sample());
+    ttAvg.put(sample(SamplerTickTime.ID));
     long now = System.currentTimeMillis();
     if (now - activatedAtMs < Math.max(0, warmupSeconds) * 1000L) {
       return;

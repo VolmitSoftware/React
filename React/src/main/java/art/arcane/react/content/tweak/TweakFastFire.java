@@ -37,11 +37,6 @@ public class TweakFastFire extends ReactTweak implements Listener {
     super(ID);
   }
 
-  @Override
-  public void onActivate() {
-
-  }
-
   @EventHandler
   public void on(BlockSpreadEvent e) {
     if (e.getBlock().getBlockData() instanceof Fire f) {
@@ -65,20 +60,5 @@ public class TweakFastFire extends ReactTweak implements Listener {
     e.setCancelled(true);
     var location = e.getBlock().getLocation().clone();
     J.s(location, () -> FastWorld.breakNaturally(location.getBlock()), 0);
-  }
-
-  @Override
-  public void onDeactivate() {
-
-  }
-
-  @Override
-  public int getTickInterval() {
-    return -1;
-  }
-
-  @Override
-  public void onTick() {
-
   }
 }

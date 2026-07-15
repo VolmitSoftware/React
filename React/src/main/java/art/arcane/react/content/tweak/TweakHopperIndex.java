@@ -4,6 +4,7 @@ import art.arcane.react.React;
 import art.arcane.react.api.tweak.ReactTweak;
 import art.arcane.react.content.feature.FeatureHopperContainerThroughputMap;
 import art.arcane.react.content.feature.FeatureHopperItemIndex;
+import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.core.NMS;
 import art.arcane.react.core.bridge.BridgeKind;
 import art.arcane.react.core.bridge.NmsBridgeDescriptor;
@@ -127,15 +128,6 @@ public class TweakHopperIndex extends ReactTweak {
         bridgesAvailable = false;
     }
 
-    @Override
-    public int getTickInterval() {
-        return -1;
-    }
-
-    @Override
-    public void onTick() {
-    }
-
     private boolean checkBridgesAvailable() {
         return bridgeAddItem.available()
             && bridgeCooldownTime.available()
@@ -176,7 +168,7 @@ public class TweakHopperIndex extends ReactTweak {
         boolean stretchEligible = idleStretch
             && idleStretchTicks > HOPPER_COOLDOWN_TICKS
             && bridgeIsEmpty.available()
-            && sampleTickMs() >= idleStretchMinTickMs;
+            && sample(SamplerTickTime.ID) >= idleStretchMinTickMs;
         for (World world : Bukkit.getWorlds()) {
             UUID worldId = world.getUID();
             positionIndex.forEachHopperInWorld(worldId, packed -> {
@@ -229,15 +221,6 @@ public class TweakHopperIndex extends ReactTweak {
             }
         } catch (Throwable ignored) {
             // Fail open: a hopper we cannot inspect simply keeps vanilla ticking.
-        }
-    }
-
-    private double sampleTickMs() {
-        try {
-            art.arcane.react.api.sampler.Sampler sampler = React.sampler(art.arcane.react.content.sampler.SamplerTickTime.ID);
-            return sampler == null ? 0D : sampler.sample();
-        } catch (Throwable ignored) {
-            return 0D;
         }
     }
 

@@ -56,16 +56,6 @@ public class TweakItemDespawnAccelerator extends ReactTweak implements Listener 
     super(ID);
   }
 
-  @Override
-  public void onActivate() {
-
-  }
-
-  @Override
-  public void onDeactivate() {
-
-  }
-
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void on(ItemSpawnEvent event) {
     Item item = event.getEntity();
@@ -84,15 +74,5 @@ public class TweakItemDespawnAccelerator extends ReactTweak implements Listener 
     if (!React.hasNearbyPlayer(item.getLocation(), noPlayerRadius)) {
       item.setTicksLived(Math.max(item.getTicksLived(), targetTicksLived));
     }
-  }
-
-  @Override
-  public int getTickInterval() {
-    return -1;
-  }
-
-  @Override
-  public void onTick() {
-
   }
 }

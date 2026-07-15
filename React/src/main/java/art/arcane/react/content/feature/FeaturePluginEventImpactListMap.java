@@ -84,26 +84,6 @@ public class FeaturePluginEventImpactListMap extends ReactFeature implements Rea
     }
   }
 
-  @Override
-  public void onActivate() {
-
-  }
-
-  @Override
-  public void onDeactivate() {
-
-  }
-
-  @Override
-  public int getTickInterval() {
-    return -1;
-  }
-
-  @Override
-  public void onTick() {
-
-  }
-
   private void drawBackdrop() {
     for (int y = 0; y < height(); y++) {
       double n = y / (double) Math.max(1, height() - 1);

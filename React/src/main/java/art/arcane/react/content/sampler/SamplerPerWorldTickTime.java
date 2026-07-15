@@ -23,6 +23,7 @@ import art.arcane.react.React;
 import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.util.common.scheduling.J;
+import art.arcane.react.util.project.world.WorldEntitySnapshots;
 import art.arcane.volmlib.util.format.Form;
 import art.arcane.volmlib.util.math.RollingSequence;
 import org.bukkit.Bukkit;
@@ -146,12 +147,12 @@ public class SamplerPerWorldTickTime extends ReactCachedSampler {
 
     long entityCount = 0L;
     try {
-      entityCount = world.getEntities().size();
+      entityCount = WorldEntitySnapshots.count(world);
     } catch (Throwable ignored) {
     }
     long chunkCount = 0L;
     try {
-      chunkCount = world.getLoadedChunks().length;
+      chunkCount = WorldEntitySnapshots.chunkCount(world);
     } catch (Throwable ignored) {
     }
 

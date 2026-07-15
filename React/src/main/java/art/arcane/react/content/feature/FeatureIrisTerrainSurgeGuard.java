@@ -198,11 +198,6 @@ public class FeatureIrisTerrainSurgeGuard extends ReactCapabilityFeature impleme
     return integration.getRemoteSamplerBridge().valueOr("iris", key, fallback);
   }
 
-  private double sample(String samplerId) {
-    var sampler = React.sampler(samplerId);
-    return sampler == null ? 0D : sampler.sample();
-  }
-
   private void rolloverWindow(long now) {
     if (now - windowStartMS <= windowMS) {
       return;

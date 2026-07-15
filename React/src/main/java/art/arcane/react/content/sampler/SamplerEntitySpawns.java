@@ -19,27 +19,18 @@
 
 package art.arcane.react.content.sampler;
 
-import art.arcane.react.api.sampler.ReactCachedSampler;
+import art.arcane.react.api.sampler.ReactCachedRateSampler;
 import art.arcane.volmlib.util.format.Form;
-import art.arcane.volmlib.util.math.M;
-import art.arcane.volmlib.util.math.RollingSequence;
 import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntitySpawnEvent;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
-public class SamplerEntitySpawns extends ReactCachedSampler implements Listener {
+public class SamplerEntitySpawns extends ReactCachedRateSampler implements Listener {
   public static final String ID = "entities-spawns";
-  private static final double D1_OVER_SECONDS = 1.0 / 1000D;
-  private transient final AtomicInteger generated;
-  private transient final RollingSequence avg = new RollingSequence(5);
-  private transient long lastSample = 0L;
 
   public SamplerEntitySpawns() {
-    super(ID, 1000); // 1 tick interval for higher accuracy
-    generated = new AtomicInteger(0);
+    super(ID, 1000);
   }
 
   @Override
@@ -49,21 +40,7 @@ public class SamplerEntitySpawns extends ReactCachedSampler implements Listener 
 
   @EventHandler
   public void on(EntitySpawnEvent event) {
-    generated.incrementAndGet();
-  }
-
-  @Override
-  public double onSample() {
-    if (lastSample == 0) {
-      lastSample = M.ms();
-    }
-
-    int r = generated.getAndSet(0);
-    long dur = Math.max(M.ms() - lastSample, 1000);
-    lastSample = M.ms();
-    avg.put(r / (dur * D1_OVER_SECONDS));
-
-    return avg.getAverage();
+    increment();
   }
 
   @Override

@@ -176,9 +176,4 @@ public class FeatureTrinityIncidentMode extends ReactCapabilityFeature {
 
     return integration.getRemoteSamplerBridge().valueOr(pluginId, key, fallback);
   }
-
-  private double sample(String samplerId) {
-    var sampler = React.sampler(samplerId);
-    return sampler == null ? 0D : sampler.sample();
-  }
 }

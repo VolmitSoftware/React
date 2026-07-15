@@ -322,11 +322,6 @@ public class FeatureChunkQuarantine extends ReactFeature implements Listener {
         || sample(SamplerIncidentScore.ID) >= pressureIncidentScore;
   }
 
-  private double sample(String id) {
-    var sampler = React.sampler(id);
-    return sampler == null ? 0D : sampler.sample();
-  }
-
   private Location resolveHopperLocation(InventoryMoveItemEvent event) {
     if (event.getSource().getHolder() instanceof Hopper source) {
       return source.getBlock().getLocation();

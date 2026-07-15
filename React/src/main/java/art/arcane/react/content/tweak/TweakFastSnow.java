@@ -36,11 +36,6 @@ public class TweakFastSnow extends ReactTweak implements Listener {
     super(ID);
   }
 
-  @Override
-  public void onActivate() {
-
-  }
-
   @EventHandler
   public void on(BlockFormEvent e) {
     if (e.getBlock().getBlockData() instanceof Snow s) {
@@ -57,20 +52,5 @@ public class TweakFastSnow extends ReactTweak implements Listener {
       var location = e.getBlock().getLocation().clone();
       J.s(location, () -> FastWorld.breakNaturally(location.getBlock()), 0);
     }
-  }
-
-  @Override
-  public void onDeactivate() {
-
-  }
-
-  @Override
-  public int getTickInterval() {
-    return -1;
-  }
-
-  @Override
-  public void onTick() {
-
   }
 }

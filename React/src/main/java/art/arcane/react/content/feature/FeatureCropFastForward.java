@@ -21,7 +21,6 @@ package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
 import art.arcane.react.api.feature.ReactFeature;
-import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.content.sampler.SamplerIncidentScore;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.util.common.scheduling.J;
@@ -538,14 +537,5 @@ public class FeatureCropFastForward extends ReactFeature implements Listener {
 
   private static long packChunk(int cx, int cz) {
     return (((long) cx) << 32) ^ (cz & 0xFFFFFFFFL);
-  }
-
-  private double sample(String id) {
-    try {
-      Sampler sampler = React.sampler(id);
-      return sampler == null ? 0D : sampler.sample();
-    } catch (Throwable ignored) {
-      return 0D;
-    }
   }
 }

@@ -43,16 +43,6 @@ public class TweakSpawnerPlayerRadius extends ReactTweak implements Listener {
     super(ID);
   }
 
-  @Override
-  public void onActivate() {
-
-  }
-
-  @Override
-  public void onDeactivate() {
-
-  }
-
   @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
   public void on(CreatureSpawnEvent event) {
     CreatureSpawnEvent.SpawnReason reason = event.getSpawnReason();
@@ -70,15 +60,5 @@ public class TweakSpawnerPlayerRadius extends ReactTweak implements Listener {
     if (!React.hasNearbyPlayer(event.getLocation(), requiredPlayerDistance)) {
       event.setCancelled(true);
     }
-  }
-
-  @Override
-  public int getTickInterval() {
-    return -1;
-  }
-
-  @Override
-  public void onTick() {
-
   }
 }

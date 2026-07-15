@@ -46,7 +46,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Prewarm Critical Chunks action. Preloads high-risk chunks and neighbors to reduce stutter spikes.")
 public class ActionPrewarmCriticalChunks extends ReactAction<ActionPrewarmCriticalChunks.Params> {
   public static final String ID = "action-prewarm-critical-chunks";
-  public static final String SHORT = "apcc";
 
   public ActionPrewarmCriticalChunks() {
     super(ID);

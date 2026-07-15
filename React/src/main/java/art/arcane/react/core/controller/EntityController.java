@@ -27,6 +27,7 @@ import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.plugin.IController;
 import art.arcane.react.util.project.value.MaterialValue;
 import art.arcane.react.util.project.world.EntityKiller;
+import art.arcane.react.util.project.world.WorldEntitySnapshots;
 import art.arcane.volmlib.util.scheduling.Looper;
 import lombok.Data;
 import org.bukkit.Bukkit;
@@ -258,7 +259,7 @@ public class EntityController implements IController, Listener {
       ThreadLocalRandom random = ThreadLocalRandom.current();
 
       for (World world : Bukkit.getWorlds()) {
-        List<Entity> entities = world.getEntities();
+        List<Entity> entities = WorldEntitySnapshots.get(world);
         int entityCount = entities.size();
 
         if (entityCount < 3) {

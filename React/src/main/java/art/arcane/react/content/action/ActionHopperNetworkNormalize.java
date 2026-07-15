@@ -51,7 +51,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Hopper Network Normalize action. Targets hopper hotspots, merges item entities, and can unload idle hot chunks.")
 public class ActionHopperNetworkNormalize extends ReactAction<ActionHopperNetworkNormalize.Params> {
   public static final String ID = "action-hopper-network-normalize";
-  public static final String SHORT = "ahnn";
 
   public ActionHopperNetworkNormalize() {
     super(ID);

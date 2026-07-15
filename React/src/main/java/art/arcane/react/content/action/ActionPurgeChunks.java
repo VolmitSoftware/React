@@ -43,7 +43,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Purge Chunks action. Attempts to unload selected chunks to reduce active chunk pressure.")
 public class ActionPurgeChunks extends ReactAction<ActionPurgeChunks.Params> {
   public static final String ID = "purge-chunks";
-  public static final String SHORT = "pc";
 
   public ActionPurgeChunks() {
     super(ID);

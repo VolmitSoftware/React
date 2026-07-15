@@ -37,7 +37,6 @@ import art.arcane.react.content.action.ActionTrimEntitiesByAgePriority;
 import art.arcane.react.content.action.ActionUnknown;
 import art.arcane.react.content.feature.FeatureCropFastForward;
 import art.arcane.react.content.feature.FeatureLazyGravity;
-import art.arcane.react.content.feature.FeatureWorldSaveStaggering;
 import art.arcane.react.core.bridge.BridgeHealthReport;
 import art.arcane.react.core.controller.ActionController;
 import art.arcane.react.core.controller.FeatureController;
@@ -68,7 +67,6 @@ import org.bukkit.entity.Player;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -154,7 +152,7 @@ public class CommandDev implements DirectorExecutor {
       aliases = {"v", "selftest"},
       origin = DirectorOrigin.BOTH,
       sync = true,
-      description = "Self-verify the optimization-sweep fixes (bridge, samplers, lazy-gravity landing, autosave restore) and report PASS/FAIL."
+      description = "Self-verify the optimization-sweep fixes (bridge, samplers, and lazy-gravity landing) and report PASS/FAIL."
   )
   public void verify() {
     VolmitSender out = sender();
@@ -166,8 +164,7 @@ public class CommandDev implements DirectorExecutor {
     verifyBridge(out);
     verifySamplers(out);
     verifyCropObservational(out);
-    verifyLazyGravity(out, () -> verifyWorldSave(out, () ->
-        out.sendMessage(C.REACT + "React verify — complete.")));
+    verifyLazyGravity(out, () -> out.sendMessage(C.REACT + "React verify — complete."));
   }
 
   private void verifyBridge(VolmitSender out) {
@@ -292,67 +289,6 @@ public class CommandDev implements DirectorExecutor {
       }
       onDone.run();
     }, 100);
-  }
-
-  private void verifyWorldSave(VolmitSender out, Runnable onDone) {
-    FeatureWorldSaveStaggering feature = React.feature(FeatureWorldSaveStaggering.class);
-    FeatureController featureController = React.controller(FeatureController.class);
-    if (feature == null || featureController == null) {
-      out.sendMessage("  " + skipTag() + C.WHITE + "world-save autosave-restore" + C.GRAY + " — feature/controller unavailable");
-      onDone.run();
-      return;
-    }
-
-    boolean wasActive = featureController.getActiveFeatures() != null
-        && featureController.getActiveFeatures().containsKey(feature.getId());
-
-    featureController.deactivateFeature(feature);
-    J.s(() -> {
-      Map<UUID, Boolean> baseline = new LinkedHashMap<>();
-      for (World world : Bukkit.getWorlds()) {
-        baseline.put(world.getUID(), world.isAutoSave());
-      }
-
-      featureController.activateFeature(feature);
-      J.s(() -> {
-        int baselineOn = 0;
-        int suppressed = 0;
-        for (World world : Bukkit.getWorlds()) {
-          if (Boolean.TRUE.equals(baseline.get(world.getUID()))) {
-            baselineOn++;
-            if (!world.isAutoSave()) {
-              suppressed++;
-            }
-          }
-        }
-
-        featureController.deactivateFeature(feature);
-        int restored = 0;
-        int total = 0;
-        for (World world : Bukkit.getWorlds()) {
-          Boolean was = baseline.get(world.getUID());
-          if (was == null) {
-            continue;
-          }
-          total++;
-          if (world.isAutoSave() == was) {
-            restored++;
-          }
-        }
-
-        if (wasActive) {
-          featureController.activateFeature(feature);
-        }
-
-        boolean restoreOk = total > 0 && restored == total;
-        boolean suppressionObserved = baselineOn > 0 && suppressed > 0;
-        out.sendMessage("  " + passTag(restoreOk) + C.WHITE + "world-save autosave-restore" + C.GRAY
-            + " — restored " + restored + "/" + total + " worlds after disable"
-            + (suppressionObserved ? "" : C.YELLOW + " (suppression not observed; suppressVanillaAutoSave may be off)"));
-        out.sendMessage("      " + C.GRAY + "data-loss fix: autosave is now restored unconditionally on disable");
-        onDone.run();
-      }, 20);
-    }, 5);
   }
 
   private String passTag(boolean pass) {

@@ -237,11 +237,6 @@ public class FeaturePortalTrafficSmoother extends ReactFeature implements Listen
     return now < window.throttleUntil;
   }
 
-  private double sample(String id) {
-    var sampler = React.sampler(id);
-    return sampler == null ? 0D : sampler.sample();
-  }
-
   private static final class PortalWindow {
     @art.arcane.react.util.project.config.ConfigDoc(value = "Internal timestamp used by portal traffic smoother to track timing windows and decay.", impact = "Primarily runtime state; changing this manually can distort cooldown or throttling behavior.")
     private long start;

@@ -4,8 +4,12 @@ import net.jqwik.api.ForAll;
 import net.jqwik.api.Property;
 import net.jqwik.api.constraints.DoubleRange;
 import net.jqwik.api.constraints.IntRange;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.MagmaCube;
+import org.bukkit.entity.Slime;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 class MobStackMergeTest {
 
@@ -99,5 +103,74 @@ class MobStackMergeTest {
     int low = FeatureMobStacking.theoreticalMaxStackCount(maxHealth, entityMaxHealth, maxStackSize);
     int high = FeatureMobStacking.theoreticalMaxStackCount(maxHealth + bump, entityMaxHealth, maxStackSize);
     Assertions.assertTrue(high >= low);
+  }
+
+  @Property(tries = 200)
+  void chunkKeyPackRoundTrips(@ForAll @IntRange(min = -2_000_000, max = 2_000_000) int chunkX,
+                              @ForAll @IntRange(min = -2_000_000, max = 2_000_000) int chunkZ) {
+    long key = FeatureMobStacking.packChunkKey(chunkX, chunkZ);
+    Assertions.assertEquals(chunkX, FeatureMobStacking.chunkKeyX(key));
+    Assertions.assertEquals(chunkZ, FeatureMobStacking.chunkKeyZ(key));
+  }
+
+  @Test
+  void chunkKeysDistinctForNegativeCoordinates() {
+    Assertions.assertNotEquals(
+        FeatureMobStacking.packChunkKey(-1, 0),
+        FeatureMobStacking.packChunkKey(0, -1));
+  }
+
+  @Test
+  void withinMergeRadiusAcceptsAxisAlignedBoundary() {
+    Assertions.assertTrue(FeatureMobStacking.withinMergeRadius(0, 0, 0, 6, 0, 0, 6));
+    Assertions.assertTrue(FeatureMobStacking.withinMergeRadius(0, 0, 0, 6, 6, 6, 6));
+  }
+
+  @Test
+  void withinMergeRadiusRejectsBeyondRadiusOnAnyAxis() {
+    Assertions.assertFalse(FeatureMobStacking.withinMergeRadius(0, 0, 0, 6.01, 0, 0, 6));
+    Assertions.assertFalse(FeatureMobStacking.withinMergeRadius(0, 0, 0, 0, 7, 0, 6));
+    Assertions.assertFalse(FeatureMobStacking.withinMergeRadius(0, 0, 0, 0, 0, -6.5, 6));
+  }
+
+  @Test
+  void differentlySizedMagmaCubesDoNotMerge() {
+    FeatureMobStacking feature = new FeatureMobStacking();
+    MagmaCube source = Mockito.mock(MagmaCube.class);
+    MagmaCube sameSize = Mockito.mock(MagmaCube.class);
+    MagmaCube differentSize = Mockito.mock(MagmaCube.class);
+    Mockito.when(source.getEntityId()).thenReturn(1);
+    Mockito.when(differentSize.getEntityId()).thenReturn(2);
+    Mockito.when(source.getType()).thenReturn(EntityType.MAGMA_CUBE);
+    Mockito.when(differentSize.getType()).thenReturn(EntityType.MAGMA_CUBE);
+    Mockito.when(source.getSize()).thenReturn(4);
+    Mockito.when(sameSize.getSize()).thenReturn(4);
+    Mockito.when(differentSize.getSize()).thenReturn(2);
+
+    Assertions.assertFalse(feature.canMerge(source, differentSize));
+    Assertions.assertTrue(FeatureMobStacking.sameCubeSize(source, sameSize));
+  }
+
+  @Test
+  void slimeSizeComparisonRemainsUnchanged() {
+    Slime source = Mockito.mock(Slime.class);
+    Slime target = Mockito.mock(Slime.class);
+    Mockito.when(source.getSize()).thenReturn(3);
+    Mockito.when(target.getSize()).thenReturn(1);
+
+    Assertions.assertFalse(FeatureMobStacking.sameCubeSize(source, target));
+  }
+
+  @Property(tries = 200)
+  void withinMergeRadiusIsSymmetric(@ForAll @DoubleRange(min = -64.0, max = 64.0) double ax,
+                                    @ForAll @DoubleRange(min = -64.0, max = 64.0) double ay,
+                                    @ForAll @DoubleRange(min = -64.0, max = 64.0) double az,
+                                    @ForAll @DoubleRange(min = -64.0, max = 64.0) double bx,
+                                    @ForAll @DoubleRange(min = -64.0, max = 64.0) double by,
+                                    @ForAll @DoubleRange(min = -64.0, max = 64.0) double bz,
+                                    @ForAll @DoubleRange(min = 0.0, max = 16.0) double radius) {
+    Assertions.assertEquals(
+        FeatureMobStacking.withinMergeRadius(ax, ay, az, bx, by, bz, radius),
+        FeatureMobStacking.withinMergeRadius(bx, by, bz, ax, ay, az, radius));
   }
 }

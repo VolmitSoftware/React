@@ -21,9 +21,11 @@ package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
 import art.arcane.react.api.feature.ReactFeature;
+import art.arcane.react.content.feature.perworld.PerWorldPressure;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.model.ReactEntity;
 import art.arcane.react.util.common.scheduling.J;
+import art.arcane.react.util.project.world.WorldEntitySnapshots;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
@@ -157,7 +159,7 @@ public class FeatureAdaptiveEntitySleep extends ReactFeature implements Listener
         return;
       }
 
-      List<Entity> entities = world.getEntities();
+      List<Entity> entities = WorldEntitySnapshots.get(world);
       if (entities.isEmpty()) {
         continue;
       }
@@ -256,7 +258,12 @@ public class FeatureAdaptiveEntitySleep extends ReactFeature implements Listener
       return;
     }
 
-    if (shouldDoze(lastTickMs, dutyCycleMinTickMs, dutyCycleSlots, mob.getEntityId(), dutyCycleIndex)) {
+    double effectiveTickMs = lastTickMs;
+    if (PerWorldPressure.get(entity.getWorld()).isPressure()) {
+      effectiveTickMs = Math.max(effectiveTickMs, dutyCycleMinTickMs);
+    }
+
+    if (shouldDoze(effectiveTickMs, dutyCycleMinTickMs, dutyCycleSlots, mob.getEntityId(), dutyCycleIndex)) {
       doze(mob);
     } else {
       undoze(mob);

@@ -20,8 +20,8 @@
 package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
+import art.arcane.react.api.feature.PressureGate;
 import art.arcane.react.api.feature.ReactFeature;
-import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.content.sampler.SamplerIncidentScore;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.util.common.scheduling.J;
@@ -59,9 +59,7 @@ public class FeatureRandomTickGovernor extends ReactFeature {
   @art.arcane.react.util.project.config.ConfigDoc(value = "Random tick speed applied while the governor is engaged.", impact = "Lower values shed more random-tick work but slow growth more during governed windows.")
   private int reducedRandomTickSpeed = 1;
   private transient Map<UUID, Integer> originalByWorld;
-  private transient long pressureSinceMs;
-  private transient long calmSinceMs;
-  private transient boolean engaged;
+  private transient final PressureGate gate = new PressureGate();
 
   public FeatureRandomTickGovernor() {
     super(ID);
@@ -70,14 +68,13 @@ public class FeatureRandomTickGovernor extends ReactFeature {
   @Override
   public void onActivate() {
     originalByWorld = new ConcurrentHashMap<>();
-    pressureSinceMs = 0;
-    calmSinceMs = 0;
-    engaged = false;
+    gate.reset();
   }
 
   @Override
   public void onDeactivate() {
-    if (engaged) {
+    if (gate.isEngaged()) {
+      gate.reset();
       release();
     }
   }
@@ -92,46 +89,19 @@ public class FeatureRandomTickGovernor extends ReactFeature {
     double tickMs = sample(SamplerTickTime.ID);
     double incident = sample(SamplerIncidentScore.ID);
     boolean pressure = isUnderPressure(tickMs, engageTickTimeMs, incident, engageIncidentScore);
-    long now = System.currentTimeMillis();
-
-    if (!engaged) {
-      if (!pressure) {
-        pressureSinceMs = 0;
-        return;
-      }
-
-      if (pressureSinceMs == 0) {
-        pressureSinceMs = now;
-        return;
-      }
-
-      if (now - pressureSinceMs >= Math.max(0, sustainEngageMs)) {
-        engage();
-      }
-
-      return;
-    }
-
     boolean calm = isCalm(tickMs, releaseTickTimeMs, incident, engageIncidentScore);
-    if (!calm) {
-      calmSinceMs = 0;
-      return;
-    }
+    long now = System.currentTimeMillis();
+    boolean wasEngaged = gate.isEngaged();
+    boolean nowEngaged = gate.update(now, pressure, calm, sustainEngageMs, sustainReleaseMs);
 
-    if (calmSinceMs == 0) {
-      calmSinceMs = now;
-      return;
-    }
-
-    if (now - calmSinceMs >= Math.max(0, sustainReleaseMs)) {
+    if (!wasEngaged && nowEngaged) {
+      engage();
+    } else if (wasEngaged && !nowEngaged) {
       release();
     }
   }
 
   private void engage() {
-    engaged = true;
-    pressureSinceMs = 0;
-    calmSinceMs = 0;
     int reduced = Math.max(0, reducedRandomTickSpeed);
 
     J.s(() -> {
@@ -154,10 +124,6 @@ public class FeatureRandomTickGovernor extends ReactFeature {
   }
 
   private void release() {
-    engaged = false;
-    pressureSinceMs = 0;
-    calmSinceMs = 0;
-
     J.s(() -> {
       int restored = 0;
       for (Map.Entry<UUID, Integer> entry : originalByWorld.entrySet()) {
@@ -175,14 +141,5 @@ public class FeatureRandomTickGovernor extends ReactFeature {
         React.verbose("Random tick governor released: restored " + restored + " worlds");
       }
     });
-  }
-
-  private double sample(String samplerId) {
-    try {
-      Sampler sampler = React.sampler(samplerId);
-      return sampler == null ? 0D : sampler.sample();
-    } catch (Throwable ignored) {
-      return 0D;
-    }
   }
 }

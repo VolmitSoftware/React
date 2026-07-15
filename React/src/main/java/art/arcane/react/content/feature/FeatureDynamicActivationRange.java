@@ -21,9 +21,11 @@ package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
 import art.arcane.react.api.feature.ReactFeature;
+import art.arcane.react.content.feature.perworld.PerWorldPressure;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.model.ReactEntity;
 import art.arcane.react.util.common.scheduling.J;
+import art.arcane.react.util.project.world.WorldEntitySnapshots;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
@@ -119,7 +121,7 @@ public class FeatureDynamicActivationRange extends ReactFeature implements Liste
         return;
       }
 
-      List<Entity> entities = world.getEntities();
+      List<Entity> entities = WorldEntitySnapshots.get(world);
       if (entities.isEmpty()) {
         continue;
       }
@@ -192,7 +194,15 @@ public class FeatureDynamicActivationRange extends ReactFeature implements Liste
       return;
     }
 
-    if (React.hasNearbyPlayer(entity.getLocation(), currentActivationRange)) {
+    double effectiveRange = currentActivationRange;
+    PerWorldPressure pressure = PerWorldPressure.get(entity.getWorld());
+    if (pressure.isPanic()) {
+      effectiveRange = minimumActivationRange;
+    } else if (pressure.isPressure()) {
+      effectiveRange = Math.max(minimumActivationRange, currentActivationRange * 0.5D);
+    }
+
+    if (React.hasNearbyPlayer(entity.getLocation(), effectiveRange)) {
       wake(entity);
       return;
     }

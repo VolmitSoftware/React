@@ -19,27 +19,71 @@
 
 package art.arcane.react.util.project.world;
 
-import art.arcane.curse.Curse;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 
+import java.lang.reflect.Method;
 import java.util.Optional;
 import java.util.UUID;
 
 public class CustomMobChecker {
+  private static final long PROBE_INTERVAL_MS = 30_000L;
+  private static volatile Object mobManager;
+  private static volatile Method getActiveMob;
+  private static volatile long nextProbeAt;
+
   public static boolean isCustom(Entity entity) {
-    try {
-      if (Bukkit.getPluginManager().getPlugin("MythicMobs") != null) {
-        Optional<?> o = Curse.on(Curse.on(Curse.on(Class.forName("io.lumine.mythic.bukkit.MythicBukkit"))
-                .method("inst").invoke()).method("getMobManager").invoke())
-            .method("getActiveMob", UUID.class).invoke(entity.getUniqueId());
-
-        return o.isPresent();
+    Object manager = mobManager;
+    Method method = getActiveMob;
+    if (manager == null || method == null) {
+      if (!resolve()) {
+        return false;
       }
-    } catch (Throwable ignored) {
 
+      manager = mobManager;
+      method = getActiveMob;
+      if (manager == null || method == null) {
+        return false;
+      }
     }
 
-    return false;
+    try {
+      Object result = method.invoke(manager, entity.getUniqueId());
+      return result instanceof Optional<?> active && active.isPresent();
+    } catch (Throwable ignored) {
+      mobManager = null;
+      getActiveMob = null;
+      nextProbeAt = System.currentTimeMillis() + PROBE_INTERVAL_MS;
+      return false;
+    }
+  }
+
+  private static synchronized boolean resolve() {
+    if (mobManager != null && getActiveMob != null) {
+      return true;
+    }
+
+    long now = System.currentTimeMillis();
+    if (now < nextProbeAt) {
+      return false;
+    }
+
+    nextProbeAt = now + PROBE_INTERVAL_MS;
+    try {
+      if (Bukkit.getPluginManager().getPlugin("MythicMobs") == null) {
+        return false;
+      }
+
+      Class<?> mythic = Class.forName("io.lumine.mythic.bukkit.MythicBukkit");
+      Object instance = mythic.getMethod("inst").invoke(null);
+      Object manager = instance.getClass().getMethod("getMobManager").invoke(instance);
+      Method method = manager.getClass().getMethod("getActiveMob", UUID.class);
+      method.setAccessible(true);
+      mobManager = manager;
+      getActiveMob = method;
+      return true;
+    } catch (Throwable ignored) {
+      return false;
+    }
   }
 }

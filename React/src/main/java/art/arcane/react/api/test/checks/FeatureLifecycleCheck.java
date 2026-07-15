@@ -4,7 +4,6 @@ import art.arcane.react.React;
 import art.arcane.react.api.feature.Feature;
 import art.arcane.react.api.test.ReactAsyncSubsystemCheck;
 import art.arcane.react.api.test.TestReport;
-import art.arcane.react.content.feature.FeatureWorldSaveStaggering;
 import art.arcane.react.core.controller.FeatureController;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.project.registry.Registry;
@@ -150,20 +149,11 @@ public class FeatureLifecycleCheck implements ReactAsyncSubsystemCheck {
     }
 
     if (total > 0 && matched == total) {
-      report.pass("features", "autosave-restore-guard", "all " + total + " worlds returned to baseline isAutoSave after full feature lifecycle cycling");
-    } else if (worldSaveFeatureActive()) {
-      report.warn("features", "autosave-restore-guard", "autosave differs from baseline (" + matched + "/" + total + ") while world-save-staggering is active, which legitimately toggles autosave");
-    } else {
-      report.fail("features", "autosave-restore-guard", "autosave drift after cycling: " + matched + "/" + total + " worlds match baseline (data-loss guard)");
+      report.pass("features", "autosave-restore-guard", "all " + total + " worlds retained baseline isAutoSave after full feature lifecycle cycling");
+      return;
     }
-  }
 
-  private boolean worldSaveFeatureActive() {
-    FeatureController controller = React.controller(FeatureController.class);
-    if (controller == null || controller.getActiveFeatures() == null) {
-      return false;
-    }
-    return controller.getActiveFeatures().containsKey(FeatureWorldSaveStaggering.ID);
+    report.fail("features", "autosave-restore-guard", "autosave drift after cycling: " + matched + "/" + total + " worlds match baseline (data-loss guard)");
   }
 
   private void restoreFeature(FeatureController controller, Feature feature, Map<String, Boolean> originalActive) {

@@ -209,19 +209,4 @@ public class FeatureItemSuperStacker extends ReactFeature implements Listener {
   public void onActivate() {
     React.controller(EntityController.class).registerEntityTickListener(EntityType.ITEM, (i) -> mergeWithNearbyItems((Item) i));
   }
-
-  @Override
-  public void onDeactivate() {
-
-  }
-
-  @Override
-  public int getTickInterval() {
-    return -1;
-  }
-
-  @Override
-  public void onTick() {
-
-  }
 }

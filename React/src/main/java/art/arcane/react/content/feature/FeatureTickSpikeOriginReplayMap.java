@@ -81,7 +81,7 @@ public class FeatureTickSpikeOriginReplayMap extends FeatureChunkHeatmapBase {
   @Override
   public void onTick() {
     long now = System.currentTimeMillis();
-    double tickMS = tickTime();
+    double tickMS = sample(SamplerTickTime.ID);
 
     if (tickMS >= spikeThresholdMS && now - lastCaptureMS >= spikeCaptureCooldownMS) {
       lastCaptureMS = now;
@@ -231,11 +231,6 @@ public class FeatureTickSpikeOriginReplayMap extends FeatureChunkHeatmapBase {
         replayHeat.remove(entry.getKey(), cell);
       }
     }
-  }
-
-  private double tickTime() {
-    var sampler = React.sampler(SamplerTickTime.ID);
-    return sampler == null ? 0D : sampler.sample();
   }
 
   private static final class HeatCell {

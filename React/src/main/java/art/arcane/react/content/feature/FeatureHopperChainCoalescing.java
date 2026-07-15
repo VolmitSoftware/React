@@ -827,15 +827,6 @@ public class FeatureHopperChainCoalescing extends ReactFeature implements Listen
     }
   }
 
-  private double sample(String id) {
-    try {
-      art.arcane.react.api.sampler.Sampler sampler = React.sampler(id);
-      return sampler == null ? 0D : sampler.sample();
-    } catch (Throwable ignored) {
-      return 0D;
-    }
-  }
-
   private static long packChunk(int cx, int cz) {
     return (((long) cx) << 32) ^ (cz & 0xFFFFFFFFL);
   }

@@ -65,7 +65,6 @@ public final class ReactConfigGUI {
       "dynamic-view-distance",
       "afk-view-shedding",
       "per-world-tick-budget",
-      "world-save-staggering",
       "random-tick-governor",
       "tracker-range-governor",
       "activation-range-governor",

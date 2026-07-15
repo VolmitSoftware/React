@@ -78,26 +78,6 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
   }
 
   @Override
-  public void onActivate() {
-
-  }
-
-  @Override
-  public void onDeactivate() {
-
-  }
-
-  @Override
-  public int getTickInterval() {
-    return -1;
-  }
-
-  @Override
-  public void onTick() {
-
-  }
-
-  @Override
   public void render() {
     Player viewer = player();
     MapController mapController = React.controller(MapController.class);

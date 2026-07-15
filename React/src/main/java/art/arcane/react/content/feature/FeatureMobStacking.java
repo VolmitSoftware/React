@@ -34,6 +34,7 @@ import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
@@ -45,9 +46,15 @@ import org.bukkit.event.entity.EntitySpawnEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.util.BoundingBox;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Mob Stacking feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureMobStacking extends ReactFeature implements Listener {
@@ -61,6 +68,30 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
 
   static int theoreticalMaxStackCount(double maxHealth, double entityMaxHealth, int maxStackSize) {
     return Math.min((int) Math.ceil(Math.floor(maxHealth / entityMaxHealth)), maxStackSize);
+  }
+
+  static long packChunkKey(int chunkX, int chunkZ) {
+    return (((long) chunkX) << 32) | (chunkZ & 0xFFFFFFFFL);
+  }
+
+  static int chunkKeyX(long key) {
+    return (int) (key >> 32);
+  }
+
+  static int chunkKeyZ(long key) {
+    return (int) key;
+  }
+
+  static boolean withinMergeRadius(double ax, double ay, double az, double bx, double by, double bz, double radius) {
+    return Math.abs(ax - bx) <= radius && Math.abs(ay - by) <= radius && Math.abs(az - bz) <= radius;
+  }
+
+  static boolean sameCubeSize(Entity source, Entity target) {
+    if (source instanceof AbstractCubeMob sourceCube) {
+      return target instanceof AbstractCubeMob targetCube && sourceCube.getSize() == targetCube.getSize();
+    }
+
+    return !(target instanceof AbstractCubeMob);
   }
 
   public static final String ID = "mob-stacking";
@@ -80,8 +111,11 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
   private boolean skipCustomMobs = true;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Controls whether mob stacking applies only spawner mobs.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
   private boolean onlySpawnerMobs = false;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "How often queued chunks are processed for stacking, in milliseconds.", impact = "Lower values stack freshly spawned mobs sooner at more scheduling cost; higher values batch more merge work per pass.")
+  private int batchIntervalMs = 250;
 
   private transient final Map<EntityType, String> formattedBaseNames = new ConcurrentHashMap<>();
+  private transient final Map<UUID, Set<Long>> dirtyChunks = new ConcurrentHashMap<>();
   private transient SamplerEntities entitiesSampler;
 
   public FeatureMobStacking() {
@@ -108,6 +142,7 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
 
   @Override
   public void onActivate() {
+    dirtyChunks.clear();
     for (EntityType i : stackableTypes) {
       React.controller(EntityController.class).registerEntityTickListener(i, this::onTick);
     }
@@ -132,13 +167,13 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
           Sheep oldSheep = (Sheep) clickedEntity;
           newEntity = (LivingEntity) clickedEntity.getWorld().spawnEntity(clickedEntity.getLocation().add(0, 0.5, 0), clickedEntity.getType());
           ((Sheep) newEntity).setColor(oldSheep.getColor()); // setting the new sheep color
-        } else if (clickedEntity instanceof Slime) {
-          Slime oldSlime = (Slime) clickedEntity;
+        } else if (clickedEntity instanceof AbstractCubeMob oldCube) {
           newEntity = (LivingEntity) clickedEntity.getWorld().spawnEntity(clickedEntity.getLocation().add(0, 0.5, 0), clickedEntity.getType());
-          if (oldSlime.getSize() > 1) { // This is to ensure no infinite loop of slime spawning
-            ((Slime) newEntity).setSize(oldSlime.getSize() / 2); // setting the new size
+          AbstractCubeMob newCube = (AbstractCubeMob) newEntity;
+          if (oldCube.getSize() > 1) { // This is to ensure no infinite loop of cube mob spawning
+            newCube.setSize(oldCube.getSize() / 2); // setting the new size
           } else {
-            ((Slime) newEntity).setSize(oldSlime.getSize());
+            newCube.setSize(oldCube.getSize());
           }
         } else {
           newEntity = (LivingEntity) clickedEntity.getWorld().spawnEntity(clickedEntity.getLocation().add(0, 0.5, 0), clickedEntity.getType());
@@ -200,8 +235,8 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
   }
 
   private void copyState(LivingEntity source, LivingEntity target) {
-    if (source instanceof Slime sourceSlime && target instanceof Slime targetSlime) {
-      targetSlime.setSize(Math.max(1, sourceSlime.getSize()));
+    if (source instanceof AbstractCubeMob sourceCube && target instanceof AbstractCubeMob targetCube) {
+      targetCube.setSize(Math.max(1, sourceCube.getSize()));
     }
 
     if (source instanceof Sheep sourceSheep && target instanceof Sheep targetSheep) {
@@ -297,11 +332,9 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
       return false;
     }
 
-    // Check if entities are Slimes or Magma Cubes and if their sizes match
-    if ((a instanceof Slime || a instanceof MagmaCube) && (into instanceof Slime || into instanceof MagmaCube)) {
-      if (((Slime) a).getSize() != ((Slime) into).getSize()) {
-        return false;
-      }
+    // Check if cube mob sizes match
+    if (!sameCubeSize(a, into)) {
+      return false;
     }
 
     // Check if entities are ageable and if both are adults or babies
@@ -386,11 +419,7 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
   @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
   public void on(EntitySpawnEvent e) {
     if (stackableTypes.contains(e.getEntityType())) {
-      if (J.isFoliaThreading()) {
-        J.runEntity(e.getEntity(), () -> onTick(e.getEntity()));
-      } else {
-        J.s(() -> onTick(e.getEntity()));
-      }
+      markDirty(e.getEntity());
     }
   }
 
@@ -402,51 +431,165 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
   }
 
   public void onTick(Entity entity) {
-    if (entity == null || entity.isDead() || StackExclusion.isExcluded(entity)) {
+    if (entity == null || entity.isDead()) {
       return;
     }
 
-    Runnable tick = () -> {
-      if (entity.isDead()) {
-        return;
-      }
-
-      for (Entity nearby : entity.getNearbyEntities(searchRadius, searchRadius, searchRadius)) {
-        if (merge(entity, nearby)) {
-          return;
-        }
-      }
-    };
-
-    if (J.isFoliaThreading()) {
-      if (J.isOwnedByCurrentRegion(entity)) {
-        tick.run();
-      } else {
-        J.runEntity(entity, () -> onTick(entity));
-      }
-      return;
-    }
-
-    if (Bukkit.isPrimaryThread()) {
-      tick.run();
-      return;
-    }
-
-    J.s(tick);
+    markDirty(entity);
   }
 
-  @Override
-  public void onDeactivate() {
+  private void markDirty(Entity entity) {
+    Location location = entity.getLocation();
+    World world = location.getWorld();
+    if (world == null) {
+      return;
+    }
 
-  }
-
-  @Override
-  public int getTickInterval() {
-    return -1;
+    dirtyChunks.computeIfAbsent(world.getUID(), ignored -> ConcurrentHashMap.newKeySet())
+        .add(packChunkKey(location.getBlockX() >> 4, location.getBlockZ() >> 4));
   }
 
   @Override
   public void onTick() {
+    if (dirtyChunks.isEmpty()) {
+      return;
+    }
 
+    List<WorldBatch> batches = new ArrayList<>();
+    for (UUID worldId : new ArrayList<>(dirtyChunks.keySet())) {
+      Set<Long> keys = dirtyChunks.remove(worldId);
+      if (keys == null || keys.isEmpty()) {
+        continue;
+      }
+
+      World world = Bukkit.getWorld(worldId);
+      if (world == null) {
+        continue;
+      }
+
+      batches.add(new WorldBatch(world, new ArrayList<>(keys)));
+    }
+
+    if (batches.isEmpty()) {
+      return;
+    }
+
+    if (J.isFoliaThreading()) {
+      for (WorldBatch batch : batches) {
+        for (long key : batch.keys()) {
+          int chunkX = chunkKeyX(key);
+          int chunkZ = chunkKeyZ(key);
+          J.runChunk(batch.world(), chunkX, chunkZ, () -> stackChunk(batch.world(), chunkX, chunkZ));
+        }
+      }
+      return;
+    }
+
+    J.s(() -> {
+      for (WorldBatch batch : batches) {
+        for (long key : batch.keys()) {
+          stackChunk(batch.world(), chunkKeyX(key), chunkKeyZ(key));
+        }
+      }
+    });
+  }
+
+  private void stackChunk(World world, int chunkX, int chunkZ) {
+    if (!world.isChunkLoaded(chunkX, chunkZ)) {
+      return;
+    }
+
+    double minX = (chunkX << 4) - searchRadius;
+    double minZ = (chunkZ << 4) - searchRadius;
+    double maxX = (chunkX << 4) + 16 + searchRadius;
+    double maxZ = (chunkZ << 4) + 16 + searchRadius;
+    BoundingBox box = new BoundingBox(minX, world.getMinHeight(), minZ, maxX, world.getMaxHeight(), maxZ);
+    Collection<Entity> candidates = world.getNearbyEntities(box, this::isStackCandidate);
+    if (candidates.size() < 2) {
+      return;
+    }
+
+    boolean folia = J.isFoliaThreading();
+    Map<StackBucket, List<Entity>> buckets = new HashMap<>();
+    for (Entity entity : candidates) {
+      if (folia && !J.isOwnedByCurrentRegion(entity)) {
+        continue;
+      }
+
+      buckets.computeIfAbsent(bucketOf(entity), ignored -> new ArrayList<>()).add(entity);
+    }
+
+    for (List<Entity> bucket : buckets.values()) {
+      collapseBucket(bucket);
+    }
+  }
+
+  private void collapseBucket(List<Entity> bucket) {
+    if (bucket.size() < 2) {
+      return;
+    }
+
+    List<Entity> survivors = new ArrayList<>(bucket.size());
+    List<Location> survivorLocations = new ArrayList<>(bucket.size());
+    for (Entity entity : bucket) {
+      if (entity.isDead()) {
+        continue;
+      }
+
+      Location at = entity.getLocation();
+      boolean merged = false;
+      for (int i = 0; i < survivors.size(); i++) {
+        Entity survivor = survivors.get(i);
+        if (survivor.isDead()) {
+          continue;
+        }
+
+        Location to = survivorLocations.get(i);
+        if (!withinMergeRadius(at.getX(), at.getY(), at.getZ(), to.getX(), to.getY(), to.getZ(), searchRadius)) {
+          continue;
+        }
+
+        if (merge(entity, survivor)) {
+          merged = true;
+          break;
+        }
+      }
+
+      if (!merged) {
+        survivors.add(entity);
+        survivorLocations.add(at);
+      }
+    }
+  }
+
+  private boolean isStackCandidate(Entity entity) {
+    return entity instanceof LivingEntity
+        && !(entity instanceof Player)
+        && !entity.isDead()
+        && stackableTypes.contains(entity.getType());
+  }
+
+  private static StackBucket bucketOf(Entity entity) {
+    int size = entity instanceof AbstractCubeMob cube ? cube.getSize() : -1;
+    boolean adult = !(entity instanceof Ageable ageable) || ageable.isAdult();
+    Object color = entity instanceof Sheep sheep ? sheep.getColor() : null;
+    Object profession = entity instanceof Villager villager ? villager.getProfession() : null;
+    return new StackBucket(entity.getType(), size, adult, color, profession);
+  }
+
+  private record StackBucket(EntityType type, int size, boolean adult, Object color, Object profession) {
+  }
+
+  private record WorldBatch(World world, List<Long> keys) {
+  }
+
+  @Override
+  public void onDeactivate() {
+    dirtyChunks.clear();
+  }
+
+  @Override
+  public int getTickInterval() {
+    return Math.max(50, batchIntervalMs);
   }
 }

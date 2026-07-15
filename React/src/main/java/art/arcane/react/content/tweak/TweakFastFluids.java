@@ -273,16 +273,6 @@ public class TweakFastFluids extends ReactTweak implements Listener {
     bridgeFailureGate = null;
   }
 
-  @Override
-  public int getTickInterval() {
-    return -1;
-  }
-
-  @Override
-  public void onTick() {
-
-  }
-
   private boolean checkFluidBridgesAvailable() {
     if (!bridgeGetFluidState.available()) {
       return false;

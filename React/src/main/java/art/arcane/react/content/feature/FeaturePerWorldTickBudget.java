@@ -19,7 +19,9 @@
 
 package art.arcane.react.content.feature;
 
+import art.arcane.react.React;
 import art.arcane.react.api.feature.ReactFeature;
+import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.content.feature.perworld.PerWorldPressure;
 import art.arcane.react.content.feature.perworld.ReactScopedPressure;
 import art.arcane.react.content.feature.perworld.WorldBudgetOverride;
@@ -122,6 +124,11 @@ public class FeaturePerWorldTickBudget extends ReactFeature {
 
   @Override
   public void onTick() {
+    Sampler perWorldSampler = React.sampler(SamplerPerWorldTickTime.ID);
+    if (perWorldSampler != null) {
+      perWorldSampler.sample();
+    }
+
     Set<UUID> live = new HashSet<>();
     for (World world : Bukkit.getWorlds()) {
       UUID worldId = world.getUID();

@@ -170,11 +170,6 @@ public class FeatureFarmBurstSmoother extends ReactFeature implements Listener {
         || sample(SamplerIncidentScore.ID) >= pressureIncidentScore;
   }
 
-  private double sample(String id) {
-    var sampler = React.sampler(id);
-    return sampler == null ? 0D : sampler.sample();
-  }
-
   private void rollWindow(long now) {
     if (now - windowStartMS > burstWindowMS) {
       windowStartMS = now;

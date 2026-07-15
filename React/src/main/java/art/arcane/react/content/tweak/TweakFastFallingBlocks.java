@@ -185,14 +185,4 @@ public class TweakFastFallingBlocks extends ReactTweak implements Listener {
       }
     }
   }
-
-  @Override
-  public int getTickInterval() {
-    return -1;
-  }
-
-  @Override
-  public void onTick() {
-
-  }
 }

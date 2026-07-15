@@ -49,7 +49,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Quarantine Hot Chunks action. Isolates high-score chunks and optionally culls old entities away from players.")
 public class ActionQuarantineHotChunks extends ReactAction<ActionQuarantineHotChunks.Params> {
   public static final String ID = "action-quarantine-hot-chunks";
-  public static final String SHORT = "aqhc";
 
   public ActionQuarantineHotChunks() {
     super(ID);

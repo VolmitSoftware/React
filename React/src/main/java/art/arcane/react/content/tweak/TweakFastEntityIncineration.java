@@ -39,11 +39,6 @@ public class TweakFastEntityIncineration extends ReactTweak implements Listener 
     super(ID);
   }
 
-  @Override
-  public void onActivate() {
-
-  }
-
   @EventHandler
   public void on(EntityDamageEvent e) {
     if (e.getCause().equals(EntityDamageEvent.DamageCause.FIRE_TICK) && e.getEntity() instanceof Monster m && !StackExclusion.isExcluded(m) && React.hasNearbyPlayer(m.getLocation(), incinerationBeyondNearestPlayer)) {
@@ -56,20 +51,5 @@ public class TweakFastEntityIncineration extends ReactTweak implements Listener 
     if (!J.runEntity(entity, () -> React.kill(entity, 3), delay)) {
       React.kill(entity, 3);
     }
-  }
-
-  @Override
-  public void onDeactivate() {
-
-  }
-
-  @Override
-  public int getTickInterval() {
-    return -1;
-  }
-
-  @Override
-  public void onTick() {
-
   }
 }

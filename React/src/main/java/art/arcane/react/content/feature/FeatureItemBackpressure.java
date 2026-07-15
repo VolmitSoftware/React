@@ -21,6 +21,7 @@ package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
 import art.arcane.react.api.feature.ReactFeature;
+import art.arcane.react.content.feature.perworld.PerWorldPressure;
 import art.arcane.react.content.sampler.SamplerEntities;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.util.common.scheduling.J;
@@ -92,7 +93,8 @@ public class FeatureItemBackpressure extends ReactFeature {
 
   @Override
   public void onTick() {
-    if (!shouldApplyBackpressure()) {
+    boolean globalTrigger = shouldApplyBackpressure();
+    if (!globalTrigger && !anyWorldPressured()) {
       return;
     }
 
@@ -101,7 +103,17 @@ public class FeatureItemBackpressure extends ReactFeature {
       return;
     }
 
-    J.s(this::removeRemoteItems);
+    J.s(() -> removeRemoteItems(globalTrigger));
+  }
+
+  private boolean anyWorldPressured() {
+    for (World world : Bukkit.getWorlds()) {
+      if (PerWorldPressure.get(world).isPressure()) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   private boolean shouldApplyBackpressure() {
@@ -114,7 +126,7 @@ public class FeatureItemBackpressure extends ReactFeature {
     return shouldThrottle(tickTime, triggerTickTimeMS, entityCount, triggerEntityCount);
   }
 
-  private void removeRemoteItems() {
+  private void removeRemoteItems(boolean includeAllWorlds) {
     int budget = Math.max(1, maxItemsRemovedPerCycle);
     int sampleCap = Math.max(1, maxItemsScannedPerWorld);
     ThreadLocalRandom random = ThreadLocalRandom.current();
@@ -122,6 +134,10 @@ public class FeatureItemBackpressure extends ReactFeature {
     for (World world : Bukkit.getWorlds()) {
       if (budget <= 0) {
         return;
+      }
+
+      if (!includeAllWorlds && !PerWorldPressure.get(world).isPressure()) {
+        continue;
       }
 
       List<Item> sampled = sampleItems(world, sampleCap, random);

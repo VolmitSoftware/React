@@ -50,7 +50,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Trim Entities By Age Priority action. Scores and trims old low-priority entities with safety guards.")
 public class ActionTrimEntitiesByAgePriority extends ReactAction<ActionTrimEntitiesByAgePriority.Params> {
   public static final String ID = "action-trim-entities-by-age-priority";
-  public static final String SHORT = "ateap";
   private static final Set<EntityType> PROTECTED_TYPES = EnumSet.of(
       EntityType.PLAYER,
       EntityType.ARMOR_STAND,

@@ -20,8 +20,8 @@
 package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
+import art.arcane.react.api.feature.PressureGate;
 import art.arcane.react.api.feature.ReactFeature;
-import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.content.sampler.SamplerIncidentScore;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.nms.FallingBlockTickHook;
@@ -87,12 +87,9 @@ public class FeatureLazyGravity extends ReactFeature implements Listener {
   private transient final AtomicLong bypassed = new AtomicLong(0L);
   private transient final AtomicLong invalidated = new AtomicLong(0L);
   private transient final AtomicLong skippedFallingTicks = new AtomicLong(0L);
-  @Getter
-  private transient volatile boolean engaged;
+  private transient final PressureGate gate = new PressureGate();
   @Getter
   private transient volatile boolean bridgeActive;
-  private transient volatile long pressureSinceMs;
-  private transient volatile long calmSinceMs;
 
   public FeatureLazyGravity() {
     super(ID);
@@ -107,9 +104,7 @@ public class FeatureLazyGravity extends ReactFeature implements Listener {
     bypassed.set(0L);
     invalidated.set(0L);
     skippedFallingTicks.set(0L);
-    engaged = false;
-    pressureSinceMs = 0L;
-    calmSinceMs = 0L;
+    gate.reset();
     installBridgeHook();
   }
 
@@ -135,7 +130,7 @@ public class FeatureLazyGravity extends ReactFeature implements Listener {
       return;
     }
     FallingBlockTickHook hook = (FallingBlock falling) -> {
-      if (!engaged) {
+      if (!gate.isEngaged()) {
         return TickDecision.RUN_VANILLA;
       }
       Location at = falling.getLocation();
@@ -391,52 +386,9 @@ public class FeatureLazyGravity extends ReactFeature implements Listener {
     double tickMs = sample(SamplerTickTime.ID);
     double incident = sample(SamplerIncidentScore.ID);
     boolean pressure = tickMs >= engageTickTimeMs || incident >= engageIncidentScore;
-    long now = System.currentTimeMillis();
-
-    if (!engaged) {
-      if (!pressure) {
-        pressureSinceMs = 0L;
-        return;
-      }
-
-      if (pressureSinceMs == 0L) {
-        pressureSinceMs = now;
-        return;
-      }
-
-      if (now - pressureSinceMs >= Math.max(0L, sustainEngageMs)) {
-        engaged = true;
-        pressureSinceMs = 0L;
-        calmSinceMs = 0L;
-      }
-      return;
-    }
-
     boolean calm = tickMs <= releaseTickTimeMs && incident < engageIncidentScore;
-    if (!calm) {
-      calmSinceMs = 0L;
-      return;
-    }
-
-    if (calmSinceMs == 0L) {
-      calmSinceMs = now;
-      return;
-    }
-
-    if (now - calmSinceMs >= Math.max(0L, sustainReleaseMs)) {
-      engaged = false;
-      pressureSinceMs = 0L;
-      calmSinceMs = 0L;
-    }
-  }
-
-  private double sample(String samplerId) {
-    try {
-      Sampler sampler = React.sampler(samplerId);
-      return sampler == null ? 0D : sampler.sample();
-    } catch (Throwable ignored) {
-      return 0D;
-    }
+    long now = System.currentTimeMillis();
+    gate.update(now, pressure, calm, sustainEngageMs, sustainReleaseMs);
   }
 
   private static long packColumn(int x, int z) {

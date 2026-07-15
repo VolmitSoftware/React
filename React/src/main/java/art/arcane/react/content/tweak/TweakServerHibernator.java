@@ -86,13 +86,4 @@ public class TweakServerHibernator extends ReactTweak implements Listener {
       taskId = -1;
     }
   }
-
-  @Override
-  public int getTickInterval() {
-    return -1;
-  }
-
-  @Override
-  public void onTick() {
-  }
 }

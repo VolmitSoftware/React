@@ -20,8 +20,8 @@
 package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
+import art.arcane.react.api.feature.PressureGate;
 import art.arcane.react.api.feature.ReactFeature;
-import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
@@ -80,9 +80,7 @@ public class FeatureTrackerRangeGovernor extends ReactFeature {
   private transient Map<UUID, Map<String, Integer>> baselinesByWorld;
   private transient boolean resolved;
   private transient boolean supported;
-  private transient boolean engaged;
-  private transient long pressureSinceMs;
-  private transient long calmSinceMs;
+  private transient final PressureGate gate = new PressureGate();
 
   public FeatureTrackerRangeGovernor() {
     super(ID);
@@ -93,14 +91,13 @@ public class FeatureTrackerRangeGovernor extends ReactFeature {
     baselinesByWorld = new ConcurrentHashMap<>();
     resolved = false;
     supported = false;
-    engaged = false;
-    pressureSinceMs = 0;
-    calmSinceMs = 0;
+    gate.reset();
   }
 
   @Override
   public void onDeactivate() {
-    if (engaged) {
+    if (gate.isEngaged()) {
+      gate.reset();
       release();
     }
   }
@@ -112,47 +109,21 @@ public class FeatureTrackerRangeGovernor extends ReactFeature {
 
   @Override
   public void onTick() {
-    double tickMs = sampleTickMs();
+    double tickMs = sample(SamplerTickTime.ID);
+    boolean pressure = !(tickMs < engageTickTimeMs);
+    boolean calm = !(tickMs > releaseTickTimeMs);
     long now = System.currentTimeMillis();
+    boolean wasEngaged = gate.isEngaged();
+    boolean nowEngaged = gate.update(now, pressure, calm, sustainEngageMs, sustainReleaseMs);
 
-    if (!engaged) {
-      if (tickMs < engageTickTimeMs) {
-        pressureSinceMs = 0;
-        return;
-      }
-
-      if (pressureSinceMs == 0) {
-        pressureSinceMs = now;
-        return;
-      }
-
-      if (now - pressureSinceMs >= Math.max(0, sustainEngageMs)) {
-        engage();
-      }
-
-      return;
-    }
-
-    if (tickMs > releaseTickTimeMs) {
-      calmSinceMs = 0;
-      return;
-    }
-
-    if (calmSinceMs == 0) {
-      calmSinceMs = now;
-      return;
-    }
-
-    if (now - calmSinceMs >= Math.max(0, sustainReleaseMs)) {
+    if (!wasEngaged && nowEngaged) {
+      engage();
+    } else if (wasEngaged && !nowEngaged) {
       release();
     }
   }
 
   private void engage() {
-    engaged = true;
-    pressureSinceMs = 0;
-    calmSinceMs = 0;
-
     if (!resolveSupport()) {
       return;
     }
@@ -198,10 +169,6 @@ public class FeatureTrackerRangeGovernor extends ReactFeature {
   }
 
   private void release() {
-    engaged = false;
-    pressureSinceMs = 0;
-    calmSinceMs = 0;
-
     if (baselinesByWorld == null || baselinesByWorld.isEmpty()) {
       return;
     }
@@ -321,14 +288,5 @@ public class FeatureTrackerRangeGovernor extends ReactFeature {
     supported = false;
     setEnabled(false);
     React.warn("Tracker Range Governor disabled due to runtime incompatibility: " + e.getClass().getSimpleName() + ": " + e.getMessage());
-  }
-
-  private double sampleTickMs() {
-    try {
-      Sampler sampler = React.sampler(SamplerTickTime.ID);
-      return sampler == null ? 0D : sampler.sample();
-    } catch (Throwable ignored) {
-      return 0D;
-    }
   }
 }

@@ -22,11 +22,13 @@ package art.arcane.react.content.feature;
 import art.arcane.react.React;
 import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.api.sampler.Sampler;
+import art.arcane.react.content.feature.perworld.PerWorldPressure;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.core.bridge.BridgeKind;
 import art.arcane.react.core.bridge.NmsBridgeDescriptor;
 import art.arcane.react.core.bridge.NmsBridgeHandle;
 import art.arcane.react.util.common.scheduling.J;
+import art.arcane.react.util.project.world.WorldEntitySnapshots;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;
@@ -156,7 +158,7 @@ public class FeaturePathfinderBudget extends ReactFeature {
         return;
       }
 
-      List<Entity> entities = world.getEntities();
+      List<Entity> entities = WorldEntitySnapshots.get(world);
       if (entities.isEmpty()) {
         continue;
       }
@@ -221,7 +223,7 @@ public class FeaturePathfinderBudget extends ReactFeature {
       return;
     }
 
-    boolean engagedLoad = lastTickMs >= engageTickTimeMs;
+    boolean engagedLoad = lastTickMs >= engageTickTimeMs || PerWorldPressure.get(mob.getWorld()).isPressure();
     if (!engagedLoad || React.hasNearbyPlayer(mob.getLocation(), fullBudgetWithinDistance)) {
       if (isBudgeted(mob)) {
         restoreBudget(mob);

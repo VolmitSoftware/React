@@ -25,6 +25,7 @@ import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.model.ReactEntity;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.project.world.CustomMobChecker;
+import art.arcane.react.util.project.world.WorldEntitySnapshots;
 import art.arcane.volmlib.util.entity.StackExclusion;
 import art.arcane.volmlib.util.math.M;
 import org.bukkit.Bukkit;
@@ -175,6 +176,15 @@ public class FeatureEntityTrimmer extends ReactFeature implements Listener {
   }
 
   private void trimEntities() {
+    long totalEntities = 0L;
+    for (World world : Bukkit.getWorlds()) {
+      totalEntities += WorldEntitySnapshots.count(world);
+    }
+
+    if (totalEntities * opporunityThreshold < minKillBatchSize) {
+      return;
+    }
+
     List<Entity> entities = collectEntities();
     if (entities.isEmpty()) {
       return;
@@ -322,7 +332,7 @@ public class FeatureEntityTrimmer extends ReactFeature implements Listener {
   private List<Entity> collectEntities() {
     List<Entity> entities = new ArrayList<>();
     for (World world : Bukkit.getWorlds()) {
-      entities.addAll(world.getEntities());
+      entities.addAll(WorldEntitySnapshots.get(world));
     }
 
     return entities;

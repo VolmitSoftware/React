@@ -50,10 +50,6 @@ public class TweakEntityHardstop extends ReactTweak implements Listener {
     super(ID);
   }
 
-  @Override
-  public void onActivate() {
-  }
-
   @EventHandler
   public void onEntitySpawn(EntitySpawnEvent event) {
     Entity entity = event.getEntity();
@@ -131,17 +127,4 @@ public class TweakEntityHardstop extends ReactTweak implements Listener {
     return (long) cx << 32 | (cz & 0xffffffffL);
   }
 
-
-  @Override
-  public void onDeactivate() {
-  }
-
-  @Override
-  public int getTickInterval() {
-    return -1;
-  }
-
-  @Override
-  public void onTick() {
-  }
 }

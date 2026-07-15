@@ -20,8 +20,8 @@
 package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
+import art.arcane.react.api.feature.PressureGate;
 import art.arcane.react.api.feature.ReactFeature;
-import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.content.sampler.SamplerIncidentScore;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.nms.BrewingTickHook;
@@ -108,10 +108,7 @@ public class FeatureFurnaceBrewBatching extends ReactFeature implements Listener
   private transient volatile long lastTotalProjectedSkippableTicks;
   @Getter
   private transient volatile long lastBypassedByPlayer;
-  @Getter
-  private transient volatile boolean engaged;
-  private transient volatile long pressureSinceMs;
-  private transient volatile long calmSinceMs;
+  private transient final PressureGate gate = new PressureGate();
   @Getter
   private transient volatile boolean bridgeActive;
   private transient final AtomicLong skippedFurnaceTicks = new AtomicLong();
@@ -141,9 +138,7 @@ public class FeatureFurnaceBrewBatching extends ReactFeature implements Listener
     lastTotalActive = 0;
     lastTotalProjectedSkippableTicks = 0;
     lastBypassedByPlayer = 0;
-    engaged = false;
-    pressureSinceMs = 0;
-    calmSinceMs = 0;
+    gate.reset();
     seedFromLoadedChunks();
     installBridgeHooks();
   }
@@ -155,7 +150,7 @@ public class FeatureFurnaceBrewBatching extends ReactFeature implements Listener
     projectedSkippableTicks.set(0);
     pendingProjectedSkippableTicks.set(0);
     pendingActiveBlocks.set(0);
-    engaged = false;
+    gate.reset();
     synchronized (furnaceSkipDebt) {
       furnaceSkipDebt.clear();
     }
@@ -185,7 +180,7 @@ public class FeatureFurnaceBrewBatching extends ReactFeature implements Listener
     }
     FurnaceTickHook furnace = (World world, int x, int y, int z) -> {
       long key = blockKey(x, y, z);
-      boolean runVanilla = !engaged
+      boolean runVanilla = !gate.isEngaged()
           || React.hasNearbyPlayer(new Location(world, x + 0.5D, y + 0.5D, z + 0.5D), bypassRadius);
       if (runVanilla) {
         int debt;
@@ -205,7 +200,7 @@ public class FeatureFurnaceBrewBatching extends ReactFeature implements Listener
     };
     BrewingTickHook brewing = (World world, int x, int y, int z) -> {
       long key = blockKey(x, y, z);
-      boolean runVanilla = !engaged
+      boolean runVanilla = !gate.isEngaged()
           || React.hasNearbyPlayer(new Location(world, x + 0.5D, y + 0.5D, z + 0.5D), bypassRadius);
       if (runVanilla) {
         int debt;
@@ -245,7 +240,7 @@ public class FeatureFurnaceBrewBatching extends ReactFeature implements Listener
   @Override
   public void onTick() {
     updateEngagement();
-    if (!engaged) {
+    if (!gate.isEngaged()) {
       lastTotalActive = 0;
       lastTotalProjectedSkippableTicks = 0;
       lastBypassedByPlayer = 0;
@@ -259,44 +254,14 @@ public class FeatureFurnaceBrewBatching extends ReactFeature implements Listener
     double tickMs = sample(SamplerTickTime.ID);
     double incident = sample(SamplerIncidentScore.ID);
     boolean pressure = tickMs >= engageTickTimeMs || incident >= engageIncidentScore;
-    long now = System.currentTimeMillis();
-
-    if (!engaged) {
-      if (!pressure) {
-        pressureSinceMs = 0;
-        return;
-      }
-
-      if (pressureSinceMs == 0) {
-        pressureSinceMs = now;
-        return;
-      }
-
-      if (now - pressureSinceMs >= Math.max(0, sustainEngageMs)) {
-        engaged = true;
-        pressureSinceMs = 0;
-        calmSinceMs = 0;
-        React.verbose("Furnace/brew batching engaged.");
-      }
-
-      return;
-    }
-
     boolean calm = tickMs <= releaseTickTimeMs && incident < engageIncidentScore;
-    if (!calm) {
-      calmSinceMs = 0;
-      return;
-    }
+    long now = System.currentTimeMillis();
+    boolean wasEngaged = gate.isEngaged();
+    boolean nowEngaged = gate.update(now, pressure, calm, sustainEngageMs, sustainReleaseMs);
 
-    if (calmSinceMs == 0) {
-      calmSinceMs = now;
-      return;
-    }
-
-    if (now - calmSinceMs >= Math.max(0, sustainReleaseMs)) {
-      engaged = false;
-      pressureSinceMs = 0;
-      calmSinceMs = 0;
+    if (!wasEngaged && nowEngaged) {
+      React.verbose("Furnace/brew batching engaged.");
+    } else if (wasEngaged && !nowEngaged) {
       React.verbose("Furnace/brew batching released.");
     }
   }
@@ -474,15 +439,6 @@ public class FeatureFurnaceBrewBatching extends ReactFeature implements Listener
     }
 
     return world.getChunkAt(cx, cz);
-  }
-
-  private double sample(String samplerId) {
-    try {
-      Sampler sampler = React.sampler(samplerId);
-      return sampler == null ? 0D : sampler.sample();
-    } catch (Throwable ignored) {
-      return 0D;
-    }
   }
 
   @EventHandler(priority = EventPriority.MONITOR)

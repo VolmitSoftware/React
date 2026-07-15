@@ -54,11 +54,6 @@ public class FeatureCircuitManager extends ReactFeature implements Listener {
   }
 
   @Override
-  public void onDeactivate() {
-
-  }
-
-  @Override
   public int getTickInterval() {
     return 1000;
   }
@@ -67,7 +62,7 @@ public class FeatureCircuitManager extends ReactFeature implements Listener {
   public void onTick() {
     J.s(() -> circuitServer.tick());
 
-    if (React.sampler(SamplerRedstoneTickTime.ID).sample() > maxCircuitMS) {
+    if (sample(SamplerRedstoneTickTime.ID) > maxCircuitMS) {
       Circuit c = circuitServer.worst();
 
       if (c != null) {

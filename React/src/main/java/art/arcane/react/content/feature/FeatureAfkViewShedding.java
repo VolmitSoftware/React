@@ -20,7 +20,9 @@
 package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
+import art.arcane.react.api.feature.PressureGate;
 import art.arcane.react.api.feature.ReactFeature;
+import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.util.common.scheduling.J;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -73,9 +75,7 @@ public class FeatureAfkViewShedding extends ReactFeature implements Listener {
   private transient Map<UUID, Long> lastActivityMs;
   private transient Map<UUID, Integer> originalSendViewDistance;
   private transient Map<UUID, Integer> pressureOriginal;
-  private transient boolean pressureEngaged;
-  private transient long pressureSinceMs;
-  private transient long pressureCalmSinceMs;
+  private transient final PressureGate pressureGate = new PressureGate();
   private transient Method getSendViewDistanceMethod;
   private transient Method setSendViewDistanceMethod;
   private transient boolean supportsSendViewDistance;
@@ -90,9 +90,7 @@ public class FeatureAfkViewShedding extends ReactFeature implements Listener {
     lastActivityMs = new ConcurrentHashMap<>();
     originalSendViewDistance = new ConcurrentHashMap<>();
     pressureOriginal = new ConcurrentHashMap<>();
-    pressureEngaged = false;
-    pressureSinceMs = 0;
-    pressureCalmSinceMs = 0;
+    pressureGate.reset();
     activatedAtMs = System.currentTimeMillis();
     warnedRuntimeFailure = false;
     supportsSendViewDistance = false;
@@ -119,7 +117,7 @@ public class FeatureAfkViewShedding extends ReactFeature implements Listener {
       originalSendViewDistance.clear();
     }
 
-    if (pressureEngaged) {
+    if (pressureGate.isEngaged()) {
       releasePressure();
     }
 
@@ -139,7 +137,7 @@ public class FeatureAfkViewShedding extends ReactFeature implements Listener {
       return;
     }
 
-    double tickMs = sampleTickMs();
+    double tickMs = sample(SamplerTickTime.ID);
     tickPressureNotch(tickMs);
 
     if (minTickTimeMs > 0 && tickMs < minTickTimeMs) {
@@ -168,43 +166,19 @@ public class FeatureAfkViewShedding extends ReactFeature implements Listener {
     }
 
     long now = System.currentTimeMillis();
-    if (!pressureEngaged) {
-      if (now - activatedAtMs < Math.max(0, pressureWarmupSeconds) * 1000L) {
-        pressureSinceMs = 0;
-        return;
-      }
+    boolean warmedUp = now - activatedAtMs >= Math.max(0, pressureWarmupSeconds) * 1000L;
+    boolean pressure = warmedUp && !(tickMs < pressureEngageTickTimeMs);
+    boolean calm = !(tickMs > pressureReleaseTickTimeMs);
+    boolean wasEngaged = pressureGate.isEngaged();
 
-      if (tickMs < pressureEngageTickTimeMs) {
-        pressureSinceMs = 0;
-        return;
-      }
-
-      if (pressureSinceMs == 0) {
-        pressureSinceMs = now;
-        return;
-      }
-
-      if (now - pressureSinceMs >= Math.max(0, pressureSustainEngageMs)) {
-        pressureEngaged = true;
-        pressureCalmSinceMs = 0;
-        applyPressureCaps();
-      }
-
-      return;
+    if (wasEngaged) {
+      applyPressureCaps();
     }
 
-    applyPressureCaps();
-    if (tickMs > pressureReleaseTickTimeMs) {
-      pressureCalmSinceMs = 0;
-      return;
-    }
-
-    if (pressureCalmSinceMs == 0) {
-      pressureCalmSinceMs = now;
-      return;
-    }
-
-    if (now - pressureCalmSinceMs >= Math.max(0, pressureSustainReleaseMs)) {
+    boolean nowEngaged = pressureGate.update(now, pressure, calm, pressureSustainEngageMs, pressureSustainReleaseMs);
+    if (!wasEngaged && nowEngaged) {
+      applyPressureCaps();
+    } else if (wasEngaged && !nowEngaged) {
       releasePressure();
     }
   }
@@ -237,9 +211,7 @@ public class FeatureAfkViewShedding extends ReactFeature implements Listener {
   }
 
   private void releasePressure() {
-    pressureEngaged = false;
-    pressureSinceMs = 0;
-    pressureCalmSinceMs = 0;
+    pressureGate.reset();
 
     for (Map.Entry<UUID, Integer> entry : pressureOriginal.entrySet()) {
       UUID playerId = entry.getKey();
@@ -324,15 +296,6 @@ public class FeatureAfkViewShedding extends ReactFeature implements Listener {
     warnedRuntimeFailure = true;
     setEnabled(false);
     React.warn("Afk View Shedding disabled due to runtime incompatibility: " + e.getClass().getSimpleName() + ": " + e.getMessage());
-  }
-
-  private double sampleTickMs() {
-    try {
-      art.arcane.react.api.sampler.Sampler sampler = React.sampler(art.arcane.react.content.sampler.SamplerTickTime.ID);
-      return sampler == null ? 0D : sampler.sample();
-    } catch (Throwable ignored) {
-      return 0D;
-    }
   }
 
   private void markActive(Player player) {

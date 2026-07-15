@@ -33,7 +33,6 @@ import lombok.experimental.Accessors;
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Collect Garbage action. Requests JVM garbage collection and reports immediate heap reclaimed.")
 public class ActionCollectGarbage extends ReactAction<ActionCollectGarbage.Params> {
   public static final String ID = "collect-garbage";
-  public static final String SHORT = "gc";
 
   public ActionCollectGarbage() {
     super(ID);

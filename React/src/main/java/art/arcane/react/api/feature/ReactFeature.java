@@ -19,6 +19,8 @@
 
 package art.arcane.react.api.feature;
 
+import art.arcane.react.React;
+import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.util.project.config.ConfigDoc;
 import art.arcane.volmlib.util.format.Form;
 import lombok.Getter;
@@ -57,5 +59,35 @@ public abstract class ReactFeature implements Feature {
 
   public void setEnabled(boolean enabled) {
     this.enabled = enabled;
+  }
+
+  @Override
+  public void onActivate() {
+  }
+
+  @Override
+  public void onDeactivate() {
+  }
+
+  @Override
+  public int getTickInterval() {
+    return -1;
+  }
+
+  @Override
+  public void onTick() {
+  }
+
+  protected double sample(String samplerId) {
+    return sample(samplerId, 0D);
+  }
+
+  protected double sample(String samplerId, double fallback) {
+    try {
+      Sampler sampler = React.sampler(samplerId);
+      return sampler == null ? fallback : sampler.sample();
+    } catch (Throwable ignored) {
+      return fallback;
+    }
   }
 }

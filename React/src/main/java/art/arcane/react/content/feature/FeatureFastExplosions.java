@@ -66,16 +66,6 @@ public class FeatureFastExplosions extends ReactFeature implements Listener {
     super(ID);
   }
 
-  @Override
-  public void onActivate() {
-
-  }
-
-  @Override
-  public void onDeactivate() {
-
-  }
-
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void on(EntitySpawnEvent e) {
     if (spreadPrimedFuseTicks > 0 && e.getEntity() instanceof TNTPrimed tnt) {

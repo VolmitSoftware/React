@@ -58,16 +58,6 @@ public class TweakVehicleIdleBrake extends ReactTweak {
   }
 
   @Override
-  public void onActivate() {
-
-  }
-
-  @Override
-  public void onDeactivate() {
-
-  }
-
-  @Override
   public int getTickInterval() {
     return tickIntervalMS;
   }

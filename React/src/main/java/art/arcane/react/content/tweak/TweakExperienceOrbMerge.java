@@ -41,16 +41,6 @@ public class TweakExperienceOrbMerge extends ReactTweak implements Listener {
     super(ID);
   }
 
-  @Override
-  public void onActivate() {
-
-  }
-
-  @Override
-  public void onDeactivate() {
-
-  }
-
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void on(EntitySpawnEvent event) {
     if (!(event.getEntity() instanceof ExperienceOrb orb) || orb.isDead()) {
@@ -79,15 +69,5 @@ public class TweakExperienceOrbMerge extends ReactTweak implements Listener {
     if (merges > 0) {
       orb.setExperience(Math.min(maxExperiencePerOrb, Math.max(1, totalExperience)));
     }
-  }
-
-  @Override
-  public int getTickInterval() {
-    return -1;
-  }
-
-  @Override
-  public void onTick() {
-
   }
 }

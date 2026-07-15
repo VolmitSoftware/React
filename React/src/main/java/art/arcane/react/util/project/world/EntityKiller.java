@@ -38,10 +38,16 @@ import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
+import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
-public class EntityKiller implements Listener {
+public class EntityKiller {
   private static final NamespacedKey nsKillerCountdown = Objects.requireNonNull(NamespacedKey.fromString("react:react-killer-countdown"));
+  private static final Map<UUID, EntityKiller> ACTIVE = new ConcurrentHashMap<>();
+  private static final Object LISTENER_LOCK = new Object();
+  private static SharedListener sharedListener;
   private Entity entity;
   private int seconds;
   private int tt;
@@ -54,11 +60,32 @@ public class EntityKiller implements Listener {
 
     React.controller(EntityController.class).getKilling().add(e);
     React.controller(EntityController.class).getKillers().add(this);
-    React.instance.registerListener(this);
+    ACTIVE.put(e.getUniqueId(), this);
+    ensureListener();
     this.entity = e;
     this.seconds = seconds;
     this.tt = seconds;
     tt = J.sr(this::tick, 20);
+  }
+
+  private static void ensureListener() {
+    synchronized (LISTENER_LOCK) {
+      if (sharedListener == null && React.instance != null) {
+        sharedListener = new SharedListener();
+        React.instance.registerListener(sharedListener);
+      }
+    }
+  }
+
+  private static void releaseListenerIfIdle() {
+    synchronized (LISTENER_LOCK) {
+      if (ACTIVE.isEmpty() && sharedListener != null) {
+        if (React.instance != null) {
+          React.instance.unregisterListener(sharedListener);
+        }
+        sharedListener = null;
+      }
+    }
   }
 
   public void stop() {
@@ -92,9 +119,11 @@ public class EntityKiller implements Listener {
   }
 
   private void cleanup() {
-    if (React.instance != null) {
-      React.instance.unregisterListener(this);
+    if (entity != null) {
+      ACTIVE.remove(entity.getUniqueId(), this);
     }
+
+    releaseListenerIfIdle();
 
     EntityController controller = null;
     try {
@@ -193,24 +222,24 @@ public class EntityKiller implements Listener {
   }
 
 
-  @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-  public void on(EntityPickupItemEvent e) {
-    if (entity != null && e.getItem().equals(entity)) {
-      stop();
-    }
-  }
-
-  @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-  public void on(PlayerInteractEntityEvent event) {
-    if (entity == null) {
-      return;
+  public static final class SharedListener implements Listener {
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
+    public void on(EntityPickupItemEvent e) {
+      EntityKiller killer = ACTIVE.get(e.getItem().getUniqueId());
+      if (killer != null) {
+        killer.stop();
+      }
     }
 
-    Entity clickedEntity = event.getRightClicked();
-    if (!entity.equals(clickedEntity)) {
-      return;
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
+    public void on(PlayerInteractEntityEvent event) {
+      EntityKiller killer = ACTIVE.get(event.getRightClicked().getUniqueId());
+      if (killer == null) {
+        return;
+      }
+
+      React.verbose("EntityKiller: countdown cancelled by player " + event.getPlayer().getName());
+      killer.stop();
     }
-    React.verbose("EntityKiller: countdown cancelled by player " + event.getPlayer().getName());
-    stop();
   }
 }

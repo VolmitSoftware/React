@@ -49,7 +49,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Purge Entities action. Removes matching entities from selected chunks or worlds.")
 public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params> {
   public static final String ID = "purge-entities";
-  public static final String SHORT = "pe";
   private List<EntityType> blacklist = new ArrayList<>(List.of(
       EntityType.ITEM_DISPLAY, EntityType.PLAYER, EntityType.ARMOR_STAND, EntityType.ITEM_FRAME, EntityType.PAINTING, EntityType.LEASH_KNOT,
       EntityType.MINECART, EntityType.CHEST_MINECART, EntityType.COMMAND_BLOCK_MINECART, EntityType.FURNACE_MINECART,
