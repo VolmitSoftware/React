@@ -41,7 +41,7 @@ public class TweakFastEntityIncineration extends ReactTweak implements Listener 
 
   @EventHandler
   public void on(EntityDamageEvent e) {
-    if (e.getCause().equals(EntityDamageEvent.DamageCause.FIRE_TICK) && e.getEntity() instanceof Monster m && !StackExclusion.isExcluded(m) && React.hasNearbyPlayer(m.getLocation(), incinerationBeyondNearestPlayer)) {
+    if (e.getCause().equals(EntityDamageEvent.DamageCause.FIRE_TICK) && e.getEntity() instanceof Monster m && !StackExclusion.isExcluded(m) && !React.hasNearbyPlayer(m.getLocation(), incinerationBeyondNearestPlayer)) {
       kill(m);
     }
   }

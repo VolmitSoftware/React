@@ -343,12 +343,7 @@ public class FeatureFurnaceBrewBatching extends ReactFeature implements Listener
       }
     };
 
-    if (J.isFoliaThreading()) {
-      J.runChunk(world, chunkX, chunkZ, task);
-      return;
-    }
-
-    task.run();
+    J.runChunk(world, chunkX, chunkZ, task);
   }
 
   private long projectSkippableNow(World world, TrackedBlock block) {
