@@ -25,6 +25,12 @@ public class RemoteSamplerBridge {
     Map<String, IntegrationMetricSample> safeSamples = samples == null ? Map.of() : samples;
     String reason = unavailableReason == null || unavailableReason.isBlank() ? "unavailable" : unavailableReason;
 
+    if ("adapt".equals(normalizedPlugin)) {
+      pluginSamples.keySet().removeIf(key -> IntegrationMetricSchema.isAdaptAbilityDetailKey(key)
+          && !safeExpectedKeys.contains(key)
+          && !safeSamples.containsKey(key));
+    }
+
     for (String key : safeExpectedKeys) {
       IntegrationMetricSample sample = safeSamples.get(key);
       if (sample != null) {
@@ -45,7 +51,16 @@ public class RemoteSamplerBridge {
   }
 
   public void markPluginUnavailable(String pluginId, Set<String> keys, String reason) {
-    updatePluginSamples(pluginId, keys, Map.of(), reason);
+    String normalizedPlugin = normalizePlugin(pluginId);
+    Set<String> unavailableKeys = ConcurrentHashMap.newKeySet();
+    if (keys != null) {
+      unavailableKeys.addAll(keys);
+    }
+    Map<String, IntegrationMetricSample> existing = samplesByPlugin.get(normalizedPlugin);
+    if (existing != null) {
+      unavailableKeys.addAll(existing.keySet());
+    }
+    updatePluginSamples(pluginId, unavailableKeys, Map.of(), reason);
   }
 
   public IntegrationMetricSample getSample(String pluginId, String key) {

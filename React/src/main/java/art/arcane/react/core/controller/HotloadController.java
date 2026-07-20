@@ -41,7 +41,12 @@ import org.bukkit.entity.Player;
 
 import java.io.File;
 import java.nio.file.Files;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import java.util.function.BooleanSupplier;
 
 @ConfigDescription("Watches React config files and hot-applies changes without requiring a full /react reload.")
@@ -375,7 +380,7 @@ public class HotloadController extends TickedObject implements IController {
   }
 
   private boolean runSync(BooleanSupplier supplier) {
-    return J.sResult(() -> {
+    Boolean result = J.sResult(() -> {
       try {
         return supplier.getAsBoolean();
       } catch (Throwable e) {
@@ -383,6 +388,7 @@ public class HotloadController extends TickedObject implements IController {
         return false;
       }
     });
+    return Boolean.TRUE.equals(result);
   }
 
   private void refreshGlobalRuntimeSettings() {

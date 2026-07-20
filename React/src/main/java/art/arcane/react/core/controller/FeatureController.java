@@ -22,6 +22,7 @@ package art.arcane.react.core.controller;
 import art.arcane.react.React;
 import art.arcane.react.api.feature.CapabilityGatedFeature;
 import art.arcane.react.api.feature.Feature;
+import art.arcane.react.api.feature.FeatureIntegrityListener;
 import art.arcane.react.api.feature.ReactTickedFeature;
 import art.arcane.react.content.feature.FeatureUnknown;
 import art.arcane.react.core.integration.IntegrationCapabilitySupport;
@@ -126,7 +127,7 @@ public class FeatureController extends TickedObject implements IController {
   }
 
   public void deactivateFeature(Feature feature) {
-    if (feature instanceof Listener l) {
+    if (feature instanceof Listener l && !(feature instanceof FeatureIntegrityListener)) {
       React.instance.unregisterListener(l);
     }
     activeFeatures.remove(feature.getId());
@@ -154,6 +155,10 @@ public class FeatureController extends TickedObject implements IController {
     for (String i : features.ids()) {
       Feature f = features.get(i);
 
+      if (f instanceof FeatureIntegrityListener listener) {
+        React.instance.registerListener(listener);
+      }
+
       if (shouldActivateFeature(f)) {
         activateFeature(f);
       } else if (f instanceof CapabilityGatedFeature gated) {
@@ -167,6 +172,11 @@ public class FeatureController extends TickedObject implements IController {
   @Override
   public void stop() {
     new ArrayList<>(activeFeatures.values()).forEach(this::deactivateFeature);
+    for (Feature feature : features.all()) {
+      if (feature instanceof FeatureIntegrityListener listener) {
+        React.instance.unregisterListener(listener);
+      }
+    }
   }
 
   private void reconcileFeatureGates() {

@@ -297,6 +297,8 @@ public final class ReactMapGUI {
           "Iris-aware pressure overlay using pregen queue and chunk stream latency.";
       case "adapt-runtime-pressure-overlay" ->
           "Adapt-aware pressure overlay using session load and ability operation rate.";
+      case "adapt-ability-impact-list-map" ->
+          "Ranks Adapt abilities by measured event, tick, and guarded-callback execution time.";
       case "iris-world-chunk-share-pie-map" ->
           "Pie chart showing chunk-share distribution across all loaded server worlds.";
       case "iris-biome-chunk-share-pie-map" ->
@@ -358,6 +360,8 @@ public final class ReactMapGUI {
           "Each slice represents the rolling share of plugin event cost over recent windows.";
       case "plugin-event-impact-list-map" ->
           "Rows are ordered from highest rolling plugin impact to lowest.";
+      case "adapt-ability-impact-list-map" ->
+          "Rows rank rolling 60-second measured callback cost; cb/m counts covered callback executions, while directly scheduled background work is outside this map.";
       default -> null;
     };
   }

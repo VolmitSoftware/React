@@ -39,9 +39,12 @@ import art.arcane.volmlib.util.scheduling.Looper;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayDeque;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 public class Ticker {
   private static final long SLOW_TICK_WARN_THRESHOLD_MS = 50L;
@@ -50,10 +53,14 @@ public class Ticker {
   private static final long SLOW_TICK_ESCALATION_LOG_INTERVAL_MS = 2_500L;
   private static final long SLOW_TICK_CRITICAL_LOG_INTERVAL_MS = 1_000L;
   private static final long[] FOLIA_BACKOFF_STEPS_MS = new long[]{0L, 1000L, 5000L, 15000L, 60000L};
+  private static final long CLOSE_DRAIN_TIMEOUT_MS = 1000L;
   private static final long CLOSE_JOIN_TIMEOUT_MS = 250L;
   private final KList<Ticked> ticklist;
   private final KList<Ticked> newTicks;
   private final KList<String> removeTicks;
+  private final Object tickChangeLock;
+  private final Object executionLock;
+  private final Set<Thread> executionThreads;
   private final RollingSequence tasksPerSecond;
   private final RollingSequence tickTime;
   private final Looper looper;
@@ -62,12 +69,16 @@ public class Ticker {
   private final Map<String, FoliaViolationState> foliaViolationStates;
   private volatile boolean ticking;
   private volatile boolean closed;
+  private int activeExecutions;
 
   public Ticker() {
     this.closed = false;
     this.ticklist = new KList<>(4096);
     this.newTicks = new KList<>(128);
     this.removeTicks = new KList<>(128);
+    this.tickChangeLock = new Object();
+    this.executionLock = new Object();
+    this.executionThreads = new HashSet<>();
     tasksPerSecond = new RollingSequence(20);
     tickTime = new RollingSequence(10);
     slowTickStats = new ConcurrentHashMap<>();
@@ -103,15 +114,39 @@ public class Ticker {
     looper.start();
   }
 
-  public void close() {
-    closed = true;
-    clear();
-    looper.interrupt();
+  public boolean close() {
+    boolean interrupted = Thread.interrupted();
+    boolean drained = false;
     try {
-      looper.join(CLOSE_JOIN_TIMEOUT_MS);
-    } catch (InterruptedException ex) {
-      Thread.currentThread().interrupt();
-      React.verbose("Ticker close wait interrupted.");
+      ExecutionWaitResult waitResult = awaitActiveExecutions();
+      interrupted |= waitResult.interrupted;
+      drained = waitResult.drained;
+      if (!drained) {
+        IllegalStateException failure = new IllegalStateException("Ticker shutdown timed out with " + activeExecutionCount() + " active executions");
+        React.error("Ticker shutdown could not drain every active execution. React will finish cleanup but will not restart.");
+        React.reportError(failure);
+      }
+
+      looper.interrupt();
+      long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(CLOSE_JOIN_TIMEOUT_MS);
+      while (looper.isAlive()) {
+        long remaining = deadline - System.nanoTime();
+        if (remaining <= 0L) {
+          break;
+        }
+
+        try {
+          TimeUnit.NANOSECONDS.timedJoin(looper, remaining);
+        } catch (InterruptedException ex) {
+          interrupted = true;
+        }
+      }
+      clear();
+      return drained;
+    } finally {
+      if (interrupted) {
+        Thread.currentThread().interrupt();
+      }
     }
   }
 
@@ -128,13 +163,23 @@ public class Ticker {
       return;
     }
 
-    synchronized (newTicks) {
+    synchronized (tickChangeLock) {
       newTicks.add(ticked);
     }
   }
 
   public void unregister(Ticked ticked) {
-    synchronized (removeTicks) {
+    if (ticked == null) {
+      return;
+    }
+
+    synchronized (tickChangeLock) {
+      for (int i = newTicks.size() - 1; i >= 0; i--) {
+        if (newTicks.get(i) == ticked) {
+          newTicks.remove(i);
+          return;
+        }
+      }
       removeTicks.add(ticked.getTid());
     }
   }
@@ -143,10 +188,8 @@ public class Ticker {
     synchronized (ticklist) {
       ticklist.clear();
     }
-    synchronized (removeTicks) {
+    synchronized (tickChangeLock) {
       removeTicks.clear();
-    }
-    synchronized (newTicks) {
       newTicks.clear();
     }
     slowTickStats.clear();
@@ -186,7 +229,10 @@ public class Ticker {
       }
     }
 
-    synchronized (newTicks) {
+    synchronized (tickChangeLock) {
+      while (removeTicks.isNotEmpty()) {
+        removeTickById(removeTicks.remove(0));
+      }
       while (!newTicks.isEmpty()) {
         Ticked ticked = newTicks.remove(0);
         if (ticked == null) {
@@ -201,17 +247,23 @@ public class Ticker {
       }
     }
 
-    synchronized (removeTicks) {
-      while (removeTicks.isNotEmpty()) {
-        removeTickById(removeTicks.remove(0));
-      }
-    }
-
     ticking = false;
     return ix;
   }
 
   private void executeTick(Ticked ticked) {
+    if (!beginExecution()) {
+      return;
+    }
+
+    try {
+      executeActiveTick(ticked);
+    } finally {
+      endExecution();
+    }
+  }
+
+  private void executeActiveTick(Ticked ticked) {
     if (shouldBackoffTick(ticked)) {
       return;
     }
@@ -250,6 +302,77 @@ public class Ticker {
         System.err.println("[React] Failed to emit tick crash log: " + logFailure.getClass().getSimpleName()
             + (logFailure.getMessage() == null ? "" : " - " + logFailure.getMessage()));
       }
+    }
+  }
+
+  private boolean beginExecution() {
+    synchronized (executionLock) {
+      if (closed) {
+        return false;
+      }
+
+      activeExecutions++;
+      executionThreads.add(Thread.currentThread());
+      return true;
+    }
+  }
+
+  private void endExecution() {
+    synchronized (executionLock) {
+      activeExecutions--;
+      executionThreads.remove(Thread.currentThread());
+      if (activeExecutions == 0) {
+        executionLock.notifyAll();
+      }
+    }
+  }
+
+  private ExecutionWaitResult awaitActiveExecutions() {
+    synchronized (executionLock) {
+      if (executionThreads.contains(Thread.currentThread())) {
+        throw new IllegalStateException("Ticker cannot close from an active tick execution");
+      }
+
+      closed = true;
+    }
+
+    interruptActiveExecutions();
+    return waitForActiveExecutions(CLOSE_DRAIN_TIMEOUT_MS);
+  }
+
+  private ExecutionWaitResult waitForActiveExecutions(long timeoutMS) {
+    long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMS);
+    boolean interrupted = false;
+    boolean drained;
+    synchronized (executionLock) {
+      while (activeExecutions > 0) {
+        long remaining = deadline - System.nanoTime();
+        if (remaining <= 0L) {
+          break;
+        }
+
+        try {
+          TimeUnit.NANOSECONDS.timedWait(executionLock, remaining);
+        } catch (InterruptedException ex) {
+          interrupted = true;
+        }
+      }
+      drained = activeExecutions == 0;
+    }
+    return new ExecutionWaitResult(drained, interrupted);
+  }
+
+  private void interruptActiveExecutions() {
+    synchronized (executionLock) {
+      for (Thread thread : executionThreads) {
+        thread.interrupt();
+      }
+    }
+  }
+
+  private int activeExecutionCount() {
+    synchronized (executionLock) {
+      return activeExecutions;
     }
   }
 
@@ -929,6 +1052,16 @@ public class Ticker {
       if (id.equals(ticklist.get(i).getTid())) {
         ticklist.remove(i);
       }
+    }
+  }
+
+  private static final class ExecutionWaitResult {
+    private final boolean drained;
+    private final boolean interrupted;
+
+    private ExecutionWaitResult(boolean drained, boolean interrupted) {
+      this.drained = drained;
+      this.interrupted = interrupted;
     }
   }
 

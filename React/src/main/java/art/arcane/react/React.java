@@ -26,7 +26,12 @@ import art.arcane.react.api.feature.Feature;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.api.tweak.Tweak;
 import art.arcane.react.content.PAPI.PapiExpansion;
-import art.arcane.react.core.controller.*;
+import art.arcane.react.core.controller.ActionController;
+import art.arcane.react.core.controller.FeatureController;
+import art.arcane.react.core.controller.JobController;
+import art.arcane.react.core.controller.NearbyPlayerIndexController;
+import art.arcane.react.core.controller.SampleController;
+import art.arcane.react.core.controller.TweakController;
 import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.util.common.plugin.SplashScreen;
 import art.arcane.react.util.common.scheduling.J;
@@ -73,10 +78,12 @@ public class React extends VolmitPlugin implements ReloadAware {
   private List<Runnable> prejobs;
   private Registry<IController> controllerRegistry;
   private NmsBridgeRegistry bridgeRegistry;
+  private volatile boolean shutdownDrained;
   private boolean ready;
 
   public React() {
     instance = this;
+    shutdownDrained = true;
     ready = false;
     long libraryLoadStart = System.currentTimeMillis();
     getLogger().info("Loading libraries...");
@@ -296,6 +303,8 @@ public class React extends VolmitPlugin implements ReloadAware {
   @Override
   public void start() {
     instance = this;
+    alreadyDrained.set(false);
+    shutdownDrained = true;
     PrecisionStopwatch psw = PrecisionStopwatch.start();
     ConfigMigrationManager.backupLegacyJsonConfigsOnce();
     startupTasks = new CopyOnWriteArrayList<>();
@@ -368,7 +377,7 @@ public class React extends VolmitPlugin implements ReloadAware {
       bridgeRegistry = null;
     }
     if (ticker != null) {
-      ticker.close();
+      shutdownDrained = ticker.close();
     }
     if (controllerRegistry != null) {
       for (IController controller : controllerRegistry.all()) {
@@ -403,13 +412,19 @@ public class React extends VolmitPlugin implements ReloadAware {
     return ticker;
   }
 
-  public void reload() {
+  public boolean reload() {
     try {
       onDisable();
+      if (!shutdownDrained) {
+        error("React reload stopped safely because the previous runtime did not finish shutting down. Restart the server before enabling React again.");
+        return false;
+      }
       onEnable();
+      return true;
     } catch (Throwable ex) {
       error("React reload failed: " + ex.getClass().getSimpleName() + (ex.getMessage() == null ? "" : " - " + ex.getMessage()));
       reportError(ex);
+      return false;
     }
 
   }

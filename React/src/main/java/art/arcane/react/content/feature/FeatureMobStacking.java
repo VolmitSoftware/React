@@ -20,10 +20,9 @@
 package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
+import art.arcane.react.api.feature.FeatureIntegrityListener;
 import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.content.sampler.SamplerEntities;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import art.arcane.react.core.NMS;
 import art.arcane.react.core.controller.EntityController;
 import art.arcane.react.model.ReactEntity;
@@ -36,13 +35,21 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
-import org.bukkit.entity.*;
+import org.bukkit.entity.AbstractCubeMob;
+import org.bukkit.entity.Ageable;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
+import org.bukkit.entity.Sheep;
+import org.bukkit.entity.Tameable;
+import org.bukkit.entity.Villager;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntitySpawnEvent;
+import org.bukkit.event.entity.EntityTameEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.metadata.FixedMetadataValue;
@@ -53,11 +60,14 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Mob Stacking feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
-public class FeatureMobStacking extends ReactFeature implements Listener {
+public class FeatureMobStacking extends ReactFeature implements FeatureIntegrityListener {
   static boolean exceedsStackLimit(int intoCount, int sourceCount, int maxStackSize) {
     return intoCount + sourceCount > maxStackSize;
   }
@@ -94,6 +104,10 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
     return !(target instanceof AbstractCubeMob);
   }
 
+  static boolean isTamedPet(Entity entity) {
+    return entity instanceof Tameable tameable && tameable.isTamed();
+  }
+
   public static final String ID = "mob-stacking";
   @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum stack size allowed by mob stacking.", impact = "Higher values allow more throughput before intervention; lower values make mitigation more aggressive.")
   private int maxStackSize = 10;
@@ -116,6 +130,8 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
 
   private transient final Map<EntityType, String> formattedBaseNames = new ConcurrentHashMap<>();
   private transient final Map<UUID, Set<Long>> dirtyChunks = new ConcurrentHashMap<>();
+  private transient final Consumer<Entity> entityTickListener = this::onTick;
+  private transient volatile boolean active;
   private transient SamplerEntities entitiesSampler;
 
   public FeatureMobStacking() {
@@ -142,10 +158,22 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
 
   @Override
   public void onActivate() {
+    active = true;
     dirtyChunks.clear();
     for (EntityType i : stackableTypes) {
-      React.controller(EntityController.class).registerEntityTickListener(i, this::onTick);
+      React.controller(EntityController.class).registerEntityTickListener(i, entityTickListener);
     }
+  }
+
+  @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
+  public void onEntityTame(EntityTameEvent event) {
+    LivingEntity entity = event.getEntity();
+    if (getStackCount(entity) <= 1) {
+      return;
+    }
+
+    UUID ownerId = event.getOwner().getUniqueId();
+    J.runEntity(entity, () -> completeTamedStackSplit(entity, ownerId), 1);
   }
 
   @EventHandler
@@ -218,20 +246,48 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
     }
   }
 
-  private void spawnReplacement(LivingEntity source, int nextStackCount) {
+  private boolean spawnReplacement(LivingEntity source, int nextStackCount) {
     if (nextStackCount <= 0 || source.getWorld() == null) {
-      return;
+      return false;
     }
 
     Location spawnLocation = source.getLocation();
     Entity created = source.getWorld().spawnEntity(spawnLocation, source.getType());
     if (!(created instanceof LivingEntity replacement)) {
       created.remove();
-      return;
+      return false;
     }
 
     copyState(source, replacement);
+    if (replacement instanceof Tameable tameable) {
+      tameable.setOwner(null);
+      tameable.setTamed(false);
+    }
     setStackCount(replacement, nextStackCount);
+    return true;
+  }
+
+  private void completeTamedStackSplit(LivingEntity entity, UUID ownerId) {
+    if (!entity.isValid() || entity.isDead() || !isTamedPet(entity)) {
+      return;
+    }
+
+    Tameable tameable = (Tameable) entity;
+    if (!ownerId.equals(tameable.getOwnerUniqueId())) {
+      return;
+    }
+
+    splitTamedStack(entity);
+  }
+
+  private boolean splitTamedStack(LivingEntity entity) {
+    int currentStack = getStackCount(entity);
+    if (currentStack <= 1 || !spawnReplacement(entity, currentStack - 1)) {
+      return false;
+    }
+
+    setStackCount(entity, 1);
+    return true;
   }
 
   private void copyState(LivingEntity source, LivingEntity target) {
@@ -283,7 +339,7 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
 
 
   public boolean merge(Entity a, Entity into) {
-    if (canMerge(a, into)) {
+    if (active && canMerge(a, into)) {
       setStackCount(into, getStackCount(into) + getStackCount(a));
       if (vacuumEffect) {
         NMS.sendCollectPacket(a, 64, a.getEntityId(), into.getEntityId(), 1);
@@ -309,6 +365,10 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
 
     // Check if entities are the same type
     if (a.getType() != into.getType()) {
+      return false;
+    }
+
+    if (isTamedPet(a) || isTamedPet(into)) {
       return false;
     }
 
@@ -418,20 +478,29 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
 
   @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
   public void on(EntitySpawnEvent e) {
-    if (stackableTypes.contains(e.getEntityType())) {
+    if (active && stackableTypes.contains(e.getEntityType())) {
       markDirty(e.getEntity());
     }
   }
 
   @EventHandler
   public void onCreatureSpawn(CreatureSpawnEvent event) {
-    if (event.getSpawnReason() == CreatureSpawnEvent.SpawnReason.SPAWNER) {
+    if (active && event.getSpawnReason() == CreatureSpawnEvent.SpawnReason.SPAWNER) {
       event.getEntity().setMetadata("SpawnedBySpawner", new FixedMetadataValue(React.instance, true));
     }
   }
 
   public void onTick(Entity entity) {
     if (entity == null || entity.isDead()) {
+      return;
+    }
+
+    if (entity instanceof LivingEntity living && isTamedPet(entity)) {
+      splitTamedStack(living);
+      return;
+    }
+
+    if (!active) {
       return;
     }
 
@@ -451,6 +520,11 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
 
   @Override
   public void onTick() {
+    if (!active) {
+      dirtyChunks.clear();
+      return;
+    }
+
     if (dirtyChunks.isEmpty()) {
       return;
     }
@@ -495,7 +569,7 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
   }
 
   private void stackChunk(World world, int chunkX, int chunkZ) {
-    if (!world.isChunkLoaded(chunkX, chunkZ)) {
+    if (!active || !world.isChunkLoaded(chunkX, chunkZ)) {
       return;
     }
 
@@ -566,6 +640,7 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
     return entity instanceof LivingEntity
         && !(entity instanceof Player)
         && !entity.isDead()
+        && !isTamedPet(entity)
         && stackableTypes.contains(entity.getType());
   }
 
@@ -585,6 +660,11 @@ public class FeatureMobStacking extends ReactFeature implements Listener {
 
   @Override
   public void onDeactivate() {
+    active = false;
+    EntityController controller = React.controller(EntityController.class);
+    if (controller != null) {
+      controller.unregisterEntityTickListener(entityTickListener);
+    }
     dirtyChunks.clear();
   }
 

@@ -3,6 +3,7 @@ package art.arcane.react.core.controller;
 import art.arcane.react.React;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.content.sampler.SamplerTickTime;
+import art.arcane.react.core.integration.IntegrationMetricKeySelector;
 import art.arcane.react.core.integration.ReactIntegrationService;
 import art.arcane.react.core.integration.ReflectiveIntegrationProviderAdapter;
 import art.arcane.react.core.integration.RemoteSamplerBridge;
@@ -258,8 +259,8 @@ public class IntegrationController extends TickedObject implements IController {
   }
 
   private void updateNode(IntegrationNodeState node, long now) {
-    Set<String> expectedKeys = expectedKeys(node.pluginId);
     IntegrationServiceContract provider = node.provider;
+    Set<String> expectedKeys = IntegrationMetricKeySelector.expectedKeys(node.pluginId, null);
 
     if (provider == null) {
       node.bound = false;
@@ -304,6 +305,7 @@ public class IntegrationController extends TickedObject implements IController {
     }
 
     try {
+      expectedKeys = IntegrationMetricKeySelector.expectedKeys(node.pluginId, provider);
       Map<String, IntegrationMetricSample> samples = provider.sampleMetrics(expectedKeys);
       remoteSamplerBridge.updatePluginSamples(node.pluginId, expectedKeys, samples, "metric-unavailable");
       setHealth(node, Health.HEALTHY, "ok");
@@ -516,20 +518,6 @@ public class IntegrationController extends TickedObject implements IController {
 
   private void logLifecycle(String event, String pluginId, String detail) {
     React.verbose("[integration] event=" + event + " plugin=" + pluginId + " detail=" + detail);
-  }
-
-  private Set<String> expectedKeys(String pluginId) {
-    String normalized = normalize(pluginId);
-    if ("iris".equals(normalized)) {
-      return IntegrationMetricSchema.irisKeys();
-    }
-    if ("adapt".equals(normalized)) {
-      return IntegrationMetricSchema.adaptKeys();
-    }
-    if ("wormholes".equals(normalized)) {
-      return IntegrationMetricSchema.wormholesKeys();
-    }
-    return Set.of();
   }
 
   private String normalize(String pluginId) {

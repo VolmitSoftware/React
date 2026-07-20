@@ -21,6 +21,7 @@ package art.arcane.react.content.feature;
 
 import art.arcane.chrono.ChronoLatch;
 import art.arcane.react.React;
+import art.arcane.react.api.feature.FeatureIntegrityListener;
 import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.content.sampler.SamplerEntities;
 import art.arcane.react.core.controller.EntityController;
@@ -29,38 +30,41 @@ import art.arcane.volmlib.util.math.RNG;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.sound.Sound;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.Particle;
+import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryMoveItemEvent;
+import org.bukkit.event.inventory.InventoryPickupItemEvent;
 import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * Stacks items into bundles
  */
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Item Super Stacker feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
-public class FeatureItemSuperStacker extends ReactFeature implements Listener {
+public class FeatureItemSuperStacker extends ReactFeature implements FeatureIntegrityListener {
   public static final String ID = "item-super-stacker";
   @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum items allowed per bundle in item super stacker.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
   private int maxItemsPerBundle = 64;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Search radius used by item super stacker (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
   private double searchRadius = 3;
   private transient ChronoLatch cl = new ChronoLatch(10);
+  private transient final Consumer<Entity> entityTickListener = this::onItemTick;
+  private transient volatile boolean active;
 
   public FeatureItemSuperStacker() {
     super(ID);
@@ -72,14 +76,9 @@ public class FeatureItemSuperStacker extends ReactFeature implements Listener {
 
   public List<ItemStack> explode(Item item) {
     ItemStack m = item.getItemStack();
-    item.remove();
-    ((SamplerEntities) React.sampler(SamplerEntities.ID)).getEntities().decrementAndGet();
-
-    if (BundleUtils.isFlagged(m)) {
-      return BundleUtils.explode(item.getItemStack());
-    }
-
-    return List.of(m);
+    List<ItemStack> contents = BundleUtils.isFlagged(m) ? BundleUtils.explode(m) : List.of(m);
+    removeTrackedItem(item);
+    return contents;
   }
 
   public void effectMerge(Item item, Item into) {
@@ -105,7 +104,7 @@ public class FeatureItemSuperStacker extends ReactFeature implements Listener {
   }
 
   public void mergeWithNearbyItems(Item item) {
-    if (item.isDead()) {
+    if (!active || item.isDead()) {
       return;
     }
 
@@ -120,8 +119,7 @@ public class FeatureItemSuperStacker extends ReactFeature implements Listener {
 
         if (is != null) {
           effectMerge(item, into);
-          item.remove();
-          ((SamplerEntities) React.sampler(SamplerEntities.ID)).getEntities().decrementAndGet();
+          removeTrackedItem(item);
           into.setItemStack(is);
           break;
         }
@@ -156,11 +154,40 @@ public class FeatureItemSuperStacker extends ReactFeature implements Listener {
       if (e.getCurrentItem() != null && BundleUtils.isFlagged(e.getCurrentItem())) {
         ItemStack i = e.getCurrentItem();
         List<ItemStack> items = BundleUtils.explode(i);
+        e.setCancelled(true);
         e.setCurrentItem(null);
         for (ItemStack j : items) {
           p.getInventory().addItem(j).values().forEach((g) -> p.getWorld().dropItem(p.getLocation(), g));
         }
       }
+    }
+  }
+
+  @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+  public void on(InventoryPickupItemEvent event) {
+    Item item = event.getItem();
+    if (!isSuperStack(item)) {
+      return;
+    }
+
+    event.setCancelled(true);
+    List<ItemStack> leftovers = insertContents(event.getInventory(), BundleUtils.explode(item.getItemStack()));
+    if (leftovers.isEmpty()) {
+      removeTrackedItem(item);
+      return;
+    }
+
+    ItemStack residualBundle = BundleUtils.createBundle(leftovers);
+    if (residualBundle != null) {
+      item.setItemStack(residualBundle);
+      return;
+    }
+
+    Location location = item.getLocation();
+    World world = item.getWorld();
+    removeTrackedItem(item);
+    for (ItemStack leftover : leftovers) {
+      world.dropItemNaturally(location, leftover);
     }
   }
 
@@ -184,29 +211,51 @@ public class FeatureItemSuperStacker extends ReactFeature implements Listener {
     }
   }
 
-  @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-  public void onInventoryMoveItemEvent(InventoryMoveItemEvent event) {
-    InventoryHolder holder = event.getDestination().getHolder();
-
-    if (holder instanceof org.bukkit.block.Hopper) {
-      ItemStack i = event.getItem();
-
-
-      if (BundleUtils.isFlagged(i)) {
-        List<ItemStack> individualItems = BundleUtils.explode(i);
-        Inventory destinationInventory = event.getDestination();
-        i.setAmount(0);
-        i.setType(Material.AIR);
-
-        for (ItemStack item : individualItems) {
-          destinationInventory.addItem(item).values().forEach((leftover) -> event.getSource().addItem(leftover));
-        }
-      }
+  @Override
+  public void onActivate() {
+    active = true;
+    EntityController controller = React.controller(EntityController.class);
+    if (controller != null) {
+      controller.registerEntityTickListener(EntityType.ITEM, entityTickListener);
     }
   }
 
   @Override
-  public void onActivate() {
-    React.controller(EntityController.class).registerEntityTickListener(EntityType.ITEM, (i) -> mergeWithNearbyItems((Item) i));
+  public void onDeactivate() {
+    active = false;
+    EntityController controller = React.controller(EntityController.class);
+    if (controller != null) {
+      controller.unregisterEntityTickListener(entityTickListener);
+    }
+  }
+
+  private void onItemTick(Entity entity) {
+    if (entity instanceof Item item) {
+      mergeWithNearbyItems(item);
+    }
+  }
+
+  private List<ItemStack> insertContents(Inventory inventory, List<ItemStack> contents) {
+    List<ItemStack> leftovers = new ArrayList<>();
+    for (ItemStack content : contents) {
+      Map<Integer, ItemStack> overflow = inventory.addItem(content.clone());
+      leftovers.addAll(overflow.values());
+    }
+    return leftovers;
+  }
+
+  private void removeTrackedItem(Item item) {
+    if (React.instance != null) {
+      FeatureHopperItemIndex hopperItemIndex = React.feature(FeatureHopperItemIndex.class);
+      if (hopperItemIndex != null && hopperItemIndex.getItemIndex() != null) {
+        hopperItemIndex.getItemIndex().removeItem(item.getUniqueId());
+      }
+
+      SamplerEntities sampler = React.sampler(SamplerEntities.ID);
+      if (sampler != null) {
+        sampler.getEntities().decrementAndGet();
+      }
+    }
+    item.remove();
   }
 }

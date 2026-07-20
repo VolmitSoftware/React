@@ -37,12 +37,26 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.*;
+import org.bukkit.event.entity.EntityBreedEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityDropItemEvent;
+import org.bukkit.event.entity.EntityInteractEvent;
+import org.bukkit.event.entity.EntityPlaceEvent;
+import org.bukkit.event.entity.EntityPoseChangeEvent;
+import org.bukkit.event.entity.EntityRegainHealthEvent;
+import org.bukkit.event.entity.EntitySpawnEvent;
+import org.bukkit.event.entity.EntityTameEvent;
+import org.bukkit.event.entity.EntityTargetEvent;
+import org.bukkit.event.entity.ItemMergeEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.world.EntitiesLoadEvent;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ThreadLocalRandom;
@@ -72,6 +86,32 @@ public class EntityController implements IController, Listener {
     }
 
     allEntityTickListeners.add(listener);
+  }
+
+  public void unregisterEntityTickListener(Consumer<Entity> listener) {
+    if (listener == null) {
+      return;
+    }
+
+    if (allEntityTickListeners != null) {
+      allEntityTickListeners.removeIf(registered -> registered == listener);
+    }
+
+    if (entityTickListeners == null) {
+      return;
+    }
+
+    for (Map.Entry<EntityType, List<Consumer<Entity>>> entry : entityTickListeners.entrySet()) {
+      List<Consumer<Entity>> listeners = entry.getValue();
+      if (listeners == null) {
+        continue;
+      }
+
+      listeners.removeIf(registered -> registered == listener);
+      if (listeners.isEmpty()) {
+        entityTickListeners.remove(entry.getKey(), listeners);
+      }
+    }
   }
 
   @Override
@@ -226,7 +266,16 @@ public class EntityController implements IController, Listener {
 
   @Override
   public void stop() {
-    looper.interrupt();
+    if (looper != null) {
+      looper.interrupt();
+    }
+
+    if (allEntityTickListeners != null) {
+      allEntityTickListeners.clear();
+    }
+    if (entityTickListeners != null) {
+      entityTickListeners.clear();
+    }
 
     for (EntityKiller i : new HashSet<>(killers)) {
       i.stop();

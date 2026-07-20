@@ -25,7 +25,12 @@ import art.arcane.volmlib.util.function.NastyFunction;
 import art.arcane.volmlib.util.function.NastyFuture;
 import art.arcane.volmlib.util.function.NastyRunnable;
 import art.arcane.volmlib.util.math.FinalInteger;
-import art.arcane.volmlib.util.scheduling.*;
+import art.arcane.volmlib.util.scheduling.AR;
+import art.arcane.volmlib.util.scheduling.FoliaScheduler;
+import art.arcane.volmlib.util.scheduling.JSupport;
+import art.arcane.volmlib.util.scheduling.SchedulerBridge;
+import art.arcane.volmlib.util.scheduling.SR;
+import art.arcane.volmlib.util.scheduling.StartupQueueSupport;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -34,7 +39,11 @@ import org.bukkit.plugin.IllegalPluginAccessException;
 import org.bukkit.plugin.Plugin;
 
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -348,12 +357,18 @@ public class J {
 
     long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(15);
     while (!finished.get()) {
+      if (React.instance == null || !React.instance.isReady()) {
+        return result.get();
+      }
       if (System.nanoTime() >= deadline) {
         React.warn("J.sResult timed out after 15s waiting for sync task; returning latest result (likely deadlock or shutdown).");
         return result.get();
       }
 
-      J.sleep(15);
+      if (!J.sleep(15)) {
+        Thread.currentThread().interrupt();
+        return result.get();
+      }
     }
 
     return result.get();

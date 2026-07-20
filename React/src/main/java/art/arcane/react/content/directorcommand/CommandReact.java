@@ -25,6 +25,7 @@ import art.arcane.react.api.rendering.ReactRenderer;
 import art.arcane.react.core.controller.MapController;
 import art.arcane.react.core.controller.PlayerController;
 import art.arcane.react.core.gui.ReactMapGUI;
+import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.director.DirectorExecutor;
 import art.arcane.react.util.director.handlers.ReactRendererHandler;
 import art.arcane.react.util.format.C;
@@ -32,6 +33,8 @@ import art.arcane.react.util.project.world.WorldDistanceSupport;
 import art.arcane.volmlib.util.director.DirectorOrigin;
 import art.arcane.volmlib.util.director.annotations.Director;
 import art.arcane.volmlib.util.director.annotations.Param;
+import art.arcane.volmlib.util.scheduling.FoliaScheduler;
+import org.bukkit.command.CommandSender;
 
 @Director(
     name = "react",
@@ -113,9 +116,24 @@ public class CommandReact implements DirectorExecutor {
       aliases = {"rl"},
       description = "Reload React")
   public void reload() {
-    sender().sendMessage("Reloading React, YOu may see errors in the console, this is OKAY! Its the threads we are sampling being killed.");
-    React.instance.reload();
-    sender().sendMessage("React v" + React.instance.getDescription().getVersion() + " Reloaded!");
+    CommandSender commandSender = sender();
+    commandSender.sendMessage("Reloading React...");
+    Runnable reload = () -> {
+      if (React.instance.reload()) {
+        commandSender.sendMessage("React v" + React.instance.getDescription().getVersion() + " reloaded.");
+      } else {
+        commandSender.sendMessage("React reload failed. Check the console for the full error.");
+      }
+    };
+
+    if (J.isFoliaThreading()) {
+      if (!FoliaScheduler.runGlobal(React.instance, reload)) {
+        commandSender.sendMessage("React reload could not be scheduled on the Folia global region.");
+      }
+      return;
+    }
+
+    reload.run();
   }
 
   @Director(

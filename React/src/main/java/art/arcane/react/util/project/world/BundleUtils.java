@@ -19,16 +19,19 @@
 
 package art.arcane.react.util.project.world;
 
-import org.bukkit.Bukkit;
+import art.arcane.react.React;
 import org.bukkit.Material;
-import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BundleMeta;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class BundleUtils {
+  private static final Set<String> REPORTED_BUNDLE_FAILURES = ConcurrentHashMap.newKeySet();
+
   public static boolean isBundle(ItemStack i) {
     return i.getType().equals(Material.BUNDLE);
   }
@@ -52,23 +55,32 @@ public class BundleUtils {
   }
 
   public static List<ItemStack> compact(List<ItemStack> items) {
-    if (items.stream().map(ItemStack::getType).distinct().count() <= items.size()) {
-      Inventory inv = Bukkit.createInventory(null, 54);
-
-      for (ItemStack i : items) {
-        inv.addItem(i);
+    List<ItemStack> compacted = new ArrayList<>(items.size());
+    for (ItemStack item : items) {
+      if (item == null || item.getAmount() <= 0) {
+        continue;
       }
 
-      List<ItemStack> l = new ArrayList<>();
-
-      for (ItemStack i : inv.getContents()) {
-        if (i != null) {
-          l.add(i);
+      ItemStack remaining = item.clone();
+      for (ItemStack existing : compacted) {
+        if (!existing.isSimilar(remaining) || existing.getAmount() >= existing.getMaxStackSize()) {
+          continue;
         }
+
+        int transferred = Math.min(remaining.getAmount(), existing.getMaxStackSize() - existing.getAmount());
+        existing.setAmount(existing.getAmount() + transferred);
+        remaining.setAmount(remaining.getAmount() - transferred);
+        if (remaining.getAmount() == 0) {
+          break;
+        }
+      }
+
+      if (remaining.getAmount() > 0) {
+        compacted.add(remaining);
       }
     }
 
-    return items;
+    return compacted;
   }
 
   public static boolean isFlagged(ItemStack item) {
@@ -77,6 +89,31 @@ public class BundleUtils {
         && item.getItemMeta().getLore() != null
         && item.getItemMeta().getLore().size() == 1
         && item.getItemMeta().getLore().get(0).equals("REACT SUPER STACK");
+  }
+
+  public static ItemStack createBundle(List<ItemStack> items) {
+    if (items == null || items.isEmpty()) {
+      return null;
+    }
+
+    ItemStack bundle = new ItemStack(Material.BUNDLE);
+    if (!(bundle.getItemMeta() instanceof BundleMeta bundleMeta)) {
+      return null;
+    }
+
+    try {
+      bundleMeta.setItems(compact(items));
+    } catch (RuntimeException exception) {
+      String failureKey = exception.getClass().getName() + ":" + exception.getMessage();
+      if (REPORTED_BUNDLE_FAILURES.add(failureKey)) {
+        React.warn("Could not create a React item bundle; bundle creation was skipped to preserve its contents.");
+        exception.printStackTrace();
+      }
+      return null;
+    }
+    bundleMeta.setLore(List.of("REACT SUPER STACK"));
+    bundle.setItemMeta(bundleMeta);
+    return bundle;
   }
 
   public static ItemStack merge(ItemStack item, ItemStack into, int maxBundle) {
@@ -88,15 +125,6 @@ public class BundleUtils {
       return null;
     }
 
-    ItemStack is = new ItemStack(Material.BUNDLE);
-    BundleMeta bm = (BundleMeta) is.getItemMeta();
-    try {
-      bm.setItems(compact(items));
-    } catch (Throwable e) {
-      return null;
-    }
-    bm.setLore(List.of("REACT SUPER STACK"));
-    is.setItemMeta(bm);
-    return is;
+    return createBundle(items);
   }
 }

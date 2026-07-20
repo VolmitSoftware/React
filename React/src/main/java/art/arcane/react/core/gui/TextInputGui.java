@@ -31,8 +31,8 @@ import org.bukkit.event.player.PlayerQuitEvent;
 
 public class TextInputGui implements Listener {
   private final Player player;
-  private String response;
-  private boolean responded;
+  private volatile String response;
+  private volatile boolean responded;
 
   public TextInputGui(Player player) {
     this.player = player;
@@ -48,13 +48,25 @@ public class TextInputGui implements Listener {
 
     TextInputGui gui = new TextInputGui(p);
 
-    while (!gui.responded) {
-      J.sleep(50);
-    }
+    try {
+      while (!gui.responded) {
+        if (!captureAvailable()) {
+          return null;
+        }
+        if (!J.sleep(50)) {
+          Thread.currentThread().interrupt();
+          return null;
+        }
+      }
 
-    return gui.response;
+      return gui.response;
+    } finally {
+      gui.responded = true;
+      HandlerList.unregisterAll(gui);
+    }
   }
 
+  @EventHandler
   public void on(PlayerQuitEvent e) {
     if (e.getPlayer().equals(player)) {
       responded = true;
@@ -71,5 +83,9 @@ public class TextInputGui implements Listener {
       responded = true;
       HandlerList.unregisterAll(this);
     }
+  }
+
+  private static boolean captureAvailable() {
+    return React.instance != null && React.instance.isEnabled() && React.instance.isReady();
   }
 }

@@ -35,7 +35,7 @@ public abstract class ReactFeature implements Feature {
       value = "Enables or disables this feature.",
       impact = "Set to false to stop this feature from activating while keeping its config file."
   )
-  private boolean enabled = true;
+  private volatile boolean enabled = true;
 
   public ReactFeature(String id) {
     this.id = id;
