@@ -21,7 +21,15 @@ package art.arcane.react.core.controller;
 
 import art.arcane.react.React;
 import art.arcane.react.api.feature.Feature;
-import art.arcane.react.api.rendering.*;
+import art.arcane.react.api.rendering.MapRendererPipe;
+import art.arcane.react.api.rendering.MegamapGrid;
+import art.arcane.react.api.rendering.ReactRenderer;
+import art.arcane.react.api.rendering.RendererAdaptMetrics;
+import art.arcane.react.api.rendering.RendererIrisMetrics;
+import art.arcane.react.api.rendering.RendererIrisWorldMetrics;
+import art.arcane.react.api.rendering.RendererReactMetrics;
+import art.arcane.react.api.rendering.RendererUnknown;
+import art.arcane.react.api.rendering.RendererWormholesMetrics;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.content.feature.FeatureUnknown;
 import art.arcane.react.core.integration.IntegrationCapabilitySupport;
@@ -30,11 +38,16 @@ import art.arcane.react.util.common.scheduling.TickedObject;
 import art.arcane.react.util.plugin.IController;
 import art.arcane.react.util.project.config.ConfigDescription;
 import art.arcane.react.util.project.config.ConfigDoc;
-import art.arcane.volmlib.integration.IntegrationMetricSchema;
-import art.arcane.volmlib.util.io.JarScanner;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.bukkit.*;
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.Chunk;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Rotation;
+import org.bukkit.World;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemFrame;
@@ -50,10 +63,15 @@ import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
 import org.bukkit.persistence.PersistentDataType;
 
-import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
@@ -66,9 +84,7 @@ public class MapController extends TickedObject implements IController, Listener
   private static final NamespacedKey nsRenderer = new NamespacedKey(React.instance, "react-renderer");
   private static final NamespacedKey nsMapToken = new NamespacedKey(React.instance, "react-map-token");
   private static final Set<String> disabledRendererIds = Set.of(
-      "iris-generation-pressure-overlay",
-      "iris-biome-chunk-share-pie-map",
-      "iris-biome-cache-hit-rate"
+      "iris-biome-chunk-share-pie-map"
   );
   @ConfigDoc(value = "Main maintenance cadence for map repair logic in milliseconds.", impact = "Lower values repair inventories and item-frames sooner after reload; higher values reduce maintenance overhead.")
   private long maintenanceTickIntervalMs = 500L;
@@ -123,7 +139,7 @@ public class MapController extends TickedObject implements IController, Listener
   private transient int inventoryRepairCursor;
   private transient int itemFrameWorldCursor;
   private transient int itemFrameChunkCursor;
-  private transient ReactRenderer irisMetricsRenderer;
+  private transient List<ReactRenderer> irisMetricsRenderers;
   private transient ReactRenderer adaptMetricsRenderer;
   private transient ReactRenderer wormholesMetricsRenderer;
   private transient ReactRenderer reactMetricsRenderer;
@@ -462,39 +478,14 @@ public class MapController extends TickedObject implements IController, Listener
     itemFrameWorldCursor = 0;
     itemFrameChunkCursor = 0;
     renderers.put(FeatureUnknown.ID, new RendererUnknown());
-    irisMetricsRenderer = new RendererIrisMetrics();
+    irisMetricsRenderers = new ArrayList<>();
+    irisMetricsRenderers.addAll(RendererIrisMetrics.dashboards());
+    irisMetricsRenderers.addAll(RendererIrisWorldMetrics.dashboards());
     adaptMetricsRenderer = new RendererAdaptMetrics();
     wormholesMetricsRenderer = new RendererWormholesMetrics();
     reactMetricsRenderer = new RendererReactMetrics();
     startupBoostUntilMs = System.currentTimeMillis() + Math.max(0L, startupBoostDurationMs);
     applyMaintenanceTickInterval();
-  }
-
-  private void scanForRenderers(String pkg) {
-    String p = React.instance.jar().getAbsolutePath();
-    p = p.replaceAll("\\Q.jar.jar\\E", ".jar");
-    JarScanner j = new JarScanner(new File(p), pkg);
-    try {
-      j.scan();
-      j.getClasses().stream()
-          .filter(i -> i.isAssignableFrom(ReactRenderer.class) || ReactRenderer.class.isAssignableFrom(i))
-          .map((i) -> {
-            try {
-              return (ReactRenderer) i.getConstructor().newInstance();
-            } catch (Throwable e) {
-              e.printStackTrace();
-            }
-
-            return null;
-          })
-          .forEach((i) -> {
-            if (i != null) {
-              renderers.put(i.getId(), i);
-            }
-          });
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
   }
 
   @Override
@@ -572,16 +563,20 @@ public class MapController extends TickedObject implements IController, Listener
   }
 
   private void syncIntegrationRenderers() {
-    syncIntegrationRenderer("iris", irisMetricsRenderer);
-    syncIntegrationRenderer("adapt", adaptMetricsRenderer);
-    syncIntegrationRenderer("wormholes", wormholesMetricsRenderer);
-    syncIntegrationRenderer("react", reactMetricsRenderer);
+    if (irisMetricsRenderers != null) {
+      for (ReactRenderer renderer : irisMetricsRenderers) {
+        syncIntegrationRenderer(renderer);
+      }
+    }
+    syncIntegrationRenderer(adaptMetricsRenderer);
+    syncIntegrationRenderer(wormholesMetricsRenderer);
+    syncIntegrationRenderer(reactMetricsRenderer);
     syncIntegrationCapabilityRenderers("iris");
     syncIntegrationCapabilityRenderers("adapt");
     syncIntegrationCapabilityRenderers("wormholes");
   }
 
-  private void syncIntegrationRenderer(String capability, ReactRenderer renderer) {
+  private void syncIntegrationRenderer(ReactRenderer renderer) {
     if (renderers == null || renderer == null) {
       return;
     }
@@ -639,26 +634,7 @@ public class MapController extends TickedObject implements IController, Listener
       return;
     }
 
-    if ("iris-chunk-stream-ms".equals(normalized) && !isIrisPregenActive()) {
-      renderers.remove(renderer.getId());
-      return;
-    }
-
     renderers.put(renderer.getId(), renderer);
-  }
-
-  private boolean isIrisPregenActive() {
-    IntegrationController controller = React.controller(IntegrationController.class);
-    if (controller == null || controller.getRemoteSamplerBridge() == null) {
-      return false;
-    }
-
-    var bridge = controller.getRemoteSamplerBridge();
-    if (!bridge.isAvailable("iris", IntegrationMetricSchema.IRIS_PREGEN_QUEUE)) {
-      return false;
-    }
-
-    return bridge.valueOr("iris", IntegrationMetricSchema.IRIS_PREGEN_QUEUE, 0D) > 0D;
   }
 
   private boolean applyRendererMetadata(MapMeta meta, ReactRenderer renderer) {
@@ -1739,8 +1715,13 @@ public class MapController extends TickedObject implements IController, Listener
   }
 
   private ReactRenderer integrationMetricsRenderer(String requested, String requestedAlias) {
-    if (requested.equals(RendererIrisMetrics.ID) || requestedAlias.equals(RendererIrisMetrics.ID)) {
-      return irisMetricsRenderer;
+    if (irisMetricsRenderers != null) {
+      for (ReactRenderer renderer : irisMetricsRenderers) {
+        if (renderer != null
+            && (requested.equals(renderer.getId()) || requestedAlias.equals(renderer.getId()))) {
+          return renderer;
+        }
+      }
     }
 
     if (requested.equals(RendererAdaptMetrics.ID) || requestedAlias.equals(RendererAdaptMetrics.ID)) {

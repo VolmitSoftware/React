@@ -23,7 +23,30 @@ import art.arcane.react.React;
 import art.arcane.react.api.entity.EntityPriority;
 import art.arcane.react.api.monitor.configuration.MonitorConfiguration;
 import art.arcane.react.api.monitor.configuration.MonitorGroup;
-import art.arcane.react.content.sampler.*;
+import art.arcane.react.content.sampler.SamplerAdaptAbilityChecksPerTick;
+import art.arcane.react.content.sampler.SamplerAdaptAbilityOps;
+import art.arcane.react.content.sampler.SamplerAdaptSessionLoad;
+import art.arcane.react.content.sampler.SamplerAdaptWorldPolicyLatency;
+import art.arcane.react.content.sampler.SamplerChunks;
+import art.arcane.react.content.sampler.SamplerEntities;
+import art.arcane.react.content.sampler.SamplerFluidTickTime;
+import art.arcane.react.content.sampler.SamplerHopperTickTime;
+import art.arcane.react.content.sampler.SamplerIrisChunksPerSecond;
+import art.arcane.react.content.sampler.SamplerIrisGenerationTotalMS;
+import art.arcane.react.content.sampler.SamplerIrisPregenQueue;
+import art.arcane.react.content.sampler.SamplerIrisPregenThroughput;
+import art.arcane.react.content.sampler.SamplerMemoryPressure;
+import art.arcane.react.content.sampler.SamplerMemoryUsedAfterGC;
+import art.arcane.react.content.sampler.SamplerPhysicsTickTime;
+import art.arcane.react.content.sampler.SamplerPlayers;
+import art.arcane.react.content.sampler.SamplerProcessorOutsideLoad;
+import art.arcane.react.content.sampler.SamplerProcessorProcessLoad;
+import art.arcane.react.content.sampler.SamplerProcessorSystemLoad;
+import art.arcane.react.content.sampler.SamplerReactAsyncTickTime;
+import art.arcane.react.content.sampler.SamplerReactJobsQueue;
+import art.arcane.react.content.sampler.SamplerRedstoneTickTime;
+import art.arcane.react.content.sampler.SamplerTickTime;
+import art.arcane.react.content.sampler.SamplerTicksPerSecond;
 import art.arcane.react.util.project.config.ConfigDescription;
 import art.arcane.react.util.project.config.ConfigDoc;
 import art.arcane.react.util.project.config.ConfigFileSupport;
@@ -58,8 +81,8 @@ public class ReactConfiguration {
   private boolean debug = false;
 
   @ConfigDoc(
-      value = "Controls how slow tick warnings are logged. Options: BLAME, SHORT, DETAILED.",
-      impact = "BLAME highlights likely plugin/workload responsibility. SHORT logs minimal timing only. DETAILED logs the full diagnostic payload."
+      value = "Controls how slow tick warnings are logged. Options: OFF, BLAME, SHORT, DETAILED.",
+      impact = "OFF suppresses slow tick warnings. BLAME highlights likely plugin/workload responsibility. SHORT logs minimal timing only. DETAILED logs the full diagnostic payload."
   )
   private SlowTickLogMode slowTickLogMode = SlowTickLogMode.BLAME;
 
@@ -157,6 +180,7 @@ public class ReactConfiguration {
   }
 
   public enum SlowTickLogMode {
+    OFF,
     BLAME,
     SHORT,
     DETAILED
@@ -261,10 +285,11 @@ public class ReactConfiguration {
         .group(MonitorGroup.builder()
             .name("Iris")
             .color("#35d68f")
-            .head(SamplerIrisChunkStreamMS.ID)
-            .sampler(SamplerIrisChunkStreamMS.ID)
+            .head(SamplerIrisGenerationTotalMS.ID)
+            .sampler(SamplerIrisGenerationTotalMS.ID)
+            .sampler(SamplerIrisChunksPerSecond.ID)
             .sampler(SamplerIrisPregenQueue.ID)
-            .sampler(SamplerIrisBiomeCacheHitRate.ID)
+            .sampler(SamplerIrisPregenThroughput.ID)
             .build())
         .group(MonitorGroup.builder()
             .name("Adapt")

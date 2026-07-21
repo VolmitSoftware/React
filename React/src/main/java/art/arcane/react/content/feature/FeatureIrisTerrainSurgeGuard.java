@@ -2,11 +2,14 @@ package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
 import art.arcane.react.api.feature.ReactCapabilityFeature;
-import art.arcane.react.content.sampler.SamplerIrisChunkStreamMS;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.core.controller.IntegrationController;
+import art.arcane.volmlib.integration.IntegrationMetricGroup;
+import art.arcane.volmlib.integration.IntegrationMetricSample;
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
+import art.arcane.volmlib.util.bukkit.WorldIdentity;
 import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -31,8 +34,8 @@ public class FeatureIrisTerrainSurgeGuard extends ReactCapabilityFeature impleme
   private double triggerTickMS = 56D;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Trigger threshold for trigger iris pregen queue in iris terrain surge guard.", impact = "Higher values trigger mitigation later; lower values trigger earlier and more aggressively.")
   private double triggerIrisPregenQueue = 280D;
-  @art.arcane.react.util.project.config.ConfigDoc(value = "Trigger threshold for trigger iris chunk stream in iris terrain surge guard.", impact = "Higher values trigger mitigation later; lower values trigger earlier and more aggressively.")
-  private double triggerIrisChunkStreamMS = 24D;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Trigger threshold for Iris generation time in iris terrain surge guard.", impact = "Higher values trigger mitigation later; lower values trigger earlier and more aggressively.")
+  private double triggerIrisGenerationMS = 24D;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Rolling enforcement window length used by iris terrain surge guard (milliseconds).", impact = "Longer windows smooth bursts but react slower; shorter windows react faster but are more sensitive.")
   private int windowMS = 2500;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum ungenerated chunk moves allowed per window in iris terrain surge guard.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
@@ -46,7 +49,6 @@ public class FeatureIrisTerrainSurgeGuard extends ReactCapabilityFeature impleme
   @art.arcane.react.util.project.config.ConfigDoc(value = "Permission node string checked before iris terrain surge guard enforcement.", impact = "Change this to match your permission model for bypass behavior.")
   private String bypassPermission = "react.secret.iris.bypass";
 
-  private transient volatile boolean surge;
   private transient long windowStartMS;
   private transient int moveAttempts;
   private transient int teleportAttempts;
@@ -68,7 +70,6 @@ public class FeatureIrisTerrainSurgeGuard extends ReactCapabilityFeature impleme
 
   @Override
   public void onActivate() {
-    surge = false;
     windowStartMS = System.currentTimeMillis();
     moveAttempts = 0;
     teleportAttempts = 0;
@@ -77,7 +78,6 @@ public class FeatureIrisTerrainSurgeGuard extends ReactCapabilityFeature impleme
 
   @Override
   public void onDeactivate() {
-    surge = false;
     lastMessageByPlayer.clear();
   }
 
@@ -88,13 +88,12 @@ public class FeatureIrisTerrainSurgeGuard extends ReactCapabilityFeature impleme
 
   @Override
   public void onTick() {
-    surge = isSurging();
     rolloverWindow(System.currentTimeMillis());
   }
 
   @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
   public void on(PlayerMoveEvent event) {
-    if (!surge || event.getTo() == null) {
+    if (event.getTo() == null || !isSurging(event.getTo().getWorld())) {
       return;
     }
 
@@ -120,7 +119,7 @@ public class FeatureIrisTerrainSurgeGuard extends ReactCapabilityFeature impleme
 
   @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
   public void on(PlayerTeleportEvent event) {
-    if (!surge || event.getTo() == null) {
+    if (event.getTo() == null || !isSurging(event.getTo().getWorld())) {
       return;
     }
 
@@ -142,7 +141,7 @@ public class FeatureIrisTerrainSurgeGuard extends ReactCapabilityFeature impleme
 
   @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
   public void on(CreatureSpawnEvent event) {
-    if (!surge || !cancelChunkGenSpawns) {
+    if (!cancelChunkGenSpawns || !isSurging(event.getLocation().getWorld())) {
       return;
     }
 
@@ -176,26 +175,38 @@ public class FeatureIrisTerrainSurgeGuard extends ReactCapabilityFeature impleme
     return location.getWorld().isChunkGenerated(location.getBlockX() >> 4, location.getBlockZ() >> 4);
   }
 
-  private boolean isSurging() {
+  private boolean isSurging(World world) {
+    IntegrationMetricGroup group = worldGroup(world);
+    if (group == null) {
+      return false;
+    }
     double tickMS = sample(SamplerTickTime.ID);
-    double pregenQueue = metricOr(IntegrationMetricSchema.IRIS_PREGEN_QUEUE, -1D);
-    double chunkStreamMS = SamplerIrisChunkStreamMS.normalizeStreamMetric(
-        metricOr(IntegrationMetricSchema.IRIS_CHUNK_STREAM_MS, -1D),
-        pregenQueue
-    );
+    double pregenQueue = metricOr(group, IntegrationMetricSchema.IRIS_PREGEN_QUEUE, -1D);
+    double generationMS = metricOr(group, IntegrationMetricSchema.IRIS_GENERATION_TOTAL_MS, -1D);
 
     return tickMS >= triggerTickMS
         || (pregenQueue >= 0D && pregenQueue >= triggerIrisPregenQueue)
-        || (chunkStreamMS >= 0D && chunkStreamMS >= triggerIrisChunkStreamMS);
+        || (generationMS >= 0D && generationMS >= triggerIrisGenerationMS);
   }
 
-  private double metricOr(String key, double fallback) {
+  private IntegrationMetricGroup worldGroup(World world) {
+    if (world == null) {
+      return null;
+    }
     IntegrationController integration = React.controller(IntegrationController.class);
     if (integration == null || integration.getRemoteSamplerBridge() == null) {
-      return fallback;
+      return null;
     }
+    return integration.getRemoteSamplerBridge().getGroup(
+        "iris",
+        "world",
+        WorldIdentity.serialize(world)
+    );
+  }
 
-    return integration.getRemoteSamplerBridge().valueOr("iris", key, fallback);
+  private double metricOr(IntegrationMetricGroup group, String key, double fallback) {
+    IntegrationMetricSample sample = group.samples().get(key);
+    return sample == null ? fallback : sample.valueOr(fallback);
   }
 
   private void rolloverWindow(long now) {

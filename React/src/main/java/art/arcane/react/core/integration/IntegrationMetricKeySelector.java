@@ -15,7 +15,7 @@ public final class IntegrationMetricKeySelector {
   public static Set<String> expectedKeys(String pluginId, IntegrationServiceContract provider) {
     String normalizedPlugin = normalize(pluginId);
     Set<String> keys = new LinkedHashSet<>(fixedKeys(normalizedPlugin));
-    if (!"adapt".equals(normalizedPlugin) || provider == null) {
+    if (provider == null || normalizedPlugin.isBlank()) {
       return Set.copyOf(keys);
     }
 
@@ -25,7 +25,7 @@ public final class IntegrationMetricKeySelector {
     }
 
     for (IntegrationMetricDescriptor descriptor : descriptors) {
-      if (descriptor == null || descriptor.key() == null || !descriptor.key().startsWith("adapt.")) {
+      if (descriptor == null || descriptor.key() == null || !descriptor.key().startsWith(normalizedPlugin + ".")) {
         continue;
       }
       keys.add(descriptor.key());

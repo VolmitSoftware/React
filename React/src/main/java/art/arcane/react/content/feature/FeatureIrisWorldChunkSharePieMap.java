@@ -1,8 +1,12 @@
 package art.arcane.react.content.feature;
 
+import art.arcane.react.React;
+import art.arcane.react.core.controller.IntegrationController;
+import art.arcane.react.core.integration.RemoteSamplerBridge;
 import art.arcane.react.util.data.TinyColor;
-import org.bukkit.Bukkit;
-import org.bukkit.World;
+import art.arcane.volmlib.integration.IntegrationMetricGroup;
+import art.arcane.volmlib.integration.IntegrationMetricSample;
+import art.arcane.volmlib.integration.IntegrationMetricSchema;
 import org.bukkit.entity.Player;
 
 import java.util.Map;
@@ -28,12 +32,19 @@ public class FeatureIrisWorldChunkSharePieMap extends FeatureIrisChunkSharePieBa
   @Override
   protected Map<String, Long> collectBuckets(Player viewer) {
     Map<String, Long> counts = newCounterMap();
-    for (World world : Bukkit.getWorlds()) {
-      if (world == null) {
+    IntegrationController controller = React.controller(IntegrationController.class);
+    RemoteSamplerBridge bridge = controller == null ? null : controller.getRemoteSamplerBridge();
+    if (bridge == null) {
+      return counts;
+    }
+
+    for (IntegrationMetricGroup group : bridge.groups("iris", "world")) {
+      IntegrationMetricSample sample = group.samples().get(IntegrationMetricSchema.IRIS_LOADED_CHUNKS);
+      if (sample == null || !sample.available()) {
         continue;
       }
-
-      counts.put(displayName(world.getName()), (long) world.getLoadedChunks().length);
+      long loadedChunks = Math.max(0L, Math.round(sample.valueOr(0D)));
+      counts.merge(displayName(group.label()), loadedChunks, Long::sum);
     }
     return counts;
   }

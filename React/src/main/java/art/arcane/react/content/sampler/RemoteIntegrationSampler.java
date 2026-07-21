@@ -10,6 +10,8 @@ abstract class RemoteIntegrationSampler extends ReactCachedSampler {
   private final String defaultMetricKey;
   private final int decimals;
   private final String suffix;
+  private transient double lastAvailableValue;
+  private transient boolean hasAvailableValue;
 
   protected RemoteIntegrationSampler(
       String id,
@@ -29,10 +31,25 @@ abstract class RemoteIntegrationSampler extends ReactCachedSampler {
   public double onSample() {
     IntegrationController controller = React.controller(IntegrationController.class);
     if (controller == null || controller.getRemoteSamplerBridge() == null) {
-      return 0D;
+      return hasAvailableValue ? lastAvailableValue : 0D;
     }
 
-    return controller.getRemoteSamplerBridge().valueOr(pluginId, metricKey(), 0D);
+    if (!controller.getRemoteSamplerBridge().isAvailable(pluginId, metricKey())) {
+      return hasAvailableValue ? lastAvailableValue : 0D;
+    }
+    double value = controller.getRemoteSamplerBridge().valueOr(pluginId, metricKey(), 0D);
+    if (Double.isFinite(value)) {
+      lastAvailableValue = value;
+      hasAvailableValue = true;
+    }
+    return hasAvailableValue ? lastAvailableValue : 0D;
+  }
+
+  @Override
+  public void start() {
+    super.start();
+    lastAvailableValue = 0D;
+    hasAvailableValue = false;
   }
 
   @Override

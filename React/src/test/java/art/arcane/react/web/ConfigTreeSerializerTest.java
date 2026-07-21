@@ -72,6 +72,7 @@ public class ConfigTreeSerializerTest {
         assertEquals("BLAME", mode.value);
         assertNotNull(mode.options);
         List<String> opts = Arrays.asList(mode.options);
+        assertTrue(opts.contains("OFF"), "options must contain OFF");
         assertTrue(opts.contains("BLAME"), "options must contain BLAME");
         assertTrue(opts.contains("SHORT"), "options must contain SHORT");
         assertTrue(opts.contains("DETAILED"), "options must contain DETAILED");

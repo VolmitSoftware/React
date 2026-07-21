@@ -2,6 +2,7 @@ package art.arcane.react.core.integration;
 
 import art.arcane.volmlib.integration.IntegrationMetricDescriptor;
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
+import art.arcane.volmlib.integration.IntegrationMetricType;
 import art.arcane.volmlib.integration.IntegrationServiceContract;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -28,12 +29,24 @@ class IntegrationMetricKeySelectorTest {
   }
 
   @Test
-  void nonAdaptSelectionDoesNotReadDynamicDescriptors() {
+  void irisSelectionUnionsFixedAndProviderDescriptorsWithinIrisNamespace() {
     IntegrationServiceContract provider = Mockito.mock(IntegrationServiceContract.class);
+    IntegrationMetricDescriptor dynamicIris = new IntegrationMetricDescriptor(
+        "iris.experimental-signal",
+        IntegrationMetricType.DOUBLE,
+        "ratio",
+        java.util.Map.of("plugin", "iris")
+    );
+    IntegrationMetricDescriptor adaptDescriptor = IntegrationMetricSchema.descriptor(
+        IntegrationMetricSchema.ADAPT_SESSION_LOAD
+    );
+    Mockito.when(provider.metricDescriptors()).thenReturn(Set.of(dynamicIris, adaptDescriptor));
 
     Set<String> keys = IntegrationMetricKeySelector.expectedKeys("iris", provider);
 
-    Assertions.assertEquals(IntegrationMetricSchema.irisKeys(), keys);
-    Mockito.verifyNoInteractions(provider);
+    Assertions.assertTrue(keys.containsAll(IntegrationMetricSchema.irisKeys()));
+    Assertions.assertTrue(keys.contains(dynamicIris.key()));
+    Assertions.assertFalse(keys.contains(IntegrationMetricSchema.ADAPT_SESSION_LOAD));
+    Mockito.verify(provider).metricDescriptors();
   }
 }

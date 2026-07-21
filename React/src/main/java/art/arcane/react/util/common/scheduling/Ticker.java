@@ -438,6 +438,12 @@ public class Ticker {
   }
 
   private void warnSlowTick(Ticked ticked, long elapsedMS, SlowTickSnapshot snapshot) {
+    ReactConfiguration.SlowTickLogMode mode = ReactConfiguration.get().getSlowTickLogMode();
+    if (mode == ReactConfiguration.SlowTickLogMode.OFF) {
+      clearSlowTickLogState(ticked);
+      return;
+    }
+
     SlowTickLogDecision logDecision = shouldLogSlowTick(ticked, elapsedMS);
     if (!logDecision.shouldLog) {
       return;
@@ -449,7 +455,6 @@ public class Ticker {
     String context = slowTickContext(ticked);
     String cause = slowTickCause(ticked);
     String source = slowTickLikelySource(ticked);
-    ReactConfiguration.SlowTickLogMode mode = ReactConfiguration.get().getSlowTickLogMode();
     String message;
     if (mode == ReactConfiguration.SlowTickLogMode.SHORT) {
       message = buildShortSlowTickMessage(ticked, elapsedMS, overMS);
@@ -808,17 +813,14 @@ public class Ticker {
 
   private String slowTickLikelySource(Ticked ticked) {
     double irisQueue = sampleSampler("iris-pregen-queue", -1D);
-    double irisStreamMs = sampleSampler("iris-chunk-stream-ms", -1D);
-    if (irisStreamMs >= 20_000D && irisQueue <= 0D) {
-      irisStreamMs = -1D;
-    }
+    double irisGenerationMs = sampleSampler("iris-generation-total-ms", -1D);
 
-    if (irisQueue > 0D || irisStreamMs >= 12D) {
+    if (irisQueue > 0D || irisGenerationMs >= 12D) {
       return String.format(
           Locale.ROOT,
-          "Iris generation pressure (queue=%.0f, stream=%.1fms)",
+          "Iris generation pressure (queue=%.0f, generation=%.1fms)",
           Math.max(0D, irisQueue),
-          Math.max(0D, irisStreamMs)
+          Math.max(0D, irisGenerationMs)
       );
     }
 

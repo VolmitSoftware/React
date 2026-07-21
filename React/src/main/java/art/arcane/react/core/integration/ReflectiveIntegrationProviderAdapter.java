@@ -1,9 +1,26 @@
 package art.arcane.react.core.integration;
 
-import art.arcane.volmlib.integration.*;
+import art.arcane.volmlib.integration.IntegrationHandshakeRequest;
+import art.arcane.volmlib.integration.IntegrationHandshakeResponse;
+import art.arcane.volmlib.integration.IntegrationHeartbeat;
+import art.arcane.volmlib.integration.IntegrationMetricDescriptor;
+import art.arcane.volmlib.integration.IntegrationMetricGroup;
+import art.arcane.volmlib.integration.IntegrationMetricSample;
+import art.arcane.volmlib.integration.IntegrationMetricSchema;
+import art.arcane.volmlib.integration.IntegrationMetricType;
+import art.arcane.volmlib.integration.IntegrationProtocolVersion;
+import art.arcane.volmlib.integration.IntegrationServiceContract;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Adapts IntegrationServiceContract implementations loaded from other plugin
@@ -21,8 +38,10 @@ public final class ReflectiveIntegrationProviderAdapter implements IntegrationSe
   private final Method supportedProtocolsMethod;
   private final Method capabilitiesMethod;
   private final Method metricDescriptorsMethod;
+  private final Method handshakeMethod;
   private final Method heartbeatMethod;
   private final Method sampleMetricsMethod;
+  private final Method metricGroupsMethod;
 
   private final String pluginId;
   private final String pluginVersion;
@@ -36,8 +55,10 @@ public final class ReflectiveIntegrationProviderAdapter implements IntegrationSe
     this.supportedProtocolsMethod = requireMethod(providerClass, "supportedProtocols");
     this.capabilitiesMethod = requireMethod(providerClass, "capabilities");
     this.metricDescriptorsMethod = requireMethod(providerClass, "metricDescriptors");
+    this.handshakeMethod = requireSingleArgumentMethod(providerClass, "handshake");
     this.heartbeatMethod = requireMethod(providerClass, "heartbeat");
     this.sampleMetricsMethod = requireMethod(providerClass, "sampleMetrics", Set.class);
+    this.metricGroupsMethod = optionalMethod(providerClass, "metricGroups");
     this.pluginId = normalize(invokeString(this.pluginIdMethod, ""));
     this.pluginVersion = invokeString(this.pluginVersionMethod, "");
     this.sourceServiceClassName = serviceClass == null ? providerClass.getName() : serviceClass.getName();
@@ -77,6 +98,26 @@ public final class ReflectiveIntegrationProviderAdapter implements IntegrationSe
     } catch (Throwable e) {
       throw new IllegalStateException("Missing method " + source.getName() + "#" + name, e);
     }
+  }
+
+  private static Method optionalMethod(Class<?> source, String name, Class<?>... args) {
+    try {
+      Method method = source.getMethod(name, args);
+      method.setAccessible(true);
+      return method;
+    } catch (Throwable ignored) {
+      return null;
+    }
+  }
+
+  private static Method requireSingleArgumentMethod(Class<?> source, String name) {
+    for (Method method : source.getMethods()) {
+      if (method.getName().equals(name) && method.getParameterCount() == 1) {
+        method.setAccessible(true);
+        return method;
+      }
+    }
+    throw new IllegalStateException("Missing method " + source.getName() + "#" + name);
   }
 
   private static String toString(Object value, String fallback) {
@@ -159,50 +200,58 @@ public final class ReflectiveIntegrationProviderAdapter implements IntegrationSe
 
   @Override
   public IntegrationHandshakeResponse handshake(IntegrationHandshakeRequest request) {
-    long now = System.currentTimeMillis();
-    Set<IntegrationProtocolVersion> remoteProtocols = supportedProtocols();
-    Set<String> remoteCapabilities = capabilities();
     if (request == null) {
-      return new IntegrationHandshakeResponse(
-          pluginId(),
-          pluginVersion(),
-          false,
-          null,
-          remoteProtocols,
-          remoteCapabilities,
-          "missing request (reflective)",
-          now
-      );
+      throw new IllegalArgumentException("Handshake request cannot be null");
     }
-
-    Optional<IntegrationProtocolVersion> negotiated = IntegrationProtocolNegotiator.negotiate(
-        remoteProtocols,
-        request.supportedProtocols()
-    );
-
-    if (negotiated.isEmpty()) {
-      return new IntegrationHandshakeResponse(
-          pluginId(),
-          pluginVersion(),
-          false,
-          null,
-          remoteProtocols,
-          remoteCapabilities,
-          "no-common-protocol (reflective)",
-          now
-      );
+    Object remoteRequest = toRemoteHandshakeRequest(request);
+    Object raw = invokeObject(handshakeMethod, remoteRequest);
+    if (raw == null) {
+      return null;
     }
-
     return new IntegrationHandshakeResponse(
-        pluginId(),
-        pluginVersion(),
-        true,
-        negotiated.get(),
-        remoteProtocols,
-        remoteCapabilities,
-        "ok (reflective)",
-        now
+        toString(invokeNoArg(raw, "responderPluginId"), pluginId()),
+        toString(invokeNoArg(raw, "responderVersion"), pluginVersion()),
+        toBoolean(invokeNoArg(raw, "accepted"), false),
+        toProtocol(invokeNoArg(raw, "negotiatedProtocol")),
+        toProtocolSet(invokeNoArg(raw, "supportedProtocols"), EMPTY_PROTOCOLS),
+        toStringSet(invokeNoArg(raw, "capabilities"), EMPTY_CAPABILITIES),
+        toString(invokeNoArg(raw, "message"), ""),
+        toLong(invokeNoArg(raw, "respondedAtMs"), System.currentTimeMillis())
     );
+  }
+
+  private Object toRemoteHandshakeRequest(IntegrationHandshakeRequest request) {
+    Object rawProtocols = invokeObject(supportedProtocolsMethod);
+    Set<Object> requestedProtocols = new LinkedHashSet<>();
+    if (rawProtocols instanceof Collection<?> protocols) {
+      for (Object protocol : protocols) {
+        IntegrationProtocolVersion converted = toProtocol(protocol);
+        if (converted != null && request.supportedProtocols().contains(converted)) {
+          requestedProtocols.add(protocol);
+        }
+      }
+    }
+
+    Class<?> requestType = handshakeMethod.getParameterTypes()[0];
+    try {
+      Constructor<?> constructor = requestType.getConstructor(
+          String.class,
+          String.class,
+          Set.class,
+          Set.class,
+          long.class
+      );
+      constructor.setAccessible(true);
+      return constructor.newInstance(
+          request.requesterPluginId(),
+          request.requesterVersion(),
+          requestedProtocols,
+          request.capabilities(),
+          request.requestedAtMs()
+      );
+    } catch (Throwable e) {
+      throw new IllegalStateException("Unable to construct reflective handshake request for " + pluginId(), e);
+    }
   }
 
   @Override
@@ -242,6 +291,27 @@ public final class ReflectiveIntegrationProviderAdapter implements IntegrationSe
     return out;
   }
 
+  @Override
+  public List<IntegrationMetricGroup> metricGroups() {
+    if (metricGroupsMethod == null) {
+      return List.of();
+    }
+
+    Object raw = invokeObject(metricGroupsMethod);
+    if (!(raw instanceof Collection<?> values)) {
+      return List.of();
+    }
+
+    List<IntegrationMetricGroup> groups = new ArrayList<>();
+    for (Object value : values) {
+      IntegrationMetricGroup group = toMetricGroup(value);
+      if (group != null) {
+        groups.add(group);
+      }
+    }
+    return groups.isEmpty() ? List.of() : List.copyOf(groups);
+  }
+
   private Map<String, IntegrationMetricSample> unavailableMetrics(Set<String> metricKeys, String reason) {
     if (metricKeys == null || metricKeys.isEmpty()) {
       return Map.of();
@@ -277,7 +347,51 @@ public final class ReflectiveIntegrationProviderAdapter implements IntegrationSe
     Double numericValue = toDoubleOrNull(invokeNoArg(value, "numericValue"));
     long sampledAtMs = toLong(invokeNoArg(value, "sampledAtMs"), now);
     String message = toString(invokeNoArg(value, "message"), "");
-    return new IntegrationMetricSample(descriptor, numericValue, available, sampledAtMs, message);
+    try {
+      return new IntegrationMetricSample(descriptor, numericValue, available, sampledAtMs, message);
+    } catch (IllegalArgumentException ignored) {
+      return IntegrationMetricSample.unavailable(descriptor, "sample-invalid (reflective)", now);
+    }
+  }
+
+  private IntegrationMetricGroup toMetricGroup(Object value) {
+    if (value == null) {
+      return null;
+    }
+
+    String scopeKind = toString(invokeNoArg(value, "scopeKind"), "");
+    String scopeId = toString(invokeNoArg(value, "scopeId"), "");
+    String label = toString(invokeNoArg(value, "label"), scopeId);
+    if (scopeKind.isBlank() || scopeId.isBlank()) {
+      return null;
+    }
+
+    Map<String, String> tags = toStringMap(invokeNoArg(value, "tags"));
+    Object rawSamples = invokeNoArg(value, "samples");
+    Map<String, IntegrationMetricSample> samples = new LinkedHashMap<>();
+    long now = System.currentTimeMillis();
+    if (rawSamples instanceof Map<?, ?> sampleMap) {
+      for (Map.Entry<?, ?> entry : sampleMap.entrySet()) {
+        String key = toString(entry.getKey(), "");
+        if (key.isBlank()) {
+          continue;
+        }
+        IntegrationMetricSample sample = toMetricSample(entry.getValue(), key, now);
+        if (key.equals(sample.descriptor().key())) {
+          samples.put(key, sample);
+        }
+      }
+    }
+
+    try {
+      return new IntegrationMetricGroup(scopeKind, scopeId, label, tags, samples);
+    } catch (IllegalArgumentException ignored) {
+      return null;
+    }
+  }
+
+  public boolean wrapsSameProvider(ReflectiveIntegrationProviderAdapter other) {
+    return other != null && provider == other.provider;
   }
 
   private IntegrationMetricDescriptor toMetricDescriptor(Object value, String keyFallback) {

@@ -21,6 +21,7 @@ package art.arcane.react.api.rendering;
 
 import art.arcane.react.React;
 import art.arcane.react.core.controller.IntegrationController;
+import art.arcane.react.core.integration.RemoteSamplerBridge;
 import art.arcane.react.util.data.TinyColor;
 import art.arcane.volmlib.integration.IntegrationMetricSample;
 import art.arcane.volmlib.util.format.Form;
@@ -39,7 +40,7 @@ abstract class RendererIntegrationMetricsBase implements ReactRenderer {
     int h = height();
     int s = uiScale();
     clear(backgroundColor());
-    dashHeader(title(), null, accentColor());
+    dashHeader(title(), headerValue(), accentColor());
 
     IntegrationController controller = React.controller(IntegrationController.class);
     if (controller == null || controller.getRemoteSamplerBridge() == null) {
@@ -48,6 +49,7 @@ abstract class RendererIntegrationMetricsBase implements ReactRenderer {
       return;
     }
 
+    RemoteSamplerBridge bridge = controller.getRemoteSamplerBridge();
     IntegrationController.IntegrationStatus status = controller.statusFor(pluginId());
     String health = status == null ? "MISSING" : status.health().name();
     set(2 * s, 15 * s, w - (4 * s), 9 * s, healthColor(health));
@@ -57,7 +59,7 @@ abstract class RendererIntegrationMetricsBase implements ReactRenderer {
     int cutoffY = h - (12 * s);
     long newestSampleMs = 0L;
     for (MetricLine metric : metricLines()) {
-      IntegrationMetricSample sample = controller.getRemoteSamplerBridge().getSample(pluginId(), metric.key());
+      IntegrationMetricSample sample = metricSample(bridge, metric);
       newestSampleMs = Math.max(newestSampleMs, sample == null ? 0L : sample.sampledAtMs());
       drawMetricRow(metric, sample, y, w, s);
       y += 14 * s;
@@ -89,6 +91,14 @@ abstract class RendererIntegrationMetricsBase implements ReactRenderer {
   protected abstract TinyColor accentColor();
 
   protected abstract List<MetricLine> metricLines();
+
+  protected String headerValue() {
+    return null;
+  }
+
+  protected IntegrationMetricSample metricSample(RemoteSamplerBridge bridge, MetricLine metric) {
+    return bridge.getSample(pluginId(), metric.key());
+  }
 
   private String formatSample(MetricLine metric, IntegrationMetricSample sample) {
     if (sample == null || !sample.available()) {

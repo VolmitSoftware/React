@@ -1,7 +1,15 @@
 package art.arcane.react.core.integration;
 
 import art.arcane.react.React;
-import art.arcane.volmlib.integration.*;
+import art.arcane.volmlib.integration.IntegrationHandshakeRequest;
+import art.arcane.volmlib.integration.IntegrationHandshakeResponse;
+import art.arcane.volmlib.integration.IntegrationHeartbeat;
+import art.arcane.volmlib.integration.IntegrationMetricDescriptor;
+import art.arcane.volmlib.integration.IntegrationMetricSample;
+import art.arcane.volmlib.integration.IntegrationMetricSchema;
+import art.arcane.volmlib.integration.IntegrationProtocolNegotiator;
+import art.arcane.volmlib.integration.IntegrationProtocolVersion;
+import art.arcane.volmlib.integration.IntegrationServiceContract;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.ServicePriority;
 
@@ -11,9 +19,11 @@ import java.util.Optional;
 import java.util.Set;
 
 public class ReactIntegrationService implements IntegrationServiceContract {
+  private static final IntegrationProtocolVersion CURRENT_PROTOCOL = new IntegrationProtocolVersion(1, 2);
   private static final Set<IntegrationProtocolVersion> SUPPORTED_PROTOCOLS = Set.of(
       new IntegrationProtocolVersion(1, 0),
-      new IntegrationProtocolVersion(1, 1)
+      new IntegrationProtocolVersion(1, 1),
+      CURRENT_PROTOCOL
   );
   private static final Set<String> CAPABILITIES = Set.of(
       "handshake",
@@ -21,8 +31,6 @@ public class ReactIntegrationService implements IntegrationServiceContract {
       "metrics",
       "react-status"
   );
-
-  private volatile IntegrationProtocolVersion negotiatedProtocol = new IntegrationProtocolVersion(1, 1);
 
   public void register() {
     Bukkit.getServicesManager().register(IntegrationServiceContract.class, this, React.instance, ServicePriority.Normal);
@@ -100,12 +108,11 @@ public class ReactIntegrationService implements IntegrationServiceContract {
       );
     }
 
-    negotiatedProtocol = negotiated.get();
     return new IntegrationHandshakeResponse(
         pluginId(),
         pluginVersion(),
         true,
-        negotiatedProtocol,
+        negotiated.get(),
         SUPPORTED_PROTOCOLS,
         CAPABILITIES,
         "ok",
@@ -116,7 +123,7 @@ public class ReactIntegrationService implements IntegrationServiceContract {
   @Override
   public IntegrationHeartbeat heartbeat() {
     long now = System.currentTimeMillis();
-    return new IntegrationHeartbeat(negotiatedProtocol, true, now, "ok");
+    return new IntegrationHeartbeat(CURRENT_PROTOCOL, true, now, "ok");
   }
 
   @Override

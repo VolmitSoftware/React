@@ -1,5 +1,6 @@
 package art.arcane.react.core.config;
 
+import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.util.project.config.TomlCodec;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -12,6 +13,10 @@ public class ConfigRoundTripTest {
   public static final class WorldFlagSettings {
     public boolean enabled = true;
     public Map<String, Boolean> worldFlags = new LinkedHashMap<String, Boolean>();
+  }
+
+  public static final class SlowTickSettings {
+    public ReactConfiguration.SlowTickLogMode slowTickLogMode = ReactConfiguration.SlowTickLogMode.BLAME;
   }
 
   @Test
@@ -68,5 +73,17 @@ public class ConfigRoundTripTest {
 
     Assertions.assertNotNull(parsed.worldFlags);
     Assertions.assertTrue(parsed.worldFlags.isEmpty());
+  }
+
+  @Test
+  public void slowTickOffModeSurvivesTomlRoundTrip() throws Exception {
+    SlowTickSettings settings = new SlowTickSettings();
+    settings.slowTickLogMode = ReactConfiguration.SlowTickLogMode.OFF;
+
+    String toml = TomlCodec.toToml(settings, "main-config");
+    SlowTickSettings parsed = TomlCodec.fromToml(toml, SlowTickSettings.class);
+
+    Assertions.assertTrue(toml.contains("slowTickLogMode = \"OFF\""));
+    Assertions.assertEquals(ReactConfiguration.SlowTickLogMode.OFF, parsed.slowTickLogMode);
   }
 }

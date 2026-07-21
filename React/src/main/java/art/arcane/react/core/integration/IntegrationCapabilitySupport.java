@@ -19,7 +19,7 @@ public final class IntegrationCapabilitySupport {
 
     if (controller != null) {
       IntegrationController.IntegrationStatus status = controller.statusFor(normalized);
-      return status != null && status.health() != IntegrationController.Health.MISSING;
+      return status != null && status.health() == IntegrationController.Health.HEALTHY;
     }
 
     return isPluginInstalled(normalized);

@@ -11,14 +11,27 @@ import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.common.scheduling.TickedObject;
 import art.arcane.react.util.plugin.IController;
-import art.arcane.volmlib.integration.*;
+import art.arcane.volmlib.integration.IntegrationHandshakeResponse;
+import art.arcane.volmlib.integration.IntegrationHeartbeat;
+import art.arcane.volmlib.integration.IntegrationMetricSample;
+import art.arcane.volmlib.integration.IntegrationMetricSchema;
+import art.arcane.volmlib.integration.IntegrationProtocolVersion;
+import art.arcane.volmlib.integration.IntegrationServiceContract;
 import art.arcane.volmlib.util.format.Form;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.RegisteredServiceProvider;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -29,6 +42,7 @@ public class IntegrationController extends TickedObject implements IController {
   private static final long DISCOVERY_INTERVAL_MS = 5_000L;
   private static final long HANDSHAKE_RETRY_MS = 10_000L;
   private static final long STALE_HEARTBEAT_TIMEOUT_MS = 15_000L;
+  private static final long MAX_FUTURE_HEARTBEAT_MS = 5_000L;
   private static final long CORRELATION_COOLDOWN_MS = 10_000L;
   private static final long TIMELINE_RETENTION_MS = 180_000L;
   private static final double ADAPT_SESSION_LOAD_THRESHOLD = 65D;
@@ -88,6 +102,9 @@ public class IntegrationController extends TickedObject implements IController {
     timeline.clear();
     activeThresholds.clear();
     adaptAbilityOpsSampleStreak = 0;
+    if (remoteSamplerBridge != null) {
+      remoteSamplerBridge.clear();
+    }
   }
 
   @Override
@@ -189,7 +206,7 @@ public class IntegrationController extends TickedObject implements IController {
 
     for (RegisteredServiceProvider<IntegrationServiceContract> registration : registrations) {
       IntegrationServiceContract provider = registration.getProvider();
-      if (provider == null) {
+      if (provider == null || registration.getPlugin() == null || !registration.getPlugin().isEnabled()) {
         continue;
       }
 
@@ -203,7 +220,7 @@ public class IntegrationController extends TickedObject implements IController {
       if (state.provider == null) {
         logLifecycle("discover", pluginId, "provider=" + registration.getPlugin().getName());
       }
-      state.provider = provider;
+      bindDiscoveredProvider(state, provider, now);
       state.lastProviderSeenMs = now;
     }
 
@@ -215,6 +232,9 @@ public class IntegrationController extends TickedObject implements IController {
       }
 
       for (RegisteredServiceProvider<?> registration : getRegistrationsRaw(serviceClass)) {
+        if (registration.getPlugin() == null || !registration.getPlugin().isEnabled()) {
+          continue;
+        }
         Object providerObject = registration.getProvider();
         ReflectiveIntegrationProviderAdapter bridge = ReflectiveIntegrationProviderAdapter.tryCreate(providerObject, serviceClass);
         if (bridge == null) {
@@ -237,16 +257,54 @@ public class IntegrationController extends TickedObject implements IController {
                   + " reflective=true"
           );
         }
-        state.provider = bridge;
+        bindDiscoveredProvider(state, bridge, now);
         state.lastProviderSeenMs = now;
       }
     }
 
     for (IntegrationNodeState state : nodes.values()) {
       if (!discovered.containsKey(state.pluginId) && now - state.lastProviderSeenMs > DISCOVERY_INTERVAL_MS * 2L) {
-        state.provider = null;
+        resetBinding(state, null);
       }
     }
+  }
+
+  private void bindDiscoveredProvider(IntegrationNodeState state, IntegrationServiceContract provider, long now) {
+    if (sameProvider(state.provider, provider)) {
+      state.provider = provider;
+      return;
+    }
+
+    boolean replacing = state.provider != null;
+    resetBinding(state, provider);
+    if (replacing) {
+      logLifecycle("replace", state.pluginId, "provider-replaced");
+      remoteSamplerBridge.markPluginUnavailable(
+          state.pluginId,
+          IntegrationMetricKeySelector.expectedKeys(state.pluginId, null),
+          "provider-replaced"
+      );
+    }
+    state.lastProviderSeenMs = now;
+  }
+
+  private boolean sameProvider(IntegrationServiceContract current, IntegrationServiceContract candidate) {
+    if (current == candidate) {
+      return true;
+    }
+    if (current instanceof ReflectiveIntegrationProviderAdapter currentReflective
+        && candidate instanceof ReflectiveIntegrationProviderAdapter candidateReflective) {
+      return currentReflective.wrapsSameProvider(candidateReflective);
+    }
+    return false;
+  }
+
+  private void resetBinding(IntegrationNodeState state, IntegrationServiceContract provider) {
+    state.provider = provider;
+    state.bound = false;
+    state.lastHandshakeAttemptMs = 0L;
+    state.lastHeartbeatMs = 0L;
+    state.negotiatedProtocol = null;
   }
 
   @SuppressWarnings({"rawtypes", "unchecked"})
@@ -279,8 +337,10 @@ public class IntegrationController extends TickedObject implements IController {
     }
 
     IntegrationHeartbeat heartbeat;
+    Set<IntegrationProtocolVersion> providerProtocols;
     try {
       heartbeat = provider.heartbeat();
+      providerProtocols = provider.supportedProtocols();
     } catch (Throwable e) {
       node.bound = false;
       setHealth(node, Health.DEGRADED, "heartbeat-error:" + e.getClass().getSimpleName());
@@ -288,14 +348,32 @@ public class IntegrationController extends TickedObject implements IController {
       return;
     }
 
-    if (heartbeat != null) {
-      node.lastHeartbeatMs = heartbeat.lastHeartbeatMs();
-      if (heartbeat.protocol() != null) {
-        node.negotiatedProtocol = heartbeat.protocol();
-      }
-      if (!heartbeat.message().isBlank()) {
-        node.message = heartbeat.message();
-      }
+    if (heartbeat == null) {
+      setHealth(node, Health.DEGRADED, "heartbeat-missing");
+      remoteSamplerBridge.markPluginUnavailable(node.pluginId, expectedKeys, "heartbeat-missing");
+      return;
+    }
+    if (!heartbeat.healthy()) {
+      setHealth(node, Health.DEGRADED, heartbeat.message().isBlank() ? "heartbeat-unhealthy" : heartbeat.message());
+      remoteSamplerBridge.markPluginUnavailable(node.pluginId, expectedKeys, "heartbeat-unhealthy");
+      return;
+    }
+    if (providerProtocols == null
+        || heartbeat.protocol() == null
+        || !providerProtocols.contains(heartbeat.protocol())) {
+      setHealth(node, Health.DEGRADED, "heartbeat-protocol-invalid");
+      remoteSamplerBridge.markPluginUnavailable(node.pluginId, expectedKeys, "heartbeat-protocol-invalid");
+      return;
+    }
+    if (heartbeat.lastHeartbeatMs() > now + MAX_FUTURE_HEARTBEAT_MS) {
+      setHealth(node, Health.DEGRADED, "heartbeat-future-timestamp");
+      remoteSamplerBridge.markPluginUnavailable(node.pluginId, expectedKeys, "heartbeat-future-timestamp");
+      return;
+    }
+
+    node.lastHeartbeatMs = heartbeat.lastHeartbeatMs();
+    if (!heartbeat.message().isBlank()) {
+      node.message = heartbeat.message();
     }
 
     if (node.lastHeartbeatMs <= 0L || now - node.lastHeartbeatMs > STALE_HEARTBEAT_TIMEOUT_MS) {
@@ -308,6 +386,13 @@ public class IntegrationController extends TickedObject implements IController {
       expectedKeys = IntegrationMetricKeySelector.expectedKeys(node.pluginId, provider);
       Map<String, IntegrationMetricSample> samples = provider.sampleMetrics(expectedKeys);
       remoteSamplerBridge.updatePluginSamples(node.pluginId, expectedKeys, samples, "metric-unavailable");
+      remoteSamplerBridge.updatePluginGroups(node.pluginId, provider.metricGroups());
+      boolean anyAvailable = expectedKeys.stream()
+          .anyMatch(key -> remoteSamplerBridge.isAvailable(node.pluginId, key));
+      if (!expectedKeys.isEmpty() && !anyAvailable) {
+        setHealth(node, Health.DEGRADED, "metric-data-unavailable");
+        return;
+      }
       setHealth(node, Health.HEALTHY, "ok");
     } catch (Throwable e) {
       setHealth(node, Health.DEGRADED, "metric-error:" + e.getClass().getSimpleName());
@@ -320,8 +405,10 @@ public class IntegrationController extends TickedObject implements IController {
     logLifecycle("negotiate", node.pluginId, "attempt");
 
     IntegrationHandshakeResponse response;
+    Set<IntegrationProtocolVersion> providerProtocols;
     try {
       response = provider.handshake(localService.createRequest());
+      providerProtocols = provider.supportedProtocols();
     } catch (Throwable e) {
       node.bound = false;
       setHealth(node, Health.DEGRADED, "handshake-error:" + e.getClass().getSimpleName());
@@ -335,9 +422,22 @@ public class IntegrationController extends TickedObject implements IController {
       return;
     }
 
+    IntegrationProtocolVersion negotiated = response.negotiatedProtocol();
+    boolean validResponder = node.pluginId.equals(normalize(response.responderPluginId()));
+    boolean localSupports = localService.supportedProtocols().contains(negotiated);
+    boolean remoteSupports = response.supportedProtocols().contains(negotiated)
+        && providerProtocols != null
+        && providerProtocols.contains(negotiated);
+    boolean metricsCapable = response.capabilities().contains("metrics");
+    if (!validResponder || !localSupports || !remoteSupports || !metricsCapable) {
+      node.bound = false;
+      setHealth(node, Health.DEGRADED, "handshake-contract-invalid");
+      return;
+    }
+
     boolean wasBound = node.bound;
     node.bound = true;
-    node.negotiatedProtocol = response.negotiatedProtocol();
+    node.negotiatedProtocol = negotiated;
     node.message = response.message();
     if (!wasBound) {
       logLifecycle("bind", node.pluginId, "protocol=" + node.negotiatedProtocol.asText());
@@ -345,7 +445,7 @@ public class IntegrationController extends TickedObject implements IController {
   }
 
   private void evaluateCorrelation(long now) {
-    var tickSampler = React.sampler(SamplerTickTime.ID);
+    Sampler tickSampler = React.sampler(SamplerTickTime.ID);
     if (tickSampler == null) {
       return;
     }

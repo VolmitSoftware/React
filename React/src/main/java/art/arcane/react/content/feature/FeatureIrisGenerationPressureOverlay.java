@@ -2,10 +2,9 @@ package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
 import art.arcane.react.api.feature.CapabilityGatedFeature;
-import art.arcane.react.content.sampler.SamplerIrisChunkStreamMS;
 import art.arcane.react.core.controller.IntegrationController;
 import art.arcane.react.util.data.TinyColor;
-import art.arcane.volmlib.integration.IntegrationMetricSchema;
+import art.arcane.volmlib.util.bukkit.WorldIdentity;
 import org.bukkit.Chunk;
 
 import java.util.Set;
@@ -35,16 +34,10 @@ public class FeatureIrisGenerationPressureOverlay extends FeatureChunkHeatmapBas
 
   @Override
   protected double chunkScore(Chunk chunk) {
-    double base = chunkTotalScore(chunk);
-    double queue = metricOr(IntegrationMetricSchema.IRIS_PREGEN_QUEUE, 0D);
-    double streamMs = SamplerIrisChunkStreamMS.normalizeStreamMetric(
-        metricOr(IntegrationMetricSchema.IRIS_CHUNK_STREAM_MS, 0D),
-        queue
-    );
-
-    double queuePressure = Math.log10(1D + Math.max(0D, queue)) * 14D;
-    double streamPressure = Math.min(120D, Math.max(0D, streamMs) * 1.5D);
-    return (base * 0.40D) + queuePressure + streamPressure;
+    if (chunk == null || chunk.getWorld() == null || !isManagedWorld(chunk)) {
+      return 0D;
+    }
+    return chunkTotalScore(chunk);
   }
 
   @Override
@@ -57,12 +50,15 @@ public class FeatureIrisGenerationPressureOverlay extends FeatureChunkHeatmapBas
     return Set.of("iris");
   }
 
-  private double metricOr(String key, double fallback) {
+  private boolean isManagedWorld(Chunk chunk) {
     IntegrationController controller = React.controller(IntegrationController.class);
     if (controller == null || controller.getRemoteSamplerBridge() == null) {
-      return fallback;
+      return false;
     }
-
-    return controller.getRemoteSamplerBridge().valueOr("iris", key, fallback);
+    return controller.getRemoteSamplerBridge().getGroup(
+        "iris",
+        "world",
+        WorldIdentity.serialize(chunk.getWorld())
+    ) != null;
   }
 }

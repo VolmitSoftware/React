@@ -36,7 +36,12 @@ import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 
 public final class ReactMapGUI {
   private static final int PAGE_JUMP = 5;
@@ -300,7 +305,7 @@ public final class ReactMapGUI {
       case "adapt-ability-impact-list-map" ->
           "Ranks Adapt abilities by measured event, tick, and guarded-callback execution time.";
       case "iris-world-chunk-share-pie-map" ->
-          "Pie chart showing chunk-share distribution across all loaded server worlds.";
+          "Pie chart showing loaded chunk share across Iris-managed worlds.";
       case "iris-biome-chunk-share-pie-map" ->
           "Pie chart showing chunk-share distribution across biomes in the map world.";
       case "plugin-event-impact-pie-map" ->
@@ -308,7 +313,7 @@ public final class ReactMapGUI {
       case "plugin-event-impact-list-map" ->
           "Ranked list of plugins by rolling event-impact score.";
       case "iris-metrics" ->
-          "Iris integration panel for pregen queue depth and active stream latency.";
+          "Iris integration overview for engines, worlds, chunks, entities, and generation.";
       case "adapt-metrics" ->
           "Adapt integration panel for session load, ability ops/min, and world policy latency.";
       case "react-metrics" ->
@@ -347,7 +352,7 @@ public final class ReactMapGUI {
            "adapt-runtime-pressure-overlay" ->
           "Hotter colors indicate more pressure in the sampled chunk.";
       case "iris-metrics" ->
-          "Monitors: queue backlog; stream ms appears only while Iris pregen is active.";
+          "Monitors: managed worlds, live engines, loaded chunks, entities, generation rate, and failures.";
       case "adapt-metrics" ->
           "Monitors: session load, ability throughput, policy latency.";
       case "react-metrics" ->
@@ -448,9 +453,9 @@ public final class ReactMapGUI {
       case "processor-process-load" -> "JVM process CPU load trend.";
       case "processor-outside" -> "Non-React external process load pressure.";
       case "iris-pregen-queue" -> "Iris remote pregen queue depth.";
-      case "iris-chunk-stream-ms" ->
-          "Iris chunk-stream latency from integration metrics.";
-      case "iris-biome-cache-hit-rate" -> "Iris biome-cache hit ratio.";
+      case "iris-pregen-throughput" -> "Iris pregenerator throughput in chunks per second.";
+      case "iris-generation-total-ms" -> "Worst active Iris-world rolling generation time.";
+      case "iris-chunks-per-second" -> "Combined Iris engine chunk generation throughput.";
       case "adapt-session-load" -> "Adapt runtime session load percentage.";
       case "adapt-ability-ops" ->
           "Adapt ability operations per minute (mode selected by config adaptAbilityOpsMetricMode).";
