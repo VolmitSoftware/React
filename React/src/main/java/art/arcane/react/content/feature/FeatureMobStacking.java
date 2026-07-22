@@ -25,6 +25,8 @@ import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.content.sampler.SamplerEntities;
 import art.arcane.react.core.NMS;
 import art.arcane.react.core.controller.EntityController;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.RuntimeMessages;
 import art.arcane.react.model.ReactEntity;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.project.world.CustomMobChecker;
@@ -226,7 +228,8 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
     if (count > 1) {
       e.setCustomName(ChatColor.BOLD + "" + count + "x " + ChatColor.RESET + ChatColor.GRAY + "" + Form.capitalizeWords(e.getType().name().toLowerCase().replaceAll("\\Q_\\E", " ")));
     } else {
-      e.setCustomName(ChatColor.GOLD + "" + count + "x UNIQUE" + ChatColor.RESET + ChatColor.GRAY + "" + Form.capitalizeWords(e.getType().name().toLowerCase().replaceAll("\\Q_\\E", " ")));
+      String uniqueLabel = ReactLanguage.plain(RuntimeMessages.MOB_STACKING_UNIQUE);
+      e.setCustomName(ChatColor.GOLD + "" + count + "x " + uniqueLabel + ChatColor.RESET + ChatColor.GRAY + "" + Form.capitalizeWords(e.getType().name().toLowerCase().replaceAll("\\Q_\\E", " ")));
     }
   }
 

@@ -6,6 +6,8 @@ import 'package:arcane_jaspr/arcane_jaspr.dart';
 import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart' show Component;
 
+import '../localization/reactor_localizations.dart';
+
 enum GaugeStatus { success, warning, error }
 
 class Gauge extends StatelessWidget {
@@ -39,9 +41,9 @@ class Gauge extends StatelessWidget {
   };
 
   static String _statusWord(GaugeStatus status) => switch (status) {
-    GaugeStatus.success => 'Nominal',
-    GaugeStatus.warning => 'Elevated',
-    GaugeStatus.error => 'Critical',
+    GaugeStatus.success => reactorText(ReactorText.statusNominal),
+    GaugeStatus.warning => reactorText(ReactorText.statusElevated),
+    GaugeStatus.error => reactorText(ReactorText.statusCritical),
   };
 
   static String _buildArcD({

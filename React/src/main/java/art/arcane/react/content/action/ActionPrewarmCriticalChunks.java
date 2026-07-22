@@ -25,11 +25,14 @@ import art.arcane.react.api.action.ActionTicket;
 import art.arcane.react.api.action.ReactAction;
 import art.arcane.react.core.controller.ActionController;
 import art.arcane.react.core.controller.ObserverController;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.ActionMessages;
 import art.arcane.react.model.SampledChunk;
 import art.arcane.react.model.SampledWorld;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.volmlib.util.bukkit.WorldIdentity;
 import art.arcane.volmlib.util.format.Form;
+import art.arcane.volmlib.util.localization.MessageArgument;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -40,7 +43,13 @@ import org.bukkit.Chunk;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Prewarm Critical Chunks action. Preloads high-risk chunks and neighbors to reduce stutter spikes.")
@@ -54,7 +63,12 @@ public class ActionPrewarmCriticalChunks extends ReactAction<ActionPrewarmCritic
   @Override
   public String getCompletedMessage(ActionTicket<Params> ticket) {
     Params p = ticket.getParams();
-    return "Prewarmed " + p.getChunksWarmed() + " chunks (" + p.getChunksLoaded() + " newly loaded) in " + Form.duration(ticket.getDuration(), 1);
+    return ReactLanguage.plain(
+        ActionMessages.PREWARMED_CHUNKS,
+        MessageArgument.untrusted("warmed", p.getChunksWarmed()),
+        MessageArgument.untrusted("loaded", p.getChunksLoaded()),
+        MessageArgument.untrusted("duration", Form.duration(ticket.getDuration(), 1))
+    );
   }
 
   @Override

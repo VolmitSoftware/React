@@ -25,12 +25,15 @@ import art.arcane.react.api.action.ActionTicket;
 import art.arcane.react.api.action.ReactAction;
 import art.arcane.react.core.controller.ActionController;
 import art.arcane.react.core.controller.ObserverController;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.ActionMessages;
 import art.arcane.react.model.SampledChunk;
 import art.arcane.react.model.SampledWorld;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.volmlib.util.bukkit.WorldIdentity;
 import art.arcane.volmlib.util.entity.StackExclusion;
 import art.arcane.volmlib.util.format.Form;
+import art.arcane.volmlib.util.localization.MessageArgument;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -40,9 +43,20 @@ import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.entity.*;
+import org.bukkit.entity.EnderDragon;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
+import org.bukkit.entity.Tameable;
+import org.bukkit.entity.Villager;
+import org.bukkit.entity.Warden;
+import org.bukkit.entity.Wither;
 
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.Comparator;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -57,7 +71,12 @@ public class ActionQuarantineHotChunks extends ReactAction<ActionQuarantineHotCh
   @Override
   public String getCompletedMessage(ActionTicket<Params> ticket) {
     Params p = ticket.getParams();
-    return "Quarantined " + p.getChunksQuarantined() + " chunks, culled " + p.getEntitiesCulled() + " entities in " + Form.duration(ticket.getDuration(), 1);
+    return ReactLanguage.plain(
+        ActionMessages.QUARANTINED_CHUNKS,
+        MessageArgument.untrusted("chunks", p.getChunksQuarantined()),
+        MessageArgument.untrusted("entities", p.getEntitiesCulled()),
+        MessageArgument.untrusted("duration", Form.duration(ticket.getDuration(), 1))
+    );
   }
 
   @Override

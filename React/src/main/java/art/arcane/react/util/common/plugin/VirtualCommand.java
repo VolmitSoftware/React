@@ -20,10 +20,12 @@
 package art.arcane.react.util.plugin;
 
 
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.RuntimeMessages;
 import art.arcane.react.util.common.scheduling.J;
-import art.arcane.react.util.format.C;
 import art.arcane.volmlib.util.collection.KList;
 import art.arcane.volmlib.util.collection.KMap;
+import art.arcane.volmlib.util.localization.MessageArgument;
 import art.arcane.volmlib.util.reflect.V;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.sound.Sound;
@@ -180,15 +182,23 @@ public class VirtualCommand {
         failed = true;
         if (sender instanceof Player) {
           Player player = (Player) sender;
-          J.runEntity(player, () -> sender.sendMessage("- " + C.WHITE + i));
+          J.runEntity(player, () -> ReactLanguage.send(
+              sender,
+              RuntimeMessages.LEGACY_PERMISSION_ENTRY,
+              MessageArgument.untrusted("permission", i)
+          ));
         } else {
-          J.s(() -> sender.sendMessage("- " + C.WHITE + i));
+          J.s(() -> ReactLanguage.send(
+              sender,
+              RuntimeMessages.LEGACY_PERMISSION_ENTRY,
+              MessageArgument.untrusted("permission", i)
+          ));
         }
       }
     }
 
     if (failed) {
-      sender.sendMessage("Insufficient Permissions");
+      ReactLanguage.send(sender, RuntimeMessages.LEGACY_INSUFFICIENT_PERMISSIONS);
       return false;
     }
 

@@ -45,7 +45,8 @@ class TickerSlowTickWarningTest {
 
       invokeSlowTickWarning(ticker, ticked);
 
-      react.verify(() -> React.warn(Mockito.contains("Slow tick [CRITICAL]: controller:hotload")));
+      react.verify(() -> React.warn(Mockito.contains("Slow tick [HIGH]: controller:hotload")));
+      react.verify(() -> React.warn(Mockito.contains("serverMSPT=unavailable serverImpact=unknown")));
     } finally {
       ticker.close();
     }
@@ -67,7 +68,7 @@ class TickerSlowTickWarningTest {
       configuration.setSlowTickLogMode(ReactConfiguration.SlowTickLogMode.BLAME);
       invokeSlowTickWarning(ticker, ticked);
 
-      react.verify(() -> React.warn(Mockito.contains("Slow tick [CRITICAL]: controller:hotload")), times(2));
+      react.verify(() -> React.warn(Mockito.contains("Slow tick [HIGH]: controller:hotload")), times(2));
     } finally {
       ticker.close();
     }

@@ -9,11 +9,13 @@ import art.arcane.react.api.web.TokenStore;
 import art.arcane.react.api.web.WebRole;
 import art.arcane.react.api.web.relay.ReactServerIdentity;
 import art.arcane.react.core.controller.WebController;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.CommandMessages;
 import art.arcane.react.util.director.DirectorExecutor;
-import art.arcane.react.util.format.C;
 import art.arcane.volmlib.util.director.DirectorOrigin;
 import art.arcane.volmlib.util.director.annotations.Director;
 import art.arcane.volmlib.util.director.annotations.Param;
+import art.arcane.volmlib.util.localization.MessageArgument;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -27,23 +29,25 @@ import java.util.Set;
     name = "web",
     aliases = {"w"},
     origin = DirectorOrigin.BOTH,
-    description = "React web API token management."
+    description = "Manage React WebUI access tokens",
+    descriptionKey = "command.description.web"
 )
 public class CommandWeb implements DirectorExecutor {
 
   @Director(
       name = "pair",
-      description = "Mint a bearer token and print a pairing code."
+      description = "Create a WebUI pairing token",
+      descriptionKey = "command.description.web.pair"
   )
   public void pair(
-      @Param(name = "label", description = "Human-readable label for this token.")
+      @Param(name = "label", description = "Human-readable label for this token", descriptionKey = "command.parameter.web.label")
       String label,
-      @Param(name = "role", description = "Role for this token: viewer, operator, or admin.", defaultValue = "admin", aliases = {"r"})
+      @Param(name = "role", description = "Role for this token: viewer, operator, or admin", descriptionKey = "command.parameter.web.role", defaultValue = "admin", aliases = {"r"})
       String role
   ) {
     WebRole webRole = WebRole.fromId(role);
     if (webRole == null) {
-      sender().sendMessage(C.RED + "Invalid role: " + role + " (expected viewer, operator, or admin)");
+      ReactLanguage.sendPrefixed(sender(), CommandMessages.WEB_INVALID_ROLE, MessageArgument.untrusted("role", role));
       return;
     }
     WebController wc = React.controller(WebController.class);
@@ -70,61 +74,69 @@ public class CommandWeb implements DirectorExecutor {
       store.save(wc.tokensFile());
     } catch (IOException e) {
       store.remove(tokenId);
-      sender().sendMessage(C.RED + "Failed to persist token: " + e.getMessage());
+      ReactLanguage.sendPrefixed(sender(), CommandMessages.WEB_PERSIST_FAILED, MessageArgument.untrusted("reason", e.getMessage()));
       return;
     }
     auditLog().append(sender().getName(), "pair", "label=" + label + " role=" + webRole.id(), "OK");
-    sender().sendMessage(C.REACT + "Pairing code: " + code);
-    sender().sendMessage(C.REACT + "Server FP:     " + id.fingerprint());
-    sender().sendMessage(C.REACT + "Token FP:      " + tokenFingerprint);
-    sender().sendMessage(C.REACT + "Confirm:      " + confirmWord);
-    sender().sendMessage(C.REACT + "Token ID:     " + tokenId);
-    sender().sendMessage(C.REACT + "Role:         " + webRole.id());
+    ReactLanguage.sendPrefixed(sender(), CommandMessages.WEB_PAIRING_CODE, MessageArgument.untrusted("code", code));
+    ReactLanguage.sendPrefixed(sender(), CommandMessages.WEB_SERVER_FINGERPRINT, MessageArgument.untrusted("fingerprint", id.fingerprint()));
+    ReactLanguage.sendPrefixed(sender(), CommandMessages.WEB_TOKEN_FINGERPRINT, MessageArgument.untrusted("fingerprint", tokenFingerprint));
+    ReactLanguage.sendPrefixed(sender(), CommandMessages.WEB_CONFIRM, MessageArgument.untrusted("word", confirmWord));
+    ReactLanguage.sendPrefixed(sender(), CommandMessages.WEB_TOKEN_ID, MessageArgument.untrusted("id", tokenId));
+    ReactLanguage.sendPrefixed(sender(), CommandMessages.WEB_ROLE, MessageArgument.untrusted("role", webRole.id()));
   }
 
   @Director(
       name = "list",
       aliases = {"ls"},
-      description = "List active bearer tokens."
+      description = "List active WebUI tokens",
+      descriptionKey = "command.description.web.list"
   )
   public void list() {
     WebController wc = React.controller(WebController.class);
     wc.loadAuth();
     List<TokenRecord> records = wc.getTokenStore().all();
     if (records.isEmpty()) {
-      sender().sendMessage(C.REACT + "No active tokens.");
+      ReactLanguage.sendPrefixed(sender(), CommandMessages.WEB_NO_TOKENS);
       return;
     }
-    sender().sendMessage(C.REACT + "Active tokens (" + records.size() + "):");
+    ReactLanguage.sendPrefixed(sender(), CommandMessages.WEB_TOKEN_HEADER, MessageArgument.untrusted("count", records.size()));
     for (TokenRecord rec : records) {
-      sender().sendMessage(C.GRAY + "  " + rec.id() + " | " + rec.label() + " | issuedAt=" + rec.issuedAt());
+      ReactLanguage.send(
+          sender(),
+          CommandMessages.WEB_TOKEN_ENTRY,
+          MessageArgument.untrusted("id", rec.id()),
+          MessageArgument.untrusted("label", rec.label()),
+          MessageArgument.untrusted("issued_at", rec.issuedAt())
+      );
     }
   }
 
   @Director(
       name = "revoke",
-      description = "Revoke a bearer token by ID."
+      description = "Revoke a WebUI token",
+      descriptionKey = "command.description.web.revoke"
   )
   public void revoke(
-      @Param(name = "id", description = "Token ID to revoke.")
+      @Param(name = "id", description = "Token ID to revoke", descriptionKey = "command.parameter.web.id")
       String id
   ) {
     WebController wc = React.controller(WebController.class);
     wc.loadAuth();
     TokenStore store = wc.getTokenStore();
     if (store.lookup(id).isEmpty()) {
-      sender().sendMessage(C.RED + "Token not found: " + id);
+      ReactLanguage.sendPrefixed(sender(), CommandMessages.WEB_TOKEN_NOT_FOUND, MessageArgument.untrusted("id", id));
       return;
     }
     store.remove(id);
     try {
       store.save(wc.tokensFile());
     } catch (IOException e) {
-      sender().sendMessage(C.RED + "Failed to update token store: " + e.getMessage());
+      ReactLanguage.sendPrefixed(sender(), CommandMessages.WEB_UPDATE_FAILED, MessageArgument.untrusted("reason", e.getMessage()));
       return;
     }
     auditLog().append(sender().getName(), "revoke", "id=" + id, "OK");
-    sender().sendMessage(C.REACT + "Revoked token: " + id);
+    ReactLanguage.sendPrefixed(sender(), CommandMessages.WEB_REVOKED, MessageArgument.untrusted("id", id));
   }
 
   private static AuditLog auditLog() {

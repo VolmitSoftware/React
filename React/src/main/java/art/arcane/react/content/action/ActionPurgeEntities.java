@@ -24,12 +24,15 @@ import art.arcane.react.api.action.ActionParams;
 import art.arcane.react.api.action.ActionTicket;
 import art.arcane.react.api.action.ReactAction;
 import art.arcane.react.core.controller.ActionController;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.ActionMessages;
 import art.arcane.react.model.AreaActionParams;
 import art.arcane.react.model.FilterParams;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.volmlib.util.bukkit.WorldIdentity;
 import art.arcane.volmlib.util.entity.StackExclusion;
 import art.arcane.volmlib.util.format.Form;
+import art.arcane.volmlib.util.localization.MessageArgument;
 import art.arcane.volmlib.util.math.Spiraler;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -95,7 +98,12 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
 
   @Override
   public String getCompletedMessage(ActionTicket<Params> ticket) {
-    return "Purged " + ticket.getCount() + " Entities across " + ticket.getTotalWork() + " chunks in " + Form.duration(ticket.getDuration(), 1);
+    return ReactLanguage.plain(
+        ActionMessages.PURGED_ENTITIES,
+        MessageArgument.untrusted("entities", ticket.getCount()),
+        MessageArgument.untrusted("chunks", ticket.getTotalWork()),
+        MessageArgument.untrusted("duration", Form.duration(ticket.getDuration(), 1))
+    );
   }
 
   @Override

@@ -21,15 +21,25 @@ package art.arcane.react.content.directorcommand;
 
 import art.arcane.react.React;
 import art.arcane.react.api.action.Action;
-import art.arcane.react.content.action.*;
+import art.arcane.react.content.action.ActionCollectGarbage;
+import art.arcane.react.content.action.ActionHopperNetworkNormalize;
+import art.arcane.react.content.action.ActionIncidentPlaybook;
+import art.arcane.react.content.action.ActionPrewarmCriticalChunks;
+import art.arcane.react.content.action.ActionPurgeChunks;
+import art.arcane.react.content.action.ActionPurgeEntities;
+import art.arcane.react.content.action.ActionQuarantineHotChunks;
+import art.arcane.react.content.action.ActionTrimEntitiesByAgePriority;
 import art.arcane.react.core.controller.ActionController;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.CommandMessages;
 import art.arcane.react.util.director.DirectorExecutor;
 import art.arcane.react.util.director.handlers.OptionalWorldHandler;
 import art.arcane.volmlib.util.bukkit.WorldIdentity;
-import art.arcane.react.util.project.config.ConfigDescription;
+import art.arcane.react.util.project.config.ConfigLocalization;
 import art.arcane.volmlib.util.director.DirectorOrigin;
 import art.arcane.volmlib.util.director.annotations.Director;
 import art.arcane.volmlib.util.director.annotations.Param;
+import art.arcane.volmlib.util.localization.MessageArgument;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 
@@ -39,18 +49,21 @@ import java.util.Comparator;
     name = "action",
     aliases = {"act", "a"},
     origin = DirectorOrigin.BOTH,
-    description = "Action utilities for mitigation, cleanup, and operational diagnostics."
+    description = "Action utilities for mitigation, cleanup, and operational diagnostics",
+    descriptionKey = "command.description.action"
 )
 public class CommandAction implements DirectorExecutor {
   @Director(
       name = "purge-entities",
       aliases = {"pe"},
-      description = "Remove matching entities in the selected world/chunk radius."
+      description = "Remove matching entities in the selected world and chunk radius",
+      descriptionKey = "command.description.action.purge_entities"
   )
   public void purgeEntities(
       @Param(
           name = "radius",
-          description = "The chunk radius around you to purge entities from. 0/Blank is all chunks.",
+          description = "Chunk radius around you; zero uses all chunks",
+          descriptionKey = "command.parameter.action.radius",
           defaultValue = "0",
           aliases = {"r"}
       )
@@ -58,7 +71,8 @@ public class CommandAction implements DirectorExecutor {
 
       @Param(
           name = "world",
-          description = "The world to purge entities from.",
+          description = "World targeted by this action",
+          descriptionKey = "command.parameter.action.world",
           customHandler = OptionalWorldHandler.class,
           defaultValue = "ALL",
           aliases = {"w"}
@@ -85,12 +99,14 @@ public class CommandAction implements DirectorExecutor {
   @Director(
       name = "purge-chunks",
       aliases = {"pc"},
-      description = "Attempt to unload chunks in the selected world."
+      description = "Attempt to unload chunks in the selected world",
+      descriptionKey = "command.description.action.purge_chunks"
   )
   public void purgeChunks(
       @Param(
           name = "world",
-          description = "The world to unload chunks from.",
+          description = "World targeted by this action",
+          descriptionKey = "command.parameter.action.world",
           customHandler = OptionalWorldHandler.class,
           defaultValue = "ALL",
           aliases = {"w"}
@@ -111,7 +127,8 @@ public class CommandAction implements DirectorExecutor {
   @Director(
       name = "collect-garbage",
       aliases = {"gc"},
-      description = "Request JVM garbage collection and report immediate reclaimed heap."
+      description = "Request JVM garbage collection and report immediate reclaimed heap",
+      descriptionKey = "command.description.action.collect_garbage"
   )
   public void collectGarbage() {
     Action<ActionCollectGarbage.Params> pe = React.action("collect-garbage");
@@ -122,12 +139,14 @@ public class CommandAction implements DirectorExecutor {
   @Director(
       name = "quarantine-hot-chunks",
       aliases = {"aqhc"},
-      description = "Temporarily isolate the hottest sampled chunks"
+      description = "Temporarily isolate the hottest sampled chunks",
+      descriptionKey = "command.description.action.quarantine_hot_chunks"
   )
   public void quarantineHotChunks(
       @Param(
           name = "max-chunks",
-          description = "Maximum amount of hot chunks to quarantine",
+          description = "Maximum number of chunks targeted by this action",
+          descriptionKey = "command.parameter.action.max_chunks",
           defaultValue = "24",
           aliases = {"m"}
       )
@@ -136,6 +155,7 @@ public class CommandAction implements DirectorExecutor {
       @Param(
           name = "min-score",
           description = "Minimum sampled chunk score to consider",
+          descriptionKey = "command.parameter.action.min_score",
           defaultValue = "90",
           aliases = {"s"}
       )
@@ -143,7 +163,8 @@ public class CommandAction implements DirectorExecutor {
 
       @Param(
           name = "world",
-          description = "The world to quarantine hot chunks in.",
+          description = "World targeted by this action",
+          descriptionKey = "command.parameter.action.world",
           customHandler = OptionalWorldHandler.class,
           defaultValue = "ALL",
           aliases = {"w"}
@@ -165,12 +186,14 @@ public class CommandAction implements DirectorExecutor {
   @Director(
       name = "trim-entities-by-age-priority",
       aliases = {"ateap"},
-      description = "Trim old low-priority entities with safety guards"
+      description = "Trim old low-priority entities with safety guards",
+      descriptionKey = "command.description.action.trim_entities"
   )
   public void trimEntitiesByAgePriority(
       @Param(
           name = "max-entities",
           description = "Maximum entities to trim in this action",
+          descriptionKey = "command.parameter.action.max_entities",
           defaultValue = "600",
           aliases = {"m"}
       )
@@ -179,6 +202,7 @@ public class CommandAction implements DirectorExecutor {
       @Param(
           name = "min-age-seconds",
           description = "Minimum age in seconds before entities are eligible",
+          descriptionKey = "command.parameter.action.min_age_seconds",
           defaultValue = "300",
           aliases = {"age"}
       )
@@ -186,7 +210,8 @@ public class CommandAction implements DirectorExecutor {
 
       @Param(
           name = "world",
-          description = "The world to trim entities in.",
+          description = "World targeted by this action",
+          descriptionKey = "command.parameter.action.world",
           customHandler = OptionalWorldHandler.class,
           defaultValue = "ALL",
           aliases = {"w"}
@@ -208,12 +233,14 @@ public class CommandAction implements DirectorExecutor {
   @Director(
       name = "hopper-network-normalize",
       aliases = {"ahnn"},
-      description = "Normalize hopper hotspots by merging nearby transfer items"
+      description = "Normalize hopper hotspots by merging nearby transfer items",
+      descriptionKey = "command.description.action.hopper_network_normalize"
   )
   public void hopperNetworkNormalize(
       @Param(
           name = "max-chunks",
-          description = "Maximum hotspot chunks to normalize",
+          description = "Maximum number of chunks targeted by this action",
+          descriptionKey = "command.parameter.action.max_chunks",
           defaultValue = "20",
           aliases = {"m"}
       )
@@ -222,6 +249,7 @@ public class CommandAction implements DirectorExecutor {
       @Param(
           name = "min-hopper-updates",
           description = "Minimum hopper updates per chunk to be considered hot",
+          descriptionKey = "command.parameter.action.min_hopper_updates",
           defaultValue = "25",
           aliases = {"u"}
       )
@@ -229,7 +257,8 @@ public class CommandAction implements DirectorExecutor {
 
       @Param(
           name = "world",
-          description = "The world to normalize hopper networks in.",
+          description = "World targeted by this action",
+          descriptionKey = "command.parameter.action.world",
           customHandler = OptionalWorldHandler.class,
           defaultValue = "ALL",
           aliases = {"w"}
@@ -251,12 +280,14 @@ public class CommandAction implements DirectorExecutor {
   @Director(
       name = "prewarm-critical-chunks",
       aliases = {"apcc"},
-      description = "Preload the most critical sampled chunks and neighbors"
+      description = "Preload the most critical sampled chunks and neighbors",
+      descriptionKey = "command.description.action.prewarm_critical_chunks"
   )
   public void prewarmCriticalChunks(
       @Param(
           name = "max-chunks",
-          description = "Maximum chunks to prewarm",
+          description = "Maximum number of chunks targeted by this action",
+          descriptionKey = "command.parameter.action.max_chunks",
           defaultValue = "40",
           aliases = {"m"}
       )
@@ -265,6 +296,7 @@ public class CommandAction implements DirectorExecutor {
       @Param(
           name = "neighbor-radius",
           description = "Neighbor radius around each critical chunk",
+          descriptionKey = "command.parameter.action.neighbor_radius",
           defaultValue = "1",
           aliases = {"r"}
       )
@@ -272,7 +304,8 @@ public class CommandAction implements DirectorExecutor {
 
       @Param(
           name = "world",
-          description = "The world to prewarm chunks in.",
+          description = "World targeted by this action",
+          descriptionKey = "command.parameter.action.world",
           customHandler = OptionalWorldHandler.class,
           defaultValue = "ALL",
           aliases = {"w"}
@@ -294,12 +327,14 @@ public class CommandAction implements DirectorExecutor {
   @Director(
       name = "incident-playbook",
       aliases = {"aip"},
-      description = "Queue a full lag-incident mitigation action sequence"
+      description = "Queue a full lag-incident mitigation action sequence",
+      descriptionKey = "command.description.action.incident_playbook"
   )
   public void incidentPlaybook(
       @Param(
           name = "include-gc",
           description = "Whether to include a garbage collection step",
+          descriptionKey = "command.parameter.action.include_gc",
           defaultValue = "true",
           aliases = {"gc"}
       )
@@ -308,6 +343,7 @@ public class CommandAction implements DirectorExecutor {
       @Param(
           name = "tier",
           description = "Force tier: -1 auto, 0 mild, 1 medium, 2 severe",
+          descriptionKey = "command.parameter.action.tier",
           defaultValue = "-1",
           aliases = {"t"}
       )
@@ -315,7 +351,8 @@ public class CommandAction implements DirectorExecutor {
 
       @Param(
           name = "world",
-          description = "Optional world filter for sub-actions.",
+          description = "World targeted by this action",
+          descriptionKey = "command.parameter.action.world",
           customHandler = OptionalWorldHandler.class,
           defaultValue = "ALL",
           aliases = {"w"}
@@ -337,24 +374,34 @@ public class CommandAction implements DirectorExecutor {
   @Director(
       name = "audit",
       aliases = {"list", "ls"},
-      description = "List all registered actions, enabled state, and current behavior summary."
+      description = "List all registered actions, enabled state, and current behavior summary",
+      descriptionKey = "command.description.action.audit"
   )
   public void audit() {
     ActionController controller = React.controller(ActionController.class);
     if (controller == null || controller.getActions() == null) {
-      sender().sendMessage("Action controller is unavailable.");
+      ReactLanguage.sendPrefixed(sender(), CommandMessages.ACTION_CONTROLLER_UNAVAILABLE);
       return;
     }
 
-    sender().sendMessage("React action audit:");
+    ReactLanguage.sendPrefixed(sender(), CommandMessages.ACTION_AUDIT_HEADER);
     controller.getActions().all().stream()
         .sorted(Comparator.comparing(Action::getId))
         .forEach(action -> {
-          ConfigDescription description = action.getClass().getAnnotation(ConfigDescription.class);
-          String summary = description == null ? "No action description provided." : description.value();
-          sender().sendMessage("- " + action.getId()
-              + " [" + (action.isEnabled() ? "enabled" : "disabled") + "] "
-              + summary);
+          String localizedDescription = ConfigLocalization.description(action.getClass());
+          String summary = localizedDescription.isBlank()
+              ? ReactLanguage.plain(CommandMessages.ACTION_NO_DESCRIPTION)
+              : localizedDescription;
+          String state = ReactLanguage.plain(
+              action.isEnabled() ? CommandMessages.STATE_ENABLED : CommandMessages.STATE_DISABLED
+          );
+          ReactLanguage.send(
+              sender(),
+              CommandMessages.ACTION_AUDIT_ENTRY,
+              MessageArgument.untrusted("id", action.getId()),
+              MessageArgument.untrusted("state", state),
+              MessageArgument.untrusted("summary", summary)
+          );
         });
   }
 }

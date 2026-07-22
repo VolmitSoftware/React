@@ -3,6 +3,8 @@ package art.arcane.react.content.feature;
 import art.arcane.react.React;
 import art.arcane.react.api.feature.CapabilityGatedFeature;
 import art.arcane.react.core.controller.IntegrationController;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.RendererMessages;
 import art.arcane.react.util.data.TinyColor;
 import art.arcane.volmlib.util.bukkit.WorldIdentity;
 import org.bukkit.Chunk;
@@ -19,7 +21,7 @@ public class FeatureIrisGenerationPressureOverlay extends FeatureChunkHeatmapBas
 
   @Override
   protected String mapLabel() {
-    return "Iris Pressure";
+    return ReactLanguage.raw(RendererMessages.TITLE_IRIS_PRESSURE);
   }
 
   @Override

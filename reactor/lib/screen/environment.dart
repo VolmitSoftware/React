@@ -5,12 +5,18 @@ import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart' show Component;
 
 import '../model/environment_info.dart';
+import '../localization/reactor_localizations.dart';
 import '../service/react_client.dart';
 import '../state/operate_scope.dart';
 import '../ui/reactor_ui.dart';
 import '../widget/section_card.dart';
 
-const List<String> _kPreferredOrder = <String>['cpu', 'memory', 'jvm', 'server'];
+const List<String> _kPreferredOrder = <String>[
+  'cpu',
+  'memory',
+  'jvm',
+  'server',
+];
 
 final RegExp _kSectionCode = RegExp('§.');
 
@@ -46,7 +52,8 @@ bool _looksLikeBytes(String section, String key) {
   }
   if (k.contains('byte')) return true;
   final String s = section.toLowerCase();
-  final bool byteSection = s.contains('mem') ||
+  final bool byteSection =
+      s.contains('mem') ||
       s.contains('disk') ||
       s.contains('storage') ||
       s.contains('gpu');
@@ -95,41 +102,51 @@ class EnvironmentView extends StatelessWidget {
             label: _sectionLabel(section),
             flush: true,
             child: dom.div(
-              styles: const dom.Styles(raw: <String, String>{
-                'display': 'flex',
-                'flex-direction': 'column',
-              }),
+              styles: const dom.Styles(
+                raw: <String, String>{
+                  'display': 'flex',
+                  'flex-direction': 'column',
+                },
+              ),
               <Widget>[
-                for (final MapEntry<String, Object?> entry
-                    in info.entriesOf(section))
+                for (final MapEntry<String, Object?> entry in info.entriesOf(
+                  section,
+                ))
                   dom.div(
-                    styles: const dom.Styles(raw: <String, String>{
-                      'display': 'flex',
-                      'justify-content': 'space-between',
-                      'align-items': 'center',
-                      'gap': '1rem',
-                      'padding': '0.6rem 1.15rem',
-                      'border-bottom': '1px solid $kReactorHairline',
-                    }),
+                    styles: const dom.Styles(
+                      raw: <String, String>{
+                        'display': 'flex',
+                        'justify-content': 'space-between',
+                        'align-items': 'center',
+                        'gap': '1rem',
+                        'padding': '0.6rem 1.15rem',
+                        'border-bottom': '1px solid $kReactorHairline',
+                      },
+                    ),
                     <Widget>[
                       dom.span(
-                        styles: const dom.Styles(raw: <String, String>{
-                          'color': 'var(--muted-foreground)',
-                          'font-size': '0.85rem',
-                        }),
+                        styles: const dom.Styles(
+                          raw: <String, String>{
+                            'color': 'var(--muted-foreground)',
+                            'font-size': '0.85rem',
+                          },
+                        ),
                         <Widget>[Component.text(entry.key)],
                       ),
                       dom.span(
-                        styles: const dom.Styles(raw: <String, String>{
-                          'font-size': '0.85rem',
-                          'font-weight': '500',
-                          'color': 'var(--foreground)',
-                          'font-variant-numeric': 'tabular-nums',
-                          'text-align': 'right',
-                        }),
+                        styles: const dom.Styles(
+                          raw: <String, String>{
+                            'font-size': '0.85rem',
+                            'font-weight': '500',
+                            'color': 'var(--foreground)',
+                            'font-variant-numeric': 'tabular-nums',
+                            'text-align': 'right',
+                          },
+                        ),
                         <Widget>[
                           Component.text(
-                              _formatEnvValue(section, entry.key, entry.value)),
+                            _formatEnvValue(section, entry.key, entry.value),
+                          ),
                         ],
                       ),
                     ],
@@ -161,19 +178,22 @@ class _EnvironmentScreenState extends State<EnvironmentScreen> {
     if (client != null && !_started) {
       _started = true;
       _loading = true;
-      client.environment().then((EnvironmentInfo info) {
-        if (!mounted) return;
-        setState(() {
-          _info = info;
-          _loading = false;
-        });
-      }).catchError((Object e) {
-        if (!mounted) return;
-        setState(() {
-          _info = null;
-          _loading = false;
-        });
-      });
+      client
+          .environment()
+          .then((EnvironmentInfo info) {
+            if (!mounted) return;
+            setState(() {
+              _info = info;
+              _loading = false;
+            });
+          })
+          .catchError((Object e) {
+            if (!mounted) return;
+            setState(() {
+              _info = null;
+              _loading = false;
+            });
+          });
     }
   }
 
@@ -181,19 +201,22 @@ class _EnvironmentScreenState extends State<EnvironmentScreen> {
     final IEnvironmentClient? client = OperateScope.of(context)?.client;
     if (client == null) return;
     setState(() => _loading = true);
-    client.environment().then((EnvironmentInfo info) {
-      if (!mounted) return;
-      setState(() {
-        _info = info;
-        _loading = false;
-      });
-    }).catchError((Object e) {
-      if (!mounted) return;
-      setState(() {
-        _info = null;
-        _loading = false;
-      });
-    });
+    client
+        .environment()
+        .then((EnvironmentInfo info) {
+          if (!mounted) return;
+          setState(() {
+            _info = info;
+            _loading = false;
+          });
+        })
+        .catchError((Object e) {
+          if (!mounted) return;
+          setState(() {
+            _info = null;
+            _loading = false;
+          });
+        });
   }
 
   @override
@@ -202,49 +225,49 @@ class _EnvironmentScreenState extends State<EnvironmentScreen> {
 
     if (client == null) {
       return ReactorPage(
-        title: 'Environment',
-        subtitle: 'Host and runtime diagnostics',
+        title: reactorText(ReactorText.environmentTitle),
+        subtitle: reactorText(ReactorText.environmentSubtitle),
         children: <Widget>[
-          _note('Environment data requires a live connection.'),
+          _note(reactorText(ReactorText.environmentLiveRequired)),
         ],
       );
     }
 
     if (_loading) {
       return ReactorPage(
-        title: 'Environment',
-        subtitle: 'Host and runtime diagnostics',
-        children: <Widget>[_note('Loading diagnostics...')],
+        title: reactorText(ReactorText.environmentTitle),
+        subtitle: reactorText(ReactorText.environmentSubtitle),
+        children: <Widget>[_note(reactorText(ReactorText.environmentLoading))],
       );
     }
 
     if (_info == null) {
       return ReactorPage(
-        title: 'Environment',
-        subtitle: 'Host and runtime diagnostics',
-        children: <Widget>[_note('No environment data available.')],
+        title: reactorText(ReactorText.environmentTitle),
+        subtitle: reactorText(ReactorText.environmentSubtitle),
+        children: <Widget>[_note(reactorText(ReactorText.environmentNoData))],
       );
     }
 
     return ReactorPage(
-      title: 'Environment',
-      subtitle: 'Host and runtime diagnostics',
+      title: reactorText(ReactorText.environmentTitle),
+      subtitle: reactorText(ReactorText.environmentSubtitle),
       actions: Button.secondary(
-        label: 'Refresh',
+        label: reactorText(ReactorText.environmentRefresh),
         size: ButtonSize.small,
         onPressed: _refresh,
       ),
-      children: <Widget>[
-        EnvironmentView(info: _info!),
-      ],
+      children: <Widget>[EnvironmentView(info: _info!)],
     );
   }
 
   Widget _note(String text) => dom.div(
-        styles: const dom.Styles(raw: <String, String>{
-          'color': 'var(--muted-foreground)',
-          'font-size': '0.875rem',
-        }),
-        <Widget>[Component.text(text)],
-      );
+    styles: const dom.Styles(
+      raw: <String, String>{
+        'color': 'var(--muted-foreground)',
+        'font-size': '0.875rem',
+      },
+    ),
+    <Widget>[Component.text(text)],
+  );
 }

@@ -4,8 +4,11 @@ import art.arcane.react.React;
 import art.arcane.react.api.feature.ReactCapabilityFeature;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.core.controller.IntegrationController;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.RuntimeMessages;
 import art.arcane.react.model.ReactConfiguration;
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
+import art.arcane.volmlib.util.localization.TextKey;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
@@ -113,7 +116,7 @@ public class FeatureAdaptRuntimeSurgeGuard extends ReactCapabilityFeature implem
     }
 
     event.setCancelled(true);
-    notifyPlayer(player, "Adapt runtime surge guard smoothed rapid interaction burst.", now);
+    notifyPlayer(player, RuntimeMessages.ADAPT_INTERACTION_THROTTLED, now);
   }
 
   @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
@@ -133,7 +136,7 @@ public class FeatureAdaptRuntimeSurgeGuard extends ReactCapabilityFeature implem
     }
 
     event.setCancelled(true);
-    notifyPlayer(player, "Adapt runtime surge guard smoothed combat ability burst.", now);
+    notifyPlayer(player, RuntimeMessages.ADAPT_COMBAT_THROTTLED, now);
   }
 
   @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
@@ -153,7 +156,7 @@ public class FeatureAdaptRuntimeSurgeGuard extends ReactCapabilityFeature implem
     }
 
     event.setCancelled(true);
-    notifyPlayer(player, "Adapt runtime surge guard smoothed item-consume burst.", now);
+    notifyPlayer(player, RuntimeMessages.ADAPT_CONSUME_THROTTLED, now);
   }
 
   @EventHandler
@@ -219,8 +222,8 @@ public class FeatureAdaptRuntimeSurgeGuard extends ReactCapabilityFeature implem
     return player == null || (bypassPermission != null && !bypassPermission.isBlank() && player.hasPermission(bypassPermission));
   }
 
-  private void notifyPlayer(Player player, String message, long now) {
-    if (player == null || message == null || message.isBlank()) {
+  private void notifyPlayer(Player player, TextKey message, long now) {
+    if (player == null || message == null) {
       return;
     }
 
@@ -230,7 +233,7 @@ public class FeatureAdaptRuntimeSurgeGuard extends ReactCapabilityFeature implem
     }
 
     lastMessageByPlayer.put(player.getUniqueId(), now);
-    player.sendMessage(message);
+    ReactLanguage.send(player, message);
   }
 
   private static final class WindowCounter {

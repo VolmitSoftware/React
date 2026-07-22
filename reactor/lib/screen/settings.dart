@@ -5,6 +5,7 @@ import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart' show Component;
 
 import '../model/alert_thresholds.dart';
+import '../localization/reactor_localizations.dart';
 import '../model/role_info.dart';
 import '../model/server_credential.dart';
 import '../service/react_client.dart';
@@ -109,7 +110,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           AlertThresholds.defaults.memoryPressureWarn,
     );
     ctrl.alertStore.thresholds = updated;
-    ArcaneSonner.success('Thresholds saved');
+    ArcaneSonner.success(reactorText(ReactorText.settingsThresholdsSaved));
   }
 
   void _resetThresholds(FleetController ctrl) {
@@ -159,7 +160,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _roles.clear();
       _roleFetchStarted.clear();
     });
-    ArcaneSonner.success('Saved fleet cleared');
+    ArcaneSonner.success(reactorText(ReactorText.settingsFleetCleared));
   }
 
   void _addTag(FleetController ctrl, String id) {
@@ -185,7 +186,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _exportConnections(FleetController ctrl) {
     final List<ServerCredential> servers = ctrl.fleetManager.servers;
     if (servers.isEmpty) {
-      ArcaneSonner.error('Nothing to export', description: 'No servers configured.');
+      ArcaneSonner.error(
+        reactorText(ReactorText.settingsNothingToExport),
+        description: reactorText(ReactorText.settingsNoServersConfigured),
+      );
       return;
     }
     final String json = buildFleetExportJson(servers);
@@ -243,7 +247,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
         }
       }
     });
-    ArcaneSonner.success('Fleet imported', description: '${pending.servers.length} server${pending.servers.length == 1 ? '' : 's'} loaded.');
+    ArcaneSonner.success(
+      reactorText(ReactorText.settingsFleetImported),
+      description: reactorText(
+        ReactorText.settingsServersLoaded,
+        <String, Object?>{'count': pending.servers.length},
+      ),
+    );
   }
 
   void _cancelImport() {
@@ -258,12 +268,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final FleetController? ctrl = FleetScope.of(context);
     if (ctrl == null) {
       return ReactorPage(
-        title: 'Settings',
-        subtitle: 'Alert thresholds and server tags',
+        title: reactorText(ReactorText.settingsTitle),
+        subtitle: reactorText(ReactorText.settingsSubtitle),
         children: <Widget>[
           ArcaneEmptyState.noData(
-            title: 'Fleet unavailable',
-            description: 'No fleet has been initialized.',
+            title: reactorText(ReactorText.settingsFleetUnavailable),
+            description: reactorText(ReactorText.settingsFleetNotInitialized),
           ),
         ],
       );
@@ -272,8 +282,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final List<ServerCredential> servers = ctrl.fleetManager.servers;
 
     return ReactorPage(
-      title: 'Settings',
-      subtitle: 'Alert thresholds and server tags',
+      title: reactorText(ReactorText.settingsTitle),
+      subtitle: reactorText(ReactorText.settingsSubtitle),
       children: <Widget>[
         _rolesSection(servers),
         _thresholdsSection(ctrl),
@@ -284,7 +294,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _rolesSection(List<ServerCredential> servers) {
     return sectionCard(
-      label: 'Account / Roles',
+      label: reactorText(ReactorText.settingsAccountRoles),
       child: dom.div(
         styles: const dom.Styles(
           raw: <String, String>{
@@ -299,7 +309,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               styles: const dom.Styles(
                 raw: <String, String>{'color': 'var(--muted-foreground)'},
               ),
-              <Widget>[Component.text('No servers configured.')],
+              <Widget>[
+                Component.text(
+                  reactorText(ReactorText.settingsNoServersConfigured),
+                ),
+              ],
             ),
           for (final ServerCredential cred in servers) _roleRow(cred),
         ],
@@ -335,7 +349,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _thresholdsSection(FleetController ctrl) {
     return sectionCard(
-      label: 'Alert Thresholds',
+      label: reactorText(ReactorText.settingsAlertThresholds),
       child: dom.div(
         styles: const dom.Styles(
           raw: <String, String>{
@@ -346,37 +360,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         <Widget>[
           _thresholdRow(
-            label: 'TPS Warn',
+            label: reactorText(ReactorText.settingsTpsWarn),
             value: _tpsWarn,
             onChanged: (String v) => setState(() => _tpsWarn = v),
           ),
           _thresholdRow(
-            label: 'TPS Critical',
+            label: reactorText(ReactorText.settingsTpsCritical),
             value: _tpsCrit,
             onChanged: (String v) => setState(() => _tpsCrit = v),
           ),
           _thresholdRow(
-            label: 'MSPT Warn',
+            label: reactorText(ReactorText.settingsMsptWarn),
             value: _msptWarn,
             onChanged: (String v) => setState(() => _msptWarn = v),
           ),
           _thresholdRow(
-            label: 'Incident Score Warn',
+            label: reactorText(ReactorText.settingsIncidentScoreWarn),
             value: _incidentScoreWarn,
             onChanged: (String v) => setState(() => _incidentScoreWarn = v),
           ),
           _thresholdRow(
-            label: 'GC Percent Warn',
+            label: reactorText(ReactorText.settingsGcPercentWarn),
             value: _gcPercentWarn,
             onChanged: (String v) => setState(() => _gcPercentWarn = v),
           ),
           _thresholdRow(
-            label: 'Ping P95 Warn',
+            label: reactorText(ReactorText.settingsPingP95Warn),
             value: _pingP95Warn,
             onChanged: (String v) => setState(() => _pingP95Warn = v),
           ),
           _thresholdRow(
-            label: 'Memory Pressure Warn',
+            label: reactorText(ReactorText.settingsMemoryPressureWarn),
             value: _memoryPressureWarn,
             onChanged: (String v) => setState(() => _memoryPressureWarn = v),
           ),
@@ -390,11 +404,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             <Widget>[
               Button.primary(
-                label: 'Save thresholds',
+                label: reactorText(ReactorText.settingsSaveThresholds),
                 onPressed: () => _saveThresholds(ctrl),
               ),
               Button.secondary(
-                label: 'Reset to defaults',
+                label: reactorText(ReactorText.settingsResetDefaults),
                 onPressed: () => _resetThresholds(ctrl),
               ),
             ],
@@ -445,9 +459,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _serversSection(FleetController ctrl, List<ServerCredential> servers) {
     return sectionCard(
-      label: 'Saved Servers',
+      label: reactorText(ReactorText.settingsSavedServers),
       trailing: Button.destructive(
-        label: _confirmClearFleet ? 'Confirm clear all' : 'Clear all',
+        label: _confirmClearFleet
+            ? reactorText(ReactorText.settingsConfirmClearAll)
+            : reactorText(ReactorText.settingsClearAll),
         size: ButtonSize.small,
         disabled: servers.isEmpty,
         onPressed: servers.isEmpty ? null : () => _clearFleet(ctrl),
@@ -472,12 +488,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             <Widget>[
               Button.secondary(
-                label: 'Export connections',
+                label: reactorText(ReactorText.settingsExportConnections),
                 size: ButtonSize.small,
                 onPressed: () => _exportConnections(ctrl),
               ),
               Button.secondary(
-                label: 'Import connections',
+                label: reactorText(ReactorText.settingsImportConnections),
                 size: ButtonSize.small,
                 onPressed: () => _triggerImportPicker(),
               ),
@@ -491,9 +507,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               },
             ),
             <Widget>[
-              Component.text(
-                'Export files contain bearer tokens and credentials. Store them securely.',
-              ),
+              Component.text(reactorText(ReactorText.settingsExportSecurity)),
             ],
           ),
           if (_importError != null)
@@ -502,21 +516,42 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 raw: <String, String>{
                   'padding': '0.6rem 0.75rem',
                   'border-radius': '0.375rem',
-                  'border': '1px solid color-mix(in srgb, var(--destructive) 40%, transparent)',
-                  'background': 'color-mix(in srgb, var(--destructive) 12%, transparent)',
+                  'border':
+                      '1px solid color-mix(in srgb, var(--destructive) 40%, transparent)',
+                  'background':
+                      'color-mix(in srgb, var(--destructive) 12%, transparent)',
                   'color': 'var(--destructive)',
                   'font-size': '0.8rem',
                 },
               ),
-              <Widget>[Component.text('Import failed: $_importError')],
+              <Widget>[
+                Component.text(
+                  reactorText(
+                    ReactorText.settingsImportFailed,
+                    <String, Object?>{'error': _importError},
+                  ),
+                ),
+              ],
             ),
           if (_pendingImport != null && _pendingImport!.ok)
             ArcaneConfirmDialog(
-              title: 'Replace fleet?',
+              title: reactorText(ReactorText.settingsReplaceFleet),
               message:
-                  'This will replace your ${servers.length} current server${servers.length == 1 ? '' : 's'} with ${_pendingImport!.servers.length} from the file${_pendingImport!.skipped > 0 ? ' (${_pendingImport!.skipped} malformed ${_pendingImport!.skipped == 1 ? 'entry' : 'entries'} skipped)' : ''}.',
+                  reactorText(
+                    ReactorText.settingsReplaceFleetMessage,
+                    <String, Object?>{
+                      'current': servers.length,
+                      'incoming': _pendingImport!.servers.length,
+                    },
+                  ) +
+                  (_pendingImport!.skipped > 0
+                      ? reactorText(
+                          ReactorText.settingsMalformedSkipped,
+                          <String, Object?>{'count': _pendingImport!.skipped},
+                        )
+                      : ''),
               destructive: true,
-              confirmText: 'Import',
+              confirmText: reactorText(ReactorText.settingsImport),
               onConfirm: () => _confirmImport(ctrl),
               onCancel: _cancelImport,
             ),
@@ -525,7 +560,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               styles: const dom.Styles(
                 raw: <String, String>{'color': 'var(--muted-foreground)'},
               ),
-              <Widget>[Component.text('No servers configured.')],
+              <Widget>[
+                Component.text(
+                  reactorText(ReactorText.settingsNoServersConfigured),
+                ),
+              ],
             ),
           for (final ServerCredential cred in servers) _serverRow(ctrl, cred),
         ],
@@ -565,7 +604,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 <Widget>[
                   TextInput(
                     value: renameLabel,
-                    placeholder: 'Server label',
+                    placeholder: reactorText(ReactorText.settingsServerLabel),
                     onChange: (String v) =>
                         setState(() => _renameLabels[cred.id] = v),
                     fullWidth: true,
@@ -573,12 +612,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ],
               ),
               Button.secondary(
-                label: 'Rename',
+                label: reactorText(ReactorText.settingsRename),
                 size: ButtonSize.small,
                 onPressed: () => _doRename(ctrl, cred.id),
               ),
               Button.destructive(
-                label: 'Remove',
+                label: reactorText(ReactorText.settingsRemove),
                 size: ButtonSize.small,
                 onPressed: () => setState(() => _confirmRemoveId = cred.id),
               ),
@@ -586,11 +625,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           if (_confirmRemoveId == cred.id)
             ArcaneConfirmDialog(
-              title: 'Remove ${cred.label}?',
-              message:
-                  'This will disconnect and remove the server from your fleet.',
+              title: reactorText(
+                ReactorText.settingsRemoveServer,
+                <String, Object?>{'server': cred.label},
+              ),
+              message: reactorText(ReactorText.settingsRemoveServerMessage),
               destructive: true,
-              confirmText: 'Remove',
+              confirmText: reactorText(ReactorText.settingsRemove),
               onConfirm: () => _removeServer(ctrl, cred.id),
               onCancel: () => setState(() => _confirmRemoveId = null),
             ),
@@ -612,7 +653,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 <Widget>[
                   TextInput(
                     value: tagInput,
-                    placeholder: 'Add tag',
+                    placeholder: reactorText(ReactorText.settingsAddTag),
                     onChange: (String v) =>
                         setState(() => _tagInputs[cred.id] = v),
                     fullWidth: true,
@@ -620,7 +661,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ],
               ),
               Button.secondary(
-                label: 'Add tag',
+                label: reactorText(ReactorText.settingsAddTag),
                 size: ButtonSize.small,
                 onPressed: () => _addTag(ctrl, cred.id),
               ),

@@ -97,7 +97,7 @@ final class AdaptAbilityImpactSeries {
 
   private static String displayName(String abilityId) {
     if (abilityId == null || abilityId.isBlank()) {
-      return "Unknown";
+      return "";
     }
 
     String spaced = abilityId

@@ -2,56 +2,75 @@ package art.arcane.react.content.directorcommand;
 
 import art.arcane.react.React;
 import art.arcane.react.core.controller.IntegrationController;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.CommandMessages;
 import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.util.director.DirectorExecutor;
-import art.arcane.react.util.format.C;
 import art.arcane.volmlib.util.director.DirectorOrigin;
 import art.arcane.volmlib.util.director.annotations.Director;
 import art.arcane.volmlib.util.format.Form;
+import art.arcane.volmlib.util.localization.MessageArgument;
+
+import java.util.List;
 
 @Director(
     name = "integration",
     aliases = {"int"},
     origin = DirectorOrigin.BOTH,
-    description = "Cross-plugin integration status"
+    description = "Cross-plugin integration status",
+    descriptionKey = "command.description.integration"
 )
 public class CommandIntegration implements DirectorExecutor {
   @Director(
       name = "status",
       aliases = {"s"},
       origin = DirectorOrigin.BOTH,
-      description = "Show Iris/Adapt integration health, protocol and heartbeat status"
+      description = "Show Iris, Adapt, and Wormholes integration health",
+      descriptionKey = "command.description.integration.status"
   )
   public void status() {
     IntegrationController controller = React.controller(IntegrationController.class);
     if (controller == null) {
-      sender().sendMessage(C.RED + "Integration controller is not ready.");
+      ReactLanguage.sendPrefixed(sender(), CommandMessages.INTEGRATION_NOT_READY);
       return;
     }
 
     long now = System.currentTimeMillis();
-    sender().sendMessage(C.REACT + "Integration Status");
+    ReactLanguage.sendPrefixed(sender(), CommandMessages.INTEGRATION_HEADER);
     for (IntegrationController.IntegrationStatus status : controller.statuses()) {
       String heartbeatAge = status.lastHeartbeatMs() <= 0
-          ? "never"
-          : Form.duration(Math.max(0L, now - status.lastHeartbeatMs()), 1) + " ago";
-      sender().sendMessage(
-          C.GRAY + "- " + C.AQUA + status.pluginId()
-              + C.GRAY + " health=" + C.WHITE + status.health().name().toLowerCase()
-              + C.GRAY + " protocol=" + C.WHITE + status.protocol()
-              + C.GRAY + " heartbeat=" + C.WHITE + heartbeatAge
-              + C.GRAY + " detail=" + C.WHITE + status.message()
+          ? ReactLanguage.plain(CommandMessages.INTEGRATION_HEARTBEAT_NEVER)
+          : ReactLanguage.plain(
+              CommandMessages.INTEGRATION_HEARTBEAT_AGE,
+              MessageArgument.untrusted("duration", Form.duration(Math.max(0L, now - status.lastHeartbeatMs()), 1))
+          );
+      ReactLanguage.send(
+          sender(),
+          CommandMessages.INTEGRATION_ENTRY,
+          MessageArgument.untrusted("plugin", status.pluginId()),
+          MessageArgument.untrusted("health", status.health().name().toLowerCase()),
+          MessageArgument.untrusted("protocol", status.protocol()),
+          MessageArgument.untrusted("heartbeat", heartbeatAge),
+          MessageArgument.untrusted("detail", status.message())
       );
     }
 
     if (ReactConfiguration.get().isVerbose() && controller.getLastCorrelationMessage() != null && !controller.getLastCorrelationMessage().isBlank()) {
-      sender().sendMessage(C.GRAY + "Correlation: " + C.WHITE + controller.getLastCorrelationMessage());
+      ReactLanguage.send(
+          sender(),
+          CommandMessages.INTEGRATION_CORRELATION,
+          MessageArgument.untrusted("detail", controller.getLastCorrelationMessage())
+      );
     }
 
-    var timeline = controller.recentTimeline(4);
+    List<String> timeline = controller.recentTimeline(4);
     if (!timeline.isEmpty()) {
-      sender().sendMessage(C.GRAY + "Incident Timeline:");
-      timeline.forEach(line -> sender().sendMessage(C.DARK_GRAY + "  " + line));
+      ReactLanguage.send(sender(), CommandMessages.INTEGRATION_TIMELINE_HEADER);
+      timeline.forEach(line -> ReactLanguage.send(
+          sender(),
+          CommandMessages.INTEGRATION_TIMELINE_ENTRY,
+          MessageArgument.untrusted("entry", line)
+      ));
     }
   }
 }

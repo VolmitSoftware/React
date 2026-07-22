@@ -32,6 +32,7 @@ import art.arcane.react.core.controller.JobController;
 import art.arcane.react.core.controller.NearbyPlayerIndexController;
 import art.arcane.react.core.controller.SampleController;
 import art.arcane.react.core.controller.TweakController;
+import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.util.common.plugin.SplashScreen;
 import art.arcane.react.util.common.scheduling.J;
@@ -307,6 +308,8 @@ public class React extends VolmitPlugin implements ReloadAware {
     shutdownDrained = true;
     PrecisionStopwatch psw = PrecisionStopwatch.start();
     ConfigMigrationManager.backupLegacyJsonConfigsOnce();
+    ReactConfiguration.get();
+    ReactLanguage.initialize();
     startupTasks = new CopyOnWriteArrayList<>();
     prejobs = new CopyOnWriteArrayList<>();
     burst = new MultiBurst("React", Thread.MIN_PRIORITY);

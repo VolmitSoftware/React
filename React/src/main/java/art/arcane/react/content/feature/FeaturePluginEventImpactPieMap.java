@@ -1,6 +1,8 @@
 package art.arcane.react.content.feature;
 
+import art.arcane.react.localization.catalog.RendererMessages;
 import art.arcane.react.util.data.TinyColor;
+import art.arcane.volmlib.util.localization.TextKey;
 import org.bukkit.entity.Player;
 
 import java.util.Map;
@@ -14,8 +16,8 @@ public class FeaturePluginEventImpactPieMap extends FeatureIrisChunkSharePieBase
   }
 
   @Override
-  protected String title() {
-    return "Plugin Impact Share";
+  protected TextKey title() {
+    return RendererMessages.TITLE_PLUGIN_IMPACT_SHARE;
   }
 
   @Override
@@ -40,7 +42,7 @@ public class FeaturePluginEventImpactPieMap extends FeatureIrisChunkSharePieBase
   }
 
   @Override
-  protected String totalUnitLabel() {
-    return "impact";
+  protected TextKey totalUnit() {
+    return RendererMessages.PIE_UNIT_IMPACT;
   }
 }

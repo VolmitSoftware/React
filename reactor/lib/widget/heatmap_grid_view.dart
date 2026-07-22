@@ -5,6 +5,7 @@ import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart' show Component;
 
 import '../model/heatmap.dart';
+import '../localization/reactor_localizations.dart';
 import '../widget/section_card.dart';
 
 class HeatmapGridView extends StatelessWidget {
@@ -21,28 +22,25 @@ class HeatmapGridView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Widget header = dom.div(
-      styles: kSectionHeadingStyles,
-      <Widget>[
-        Component.text(
-          grid.world.isNotEmpty ? '${grid.label} — ${grid.world}' : grid.label,
-        ),
-      ],
-    );
+    final Widget header = dom.div(styles: kSectionHeadingStyles, <Widget>[
+      Component.text(
+        grid.world.isNotEmpty ? '${grid.label} — ${grid.world}' : grid.label,
+      ),
+    ]);
 
     if (grid.cells.isEmpty) {
-      return dom.div(
-        <Widget>[
-          header,
-          dom.div(
-            styles: const dom.Styles(raw: <String, String>{
+      return dom.div(<Widget>[
+        header,
+        dom.div(
+          styles: const dom.Styles(
+            raw: <String, String>{
               'color': 'var(--muted-foreground)',
               'font-size': '0.875rem',
-            }),
-            <Widget>[Component.text('No activity')],
+            },
           ),
-        ],
-      );
+          <Widget>[Component.text(reactorText(ReactorText.commonNoActivity))],
+        ),
+      ]);
     }
 
     final int cols = grid.size;
@@ -57,63 +55,66 @@ class HeatmapGridView extends StatelessWidget {
         final int chunkZ = originZ + gz;
         final HeatmapCell? cell = grid.cellAt(chunkX, chunkZ);
         if (cell == null) {
-          cellWidgets.add(dom.div(
-            styles: const dom.Styles(raw: <String, String>{
-              'background': 'var(--muted)',
-            }),
-            const <Widget>[],
-          ));
+          cellWidgets.add(
+            dom.div(
+              styles: const dom.Styles(
+                raw: <String, String>{'background': 'var(--muted)'},
+              ),
+              const <Widget>[],
+            ),
+          );
         } else {
           final double normalized = grid.max <= grid.min + 0.0001
               ? (cell.score > 0 ? 0.5 : 0.0)
-              : ((cell.score - grid.min) / (grid.max - grid.min)).clamp(0.0, 1.0);
+              : ((cell.score - grid.min) / (grid.max - grid.min)).clamp(
+                  0.0,
+                  1.0,
+                );
           final String color = _colorFor(normalized);
-          cellWidgets.add(dom.div(
-            styles: dom.Styles(raw: <String, String>{
-              'background': color,
-            }),
-            attributes: <String, String>{
-              'data-cx': chunkX.toString(),
-              'data-cz': chunkZ.toString(),
-              'data-score': cell.score.toString(),
-            },
-            const <Widget>[],
-          ));
+          cellWidgets.add(
+            dom.div(
+              styles: dom.Styles(raw: <String, String>{'background': color}),
+              attributes: <String, String>{
+                'data-cx': chunkX.toString(),
+                'data-cz': chunkZ.toString(),
+                'data-score': cell.score.toString(),
+              },
+              const <Widget>[],
+            ),
+          );
         }
       }
     }
 
     final Widget gridContainer = dom.div(
-      styles: dom.Styles(raw: <String, String>{
-        'display': 'grid',
-        'grid-template-columns': 'repeat($cols, 1fr)',
-        'gap': '1px',
-        'aspect-ratio': '1/1',
-        'width': '100%',
-        'max-width': '320px',
-      }),
+      styles: dom.Styles(
+        raw: <String, String>{
+          'display': 'grid',
+          'grid-template-columns': 'repeat($cols, 1fr)',
+          'gap': '1px',
+          'aspect-ratio': '1/1',
+          'width': '100%',
+          'max-width': '320px',
+        },
+      ),
       cellWidgets,
     );
 
     final Widget legend = dom.div(
-      styles: const dom.Styles(raw: <String, String>{
-        'display': 'flex',
-        'justify-content': 'space-between',
-        'font-size': '0.75rem',
-        'color': 'var(--muted-foreground)',
-      }),
+      styles: const dom.Styles(
+        raw: <String, String>{
+          'display': 'flex',
+          'justify-content': 'space-between',
+          'font-size': '0.75rem',
+          'color': 'var(--muted-foreground)',
+        },
+      ),
       <Widget>[
         Component.text(grid.min.toStringAsFixed(2)),
         Component.text(grid.max.toStringAsFixed(2)),
       ],
     );
 
-    return dom.div(
-      <Widget>[
-        header,
-        gridContainer,
-        legend,
-      ],
-    );
+    return dom.div(<Widget>[header, gridContainer, legend]);
   }
 }

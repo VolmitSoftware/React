@@ -19,6 +19,8 @@
 
 package art.arcane.react.api.rendering;
 
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.RendererMessages;
 import art.arcane.react.util.data.TinyColor;
 
 public class RendererUnknown implements ReactRenderer {
@@ -46,18 +48,18 @@ public class RendererUnknown implements ReactRenderer {
       set(0, y, width(), 1, row);
     }
 
-    dashHeader("React Map", null, new TinyColor(226, 102, 88));
-    text(4 * s, 16 * s, "Renderer unavailable", TEXT_DIM);
+    dashHeader(ReactLanguage.raw(RendererMessages.TITLE_REACT_MAP), null, new TinyColor(226, 102, 88));
+    text(4 * s, 16 * s, ReactLanguage.raw(RendererMessages.UNKNOWN_RENDERER_UNAVAILABLE), TEXT_DIM);
 
     int cx = 26 * s;
     int cy = 64 * s;
     drawWarningGlyph(cx, cy, s);
 
-    text(46 * s, 48 * s, "This map was", TEXT_BRIGHT);
-    text(46 * s, 58 * s, "bound to a renderer", TEXT_BRIGHT);
-    text(46 * s, 68 * s, "that is missing", TEXT_BRIGHT);
-    text(46 * s, 90 * s, "Use /re map", TEXT_DIM);
-    text(46 * s, 100 * s, "to reselect.", TEXT_DIM);
+    text(46 * s, 48 * s, ReactLanguage.raw(RendererMessages.UNKNOWN_MAP_WAS), TEXT_BRIGHT);
+    text(46 * s, 58 * s, ReactLanguage.raw(RendererMessages.UNKNOWN_BOUND), TEXT_BRIGHT);
+    text(46 * s, 68 * s, ReactLanguage.raw(RendererMessages.UNKNOWN_MISSING), TEXT_BRIGHT);
+    text(46 * s, 90 * s, ReactLanguage.raw(RendererMessages.UNKNOWN_RESELECT_COMMAND), TEXT_DIM);
+    text(46 * s, 100 * s, ReactLanguage.raw(RendererMessages.UNKNOWN_RESELECT), TEXT_DIM);
   }
 
   private void drawWarningGlyph(int cx, int cy, int s) {

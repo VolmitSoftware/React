@@ -8,6 +8,9 @@ import art.arcane.react.api.rendering.RendererUnknown;
 import art.arcane.react.api.test.ReactSubsystemCheck;
 import art.arcane.react.api.test.TestReport;
 import art.arcane.react.core.controller.MapController;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.TestMessages;
+import art.arcane.volmlib.util.localization.MessageArgument;
 import org.bukkit.block.BlockFace;
 import org.bukkit.map.MapCanvas;
 import org.bukkit.map.MapCursorCollection;
@@ -39,20 +42,20 @@ public class MapsRenderingCheck implements ReactSubsystemCheck {
   private void checkRegistry(TestReport report) {
     MapController controller = React.controller(MapController.class);
     if (controller == null) {
-      report.fail("maps", "registry", "MapController is not registered");
+      report.fail("maps", "registry", ReactLanguage.raw(TestMessages.MAP_CONTROLLER_UNAVAILABLE));
       return;
     }
 
     Map<String, ReactRenderer> registry = controller.getRenderers();
     if (registry == null || registry.isEmpty()) {
-      report.fail("maps", "registry", "renderer registry is empty");
+      report.fail("maps", "registry", ReactLanguage.raw(TestMessages.MAP_REGISTRY_EMPTY));
       return;
     }
 
     List<String> blank = new ArrayList<String>();
     for (ReactRenderer renderer : registry.values()) {
       if (renderer == null) {
-        blank.add("<null renderer>");
+        blank.add(ReactLanguage.raw(TestMessages.MAP_NULL_RENDERER));
         continue;
       }
 
@@ -63,11 +66,25 @@ public class MapsRenderingCheck implements ReactSubsystemCheck {
     }
 
     if (!blank.isEmpty()) {
-      report.fail("maps", "registry", "renderers with blank id: " + String.join(", ", blank));
+      report.fail(
+          "maps",
+          "registry",
+          ReactLanguage.raw(
+              TestMessages.MAP_BLANK_IDS,
+              MessageArgument.untrusted("renderers", String.join(", ", blank))
+          )
+      );
       return;
     }
 
-    report.pass("maps", "registry", registry.size() + " renderers registered, all ids non-blank");
+    report.pass(
+        "maps",
+        "registry",
+        ReactLanguage.raw(
+            TestMessages.MAP_REGISTRY_PASS,
+            MessageArgument.untrusted("count", registry.size())
+        )
+    );
   }
 
   private void checkMegamapTiling(TestReport report) {
@@ -80,18 +97,34 @@ public class MapsRenderingCheck implements ReactSubsystemCheck {
 
     Map<Integer, MegamapGrid.MegamapTile> tiles = MegamapGrid.solve(wall);
     if (tiles.size() != 4) {
-      report.fail("maps", "megamap-tile", "2x2 same-renderer wall produced " + tiles.size() + " tiled cells, expected 4");
+      report.fail(
+          "maps",
+          "megamap-tile",
+          ReactLanguage.raw(
+              TestMessages.MAP_TILE_COUNT_FAIL,
+              MessageArgument.untrusted("count", tiles.size())
+          )
+      );
       return;
     }
 
     MegamapGrid.MegamapTile sample = tiles.get(1);
     if (sample == null || sample.gridWidth() != 2 || sample.gridHeight() != 2) {
-      String dims = sample == null ? "missing" : sample.gridWidth() + "x" + sample.gridHeight();
-      report.fail("maps", "megamap-tile", "2x2 wall did not resolve to a 2x2 grid (got " + dims + ")");
+      String dims = sample == null
+          ? ReactLanguage.raw(TestMessages.MAP_DIMENSIONS_MISSING)
+          : sample.gridWidth() + "x" + sample.gridHeight();
+      report.fail(
+          "maps",
+          "megamap-tile",
+          ReactLanguage.raw(
+              TestMessages.MAP_TILE_GRID_FAIL,
+              MessageArgument.untrusted("dimensions", dims)
+          )
+      );
       return;
     }
 
-    report.pass("maps", "megamap-tile", "2x2 same-renderer wall tiled into a 2x2 grid across 4 maps");
+    report.pass("maps", "megamap-tile", ReactLanguage.raw(TestMessages.MAP_TILE_PASS));
   }
 
   private void checkMegamapHole(TestReport report) {
@@ -103,44 +136,83 @@ public class MapsRenderingCheck implements ReactSubsystemCheck {
 
     Map<Integer, MegamapGrid.MegamapTile> tiles = MegamapGrid.solve(wall);
     if (!tiles.isEmpty()) {
-      report.fail("maps", "megamap-hole", "non-rectangular wall (hole) was tiled into " + tiles.size() + " cells, expected rejection");
+      report.fail(
+          "maps",
+          "megamap-hole",
+          ReactLanguage.raw(
+              TestMessages.MAP_HOLE_FAIL,
+              MessageArgument.untrusted("count", tiles.size())
+          )
+      );
       return;
     }
 
-    report.pass("maps", "megamap-hole", "non-rectangular wall with a hole was rejected (no tiling)");
+    report.pass("maps", "megamap-hole", ReactLanguage.raw(TestMessages.MAP_HOLE_PASS));
   }
 
   private void checkPureRender(TestReport report) {
     ReactRenderer renderer = new RendererUnknown();
     int size = ReactRenderer.CANVAS_SIZE;
     try {
-      byte[] first = renderToBuffer(renderer, size, size);
-      byte[] second = renderToBuffer(renderer, size, size);
+      int[] first = renderToBuffer(renderer, size, size);
+      int[] second = renderToBuffer(renderer, size, size);
 
       int nonBlank = 0;
-      for (byte pixel : first) {
+      for (int pixel : first) {
         if (pixel != 0) {
           nonBlank++;
         }
       }
 
       if (nonBlank == 0) {
-        report.fail("maps", "render-determinism", "renderer '" + renderer.getId() + "' produced a fully blank canvas");
+        report.fail(
+            "maps",
+            "render-determinism",
+            ReactLanguage.raw(
+                TestMessages.MAP_BLANK_CANVAS,
+                MessageArgument.untrusted("renderer", renderer.getId())
+            )
+        );
         return;
       }
 
       if (!Arrays.equals(first, second)) {
-        report.fail("maps", "render-determinism", "renderer '" + renderer.getId() + "' produced non-deterministic pixels across two renders");
+        report.fail(
+            "maps",
+            "render-determinism",
+            ReactLanguage.raw(
+                TestMessages.MAP_NONDETERMINISTIC,
+                MessageArgument.untrusted("renderer", renderer.getId())
+            )
+        );
         return;
       }
 
-      report.pass("maps", "render-determinism", "renderer '" + renderer.getId() + "' rendered " + nonBlank + " non-blank pixels identically twice on a synthetic " + size + "x" + size + " canvas");
+      report.pass(
+          "maps",
+          "render-determinism",
+          ReactLanguage.raw(
+              TestMessages.MAP_RENDER_PASS,
+              MessageArgument.untrusted("renderer", renderer.getId()),
+              MessageArgument.untrusted("pixels", nonBlank),
+              MessageArgument.untrusted("width", size),
+              MessageArgument.untrusted("height", size)
+          )
+      );
     } catch (Throwable e) {
-      report.skip("maps", "render-determinism", "headless pixel render unavailable: " + e.getClass().getSimpleName() + (e.getMessage() == null ? "" : " - " + e.getMessage()));
+      String reason = e.getClass().getSimpleName() + (e.getMessage() == null ? "" : " - " + e.getMessage());
+      report.skip(
+          "maps",
+          "render-determinism",
+          ReactLanguage.raw(
+              TestMessages.MAP_HEADLESS_UNAVAILABLE,
+              MessageArgument.untrusted("reason", reason)
+          )
+      );
     }
   }
 
-  private byte[] renderToBuffer(ReactRenderer renderer, int width, int height) {
+  private int[] renderToBuffer(ReactRenderer renderer, int width, int height) {
     SyntheticCanvas canvas = new SyntheticCanvas(width, height);
     ReactRenderContext context = ReactRenderContext.builder()
         .canvas(canvas)
@@ -163,15 +235,15 @@ public class MapsRenderingCheck implements ReactSubsystemCheck {
   private static final class SyntheticCanvas implements MapCanvas {
     private final int width;
     private final int height;
-    private final byte[] pixels;
+    private final int[] pixels;
 
     private SyntheticCanvas(int width, int height) {
       this.width = width;
       this.height = height;
-      this.pixels = new byte[width * height];
+      this.pixels = new int[width * height];
     }
 
-    private byte[] pixels() {
+    private int[] pixels() {
       return pixels;
     }
 
@@ -191,16 +263,26 @@ public class MapsRenderingCheck implements ReactSubsystemCheck {
 
     @Override
     public void setPixelColor(int x, int y, Color color) {
+      if (x < 0 || y < 0 || x >= width || y >= height) {
+        return;
+      }
+
+      pixels[(y * width) + x] = color == null ? 0 : color.getRGB();
     }
 
     @Override
     public Color getPixelColor(int x, int y) {
-      return null;
+      if (x < 0 || y < 0 || x >= width || y >= height) {
+        return null;
+      }
+
+      int color = pixels[(y * width) + x];
+      return color == 0 ? null : new Color(color, true);
     }
 
     @Override
     public Color getBasePixelColor(int x, int y) {
-      return null;
+      return Color.BLACK;
     }
 
     @Override
@@ -212,15 +294,17 @@ public class MapsRenderingCheck implements ReactSubsystemCheck {
       pixels[(y * width) + x] = color;
     }
 
+    @SuppressWarnings("removal")
     @Override
     public byte getPixel(int x, int y) {
       if (x < 0 || y < 0 || x >= width || y >= height) {
         return 0;
       }
 
-      return pixels[(y * width) + x];
+      return (byte) pixels[(y * width) + x];
     }
 
+    @SuppressWarnings("removal")
     @Override
     public byte getBasePixel(int x, int y) {
       return 0;

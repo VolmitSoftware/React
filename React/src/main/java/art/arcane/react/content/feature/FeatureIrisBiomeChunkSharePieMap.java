@@ -1,6 +1,8 @@
 package art.arcane.react.content.feature;
 
+import art.arcane.react.localization.catalog.RendererMessages;
 import art.arcane.react.util.data.TinyColor;
+import art.arcane.volmlib.util.localization.TextKey;
 import org.bukkit.Chunk;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -16,8 +18,8 @@ public class FeatureIrisBiomeChunkSharePieMap extends FeatureIrisChunkSharePieBa
   }
 
   @Override
-  protected String title() {
-    return "Biome Chunk Share";
+  protected TextKey title() {
+    return RendererMessages.TITLE_BIOME_CHUNK_SHARE;
   }
 
   @Override

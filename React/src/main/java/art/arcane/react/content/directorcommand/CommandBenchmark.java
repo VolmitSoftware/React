@@ -30,14 +30,16 @@ import art.arcane.volmlib.util.director.annotations.Director;
     name = "benchmark",
     aliases = {"bench"},
     origin = DirectorOrigin.BOTH,
-    description = "These are the benchmark commands, please note that the numbers are never accurate and are only meant to be used as a relative comparison."
+    description = "Relative system benchmark commands",
+    descriptionKey = "command.description.benchmark"
 )
 public class CommandBenchmark implements DirectorExecutor {
 
   @Director(
       name = "cpu-benchmark",
       aliases = {"cpu", "processor"},
-      description = "Benchmark the CPU"
+      description = "Benchmark the CPU",
+      descriptionKey = "command.description.benchmark.cpu"
   )
   public void cpuBenchmark() {
     new CPUBenchmark(sender()).run();
@@ -47,7 +49,8 @@ public class CommandBenchmark implements DirectorExecutor {
   @Director(
       name = "drive-benchmark",
       aliases = {"drive"},
-      description = "Benchmark the Hard-Drive"
+      description = "Benchmark the storage drive",
+      descriptionKey = "command.description.benchmark.drive"
   )
   public void driveBenchmark() {
     new DriveBenchmark(sender()).run();
@@ -57,7 +60,8 @@ public class CommandBenchmark implements DirectorExecutor {
   @Director(
       name = "memory-benchmark",
       aliases = {"mem", "memory", "ram"},
-      description = "Benchmark the Memory"
+      description = "Benchmark memory",
+      descriptionKey = "command.description.benchmark.memory"
   )
   public void memoryBenchmark() {
     new MemoryBenchmark(sender()).run();

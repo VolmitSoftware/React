@@ -308,7 +308,7 @@ public class FeatureChunkQuarantine extends ReactFeature implements Listener {
 
   private boolean shouldTrackSpawn(CreatureSpawnEvent.SpawnReason reason) {
     boolean natural = switch (reason) {
-      case NATURAL, CHUNK_GEN, NETHER_PORTAL, REINFORCEMENTS, JOCKEY, PATROL,
+      case NATURAL, NETHER_PORTAL, REINFORCEMENTS, JOCKEY, PATROL,
            RAID -> true;
       default -> false;
     };

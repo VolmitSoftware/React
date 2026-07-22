@@ -25,10 +25,14 @@ import art.arcane.react.api.rendering.MapColors;
 import art.arcane.react.api.rendering.ReactRenderer;
 import art.arcane.react.core.controller.ObserverController;
 import art.arcane.react.core.controller.SampleController;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.MapMessages;
+import art.arcane.react.localization.catalog.RendererMessages;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.data.TinyColor;
 import art.arcane.react.util.project.registry.Registered;
 import art.arcane.volmlib.util.math.M;
+import art.arcane.volmlib.util.localization.MessageArgument;
 import com.google.common.util.concurrent.AtomicDouble;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Chunk;
@@ -153,13 +157,19 @@ public interface Sampler extends Registered, ReactRenderer {
     set(markerX, Math.min(chartBottom, markerY + 1), marker);
 
     String nowLabel = format(now);
-    dashHeader(getName(), nowLabel, line, marker);
+    dashHeader(MapMessages.localizedSamplerName(normalizedId, getName()), nowLabel, line, marker);
 
     set(0, footerY, w, footerH, FOOTER_BAND);
     set(3 * s, footerY + (3 * s), 4 * s, 4 * s, marker);
     text(10 * s, footerY + (2 * s), nowLabel, TEXT_BRIGHT);
-    String lowLabel = "L " + formattedValue(min);
-    String highLabel = "H " + formattedValue(max);
+    String lowLabel = ReactLanguage.raw(
+        RendererMessages.SAMPLER_LOW_VALUE,
+        MessageArgument.untrusted("value", formattedValue(min))
+    );
+    String highLabel = ReactLanguage.raw(
+        RendererMessages.SAMPLER_HIGH_VALUE,
+        MessageArgument.untrusted("value", formattedValue(max))
+    );
     int highX = w - (3 * s) - textWidth(highLabel);
     int lowX = highX - (6 * s) - textWidth(lowLabel);
     int nowEnd = (10 * s) + textWidth(nowLabel);

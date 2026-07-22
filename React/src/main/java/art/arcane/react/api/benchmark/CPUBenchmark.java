@@ -19,8 +19,11 @@
 
 package art.arcane.react.api.benchmark;
 
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.BenchmarkMessages;
 import art.arcane.react.util.common.scheduling.J;
-import org.bukkit.ChatColor;
+import art.arcane.volmlib.util.localization.MessageArgument;
+import art.arcane.volmlib.util.localization.TextKey;
 import org.bukkit.command.CommandSender;
 
 import java.util.TreeMap;
@@ -41,12 +44,17 @@ public class CPUBenchmark implements Runnable {
   public void run() {
     int score = doCPUBenchmark();
     String result = CPUResult.getSpeedLabel(score);
-    sender.sendMessage(ChatColor.GREEN + "Benchmark result: " + result + " (" + score + " Miliseconds)");
+    ReactLanguage.send(
+        sender,
+        BenchmarkMessages.CPU_RESULT,
+        MessageArgument.untrusted("rating", result),
+        MessageArgument.untrusted("milliseconds", score)
+    );
   }
 
   private int doCPUBenchmark() {
     long startTime = System.nanoTime();
-    sender.sendMessage(ChatColor.DARK_RED + "Benchmarking CPU...");
+    ReactLanguage.send(sender, BenchmarkMessages.CPU_STARTING);
 
     // Arithmetic Operations
     long resultInt = 1;
@@ -78,18 +86,25 @@ public class CPUBenchmark implements Runnable {
     long endTime = System.nanoTime();
     long duration = (endTime - startTime);
 
-    sender.sendMessage(ChatColor.YELLOW + "Benchmark complete. (Lower = Better)");
+    ReactLanguage.send(sender, BenchmarkMessages.COMPLETE_LOWER_BETTER);
     return (int) (TimeUnit.MILLISECONDS.convert(duration, TimeUnit.NANOSECONDS));
   }
 
   private enum CPUResult {
-    ULTRA_SLOW("Ultra Slow!"), VERY_SLOW("Very Slow!"), SLOW("Slow!"), AVERAGE("Average."),
-    GOOD("Good!"), FAST("Fast!"), VERY_FAST("Very fast!"), ULTRA_FAST("Ultra Fast"), INSANELY_FAST("Insanely Fast!");
+    ULTRA_SLOW(BenchmarkMessages.SPEED_ULTRA_SLOW),
+    VERY_SLOW(BenchmarkMessages.SPEED_VERY_SLOW),
+    SLOW(BenchmarkMessages.SPEED_SLOW),
+    AVERAGE(BenchmarkMessages.SPEED_AVERAGE),
+    GOOD(BenchmarkMessages.SPEED_GOOD),
+    FAST(BenchmarkMessages.SPEED_FAST),
+    VERY_FAST(BenchmarkMessages.SPEED_VERY_FAST),
+    ULTRA_FAST(BenchmarkMessages.SPEED_ULTRA_FAST),
+    INSANELY_FAST(BenchmarkMessages.SPEED_INSANELY_FAST);
 
-    private final String m;
+    private final TextKey message;
 
-    CPUResult(String m) {
-      this.m = m;
+    CPUResult(TextKey message) {
+      this.message = message;
     }
 
     public static String getSpeedLabel(int s) {
@@ -105,11 +120,11 @@ public class CPUBenchmark implements Runnable {
 
       for (int speedThreshold : speedMap.descendingKeySet()) {
         if (s > speedThreshold) {
-          return speedMap.get(speedThreshold).m;
+          return ReactLanguage.plain(speedMap.get(speedThreshold).message);
         }
       }
 
-      return ULTRA_SLOW.m;
+      return ReactLanguage.plain(ULTRA_SLOW.message);
     }
   }
 }

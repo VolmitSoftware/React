@@ -25,14 +25,17 @@ import art.arcane.react.api.rendering.ReactRenderer;
 import art.arcane.react.core.controller.MapController;
 import art.arcane.react.core.controller.PlayerController;
 import art.arcane.react.core.gui.ReactMapGUI;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.CommandMessages;
+import art.arcane.react.localization.catalog.RuntimeMessages;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.director.DirectorExecutor;
 import art.arcane.react.util.director.handlers.ReactRendererHandler;
-import art.arcane.react.util.format.C;
 import art.arcane.react.util.project.world.WorldDistanceSupport;
 import art.arcane.volmlib.util.director.DirectorOrigin;
 import art.arcane.volmlib.util.director.annotations.Director;
 import art.arcane.volmlib.util.director.annotations.Param;
+import art.arcane.volmlib.util.localization.MessageArgument;
 import art.arcane.volmlib.util.scheduling.FoliaScheduler;
 import org.bukkit.command.CommandSender;
 
@@ -40,7 +43,8 @@ import org.bukkit.command.CommandSender;
     name = "react",
     aliases = {"re"},
     origin = DirectorOrigin.BOTH,
-    description = "The root react command"
+    description = "The root React command",
+    descriptionKey = "command.description.root"
 )
 public class CommandReact implements DirectorExecutor {
   private CommandConfig config;
@@ -60,25 +64,32 @@ public class CommandReact implements DirectorExecutor {
       name = "monitor",
       aliases = {"m", "mon"},
       description = "Monitor the server via action bar",
+      descriptionKey = "command.description.monitor",
       origin = DirectorOrigin.PLAYER
   )
   public void monitor() {
     React.controller(PlayerController.class).getPlayer(player()).toggleActionBar();
-    sender().sendMessage(C.REACT + "Action bar monitor " + (React.controller(PlayerController.class).getPlayer(player()).isActionBarMonitoring() ? "enabled" : "disabled"));
+    boolean enabled = React.controller(PlayerController.class).getPlayer(player()).isActionBarMonitoring();
+    ReactLanguage.sendPrefixed(sender(), enabled ? RuntimeMessages.MONITOR_ENABLED : RuntimeMessages.MONITOR_DISABLED);
   }
 
 
   @Director(
       name = "set-player-view-distance",
       aliases = {"vd", "view-distance"},
-      description = "Visualize the via glow blocks",
+      description = "Set the current world's view and simulation distance",
+      descriptionKey = "command.description.view_distance",
       origin = DirectorOrigin.PLAYER
   )
   public void vd(
-      @Param(name = "distance")
+      @Param(
+          name = "distance",
+          description = "The view and simulation distance in chunks",
+          descriptionKey = "command.parameter.view_distance.distance"
+      )
       int d) {
     if (!WorldDistanceSupport.supportsWorldDistanceSetters()) {
-      sender().sendMessage(C.REACT + "This command requires Paper/Purpur. Spigot does not expose world view/simulation distance setters.");
+      ReactLanguage.sendPrefixed(sender(), CommandMessages.PAPER_REQUIRED);
       return;
     }
 
@@ -88,17 +99,25 @@ public class CommandReact implements DirectorExecutor {
 
     Curse.on(player().getWorld()).method("setViewDistance", int.class).invoke(d);
     Curse.on(player().getWorld()).method("setSimulationDistance", int.class).invoke(d);
-    sender().sendMessage(C.REACT + "Set " + player().getWorld().getName() + " view and simulation distance to " + d + ".");
+    ReactLanguage.sendPrefixed(
+        sender(),
+        CommandMessages.VIEW_DISTANCE_SET,
+        MessageArgument.untrusted("world", player().getWorld().getName()),
+        MessageArgument.untrusted("distance", d)
+    );
   }
 
   @Director(
       name = "map",
-      description = "Visualize the via glow blocks",
+      description = "Open or select a React map renderer",
+      descriptionKey = "command.description.map",
       origin = DirectorOrigin.PLAYER
   )
   public void map(
       @Param(
           name = "renderer",
+          description = "The map renderer to open",
+          descriptionKey = "command.parameter.map.renderer",
           defaultValue = "unknown",
           customHandler = ReactRendererHandler.class
       ) ReactRenderer renderer
@@ -114,21 +133,26 @@ public class CommandReact implements DirectorExecutor {
   @Director(
       name = "reload",
       aliases = {"rl"},
-      description = "Reload React")
+      description = "Reload React",
+      descriptionKey = "command.description.reload")
   public void reload() {
     CommandSender commandSender = sender();
-    commandSender.sendMessage("Reloading React...");
+    ReactLanguage.send(commandSender, CommandMessages.RELOAD_STARTING);
     Runnable reload = () -> {
       if (React.instance.reload()) {
-        commandSender.sendMessage("React v" + React.instance.getDescription().getVersion() + " reloaded.");
+        ReactLanguage.send(
+            commandSender,
+            CommandMessages.RELOAD_SUCCESS,
+            MessageArgument.untrusted("version", React.instance.getDescription().getVersion())
+        );
       } else {
-        commandSender.sendMessage("React reload failed. Check the console for the full error.");
+        ReactLanguage.send(commandSender, CommandMessages.RELOAD_FAILED);
       }
     };
 
     if (J.isFoliaThreading()) {
       if (!FoliaScheduler.runGlobal(React.instance, reload)) {
-        commandSender.sendMessage("React reload could not be scheduled on the Folia global region.");
+        ReactLanguage.send(commandSender, CommandMessages.RELOAD_SCHEDULE_FAILED);
       }
       return;
     }
@@ -139,8 +163,13 @@ public class CommandReact implements DirectorExecutor {
   @Director(
       name = "version",
       aliases = {"v"},
-      description = "Get React version")
+      description = "Show the React version",
+      descriptionKey = "command.description.version")
   public void version() {
-    sender().sendMessage("React " + React.instance.getDescription().getVersion());
+    ReactLanguage.send(
+        sender(),
+        CommandMessages.VERSION,
+        MessageArgument.untrusted("version", React.instance.getDescription().getVersion())
+    );
   }
 }

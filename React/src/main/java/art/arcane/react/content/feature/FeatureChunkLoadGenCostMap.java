@@ -23,6 +23,8 @@ import art.arcane.react.content.sampler.SamplerChunkGenMS;
 import art.arcane.react.content.sampler.SamplerChunkLoadMS;
 import art.arcane.react.content.sampler.SamplerChunksGenerated;
 import art.arcane.react.content.sampler.SamplerChunksLoaded;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.RendererMessages;
 import art.arcane.react.util.data.TinyColor;
 import org.bukkit.Chunk;
 
@@ -36,7 +38,7 @@ public class FeatureChunkLoadGenCostMap extends FeatureChunkHeatmapBase {
 
   @Override
   protected String mapLabel() {
-    return "Chunk Load/Gen Cost";
+    return ReactLanguage.raw(RendererMessages.TITLE_CHUNK_LOAD_GEN_COST);
   }
 
   @Override

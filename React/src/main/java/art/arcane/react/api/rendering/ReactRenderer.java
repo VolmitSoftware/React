@@ -23,11 +23,10 @@ import art.arcane.react.util.data.TinyColor;
 import org.bukkit.entity.Player;
 import org.bukkit.map.MapCanvas;
 import org.bukkit.map.MapFont;
-import org.bukkit.map.MapPalette;
 import org.bukkit.map.MapView;
 import org.bukkit.map.MinecraftFont;
 
-import java.awt.*;
+import java.awt.Color;
 
 public interface ReactRenderer {
   TinyColor TEXT_BRIGHT = new TinyColor(228, 236, 244);
@@ -57,19 +56,18 @@ public interface ReactRenderer {
   }
 
   default void text(int x, int y, String text) {
-    drawGlyphs(x, y, text, defaultTextByte());
+    drawGlyphs(x, y, text, defaultTextColor());
   }
 
   default void text(int x, int y, String text, TinyColor color) {
-    drawGlyphs(x, y, text, MapColors.byteFor(color.toRGB()));
+    drawGlyphs(x, y, text, MapColors.colorFor(color.toRGB()));
   }
 
-  @SuppressWarnings("deprecation")
-  private byte defaultTextByte() {
-    return MapPalette.DARK_GRAY;
+  private Color defaultTextColor() {
+    return MapColors.colorFor(0x4F4F4F);
   }
 
-  private void drawGlyphs(int x, int y, String text, byte paletteByte) {
+  private void drawGlyphs(int x, int y, String text, Color color) {
     if (text == null || text.isEmpty()) {
       return;
     }
@@ -96,7 +94,7 @@ public interface ReactRenderer {
       for (int row = 0; row < fontHeight; row++) {
         for (int col = 0; col < glyphWidth; col++) {
           if (sprite.get(row, col)) {
-            blitRect(context, cursorX + (col * scale), cursorY + (row * scale), scale, scale, paletteByte);
+            blitRect(context, cursorX + (col * scale), cursorY + (row * scale), scale, scale, color);
           }
         }
       }
@@ -114,7 +112,7 @@ public interface ReactRenderer {
     int steps = Math.max(dx, dy);
     int x = x1;
     int y = y1;
-    byte paletteByte = MapColors.byteFor(color.toRGB());
+    Color mapColor = MapColors.colorFor(color.toRGB());
     ReactRenderContext context = ReactRenderContext.of();
     int width = context.getWidth();
     int height = context.getHeight();
@@ -128,7 +126,7 @@ public interface ReactRenderer {
         break;
       }
 
-      blitRect(context, x, y, 1, 1, paletteByte);
+      blitRect(context, x, y, 1, 1, mapColor);
       int e2 = 2 * err;
 
       if (e2 > -dy) {
@@ -148,7 +146,7 @@ public interface ReactRenderer {
   }
 
   default void setRgb(int x, int y, int rgb) {
-    blitRect(ReactRenderContext.of(), x, y, 1, 1, MapColors.byteFor(rgb));
+    blitRect(ReactRenderContext.of(), x, y, 1, 1, MapColors.colorFor(rgb));
   }
 
   default void set(int x, int y, int rgb) {
@@ -224,11 +222,10 @@ public interface ReactRenderer {
   }
 
   default void fillRgb(int x, int y, int w, int h, int rgb) {
-    blitRect(ReactRenderContext.of(), x, y, w, h, MapColors.byteFor(rgb));
+    blitRect(ReactRenderContext.of(), x, y, w, h, MapColors.colorFor(rgb));
   }
 
-  @SuppressWarnings("deprecation")
-  private void blitRect(ReactRenderContext context, int x, int y, int w, int h, byte paletteByte) {
+  private void blitRect(ReactRenderContext context, int x, int y, int w, int h, Color color) {
     int scaleX = context.getScaleX();
     int scaleY = context.getScaleY();
     int x0 = Math.max(0, (x * scaleX) - context.getOffsetX());
@@ -242,7 +239,7 @@ public interface ReactRenderer {
     MapCanvas canvas = context.getCanvas();
     for (int i = x0; i < x1; i++) {
       for (int j = y0; j < y1; j++) {
-        canvas.setPixel(i, j, paletteByte);
+        canvas.setPixelColor(i, j, color);
       }
     }
   }

@@ -6,6 +6,7 @@ import 'package:jaspr/jaspr.dart' show Component;
 import 'package:jaspr_router/jaspr_router.dart';
 
 import '../model/server_credential.dart';
+import '../localization/reactor_localizations.dart';
 import '../state/fleet_manager.dart';
 import '../state/fleet_scope.dart';
 import '../ui/reactor_ui.dart';
@@ -125,17 +126,19 @@ class PairingCode {
 
   static String? validationMessage(String code) {
     final String normalized = normalizeInput(code);
-    if (normalized.isEmpty) return 'Paste the full RCT1 pairing code.';
+    if (normalized.isEmpty) {
+      return reactorText(ReactorText.addServerPasteFullCode);
+    }
     if (!normalized.startsWith(_prefix)) {
-      return 'Pairing codes must start with RCT1.';
+      return reactorText(ReactorText.addServerPrefixRequired);
     }
     final String b64 = normalized.substring(_prefix.length);
-    if (b64.isEmpty) return 'The RCT1 payload is missing.';
+    if (b64.isEmpty) return reactorText(ReactorText.addServerPayloadMissing);
     if (b64.length % 4 == 1) {
-      return 'This code is incomplete. Copy the entire Pairing code line from the server console.';
+      return reactorText(ReactorText.addServerCodeIncomplete);
     }
     if (decode(normalized) == null) {
-      return 'This RCT1 code could not be decoded. Copy the full code without truncating it.';
+      return reactorText(ReactorText.addServerDecodeFailed);
     }
     return null;
   }
@@ -226,10 +229,9 @@ class _AddServerScreenState extends State<AddServerScreen> {
     fleet.clearFleet();
     setState(() {
       _confirmReset = false;
-      _pairingMessage =
-          'Saved fleet cleared. Paste a new RCT1 code to reconnect.';
+      _pairingMessage = reactorText(ReactorText.addServerFleetClearedMessage);
     });
-    ArcaneSonner.success('Fleet reset');
+    ArcaneSonner.success(reactorText(ReactorText.addServerFleetReset));
   }
 
   Future<void> _onPair([String? submittedCode]) async {
@@ -248,7 +250,7 @@ class _AddServerScreenState extends State<AddServerScreen> {
       _code = rawCode;
       _decoded = PairingCode.decode(rawCode);
       _validationMessage = null;
-      _pairingMessage = 'Connecting to server identity endpoint...';
+      _pairingMessage = reactorText(ReactorText.addServerConnectingIdentity);
       _loading = true;
     });
     try {
@@ -258,27 +260,33 @@ class _AddServerScreenState extends State<AddServerScreen> {
       );
       component.fleetManager.setActive(cred.id);
       FleetScope.of(context)?.trackPaired(cred.id);
-      ArcaneSonner.success('Server paired');
+      ArcaneSonner.success(reactorText(ReactorText.addServerPaired));
       context.push('/server/${cred.id}/overview');
     } on ArgumentError {
       if (!mounted) return;
       setState(() {
-        _pairingMessage =
-            'Invalid pairing code. Copy the full RCT1 line from the server console.';
+        _pairingMessage = reactorText(
+          ReactorText.addServerInvalidPairingMessage,
+        );
         _validationMessage = _pairingMessage;
       });
       ArcaneSonner.error(
-        'Invalid pairing code',
-        description:
-            'Check that you copied the full RCT1 code from the server console.',
+        reactorText(ReactorText.addServerInvalidPairingCode),
+        description: reactorText(
+          ReactorText.addServerInvalidPairingDescription,
+        ),
       );
     } on Object catch (e) {
       if (!mounted) return;
       setState(() {
-        _pairingMessage =
-            'Could not connect to the server API. Verify the host, port, token, and that the web controller is reachable.';
+        _pairingMessage = reactorText(
+          ReactorText.addServerConnectionFailedMessage,
+        );
       });
-      ArcaneSonner.error('Pairing failed', description: e.toString());
+      ArcaneSonner.error(
+        reactorText(ReactorText.addServerPairingFailed),
+        description: e.toString(),
+      );
     } finally {
       if (mounted) {
         setState(() {
@@ -296,24 +304,27 @@ class _AddServerScreenState extends State<AddServerScreen> {
     final bool canPair = !_loading && _code.trim().isNotEmpty;
     final String? inputError = _validationMessage;
     return ReactorPage(
-      title: 'Add Server',
-      subtitle:
-          'Paste an authenticated RCT1 code from the React server console',
+      title: reactorText(ReactorText.addServerTitle),
+      subtitle: reactorText(ReactorText.addServerSubtitle),
       actions: dom.div(classes: 'reactor-add-actions', <Widget>[
         Button.secondary(
-          label: 'Clear code',
+          label: reactorText(ReactorText.addServerClearCode),
           size: ButtonSize.small,
           disabled: _loading || _code.isEmpty,
           onPressed: _loading || _code.isEmpty ? null : _clearCode,
         ),
         Button.destructive(
-          label: _confirmReset ? 'Confirm reset' : 'Reset fleet',
+          label: _confirmReset
+              ? reactorText(ReactorText.addServerConfirmReset)
+              : reactorText(ReactorText.addServerResetFleet),
           size: ButtonSize.small,
           disabled: _loading || savedCount == 0,
           onPressed: _loading || savedCount == 0 ? null : _resetFleet,
         ),
         Button(
-          label: _loading ? 'Connecting...' : 'Pair',
+          label: _loading
+              ? reactorText(ReactorText.addServerConnecting)
+              : reactorText(ReactorText.addServerPair),
           size: ButtonSize.small,
           disabled: !canPair,
           onPressed: canPair ? () => _onPair() : null,
@@ -322,8 +333,10 @@ class _AddServerScreenState extends State<AddServerScreen> {
       children: <Widget>[
         dom.div(classes: 'reactor-add-layout', <Widget>[
           SectionPanel(
-            label: 'Pairing Console',
-            description: 'Connect direct LAN nodes or relay-backed servers.',
+            label: reactorText(ReactorText.addServerPairingConsole),
+            description: reactorText(
+              ReactorText.addServerPairingConsoleDescription,
+            ),
             trailing: _statusBadge(decoded, inputError),
             children: <Widget>[
               dom.div(classes: 'reactor-add-console', <Widget>[
@@ -337,25 +350,30 @@ class _AddServerScreenState extends State<AddServerScreen> {
                           : ReactorStatus.healthy,
                       size: 7,
                     ),
-                    dom.span(<Widget>[Component.text('RCT1 handshake')]),
+                    dom.span(<Widget>[
+                      Component.text(
+                        reactorText(ReactorText.addServerHandshake),
+                      ),
+                    ]),
                   ]),
                   reactorEyebrow(
                     inputError != null
-                        ? 'Needs full code'
+                        ? reactorText(ReactorText.addServerNeedsFullCode)
                         : decoded == null
-                        ? 'Standby'
-                        : 'Decoded',
+                        ? reactorText(ReactorText.addServerStandby)
+                        : reactorText(ReactorText.addServerDecoded),
                   ),
                 ]),
                 dom.div(classes: 'reactor-add-console-body', <Widget>[
                   TextInput(
-                    placeholder: 'Paste RCT1. code from server console',
+                    placeholder: reactorText(
+                      ReactorText.addServerInputPlaceholder,
+                    ),
                     value: _code,
                     onChange: _onCodeChanged,
                     onSubmit: _onPair,
                     error: inputError,
-                    helperText:
-                        'You can paste the raw RCT1 token or the full console line.',
+                    helperText: reactorText(ReactorText.addServerInputHelper),
                     fullWidth: true,
                   ),
                   if (_pairingMessage != null)
@@ -372,47 +390,56 @@ class _AddServerScreenState extends State<AddServerScreen> {
           ),
           dom.div(classes: 'reactor-add-side', <Widget>[
             SectionPanel(
-              label: 'Connection Flow',
-              description:
-                  'The dashboard validates locally before opening telemetry.',
+              label: reactorText(ReactorText.addServerConnectionFlow),
+              description: reactorText(
+                ReactorText.addServerConnectionFlowDescription,
+              ),
               children: <Widget>[
                 dom.div(classes: 'reactor-add-step-list', <Widget>[
                   _flowStep(
                     '01',
-                    'Copy',
-                    'Run the React pairing command and copy the full RCT1 value.',
+                    reactorText(ReactorText.addServerCopy),
+                    reactorText(ReactorText.addServerCopyDescription),
                   ),
                   _flowStep(
                     '02',
-                    'Decode',
-                    'Reactor checks the transport, token, and confirmation word.',
+                    reactorText(ReactorText.addServerDecode),
+                    reactorText(ReactorText.addServerDecodeDescription),
                   ),
                   _flowStep(
                     '03',
-                    'Monitor',
-                    'A live server workspace opens as soon as the fleet accepts it.',
+                    reactorText(ReactorText.addServerMonitor),
+                    reactorText(ReactorText.addServerMonitorDescription),
                   ),
                 ]),
               ],
             ),
             SectionPanel(
-              label: 'Security',
-              description:
-                  'Pairing credentials stay in browser storage for this console.',
+              label: reactorText(ReactorText.addServerSecurity),
+              description: reactorText(
+                ReactorText.addServerSecurityDescription,
+              ),
               trailing: reactorStatusDot(
                 ReactorStatus.info,
-                label: 'Credential scope',
+                label: reactorText(ReactorText.addServerCredentialScope),
               ),
               children: <Widget>[
-                _detail('Saved Servers', savedCount.toString()),
-                _detail('Format', 'RCT1'),
                 _detail(
-                  'Token',
-                  decoded == null ? 'Hidden until decoded' : 'Bearer',
+                  reactorText(ReactorText.addServerSavedServers),
+                  savedCount.toString(),
+                ),
+                _detail(reactorText(ReactorText.addServerFormat), 'RCT1'),
+                _detail(
+                  reactorText(ReactorText.addServerToken),
+                  decoded == null
+                      ? reactorText(ReactorText.addServerHiddenUntilDecoded)
+                      : 'Bearer',
                 ),
                 _detail(
-                  'Transport',
-                  decoded?.relayUrl == null ? 'Direct host' : 'Relay channel',
+                  reactorText(ReactorText.addServerTransport),
+                  decoded?.relayUrl == null
+                      ? reactorText(ReactorText.addServerDirectHost)
+                      : reactorText(ReactorText.addServerRelayChannel),
                 ),
               ],
             ),
@@ -424,30 +451,61 @@ class _AddServerScreenState extends State<AddServerScreen> {
 
   Widget _statusBadge(PairingCode? decoded, String? inputError) {
     if (inputError != null) {
-      return reactorBadge('Check Code', ReactorStatus.warning);
+      return reactorBadge(
+        reactorText(ReactorText.addServerCheckCode),
+        ReactorStatus.warning,
+      );
     }
     if (decoded == null) {
-      return reactorBadge('Awaiting Code', ReactorStatus.info);
+      return reactorBadge(
+        reactorText(ReactorText.addServerAwaitingCode),
+        ReactorStatus.info,
+      );
     }
-    return reactorBadge('Code Ready', ReactorStatus.healthy);
+    return reactorBadge(
+      reactorText(ReactorText.addServerCodeReady),
+      ReactorStatus.healthy,
+    );
   }
 
   Widget _connectionDetails(PairingCode? decoded) {
     if (decoded == null) {
       return dom.div(classes: 'reactor-add-detail-grid', <Widget>[
-        _detail('Status', 'Waiting for code'),
-        _detail('Expected', 'RCT1. payload'),
-        _detail('Validation', 'Local decode'),
-        _detail('Handshake', 'One server'),
+        _detail(
+          reactorText(ReactorText.addServerStatus),
+          reactorText(ReactorText.addServerWaitingForCode),
+        ),
+        _detail(reactorText(ReactorText.addServerExpected), 'RCT1. payload'),
+        _detail(
+          reactorText(ReactorText.addServerValidation),
+          reactorText(ReactorText.addServerLocalDecode),
+        ),
+        _detail(
+          reactorText(ReactorText.addServerHandshake),
+          reactorText(ReactorText.addServerOneServer),
+        ),
       ]);
     }
     return dom.div(classes: 'reactor-add-detail-grid', <Widget>[
-      _detail('Host', decoded.host.isEmpty ? 'Relay only' : decoded.host),
-      _detail('Port', decoded.port <= 0 ? 'Relay' : decoded.port.toString()),
-      _detail('Confirm Word', decoded.confirmWord),
       _detail(
-        'Relay',
-        decoded.relayUrl?.isEmpty ?? true ? 'Not used' : 'Enabled',
+        reactorText(ReactorText.addServerHost),
+        decoded.host.isEmpty
+            ? reactorText(ReactorText.addServerRelayOnly)
+            : decoded.host,
+      ),
+      _detail(
+        reactorText(ReactorText.addServerPort),
+        decoded.port <= 0 ? 'Relay' : decoded.port.toString(),
+      ),
+      _detail(
+        reactorText(ReactorText.addServerConfirmWord),
+        decoded.confirmWord,
+      ),
+      _detail(
+        reactorText(ReactorText.addServerRelay),
+        decoded.relayUrl?.isEmpty ?? true
+            ? reactorText(ReactorText.addServerNotUsed)
+            : reactorText(ReactorText.commonEnabled),
       ),
     ]);
   }

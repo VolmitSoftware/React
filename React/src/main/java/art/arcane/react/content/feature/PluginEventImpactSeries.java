@@ -22,7 +22,12 @@ package art.arcane.react.content.feature;
 import art.arcane.react.React;
 import art.arcane.react.core.controller.EventController;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 final class PluginEventImpactSeries {
@@ -133,12 +138,12 @@ final class PluginEventImpactSeries {
 
   private static String normalizePlugin(String plugin) {
     if (plugin == null || plugin.isBlank()) {
-      return "Unknown";
+      return "";
     }
 
     String trimmed = plugin.trim();
     if (trimmed.isBlank()) {
-      return "Unknown";
+      return "";
     }
 
     String lower = trimmed.toLowerCase(Locale.ROOT);
@@ -166,7 +171,7 @@ final class PluginEventImpactSeries {
     }
 
     String value = out.toString().trim();
-    return value.isBlank() ? "Unknown" : value;
+    return value;
   }
 
   record Entry(
@@ -183,4 +188,3 @@ final class PluginEventImpactSeries {
   ) {
   }
 }
-

@@ -3,10 +3,12 @@ package art.arcane.react.content.feature;
 import art.arcane.react.React;
 import art.arcane.react.core.controller.IntegrationController;
 import art.arcane.react.core.integration.RemoteSamplerBridge;
+import art.arcane.react.localization.catalog.RendererMessages;
 import art.arcane.react.util.data.TinyColor;
 import art.arcane.volmlib.integration.IntegrationMetricGroup;
 import art.arcane.volmlib.integration.IntegrationMetricSample;
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
+import art.arcane.volmlib.util.localization.TextKey;
 import org.bukkit.entity.Player;
 
 import java.util.Map;
@@ -20,8 +22,8 @@ public class FeatureIrisWorldChunkSharePieMap extends FeatureIrisChunkSharePieBa
   }
 
   @Override
-  protected String title() {
-    return "World Chunk Share";
+  protected TextKey title() {
+    return RendererMessages.TITLE_WORLD_CHUNK_SHARE;
   }
 
   @Override

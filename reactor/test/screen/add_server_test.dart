@@ -2,6 +2,7 @@ import 'package:arcane_jaspr/arcane_jaspr.dart';
 import 'package:arcane_jaspr_shadcn/arcane_jaspr_shadcn.dart';
 import 'package:jaspr_test/server_test.dart';
 
+import 'package:reactor/localization/reactor_localizations.dart';
 import 'package:reactor/model/identity_info.dart';
 import 'package:reactor/model/server_credential.dart';
 import 'package:reactor/model/server_snapshot.dart';
@@ -449,17 +450,17 @@ void main() {
       final DocumentResponse res = await tester.request('/');
       expect(res.statusCode, equals(200));
       expect(
-        res.body.contains('Pair'),
+        res.body.contains(ReactorText.addServerPair.english),
         isTrue,
         reason: 'Pair button must be present in the rendered output',
       );
       expect(
-        res.body.contains('Clear code'),
+        res.body.contains(ReactorText.addServerClearCode.english),
         isTrue,
         reason: 'Clear code control must be present near the pair action',
       );
       expect(
-        res.body.contains('Reset fleet'),
+        res.body.contains(ReactorText.addServerResetFleet.english),
         isTrue,
         reason: 'Reset fleet control must be present for stuck pairings',
       );

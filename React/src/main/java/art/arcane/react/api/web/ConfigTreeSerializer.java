@@ -4,6 +4,7 @@ import art.arcane.react.api.web.dto.ConfigNodeDto;
 import art.arcane.react.api.web.dto.ConfigSectionDto;
 import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.util.project.config.ConfigDoc;
+import art.arcane.react.util.project.config.ConfigLocalization;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -76,7 +77,7 @@ public class ConfigTreeSerializer {
         node.type = type;
 
         ConfigDoc annotation = field.getAnnotation(ConfigDoc.class);
-        node.doc = annotation != null ? annotation.value() : "";
+        node.doc = annotation == null ? "" : ConfigLocalization.fieldSummary(field);
 
         if (normalized != null && normalized.isEnum()) {
             node.value = rawValue != null ? ((Enum<?>) rawValue).name() : null;

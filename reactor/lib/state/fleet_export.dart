@@ -2,6 +2,7 @@ library;
 
 import 'dart:convert';
 
+import '../localization/reactor_localizations.dart';
 import '../model/server_credential.dart';
 
 class FleetParseResult {
@@ -23,8 +24,7 @@ String buildFleetExportJson(List<ServerCredential> servers) {
     'kind': 'reactor-fleet',
     'version': 1,
     'exportedAt': DateTime.now().millisecondsSinceEpoch,
-    'servers':
-        servers.map((ServerCredential c) => c.toJson()).toList(),
+    'servers': servers.map((ServerCredential c) => c.toJson()).toList(),
   };
   return jsonEncode(envelope);
 }
@@ -34,32 +34,32 @@ FleetParseResult parseFleetImportJson(String raw) {
   try {
     decoded = jsonDecode(raw);
   } on Object {
-    return const FleetParseResult(
-      servers: <ServerCredential>[],
+    return FleetParseResult(
+      servers: const <ServerCredential>[],
       skipped: 0,
-      error: 'Invalid JSON',
+      error: reactorText(ReactorText.fleetImportInvalidJson),
     );
   }
   if (decoded is! Map<String, dynamic>) {
-    return const FleetParseResult(
-      servers: <ServerCredential>[],
+    return FleetParseResult(
+      servers: const <ServerCredential>[],
       skipped: 0,
-      error: 'Not a valid fleet export file',
+      error: reactorText(ReactorText.fleetImportInvalidFile),
     );
   }
   if (decoded['kind'] != 'reactor-fleet') {
-    return const FleetParseResult(
-      servers: <ServerCredential>[],
+    return FleetParseResult(
+      servers: const <ServerCredential>[],
       skipped: 0,
-      error: 'Not a reactor-fleet export file',
+      error: reactorText(ReactorText.fleetImportWrongKind),
     );
   }
   final Object? rawList = decoded['servers'];
   if (rawList is! List<dynamic>) {
-    return const FleetParseResult(
-      servers: <ServerCredential>[],
+    return FleetParseResult(
+      servers: const <ServerCredential>[],
       skipped: 0,
-      error: 'Missing or invalid servers list',
+      error: reactorText(ReactorText.fleetImportInvalidServerList),
     );
   }
   final List<ServerCredential> valid = <ServerCredential>[];
@@ -80,8 +80,13 @@ FleetParseResult parseFleetImportJson(String raw) {
       servers: const <ServerCredential>[],
       skipped: skipped,
       error: skipped > 0
-          ? 'No valid servers found ($skipped malformed ${skipped == 1 ? 'entry' : 'entries'})'
-          : 'No servers in file',
+          ? reactorText(
+              skipped == 1
+                  ? ReactorText.fleetImportNoValidServer
+                  : ReactorText.fleetImportNoValidServers,
+              <String, Object?>{'count': skipped},
+            )
+          : reactorText(ReactorText.fleetImportNoServers),
     );
   }
   return FleetParseResult(servers: valid, skipped: skipped);

@@ -20,10 +20,12 @@
 package art.arcane.react.core.controller;
 
 import art.arcane.react.core.gui.ReactConfigGUI;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.GuiMessages;
 import art.arcane.react.util.common.scheduling.J;
-import art.arcane.react.util.format.C;
 import art.arcane.react.util.plugin.IController;
 import art.arcane.react.util.project.config.ConfigDoc;
+import art.arcane.volmlib.util.localization.MessageArgument;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -86,10 +88,10 @@ public class ConfigInputController implements IController, Listener {
     sessions.put(player.getUniqueId(), pending);
 
     player.closeInventory();
-    player.sendMessage(C.AQUA + "Enter value for " + C.WHITE + pending.label());
-    player.sendMessage(C.AQUA + "Path: " + C.WHITE + pending.valuePath());
-    player.sendMessage(C.AQUA + "Expected type: " + C.WHITE + ReactConfigGUI.typeName(targetType));
-    player.sendMessage(C.GRAY + "Type " + C.WHITE + "cancel" + C.GRAY + " to abort.");
+    ReactLanguage.send(player, GuiMessages.INPUT_ENTER_VALUE, MessageArgument.untrusted("label", pending.label()));
+    ReactLanguage.send(player, GuiMessages.INPUT_PATH, MessageArgument.untrusted("path", pending.valuePath()));
+    ReactLanguage.send(player, GuiMessages.INPUT_EXPECTED_TYPE, MessageArgument.untrusted("type", ReactConfigGUI.typeName(targetType)));
+    ReactLanguage.send(player, GuiMessages.INPUT_CANCEL_HINT);
   }
 
   @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -105,7 +107,7 @@ public class ConfigInputController implements IController, Listener {
     if (pending.isExpired()) {
       sessions.remove(player.getUniqueId());
       J.runEntity(player, () -> {
-        player.sendMessage(C.RED + "Config input timed out.");
+        ReactLanguage.send(player, GuiMessages.INPUT_TIMED_OUT);
         ReactConfigGUI.open(player, pending.returnSectionPath(), pending.returnPage());
       });
       return;
@@ -115,7 +117,7 @@ public class ConfigInputController implements IController, Listener {
     if (message.equalsIgnoreCase("cancel")) {
       sessions.remove(player.getUniqueId());
       J.runEntity(player, () -> {
-        player.sendMessage(C.YELLOW + "Config edit cancelled.");
+        ReactLanguage.send(player, GuiMessages.INPUT_CANCELLED);
         ReactConfigGUI.open(player, pending.returnSectionPath(), pending.returnPage());
       });
       return;
@@ -124,8 +126,8 @@ public class ConfigInputController implements IController, Listener {
     ReactConfigGUI.ParseResult parsed = ReactConfigGUI.parseInputValue(pending.targetType(), message);
     if (!parsed.success()) {
       J.runEntity(player, () -> {
-        player.sendMessage(C.RED + parsed.error());
-        player.sendMessage(C.GRAY + "Try again or type " + C.WHITE + "cancel");
+        ReactLanguage.send(player, GuiMessages.INPUT_INVALID, MessageArgument.untrusted("reason", parsed.error()));
+        ReactLanguage.send(player, GuiMessages.INPUT_RETRY);
       });
       return;
     }

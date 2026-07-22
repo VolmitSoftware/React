@@ -2,6 +2,7 @@ package art.arcane.react.api.web;
 
 import art.arcane.react.api.web.dto.KnobDto;
 import art.arcane.react.util.project.config.ConfigDoc;
+import art.arcane.react.util.project.config.ConfigLocalization;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -39,13 +40,11 @@ public class KnobSerializer {
                 continue;
             }
 
-            ConfigDoc annotation = field.getAnnotation(ConfigDoc.class);
-
             KnobDto knob = new KnobDto();
             knob.key = field.getName();
             knob.label = ConfigReflectionUtil.displayName(field.getName());
             knob.type = type;
-            knob.doc = annotation.value();
+            knob.doc = ConfigLocalization.fieldSummary(field);
 
             if (normalized.isEnum()) {
                 knob.value = rawValue != null ? ((Enum<?>) rawValue).name() : null;

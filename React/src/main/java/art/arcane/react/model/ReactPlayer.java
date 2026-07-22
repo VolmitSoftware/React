@@ -23,8 +23,9 @@ import art.arcane.volmlib.util.bukkit.WorldIdentity;
 import art.arcane.chrono.ChronoLatch;
 import art.arcane.react.React;
 import art.arcane.react.api.monitor.ActionBarMonitor;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.RuntimeMessages;
 import art.arcane.react.util.common.scheduling.TickedObject;
-import art.arcane.react.util.plugin.VolmitSender;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.bukkit.entity.Player;
@@ -177,7 +178,7 @@ public class ReactPlayer extends TickedObject {
 
     if (settings.isActionBarMonitoring()) {
       setActionBarMonitoring(true);
-      new VolmitSender(getPlayer(), React.instance.getTag()).sendMessage("Monitor Enabled");
+      ReactLanguage.sendPrefixed(getPlayer(), RuntimeMessages.MONITOR_ENABLED);
     }
 
     React.instance.registerListener(this);

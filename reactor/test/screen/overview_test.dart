@@ -5,6 +5,7 @@ import 'package:arcane_jaspr_shadcn/arcane_jaspr_shadcn.dart';
 import 'package:jaspr_test/server_test.dart';
 import 'package:test/test.dart';
 
+import 'package:reactor/localization/reactor_localizations.dart';
 import 'package:reactor/model/sampler_sample.dart';
 import 'package:reactor/model/server_snapshot.dart';
 import 'package:reactor/screen/overview.dart';
@@ -19,17 +20,16 @@ SamplerSample _sample(
   String suffix = '',
   double min = 0.0,
   double max = 100.0,
-}) =>
-    SamplerSample(
-      id: id,
-      name: id,
-      value: value,
-      display: value.toString(),
-      suffix: suffix,
-      min: min,
-      max: max,
-      history: <double>[value],
-    );
+}) => SamplerSample(
+  id: id,
+  name: id,
+  value: value,
+  display: value.toString(),
+  suffix: suffix,
+  min: min,
+  max: max,
+  history: <double>[value],
+);
 
 ServerSnapshot _fakeSnapshot() {
   final List<SamplerSample> samples = <SamplerSample>[
@@ -66,71 +66,63 @@ ServerSnapshot _lowTpsSnapshot() {
 }
 
 Widget _wrap(Widget child, {ServerSnapshot? snapshot}) => ArcaneThemeProvider(
-      stylesheet: _sheet,
-      child: ServerScope(
-        snapshot: snapshot ?? _fakeSnapshot(),
-        state: ConnState.live,
-        child: child,
-      ),
-    );
+  stylesheet: _sheet,
+  child: ServerScope(
+    snapshot: snapshot ?? _fakeSnapshot(),
+    state: ConnState.live,
+    child: child,
+  ),
+);
 
 void main() {
   group('OverviewScreen', () {
-    testServer(
-      'renders TPS headline value 19.9',
-      (ServerTester tester) async {
-        tester.pumpComponent(_wrap(const OverviewScreen()));
-        final DocumentResponse res = await tester.request('/');
-        expect(res.statusCode, equals(200));
-        expect(
-          res.body.contains('19.9'),
-          isTrue,
-          reason: 'TPS value 19.9 must appear in rendered HTML',
-        );
-      },
-    );
+    testServer('renders TPS headline value 19.9', (ServerTester tester) async {
+      tester.pumpComponent(_wrap(const OverviewScreen()));
+      final DocumentResponse res = await tester.request('/');
+      expect(res.statusCode, equals(200));
+      expect(
+        res.body.contains('19.9'),
+        isTrue,
+        reason: 'TPS value 19.9 must appear in rendered HTML',
+      );
+    });
 
-    testServer(
-      'renders Players stat tile label',
-      (ServerTester tester) async {
-        tester.pumpComponent(_wrap(const OverviewScreen()));
-        final DocumentResponse res = await tester.request('/');
-        expect(res.statusCode, equals(200));
-        expect(
-          res.body.contains('Players'),
-          isTrue,
-          reason: 'Players stat tile label must appear in rendered HTML',
-        );
-      },
-    );
+    testServer('renders Players stat tile label', (ServerTester tester) async {
+      tester.pumpComponent(_wrap(const OverviewScreen()));
+      final DocumentResponse res = await tester.request('/');
+      expect(res.statusCode, equals(200));
+      expect(
+        res.body.contains(ReactorText.commonPlayers.english),
+        isTrue,
+        reason: 'Players stat tile label must appear in rendered HTML',
+      );
+    });
 
-    testServer(
-      'renders Incident Score gauge label',
-      (ServerTester tester) async {
-        tester.pumpComponent(_wrap(const OverviewScreen()));
-        final DocumentResponse res = await tester.request('/');
-        expect(res.statusCode, equals(200));
-        expect(
-          res.body.contains('Incident Score'),
-          isTrue,
-          reason: 'Incident Score gauge label must appear in rendered HTML',
-        );
-      },
-    );
+    testServer('renders Incident Score gauge label', (
+      ServerTester tester,
+    ) async {
+      tester.pumpComponent(_wrap(const OverviewScreen()));
+      final DocumentResponse res = await tester.request('/');
+      expect(res.statusCode, equals(200));
+      expect(
+        res.body.contains(ReactorText.commonIncidentScore.english),
+        isTrue,
+        reason: 'Incident Score gauge label must appear in rendered HTML',
+      );
+    });
 
-    testServer(
-      'renders memory-used stat tile with full label',
-      (ServerTester tester) async {
-        tester.pumpComponent(_wrap(const OverviewScreen()));
-        final DocumentResponse res = await tester.request('/');
-        expect(res.statusCode, equals(200));
-        expect(
-          res.body.contains('Memory Used'),
-          isTrue,
-          reason: 'Memory Used tile label must appear in rendered HTML',
-        );
-      },
-    );
+    testServer('renders memory-used stat tile with full label', (
+      ServerTester tester,
+    ) async {
+      tester.pumpComponent(_wrap(const OverviewScreen()));
+      final DocumentResponse res = await tester.request('/');
+      expect(res.statusCode, equals(200));
+      expect(
+        res.body.contains(ReactorText.commonMemoryUsed.english),
+        isTrue,
+        reason: 'Memory Used tile label must appear in rendered HTML',
+      );
+    });
 
     testServer(
       'TPS gauge shows error status at TPS=1.0 (invertStatus correctness)',

@@ -2,11 +2,15 @@ package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
 import art.arcane.react.api.feature.ReactFeature;
-import art.arcane.volmlib.util.bukkit.WorldIdentity;
 import art.arcane.react.api.rendering.ReactRenderer;
 import art.arcane.react.core.controller.MapController;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.RendererMessages;
 import art.arcane.react.util.data.TinyColor;
+import art.arcane.volmlib.util.bukkit.WorldIdentity;
 import art.arcane.volmlib.util.format.Form;
+import art.arcane.volmlib.util.localization.MessageArgument;
+import art.arcane.volmlib.util.localization.TextKey;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -15,7 +19,13 @@ import org.bukkit.event.Listener;
 import org.bukkit.generator.ChunkGenerator;
 
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 abstract class FeatureIrisChunkSharePieBase extends ReactFeature implements Listener, ReactRenderer {
@@ -60,18 +70,18 @@ abstract class FeatureIrisChunkSharePieBase extends ReactFeature implements List
   @Override
   public final void render() {
     drawBackdrop();
-    dashHeader(title(), null, headerColor());
+    dashHeader(ReactLanguage.raw(title()), null, headerColor());
 
     Player viewer = player();
     if (viewer == null || !viewer.isOnline()) {
-      drawInfoPanel("Viewer unavailable");
+      drawInfoPanel(ReactLanguage.raw(RendererMessages.PIE_VIEWER_UNAVAILABLE));
       return;
     }
 
     Map<String, Long> raw = collectBuckets(viewer);
     List<Slice> slices = normalize(raw);
     if (slices.isEmpty()) {
-      drawInfoPanel("No data");
+      drawInfoPanel(ReactLanguage.raw(RendererMessages.PIE_NO_DATA));
       return;
     }
 
@@ -80,15 +90,28 @@ abstract class FeatureIrisChunkSharePieBase extends ReactFeature implements List
     long total = total(slices);
     drawPie(centerX, centerY, 27, 11, slices, total);
     drawLegend(62, 16, slices);
-    text(4, 116, "Total: " + compact(total) + " " + totalUnitLabel(), TEXT_DIM);
+    text(
+        4,
+        116,
+        ReactLanguage.raw(
+            RendererMessages.PIE_TOTAL,
+            MessageArgument.untrusted("total", compact(total)),
+            MessageArgument.untrusted("unit", totalUnitLabel())
+        ),
+        TEXT_DIM
+    );
   }
 
-  protected abstract String title();
+  protected abstract TextKey title();
 
   protected abstract Map<String, Long> collectBuckets(Player viewer);
 
   protected String totalUnitLabel() {
-    return "chunks";
+    return ReactLanguage.raw(totalUnit());
+  }
+
+  protected TextKey totalUnit() {
+    return RendererMessages.PIE_UNIT_CHUNKS;
   }
 
   protected TinyColor headerColor() {
@@ -132,7 +155,7 @@ abstract class FeatureIrisChunkSharePieBase extends ReactFeature implements List
 
   protected String displayName(String value) {
     if (value == null || value.isBlank()) {
-      return "Unknown";
+      return ReactLanguage.raw(RendererMessages.PIE_UNKNOWN);
     }
 
     String spaced = value.replace('_', ' ')
@@ -140,7 +163,7 @@ abstract class FeatureIrisChunkSharePieBase extends ReactFeature implements List
         .trim()
         .toLowerCase(Locale.ROOT);
     if (spaced.isBlank()) {
-      return "Unknown";
+      return ReactLanguage.raw(RendererMessages.PIE_UNKNOWN);
     }
 
     StringBuilder out = new StringBuilder(spaced.length());
@@ -184,7 +207,7 @@ abstract class FeatureIrisChunkSharePieBase extends ReactFeature implements List
 
   protected String labelForChunkBiome(Chunk chunk, int y) {
     if (chunk == null || chunk.getWorld() == null) {
-      return "Unknown";
+      return ReactLanguage.raw(RendererMessages.PIE_UNKNOWN);
     }
 
     World world = chunk.getWorld();
@@ -196,9 +219,9 @@ abstract class FeatureIrisChunkSharePieBase extends ReactFeature implements List
     }
 
     try {
-      return displayName(chunk.getBlock(8, y, 8).getBiome().name());
+      return displayName(chunk.getBlock(8, y, 8).getBiome().key().value());
     } catch (Throwable ignored) {
-      return "Unknown";
+      return ReactLanguage.raw(RendererMessages.PIE_UNKNOWN);
     }
   }
 
@@ -243,7 +266,7 @@ abstract class FeatureIrisChunkSharePieBase extends ReactFeature implements List
     }
 
     if (other > 0L) {
-      visible.add(new Bucket("Other", other));
+      visible.add(new Bucket(ReactLanguage.raw(RendererMessages.PIE_OTHER), other));
     }
 
     List<Slice> slices = new ArrayList<>();
@@ -368,7 +391,9 @@ abstract class FeatureIrisChunkSharePieBase extends ReactFeature implements List
   }
 
   private String trimLabel(String label, int max) {
-    String safe = label == null || label.isBlank() ? "Unknown" : label.trim();
+    String safe = label == null || label.isBlank()
+        ? ReactLanguage.raw(RendererMessages.PIE_UNKNOWN)
+        : label.trim();
     int limit = Math.max(4, max);
     if (safe.length() <= limit) {
       return safe;
@@ -377,7 +402,9 @@ abstract class FeatureIrisChunkSharePieBase extends ReactFeature implements List
   }
 
   private String trimToWidth(String value, int maxWidth) {
-    String safe = value == null || value.isBlank() ? "Unknown" : value.trim();
+    String safe = value == null || value.isBlank()
+        ? ReactLanguage.raw(RendererMessages.PIE_UNKNOWN)
+        : value.trim();
     int limit = Math.max(8, maxWidth);
     if (textWidth(safe) <= limit) {
       return safe;

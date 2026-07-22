@@ -23,8 +23,11 @@ import art.arcane.react.React;
 import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.api.rendering.ReactRenderer;
 import art.arcane.react.core.controller.MapController;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.RendererMessages;
 import art.arcane.react.util.data.TinyColor;
 import art.arcane.volmlib.util.format.Form;
+import art.arcane.volmlib.util.localization.MessageArgument;
 
 import java.util.List;
 
@@ -46,13 +49,18 @@ public class FeaturePluginEventImpactListMap extends ReactFeature implements Rea
   public void render() {
     boolean frameAnchored = isFrameAnchored();
     drawBackdrop();
-    dashHeader("Plugin Impact", frameAnchored ? "FRAME" : null, ACCENT, FRAME_VALUE);
+    dashHeader(
+        ReactLanguage.raw(RendererMessages.TITLE_PLUGIN_IMPACT),
+        frameAnchored ? ReactLanguage.raw(RendererMessages.STATUS_FRAME) : null,
+        ACCENT,
+        FRAME_VALUE
+    );
 
     PluginEventImpactSeries.Snapshot snapshot = PluginEventImpactSeries.snapshot();
     List<PluginEventImpactSeries.Entry> entries = snapshot.entries();
     if (entries.isEmpty()) {
-      text(4, 20, "No plugin event impact data", TEXT_BRIGHT);
-      text(4, 30, "Open this map for a few seconds", TEXT_DIM);
+      text(4, 20, ReactLanguage.raw(RendererMessages.PLUGIN_NO_IMPACT), TEXT_BRIGHT);
+      text(4, 30, ReactLanguage.raw(RendererMessages.PLUGIN_WAIT_FOR_DATA), TEXT_DIM);
       return;
     }
 
@@ -118,7 +126,11 @@ public class FeaturePluginEventImpactListMap extends ReactFeature implements Rea
       set(barX, barY, fill, 4, rankColor(rank, normalized));
     }
 
-    String line = Form.f(percent, 1) + "%  " + compact(entry.impact()) + " ms";
+    String line = ReactLanguage.raw(
+        RendererMessages.PLUGIN_IMPACT_VALUE,
+        MessageArgument.untrusted("percent", Form.f(percent, 1)),
+        MessageArgument.untrusted("impact", compact(entry.impact()))
+    );
     text(4, y + 8, line, TEXT_DIM);
   }
 
@@ -161,7 +173,7 @@ public class FeaturePluginEventImpactListMap extends ReactFeature implements Rea
 
   private String trimToWidth(String value, int maxWidth) {
     if (value == null || value.isBlank()) {
-      return "Unknown";
+      return ReactLanguage.raw(RendererMessages.PIE_UNKNOWN);
     }
 
     String safe = value.trim();

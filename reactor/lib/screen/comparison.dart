@@ -6,6 +6,7 @@ import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart' show Component;
 
 import '../chart/timeseries_chart.dart';
+import '../localization/reactor_localizations.dart';
 import '../model/sampler_sample.dart';
 import '../state/fleet_live_scope.dart';
 import '../state/fleet_rollup.dart';
@@ -64,9 +65,11 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
         .toList();
 
     final List<_ServerMetricEntry> activeEntries = servers
-        .where((FleetServerLive s) =>
-            selectedIds.contains(s.id) &&
-            s.snapshot?.sampler(_selectedMetric) != null)
+        .where(
+          (FleetServerLive s) =>
+              selectedIds.contains(s.id) &&
+              s.snapshot?.sampler(_selectedMetric) != null,
+        )
         .map((FleetServerLive s) {
           final SamplerSample sample = s.snapshot!.sampler(_selectedMetric)!;
           return (
@@ -81,9 +84,10 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
         .toList();
 
     final List<_ServerMetricEntry> leaderboard =
-        List<_ServerMetricEntry>.from(activeEntries)
-          ..sort((_ServerMetricEntry a, _ServerMetricEntry b) =>
-              b.value.compareTo(a.value));
+        List<_ServerMetricEntry>.from(activeEntries)..sort(
+          (_ServerMetricEntry a, _ServerMetricEntry b) =>
+              b.value.compareTo(a.value),
+        );
 
     final List<(String, List<double>)> chartSeries = activeEntries
         .map((_ServerMetricEntry e) => (e.name, e.history))
@@ -92,22 +96,22 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
     final bool isEmpty = activeEntries.isEmpty;
 
     return ReactorPage(
-      title: 'Comparison',
-      subtitle: 'Cross-server metric comparison',
+      title: reactorText(ReactorText.comparisonTitle),
+      subtitle: reactorText(ReactorText.comparisonSubtitle),
       actions: _metricFilter(availableMetrics),
       children: <Widget>[
         _serversCard(servers: servers, selectedIds: selectedIds),
         sectionCard(
-          label: 'Overlay',
+          label: reactorText(ReactorText.comparisonOverlay),
           child: isEmpty
-              ? _emptyState('No data for selected metric')
+              ? _emptyState(reactorText(ReactorText.comparisonNoData))
               : TimeseriesChart(series: chartSeries, height: 220),
         ),
         sectionCard(
-          label: 'Leaderboard',
+          label: reactorText(ReactorText.comparisonLeaderboard),
           flush: true,
           child: isEmpty
-              ? _emptyState('No data for selected metric')
+              ? _emptyState(reactorText(ReactorText.comparisonNoData))
               : _leaderboardTable(leaderboard),
         ),
       ],
@@ -116,13 +120,15 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
 
   Widget _metricFilter(List<String> availableMetrics) {
     return dom.div(
-      styles: const dom.Styles(raw: <String, String>{
-        'display': 'flex',
-        'align-items': 'center',
-        'gap': '0.6rem',
-      }),
+      styles: const dom.Styles(
+        raw: <String, String>{
+          'display': 'flex',
+          'align-items': 'center',
+          'gap': '0.6rem',
+        },
+      ),
       <Widget>[
-        reactorEyebrow('Metric'),
+        reactorEyebrow(reactorText(ReactorText.comparisonMetric)),
         ArcaneNativeSelect(
           options: availableMetrics
               .map((String m) => ArcaneSelectOption(label: m, value: m))
@@ -139,13 +145,15 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
     required Set<String> selectedIds,
   }) {
     return sectionCard(
-      label: 'Servers',
+      label: reactorText(ReactorText.comparisonServers),
       child: dom.div(
-        styles: const dom.Styles(raw: <String, String>{
-          'display': 'flex',
-          'flex-wrap': 'wrap',
-          'gap': '0.75rem',
-        }),
+        styles: const dom.Styles(
+          raw: <String, String>{
+            'display': 'flex',
+            'flex-wrap': 'wrap',
+            'gap': '0.75rem',
+          },
+        ),
         <Widget>[
           for (final FleetServerLive srv in servers)
             ArcaneCheckbox(
@@ -170,10 +178,9 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
 
   Widget _leaderboardTable(List<_ServerMetricEntry> ranked) {
     return dom.div(
-      styles: const dom.Styles(raw: <String, String>{
-        'display': 'flex',
-        'flex-direction': 'column',
-      }),
+      styles: const dom.Styles(
+        raw: <String, String>{'display': 'flex', 'flex-direction': 'column'},
+      ),
       <Widget>[
         for (int i = 0; i < ranked.length; i++)
           _leaderboardRow(rank: i + 1, entry: ranked[i]),
@@ -186,35 +193,40 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
     required _ServerMetricEntry entry,
   }) {
     return dom.div(
-      styles: const dom.Styles(raw: <String, String>{
-        'display': 'flex',
-        'align-items': 'center',
-        'gap': '1rem',
-        'padding': '0.65rem 1.15rem',
-        'border-bottom': '1px solid var(--border)',
-      }),
+      styles: const dom.Styles(
+        raw: <String, String>{
+          'display': 'flex',
+          'align-items': 'center',
+          'gap': '1rem',
+          'padding': '0.65rem 1.15rem',
+          'border-bottom': '1px solid var(--border)',
+        },
+      ),
       <Widget>[
         dom.div(
-          styles: const dom.Styles(raw: <String, String>{
-            'min-width': '2rem',
-            'font-size': '0.75rem',
-            'color': 'var(--muted-foreground)',
-            'font-weight': '600',
-          }),
+          styles: const dom.Styles(
+            raw: <String, String>{
+              'min-width': '2rem',
+              'font-size': '0.75rem',
+              'color': 'var(--muted-foreground)',
+              'font-weight': '600',
+            },
+          ),
           <Widget>[Component.text('#$rank')],
         ),
         dom.div(
-          styles: const dom.Styles(raw: <String, String>{
-            'flex': '1',
-            'font-size': '0.875rem',
-          }),
+          styles: const dom.Styles(
+            raw: <String, String>{'flex': '1', 'font-size': '0.875rem'},
+          ),
           <Widget>[Component.text(entry.name)],
         ),
         dom.div(
-          styles: const dom.Styles(raw: <String, String>{
-            'font-size': '0.875rem',
-            'font-weight': '500',
-          }),
+          styles: const dom.Styles(
+            raw: <String, String>{
+              'font-size': '0.875rem',
+              'font-weight': '500',
+            },
+          ),
           <Widget>[
             Component.text(
               entry.suffix.isEmpty
@@ -229,12 +241,14 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
 
   Widget _emptyState(String message) {
     return dom.div(
-      styles: const dom.Styles(raw: <String, String>{
-        'padding': '2rem',
-        'text-align': 'center',
-        'color': 'var(--muted-foreground)',
-        'font-size': '0.875rem',
-      }),
+      styles: const dom.Styles(
+        raw: <String, String>{
+          'padding': '2rem',
+          'text-align': 'center',
+          'color': 'var(--muted-foreground)',
+          'font-size': '0.875rem',
+        },
+      ),
       <Widget>[Component.text(message)],
     );
   }

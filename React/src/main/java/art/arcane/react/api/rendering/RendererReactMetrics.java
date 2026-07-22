@@ -21,9 +21,17 @@ package art.arcane.react.api.rendering;
 
 import art.arcane.react.React;
 import art.arcane.react.api.sampler.Sampler;
-import art.arcane.react.content.sampler.*;
+import art.arcane.react.content.sampler.SamplerIncidentScore;
+import art.arcane.react.content.sampler.SamplerReactJobsQueue;
+import art.arcane.react.content.sampler.SamplerSchedulerBacklog;
+import art.arcane.react.content.sampler.SamplerTickTime;
+import art.arcane.react.content.sampler.SamplerTicksPerSecond;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.RendererMessages;
 import art.arcane.react.util.data.TinyColor;
 import art.arcane.volmlib.util.format.Form;
+import art.arcane.volmlib.util.localization.MessageArgument;
+import art.arcane.volmlib.util.localization.TextKey;
 
 import java.util.List;
 
@@ -31,11 +39,11 @@ public class RendererReactMetrics implements ReactRenderer {
   public static final String ID = "react-metrics";
 
   private static final List<MetricLine> METRICS = List.of(
-      new MetricLine(SamplerTicksPerSecond.ID, "TPS", 1, "", 20D),
-      new MetricLine(SamplerTickTime.ID, "Tick", 1, " ms", 80D),
-      new MetricLine(SamplerIncidentScore.ID, "Incident", 1, "", 100D),
-      new MetricLine(SamplerReactJobsQueue.ID, "Jobs", 0, "", 300D),
-      new MetricLine(SamplerSchedulerBacklog.ID, "Backlog", 0, "", 300D)
+      new MetricLine(SamplerTicksPerSecond.ID, RendererMessages.METRIC_TPS, 1, "", 20D),
+      new MetricLine(SamplerTickTime.ID, RendererMessages.METRIC_TICK, 1, " ms", 80D),
+      new MetricLine(SamplerIncidentScore.ID, RendererMessages.METRIC_INCIDENT, 1, "", 100D),
+      new MetricLine(SamplerReactJobsQueue.ID, RendererMessages.METRIC_JOBS, 0, "", 300D),
+      new MetricLine(SamplerSchedulerBacklog.ID, RendererMessages.METRIC_BACKLOG, 0, "", 300D)
   );
 
   @Override
@@ -54,10 +62,16 @@ public class RendererReactMetrics implements ReactRenderer {
     int h = height();
     int s = uiScale();
     clear(new TinyColor(12, 16, 24));
-    dashHeader("React Metrics", null, new TinyColor(96, 148, 222));
+    dashHeader(ReactLanguage.raw(RendererMessages.TITLE_REACT_METRICS), null, new TinyColor(96, 148, 222));
 
     set(2 * s, 15 * s, w - (4 * s), 9 * s, new TinyColor(52, 134, 96));
-    text(4 * s, 16 * s, "Status: LOCAL", TEXT_BRIGHT);
+    String status = ReactLanguage.raw(RendererMessages.STATUS_LOCAL);
+    text(
+        4 * s,
+        16 * s,
+        ReactLanguage.raw(RendererMessages.STATUS_LINE, MessageArgument.untrusted("status", status)),
+        TEXT_BRIGHT
+    );
 
     int y = 28 * s;
     int cutoffY = h - (12 * s);
@@ -72,7 +86,7 @@ public class RendererReactMetrics implements ReactRenderer {
 
   private void drawMetricRow(MetricLine metric, int y, int w, int s) {
     Double sampled = sample(metric.samplerId());
-    String line = metric.label() + ": " + formatSample(metric, sampled);
+    String line = RendererMessages.metricLine(metric.labelKey(), formatSample(metric, sampled));
     text(4 * s, y, fitText(line, w - (10 * s)), TEXT_BRIGHT);
 
     int barWidth = w - (10 * s);
@@ -94,7 +108,7 @@ public class RendererReactMetrics implements ReactRenderer {
 
   private String formatSample(MetricLine metric, Double sampled) {
     if (sampled == null) {
-      return "n/a";
+      return ReactLanguage.raw(RendererMessages.VALUE_NOT_AVAILABLE);
     }
     return Form.f(sampled, Math.max(0, metric.decimals())) + metric.unitSuffix();
   }
@@ -120,7 +134,7 @@ public class RendererReactMetrics implements ReactRenderer {
     return new TinyColor(gradientRgb(normalized, low, high));
   }
 
-  private record MetricLine(String samplerId, String label, int decimals,
+  private record MetricLine(String samplerId, TextKey labelKey, int decimals,
                             String unitSuffix, double maxValue) {
   }
 }

@@ -1,8 +1,11 @@
 package art.arcane.react.api.test;
 
 import art.arcane.react.React;
-import art.arcane.react.util.format.C;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.TestMessages;
 import art.arcane.react.util.plugin.VolmitSender;
+import art.arcane.volmlib.util.localization.MessageArgument;
+import art.arcane.volmlib.util.localization.TextKey;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -76,17 +79,23 @@ public class ReactTestRunner {
     List<TestCheck> checks = report.checks();
     for (int i = fromIndex; i < checks.size(); i++) {
       TestCheck check = checks.get(i);
-      out.sendMessage("  " + tag(check.status()) + C.WHITE + check.subsystem() + "/" + check.name() + C.GRAY + " — " + check.detail());
+      ReactLanguage.send(
+          out,
+          resultKey(check.status()),
+          MessageArgument.untrusted("subsystem", TestMessages.subsystemLabel(check.subsystem())),
+          MessageArgument.untrusted("name", TestMessages.nameLabel(check.name())),
+          MessageArgument.untrusted("detail", check.detail())
+      );
     }
   }
 
-  private String tag(TestStatus status) {
+  private TextKey resultKey(TestStatus status) {
     return switch (status) {
-      case PASS -> C.GREEN + "[PASS] ";
-      case FAIL -> C.RED + "[FAIL] ";
-      case WARN -> C.YELLOW + "[WARN] ";
-      case SKIP -> C.YELLOW + "[SKIP] ";
-      case INFO -> C.GRAY + "[INFO] ";
+      case PASS -> TestMessages.RESULT_PASS;
+      case FAIL -> TestMessages.RESULT_FAIL;
+      case WARN -> TestMessages.RESULT_WARN;
+      case SKIP -> TestMessages.RESULT_SKIP;
+      case INFO -> TestMessages.RESULT_INFO;
     };
   }
 }

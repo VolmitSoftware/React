@@ -9,6 +9,7 @@ import 'package:jaspr/jaspr.dart' show Component, EventCallback, kIsWeb;
 import 'package:jaspr_router/jaspr_router.dart';
 
 import '../model/server_credential.dart';
+import '../localization/reactor_localizations.dart';
 import '../model/server_snapshot.dart';
 import '../screen/actions.dart';
 import '../screen/add_server.dart';
@@ -257,8 +258,8 @@ Widget _buildAddServer(BuildContext context) {
   final FleetController? fleet = FleetScope.of(context);
   if (fleet == null) {
     return ArcaneEmptyState.noData(
-      title: 'Fleet unavailable',
-      description: 'The server fleet has not been initialized yet.',
+      title: reactorText(ReactorText.shellFleetUnavailable),
+      description: reactorText(ReactorText.shellFleetUnavailableDescription),
     );
   }
   return AddServerScreen(fleetManager: fleet.fleetManager);
@@ -270,9 +271,8 @@ Widget _buildServerPage(BuildContext context, RouteState state, Widget screen) {
   final ConnectionManager? manager = id == null ? null : fleet?.managerFor(id);
   if (manager == null) {
     return ArcaneEmptyState.noData(
-      title: 'Server not connected',
-      description:
-          'This server is not part of the live fleet. Pair it from the sidebar.',
+      title: reactorText(ReactorText.shellServerNotConnected),
+      description: reactorText(ReactorText.shellServerNotConnectedDescription),
     );
   }
   return RoleObserver(
@@ -313,8 +313,8 @@ class ReactorApp extends StatelessWidget {
         ReactorFleetObserver(fleetManager: fleetManager),
         const ArcaneSonner(),
       ]),
-      title: 'Reactor',
-      description: 'React plugin monitoring dashboard',
+      title: reactorText(ReactorText.appTitle),
+      description: reactorText(ReactorText.appDescription),
     );
   }
 }
@@ -1512,7 +1512,7 @@ const String kReactorNavCss = '''
 ''';
 
 class _NavEntry {
-  final String label;
+  final ReactorText label;
   final String route;
   final Widget Function({IconSize size}) icon;
 
@@ -1547,27 +1547,35 @@ class _NavItem extends StatelessWidget {
 }
 
 final List<_NavEntry> _kServerNav = <_NavEntry>[
-  _NavEntry('Overview', 'overview', ArcaneIcon.gauge),
-  _NavEntry('Performance', 'performance', ArcaneIcon.activity),
-  _NavEntry('Memory', 'memory', ArcaneIcon.memoryStick),
-  _NavEntry('Entities', 'entities', ArcaneIcon.boxes),
-  _NavEntry('Chunks', 'chunks', ArcaneIcon.grid3x3),
-  _NavEntry('Mechanics', 'mechanics', ArcaneIcon.cog),
-  _NavEntry('Events', 'events', ArcaneIcon.zap),
-  _NavEntry('Internals', 'internals', ArcaneIcon.cpu),
-  _NavEntry('Incidents', 'incidents', ArcaneIcon.triangleAlert),
-  _NavEntry('Worlds', 'worlds', ArcaneIcon.globe),
-  _NavEntry('World Overrides', 'world-overrides', ArcaneIcon.settings2),
-  _NavEntry('Integrations', 'integrations', ArcaneIcon.plug),
-  _NavEntry('Heatmaps', 'heatmaps', ArcaneIcon.thermometer),
-  _NavEntry('Optimization', 'optimization', ArcaneIcon.rocket),
-  _NavEntry('Tweaks', 'tweaks', ArcaneIcon.slidersHorizontal),
-  _NavEntry('Governors', 'governors', ArcaneIcon.signal),
-  _NavEntry('Actions', 'actions', ArcaneIcon.play),
-  _NavEntry('Incident Center', 'incident-center', ArcaneIcon.siren),
-  _NavEntry('Environment', 'environment', ArcaneIcon.serverCog),
-  _NavEntry('Config Editor', 'config', ArcaneIcon.braces),
-  _NavEntry('Logs', 'logs', ArcaneIcon.scrollText),
+  _NavEntry(ReactorText.overviewTitle, 'overview', ArcaneIcon.gauge),
+  _NavEntry(ReactorText.performanceTitle, 'performance', ArcaneIcon.activity),
+  _NavEntry(ReactorText.memoryTitle, 'memory', ArcaneIcon.memoryStick),
+  _NavEntry(ReactorText.entitiesTitle, 'entities', ArcaneIcon.boxes),
+  _NavEntry(ReactorText.chunksTitle, 'chunks', ArcaneIcon.grid3x3),
+  _NavEntry(ReactorText.mechanicsTitle, 'mechanics', ArcaneIcon.cog),
+  _NavEntry(ReactorText.eventsTitle, 'events', ArcaneIcon.zap),
+  _NavEntry(ReactorText.internalsTitle, 'internals', ArcaneIcon.cpu),
+  _NavEntry(ReactorText.incidentsTitle, 'incidents', ArcaneIcon.triangleAlert),
+  _NavEntry(ReactorText.worldsTitle, 'worlds', ArcaneIcon.globe),
+  _NavEntry(
+    ReactorText.worldOverridesTitle,
+    'world-overrides',
+    ArcaneIcon.settings2,
+  ),
+  _NavEntry(ReactorText.integrationsTitle, 'integrations', ArcaneIcon.plug),
+  _NavEntry(ReactorText.heatmapsTitle, 'heatmaps', ArcaneIcon.thermometer),
+  _NavEntry(ReactorText.optimizationTitle, 'optimization', ArcaneIcon.rocket),
+  _NavEntry(ReactorText.tweaksTitle, 'tweaks', ArcaneIcon.slidersHorizontal),
+  _NavEntry(ReactorText.governorsTitle, 'governors', ArcaneIcon.signal),
+  _NavEntry(ReactorText.actionsTitle, 'actions', ArcaneIcon.play),
+  _NavEntry(
+    ReactorText.incidentCenterTitle,
+    'incident-center',
+    ArcaneIcon.siren,
+  ),
+  _NavEntry(ReactorText.environmentTitle, 'environment', ArcaneIcon.serverCog),
+  _NavEntry(ReactorText.configEditorTitle, 'config', ArcaneIcon.braces),
+  _NavEntry(ReactorText.logsTitle, 'logs', ArcaneIcon.scrollText),
 ];
 
 class ReactorShell extends StatelessWidget {
@@ -1640,12 +1648,39 @@ class ReactorShell extends StatelessWidget {
 
   Widget _fleetGroup(BuildContext context) {
     return dom.div(classes: 'reactor-nav', <Widget>[
-      dom.div(classes: 'reactor-nav-label', <Widget>[Component.text('Fleet')]),
-      _navItem(context, 'Overview', kRouteRoot, ArcaneIcon.layoutDashboard),
-      _navItem(context, 'Add Server', kRouteAddServer, ArcaneIcon.circlePlus),
-      _navItem(context, 'Alerts', kRouteAlerts, ArcaneIcon.bell),
-      _navItem(context, 'Comparison', kRouteComparison, ArcaneIcon.gitCompare),
-      _navItem(context, 'Settings', kRouteSettings, ArcaneIcon.settings),
+      dom.div(classes: 'reactor-nav-label', <Widget>[
+        Component.text(reactorText(ReactorText.fleetTitle)),
+      ]),
+      _navItem(
+        context,
+        reactorText(ReactorText.overviewTitle),
+        kRouteRoot,
+        ArcaneIcon.layoutDashboard,
+      ),
+      _navItem(
+        context,
+        reactorText(ReactorText.addServerTitle),
+        kRouteAddServer,
+        ArcaneIcon.circlePlus,
+      ),
+      _navItem(
+        context,
+        reactorText(ReactorText.alertsTitle),
+        kRouteAlerts,
+        ArcaneIcon.bell,
+      ),
+      _navItem(
+        context,
+        reactorText(ReactorText.comparisonTitle),
+        kRouteComparison,
+        ArcaneIcon.gitCompare,
+      ),
+      _navItem(
+        context,
+        reactorText(ReactorText.settingsTitle),
+        kRouteSettings,
+        ArcaneIcon.settings,
+      ),
     ]);
   }
 
@@ -1684,10 +1719,16 @@ class ReactorShell extends StatelessWidget {
 
   Widget _serverList(BuildContext context) {
     final String route = _serverRouteFromPath();
-    final String label = servers.length == 1 ? 'Server' : 'Servers';
     return dom.div(classes: 'reactor-server-list', <Widget>[
       dom.div(classes: 'reactor-server-list-label', <Widget>[
-        Component.text('$label (${servers.length})'),
+        Component.text(
+          reactorText(
+            servers.length == 1
+                ? ReactorText.shellServerCount
+                : ReactorText.shellServersCount,
+            <String, Object?>{'count': servers.length},
+          ),
+        ),
       ]),
       dom.div(classes: 'reactor-server-list-scroll', <Widget>[
         for (final ServerEntry server in servers)
@@ -1733,15 +1774,20 @@ class ReactorShell extends StatelessWidget {
   Widget _brandHeader() {
     final ReactorStatus status = _fleetStatus;
     final String statusLabel = switch (status) {
-      ReactorStatus.healthy => 'Healthy',
-      ReactorStatus.warning => 'Warn',
-      ReactorStatus.critical => 'Critical',
-      ReactorStatus.info => 'Syncing',
-      ReactorStatus.neutral => 'Standby',
+      ReactorStatus.healthy => reactorText(ReactorText.commonHealthy),
+      ReactorStatus.warning => reactorText(ReactorText.shellWarn),
+      ReactorStatus.critical => reactorText(ReactorText.statusCritical),
+      ReactorStatus.info => reactorText(ReactorText.shellSyncing),
+      ReactorStatus.neutral => reactorText(ReactorText.shellStandby),
     };
     final String fleetValue = servers.isEmpty
-        ? '0 paired'
-        : '$_liveCount/${servers.length} live';
+        ? reactorText(ReactorText.shellPairedCount, <String, Object?>{
+            'count': 0,
+          })
+        : reactorText(ReactorText.shellLiveCount, <String, Object?>{
+            'live': _liveCount,
+            'total': servers.length,
+          });
     return dom.div(classes: 'reactor-brand', <Widget>[
       dom.div(classes: 'reactor-brand-mark', <Widget>[
         ArcaneIcon.activity(size: IconSize.sm),
@@ -1749,7 +1795,7 @@ class ReactorShell extends StatelessWidget {
       dom.div(classes: 'reactor-brand-body', <Widget>[
         dom.div(classes: 'reactor-brand-title-row', <Widget>[
           dom.span(classes: 'reactor-brand-title', <Widget>[
-            Component.text('Reactor'),
+            Component.text(reactorText(ReactorText.appTitle)),
           ]),
           dom.span(classes: 'reactor-brand-chip', <Widget>[
             reactorStatusDot(status, size: 6),
@@ -1757,12 +1803,12 @@ class ReactorShell extends StatelessWidget {
           ]),
         ]),
         dom.span(classes: 'reactor-brand-subtitle', <Widget>[
-          Component.text('Fleet Monitor'),
+          Component.text(reactorText(ReactorText.shellFleetMonitor)),
         ]),
       ]),
       dom.div(classes: 'reactor-brand-meta', <Widget>[
-        _brandStat('State', statusLabel),
-        _brandStat('Fleet', fleetValue),
+        _brandStat(reactorText(ReactorText.shellState), statusLabel),
+        _brandStat(reactorText(ReactorText.fleetTitle), fleetValue),
       ]),
     ]);
   }
@@ -1781,11 +1827,14 @@ class ReactorShell extends StatelessWidget {
   Widget _connectionFooter(BuildContext context) {
     final ReactorStatus status = _fleetStatus;
     final String summary = servers.isEmpty
-        ? 'No servers paired'
-        : '$_liveCount/${servers.length} servers live';
+        ? reactorText(ReactorText.fleetNoServersPaired)
+        : reactorText(ReactorText.shellServersLive, <String, Object?>{
+            'live': _liveCount,
+            'total': servers.length,
+          });
     final String subtitle = servers.isEmpty
-        ? 'Ready for pairing'
-        : 'Realtime telemetry';
+        ? reactorText(ReactorText.shellReadyForPairing)
+        : reactorText(ReactorText.shellRealtimeTelemetry);
     return dom.div(classes: 'reactor-sidebar-status', <Widget>[
       dom.div(classes: 'reactor-sidebar-status-top', <Widget>[
         dom.div(classes: 'reactor-sidebar-status-copy', <Widget>[
@@ -1807,7 +1856,9 @@ class ReactorShell extends StatelessWidget {
           },
           <Widget>[
             ArcaneIcon.circlePlus(size: IconSize.xs),
-            dom.span(<Widget>[Component.text('Pair Server')]),
+            dom.span(<Widget>[
+              Component.text(reactorText(ReactorText.shellPairServer)),
+            ]),
           ],
         ),
     ]);
@@ -1819,12 +1870,12 @@ class ReactorShell extends StatelessWidget {
       dom.div(classes: 'reactor-nav-section-header', <Widget>[
         StatusDot(state: server.state),
         dom.span(classes: 'reactor-nav-section-name', <Widget>[
-          Component.text('Workspace'),
+          Component.text(reactorText(ReactorText.shellWorkspace)),
         ]),
       ]),
       for (final _NavEntry e in _kServerNav)
         _NavItem(
-          label: e.label,
+          label: reactorText(e.label),
           icon: e.icon,
           active: currentPath == '/server/${server.id}/${e.route}',
           onTap: () => context.push('/server/${server.id}/${e.route}'),
@@ -1859,60 +1910,95 @@ class _FirstRunFleetView extends StatelessWidget {
             ArcaneIcon.activity(size: IconSize.lg),
           ]),
           dom.div(classes: 'reactor-empty-kicker', <Widget>[
-            Component.text('Fleet control plane'),
+            Component.text(reactorText(ReactorText.shellFleetControlPlane)),
           ]),
           dom.h1(classes: 'reactor-empty-title', <Widget>[
-            Component.text('No servers connected'),
+            Component.text(reactorText(ReactorText.shellNoServersConnected)),
           ]),
           dom.p(classes: 'reactor-empty-copy', <Widget>[
-            Component.text(
-              'Reactor is standing by for authenticated telemetry. Pair a React server to bring TPS, memory, entity pressure, alerts, and optimization controls into this console.',
-            ),
+            Component.text(reactorText(ReactorText.shellFirstRunDescription)),
           ]),
           dom.div(classes: 'reactor-empty-actions', <Widget>[
             Button(
-              label: 'Pair Server',
+              label: reactorText(ReactorText.shellPairServer),
               onPressed: () => context.push(kRouteAddServer),
             ),
             Button.secondary(
-              label: 'Fleet Settings',
+              label: reactorText(ReactorText.shellFleetSettings),
               onPressed: () => context.push(kRouteSettings),
             ),
           ]),
         ]),
         dom.div(classes: 'reactor-first-run-proof', <Widget>[
-          _proofCell('0', 'Paired servers'),
-          _proofCell('RCT1', 'Secure pairing'),
-          _proofCell('Live', 'Telemetry stream'),
+          _proofCell('0', reactorText(ReactorText.shellPairedServers)),
+          _proofCell('RCT1', reactorText(ReactorText.shellSecurePairing)),
+          _proofCell(
+            reactorText(ReactorText.statusLive),
+            reactorText(ReactorText.shellTelemetryStream),
+          ),
         ]),
       ]),
       dom.aside(classes: 'reactor-first-run-side', <Widget>[
         _sidePanel(
-          title: 'Signal Readiness',
-          trailing: reactorBadge('Waiting', ReactorStatus.info),
+          title: reactorText(ReactorText.shellSignalReadiness),
+          trailing: reactorBadge(
+            reactorText(ReactorText.shellWaiting),
+            ReactorStatus.info,
+          ),
           child: dom.div(classes: 'reactor-side-body', <Widget>[
-            _signalRow('TPS', '0%', 'standby'),
-            _signalRow('Memory', '0%', 'standby'),
-            _signalRow('Incidents', '0%', 'standby'),
-            _signalRow('Actions', '0%', 'locked'),
+            _signalRow(
+              reactorText(ReactorText.overviewTps),
+              '0%',
+              reactorText(ReactorText.shellStandbyLower),
+            ),
+            _signalRow(
+              reactorText(ReactorText.shellMemory),
+              '0%',
+              reactorText(ReactorText.shellStandbyLower),
+            ),
+            _signalRow(
+              reactorText(ReactorText.shellIncidents),
+              '0%',
+              reactorText(ReactorText.shellStandbyLower),
+            ),
+            _signalRow(
+              reactorText(ReactorText.shellActions),
+              '0%',
+              reactorText(ReactorText.shellLockedLower),
+            ),
           ]),
         ),
         _sidePanel(
-          title: 'Console Status',
-          trailing: reactorStatusDot(ReactorStatus.info, label: 'Standby'),
+          title: reactorText(ReactorText.shellConsoleStatus),
+          trailing: reactorStatusDot(
+            ReactorStatus.info,
+            label: reactorText(ReactorText.shellStandby),
+          ),
           child: dom.div(classes: 'reactor-side-body', <Widget>[
-            _commandLine('reactor://fleet waiting for first handshake'),
-            _commandLine('samplers idle until a server is paired'),
-            _commandLine('alerts queue armed for live telemetry'),
+            _commandLine(reactorText(ReactorText.shellConsoleWaiting)),
+            _commandLine(reactorText(ReactorText.shellSamplersIdle)),
+            _commandLine(reactorText(ReactorText.shellAlertsArmed)),
           ]),
         ),
         _sidePanel(
-          title: 'Connection Flow',
+          title: reactorText(ReactorText.shellConnectionFlow),
           child: dom.div(classes: 'reactor-side-body', <Widget>[
             dom.div(classes: 'reactor-step-list', <Widget>[
-              _step('01', 'Pair', 'Add the RCT1 server code.'),
-              _step('02', 'Verify', 'Confirm the authenticated handshake.'),
-              _step('03', 'Monitor', 'Open the live server workspace.'),
+              _step(
+                '01',
+                reactorText(ReactorText.shellPair),
+                reactorText(ReactorText.shellPairDescription),
+              ),
+              _step(
+                '02',
+                reactorText(ReactorText.shellVerify),
+                reactorText(ReactorText.shellVerifyDescription),
+              ),
+              _step(
+                '03',
+                reactorText(ReactorText.shellMonitor),
+                reactorText(ReactorText.shellMonitorDescription),
+              ),
             ]),
           ]),
         ),
@@ -1988,7 +2074,9 @@ class _OfflineBanner extends StatelessWidget {
         ? ReactorStatus.critical
         : ReactorStatus.warning;
     final String color = reactorStatusColor(status);
-    final String label = anyOffline ? 'Connection lost' : 'Connection degraded';
+    final String label = anyOffline
+        ? reactorText(ReactorText.shellConnectionLost)
+        : reactorText(ReactorText.shellConnectionDegraded);
     return dom.div(
       styles: dom.Styles(
         raw: <String, String>{
@@ -2026,7 +2114,7 @@ class _OfflineBanner extends StatelessWidget {
           ],
         ),
         Button.secondary(
-          label: 'Reconnect',
+          label: reactorText(ReactorText.shellReconnect),
           size: ButtonSize.small,
           fullWidth: true,
           onPressed: onReconnect,
@@ -2211,11 +2299,20 @@ class ReactorFleetObserverState extends State<ReactorFleetObserver>
 
   void _onTransition(String id, String name, ConnState next) {
     if (next == ConnState.offline) {
-      ArcaneSonner.error('Server offline', description: name);
+      ArcaneSonner.error(
+        reactorText(ReactorText.shellServerOffline),
+        description: name,
+      );
     } else if (next == ConnState.degraded) {
-      ArcaneSonner.warning('Connection degraded', description: name);
+      ArcaneSonner.warning(
+        reactorText(ReactorText.shellConnectionDegraded),
+        description: name,
+      );
     } else if (next == ConnState.live) {
-      ArcaneSonner.success('Server reconnected', description: name);
+      ArcaneSonner.success(
+        reactorText(ReactorText.shellServerReconnected),
+        description: name,
+      );
     }
     setState(() {
       final int idx = _servers.indexWhere((_ActiveServer s) => s.id == id);

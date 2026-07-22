@@ -22,27 +22,25 @@ package art.arcane.react.api.rendering;
 import org.bukkit.map.MapPalette;
 
 import java.awt.Color;
-import java.util.concurrent.atomic.AtomicLongArray;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 
 public final class MapColors {
   private static final int CACHE_SIZE = 4096;
-  private static final long PRESENT = 1L << 40;
-  private static final AtomicLongArray CACHE = new AtomicLongArray(CACHE_SIZE);
+  private static final AtomicReferenceArray<ColorEntry> CACHE = new AtomicReferenceArray<>(CACHE_SIZE);
 
   private MapColors() {
   }
 
-  @SuppressWarnings("deprecation")
-  public static byte byteFor(int rgb) {
+  public static Color colorFor(int rgb) {
     int key = rgb & 0xFFFFFF;
     int slot = mix(key) & (CACHE_SIZE - 1);
-    long entry = CACHE.get(slot);
-    if ((entry & PRESENT) != 0L && ((int) (entry >>> 8) & 0xFFFFFF) == key) {
-      return (byte) entry;
+    ColorEntry cached = CACHE.get(slot);
+    if (cached != null && cached.rgb() == key) {
+      return cached.color();
     }
 
-    byte matched = MapPalette.matchColor(new Color(key));
-    CACHE.set(slot, PRESENT | (((long) key) << 8) | (matched & 0xFFL));
+    Color matched = MapPalette.getNearestColor(new Color(key));
+    CACHE.set(slot, new ColorEntry(key, matched));
     return matched;
   }
 
@@ -57,5 +55,8 @@ public final class MapColors {
   private static int mix(int key) {
     int h = key * 0x9E3779B1;
     return (h ^ (h >>> 16)) & 0x7FFFFFFF;
+  }
+
+  private record ColorEntry(int rgb, Color color) {
   }
 }

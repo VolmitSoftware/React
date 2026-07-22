@@ -24,12 +24,22 @@ import art.arcane.react.api.action.Action;
 import art.arcane.react.api.feature.Feature;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.api.tweak.Tweak;
-import art.arcane.react.core.controller.*;
+import art.arcane.react.core.controller.ActionController;
+import art.arcane.react.core.controller.ConfigInputController;
+import art.arcane.react.core.controller.EntityController;
+import art.arcane.react.core.controller.FeatureController;
+import art.arcane.react.core.controller.HotloadController;
+import art.arcane.react.core.controller.PlayerController;
+import art.arcane.react.core.controller.SampleController;
+import art.arcane.react.core.controller.TweakController;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.GuiMessages;
 import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.format.C;
 import art.arcane.react.util.inventorygui.UIStaticDecorator;
 import art.arcane.react.util.plugin.IController;
+import art.arcane.react.util.project.config.ConfigFileSupport;
 import art.arcane.react.util.project.config.ConfigDocumentation;
 import art.arcane.react.util.project.config.TomlCodec;
 import art.arcane.react.util.project.registry.Registry;
@@ -37,7 +47,7 @@ import art.arcane.volmlib.util.data.MaterialBlock;
 import art.arcane.volmlib.util.inventorygui.UIElement;
 import art.arcane.volmlib.util.inventorygui.UIWindow;
 import art.arcane.volmlib.util.inventorygui.WindowResolution;
-import art.arcane.volmlib.util.io.IO;
+import art.arcane.volmlib.util.localization.MessageArgument;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -47,7 +57,15 @@ import java.io.File;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BooleanSupplier;
 
@@ -104,7 +122,7 @@ public final class ReactConfigGUI {
     }
 
     if (!canConfigure(player)) {
-      player.sendMessage(C.RED + "You do not have permission to use the config editor.");
+      ReactLanguage.send(player, GuiMessages.CONFIG_PERMISSION);
       return;
     }
 
@@ -169,7 +187,7 @@ public final class ReactConfigGUI {
 
     SectionTarget target = resolveSectionTarget(safePath, false);
     if (target == null || target.sectionObject() == null) {
-      player.sendMessage(C.RED + "Unable to open config section: " + C.WHITE + safePath);
+      ReactLanguage.send(player, GuiMessages.CONFIG_OPEN_FAILED, MessageArgument.untrusted("path", safePath));
       return;
     }
 
@@ -179,7 +197,7 @@ public final class ReactConfigGUI {
 
   public static ParseResult parseInputValue(Class<?> type, String raw) {
     if (type == null) {
-      return ParseResult.fail("Unknown target type.");
+      return ParseResult.fail(ReactLanguage.plain(GuiMessages.INPUT_UNKNOWN_TARGET_TYPE));
     }
 
     Class<?> normalized = normalizeType(type);
@@ -192,7 +210,7 @@ public final class ReactConfigGUI {
 
       if (normalized == Character.class) {
         if (trimmed.length() != 1) {
-          return ParseResult.fail("Expected exactly one character.");
+          return ParseResult.fail(ReactLanguage.plain(GuiMessages.INPUT_EXPECTED_CHARACTER));
         }
         return ParseResult.ok(trimmed.charAt(0));
       }
@@ -204,13 +222,16 @@ public final class ReactConfigGUI {
         if (trimmed.equalsIgnoreCase("false") || trimmed.equalsIgnoreCase("no") || trimmed.equalsIgnoreCase("off")) {
           return ParseResult.ok(false);
         }
-        return ParseResult.fail("Expected boolean value: true/false.");
+        return ParseResult.fail(ReactLanguage.plain(GuiMessages.INPUT_EXPECTED_BOOLEAN));
       }
 
       if (normalized.isEnum()) {
         Object constant = parseEnumConstant(normalized, trimmed);
         if (constant == null) {
-          return ParseResult.fail("Expected one of: " + enumConstants(normalized));
+          return ParseResult.fail(ReactLanguage.plain(
+              GuiMessages.INPUT_EXPECTED_ENUM,
+              MessageArgument.untrusted("options", enumConstants(normalized))
+          ));
         }
         return ParseResult.ok(constant);
       }
@@ -224,14 +245,14 @@ public final class ReactConfigGUI {
       if (normalized == Double.class) {
         double v = Double.parseDouble(trimmed);
         if (!Double.isFinite(v)) {
-          return ParseResult.fail("Expected a finite number.");
+          return ParseResult.fail(ReactLanguage.plain(GuiMessages.INPUT_EXPECTED_FINITE_NUMBER));
         }
         return ParseResult.ok(v);
       }
       if (normalized == Float.class) {
         float v = Float.parseFloat(trimmed);
         if (!Float.isFinite(v)) {
-          return ParseResult.fail("Expected a finite number.");
+          return ParseResult.fail(ReactLanguage.plain(GuiMessages.INPUT_EXPECTED_FINITE_NUMBER));
         }
         return ParseResult.ok(v);
       }
@@ -242,20 +263,26 @@ public final class ReactConfigGUI {
         return ParseResult.ok(Byte.parseByte(trimmed));
       }
     } catch (Throwable e) {
-      return ParseResult.fail("Invalid value for type " + typeName(type) + ".");
+      return ParseResult.fail(ReactLanguage.plain(
+          GuiMessages.INPUT_INVALID_TYPE,
+          MessageArgument.untrusted("type", typeName(type))
+      ));
     }
 
-    return ParseResult.fail("Unsupported type: " + typeName(type) + ".");
+    return ParseResult.fail(ReactLanguage.plain(
+        GuiMessages.INPUT_UNSUPPORTED_TYPE,
+        MessageArgument.untrusted("type", typeName(type))
+    ));
   }
 
   public static String typeName(Class<?> type) {
     if (type == null) {
-      return "unknown";
+      return ReactLanguage.plain(GuiMessages.INPUT_TYPE_UNKNOWN);
     }
 
     Class<?> normalized = normalizeType(type);
     if (normalized.isEnum()) {
-      return "enum";
+      return ReactLanguage.plain(GuiMessages.INPUT_TYPE_ENUM);
     }
     return normalized.getSimpleName().toLowerCase(Locale.ROOT);
   }
@@ -281,7 +308,7 @@ public final class ReactConfigGUI {
       EditTarget target = resolveEditTarget(path);
       if (target == null) {
         if (actor != null) {
-          actor.sendMessage(C.RED + "Failed to set config value at " + C.WHITE + path);
+          ReactLanguage.send(actor, GuiMessages.CONFIG_SET_FAILED, MessageArgument.untrusted("path", path));
         }
         return false;
       }
@@ -291,36 +318,41 @@ public final class ReactConfigGUI {
 
       if (!setPathValue(target.rootObject(), target.objectPath(), value, true)) {
         if (actor != null) {
-          actor.sendMessage(C.RED + "Failed to set config value at " + C.WHITE + path);
+          ReactLanguage.send(actor, GuiMessages.CONFIG_SET_FAILED, MessageArgument.untrusted("path", path));
         }
         return false;
       }
 
       try {
         String updatedToml = TomlCodec.toToml(target.rootObject(), target.sourceTag());
-        IO.writeAll(target.file(), updatedToml);
+        ConfigFileSupport.writeConfig(target.file(), updatedToml);
       } catch (Throwable e) {
-        J.attempt(() -> IO.writeAll(target.file(), beforeToml));
+        J.attempt(() -> ConfigFileSupport.writeConfig(target.file(), beforeToml));
         target.reload().getAsBoolean();
         if (actor != null) {
-          actor.sendMessage(C.RED + "Failed to persist config update: " + C.WHITE + e.getMessage());
+          ReactLanguage.send(actor, GuiMessages.CONFIG_PERSIST_FAILED, MessageArgument.untrusted("reason", String.valueOf(e.getMessage())));
         }
         return false;
       }
 
       if (!target.reload().getAsBoolean()) {
-        J.attempt(() -> IO.writeAll(target.file(), beforeToml));
+        J.attempt(() -> ConfigFileSupport.writeConfig(target.file(), beforeToml));
         target.reload().getAsBoolean();
         if (actor != null) {
-          actor.sendMessage(C.RED + "Config reload failed. Reverted file changes.");
+          ReactLanguage.send(actor, GuiMessages.CONFIG_RELOAD_REVERTED);
         }
         return false;
       }
 
       target.afterReload().run();
       if (actor != null) {
-        actor.sendMessage(C.GREEN + "Updated " + C.WHITE + path
-            + C.GRAY + " [" + summarizeValue(before) + C.GRAY + " -> " + summarizeValue(value) + C.GRAY + "]");
+        ReactLanguage.send(
+            actor,
+            GuiMessages.CONFIG_UPDATED,
+            MessageArgument.untrusted("path", path),
+            MessageArgument.untrusted("before", summarizeValue(before)),
+            MessageArgument.untrusted("after", summarizeValue(value))
+        );
       }
       return true;
     }
@@ -354,13 +386,51 @@ public final class ReactConfigGUI {
         : 0;
 
     List<SectionIndexEntry> entries = new ArrayList<>();
-    entries.add(new SectionIndexEntry(ROOT_MAIN, "Main Config", Material.COMPARATOR, ""));
-    entries.add(new SectionIndexEntry(ROOT_CORE, "Core Controllers (" + coreCount + ")", Material.REDSTONE, "", coreCount > 0));
-    entries.add(new SectionIndexEntry(ROOT_FEATURE, "Features (" + activeFeatureCount + "/" + featureCount + ")", Material.NETHER_STAR, "", activeFeatureCount > 0));
-    entries.add(new SectionIndexEntry(ROOT_TWEAK, "Tweaks (" + activeTweakCount + "/" + tweakCount + ")", Material.BLAZE_POWDER, "", activeTweakCount > 0));
-    entries.add(new SectionIndexEntry(ROOT_ACTION, "Actions (" + actionCount + ")", Material.ANVIL, "", actionCount > 0));
-    entries.add(new SectionIndexEntry(ROOT_SAMPLER, "Samplers (" + samplerCount + ")", Material.CLOCK, "", samplerCount > 0));
-    openSectionIndex(player, ROOT_ADVANCED, page, "Configure: advanced", entries);
+    entries.add(new SectionIndexEntry(ROOT_MAIN, ReactLanguage.plain(GuiMessages.CONFIG_MAIN), Material.COMPARATOR, ""));
+    entries.add(new SectionIndexEntry(
+        ROOT_CORE,
+        ReactLanguage.plain(GuiMessages.CONFIG_CORE_COUNT, MessageArgument.untrusted("count", coreCount)),
+        Material.REDSTONE,
+        "",
+        coreCount > 0
+    ));
+    entries.add(new SectionIndexEntry(
+        ROOT_FEATURE,
+        ReactLanguage.plain(
+            GuiMessages.CONFIG_FEATURE_COUNT,
+            MessageArgument.untrusted("active", activeFeatureCount),
+            MessageArgument.untrusted("total", featureCount)
+        ),
+        Material.NETHER_STAR,
+        "",
+        activeFeatureCount > 0
+    ));
+    entries.add(new SectionIndexEntry(
+        ROOT_TWEAK,
+        ReactLanguage.plain(
+            GuiMessages.CONFIG_TWEAK_COUNT,
+            MessageArgument.untrusted("active", activeTweakCount),
+            MessageArgument.untrusted("total", tweakCount)
+        ),
+        Material.BLAZE_POWDER,
+        "",
+        activeTweakCount > 0
+    ));
+    entries.add(new SectionIndexEntry(
+        ROOT_ACTION,
+        ReactLanguage.plain(GuiMessages.CONFIG_ACTION_COUNT, MessageArgument.untrusted("count", actionCount)),
+        Material.ANVIL,
+        "",
+        actionCount > 0
+    ));
+    entries.add(new SectionIndexEntry(
+        ROOT_SAMPLER,
+        ReactLanguage.plain(GuiMessages.CONFIG_SAMPLER_COUNT, MessageArgument.untrusted("count", samplerCount)),
+        Material.CLOCK,
+        "",
+        samplerCount > 0
+    ));
+    openSectionIndex(player, ROOT_ADVANCED, page, ReactLanguage.plain(GuiMessages.CONFIG_ADVANCED_TITLE), entries);
   }
 
   private static void openRoot(Player player, int page) {
@@ -384,7 +454,7 @@ public final class ReactConfigGUI {
       }
     }
 
-    UIWindow window = baseWindow(player, "Configure React", 6);
+    UIWindow window = baseWindow(player, ReactLanguage.plain(GuiMessages.CONFIG_TITLE), 6);
 
     List<ReactGuiTaxonomy.Category> categories = new ArrayList<>();
     for (ReactGuiTaxonomy.Category category : ReactGuiTaxonomy.topLevelCategories()) {
@@ -408,7 +478,11 @@ public final class ReactConfigGUI {
           .setMaterial(new MaterialBlock(category.icon()))
           .setName(C.WHITE + category.label());
       element.addLore(C.GRAY + category.description());
-      element.addLore(C.GREEN + String.valueOf(enabled) + C.GRAY + "/" + C.WHITE + total + C.GRAY + " on");
+      element.addLore(C.GREEN + ReactLanguage.plain(
+          GuiMessages.CONFIG_CATEGORY_ENABLED,
+          MessageArgument.untrusted("enabled", enabled),
+          MessageArgument.untrusted("total", total)
+      ));
       if (enabled > 0) {
         element.setEnchanted(true);
       }
@@ -419,54 +493,62 @@ public final class ReactConfigGUI {
     if (categoryRowCount == 0) {
       window.setElement(0, 0, new UIElement("cfg-empty")
           .setMaterial(new MaterialBlock(Material.PAPER))
-          .setName(C.GRAY + "No modules available"));
+          .setName(C.GRAY + ReactLanguage.plain(GuiMessages.CONFIG_NO_MODULES)));
     }
 
     int presetRow = Math.max(categoryRows, 3);
 
     UIElement off = new UIElement("cfg-preset-off")
         .setMaterial(new MaterialBlock(Material.GRAY_DYE))
-        .setName(C.AQUA + "Profile: Off");
-    off.addLore(C.GRAY + "Disable all managed load-management modules.");
+        .setName(C.AQUA + ReactLanguage.plain(
+            GuiMessages.CONFIG_PROFILE_TITLE,
+            MessageArgument.untrusted("profile", ReactLanguage.plain(GuiMessages.CONFIG_PROFILE_OFF))
+        ));
+    off.addLore(C.GRAY + ReactLanguage.plain(GuiMessages.CONFIG_PROFILE_OFF_DESCRIPTION));
     off.onLeftClick((e) -> applyPreset(player, "off"));
     window.setElement(-3, presetRow, off);
 
     UIElement light = new UIElement("cfg-preset-light")
         .setMaterial(new MaterialBlock(Material.LIME_DYE))
-        .setName(C.AQUA + "Profile: Light");
-    light.addLore(C.GRAY + "Gentle load management with relaxed");
-    light.addLore(C.GRAY + "view-distance aggression.");
+        .setName(C.AQUA + ReactLanguage.plain(
+            GuiMessages.CONFIG_PROFILE_TITLE,
+            MessageArgument.untrusted("profile", ReactLanguage.plain(GuiMessages.CONFIG_PROFILE_LIGHT))
+        ));
+    light.addLore(C.GRAY + ReactLanguage.plain(GuiMessages.CONFIG_PROFILE_LIGHT_DESCRIPTION));
     light.onLeftClick((e) -> applyPreset(player, "light"));
     window.setElement(-1, presetRow, light);
 
     UIElement balanced = new UIElement("cfg-preset-balanced")
         .setMaterial(new MaterialBlock(Material.GOLD_INGOT))
-        .setName(C.AQUA + "Profile: Balanced");
-    balanced.addLore(C.GRAY + "Recommended load management with");
-    balanced.addLore(C.GRAY + "moderate view-distance aggression.");
+        .setName(C.AQUA + ReactLanguage.plain(
+            GuiMessages.CONFIG_PROFILE_TITLE,
+            MessageArgument.untrusted("profile", ReactLanguage.plain(GuiMessages.CONFIG_PROFILE_BALANCED))
+        ));
+    balanced.addLore(C.GRAY + ReactLanguage.plain(GuiMessages.CONFIG_PROFILE_BALANCED_DESCRIPTION));
     balanced.onLeftClick((e) -> applyPreset(player, "balanced"));
     window.setElement(1, presetRow, balanced);
 
     UIElement high = new UIElement("cfg-preset-high")
         .setMaterial(new MaterialBlock(Material.BLAZE_POWDER))
-        .setName(C.AQUA + "Profile: High");
-    high.addLore(C.GRAY + "Aggressive load management with");
-    high.addLore(C.GRAY + "tight view-distance aggression.");
+        .setName(C.AQUA + ReactLanguage.plain(
+            GuiMessages.CONFIG_PROFILE_TITLE,
+            MessageArgument.untrusted("profile", ReactLanguage.plain(GuiMessages.CONFIG_PROFILE_HIGH))
+        ));
+    high.addLore(C.GRAY + ReactLanguage.plain(GuiMessages.CONFIG_PROFILE_HIGH_DESCRIPTION));
     high.onLeftClick((e) -> applyPreset(player, "high"));
     window.setElement(3, presetRow, high);
 
     UIElement main = new UIElement("cfg-root-main")
         .setMaterial(new MaterialBlock(Material.COMPARATOR))
-        .setName(C.WHITE + "Main Config");
-    main.addLore(C.GRAY + "Edit the global React configuration.");
+        .setName(C.WHITE + ReactLanguage.plain(GuiMessages.CONFIG_MAIN));
+    main.addLore(C.GRAY + ReactLanguage.plain(GuiMessages.CONFIG_MAIN_DESCRIPTION));
     main.onLeftClick((e) -> navigateTo(player, ROOT_MAIN, 0));
     window.setElement(-1, 5, main);
 
     UIElement advanced = new UIElement("cfg-root-advanced")
         .setMaterial(new MaterialBlock(Material.COMMAND_BLOCK))
-        .setName(C.WHITE + "Advanced (all modules)");
-    advanced.addLore(C.GRAY + "Browse every core, feature, tweak,");
-    advanced.addLore(C.GRAY + "action and sampler module.");
+        .setName(C.WHITE + ReactLanguage.plain(GuiMessages.CONFIG_ADVANCED));
+    advanced.addLore(C.GRAY + ReactLanguage.plain(GuiMessages.CONFIG_ADVANCED_DESCRIPTION));
     advanced.onLeftClick((e) -> navigateTo(player, ROOT_ADVANCED, 0));
     window.setElement(1, 5, advanced);
 
@@ -505,7 +587,11 @@ public final class ReactConfigGUI {
             ROOT_FEATURE + "." + feature.getId(),
             C.stripColor(feature.getName()),
             ReactGuiTaxonomy.iconForId(feature.getId()),
-            (active ? "Active" : "Inactive") + " | feature/" + feature.getId() + ".toml",
+            ReactLanguage.plain(
+                GuiMessages.CONFIG_LORE_STATUS_PATH,
+                MessageArgument.untrusted("status", configurationStatus(active)),
+                MessageArgument.untrusted("path", "feature/" + feature.getId() + ".toml")
+            ),
             active,
             ROOT_FEATURE + "." + feature.getId() + ".enabled",
             feature.isEnabled()
@@ -525,7 +611,11 @@ public final class ReactConfigGUI {
             ROOT_TWEAK + "." + tweak.getId(),
             C.stripColor(tweak.getName()),
             ReactGuiTaxonomy.iconForId(tweak.getId()),
-            (active ? "Active" : "Inactive") + " | tweak/" + tweak.getId() + ".toml",
+            ReactLanguage.plain(
+                GuiMessages.CONFIG_LORE_STATUS_PATH,
+                MessageArgument.untrusted("status", configurationStatus(active)),
+                MessageArgument.untrusted("path", "tweak/" + tweak.getId() + ".toml")
+            ),
             active,
             ROOT_TWEAK + "." + tweak.getId() + ".enabled",
             tweak.isEnabled()
@@ -534,7 +624,13 @@ public final class ReactConfigGUI {
     }
 
     entries.sort(Comparator.comparing(e -> normalizeSortKey(e.displayName())));
-    openSectionIndex(player, ROOT_CATEGORY + "." + categoryKey, page, "Configure: " + label, entries);
+    openSectionIndex(
+        player,
+        ROOT_CATEGORY + "." + categoryKey,
+        page,
+        ReactLanguage.plain(GuiMessages.CONFIG_SECTION_TITLE, MessageArgument.untrusted("section", label)),
+        entries
+    );
   }
 
   public static int applyPresetHeadless(String preset) {
@@ -569,21 +665,25 @@ public final class ReactConfigGUI {
   private static void applyPreset(Player player, String preset) {
     int updated = applyPresetHeadless(preset);
     if (updated < 0) {
-      player.sendMessage(C.RED + "Unknown React profile: " + C.WHITE + preset);
+      ReactLanguage.send(player, GuiMessages.CONFIG_PROFILE_UNKNOWN, MessageArgument.untrusted("profile", String.valueOf(preset)));
       return;
     }
 
     String normalizedPreset = preset == null ? "" : preset.trim().toLowerCase(Locale.ROOT);
     String presetName = switch (normalizedPreset) {
-      case "off" -> "Off";
-      case "light" -> "Light";
-      case "balanced" -> "Balanced";
-      case "high" -> "High";
+      case "off" -> ReactLanguage.plain(GuiMessages.CONFIG_PROFILE_OFF);
+      case "light" -> ReactLanguage.plain(GuiMessages.CONFIG_PROFILE_LIGHT);
+      case "balanced" -> ReactLanguage.plain(GuiMessages.CONFIG_PROFILE_BALANCED);
+      case "high" -> ReactLanguage.plain(GuiMessages.CONFIG_PROFILE_HIGH);
       default -> throw new AssertionError("unreachable: applyPresetHeadless validated preset");
     };
 
-    player.sendMessage(C.GREEN + "Applied React profile: " + C.WHITE + presetName
-        + C.GRAY + " (" + updated + " modules updated)");
+    ReactLanguage.send(
+        player,
+        GuiMessages.CONFIG_PROFILE_APPLIED,
+        MessageArgument.untrusted("profile", presetName),
+        MessageArgument.untrusted("count", updated)
+    );
     openRoot(player, 0);
   }
 
@@ -700,7 +800,7 @@ public final class ReactConfigGUI {
   private static void openMain(Player player, int page) {
     SectionTarget target = resolveSectionTarget(ROOT_MAIN, false);
     if (target == null || target.sectionObject() == null) {
-      player.sendMessage(C.RED + "Main config is unavailable.");
+      ReactLanguage.send(player, GuiMessages.CONFIG_MAIN_UNAVAILABLE);
       return;
     }
     openFieldEntries(player, ROOT_MAIN, buildEntries(ROOT_MAIN, target.sectionObject(), target.sourceTag()), page);
@@ -717,13 +817,25 @@ public final class ReactConfigGUI {
             ROOT_CORE + "." + controller.getId(),
             displayName(controller.getName()),
             controller.getIcon(),
-            "Configure core/" + controller.getId() + ".toml"
+            ReactLanguage.plain(
+                GuiMessages.CONFIG_LORE_CONFIGURE_PATH,
+                MessageArgument.untrusted("path", "core/" + controller.getId() + ".toml")
+            )
         ));
       }
     }
 
     entries.sort(Comparator.comparing(e -> normalizeSortKey(e.displayName())));
-    openSectionIndex(player, ROOT_CORE, page, "Configure: core", entries);
+    openSectionIndex(
+        player,
+        ROOT_CORE,
+        page,
+        ReactLanguage.plain(
+            GuiMessages.CONFIG_SECTION_TITLE,
+            MessageArgument.untrusted("section", ReactLanguage.plain(GuiMessages.CONFIG_CORE))
+        ),
+        entries
+    );
   }
 
   private static void openFeatureIndex(Player player, int page) {
@@ -740,9 +852,12 @@ public final class ReactConfigGUI {
             ROOT_FEATURE + "." + feature.getId(),
             C.stripColor(feature.getName()),
             ReactGuiTaxonomy.iconForId(feature.getId()),
-            (active ? "Active" : "Inactive")
-                + " | Group: " + ReactGuiTaxonomy.groupLabel(feature.getId())
-                + " | feature/" + feature.getId() + ".toml",
+            ReactLanguage.plain(
+                GuiMessages.CONFIG_LORE_STATUS_GROUP_PATH,
+                MessageArgument.untrusted("status", configurationStatus(active)),
+                MessageArgument.untrusted("group", ReactGuiTaxonomy.groupLabel(feature.getId())),
+                MessageArgument.untrusted("path", "feature/" + feature.getId() + ".toml")
+            ),
             active,
             ROOT_FEATURE + "." + feature.getId() + ".enabled",
             feature.isEnabled()
@@ -751,7 +866,16 @@ public final class ReactConfigGUI {
     }
 
     entries.sort(groupedIndexComparator(ROOT_FEATURE));
-    openSectionIndex(player, ROOT_FEATURE, page, "Configure: features", entries);
+    openSectionIndex(
+        player,
+        ROOT_FEATURE,
+        page,
+        ReactLanguage.plain(
+            GuiMessages.CONFIG_SECTION_TITLE,
+            MessageArgument.untrusted("section", ReactLanguage.plain(GuiMessages.CONFIG_FEATURES))
+        ),
+        entries
+    );
   }
 
   private static void openTweakIndex(Player player, int page) {
@@ -768,9 +892,12 @@ public final class ReactConfigGUI {
             ROOT_TWEAK + "." + tweak.getId(),
             C.stripColor(tweak.getName()),
             ReactGuiTaxonomy.iconForId(tweak.getId()),
-            (active ? "Active" : "Inactive")
-                + " | Group: " + ReactGuiTaxonomy.groupLabel(tweak.getId())
-                + " | tweak/" + tweak.getId() + ".toml",
+            ReactLanguage.plain(
+                GuiMessages.CONFIG_LORE_STATUS_GROUP_PATH,
+                MessageArgument.untrusted("status", configurationStatus(active)),
+                MessageArgument.untrusted("group", ReactGuiTaxonomy.groupLabel(tweak.getId())),
+                MessageArgument.untrusted("path", "tweak/" + tweak.getId() + ".toml")
+            ),
             active,
             ROOT_TWEAK + "." + tweak.getId() + ".enabled",
             tweak.isEnabled()
@@ -779,7 +906,16 @@ public final class ReactConfigGUI {
     }
 
     entries.sort(groupedIndexComparator(ROOT_TWEAK));
-    openSectionIndex(player, ROOT_TWEAK, page, "Configure: tweaks", entries);
+    openSectionIndex(
+        player,
+        ROOT_TWEAK,
+        page,
+        ReactLanguage.plain(
+            GuiMessages.CONFIG_SECTION_TITLE,
+            MessageArgument.untrusted("section", ReactLanguage.plain(GuiMessages.CONFIG_TWEAKS))
+        ),
+        entries
+    );
   }
 
   private static void openActionIndex(Player player, int page) {
@@ -795,14 +931,26 @@ public final class ReactConfigGUI {
             ROOT_ACTION + "." + action.getId(),
             C.stripColor(action.getName()),
             ReactGuiTaxonomy.iconForId(action.getId()),
-            "Group: " + ReactGuiTaxonomy.groupLabel(action.getId())
-                + " | action/" + action.getId() + ".toml"
+            ReactLanguage.plain(
+                GuiMessages.CONFIG_LORE_GROUP_PATH,
+                MessageArgument.untrusted("group", ReactGuiTaxonomy.groupLabel(action.getId())),
+                MessageArgument.untrusted("path", "action/" + action.getId() + ".toml")
+            )
         ));
       }
     }
 
     entries.sort(groupedIndexComparator(ROOT_ACTION));
-    openSectionIndex(player, ROOT_ACTION, page, "Configure: actions", entries);
+    openSectionIndex(
+        player,
+        ROOT_ACTION,
+        page,
+        ReactLanguage.plain(
+            GuiMessages.CONFIG_SECTION_TITLE,
+            MessageArgument.untrusted("section", ReactLanguage.plain(GuiMessages.CONFIG_ACTIONS))
+        ),
+        entries
+    );
   }
 
   private static void openSamplerIndex(Player player, int page) {
@@ -818,14 +966,26 @@ public final class ReactConfigGUI {
             ROOT_SAMPLER + "." + sampler.getId(),
             C.stripColor(sampler.getName()),
             ReactGuiTaxonomy.iconForId(sampler.getId()),
-            "Group: " + ReactGuiTaxonomy.groupLabel(sampler.getId())
-                + " | sampler/" + sampler.getId() + ".toml"
+            ReactLanguage.plain(
+                GuiMessages.CONFIG_LORE_GROUP_PATH,
+                MessageArgument.untrusted("group", ReactGuiTaxonomy.groupLabel(sampler.getId())),
+                MessageArgument.untrusted("path", "sampler/" + sampler.getId() + ".toml")
+            )
         ));
       }
     }
 
     entries.sort(groupedIndexComparator(ROOT_SAMPLER));
-    openSectionIndex(player, ROOT_SAMPLER, page, "Configure: samplers", entries);
+    openSectionIndex(
+        player,
+        ROOT_SAMPLER,
+        page,
+        ReactLanguage.plain(
+            GuiMessages.CONFIG_SECTION_TITLE,
+            MessageArgument.untrusted("section", ReactLanguage.plain(GuiMessages.CONFIG_SAMPLERS))
+        ),
+        entries
+    );
   }
 
   private static void openSectionIndex(Player player, String path, int page, String title, List<SectionIndexEntry> entries) {
@@ -841,7 +1001,7 @@ public final class ReactConfigGUI {
     if (entries.isEmpty()) {
       window.setElement(0, 0, new UIElement("cfg-empty")
           .setMaterial(new MaterialBlock(Material.PAPER))
-          .setName(C.GRAY + "No entries"));
+          .setName(C.GRAY + ReactLanguage.plain(GuiMessages.CONFIG_NO_ENTRIES)));
     } else {
       for (int row = 0; row < layout.contentRows(); row++) {
         int rowStart = start + (row * 9);
@@ -856,7 +1016,10 @@ public final class ReactConfigGUI {
           int w = centeredPosition(i, rowCount);
           String displayName = C.WHITE + entry.displayName();
           if (entry.quickTogglePath() != null && entry.quickToggleValue() != null) {
-            displayName += C.GRAY + " [" + (entry.quickToggleValue() ? C.GREEN + "ON" : C.RED + "OFF") + C.GRAY + "]";
+            String status = entry.quickToggleValue()
+                ? C.GREEN + ReactLanguage.plain(GuiMessages.CONFIG_STATUS_ON)
+                : C.RED + ReactLanguage.plain(GuiMessages.CONFIG_STATUS_OFF);
+            displayName += C.GRAY + " [" + status + C.GRAY + "]";
           }
 
           UIElement element = new UIElement("cfg-index-" + entry.path())
@@ -865,13 +1028,13 @@ public final class ReactConfigGUI {
           if (entry.lore() != null && !entry.lore().isBlank()) {
             element.addLore(C.GRAY + entry.lore());
           }
-          element.addLore(C.DARK_GRAY + "Path: " + entry.path());
+          element.addLore(C.DARK_GRAY + ReactLanguage.plain(GuiMessages.CONFIG_PATH, MessageArgument.untrusted("path", entry.path())));
           element.onLeftClick((e) -> navigateTo(player, entry.path(), 0));
           if (entry.highlighted()) {
             element.setEnchanted(true);
           }
           if (entry.quickTogglePath() != null && entry.quickToggleValue() != null) {
-            element.addLore(C.GREEN + "Right Click: " + C.GRAY + "Toggle enabled");
+            element.addLore(C.GREEN + ReactLanguage.plain(GuiMessages.CONFIG_TOGGLE_ENABLED));
             element.onRightClick((e) -> confirmAndApply(
                 player,
                 safePath,
@@ -898,13 +1061,17 @@ public final class ReactConfigGUI {
     int currentPage = clampPage(page, pageCount);
     int start = currentPage * layout.itemsPerPage();
     int end = Math.min(entries.size(), start + layout.itemsPerPage());
-    String title = "Configure: " + (safePath.isBlank() ? "root" : safePath);
+    String section = safePath.isBlank() ? ReactLanguage.plain(GuiMessages.CONFIG_ROOT) : safePath;
+    String title = ReactLanguage.plain(
+        GuiMessages.CONFIG_SECTION_TITLE,
+        MessageArgument.untrusted("section", section)
+    );
 
     UIWindow window = baseWindow(player, title, layout.rows());
     if (entries.isEmpty()) {
       window.setElement(0, 0, new UIElement("cfg-empty")
           .setMaterial(new MaterialBlock(Material.PAPER))
-          .setName(C.GRAY + "No settings in this section"));
+          .setName(C.GRAY + ReactLanguage.plain(GuiMessages.CONFIG_NO_SETTINGS)));
     } else {
       for (int row = 0; row < layout.contentRows(); row++) {
         int rowStart = start + (row * 9);
@@ -963,7 +1130,7 @@ public final class ReactConfigGUI {
     if (layout.includeBack()) {
       window.setElement(4, navRow, new UIElement("cfg-back")
           .setMaterial(new MaterialBlock(Material.ARROW))
-          .setName(C.GRAY + "Back")
+          .setName(C.GRAY + ReactLanguage.plain(GuiMessages.BACK))
           .onLeftClick((e) -> navigateTo(player, parentPath(safePath), 0)));
     }
 
@@ -981,7 +1148,7 @@ public final class ReactConfigGUI {
     if (currentPage > 0) {
       window.setElement(prevPos, navRow, new UIElement("cfg-prev")
           .setMaterial(new MaterialBlock(Material.ARROW))
-          .setName(C.WHITE + "Prev")
+          .setName(C.WHITE + ReactLanguage.plain(GuiMessages.PREVIOUS))
           .onLeftClick((e) -> navigateTo(player, safePath, currentPage - 1))
           .onRightClick((e) -> navigateTo(player, safePath, jumpBack)));
     }
@@ -989,7 +1156,7 @@ public final class ReactConfigGUI {
     if (currentPage < pageCount - 1) {
       window.setElement(nextPos, navRow, new UIElement("cfg-next")
           .setMaterial(new MaterialBlock(Material.ARROW))
-          .setName(C.WHITE + "Next")
+          .setName(C.WHITE + ReactLanguage.plain(GuiMessages.NEXT))
           .onLeftClick((e) -> navigateTo(player, safePath, currentPage + 1))
           .onRightClick((e) -> navigateTo(player, safePath, jumpForward)));
     }
@@ -998,26 +1165,34 @@ public final class ReactConfigGUI {
     int to = totalEntries <= 0 ? 0 : end;
     window.setElement(infoPos, navRow, new UIElement("cfg-page-info")
         .setMaterial(new MaterialBlock(Material.PAPER))
-        .setName(C.AQUA + "Page " + (currentPage + 1) + "/" + pageCount + " " + C.GRAY + "(" + from + "-" + to + ")"));
+        .setName(C.AQUA + ReactLanguage.plain(
+            GuiMessages.PAGE,
+            MessageArgument.untrusted("current", currentPage + 1),
+            MessageArgument.untrusted("total", pageCount),
+            MessageArgument.untrusted("from", from),
+            MessageArgument.untrusted("to", to)
+        )));
   }
 
   private static UIElement createElementForEntry(Player player, String sectionPath, int currentPage, FieldEntry entry) {
     Material material = materialFor(entry);
     String typePrefix = switch (entry.descriptor().kind()) {
-      case BOOLEAN -> C.GREEN + "[Boolean] ";
-      case NUMBER -> C.AQUA + "[Number] ";
-      case STRING -> C.YELLOW + "[Text] ";
-      case ENUM -> C.LIGHT_PURPLE + "[Enum] ";
-      case SECTION -> C.BLUE + "[Section] ";
-      case MAP -> C.GOLD + "[Map] ";
-      case LIST -> C.GOLD + "[List] ";
-      case UNSUPPORTED -> C.RED + "[Unsupported] ";
+      case BOOLEAN -> C.GREEN + ReactLanguage.plain(GuiMessages.CONFIG_TYPE_BOOLEAN);
+      case NUMBER -> C.AQUA + ReactLanguage.plain(GuiMessages.CONFIG_TYPE_NUMBER);
+      case STRING -> C.YELLOW + ReactLanguage.plain(GuiMessages.CONFIG_TYPE_TEXT);
+      case ENUM -> C.LIGHT_PURPLE + ReactLanguage.plain(GuiMessages.CONFIG_TYPE_ENUM);
+      case SECTION -> C.BLUE + ReactLanguage.plain(GuiMessages.CONFIG_TYPE_SECTION);
+      case MAP -> C.GOLD + ReactLanguage.plain(GuiMessages.CONFIG_TYPE_MAP);
+      case LIST -> C.GOLD + ReactLanguage.plain(GuiMessages.CONFIG_TYPE_LIST);
+      case UNSUPPORTED -> C.RED + ReactLanguage.plain(GuiMessages.CONFIG_TYPE_UNSUPPORTED);
     };
 
     String name = displayName(entry.field().getName());
     String value = switch (entry.descriptor().kind()) {
       case BOOLEAN ->
-          Boolean.TRUE.equals(entry.value()) ? "enabled" : "disabled";
+          Boolean.TRUE.equals(entry.value())
+              ? ReactLanguage.plain(GuiMessages.CONFIG_VALUE_ENABLED)
+              : ReactLanguage.plain(GuiMessages.CONFIG_VALUE_DISABLED);
       case SECTION -> "";
       default -> summarizeValue(entry.value());
     };
@@ -1053,7 +1228,7 @@ public final class ReactConfigGUI {
         element.onLeftClick((e) -> {
           ConfigInputController inputController = React.controller(ConfigInputController.class);
           if (inputController == null) {
-            player.sendMessage(C.RED + "Config input service is unavailable.");
+            ReactLanguage.send(player, GuiMessages.CONFIG_INPUT_UNAVAILABLE);
             return;
           }
 
@@ -1072,11 +1247,11 @@ public final class ReactConfigGUI {
           int nested = getSerializableFields(entry.value().getClass()).size();
           element.setName(typePrefix + C.WHITE + name + C.GRAY + " (" + C.AQUA + nested + C.GRAY + ")");
         } else {
-          element.setName(typePrefix + C.WHITE + name + C.GRAY + " (" + C.RED + "null" + C.GRAY + ")");
+          element.setName(typePrefix + C.WHITE + name + C.GRAY + " (" + C.RED + ReactLanguage.plain(GuiMessages.NULL_VALUE) + C.GRAY + ")");
         }
         element.onLeftClick((e) -> {
           if (entry.value() == null) {
-            player.sendMessage(C.RED + "This section is null and cannot be edited.");
+            ReactLanguage.send(player, GuiMessages.CONFIG_SECTION_NULL);
             return;
           }
           navigateTo(player, entry.path(), 0);
@@ -2057,7 +2232,7 @@ public final class ReactConfigGUI {
   }
 
   private static String shortenTitle(String title) {
-    String safe = title == null ? "Configure" : title;
+    String safe = title == null ? ReactLanguage.plain(GuiMessages.CONFIG_FALLBACK_TITLE) : title;
     if (safe.length() <= 32) {
       return safe;
     }
@@ -2066,7 +2241,7 @@ public final class ReactConfigGUI {
 
   private static String displayName(String key) {
     if (key == null || key.isBlank()) {
-      return "Unnamed";
+      return ReactLanguage.plain(GuiMessages.CONFIG_UNNAMED);
     }
 
     String spaced = key
@@ -2082,23 +2257,36 @@ public final class ReactConfigGUI {
 
   private static String summarizeValue(Object value) {
     if (value == null) {
-      return "null";
+      return ReactLanguage.plain(GuiMessages.NULL_VALUE);
     }
 
     if (value instanceof Map<?, ?> map) {
-      return "map(" + map.size() + ")";
+      return ReactLanguage.plain(
+          GuiMessages.CONFIG_VALUE_MAP,
+          MessageArgument.untrusted("count", map.size())
+      );
     }
     if (value instanceof Collection<?> collection) {
-      return "list(" + collection.size() + ")";
+      return ReactLanguage.plain(
+          GuiMessages.CONFIG_VALUE_LIST,
+          MessageArgument.untrusted("count", collection.size())
+      );
     }
     if (value.getClass().isArray()) {
-      return "array(" + Array.getLength(value) + ")";
+      return ReactLanguage.plain(
+          GuiMessages.CONFIG_VALUE_ARRAY,
+          MessageArgument.untrusted("count", Array.getLength(value))
+      );
     }
     String text = String.valueOf(value).replace("\n", "\\n").replace("\r", "\\r");
     if (text.length() > MAX_VALUE_PREVIEW) {
       return text.substring(0, MAX_VALUE_PREVIEW - 3) + "...";
     }
     return text;
+  }
+
+  private static String configurationStatus(boolean active) {
+    return ReactLanguage.plain(active ? GuiMessages.CONFIG_STATUS_ACTIVE : GuiMessages.CONFIG_STATUS_INACTIVE);
   }
 
   private static String normalizeSortKey(String input) {
@@ -2187,7 +2375,11 @@ public final class ReactConfigGUI {
     }
 
     public static ParseResult fail(String error) {
-      return new ParseResult(false, null, error == null ? "Invalid value." : error);
+      return new ParseResult(
+          false,
+          null,
+          error == null ? ReactLanguage.plain(GuiMessages.INPUT_INVALID_VALUE) : error
+      );
     }
   }
 }

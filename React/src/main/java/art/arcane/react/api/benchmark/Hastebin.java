@@ -20,11 +20,12 @@
 package art.arcane.react.api.benchmark;
 
 import art.arcane.react.React;
-import art.arcane.react.util.format.C;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.EnvironmentMessages;
 import art.arcane.react.util.reflect.Platform;
 import art.arcane.volmlib.util.format.Form;
-import net.md_5.bungee.api.chat.ClickEvent;
-import net.md_5.bungee.api.chat.TextComponent;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 
@@ -61,16 +62,14 @@ public class Hastebin {
       String hastebinUrl = uploadToHastebin(sb.toString());
 
       // Create the clickable message
-      TextComponent message = new TextComponent(C.AQUA + "[Link]");
-      TextComponent link = new TextComponent(C.DARK_AQUA + hastebinUrl);
-      link.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, hastebinUrl));
-      message.addExtra(link);
+      Component message = ReactLanguage.component(EnvironmentMessages.HASTEBIN_LINK)
+          .clickEvent(ClickEvent.openUrl(hastebinUrl));
 
       // Send the clickable message to the player
-      sender.spigot().sendMessage(message);
+      sender.sendMessage(message);
     } catch (Exception e) {
       // Error occurred during upload
-      sender.sendMessage(C.DARK_RED + "Failed to upload server information to Hastebin.");
+      ReactLanguage.send(sender, EnvironmentMessages.HASTEBIN_FAILED);
     }
   }
 

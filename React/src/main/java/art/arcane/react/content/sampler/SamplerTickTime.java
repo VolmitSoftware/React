@@ -19,16 +19,15 @@
 
 package art.arcane.react.content.sampler;
 
-import art.arcane.react.React;
 import art.arcane.react.api.sampler.ReactCachedSampler;
-import art.arcane.react.util.reflect.ThreadUtilizationMonitor;
 import art.arcane.volmlib.util.format.Form;
 import net.kyori.adventure.text.Component;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.Server;
 
 public class SamplerTickTime extends ReactCachedSampler {
   public static final String ID = "tick-time";
-  private transient ThreadUtilizationMonitor monitor;
 
   public SamplerTickTime() {
     super(ID, 50);
@@ -40,25 +39,14 @@ public class SamplerTickTime extends ReactCachedSampler {
   }
 
   @Override
-  public void start() {
-    super.start();
-    ensureMonitor();
-  }
-
-  @Override
-  public void stop() {
-    ThreadUtilizationMonitor local = monitor;
-    monitor = null;
-    if (local != null) {
-      local.interrupt();
-    }
-    super.stop();
-  }
-
-  @Override
   public double onSample() {
-    ensureMonitor();
-    return monitor == null ? 0D : monitor.getAverage();
+    Server server = Bukkit.getServer();
+    if (server == null) {
+      return 0D;
+    }
+
+    double tickTime = server.getAverageTickTime();
+    return Double.isFinite(tickTime) ? Math.max(0D, tickTime) : 0D;
   }
 
   @Override
@@ -81,17 +69,4 @@ public class SamplerTickTime extends ReactCachedSampler {
     return Form.durationSplit(t, 0)[1];
   }
 
-  private synchronized void ensureMonitor() {
-    if (monitor != null) {
-      return;
-    }
-
-    Thread target = React.serverThread == null ? Thread.currentThread() : React.serverThread;
-    try {
-      monitor = new ThreadUtilizationMonitor(target, 50);
-      monitor.start();
-    } catch (Throwable e) {
-      monitor = null;
-    }
-  }
 }

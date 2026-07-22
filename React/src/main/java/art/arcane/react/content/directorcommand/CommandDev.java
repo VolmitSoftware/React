@@ -42,18 +42,21 @@ import art.arcane.react.core.controller.ActionController;
 import art.arcane.react.core.controller.FeatureController;
 import art.arcane.react.core.controller.SampleController;
 import art.arcane.react.core.controller.TweakController;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.CommandMessages;
+import art.arcane.react.localization.catalog.DevMessages;
 import art.arcane.react.model.AreaActionParams;
 import art.arcane.volmlib.util.bukkit.WorldIdentity;
 import art.arcane.react.nms.NmsBridge;
 import art.arcane.react.nms.NmsBridges;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.director.DirectorExecutor;
-import art.arcane.react.util.format.C;
 import art.arcane.react.util.plugin.VolmitSender;
 import art.arcane.react.util.project.registry.Registry;
 import art.arcane.volmlib.util.director.DirectorOrigin;
 import art.arcane.volmlib.util.director.annotations.Director;
 import art.arcane.volmlib.util.director.annotations.Param;
+import art.arcane.volmlib.util.localization.MessageArgument;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
@@ -76,7 +79,8 @@ import java.util.UUID;
     name = "dev",
     aliases = {"developer", "d"},
     origin = DirectorOrigin.BOTH,
-    description = "Developer-only React validation and diagnostics."
+    description = "Developer-only React validation and diagnostics",
+    descriptionKey = "command.description.dev"
 )
 public class CommandDev implements DirectorExecutor {
   private static final List<String> TEST_ACTION_ORDER = List.of(
@@ -108,12 +112,14 @@ public class CommandDev implements DirectorExecutor {
       aliases = {"ta"},
       origin = DirectorOrigin.PLAYER,
       sync = true,
-      description = "Audit React state, then queue the direct action suite one step at a time in your current world."
+      description = "Audit React state, then queue the direct action suite one step at a time in your current world",
+      descriptionKey = "command.description.dev.test_all"
   )
   public void testAll(
       @Param(
           name = "radius",
-          description = "Chunk radius used for the local purge entity/chunk test steps.",
+          description = "Chunk radius used for local purge entity and chunk test steps",
+          descriptionKey = "command.parameter.dev.radius",
           defaultValue = "2",
           aliases = {"r"}
       )
@@ -125,7 +131,7 @@ public class CommandDev implements DirectorExecutor {
     int safeRadius = Math.max(0, Math.min(radius, 6));
     ActionController actionController = React.controller(ActionController.class);
     if (actionController == null || actionController.getActions() == null) {
-      commandSender.sendMessage(C.REACT + "Action controller is unavailable.");
+      ReactLanguage.sendPrefixed(commandSender, CommandMessages.ACTION_CONTROLLER_UNAVAILABLE);
       return;
     }
 
@@ -133,15 +139,28 @@ public class CommandDev implements DirectorExecutor {
 
     List<ActionTestStep> steps = buildTestSteps(actionController, world, executingPlayer, safeRadius);
     if (steps.isEmpty()) {
-      commandSender.sendMessage(C.REACT + "No enabled direct actions are available for the dev test suite.");
+      ReactLanguage.sendPrefixed(commandSender, DevMessages.ACTIONS_NONE);
       return;
     }
 
     List<String> uncoveredActions = findUncoveredEnabledActions(actionController);
-    commandSender.sendMessage(C.REACT + "Dev suite scope: world=" + world.getName() + ", purgeRadius=" + safeRadius + " chunks.");
-    commandSender.sendMessage(C.REACT + "Queueing " + steps.size() + " direct actions sequentially. Recursive meta actions stay excluded.");
+    ReactLanguage.sendPrefixed(
+        commandSender,
+        DevMessages.SUITE_SCOPE,
+        MessageArgument.untrusted("world", world.getName()),
+        MessageArgument.untrusted("radius", safeRadius)
+    );
+    ReactLanguage.sendPrefixed(
+        commandSender,
+        DevMessages.SUITE_QUEUEING,
+        MessageArgument.untrusted("count", steps.size())
+    );
     if (!uncoveredActions.isEmpty()) {
-      commandSender.sendMessage(C.REACT + "Enabled actions not covered by this suite: " + String.join(", ", uncoveredActions));
+      ReactLanguage.sendPrefixed(
+          commandSender,
+          DevMessages.SUITE_UNCOVERED,
+          MessageArgument.untrusted("actions", String.join(", ", uncoveredActions))
+      );
     }
 
     queueStep(commandSender, steps, 0);
@@ -152,36 +171,48 @@ public class CommandDev implements DirectorExecutor {
       aliases = {"v", "selftest"},
       origin = DirectorOrigin.BOTH,
       sync = true,
-      description = "Self-verify the optimization-sweep fixes (bridge, samplers, and lazy-gravity landing) and report PASS/FAIL."
+      description = "Verify bridge, sampler, and lazy-gravity behavior and report PASS or FAIL",
+      descriptionKey = "command.description.dev.verify"
   )
   public void verify() {
     VolmitSender out = sender();
-    out.sendMessage(C.REACT + "React verify — optimization-sweep fix checks");
-    out.sendMessage("      " + C.GRAY + "platform: " + (J.isFoliaThreading()
-        ? C.GREEN + "Folia / region-threaded"
-        : C.YELLOW + "single-thread (Paper/Purpur) — Folia-only fixes can't fire here"));
+    ReactLanguage.sendPrefixed(out, DevMessages.VERIFY_HEADER);
+    ReactLanguage.send(out, J.isFoliaThreading() ? DevMessages.VERIFY_PLATFORM_FOLIA : DevMessages.VERIFY_PLATFORM_SINGLE);
 
     verifyBridge(out);
     verifySamplers(out);
     verifyCropObservational(out);
-    verifyLazyGravity(out, () -> out.sendMessage(C.REACT + "React verify — complete."));
+    verifyLazyGravity(out, () -> ReactLanguage.sendPrefixed(out, DevMessages.VERIFY_COMPLETE));
   }
 
   private void verifyBridge(VolmitSender out) {
     NmsBridge bridge = NmsBridges.get();
     if (bridge == null) {
-      out.sendMessage("  " + skipTag() + C.WHITE + "nms-bridge" + C.GRAY + " — unavailable: " + NmsBridges.failureReason());
+      ReactLanguage.send(
+          out,
+          DevMessages.BRIDGE_SKIPPED,
+          MessageArgument.untrusted("reason", NmsBridges.failureReason())
+      );
       return;
     }
 
     BridgeHealthReport report = React.bridgeRegistry().snapshotHealth();
     boolean healthy = report.unavailableCount() == 0;
-    out.sendMessage("  " + passTag(healthy) + C.WHITE + "nms-bridge" + C.GRAY + " — "
-        + report.availableCount() + " available, " + report.unavailableCount() + " unavailable");
+    ReactLanguage.send(
+        out,
+        healthy ? DevMessages.BRIDGE_PASS : DevMessages.BRIDGE_FAIL,
+        MessageArgument.untrusted("available", report.availableCount()),
+        MessageArgument.untrusted("unavailable", report.unavailableCount())
+    );
     if (!healthy) {
       for (BridgeHealthReport.BridgeHealthEntry entry : report.entries()) {
         if (!entry.available()) {
-          out.sendMessage("      " + C.RED + entry.logicalId() + " " + entry.failureReason());
+          ReactLanguage.send(
+              out,
+              DevMessages.BRIDGE_FAILURE,
+              MessageArgument.untrusted("id", entry.logicalId()),
+              MessageArgument.untrusted("reason", entry.failureReason())
+          );
         }
       }
     }
@@ -189,68 +220,82 @@ public class CommandDev implements DirectorExecutor {
     FeatureLazyGravity gravity = React.feature(FeatureLazyGravity.class);
     if (gravity != null) {
       boolean hookActive = !gravity.isMeasurementOnly();
-      out.sendMessage("  " + (hookActive ? passTag(true) : warnTag()) + C.WHITE + "nms-hooks" + C.GRAY
-          + " — falling-block hook " + (hookActive ? "installed" : "measurement-only (not installed)"));
+      ReactLanguage.send(out, hookActive ? DevMessages.HOOKS_PASS : DevMessages.HOOKS_WARN);
     }
-    out.sendMessage("      " + C.GRAY + "reset() uninstalls all 6 hooks incl. hopper (reload-leak fixed)");
+    ReactLanguage.send(out, DevMessages.HOOKS_RESET);
   }
 
   private void verifySamplers(VolmitSender out) {
     int missing = 0;
     int invalid = 0;
-    StringBuilder values = new StringBuilder();
+    List<String> values = new ArrayList<>();
     for (String id : VERIFY_SAMPLER_IDS) {
       Sampler sampler = React.sampler(id);
       if (sampler == null) {
         missing++;
-        out.sendMessage("      " + C.RED + "missing sampler: " + id);
+        ReactLanguage.send(out, DevMessages.SAMPLER_MISSING, MessageArgument.untrusted("id", id));
         continue;
       }
 
       double value = sampler.sample();
       if (Double.isNaN(value) || Double.isInfinite(value) || value < 0D) {
         invalid++;
-        out.sendMessage("      " + C.RED + id + " returned " + value);
+        ReactLanguage.send(
+            out,
+            DevMessages.SAMPLER_INVALID,
+            MessageArgument.untrusted("id", id),
+            MessageArgument.untrusted("value", value)
+        );
         continue;
       }
 
-      if (values.length() > 0) {
-        values.append(C.GRAY).append(", ");
-      }
-      values.append(C.WHITE).append(id).append("=").append(sampler.format(value));
+      values.add(id + "=" + sampler.format(value));
     }
 
     boolean pass = missing == 0 && invalid == 0;
-    out.sendMessage("  " + passTag(pass) + C.WHITE + "samplers" + C.GRAY + " — "
-        + VERIFY_SAMPLER_IDS.size() + " checked, " + missing + " missing, " + invalid + " invalid");
-    if (values.length() > 0) {
-      out.sendMessage("      " + values);
+    ReactLanguage.send(
+        out,
+        pass ? DevMessages.SAMPLERS_PASS : DevMessages.SAMPLERS_FAIL,
+        MessageArgument.untrusted("checked", VERIFY_SAMPLER_IDS.size()),
+        MessageArgument.untrusted("missing", missing),
+        MessageArgument.untrusted("invalid", invalid)
+    );
+    if (!values.isEmpty()) {
+      ReactLanguage.send(
+          out,
+          DevMessages.SAMPLER_VALUES,
+          MessageArgument.untrusted("values", String.join(", ", values))
+      );
     }
   }
 
   private void verifyCropObservational(VolmitSender out) {
     FeatureCropFastForward crop = React.feature(FeatureCropFastForward.class);
     if (crop == null) {
-      out.sendMessage("  " + skipTag() + C.WHITE + "crop-fast-forward" + C.GRAY + " — feature not registered");
+      ReactLanguage.send(out, DevMessages.CROP_SKIPPED);
       return;
     }
 
     Sampler sampler = React.sampler("crop-fast-forward");
     String rate = sampler == null ? "n/a" : sampler.format(sampler.sample());
-    out.sendMessage("  " + infoTag() + C.WHITE + "crop-fast-forward" + C.GRAY
-        + " — enabled=" + crop.isEnabled() + ", rate=" + rate);
-    out.sendMessage("      " + C.GRAY + "single-step clamp removed (proportional growth). Fires on dormant->active wake; observe by leaving/returning to a planted area.");
+    ReactLanguage.send(
+        out,
+        DevMessages.CROP_INFO,
+        MessageArgument.untrusted("enabled", crop.isEnabled()),
+        MessageArgument.untrusted("rate", rate)
+    );
+    ReactLanguage.send(out, DevMessages.CROP_OBSERVE);
   }
 
   private void verifyLazyGravity(VolmitSender out, Runnable onDone) {
     FeatureLazyGravity gravity = React.feature(FeatureLazyGravity.class);
     if (gravity == null) {
-      out.sendMessage("  " + skipTag() + C.WHITE + "lazy-gravity" + C.GRAY + " — feature not registered");
+      ReactLanguage.send(out, DevMessages.GRAVITY_NOT_REGISTERED);
       onDone.run();
       return;
     }
     if (Bukkit.getWorlds().isEmpty()) {
-      out.sendMessage("  " + skipTag() + C.WHITE + "lazy-gravity" + C.GRAY + " — no worlds loaded");
+      ReactLanguage.send(out, DevMessages.GRAVITY_NO_WORLDS);
       onDone.run();
       return;
     }
@@ -262,7 +307,11 @@ public class CommandDev implements DirectorExecutor {
     int groundY = world.getHighestBlockYAt(x, z);
     int spawnY = Math.min(world.getMaxHeight() - 2, groundY + 20);
     if (spawnY <= groundY + 2) {
-      out.sendMessage("  " + skipTag() + C.WHITE + "lazy-gravity" + C.GRAY + " — no headroom above y=" + groundY + " to drop a test block");
+      ReactLanguage.send(
+          out,
+          DevMessages.GRAVITY_NO_HEADROOM,
+          MessageArgument.untrusted("ground_y", groundY)
+      );
       onDone.run();
       return;
     }
@@ -270,16 +319,17 @@ public class CommandDev implements DirectorExecutor {
     Location dropAt = new Location(world, x + 0.5D, spawnY, z + 0.5D);
     FallingBlock falling = world.spawnFallingBlock(dropAt, Material.SAND.createBlockData());
     UUID id = falling.getUniqueId();
-    out.sendMessage("  " + infoTag() + C.WHITE + "lazy-gravity" + C.GRAY
-        + " — dropped SAND y=" + spawnY + " over ground y=" + groundY + ", checking landing (5s)...");
+    ReactLanguage.send(
+        out,
+        DevMessages.GRAVITY_DROPPED,
+        MessageArgument.untrusted("spawn_y", spawnY),
+        MessageArgument.untrusted("ground_y", groundY)
+    );
 
     J.s(() -> {
       Entity entity = Bukkit.getEntity(id);
       boolean landed = entity == null || entity.isDead() || !entity.isValid();
-      out.sendMessage("  " + passTag(landed) + C.WHITE + "lazy-gravity" + C.GRAY
-          + (landed
-              ? " — block landed within 5s (projection / un-skip / landing path OK)"
-              : " — block STILL FALLING after 5s (stuck mid-air)"));
+      ReactLanguage.send(out, landed ? DevMessages.GRAVITY_PASS : DevMessages.GRAVITY_FAIL);
       if (!landed && entity != null) {
         entity.remove();
       }
@@ -289,22 +339,6 @@ public class CommandDev implements DirectorExecutor {
       }
       onDone.run();
     }, 100);
-  }
-
-  private String passTag(boolean pass) {
-    return pass ? C.GREEN + "[PASS] " : C.RED + "[FAIL] ";
-  }
-
-  private String warnTag() {
-    return C.YELLOW + "[WARN] ";
-  }
-
-  private String infoTag() {
-    return C.GRAY + "[INFO] ";
-  }
-
-  private String skipTag() {
-    return C.YELLOW + "[SKIP] ";
   }
 
   private void sendRuntimeAudit(VolmitSender commandSender, ActionController actionController) {
@@ -324,12 +358,38 @@ public class CommandDev implements DirectorExecutor {
     int registeredActions = size(actionController.getActions());
     int enabledActions = countEnabledActions(actionController.getActions());
 
-    commandSender.sendMessage(C.REACT + "React dev audit:");
-    commandSender.sendMessage(C.REACT + "- Features: " + registeredFeatures + " registered, " + enabledFeatures + " enabled, " + activeFeatures + " active");
-    commandSender.sendMessage(C.REACT + "- Tweaks: " + registeredTweaks + " registered, " + enabledTweaks + " enabled, " + activeTweaks + " active");
-    commandSender.sendMessage(C.REACT + "- Samplers: " + registeredSamplers + " registered");
-    commandSender.sendMessage(C.REACT + "- Actions: " + registeredActions + " registered, " + enabledActions + " enabled");
-    commandSender.sendMessage(C.REACT + "- Excluded from dev suite: " + ActionIncidentPlaybook.ID + " (recursive meta action), " + ActionUnknown.ID);
+    ReactLanguage.sendPrefixed(commandSender, DevMessages.AUDIT_HEADER);
+    ReactLanguage.sendPrefixed(
+        commandSender,
+        DevMessages.AUDIT_FEATURES,
+        MessageArgument.untrusted("registered", registeredFeatures),
+        MessageArgument.untrusted("enabled", enabledFeatures),
+        MessageArgument.untrusted("active", activeFeatures)
+    );
+    ReactLanguage.sendPrefixed(
+        commandSender,
+        DevMessages.AUDIT_TWEAKS,
+        MessageArgument.untrusted("registered", registeredTweaks),
+        MessageArgument.untrusted("enabled", enabledTweaks),
+        MessageArgument.untrusted("active", activeTweaks)
+    );
+    ReactLanguage.sendPrefixed(
+        commandSender,
+        DevMessages.AUDIT_SAMPLERS,
+        MessageArgument.untrusted("registered", registeredSamplers)
+    );
+    ReactLanguage.sendPrefixed(
+        commandSender,
+        DevMessages.AUDIT_ACTIONS,
+        MessageArgument.untrusted("registered", registeredActions),
+        MessageArgument.untrusted("enabled", enabledActions)
+    );
+    ReactLanguage.sendPrefixed(
+        commandSender,
+        DevMessages.AUDIT_EXCLUDED,
+        MessageArgument.untrusted("incident", ActionIncidentPlaybook.ID),
+        MessageArgument.untrusted("unknown", ActionUnknown.ID)
+    );
   }
 
   private List<ActionTestStep> buildTestSteps(ActionController actionController, World world, Player executingPlayer, int radius) {
@@ -453,14 +513,20 @@ public class CommandDev implements DirectorExecutor {
 
   private void queueStep(VolmitSender commandSender, List<ActionTestStep> steps, int index) {
     if (index >= steps.size()) {
-      commandSender.sendMessage(C.REACT + "React dev test suite finished.");
+      ReactLanguage.sendPrefixed(commandSender, DevMessages.SUITE_FINISHED);
       return;
     }
 
     ActionTestStep step = steps.get(index);
     Action<?> action = step.action();
     if (action == null || !action.isEnabled()) {
-      commandSender.sendMessage(C.REACT + "[" + (index + 1) + "/" + steps.size() + "] Skipped " + (action == null ? "unknown-action" : action.getId()) + " because it is unavailable.");
+      ReactLanguage.sendPrefixed(
+          commandSender,
+          DevMessages.SUITE_SKIPPED,
+          MessageArgument.untrusted("index", index + 1),
+          MessageArgument.untrusted("total", steps.size()),
+          MessageArgument.untrusted("action", action == null ? "unknown-action" : action.getId())
+      );
       queueStep(commandSender, steps, index + 1);
       return;
     }
@@ -469,20 +535,46 @@ public class CommandDev implements DirectorExecutor {
     try {
       ticket = action.createForceful(step.params());
     } catch (Throwable e) {
-      commandSender.sendMessage(C.REACT + "[" + (index + 1) + "/" + steps.size() + "] Failed to create " + action.getId() + ": " + e.getClass().getSimpleName() + (e.getMessage() == null ? "" : " - " + e.getMessage()));
+      String detail = e.getClass().getSimpleName() + (e.getMessage() == null ? "" : " - " + e.getMessage());
+      ReactLanguage.sendPrefixed(
+          commandSender,
+          DevMessages.SUITE_CREATE_FAILED,
+          MessageArgument.untrusted("index", index + 1),
+          MessageArgument.untrusted("total", steps.size()),
+          MessageArgument.untrusted("action", action.getId()),
+          MessageArgument.untrusted("detail", detail)
+      );
       React.reportError(e);
       queueStep(commandSender, steps, index + 1);
       return;
     }
 
     Action<?> queuedAction = action;
-    ticket.onStart((started) -> commandSender.sendMessage(C.REACT + "[" + (index + 1) + "/" + steps.size() + "] Starting " + queuedAction.getId()))
+    ticket.onStart((started) -> ReactLanguage.sendPrefixed(
+            commandSender,
+            DevMessages.SUITE_STARTING,
+            MessageArgument.untrusted("index", index + 1),
+            MessageArgument.untrusted("total", steps.size()),
+            MessageArgument.untrusted("action", queuedAction.getId())
+        ))
         .onComplete((completed) -> {
-          commandSender.sendMessage(C.REACT + "[" + (index + 1) + "/" + steps.size() + "] " + completedMessage(queuedAction, completed));
+          ReactLanguage.sendPrefixed(
+              commandSender,
+              DevMessages.SUITE_COMPLETED,
+              MessageArgument.untrusted("index", index + 1),
+              MessageArgument.untrusted("total", steps.size()),
+              MessageArgument.untrusted("message", completedMessage(queuedAction, completed))
+          );
           queueStep(commandSender, steps, index + 1);
         });
 
-    commandSender.sendMessage(C.REACT + "[" + (index + 1) + "/" + steps.size() + "] Queued " + action.getId());
+    ReactLanguage.sendPrefixed(
+        commandSender,
+        DevMessages.SUITE_QUEUED,
+        MessageArgument.untrusted("index", index + 1),
+        MessageArgument.untrusted("total", steps.size()),
+        MessageArgument.untrusted("action", action.getId())
+    );
     ticket.queue();
   }
 

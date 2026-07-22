@@ -19,8 +19,11 @@
 
 package art.arcane.react.api.benchmark;
 
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.BenchmarkMessages;
 import art.arcane.react.util.common.scheduling.J;
-import org.bukkit.ChatColor;
+import art.arcane.volmlib.util.localization.MessageArgument;
+import art.arcane.volmlib.util.localization.TextKey;
 import org.bukkit.command.CommandSender;
 
 import java.nio.ByteBuffer;
@@ -41,11 +44,16 @@ public class MemoryBenchmark implements Runnable {
   public void run() {
     int score = doMemoryBenchmark();
     String result = MemoryResult.getSpeedLabel(score);
-    sender.sendMessage(ChatColor.GREEN + "Benchmark result: " + result + " (" + score + ")");
+    ReactLanguage.send(
+        sender,
+        BenchmarkMessages.RESULT,
+        MessageArgument.untrusted("rating", result),
+        MessageArgument.untrusted("score", score)
+    );
   }
 
   private int doMemoryBenchmark() {
-    sender.sendMessage(ChatColor.DARK_RED + "Benchmarking memory...");
+    ReactLanguage.send(sender, BenchmarkMessages.MEMORY_STARTING);
 
     long startTime = System.nanoTime();
 
@@ -59,19 +67,25 @@ public class MemoryBenchmark implements Runnable {
     long endTime = System.nanoTime();
     long duration = (endTime - startTime);
 
-    sender.sendMessage(ChatColor.YELLOW + "Benchmark complete.");
+    ReactLanguage.send(sender, BenchmarkMessages.COMPLETE);
     return (int) (1000000000.0 / (duration / (double) bufferSize));
   }
 
   private enum MemoryResult {
-    ULTRA_SLOW("Ultra Slow!"), VERY_SLOW("Very Slow!"), SLOW("Slow!"), AVERAGE("Average."),
-    GOOD("Good!"), FAST("Fast!"), VERY_FAST("Very Fast!"), ULTRA_FAST("Ultra Fast"),
-    INSANELY_FAST("Insanely Fast!");
+    ULTRA_SLOW(BenchmarkMessages.SPEED_ULTRA_SLOW),
+    VERY_SLOW(BenchmarkMessages.SPEED_VERY_SLOW),
+    SLOW(BenchmarkMessages.SPEED_SLOW),
+    AVERAGE(BenchmarkMessages.SPEED_AVERAGE),
+    GOOD(BenchmarkMessages.SPEED_GOOD),
+    FAST(BenchmarkMessages.SPEED_FAST),
+    VERY_FAST(BenchmarkMessages.SPEED_VERY_FAST),
+    ULTRA_FAST(BenchmarkMessages.SPEED_ULTRA_FAST),
+    INSANELY_FAST(BenchmarkMessages.SPEED_INSANELY_FAST);
 
-    private final String label;
+    private final TextKey message;
 
-    MemoryResult(String label) {
-      this.label = label;
+    MemoryResult(TextKey message) {
+      this.message = message;
     }
 
     public static String getSpeedLabel(int speed) {
@@ -87,11 +101,11 @@ public class MemoryBenchmark implements Runnable {
 
       for (int speedThreshold : speedMap.descendingKeySet()) {
         if (speed > speedThreshold) {
-          return speedMap.get(speedThreshold).label;
+          return ReactLanguage.plain(speedMap.get(speedThreshold).message);
         }
       }
 
-      return ULTRA_SLOW.label;
+      return ReactLanguage.plain(ULTRA_SLOW.message);
     }
   }
 }

@@ -3,6 +3,7 @@ library;
 import 'package:arcane_jaspr/arcane_jaspr.dart';
 
 import '../chart/timeseries_chart.dart';
+import '../localization/reactor_localizations.dart';
 import '../model/sampler_sample.dart';
 import '../state/server_scope.dart';
 import '../ui/reactor_ui.dart';
@@ -15,31 +16,47 @@ class EventsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ServerScope? scope = ServerScope.of(context);
-    final SamplerSample? eventHandles =
-        scope?.snapshot?.sampler('event-handles-per-tick');
-    final SamplerSample? eventListeners =
-        scope?.snapshot?.sampler('events-listeners');
-    final SamplerSample? eventTime =
-        scope?.snapshot?.sampler('event-time');
+    final SamplerSample? eventHandles = scope?.snapshot?.sampler(
+      'event-handles-per-tick',
+    );
+    final SamplerSample? eventListeners = scope?.snapshot?.sampler(
+      'events-listeners',
+    );
+    final SamplerSample? eventTime = scope?.snapshot?.sampler('event-time');
 
     final List<(String, List<double>)> eventTimeSeries =
         <(String, List<double>)>[
-      ('Event Time', eventTime?.history ?? const <double>[]),
-      ('Handles/tick', eventHandles?.history ?? const <double>[]),
-    ];
+          (
+            reactorText(ReactorText.commonEventTime),
+            eventTime?.history ?? const <double>[],
+          ),
+          (
+            reactorText(ReactorText.eventsSeriesHandlesPerTick),
+            eventHandles?.history ?? const <double>[],
+          ),
+        ];
 
     return ReactorPage(
-      title: 'Events',
-      subtitle: 'Event dispatch and listeners',
+      title: reactorText(ReactorText.eventsTitle),
+      subtitle: reactorText(ReactorText.eventsSubtitle),
       children: <Widget>[
         sectionCard(
-          label: 'Event Time',
+          label: reactorText(ReactorText.commonEventTime),
           child: TimeseriesChart(series: eventTimeSeries, height: 160),
         ),
         statGrid(<Widget>[
-          StatTile(label: 'Handles/Tick', sample: eventHandles),
-          StatTile(label: 'Listeners', sample: eventListeners),
-          StatTile(label: 'Event Time', sample: eventTime),
+          StatTile(
+            label: reactorText(ReactorText.eventsHandlesPerTick),
+            sample: eventHandles,
+          ),
+          StatTile(
+            label: reactorText(ReactorText.eventsListeners),
+            sample: eventListeners,
+          ),
+          StatTile(
+            label: reactorText(ReactorText.commonEventTime),
+            sample: eventTime,
+          ),
         ]),
       ],
     );

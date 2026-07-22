@@ -6,6 +6,7 @@ import 'package:arcane_jaspr/arcane_jaspr.dart';
 import 'package:arcane_jaspr_shadcn/arcane_jaspr_shadcn.dart';
 import 'package:jaspr_test/server_test.dart';
 
+import 'package:reactor/localization/reactor_localizations.dart';
 import 'package:reactor/model/identity_info.dart';
 import 'package:reactor/model/server_credential.dart';
 import 'package:reactor/model/server_snapshot.dart';
@@ -173,7 +174,7 @@ void main() {
       final DocumentResponse res = await tester.request('/');
       expect(res.statusCode, equals(200));
       expect(
-        res.body.contains('Save thresholds'),
+        res.body.contains(ReactorText.settingsSaveThresholds.english),
         isTrue,
         reason: 'Save thresholds button must appear in settings',
       );
@@ -188,7 +189,7 @@ void main() {
       final DocumentResponse res = await tester.request('/');
       expect(res.statusCode, equals(200));
       expect(
-        res.body.contains('Clear all'),
+        res.body.contains(ReactorText.settingsClearAll.english),
         isTrue,
         reason: 'settings must expose a fleet-wide clear action',
       );

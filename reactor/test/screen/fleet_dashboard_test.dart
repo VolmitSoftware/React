@@ -6,6 +6,7 @@ import 'package:jaspr_router/jaspr_router.dart';
 import 'package:jaspr_test/server_test.dart';
 
 import 'package:reactor/app/reactor_app.dart';
+import 'package:reactor/localization/reactor_localizations.dart';
 import 'package:reactor/model/sampler_sample.dart';
 import 'package:reactor/model/server_credential.dart';
 import 'package:reactor/model/server_snapshot.dart';
@@ -185,8 +186,8 @@ void main() {
           res.body.contains('19.9') ||
           res.body.contains('14.4') ||
           res.body.contains('9') ||
-          res.body.contains('Worst TPS') ||
-          res.body.contains('Mean TPS');
+          res.body.contains(ReactorText.fleetWorstTps.english) ||
+          res.body.contains(ReactorText.fleetMeanTps.english);
       expect(
         hasTpsValue,
         isTrue,
@@ -221,7 +222,7 @@ void main() {
         expect(res.statusCode, equals(200));
         final bool hasCriticalSignal =
             res.body.contains('var(--destructive)') ||
-            res.body.contains('Critical');
+            res.body.contains(ReactorText.statusCritical.english);
         expect(
           hasCriticalSignal,
           isTrue,
@@ -279,7 +280,7 @@ void main() {
         final DocumentResponse res = await tester.request('/');
         expect(res.statusCode, equals(200));
         expect(
-          res.body.contains('All servers healthy'),
+          res.body.contains(ReactorText.fleetAllHealthy.english),
           isTrue,
           reason:
               'All servers healthy must appear when no server needs attention',
@@ -296,7 +297,7 @@ void main() {
       final DocumentResponse res = await tester.request('/');
       expect(res.statusCode, equals(200));
       expect(
-        res.body.contains('No servers connected'),
+        res.body.contains(ReactorText.shellNoServersConnected.english),
         isTrue,
         reason:
             'Root route with empty fleet must show No servers connected empty-state',

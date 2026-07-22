@@ -21,14 +21,16 @@ package art.arcane.react.core.controller;
 
 import art.arcane.react.React;
 import art.arcane.react.content.directorcommand.CommandReact;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.RuntimeMessages;
 import art.arcane.react.util.cache.AtomicCache;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.director.DirectorContext;
 import art.arcane.react.util.director.DirectorContextHandler;
 import art.arcane.react.util.director.DirectorSystem;
-import art.arcane.react.util.format.C;
 import art.arcane.react.util.plugin.IController;
 import art.arcane.react.util.plugin.VolmitSender;
+import art.arcane.volmlib.util.director.DirectorEngineOptions;
 import art.arcane.volmlib.util.director.compat.DirectorEngineFactory;
 import art.arcane.volmlib.util.director.context.DirectorContextRegistry;
 import art.arcane.volmlib.util.director.help.DirectorMiniMenu;
@@ -40,11 +42,9 @@ import art.arcane.volmlib.util.director.runtime.DirectorRuntimeEngine;
 import art.arcane.volmlib.util.director.runtime.DirectorRuntimeNode;
 import art.arcane.volmlib.util.director.runtime.DirectorSender;
 import art.arcane.volmlib.util.math.RNG;
+import art.arcane.volmlib.util.localization.MessageArgument;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.sound.Sound;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -64,8 +64,6 @@ public class DirectorCommandController implements IController, CommandExecutor, 
   private static final String ROOT_COMMAND = "react";
   private static final String ROOT_PERMISSION = "react.use";
   private static final int HELP_PAGE_SIZE = 9;
-  private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
-  private static final LegacyComponentSerializer LEGACY_SERIALIZER = LegacyComponentSerializer.legacySection();
 
   private final transient AtomicCache<DirectorRuntimeEngine> directorCache = new AtomicCache<>();
 
@@ -105,11 +103,13 @@ public class DirectorCommandController implements IController, CommandExecutor, 
   public DirectorRuntimeEngine getDirector() {
     return directorCache.aquireNastyPrint(() -> DirectorEngineFactory.create(
         new CommandReact(),
-        null,
-        buildDirectorContexts(),
-        this::dispatchDirector,
-        this,
-        DirectorSystem.handlers
+        DirectorEngineOptions.builder()
+            .contexts(buildDirectorContexts())
+            .dispatcher(this::dispatchDirector)
+            .invocationHook(this)
+            .legacyHandlers(DirectorSystem.handlers)
+            .textResolver(ReactLanguage.directorResolver())
+            .build()
     ));
   }
 
@@ -184,7 +184,8 @@ public class DirectorCommandController implements IController, CommandExecutor, 
     }
 
     if (!sender.hasPermission(ROOT_PERMISSION) && !sender.hasPermission("react.*") && !sender.isOp()) {
-      sender.sendMessage("You lack the Permission '" + ROOT_PERMISSION + "'");
+      ReactLanguage.send(sender, RuntimeMessages.MISSING_PERMISSION,
+          MessageArgument.untrusted("permission", ROOT_PERMISSION));
       return true;
     }
 
@@ -206,9 +207,7 @@ public class DirectorCommandController implements IController, CommandExecutor, 
     }
 
     playFailureSound(sender);
-    if (result.getMessage() == null || result.getMessage().trim().isEmpty()) {
-      sender.sendMessage(C.RED + "Unknown React Command");
-    }
+    ReactLanguage.send(sender, RuntimeMessages.UNKNOWN_COMMAND);
   }
 
   private boolean sendHelpIfRequested(CommandSender sender, String[] args) {
@@ -218,9 +217,7 @@ public class DirectorCommandController implements IController, CommandExecutor, 
     }
 
     DirectorMiniMenu.Theme helpTheme = DirectorMiniMenu.Theme.reactBlue();
-    for (String line : DirectorMiniMenu.render(page.get(), helpTheme)) {
-      sendRich(sender, line);
-    }
+    DirectorMiniMenu.deliver(sender, DirectorMiniMenu.render(page.get(), helpTheme, ReactLanguage.directorResolver()));
     return true;
   }
 
@@ -263,21 +260,6 @@ public class DirectorCommandController implements IController, CommandExecutor, 
     } catch (NumberFormatException ignored) {
       return false;
     }
-  }
-
-  private void sendRich(CommandSender sender, String miniMessage) {
-    if (miniMessage == null || miniMessage.trim().isEmpty()) {
-      return;
-    }
-
-    try {
-      sender.getClass().getMethod("sendRichMessage", String.class).invoke(sender, miniMessage);
-      return;
-    } catch (Throwable ignored) {
-    }
-
-    Component component = MINI_MESSAGE.deserialize(miniMessage);
-    sender.sendMessage(LEGACY_SERIALIZER.serialize(component));
   }
 
   private DirectorExecutionResult runDirector(CommandSender sender, String label, String[] args) {

@@ -24,8 +24,11 @@ import art.arcane.react.api.action.ActionParams;
 import art.arcane.react.api.action.ActionTicket;
 import art.arcane.react.api.action.ReactAction;
 import art.arcane.react.content.sampler.SamplerMemoryUsed;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.ActionMessages;
 import art.arcane.react.util.project.config.ConfigDoc;
 import art.arcane.volmlib.util.format.Form;
+import art.arcane.volmlib.util.localization.MessageArgument;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -42,12 +45,20 @@ public class ActionCollectGarbage extends ReactAction<ActionCollectGarbage.Param
   public String getCompletedMessage(ActionTicket<Params> ticket) {
     Params params = ticket.getParams();
     if (params.getFreedBytes() <= 0L) {
-      return "GC complete, no immediate heap reclaimed (" + Form.memSize(params.getAfterBytes()) + " used) in " + Form.duration(ticket.getDuration(), 1);
+      return ReactLanguage.plain(
+          ActionMessages.GC_NO_RECLAIM,
+          MessageArgument.untrusted("used", Form.memSize(params.getAfterBytes())),
+          MessageArgument.untrusted("duration", Form.duration(ticket.getDuration(), 1))
+      );
     }
 
-    return "Freed " + Form.memSize(params.getFreedBytes())
-        + " (" + Form.memSize(params.getBeforeBytes()) + " -> " + Form.memSize(params.getAfterBytes()) + ") in "
-        + Form.duration(ticket.getDuration(), 1);
+    return ReactLanguage.plain(
+        ActionMessages.GC_RECLAIMED,
+        MessageArgument.untrusted("freed", Form.memSize(params.getFreedBytes())),
+        MessageArgument.untrusted("before", Form.memSize(params.getBeforeBytes())),
+        MessageArgument.untrusted("after", Form.memSize(params.getAfterBytes())),
+        MessageArgument.untrusted("duration", Form.duration(ticket.getDuration(), 1))
+    );
   }
 
   @Override

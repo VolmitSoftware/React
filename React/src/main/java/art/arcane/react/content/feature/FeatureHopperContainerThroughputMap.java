@@ -20,6 +20,8 @@
 package art.arcane.react.content.feature;
 
 import art.arcane.react.content.sampler.SamplerHopperUpdates;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.RendererMessages;
 import art.arcane.react.util.data.TinyColor;
 import org.bukkit.Chunk;
 
@@ -36,7 +38,7 @@ public class FeatureHopperContainerThroughputMap extends FeatureChunkHeatmapBase
 
   @Override
   protected String mapLabel() {
-    return "Hopper Throughput";
+    return ReactLanguage.raw(RendererMessages.TITLE_HOPPER_THROUGHPUT);
   }
 
   @Override

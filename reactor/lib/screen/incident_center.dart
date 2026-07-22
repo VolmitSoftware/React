@@ -5,6 +5,7 @@ import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart' show Component;
 
 import '../model/incident_status.dart';
+import '../localization/reactor_localizations.dart';
 import '../model/sampler_sample.dart';
 import '../service/react_client.dart';
 import '../state/operate_scope.dart';
@@ -15,7 +16,7 @@ import '../widget/section_card.dart';
 
 ArcaneStatusBadge _stateChip(String? state) {
   if (state == null) {
-    return ArcaneStatusBadge.info('Offline');
+    return ArcaneStatusBadge.info(reactorText(ReactorText.statusOffline));
   }
   final String upper = state.toUpperCase();
   if (upper.contains('CRIT') || upper.contains('PANIC')) {
@@ -49,14 +50,16 @@ class IncidentCenterView extends StatelessWidget {
       gap: 20,
       children: <Widget>[
         dom.div(
-          styles: const dom.Styles(raw: <String, String>{
-            'display': 'flex',
-            'justify-content': 'center',
-            'padding': '1rem 0',
-          }),
+          styles: const dom.Styles(
+            raw: <String, String>{
+              'display': 'flex',
+              'justify-content': 'center',
+              'padding': '1rem 0',
+            },
+          ),
           <Widget>[
             Gauge(
-              label: 'Incident Score',
+              label: reactorText(ReactorText.commonIncidentScore),
               value: gaugeValue,
               display: liveDisplay,
               max: 100.0,
@@ -65,14 +68,16 @@ class IncidentCenterView extends StatelessWidget {
           ],
         ),
         dom.div(
-          styles: const dom.Styles(raw: <String, String>{
-            'display': 'flex',
-            'justify-content': 'center',
-          }),
+          styles: const dom.Styles(
+            raw: <String, String>{
+              'display': 'flex',
+              'justify-content': 'center',
+            },
+          ),
           <Widget>[_stateChip(status.state)],
         ),
         sectionCard(
-          label: 'Incident Timeline',
+          label: reactorText(ReactorText.commonIncidentTimeline),
           child: status.timeline.isEmpty
               ? ArcaneEmptyState.noData()
               : Collection(
@@ -80,17 +85,19 @@ class IncidentCenterView extends StatelessWidget {
                   children: <Widget>[
                     for (final String entry in status.timeline)
                       dom.div(
-                        styles: const dom.Styles(raw: <String, String>{
-                          'font-size': '0.875rem',
-                          'color': 'var(--foreground)',
-                        }),
+                        styles: const dom.Styles(
+                          raw: <String, String>{
+                            'font-size': '0.875rem',
+                            'color': 'var(--foreground)',
+                          },
+                        ),
                         <Widget>[Component.text(entry)],
                       ),
                   ],
                 ),
         ),
         sectionCard(
-          label: 'Contributing Factors',
+          label: reactorText(ReactorText.incidentCenterContributingFactors),
           child: status.contributors.isEmpty
               ? ArcaneEmptyState.noData()
               : Collection(
@@ -117,38 +124,46 @@ class _ContributorRow extends StatelessWidget {
     final int widthPct = (fraction * 100).round();
 
     return dom.div(
-      styles: const dom.Styles(raw: <String, String>{
-        'display': 'flex',
-        'flex-direction': 'column',
-        'gap': '2px',
-      }),
+      styles: const dom.Styles(
+        raw: <String, String>{
+          'display': 'flex',
+          'flex-direction': 'column',
+          'gap': '2px',
+        },
+      ),
       <Widget>[
         dom.div(
-          styles: const dom.Styles(raw: <String, String>{
-            'display': 'flex',
-            'justify-content': 'space-between',
-            'font-size': '0.8125rem',
-          }),
+          styles: const dom.Styles(
+            raw: <String, String>{
+              'display': 'flex',
+              'justify-content': 'space-between',
+              'font-size': '0.8125rem',
+            },
+          ),
           <Widget>[
             Component.text(contributor.name),
             Component.text(contributor.value.toStringAsFixed(1)),
           ],
         ),
         dom.div(
-          styles: const dom.Styles(raw: <String, String>{
-            'height': '4px',
-            'background-color': 'var(--border)',
-            'border-radius': '2px',
-            'overflow': 'hidden',
-          }),
+          styles: const dom.Styles(
+            raw: <String, String>{
+              'height': '4px',
+              'background-color': 'var(--border)',
+              'border-radius': '2px',
+              'overflow': 'hidden',
+            },
+          ),
           <Widget>[
             dom.div(
-              styles: dom.Styles(raw: <String, String>{
-                'height': '100%',
-                'width': '$widthPct%',
-                'background-color': 'var(--primary)',
-                'border-radius': '2px',
-              }),
+              styles: dom.Styles(
+                raw: <String, String>{
+                  'height': '100%',
+                  'width': '$widthPct%',
+                  'background-color': 'var(--primary)',
+                  'border-radius': '2px',
+                },
+              ),
               <Widget>[],
             ),
           ],
@@ -173,48 +188,53 @@ class _IncidentCenterScreenState extends State<IncidentCenterScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final IIncidentClient? client =
-        OperateScope.of(context)?.client;
+    final IIncidentClient? client = OperateScope.of(context)?.client;
     if (client != null && !_started) {
       _started = true;
       _loading = true;
-      client.incidents().then((IncidentStatus s) {
-        if (!mounted) return;
-        setState(() {
-          _status = s;
-          _loading = false;
-        });
-      }).catchError((Object _) {
-        if (!mounted) return;
-        setState(() {
-          _status = null;
-          _loading = false;
-        });
-      });
+      client
+          .incidents()
+          .then((IncidentStatus s) {
+            if (!mounted) return;
+            setState(() {
+              _status = s;
+              _loading = false;
+            });
+          })
+          .catchError((Object _) {
+            if (!mounted) return;
+            setState(() {
+              _status = null;
+              _loading = false;
+            });
+          });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final SamplerSample? sample =
-        ServerScope.of(context)?.snapshot?.sampler('incident-score');
+    final SamplerSample? sample = ServerScope.of(
+      context,
+    )?.snapshot?.sampler('incident-score');
     final IIncidentClient? client = OperateScope.of(context)?.client;
 
     if (client == null) {
       return ReactorPage(
-        title: 'Incident Center',
-        subtitle: 'Live incident analysis',
+        title: reactorText(ReactorText.incidentCenterTitle),
+        subtitle: reactorText(ReactorText.incidentCenterSubtitle),
         children: <Widget>[
           sectionCard(
-            label: 'Incident Center',
+            label: reactorText(ReactorText.incidentCenterTitle),
             child: dom.div(
-              styles: const dom.Styles(raw: <String, String>{
-                'color': 'var(--muted-foreground)',
-                'font-size': '0.875rem',
-              }),
+              styles: const dom.Styles(
+                raw: <String, String>{
+                  'color': 'var(--muted-foreground)',
+                  'font-size': '0.875rem',
+                },
+              ),
               <Widget>[
                 Component.text(
-                  'Incident data requires a live connection.',
+                  reactorText(ReactorText.incidentCenterLiveRequired),
                 ),
               ],
             ),
@@ -225,17 +245,21 @@ class _IncidentCenterScreenState extends State<IncidentCenterScreen> {
 
     if (_loading) {
       return ReactorPage(
-        title: 'Incident Center',
-        subtitle: 'Live incident analysis',
+        title: reactorText(ReactorText.incidentCenterTitle),
+        subtitle: reactorText(ReactorText.incidentCenterSubtitle),
         children: <Widget>[
           sectionCard(
-            label: 'Incident Center',
+            label: reactorText(ReactorText.incidentCenterTitle),
             child: dom.div(
-              styles: const dom.Styles(raw: <String, String>{
-                'color': 'var(--muted-foreground)',
-                'font-size': '0.875rem',
-              }),
-              <Widget>[Component.text('Loading incidents...')],
+              styles: const dom.Styles(
+                raw: <String, String>{
+                  'color': 'var(--muted-foreground)',
+                  'font-size': '0.875rem',
+                },
+              ),
+              <Widget>[
+                Component.text(reactorText(ReactorText.incidentCenterLoading)),
+              ],
             ),
           ),
         ],
@@ -244,11 +268,11 @@ class _IncidentCenterScreenState extends State<IncidentCenterScreen> {
 
     if (_status == null) {
       return ReactorPage(
-        title: 'Incident Center',
-        subtitle: 'Live incident analysis',
+        title: reactorText(ReactorText.incidentCenterTitle),
+        subtitle: reactorText(ReactorText.incidentCenterSubtitle),
         children: <Widget>[
           sectionCard(
-            label: 'Incident Center',
+            label: reactorText(ReactorText.incidentCenterTitle),
             child: ArcaneEmptyState.noData(),
           ),
         ],
@@ -256,8 +280,8 @@ class _IncidentCenterScreenState extends State<IncidentCenterScreen> {
     }
 
     return ReactorPage(
-      title: 'Incident Center',
-      subtitle: 'Live incident analysis',
+      title: reactorText(ReactorText.incidentCenterTitle),
+      subtitle: reactorText(ReactorText.incidentCenterSubtitle),
       children: <Widget>[
         IncidentCenterView(
           status: _status!,

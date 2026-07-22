@@ -29,7 +29,7 @@ public final class ConfigFileSupport {
     selfWriteListener = listener;
   }
 
-  private static void writeConfig(File file, String content) throws IOException {
+  public static void writeConfig(File file, String content) throws IOException {
     IO.writeAll(file, content);
     BiConsumer<File, String> listener = selfWriteListener;
     if (listener != null) {

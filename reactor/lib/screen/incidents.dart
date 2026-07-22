@@ -4,6 +4,7 @@ import 'package:arcane_jaspr/arcane_jaspr.dart';
 import 'package:jaspr/dom.dart' as dom;
 
 import '../chart/timeseries_chart.dart';
+import '../localization/reactor_localizations.dart';
 import '../model/sampler_sample.dart';
 import '../state/server_scope.dart';
 import '../ui/reactor_ui.dart';
@@ -17,26 +18,31 @@ class IncidentsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ServerScope? scope = ServerScope.of(context);
-    final SamplerSample? incidentScore =
-        scope?.snapshot?.sampler('incident-score');
-    final SamplerSample? backlogGrowthRate =
-        scope?.snapshot?.sampler('backlog-growth-rate');
-    final SamplerSample? schedulerBacklog =
-        scope?.snapshot?.sampler('scheduler-backlog');
+    final SamplerSample? incidentScore = scope?.snapshot?.sampler(
+      'incident-score',
+    );
+    final SamplerSample? backlogGrowthRate = scope?.snapshot?.sampler(
+      'backlog-growth-rate',
+    );
+    final SamplerSample? schedulerBacklog = scope?.snapshot?.sampler(
+      'scheduler-backlog',
+    );
 
     return ReactorPage(
-      title: 'Incidents',
-      subtitle: 'Incident scoring and history',
+      title: reactorText(ReactorText.incidentsTitle),
+      subtitle: reactorText(ReactorText.incidentsSubtitle),
       children: <Widget>[
         dom.div(
-          styles: const dom.Styles(raw: <String, String>{
-            'display': 'flex',
-            'justify-content': 'center',
-            'padding': '1rem 0',
-          }),
+          styles: const dom.Styles(
+            raw: <String, String>{
+              'display': 'flex',
+              'justify-content': 'center',
+              'padding': '1rem 0',
+            },
+          ),
           <Widget>[
             Gauge(
-              label: 'Incident Score',
+              label: reactorText(ReactorText.commonIncidentScore),
               value: incidentScore?.value ?? 0.0,
               display: incidentScore?.display,
               max: 100.0,
@@ -45,24 +51,27 @@ class IncidentsScreen extends StatelessWidget {
           ],
         ),
         sectionCard(
-          label: 'Incident Timeline',
+          label: reactorText(ReactorText.commonIncidentTimeline),
           child: TimeseriesChart(
             series: <(String, List<double>)>[
-              ('Incident Score', incidentScore?.history ?? const <double>[]),
+              (
+                reactorText(ReactorText.commonIncidentScore),
+                incidentScore?.history ?? const <double>[],
+              ),
             ],
             height: 120,
           ),
         ),
         sectionCard(
-          label: 'Backlog',
+          label: reactorText(ReactorText.incidentsBacklog),
           child: TimeseriesChart(
             series: <(String, List<double>)>[
               (
-                'Growth Rate',
+                reactorText(ReactorText.commonGrowthRate),
                 backlogGrowthRate?.history ?? const <double>[],
               ),
               (
-                'Scheduler Backlog',
+                reactorText(ReactorText.commonSchedulerBacklog),
                 schedulerBacklog?.history ?? const <double>[],
               ),
             ],
@@ -70,9 +79,18 @@ class IncidentsScreen extends StatelessWidget {
           ),
         ),
         statGrid(<Widget>[
-          StatTile(label: 'Incident Score', sample: incidentScore),
-          StatTile(label: 'Backlog Growth', sample: backlogGrowthRate),
-          StatTile(label: 'Scheduler Backlog', sample: schedulerBacklog),
+          StatTile(
+            label: reactorText(ReactorText.commonIncidentScore),
+            sample: incidentScore,
+          ),
+          StatTile(
+            label: reactorText(ReactorText.incidentsBacklogGrowth),
+            sample: backlogGrowthRate,
+          ),
+          StatTile(
+            label: reactorText(ReactorText.commonSchedulerBacklog),
+            sample: schedulerBacklog,
+          ),
         ]),
       ],
     );

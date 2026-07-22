@@ -1,35 +1,18 @@
 package art.arcane.react.util.project.config;
 
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.ConfigMessages;
+import art.arcane.volmlib.util.localization.MessageArgument;
+import art.arcane.volmlib.util.localization.TextKey;
+
 import java.lang.reflect.Field;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 public final class ConfigDocumentation {
-  private static final Map<String, String> SUMMARY_BY_KEY = Map.ofEntries(
-      Map.entry("enabled", "Enables or disables this component."),
-      Map.entry("debug", "Enables extra debugging output and diagnostics."),
-      Map.entry("verbose", "Enables verbose logging for additional runtime detail."),
-      Map.entry("customColors", "Enables custom color rendering in monitors and UI."),
-      Map.entry("baseValue", "Base material value used by value calculations."),
-      Map.entry("valueMutlipliers", "Per-material value multipliers used to tune priority and valuation."),
-      Map.entry("maxRecipeListPrecaution", "Safety cap used while exploring recipe chains to avoid runaway cost loops."),
-      Map.entry("monitorConfiguration", "Default monitor layout and sampler grouping."),
-      Map.entry("updateCooldownSeconds", "Cooldown between dynamic updates to reduce jitter and churn."),
-      Map.entry("secondsToPurge", "Delay before purge actions start removing entities."),
-      Map.entry("countUpTickTimeThresholdMS", "Threshold after which TPS sampler switches to elapsed-time reporting.")
-  );
-
-  private static final Map<String, String> IMPACT_BY_KEY = Map.ofEntries(
-      Map.entry("enabled", "Set to false to disable this behavior without removing the config file."),
-      Map.entry("debug", "Higher verbosity can help troubleshooting but may add console noise."),
-      Map.entry("verbose", "Enable only when diagnosing behavior to avoid noisy logs."),
-      Map.entry("baseValue", "Higher values increase baseline valuation; lower values make value scores more conservative."),
-      Map.entry("valueMutlipliers", "Higher multipliers increase weight for selected materials; lower values decrease it."),
-      Map.entry("maxRecipeListPrecaution", "Higher values allow deeper recipe traversal; lower values reduce CPU and avoid recursion risk."),
-      Map.entry("updateCooldownSeconds", "Higher values reduce update frequency; lower values react faster but can oscillate more."),
-      Map.entry("secondsToPurge", "Higher values give players more warning time; lower values purge sooner."),
-      Map.entry("countUpTickTimeThresholdMS", "Higher values delay fallback reporting; lower values switch sooner during long stalls.")
-  );
-
   private static final Set<String> ALWAYS_VISIBLE_KEYS = Set.of(
       "enabled",
       "debug",
@@ -50,8 +33,8 @@ public final class ConfigDocumentation {
     String impact;
 
     if (annotation != null) {
-      summary = annotation.value().strip();
-      impact = annotation.impact().strip();
+      summary = ConfigLocalization.fieldSummary(field);
+      impact = ConfigLocalization.fieldImpact(field);
       if (isGenericSummary(summary)) {
         summary = defaultSummary(sourceTag, path, field);
       }
@@ -59,20 +42,22 @@ public final class ConfigDocumentation {
         impact = defaultImpact(field, value);
       }
     } else {
-      summary = SUMMARY_BY_KEY.getOrDefault(key, defaultSummary(sourceTag, path, field));
-      impact = IMPACT_BY_KEY.getOrDefault(key, defaultImpact(field, value));
+      TextKey summaryKey = ConfigMessages.summaryFor(key);
+      TextKey impactKey = ConfigMessages.impactFor(key);
+      summary = summaryKey == null ? defaultSummary(sourceTag, path, field) : ReactLanguage.raw(summaryKey);
+      impact = impactKey == null ? defaultImpact(field, value) : ReactLanguage.raw(impactKey);
     }
 
     if (summary != null && !summary.isBlank()) {
       lines.add(summary);
     }
     if (!impact.isBlank()) {
-      lines.add("Effect: " + impact);
+      lines.add(ReactLanguage.raw(ConfigMessages.EFFECT, MessageArgument.untrusted("impact", impact)));
     }
 
     String options = optionHints(field, value);
     if (!options.isBlank()) {
-      lines.add("Options: " + options);
+      lines.add(ReactLanguage.raw(ConfigMessages.OPTIONS, MessageArgument.untrusted("options", options)));
     }
 
     lines.addAll(rangeHints(field));
@@ -81,26 +66,48 @@ public final class ConfigDocumentation {
 
   public static String buildRootDescription(String sourceTag, Class<?> rootType) {
     if (sourceTag != null && sourceTag.startsWith("feature:")) {
-      return "Configuration for the " + sourceTag.substring("feature:".length()) + " feature.";
+      return ReactLanguage.raw(
+          ConfigMessages.ROOT_FEATURE,
+          MessageArgument.untrusted("name", sourceTag.substring("feature:".length()))
+      );
     }
     if (sourceTag != null && sourceTag.startsWith("tweak:")) {
-      return "Configuration for the " + sourceTag.substring("tweak:".length()) + " tweak.";
+      return ReactLanguage.raw(
+          ConfigMessages.ROOT_TWEAK,
+          MessageArgument.untrusted("name", sourceTag.substring("tweak:".length()))
+      );
     }
     if (sourceTag != null && sourceTag.startsWith("action:")) {
-      return "Configuration for the " + sourceTag.substring("action:".length()) + " action.";
+      return ReactLanguage.raw(
+          ConfigMessages.ROOT_ACTION,
+          MessageArgument.untrusted("name", sourceTag.substring("action:".length()))
+      );
     }
     if (sourceTag != null && sourceTag.startsWith("sampler:")) {
-      return "Configuration for the " + sourceTag.substring("sampler:".length()) + " sampler.";
+      return ReactLanguage.raw(
+          ConfigMessages.ROOT_SAMPLER,
+          MessageArgument.untrusted("name", sourceTag.substring("sampler:".length()))
+      );
     }
     if (sourceTag != null && sourceTag.startsWith("core:")) {
-      return "Configuration for the " + sourceTag.substring("core:".length()) + " core controller.";
+      return ReactLanguage.raw(
+          ConfigMessages.ROOT_CORE,
+          MessageArgument.untrusted("name", sourceTag.substring("core:".length()))
+      );
     }
 
     if (rootType != null) {
-      return "Configuration for " + humanize(rootType.getSimpleName()) + ".";
+      String description = ConfigLocalization.description(rootType);
+      if (!description.isBlank()) {
+        return description;
+      }
+      return ReactLanguage.raw(
+          ConfigMessages.ROOT_TYPE,
+          MessageArgument.untrusted("name", humanize(rootType.getSimpleName()))
+      );
     }
 
-    return "React configuration.";
+    return ReactLanguage.raw(ConfigMessages.ROOT_DEFAULT);
   }
 
   public static boolean shouldExposeField(String sourceTag, String path, Field field, Object value) {
@@ -146,22 +153,45 @@ public final class ConfigDocumentation {
 
     String humanLeaf = humanize(leaf);
     if (sourceTag != null && sourceTag.startsWith("feature:")) {
-      return List.of("Settings for the " + sourceTag.substring("feature:".length()) + " feature " + humanLeaf + " section.");
+      return List.of(ReactLanguage.raw(
+          ConfigMessages.SECTION_FEATURE,
+          MessageArgument.untrusted("name", sourceTag.substring("feature:".length())),
+          MessageArgument.untrusted("section", humanLeaf)
+      ));
     }
     if (sourceTag != null && sourceTag.startsWith("tweak:")) {
-      return List.of("Settings for the " + sourceTag.substring("tweak:".length()) + " tweak " + humanLeaf + " section.");
+      return List.of(ReactLanguage.raw(
+          ConfigMessages.SECTION_TWEAK,
+          MessageArgument.untrusted("name", sourceTag.substring("tweak:".length())),
+          MessageArgument.untrusted("section", humanLeaf)
+      ));
     }
     if (sourceTag != null && sourceTag.startsWith("action:")) {
-      return List.of("Settings for the " + sourceTag.substring("action:".length()) + " action " + humanLeaf + " section.");
+      return List.of(ReactLanguage.raw(
+          ConfigMessages.SECTION_ACTION,
+          MessageArgument.untrusted("name", sourceTag.substring("action:".length())),
+          MessageArgument.untrusted("section", humanLeaf)
+      ));
     }
     if (sourceTag != null && sourceTag.startsWith("sampler:")) {
-      return List.of("Settings for the " + sourceTag.substring("sampler:".length()) + " sampler " + humanLeaf + " section.");
+      return List.of(ReactLanguage.raw(
+          ConfigMessages.SECTION_SAMPLER,
+          MessageArgument.untrusted("name", sourceTag.substring("sampler:".length())),
+          MessageArgument.untrusted("section", humanLeaf)
+      ));
     }
     if (sourceTag != null && sourceTag.startsWith("core:")) {
-      return List.of("Settings for the " + sourceTag.substring("core:".length()) + " core controller " + humanLeaf + " section.");
+      return List.of(ReactLanguage.raw(
+          ConfigMessages.SECTION_CORE,
+          MessageArgument.untrusted("name", sourceTag.substring("core:".length())),
+          MessageArgument.untrusted("section", humanLeaf)
+      ));
     }
 
-    return List.of("Settings for " + humanLeaf + ".");
+    return List.of(ReactLanguage.raw(
+        ConfigMessages.SECTION_DEFAULT,
+        MessageArgument.untrusted("section", humanLeaf)
+    ));
   }
 
   private static List<String> rangeHints(Field field) {
@@ -169,13 +199,13 @@ public final class ConfigDocumentation {
     String lower = field.getName().toLowerCase(Locale.ROOT);
 
     if (lower.contains("chance") || lower.contains("percent") || lower.contains("ratio")) {
-      hints.add("Tuning: Start with small changes and validate behavior under load before increasing aggressively.");
+      hints.add(ReactLanguage.raw(ConfigMessages.TUNING_RATIO));
     }
     if (lower.contains("tick") || lower.contains("interval") || lower.endsWith("ms") || lower.contains("cooldown")) {
-      hints.add("Tuning: Lower values run more often and can cost more CPU; increase carefully on busy servers.");
+      hints.add(ReactLanguage.raw(ConfigMessages.TUNING_TIMING));
     }
     if (lower.contains("radius") || lower.contains("distance") || lower.contains("range")) {
-      hints.add("Tuning: Larger ranges increase affected entities/blocks and may increase per-tick work.");
+      hints.add(ReactLanguage.raw(ConfigMessages.TUNING_RANGE));
     }
 
     return hints;
@@ -186,48 +216,72 @@ public final class ConfigDocumentation {
     String lower = key.toLowerCase(Locale.ROOT);
     String subject = subject(sourceTag, path);
     if (lower.contains("cooldown")) {
-      return "Cooldown between " + subject + " operations.";
+      return ReactLanguage.raw(ConfigMessages.SUMMARY_COOLDOWN, MessageArgument.untrusted("subject", subject));
     }
     if (lower.contains("chance") || lower.contains("percent") || lower.contains("ratio")) {
-      return "Chance/ratio tuning used by " + subject + ".";
+      return ReactLanguage.raw(ConfigMessages.SUMMARY_RATIO, MessageArgument.untrusted("subject", subject));
     }
     if (lower.contains("multiplier") || lower.contains("factor") || lower.contains("scalar")) {
-      return "Scaling applied to " + subject + ".";
+      return ReactLanguage.raw(ConfigMessages.SUMMARY_SCALING, MessageArgument.untrusted("subject", subject));
     }
     if (lower.contains("duration") || lower.contains("ticks") || lower.contains("millis") || lower.endsWith("ms") || lower.contains("interval")) {
-      return "Duration or timing value used by " + subject + ".";
+      return ReactLanguage.raw(ConfigMessages.SUMMARY_TIMING, MessageArgument.untrusted("subject", subject));
     }
     if (lower.contains("radius") || lower.contains("range") || lower.contains("distance")) {
-      return "Distance or area limit used by " + subject + ".";
+      return ReactLanguage.raw(ConfigMessages.SUMMARY_RANGE, MessageArgument.untrusted("subject", subject));
     }
     if (lower.startsWith("min") || lower.contains("threshold")) {
-      return "Minimum threshold required for " + subject + ".";
+      return ReactLanguage.raw(ConfigMessages.SUMMARY_MINIMUM, MessageArgument.untrusted("subject", subject));
     }
     if (lower.startsWith("max") || lower.contains("cap") || lower.contains("limit")) {
-      return "Maximum cap applied to " + subject + ".";
+      return ReactLanguage.raw(ConfigMessages.SUMMARY_MAXIMUM, MessageArgument.untrusted("subject", subject));
     }
 
     String label = humanize(field.getName());
     if (sourceTag != null && sourceTag.startsWith("feature:")) {
-      return "Controls " + label + " for the " + sourceTag.substring("feature:".length()) + " feature.";
+      return ReactLanguage.raw(
+          ConfigMessages.CONTROL_FEATURE,
+          MessageArgument.untrusted("label", label),
+          MessageArgument.untrusted("name", sourceTag.substring("feature:".length()))
+      );
     }
     if (sourceTag != null && sourceTag.startsWith("tweak:")) {
-      return "Controls " + label + " for the " + sourceTag.substring("tweak:".length()) + " tweak.";
+      return ReactLanguage.raw(
+          ConfigMessages.CONTROL_TWEAK,
+          MessageArgument.untrusted("label", label),
+          MessageArgument.untrusted("name", sourceTag.substring("tweak:".length()))
+      );
     }
     if (sourceTag != null && sourceTag.startsWith("action:")) {
-      return "Controls " + label + " for the " + sourceTag.substring("action:".length()) + " action.";
+      return ReactLanguage.raw(
+          ConfigMessages.CONTROL_ACTION,
+          MessageArgument.untrusted("label", label),
+          MessageArgument.untrusted("name", sourceTag.substring("action:".length()))
+      );
     }
     if (sourceTag != null && sourceTag.startsWith("sampler:")) {
-      return "Controls " + label + " for the " + sourceTag.substring("sampler:".length()) + " sampler.";
+      return ReactLanguage.raw(
+          ConfigMessages.CONTROL_SAMPLER,
+          MessageArgument.untrusted("label", label),
+          MessageArgument.untrusted("name", sourceTag.substring("sampler:".length()))
+      );
     }
     if (sourceTag != null && sourceTag.startsWith("core:")) {
-      return "Controls " + label + " for the " + sourceTag.substring("core:".length()) + " core controller.";
+      return ReactLanguage.raw(
+          ConfigMessages.CONTROL_CORE,
+          MessageArgument.untrusted("label", label),
+          MessageArgument.untrusted("name", sourceTag.substring("core:".length()))
+      );
     }
     if (path != null && !path.isBlank()) {
-      return "Controls " + label + " in the " + path + " section.";
+      return ReactLanguage.raw(
+          ConfigMessages.CONTROL_SECTION,
+          MessageArgument.untrusted("label", label),
+          MessageArgument.untrusted("section", path)
+      );
     }
 
-    return "Controls " + label + ".";
+    return ReactLanguage.raw(ConfigMessages.CONTROL_DEFAULT, MessageArgument.untrusted("label", label));
   }
 
   private static String defaultImpact(Field field, Object value) {
@@ -235,40 +289,40 @@ public final class ConfigDocumentation {
     String lower = field.getName().toLowerCase(Locale.ROOT);
 
     if (type == boolean.class || type == Boolean.class) {
-      return "True enables this behavior and false disables it.";
+      return ReactLanguage.raw(ConfigMessages.IMPACT_BOOLEAN);
     }
     if (lower.contains("chance") || lower.contains("ratio") || lower.contains("percent")) {
-      return "Higher values trigger behavior more often; lower values trigger it less often.";
+      return ReactLanguage.raw(ConfigMessages.IMPACT_RATIO);
     }
     if (lower.contains("cooldown") || lower.contains("interval") || lower.endsWith("ms") || lower.contains("tick")) {
-      return "Higher values run less frequently; lower values run more frequently.";
+      return ReactLanguage.raw(ConfigMessages.IMPACT_TIMING);
     }
     if (lower.contains("multiplier") || lower.contains("factor") || lower.contains("scalar")) {
-      return "Higher values amplify the effect; lower values reduce it.";
+      return ReactLanguage.raw(ConfigMessages.IMPACT_SCALING);
     }
     if (lower.contains("radius") || lower.contains("range") || lower.contains("distance")) {
-      return "Higher values affect a wider area; lower values keep the effect tighter.";
+      return ReactLanguage.raw(ConfigMessages.IMPACT_RANGE);
     }
     if (lower.startsWith("min") || lower.contains("threshold")) {
-      return "Higher values make activation stricter; lower values make it easier to trigger.";
+      return ReactLanguage.raw(ConfigMessages.IMPACT_MINIMUM);
     }
     if (lower.startsWith("max") || lower.contains("cap") || lower.contains("limit")) {
-      return "Higher values raise the upper limit; lower values clamp behavior sooner.";
+      return ReactLanguage.raw(ConfigMessages.IMPACT_MAXIMUM);
     }
     if (Number.class.isAssignableFrom(type) || (type.isPrimitive() && type != boolean.class && type != char.class)) {
-      return "Higher values generally increase intensity, cost, or limits; lower values reduce them.";
+      return ReactLanguage.raw(ConfigMessages.IMPACT_NUMBER);
     }
     if (type.isEnum()) {
-      return "Changing this selects a different operating mode.";
+      return ReactLanguage.raw(ConfigMessages.IMPACT_ENUM);
     }
     if (type == String.class || type == char.class || type == Character.class) {
-      return "Changing this updates the identifier or label used by the component.";
+      return ReactLanguage.raw(ConfigMessages.IMPACT_TEXT);
     }
     if (value instanceof List<?>) {
-      return "Add or remove entries to tune which values are included.";
+      return ReactLanguage.raw(ConfigMessages.IMPACT_LIST);
     }
     if (value instanceof Map<?, ?>) {
-      return "Edit keys to define targeted overrides for this behavior.";
+      return ReactLanguage.raw(ConfigMessages.IMPACT_MAP);
     }
 
     return "";
@@ -281,7 +335,7 @@ public final class ConfigDocumentation {
 
     Class<?> type = field.getType();
     if (type == boolean.class || type == Boolean.class) {
-      return "true | false";
+      return ReactLanguage.raw(ConfigMessages.OPTION_BOOLEAN);
     }
     if (type.isEnum()) {
       Object[] constants = type.getEnumConstants();
@@ -299,16 +353,16 @@ public final class ConfigDocumentation {
       return builder.toString();
     }
     if (Number.class.isAssignableFrom(type) || (type.isPrimitive() && type != boolean.class && type != char.class)) {
-      return "Numeric value.";
+      return ReactLanguage.raw(ConfigMessages.OPTION_NUMBER);
     }
     if (type == String.class || type == char.class || type == Character.class) {
-      return "Text value.";
+      return ReactLanguage.raw(ConfigMessages.OPTION_TEXT);
     }
     if (value instanceof List<?>) {
-      return "TOML array, for example: [\"value-a\", \"value-b\"]";
+      return ReactLanguage.raw(ConfigMessages.OPTION_LIST);
     }
     if (value instanceof Map<?, ?>) {
-      return "TOML key/value table entries.";
+      return ReactLanguage.raw(ConfigMessages.OPTION_MAP);
     }
 
     return "";
@@ -335,29 +389,47 @@ public final class ConfigDocumentation {
 
   private static String subject(String sourceTag, String path) {
     if (sourceTag != null && sourceTag.startsWith("feature:")) {
-      return "the " + sourceTag.substring("feature:".length()) + " feature";
+      return ReactLanguage.raw(
+          ConfigMessages.SUBJECT_FEATURE,
+          MessageArgument.untrusted("name", sourceTag.substring("feature:".length()))
+      );
     }
     if (sourceTag != null && sourceTag.startsWith("tweak:")) {
-      return "the " + sourceTag.substring("tweak:".length()) + " tweak";
+      return ReactLanguage.raw(
+          ConfigMessages.SUBJECT_TWEAK,
+          MessageArgument.untrusted("name", sourceTag.substring("tweak:".length()))
+      );
     }
     if (sourceTag != null && sourceTag.startsWith("action:")) {
-      return "the " + sourceTag.substring("action:".length()) + " action";
+      return ReactLanguage.raw(
+          ConfigMessages.SUBJECT_ACTION,
+          MessageArgument.untrusted("name", sourceTag.substring("action:".length()))
+      );
     }
     if (sourceTag != null && sourceTag.startsWith("sampler:")) {
-      return "the " + sourceTag.substring("sampler:".length()) + " sampler";
+      return ReactLanguage.raw(
+          ConfigMessages.SUBJECT_SAMPLER,
+          MessageArgument.untrusted("name", sourceTag.substring("sampler:".length()))
+      );
     }
     if (sourceTag != null && sourceTag.startsWith("core:")) {
-      return "the " + sourceTag.substring("core:".length()) + " core controller";
+      return ReactLanguage.raw(
+          ConfigMessages.SUBJECT_CORE,
+          MessageArgument.untrusted("name", sourceTag.substring("core:".length()))
+      );
     }
     if (path != null && !path.isBlank()) {
-      return "the " + path + " section";
+      return ReactLanguage.raw(
+          ConfigMessages.SUBJECT_SECTION,
+          MessageArgument.untrusted("section", path)
+      );
     }
-    return "this component";
+    return ReactLanguage.raw(ConfigMessages.SUBJECT_DEFAULT);
   }
 
   private static String humanize(String key) {
     if (key == null || key.isBlank()) {
-      return "this setting";
+      return ReactLanguage.raw(ConfigMessages.SETTING_DEFAULT);
     }
 
     String spaced = key

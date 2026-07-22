@@ -12,13 +12,15 @@ import art.arcane.react.api.test.checks.FeatureLifecycleCheck;
 import art.arcane.react.api.test.checks.MapsRenderingCheck;
 import art.arcane.react.api.test.checks.MonitoringCheck;
 import art.arcane.react.api.test.load.LoadTest;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.CommandMessages;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.director.DirectorExecutor;
-import art.arcane.react.util.format.C;
 import art.arcane.react.util.plugin.VolmitSender;
 import art.arcane.volmlib.util.director.DirectorOrigin;
 import art.arcane.volmlib.util.director.annotations.Director;
 import art.arcane.volmlib.util.director.annotations.Param;
+import art.arcane.volmlib.util.localization.MessageArgument;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 
@@ -28,7 +30,8 @@ import java.nio.file.Path;
     name = "test",
     aliases = {"selftest"},
     origin = DirectorOrigin.BOTH,
-    description = "React comprehensive in-game self-test and load harness."
+    description = "Run React validation and load tests",
+    descriptionKey = "command.description.test"
 )
 public class CommandTest implements DirectorExecutor {
 
@@ -37,12 +40,13 @@ public class CommandTest implements DirectorExecutor {
       aliases = {"r"},
       origin = DirectorOrigin.BOTH,
       sync = true,
-      description = "Run the full React subsystem self-test and write a JSON report."
+      description = "Run the React validation suite",
+      descriptionKey = "command.description.test.run"
   )
   public void run(
-      @Param(name = "full", description = "Run the full deep test suite.", defaultValue = "true", aliases = {"f"})
+      @Param(name = "full", description = "Run the full deep test suite", descriptionKey = "command.parameter.test.full", defaultValue = "true", aliases = {"f"})
       boolean full,
-      @Param(name = "json", description = "Write a JSON report file.", defaultValue = "true", aliases = {"j"})
+      @Param(name = "json", description = "Write a JSON report file", descriptionKey = "command.parameter.test.json", defaultValue = "true", aliases = {"j"})
       boolean json
   ) {
     VolmitSender out = sender();
@@ -51,7 +55,16 @@ public class CommandTest implements DirectorExecutor {
     boolean folia = J.isFoliaThreading();
     TestReport report = new TestReport(platform, mcVersion, folia, full, System.currentTimeMillis());
 
-    out.sendMessage(C.REACT + "React test run — platform=" + platform + " mc=" + mcVersion + (folia ? " (Folia region-threaded)" : ""));
+    ReactLanguage.sendPrefixed(
+        out,
+        CommandMessages.TEST_RUN_START,
+        MessageArgument.untrusted("platform", platform),
+        MessageArgument.untrusted("minecraft", mcVersion),
+        MessageArgument.untrusted(
+            "threading",
+            ReactLanguage.plain(folia ? CommandMessages.TEST_THREADING_FOLIA : CommandMessages.TEST_THREADING_STANDARD)
+        )
+    );
 
     ReactTestRunner runner = new ReactTestRunner()
         .add(new MonitoringCheck())
@@ -66,19 +79,25 @@ public class CommandTest implements DirectorExecutor {
       int fail = done.count(TestStatus.FAIL);
       int warn = done.count(TestStatus.WARN);
       int skip = done.count(TestStatus.SKIP);
-      String verdict = done.passed() ? (C.GREEN + "PASS") : (C.RED + "FAIL");
-      String reportPath = "(not written)";
+      String reportPath = ReactLanguage.plain(CommandMessages.TEST_REPORT_NOT_WRITTEN);
       if (json) {
         try {
           Path path = TestReportWriter.write(done, "selftest");
           reportPath = path.toString();
         } catch (Throwable e) {
-          out.sendMessage(C.RED + "Failed to write report: " + e.getMessage());
+          ReactLanguage.sendPrefixed(out, CommandMessages.TEST_REPORT_FAILED, MessageArgument.untrusted("reason", String.valueOf(e.getMessage())));
           React.reportError(e);
         }
       }
-      out.sendMessage(C.REACT + "React test: " + verdict + C.GRAY + " pass=" + pass + " fail=" + fail + " warn=" + warn + " skip=" + skip);
-      out.sendMessage(C.REACT + "Report: " + reportPath);
+      ReactLanguage.sendPrefixed(
+          out,
+          done.passed() ? CommandMessages.TEST_SUMMARY_PASS : CommandMessages.TEST_SUMMARY_FAIL,
+          MessageArgument.untrusted("pass", pass),
+          MessageArgument.untrusted("fail", fail),
+          MessageArgument.untrusted("warn", warn),
+          MessageArgument.untrusted("skip", skip)
+      );
+      ReactLanguage.sendPrefixed(out, CommandMessages.TEST_REPORT_PATH, MessageArgument.untrusted("path", reportPath));
     });
   }
 
@@ -87,23 +106,24 @@ public class CommandTest implements DirectorExecutor {
       aliases = {"load"},
       origin = DirectorOrigin.BOTH,
       sync = true,
-      description = "Synthetic 1k-player load/stress test with a hard SLO gate and a React-on/off baseline."
+      description = "Run a two-pass synthetic load test",
+      descriptionKey = "command.description.test.load"
   )
   public void loadtest(
-      @Param(name = "confirm", description = "Must be true; this spawns heavy synthetic load on world 0.")
+      @Param(name = "confirm", description = "Must be true; this spawns heavy synthetic load on world 0", descriptionKey = "command.parameter.test.confirm")
       boolean confirm,
-      @Param(name = "players", description = "Synthetic player count.", defaultValue = "1000", aliases = {"p"})
+      @Param(name = "players", description = "Synthetic player count", descriptionKey = "command.parameter.test.players", defaultValue = "1000", aliases = {"p"})
       int players,
-      @Param(name = "duration", description = "Seconds per pass (React-on then React-off).", defaultValue = "600", aliases = {"d"})
+      @Param(name = "duration", description = "Seconds per pass, first with React on and then with React off", descriptionKey = "command.parameter.test.duration", defaultValue = "600", aliases = {"d"})
       int duration
   ) {
     VolmitSender out = sender();
     if (!confirm) {
-      out.sendMessage(C.REACT + "Refused: pass confirm=true to run the load test (it spawns heavy synthetic load on world 0).");
+      ReactLanguage.sendPrefixed(out, CommandMessages.LOAD_CONFIRM_REQUIRED);
       return;
     }
     if (Bukkit.getWorlds().isEmpty()) {
-      out.sendMessage(C.REACT + "Refused: no worlds loaded.");
+      ReactLanguage.sendPrefixed(out, CommandMessages.LOAD_NO_WORLDS);
       return;
     }
 
@@ -112,20 +132,25 @@ public class CommandTest implements DirectorExecutor {
     String mcVersion = Bukkit.getBukkitVersion();
     boolean folia = J.isFoliaThreading();
     TestReport report = new TestReport(platform, mcVersion, folia, true, System.currentTimeMillis());
-    out.sendMessage(C.REACT + "Loadtest starting — platform=" + platform + " players=" + players + " duration=" + duration + "s x2 passes");
+    ReactLanguage.sendPrefixed(
+        out,
+        CommandMessages.LOAD_START,
+        MessageArgument.untrusted("platform", platform),
+        MessageArgument.untrusted("players", players),
+        MessageArgument.untrusted("duration", duration)
+    );
 
     new LoadTest(out, players, duration, world, report, (TestReport done) -> {
-      String reportPath = "(not written)";
+      String reportPath = ReactLanguage.plain(CommandMessages.TEST_REPORT_NOT_WRITTEN);
       try {
         Path path = TestReportWriter.write(done, "loadtest");
         reportPath = path.toString();
       } catch (Throwable e) {
-        out.sendMessage(C.RED + "Failed to write loadtest report: " + e.getMessage());
+        ReactLanguage.sendPrefixed(out, CommandMessages.LOAD_REPORT_FAILED, MessageArgument.untrusted("reason", String.valueOf(e.getMessage())));
         React.reportError(e);
       }
-      String verdict = done.passed() ? (C.GREEN + "PASS") : (C.RED + "FAIL");
-      out.sendMessage(C.REACT + "Loadtest: " + verdict);
-      out.sendMessage(C.REACT + "Report: " + reportPath);
+      ReactLanguage.sendPrefixed(out, done.passed() ? CommandMessages.LOAD_SUMMARY_PASS : CommandMessages.LOAD_SUMMARY_FAIL);
+      ReactLanguage.sendPrefixed(out, CommandMessages.TEST_REPORT_PATH, MessageArgument.untrusted("path", reportPath));
     }).run();
   }
 }

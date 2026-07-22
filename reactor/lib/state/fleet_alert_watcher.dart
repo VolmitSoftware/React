@@ -3,6 +3,7 @@ library;
 import 'package:arcane_jaspr/arcane_jaspr.dart';
 
 import '../model/alert.dart';
+import '../localization/reactor_localizations.dart';
 import '../model/alert_thresholds.dart';
 import '../model/server_snapshot.dart';
 import 'alert_engine.dart';
@@ -31,8 +32,10 @@ class _FleetAlertWatcherState extends State<FleetAlertWatcher> {
 
     final List<({String id, String name, ServerSnapshot? snapshot})> servers =
         liveScope.servers
-            .map((FleetServerLive s) =>
-                (id: s.id, name: s.name, snapshot: s.snapshot))
+            .map(
+              (FleetServerLive s) =>
+                  (id: s.id, name: s.name, snapshot: s.snapshot),
+            )
             .toList();
 
     final AlertThresholds thresholds = fleet.alertStore.thresholds;
@@ -51,8 +54,11 @@ class _FleetAlertWatcherState extends State<FleetAlertWatcher> {
       final FleetAlert? alert = byKey[key];
       if (alert != null) {
         ArcaneSonner.error(
-          'Critical alert',
-          description: '${alert.serverName}: ${alert.title}',
+          reactorText(ReactorText.alertCriticalNotification),
+          description: reactorText(
+            ReactorText.alertCriticalDescription,
+            <String, Object?>{'server': alert.serverName, 'title': alert.title},
+          ),
         );
       }
     }

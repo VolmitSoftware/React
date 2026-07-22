@@ -4,6 +4,10 @@
 
 The master branch is for the latest version of minecraft.
 
+## Language and localization
+
+Canonical server English is defined in the typed Java catalogs under `React/src/main/java/art/arcane/react/localization`; canonical Reactor dashboard English is defined in `reactor/lib/localization`. Neither surface requires a duplicate English translation resource during feature work. Complete bundles are included for German, Spanish, Finnish, French, Hebrew, Italian, Japanese, Korean, Lithuanian, Dutch, Polish, Portuguese, Russian, Turkish, Vietnamese, Simplified Chinese, and Traditional Chinese. React's `language` setting selects the server locale, and a TOML file at `languages/overrides/<locale>.toml` can override only selected server messages. Missing entries resolve from the selected bundle and then code-owned English.
+
 # [Support](https://discord.gg/3xxPTpT) **|** [Documentation](https://docs.volmit.com/react/)
 
 # Building

@@ -16,3 +16,36 @@ permissions:
     default: op
     children:
       react.use: true
+      react.shorthands.*: true
+  react.shorthands.*:
+    description: Allows using all enabled React shorthand commands.
+    default: op
+    children:
+      react.shorthands.gms: true
+      react.shorthands.gmsp: true
+      react.shorthands.gmc: true
+      react.shorthands.give: true
+      react.shorthands.more: true
+      react.shorthands.rl: true
+      react.shorthands.custom: true
+  react.shorthands.gms:
+    description: Allows using /gms when React Shorthands is enabled.
+    default: op
+  react.shorthands.gmsp:
+    description: Allows using /gmsp when React Shorthands is enabled.
+    default: op
+  react.shorthands.gmc:
+    description: Allows using /gmc when React Shorthands is enabled.
+    default: op
+  react.shorthands.give:
+    description: Allows using the React /give shorthand when enabled.
+    default: op
+  react.shorthands.more:
+    description: Allows using /more when React Shorthands is enabled.
+    default: op
+  react.shorthands.rl:
+    description: Allows using /rl when React Shorthands is enabled.
+    default: op
+  react.shorthands.custom:
+    description: Allows using operator-configured React shorthand commands.
+    default: op

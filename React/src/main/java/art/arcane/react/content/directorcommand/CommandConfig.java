@@ -23,8 +23,9 @@ import art.arcane.react.React;
 import art.arcane.react.core.controller.PlayerController;
 import art.arcane.react.core.gui.MonitorConfigGUI;
 import art.arcane.react.core.gui.ReactConfigGUI;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.CommandMessages;
 import art.arcane.react.util.director.DirectorExecutor;
-import art.arcane.react.util.format.C;
 import art.arcane.volmlib.util.director.DirectorOrigin;
 import art.arcane.volmlib.util.director.annotations.Director;
 import org.bukkit.entity.Player;
@@ -33,19 +34,21 @@ import org.bukkit.entity.Player;
     name = "config",
     aliases = {"cfg", "c"},
     origin = DirectorOrigin.BOTH,
-    description = "This is the place to configure Itemized Settings."
+    description = "Configure React settings",
+    descriptionKey = "command.description.config"
 )
 public class CommandConfig implements DirectorExecutor {
   @Director(
       name = "gui",
       aliases = {"menu", "editor"},
-      description = "Open the React TOML config editor.",
+      description = "Open the React TOML config editor",
+      descriptionKey = "command.description.config.gui",
       origin = DirectorOrigin.PLAYER
   )
   public void gui() {
     Player player = player();
     if (!ReactConfigGUI.canConfigure(player)) {
-      sender().sendMessage(C.RED + "You do not have permission to open the config editor.");
+      ReactLanguage.sendPrefixed(sender(), CommandMessages.CONFIG_PERMISSION);
       return;
     }
 
@@ -55,7 +58,8 @@ public class CommandConfig implements DirectorExecutor {
   @Director(
       name = "monitor",
       aliases = {"m", "mon"},
-      description = "Configure the monitor",
+      description = "Configure the action bar monitor",
+      descriptionKey = "command.description.config.monitor",
       origin = DirectorOrigin.PLAYER
   )
   public void monitor() {

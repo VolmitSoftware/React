@@ -20,11 +20,14 @@
 package art.arcane.react.content.directorcommand;
 
 import art.arcane.react.model.ReactEntity;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.CommandMessages;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.director.DirectorExecutor;
 import art.arcane.volmlib.util.director.DirectorOrigin;
 import art.arcane.volmlib.util.director.annotations.Director;
 import art.arcane.volmlib.util.format.Form;
+import art.arcane.volmlib.util.localization.MessageArgument;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
@@ -35,13 +38,15 @@ import org.bukkit.util.Vector;
 @Director(
     name = "debug",
     origin = DirectorOrigin.BOTH,
-    description = "This is the Debugging command for Various things."
+    description = "React debugging commands",
+    descriptionKey = "command.description.debug"
 )
 public class CommandDebug implements DirectorExecutor {
   @Director(
       name = "entity-data",
       aliases = {"ed"},
-      description = "Show Entity Data for the entity looked at",
+      description = "Show data for the entity being looked at",
+      descriptionKey = "command.description.debug.entity",
       origin = DirectorOrigin.PLAYER,
       sync = true
   )
@@ -58,10 +63,10 @@ public class CommandDebug implements DirectorExecutor {
         if (j instanceof LivingEntity living) {
           J.runEntity(living, () -> living.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 20, 0, false, false)));
         }
-        player().sendMessage("Priority: " + Form.f((int) ReactEntity.getPriority(j)));
-        player().sendMessage("Crowding: " + Form.f((int) ReactEntity.getCrowding(j)));
-        player().sendMessage("Player N: " + Form.f(ReactEntity.getNearestPlayer(j), 1));
-        player().sendMessage("Updated : " + Form.duration(ReactEntity.getStaleness(j), 0) + " ago");
+        ReactLanguage.send(player(), CommandMessages.DEBUG_PRIORITY, MessageArgument.untrusted("value", Form.f((int) ReactEntity.getPriority(j))));
+        ReactLanguage.send(player(), CommandMessages.DEBUG_CROWDING, MessageArgument.untrusted("value", Form.f((int) ReactEntity.getCrowding(j))));
+        ReactLanguage.send(player(), CommandMessages.DEBUG_NEAREST_PLAYER, MessageArgument.untrusted("value", Form.f(ReactEntity.getNearestPlayer(j), 1)));
+        ReactLanguage.send(player(), CommandMessages.DEBUG_UPDATED, MessageArgument.untrusted("duration", Form.duration(ReactEntity.getStaleness(j), 0)));
         break ray;
       }
     }

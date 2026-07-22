@@ -22,6 +22,8 @@ package art.arcane.react.content.feature;
 import art.arcane.react.React;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.core.controller.ObserverController;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.RendererMessages;
 import art.arcane.react.model.SampledChunk;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.data.TinyColor;
@@ -100,7 +102,7 @@ public class FeatureTickSpikeOriginReplayMap extends FeatureChunkHeatmapBase {
 
   @Override
   protected String mapLabel() {
-    return "Tick Spike Replay";
+    return ReactLanguage.raw(RendererMessages.TITLE_TICK_SPIKE_REPLAY);
   }
 
   @Override

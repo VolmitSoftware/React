@@ -3,6 +3,7 @@ library;
 import 'package:arcane_jaspr/arcane_jaspr.dart';
 
 import '../chart/timeseries_chart.dart';
+import '../localization/reactor_localizations.dart';
 import '../model/sampler_sample.dart';
 import '../model/server_snapshot.dart';
 import '../state/server_scope.dart';
@@ -56,13 +57,12 @@ class IntegrationsScreen extends StatelessWidget {
 
     if (!hasAdapt && !hasIris && !hasWormholes) {
       return ReactorPage(
-        title: 'Integrations',
-        subtitle: 'Detected plugin integrations',
+        title: reactorText(ReactorText.integrationsTitle),
+        subtitle: reactorText(ReactorText.integrationsSubtitle),
         children: <Widget>[
           ArcaneEmptyState.noData(
-            title: 'No integrations detected',
-            description:
-                'No Adapt, Iris, or Wormholes metrics are being reported by this server.',
+            title: reactorText(ReactorText.integrationsNone),
+            description: reactorText(ReactorText.integrationsNoneDescription),
           ),
         ],
       );
@@ -81,8 +81,8 @@ class IntegrationsScreen extends StatelessWidget {
     }
 
     return ReactorPage(
-      title: 'Integrations',
-      subtitle: 'Detected plugin integrations',
+      title: reactorText(ReactorText.integrationsTitle),
+      subtitle: reactorText(ReactorText.integrationsSubtitle),
       children: sections,
     );
   }
@@ -103,7 +103,9 @@ class _AdaptSection extends StatelessWidget {
       }
     }
 
-    final SamplerSample? headline = snapshot?.sampler('adapt-world-policy-latency');
+    final SamplerSample? headline = snapshot?.sampler(
+      'adapt-world-policy-latency',
+    );
 
     return sectionCard(
       label: 'Adapt',
@@ -114,7 +116,10 @@ class _AdaptSection extends StatelessWidget {
           if (headline != null)
             TimeseriesChart(
               series: <(String, List<double>)>[
-                ('Policy Latency', headline.history),
+                (
+                  reactorText(ReactorText.integrationsPolicyLatency),
+                  headline.history,
+                ),
               ],
               height: 100,
             ),
@@ -150,7 +155,10 @@ class _IrisSection extends StatelessWidget {
           if (headline != null)
             TimeseriesChart(
               series: <(String, List<double>)>[
-                ('Chunk Stream ms', headline.history),
+                (
+                  reactorText(ReactorText.integrationsChunkStreamMs),
+                  headline.history,
+                ),
               ],
               height: 100,
             ),
@@ -175,8 +183,9 @@ class _WormholesSection extends StatelessWidget {
       }
     }
 
-    final SamplerSample? headline =
-        snapshot?.sampler('wormholes-projection-render-ms');
+    final SamplerSample? headline = snapshot?.sampler(
+      'wormholes-projection-render-ms',
+    );
 
     return sectionCard(
       label: 'Wormholes',
@@ -187,7 +196,10 @@ class _WormholesSection extends StatelessWidget {
           if (headline != null)
             TimeseriesChart(
               series: <(String, List<double>)>[
-                ('Projection Render ms', headline.history),
+                (
+                  reactorText(ReactorText.integrationsProjectionRenderMs),
+                  headline.history,
+                ),
               ],
               height: 100,
             ),
@@ -203,8 +215,10 @@ String _labelFor(String id) {
       .replaceFirst('iris-', '')
       .replaceFirst('wormholes-', '');
   final List<String> words = stripped.split('-');
-  return words.map((String w) {
-    if (w.isEmpty) return w;
-    return w[0].toUpperCase() + w.substring(1);
-  }).join(' ');
+  return words
+      .map((String w) {
+        if (w.isEmpty) return w;
+        return w[0].toUpperCase() + w.substring(1);
+      })
+      .join(' ');
 }

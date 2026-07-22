@@ -20,8 +20,11 @@
 package art.arcane.react.util.plugin;
 
 
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.RuntimeMessages;
 import art.arcane.react.util.format.C;
 import art.arcane.volmlib.util.collection.KList;
+import art.arcane.volmlib.util.localization.MessageArgument;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.sound.Sound;
 
@@ -55,7 +58,7 @@ public abstract class MortarCommand implements ICommand {
     this.nodes = new KList<>(nodes);
     requiredPermissions = new KList<>();
     children = buildChildren();
-    description = "No Description";
+    description = null;
   }
 
   @Override
@@ -102,7 +105,7 @@ public abstract class MortarCommand implements ICommand {
     }
 
     if (!b) {
-      sender.sendMessage("There are either no sub-commands or you do not have permission to use them.");
+      ReactLanguage.send(sender, RuntimeMessages.LEGACY_NO_SUBCOMMANDS);
     }
 
     if (sender.isPlayer()) {
@@ -124,7 +127,7 @@ public abstract class MortarCommand implements ICommand {
   protected abstract String getArgsUsage();
 
   public String getDescription() {
-    return description;
+    return description == null ? ReactLanguage.plain(RuntimeMessages.LEGACY_NO_DESCRIPTION) : description;
   }
 
   protected void setDescription(String description) {
@@ -161,7 +164,11 @@ public abstract class MortarCommand implements ICommand {
       }
 
       if (!m.toString().trim().isEmpty()) {
-        sender.sendMessage("Parameters Ignored: " + m);
+        ReactLanguage.send(
+            sender,
+            RuntimeMessages.LEGACY_PARAMETERS_IGNORED,
+            MessageArgument.untrusted("parameters", m.toString())
+        );
       }
     }
   }

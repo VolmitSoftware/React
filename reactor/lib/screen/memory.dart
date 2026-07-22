@@ -5,6 +5,7 @@ import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart' show Component;
 
 import '../chart/timeseries_chart.dart';
+import '../localization/reactor_localizations.dart';
 import '../model/sampler_sample.dart';
 import '../state/server_scope.dart';
 import '../ui/reactor_ui.dart';
@@ -20,60 +21,80 @@ class MemoryScreen extends StatelessWidget {
     final ServerScope? scope = ServerScope.of(context);
     final SamplerSample? memUsed = scope?.snapshot?.sampler('memory-used');
     final SamplerSample? memFree = scope?.snapshot?.sampler('memory-free');
-    final SamplerSample? memAfterGc =
-        scope?.snapshot?.sampler('memory-used-after-gc');
-    final SamplerSample? memPressure =
-        scope?.snapshot?.sampler('memory-pressure');
-    final SamplerSample? gcTimePercent =
-        scope?.snapshot?.sampler('gc-time-percent');
-    final SamplerSample? gcPauseP95 =
-        scope?.snapshot?.sampler('gc-pause-p95');
-    final SamplerSample? memGarbage =
-        scope?.snapshot?.sampler('memory-garbage');
+    final SamplerSample? memAfterGc = scope?.snapshot?.sampler(
+      'memory-used-after-gc',
+    );
+    final SamplerSample? memPressure = scope?.snapshot?.sampler(
+      'memory-pressure',
+    );
+    final SamplerSample? gcTimePercent = scope?.snapshot?.sampler(
+      'gc-time-percent',
+    );
+    final SamplerSample? gcPauseP95 = scope?.snapshot?.sampler('gc-pause-p95');
+    final SamplerSample? memGarbage = scope?.snapshot?.sampler(
+      'memory-garbage',
+    );
 
-    final List<(String, List<double>)> heapSeries =
-        <(String, List<double>)>[
-      ('Memory Used', memUsed?.history ?? const <double>[]),
-      if (memFree != null) ('Memory Free', memFree.history),
-      if (memAfterGc != null) ('After GC', memAfterGc.history),
+    final List<(String, List<double>)> heapSeries = <(String, List<double>)>[
+      (
+        reactorText(ReactorText.commonMemoryUsed),
+        memUsed?.history ?? const <double>[],
+      ),
+      if (memFree != null)
+        (reactorText(ReactorText.memoryFree), memFree.history),
+      if (memAfterGc != null)
+        (reactorText(ReactorText.memoryAfterGc), memAfterGc.history),
     ];
 
     final List<(String, List<double>)> pressureSeries =
         <(String, List<double>)>[
-      ('Memory Pressure', memPressure?.history ?? const <double>[]),
-    ];
+          (
+            reactorText(ReactorText.memoryPressure),
+            memPressure?.history ?? const <double>[],
+          ),
+        ];
 
-    final List<(String, List<double>)> gcPauseSeries =
-        <(String, List<double>)>[
-      ('GC Pause p95', gcPauseP95?.history ?? const <double>[]),
+    final List<(String, List<double>)> gcPauseSeries = <(String, List<double>)>[
+      (
+        reactorText(ReactorText.memoryGcPauseP95),
+        gcPauseP95?.history ?? const <double>[],
+      ),
     ];
 
     return ReactorPage(
-      title: 'Memory',
-      subtitle: 'Heap usage and garbage collection',
+      title: reactorText(ReactorText.memoryTitle),
+      subtitle: reactorText(ReactorText.memorySubtitle),
       children: <Widget>[
         sectionCard(
-          label: 'Heap Usage',
+          label: reactorText(ReactorText.memoryHeapUsage),
           child: TimeseriesChart(series: heapSeries, height: 180),
         ),
         sectionCard(
-          label: 'Memory Pressure',
+          label: reactorText(ReactorText.memoryPressure),
           child: TimeseriesChart(series: pressureSeries, height: 100),
         ),
         sectionCard(
-          label: 'GC Pause p95',
+          label: reactorText(ReactorText.memoryGcPauseP95),
           child: TimeseriesChart(series: gcPauseSeries, height: 100),
         ),
         dom.div(
-          styles: const dom.Styles(raw: <String, String>{
-            'display': 'grid',
-            'grid-template-columns': 'repeat(auto-fill, minmax(200px, 1fr))',
-            'gap': '1rem',
-          }),
+          styles: const dom.Styles(
+            raw: <String, String>{
+              'display': 'grid',
+              'grid-template-columns': 'repeat(auto-fill, minmax(200px, 1fr))',
+              'gap': '1rem',
+            },
+          ),
           <Widget>[
             _GcGaugeCard(gcTimePercent: gcTimePercent),
-            StatTile(label: 'Memory Used', sample: memUsed),
-            StatTile(label: 'Memory Garbage', sample: memGarbage),
+            StatTile(
+              label: reactorText(ReactorText.commonMemoryUsed),
+              sample: memUsed,
+            ),
+            StatTile(
+              label: reactorText(ReactorText.memoryGarbage),
+              sample: memGarbage,
+            ),
           ],
         ),
       ],
@@ -91,20 +112,21 @@ class _GcGaugeCard extends StatelessWidget {
     return Card.elevated(
       fillWidth: true,
       child: dom.div(
-        styles: const dom.Styles(raw: <String, String>{
-          'display': 'flex',
-          'flex-direction': 'column',
-          'align-items': 'center',
-          'gap': '0.5rem',
-          'padding': '1rem',
-        }),
+        styles: const dom.Styles(
+          raw: <String, String>{
+            'display': 'flex',
+            'flex-direction': 'column',
+            'align-items': 'center',
+            'gap': '0.5rem',
+            'padding': '1rem',
+          },
+        ),
         <Widget>[
-          dom.div(
-            styles: kSectionHeadingStyles,
-            <Widget>[Component.text('GC Time')],
-          ),
+          dom.div(styles: kSectionHeadingStyles, <Widget>[
+            Component.text(reactorText(ReactorText.commonGcTime)),
+          ]),
           Gauge(
-            label: 'GC Time %',
+            label: reactorText(ReactorText.memoryGcTimePercent),
             value: gcTimePercent?.value ?? 0.0,
             display: gcTimePercent?.display,
             max: 100.0,

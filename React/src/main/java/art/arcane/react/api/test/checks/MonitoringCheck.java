@@ -6,7 +6,10 @@ import art.arcane.react.api.test.ReactSubsystemCheck;
 import art.arcane.react.api.test.TestReport;
 import art.arcane.react.api.test.TestStatus;
 import art.arcane.react.core.controller.SampleController;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.TestMessages;
 import art.arcane.react.util.project.registry.Registry;
+import art.arcane.volmlib.util.localization.MessageArgument;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -26,20 +29,20 @@ public class MonitoringCheck implements ReactSubsystemCheck {
   public void run(TestReport report) {
     SampleController controller = React.controller(SampleController.class);
     if (controller == null) {
-      report.skip(SUBSYSTEM, "Sampler finiteness", "SampleController is not available");
+      report.skip(SUBSYSTEM, "Sampler finiteness", ReactLanguage.raw(TestMessages.MONITOR_CONTROLLER_UNAVAILABLE));
       return;
     }
 
     Registry<Sampler> registry = controller.getSamplers();
     if (registry == null) {
-      report.skip(SUBSYSTEM, "Sampler finiteness", "Sampler registry is not initialized");
+      report.skip(SUBSYSTEM, "Sampler finiteness", ReactLanguage.raw(TestMessages.MONITOR_REGISTRY_UNAVAILABLE));
       return;
     }
 
     Collection<Sampler> samplers = registry.all();
     int total = registry.size();
     if (samplers == null || samplers.isEmpty()) {
-      report.warn(SUBSYSTEM, "Sampler finiteness", "No samplers are registered");
+      report.warn(SUBSYSTEM, "Sampler finiteness", ReactLanguage.raw(TestMessages.MONITOR_NONE));
       return;
     }
 
@@ -60,7 +63,14 @@ public class MonitoringCheck implements ReactSubsystemCheck {
         value = sampler.sample();
       } catch (Throwable e) {
         unreadable++;
-        report.warn(SUBSYSTEM, "Sampler read [" + id + "]", "sample() threw " + summarize(e));
+        report.warn(
+            SUBSYSTEM,
+            "Sampler read [" + id + "]",
+            ReactLanguage.raw(
+                TestMessages.MONITOR_READ_FAILED,
+                MessageArgument.untrusted("reason", summarize(e))
+            )
+        );
         React.reportError(e);
         continue;
       }
@@ -78,15 +88,24 @@ public class MonitoringCheck implements ReactSubsystemCheck {
         "Integration samplers",
         TestStatus.INFO,
         integrationIds.isEmpty()
-            ? "No iris/adapt/wormholes integration samplers present"
-            : integrationIds.size() + " integration sampler(s): " + String.join(", ", integrationIds));
+            ? ReactLanguage.raw(TestMessages.MONITOR_NO_INTEGRATIONS)
+            : ReactLanguage.raw(
+                TestMessages.MONITOR_INTEGRATIONS,
+                MessageArgument.untrusted("count", integrationIds.size()),
+                MessageArgument.untrusted("samplers", String.join(", ", integrationIds))
+            ));
 
     if (!offenders.isEmpty()) {
       report.record(
           SUBSYSTEM,
           "Sampler finiteness",
           TestStatus.FAIL,
-          offenders.size() + " of " + total + " sampler(s) returned a non-finite sample(): " + String.join(", ", offenderIds),
+          ReactLanguage.raw(
+              TestMessages.MONITOR_NONFINITE,
+              MessageArgument.untrusted("offenders", offenders.size()),
+              MessageArgument.untrusted("total", total),
+              MessageArgument.untrusted("samplers", String.join(", ", offenderIds))
+          ),
           offenders);
       return;
     }
@@ -94,7 +113,16 @@ public class MonitoringCheck implements ReactSubsystemCheck {
     report.pass(
         SUBSYSTEM,
         "Sampler finiteness",
-        finiteCount + " samplers, all finite" + (unreadable > 0 ? " (" + unreadable + " unreadable)" : ""));
+        unreadable > 0
+            ? ReactLanguage.raw(
+                TestMessages.MONITOR_ALL_FINITE_UNREADABLE,
+                MessageArgument.untrusted("finite", finiteCount),
+                MessageArgument.untrusted("unreadable", unreadable)
+            )
+            : ReactLanguage.raw(
+                TestMessages.MONITOR_ALL_FINITE,
+                MessageArgument.untrusted("finite", finiteCount)
+            ));
   }
 
   private boolean isIntegrationId(String id) {

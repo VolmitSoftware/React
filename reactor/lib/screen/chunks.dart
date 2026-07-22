@@ -3,6 +3,7 @@ library;
 import 'package:arcane_jaspr/arcane_jaspr.dart';
 
 import '../chart/timeseries_chart.dart';
+import '../localization/reactor_localizations.dart';
 import '../model/sampler_sample.dart';
 import '../state/server_scope.dart';
 import '../ui/reactor_ui.dart';
@@ -16,45 +17,75 @@ class ChunksScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final ServerScope? scope = ServerScope.of(context);
     final SamplerSample? chunks = scope?.snapshot?.sampler('chunks');
-    final SamplerSample? chunksLoaded =
-        scope?.snapshot?.sampler('chunks-loaded');
-    final SamplerSample? chunksGenerated =
-        scope?.snapshot?.sampler('chunks-generated');
-    final SamplerSample? chunkLoadMs =
-        scope?.snapshot?.sampler('chunk-load-ms');
-    final SamplerSample? chunkGenMs =
-        scope?.snapshot?.sampler('chunk-gen-ms');
-    final SamplerSample? worldSaveDuration =
-        scope?.snapshot?.sampler('world-save-duration');
-    final SamplerSample? pdcWriteBatcher =
-        scope?.snapshot?.sampler('pdc-write-batcher');
+    final SamplerSample? chunksLoaded = scope?.snapshot?.sampler(
+      'chunks-loaded',
+    );
+    final SamplerSample? chunksGenerated = scope?.snapshot?.sampler(
+      'chunks-generated',
+    );
+    final SamplerSample? chunkLoadMs = scope?.snapshot?.sampler(
+      'chunk-load-ms',
+    );
+    final SamplerSample? chunkGenMs = scope?.snapshot?.sampler('chunk-gen-ms');
+    final SamplerSample? worldSaveDuration = scope?.snapshot?.sampler(
+      'world-save-duration',
+    );
+    final SamplerSample? pdcWriteBatcher = scope?.snapshot?.sampler(
+      'pdc-write-batcher',
+    );
 
-    final List<(String, List<double>)> timeSeries =
-        <(String, List<double>)>[
-      ('Load ms', chunkLoadMs?.history ?? const <double>[]),
-      ('Gen ms', chunkGenMs?.history ?? const <double>[]),
+    final List<(String, List<double>)> timeSeries = <(String, List<double>)>[
+      (
+        reactorText(ReactorText.chunksLoadMs),
+        chunkLoadMs?.history ?? const <double>[],
+      ),
+      (
+        reactorText(ReactorText.chunksGenMs),
+        chunkGenMs?.history ?? const <double>[],
+      ),
     ];
 
     return ReactorPage(
-      title: 'Chunks',
-      subtitle: 'Chunk loading and persistence',
+      title: reactorText(ReactorText.chunksTitle),
+      subtitle: reactorText(ReactorText.chunksSubtitle),
       children: <Widget>[
         sectionCard(
-          label: 'Chunk Load/Gen Time',
+          label: reactorText(ReactorText.chunksLoadGenTime),
           child: TimeseriesChart(series: timeSeries, height: 160),
         ),
         statGrid(<Widget>[
-          StatTile(label: 'Chunks', sample: chunks),
-          StatTile(label: 'Loaded/s', sample: chunksLoaded),
-          StatTile(label: 'Generated/s', sample: chunksGenerated),
-          StatTile(label: 'Load Time', sample: chunkLoadMs),
-          StatTile(label: 'Gen Time', sample: chunkGenMs),
+          StatTile(
+            label: reactorText(ReactorText.commonChunks),
+            sample: chunks,
+          ),
+          StatTile(
+            label: reactorText(ReactorText.chunksLoadedPerSecond),
+            sample: chunksLoaded,
+          ),
+          StatTile(
+            label: reactorText(ReactorText.chunksGeneratedPerSecond),
+            sample: chunksGenerated,
+          ),
+          StatTile(
+            label: reactorText(ReactorText.chunksLoadTime),
+            sample: chunkLoadMs,
+          ),
+          StatTile(
+            label: reactorText(ReactorText.chunksGenTime),
+            sample: chunkGenMs,
+          ),
         ]),
         sectionCard(
-          label: 'Persistence',
+          label: reactorText(ReactorText.chunksPersistence),
           child: statGrid(<Widget>[
-            StatTile(label: 'World Save', sample: worldSaveDuration),
-            StatTile(label: 'PDC Batcher', sample: pdcWriteBatcher),
+            StatTile(
+              label: reactorText(ReactorText.chunksWorldSave),
+              sample: worldSaveDuration,
+            ),
+            StatTile(
+              label: reactorText(ReactorText.chunksPdcBatcher),
+              sample: pdcWriteBatcher,
+            ),
           ]),
         ),
       ],

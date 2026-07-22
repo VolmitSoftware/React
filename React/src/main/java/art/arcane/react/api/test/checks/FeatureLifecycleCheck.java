@@ -5,8 +5,11 @@ import art.arcane.react.api.feature.Feature;
 import art.arcane.react.api.test.ReactAsyncSubsystemCheck;
 import art.arcane.react.api.test.TestReport;
 import art.arcane.react.core.controller.FeatureController;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.TestMessages;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.project.registry.Registry;
+import art.arcane.volmlib.util.localization.MessageArgument;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 
@@ -29,14 +32,14 @@ public class FeatureLifecycleCheck implements ReactAsyncSubsystemCheck {
   public void run(TestReport report, Runnable onDone) {
     FeatureController controller = React.controller(FeatureController.class);
     if (controller == null) {
-      report.skip("features", "lifecycle", "FeatureController unavailable");
+      report.skip("features", "lifecycle", ReactLanguage.raw(TestMessages.FEATURE_CONTROLLER_UNAVAILABLE));
       onDone.run();
       return;
     }
 
     Registry<Feature> registry = controller.getFeatures();
     if (registry == null) {
-      report.skip("features", "lifecycle", "feature registry not initialized");
+      report.skip("features", "lifecycle", ReactLanguage.raw(TestMessages.FEATURE_REGISTRY_UNAVAILABLE));
       onDone.run();
       return;
     }
@@ -63,7 +66,7 @@ public class FeatureLifecycleCheck implements ReactAsyncSubsystemCheck {
     }
 
     if (enabled.isEmpty()) {
-      report.info("features", "lifecycle", "no enabled features to cycle");
+      report.info("features", "lifecycle", ReactLanguage.raw(TestMessages.FEATURE_NONE));
       assertWorldAutoSave(report, baseline);
       done.run();
       return;
@@ -118,9 +121,18 @@ public class FeatureLifecycleCheck implements ReactAsyncSubsystemCheck {
           boolean removedAfterRedeactivate = !isActive(controller, id);
           boolean mapConsistent = removedAfterDeactivate && addedAfterActivate && removedAfterRedeactivate;
           if (mapConsistent) {
-            report.pass("features", id, "deactivate/activate/deactivate cycle clean; activeFeatures tracked every transition");
+            report.pass("features", id, ReactLanguage.raw(TestMessages.FEATURE_CYCLE_PASS));
           } else {
-            report.fail("features", id, "activeFeatures map inconsistent: removed1=" + removedAfterDeactivate + " added=" + addedAfterActivate + " removed2=" + removedAfterRedeactivate);
+            report.fail(
+                "features",
+                id,
+                ReactLanguage.raw(
+                    TestMessages.FEATURE_CYCLE_FAIL,
+                    MessageArgument.untrusted("removed_first", removedAfterDeactivate),
+                    MessageArgument.untrusted("added", addedAfterActivate),
+                    MessageArgument.untrusted("removed_second", removedAfterRedeactivate)
+                )
+            );
           }
           restoreFeature(controller, feature, originalActive);
           advance.run();
@@ -131,7 +143,7 @@ public class FeatureLifecycleCheck implements ReactAsyncSubsystemCheck {
 
   private void assertWorldAutoSave(TestReport report, Map<UUID, Boolean> baseline) {
     if (baseline.isEmpty()) {
-      report.skip("features", "autosave-restore-guard", "no worlds loaded to verify autosave restoration");
+      report.skip("features", "autosave-restore-guard", ReactLanguage.raw(TestMessages.FEATURE_AUTOSAVE_NO_WORLDS));
       return;
     }
 
@@ -149,11 +161,26 @@ public class FeatureLifecycleCheck implements ReactAsyncSubsystemCheck {
     }
 
     if (total > 0 && matched == total) {
-      report.pass("features", "autosave-restore-guard", "all " + total + " worlds retained baseline isAutoSave after full feature lifecycle cycling");
+      report.pass(
+          "features",
+          "autosave-restore-guard",
+          ReactLanguage.raw(
+              TestMessages.FEATURE_AUTOSAVE_PASS,
+              MessageArgument.untrusted("total", total)
+          )
+      );
       return;
     }
 
-    report.fail("features", "autosave-restore-guard", "autosave drift after cycling: " + matched + "/" + total + " worlds match baseline (data-loss guard)");
+    report.fail(
+        "features",
+        "autosave-restore-guard",
+        ReactLanguage.raw(
+            TestMessages.FEATURE_AUTOSAVE_FAIL,
+            MessageArgument.untrusted("matched", matched),
+            MessageArgument.untrusted("total", total)
+        )
+    );
   }
 
   private void restoreFeature(FeatureController controller, Feature feature, Map<String, Boolean> originalActive) {
@@ -172,7 +199,16 @@ public class FeatureLifecycleCheck implements ReactAsyncSubsystemCheck {
 
   private void recordFeatureFailure(TestReport report, Feature feature, String phase, Throwable e) {
     React.reportError(e);
-    report.fail("features", feature.getId(), phase + " threw " + e.getClass().getSimpleName() + (e.getMessage() == null ? "" : ": " + e.getMessage()));
+    String reason = e.getClass().getSimpleName() + (e.getMessage() == null ? "" : ": " + e.getMessage());
+    report.fail(
+        "features",
+        feature.getId(),
+        ReactLanguage.raw(
+            TestMessages.FEATURE_PHASE_FAILED,
+            MessageArgument.untrusted("phase", phase),
+            MessageArgument.untrusted("reason", reason)
+        )
+    );
   }
 
   private boolean isActive(FeatureController controller, String id) {

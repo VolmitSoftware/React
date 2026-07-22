@@ -21,14 +21,16 @@ package art.arcane.react.content.directorcommand;
 
 import art.arcane.react.React;
 import art.arcane.react.api.benchmark.Hastebin;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.EnvironmentMessages;
 import art.arcane.react.util.director.DirectorExecutor;
-import art.arcane.react.util.format.C;
 import art.arcane.react.util.project.hardware.getHardware;
 import art.arcane.react.util.reflect.Platform;
 import art.arcane.volmlib.util.collection.KList;
 import art.arcane.volmlib.util.director.DirectorOrigin;
 import art.arcane.volmlib.util.director.annotations.Director;
 import art.arcane.volmlib.util.format.Form;
+import art.arcane.volmlib.util.localization.MessageArgument;
 import org.bukkit.Bukkit;
 import oshi.SystemInfo;
 
@@ -36,14 +38,16 @@ import oshi.SystemInfo;
     name = "environment",
     aliases = {"env"},
     origin = DirectorOrigin.BOTH,
-    description = "This is the place to benchmark your system and get information about your system."
+    description = "Inspect system and server environment information",
+    descriptionKey = "command.description.environment"
 )
 public class CommandEnvironment implements DirectorExecutor {
 
   @Director(
       name = "info",
       aliases = {"i"},
-      description = "Print the environment details!"
+      description = "Print environment details",
+      descriptionKey = "command.description.environment.info"
   )
   public void info() {
     SystemInfo systemInfo = new SystemInfo();
@@ -54,43 +58,75 @@ public class CommandEnvironment implements DirectorExecutor {
     KList<String> gpus = new KList<>(getHardware.getGraphicsCards());
     KList<String> powersources = new KList<>(getHardware.getPowerSources());
 
-    sender().sendMessage(String.valueOf(C.BOLD) + C.DARK_AQUA + " -- == React Info == -- ");
-    sender().sendMessage(C.AQUA + "React Version Version: " + React.instance.getDescription().getVersion());
-    sender().sendMessage(C.AQUA + "Server Type: " + Bukkit.getVersion());
-    sender().sendMessage(C.AQUA + "Server Uptime: " + Form.stampTime(systemInfo.getOperatingSystem().getSystemUptime()));
-    sender().sendMessage(String.valueOf(C.BOLD) + C.DARK_AQUA + " -- == Platform Overview == -- ");
-    sender().sendMessage(C.AQUA + "Version: " + Platform.getVersion() + " - Platform: " + Platform.getName());
-    sender().sendMessage(C.AQUA + "Java Vendor: " + Platform.ENVIRONMENT.getJavaVendor() + " - Java Version: " + Platform.ENVIRONMENT.getJavaVersion());
-    sender().sendMessage(String.valueOf(C.BOLD) + C.DARK_AQUA + " -- == Processor Overview == -- ");
-    sender().sendMessage(C.AQUA + "CPU Model: " + getHardware.getCPUModel());
-    sender().sendMessage(C.AQUA + "CPU Architecture: " + Platform.CPU.getArchitecture() + " Available Processors: " + Platform.CPU.getAvailableProcessors());
-    sender().sendMessage(C.AQUA + "CPU Load: " + Form.pc(Platform.CPU.getCPULoad()) + " CPU Live Process Load: " + Form.pc(Platform.CPU.getLiveProcessCPULoad()));
-    sender().sendMessage(C.DARK_GRAY + "-=" + C.BLUE + " Graphics " + C.DARK_GRAY + "=- ");
+    ReactLanguage.send(sender(), EnvironmentMessages.REACT_HEADER);
+    ReactLanguage.send(sender(), EnvironmentMessages.REACT_VERSION, MessageArgument.untrusted("version", React.instance.getDescription().getVersion()));
+    ReactLanguage.send(sender(), EnvironmentMessages.SERVER_TYPE, MessageArgument.untrusted("server", Bukkit.getVersion()));
+    ReactLanguage.send(sender(), EnvironmentMessages.SERVER_UPTIME, MessageArgument.untrusted("uptime", Form.stampTime(systemInfo.getOperatingSystem().getSystemUptime())));
+    ReactLanguage.send(sender(), EnvironmentMessages.PLATFORM_HEADER);
+    ReactLanguage.send(
+        sender(),
+        EnvironmentMessages.PLATFORM,
+        MessageArgument.untrusted("version", Platform.getVersion()),
+        MessageArgument.untrusted("platform", Platform.getName())
+    );
+    ReactLanguage.send(
+        sender(),
+        EnvironmentMessages.JAVA,
+        MessageArgument.untrusted("vendor", Platform.ENVIRONMENT.getJavaVendor()),
+        MessageArgument.untrusted("version", Platform.ENVIRONMENT.getJavaVersion())
+    );
+    ReactLanguage.send(sender(), EnvironmentMessages.PROCESSOR_HEADER);
+    ReactLanguage.send(sender(), EnvironmentMessages.CPU_MODEL, MessageArgument.untrusted("model", getHardware.getCPUModel()));
+    ReactLanguage.send(
+        sender(),
+        EnvironmentMessages.CPU_ARCHITECTURE,
+        MessageArgument.untrusted("architecture", Platform.CPU.getArchitecture()),
+        MessageArgument.untrusted("processors", Platform.CPU.getAvailableProcessors())
+    );
+    ReactLanguage.send(
+        sender(),
+        EnvironmentMessages.CPU_LOAD,
+        MessageArgument.untrusted("system_load", Form.pc(Platform.CPU.getCPULoad())),
+        MessageArgument.untrusted("process_load", Form.pc(Platform.CPU.getLiveProcessCPULoad()))
+    );
+    ReactLanguage.send(sender(), EnvironmentMessages.GRAPHICS_HEADER);
     for (String gpu : gpus) {
-      sender().sendMessage(C.BLUE + " " + gpu);
+      ReactLanguage.send(sender(), EnvironmentMessages.GRAPHICS_ENTRY, MessageArgument.untrusted("value", gpu));
     }
-    sender().sendMessage(String.valueOf(C.BOLD) + C.DARK_AQUA + " -- == Memory Information == -- ");
-    sender().sendMessage(C.AQUA + "Physical Memory - Total: " + Form.memSize(Platform.MEMORY.PHYSICAL.getTotalMemory()) + " Free: " + Form.memSize(Platform.MEMORY.PHYSICAL.getFreeMemory()) + " Used: " + Form.memSize(Platform.MEMORY.PHYSICAL.getUsedMemory()));
-    sender().sendMessage(C.AQUA + "Virtual Memory - Total: " + Form.memSize(Platform.MEMORY.VIRTUAL.getTotalMemory()) + " Free: " + Form.memSize(Platform.MEMORY.VIRTUAL.getFreeMemory()) + " Used: " + Form.memSize(Platform.MEMORY.VIRTUAL.getUsedMemory()));
-    sender().sendMessage(String.valueOf(C.BOLD) + C.DARK_AQUA + " -- == Storage Information == -- ");
+    ReactLanguage.send(sender(), EnvironmentMessages.MEMORY_HEADER);
+    ReactLanguage.send(
+        sender(),
+        EnvironmentMessages.MEMORY_PHYSICAL,
+        MessageArgument.untrusted("total", Form.memSize(Platform.MEMORY.PHYSICAL.getTotalMemory())),
+        MessageArgument.untrusted("free", Form.memSize(Platform.MEMORY.PHYSICAL.getFreeMemory())),
+        MessageArgument.untrusted("used", Form.memSize(Platform.MEMORY.PHYSICAL.getUsedMemory()))
+    );
+    ReactLanguage.send(
+        sender(),
+        EnvironmentMessages.MEMORY_VIRTUAL,
+        MessageArgument.untrusted("total", Form.memSize(Platform.MEMORY.VIRTUAL.getTotalMemory())),
+        MessageArgument.untrusted("free", Form.memSize(Platform.MEMORY.VIRTUAL.getFreeMemory())),
+        MessageArgument.untrusted("used", Form.memSize(Platform.MEMORY.VIRTUAL.getUsedMemory()))
+    );
+    ReactLanguage.send(sender(), EnvironmentMessages.STORAGE_HEADER);
     for (String disk : disks) {
-      sender().sendMessage(C.AQUA + " " + disk);
+      ReactLanguage.send(sender(), EnvironmentMessages.STORAGE_ENTRY, MessageArgument.untrusted("value", disk));
     }
-    sender().sendMessage(String.valueOf(C.BOLD) + C.DARK_AQUA + " -- == Interface Information == -- ");
+    ReactLanguage.send(sender(), EnvironmentMessages.INTERFACE_HEADER);
     for (String inter : interfaces) {
-      sender().sendMessage(C.AQUA + " " + inter);
+      ReactLanguage.send(sender(), EnvironmentMessages.INTERFACE_ENTRY, MessageArgument.untrusted("value", inter));
     }
-    sender().sendMessage(String.valueOf(C.BOLD) + C.DARK_AQUA + " -- == Display Information == -- ");
+    ReactLanguage.send(sender(), EnvironmentMessages.DISPLAY_HEADER);
     for (String display : displays) {
-      sender().sendMessage(C.AQUA + " " + display);
+      ReactLanguage.send(sender(), EnvironmentMessages.DISPLAY_ENTRY, MessageArgument.untrusted("value", display));
     }
-    sender().sendMessage(String.valueOf(C.BOLD) + C.DARK_AQUA + " -- == Sensor Information == -- ");
+    ReactLanguage.send(sender(), EnvironmentMessages.SENSOR_HEADER);
     for (String sensor : sensors) {
-      sender().sendMessage(C.AQUA + " " + sensor);
+      ReactLanguage.send(sender(), EnvironmentMessages.SENSOR_ENTRY, MessageArgument.untrusted("value", sensor));
     }
-    sender().sendMessage(String.valueOf(C.BOLD) + C.DARK_AQUA + " -- == Power Information == -- ");
+    ReactLanguage.send(sender(), EnvironmentMessages.POWER_HEADER);
     for (String power : powersources) {
-      sender().sendMessage(C.AQUA + " " + power);
+      ReactLanguage.send(sender(), EnvironmentMessages.POWER_ENTRY, MessageArgument.untrusted("value", power));
     }
     Hastebin.enviornment(sender());
 

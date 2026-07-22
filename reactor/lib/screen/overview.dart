@@ -5,6 +5,7 @@ import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart' show Component;
 
 import '../model/sampler_sample.dart';
+import '../localization/reactor_localizations.dart';
 import '../state/server_scope.dart';
 import '../ui/reactor_ui.dart';
 import '../widget/gauge.dart';
@@ -18,22 +19,24 @@ class OverviewScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final ServerScope? scope = ServerScope.of(context);
     final SamplerSample? tps = scope?.snapshot?.sampler('ticks-per-second');
-    final SamplerSample? incidentScore =
-        scope?.snapshot?.sampler('incident-score');
+    final SamplerSample? incidentScore = scope?.snapshot?.sampler(
+      'incident-score',
+    );
     final SamplerSample? tickTime = scope?.snapshot?.sampler('tick-time');
     final SamplerSample? players = scope?.snapshot?.sampler('players');
     final SamplerSample? entities = scope?.snapshot?.sampler('entities');
     final SamplerSample? chunks = scope?.snapshot?.sampler('chunks');
     final SamplerSample? memoryUsed = scope?.snapshot?.sampler('memory-used');
-    final SamplerSample? gcTimePercent =
-        scope?.snapshot?.sampler('gc-time-percent');
+    final SamplerSample? gcTimePercent = scope?.snapshot?.sampler(
+      'gc-time-percent',
+    );
 
     return ReactorPage(
-      title: 'Overview',
-      subtitle: 'Live server health and key runtime telemetry',
+      title: reactorText(ReactorText.overviewTitle),
+      subtitle: reactorText(ReactorText.overviewSubtitle),
       children: <Widget>[
         SectionPanel(
-          label: 'Vitals',
+          label: reactorText(ReactorText.overviewVitals),
           child: _gaugeRow(
             tps: tps,
             incidentScore: incidentScore,
@@ -41,11 +44,26 @@ class OverviewScreen extends StatelessWidget {
           ),
         ),
         statGrid(<Widget>[
-          StatTile(label: 'Players', sample: players),
-          StatTile(label: 'Entities', sample: entities),
-          StatTile(label: 'Chunks', sample: chunks),
-          StatTile(label: 'Memory Used', sample: memoryUsed),
-          StatTile(label: 'GC Time', sample: gcTimePercent),
+          StatTile(
+            label: reactorText(ReactorText.commonPlayers),
+            sample: players,
+          ),
+          StatTile(
+            label: reactorText(ReactorText.commonEntities),
+            sample: entities,
+          ),
+          StatTile(
+            label: reactorText(ReactorText.commonChunks),
+            sample: chunks,
+          ),
+          StatTile(
+            label: reactorText(ReactorText.commonMemoryUsed),
+            sample: memoryUsed,
+          ),
+          StatTile(
+            label: reactorText(ReactorText.commonGcTime),
+            sample: gcTimePercent,
+          ),
         ]),
         _IncidentStrip(incidentScore: incidentScore),
       ],
@@ -58,17 +76,19 @@ class OverviewScreen extends StatelessWidget {
     required SamplerSample? tickTime,
   }) {
     return dom.div(
-      styles: const dom.Styles(raw: <String, String>{
-        'display': 'flex',
-        'flex-wrap': 'wrap',
-        'gap': '1.5rem',
-        'justify-content': 'space-around',
-        'align-items': 'flex-start',
-        'padding': '0.5rem 0',
-      }),
+      styles: const dom.Styles(
+        raw: <String, String>{
+          'display': 'flex',
+          'flex-wrap': 'wrap',
+          'gap': '1.5rem',
+          'justify-content': 'space-around',
+          'align-items': 'flex-start',
+          'padding': '0.5rem 0',
+        },
+      ),
       <Widget>[
         Gauge(
-          label: 'TPS',
+          label: reactorText(ReactorText.overviewTps),
           value: tps?.value ?? 0.0,
           display: tps?.display,
           max: 20.0,
@@ -76,14 +96,14 @@ class OverviewScreen extends StatelessWidget {
           invertStatus: true,
         ),
         Gauge(
-          label: 'Incident Score',
+          label: reactorText(ReactorText.commonIncidentScore),
           value: incidentScore?.value ?? 0.0,
           display: incidentScore?.display,
           max: 100.0,
           thresholds: (40.0, 70.0),
         ),
         Gauge(
-          label: 'Tick Time',
+          label: reactorText(ReactorText.commonTickTime),
           value: tickTime?.value ?? 0.0,
           display: tickTime?.display,
           max: 50.0,
@@ -110,28 +130,36 @@ class _IncidentStrip extends StatelessWidget {
       GaugeStatus.error => ReactorStatus.critical,
     };
     final String statusLabel = switch (gStatus) {
-      GaugeStatus.success => 'Normal',
-      GaugeStatus.warning => 'Elevated',
-      GaugeStatus.error => 'Critical',
+      GaugeStatus.success => reactorText(ReactorText.statusNormal),
+      GaugeStatus.warning => reactorText(ReactorText.statusElevated),
+      GaugeStatus.error => reactorText(ReactorText.statusCritical),
     };
     final String barColor = reactorStatusColor(status);
 
     final Widget body = history.isEmpty
         ? dom.div(
-            styles: const dom.Styles(raw: <String, String>{
-              'font-size': '0.85rem',
-              'color': kReactorMuted,
-              'padding': '0.5rem 0',
-            }),
-            <Widget>[Component.text('No incident history yet')],
+            styles: const dom.Styles(
+              raw: <String, String>{
+                'font-size': '0.85rem',
+                'color': kReactorMuted,
+                'padding': '0.5rem 0',
+              },
+            ),
+            <Widget>[
+              Component.text(
+                reactorText(ReactorText.overviewNoIncidentHistory),
+              ),
+            ],
           )
         : dom.div(
-            styles: const dom.Styles(raw: <String, String>{
-              'display': 'flex',
-              'gap': '3px',
-              'height': '56px',
-              'align-items': 'flex-end',
-            }),
+            styles: const dom.Styles(
+              raw: <String, String>{
+                'display': 'flex',
+                'gap': '3px',
+                'height': '56px',
+                'align-items': 'flex-end',
+              },
+            ),
             <Widget>[
               for (final double v in history)
                 _IncidentBar(value: v, max: 100.0, color: barColor),
@@ -139,7 +167,7 @@ class _IncidentStrip extends StatelessWidget {
           );
 
     return MetricCard(
-      title: 'Incident Pressure',
+      title: reactorText(ReactorText.overviewIncidentPressure),
       value: currentScore.toStringAsFixed(0),
       status: status,
       badge: reactorBadge(statusLabel, status),
@@ -165,15 +193,18 @@ class _IncidentBar extends StatelessWidget {
     final int heightPct = (fraction * 100).round().clamp(5, 100);
 
     return dom.div(
-      styles: dom.Styles(raw: <String, String>{
-        'flex': '1',
-        'min-width': '3px',
-        'height': '$heightPct%',
-        'background': 'linear-gradient(to top, $color, '
-            'color-mix(in srgb, $color 55%, transparent))',
-        'border-radius': '2px',
-        'transition': 'height 200ms ease',
-      }),
+      styles: dom.Styles(
+        raw: <String, String>{
+          'flex': '1',
+          'min-width': '3px',
+          'height': '$heightPct%',
+          'background':
+              'linear-gradient(to top, $color, '
+              'color-mix(in srgb, $color 55%, transparent))',
+          'border-radius': '2px',
+          'transition': 'height 200ms ease',
+        },
+      ),
       const <Widget>[],
     );
   }

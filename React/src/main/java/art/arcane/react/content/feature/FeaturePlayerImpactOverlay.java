@@ -22,6 +22,8 @@ package art.arcane.react.content.feature;
 import art.arcane.react.content.sampler.SamplerEntities;
 import art.arcane.react.content.sampler.SamplerHopperUpdates;
 import art.arcane.react.content.sampler.SamplerRedstoneUpdates;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.RendererMessages;
 import art.arcane.react.util.data.TinyColor;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
@@ -46,7 +48,7 @@ public class FeaturePlayerImpactOverlay extends FeatureChunkHeatmapBase {
 
   @Override
   protected String mapLabel() {
-    return "Player Impact";
+    return ReactLanguage.raw(RendererMessages.TITLE_PLAYER_IMPACT);
   }
 
   @Override

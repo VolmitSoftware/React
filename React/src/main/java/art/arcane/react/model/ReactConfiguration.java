@@ -80,6 +80,9 @@ public class ReactConfiguration {
   @ConfigDoc(value = "Enables debug logging and additional diagnostics.", impact = "Use during debugging sessions; disable for normal production runtime.")
   private boolean debug = false;
 
+  @ConfigDoc(value = "Locale used for React player and operator interfaces.", impact = "Code-owned English remains the fallback; optional TOML overrides are loaded from languages/overrides.")
+  private String language = "en_US";
+
   @ConfigDoc(
       value = "Controls how slow tick warnings are logged. Options: OFF, BLAME, SHORT, DETAILED.",
       impact = "OFF suppresses slow tick warnings. BLAME highlights likely plugin/workload responsibility. SHORT logs minimal timing only. DETAILED logs the full diagnostic payload."

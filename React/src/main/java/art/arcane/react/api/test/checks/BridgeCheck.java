@@ -5,9 +5,12 @@ import art.arcane.react.api.test.ReactAsyncSubsystemCheck;
 import art.arcane.react.api.test.TestReport;
 import art.arcane.react.core.bridge.BridgeHealthReport;
 import art.arcane.react.core.bridge.NmsBridgeRegistry;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.TestMessages;
 import art.arcane.react.nms.NmsBridge;
 import art.arcane.react.nms.NmsBridges;
 import art.arcane.react.util.common.scheduling.J;
+import art.arcane.volmlib.util.localization.MessageArgument;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -35,7 +38,7 @@ public final class BridgeCheck implements ReactAsyncSubsystemCheck {
     NmsBridgeRegistry registry = React.bridgeRegistry();
     if (registry == null) {
       report.setBridgeHealth(0, 0);
-      report.warn("bridge", "health", "bridge registry unavailable (plugin not fully started)");
+      report.warn("bridge", "health", ReactLanguage.raw(TestMessages.BRIDGE_REGISTRY_UNAVAILABLE));
       return;
     }
 
@@ -45,7 +48,11 @@ public final class BridgeCheck implements ReactAsyncSubsystemCheck {
     report.setBridgeHealth(available, unavailable);
 
     if (unavailable == 0) {
-      report.pass("bridge", "health", available + " bridge handle(s) available, 0 unavailable");
+      report.pass(
+          "bridge",
+          "health",
+          ReactLanguage.raw(TestMessages.BRIDGE_HEALTHY, MessageArgument.untrusted("available", available))
+      );
       return;
     }
 
@@ -54,13 +61,28 @@ public final class BridgeCheck implements ReactAsyncSubsystemCheck {
     boolean onBundledVersion = NmsBridges.onBundledVersion();
 
     if (bridge == null || !onBundledVersion) {
-      report.warn("bridge", "health", "bridge degraded / measurement-only on this MC - expected off bundled version ("
-          + unavailable + " unavailable: " + unavailableDetail + "; reason: " + NmsBridges.failureReason() + ")");
+      report.warn(
+          "bridge",
+          "health",
+          ReactLanguage.raw(
+              TestMessages.BRIDGE_DEGRADED,
+              MessageArgument.untrusted("unavailable", unavailable),
+              MessageArgument.untrusted("detail", unavailableDetail),
+              MessageArgument.untrusted("reason", NmsBridges.failureReason())
+          )
+      );
       return;
     }
 
-    report.fail("bridge", "health", unavailable + " bridge hook(s) unavailable on a supported (bundled) version: "
-        + unavailableDetail);
+    report.fail(
+        "bridge",
+        "health",
+        ReactLanguage.raw(
+            TestMessages.BRIDGE_UNAVAILABLE,
+            MessageArgument.untrusted("unavailable", unavailable),
+            MessageArgument.untrusted("detail", unavailableDetail)
+        )
+    );
   }
 
   private String describeUnavailable(BridgeHealthReport health) {
@@ -74,12 +96,12 @@ public final class BridgeCheck implements ReactAsyncSubsystemCheck {
       }
       out.append(entry.logicalId()).append(" (").append(entry.failureReason()).append(")");
     }
-    return out.length() == 0 ? "none" : out.toString();
+    return out.length() == 0 ? ReactLanguage.raw(TestMessages.BRIDGE_NONE) : out.toString();
   }
 
   private void checkFallingBlock(TestReport report, Runnable onDone) {
     if (Bukkit.getWorlds().isEmpty()) {
-      report.skip("bridge", "falling-block", "no worlds loaded - cannot run live gravity landing test from console");
+      report.skip("bridge", "falling-block", ReactLanguage.raw(TestMessages.BRIDGE_NO_WORLDS));
       onDone.run();
       return;
     }
@@ -93,8 +115,15 @@ public final class BridgeCheck implements ReactAsyncSubsystemCheck {
         int groundY = world.getHighestBlockYAt(x, z);
         int spawnY = Math.min(world.getMaxHeight() - 2, groundY + 20);
         if (spawnY <= groundY + 2) {
-          report.skip("bridge", "falling-block", "no headroom above y=" + groundY + " in world '" + world.getName()
-              + "' to drop a test block");
+          report.skip(
+              "bridge",
+              "falling-block",
+              ReactLanguage.raw(
+                  TestMessages.BRIDGE_NO_HEADROOM,
+                  MessageArgument.untrusted("ground_y", groundY),
+                  MessageArgument.untrusted("world", world.getName())
+              )
+          );
           onDone.run();
           return;
         }
@@ -106,11 +135,24 @@ public final class BridgeCheck implements ReactAsyncSubsystemCheck {
           Entity entity = Bukkit.getEntity(id);
           boolean landed = entity == null || entity.isDead() || !entity.isValid();
           if (landed) {
-            report.pass("bridge", "falling-block", "SAND dropped at y=" + spawnY + " over ground y=" + groundY
-                + " landed/despawned within 100 ticks (gravity hook + landing path OK)");
+            report.pass(
+                "bridge",
+                "falling-block",
+                ReactLanguage.raw(
+                    TestMessages.BRIDGE_LANDING_PASS,
+                    MessageArgument.untrusted("spawn_y", spawnY),
+                    MessageArgument.untrusted("ground_y", groundY)
+                )
+            );
           } else {
-            report.fail("bridge", "falling-block", "SAND dropped at y=" + spawnY
-                + " still falling after 100 ticks (stuck mid-air)");
+            report.fail(
+                "bridge",
+                "falling-block",
+                ReactLanguage.raw(
+                    TestMessages.BRIDGE_LANDING_FAIL,
+                    MessageArgument.untrusted("spawn_y", spawnY)
+                )
+            );
             entity.remove();
           }
 
@@ -121,8 +163,15 @@ public final class BridgeCheck implements ReactAsyncSubsystemCheck {
           onDone.run();
         }, 100);
       } catch (Throwable t) {
-        report.info("bridge", "falling-block", "live drop unavailable on this server/thread: "
-            + t.getClass().getSimpleName() + (t.getMessage() == null ? "" : " - " + t.getMessage()));
+        String reason = t.getClass().getSimpleName() + (t.getMessage() == null ? "" : " - " + t.getMessage());
+        report.info(
+            "bridge",
+            "falling-block",
+            ReactLanguage.raw(
+                TestMessages.BRIDGE_LIVE_UNAVAILABLE,
+                MessageArgument.untrusted("reason", reason)
+            )
+        );
         onDone.run();
       }
     });

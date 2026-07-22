@@ -5,6 +5,7 @@ import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart' show Component;
 
 import '../service/react_client.dart';
+import '../localization/reactor_localizations.dart';
 import '../service/react_log_socket.dart';
 import '../state/log_controller.dart';
 import '../state/operate_scope.dart';
@@ -32,22 +33,26 @@ class LogsView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ReactorPage(
-      title: 'Logs',
-      subtitle: 'Live server log stream',
+      title: reactorText(ReactorText.logsTitle),
+      subtitle: reactorText(ReactorText.logsSubtitle),
       actions: dom.div(
-        styles: const dom.Styles(raw: <String, String>{
-          'display': 'flex',
-          'align-items': 'center',
-          'gap': '0.5rem',
-        }),
+        styles: const dom.Styles(
+          raw: <String, String>{
+            'display': 'flex',
+            'align-items': 'center',
+            'gap': '0.5rem',
+          },
+        ),
         <Widget>[
           Button.secondary(
-            label: paused ? 'Resume' : 'Pause',
+            label: paused
+                ? reactorText(ReactorText.logsResume)
+                : reactorText(ReactorText.logsPause),
             size: ButtonSize.small,
             onPressed: () => onPause?.call(!paused),
           ),
           Button.ghost(
-            label: 'Clear',
+            label: reactorText(ReactorText.logsClear),
             size: ButtonSize.small,
             onPressed: () => onClear?.call(),
           ),
@@ -55,10 +60,10 @@ class LogsView extends StatelessWidget {
       ),
       children: <Widget>[
         sectionCard(
-          label: 'Stream',
+          label: reactorText(ReactorText.logsStream),
           flush: true,
           trailing: ArcaneSelect(
-            label: 'Level',
+            label: reactorText(ReactorText.logsLevel),
             value: levelFilter,
             options: const <ArcaneSelectOption>[
               ArcaneSelectOption(label: 'ALL', value: 'ALL'),
@@ -72,18 +77,22 @@ class LogsView extends StatelessWidget {
           child: ArcaneScrollArea.vertical(
             height: '480px',
             child: dom.div(
-              styles: const dom.Styles(raw: <String, String>{
-                'display': 'flex',
-                'flex-direction': 'column',
-              }),
+              styles: const dom.Styles(
+                raw: <String, String>{
+                  'display': 'flex',
+                  'flex-direction': 'column',
+                },
+              ),
               <Widget>[
                 for (final String line in lines)
                   dom.div(
-                    styles: const dom.Styles(raw: <String, String>{
-                      'font-family': 'monospace',
-                      'font-size': '0.8rem',
-                      'white-space': 'pre-wrap',
-                    }),
+                    styles: const dom.Styles(
+                      raw: <String, String>{
+                        'font-family': 'monospace',
+                        'font-size': '0.8rem',
+                        'white-space': 'pre-wrap',
+                      },
+                    ),
                     <Widget>[Component.text(line)],
                   ),
               ],
@@ -136,18 +145,20 @@ class _LogsScreenState extends State<LogsScreen> {
   Widget build(BuildContext context) {
     if (_client == null) {
       return ReactorPage(
-        title: 'Logs',
-        subtitle: 'Live server log stream',
+        title: reactorText(ReactorText.logsTitle),
+        subtitle: reactorText(ReactorText.logsSubtitle),
         children: <Widget>[
           sectionCard(
-            label: 'Logs',
+            label: reactorText(ReactorText.logsTitle),
             child: dom.div(
-              styles: const dom.Styles(raw: <String, String>{
-                'color': 'var(--muted-foreground)',
-                'font-size': '0.875rem',
-              }),
+              styles: const dom.Styles(
+                raw: <String, String>{
+                  'color': 'var(--muted-foreground)',
+                  'font-size': '0.875rem',
+                },
+              ),
               <Widget>[
-                Component.text('Logs require a live connection.'),
+                Component.text(reactorText(ReactorText.logsLiveRequired)),
               ],
             ),
           ),

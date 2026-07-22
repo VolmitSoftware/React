@@ -215,7 +215,7 @@ public class FeatureSpawnBurstLimiter extends ReactFeature implements Listener {
 
     CreatureSpawnEvent.SpawnReason reason = event.getSpawnReason();
     boolean natural = switch (reason) {
-      case NATURAL, CHUNK_GEN, NETHER_PORTAL, REINFORCEMENTS, JOCKEY, PATROL,
+      case NATURAL, NETHER_PORTAL, REINFORCEMENTS, JOCKEY, PATROL,
            RAID -> true;
       default -> false;
     };

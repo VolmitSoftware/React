@@ -14,7 +14,10 @@ import art.arcane.react.content.action.ActionPurgeEntities;
 import art.arcane.react.content.action.ActionQuarantineHotChunks;
 import art.arcane.react.content.action.ActionTrimEntitiesByAgePriority;
 import art.arcane.react.core.controller.ActionController;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.TestMessages;
 import art.arcane.react.model.AreaActionParams;
+import art.arcane.volmlib.util.localization.MessageArgument;
 import art.arcane.volmlib.util.bukkit.WorldIdentity;
 import art.arcane.react.util.project.registry.Registry;
 import org.bukkit.Bukkit;
@@ -48,14 +51,14 @@ public class ActionSuiteCheck implements ReactAsyncSubsystemCheck {
   public void run(TestReport report, Runnable onDone) {
     ActionController controller = React.controller(ActionController.class);
     if (controller == null || controller.getActions() == null) {
-      report.skip(SUBSYSTEM, "action-suite", "Action controller is unavailable; cannot run the direct action suite.");
+      report.skip(SUBSYSTEM, "action-suite", ReactLanguage.raw(TestMessages.ACTION_CONTROLLER_UNAVAILABLE));
       onDone.run();
       return;
     }
 
     if (Bukkit.getWorlds().isEmpty()) {
       for (String actionId : TEST_ACTION_ORDER) {
-        report.skip(SUBSYSTEM, actionId, "No worlds are loaded; cannot run actions around a world spawn.");
+        report.skip(SUBSYSTEM, actionId, ReactLanguage.raw(TestMessages.ACTION_NO_WORLDS));
       }
       onDone.run();
       return;
@@ -71,12 +74,12 @@ public class ActionSuiteCheck implements ReactAsyncSubsystemCheck {
     for (String actionId : TEST_ACTION_ORDER) {
       Action<?> action = registry.get(actionId);
       if (action == null) {
-        report.skip(SUBSYSTEM, actionId, "Action is not registered.");
+        report.skip(SUBSYSTEM, actionId, ReactLanguage.raw(TestMessages.ACTION_NOT_REGISTERED));
         continue;
       }
 
       if (!action.isEnabled()) {
-        report.skip(SUBSYSTEM, actionId, "Action is disabled in config.");
+        report.skip(SUBSYSTEM, actionId, ReactLanguage.raw(TestMessages.ACTION_DISABLED));
         continue;
       }
 
@@ -84,7 +87,14 @@ public class ActionSuiteCheck implements ReactAsyncSubsystemCheck {
         ActionParams params = prepareParams(actionId, action.getDefaultParams(), world, centerChunkX, centerChunkZ);
         steps.add(new Step(actionId, action, params));
       } catch (Throwable e) {
-        report.fail(SUBSYSTEM, actionId, "Failed to prepare params: " + describe(e));
+        report.fail(
+            SUBSYSTEM,
+            actionId,
+            ReactLanguage.raw(
+                TestMessages.ACTION_PREPARE_FAILED,
+                MessageArgument.untrusted("reason", describe(e))
+            )
+        );
         React.reportError(e);
       }
     }
@@ -111,7 +121,14 @@ public class ActionSuiteCheck implements ReactAsyncSubsystemCheck {
     try {
       ticket = stepAction.createForceful(step.params());
     } catch (Throwable e) {
-      report.fail(SUBSYSTEM, stepId, "Failed to create action: " + describe(e));
+      report.fail(
+          SUBSYSTEM,
+          stepId,
+          ReactLanguage.raw(
+              TestMessages.ACTION_CREATE_FAILED,
+              MessageArgument.untrusted("reason", describe(e))
+          )
+      );
       React.reportError(e);
       runStep(report, steps, index + 1, onDone);
       return;
@@ -126,7 +143,14 @@ public class ActionSuiteCheck implements ReactAsyncSubsystemCheck {
       try {
         report.pass(SUBSYSTEM, stepId, completedMessage(stepAction, completed));
       } catch (Throwable e) {
-        report.fail(SUBSYSTEM, stepId, "Completion handler threw: " + describe(e));
+        report.fail(
+            SUBSYSTEM,
+            stepId,
+            ReactLanguage.raw(
+                TestMessages.ACTION_COMPLETION_FAILED,
+                MessageArgument.untrusted("reason", describe(e))
+            )
+        );
         React.reportError(e);
       }
 

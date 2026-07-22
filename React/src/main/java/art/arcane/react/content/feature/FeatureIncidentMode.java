@@ -179,7 +179,7 @@ public class FeatureIncidentMode extends ReactFeature implements Listener {
     CreatureSpawnEvent.SpawnReason reason = event.getSpawnReason();
     boolean spawner = reason == CreatureSpawnEvent.SpawnReason.SPAWNER || "TRIAL_SPAWNER".equals(reason.name());
     boolean natural = switch (reason) {
-      case NATURAL, CHUNK_GEN, NETHER_PORTAL, REINFORCEMENTS, JOCKEY, PATROL,
+      case NATURAL, NETHER_PORTAL, REINFORCEMENTS, JOCKEY, PATROL,
            RAID -> true;
       default -> false;
     };

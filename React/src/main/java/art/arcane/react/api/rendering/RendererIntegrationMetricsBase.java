@@ -22,9 +22,13 @@ package art.arcane.react.api.rendering;
 import art.arcane.react.React;
 import art.arcane.react.core.controller.IntegrationController;
 import art.arcane.react.core.integration.RemoteSamplerBridge;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.RendererMessages;
 import art.arcane.react.util.data.TinyColor;
 import art.arcane.volmlib.integration.IntegrationMetricSample;
 import art.arcane.volmlib.util.format.Form;
+import art.arcane.volmlib.util.localization.MessageArgument;
+import art.arcane.volmlib.util.localization.TextKey;
 
 import java.util.List;
 
@@ -40,12 +44,12 @@ abstract class RendererIntegrationMetricsBase implements ReactRenderer {
     int h = height();
     int s = uiScale();
     clear(backgroundColor());
-    dashHeader(title(), headerValue(), accentColor());
+    dashHeader(ReactLanguage.raw(title()), headerValue(), accentColor());
 
     IntegrationController controller = React.controller(IntegrationController.class);
     if (controller == null || controller.getRemoteSamplerBridge() == null) {
-      text(4 * s, 18 * s, "Status: OFFLINE", TEXT_BRIGHT);
-      text(4 * s, 30 * s, "Bridge unavailable", TEXT_DIM);
+      text(4 * s, 18 * s, statusLine(ReactLanguage.raw(RendererMessages.STATUS_OFFLINE)), TEXT_BRIGHT);
+      text(4 * s, 30 * s, ReactLanguage.raw(RendererMessages.BRIDGE_UNAVAILABLE), TEXT_DIM);
       return;
     }
 
@@ -53,7 +57,7 @@ abstract class RendererIntegrationMetricsBase implements ReactRenderer {
     IntegrationController.IntegrationStatus status = controller.statusFor(pluginId());
     String health = status == null ? "MISSING" : status.health().name();
     set(2 * s, 15 * s, w - (4 * s), 9 * s, healthColor(health));
-    text(4 * s, 16 * s, "Status: " + health, TEXT_BRIGHT);
+    text(4 * s, 16 * s, statusLine(RendererMessages.health(health)), TEXT_BRIGHT);
 
     int y = 28 * s;
     int cutoffY = h - (12 * s);
@@ -69,7 +73,11 @@ abstract class RendererIntegrationMetricsBase implements ReactRenderer {
     }
 
     if (status != null && status.message() != null && !status.message().isBlank()) {
-      text(4 * s, y, fitText("Msg: " + status.message(), w - (8 * s)), TEXT_DIM);
+      String messageLine = ReactLanguage.raw(
+          RendererMessages.MESSAGE_LINE,
+          MessageArgument.untrusted("message", status.message())
+      );
+      text(4 * s, y, fitText(messageLine, w - (8 * s)), TEXT_DIM);
       y += 12 * s;
       if (y > cutoffY) {
         return;
@@ -78,13 +86,17 @@ abstract class RendererIntegrationMetricsBase implements ReactRenderer {
 
     if (newestSampleMs > 0L) {
       double ageSeconds = Math.max(0D, (System.currentTimeMillis() - newestSampleMs) / 1000D);
-      text(4 * s, y, "Age: " + Form.f(ageSeconds, 1) + "s", TEXT_DIM);
+      String ageLine = ReactLanguage.raw(
+          RendererMessages.AGE_LINE,
+          MessageArgument.untrusted("age", Form.f(ageSeconds, 1))
+      );
+      text(4 * s, y, ageLine, TEXT_DIM);
     }
   }
 
   protected abstract String pluginId();
 
-  protected abstract String title();
+  protected abstract TextKey title();
 
   protected abstract TinyColor backgroundColor();
 
@@ -100,9 +112,13 @@ abstract class RendererIntegrationMetricsBase implements ReactRenderer {
     return bridge.getSample(pluginId(), metric.key());
   }
 
+  protected String metricLabel(MetricLine metric) {
+    return ReactLanguage.raw(metric.labelKey());
+  }
+
   private String formatSample(MetricLine metric, IntegrationMetricSample sample) {
     if (sample == null || !sample.available()) {
-      return "n/a";
+      return ReactLanguage.raw(RendererMessages.VALUE_NOT_AVAILABLE);
     }
 
     double value = scaledValue(metric, sample);
@@ -118,7 +134,7 @@ abstract class RendererIntegrationMetricsBase implements ReactRenderer {
   }
 
   private void drawMetricRow(MetricLine metric, IntegrationMetricSample sample, int y, int w, int s) {
-    String line = metric.label() + ": " + formatSample(metric, sample);
+    String line = RendererMessages.metricLine(metricLabel(metric), formatSample(metric, sample));
     text(4 * s, y, fitText(line, w - (10 * s)), TEXT_BRIGHT);
 
     int barWidth = w - (10 * s);
@@ -158,10 +174,17 @@ abstract class RendererIntegrationMetricsBase implements ReactRenderer {
     return new TinyColor(gradientRgb(normalized, low, high));
   }
 
-  protected record MetricLine(String key, String label, int decimals,
+  private String statusLine(String status) {
+    return ReactLanguage.raw(
+        RendererMessages.STATUS_LINE,
+        MessageArgument.untrusted("status", status)
+    );
+  }
+
+  protected record MetricLine(String key, TextKey labelKey, int decimals,
                               String unitSuffix, double scale) {
-    protected MetricLine(String key, String label, int decimals, String unitSuffix) {
-      this(key, label, decimals, unitSuffix, 1D);
+    protected MetricLine(String key, TextKey labelKey, int decimals, String unitSuffix) {
+      this(key, labelKey, decimals, unitSuffix, 1D);
     }
   }
 }

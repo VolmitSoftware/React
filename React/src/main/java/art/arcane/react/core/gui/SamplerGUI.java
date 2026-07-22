@@ -23,12 +23,16 @@ import art.arcane.react.React;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.content.sampler.SamplerUnknown;
 import art.arcane.react.core.controller.SampleController;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.GuiMessages;
+import art.arcane.react.localization.catalog.MapMessages;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.inventorygui.UIStaticDecorator;
 import art.arcane.volmlib.util.data.MaterialBlock;
 import art.arcane.volmlib.util.inventorygui.UIElement;
 import art.arcane.volmlib.util.inventorygui.UIWindow;
 import art.arcane.volmlib.util.inventorygui.WindowResolution;
+import art.arcane.volmlib.util.localization.MessageArgument;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 
@@ -56,7 +60,7 @@ public class SamplerGUI {
 
     if (!J.runEntity(p, () -> {
       UIWindow window = new UIWindow(React.instance, p);
-      window.setTitle("React Samplers");
+      window.setTitle(ReactLanguage.plain(GuiMessages.SAMPLER_TITLE));
       window.setResolution(WindowResolution.W9_H6);
       window.setDecorator(new UIStaticDecorator(new UIElement("bg").setMaterial(new MaterialBlock(Material.BLACK_STAINED_GLASS_PANE))));
       //Sorted Samplers
@@ -90,8 +94,8 @@ public class SamplerGUI {
         rp++;
         window.setElement(w, h, new UIElement("sample-" + i.getId())
             .setMaterial(new MaterialBlock(ReactGuiTaxonomy.iconForId(i.getId())))
-            .setName(i.getName())
-            .addLore("Group: " + ReactGuiTaxonomy.groupLabel(i.getId()))
+            .setName(MapMessages.localizedSamplerName(i.getId(), i.getName()))
+            .addLore(ReactLanguage.plain(GuiMessages.SAMPLER_GROUP, MessageArgument.untrusted("group", ReactGuiTaxonomy.groupLabel(i.getId()))))
             .addLore(i.format(i.sample()))
             .onLeftClick((e) -> {
               onPicked.accept(i);
@@ -105,7 +109,7 @@ public class SamplerGUI {
       if (pg > 0) {
         window.setElement(-4, 2, new UIElement("page-back")
             .setMaterial(new MaterialBlock(Material.ARROW))
-            .setName("Previous Page")
+            .setName(ReactLanguage.plain(GuiMessages.PREVIOUS_PAGE))
             .onLeftClick((e) -> {
               window.close();
               J.a(() -> pickSampler(p, onPicked, without, pg - 1));
@@ -116,7 +120,7 @@ public class SamplerGUI {
       if (hasMore) {
         window.setElement(4, 2, new UIElement("page-forward")
             .setMaterial(new MaterialBlock(Material.ARROW))
-            .setName("Next Page")
+            .setName(ReactLanguage.plain(GuiMessages.NEXT_PAGE))
             .onLeftClick((e) -> {
               window.close();
               J.a(() -> pickSampler(p, onPicked, without, pg + 1));

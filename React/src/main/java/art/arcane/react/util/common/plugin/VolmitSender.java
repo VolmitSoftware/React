@@ -20,6 +20,8 @@
 package art.arcane.react.util.plugin;
 
 
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.RuntimeMessages;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.format.C;
 import art.arcane.volmlib.util.collection.KList;
@@ -375,6 +377,12 @@ public class VolmitSender implements CommandSender {
     s.sendMessage(C.translateAlternateColorCodes('&', getTag() + message));
   }
 
+  public void sendComponent(Component component) {
+    if (component != null && !(s instanceof CommandDummy)) {
+      s.sendMessage(component);
+    }
+  }
+
   public void sendMessageBasic(String message) {
     s.sendMessage(C.translateAlternateColorCodes('&', getTag() + message));
   }
@@ -515,7 +523,7 @@ public class VolmitSender implements CommandSender {
 
       sendMessageRaw(s);
     } else {
-      sendMessage(C.RED + "There are no subcommands in this group! Contact support, this is a command design issue!");
+      ReactLanguage.send(this, RuntimeMessages.DIRECTOR_NO_SUBCOMMANDS);
     }
   }
 

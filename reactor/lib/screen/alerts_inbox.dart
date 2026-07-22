@@ -6,6 +6,7 @@ import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart' show Component;
 
 import '../model/alert.dart';
+import '../localization/reactor_localizations.dart';
 import '../model/alert_thresholds.dart';
 import '../model/server_snapshot.dart';
 import '../state/alert_engine.dart';
@@ -37,10 +38,11 @@ class _AlertsInboxScreenState extends State<AlertsInboxScreen> {
     final AlertStore? alertStore = fleet?.alertStore;
 
     final List<({String id, String name, ServerSnapshot? snapshot})>
-        serverData = servers
-            .map((FleetServerLive s) =>
-                (id: s.id, name: s.name, snapshot: s.snapshot))
-            .toList();
+    serverData = servers
+        .map(
+          (FleetServerLive s) => (id: s.id, name: s.name, snapshot: s.snapshot),
+        )
+        .toList();
 
     final AlertThresholds thresholds =
         alertStore?.thresholds ?? AlertThresholds.defaults;
@@ -65,41 +67,48 @@ class _AlertsInboxScreenState extends State<AlertsInboxScreen> {
     open.sort((FleetAlert a, FleetAlert b) {
       final int tsCmp = b.firstSeen.compareTo(a.firstSeen);
       if (tsCmp != 0) return tsCmp;
-      return alertSeverityRank(b.severity)
-          .compareTo(alertSeverityRank(a.severity));
+      return alertSeverityRank(
+        b.severity,
+      ).compareTo(alertSeverityRank(a.severity));
     });
 
-    final List<String> distinctServerIds = servers.map((FleetServerLive s) => s.id).toList();
+    final List<String> distinctServerIds = servers
+        .map((FleetServerLive s) => s.id)
+        .toList();
     final Map<String, String> idToName = <String, String>{
       for (final FleetServerLive s in servers) s.id: s.name,
     };
 
     return ReactorPage(
-      title: 'Alerts',
-      subtitle: 'Open fleet alerts',
+      title: reactorText(ReactorText.alertsTitle),
+      subtitle: reactorText(ReactorText.alertsSubtitle),
       children: <Widget>[
         _filterRow(distinctServerIds, idToName),
         if (open.isEmpty)
           sectionCard(
-            label: 'Alerts',
+            label: reactorText(ReactorText.alertsTitle),
             child: dom.div(
-              styles: const dom.Styles(raw: <String, String>{
-                'color': 'var(--muted-foreground)',
-                'font-size': '0.875rem',
-                'padding': '0.5rem 0',
-              }),
-              <Widget>[Component.text('No open alerts')],
+              styles: const dom.Styles(
+                raw: <String, String>{
+                  'color': 'var(--muted-foreground)',
+                  'font-size': '0.875rem',
+                  'padding': '0.5rem 0',
+                },
+              ),
+              <Widget>[Component.text(reactorText(ReactorText.alertsNoneOpen))],
             ),
           )
         else
           sectionCard(
-            label: 'Alerts',
+            label: reactorText(ReactorText.alertsTitle),
             child: dom.div(
-              styles: const dom.Styles(raw: <String, String>{
-                'display': 'flex',
-                'flex-direction': 'column',
-                'gap': '0.75rem',
-              }),
+              styles: const dom.Styles(
+                raw: <String, String>{
+                  'display': 'flex',
+                  'flex-direction': 'column',
+                  'gap': '0.75rem',
+                },
+              ),
               <Widget>[
                 for (final FleetAlert alert in open)
                   _AlertRow(
@@ -121,37 +130,47 @@ class _AlertsInboxScreenState extends State<AlertsInboxScreen> {
 
   Widget _filterRow(List<String> serverIds, Map<String, String> idToName) {
     final List<ArcaneSelectOption> severityOptions = <ArcaneSelectOption>[
-      const ArcaneSelectOption(label: 'All', value: ''),
-      const ArcaneSelectOption(label: 'critical', value: 'critical'),
-      const ArcaneSelectOption(label: 'warning', value: 'warning'),
-      const ArcaneSelectOption(label: 'info', value: 'info'),
+      ArcaneSelectOption(label: reactorText(ReactorText.commonAll), value: ''),
+      ArcaneSelectOption(
+        label: reactorText(ReactorText.alertsSeverityCritical),
+        value: 'critical',
+      ),
+      ArcaneSelectOption(
+        label: reactorText(ReactorText.alertsSeverityWarning),
+        value: 'warning',
+      ),
+      ArcaneSelectOption(
+        label: reactorText(ReactorText.alertsSeverityInfo),
+        value: 'info',
+      ),
     ];
 
     final List<ArcaneSelectOption> serverOptions = <ArcaneSelectOption>[
-      const ArcaneSelectOption(label: 'All', value: ''),
+      ArcaneSelectOption(label: reactorText(ReactorText.commonAll), value: ''),
       for (final String id in serverIds)
         ArcaneSelectOption(label: idToName[id] ?? id, value: id),
     ];
 
     return dom.div(
-      styles: const dom.Styles(raw: <String, String>{
-        'display': 'flex',
-        'align-items': 'center',
-        'gap': '0.75rem',
-        'flex-wrap': 'wrap',
-      }),
+      styles: const dom.Styles(
+        raw: <String, String>{
+          'display': 'flex',
+          'align-items': 'center',
+          'gap': '0.75rem',
+          'flex-wrap': 'wrap',
+        },
+      ),
       <Widget>[
         ArcaneNativeSelect(
           options: severityOptions,
-          value: _severityFilter == null
-              ? ''
-              : _severityFilter!.name,
+          value: _severityFilter == null ? '' : _severityFilter!.name,
           onChange: (String v) => setState(() {
             if (v.isEmpty) {
               _severityFilter = null;
             } else {
-              _severityFilter = AlertSeverity.values
-                  .firstWhere((AlertSeverity s) => s.name == v);
+              _severityFilter = AlertSeverity.values.firstWhere(
+                (AlertSeverity s) => s.name == v,
+              );
             }
           }),
         ),
@@ -181,17 +200,32 @@ class _AlertRow extends StatelessWidget {
 
   static ArcaneStatusBadge _severityBadge(AlertSeverity s) {
     return switch (s) {
-      AlertSeverity.critical => ArcaneStatusBadge.error('critical'),
-      AlertSeverity.warning => ArcaneStatusBadge.warning('warning'),
-      AlertSeverity.info => ArcaneStatusBadge.info('info'),
+      AlertSeverity.critical => ArcaneStatusBadge.error(
+        reactorText(ReactorText.alertsSeverityCritical),
+      ),
+      AlertSeverity.warning => ArcaneStatusBadge.warning(
+        reactorText(ReactorText.alertsSeverityWarning),
+      ),
+      AlertSeverity.info => ArcaneStatusBadge.info(
+        reactorText(ReactorText.alertsSeverityInfo),
+      ),
     };
   }
 
   static String _formatTime(DateTime dt) {
     final Duration ago = DateTime.now().difference(dt);
-    if (ago.inSeconds < 60) return '${ago.inSeconds}s ago';
-    if (ago.inMinutes < 60) return '${ago.inMinutes}m ago';
-    if (ago.inHours < 24) return '${ago.inHours}h ago';
+    if (ago.inSeconds < 60)
+      return reactorText(ReactorText.commonSecondsAgo, <String, Object?>{
+        'value': ago.inSeconds,
+      });
+    if (ago.inMinutes < 60)
+      return reactorText(ReactorText.commonMinutesAgo, <String, Object?>{
+        'value': ago.inMinutes,
+      });
+    if (ago.inHours < 24)
+      return reactorText(ReactorText.commonHoursAgo, <String, Object?>{
+        'value': ago.inHours,
+      });
     return dt.toIso8601String().substring(0, 16);
   }
 
@@ -200,77 +234,99 @@ class _AlertRow extends StatelessWidget {
     return Card.elevated(
       fillWidth: true,
       child: dom.div(
-        styles: const dom.Styles(raw: <String, String>{
-          'display': 'flex',
-          'flex-direction': 'column',
-          'gap': '0.4rem',
-          'padding': '0.75rem 1rem',
-        }),
+        styles: const dom.Styles(
+          raw: <String, String>{
+            'display': 'flex',
+            'flex-direction': 'column',
+            'gap': '0.4rem',
+            'padding': '0.75rem 1rem',
+          },
+        ),
         <Widget>[
           dom.div(
-            styles: const dom.Styles(raw: <String, String>{
-              'display': 'flex',
-              'align-items': 'center',
-              'gap': '0.5rem',
-              'flex-wrap': 'wrap',
-            }),
+            styles: const dom.Styles(
+              raw: <String, String>{
+                'display': 'flex',
+                'align-items': 'center',
+                'gap': '0.5rem',
+                'flex-wrap': 'wrap',
+              },
+            ),
             <Widget>[
               _severityBadge(alert.severity),
               dom.span(
-                styles: const dom.Styles(raw: <String, String>{
-                  'font-weight': '600',
-                  'font-size': '0.9rem',
-                }),
+                styles: const dom.Styles(
+                  raw: <String, String>{
+                    'font-weight': '600',
+                    'font-size': '0.9rem',
+                  },
+                ),
                 <Widget>[Component.text(alert.serverName)],
               ),
               dom.span(
-                styles: const dom.Styles(raw: <String, String>{
-                  'font-weight': '500',
-                  'font-size': '0.875rem',
-                }),
+                styles: const dom.Styles(
+                  raw: <String, String>{
+                    'font-weight': '500',
+                    'font-size': '0.875rem',
+                  },
+                ),
                 <Widget>[Component.text(alert.title)],
               ),
             ],
           ),
           dom.div(
-            styles: const dom.Styles(raw: <String, String>{
-              'font-size': '0.8rem',
-              'color': 'var(--muted-foreground)',
-            }),
+            styles: const dom.Styles(
+              raw: <String, String>{
+                'font-size': '0.8rem',
+                'color': 'var(--muted-foreground)',
+              },
+            ),
             <Widget>[Component.text(alert.message)],
           ),
           dom.div(
-            styles: const dom.Styles(raw: <String, String>{
-              'font-size': '0.75rem',
-              'color': 'var(--muted-foreground)',
-            }),
+            styles: const dom.Styles(
+              raw: <String, String>{
+                'font-size': '0.75rem',
+                'color': 'var(--muted-foreground)',
+              },
+            ),
             <Widget>[
-              Component.text('First seen: ${_formatTime(alert.firstSeen)}'),
+              Component.text(
+                reactorText(ReactorText.alertsFirstSeen, <String, Object?>{
+                  'time': _formatTime(alert.firstSeen),
+                }),
+              ),
             ],
           ),
           dom.div(
-            styles: const dom.Styles(raw: <String, String>{
-              'display': 'flex',
-              'gap': '0.5rem',
-              'align-items': 'center',
-            }),
+            styles: const dom.Styles(
+              raw: <String, String>{
+                'display': 'flex',
+                'gap': '0.5rem',
+                'align-items': 'center',
+              },
+            ),
             <Widget>[
               if (!isAcked)
                 Button.secondary(
-                  label: 'Ack',
+                  label: reactorText(ReactorText.alertsAck),
                   size: ButtonSize.small,
                   onPressed: onAck,
                 )
               else ...<Widget>[
                 dom.span(
-                  styles: const dom.Styles(raw: <String, String>{
-                    'font-size': '0.8rem',
-                    'color': 'var(--muted-foreground)',
-                  }),
-                  <Widget>[Component.text('Acked')],
+                  styles: const dom.Styles(
+                    raw: <String, String>{
+                      'font-size': '0.8rem',
+                      'color': 'var(--muted-foreground)',
+                    },
+                  ),
+                  <Widget>[
+                    Component.text(reactorText(ReactorText.alertsAcked)),
+                  ],
                 ),
                 Button.secondary(
-                  label: 'Resolve',
+                  label: reactorText(ReactorText.alertsResolve),
                   size: ButtonSize.small,
                   onPressed: onResolve,
                 ),

@@ -30,6 +30,7 @@ import art.arcane.react.api.feature.ReactTickedFeature;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.api.tweak.ReactTickedTweak;
 import art.arcane.react.api.tweak.Tweak;
+import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.core.controller.HotloadController;
 import art.arcane.react.core.controller.TweakController;
 import art.arcane.react.model.ReactConfiguration;
@@ -48,6 +49,7 @@ import java.util.concurrent.TimeUnit;
 
 public class Ticker {
   private static final long SLOW_TICK_WARN_THRESHOLD_MS = 50L;
+  private static final double SLOW_TICK_MSPT_IMPACT_THRESHOLD_MS = 50D;
   private static final long SLOW_TICK_RECENCY_WINDOW_MS = 30_000L;
   private static final long SLOW_TICK_LOG_INTERVAL_MS = 10_000L;
   private static final long SLOW_TICK_ESCALATION_LOG_INTERVAL_MS = 2_500L;
@@ -444,7 +446,9 @@ public class Ticker {
       return;
     }
 
-    SlowTickLogDecision logDecision = shouldLogSlowTick(ticked, elapsedMS);
+    double serverMspt = sampleSampler(SamplerTickTime.ID, -1D);
+    SlowSeverity severity = classifySlowSeverity(elapsedMS, serverMspt);
+    SlowTickLogDecision logDecision = shouldLogSlowTick(ticked, severity);
     if (!logDecision.shouldLog) {
       return;
     }
@@ -457,9 +461,9 @@ public class Ticker {
     String source = slowTickLikelySource(ticked);
     String message;
     if (mode == ReactConfiguration.SlowTickLogMode.SHORT) {
-      message = buildShortSlowTickMessage(ticked, elapsedMS, overMS);
+      message = buildShortSlowTickMessage(ticked, elapsedMS, overMS, severity, serverMspt);
     } else if (mode == ReactConfiguration.SlowTickLogMode.BLAME) {
-      message = buildBlameSlowTickMessage(ticked, elapsedMS, overMS, cause, source);
+      message = buildBlameSlowTickMessage(ticked, elapsedMS, overMS, cause, source, severity, serverMspt);
     } else {
       message = buildDetailedSlowTickMessage(
           ticked,
@@ -471,7 +475,9 @@ public class Ticker {
           slowTickMethod(ticked),
           source,
           cause,
-          snapshot
+          snapshot,
+          severity,
+          serverMspt
       );
     }
 
@@ -486,25 +492,33 @@ public class Ticker {
     }
   }
 
-  private String buildShortSlowTickMessage(Ticked ticked, long elapsedMS, long overMS) {
-    return "Slow tick [" + slowSeverity(elapsedMS) + "]: "
+  private String buildShortSlowTickMessage(Ticked ticked,
+                                           long elapsedMS,
+                                           long overMS,
+                                           SlowSeverity severity,
+                                           double serverMspt) {
+    return "Slow tick [" + severity + "]: "
         + shortTickLabel(ticked)
         + " took " + elapsedMS + "ms"
-        + " (+" + overMS + "ms over " + SLOW_TICK_WARN_THRESHOLD_MS + "ms).";
+        + " (+" + overMS + "ms over " + SLOW_TICK_WARN_THRESHOLD_MS + "ms). "
+        + slowTickImpactSummary(serverMspt) + ".";
   }
 
   private String buildBlameSlowTickMessage(Ticked ticked,
                                            long elapsedMS,
                                            long overMS,
                                            String cause,
-                                           String source) {
-    String message = "Slow tick [" + slowSeverity(elapsedMS) + "]: "
+                                           String source,
+                                           SlowSeverity severity,
+                                           double serverMspt) {
+    String message = "Slow tick [" + severity + "]: "
         + shortTickLabel(ticked)
         + " took " + elapsedMS + "ms"
         + " (+" + overMS + "ms over " + SLOW_TICK_WARN_THRESHOLD_MS + "ms)."
         + " Blame: " + slowTickBlameTarget(source)
         + " caused " + compactPhrase(cause)
-        + "; pressure=" + trimSentence(source) + ".";
+        + "; pressure=" + trimSentence(source) + ". "
+        + slowTickImpactSummary(serverMspt) + ".";
     String detail = slowTickDetail(ticked);
     if (!detail.isBlank()) {
       message += " detail=" + trimSentence(detail) + ".";
@@ -522,8 +536,10 @@ public class Ticker {
                                               String method,
                                               String source,
                                               String cause,
-                                              SlowTickSnapshot snapshot) {
-    String message = "Slow tick detected [" + slowSeverity(elapsedMS) + "]: " + describeTicked(ticked)
+                                              SlowTickSnapshot snapshot,
+                                              SlowSeverity severity,
+                                              double serverMspt) {
+    String message = "Slow tick detected [" + severity + "]: " + describeTicked(ticked)
         + " took " + elapsedMS + "ms"
         + " (threshold=" + SLOW_TICK_WARN_THRESHOLD_MS + "ms, over=" + overMS + "ms, ratio=" + ratioLabel(elapsedMS, SLOW_TICK_WARN_THRESHOLD_MS)
         + ", interval=" + intervalMS + "ms, budget=" + budgetLabel(elapsedMS, intervalMS) + ", age=" + ageMS + "ms)."
@@ -535,7 +551,8 @@ public class Ticker {
         + " (consecutive=" + snapshot.consecutiveSlowRuns
         + ", last30s=" + snapshot.slowRunsLastWindow
         + ", avgSlow=" + formatMs(snapshot.averageSlowMS)
-        + "ms, max=" + snapshot.maxSlowMS + "ms).";
+        + "ms, max=" + snapshot.maxSlowMS + "ms). "
+        + slowTickImpactSummary(serverMspt) + ".";
     String detail = slowTickDetail(ticked);
     if (!detail.isBlank()) {
       message += " detail=" + detail + ".";
@@ -684,17 +701,28 @@ public class Ticker {
     return group + ":" + id + "|" + ticked.getClass().getName();
   }
 
-  private String slowSeverity(long elapsedMS) {
-    if (elapsedMS >= 120L || elapsedMS >= SLOW_TICK_WARN_THRESHOLD_MS * 2L) {
-      return "CRITICAL";
+  static SlowSeverity classifySlowSeverity(long elapsedMS, double serverMspt) {
+    boolean serverImpacted = Double.isFinite(serverMspt)
+        && serverMspt >= SLOW_TICK_MSPT_IMPACT_THRESHOLD_MS;
+    if (elapsedMS >= SLOW_TICK_WARN_THRESHOLD_MS * 2L && serverImpacted) {
+      return SlowSeverity.CRITICAL;
     }
-    if (elapsedMS >= 90L || elapsedMS * 10L >= SLOW_TICK_WARN_THRESHOLD_MS * 16L) {
-      return "HIGH";
+    if (elapsedMS * 10L >= SLOW_TICK_WARN_THRESHOLD_MS * 16L) {
+      return SlowSeverity.HIGH;
     }
-    if (elapsedMS >= 65L || elapsedMS * 10L >= SLOW_TICK_WARN_THRESHOLD_MS * 13L) {
-      return "MEDIUM";
+    if (elapsedMS * 10L >= SLOW_TICK_WARN_THRESHOLD_MS * 13L) {
+      return SlowSeverity.MEDIUM;
     }
-    return "LOW";
+    return SlowSeverity.LOW;
+  }
+
+  private String slowTickImpactSummary(double serverMspt) {
+    if (!Double.isFinite(serverMspt) || serverMspt < 0D) {
+      return "serverMSPT=unavailable serverImpact=unknown";
+    }
+
+    String impact = serverMspt >= SLOW_TICK_MSPT_IMPACT_THRESHOLD_MS ? "impacted" : "healthy";
+    return "serverMSPT=" + formatMs(serverMspt) + "ms serverImpact=" + impact;
   }
 
   private String ratioLabel(long value, long baseline) {
@@ -957,7 +985,7 @@ public class Ticker {
     return Math.max(0L, value);
   }
 
-  private SlowTickLogDecision shouldLogSlowTick(Ticked ticked, long elapsedMS) {
+  private SlowTickLogDecision shouldLogSlowTick(Ticked ticked, SlowSeverity severity) {
     if (ticked == null) {
       return new SlowTickLogDecision(true, 0L, 0L);
     }
@@ -965,7 +993,7 @@ public class Ticker {
     String key = slowTickKey(ticked);
     SlowTickLogState state = slowTickLogStates.computeIfAbsent(key, ignored -> new SlowTickLogState());
     long now = System.currentTimeMillis();
-    int severityRank = slowSeverityRank(elapsedMS);
+    int severityRank = severity.rank();
 
     synchronized (state) {
       if (state.lastLogMS <= 0L) {
@@ -998,19 +1026,6 @@ public class Ticker {
     }
 
     slowTickLogStates.remove(slowTickKey(ticked));
-  }
-
-  private int slowSeverityRank(long elapsedMS) {
-    if (elapsedMS >= 120L || elapsedMS >= SLOW_TICK_WARN_THRESHOLD_MS * 2L) {
-      return 3;
-    }
-    if (elapsedMS >= 90L || elapsedMS * 10L >= SLOW_TICK_WARN_THRESHOLD_MS * 16L) {
-      return 2;
-    }
-    if (elapsedMS >= 65L || elapsedMS * 10L >= SLOW_TICK_WARN_THRESHOLD_MS * 13L) {
-      return 1;
-    }
-    return 0;
   }
 
   private String summarizeThrowable(Throwable throwable) {
@@ -1064,6 +1079,23 @@ public class Ticker {
     private ExecutionWaitResult(boolean drained, boolean interrupted) {
       this.drained = drained;
       this.interrupted = interrupted;
+    }
+  }
+
+  enum SlowSeverity {
+    LOW(0),
+    MEDIUM(1),
+    HIGH(2),
+    CRITICAL(3);
+
+    private final int rank;
+
+    SlowSeverity(int rank) {
+      this.rank = rank;
+    }
+
+    int rank() {
+      return rank;
     }
   }
 

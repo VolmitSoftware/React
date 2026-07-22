@@ -19,9 +19,12 @@
 
 package art.arcane.react.api.benchmark;
 
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.BenchmarkMessages;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.plugin.VolmitSender;
-import org.bukkit.ChatColor;
+import art.arcane.volmlib.util.localization.MessageArgument;
+import art.arcane.volmlib.util.localization.TextKey;
 
 import java.io.File;
 import java.io.IOException;
@@ -44,18 +47,23 @@ public class DriveBenchmark implements Runnable {
   public void run() {
     double score = doDriveBenchmark();
     String result = DriveResult.getSpeedLabel(score);
-    sender.sendMessage(ChatColor.GREEN + "Benchmark result: " + result + " (" + score + ")");
+    ReactLanguage.send(
+        sender,
+        BenchmarkMessages.RESULT,
+        MessageArgument.untrusted("rating", result),
+        MessageArgument.untrusted("score", score)
+    );
   }
 
   private double doDriveBenchmark() {
-    sender.sendMessage(ChatColor.DARK_RED + "Benchmarking Drive...");
+    ReactLanguage.send(sender, BenchmarkMessages.DRIVE_STARTING);
 
     // Create a temporary file
     File file;
     try {
       file = File.createTempFile("drive_benchmark", ".tmp");
     } catch (IOException e) {
-      sender.sendMessage(ChatColor.RED + "Failed to create a temporary file for benchmarking.");
+      ReactLanguage.send(sender, BenchmarkMessages.DRIVE_TEMP_FAILED);
       return 0.0;
     }
 
@@ -76,27 +84,34 @@ public class DriveBenchmark implements Runnable {
         Files.readAllBytes(file.toPath());
       }
     } catch (IOException e) {
-      sender.sendMessage(ChatColor.RED + "Failed to perform drive benchmark operations.");
+      ReactLanguage.send(sender, BenchmarkMessages.DRIVE_IO_FAILED);
       return 0.0;
     }
 
     long endTime = System.nanoTime();
     long duration = (endTime - startTime);
 
-    sender.sendMessage(ChatColor.YELLOW + "Benchmark complete.");
+    ReactLanguage.send(sender, BenchmarkMessages.COMPLETE);
 
     // Calculate the score based on the duration
     return 1000000000.0 / (duration / 1000000.0);
   }
 
   private enum DriveResult {
-    ULTRA_SLOW("Ultra Slow!"), VERY_SLOW("Very Slow!"), SLOW("Slow!"), AVERAGE("Average."),
-    GOOD("Good!"), FAST("Fast!"), VERY_FAST("Very fast!"), ULTRA_FAST("Ultra Fast"), INSANELY_FAST("Insanely Fast!");
+    ULTRA_SLOW(BenchmarkMessages.SPEED_ULTRA_SLOW),
+    VERY_SLOW(BenchmarkMessages.SPEED_VERY_SLOW),
+    SLOW(BenchmarkMessages.SPEED_SLOW),
+    AVERAGE(BenchmarkMessages.SPEED_AVERAGE),
+    GOOD(BenchmarkMessages.SPEED_GOOD),
+    FAST(BenchmarkMessages.SPEED_FAST),
+    VERY_FAST(BenchmarkMessages.SPEED_VERY_FAST),
+    ULTRA_FAST(BenchmarkMessages.SPEED_ULTRA_FAST),
+    INSANELY_FAST(BenchmarkMessages.SPEED_INSANELY_FAST);
 
-    private final String label;
+    private final TextKey message;
 
-    DriveResult(String label) {
-      this.label = label;
+    DriveResult(TextKey message) {
+      this.message = message;
     }
 
     public static String getSpeedLabel(double speed) {
@@ -112,11 +127,11 @@ public class DriveBenchmark implements Runnable {
 
       for (double speedThreshold : speedMap.descendingKeySet()) {
         if (speed > speedThreshold) {
-          return speedMap.get(speedThreshold).label;
+          return ReactLanguage.plain(speedMap.get(speedThreshold).message);
         }
       }
 
-      return ULTRA_SLOW.label;
+      return ReactLanguage.plain(ULTRA_SLOW.message);
     }
   }
 }

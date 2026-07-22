@@ -26,7 +26,7 @@ import art.arcane.react.content.sampler.SamplerIncidentScore;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.util.common.scheduling.J;
 import org.bukkit.Bukkit;
-import org.bukkit.GameRule;
+import org.bukkit.GameRules;
 import org.bukkit.World;
 
 import java.util.Map;
@@ -107,13 +107,13 @@ public class FeatureRandomTickGovernor extends ReactFeature {
     J.s(() -> {
       int governed = 0;
       for (World world : Bukkit.getWorlds()) {
-        Integer current = world.getGameRuleValue(GameRule.RANDOM_TICK_SPEED);
+        Integer current = world.getGameRuleValue(GameRules.RANDOM_TICK_SPEED);
         if (current == null || current <= reduced) {
           continue;
         }
 
         originalByWorld.put(world.getUID(), current);
-        world.setGameRule(GameRule.RANDOM_TICK_SPEED, reduced);
+        world.setGameRule(GameRules.RANDOM_TICK_SPEED, reduced);
         governed++;
       }
 
@@ -132,7 +132,7 @@ public class FeatureRandomTickGovernor extends ReactFeature {
           continue;
         }
 
-        world.setGameRule(GameRule.RANDOM_TICK_SPEED, entry.getValue());
+        world.setGameRule(GameRules.RANDOM_TICK_SPEED, entry.getValue());
         restored++;
       }
 

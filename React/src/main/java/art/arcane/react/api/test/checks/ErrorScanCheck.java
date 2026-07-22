@@ -4,7 +4,10 @@ import art.arcane.react.React;
 import art.arcane.react.api.test.ReactAsyncSubsystemCheck;
 import art.arcane.react.api.test.TestReport;
 import art.arcane.react.api.test.TestStatus;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.TestMessages;
 import art.arcane.react.util.common.scheduling.J;
+import art.arcane.volmlib.util.localization.MessageArgument;
 
 import java.io.File;
 import java.io.IOException;
@@ -46,7 +49,13 @@ public class ErrorScanCheck implements ReactAsyncSubsystemCheck {
         try {
           scan = scanLog(startedAt, scanUntil);
         } catch (Throwable scanError) {
-          scan = LogScanResult.unavailable(describeLogPath(), "scan failed: " + describe(scanError));
+          scan = LogScanResult.unavailable(
+              describeLogPath(),
+              ReactLanguage.raw(
+                  TestMessages.ERROR_SCAN_FAILED,
+                  MessageArgument.untrusted("reason", describe(scanError))
+              )
+          );
         }
 
         LogScanResult finalScan = scan;
@@ -64,8 +73,16 @@ public class ErrorScanCheck implements ReactAsyncSubsystemCheck {
     } catch (Throwable scheduleError) {
       try {
         recordCounter(report, startedAt);
-        report.record(SUBSYSTEM, "log-scan", TestStatus.INFO,
-            "Async log scan could not be scheduled: " + describe(scheduleError), null);
+        report.record(
+            SUBSYSTEM,
+            "log-scan",
+            TestStatus.INFO,
+            ReactLanguage.raw(
+                TestMessages.ERROR_ASYNC_UNAVAILABLE,
+                MessageArgument.untrusted("reason", describe(scheduleError))
+            ),
+            null
+        );
       } finally {
         complete.run();
       }
@@ -81,11 +98,28 @@ public class ErrorScanCheck implements ReactAsyncSubsystemCheck {
     data.put("totalSinceStartup", totalSinceStartup);
 
     if (sinceRunStart > 0) {
-      report.record(SUBSYSTEM, "reported-errors", TestStatus.FAIL,
-          sinceRunStart + " React.reportError call(s) during this run (" + totalSinceStartup + " total since startup)", data);
+      report.record(
+          SUBSYSTEM,
+          "reported-errors",
+          TestStatus.FAIL,
+          ReactLanguage.raw(
+              TestMessages.ERROR_REPORTED_FAIL,
+              MessageArgument.untrusted("since_run", sinceRunStart),
+              MessageArgument.untrusted("total", totalSinceStartup)
+          ),
+          data
+      );
     } else {
-      report.record(SUBSYSTEM, "reported-errors", TestStatus.PASS,
-          "No React.reportError calls during this run (" + totalSinceStartup + " total since startup)", data);
+      report.record(
+          SUBSYSTEM,
+          "reported-errors",
+          TestStatus.PASS,
+          ReactLanguage.raw(
+              TestMessages.ERROR_REPORTED_PASS,
+              MessageArgument.untrusted("total", totalSinceStartup)
+          ),
+          data
+      );
     }
   }
 
@@ -101,26 +135,55 @@ public class ErrorScanCheck implements ReactAsyncSubsystemCheck {
     }
 
     if (!scan.logAvailable()) {
-      report.record(SUBSYSTEM, "log-scan", TestStatus.INFO,
-          "Server log not scanned (" + scan.note() + "); relying on error counter", data);
+      report.record(
+          SUBSYSTEM,
+          "log-scan",
+          TestStatus.INFO,
+          ReactLanguage.raw(
+              TestMessages.ERROR_LOG_NOT_SCANNED,
+              MessageArgument.untrusted("note", scan.note())
+          ),
+          data
+      );
       return;
     }
 
     if (scan.crossedMidnight()) {
-      report.record(SUBSYSTEM, "log-scan", TestStatus.INFO,
-          "Run window crossed midnight; skipped time-filtered log scan", data);
+      report.record(
+          SUBSYSTEM,
+          "log-scan",
+          TestStatus.INFO,
+          ReactLanguage.raw(TestMessages.ERROR_CROSSED_MIDNIGHT),
+          data
+      );
       return;
     }
 
     if (scan.tickCrashLines() > 0 || scan.reactErrorLines() > 0) {
-      report.record(SUBSYSTEM, "log-scan", TestStatus.FAIL,
-          scan.tickCrashLines() + " tick crash + " + scan.reactErrorLines()
-              + " React error line(s) in latest.log during run", data);
+      report.record(
+          SUBSYSTEM,
+          "log-scan",
+          TestStatus.FAIL,
+          ReactLanguage.raw(
+              TestMessages.ERROR_LOG_FAIL,
+              MessageArgument.untrusted("tick_crashes", scan.tickCrashLines()),
+              MessageArgument.untrusted("react_errors", scan.reactErrorLines())
+          ),
+          data
+      );
       return;
     }
 
-    report.record(SUBSYSTEM, "log-scan", TestStatus.PASS,
-        "No React error/crash lines in latest.log during run (" + scan.totalScanned() + " lines scanned)", data);
+    report.record(
+        SUBSYSTEM,
+        "log-scan",
+        TestStatus.PASS,
+        ReactLanguage.raw(
+            TestMessages.ERROR_LOG_PASS,
+            MessageArgument.untrusted("lines", scan.totalScanned())
+        ),
+        data
+    );
   }
 
   private LogScanResult scanLog(long startedAt, long scanUntil) throws IOException {
@@ -128,7 +191,7 @@ public class ErrorScanCheck implements ReactAsyncSubsystemCheck {
     String path = logFile == null ? "<unknown>" : logFile.getAbsolutePath();
 
     if (logFile == null || !logFile.isFile() || !logFile.canRead()) {
-      return LogScanResult.unavailable(path, "file missing or unreadable");
+      return LogScanResult.unavailable(path, ReactLanguage.raw(TestMessages.ERROR_FILE_MISSING));
     }
 
     ZoneId zone = ZoneId.systemDefault();

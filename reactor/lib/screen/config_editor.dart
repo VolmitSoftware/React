@@ -5,6 +5,7 @@ import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart' show Component;
 
 import '../model/config_tree.dart';
+import '../localization/reactor_localizations.dart';
 import '../model/knob.dart';
 import '../model/role_info.dart';
 import '../service/react_client.dart';
@@ -39,51 +40,54 @@ class ConfigEditorView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ReactorPage(
-      title: 'Config Editor',
-      subtitle: 'Server configuration',
+      title: reactorText(ReactorText.configEditorTitle),
+      subtitle: reactorText(ReactorText.configEditorSubtitle),
       leading: roleBadge,
       actions: adminGated
           ? ArcaneTooltip(
-              text: 'Requires admin role',
+              text: reactorText(ReactorText.commonRequiresAdminRole),
               child: Button.primary(
-                label: 'Apply Changes',
+                label: reactorText(ReactorText.configEditorApplyChanges),
                 size: ButtonSize.small,
                 disabled: true,
                 onPressed: null,
               ),
             )
           : Button.primary(
-              label: 'Apply Changes',
+              label: reactorText(ReactorText.configEditorApplyChanges),
               size: ButtonSize.small,
               onPressed: onApply,
             ),
       children: <Widget>[
         sectionCard(
-          label: 'Presets',
+          label: reactorText(ReactorText.configEditorPresets),
           child: dom.div(
-            styles: const dom.Styles(raw: <String, String>{
-              'display': 'flex',
-              'flex-direction': 'column',
-              'gap': '0.5rem',
-            }),
+            styles: const dom.Styles(
+              raw: <String, String>{
+                'display': 'flex',
+                'flex-direction': 'column',
+                'gap': '0.5rem',
+              },
+            ),
             <Widget>[
-              for (final (String label, String key) in const <(String, String)>[
-                ('Off', 'off'),
-                ('Light', 'light'),
-                ('Balanced', 'balanced'),
-                ('High', 'high'),
-              ])
+              for (final (ReactorText label, String key)
+                  in const <(ReactorText, String)>[
+                    (ReactorText.configEditorPresetOff, 'off'),
+                    (ReactorText.configEditorPresetLight, 'light'),
+                    (ReactorText.configEditorPresetBalanced, 'balanced'),
+                    (ReactorText.configEditorPresetHigh, 'high'),
+                  ])
                 adminGated
                     ? ArcaneTooltip(
-                        text: 'Requires admin role',
+                        text: reactorText(ReactorText.commonRequiresAdminRole),
                         child: Button.secondary(
-                          label: label,
+                          label: reactorText(label),
                           disabled: true,
                           onPressed: null,
                         ),
                       )
                     : Button.secondary(
-                        label: label,
+                        label: reactorText(label),
                         onPressed: () => onPreset?.call(key),
                       ),
             ],
@@ -93,11 +97,13 @@ class ConfigEditorView extends StatelessWidget {
           sectionCard(
             label: section.name,
             child: dom.div(
-              styles: const dom.Styles(raw: <String, String>{
-                'display': 'flex',
-                'flex-direction': 'column',
-                'gap': '0.75rem',
-              }),
+              styles: const dom.Styles(
+                raw: <String, String>{
+                  'display': 'flex',
+                  'flex-direction': 'column',
+                  'gap': '0.75rem',
+                },
+              ),
               <Widget>[
                 for (final Knob node in section.nodes)
                   KnobEditor(
@@ -107,7 +113,9 @@ class ConfigEditorView extends StatelessWidget {
                           : node.value,
                     ),
                     disabled: adminGated,
-                    onChanged: adminGated ? null : (Object? v) => onEdit?.call(node.key, v),
+                    onChanged: adminGated
+                        ? null
+                        : (Object? v) => onEdit?.call(node.key, v),
                   ),
               ],
             ),
@@ -137,8 +145,10 @@ class _ConfigEditorScreenState extends State<ConfigEditorScreen> {
       _controller = ConfigController(
         c,
         onChange: () => setState(() {}),
-        onError: (Object e) =>
-            ArcaneSonner.error('Config failed', description: e.toString()),
+        onError: (Object e) => ArcaneSonner.error(
+          reactorText(ReactorText.configEditorFailed),
+          description: e.toString(),
+        ),
       );
       _controller!.load();
     }
@@ -147,14 +157,14 @@ class _ConfigEditorScreenState extends State<ConfigEditorScreen> {
   Future<void> _applyPreset(String name) async {
     await _controller?.applyPreset(name);
     if (_controller?.error == null) {
-      ArcaneSonner.success('Configuration applied');
+      ArcaneSonner.success(reactorText(ReactorText.configEditorApplied));
     }
   }
 
   Future<void> _apply() async {
     await _controller?.apply();
     if (_controller?.error == null) {
-      ArcaneSonner.success('Configuration applied');
+      ArcaneSonner.success(reactorText(ReactorText.configEditorApplied));
     }
   }
 
@@ -162,16 +172,18 @@ class _ConfigEditorScreenState extends State<ConfigEditorScreen> {
   Widget build(BuildContext context) {
     if (_controller == null) {
       return ReactorPage(
-        title: 'Config Editor',
-        subtitle: 'Server configuration',
+        title: reactorText(ReactorText.configEditorTitle),
+        subtitle: reactorText(ReactorText.configEditorSubtitle),
         children: <Widget>[
           dom.div(
-            styles: const dom.Styles(raw: <String, String>{
-              'color': 'var(--muted-foreground)',
-              'font-size': '0.875rem',
-            }),
+            styles: const dom.Styles(
+              raw: <String, String>{
+                'color': 'var(--muted-foreground)',
+                'font-size': '0.875rem',
+              },
+            ),
             <Widget>[
-              Component.text('Config editing requires a live connection.'),
+              Component.text(reactorText(ReactorText.configEditorLiveRequired)),
             ],
           ),
         ],
@@ -182,15 +194,19 @@ class _ConfigEditorScreenState extends State<ConfigEditorScreen> {
 
     if (controller.loading && controller.tree.sections.isEmpty) {
       return ReactorPage(
-        title: 'Config Editor',
-        subtitle: 'Server configuration',
+        title: reactorText(ReactorText.configEditorTitle),
+        subtitle: reactorText(ReactorText.configEditorSubtitle),
         children: <Widget>[
           dom.div(
-            styles: const dom.Styles(raw: <String, String>{
-              'color': 'var(--muted-foreground)',
-              'font-size': '0.875rem',
-            }),
-            <Widget>[Component.text('Loading configuration...')],
+            styles: const dom.Styles(
+              raw: <String, String>{
+                'color': 'var(--muted-foreground)',
+                'font-size': '0.875rem',
+              },
+            ),
+            <Widget>[
+              Component.text(reactorText(ReactorText.configEditorLoading)),
+            ],
           ),
         ],
       );

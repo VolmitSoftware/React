@@ -8,7 +8,12 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 public final class TomlCodec {
   private static final Gson JSON = new Gson();
@@ -101,7 +106,7 @@ public final class TomlCodec {
         || value instanceof Boolean
         || value instanceof Character
         || value instanceof Enum<?>
-        || value instanceof java.util.UUID
+        || value instanceof UUID
         || value instanceof java.time.temporal.TemporalAccessor) {
       return true;
     }
@@ -292,10 +297,10 @@ public final class TomlCodec {
       out.append("# React configuration - ").append(sourceTag).append('\n');
       out.append("# This file is canonicalized on load. Comments and key order may refresh automatically.\n");
       out.append("# Docs schema: 2\n");
-      ConfigDescription desc = root.getClass().getAnnotation(ConfigDescription.class);
-      String rootDescription = desc != null && !desc.value().isBlank()
-          ? desc.value().strip()
-          : ConfigDocumentation.buildRootDescription(sourceTag, root.getClass());
+      String localizedDescription = ConfigLocalization.description(root.getClass());
+      String rootDescription = localizedDescription.isBlank()
+          ? ConfigDocumentation.buildRootDescription(sourceTag, root.getClass())
+          : localizedDescription;
       if (rootDescription != null && !rootDescription.isBlank()) {
         out.append("#\n");
         out.append("# ").append(rootDescription).append('\n');

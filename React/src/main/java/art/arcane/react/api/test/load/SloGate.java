@@ -1,8 +1,13 @@
 package art.arcane.react.api.test.load;
 
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.TestMessages;
+import art.arcane.volmlib.util.localization.MessageArgument;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public final class SloGate {
@@ -17,23 +22,41 @@ public final class SloGate {
   public static SloResult evaluate(LoadSummary summary) {
     List<String> breaches = new ArrayList<String>();
     if (summary.avgTps() < MIN_TPS) {
-      breaches.add(String.format("low TPS: avg %.2f < %.1f", summary.avgTps(), MIN_TPS));
+      breaches.add(ReactLanguage.raw(
+          TestMessages.SLO_LOW_TPS,
+          MessageArgument.untrusted("average", format("%.2f", summary.avgTps())),
+          MessageArgument.untrusted("minimum", format("%.1f", MIN_TPS))
+      ));
     }
     if (summary.avgMspt() >= MAX_AVG_MSPT) {
-      breaches.add(String.format("high MSPT: avg %.2fms >= %.1fms", summary.avgMspt(), MAX_AVG_MSPT));
+      breaches.add(ReactLanguage.raw(
+          TestMessages.SLO_HIGH_MSPT,
+          MessageArgument.untrusted("average", format("%.2f", summary.avgMspt())),
+          MessageArgument.untrusted("maximum", format("%.1f", MAX_AVG_MSPT))
+      ));
     }
     if (summary.maxTickMs() > FREEZE_TICK_MS) {
-      breaches.add(String.format("main-thread freeze: %.0fms tick > %.0fms", summary.maxTickMs(), FREEZE_TICK_MS));
+      breaches.add(ReactLanguage.raw(
+          TestMessages.SLO_FREEZE,
+          MessageArgument.untrusted("tick", format("%.0f", summary.maxTickMs())),
+          MessageArgument.untrusted("maximum", format("%.0f", FREEZE_TICK_MS))
+      ));
     }
     if (summary.oom()) {
-      breaches.add("OutOfMemory observed during run");
+      breaches.add(ReactLanguage.raw(TestMessages.SLO_OOM));
     }
     double heapGrowth = summary.heapEndMb() - summary.heapStartMb();
     if (summary.heapMonotonicGrowth() && heapGrowth > MAX_HEAP_GROWTH_MB) {
-      breaches.add(String.format("unbounded heap growth: +%.0fMB with no GC recovery", heapGrowth));
+      breaches.add(ReactLanguage.raw(
+          TestMessages.SLO_HEAP_GROWTH,
+          MessageArgument.untrusted("growth", format("%.0f", heapGrowth))
+      ));
     }
     if (summary.reactPathExceptions() > 0) {
-      breaches.add("React-path exceptions: " + summary.reactPathExceptions());
+      breaches.add(ReactLanguage.raw(
+          TestMessages.SLO_EXCEPTIONS,
+          MessageArgument.untrusted("count", summary.reactPathExceptions())
+      ));
     }
 
     Map<String, Double> metrics = new LinkedHashMap<String, Double>();
@@ -48,5 +71,9 @@ public final class SloGate {
     metrics.put("reactPathExceptions", (double) summary.reactPathExceptions());
 
     return new SloResult(breaches.isEmpty(), breaches, metrics);
+  }
+
+  private static String format(String format, double value) {
+    return String.format(Locale.ROOT, format, value);
   }
 }

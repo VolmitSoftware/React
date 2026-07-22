@@ -5,7 +5,7 @@ import art.arcane.react.api.tweak.Tweak;
 import art.arcane.react.api.web.dto.ControlItemDto;
 import art.arcane.react.api.web.dto.KnobDto;
 import art.arcane.react.core.gui.ReactGuiTaxonomy;
-import art.arcane.react.util.project.config.ConfigDescription;
+import art.arcane.react.util.project.config.ConfigLocalization;
 import art.arcane.react.util.project.registry.Registered;
 
 import java.util.List;
@@ -43,14 +43,6 @@ public class ControlSerializer {
     }
 
     private static String extractDescription(Class<?> type) {
-        Class<?> cursor = type;
-        while (cursor != null && cursor != Object.class) {
-            ConfigDescription annotation = cursor.getDeclaredAnnotation(ConfigDescription.class);
-            if (annotation != null) {
-                return annotation.value();
-            }
-            cursor = cursor.getSuperclass();
-        }
-        return "";
+        return ConfigLocalization.description(type);
     }
 }

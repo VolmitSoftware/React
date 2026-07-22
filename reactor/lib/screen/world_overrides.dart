@@ -5,6 +5,7 @@ import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart' show Component;
 
 import '../model/role_info.dart';
+import '../localization/reactor_localizations.dart';
 import '../model/world_settings.dart';
 import '../service/react_client.dart';
 import '../state/control_scope.dart';
@@ -16,7 +17,13 @@ import '../widget/section_card.dart';
 
 class WorldOverridesView extends StatelessWidget {
   final List<WorldSettings> worlds;
-  final void Function(String name, {double? budgetMs, double? panicMs, double? releaseMs})? onSetBudget;
+  final void Function(
+    String name, {
+    double? budgetMs,
+    double? panicMs,
+    double? releaseMs,
+  })?
+  onSetBudget;
   final bool readOnly;
   final Widget? roleBadge;
 
@@ -31,9 +38,9 @@ class WorldOverridesView extends StatelessWidget {
   Widget _pressureBadge(PressureMode mode) {
     return switch (mode) {
       PressureMode.normal => const ArcaneStatusBadge.success(
-          'NORMAL',
-          showPulse: false,
-        ),
+        'NORMAL',
+        showPulse: false,
+      ),
       PressureMode.pressure => const ArcaneStatusBadge.warning('PRESSURE'),
       PressureMode.panic => const ArcaneStatusBadge.error('PANIC'),
     };
@@ -43,37 +50,41 @@ class WorldOverridesView extends StatelessWidget {
   Widget build(BuildContext context) {
     if (worlds.isEmpty) {
       return ReactorPage(
-        title: 'World Overrides',
-        subtitle: 'Per-world tick budgets',
+        title: reactorText(ReactorText.worldOverridesTitle),
+        subtitle: reactorText(ReactorText.worldOverridesSubtitle),
         leading: roleBadge,
         children: <Widget>[
           ArcaneEmptyState.noData(
-            title: 'No worlds',
-            description: 'No worlds reported by the server.',
+            title: reactorText(ReactorText.worldOverridesNoWorlds),
+            description: reactorText(
+              ReactorText.worldOverridesNoWorldsDescription,
+            ),
           ),
         ],
       );
     }
     return ReactorPage(
-      title: 'World Overrides',
-      subtitle: 'Per-world tick budgets',
+      title: reactorText(ReactorText.worldOverridesTitle),
+      subtitle: reactorText(ReactorText.worldOverridesSubtitle),
       leading: roleBadge,
       children: <Widget>[
         for (final WorldSettings world in worlds)
           Card.elevated(
             fillWidth: true,
             child: dom.div(
-              styles: const dom.Styles(raw: <String, String>{
-                'padding': '0.75rem',
-                'display': 'flex',
-                'flex-direction': 'column',
-                'gap': '0.5rem',
-              }),
+              styles: const dom.Styles(
+                raw: <String, String>{
+                  'padding': '0.75rem',
+                  'display': 'flex',
+                  'flex-direction': 'column',
+                  'gap': '0.5rem',
+                },
+              ),
               <Widget>[
                 Text.heading3(world.name),
                 _pressureBadge(world.pressureMode),
                 TextInput(
-                  label: 'Budget (ms)',
+                  label: reactorText(ReactorText.worldOverridesBudgetMs),
                   type: TextInputType.number,
                   value: world.budgetMs.toString(),
                   disabled: readOnly,
@@ -81,11 +92,12 @@ class WorldOverridesView extends StatelessWidget {
                       ? null
                       : (String s) {
                           final double? v = double.tryParse(s.trim());
-                          if (v != null) onSetBudget?.call(world.name, budgetMs: v);
+                          if (v != null)
+                            onSetBudget?.call(world.name, budgetMs: v);
                         },
                 ),
                 TextInput(
-                  label: 'Panic (ms)',
+                  label: reactorText(ReactorText.worldOverridesPanicMs),
                   type: TextInputType.number,
                   value: world.panicMs.toString(),
                   disabled: readOnly,
@@ -93,11 +105,12 @@ class WorldOverridesView extends StatelessWidget {
                       ? null
                       : (String s) {
                           final double? v = double.tryParse(s.trim());
-                          if (v != null) onSetBudget?.call(world.name, panicMs: v);
+                          if (v != null)
+                            onSetBudget?.call(world.name, panicMs: v);
                         },
                 ),
                 TextInput(
-                  label: 'Release (ms)',
+                  label: reactorText(ReactorText.worldOverridesReleaseMs),
                   type: TextInputType.number,
                   value: world.releaseMs.toString(),
                   disabled: readOnly,
@@ -105,7 +118,8 @@ class WorldOverridesView extends StatelessWidget {
                       ? null
                       : (String s) {
                           final double? v = double.tryParse(s.trim());
-                          if (v != null) onSetBudget?.call(world.name, releaseMs: v);
+                          if (v != null)
+                            onSetBudget?.call(world.name, releaseMs: v);
                         },
                 ),
               ],
@@ -138,8 +152,10 @@ class _WorldOverridesScreenState extends State<WorldOverridesScreen> {
       _controller = WorldOverridesController(
         c,
         onChange: () => setState(() {}),
-        onError: (Object e) =>
-            ArcaneSonner.error('Update failed', description: e.toString()),
+        onError: (Object e) => ArcaneSonner.error(
+          reactorText(ReactorText.commonUpdateFailed),
+          description: e.toString(),
+        ),
       );
       _controller!.load();
     }
@@ -149,19 +165,21 @@ class _WorldOverridesScreenState extends State<WorldOverridesScreen> {
   Widget build(BuildContext context) {
     if (_client == null) {
       return ReactorPage(
-        title: 'World Overrides',
-        subtitle: 'Per-world tick budgets',
+        title: reactorText(ReactorText.worldOverridesTitle),
+        subtitle: reactorText(ReactorText.worldOverridesSubtitle),
         children: <Widget>[
           sectionCard(
-            label: 'Per-World Overrides',
+            label: reactorText(ReactorText.worldOverridesSection),
             child: dom.div(
-              styles: const dom.Styles(raw: <String, String>{
-                'color': 'var(--muted-foreground)',
-                'font-size': '0.875rem',
-              }),
+              styles: const dom.Styles(
+                raw: <String, String>{
+                  'color': 'var(--muted-foreground)',
+                  'font-size': '0.875rem',
+                },
+              ),
               <Widget>[
                 Component.text(
-                  'Per-world overrides require a live connection.',
+                  reactorText(ReactorText.worldOverridesLiveRequired),
                 ),
               ],
             ),
@@ -174,17 +192,21 @@ class _WorldOverridesScreenState extends State<WorldOverridesScreen> {
 
     if (controller.loading && controller.worlds.isEmpty) {
       return ReactorPage(
-        title: 'World Overrides',
-        subtitle: 'Per-world tick budgets',
+        title: reactorText(ReactorText.worldOverridesTitle),
+        subtitle: reactorText(ReactorText.worldOverridesSubtitle),
         children: <Widget>[
           sectionCard(
-            label: 'Per-World Overrides',
+            label: reactorText(ReactorText.worldOverridesSection),
             child: dom.div(
-              styles: const dom.Styles(raw: <String, String>{
-                'color': 'var(--muted-foreground)',
-                'font-size': '0.875rem',
-              }),
-              <Widget>[Component.text('Loading worlds...')],
+              styles: const dom.Styles(
+                raw: <String, String>{
+                  'color': 'var(--muted-foreground)',
+                  'font-size': '0.875rem',
+                },
+              ),
+              <Widget>[
+                Component.text(reactorText(ReactorText.commonLoadingWorlds)),
+              ],
             ),
           ),
         ],

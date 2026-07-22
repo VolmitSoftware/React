@@ -5,6 +5,7 @@ import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart' show Component;
 
 import '../model/action_descriptor.dart';
+import '../localization/reactor_localizations.dart';
 import '../model/knob.dart';
 import '../model/role_info.dart';
 import '../service/react_client.dart';
@@ -23,10 +24,10 @@ class ActionsConsoleView extends StatelessWidget {
   final Map<String, Map<String, Object?>> paramValues;
   final RoleInfo? role;
   final void Function(String id, Map<String, Object?> params, bool confirm)?
-      onExecute;
+  onExecute;
   final void Function(String? id)? onPendingChanged;
   final void Function(String actionId, String paramKey, Object? value)?
-      onParamChanged;
+  onParamChanged;
 
   const ActionsConsoleView({
     required this.actions,
@@ -42,11 +43,12 @@ class ActionsConsoleView extends StatelessWidget {
 
   Widget _executeButton(ActionDescriptor action) {
     final bool allDisabled = readOnlyFor(role);
-    final bool destructiveBlocked = action.destructive && adminGatedDisabled(role);
+    final bool destructiveBlocked =
+        action.destructive && adminGatedDisabled(role);
     final bool isDisabled = allDisabled || destructiveBlocked;
 
     final Widget button = Button.primary(
-      label: 'Execute',
+      label: reactorText(ReactorText.actionsExecute),
       disabled: isDisabled,
       onPressed: isDisabled
           ? null
@@ -61,7 +63,7 @@ class ActionsConsoleView extends StatelessWidget {
 
     if (destructiveBlocked) {
       return ArcaneTooltip(
-        text: 'Requires admin role',
+        text: reactorText(ReactorText.commonRequiresAdminRole),
         child: button,
       );
     }
@@ -73,7 +75,7 @@ class ActionsConsoleView extends StatelessWidget {
     for (final ActionParam p in action.params) {
       base[p.key] =
           (paramValues[action.id] ?? const <String, Object?>{})[p.key] ??
-              p.defaultValue;
+          p.defaultValue;
     }
     return base;
   }
@@ -84,18 +86,20 @@ class ActionsConsoleView extends StatelessWidget {
       gap: 20,
       children: <Widget>[
         sectionCard(
-          label: 'Actions',
+          label: reactorText(ReactorText.actionsTitle),
           child: statGrid(<Widget>[
             for (final ActionDescriptor action in actions)
               Card.elevated(
                 fillWidth: true,
                 child: dom.div(
-                  styles: const dom.Styles(raw: <String, String>{
-                    'padding': '0.75rem',
-                    'display': 'flex',
-                    'flex-direction': 'column',
-                    'gap': '0.5rem',
-                  }),
+                  styles: const dom.Styles(
+                    raw: <String, String>{
+                      'padding': '0.75rem',
+                      'display': 'flex',
+                      'flex-direction': 'column',
+                      'gap': '0.5rem',
+                    },
+                  ),
                   <Widget>[
                     Text.heading3(action.name),
                     Text(
@@ -104,14 +108,17 @@ class ActionsConsoleView extends StatelessWidget {
                       size: FontSize.sm,
                     ),
                     if (action.destructive)
-                      const ArcaneStatusBadge.warning('Destructive'),
+                      ArcaneStatusBadge.warning(
+                        reactorText(ReactorText.actionsDestructive),
+                      ),
                     for (final ActionParam p in action.params)
                       KnobEditor(
                         knob: Knob(
                           key: p.key,
                           label: p.label,
                           type: p.type,
-                          value: (paramValues[action.id] ??
+                          value:
+                              (paramValues[action.id] ??
                                   const <String, Object?>{})[p.key] ??
                               p.defaultValue,
                           options: p.options,
@@ -121,11 +128,15 @@ class ActionsConsoleView extends StatelessWidget {
                       ),
                     if (pendingId == action.id)
                       ArcaneConfirmDialog(
-                        title: 'Confirm ${action.name}',
-                        message:
-                            'This is a destructive action. Are you sure you want to proceed?',
+                        title: reactorText(
+                          ReactorText.actionsConfirmTitle,
+                          <String, Object?>{'action': action.name},
+                        ),
+                        message: reactorText(
+                          ReactorText.actionsConfirmDestructive,
+                        ),
                         destructive: true,
-                        confirmText: 'Execute',
+                        confirmText: reactorText(ReactorText.actionsExecute),
                         onConfirm: () {
                           onExecute?.call(
                             action.id,
@@ -143,32 +154,51 @@ class ActionsConsoleView extends StatelessWidget {
           ]),
         ),
         sectionCard(
-          label: 'Recent Executions',
+          label: reactorText(ReactorText.actionsRecentExecutions),
           child: dom.div(
-            styles: const dom.Styles(raw: <String, String>{
-              'display': 'flex',
-              'flex-direction': 'column',
-              'gap': '0.5rem',
-            }),
+            styles: const dom.Styles(
+              raw: <String, String>{
+                'display': 'flex',
+                'flex-direction': 'column',
+                'gap': '0.5rem',
+              },
+            ),
             <Widget>[
               if (recent.isEmpty)
                 dom.div(
-                  styles: const dom.Styles(raw: <String, String>{
-                    'color': 'var(--muted-foreground)',
-                    'font-size': '0.875rem',
-                  }),
-                  <Widget>[Component.text('No actions executed yet.')],
+                  styles: const dom.Styles(
+                    raw: <String, String>{
+                      'color': 'var(--muted-foreground)',
+                      'font-size': '0.875rem',
+                    },
+                  ),
+                  <Widget>[
+                    Component.text(
+                      reactorText(ReactorText.actionsNoneExecuted),
+                    ),
+                  ],
                 ),
               for (final ActionExecution exec in recent)
                 dom.div(
-                  styles: const dom.Styles(raw: <String, String>{
-                    'display': 'flex',
-                    'gap': '0.5rem',
-                    'font-size': '0.875rem',
-                    'align-items': 'center',
-                  }),
+                  styles: const dom.Styles(
+                    raw: <String, String>{
+                      'display': 'flex',
+                      'gap': '0.5rem',
+                      'font-size': '0.875rem',
+                      'align-items': 'center',
+                    },
+                  ),
                   <Widget>[
-                    Component.text('${exec.actionId} — ${exec.status} — ${exec.ticketId}'),
+                    Component.text(
+                      reactorText(
+                        ReactorText.actionsExecutionSummary,
+                        <String, Object?>{
+                          'actionId': exec.actionId,
+                          'status': exec.status,
+                          'ticketId': exec.ticketId,
+                        },
+                      ),
+                    ),
                   ],
                 ),
             ],
@@ -210,14 +240,16 @@ class _ActionsScreenState extends State<ActionsScreen> {
             _recentCount = ctrl.recent.length;
             if (ctrl.recent.isNotEmpty) {
               ArcaneSonner.success(
-                'Action queued',
+                reactorText(ReactorText.actionsQueued),
                 description: ctrl.recent.first.ticketId,
               );
             }
           }
         }),
-        onError: (Object e) =>
-            ArcaneSonner.error('Action failed', description: e.toString()),
+        onError: (Object e) => ArcaneSonner.error(
+          reactorText(ReactorText.actionsFailed),
+          description: e.toString(),
+        ),
       );
       _controller!.load();
     }
@@ -227,18 +259,20 @@ class _ActionsScreenState extends State<ActionsScreen> {
   Widget build(BuildContext context) {
     if (_client == null) {
       return ReactorPage(
-        title: 'Actions',
-        subtitle: 'Operational commands',
+        title: reactorText(ReactorText.actionsTitle),
+        subtitle: reactorText(ReactorText.actionsSubtitle),
         children: <Widget>[
           sectionCard(
-            label: 'Actions',
+            label: reactorText(ReactorText.actionsTitle),
             child: dom.div(
-              styles: const dom.Styles(raw: <String, String>{
-                'color': 'var(--muted-foreground)',
-                'font-size': '0.875rem',
-              }),
+              styles: const dom.Styles(
+                raw: <String, String>{
+                  'color': 'var(--muted-foreground)',
+                  'font-size': '0.875rem',
+                },
+              ),
               <Widget>[
-                Component.text('Actions require a live connection.'),
+                Component.text(reactorText(ReactorText.actionsLiveRequired)),
               ],
             ),
           ),
@@ -250,17 +284,19 @@ class _ActionsScreenState extends State<ActionsScreen> {
 
     if (controller.loading && controller.actions.isEmpty) {
       return ReactorPage(
-        title: 'Actions',
-        subtitle: 'Operational commands',
+        title: reactorText(ReactorText.actionsTitle),
+        subtitle: reactorText(ReactorText.actionsSubtitle),
         children: <Widget>[
           sectionCard(
-            label: 'Actions',
+            label: reactorText(ReactorText.actionsTitle),
             child: dom.div(
-              styles: const dom.Styles(raw: <String, String>{
-                'color': 'var(--muted-foreground)',
-                'font-size': '0.875rem',
-              }),
-              <Widget>[Component.text('Loading actions...')],
+              styles: const dom.Styles(
+                raw: <String, String>{
+                  'color': 'var(--muted-foreground)',
+                  'font-size': '0.875rem',
+                },
+              ),
+              <Widget>[Component.text(reactorText(ReactorText.actionsLoading))],
             ),
           ),
         ],
@@ -270,8 +306,8 @@ class _ActionsScreenState extends State<ActionsScreen> {
     final RoleInfo? role = RoleScope.of(context)?.role;
 
     return ReactorPage(
-      title: 'Actions',
-      subtitle: 'Operational commands',
+      title: reactorText(ReactorText.actionsTitle),
+      subtitle: reactorText(ReactorText.actionsSubtitle),
       leading: RoleBadge(role: role),
       children: <Widget>[
         ActionsConsoleView(
@@ -287,8 +323,9 @@ class _ActionsScreenState extends State<ActionsScreen> {
           onParamChanged: (String actionId, String paramKey, Object? value) {
             setState(() {
               _paramValues = Map<String, Map<String, Object?>>.of(_paramValues);
-              _paramValues[actionId] =
-                  Map<String, Object?>.of(_paramValues[actionId] ?? <String, Object?>{});
+              _paramValues[actionId] = Map<String, Object?>.of(
+                _paramValues[actionId] ?? <String, Object?>{},
+              );
               _paramValues[actionId]![paramKey] = value;
             });
           },

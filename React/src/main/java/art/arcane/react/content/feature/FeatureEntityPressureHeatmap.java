@@ -20,6 +20,8 @@
 package art.arcane.react.content.feature;
 
 import art.arcane.react.content.sampler.SamplerEntities;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.RendererMessages;
 import art.arcane.react.util.data.TinyColor;
 import org.bukkit.Chunk;
 
@@ -33,7 +35,7 @@ public class FeatureEntityPressureHeatmap extends FeatureChunkHeatmapBase {
 
   @Override
   protected String mapLabel() {
-    return "Entity Pressure";
+    return ReactLanguage.raw(RendererMessages.TITLE_ENTITY_PRESSURE);
   }
 
   @Override

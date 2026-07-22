@@ -511,22 +511,23 @@ public class IntegrationController extends TickedObject implements IController {
         false
     );
 
-    boolean stressGate = adaptSessionLoad >= ADAPT_SESSION_LOAD_THRESHOLD
-        || tickMs >= ADAPT_ABILITY_OPS_MSPT_GATE;
-    boolean sustainedGate = adaptAbilityOpsSampleStreak >= ADAPT_ABILITY_OPS_SUSTAINED_SAMPLES;
-    boolean gatedAbilityOpsHigh = rawAbilityOpsHigh && sustainedGate && stressGate;
-    String gateMode = resolveAdaptOpsGateMode(adaptSessionLoad, tickMs);
+    boolean gatedAbilityOpsHigh = shouldReportSevereAdaptAbilityOps(
+        adaptAbilityOps,
+        adaptAbilityOpsSampleStreak,
+        tickMs
+    );
 
     evaluateThreshold(
         "adapt.ability.ops.high",
         gatedAbilityOpsHigh,
         String.format(
             Locale.ROOT,
-            "Adapt ability ops elevated [%s checks] (%.0f ops/min, streak=%d, gate=%s)",
+            "Adapt ability ops elevated [%s checks] (%.0f ops/min, streak=%d, MSPT=%.1fms, session=%.1f%%)",
             adaptAbilityOpsMode,
             adaptAbilityOps,
             adaptAbilityOpsSampleStreak,
-            gateMode
+            tickMs,
+            adaptSessionLoad
         ),
         String.format(
             Locale.ROOT,
@@ -537,6 +538,14 @@ public class IntegrationController extends TickedObject implements IController {
         ),
         now
     );
+  }
+
+  static boolean shouldReportSevereAdaptAbilityOps(double abilityOps, int sampleStreak, double tickMs) {
+    return Double.isFinite(abilityOps)
+        && abilityOps >= ADAPT_ABILITY_OPS_THRESHOLD
+        && sampleStreak >= ADAPT_ABILITY_OPS_SUSTAINED_SAMPLES
+        && Double.isFinite(tickMs)
+        && tickMs >= ADAPT_ABILITY_OPS_MSPT_GATE;
   }
 
   private void evaluateThreshold(String key, boolean tripped, String tripMessage, String recoverMessage, long now) {
@@ -563,21 +572,6 @@ public class IntegrationController extends TickedObject implements IController {
       return -1D;
     }
     return tickSampler.sample();
-  }
-
-  private String resolveAdaptOpsGateMode(double adaptSessionLoad, double tickMs) {
-    boolean loadGate = adaptSessionLoad >= ADAPT_SESSION_LOAD_THRESHOLD;
-    boolean msptGate = tickMs >= ADAPT_ABILITY_OPS_MSPT_GATE;
-    if (loadGate && msptGate) {
-      return "session+mspt";
-    }
-    if (loadGate) {
-      return "session";
-    }
-    if (msptGate) {
-      return "mspt";
-    }
-    return "none";
   }
 
   private void trimTimeline(long now) {

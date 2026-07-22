@@ -19,6 +19,8 @@
 
 package art.arcane.react.core.gui;
 
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.GuiMessages;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.data.TinyColor;
 import art.arcane.react.util.inventorygui.CustomUIElement;
@@ -27,11 +29,12 @@ import art.arcane.volmlib.util.data.MaterialBlock;
 import art.arcane.volmlib.util.inventorygui.UIElement;
 import art.arcane.volmlib.util.inventorygui.UIWindow;
 import art.arcane.volmlib.util.inventorygui.WindowResolution;
+import art.arcane.volmlib.util.localization.MessageArgument;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 
-import java.awt.*;
+import java.awt.Color;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -73,7 +76,7 @@ public class ColorPickerGUI {
 
     J.s(() -> {
       UIWindow window = new UIWindow(art.arcane.react.React.instance, p);
-      window.setTitle("Color Picker");
+      window.setTitle(ReactLanguage.plain(GuiMessages.COLOR_TITLE));
       window.setResolution(WindowResolution.W9_H6);
       window.setDecorator(new UIStaticDecorator(new UIElement("bg").setMaterial(new MaterialBlock(Material.BLACK_STAINED_GLASS_PANE))));
 
@@ -94,8 +97,8 @@ public class ColorPickerGUI {
       AtomicBoolean refresh = new AtomicBoolean(false);
 
       window.setElement(0, 2, new UIElement("custom")
-          .setName("Custom Color")
-          .addLore("* Left Click to pick a custom color")
+          .setName(ReactLanguage.plain(GuiMessages.COLOR_CUSTOM))
+          .addLore(ReactLanguage.plain(GuiMessages.CLICK_CUSTOM))
           .setMaterial(new MaterialBlock(Material.WRITABLE_BOOK))
           .onLeftClick((e) -> {
             refresh.set(true);
@@ -131,15 +134,15 @@ public class ColorPickerGUI {
         result.set(new Color(0xBB6666));
       }
       UIWindow window = new UIWindow(art.arcane.react.React.instance, p);
-      window.setTitle("Color Picker");
+      window.setTitle(ReactLanguage.plain(GuiMessages.COLOR_TITLE));
       window.setResolution(WindowResolution.W3_H3);
       window.setDecorator(new UIStaticDecorator(new UIElement("bg").setMaterial(new MaterialBlock(Material.BLACK_STAINED_GLASS_PANE))));
 
       window.setElement(0, 1, new CustomUIElement("buf", Guis.generateColorIcon("#" + Integer.toHexString(result.get().getRGB())
           .substring(2), result.get()))
-          .setName("Current Color")
-          .addLore("* Left Click to use this color")
-          .addLore("* You can also just hit escape to use this color")
+          .setName(ReactLanguage.plain(GuiMessages.COLOR_CURRENT))
+          .addLore(ReactLanguage.plain(GuiMessages.CLICK_USE_COLOR))
+          .addLore(ReactLanguage.plain(GuiMessages.ESCAPE_USE_COLOR))
           .onLeftClick((e) -> {
             refresh.set(true);
             picked.set(true);
@@ -148,11 +151,11 @@ public class ColorPickerGUI {
       );
 
       window.setElement(-1, 1, new CustomUIElement("darken",
-          Guis.generateColorIcon("Darken", new TinyColor(result.get()).darken(15).getColor()))
-          .setName("Darken")
-          .addLore("Brightness: " + (Math.round(new TinyColor(result.get()).getBrightness() * 100)) + "%")
-          .addLore("* Left Click to darken 5%")
-          .addLore("* Shift Left Click to darken 15%")
+          Guis.generateColorIcon(ReactLanguage.plain(GuiMessages.COLOR_DARKEN), new TinyColor(result.get()).darken(15).getColor()))
+          .setName(ReactLanguage.plain(GuiMessages.COLOR_DARKEN))
+          .addLore(ReactLanguage.plain(GuiMessages.COLOR_BRIGHTNESS, MessageArgument.untrusted("percent", Math.round(new TinyColor(result.get()).getBrightness() * 100))))
+          .addLore(ReactLanguage.plain(GuiMessages.CLICK_ADJUST_FIVE, MessageArgument.untrusted("action", ReactLanguage.plain(GuiMessages.ACTION_DARKEN))))
+          .addLore(ReactLanguage.plain(GuiMessages.SHIFT_CLICK_ADJUST_FIFTEEN, MessageArgument.untrusted("action", ReactLanguage.plain(GuiMessages.ACTION_DARKEN))))
           .onLeftClick((e) -> {
             refresh.set(true);
             result.set(new TinyColor(result.get()).darken(5).getColor());
@@ -165,11 +168,11 @@ public class ColorPickerGUI {
           }));
 
       window.setElement(1, 1, new CustomUIElement("brighten",
-          Guis.generateColorIcon("Brighten", new TinyColor(result.get()).brighten(15).getColor()))
-          .setName("Brighten")
-          .addLore("Brightness: " + (Math.round(new TinyColor(result.get()).getBrightness() * 100)) + "%")
-          .addLore("* Left Click to brighten 5%")
-          .addLore("* Shift Left Click to brighten 15%")
+          Guis.generateColorIcon(ReactLanguage.plain(GuiMessages.COLOR_BRIGHTEN), new TinyColor(result.get()).brighten(15).getColor()))
+          .setName(ReactLanguage.plain(GuiMessages.COLOR_BRIGHTEN))
+          .addLore(ReactLanguage.plain(GuiMessages.COLOR_BRIGHTNESS, MessageArgument.untrusted("percent", Math.round(new TinyColor(result.get()).getBrightness() * 100))))
+          .addLore(ReactLanguage.plain(GuiMessages.CLICK_ADJUST_FIVE, MessageArgument.untrusted("action", ReactLanguage.plain(GuiMessages.ACTION_BRIGHTEN))))
+          .addLore(ReactLanguage.plain(GuiMessages.SHIFT_CLICK_ADJUST_FIFTEEN, MessageArgument.untrusted("action", ReactLanguage.plain(GuiMessages.ACTION_BRIGHTEN))))
           .onLeftClick((e) -> {
             refresh.set(true);
             result.set(new TinyColor(result.get()).brighten(5).getColor());
@@ -182,11 +185,11 @@ public class ColorPickerGUI {
           }));
 
       window.setElement(1, 0, new CustomUIElement("saturate",
-          Guis.generateColorIcon("Saturate", new TinyColor(result.get()).saturate(15).getColor()))
-          .setName("Saturate")
-          .addLore("Saturation: " + (Math.round(new TinyColor(result.get()).getSaturation() * 100)) + "%")
-          .addLore("* Left Click to saturate 5%")
-          .addLore("* Shift Left Click to saturate 15%")
+          Guis.generateColorIcon(ReactLanguage.plain(GuiMessages.COLOR_SATURATE), new TinyColor(result.get()).saturate(15).getColor()))
+          .setName(ReactLanguage.plain(GuiMessages.COLOR_SATURATE))
+          .addLore(ReactLanguage.plain(GuiMessages.COLOR_SATURATION, MessageArgument.untrusted("percent", Math.round(new TinyColor(result.get()).getSaturation() * 100))))
+          .addLore(ReactLanguage.plain(GuiMessages.CLICK_ADJUST_FIVE, MessageArgument.untrusted("action", ReactLanguage.plain(GuiMessages.ACTION_SATURATE))))
+          .addLore(ReactLanguage.plain(GuiMessages.SHIFT_CLICK_ADJUST_FIFTEEN, MessageArgument.untrusted("action", ReactLanguage.plain(GuiMessages.ACTION_SATURATE))))
           .onLeftClick((e) -> {
             refresh.set(true);
             result.set(new TinyColor(result.get()).saturate(5).getColor());
@@ -199,11 +202,11 @@ public class ColorPickerGUI {
           }));
 
       window.setElement(-1, 0, new CustomUIElement("desaturate",
-          Guis.generateColorIcon("Desaturate", new TinyColor(result.get()).desaturate(15).getColor()))
-          .setName("Desaturate")
-          .addLore("Saturation: " + (Math.round(new TinyColor(result.get()).getSaturation() * 100)) + "%")
-          .addLore("* Left Click to desaturate 5%")
-          .addLore("* Shift Left Click to desaturate 15%")
+          Guis.generateColorIcon(ReactLanguage.plain(GuiMessages.COLOR_DESATURATE), new TinyColor(result.get()).desaturate(15).getColor()))
+          .setName(ReactLanguage.plain(GuiMessages.COLOR_DESATURATE))
+          .addLore(ReactLanguage.plain(GuiMessages.COLOR_SATURATION, MessageArgument.untrusted("percent", Math.round(new TinyColor(result.get()).getSaturation() * 100))))
+          .addLore(ReactLanguage.plain(GuiMessages.CLICK_ADJUST_FIVE, MessageArgument.untrusted("action", ReactLanguage.plain(GuiMessages.ACTION_DESATURATE))))
+          .addLore(ReactLanguage.plain(GuiMessages.SHIFT_CLICK_ADJUST_FIFTEEN, MessageArgument.untrusted("action", ReactLanguage.plain(GuiMessages.ACTION_DESATURATE))))
           .onLeftClick((e) -> {
             refresh.set(true);
             result.set(new TinyColor(result.get()).desaturate(5).getColor());
@@ -216,10 +219,10 @@ public class ColorPickerGUI {
           }));
 
       window.setElement(-1, 2, new CustomUIElement("spinleft",
-          Guis.generateColorIcon("Spin Left", new TinyColor(result.get()).spin(-15).getColor()))
-          .setName("Spin Left")
-          .addLore("* Left Click to spin left 5 deg")
-          .addLore("* Shift Left Click to spin left 15 deg")
+          Guis.generateColorIcon(ReactLanguage.plain(GuiMessages.COLOR_SPIN_LEFT), new TinyColor(result.get()).spin(-15).getColor()))
+          .setName(ReactLanguage.plain(GuiMessages.COLOR_SPIN_LEFT))
+          .addLore(ReactLanguage.plain(GuiMessages.CLICK_SPIN_FIVE, MessageArgument.untrusted("direction", ReactLanguage.plain(GuiMessages.DIRECTION_LEFT))))
+          .addLore(ReactLanguage.plain(GuiMessages.SHIFT_CLICK_SPIN_FIFTEEN, MessageArgument.untrusted("direction", ReactLanguage.plain(GuiMessages.DIRECTION_LEFT))))
           .onLeftClick((e) -> {
             refresh.set(true);
             result.set(new TinyColor(result.get()).spin(-5).getColor());
@@ -232,10 +235,10 @@ public class ColorPickerGUI {
           }));
 
       window.setElement(1, 2, new CustomUIElement("spinright",
-          Guis.generateColorIcon("Spin Right", new TinyColor(result.get()).spin(15).getColor()))
-          .setName("Spin Right")
-          .addLore("* Left Click to spin right 5 deg")
-          .addLore("* Shift Left Click to spin right 15 deg")
+          Guis.generateColorIcon(ReactLanguage.plain(GuiMessages.COLOR_SPIN_RIGHT), new TinyColor(result.get()).spin(15).getColor()))
+          .setName(ReactLanguage.plain(GuiMessages.COLOR_SPIN_RIGHT))
+          .addLore(ReactLanguage.plain(GuiMessages.CLICK_SPIN_FIVE, MessageArgument.untrusted("direction", ReactLanguage.plain(GuiMessages.DIRECTION_RIGHT))))
+          .addLore(ReactLanguage.plain(GuiMessages.SHIFT_CLICK_SPIN_FIFTEEN, MessageArgument.untrusted("direction", ReactLanguage.plain(GuiMessages.DIRECTION_RIGHT))))
           .onLeftClick((e) -> {
             refresh.set(true);
             result.set(new TinyColor(result.get()).spin(5).getColor());
@@ -248,14 +251,14 @@ public class ColorPickerGUI {
           }));
 
       window.setElement(0, 2, new UIElement("hexcode")
-          .setName("Enter Hex Code")
+          .setName(ReactLanguage.plain(GuiMessages.COLOR_ENTER_HEX))
           .setMaterial(new MaterialBlock(Material.WRITABLE_BOOK))
-          .addLore("* Left Click to enter a hex code")
+          .addLore(ReactLanguage.plain(GuiMessages.CLICK_ENTER_HEX))
           .onLeftClick((e) -> {
             refresh.set(true);
 
             J.a(() -> {
-              p.sendMessage("<Enter a hex code with or without the # in chat>");
+              ReactLanguage.send(p, GuiMessages.COLOR_PROMPT_HEX);
               String c = TextInputGui.captureText(p);
               if (c != null) {
                 result.set(new TinyColor(c).getColor());

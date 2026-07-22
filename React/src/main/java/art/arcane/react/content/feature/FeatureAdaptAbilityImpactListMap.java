@@ -4,8 +4,11 @@ import art.arcane.react.React;
 import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.api.rendering.ReactRenderer;
 import art.arcane.react.core.controller.MapController;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.RendererMessages;
 import art.arcane.react.util.data.TinyColor;
 import art.arcane.volmlib.util.format.Form;
+import art.arcane.volmlib.util.localization.MessageArgument;
 
 import java.util.List;
 
@@ -29,7 +32,7 @@ public class FeatureAdaptAbilityImpactListMap extends ReactFeature implements Re
     boolean frameAnchored = isFrameAnchored();
     AdaptAbilityImpactSeries.Snapshot snapshot = AdaptAbilityImpactSeries.snapshot();
     drawBackdrop();
-    dashHeader("Adapt Callback Cost", topLabel(snapshot), ACCENT, FRAME_VALUE);
+    dashHeader(ReactLanguage.raw(RendererMessages.TITLE_ADAPT_CALLBACK_COST), topLabel(snapshot), ACCENT, FRAME_VALUE);
 
     List<AdaptAbilityImpactSeries.Entry> entries = snapshot.entries();
     if (entries.isEmpty()) {
@@ -67,13 +70,13 @@ public class FeatureAdaptAbilityImpactListMap extends ReactFeature implements Re
 
   private void drawEmptyState(AdaptAbilityImpactSeries.Snapshot snapshot) {
     if (snapshot.aggregateAvailable() && snapshot.aggregateGuardChecks() > 0D) {
-      text(4, 22, "Measured callback data unavailable", TEXT_BRIGHT);
-      text(4, 34, "Adapt reports guard checks only", TEXT_DIM);
+      text(4, 22, ReactLanguage.raw(RendererMessages.ADAPT_MEASURED_UNAVAILABLE), TEXT_BRIGHT);
+      text(4, 34, ReactLanguage.raw(RendererMessages.ADAPT_GUARD_ONLY), TEXT_DIM);
       return;
     }
 
-    text(4, 22, "No Adapt ability activity", TEXT_BRIGHT);
-    text(4, 34, "Use abilities to populate this chart", TEXT_DIM);
+    text(4, 22, ReactLanguage.raw(RendererMessages.ADAPT_NO_ACTIVITY), TEXT_BRIGHT);
+    text(4, 34, ReactLanguage.raw(RendererMessages.ADAPT_USE_ABILITIES), TEXT_DIM);
   }
 
   private void drawRowCard(int y, int rowHeight, boolean frameAnchored) {
@@ -105,7 +108,11 @@ public class FeatureAdaptAbilityImpactListMap extends ReactFeature implements Re
       set(barX, barY, fill, 4, rankColor(rank, normalized));
     }
 
-    String value = compact(entry.executionTimingMs()) + "ms/m " + compact(entry.executionOps()) + "cb/m";
+    String value = ReactLanguage.raw(
+        RendererMessages.ADAPT_CALLBACK_VALUE,
+        MessageArgument.untrusted("timing", compact(entry.executionTimingMs())),
+        MessageArgument.untrusted("operations", compact(entry.executionOps()))
+    );
     text(4, y + 7, trimToWidth(value, barX - 7), TEXT_DIM);
   }
 
@@ -125,10 +132,13 @@ public class FeatureAdaptAbilityImpactListMap extends ReactFeature implements Re
 
   private String topLabel(AdaptAbilityImpactSeries.Snapshot snapshot) {
     if (!snapshot.aggregateAvailable() && snapshot.entries().isEmpty()) {
-      return "WAITING";
+      return ReactLanguage.raw(RendererMessages.STATUS_WAITING);
     }
     double topTiming = snapshot.entries().isEmpty() ? 0D : snapshot.entries().getFirst().executionTimingMs();
-    return "TOP " + compact(topTiming) + " ms/m";
+    return ReactLanguage.raw(
+        RendererMessages.ADAPT_TOP_VALUE,
+        MessageArgument.untrusted("timing", compact(topTiming))
+    );
   }
 
   private boolean isFrameAnchored() {
@@ -152,7 +162,7 @@ public class FeatureAdaptAbilityImpactListMap extends ReactFeature implements Re
 
   private String trimToWidth(String value, int maxWidth) {
     if (value == null || value.isBlank()) {
-      return "Unknown";
+      return ReactLanguage.raw(RendererMessages.PIE_UNKNOWN);
     }
 
     String safe = value.trim();

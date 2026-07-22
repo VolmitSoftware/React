@@ -1,6 +1,9 @@
 package art.arcane.react.core.gui;
 
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.TaxonomyMessages;
 import art.arcane.react.util.format.C;
+import art.arcane.volmlib.util.localization.TextKey;
 import org.bukkit.Material;
 
 import java.util.List;
@@ -15,35 +18,35 @@ public final class ReactGuiTaxonomy {
     String normalizedId = normalizeId(id);
 
     if (containsAny(normalizedId, "map", "overlay", "heatmap", "-pie", "pie-", "replay", "impact")) {
-      return new Category(10, "diagnostics", "Diagnostics & HUD", Material.FILLED_MAP, "Live maps, overlays & heatmaps");
+      return category(10, "diagnostics", Material.FILLED_MAP, TaxonomyMessages.CATEGORY_DIAGNOSTICS, TaxonomyMessages.CATEGORY_DIAGNOSTICS_DESCRIPTION);
     }
     if (containsAny(normalizedId, "redstone", "circuit")) {
-      return new Category(20, "redstone", "Redstone & Circuits", Material.REDSTONE, "Redstone & circuit throttling");
+      return category(20, "redstone", Material.REDSTONE, TaxonomyMessages.CATEGORY_REDSTONE, TaxonomyMessages.CATEGORY_REDSTONE_DESCRIPTION);
     }
     if (containsAny(normalizedId, "hopper")) {
-      return new Category(30, "hoppers", "Hoppers & Storage", Material.HOPPER, "Hopper & container throughput");
+      return category(30, "hoppers", Material.HOPPER, TaxonomyMessages.CATEGORY_HOPPERS, TaxonomyMessages.CATEGORY_HOPPERS_DESCRIPTION);
     }
     if (containsAny(normalizedId, "entity", "mob", "spawn", "item", "drop", "projectile", "vehicle", "minecart", "orb", "despawn", "stack", "trim", "burst", "farm", "bubbler", "crowd")) {
-      return new Category(40, "entities", "Entities & Mobs", Material.ZOMBIE_HEAD, "Mob, item & spawn management");
+      return category(40, "entities", Material.ZOMBIE_HEAD, TaxonomyMessages.CATEGORY_ENTITIES, TaxonomyMessages.CATEGORY_ENTITIES_DESCRIPTION);
     }
     if (containsAny(normalizedId, "chunk", "column", "gravity", "crop", "leaf", "portal", "explosion", "fluid", "snow", "fire", "falling", "quarantine", "block")) {
-      return new Category(50, "world", "World & Blocks", Material.GRASS_BLOCK, "Chunks, blocks & physics");
+      return category(50, "world", Material.GRASS_BLOCK, TaxonomyMessages.CATEGORY_WORLD, TaxonomyMessages.CATEGORY_WORLD_DESCRIPTION);
     }
     if (containsAny(normalizedId, "view", "tick", "tps", "mspt", "budget", "governor", "activation", "sleep", "surge", "incident", "hibernat", "save", "pathfinder", "tracker", "afk", "spike", "load")) {
-      return new Category(60, "performance", "Performance & Load", Material.CLOCK, "View distance, tick budgets & governors");
+      return category(60, "performance", Material.CLOCK, TaxonomyMessages.CATEGORY_PERFORMANCE, TaxonomyMessages.CATEGORY_PERFORMANCE_DESCRIPTION);
     }
 
-    return new Category(99, "other", "Other", Material.CHEST, "Uncategorized");
+    return category(99, "other", Material.CHEST, TaxonomyMessages.CATEGORY_OTHER, TaxonomyMessages.CATEGORY_OTHER_DESCRIPTION);
   }
 
   public static List<Category> topLevelCategories() {
     return List.of(
-        new Category(10, "diagnostics", "Diagnostics & HUD", Material.FILLED_MAP, "Live maps, overlays & heatmaps"),
-        new Category(20, "redstone", "Redstone & Circuits", Material.REDSTONE, "Redstone & circuit throttling"),
-        new Category(30, "hoppers", "Hoppers & Storage", Material.HOPPER, "Hopper & container throughput"),
-        new Category(40, "entities", "Entities & Mobs", Material.ZOMBIE_HEAD, "Mob, item & spawn management"),
-        new Category(50, "world", "World & Blocks", Material.GRASS_BLOCK, "Chunks, blocks & physics"),
-        new Category(60, "performance", "Performance & Load", Material.CLOCK, "View distance, tick budgets & governors")
+        category(10, "diagnostics", Material.FILLED_MAP, TaxonomyMessages.CATEGORY_DIAGNOSTICS, TaxonomyMessages.CATEGORY_DIAGNOSTICS_DESCRIPTION),
+        category(20, "redstone", Material.REDSTONE, TaxonomyMessages.CATEGORY_REDSTONE, TaxonomyMessages.CATEGORY_REDSTONE_DESCRIPTION),
+        category(30, "hoppers", Material.HOPPER, TaxonomyMessages.CATEGORY_HOPPERS, TaxonomyMessages.CATEGORY_HOPPERS_DESCRIPTION),
+        category(40, "entities", Material.ZOMBIE_HEAD, TaxonomyMessages.CATEGORY_ENTITIES, TaxonomyMessages.CATEGORY_ENTITIES_DESCRIPTION),
+        category(50, "world", Material.GRASS_BLOCK, TaxonomyMessages.CATEGORY_WORLD, TaxonomyMessages.CATEGORY_WORLD_DESCRIPTION),
+        category(60, "performance", Material.CLOCK, TaxonomyMessages.CATEGORY_PERFORMANCE, TaxonomyMessages.CATEGORY_PERFORMANCE_DESCRIPTION)
     );
   }
 
@@ -51,52 +54,52 @@ public final class ReactGuiTaxonomy {
     String normalizedId = normalizeId(id);
 
     if (normalizedId.startsWith("adapt-")) {
-      return new EntryGroup(0, "Adapt Integration", Material.BOOKSHELF);
+      return group(0, TaxonomyMessages.GROUP_ADAPT, Material.BOOKSHELF);
     }
     if (normalizedId.startsWith("iris-")) {
-      return new EntryGroup(1, "Iris Integration", Material.OAK_SAPLING);
+      return group(1, TaxonomyMessages.GROUP_IRIS, Material.OAK_SAPLING);
     }
     if (containsAny(normalizedId, "tick", "tps", "mspt", "incident", "spike")) {
-      return new EntryGroup(10, "Tick & Stability", Material.CLOCK);
+      return group(10, TaxonomyMessages.GROUP_TICK, Material.CLOCK);
     }
     if (containsAny(normalizedId, "memory", "gc")) {
-      return new EntryGroup(11, "Memory & GC", Material.EXPERIENCE_BOTTLE);
+      return group(11, TaxonomyMessages.GROUP_MEMORY, Material.EXPERIENCE_BOTTLE);
     }
     if (containsAny(normalizedId, "player", "ping")) {
-      return new EntryGroup(12, "Players & Network", Material.PLAYER_HEAD);
+      return group(12, TaxonomyMessages.GROUP_PLAYERS, Material.PLAYER_HEAD);
     }
     if (containsAny(normalizedId, "entity", "spawn")) {
-      return new EntryGroup(13, "Entities & Spawns", Material.ZOMBIE_HEAD);
+      return group(13, TaxonomyMessages.GROUP_ENTITIES, Material.ZOMBIE_HEAD);
     }
     if (containsAny(normalizedId, "chunk", "world")) {
-      return new EntryGroup(14, "Chunks & World", Material.MAP);
+      return group(14, TaxonomyMessages.GROUP_CHUNKS, Material.MAP);
     }
     if (containsAny(normalizedId, "redstone")) {
-      return new EntryGroup(15, "Redstone", Material.REDSTONE);
+      return group(15, TaxonomyMessages.GROUP_REDSTONE, Material.REDSTONE);
     }
     if (containsAny(normalizedId, "hopper")) {
-      return new EntryGroup(16, "Hoppers", Material.HOPPER);
+      return group(16, TaxonomyMessages.GROUP_HOPPERS, Material.HOPPER);
     }
     if (containsAny(normalizedId, "fluid")) {
-      return new EntryGroup(17, "Fluids", Material.WATER_BUCKET);
+      return group(17, TaxonomyMessages.GROUP_FLUIDS, Material.WATER_BUCKET);
     }
     if (containsAny(normalizedId, "physics")) {
-      return new EntryGroup(18, "Physics", Material.ANVIL);
+      return group(18, TaxonomyMessages.GROUP_PHYSICS, Material.ANVIL);
     }
     if (containsAny(normalizedId, "event", "listener")) {
-      return new EntryGroup(19, "Events", Material.NOTE_BLOCK);
+      return group(19, TaxonomyMessages.GROUP_EVENTS, Material.NOTE_BLOCK);
     }
     if (containsAny(normalizedId, "react", "job", "queue", "backlog")) {
-      return new EntryGroup(20, "React Scheduler", Material.COMPARATOR);
+      return group(20, TaxonomyMessages.GROUP_SCHEDULER, Material.COMPARATOR);
     }
     if (containsAny(normalizedId, "processor", "load", "cpu")) {
-      return new EntryGroup(21, "CPU & Host", Material.BLAST_FURNACE);
+      return group(21, TaxonomyMessages.GROUP_CPU, Material.BLAST_FURNACE);
     }
     if ("unknown".equals(normalizedId)) {
-      return new EntryGroup(98, "Fallback", Material.BARRIER);
+      return group(98, TaxonomyMessages.GROUP_FALLBACK, Material.BARRIER);
     }
 
-    return new EntryGroup(99, "Misc", Material.FILLED_MAP);
+    return group(99, TaxonomyMessages.GROUP_MISC, Material.FILLED_MAP);
   }
 
   public static Material iconForId(String id) {
@@ -131,6 +134,14 @@ public final class ReactGuiTaxonomy {
     }
 
     return false;
+  }
+
+  private static Category category(int order, String key, Material icon, TextKey label, TextKey description) {
+    return new Category(order, key, ReactLanguage.plain(label), icon, ReactLanguage.plain(description));
+  }
+
+  private static EntryGroup group(int order, TextKey label, Material icon) {
+    return new EntryGroup(order, ReactLanguage.plain(label), icon);
   }
 
   public record EntryGroup(

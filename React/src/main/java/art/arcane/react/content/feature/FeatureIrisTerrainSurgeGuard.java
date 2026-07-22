@@ -4,17 +4,19 @@ import art.arcane.react.React;
 import art.arcane.react.api.feature.ReactCapabilityFeature;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.core.controller.IntegrationController;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.RuntimeMessages;
 import art.arcane.volmlib.integration.IntegrationMetricGroup;
 import art.arcane.volmlib.integration.IntegrationMetricSample;
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
 import art.arcane.volmlib.util.bukkit.WorldIdentity;
+import art.arcane.volmlib.util.localization.TextKey;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
@@ -42,8 +44,6 @@ public class FeatureIrisTerrainSurgeGuard extends ReactCapabilityFeature impleme
   private int maxUngeneratedChunkMovesPerWindow = 10;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum ungenerated chunk teleports allowed per window in iris terrain surge guard.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
   private int maxUngeneratedChunkTeleportsPerWindow = 4;
-  @art.arcane.react.util.project.config.ConfigDoc(value = "Cancels cancel chunk gen spawns while iris terrain surge guard is active.", impact = "Enable to hard-block this path during mitigation; disable to observe without blocking.")
-  private boolean cancelChunkGenSpawns = true;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Message rate-limit cooldown for iris terrain surge guard notifications (milliseconds).", impact = "Higher values reduce repeated chat spam; lower values allow status messages more often.")
   private long messageCooldownMS = 2500L;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Permission node string checked before iris terrain surge guard enforcement.", impact = "Change this to match your permission model for bypass behavior.")
@@ -114,7 +114,7 @@ public class FeatureIrisTerrainSurgeGuard extends ReactCapabilityFeature impleme
     }
 
     event.setTo(event.getFrom());
-    notifyPlayer(player, "Iris terrain surge guard throttled new chunk movement.", now);
+    notifyPlayer(player, RuntimeMessages.IRIS_MOVEMENT_THROTTLED, now);
   }
 
   @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
@@ -136,18 +136,7 @@ public class FeatureIrisTerrainSurgeGuard extends ReactCapabilityFeature impleme
     }
 
     event.setCancelled(true);
-    notifyPlayer(player, "Iris terrain surge guard throttled teleport into ungenerated terrain.", now);
-  }
-
-  @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
-  public void on(CreatureSpawnEvent event) {
-    if (!cancelChunkGenSpawns || !isSurging(event.getLocation().getWorld())) {
-      return;
-    }
-
-    if (event.getSpawnReason() == CreatureSpawnEvent.SpawnReason.CHUNK_GEN) {
-      event.setCancelled(true);
-    }
+    notifyPlayer(player, RuntimeMessages.IRIS_TELEPORT_THROTTLED, now);
   }
 
   @EventHandler
@@ -223,8 +212,8 @@ public class FeatureIrisTerrainSurgeGuard extends ReactCapabilityFeature impleme
     return player == null || (bypassPermission != null && !bypassPermission.isBlank() && player.hasPermission(bypassPermission));
   }
 
-  private void notifyPlayer(Player player, String message, long now) {
-    if (player == null || message == null || message.isBlank()) {
+  private void notifyPlayer(Player player, TextKey message, long now) {
+    if (player == null || message == null) {
       return;
     }
 
@@ -234,6 +223,6 @@ public class FeatureIrisTerrainSurgeGuard extends ReactCapabilityFeature impleme
     }
 
     lastMessageByPlayer.put(player.getUniqueId(), now);
-    player.sendMessage(message);
+    ReactLanguage.send(player, message);
   }
 }

@@ -5,6 +5,7 @@ import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart' show Component;
 
 import '../model/control_item.dart';
+import '../localization/reactor_localizations.dart';
 import '../model/knob.dart';
 import '../model/role_info.dart';
 import '../service/react_client.dart';
@@ -39,12 +40,14 @@ class TweaksListView extends StatelessWidget {
           Card.elevated(
             fillWidth: true,
             child: dom.div(
-              styles: const dom.Styles(raw: <String, String>{
-                'padding': '0.75rem',
-                'display': 'flex',
-                'flex-direction': 'column',
-                'gap': '0.5rem',
-              }),
+              styles: const dom.Styles(
+                raw: <String, String>{
+                  'padding': '0.75rem',
+                  'display': 'flex',
+                  'flex-direction': 'column',
+                  'gap': '0.5rem',
+                },
+              ),
               <Widget>[
                 Text.heading3(tweak.name),
                 Text(
@@ -55,13 +58,18 @@ class TweaksListView extends StatelessWidget {
                 ArcaneToggleSwitch(
                   value: tweak.enabled,
                   disabled: readOnly,
-                  onChanged: readOnly ? null : (bool b) => onToggle?.call(tweak.id, b),
+                  onChanged: readOnly
+                      ? null
+                      : (bool b) => onToggle?.call(tweak.id, b),
                 ),
                 if (tweak.knobs.isNotEmpty)
                   ArcaneAccordion(
                     items: <ArcaneAccordionItem>[
                       ArcaneAccordionItem(
-                        title: 'Configure (${tweak.knobs.length})',
+                        title: reactorText(
+                          ReactorText.tweaksConfigure,
+                          <String, Object?>{'count': tweak.knobs.length},
+                        ),
                         customContent: Collection(
                           gap: 8,
                           children: <Widget>[
@@ -71,8 +79,11 @@ class TweaksListView extends StatelessWidget {
                                 disabled: readOnly,
                                 onChanged: readOnly
                                     ? null
-                                    : (Object? v) =>
-                                        onKnobChanged?.call(tweak.id, k.key, v),
+                                    : (Object? v) => onKnobChanged?.call(
+                                        tweak.id,
+                                        k.key,
+                                        v,
+                                      ),
                               ),
                           ],
                         ),
@@ -110,8 +121,10 @@ class _TweaksScreenState extends State<TweaksScreen> {
         c,
         isTweaks: true,
         onChange: () => setState(() {}),
-        onError: (Object e) =>
-            ArcaneSonner.error('Update failed', description: e.toString()),
+        onError: (Object e) => ArcaneSonner.error(
+          reactorText(ReactorText.commonUpdateFailed),
+          description: e.toString(),
+        ),
       );
       _controller!.load();
     }
@@ -121,20 +134,20 @@ class _TweaksScreenState extends State<TweaksScreen> {
   Widget build(BuildContext context) {
     if (_client == null) {
       return ReactorPage(
-        title: 'Tweaks',
-        subtitle: 'Fine-grained runtime tweaks',
+        title: reactorText(ReactorText.tweaksTitle),
+        subtitle: reactorText(ReactorText.tweaksSubtitle),
         children: <Widget>[
           sectionCard(
-            label: 'Tweak Control',
+            label: reactorText(ReactorText.tweaksControl),
             child: dom.div(
-              styles: const dom.Styles(raw: <String, String>{
-                'color': 'var(--muted-foreground)',
-                'font-size': '0.875rem',
-              }),
+              styles: const dom.Styles(
+                raw: <String, String>{
+                  'color': 'var(--muted-foreground)',
+                  'font-size': '0.875rem',
+                },
+              ),
               <Widget>[
-                Component.text(
-                  'Tweak control requires a live connection.',
-                ),
+                Component.text(reactorText(ReactorText.tweaksLiveRequired)),
               ],
             ),
           ),
@@ -146,17 +159,19 @@ class _TweaksScreenState extends State<TweaksScreen> {
 
     if (controller.loading && controller.items.isEmpty) {
       return ReactorPage(
-        title: 'Tweaks',
-        subtitle: 'Fine-grained runtime tweaks',
+        title: reactorText(ReactorText.tweaksTitle),
+        subtitle: reactorText(ReactorText.tweaksSubtitle),
         children: <Widget>[
           sectionCard(
-            label: 'Tweak Control',
+            label: reactorText(ReactorText.tweaksControl),
             child: dom.div(
-              styles: const dom.Styles(raw: <String, String>{
-                'color': 'var(--muted-foreground)',
-                'font-size': '0.875rem',
-              }),
-              <Widget>[Component.text('Loading tweaks...')],
+              styles: const dom.Styles(
+                raw: <String, String>{
+                  'color': 'var(--muted-foreground)',
+                  'font-size': '0.875rem',
+                },
+              ),
+              <Widget>[Component.text(reactorText(ReactorText.tweaksLoading))],
             ),
           ),
         ],
@@ -167,8 +182,8 @@ class _TweaksScreenState extends State<TweaksScreen> {
     final bool readOnly = readOnlyFor(role);
 
     return ReactorPage(
-      title: 'Tweaks',
-      subtitle: 'Fine-grained runtime tweaks',
+      title: reactorText(ReactorText.tweaksTitle),
+      subtitle: reactorText(ReactorText.tweaksSubtitle),
       leading: RoleBadge(role: role),
       children: <Widget>[
         TweaksListView(

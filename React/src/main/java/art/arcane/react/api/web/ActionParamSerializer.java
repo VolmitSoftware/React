@@ -5,7 +5,7 @@ import art.arcane.react.api.action.ActionParams;
 import art.arcane.react.api.web.dto.ActionDescriptorDto;
 import art.arcane.react.api.web.dto.ActionParamDto;
 import art.arcane.react.api.web.dto.KnobDto;
-import art.arcane.react.util.project.config.ConfigDescription;
+import art.arcane.react.util.project.config.ConfigLocalization;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -70,14 +70,6 @@ public class ActionParamSerializer {
     }
 
     private static String extractDescription(Class<?> type) {
-        Class<?> cursor = type;
-        while (cursor != null && cursor != Object.class) {
-            ConfigDescription annotation = cursor.getDeclaredAnnotation(ConfigDescription.class);
-            if (annotation != null) {
-                return annotation.value();
-            }
-            cursor = cursor.getSuperclass();
-        }
-        return "";
+        return ConfigLocalization.description(type);
     }
 }

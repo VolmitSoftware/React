@@ -30,7 +30,7 @@ import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.ChunkSnapshot;
-import org.bukkit.GameRule;
+import org.bukkit.GameRules;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -422,7 +422,7 @@ public class FeatureCropFastForward extends ReactFeature implements Listener {
 
   private int readRandomTickSpeed(World world) {
     try {
-      Integer value = world.getGameRuleValue(GameRule.RANDOM_TICK_SPEED);
+      Integer value = world.getGameRuleValue(GameRules.RANDOM_TICK_SPEED);
       return value == null ? 3 : Math.max(0, value);
     } catch (Throwable ex) {
       return 3;

@@ -26,6 +26,8 @@ import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.api.web.heatmap.ChunkGridExporter;
 import art.arcane.react.core.controller.MapController;
 import art.arcane.react.core.controller.ObserverController;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.RendererMessages;
 import art.arcane.react.model.SampledChunk;
 import art.arcane.react.util.data.TinyColor;
 import org.bukkit.Chunk;
@@ -180,7 +182,7 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
     }
 
     if (quiet) {
-      String message = "No activity nearby";
+      String message = ReactLanguage.raw(RendererMessages.HEATMAP_NO_ACTIVITY);
       text(Math.max(2, 64 - (textWidth(message) / 2)), 74, message, TEXT_DIM);
     }
 
@@ -189,7 +191,7 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
 
     dashHeader(
         drawLabel ? mapLabel() : null,
-        frameAnchored ? "FRAME" : null,
+        frameAnchored ? ReactLanguage.raw(RendererMessages.STATUS_FRAME) : null,
         headerColor(frameAnchored),
         FRAME_VALUE
     );
@@ -277,7 +279,7 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
     set(0, 115, width(), 13, FOOTER_BAND);
 
     if (quiet) {
-      text(3, 117, "quiet", TEXT_DIM);
+      text(3, 117, ReactLanguage.raw(RendererMessages.HEATMAP_QUIET), TEXT_DIM);
       return;
     }
 

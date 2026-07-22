@@ -25,6 +25,8 @@ import art.arcane.react.api.action.ActionTicket;
 import art.arcane.react.api.action.ReactAction;
 import art.arcane.react.core.controller.ActionController;
 import art.arcane.react.core.controller.ObserverController;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.ActionMessages;
 import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.model.ReactEntity;
 import art.arcane.react.model.SampledChunk;
@@ -33,6 +35,7 @@ import art.arcane.react.util.common.scheduling.J;
 import art.arcane.volmlib.util.bukkit.WorldIdentity;
 import art.arcane.volmlib.util.entity.StackExclusion;
 import art.arcane.volmlib.util.format.Form;
+import art.arcane.volmlib.util.localization.MessageArgument;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -41,9 +44,27 @@ import lombok.experimental.Accessors;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.World;
-import org.bukkit.entity.*;
+import org.bukkit.entity.EnderDragon;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Item;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Monster;
+import org.bukkit.entity.Player;
+import org.bukkit.entity.Tameable;
+import org.bukkit.entity.Villager;
+import org.bukkit.entity.Warden;
+import org.bukkit.entity.Wither;
 
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Deque;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
+import java.util.PriorityQueue;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -97,7 +118,12 @@ public class ActionTrimEntitiesByAgePriority extends ReactAction<ActionTrimEntit
   @Override
   public String getCompletedMessage(ActionTicket<Params> ticket) {
     Params p = ticket.getParams();
-    return "Trimmed " + p.getTrimmed() + " entities across " + p.getChunksProcessed() + " chunks in " + Form.duration(ticket.getDuration(), 1);
+    return ReactLanguage.plain(
+        ActionMessages.TRIMMED_ENTITIES,
+        MessageArgument.untrusted("entities", p.getTrimmed()),
+        MessageArgument.untrusted("chunks", p.getChunksProcessed()),
+        MessageArgument.untrusted("duration", Form.duration(ticket.getDuration(), 1))
+    );
   }
 
   @Override

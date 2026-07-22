@@ -27,9 +27,14 @@ import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.content.sampler.SamplerHopperUpdates;
 import art.arcane.react.core.controller.ActionController;
 import art.arcane.react.core.controller.ObserverController;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.ActionMessages;
+import art.arcane.react.model.SampledChunk;
+import art.arcane.react.model.SampledWorld;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.volmlib.util.bukkit.WorldIdentity;
 import art.arcane.volmlib.util.format.Form;
+import art.arcane.volmlib.util.localization.MessageArgument;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -45,7 +50,11 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Deque;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Hopper Network Normalize action. Targets hopper hotspots, merges item entities, and can unload idle hot chunks.")
@@ -59,7 +68,13 @@ public class ActionHopperNetworkNormalize extends ReactAction<ActionHopperNetwor
   @Override
   public String getCompletedMessage(ActionTicket<Params> ticket) {
     Params p = ticket.getParams();
-    return "Normalized " + p.getHoppersNormalized() + " hoppers, merged " + p.getItemsMerged() + " item entities, unloaded " + p.getChunksUnloaded() + " chunks in " + Form.duration(ticket.getDuration(), 1);
+    return ReactLanguage.plain(
+        ActionMessages.NORMALIZED_HOPPERS,
+        MessageArgument.untrusted("hoppers", p.getHoppersNormalized()),
+        MessageArgument.untrusted("items", p.getItemsMerged()),
+        MessageArgument.untrusted("chunks", p.getChunksUnloaded()),
+        MessageArgument.untrusted("duration", Form.duration(ticket.getDuration(), 1))
+    );
   }
 
   @Override
@@ -148,7 +163,7 @@ public class ActionHopperNetworkNormalize extends ReactAction<ActionHopperNetwor
       return targets;
     }
 
-    for (var sampledWorld : observer.getSampled().getWorlds().values()) {
+    for (SampledWorld sampledWorld : observer.getSampled().getWorlds().values()) {
       World world = sampledWorld.getWorld();
       if (world == null) {
         continue;
@@ -158,7 +173,7 @@ public class ActionHopperNetworkNormalize extends ReactAction<ActionHopperNetwor
         continue;
       }
 
-      for (var sampledChunk : sampledWorld.getChunks().values()) {
+      for (SampledChunk sampledChunk : sampledWorld.getChunks().values()) {
         Chunk chunk = sampledChunk.getChunk();
         if (chunk == null || chunk.getWorld() == null) {
           continue;

@@ -22,8 +22,11 @@ package art.arcane.react.util.project.world;
 import art.arcane.react.React;
 import art.arcane.react.content.sampler.SamplerEntities;
 import art.arcane.react.core.controller.EntityController;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.RuntimeMessages;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.format.C;
+import art.arcane.volmlib.util.localization.MessageArgument;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.sound.Sound;
 import org.bukkit.Color;
@@ -176,7 +179,10 @@ public class EntityKiller {
     }
 
     stampCountdown();
-    entity.setCustomName(C.RED + "" + seconds + "s");
+    entity.setCustomName(C.RED + ReactLanguage.plain(
+        RuntimeMessages.ENTITY_KILLER_COUNTDOWN,
+        MessageArgument.untrusted("seconds", seconds)
+    ));
     entity.setCustomNameVisible(true);
   }
 

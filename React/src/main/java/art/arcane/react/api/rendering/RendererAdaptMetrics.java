@@ -19,9 +19,13 @@
 
 package art.arcane.react.api.rendering;
 
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.RendererMessages;
 import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.util.data.TinyColor;
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
+import art.arcane.volmlib.util.localization.MessageArgument;
+import art.arcane.volmlib.util.localization.TextKey;
 
 import java.util.List;
 
@@ -39,8 +43,8 @@ public class RendererAdaptMetrics extends RendererIntegrationMetricsBase {
   }
 
   @Override
-  protected String title() {
-    return "Adapt Metrics";
+  protected TextKey title() {
+    return RendererMessages.TITLE_ADAPT_METRICS;
   }
 
   @Override
@@ -56,10 +60,21 @@ public class RendererAdaptMetrics extends RendererIntegrationMetricsBase {
   @Override
   protected List<MetricLine> metricLines() {
     return List.of(
-        new MetricLine(IntegrationMetricSchema.ADAPT_SESSION_LOAD, "Session", 1, " %"),
-        new MetricLine(ReactConfiguration.adaptAbilityOpsMetricKey(), "Ability (" + ReactConfiguration.adaptAbilityOpsMetricLabel() + ")", 0, " op/m"),
-        new MetricLine(IntegrationMetricSchema.ADAPT_ABILITY_CHECK_OPS_TICK, "All/tick", 3, " op/t"),
-        new MetricLine(IntegrationMetricSchema.ADAPT_WORLD_POLICY_LATENCY, "Policy", 2, " ms")
+        new MetricLine(IntegrationMetricSchema.ADAPT_SESSION_LOAD, RendererMessages.METRIC_SESSION, 1, " %"),
+        new MetricLine(ReactConfiguration.adaptAbilityOpsMetricKey(), RendererMessages.METRIC_ABILITY_MODE, 0, " op/m"),
+        new MetricLine(IntegrationMetricSchema.ADAPT_ABILITY_CHECK_OPS_TICK, RendererMessages.METRIC_ALL_PER_TICK, 3, " op/t"),
+        new MetricLine(IntegrationMetricSchema.ADAPT_WORLD_POLICY_LATENCY, RendererMessages.METRIC_POLICY, 2, " ms")
+    );
+  }
+
+  @Override
+  protected String metricLabel(MetricLine metric) {
+    if (metric.labelKey() != RendererMessages.METRIC_ABILITY_MODE) {
+      return super.metricLabel(metric);
+    }
+    return ReactLanguage.raw(
+        RendererMessages.METRIC_ABILITY_MODE,
+        MessageArgument.untrusted("mode", ReactConfiguration.adaptAbilityOpsMetricLabel())
     );
   }
 }

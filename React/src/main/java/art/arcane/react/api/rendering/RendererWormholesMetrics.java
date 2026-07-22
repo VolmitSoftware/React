@@ -19,8 +19,10 @@
 
 package art.arcane.react.api.rendering;
 
+import art.arcane.react.localization.catalog.RendererMessages;
 import art.arcane.react.util.data.TinyColor;
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
+import art.arcane.volmlib.util.localization.TextKey;
 
 import java.util.List;
 
@@ -38,8 +40,8 @@ public class RendererWormholesMetrics extends RendererIntegrationMetricsBase {
   }
 
   @Override
-  protected String title() {
-    return "Wormholes Metrics";
+  protected TextKey title() {
+    return RendererMessages.TITLE_WORMHOLES_METRICS;
   }
 
   @Override
@@ -55,13 +57,13 @@ public class RendererWormholesMetrics extends RendererIntegrationMetricsBase {
   @Override
   protected List<MetricLine> metricLines() {
     return List.of(
-        new MetricLine(IntegrationMetricSchema.WORMHOLES_PORTALS, "Portals", 0, ""),
-        new MetricLine(IntegrationMetricSchema.WORMHOLES_PROJECTIONS_ACTIVE, "Projecting", 0, ""),
-        new MetricLine(IntegrationMetricSchema.WORMHOLES_PROJECTION_OBSERVERS, "Observers", 0, ""),
-        new MetricLine(IntegrationMetricSchema.WORMHOLES_PROJECTION_RENDER_MS, "Render", 2, " ms/s"),
-        new MetricLine(IntegrationMetricSchema.WORMHOLES_PACKETS_PER_SECOND, "Traffic", 0, " pk/s"),
-        new MetricLine(IntegrationMetricSchema.WORMHOLES_SPOOFED_ENTITIES, "Entities", 0, ""),
-        new MetricLine(IntegrationMetricSchema.WORMHOLES_TRAVERSALS_PER_MINUTE, "Travel", 1, " /min")
+        new MetricLine(IntegrationMetricSchema.WORMHOLES_PORTALS, RendererMessages.METRIC_PORTALS, 0, ""),
+        new MetricLine(IntegrationMetricSchema.WORMHOLES_PROJECTIONS_ACTIVE, RendererMessages.METRIC_PROJECTING, 0, ""),
+        new MetricLine(IntegrationMetricSchema.WORMHOLES_PROJECTION_OBSERVERS, RendererMessages.METRIC_OBSERVERS, 0, ""),
+        new MetricLine(IntegrationMetricSchema.WORMHOLES_PROJECTION_RENDER_MS, RendererMessages.METRIC_RENDER, 2, " ms/s"),
+        new MetricLine(IntegrationMetricSchema.WORMHOLES_PACKETS_PER_SECOND, RendererMessages.METRIC_TRAFFIC, 0, " pk/s"),
+        new MetricLine(IntegrationMetricSchema.WORMHOLES_SPOOFED_ENTITIES, RendererMessages.METRIC_ENTITIES, 0, ""),
+        new MetricLine(IntegrationMetricSchema.WORMHOLES_TRAVERSALS_PER_MINUTE, RendererMessages.METRIC_TRAVEL, 1, " /min")
     );
   }
 }

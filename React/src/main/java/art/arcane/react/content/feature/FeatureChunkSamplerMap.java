@@ -21,6 +21,8 @@ package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
 import art.arcane.react.core.controller.ObserverController;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.RendererMessages;
 import art.arcane.react.model.SampledChunk;
 import art.arcane.react.util.data.TinyColor;
 import org.bukkit.Chunk;
@@ -35,7 +37,7 @@ public class FeatureChunkSamplerMap extends FeatureChunkHeatmapBase {
 
   @Override
   protected String mapLabel() {
-    return "Chunk Cost Heat";
+    return ReactLanguage.raw(RendererMessages.TITLE_CHUNK_COST_HEAT);
   }
 
   @Override

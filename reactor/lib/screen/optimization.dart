@@ -7,6 +7,7 @@ import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart' show Component;
 
 import '../model/control_item.dart';
+import '../localization/reactor_localizations.dart';
 import '../model/role_info.dart';
 import '../service/react_client.dart';
 import '../state/control_list_controller.dart';
@@ -48,24 +49,29 @@ class OptimizationGridView extends StatelessWidget {
     }
 
     return ReactorPage(
-      title: 'Optimization',
-      subtitle: '$enabledCount / $total enabled',
+      title: reactorText(ReactorText.optimizationTitle),
+      subtitle: reactorText(
+        ReactorText.optimizationEnabledCount,
+        <String, Object?>{'enabled': enabledCount, 'total': total},
+      ),
       leading: roleBadge,
       actions: dom.div(
-        styles: const dom.Styles(raw: <String, String>{
-          'display': 'flex',
-          'align-items': 'center',
-          'gap': '0.5rem',
-        }),
+        styles: const dom.Styles(
+          raw: <String, String>{
+            'display': 'flex',
+            'align-items': 'center',
+            'gap': '0.5rem',
+          },
+        ),
         <Widget>[
           Button.secondary(
-            label: 'Enable all',
+            label: reactorText(ReactorText.optimizationEnableAll),
             size: ButtonSize.small,
             disabled: readOnly,
             onPressed: readOnly ? null : () => onSetAll?.call(true),
           ),
           Button.outline(
-            label: 'Disable all',
+            label: reactorText(ReactorText.optimizationDisableAll),
             size: ButtonSize.small,
             disabled: readOnly,
             onPressed: readOnly ? null : () => onSetAll?.call(false),
@@ -77,8 +83,13 @@ class OptimizationGridView extends StatelessWidget {
             in byCategory.entries)
           sectionCard(
             label: entry.key,
-            description: '${entry.value.where((ControlItem i) => i.enabled).length}'
-                ' of ${entry.value.length} on',
+            description: reactorText(ReactorText.optimizationCategoryCount, <
+              String,
+              Object?
+            >{
+              'enabled': entry.value.where((ControlItem i) => i.enabled).length,
+              'total': entry.value.length,
+            }),
             child: reactorGrid(
               minWidth: '260px',
               children: <Widget>[
@@ -118,51 +129,61 @@ class _FeatureCard extends StatelessWidget {
       padding: '0',
       borderRadius: kReactorRadius,
       child: dom.div(
-        styles: dom.Styles(raw: <String, String>{
-          'display': 'flex',
-          'flex-direction': 'column',
-          'gap': '0.75rem',
-          'padding': '0.85rem 0.95rem',
-          'overflow': 'hidden',
-          'border-radius': kReactorRadius,
-          'box-shadow': enabled ? 'inset 3px 0 0 $kReactorSuccess' : 'none',
-        }),
+        styles: dom.Styles(
+          raw: <String, String>{
+            'display': 'flex',
+            'flex-direction': 'column',
+            'gap': '0.75rem',
+            'padding': '0.85rem 0.95rem',
+            'overflow': 'hidden',
+            'border-radius': kReactorRadius,
+            'box-shadow': enabled ? 'inset 3px 0 0 $kReactorSuccess' : 'none',
+          },
+        ),
         <Widget>[
           dom.div(
-            styles: const dom.Styles(raw: <String, String>{
-              'display': 'flex',
-              'align-items': 'flex-start',
-              'justify-content': 'space-between',
-              'gap': '0.75rem',
-            }),
+            styles: const dom.Styles(
+              raw: <String, String>{
+                'display': 'flex',
+                'align-items': 'flex-start',
+                'justify-content': 'space-between',
+                'gap': '0.75rem',
+              },
+            ),
             <Widget>[
               dom.div(
-                styles: const dom.Styles(raw: <String, String>{
-                  'display': 'flex',
-                  'flex-direction': 'column',
-                  'gap': '0.3rem',
-                  'min-width': '0',
-                }),
+                styles: const dom.Styles(
+                  raw: <String, String>{
+                    'display': 'flex',
+                    'flex-direction': 'column',
+                    'gap': '0.3rem',
+                    'min-width': '0',
+                  },
+                ),
                 <Widget>[
                   dom.span(
-                    styles: const dom.Styles(raw: <String, String>{
-                      'font-size': '0.9rem',
-                      'font-weight': '600',
-                      'color': 'var(--foreground)',
-                      'line-height': '1.25',
-                    }),
+                    styles: const dom.Styles(
+                      raw: <String, String>{
+                        'font-size': '0.9rem',
+                        'font-weight': '600',
+                        'color': 'var(--foreground)',
+                        'line-height': '1.25',
+                      },
+                    ),
                     <Widget>[Component.text(item.name)],
                   ),
                   dom.span(
-                    styles: const dom.Styles(raw: <String, String>{
-                      'font-size': '0.8rem',
-                      'color': kReactorMuted,
-                      'line-height': '1.4',
-                      'display': '-webkit-box',
-                      '-webkit-line-clamp': '2',
-                      '-webkit-box-orient': 'vertical',
-                      'overflow': 'hidden',
-                    }),
+                    styles: const dom.Styles(
+                      raw: <String, String>{
+                        'font-size': '0.8rem',
+                        'color': kReactorMuted,
+                        'line-height': '1.4',
+                        'display': '-webkit-box',
+                        '-webkit-line-clamp': '2',
+                        '-webkit-box-orient': 'vertical',
+                        'overflow': 'hidden',
+                      },
+                    ),
                     <Widget>[Component.text(item.description)],
                   ),
                 ],
@@ -170,21 +191,24 @@ class _FeatureCard extends StatelessWidget {
               ArcaneToggleSwitch(
                 value: enabled,
                 disabled: readOnly,
-                onChanged:
-                    readOnly ? null : (bool b) => onToggle?.call(item.id, b),
+                onChanged: readOnly
+                    ? null
+                    : (bool b) => onToggle?.call(item.id, b),
               ),
             ],
           ),
           dom.div(
-            styles: const dom.Styles(raw: <String, String>{
-              'display': 'flex',
-              'justify-content': 'flex-end',
-              'border-top': '1px solid $kReactorHairline',
-              'padding-top': '0.6rem',
-            }),
+            styles: const dom.Styles(
+              raw: <String, String>{
+                'display': 'flex',
+                'justify-content': 'flex-end',
+                'border-top': '1px solid $kReactorHairline',
+                'padding-top': '0.6rem',
+              },
+            ),
             <Widget>[
               Button.ghost(
-                label: 'Configure',
+                label: reactorText(ReactorText.optimizationConfigure),
                 size: ButtonSize.small,
                 disabled: readOnly,
                 onPressed: readOnly ? null : () => onConfigure?.call(item.id),
@@ -221,8 +245,10 @@ class _OptimizationScreenState extends State<OptimizationScreen> {
         c,
         isTweaks: false,
         onChange: () => setState(() {}),
-        onError: (Object e) =>
-            ArcaneSonner.error('Update failed', description: e.toString()),
+        onError: (Object e) => ArcaneSonner.error(
+          reactorText(ReactorText.commonUpdateFailed),
+          description: e.toString(),
+        ),
       );
       _controller!.load();
     }
@@ -232,19 +258,21 @@ class _OptimizationScreenState extends State<OptimizationScreen> {
   Widget build(BuildContext context) {
     if (_client == null) {
       return ReactorPage(
-        title: 'Optimization',
-        subtitle: 'Runtime feature control',
+        title: reactorText(ReactorText.optimizationTitle),
+        subtitle: reactorText(ReactorText.optimizationRuntimeControl),
         children: <Widget>[
           sectionCard(
-            label: 'Feature Control',
+            label: reactorText(ReactorText.optimizationFeatureControl),
             child: dom.div(
-              styles: const dom.Styles(raw: <String, String>{
-                'color': 'var(--muted-foreground)',
-                'font-size': '0.875rem',
-              }),
+              styles: const dom.Styles(
+                raw: <String, String>{
+                  'color': 'var(--muted-foreground)',
+                  'font-size': '0.875rem',
+                },
+              ),
               <Widget>[
                 Component.text(
-                  'Feature control requires a live connection.',
+                  reactorText(ReactorText.optimizationLiveRequired),
                 ),
               ],
             ),
@@ -257,17 +285,21 @@ class _OptimizationScreenState extends State<OptimizationScreen> {
 
     if (controller.loading && controller.items.isEmpty) {
       return ReactorPage(
-        title: 'Optimization',
-        subtitle: 'Runtime feature control',
+        title: reactorText(ReactorText.optimizationTitle),
+        subtitle: reactorText(ReactorText.optimizationRuntimeControl),
         children: <Widget>[
           sectionCard(
-            label: 'Feature Control',
+            label: reactorText(ReactorText.optimizationFeatureControl),
             child: dom.div(
-              styles: const dom.Styles(raw: <String, String>{
-                'color': 'var(--muted-foreground)',
-                'font-size': '0.875rem',
-              }),
-              <Widget>[Component.text('Loading features...')],
+              styles: const dom.Styles(
+                raw: <String, String>{
+                  'color': 'var(--muted-foreground)',
+                  'font-size': '0.875rem',
+                },
+              ),
+              <Widget>[
+                Component.text(reactorText(ReactorText.optimizationLoading)),
+              ],
             ),
           ),
         ],
@@ -279,8 +311,9 @@ class _OptimizationScreenState extends State<OptimizationScreen> {
 
     ControlItem? selectedItem;
     if (_selectedId != null) {
-      final int idx =
-          controller.items.indexWhere((ControlItem i) => i.id == _selectedId);
+      final int idx = controller.items.indexWhere(
+        (ControlItem i) => i.id == _selectedId,
+      );
       selectedItem = idx >= 0 ? controller.items[idx] : null;
     }
 
@@ -290,14 +323,16 @@ class _OptimizationScreenState extends State<OptimizationScreen> {
       OptimizationGridView(
         items: controller.items,
         total: controller.items.length,
-        enabledCount:
-            controller.items.where((ControlItem i) => i.enabled).length,
+        enabledCount: controller.items
+            .where((ControlItem i) => i.enabled)
+            .length,
         readOnly: readOnly,
         roleBadge: RoleBadge(role: role),
         onToggle: readOnly ? null : controller.toggle,
         onSetAll: readOnly ? null : controller.setAll,
-        onConfigure:
-            readOnly ? null : (String id) => setState(() => _selectedId = id),
+        onConfigure: readOnly
+            ? null
+            : (String id) => setState(() => _selectedId = id),
       ),
       ConfigSheet(
         isOpen: _selectedId != null,

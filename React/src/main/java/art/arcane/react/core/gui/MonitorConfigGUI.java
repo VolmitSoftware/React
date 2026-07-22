@@ -23,6 +23,8 @@ import art.arcane.react.React;
 import art.arcane.react.api.monitor.configuration.MonitorConfiguration;
 import art.arcane.react.api.monitor.configuration.MonitorGroup;
 import art.arcane.react.api.sampler.Sampler;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.GuiMessages;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.inventorygui.CustomUIElement;
 import art.arcane.react.util.inventorygui.UIStaticDecorator;
@@ -30,10 +32,11 @@ import art.arcane.volmlib.util.data.MaterialBlock;
 import art.arcane.volmlib.util.inventorygui.UIElement;
 import art.arcane.volmlib.util.inventorygui.UIWindow;
 import art.arcane.volmlib.util.inventorygui.WindowResolution;
+import art.arcane.volmlib.util.localization.MessageArgument;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 
-import java.awt.*;
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -48,7 +51,7 @@ public class MonitorConfigGUI {
     if (!J.runEntity(p, () -> {
       group.setSamplers(new ArrayList<>(group.getSamplers()));
       UIWindow window = new UIWindow(React.instance, p);
-      window.setTitle(group.getName() + " Group");
+      window.setTitle(ReactLanguage.plain(GuiMessages.MONITOR_GROUP_TITLE, MessageArgument.untrusted("group", group.getName())));
       window.setResolution(WindowResolution.W9_H6);
       window.setDecorator(new UIStaticDecorator(new UIElement("bg").setMaterial(new MaterialBlock(Material.BLACK_STAINED_GLASS_PANE))));
       AtomicBoolean refresh = new AtomicBoolean(false);
@@ -66,11 +69,11 @@ public class MonitorConfigGUI {
         window.setElement(w, h, new UIElement("sample-" + i.getId())
             .setMaterial(new MaterialBlock(ReactGuiTaxonomy.iconForId(i.getId())))
             .setName(i.getName())
-            .addLore("Group: " + ReactGuiTaxonomy.groupLabel(i.getId()))
+            .addLore(ReactLanguage.plain(GuiMessages.SAMPLER_GROUP, MessageArgument.untrusted("group", ReactGuiTaxonomy.groupLabel(i.getId()))))
             .addLore(i.format(i.sample()))
             .setEnchanted(head.equals(ii))
-            .addLore("* Left Click to set as header")
-            .addLore("* Shift + Right Click to remove")
+            .addLore(ReactLanguage.plain(GuiMessages.SAMPLER_SET_HEADER))
+            .addLore(ReactLanguage.plain(GuiMessages.SAMPLER_REMOVE))
             .onLeftClick((e) -> {
               group.setHeadSampler(i.getId());
               saver.accept(configuration);
@@ -92,8 +95,8 @@ public class MonitorConfigGUI {
       }
 
       window.setElement(0, 2, new UIElement("addnew")
-          .setName("Add Sampler")
-          .addLore("* Left Click to add a new sampler")
+          .setName(ReactLanguage.plain(GuiMessages.SAMPLER_ADD))
+          .addLore(ReactLanguage.plain(GuiMessages.SAMPLER_ADD_LORE))
           .setMaterial(new MaterialBlock(Material.EMERALD))
           .onLeftClick((e) -> {
             refresh.set(true);
@@ -109,8 +112,8 @@ public class MonitorConfigGUI {
       );
 
       window.setElement(-1, 2, new UIElement("renamegroup")
-          .setName("Rename Group")
-          .addLore("* Left Click to rename the group. Simply send a chat message of the new name!")
+          .setName(ReactLanguage.plain(GuiMessages.GROUP_RENAME))
+          .addLore(ReactLanguage.plain(GuiMessages.GROUP_RENAME_LORE))
           .setMaterial(new MaterialBlock(Material.WRITABLE_BOOK))
           .onLeftClick((e) -> {
             refresh.set(true);
@@ -118,7 +121,7 @@ public class MonitorConfigGUI {
               window.close();
 
               J.a(() -> {
-                p.sendMessage("<Enter the new name for the group in chat>");
+                ReactLanguage.send(p, GuiMessages.GROUP_RENAME_PROMPT);
                 String n = TextInputGui.captureText(p);
 
                 if (n != null) {
@@ -131,9 +134,9 @@ public class MonitorConfigGUI {
           })
       );
 
-      window.setElement(-2, 2, new CustomUIElement("recolorgroup", Guis.generateColorIcon("Group Color", new Color(group.getColorValue())))
-          .setName("Group Color")
-          .addLore("* Left Click to set the group color")
+      window.setElement(-2, 2, new CustomUIElement("recolorgroup", Guis.generateColorIcon(ReactLanguage.plain(GuiMessages.GROUP_COLOR), new Color(group.getColorValue())))
+          .setName(ReactLanguage.plain(GuiMessages.GROUP_COLOR))
+          .addLore(ReactLanguage.plain(GuiMessages.GROUP_COLOR_LORE))
           .onLeftClick((e) -> {
             refresh.set(true);
             J.a(() -> {
@@ -150,8 +153,8 @@ public class MonitorConfigGUI {
       );
 
       window.setElement(1, 2, new UIElement("deletegroup")
-          .setName("Delete Group")
-          .addLore("* Shift Left Click to delete")
+          .setName(ReactLanguage.plain(GuiMessages.GROUP_DELETE))
+          .addLore(ReactLanguage.plain(GuiMessages.GROUP_DELETE_LORE))
           .setMaterial(new MaterialBlock(Material.BARRIER))
           .onShiftLeftClick((e) -> {
             refresh.set(true);
@@ -180,7 +183,7 @@ public class MonitorConfigGUI {
 
     if (!J.runEntity(p, () -> {
       UIWindow window = new UIWindow(React.instance, p);
-      window.setTitle("Monitor Configuration");
+      window.setTitle(ReactLanguage.plain(GuiMessages.MONITOR_TITLE));
       window.setResolution(WindowResolution.W9_H6);
       window.setDecorator(new UIStaticDecorator(new UIElement("bg").setMaterial(new MaterialBlock(Material.BLACK_STAINED_GLASS_PANE))));
 
@@ -204,13 +207,13 @@ public class MonitorConfigGUI {
       }
 
       window.setElement(0, 2, new UIElement("creategroup")
-          .setName("Create Group")
-          .addLore("* Left Click to create a group")
+          .setName(ReactLanguage.plain(GuiMessages.GROUP_CREATE))
+          .addLore(ReactLanguage.plain(GuiMessages.GROUP_CREATE_LORE))
           .setMaterial(new MaterialBlock(Material.EMERALD))
           .onLeftClick((e) -> {
             J.a(() -> {
               J.s(window::close);
-              p.sendMessage("<Enter a name for this monitor group in chat>");
+              ReactLanguage.send(p, GuiMessages.GROUP_CREATE_PROMPT);
               String name = TextInputGui.captureText(p);
               Color c = ColorPickerGUI.presetColors.get(new Random().nextInt(ColorPickerGUI.presetColors.size()));
               if (name != null) {
@@ -222,7 +225,7 @@ public class MonitorConfigGUI {
                 saver.accept(configuration);
                 J.a(() -> editMonitorConfigurationGroup(p, configuration, g, saver));
               } else {
-                p.sendMessage("Invalid Name?");
+                ReactLanguage.send(p, GuiMessages.GROUP_INVALID_NAME);
                 J.a(() -> editMonitorConfiguration(p, configuration, saver));
               }
             });

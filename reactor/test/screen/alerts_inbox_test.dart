@@ -4,6 +4,7 @@ import 'package:arcane_jaspr/arcane_jaspr.dart';
 import 'package:arcane_jaspr_shadcn/arcane_jaspr_shadcn.dart';
 import 'package:jaspr_test/server_test.dart';
 
+import 'package:reactor/localization/reactor_localizations.dart';
 import 'package:reactor/model/sampler_sample.dart';
 import 'package:reactor/model/server_credential.dart';
 import 'package:reactor/model/server_snapshot.dart';
@@ -128,7 +129,7 @@ void main() {
             'Server name ServerAlpha must appear for the critical alert row',
       );
       expect(
-        res.body.contains('Low TPS'),
+        res.body.contains(ReactorText.alertLowTps.english),
         isTrue,
         reason: 'Low TPS title must appear for the critical alert row',
       );
@@ -163,7 +164,8 @@ void main() {
       final DocumentResponse res = await tester.request('/');
       expect(res.statusCode, equals(200));
       expect(
-        res.body.contains('ServerBeta') && res.body.contains('Low TPS'),
+        res.body.contains('ServerBeta') &&
+            res.body.contains(ReactorText.alertLowTps.english),
         isTrue,
         reason:
             'ServerBeta is healthy so there should be no Low TPS for it but it may appear in filters; main check: critical row for ServerAlpha is present',
@@ -171,7 +173,7 @@ void main() {
       final bool serverBetaHasAlert = _serverHasAlert(
         res.body,
         'ServerBeta',
-        'Low TPS',
+        ReactorText.alertLowTps.english,
       );
       expect(
         serverBetaHasAlert,
@@ -195,7 +197,7 @@ void main() {
       final DocumentResponse res = await tester.request('/');
       expect(res.statusCode, equals(200));
       expect(
-        res.body.contains('No open alerts'),
+        res.body.contains(ReactorText.alertsNoneOpen.english),
         isTrue,
         reason: 'Empty alert feed must show No open alerts message',
       );
@@ -218,7 +220,7 @@ void main() {
       final DocumentResponse res = await tester.request('/');
       expect(res.statusCode, equals(200));
       expect(
-        res.body.contains('No open alerts'),
+        res.body.contains(ReactorText.alertsNoneOpen.english),
         isTrue,
         reason:
             'Pre-resolved alert must not appear; feed must show No open alerts',

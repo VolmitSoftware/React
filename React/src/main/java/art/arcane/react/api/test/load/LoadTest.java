@@ -6,9 +6,11 @@ import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.api.test.TestReport;
 import art.arcane.react.api.test.TestStatus;
 import art.arcane.react.core.controller.FeatureController;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.TestMessages;
 import art.arcane.react.util.common.scheduling.J;
-import art.arcane.react.util.format.C;
 import art.arcane.react.util.plugin.VolmitSender;
+import art.arcane.volmlib.util.localization.MessageArgument;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -17,6 +19,7 @@ import org.bukkit.scheduler.BukkitTask;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -47,10 +50,19 @@ public final class LoadTest {
   }
 
   public void run() {
-    out.sendMessage(C.REACT + "Loadtest pass A (React ON): " + players + " synthetic players, " + durationSeconds + "s");
+    ReactLanguage.sendPrefixed(
+        out,
+        TestMessages.LOAD_PASS_ON,
+        MessageArgument.untrusted("players", players),
+        MessageArgument.untrusted("seconds", durationSeconds)
+    );
     runPass((LoadSummary summaryOn) -> {
       onSummary = summaryOn;
-      out.sendMessage(C.REACT + "Loadtest pass B (React OFF baseline): " + durationSeconds + "s");
+      ReactLanguage.sendPrefixed(
+          out,
+          TestMessages.LOAD_PASS_OFF,
+          MessageArgument.untrusted("seconds", durationSeconds)
+      );
       List<Feature> disabled = disableAllFeatures();
       runPass((LoadSummary summaryOff) -> {
         offSummary = summaryOff;
@@ -152,7 +164,9 @@ public final class LoadTest {
 
   private void finish() {
     SloResult slo = SloGate.evaluate(onSummary);
-    String breaches = slo.breaches().isEmpty() ? "all SLOs met" : String.join("; ", slo.breaches());
+    String breaches = slo.breaches().isEmpty()
+        ? ReactLanguage.raw(TestMessages.LOAD_ALL_SLOS_MET)
+        : String.join("; ", slo.breaches());
     report.record("loadtest", "slo-gate", slo.passed() ? TestStatus.PASS : TestStatus.FAIL, breaches, new LinkedHashMap<String, Object>(slo.metrics()));
     report.record("loadtest", "react-on", TestStatus.INFO, passDetail(onSummary), summaryData(onSummary));
     report.record("loadtest", "react-off-baseline", TestStatus.INFO, passDetail(offSummary), summaryData(offSummary));
@@ -161,15 +175,32 @@ public final class LoadTest {
   }
 
   private String passDetail(LoadSummary summary) {
-    return String.format("avgMSPT=%.2f p95=%.2f maxTickGap=%.0fms avgTPS=%.2f heap=%.0f->%.0fMB exceptions=%d",
-        summary.avgMspt(), summary.p95Mspt(), summary.maxTickMs(), summary.avgTps(), summary.heapStartMb(), summary.heapEndMb(), summary.reactPathExceptions());
+    return ReactLanguage.raw(
+        TestMessages.LOAD_PASS_DETAIL,
+        MessageArgument.untrusted("avg_mspt", format("%.2f", summary.avgMspt())),
+        MessageArgument.untrusted("p95", format("%.2f", summary.p95Mspt())),
+        MessageArgument.untrusted("max_tick", format("%.0f", summary.maxTickMs())),
+        MessageArgument.untrusted("avg_tps", format("%.2f", summary.avgTps())),
+        MessageArgument.untrusted("heap_start", format("%.0f", summary.heapStartMb())),
+        MessageArgument.untrusted("heap_end", format("%.0f", summary.heapEndMb())),
+        MessageArgument.untrusted("exceptions", summary.reactPathExceptions())
+    );
   }
 
   private String deltaDetail() {
     double dMspt = onSummary.avgMspt() - offSummary.avgMspt();
     double dTps = onSummary.avgTps() - offSummary.avgTps();
     double dHeap = onSummary.heapEndMb() - offSummary.heapEndMb();
-    return String.format("React vs baseline: dMSPT=%+.2fms dTPS=%+.2f dHeapEnd=%+.0fMB", dMspt, dTps, dHeap);
+    return ReactLanguage.raw(
+        TestMessages.LOAD_DELTA_DETAIL,
+        MessageArgument.untrusted("delta_mspt", format("%+.2f", dMspt)),
+        MessageArgument.untrusted("delta_tps", format("%+.2f", dTps)),
+        MessageArgument.untrusted("delta_heap", format("%+.0f", dHeap))
+    );
+  }
+
+  private String format(String format, double value) {
+    return String.format(Locale.ROOT, format, value);
   }
 
   private Map<String, Object> summaryData(LoadSummary summary) {

@@ -19,15 +19,23 @@
 
 package art.arcane.react.api.action;
 
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.ActionMessages;
+import art.arcane.react.localization.catalog.RuntimeMessages;
 import art.arcane.react.util.project.registry.Registered;
 import art.arcane.volmlib.util.format.Form;
+import art.arcane.volmlib.util.localization.MessageArgument;
 import org.bukkit.command.CommandSender;
 
 public interface Action<T extends ActionParams> extends Registered {
   ActionTicket<T> create(T params);
 
   default String getCompletedMessage(ActionTicket<T> ticket) {
-    return "Completed " + getName() + " in " + Form.duration(ticket.getDuration(), 1);
+    return ReactLanguage.plain(
+        ActionMessages.COMPLETED,
+        MessageArgument.untrusted("action", getName()),
+        MessageArgument.untrusted("duration", Form.duration(ticket.getDuration(), 1))
+    );
   }
 
   @Override
@@ -41,14 +49,26 @@ public interface Action<T extends ActionParams> extends Registered {
 
   default ActionTicket<T> create(T params, CommandSender sender) {
     if (!isEnabled()) {
-      sender.sendMessage(getName() + " is disabled in config.");
+      ReactLanguage.sendPrefixed(
+          sender,
+          RuntimeMessages.ACTION_DISABLED,
+          MessageArgument.untrusted("action", getName())
+      );
       return create(params);
     }
 
-    sender.sendMessage("Queued " + getName());
+    ReactLanguage.sendPrefixed(sender, RuntimeMessages.ACTION_QUEUED, MessageArgument.untrusted("action", getName()));
     return create(params)
-        .onStart((i) -> sender.sendMessage("Starting " + getName()))
-        .onComplete((i) -> sender.sendMessage(getCompletedMessage(i)));
+        .onStart((i) -> ReactLanguage.sendPrefixed(
+            sender,
+            RuntimeMessages.ACTION_STARTING,
+            MessageArgument.untrusted("action", getName())
+        ))
+        .onComplete((i) -> ReactLanguage.sendPrefixed(
+            sender,
+            RuntimeMessages.ACTION_COMPLETED,
+            MessageArgument.untrusted("message", getCompletedMessage(i))
+        ));
   }
 
   @SuppressWarnings("unchecked")

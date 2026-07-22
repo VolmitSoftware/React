@@ -23,10 +23,11 @@ import art.arcane.react.React;
 import art.arcane.react.api.action.Action;
 import art.arcane.react.api.feature.Feature;
 import art.arcane.react.api.tweak.Tweak;
+import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.RuntimeMessages;
 import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.common.scheduling.TickedObject;
-import art.arcane.react.util.format.C;
 import art.arcane.react.util.plugin.IController;
 import art.arcane.react.util.project.config.ConfigDescription;
 import art.arcane.react.util.project.config.ConfigDoc;
@@ -34,8 +35,10 @@ import art.arcane.react.util.project.config.ConfigFileSupport;
 import art.arcane.react.util.project.config.ConfigRewriteReporter;
 import art.arcane.volmlib.util.hotload.ConfigHotloadEngine;
 import art.arcane.volmlib.util.io.IO;
+import art.arcane.volmlib.util.localization.MessageArgument;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
@@ -56,7 +59,7 @@ public class HotloadController extends TickedObject implements IController {
   @ConfigDoc(value = "Enables live hotloading for React managed configs.", impact = "Set to false to disable file watching and require manual reloads.")
   private boolean enabled = true;
 
-  @ConfigDoc(value = "Polling interval used by the config watcher in milliseconds.", impact = "Lower values detect changes faster but perform more frequent scans.")
+  @ConfigDoc(value = "Queue-drain interval used by the config watcher in milliseconds.", impact = "Lower values process delivered filesystem events sooner; operating-system delivery latency may be longer.")
   private int pollIntervalMs = 500;
 
   @ConfigDoc(value = "Maximum number of key-level diff messages sent per changed file.", impact = "Lower values reduce operator chat noise on large config edits.")
@@ -68,6 +71,7 @@ public class HotloadController extends TickedObject implements IController {
   private transient File dataFolder;
   private transient File configToml;
   private transient File configLegacyJson;
+  private transient File localeOverrideFolder;
   private final transient ConfigHotloadEngine hotloadEngine = new ConfigHotloadEngine(
       this::isManagedConfigFile,
       this::listKnownConfigFiles,
@@ -90,6 +94,7 @@ public class HotloadController extends TickedObject implements IController {
     dataFolder = React.instance.getDataFolder();
     configToml = React.instance.getDataFile("config.toml");
     configLegacyJson = React.instance.getDataFile("config.json");
+    localeOverrideFolder = ReactLanguage.overrideFolder();
     reconfigureWatcher();
     ConfigFileSupport.setSelfWriteListener(hotloadEngine::noteSelfWrite);
   }
@@ -139,6 +144,7 @@ public class HotloadController extends TickedObject implements IController {
       File categoryFolder = React.instance.getDataFolderNoCreate(category);
       watchedDirectories.add(categoryFolder);
     }
+    watchedDirectories.add(localeOverrideFolder);
 
     hotloadEngine.configure(effectivePollInterval, watchedFiles, watchedDirectories);
     React.info("Config hotload watcher enabled for config.toml and managed component configs.");
@@ -232,6 +238,10 @@ public class HotloadController extends TickedObject implements IController {
           React.warn("Skipped hotload for " + file.getPath() + " due to invalid config.");
         }
         return ok;
+      }
+
+      if (ReactLanguage.isOverrideFile(file)) {
+        return ReactLanguage.reload();
       }
 
       ManagedConfig target = resolveManagedConfig(file);
@@ -392,6 +402,7 @@ public class HotloadController extends TickedObject implements IController {
   }
 
   private void refreshGlobalRuntimeSettings() {
+    ReactLanguage.reload();
     J.s(() -> {
       EntityController entityController = React.controller(EntityController.class);
       if (entityController != null) {
@@ -491,6 +502,10 @@ public class HotloadController extends TickedObject implements IController {
       return false;
     }
 
+    if (ReactLanguage.isOverrideFile(file)) {
+      return true;
+    }
+
     String relative = relativizeToDataFolder(file).replace('\\', '/').toLowerCase(Locale.ROOT);
     if ("config.toml".equals(relative) || "config.json".equals(relative)) {
       return true;
@@ -536,6 +551,13 @@ public class HotloadController extends TickedObject implements IController {
         }
 
         addIfConfig(files, added, child);
+      }
+    }
+
+    File[] localeFiles = localeOverrideFolder == null ? null : localeOverrideFolder.listFiles();
+    if (localeFiles != null) {
+      for (File localeFile : localeFiles) {
+        addIfConfig(files, added, localeFile);
       }
     }
 
@@ -631,7 +653,7 @@ public class HotloadController extends TickedObject implements IController {
     }
 
     String relative = relativizeToDataFolder(file);
-    List<String> messages = new ArrayList<>();
+    List<Component> messages = new ArrayList<>();
     int shown = Math.min(Math.max(1, maxDiffMessagesPerFile), diffs.size());
     for (int i = 0; i < shown; i++) {
       ConfigHotloadEngine.DiffEntry diff = diffs.get(i);
@@ -640,7 +662,11 @@ public class HotloadController extends TickedObject implements IController {
 
     if (diffs.size() > shown) {
       int remaining = diffs.size() - shown;
-      messages.add(formatHotloadMessage(relative, "...", "+" + remaining + " more", "truncated"));
+      messages.add(ReactLanguage.prefixedComponent(
+          RuntimeMessages.HOTLOAD_TRUNCATED,
+          MessageArgument.untrusted("count", remaining),
+          MessageArgument.untrusted("file", relative)
+      ));
     }
 
     J.s(() -> {
@@ -654,12 +680,14 @@ public class HotloadController extends TickedObject implements IController {
     });
   }
 
-  private String formatHotloadMessage(String file, String key, String oldValue, String newValue) {
-    return C.GRAY + "[" + C.AQUA + "React" + C.GRAY + "]: "
-        + C.GREEN + "Config Hotloaded: "
-        + C.WHITE + "[" + file + "] "
-        + C.AQUA + "[" + key + "] "
-        + C.GRAY + "[" + formatValue(oldValue) + " -> " + formatValue(newValue) + "]";
+  private Component formatHotloadMessage(String file, String key, String oldValue, String newValue) {
+    return ReactLanguage.prefixedComponent(
+        RuntimeMessages.HOTLOAD_DIFF,
+        MessageArgument.untrusted("file", file),
+        MessageArgument.untrusted("key", key),
+        MessageArgument.untrusted("before", formatValue(oldValue)),
+        MessageArgument.untrusted("after", formatValue(newValue))
+    );
   }
 
   private String formatValue(String value) {

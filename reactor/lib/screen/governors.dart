@@ -5,6 +5,7 @@ import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart' show Component;
 
 import '../model/control_item.dart';
+import '../localization/reactor_localizations.dart';
 import '../model/sampler_sample.dart';
 import '../service/react_client.dart';
 import '../state/control_list_controller.dart';
@@ -54,14 +55,16 @@ class GovernorDashboardView extends StatelessWidget {
       gap: 20,
       children: <Widget>[
         dom.div(
-          styles: const dom.Styles(raw: <String, String>{
-            'display': 'flex',
-            'justify-content': 'center',
-            'padding': '1rem 0',
-          }),
+          styles: const dom.Styles(
+            raw: <String, String>{
+              'display': 'flex',
+              'justify-content': 'center',
+              'padding': '1rem 0',
+            },
+          ),
           <Widget>[
             Gauge(
-              label: 'Incident Score',
+              label: reactorText(ReactorText.commonIncidentScore),
               value: incidentScore?.value ?? 0.0,
               display: incidentScore?.display,
               max: 100.0,
@@ -70,30 +73,40 @@ class GovernorDashboardView extends StatelessWidget {
           ],
         ),
         statGrid(<Widget>[
-          StatTile(label: 'Scheduler Backlog', sample: schedulerBacklog),
-          StatTile(label: 'Backlog Growth Rate', sample: backlogGrowthRate),
+          StatTile(
+            label: reactorText(ReactorText.commonSchedulerBacklog),
+            sample: schedulerBacklog,
+          ),
+          StatTile(
+            label: reactorText(ReactorText.governorsBacklogGrowthRate),
+            sample: backlogGrowthRate,
+          ),
         ]),
         sectionCard(
-          label: 'Governors',
+          label: reactorText(ReactorText.governorsSection),
           child: statGrid(<Widget>[
             for (final ControlItem governor in governors)
               Card.elevated(
                 fillWidth: true,
                 child: dom.div(
-                  styles: const dom.Styles(raw: <String, String>{
-                    'padding': '0.75rem',
-                    'display': 'flex',
-                    'flex-direction': 'column',
-                    'gap': '0.5rem',
-                  }),
+                  styles: const dom.Styles(
+                    raw: <String, String>{
+                      'padding': '0.75rem',
+                      'display': 'flex',
+                      'flex-direction': 'column',
+                      'gap': '0.5rem',
+                    },
+                  ),
                   <Widget>[
                     Text.heading3(governor.name),
                     governor.enabled
-                        ? const ArcaneStatusBadge.success(
-                            'Enabled',
+                        ? ArcaneStatusBadge.success(
+                            reactorText(ReactorText.commonEnabled),
                             showPulse: false,
                           )
-                        : const ArcaneStatusBadge.offline('Disabled'),
+                        : ArcaneStatusBadge.offline(
+                            reactorText(ReactorText.commonDisabled),
+                          ),
                     ArcaneToggleSwitch(
                       value: governor.enabled,
                       onChanged: (bool b) => onToggle?.call(governor.id, b),
@@ -131,8 +144,10 @@ class _GovernorsScreenState extends State<GovernorsScreen> {
         c,
         isTweaks: false,
         onChange: () => setState(() {}),
-        onError: (Object e) =>
-            ArcaneSonner.error('Update failed', description: e.toString()),
+        onError: (Object e) => ArcaneSonner.error(
+          reactorText(ReactorText.commonUpdateFailed),
+          description: e.toString(),
+        ),
       );
       _controller!.load();
     }
@@ -141,35 +156,38 @@ class _GovernorsScreenState extends State<GovernorsScreen> {
   @override
   Widget build(BuildContext context) {
     final ServerScope? scope = ServerScope.of(context);
-    final SamplerSample? incidentScore =
-        scope?.snapshot?.sampler('incident-score');
-    final SamplerSample? schedulerBacklog =
-        scope?.snapshot?.sampler('scheduler-backlog');
-    final SamplerSample? backlogGrowthRate =
-        scope?.snapshot?.sampler('backlog-growth-rate');
+    final SamplerSample? incidentScore = scope?.snapshot?.sampler(
+      'incident-score',
+    );
+    final SamplerSample? schedulerBacklog = scope?.snapshot?.sampler(
+      'scheduler-backlog',
+    );
+    final SamplerSample? backlogGrowthRate = scope?.snapshot?.sampler(
+      'backlog-growth-rate',
+    );
 
     final List<ControlItem> governors = _controller == null
         ? const <ControlItem>[]
         : _controller!.items
-            .where((ControlItem i) => kGovernorFeatureIds.contains(i.id))
-            .toList();
+              .where((ControlItem i) => kGovernorFeatureIds.contains(i.id))
+              .toList();
 
     if (_client == null) {
       return ReactorPage(
-        title: 'Governors',
-        subtitle: 'Adaptive load governors',
+        title: reactorText(ReactorText.governorsTitle),
+        subtitle: reactorText(ReactorText.governorsSubtitle),
         children: <Widget>[
           sectionCard(
-            label: 'Governor Control',
+            label: reactorText(ReactorText.governorsControl),
             child: dom.div(
-              styles: const dom.Styles(raw: <String, String>{
-                'color': 'var(--muted-foreground)',
-                'font-size': '0.875rem',
-              }),
+              styles: const dom.Styles(
+                raw: <String, String>{
+                  'color': 'var(--muted-foreground)',
+                  'font-size': '0.875rem',
+                },
+              ),
               <Widget>[
-                Component.text(
-                  'Governor control requires a live connection.',
-                ),
+                Component.text(reactorText(ReactorText.governorsLiveRequired)),
               ],
             ),
           ),
@@ -185,8 +203,8 @@ class _GovernorsScreenState extends State<GovernorsScreen> {
     }
 
     return ReactorPage(
-      title: 'Governors',
-      subtitle: 'Adaptive load governors',
+      title: reactorText(ReactorText.governorsTitle),
+      subtitle: reactorText(ReactorText.governorsSubtitle),
       children: <Widget>[
         GovernorDashboardView(
           governors: governors,
