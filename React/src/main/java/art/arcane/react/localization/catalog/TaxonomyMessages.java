@@ -20,6 +20,10 @@ public final class TaxonomyMessages {
   public static final TextKey CATEGORY_OTHER_DESCRIPTION = TextKey.of("taxonomy.category.other.description", "Uncategorized");
   public static final TextKey GROUP_ADAPT = TextKey.of("taxonomy.group.adapt", "Adapt Integration");
   public static final TextKey GROUP_IRIS = TextKey.of("taxonomy.group.iris", "Iris Integration");
+  public static final TextKey GROUP_WORMHOLES = TextKey.of("taxonomy.group.wormholes", "Wormholes Integration");
+  public static final TextKey GROUP_HOLOUI = TextKey.of("taxonomy.group.holoui", "HoloUi Integration");
+  public static final TextKey GROUP_HIDDENORE = TextKey.of("taxonomy.group.hiddenore", "HiddenOre Integration");
+  public static final TextKey GROUP_BILETOOLS = TextKey.of("taxonomy.group.biletools", "BileTools Integration");
   public static final TextKey GROUP_REACT = TextKey.of("taxonomy.group.react", "React Integration");
   public static final TextKey GROUP_CORE = TextKey.of("taxonomy.group.core", "React Core");
   public static final TextKey GROUP_TICK = TextKey.of("taxonomy.group.tick", "Tick & Stability");
@@ -59,6 +63,10 @@ public final class TaxonomyMessages {
     builder.add(CATEGORY_OTHER_DESCRIPTION);
     builder.add(GROUP_ADAPT);
     builder.add(GROUP_IRIS);
+    builder.add(GROUP_WORMHOLES);
+    builder.add(GROUP_HOLOUI);
+    builder.add(GROUP_HIDDENORE);
+    builder.add(GROUP_BILETOOLS);
     builder.add(GROUP_REACT);
     builder.add(GROUP_CORE);
     builder.add(GROUP_TICK);

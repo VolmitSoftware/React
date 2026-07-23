@@ -38,6 +38,9 @@ public final class IntegrationMetricKeySelector {
       case "iris" -> IntegrationMetricSchema.irisKeys();
       case "adapt" -> IntegrationMetricSchema.adaptKeys();
       case "wormholes" -> IntegrationMetricSchema.wormholesKeys();
+      case "holoui" -> IntegrationMetricSchema.holouiKeys();
+      case "hiddenore" -> IntegrationMetricSchema.hiddenoreKeys();
+      case "biletools" -> IntegrationMetricSchema.biletoolsKeys();
       default -> Set.of();
     };
   }

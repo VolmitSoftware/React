@@ -311,6 +311,39 @@ public interface Sampler extends Registered, ReactRenderer {
           new TinyColor(20, 14, 32)
       );
     }
+    if (containsAny(normalizedId, "holoui")) {
+      return palette(
+          new TinyColor(38, 142, 134),
+          new TinyColor(16, 70, 66),
+          new TinyColor(66, 206, 192),
+          new TinyColor(152, 240, 230),
+          new TinyColor(216, 252, 248),
+          new TinyColor(8, 16, 15),
+          new TinyColor(12, 24, 22)
+      );
+    }
+    if (containsAny(normalizedId, "hiddenore")) {
+      return palette(
+          new TinyColor(170, 126, 44),
+          new TinyColor(94, 66, 20),
+          new TinyColor(228, 178, 66),
+          new TinyColor(255, 222, 122),
+          new TinyColor(255, 242, 180),
+          new TinyColor(18, 14, 8),
+          new TinyColor(26, 20, 12)
+      );
+    }
+    if (containsAny(normalizedId, "biletools")) {
+      return palette(
+          new TinyColor(96, 150, 50),
+          new TinyColor(48, 84, 22),
+          new TinyColor(142, 210, 74),
+          new TinyColor(198, 244, 132),
+          new TinyColor(232, 252, 190),
+          new TinyColor(12, 16, 8),
+          new TinyColor(18, 26, 12)
+      );
+    }
     if (containsAny(normalizedId, "processor", "cpu", "load", "react", "job", "queue", "backlog")) {
       return palette(
           new TinyColor(46, 126, 154),

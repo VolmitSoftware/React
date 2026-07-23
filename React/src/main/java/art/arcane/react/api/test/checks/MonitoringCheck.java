@@ -130,7 +130,12 @@ public class MonitoringCheck implements ReactSubsystemCheck {
       return false;
     }
     String lower = id.toLowerCase();
-    return lower.contains("iris") || lower.contains("adapt") || lower.contains("wormhole");
+    return lower.contains("iris")
+        || lower.contains("adapt")
+        || lower.contains("wormhole")
+        || lower.contains("holoui")
+        || lower.contains("hiddenore")
+        || lower.contains("biletools");
   }
 
   private String summarize(Throwable throwable) {

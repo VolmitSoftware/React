@@ -22,7 +22,9 @@ package art.arcane.react.core.gui;
 import art.arcane.react.React;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.content.sampler.SamplerUnknown;
+import art.arcane.react.core.controller.IntegrationController;
 import art.arcane.react.core.controller.SampleController;
+import art.arcane.react.core.integration.IntegrationCapabilitySupport;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.GuiMessages;
 import art.arcane.react.localization.catalog.MapMessages;
@@ -69,6 +71,7 @@ public class SamplerGUI {
           .all()
           .stream()
           .filter(i -> i != null && !SamplerUnknown.ID.equalsIgnoreCase(i.getId()))
+          .filter(SamplerGUI::isSamplerListed)
           .sorted(Comparator
               .comparingInt((Sampler i) -> ReactGuiTaxonomy.groupOrder(i.getId()))
               .thenComparing(i -> ReactGuiTaxonomy.normalizeSortKey(i.getName()))
@@ -132,5 +135,17 @@ public class SamplerGUI {
     })) {
       React.warn("Failed to schedule sampler picker UI for " + p.getName());
     }
+  }
+
+  private static boolean isSamplerListed(Sampler sampler) {
+    String pluginId = IntegrationCapabilitySupport.integrationPluginFor(ReactGuiTaxonomy.normalizeId(sampler.getId()));
+    if (pluginId == null) {
+      return true;
+    }
+
+    return IntegrationCapabilitySupport.isCapabilityPresent(
+        React.controller(IntegrationController.class),
+        pluginId
+    );
   }
 }

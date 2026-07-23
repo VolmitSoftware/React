@@ -25,6 +25,9 @@ import art.arcane.react.api.rendering.MapRendererPipe;
 import art.arcane.react.api.rendering.MegamapGrid;
 import art.arcane.react.api.rendering.ReactRenderer;
 import art.arcane.react.api.rendering.RendererAdaptMetrics;
+import art.arcane.react.api.rendering.RendererBiletoolsMetrics;
+import art.arcane.react.api.rendering.RendererHiddenoreMetrics;
+import art.arcane.react.api.rendering.RendererHolouiMetrics;
 import art.arcane.react.api.rendering.RendererIrisMetrics;
 import art.arcane.react.api.rendering.RendererIrisWorldMetrics;
 import art.arcane.react.api.rendering.RendererReactMetrics;
@@ -142,6 +145,9 @@ public class MapController extends TickedObject implements IController, Listener
   private transient List<ReactRenderer> irisMetricsRenderers;
   private transient ReactRenderer adaptMetricsRenderer;
   private transient ReactRenderer wormholesMetricsRenderer;
+  private transient ReactRenderer holouiMetricsRenderer;
+  private transient ReactRenderer hiddenoreMetricsRenderer;
+  private transient ReactRenderer biletoolsMetricsRenderer;
   private transient ReactRenderer reactMetricsRenderer;
   private transient long startupBoostUntilMs;
 
@@ -483,6 +489,9 @@ public class MapController extends TickedObject implements IController, Listener
     irisMetricsRenderers.addAll(RendererIrisWorldMetrics.dashboards());
     adaptMetricsRenderer = new RendererAdaptMetrics();
     wormholesMetricsRenderer = new RendererWormholesMetrics();
+    holouiMetricsRenderer = new RendererHolouiMetrics();
+    hiddenoreMetricsRenderer = new RendererHiddenoreMetrics();
+    biletoolsMetricsRenderer = new RendererBiletoolsMetrics();
     reactMetricsRenderer = new RendererReactMetrics();
     startupBoostUntilMs = System.currentTimeMillis() + Math.max(0L, startupBoostDurationMs);
     applyMaintenanceTickInterval();
@@ -509,11 +518,17 @@ public class MapController extends TickedObject implements IController, Listener
   public void postStart() {
     startupBoostUntilMs = System.currentTimeMillis() + Math.max(0L, startupBoostDurationMs);
     for (Sampler i : React.controller(SampleController.class).getSamplers().all()) {
+      if (isAbsentIntegrationRenderer(i)) {
+        continue;
+      }
       registerRenderer(i);
     }
 
     for (Feature i : React.controller(FeatureController.class).getFeatures().all()) {
       if (i instanceof ReactRenderer f) {
+        if (isAbsentIntegrationRenderer(f)) {
+          continue;
+        }
         registerRenderer(f);
       }
     }
@@ -563,27 +578,13 @@ public class MapController extends TickedObject implements IController, Listener
   }
 
   private void syncIntegrationRenderers() {
-    if (irisMetricsRenderers != null) {
-      for (ReactRenderer renderer : irisMetricsRenderers) {
-        syncIntegrationRenderer(renderer);
-      }
-    }
-    syncIntegrationRenderer(adaptMetricsRenderer);
-    syncIntegrationRenderer(wormholesMetricsRenderer);
-    syncIntegrationRenderer(reactMetricsRenderer);
+    registerRenderer(reactMetricsRenderer);
     syncIntegrationCapabilityRenderers("iris");
     syncIntegrationCapabilityRenderers("adapt");
     syncIntegrationCapabilityRenderers("wormholes");
-  }
-
-  private void syncIntegrationRenderer(ReactRenderer renderer) {
-    if (renderers == null || renderer == null) {
-      return;
-    }
-
-    // Keep integration dashboards resolvable even when capability is temporarily missing
-    // during reload/handshake windows. The renderer itself handles offline status safely.
-    registerRenderer(renderer);
+    syncIntegrationCapabilityRenderers("holoui");
+    syncIntegrationCapabilityRenderers("hiddenore");
+    syncIntegrationCapabilityRenderers("biletools");
   }
 
   private void syncIntegrationCapabilityRenderers(String capability) {
@@ -591,15 +592,20 @@ public class MapController extends TickedObject implements IController, Listener
       return;
     }
 
-    String prefix = capability.toLowerCase(Locale.ROOT).trim() + "-";
-    boolean available = IntegrationCapabilitySupport.hasCapability(
+    String normalizedCapability = capability.toLowerCase(Locale.ROOT).trim();
+    String prefix = normalizedCapability + "-";
+    boolean available = IntegrationCapabilitySupport.isCapabilityPresent(
         React.controller(IntegrationController.class),
-        capability
+        normalizedCapability
     );
 
     if (!available) {
       // Do not remove these renderer ids while integration is negotiating after reload.
       return;
+    }
+
+    for (ReactRenderer dashboard : integrationDashboardsFor(normalizedCapability)) {
+      registerRenderer(dashboard);
     }
 
     SampleController sampleController = React.controller(SampleController.class);
@@ -621,6 +627,34 @@ public class MapController extends TickedObject implements IController, Listener
         registerRenderer(reactRenderer);
       }
     }
+  }
+
+  private List<ReactRenderer> integrationDashboardsFor(String capability) {
+    return switch (capability) {
+      case "iris" -> irisMetricsRenderers == null ? List.of() : irisMetricsRenderers;
+      case "adapt" -> adaptMetricsRenderer == null ? List.of() : List.of(adaptMetricsRenderer);
+      case "wormholes" -> wormholesMetricsRenderer == null ? List.of() : List.of(wormholesMetricsRenderer);
+      case "holoui" -> holouiMetricsRenderer == null ? List.of() : List.of(holouiMetricsRenderer);
+      case "hiddenore" -> hiddenoreMetricsRenderer == null ? List.of() : List.of(hiddenoreMetricsRenderer);
+      case "biletools" -> biletoolsMetricsRenderer == null ? List.of() : List.of(biletoolsMetricsRenderer);
+      default -> List.of();
+    };
+  }
+
+  private boolean isAbsentIntegrationRenderer(ReactRenderer renderer) {
+    if (renderer == null || renderer.getId() == null) {
+      return false;
+    }
+
+    String pluginId = IntegrationCapabilitySupport.integrationPluginFor(normalizeRendererId(renderer.getId()));
+    if (pluginId == null) {
+      return false;
+    }
+
+    return !IntegrationCapabilitySupport.isCapabilityPresent(
+        React.controller(IntegrationController.class),
+        pluginId
+    );
   }
 
   private void registerRenderer(ReactRenderer renderer) {
@@ -1732,6 +1766,18 @@ public class MapController extends TickedObject implements IController, Listener
       return wormholesMetricsRenderer;
     }
 
+    if (requested.equals(RendererHolouiMetrics.ID) || requestedAlias.equals(RendererHolouiMetrics.ID)) {
+      return holouiMetricsRenderer;
+    }
+
+    if (requested.equals(RendererHiddenoreMetrics.ID) || requestedAlias.equals(RendererHiddenoreMetrics.ID)) {
+      return hiddenoreMetricsRenderer;
+    }
+
+    if (requested.equals(RendererBiletoolsMetrics.ID) || requestedAlias.equals(RendererBiletoolsMetrics.ID)) {
+      return biletoolsMetricsRenderer;
+    }
+
     return null;
   }
 
@@ -1902,6 +1948,15 @@ public class MapController extends TickedObject implements IController, Listener
     }
     if (normalizedRendererId.startsWith("wormholes-")) {
       return "Wormholes";
+    }
+    if (normalizedRendererId.startsWith("holoui-")) {
+      return "HoloUi";
+    }
+    if (normalizedRendererId.startsWith("hiddenore-")) {
+      return "HiddenOre";
+    }
+    if (normalizedRendererId.startsWith("biletools-")) {
+      return "BileTools";
     }
     if (normalizedRendererId.startsWith("react-")) {
       return "React";

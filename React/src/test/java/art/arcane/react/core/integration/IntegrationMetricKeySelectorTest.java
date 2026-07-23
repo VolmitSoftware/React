@@ -49,4 +49,43 @@ class IntegrationMetricKeySelectorTest {
     Assertions.assertFalse(keys.contains(IntegrationMetricSchema.ADAPT_SESSION_LOAD));
     Mockito.verify(provider).metricDescriptors();
   }
+
+  @Test
+  void holouiSelectionUnionsFixedAndProviderDescriptorsWithinHolouiNamespace() {
+    IntegrationServiceContract provider = Mockito.mock(IntegrationServiceContract.class);
+    IntegrationMetricDescriptor dynamicHoloui = new IntegrationMetricDescriptor(
+        "holoui.experimental-signal",
+        IntegrationMetricType.DOUBLE,
+        "ratio",
+        java.util.Map.of("plugin", "holoui")
+    );
+    IntegrationMetricDescriptor irisDescriptor = IntegrationMetricSchema.descriptor(IntegrationMetricSchema.IRIS_PREGEN_QUEUE);
+    Mockito.when(provider.metricDescriptors()).thenReturn(Set.of(dynamicHoloui, irisDescriptor));
+
+    Set<String> keys = IntegrationMetricKeySelector.expectedKeys("HoloUi", provider);
+
+    Assertions.assertTrue(keys.containsAll(IntegrationMetricSchema.holouiKeys()));
+    Assertions.assertTrue(keys.contains(dynamicHoloui.key()));
+    Assertions.assertFalse(keys.contains(IntegrationMetricSchema.IRIS_PREGEN_QUEUE));
+  }
+
+  @Test
+  void hiddenoreSelectionUsesFixedHiddenoreKeys() {
+    IntegrationServiceContract provider = Mockito.mock(IntegrationServiceContract.class);
+    Mockito.when(provider.metricDescriptors()).thenReturn(Set.of());
+
+    Set<String> keys = IntegrationMetricKeySelector.expectedKeys("HiddenOre", provider);
+
+    Assertions.assertEquals(IntegrationMetricSchema.hiddenoreKeys(), keys);
+  }
+
+  @Test
+  void biletoolsSelectionUsesFixedBiletoolsKeys() {
+    IntegrationServiceContract provider = Mockito.mock(IntegrationServiceContract.class);
+    Mockito.when(provider.metricDescriptors()).thenReturn(Set.of());
+
+    Set<String> keys = IntegrationMetricKeySelector.expectedKeys("BileTools", provider);
+
+    Assertions.assertEquals(IntegrationMetricSchema.biletoolsKeys(), keys);
+  }
 }

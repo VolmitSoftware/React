@@ -49,9 +49,14 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 public final class ReactMapGUI {
   private static final int PAGE_JUMP = 5;
+  private static final Set<String> INTEGRATION_METRIC_IDS = Set.of(
+      "iris-metrics", "adapt-metrics", "wormholes-metrics",
+      "holoui-metrics", "hiddenore-metrics", "biletools-metrics", "react-metrics"
+  );
 
   private ReactMapGUI() {
   }
@@ -300,7 +305,7 @@ public final class ReactMapGUI {
     if (renderer instanceof Sampler) {
       return ReactLanguage.plain(GuiMessages.MAP_TYPE_SAMPLER);
     }
-    if ("iris-metrics".equals(normalizedId) || "adapt-metrics".equals(normalizedId) || "react-metrics".equals(normalizedId)) {
+    if (INTEGRATION_METRIC_IDS.contains(normalizedId)) {
       return ReactLanguage.plain(GuiMessages.MAP_TYPE_INTEGRATION);
     }
     if (normalizedId.contains("-list-map")) {
@@ -339,6 +344,18 @@ public final class ReactMapGUI {
     if (normalizedId.startsWith("adapt-")) {
       return ReactLanguage.plain(TaxonomyMessages.GROUP_ADAPT);
     }
+    if (normalizedId.startsWith("wormholes-")) {
+      return ReactLanguage.plain(TaxonomyMessages.GROUP_WORMHOLES);
+    }
+    if (normalizedId.startsWith("holoui-")) {
+      return ReactLanguage.plain(TaxonomyMessages.GROUP_HOLOUI);
+    }
+    if (normalizedId.startsWith("hiddenore-")) {
+      return ReactLanguage.plain(TaxonomyMessages.GROUP_HIDDENORE);
+    }
+    if (normalizedId.startsWith("biletools-")) {
+      return ReactLanguage.plain(TaxonomyMessages.GROUP_BILETOOLS);
+    }
     if (normalizedId.startsWith("react-")) {
       return ReactLanguage.plain(TaxonomyMessages.GROUP_REACT);
     }
@@ -351,6 +368,18 @@ public final class ReactMapGUI {
     }
     if (normalizedId.startsWith("adapt-")) {
       return ReactLanguage.plain(GuiMessages.MAP_SCOPE_TAG_ADAPT);
+    }
+    if (normalizedId.startsWith("wormholes-")) {
+      return ReactLanguage.plain(GuiMessages.MAP_SCOPE_TAG_WORMHOLES);
+    }
+    if (normalizedId.startsWith("holoui-")) {
+      return ReactLanguage.plain(GuiMessages.MAP_SCOPE_TAG_HOLOUI);
+    }
+    if (normalizedId.startsWith("hiddenore-")) {
+      return ReactLanguage.plain(GuiMessages.MAP_SCOPE_TAG_HIDDENORE);
+    }
+    if (normalizedId.startsWith("biletools-")) {
+      return ReactLanguage.plain(GuiMessages.MAP_SCOPE_TAG_BILETOOLS);
     }
     if (normalizedId.startsWith("react-")) {
       return ReactLanguage.plain(GuiMessages.MAP_SCOPE_TAG_REACT);
@@ -367,6 +396,18 @@ public final class ReactMapGUI {
     }
     if (normalizedId.startsWith("react-")) {
       return rendererGroup(2, TaxonomyMessages.GROUP_REACT, Material.REDSTONE_TORCH);
+    }
+    if (normalizedId.startsWith("wormholes-")) {
+      return rendererGroup(3, TaxonomyMessages.GROUP_WORMHOLES, Material.ENDER_PEARL);
+    }
+    if (normalizedId.startsWith("holoui-")) {
+      return rendererGroup(4, TaxonomyMessages.GROUP_HOLOUI, Material.PAINTING);
+    }
+    if (normalizedId.startsWith("hiddenore-")) {
+      return rendererGroup(5, TaxonomyMessages.GROUP_HIDDENORE, Material.DIAMOND_ORE);
+    }
+    if (normalizedId.startsWith("biletools-")) {
+      return rendererGroup(6, TaxonomyMessages.GROUP_BILETOOLS, Material.LIME_DYE);
     }
 
     if (containsAny(normalizedId, "tick", "tps", "mspt", "incident", "spike")) {

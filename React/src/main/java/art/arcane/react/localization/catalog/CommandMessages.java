@@ -23,7 +23,7 @@ public final class CommandMessages {
   public static final TextKey DEBUG_DESCRIPTION = TextKey.of("command.description.debug", "React debugging commands");
   public static final TextKey DEBUG_ENTITY_DESCRIPTION = TextKey.of("command.description.debug.entity", "Show data for the entity being looked at");
   public static final TextKey INTEGRATION_DESCRIPTION = TextKey.of("command.description.integration", "Cross-plugin integration status");
-  public static final TextKey INTEGRATION_STATUS_DESCRIPTION = TextKey.of("command.description.integration.status", "Show Iris, Adapt, and Wormholes integration health");
+  public static final TextKey INTEGRATION_STATUS_DESCRIPTION = TextKey.of("command.description.integration.status", "Show Iris, Adapt, Wormholes, HoloUi, HiddenOre, and BileTools integration health");
   public static final TextKey BENCHMARK_DESCRIPTION = TextKey.of("command.description.benchmark", "Relative system benchmark commands");
   public static final TextKey BENCHMARK_CPU_DESCRIPTION = TextKey.of("command.description.benchmark.cpu", "Benchmark the CPU");
   public static final TextKey BENCHMARK_DRIVE_DESCRIPTION = TextKey.of("command.description.benchmark.drive", "Benchmark the storage drive");

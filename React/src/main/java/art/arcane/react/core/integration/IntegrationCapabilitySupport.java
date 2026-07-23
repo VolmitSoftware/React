@@ -5,10 +5,33 @@ import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 
+import java.util.List;
 import java.util.Locale;
 
 public final class IntegrationCapabilitySupport {
+  private static final List<String> INTEGRATION_PLUGIN_IDS = List.of(
+      "iris", "adapt", "wormholes", "holoui", "hiddenore", "biletools"
+  );
+
   private IntegrationCapabilitySupport() {
+  }
+
+  public static String integrationPluginFor(String normalizedRendererId) {
+    if (normalizedRendererId == null || normalizedRendererId.isBlank()) {
+      return null;
+    }
+
+    for (String pluginId : INTEGRATION_PLUGIN_IDS) {
+      if (normalizedRendererId.startsWith(pluginId + "-")) {
+        return pluginId;
+      }
+    }
+
+    return null;
+  }
+
+  public static boolean isCapabilityPresent(IntegrationController controller, String capability) {
+    return hasCapability(controller, capability) || isPluginInstalled(capability);
   }
 
   public static boolean hasCapability(IntegrationController controller, String capability) {

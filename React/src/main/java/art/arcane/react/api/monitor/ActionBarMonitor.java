@@ -40,6 +40,7 @@ import org.bukkit.plugin.IllegalPluginAccessException;
 import java.awt.*;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.Map;
 
 public class ActionBarMonitor extends PlayerMonitor {
@@ -63,7 +64,7 @@ public class ActionBarMonitor extends PlayerMonitor {
   public ActionBarMonitor(ReactPlayer player) {
     super("actionbar", player, 50);
     sleepDelay = 10;
-    viewportIndexes = new HashMap<>();
+    viewportIndexes = new IdentityHashMap<>();
     lastValue = new HashMap<>();
     maxLengths = new HashMap<>();
     lastTimes = new HashMap<>();
@@ -268,7 +269,7 @@ public class ActionBarMonitor extends PlayerMonitor {
     if (index < 0) {
       index = 0;
     }
-    int viewportIndex = viewportIndexes.get(focus);
+    int viewportIndex = viewportIndexes.getOrDefault(focus, 0);
 
     while (index + 1 > viewportIndex + viewportLimit) {
       viewportIndex++;
@@ -284,7 +285,7 @@ public class ActionBarMonitor extends PlayerMonitor {
     boolean first = true;
     for (int m = 0; m < viewportLimit; m++) {
       try {
-        int calculatedIndex = (viewportIndexes.get(focus) + m) % focus.getSamplers().size();
+        int calculatedIndex = (viewportIndex + m) % focus.getSamplers().size();
         if (calculatedIndex < 0) {
           calculatedIndex += focus.getSamplers().size();
         }

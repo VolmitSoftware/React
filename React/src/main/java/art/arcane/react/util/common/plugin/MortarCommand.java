@@ -22,7 +22,6 @@ package art.arcane.react.util.plugin;
 
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.RuntimeMessages;
-import art.arcane.react.util.format.C;
 import art.arcane.volmlib.util.collection.KList;
 import art.arcane.volmlib.util.localization.MessageArgument;
 import net.kyori.adventure.key.Key;
@@ -89,40 +88,6 @@ public abstract class MortarCommand implements ICommand {
   }
 
   public abstract void addTabOptions(VolmitSender sender, String[] args, KList<String> list);
-
-  public void printHelp(VolmitSender sender) {
-    boolean b = false;
-
-    for (MortarCommand i : getChildren()) {
-      for (String j : i.getRequiredPermissions()) {
-        if (!sender.hasPermission(j)) {
-        }
-      }
-
-      b = true;
-
-      sender.sendMessage("" + C.GREEN + i.getNode() + " " + "<font:minecraft:uniform>" + (getArgsUsage().trim().isEmpty() ? "" : (C.WHITE + i.getArgsUsage())) + C.GRAY + " - " + i.getDescription());
-    }
-
-    if (!b) {
-      ReactLanguage.send(sender, RuntimeMessages.LEGACY_NO_SUBCOMMANDS);
-    }
-
-    if (sender.isPlayer()) {
-      sender.player().playSound(Sound.sound(
-          Key.key("minecraft:item.book.page_turn"),
-          Sound.Source.PLAYER,
-          0.28f,
-          1.4f
-      ));
-      sender.player().playSound(Sound.sound(
-          Key.key("minecraft:item.axe.strip"),
-          Sound.Source.PLAYER,
-          0.35f,
-          1.7f
-      ));
-    }
-  }
 
   protected abstract String getArgsUsage();
 

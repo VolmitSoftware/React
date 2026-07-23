@@ -59,6 +59,18 @@ public final class ReactGuiTaxonomy {
     if (normalizedId.startsWith("iris-")) {
       return group(1, TaxonomyMessages.GROUP_IRIS, Material.OAK_SAPLING);
     }
+    if (normalizedId.startsWith("wormholes-")) {
+      return group(2, TaxonomyMessages.GROUP_WORMHOLES, Material.ENDER_PEARL);
+    }
+    if (normalizedId.startsWith("holoui-")) {
+      return group(3, TaxonomyMessages.GROUP_HOLOUI, Material.PAINTING);
+    }
+    if (normalizedId.startsWith("hiddenore-")) {
+      return group(4, TaxonomyMessages.GROUP_HIDDENORE, Material.DIAMOND_ORE);
+    }
+    if (normalizedId.startsWith("biletools-")) {
+      return group(5, TaxonomyMessages.GROUP_BILETOOLS, Material.LIME_DYE);
+    }
     if (containsAny(normalizedId, "tick", "tps", "mspt", "incident", "spike")) {
       return group(10, TaxonomyMessages.GROUP_TICK, Material.CLOCK);
     }

@@ -34,6 +34,9 @@ public final class RendererMessages {
   public static final TextKey TITLE_REACT_METRICS = title("react_metrics", "React Metrics");
   public static final TextKey TITLE_ADAPT_METRICS = title("adapt_metrics", "Adapt Metrics");
   public static final TextKey TITLE_WORMHOLES_METRICS = title("wormholes_metrics", "Wormholes Metrics");
+  public static final TextKey TITLE_HOLOUI_METRICS = title("holoui_metrics", "HoloUi Metrics");
+  public static final TextKey TITLE_HIDDENORE_METRICS = title("hiddenore_metrics", "HiddenOre Metrics");
+  public static final TextKey TITLE_BILETOOLS_METRICS = title("biletools_metrics", "BileTools Metrics");
   public static final TextKey TITLE_IRIS_OVERVIEW = title("iris_overview", "Iris Overview");
   public static final TextKey TITLE_IRIS_ENGINE_ACTIVITY = title("iris_engine_activity", "Iris Engine Activity");
   public static final TextKey TITLE_IRIS_LIFECYCLE = title("iris_lifecycle", "Iris Lifecycle");
@@ -154,6 +157,22 @@ public final class RendererMessages {
   public static final TextKey METRIC_GENERATION_LEASES = metric("generation_leases", "Generation Leases");
   public static final TextKey METRIC_IDLE = metric("idle", "Idle");
   public static final TextKey METRIC_ENGINE_RATE = metric("engine_rate", "Engine Rate");
+  public static final TextKey METRIC_SESSIONS = metric("sessions", "Sessions");
+  public static final TextKey METRIC_MENUS = metric("menus", "Menus");
+  public static final TextKey METRIC_PREVIEWS = metric("previews", "Previews");
+  public static final TextKey METRIC_VISIBLE = metric("visible", "Visible");
+  public static final TextKey METRIC_BREAKS = metric("breaks", "Breaks");
+  public static final TextKey METRIC_DROPS = metric("drops", "Drops");
+  public static final TextKey METRIC_VEIN_FINDS = metric("vein_finds", "Vein Finds");
+  public static final TextKey METRIC_VEIN_CACHE = metric("vein_cache", "Vein Cache");
+  public static final TextKey METRIC_PDC_READS = metric("pdc_reads", "PDC Reads");
+  public static final TextKey METRIC_PDC_WRITES = metric("pdc_writes", "PDC Writes");
+  public static final TextKey METRIC_RULES = metric("rules", "Rules");
+  public static final TextKey METRIC_WATCHED_JARS = metric("watched_jars", "Watched Jars");
+  public static final TextKey METRIC_DIRTY_PLUGINS = metric("dirty_plugins", "Dirty Plugins");
+  public static final TextKey METRIC_RELOADS = metric("reloads", "Reloads");
+  public static final TextKey METRIC_LAST_RELOAD = metric("last_reload", "Last Reload");
+  public static final TextKey METRIC_REMOTE_SLAVE = metric("remote_slave", "Remote Slave");
 
   public static final TextKey UNKNOWN_RENDERER_UNAVAILABLE = key("unknown.renderer_unavailable", "Renderer unavailable");
   public static final TextKey UNKNOWN_MAP_WAS = key("unknown.map_was", "This map was");
@@ -187,6 +206,7 @@ public final class RendererMessages {
       STATUS_LOCAL, STATUS_OFFLINE, STATUS_MISSING, STATUS_HEALTHY, STATUS_ONLINE, STATUS_OK,
       STATUS_DEGRADED, STATUS_WARN, STATUS_UNAVAILABLE, STATUS_ERROR, STATUS_NO_WORLD, STATUS_FRAME,
       STATUS_WAITING, TITLE_REACT_MAP, TITLE_REACT_METRICS, TITLE_ADAPT_METRICS, TITLE_WORMHOLES_METRICS,
+      TITLE_HOLOUI_METRICS, TITLE_HIDDENORE_METRICS, TITLE_BILETOOLS_METRICS,
       TITLE_IRIS_OVERVIEW, TITLE_IRIS_ENGINE_ACTIVITY, TITLE_IRIS_LIFECYCLE, TITLE_IRIS_MANTLE_HEALTH,
       TITLE_IRIS_CACHE_OVERVIEW, TITLE_IRIS_STREAM_CACHES, TITLE_IRIS_OTHER_CACHES,
       TITLE_IRIS_PREGEN_PROGRESS, TITLE_IRIS_PREGEN_HEALTH, TITLE_IRIS_GENERATION_PIPELINE,
@@ -214,6 +234,9 @@ public final class RendererMessages {
       METRIC_PERFECTION, METRIC_DECORATION, METRIC_UPDATES, METRIC_CAVES, METRIC_DEPOSITS,
       METRIC_CONTEXT_PREFILL, METRIC_CARVE_RESOLVE, METRIC_CARVE_APPLY, METRIC_LOADED_CHUNKS,
       METRIC_SATURATION, METRIC_GENERATION_LEASES, METRIC_IDLE, METRIC_ENGINE_RATE,
+      METRIC_SESSIONS, METRIC_MENUS, METRIC_PREVIEWS, METRIC_VISIBLE, METRIC_BREAKS, METRIC_DROPS,
+      METRIC_VEIN_FINDS, METRIC_VEIN_CACHE, METRIC_PDC_READS, METRIC_PDC_WRITES, METRIC_RULES,
+      METRIC_WATCHED_JARS, METRIC_DIRTY_PLUGINS, METRIC_RELOADS, METRIC_LAST_RELOAD, METRIC_REMOTE_SLAVE,
       UNKNOWN_RENDERER_UNAVAILABLE, UNKNOWN_MAP_WAS, UNKNOWN_BOUND, UNKNOWN_MISSING,
       UNKNOWN_RESELECT_COMMAND, UNKNOWN_RESELECT, HEATMAP_NO_ACTIVITY, HEATMAP_QUIET,
       PIE_VIEWER_UNAVAILABLE, PIE_NO_DATA, PIE_TOTAL, PIE_UNIT_CHUNKS, PIE_UNIT_IMPACT, PIE_UNKNOWN,
@@ -238,6 +261,9 @@ public final class RendererMessages {
       Map.entry("react-metrics", TITLE_REACT_METRICS),
       Map.entry("adapt-metrics", TITLE_ADAPT_METRICS),
       Map.entry("wormholes-metrics", TITLE_WORMHOLES_METRICS),
+      Map.entry("holoui-metrics", TITLE_HOLOUI_METRICS),
+      Map.entry("hiddenore-metrics", TITLE_HIDDENORE_METRICS),
+      Map.entry("biletools-metrics", TITLE_BILETOOLS_METRICS),
       Map.entry("iris-metrics", TITLE_IRIS_OVERVIEW),
       Map.entry("iris-engine-activity", TITLE_IRIS_ENGINE_ACTIVITY),
       Map.entry("iris-engine-lifecycle", TITLE_IRIS_LIFECYCLE),

@@ -22,10 +22,8 @@ public final class RuntimeMessages {
   public static final TextKey IRIS_TELEPORT_THROTTLED = TextKey.of("runtime.guard.iris.teleport_throttled", "<yellow>Iris terrain surge guard throttled teleport into ungenerated terrain.</yellow>");
   public static final TextKey LEGACY_PERMISSION_ENTRY = TextKey.of("runtime.legacy_command.permission_entry", "<gray>-</gray> <white>{permission}</white>");
   public static final TextKey LEGACY_INSUFFICIENT_PERMISSIONS = TextKey.of("runtime.legacy_command.insufficient_permissions", "<red>Insufficient permissions.</red>");
-  public static final TextKey LEGACY_NO_SUBCOMMANDS = TextKey.of("runtime.legacy_command.no_subcommands", "<red>There are either no subcommands or you do not have permission to use them.</red>");
   public static final TextKey LEGACY_PARAMETERS_IGNORED = TextKey.of("runtime.legacy_command.parameters_ignored", "<yellow>Parameters ignored:</yellow> <white>{parameters}</white>");
   public static final TextKey LEGACY_NO_DESCRIPTION = TextKey.of("runtime.legacy_command.no_description", "No description");
-  public static final TextKey DIRECTOR_NO_SUBCOMMANDS = TextKey.of("runtime.director.no_subcommands", "<red>There are no subcommands in this group. Contact support; this is a command design issue.</red>");
   public static final TextKey MOB_STACKING_UNIQUE = TextKey.of("runtime.mob_stacking.unique", "UNIQUE");
   public static final TextKey ENTITY_KILLER_COUNTDOWN = TextKey.of("runtime.entity_killer.countdown", "{seconds}s");
 
@@ -51,10 +49,8 @@ public final class RuntimeMessages {
     builder.add(IRIS_TELEPORT_THROTTLED);
     builder.add(LEGACY_PERMISSION_ENTRY);
     builder.add(LEGACY_INSUFFICIENT_PERMISSIONS);
-    builder.add(LEGACY_NO_SUBCOMMANDS);
     builder.add(LEGACY_PARAMETERS_IGNORED);
     builder.add(LEGACY_NO_DESCRIPTION);
-    builder.add(DIRECTOR_NO_SUBCOMMANDS);
     builder.add(MOB_STACKING_UNIQUE);
     builder.add(ENTITY_KILLER_COUNTDOWN);
   }

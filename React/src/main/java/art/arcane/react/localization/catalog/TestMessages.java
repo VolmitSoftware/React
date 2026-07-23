@@ -67,7 +67,7 @@ public final class TestMessages {
   public static final TextKey MONITOR_REGISTRY_UNAVAILABLE = TextKey.of("test.monitor.registry_unavailable", "Sampler registry is not initialized.");
   public static final TextKey MONITOR_NONE = TextKey.of("test.monitor.none", "No samplers are registered.");
   public static final TextKey MONITOR_READ_FAILED = TextKey.of("test.monitor.read_failed", "sample() threw {reason}");
-  public static final TextKey MONITOR_NO_INTEGRATIONS = TextKey.of("test.monitor.no_integrations", "No Iris, Adapt, or Wormholes integration samplers present.");
+  public static final TextKey MONITOR_NO_INTEGRATIONS = TextKey.of("test.monitor.no_integrations", "No Iris, Adapt, Wormholes, HoloUi, HiddenOre, or BileTools integration samplers present.");
   public static final TextKey MONITOR_INTEGRATIONS = TextKey.of("test.monitor.integrations", "{count} integration sampler(s): {samplers}");
   public static final TextKey MONITOR_NONFINITE = TextKey.of("test.monitor.nonfinite", "{offenders} of {total} sampler(s) returned a non-finite sample(): {samplers}");
   public static final TextKey MONITOR_ALL_FINITE = TextKey.of("test.monitor.all_finite", "{finite} samplers, all finite.");
