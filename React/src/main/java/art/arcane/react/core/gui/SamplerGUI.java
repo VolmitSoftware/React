@@ -40,22 +40,28 @@ import org.bukkit.entity.Player;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.function.Consumer;
 
 public class SamplerGUI {
   public static void pickSampler(Player p, Consumer<Sampler> onPicked, int page) {
-    pickSampler(p, onPicked, null, page);
+    openGroup(p, onPicked, null, null, page);
   }
 
   public static void pickSampler(Player p, Consumer<Sampler> onPicked, List<String> without) {
-    pickSampler(p, onPicked, without, 0);
+    openHub(p, onPicked, without);
   }
 
   public static void pickSampler(Player p, Consumer<Sampler> onPicked) {
-    pickSampler(p, onPicked, null, 0);
+    openHub(p, onPicked, null);
   }
 
   public static void pickSampler(Player p, Consumer<Sampler> onPicked, List<String> without, int page) {
+    openGroup(p, onPicked, without, null, page);
+  }
+
+  private static void openHub(Player p, Consumer<Sampler> onPicked, List<String> without) {
     if (p == null) {
       return;
     }
@@ -65,18 +71,72 @@ public class SamplerGUI {
       window.setTitle(ReactLanguage.plain(GuiMessages.SAMPLER_TITLE));
       window.setResolution(WindowResolution.W9_H6);
       window.setDecorator(new UIStaticDecorator(new UIElement("bg").setMaterial(new MaterialBlock(Material.BLACK_STAINED_GLASS_PANE))));
-      //Sorted Samplers
-      List<Sampler> samplers = React.controller(SampleController.class)
-          .getSamplers()
-          .all()
-          .stream()
-          .filter(i -> i != null && !SamplerUnknown.ID.equalsIgnoreCase(i.getId()))
-          .filter(SamplerGUI::isSamplerListed)
-          .sorted(Comparator
-              .comparingInt((Sampler i) -> ReactGuiTaxonomy.groupOrder(i.getId()))
-              .thenComparing(i -> ReactGuiTaxonomy.normalizeSortKey(i.getName()))
-              .thenComparing(i -> ReactGuiTaxonomy.normalizeSortKey(i.getId())))
-          .toList();
+      List<Sampler> samplers = listedSamplers(without);
+      Map<Integer, ReactGuiTaxonomy.EntryGroup> groups = new TreeMap<>();
+      Map<Integer, Integer> counts = new TreeMap<>();
+      for (Sampler i : samplers) {
+        ReactGuiTaxonomy.EntryGroup group = ReactGuiTaxonomy.groupForId(i.getId());
+        groups.putIfAbsent(group.order(), group);
+        counts.merge(group.order(), 1, Integer::sum);
+      }
+
+      int rp = 0;
+      int allRow = window.getRow(rp);
+      int allPosition = window.getPosition(rp);
+      rp++;
+      window.setElement(allPosition, allRow, new UIElement("hub-all")
+          .setMaterial(new MaterialBlock(Material.SPYGLASS))
+          .setName(ReactLanguage.plain(GuiMessages.SAMPLER_HUB_ALL))
+          .addLore(ReactLanguage.plain(GuiMessages.SAMPLER_HUB_ALL_SUMMARY))
+          .addLore(ReactLanguage.plain(GuiMessages.SAMPLER_HUB_GROUP_COUNT, MessageArgument.untrusted("count", samplers.size())))
+          .onLeftClick((e) -> {
+            window.close();
+            J.a(() -> openGroup(p, onPicked, without, null, 0));
+          })
+      );
+
+      for (ReactGuiTaxonomy.EntryGroup group : groups.values()) {
+        int count = counts.get(group.order());
+        int row = window.getRow(rp);
+        int position = window.getPosition(rp);
+        rp++;
+        window.setElement(position, row, new UIElement("hub-group-" + group.order())
+            .setMaterial(new MaterialBlock(group.icon()))
+            .setName(group.label())
+            .addLore(ReactLanguage.plain(GuiMessages.SAMPLER_HUB_GROUP_COUNT, MessageArgument.untrusted("count", count)))
+            .addLore(ReactLanguage.plain(GuiMessages.SAMPLER_HUB_OPEN_GROUP))
+            .onLeftClick((e) -> {
+              window.close();
+              J.a(() -> openGroup(p, onPicked, without, group, 0));
+            })
+        );
+      }
+
+      window.open();
+    })) {
+      React.warn("Failed to schedule sampler picker UI for " + p.getName());
+    }
+  }
+
+  private static void openGroup(Player p, Consumer<Sampler> onPicked, List<String> without, ReactGuiTaxonomy.EntryGroup group, int page) {
+    if (p == null) {
+      return;
+    }
+
+    if (!J.runEntity(p, () -> {
+      UIWindow window = new UIWindow(React.instance, p);
+      window.setTitle(group == null
+          ? ReactLanguage.plain(GuiMessages.SAMPLER_TITLE)
+          : ReactLanguage.plain(GuiMessages.SAMPLER_GROUP_TITLE, MessageArgument.untrusted("group", group.label())));
+      window.setResolution(WindowResolution.W9_H6);
+      window.setDecorator(new UIStaticDecorator(new UIElement("bg").setMaterial(new MaterialBlock(Material.BLACK_STAINED_GLASS_PANE))));
+      List<Sampler> samplers = listedSamplers(without);
+      if (group != null) {
+        samplers = samplers.stream()
+            .filter(i -> ReactGuiTaxonomy.groupOrder(i.getId()) == group.order())
+            .toList();
+      }
+
       boolean hasMore = samplers.size() > (9 * 2) * (page + 1);
       int pge = page;
       if (samplers.size() <= pge * (9 * 2)) {
@@ -88,10 +148,6 @@ public class SamplerGUI {
 
       int rp = 0;
       for (Sampler i : samplers) {
-        if (without != null && without.contains(i.getId())) {
-          continue;
-        }
-
         int h = window.getRow(rp);
         int w = window.getPosition(rp);
         rp++;
@@ -115,7 +171,7 @@ public class SamplerGUI {
             .setName(ReactLanguage.plain(GuiMessages.PREVIOUS_PAGE))
             .onLeftClick((e) -> {
               window.close();
-              J.a(() -> pickSampler(p, onPicked, without, pg - 1));
+              J.a(() -> openGroup(p, onPicked, without, group, pg - 1));
             })
         );
       }
@@ -126,15 +182,39 @@ public class SamplerGUI {
             .setName(ReactLanguage.plain(GuiMessages.NEXT_PAGE))
             .onLeftClick((e) -> {
               window.close();
-              J.a(() -> pickSampler(p, onPicked, without, pg + 1));
+              J.a(() -> openGroup(p, onPicked, without, group, pg + 1));
             })
         );
       }
+
+      window.setElement(0, 2, new UIElement("hub-back")
+          .setMaterial(new MaterialBlock(Material.ARROW))
+          .setName(ReactLanguage.plain(GuiMessages.SAMPLER_HUB_BACK))
+          .onLeftClick((e) -> {
+            window.close();
+            J.a(() -> openHub(p, onPicked, without));
+          })
+      );
 
       window.open();
     })) {
       React.warn("Failed to schedule sampler picker UI for " + p.getName());
     }
+  }
+
+  private static List<Sampler> listedSamplers(List<String> without) {
+    return React.controller(SampleController.class)
+        .getSamplers()
+        .all()
+        .stream()
+        .filter(i -> i != null && !SamplerUnknown.ID.equalsIgnoreCase(i.getId()))
+        .filter(SamplerGUI::isSamplerListed)
+        .filter(i -> without == null || !without.contains(i.getId()))
+        .sorted(Comparator
+            .comparingInt((Sampler i) -> ReactGuiTaxonomy.groupOrder(i.getId()))
+            .thenComparing(i -> ReactGuiTaxonomy.normalizeSortKey(i.getName()))
+            .thenComparing(i -> ReactGuiTaxonomy.normalizeSortKey(i.getId())))
+        .toList();
   }
 
   private static boolean isSamplerListed(Sampler sampler) {

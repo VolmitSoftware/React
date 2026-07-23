@@ -33,6 +33,7 @@ import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.format.C;
 import art.arcane.react.util.inventorygui.UIStaticDecorator;
 import art.arcane.volmlib.util.data.MaterialBlock;
+import art.arcane.volmlib.util.inventorygui.Element;
 import art.arcane.volmlib.util.inventorygui.UIElement;
 import art.arcane.volmlib.util.inventorygui.UIWindow;
 import art.arcane.volmlib.util.inventorygui.WindowResolution;
@@ -53,6 +54,7 @@ import java.util.Set;
 
 public final class ReactMapGUI {
   private static final int PAGE_JUMP = 5;
+  private static final int ALL_GROUPS = -1;
   private static final Set<String> INTEGRATION_METRIC_IDS = Set.of(
       "iris-metrics", "adapt-metrics", "wormholes-metrics",
       "holoui-metrics", "hiddenore-metrics", "biletools-metrics", "react-metrics"
@@ -62,17 +64,20 @@ public final class ReactMapGUI {
   }
 
   public static void open(Player player) {
-    open(player, 0);
+    openHub(player);
   }
 
   public static void open(Player player, int page) {
+    openGroup(player, ALL_GROUPS, page);
+  }
+
+  private static void openHub(Player player) {
     if (player == null) {
       return;
     }
 
     if (!Bukkit.isPrimaryThread()) {
-      int safePage = page;
-      J.runEntity(player, () -> open(player, safePage));
+      J.runEntity(player, () -> openHub(player));
       return;
     }
 
@@ -89,7 +94,94 @@ public final class ReactMapGUI {
     }
 
     playPageTurn(player);
-    PageLayout layout = pageLayout(renderers.size());
+    Map<Integer, RendererGroup> groups = new LinkedHashMap<>();
+    Map<Integer, Integer> groupCounts = new LinkedHashMap<>();
+    for (ReactRenderer renderer : renderers) {
+      RendererGroup group = rendererGroup(renderer, normalizeRendererId(renderer));
+      groups.putIfAbsent(group.order(), group);
+      groupCounts.merge(group.order(), 1, Integer::sum);
+    }
+
+    List<Element> tiles = new ArrayList<>();
+    tiles.add(new UIElement("map-hub-all")
+        .setMaterial(new MaterialBlock(Material.FILLED_MAP))
+        .setName(C.WHITE + ReactLanguage.plain(GuiMessages.MAP_HUB_ALL))
+        .addLore(C.GRAY + ReactLanguage.plain(GuiMessages.MAP_HUB_ALL_SUMMARY))
+        .addLore(C.DARK_GRAY + ReactLanguage.plain(
+            GuiMessages.MAP_HUB_GROUP_COUNT,
+            MessageArgument.untrusted("count", renderers.size())
+        ))
+        .onLeftClick((e) -> J.runEntity(player, () -> openGroup(player, ALL_GROUPS, 0))));
+
+    for (Map.Entry<Integer, RendererGroup> entry : groups.entrySet()) {
+      int groupOrder = entry.getKey();
+      RendererGroup group = entry.getValue();
+      int count = groupCounts.getOrDefault(groupOrder, 0);
+      tiles.add(new UIElement("map-hub-group-" + groupOrder)
+          .setMaterial(new MaterialBlock(group.icon()))
+          .setName(C.WHITE + group.label())
+          .addLore(C.DARK_GRAY + ReactLanguage.plain(
+              GuiMessages.MAP_HUB_GROUP_COUNT,
+              MessageArgument.untrusted("count", count)
+          ))
+          .addLore(C.GREEN + ReactLanguage.plain(GuiMessages.MAP_HUB_OPEN_GROUP))
+          .onLeftClick((e) -> J.runEntity(player, () -> openGroup(player, groupOrder, 0))));
+    }
+
+    int rows = Math.max(1, Math.min(6, (int) Math.ceil(tiles.size() / 9D)));
+    UIWindow window = new UIWindow(React.instance, player);
+    window.setResolution(WindowResolution.W9_H6);
+    window.setViewportHeight(rows);
+    window.setTitle(ReactLanguage.plain(GuiMessages.MAP_TITLE));
+    window.setDecorator(new UIStaticDecorator(new UIElement("bg")
+        .setMaterial(new MaterialBlock(Material.BLACK_STAINED_GLASS_PANE))));
+
+    for (int row = 0; row < rows; row++) {
+      int rowStart = row * 9;
+      if (rowStart >= tiles.size()) {
+        break;
+      }
+
+      int rowCount = Math.min(9, tiles.size() - rowStart);
+      for (int i = 0; i < rowCount; i++) {
+        window.setElement(centeredPosition(i, rowCount), row, tiles.get(rowStart + i));
+      }
+    }
+
+    window.open();
+  }
+
+  private static void openGroup(Player player, int groupOrder, int page) {
+    if (player == null) {
+      return;
+    }
+
+    if (!Bukkit.isPrimaryThread()) {
+      int safePage = page;
+      J.runEntity(player, () -> openGroup(player, groupOrder, safePage));
+      return;
+    }
+
+    MapController controller = React.controller(MapController.class);
+    if (controller == null || controller.getRenderers() == null) {
+      ReactLanguage.send(player, GuiMessages.MAP_CONTROLLER_UNAVAILABLE);
+      return;
+    }
+
+    List<ReactRenderer> allRenderers = getRenderers(controller);
+    if (allRenderers.isEmpty()) {
+      ReactLanguage.send(player, GuiMessages.MAP_NONE_AVAILABLE);
+      return;
+    }
+
+    List<ReactRenderer> renderers = filterByGroup(allRenderers, groupOrder);
+    if (renderers.isEmpty()) {
+      openHub(player);
+      return;
+    }
+
+    playPageTurn(player);
+    PageLayout layout = groupPageLayout(renderers.size());
     int currentPage = clampPage(page, layout.pageCount());
     int start = currentPage * layout.itemsPerPage();
     int end = Math.min(renderers.size(), start + layout.itemsPerPage());
@@ -97,7 +189,7 @@ public final class ReactMapGUI {
     UIWindow window = new UIWindow(React.instance, player);
     window.setResolution(WindowResolution.W9_H6);
     window.setViewportHeight(layout.rows());
-    window.setTitle(ReactLanguage.plain(GuiMessages.MAP_TITLE));
+    window.setTitle(groupTitle(renderers, groupOrder));
     window.setDecorator(new UIStaticDecorator(new UIElement("bg")
         .setMaterial(new MaterialBlock(Material.BLACK_STAINED_GLASS_PANE))));
 
@@ -154,8 +246,13 @@ public final class ReactMapGUI {
       }
     }
 
+    int controlRow = layout.controlRow();
+    window.setElement(-4, controlRow, new UIElement("map-hub-back")
+        .setMaterial(new MaterialBlock(Material.ARROW))
+        .setName(C.WHITE + ReactLanguage.plain(GuiMessages.MAP_HUB_BACK))
+        .onLeftClick((e) -> J.runEntity(player, () -> openHub(player))));
+
     if (layout.pagination()) {
-      int controlRow = layout.controlRow();
       int jumpBack = Math.max(0, currentPage - PAGE_JUMP);
       int jumpForward = Math.min(layout.pageCount() - 1, currentPage + PAGE_JUMP);
 
@@ -163,16 +260,16 @@ public final class ReactMapGUI {
         window.setElement(2, controlRow, new UIElement("map-prev")
             .setMaterial(new MaterialBlock(Material.ARROW))
             .setName(C.WHITE + ReactLanguage.plain(GuiMessages.PREVIOUS))
-            .onLeftClick((e) -> open(player, currentPage - 1))
-            .onRightClick((e) -> open(player, jumpBack)));
+            .onLeftClick((e) -> J.runEntity(player, () -> openGroup(player, groupOrder, currentPage - 1)))
+            .onRightClick((e) -> J.runEntity(player, () -> openGroup(player, groupOrder, jumpBack))));
       }
 
       if (currentPage < layout.pageCount() - 1) {
         window.setElement(4, controlRow, new UIElement("map-next")
             .setMaterial(new MaterialBlock(Material.ARROW))
             .setName(C.WHITE + ReactLanguage.plain(GuiMessages.NEXT))
-            .onLeftClick((e) -> open(player, currentPage + 1))
-            .onRightClick((e) -> open(player, jumpForward)));
+            .onLeftClick((e) -> J.runEntity(player, () -> openGroup(player, groupOrder, currentPage + 1)))
+            .onRightClick((e) -> J.runEntity(player, () -> openGroup(player, groupOrder, jumpForward))));
       }
 
       int from = start + 1;
@@ -189,6 +286,33 @@ public final class ReactMapGUI {
     }
 
     window.open();
+  }
+
+  private static String groupTitle(List<ReactRenderer> renderers, int groupOrder) {
+    if (groupOrder == ALL_GROUPS) {
+      return ReactLanguage.plain(GuiMessages.MAP_TITLE);
+    }
+
+    ReactRenderer first = renderers.get(0);
+    RendererGroup group = rendererGroup(first, normalizeRendererId(first));
+    return ReactLanguage.plain(
+        GuiMessages.MAP_GROUP_TITLE,
+        MessageArgument.untrusted("group", group.label())
+    );
+  }
+
+  private static List<ReactRenderer> filterByGroup(List<ReactRenderer> renderers, int groupOrder) {
+    if (groupOrder == ALL_GROUPS) {
+      return renderers;
+    }
+
+    List<ReactRenderer> filtered = new ArrayList<>();
+    for (ReactRenderer renderer : renderers) {
+      if (rendererGroup(renderer, normalizeRendererId(renderer)).order() == groupOrder) {
+        filtered.add(renderer);
+      }
+    }
+    return filtered;
   }
 
   private static List<ReactRenderer> getRenderers(MapController controller) {
@@ -215,6 +339,11 @@ public final class ReactMapGUI {
       if (groupCompare != 0) {
         return groupCompare;
       }
+      boolean aMetrics = aNormalized.endsWith("-metrics");
+      boolean bMetrics = bNormalized.endsWith("-metrics");
+      if (aMetrics != bMetrics) {
+        return aMetrics ? -1 : 1;
+      }
       return normalizeSortKey(a.getId()).compareTo(normalizeSortKey(b.getId()));
     });
     return renderers;
@@ -232,19 +361,13 @@ public final class ReactMapGUI {
     return Math.max(0, Math.min(page, pageCount - 1));
   }
 
-  private static PageLayout pageLayout(int totalEntries) {
+  private static PageLayout groupPageLayout(int totalEntries) {
     int safeEntries = Math.max(0, totalEntries);
-    int rows = Math.max(1, Math.min(6, (int) Math.ceil(Math.max(1, safeEntries) / 9D)));
-    int itemsPerPage = rows * 9;
-    if (safeEntries <= itemsPerPage) {
-      return new PageLayout(rows, rows, itemsPerPage, 1, false, -1);
-    }
-
-    int contentRows = 5;
-    rows = contentRows + 1;
-    itemsPerPage = contentRows * 9;
+    int contentRows = Math.max(1, Math.min(5, (int) Math.ceil(Math.max(1, safeEntries) / 9D)));
+    int rows = contentRows + 1;
+    int itemsPerPage = contentRows * 9;
     int pageCount = Math.max(1, (int) Math.ceil(safeEntries / (double) itemsPerPage));
-    return new PageLayout(rows, contentRows, itemsPerPage, pageCount, true, rows - 1);
+    return new PageLayout(rows, contentRows, itemsPerPage, pageCount, pageCount > 1, rows - 1);
   }
 
   private static int centeredPosition(int index, int rowCount) {
