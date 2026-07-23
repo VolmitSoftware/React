@@ -22,6 +22,7 @@ package art.arcane.react.content.feature;
 import art.arcane.react.React;
 import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.api.rendering.ReactRenderer;
+import art.arcane.react.core.controller.EventController;
 import art.arcane.react.core.controller.MapController;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.RendererMessages;
@@ -129,9 +130,15 @@ public class FeaturePluginEventImpactListMap extends ReactFeature implements Rea
     String line = ReactLanguage.raw(
         RendererMessages.PLUGIN_IMPACT_VALUE,
         MessageArgument.untrusted("percent", Form.f(percent, 1)),
-        MessageArgument.untrusted("impact", compact(entry.impact()))
+        MessageArgument.untrusted("impact", compact(currentMillisPerSecond(entry)))
     );
     text(4, y + 8, line, TEXT_DIM);
+  }
+
+  private double currentMillisPerSecond(PluginEventImpactSeries.Entry entry) {
+    EventController controller = React.controller(EventController.class);
+    double windowSeconds = controller == null ? 5D : Math.max(1L, controller.getTinterval()) / 1000.0D;
+    return entry.currentMS() / windowSeconds;
   }
 
   private void drawFrameRow(int rank, int y, double normalized, double percent, PluginEventImpactSeries.Entry entry) {

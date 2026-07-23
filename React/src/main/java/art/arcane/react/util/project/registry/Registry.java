@@ -27,14 +27,15 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Registry<T extends Registered> {
-  private Map<String, T> idRegistry;
-  private Map<Class<?>, T> classRegistry;
+  private final Map<String, T> idRegistry;
+  private final Map<Class<?>, T> classRegistry;
 
   public Registry(Class<?> type, String packageName) {
-    idRegistry = new LinkedHashMap<>();
-    classRegistry = new LinkedHashMap<>();
+    idRegistry = new ConcurrentHashMap<>();
+    classRegistry = new ConcurrentHashMap<>();
     React.instance.getStartupTasks().add(() -> {
       React.verbose("Registering " + type.getSimpleName() + "s" + " in " + packageName);
       String p = React.instance.jar().getAbsolutePath();
@@ -46,13 +47,51 @@ public class Registry<T extends Registered> {
             .filter(type::isAssignableFrom)
             .sorted(Comparator.comparing(Class::getName))
             .forEach(candidate -> registerCandidate(type, candidate));
-
-        this.idRegistry = Collections.unmodifiableMap(idRegistry);
-        this.classRegistry = Collections.unmodifiableMap(classRegistry);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
     });
+  }
+
+  public T register(T instance) {
+    if (instance == null) {
+      return null;
+    }
+
+    String id = instance.getId();
+    if (id == null || id.isBlank()) {
+      return null;
+    }
+
+    if (!instance.autoRegister()) {
+      React.verbose("Skipped " + instance.getConfigCategory() + " " + id + " due to autoRegister=false");
+      return null;
+    }
+
+    T existing = idRegistry.get(id);
+    if (existing != null) {
+      React.warn("Duplicate " + instance.getClass().getSimpleName() + " id " + id + " rejected. Keeping the first registration.");
+      return existing;
+    }
+
+    instance.loadConfiguration();
+    idRegistry.put(id, instance);
+    classRegistry.put(instance.getClass(), instance);
+    React.verbose("Register " + instance.getConfigCategory() + " " + id + " (" + instance.getClass().getSimpleName() + ")");
+    return instance;
+  }
+
+  public T unregister(String id) {
+    if (id == null || id.isBlank()) {
+      return null;
+    }
+
+    T removed = idRegistry.remove(id);
+    if (removed != null) {
+      classRegistry.remove(removed.getClass(), removed);
+      React.verbose("Unregister " + removed.getConfigCategory() + " " + id + " (" + removed.getClass().getSimpleName() + ")");
+    }
+    return removed;
   }
 
   private static boolean hasNoArgConstructor(Class<?> clazz) {

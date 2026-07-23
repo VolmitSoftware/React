@@ -482,6 +482,9 @@ public final class ReactMapGUI {
     if (normalizedId.startsWith("react-")) {
       return ReactLanguage.plain(TaxonomyMessages.GROUP_REACT);
     }
+    if (normalizedId.startsWith("plugin-")) {
+      return ReactLanguage.plain(TaxonomyMessages.GROUP_PLUGINS);
+    }
     return ReactLanguage.plain(TaxonomyMessages.GROUP_CORE);
   }
 
@@ -506,6 +509,9 @@ public final class ReactMapGUI {
     }
     if (normalizedId.startsWith("react-")) {
       return ReactLanguage.plain(GuiMessages.MAP_SCOPE_TAG_REACT);
+    }
+    if (normalizedId.startsWith("plugin-")) {
+      return ReactLanguage.plain(GuiMessages.MAP_SCOPE_TAG_PLUGIN);
     }
     return ReactLanguage.plain(GuiMessages.MAP_SCOPE_TAG_CORE);
   }

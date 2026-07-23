@@ -17,34 +17,60 @@
  *
  */
 
-package art.arcane.react.content.sampler;
+package art.arcane.react.core.plugincost;
 
 import art.arcane.react.React;
 import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.react.core.controller.EventController;
 import art.arcane.volmlib.util.format.Form;
+import art.arcane.volmlib.util.math.RollingSequence;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
-import org.bukkit.event.Listener;
 
-public class SamplerEventTime extends ReactCachedSampler implements Listener {
-  public static final String ID = "event-time";
+import java.util.Locale;
+
+public class SamplerPluginCost extends ReactCachedSampler {
+  private final transient String pluginName;
+  private final transient RollingSequence average = new RollingSequence(5);
   private transient EventController eventController;
 
-  public SamplerEventTime() {
-    super(ID, 1000);
+  public SamplerPluginCost(String pluginName) {
+    super(idFor(pluginName), 1000);
+    this.pluginName = pluginName == null ? "" : pluginName.trim();
+  }
+
+  public static String idFor(String pluginName) {
+    String base = (pluginName == null ? "" : pluginName).trim().toLowerCase(Locale.ROOT);
+    return "plugin-" + base.replaceAll("[^a-z0-9_-]+", "-");
+  }
+
+  @Override
+  public String getName() {
+    return pluginName;
   }
 
   @Override
   public Material getIcon() {
-    return Material.HEART_OF_THE_SEA;
+    return Material.NOTE_BLOCK;
   }
 
   @Override
   public double onSample() {
-    eventController.markSamplerActivity();
-    double windowSeconds = Math.max(1L, eventController.getTinterval()) / 1000.0D;
-    return eventController.getTotalTime() / windowSeconds;
+    EventController controller = eventController;
+    if (controller == null) {
+      controller = React.controller(EventController.class);
+      eventController = controller;
+    }
+
+    if (controller == null) {
+      return 0D;
+    }
+
+    controller.markSamplerActivity();
+    Double harvested = controller.snapshotPluginEventTimeMS().get(pluginName);
+    average.put(harvested == null ? 0D : harvested);
+    double windowSeconds = Math.max(1L, controller.getTinterval()) / 1000.0D;
+    return average.getAverage() / windowSeconds;
   }
 
   @Override
@@ -65,11 +91,15 @@ public class SamplerEventTime extends ReactCachedSampler implements Listener {
 
   @Override
   public String formattedValue(double t) {
-    return Form.durationSplit(t, 2)[0];
+    return Form.f(t, 2);
   }
 
   @Override
   public String formattedSuffix(double t) {
-    return Form.durationSplit(t, 2)[1] + " EVENT TIME";
+    return " ms/s";
+  }
+
+  @Override
+  public void loadConfiguration() {
   }
 }

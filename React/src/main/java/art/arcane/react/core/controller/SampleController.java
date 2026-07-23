@@ -102,6 +102,75 @@ public class SampleController extends TickedObject implements IController {
     samplers = null;
   }
 
+  public boolean registerSampler(Sampler sampler) {
+    if (sampler == null || samplers == null) {
+      return false;
+    }
+
+    String id = sampler.getId();
+    if (id == null || id.isBlank() || samplers.get(id) != null) {
+      return false;
+    }
+
+    if (samplers.register(sampler) != sampler) {
+      return false;
+    }
+
+    startSamplerRuntime(sampler);
+
+    if (sampler instanceof Listener l) {
+      React.instance.registerListener(l);
+    }
+
+    MapController mapController = React.controller(MapController.class);
+    if (mapController != null) {
+      mapController.registerRenderer(sampler);
+    }
+
+    J.s(() -> {
+      PlayerController playerController = React.controller(PlayerController.class);
+      if (playerController != null) {
+        playerController.updateMonitors();
+      }
+    });
+
+    return true;
+  }
+
+  public boolean unregisterSampler(String id) {
+    if (id == null || id.isBlank() || samplers == null) {
+      return false;
+    }
+
+    Sampler sampler = samplers.get(id);
+    if (sampler == null) {
+      return false;
+    }
+
+    if (sampler instanceof Listener l) {
+      React.instance.unregisterListener(l);
+    }
+
+    stopSamplerRuntime(sampler);
+    samplers.unregister(id);
+    samplerStates.remove(id);
+    samplerLocks.remove(id);
+
+    MapController mapController = React.controller(MapController.class);
+    if (mapController != null) {
+      mapController.unregisterRenderer(id);
+    }
+
+    J.s(() -> {
+      PlayerController playerController = React.controller(PlayerController.class);
+      if (playerController != null) {
+        playerController.updateMonitors();
+      }
+    });
+
+    return true;
+  }
+
   public boolean canSample(Sampler sampler) {
     if (sampler == null) {
       return false;

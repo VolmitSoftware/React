@@ -19,38 +19,46 @@
 
 package art.arcane.react.content.sampler;
 
-import art.arcane.react.React;
 import art.arcane.react.api.sampler.ReactCachedSampler;
-import art.arcane.react.core.controller.EventController;
+import art.arcane.react.util.common.scheduling.J;
 import art.arcane.volmlib.util.format.Form;
-import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
-import org.bukkit.event.Listener;
 
-public class SamplerEventTime extends ReactCachedSampler implements Listener {
-  public static final String ID = "event-time";
-  private transient EventController eventController;
+public class SamplerVillagers extends ReactCachedSampler {
+  public static final String ID = "villagers";
 
-  public SamplerEventTime() {
-    super(ID, 1000);
-  }
-
-  @Override
-  public Material getIcon() {
-    return Material.HEART_OF_THE_SEA;
-  }
-
-  @Override
-  public double onSample() {
-    eventController.markSamplerActivity();
-    double windowSeconds = Math.max(1L, eventController.getTinterval()) / 1000.0D;
-    return eventController.getTotalTime() / windowSeconds;
+  public SamplerVillagers() {
+    super(ID, 2000);
   }
 
   @Override
   public void start() {
     super.start();
-    eventController = React.controller(EventController.class);
+    EntityCensusTracker.acquire();
+  }
+
+  @Override
+  public void stop() {
+    EntityCensusTracker.release();
+    super.stop();
+  }
+
+  @Override
+  public Material getIcon() {
+    return Material.EMERALD;
+  }
+
+  @Override
+  public double onSample() {
+    if (J.isFoliaThreading()) {
+      EntityCensusTracker.refreshFolia();
+      return (double) EntityCensusTracker.villagers();
+    }
+
+    return sampleOnMainThread(() -> {
+      EntityCensusTracker.refreshMainThread();
+      return (double) EntityCensusTracker.villagers();
+    });
   }
 
   @Override
@@ -59,17 +67,12 @@ public class SamplerEventTime extends ReactCachedSampler implements Listener {
   }
 
   @Override
-  public Component format(Component value, Component suffix) {
-    return Component.empty().append(value).append(suffix);
-  }
-
-  @Override
   public String formattedValue(double t) {
-    return Form.durationSplit(t, 2)[0];
+    return Form.f(Math.round(t));
   }
 
   @Override
   public String formattedSuffix(double t) {
-    return Form.durationSplit(t, 2)[1] + " EVENT TIME";
+    return " villagers";
   }
 }

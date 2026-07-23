@@ -19,38 +19,44 @@
 
 package art.arcane.react.content.sampler;
 
-import art.arcane.react.React;
 import art.arcane.react.api.sampler.ReactCachedSampler;
-import art.arcane.react.core.controller.EventController;
 import art.arcane.volmlib.util.format.Form;
-import net.kyori.adventure.text.Component;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.event.Listener;
+import org.bukkit.World;
 
-public class SamplerEventTime extends ReactCachedSampler implements Listener {
-  public static final String ID = "event-time";
-  private transient EventController eventController;
+public class SamplerBlockEntities extends ReactCachedSampler {
+  public static final String ID = "block-entities";
+  private transient volatile boolean available = true;
 
-  public SamplerEventTime() {
-    super(ID, 1000);
+  public SamplerBlockEntities() {
+    super(ID, 2000);
   }
 
   @Override
   public Material getIcon() {
-    return Material.HEART_OF_THE_SEA;
+    return Material.FURNACE;
   }
 
   @Override
   public double onSample() {
-    eventController.markSamplerActivity();
-    double windowSeconds = Math.max(1L, eventController.getTinterval()) / 1000.0D;
-    return eventController.getTotalTime() / windowSeconds;
-  }
+    return sampleOnMainThread(() -> {
+      if (!available) {
+        return 0D;
+      }
 
-  @Override
-  public void start() {
-    super.start();
-    eventController = React.controller(EventController.class);
+      try {
+        long total = 0L;
+        for (World world : Bukkit.getWorlds()) {
+          total += world.getTileEntityCount();
+        }
+
+        return (double) total;
+      } catch (Throwable ex) {
+        available = false;
+        return 0D;
+      }
+    });
   }
 
   @Override
@@ -59,17 +65,12 @@ public class SamplerEventTime extends ReactCachedSampler implements Listener {
   }
 
   @Override
-  public Component format(Component value, Component suffix) {
-    return Component.empty().append(value).append(suffix);
-  }
-
-  @Override
   public String formattedValue(double t) {
-    return Form.durationSplit(t, 2)[0];
+    return Form.f(Math.round(t));
   }
 
   @Override
   public String formattedSuffix(double t) {
-    return Form.durationSplit(t, 2)[1] + " EVENT TIME";
+    return "";
   }
 }

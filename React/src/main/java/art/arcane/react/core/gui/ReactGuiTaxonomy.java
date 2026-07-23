@@ -17,6 +17,9 @@ public final class ReactGuiTaxonomy {
   public static Category categoryForId(String id) {
     String normalizedId = normalizeId(id);
 
+    if (normalizedId.startsWith("plugin-")) {
+      return category(70, "plugins", Material.NOTE_BLOCK, TaxonomyMessages.GROUP_PLUGINS, TaxonomyMessages.GROUP_PLUGINS);
+    }
     if (containsAny(normalizedId, "map", "overlay", "heatmap", "-pie", "pie-", "replay", "impact")) {
       return category(10, "diagnostics", Material.FILLED_MAP, TaxonomyMessages.CATEGORY_DIAGNOSTICS, TaxonomyMessages.CATEGORY_DIAGNOSTICS_DESCRIPTION);
     }
@@ -70,6 +73,9 @@ public final class ReactGuiTaxonomy {
     }
     if (normalizedId.startsWith("biletools-")) {
       return group(5, TaxonomyMessages.GROUP_BILETOOLS, Material.LIME_DYE);
+    }
+    if (normalizedId.startsWith("plugin-")) {
+      return group(6, TaxonomyMessages.GROUP_PLUGINS, Material.NOTE_BLOCK);
     }
     if (containsAny(normalizedId, "tick", "tps", "mspt", "incident", "spike")) {
       return group(10, TaxonomyMessages.GROUP_TICK, Material.CLOCK);

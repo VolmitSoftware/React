@@ -48,7 +48,7 @@ public class NaughtyRegisteredListener extends RegisteredListener {
     long start = System.nanoTime();
     super.callEvent(event);
     double elapsedMs = (System.nanoTime() - start) / 1.0E6D;
-    time = elapsedMs;
+    time += elapsedMs;
     timeHighest = Math.max(timeHighest, elapsedMs);
     calls++;
   }

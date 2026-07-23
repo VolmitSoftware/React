@@ -197,7 +197,7 @@ public final class RendererMessages {
   public static final TextKey ADAPT_TOP_VALUE = key("adapt.top_value", "TOP {timing} ms/m");
   public static final TextKey PLUGIN_NO_IMPACT = key("plugin.no_impact", "No plugin event impact data");
   public static final TextKey PLUGIN_WAIT_FOR_DATA = key("plugin.wait_for_data", "Open this map for a few seconds");
-  public static final TextKey PLUGIN_IMPACT_VALUE = key("plugin.impact_value", "{percent}%  {impact} ms");
+  public static final TextKey PLUGIN_IMPACT_VALUE = key("plugin.impact_value", "{percent}%  {impact} ms/s");
   public static final TextKey SAMPLER_LOW_VALUE = key("sampler.low_value", "L {value}");
   public static final TextKey SAMPLER_HIGH_VALUE = key("sampler.high_value", "H {value}");
 

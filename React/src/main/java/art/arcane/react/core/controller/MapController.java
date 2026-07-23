@@ -657,7 +657,7 @@ public class MapController extends TickedObject implements IController, Listener
     );
   }
 
-  private void registerRenderer(ReactRenderer renderer) {
+  public void registerRenderer(ReactRenderer renderer) {
     if (renderers == null || renderer == null || renderer.getId() == null) {
       return;
     }
@@ -669,6 +669,15 @@ public class MapController extends TickedObject implements IController, Listener
     }
 
     renderers.put(renderer.getId(), renderer);
+  }
+
+  public void unregisterRenderer(String rendererId) {
+    if (renderers == null || rendererId == null || rendererId.isBlank()) {
+      return;
+    }
+
+    renderers.remove(rendererId);
+    renderers.remove(normalizeRendererId(rendererId));
   }
 
   private boolean applyRendererMetadata(MapMeta meta, ReactRenderer renderer) {
@@ -1960,6 +1969,9 @@ public class MapController extends TickedObject implements IController, Listener
     }
     if (normalizedRendererId.startsWith("react-")) {
       return "React";
+    }
+    if (normalizedRendererId.startsWith("plugin-")) {
+      return "Plugins";
     }
     return "Core";
   }
