@@ -53,7 +53,7 @@ public class ActionBarMonitor extends PlayerMonitor {
   private Map<Sampler, Double> trends;
   private Map<Sampler, Long> lastTimes;
   private int focusUpAnimation = 0;
-  private boolean focusDownAnimation = false;
+  private int focusDownAnimation = 0;
   private boolean tickUp = false;
   private boolean locked = false;
   private int lockedPosition;
@@ -83,7 +83,7 @@ public class ActionBarMonitor extends PlayerMonitor {
     viewportIndex = 0;
     lockedPosition = 0;
     focusUpAnimation = 0;
-    focusDownAnimation = false;
+    focusDownAnimation = 0;
     viewportIndexes.clear();
     maxLengths.clear();
     lastValue.clear();
@@ -429,7 +429,7 @@ public class ActionBarMonitor extends PlayerMonitor {
       if (focus != null) {
         focusUpAnimation = 5;
       } else {
-        focusDownAnimation = true;
+        focusDownAnimation = 2;
       }
     }
 
@@ -456,8 +456,9 @@ public class ActionBarMonitor extends PlayerMonitor {
       }
 
       getPlayer().getPlayer().sendTitlePart(TitlePart.SUBTITLE, writeSubSamplers());
-    } else if (focusDownAnimation) {
-      getPlayer().getPlayer().sendTitle(" ", "  ", 0, (int) ((getTinterval() / 50) + 1), 17);
+    } else if (focusDownAnimation > 0) {
+      focusDownAnimation--;
+      getPlayer().getPlayer().clearTitle();
     }
 
     getPlayer().getPlayer().sendActionBar(writeHeader());
