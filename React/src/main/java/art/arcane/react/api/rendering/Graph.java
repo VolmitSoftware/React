@@ -55,11 +55,12 @@ public class Graph {
   }
 
   public synchronized double get(int index) {
-    if (index < 0 || index >= size) {
+    if (size <= 0) {
       return 0;
     }
 
-    int slot = head - 1 - index;
+    int clamped = index < 0 ? 0 : Math.min(index, size - 1);
+    int slot = head - 1 - clamped;
     slot %= CAPACITY;
     if (slot < 0) {
       slot += CAPACITY;

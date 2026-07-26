@@ -25,7 +25,7 @@ import art.arcane.react.api.action.Action;
 import art.arcane.react.api.feature.Feature;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.api.tweak.Tweak;
-import art.arcane.react.content.PAPI.PapiExpansion;
+import art.arcane.react.content.PAPI.ReactPlaceholders;
 import art.arcane.react.core.controller.ActionController;
 import art.arcane.react.core.controller.FeatureController;
 import art.arcane.react.core.controller.JobController;
@@ -39,6 +39,7 @@ import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.common.scheduling.Ticker;
 import art.arcane.react.util.format.C;
 import art.arcane.react.util.plugin.IController;
+import art.arcane.react.core.NMS;
 import art.arcane.react.core.bridge.NmsBridgeRegistry;
 import art.arcane.react.util.plugin.VolmitPlugin;
 import art.arcane.react.util.project.config.ConfigFileSupport;
@@ -80,6 +81,7 @@ public class React extends VolmitPlugin implements ReloadAware {
   private Registry<IController> controllerRegistry;
   private NmsBridgeRegistry bridgeRegistry;
   private volatile boolean shutdownDrained;
+  private volatile ReactPlaceholders papiExpansion;
   private boolean ready;
 
   public React() {
@@ -316,6 +318,7 @@ public class React extends VolmitPlugin implements ReloadAware {
     ticker = new Ticker();
     bridgeRegistry = new NmsBridgeRegistry();
     bridgeRegistry.setMappingsLoader(new art.arcane.react.core.bridge.MappingsLoader());
+    NMS.reset();
     if (ReactConfiguration.get().isUnsafeBytecode()) {
       art.arcane.react.core.bridge.BytecodeAgent.install();
       if (art.arcane.react.core.bridge.BytecodeAgent.isInstalled()) {
@@ -364,9 +367,30 @@ public class React extends VolmitPlugin implements ReloadAware {
 
     ConfigFileSupport.flushCreatedConfigSummary();
     React.info("React Started in " + Form.duration(psw.getMilliseconds(), 0));
-    if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
-      new PapiExpansion().register();
+    registerPapiExpansion();
+  }
+
+  private void registerPapiExpansion() {
+    if (!Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
+      return;
     }
+
+    ReactPlaceholders placeholders = new ReactPlaceholders(getLogger());
+
+    if (placeholders.start()) {
+      papiExpansion = placeholders;
+    }
+  }
+
+  private void unregisterPapiExpansion() {
+    ReactPlaceholders placeholders = papiExpansion;
+
+    if (placeholders == null) {
+      return;
+    }
+
+    papiExpansion = null;
+    placeholders.stop();
   }
 
   @Override
@@ -375,6 +399,7 @@ public class React extends VolmitPlugin implements ReloadAware {
       return;
     }
     ready = false;
+    unregisterPapiExpansion();
     if (bridgeRegistry != null) {
       bridgeRegistry.clear();
       bridgeRegistry = null;

@@ -69,6 +69,7 @@ import org.bukkit.persistence.PersistentDataType;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -77,6 +78,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 @EqualsAndHashCode(callSuper = true)
@@ -129,8 +131,14 @@ public class MapController extends TickedObject implements IController, Listener
   private long frameMapValidateIntervalMs = 2_000L;
   @ConfigDoc(value = "Combines adjacent item-frame React maps with the same renderer into one large tiled megamap display.", impact = "Disable to render every frame map as an independent 128x128 dashboard.")
   private boolean megamapEnabled = true;
-  private transient volatile Map<Integer, MegamapGrid.MegamapTile> megamapTiles;
+  private int megamapMaxTiles = 16;
+  private transient volatile MegamapGrid.MegamapSolution megamapSolution;
+  private transient AtomicInteger megamapStateVersion;
+  private transient int megamapSolvedVersion;
+  private transient boolean megamapSolvedEnabled;
   private transient Map<String, ReactRenderer> renderers;
+  private transient Map<String, ReactRenderer> resolvedRenderers;
+  private transient Map<String, RendererMetadata> rendererMetadata;
   private transient Map<FramePushKey, Long> frameMapPushMsByViewerKey;
   private transient Map<Integer, Long> frameMapLastSeenByMapId;
   private transient Map<UUID, ActiveFrameMap> activeFrameMaps;
@@ -299,25 +307,7 @@ public class MapController extends TickedObject implements IController, Listener
   }
 
   public boolean isReactMap(ItemStack item) {
-    if (item == null || !item.getType().equals(Material.FILLED_MAP)) {
-      return false;
-    }
-
-    MapMeta meta = (MapMeta) item.getItemMeta();
-    if (meta == null) {
-      return false;
-    }
-
-    if (meta.getPersistentDataContainer().getOrDefault(nsReact, PersistentDataType.BYTE, (byte) 0) == 1) {
-      return true;
-    }
-
-    String rendererId = meta.getPersistentDataContainer().get(nsRenderer, PersistentDataType.STRING);
-    if (isSpecificRendererId(rendererId)) {
-      return true;
-    }
-
-    return isSpecificRendererId(parseRendererIdFromLore(meta.getLore()));
+    return reactMapMeta(item) != null;
   }
 
   public void updateMapViews(Player player, boolean force) {
@@ -471,10 +461,15 @@ public class MapController extends TickedObject implements IController, Listener
   @Override
   public void start() {
     renderers = new ConcurrentHashMap<>();
+    resolvedRenderers = new ConcurrentHashMap<>();
+    rendererMetadata = new ConcurrentHashMap<>();
     frameMapPushMsByViewerKey = new ConcurrentHashMap<>();
     frameMapLastSeenByMapId = new ConcurrentHashMap<>();
     activeFrameMaps = new ConcurrentHashMap<>();
-    megamapTiles = Map.of();
+    megamapSolution = MegamapGrid.MegamapSolution.EMPTY;
+    megamapStateVersion = new AtomicInteger(1);
+    megamapSolvedVersion = 0;
+    megamapSolvedEnabled = !megamapEnabled;
     maintenanceTickQueued = new AtomicBoolean(false);
     itemFrameSetItemSilentMethod = null;
     itemFrameSetItemSilentMethodResolved = false;
@@ -511,7 +506,14 @@ public class MapController extends TickedObject implements IController, Listener
     if (activeFrameMaps != null) {
       activeFrameMaps.clear();
     }
-    megamapTiles = Map.of();
+    if (resolvedRenderers != null) {
+      resolvedRenderers.clear();
+    }
+    if (rendererMetadata != null) {
+      rendererMetadata.clear();
+    }
+    megamapSolution = MegamapGrid.MegamapSolution.EMPTY;
+    megamapSolvedVersion = 0;
   }
 
   @Override
@@ -664,11 +666,15 @@ public class MapController extends TickedObject implements IController, Listener
 
     String normalized = normalizeRendererId(renderer.getId());
     if (disabledRendererIds.contains(normalized)) {
-      renderers.remove(renderer.getId());
+      if (renderers.remove(renderer.getId()) != null) {
+        invalidateRendererCaches();
+      }
       return;
     }
 
-    renderers.put(renderer.getId(), renderer);
+    if (renderers.put(renderer.getId(), renderer) != renderer) {
+      invalidateRendererCaches();
+    }
   }
 
   public void unregisterRenderer(String rendererId) {
@@ -676,8 +682,36 @@ public class MapController extends TickedObject implements IController, Listener
       return;
     }
 
-    renderers.remove(rendererId);
-    renderers.remove(normalizeRendererId(rendererId));
+    boolean removed = renderers.remove(rendererId) != null;
+    removed |= renderers.remove(normalizeRendererId(rendererId)) != null;
+    if (removed) {
+      invalidateRendererCaches();
+    }
+  }
+
+  private void invalidateRendererCaches() {
+    if (resolvedRenderers != null) {
+      resolvedRenderers.clear();
+    }
+  }
+
+  private RendererMetadata metadataFor(String rendererId) {
+    String id = Objects.toString(rendererId, FeatureUnknown.ID);
+    if (rendererMetadata == null) {
+      return buildRendererMetadata(id);
+    }
+
+    return rendererMetadata.computeIfAbsent(id, this::buildRendererMetadata);
+  }
+
+  private RendererMetadata buildRendererMetadata(String rendererId) {
+    String normalized = normalizeRendererId(rendererId);
+    return new RendererMetadata(
+        normalized,
+        "Renderer: " + rendererDisplayName(rendererId),
+        "Scope: " + rendererScope(normalized),
+        "ID: " + rendererId
+    );
   }
 
   private boolean applyRendererMetadata(MapMeta meta, ReactRenderer renderer) {
@@ -691,15 +725,13 @@ public class MapController extends TickedObject implements IController, Listener
     if (isUnknownRendererId(resolvedId) && isSpecificRendererId(storedId)) {
       rendererId = storedId;
     }
-    String normalized = normalizeRendererId(rendererId);
-    String scope = rendererScope(normalized);
-    String rendererName = rendererDisplayName(rendererId);
+    RendererMetadata metadata = metadataFor(rendererId);
     String previousToken = meta.getPersistentDataContainer().get(nsMapToken, PersistentDataType.STRING);
     String mapToken = getOrCreateMapToken(meta);
     List<String> lore = List.of(
-        "Renderer: " + rendererName,
-        "Scope: " + scope,
-        "ID: " + rendererId,
+        metadata.rendererLine(),
+        metadata.scopeLine(),
+        metadata.idLine(),
         "Tag: " + mapToken
     );
 
@@ -739,15 +771,45 @@ public class MapController extends TickedObject implements IController, Listener
   }
 
   private boolean repairMapItem(ItemStack item, World worldHint, boolean forceRendererUpdate) {
-    if (!isReactMap(item)) {
-      return false;
-    }
-
-    MapMeta meta = (MapMeta) item.getItemMeta();
+    MapMeta meta = reactMapMeta(item);
     if (meta == null) {
       return false;
     }
 
+    if (!repairMapMeta(meta, worldHint, forceRendererUpdate)) {
+      return false;
+    }
+
+    item.setItemMeta(meta);
+    return true;
+  }
+
+  private MapMeta reactMapMeta(ItemStack item) {
+    if (item == null || item.getType() != Material.FILLED_MAP) {
+      return null;
+    }
+
+    if (!(item.getItemMeta() instanceof MapMeta meta)) {
+      return null;
+    }
+
+    return isReactMapMeta(meta) ? meta : null;
+  }
+
+  private boolean isReactMapMeta(MapMeta meta) {
+    if (meta.getPersistentDataContainer().getOrDefault(nsReact, PersistentDataType.BYTE, (byte) 0) == 1) {
+      return true;
+    }
+
+    String rendererId = meta.getPersistentDataContainer().get(nsRenderer, PersistentDataType.STRING);
+    if (isSpecificRendererId(rendererId)) {
+      return true;
+    }
+
+    return isSpecificRendererId(parseRendererIdFromLore(meta.getLore()));
+  }
+
+  private boolean repairMapMeta(MapMeta meta, World worldHint, boolean forceRendererUpdate) {
     boolean changed = false;
     MapView view = meta.getMapView();
     String storedRendererId = getStoredRendererId(meta);
@@ -786,12 +848,7 @@ public class MapController extends TickedObject implements IController, Listener
     }
 
     boolean metadataChanged = applyRendererMetadata(meta, renderer);
-    if (mapViewChanged || metadataChanged || changed) {
-      item.setItemMeta(meta);
-      return true;
-    }
-
-    return false;
+    return mapViewChanged || metadataChanged || changed;
   }
 
   private void ensureMapRenderer(MapView view, ReactRenderer renderer, boolean forceRendererUpdate) {
@@ -819,9 +876,7 @@ public class MapController extends TickedObject implements IController, Listener
       return false;
     }
 
-    String currentId = normalizeRendererId(pipe.getRendererId());
-    String expectedId = normalizeRendererId(renderer.getId());
-    return currentId.equals(expectedId);
+    return pipe.getNormalizedRendererId().equals(metadataFor(renderer.getId()).normalizedId());
   }
 
   private String rendererIdFromView(MapView view) {
@@ -895,7 +950,8 @@ public class MapController extends TickedObject implements IController, Listener
     }
 
     ItemStack item = frame.getItem();
-    if (!isReactMap(item)) {
+    MapMeta meta = reactMapMeta(item);
+    if (meta == null) {
       return;
     }
 
@@ -903,19 +959,16 @@ public class MapController extends TickedObject implements IController, Listener
       frame.setRotation(Rotation.NONE);
     }
 
-    ItemStack updated = item.clone();
-    boolean metadataChanged = repairMapItem(updated, frame.getWorld(), forceRendererUpdate);
-    if (metadataChanged) {
-      setFrameItemQuietly(frame, updated);
+    if (repairMapMeta(meta, frame.getWorld(), forceRendererUpdate)) {
+      item.setItemMeta(meta);
+      setFrameItemQuietly(frame, item);
     }
 
-    ItemStack effectiveItem = metadataChanged ? updated : item;
-    MapMeta effectiveMeta = (MapMeta) effectiveItem.getItemMeta();
-    if (effectiveMeta == null || effectiveMeta.getMapView() == null) {
+    MapView view = meta.getMapView();
+    if (view == null) {
       return;
     }
 
-    MapView view = effectiveMeta.getMapView();
     trackFrameMap(frame, view);
     pushFrameMapToNearbyPlayers(frame, view, viewerSnapshot);
   }
@@ -948,6 +1001,9 @@ public class MapController extends TickedObject implements IController, Listener
       existing.lastSeenMs = now;
       return existing;
     });
+    if (tracked.gridMapId < 0) {
+      invalidateMegamapGrid();
+    }
     captureFrameGridState(tracked, frame, view);
   }
 
@@ -956,19 +1012,62 @@ public class MapController extends TickedObject implements IController, Listener
       return;
     }
 
-    tracked.facing = frame.getFacing();
-    tracked.rotationAligned = frame.getRotation() == Rotation.NONE;
-    tracked.blockX = tracked.location.getBlockX();
-    tracked.blockY = tracked.location.getBlockY();
-    tracked.blockZ = tracked.location.getBlockZ();
-    tracked.rendererId = rendererIdFromView(view);
+    BlockFace facing = frame.getFacing();
+    boolean rotationAligned = frame.getRotation() == Rotation.NONE;
+    int blockX = tracked.location.getBlockX();
+    int blockY = tracked.location.getBlockY();
+    int blockZ = tracked.location.getBlockZ();
+    String rendererId = rendererIdFromView(view);
+    if (tracked.gridMapId == tracked.mapId
+        && tracked.facing == facing
+        && tracked.rotationAligned == rotationAligned
+        && tracked.blockX == blockX
+        && tracked.blockY == blockY
+        && tracked.blockZ == blockZ
+        && Objects.equals(tracked.rendererId, rendererId)) {
+      return;
+    }
+
+    tracked.gridMapId = tracked.mapId;
+    tracked.facing = facing;
+    tracked.rotationAligned = rotationAligned;
+    tracked.blockX = blockX;
+    tracked.blockY = blockY;
+    tracked.blockZ = blockZ;
+    tracked.rendererId = rendererId;
+    invalidateMegamapGrid();
+  }
+
+  private void invalidateMegamapGrid() {
+    if (megamapStateVersion != null) {
+      megamapStateVersion.incrementAndGet();
+    }
+  }
+
+  private void untrackFrameMap(UUID frameId) {
+    if (activeFrameMaps == null || frameId == null) {
+      return;
+    }
+
+    if (activeFrameMaps.remove(frameId) != null) {
+      invalidateMegamapGrid();
+    }
   }
 
   private void rebuildMegamapTiles() {
+    if (megamapStateVersion == null) {
+      return;
+    }
+
+    int version = megamapStateVersion.get();
+    if (version == megamapSolvedVersion && megamapEnabled == megamapSolvedEnabled) {
+      return;
+    }
+
+    megamapSolvedVersion = version;
+    megamapSolvedEnabled = megamapEnabled;
     if (!megamapEnabled || activeFrameMaps == null || activeFrameMaps.isEmpty()) {
-      if (megamapTiles != null && !megamapTiles.isEmpty()) {
-        megamapTiles = Map.of();
-      }
+      megamapSolution = MegamapGrid.MegamapSolution.EMPTY;
       return;
     }
 
@@ -990,7 +1089,7 @@ public class MapController extends TickedObject implements IController, Listener
       ));
     }
 
-    megamapTiles = MegamapGrid.solve(cells);
+    megamapSolution = MegamapGrid.analyze(cells);
   }
 
   public MegamapGrid.MegamapTile megamapTileFor(MapView view) {
@@ -998,13 +1097,61 @@ public class MapController extends TickedObject implements IController, Listener
       return null;
     }
 
-    Map<Integer, MegamapGrid.MegamapTile> tiles = megamapTiles;
-    if (tiles == null || tiles.isEmpty()) {
+    MegamapGrid.MegamapSolution solution = megamapSolution;
+    if (solution == null || solution.tiles().isEmpty()) {
       return null;
     }
 
     Integer mapId = mapIdOf(view);
-    return mapId == null ? null : tiles.get(mapId);
+    return mapId == null ? null : solution.tiles().get(mapId);
+  }
+
+  public MegamapGrid.MegamapDefect megamapDefectFor(MapView view) {
+    if (!megamapEnabled) {
+      return null;
+    }
+
+    MegamapGrid.MegamapSolution solution = megamapSolution;
+    if (solution == null || solution.defects().isEmpty()) {
+      return null;
+    }
+
+    Integer mapId = mapIdOf(view);
+    return mapId == null ? null : solution.defects().get(mapId);
+  }
+
+  public Map<String, MegamapStatus> megamapStatusByRenderer() {
+    MegamapGrid.MegamapSolution solution = megamapSolution;
+    if (!megamapEnabled || solution == null || solution.isEmpty() || activeFrameMaps == null) {
+      return Map.of();
+    }
+
+    Map<String, MegamapStatus> status = new LinkedHashMap<>();
+    for (ActiveFrameMap tracked : activeFrameMaps.values()) {
+      if (tracked == null || tracked.rendererId == null) {
+        continue;
+      }
+
+      String rendererId = normalizeRendererId(tracked.rendererId);
+      MegamapGrid.MegamapTile tile = solution.tiles().get(tracked.mapId);
+      MegamapGrid.MegamapDefect defect = solution.defects().get(tracked.mapId);
+      if (tile == null && defect == null) {
+        continue;
+      }
+
+      status.merge(
+          rendererId,
+          new MegamapStatus(
+              tile == null ? 0 : tile.gridWidth(),
+              tile == null ? 0 : tile.gridHeight(),
+              1,
+              defect == null ? null : defect.reason()
+          ),
+          MegamapStatus::mergeWith
+      );
+    }
+
+    return status;
   }
 
   private void pushTrackedFrameMaps(Supplier<FrameMapViewerSnapshot> viewerSnapshot) {
@@ -1016,14 +1163,14 @@ public class MapController extends TickedObject implements IController, Listener
     for (ActiveFrameMap tracked : activeFrameMaps.values()) {
       if (tracked == null || tracked.worldId == null) {
         if (tracked != null) {
-          activeFrameMaps.remove(tracked.frameId);
+          untrackFrameMap(tracked.frameId);
         }
         continue;
       }
 
       World world = Bukkit.getWorld(tracked.worldId);
       if (world == null) {
-        activeFrameMaps.remove(tracked.frameId);
+        untrackFrameMap(tracked.frameId);
         continue;
       }
 
@@ -1038,7 +1185,7 @@ public class MapController extends TickedObject implements IController, Listener
       }
 
       if (entity == null) {
-        activeFrameMaps.remove(tracked.frameId);
+        untrackFrameMap(tracked.frameId);
         continue;
       }
 
@@ -1055,7 +1202,7 @@ public class MapController extends TickedObject implements IController, Listener
         || !frame.isValid()
         || frame.getWorld() == null
         || !tracked.worldId.equals(frame.getWorld().getUID())) {
-      activeFrameMaps.remove(tracked.frameId);
+      untrackFrameMap(tracked.frameId);
       return;
     }
 
@@ -1070,22 +1217,16 @@ public class MapController extends TickedObject implements IController, Listener
       return;
     }
 
-    ItemStack frameItem = frame.getItem();
-    if (!isReactMap(frameItem)) {
-      activeFrameMaps.remove(tracked.frameId);
-      return;
-    }
-
-    MapMeta meta = (MapMeta) frameItem.getItemMeta();
+    MapMeta meta = reactMapMeta(frame.getItem());
     if (meta == null || meta.getMapView() == null) {
-      activeFrameMaps.remove(tracked.frameId);
+      untrackFrameMap(tracked.frameId);
       return;
     }
 
     MapView view = meta.getMapView();
     Integer mapId = mapIdOf(view);
     if (mapId == null) {
-      activeFrameMaps.remove(tracked.frameId);
+      untrackFrameMap(tracked.frameId);
       return;
     }
 
@@ -1667,6 +1808,24 @@ public class MapController extends TickedObject implements IController, Listener
       return null;
     }
 
+    if (resolvedRenderers == null) {
+      return resolveRendererUncached(rendererId);
+    }
+
+    ReactRenderer cached = resolvedRenderers.get(Objects.toString(rendererId, ""));
+    if (cached != null) {
+      return cached;
+    }
+
+    ReactRenderer resolved = resolveRendererUncached(rendererId);
+    if (resolved != null) {
+      resolvedRenderers.put(Objects.toString(rendererId, ""), resolved);
+    }
+
+    return resolved;
+  }
+
+  private ReactRenderer resolveRendererUncached(String rendererId) {
     ReactRenderer unknown = renderers.get(FeatureUnknown.ID);
     String requested = normalizeRendererId(rendererId);
     if (requested.isBlank()) {
@@ -1994,7 +2153,31 @@ public class MapController extends TickedObject implements IController, Listener
   }
 
   private String normalizeRendererId(String rendererId) {
-    return Objects.toString(rendererId, "").toLowerCase(Locale.ROOT).trim();
+    if (rendererId == null) {
+      return "";
+    }
+
+    int length = rendererId.length();
+    if (length == 0) {
+      return rendererId;
+    }
+
+    if (rendererId.charAt(0) > ' ' && rendererId.charAt(length - 1) > ' ') {
+      boolean normalized = true;
+      for (int i = 0; i < length; i++) {
+        char character = rendererId.charAt(i);
+        if (character > 127 || (character >= 'A' && character <= 'Z')) {
+          normalized = false;
+          break;
+        }
+      }
+
+      if (normalized) {
+        return rendererId;
+      }
+    }
+
+    return rendererId.toLowerCase(Locale.ROOT).trim();
   }
 
   private long effectiveFrameMapPushIntervalMs() {
@@ -2136,10 +2319,30 @@ public class MapController extends TickedObject implements IController, Listener
     }
   }
 
+  private record RendererMetadata(String normalizedId, String rendererLine, String scopeLine, String idLine) {
+  }
+
+  public record MegamapStatus(int gridWidth, int gridHeight, int frames, MegamapGrid.DefectReason defect) {
+    private MegamapStatus mergeWith(MegamapStatus other) {
+      if (other == null) {
+        return this;
+      }
+
+      boolean preferOther = (other.gridWidth * other.gridHeight) > (gridWidth * gridHeight);
+      return new MegamapStatus(
+          preferOther ? other.gridWidth : gridWidth,
+          preferOther ? other.gridHeight : gridHeight,
+          frames + other.frames,
+          defect == null ? other.defect : defect
+      );
+    }
+  }
+
   private static final class ActiveFrameMap {
     private final UUID frameId;
     private final UUID worldId;
     private int mapId;
+    private int gridMapId = -1;
     private Location location;
     private long lastSeenMs;
     private long lastValidatedMs;

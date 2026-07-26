@@ -30,7 +30,9 @@ import art.arcane.react.localization.catalog.RuntimeMessages;
 import art.arcane.react.model.ReactEntity;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.project.world.CustomMobChecker;
-import art.arcane.volmlib.util.entity.StackExclusion;
+import art.arcane.react.api.protect.ReactOperation;
+import art.arcane.react.api.protect.ReactOperations;
+import art.arcane.react.api.protect.ReactProtection;
 import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -59,6 +61,7 @@ import org.bukkit.util.BoundingBox;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -135,6 +138,7 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
   private transient final Consumer<Entity> entityTickListener = this::onTick;
   private transient volatile boolean active;
   private transient SamplerEntities entitiesSampler;
+  private transient volatile StackableIndex stackableIndex;
 
   public FeatureMobStacking() {
     super(ID);
@@ -162,9 +166,39 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
   public void onActivate() {
     active = true;
     dirtyChunks.clear();
+    rebuildStackableIndex();
     for (EntityType i : stackableTypes) {
       React.controller(EntityController.class).registerEntityTickListener(i, entityTickListener);
     }
+  }
+
+  public boolean isStackableType(EntityType type) {
+    if (type == null) {
+      return false;
+    }
+
+    StackableIndex index = stackableIndex;
+    if (index == null || index.source() != stackableTypes) {
+      index = rebuildStackableIndex();
+    }
+
+    return index.types().contains(type);
+  }
+
+  private synchronized StackableIndex rebuildStackableIndex() {
+    Set<EntityType> configured = stackableTypes;
+    EnumSet<EntityType> types = EnumSet.noneOf(EntityType.class);
+    if (configured != null) {
+      for (EntityType type : configured) {
+        if (type != null) {
+          types.add(type);
+        }
+      }
+    }
+
+    StackableIndex index = new StackableIndex(configured, types);
+    stackableIndex = index;
+    return index;
   }
 
   @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
@@ -186,7 +220,7 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
 
 
       // Check if entity is stackable and has more than 1 in the stack
-      if (stackableTypes.contains(clickedEntity.getType()) && getStackCount(clickedEntity) > 1) {
+      if (isStackableType(clickedEntity.getType()) && getStackCount(clickedEntity) > 1) {
         // Calculate new stack counts for split entities
         int newStackCount = getStackCount(clickedEntity) / 2;
         int remainingStackCount = getStackCount(clickedEntity) - newStackCount;
@@ -342,6 +376,11 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
 
 
   public boolean merge(Entity a, Entity into) {
+    if (ReactProtection.isProtected(a, ReactOperation.STACK)
+        || ReactProtection.isProtected(into, ReactOperation.STACK)) {
+      return false;
+    }
+
     if (active && canMerge(a, into)) {
       setStackCount(into, getStackCount(into) + getStackCount(a));
       if (vacuumEffect) {
@@ -376,7 +415,7 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
     }
 
     // types that can stack
-    if (!stackableTypes.contains(a.getType())) {
+    if (!isStackableType(a.getType())) {
       return false;
     }
 
@@ -431,10 +470,6 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
       return false;
     }
 
-    if (StackExclusion.isExcluded(a) || StackExclusion.isExcluded(into)) {
-      return false;
-    }
-
     // Check if entities are stackable via spawn reason
     if (onlySpawnerMobs && (!a.hasMetadata("SpawnedBySpawner") || !into.hasMetadata("SpawnedBySpawner"))) {
       return false;
@@ -481,7 +516,7 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
 
   @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
   public void on(EntitySpawnEvent e) {
-    if (active && stackableTypes.contains(e.getEntityType())) {
+    if (active && isStackableType(e.getEntityType())) {
       markDirty(e.getEntity());
     }
   }
@@ -608,31 +643,40 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
 
     List<Entity> survivors = new ArrayList<>(bucket.size());
     List<Location> survivorLocations = new ArrayList<>(bucket.size());
+    int[] survivorProtection = new int[bucket.size()];
     for (Entity entity : bucket) {
       if (entity.isDead()) {
         continue;
       }
 
+      int protection = ReactProtection.operationsFor(entity);
       Location at = entity.getLocation();
       boolean merged = false;
-      for (int i = 0; i < survivors.size(); i++) {
-        Entity survivor = survivors.get(i);
-        if (survivor.isDead()) {
-          continue;
-        }
+      if (!ReactOperations.covers(protection, ReactOperation.STACK)) {
+        for (int i = 0; i < survivors.size(); i++) {
+          if (ReactOperations.covers(survivorProtection[i], ReactOperation.STACK)) {
+            continue;
+          }
 
-        Location to = survivorLocations.get(i);
-        if (!withinMergeRadius(at.getX(), at.getY(), at.getZ(), to.getX(), to.getY(), to.getZ(), searchRadius)) {
-          continue;
-        }
+          Entity survivor = survivors.get(i);
+          if (survivor.isDead()) {
+            continue;
+          }
 
-        if (merge(entity, survivor)) {
-          merged = true;
-          break;
+          Location to = survivorLocations.get(i);
+          if (!withinMergeRadius(at.getX(), at.getY(), at.getZ(), to.getX(), to.getY(), to.getZ(), searchRadius)) {
+            continue;
+          }
+
+          if (merge(entity, survivor)) {
+            merged = true;
+            break;
+          }
         }
       }
 
       if (!merged) {
+        survivorProtection[survivors.size()] = protection;
         survivors.add(entity);
         survivorLocations.add(at);
       }
@@ -642,9 +686,9 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
   private boolean isStackCandidate(Entity entity) {
     return entity instanceof LivingEntity
         && !(entity instanceof Player)
+        && isStackableType(entity.getType())
         && !entity.isDead()
-        && !isTamedPet(entity)
-        && stackableTypes.contains(entity.getType());
+        && !isTamedPet(entity);
   }
 
   private static StackBucket bucketOf(Entity entity) {
@@ -659,6 +703,9 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
   }
 
   private record WorldBatch(World world, List<Long> keys) {
+  }
+
+  private record StackableIndex(Set<EntityType> source, EnumSet<EntityType> types) {
   }
 
   @Override

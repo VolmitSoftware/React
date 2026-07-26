@@ -54,6 +54,7 @@ public class TweakHopperIndex extends ReactTweak {
     private transient boolean bridgesAvailable;
     private transient int tickTaskId;
     private transient int stretchPassCounter;
+    private transient FeatureHopperItemIndex indexFeature;
 
     public TweakHopperIndex() {
         super(ID);
@@ -126,6 +127,7 @@ public class TweakHopperIndex extends ReactTweak {
             tickTaskId = 0;
         }
         bridgesAvailable = false;
+        indexFeature = null;
     }
 
     private boolean checkBridgesAvailable() {
@@ -153,12 +155,16 @@ public class TweakHopperIndex extends ReactTweak {
         if (!bridgesAvailable) {
             return;
         }
-        FeatureHopperItemIndex indexFeature = React.feature(FeatureHopperItemIndex.class);
-        if (indexFeature == null) {
+        FeatureHopperItemIndex feature = indexFeature;
+        if (feature == null) {
+            feature = React.feature(FeatureHopperItemIndex.class);
+            indexFeature = feature;
+        }
+        if (feature == null) {
             return;
         }
-        HopperItemIndex itemIndex = indexFeature.getItemIndex();
-        HopperPositionIndex positionIndex = indexFeature.getPositionIndex();
+        HopperItemIndex itemIndex = feature.getItemIndex();
+        HopperPositionIndex positionIndex = feature.getPositionIndex();
         if (itemIndex == null || positionIndex == null) {
             return;
         }

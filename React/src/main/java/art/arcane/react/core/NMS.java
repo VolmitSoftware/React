@@ -19,86 +19,52 @@
 
 package art.arcane.react.core;
 
-import art.arcane.curse.Curse;
-import art.arcane.curse.model.CursedComponent;
-import art.arcane.curse.model.CursedField;
-import art.arcane.curse.model.FuzzyMethod;
 import art.arcane.react.React;
-import it.unimi.dsi.fastutil.ints.IntArrayList;
+import art.arcane.react.core.bridge.NmsAccessors;
+import art.arcane.react.core.bridge.NmsBridgeRegistry;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
-import java.util.List;
+public final class NMS {
+  private static volatile NmsAccessors accessors;
+  private static volatile boolean registryWarningIssued;
+  private static volatile boolean collectPacketDisabled;
+  private static volatile boolean collectPacketWarningIssued;
 
-public class NMS {
-  private static final String[] BLOCK_POSITION_CLASS_NAMES = {"net.minecraft.core.BlockPos", "net.minecraft.core.BlockPosition"};
-  private static final String[] CONNECTION_CLASS_NAMES = {"net.minecraft.server.network.ServerGamePacketListenerImpl", "net.minecraft.server.network.PlayerConnection"};
-  private static final String[] PACKET_CLASS_NAMES = {"net.minecraft.network.protocol.Packet"};
-  private static final String[] BLOCK_DATA_CLASS_NAMES = {"net.minecraft.world.level.block.state.BlockState", "net.minecraft.world.level.block.state.IBlockData"};
-  private static final String[] REMOVE_ENTITY_PACKET_CLASS_NAMES = {"net.minecraft.network.protocol.game.ClientboundRemoveEntitiesPacket", "net.minecraft.network.protocol.game.PacketPlayOutEntityDestroy"};
-  private static final String[] COLLECT_PACKET_CLASS_NAMES = {"net.minecraft.network.protocol.game.ClientboundTakeItemEntityPacket", "net.minecraft.network.protocol.game.PacketPlayOutCollect"};
-  private static boolean collectPacketDisabled;
-  private static boolean collectPacketWarningIssued;
-
-  public static Object getHandle(Player p) {
-    return Curse.on(p).get("handle");
+  private NMS() {
   }
 
-  public static Object blockPosition(int x, int y, int z) {
-    return curse(BLOCK_POSITION_CLASS_NAMES).construct(x, y, z);
-  }
-
-  public static Object blockPosition(Block block) {
-    return blockPosition(block.getX(), block.getY(), block.getZ());
-  }
-
-  public static List<?> getTickList(World world) {
-    return Curse.on(getWorldServer(world)).get("o");
+  public static void reset() {
+    synchronized (NMS.class) {
+      accessors = null;
+      registryWarningIssued = false;
+      collectPacketDisabled = false;
+      collectPacketWarningIssued = false;
+    }
   }
 
   public static Object getWorldServer(World world) {
-    return Curse.on(world).get("handle");
+    if (world == null) {
+      return null;
+    }
+
+    NmsAccessors resolved = accessors();
+    if (!resolved.worldHandleAvailable()) {
+      return null;
+    }
+
+    return resolved.worldHandle(world);
+  }
+
+  public static Object getHandle(Entity entity) {
+    return accessors().entityHandle(entity);
   }
 
   public static Object getConnection(Player player) {
-    Class<?> connectionClass = classFor(CONNECTION_CLASS_NAMES);
-    if (connectionClass == null) {
-      throw new IllegalStateException("Unable to resolve the player connection class.");
-    }
-
-    CursedField connectionField = (CursedField) Curse.on(getHandle(player))
-        .fuzzyField(connectionClass)
-        .orElseThrow(() -> new IllegalStateException("Unable to resolve the player connection field."));
-    return connectionField.get();
-  }
-
-  public static CursedComponent curse(String... classNames) {
-    Class<?> resolvedClass = classFor(classNames);
-    if (resolvedClass == null) {
-      throw new IllegalStateException("Unable to resolve any class from " + String.join(", ", classNames));
-    }
-
-    return Curse.on(resolvedClass);
-  }
-
-  public static Class<?> classFor(String... canonicalNames) {
-    for (String canonicalName : canonicalNames) {
-      if (canonicalName == null || canonicalName.isBlank()) {
-        continue;
-      }
-
-      try {
-        return Class.forName(canonicalName);
-      } catch (ClassNotFoundException ignored) {
-
-      }
-    }
-
-    return null;
+    return accessors().connection(getHandle(player));
   }
 
   public static void sendPacket(Player player, Object packet) {
@@ -106,51 +72,16 @@ public class NMS {
       return;
     }
 
-    Class<?> packetClass = classFor(PACKET_CLASS_NAMES);
-    if (packetClass == null) {
-      throw new IllegalStateException("Unable to resolve the packet interface.");
-    }
-
-    Curse.on(getConnection(player)).methodArgs(packetClass).invoke(packet);
-  }
-
-  public static int getBlockId(BlockData data) {
-    Class<?> blockDataClass = classFor(BLOCK_DATA_CLASS_NAMES);
-    if (blockDataClass == null) {
-      throw new IllegalStateException("Unable to resolve the block data class.");
-    }
-
-    return curse("net.minecraft.world.level.block.Block").fuzzyMethod(FuzzyMethod.builder()
-        .returns(int.class)
-        .parameter(blockDataClass)
-        .build()).orElseThrow(() -> new IllegalStateException("Unable to resolve the block id method.")).invoke(data);
-  }
-
-  public static Object removeEntityPacket(int entity) {
-    CursedComponent packetClass = curse(REMOVE_ENTITY_PACKET_CLASS_NAMES);
-
-    try {
-      return packetClass.construct(new IntArrayList(entity)).instance();
-    } catch (Throwable ignored) {
-
-    }
-
-    try {
-      return packetClass.construct(entity).instance();
-    } catch (Throwable ignored) {
-
-    }
-
-    return packetClass.construct(new int[]{entity}).instance();
+    accessors().send(getConnection(player), packet);
   }
 
   public static Object collectPacket(int entity, int toCollect, int count) {
-    Class<?> collectPacketClass = classFor(COLLECT_PACKET_CLASS_NAMES);
-    if (collectPacketClass == null) {
+    NmsAccessors resolved = accessors();
+    if (!resolved.collectPacketAvailable()) {
       return null;
     }
 
-    return Curse.on(collectPacketClass).construct(entity, toCollect, count).instance();
+    return resolved.collectPacket(entity, toCollect, count);
   }
 
   public static void sendCollectPacket(Entity at, int radius, int entity, int toCollect, int count) {
@@ -161,14 +92,14 @@ public class NMS {
     try {
       Object packet = collectPacket(entity, toCollect, count);
       if (packet == null) {
-        disableCollectPacket("collect packet class was not found for this server runtime.");
+        disableCollectPacket("collect packet class was not found for this server runtime.", null);
         return;
       }
 
       sendPacket(at, radius, packet);
     } catch (Throwable e) {
       String message = e.getMessage();
-      disableCollectPacket(e.getClass().getSimpleName() + (message == null || message.isBlank() ? "" : ": " + message));
+      disableCollectPacket(e.getClass().getSimpleName() + (message == null || message.isBlank() ? "" : ": " + message), e);
     }
   }
 
@@ -188,7 +119,38 @@ public class NMS {
     }
   }
 
-  private static void disableCollectPacket(String reason) {
+  private static NmsAccessors accessors() {
+    NmsAccessors resolved = accessors;
+    if (resolved != null) {
+      return resolved;
+    }
+
+    synchronized (NMS.class) {
+      if (accessors != null) {
+        return accessors;
+      }
+
+      NmsBridgeRegistry registry = React.instance == null ? null : React.bridgeRegistry();
+      if (registry == null) {
+        warnRegistryUnavailable();
+        return NmsAccessors.unresolved();
+      }
+
+      accessors = NmsAccessors.resolve(registry, NmsAccessors.defaultDescriptors(), React::warn);
+      return accessors;
+    }
+  }
+
+  private static void warnRegistryUnavailable() {
+    if (registryWarningIssued) {
+      return;
+    }
+
+    registryWarningIssued = true;
+    React.warn("NMS accessors are inactive: the React bridge registry has not been initialised.");
+  }
+
+  private static void disableCollectPacket(String reason, Throwable cause) {
     collectPacketDisabled = true;
     if (collectPacketWarningIssued) {
       return;
@@ -196,5 +158,8 @@ public class NMS {
 
     collectPacketWarningIssued = true;
     React.warn("Mob stacking vacuum packets disabled: " + reason);
+    if (cause != null) {
+      React.reportError(cause);
+    }
   }
 }

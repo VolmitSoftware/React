@@ -21,7 +21,6 @@ package art.arcane.react.api.rendering;
 
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.RendererMessages;
-import art.arcane.react.util.data.TinyColor;
 
 public class RendererUnknown implements ReactRenderer {
   public static final String ID = "unknown";
@@ -32,58 +31,61 @@ public class RendererUnknown implements ReactRenderer {
   }
 
   @Override
-  public boolean rendersNativeMegamap() {
-    return true;
+  public MegamapGrid.MegamapCapability megamapCapability() {
+    return MegamapGrid.MegamapCapability.adaptive(4, 4);
   }
 
   @Override
   public void render() {
-    int h = height();
     int s = uiScale();
-    int bgY0 = Math.max(0, clipY0());
-    int bgY1 = Math.min(h, clipY1());
-    for (int y = bgY0; y < bgY1; y++) {
-      double n = y / (double) Math.max(1, h - 1);
-      TinyColor row = gradient(n, new TinyColor(12, 16, 20), new TinyColor(18, 26, 34));
-      set(0, y, width(), 1, row);
-    }
+    RendererLayout.backdrop(this, MapTheme.SURFACE_0, MapTheme.SURFACE_1);
+    dashHeader(ReactLanguage.raw(RendererMessages.TITLE_REACT_MAP), null, MapTheme.WARN);
 
-    dashHeader(ReactLanguage.raw(RendererMessages.TITLE_REACT_MAP), null, new TinyColor(226, 102, 88));
-    text(4 * s, 16 * s, ReactLanguage.raw(RendererMessages.UNKNOWN_RENDERER_UNAVAILABLE), TEXT_DIM);
+    Region body = RendererLayout.body(this);
+    Region[] split = body.splitColumns(MapTheme.gutter(s), 34, 66);
+    drawWarningGlyph(split[0], s);
 
-    int cx = 26 * s;
-    int cy = 64 * s;
-    drawWarningGlyph(cx, cy, s);
+    Region text = split[1];
+    int lineHeight = MapTheme.lineHeight(s);
+    int top = Math.max(0, (text.height() - (6 * lineHeight)) / 2);
+    textIn(text, 0, top, ReactLanguage.raw(RendererMessages.UNKNOWN_MAP_WAS), MapTheme.TEXT);
+    textIn(text, 0, top + lineHeight, ReactLanguage.raw(RendererMessages.UNKNOWN_BOUND), MapTheme.TEXT);
+    textIn(text, 0, top + (2 * lineHeight), ReactLanguage.raw(RendererMessages.UNKNOWN_MISSING), MapTheme.TEXT);
+    textIn(text, 0, top + (4 * lineHeight), ReactLanguage.raw(RendererMessages.UNKNOWN_RESELECT_COMMAND), MapTheme.TEXT_MUTED);
+    textIn(text, 0, top + (5 * lineHeight), ReactLanguage.raw(RendererMessages.UNKNOWN_RESELECT), MapTheme.TEXT_MUTED);
 
-    text(46 * s, 48 * s, ReactLanguage.raw(RendererMessages.UNKNOWN_MAP_WAS), TEXT_BRIGHT);
-    text(46 * s, 58 * s, ReactLanguage.raw(RendererMessages.UNKNOWN_BOUND), TEXT_BRIGHT);
-    text(46 * s, 68 * s, ReactLanguage.raw(RendererMessages.UNKNOWN_MISSING), TEXT_BRIGHT);
-    text(46 * s, 90 * s, ReactLanguage.raw(RendererMessages.UNKNOWN_RESELECT_COMMAND), TEXT_DIM);
-    text(46 * s, 100 * s, ReactLanguage.raw(RendererMessages.UNKNOWN_RESELECT), TEXT_DIM);
+    RendererLayout.footer(this, ReactLanguage.raw(RendererMessages.UNKNOWN_RENDERER_UNAVAILABLE), null, MapTheme.WARN);
   }
 
-  private void drawWarningGlyph(int cx, int cy, int s) {
-    TinyColor border = new TinyColor(238, 180, 80);
-    TinyColor fill = new TinyColor(74, 52, 26);
+  private void drawWarningGlyph(Region area, int s) {
+    if (!visible(area)) {
+      return;
+    }
 
-    for (int y = -15; y <= 15; y++) {
-      int halfWidth = Math.max(0, 15 - Math.abs(y));
-      for (int x = -halfWidth; x <= halfWidth; x++) {
-        int px = cx + (x * s);
-        int py = cy + (y * s);
-        if (Math.abs(x) == halfWidth || y == -15 || y == 15) {
-          set(px, py, s, s, border);
-        } else {
-          set(px, py, s, s, fill);
+    int extent = (Math.min(area.width(), area.height()) / 2) - MapTheme.pad(s);
+    if (extent < 6) {
+      return;
+    }
+
+    int cx = area.centerX();
+    int cy = area.centerY();
+    pushClip(area);
+    try {
+      for (int y = -extent; y <= extent; y++) {
+        int halfWidth = Math.max(0, extent - Math.abs(y));
+        boolean edge = Math.abs(y) == extent;
+        set(cx - halfWidth, cy + y, (2 * halfWidth) + 1, 1, edge ? MapTheme.WARN : MapTheme.SURFACE_3);
+        if (!edge) {
+          set(cx - halfWidth, cy + y, Math.max(1, s), 1, MapTheme.WARN);
+          set(cx + halfWidth, cy + y, Math.max(1, s), 1, MapTheme.WARN);
         }
       }
+
+      int barHeight = Math.max(3, (extent * 3) / 5);
+      set(cx, cy - (barHeight / 2), Math.max(1, s), barHeight, MapTheme.ACCENT_YELLOW);
+      set(cx, cy + (barHeight / 2) + (2 * s), Math.max(1, s), Math.max(1, s), MapTheme.ACCENT_YELLOW);
+    } finally {
+      popClip();
     }
-
-    set(cx, cy - (6 * s), s, 9 * s, new TinyColor(255, 222, 120));
-    set(cx, cy + (7 * s), s, s, new TinyColor(255, 222, 120));
-  }
-
-  private TinyColor gradient(double normalized, TinyColor low, TinyColor high) {
-    return new TinyColor(gradientRgb(normalized, low, high));
   }
 }

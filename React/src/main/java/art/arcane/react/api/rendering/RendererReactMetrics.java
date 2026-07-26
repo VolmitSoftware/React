@@ -28,7 +28,6 @@ import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.content.sampler.SamplerTicksPerSecond;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.RendererMessages;
-import art.arcane.react.util.data.TinyColor;
 import art.arcane.volmlib.util.format.Form;
 import art.arcane.volmlib.util.localization.MessageArgument;
 import art.arcane.volmlib.util.localization.TextKey;
@@ -52,58 +51,75 @@ public class RendererReactMetrics implements ReactRenderer {
   }
 
   @Override
-  public boolean rendersNativeMegamap() {
-    return true;
+  public MegamapGrid.MegamapCapability megamapCapability() {
+    return MegamapGrid.MegamapCapability.adaptive(4, 4);
   }
 
   @Override
   public void render() {
-    int w = width();
-    int h = height();
     int s = uiScale();
-    clear(new TinyColor(12, 16, 24));
-    dashHeader(ReactLanguage.raw(RendererMessages.TITLE_REACT_METRICS), null, new TinyColor(96, 148, 222));
+    RendererLayout.backdrop(this, MapTheme.SURFACE_0, MapTheme.SURFACE_1);
+    dashHeader(ReactLanguage.raw(RendererMessages.TITLE_REACT_METRICS), null, MapTheme.INFO);
 
-    set(2 * s, 15 * s, w - (4 * s), 9 * s, new TinyColor(52, 134, 96));
-    String status = ReactLanguage.raw(RendererMessages.STATUS_LOCAL);
-    text(
-        4 * s,
-        16 * s,
-        ReactLanguage.raw(RendererMessages.STATUS_LINE, MessageArgument.untrusted("status", status)),
-        TEXT_BRIGHT
+    Region body = RendererLayout.body(this);
+    Region statusRow = body.topBand(MapTheme.lineHeight(s) + (2 * s));
+    panel(statusRow, MapTheme.OK, null);
+    textIn(
+        statusRow,
+        MapTheme.pad(s),
+        s,
+        ReactLanguage.raw(
+            RendererMessages.STATUS_LINE,
+            MessageArgument.untrusted("status", ReactLanguage.raw(RendererMessages.STATUS_LOCAL))
+        ),
+        MapTheme.TEXT_STRONG
     );
 
-    int y = 28 * s;
-    int cutoffY = h - (12 * s);
+    Region grid = body.withoutTop(statusRow.height() + MapTheme.gutter(s));
+    int cellHeight = MapTheme.lineHeight(s) + (7 * s);
+    int columns = Math.max(1, Math.min(megamapColumns(), grid.width() / (76 * s)));
+    Region[] cells = grid.splitColumns(MapTheme.gutter(s), equalWeights(columns));
+    int rows = Math.max(1, cells[0].rowCapacity(cellHeight));
+
+    int placed = 0;
     for (MetricLine metric : METRICS) {
-      drawMetricRow(metric, y, w, s);
-      y += 14 * s;
-      if (y > cutoffY) {
-        return;
+      if (placed >= columns * rows) {
+        break;
+      }
+
+      Region cell = cells[placed / rows].rowAt(placed % rows, cellHeight);
+      placed++;
+      if (visible(cell)) {
+        drawMetricCell(metric, cell, s);
       }
     }
+
+    RendererLayout.footer(this, null, null, MapTheme.INFO);
   }
 
-  private void drawMetricRow(MetricLine metric, int y, int w, int s) {
+  private void drawMetricCell(MetricLine metric, Region cell, int s) {
     Double sampled = sample(metric.samplerId());
-    String line = RendererMessages.metricLine(metric.labelKey(), formatSample(metric, sampled));
-    text(4 * s, y, fitText(line, w - (10 * s)), TEXT_BRIGHT);
+    Region line = cell.topBand(MapTheme.lineHeight(s));
+    Region[] halves = line.splitColumns(MapTheme.gutter(s), 58, 42);
+    textIn(halves[0], 0, 0, ReactLanguage.raw(metric.labelKey()), MapTheme.TEXT);
+    textRightIn(halves[1], 0, 0, formatSample(metric, sampled), MapTheme.TEXT_SOFT);
 
-    int barWidth = w - (10 * s);
-    set(4 * s, y + (8 * s), barWidth, 3 * s, new TinyColor(22, 28, 34));
+    Region track = cell.withoutTop(line.height() + s).topBand(3 * s);
     if (sampled == null) {
-      set(4 * s, y + (8 * s), barWidth, 3 * s, new TinyColor(42, 42, 42));
+      fill(track, MapTheme.LINE);
       return;
     }
 
     double normalized = Math.max(0D, Math.min(1D, sampled / Math.max(1D, metric.maxValue())));
-    int fillWidth = (int) Math.round(barWidth * normalized);
-    if (fillWidth <= 0) {
-      return;
-    }
+    RendererLayout.bar(this, track, normalized, MapTheme.severity(normalized));
+  }
 
-    TinyColor color = gradient(normalized, new TinyColor(58, 170, 214), new TinyColor(255, 184, 74));
-    set(4 * s, y + (8 * s), fillWidth, 3 * s, color);
+  private int[] equalWeights(int columns) {
+    int[] weights = new int[columns];
+    for (int i = 0; i < columns; i++) {
+      weights[i] = 1;
+    }
+    return weights;
   }
 
   private String formatSample(MetricLine metric, Double sampled) {
@@ -128,10 +144,6 @@ public class RendererReactMetrics implements ReactRenderer {
     } catch (Throwable ignored) {
       return null;
     }
-  }
-
-  private TinyColor gradient(double normalized, TinyColor low, TinyColor high) {
-    return new TinyColor(gradientRgb(normalized, low, high));
   }
 
   private record MetricLine(String samplerId, TextKey labelKey, int decimals,

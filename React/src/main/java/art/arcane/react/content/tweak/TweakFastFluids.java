@@ -40,13 +40,14 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockFromToEvent;
 import org.bukkit.event.block.FluidLevelChangeEvent;
 
-import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Queue;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -69,6 +70,19 @@ public class TweakFastFluids extends ReactTweak implements Listener {
       BlockFace.EAST,
       BlockFace.SOUTH,
       BlockFace.WEST
+  };
+  private static final ClassValue<FluidKind> FLUID_KIND_BY_TYPE = new ClassValue<FluidKind>() {
+    @Override
+    protected FluidKind computeValue(Class<?> type) {
+      String className = type.getName().toLowerCase(Locale.ROOT);
+      if (className.contains("water")) {
+        return FluidKind.WATER;
+      }
+      if (className.contains("lava")) {
+        return FluidKind.LAVA;
+      }
+      return FluidKind.OTHER;
+    }
   };
   @art.arcane.react.util.project.config.ConfigDoc(value = "Controls whether fast fluids applies water acceleration.", impact = "Enable to accelerate water flow chains; disable to leave water at vanilla timing.")
   private boolean accelerateWater = true;
@@ -349,70 +363,92 @@ public class TweakFastFluids extends ReactTweak implements Listener {
       return;
     }
 
-    int chunkX = pulse.getX() >> 4;
-    int chunkZ = pulse.getZ() >> 4;
-    if (!world.isChunkLoaded(chunkX, chunkZ)) {
+    if (!accelerateWater && !accelerateLava) {
+      resetBridgeFailures();
       return;
     }
 
-    Block block = world.getBlockAt(pulse.getX(), pulse.getY(), pulse.getZ());
+    int x = pulse.getX();
+    int y = pulse.getY();
+    int z = pulse.getZ();
+    if (!isChunkNeighborhoodReady(world, x, z)) {
+      resetBridgeFailures();
+      return;
+    }
+
+    Object worldHandle = NMS.getWorldServer(world);
+    if (worldHandle == null) {
+      recordBridgeFailure();
+      return;
+    }
+
+    Object blockPos;
+    try {
+      blockPos = bridgeBlockPosCtor.methodHandle().invokeWithArguments(x, y, z);
+    } catch (Throwable throwable) {
+      reportBridgeThrowable(throwable);
+      recordBridgeFailure();
+      return;
+    }
+
+    if (blockPos == null) {
+      recordBridgeFailure();
+      return;
+    }
+
+    Block block = world.getBlockAt(x, y, z);
     int safeBurstTicks = Math.max(1, burstTicks);
     for (int i = 0; i < safeBurstTicks; i++) {
-      TickResult result = tickVanillaFluid(block, accelerateWater, accelerateLava);
+      TickResult result = tickFluidAt(worldHandle, blockPos, block);
       if (result == TickResult.SKIPPED) {
-        if (bridgeFailureGate != null) {
-          bridgeFailureGate.reset();
-        }
+        resetBridgeFailures();
         return;
       }
 
       if (result == TickResult.FAILED) {
-        if (bridgeFailureGate != null && bridgeFailureGate.incrementAndCheckThreshold()) {
-          fluidBridgesAvailable = false;
-          if (!bridgeFailureGate.isWarned()) {
-            bridgeFailureGate.markWarned();
-            React.warn("Fast Fluids acceleration is passive: consecutive runtime bridge failures exceeded threshold");
-          }
-        }
+        recordBridgeFailure();
         return;
       }
     }
 
-    if (bridgeFailureGate != null) {
-      bridgeFailureGate.reset();
+    resetBridgeFailures();
+  }
+
+  private void resetBridgeFailures() {
+    BridgeFailureGate gate = bridgeFailureGate;
+    if (gate != null) {
+      gate.reset();
     }
   }
 
-  private TickResult tickVanillaFluid(Block block, boolean allowWater, boolean allowLava) {
-    if (block == null || block.getWorld() == null) {
-      return TickResult.FAILED;
+  private void recordBridgeFailure() {
+    BridgeFailureGate gate = bridgeFailureGate;
+    if (gate == null || !gate.incrementAndCheckThreshold()) {
+      return;
     }
 
-    if (!allowWater && !allowLava) {
-      return TickResult.SKIPPED;
+    fluidBridgesAvailable = false;
+    if (gate.isWarned()) {
+      return;
     }
 
+    gate.markWarned();
+    React.warn("Fast Fluids acceleration is passive: consecutive runtime bridge failures exceeded threshold");
+  }
+
+  private void reportBridgeThrowable(Throwable throwable) {
+    BridgeFailureGate gate = bridgeFailureGate;
+    if (gate == null || !gate.shouldReport(throwable)) {
+      return;
+    }
+
+    React.warn("Fast Fluids runtime bridge failure on the fluid tick path: " + throwable.getClass().getName()
+        + (throwable.getMessage() == null ? "" : ": " + throwable.getMessage()));
+    React.reportError(throwable);
+  }
+
+  private TickResult tickFluidAt(Object worldHandle, Object blockPos, Block block) {
     try {
-      int chunkX = block.getX() >> 4;
-      int chunkZ = block.getZ() >> 4;
-      World world = block.getWorld();
-      if (!world.isChunkLoaded(chunkX, chunkZ)) {
-        return TickResult.SKIPPED;
-      }
-      if (!isChunkNeighborhoodReady(world, block.getX(), block.getZ())) {
-        return TickResult.SKIPPED;
-      }
-
-      Object worldHandle = NMS.getWorldServer(world);
-      if (worldHandle == null) {
-        return TickResult.FAILED;
-      }
-
-      Object blockPos = bridgeBlockPosCtor.methodHandle().invokeWithArguments(block.getX(), block.getY(), block.getZ());
-      if (blockPos == null) {
-        return TickResult.FAILED;
-      }
-
       Object fluidState = bridgeGetFluidState.methodHandle().invokeWithArguments(worldHandle, blockPos);
       if (fluidState == null) {
         return TickResult.SKIPPED;
@@ -426,10 +462,10 @@ public class TweakFastFluids extends ReactTweak implements Listener {
       }
 
       Material blockMaterial = block.getType();
-      if (blockMaterial == Material.WATER && !allowWater) {
+      if (blockMaterial == Material.WATER && !accelerateWater) {
         return TickResult.SKIPPED;
       }
-      if (blockMaterial == Material.LAVA && !allowLava) {
+      if (blockMaterial == Material.LAVA && !accelerateLava) {
         return TickResult.SKIPPED;
       }
 
@@ -443,10 +479,10 @@ public class TweakFastFluids extends ReactTweak implements Listener {
 
       if (blockMaterial != Material.WATER && blockMaterial != Material.LAVA) {
         FluidKind kind = resolveFluidKind(fluidType, blockMaterial);
-        if (kind == FluidKind.WATER && !allowWater) {
+        if (kind == FluidKind.WATER && !accelerateWater) {
           return TickResult.SKIPPED;
         }
-        if (kind == FluidKind.LAVA && !allowLava) {
+        if (kind == FluidKind.LAVA && !accelerateLava) {
           return TickResult.SKIPPED;
         }
       }
@@ -488,6 +524,7 @@ public class TweakFastFluids extends ReactTweak implements Listener {
 
       return TickResult.FAILED;
     } catch (Throwable throwable) {
+      reportBridgeThrowable(throwable);
       return TickResult.FAILED;
     }
   }
@@ -554,15 +591,12 @@ public class TweakFastFluids extends ReactTweak implements Listener {
       return FluidKind.OTHER;
     }
 
-    String className = fluidType.getClass().getName().toLowerCase();
-    if (className.contains("water")) {
-      return FluidKind.WATER;
-    }
-    if (className.contains("lava")) {
-      return FluidKind.LAVA;
+    FluidKind kindByClass = FLUID_KIND_BY_TYPE.get(fluidType.getClass());
+    if (kindByClass != FluidKind.OTHER) {
+      return kindByClass;
     }
 
-    String typeString = fluidType.toString().toLowerCase();
+    String typeString = fluidType.toString().toLowerCase(Locale.ROOT);
     if (typeString.contains("water")) {
       return FluidKind.WATER;
     }
@@ -726,11 +760,15 @@ public class TweakFastFluids extends ReactTweak implements Listener {
   }
 
   private static final class BridgeFailureGate {
-    private volatile boolean warned;
+    private static final int MAX_REPORTED_FAILURE_KINDS = 4;
+
+    private final Set<String> reportedFailureKinds;
     private final AtomicInteger count;
     private final int threshold;
+    private volatile boolean warned;
 
     BridgeFailureGate(int threshold) {
+      this.reportedFailureKinds = ConcurrentHashMap.newKeySet();
       this.warned = false;
       this.count = new AtomicInteger(0);
       this.threshold = threshold;
@@ -742,6 +780,14 @@ public class TweakFastFluids extends ReactTweak implements Listener {
 
     boolean incrementAndCheckThreshold() {
       return count.incrementAndGet() >= Math.max(1, threshold);
+    }
+
+    boolean shouldReport(Throwable throwable) {
+      if (reportedFailureKinds.size() >= MAX_REPORTED_FAILURE_KINDS) {
+        return false;
+      }
+
+      return reportedFailureKinds.add(throwable.getClass().getName());
     }
 
     boolean isWarned() {

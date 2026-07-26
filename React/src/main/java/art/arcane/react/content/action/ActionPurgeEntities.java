@@ -30,7 +30,8 @@ import art.arcane.react.model.AreaActionParams;
 import art.arcane.react.model.FilterParams;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.volmlib.util.bukkit.WorldIdentity;
-import art.arcane.volmlib.util.entity.StackExclusion;
+import art.arcane.react.api.protect.ReactOperation;
+import art.arcane.react.api.protect.internal.ProtectionGuards;
 import art.arcane.volmlib.util.format.Form;
 import art.arcane.volmlib.util.localization.MessageArgument;
 import art.arcane.volmlib.util.math.Spiraler;
@@ -171,7 +172,7 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
             continue;
           }
 
-          if (StackExclusion.isExcluded(entity)) {
+          if (!ProtectionGuards.allows(entity, ReactOperation.PURGE)) {
             continue;
           }
 

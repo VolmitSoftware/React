@@ -169,7 +169,24 @@ public class SamplerEntities extends ReactCachedSampler implements Listener {
   @Override
   public double onSample() {
     if (realEntityUpdate.flip() || entities.get() < 0) {
-      J.a(() -> entities.set(getRealCheck()));
+      if (J.isFoliaThreading()) {
+        J.a(() -> entities.set(getFoliaApproximateRealCheck()));
+      } else {
+        sampleOnMainThread(() -> {
+          int m = 0;
+
+          for (World i : Bukkit.getWorlds()) {
+            for (Chunk j : i.getLoadedChunks()) {
+              int count = j.getEntities().length;
+              m += count;
+              getChunkCounter(j).set(count);
+            }
+          }
+
+          entities.set(m);
+          return (double) m;
+        });
+      }
     }
 
     return entities.get();

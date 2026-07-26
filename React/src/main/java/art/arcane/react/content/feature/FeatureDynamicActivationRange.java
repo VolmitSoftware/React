@@ -20,6 +20,8 @@
 package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
+import art.arcane.react.api.protect.ReactOperation;
+import art.arcane.react.api.protect.ReactProtection;
 import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.content.feature.perworld.PerWorldPressure;
 import art.arcane.react.content.sampler.SamplerTickTime;
@@ -217,12 +219,19 @@ public class FeatureDynamicActivationRange extends ReactFeature implements Liste
       return false;
     }
 
+    if (ReactProtection.isProtected(entity, ReactOperation.SLEEP)) {
+      return false;
+    }
+
     if (entity.getTicksLived() < minimumEntityAgeTicks) {
       return false;
     }
 
-    if (ignoreNamedEntities && living.getCustomName() != null && !living.getCustomName().isBlank()) {
-      return false;
+    if (ignoreNamedEntities) {
+      String customName = living.getCustomName();
+      if (customName != null && !customName.isBlank()) {
+        return false;
+      }
     }
 
     return !(ignoreTamedEntities && living instanceof Tameable tameable && tameable.isTamed());

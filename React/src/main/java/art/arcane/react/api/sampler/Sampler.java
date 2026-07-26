@@ -22,6 +22,7 @@ package art.arcane.react.api.sampler;
 import art.arcane.react.React;
 import art.arcane.react.api.rendering.Graph;
 import art.arcane.react.api.rendering.MapColors;
+import art.arcane.react.api.rendering.MegamapGrid;
 import art.arcane.react.api.rendering.ReactRenderer;
 import art.arcane.react.core.controller.ObserverController;
 import art.arcane.react.core.controller.SampleController;
@@ -52,8 +53,8 @@ public interface Sampler extends Registered, ReactRenderer {
   }
 
   @Override
-  default boolean rendersNativeMegamap() {
-    return true;
+  default MegamapGrid.MegamapCapability megamapCapability() {
+    return MegamapGrid.MegamapCapability.adaptive(4, 4);
   }
 
   default void render() {

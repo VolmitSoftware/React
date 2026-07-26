@@ -1,8 +1,8 @@
 package art.arcane.react.content.tweak;
 
 import art.arcane.react.React;
+import art.arcane.react.api.protect.internal.ProtectionInstaller;
 import art.arcane.react.util.common.scheduling.J;
-import art.arcane.volmlib.util.entity.StackExclusion;
 import org.bukkit.Location;
 import org.bukkit.entity.Monster;
 import org.bukkit.event.entity.EntityDamageEvent;
@@ -22,10 +22,10 @@ public class TweakFastEntityIncinerationTest {
     Mockito.when(event.getEntity()).thenReturn(monster);
     Mockito.when(monster.getLocation()).thenReturn(location);
 
-    try (MockedStatic<StackExclusion> exclusions = Mockito.mockStatic(StackExclusion.class);
-         MockedStatic<React> react = Mockito.mockStatic(React.class);
+    ProtectionInstaller.install(null);
+
+    try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
-      exclusions.when(() -> StackExclusion.isExcluded(monster)).thenReturn(false);
       react.when(() -> React.hasNearbyPlayer(location, 32D)).thenReturn(true);
 
       tweak.on(event);
@@ -44,10 +44,10 @@ public class TweakFastEntityIncinerationTest {
     Mockito.when(event.getEntity()).thenReturn(monster);
     Mockito.when(monster.getLocation()).thenReturn(location);
 
-    try (MockedStatic<StackExclusion> exclusions = Mockito.mockStatic(StackExclusion.class);
-         MockedStatic<React> react = Mockito.mockStatic(React.class);
+    ProtectionInstaller.install(null);
+
+    try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
-      exclusions.when(() -> StackExclusion.isExcluded(monster)).thenReturn(false);
       react.when(() -> React.hasNearbyPlayer(location, 32D)).thenReturn(false);
       scheduling.when(() -> J.runEntity(Mockito.eq(monster), Mockito.any(Runnable.class), Mockito.anyInt())).thenReturn(true);
 

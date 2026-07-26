@@ -1,5 +1,6 @@
 package art.arcane.react.localization.catalog;
 
+import art.arcane.react.api.rendering.MegamapGrid;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.volmlib.util.localization.MessageArgument;
 import art.arcane.volmlib.util.localization.MessageCatalog;
@@ -366,6 +367,32 @@ public final class MapMessages {
   private static final TextKey SAMPLER_ADAPT = keywordSummary("adapt", "Adapt integration metric exposed through the remote sampler bridge.");
   private static final TextKey SAMPLER_FALLBACK = keywordSummary("fallback", "Live sampler trend for this monitor.");
 
+  public static final TextKey COLUMN_NAME = render("column_name", "Name");
+  public static final TextKey COLUMN_SHARE = render("column_share", "Share");
+  public static final TextKey COLUMN_COST = render("column_cost", "Cost");
+  public static final TextKey COLUMN_CALLS = render("column_calls", "Calls");
+  public static final TextKey COLUMN_OPS = render("column_ops", "Ops");
+  public static final TextKey COLUMN_COUNT = render("column_count", "Count");
+  public static final TextKey ROWS_SHOWN = render("rows_shown", "{shown}/{total}");
+  public static final TextKey TOTAL_COST = render("total_cost", "{value} ms/s");
+  public static final TextKey SCALE_CHUNKS = render("scale_chunks", "{radius} chunk radius");
+  public static final TextKey MORE_ITEMS = render("more_items", "+{count} more");
+  public static final TextKey MEGAMAP_ZOOMED = megamap("zoomed", "{grid} zoom");
+  public static final TextKey MEGAMAP_CAPPED = megamap("capped", "{grid} capped");
+  public static final TextKey MEGAMAP_DEFECT_HOLE = megamap("defect_hole", "wall gap");
+  public static final TextKey MEGAMAP_DEFECT_DUPLICATE = megamap("defect_duplicate", "duplicate map");
+  public static final TextKey MEGAMAP_DEFECT_ROTATED = megamap("defect_rotated", "frame rotated");
+  public static final TextKey MEGAMAP_DEFECT_MIXED = megamap("defect_mixed", "mixed maps");
+  public static final TextKey MEGAMAP_WALLS = megamap("walls", "Map walls");
+  public static final TextKey MEGAMAP_WALLS_SUMMARY =
+      megamap("walls_summary", "Adjacent frames with the same map join into one display.");
+  public static final TextKey MEGAMAP_WALLS_DETECTED = megamap("walls_detected", "{count} detected");
+  public static final TextKey MEGAMAP_WALLS_ISSUES = megamap("walls_issues", "{count} with issues");
+  public static final TextKey MEGAMAP_ADAPTIVE = megamap("adaptive", "Megamap: more data up to {size}");
+  public static final TextKey MEGAMAP_MAGNIFY = megamap("magnify", "Megamap: scales up, same layout");
+  public static final TextKey MEGAMAP_ACTIVE = megamap("active", "Active wall: {size} ({frames})");
+  public static final TextKey MEGAMAP_ISSUE = megamap("issue", "Wall issue: {reason}");
+
   private MapMessages() {
   }
 
@@ -394,6 +421,39 @@ public final class MapMessages {
     builder.add(SAMPLER_IRIS);
     builder.add(SAMPLER_ADAPT);
     builder.add(SAMPLER_FALLBACK);
+    builder.add(COLUMN_NAME);
+    builder.add(COLUMN_SHARE);
+    builder.add(COLUMN_COST);
+    builder.add(COLUMN_CALLS);
+    builder.add(COLUMN_OPS);
+    builder.add(COLUMN_COUNT);
+    builder.add(ROWS_SHOWN);
+    builder.add(TOTAL_COST);
+    builder.add(SCALE_CHUNKS);
+    builder.add(MORE_ITEMS);
+    builder.add(MEGAMAP_ZOOMED);
+    builder.add(MEGAMAP_CAPPED);
+    builder.add(MEGAMAP_DEFECT_HOLE);
+    builder.add(MEGAMAP_DEFECT_DUPLICATE);
+    builder.add(MEGAMAP_DEFECT_ROTATED);
+    builder.add(MEGAMAP_DEFECT_MIXED);
+    builder.add(MEGAMAP_WALLS);
+    builder.add(MEGAMAP_WALLS_SUMMARY);
+    builder.add(MEGAMAP_WALLS_DETECTED);
+    builder.add(MEGAMAP_WALLS_ISSUES);
+    builder.add(MEGAMAP_ADAPTIVE);
+    builder.add(MEGAMAP_MAGNIFY);
+    builder.add(MEGAMAP_ACTIVE);
+    builder.add(MEGAMAP_ISSUE);
+  }
+
+  public static TextKey defectLabel(MegamapGrid.DefectReason reason) {
+    return switch (reason) {
+      case HOLE -> MEGAMAP_DEFECT_HOLE;
+      case DUPLICATE_MAP_ID -> MEGAMAP_DEFECT_DUPLICATE;
+      case ROTATED -> MEGAMAP_DEFECT_ROTATED;
+      case MIXED_RENDERER -> MEGAMAP_DEFECT_MIXED;
+    };
   }
 
   public static String rendererSummary(String normalizedId, String displayName) {
@@ -496,5 +556,13 @@ public final class MapMessages {
 
   private static TextKey keywordSummary(String keyword, String english) {
     return TextKey.of("gui.map.summary.sampler.keyword." + keyword, english);
+  }
+
+  private static TextKey render(String id, String english) {
+    return TextKey.of("gui.map.render." + id, english);
+  }
+
+  private static TextKey megamap(String id, String english) {
+    return TextKey.of("gui.map.megamap." + id, english);
   }
 }

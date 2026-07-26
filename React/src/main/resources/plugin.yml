@@ -4,6 +4,8 @@ version: ${version}
 folia-supported: true
 authors: [ NextdoorPsycho, Cyberpwn ]
 api-version: ${apiversion}
+softdepend:
+  - PlaceholderAPI
 commands:
   react:
     aliases: [ re ]

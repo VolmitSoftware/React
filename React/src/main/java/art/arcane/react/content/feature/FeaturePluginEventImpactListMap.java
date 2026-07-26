@@ -21,13 +21,17 @@ package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
 import art.arcane.react.api.feature.ReactFeature;
+import art.arcane.react.api.rendering.MapTheme;
+import art.arcane.react.api.rendering.MegamapGrid;
 import art.arcane.react.api.rendering.ReactRenderer;
+import art.arcane.react.api.rendering.Region;
+import art.arcane.react.api.rendering.RendererLayout;
 import art.arcane.react.core.controller.EventController;
 import art.arcane.react.core.controller.MapController;
 import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.MapMessages;
 import art.arcane.react.localization.catalog.RendererMessages;
 import art.arcane.react.util.data.TinyColor;
-import art.arcane.volmlib.util.format.Form;
 import art.arcane.volmlib.util.localization.MessageArgument;
 
 import java.util.List;
@@ -35,183 +39,189 @@ import java.util.List;
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Plugin Event Impact List Map feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeaturePluginEventImpactListMap extends ReactFeature implements ReactRenderer {
   public static final String ID = "plugin-event-impact-list-map";
-  private static final TinyColor ACCENT = new TinyColor(236, 142, 58);
-  private static final TinyColor FRAME_VALUE = new TinyColor(126, 196, 255);
-  @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum entries shown by plugin event impact list map.", impact = "Higher values show more plugins but reduce per-row readability.")
-  private int maxEntries = 7;
-  @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum entries shown when plugin event impact list map is placed in item-frames.", impact = "Lower values improve readability from distance; higher values show more rows with denser text.")
-  private int frameMaxEntries = 5;
+  private static final TinyColor ACCENT = MapTheme.WARN;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum rows drawn per map tile, or 0 to fill the available height.", impact = "Zero lets a taller map wall list every plugin; a fixed value keeps the row count constant no matter how large the wall is.")
+  private int maxRowsPerTile = 0;
 
   public FeaturePluginEventImpactListMap() {
     super(ID);
   }
 
   @Override
+  public MegamapGrid.MegamapCapability megamapCapability() {
+    return MegamapGrid.MegamapCapability.adaptive(4, 4);
+  }
+
+  @Override
   public void render() {
     boolean frameAnchored = isFrameAnchored();
-    drawBackdrop();
+    RendererLayout.backdrop(this, MapTheme.SURFACE_0, MapTheme.SURFACE_1);
     dashHeader(
         ReactLanguage.raw(RendererMessages.TITLE_PLUGIN_IMPACT),
         frameAnchored ? ReactLanguage.raw(RendererMessages.STATUS_FRAME) : null,
         ACCENT,
-        FRAME_VALUE
+        MapTheme.INFO
     );
 
     PluginEventImpactSeries.Snapshot snapshot = PluginEventImpactSeries.snapshot();
     List<PluginEventImpactSeries.Entry> entries = snapshot.entries();
+    Region body = RendererLayout.body(this);
     if (entries.isEmpty()) {
-      text(4, 20, ReactLanguage.raw(RendererMessages.PLUGIN_NO_IMPACT), TEXT_BRIGHT);
-      text(4, 30, ReactLanguage.raw(RendererMessages.PLUGIN_WAIT_FOR_DATA), TEXT_DIM);
+      RendererLayout.emptyState(
+          this,
+          body,
+          ReactLanguage.raw(RendererMessages.PLUGIN_NO_IMPACT),
+          ReactLanguage.raw(RendererMessages.PLUGIN_WAIT_FOR_DATA)
+      );
+      RendererLayout.footer(this, null, null, ACCENT);
       return;
     }
 
-    int rowHeight = 18;
-    int startY = 16;
-    int rowsBySpace = Math.max(1, (118 - startY) / rowHeight);
-    int configuredLimit = Math.max(1, frameAnchored ? frameMaxEntries : maxEntries);
-    int limit = Math.max(1, Math.min(Math.min(configuredLimit, entries.size()), rowsBySpace));
+    int columns = megamapColumns();
+    int[] weights = columnWeights(columns);
+    int gutter = MapTheme.gutter(uiScale());
+    Region list = body;
+    if (megamapDetail().atLeast(MegamapGrid.MegamapDetail.EXPANDED)) {
+      Region strip = body.topBand(MapTheme.lineHeight(uiScale()));
+      RendererLayout.columnLabels(this, strip, strip.splitColumns(gutter, weights), columnLabels(columns));
+      list = body.withoutTop(strip.height() + gutter);
+    }
+
+    int rowHeight = RendererLayout.listRowHeight(this);
+    int capacity = Math.max(1, list.rowCapacity(rowHeight));
+    if (maxRowsPerTile > 0) {
+      capacity = Math.min(capacity, maxRowsPerTile);
+    }
+
+    int limit = Math.min(entries.size(), capacity);
     double maxImpact = Math.max(0.0001D, entries.get(0).impact());
     double total = Math.max(0.0001D, snapshot.totalImpact());
-    int y = startY;
+    double windowSeconds = windowSeconds();
+    double totalMillis = 0D;
+    for (PluginEventImpactSeries.Entry entry : entries) {
+      totalMillis += entry.currentMS() / windowSeconds;
+    }
 
     for (int i = 0; i < limit; i++) {
+      Region row = list.rowAt(i, rowHeight);
+      if (!visible(row)) {
+        continue;
+      }
+
       PluginEventImpactSeries.Entry entry = entries.get(i);
       double normalized = Math.max(0D, Math.min(1D, entry.impact() / maxImpact));
-      double percent = Math.max(0D, Math.min(1D, entry.impact() / total)) * 100D;
-
-      drawRowCard(y, rowHeight, frameAnchored);
-      if (frameAnchored) {
-        drawFrameRow(i, y, normalized, percent, entry);
-      } else {
-        drawStandardRow(i, y, normalized, percent, entry);
-      }
-
-      y += rowHeight;
-      if (y > 116) {
-        break;
-      }
-    }
-  }
-
-  private void drawBackdrop() {
-    for (int y = 0; y < height(); y++) {
-      double n = y / (double) Math.max(1, height() - 1);
-      set(0, y, width(), 1, gradient(n, new TinyColor(12, 16, 20), new TinyColor(20, 24, 28)));
-    }
-  }
-
-  private void drawRowCard(int y, int rowHeight, boolean frameAnchored) {
-    int cardHeight = Math.max(13, rowHeight - 1);
-    TinyColor panel = frameAnchored ? new TinyColor(18, 24, 30) : new TinyColor(16, 22, 28);
-    TinyColor border = frameAnchored ? new TinyColor(44, 58, 72) : new TinyColor(32, 42, 54);
-
-    set(2, y - 1, 124, cardHeight, panel);
-    set(2, y - 1, 124, 1, border);
-    set(2, y + cardHeight - 1, 124, 1, border);
-  }
-
-  private void drawStandardRow(int rank, int y, double normalized, double percent, PluginEventImpactSeries.Entry entry) {
-    String rankLabel = "#" + (rank + 1);
-    text(4, y, rankLabel, TEXT_DIM);
-
-    int pluginX = 18;
-    int barX = 74;
-    int pluginMaxWidth = Math.max(10, barX - pluginX - 3);
-    text(pluginX, y, trimToWidth(entry.plugin(), pluginMaxWidth), TEXT_BRIGHT);
-
-    int barY = y + 2;
-    int barW = 48;
-    int fill = (int) Math.round(barW * normalized);
-    set(barX, barY, barW, 4, new TinyColor(26, 34, 42));
-    if (fill > 0) {
-      set(barX, barY, fill, 4, rankColor(rank, normalized));
+      double share = Math.max(0D, Math.min(1D, entry.impact() / total));
+      String[] values = columnValues(columns, i, share, entry.currentMS() / windowSeconds, entry);
+      drawRow(i, row.withoutBottom(gutter), weights, gutter, normalized, values);
     }
 
-    String line = ReactLanguage.raw(
-        RendererMessages.PLUGIN_IMPACT_VALUE,
-        MessageArgument.untrusted("percent", Form.f(percent, 1)),
-        MessageArgument.untrusted("impact", compact(currentMillisPerSecond(entry)))
+    RendererLayout.footer(
+        this,
+        ReactLanguage.raw(
+            MapMessages.ROWS_SHOWN,
+            MessageArgument.untrusted("shown", Integer.toString(limit)),
+            MessageArgument.untrusted("total", Integer.toString(entries.size()))
+        ),
+        ReactLanguage.raw(
+            MapMessages.TOTAL_COST,
+            MessageArgument.untrusted("value", RendererLayout.compact(totalMillis))
+        ),
+        ACCENT
     );
-    text(4, y + 8, line, TEXT_DIM);
   }
 
-  private double currentMillisPerSecond(PluginEventImpactSeries.Entry entry) {
-    EventController controller = React.controller(EventController.class);
-    double windowSeconds = controller == null ? 5D : Math.max(1L, controller.getTinterval()) / 1000.0D;
-    return entry.currentMS() / windowSeconds;
-  }
-
-  private void drawFrameRow(int rank, int y, double normalized, double percent, PluginEventImpactSeries.Entry entry) {
-    text(4, y, "#" + (rank + 1), TEXT_DIM);
-
-    String percentLabel = Form.f(percent, 1) + "%";
-    int percentX = Math.max(78, 121 - textWidth(percentLabel) + 1);
-    text(20, y, trimToWidth(entry.plugin(), Math.max(10, percentX - 23)), TEXT_BRIGHT);
-    text(percentX, y, percentLabel, TEXT_DIM);
-
-    int barX = 20;
-    int barY = y + 8;
-    int barW = 102;
-    int fill = (int) Math.round(barW * normalized);
-    set(barX, barY, barW, 5, new TinyColor(26, 34, 42));
-    if (fill > 0) {
-      set(barX, barY, fill, 5, rankColor(rank, normalized));
+  private void drawRow(
+      int rank,
+      Region card,
+      int[] weights,
+      int gutter,
+      double normalized,
+      String[] values
+  ) {
+    if (card.isEmpty()) {
+      return;
     }
+
+    int scale = uiScale();
+    RendererLayout.card(this, card, rank < 3);
+
+    Region inner = card.inset(MapTheme.pad(scale), MapTheme.borderThickness(scale) + scale, MapTheme.pad(scale), MapTheme.borderThickness(scale) + scale);
+    if (inner.isEmpty()) {
+      return;
+    }
+
+    Region textLine = inner.topBand(MapTheme.lineHeight(scale));
+    Region[] columns = textLine.splitColumns(gutter, weights);
+    for (int i = 0; i < columns.length && i < values.length; i++) {
+      TinyColor color = i == 0 ? MapTheme.TEXT : MapTheme.TEXT_SOFT;
+      if (i == 0) {
+        textIn(columns[i], 0, 0, values[i], color);
+      } else {
+        textRightIn(columns[i], 0, 0, values[i], color);
+      }
+    }
+
+    Region barRow = inner.withoutTop(textLine.height() + scale);
+    if (barRow.isEmpty()) {
+      return;
+    }
+
+    RendererLayout.bar(
+        this,
+        barRow.topBand(Math.min(barRow.height(), RendererLayout.barHeight(this))),
+        normalized,
+        MapTheme.categorical(rank)
+    );
+  }
+
+  private int[] columnWeights(int columns) {
+    return switch (columns) {
+      case 1 -> new int[]{62, 38};
+      case 2 -> new int[]{46, 27, 27};
+      default -> new int[]{38, 21, 21, 20};
+    };
+  }
+
+  private String[] columnLabels(int columns) {
+    String name = ReactLanguage.raw(MapMessages.COLUMN_NAME);
+    String share = ReactLanguage.raw(MapMessages.COLUMN_SHARE);
+    String cost = ReactLanguage.raw(MapMessages.COLUMN_COST);
+    return switch (columns) {
+      case 1 -> new String[]{name, share};
+      case 2 -> new String[]{name, cost, share};
+      default -> new String[]{name, ReactLanguage.raw(MapMessages.COLUMN_CALLS), cost, share};
+    };
+  }
+
+  private String[] columnValues(
+      int columns,
+      int rank,
+      double share,
+      double millisPerSecond,
+      PluginEventImpactSeries.Entry entry
+  ) {
+    String name = "#" + (rank + 1) + " " + pluginName(entry);
+    String sharePercent = RendererLayout.percent(share);
+    String cost = RendererLayout.compact(millisPerSecond);
+    return switch (columns) {
+      case 1 -> new String[]{name, sharePercent};
+      case 2 -> new String[]{name, cost, sharePercent};
+      default -> new String[]{name, RendererLayout.compact(entry.currentCalls()), cost, sharePercent};
+    };
+  }
+
+  private String pluginName(PluginEventImpactSeries.Entry entry) {
+    String plugin = entry.plugin();
+    return plugin == null || plugin.isBlank() ? ReactLanguage.raw(RendererMessages.PIE_UNKNOWN) : plugin.trim();
+  }
+
+  private double windowSeconds() {
+    EventController controller = React.controller(EventController.class);
+    return controller == null ? 5D : Math.max(1L, controller.getTinterval()) / 1000.0D;
   }
 
   private boolean isFrameAnchored() {
     MapController mapController = React.controller(MapController.class);
     return mapController != null && mapController.hasFrameAnchor(view());
-  }
-
-  private TinyColor rankColor(int rank, double normalized) {
-    if (rank == 0) {
-      return gradient(normalized, new TinyColor(255, 188, 74), new TinyColor(255, 90, 50));
-    }
-    if (rank <= 2) {
-      return gradient(normalized, new TinyColor(226, 134, 68), new TinyColor(232, 78, 56));
-    }
-    return gradient(normalized, new TinyColor(78, 176, 214), new TinyColor(136, 122, 255));
-  }
-
-  private TinyColor gradient(double normalized, TinyColor low, TinyColor high) {
-    return new TinyColor(gradientRgb(normalized, low, high));
-  }
-
-  private String trimToWidth(String value, int maxWidth) {
-    if (value == null || value.isBlank()) {
-      return ReactLanguage.raw(RendererMessages.PIE_UNKNOWN);
-    }
-
-    String safe = value.trim();
-    int limit = Math.max(8, maxWidth);
-    if (textWidth(safe) <= limit) {
-      return safe;
-    }
-
-    String suffix = ".";
-    int end = safe.length();
-    while (end > 1) {
-      String candidate = safe.substring(0, end) + suffix;
-      if (textWidth(candidate) <= limit) {
-        return candidate;
-      }
-      end--;
-    }
-
-    return safe.substring(0, 1);
-  }
-
-  private String compact(double value) {
-    if (!Double.isFinite(value) || value <= 0D) {
-      return "0";
-    }
-    if (value >= 1000D) {
-      return Form.f(value / 1000D, 1) + "k";
-    }
-    if (value >= 100D) {
-      return Form.f(value, 0);
-    }
-    return Form.f(value, 1);
   }
 }

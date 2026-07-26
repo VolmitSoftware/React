@@ -310,11 +310,13 @@ public class ActionBarMonitor extends PlayerMonitor {
         Style ss = (locked && getPlayer().isMonitorSneaking() && getFocusedSampler() == i) ? Style.style(TextColor.fromHexString(color), TextDecoration.UNDERLINED).font(Key.key("uniform"))
             : Style.style(TextColor.fromHexString(colorD)).font(Key.key("uniform"));
 
-        int l = i.format(value).length();
+        String formattedValue = i.formattedValue(value);
+        String formattedSuffix = i.formattedSuffix(value);
+        int l = formattedValue.length() + formattedSuffix.length();
         synchronized (maxLengths) {
           maxLengths.compute(i, (k, v) -> Math.max(v == null ? 0 : v, l));
         }
-        result = result.append(i.format(Component.text(i.formattedValue(value), s), Component.text(i.formattedSuffix(value), ss)));
+        result = result.append(i.format(Component.text(formattedValue, s), Component.text(formattedSuffix, ss)));
 
         if (l < maxLengths.get(i)) {
           result = result.append(Component.text(" ".repeat(maxLengths.get(i) - l)));
@@ -374,11 +376,13 @@ public class ActionBarMonitor extends PlayerMonitor {
           : Style.style(TextColor.fromHexString(color));
       Style ss = focus == i ? Style.style(TextColor.fromHexString(color), TextDecoration.UNDERLINED).font(Key.key("uniform"))
           : Style.style(TextColor.fromHexString(colorD)).font(Key.key("uniform"));
-      int l = head.format(value).length();
+      String formattedValue = head.formattedValue(value);
+      String formattedSuffix = head.formattedSuffix(value);
+      int l = formattedValue.length() + formattedSuffix.length();
       synchronized (maxLengths) {
         maxLengths.compute(head, (k, v) -> Math.max(v == null ? 0 : v, l));
       }
-      result = result.append(head.format(Component.text(head.formattedValue(value), s), Component.text(head.formattedSuffix(value), ss)));
+      result = result.append(head.format(Component.text(formattedValue, s), Component.text(formattedSuffix, ss)));
 
       if (l < maxLengths.get(head)) {
         result = result.append(Component.text(" ".repeat(maxLengths.get(head) - l)));

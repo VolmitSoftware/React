@@ -37,6 +37,7 @@ public abstract class ReactCachedSampler implements Sampler {
   private transient final AtomicBoolean mainRefreshInFlight;
   private transient volatile double mainRefreshValue;
   private transient volatile boolean runtimeStarted;
+  private transient volatile SampleController sampleController;
 
   public ReactCachedSampler(String id, long sampleDelay) {
     this.sid = id;
@@ -61,16 +62,25 @@ public abstract class ReactCachedSampler implements Sampler {
     }
 
     if (mainRefreshInFlight.compareAndSet(false, true)) {
-      J.s(() -> {
-        try {
-          Double value = compute.get();
-          if (value != null) {
-            mainRefreshValue = value;
+      boolean dispatched = false;
+
+      try {
+        J.s(() -> {
+          try {
+            Double value = compute.get();
+            if (value != null) {
+              mainRefreshValue = value;
+            }
+          } finally {
+            mainRefreshInFlight.set(false);
           }
-        } finally {
+        });
+        dispatched = true;
+      } finally {
+        if (!dispatched) {
           mainRefreshInFlight.set(false);
         }
-      });
+      }
     }
 
     return mainRefreshValue;
@@ -78,12 +88,15 @@ public abstract class ReactCachedSampler implements Sampler {
 
   @Override
   public void start() {
+    sampleController = null;
+    mainRefreshInFlight.set(false);
     runtimeStarted = true;
   }
 
   @Override
   public void stop() {
     runtimeStarted = false;
+    sampleController = null;
   }
 
   public abstract double onSample();
@@ -112,7 +125,12 @@ public abstract class ReactCachedSampler implements Sampler {
     }
 
     try {
-      SampleController controller = React.controller(SampleController.class);
+      SampleController controller = sampleController;
+      if (controller == null) {
+        controller = React.controller(SampleController.class);
+        sampleController = controller;
+      }
+
       return controller == null || controller.canSample(this);
     } catch (Throwable ignored) {
       return runtimeStarted;

@@ -26,7 +26,9 @@ import art.arcane.react.model.ReactEntity;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.project.world.CustomMobChecker;
 import art.arcane.react.util.project.world.WorldEntitySnapshots;
-import art.arcane.volmlib.util.entity.StackExclusion;
+import art.arcane.react.api.protect.ReactOperation;
+import art.arcane.react.api.protect.ReactProtection;
+import art.arcane.react.api.protect.internal.ProtectionGuards;
 import art.arcane.volmlib.util.math.M;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -374,7 +376,7 @@ public class FeatureEntityTrimmer extends ReactFeature implements Listener {
       return false;
     }
 
-    if (StackExclusion.isExcluded(entity)) {
+    if (ReactProtection.isProtected(entity, ReactOperation.TRIM)) {
       return false;
     }
 
@@ -403,6 +405,10 @@ public class FeatureEntityTrimmer extends ReactFeature implements Listener {
   }
 
   private void kill(Entity entity) {
+    if (!ProtectionGuards.allows(entity, ReactOperation.TRIM)) {
+      return;
+    }
+
     int delay = ThreadLocalRandom.current().nextInt(20);
     if (!J.runEntity(entity, () -> React.kill(entity), delay)) {
       React.kill(entity);

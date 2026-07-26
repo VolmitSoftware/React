@@ -21,86 +21,97 @@ package art.arcane.react.api.rendering;
 
 import art.arcane.react.util.data.TinyColor;
 import org.bukkit.entity.Player;
-import org.bukkit.map.MapCanvas;
-import org.bukkit.map.MapFont;
 import org.bukkit.map.MapView;
-import org.bukkit.map.MinecraftFont;
 
 import java.awt.Color;
 
 public interface ReactRenderer {
-  TinyColor TEXT_BRIGHT = new TinyColor(228, 236, 244);
-  TinyColor TEXT_DIM = new TinyColor(128, 140, 152);
-  TinyColor HEADER_BAND = new TinyColor(14, 18, 24);
-  TinyColor FOOTER_BAND = new TinyColor(10, 13, 18);
+  TinyColor TEXT_BRIGHT = MapTheme.TEXT;
+  TinyColor TEXT_DIM = MapTheme.TEXT_MUTED;
+  TinyColor HEADER_BAND = MapTheme.SURFACE_2;
+  TinyColor FOOTER_BAND = MapTheme.SURFACE_1;
   int CANVAS_SIZE = 128;
 
   String getId();
 
   void render();
 
-  default boolean rendersNativeMegamap() {
-    return false;
+  default MegamapGrid.MegamapCapability megamapCapability() {
+    return MegamapGrid.MegamapCapability.magnify();
   }
 
-  default int uiScale() {
-    return Math.max(1, ReactRenderContext.of().getTextScale());
+  default MegamapGrid.MegamapDetail megamapDetail() {
+    ReactRenderContext context = ReactRenderContext.of();
+    return megamapCapability().detailFor(context.getGridWidth(), context.getGridHeight());
   }
 
-  default int textHeight() {
-    return MinecraftFont.Font.getHeight() * uiScale();
+  default int megamapColumns() {
+    return megamapCapability().contentColumns(ReactRenderContext.of().getGridWidth());
   }
 
-  default int textWidth(String w) {
-    return MinecraftFont.Font.getWidth(w) * uiScale();
+  default int megamapRows() {
+    return megamapCapability().contentRows(ReactRenderContext.of().getGridHeight());
   }
 
-  default void text(int x, int y, String text) {
-    drawGlyphs(x, y, text, defaultTextColor());
+  default int megamapRowCapacity(int rowHeight) {
+    return bodyRegionOf(ReactRenderContext.of()).rowCapacity(Math.max(1, rowHeight));
   }
 
-  default void text(int x, int y, String text, TinyColor color) {
-    drawGlyphs(x, y, text, MapColors.colorFor(color.toRGB()));
-  }
-
-  private Color defaultTextColor() {
-    return MapColors.colorFor(0x4F4F4F);
-  }
-
-  private void drawGlyphs(int x, int y, String text, Color color) {
-    if (text == null || text.isEmpty()) {
+  default void drawMegamapNotice(String notice) {
+    if (notice == null || notice.isBlank()) {
       return;
     }
 
     ReactRenderContext context = ReactRenderContext.of();
-    int scale = Math.max(1, context.getTextScale());
-    int fontHeight = MinecraftFont.Font.getHeight();
-    int cursorX = x;
-    int cursorY = y;
-    for (int i = 0; i < text.length(); i++) {
-      char ch = text.charAt(i);
-      if (ch == '\n') {
-        cursorX = x;
-        cursorY += (fontHeight + 1) * scale;
-        continue;
-      }
-
-      MapFont.CharacterSprite sprite = MinecraftFont.Font.getChar(ch);
-      if (sprite == null) {
-        continue;
-      }
-
-      int glyphWidth = sprite.getWidth();
-      for (int row = 0; row < fontHeight; row++) {
-        for (int col = 0; col < glyphWidth; col++) {
-          if (sprite.get(row, col)) {
-            blitRect(context, cursorX + (col * scale), cursorY + (row * scale), scale, scale, color);
-          }
-        }
-      }
-
-      cursorX += (glyphWidth + 1) * scale;
+    int scale = uiScaleOf(context);
+    int width = textWidthOf(context, notice);
+    if (width <= 0) {
+      return;
     }
+
+    Region root = rootRegionOf(context);
+    int chipWidth = Math.min(root.width(), width + (2 * MapTheme.pad(scale)));
+    int chipHeight = (MapGlyphs.FONT_HEIGHT * scale) + (2 * scale);
+    Region chip = new Region(
+        root.right() - chipWidth - scale,
+        root.bottom() - chipHeight - scale,
+        chipWidth,
+        chipHeight
+    );
+    if (!visibleIn(context, chip)) {
+      return;
+    }
+
+    panel(chip, MapTheme.SURFACE_0, MapTheme.LINE_STRONG);
+    textIn(chip, MapTheme.pad(scale), scale, notice, MapTheme.TEXT_MUTED);
+  }
+
+  default int uiScale() {
+    return uiScaleOf(ReactRenderContext.of());
+  }
+
+  default int gridWidth() {
+    return ReactRenderContext.of().getGridWidth();
+  }
+
+  default int gridHeight() {
+    return ReactRenderContext.of().getGridHeight();
+  }
+
+  default int textHeight() {
+    return MapGlyphs.FONT_HEIGHT * uiScaleOf(ReactRenderContext.of());
+  }
+
+  default int textWidth(String w) {
+    return textWidthOf(ReactRenderContext.of(), w);
+  }
+
+  default void text(int x, int y, String text) {
+    drawGlyphs(ReactRenderContext.of(), x, y, text, MapColors.indexFor(0x4F4F4F));
+  }
+
+  default void text(int x, int y, String text, TinyColor color) {
+    drawGlyphs(ReactRenderContext.of(), x, y, text, MapColors.indexFor(color.toRGB()));
   }
 
   default void line(int x1, int y1, int x2, int y2, TinyColor color) {
@@ -112,21 +123,11 @@ public interface ReactRenderer {
     int steps = Math.max(dx, dy);
     int x = x1;
     int y = y1;
-    Color mapColor = MapColors.colorFor(color.toRGB());
+    byte index = MapColors.indexFor(color.toRGB());
     ReactRenderContext context = ReactRenderContext.of();
-    int width = context.getWidth();
-    int height = context.getHeight();
 
     for (int i = 0; i <= steps; i++) {
-      if (x < 0 || y < 0 || x >= width || y >= height) {
-        break;
-      }
-
-      if (i > 4096) {
-        break;
-      }
-
-      blitRect(context, x, y, 1, 1, mapColor);
+      blitRect(context, x, y, 1, 1, index);
       int e2 = 2 * err;
 
       if (e2 > -dy) {
@@ -146,7 +147,7 @@ public interface ReactRenderer {
   }
 
   default void setRgb(int x, int y, int rgb) {
-    blitRect(ReactRenderContext.of(), x, y, 1, 1, MapColors.colorFor(rgb));
+    blitRect(ReactRenderContext.of(), x, y, 1, 1, MapColors.indexFor(rgb));
   }
 
   default void set(int x, int y, int rgb) {
@@ -157,18 +158,6 @@ public interface ReactRenderer {
     setRgb(x, y, color.getRGB());
   }
 
-  default int x(int x) {
-    return Math.max(4, Math.min(width() - 1, x - 4));
-  }
-
-  default int y(int y) {
-    return Math.max(4, Math.min(height() - 1, y - 4));
-  }
-
-  default void textNear(int x, int y, String text) {
-    text(x(x - textWidth(text)), y(y - textHeight()), text);
-  }
-
   default void set(int x, int y, TinyColor color) {
     setRgb(x, y, color.toRGB());
   }
@@ -177,8 +166,16 @@ public interface ReactRenderer {
     setRgb(x, y, color.asRGB());
   }
 
-  default MapCanvas canvas() {
-    return ReactRenderContext.of().getCanvas();
+  default void textNear(int x, int y, String text) {
+    ReactRenderContext context = ReactRenderContext.of();
+    int scale = uiScaleOf(context);
+    drawGlyphs(
+        context,
+        x - textWidthOf(context, text),
+        y - (MapGlyphs.FONT_HEIGHT * scale),
+        text,
+        MapColors.indexFor(0x4F4F4F)
+    );
   }
 
   default MapView view() {
@@ -198,54 +195,189 @@ public interface ReactRenderer {
   }
 
   default int clipX0() {
-    ReactRenderContext context = ReactRenderContext.of();
-    return Math.max(0, context.getOffsetX() / Math.max(1, context.getScaleX()));
+    return clipX0Of(ReactRenderContext.of());
   }
 
   default int clipX1() {
-    ReactRenderContext context = ReactRenderContext.of();
-    return Math.min(context.getWidth(), Math.ceilDiv(context.getOffsetX() + CANVAS_SIZE, Math.max(1, context.getScaleX())));
+    return clipX1Of(ReactRenderContext.of());
   }
 
   default int clipY0() {
-    ReactRenderContext context = ReactRenderContext.of();
-    return Math.max(0, context.getOffsetY() / Math.max(1, context.getScaleY()));
+    return clipY0Of(ReactRenderContext.of());
   }
 
   default int clipY1() {
+    return clipY1Of(ReactRenderContext.of());
+  }
+
+  default Region rootRegion() {
+    return rootRegionOf(ReactRenderContext.of());
+  }
+
+  default Region tileRegion() {
+    return tileRegionOf(ReactRenderContext.of());
+  }
+
+  default Region clipRegion() {
+    return clipRegionOf(ReactRenderContext.of());
+  }
+
+  default Region headerRegion() {
     ReactRenderContext context = ReactRenderContext.of();
-    return Math.min(context.getHeight(), Math.ceilDiv(context.getOffsetY() + CANVAS_SIZE, Math.max(1, context.getScaleY())));
+    return rootRegionOf(context).topBand(MapTheme.headerHeight(uiScaleOf(context)));
+  }
+
+  default Region footerRegion() {
+    ReactRenderContext context = ReactRenderContext.of();
+    return rootRegionOf(context).bottomBand(MapTheme.footerHeight(uiScaleOf(context)));
+  }
+
+  default Region bodyRegion() {
+    return bodyRegionOf(ReactRenderContext.of());
+  }
+
+  default void pushClip(Region region) {
+    ReactRenderContext.of().pushClip(region.x(), region.y(), region.width(), region.height());
+  }
+
+  default void popClip() {
+    ReactRenderContext.of().popClip();
+  }
+
+  default boolean visible(Region region) {
+    return visibleIn(ReactRenderContext.of(), region);
   }
 
   default void set(int x, int y, int w, int h, TinyColor c) {
-    fillRgb(x, y, w, h, c.toRGB());
+    blitRect(ReactRenderContext.of(), x, y, w, h, MapColors.indexFor(c.toRGB()));
   }
 
   default void fillRgb(int x, int y, int w, int h, int rgb) {
-    blitRect(ReactRenderContext.of(), x, y, w, h, MapColors.colorFor(rgb));
+    blitRect(ReactRenderContext.of(), x, y, w, h, MapColors.indexFor(rgb));
   }
 
-  private void blitRect(ReactRenderContext context, int x, int y, int w, int h, Color color) {
-    int scaleX = context.getScaleX();
-    int scaleY = context.getScaleY();
-    int x0 = Math.max(0, (x * scaleX) - context.getOffsetX());
-    int y0 = Math.max(0, (y * scaleY) - context.getOffsetY());
-    int x1 = Math.min(CANVAS_SIZE, ((x + w) * scaleX) - context.getOffsetX());
-    int y1 = Math.min(CANVAS_SIZE, ((y + h) * scaleY) - context.getOffsetY());
-    if (x0 >= x1 || y0 >= y1) {
+  default void fill(Region region, TinyColor color) {
+    blitRect(
+        ReactRenderContext.of(),
+        region.x(),
+        region.y(),
+        region.width(),
+        region.height(),
+        MapColors.indexFor(color.toRGB())
+    );
+  }
+
+  default void border(Region region, TinyColor color) {
+    ReactRenderContext context = ReactRenderContext.of();
+    borderIn(context, region, color, MapTheme.borderThickness(uiScaleOf(context)));
+  }
+
+  default void border(Region region, TinyColor color, int thickness) {
+    borderIn(ReactRenderContext.of(), region, color, thickness);
+  }
+
+  default void panel(Region region, TinyColor background, TinyColor outline) {
+    if (region.isEmpty()) {
       return;
     }
 
-    MapCanvas canvas = context.getCanvas();
-    for (int i = x0; i < x1; i++) {
-      for (int j = y0; j < y1; j++) {
-        canvas.setPixelColor(i, j, color);
+    ReactRenderContext context = ReactRenderContext.of();
+    if (background != null) {
+      blitRect(
+          context,
+          region.x(),
+          region.y(),
+          region.width(),
+          region.height(),
+          MapColors.indexFor(background.toRGB())
+      );
+    }
+
+    if (outline != null) {
+      borderIn(context, region, outline, MapTheme.borderThickness(uiScaleOf(context)));
+    }
+  }
+
+  default void hSeparator(Region region, int offsetY, TinyColor color) {
+    ReactRenderContext context = ReactRenderContext.of();
+    blitRect(
+        context,
+        region.x(),
+        region.y() + offsetY,
+        region.width(),
+        MapTheme.borderThickness(uiScaleOf(context)),
+        MapColors.indexFor(color.toRGB())
+    );
+  }
+
+  default void vSeparator(Region region, int offsetX, TinyColor color) {
+    ReactRenderContext context = ReactRenderContext.of();
+    blitRect(
+        context,
+        region.x() + offsetX,
+        region.y(),
+        MapTheme.borderThickness(uiScaleOf(context)),
+        region.height(),
+        MapColors.indexFor(color.toRGB())
+    );
+  }
+
+  default void textIn(Region region, int dx, int dy, String text, TinyColor color) {
+    if (region == null || region.isEmpty() || text == null || text.isEmpty()) {
+      return;
+    }
+
+    ReactRenderContext context = ReactRenderContext.of();
+    context.pushClip(region.x(), region.y(), region.width(), region.height());
+    try {
+      String fitted = fitTextIn(context, text, region.width() - dx);
+      if (!fitted.isEmpty()) {
+        drawGlyphs(context, region.x() + dx, region.y() + dy, fitted, MapColors.indexFor(color.toRGB()));
       }
+    } finally {
+      context.popClip();
+    }
+  }
+
+  default void textRightIn(Region region, int inset, int dy, String text, TinyColor color) {
+    if (region == null || region.isEmpty() || text == null || text.isEmpty()) {
+      return;
+    }
+
+    ReactRenderContext context = ReactRenderContext.of();
+    context.pushClip(region.x(), region.y(), region.width(), region.height());
+    try {
+      String fitted = fitTextIn(context, text, region.width() - (2 * inset));
+      if (!fitted.isEmpty()) {
+        int x = region.right() - inset - textWidthOf(context, fitted);
+        drawGlyphs(context, Math.max(region.x() + inset, x), region.y() + dy, fitted, MapColors.indexFor(color.toRGB()));
+      }
+    } finally {
+      context.popClip();
+    }
+  }
+
+  default void textCenteredIn(Region region, int dy, String text, TinyColor color) {
+    if (region == null || region.isEmpty() || text == null || text.isEmpty()) {
+      return;
+    }
+
+    ReactRenderContext context = ReactRenderContext.of();
+    context.pushClip(region.x(), region.y(), region.width(), region.height());
+    try {
+      String fitted = fitTextIn(context, text, region.width());
+      if (!fitted.isEmpty()) {
+        int x = region.x() + ((region.width() - textWidthOf(context, fitted)) / 2);
+        drawGlyphs(context, Math.max(region.x(), x), region.y() + dy, fitted, MapColors.indexFor(color.toRGB()));
+      }
+    } finally {
+      context.popClip();
     }
   }
 
   default void clear(TinyColor color) {
-    fillRgb(0, 0, width(), height(), color.toRGB());
+    ReactRenderContext context = ReactRenderContext.of();
+    blitRect(context, 0, 0, context.getWidth(), context.getHeight(), MapColors.indexFor(color.toRGB()));
   }
 
   default int gradientRgb(double normalized, TinyColor low, TinyColor high) {
@@ -253,26 +385,28 @@ public interface ReactRenderer {
   }
 
   default void dashHeader(String title, String value, TinyColor accent, TinyColor valueColor) {
-    int w = width();
-    int s = uiScale();
-    set(0, 0, w, 13 * s, HEADER_BAND);
-    set(0, 0, 2 * s, 13 * s, accent);
+    ReactRenderContext context = ReactRenderContext.of();
+    int w = context.getWidth();
+    int s = uiScaleOf(context);
+    blitRect(context, 0, 0, w, 13 * s, MapColors.indexFor(HEADER_BAND.toRGB()));
+    blitRect(context, 0, 0, 2 * s, 13 * s, MapColors.indexFor(accent.toRGB()));
 
     int titleLimit = w - (8 * s);
     if (value != null && !value.isBlank()) {
-      int valueX = w - (3 * s) - textWidth(value);
-      text(valueX, 3 * s, value, valueColor == null ? accent : valueColor);
+      int valueX = w - (3 * s) - textWidthOf(context, value);
+      TinyColor resolved = valueColor == null ? accent : valueColor;
+      drawGlyphs(context, valueX, 3 * s, value, MapColors.indexFor(resolved.toRGB()));
       titleLimit = valueX - (9 * s);
     }
 
     if (title != null && !title.isBlank()) {
-      String fitted = fitText(title, titleLimit);
+      String fitted = fitTextIn(context, title, titleLimit);
       if (!fitted.isBlank()) {
-        text(5 * s, 3 * s, fitted, TEXT_BRIGHT);
+        drawGlyphs(context, 5 * s, 3 * s, fitted, MapColors.indexFor(TEXT_BRIGHT.toRGB()));
       }
     }
 
-    set(0, 13 * s, w, s, accent);
+    blitRect(context, 0, 13 * s, w, s, MapColors.indexFor(accent.toRGB()));
   }
 
   default void dashHeader(String title, String value, TinyColor accent) {
@@ -280,23 +414,182 @@ public interface ReactRenderer {
   }
 
   default String fitText(String text, int maxWidth) {
+    return fitTextIn(ReactRenderContext.of(), text, maxWidth);
+  }
+
+  private static int uiScaleOf(ReactRenderContext context) {
+    return Math.max(1, context.getTextScale());
+  }
+
+  private static int textWidthOf(ReactRenderContext context, String text) {
+    if (text == null || text.isEmpty()) {
+      return 0;
+    }
+
+    return MapGlyphs.runWidth(text) * uiScaleOf(context);
+  }
+
+  private static String fitTextIn(ReactRenderContext context, String text, int maxWidth) {
     if (text == null || text.isBlank() || maxWidth <= 0) {
       return "";
     }
 
-    if (textWidth(text) <= maxWidth) {
+    int scale = uiScaleOf(context);
+    if (MapGlyphs.runWidth(text) * scale <= maxWidth) {
       return text;
     }
 
-    int end = text.length();
-    while (end > 1) {
-      String candidate = text.substring(0, end).stripTrailing() + ".";
-      if (textWidth(candidate) <= maxWidth) {
-        return candidate;
-      }
-      end--;
+    int dotAdvance = MapGlyphs.advance('.');
+    if (dotAdvance <= 0) {
+      return "";
     }
 
-    return "";
+    int advance = 0;
+    int fitEnd = 0;
+    for (int i = 0; i < text.length(); i++) {
+      advance += MapGlyphs.advance(text.charAt(i));
+      if (((advance + dotAdvance - 1) * scale) > maxWidth) {
+        break;
+      }
+      fitEnd = i + 1;
+    }
+
+    if (fitEnd < 2) {
+      return "";
+    }
+
+    return text.substring(0, fitEnd).stripTrailing() + ".";
+  }
+
+  private static Region rootRegionOf(ReactRenderContext context) {
+    return new Region(0, 0, context.getWidth(), context.getHeight());
+  }
+
+  private static Region tileRegionOf(ReactRenderContext context) {
+    int x0 = clipX0Of(context);
+    int y0 = clipY0Of(context);
+    return new Region(x0, y0, clipX1Of(context) - x0, clipY1Of(context) - y0);
+  }
+
+  private static Region clipRegionOf(ReactRenderContext context) {
+    return new Region(
+        context.getClipX0(),
+        context.getClipY0(),
+        context.getClipX1() - context.getClipX0(),
+        context.getClipY1() - context.getClipY0()
+    );
+  }
+
+  private static Region bodyRegionOf(ReactRenderContext context) {
+    int scale = uiScaleOf(context);
+    return rootRegionOf(context).withoutTop(MapTheme.headerHeight(scale)).withoutBottom(MapTheme.footerHeight(scale));
+  }
+
+  private static int clipX0Of(ReactRenderContext context) {
+    return Math.max(0, context.getOffsetX() / context.getScaleX());
+  }
+
+  private static int clipX1Of(ReactRenderContext context) {
+    return Math.min(context.getWidth(), Math.ceilDiv(context.getOffsetX() + CANVAS_SIZE, context.getScaleX()));
+  }
+
+  private static int clipY0Of(ReactRenderContext context) {
+    return Math.max(0, context.getOffsetY() / context.getScaleY());
+  }
+
+  private static int clipY1Of(ReactRenderContext context) {
+    return Math.min(context.getHeight(), Math.ceilDiv(context.getOffsetY() + CANVAS_SIZE, context.getScaleY()));
+  }
+
+  private static boolean visibleIn(ReactRenderContext context, Region region) {
+    if (region == null || region.isEmpty()) {
+      return false;
+    }
+
+    return region.intersects(clipRegionOf(context)) && region.intersects(tileRegionOf(context));
+  }
+
+  private static void borderIn(ReactRenderContext context, Region region, TinyColor color, int thickness) {
+    if (region.isEmpty() || thickness <= 0) {
+      return;
+    }
+
+    byte index = MapColors.indexFor(color.toRGB());
+    int capped = Math.min(thickness, Math.min(region.width(), region.height()));
+    blitRect(context, region.x(), region.y(), region.width(), capped, index);
+    blitRect(context, region.x(), region.bottom() - capped, region.width(), capped, index);
+    blitRect(context, region.x(), region.y() + capped, capped, region.height() - (2 * capped), index);
+    blitRect(context, region.right() - capped, region.y() + capped, capped, region.height() - (2 * capped), index);
+  }
+
+  private static void drawGlyphs(ReactRenderContext context, int x, int y, String text, byte paletteIndex) {
+    if (text == null || text.isEmpty()) {
+      return;
+    }
+
+    int scale = uiScaleOf(context);
+    int fontHeight = MapGlyphs.FONT_HEIGHT;
+    int clipX0 = context.getClipX0();
+    int clipX1 = context.getClipX1();
+    int clipY0 = context.getClipY0();
+    int clipY1 = context.getClipY1();
+    int cursorX = x;
+    int cursorY = y;
+    for (int i = 0; i < text.length(); i++) {
+      char ch = text.charAt(i);
+      if (ch == '\n') {
+        cursorX = x;
+        cursorY += (fontHeight + 1) * scale;
+        continue;
+      }
+
+      MapGlyphs.Glyph glyph = MapGlyphs.glyph(ch);
+      int advance = glyph.advance() * scale;
+      if (advance <= 0) {
+        continue;
+      }
+
+      if (cursorX >= clipX1 || cursorX + advance <= clipX0
+          || cursorY >= clipY1 || cursorY + (fontHeight * scale) <= clipY0) {
+        cursorX += advance;
+        continue;
+      }
+
+      int[] runs = glyph.runs();
+      for (int run = 0; run < runs.length; run += MapGlyphs.RUN_STRIDE) {
+        blitRect(
+            context,
+            cursorX + (runs[run + 1] * scale),
+            cursorY + (runs[run] * scale),
+            runs[run + 2] * scale,
+            scale,
+            paletteIndex
+        );
+      }
+
+      cursorX += advance;
+    }
+  }
+
+  private static void blitRect(ReactRenderContext context, int x, int y, int w, int h, byte paletteIndex) {
+    int lx0 = Math.max(x, context.getClipX0());
+    int ly0 = Math.max(y, context.getClipY0());
+    int lx1 = Math.min(x + w, context.getClipX1());
+    int ly1 = Math.min(y + h, context.getClipY1());
+    if (lx0 >= lx1 || ly0 >= ly1) {
+      return;
+    }
+
+    int scaleX = context.getScaleX();
+    int scaleY = context.getScaleY();
+    int offsetX = context.getOffsetX();
+    int offsetY = context.getOffsetY();
+    context.paintCanvasRect(
+        (lx0 * scaleX) - offsetX,
+        (ly0 * scaleY) - offsetY,
+        (lx1 * scaleX) - offsetX,
+        (ly1 * scaleY) - offsetY,
+        paletteIndex
+    );
   }
 }

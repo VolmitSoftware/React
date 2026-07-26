@@ -24,7 +24,8 @@ import art.arcane.react.api.tweak.ReactTweak;
 import art.arcane.react.core.controller.EntityController;
 import art.arcane.react.model.ReactEntity;
 import art.arcane.react.util.common.scheduling.J;
-import art.arcane.volmlib.util.entity.StackExclusion;
+import art.arcane.react.api.protect.ReactOperation;
+import art.arcane.react.api.protect.ReactProtection;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.event.Listener;
@@ -73,7 +74,7 @@ public class TweakEntityCrowdPrevention extends ReactTweak implements Listener {
    * Checks if the entity is crowded
    */
   public void onCrowdCheck(Entity entity) {
-    if (StackExclusion.isExcluded(entity)) {
+    if (ReactProtection.isProtected(entity, ReactOperation.PURGE)) {
       return;
     }
 

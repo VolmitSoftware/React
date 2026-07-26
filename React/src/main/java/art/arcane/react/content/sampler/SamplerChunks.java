@@ -144,7 +144,20 @@ public class SamplerChunks extends ReactCachedSampler implements Listener {
   @Override
   public double onSample() {
     if (realCheckUpdate.flip() || loadedChunks.get() < 0) {
-      J.a(() -> loadedChunks.set(getRealCheck()));
+      if (J.isFoliaThreading()) {
+        J.a(() -> loadedChunks.set(getFoliaApproximateRealCheck()));
+      } else {
+        sampleOnMainThread(() -> {
+          int m = 0;
+
+          for (World i : Bukkit.getWorlds()) {
+            m += i.getLoadedChunks().length;
+          }
+
+          loadedChunks.set(m);
+          return (double) m;
+        });
+      }
     }
 
     return loadedChunks.get();

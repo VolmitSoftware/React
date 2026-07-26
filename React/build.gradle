@@ -169,6 +169,9 @@ dependencies {
     compileOnly('io.netty:netty-transport:4.1.92.Final')
 
     testImplementation('io.javalin:javalin:6.4.0')
+    testImplementation('me.clip:placeholderapi:2.11.6') {
+        transitive = false
+    }
     testImplementation('net.kyori:adventure-text-minimessage:5.1.1')
     testImplementation('net.kyori:adventure-text-serializer-legacy:5.1.1')
     testImplementation('org.junit.jupiter:junit-jupiter:5.11.4')

@@ -20,7 +20,7 @@ public class RemoteSamplerBridge {
   private final Map<String, Map<String, IntegrationMetricSample>> samplesByPlugin = new ConcurrentHashMap<>();
   private final Map<String, Map<GroupKey, IntegrationMetricGroup>> groupsByPlugin = new ConcurrentHashMap<>();
 
-  public void updatePluginSamples(
+  public int updatePluginSamples(
       String pluginId,
       Set<String> expectedKeys,
       Map<String, IntegrationMetricSample> samples,
@@ -36,15 +36,19 @@ public class RemoteSamplerBridge {
     Map<String, IntegrationMetricSample> safeSamples = samples == null ? Map.of() : samples;
     String reason = unavailableReason == null || unavailableReason.isBlank() ? "unavailable" : unavailableReason;
 
-    pluginSamples.keySet().removeIf(key -> key.startsWith(normalizedPlugin + ".")
+    pluginSamples.keySet().removeIf(key -> hasPluginPrefix(key, normalizedPlugin)
         && !safeExpectedKeys.contains(key)
         && !safeSamples.containsKey(key));
 
+    int available = 0;
     for (String key : safeExpectedKeys) {
       IntegrationMetricSample supplied = safeSamples.get(key);
       IntegrationMetricSample sample = validatedSample(normalizedPlugin, key, supplied, now);
       if (sample != null) {
         pluginSamples.put(key, sample);
+        if (sample.available()) {
+          available++;
+        }
         continue;
       }
 
@@ -58,11 +62,17 @@ public class RemoteSamplerBridge {
 
     for (Map.Entry<String, IntegrationMetricSample> entry : safeSamples.entrySet()) {
       String key = entry.getKey();
+      if (safeExpectedKeys.contains(key)) {
+        continue;
+      }
+
       IntegrationMetricSample sample = validatedSample(normalizedPlugin, key, entry.getValue(), now);
       if (sample != null) {
         pluginSamples.put(key, sample);
       }
     }
+
+    return available;
   }
 
   public void updatePluginGroups(String pluginId, List<IntegrationMetricGroup> groups) {
@@ -137,11 +147,13 @@ public class RemoteSamplerBridge {
   }
 
   public double valueOr(String pluginId, String key, double fallback) {
-    return getSample(pluginId, key).valueOr(fallback);
+    IntegrationMetricSample sample = storedSample(pluginId, key);
+    return sample == null ? fallback : sample.valueOr(fallback);
   }
 
   public boolean isAvailable(String pluginId, String key) {
-    return getSample(pluginId, key).available();
+    IntegrationMetricSample sample = storedSample(pluginId, key);
+    return sample != null && sample.available();
   }
 
   public Map<String, IntegrationMetricSample> snapshot(String pluginId) {
@@ -158,6 +170,18 @@ public class RemoteSamplerBridge {
     groupsByPlugin.clear();
   }
 
+  private static boolean hasPluginPrefix(String key, String pluginId) {
+    int prefixLength = pluginId.length();
+    return key.length() > prefixLength
+        && key.charAt(prefixLength) == '.'
+        && key.startsWith(pluginId);
+  }
+
+  private IntegrationMetricSample storedSample(String pluginId, String key) {
+    Map<String, IntegrationMetricSample> pluginSamples = samplesByPlugin.get(normalizePlugin(pluginId));
+    return pluginSamples == null ? null : pluginSamples.get(key);
+  }
+
   private IntegrationMetricSample validatedSample(
       String pluginId,
       String mapKey,
@@ -167,7 +191,7 @@ public class RemoteSamplerBridge {
     if (mapKey == null || mapKey.isBlank() || sample == null || sample.descriptor() == null) {
       return null;
     }
-    if (!mapKey.equals(sample.descriptor().key()) || !mapKey.startsWith(pluginId + ".")) {
+    if (!mapKey.equals(sample.descriptor().key()) || !hasPluginPrefix(mapKey, pluginId)) {
       return null;
     }
     String descriptorPlugin = normalize(sample.descriptor().tags().get("plugin"));
@@ -221,7 +245,19 @@ public class RemoteSamplerBridge {
   }
 
   private String normalize(String value) {
-    return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
+    if (value == null) {
+      return "";
+    }
+
+    int length = value.length();
+    for (int i = 0; i < length; i++) {
+      char c = value.charAt(i);
+      if (c <= ' ' || c > 'z' || (c >= 'A' && c <= 'Z')) {
+        return value.trim().toLowerCase(Locale.ROOT);
+      }
+    }
+
+    return value;
   }
 
   private record GroupKey(String scopeKind, String scopeId) {

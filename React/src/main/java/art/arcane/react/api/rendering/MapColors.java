@@ -19,6 +19,7 @@
 
 package art.arcane.react.api.rendering;
 
+import art.arcane.react.util.data.TinyColor;
 import org.bukkit.map.MapPalette;
 
 import java.awt.Color;
@@ -32,16 +33,11 @@ public final class MapColors {
   }
 
   public static Color colorFor(int rgb) {
-    int key = rgb & 0xFFFFFF;
-    int slot = mix(key) & (CACHE_SIZE - 1);
-    ColorEntry cached = CACHE.get(slot);
-    if (cached != null && cached.rgb() == key) {
-      return cached.color();
-    }
+    return entryFor(rgb).color();
+  }
 
-    Color matched = MapPalette.getNearestColor(new Color(key));
-    CACHE.set(slot, new ColorEntry(key, matched));
-    return matched;
+  public static byte indexFor(int rgb) {
+    return entryFor(rgb).index();
   }
 
   public static int lerpRgb(double normalized, int lowRgb, int highRgb) {
@@ -52,11 +48,40 @@ public final class MapColors {
     return (r << 16) | (g << 8) | b;
   }
 
+  public static TinyColor rampColor(double normalized, TinyColor[] ramp) {
+    if (ramp == null || ramp.length == 0) {
+      throw new IllegalArgumentException("Ramp must contain at least one color");
+    }
+
+    if (ramp.length == 1) {
+      return ramp[0];
+    }
+
+    double n = normalized < 0D ? 0D : (normalized > 1D ? 1D : normalized);
+    int index = (int) Math.round(n * (ramp.length - 1));
+    return ramp[Math.max(0, Math.min(ramp.length - 1, index))];
+  }
+
+  @SuppressWarnings("removal")
+  private static ColorEntry entryFor(int rgb) {
+    int key = rgb & 0xFFFFFF;
+    int slot = mix(key) & (CACHE_SIZE - 1);
+    ColorEntry cached = CACHE.get(slot);
+    if (cached != null && cached.rgb() == key) {
+      return cached;
+    }
+
+    byte index = MapPalette.matchColor(new Color(key));
+    ColorEntry entry = new ColorEntry(key, MapPalette.getColor(index), index);
+    CACHE.set(slot, entry);
+    return entry;
+  }
+
   private static int mix(int key) {
     int h = key * 0x9E3779B1;
     return (h ^ (h >>> 16)) & 0x7FFFFFFF;
   }
 
-  private record ColorEntry(int rgb, Color color) {
+  private record ColorEntry(int rgb, Color color, byte index) {
   }
 }

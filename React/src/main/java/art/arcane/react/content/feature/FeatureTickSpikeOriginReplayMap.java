@@ -20,6 +20,10 @@
 package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
+import art.arcane.react.api.rendering.MapTheme;
+import art.arcane.react.api.rendering.MegamapGrid;
+import art.arcane.react.api.rendering.Region;
+import art.arcane.react.api.rendering.RendererLayout;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.core.controller.ObserverController;
 import art.arcane.react.localization.ReactLanguage;
@@ -29,6 +33,8 @@ import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.data.TinyColor;
 import org.bukkit.Chunk;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -129,6 +135,52 @@ public class FeatureTickSpikeOriginReplayMap extends FeatureChunkHeatmapBase {
     }
 
     return gradient((normalized - 0.5D) * 2D, new TinyColor(255, 120, 10), new TinyColor(255, 240, 180));
+  }
+
+  @Override
+  protected void renderOverlay(Map<Chunk, Double> score, double min, double max) {
+    MegamapGrid.MegamapDetail detail = megamapDetail();
+    if (score.isEmpty() || !detail.atLeast(MegamapGrid.MegamapDetail.EXPANDED)) {
+      return;
+    }
+
+    int limit = detail.atLeast(MegamapGrid.MegamapDetail.RICH) ? 8 : 3;
+    List<Map.Entry<Chunk, Double>> ranked = highest(score, limit);
+
+    int scale = uiScale();
+    int marker = Math.max(2, 3 * scale);
+    for (int i = 0; i < ranked.size(); i++) {
+      Map.Entry<Chunk, Double> entry = ranked.get(i);
+      Chunk chunk = entry.getKey();
+      Pixel pixel = projectChunk(chunk);
+      Region badge = new Region(pixel.x() - marker, pixel.y() - marker, (2 * marker) + 1, (2 * marker) + 1);
+      border(badge, MapTheme.TEXT_STRONG, Math.max(1, scale));
+
+      Region label = new Region(badge.right() + scale, pixel.y() - (MapTheme.lineHeight(scale) / 2), 40 * scale, MapTheme.lineHeight(scale));
+      textIn(label, 0, 0, "#" + (i + 1) + " " + RendererLayout.compact(entry.getValue()), MapTheme.TEXT_STRONG);
+    }
+  }
+
+  private List<Map.Entry<Chunk, Double>> highest(Map<Chunk, Double> score, int limit) {
+    List<Map.Entry<Chunk, Double>> ranked = new ArrayList<>(limit);
+    for (Map.Entry<Chunk, Double> candidate : score.entrySet()) {
+      double value = candidate.getValue() == null ? 0D : candidate.getValue();
+      if (ranked.size() >= limit && value <= ranked.get(ranked.size() - 1).getValue()) {
+        continue;
+      }
+
+      int slot = 0;
+      while (slot < ranked.size() && ranked.get(slot).getValue() >= value) {
+        slot++;
+      }
+
+      ranked.add(slot, candidate);
+      if (ranked.size() > limit) {
+        ranked.remove(ranked.size() - 1);
+      }
+    }
+
+    return ranked;
   }
 
   private void captureSpike(long now, double tickMS) {

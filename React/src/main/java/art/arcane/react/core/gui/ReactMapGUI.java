@@ -20,6 +20,7 @@
 package art.arcane.react.core.gui;
 
 import art.arcane.react.React;
+import art.arcane.react.api.rendering.MegamapGrid;
 import art.arcane.react.api.rendering.ReactRenderer;
 import art.arcane.react.api.rendering.RendererUnknown;
 import art.arcane.react.api.sampler.Sampler;
@@ -113,6 +114,11 @@ public final class ReactMapGUI {
         ))
         .onLeftClick((e) -> J.runEntity(player, () -> openGroup(player, ALL_GROUPS, 0))));
 
+    Map<String, MapController.MegamapStatus> megamapStatus = controller.megamapStatusByRenderer();
+    if (!megamapStatus.isEmpty()) {
+      tiles.add(megamapSummaryTile(megamapStatus));
+    }
+
     for (Map.Entry<Integer, RendererGroup> entry : groups.entrySet()) {
       int groupOrder = entry.getKey();
       RendererGroup group = entry.getValue();
@@ -181,6 +187,7 @@ public final class ReactMapGUI {
     }
 
     playPageTurn(player);
+    Map<String, MapController.MegamapStatus> megamapStatus = controller.megamapStatusByRenderer();
     PageLayout layout = groupPageLayout(renderers.size());
     int currentPage = clampPage(page, layout.pageCount());
     int start = currentPage * layout.itemsPerPage();
@@ -210,7 +217,7 @@ public final class ReactMapGUI {
         UIElement element = new UIElement("map-renderer-" + renderer.getId())
             .setMaterial(new MaterialBlock(materialFor(renderer)))
             .setName(C.WHITE + rendererName + C.DARK_GRAY + " [" + scopeTag + "]");
-        for (String loreLine : loreFor(renderer)) {
+        for (String loreLine : loreFor(renderer, megamapStatus.get(normalizedId))) {
           element.addLore(loreLine);
         }
 
@@ -396,7 +403,7 @@ public final class ReactMapGUI {
     return Character.toUpperCase(spaced.charAt(0)) + spaced.substring(1);
   }
 
-  private static List<String> loreFor(ReactRenderer renderer) {
+  private static List<String> loreFor(ReactRenderer renderer, MapController.MegamapStatus megamapStatus) {
     List<String> lore = new ArrayList<>();
     String id = renderer == null ? "unknown" : Objects.toString(renderer.getId(), "unknown");
     String normalizedId = normalizeRendererId(renderer);
@@ -410,9 +417,83 @@ public final class ReactMapGUI {
       lore.add(C.DARK_GRAY + detail);
     }
     lore.add(C.DARK_GRAY + ReactLanguage.plain(GuiMessages.MAP_ID, MessageArgument.untrusted("id", id)));
+    lore.add(C.AQUA + megamapCapabilityLine(renderer));
+    if (megamapStatus != null) {
+      lore.add(C.YELLOW + megamapStatusLine(megamapStatus));
+    }
     lore.add(C.GREEN + ReactLanguage.plain(GuiMessages.MAP_SELECT));
     lore.add(C.GREEN + ReactLanguage.plain(GuiMessages.MAP_ADD_KEEP_OPEN));
     return lore;
+  }
+
+  private static Element megamapSummaryTile(Map<String, MapController.MegamapStatus> megamapStatus) {
+    int walls = 0;
+    int issues = 0;
+    for (MapController.MegamapStatus status : megamapStatus.values()) {
+      if (status.gridWidth() > 0) {
+        walls++;
+      }
+      if (status.defect() != null) {
+        issues++;
+      }
+    }
+
+    Element tile = new UIElement("map-hub-megamap")
+        .setMaterial(new MaterialBlock(Material.ITEM_FRAME))
+        .setName(C.WHITE + ReactLanguage.raw(MapMessages.MEGAMAP_WALLS));
+    tile.addLore(C.GRAY + ReactLanguage.raw(MapMessages.MEGAMAP_WALLS_SUMMARY));
+    tile.addLore(C.DARK_GRAY + ReactLanguage.raw(
+        MapMessages.MEGAMAP_WALLS_DETECTED,
+        MessageArgument.untrusted("count", Integer.toString(walls))
+    ) + (issues > 0 ? C.RED + "  " + ReactLanguage.raw(
+        MapMessages.MEGAMAP_WALLS_ISSUES,
+        MessageArgument.untrusted("count", Integer.toString(issues))
+    ) : ""));
+
+    int listed = 0;
+    for (Map.Entry<String, MapController.MegamapStatus> entry : megamapStatus.entrySet()) {
+      if (listed >= 8) {
+        break;
+      }
+
+      tile.addLore(C.DARK_GRAY + displayName(entry.getKey()) + C.GRAY + "  " + megamapStatusLine(entry.getValue()));
+      listed++;
+    }
+
+    return tile;
+  }
+
+  private static String megamapCapabilityLine(ReactRenderer renderer) {
+    MegamapGrid.MegamapCapability capability = renderer == null
+        ? MegamapGrid.MegamapCapability.magnify()
+        : renderer.megamapCapability();
+    if (!capability.adaptive()) {
+      return ReactLanguage.raw(MapMessages.MEGAMAP_MAGNIFY);
+    }
+
+    return ReactLanguage.raw(
+        MapMessages.MEGAMAP_ADAPTIVE,
+        MessageArgument.untrusted("size", capability.maxGridWidth() + "x" + capability.maxGridHeight())
+    );
+  }
+
+  private static String megamapStatusLine(MapController.MegamapStatus status) {
+    if (status.defect() != null) {
+      return ReactLanguage.raw(
+          MapMessages.MEGAMAP_ISSUE,
+          MessageArgument.untrusted("reason", megamapDefectLabel(status.defect()))
+      );
+    }
+
+    return ReactLanguage.raw(
+        MapMessages.MEGAMAP_ACTIVE,
+        MessageArgument.untrusted("size", status.gridWidth() + "x" + status.gridHeight()),
+        MessageArgument.untrusted("frames", Integer.toString(status.frames()))
+    );
+  }
+
+  private static String megamapDefectLabel(MegamapGrid.DefectReason reason) {
+    return ReactLanguage.raw(MapMessages.defectLabel(reason));
   }
 
   private static String rendererDisplayName(ReactRenderer renderer) {

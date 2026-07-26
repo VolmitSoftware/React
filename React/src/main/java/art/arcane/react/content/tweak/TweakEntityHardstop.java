@@ -19,11 +19,15 @@
 
 package art.arcane.react.content.tweak;
 
+import art.arcane.react.api.protect.internal.ProtectionGuards;
 import art.arcane.react.api.tweak.ReactTweak;
 import it.unimi.dsi.fastutil.longs.Long2LongMap;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import org.bukkit.Chunk;
+import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Item;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -53,37 +57,61 @@ public class TweakEntityHardstop extends ReactTweak implements Listener {
   @EventHandler
   public void onEntitySpawn(EntitySpawnEvent event) {
     Entity entity = event.getEntity();
-    Chunk chunk = entity.getLocation().getChunk();
+    Location at = entity.getLocation();
     if (entity instanceof Item && allowItemDrops) {
       return;
     }
-    if (!canSpawnEntity(chunk)) {
+    if (spawnProtected(entity.getType(), at)) {
+      return;
+    }
+    if (!canSpawnEntity(at.getChunk())) {
       event.setCancelled(true);
     }
   }
 
   @EventHandler
   public void onCreatureSpawn(CreatureSpawnEvent event) {
-    Chunk chunk = event.getLocation().getChunk();
-    if (!canSpawnEntity(chunk)) {
+    Location at = event.getLocation();
+    if (spawnProtected(event.getEntityType(), at, event.getSpawnReason())) {
+      return;
+    }
+    if (!canSpawnEntity(at.getChunk())) {
       event.setCancelled(true);
     }
   }
 
   @EventHandler
   public void onPlayerDropItem(PlayerDropItemEvent event) {
-    Chunk chunk = event.getPlayer().getLocation().getChunk();
-    if (!allowItemDrops && !canSpawnEntity(chunk)) {
+    Location at = event.getPlayer().getLocation();
+    if (allowItemDrops) {
+      return;
+    }
+    if (spawnProtected(EntityType.ITEM, at)) {
+      return;
+    }
+    if (!canSpawnEntity(at.getChunk())) {
       event.setCancelled(true);
     }
   }
 
   @EventHandler
   public void onEntityBreed(EntityBreedEvent event) {
-    Chunk chunk = event.getEntity().getLocation().getChunk();
-    if (!canSpawnEntity(chunk)) {
+    Location at = event.getEntity().getLocation();
+    if (spawnProtected(event.getEntity().getType(), at)) {
+      return;
+    }
+    if (!canSpawnEntity(at.getChunk())) {
       event.setCancelled(true);
     }
+  }
+
+  private boolean spawnProtected(EntityType type, Location at) {
+    return spawnProtected(type, at, null);
+  }
+
+  private boolean spawnProtected(EntityType type, Location at, CreatureSpawnEvent.SpawnReason reason) {
+    World world = at.getWorld();
+    return ProtectionGuards.spawnProtected(type, world == null ? "" : world.getName(), reason);
   }
 
 

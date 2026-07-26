@@ -7,6 +7,7 @@ import art.arcane.react.core.integration.IntegrationMetricKeySelector;
 import art.arcane.react.core.integration.ReactIntegrationService;
 import art.arcane.react.core.integration.ReflectiveIntegrationProviderAdapter;
 import art.arcane.react.core.integration.RemoteSamplerBridge;
+import art.arcane.react.core.integration.ThirdPartyMetricRegistry;
 import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.common.scheduling.TickedObject;
@@ -40,6 +41,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Getter
 public class IntegrationController extends TickedObject implements IController {
   private static final long DISCOVERY_INTERVAL_MS = 5_000L;
+  private static final long EXPECTED_KEY_REFRESH_MS = 5_000L;
   private static final long HANDSHAKE_RETRY_MS = 10_000L;
   private static final long STALE_HEARTBEAT_TIMEOUT_MS = 15_000L;
   private static final long MAX_FUTURE_HEARTBEAT_MS = 5_000L;
@@ -57,6 +59,7 @@ public class IntegrationController extends TickedObject implements IController {
   private final transient Map<String, Boolean> activeThresholds = new ConcurrentHashMap<>();
   private transient ReactIntegrationService localService;
   private transient RemoteSamplerBridge remoteSamplerBridge;
+  private transient ThirdPartyMetricRegistry thirdPartyMetrics;
   private transient long lastDiscoveryMs;
   private transient long lastCorrelationLogMs;
   private transient double previousIrisQueue;
@@ -80,6 +83,8 @@ public class IntegrationController extends TickedObject implements IController {
   @Override
   public void start() {
     remoteSamplerBridge = new RemoteSamplerBridge();
+    thirdPartyMetrics = new ThirdPartyMetricRegistry();
+    thirdPartyMetrics.install();
     localService = new ReactIntegrationService();
     localService.register();
     lastDiscoveryMs = 0L;
@@ -97,6 +102,10 @@ public class IntegrationController extends TickedObject implements IController {
   public void stop() {
     if (localService != null) {
       localService.unregister();
+    }
+    if (thirdPartyMetrics != null) {
+      thirdPartyMetrics.uninstall();
+      thirdPartyMetrics = null;
     }
     nodes.clear();
     timeline.clear();
@@ -184,6 +193,7 @@ public class IntegrationController extends TickedObject implements IController {
     long now = System.currentTimeMillis();
     if (now - lastDiscoveryMs >= DISCOVERY_INTERVAL_MS) {
       discoverProviders(now);
+      discoverMetricSources(now);
       lastDiscoveryMs = now;
     }
 
@@ -198,6 +208,21 @@ public class IntegrationController extends TickedObject implements IController {
     evaluateCorrelation(now);
     evaluateThresholds(now);
     trimTimeline(now);
+  }
+
+  private void discoverMetricSources(long now) {
+    ThirdPartyMetricRegistry registry = thirdPartyMetrics;
+
+    if (registry == null) {
+      return;
+    }
+
+    try {
+      registry.reconcile(now);
+    } catch (Throwable e) {
+      React.warn("[metric] third-party metric reconcile failed: " + e.getClass().getSimpleName()
+          + (e.getMessage() == null ? "" : " - " + e.getMessage()));
+    }
   }
 
   private void discoverProviders(long now) {
@@ -281,7 +306,7 @@ public class IntegrationController extends TickedObject implements IController {
       logLifecycle("replace", state.pluginId, "provider-replaced");
       remoteSamplerBridge.markPluginUnavailable(
           state.pluginId,
-          IntegrationMetricKeySelector.expectedKeys(state.pluginId, null),
+          fixedKeys(state),
           "provider-replaced"
       );
     }
@@ -305,6 +330,9 @@ public class IntegrationController extends TickedObject implements IController {
     state.lastHandshakeAttemptMs = 0L;
     state.lastHeartbeatMs = 0L;
     state.negotiatedProtocol = null;
+    state.expectedKeys = null;
+    state.expectedKeysProvider = null;
+    state.expectedKeysAtMs = 0L;
   }
 
   @SuppressWarnings({"rawtypes", "unchecked"})
@@ -318,7 +346,7 @@ public class IntegrationController extends TickedObject implements IController {
 
   private void updateNode(IntegrationNodeState node, long now) {
     IntegrationServiceContract provider = node.provider;
-    Set<String> expectedKeys = IntegrationMetricKeySelector.expectedKeys(node.pluginId, null);
+    Set<String> expectedKeys = fixedKeys(node);
 
     if (provider == null) {
       node.bound = false;
@@ -383,13 +411,11 @@ public class IntegrationController extends TickedObject implements IController {
     }
 
     try {
-      expectedKeys = IntegrationMetricKeySelector.expectedKeys(node.pluginId, provider);
+      expectedKeys = providerKeys(node, provider, now);
       Map<String, IntegrationMetricSample> samples = provider.sampleMetrics(expectedKeys);
-      remoteSamplerBridge.updatePluginSamples(node.pluginId, expectedKeys, samples, "metric-unavailable");
+      int availableSamples = remoteSamplerBridge.updatePluginSamples(node.pluginId, expectedKeys, samples, "metric-unavailable");
       remoteSamplerBridge.updatePluginGroups(node.pluginId, provider.metricGroups());
-      boolean anyAvailable = expectedKeys.stream()
-          .anyMatch(key -> remoteSamplerBridge.isAvailable(node.pluginId, key));
-      if (!expectedKeys.isEmpty() && !anyAvailable) {
+      if (!expectedKeys.isEmpty() && availableSamples <= 0) {
         setHealth(node, Health.DEGRADED, "metric-data-unavailable");
         return;
       }
@@ -398,6 +424,24 @@ public class IntegrationController extends TickedObject implements IController {
       setHealth(node, Health.DEGRADED, "metric-error:" + e.getClass().getSimpleName());
       remoteSamplerBridge.markPluginUnavailable(node.pluginId, expectedKeys, "metric-error");
     }
+  }
+
+  private Set<String> fixedKeys(IntegrationNodeState node) {
+    if (node.fixedKeys == null) {
+      node.fixedKeys = IntegrationMetricKeySelector.expectedKeys(node.pluginId, null);
+    }
+    return node.fixedKeys;
+  }
+
+  private Set<String> providerKeys(IntegrationNodeState node, IntegrationServiceContract provider, long now) {
+    if (node.expectedKeys == null
+        || node.expectedKeysProvider != provider
+        || now - node.expectedKeysAtMs >= EXPECTED_KEY_REFRESH_MS) {
+      node.expectedKeys = IntegrationMetricKeySelector.expectedKeys(node.pluginId, provider);
+      node.expectedKeysProvider = provider;
+      node.expectedKeysAtMs = now;
+    }
+    return node.expectedKeys;
   }
 
   private void attemptHandshake(IntegrationNodeState node, IntegrationServiceContract provider, long now) {
@@ -644,6 +688,10 @@ public class IntegrationController extends TickedObject implements IController {
     private IntegrationProtocolVersion negotiatedProtocol;
     private Health health;
     private String message;
+    private Set<String> fixedKeys;
+    private Set<String> expectedKeys;
+    private IntegrationServiceContract expectedKeysProvider;
+    private long expectedKeysAtMs;
 
     private IntegrationNodeState(String pluginId) {
       this.pluginId = pluginId;
@@ -655,6 +703,10 @@ public class IntegrationController extends TickedObject implements IController {
       this.negotiatedProtocol = null;
       this.health = Health.MISSING;
       this.message = "not-discovered";
+      this.fixedKeys = null;
+      this.expectedKeys = null;
+      this.expectedKeysProvider = null;
+      this.expectedKeysAtMs = 0L;
     }
   }
 

@@ -40,6 +40,10 @@ public class SamplerTickTime extends ReactCachedSampler {
 
   @Override
   public double onSample() {
+    return sampleOnMainThread(SamplerTickTime::readAverageTickTime);
+  }
+
+  private static Double readAverageTickTime() {
     Server server = Bukkit.getServer();
     if (server == null) {
       return 0D;

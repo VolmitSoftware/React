@@ -29,13 +29,23 @@ import org.bukkit.plugin.RegisteredListener;
 import org.jetbrains.annotations.NotNull;
 
 public class NaughtyRegisteredListener extends RegisteredListener {
-  public double timeHighest;
-  public double time;
+  public final String pluginName;
+  public long timeNanos;
   public int calls;
 
   public NaughtyRegisteredListener(@NotNull final Listener listener, @NotNull final EventExecutor executor,
                                    @NotNull final EventPriority priority, @NotNull final Plugin plugin, final boolean ignoreCancelled) {
     super(listener, executor, priority, plugin, ignoreCancelled);
+    this.pluginName = resolvePluginName(plugin);
+  }
+
+  private static String resolvePluginName(Plugin plugin) {
+    if (plugin == null || plugin.getName() == null) {
+      return "Unknown";
+    }
+
+    String name = plugin.getName().trim();
+    return name.isBlank() ? "Unknown" : name;
   }
 
   /**
@@ -47,9 +57,7 @@ public class NaughtyRegisteredListener extends RegisteredListener {
   public void callEvent(@NotNull final Event event) throws EventException {
     long start = System.nanoTime();
     super.callEvent(event);
-    double elapsedMs = (System.nanoTime() - start) / 1.0E6D;
-    time += elapsedMs;
-    timeHighest = Math.max(timeHighest, elapsedMs);
+    timeNanos += System.nanoTime() - start;
     calls++;
   }
 }

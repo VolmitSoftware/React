@@ -19,12 +19,13 @@
 
 package art.arcane.react.content.directorcommand;
 
-import art.arcane.react.api.benchmark.CPUBenchmark;
-import art.arcane.react.api.benchmark.DriveBenchmark;
-import art.arcane.react.api.benchmark.MemoryBenchmark;
+import art.arcane.react.api.benchmark.BenchmarkRunner;
+import art.arcane.react.api.benchmark.BenchmarkTarget;
 import art.arcane.react.util.director.DirectorExecutor;
 import art.arcane.volmlib.util.director.DirectorOrigin;
 import art.arcane.volmlib.util.director.annotations.Director;
+
+import java.util.EnumSet;
 
 @Director(
     name = "benchmark",
@@ -42,9 +43,8 @@ public class CommandBenchmark implements DirectorExecutor {
       descriptionKey = "command.description.benchmark.cpu"
   )
   public void cpuBenchmark() {
-    new CPUBenchmark(sender()).run();
+    BenchmarkRunner.run(sender(), EnumSet.of(BenchmarkTarget.PROCESSOR));
   }
-
 
   @Director(
       name = "drive-benchmark",
@@ -53,9 +53,8 @@ public class CommandBenchmark implements DirectorExecutor {
       descriptionKey = "command.description.benchmark.drive"
   )
   public void driveBenchmark() {
-    new DriveBenchmark(sender()).run();
+    BenchmarkRunner.run(sender(), EnumSet.of(BenchmarkTarget.DRIVE));
   }
-
 
   @Director(
       name = "memory-benchmark",
@@ -64,8 +63,16 @@ public class CommandBenchmark implements DirectorExecutor {
       descriptionKey = "command.description.benchmark.memory"
   )
   public void memoryBenchmark() {
-    new MemoryBenchmark(sender()).run();
+    BenchmarkRunner.run(sender(), EnumSet.of(BenchmarkTarget.MEMORY));
   }
 
-
+  @Director(
+      name = "all-benchmark",
+      aliases = {"all", "full"},
+      description = "Benchmark the CPU, memory and storage drive",
+      descriptionKey = "command.description.benchmark.all"
+  )
+  public void allBenchmark() {
+    BenchmarkRunner.run(sender(), EnumSet.allOf(BenchmarkTarget.class));
+  }
 }

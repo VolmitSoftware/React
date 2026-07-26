@@ -107,7 +107,6 @@ public class NearbyPlayerIndexController extends TickedObject implements IContro
     }
 
     long now = System.currentTimeMillis();
-    double radiusSquared = blocks * blocks;
     double lx = location.getX();
     double ly = location.getY();
     double lz = location.getZ();
@@ -115,6 +114,17 @@ public class NearbyPlayerIndexController extends TickedObject implements IContro
     int maxChunkX = chunkCoordinate(lx + blocks);
     int minChunkZ = chunkCoordinate(lz - blocks);
     int maxChunkZ = chunkCoordinate(lz + blocks);
+    long cells = (long) (maxChunkX - minChunkX + 1) * (maxChunkZ - minChunkZ + 1);
+
+    if (snapshotsByPlayer.size() <= cells) {
+      for (Map.Entry<UUID, PlayerSnapshot> entry : snapshotsByPlayer.entrySet()) {
+        if (withinRange(entry.getKey(), entry.getValue(), worldId, lx, ly, lz, blocks, now)) {
+          return true;
+        }
+      }
+
+      return false;
+    }
 
     for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
       for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
@@ -124,34 +134,7 @@ public class NearbyPlayerIndexController extends TickedObject implements IContro
         }
 
         for (UUID playerId : playerIds) {
-          PlayerSnapshot snapshot = snapshotsByPlayer.get(playerId);
-          if (snapshot == null || !worldId.equals(snapshot.worldId)) {
-            continue;
-          }
-
-          if (now - snapshot.lastUpdateMs > STALE_SNAPSHOT_RETENTION_MS) {
-            Player online = Bukkit.getPlayer(playerId);
-            if (online == null || !online.isOnline()) {
-              continue;
-            }
-          }
-
-          double dx = snapshot.x - lx;
-          if (dx > blocks || dx < -blocks) {
-            continue;
-          }
-
-          double dy = snapshot.y - ly;
-          if (dy > blocks || dy < -blocks) {
-            continue;
-          }
-
-          double dz = snapshot.z - lz;
-          if (dz > blocks || dz < -blocks) {
-            continue;
-          }
-
-          if ((dx * dx) + (dy * dy) + (dz * dz) <= radiusSquared) {
+          if (withinRange(playerId, snapshotsByPlayer.get(playerId), worldId, lx, ly, lz, blocks, now)) {
             return true;
           }
         }
@@ -159,6 +142,47 @@ public class NearbyPlayerIndexController extends TickedObject implements IContro
     }
 
     return false;
+  }
+
+  private boolean withinRange(
+      UUID playerId,
+      PlayerSnapshot snapshot,
+      UUID worldId,
+      double lx,
+      double ly,
+      double lz,
+      double blocks,
+      long now
+  ) {
+    if (snapshot == null || !worldId.equals(snapshot.worldId)) {
+      return false;
+    }
+
+    double dx = snapshot.x - lx;
+    if (dx > blocks || dx < -blocks) {
+      return false;
+    }
+
+    double dy = snapshot.y - ly;
+    if (dy > blocks || dy < -blocks) {
+      return false;
+    }
+
+    double dz = snapshot.z - lz;
+    if (dz > blocks || dz < -blocks) {
+      return false;
+    }
+
+    if ((dx * dx) + (dy * dy) + (dz * dz) > blocks * blocks) {
+      return false;
+    }
+
+    if (now - snapshot.lastUpdateMs > STALE_SNAPSHOT_RETENTION_MS) {
+      Player online = Bukkit.getPlayer(playerId);
+      return online != null && online.isOnline();
+    }
+
+    return true;
   }
 
   @EventHandler

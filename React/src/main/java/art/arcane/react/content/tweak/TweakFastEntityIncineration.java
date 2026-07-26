@@ -22,7 +22,8 @@ package art.arcane.react.content.tweak;
 import art.arcane.react.React;
 import art.arcane.react.api.tweak.ReactTweak;
 import art.arcane.react.util.common.scheduling.J;
-import art.arcane.volmlib.util.entity.StackExclusion;
+import art.arcane.react.api.protect.ReactOperation;
+import art.arcane.react.api.protect.ReactProtection;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Monster;
 import org.bukkit.event.EventHandler;
@@ -41,7 +42,7 @@ public class TweakFastEntityIncineration extends ReactTweak implements Listener 
 
   @EventHandler
   public void on(EntityDamageEvent e) {
-    if (e.getCause().equals(EntityDamageEvent.DamageCause.FIRE_TICK) && e.getEntity() instanceof Monster m && !StackExclusion.isExcluded(m) && !React.hasNearbyPlayer(m.getLocation(), incinerationBeyondNearestPlayer)) {
+    if (e.getCause().equals(EntityDamageEvent.DamageCause.FIRE_TICK) && e.getEntity() instanceof Monster m && !ReactProtection.isProtected(m, ReactOperation.DESPAWN) && !React.hasNearbyPlayer(m.getLocation(), incinerationBeyondNearestPlayer)) {
       kill(m);
     }
   }

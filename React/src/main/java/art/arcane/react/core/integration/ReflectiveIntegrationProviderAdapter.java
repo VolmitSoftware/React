@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Adapts IntegrationServiceContract implementations loaded from other plugin
@@ -31,6 +32,13 @@ public final class ReflectiveIntegrationProviderAdapter implements IntegrationSe
   private static final Set<IntegrationProtocolVersion> EMPTY_PROTOCOLS = Set.of();
   private static final Set<String> EMPTY_CAPABILITIES = Set.of();
   private static final Set<IntegrationMetricDescriptor> EMPTY_DESCRIPTORS = Set.of();
+  private static final MethodEntry MISSING_METHOD = new MethodEntry(null);
+  private static final ClassValue<Map<String, MethodEntry>> NO_ARG_METHODS = new ClassValue<Map<String, MethodEntry>>() {
+    @Override
+    protected Map<String, MethodEntry> computeValue(Class<?> type) {
+      return new ConcurrentHashMap<>();
+    }
+  };
 
   private final Object provider;
   private final Method pluginIdMethod;
@@ -499,16 +507,39 @@ public final class ReflectiveIntegrationProviderAdapter implements IntegrationSe
       return null;
     }
 
+    Class<?> targetClass = target.getClass();
+    Map<String, MethodEntry> cache = NO_ARG_METHODS.get(targetClass);
+    MethodEntry entry = cache.get(methodName);
+    if (entry == null) {
+      entry = resolveNoArgMethod(targetClass, methodName);
+      cache.put(methodName, entry);
+    }
+
+    if (entry.method() == null) {
+      return null;
+    }
+
     try {
-      Method method = target.getClass().getMethod(methodName);
-      method.setAccessible(true);
-      return method.invoke(target);
+      return entry.method().invoke(target);
     } catch (Throwable ignored) {
       return null;
     }
   }
 
+  private static MethodEntry resolveNoArgMethod(Class<?> targetClass, String methodName) {
+    try {
+      Method method = targetClass.getMethod(methodName);
+      method.setAccessible(true);
+      return new MethodEntry(method);
+    } catch (Throwable ignored) {
+      return MISSING_METHOD;
+    }
+  }
+
   private String invokeString(Method method, String fallback) {
     return toString(invokeObject(method), fallback);
+  }
+
+  private record MethodEntry(Method method) {
   }
 }

@@ -27,14 +27,17 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.persistence.PersistentDataType;
 
+import java.util.Iterator;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
 public class ReactEntity {
   private static final long maxTickInterval = 10000;
+  private static final long SCRATCH_RETENTION_MS = 900_000L;
   private static final NamespacedKey nsStackCount = new NamespacedKey(React.instance, "react-stack-count");
-  private static final NamespacedKey nsPriority = new NamespacedKey(React.instance, "react-priority");
-  private static final NamespacedKey nsLastTick = new NamespacedKey(React.instance, "react-last-tick");
   private static final NamespacedKey nsPaused = new NamespacedKey(React.instance, "react-paused");
-  private static final NamespacedKey nsCrowding = new NamespacedKey(React.instance, "react-crowding");
-  private static final NamespacedKey nsDistancePlayer = new NamespacedKey(React.instance, "react-player-distance");
+  private static final Map<UUID, Scratch> scratchByEntity = new ConcurrentHashMap<>();
 
   public static long getStaleness(Entity entity) {
     return System.currentTimeMillis() - getLastTick(entity);
@@ -71,21 +74,25 @@ public class ReactEntity {
   }
 
   public static long getLastTick(Entity entity) {
-    Long d = entity.getPersistentDataContainer().get(nsLastTick, PersistentDataType.LONG);
-    return d == null ? 0 : d;
+    Scratch scratch = scratchByEntity.get(entity.getUniqueId());
+    return scratch == null ? 0 : scratch.lastTick;
   }
 
   public static void setLastTick(Entity entity, long lastTick) {
-    entity.getPersistentDataContainer().set(nsLastTick, PersistentDataType.LONG, lastTick);
+    Scratch scratch = scratch(entity);
+    scratch.lastTick = lastTick;
+    scratch.touchedMs = System.currentTimeMillis();
   }
 
   public static double getPriority(Entity entity) {
-    Double d = entity.getPersistentDataContainer().get(nsPriority, PersistentDataType.DOUBLE);
-    return d == null ? EntityPriority.BASELINE : d;
+    Scratch scratch = scratchByEntity.get(entity.getUniqueId());
+    return scratch == null ? EntityPriority.BASELINE : scratch.priority;
   }
 
   public static void setPriority(Entity entity, double priority) {
-    entity.getPersistentDataContainer().set(nsPriority, PersistentDataType.DOUBLE, priority);
+    Scratch scratch = scratch(entity);
+    scratch.priority = priority;
+    scratch.touchedMs = System.currentTimeMillis();
   }
 
   public static int getStackCount(Entity entity) {
@@ -98,21 +105,25 @@ public class ReactEntity {
   }
 
   public static double getCrowding(Entity entity) {
-    Double d = entity.getPersistentDataContainer().get(nsCrowding, PersistentDataType.DOUBLE);
-    return d == null ? 1 : d;
+    Scratch scratch = scratchByEntity.get(entity.getUniqueId());
+    return scratch == null ? 1 : scratch.crowding;
   }
 
   public static void setCrowding(Entity entity, double crowding) {
-    entity.getPersistentDataContainer().set(nsCrowding, PersistentDataType.DOUBLE, crowding);
+    Scratch scratch = scratch(entity);
+    scratch.crowding = crowding;
+    scratch.touchedMs = System.currentTimeMillis();
   }
 
   public static double getNearestPlayer(Entity entity) {
-    Double d = entity.getPersistentDataContainer().get(nsDistancePlayer, PersistentDataType.DOUBLE);
-    return d == null ? 1 : d;
+    Scratch scratch = scratchByEntity.get(entity.getUniqueId());
+    return scratch == null ? 1 : scratch.nearestPlayer;
   }
 
   public static void setNearestPlayer(Entity entity, double d) {
-    entity.getPersistentDataContainer().set(nsDistancePlayer, PersistentDataType.DOUBLE, d);
+    Scratch scratch = scratch(entity);
+    scratch.nearestPlayer = d;
+    scratch.touchedMs = System.currentTimeMillis();
   }
 
   public static boolean isPaused(Entity entity) {
@@ -128,5 +139,36 @@ public class ReactEntity {
     } else if (!paused && entity instanceof LivingEntity le) {
       le.setAI(true);
     }
+  }
+
+  public static void sweepScratch() {
+    if (scratchByEntity.isEmpty()) {
+      return;
+    }
+
+    long cutoff = System.currentTimeMillis() - SCRATCH_RETENTION_MS;
+    Iterator<Map.Entry<UUID, Scratch>> iterator = scratchByEntity.entrySet().iterator();
+    while (iterator.hasNext()) {
+      Map.Entry<UUID, Scratch> entry = iterator.next();
+      if (entry.getValue().touchedMs < cutoff) {
+        iterator.remove();
+      }
+    }
+  }
+
+  public static void clearScratch() {
+    scratchByEntity.clear();
+  }
+
+  private static Scratch scratch(Entity entity) {
+    return scratchByEntity.computeIfAbsent(entity.getUniqueId(), ignored -> new Scratch());
+  }
+
+  private static final class Scratch {
+    private volatile long lastTick;
+    private volatile double priority = EntityPriority.BASELINE;
+    private volatile double crowding = 1;
+    private volatile double nearestPlayer = 1;
+    private volatile long touchedMs = System.currentTimeMillis();
   }
 }

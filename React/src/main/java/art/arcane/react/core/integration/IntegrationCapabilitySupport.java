@@ -1,5 +1,6 @@
 package art.arcane.react.core.integration;
 
+import art.arcane.react.api.metric.ReactMetrics;
 import art.arcane.react.core.controller.IntegrationController;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
@@ -27,6 +28,12 @@ public final class IntegrationCapabilitySupport {
       }
     }
 
+    for (String sourceId : ReactMetrics.publishedSourceIds()) {
+      if (normalizedRendererId.startsWith(sourceId + "-")) {
+        return sourceId;
+      }
+    }
+
     return null;
   }
 
@@ -38,6 +45,10 @@ public final class IntegrationCapabilitySupport {
     String normalized = normalize(capability);
     if (normalized.isBlank()) {
       return false;
+    }
+
+    if (ReactMetrics.accepting(normalized)) {
+      return true;
     }
 
     if (controller != null) {

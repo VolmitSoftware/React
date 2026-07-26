@@ -31,7 +31,8 @@ import art.arcane.react.model.SampledChunk;
 import art.arcane.react.model.SampledWorld;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.volmlib.util.bukkit.WorldIdentity;
-import art.arcane.volmlib.util.entity.StackExclusion;
+import art.arcane.react.api.protect.ReactOperation;
+import art.arcane.react.api.protect.ReactProtection;
 import art.arcane.volmlib.util.format.Form;
 import art.arcane.volmlib.util.localization.MessageArgument;
 import lombok.AllArgsConstructor;
@@ -274,7 +275,7 @@ public class ActionQuarantineHotChunks extends ReactAction<ActionQuarantineHotCh
       return false;
     }
 
-    if (StackExclusion.isExcluded(entity)) {
+    if (ReactProtection.isProtected(entity, ReactOperation.PURGE)) {
       return false;
     }
 

@@ -23,6 +23,7 @@ import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.Server;
 import org.bukkit.event.Listener;
 
 public class SamplerPlayers extends ReactCachedSampler implements Listener {
@@ -39,7 +40,12 @@ public class SamplerPlayers extends ReactCachedSampler implements Listener {
 
   @Override
   public double onSample() {
-    return Bukkit.getServer().getOnlinePlayers().size();
+    return sampleOnMainThread(SamplerPlayers::countOnlinePlayers);
+  }
+
+  private static Double countOnlinePlayers() {
+    Server server = Bukkit.getServer();
+    return server == null ? 0D : (double) server.getOnlinePlayers().size();
   }
 
   @Override

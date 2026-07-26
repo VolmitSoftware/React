@@ -50,6 +50,7 @@ public final class ReactLanguage {
   private static final long MAX_LOCALE_BYTES = 2L * 1024L * 1024L;
   private static final int MAX_REPORTED_ISSUES = 12;
   private static final Pattern LOCALE_NAME = Pattern.compile("[A-Za-z0-9_-]+");
+  private static final String LEGACY_CODES = "0123456789abcdefklmnorx";
   private static final MessageCatalog CATALOG = ReactMessages.catalog();
   private static final MiniMessage MINI_MESSAGE = MiniMessage.builder().strict(true).build();
   private static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.legacySection();
@@ -359,10 +360,30 @@ public final class ReactLanguage {
       MessageArgument argument = arguments.require(name);
       String replacement = String.valueOf(argument.value());
       if (escapeMiniMessage && argument.kind() == MessageArgumentKind.UNTRUSTED) {
-        replacement = MINI_MESSAGE.escapeTags(replacement);
+        replacement = MINI_MESSAGE.escapeTags(stripLegacyCodes(replacement));
       }
       output.append(replacement);
       index = end + 1;
+    }
+    return output.toString();
+  }
+
+  private static String stripLegacyCodes(String value) {
+    int marker = value.indexOf('§');
+    if (marker < 0) {
+      return value;
+    }
+    StringBuilder output = new StringBuilder(value.length());
+    output.append(value, 0, marker);
+    for (int index = marker; index < value.length(); index++) {
+      char current = value.charAt(index);
+      if (current != '§') {
+        output.append(current);
+        continue;
+      }
+      if (index + 1 < value.length() && LEGACY_CODES.indexOf(Character.toLowerCase(value.charAt(index + 1))) >= 0) {
+        index++;
+      }
     }
     return output.toString();
   }

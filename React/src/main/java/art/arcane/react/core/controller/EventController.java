@@ -238,16 +238,7 @@ public class EventController extends TickedObject implements IController, Listen
                 r[j] = new NaughtyRegisteredListener(r[j].getListener(), executorOf(r[j]),
                     r[j].getPriority(), r[j].getPlugin(), r[j].isIgnoringCancelled());
               } else {
-                NaughtyRegisteredListener naughty = (NaughtyRegisteredListener) r[j];
-                String pluginName = pluginName(naughty);
-                double listenerTime = naughty.time;
-                int listenerCalls = naughty.calls;
-                totalTime += listenerTime;
-                calls += listenerCalls;
-                pluginTime.merge(pluginName, listenerTime, Double::sum);
-                pluginCalls.merge(pluginName, listenerCalls, Integer::sum);
-                naughty.time = 0;
-                naughty.calls = 0;
+                drainListener((NaughtyRegisteredListener) r[j], pluginTime, pluginCalls);
               }
             }
 
@@ -261,16 +252,7 @@ public class EventController extends TickedObject implements IController, Listen
                   j.set(k, new NaughtyRegisteredListener(j.get(k).getListener(), executorOf(j.get(k)),
                       j.get(k).getPriority(), j.get(k).getPlugin(), j.get(k).isIgnoringCancelled()));
                 } else {
-                  NaughtyRegisteredListener naughty = (NaughtyRegisteredListener) j.get(k);
-                  String pluginName = pluginName(naughty);
-                  double listenerTime = naughty.time;
-                  int listenerCalls = naughty.calls;
-                  totalTime += listenerTime;
-                  calls += listenerCalls;
-                  pluginTime.merge(pluginName, listenerTime, Double::sum);
-                  pluginCalls.merge(pluginName, listenerCalls, Integer::sum);
-                  naughty.time = 0;
-                  naughty.calls = 0;
+                  drainListener((NaughtyRegisteredListener) j.get(k), pluginTime, pluginCalls);
                 }
               }
 
@@ -335,12 +317,14 @@ public class EventController extends TickedObject implements IController, Listen
     return new HashMap<>(pluginEventCalls);
   }
 
-  private String pluginName(RegisteredListener listener) {
-    if (listener == null || listener.getPlugin() == null || listener.getPlugin().getName() == null) {
-      return "Unknown";
-    }
-
-    String plugin = listener.getPlugin().getName().trim();
-    return plugin.isBlank() ? "Unknown" : plugin;
+  private void drainListener(NaughtyRegisteredListener naughty, Map<String, Double> pluginTime, Map<String, Integer> pluginCalls) {
+    double listenerTime = naughty.timeNanos / 1.0E6D;
+    int listenerCalls = naughty.calls;
+    totalTime += listenerTime;
+    calls += listenerCalls;
+    pluginTime.merge(naughty.pluginName, listenerTime, Double::sum);
+    pluginCalls.merge(naughty.pluginName, listenerCalls, Integer::sum);
+    naughty.timeNanos = 0;
+    naughty.calls = 0;
   }
 }

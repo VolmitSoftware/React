@@ -19,13 +19,13 @@
 
 package art.arcane.react.api.entity;
 
-import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.model.ReactEntity;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.project.value.MaterialValue;
 import art.arcane.volmlib.util.math.M;
 import lombok.Getter;
 import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.*;
 import org.bukkit.inventory.ItemStack;
 
@@ -312,17 +312,16 @@ public class EntityPriority {
       return getPriority(e.getType());
     }
 
-    double buf = getPriority(e.getType());
-    buf *= getAgeMultipler(e.getTicksLived());
-
     if (e instanceof Player) {
       return -1;
     }
 
-    if (ReactConfiguration.get().getPriority().isUseItemStackValueSystem() && e instanceof Item it) {
+    double buf = getPriority(e.getType());
+    buf *= getAgeMultipler(e.getTicksLived());
+
+    if (useItemStackValueSystem && e instanceof Item it) {
       ItemStack is = it.getItemStack();
-      double s = MaterialValue.getValue(is.getType()) * is.getAmount() * ReactConfiguration.get().getPriority().itemStackValueMultiplier;
-      buf += s;
+      buf += MaterialValue.getValue(is.getType()) * is.getAmount() * itemStackValueMultiplier;
     }
 
     if (e instanceof LivingEntity l) {
@@ -331,16 +330,15 @@ public class EntityPriority {
       if (d < 1) {
         buf *= M.lerp(1, movingMultiplier, d);
       }
-    }
 
-    if (e instanceof LivingEntity l) {
       buf *= livingMultiplier;
 
-      if (l.getAttribute(Attribute.MAX_HEALTH) == null) {
+      AttributeInstance maxHealthAttribute = l.getAttribute(Attribute.MAX_HEALTH);
+      if (maxHealthAttribute == null) {
         return buf;
       }
 
-      double maxHealth = l.getAttribute(Attribute.MAX_HEALTH).getValue();
+      double maxHealth = maxHealthAttribute.getValue();
       double h = l.getHealth();
 
       if (h >= maxHealth) {

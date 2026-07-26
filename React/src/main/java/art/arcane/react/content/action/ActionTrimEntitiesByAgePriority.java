@@ -33,7 +33,9 @@ import art.arcane.react.model.SampledChunk;
 import art.arcane.react.model.SampledWorld;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.volmlib.util.bukkit.WorldIdentity;
-import art.arcane.volmlib.util.entity.StackExclusion;
+import art.arcane.react.api.protect.ReactOperation;
+import art.arcane.react.api.protect.ReactProtection;
+import art.arcane.react.api.protect.internal.ProtectionGuards;
 import art.arcane.volmlib.util.format.Form;
 import art.arcane.volmlib.util.localization.MessageArgument;
 import lombok.AllArgsConstructor;
@@ -342,6 +344,10 @@ public class ActionTrimEntitiesByAgePriority extends ReactAction<ActionTrimEntit
         continue;
       }
 
+      if (!ProtectionGuards.allows(target, ReactOperation.TRIM)) {
+        continue;
+      }
+
       React.kill(target, 2 + ThreadLocalRandom.current().nextInt(6));
       removed++;
     }
@@ -362,7 +368,7 @@ public class ActionTrimEntitiesByAgePriority extends ReactAction<ActionTrimEntit
       return false;
     }
 
-    if (StackExclusion.isExcluded(entity)) {
+    if (ReactProtection.isProtected(entity, ReactOperation.TRIM)) {
       return false;
     }
 

@@ -28,6 +28,7 @@ public final class CommandMessages {
   public static final TextKey BENCHMARK_CPU_DESCRIPTION = TextKey.of("command.description.benchmark.cpu", "Benchmark the CPU");
   public static final TextKey BENCHMARK_DRIVE_DESCRIPTION = TextKey.of("command.description.benchmark.drive", "Benchmark the storage drive");
   public static final TextKey BENCHMARK_MEMORY_DESCRIPTION = TextKey.of("command.description.benchmark.memory", "Benchmark memory");
+  public static final TextKey BENCHMARK_ALL_DESCRIPTION = TextKey.of("command.description.benchmark.all", "Benchmark the CPU, memory and storage drive");
   public static final TextKey ENVIRONMENT_DESCRIPTION = TextKey.of("command.description.environment", "Inspect system and server environment information");
   public static final TextKey ENVIRONMENT_INFO_DESCRIPTION = TextKey.of("command.description.environment.info", "Print environment details");
   public static final TextKey WEB_DESCRIPTION = TextKey.of("command.description.web", "Manage React WebUI access tokens");
@@ -161,6 +162,7 @@ public final class CommandMessages {
     builder.add(BENCHMARK_CPU_DESCRIPTION);
     builder.add(BENCHMARK_DRIVE_DESCRIPTION);
     builder.add(BENCHMARK_MEMORY_DESCRIPTION);
+    builder.add(BENCHMARK_ALL_DESCRIPTION);
     builder.add(ENVIRONMENT_DESCRIPTION);
     builder.add(ENVIRONMENT_INFO_DESCRIPTION);
     builder.add(WEB_DESCRIPTION);

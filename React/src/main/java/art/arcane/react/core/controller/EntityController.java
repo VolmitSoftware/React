@@ -21,6 +21,8 @@ package art.arcane.react.core.controller;
 
 import art.arcane.chrono.ChronoLatch;
 import art.arcane.react.React;
+import art.arcane.react.api.entity.EntityPriority;
+import art.arcane.react.api.protect.internal.ProtectionGuards;
 import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.model.ReactEntity;
 import art.arcane.react.util.common.scheduling.J;
@@ -67,6 +69,7 @@ public class EntityController implements IController, Listener {
   private int perWorldUpdatesPerTick = 15;
   private transient Looper looper;
   private transient ChronoLatch valueSaver = new ChronoLatch(60000);
+  private transient ChronoLatch scratchSweeper = new ChronoLatch(30000);
   private transient Map<EntityType, List<Consumer<Entity>>> entityTickListeners;
   private transient List<Consumer<Entity>> allEntityTickListeners;
   private transient Set<EntityKiller> killers = new HashSet<>();
@@ -147,21 +150,25 @@ public class EntityController implements IController, Listener {
       return;
     }
 
-    if (J.isFoliaThreading()) {
-      if (!J.isOwnedByCurrentRegion(e)) {
-        J.runEntity(e, () -> tickEntity(e));
-        return;
-      }
-    } else if (!J.isPrimaryThread()) {
-      J.s(() -> tickEntity(e));
-      return;
-    }
-
     if (!hasRegisteredTickListeners()) {
       return;
     }
 
-    if (!ReactEntity.tick(e, ReactConfiguration.get().getPriority())) {
+    tickEntity(e, ReactConfiguration.get().getPriority());
+  }
+
+  private void tickEntity(Entity e, EntityPriority priority) {
+    if (J.isFoliaThreading()) {
+      if (!J.isOwnedByCurrentRegion(e)) {
+        J.runEntity(e, () -> tickEntity(e, priority));
+        return;
+      }
+    } else if (!J.isPrimaryThread()) {
+      J.s(() -> tickEntity(e, priority));
+      return;
+    }
+
+    if (!ReactEntity.tick(e, priority)) {
       return;
     }
 
@@ -189,6 +196,7 @@ public class EntityController implements IController, Listener {
 
   @EventHandler
   public void on(EntitySpawnEvent e) {
+    ProtectionGuards.hydrate(e.getEntity());
     tickEntity(e.getEntity());
   }
 
@@ -260,6 +268,7 @@ public class EntityController implements IController, Listener {
   @EventHandler
   public void on(EntitiesLoadEvent e) {
     for (Entity entity : e.getEntities()) {
+      ProtectionGuards.hydrate(entity);
       EntityKiller.reconcile(entity);
     }
   }
@@ -283,6 +292,7 @@ public class EntityController implements IController, Listener {
 
     killers.clear();
     killing.clear();
+    ReactEntity.clearScratch();
   }
 
   @Override
@@ -291,8 +301,15 @@ public class EntityController implements IController, Listener {
   }
 
   public void onTick() {
-    if (valueSaver.flip() && ReactConfiguration.get().getPriority().isUseItemStackValueSystem()) {
+    EntityPriority priority = ReactConfiguration.get().getPriority();
+
+    if (valueSaver.flip() && priority.isUseItemStackValueSystem()) {
       MaterialValue.save();
+    }
+
+    if (scratchSweeper.flip()) {
+      ReactEntity.sweepScratch();
+      ProtectionGuards.sweep(System.currentTimeMillis());
     }
 
     if (!hasRegisteredTickListeners()) {
@@ -300,7 +317,7 @@ public class EntityController implements IController, Listener {
     }
 
     if (J.isFoliaThreading()) {
-      onFoliaTick();
+      onFoliaTick(priority);
       return;
     }
 
@@ -318,13 +335,16 @@ public class EntityController implements IController, Listener {
         int sampleCount = Math.min(perWorldUpdatesPerTick, entityCount);
 
         for (int j = 0; j < sampleCount; j++) {
-          tickEntity(entities.get(random.nextInt(entityCount)));
+          Entity sampled = entities.get(random.nextInt(entityCount));
+          if (sampled != null) {
+            tickEntity(sampled, priority);
+          }
         }
       }
     });
   }
 
-  private void onFoliaTick() {
+  private void onFoliaTick(EntityPriority priority) {
     List<Player> players = new ArrayList<>(Bukkit.getOnlinePlayers());
     if (players.isEmpty()) {
       return;
@@ -335,11 +355,11 @@ public class EntityController implements IController, Listener {
 
     for (int i = 0; i < samples; i++) {
       Player player = players.get(random.nextInt(players.size()));
-      J.runEntity(player, () -> sampleAroundPlayer(player));
+      J.runEntity(player, () -> sampleAroundPlayer(player, priority));
     }
   }
 
-  private void sampleAroundPlayer(Player player) {
+  private void sampleAroundPlayer(Player player, EntityPriority priority) {
     if (player == null || !player.isOnline() || !J.isOwnedByCurrentRegion(player)) {
       return;
     }
@@ -354,7 +374,7 @@ public class EntityController implements IController, Listener {
     for (int i = 0; i < samples; i++) {
       Entity sampled = nearby.get(random.nextInt(nearby.size()));
       if (sampled != null) {
-        tickEntity(sampled);
+        tickEntity(sampled, priority);
       }
     }
   }
