@@ -49,6 +49,8 @@ import art.arcane.react.util.project.world.EntityKiller;
 import art.arcane.volmlib.integration.ReloadAware;
 import art.arcane.volmlib.util.collection.KList;
 import art.arcane.volmlib.util.format.Form;
+import art.arcane.volmlib.util.hud.HudBossBarLane;
+import art.arcane.volmlib.util.hud.HudSlotService;
 import art.arcane.volmlib.util.io.JarScanner;
 import io.github.slimjar.app.builder.SpigotApplicationBuilder;
 import lombok.Getter;
@@ -73,6 +75,8 @@ public class React extends VolmitPlugin implements ReloadAware {
   public static Thread serverThread;
   public static Ticker ticker;
   public static MultiBurst burst;
+  private static HudSlotService hudSlots;
+  private static HudBossBarLane hudLanes;
   private static final int REPORTED_ERROR_HISTORY = 1024;
   private static final java.util.concurrent.atomic.AtomicInteger reportedErrorCounter = new java.util.concurrent.atomic.AtomicInteger();
   private static final java.util.ArrayDeque<Long> reportedErrorTimestamps = new java.util.ArrayDeque<Long>();
@@ -243,6 +247,14 @@ public class React extends VolmitPlugin implements ReloadAware {
     return instance.bridgeRegistry;
   }
 
+  public static HudSlotService hud() {
+    return hudSlots;
+  }
+
+  public static HudBossBarLane lanes() {
+    return hudLanes;
+  }
+
   public static <T extends IController> T controller(Class<T> c) {
     Registry<IController> reg = instance.controllerRegistry;
     return reg == null ? null : reg.get(c);
@@ -316,6 +328,8 @@ public class React extends VolmitPlugin implements ReloadAware {
     prejobs = new CopyOnWriteArrayList<>();
     burst = new MultiBurst("React", Thread.MIN_PRIORITY);
     ticker = new Ticker();
+    hudSlots = new HudSlotService(this);
+    hudLanes = new HudBossBarLane();
     bridgeRegistry = new NmsBridgeRegistry();
     bridgeRegistry.setMappingsLoader(new art.arcane.react.core.bridge.MappingsLoader());
     NMS.reset();
@@ -419,6 +433,14 @@ public class React extends VolmitPlugin implements ReloadAware {
           React.reportError(throwable);
         }
       }
+    }
+    if (hudLanes != null) {
+      hudLanes.shutdown();
+      hudLanes = null;
+    }
+    if (hudSlots != null) {
+      hudSlots.shutdown();
+      hudSlots = null;
     }
     if (burst != null) {
       burst.close();

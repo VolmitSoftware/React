@@ -26,14 +26,22 @@ import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.model.ReactPlayer;
 import art.arcane.react.util.common.scheduling.J;
+import art.arcane.volmlib.util.hud.HudBossBarLane;
+import art.arcane.volmlib.util.hud.HudPriority;
+import art.arcane.volmlib.util.hud.HudSlotClaim;
+import art.arcane.volmlib.util.hud.HudSlotRequest;
+import art.arcane.volmlib.util.hud.HudSurface;
 import art.arcane.volmlib.util.math.M;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.Style;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.title.Title;
 import net.kyori.adventure.title.TitlePart;
+import org.bukkit.boss.BarColor;
+import org.bukkit.boss.BarStyle;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.IllegalPluginAccessException;
 
@@ -41,6 +49,7 @@ import java.awt.*;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Map;
 
 public class ActionBarMonitor extends PlayerMonitor {
@@ -60,6 +69,10 @@ public class ActionBarMonitor extends PlayerMonitor {
   private boolean running;
   private int headerViewportSlots;
   private int samplerViewportSlots;
+  private HudSlotClaim barClaim;
+  private HudSlotClaim focusClaim;
+  private long lastResolveMillis;
+  private long barDeniedSinceMillis;
 
   public ActionBarMonitor(ReactPlayer player) {
     super("actionbar", player, 50);
@@ -107,30 +120,51 @@ public class ActionBarMonitor extends PlayerMonitor {
   public void stop() {
     running = false;
     Player player = getPlayer().getPlayer();
+    boolean blankActionBar = barClaim != null && barClaim.granted() == HudSurface.ACTION_BAR;
+    boolean blankTitle = focusClaim != null && focusClaim.granted() == HudSurface.TITLE;
     Runnable clearUi = () -> {
-      player.sendActionBar(Component.space());
-      player.sendTitlePart(TitlePart.TITLE, Component.space());
-      player.sendTitlePart(TitlePart.SUBTITLE, Component.space());
+      if (blankActionBar) {
+        player.sendActionBar(Component.space());
+      }
+      if (blankTitle) {
+        player.sendTitlePart(TitlePart.TITLE, Component.space());
+        player.sendTitlePart(TitlePart.SUBTITLE, Component.space());
+      }
     };
 
-    try {
-      if (J.isFoliaThreading()) {
-        if (!J.runEntity(player, clearUi, 3)) {
-          J.runEntity(player, clearUi);
+    if (blankActionBar || blankTitle) {
+      try {
+        if (J.isFoliaThreading()) {
+          if (!J.runEntity(player, clearUi, 3)) {
+            J.runEntity(player, clearUi);
+          }
+        } else {
+          J.sync(clearUi, 3);
         }
-      } else {
-        J.sync(clearUi, 3);
+      } catch (IllegalPluginAccessException e) {
+        clearUi.run();
       }
-    } catch (IllegalPluginAccessException e) {
-      clearUi.run();
     }
 
+    if (barClaim != null) {
+      barClaim.release();
+    }
+    if (focusClaim != null) {
+      focusClaim.release();
+    }
+    HudBossBarLane lanes = React.lanes();
+    if (lanes != null) {
+      lanes.hide(player, "react:monitor");
+    }
     super.stop();
     unregister();
   }
 
   @Override
   public void start() {
+    Player player = getPlayer().getPlayer();
+    barClaim = React.hud().open(player, new HudSlotRequest("react:monitor", HudPriority.AMBIENT, 1500L, List.of(HudSurface.ACTION_BAR, HudSurface.BOSS_BAR)));
+    focusClaim = React.hud().open(player, new HudSlotRequest("react:monitor-focus", HudPriority.INTERACTIVE, 1500L, List.of(HudSurface.TITLE)));
     running = true;
     super.start();
   }
@@ -408,7 +442,7 @@ public class ActionBarMonitor extends PlayerMonitor {
 
   @Override
   public void flush() {
-    if (!running) {
+    if (!running || barClaim == null || focusClaim == null) {
       return;
     }
 
@@ -437,6 +471,14 @@ public class ActionBarMonitor extends PlayerMonitor {
       }
     }
 
+    long now = System.currentTimeMillis();
+    boolean resolveNow = now - lastResolveMillis >= 250L;
+    if (resolveNow) {
+      lastResolveMillis = now;
+    }
+
+    HudSurface barSurface = resolveNow ? barClaim.resolve() : barClaim.granted();
+
     if (focus != null) {
       if (locked && getPlayer().isMonitorSneaking()) {
         Sampler nextFocusedSampler = getNextFocusedSampler();
@@ -445,26 +487,52 @@ public class ActionBarMonitor extends PlayerMonitor {
         }
       }
 
-      Duration stay = Duration.ofMillis(((int) ((getTinterval() / 50) + 3)) * 50L);
-      Duration fadeOut = Duration.ofMillis(20 * 50);
-      getPlayer().getPlayer().sendTitlePart(TitlePart.TIMES, Title.Times.times(Duration.ZERO, stay, fadeOut));
+      HudSurface focusSurface = resolveNow || focus != f ? focusClaim.resolve() : focusClaim.granted();
 
-      if (focusUpAnimation >= -10) {
-        if (focusUpAnimation > 0) {
-          getPlayer().getPlayer().sendTitlePart(TitlePart.TITLE, writeHeaderTitle(focus));
-        } else {
-          getPlayer().getPlayer().sendTitlePart(TitlePart.TITLE, Component.space());
+      if (focusSurface == HudSurface.TITLE) {
+        Duration stay = Duration.ofMillis(((int) ((getTinterval() / 50) + 3)) * 50L);
+        Duration fadeOut = Duration.ofMillis(20 * 50);
+        getPlayer().getPlayer().sendTitlePart(TitlePart.TIMES, Title.Times.times(Duration.ZERO, stay, fadeOut));
+
+        if (focusUpAnimation >= -10) {
+          if (focusUpAnimation > 0) {
+            getPlayer().getPlayer().sendTitlePart(TitlePart.TITLE, writeHeaderTitle(focus));
+          } else {
+            getPlayer().getPlayer().sendTitlePart(TitlePart.TITLE, Component.space());
+          }
+
+          focusUpAnimation--;
         }
 
-        focusUpAnimation--;
+        getPlayer().getPlayer().sendTitlePart(TitlePart.SUBTITLE, writeSubSamplers());
       }
-
-      getPlayer().getPlayer().sendTitlePart(TitlePart.SUBTITLE, writeSubSamplers());
     } else if (focusDownAnimation > 0) {
       focusDownAnimation--;
-      getPlayer().getPlayer().clearTitle();
+      if (focusClaim.granted() == HudSurface.TITLE) {
+        getPlayer().getPlayer().clearTitle();
+        if (focusDownAnimation == 0) {
+          getPlayer().getPlayer().sendTitlePart(TitlePart.TIMES, Title.Times.times(Duration.ofMillis(500), Duration.ofMillis(3500), Duration.ofMillis(1000)));
+          focusClaim.release();
+        }
+      }
     }
 
-    getPlayer().getPlayer().sendActionBar(writeHeader());
+    Component header = writeHeader();
+    HudBossBarLane lanes = React.lanes();
+
+    if (barSurface == HudSurface.ACTION_BAR) {
+      barDeniedSinceMillis = 0L;
+      getPlayer().getPlayer().sendActionBar(header);
+      if (lanes != null) {
+        lanes.hide(getPlayer().getPlayer(), "react:monitor");
+      }
+    } else if (barSurface == HudSurface.BOSS_BAR) {
+      if (barDeniedSinceMillis == 0L) {
+        barDeniedSinceMillis = now;
+      }
+      if (now - barDeniedSinceMillis >= 2000L && lanes != null) {
+        lanes.show(getPlayer().getPlayer(), "react:monitor", LegacyComponentSerializer.legacySection().serialize(header), 1.0D, BarColor.WHITE, BarStyle.SOLID, 4000L);
+      }
+    }
   }
 }
