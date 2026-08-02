@@ -38,6 +38,7 @@ import org.bukkit.event.Listener;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @EqualsAndHashCode(callSuper = true)
@@ -143,7 +144,8 @@ public class FeatureController extends TickedObject implements IController {
 
   @Override
   public void start() {
-    activeFeatures = new HashMap<>();
+    // Concurrent: bStats chart callables read this from their own daemon thread on Folia
+    activeFeatures = new ConcurrentHashMap<>();
     tickedFeatures = new HashMap<>();
     features = new Registry<>(Feature.class, "art.arcane.react.content.feature");
     lastGateReconcileMS = 0L;

@@ -1352,6 +1352,8 @@
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsecretsenabled.summary" = "플러그인을 활성화된 비밀 통합 기능."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.impact" = "Code-owned English는 미화폐로 남아 있습니다. TOML overrides는에서 적재됩니다 languages/overrides."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.summary" = "현지에 사용 React 플레이어 및 운영자 인터페이스."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.impact" = "false로 설정하면 React의 bStats 전송을 완전히 비활성화합니다. 적용하려면 재시작이 필요합니다."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.summary" = "React의 익명 bStats 사용 통계 보고를 활성화합니다."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.monitoring.impact" = "변경 사항은 기본 라인 모니터링 대시보드 구성 및 메트릭 샘플러 그룹화에 영향을 미칩니다."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.monitoring.summary" = "플레이어와 같은 기본 모니터 레이아웃."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.priority.impact" = "이 무게를 변경할 수 있습니다 조각, 큐어링, 그리고 가시성 행동."

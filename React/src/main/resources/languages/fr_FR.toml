@@ -1352,6 +1352,8 @@
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsecretsenabled.summary" = "Active les fonctionnalités d'intégration secrètes avec plugin."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.impact" = "L'anglais appartenant au code reste le retour; facultatif TOML les valeurs de rechange sont chargées à partir languages/overrides."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.summary" = "Locale utilisée pour React interfaces de lecteur et opérateur."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.impact" = "Définissez sur false pour désactiver entièrement les envois bStats de React. Nécessite un redémarrage."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.summary" = "Active les rapports d'utilisation anonymes bStats pour React."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.monitoring.impact" = "Les modifications affectent la composition du tableau de bord et le regroupement lecteur de métriques."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.monitoring.summary" = "Mise en page par défaut du moniteur montrée aux joueurs."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.priority.impact" = "Changer ces poids peut modifier le comportement d'abattage, de file d'attente et de visibilité."

@@ -1352,6 +1352,8 @@
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsecretsenabled.summary" = "啟用外掛加碼的秘密整合功能。"
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.impact" = "密碼屬英文仍是倒置;可選 TOML 覆蓋從 languages/overrides."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.summary" = "用於 React 播放器和操作員介面。"
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.impact" = "設為 false 可完全關閉 React 的 bStats 資料回報。需要重新啟動後生效。"
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.summary" = "啟用 React 的匿名 bStats 使用情況統計回報。"
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.monitoring.impact" = "變化影響了基線監測儀表板的組成和指標取樣器組合."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.monitoring.summary" = "向玩家顯示預設監視器佈局 。"
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.priority.impact" = "改變這些重量可以改變彎曲,排隊,以及能見度行為."

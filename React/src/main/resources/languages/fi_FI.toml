@@ -1352,6 +1352,8 @@
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsecretsenabled.summary" = "Mahdollistaa plugin- gated salaisia integraation ominaisuuksia."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.impact" = "Koodiomisteinen englanti on edelleen varasuunnitelma; valinnainen TOML ohitus on ladattu languages/overrides."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.summary" = "Paikallinen React pelaaja- ja operaattoriliitännät."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.impact" = "Aseta arvoksi false poistaaksesi Reactin bStats-lähetykset kokonaan käytöstä. Vaatii uudelleenkäynnistyksen."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.summary" = "Ottaa käyttöön nimettömän bStats-käyttötilastoinnin Reactille."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.monitoring.impact" = "Muutokset vaikuttavat lähtöviivaisten seurantalaitteiden koostumukseen ja mittarilukija-ryhmään."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.monitoring.summary" = "Oletusmonitorin ulkoasu näytetään pelaajille."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.priority.impact" = "Painojen muuttaminen voi muuttaa harventamista, jonottamista ja näkyvyyttä."

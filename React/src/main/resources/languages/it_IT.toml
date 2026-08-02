@@ -1352,6 +1352,8 @@
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsecretsenabled.summary" = "Consente di integrare le funzioni segrete con plugin-gated."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.impact" = "L'inglese in codice rimane il fallback; opzionale TOML i sovrascritti sono caricati da languages/overrides."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.summary" = "Locale utilizzato per React Interfacce di giocatore e operatore."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.impact" = "Imposta su false per disattivare completamente gli invii bStats di React. Richiede un riavvio."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.summary" = "Abilita la segnalazione anonima di utilizzo bStats per React."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.monitoring.impact" = "Le modifiche influenzano la composizione della dashboard di monitoraggio baseline e il raggruppamento lettore di metriche."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.monitoring.summary" = "Il layout del monitor predefinito mostrato ai giocatori."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.priority.impact" = "Cambiare questi pesi può alterare il comportamento di culling, coda e visibilità."

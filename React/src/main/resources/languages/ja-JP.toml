@@ -1352,6 +1352,8 @@
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsecretsenabled.summary" = "プラグインをゲートしたシークレット統合機能を有効にします。"
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.impact" = "コード所有の英語はフォールバックのままです。オプション TOML オーバーライドはからロードされます languages/overrides."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.summary" = "ロケール使用 React プレーヤーおよびオペレータはインターフェイスします。"
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.impact" = "false に設定すると React の bStats 送信を完全に無効化します。反映には再起動が必要です。"
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.summary" = "React の匿名 bStats 利用統計レポートを有効にします。"
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.monitoring.impact" = "変更はベースラインモニタリングダッシュボードの構成とメトリクスサンプラーグループ化に影響します."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.monitoring.summary" = "デフォルトでは、プレイヤーに表示されているレイアウトを監視します。"
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.priority.impact" = "これらの重量を変更すると、計算、キューイング、可視性行動を変更できます。"

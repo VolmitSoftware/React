@@ -1352,6 +1352,8 @@
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsecretsenabled.summary" = "Enables eklentili gizli entegrasyon özellikleri."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.impact" = "Kod sahibi İngilizce geri çekilmeye devam ediyor; Seçmeli TOML Overrides is installed from overrides are installed from languages/overrides."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.summary" = "Locale için kullanılır React oyuncu ve operatör arabirimleri."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.impact" = "React'in bStats gönderimlerini tamamen kapatmak için false yapın. Yeniden başlatma gerektirir."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.summary" = "React için anonim bStats kullanım raporlamasını etkinleştirir."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.monitoring.impact" = "Değişiklikler, temel izleme tablosunun bileşimini ve metrik okuyucu grubunu etkilemektedir."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.monitoring.summary" = "Oyunculara gösterilen sıralayıcı monitör düzeni."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.priority.impact" = "Bu ağırlıkları değiştirmek, kuyruk ve görünürlük davranışını değiştirebilir."

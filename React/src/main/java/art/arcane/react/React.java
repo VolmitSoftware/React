@@ -54,6 +54,10 @@ import art.arcane.volmlib.util.hud.HudSlotService;
 import art.arcane.volmlib.util.io.JarScanner;
 import io.github.slimjar.app.builder.SpigotApplicationBuilder;
 import lombok.Getter;
+import org.bstats.bukkit.Metrics;
+import org.bstats.charts.AdvancedPie;
+import org.bstats.charts.SimplePie;
+import org.bstats.charts.SingleLineChart;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
@@ -62,7 +66,9 @@ import org.bukkit.event.Listener;
 
 import java.io.File;
 import java.lang.annotation.Annotation;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -78,6 +84,8 @@ public class React extends VolmitPlugin implements ReloadAware {
   private static HudSlotService hudSlots;
   private static HudBossBarLane hudLanes;
   private static final int REPORTED_ERROR_HISTORY = 1024;
+  // bstats.org plugin id; 0 disables submission until the id is assigned
+  private static final int BSTATS_PLUGIN_ID = 0;
   private static final java.util.concurrent.atomic.AtomicInteger reportedErrorCounter = new java.util.concurrent.atomic.AtomicInteger();
   private static final java.util.ArrayDeque<Long> reportedErrorTimestamps = new java.util.ArrayDeque<Long>();
   private List<Runnable> startupTasks;
@@ -86,6 +94,7 @@ public class React extends VolmitPlugin implements ReloadAware {
   private NmsBridgeRegistry bridgeRegistry;
   private volatile boolean shutdownDrained;
   private volatile ReactPlaceholders papiExpansion;
+  private Metrics metrics;
   private boolean ready;
 
   public React() {
@@ -382,6 +391,56 @@ public class React extends VolmitPlugin implements ReloadAware {
     ConfigFileSupport.flushCreatedConfigSummary();
     React.info("React Started in " + Form.duration(psw.getMilliseconds(), 0));
     registerPapiExpansion();
+    setupMetrics();
+  }
+
+  // bStats invokes chart callables off the main thread (its own daemon thread on Folia),
+  // so every accessor below must read concurrent or immutable state and tolerate a null controller.
+  private void setupMetrics() {
+    if (BSTATS_PLUGIN_ID <= 0 || !ReactConfiguration.get().isMetrics()) {
+      return;
+    }
+
+    Metrics m = new Metrics(this, BSTATS_PLUGIN_ID);
+
+    m.addCustomChart(new AdvancedPie("active_features", () -> {
+      FeatureController c = controller(FeatureController.class);
+
+      if (c == null) {
+        return null;
+      }
+
+      Map<String, Feature> active = c.getActiveFeatures();
+
+      if (active == null) {
+        return null;
+      }
+
+      Map<String, Integer> data = new HashMap<>();
+
+      for (String id : active.keySet()) {
+        data.put(id, 1);
+      }
+
+      return data;
+    }));
+
+    m.addCustomChart(new SingleLineChart("registered_features", () -> {
+      FeatureController c = controller(FeatureController.class);
+
+      if (c == null || c.getFeatures() == null) {
+        return null;
+      }
+
+      return c.getFeatures().size();
+    }));
+
+    m.addCustomChart(new SimplePie("unsafe_bytecode",
+        () -> String.valueOf(ReactConfiguration.get().isUnsafeBytecode())));
+    m.addCustomChart(new SimplePie("bytecode_agent",
+        () -> String.valueOf(art.arcane.react.core.bridge.BytecodeAgent.isInstalled())));
+
+    metrics = m;
   }
 
   private void registerPapiExpansion() {
@@ -414,6 +473,10 @@ public class React extends VolmitPlugin implements ReloadAware {
     }
     ready = false;
     unregisterPapiExpansion();
+    if (metrics != null) {
+      metrics.shutdown();
+      metrics = null;
+    }
     if (bridgeRegistry != null) {
       bridgeRegistry.clear();
       bridgeRegistry = null;

@@ -1352,6 +1352,8 @@
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsecretsenabled.summary" = "Ermöglicht Plugin-gelieferte geheime Integrationsfunktionen."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.impact" = "Code-owned English bleibt der Fallback; optional TOML Overrides werden von languages/overrides."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.summary" = "Locale wird verwendet für React Spieler- und Bedienerschnittstellen."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.impact" = "Auf false setzen, um die bStats-Übermittlungen von React vollständig zu deaktivieren. Erfordert einen Neustart."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.summary" = "Aktiviert die anonyme bStats-Nutzungsberichterstattung für React."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.monitoring.impact" = "Änderungen beeinflussen die Zusammensetzung des Dashboards zur Überwachung der Basislinie und die Messwertsammler-Gruppierung."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.monitoring.summary" = "Standard-Monitor-Layout für Spieler angezeigt."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.priority.impact" = "Das Ändern dieser Gewichte kann das Keulen, Warteschlangen und Sichtbarkeitsverhalten verändern."

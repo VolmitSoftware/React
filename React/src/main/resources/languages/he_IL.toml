@@ -1352,6 +1352,8 @@
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsecretsenabled.summary" = "תכונות שילוב חשאיות של תוסף."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.impact" = "אנגלית בבעלות קוד נותרה הנפילה; אופציונלית TOML מעלים טעון languages/overrides."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.summary" = "מקומי המשמש לשימוש React ממשקי שחקן ומפעיל."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.impact" = "הגדר ל-false כדי לבטל לחלוטין את שליחות bStats של React. נדרשת הפעלה מחדש."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.summary" = "מפעיל דיווח שימוש אנונימי של bStats עבור React."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.monitoring.impact" = "השינויים משפיעים על תורמת לוח המעקב של הקו הבסיסי והקבוצת דוגם מדדים."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.monitoring.summary" = "איפור מעקב Default מוצג לשחקנים."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.priority.impact" = "שינוי משקל זה יכול לשנות culling, תורים והתנהגות הנראות."

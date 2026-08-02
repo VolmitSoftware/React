@@ -1352,6 +1352,8 @@
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsecretsenabled.summary" = "Permite funciones de integración secreta con plugin."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.impact" = "El inglés de propiedad del código sigue siendo el inconveniente; opcional TOML las anulas se cargan de languages/overrides."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.summary" = "Locale utilizado para React interfaces de reproductor y operador."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.impact" = "Ponlo en false para desactivar por completo los envíos bStats de React. Requiere reiniciar el servidor."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.summary" = "Activa el envío anónimo de estadísticas de uso bStats para React."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.monitoring.impact" = "Los cambios afectan la composición del panel de monitoreo de línea base y el agrupamiento lector de métricas."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.monitoring.summary" = "Diseño de monitor predeterminado mostrado a los jugadores."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.priority.impact" = "Cambiar estos pesos puede alterar el comportamiento de la culling, cola y visibilidad."

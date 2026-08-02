@@ -1352,6 +1352,8 @@
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsecretsenabled.summary" = "Activeert plugin-gaated geheime integratie functies."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.impact" = "Code-owned English blijft de fallback; optioneel TOML overrides worden geladen van languages/overrides."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.summary" = "Lokaal gebruikt voor React interfaces voor spelers en exploitanten."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.impact" = "Zet op false om de bStats-inzendingen van React volledig uit te schakelen. Vereist een herstart."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.summary" = "Schakelt anonieme bStats-gebruiksrapportage voor React in."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.monitoring.impact" = "Veranderingen hebben invloed op de samenstelling van het dashboard en de metrieklezer-groepering voor het monitoren van de basislijn."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.monitoring.summary" = "Standaard monitorindeling getoond aan spelers."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.priority.impact" = "Het veranderen van deze gewichten kan het ruimen, in de rij staan en zichtbaarheid gedrag wijzigen."

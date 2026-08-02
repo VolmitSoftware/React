@@ -1352,6 +1352,8 @@
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsecretsenabled.summary" = "Activa as funcionalidades de integração secreta com o 'plugin'."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.impact" = "O inglês de propriedade do código continua sendo o recurso; opcional TOML os comandos são carregados de languages/overrides."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.summary" = "Localidade utilizada para React interfaces de jogador e operador."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.impact" = "Define como false para desativar completamente os envios bStats do React. Requer reinício."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.summary" = "Ativa o relatório anónimo de utilização bStats para o React."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.monitoring.impact" = "As alterações afetam a composição do painel de monitorização da linha base e o agrupamento leitor de métricas."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.monitoring.summary" = "Disposição padrão do monitor mostrada aos jogadores."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.priority.impact" = "Mudar esses pesos pode alterar o comportamento de abate, fila e visibilidade."

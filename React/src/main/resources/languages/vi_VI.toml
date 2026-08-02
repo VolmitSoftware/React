@@ -1352,6 +1352,8 @@
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsecretsenabled.summary" = "Kích hoạt tính năng tích hợp bí mật bổ sung."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.impact" = "Tiếng Anh nổi tiếng mã vẫn còn lại sự sao chép; tùy chọn TOML Ghi đè languages/overrides."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.summary" = "Miền địa phương dùng cho React Người chơi và người điều khiển giao diện."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.impact" = "Đặt thành false để tắt hoàn toàn việc gửi dữ liệu bStats của React. Cần khởi động lại."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.summary" = "Bật báo cáo sử dụng ẩn danh bStats cho React."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.monitoring.impact" = "Những thay đổi ảnh hưởng đến cấu trúc bảng điều khiển giám sát đường cơ bản và nhóm bộ đọc chỉ số."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.monitoring.summary" = "Name"
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.priority.impact" = "Thay đổi trọng lượng có thể thay đổi việc chăm sóc, xếp hàng và quan sát."

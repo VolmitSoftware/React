@@ -1352,6 +1352,8 @@
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsecretsenabled.summary" = "Включает функции секретной интеграции, связанные с плагином."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.impact" = "Кодовый английский остается запасным; факультативный TOML Для этого открываются languages/overrides."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.summary" = "Локальные, используемые для React Интерфейсы игрока и оператора."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.impact" = "Установите false, чтобы полностью отключить отправку данных bStats из React. Требуется перезапуск."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.summary" = "Включает анонимную отправку статистики использования bStats для React."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.monitoring.impact" = "Изменения влияют на состав панели управления мониторинга базовой линии и группировку сборщик метрик."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.monitoring.summary" = "Диспетчер по умолчанию, показанный игрокам."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.priority.impact" = "Изменение этих весов может изменить отбор, очереди и поведение видимости."

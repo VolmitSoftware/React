@@ -1352,6 +1352,8 @@
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsecretsenabled.summary" = "Įjungia slapto integravimo į tinklą funkcijas."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.impact" = "Kodo priklausanti anglų lieka atsarginis; neprivaloma TOML perkrautos yra pakrautos iš languages/overrides."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.summary" = "Lokalas naudojamas React grotuvo ir operatoriaus sąsajos."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.impact" = "Nustatykite false, kad visiškai išjungtumėte React bStats siuntimą. Reikia paleisti serverį iš naujo."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.summary" = "Įjungia anoniminį bStats naudojimo ataskaitų teikimą React įskiepiui."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.monitoring.impact" = "Pakeitimai daro įtaką pagrindinės linijos stebėjimo prietaisų plokštelės sudėčiai ir metrikų skaitytuvas grupiui."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.monitoring.summary" = "Žaidėjams rodomas numatytasis monitoriaus išdėstymas."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.priority.impact" = "Pakeitus šiuos svorius, gali pasikeisti skerdimas, eilėje, ir matomumo elgesys."

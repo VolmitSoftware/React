@@ -1352,6 +1352,8 @@
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsecretsenabled.summary" = "Umożliwia wtykowe funkcje integracji."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.impact" = "Angielski będący własnością Codea pozostaje zapasem; opcjonalne TOML nadjazdy są ładowane z languages/overrides."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.summary" = "Locale stosowane do React interfejsy odtwarzacza i operatora."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.impact" = "Ustaw na false, aby całkowicie wyłączyć wysyłanie danych bStats przez Reacta. Wymaga restartu."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.summary" = "Włącza anonimowe raportowanie użycia bStats dla Reacta."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.monitoring.impact" = "Zmiany wpływają na skład deski kontrolnej linii wyjściowej i grupy czytnik metryk."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.monitoring.summary" = "Domyślny układ monitora pokazany graczom."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.priority.impact" = "Zmiana tych ciężarów może zmienić wycinanie, kolejkę i zachowanie widoczności."
