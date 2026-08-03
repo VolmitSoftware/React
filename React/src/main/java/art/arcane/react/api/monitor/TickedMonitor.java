@@ -42,6 +42,7 @@ public abstract class TickedMonitor extends TickedObject implements Monitor {
   protected long sleepingRate;
   protected int sleepDelay;
   protected int currentSleepDelay;
+  private volatile boolean armed;
 
   public TickedMonitor(String id, long interval) {
     super("monitor", id, interval);
@@ -58,6 +59,21 @@ public abstract class TickedMonitor extends TickedObject implements Monitor {
   public void wakeUp() {
     currentSleepDelay = sleepDelay;
     setTinterval(awakeInterval);
+  }
+
+  // The Ticker sees this object before the subclass constructors finish (TickedObject
+  // registers in its own constructor), so ticks are gated until start() publishes the
+  // fully-built monitor.
+  @Override
+  public void start() {
+    armed = true;
+    Monitor.super.start();
+  }
+
+  @Override
+  public void stop() {
+    armed = false;
+    Monitor.super.stop();
   }
 
   public void setVisible(Sampler sampler, boolean visible) {
@@ -83,6 +99,10 @@ public abstract class TickedMonitor extends TickedObject implements Monitor {
 
   @Override
   public void onTick() {
+    if (!armed) {
+      return;
+    }
+
     for (Sampler i : new ArrayList<>(changers.keySet())) {
       changers.put(i, M.lerp(getChanger(i), 0, 0.1));
     }

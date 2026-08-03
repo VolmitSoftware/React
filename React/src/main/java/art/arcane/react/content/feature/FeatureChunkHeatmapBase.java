@@ -91,7 +91,7 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
 
   @Override
   public MegamapGrid.MegamapCapability megamapCapability() {
-    return MegamapGrid.MegamapCapability.adaptive(4, 4);
+    return MegamapGrid.MegamapCapability.adaptiveWall();
   }
 
   @Override
@@ -104,6 +104,16 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
         : anchor == null ? (viewer == null ? null : viewer.getWorld()) : anchor.getWorld();
 
     if (mapWorld == null) {
+      // No world resolves for this view yet (fresh map, headless render); paint the
+      // dashboard shell instead of leaving the frame blank.
+      fill(rootRegion(), backgroundColor());
+      RendererLayout.emptyState(
+          this,
+          bodyRegion(),
+          ReactLanguage.raw(RendererMessages.HEATMAP_NO_ACTIVITY),
+          ReactLanguage.raw(RendererMessages.PLUGIN_WAIT_FOR_DATA)
+      );
+      dashHeader(drawLabel ? mapLabel() : null, null, headerColor(false), FRAME_VALUE);
       return;
     }
 
@@ -214,7 +224,10 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
 
   protected int effectiveZoom() {
     int zoom = Math.max(1, chunkPixelSize);
-    if (megamapDetail().atLeast(MegamapGrid.MegamapDetail.RICH)) {
+    // Megamap detail tiers on tile count, so a 1xN strip gets promoted like a square
+    // wall even though neither axis gained room. Key off the canvas instead: zoom only
+    // shrinks once the shorter axis actually spans more than one map.
+    if (canvasSpan() >= 2) {
       return Math.max(2, zoom - 2);
     }
     return zoom;
@@ -222,9 +235,21 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
 
   protected int effectiveRadius(World world, Region body, int zoom) {
     int base = mapRadiusChunks > 0 ? mapRadiusChunks : Math.max(2, world.getViewDistance() * 2);
-    int expansion = Math.max(1, Math.max(gridWidth(), gridHeight()));
+    int expansion = canvasExtent();
     int fit = (Math.max(body.width(), body.height()) / (2 * Math.max(1, zoom))) + 2;
     return Math.max(base, Math.min(fit, base * expansion));
+  }
+
+  // Maps spanning the shorter canvas axis: 1 for a single map, for a 1xN strip and for
+  // any magnified megamap that fell back to a 128px canvas, 2 for a 2x2 wall.
+  private int canvasSpan() {
+    return Math.max(1, Math.min(width(), height()) / ReactRenderer.CANVAS_SIZE);
+  }
+
+  // Maps spanning the longer canvas axis, which bounds how far the loaded-chunk scan
+  // may reach past the configured radius.
+  private int canvasExtent() {
+    return Math.max(1, Math.max(width(), height()) / ReactRenderer.CANVAS_SIZE);
   }
 
   protected Pixel projectChunk(Chunk chunk) {

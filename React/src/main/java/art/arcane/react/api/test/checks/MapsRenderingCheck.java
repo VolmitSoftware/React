@@ -370,7 +370,7 @@ public class MapsRenderingCheck implements ReactSubsystemCheck {
       return;
     }
 
-    int[][] grids = {{1, 1}, {2, 1}, {1, 2}, {1, 3}, {2, 2}, {3, 1}, {3, 3}};
+    int[][] grids = {{1, 1}, {2, 1}, {1, 2}, {1, 3}, {2, 2}, {3, 1}, {3, 3}, {5, 3}};
     int rendered = 0;
     int unavailable = 0;
     List<String> problems = new ArrayList<String>();
@@ -420,7 +420,7 @@ public class MapsRenderingCheck implements ReactSubsystemCheck {
     report.pass(
         "maps",
         "megamap-expansion",
-        ReactLanguage.raw("test.map.megamap_expansion_pass", "Every renderer fills every frame of a 1x1, 2x1, 1x2, 1x3, 2x2, 3x1 and 3x3 wall.")
+        ReactLanguage.raw("test.map.megamap_expansion_pass", "Every renderer fills every frame of a 1x1, 2x1, 1x2, 1x3, 2x2, 3x1, 3x3 and 5x3 wall.")
             + " (" + rendered + " rendered, " + unavailable + " unavailable)"
     );
   }
@@ -431,7 +431,7 @@ public class MapsRenderingCheck implements ReactSubsystemCheck {
     for (int tileY = 0; tileY < gridHeight; tileY++) {
       for (int tileX = 0; tileX < gridWidth; tileX++) {
         MegamapGrid.MegamapTile tile = new MegamapGrid.MegamapTile(gridWidth, gridHeight, tileX, tileY);
-        MegamapGrid.MegamapViewport viewport = MegamapGrid.viewportFor(tile, capability, 16, size);
+        MegamapGrid.MegamapViewport viewport = MegamapGrid.viewportFor(tile, capability, 32, size);
         SyntheticCanvas canvas = new SyntheticCanvas(size, size);
         ReactRenderContext context = ReactRenderContext.builder()
             .canvas(canvas)
@@ -810,7 +810,7 @@ public class MapsRenderingCheck implements ReactSubsystemCheck {
         for (int tileY = 0; tileY < grid[1]; tileY++) {
           for (int tileX = 0; tileX < grid[0]; tileX++) {
             MegamapGrid.MegamapTile tile = new MegamapGrid.MegamapTile(grid[0], grid[1], tileX, tileY);
-            MegamapGrid.MegamapViewport viewport = MegamapGrid.viewportFor(tile, capability, 16, size);
+            MegamapGrid.MegamapViewport viewport = MegamapGrid.viewportFor(tile, capability, 32, size);
             SyntheticCanvas canvas = new SyntheticCanvas(size, size);
             ReactRenderContext context = viewportContext(canvas, tile, viewport, null, null, false);
 
@@ -883,7 +883,7 @@ public class MapsRenderingCheck implements ReactSubsystemCheck {
           for (int tileY = 0; tileY < grid[1]; tileY++) {
             for (int tileX = 0; tileX < grid[0]; tileX++) {
               MegamapGrid.MegamapTile tile = new MegamapGrid.MegamapTile(grid[0], grid[1], tileX, tileY);
-              MegamapGrid.MegamapViewport viewport = MegamapGrid.viewportFor(tile, capability, 16, size);
+              MegamapGrid.MegamapViewport viewport = MegamapGrid.viewportFor(tile, capability, 32, size);
               byte[] surface = ReactRenderContext.newSurface();
               byte[] shadow = ReactRenderContext.newSurface();
               SyntheticCanvas canvas = new SyntheticCanvas(size, size);
@@ -1058,7 +1058,7 @@ public class MapsRenderingCheck implements ReactSubsystemCheck {
 
     @Override
     public MegamapGrid.MegamapCapability megamapCapability() {
-      return MegamapGrid.MegamapCapability.adaptive(4, 4);
+      return MegamapGrid.MegamapCapability.adaptiveWall();
     }
 
     @Override

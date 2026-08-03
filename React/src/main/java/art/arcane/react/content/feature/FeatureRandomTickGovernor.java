@@ -26,6 +26,7 @@ import art.arcane.react.content.sampler.SamplerIncidentScore;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.util.common.scheduling.J;
 import org.bukkit.Bukkit;
+import org.bukkit.GameRule;
 import org.bukkit.GameRules;
 import org.bukkit.World;
 
@@ -60,6 +61,23 @@ public class FeatureRandomTickGovernor extends ReactFeature {
   private int reducedRandomTickSpeed = 1;
   private transient Map<UUID, Integer> originalByWorld;
   private transient final PressureGate gate = new PressureGate();
+
+  // GameRules constants are paper-only; the legacy GameRule constant survives on spigot
+  private static volatile GameRule<Integer> randomTickSpeedRule;
+
+  @SuppressWarnings("removal") // legacy constant only resolved where paper GameRules is absent
+  static GameRule<Integer> randomTickSpeedRule() {
+    GameRule<Integer> rule = randomTickSpeedRule;
+    if (rule == null) {
+      try {
+        rule = GameRules.RANDOM_TICK_SPEED;
+      } catch (NoClassDefFoundError e) {
+        rule = GameRule.RANDOM_TICK_SPEED;
+      }
+      randomTickSpeedRule = rule;
+    }
+    return rule;
+  }
 
   public FeatureRandomTickGovernor() {
     super(ID);
@@ -107,13 +125,13 @@ public class FeatureRandomTickGovernor extends ReactFeature {
     J.s(() -> {
       int governed = 0;
       for (World world : Bukkit.getWorlds()) {
-        Integer current = world.getGameRuleValue(GameRules.RANDOM_TICK_SPEED);
+        Integer current = world.getGameRuleValue(randomTickSpeedRule());
         if (current == null || current <= reduced) {
           continue;
         }
 
         originalByWorld.put(world.getUID(), current);
-        world.setGameRule(GameRules.RANDOM_TICK_SPEED, reduced);
+        world.setGameRule(randomTickSpeedRule(), reduced);
         governed++;
       }
 
@@ -132,7 +150,7 @@ public class FeatureRandomTickGovernor extends ReactFeature {
           continue;
         }
 
-        world.setGameRule(GameRules.RANDOM_TICK_SPEED, entry.getValue());
+        world.setGameRule(randomTickSpeedRule(), entry.getValue());
         restored++;
       }
 

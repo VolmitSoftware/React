@@ -65,8 +65,8 @@ public class Hastebin {
       Component message = ReactLanguage.component(EnvironmentMessages.HASTEBIN_LINK)
           .clickEvent(ClickEvent.openUrl(hastebinUrl));
 
-      // Send the clickable message to the player
-      sender.sendMessage(message);
+      // audience delivery: spigot CommandSender has no sendMessage(Component)
+      React.audiences().sender(sender).sendMessage(message);
     } catch (Exception e) {
       // Error occurred during upload
       ReactLanguage.send(sender, EnvironmentMessages.HASTEBIN_FAILED);

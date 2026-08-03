@@ -32,6 +32,7 @@ import art.arcane.volmlib.util.hud.HudSlotClaim;
 import art.arcane.volmlib.util.hud.HudSlotRequest;
 import art.arcane.volmlib.util.hud.HudSurface;
 import art.arcane.volmlib.util.math.M;
+import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.Style;
@@ -66,13 +67,18 @@ public class ActionBarMonitor extends PlayerMonitor {
   private boolean tickUp = false;
   private boolean locked = false;
   private int lockedPosition;
-  private boolean running;
+  private volatile boolean running;
   private int headerViewportSlots;
   private int samplerViewportSlots;
   private HudSlotClaim barClaim;
   private HudSlotClaim focusClaim;
   private long lastResolveMillis;
   private long barDeniedSinceMillis;
+  private boolean bossBarShown;
+  // flush() runs on a different worker thread every tick while refreshConfiguration()
+  // arrives from sampler-churn/hotload threads; both must mutate the render state
+  // under the same lock.
+  private final Object renderLock = new Object();
 
   public ActionBarMonitor(ReactPlayer player) {
     super("actionbar", player, 50);
@@ -90,19 +96,21 @@ public class ActionBarMonitor extends PlayerMonitor {
   }
 
   public void refreshConfiguration() {
-    configuration = getPlayer().getSettings().getMonitorConfiguration();
-    refreshViewportSettings();
-    focus = null;
-    viewportIndex = 0;
-    lockedPosition = 0;
-    focusUpAnimation = 0;
-    focusDownAnimation = 0;
-    viewportIndexes.clear();
-    maxLengths.clear();
-    lastValue.clear();
-    trends.clear();
-    lastTimes.clear();
-    clearVisibility();
+    synchronized (renderLock) {
+      configuration = getPlayer().getSettings().getMonitorConfiguration();
+      refreshViewportSettings();
+      focus = null;
+      viewportIndex = 0;
+      lockedPosition = 0;
+      focusUpAnimation = 0;
+      focusDownAnimation = 0;
+      viewportIndexes.clear();
+      maxLengths.clear();
+      lastValue.clear();
+      trends.clear();
+      lastTimes.clear();
+      clearVisibility();
+    }
     wakeUp();
   }
 
@@ -123,12 +131,14 @@ public class ActionBarMonitor extends PlayerMonitor {
     boolean blankActionBar = barClaim != null && barClaim.granted() == HudSurface.ACTION_BAR;
     boolean blankTitle = focusClaim != null && focusClaim.granted() == HudSurface.TITLE;
     Runnable clearUi = () -> {
+      // audience delivery: spigot Player has no sendActionBar/sendTitlePart(Component)
+      Audience audience = React.audiences().player(player);
       if (blankActionBar) {
-        player.sendActionBar(Component.space());
+        audience.sendActionBar(Component.space());
       }
       if (blankTitle) {
-        player.sendTitlePart(TitlePart.TITLE, Component.space());
-        player.sendTitlePart(TitlePart.SUBTITLE, Component.space());
+        audience.sendTitlePart(TitlePart.TITLE, Component.space());
+        audience.sendTitlePart(TitlePart.SUBTITLE, Component.space());
       }
     };
 
@@ -154,7 +164,7 @@ public class ActionBarMonitor extends PlayerMonitor {
     }
     HudBossBarLane lanes = React.lanes();
     if (lanes != null) {
-      lanes.hide(player, "react:monitor");
+      runBossBarSafe(() -> lanes.hide(player, "react:monitor"));
     }
     super.stop();
     unregister();
@@ -165,8 +175,19 @@ public class ActionBarMonitor extends PlayerMonitor {
     Player player = getPlayer().getPlayer();
     barClaim = React.hud().open(player, new HudSlotRequest("react:monitor", HudPriority.AMBIENT, 1500L, List.of(HudSurface.ACTION_BAR, HudSurface.BOSS_BAR)));
     focusClaim = React.hud().open(player, new HudSlotRequest("react:monitor-focus", HudPriority.INTERACTIVE, 1500L, List.of(HudSurface.TITLE)));
+    bossBarShown = true;
     running = true;
     super.start();
+  }
+
+  // Bukkit boss-bar mutation is not safe from the async render worker; on Folia the
+  // flush already runs on the owning region thread.
+  private void runBossBarSafe(Runnable task) {
+    if (J.isFoliaThreading()) {
+      task.run();
+    } else {
+      J.s(task);
+    }
   }
 
   private Component writeHeaderTitle(MonitorGroup group) {
@@ -347,13 +368,11 @@ public class ActionBarMonitor extends PlayerMonitor {
         String formattedValue = i.formattedValue(value);
         String formattedSuffix = i.formattedSuffix(value);
         int l = formattedValue.length() + formattedSuffix.length();
-        synchronized (maxLengths) {
-          maxLengths.compute(i, (k, v) -> Math.max(v == null ? 0 : v, l));
-        }
+        int max = maxLengths.compute(i, (k, v) -> Math.max(v == null ? 0 : v, l));
         result = result.append(i.format(Component.text(formattedValue, s), Component.text(formattedSuffix, ss)));
 
-        if (l < maxLengths.get(i)) {
-          result = result.append(Component.text(" ".repeat(maxLengths.get(i) - l)));
+        if (l < max) {
+          result = result.append(Component.text(" ".repeat(max - l)));
         }
       } catch (Throwable e) {
         e.printStackTrace();
@@ -374,19 +393,21 @@ public class ActionBarMonitor extends PlayerMonitor {
     if (focus != null) {
       int index = configuration.getGroups().indexOf(focus);
 
-      while (index + 1 > viewportIndex + viewportLimit) {
-        viewportIndex++;
-      }
+      if (index >= 0) {
+        while (index + 1 > viewportIndex + viewportLimit) {
+          viewportIndex++;
+        }
 
-      while (index < viewportIndex) {
-        viewportIndex--;
+        while (index < viewportIndex) {
+          viewportIndex--;
+        }
       }
     }
 
     Component result = Component.empty();
     boolean first = true;
     for (int m = 0; m < viewportLimit; m++) {
-      MonitorGroup i = configuration.getGroups().get((viewportIndex + m) % configuration.getGroups().size());
+      MonitorGroup i = configuration.getGroups().get(Math.floorMod(viewportIndex + m, configuration.getGroups().size()));
       Sampler headerSampler = getFocusedSampler(i);
       if (headerSampler == null) {
         continue;
@@ -413,13 +434,11 @@ public class ActionBarMonitor extends PlayerMonitor {
       String formattedValue = head.formattedValue(value);
       String formattedSuffix = head.formattedSuffix(value);
       int l = formattedValue.length() + formattedSuffix.length();
-      synchronized (maxLengths) {
-        maxLengths.compute(head, (k, v) -> Math.max(v == null ? 0 : v, l));
-      }
+      int max = maxLengths.compute(head, (k, v) -> Math.max(v == null ? 0 : v, l));
       result = result.append(head.format(Component.text(formattedValue, s), Component.text(formattedSuffix, ss)));
 
-      if (l < maxLengths.get(head)) {
-        result = result.append(Component.text(" ".repeat(maxLengths.get(head) - l)));
+      if (l < max) {
+        result = result.append(Component.text(" ".repeat(max - l)));
       }
     }
 
@@ -430,7 +449,8 @@ public class ActionBarMonitor extends PlayerMonitor {
     if (configuration == null || configuration.getGroups() == null || configuration.getGroups().isEmpty()) {
       return null;
     }
-    return locked ? configuration.getGroups().get(lockedPosition) : getPlayer().isMonitorSneaking() ? configuration.getGroups().get(getPlayer().getScrollPosition(configuration.getGroups().size())) : null;
+    int size = configuration.getGroups().size();
+    return locked ? configuration.getGroups().get(Math.floorMod(lockedPosition, size)) : getPlayer().isMonitorSneaking() ? configuration.getGroups().get(Math.floorMod(getPlayer().getScrollPosition(size), size)) : null;
   }
 
   Sampler getNextFocusedSampler() {
@@ -451,6 +471,12 @@ public class ActionBarMonitor extends PlayerMonitor {
       return;
     }
 
+    synchronized (renderLock) {
+      flushLocked();
+    }
+  }
+
+  private void flushLocked() {
     clearVisibility();
     MonitorGroup f = focus;
 
@@ -490,28 +516,30 @@ public class ActionBarMonitor extends PlayerMonitor {
       HudSurface focusSurface = resolveNow || focus != f ? focusClaim.resolve() : focusClaim.granted();
 
       if (focusSurface == HudSurface.TITLE) {
+        Audience audience = React.audiences().player(getPlayer().getPlayer());
         Duration stay = Duration.ofMillis(((int) ((getTinterval() / 50) + 3)) * 50L);
         Duration fadeOut = Duration.ofMillis(20 * 50);
-        getPlayer().getPlayer().sendTitlePart(TitlePart.TIMES, Title.Times.times(Duration.ZERO, stay, fadeOut));
+        audience.sendTitlePart(TitlePart.TIMES, Title.Times.times(Duration.ZERO, stay, fadeOut));
 
         if (focusUpAnimation >= -10) {
           if (focusUpAnimation > 0) {
-            getPlayer().getPlayer().sendTitlePart(TitlePart.TITLE, writeHeaderTitle(focus));
+            audience.sendTitlePart(TitlePart.TITLE, writeHeaderTitle(focus));
           } else {
-            getPlayer().getPlayer().sendTitlePart(TitlePart.TITLE, Component.space());
+            audience.sendTitlePart(TitlePart.TITLE, Component.space());
           }
 
           focusUpAnimation--;
         }
 
-        getPlayer().getPlayer().sendTitlePart(TitlePart.SUBTITLE, writeSubSamplers());
+        audience.sendTitlePart(TitlePart.SUBTITLE, writeSubSamplers());
       }
     } else if (focusDownAnimation > 0) {
       focusDownAnimation--;
       if (focusClaim.granted() == HudSurface.TITLE) {
-        getPlayer().getPlayer().clearTitle();
+        Audience audience = React.audiences().player(getPlayer().getPlayer());
+        audience.clearTitle();
         if (focusDownAnimation == 0) {
-          getPlayer().getPlayer().sendTitlePart(TitlePart.TIMES, Title.Times.times(Duration.ofMillis(500), Duration.ofMillis(3500), Duration.ofMillis(1000)));
+          audience.sendTitlePart(TitlePart.TIMES, Title.Times.times(Duration.ofMillis(500), Duration.ofMillis(3500), Duration.ofMillis(1000)));
           focusClaim.release();
         }
       }
@@ -522,16 +550,19 @@ public class ActionBarMonitor extends PlayerMonitor {
 
     if (barSurface == HudSurface.ACTION_BAR) {
       barDeniedSinceMillis = 0L;
-      getPlayer().getPlayer().sendActionBar(header);
-      if (lanes != null) {
-        lanes.hide(getPlayer().getPlayer(), "react:monitor");
+      React.audiences().player(getPlayer().getPlayer()).sendActionBar(header);
+      if (lanes != null && bossBarShown) {
+        bossBarShown = false;
+        runBossBarSafe(() -> lanes.hide(getPlayer().getPlayer(), "react:monitor"));
       }
     } else if (barSurface == HudSurface.BOSS_BAR) {
       if (barDeniedSinceMillis == 0L) {
         barDeniedSinceMillis = now;
       }
       if (now - barDeniedSinceMillis >= 2000L && lanes != null) {
-        lanes.show(getPlayer().getPlayer(), "react:monitor", LegacyComponentSerializer.legacySection().serialize(header), 1.0D, BarColor.WHITE, BarStyle.SOLID, 4000L);
+        bossBarShown = true;
+        String legacyHeader = LegacyComponentSerializer.legacySection().serialize(header);
+        runBossBarSafe(() -> lanes.show(getPlayer().getPlayer(), "react:monitor", legacyHeader, 1.0D, BarColor.WHITE, BarStyle.SOLID, 4000L));
       }
     }
   }

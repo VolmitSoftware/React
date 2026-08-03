@@ -215,8 +215,9 @@ public class EntityKiller {
 
     stop();
     entity.getWorld().spawnParticle(Particle.FLASH, entity.getLocation(), 1, Color.WHITE);
+    // audience delivery: spigot Player has no playSound(net.kyori Sound)
     entity.getWorld().getPlayers().forEach(player ->
-        player.playSound(Sound.sound(
+        React.audiences().player(player).playSound(Sound.sound(
             Key.key("minecraft:particle.soul_escape"),
             Sound.Source.NEUTRAL,
             0.5f,

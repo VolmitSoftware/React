@@ -22,6 +22,7 @@ package art.arcane.react.core.controller;
 import art.arcane.react.React;
 import art.arcane.react.api.feature.Feature;
 import art.arcane.react.api.rendering.MapRendererPipe;
+import art.arcane.react.api.rendering.MegamapDuplicateSplitter;
 import art.arcane.react.api.rendering.MegamapGrid;
 import art.arcane.react.api.rendering.ReactRenderer;
 import art.arcane.react.api.rendering.RendererAdaptMetrics;
@@ -56,10 +57,15 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.hanging.HangingBreakEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
-import org.bukkit.event.world.ChunkLoadEvent;
+import org.bukkit.event.world.EntitiesLoadEvent;
+import org.bukkit.event.world.EntitiesUnloadEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.MapMeta;
 import org.bukkit.map.MapRenderer;
@@ -91,6 +97,8 @@ public class MapController extends TickedObject implements IController, Listener
   private static final Set<String> disabledRendererIds = Set.of(
       "iris-biome-chunk-share-pie-map"
   );
+  private static final int megamapSplitsPerPass = 8;
+  private static final int megamapRotationResetsPerPass = 8;
   @ConfigDoc(value = "Main maintenance cadence for map repair logic in milliseconds.", impact = "Lower values repair inventories and item-frames sooner after reload; higher values reduce maintenance overhead.")
   private long maintenanceTickIntervalMs = 500L;
   @ConfigDoc(value = "Cadence for scanning player inventories for React map repair in milliseconds.", impact = "Lower values repair map metadata and renderers faster; higher values reduce per-tick work.")
@@ -131,7 +139,10 @@ public class MapController extends TickedObject implements IController, Listener
   private long frameMapValidateIntervalMs = 2_000L;
   @ConfigDoc(value = "Combines adjacent item-frame React maps with the same renderer into one large tiled megamap display.", impact = "Disable to render every frame map as an independent 128x128 dashboard.")
   private boolean megamapEnabled = true;
-  private int megamapMaxTiles = 16;
+  @ConfigDoc(value = "Total tile budget for one combined megamap wall.", impact = "Walls larger than the budget fall back to zoomed single-dashboard rendering.")
+  private int megamapMaxTiles = 32;
+  @ConfigDoc(value = "Cloned React maps placed in item frames are automatically given fresh map ids so adjacent copies can combine into a megamap wall.", impact = "Disable to keep cloned maps sharing one picture and never combining.")
+  private boolean megamapSplitDuplicates = true;
   private transient volatile MegamapGrid.MegamapSolution megamapSolution;
   private transient AtomicInteger megamapStateVersion;
   private transient int megamapSolvedVersion;
@@ -142,6 +153,12 @@ public class MapController extends TickedObject implements IController, Listener
   private transient Map<FramePushKey, Long> frameMapPushMsByViewerKey;
   private transient Map<Integer, Long> frameMapLastSeenByMapId;
   private transient Map<UUID, ActiveFrameMap> activeFrameMaps;
+  private transient Map<Integer, UUID> frameIdsByMapId;
+  private transient Set<UUID> megamapSplitsInFlight;
+  // Declared as Listener so the Paper-only listener type never leaks into a generated
+  // accessor signature that reflection would resolve on Spigot.
+  private transient Listener frameChangeListener;
+  private transient boolean frameChangeEventsAvailable;
   private transient AtomicBoolean maintenanceTickQueued;
   private transient Method itemFrameSetItemSilentMethod;
   private transient boolean itemFrameSetItemSilentMethodResolved;
@@ -421,8 +438,63 @@ public class MapController extends TickedObject implements IController, Listener
   }
 
   @EventHandler
-  public void on(ChunkLoadEvent e) {
-    refreshChunkItemFrames(e.getChunk(), true, memoizedViewerSnapshot());
+  public void on(EntitiesLoadEvent e) {
+    // Chunk entities are not populated at ChunkLoadEvent time on modern Paper; this
+    // handler already runs on the owning region thread, so refresh frames inline.
+    Supplier<FrameMapViewerSnapshot> viewerSnapshot = memoizedViewerSnapshot();
+    for (Entity entity : e.getEntities()) {
+      if (entity instanceof ItemFrame frame) {
+        refreshItemFrame(frame, true, viewerSnapshot);
+      }
+    }
+  }
+
+  @EventHandler
+  public void on(EntitiesUnloadEvent e) {
+    if (activeFrameMaps == null || activeFrameMaps.isEmpty()) {
+      return;
+    }
+
+    for (Entity entity : e.getEntities()) {
+      if (entity instanceof ItemFrame frame) {
+        untrackFrameMap(frame.getUniqueId());
+      }
+    }
+  }
+
+  @EventHandler(ignoreCancelled = true)
+  public void on(HangingBreakEvent e) {
+    if (e.getEntity() instanceof ItemFrame frame) {
+      untrackFrameMap(frame.getUniqueId());
+    }
+  }
+
+  @EventHandler(ignoreCancelled = true)
+  public void on(PlayerInteractEntityEvent e) {
+    if (frameChangeEventsAvailable || !(e.getRightClicked() instanceof ItemFrame frame)) {
+      return;
+    }
+
+    scheduleFrameRefresh(frame);
+  }
+
+  @EventHandler(ignoreCancelled = true)
+  public void on(EntityDamageByEntityEvent e) {
+    if (frameChangeEventsAvailable || !(e.getEntity() instanceof ItemFrame frame)) {
+      return;
+    }
+
+    scheduleFrameRefresh(frame);
+  }
+
+  public void scheduleFrameRefresh(ItemFrame frame) {
+    if (frame == null) {
+      return;
+    }
+
+    // Frame change events fire before the item lands, so re-read the frame one tick
+    // later from its owning region.
+    J.runEntity(frame, () -> refreshItemFrame(frame, false, memoizedViewerSnapshot()), 1);
   }
 
   private Supplier<FrameMapViewerSnapshot> memoizedViewerSnapshot() {
@@ -466,6 +538,10 @@ public class MapController extends TickedObject implements IController, Listener
     frameMapPushMsByViewerKey = new ConcurrentHashMap<>();
     frameMapLastSeenByMapId = new ConcurrentHashMap<>();
     activeFrameMaps = new ConcurrentHashMap<>();
+    frameIdsByMapId = new ConcurrentHashMap<>();
+    megamapSplitsInFlight = ConcurrentHashMap.newKeySet();
+    frameChangeListener = null;
+    frameChangeEventsAvailable = false;
     megamapSolution = MegamapGrid.MegamapSolution.EMPTY;
     megamapStateVersion = new AtomicInteger(1);
     megamapSolvedVersion = 0;
@@ -506,6 +582,17 @@ public class MapController extends TickedObject implements IController, Listener
     if (activeFrameMaps != null) {
       activeFrameMaps.clear();
     }
+    if (frameIdsByMapId != null) {
+      frameIdsByMapId.clear();
+    }
+    if (megamapSplitsInFlight != null) {
+      megamapSplitsInFlight.clear();
+    }
+    if (frameChangeListener != null) {
+      HandlerList.unregisterAll(frameChangeListener);
+      frameChangeListener = null;
+    }
+    frameChangeEventsAvailable = false;
     if (resolvedRenderers != null) {
       resolvedRenderers.clear();
     }
@@ -546,7 +633,30 @@ public class MapController extends TickedObject implements IController, Listener
       J.runEntity(i, () -> join(i));
     }
 
+    registerFrameChangeListener();
     refreshLoadedItemFrames();
+  }
+
+  private void registerFrameChangeListener() {
+    // Capability probe: the Paper frame-change event is the only one that fires on the
+    // actual place/remove/rotate gesture. Never gate this on a server version string.
+    String probeFailure = null;
+    try {
+      Class.forName("io.papermc.paper.event.player.PlayerItemFrameChangeEvent");
+    } catch (Throwable ex) {
+      probeFailure = ex.getClass().getSimpleName();
+    }
+
+    if (probeFailure != null || React.instance == null) {
+      React.verbose("Item-frame change events unavailable ("
+          + (probeFailure == null ? "no plugin instance" : probeFailure)
+          + "); using interact/damage fallback.");
+      return;
+    }
+
+    frameChangeListener = new MapFrameChangeListener(this);
+    Bukkit.getPluginManager().registerEvents(frameChangeListener, React.instance);
+    frameChangeEventsAvailable = true;
   }
 
   @Override
@@ -561,7 +671,9 @@ public class MapController extends TickedObject implements IController, Listener
         repairOneOnlinePlayerInventory();
         pushTrackedFrameMaps(viewerSnapshot);
         repairOneLoadedChunkItemFrames(viewerSnapshot);
-        rebuildMegamapTiles();
+        if (rebuildMegamapTiles()) {
+          reconcileMegamapDefects();
+        }
       } finally {
         if (maintenanceTickQueued != null) {
           maintenanceTickQueued.set(false);
@@ -776,11 +888,60 @@ public class MapController extends TickedObject implements IController, Listener
       return false;
     }
 
-    if (!repairMapMeta(meta, worldHint, forceRendererUpdate)) {
+    boolean rekeyed = rekeyWallAssignedInventoryMap(meta, worldHint);
+    if (!repairMapMeta(meta, worldHint, forceRendererUpdate) && !rekeyed) {
       return false;
     }
 
     item.setItemMeta(meta);
+    return true;
+  }
+
+  // An inventory copy of a map id that is tiling a wall would show that wall's tile
+  // fragment in hand; re-key the copy to its own fresh id so held maps always render
+  // as a full standalone dashboard. Frame items never pass through this path.
+  private boolean rekeyWallAssignedInventoryMap(MapMeta meta, World worldHint) {
+    if (!megamapEnabled || !megamapSplitDuplicates) {
+      return false;
+    }
+
+    MegamapGrid.MegamapSolution solution = megamapSolution;
+    if (solution == null || solution.tiles().isEmpty()) {
+      return false;
+    }
+
+    MapView view = meta.getMapView();
+    Integer mapId = mapIdOf(view);
+    if (mapId == null || solution.tiles().get(mapId) == null) {
+      return false;
+    }
+
+    String storedRendererId = getStoredRendererId(meta);
+    ReactRenderer renderer = resolveRenderer(storedRendererId);
+    if (renderer == null) {
+      return false;
+    }
+
+    // Never re-key behind an unresolved renderer; that would swap the dashboard.
+    if (isSpecificRendererId(storedRendererId) && isUnknownRendererId(renderer.getId())) {
+      return false;
+    }
+
+    World world = worldHint;
+    if (world == null && view != null && view.getWorld() != null) {
+      world = view.getWorld();
+    }
+    if (world == null && !Bukkit.getWorlds().isEmpty()) {
+      world = Bukkit.getWorlds().get(0);
+    }
+    if (world == null) {
+      return false;
+    }
+
+    MapView fresh = createView(world, renderer);
+    meta.setMapView(fresh);
+    applyRendererMetadata(meta, renderer);
+    React.verbose("Megamap re-keyed inventory copy of wall map " + mapId + " -> " + mapIdOf(fresh));
     return true;
   }
 
@@ -952,11 +1113,9 @@ public class MapController extends TickedObject implements IController, Listener
     ItemStack item = frame.getItem();
     MapMeta meta = reactMapMeta(item);
     if (meta == null) {
+      // The frame no longer holds a React map; drop stale tracking so the wall re-solves.
+      untrackFrameMap(frame.getUniqueId());
       return;
-    }
-
-    if (megamapEnabled && frame.getRotation() != Rotation.NONE) {
-      frame.setRotation(Rotation.NONE);
     }
 
     if (repairMapMeta(meta, frame.getWorld(), forceRendererUpdate)) {
@@ -1001,10 +1160,21 @@ public class MapController extends TickedObject implements IController, Listener
       existing.lastSeenMs = now;
       return existing;
     });
+    indexFrameMapId(mapId, frameId);
     if (tracked.gridMapId < 0) {
       invalidateMegamapGrid();
     }
     captureFrameGridState(tracked, frame, view);
+  }
+
+  private void indexFrameMapId(int mapId, UUID frameId) {
+    if (frameIdsByMapId == null || frameId == null || mapId < 0) {
+      return;
+    }
+
+    // A map id can transiently point at several frames while a duplicate is being
+    // split; keeping the latest is enough for anchor lookups.
+    frameIdsByMapId.put(mapId, frameId);
   }
 
   private void captureFrameGridState(ActiveFrameMap tracked, ItemFrame frame, MapView view) {
@@ -1049,26 +1219,39 @@ public class MapController extends TickedObject implements IController, Listener
       return;
     }
 
-    if (activeFrameMaps.remove(frameId) != null) {
-      invalidateMegamapGrid();
+    ActiveFrameMap removed = activeFrameMaps.remove(frameId);
+    if (removed == null) {
+      return;
     }
+
+    if (frameIdsByMapId != null) {
+      frameIdsByMapId.remove(removed.mapId, frameId);
+    }
+
+    // A split dispatched to a region that never ran (entity retired, chunk unloaded)
+    // must not pin this frame id out of future splits after the frame reloads.
+    if (megamapSplitsInFlight != null) {
+      megamapSplitsInFlight.remove(frameId);
+    }
+
+    invalidateMegamapGrid();
   }
 
-  private void rebuildMegamapTiles() {
+  private boolean rebuildMegamapTiles() {
     if (megamapStateVersion == null) {
-      return;
+      return false;
     }
 
     int version = megamapStateVersion.get();
     if (version == megamapSolvedVersion && megamapEnabled == megamapSolvedEnabled) {
-      return;
+      return false;
     }
 
     megamapSolvedVersion = version;
     megamapSolvedEnabled = megamapEnabled;
     if (!megamapEnabled || activeFrameMaps == null || activeFrameMaps.isEmpty()) {
       megamapSolution = MegamapGrid.MegamapSolution.EMPTY;
-      return;
+      return true;
     }
 
     List<MegamapGrid.FrameCell> cells = new ArrayList<>(activeFrameMaps.size());
@@ -1090,6 +1273,208 @@ public class MapController extends TickedObject implements IController, Listener
     }
 
     megamapSolution = MegamapGrid.analyze(cells);
+    return true;
+  }
+
+  private void reconcileMegamapDefects() {
+    MegamapGrid.MegamapSolution solution = megamapSolution;
+    if (!megamapEnabled
+        || solution == null
+        || solution.defects().isEmpty()
+        || activeFrameMaps == null
+        || activeFrameMaps.isEmpty()) {
+      return;
+    }
+
+    splitDuplicateFrameMaps(solution);
+    resetRotatedFrameMaps(solution);
+  }
+
+  private void splitDuplicateFrameMaps(MegamapGrid.MegamapSolution solution) {
+    if (!megamapSplitDuplicates) {
+      return;
+    }
+
+    List<MegamapDuplicateSplitter.DuplicateFrame> duplicates = null;
+    for (ActiveFrameMap tracked : activeFrameMaps.values()) {
+      if (tracked == null || tracked.rendererId == null) {
+        continue;
+      }
+
+      MegamapGrid.MegamapDefect defect = solution.defects().get(tracked.mapId);
+      if (defect == null || defect.reason() != MegamapGrid.DefectReason.DUPLICATE_MAP_ID) {
+        continue;
+      }
+
+      if (duplicates == null) {
+        duplicates = new ArrayList<>();
+      }
+
+      duplicates.add(new MegamapDuplicateSplitter.DuplicateFrame(
+          tracked.frameId,
+          tracked.mapId,
+          tracked.rendererId,
+          tracked.firstSeenMs
+      ));
+    }
+
+    if (duplicates == null) {
+      return;
+    }
+
+    int remaining = megamapSplitsPerPass;
+    for (UUID frameId : MegamapDuplicateSplitter.plan(duplicates)) {
+      if (remaining <= 0) {
+        return;
+      }
+
+      if (splitDuplicateFrameMap(frameId)) {
+        remaining--;
+      }
+    }
+  }
+
+  private boolean splitDuplicateFrameMap(UUID frameId) {
+    ActiveFrameMap tracked = activeFrameMaps.get(frameId);
+    if (tracked == null || tracked.rendererId == null || megamapSplitsInFlight == null) {
+      return false;
+    }
+
+    Entity entity = resolveFrameEntity(frameId);
+    if (entity == null) {
+      return false;
+    }
+
+    ReactRenderer renderer = resolveRenderer(tracked.rendererId);
+    World world = Bukkit.getWorld(tracked.worldId);
+    if (renderer == null || world == null) {
+      return false;
+    }
+
+    // Never mint a fresh view behind an unresolved renderer; that would swap the
+    // dashboard out from under the player instead of just re-keying the map.
+    if (isSpecificRendererId(tracked.rendererId) && isUnknownRendererId(renderer.getId())) {
+      return false;
+    }
+
+    if (!megamapSplitsInFlight.add(frameId)) {
+      return false;
+    }
+
+    // Bukkit.createMap allocates a global map id, so mint the view here on the
+    // global/primary maintenance thread and dispatch only the frame item write to the
+    // frame's owning region.
+    int duplicateMapId = tracked.mapId;
+    MapView view = createView(world, renderer);
+    runFrameRegion(entity, () -> {
+      try {
+        applyDuplicateSplit(tracked, entity, duplicateMapId, renderer, view);
+      } finally {
+        megamapSplitsInFlight.remove(frameId);
+      }
+    });
+
+    return true;
+  }
+
+  private void applyDuplicateSplit(
+      ActiveFrameMap tracked,
+      Entity entity,
+      int duplicateMapId,
+      ReactRenderer renderer,
+      MapView view
+  ) {
+    if (!(entity instanceof ItemFrame frame) || !frame.isValid()) {
+      return;
+    }
+
+    ItemStack item = frame.getItem();
+    MapMeta meta = reactMapMeta(item);
+    if (meta == null) {
+      return;
+    }
+
+    Integer currentMapId = mapIdOf(meta.getMapView());
+    if (currentMapId == null || currentMapId != duplicateMapId) {
+      return;
+    }
+
+    Integer freshMapId = mapIdOf(view);
+    if (freshMapId == null) {
+      return;
+    }
+
+    meta.setMapView(view);
+    applyRendererMetadata(meta, renderer);
+    item.setItemMeta(meta);
+    setFrameItemQuietly(frame, item);
+
+    long now = System.currentTimeMillis();
+    tracked.mapId = freshMapId;
+    tracked.view = view;
+    tracked.location = frame.getLocation();
+    tracked.lastSeenMs = now;
+    tracked.lastValidatedMs = now;
+    if (frameIdsByMapId != null) {
+      frameIdsByMapId.remove(duplicateMapId, tracked.frameId);
+    }
+    indexFrameMapId(freshMapId, tracked.frameId);
+    captureFrameGridState(tracked, frame, view);
+    invalidateMegamapGrid();
+    React.verbose("Megamap split duplicate map " + duplicateMapId + " -> " + freshMapId + " frame=" + tracked.frameId);
+  }
+
+  private void resetRotatedFrameMaps(MegamapGrid.MegamapSolution solution) {
+    int remaining = megamapRotationResetsPerPass;
+    for (ActiveFrameMap tracked : activeFrameMaps.values()) {
+      if (remaining <= 0) {
+        return;
+      }
+
+      if (tracked == null || tracked.rotationAligned) {
+        continue;
+      }
+
+      MegamapGrid.MegamapDefect defect = solution.defects().get(tracked.mapId);
+      if (defect == null || defect.reason() != MegamapGrid.DefectReason.ROTATED) {
+        continue;
+      }
+
+      Entity entity = resolveFrameEntity(tracked.frameId);
+      if (entity == null) {
+        continue;
+      }
+
+      remaining--;
+      runFrameRegion(entity, () -> applyRotationReset(tracked, entity));
+    }
+  }
+
+  private void applyRotationReset(ActiveFrameMap tracked, Entity entity) {
+    if (!(entity instanceof ItemFrame frame) || !frame.isValid()) {
+      return;
+    }
+
+    if (frame.getRotation() != Rotation.NONE) {
+      frame.setRotation(Rotation.NONE);
+      React.verbose("Megamap rotation reset map=" + tracked.mapId + " frame=" + tracked.frameId);
+    }
+
+    if (!tracked.rotationAligned) {
+      tracked.rotationAligned = true;
+      invalidateMegamapGrid();
+    }
+  }
+
+  private Entity resolveFrameEntity(UUID frameId) {
+    try {
+      return Bukkit.getEntity(frameId);
+    } catch (Throwable ex) {
+      React.verbose("Failed to resolve tracked map frame entity " + frameId + ": "
+          + ex.getClass().getSimpleName()
+          + (ex.getMessage() == null ? "" : " - " + ex.getMessage()));
+      return null;
+    }
   }
 
   public MegamapGrid.MegamapTile megamapTileFor(MapView view) {
@@ -1174,23 +1559,13 @@ public class MapController extends TickedObject implements IController, Listener
         continue;
       }
 
-      Entity entity;
-      try {
-        entity = Bukkit.getEntity(tracked.frameId);
-      } catch (Throwable ex) {
-        React.verbose("Failed to resolve tracked map frame entity " + tracked.frameId + ": "
-            + ex.getClass().getSimpleName()
-            + (ex.getMessage() == null ? "" : " - " + ex.getMessage()));
-        entity = null;
-      }
-
+      Entity entity = resolveFrameEntity(tracked.frameId);
       if (entity == null) {
         untrackFrameMap(tracked.frameId);
         continue;
       }
 
-      Entity resolved = entity;
-      runFrameRegion(resolved, () -> validateAndPushTrackedFrame(tracked, resolved, viewerSnapshot));
+      runFrameRegion(entity, () -> validateAndPushTrackedFrame(tracked, entity, viewerSnapshot));
     }
 
     pruneFramePushState();
@@ -1230,11 +1605,16 @@ public class MapController extends TickedObject implements IController, Listener
       return;
     }
 
+    int previousMapId = tracked.mapId;
     tracked.mapId = mapId;
     tracked.location = frame.getLocation();
     tracked.lastSeenMs = now;
     tracked.lastValidatedMs = now;
     tracked.view = view;
+    if (previousMapId != mapId && frameIdsByMapId != null) {
+      frameIdsByMapId.remove(previousMapId, tracked.frameId);
+    }
+    indexFrameMapId(mapId, tracked.frameId);
     captureFrameGridState(tracked, frame, view);
     if (frameMapLastSeenByMapId != null) {
       frameMapLastSeenByMapId.put(mapId, now);
@@ -2087,20 +2467,44 @@ public class MapController extends TickedObject implements IController, Listener
       return null;
     }
 
+    // This sits on the per-viewer render path, so hit the mapId index first and only
+    // fall back to the linear scan when the index misses.
     World viewWorld = view.getWorld();
+    if (frameIdsByMapId != null) {
+      UUID frameId = frameIdsByMapId.get(mapId);
+      if (frameId != null) {
+        Location anchor = frameAnchorOf(activeFrameMaps.get(frameId), mapId, viewWorld);
+        if (anchor != null) {
+          return anchor;
+        }
+      }
+    }
+
     for (ActiveFrameMap tracked : activeFrameMaps.values()) {
-      if (tracked == null || tracked.mapId != mapId || tracked.location == null || tracked.location.getWorld() == null) {
-        continue;
+      Location anchor = frameAnchorOf(tracked, mapId, viewWorld);
+      if (anchor != null) {
+        return anchor;
       }
-
-      if (viewWorld != null && !viewWorld.equals(tracked.location.getWorld())) {
-        continue;
-      }
-
-      return tracked.location.clone();
     }
 
     return null;
+  }
+
+  private Location frameAnchorOf(ActiveFrameMap tracked, int mapId, World viewWorld) {
+    if (tracked == null || tracked.mapId != mapId) {
+      return null;
+    }
+
+    Location location = tracked.location;
+    if (location == null || location.getWorld() == null) {
+      return null;
+    }
+
+    if (viewWorld != null && !viewWorld.equals(location.getWorld())) {
+      return null;
+    }
+
+    return location.clone();
   }
 
   private String canonicalRendererId(String rendererId) {
@@ -2338,21 +2742,24 @@ public class MapController extends TickedObject implements IController, Listener
     }
   }
 
+  // Mutated from region threads and read from the maintenance thread, so every mutable
+  // field is volatile.
   private static final class ActiveFrameMap {
     private final UUID frameId;
     private final UUID worldId;
-    private int mapId;
-    private int gridMapId = -1;
-    private Location location;
-    private long lastSeenMs;
-    private long lastValidatedMs;
-    private MapView view;
-    private BlockFace facing;
-    private boolean rotationAligned;
-    private int blockX;
-    private int blockY;
-    private int blockZ;
-    private String rendererId;
+    private final long firstSeenMs;
+    private volatile int mapId;
+    private volatile int gridMapId = -1;
+    private volatile Location location;
+    private volatile long lastSeenMs;
+    private volatile long lastValidatedMs;
+    private volatile MapView view;
+    private volatile BlockFace facing;
+    private volatile boolean rotationAligned;
+    private volatile int blockX;
+    private volatile int blockY;
+    private volatile int blockZ;
+    private volatile String rendererId;
 
     private ActiveFrameMap(UUID frameId, UUID worldId, int mapId, Location location, long lastSeenMs) {
       this.frameId = frameId;
@@ -2360,6 +2767,7 @@ public class MapController extends TickedObject implements IController, Listener
       this.mapId = mapId;
       this.location = location;
       this.lastSeenMs = lastSeenMs;
+      this.firstSeenMs = lastSeenMs;
     }
   }
 

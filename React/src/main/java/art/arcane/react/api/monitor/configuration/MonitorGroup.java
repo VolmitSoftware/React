@@ -34,6 +34,8 @@ import java.util.stream.Collectors;
 @Builder
 @Data
 public class MonitorGroup {
+  private static final String DEFAULT_COLOR = "#42cbf5";
+
   private String color;
   private String name;
 
@@ -83,7 +85,11 @@ public class MonitorGroup {
     return samplers.stream().skip(1).map(i -> (Sampler) React.sampler(i)).filter(i -> i != null).collect(Collectors.toList());
   }
 
+  public String getColor() {
+    return color == null || color.isBlank() ? DEFAULT_COLOR : color;
+  }
+
   public int getColorValue() {
-    return Color.decode(color).getRGB();
+    return Color.decode(getColor()).getRGB();
   }
 }

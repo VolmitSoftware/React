@@ -92,8 +92,9 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
     }
 
     if (cl.flip()) {
+      // audience delivery: spigot Player has no playSound(net.kyori Sound)
       item.getWorld().getPlayers().forEach(player ->
-          player.playSound(Sound.sound(
+          React.audiences().player(player).playSound(Sound.sound(
               Key.key("minecraft:item.bundle.insert"),
               Sound.Source.NEUTRAL,
               0.5f,
@@ -137,7 +138,7 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
         }
 
         if (cl.flip()) {
-          p.playSound(Sound.sound(
+          React.audiences().player(p).playSound(Sound.sound(
               Key.key("minecraft:item.bundle.drop_contents"),
               Sound.Source.PLAYER,
               1f,

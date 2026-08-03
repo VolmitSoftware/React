@@ -40,7 +40,7 @@ import java.util.List;
 public class FeaturePluginEventImpactListMap extends ReactFeature implements ReactRenderer {
   public static final String ID = "plugin-event-impact-list-map";
   private static final TinyColor ACCENT = MapTheme.WARN;
-  @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum rows drawn per map tile, or 0 to fill the available height.", impact = "Zero lets a taller map wall list every plugin; a fixed value keeps the row count constant no matter how large the wall is.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum rows drawn per map tile, or 0 to fill the available height.", impact = "Zero lets a taller map wall list every plugin; a fixed value multiplies by the number of vertical tiles, so a taller wall still lists more plugins.")
   private int maxRowsPerTile = 0;
 
   public FeaturePluginEventImpactListMap() {
@@ -49,7 +49,7 @@ public class FeaturePluginEventImpactListMap extends ReactFeature implements Rea
 
   @Override
   public MegamapGrid.MegamapCapability megamapCapability() {
-    return MegamapGrid.MegamapCapability.adaptive(4, 4);
+    return MegamapGrid.MegamapCapability.adaptiveWall();
   }
 
   @Override
@@ -90,7 +90,7 @@ public class FeaturePluginEventImpactListMap extends ReactFeature implements Rea
     int rowHeight = RendererLayout.listRowHeight(this);
     int capacity = Math.max(1, list.rowCapacity(rowHeight));
     if (maxRowsPerTile > 0) {
-      capacity = Math.min(capacity, maxRowsPerTile);
+      capacity = (int) Math.min(capacity, (long) maxRowsPerTile * gridHeight());
     }
 
     int limit = Math.min(entries.size(), capacity);
@@ -112,7 +112,7 @@ public class FeaturePluginEventImpactListMap extends ReactFeature implements Rea
       double normalized = Math.max(0D, Math.min(1D, entry.impact() / maxImpact));
       double share = Math.max(0D, Math.min(1D, entry.impact() / total));
       String[] values = columnValues(columns, i, share, entry.currentMS() / windowSeconds, entry);
-      drawRow(i, row.withoutBottom(gutter), weights, gutter, normalized, values);
+      RendererLayout.listRow(this, i, row.withoutBottom(gutter), weights, gutter, normalized, values);
     }
 
     RendererLayout.footer(
@@ -130,55 +130,13 @@ public class FeaturePluginEventImpactListMap extends ReactFeature implements Rea
     );
   }
 
-  private void drawRow(
-      int rank,
-      Region card,
-      int[] weights,
-      int gutter,
-      double normalized,
-      String[] values
-  ) {
-    if (card.isEmpty()) {
-      return;
-    }
-
-    int scale = uiScale();
-    RendererLayout.card(this, card, rank < 3);
-
-    Region inner = card.inset(MapTheme.pad(scale), MapTheme.borderThickness(scale) + scale, MapTheme.pad(scale), MapTheme.borderThickness(scale) + scale);
-    if (inner.isEmpty()) {
-      return;
-    }
-
-    Region textLine = inner.topBand(MapTheme.lineHeight(scale));
-    Region[] columns = textLine.splitColumns(gutter, weights);
-    for (int i = 0; i < columns.length && i < values.length; i++) {
-      TinyColor color = i == 0 ? MapTheme.TEXT : MapTheme.TEXT_SOFT;
-      if (i == 0) {
-        textIn(columns[i], 0, 0, values[i], color);
-      } else {
-        textRightIn(columns[i], 0, 0, values[i], color);
-      }
-    }
-
-    Region barRow = inner.withoutTop(textLine.height() + scale);
-    if (barRow.isEmpty()) {
-      return;
-    }
-
-    RendererLayout.bar(
-        this,
-        barRow.topBand(Math.min(barRow.height(), RendererLayout.barHeight(this))),
-        normalized,
-        MapTheme.categorical(rank)
-    );
-  }
-
   private int[] columnWeights(int columns) {
     return switch (columns) {
       case 1 -> new int[]{62, 38};
       case 2 -> new int[]{46, 27, 27};
-      default -> new int[]{38, 21, 21, 20};
+      case 3, 4 -> new int[]{38, 21, 21, 20};
+      // 5+ tiles of width: hand the surplus to the name column so plugin names stop truncating.
+      default -> new int[]{52, 17, 16, 15};
     };
   }
 

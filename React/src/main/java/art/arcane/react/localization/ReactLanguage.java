@@ -179,7 +179,9 @@ public final class ReactLanguage {
 
   public static void send(CommandSender sender, MessageKey key, MessageArgument... arguments) {
     if (sender != null) {
-      sender.sendMessage(component(key, arguments));
+      // audience delivery: spigot CommandSender has no sendMessage(Component); the router
+      // sends console/RCON via the legacy String path (facade drops console chat on spigot)
+      React.audiences().sender(sender).sendMessage(component(key, arguments));
     }
   }
 
@@ -191,7 +193,7 @@ public final class ReactLanguage {
 
   public static void sendPrefixed(CommandSender sender, MessageKey key, MessageArgument... arguments) {
     if (sender != null) {
-      sender.sendMessage(prefixedComponent(key, arguments));
+      React.audiences().sender(sender).sendMessage(prefixedComponent(key, arguments));
     }
   }
 

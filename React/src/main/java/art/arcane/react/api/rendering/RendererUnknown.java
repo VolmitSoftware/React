@@ -32,7 +32,7 @@ public class RendererUnknown implements ReactRenderer {
 
   @Override
   public MegamapGrid.MegamapCapability megamapCapability() {
-    return MegamapGrid.MegamapCapability.adaptive(4, 4);
+    return MegamapGrid.MegamapCapability.adaptiveWall();
   }
 
   @Override

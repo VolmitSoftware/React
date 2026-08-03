@@ -96,6 +96,51 @@ public final class RendererLayout {
     renderer.fill(new Region(track.x(), track.y(), Math.min(track.width(), fill), track.height()), color);
   }
 
+  public static void listRow(
+      ReactRenderer renderer,
+      int rank,
+      Region region,
+      int[] weights,
+      int gutter,
+      double normalized,
+      String[] values
+  ) {
+    if (region.isEmpty()) {
+      return;
+    }
+
+    int scale = renderer.uiScale();
+    card(renderer, region, rank < 3);
+
+    Region inner = region.inset(MapTheme.pad(scale), MapTheme.borderThickness(scale) + scale, MapTheme.pad(scale), MapTheme.borderThickness(scale) + scale);
+    if (inner.isEmpty()) {
+      return;
+    }
+
+    Region textLine = inner.topBand(MapTheme.lineHeight(scale));
+    Region[] columns = textLine.splitColumns(gutter, weights);
+    for (int i = 0; i < columns.length && i < values.length; i++) {
+      TinyColor color = i == 0 ? MapTheme.TEXT : MapTheme.TEXT_SOFT;
+      if (i == 0) {
+        renderer.textIn(columns[i], 0, 0, values[i], color);
+      } else {
+        renderer.textRightIn(columns[i], 0, 0, values[i], color);
+      }
+    }
+
+    Region barRow = inner.withoutTop(textLine.height() + scale);
+    if (barRow.isEmpty()) {
+      return;
+    }
+
+    bar(
+        renderer,
+        barRow.topBand(Math.min(barRow.height(), barHeight(renderer))),
+        normalized,
+        MapTheme.categorical(rank)
+    );
+  }
+
   public static int listRowHeight(ReactRenderer renderer) {
     int scale = renderer.uiScale();
     return MapTheme.lineHeight(scale) + (8 * scale);

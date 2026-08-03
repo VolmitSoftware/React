@@ -41,7 +41,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 @Getter
 public class MapRendererPipe extends MapRenderer {
-  private static final int DEFAULT_MAX_TILES = 16;
+  private static final int DEFAULT_MAX_TILES = 32;
 
   private final String rendererId;
   private final String normalizedRendererId;
@@ -49,6 +49,8 @@ public class MapRendererPipe extends MapRenderer {
   @Getter(AccessLevel.NONE)
   private final ReentrantLock composeLock = new ReentrantLock();
   private volatile ReactRenderer renderer;
+  @Getter(AccessLevel.NONE)
+  private volatile MegamapAssignment appliedAssignment = MegamapAssignment.NONE;
   @Getter(AccessLevel.NONE)
   private byte[] surface;
   @Getter(AccessLevel.NONE)
@@ -70,22 +72,29 @@ public class MapRendererPipe extends MapRenderer {
         return;
       }
 
+      // The megamap assignment is read before the interval gate: a wall forming, growing or
+      // breaking changes the viewport geometry, and that transition must land on the next
+      // invocation instead of waiting out the redraw interval.
+      MegamapGrid.MegamapTile tile = controller == null ? null : controller.megamapTileFor(map);
+      MegamapGrid.MegamapDefect defect = controller == null ? null : controller.megamapDefectFor(map);
+      MegamapGrid.DefectReason defectReason = defect == null ? null : defect.reason();
+      boolean reassigned = !appliedAssignment.matches(tile, defectReason);
+
       // The canvas is shared across all viewers; the renderer is invoked once per viewer per
       // update by the server, so skipping within the redraw interval collapses N-viewer
       // redraws to one without changing what any viewer sees.
       long now = System.currentTimeMillis();
       long nextDrawAt = nextDrawAtMs.get();
-      if (now < nextDrawAt) {
+      if (!reassigned && now < nextDrawAt) {
         return;
       }
 
       long interval = controller == null ? 0L : controller.redrawIntervalMsFor(map);
-      if (!nextDrawAtMs.compareAndSet(nextDrawAt, now + interval)) {
+      if (!nextDrawAtMs.compareAndSet(nextDrawAt, now + interval) && !reassigned) {
         return;
       }
 
       ReactRenderer resolved = resolveRenderer();
-      MegamapGrid.MegamapTile tile = controller == null ? null : controller.megamapTileFor(map);
       ReactRenderContext.Builder context = ReactRenderContext.builder()
           .player(player)
           .view(map)
@@ -96,7 +105,7 @@ public class MapRendererPipe extends MapRenderer {
       String notice;
       if (tile == null) {
         context.width(ReactRenderer.CANVAS_SIZE).height(ReactRenderer.CANVAS_SIZE);
-        notice = noticeForDefect(controller == null ? null : controller.megamapDefectFor(map));
+        notice = noticeForDefect(defectReason);
       } else {
         MegamapGrid.MegamapViewport viewport = MegamapGrid.viewportFor(
             tile,
@@ -124,10 +133,18 @@ public class MapRendererPipe extends MapRenderer {
       }
 
       try {
+        boolean fullFlush = bindCanvas(canvas);
+        if (applyAssignment(tile, defectReason)) {
+          fullFlush = true;
+        }
+        if (fullFlush) {
+          Arrays.fill(shadow(), ReactRenderContext.UNTOUCHED);
+        }
+
         ReactRenderContext active = context
             .surface(surface())
             .shadow(shadow())
-            .fullFlush(bindCanvas(canvas))
+            .fullFlush(fullFlush)
             .build();
         ReactRenderContext.push(active);
         try {
@@ -174,7 +191,15 @@ public class MapRendererPipe extends MapRenderer {
     }
 
     boundCanvas = canvas;
-    Arrays.fill(shadow(), ReactRenderContext.UNTOUCHED);
+    return true;
+  }
+
+  private boolean applyAssignment(MegamapGrid.MegamapTile tile, MegamapGrid.DefectReason defectReason) {
+    if (appliedAssignment.matches(tile, defectReason)) {
+      return false;
+    }
+
+    appliedAssignment = new MegamapAssignment(tile, defectReason);
     return true;
   }
 
@@ -235,11 +260,22 @@ public class MapRendererPipe extends MapRenderer {
     context.paintCanvasRect(x1, y0, ReactRenderer.CANVAS_SIZE, y1, index);
   }
 
-  private String noticeForDefect(MegamapGrid.MegamapDefect defect) {
-    if (defect == null) {
+  private String noticeForDefect(MegamapGrid.DefectReason defectReason) {
+    if (defectReason == null) {
       return null;
     }
 
-    return ReactLanguage.raw(MapMessages.defectLabel(defect.reason()));
+    return ReactLanguage.raw(MapMessages.defectLabel(defectReason));
+  }
+
+  // The megamap assignment a build was composed under. Written only inside composeLock so the
+  // shadow refill and the stored value cannot separate; read unlocked before the interval gate,
+  // where a stale read at worst costs one extra repaint.
+  private record MegamapAssignment(MegamapGrid.MegamapTile tile, MegamapGrid.DefectReason defectReason) {
+    private static final MegamapAssignment NONE = new MegamapAssignment(null, null);
+
+    private boolean matches(MegamapGrid.MegamapTile otherTile, MegamapGrid.DefectReason otherDefectReason) {
+      return Objects.equals(tile, otherTile) && defectReason == otherDefectReason;
+    }
   }
 }

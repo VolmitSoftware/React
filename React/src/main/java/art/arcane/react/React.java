@@ -37,6 +37,7 @@ import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.util.common.plugin.SplashScreen;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.common.scheduling.Ticker;
+import art.arcane.react.util.common.plugin.ConsoleLegacyAudience;
 import art.arcane.react.util.format.C;
 import art.arcane.react.util.plugin.IController;
 import art.arcane.react.core.NMS;
@@ -53,6 +54,8 @@ import art.arcane.volmlib.util.hud.HudBossBarLane;
 import art.arcane.volmlib.util.hud.HudSlotService;
 import art.arcane.volmlib.util.io.JarScanner;
 import io.github.slimjar.app.builder.SpigotApplicationBuilder;
+import net.kyori.adventure.audience.Audience;
+import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import lombok.Getter;
 import org.bstats.bukkit.Metrics;
 import org.bstats.charts.AdvancedPie;
@@ -60,6 +63,7 @@ import org.bstats.charts.SimplePie;
 import org.bstats.charts.SingleLineChart;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
@@ -81,6 +85,10 @@ public class React extends VolmitPlugin implements ReloadAware {
   public static Thread serverThread;
   public static Ticker ticker;
   public static MultiBurst burst;
+  // Lazy: Audiences links against slimjar-provided adventure types, so it must not be
+  // loaded from <clinit> — the main class initializes before ApplicationBuilder.build().
+  private static volatile Audiences audiencesFacade;
+  private static volatile BukkitAudiences audienceProvider;
   private static HudSlotService hudSlots;
   private static HudBossBarLane hudLanes;
   private static final int REPORTED_ERROR_HISTORY = 1024;
@@ -260,6 +268,58 @@ public class React extends VolmitPlugin implements ReloadAware {
     return hudSlots;
   }
 
+  public static Audiences audiences() {
+    Audiences facade = audiencesFacade;
+    if (facade == null) {
+      synchronized (React.class) {
+        facade = audiencesFacade;
+        if (facade == null) {
+          facade = new Audiences();
+          audiencesFacade = facade;
+        }
+      }
+    }
+    return facade;
+  }
+
+  // Paper senders natively implement Audience; the adventure-platform facade is only built on
+  // plain spigot. Console/RCON senders never ride the facade: it silently drops console chat
+  // on spigot (facet errors swallowed), so they get the legacy String path instead.
+  // Lazy: adventure-platform is slimjar-provided and must not resolve before
+  // ApplicationBuilder.build().
+  public static final class Audiences {
+    private Audiences() {
+    }
+
+    public Audience player(Player player) {
+      return player instanceof Audience audience ? audience : provider().player(player);
+    }
+
+    public Audience sender(CommandSender sender) {
+      if (sender instanceof Audience audience) {
+        return audience;
+      }
+      if (ConsoleLegacyAudience.isConsoleLike(sender)) {
+        return new ConsoleLegacyAudience(sender);
+      }
+      return provider().sender(sender);
+    }
+
+    private static BukkitAudiences provider() {
+      BukkitAudiences provider = audienceProvider;
+      if (provider == null) {
+        synchronized (Audiences.class) {
+          provider = audienceProvider;
+          if (provider == null) {
+            provider = BukkitAudiences.create(instance);
+            audienceProvider = provider;
+          }
+        }
+      }
+      return provider;
+    }
+  }
+
   public static HudBossBarLane lanes() {
     return hudLanes;
   }
@@ -327,6 +387,7 @@ public class React extends VolmitPlugin implements ReloadAware {
   @Override
   public void start() {
     instance = this;
+    audienceProvider = null; // rebind lazily; the previous facade's listeners died with disable
     alreadyDrained.set(false);
     shutdownDrained = true;
     PrecisionStopwatch psw = PrecisionStopwatch.start();

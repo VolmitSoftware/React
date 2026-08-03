@@ -19,15 +19,28 @@
 
 package art.arcane.react.content.sampler;
 
+import art.arcane.react.api.event.layer.ServerTickEvent;
 import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.volmlib.util.format.Form;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Server;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
 
-public class SamplerTickTime extends ReactCachedSampler {
+import java.util.ArrayDeque;
+import java.util.Collection;
+
+public class SamplerTickTime extends ReactCachedSampler implements Listener {
   public static final String ID = "tick-time";
+  private static final int GAP_WINDOW_TICKS = 100;
+  // Server#getAverageTickTime is paper-only; latch after first NoSuchMethodError and
+  // approximate from inter-tick gaps instead (floors at ~50ms, still signals lag).
+  private transient volatile boolean averageTickTimeUnsupported;
+  private transient long lastTickMS;
+  private transient final ArrayDeque<Double> tickGaps = new ArrayDeque<>();
 
   public SamplerTickTime() {
     super(ID, 50);
@@ -38,19 +51,73 @@ public class SamplerTickTime extends ReactCachedSampler {
     return Material.NAUTILUS_SHELL;
   }
 
-  @Override
-  public double onSample() {
-    return sampleOnMainThread(SamplerTickTime::readAverageTickTime);
+  @EventHandler(priority = EventPriority.MONITOR)
+  public void on(ServerTickEvent event) {
+    if (!averageTickTimeUnsupported) {
+      return;
+    }
+
+    recordTick(System.currentTimeMillis());
   }
 
-  private static Double readAverageTickTime() {
+  void recordTick(long nowMS) {
+    if (lastTickMS > 0) {
+      synchronized (tickGaps) {
+        tickGaps.addLast((double) Math.max(0L, nowMS - lastTickMS));
+        while (tickGaps.size() > GAP_WINDOW_TICKS) {
+          tickGaps.removeFirst();
+        }
+      }
+    }
+
+    lastTickMS = nowMS;
+  }
+
+  @Override
+  public double onSample() {
+    if (averageTickTimeUnsupported) {
+      return measuredTickTime();
+    }
+
+    return sampleOnMainThread(this::readAverageTickTime);
+  }
+
+  private double measuredTickTime() {
+    synchronized (tickGaps) {
+      return averageTickMS(tickGaps);
+    }
+  }
+
+  private Double readAverageTickTime() {
     Server server = Bukkit.getServer();
     if (server == null) {
       return 0D;
     }
 
-    double tickTime = server.getAverageTickTime();
-    return Double.isFinite(tickTime) ? Math.max(0D, tickTime) : 0D;
+    try {
+      double tickTime = server.getAverageTickTime();
+      return Double.isFinite(tickTime) ? Math.max(0D, tickTime) : 0D;
+    } catch (NoSuchMethodError e) {
+      averageTickTimeUnsupported = true;
+      return measuredTickTime();
+    }
+  }
+
+  static double averageTickMS(Collection<Double> gaps) {
+    if (gaps == null || gaps.isEmpty()) {
+      return 0D;
+    }
+
+    double total = 0D;
+    int counted = 0;
+    for (Double gap : gaps) {
+      if (gap != null && Double.isFinite(gap) && gap >= 0D) {
+        total += gap;
+        counted++;
+      }
+    }
+
+    return counted == 0 ? 0D : total / counted;
   }
 
   @Override

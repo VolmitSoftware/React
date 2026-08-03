@@ -22,6 +22,9 @@ package art.arcane.react.api.rendering;
 import art.arcane.react.util.data.TinyColor;
 import org.bukkit.map.MinecraftFont;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public final class MapTheme {
   public static final TinyColor SURFACE_0 = new TinyColor(0x0D0D0D);
   public static final TinyColor SURFACE_1 = new TinyColor(0x111111);
@@ -63,6 +66,13 @@ public final class MapTheme {
       INFO, OK, WARN, ACCENT_MAGENTA, ACCENT_TEAL, ACCENT_PINK, ACCENT_YELLOW, BAD
   };
 
+  private static final int CATEGORICAL_SPAN = 64;
+  private static final int CATEGORICAL_PROBES = 512;
+  private static final double CATEGORICAL_HUE_SEED = 0.07D;
+  private static final double CATEGORICAL_HUE_STEP = 0.6180339887498949D;
+  private static final float[] CATEGORICAL_SATURATION = {0.86F, 0.55F, 0.98F, 0.70F};
+  private static final float[] CATEGORICAL_BRIGHTNESS = {0.94F, 0.78F, 0.62F};
+
   private MapTheme() {
   }
 
@@ -95,7 +105,8 @@ public final class MapTheme {
   }
 
   public static TinyColor categorical(int index) {
-    return CATEGORICAL[Math.floorMod(index, CATEGORICAL.length)];
+    int slot = Math.floorMod(index, CATEGORICAL_SPAN);
+    return slot < CATEGORICAL.length ? CATEGORICAL[slot] : ExtendedCategorical.RAMP[slot];
   }
 
   public static TinyColor heat(double normalized) {
@@ -110,5 +121,50 @@ public final class MapTheme {
       return WARN;
     }
     return OK;
+  }
+
+  // Slots past the hand picked base eight. Built once on first use: a golden angle hue rotation
+  // over three tone tiers, each candidate snapped to a map palette entry no earlier slot claimed.
+  // Same slot always yields the same color, so renderers stay pure.
+  private static final class ExtendedCategorical {
+    private static final TinyColor[] RAMP = build();
+
+    private ExtendedCategorical() {
+    }
+
+    private static TinyColor[] build() {
+      TinyColor[] ramp = new TinyColor[CATEGORICAL_SPAN];
+      Set<Integer> claimed = new HashSet<>();
+      for (int i = 0; i < CATEGORICAL.length; i++) {
+        ramp[i] = CATEGORICAL[i];
+        claimed.add(MapColors.indexFor(CATEGORICAL[i].toRGB()) & 0xFF);
+      }
+
+      int slot = CATEGORICAL.length;
+      for (int probe = 0; probe < CATEGORICAL_PROBES && slot < ramp.length; probe++) {
+        int rgb = candidate(probe).toRGB();
+        if (!claimed.add(MapColors.indexFor(rgb) & 0xFF)) {
+          continue;
+        }
+
+        ramp[slot] = new TinyColor(MapColors.colorFor(rgb));
+        slot++;
+      }
+
+      while (slot < ramp.length) {
+        ramp[slot] = CATEGORICAL[slot % CATEGORICAL.length];
+        slot++;
+      }
+
+      return ramp;
+    }
+
+    private static TinyColor candidate(int index) {
+      return new TinyColor(
+          (float) ((CATEGORICAL_HUE_SEED + (index * CATEGORICAL_HUE_STEP)) % 1D),
+          CATEGORICAL_SATURATION[index % CATEGORICAL_SATURATION.length],
+          CATEGORICAL_BRIGHTNESS[index % CATEGORICAL_BRIGHTNESS.length]
+      );
+    }
   }
 }

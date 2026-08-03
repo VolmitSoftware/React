@@ -54,7 +54,7 @@ public interface Sampler extends Registered, ReactRenderer {
 
   @Override
   default MegamapGrid.MegamapCapability megamapCapability() {
-    return MegamapGrid.MegamapCapability.adaptive(4, 4);
+    return MegamapGrid.MegamapCapability.adaptiveWall();
   }
 
   default void render() {
@@ -67,12 +67,20 @@ public interface Sampler extends Registered, ReactRenderer {
     TinyColor backgroundTop = palette[5];
     TinyColor backgroundBottom = palette[6];
 
+    int w = width();
+    int h = height();
+    int s = uiScale();
+    // One sample per logical pixel: a single map keeps the historical 128 sample
+    // window, a wider wall shows proportionally more history instead of stretching
+    // the same 128 samples across the extra width.
+    int samples = Math.max(1, Math.min(Graph.CAPACITY, w));
+
     Graph g = Graph.of(this);
     double now = g.get(0);
-    double min = g.getMin();
-    double max = g.getMax();
-    double pmax = g.getPaddedMax(0.15);
-    double pmin = g.getPaddedMin(0.15);
+    double min = g.getMin(samples);
+    double max = g.getMax(samples);
+    double pmax = g.getPaddedMax(0.15, samples);
+    double pmin = g.getPaddedMin(0.15, samples);
     double range = pmax - pmin;
     if (!Double.isFinite(range) || Math.abs(range) < 1.0E-9D) {
       range = 1D;
@@ -92,9 +100,6 @@ public interface Sampler extends Registered, ReactRenderer {
       range = minSpan;
     }
 
-    int w = width();
-    int h = height();
-    int s = uiScale();
     int headerH = 14 * s;
     int footerH = 12 * s;
     int footerY = h - footerH;
@@ -111,8 +116,19 @@ public interface Sampler extends Registered, ReactRenderer {
     }
 
     int gridRgb = MapColors.lerpRgb(0.16D, bottomRgb, line.toRGB());
+    // Dot pitch tracks uiScale the same way the 24 * s row pitch does, and the run is
+    // snapped onto the dot lattice at the visible tile instead of spanning the wall.
+    int dotPitch = 4 * s;
+    int gridX0 = (Math.max(0, clipX0()) / dotPitch) * dotPitch;
+    int gridX1 = Math.min(w, clipX1());
+    int gridY0 = clipY0();
+    int gridY1 = clipY1();
     for (int y = chartTop + (23 * s); y < chartBottom; y += 24 * s) {
-      for (int x = 0; x < w; x += 4) {
+      if (y < gridY0 || y >= gridY1) {
+        continue;
+      }
+
+      for (int x = gridX0; x < gridX1; x += dotPitch) {
         setRgb(x, y, gridRgb);
       }
     }
@@ -123,11 +139,14 @@ public interface Sampler extends Registered, ReactRenderer {
     int chartSpan = Math.max(1, chartBottom - chartTop);
     int chartX0 = Math.max(0, clipX0() - 1);
     int chartX1 = Math.min(w, clipX1() + 1);
+    int fillY0 = Math.max(chartTop, clipY0());
+    int fillY1 = Math.min(chartBottom, clipY1() - 1);
     int prevX = -1;
     int prevY = -1;
     for (int x = chartX0; x < chartX1; x++) {
-      int y = chartYFor(g, x, w, pmin, range, chartTop, chartBottom);
-      for (int fill = chartBottom; fill > y; fill--) {
+      int y = chartYFor(g, x, w, samples, pmin, range, chartTop, chartBottom);
+      int fillTop = Math.max(y + 1, fillY0);
+      for (int fill = fillY1; fill >= fillTop; fill--) {
         double depth = (chartBottom - (double) fill) / chartSpan;
         setRgb(x, fill, MapColors.lerpRgb(depth, fillLowRgb, fillHighRgb));
       }
@@ -142,7 +161,7 @@ public interface Sampler extends Registered, ReactRenderer {
     prevX = -1;
     prevY = -1;
     for (int x = chartX0; x < chartX1; x++) {
-      int y = chartYFor(g, x, w, pmin, range, chartTop, chartBottom);
+      int y = chartYFor(g, x, w, samples, pmin, range, chartTop, chartBottom);
       if (prevX >= 0) {
         line(prevX, prevY, x, y, line);
       }
@@ -151,7 +170,7 @@ public interface Sampler extends Registered, ReactRenderer {
     }
 
     int markerX = w - 1;
-    int markerY = chartYFor(g, markerX, w, pmin, range, chartTop, chartBottom);
+    int markerY = chartYFor(g, markerX, w, samples, pmin, range, chartTop, chartBottom);
     set(markerX, markerY, marker);
     set(Math.max(0, markerX - 1), markerY, marker);
     set(markerX, Math.max(chartTop, markerY - 1), marker);
@@ -182,8 +201,8 @@ public interface Sampler extends Registered, ReactRenderer {
     }
   }
 
-  private int chartYFor(Graph g, int x, int w, double pmin, double range, int chartTop, int chartBottom) {
-    int sampleIndex = 127 - ((x * 128) / Math.max(1, w));
+  private int chartYFor(Graph g, int x, int w, int samples, double pmin, double range, int chartTop, int chartBottom) {
+    int sampleIndex = (samples - 1) - ((x * samples) / Math.max(1, w));
     double normalized = (g.get(sampleIndex) - pmin) / range;
     if (!Double.isFinite(normalized)) {
       normalized = 0.5D;

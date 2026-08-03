@@ -137,8 +137,9 @@ public class FeatureFastLeafDecay extends ReactFeature implements Listener {
 
     if (shouldDecay(b.getBlockData())) {
       if (playSounds && Math.random() < soundChance) {
+        // audience delivery: spigot Player has no playSound(net.kyori Sound)
         b.getWorld().getPlayers().forEach(player ->
-            player.playSound(Sound.sound(
+            React.audiences().player(player).playSound(Sound.sound(
                 Key.key(decaySound),
                 Sound.Source.BLOCK,
                 (float) soundVolume,

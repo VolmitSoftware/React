@@ -19,6 +19,7 @@
 
 package art.arcane.react.content.tweak;
 
+import art.arcane.react.React;
 import art.arcane.react.api.tweak.ReactTweak;
 import art.arcane.volmlib.util.math.RNG;
 import net.kyori.adventure.key.Key;
@@ -86,7 +87,8 @@ public class TweakFastDrops extends ReactTweak implements Listener {
 
         if (xp > 0) {
           p.giveExp(xp);
-          p.playSound(Sound.sound(
+          // audience delivery: spigot Player has no playSound(net.kyori Sound)
+          React.audiences().player(p).playSound(Sound.sound(
               Key.key("minecraft:entity.experience_orb.pickup"),
               Sound.Source.PLAYER,
               0.7f,
@@ -106,7 +108,7 @@ public class TweakFastDrops extends ReactTweak implements Listener {
           }
 
           if (!dropped) {
-            p.playSound(Sound.sound(
+            React.audiences().player(p).playSound(Sound.sound(
                 Key.key("minecraft:entity.item.pickup"),
                 Sound.Source.PLAYER,
                 0.7f,
@@ -139,7 +141,7 @@ public class TweakFastDrops extends ReactTweak implements Listener {
         }
 
         if (!dropped) {
-          e.getPlayer().playSound(Sound.sound(
+          React.audiences().player(e.getPlayer()).playSound(Sound.sound(
               Key.key("minecraft:entity.item.pickup"),
               Sound.Source.PLAYER,
               0.7f,
@@ -168,7 +170,7 @@ public class TweakFastDrops extends ReactTweak implements Listener {
 
     if (xp > 0 && teleportEntityXP) {
       e.getPlayer().giveExp(xp);
-      e.getPlayer().playSound(Sound.sound(
+      React.audiences().player(e.getPlayer()).playSound(Sound.sound(
           Key.key("minecraft:entity.experience_orb.pickup"),
           Sound.Source.PLAYER,
           0.7f,
@@ -185,7 +187,7 @@ public class TweakFastDrops extends ReactTweak implements Listener {
 
     if (isEnabled()) {
       player.giveExp(xp);
-      player.playSound(Sound.sound(
+      React.audiences().player(player).playSound(Sound.sound(
           Key.key("minecraft:entity.experience_orb.pickup"),
           Sound.Source.PLAYER,
           0.7f,
@@ -210,7 +212,7 @@ public class TweakFastDrops extends ReactTweak implements Listener {
       }
 
       if (!dropped) {
-        player.playSound(Sound.sound(
+        React.audiences().player(player).playSound(Sound.sound(
             Key.key("minecraft:entity.item.pickup"),
             Sound.Source.PLAYER,
             0.7f,

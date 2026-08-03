@@ -38,6 +38,7 @@ import art.arcane.volmlib.util.io.IO;
 import art.arcane.volmlib.util.localization.MessageArgument;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
+import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -675,7 +676,9 @@ public class HotloadController extends TickedObject implements IController {
           continue;
         }
 
-        messages.forEach(player::sendMessage);
+        // audience delivery: spigot Player has no sendMessage(Component)
+        Audience audience = React.audiences().player(player);
+        messages.forEach(audience::sendMessage);
       }
     });
   }

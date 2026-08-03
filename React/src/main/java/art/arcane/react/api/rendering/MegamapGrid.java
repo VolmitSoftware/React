@@ -82,8 +82,13 @@ public final class MegamapGrid {
       int maxGridWidth,
       int maxGridHeight
   ) {
+    // The canonical ceiling for full-wall dashboards. Walls past this fall back to
+    // magnify; raising it multiplies per-tile render cost, so renderers must cull.
+    public static final int MAX_ADAPTIVE_SPAN = 8;
     private static final MegamapCapability MAGNIFY_ONLY =
         new MegamapCapability(MegamapMode.MAGNIFY, 1, 1, 1, 1);
+    private static final MegamapCapability ADAPTIVE_WALL =
+        new MegamapCapability(MegamapMode.ADAPTIVE, 1, 1, MAX_ADAPTIVE_SPAN, MAX_ADAPTIVE_SPAN);
 
     public MegamapCapability {
       Objects.requireNonNull(mode, "megamap mode");
@@ -95,6 +100,10 @@ public final class MegamapGrid {
 
     public static MegamapCapability magnify() {
       return MAGNIFY_ONLY;
+    }
+
+    public static MegamapCapability adaptiveWall() {
+      return ADAPTIVE_WALL;
     }
 
     public static MegamapCapability adaptive(int maxGridWidth, int maxGridHeight) {
@@ -256,6 +265,7 @@ public final class MegamapGrid {
 
     Map<GroupKey, Map<Long, FrameCell>> groups = new HashMap<>();
     Map<PlaneKey, Map<Long, FrameCell>> planes = new HashMap<>();
+    Map<PlaneKey, Map<Long, FrameCell>> rotatedPlanes = new HashMap<>();
     List<FrameCell> rotated = new ArrayList<>();
     for (FrameCell cell : cells) {
       if (cell == null || cell.worldId() == null) {
@@ -274,6 +284,8 @@ public final class MegamapGrid {
 
       if (!cell.rotationAligned()) {
         rotated.add(cell);
+        rotatedPlanes.computeIfAbsent(new PlaneKey(cell.worldId(), cell.facing(), mapping.plane()), ignored -> new HashMap<>())
+            .put(cellKey(mapping.u(), mapping.v()), cell);
         continue;
       }
 
@@ -290,7 +302,7 @@ public final class MegamapGrid {
       assignGroupTiles(group, tiles, defects);
     }
 
-    recordRotationDefects(rotated, planes, defects);
+    recordRotationDefects(rotated, planes, rotatedPlanes, defects);
     recordMixedRendererDefects(planes, tiles, defects);
 
     if (tiles.isEmpty() && defects.isEmpty()) {
@@ -408,6 +420,7 @@ public final class MegamapGrid {
   private static void recordRotationDefects(
       List<FrameCell> rotated,
       Map<PlaneKey, Map<Long, FrameCell>> planes,
+      Map<PlaneKey, Map<Long, FrameCell>> rotatedPlanes,
       Map<Integer, MegamapDefect> defects
   ) {
     for (FrameCell cell : rotated) {
@@ -416,8 +429,14 @@ public final class MegamapGrid {
         continue;
       }
 
-      Map<Long, FrameCell> plane = planes.get(new PlaneKey(cell.worldId(), cell.facing(), mapping.plane()));
-      if (plane == null || !hasNeighbor(plane, mapping.u(), mapping.v())) {
+      // A rotated frame is only a wall candidate when something sits next to it; that
+      // neighbor may itself be rotated, which is the whole-wall-rotated case.
+      PlaneKey planeKey = new PlaneKey(cell.worldId(), cell.facing(), mapping.plane());
+      Map<Long, FrameCell> plane = planes.get(planeKey);
+      Map<Long, FrameCell> rotatedPlane = rotatedPlanes.get(planeKey);
+      boolean adjacent = (plane != null && hasNeighbor(plane, mapping.u(), mapping.v()))
+          || (rotatedPlane != null && hasNeighbor(rotatedPlane, mapping.u(), mapping.v()));
+      if (!adjacent) {
         continue;
       }
 

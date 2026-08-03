@@ -20,6 +20,7 @@
 package art.arcane.react.util.plugin;
 
 
+import art.arcane.react.React;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.format.C;
 import art.arcane.volmlib.util.format.Form;
@@ -213,7 +214,8 @@ public class VolmitSender implements CommandSender {
   }
 
   public void sendTitle(String title, String subtitle, int i, int s, int o) {
-    player().showTitle(Title.title(
+    // audience delivery: spigot Player has no showTitle/sendActionBar(Component)
+    React.audiences().player(player()).showTitle(Title.title(
         createComponent(title),
         createComponent(subtitle),
         Title.Times.times(Duration.ofMillis(i), Duration.ofMillis(s), Duration.ofMillis(o))));
@@ -235,15 +237,15 @@ public class VolmitSender implements CommandSender {
   }
 
   public void sendAction(String action) {
-    player().sendActionBar(createNoPrefixComponent(action));
+    React.audiences().player(player()).sendActionBar(createNoPrefixComponent(action));
   }
 
   public void sendActionNoProcessing(String action) {
-    player().sendActionBar(createNoPrefixComponentNoProcessing(action));
+    React.audiences().player(player()).sendActionBar(createNoPrefixComponentNoProcessing(action));
   }
 
   public void sendTitle(String subtitle, int i, int s, int o) {
-    player().showTitle(Title.title(
+    React.audiences().player(player()).showTitle(Title.title(
         createNoPrefixComponent(" "),
         createNoPrefixComponent(subtitle),
         Title.Times.times(Duration.ofMillis(i), Duration.ofMillis(s), Duration.ofMillis(o))));
@@ -355,7 +357,7 @@ public class VolmitSender implements CommandSender {
 
   public void sendComponent(Component component) {
     if (component != null && !(s instanceof CommandDummy)) {
-      s.sendMessage(component);
+      React.audiences().sender(s).sendMessage(component);
     }
   }
 

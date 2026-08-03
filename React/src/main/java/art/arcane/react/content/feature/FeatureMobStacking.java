@@ -40,6 +40,7 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.AbstractCubeMob;
+import org.bukkit.entity.AnimalTamer;
 import org.bukkit.entity.Ageable;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -310,11 +311,27 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
     }
 
     Tameable tameable = (Tameable) entity;
-    if (!ownerId.equals(tameable.getOwnerUniqueId())) {
+    if (!ownerId.equals(resolveOwnerId(tameable))) {
       return;
     }
 
     splitTamedStack(entity);
+  }
+
+  // Tameable#getOwnerUniqueId is paper-only; probe once, fall back to getOwner on spigot
+  private static volatile boolean ownerUniqueIdUnsupported;
+
+  private static UUID resolveOwnerId(Tameable tameable) {
+    if (!ownerUniqueIdUnsupported) {
+      try {
+        return tameable.getOwnerUniqueId();
+      } catch (NoSuchMethodError e) {
+        ownerUniqueIdUnsupported = true;
+      }
+    }
+
+    AnimalTamer owner = tameable.getOwner();
+    return owner == null ? null : owner.getUniqueId();
   }
 
   private boolean splitTamedStack(LivingEntity entity) {

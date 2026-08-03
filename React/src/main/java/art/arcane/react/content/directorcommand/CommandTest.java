@@ -9,6 +9,7 @@ import art.arcane.react.api.test.checks.ActionSuiteCheck;
 import art.arcane.react.api.test.checks.BridgeCheck;
 import art.arcane.react.api.test.checks.ErrorScanCheck;
 import art.arcane.react.api.test.checks.FeatureLifecycleCheck;
+import art.arcane.react.api.test.checks.MapsFrameWallCheck;
 import art.arcane.react.api.test.checks.MapsRenderingCheck;
 import art.arcane.react.api.test.checks.MonitoringCheck;
 import art.arcane.react.api.test.load.LoadTest;
@@ -71,6 +72,7 @@ public class CommandTest implements DirectorExecutor {
         .add(new MapsRenderingCheck())
         .addAsync(new FeatureLifecycleCheck())
         .addAsync(new ActionSuiteCheck())
+        .addAsync(new MapsFrameWallCheck())
         .addAsync(new BridgeCheck())
         .addAsync(new ErrorScanCheck());
 

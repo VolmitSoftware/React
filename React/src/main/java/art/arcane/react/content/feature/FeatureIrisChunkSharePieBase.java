@@ -36,7 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 abstract class FeatureIrisChunkSharePieBase extends ReactFeature implements Listener, ReactRenderer {
   private static final int MIN_VISIBLE_SLICES = 3;
-  private static final int MAX_VISIBLE_SLICES = 16;
+  private static final int MAX_VISIBLE_SLICES = 32;
   private static final long BUCKET_CACHE_TTL_MS = 45L;
   private static final ThreadLocal<BucketCache> BUCKET_CACHE = ThreadLocal.withInitial(BucketCache::new);
   private static final TinyColor HEADER = MapTheme.INFO;
@@ -63,7 +63,7 @@ abstract class FeatureIrisChunkSharePieBase extends ReactFeature implements List
 
   @Override
   public MegamapGrid.MegamapCapability megamapCapability() {
-    return MegamapGrid.MegamapCapability.adaptive(4, 4);
+    return MegamapGrid.MegamapCapability.adaptiveWall();
   }
 
   @Override
@@ -94,10 +94,7 @@ abstract class FeatureIrisChunkSharePieBase extends ReactFeature implements List
     }
 
     int legendRowHeight = RendererLayout.compactRowHeight(this);
-    int legendCapacity = Math.max(
-        MIN_VISIBLE_SLICES,
-        Math.min(MAX_VISIBLE_SLICES, legendArea.inset(gutter).rowCapacity(legendRowHeight))
-    );
+    int legendCapacity = sliceBudget(legendContent(legendArea).rowCapacity(legendRowHeight));
 
     Map<String, Long> raw = cachedBuckets(viewer);
     List<Slice> slices = normalize(raw, legendCapacity);
@@ -280,6 +277,20 @@ abstract class FeatureIrisChunkSharePieBase extends ReactFeature implements List
     return count;
   }
 
+  private Region legendContent(Region area) {
+    int scale = uiScale();
+    return area.inset(
+        MapTheme.pad(scale),
+        MapTheme.borderThickness(scale) + scale,
+        MapTheme.pad(scale),
+        MapTheme.borderThickness(scale) + scale
+    );
+  }
+
+  private static int sliceBudget(int rowCapacity) {
+    return Math.max(MIN_VISIBLE_SLICES, Math.min(MAX_VISIBLE_SLICES, rowCapacity));
+  }
+
   private List<Slice> normalize(Map<String, Long> values, int maxSlices) {
     if (values == null || values.isEmpty()) {
       return List.of();
@@ -309,7 +320,7 @@ abstract class FeatureIrisChunkSharePieBase extends ReactFeature implements List
       return List.of();
     }
 
-    int limit = Math.max(MIN_VISIBLE_SLICES, Math.min(MAX_VISIBLE_SLICES, maxSlices));
+    int limit = sliceBudget(maxSlices);
     List<Bucket> visible = new ArrayList<>();
     long other = 0L;
     for (int i = 0; i < buckets.size(); i++) {
@@ -365,10 +376,17 @@ abstract class FeatureIrisChunkSharePieBase extends ReactFeature implements List
     int radiusSq = radius * radius;
     int innerSq = innerRadius * innerRadius;
 
+    // Only rasterize the part of the disc this tile actually owns, otherwise every tile of a
+    // megamap wall pays for the whole pie.
+    Region disc = new Region(cx - radius, cy - radius, (2 * radius) + 1, (2 * radius) + 1).intersect(tileRegion());
+    if (disc.isEmpty()) {
+      return;
+    }
+
     pushClip(area);
     try {
-      for (int x = cx - radius; x <= cx + radius; x++) {
-        for (int y = cy - radius; y <= cy + radius; y++) {
+      for (int x = disc.x(); x < disc.right(); x++) {
+        for (int y = disc.y(); y < disc.bottom(); y++) {
           int dx = x - cx;
           int dy = y - cy;
           int distSq = (dx * dx) + (dy * dy);
@@ -391,7 +409,7 @@ abstract class FeatureIrisChunkSharePieBase extends ReactFeature implements List
         }
       }
 
-      drawDonutRing(cx, cy, radius, innerRadius);
+      drawDonutRing(disc, cx, cy, radius, innerRadius);
       drawDonutLabels(cx, cy, innerRadius, total);
     } finally {
       popClip();
@@ -425,7 +443,7 @@ abstract class FeatureIrisChunkSharePieBase extends ReactFeature implements List
     int scale = uiScale();
     panel(area, MapTheme.SURFACE_2, MapTheme.LINE);
 
-    Region content = area.inset(MapTheme.pad(scale), MapTheme.borderThickness(scale) + scale, MapTheme.pad(scale), MapTheme.borderThickness(scale) + scale);
+    Region content = legendContent(area);
     if (content.isEmpty()) {
       return;
     }
@@ -508,12 +526,12 @@ abstract class FeatureIrisChunkSharePieBase extends ReactFeature implements List
         : label.trim();
   }
 
-  private void drawDonutRing(int cx, int cy, int outerRadius, int innerRadius) {
+  private void drawDonutRing(Region disc, int cx, int cy, int outerRadius, int innerRadius) {
     int outerSq = outerRadius * outerRadius;
     int innerSq = innerRadius * innerRadius;
 
-    for (int x = cx - outerRadius; x <= cx + outerRadius; x++) {
-      for (int y = cy - outerRadius; y <= cy + outerRadius; y++) {
+    for (int x = disc.x(); x < disc.right(); x++) {
+      for (int y = disc.y(); y < disc.bottom(); y++) {
         int dx = x - cx;
         int dy = y - cy;
         int distSq = (dx * dx) + (dy * dy);
