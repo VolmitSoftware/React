@@ -3,6 +3,7 @@ main: art.arcane.react.React
 version: ${version}
 folia-supported: true
 authors: [ NextdoorPsycho, Cyberpwn ]
+website: VolmitSoftware.com
 api-version: ${apiversion}
 softdepend:
   - PlaceholderAPI
