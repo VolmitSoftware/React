@@ -92,8 +92,8 @@ public class React extends VolmitPlugin implements ReloadAware {
   private static HudSlotService hudSlots;
   private static HudBossBarLane hudLanes;
   private static final int REPORTED_ERROR_HISTORY = 1024;
-  // bstats.org plugin id; 0 disables submission until the id is assigned
-  private static final int BSTATS_PLUGIN_ID = 0;
+  // bstats.org plugin id
+  private static final int BSTATS_PLUGIN_ID = 24219;
   private static final java.util.concurrent.atomic.AtomicInteger reportedErrorCounter = new java.util.concurrent.atomic.AtomicInteger();
   private static final java.util.ArrayDeque<Long> reportedErrorTimestamps = new java.util.ArrayDeque<Long>();
   private List<Runnable> startupTasks;
