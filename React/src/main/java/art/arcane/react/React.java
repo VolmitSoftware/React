@@ -57,10 +57,6 @@ import io.github.slimjar.app.builder.SpigotApplicationBuilder;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import lombok.Getter;
-import org.bstats.bukkit.Metrics;
-import org.bstats.charts.AdvancedPie;
-import org.bstats.charts.SimplePie;
-import org.bstats.charts.SingleLineChart;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
@@ -70,9 +66,7 @@ import org.bukkit.event.Listener;
 
 import java.io.File;
 import java.lang.annotation.Annotation;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -102,7 +96,8 @@ public class React extends VolmitPlugin implements ReloadAware {
   private NmsBridgeRegistry bridgeRegistry;
   private volatile boolean shutdownDrained;
   private volatile ReactPlaceholders papiExpansion;
-  private Metrics metrics;
+  // ReactMetrics owns all bstats types; never reference them from this class (slimjar link trap)
+  private ReactMetrics metrics;
   private boolean ready;
 
   public React() {
@@ -455,53 +450,12 @@ public class React extends VolmitPlugin implements ReloadAware {
     setupMetrics();
   }
 
-  // bStats invokes chart callables off the main thread (its own daemon thread on Folia),
-  // so every accessor below must read concurrent or immutable state and tolerate a null controller.
   private void setupMetrics() {
     if (BSTATS_PLUGIN_ID <= 0 || !ReactConfiguration.get().isMetrics()) {
       return;
     }
 
-    Metrics m = new Metrics(this, BSTATS_PLUGIN_ID);
-
-    m.addCustomChart(new AdvancedPie("active_features", () -> {
-      FeatureController c = controller(FeatureController.class);
-
-      if (c == null) {
-        return null;
-      }
-
-      Map<String, Feature> active = c.getActiveFeatures();
-
-      if (active == null) {
-        return null;
-      }
-
-      Map<String, Integer> data = new HashMap<>();
-
-      for (String id : active.keySet()) {
-        data.put(id, 1);
-      }
-
-      return data;
-    }));
-
-    m.addCustomChart(new SingleLineChart("registered_features", () -> {
-      FeatureController c = controller(FeatureController.class);
-
-      if (c == null || c.getFeatures() == null) {
-        return null;
-      }
-
-      return c.getFeatures().size();
-    }));
-
-    m.addCustomChart(new SimplePie("unsafe_bytecode",
-        () -> String.valueOf(ReactConfiguration.get().isUnsafeBytecode())));
-    m.addCustomChart(new SimplePie("bytecode_agent",
-        () -> String.valueOf(art.arcane.react.core.bridge.BytecodeAgent.isInstalled())));
-
-    metrics = m;
+    metrics = ReactMetrics.start(this, BSTATS_PLUGIN_ID);
   }
 
   private void registerPapiExpansion() {

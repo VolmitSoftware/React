@@ -29,6 +29,7 @@ import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.RuntimeMessages;
 import art.arcane.react.model.ReactEntity;
 import art.arcane.react.util.common.scheduling.J;
+import art.arcane.react.util.project.world.CubeMobs;
 import art.arcane.react.util.project.world.CustomMobChecker;
 import art.arcane.react.api.protect.ReactOperation;
 import art.arcane.react.api.protect.ReactOperations;
@@ -39,7 +40,6 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
-import org.bukkit.entity.AbstractCubeMob;
 import org.bukkit.entity.AnimalTamer;
 import org.bukkit.entity.Ageable;
 import org.bukkit.entity.Entity;
@@ -103,11 +103,11 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
   }
 
   static boolean sameCubeSize(Entity source, Entity target) {
-    if (source instanceof AbstractCubeMob sourceCube) {
-      return target instanceof AbstractCubeMob targetCube && sourceCube.getSize() == targetCube.getSize();
+    if (CubeMobs.isCubeMob(source)) {
+      return CubeMobs.isCubeMob(target) && CubeMobs.getSize(source) == CubeMobs.getSize(target);
     }
 
-    return !(target instanceof AbstractCubeMob);
+    return !CubeMobs.isCubeMob(target);
   }
 
   static boolean isTamedPet(Entity entity) {
@@ -232,13 +232,13 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
           Sheep oldSheep = (Sheep) clickedEntity;
           newEntity = (LivingEntity) clickedEntity.getWorld().spawnEntity(clickedEntity.getLocation().add(0, 0.5, 0), clickedEntity.getType());
           ((Sheep) newEntity).setColor(oldSheep.getColor()); // setting the new sheep color
-        } else if (clickedEntity instanceof AbstractCubeMob oldCube) {
+        } else if (CubeMobs.isCubeMob(clickedEntity)) {
           newEntity = (LivingEntity) clickedEntity.getWorld().spawnEntity(clickedEntity.getLocation().add(0, 0.5, 0), clickedEntity.getType());
-          AbstractCubeMob newCube = (AbstractCubeMob) newEntity;
-          if (oldCube.getSize() > 1) { // This is to ensure no infinite loop of cube mob spawning
-            newCube.setSize(oldCube.getSize() / 2); // setting the new size
+          int oldSize = CubeMobs.getSize(clickedEntity);
+          if (oldSize > 1) { // This is to ensure no infinite loop of cube mob spawning
+            CubeMobs.setSize(newEntity, oldSize / 2); // setting the new size
           } else {
-            newCube.setSize(oldCube.getSize());
+            CubeMobs.setSize(newEntity, oldSize);
           }
         } else {
           newEntity = (LivingEntity) clickedEntity.getWorld().spawnEntity(clickedEntity.getLocation().add(0, 0.5, 0), clickedEntity.getType());
@@ -345,8 +345,8 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
   }
 
   private void copyState(LivingEntity source, LivingEntity target) {
-    if (source instanceof AbstractCubeMob sourceCube && target instanceof AbstractCubeMob targetCube) {
-      targetCube.setSize(Math.max(1, sourceCube.getSize()));
+    if (CubeMobs.isCubeMob(source) && CubeMobs.isCubeMob(target)) {
+      CubeMobs.setSize(target, Math.max(1, CubeMobs.getSize(source)));
     }
 
     if (source instanceof Sheep sourceSheep && target instanceof Sheep targetSheep) {
@@ -709,7 +709,7 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
   }
 
   private static StackBucket bucketOf(Entity entity) {
-    int size = entity instanceof AbstractCubeMob cube ? cube.getSize() : -1;
+    int size = CubeMobs.isCubeMob(entity) ? CubeMobs.getSize(entity) : -1;
     boolean adult = !(entity instanceof Ageable ageable) || ageable.isAdult();
     Object color = entity instanceof Sheep sheep ? sheep.getColor() : null;
     Object profession = entity instanceof Villager villager ? villager.getProfession() : null;

@@ -133,7 +133,7 @@ public final class NmsBridges {
             return "";
         }
         return switch (mcVersion) {
-            case "26.2", "1.21.11" -> "v26_2_R1";
+            case "26.2", "26.1.2", "1.21.11" -> "v26_2_R1";
             default -> "";
         };
     }

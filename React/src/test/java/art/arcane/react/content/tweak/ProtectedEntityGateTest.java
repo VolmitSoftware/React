@@ -20,6 +20,17 @@ import org.mockito.Mockito;
 
 class ProtectedEntityGateTest {
 
+  // ReactEntity's clinit builds NamespacedKeys from React.instance; install a mock before any
+  // test here touches ReactEntity so this class does not depend on execution order
+  static {
+    if (React.instance == null) {
+      React react = Mockito.mock(React.class);
+      Mockito.when(react.getName()).thenReturn("react");
+      Mockito.when(react.namespace()).thenReturn("react");
+      React.instance = react;
+    }
+  }
+
   @AfterEach
   void unbind() {
     ProtectionInstaller.install(null);

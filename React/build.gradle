@@ -29,7 +29,7 @@ plugins {
 apply from: 'nms-jars.gradle'
 
 version = '2.0.0-26.2' // Needs to be version specific
-def apiVersion = '26.2'
+def apiVersion = '26.1'
 def pluginName = rootProject.name // Defined in settings.gradle.kts
 String mainClass = 'art.arcane.react.React'
 String lib = 'art.arcane.react.util.arcane'
@@ -123,9 +123,9 @@ dependencies {
     // Provided or Classpath
     compileOnly('org.projectlombok:lombok:1.18.44')
     annotationProcessor('org.projectlombok:lombok:1.18.44')
-    compileOnly('io.papermc.paper:paper-api:26.2.build.60-beta')
+    compileOnly('io.papermc.paper:paper-api:26.1.2.build.74-stable')
     compileOnly('io.papermc:paperlib:1.0.7')
-    testImplementation('io.papermc.paper:paper-api:26.2.build.60-beta')
+    testImplementation('io.papermc.paper:paper-api:26.1.2.build.74-stable')
 
     // Bridge API interfaces shared with NMS submodule
     implementation(project(':bridge-api'))
@@ -179,8 +179,13 @@ dependencies {
     testImplementation('me.clip:placeholderapi:2.11.6') {
         transitive = false
     }
-    testImplementation('net.kyori:adventure-text-minimessage:5.1.1')
-    testImplementation('net.kyori:adventure-text-serializer-legacy:5.1.1')
+    // Pin the whole adventure family to the paper-api 26.1.2 bom on test classpaths. The slim
+    // 5.1.1 copies (shipped for plain Spigot) leak into testRuntimeClasspath and win conflict
+    // resolution, but adventure 5.x drops MessageType, which the 26.1.2 Audience hierarchy still
+    // references — Mockito then fails to mock any Bukkit entity
+    testImplementation(enforcedPlatform('net.kyori:adventure-bom:4.26.1'))
+    testImplementation('net.kyori:adventure-text-minimessage:4.26.1')
+    testImplementation('net.kyori:adventure-text-serializer-legacy:4.26.1')
     testImplementation('org.junit.jupiter:junit-jupiter:5.11.4')
     testRuntimeOnly('org.junit.platform:junit-platform-launcher:1.11.4')
     testImplementation('org.mockito:mockito-core:5.18.0')
