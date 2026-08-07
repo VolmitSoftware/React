@@ -236,8 +236,16 @@ tasks.named('compileJava', JavaCompile).configure {
 
 tasks.named('shadowJar', ShadowJar).configure {
     // Configure React for shading
-    // React/Curse rely on reflection/decompiler internals; minimization strips required classes.
-    // minimize()
+    minimize {
+        // slimjar bootstraps itself reflectively before any static reference exists, and its
+        // ByteBuddy agent factory names byte-buddy types only as strings.
+        exclude(dependency('de.crazydev22.slimjar.helper:.*:.*'))
+        exclude(dependency('io.github.slimjar:.*:.*'))
+        // NmsBridges resolves art.arcane.react.nms.<tag>.NmsBridgeImpl by Class.forName presence
+        // probe, and the advice/runtime classes underneath it are only ever named by ByteBuddy.
+        exclude(project(':nms:v26_2_R1'))
+        exclude(project(':bridge-api'))
+    }
     dependsOn(tasks.named('processResources'))
     from(sourceSets.main.output)
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
