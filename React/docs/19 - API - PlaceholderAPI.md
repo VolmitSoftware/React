@@ -1,8 +1,6 @@
-# React PlaceholderAPI keys
+# API — PlaceholderAPI
 
-React registers a PlaceholderAPI expansion under the identifier `react`. Every key is read-only, needs no
-code, and works anywhere PlaceholderAPI is parsed — scoreboards, holograms, tab lists, chat formats, signs,
-NPC names.
+React registers read-only `%react_…%` keys for scoreboards, holograms, tab lists, chat formats, signs, and other PlaceholderAPI consumers. The expansion identifier is `react`.
 
 ```
 %react_tps%            20.00
@@ -27,7 +25,7 @@ The expansion is `persist()`-marked, so `/papi reload` does not unregister it.
 |------------|------------------|
 | Identifier | `react`          |
 | Author     | Volmit Software  |
-| Version    | `2.0.0`          |
+| Version    | Current React plugin version |
 | Required plugin | `React`     |
 
 ---
@@ -38,11 +36,9 @@ The expansion is `persist()`-marked, so `/papi reload` does not unregister it.
 %react_<key>%
 ```
 
-Keys are lowercased before lookup, so `%react_TPS%` and `%react_tps%` are the same key. Dots are part of the
-key (`memory.used`), not a separator PlaceholderAPI understands, so nothing else needs escaping.
+Paths contain one to four dot-separated segments. Each segment uses lowercase letters, digits, or hyphens; underscores are not valid inside the path because the underscore after `react` is PlaceholderAPI's identifier separator. Keys are lowercased before lookup, so `%react_TPS%` and `%react_tps%` resolve identically.
 
-An **unknown** key returns nothing at all, and PlaceholderAPI leaves the literal `%react_nonsense%` in your
-text. That is the fastest way to tell a typo from a value that is merely unavailable.
+An **unknown** key returns nothing, so PlaceholderAPI leaves the literal `%react_nonsense%` in the output. This distinguishes an unknown key from a known but unavailable value.
 
 An **unavailable** value returns `---`.
 
@@ -51,15 +47,12 @@ your format.
 
 ---
 
-## Warm-up: the first read is always `---`
+## Warm-up for previously undemanded keys
 
 React does not sample anything until a placeholder asks for it, and it publishes values on a one-second
-cycle. So the first time a key is requested it returns `---`, and the real value appears on the next cycle —
-within one second.
+cycle. The first request for a previously undemanded key returns `---` unless another consumer has already demanded it; the next publisher cycle normally supplies the value within one second.
 
-This is deliberate. React has more than 140 samplers; sampling all of them once a second so that a
-placeholder nobody uses stays warm would cost more than the placeholders are worth. Asking for a key adds it
-to a demand set; only demanded keys are sampled.
+React has more than 140 samplers, so the PlaceholderAPI publisher samples only demanded keys. Asking for a known key adds it to a sticky demand set.
 
 Consequences:
 
@@ -101,7 +94,7 @@ Thirteen keys exist. Twelve are fixed, one is a group.
 
 | Key                     | Unit                | Meaning                                                                                       |
 |-------------------------|---------------------|------------------------------------------------------------------------------------------------|
-| `%react_available%`     | `true` / `false`    | Whether React has published a snapshot yet. `false` before the first cycle and after a shutdown |
+| `%react_available%`     | `true` / `false`    | Whether the registered expansion has published its first snapshot; React unregisters the expansion during shutdown |
 | `%react_tps%`           | ticks per second    | Server tick rate, derived from real elapsed time between ticks. Capped at `20.00`                |
 | `%react_mspt%`          | milliseconds        | Mean tick duration, from the server's own average-tick-time counter                             |
 | `%react_mspt-p95%`      | milliseconds        | 95th-percentile tick duration over the last 1200 recorded ticks. The number that tells you about stutter, where `mspt` tells you about steady load |
@@ -194,7 +187,7 @@ Every id below can be used as `%react_sampler.<id>%`. All are server-wide.
 | `bukkit-pending-tasks` | count     | Tasks queued in the Bukkit scheduler. Reads `0` where the server does not support the query |
 | `scheduler-backlog`    | count     | Jobs queued in React's own sync job controller                      |
 | `backlog-growth-rate`  | jobs/s    | Rate of change of that queue. Sustained positive means React is falling behind |
-| `react-jobs-queue`     | count     | The same queue depth, on React's own dashboard series               |
+| `react-jobs-queue`     | count     | The same React job-controller queue depth                           |
 | `react-job-budget`     | ms        | How far React's job execution overran its per-tick budget           |
 | `react-job-queue-time` | ms        | Estimated compute time sitting in the queue                         |
 | `react-sync-tick-time` | ms        | Time React spent on the server thread last tick                     |
@@ -268,7 +261,6 @@ Every id below can be used as `%react_sampler.<id>%`. All are server-wide.
 | `spawner-light-cache-skipped` | checks/s    | Spawner light checks skipped per second by React's light cache         |
 | `explosion-packet-reduction`  | ratio 0–1   | Share of explosion packets removed by React's explosion batching. Stored as a fraction; React's own monitors render it as a percentage |
 | `pdc-write-batcher`           | writes/s    | Persistent-data writes deferred per second by React's write batcher    |
-| `unknown`                     | —           | A stand-in used when React needs a sampler and has none. Always reads `0`, so the placeholder prints `0`; React's own monitors render it as `---` |
 
 ### Integration samplers
 
@@ -396,15 +388,13 @@ two decimals otherwise.
 **A metric that stops updating freezes, it does not go to `---`.** React's monitors mark a reading stale
 after 15 seconds and render `---`, but the underlying sampler keeps returning the last value it saw, and the
 placeholder reads that number. A metric reads `0` only before its very first reading. Treat an unchanging
-number as a possible "publisher stopped", not as a measurement. See [metrics.md](metrics.md).
+number as a possible "publisher stopped", not as a measurement. See [18 - API - Metric Publishing.md](<18 - API - Metric Publishing.md>).
 
 ---
 
 ## Cost
 
-Resolving a placeholder is a map lookup against a snapshot that React publishes once a second on its own
-thread. It never samples on the calling thread, never touches a world, and never blocks — so a scoreboard
-that renders 30 React keys per player per tick costs 30 hash lookups per player per tick.
+Resolving a placeholder performs key normalization and a lookup against a snapshot that React publishes once a second. The request path does not sample metrics, access Bukkit world state, or block on metric collection.
 
 What does cost something is the sampling behind a key, which happens once a second regardless of how many
 players display it. Asking for one key on a 200-player scoreboard costs the same as asking for it once.
@@ -417,7 +407,7 @@ players display it. Asking for one key on a 200-player scoreboard costs the same
 |-----------------------------------------------|---------------------------------------------------------------------------------|
 | `%react_tps%` appears literally in the output | The expansion is not registered. PlaceholderAPI was enabled after React — run `/react reload` |
 | One key appears literally, the rest work      | Typo, or a `sampler.<id>` that is not a registered sampler                       |
-| Everything shows `---`, `available` is `false` | React's runtime has not started, or is shutting down                            |
+| Everything shows `---`, `available` is `false` | The expansion is registered but has not published its first snapshot           |
 | One key shows `---` forever                    | Its sampler reports a non-finite value. `%react_world.mspt%` also does this with no player context |
 | A `sampler.<id>` number stopped changing       | The plugin behind it stopped publishing. Placeholders read the raw sampler, which freezes at the last value rather than going to `---` |
 | The value is 100× smaller than the monitor shows | You are reading a sampler that stores a fraction and is rendered as a percentage — `processor-system-load`, `processor-process-load`, `processor-outside`, `explosion-packet-reduction`. Multiply in your own format, or use a named key |

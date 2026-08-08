@@ -1,25 +1,23 @@
-# React metric publishing API
+# API — Metric Publishing
 
-`art.arcane.react.api.metric` lets another plugin put its own numbers into React. Once published, a metric is
-indistinguishable from one of React's own: it gets a graph, an icon, a place in the monitor pickers, a map
-renderer, a slot in the web dashboard, and a `%react_sampler.…%` placeholder.
+The `art.arcane.react.api.metric` package lets another plugin publish numbers to React monitors, maps, sampler graphs, and PlaceholderAPI. React creates and manages a sampler from each accepted metric declaration.
 
-The shape of the integration is deliberate and worth stating up front:
+The integration has three parts:
 
-- You **declare** what your metrics are — key, kind, unit, display name, icon, decimal places.
-- You **publish** values whenever you have them.
-- React **synthesises the sampler**. You never implement one, and you cannot.
+- A source **declares** each metric's key, kind, unit, display name, icon, and decimal places.
+- The owning plugin **publishes** values as they become available.
+- React **synthesises the sampler**; third-party plugins do not implement React's internal `Sampler` type.
 
 ---
 
 ## Depending on React
 
-See [README.md](README.md) for `plugin.yml` / `paper-plugin.yml` and the compile classpath. Nothing in this
+See [16 - API - Getting Started.md](<16 - API - Getting Started.md>) for `plugin.yml` / `paper-plugin.yml` and the compile classpath. Nothing in this
 package needs anything beyond Bukkit's `Material` and `java.*`.
 
 ---
 
-## Why you cannot implement React's `Sampler`
+## Sampler boundary
 
 `art.arcane.react.api.sampler.Sampler` is React's internal measurement type and it is not implementable from
 outside, by design and by construction:
@@ -32,10 +30,8 @@ outside, by design and by construction:
   `art.arcane.react.util.arcane.*` — names that exist only inside React.
 - The controller that registers samplers is not reachable from any API type.
 
-Compiling a class against `Sampler` from outside React therefore either fails at build time or fails at
-runtime with `NoClassDefFoundError` on a relocated name. `ReactMetric` exists so that you never have to.
-Declare a descriptor, publish a `double`, and React builds a real sampler behind it — one that renders,
-graphs, formats, caches and retires on the same code path as `tick-time`.
+Compiling a class against `Sampler` from outside React therefore fails at build time or at runtime with
+`NoClassDefFoundError` on a relocated name. `ReactMetric` is the supported boundary: a source declares a descriptor, publishes a `double`, and React creates the sampler used for rendering, graphs, formatting, caching, and retirement.
 
 ---
 
@@ -82,7 +78,7 @@ which of your features are enabled works without re-registering.
 | `ReactMetrics.available` / `accepting` / `publishedSourceIds` | Any thread                                                  |
 | `ReactMetrics.hostMetricKeys` / `readHostMetric` / `hostMetricAvailable` | Any thread. This is the same call React makes from its own sampler ticker, which is not the server thread. Samplers cache their value for 50 ms to 5 seconds depending on what they measure, and most of those that need main-thread or world state refresh behind the read rather than blocking on it — so a value may be a sample or two old. See the caveat below before calling this on a latency-sensitive path |
 
-"Any thread" is a real claim for the publishing half, not a shrug: nothing in `publish`, `withdraw`,
+The publishing half accepts calls from any thread: nothing in `publish`, `withdraw`,
 `accepting` or `publishedSourceIds` reads Folia-owned state. The constraint that matters on Folia is a
 different one — **the value you publish must be safe for you to compute wherever you compute it**. Counting
 your own `ConcurrentHashMap` is fine anywhere. Walking `world.getEntities()` is not, and React will not save
@@ -245,8 +241,7 @@ no fallback: React refuses a source whose id it cannot validate, every cycle, wi
 
 ## Naming rules
 
-React enforces both of these on every cycle. Get them wrong and your metrics are dropped silently apart from
-one verbose log line.
+React enforces both naming rules on every declaration cycle. Invalid descriptors are dropped; verbose logging reports only the accepted declaration count.
 
 **Source id.** Stripped and lowercased before validation, then it must be:
 
@@ -267,7 +262,7 @@ one verbose log line.
 
 **Sampler id.** React derives it by lowercasing your key and replacing every non-alphanumeric character with
 `-`. `guardianpets.pets.live` becomes the sampler `guardianpets-pets-live`, which is the id an operator sees
-and the id you use in [`%react_sampler.guardianpets-pets-live%`](placeholders.md).
+and the id you use in [`%react_sampler.guardianpets-pets-live%`](<19 - API - PlaceholderAPI.md>).
 
 ---
 
@@ -286,7 +281,7 @@ public record ReactMetric(
 | Component     | Effect                                                                                                        |
 |---------------|----------------------------------------------------------------------------------------------------------------|
 | `key`         | Identity. Also derives the sampler id and the placeholder                                                       |
-| `kind`        | Chooses the unit suffix when `unit` is blank, and describes the series to the dashboard                        |
+| `kind`        | Chooses the unit suffix when `unit` is blank and describes the series to React renderers                       |
 | `unit`        | Suffix shown after the number. Stripped, control characters and `§` removed, truncated to 16 characters. Blank falls back to the kind default |
 | `displayName` | Label on monitors and maps. Same sanitizing, truncated to 48 characters. Blank falls back to `key`             |
 | `icon`        | Item icon in the monitor picker. `null` becomes `Material.SLIME_BALL`                                           |
@@ -356,7 +351,7 @@ When a reading goes stale — 15 seconds with no publish, or an explicit `withdr
 maps** show `---`. The **numeric** value does not become `NaN` or reset to zero: the synthesised sampler
 holds the last value it saw and keeps returning it. Anything that reads the number rather than the rendered
 string sees a frozen value, not an absent one. That includes
-[`%react_sampler.…%`](placeholders.md) and `ReactMetrics.readHostMetric`.
+[`%react_sampler.…%`](<19 - API - PlaceholderAPI.md>) and `ReactMetrics.readHostMetric`.
 
 A synthesised sampler returns `0` only before its first ever reading. If you need consumers to be able to
 tell "stopped" from "genuinely zero", publish an explicit heartbeat metric alongside the one that matters.
@@ -365,8 +360,7 @@ tell "stopped" from "genuinely zero", publish an explicit heartbeat metric along
 
 ## Reading React's own numbers
 
-The same facade reads React's samplers, so you do not need a second integration to put React's tick time on
-your own dashboard.
+The same facade reads React's samplers, so another plugin can consume React's tick-time and other host metrics without a separate integration.
 
 ```java
 public static Set<String> hostMetricKeys();
@@ -376,7 +370,7 @@ public static boolean hostMetricAvailable(String key);
 
 The keys are React's sampler ids — `tick-time`, `ticks-per-second`, `entities`, `chunks`, `memory-used` and
 the rest, including samplers synthesised from other plugins' published metrics. See
-[placeholders.md](placeholders.md) for the catalogue.
+[19 - API - PlaceholderAPI.md](<19 - API - PlaceholderAPI.md>) for the catalogue.
 
 ```java
 double mspt = ReactMetrics.readHostMetric("tick-time");
@@ -430,11 +424,7 @@ The metric API has no configuration. It is always on and its limits — 16 sourc
 64 per declaration read, 15-second freshness, 5-second future tolerance, 5 faults before quarantine, a 5 ms
 slow warning, a 5-second discovery interval, a 60-second re-declaration interval — are fixed.
 
-`verbose = false` in `plugins/React/config.toml` hides most `[metric]` diagnostics. Turn it on when your
-source is not appearing: refusals, faults, key rejections and the withdrawal notice are all logged there. Two
-lines are exceptions and always print — a sampler-id collision and a failed reconcile pass are warnings, so
-if your metric is silently absent, check the console for `[metric] sampler id … is already taken` before you
-turn verbose on.
+`verbose = false` in `plugins/React/config.toml` hides most `[metric]` diagnostics. Enable it when a source is not appearing to see source refusals, faults, accepted declaration counts, and withdrawal notices. Invalid individual metric descriptors are omitted from the accepted declaration rather than logged one by one; sampler-id collisions and failed reconcile passes are warnings regardless of verbose mode.
 
 ---
 
@@ -444,8 +434,7 @@ turn verbose on.
 |----------------------------|---------------------------------------------------------------------|
 | Monitor picker and HUD     | `/react monitor`, then choose your sampler by its display name       |
 | Map graph                  | `/react map <sampler-id>`                                           |
-| Web dashboard              | The metrics feed, under your sampler id                              |
-| PlaceholderAPI             | `%react_sampler.<sampler-id>%` — see [placeholders.md](placeholders.md) |
+| PlaceholderAPI             | `%react_sampler.<sampler-id>%` — see [19 - API - PlaceholderAPI.md](<19 - API - PlaceholderAPI.md>) |
 | Another plugin             | `ReactMetrics.readHostMetric("<sampler-id>")`                        |
 
-All five use the derived sampler id, not the metric key.
+All four use the derived sampler id, not the metric key.

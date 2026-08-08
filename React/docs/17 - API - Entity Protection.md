@@ -1,40 +1,27 @@
-# React entity protection API
+# API — Entity Protection
 
-`art.arcane.react.api.protect` is how another plugin tells React **do not touch this entity**. React stacks,
-trims, purges, sleeps and despawns entities on its hot paths; if your plugin owns an entity — a pet, a
-summon, a boss, a quest NPC, a moving part of a machine — React will treat it like any other mob unless you
-say otherwise.
+The `art.arcane.react.api.protect` package lets another plugin exclude owned entities from selected React operations. It supports compiled provider rules, direct per-entity claims, and a limited per-decision guard event.
 
-There are two ways to say it, and they solve different problems:
+Provider rules and direct claims cover different ownership models:
 
-| You want to…                                                    | Use                                     |
+| Ownership model                                                 | API                                     |
 |-----------------------------------------------------------------|-----------------------------------------|
-| protect entities that already carry something identifying — a persistent-data key, a scoreboard tag, a type, a world | `ReactProtectionProvider` (ServicesManager) |
-| protect one specific entity you have in hand, right now          | `ReactProtection.protect(entity, plugin, ops)` |
+| Entities identified by a persistent-data key, scoreboard tag, type, world, or spawn reason | `ReactProtectionProvider` through `ServicesManager` |
+| A specific entity available to the caller                        | `ReactProtection.protect(entity, plugin, ops)` |
 
-Most integrations want the first. A rule is evaluated from facts React already reads, applies to every
-entity that matches it including ones spawned before your plugin existed, and needs no bookkeeping of your
-own.
+Provider rules apply to every matching entity, including entities that existed before the provider registered. Direct claims persist an operation mask on one entity.
 
 ---
 
-## The one thing to understand first
+## Rule model
 
-**React never asks you about an entity.** There is no callback, no `boolean isProtected(Entity)` you get to
-implement, and no way to make a decision when React is about to act.
+The provider API is declarative. It has no `boolean isProtected(Entity)` callback and does not query a provider immediately before React acts.
 
-You **declare** rules. React reads them, compiles them into a bitmask lookup, and evaluates that lookup
-itself, per entity, on paths that run for every entity in every loaded chunk. `ReactProtectionProvider.rules()`
-is called roughly every 30 seconds, on one of React's own worker threads — not once per entity, not once per
-operation, and not on the server thread. A provider that tries to answer "is *this* entity mine?" has nowhere
-to put the answer.
+React reads declared rules, compiles them into a bitmask lookup, and evaluates that lookup on its entity paths. `ReactProtectionProvider.rules()` is called roughly every 30 seconds on a React worker thread, not once per entity or operation and not on the server thread.
 
-The result is that protection is expressed as **matchers over facts React can read cheaply**: entity type,
-world name, scoreboard tags, persistent-data keys, spawn reason. If your ownership cannot be expressed that
-way, write a marker onto the entity's persistent data when you create it and match on the key.
+Rules match entity type, world name, scoreboard tags, persistent-data keys, and spawn reason. Ownership that cannot be expressed through existing fields can be represented by a persistent-data marker written when the entity is created.
 
-If you genuinely need a per-decision veto, `ReactEntityGuardEvent` gives you one — but only for two of the
-six operations, and it fires per entity on the same hot paths. See
+`ReactEntityGuardEvent` provides a per-decision veto for two of the six operations and fires per entity on the same hot paths. See
 [Vetoing per entity with an event](#vetoing-per-entity-with-an-event).
 
 ---
@@ -170,14 +157,14 @@ public Wolf spawnPet(PetProtection protection, World world, Location at) {
 }
 ```
 
-That is the whole integration. The mark is persistent data, so it survives chunk unloads, restarts and world
+The mark is persistent data, so it survives chunk unloads, restarts and world
 backups.
 
 The **rule** does not. Bukkit unregisters your service when your plugin disables, and React drops your rules
 on the next reconcile — so while your plugin is off, marked entities are unprotected even though the mark is
 still on them, and protection comes back when you enable again. If you need protection that holds while your
 plugin is disabled or uninstalled, write a claim instead (see
-[Claiming a single entity](#claiming-a-single-entity)).
+[Claiming a single entity](#claiming-a-single-entity).
 
 ### A fuller provider
 
@@ -318,8 +305,7 @@ else.
 **Only Folia enforces the rule.** React's check is "is this a Folia runtime, and if so does the current region
 own this entity". On Paper and Spigot the answer is always yes, so an off-main-thread `protect`, `release` or
 `isProtected` is **not** refused, **not** logged, and reaches the entity's `PersistentDataContainer` anyway.
-Nothing tells you it happened. Getting the thread right on Paper is entirely yours; React's refusal is a
-Folia backstop, not a portable guard.
+No additional notification is emitted. Callers remain responsible for correct Paper thread ownership; React's refusal is a Folia-specific backstop, not a portable guard.
 
 `ReactProtection.operationsFor` returning `NONE` off-region on Folia is the single most common way to be
 confused by this API. It looks exactly like "nothing protects this entity".
@@ -429,7 +415,7 @@ public void onGuard(ReactEntityGuardEvent event) {
 
 Cancelling means "do not perform this operation on this entity". React skips it and moves on.
 
-**Limitations, stated plainly:**
+Limitations:
 
 - **It fires for `TRIM` and `PURGE` only.** Stacking, sleeping, despawning and spawn caps consult the
   compiled rule set directly and never fire an event. There is no per-entity veto for those four.
@@ -461,7 +447,7 @@ VolmLib ships `art.arcane.volmlib.util.entity.StackExclusion`, which writes a `B
 `volmit:no-stack` into an entity's persistent data. Plugins in this suite used it to opt out of mob stacking
 before React had an API.
 
-**It still works, exactly.** React ships a built-in rule — `react/legacy-no-stack` — that matches the marker
+React ships a built-in rule — `react/legacy-no-stack` — that matches the marker
 key `volmit:no-stack` and grants `STACK`, `TRIM`, `PURGE`, `SLEEP` and `DESPAWN`. It is compiled with every
 third-party rule and evaluated on the same path. Nothing you already wrote needs to change.
 
@@ -476,10 +462,7 @@ What it does not do:
 - **It is a VolmLib type.** Inside React's jar VolmLib is relocated, so the class you call is your copy, not
   React's. React only ever sees the resulting `NamespacedKey`.
 
-**Which to use now:** for new work, `ReactProtection.protect(entity, plugin, ops)` or a rule with your own
-marker key. Both name your plugin, both let you pick operations, and neither needs VolmLib. Keep
-`StackExclusion` only where it is already deployed; there is no migration deadline and no plan to drop the
-built-in rule.
+For new work, use `ReactProtection.protect(entity, plugin, ops)` or a rule with your own marker key. Both identify the owning plugin, support per-operation selection, and do not require VolmLib. Existing `StackExclusion` use continues to resolve through the current built-in rule.
 
 If you want the legacy behaviour without a VolmLib dependency, the key is stable and you can write it
 yourself:
@@ -532,14 +515,14 @@ The protection API has no configuration of its own. It is always on, cannot be d
 64 rules per provider, 5 faults before quarantine, a 5 ms slow warning, a 5-minute mask retention — are
 fixed.
 
-Two things an operator can change do affect what you see:
+Two operator settings affect integration behavior and diagnostics:
 
 | File                              | Key       | Effect                                                                            |
 |-----------------------------------|-----------|-----------------------------------------------------------------------------------|
 | `plugins/React/config.toml`       | `verbose` | `false` by default. Every `[protect]` diagnostic that concerns your provider — refusals, faults, quarantine, slow-provider warnings, off-region write refusals — is verbose-level. Turn it on when your rules are not taking effect |
 | `plugins/React/feature/*.toml`, `plugins/React/tweak/*.toml` | `enabled` | Turning off the feature that performs an operation removes that operation from the server entirely |
 
-Which file performs which operation, if you need to reproduce a report:
+The following component files perform each operation:
 
 | Operation   | Config files                                                                                              |
 |-------------|-----------------------------------------------------------------------------------------------------------|
@@ -556,7 +539,7 @@ Which file performs which operation, if you need to reproduce a report:
 
 `ReactOperation` — `STACK`, `TRIM`, `PURGE`, `SLEEP`, `DESPAWN`, `SPAWN_CAP`. Ordinals are the bit positions
 in a `ReactOperations` mask, so a mask is not portable across React versions if constants are reordered.
-Never persist a raw mask outside React's own claims; store the `ReactOperation` names instead.
+Raw masks are not stable persistence values; persist `ReactOperation` names instead.
 
 The enum may gain constants. Write a `default` arm in any `switch` expression over it:
 
@@ -568,5 +551,4 @@ String verb = switch (event.getOperation()) {
 };
 ```
 
-`ReactOperations.all()` is computed from the enum at class-init, so it automatically covers constants added
-in a later release — which is what you want when your intent is "never touch this".
+`ReactOperations.all()` is computed from the enum at class initialization and therefore includes constants added in a later release.

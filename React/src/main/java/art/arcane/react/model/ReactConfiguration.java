@@ -92,7 +92,7 @@ public class ReactConfiguration {
   @ConfigDoc(value = "Enables plugin-gated secret integration features.", impact = "Disabled by default. Enable to allow Iris/Adapt secret bundles when dependencies are present.")
   private boolean integrationSecretsEnabled = false;
 
-  @ConfigDoc(value = "Enables the optional ByteBuddy bytecode agent for advanced runtime instrumentation.", impact = "Disabled by default. Once enabled and the agent attaches, it cannot be detached without restarting the JVM. No transformations are registered in the current release.")
+  @ConfigDoc(value = "Eagerly attaches React's general ByteBuddy agent during startup.", impact = "Disabled by default. Versioned NMS features can still attach their own instrumentation when activated. Any attached instrumentation remains until the JVM restarts.")
   private boolean unsafeBytecode = false;
 
   @ConfigDoc(value = "Enables anonymous bStats usage reporting for React.", impact = "Set to false to disable React's bStats submissions entirely. Requires a restart to take effect.")

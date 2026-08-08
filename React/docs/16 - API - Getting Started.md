@@ -1,19 +1,14 @@
-# React plugin API
+# API — Getting Started
 
-React is a runtime performance plugin: it samples the server, stacks mobs, trims and purges entities, sleeps
-idle AI, caps spawns, and renders all of it onto maps and monitors. Two of those behaviours affect other
-plugins, so two of them are public API — **telling React to leave your entities alone**, and **putting your
-own numbers into React's dashboards**. A third surface, PlaceholderAPI, is read-only and needs no code.
+React exposes third-party Java APIs for entity protection and metric publishing, plus read-only PlaceholderAPI keys. This document covers dependency setup, current relocation boundaries, and the distinction between public API and internal runtime types.
 
 | You want to…                                            | Read                                 |
 |---------------------------------------------------------|--------------------------------------|
-| stop React stacking, trimming, purging, sleeping or despawning your entities | [protection.md](protection.md) |
-| show your plugin's numbers on React's monitors, maps and web dashboard | [metrics.md](metrics.md) |
-| print React's numbers in a scoreboard, hologram or chat format | [placeholders.md](placeholders.md) |
+| stop React stacking, trimming, purging, sleeping or despawning your entities | [17 - API - Entity Protection.md](<17 - API - Entity Protection.md>) |
+| show your plugin's numbers on React's monitors, maps and PlaceholderAPI | [18 - API - Metric Publishing.md](<18 - API - Metric Publishing.md>) |
+| print React's numbers in a scoreboard, hologram or chat format | [19 - API - PlaceholderAPI.md](<19 - API - PlaceholderAPI.md>) |
 
-Everything documented in those three files is built from Bukkit types, `java.*` types and React's own API
-types only. No VolmLib, no Adventure, no Guava, no shaded types — so the API links against a plain Spigot or
-Paper compile classpath and keeps working across React builds.
+The current public signatures use Bukkit, `java.*`, and React API types only. React's API-surface test rejects internal, relocated, shaded, and Adventure types in those signatures.
 
 ---
 
@@ -59,8 +54,7 @@ Scope is compile-only in every case — the jar must not end up inside yours. Ne
 your plugin: two copies of `ReactProtection` means your calls reach a facade with no binding installed, and
 every call silently returns `false` with no error anywhere.
 
-The version suffix tracks the Minecraft API version React was built against (`2.0.0-26.2` is React 2.0.0 for
-Minecraft 26.2). The API packages themselves do not change with it.
+The version suffix tracks the Minecraft API version React was built against (`2.0.0-26.2` is React 2.0.0 for Minecraft 26.2). It does not by itself state API compatibility with another React build.
 
 ---
 
@@ -87,9 +81,7 @@ Three consequences:
 - **Reflection into React by original package name fails.** `Class.forName("art.arcane.volmlib.…")` will not
   find React's copy. Nothing in the documented API requires reflection.
 
-`art.arcane.react.api.protect` and `art.arcane.react.api.metric` are **not** relocated and never will be.
-That is enforced by a test in React's own build, which fails if any public member of those two packages
-mentions a relocated, shaded or Adventure type.
+`art.arcane.react.api.protect` and `art.arcane.react.api.metric` are not relocated in the current shaded build. A build test fails if any current public member of those packages mentions a relocated, shaded, internal, or Adventure type.
 
 ---
 
@@ -139,10 +131,9 @@ Only `art.arcane.react.api.protect` and `art.arcane.react.api.metric` are contra
   `ReactTickedSampler` are React's internal measurement types. They extend React's registry and map-renderer
   interfaces and their members use relocated and shaded types, so a third-party plugin cannot implement or
   extend them at all. Publish a metric instead — React builds the sampler for you. See
-  [metrics.md](metrics.md).
+  [18 - API - Metric Publishing.md](<18 - API - Metric Publishing.md>).
 - **`api.feature`, `api.tweak`, `api.action`, `api.monitor`, `api.rendering`, `api.entity`, `api.benchmark`,
-  `api.test`, `api.web`.** React's own content model, dashboards, HTTP layer and self-test harness. Same
-  problem: they are wired to React's registries and shaded dependencies.
+  `api.test`.** React's own content model, renderers, and self-test harness. They are wired to React's registries and shaded dependencies.
 - **`art.arcane.react.api.event`.** `ReactEvent` and `ReactCancellableEvent` are base classes that hold the
   `HandlerList` for every subclass, so all of React's internal layer events funnel through two shared lists,
   and some of them are fired every tick from a reused instance. `ReactEntityGuardEvent` deliberately does
@@ -167,6 +158,4 @@ String verb = switch (event.getOperation()) {
 };
 ```
 
-Records in the API (`ReactProtectionRule`, `ReactMetric`) may gain components. Build them through the static
-factories and `with…` methods rather than the canonical constructor, and a new component will not break your
-source.
+Construct `ReactProtectionRule` and `ReactMetric` through their static factories and `with…` methods. Those are the documented construction surface; the canonical record constructors are not.

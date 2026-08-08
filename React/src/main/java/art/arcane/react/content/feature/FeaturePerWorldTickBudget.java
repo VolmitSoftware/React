@@ -40,7 +40,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-@ConfigDescription("Configuration for Per-World Tick Budget feature. Measures rolling per-world tick-time share, applies engage/release hysteresis against a budget and a panic threshold, and publishes a NORMAL/PRESSURE/PANIC mode per world that other Features can consume cooperatively. Measurement-only by default; existing Features are not rewired in this sprint.")
+@ConfigDescription("Configuration for Per-World Tick Budget feature. Measures rolling per-world tick-time share, applies engage and release hysteresis, and publishes NORMAL/PRESSURE/PANIC for each world. Adaptive entity sleep, dynamic activation range, item backpressure, and pathfinder budget consume this state when applying per-world pressure behavior.")
 public class FeaturePerWorldTickBudget extends ReactFeature {
   public static final String ID = "per-world-tick-budget";
 

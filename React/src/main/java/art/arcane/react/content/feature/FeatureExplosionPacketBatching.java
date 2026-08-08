@@ -48,7 +48,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-@art.arcane.react.util.project.config.ConfigDescription("Configuration for Explosion Packet Batching feature. Collects same-tick explosions per world, clusters them by mergeRadius, and measures how many separate ClientboundExplodePackets would collapse into one merged packet per cluster. Reports projected explosion-to-packet reduction as a runtime metric; bypasses clusters whose any explosion is within bypassRadius of a player so nearby observers see vanilla animation/sound fidelity. Shipped as measurement-only pending a Folia-safe synthesized-explode-packet NMS bridge.")
+@art.arcane.react.util.project.config.ConfigDescription("Configuration for Explosion Packet Batching feature. Collects same-tick explosions per world, clusters them by mergeRadius, and reports how many ClientboundExplodePackets are removed. With the versioned explosion hooks available, eligible clusters suppress the original packets and broadcast one merged packet; otherwise the feature remains measurement-only. Clusters within bypassRadius of a player keep vanilla packets for animation and sound fidelity.")
 public class FeatureExplosionPacketBatching extends ReactFeature implements Listener {
   public static final String ID = "explosion-packet-batching";
 

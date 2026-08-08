@@ -63,7 +63,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-@ConfigDescription("Configuration for Hopper Chain Coalescing feature. Detects linear chains of N hoppers feeding the same direction and projects how many per-hopper transfer ticks would collapse into a single head-to-tail batched pull per chain per tick. Operates in measurement-only mode: chain detection plus projected ticks-saved exposed via the chain-coalescing sampler. Cancelling intermediate InventoryMoveItemEvent dispatches collides with FeatureHopperTokenBucket's bucket consumption ordering, so the actual batched move is deferred to a dedicated NMS bridge.")
+@ConfigDescription("Configuration for Hopper Chain Coalescing feature. Detects linear hopper chains and reports projected tick savings. It remains measurement-only by default; in act mode with the versioned hopper hook, eligible intermediate ticks are skipped and one head-to-tail transfer is synthesized. Synthesized transfers coordinate with FeatureHopperTokenBucket gating instead of cancelling InventoryMoveItemEvent directly.")
 public class FeatureHopperChainCoalescing extends ReactFeature implements Listener {
   public static final String ID = "hopper-chain-coalescing";
   private static final int MAX_CHAIN_LENGTH = 256;

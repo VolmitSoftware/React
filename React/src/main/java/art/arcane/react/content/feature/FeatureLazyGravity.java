@@ -53,7 +53,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-@ConfigDescription("Configuration for Lazy Gravity feature. Tracks vanilla FallingBlock entities on clear vertical paths and projects how many movement ticks would be skippable if their landing tick were resolved deterministically from spawn position and gravity math, instead of per-tick AI/move processing. Reports the projected skip volume as a runtime metric so operators can size the impact before a full tick-skip implementation lands. Bypasses falling blocks within bypassRadius of a player. Active path interruptions (place/break/physics in the column) drop the tracked entity back to vanilla physics.")
+@ConfigDescription("Configuration for Lazy Gravity feature. Tracks FallingBlock entities on clear vertical paths and reports eligible tick skips. Under configured pressure, the versioned hook skips eligible ticks outside bypassRadius; without the hook the feature remains measurement-only. Column changes return affected blocks to vanilla physics.")
 public class FeatureLazyGravity extends ReactFeature implements Listener {
   public static final String ID = "lazy-gravity";
   private static final double VANILLA_GRAVITY = 0.04D;
