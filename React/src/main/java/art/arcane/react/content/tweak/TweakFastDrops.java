@@ -39,6 +39,7 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -80,9 +81,8 @@ public class TweakFastDrops extends ReactTweak implements Listener {
         return;
       }
 
-      int xp = teleportEntityXP ? e.getDroppedExp() : 0;
-
-      if (teleportEntityDrops) {
+      if (teleportEntityXP) {
+        int xp = e.getDroppedExp();
         e.setDroppedExp(0);
 
         if (xp > 0) {
@@ -97,12 +97,12 @@ public class TweakFastDrops extends ReactTweak implements Listener {
         }
       }
 
-      if (teleportBlockDrops) {
+      if (teleportEntityDrops) {
         List<ItemStack> drops = new ArrayList<>(e.getDrops());
         e.getDrops().clear();
         for (ItemStack i : drops) {
           boolean dropped = false;
-          for (ItemStack j : p.getInventory().addItem(i).values()) {
+          for (ItemStack j : p.getInventory().addItem(i.clone()).values()) {
             p.getWorld().dropItemNaturally(p.getLocation(), j);
             dropped = true;
           }
@@ -120,7 +120,7 @@ public class TweakFastDrops extends ReactTweak implements Listener {
     }
   }
 
-  @EventHandler(priority = EventPriority.HIGHEST)
+  @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
   public void on(BlockDropItemEvent e) {
     if (!allowContainerDrops && e.getBlock().getState() instanceof InventoryHolder) {
       return;
@@ -131,11 +131,16 @@ public class TweakFastDrops extends ReactTweak implements Listener {
     }
 
     if (teleportBlockDrops) {
-      e.setCancelled(true);
+      List<Item> items = new ArrayList<>(e.getItems());
+      for (Item i : items) {
+        ItemStack stack = i.getItemStack().clone();
+        if (!e.getItems().remove(i)) {
+          continue;
+        }
 
-      for (Item i : e.getItems()) {
         boolean dropped = false;
-        for (ItemStack j : e.getPlayer().getInventory().addItem(i.getItemStack()).values()) {
+        HashMap<Integer, ItemStack> leftovers = e.getPlayer().getInventory().addItem(stack);
+        for (ItemStack j : leftovers.values()) {
           e.getPlayer().getWorld().dropItemNaturally(i.getLocation(), j);
           dropped = true;
         }
@@ -162,13 +167,10 @@ public class TweakFastDrops extends ReactTweak implements Listener {
       return;
     }
 
-    int xp = teleportBlockXP ? e.getExpToDrop() : 0;
+    int xp = e.getExpToDrop();
+    e.setExpToDrop(0);
 
-    if (teleportBlockXP) {
-      e.setExpToDrop(0);
-    }
-
-    if (xp > 0 && teleportEntityXP) {
+    if (xp > 0) {
       e.getPlayer().giveExp(xp);
       React.audiences().player(e.getPlayer()).playSound(Sound.sound(
           Key.key("minecraft:entity.experience_orb.pickup"),
