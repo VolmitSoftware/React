@@ -48,8 +48,16 @@ public interface Registered {
 
   String getId();
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   default void loadConfiguration() {
+    reloadFromDisk(true);
+  }
+
+  default boolean reloadConfiguration() {
+    return reloadFromDisk(false);
+  }
+
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  default boolean reloadFromDisk(boolean overwriteOnReadFailure) {
     File canonicalFile = React.instance.getDataFile(getConfigCategory(), getId() + ".toml");
     File legacyFile = React.instance.getDataFile(getConfigCategory(), getId() + ".json");
 
@@ -59,7 +67,7 @@ public interface Registered {
           legacyFile,
           (Class) getClass(),
           this,
-          true,
+          overwriteOnReadFailure,
           getConfigCategory() + ":" + getId(),
           "Created missing config [" + getConfigCategory() + "/" + getId() + ".toml] from defaults."
       );
@@ -75,8 +83,10 @@ public interface Registered {
         }
       });
       React.verbose("Loaded config for " + getName() + " in " + canonicalFile.getPath());
+      return true;
     } catch (Throwable e) {
       React.warn("Failed to load config for " + getName() + ": " + e.getMessage());
+      return false;
     }
   }
 }

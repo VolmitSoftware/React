@@ -102,4 +102,9 @@ public class SamplerPluginCost extends ReactCachedSampler {
   @Override
   public void loadConfiguration() {
   }
+
+  @Override
+  public boolean reloadConfiguration() {
+    return true;
+  }
 }

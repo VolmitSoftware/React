@@ -14,6 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ConfigFileSupportSelfWriteTest {
   @AfterEach
@@ -60,11 +61,35 @@ class ConfigFileSupportSelfWriteTest {
     }
   }
 
+  @Test
+  void invalidHotloadDoesNotRewriteLiveFile(@TempDir Path temporaryDirectory) throws Exception {
+    File file = temporaryDirectory.resolve("feature.toml").toFile();
+    String invalid = "enabled = [\n";
+    Files.writeString(file.toPath(), invalid, StandardCharsets.UTF_8);
+    HotloadProbe fallback = new HotloadProbe();
+
+    assertThrows(Exception.class, () -> ConfigFileSupport.load(
+        file,
+        null,
+        HotloadProbe.class,
+        fallback,
+        false,
+        "feature:probe",
+        "Created missing config [feature/probe.toml] from defaults."
+    ));
+
+    assertEquals(invalid, Files.readString(file.toPath(), StandardCharsets.UTF_8));
+  }
+
   private String read(Path path) {
     try {
       return Files.readString(path, StandardCharsets.UTF_8);
     } catch (Exception e) {
       throw new IllegalStateException(e);
     }
+  }
+
+  public static final class HotloadProbe {
+    public boolean enabled = true;
   }
 }

@@ -45,6 +45,11 @@ public class PublishedMetricSampler extends ReactCachedSampler {
   }
 
   @Override
+  public boolean reloadConfiguration() {
+    return true;
+  }
+
+  @Override
   public void start() {
     super.start();
     lastAvailableValue = 0D;

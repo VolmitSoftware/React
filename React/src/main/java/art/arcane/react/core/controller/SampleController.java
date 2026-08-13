@@ -194,7 +194,10 @@ public class SampleController extends TickedObject implements IController {
     synchronized (lock) {
       setSamplerState(id, SamplerState.RELOADING);
       try {
-        sampler.loadConfiguration();
+        if (!sampler.reloadConfiguration()) {
+          setSamplerState(id, SamplerState.STOPPED);
+          return false;
+        }
         stopSamplerRuntime(sampler);
         startSamplerRuntime(sampler);
         return canSample(sampler);

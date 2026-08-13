@@ -275,7 +275,9 @@ public class HotloadController extends TickedObject implements IController {
     }
 
     return runSync(() -> {
-      controller.loadConfiguration();
+      if (!controller.reloadConfiguration()) {
+        return false;
+      }
       if (controller == this) {
         reconfigureWatcher();
       }
@@ -299,7 +301,9 @@ public class HotloadController extends TickedObject implements IController {
 
     return runSync(() -> {
       boolean wasActive = controller.getActiveFeatures().containsKey(feature.getId());
-      feature.loadConfiguration();
+      if (!feature.reloadConfiguration()) {
+        return false;
+      }
       boolean nowEnabled = feature.isEnabled();
 
       if (wasActive && !nowEnabled) {
@@ -328,7 +332,9 @@ public class HotloadController extends TickedObject implements IController {
 
     return runSync(() -> {
       boolean wasActive = controller.getActiveTweaks().containsKey(tweak.getId());
-      tweak.loadConfiguration();
+      if (!tweak.reloadConfiguration()) {
+        return false;
+      }
       boolean nowEnabled = tweak.isEnabled();
 
       if (wasActive && !nowEnabled) {
@@ -357,7 +363,9 @@ public class HotloadController extends TickedObject implements IController {
 
     return runSync(() -> {
       boolean wasEnabled = action.isEnabled();
-      action.loadConfiguration();
+      if (!action.reloadConfiguration()) {
+        return false;
+      }
       if (!wasEnabled && action.isEnabled()) {
         action.onInit();
       }
