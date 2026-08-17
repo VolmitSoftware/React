@@ -50,8 +50,8 @@ import art.arcane.react.util.project.world.EntityKiller;
 import art.arcane.volmlib.integration.ReloadAware;
 import art.arcane.volmlib.util.collection.KList;
 import art.arcane.volmlib.util.format.Form;
-import art.arcane.volmlib.util.hud.HudBossBarLane;
-import art.arcane.volmlib.util.hud.HudSlotService;
+import art.arcane.volmlib.util.hud.HudActionBar;
+import art.arcane.volmlib.util.hud.HudTitleService;
 import art.arcane.volmlib.util.io.JarScanner;
 import io.github.slimjar.app.builder.SpigotApplicationBuilder;
 import net.kyori.adventure.audience.Audience;
@@ -83,8 +83,8 @@ public class React extends VolmitPlugin implements ReloadAware {
   // loaded from <clinit> — the main class initializes before ApplicationBuilder.build().
   private static volatile Audiences audiencesFacade;
   private static volatile BukkitAudiences audienceProvider;
-  private static HudSlotService hudSlots;
-  private static HudBossBarLane hudLanes;
+  private static HudActionBar hudBar;
+  private static HudTitleService hudTitles;
   private static final int REPORTED_ERROR_HISTORY = 1024;
   // bstats.org plugin id
   private static final int BSTATS_PLUGIN_ID = 24219;
@@ -259,8 +259,8 @@ public class React extends VolmitPlugin implements ReloadAware {
     return instance.bridgeRegistry;
   }
 
-  public static HudSlotService hud() {
-    return hudSlots;
+  public static HudActionBar hud() {
+    return hudBar;
   }
 
   public static Audiences audiences() {
@@ -315,8 +315,8 @@ public class React extends VolmitPlugin implements ReloadAware {
     }
   }
 
-  public static HudBossBarLane lanes() {
-    return hudLanes;
+  public static HudTitleService titles() {
+    return hudTitles;
   }
 
   public static <T extends IController> T controller(Class<T> c) {
@@ -393,8 +393,8 @@ public class React extends VolmitPlugin implements ReloadAware {
     prejobs = new CopyOnWriteArrayList<>();
     burst = new MultiBurst("React", Thread.MIN_PRIORITY);
     ticker = new Ticker();
-    hudSlots = new HudSlotService(this);
-    hudLanes = new HudBossBarLane();
+    hudBar = new HudActionBar(this);
+    hudTitles = new HudTitleService(this);
     bridgeRegistry = new NmsBridgeRegistry();
     bridgeRegistry.setMappingsLoader(new art.arcane.react.core.bridge.MappingsLoader());
     NMS.reset();
@@ -512,13 +512,13 @@ public class React extends VolmitPlugin implements ReloadAware {
         }
       }
     }
-    if (hudLanes != null) {
-      hudLanes.shutdown();
-      hudLanes = null;
+    if (hudBar != null) {
+      hudBar.shutdown();
+      hudBar = null;
     }
-    if (hudSlots != null) {
-      hudSlots.shutdown();
-      hudSlots = null;
+    if (hudTitles != null) {
+      hudTitles.shutdown();
+      hudTitles = null;
     }
     if (burst != null) {
       burst.close();

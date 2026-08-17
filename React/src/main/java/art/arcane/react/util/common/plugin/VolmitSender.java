@@ -21,7 +21,6 @@ package art.arcane.react.util.plugin;
 
 
 import art.arcane.react.React;
-import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.format.C;
 import art.arcane.volmlib.util.format.Form;
 import art.arcane.volmlib.util.math.M;
@@ -29,7 +28,6 @@ import lombok.Getter;
 import lombok.Setter;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.kyori.adventure.title.Title;
 import org.bukkit.Server;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -38,13 +36,8 @@ import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.permissions.PermissionAttachmentInfo;
 import org.bukkit.plugin.Plugin;
 
-import java.time.Duration;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Represents a volume sender. A command sender with extra crap in it
@@ -213,62 +206,9 @@ public class VolmitSender implements CommandSender {
     s.sendMessage("========================================================");
   }
 
-  public void sendTitle(String title, String subtitle, int i, int s, int o) {
-    // audience delivery: spigot Player has no showTitle/sendActionBar(Component)
-    React.audiences().player(player()).showTitle(Title.title(
-        createComponent(title),
-        createComponent(subtitle),
-        Title.Times.times(Duration.ofMillis(i), Duration.ofMillis(s), Duration.ofMillis(o))));
-  }
-
-  public void sendProgress(double percent, String thing) {
-    //noinspection IfStatementWithIdenticalBranches
-    if (percent < 0) {
-      int l = 44;
-      int g = (int) (1D * l);
-      sendTitle(C.REACT + thing + " ", 0, 500, 250);
-      sendActionNoProcessing("" + "" + pulse("#4f7fd6", "#1f2f4f", 1D) + "<underlined> " + Form.repeat(" ", g) + "<reset>" + Form.repeat(" ", l - g));
-    } else {
-      int l = 44;
-      int g = (int) (percent * l);
-      sendTitle(C.REACT + thing + " " + C.BLUE + "<font:minecraft:uniform>" + Form.pc(percent, 0), 0, 500, 250);
-      sendActionNoProcessing("" + "" + pulse("#4f7fd6", "#1f2f4f", 1D) + "<underlined> " + Form.repeat(" ", g) + "<reset>" + Form.repeat(" ", l - g));
-    }
-  }
-
-  public void sendAction(String action) {
-    React.audiences().player(player()).sendActionBar(createNoPrefixComponent(action));
-  }
-
-  public void sendActionNoProcessing(String action) {
-    React.audiences().player(player()).sendActionBar(createNoPrefixComponentNoProcessing(action));
-  }
-
-  public void sendTitle(String subtitle, int i, int s, int o) {
-    React.audiences().player(player()).showTitle(Title.title(
-        createNoPrefixComponent(" "),
-        createNoPrefixComponent(subtitle),
-        Title.Times.times(Duration.ofMillis(i), Duration.ofMillis(s), Duration.ofMillis(o))));
-  }
-
   @SuppressWarnings("BooleanMethodIsAlwaysInverted")
   public boolean canUseCustomColors(VolmitSender volmitSender) {
     return volmitSender.isPlayer() ? useCustomColorsIngame : useConsoleCustomColors;
-  }
-
-  private Component createNoPrefixComponent(String message) {
-    if (!canUseCustomColors(this)) {
-      String t = C.translateAlternateColorCodes('&', MiniMessage.miniMessage().stripTags(message));
-      return MiniMessage.miniMessage().deserialize(t);
-    }
-
-    String t = C.translateAlternateColorCodes('&', message);
-    String a = C.aura(t, spinh, spins, spinb, 0.36);
-    return MiniMessage.miniMessage().deserialize(a);
-  }
-
-  private Component createNoPrefixComponentNoProcessing(String message) {
-    return MiniMessage.builder().postProcessor(c -> c).build().deserialize(message);
   }
 
   private Component createComponent(String message) {
@@ -306,30 +246,6 @@ public class VolmitSender implements CommandSender {
     } catch (Throwable ignored) {
       return false;
     }
-  }
-
-  public <T> void showWaiting(String passive, CompletableFuture<T> f) {
-    AtomicInteger v = new AtomicInteger();
-    AtomicReference<T> g = new AtomicReference<>();
-    v.set(J.ar(() -> {
-      if (f.isDone() && g.get() != null) {
-        J.car(v.get());
-        sendAction(" ");
-        return;
-      }
-
-      sendProgress(-1, passive);
-    }, 0));
-    J.a(() -> {
-      try {
-        g.set(f.get());
-      } catch (InterruptedException e) {
-        e.printStackTrace();
-      } catch (ExecutionException e) {
-        e.printStackTrace();
-      }
-    });
-
   }
 
   @Override

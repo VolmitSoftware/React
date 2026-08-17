@@ -26,11 +26,11 @@ import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.model.ReactPlayer;
 import art.arcane.react.util.common.scheduling.J;
-import art.arcane.volmlib.util.hud.HudBossBarLane;
+import art.arcane.volmlib.util.hud.HudActionBar;
 import art.arcane.volmlib.util.hud.HudPriority;
-import art.arcane.volmlib.util.hud.HudSlotClaim;
-import art.arcane.volmlib.util.hud.HudSlotRequest;
-import art.arcane.volmlib.util.hud.HudSurface;
+import art.arcane.volmlib.util.hud.HudSegment;
+import art.arcane.volmlib.util.hud.HudSlot;
+import art.arcane.volmlib.util.hud.HudTitleClaim;
 import art.arcane.volmlib.util.math.M;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.key.Key;
@@ -41,8 +41,6 @@ import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.title.Title;
 import net.kyori.adventure.title.TitlePart;
-import org.bukkit.boss.BarColor;
-import org.bukkit.boss.BarStyle;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.IllegalPluginAccessException;
 
@@ -70,11 +68,8 @@ public class ActionBarMonitor extends PlayerMonitor {
   private volatile boolean running;
   private int headerViewportSlots;
   private int samplerViewportSlots;
-  private HudSlotClaim barClaim;
-  private HudSlotClaim focusClaim;
+  private HudTitleClaim focusClaim;
   private long lastResolveMillis;
-  private long barDeniedSinceMillis;
-  private boolean bossBarShown;
   // flush() runs on a different worker thread every tick while refreshConfiguration()
   // arrives from sampler-churn/hotload threads; both must mutate the render state
   // under the same lock.
@@ -128,43 +123,34 @@ public class ActionBarMonitor extends PlayerMonitor {
   public void stop() {
     running = false;
     Player player = getPlayer().getPlayer();
-    boolean blankActionBar = barClaim != null && barClaim.granted() == HudSurface.ACTION_BAR;
-    boolean blankTitle = focusClaim != null && focusClaim.granted() == HudSurface.TITLE;
+    boolean blankTitle = focusClaim != null && focusClaim.granted();
     Runnable clearUi = () -> {
-      // audience delivery: spigot Player has no sendActionBar/sendTitlePart(Component)
-      Audience audience = React.audiences().player(player);
-      if (blankActionBar) {
-        audience.sendActionBar(Component.space());
+      HudActionBar hud = React.hud();
+      if (hud != null) {
+        hud.clear(player, "react:monitor");
       }
       if (blankTitle) {
+        // audience delivery: spigot Player has no sendTitlePart(Component)
+        Audience audience = React.audiences().player(player);
         audience.sendTitlePart(TitlePart.TITLE, Component.space());
         audience.sendTitlePart(TitlePart.SUBTITLE, Component.space());
       }
     };
 
-    if (blankActionBar || blankTitle) {
-      try {
-        if (J.isFoliaThreading()) {
-          if (!J.runEntity(player, clearUi, 3)) {
-            J.runEntity(player, clearUi);
-          }
-        } else {
-          J.sync(clearUi, 3);
+    try {
+      if (J.isFoliaThreading()) {
+        if (!J.runEntity(player, clearUi, 3)) {
+          J.runEntity(player, clearUi);
         }
-      } catch (IllegalPluginAccessException e) {
-        clearUi.run();
+      } else {
+        J.sync(clearUi, 3);
       }
+    } catch (IllegalPluginAccessException e) {
+      clearUi.run();
     }
 
-    if (barClaim != null) {
-      barClaim.release();
-    }
     if (focusClaim != null) {
       focusClaim.release();
-    }
-    HudBossBarLane lanes = React.lanes();
-    if (lanes != null) {
-      runBossBarSafe(() -> lanes.hide(player, "react:monitor"));
     }
     super.stop();
     unregister();
@@ -173,21 +159,9 @@ public class ActionBarMonitor extends PlayerMonitor {
   @Override
   public void start() {
     Player player = getPlayer().getPlayer();
-    barClaim = React.hud().open(player, new HudSlotRequest("react:monitor", HudPriority.AMBIENT, 1500L, List.of(HudSurface.ACTION_BAR, HudSurface.BOSS_BAR)));
-    focusClaim = React.hud().open(player, new HudSlotRequest("react:monitor-focus", HudPriority.INTERACTIVE, 1500L, List.of(HudSurface.TITLE)));
-    bossBarShown = true;
+    focusClaim = React.titles().open(player, "react:monitor-focus", HudPriority.INTERACTIVE, 1500L);
     running = true;
     super.start();
-  }
-
-  // Bukkit boss-bar mutation is not safe from the async render worker; on Folia the
-  // flush already runs on the owning region thread.
-  private void runBossBarSafe(Runnable task) {
-    if (J.isFoliaThreading()) {
-      task.run();
-    } else {
-      J.s(task);
-    }
   }
 
   private Component writeHeaderTitle(MonitorGroup group) {
@@ -462,7 +436,7 @@ public class ActionBarMonitor extends PlayerMonitor {
 
   @Override
   public void flush() {
-    if (!running || barClaim == null || focusClaim == null) {
+    if (!running || focusClaim == null) {
       return;
     }
 
@@ -503,8 +477,6 @@ public class ActionBarMonitor extends PlayerMonitor {
       lastResolveMillis = now;
     }
 
-    HudSurface barSurface = resolveNow ? barClaim.resolve() : barClaim.granted();
-
     if (focus != null) {
       if (locked && getPlayer().isMonitorSneaking()) {
         Sampler nextFocusedSampler = getNextFocusedSampler();
@@ -513,9 +485,9 @@ public class ActionBarMonitor extends PlayerMonitor {
         }
       }
 
-      HudSurface focusSurface = resolveNow || focus != f ? focusClaim.resolve() : focusClaim.granted();
+      boolean focusGranted = resolveNow || focus != f ? focusClaim.resolve() : focusClaim.granted();
 
-      if (focusSurface == HudSurface.TITLE) {
+      if (focusGranted) {
         Audience audience = React.audiences().player(getPlayer().getPlayer());
         Duration stay = Duration.ofMillis(((int) ((getTinterval() / 50) + 3)) * 50L);
         Duration fadeOut = Duration.ofMillis(20 * 50);
@@ -535,7 +507,7 @@ public class ActionBarMonitor extends PlayerMonitor {
       }
     } else if (focusDownAnimation > 0) {
       focusDownAnimation--;
-      if (focusClaim.granted() == HudSurface.TITLE) {
+      if (focusClaim.granted()) {
         Audience audience = React.audiences().player(getPlayer().getPlayer());
         audience.clearTitle();
         if (focusDownAnimation == 0) {
@@ -546,24 +518,11 @@ public class ActionBarMonitor extends PlayerMonitor {
     }
 
     Component header = writeHeader();
-    HudBossBarLane lanes = React.lanes();
+    HudActionBar hud = React.hud();
 
-    if (barSurface == HudSurface.ACTION_BAR) {
-      barDeniedSinceMillis = 0L;
-      React.audiences().player(getPlayer().getPlayer()).sendActionBar(header);
-      if (lanes != null && bossBarShown) {
-        bossBarShown = false;
-        runBossBarSafe(() -> lanes.hide(getPlayer().getPlayer(), "react:monitor"));
-      }
-    } else if (barSurface == HudSurface.BOSS_BAR) {
-      if (barDeniedSinceMillis == 0L) {
-        barDeniedSinceMillis = now;
-      }
-      if (now - barDeniedSinceMillis >= 2000L && lanes != null) {
-        bossBarShown = true;
-        String legacyHeader = LegacyComponentSerializer.legacySection().serialize(header);
-        runBossBarSafe(() -> lanes.show(getPlayer().getPlayer(), "react:monitor", legacyHeader, 1.0D, BarColor.WHITE, BarStyle.SOLID, 4000L));
-      }
+    if (hud != null) {
+      String legacyHeader = LegacyComponentSerializer.legacySection().serialize(header);
+      hud.publish(getPlayer().getPlayer(), new HudSegment("react:monitor", HudPriority.PINNED, 1500L, List.of(HudSlot.CENTER), legacyHeader));
     }
   }
 }
