@@ -65,8 +65,8 @@ public final class ReactGuiTaxonomy {
     if (normalizedId.startsWith("wormholes-")) {
       return group(2, TaxonomyMessages.GROUP_WORMHOLES, Material.ENDER_PEARL);
     }
-    if (normalizedId.startsWith("holoui-")) {
-      return group(3, TaxonomyMessages.GROUP_HOLOUI, Material.PAINTING);
+    if (normalizedId.startsWith("gloss-")) {
+      return group(3, TaxonomyMessages.GROUP_GLOSS, Material.PAINTING);
     }
     if (normalizedId.startsWith("hiddenore-")) {
       return group(4, TaxonomyMessages.GROUP_HIDDENORE, Material.DIAMOND_ORE);

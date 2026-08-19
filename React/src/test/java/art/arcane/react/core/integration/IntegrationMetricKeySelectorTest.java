@@ -51,21 +51,21 @@ class IntegrationMetricKeySelectorTest {
   }
 
   @Test
-  void holouiSelectionUnionsFixedAndProviderDescriptorsWithinHolouiNamespace() {
+  void glossSelectionUnionsFixedAndProviderDescriptorsWithinGlossNamespace() {
     IntegrationServiceContract provider = Mockito.mock(IntegrationServiceContract.class);
-    IntegrationMetricDescriptor dynamicHoloui = new IntegrationMetricDescriptor(
-        "holoui.experimental-signal",
+    IntegrationMetricDescriptor dynamicGloss = new IntegrationMetricDescriptor(
+        "gloss.experimental-signal",
         IntegrationMetricType.DOUBLE,
         "ratio",
-        java.util.Map.of("plugin", "holoui")
+        java.util.Map.of("plugin", "gloss")
     );
     IntegrationMetricDescriptor irisDescriptor = IntegrationMetricSchema.descriptor(IntegrationMetricSchema.IRIS_PREGEN_QUEUE);
-    Mockito.when(provider.metricDescriptors()).thenReturn(Set.of(dynamicHoloui, irisDescriptor));
+    Mockito.when(provider.metricDescriptors()).thenReturn(Set.of(dynamicGloss, irisDescriptor));
 
-    Set<String> keys = IntegrationMetricKeySelector.expectedKeys("HoloUi", provider);
+    Set<String> keys = IntegrationMetricKeySelector.expectedKeys("Gloss", provider);
 
-    Assertions.assertTrue(keys.containsAll(IntegrationMetricSchema.holouiKeys()));
-    Assertions.assertTrue(keys.contains(dynamicHoloui.key()));
+    Assertions.assertTrue(keys.containsAll(IntegrationMetricSchema.glossKeys()));
+    Assertions.assertTrue(keys.contains(dynamicGloss.key()));
     Assertions.assertFalse(keys.contains(IntegrationMetricSchema.IRIS_PREGEN_QUEUE));
   }
 

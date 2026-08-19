@@ -175,7 +175,7 @@ public final class GuiMessages {
   public static final TextKey MAP_SCOPE_TAG_IRIS = TextKey.of("gui.map.scope_tag.iris", "IRIS");
   public static final TextKey MAP_SCOPE_TAG_ADAPT = TextKey.of("gui.map.scope_tag.adapt", "ADAPT");
   public static final TextKey MAP_SCOPE_TAG_WORMHOLES = TextKey.of("gui.map.scope_tag.wormholes", "WORMHOLES");
-  public static final TextKey MAP_SCOPE_TAG_HOLOUI = TextKey.of("gui.map.scope_tag.holoui", "HOLOUI");
+  public static final TextKey MAP_SCOPE_TAG_GLOSS = TextKey.of("gui.map.scope_tag.gloss", "GLOSS");
   public static final TextKey MAP_SCOPE_TAG_HIDDENORE = TextKey.of("gui.map.scope_tag.hiddenore", "HIDDENORE");
   public static final TextKey MAP_SCOPE_TAG_BILETOOLS = TextKey.of("gui.map.scope_tag.biletools", "BILETOOLS");
   public static final TextKey MAP_SCOPE_TAG_REACT = TextKey.of("gui.map.scope_tag.react", "REACT");
@@ -357,7 +357,7 @@ public final class GuiMessages {
     builder.add(MAP_SCOPE_TAG_IRIS);
     builder.add(MAP_SCOPE_TAG_ADAPT);
     builder.add(MAP_SCOPE_TAG_WORMHOLES);
-    builder.add(MAP_SCOPE_TAG_HOLOUI);
+    builder.add(MAP_SCOPE_TAG_GLOSS);
     builder.add(MAP_SCOPE_TAG_HIDDENORE);
     builder.add(MAP_SCOPE_TAG_BILETOOLS);
     builder.add(MAP_SCOPE_TAG_REACT);

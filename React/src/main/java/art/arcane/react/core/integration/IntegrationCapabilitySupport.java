@@ -11,7 +11,7 @@ import java.util.Locale;
 
 public final class IntegrationCapabilitySupport {
   private static final List<String> INTEGRATION_PLUGIN_IDS = List.of(
-      "iris", "adapt", "wormholes", "holoui", "hiddenore", "biletools"
+      "iris", "adapt", "wormholes", "gloss", "hiddenore", "biletools"
   );
 
   private IntegrationCapabilitySupport() {

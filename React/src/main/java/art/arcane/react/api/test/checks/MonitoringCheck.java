@@ -133,7 +133,7 @@ public class MonitoringCheck implements ReactSubsystemCheck {
     return lower.contains("iris")
         || lower.contains("adapt")
         || lower.contains("wormhole")
-        || lower.contains("holoui")
+        || lower.contains("gloss")
         || lower.contains("hiddenore")
         || lower.contains("biletools");
   }

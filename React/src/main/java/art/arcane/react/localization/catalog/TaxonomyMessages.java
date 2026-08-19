@@ -21,7 +21,7 @@ public final class TaxonomyMessages {
   public static final TextKey GROUP_ADAPT = TextKey.of("taxonomy.group.adapt", "Adapt Integration");
   public static final TextKey GROUP_IRIS = TextKey.of("taxonomy.group.iris", "Iris Integration");
   public static final TextKey GROUP_WORMHOLES = TextKey.of("taxonomy.group.wormholes", "Wormholes Integration");
-  public static final TextKey GROUP_HOLOUI = TextKey.of("taxonomy.group.holoui", "HoloUi Integration");
+  public static final TextKey GROUP_GLOSS = TextKey.of("taxonomy.group.gloss", "Gloss Integration");
   public static final TextKey GROUP_HIDDENORE = TextKey.of("taxonomy.group.hiddenore", "HiddenOre Integration");
   public static final TextKey GROUP_BILETOOLS = TextKey.of("taxonomy.group.biletools", "BileTools Integration");
   public static final TextKey GROUP_PLUGINS = TextKey.of("taxonomy.group.plugins", "Plugin Costs");
@@ -65,7 +65,7 @@ public final class TaxonomyMessages {
     builder.add(GROUP_ADAPT);
     builder.add(GROUP_IRIS);
     builder.add(GROUP_WORMHOLES);
-    builder.add(GROUP_HOLOUI);
+    builder.add(GROUP_GLOSS);
     builder.add(GROUP_HIDDENORE);
     builder.add(GROUP_BILETOOLS);
     builder.add(GROUP_PLUGINS);

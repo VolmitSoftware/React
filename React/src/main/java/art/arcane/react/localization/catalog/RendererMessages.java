@@ -34,7 +34,7 @@ public final class RendererMessages {
   public static final TextKey TITLE_REACT_METRICS = title("react_metrics", "React Metrics");
   public static final TextKey TITLE_ADAPT_METRICS = title("adapt_metrics", "Adapt Metrics");
   public static final TextKey TITLE_WORMHOLES_METRICS = title("wormholes_metrics", "Wormholes Metrics");
-  public static final TextKey TITLE_HOLOUI_METRICS = title("holoui_metrics", "HoloUi Metrics");
+  public static final TextKey TITLE_GLOSS_METRICS = title("gloss_metrics", "Gloss Metrics");
   public static final TextKey TITLE_HIDDENORE_METRICS = title("hiddenore_metrics", "HiddenOre Metrics");
   public static final TextKey TITLE_BILETOOLS_METRICS = title("biletools_metrics", "BileTools Metrics");
   public static final TextKey TITLE_IRIS_OVERVIEW = title("iris_overview", "Iris Overview");
@@ -206,7 +206,7 @@ public final class RendererMessages {
       STATUS_LOCAL, STATUS_OFFLINE, STATUS_MISSING, STATUS_HEALTHY, STATUS_ONLINE, STATUS_OK,
       STATUS_DEGRADED, STATUS_WARN, STATUS_UNAVAILABLE, STATUS_ERROR, STATUS_NO_WORLD, STATUS_FRAME,
       STATUS_WAITING, TITLE_REACT_MAP, TITLE_REACT_METRICS, TITLE_ADAPT_METRICS, TITLE_WORMHOLES_METRICS,
-      TITLE_HOLOUI_METRICS, TITLE_HIDDENORE_METRICS, TITLE_BILETOOLS_METRICS,
+      TITLE_GLOSS_METRICS, TITLE_HIDDENORE_METRICS, TITLE_BILETOOLS_METRICS,
       TITLE_IRIS_OVERVIEW, TITLE_IRIS_ENGINE_ACTIVITY, TITLE_IRIS_LIFECYCLE, TITLE_IRIS_MANTLE_HEALTH,
       TITLE_IRIS_CACHE_OVERVIEW, TITLE_IRIS_STREAM_CACHES, TITLE_IRIS_OTHER_CACHES,
       TITLE_IRIS_PREGEN_PROGRESS, TITLE_IRIS_PREGEN_HEALTH, TITLE_IRIS_GENERATION_PIPELINE,
@@ -261,7 +261,7 @@ public final class RendererMessages {
       Map.entry("react-metrics", TITLE_REACT_METRICS),
       Map.entry("adapt-metrics", TITLE_ADAPT_METRICS),
       Map.entry("wormholes-metrics", TITLE_WORMHOLES_METRICS),
-      Map.entry("holoui-metrics", TITLE_HOLOUI_METRICS),
+      Map.entry("gloss-metrics", TITLE_GLOSS_METRICS),
       Map.entry("hiddenore-metrics", TITLE_HIDDENORE_METRICS),
       Map.entry("biletools-metrics", TITLE_BILETOOLS_METRICS),
       Map.entry("iris-metrics", TITLE_IRIS_OVERVIEW),

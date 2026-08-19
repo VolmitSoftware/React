@@ -331,7 +331,7 @@ public interface Sampler extends Registered, ReactRenderer {
           new TinyColor(20, 14, 32)
       );
     }
-    if (containsAny(normalizedId, "holoui")) {
+    if (containsAny(normalizedId, "gloss")) {
       return palette(
           new TinyColor(38, 142, 134),
           new TinyColor(16, 70, 66),

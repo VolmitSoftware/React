@@ -28,7 +28,7 @@ import art.arcane.react.api.rendering.ReactRenderer;
 import art.arcane.react.api.rendering.RendererAdaptMetrics;
 import art.arcane.react.api.rendering.RendererBiletoolsMetrics;
 import art.arcane.react.api.rendering.RendererHiddenoreMetrics;
-import art.arcane.react.api.rendering.RendererHolouiMetrics;
+import art.arcane.react.api.rendering.RendererGlossMetrics;
 import art.arcane.react.api.rendering.RendererIrisMetrics;
 import art.arcane.react.api.rendering.RendererIrisWorldMetrics;
 import art.arcane.react.api.rendering.RendererReactMetrics;
@@ -170,7 +170,7 @@ public class MapController extends TickedObject implements IController, Listener
   private transient List<ReactRenderer> irisMetricsRenderers;
   private transient ReactRenderer adaptMetricsRenderer;
   private transient ReactRenderer wormholesMetricsRenderer;
-  private transient ReactRenderer holouiMetricsRenderer;
+  private transient ReactRenderer glossMetricsRenderer;
   private transient ReactRenderer hiddenoreMetricsRenderer;
   private transient ReactRenderer biletoolsMetricsRenderer;
   private transient ReactRenderer reactMetricsRenderer;
@@ -560,7 +560,7 @@ public class MapController extends TickedObject implements IController, Listener
     irisMetricsRenderers.addAll(RendererIrisWorldMetrics.dashboards());
     adaptMetricsRenderer = new RendererAdaptMetrics();
     wormholesMetricsRenderer = new RendererWormholesMetrics();
-    holouiMetricsRenderer = new RendererHolouiMetrics();
+    glossMetricsRenderer = new RendererGlossMetrics();
     hiddenoreMetricsRenderer = new RendererHiddenoreMetrics();
     biletoolsMetricsRenderer = new RendererBiletoolsMetrics();
     reactMetricsRenderer = new RendererReactMetrics();
@@ -696,7 +696,7 @@ public class MapController extends TickedObject implements IController, Listener
     syncIntegrationCapabilityRenderers("iris");
     syncIntegrationCapabilityRenderers("adapt");
     syncIntegrationCapabilityRenderers("wormholes");
-    syncIntegrationCapabilityRenderers("holoui");
+    syncIntegrationCapabilityRenderers("gloss");
     syncIntegrationCapabilityRenderers("hiddenore");
     syncIntegrationCapabilityRenderers("biletools");
   }
@@ -748,7 +748,7 @@ public class MapController extends TickedObject implements IController, Listener
       case "iris" -> irisMetricsRenderers == null ? List.of() : irisMetricsRenderers;
       case "adapt" -> adaptMetricsRenderer == null ? List.of() : List.of(adaptMetricsRenderer);
       case "wormholes" -> wormholesMetricsRenderer == null ? List.of() : List.of(wormholesMetricsRenderer);
-      case "holoui" -> holouiMetricsRenderer == null ? List.of() : List.of(holouiMetricsRenderer);
+      case "gloss" -> glossMetricsRenderer == null ? List.of() : List.of(glossMetricsRenderer);
       case "hiddenore" -> hiddenoreMetricsRenderer == null ? List.of() : List.of(hiddenoreMetricsRenderer);
       case "biletools" -> biletoolsMetricsRenderer == null ? List.of() : List.of(biletoolsMetricsRenderer);
       default -> List.of();
@@ -2314,8 +2314,8 @@ public class MapController extends TickedObject implements IController, Listener
       return wormholesMetricsRenderer;
     }
 
-    if (requested.equals(RendererHolouiMetrics.ID) || requestedAlias.equals(RendererHolouiMetrics.ID)) {
-      return holouiMetricsRenderer;
+    if (requested.equals(RendererGlossMetrics.ID) || requestedAlias.equals(RendererGlossMetrics.ID)) {
+      return glossMetricsRenderer;
     }
 
     if (requested.equals(RendererHiddenoreMetrics.ID) || requestedAlias.equals(RendererHiddenoreMetrics.ID)) {
@@ -2521,8 +2521,8 @@ public class MapController extends TickedObject implements IController, Listener
     if (normalizedRendererId.startsWith("wormholes-")) {
       return "Wormholes";
     }
-    if (normalizedRendererId.startsWith("holoui-")) {
-      return "HoloUi";
+    if (normalizedRendererId.startsWith("gloss-")) {
+      return "Gloss";
     }
     if (normalizedRendererId.startsWith("hiddenore-")) {
       return "HiddenOre";

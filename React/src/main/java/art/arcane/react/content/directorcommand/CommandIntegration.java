@@ -25,7 +25,7 @@ public class CommandIntegration implements DirectorExecutor {
       name = "status",
       aliases = {"s"},
       origin = DirectorOrigin.BOTH,
-      description = "Show Iris, Adapt, Wormholes, HoloUi, HiddenOre, and BileTools integration health",
+      description = "Show Iris, Adapt, Wormholes, Gloss, HiddenOre, and BileTools integration health",
       descriptionKey = "command.description.integration.status"
   )
   public void status() {

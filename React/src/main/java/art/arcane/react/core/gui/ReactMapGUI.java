@@ -58,7 +58,7 @@ public final class ReactMapGUI {
   private static final int ALL_GROUPS = -1;
   private static final Set<String> INTEGRATION_METRIC_IDS = Set.of(
       "iris-metrics", "adapt-metrics", "wormholes-metrics",
-      "holoui-metrics", "hiddenore-metrics", "biletools-metrics", "react-metrics"
+      "gloss-metrics", "hiddenore-metrics", "biletools-metrics", "react-metrics"
   );
 
   private ReactMapGUI() {
@@ -551,8 +551,8 @@ public final class ReactMapGUI {
     if (normalizedId.startsWith("wormholes-")) {
       return ReactLanguage.plain(TaxonomyMessages.GROUP_WORMHOLES);
     }
-    if (normalizedId.startsWith("holoui-")) {
-      return ReactLanguage.plain(TaxonomyMessages.GROUP_HOLOUI);
+    if (normalizedId.startsWith("gloss-")) {
+      return ReactLanguage.plain(TaxonomyMessages.GROUP_GLOSS);
     }
     if (normalizedId.startsWith("hiddenore-")) {
       return ReactLanguage.plain(TaxonomyMessages.GROUP_HIDDENORE);
@@ -579,8 +579,8 @@ public final class ReactMapGUI {
     if (normalizedId.startsWith("wormholes-")) {
       return ReactLanguage.plain(GuiMessages.MAP_SCOPE_TAG_WORMHOLES);
     }
-    if (normalizedId.startsWith("holoui-")) {
-      return ReactLanguage.plain(GuiMessages.MAP_SCOPE_TAG_HOLOUI);
+    if (normalizedId.startsWith("gloss-")) {
+      return ReactLanguage.plain(GuiMessages.MAP_SCOPE_TAG_GLOSS);
     }
     if (normalizedId.startsWith("hiddenore-")) {
       return ReactLanguage.plain(GuiMessages.MAP_SCOPE_TAG_HIDDENORE);
@@ -610,8 +610,8 @@ public final class ReactMapGUI {
     if (normalizedId.startsWith("wormholes-")) {
       return rendererGroup(3, TaxonomyMessages.GROUP_WORMHOLES, Material.ENDER_PEARL);
     }
-    if (normalizedId.startsWith("holoui-")) {
-      return rendererGroup(4, TaxonomyMessages.GROUP_HOLOUI, Material.PAINTING);
+    if (normalizedId.startsWith("gloss-")) {
+      return rendererGroup(4, TaxonomyMessages.GROUP_GLOSS, Material.PAINTING);
     }
     if (normalizedId.startsWith("hiddenore-")) {
       return rendererGroup(5, TaxonomyMessages.GROUP_HIDDENORE, Material.DIAMOND_ORE);

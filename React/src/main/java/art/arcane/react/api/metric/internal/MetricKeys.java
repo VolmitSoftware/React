@@ -7,7 +7,7 @@ public final class MetricKeys {
   public static final int MAX_SOURCE_ID_LENGTH = 32;
   public static final int MAX_KEY_LENGTH = 64;
   public static final Set<String> RESERVED_SOURCE_IDS = Set.of(
-      "react", "iris", "adapt", "wormholes", "holoui", "hiddenore", "biletools");
+      "react", "iris", "adapt", "wormholes", "gloss", "hiddenore", "biletools");
 
   private MetricKeys() {
   }

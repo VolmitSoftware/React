@@ -26,8 +26,8 @@ import art.arcane.volmlib.util.localization.TextKey;
 
 import java.util.List;
 
-public class RendererHolouiMetrics extends RendererIntegrationMetricsBase {
-  public static final String ID = "holoui-metrics";
+public class RendererGlossMetrics extends RendererIntegrationMetricsBase {
+  public static final String ID = "gloss-metrics";
 
   @Override
   public String getId() {
@@ -36,12 +36,12 @@ public class RendererHolouiMetrics extends RendererIntegrationMetricsBase {
 
   @Override
   protected String pluginId() {
-    return "holoui";
+    return "gloss";
   }
 
   @Override
   protected TextKey title() {
-    return RendererMessages.TITLE_HOLOUI_METRICS;
+    return RendererMessages.TITLE_GLOSS_METRICS;
   }
 
   @Override
@@ -57,13 +57,13 @@ public class RendererHolouiMetrics extends RendererIntegrationMetricsBase {
   @Override
   protected List<MetricLine> metricLines() {
     return List.of(
-        new MetricLine(IntegrationMetricSchema.HOLOUI_SESSION_HOLDERS, RendererMessages.METRIC_SESSIONS, 0, ""),
-        new MetricLine(IntegrationMetricSchema.HOLOUI_MENUS_OPEN, RendererMessages.METRIC_MENUS, 0, ""),
-        new MetricLine(IntegrationMetricSchema.HOLOUI_PREVIEWS_OPEN, RendererMessages.METRIC_PREVIEWS, 0, ""),
-        new MetricLine(IntegrationMetricSchema.HOLOUI_DISPLAY_ENTITIES, RendererMessages.METRIC_ENTITIES, 0, ""),
-        new MetricLine(IntegrationMetricSchema.HOLOUI_DISPLAY_ENTITIES_VISIBLE, RendererMessages.METRIC_VISIBLE, 0, ""),
-        new MetricLine(IntegrationMetricSchema.HOLOUI_PACKETS_PER_SECOND, RendererMessages.METRIC_TRAFFIC, 0, " pk/s"),
-        new MetricLine(IntegrationMetricSchema.HOLOUI_TICK_MS, RendererMessages.METRIC_TICK, 2, " ms/s")
+        new MetricLine(IntegrationMetricSchema.GLOSS_SESSION_HOLDERS, RendererMessages.METRIC_SESSIONS, 0, ""),
+        new MetricLine(IntegrationMetricSchema.GLOSS_MENUS_OPEN, RendererMessages.METRIC_MENUS, 0, ""),
+        new MetricLine(IntegrationMetricSchema.GLOSS_PREVIEWS_OPEN, RendererMessages.METRIC_PREVIEWS, 0, ""),
+        new MetricLine(IntegrationMetricSchema.GLOSS_DISPLAY_ENTITIES, RendererMessages.METRIC_ENTITIES, 0, ""),
+        new MetricLine(IntegrationMetricSchema.GLOSS_DISPLAY_ENTITIES_VISIBLE, RendererMessages.METRIC_VISIBLE, 0, ""),
+        new MetricLine(IntegrationMetricSchema.GLOSS_PACKETS_PER_SECOND, RendererMessages.METRIC_TRAFFIC, 0, " pk/s"),
+        new MetricLine(IntegrationMetricSchema.GLOSS_TICK_MS, RendererMessages.METRIC_TICK, 2, " ms/s")
     );
   }
 }
