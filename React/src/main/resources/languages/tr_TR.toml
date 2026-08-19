@@ -1523,6 +1523,7 @@
 "director.runtime.error.invalid_origin" = "Bu komut bu kaynaktan çalıştırılamaz."
 "director.runtime.error.missing_argument" = "Eksik bağımsız değişken \"{parameter}\" ({type})"
 "director.runtime.error.unexpected_argument" = "Beklenmeyen bağımsız değişken \"{argument}\". İsteğe bağlı parametreler anahtarla belirtilmelidir, ör. seed=123"
+"director.runtime.error.unclosed_group" = "{key} parametresi için kapanış \"]\" karakteri eksik"
 "director.runtime.error.unknown_parameter" = "Bilinmeyen parametre anahtarı: {key}"
 "director.runtime.usage" = "Kullanım: {usage}"
 "environment.cpu_architecture" = "<aqua>CPU mimarlık: {architecture} - Mevcut işlemciler: {processors}</aqua>"

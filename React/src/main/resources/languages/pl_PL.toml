@@ -1523,6 +1523,7 @@
 "director.runtime.error.invalid_origin" = "Tego polecenia nie można wykonać z tego źródła."
 "director.runtime.error.missing_argument" = "Brak argumentu \"{parameter}\" ({type})"
 "director.runtime.error.unexpected_argument" = "Nieoczekiwany argument \"{argument}\". Parametry opcjonalne muszą mieć klucz, np. seed=123"
+"director.runtime.error.unclosed_group" = "Brak zamykającego \"]\" dla parametru {key}"
 "director.runtime.error.unknown_parameter" = "Nieznany klucz parametru: {key}"
 "director.runtime.usage" = "Użycie: {usage}"
 "environment.cpu_architecture" = "<aqua>CPU architektura: {architecture} - Dostępne procesory: {processors}</aqua>"

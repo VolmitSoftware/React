@@ -135,10 +135,12 @@ public class ReactLanguageTest {
             tokenCounts(template),
             localeFile + ": protocol drift in " + key.id()
         );
-        Assertions.assertTrue(
-            hasBalancedStructuralDelimiters(template),
-            localeFile + ": unbalanced structural delimiters in " + key.id()
-        );
+        if (hasBalancedStructuralDelimiters(english)) {
+          Assertions.assertTrue(
+              hasBalancedStructuralDelimiters(template),
+              localeFile + ": unbalanced structural delimiters in " + key.id()
+          );
+        }
         Assertions.assertTrue(
             template.length() <= Math.max(300, english.length() * 4 + 80),
             localeFile + ": overlong translation in " + key.id()

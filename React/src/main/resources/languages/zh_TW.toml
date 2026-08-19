@@ -1523,6 +1523,7 @@
 "director.runtime.error.invalid_origin" = "無法從此來源執行該指令。"
 "director.runtime.error.missing_argument" = "缺少參數 \"{parameter}\" ({type})"
 "director.runtime.error.unexpected_argument" = "意外參數 \"{argument}\"。選用參數必須使用鍵指定，例如 seed=123"
+"director.runtime.error.unclosed_group" = "引數 {key} 缺少閉合的 \"]\""
 "director.runtime.error.unknown_parameter" = "未知參數鍵: {key}"
 "director.runtime.usage" = "用法: {usage}"
 "environment.cpu_architecture" = "<aqua>CPU 結構 : {architecture} - 可用的處理器: {processors}</aqua>"

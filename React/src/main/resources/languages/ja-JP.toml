@@ -1523,6 +1523,7 @@
 "director.runtime.error.invalid_origin" = "この実行元からはコマンドを実行できません。"
 "director.runtime.error.missing_argument" = "引数 \"{parameter}\" ({type}) が必要です"
 "director.runtime.error.unexpected_argument" = "予期しない引数 \"{argument}\"。オプションのパラメーターはキー付きで指定してください。例: seed=123"
+"director.runtime.error.unclosed_group" = "パラメータ {key} の閉じかっこ \"]\" がありません"
 "director.runtime.error.unknown_parameter" = "不明なパラメーターキー: {key}"
 "director.runtime.usage" = "使用法: {usage}"
 "environment.cpu_architecture" = "<aqua>CPU アーキテクチャ: {architecture} - 利用できるプロセッサ: {processors}</aqua>"

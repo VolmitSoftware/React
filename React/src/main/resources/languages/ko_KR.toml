@@ -1523,6 +1523,7 @@
 "director.runtime.error.invalid_origin" = "이 실행 위치에서는 이 명령어를 실행할 수 없습니다."
 "director.runtime.error.missing_argument" = "인수 \"{parameter}\" ({type})가 필요합니다"
 "director.runtime.error.unexpected_argument" = "예상하지 못한 인수 \"{argument}\". 선택적 매개변수는 키와 함께 지정해야 합니다. 예: seed=123"
+"director.runtime.error.unclosed_group" = "매개변수 {key}의 닫는 \"]\"가 누락되었습니다"
 "director.runtime.error.unknown_parameter" = "알 수 없는 매개변수 키: {key}"
 "director.runtime.usage" = "사용법: {usage}"
 "environment.cpu_architecture" = "<aqua>CPU 건축: {architecture} - 사용 가능한 프로세서: {processors}</aqua>"

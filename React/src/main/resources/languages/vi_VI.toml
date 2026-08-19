@@ -1523,6 +1523,7 @@
 "director.runtime.error.invalid_origin" = "Không thể chạy lệnh này từ nguồn này."
 "director.runtime.error.missing_argument" = "Thiếu đối số \"{parameter}\" ({type})"
 "director.runtime.error.unexpected_argument" = "Đối số không mong đợi \"{argument}\". Các tham số tùy chọn phải được chỉ định bằng khóa, ví dụ seed=123"
+"director.runtime.error.unclosed_group" = "Thiếu dấu \"]\" đóng cho tham số {key}"
 "director.runtime.error.unknown_parameter" = "Khóa tham số không xác định: {key}"
 "director.runtime.usage" = "Cách dùng: {usage}"
 "environment.cpu_architecture" = "<aqua>CPU kiến trúc: {architecture} - Các bộ xử lý sẵn sàng: {processors}</aqua>"

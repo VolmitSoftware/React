@@ -1523,6 +1523,7 @@
 "director.runtime.error.invalid_origin" = "Šios komandos negalima vykdyti iš šio šaltinio."
 "director.runtime.error.missing_argument" = "Trūksta argumento \"{parameter}\" ({type})"
 "director.runtime.error.unexpected_argument" = "Netikėtas argumentas \"{argument}\". Pasirenkami parametrai turi būti nurodyti su raktu, pvz. seed=123"
+"director.runtime.error.unclosed_group" = "Trūksta uždarančio \"]\" parametrui {key}"
 "director.runtime.error.unknown_parameter" = "Nežinomas parametro raktas: {key}"
 "director.runtime.usage" = "Naudojimas: {usage}"
 "environment.cpu_architecture" = "<aqua>CPU architektūra: {architecture} - Esami perdirbėjai: {processors}</aqua>"

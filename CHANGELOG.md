@@ -11,6 +11,7 @@
 - Compile baseline lowered to paper-api 26.1.2.build.74-stable; plugin.yml api-version lowered to 26.1.
 - Mob stacking resolves the cube-mob size API via Class.forName capability probe (AbstractCubeMob on 26.2+, Slime on 26.1.x) instead of the compile-time 26.2-only AbstractCubeMob type.
 - Monitor publishes its header into the shared cooperative action-bar compositor, pinned to the center slot; other plugins' HUD text merges around it instead of fighting for the surface. Stopping the monitor clears only its own segment.
+- Director command help now uses the shared 19-line player layout with 17 root entries or 16 subtree entries, while console help prints the complete unpaginated command list.
 
 ### Removed
 

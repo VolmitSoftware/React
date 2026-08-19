@@ -1523,6 +1523,7 @@
 "director.runtime.error.invalid_origin" = "Deze opdracht kan niet vanuit deze bron worden uitgevoerd."
 "director.runtime.error.missing_argument" = "Ontbrekend argument \"{parameter}\" ({type})"
 "director.runtime.error.unexpected_argument" = "Onverwacht argument \"{argument}\". Optionele parameters moeten met een sleutel worden opgegeven, bijv. seed=123"
+"director.runtime.error.unclosed_group" = "Ontbrekende sluitende \"]\" voor parameter {key}"
 "director.runtime.error.unknown_parameter" = "Onbekende parametersleutel: {key}"
 "director.runtime.usage" = "Gebruik: {usage}"
 "environment.cpu_architecture" = "<aqua>CPU architectuur: {architecture} - Beschikbare processoren: {processors}</aqua>"

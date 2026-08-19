@@ -1523,6 +1523,7 @@
 "director.runtime.error.invalid_origin" = "Tätä komentoa ei voi suorittaa tästä lähteestä."
 "director.runtime.error.missing_argument" = "Puuttuva argumentti \"{parameter}\" ({type})"
 "director.runtime.error.unexpected_argument" = "Odottamaton argumentti \"{argument}\". Valinnaiset parametrit on annettava avaimella, esim. seed=123"
+"director.runtime.error.unclosed_group" = "Sulkeva \"]\" puuttuu parametrilta {key}"
 "director.runtime.error.unknown_parameter" = "Tuntematon parametriavain: {key}"
 "director.runtime.usage" = "Käyttö: {usage}"
 "environment.cpu_architecture" = "<aqua>CPU arkkitehtuuri: {architecture} - Käytettävissä olevat jalostajat: {processors}</aqua>"

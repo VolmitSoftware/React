@@ -1523,6 +1523,7 @@
 "director.runtime.error.invalid_origin" = "Este comando no se puede ejecutar desde este origen."
 "director.runtime.error.missing_argument" = "Falta el argumento \"{parameter}\" ({type})"
 "director.runtime.error.unexpected_argument" = "Argumento inesperado \"{argument}\". Los parámetros opcionales deben especificarse con clave, p. ej. seed=123"
+"director.runtime.error.unclosed_group" = "Falta el corchete de cierre \"]\" para el parámetro {key}"
 "director.runtime.error.unknown_parameter" = "Clave de parámetro desconocida: {key}"
 "director.runtime.usage" = "Uso: {usage}"
 "environment.cpu_architecture" = "<aqua>CPU arquitectura: {architecture} - Procesadores disponibles: {processors}</aqua>"

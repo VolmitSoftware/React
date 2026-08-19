@@ -1523,6 +1523,7 @@
 "director.runtime.error.invalid_origin" = "无法从此来源运行该命令。"
 "director.runtime.error.missing_argument" = "缺少参数 \"{parameter}\" ({type})"
 "director.runtime.error.unexpected_argument" = "意外参数 \"{argument}\"。可选参数必须使用键指定，例如 seed=123"
+"director.runtime.error.unclosed_group" = "参数 {key} 缺少闭合的 \"]\""
 "director.runtime.error.unknown_parameter" = "未知参数键: {key}"
 "director.runtime.usage" = "用法: {usage}"
 "environment.cpu_architecture" = "<aqua>CPU 结构 : {architecture} - 可用的处理器: {processors}</aqua>"

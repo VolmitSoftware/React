@@ -1523,6 +1523,7 @@
 "director.runtime.error.invalid_origin" = "לא ניתן להריץ פקודה זו ממקור זה."
 "director.runtime.error.missing_argument" = "חסר ארגומנט \"{parameter}\" ({type})"
 "director.runtime.error.unexpected_argument" = "ארגומנט לא צפוי \"{argument}\". פרמטרים אופציונליים חייבים להינתן עם מפתח, לדוגמה seed=123"
+"director.runtime.error.unclosed_group" = "חסר סוגר \"]\" עבור הפרמטר {key}"
 "director.runtime.error.unknown_parameter" = "מפתח פרמטר לא ידוע: {key}"
 "director.runtime.usage" = "שימוש: {usage}"
 "environment.cpu_architecture" = "<aqua>CPU אדריכלות: {architecture} מעבדים זמינים: {processors}</aqua>"

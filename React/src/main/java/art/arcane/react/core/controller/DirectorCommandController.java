@@ -64,7 +64,6 @@ import java.util.Optional;
 public class DirectorCommandController implements IController, CommandExecutor, TabCompleter, DirectorInvocationHook {
   private static final String ROOT_COMMAND = "react";
   private static final String ROOT_PERMISSION = "react.use";
-  private static final int HELP_PAGE_SIZE = 9;
 
   private final transient AtomicCache<DirectorRuntimeEngine> directorCache = new AtomicCache<>();
 
@@ -213,13 +212,13 @@ public class DirectorCommandController implements IController, CommandExecutor, 
   }
 
   private boolean sendHelpIfRequested(CommandSender sender, String[] args) {
-    Optional<DirectorMiniMenu.DirectorHelpPage> page = DirectorMiniMenu.resolveHelp(getDirector(), Arrays.asList(normalizeHelpArgs(args)), HELP_PAGE_SIZE);
+    Optional<DirectorMiniMenu.DirectorHelpPage> page = DirectorMiniMenu.resolveHelp(getDirector(), Arrays.asList(normalizeHelpArgs(args)));
     if (page.isEmpty()) {
       return false;
     }
 
     DirectorMiniMenu.Theme helpTheme = DirectorMiniMenu.Theme.reactBlue();
-    DirectorMiniMenu.deliver(sender, DirectorMiniMenu.render(page.get(), helpTheme, ReactLanguage.directorResolver()));
+    DirectorMiniMenu.deliver(sender, page.get(), helpTheme, ReactLanguage.directorResolver());
     return true;
   }
 

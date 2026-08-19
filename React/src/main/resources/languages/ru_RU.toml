@@ -1523,6 +1523,7 @@
 "director.runtime.error.invalid_origin" = "Эту команду нельзя выполнить из данного источника."
 "director.runtime.error.missing_argument" = "Отсутствует аргумент \"{parameter}\" ({type})"
 "director.runtime.error.unexpected_argument" = "Неожиданный аргумент \"{argument}\". Необязательные параметры должны задаваться с ключом, например seed=123"
+"director.runtime.error.unclosed_group" = "Отсутствует закрывающая скобка \"]\" для параметра {key}"
 "director.runtime.error.unknown_parameter" = "Неизвестный ключ параметра: {key}"
 "director.runtime.usage" = "Использование: {usage}"
 "environment.cpu_architecture" = "<aqua>CPU Архитектура: {architecture} Доступные процессоры: {processors}</aqua>"

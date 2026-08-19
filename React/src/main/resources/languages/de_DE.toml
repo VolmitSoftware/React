@@ -1523,6 +1523,7 @@
 "director.runtime.error.invalid_origin" = "Dieser Befehl kann von diesem Ursprung aus nicht ausgeführt werden."
 "director.runtime.error.missing_argument" = "Fehlendes Argument \"{parameter}\" ({type})"
 "director.runtime.error.unexpected_argument" = "Unerwartetes Argument \"{argument}\". Optionale Parameter müssen als Schlüssel angegeben werden, z. B. seed=123"
+"director.runtime.error.unclosed_group" = "Fehlende schließende Klammer \"]\" für Parameter {key}"
 "director.runtime.error.unknown_parameter" = "Unbekannter Parameterschlüssel: {key}"
 "director.runtime.usage" = "Verwendung: {usage}"
 "environment.cpu_architecture" = "<aqua>CPU Architektur: {architecture} - Verfügbare Prozessoren: {processors}</aqua>"
