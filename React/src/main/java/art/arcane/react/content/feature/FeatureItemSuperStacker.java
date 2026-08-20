@@ -26,6 +26,7 @@ import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.content.sampler.SamplerEntities;
 import art.arcane.react.core.controller.EntityController;
 import art.arcane.react.core.integration.GlossDropNameIntegration;
+import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.project.world.BundleUtils;
 import art.arcane.volmlib.util.math.RNG;
 import net.kyori.adventure.key.Key;
@@ -50,6 +51,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -69,6 +71,12 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
   private int maxItemsPerBundle = 64;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Search radius used by item super stacker (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
   private double searchRadius = 3;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Merges ordinary matching item stacks immediately instead of waiting for Minecraft's merge timer.", impact = "This is especially effective for dense mining drops such as cobblestone and preserves the normal maximum stack size.")
+  private boolean mergeMatchingStacks = true;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum nearby item entities consolidated by one item-super-stacker pass.", impact = "Higher values collapse dense drop clusters sooner; runtime use is bounded from 1 to 64 to cap work per pass.")
+  private int maxMergesPerPass = 16;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Ticks after an item spawns before React runs its first cluster merge.", impact = "One tick lets Bukkit finish adding the item entity; runtime use is bounded from 1 to 20 ticks.")
+  private int spawnMergeDelayTicks = 1;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Gloss vertical-label header for React bundles.", impact = "Gloss replaces the total token and renders ampersand color codes.")
   private String glossBundleHeaderFormat = "&eBundle &8(&e{total} items&8)";
   @art.arcane.react.util.project.config.ConfigDoc(value = "Gloss vertical-label line for each material in React bundles.", impact = "Gloss replaces the count and type tokens and renders ampersand color codes.")
@@ -106,13 +114,19 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
   }
 
   public void effectMerge(Item item, Item into) {
-    Location buf = item.getLocation().clone();
-    item.getWorld().spawnParticle(Particle.ITEM, item.getLocation(), 7, 0.1, 0.1, 0.1, 0.1, item.getItemStack());
+    Location source = item.getLocation();
+    Location buf = source.clone();
+    item.getWorld().spawnParticle(Particle.ITEM, source, 7, 0.1, 0.1, 0.1, 0.1, item.getItemStack());
 
-    Vector j = into.getLocation().clone().subtract(item.getLocation()).toVector().normalize().multiply(into.getLocation().clone().distance(item.getLocation()) / (searchRadius * 2));
-    for (int i = 0; i < searchRadius * 2; i++) {
-      buf = buf.clone().add(j);
-      item.getWorld().spawnParticle(Particle.ITEM, buf, 3, 0, 0, 0, 0, item.getItemStack());
+    Location target = into.getLocation();
+    double distance = target.distance(source);
+    int steps = Math.max(1, (int) Math.ceil(effectiveSearchRadius() * 2.0D));
+    if (distance > 1.0E-6D) {
+      Vector step = target.clone().subtract(source).toVector().multiply(1.0D / steps);
+      for (int index = 0; index < steps; index++) {
+        buf.add(step);
+        item.getWorld().spawnParticle(Particle.ITEM, buf, 3, 0, 0, 0, 0, item.getItemStack());
+      }
     }
 
     if (cl.flip()) {
@@ -129,28 +143,77 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
   }
 
   public void mergeWithNearbyItems(Item item) {
-    if (!active || item.isDead()) {
+    if (!active || item.isDead() || !item.isValid()) {
       return;
     }
 
+    double radius = effectiveSearchRadius();
+    Collection<Entity> nearby = item.getWorld().getNearbyEntities(item.getLocation(), radius, radius, radius);
+    Item collector = item;
+    int merged = 0;
+    boolean effectPlayed = false;
+    boolean folia = J.isFoliaThreading();
+    for (Entity entity : nearby) {
+      if (merged >= effectiveMaxMergesPerPass() || collector.isDead() || !collector.isValid()) {
+        break;
+      }
+      if (!(entity instanceof Item target) || target.isDead() || !target.isValid()
+          || target.getUniqueId().equals(collector.getUniqueId())) {
+        continue;
+      }
+      if (folia && !J.isOwnedByCurrentRegion(target)) {
+        continue;
+      }
 
-    for (Entity i : item.getWorld().getNearbyEntities(item.getLocation(), searchRadius, searchRadius, searchRadius)) {
-      if (i instanceof Item into) {
-        if (into.isDead() || into.getUniqueId().equals(item.getUniqueId())) {
-          continue;
-        }
-
-        ItemStack is = BundleUtils.merge(item.getItemStack(), into.getItemStack(), maxItemsPerBundle);
-
-        if (is != null) {
-          effectMerge(item, into);
-          removeTrackedItem(item);
-          into.setItemStack(is);
-          refreshGloss(into);
-          break;
-        }
+      Item survivor = mergePair(collector, target, !effectPlayed);
+      if (survivor != null) {
+        collector = survivor;
+        effectPlayed = true;
+        merged++;
       }
     }
+  }
+
+  private Item mergePair(Item source, Item target, boolean playEffect) {
+    ItemStack sourceStack = source.getItemStack();
+    ItemStack targetStack = target.getItemStack();
+    ItemStack bundled = BundleUtils.merge(sourceStack, targetStack, effectiveMaxItemsPerBundle());
+    if (bundled != null) {
+      if (playEffect) {
+        effectMerge(source, target);
+      }
+      removeTrackedItem(source);
+      target.setItemStack(bundled);
+      refreshGloss(target);
+      return target;
+    }
+    if (!mergeMatchingStacks || !sourceStack.isSimilar(targetStack)) {
+      return null;
+    }
+
+    int capacity = Math.max(0, targetStack.getMaxStackSize() - targetStack.getAmount());
+    int transferred = Math.min(sourceStack.getAmount(), capacity);
+    if (transferred <= 0) {
+      return null;
+    }
+    if (playEffect) {
+      effectMerge(source, target);
+    }
+
+    ItemStack updatedTarget = targetStack.clone();
+    updatedTarget.setAmount(targetStack.getAmount() + transferred);
+    target.setItemStack(updatedTarget);
+    refreshGloss(target);
+    if (transferred == sourceStack.getAmount()) {
+      removeTrackedItem(source);
+      return target;
+    }
+
+    ItemStack remainder = sourceStack.clone();
+    remainder.setAmount(sourceStack.getAmount() - transferred);
+    source.setItemStack(remainder);
+    refreshGloss(source);
+    return source;
   }
 
   @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -220,7 +283,8 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void on(ItemSpawnEvent e) {
-    mergeWithNearbyItems(e.getEntity());
+    Item item = e.getEntity();
+    J.runEntity(item, () -> mergeWithNearbyItems(item), effectiveSpawnMergeDelayTicks());
   }
 
   @EventHandler(priority = EventPriority.MONITOR)
@@ -271,11 +335,11 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
   }
 
   private void onItemTick(Entity entity) {
-    if (!active || !(entity instanceof Item item)) {
+    if (!active || !(entity instanceof Item item) || item.isDead() || !item.isValid()) {
       return;
     }
     mergeWithNearbyItems(item);
-    if (!item.isDead() && isSuperStack(item)) {
+    if (!item.isDead() && item.isValid() && isSuperStack(item)) {
       refreshGlossIfDue(item);
     }
   }
@@ -333,5 +397,21 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
       }
     }
     item.remove();
+  }
+
+  private int effectiveMaxItemsPerBundle() {
+    return Math.max(2, Math.min(maxItemsPerBundle, 64));
+  }
+
+  private double effectiveSearchRadius() {
+    return Math.max(0.5D, Math.min(searchRadius, 16.0D));
+  }
+
+  private int effectiveMaxMergesPerPass() {
+    return Math.max(1, Math.min(maxMergesPerPass, 64));
+  }
+
+  private int effectiveSpawnMergeDelayTicks() {
+    return Math.max(1, Math.min(spawnMergeDelayTicks, 20));
   }
 }

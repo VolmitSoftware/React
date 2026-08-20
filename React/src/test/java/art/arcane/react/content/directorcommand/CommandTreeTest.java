@@ -43,6 +43,15 @@ class CommandTreeTest {
     assertExactPath(root, "web", "revoke");
   }
 
+  @Test
+  void reactDirectorTreeResolvesMonitoringOnlyPaths() {
+    DirectorRuntimeNode root = reactRoot();
+    assertExactPath(root, "monitoring-only");
+    assertExactPath(root, "monitor-only");
+    assertExactPath(root, "monitoring-mode");
+    assertExactPath(root, "mo");
+  }
+
   private static DirectorRuntimeNode reactRoot() {
     DirectorRuntimeEngine engine = DirectorEngineFactory.create(new CommandReact());
     return engine.getRoot();

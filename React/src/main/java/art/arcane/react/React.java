@@ -98,6 +98,7 @@ public class React extends VolmitPlugin implements ReloadAware {
   private volatile ReactPlaceholders papiExpansion;
   // ReactMetrics owns all bstats types; never reference them from this class (slimjar link trap)
   private ReactMetrics metrics;
+  private volatile boolean monitoringOnly;
   private boolean ready;
 
   public React() {
@@ -538,6 +539,20 @@ public class React extends VolmitPlugin implements ReloadAware {
 
   public Ticker getTicker() {
     return ticker;
+  }
+
+  public void setMonitoringOnly(boolean monitoringOnly) {
+    this.monitoringOnly = monitoringOnly;
+
+    FeatureController featureController = controller(FeatureController.class);
+    if (featureController != null) {
+      featureController.reconcileRuntimeMode();
+    }
+
+    TweakController tweakController = controller(TweakController.class);
+    if (tweakController != null) {
+      tweakController.reconcileRuntimeMode();
+    }
   }
 
   public boolean reload() {

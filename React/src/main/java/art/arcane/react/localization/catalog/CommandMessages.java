@@ -10,6 +10,7 @@ public final class CommandMessages {
   public static final TextKey VIEW_DISTANCE_PARAM = TextKey.of("command.parameter.view_distance.distance", "The view and simulation distance in chunks");
   public static final TextKey MAP_DESCRIPTION = TextKey.of("command.description.map", "Open or select a React map renderer");
   public static final TextKey MAP_RENDERER_PARAM = TextKey.of("command.parameter.map.renderer", "The map renderer to open");
+  public static final TextKey MONITORING_ONLY_DESCRIPTION = TextKey.of("command.description.monitoring_only", "Toggle monitoring-only mode without changing configuration");
   public static final TextKey RELOAD_DESCRIPTION = TextKey.of("command.description.reload", "Reload React");
   public static final TextKey VERSION_DESCRIPTION = TextKey.of("command.description.version", "Show the React version");
   public static final TextKey BRIDGE_DESCRIPTION = TextKey.of("command.description.bridge", "Show NMS bridge resolution status");
@@ -77,6 +78,10 @@ public final class CommandMessages {
   public static final TextKey RELOAD_FAILED = TextKey.of("command.runtime.reload_failed", "<red>React reload failed. Check the console for the full error.</red>");
   public static final TextKey RELOAD_SCHEDULE_FAILED = TextKey.of("command.runtime.reload_schedule_failed", "<red>React reload could not be scheduled on the Folia global region.</red>");
   public static final TextKey VERSION = TextKey.of("command.runtime.version", "<aqua>React {version}</aqua>");
+  public static final TextKey MONITORING_ONLY_ENABLED = TextKey.of("command.runtime.monitoring_only.enabled", "<green>Monitoring-only mode enabled.</green> <gray>Features and tweaks are paused; monitoring, statistics, maps, manual actions, and commands remain available.</gray>");
+  public static final TextKey MONITORING_ONLY_DISABLED = TextKey.of("command.runtime.monitoring_only.disabled", "<green>Monitoring-only mode disabled.</green> <gray>Configured features and tweaks are active again.</gray>");
+  public static final TextKey MONITORING_ONLY_UNAVAILABLE = TextKey.of("command.runtime.monitoring_only.unavailable", "<red>Monitoring-only mode is unavailable because the feature controller is not ready.</red>");
+  public static final TextKey MONITORING_ONLY_SCHEDULE_FAILED = TextKey.of("command.runtime.monitoring_only.schedule_failed", "<red>Monitoring-only mode could not be changed on the Folia global region.</red>");
   public static final TextKey CONFIG_PERMISSION = TextKey.of("command.runtime.config_permission", "<red>You do not have permission to open the config editor.</red>");
   public static final TextKey CHUNK_NOT_SAMPLED = TextKey.of("command.runtime.chunk_not_sampled", "<red>This chunk is not sampled yet. Check back in a second.</red>");
   public static final TextKey NO_CHUNKS_SAMPLED = TextKey.of("command.runtime.no_chunks_sampled", "<red>No chunks are sampled yet. Check back in a second.</red>");
@@ -144,6 +149,7 @@ public final class CommandMessages {
     builder.add(VIEW_DISTANCE_PARAM);
     builder.add(MAP_DESCRIPTION);
     builder.add(MAP_RENDERER_PARAM);
+    builder.add(MONITORING_ONLY_DESCRIPTION);
     builder.add(RELOAD_DESCRIPTION);
     builder.add(VERSION_DESCRIPTION);
     builder.add(BRIDGE_DESCRIPTION);
@@ -211,6 +217,10 @@ public final class CommandMessages {
     builder.add(RELOAD_FAILED);
     builder.add(RELOAD_SCHEDULE_FAILED);
     builder.add(VERSION);
+    builder.add(MONITORING_ONLY_ENABLED);
+    builder.add(MONITORING_ONLY_DISABLED);
+    builder.add(MONITORING_ONLY_UNAVAILABLE);
+    builder.add(MONITORING_ONLY_SCHEDULE_FAILED);
     builder.add(CONFIG_PERMISSION);
     builder.add(CHUNK_NOT_SAMPLED);
     builder.add(NO_CHUNKS_SAMPLED);

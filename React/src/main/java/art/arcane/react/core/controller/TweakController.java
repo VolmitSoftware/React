@@ -69,6 +69,10 @@ public class TweakController extends TickedObject implements IController {
   }
 
   public void activateTweak(Tweak tweak) {
+    if (React.instance.isMonitoringOnly()) {
+      return;
+    }
+
     if (!activeTweaks.containsKey(tweak.getId())) {
       activeTweaks.put(tweak.getId(), tweak);
       tweak.onActivate();
@@ -124,6 +128,37 @@ public class TweakController extends TickedObject implements IController {
   @Override
   public void stop() {
     new ArrayList<>(activeTweaks.values()).forEach(this::deactivateTweak);
+  }
+
+  public void reconcileRuntimeMode() {
+    if (tweaks == null || activeTweaks == null) {
+      return;
+    }
+
+    if (React.instance.isMonitoringOnly()) {
+      for (Tweak tweak : new ArrayList<>(activeTweaks.values())) {
+        try {
+          deactivateTweak(tweak);
+        } catch (Throwable e) {
+          React.error("Failed to pause tweak " + tweak.getId() + ".");
+          React.reportError(e);
+        }
+      }
+      return;
+    }
+
+    for (Tweak tweak : tweaks.all()) {
+      if (tweak == null || !tweak.isEnabled() || activeTweaks.containsKey(tweak.getId())) {
+        continue;
+      }
+
+      try {
+        activateTweak(tweak);
+      } catch (Throwable e) {
+        React.error("Failed to restore tweak " + tweak.getId() + ".");
+        React.reportError(e);
+      }
+    }
   }
 
   private String previewIds(Collection<String> ids, int limit) {

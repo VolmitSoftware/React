@@ -24,6 +24,7 @@ import art.arcane.react.api.feature.CapabilityGatedFeature;
 import art.arcane.react.api.feature.Feature;
 import art.arcane.react.api.feature.FeatureIntegrityListener;
 import art.arcane.react.api.feature.ReactTickedFeature;
+import art.arcane.react.api.rendering.ReactRenderer;
 import art.arcane.react.content.feature.FeatureUnknown;
 import art.arcane.react.core.integration.IntegrationCapabilitySupport;
 import art.arcane.react.model.ReactConfiguration;
@@ -108,7 +109,7 @@ public class FeatureController extends TickedObject implements IController {
   }
 
   public void activateFeature(Feature feature) {
-    if (feature == null || !React.instance.isEnabled()) {
+    if (feature == null || !React.instance.isEnabled() || !isAllowedByRuntimeMode(feature)) {
       return;
     }
 
@@ -181,6 +182,10 @@ public class FeatureController extends TickedObject implements IController {
     }
   }
 
+  public void reconcileRuntimeMode() {
+    reconcileFeatureGates();
+  }
+
   private void reconcileFeatureGates() {
     if (!React.instance.isEnabled() || !React.instance.isReady()) {
       return;
@@ -195,21 +200,26 @@ public class FeatureController extends TickedObject implements IController {
         continue;
       }
 
-      boolean active = activeFeatures.containsKey(feature.getId());
-      boolean shouldBeActive = shouldActivateFeature(feature);
-      if (shouldBeActive && !active) {
-        activateFeature(feature);
-        continue;
-      }
+      try {
+        boolean active = activeFeatures.containsKey(feature.getId());
+        boolean shouldBeActive = shouldActivateFeature(feature);
+        if (shouldBeActive && !active) {
+          activateFeature(feature);
+          continue;
+        }
 
-      if (!shouldBeActive && active) {
-        deactivateFeature(feature);
+        if (!shouldBeActive && active) {
+          deactivateFeature(feature);
+        }
+      } catch (Throwable e) {
+        React.error("Failed to reconcile feature " + feature.getId() + ".");
+        React.reportError(e);
       }
     }
   }
 
   private boolean shouldActivateFeature(Feature feature) {
-    if (feature == null || !feature.isEnabled()) {
+    if (feature == null || !feature.isEnabled() || !isAllowedByRuntimeMode(feature)) {
       return false;
     }
 
@@ -229,5 +239,9 @@ public class FeatureController extends TickedObject implements IController {
     }
 
     return true;
+  }
+
+  private boolean isAllowedByRuntimeMode(Feature feature) {
+    return !React.instance.isMonitoringOnly() || feature instanceof ReactRenderer;
   }
 }

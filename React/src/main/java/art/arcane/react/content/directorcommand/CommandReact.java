@@ -22,8 +22,10 @@ package art.arcane.react.content.directorcommand;
 import art.arcane.curse.Curse;
 import art.arcane.react.React;
 import art.arcane.react.api.rendering.ReactRenderer;
+import art.arcane.react.core.controller.FeatureController;
 import art.arcane.react.core.controller.MapController;
 import art.arcane.react.core.controller.PlayerController;
+import art.arcane.react.core.controller.TweakController;
 import art.arcane.react.core.gui.ReactMapGUI;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.CommandMessages;
@@ -131,6 +133,26 @@ public class CommandReact implements DirectorExecutor {
   }
 
   @Director(
+      name = "monitoring-only",
+      aliases = {"monitor-only", "monitoring-mode", "mo"},
+      description = "Toggle monitoring-only mode without changing configuration",
+      descriptionKey = "command.description.monitoring_only"
+  )
+  public void monitoringOnly() {
+    CommandSender commandSender = sender();
+    Runnable toggle = () -> toggleMonitoringOnly(commandSender);
+
+    if (J.isFoliaThreading()) {
+      if (!FoliaScheduler.runGlobal(React.instance, toggle)) {
+        ReactLanguage.sendPrefixed(commandSender, CommandMessages.MONITORING_ONLY_SCHEDULE_FAILED);
+      }
+      return;
+    }
+
+    toggle.run();
+  }
+
+  @Director(
       name = "reload",
       aliases = {"rl"},
       description = "Reload React",
@@ -170,6 +192,23 @@ public class CommandReact implements DirectorExecutor {
         sender(),
         CommandMessages.VERSION,
         MessageArgument.untrusted("version", React.instance.getDescription().getVersion())
+    );
+  }
+
+  private void toggleMonitoringOnly(CommandSender commandSender) {
+    FeatureController featureController = React.controller(FeatureController.class);
+    TweakController tweakController = React.controller(TweakController.class);
+    if (featureController == null || featureController.getFeatures() == null
+        || tweakController == null || tweakController.getTweaks() == null) {
+      ReactLanguage.sendPrefixed(commandSender, CommandMessages.MONITORING_ONLY_UNAVAILABLE);
+      return;
+    }
+
+    boolean monitoringOnly = !React.instance.isMonitoringOnly();
+    React.instance.setMonitoringOnly(monitoringOnly);
+    ReactLanguage.sendPrefixed(
+        commandSender,
+        monitoringOnly ? CommandMessages.MONITORING_ONLY_ENABLED : CommandMessages.MONITORING_ONLY_DISABLED
     );
   }
 }
