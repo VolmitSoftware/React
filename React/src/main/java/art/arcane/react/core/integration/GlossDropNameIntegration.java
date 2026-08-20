@@ -37,21 +37,45 @@ public final class GlossDropNameIntegration {
     this.clock = Objects.requireNonNull(clock);
   }
 
-  public void refresh(Item item, String bundleFormat, int bundleEntryLimit) {
+  public boolean refresh(Item item, String bundleHeaderFormat, String bundleEntryFormat,
+                         String bundleMoreFormat, int bundleEntryLimit) {
     if (item == null) {
-      return;
+      return false;
     }
 
     Binding active = resolveBinding();
     if (active == null) {
-      return;
+      return false;
     }
 
     try {
-      active.refreshMethod().invoke(active.provider(), item, bundleFormat, bundleEntryLimit);
+      active.refreshMethod().invoke(active.provider(), item, bundleHeaderFormat,
+          bundleEntryFormat, bundleMoreFormat, bundleEntryLimit);
+      return true;
     } catch (IllegalAccessException | InvocationTargetException | RuntimeException exception) {
       invalidate(active);
       reportFailure(exception);
+      return false;
+    }
+  }
+
+  public boolean remove(Item item) {
+    if (item == null) {
+      return false;
+    }
+
+    Binding active = resolveBinding();
+    if (active == null) {
+      return false;
+    }
+
+    try {
+      active.removeMethod().invoke(active.provider(), item);
+      return true;
+    } catch (IllegalAccessException | InvocationTargetException | RuntimeException exception) {
+      invalidate(active);
+      reportFailure(exception);
+      return false;
     }
   }
 
@@ -101,8 +125,9 @@ public final class GlossDropNameIntegration {
 
         try {
           Method refreshMethod = provider.getClass().getMethod(
-              "refreshDropName", Item.class, String.class, int.class);
-          return new Binding(provider, refreshMethod, owner);
+              "refreshDropName", Item.class, String.class, String.class, String.class, int.class);
+          Method removeMethod = provider.getClass().getMethod("removeDropPresentation", Item.class);
+          return new Binding(provider, refreshMethod, removeMethod, owner);
         } catch (NoSuchMethodException ignored) {
           continue;
         }
@@ -133,11 +158,11 @@ public final class GlossDropNameIntegration {
         : exception;
     String failureKey = failure.getClass().getName() + ":" + failure.getMessage();
     if (REPORTED_FAILURES.add(failureKey)) {
-      React.warn("Could not refresh a Gloss drop label; the integration will retry discovery.");
+      React.warn("Could not update a Gloss drop presentation; the integration will retry discovery.");
       failure.printStackTrace();
     }
   }
 
-  private record Binding(Object provider, Method refreshMethod, Plugin owner) {
+  private record Binding(Object provider, Method refreshMethod, Method removeMethod, Plugin owner) {
   }
 }

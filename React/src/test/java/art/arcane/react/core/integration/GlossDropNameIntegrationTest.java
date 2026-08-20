@@ -29,12 +29,16 @@ class GlossDropNameIntegrationTest {
     Mockito.when(servicesManager.getRegistrations(GlossAPI.class)).thenReturn(List.of(registration));
     GlossDropNameIntegration integration = new GlossDropNameIntegration(() -> servicesManager, () -> 1_000L);
 
-    integration.refresh(first, "first {contents}", 2);
-    integration.refresh(second, "second {contents}", 4);
+    integration.refresh(first, "first {total}", "first {count} {type}", "first {remaining}", 2);
+    integration.refresh(second, "second {total}", "second {count} {type}", "second {remaining}", 4);
+    integration.remove(first);
 
     assertEquals(List.of(first, second), provider.refreshed);
-    assertEquals(List.of("first {contents}", "second {contents}"), provider.formats);
+    assertEquals(List.of("first {total}", "second {total}"), provider.headers);
+    assertEquals(List.of("first {count} {type}", "second {count} {type}"), provider.entries);
+    assertEquals(List.of("first {remaining}", "second {remaining}"), provider.moreLines);
     assertEquals(List.of(2, 4), provider.entryLimits);
+    assertEquals(List.of(first), provider.removed);
     Mockito.verify(servicesManager, Mockito.times(1)).getKnownServices();
   }
 
@@ -46,10 +50,10 @@ class GlossDropNameIntegrationTest {
     GlossDropNameIntegration integration = new GlossDropNameIntegration(() -> servicesManager, clock::get);
     Item item = Mockito.mock(Item.class);
 
-    integration.refresh(item, "{contents}", 3);
-    integration.refresh(item, "{contents}", 3);
+    integration.refresh(item, "{total}", "{count} {type}", "{remaining}", 3);
+    integration.refresh(item, "{total}", "{count} {type}", "{remaining}", 3);
     clock.addAndGet(5_000L);
-    integration.refresh(item, "{contents}", 3);
+    integration.refresh(item, "{total}", "{count} {type}", "{remaining}", 3);
 
     Mockito.verify(servicesManager, Mockito.times(2)).getKnownServices();
   }
@@ -64,14 +68,25 @@ class GlossDropNameIntegrationTest {
 
   public static final class RecordingGlossAPI implements GlossAPI {
     private final List<Item> refreshed = new ArrayList<>();
-    private final List<String> formats = new ArrayList<>();
+    private final List<String> headers = new ArrayList<>();
+    private final List<String> entries = new ArrayList<>();
+    private final List<String> moreLines = new ArrayList<>();
     private final List<Integer> entryLimits = new ArrayList<>();
+    private final List<Item> removed = new ArrayList<>();
 
     @Override
-    public void refreshDropName(Item item, String bundleFormat, int bundleEntryLimit) {
+    public void refreshDropName(Item item, String bundleHeaderFormat, String bundleEntryFormat,
+                                String bundleMoreFormat, int bundleEntryLimit) {
       refreshed.add(item);
-      formats.add(bundleFormat);
+      headers.add(bundleHeaderFormat);
+      entries.add(bundleEntryFormat);
+      moreLines.add(bundleMoreFormat);
       entryLimits.add(bundleEntryLimit);
+    }
+
+    @Override
+    public void removeDropPresentation(Item item) {
+      removed.add(item);
     }
   }
 }

@@ -44,6 +44,7 @@ import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryPickupItemEvent;
+import org.bukkit.event.world.EntitiesLoadEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
@@ -52,6 +53,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 /**
@@ -60,17 +63,25 @@ import java.util.function.Consumer;
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Item Super Stacker feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureItemSuperStacker extends ReactFeature implements FeatureIntegrityListener {
   public static final String ID = "item-super-stacker";
+  private static final long GLOSS_REPUBLISH_INTERVAL_MS = 30_000L;
+  private static final long GLOSS_CACHE_SWEEP_INTERVAL_MS = 60_000L;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum items allowed per bundle in item super stacker.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
   private int maxItemsPerBundle = 64;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Search radius used by item super stacker (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
   private double searchRadius = 3;
-  @art.arcane.react.util.project.config.ConfigDoc(value = "Single-line Gloss nametag format for React bundles. Supports total-count and content-list tokens.", impact = "Ampersand color codes and Gloss text formatting are rendered by Gloss.")
-  private String glossBundleFormat = "&7Bundle &8(&7{total} items&8): &7{contents}";
-  @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum material entries shown in a React bundle's Gloss nametag.", impact = "Additional material types collapse into a +N more suffix. Values are clamped from 1 to 10.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Gloss vertical-label header for React bundles.", impact = "Gloss replaces the total token and renders ampersand color codes.")
+  private String glossBundleHeaderFormat = "&eBundle &8(&e{total} items&8)";
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Gloss vertical-label line for each material in React bundles.", impact = "Gloss replaces the count and type tokens and renders ampersand color codes.")
+  private String glossBundleEntryFormat = "&7- &f{count}x {type}";
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Gloss vertical-label suffix for hidden React bundle materials.", impact = "Gloss replaces the remaining-material token and renders ampersand color codes.")
+  private String glossBundleMoreFormat = "&8+{remaining} more";
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum material entries shown in a React bundle's Gloss label.", impact = "Additional material types collapse into the configured remainder line. Values are clamped from 1 to 10.")
   private int glossBundleEntryLimit = 3;
   private transient ChronoLatch cl = new ChronoLatch(10);
   private transient final Consumer<Entity> entityTickListener = this::onItemTick;
   private transient final GlossDropNameIntegration glossDropNames;
+  private transient final Map<UUID, Long> glossRefreshes;
+  private transient volatile long lastGlossCacheSweepMs;
   private transient volatile boolean active;
 
   public FeatureItemSuperStacker() {
@@ -80,6 +91,7 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
   FeatureItemSuperStacker(GlossDropNameIntegration glossDropNames) {
     super(ID);
     this.glossDropNames = Objects.requireNonNull(glossDropNames);
+    this.glossRefreshes = new ConcurrentHashMap<>();
   }
 
   public boolean isSuperStack(Item item) {
@@ -134,7 +146,7 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
           effectMerge(item, into);
           removeTrackedItem(item);
           into.setItemStack(is);
-          glossDropNames.refresh(into, glossBundleFormat, glossBundleEntryLimit);
+          refreshGloss(into);
           break;
         }
       }
@@ -194,7 +206,7 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
     ItemStack residualBundle = BundleUtils.createBundle(leftovers);
     if (residualBundle != null) {
       item.setItemStack(residualBundle);
-      glossDropNames.refresh(item, glossBundleFormat, glossBundleEntryLimit);
+      refreshGloss(item);
       return;
     }
 
@@ -209,6 +221,18 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void on(ItemSpawnEvent e) {
     mergeWithNearbyItems(e.getEntity());
+  }
+
+  @EventHandler(priority = EventPriority.MONITOR)
+  public void on(EntitiesLoadEvent event) {
+    if (!active) {
+      return;
+    }
+    for (Entity entity : event.getEntities()) {
+      if (entity instanceof Item item && isSuperStack(item)) {
+        refreshGloss(item);
+      }
+    }
   }
 
   @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -229,6 +253,7 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
   @Override
   public void onActivate() {
     active = true;
+    glossRefreshes.clear();
     EntityController controller = React.controller(EntityController.class);
     if (controller != null) {
       controller.registerEntityTickListener(EntityType.ITEM, entityTickListener);
@@ -238,6 +263,7 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
   @Override
   public void onDeactivate() {
     active = false;
+    glossRefreshes.clear();
     EntityController controller = React.controller(EntityController.class);
     if (controller != null) {
       controller.unregisterEntityTickListener(entityTickListener);
@@ -245,9 +271,42 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
   }
 
   private void onItemTick(Entity entity) {
-    if (entity instanceof Item item) {
-      mergeWithNearbyItems(item);
+    if (!active || !(entity instanceof Item item)) {
+      return;
     }
+    mergeWithNearbyItems(item);
+    if (!item.isDead() && isSuperStack(item)) {
+      refreshGlossIfDue(item);
+    }
+  }
+
+  private void refreshGlossIfDue(Item item) {
+    long now = System.currentTimeMillis();
+    Long refreshedAt = glossRefreshes.get(item.getUniqueId());
+    if (refreshedAt != null && now - refreshedAt < GLOSS_REPUBLISH_INTERVAL_MS) {
+      return;
+    }
+    refreshGloss(item, now);
+    sweepGlossRefreshes(now);
+  }
+
+  private void refreshGloss(Item item) {
+    refreshGloss(item, System.currentTimeMillis());
+  }
+
+  private void refreshGloss(Item item, long now) {
+    if (glossDropNames.refresh(item, glossBundleHeaderFormat, glossBundleEntryFormat,
+        glossBundleMoreFormat, glossBundleEntryLimit)) {
+      glossRefreshes.put(item.getUniqueId(), now);
+    }
+  }
+
+  private void sweepGlossRefreshes(long now) {
+    if (now - lastGlossCacheSweepMs < GLOSS_CACHE_SWEEP_INTERVAL_MS) {
+      return;
+    }
+    lastGlossCacheSweepMs = now;
+    glossRefreshes.entrySet().removeIf(entry -> now - entry.getValue() >= GLOSS_CACHE_SWEEP_INTERVAL_MS);
   }
 
   private List<ItemStack> insertContents(Inventory inventory, List<ItemStack> contents) {
@@ -260,6 +319,8 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
   }
 
   private void removeTrackedItem(Item item) {
+    glossDropNames.remove(item);
+    glossRefreshes.remove(item.getUniqueId());
     if (React.instance != null) {
       FeatureHopperItemIndex hopperItemIndex = React.feature(FeatureHopperItemIndex.class);
       if (hopperItemIndex != null && hopperItemIndex.getItemIndex() != null) {

@@ -61,7 +61,8 @@ class FeatureItemSuperStackerTest {
     React previous = React.instance;
     React.instance = null;
     try {
-      FeatureItemSuperStacker feature = new FeatureItemSuperStacker();
+      GlossDropNameIntegration glossDropNames = Mockito.mock(GlossDropNameIntegration.class);
+      FeatureItemSuperStacker feature = new FeatureItemSuperStacker(glossDropNames);
       InventoryPickupItemEvent event = Mockito.mock(InventoryPickupItemEvent.class);
       Inventory inventory = Mockito.mock(Inventory.class);
       Item item = Mockito.mock(Item.class);
@@ -70,6 +71,7 @@ class FeatureItemSuperStackerTest {
       ItemStack transfer = Mockito.mock(ItemStack.class);
       Mockito.when(event.getItem()).thenReturn(item);
       Mockito.when(event.getInventory()).thenReturn(inventory);
+      Mockito.when(item.getUniqueId()).thenReturn(UUID.randomUUID());
       Mockito.when(item.getItemStack()).thenReturn(bundle);
       Mockito.when(content.clone()).thenReturn(transfer);
       Mockito.when(inventory.addItem(Mockito.any(ItemStack[].class))).thenReturn(new HashMap<>());
@@ -84,6 +86,7 @@ class FeatureItemSuperStackerTest {
 
       Mockito.verify(event).setCancelled(true);
       Mockito.verify(inventory).addItem(transfer);
+      Mockito.verify(glossDropNames).remove(item);
       Mockito.verify(item).remove();
       Mockito.verify(item, Mockito.never()).setItemStack(Mockito.any(ItemStack.class));
     } finally {
@@ -124,7 +127,9 @@ class FeatureItemSuperStackerTest {
     Mockito.verify(item).setItemStack(residualBundle);
     Mockito.verify(glossDropNames).refresh(
         item,
-        "&7Bundle &8(&7{total} items&8): &7{contents}",
+        "&eBundle &8(&e{total} items&8)",
+        "&7- &f{count}x {type}",
+        "&8+{remaining} more",
         3);
     Mockito.verify(item, Mockito.never()).remove();
   }
@@ -162,8 +167,11 @@ class FeatureItemSuperStackerTest {
       mergeOrder.verify(target).setItemStack(bundle);
       mergeOrder.verify(glossDropNames).refresh(
           target,
-          "&7Bundle &8(&7{total} items&8): &7{contents}",
+          "&eBundle &8(&e{total} items&8)",
+          "&7- &f{count}x {type}",
+          "&8+{remaining} more",
           3);
+      Mockito.verify(glossDropNames).remove(item);
     }
   }
 
@@ -172,7 +180,8 @@ class FeatureItemSuperStackerTest {
     React previous = React.instance;
     React.instance = null;
     try {
-      FeatureItemSuperStacker feature = new FeatureItemSuperStacker();
+      GlossDropNameIntegration glossDropNames = Mockito.mock(GlossDropNameIntegration.class);
+      FeatureItemSuperStacker feature = new FeatureItemSuperStacker(glossDropNames);
       InventoryPickupItemEvent event = Mockito.mock(InventoryPickupItemEvent.class);
       Inventory inventory = Mockito.mock(Inventory.class);
       Item item = Mockito.mock(Item.class);
@@ -186,6 +195,7 @@ class FeatureItemSuperStackerTest {
       overflow.put(0, leftover);
       Mockito.when(event.getItem()).thenReturn(item);
       Mockito.when(event.getInventory()).thenReturn(inventory);
+      Mockito.when(item.getUniqueId()).thenReturn(UUID.randomUUID());
       Mockito.when(item.getItemStack()).thenReturn(bundle);
       Mockito.when(item.getLocation()).thenReturn(location);
       Mockito.when(item.getWorld()).thenReturn(world);
@@ -202,6 +212,7 @@ class FeatureItemSuperStackerTest {
       }
 
       Mockito.verify(event).setCancelled(true);
+      Mockito.verify(glossDropNames).remove(item);
       Mockito.verify(item).remove();
       Mockito.verify(world).dropItemNaturally(location, leftover);
     } finally {
@@ -226,5 +237,46 @@ class FeatureItemSuperStackerTest {
     Mockito.verify(controller).unregisterEntityTickListener(Mockito.same(listener.getValue()));
     listener.getValue().accept(item);
     Mockito.verifyNoInteractions(item);
+  }
+
+  @Test
+  void sampledBundlesRepublishGlossStylingAtMostOncePerCacheWindow() {
+    GlossDropNameIntegration glossDropNames = Mockito.mock(GlossDropNameIntegration.class);
+    FeatureItemSuperStacker feature = new FeatureItemSuperStacker(glossDropNames);
+    EntityController controller = Mockito.mock(EntityController.class);
+    Item item = Mockito.mock(Item.class);
+    ItemStack bundle = Mockito.mock(ItemStack.class);
+    World world = Mockito.mock(World.class);
+    Location location = Mockito.mock(Location.class);
+    UUID itemId = UUID.randomUUID();
+    ArgumentCaptor<Consumer<Entity>> listener = ArgumentCaptor.forClass(Consumer.class);
+    Mockito.when(item.isDead()).thenReturn(false);
+    Mockito.when(item.getUniqueId()).thenReturn(itemId);
+    Mockito.when(item.getItemStack()).thenReturn(bundle);
+    Mockito.when(item.getWorld()).thenReturn(world);
+    Mockito.when(item.getLocation()).thenReturn(location);
+    Mockito.when(world.getNearbyEntities(location, 3, 3, 3)).thenReturn(List.of());
+    Mockito.when(glossDropNames.refresh(Mockito.eq(item), Mockito.anyString(), Mockito.anyString(),
+        Mockito.anyString(), Mockito.anyInt())).thenReturn(true);
+
+    try (MockedStatic<React> react = Mockito.mockStatic(React.class);
+         MockedStatic<BundleUtils> bundles = Mockito.mockStatic(BundleUtils.class)) {
+      react.when(() -> React.controller(EntityController.class)).thenReturn(controller);
+      bundles.when(() -> BundleUtils.isBundle(bundle)).thenReturn(true);
+      bundles.when(() -> BundleUtils.isFlagged(bundle)).thenReturn(true);
+      feature.onActivate();
+      Mockito.verify(controller).registerEntityTickListener(Mockito.eq(EntityType.ITEM), listener.capture());
+
+      listener.getValue().accept(item);
+      listener.getValue().accept(item);
+      feature.onDeactivate();
+    }
+
+    Mockito.verify(glossDropNames, Mockito.times(1)).refresh(
+        item,
+        "&eBundle &8(&e{total} items&8)",
+        "&7- &f{count}x {type}",
+        "&8+{remaining} more",
+        3);
   }
 }
