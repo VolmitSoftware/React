@@ -7,6 +7,7 @@ website: VolmitSoftware.com
 api-version: ${apiversion}
 softdepend:
   - PlaceholderAPI
+  - Gloss
 commands:
   react:
     aliases: [ re ]

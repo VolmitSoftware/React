@@ -3,6 +3,7 @@ package art.arcane.react.content.feature;
 import art.arcane.react.React;
 import art.arcane.react.api.feature.FeatureIntegrityListener;
 import art.arcane.react.core.controller.EntityController;
+import art.arcane.react.core.integration.GlossDropNameIntegration;
 import art.arcane.react.util.project.world.BundleUtils;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -24,6 +25,7 @@ import org.mockito.Mockito;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 import java.util.function.Consumer;
 
 class FeatureItemSuperStackerTest {
@@ -91,7 +93,8 @@ class FeatureItemSuperStackerTest {
 
   @Test
   void hopperPickupPreservesOverflowInsideResidualBundle() {
-    FeatureItemSuperStacker feature = new FeatureItemSuperStacker();
+    GlossDropNameIntegration glossDropNames = Mockito.mock(GlossDropNameIntegration.class);
+    FeatureItemSuperStacker feature = new FeatureItemSuperStacker(glossDropNames);
     InventoryPickupItemEvent event = Mockito.mock(InventoryPickupItemEvent.class);
     Inventory inventory = Mockito.mock(Inventory.class);
     Item item = Mockito.mock(Item.class);
@@ -119,7 +122,49 @@ class FeatureItemSuperStackerTest {
 
     Mockito.verify(event).setCancelled(true);
     Mockito.verify(item).setItemStack(residualBundle);
+    Mockito.verify(glossDropNames).refresh(
+        item,
+        "&7Bundle &8(&7{total} items&8): &7{contents}",
+        3);
     Mockito.verify(item, Mockito.never()).remove();
+  }
+
+  @Test
+  void mergedBundleRefreshesTheSurvivingGlossDropName() {
+    try (MockedStatic<React> react = Mockito.mockStatic(React.class);
+         MockedStatic<BundleUtils> bundles = Mockito.mockStatic(BundleUtils.class)) {
+      GlossDropNameIntegration glossDropNames = Mockito.mock(GlossDropNameIntegration.class);
+      FeatureItemSuperStacker feature = Mockito.spy(new FeatureItemSuperStacker(glossDropNames));
+      Item item = Mockito.mock(Item.class);
+      Item target = Mockito.mock(Item.class);
+      ItemStack itemStack = Mockito.mock(ItemStack.class);
+      ItemStack targetStack = Mockito.mock(ItemStack.class);
+      ItemStack bundle = Mockito.mock(ItemStack.class);
+      World world = Mockito.mock(World.class);
+      Location location = Mockito.mock(Location.class);
+      Mockito.when(item.isDead()).thenReturn(false);
+      Mockito.when(target.isDead()).thenReturn(false);
+      Mockito.when(item.getUniqueId()).thenReturn(UUID.randomUUID());
+      Mockito.when(target.getUniqueId()).thenReturn(UUID.randomUUID());
+      Mockito.when(item.getWorld()).thenReturn(world);
+      Mockito.when(item.getLocation()).thenReturn(location);
+      Mockito.when(item.getItemStack()).thenReturn(itemStack);
+      Mockito.when(target.getItemStack()).thenReturn(targetStack);
+      Mockito.when(world.getNearbyEntities(location, 3, 3, 3)).thenReturn(List.of(target));
+      Mockito.doNothing().when(feature).effectMerge(item, target);
+      react.when(() -> React.controller(EntityController.class)).thenReturn(null);
+      bundles.when(() -> BundleUtils.merge(itemStack, targetStack, 64)).thenReturn(bundle);
+
+      feature.onActivate();
+      feature.mergeWithNearbyItems(item);
+
+      InOrder mergeOrder = Mockito.inOrder(target, glossDropNames);
+      mergeOrder.verify(target).setItemStack(bundle);
+      mergeOrder.verify(glossDropNames).refresh(
+          target,
+          "&7Bundle &8(&7{total} items&8): &7{contents}",
+          3);
+    }
   }
 
   @Test

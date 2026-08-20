@@ -25,6 +25,7 @@ import art.arcane.react.api.feature.FeatureIntegrityListener;
 import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.content.sampler.SamplerEntities;
 import art.arcane.react.core.controller.EntityController;
+import art.arcane.react.core.integration.GlossDropNameIntegration;
 import art.arcane.react.util.project.world.BundleUtils;
 import art.arcane.volmlib.util.math.RNG;
 import net.kyori.adventure.key.Key;
@@ -50,6 +51,7 @@ import org.bukkit.util.Vector;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 /**
@@ -62,12 +64,22 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
   private int maxItemsPerBundle = 64;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Search radius used by item super stacker (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
   private double searchRadius = 3;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Single-line Gloss nametag format for React bundles. Supports total-count and content-list tokens.", impact = "Ampersand color codes and Gloss text formatting are rendered by Gloss.")
+  private String glossBundleFormat = "&7Bundle &8(&7{total} items&8): &7{contents}";
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum material entries shown in a React bundle's Gloss nametag.", impact = "Additional material types collapse into a +N more suffix. Values are clamped from 1 to 10.")
+  private int glossBundleEntryLimit = 3;
   private transient ChronoLatch cl = new ChronoLatch(10);
   private transient final Consumer<Entity> entityTickListener = this::onItemTick;
+  private transient final GlossDropNameIntegration glossDropNames;
   private transient volatile boolean active;
 
   public FeatureItemSuperStacker() {
+    this(new GlossDropNameIntegration());
+  }
+
+  FeatureItemSuperStacker(GlossDropNameIntegration glossDropNames) {
     super(ID);
+    this.glossDropNames = Objects.requireNonNull(glossDropNames);
   }
 
   public boolean isSuperStack(Item item) {
@@ -122,6 +134,7 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
           effectMerge(item, into);
           removeTrackedItem(item);
           into.setItemStack(is);
+          glossDropNames.refresh(into, glossBundleFormat, glossBundleEntryLimit);
           break;
         }
       }
@@ -181,6 +194,7 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
     ItemStack residualBundle = BundleUtils.createBundle(leftovers);
     if (residualBundle != null) {
       item.setItemStack(residualBundle);
+      glossDropNames.refresh(item, glossBundleFormat, glossBundleEntryLimit);
       return;
     }
 
