@@ -9,17 +9,21 @@ import com.google.gson.JsonParser;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
+import java.util.function.BooleanSupplier;
 
 public final class ConfigFileSupport {
   private static final Gson PRETTY_JSON = new GsonBuilder().setPrettyPrinting().create();
   private static final long MAX_CONFIG_BYTES_DEFAULT = 2L * 1024L * 1024L;
   private static final long MAX_CONFIG_BYTES_COMPONENT = 256L * 1024L;
   private static final AtomicInteger CREATED_MISSING_CONFIGS = new AtomicInteger();
+  private static final ThreadLocal<PassiveHotloadSnapshot> PASSIVE_HOTLOAD_SNAPSHOT = new ThreadLocal<>();
   private static volatile BiConsumer<File, String> selfWriteListener;
 
   private ConfigFileSupport() {
@@ -37,6 +41,24 @@ public final class ConfigFileSupport {
     }
   }
 
+  public static boolean withPassiveHotloadSnapshot(File file, String content, BooleanSupplier action) {
+    Objects.requireNonNull(file, "file");
+    Objects.requireNonNull(content, "content");
+    Objects.requireNonNull(action, "action");
+
+    PassiveHotloadSnapshot previous = PASSIVE_HOTLOAD_SNAPSHOT.get();
+    PASSIVE_HOTLOAD_SNAPSHOT.set(new PassiveHotloadSnapshot(normalizedPath(file), content));
+    try {
+      return action.getAsBoolean();
+    } finally {
+      if (previous == null) {
+        PASSIVE_HOTLOAD_SNAPSHOT.remove();
+      } else {
+        PASSIVE_HOTLOAD_SNAPSHOT.set(previous);
+      }
+    }
+  }
+
   public static <T> T load(
       File canonicalFile,
       File legacyFile,
@@ -48,6 +70,10 @@ public final class ConfigFileSupport {
   ) throws IOException {
     long maxConfigBytes = maxConfigBytesForSourceTag(sourceTag);
     boolean canonicalizeExisting = shouldCanonicalizeExisting(sourceTag, overwriteOnReadFailure);
+    String canonicalSnapshot = passiveSnapshot(canonicalFile);
+    if (canonicalSnapshot != null) {
+      return loadPassiveSnapshot(canonicalFile, canonicalSnapshot, type, maxConfigBytes);
+    }
     if (canonicalFile != null && canonicalFile.exists()) {
       try {
         if (canonicalFile.length() > maxConfigBytes) {
@@ -87,6 +113,10 @@ public final class ConfigFileSupport {
       }
     }
 
+    String legacySnapshot = passiveSnapshot(legacyFile);
+    if (legacySnapshot != null) {
+      return loadPassiveSnapshot(legacyFile, legacySnapshot, type, maxConfigBytes);
+    }
     if (legacyFile != null && legacyFile.exists()) {
       try {
         if (legacyFile.length() > maxConfigBytes) {
@@ -269,6 +299,37 @@ public final class ConfigFileSupport {
     }
   }
 
+  private static <T> T loadPassiveSnapshot(
+      File sourceFile,
+      String raw,
+      Class<T> type,
+      long maxConfigBytes
+  ) throws IOException {
+    if (raw.getBytes(StandardCharsets.UTF_8).length > maxConfigBytes) {
+      throw new IOException("Config file is too large (more than " + maxConfigBytes + " bytes)");
+    }
+    T loaded = deserialize(raw, sourceFile, type);
+    if (loaded == null) {
+      throw new IOException("Config parser returned null.");
+    }
+    return loaded;
+  }
+
+  private static String passiveSnapshot(File file) {
+    if (file == null) {
+      return null;
+    }
+    PassiveHotloadSnapshot snapshot = PASSIVE_HOTLOAD_SNAPSHOT.get();
+    if (snapshot == null || !snapshot.path().equals(normalizedPath(file))) {
+      return null;
+    }
+    return snapshot.content();
+  }
+
+  private static String normalizedPath(File file) {
+    return file.toPath().toAbsolutePath().normalize().toString();
+  }
+
   private static String serialize(Object loaded, File targetFile, String sourceTag) {
     if (isTomlFile(targetFile)) {
       return TomlCodec.toToml(loaded, sourceTag);
@@ -328,6 +389,9 @@ public final class ConfigFileSupport {
 
     return !normalized.startsWith("# React configuration -")
         || !normalized.contains("# Docs schema: 2");
+  }
+
+  private record PassiveHotloadSnapshot(String path, String content) {
   }
 
   private static String reason(String prefix, Throwable error) {

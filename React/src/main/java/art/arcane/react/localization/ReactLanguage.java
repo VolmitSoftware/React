@@ -72,11 +72,31 @@ public final class ReactLanguage {
   }
 
   public static boolean reload() {
+    return reload(null);
+  }
+
+  public static boolean reload(File overrideFile, String rawContent) {
+    OverrideHotloadSnapshot hotloadSnapshot = overrideFile == null || rawContent == null
+        ? null
+        : new OverrideHotloadSnapshot(normalizedPath(overrideFile), rawContent);
+    if (hotloadSnapshot != null) {
+      String configuredLocale = normalizeLocale(ReactConfiguration.get().getLanguage());
+      File activeOverride = new File(overrideFolder(), configuredLocale + ".toml");
+      if (!hotloadSnapshot.path().equals(normalizedPath(activeOverride))) {
+        return true;
+      }
+    }
+    return reload(hotloadSnapshot);
+  }
+
+  private static boolean reload(OverrideHotloadSnapshot hotloadSnapshot) {
     String configuredLocale = ReactConfiguration.get().getLanguage();
     String requestedLocale = configuredLocale == null || configuredLocale.isBlank()
         ? CATALOG.englishLocale()
         : configuredLocale.trim();
-    LocalizationReloadResult result = MANAGER.reload(() -> loadCandidate(normalizeLocale(configuredLocale)));
+    LocalizationReloadResult result = MANAGER.reload(
+        () -> loadCandidate(normalizeLocale(configuredLocale), hotloadSnapshot)
+    );
     if (!result.applied()) {
       reportRejectedReload(requestedLocale, result);
       return false;
@@ -221,11 +241,18 @@ public final class ReactLanguage {
     return MANAGER.snapshot();
   }
 
-  private static LocalizationCandidate loadCandidate(String locale) throws Exception {
-    Files.createDirectories(overrideFolder().toPath());
+  private static LocalizationCandidate loadCandidate(
+      String locale,
+      OverrideHotloadSnapshot hotloadSnapshot
+  ) throws Exception {
+    if (hotloadSnapshot == null) {
+      Files.createDirectories(overrideFolder().toPath());
+    }
     List<LocaleOverlay> overlays = new ArrayList<>();
     File override = new File(overrideFolder(), locale + ".toml");
-    if (override.exists()) {
+    if (hotloadSnapshot != null && hotloadSnapshot.path().equals(normalizedPath(override))) {
+      overlays.add(loadSnapshotOverlay(override, locale, hotloadSnapshot.rawContent()));
+    } else if (override.exists()) {
       overlays.add(loadFileOverlay(override, locale));
     }
 
@@ -246,6 +273,17 @@ public final class ReactLanguage {
       throw new IllegalArgumentException("Locale override is too large: " + file.getPath());
     }
     return parseOverlay(file.getPath(), locale, Files.readString(file.toPath()));
+  }
+
+  private static LocaleOverlay loadSnapshotOverlay(File file, String locale, String rawContent) {
+    if (rawContent.getBytes(StandardCharsets.UTF_8).length > MAX_LOCALE_BYTES) {
+      throw new IllegalArgumentException("Locale override is too large: " + file.getPath());
+    }
+    return parseOverlay(file.getPath(), locale, rawContent);
+  }
+
+  private static String normalizedPath(File file) {
+    return file.toPath().toAbsolutePath().normalize().toString();
   }
 
   private static LocaleOverlay loadBundledOverlay(String locale) throws Exception {
@@ -296,6 +334,9 @@ public final class ReactLanguage {
         throw new IllegalArgumentException("Unsupported locale value: " + key);
       }
     }
+  }
+
+  private record OverrideHotloadSnapshot(String path, String rawContent) {
   }
 
   private static String normalizeOverlayKey(String key) {

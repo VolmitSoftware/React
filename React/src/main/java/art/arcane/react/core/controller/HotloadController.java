@@ -32,11 +32,9 @@ import art.arcane.react.util.plugin.IController;
 import art.arcane.react.util.project.config.ConfigDescription;
 import art.arcane.react.util.project.config.ConfigDoc;
 import art.arcane.react.util.project.config.ConfigFileSupport;
-import art.arcane.react.util.project.config.ConfigRewriteReporter;
+import art.arcane.react.util.project.config.ConfigHotloadSnapshot;
 import art.arcane.volmlib.util.hotload.ConfigHotloadEngine;
-import art.arcane.volmlib.util.io.IO;
 import art.arcane.volmlib.util.localization.MessageArgument;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
@@ -44,23 +42,39 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
+import java.util.logging.Level;
 
 @ConfigDescription("Watches React config files and hot-applies changes without requiring a full /react reload.")
 public class HotloadController extends TickedObject implements IController {
   private static final String[] MANAGED_CATEGORIES = {"core", "feature", "tweak", "action", "sampler"};
+  private static final long AUTOMATIC_HOTLOAD_COOLDOWN_MS = 3_000L;
+  private static final long AUTOMATIC_HOTLOAD_COOLDOWN_NANOS = TimeUnit.MILLISECONDS.toNanos(AUTOMATIC_HOTLOAD_COOLDOWN_MS);
+  private static final long TOMBSTONE_GRACE_NANOS = TimeUnit.SECONDS.toNanos(3L);
+  private static final long MAX_HOTLOAD_FILE_BYTES = 2L * 1024L * 1024L;
+  private static final String MISSING_DIGEST = "<missing>";
 
   @ConfigDoc(value = "Enables live hotloading for React managed configs.", impact = "Set to false to disable file watching and require manual reloads.")
   private boolean enabled = true;
 
-  @ConfigDoc(value = "Queue-drain interval used by the config watcher in milliseconds.", impact = "Lower values process delivered filesystem events sooner; operating-system delivery latency may be longer.")
+  @ConfigDoc(value = "Filesystem event polling interval in milliseconds.", impact = "Lower values detect delivered events sooner; automatic apply batches still run at most once every three seconds.")
   private int pollIntervalMs = 500;
 
   @ConfigDoc(value = "Maximum number of key-level diff messages sent per changed file.", impact = "Lower values reduce operator chat noise on large config edits.")
@@ -79,7 +93,15 @@ public class HotloadController extends TickedObject implements IController {
       this::readFileContent,
       this::normalizeContent
   );
+  private final transient HotloadPendingQueue pendingHotloads = new HotloadPendingQueue(
+      AUTOMATIC_HOTLOAD_COOLDOWN_NANOS,
+      TOMBSTONE_GRACE_NANOS,
+      System::nanoTime
+  );
+  private final transient Map<String, String> lastAppliedContents = new ConcurrentHashMap<>();
+  private final transient Map<String, String> lastObservedDigests = new ConcurrentHashMap<>();
   private transient volatile String lastSlowTickPollSummary = "poll=not-run";
+  private transient volatile boolean reconfigureAfterBatch;
 
   public HotloadController() {
     super("react", "hotload", 500);
@@ -92,18 +114,28 @@ public class HotloadController extends TickedObject implements IController {
 
   @Override
   public void start() {
+    pendingHotloads.clear();
+    lastAppliedContents.clear();
+    lastObservedDigests.clear();
+    reconfigureAfterBatch = false;
     dataFolder = React.instance.getDataFolder();
     configToml = React.instance.getDataFile("config.toml");
     configLegacyJson = React.instance.getDataFile("config.json");
     localeOverrideFolder = ReactLanguage.overrideFolder();
+    primeAppliedContents();
     reconfigureWatcher();
-    ConfigFileSupport.setSelfWriteListener(hotloadEngine::noteSelfWrite);
+    queueDiskDivergences();
+    ConfigFileSupport.setSelfWriteListener(this::noteSelfWrite);
   }
 
   @Override
   public void stop() {
     ConfigFileSupport.setSelfWriteListener(null);
     hotloadEngine.clear();
+    pendingHotloads.clear();
+    lastAppliedContents.clear();
+    lastObservedDigests.clear();
+    reconfigureAfterBatch = false;
     lastSlowTickPollSummary = "poll=stopped";
   }
 
@@ -147,12 +179,17 @@ public class HotloadController extends TickedObject implements IController {
     }
     watchedDirectories.add(localeOverrideFolder);
 
-    hotloadEngine.configure(effectivePollInterval, watchedFiles, watchedDirectories);
+    hotloadEngine.configure(
+        effectivePollInterval,
+        AUTOMATIC_HOTLOAD_COOLDOWN_MS,
+        watchedFiles,
+        watchedDirectories
+    );
     React.info("Config hotload watcher enabled for config.toml and managed component configs.");
   }
 
   public void refreshAfterConfigReload() {
-    reconfigureWatcher();
+    reconfigureWatcherPreservingQueue();
   }
 
   public String describeLastPollForSlowTick() {
@@ -172,38 +209,47 @@ public class HotloadController extends TickedObject implements IController {
 
     long pollStartNs = System.nanoTime();
     Set<File> touched = hotloadEngine.pollTouchedFiles();
-    if (touched.isEmpty()) {
+    enqueueTouchedFiles(touched);
+    List<HotloadPendingQueue.ReadyChange> readyChanges = pendingHotloads.beginDrain();
+    if (readyChanges.isEmpty()) {
       long pollMs = (System.nanoTime() - pollStartNs) / 1_000_000L;
-      lastSlowTickPollSummary = "poll=" + pollMs + "ms touched=0 applied=0 skipped=0 files=none";
+      lastSlowTickPollSummary = "poll=" + pollMs + "ms touched=" + touched.size()
+          + " queued=" + pendingHotloads.pendingCount()
+          + " applied=0 skipped=0 files=none";
       return;
     }
 
-    List<File> orderedTouched = new ArrayList<>(touched);
-    orderedTouched.sort(Comparator.comparing(this::diagnosticRelativePath));
+    List<HotloadPendingQueue.ReadyChange> orderedTouched = new ArrayList<>(readyChanges);
+    orderedTouched.sort(Comparator.comparing(change -> diagnosticRelativePath(change.path().toFile())));
     List<String> touchedPreview = new ArrayList<>();
     List<String> appliedPreview = new ArrayList<>();
     int appliedCount = 0;
     long slowestApplyMs = 0L;
     String slowestFile = "";
 
-    for (File file : orderedTouched) {
-      String relative = diagnosticRelativePath(file);
-      addPreviewEntry(touchedPreview, relative, 5);
-      long applyStartNs = System.nanoTime();
-      boolean applied = hotloadEngine.processFileChange(
-          file,
-          this::applyConfigChange,
-          delta -> notifyOps(file, delta.before(), delta.after())
-      );
-      long applyMs = (System.nanoTime() - applyStartNs) / 1_000_000L;
-      if (applyMs > slowestApplyMs) {
-        slowestApplyMs = applyMs;
-        slowestFile = relative;
-      }
+    try {
+      for (HotloadPendingQueue.ReadyChange change : orderedTouched) {
+        File file = change.path().toFile();
+        String relative = diagnosticRelativePath(file);
+        addPreviewEntry(touchedPreview, relative, 5);
+        long applyStartNs = System.nanoTime();
+        QueuedApplyResult result = processQueuedChange(file, change.present());
+        long applyMs = (System.nanoTime() - applyStartNs) / 1_000_000L;
+        if (applyMs > slowestApplyMs) {
+          slowestApplyMs = applyMs;
+          slowestFile = relative;
+        }
 
-      if (applied) {
-        appliedCount++;
-        addPreviewEntry(appliedPreview, relative, 5);
+        if (result.applied()) {
+          appliedCount++;
+          addPreviewEntry(appliedPreview, relative, 5);
+        }
+      }
+    } finally {
+      try {
+        applyDeferredWatcherReconfiguration();
+      } finally {
+        pendingHotloads.finishDrain();
       }
     }
 
@@ -211,6 +257,7 @@ public class HotloadController extends TickedObject implements IController {
     int touchedCount = orderedTouched.size();
     int skippedCount = Math.max(0, touchedCount - appliedCount);
     String summary = "poll=" + pollMs + "ms touched=" + touchedCount
+        + " queued=" + pendingHotloads.pendingCount()
         + " applied=" + appliedCount
         + " skipped=" + skippedCount
         + " files=" + formatPreview(touchedPreview, touchedCount);
@@ -224,82 +271,192 @@ public class HotloadController extends TickedObject implements IController {
     lastSlowTickPollSummary = summary;
   }
 
-  private boolean applyConfigChange(File file) {
-    try {
-      if (isShadowedLegacyJson(file)) {
-        React.verbose("Ignoring legacy json hotload because canonical toml exists: " + file.getPath());
-        return false;
+  private void enqueueTouchedFiles(Set<File> touchedFiles) {
+    if (touchedFiles == null || touchedFiles.isEmpty()) {
+      return;
+    }
+    for (File file : touchedFiles) {
+      if (file == null || isTemporaryArtifact(file)) {
+        continue;
       }
-
-      if (isMainConfigFile(file)) {
-        boolean ok = ReactConfiguration.reload();
-        if (ok) {
-          refreshGlobalRuntimeSettings();
-        } else {
-          React.warn("Skipped hotload for " + file.getPath() + " due to invalid config.");
-        }
-        return ok;
-      }
-
-      if (ReactLanguage.isOverrideFile(file)) {
-        return ReactLanguage.reload();
-      }
-
-      ManagedConfig target = resolveManagedConfig(file);
-      if (target != null) {
-        return switch (target.category) {
-          case "core" -> reloadCoreConfig(target.id, file);
-          case "feature" -> reloadFeatureConfig(target.id, file);
-          case "tweak" -> reloadTweakConfig(target.id, file);
-          case "action" -> reloadActionConfig(target.id, file);
-          case "sampler" -> reloadSamplerConfig(target.id, file);
-          default -> validateAndCanonicalizeConfig(file);
-        };
-      }
-
-      return validateAndCanonicalizeConfig(file);
-    } catch (Throwable e) {
-      React.warn("Skipped hotload for " + file.getPath() + " due to invalid config: " + e.getMessage());
-      return false;
+      pendingHotloads.enqueue(file.toPath(), Files.isRegularFile(file.toPath()));
     }
   }
 
-  private boolean reloadCoreConfig(String id, File file) {
+  private QueuedApplyResult processQueuedChange(File file, boolean expectedPresent) {
+    Path path = file.toPath().toAbsolutePath().normalize();
+    if (!Files.isRegularFile(path)) {
+      if (expectedPresent) {
+        pendingHotloads.enqueue(path, false);
+        return QueuedApplyResult.SKIPPED;
+      }
+      React.warn("Ignored config deletion after the hotload grace window; last-good state remains active: "
+          + diagnosticRelativePath(file));
+      acknowledgeMissing(file);
+      return QueuedApplyResult.SKIPPED;
+    }
+
+    ConfigHotloadSnapshot snapshot;
+    try {
+      snapshot = ConfigHotloadSnapshot.capture(path, MAX_HOTLOAD_FILE_BYTES);
+    } catch (NoSuchFileException e) {
+      pendingHotloads.enqueue(path, false);
+      return QueuedApplyResult.SKIPPED;
+    } catch (IOException e) {
+      logTransientFailure("Could not capture a stable hotload snapshot for " + diagnosticRelativePath(file), e);
+      pendingHotloads.enqueue(path, Files.isRegularFile(path));
+      return QueuedApplyResult.SKIPPED;
+    }
+
+    String pathKey = normalizedPath(file);
+    String before = lastAppliedContents.get(pathKey);
+    if (Objects.equals(before, snapshot.normalizedContent())) {
+      acknowledgeSnapshot(snapshot);
+      requeueIfChanged(snapshot);
+      return QueuedApplyResult.SKIPPED;
+    }
+
+    ApplyOutcome outcome = applyConfigSnapshot(file, snapshot.rawContent());
+    if (outcome == ApplyOutcome.APPLIED) {
+      lastAppliedContents.put(pathKey, snapshot.normalizedContent());
+      acknowledgeSnapshot(snapshot);
+      try {
+        notifyOps(file, before, snapshot.rawContent());
+      } catch (Throwable e) {
+        logTransientFailure("Could not notify operators about the applied hotload for "
+            + diagnosticRelativePath(file), e);
+      }
+    } else if (outcome == ApplyOutcome.REJECTED) {
+      acknowledgeSnapshot(snapshot);
+    } else if (outcome == ApplyOutcome.RETRY) {
+      pendingHotloads.enqueue(path, Files.isRegularFile(path));
+    }
+
+    requeueIfChanged(snapshot);
+    return outcome == ApplyOutcome.APPLIED ? QueuedApplyResult.APPLIED : QueuedApplyResult.SKIPPED;
+  }
+
+  private ApplyOutcome applyConfigSnapshot(File file, String rawContent) {
+    try {
+      boolean applied = applyConfigChange(file, rawContent);
+      return applied ? ApplyOutcome.APPLIED : ApplyOutcome.REJECTED;
+    } catch (Throwable e) {
+      logTransientFailure("Hotload apply failed for " + diagnosticRelativePath(file), e);
+      return ApplyOutcome.RETRY;
+    }
+  }
+
+  private void requeueIfChanged(ConfigHotloadSnapshot appliedSnapshot) {
+    Path path = appliedSnapshot.path();
+    try {
+      ConfigHotloadSnapshot latest = ConfigHotloadSnapshot.capture(path, MAX_HOTLOAD_FILE_BYTES);
+      if (!latest.digest().equals(appliedSnapshot.digest())) {
+        pendingHotloads.enqueue(path, true);
+      }
+    } catch (NoSuchFileException e) {
+      pendingHotloads.enqueue(path, false);
+    } catch (IOException e) {
+      logTransientFailure("Could not verify the applied hotload snapshot for " + diagnosticRelativePath(path.toFile()), e);
+      pendingHotloads.enqueue(path, Files.isRegularFile(path));
+    }
+  }
+
+  private void applyDeferredWatcherReconfiguration() {
+    if (!reconfigureAfterBatch) {
+      return;
+    }
+    reconfigureAfterBatch = false;
+    try {
+      reconfigureWatcherPreservingQueue();
+    } catch (Throwable e) {
+      logTransientFailure("Could not reconfigure the React hotload watcher after applying its settings", e);
+    }
+  }
+
+  private void reconfigureWatcherPreservingQueue() {
+    queueDiskDivergences();
+    try {
+      reconfigureWatcher();
+    } finally {
+      queueDiskDivergences();
+    }
+  }
+
+  private boolean applyConfigChange(File file, String rawContent) {
+    if (isShadowedLegacyJson(file)) {
+      React.verbose("Ignoring legacy json hotload because canonical toml exists: " + file.getPath());
+      return false;
+    }
+
+    if (isMainConfigFile(file)) {
+      boolean ok = ConfigFileSupport.withPassiveHotloadSnapshot(
+          file,
+          rawContent,
+          ReactConfiguration::reload
+      );
+      if (ok) {
+        refreshGlobalRuntimeSettings();
+      } else {
+        React.warn("Skipped hotload for " + file.getPath() + " due to invalid config.");
+      }
+      return ok;
+    }
+
+    if (ReactLanguage.isOverrideFile(file)) {
+      return ReactLanguage.reload(file, rawContent);
+    }
+
+    ManagedConfig target = resolveManagedConfig(file);
+    if (target != null) {
+      return switch (target.category) {
+        case "core" -> reloadCoreConfig(target.id, file, rawContent);
+        case "feature" -> reloadFeatureConfig(target.id, file, rawContent);
+        case "tweak" -> reloadTweakConfig(target.id, file, rawContent);
+        case "action" -> reloadActionConfig(target.id, file, rawContent);
+        case "sampler" -> reloadSamplerConfig(target.id, file, rawContent);
+        default -> validateConfigSnapshot(file, rawContent);
+      };
+    }
+
+    return validateConfigSnapshot(file, rawContent);
+  }
+
+  private boolean reloadCoreConfig(String id, File file, String rawContent) {
     if (id == null || React.instance.getControllerRegistry() == null) {
-      return validateAndCanonicalizeConfig(file);
+      return validateConfigSnapshot(file, rawContent);
     }
 
     IController controller = React.instance.getControllerRegistry().get(id);
     if (controller == null) {
-      return validateAndCanonicalizeConfig(file);
+      return validateConfigSnapshot(file, rawContent);
     }
 
-    return runSync(() -> {
+    return runSync(() -> ConfigFileSupport.withPassiveHotloadSnapshot(file, rawContent, () -> {
       if (!controller.reloadConfiguration()) {
         return false;
       }
       if (controller == this) {
-        reconfigureWatcher();
+        reconfigureAfterBatch = true;
       }
       if (controller instanceof PlayerController playerController) {
         playerController.updateMonitors();
       }
       return true;
-    });
+    }));
   }
 
-  private boolean reloadFeatureConfig(String id, File file) {
+  private boolean reloadFeatureConfig(String id, File file, String rawContent) {
     FeatureController controller = React.controller(FeatureController.class);
     if (controller == null || controller.getFeatures() == null || id == null) {
-      return validateAndCanonicalizeConfig(file);
+      return validateConfigSnapshot(file, rawContent);
     }
 
     Feature feature = controller.getFeatures().get(id);
     if (feature == null) {
-      return validateAndCanonicalizeConfig(file);
+      return validateConfigSnapshot(file, rawContent);
     }
 
-    return runSync(() -> {
+    return runSync(() -> ConfigFileSupport.withPassiveHotloadSnapshot(file, rawContent, () -> {
       boolean wasActive = controller.getActiveFeatures().containsKey(feature.getId());
       if (!feature.reloadConfiguration()) {
         return false;
@@ -316,21 +473,21 @@ public class HotloadController extends TickedObject implements IController {
       }
 
       return true;
-    });
+    }));
   }
 
-  private boolean reloadTweakConfig(String id, File file) {
+  private boolean reloadTweakConfig(String id, File file, String rawContent) {
     TweakController controller = React.controller(TweakController.class);
     if (controller == null || controller.getTweaks() == null || id == null) {
-      return validateAndCanonicalizeConfig(file);
+      return validateConfigSnapshot(file, rawContent);
     }
 
     Tweak tweak = controller.getTweaks().get(id);
     if (tweak == null) {
-      return validateAndCanonicalizeConfig(file);
+      return validateConfigSnapshot(file, rawContent);
     }
 
-    return runSync(() -> {
+    return runSync(() -> ConfigFileSupport.withPassiveHotloadSnapshot(file, rawContent, () -> {
       boolean wasActive = controller.getActiveTweaks().containsKey(tweak.getId());
       if (!tweak.reloadConfiguration()) {
         return false;
@@ -347,21 +504,21 @@ public class HotloadController extends TickedObject implements IController {
       }
 
       return true;
-    });
+    }));
   }
 
-  private boolean reloadActionConfig(String id, File file) {
+  private boolean reloadActionConfig(String id, File file, String rawContent) {
     ActionController controller = React.controller(ActionController.class);
     if (controller == null || controller.getActions() == null || id == null) {
-      return validateAndCanonicalizeConfig(file);
+      return validateConfigSnapshot(file, rawContent);
     }
 
     Action<?> action = controller.getActions().get(id);
     if (action == null) {
-      return validateAndCanonicalizeConfig(file);
+      return validateConfigSnapshot(file, rawContent);
     }
 
-    return runSync(() -> {
+    return runSync(() -> ConfigFileSupport.withPassiveHotloadSnapshot(file, rawContent, () -> {
       boolean wasEnabled = action.isEnabled();
       if (!action.reloadConfiguration()) {
         return false;
@@ -370,20 +527,20 @@ public class HotloadController extends TickedObject implements IController {
         action.onInit();
       }
       return true;
-    });
+    }));
   }
 
-  private boolean reloadSamplerConfig(String id, File file) {
+  private boolean reloadSamplerConfig(String id, File file, String rawContent) {
     SampleController controller = React.controller(SampleController.class);
     if (controller == null || controller.getSamplers() == null || id == null) {
-      return validateAndCanonicalizeConfig(file);
+      return validateConfigSnapshot(file, rawContent);
     }
 
     if (controller.getSamplers().get(id) == null) {
-      return validateAndCanonicalizeConfig(file);
+      return validateConfigSnapshot(file, rawContent);
     }
 
-    return runSync(() -> {
+    return runSync(() -> ConfigFileSupport.withPassiveHotloadSnapshot(file, rawContent, () -> {
       boolean ok = controller.reloadSamplerConfig(id);
       if (!ok) {
         return false;
@@ -395,18 +552,26 @@ public class HotloadController extends TickedObject implements IController {
       }
 
       return true;
-    });
+    }));
   }
 
   private boolean runSync(BooleanSupplier supplier) {
+    AtomicReference<Throwable> failure = new AtomicReference<>();
     Boolean result = J.sResult(() -> {
       try {
         return supplier.getAsBoolean();
       } catch (Throwable e) {
-        React.warn("Hotload apply failed: " + e.getMessage());
+        failure.set(e);
         return false;
       }
     });
+    Throwable applyFailure = failure.get();
+    if (applyFailure != null) {
+      throw new IllegalStateException("Synchronous hotload application failed", applyFailure);
+    }
+    if (result == null) {
+      throw new IllegalStateException("Synchronous hotload application was interrupted, timed out, or refused");
+    }
     return Boolean.TRUE.equals(result);
   }
 
@@ -425,31 +590,13 @@ public class HotloadController extends TickedObject implements IController {
     });
   }
 
-  private boolean validateAndCanonicalizeConfig(File file) {
-    if (file == null || !file.exists() || !file.isFile()) {
-      return true;
-    }
-
-    try {
-      String raw = readFileContent(file);
-      JsonElement parsed = parseStructured(raw, file);
-      if (parsed == null) {
-        return false;
-      }
-
-      if (ConfigFileSupport.isTomlFile(file)) {
-        return true;
-      }
-
-      String canonical = new GsonBuilder().setPrettyPrinting().create().toJson(parsed);
-      if (!normalizeContent(raw).equals(normalizeContent(canonical))) {
-        ConfigRewriteReporter.reportRewrite(file, "hotload", raw, canonical);
-        IO.writeAll(file, canonical);
-      }
-      return true;
-    } catch (Throwable e) {
+  private boolean validateConfigSnapshot(File file, String rawContent) {
+    if (file == null || rawContent == null || rawContent.isBlank()) {
       return false;
     }
+
+    JsonElement parsed = parseStructured(rawContent, file);
+    return parsed != null;
   }
 
   private ManagedConfig resolveManagedConfig(File file) {
@@ -507,7 +654,7 @@ public class HotloadController extends TickedObject implements IController {
   }
 
   private boolean isManagedConfigFile(File file) {
-    if (file == null || !ConfigFileSupport.isSupportedConfigFile(file)) {
+    if (file == null || isTemporaryArtifact(file) || !ConfigFileSupport.isSupportedConfigFile(file)) {
       return false;
     }
 
@@ -526,6 +673,43 @@ public class HotloadController extends TickedObject implements IController {
     }
 
     return isManagedCategory(parts[0]) && ConfigFileSupport.configNameFromFileName(parts[1]) != null;
+  }
+
+  static boolean isTemporaryArtifactName(String fileName) {
+    if (fileName == null || fileName.isBlank()) {
+      return true;
+    }
+    String name = fileName.toLowerCase(Locale.ROOT);
+    if (name.startsWith(".")
+        || name.startsWith("~$")
+        || name.endsWith("~")
+        || (name.startsWith("#") && name.endsWith("#"))) {
+      return true;
+    }
+    if (name.endsWith(".tmp")
+        || name.endsWith(".temp")
+        || name.endsWith(".part")
+        || name.endsWith(".swp")
+        || name.endsWith(".swo")
+        || name.endsWith(".crdownload")
+        || name.endsWith(".download")
+        || name.endsWith(".filepart")
+        || name.endsWith(".partial")
+        || name.endsWith(".upload")
+        || name.endsWith(".uploading")) {
+      return true;
+    }
+    return name.contains(".tmp.")
+        || name.contains(".temp.")
+        || name.contains(".part.")
+        || name.contains(".swp.")
+        || name.contains(".swo.")
+        || name.contains("___jb_tmp___")
+        || name.contains("___jb_old___");
+  }
+
+  private boolean isTemporaryArtifact(File file) {
+    return file == null || isTemporaryArtifactName(file.getName());
   }
 
   private boolean sameFile(File a, File b) {
@@ -573,6 +757,100 @@ public class HotloadController extends TickedObject implements IController {
     return files;
   }
 
+  private void primeAppliedContents() {
+    for (File file : listKnownConfigFiles()) {
+      if (file == null) {
+        continue;
+      }
+      if (!Files.isRegularFile(file.toPath())) {
+        lastObservedDigests.putIfAbsent(normalizedPath(file), MISSING_DIGEST);
+        continue;
+      }
+      try {
+        ConfigHotloadSnapshot snapshot = ConfigHotloadSnapshot.capture(file.toPath(), MAX_HOTLOAD_FILE_BYTES);
+        lastAppliedContents.putIfAbsent(normalizedPath(file), snapshot.normalizedContent());
+        lastObservedDigests.putIfAbsent(normalizedPath(file), snapshot.digest());
+      } catch (IOException e) {
+        logTransientFailure("Could not establish the hotload baseline for " + diagnosticRelativePath(file), e);
+      }
+    }
+  }
+
+  private void noteSelfWrite(File file, String rawContent) {
+    hotloadEngine.noteSelfWrite(file, rawContent);
+    if (file == null || rawContent == null || !isManagedConfigFile(file)) {
+      return;
+    }
+    lastAppliedContents.put(normalizedPath(file), normalizeContent(rawContent));
+    try {
+      ConfigHotloadSnapshot snapshot = ConfigHotloadSnapshot.capture(file.toPath(), MAX_HOTLOAD_FILE_BYTES);
+      if (Objects.equals(snapshot.normalizedContent(), normalizeContent(rawContent))) {
+        lastObservedDigests.put(normalizedPath(file), snapshot.digest());
+      } else {
+        pendingHotloads.enqueue(snapshot.path(), true);
+      }
+    } catch (IOException e) {
+      logTransientFailure("Could not record the completed config write for " + diagnosticRelativePath(file), e);
+      pendingHotloads.enqueue(file.toPath(), Files.isRegularFile(file.toPath()));
+    }
+  }
+
+  private void acknowledgeSnapshot(ConfigHotloadSnapshot snapshot) {
+    File file = snapshot.path().toFile();
+    lastObservedDigests.put(normalizedPath(file), snapshot.digest());
+    hotloadEngine.noteSelfWrite(file, snapshot.rawContent());
+  }
+
+  private void acknowledgeMissing(File file) {
+    lastObservedDigests.put(normalizedPath(file), MISSING_DIGEST);
+    hotloadEngine.noteSelfWrite(file, null);
+  }
+
+  private void queueDiskDivergences() {
+    Set<String> seen = new HashSet<>();
+    for (File file : listKnownConfigFiles()) {
+      if (file == null || !isManagedConfigFile(file)) {
+        continue;
+      }
+      String pathKey = normalizedPath(file);
+      seen.add(pathKey);
+      queueDiskDivergence(file, pathKey);
+    }
+
+    for (String pathKey : new HashSet<>(lastObservedDigests.keySet())) {
+      if (seen.contains(pathKey)) {
+        continue;
+      }
+      File file = new File(pathKey);
+      if (isManagedConfigFile(file)) {
+        queueDiskDivergence(file, pathKey);
+      }
+    }
+  }
+
+  private void queueDiskDivergence(File file, String pathKey) {
+    Path path = file.toPath().toAbsolutePath().normalize();
+    if (!Files.isRegularFile(path)) {
+      if (!MISSING_DIGEST.equals(lastObservedDigests.get(pathKey))) {
+        pendingHotloads.enqueue(path, false);
+      }
+      return;
+    }
+
+    try {
+      ConfigHotloadSnapshot snapshot = ConfigHotloadSnapshot.capture(path, MAX_HOTLOAD_FILE_BYTES);
+      if (!snapshot.digest().equals(lastObservedDigests.get(pathKey))) {
+        pendingHotloads.enqueue(path, true);
+      }
+    } catch (NoSuchFileException e) {
+      pendingHotloads.enqueue(path, false);
+    } catch (IOException e) {
+      logTransientFailure("Could not reconcile config state while reconfiguring the watcher for "
+          + diagnosticRelativePath(file), e);
+      pendingHotloads.enqueue(path, Files.isRegularFile(path));
+    }
+  }
+
   private void addIfConfig(List<File> out, Set<String> added, File file) {
     if (!isManagedConfigFile(file)) {
       return;
@@ -591,11 +869,29 @@ public class HotloadController extends TickedObject implements IController {
       return null;
     }
 
-    try {
-      return Files.readString(file.toPath());
+    try (InputStream input = Files.newInputStream(file.toPath())) {
+      byte[] content = input.readNBytes((int) MAX_HOTLOAD_FILE_BYTES + 1);
+      if (content.length > MAX_HOTLOAD_FILE_BYTES) {
+        throw new IOException("Config exceeds " + MAX_HOTLOAD_FILE_BYTES + " bytes: " + file);
+      }
+      return new String(content, StandardCharsets.UTF_8);
     } catch (Throwable e) {
+      logTransientFailure("Could not read watched config " + diagnosticRelativePath(file), e);
       return null;
     }
+  }
+
+  private String normalizedPath(File file) {
+    return file.toPath().toAbsolutePath().normalize().toString();
+  }
+
+  private void logTransientFailure(String message, Throwable failure) {
+    if (React.instance != null) {
+      React.instance.getLogger().log(Level.WARNING, message, failure);
+      return;
+    }
+    System.err.println("[React] " + message);
+    failure.printStackTrace();
   }
 
   private String normalizeContent(String text) {
@@ -711,6 +1007,17 @@ public class HotloadController extends TickedObject implements IController {
     } catch (Throwable e) {
       return file == null ? "<unknown>" : file.getName();
     }
+  }
+
+  private enum ApplyOutcome {
+    APPLIED,
+    REJECTED,
+    RETRY
+  }
+
+  private record QueuedApplyResult(boolean applied) {
+    private static final QueuedApplyResult APPLIED = new QueuedApplyResult(true);
+    private static final QueuedApplyResult SKIPPED = new QueuedApplyResult(false);
   }
 
   private record ManagedConfig(String category, String id) {

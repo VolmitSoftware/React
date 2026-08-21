@@ -11,10 +11,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ConfigFileSupportSelfWriteTest {
   @AfterEach
@@ -36,7 +38,7 @@ class ConfigFileSupportSelfWriteTest {
     AtomicInteger applyCalls = new AtomicInteger();
 
     try {
-      engine.configure(500L, List.of(file), List.of());
+      engine.configure(500L, 3_000L, List.of(file), List.of());
       ConfigFileSupport.setSelfWriteListener((writtenFile, content) -> {
         notifications.incrementAndGet();
         engine.noteSelfWrite(writtenFile, content);
@@ -79,6 +81,68 @@ class ConfigFileSupportSelfWriteTest {
     ));
 
     assertEquals(invalid, Files.readString(file.toPath(), StandardCharsets.UTF_8));
+  }
+
+  @Test
+  void passiveSnapshotLoadsCapturedBytesWithoutOverwritingNewerDiskState(@TempDir Path temporaryDirectory) throws Exception {
+    File file = temporaryDirectory.resolve("feature.toml").toFile();
+    String captured = "enabled = true\n";
+    String newer = "enabled = false\n";
+    Files.writeString(file.toPath(), newer, StandardCharsets.UTF_8);
+    AtomicReference<HotloadProbe> loaded = new AtomicReference<>();
+
+    boolean applied = ConfigFileSupport.withPassiveHotloadSnapshot(file, captured, () -> {
+      try {
+        loaded.set(ConfigFileSupport.load(
+            file,
+            null,
+            HotloadProbe.class,
+            new HotloadProbe(),
+            false,
+            "feature:probe",
+            "Created missing config [feature/probe.toml] from defaults."
+        ));
+        return true;
+      } catch (Exception e) {
+        throw new IllegalStateException(e);
+      }
+    });
+
+    assertTrue(applied);
+    assertTrue(loaded.get().enabled);
+    assertEquals(newer, Files.readString(file.toPath(), StandardCharsets.UTF_8));
+  }
+
+  @Test
+  void passiveLegacySnapshotDoesNotMigrateOrDeleteFiles(@TempDir Path temporaryDirectory) throws Exception {
+    File canonical = temporaryDirectory.resolve("feature.toml").toFile();
+    File legacy = temporaryDirectory.resolve("feature.json").toFile();
+    String captured = "{\"enabled\":false}";
+    Files.writeString(legacy.toPath(), captured, StandardCharsets.UTF_8);
+    AtomicReference<HotloadProbe> loaded = new AtomicReference<>();
+
+    boolean applied = ConfigFileSupport.withPassiveHotloadSnapshot(legacy, captured, () -> {
+      try {
+        loaded.set(ConfigFileSupport.load(
+            canonical,
+            legacy,
+            HotloadProbe.class,
+            new HotloadProbe(),
+            false,
+            "feature:probe",
+            "Created missing config [feature/probe.toml] from defaults."
+        ));
+        return true;
+      } catch (Exception e) {
+        throw new IllegalStateException(e);
+      }
+    });
+
+    assertTrue(applied);
+    assertFalse(loaded.get().enabled);
+    assertFalse(canonical.exists());
+    assertTrue(legacy.isFile());
+    assertEquals(captured, Files.readString(legacy.toPath(), StandardCharsets.UTF_8));
   }
 
   private String read(Path path) {
