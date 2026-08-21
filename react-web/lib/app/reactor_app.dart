@@ -58,6 +58,7 @@ import '../state/heatmap_scope.dart';
 import '../state/operate_scope.dart';
 import '../state/role_scope.dart';
 import '../state/server_scope.dart';
+import '../theme/reactor_theme.dart';
 import '../ui/reactor_ui.dart';
 import '../widget/pane_layout.dart';
 import '../widget/pane_splitter.dart';
@@ -336,23 +337,48 @@ Widget _buildServerPage(BuildContext context, RouteState state, Widget screen) {
   );
 }
 
-class ReactorApp extends StatelessWidget {
+class ReactorApp extends StatefulWidget {
   final FleetManager? fleetManager;
+  final ValueChanged<Brightness>? onThemeChanged;
 
-  const ReactorApp({this.fleetManager, super.key});
+  const ReactorApp({this.fleetManager, this.onThemeChanged, super.key});
+
+  @override
+  State<ReactorApp> createState() => _ReactorAppState();
+}
+
+class _ReactorAppState extends State<ReactorApp> {
+  late Brightness _brightness;
+
+  @override
+  void initState() {
+    super.initState();
+    _brightness = loadReactorBrightness(component.fleetManager?.storage);
+  }
+
+  void _setBrightness(Brightness brightness) {
+    if (_brightness == brightness) return;
+    persistReactorBrightness(component.fleetManager?.storage, brightness);
+    component.onThemeChanged?.call(brightness);
+    setState(() => _brightness = brightness);
+  }
 
   @override
   Widget build(BuildContext context) {
     return ArcaneApp(
-      brightness: Brightness.dark,
+      brightness: _brightness,
       stylesheet: const _OfflineShadcnStylesheet(theme: ShadcnTheme.midnight),
       head: <Widget>[
         const dom.link(href: '/styles/react-web.css', rel: 'stylesheet'),
       ],
-      home: Component.fragment(<Widget>[
-        ReactorFleetObserver(fleetManager: fleetManager),
-        const ArcaneSonner(),
-      ]),
+      home: ReactorThemeScope(
+        brightness: _brightness,
+        onChanged: _setBrightness,
+        child: Component.fragment(<Widget>[
+          ReactorFleetObserver(fleetManager: component.fleetManager),
+          const ArcaneSonner(),
+        ]),
+      ),
       title: reactorText(ReactorText.appTitle),
       description: reactorText(ReactorText.appDescription),
     );
@@ -689,6 +715,7 @@ class _ReactorShellState extends State<ReactorShell> {
   Widget _topBar(BuildContext context) {
     final ServerEntry? active = _activeServer;
     final String scope = active?.name ?? reactorText(ReactorText.fleetTitle);
+    final ReactorThemeScope? theme = ReactorThemeScope.maybeOf(context);
     return dom.header(classes: 'reactor-bar', <Widget>[
       dom.div(classes: 'reactor-bar-primary', <Widget>[
         dom.div(classes: 'reactor-bar-left', <Widget>[
@@ -711,6 +738,17 @@ class _ReactorShellState extends State<ReactorShell> {
           ]),
         ]),
         dom.div(classes: 'reactor-bar-actions', <Widget>[
+          if (theme != null)
+            _barButton(
+              label: theme.isDark
+                  ? reactorText(ReactorText.themeSwitchToLight)
+                  : reactorText(ReactorText.themeSwitchToDark),
+              icon: theme.isDark
+                  ? ArcaneIcon.sun(size: IconSize.sm)
+                  : ArcaneIcon.moon(size: IconSize.sm),
+              onPressed: theme.toggle,
+              compact: true,
+            ),
           _barButton(
             label: reactorText(ReactorText.settingsTitle),
             icon: ArcaneIcon.settings(size: IconSize.sm),

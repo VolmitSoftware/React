@@ -602,8 +602,25 @@ enum ReactorText {
   settingsTitle('screen.settings.title', 'Settings'),
   settingsSubtitle(
     'screen.settings.subtitle',
-    'Alert thresholds and server tags',
+    'Appearance, alert thresholds, and server connections',
   ),
+  settingsAppearance('screen.settings.appearance', 'Appearance'),
+  settingsAppearanceDescription(
+    'screen.settings.appearance_description',
+    'Choose the interface theme used on this browser.',
+  ),
+  settingsDarkTheme('screen.settings.dark_theme', 'Dark'),
+  settingsDarkThemeDescription(
+    'screen.settings.dark_theme_description',
+    'Low-glare workspace for dim environments.',
+  ),
+  settingsLightTheme('screen.settings.light_theme', 'Light'),
+  settingsLightThemeDescription(
+    'screen.settings.light_theme_description',
+    'High-clarity workspace for bright environments.',
+  ),
+  themeSwitchToLight('theme.switch_to_light', 'Switch to light theme'),
+  themeSwitchToDark('theme.switch_to_dark', 'Switch to dark theme'),
   settingsThresholdsSaved(
     'screen.settings.thresholds_saved',
     'Thresholds saved',

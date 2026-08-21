@@ -339,8 +339,12 @@
   "screen.settings.account_roles": "口座 /役割",
   "screen.settings.add_tag": "タグを追加する",
   "screen.settings.alert_thresholds": "警告の限界値",
+  "screen.settings.appearance": "外観",
+  "screen.settings.appearance_description": "このブラウザーで使用するインターフェーステーマを選択します。",
   "screen.settings.clear_all": "片付け",
   "screen.settings.confirm_clear_all": "確認してください すべてを清掃します",
+  "screen.settings.dark_theme": "ダーク",
+  "screen.settings.dark_theme_description": "暗い環境向けの低グレアなワークスペースです。",
   "screen.settings.export_connections": "輸出関連",
   "screen.settings.export_security": "エクポートファイルには,ベアラー 認証トークンと認証が含まれます.安全に保存します.",
   "screen.settings.fleet_cleared": "保存された艦隊は清掃されました",
@@ -352,6 +356,8 @@
   "screen.settings.import_connections": "輸入接続",
   "screen.settings.import_failed": "輸入失敗: {error}",
   "screen.settings.incident_score_warn": "事件スコア警告",
+  "screen.settings.light_theme": "ライト",
+  "screen.settings.light_theme_description": "明るい環境向けの見やすいワークスペースです。",
   "screen.settings.malformed_skipped": "誤った入力をスキップする: {count}.",
   "screen.settings.memory_pressure_warn": "記憶力 の 圧力 に 対する 警告",
   "screen.settings.mspt_warn": "MSPT 警告のしきい値",
@@ -451,5 +457,7 @@
   "status.live": "ライブ接続",
   "status.nominal": "公称状態",
   "status.normal": "通常状態",
-  "status.offline": "オフライン"
+  "status.offline": "オフライン",
+  "theme.switch_to_dark": "ダークテーマに切り替え",
+  "theme.switch_to_light": "ライトテーマに切り替え"
 }

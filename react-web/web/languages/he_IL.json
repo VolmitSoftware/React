@@ -339,8 +339,12 @@
   "screen.settings.account_roles": "חשבון / תפקידים",
   "screen.settings.add_tag": "הוסף תג",
   "screen.settings.alert_thresholds": "סף אזהרה",
+  "screen.settings.appearance": "מראה",
+  "screen.settings.appearance_description": "בחר את ערכת הנושא של הממשק עבור דפדפן זה.",
   "screen.settings.clear_all": "תירגעו.",
   "screen.settings.confirm_clear_all": "אישר את כולם.",
+  "screen.settings.dark_theme": "כהה",
+  "screen.settings.dark_theme_description": "סביבת עבודה עם סנוור נמוך לסביבה חשוכה.",
   "screen.settings.export_connections": "קישורים לייצוא",
   "screen.settings.export_security": "קבצים של ייצוא מכילים אסימוני אימות ו- credentials. חסו אותם בבטחה.",
   "screen.settings.fleet_cleared": "הצי הנציל נפטר.",
@@ -352,6 +356,8 @@
   "screen.settings.import_connections": "קישורים לייבוא",
   "screen.settings.import_failed": "ההשאת נכשלה: {error}",
   "screen.settings.incident_score_warn": "אזהרה על סיכוי אירועי",
+  "screen.settings.light_theme": "בהיר",
+  "screen.settings.light_theme_description": "סביבת עבודה ברורה לסביבה מוארת.",
   "screen.settings.malformed_skipped": "הכניסה לא נכונה כדי לדלג: {count}.",
   "screen.settings.memory_pressure_warn": "אזהרה מפני לחץ זיכרון",
   "screen.settings.mspt_warn": "סף אזהרה MSPT",
@@ -451,5 +457,7 @@
   "status.live": "חיבור פעיל",
   "status.nominal": "מצב נומינלי",
   "status.normal": "מצב רגיל",
-  "status.offline": "חיבור לא מקוון"
+  "status.offline": "חיבור לא מקוון",
+  "theme.switch_to_dark": "עבור לערכת נושא כהה",
+  "theme.switch_to_light": "עבור לערכת נושא בהירה"
 }

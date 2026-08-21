@@ -339,8 +339,12 @@
   "screen.settings.account_roles": "Hesap / Roller",
   "screen.settings.add_tag": "Etiket ekle",
   "screen.settings.alert_thresholds": "Uyarı Dönemleri",
+  "screen.settings.appearance": "Görünüm",
+  "screen.settings.appearance_description": "Bu tarayıcıda kullanılacak arayüz temasını seçin.",
   "screen.settings.clear_all": "Her şeyi temizleyin.",
   "screen.settings.confirm_clear_all": "Her şeyi açıklayın.",
+  "screen.settings.dark_theme": "Koyu",
+  "screen.settings.dark_theme_description": "Karanlık ortamlar için düşük parlamalı çalışma alanı.",
   "screen.settings.export_connections": "Dışarıya aktarım bağlantıları",
   "screen.settings.export_security": "Dışarı çıkarma dosyaları taşıyıcı kimlik doğrulama belirteçleri ve kimlik bilgileri içerir. Onları güvenli bir şekilde saklayın.",
   "screen.settings.fleet_cleared": "Kurtarılmış filot temizlenmiştir.",
@@ -352,6 +356,8 @@
   "screen.settings.import_connections": "İçe aktarma bağlantıları",
   "screen.settings.import_failed": "İndirim başarısız oldu: {error}",
   "screen.settings.incident_score_warn": "Olay Skoru Uyarısı",
+  "screen.settings.light_theme": "Açık",
+  "screen.settings.light_theme_description": "Aydınlık ortamlar için yüksek netlikte çalışma alanı.",
   "screen.settings.malformed_skipped": "Atlamak için yanlış biçimlendirilmiş girişler: {count}.",
   "screen.settings.memory_pressure_warn": "Hatıra Basıncı Uyarısı",
   "screen.settings.mspt_warn": "MSPT uyarı eşiği",
@@ -451,5 +457,7 @@
   "status.live": "Canlı bağlantı",
   "status.nominal": "Nominal durum",
   "status.normal": "Normal durum",
-  "status.offline": "Çevrimdışı bağlantı"
+  "status.offline": "Çevrimdışı bağlantı",
+  "theme.switch_to_dark": "Koyu temaya geç",
+  "theme.switch_to_light": "Açık temaya geç"
 }

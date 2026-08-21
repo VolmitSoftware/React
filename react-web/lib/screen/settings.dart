@@ -16,6 +16,7 @@ import '../state/fleet_export.dart';
 import '../state/fleet_import_picker.dart';
 import '../state/fleet_manager.dart';
 import '../state/fleet_scope.dart';
+import '../theme/reactor_theme.dart';
 import '../ui/reactor_ui.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -284,12 +285,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final ReactorThemeScope theme = ReactorThemeScope.of(context);
     final FleetController? ctrl = FleetScope.of(context);
     if (ctrl == null) {
       return ReactorPage(
         title: reactorText(ReactorText.settingsTitle),
         subtitle: reactorText(ReactorText.settingsSubtitle),
         children: <Widget>[
+          _appearanceSection(theme),
           SectionPanel(
             child: ReactorEmptyState(
               title: reactorText(ReactorText.settingsFleetUnavailable),
@@ -307,9 +310,73 @@ class _SettingsScreenState extends State<SettingsScreen> {
       title: reactorText(ReactorText.settingsTitle),
       subtitle: reactorText(ReactorText.settingsSubtitle),
       children: <Widget>[
+        _appearanceSection(theme),
         _rolesSection(servers),
         _thresholdsSection(ctrl),
         _serversSection(ctrl, servers),
+      ],
+    );
+  }
+
+  Widget _appearanceSection(ReactorThemeScope theme) {
+    return SectionPanel(
+      label: reactorText(ReactorText.settingsAppearance),
+      description: reactorText(ReactorText.settingsAppearanceDescription),
+      flush: true,
+      child: dom.div(classes: 'reactor-theme-options', <Widget>[
+        _themeOption(
+          theme: theme,
+          brightness: Brightness.dark,
+          title: reactorText(ReactorText.settingsDarkTheme),
+          description: reactorText(ReactorText.settingsDarkThemeDescription),
+          icon: ArcaneIcon.moon(size: IconSize.sm),
+        ),
+        _themeOption(
+          theme: theme,
+          brightness: Brightness.light,
+          title: reactorText(ReactorText.settingsLightTheme),
+          description: reactorText(ReactorText.settingsLightThemeDescription),
+          icon: ArcaneIcon.sun(size: IconSize.sm),
+        ),
+      ]),
+    );
+  }
+
+  Widget _themeOption({
+    required ReactorThemeScope theme,
+    required Brightness brightness,
+    required String title,
+    required String description,
+    required Widget icon,
+  }) {
+    final bool selected = theme.brightness == brightness;
+    return dom.button(
+      classes: selected
+          ? 'reactor-theme-option is-selected'
+          : 'reactor-theme-option',
+      attributes: <String, String>{
+        'type': 'button',
+        'aria-pressed': selected ? 'true' : 'false',
+        'data-theme-choice': brightness == Brightness.light ? 'light' : 'dark',
+      },
+      events: <String, void Function(Object)>{
+        'click': (Object _) => theme.onChanged(brightness),
+      },
+      <Widget>[
+        dom.span(
+          classes: 'reactor-theme-option-icon',
+          attributes: const <String, String>{'aria-hidden': 'true'},
+          <Widget>[icon],
+        ),
+        dom.span(classes: 'reactor-theme-option-copy', <Widget>[
+          dom.strong(<Widget>[Component.text(title)]),
+          dom.span(<Widget>[Component.text(description)]),
+        ]),
+        if (selected)
+          dom.span(classes: 'reactor-theme-option-state', <Widget>[
+            ArcaneIcon.check(size: IconSize.sm),
+            Component.text('Active'),
+          ]),
       ],
     );
   }

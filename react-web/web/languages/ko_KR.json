@@ -339,8 +339,12 @@
   "screen.settings.account_roles": "계좌 / 역할",
   "screen.settings.add_tag": "태그 추가",
   "screen.settings.alert_thresholds": "경고 한계",
+  "screen.settings.appearance": "모양",
+  "screen.settings.appearance_description": "이 브라우저에서 사용할 인터페이스 테마를 선택합니다.",
   "screen.settings.clear_all": "모든 것을 정리해",
   "screen.settings.confirm_clear_all": "모든 것을 확인해 주세요.",
+  "screen.settings.dark_theme": "어둡게",
+  "screen.settings.dark_theme_description": "어두운 환경을 위한 눈부심이 적은 작업 공간입니다.",
   "screen.settings.export_connections": "수출 연결",
   "screen.settings.export_security": "수출 파일에는 배포자 인증 토큰 및 인증서들이 포함되어 있습니다. 안전하게 저장하십시오.",
   "screen.settings.fleet_cleared": "구조된 함대가 비결되었습니다.",
@@ -352,6 +356,8 @@
   "screen.settings.import_connections": "수입 연결",
   "screen.settings.import_failed": "수입 실패: {error}",
   "screen.settings.incident_score_warn": "사건 점수 경고",
+  "screen.settings.light_theme": "밝게",
+  "screen.settings.light_theme_description": "밝은 환경을 위한 선명한 작업 공간입니다.",
   "screen.settings.malformed_skipped": "오작동 입력: {count}.",
   "screen.settings.memory_pressure_warn": "기억력 압력 에 대한 경고",
   "screen.settings.mspt_warn": "MSPT 경고 문턱",
@@ -451,5 +457,7 @@
   "status.live": "실시간 연결",
   "status.nominal": "명목 상태",
   "status.normal": "정상 상태",
-  "status.offline": "오프라인 연결"
+  "status.offline": "오프라인 연결",
+  "theme.switch_to_dark": "어두운 테마로 전환",
+  "theme.switch_to_light": "밝은 테마로 전환"
 }

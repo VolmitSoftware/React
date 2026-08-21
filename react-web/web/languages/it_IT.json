@@ -339,8 +339,12 @@
   "screen.settings.account_roles": "Conto / ruoli",
   "screen.settings.add_tag": "Aggiungere tag",
   "screen.settings.alert_thresholds": "Limiti di allarme",
+  "screen.settings.appearance": "Aspetto",
+  "screen.settings.appearance_description": "Scegli il tema dell’interfaccia usato in questo browser.",
   "screen.settings.clear_all": "- Spogliate tutto.",
   "screen.settings.confirm_clear_all": "Confirmate che tutto è pulito .",
+  "screen.settings.dark_theme": "Scuro",
+  "screen.settings.dark_theme_description": "Area di lavoro a basso abbagliamento per ambienti bui.",
   "screen.settings.export_connections": "Connessioni di esportazione",
   "screen.settings.export_security": "I file di esportazione contengono token di autenticazione e credenziali portatori.",
   "screen.settings.fleet_cleared": "Flotta salvata liberata.",
@@ -352,6 +356,8 @@
   "screen.settings.import_connections": "Connessioni di importazione",
   "screen.settings.import_failed": "Importare non è riuscito: {error}",
   "screen.settings.incident_score_warn": "Avvertimento per il punteggio degli incidenti",
+  "screen.settings.light_theme": "Chiaro",
+  "screen.settings.light_theme_description": "Area di lavoro ad alta leggibilità per ambienti luminosi.",
   "screen.settings.malformed_skipped": "Entri malformati da saltare: {count}.",
   "screen.settings.memory_pressure_warn": "Avvertimento per la pressione della memoria",
   "screen.settings.mspt_warn": "MSPT soglia di avvertimento",
@@ -451,5 +457,7 @@
   "status.live": "Connessione attiva",
   "status.nominal": "Stato nominale",
   "status.normal": "Stato normale",
-  "status.offline": "Connessione non in linea"
+  "status.offline": "Connessione non in linea",
+  "theme.switch_to_dark": "Passa al tema scuro",
+  "theme.switch_to_light": "Passa al tema chiaro"
 }

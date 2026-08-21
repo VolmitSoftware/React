@@ -339,8 +339,12 @@
   "screen.settings.account_roles": "Konto / Rollen",
   "screen.settings.add_tag": "Hinzufügen von Tag",
   "screen.settings.alert_thresholds": "Warnschwellen",
+  "screen.settings.appearance": "Erscheinungsbild",
+  "screen.settings.appearance_description": "Wählen Sie das Oberflächenthema für diesen Browser.",
   "screen.settings.clear_all": "Alle aufklären.",
   "screen.settings.confirm_clear_all": "Bestätigen Sie alles.",
+  "screen.settings.dark_theme": "Dunkel",
+  "screen.settings.dark_theme_description": "Blendarmer Arbeitsbereich für dunkle Umgebungen.",
   "screen.settings.export_connections": "Exportverbindungen",
   "screen.settings.export_security": "Exportdateien enthalten Authentifizierungstoken und Anmeldeinformationen.",
   "screen.settings.fleet_cleared": "Sparte Flotte freigesetzt",
@@ -352,6 +356,8 @@
   "screen.settings.import_connections": "Importeinrichtungen",
   "screen.settings.import_failed": "Importieren fehlgeschlagen: {error}",
   "screen.settings.incident_score_warn": "Warnung über die Ereignisse",
+  "screen.settings.light_theme": "Hell",
+  "screen.settings.light_theme_description": "Kontrastreicher Arbeitsbereich für helle Umgebungen.",
   "screen.settings.malformed_skipped": "Fehlformate Einträge zu überspringen: {count}.",
   "screen.settings.memory_pressure_warn": "Gedächtnisdruck warnt vor",
   "screen.settings.mspt_warn": "MSPT-Warnungsschwelle",
@@ -451,5 +457,7 @@
   "status.live": "Live-Verbindung",
   "status.nominal": "Nominaler Zustand",
   "status.normal": "Normaler Zustand",
-  "status.offline": "Offline-Verbindung"
+  "status.offline": "Offline-Verbindung",
+  "theme.switch_to_dark": "Zum dunklen Design wechseln",
+  "theme.switch_to_light": "Zum hellen Design wechseln"
 }

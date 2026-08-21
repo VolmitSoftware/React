@@ -339,8 +339,12 @@
   "screen.settings.account_roles": "Tài khoản / Vai trò",
   "screen.settings.add_tag": "Thêm thẻ",
   "screen.settings.alert_thresholds": "Các ngưỡng cảnh báo",
+  "screen.settings.appearance": "Giao diện",
+  "screen.settings.appearance_description": "Chọn chủ đề giao diện dùng trong trình duyệt này.",
   "screen.settings.clear_all": "Tẩy sạch mọi thứ.",
   "screen.settings.confirm_clear_all": "Hãy xác nhận tất cả.",
+  "screen.settings.dark_theme": "Tối",
+  "screen.settings.dark_theme_description": "Không gian làm việc ít chói cho môi trường tối.",
   "screen.settings.export_connections": "Liên kết xuất khẩu",
   "screen.settings.export_security": "Các tập tin xuất có chứa các mã xác thực và thông tin tín dụng. lưu trữ chúng một cách an toàn.",
   "screen.settings.fleet_cleared": "Hạm đội được cứu thoát đã được giải phóng.",
@@ -352,6 +356,8 @@
   "screen.settings.import_connections": "Liên kết nhập khẩu",
   "screen.settings.import_failed": "Import thất bại: {error}",
   "screen.settings.incident_score_warn": "Cảnh báo điểm số sự cố",
+  "screen.settings.light_theme": "Sáng",
+  "screen.settings.light_theme_description": "Không gian làm việc rõ nét cho môi trường sáng.",
   "screen.settings.malformed_skipped": "Các mục bị sai định để bỏ qua: {count}.",
   "screen.settings.memory_pressure_warn": "Cảnh báo về áp lực trí nhớ",
   "screen.settings.mspt_warn": "Tỉ lệ cảnh báo MSPT",
@@ -451,5 +457,7 @@
   "status.live": "Kết nối đang hoạt động",
   "status.nominal": "Trạng thái danh định",
   "status.normal": "Trạng thái bình thường",
-  "status.offline": "Kết nối ngoại tuyến"
+  "status.offline": "Kết nối ngoại tuyến",
+  "theme.switch_to_dark": "Chuyển sang chủ đề tối",
+  "theme.switch_to_light": "Chuyển sang chủ đề sáng"
 }

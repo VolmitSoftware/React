@@ -13,6 +13,7 @@ import 'service/relay_connection.dart';
 import 'service/relay_react_client.dart';
 import 'state/fleet_manager.dart';
 import 'state/web_fleet_storage.dart';
+import 'theme/reactor_theme_web.dart';
 
 Future<void> main() async {
   Jaspr.initializeApp(options: defaultClientOptions);
@@ -38,5 +39,7 @@ Future<void> main() async {
       );
     },
   );
-  runApp(ReactorApp(fleetManager: fleet));
+  runApp(
+    ReactorApp(fleetManager: fleet, onThemeChanged: updateReactorThemeMetadata),
+  );
 }

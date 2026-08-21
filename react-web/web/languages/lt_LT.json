@@ -339,8 +339,12 @@
   "screen.settings.account_roles": "Sąskaita / vaidmuo",
   "screen.settings.add_tag": "Įrašyti žymę",
   "screen.settings.alert_thresholds": "Įsteigimo ribos",
+  "screen.settings.appearance": "Išvaizda",
+  "screen.settings.appearance_description": "Pasirinkite šioje naršyklėje naudojamą sąsajos temą.",
   "screen.settings.clear_all": "Išvalykite viską.",
   "screen.settings.confirm_clear_all": "Įsteiginkite visus.",
+  "screen.settings.dark_theme": "Tamsi",
+  "screen.settings.dark_theme_description": "Mažai akinanti darbo sritis tamsiai aplinkai.",
   "screen.settings.export_connections": "Eksporto ryšiai",
   "screen.settings.export_security": "Eksporto failų sudėtyje yra autentifikavimo prieigos raktai ir tapatybės numeris.",
   "screen.settings.fleet_cleared": "Išsigelbėtas laivynas išvalytas.",
@@ -352,6 +356,8 @@
   "screen.settings.import_connections": "Importiniai ryšiai",
   "screen.settings.import_failed": "Importo nesėkmė: {error}",
   "screen.settings.incident_score_warn": "Įspėjimas dėl įvykių rezultato",
+  "screen.settings.light_theme": "Šviesi",
+  "screen.settings.light_theme_description": "Aiški darbo sritis šviesiai aplinkai.",
   "screen.settings.malformed_skipped": "Nesugebėti įrašai: {count}.",
   "screen.settings.memory_pressure_warn": "Įspėjimas apie atminties spaudimą",
   "screen.settings.mspt_warn": "MSPT įspėjimo riba",
@@ -451,5 +457,7 @@
   "status.live": "Aktyvus ryšys",
   "status.nominal": "Nominali būsena",
   "status.normal": "Normali būsena",
-  "status.offline": "Ryšys neprisijungus"
+  "status.offline": "Ryšys neprisijungus",
+  "theme.switch_to_dark": "Perjungti į tamsią temą",
+  "theme.switch_to_light": "Perjungti į šviesią temą"
 }

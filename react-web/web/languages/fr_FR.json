@@ -339,8 +339,12 @@
   "screen.settings.account_roles": "Compte / rôles",
   "screen.settings.add_tag": "Ajouter la balise",
   "screen.settings.alert_thresholds": "Les seuils d'alerte",
+  "screen.settings.appearance": "Apparence",
+  "screen.settings.appearance_description": "Choisissez le thème de l’interface utilisé dans ce navigateur.",
   "screen.settings.clear_all": "Tout est net .",
   "screen.settings.confirm_clear_all": "Confirmez tout.",
+  "screen.settings.dark_theme": "Sombre",
+  "screen.settings.dark_theme_description": "Espace de travail peu éblouissant pour les environnements sombres.",
   "screen.settings.export_connections": "Connexions d'exportation",
   "screen.settings.export_security": "Les fichiers d'exportation contiennent le code jetons d'authentification et les informations de référence.",
   "screen.settings.fleet_cleared": "La flotte sauvée est dégagée.",
@@ -352,6 +356,8 @@
   "screen.settings.import_connections": "Connexions à l'importation",
   "screen.settings.import_failed": "L' importation a échoué: {error}",
   "screen.settings.incident_score_warn": "Avertissement sur les scores d'incidents",
+  "screen.settings.light_theme": "Clair",
+  "screen.settings.light_theme_description": "Espace de travail très lisible pour les environnements lumineux.",
   "screen.settings.malformed_skipped": "Les entrées malformées à sauter: {count}.",
   "screen.settings.memory_pressure_warn": "L'avertissement contre la pression de mémoire",
   "screen.settings.mspt_warn": "Térubin d'avertissement MSPT",
@@ -451,5 +457,7 @@
   "status.live": "Connexion active",
   "status.nominal": "État nominal",
   "status.normal": "État normal",
-  "status.offline": "Connexion hors ligne"
+  "status.offline": "Connexion hors ligne",
+  "theme.switch_to_dark": "Passer au thème sombre",
+  "theme.switch_to_light": "Passer au thème clair"
 }

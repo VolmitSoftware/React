@@ -339,8 +339,12 @@
   "screen.settings.account_roles": "账户/角色",
   "screen.settings.add_tag": "添加标签",
   "screen.settings.alert_thresholds": "警报门",
+  "screen.settings.appearance": "外观",
+  "screen.settings.appearance_description": "选择此浏览器使用的界面主题。",
   "screen.settings.clear_all": "清除所有东西.",
   "screen.settings.confirm_clear_all": "确认所有清除.",
+  "screen.settings.dark_theme": "深色",
+  "screen.settings.dark_theme_description": "适合昏暗环境的低眩光工作区。",
   "screen.settings.export_connections": "出口连接",
   "screen.settings.export_security": "输出文件包含载体身份验证令牌和身份证.",
   "screen.settings.fleet_cleared": "保存的舰队清除",
@@ -352,6 +356,8 @@
   "screen.settings.import_connections": "进口连接",
   "screen.settings.import_failed": "进口失败:{error}",
   "screen.settings.incident_score_warn": "事件得分警告",
+  "screen.settings.light_theme": "浅色",
+  "screen.settings.light_theme_description": "适合明亮环境的高清晰度工作区。",
   "screen.settings.malformed_skipped": "错误的输入:{count}.",
   "screen.settings.memory_pressure_warn": "记忆压力警告",
   "screen.settings.mspt_warn": "MSPT 警告阈值",
@@ -451,5 +457,7 @@
   "status.live": "实时连接",
   "status.nominal": "标称状态",
   "status.normal": "正常状态",
-  "status.offline": "离线连接"
+  "status.offline": "离线连接",
+  "theme.switch_to_dark": "切换到深色主题",
+  "theme.switch_to_light": "切换到浅色主题"
 }

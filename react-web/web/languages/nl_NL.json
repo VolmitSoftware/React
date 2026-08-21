@@ -339,8 +339,12 @@
   "screen.settings.account_roles": "Rekening / Rollen",
   "screen.settings.add_tag": "Voeg tag toe",
   "screen.settings.alert_thresholds": "Waarschuwingsdrempels",
+  "screen.settings.appearance": "Weergave",
+  "screen.settings.appearance_description": "Kies het interfacethema voor deze browser.",
   "screen.settings.clear_all": "Maak alles vrij .",
   "screen.settings.confirm_clear_all": "Bevestig dat alles duidelijk is.",
+  "screen.settings.dark_theme": "Donker",
+  "screen.settings.dark_theme_description": "Werkruimte met weinig schittering voor donkere omgevingen.",
   "screen.settings.export_connections": "Exportverbindingen",
   "screen.settings.export_security": "Exportbestanden bevatten drager authenticatietokens en referenties.",
   "screen.settings.fleet_cleared": "Geprijsde vloot vrijgemaakt .",
@@ -352,6 +356,8 @@
   "screen.settings.import_connections": "Importverbindingen",
   "screen.settings.import_failed": "Importen mislukt: {error}",
   "screen.settings.incident_score_warn": "Voorvalscore waarschuwing",
+  "screen.settings.light_theme": "Licht",
+  "screen.settings.light_theme_description": "Goed leesbare werkruimte voor lichte omgevingen.",
   "screen.settings.malformed_skipped": "Verkeerde gegevens om te overslaan: {count}.",
   "screen.settings.memory_pressure_warn": "Een waarschuwing voor geheugendruk",
   "screen.settings.mspt_warn": "MSPT-waarschuwingsdrempel",
@@ -451,5 +457,7 @@
   "status.live": "Actieve verbinding",
   "status.nominal": "Nominale status",
   "status.normal": "Normale status",
-  "status.offline": "Offlineverbinding"
+  "status.offline": "Offlineverbinding",
+  "theme.switch_to_dark": "Overschakelen naar donker thema",
+  "theme.switch_to_light": "Overschakelen naar licht thema"
 }

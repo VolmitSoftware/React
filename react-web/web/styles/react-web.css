@@ -69,25 +69,6 @@
     BlinkMacSystemFont, "Segoe UI", sans-serif !important;
   --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco,
     Consolas, monospace !important;
-  --reactor-bg: #0a0a0b;
-  --reactor-panel: #111113;
-  --reactor-panel-soft: #17171a;
-  --reactor-surface: #141416;
-  --reactor-raised: #1d1d21;
-  --reactor-border: #303036;
-  --reactor-border-soft: #242429;
-  --reactor-label: #8f8f99;
-  --reactor-text: #f4f4f5;
-  --reactor-success: #49a276;
-  --reactor-warning: #d49a52;
-  --reactor-danger: #e3676a;
-  --reactor-info: #71a7d9;
-  --reactor-chart-1: #71a7d9;
-  --reactor-chart-2: #d49a52;
-  --reactor-chart-3: #49a276;
-  --reactor-chart-4: #b391d9;
-  --reactor-chart-5: #d9789f;
-  --reactor-chart-6: #8f8f99;
   --reactor-rail: 240px;
   --reactor-inspector: 320px;
   --reactor-splitter: 6px;
@@ -99,18 +80,99 @@
   --radius-lg: 0px !important;
   --radius-xl: 0px !important;
   --radius-full: 0px !important;
+}
+
+html.dark,
+html.dark #arcane-root,
+#arcane-root.dark {
+  color-scheme: dark;
+  --reactor-bg: #0a0a0b;
+  --reactor-panel: #111113;
+  --reactor-panel-soft: #17171a;
+  --reactor-surface: #141416;
+  --reactor-raised: #1d1d21;
+  --reactor-border: #303036;
+  --reactor-border-soft: #242429;
+  --reactor-label: #a1a1aa;
+  --reactor-text: #f4f4f5;
+  --reactor-success: #69c490;
+  --reactor-warning: #e5b56e;
+  --reactor-danger: #ff8a8d;
+  --reactor-info: #82b8e8;
+  --reactor-chart-1: #82b8e8;
+  --reactor-chart-2: #e5b56e;
+  --reactor-chart-3: #69c490;
+  --reactor-chart-4: #b391d9;
+  --reactor-chart-5: #d9789f;
+  --reactor-chart-6: #a1a1aa;
   --background: var(--reactor-bg) !important;
+  --foreground: var(--reactor-text) !important;
   --card: var(--reactor-panel) !important;
+  --card-foreground: var(--reactor-text) !important;
   --popover: var(--reactor-raised) !important;
+  --popover-foreground: var(--reactor-text) !important;
   --border: var(--reactor-border) !important;
   --input: var(--reactor-border) !important;
   --muted: var(--reactor-panel-soft) !important;
-  --accent: var(--reactor-raised) !important;
-  --foreground: var(--reactor-text) !important;
   --muted-foreground: var(--reactor-label) !important;
+  --secondary: var(--reactor-panel-soft) !important;
+  --secondary-foreground: var(--reactor-text) !important;
+  --accent: var(--reactor-raised) !important;
+  --accent-foreground: var(--reactor-text) !important;
+  --primary: var(--reactor-text) !important;
+  --primary-foreground: var(--reactor-bg) !important;
+  --ring: var(--reactor-info) !important;
   --success: var(--reactor-success) !important;
   --warning: var(--reactor-warning) !important;
   --destructive: var(--reactor-danger) !important;
+  --destructive-foreground: #000000 !important;
+  --info: var(--reactor-info) !important;
+}
+
+html.light,
+html.light #arcane-root,
+#arcane-root.light {
+  color-scheme: light;
+  --reactor-bg: #f5f5f6;
+  --reactor-panel: #ffffff;
+  --reactor-panel-soft: #f0f0f2;
+  --reactor-surface: #f7f7f8;
+  --reactor-raised: #e8e8eb;
+  --reactor-border: #b9b9c0;
+  --reactor-border-soft: #d8d8dc;
+  --reactor-label: #5d5d66;
+  --reactor-text: #18181b;
+  --reactor-success: #1f6f4a;
+  --reactor-warning: #8a4d0f;
+  --reactor-danger: #b4232c;
+  --reactor-info: #1d5f99;
+  --reactor-chart-1: #1d5f99;
+  --reactor-chart-2: #8a4d0f;
+  --reactor-chart-3: #1f6f4a;
+  --reactor-chart-4: #704a9c;
+  --reactor-chart-5: #9e3f69;
+  --reactor-chart-6: #5d5d66;
+  --background: var(--reactor-bg) !important;
+  --foreground: var(--reactor-text) !important;
+  --card: var(--reactor-panel) !important;
+  --card-foreground: var(--reactor-text) !important;
+  --popover: var(--reactor-panel) !important;
+  --popover-foreground: var(--reactor-text) !important;
+  --border: var(--reactor-border) !important;
+  --input: var(--reactor-border) !important;
+  --muted: var(--reactor-panel-soft) !important;
+  --muted-foreground: var(--reactor-label) !important;
+  --secondary: var(--reactor-panel-soft) !important;
+  --secondary-foreground: var(--reactor-text) !important;
+  --accent: var(--reactor-raised) !important;
+  --accent-foreground: var(--reactor-text) !important;
+  --primary: var(--reactor-text) !important;
+  --primary-foreground: #ffffff !important;
+  --ring: var(--reactor-info) !important;
+  --success: var(--reactor-success) !important;
+  --warning: var(--reactor-warning) !important;
+  --destructive: var(--reactor-danger) !important;
+  --destructive-foreground: #ffffff !important;
   --info: var(--reactor-info) !important;
 }
 
@@ -1549,6 +1611,81 @@ select {
   border-bottom: 1px solid var(--reactor-border-soft);
 }
 
+.reactor-theme-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-top: 1px solid var(--reactor-border-soft);
+}
+
+.reactor-theme-option {
+  display: grid;
+  min-width: 0;
+  min-height: 78px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 0;
+  border-right: 1px solid var(--reactor-border-soft);
+  background: var(--reactor-panel);
+  color: var(--reactor-text);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--reactor-transition),
+    box-shadow var(--reactor-transition);
+}
+
+.reactor-theme-option:last-child {
+  border-right: 0;
+}
+
+.reactor-theme-option:hover,
+.reactor-theme-option:focus-visible {
+  background: var(--reactor-surface);
+}
+
+.reactor-theme-option.is-selected {
+  background: var(--reactor-raised);
+  box-shadow: inset 0 0 0 1px var(--reactor-text);
+}
+
+.reactor-theme-option-icon {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 1px solid var(--reactor-border);
+  color: var(--reactor-text);
+}
+
+.reactor-theme-option-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.reactor-theme-option-copy strong {
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.reactor-theme-option-copy span {
+  color: var(--reactor-label);
+  font-size: 0.69rem;
+  line-height: 1.35;
+}
+
+.reactor-theme-option-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--reactor-text);
+  font-size: 0.65rem;
+  font-weight: 650;
+  text-transform: uppercase;
+}
+
 .reactor-settings-threshold-label {
   min-width: 0;
   font-size: 0.875rem;
@@ -2135,6 +2272,20 @@ select {
 }
 
 @media (max-width: 700px) {
+  .reactor-theme-options {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .reactor-theme-option,
+  .reactor-theme-option:last-child {
+    border-right: 0;
+    border-bottom: 1px solid var(--reactor-border-soft);
+  }
+
+  .reactor-theme-option:last-child {
+    border-bottom: 0;
+  }
+
   .reactor-settings-threshold-row {
     grid-template-columns: minmax(0, 1fr) 92px;
     gap: 8px;

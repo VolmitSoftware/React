@@ -18,6 +18,7 @@ import 'package:react_web/state/fleet_manager.dart';
 import 'package:react_web/state/fleet_scope.dart';
 import 'package:react_web/state/memory_fleet_storage.dart';
 import 'package:react_web/state/server_tags_store.dart';
+import 'package:react_web/theme/reactor_theme.dart';
 
 const ShadcnStylesheet _sheet = ShadcnStylesheet(theme: ShadcnTheme.midnight);
 
@@ -104,14 +105,35 @@ class _FakeFleetController implements FleetController {
 Widget _wrapSettings({required _FakeFleetController ctrl}) =>
     ArcaneThemeProvider(
       stylesheet: _sheet,
-      child: FleetScope(
-        controller: ctrl,
-        revision: 0,
-        child: const SettingsScreen(),
+      child: ReactorThemeScope(
+        brightness: Brightness.dark,
+        onChanged: (Brightness _) {},
+        child: FleetScope(
+          controller: ctrl,
+          revision: 0,
+          child: const SettingsScreen(),
+        ),
       ),
     );
 
 void main() {
+  group('SettingsScreen — appearance', () {
+    testServer('renders dark and light theme choices', (
+      ServerTester tester,
+    ) async {
+      final InMemoryFleetStorage storage = InMemoryFleetStorage();
+      final _FakeFleetController ctrl = _FakeFleetController(storage);
+      tester.pumpComponent(_wrapSettings(ctrl: ctrl));
+      final DocumentResponse response = await tester.request('/');
+
+      expect(response.statusCode, equals(200));
+      expect(response.body, contains('data-theme-choice="dark"'));
+      expect(response.body, contains('data-theme-choice="light"'));
+      expect(response.body, contains('aria-pressed="true"'));
+      expect(response.body, contains('High-clarity workspace'));
+    });
+  });
+
   group('SettingsScreen — server labels', () {
     testServer('renders Alpha server label', (ServerTester tester) async {
       final InMemoryFleetStorage storage = InMemoryFleetStorage();

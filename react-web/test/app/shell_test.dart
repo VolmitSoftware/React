@@ -11,12 +11,19 @@ import 'package:react_web/model/server_snapshot.dart';
 import 'package:react_web/state/connection_manager.dart';
 import 'package:react_web/state/fleet_live_scope.dart';
 import 'package:react_web/state/fleet_rollup.dart';
+import 'package:react_web/theme/reactor_theme.dart';
 import 'package:react_web/widget/status_dot.dart';
 
 const ShadcnStylesheet _sheet = ShadcnStylesheet(theme: ShadcnTheme.midnight);
 
-Widget _wrap(Widget child) =>
-    ArcaneThemeProvider(stylesheet: _sheet, child: child);
+Widget _wrap(Widget child) => ArcaneThemeProvider(
+  stylesheet: _sheet,
+  child: ReactorThemeScope(
+    brightness: Brightness.dark,
+    onChanged: (Brightness _) {},
+    child: child,
+  ),
+);
 
 SamplerSample _sample(String id, double value, String display) => SamplerSample(
   id: id,
@@ -31,9 +38,9 @@ SamplerSample _sample(String id, double value, String display) => SamplerSample(
 
 void main() {
   group('ReactorApp', () {
-    test('is a StatelessWidget', () {
+    test('is a StatefulWidget', () {
       const ReactorApp app = ReactorApp();
-      expect(app, isA<StatelessWidget>());
+      expect(app, isA<StatefulWidget>());
     });
 
     test('kRouteRoot is "/"', () {
@@ -113,6 +120,16 @@ void main() {
         );
       },
     );
+
+    testServer('ReactorShell exposes the light theme command', (
+      ServerTester tester,
+    ) async {
+      tester.pumpComponent(_wrap(const ReactorShell()));
+      final DocumentResponse response = await tester.request('/');
+
+      expect(response.statusCode, 200);
+      expect(response.body, contains('aria-label="Switch to light theme"'));
+    });
 
     testServer(
       'routed shell at / renders empty-state body inside the scaffold',

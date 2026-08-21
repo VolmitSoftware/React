@@ -339,8 +339,12 @@
   "screen.settings.account_roles": "賬戶/角色",
   "screen.settings.add_tag": "添加標籤",
   "screen.settings.alert_thresholds": "警報門",
+  "screen.settings.appearance": "外觀",
+  "screen.settings.appearance_description": "選擇此瀏覽器使用的介面主題。",
   "screen.settings.clear_all": "清除所有東西.",
   "screen.settings.confirm_clear_all": "確認所有清除.",
+  "screen.settings.dark_theme": "深色",
+  "screen.settings.dark_theme_description": "適合昏暗環境的低眩光工作區。",
   "screen.settings.export_connections": "出口連接",
   "screen.settings.export_security": "輸出文件包含載體身分驗證權杖和身份證.",
   "screen.settings.fleet_cleared": "保存的艦隊清除",
@@ -352,6 +356,8 @@
   "screen.settings.import_connections": "進口連接",
   "screen.settings.import_failed": "進口失敗:{error}",
   "screen.settings.incident_score_warn": "事件得分警告",
+  "screen.settings.light_theme": "淺色",
+  "screen.settings.light_theme_description": "適合明亮環境的高清晰度工作區。",
   "screen.settings.malformed_skipped": "錯誤的輸入:{count}.",
   "screen.settings.memory_pressure_warn": "記憶壓力警告",
   "screen.settings.mspt_warn": "MSPT 警告閾值",
@@ -451,5 +457,7 @@
   "status.live": "即時連線",
   "status.nominal": "標稱狀態",
   "status.normal": "正常狀態",
-  "status.offline": "離線連線"
+  "status.offline": "離線連線",
+  "theme.switch_to_dark": "切換到深色主題",
+  "theme.switch_to_light": "切換到淺色主題"
 }

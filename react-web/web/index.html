@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
   <title>React Web</title>
   <meta name="description" content="A local-first control plane for React Minecraft server telemetry, maps, incidents, actions, and console access.">
-  <meta name="theme-color" content="#0a0a0b">
-  <meta name="color-scheme" content="dark">
+  <meta id="reactor-theme-color" name="theme-color" content="#0a0a0b">
+  <meta name="color-scheme" content="dark light">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="React Web">
   <meta property="og:title" content="React Web">
@@ -21,6 +21,25 @@
   <link rel="canonical" href="https://react.volmitsoftware.com/">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" href="/favicon.ico" sizes="any">
+  <script>
+    (function () {
+      var mode = 'dark';
+      try {
+        var stored = window.localStorage.getItem('reactor.theme');
+        if (stored === 'light' || stored === 'dark') { mode = stored; }
+      } catch (e) {}
+      var root = document.documentElement;
+      root.classList.remove('light', 'dark');
+      root.classList.add(mode);
+      var themeColor = document.getElementById('reactor-theme-color');
+      if (themeColor) {
+        themeColor.setAttribute(
+          'content',
+          mode === 'light' ? '#f5f5f6' : '#0a0a0b'
+        );
+      }
+    })();
+  </script>
   <link rel="preload" href="/assets/fonts/geist/Geist-Regular.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/assets/fonts/geist/Geist-SemiBold.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/styles/react-web.css">

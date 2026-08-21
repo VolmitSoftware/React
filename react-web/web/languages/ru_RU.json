@@ -339,8 +339,12 @@
   "screen.settings.account_roles": "Счет / Роли",
   "screen.settings.add_tag": "Добавить тег",
   "screen.settings.alert_thresholds": "Предупредительные пороги",
+  "screen.settings.appearance": "Оформление",
+  "screen.settings.appearance_description": "Выберите тему интерфейса для этого браузера.",
   "screen.settings.clear_all": "Все очистить.",
   "screen.settings.confirm_clear_all": "Подтвердите все .",
+  "screen.settings.dark_theme": "Тёмная",
+  "screen.settings.dark_theme_description": "Небликующее рабочее пространство для тёмного окружения.",
   "screen.settings.export_connections": "Экспортные связи",
   "screen.settings.export_security": "Экспортные файлы содержат токены аутентификации и идентификационные данные носителя.",
   "screen.settings.fleet_cleared": "Сберегаемый флот очищен .",
@@ -352,6 +356,8 @@
   "screen.settings.import_connections": "Импортные связи",
   "screen.settings.import_failed": "Импорт не удается: {error}",
   "screen.settings.incident_score_warn": "Предупреждение о результатах событий",
+  "screen.settings.light_theme": "Светлая",
+  "screen.settings.light_theme_description": "Контрастное рабочее пространство для светлого окружения.",
   "screen.settings.malformed_skipped": "Неформальные записи для удаления: {count}.",
   "screen.settings.memory_pressure_warn": "Предупреждение о давлении памяти",
   "screen.settings.mspt_warn": "Предел предупреждения MSPT",
@@ -451,5 +457,7 @@
   "status.live": "Активное подключение",
   "status.nominal": "Номинальное состояние",
   "status.normal": "Нормальное состояние",
-  "status.offline": "Офлайн-подключение"
+  "status.offline": "Офлайн-подключение",
+  "theme.switch_to_dark": "Переключиться на тёмную тему",
+  "theme.switch_to_light": "Переключиться на светлую тему"
 }

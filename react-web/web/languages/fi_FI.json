@@ -339,8 +339,12 @@
   "screen.settings.account_roles": "Tilin / roolit",
   "screen.settings.add_tag": "Lisää merkkiä",
   "screen.settings.alert_thresholds": "Varoitusrajat",
+  "screen.settings.appearance": "Ulkoasu",
+  "screen.settings.appearance_description": "Valitse tässä selaimessa käytettävä käyttöliittymäteema.",
   "screen.settings.clear_all": "- Puhdista kaikki.",
   "screen.settings.confirm_clear_all": "Vahvistakaa kaikki .",
+  "screen.settings.dark_theme": "Tumma",
+  "screen.settings.dark_theme_description": "Vähähäikäisyinen työtila hämäriin ympäristöihin.",
   "screen.settings.export_connections": "Vientiyhteydet",
   "screen.settings.export_security": "Vientitiedostoissa on kantaja-todennustunnukset ja -luottoluokit.",
   "screen.settings.fleet_cleared": "Pelastettu laivasto on puhdistettu.",
@@ -352,6 +356,8 @@
   "screen.settings.import_connections": "Importaatiosuhteet",
   "screen.settings.import_failed": "Importti epäonnistunut: {error}",
   "screen.settings.incident_score_warn": "Tapahtumista koskeva varoitus",
+  "screen.settings.light_theme": "Vaalea",
+  "screen.settings.light_theme_description": "Selkeä työtila valoisiin ympäristöihin.",
   "screen.settings.malformed_skipped": "Virheellinen kirjaus: {count}.",
   "screen.settings.memory_pressure_warn": "Muistipaineen varoitus",
   "screen.settings.mspt_warn": "MSPT-varoitusraja",
@@ -451,5 +457,7 @@
   "status.live": "Aktiivinen yhteys",
   "status.nominal": "Nimellistila",
   "status.normal": "Normaali tila",
-  "status.offline": "Offline-yhteys"
+  "status.offline": "Offline-yhteys",
+  "theme.switch_to_dark": "Vaihda tummaan teemaan",
+  "theme.switch_to_light": "Vaihda vaaleaan teemaan"
 }

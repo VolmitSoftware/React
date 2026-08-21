@@ -339,8 +339,12 @@
   "screen.settings.account_roles": "Konto / role",
   "screen.settings.add_tag": "Dodaj tag",
   "screen.settings.alert_thresholds": "Praga ostrzegawcza",
+  "screen.settings.appearance": "Wygląd",
+  "screen.settings.appearance_description": "Wybierz motyw interfejsu używany w tej przeglądarce.",
   "screen.settings.clear_all": "Wyczyść wszystko.",
   "screen.settings.confirm_clear_all": "Potwierdź wszystko.",
+  "screen.settings.dark_theme": "Ciemny",
+  "screen.settings.dark_theme_description": "Obszar roboczy o niskim blasku do ciemnego otoczenia.",
   "screen.settings.export_connections": "Połączenia eksportowe",
   "screen.settings.export_security": "Pliki eksportowe zawierają tokeny uwierzytelniające i dokumenty uwierzytelniające.",
   "screen.settings.fleet_cleared": "Oczyszczona flota oszczędna",
@@ -352,6 +356,8 @@
   "screen.settings.import_connections": "Połączenia importowe",
   "screen.settings.import_failed": "Import nie powiodł się: {error}",
   "screen.settings.incident_score_warn": "Ostrzeżenie o wyniku incydentu",
+  "screen.settings.light_theme": "Jasny",
+  "screen.settings.light_theme_description": "Czytelny obszar roboczy do jasnego otoczenia.",
   "screen.settings.malformed_skipped": "Nieprawidłowe wpisy do przelewu: {count}.",
   "screen.settings.memory_pressure_warn": "Ostrzeżenie przed ciśnieniem pamięci",
   "screen.settings.mspt_warn": "Praga ostrzeżenia MSPT",
@@ -451,5 +457,7 @@
   "status.live": "Aktywne połączenie",
   "status.nominal": "Stan nominalny",
   "status.normal": "Stan normalny",
-  "status.offline": "Połączenie offline"
+  "status.offline": "Połączenie offline",
+  "theme.switch_to_dark": "Przełącz na ciemny motyw",
+  "theme.switch_to_light": "Przełącz na jasny motyw"
 }
