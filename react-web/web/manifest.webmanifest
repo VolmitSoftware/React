@@ -1,0 +1,12 @@
+{
+  "name": "React Web",
+  "short_name": "React",
+  "description": "Local-first telemetry and control for React Minecraft servers.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0b",
+  "theme_color": "#0a0a0b",
+  "categories": ["developer", "utilities"]
+}

@@ -140,7 +140,7 @@ public class ActionRoutesIntegrationTest {
             String id = entry.get("id").getAsString();
             if ("purge-entities".equals(id)) {
                 purgeEntry = entry;
-            } else if ("hopper-network-normalize".equals(id)) {
+            } else if ("action-hopper-network-normalize".equals(id)) {
                 hopperEntry = entry;
             }
         }
@@ -155,13 +155,13 @@ public class ActionRoutesIntegrationTest {
             "first param key should be secondsToPurge");
         assertTrue(firstParam.has("default"),
             "param should have a 'default' key present, got: " + firstParam);
-        assertNotNull(hopperEntry, "hopper-network-normalize should be in the list");
+        assertNotNull(hopperEntry, "action-hopper-network-normalize should be in the list");
         assertFalse(hopperEntry.get("destructive").getAsBoolean(),
-            "hopper-network-normalize should not be destructive");
+            "action-hopper-network-normalize should not be destructive");
 
         long c1 = opCounter.incrementAndGet();
         HttpRequest executeNonDestructive = HttpRequest.newBuilder()
-            .uri(URI.create("http://127.0.0.1:" + port + "/api/v1/actions/hopper-network-normalize/execute"))
+            .uri(URI.create("http://127.0.0.1:" + port + "/api/v1/actions/action-hopper-network-normalize/execute"))
             .header("Authorization", "Bearer " + opBearer)
             .header("X-React-Counter", String.valueOf(c1))
             .header("Content-Type", "application/json")
@@ -169,13 +169,13 @@ public class ActionRoutesIntegrationTest {
             .build();
         HttpResponse<String> executeNonDestructiveResponse = client.send(executeNonDestructive, HttpResponse.BodyHandlers.ofString());
         assertEquals(202, executeNonDestructiveResponse.statusCode(),
-            "POST hopper-network-normalize/execute with op token should return 202, body: " + executeNonDestructiveResponse.body());
+            "POST action-hopper-network-normalize/execute with op token should return 202, body: " + executeNonDestructiveResponse.body());
         JsonObject execData = JsonParser.parseString(executeNonDestructiveResponse.body()).getAsJsonObject().getAsJsonObject("data");
         assertNotNull(execData, "Response should contain 'data' object");
         assertEquals("tkt-int", execData.get("ticketId").getAsString());
         assertEquals("queued", execData.get("status").getAsString());
         assertTrue(fakeDispatcher.dispatched, "Dispatcher should have been invoked");
-        assertEquals("hopper-network-normalize", fakeDispatcher.lastId);
+        assertEquals("action-hopper-network-normalize", fakeDispatcher.lastId);
 
         fakeDispatcher.dispatched = false;
         long ac1 = adminCounter.incrementAndGet();
@@ -232,7 +232,7 @@ public class ActionRoutesIntegrationTest {
         AtomicLong readCounter = new AtomicLong(0);
         long rc1 = readCounter.incrementAndGet();
         HttpRequest executeWithReadToken = HttpRequest.newBuilder()
-            .uri(URI.create("http://127.0.0.1:" + port + "/api/v1/actions/hopper-network-normalize/execute"))
+            .uri(URI.create("http://127.0.0.1:" + port + "/api/v1/actions/action-hopper-network-normalize/execute"))
             .header("Authorization", "Bearer " + readBearer)
             .header("X-React-Counter", String.valueOf(rc1))
             .header("Content-Type", "application/json")
@@ -247,7 +247,7 @@ public class ActionRoutesIntegrationTest {
         assertFalse(fakeDispatcher.dispatched, "Dispatcher must NOT be invoked when scope check fails");
 
         HttpRequest executeNoCounter = HttpRequest.newBuilder()
-            .uri(URI.create("http://127.0.0.1:" + port + "/api/v1/actions/hopper-network-normalize/execute"))
+            .uri(URI.create("http://127.0.0.1:" + port + "/api/v1/actions/action-hopper-network-normalize/execute"))
             .header("Authorization", "Bearer " + opBearer)
             .header("Content-Type", "application/json")
             .POST(HttpRequest.BodyPublishers.ofString("{\"params\":{},\"confirm\":false}"))
@@ -294,7 +294,7 @@ public class ActionRoutesIntegrationTest {
             purge.params = new ActionParamDto[]{secondsToPurge};
 
             ActionDescriptorDto hopper = new ActionDescriptorDto();
-            hopper.id = "hopper-network-normalize";
+            hopper.id = "action-hopper-network-normalize";
             hopper.name = "Hopper Network Normalize";
             hopper.destructive = false;
             hopper.params = new ActionParamDto[0];

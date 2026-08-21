@@ -1,1 +1,0 @@
-{"isEntrypoint":true,"deps":["http|lib/http.dart","path|lib/path.dart","shelf|lib/shelf.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async"],"hasMain":false}

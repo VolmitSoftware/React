@@ -1,1 +1,0 @@
-{"isEntrypoint":false,"deps":["arcane_jaspr|lib/component/navigation/toc.dart","arcane_jaspr|lib/component/view/map/map_style.dart","arcane_jaspr|lib/util/content/prose_styles.dart","arcane_jaspr_shadcn|lib/src/shadcn_theme.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

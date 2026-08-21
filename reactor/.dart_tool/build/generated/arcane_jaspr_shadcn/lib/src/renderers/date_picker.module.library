@@ -1,1 +1,0 @@
-{"isEntrypoint":false,"deps":["jaspr|lib/jaspr.dart","arcane_jaspr|lib/core/props/calendar_props.dart","arcane_jaspr|lib/core/props/date_picker_props.dart","arcane_jaspr|lib/core/rendering/base/date_picker_render_base.dart","arcane_jaspr_shadcn|lib/src/renderers/calendar.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

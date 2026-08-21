@@ -1,1 +1,0 @@
-{"isEntrypoint":true,"deps":["reactor|lib/service/react_client.dart","reactor|lib/service/react_log_socket.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async"],"hasMain":false}

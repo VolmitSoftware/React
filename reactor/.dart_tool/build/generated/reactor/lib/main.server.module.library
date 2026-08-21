@@ -1,1 +1,0 @@
-{"isEntrypoint":true,"deps":["jaspr|lib/server.dart","reactor|lib/app/reactor_app.dart","reactor|lib/main.server.options.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":true}

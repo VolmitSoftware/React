@@ -7,9 +7,9 @@ public enum WebRole {
 
     VIEWER("viewer", Set.of("read")),
     OPERATOR("operator", Set.of("read", "op:execute")),
-    ADMIN("admin", Set.of("read", "op:execute", "admin"));
+    ADMIN("admin", Set.of("read", "op:execute", "admin", "console:read", "console:execute"));
 
-    public static final String DEFAULT_ROLE_ID = "admin";
+    public static final String DEFAULT_ROLE_ID = "viewer";
 
     private final String roleId;
     private final Set<String> roleScopes;

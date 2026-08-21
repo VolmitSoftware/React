@@ -1,1 +1,0 @@
-{"isEntrypoint":true,"deps":["reactor|lib/model/server_credential.dart","reactor|lib/model/server_snapshot.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

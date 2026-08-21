@@ -14,8 +14,10 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.File;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -43,6 +45,12 @@ public class WebControllerRelayTest {
         c.setConfig(config);
         c.setDataFolder(dataFolder);
         c.setSampleController(sampleController);
+        return c;
+    }
+
+    private TestWebController buildInspectableController(WebConfiguration config) {
+        TestWebController c = new TestWebController();
+        c.setConfig(config);
         return c;
     }
 
@@ -104,5 +112,49 @@ public class WebControllerRelayTest {
         controller.stop();
         assertNull(controller.getRelayClient(), "RelayClient must be null after stop()");
         controller = null;
+    }
+
+    @Test
+    void relayLoopbackAlwaysUsesHttpEvenWhenAdvertisedUrlIsHttps() {
+        WebConfiguration config = new WebConfiguration();
+        config.setAdvertisedUrl("https://react.example.net/direct");
+        TestWebController c = buildInspectableController(config);
+
+        assertEquals("http://127.0.0.1:41234", c.loopbackUrl(41234));
+    }
+
+    @Test
+    void advertisedUrlBecomesNormalizedDirectUrl() {
+        WebConfiguration config = new WebConfiguration();
+        config.setAdvertisedUrl("  https://react.example.net/proxy/react/  ");
+        TestWebController c = buildInspectableController(config);
+
+        assertEquals("https://react.example.net/proxy/react", c.resolveDirectUrl());
+    }
+
+    @Test
+    void blankAdvertisedUrlUsesHttpListenerFallback() {
+        WebConfiguration config = new WebConfiguration();
+        config.setBindAddress("0.0.0.0");
+        config.setPort(9697);
+        TestWebController c = buildInspectableController(config);
+
+        assertEquals("http://127.0.0.1:9697", c.resolveDirectUrl());
+    }
+
+    @Test
+    void invalidAdvertisedUrlIsRejected() {
+        WebConfiguration config = new WebConfiguration();
+        config.setAdvertisedUrl("ftp://react.example.net");
+        TestWebController c = buildInspectableController(config);
+
+        assertThrows(IllegalArgumentException.class, c::resolveDirectUrl);
+    }
+
+    private static final class TestWebController extends WebController {
+
+        String loopbackUrl(int port) {
+            return resolveRelayLoopbackUrl(port);
+        }
     }
 }

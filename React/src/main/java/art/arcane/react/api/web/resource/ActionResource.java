@@ -3,6 +3,7 @@ package art.arcane.react.api.web.resource;
 import art.arcane.react.api.web.ActionBackend;
 import art.arcane.react.api.web.ActionDispatcher;
 import art.arcane.react.api.web.AuditLog;
+import art.arcane.react.api.web.PairingToken;
 import art.arcane.react.api.web.WebAuth;
 import art.arcane.react.api.web.dto.ActionDescriptorDto;
 import art.arcane.react.api.web.dto.Envelope;
@@ -59,6 +60,7 @@ public class ActionResource {
     }
 
     private String resolveActor(Context ctx) {
-        return "web";
+        PairingToken token = ctx.attribute("token");
+        return token == null ? "web" : "web:" + token.tokenId();
     }
 }

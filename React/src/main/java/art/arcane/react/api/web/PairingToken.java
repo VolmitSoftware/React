@@ -17,12 +17,18 @@ public final class PairingToken {
 
   private static final String HMAC_ALGO = "HmacSHA256";
 
+  private final String tokenId;
   private final Set<String> scopes;
   private final String role;
 
-  private PairingToken(Set<String> scopes, String role) {
+  private PairingToken(String tokenId, Set<String> scopes, String role) {
+    this.tokenId = tokenId;
     this.scopes = scopes;
     this.role = role;
+  }
+
+  public String tokenId() {
+    return tokenId;
   }
 
   public boolean hasScope(String scope) {
@@ -68,7 +74,7 @@ public final class PairingToken {
     }
     String roleId = WebRole.resolveRoleId(rec.role());
     Set<String> effective = WebRole.scopesFor(rec.role());
-    return Optional.of(new PairingToken(effective, roleId));
+    return Optional.of(new PairingToken(rec.id(), effective, roleId));
   }
 
   private static String signingInput(String id, String label, long issuedAt, Set<String> scopes) {

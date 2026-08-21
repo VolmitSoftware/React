@@ -1,1 +1,0 @@
-{"isEntrypoint":true,"deps":["arcane_jaspr|lib/theme/color_seed.dart","arcane_jaspr|lib/theme/css_generator.dart","arcane_jaspr|lib/theme/font_config.dart","arcane_jaspr|lib/theme/palette.dart","arcane_jaspr|lib/theme/palette_generator.dart","arcane_jaspr|lib/theme/radius_config.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

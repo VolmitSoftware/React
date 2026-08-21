@@ -1,5 +1,6 @@
 package art.arcane.react.api.web.resource;
 
+import art.arcane.react.api.web.WebAuth;
 import io.javalin.http.BadRequestResponse;
 import io.javalin.http.Context;
 
@@ -17,6 +18,7 @@ public class LogsResource {
     public record LogsResponse(String[] data) {}
 
     public void list(Context ctx) {
+        WebAuth.requireScope(ctx, "console:read");
         String limitParam = ctx.queryParam("limit");
         int limit = 200;
         if (limitParam != null) {

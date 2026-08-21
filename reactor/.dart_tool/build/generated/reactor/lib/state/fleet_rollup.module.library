@@ -1,1 +1,0 @@
-{"isEntrypoint":true,"deps":["reactor|lib/model/alert.dart","reactor|lib/model/server_snapshot.dart","reactor|lib/state/connection_manager.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

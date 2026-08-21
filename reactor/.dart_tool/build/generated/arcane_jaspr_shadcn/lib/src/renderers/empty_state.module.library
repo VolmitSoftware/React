@@ -1,1 +1,0 @@
-{"isEntrypoint":false,"deps":["jaspr|lib/jaspr.dart","jaspr|lib/dom.dart","arcane_jaspr|lib/core/props/empty_state_props.dart","arcane_jaspr|lib/core/rendering/base/empty_state_render_base.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

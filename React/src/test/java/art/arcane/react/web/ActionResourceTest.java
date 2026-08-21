@@ -91,7 +91,7 @@ public class ActionResourceTest {
     void execute_non_destructive_with_op_token_returns_202_and_ticket() {
         Context ctx = mock(Context.class);
         when(ctx.<PairingToken>attribute("token")).thenReturn(opToken);
-        when(ctx.pathParam("id")).thenReturn("hopper-network-normalize");
+        when(ctx.pathParam("id")).thenReturn("action-hopper-network-normalize");
         when(ctx.bodyAsClass(ActionResource.ExecuteBody.class))
                 .thenReturn(new ActionResource.ExecuteBody(Map.of(), null));
 
@@ -110,12 +110,12 @@ public class ActionResourceTest {
         assertEquals("queued", envelope.data().status());
 
         assertTrue(fakeDispatcher.dispatched);
-        assertEquals("hopper-network-normalize", fakeDispatcher.lastId);
+        assertEquals("action-hopper-network-normalize", fakeDispatcher.lastId);
 
         List<String> tail = audit.tail(1);
         assertEquals(1, tail.size());
         assertTrue(tail.get(0).contains("action.execute"));
-        assertTrue(tail.get(0).contains("hopper-network-normalize"));
+        assertTrue(tail.get(0).contains("action-hopper-network-normalize"));
     }
 
     @Test
@@ -173,7 +173,7 @@ public class ActionResourceTest {
     void execute_with_read_only_token_throws_forbidden_and_dispatcher_not_invoked() {
         Context ctx = mock(Context.class);
         when(ctx.<PairingToken>attribute("token")).thenReturn(readToken);
-        when(ctx.pathParam("id")).thenReturn("hopper-network-normalize");
+        when(ctx.pathParam("id")).thenReturn("action-hopper-network-normalize");
         when(ctx.bodyAsClass(ActionResource.ExecuteBody.class))
                 .thenReturn(new ActionResource.ExecuteBody(Map.of(), null));
 
@@ -193,7 +193,7 @@ public class ActionResourceTest {
             destructive.params = new art.arcane.react.api.web.dto.ActionParamDto[0];
 
             ActionDescriptorDto normal = new ActionDescriptorDto();
-            normal.id = "hopper-network-normalize";
+            normal.id = "action-hopper-network-normalize";
             normal.name = "Hopper Network Normalize";
             normal.destructive = false;
             normal.params = new art.arcane.react.api.web.dto.ActionParamDto[0];

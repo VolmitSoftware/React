@@ -1,1 +1,0 @@
-{"isEntrypoint":true,"deps":["arcane_jaspr|lib/arcane_jaspr.dart","jaspr|lib/dom.dart","jaspr|lib/jaspr.dart","jaspr_router|lib/jaspr_router.dart","reactor|lib/model/server_credential.dart","reactor|lib/state/fleet_manager.dart","reactor|lib/state/fleet_scope.dart","reactor|lib/ui/reactor_ui.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["convert"],"hasMain":false}

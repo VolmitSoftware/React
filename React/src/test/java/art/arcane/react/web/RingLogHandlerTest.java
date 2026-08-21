@@ -68,4 +68,32 @@ public class RingLogHandlerTest {
         handler.publish(null);
         assertEquals(1, handler.size());
     }
+
+    @Test
+    void multilineMessagesAndThrownStackTracesArePreservedAsConsoleLines() {
+        RingLogHandler handler = new RingLogHandler(256);
+        LogRecord record = new LogRecord(Level.SEVERE, "first line\nsecond line");
+        record.setThrown(new IllegalStateException("broken console record"));
+
+        handler.publish(record);
+
+        List<String> lines = handler.recent(256);
+        assertTrue(lines.stream().anyMatch(line -> line.contains("first line")));
+        assertTrue(lines.stream().anyMatch(line -> line.contains("second line")));
+        assertTrue(lines.stream().anyMatch(line -> line.contains("IllegalStateException: broken console record")));
+        assertTrue(lines.stream().anyMatch(line -> line.contains("RingLogHandlerTest")));
+    }
+
+    @Test
+    void externalConsoleRecordsUseTheSameBoundedLinePipeline() {
+        RingLogHandler handler = new RingLogHandler(3);
+
+        handler.publishExternal("WARN", "first\nsecond\nthird\nfourth", null);
+
+        List<String> lines = handler.recent(3);
+        assertEquals(3, lines.size());
+        assertTrue(lines.stream().allMatch(line -> line.startsWith("[WARN] ")));
+        assertTrue(lines.stream().noneMatch(line -> line.contains("first")));
+        assertTrue(lines.stream().anyMatch(line -> line.contains("fourth")));
+    }
 }

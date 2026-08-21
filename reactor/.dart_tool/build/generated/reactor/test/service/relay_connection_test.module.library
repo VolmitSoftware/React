@@ -1,1 +1,0 @@
-{"isEntrypoint":true,"deps":["test|lib/test.dart","reactor|lib/model/relay_frame.dart","reactor|lib/service/relay_connection.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async"],"hasMain":true}

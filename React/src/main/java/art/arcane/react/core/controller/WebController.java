@@ -10,11 +10,13 @@ import art.arcane.react.api.web.ActionDispatcher;
 import art.arcane.react.api.web.ActionParamCoercer;
 import art.arcane.react.api.web.ActionParamSerializer;
 import art.arcane.react.api.web.AuditLog;
+import art.arcane.react.api.web.BukkitConsoleCommandDispatcher;
 import art.arcane.react.api.web.ConfigApplier;
 import art.arcane.react.api.web.ConfigTreeSerializer;
 import art.arcane.react.api.web.ControlBackend;
 import art.arcane.react.api.web.ControlMutator;
 import art.arcane.react.api.web.ControlSerializer;
+import art.arcane.react.api.web.ConsoleCommandDispatcher;
 import art.arcane.react.api.web.FeatureWorldBackend;
 import art.arcane.react.api.web.MetricsSerializer;
 import art.arcane.react.api.web.PairingToken;
@@ -41,12 +43,15 @@ import art.arcane.react.api.web.heatmap.ReactHeatmapCellProvider;
 import art.arcane.react.api.web.EnvironmentSnapshotProvider;
 import art.arcane.react.api.web.RingLogHandler;
 import art.arcane.react.api.web.resource.ActionResource;
+import art.arcane.react.api.web.resource.CapabilityResource;
 import art.arcane.react.api.web.resource.ConfigResource;
+import art.arcane.react.api.web.resource.ConsoleResource;
 import art.arcane.react.api.web.resource.ControlResource;
 import art.arcane.react.api.web.resource.EnvironmentResource;
 import art.arcane.react.api.web.resource.HeatmapResource;
 import art.arcane.react.api.web.resource.IdentityResource;
 import art.arcane.react.api.web.IncidentTimeline;
+import art.arcane.react.api.web.Log4jConsoleCapture;
 import art.arcane.react.api.web.resource.IncidentResource;
 import art.arcane.react.api.web.resource.IntegrationResource;
 import art.arcane.react.api.web.resource.LogsResource;
@@ -77,6 +82,7 @@ import lombok.Setter;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.DoubleSupplier;
@@ -88,6 +94,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @Getter
@@ -118,6 +125,7 @@ public class WebController implements IController {
     private transient volatile AuditLog auditLog;
     private transient volatile ActionBackend actionBackend;
     private transient volatile ActionDispatcher actionDispatcher;
+    private transient volatile ConsoleCommandDispatcher consoleCommandDispatcher;
     private transient volatile DoubleSupplier incidentScoreSupplier;
     private transient volatile Supplier<String> incidentStateSupplier;
     private transient volatile IntFunction<List<String>> incidentTimelineSupplier;
@@ -130,6 +138,7 @@ public class WebController implements IController {
     private transient volatile IntFunction<List<String>> logLinesSupplier;
     private transient volatile WebSocketSessions logSessions;
     private transient volatile Logger attachedLogger;
+    private transient volatile Log4jConsoleCapture log4jConsoleCapture;
 
     public WebController() {
     }
@@ -236,6 +245,52 @@ public class WebController implements IController {
         return dto;
     }
 
+    protected Logger resolveConsoleLogger() {
+        if (React.instance != null && React.instance.getServer() != null) {
+            return React.instance.getServer().getLogger();
+        }
+        return Logger.getLogger("");
+    }
+
+    protected RelayLoopbackBridge createRelayLoopbackBridge(int port) {
+        return new RelayLoopbackBridge(resolveRelayLoopbackUrl(port));
+    }
+
+    protected String resolveRelayLoopbackUrl(int port) {
+        return "http://127.0.0.1:" + port;
+    }
+
+    public String resolveDirectUrl() {
+        String advertisedUrl = config.getAdvertisedUrl();
+        if (advertisedUrl != null && !advertisedUrl.isBlank()) {
+            String normalized = advertisedUrl.trim();
+            while (normalized.endsWith("/")) {
+                normalized = normalized.substring(0, normalized.length() - 1);
+            }
+            if (!normalized.isBlank()) {
+                validateAdvertisedUrl(normalized);
+                return normalized;
+            }
+        }
+        String host = config.getBindAddress();
+        if (host == null || host.isBlank() || host.equals("0.0.0.0") || host.equals("::") || host.equals("[::]")) {
+            host = "127.0.0.1";
+        } else if (host.indexOf(':') >= 0 && !host.startsWith("[")) {
+            host = "[" + host + "]";
+        }
+        int directPort = boundPort > 0 ? boundPort : config.getPort();
+        return "http://" + host + ":" + directPort;
+    }
+
+    private static void validateAdvertisedUrl(String url) {
+        URI uri = URI.create(url);
+        String scheme = uri.getScheme();
+        if (scheme == null || (!scheme.equalsIgnoreCase("http") && !scheme.equalsIgnoreCase("https"))
+            || uri.getHost() == null || uri.getUserInfo() != null || uri.getQuery() != null || uri.getFragment() != null) {
+            throw new IllegalArgumentException("advertisedUrl must be an absolute HTTP or HTTPS base URL without credentials, query, or fragment");
+        }
+    }
+
     @Override
     public void postStart() {
         if (!config.isEnabled()) {
@@ -268,6 +323,11 @@ public class WebController implements IController {
                     React.warn("Unhandled web exception: " + e.getMessage());
                     ctx.status(500).json(new ErrorEnvelope(new ErrorEnvelope.Message("Internal server error")));
                 });
+                CapabilityResource capabilityResource = new CapabilityResource(
+                    () -> WebController.this.identity.fingerprint(),
+                    this::isRelayAvailable
+                );
+                javalin.get("/api/v1/ping", capabilityResource::get);
                 if (featureControlBackend == null) {
                     ControlMutator fcMutator = (path, value) -> J.sResult(() -> ReactConfigGUI.applyAndSave(null, path, value));
                     featureControlBackend = new RegistryControlBackend<Feature>(
@@ -388,8 +448,14 @@ public class WebController implements IController {
                     javalin.before("/api/v1/worlds", auth);
                 }
                 javalin.before("/api/v1/worlds/update", auth);
+                javalin.before("/api/v1/worlds/{name}", ctx -> {
+                    if (!ctx.path().equals("/api/v1/worlds/update")) {
+                        auth.handle(ctx);
+                    }
+                });
                 javalin.get("/api/v1/worlds", worldResource::list);
                 javalin.put("/api/v1/worlds/update", worldResource::update);
+                javalin.put("/api/v1/worlds/{name}", worldResource::updateNamed);
                 if (auditLog == null) {
                     auditLog = new AuditLog(resolveDataFolder());
                 }
@@ -425,6 +491,12 @@ public class WebController implements IController {
                 javalin.before("/api/v1/actions/{id}/execute", auth);
                 javalin.get("/api/v1/actions", actionResource::list);
                 javalin.post("/api/v1/actions/{id}/execute", actionResource::execute);
+                if (consoleCommandDispatcher == null) {
+                    consoleCommandDispatcher = new BukkitConsoleCommandDispatcher();
+                }
+                ConsoleResource consoleResource = new ConsoleResource(consoleCommandDispatcher, auditLog);
+                javalin.before("/api/v1/console/execute", auth);
+                javalin.post("/api/v1/console/execute", consoleResource::execute);
                 if (incidentScoreSupplier == null) {
                     incidentScoreSupplier = () -> {
                         Sampler s = React.instance != null ? React.sampler(SamplerIncidentScore.ID) : null;
@@ -500,14 +572,18 @@ public class WebController implements IController {
                     RingLogHandler capturedHandler = logHandler;
                     logLinesSupplier = n -> capturedHandler.recent(n);
                 }
-                Logger pluginLogger = React.instance != null ? React.instance.getLogger() : null;
-                Logger reactLogger = pluginLogger != null ? pluginLogger : Logger.getGlobal();
-                reactLogger.addHandler(logHandler);
-                attachedLogger = reactLogger;
-                LogsResource logsResource = new LogsResource(logLinesSupplier);
-                if (config.isRequireTokenForReads()) {
-                    javalin.before("/api/v1/logs", auth);
+                Logger consoleLogger = resolveConsoleLogger();
+                consoleLogger.addHandler(logHandler);
+                attachedLogger = consoleLogger;
+                try {
+                    log4jConsoleCapture = Log4jConsoleCapture.attach(logHandler);
+                } catch (ReflectiveOperationException | SecurityException | LinkageError e) {
+                    if (React.instance != null) {
+                        consoleLogger.log(Level.WARNING, "Unable to attach React web console capture to Log4j", e);
+                    }
                 }
+                LogsResource logsResource = new LogsResource(logLinesSupplier);
+                javalin.before("/api/v1/logs", auth);
                 javalin.get("/api/v1/logs", logsResource::list);
                 javalin.start(config.getBindAddress(), config.getPort());
                 app = javalin;
@@ -540,7 +616,7 @@ public class WebController implements IController {
                 ExecutorService capturedSendExecutor = sendExecutor;
                 javalin.ws("/ws/logs", ws -> {
                     ws.onConnect(ctx -> {
-                        if (!authorizeWsRead(ctx)) {
+                        if (!authorizeWsConsoleRead(ctx)) {
                             ctx.closeSession(1008, "Unauthorized");
                             return;
                         }
@@ -572,8 +648,7 @@ public class WebController implements IController {
                 }, periodMs, periodMs, TimeUnit.MILLISECONDS);
                 if (config.isRelayEnabled() && config.getRelayUrl() != null && !config.getRelayUrl().isBlank()) {
                     try {
-                        String scheme = config.isTlsEnabled() ? "https" : "http";
-                        RelayLoopbackBridge bridge = new RelayLoopbackBridge(scheme + "://127.0.0.1:" + boundPort);
+                        RelayLoopbackBridge bridge = createRelayLoopbackBridge(boundPort);
                         RelayClient client = new RelayClient(config.getRelayUrl(), WebController.this.identity, bridge, new RelayBackoff(1000L, 30000L));
                         client.start();
                         relayClient = client;
@@ -604,11 +679,26 @@ public class WebController implements IController {
         if (!config.isRequireTokenForReads()) {
             return true;
         }
+        return authorizeWsScope(ctx, "read");
+    }
+
+    private boolean authorizeWsConsoleRead(WsConnectContext ctx) {
+        return authorizeWsScope(ctx, "console:read");
+    }
+
+    private boolean authorizeWsScope(WsConnectContext ctx, String scope) {
         String token = ctx.queryParam("token");
         if (token == null) {
             return false;
         }
-        return PairingToken.verify(secret, token, tokenStore).isPresent();
+        return PairingToken.verify(secret, token, tokenStore)
+            .map(pairingToken -> pairingToken.hasScope(scope))
+            .orElse(false);
+    }
+
+    private boolean isRelayAvailable() {
+        RelayClient client = relayClient;
+        return client != null && client.isRegistered();
     }
 
     public void awaitStart(long timeoutMs) throws InterruptedException {
@@ -629,6 +719,18 @@ public class WebController implements IController {
         RingLogHandler handler = logHandler;
         if (handler != null) {
             handler.clearLineListener();
+            Log4jConsoleCapture capture = log4jConsoleCapture;
+            if (capture != null) {
+                try {
+                    capture.close();
+                } catch (ReflectiveOperationException e) {
+                    Logger logger = attachedLogger;
+                    if (logger != null) {
+                        logger.log(Level.WARNING, "Unable to detach React web console capture from Log4j", e);
+                    }
+                }
+                log4jConsoleCapture = null;
+            }
             Logger logger = attachedLogger;
             if (logger != null) {
                 logger.removeHandler(handler);

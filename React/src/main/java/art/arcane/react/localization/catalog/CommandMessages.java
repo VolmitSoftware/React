@@ -107,7 +107,6 @@ public final class CommandMessages {
   public static final TextKey WEB_PAIRING_CODE = TextKey.of("command.runtime.web.pairing_code", "<aqua>Pairing code:</aqua> {code}");
   public static final TextKey WEB_SERVER_FINGERPRINT = TextKey.of("command.runtime.web.server_fingerprint", "<aqua>Server fingerprint:</aqua> {fingerprint}");
   public static final TextKey WEB_TOKEN_FINGERPRINT = TextKey.of("command.runtime.web.token_fingerprint", "<aqua>Token fingerprint:</aqua> {fingerprint}");
-  public static final TextKey WEB_CONFIRM = TextKey.of("command.runtime.web.confirm", "<aqua>Confirm:</aqua> {word}");
   public static final TextKey WEB_TOKEN_ID = TextKey.of("command.runtime.web.token_id", "<aqua>Token ID:</aqua> {id}");
   public static final TextKey WEB_ROLE = TextKey.of("command.runtime.web.role", "<aqua>Role:</aqua> {role}");
   public static final TextKey WEB_NO_TOKENS = TextKey.of("command.runtime.web.no_tokens", "<aqua>No active tokens.</aqua>");
@@ -246,7 +245,6 @@ public final class CommandMessages {
     builder.add(WEB_PAIRING_CODE);
     builder.add(WEB_SERVER_FINGERPRINT);
     builder.add(WEB_TOKEN_FINGERPRINT);
-    builder.add(WEB_CONFIRM);
     builder.add(WEB_TOKEN_ID);
     builder.add(WEB_ROLE);
     builder.add(WEB_NO_TOKENS);

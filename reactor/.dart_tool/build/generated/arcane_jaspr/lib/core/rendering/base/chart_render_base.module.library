@@ -1,1 +1,0 @@
-{"isEntrypoint":true,"deps":["jaspr|lib/dom.dart","jaspr|lib/jaspr.dart","arcane_jaspr|lib/core/props/chart_props.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

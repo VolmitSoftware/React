@@ -1,103 +1,73 @@
 package art.arcane.react.api.web;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
-public record PairingCode(String host, int port, String tokenId, String tokenSig, String confirmWord,
-                          String relayUrl, String serverPubKey, String fingerprint) {
+public record PairingCode(String directUrl, String relayUrl, String serverPubKey, String fingerprint,
+                          String tokenId, String tokenSig) {
 
-  public static String encode(String host, int port, String tokenId, String tokenSig, String confirmWord,
-                              String relayUrl, String serverPubKey, String fingerprint) {
-    String json = "{\"host\":\"" + escapeJson(host) + "\","
-        + "\"port\":" + port + ","
-        + "\"tokenId\":\"" + escapeJson(tokenId) + "\","
-        + "\"tokenSig\":\"" + escapeJson(tokenSig) + "\","
-        + "\"confirmWord\":\"" + escapeJson(confirmWord) + "\","
-        + "\"relayUrl\":\"" + escapeJson(relayUrl) + "\","
-        + "\"serverPubKey\":\"" + escapeJson(serverPubKey) + "\","
-        + "\"fingerprint\":\"" + escapeJson(fingerprint) + "\"}";
+  private static final String PREFIX = "RCT2.";
+
+  public static String encode(String directUrl, String relayUrl, String serverPubKey, String fingerprint,
+                              String tokenId, String tokenSig) {
+    JsonObject payload = new JsonObject();
+    payload.addProperty("directUrl", requireNonBlank(directUrl, "directUrl"));
+    payload.addProperty("relayUrl", requireNonNull(relayUrl, "relayUrl"));
+    payload.addProperty("serverPubKey", requireNonBlank(serverPubKey, "serverPubKey"));
+    payload.addProperty("fingerprint", requireNonBlank(fingerprint, "fingerprint"));
+    payload.addProperty("tokenId", requireNonBlank(tokenId, "tokenId"));
+    payload.addProperty("tokenSig", requireNonBlank(tokenSig, "tokenSig"));
     String encoded = Base64.getUrlEncoder().withoutPadding()
-        .encodeToString(json.getBytes(StandardCharsets.UTF_8));
-    return "RCT1." + encoded;
+        .encodeToString(payload.toString().getBytes(StandardCharsets.UTF_8));
+    return PREFIX + encoded;
   }
 
   public static PairingCode decode(String code) {
-    if (!code.startsWith("RCT1.")) {
+    if (code == null || !code.startsWith(PREFIX)) {
       throw new IllegalArgumentException("Invalid pairing code prefix");
     }
-    String payload = code.substring("RCT1.".length());
-    byte[] jsonBytes = Base64.getUrlDecoder().decode(payload);
-    String json = new String(jsonBytes, StandardCharsets.UTF_8);
-    String host = extractJsonString(json, "host");
-    int parsedPort = (int) extractJsonLong(json, "port");
-    String tokenId = extractJsonString(json, "tokenId");
-    String tokenSig = extractJsonString(json, "tokenSig");
-    String confirmWord = extractJsonString(json, "confirmWord");
-    String relayUrl = extractJsonStringOrDefault(json, "relayUrl", "");
-    String serverPubKey = extractJsonStringOrDefault(json, "serverPubKey", "");
-    String fingerprint = extractJsonStringOrDefault(json, "fingerprint", "");
-    return new PairingCode(host, parsedPort, tokenId, tokenSig, confirmWord, relayUrl, serverPubKey, fingerprint);
+    try {
+      byte[] jsonBytes = Base64.getUrlDecoder().decode(code.substring(PREFIX.length()));
+      JsonObject payload = JsonParser.parseString(new String(jsonBytes, StandardCharsets.UTF_8)).getAsJsonObject();
+      return new PairingCode(
+          requiredString(payload, "directUrl"),
+          requiredStringAllowEmpty(payload, "relayUrl"),
+          requiredString(payload, "serverPubKey"),
+          requiredString(payload, "fingerprint"),
+          requiredString(payload, "tokenId"),
+          requiredString(payload, "tokenSig")
+      );
+    } catch (RuntimeException e) {
+      throw new IllegalArgumentException("Invalid pairing code payload", e);
+    }
   }
 
-  private static String escapeJson(String value) {
-    return value.replace("\\", "\\\\").replace("\"", "\\\"");
+  private static String requiredString(JsonObject payload, String key) {
+    return requireNonBlank(requiredStringAllowEmpty(payload, key), key);
   }
 
-  private static String extractJsonString(String json, String key) {
-    String searchKey = "\"" + key + "\":\"";
-    int start = json.indexOf(searchKey);
-    if (start < 0) {
-      throw new IllegalArgumentException("Key not found in JSON: " + key);
+  private static String requiredStringAllowEmpty(JsonObject payload, String key) {
+    if (!payload.has(key) || payload.get(key).isJsonNull() || !payload.get(key).isJsonPrimitive()
+        || !payload.getAsJsonPrimitive(key).isString()) {
+      throw new IllegalArgumentException("Missing pairing field: " + key);
     }
-    start += searchKey.length();
-    int end = start;
-    while (end < json.length()) {
-      char c = json.charAt(end);
-      if (c == '\\') {
-        end += 2;
-        continue;
-      }
-      if (c == '"') {
-        break;
-      }
-      end++;
-    }
-    return json.substring(start, end).replace("\\\"", "\"").replace("\\\\", "\\");
+    return payload.get(key).getAsString();
   }
 
-  private static String extractJsonStringOrDefault(String json, String key, String defaultValue) {
-    String searchKey = "\"" + key + "\":\"";
-    int start = json.indexOf(searchKey);
-    if (start < 0) {
-      return defaultValue;
+  private static String requireNonBlank(String value, String key) {
+    if (value == null || value.isBlank()) {
+      throw new IllegalArgumentException("Pairing field must not be blank: " + key);
     }
-    start += searchKey.length();
-    int end = start;
-    while (end < json.length()) {
-      char c = json.charAt(end);
-      if (c == '\\') {
-        end += 2;
-        continue;
-      }
-      if (c == '"') {
-        break;
-      }
-      end++;
-    }
-    return json.substring(start, end).replace("\\\"", "\"").replace("\\\\", "\\");
+    return value;
   }
 
-  private static long extractJsonLong(String json, String key) {
-    String searchKey = "\"" + key + "\":";
-    int start = json.indexOf(searchKey);
-    if (start < 0) {
-      throw new IllegalArgumentException("Key not found in JSON: " + key);
+  private static String requireNonNull(String value, String key) {
+    if (value == null) {
+      throw new IllegalArgumentException("Pairing field must not be null: " + key);
     }
-    start += searchKey.length();
-    int end = start;
-    while (end < json.length() && (Character.isDigit(json.charAt(end)) || json.charAt(end) == '-')) {
-      end++;
-    }
-    return Long.parseLong(json.substring(start, end));
+    return value;
   }
 }

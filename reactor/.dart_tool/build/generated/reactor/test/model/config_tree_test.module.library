@@ -1,1 +1,0 @@
-{"isEntrypoint":true,"deps":["test|lib/test.dart","reactor|lib/model/knob.dart","reactor|lib/model/config_tree.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":true}

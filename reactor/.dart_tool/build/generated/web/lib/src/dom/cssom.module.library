@@ -1,1 +1,0 @@
-{"isEntrypoint":false,"deps":["web|lib/src/dom/css_highlight_api.dart","web|lib/src/dom/css_properties_values_api.dart","web|lib/src/dom/css_typed_om.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["js_interop"],"hasMain":false}

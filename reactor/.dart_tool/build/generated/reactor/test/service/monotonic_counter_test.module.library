@@ -1,1 +1,0 @@
-{"isEntrypoint":true,"deps":["test|lib/test.dart","reactor|lib/service/monotonic_counter.dart","reactor|lib/state/fleet_manager.dart","reactor|lib/state/memory_fleet_storage.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":true}

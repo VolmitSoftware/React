@@ -1,1 +1,0 @@
-{"isEntrypoint":false,"deps":["jaspr|lib/jaspr.dart","jaspr|lib/src/server/async_build_owner.dart","meta|lib/meta.dart","test|lib/test.dart","universal_web|lib/web.dart","jaspr_test|lib/src/binding.dart","jaspr_test|lib/src/finders.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async","io"],"hasMain":false}

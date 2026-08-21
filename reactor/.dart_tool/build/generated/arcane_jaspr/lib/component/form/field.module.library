@@ -1,1 +1,0 @@
-{"isEntrypoint":true,"deps":["arcane_jaspr|lib/flutter.dart","jaspr|lib/jaspr.dart","jaspr|lib/dom.dart","arcane_jaspr|lib/component/form/provider.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

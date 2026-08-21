@@ -1,1 +1,0 @@
-{"isEntrypoint":true,"deps":["test|lib/test.dart","reactor|lib/state/fleet_manager.dart","reactor|lib/state/memory_fleet_storage.dart","reactor|lib/state/server_tags_store.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":true}

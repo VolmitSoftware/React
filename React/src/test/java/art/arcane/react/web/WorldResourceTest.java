@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -108,11 +109,34 @@ public class WorldResourceTest {
     }
 
     @Test
+    void updateNamed_resolves_display_name_to_canonical_world_key() {
+        Context ctx = mock(Context.class);
+        when(ctx.<PairingToken>attribute("token")).thenReturn(opToken);
+        when(ctx.pathParam("name")).thenReturn("world");
+        when(ctx.bodyAsClass(Map.class)).thenReturn(Map.of("panicMs", 55.0));
+
+        resource.updateNamed(ctx);
+
+        assertEquals("test:world/path", fakeBackend.lastUpdateKey);
+        assertEquals(55.0, fakeBackend.lastUpdatePanicMs, 1e-9);
+    }
+
+    @Test
     void update_with_read_only_token_throws_forbidden() {
         Context ctx = mock(Context.class);
         when(ctx.<PairingToken>attribute("token")).thenReturn(readToken);
 
         assertThrows(ForbiddenResponse.class, () -> resource.update(ctx));
+    }
+
+    @Test
+    void updateNamed_authorizes_before_reading_worlds_or_body() {
+        Context ctx = mock(Context.class);
+        when(ctx.<PairingToken>attribute("token")).thenReturn(readToken);
+
+        assertThrows(ForbiddenResponse.class, () -> resource.updateNamed(ctx));
+        assertEquals(0, fakeBackend.listCalls);
+        verify(ctx, never()).bodyAsClass(Map.class);
     }
 
     @Test
@@ -139,6 +163,7 @@ public class WorldResourceTest {
     private static final class FakeWorldBackend implements WorldBackend {
 
         private final List<WorldDto> worlds = new ArrayList<>();
+        int listCalls;
         String lastUpdateKey;
         Double lastUpdateBudgetMs;
         Double lastUpdatePanicMs;
@@ -157,6 +182,7 @@ public class WorldResourceTest {
 
         @Override
         public List<WorldDto> list() {
+            listCalls++;
             return worlds;
         }
 

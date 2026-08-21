@@ -1,1 +1,0 @@
-{"isEntrypoint":true,"deps":["arcane_jaspr|lib/flutter.dart","arcane_jaspr|lib/core/theme_provider.dart","arcane_jaspr|lib/core/props/separator_props.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

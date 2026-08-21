@@ -1,1 +1,0 @@
-{"isEntrypoint":true,"deps":["reactor|lib/model/alert.dart","reactor|lib/model/alert_thresholds.dart","reactor|lib/state/fleet_manager.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["convert","developer"],"hasMain":false}

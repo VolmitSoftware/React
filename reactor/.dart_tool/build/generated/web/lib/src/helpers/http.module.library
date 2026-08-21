@@ -1,1 +1,0 @@
-{"isEntrypoint":false,"deps":["web|lib/src/dom.dart","web|lib/src/helpers/events/events.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async","js_interop","typed_data"],"hasMain":false}

@@ -42,7 +42,7 @@ public class CommandWeb implements DirectorExecutor {
   public void pair(
       @Param(name = "label", description = "Human-readable label for this token", descriptionKey = "command.parameter.web.label")
       String label,
-      @Param(name = "role", description = "Role for this token: viewer, operator, or admin", descriptionKey = "command.parameter.web.role", defaultValue = "admin", aliases = {"r"})
+      @Param(name = "role", description = "Role for this token: viewer, operator, or admin", descriptionKey = "command.parameter.web.role", defaultValue = "viewer", aliases = {"r"})
       String role
   ) {
     WebRole webRole = WebRole.fromId(role);
@@ -61,12 +61,9 @@ public class CommandWeb implements DirectorExecutor {
     String bearer = PairingToken.mint(secret, tokenId, label, issuedAt, scopes);
     int dotPos = bearer.indexOf('.');
     String tokenSig = dotPos >= 0 ? bearer.substring(dotPos + 1) : bearer;
-    int confirmNum = new SecureRandom().nextInt(900000) + 100000;
-    String confirmWord = String.valueOf(confirmNum);
-    String host = wc.getConfig().getBindAddress();
-    int port = wc.getConfig().getPort();
+    String directUrl = wc.resolveDirectUrl();
     String relayUrl = wc.getConfig().isRelayEnabled() ? wc.getConfig().getRelayUrl() : "";
-    String code = PairingCode.encode(host, port, tokenId, tokenSig, confirmWord, relayUrl, id.publicKeyBase64(), id.fingerprint());
+    String code = PairingCode.encode(directUrl, relayUrl, id.publicKeyBase64(), id.fingerprint(), tokenId, tokenSig);
     String tokenFingerprint = sha256Hex(bearer);
     TokenRecord record = new TokenRecord(tokenId, label, issuedAt, scopes, webRole.id());
     store.add(record);
@@ -81,7 +78,6 @@ public class CommandWeb implements DirectorExecutor {
     ReactLanguage.sendPrefixed(sender(), CommandMessages.WEB_PAIRING_CODE, MessageArgument.untrusted("code", code));
     ReactLanguage.sendPrefixed(sender(), CommandMessages.WEB_SERVER_FINGERPRINT, MessageArgument.untrusted("fingerprint", id.fingerprint()));
     ReactLanguage.sendPrefixed(sender(), CommandMessages.WEB_TOKEN_FINGERPRINT, MessageArgument.untrusted("fingerprint", tokenFingerprint));
-    ReactLanguage.sendPrefixed(sender(), CommandMessages.WEB_CONFIRM, MessageArgument.untrusted("word", confirmWord));
     ReactLanguage.sendPrefixed(sender(), CommandMessages.WEB_TOKEN_ID, MessageArgument.untrusted("id", tokenId));
     ReactLanguage.sendPrefixed(sender(), CommandMessages.WEB_ROLE, MessageArgument.untrusted("role", webRole.id()));
   }

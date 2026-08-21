@@ -1,1 +1,0 @@
-{"isEntrypoint":false,"deps":["web|lib/src/dom/dom.dart","web|lib/src/dom/reporting.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["js_interop"],"hasMain":false}

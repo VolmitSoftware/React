@@ -1,1 +1,0 @@
-{"isEntrypoint":true,"deps":["test|lib/test.dart","reactor|lib/model/action_descriptor.dart","reactor|lib/model/knob.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":true}

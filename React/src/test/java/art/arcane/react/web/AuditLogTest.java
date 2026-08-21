@@ -1,6 +1,8 @@
 package art.arcane.react.web;
 
 import art.arcane.react.api.web.AuditLog;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -67,5 +69,15 @@ public class AuditLogTest {
     log.append("b", "op2", "d2", "r2");
     List<String> tail = log.tail(100);
     assertEquals(2, tail.size());
+  }
+
+  @Test
+  void controlCharactersRemainValidEscapedJson() {
+    AuditLog log = synchronousLog();
+    log.append("web\nactor", "console.execute", "verb=say\tdetail", "OK");
+
+    JsonObject entry = JsonParser.parseString(log.tail(1).get(0)).getAsJsonObject();
+    assertEquals("web\nactor", entry.get("actor").getAsString());
+    assertEquals("verb=say\tdetail", entry.get("detail").getAsString());
   }
 }

@@ -22,8 +22,11 @@ public class WebRoleTest {
     }
 
     @Test
-    void adminScopesContainReadOpExecuteAndAdmin() {
-        assertEquals(Set.of("read", "op:execute", "admin"), WebRole.ADMIN.scopes());
+    void adminScopesContainReadOperationsAndConsoleAuthority() {
+        assertEquals(
+            Set.of("read", "op:execute", "admin", "console:read", "console:execute"),
+            WebRole.ADMIN.scopes()
+        );
     }
 
     @Test
@@ -57,8 +60,8 @@ public class WebRoleTest {
     }
 
     @Test
-    void scopesForNullReturnsAdminScopes() {
-        assertEquals(WebRole.ADMIN.scopes(), WebRole.scopesFor(null));
+    void scopesForNullReturnsViewerScopes() {
+        assertEquals(WebRole.VIEWER.scopes(), WebRole.scopesFor(null));
     }
 
     @Test
@@ -72,8 +75,8 @@ public class WebRoleTest {
     }
 
     @Test
-    void resolveRoleIdNullReturnsDefaultAdmin() {
-        assertEquals("admin", WebRole.resolveRoleId(null));
+    void resolveRoleIdNullReturnsDefaultViewer() {
+        assertEquals("viewer", WebRole.resolveRoleId(null));
     }
 
     @Test
@@ -82,8 +85,8 @@ public class WebRoleTest {
     }
 
     @Test
-    void defaultRoleIdIsAdmin() {
-        assertEquals("admin", WebRole.DEFAULT_ROLE_ID);
+    void defaultRoleIdIsViewer() {
+        assertEquals("viewer", WebRole.DEFAULT_ROLE_ID);
     }
 
     @Test

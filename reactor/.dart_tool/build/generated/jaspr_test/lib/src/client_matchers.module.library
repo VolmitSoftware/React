@@ -1,1 +1,0 @@
-{"isEntrypoint":false,"deps":["universal_web|lib/web.dart","jaspr_test|lib/jaspr_test.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["js_interop"],"hasMain":false}

@@ -1,1 +1,0 @@
-{"isEntrypoint":true,"deps":["reactor|lib/model/control_item.dart","reactor|lib/service/react_client.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

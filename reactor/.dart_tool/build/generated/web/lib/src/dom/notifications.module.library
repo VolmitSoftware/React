@@ -1,1 +1,0 @@
-{"isEntrypoint":false,"deps":["web|lib/src/dom/dom.dart","web|lib/src/dom/hr_time.dart","web|lib/src/dom/html.dart","web|lib/src/dom/service_workers.dart","web|lib/src/dom/vibration.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["js_interop"],"hasMain":false}

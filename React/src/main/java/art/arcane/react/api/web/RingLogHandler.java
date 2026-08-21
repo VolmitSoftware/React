@@ -1,7 +1,10 @@
 package art.arcane.react.api.web;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
@@ -35,36 +38,54 @@ public class RingLogHandler extends Handler {
         if (record == null) {
             return;
         }
-        String line = formatLine(record);
-        lock.lock();
-        try {
-            while (ring.size() >= capacity) {
-                ring.pollFirst();
-            }
-            ring.addLast(line);
-        } finally {
-            lock.unlock();
-        }
-        Consumer<String> listener = lineListener;
-        if (listener != null) {
+        java.util.logging.Formatter formatter = getFormatter();
+        String message = formatter != null ? formatter.formatMessage(record) : record.getMessage();
+        publishExternal(record.getLevel().getName(), message, record.getThrown());
+    }
+
+    public void publishExternal(String level, String message, Throwable thrown) {
+        String normalizedLevel = level == null || level.isBlank() ? "INFO" : level;
+        List<String> lines = formatLines(normalizedLevel, message, thrown);
+        for (String line : lines) {
+            lock.lock();
             try {
-                listener.accept(line);
-            } catch (Exception ignored) {
+                while (ring.size() >= capacity) {
+                    ring.pollFirst();
+                }
+                ring.addLast(line);
+            } finally {
+                lock.unlock();
+            }
+            Consumer<String> listener = lineListener;
+            if (listener != null) {
+                try {
+                    listener.accept(line);
+                } catch (Exception ignored) {
+                }
             }
         }
     }
 
-    private String formatLine(LogRecord record) {
-        java.util.logging.Formatter formatter = getFormatter();
-        String message = formatter != null ? formatter.formatMessage(record) : record.getMessage();
+    private List<String> formatLines(String level, String message, Throwable thrown) {
         if (message == null) {
             message = "";
         }
-        String line = "[" + record.getLevel().getName() + "] " + message;
-        while (line.endsWith("\n") || line.endsWith("\r")) {
-            line = line.substring(0, line.length() - 1);
+        List<String> rawLines = new ArrayList<>(Arrays.asList(message.split("\\R", -1)));
+        while (rawLines.size() > 1 && rawLines.get(rawLines.size() - 1).isEmpty()) {
+            rawLines.remove(rawLines.size() - 1);
         }
-        return line;
+        if (thrown != null) {
+            StringWriter stack = new StringWriter();
+            thrown.printStackTrace(new PrintWriter(stack));
+            String[] stackLines = stack.toString().split("\\R");
+            rawLines.addAll(Arrays.asList(stackLines));
+        }
+        String prefix = "[" + level + "] ";
+        List<String> lines = new ArrayList<>(rawLines.size());
+        for (String rawLine : rawLines) {
+            lines.add(prefix + rawLine);
+        }
+        return lines;
     }
 
     @Override

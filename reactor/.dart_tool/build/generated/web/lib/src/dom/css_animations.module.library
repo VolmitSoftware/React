@@ -1,1 +1,0 @@
-{"isEntrypoint":false,"deps":["web|lib/src/dom/cssom.dart","web|lib/src/dom/dom.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["js_interop"],"hasMain":false}

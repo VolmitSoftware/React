@@ -1,1 +1,0 @@
-{"isEntrypoint":true,"deps":["arcane_jaspr|lib/component/screen/abstract_screen.dart","arcane_jaspr|lib/component/screen/fill_screen.dart","arcane_jaspr|lib/flutter.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":false}

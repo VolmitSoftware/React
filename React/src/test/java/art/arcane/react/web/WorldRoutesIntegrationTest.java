@@ -148,10 +148,26 @@ public class WorldRoutesIntegrationTest {
         assertEquals(40.0, putData.get("budgetMs").getAsDouble(), 1e-9);
 
         long c2 = opCounter.incrementAndGet();
+        HttpRequest putNamedRequest = HttpRequest.newBuilder()
+            .uri(URI.create("http://127.0.0.1:" + port + "/api/v1/worlds/world"))
+            .header("Authorization", "Bearer " + opBearer)
+            .header("X-React-Counter", String.valueOf(c2))
+            .header("Content-Type", "application/json")
+            .PUT(HttpRequest.BodyPublishers.ofString("{\"releaseMs\":29}"))
+            .build();
+        HttpResponse<String> putNamedResponse = client.send(putNamedRequest, HttpResponse.BodyHandlers.ofString());
+        assertEquals(200, putNamedResponse.statusCode(),
+            "PUT /api/v1/worlds/{name} should resolve the display name, body: " + putNamedResponse.body());
+        JsonObject putNamedData = JsonParser.parseString(putNamedResponse.body())
+            .getAsJsonObject()
+            .getAsJsonObject("data");
+        assertEquals(29.0, putNamedData.get("releaseMs").getAsDouble(), 1e-9);
+
+        long c3 = opCounter.incrementAndGet();
         HttpRequest putUnknownRequest = HttpRequest.newBuilder()
             .uri(URI.create("http://127.0.0.1:" + port + "/api/v1/worlds/update"))
             .header("Authorization", "Bearer " + opBearer)
-            .header("X-React-Counter", String.valueOf(c2))
+            .header("X-React-Counter", String.valueOf(c3))
             .header("Content-Type", "application/json")
             .PUT(HttpRequest.BodyPublishers.ofString("{\"worldKey\":\"test:no/such/world\",\"budgetMs\":40}"))
             .build();
@@ -162,11 +178,11 @@ public class WorldRoutesIntegrationTest {
         assertTrue(notFoundBody.has("error"), "404 body must have 'error' object");
         assertNotNull(notFoundBody.getAsJsonObject("error").get("message"), "error must have 'message'");
 
-        long c3 = opCounter.incrementAndGet();
+        long c4 = opCounter.incrementAndGet();
         HttpRequest putReadRequest = HttpRequest.newBuilder()
             .uri(URI.create("http://127.0.0.1:" + port + "/api/v1/worlds/update"))
             .header("Authorization", "Bearer " + readBearer)
-            .header("X-React-Counter", String.valueOf(c3))
+            .header("X-React-Counter", String.valueOf(c4))
             .header("Content-Type", "application/json")
             .PUT(HttpRequest.BodyPublishers.ofString("{\"worldKey\":\"test:world/path\",\"budgetMs\":40}"))
             .build();

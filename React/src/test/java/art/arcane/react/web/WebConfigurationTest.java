@@ -15,6 +15,7 @@ public class WebConfigurationTest {
     assertFalse(c.isEnabled());
     assertEquals("127.0.0.1", c.getBindAddress());
     assertEquals(9696, c.getPort());
+    assertEquals("", c.getAdvertisedUrl());
     assertFalse(c.isRequireTokenForReads() == false && c.isEnabled());
   }
 
@@ -32,5 +33,12 @@ public class WebConfigurationTest {
     c.setRelayUrl("wss://x");
     assertTrue(c.isRelayEnabled());
     assertEquals("wss://x", c.getRelayUrl());
+  }
+
+  @Test
+  void advertisedUrlSetterRoundTrip() {
+    WebConfiguration c = new WebConfiguration();
+    c.setAdvertisedUrl("https://react.example.net");
+    assertEquals("https://react.example.net", c.getAdvertisedUrl());
   }
 }

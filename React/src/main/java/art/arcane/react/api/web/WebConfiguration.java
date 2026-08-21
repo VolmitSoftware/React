@@ -27,7 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Data
-@ConfigDescription("Embedded HTTP/WebSocket API configuration for React. Controls the opt-in web server used by the companion app.")
+@ConfigDescription("Embedded HTTP/WebSocket management API configuration for React.")
 public class WebConfiguration {
 
   @ConfigDoc(value = "Enables the embedded web server.", impact = "When false, no HTTP or WebSocket listeners are bound. All other settings in this section are ignored.")
@@ -39,14 +39,8 @@ public class WebConfiguration {
   @ConfigDoc(value = "TCP port the web server listens on.", impact = "Ensure this port is not already in use. Requires a server restart to take effect.")
   private int port = 9696;
 
-  @ConfigDoc(value = "Enables TLS for the web server.", impact = "Requires a valid keystore at keystorePath. Disabled by default; enable for production deployments exposed beyond localhost.")
-  private boolean tlsEnabled = false;
-
-  @ConfigDoc(value = "Path to the JKS or PKCS12 keystore file used for TLS.", impact = "Only read when tlsEnabled is true. Leave empty when TLS is disabled.")
-  private String keystorePath = "";
-
-  @ConfigDoc(value = "Password for the keystore file.", impact = "Only read when tlsEnabled is true. Leave empty when TLS is disabled.")
-  private String keystorePassword = "";
+  @ConfigDoc(value = "Public base URL advertised to direct API clients.", impact = "Set this to the HTTPS URL of a reverse proxy when the listener is exposed beyond localhost. React's embedded listener remains HTTP-only.")
+  private String advertisedUrl = "";
 
   @ConfigDoc(value = "List of allowed CORS origins for the HTTP API.", impact = "An empty list allows all origins. Add specific origins to restrict cross-origin access.")
   private List<String> corsOrigins = new ArrayList<>();

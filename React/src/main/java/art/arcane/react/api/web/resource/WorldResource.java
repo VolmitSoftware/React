@@ -26,9 +26,21 @@ public class WorldResource {
 
     public void update(Context ctx) {
         WebAuth.requireScope(ctx, "op:execute");
-        @SuppressWarnings("unchecked")
-        Map<String, Object> body = ctx.bodyAsClass(Map.class);
-        String worldKey = extractWorldKey(body);
+        Map<String, Object> body = readBody(ctx);
+        update(ctx, extractWorldKey(body), body);
+    }
+
+    public void updateNamed(Context ctx) {
+        WebAuth.requireScope(ctx, "op:execute");
+        String worldReference = ctx.pathParam("name");
+        if (worldReference == null || worldReference.isBlank()) {
+            throw new BadRequestResponse("Missing world name");
+        }
+        Map<String, Object> body = readBody(ctx);
+        update(ctx, resolveWorldKey(worldReference), body);
+    }
+
+    private void update(Context ctx, String worldKey, Map<String, Object> body) {
         Double budgetMs = extractDouble(body, "budgetMs");
         Double panicMs = extractDouble(body, "panicMs");
         Double releaseMs = extractDouble(body, "releaseMs");
@@ -37,6 +49,20 @@ public class WorldResource {
             throw new NotFoundResponse("Unknown world: " + worldKey);
         }
         ctx.json(new Envelope<>(dto));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> readBody(Context ctx) {
+        return ctx.bodyAsClass(Map.class);
+    }
+
+    private String resolveWorldKey(String reference) {
+        for (WorldDto world : backend.list()) {
+            if (reference.equals(world.key) || reference.equals(world.name)) {
+                return world.key;
+            }
+        }
+        return reference;
     }
 
     private static String extractWorldKey(Map<String, Object> body) {

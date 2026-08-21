@@ -22,6 +22,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -145,7 +146,7 @@ public class WhoamiRoutesIntegrationTest {
         assertEquals("operator", operatorData.get("role").getAsString(), "role must be operator");
         JsonArray operatorScopes = operatorData.getAsJsonArray("scopes");
         assertNotNull(operatorScopes, "operator scopes must be present");
-        List<String> operatorScopeList = new java.util.ArrayList<>();
+        List<String> operatorScopeList = new ArrayList<>();
         operatorScopes.forEach(e -> operatorScopeList.add(e.getAsString()));
         assertTrue(operatorScopeList.contains("read"), "operator scopes must contain read");
         assertTrue(operatorScopeList.contains("op:execute"), "operator scopes must contain op:execute");
@@ -166,12 +167,18 @@ public class WhoamiRoutesIntegrationTest {
         assertEquals("admin", adminData.get("role").getAsString(), "role must be admin");
         JsonArray adminScopes = adminData.getAsJsonArray("scopes");
         assertNotNull(adminScopes, "admin scopes must be present");
-        List<String> adminScopeList = new java.util.ArrayList<>();
+        List<String> adminScopeList = new ArrayList<>();
         adminScopes.forEach(e -> adminScopeList.add(e.getAsString()));
         assertTrue(adminScopeList.contains("read"), "admin scopes must contain read");
         assertTrue(adminScopeList.contains("op:execute"), "admin scopes must contain op:execute");
         assertTrue(adminScopeList.contains("admin"), "admin scopes must contain admin");
-        assertEquals(List.of("admin", "op:execute", "read"), adminScopeList, "admin scopes must be sorted");
+        assertTrue(adminScopeList.contains("console:read"), "admin scopes must contain console:read");
+        assertTrue(adminScopeList.contains("console:execute"), "admin scopes must contain console:execute");
+        assertEquals(
+            List.of("admin", "console:execute", "console:read", "op:execute", "read"),
+            adminScopeList,
+            "admin scopes must be sorted"
+        );
 
         HttpResponse<String> legacyResponse = client.send(
             HttpRequest.newBuilder()
@@ -185,12 +192,12 @@ public class WhoamiRoutesIntegrationTest {
             "Legacy (null-role) bearer should return 200, body: " + legacyResponse.body());
         JsonObject legacyData = JsonParser.parseString(legacyResponse.body()).getAsJsonObject().getAsJsonObject("data");
         assertNotNull(legacyData, "legacy response must have 'data' object");
-        assertEquals("admin", legacyData.get("role").getAsString(), "null role must default to admin");
+        assertEquals("viewer", legacyData.get("role").getAsString(), "null role must default to viewer");
         JsonArray legacyScopes = legacyData.getAsJsonArray("scopes");
         assertNotNull(legacyScopes, "legacy scopes must be present");
-        List<String> legacyScopeList = new java.util.ArrayList<>();
+        List<String> legacyScopeList = new ArrayList<>();
         legacyScopes.forEach(e -> legacyScopeList.add(e.getAsString()));
-        assertTrue(legacyScopeList.contains("admin"), "legacy (default-admin) scopes must contain admin");
+        assertEquals(List.of("read"), legacyScopeList, "legacy null-role token must be read-only");
 
         HttpResponse<String> noAuthResponse = client.send(
             HttpRequest.newBuilder()

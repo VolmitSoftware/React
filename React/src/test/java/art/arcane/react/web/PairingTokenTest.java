@@ -83,6 +83,8 @@ public class PairingTokenTest {
     assertEquals("operator", token.role());
     assertTrue(token.hasScope("op:execute"));
     assertFalse(token.hasScope("admin"));
+    assertFalse(token.hasScope("console:read"));
+    assertFalse(token.hasScope("console:execute"));
   }
 
   @Test
@@ -95,18 +97,23 @@ public class PairingTokenTest {
     PairingToken token = PairingToken.verify(secret, bearer, store).orElseThrow();
     assertEquals("admin", token.role());
     assertTrue(token.hasScope("admin"));
-    assertEquals(List.of("admin", "op:execute", "read"), token.scopes());
+    assertTrue(token.hasScope("console:read"));
+    assertTrue(token.hasScope("console:execute"));
+    assertEquals(List.of("admin", "console:execute", "console:read", "op:execute", "read"), token.scopes());
+    assertEquals("adm1", token.tokenId());
   }
 
   @Test
-  void legacyNullRoleResolvesToAdmin() {
+  void legacyNullRoleResolvesToViewer() {
     byte[] secret = new byte[32];
     new SecureRandom().nextBytes(secret);
     TokenRecord rec = new TokenRecord("leg1", "legacy-device", 1000L, Set.of("read", "op:execute"), null);
     TokenStore store = TokenStore.inMemory(rec);
     String bearer = PairingToken.mint(secret, rec.id(), rec.label(), rec.issuedAt(), rec.scopes());
     PairingToken token = PairingToken.verify(secret, bearer, store).orElseThrow();
-    assertEquals("admin", token.role());
-    assertTrue(token.hasScope("admin"));
+    assertEquals("viewer", token.role());
+    assertTrue(token.hasScope("read"));
+    assertFalse(token.hasScope("admin"));
+    assertFalse(token.hasScope("op:execute"));
   }
 }

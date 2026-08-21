@@ -1,1 +1,0 @@
-{"isEntrypoint":true,"deps":["test|lib/test.dart","reactor|lib/service/react_exceptions.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":[],"hasMain":true}

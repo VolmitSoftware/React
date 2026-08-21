@@ -34,8 +34,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
+import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -114,13 +116,16 @@ public class LogsRoutesIntegrationTest {
     }
 
     @Test
-    void get_logs_with_read_token_returns_200_and_data_array(@TempDir File dataFolder) throws Exception {
+    void get_logs_requires_console_read_and_captures_server_console(@TempDir File dataFolder) throws Exception {
         byte[] secret = WebSecret.load(dataFolder);
-        TokenRecord readRecord = new TokenRecord("tok-read-logs", "read-device", 1000L, Set.of("read"), "viewer");
-        String readBearer = PairingToken.mint(secret, readRecord.id(), readRecord.label(), readRecord.issuedAt(), readRecord.scopes());
+        TokenRecord adminRecord = new TokenRecord("tok-admin-logs", "admin-device", 1000L, Set.of("read"), "admin");
+        TokenRecord viewerRecord = new TokenRecord("tok-viewer-logs", "viewer-device", 1000L, Set.of("read"), "viewer");
+        String adminBearer = PairingToken.mint(secret, adminRecord.id(), adminRecord.label(), adminRecord.issuedAt(), adminRecord.scopes());
+        String viewerBearer = PairingToken.mint(secret, viewerRecord.id(), viewerRecord.label(), viewerRecord.issuedAt(), viewerRecord.scopes());
         File tokensFile = new File(dataFolder, "web/tokens.toml");
         TokenStore store = TokenStore.fromToml(tokensFile);
-        store.add(readRecord);
+        store.add(adminRecord);
+        store.add(viewerRecord);
         store.save(tokensFile);
 
         WebConfiguration config = new WebConfiguration();
@@ -139,17 +144,18 @@ public class LogsRoutesIntegrationTest {
 
         RingLogHandler handler = controller.getLogHandler();
         assertNotNull(handler, "WebController must expose logHandler after start");
-        handler.publish(new LogRecord(Level.INFO, "seeded-log-line"));
+        Logger foreignPluginLogger = Logger.getLogger("foreign-plugin-" + System.nanoTime());
+        foreignPluginLogger.info("seeded-server-console-line");
 
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
             .uri(URI.create("http://127.0.0.1:" + port + "/api/v1/logs"))
-            .header("Authorization", "Bearer " + readBearer)
+            .header("Authorization", "Bearer " + adminBearer)
             .GET()
             .build();
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
         assertEquals(200, response.statusCode(),
-            "GET /api/v1/logs with read token should return 200, body: " + response.body());
+            "GET /api/v1/logs with admin token should return 200, body: " + response.body());
 
         JsonObject root = JsonParser.parseString(response.body()).getAsJsonObject();
         assertTrue(root.has("data"), "Response must have 'data' field; got: " + response.body());
@@ -158,22 +164,36 @@ public class LogsRoutesIntegrationTest {
 
         boolean found = false;
         for (int i = 0; i < data.size(); i++) {
-            if (data.get(i).getAsString().contains("seeded-log-line")) {
+            if (data.get(i).getAsString().contains("seeded-server-console-line")) {
                 found = true;
                 break;
             }
         }
         assertTrue(found, "data array must contain the seeded log line; got: " + data);
+
+        HttpRequest viewerRequest = HttpRequest.newBuilder()
+            .uri(URI.create("http://127.0.0.1:" + port + "/api/v1/logs"))
+            .header("Authorization", "Bearer " + viewerBearer)
+            .GET()
+            .build();
+        HttpResponse<String> viewerResponse = client.send(viewerRequest, HttpResponse.BodyHandlers.ofString());
+        assertEquals(403, viewerResponse.statusCode(), viewerResponse.body());
+
+        Logger attachedLogger = controller.getAttachedLogger();
+        assertTrue(List.of(attachedLogger.getHandlers()).contains(handler));
+        controller.stop();
+        assertFalse(List.of(attachedLogger.getHandlers()).contains(handler));
+        controller = null;
     }
 
     @Test
     void ws_logs_delivers_frame_to_authorized_client(@TempDir File dataFolder) throws Exception {
         byte[] secret = WebSecret.load(dataFolder);
-        TokenRecord readRecord = new TokenRecord("tok-ws-logs", "ws-device", 1000L, Set.of("read"), "viewer");
-        String readBearer = PairingToken.mint(secret, readRecord.id(), readRecord.label(), readRecord.issuedAt(), readRecord.scopes());
+        TokenRecord adminRecord = new TokenRecord("tok-ws-logs", "ws-device", 1000L, Set.of("read"), "admin");
+        String adminBearer = PairingToken.mint(secret, adminRecord.id(), adminRecord.label(), adminRecord.issuedAt(), adminRecord.scopes());
         File tokensFile = new File(dataFolder, "web/tokens.toml");
         TokenStore store = TokenStore.fromToml(tokensFile);
-        store.add(readRecord);
+        store.add(adminRecord);
         store.save(tokensFile);
 
         WebConfiguration config = new WebConfiguration();
@@ -193,7 +213,7 @@ public class LogsRoutesIntegrationTest {
         AtomicReference<String> firstFrame = new AtomicReference<>(null);
 
         HttpClient client = HttpClient.newHttpClient();
-        URI wsUri = URI.create("ws://127.0.0.1:" + port + "/ws/logs?token=" + readBearer);
+        URI wsUri = URI.create("ws://127.0.0.1:" + port + "/ws/logs?token=" + adminBearer);
 
         CompletableFuture<WebSocket> wsFuture = client.newWebSocketBuilder()
             .buildAsync(wsUri, new WebSocket.Listener() {
@@ -245,16 +265,19 @@ public class LogsRoutesIntegrationTest {
     }
 
     @Test
-    void ws_logs_unauthorized_closes_with_1008(@TempDir File dataFolder) throws Exception {
+    void ws_logs_viewer_scope_closes_with_1008(@TempDir File dataFolder) throws Exception {
         WebConfiguration config = new WebConfiguration();
         config.setEnabled(true);
         config.setBindAddress("127.0.0.1");
         config.setPort(0);
         config.setRequireTokenForReads(true);
 
-        WebSecret.load(dataFolder);
+        byte[] secret = WebSecret.load(dataFolder);
+        TokenRecord viewerRecord = new TokenRecord("tok-ws-viewer", "viewer-device", 1000L, Set.of("read"), "viewer");
+        String viewerBearer = PairingToken.mint(secret, viewerRecord.id(), viewerRecord.label(), viewerRecord.issuedAt(), viewerRecord.scopes());
         File tokensFile = new File(dataFolder, "web/tokens.toml");
         TokenStore store = TokenStore.fromToml(tokensFile);
+        store.add(viewerRecord);
         store.save(tokensFile);
 
         controller = buildController(config, dataFolder);
@@ -270,7 +293,7 @@ public class LogsRoutesIntegrationTest {
         AtomicInteger textFrameCount = new AtomicInteger(0);
 
         HttpClient client = HttpClient.newHttpClient();
-        URI wsUri = URI.create("ws://127.0.0.1:" + port + "/ws/logs");
+        URI wsUri = URI.create("ws://127.0.0.1:" + port + "/ws/logs?token=" + viewerBearer);
 
         CompletableFuture<WebSocket> wsFuture = client.newWebSocketBuilder()
             .buildAsync(wsUri, new WebSocket.Listener() {

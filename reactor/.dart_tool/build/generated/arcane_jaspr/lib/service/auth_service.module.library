@@ -1,1 +1,0 @@
-{"isEntrypoint":true,"deps":["fast_log|lib/fast_log.dart","http|lib/http.dart","arcane_jaspr|lib/service/auth_state.dart"],"parts":[],"conditionalDeps":[],"sdkDeps":["async","convert","js_interop"],"hasMain":false}

@@ -1,0 +1,9 @@
+.dart_tool/
+.git/
+.gitignore
+.DS_Store
+build/
+coverage/
+test/
+service-account*.json
+firebase-debug*.log
