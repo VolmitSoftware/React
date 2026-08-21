@@ -1,0 +1,89 @@
+/*
+ *  Copyright (c) 2016-2025 Arcane Arts (Volmit Software)
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ *
+ */
+
+package art.arcane.react.api.tweak;
+
+import art.arcane.react.React;
+import art.arcane.react.api.sampler.Sampler;
+import art.arcane.react.util.project.config.ConfigDoc;
+import art.arcane.volmlib.util.format.Form;
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+public abstract class ReactTweak implements Tweak {
+  private transient final String id;
+  private transient final String name;
+  @ConfigDoc(
+      value = "Enables or disables this tweak.",
+      impact = "Set to false to stop this tweak from activating while keeping its config file."
+  )
+  private boolean enabled = true;
+
+  public ReactTweak(String id) {
+    this.id = id;
+    this.name = Form.capitalizeWords(id.replace("-", " "));
+  }
+
+  @Override
+  public String getId() {
+    return id;
+  }
+
+  @Override
+  public String getName() {
+    return name;
+  }
+
+  @Override
+  public boolean isEnabled() {
+    return enabled;
+  }
+
+  @Override
+  public void onActivate() {
+  }
+
+  @Override
+  public void onDeactivate() {
+  }
+
+  @Override
+  public int getTickInterval() {
+    return -1;
+  }
+
+  @Override
+  public void onTick() {
+  }
+
+  protected double sample(String samplerId) {
+    return sample(samplerId, 0D);
+  }
+
+  protected double sample(String samplerId, double fallback) {
+    try {
+      Sampler sampler = React.sampler(samplerId);
+      return sampler == null ? fallback : sampler.sample();
+    } catch (Throwable ignored) {
+      return fallback;
+    }
+  }
+}

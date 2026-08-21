@@ -1,0 +1,269 @@
+/*
+ *  Copyright (c) 2016-2025 Arcane Arts (Volmit Software)
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ *
+ */
+
+package art.arcane.react.content.feature;
+
+import art.arcane.react.React;
+import art.arcane.react.api.feature.ReactFeature;
+import art.arcane.react.core.controller.PdcWriteBatcher;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.World;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
+import org.bukkit.block.CreatureSpawner;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Monster;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import org.bukkit.event.entity.CreatureSpawnEvent;
+
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectIterator;
+
+import java.util.Iterator;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
+@art.arcane.react.util.project.config.ConfigDescription("Configuration for Spawn Burst Limiter feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
+public class FeatureSpawnBurstLimiter extends ReactFeature implements Listener {
+  public static final String ID = "spawn-burst-limiter";
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Main evaluation interval for spawn burst limiter in milliseconds.", impact = "Lower values react faster but consume more CPU; higher values reduce overhead but react later.")
+  private int tickIntervalMS = 5000;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Rolling enforcement window length used by spawn burst limiter (milliseconds).", impact = "Longer windows smooth bursts but react slower; shorter windows react faster but are more sensitive.")
+  private int windowMS = 1200;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum spawns allowed per chunk window in spawn burst limiter.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
+  private int maxSpawnsPerChunkWindow = 22;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum spawner spawns allowed per chunk window in spawn burst limiter.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
+  private int maxSpawnerSpawnsPerChunkWindow = 10;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum monster spawns allowed per chunk window in spawn burst limiter.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
+  private int maxMonsterSpawnsPerChunkWindow = 15;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Controls whether spawn burst limiter applies enforce natural spawns.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
+  private boolean enforceNaturalSpawns = true;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Controls whether spawn burst limiter applies enforce spawner spawns.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
+  private boolean enforceSpawnerSpawns = true;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Controls whether spawn burst limiter applies enforce monster spawns.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
+  private boolean enforceMonsterSpawns = true;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Skips named entities when spawn burst limiter evaluates targets.", impact = "Enable this to exclude matching cases; disable it to include them in enforcement.")
+  private boolean ignoreNamedEntities = true;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Pushes back the next spawn attempt of spawners whose spawns get burst-limited.", impact = "Enable to stop limited spawners from wastefully re-attempting every cycle; disable to only cancel the spawn itself.")
+  private boolean spawnerBackoff = true;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Delay in ticks applied to a burst-limited spawner's next spawn attempt.", impact = "Higher values idle limited spawners longer, shedding more spawn-attempt work; lower values let grinders resume sooner.")
+  private int spawnerBackoffTicks = 600;
+  private transient Map<UUID, Long2ObjectOpenHashMap<SpawnWindow>> windows = new ConcurrentHashMap<>();
+
+  public FeatureSpawnBurstLimiter() {
+    super(ID);
+  }
+
+  @Override
+  public void onActivate() {
+    windows = new ConcurrentHashMap<>();
+  }
+
+  @Override
+  public void onDeactivate() {
+    windows.clear();
+  }
+
+  @Override
+  public int getTickInterval() {
+    return tickIntervalMS;
+  }
+
+  @Override
+  public void onTick() {
+    long now = System.currentTimeMillis();
+    long expiryMS = Math.max(1000L, windowMS * 4L);
+    Iterator<Map.Entry<UUID, Long2ObjectOpenHashMap<SpawnWindow>>> worldIterator = windows.entrySet().iterator();
+    while (worldIterator.hasNext()) {
+      Map.Entry<UUID, Long2ObjectOpenHashMap<SpawnWindow>> worldEntry = worldIterator.next();
+      Long2ObjectOpenHashMap<SpawnWindow> chunkMap = worldEntry.getValue();
+      synchronized (chunkMap) {
+        ObjectIterator<Long2ObjectOpenHashMap.Entry<SpawnWindow>> chunkIterator = chunkMap.long2ObjectEntrySet().fastIterator();
+        while (chunkIterator.hasNext()) {
+          if (now - chunkIterator.next().getValue().lastHit > expiryMS) {
+            chunkIterator.remove();
+          }
+        }
+      }
+    }
+  }
+
+  @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+  public void on(CreatureSpawnEvent event) {
+    if (!shouldEvaluate(event)) {
+      return;
+    }
+
+    long now = System.currentTimeMillis();
+    org.bukkit.Location location = event.getLocation();
+    UUID worldId = location.getWorld().getUID();
+    long chunkKey = packChunk(location.getBlockX() >> 4, location.getBlockZ() >> 4);
+    Long2ObjectOpenHashMap<SpawnWindow> chunkMap = windows.computeIfAbsent(worldId, ignored -> new Long2ObjectOpenHashMap<>());
+    SpawnWindow window;
+    synchronized (chunkMap) {
+      window = chunkMap.get(chunkKey);
+      if (window == null) {
+        window = new SpawnWindow(now);
+        chunkMap.put(chunkKey, window);
+      }
+    }
+    window.rollover(windowMS, now);
+    window.total++;
+
+    boolean spawnerReason = event.getSpawnReason() == CreatureSpawnEvent.SpawnReason.SPAWNER
+        || "TRIAL_SPAWNER".equals(event.getSpawnReason().name());
+    if (spawnerReason) {
+      window.spawner++;
+    }
+
+    if (event.getEntity() instanceof Monster) {
+      window.monster++;
+    }
+
+    if (window.total > maxSpawnsPerChunkWindow) {
+      event.setCancelled(true);
+      if (spawnerReason) {
+        backoffNearbySpawners(location, window, now);
+      }
+      return;
+    }
+
+    if (enforceSpawnerSpawns && window.spawner > maxSpawnerSpawnsPerChunkWindow) {
+      event.setCancelled(true);
+      backoffNearbySpawners(location, window, now);
+      return;
+    }
+
+    if (enforceMonsterSpawns && event.getEntity() instanceof Monster && window.monster > maxMonsterSpawnsPerChunkWindow) {
+      event.setCancelled(true);
+    }
+  }
+
+  private void backoffNearbySpawners(Location location, SpawnWindow window, long now) {
+    if (!spawnerBackoff || spawnerBackoffTicks <= 0) {
+      return;
+    }
+
+    if (now - window.lastBackoffMs < Math.max(250, windowMS)) {
+      return;
+    }
+    window.lastBackoffMs = now;
+
+    World world = location.getWorld();
+    if (world == null) {
+      return;
+    }
+
+    // Spawners place mobs within 4 blocks horizontally and 1 vertically of themselves.
+    int blockX = location.getBlockX();
+    int blockY = location.getBlockY();
+    int blockZ = location.getBlockZ();
+    for (int y = -1; y <= 1; y++) {
+      for (int x = -4; x <= 4; x++) {
+        for (int z = -4; z <= 4; z++) {
+          int worldX = blockX + x;
+          int worldZ = blockZ + z;
+          if (!world.isChunkLoaded(worldX >> 4, worldZ >> 4)) {
+            continue;
+          }
+
+          Block block = world.getBlockAt(worldX, blockY + y, worldZ);
+          if (block.getType() != Material.SPAWNER) {
+            continue;
+          }
+
+          BlockState state = block.getState();
+          if (state instanceof CreatureSpawner spawner) {
+            spawner.setDelay(Math.max(spawner.getDelay(), spawnerBackoffTicks));
+            PdcWriteBatcher batcher = React.controller(PdcWriteBatcher.class);
+            if (batcher != null) {
+              batcher.enqueue(spawner, false, false);
+            } else {
+              spawner.update(false, false);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  private boolean shouldEvaluate(CreatureSpawnEvent event) {
+    Entity entity = event.getEntity();
+    if (ignoreNamedEntities && entity.getCustomName() != null && !entity.getCustomName().isBlank()) {
+      return false;
+    }
+
+    CreatureSpawnEvent.SpawnReason reason = event.getSpawnReason();
+    boolean natural = switch (reason) {
+      case NATURAL, NETHER_PORTAL, REINFORCEMENTS, JOCKEY, PATROL,
+           RAID -> true;
+      default -> false;
+    };
+
+    boolean spawner = reason == CreatureSpawnEvent.SpawnReason.SPAWNER || "TRIAL_SPAWNER".equals(reason.name());
+    if (spawner && enforceSpawnerSpawns) {
+      return true;
+    }
+
+    if (entity instanceof Monster && enforceMonsterSpawns) {
+      return true;
+    }
+
+    return natural && enforceNaturalSpawns;
+  }
+
+  private static final class SpawnWindow {
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Internal timestamp used by spawn burst limiter to track timing windows and decay.", impact = "Primarily runtime state; changing this manually can distort cooldown or throttling behavior.")
+    private long start;
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Internal timestamp used by spawn burst limiter to track timing windows and decay.", impact = "Primarily runtime state; changing this manually can distort cooldown or throttling behavior.")
+    private long lastHit;
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Internal counter used by spawn burst limiter while tracking burst activity.", impact = "Primarily runtime state; React updates this automatically during live evaluation.")
+    private int total;
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Internal counter used by spawn burst limiter while tracking burst activity.", impact = "Primarily runtime state; React updates this automatically during live evaluation.")
+    private int spawner;
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Internal counter used by spawn burst limiter while tracking burst activity.", impact = "Primarily runtime state; React updates this automatically during live evaluation.")
+    private int monster;
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Internal timestamp used by spawn burst limiter to track timing windows and decay.", impact = "Primarily runtime state; changing this manually can distort cooldown or throttling behavior.")
+    private long lastBackoffMs;
+
+    private SpawnWindow(long now) {
+      start = now;
+      lastHit = now;
+    }
+
+    private void rollover(int windowMS, long now) {
+      if (now - start > windowMS) {
+        start = now;
+        total = 0;
+        spawner = 0;
+        monster = 0;
+      }
+
+      lastHit = now;
+    }
+  }
+
+  private static long packChunk(int cx, int cz) {
+    return (((long) cx) << 32) ^ (cz & 0xFFFFFFFFL);
+  }
+}

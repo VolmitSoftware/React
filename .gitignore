@@ -1,4 +1,19 @@
 
 .idea/
+.DS_Store
 
 React/libs/
+
+.codegraph/
+
+React/.jqwik-database
+
+# Dart/Jaspr and local web tooling
+**/.dart_tool/
+**/build/
+react-web/.deps/
+react-web/service-account.json
+react-web/.firebase/
+react-web/firebase-debug.log
+react-web/relay/.dart_tool/
+react-web/.qa/

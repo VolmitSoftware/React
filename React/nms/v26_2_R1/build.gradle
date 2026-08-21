@@ -1,0 +1,34 @@
+apply plugin: 'java'
+
+Class nmsTypeClass = Class.forName('NMSBinding$Type')
+def nmsConfig = new Config()
+nmsConfig.jvm = 25
+nmsConfig.version = '26.1.2.build.74-stable'
+nmsConfig.type = Enum.valueOf(nmsTypeClass, 'USER_DEV')
+extensions.extraProperties.set('nms', nmsConfig)
+plugins.apply(NMSBinding)
+
+repositories {
+    mavenCentral()
+    maven { url = uri('https://repo.papermc.io/repository/maven-public/') }
+    maven { url = uri('https://www.jitpack.io') }
+}
+
+dependencies {
+    compileOnly(project(':bridge-api'))
+    compileOnly('net.bytebuddy:byte-buddy:1.14.19')
+    compileOnly('net.bytebuddy:byte-buddy-agent:1.14.19')
+    compileOnly('it.unimi.dsi:fastutil:8.5.8')
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+tasks.named('compileJava', JavaCompile).configure {
+    options.compilerArgs.add('-parameters')
+    options.encoding = 'UTF-8'
+    options.release.set(25)
+}

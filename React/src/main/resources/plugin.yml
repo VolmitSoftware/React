@@ -1,24 +1,55 @@
 name: ${name}
-main: com.volmit.react.React
+main: art.arcane.react.React
 version: ${version}
+folia-supported: true
 authors: [ NextdoorPsycho, Cyberpwn ]
+website: VolmitSoftware.com
 api-version: ${apiversion}
+softdepend:
+  - PlaceholderAPI
+  - Gloss
 commands:
   react:
     aliases: [ re ]
-libraries:
-  - net.kyori:adventure-text-minimessage:4.24.0
-  - net.kyori:adventure-platform-bukkit:4.4.1
-  - net.kyori:adventure-api:4.9.3
-  - io.timeandspace:smoothie-map:2.0.2
-  - it.unimi.dsi:fastutil:8.5.8
-  - com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru:1.4.2
-  - org.apache.commons:commons-lang3:3.12.0
-  - com.google.code.gson:gson:2.10
-  - org.zeroturnaround:zt-zip:1.15
-  - org.bitbucket.mstrobel:procyon-core:0.6.0
-  - org.bitbucket.mstrobel:procyon-compilertools:0.6.0
-  - org.bitbucket.mstrobel:procyon-reflection:0.6.0
-  - fr.inria.gforge.spoon:spoon-core:10.2.0
-  - com.github.ben-manes.caffeine:caffeine:3.0.6
-  - org.java-websocket:Java-WebSocket:1.5.3
+permissions:
+  react.use:
+    description: Allows using the /react command root.
+    default: op
+  react.*:
+    description: Allows using all /react commands.
+    default: op
+    children:
+      react.use: true
+      react.shorthands.*: true
+  react.shorthands.*:
+    description: Allows using all enabled React shorthand commands.
+    default: op
+    children:
+      react.shorthands.gms: true
+      react.shorthands.gmsp: true
+      react.shorthands.gmc: true
+      react.shorthands.give: true
+      react.shorthands.more: true
+      react.shorthands.rl: true
+      react.shorthands.custom: true
+  react.shorthands.gms:
+    description: Allows using /gms when React Shorthands is enabled.
+    default: op
+  react.shorthands.gmsp:
+    description: Allows using /gmsp when React Shorthands is enabled.
+    default: op
+  react.shorthands.gmc:
+    description: Allows using /gmc when React Shorthands is enabled.
+    default: op
+  react.shorthands.give:
+    description: Allows using the React /give shorthand when enabled.
+    default: op
+  react.shorthands.more:
+    description: Allows using /more when React Shorthands is enabled.
+    default: op
+  react.shorthands.rl:
+    description: Allows using /rl when React Shorthands is enabled.
+    default: op
+  react.shorthands.custom:
+    description: Allows using operator-configured React shorthand commands.
+    default: op

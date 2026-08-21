@@ -1,0 +1,61 @@
+/*
+ *  Copyright (c) 2016-2025 Arcane Arts (Volmit Software)
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ *
+ */
+
+package art.arcane.react.content.action;
+
+import art.arcane.react.api.action.ActionParams;
+import art.arcane.react.api.action.ActionTicket;
+import art.arcane.react.api.action.ReactAction;
+import lombok.Builder;
+import lombok.Data;
+
+@art.arcane.react.util.project.config.ConfigDescription("Configuration for Unknown action. Disabled placeholder used as a guard when action resolution fails.")
+public class ActionUnknown extends ReactAction<ActionUnknown.Params> {
+  public static final String ID = "unknown";
+
+  public ActionUnknown() {
+    super(ID);
+  }
+
+  @Override
+  public Params getDefaultParams() {
+    return new Params();
+  }
+
+  @Override
+  public void workOn(ActionTicket<Params> ticket) {
+
+  }
+
+  @Override
+  public void onInit() {
+
+  }
+
+  @Override
+  public boolean autoRegister() {
+    return false;
+  }
+
+  @Builder
+  @Data
+  public static class Params implements ActionParams {
+
+  }
+}

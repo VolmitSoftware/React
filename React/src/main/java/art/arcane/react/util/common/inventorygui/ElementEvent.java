@@ -1,0 +1,19 @@
+package art.arcane.react.util.inventorygui;
+
+public enum ElementEvent {
+  LEFT,
+  RIGHT,
+  MIDDLE,
+  SHIFT_LEFT,
+  SHIFT_RIGHT,
+  DRAG_INTO,
+  OTHER_DRAG_INTO;
+
+  public static ElementEvent fromShared(art.arcane.volmlib.util.inventorygui.ElementEvent event) {
+    return valueOf(event.name());
+  }
+
+  public art.arcane.volmlib.util.inventorygui.ElementEvent toShared() {
+    return art.arcane.volmlib.util.inventorygui.ElementEvent.valueOf(name());
+  }
+}

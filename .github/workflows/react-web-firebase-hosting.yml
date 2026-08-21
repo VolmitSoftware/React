@@ -1,0 +1,128 @@
+name: Deploy React Web to Firebase Hosting
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - react-web/**
+      - .github/workflows/react-web-firebase-hosting.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ARCANE_JASPR_REF: 665652de05c83d51ba26da51a06398bbd1c6f57e
+  FIREBASE_PROJECT_ID: react-web-plugin
+  FIREBASE_TOOLS_VERSION: 15.25.1
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  NODE_VERSION: 22.23.1
+
+concurrency:
+  group: react-web-firebase-hosting-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Build, verify, and deploy
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://react.volmitsoftware.com
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Cache pinned Arcane Jaspr
+        id: cache-arcane-jaspr
+        uses: actions/cache@v5
+        with:
+          path: react-web/.deps/arcane_jaspr
+          key: arcane-jaspr-${{ env.ARCANE_JASPR_REF }}
+
+      - name: Checkout pinned Arcane Jaspr
+        if: steps.cache-arcane-jaspr.outputs.cache-hit != 'true'
+        uses: actions/checkout@v6
+        with:
+          repository: ArcaneArts/arcane_jaspr
+          ref: ${{ env.ARCANE_JASPR_REF }}
+          path: react-web/.deps/arcane_jaspr
+
+      - name: Setup Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Get client dependencies
+        working-directory: react-web
+        run: dart pub get --enforce-lockfile
+
+      - name: Analyze client
+        working-directory: react-web
+        run: dart analyze
+
+      - name: Test client
+        working-directory: react-web
+        run: dart test
+
+      - name: Get relay dependencies
+        working-directory: react-web/relay
+        run: dart pub get --enforce-lockfile
+
+      - name: Analyze relay
+        working-directory: react-web/relay
+        run: dart analyze
+
+      - name: Test relay
+        working-directory: react-web/relay
+        run: dart test
+
+      - name: Build client
+        working-directory: react-web
+        run: |
+          REACT_WEB_VERSION="$(sed -n 's/^version: //p' pubspec.yaml)"
+          dart run jaspr_cli:jaspr build \
+            --dart-define=REACT_WEB_VERSION="$REACT_WEB_VERSION" \
+            --dart-define=REACT_WEB_COMMIT="${GITHUB_SHA:0:7}"
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_REACT_WEB_PLUGIN }}
+
+      - name: Deploy Firebase Hosting
+        working-directory: react-web
+        run: |
+          set -euo pipefail
+          unset FIREBASE_TOKEN
+          npx --yes "firebase-tools@$FIREBASE_TOOLS_VERSION" deploy \
+            --only hosting \
+            --project "$FIREBASE_PROJECT_ID" \
+            --non-interactive
+
+      - name: Verify deployed bundle
+        working-directory: react-web
+        run: |
+          set -euo pipefail
+          expected_sha="$(sha256sum build/jaspr/main.client.dart.js | awk '{print $1}')"
+          actual_sha=""
+          for attempt in {1..12}; do
+            if actual_sha="$(curl -fsS --max-time 30 \
+                "https://react.volmitsoftware.com/main.client.dart.js?release=$GITHUB_SHA" \
+                | sha256sum | awk '{print $1}')" \
+                && [[ "$actual_sha" == "$expected_sha" ]]; then
+              echo "Firebase is serving the React Web client built from $GITHUB_SHA."
+              exit 0
+            fi
+            echo "Waiting for Firebase Hosting to converge (attempt $attempt/12)."
+            sleep 5
+          done
+          echo "::error title=Stale Firebase client bundle::Expected $expected_sha but received $actual_sha."
+          exit 1
