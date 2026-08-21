@@ -29,13 +29,11 @@ String reactorStatusColor(ReactorStatus status) => switch (status) {
 String reactorStatusSoft(ReactorStatus status, [int pct = 14]) =>
     'color-mix(in srgb, ${reactorStatusColor(status)} $pct%, transparent)';
 
-Widget reactorBadge(String label, ReactorStatus status) => switch (status) {
-  ReactorStatus.healthy => ArcaneStatusBadge.success(label, showPulse: false),
-  ReactorStatus.warning => ArcaneStatusBadge.warning(label),
-  ReactorStatus.critical => ArcaneStatusBadge.error(label),
-  ReactorStatus.info => ArcaneStatusBadge.info(label),
-  ReactorStatus.neutral => ArcaneStatusBadge.secondary(label),
-};
+Widget reactorBadge(String label, ReactorStatus status) => dom.span(
+  classes: 'reactor-status-label is-${status.name}',
+  attributes: <String, String>{'role': 'status'},
+  <Widget>[Component.text(label)],
+);
 
 Widget reactorEyebrow(String text) => dom.span(
   styles: const dom.Styles(
@@ -57,29 +55,37 @@ Widget reactorStatusDot(
   String? label,
 }) {
   final String color = reactorStatusColor(status);
+  final Widget icon = switch (status) {
+    ReactorStatus.healthy => ArcaneIcon.circleCheck(size: IconSize.xs),
+    ReactorStatus.warning => ArcaneIcon.triangleAlert(size: IconSize.xs),
+    ReactorStatus.critical => ArcaneIcon.circleAlert(size: IconSize.xs),
+    ReactorStatus.info => ArcaneIcon.activity(size: IconSize.xs),
+    ReactorStatus.neutral => ArcaneIcon.minus(size: IconSize.xs),
+  };
   return dom.span(
+    classes: 'reactor-state-symbol is-${status.name}',
     styles: dom.Styles(
       raw: <String, String>{
-        'display': 'inline-block',
-        'width': '${size}px',
-        'height': '${size}px',
-        'border-radius': '999px',
-        'background': color,
-        'box-shadow': '0 0 0 3px ${reactorStatusSoft(status, 18)}',
+        'display': 'inline-flex',
+        'width': '${size + 6}px',
+        'height': '${size + 6}px',
+        'align-items': 'center',
+        'justify-content': 'center',
+        'color': color,
         'flex': '0 0 auto',
       },
     ),
     attributes: label == null
         ? null
         : <String, String>{'aria-label': label, 'title': label, 'role': 'img'},
-    const <Widget>[],
+    <Widget>[icon],
   );
 }
 
 Widget reactorGrid({
   required List<Widget> children,
   String minWidth = '220px',
-  String gap = '1rem',
+  String gap = '8px',
 }) {
   return dom.div(
     classes: 'reactor-grid',
@@ -108,7 +114,7 @@ class ReactorPage extends StatelessWidget {
     this.actions,
     this.leading,
     this.children = const <Widget>[],
-    this.gap = 24,
+    this.gap = 12,
     super.key,
   });
 
@@ -163,9 +169,9 @@ class ReactorPageHeader extends StatelessWidget {
           'display': 'flex',
           'align-items': 'flex-start',
           'justify-content': 'space-between',
-          'gap': '1rem',
+          'gap': '0.75rem',
           'flex-wrap': 'wrap',
-          'padding': '0.15rem 0 1.15rem',
+          'padding': '0 0 0.65rem',
           'border-bottom': '1px solid $kReactorHairline',
         },
       ),
@@ -175,7 +181,7 @@ class ReactorPageHeader extends StatelessWidget {
             raw: <String, String>{
               'display': 'flex',
               'align-items': 'center',
-              'gap': '0.85rem',
+              'gap': '0.65rem',
               'min-width': '0',
             },
           ),
@@ -186,7 +192,7 @@ class ReactorPageHeader extends StatelessWidget {
                 raw: <String, String>{
                   'display': 'flex',
                   'flex-direction': 'column',
-                  'gap': '0.3rem',
+                  'gap': '0.2rem',
                   'min-width': '0',
                 },
               ),
@@ -194,8 +200,8 @@ class ReactorPageHeader extends StatelessWidget {
                 dom.div(
                   styles: const dom.Styles(
                     raw: <String, String>{
-                      'font-size': '1.6rem',
-                      'font-weight': '700',
+                      'font-size': '1rem',
+                      'font-weight': '650',
                       'letter-spacing': '0',
                       'line-height': '1.1',
                       'color': kReactorFg,
@@ -207,7 +213,7 @@ class ReactorPageHeader extends StatelessWidget {
                   dom.div(
                     styles: const dom.Styles(
                       raw: <String, String>{
-                        'font-size': '0.875rem',
+                        'font-size': '0.75rem',
                         'color': kReactorMuted,
                         'line-height': '1.4',
                       },
@@ -282,7 +288,7 @@ class SectionPanel extends StatelessWidget {
             dom.div(
               styles: dom.Styles(
                 raw: <String, String>{
-                  'padding': flush ? '0' : '1.15rem',
+                  'padding': flush ? '0' : '0.75rem',
                   'display': 'flex',
                   'flex-direction': 'column',
                   'gap': '${gap}px',
@@ -306,10 +312,9 @@ class SectionPanel extends StatelessWidget {
           'align-items': 'center',
           'justify-content': 'space-between',
           'gap': '1rem',
-          'padding': '0.85rem 1.15rem',
+          'padding': '0.6rem 0.75rem',
           if (hasBody) 'border-bottom': '1px solid $kReactorHairline',
-          'background':
-              'linear-gradient(90deg, color-mix(in srgb, var(--primary) 8%, transparent), transparent 72%)',
+          'background': 'var(--reactor-surface)',
         },
       ),
       <Widget>[

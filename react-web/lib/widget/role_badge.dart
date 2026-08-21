@@ -5,6 +5,7 @@ import 'package:jaspr/jaspr.dart' show Component;
 
 import '../model/role_info.dart';
 import '../localization/reactor_localizations.dart';
+import '../ui/reactor_ui.dart';
 
 class RoleBadge extends StatelessWidget {
   final RoleInfo? role;
@@ -16,11 +17,18 @@ class RoleBadge extends StatelessWidget {
     final RoleInfo? r = role;
     if (r == null) return Component.fragment(const <Widget>[]);
     return switch (r.role) {
-      'admin' => ArcaneStatusBadge.success(reactorText(ReactorText.roleAdmin)),
-      'operator' => ArcaneStatusBadge.info(
-        reactorText(ReactorText.roleOperator),
+      'admin' => reactorBadge(
+        reactorText(ReactorText.roleAdmin),
+        ReactorStatus.healthy,
       ),
-      _ => ArcaneStatusBadge.warning(reactorText(ReactorText.roleViewer)),
+      'operator' => reactorBadge(
+        reactorText(ReactorText.roleOperator),
+        ReactorStatus.info,
+      ),
+      _ => reactorBadge(
+        reactorText(ReactorText.roleViewer),
+        ReactorStatus.warning,
+      ),
     };
   }
 }

@@ -37,12 +37,9 @@ class WorldOverridesView extends StatelessWidget {
 
   Widget _pressureBadge(PressureMode mode) {
     return switch (mode) {
-      PressureMode.normal => const ArcaneStatusBadge.success(
-        'NORMAL',
-        showPulse: false,
-      ),
-      PressureMode.pressure => const ArcaneStatusBadge.warning('PRESSURE'),
-      PressureMode.panic => const ArcaneStatusBadge.error('PANIC'),
+      PressureMode.normal => reactorBadge('NORMAL', ReactorStatus.healthy),
+      PressureMode.pressure => reactorBadge('PRESSURE', ReactorStatus.warning),
+      PressureMode.panic => reactorBadge('PANIC', ReactorStatus.critical),
     };
   }
 
@@ -69,8 +66,10 @@ class WorldOverridesView extends StatelessWidget {
       leading: roleBadge,
       children: <Widget>[
         for (final WorldSettings world in worlds)
-          Card.elevated(
+          Card.flat(
             fillWidth: true,
+            padding: EdgeInsets.zero,
+            borderRadius: BorderRadius.zero,
             child: dom.div(
               styles: const dom.Styles(
                 raw: <String, String>{

@@ -163,31 +163,39 @@ void main() {
       );
     });
 
-    testServer(
-      'renders error color on SVG arc when value is above the error threshold',
-      (ServerTester tester) async {
-        tester.pumpComponent(
-          _wrap(
-            Gauge(
-              label: 'CPU',
-              value: 95.0,
-              max: 100.0,
-              thresholds: (70.0, 90.0),
-            ),
+    testServer('renders an accessible error meter above the error threshold', (
+      ServerTester tester,
+    ) async {
+      tester.pumpComponent(
+        _wrap(
+          Gauge(
+            label: 'CPU',
+            value: 95.0,
+            max: 100.0,
+            thresholds: (70.0, 90.0),
           ),
-        );
-        final DocumentResponse res = await tester.request('/');
-        expect(res.statusCode, equals(200));
-        expect(
-          res.body.contains('var(--destructive)'),
-          isTrue,
-          reason:
-              'Gauge SVG arc stroke must carry var(--destructive) when value >= error threshold',
-        );
-      },
-    );
+        ),
+      );
+      final DocumentResponse res = await tester.request('/');
+      expect(res.statusCode, equals(200));
+      expect(
+        res.body.contains('var(--destructive)'),
+        isTrue,
+        reason: 'The meter fill must use the destructive state color',
+      );
+      expect(
+        res.body.contains('role="meter"'),
+        isTrue,
+        reason: 'Gauge values must expose meter semantics',
+      );
+      expect(
+        res.body.contains('aria-valuenow="95.0"'),
+        isTrue,
+        reason: 'The meter must expose its current value',
+      );
+    });
 
-    testServer('renders the provided display string as the center value', (
+    testServer('renders the provided display string as the meter value', (
       ServerTester tester,
     ) async {
       tester.pumpComponent(

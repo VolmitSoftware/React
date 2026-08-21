@@ -89,8 +89,10 @@ class ActionsConsoleView extends StatelessWidget {
           label: reactorText(ReactorText.actionsTitle),
           child: statGrid(<Widget>[
             for (final ActionDescriptor action in actions)
-              Card.elevated(
+              Card.flat(
                 fillWidth: true,
+                padding: EdgeInsets.zero,
+                borderRadius: BorderRadius.zero,
                 child: dom.div(
                   styles: const dom.Styles(
                     raw: <String, String>{
@@ -108,8 +110,9 @@ class ActionsConsoleView extends StatelessWidget {
                       size: FontSize.sm,
                     ),
                     if (action.destructive)
-                      ArcaneStatusBadge.warning(
+                      reactorBadge(
                         reactorText(ReactorText.actionsDestructive),
+                        ReactorStatus.warning,
                       ),
                     for (final ActionParam p in action.params)
                       KnobEditor(

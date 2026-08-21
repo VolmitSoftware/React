@@ -109,8 +109,10 @@ class _GcGaugeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card.elevated(
+    return Card.flat(
       fillWidth: true,
+      padding: EdgeInsets.zero,
+      borderRadius: BorderRadius.zero,
       child: dom.div(
         styles: const dom.Styles(
           raw: <String, String>{

@@ -14,20 +14,23 @@ import '../ui/reactor_ui.dart';
 import '../widget/gauge.dart';
 import '../widget/section_card.dart';
 
-ArcaneStatusBadge _stateChip(String? state) {
+Widget _stateChip(String? state) {
   if (state == null) {
-    return ArcaneStatusBadge.info(reactorText(ReactorText.statusOffline));
+    return reactorBadge(
+      reactorText(ReactorText.statusOffline),
+      ReactorStatus.neutral,
+    );
   }
   final String upper = state.toUpperCase();
   if (upper.contains('CRIT') || upper.contains('PANIC')) {
-    return ArcaneStatusBadge.error(state);
+    return reactorBadge(state, ReactorStatus.critical);
   }
   if (upper.contains('ELEV') ||
       upper.contains('WARN') ||
       upper.contains('PRESSURE')) {
-    return ArcaneStatusBadge.warning(state);
+    return reactorBadge(state, ReactorStatus.warning);
   }
-  return ArcaneStatusBadge.success(state);
+  return reactorBadge(state, ReactorStatus.healthy);
 }
 
 class IncidentCenterView extends StatelessWidget {
@@ -150,7 +153,7 @@ class _ContributorRow extends StatelessWidget {
             raw: <String, String>{
               'height': '4px',
               'background-color': 'var(--border)',
-              'border-radius': '2px',
+              'border-radius': '0',
               'overflow': 'hidden',
             },
           ),
@@ -161,7 +164,7 @@ class _ContributorRow extends StatelessWidget {
                   'height': '100%',
                   'width': '$widthPct%',
                   'background-color': 'var(--primary)',
-                  'border-radius': '2px',
+                  'border-radius': '0',
                 },
               ),
               <Widget>[],

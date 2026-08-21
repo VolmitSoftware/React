@@ -520,33 +520,270 @@ class ReactorShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ArcaneScaffold(
-      sidebar: ArcaneSidebar(
-        header: _brandHeader(),
-        footer: _connectionFooter(context),
-        showCollapseToggle: false,
-        children: <Widget>[
-          _fleetGroup(context),
-          if (servers.isNotEmpty) _serverList(context),
-          if (_hasUnhealthy)
-            _OfflineBanner(servers: servers, onReconnect: onReconnect),
-          if (_activeServer != null) _serverSection(context, _activeServer!),
-        ],
-      ),
-      body: dom.div(
-        classes: 'reactor-shell-content',
-        styles: const dom.Styles(
-          raw: <String, String>{
-            'padding': '1.75rem clamp(1rem, 3vw, 2.25rem)',
-            'max-width': '1480px',
-            'width': '100%',
-            'margin': '0 auto',
-            'box-sizing': 'border-box',
+    return dom.div(classes: 'reactor-shell', <Widget>[
+      _topBar(context),
+      dom.div(classes: 'reactor-shell-body', <Widget>[
+        dom.aside(
+          classes: 'reactor-rail',
+          attributes: const <String, String>{
+            'aria-label': 'Fleet and server navigation',
           },
+          <Widget>[
+            dom.div(classes: 'reactor-rail-head', <Widget>[
+              dom.span(classes: 'reactor-rail-title', <Widget>[
+                ArcaneIcon.layoutDashboard(size: IconSize.sm),
+                Component.text(reactorText(ReactorText.fleetTitle)),
+              ]),
+              dom.span(classes: 'reactor-rail-count', <Widget>[
+                Component.text(servers.length.toString()),
+              ]),
+            ]),
+            dom.div(classes: 'reactor-rail-scroll', <Widget>[
+              _fleetGroup(context),
+              if (servers.isNotEmpty) _serverList(context),
+              if (_hasUnhealthy)
+                _OfflineBanner(servers: servers, onReconnect: onReconnect),
+              if (_activeServer != null)
+                _serverSection(context, _activeServer!),
+            ]),
+            _connectionFooter(),
+          ],
         ),
-        <Widget>[body],
-      ),
+        dom.main_(classes: 'reactor-workspace', <Widget>[
+          dom.div(classes: 'reactor-shell-content', <Widget>[body]),
+        ]),
+        _inspector(),
+      ]),
+      _statusBar(),
+    ]);
+  }
+
+  Widget _topBar(BuildContext context) {
+    final ServerEntry? active = _activeServer;
+    final String scope = active?.name ?? reactorText(ReactorText.fleetTitle);
+    return dom.header(classes: 'reactor-bar', <Widget>[
+      dom.div(classes: 'reactor-bar-primary', <Widget>[
+        dom.div(classes: 'reactor-bar-left', <Widget>[
+          dom.div(classes: 'reactor-bar-brand', <Widget>[
+            ArcaneIcon.activity(size: IconSize.sm),
+            dom.span(<Widget>[
+              Component.text(reactorText(ReactorText.appTitle)),
+            ]),
+          ]),
+          dom.div(classes: 'reactor-bar-scope', <Widget>[
+            dom.span(classes: 'reactor-bar-scope-name', <Widget>[
+              Component.text(scope),
+            ]),
+            dom.span(classes: 'reactor-bar-scope-meta', <Widget>[
+              Component.text(_currentPageTitle),
+            ]),
+          ]),
+        ]),
+        dom.div(classes: 'reactor-bar-actions', <Widget>[
+          _barButton(
+            label: reactorText(ReactorText.shellPairServer),
+            icon: ArcaneIcon.plus(size: IconSize.sm),
+            onPressed: () => context.push(kRouteAddServer),
+          ),
+          _barButton(
+            label: reactorText(ReactorText.alertsTitle),
+            icon: ArcaneIcon.bell(size: IconSize.sm),
+            onPressed: () => context.push(kRouteAlerts),
+          ),
+          _barButton(
+            label: reactorText(ReactorText.comparisonTitle),
+            icon: ArcaneIcon.gitCompare(size: IconSize.sm),
+            onPressed: () => context.push(kRouteComparison),
+          ),
+          if (_hasUnhealthy && onReconnect != null)
+            _barButton(
+              label: reactorText(ReactorText.shellReconnect),
+              icon: ArcaneIcon.refreshCw(size: IconSize.sm),
+              onPressed: onReconnect!,
+            ),
+          _barButton(
+            label: reactorText(ReactorText.settingsTitle),
+            icon: ArcaneIcon.settings(size: IconSize.sm),
+            onPressed: () => context.push(kRouteSettings),
+            compact: true,
+          ),
+        ]),
+      ]),
+      dom.div(classes: 'reactor-bar-context', <Widget>[
+        dom.div(classes: 'reactor-context-title', <Widget>[
+          ArcaneIcon.layoutDashboard(size: IconSize.sm),
+          dom.span(<Widget>[Component.text(_currentPageTitle)]),
+        ]),
+        dom.div(classes: 'reactor-context-nav', <Widget>[
+          dom.span(classes: 'reactor-context-state', <Widget>[
+            Component.text(
+              servers.isEmpty
+                  ? reactorText(ReactorText.shellReadyForPairing)
+                  : reactorText(ReactorText.shellServersLive, <String, Object?>{
+                      'live': _liveCount,
+                      'total': servers.length,
+                    }),
+            ),
+          ]),
+        ]),
+      ]),
+    ]);
+  }
+
+  Widget _barButton({
+    required String label,
+    required Widget icon,
+    required VoidCallback onPressed,
+    bool compact = false,
+  }) {
+    return dom.button(
+      classes: compact ? 'reactor-bar-button is-compact' : 'reactor-bar-button',
+      attributes: <String, String>{
+        'type': 'button',
+        'aria-label': label,
+        'title': label,
+      },
+      events: <String, EventCallback>{'click': (_) => onPressed()},
+      <Widget>[
+        icon,
+        if (!compact) dom.span(<Widget>[Component.text(label)]),
+      ],
     );
+  }
+
+  Widget _inspector() {
+    final ServerEntry? active = _activeServer;
+    final ReactorStatus status = _fleetStatus;
+    final String statusLabel = switch (status) {
+      ReactorStatus.healthy => reactorText(ReactorText.commonHealthy),
+      ReactorStatus.warning => reactorText(ReactorText.shellWarn),
+      ReactorStatus.critical => reactorText(ReactorText.statusCritical),
+      ReactorStatus.info => reactorText(ReactorText.shellSyncing),
+      ReactorStatus.neutral => reactorText(ReactorText.shellStandby),
+    };
+    return dom.aside(
+      classes: 'reactor-inspector',
+      attributes: const <String, String>{'aria-label': 'Fleet inspector'},
+      <Widget>[
+        dom.div(classes: 'reactor-inspector-head', <Widget>[
+          reactorEyebrow(
+            active == null
+                ? reactorText(ReactorText.fleetTitle)
+                : reactorText(ReactorText.shellWorkspace),
+          ),
+          dom.h2(<Widget>[
+            Component.text(
+              active?.name ?? reactorText(ReactorText.shellFleetMonitor),
+            ),
+          ]),
+          dom.p(<Widget>[
+            Component.text(
+              servers.isEmpty
+                  ? reactorText(ReactorText.shellReadyForPairing)
+                  : reactorText(ReactorText.shellRealtimeTelemetry),
+            ),
+          ]),
+        ]),
+        _inspectorSection(reactorText(ReactorText.shellState), <Widget>[
+          _inspectorRow(reactorText(ReactorText.shellState), statusLabel),
+          _inspectorRow(
+            reactorText(ReactorText.shellPairedServers),
+            servers.length.toString(),
+          ),
+          _inspectorRow(
+            reactorText(ReactorText.statusLive),
+            _liveCount.toString(),
+          ),
+          _inspectorRow(reactorText(ReactorText.addServerTransport), 'RCT2'),
+        ]),
+        _inspectorSection(reactorText(ReactorText.shellSecurePairing), <Widget>[
+          _inspectorRow(
+            reactorText(ReactorText.addServerValidation),
+            reactorText(ReactorText.addServerLocalDecode),
+          ),
+          _inspectorRow(
+            reactorText(ReactorText.shellTelemetryStream),
+            servers.isEmpty
+                ? reactorText(ReactorText.shellStandby)
+                : reactorText(ReactorText.statusLive),
+          ),
+        ]),
+      ],
+    );
+  }
+
+  Widget _inspectorSection(String label, List<Widget> children) {
+    return dom.section(classes: 'reactor-inspector-section', <Widget>[
+      dom.div(classes: 'reactor-inspector-label', <Widget>[
+        Component.text(label),
+      ]),
+      ...children,
+    ]);
+  }
+
+  Widget _inspectorRow(String label, String value) {
+    return dom.div(classes: 'reactor-inspector-row', <Widget>[
+      dom.span(<Widget>[Component.text(label)]),
+      dom.code(<Widget>[Component.text(value)]),
+    ]);
+  }
+
+  Widget _statusBar() {
+    final ReactorStatus status = _fleetStatus;
+    final String statusLabel = switch (status) {
+      ReactorStatus.healthy => reactorText(ReactorText.commonHealthy),
+      ReactorStatus.warning => reactorText(ReactorText.shellWarn),
+      ReactorStatus.critical => reactorText(ReactorText.statusCritical),
+      ReactorStatus.info => reactorText(ReactorText.shellSyncing),
+      ReactorStatus.neutral => reactorText(ReactorText.shellStandby),
+    };
+    return dom.footer(
+      classes: 'reactor-status-bar',
+      attributes: const <String, String>{'aria-label': 'Application status'},
+      <Widget>[
+        dom.span(classes: 'reactor-status-item', <Widget>[
+          reactorStatusDot(status, size: 7),
+          Component.text(statusLabel),
+        ]),
+        dom.span(classes: 'reactor-status-item', <Widget>[
+          Component.text(
+            reactorText(ReactorText.shellPairedCount, <String, Object?>{
+              'count': servers.length,
+            }),
+          ),
+        ]),
+        const dom.span(classes: 'reactor-status-spacer', <Widget>[]),
+        dom.span(classes: 'reactor-status-item', <Widget>[
+          Component.text(_currentPageTitle),
+        ]),
+        const dom.span(classes: 'reactor-status-item', <Widget>[
+          Component.text('RCT2'),
+        ]),
+      ],
+    );
+  }
+
+  String get _currentPageTitle {
+    if (currentPath == kRouteRoot) {
+      return reactorText(ReactorText.overviewTitle);
+    }
+    if (currentPath == kRouteAddServer) {
+      return reactorText(ReactorText.addServerTitle);
+    }
+    if (currentPath == kRouteAlerts) {
+      return reactorText(ReactorText.alertsTitle);
+    }
+    if (currentPath == kRouteComparison) {
+      return reactorText(ReactorText.comparisonTitle);
+    }
+    if (currentPath == kRouteSettings) {
+      return reactorText(ReactorText.settingsTitle);
+    }
+    final String route = _serverRouteFromPath();
+    for (final _NavEntry entry in _kServerNav) {
+      if (entry.route == route) return reactorText(entry.label);
+    }
+    return reactorText(ReactorText.shellWorkspace);
   }
 
   Widget _fleetGroup(BuildContext context) {
@@ -679,60 +916,7 @@ class ReactorShell extends StatelessWidget {
     );
   }
 
-  Widget _brandHeader() {
-    final ReactorStatus status = _fleetStatus;
-    final String statusLabel = switch (status) {
-      ReactorStatus.healthy => reactorText(ReactorText.commonHealthy),
-      ReactorStatus.warning => reactorText(ReactorText.shellWarn),
-      ReactorStatus.critical => reactorText(ReactorText.statusCritical),
-      ReactorStatus.info => reactorText(ReactorText.shellSyncing),
-      ReactorStatus.neutral => reactorText(ReactorText.shellStandby),
-    };
-    final String fleetValue = servers.isEmpty
-        ? reactorText(ReactorText.shellPairedCount, <String, Object?>{
-            'count': 0,
-          })
-        : reactorText(ReactorText.shellLiveCount, <String, Object?>{
-            'live': _liveCount,
-            'total': servers.length,
-          });
-    return dom.div(classes: 'reactor-brand', <Widget>[
-      dom.div(classes: 'reactor-brand-mark', <Widget>[
-        ArcaneIcon.activity(size: IconSize.sm),
-      ]),
-      dom.div(classes: 'reactor-brand-body', <Widget>[
-        dom.div(classes: 'reactor-brand-title-row', <Widget>[
-          dom.span(classes: 'reactor-brand-title', <Widget>[
-            Component.text(reactorText(ReactorText.appTitle)),
-          ]),
-          dom.span(classes: 'reactor-brand-chip', <Widget>[
-            reactorStatusDot(status, size: 6),
-            Component.text(statusLabel),
-          ]),
-        ]),
-        dom.span(classes: 'reactor-brand-subtitle', <Widget>[
-          Component.text(reactorText(ReactorText.shellFleetMonitor)),
-        ]),
-      ]),
-      dom.div(classes: 'reactor-brand-meta', <Widget>[
-        _brandStat(reactorText(ReactorText.shellState), statusLabel),
-        _brandStat(reactorText(ReactorText.fleetTitle), fleetValue),
-      ]),
-    ]);
-  }
-
-  Widget _brandStat(String label, String value) {
-    return dom.div(classes: 'reactor-brand-stat', <Widget>[
-      dom.span(classes: 'reactor-brand-stat-label', <Widget>[
-        Component.text(label),
-      ]),
-      dom.span(classes: 'reactor-brand-stat-value', <Widget>[
-        Component.text(value),
-      ]),
-    ]);
-  }
-
-  Widget _connectionFooter(BuildContext context) {
+  Widget _connectionFooter() {
     final ReactorStatus status = _fleetStatus;
     final String summary = servers.isEmpty
         ? reactorText(ReactorText.fleetNoServersPaired)
@@ -755,20 +939,6 @@ class ReactorShell extends StatelessWidget {
         ]),
         reactorStatusDot(status),
       ]),
-      if (servers.isEmpty)
-        dom.button(
-          classes: 'reactor-sidebar-action',
-          attributes: const <String, String>{'type': 'button'},
-          events: <String, EventCallback>{
-            'click': (_) => context.push(kRouteAddServer),
-          },
-          <Widget>[
-            ArcaneIcon.circlePlus(size: IconSize.xs),
-            dom.span(<Widget>[
-              Component.text(reactorText(ReactorText.shellPairServer)),
-            ]),
-          ],
-        ),
     ]);
   }
 
@@ -811,157 +981,51 @@ class _FirstRunFleetView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return dom.div(classes: 'reactor-first-run', <Widget>[
-      dom.section(classes: 'reactor-first-run-hero', <Widget>[
-        dom.div(classes: 'reactor-first-run-main', <Widget>[
-          dom.div(classes: 'reactor-empty-mark', <Widget>[
-            ArcaneIcon.activity(size: IconSize.lg),
-          ]),
-          dom.div(classes: 'reactor-empty-kicker', <Widget>[
-            Component.text(reactorText(ReactorText.shellFleetControlPlane)),
-          ]),
-          dom.h1(classes: 'reactor-empty-title', <Widget>[
+    return dom.div(classes: 'reactor-board', <Widget>[
+      dom.div(classes: 'reactor-board-toolbar', <Widget>[
+        dom.div(classes: 'reactor-board-heading', <Widget>[
+          reactorEyebrow(reactorText(ReactorText.shellFleetControlPlane)),
+          dom.h1(<Widget>[Component.text(reactorText(ReactorText.fleetTitle))]),
+        ]),
+      ]),
+      dom.div(classes: 'reactor-board-metrics', <Widget>[
+        _metric('0', reactorText(ReactorText.shellPairedServers)),
+        _metric('0', reactorText(ReactorText.statusLive)),
+        _metric('0', reactorText(ReactorText.alertsTitle)),
+        _metric('RCT2', reactorText(ReactorText.addServerTransport)),
+      ]),
+      dom.div(classes: 'reactor-board-empty', <Widget>[
+        ArcaneIcon.serverCog(size: IconSize.lg),
+        dom.div(classes: 'reactor-board-empty-copy', <Widget>[
+          dom.h2(<Widget>[
             Component.text(reactorText(ReactorText.shellNoServersConnected)),
           ]),
-          dom.p(classes: 'reactor-empty-copy', <Widget>[
+          dom.p(<Widget>[
             Component.text(reactorText(ReactorText.shellFirstRunDescription)),
           ]),
-          dom.div(classes: 'reactor-empty-actions', <Widget>[
-            Button(
-              label: reactorText(ReactorText.shellPairServer),
-              onPressed: () => context.push(kRouteAddServer),
-            ),
-            Button.secondary(
-              label: reactorText(ReactorText.shellFleetSettings),
-              onPressed: () => context.push(kRouteSettings),
-            ),
-          ]),
         ]),
-        dom.div(classes: 'reactor-first-run-proof', <Widget>[
-          _proofCell('0', reactorText(ReactorText.shellPairedServers)),
-          _proofCell('RCT2', reactorText(ReactorText.shellSecurePairing)),
-          _proofCell(
-            reactorText(ReactorText.statusLive),
-            reactorText(ReactorText.shellTelemetryStream),
-          ),
-        ]),
-      ]),
-      dom.aside(classes: 'reactor-first-run-side', <Widget>[
-        _sidePanel(
-          title: reactorText(ReactorText.shellSignalReadiness),
-          trailing: reactorBadge(
-            reactorText(ReactorText.shellWaiting),
-            ReactorStatus.info,
-          ),
-          child: dom.div(classes: 'reactor-side-body', <Widget>[
-            _signalRow(
-              reactorText(ReactorText.overviewTps),
-              '0%',
-              reactorText(ReactorText.shellStandbyLower),
-            ),
-            _signalRow(
-              reactorText(ReactorText.shellMemory),
-              '0%',
-              reactorText(ReactorText.shellStandbyLower),
-            ),
-            _signalRow(
-              reactorText(ReactorText.shellIncidents),
-              '0%',
-              reactorText(ReactorText.shellStandbyLower),
-            ),
-            _signalRow(
-              reactorText(ReactorText.shellActions),
-              '0%',
-              reactorText(ReactorText.shellLockedLower),
-            ),
-          ]),
-        ),
-        _sidePanel(
-          title: reactorText(ReactorText.shellConsoleStatus),
-          trailing: reactorStatusDot(
-            ReactorStatus.info,
-            label: reactorText(ReactorText.shellStandby),
-          ),
-          child: dom.div(classes: 'reactor-side-body', <Widget>[
-            _commandLine(reactorText(ReactorText.shellConsoleWaiting)),
-            _commandLine(reactorText(ReactorText.shellSamplersIdle)),
-            _commandLine(reactorText(ReactorText.shellAlertsArmed)),
-          ]),
-        ),
-        _sidePanel(
-          title: reactorText(ReactorText.shellConnectionFlow),
-          child: dom.div(classes: 'reactor-side-body', <Widget>[
-            dom.div(classes: 'reactor-step-list', <Widget>[
-              _step(
-                '01',
-                reactorText(ReactorText.shellPair),
-                reactorText(ReactorText.shellPairDescription),
-              ),
-              _step(
-                '02',
-                reactorText(ReactorText.shellVerify),
-                reactorText(ReactorText.shellVerifyDescription),
-              ),
-              _step(
-                '03',
-                reactorText(ReactorText.shellMonitor),
-                reactorText(ReactorText.shellMonitorDescription),
-              ),
-            ]),
-          ]),
+        dom.button(
+          classes: 'reactor-board-action',
+          attributes: const <String, String>{'type': 'button'},
+          events: <String, EventCallback>{
+            'click': (_) => context.push(kRouteAddServer),
+          },
+          <Widget>[
+            ArcaneIcon.plus(size: IconSize.sm),
+            Component.text(reactorText(ReactorText.shellPairServer)),
+          ],
         ),
       ]),
     ]);
   }
 
-  Widget _proofCell(String value, String label) {
-    return dom.div(classes: 'reactor-proof-cell', <Widget>[
-      dom.span(classes: 'reactor-proof-value', <Widget>[Component.text(value)]),
-      dom.span(classes: 'reactor-proof-label', <Widget>[Component.text(label)]),
-    ]);
-  }
-
-  Widget _sidePanel({
-    required String title,
-    required Widget child,
-    Widget? trailing,
-  }) {
-    return dom.div(classes: 'reactor-side-panel', <Widget>[
-      dom.div(classes: 'reactor-side-panel-head', <Widget>[
-        dom.span(classes: 'reactor-side-title', <Widget>[
-          Component.text(title),
-        ]),
-        ?trailing,
+  Widget _metric(String value, String label) {
+    return dom.div(classes: 'reactor-board-metric', <Widget>[
+      dom.span(classes: 'reactor-board-metric-value', <Widget>[
+        Component.text(value),
       ]),
-      child,
-    ]);
-  }
-
-  Widget _signalRow(String label, String width, String value) {
-    return dom.div(classes: 'reactor-signal-row', <Widget>[
-      dom.span(<Widget>[Component.text(label)]),
-      dom.span(
-        classes: 'reactor-signal-bar',
-        styles: dom.Styles(raw: <String, String>{'--signal': width}),
-        <Widget>[dom.span(classes: 'reactor-signal-fill', const <Widget>[])],
-      ),
-      dom.span(<Widget>[Component.text(value)]),
-    ]);
-  }
-
-  Widget _commandLine(String text) {
-    return dom.div(classes: 'reactor-command-line', <Widget>[
-      dom.span(classes: 'reactor-command-dot', const <Widget>[]),
-      dom.span(<Widget>[Component.text(text)]),
-    ]);
-  }
-
-  Widget _step(String index, String title, String copy) {
-    return dom.div(classes: 'reactor-step', <Widget>[
-      dom.span(classes: 'reactor-step-index', <Widget>[Component.text(index)]),
-      dom.div(<Widget>[
-        dom.div(classes: 'reactor-step-title', <Widget>[Component.text(title)]),
-        dom.div(classes: 'reactor-step-copy', <Widget>[Component.text(copy)]),
+      dom.span(classes: 'reactor-board-metric-label', <Widget>[
+        Component.text(label),
       ]),
     ]);
   }

@@ -198,16 +198,19 @@ class _AlertRow extends StatelessWidget {
     this.onResolve,
   });
 
-  static ArcaneStatusBadge _severityBadge(AlertSeverity s) {
+  static Widget _severityBadge(AlertSeverity s) {
     return switch (s) {
-      AlertSeverity.critical => ArcaneStatusBadge.error(
+      AlertSeverity.critical => reactorBadge(
         reactorText(ReactorText.alertsSeverityCritical),
+        ReactorStatus.critical,
       ),
-      AlertSeverity.warning => ArcaneStatusBadge.warning(
+      AlertSeverity.warning => reactorBadge(
         reactorText(ReactorText.alertsSeverityWarning),
+        ReactorStatus.warning,
       ),
-      AlertSeverity.info => ArcaneStatusBadge.info(
+      AlertSeverity.info => reactorBadge(
         reactorText(ReactorText.alertsSeverityInfo),
+        ReactorStatus.info,
       ),
     };
   }
@@ -234,8 +237,10 @@ class _AlertRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card.elevated(
+    return Card.flat(
       fillWidth: true,
+      padding: EdgeInsets.zero,
+      borderRadius: BorderRadius.zero,
       child: dom.div(
         styles: const dom.Styles(
           raw: <String, String>{

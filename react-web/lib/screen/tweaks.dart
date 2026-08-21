@@ -37,8 +37,10 @@ class TweaksListView extends StatelessWidget {
       gap: 12,
       children: <Widget>[
         for (final ControlItem tweak in items)
-          Card.elevated(
+          Card.flat(
             fillWidth: true,
+            padding: EdgeInsets.zero,
+            borderRadius: BorderRadius.zero,
             child: dom.div(
               styles: const dom.Styles(
                 raw: <String, String>{

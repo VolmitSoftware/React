@@ -86,8 +86,10 @@ class GovernorDashboardView extends StatelessWidget {
           label: reactorText(ReactorText.governorsSection),
           child: statGrid(<Widget>[
             for (final ControlItem governor in governors)
-              Card.elevated(
+              Card.flat(
                 fillWidth: true,
+                padding: EdgeInsets.zero,
+                borderRadius: BorderRadius.zero,
                 child: dom.div(
                   styles: const dom.Styles(
                     raw: <String, String>{
@@ -100,12 +102,13 @@ class GovernorDashboardView extends StatelessWidget {
                   <Widget>[
                     Text.heading3(governor.name),
                     governor.enabled
-                        ? ArcaneStatusBadge.success(
+                        ? reactorBadge(
                             reactorText(ReactorText.commonEnabled),
-                            showPulse: false,
+                            ReactorStatus.healthy,
                           )
-                        : ArcaneStatusBadge.offline(
+                        : reactorBadge(
                             reactorText(ReactorText.commonDisabled),
+                            ReactorStatus.neutral,
                           ),
                     ArcaneToggleSwitch(
                       value: governor.enabled,

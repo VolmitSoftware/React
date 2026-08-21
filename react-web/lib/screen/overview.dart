@@ -198,10 +198,8 @@ class _IncidentBar extends StatelessWidget {
           'flex': '1',
           'min-width': '3px',
           'height': '$heightPct%',
-          'background':
-              'linear-gradient(to top, $color, '
-              'color-mix(in srgb, $color 55%, transparent))',
-          'border-radius': '2px',
+          'background': color,
+          'border-radius': '0',
           'transition': 'height 200ms ease',
         },
       ),

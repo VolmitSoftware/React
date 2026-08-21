@@ -191,20 +191,23 @@ class _FleetDashboardScreenState extends State<FleetDashboardScreen> {
         },
       ),
       <Widget>[
-        ArcaneStatusBadge.error(
+        reactorBadge(
           reactorText(ReactorText.fleetCriticalCount, <String, Object?>{
             'count': critical,
           }),
+          ReactorStatus.critical,
         ),
-        ArcaneStatusBadge.warning(
+        reactorBadge(
           reactorText(ReactorText.fleetWarningCount, <String, Object?>{
             'count': warning,
           }),
+          ReactorStatus.warning,
         ),
-        ArcaneStatusBadge.info(
+        reactorBadge(
           reactorText(ReactorText.fleetInfoCount, <String, Object?>{
             'count': info,
           }),
+          ReactorStatus.info,
         ),
       ],
     );

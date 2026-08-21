@@ -577,8 +577,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final String tagInput = _tagInputs[cred.id] ?? '';
     final String renameLabel = _renameLabels[cred.id] ?? cred.label;
 
-    return Card.elevated(
+    return Card.flat(
       fillWidth: true,
+      padding: EdgeInsets.zero,
+      borderRadius: BorderRadius.zero,
       child: dom.div(
         styles: const dom.Styles(
           raw: <String, String>{
@@ -682,7 +684,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         },
       ),
       <Widget>[
-        ArcaneStatusBadge.secondary(tag),
+        reactorBadge(tag, ReactorStatus.neutral),
         Button.ghost(
           label: '×',
           size: ButtonSize.small,
