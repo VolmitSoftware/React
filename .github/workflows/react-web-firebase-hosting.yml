@@ -14,6 +14,7 @@ permissions:
 
 env:
   ARCANE_JASPR_REF: 665652de05c83d51ba26da51a06398bbd1c6f57e
+  DART_VERSION: 3.11.5
   FIREBASE_PROJECT_ID: react-web-plugin
   FIREBASE_TOOLS_VERSION: 15.25.1
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -53,7 +54,7 @@ jobs:
       - name: Setup Dart
         uses: dart-lang/setup-dart@v1
         with:
-          sdk: stable
+          sdk: ${{ env.DART_VERSION }}
 
       - name: Setup Node
         uses: actions/setup-node@v6

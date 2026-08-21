@@ -257,6 +257,15 @@ void main() {
       expect(response.body, contains(ReactorText.addServerPair.english));
       expect(response.body, contains(ReactorText.addServerClearCode.english));
       expect(response.body, contains(ReactorText.addServerResetFleet.english));
+      expect(response.body, contains('reactor-pane-state is-empty'));
+      expect(
+        response.body,
+        isNot(contains(ReactorText.addServerConnectionFlow.english)),
+      );
+      expect(
+        response.body,
+        isNot(contains(ReactorText.addServerSecurity.english)),
+      );
     });
 
     test('pairs a valid direct server', () async {

@@ -51,7 +51,8 @@ class GovernorDashboardView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool hasMetrics = incidentScore != null ||
+    final bool hasMetrics =
+        incidentScore != null ||
         schedulerBacklog != null ||
         backlogGrowthRate != null;
     return Collection(
@@ -173,8 +174,10 @@ class GovernorDashboardView extends StatelessWidget {
                   ),
             ArcaneToggleSwitch(
               value: governor.enabled,
-              onChanged: (bool enabled) =>
-                  onToggle?.call(governor.id, enabled),
+              disabled: onToggle == null,
+              onChanged: onToggle == null
+                  ? null
+                  : (bool enabled) => onToggle?.call(governor.id, enabled),
             ),
           ],
         ),
@@ -234,18 +237,30 @@ class _GovernorsScreenState extends State<GovernorsScreen> {
               .where((ControlItem i) => kGovernorFeatureIds.contains(i.id))
               .toList();
 
-    if (scope?.state == ConnState.connecting && _client == null) {
+    if (scope?.state == ConnState.connecting &&
+        scope?.snapshot == null &&
+        _client == null) {
       return _statePage(
         const ReactorLoadingState(label: 'Loading governor state'),
       );
     }
-    if (_client == null || scope?.state == ConnState.offline) {
-      return _statePage(
-        ReactorNotice(
-          title: reactorText(ReactorText.statusOffline),
-          message: reactorText(ReactorText.governorsLiveRequired),
-          status: ReactorStatus.critical,
-        ),
+    if (_client == null) {
+      return ReactorPage(
+        title: reactorText(ReactorText.governorsTitle),
+        subtitle: reactorText(ReactorText.governorsSubtitle),
+        children: <Widget>[
+          ReactorNotice(
+            title: 'Governor controls unavailable',
+            message: reactorText(ReactorText.governorsLiveRequired),
+            status: ReactorStatus.critical,
+          ),
+          GovernorDashboardView(
+            governors: governors,
+            incidentScore: incidentScore,
+            schedulerBacklog: schedulerBacklog,
+            backlogGrowthRate: backlogGrowthRate,
+          ),
+        ],
       );
     }
 
@@ -285,12 +300,6 @@ class _GovernorsScreenState extends State<GovernorsScreen> {
               size: ButtonSize.small,
               onPressed: controller.load,
             ),
-          )
-        else if (scope?.state == ConnState.degraded)
-          const ReactorNotice(
-            title: 'Connection degraded',
-            message: 'Governor state may be delayed until React reconnects.',
-            status: ReactorStatus.warning,
           ),
         GovernorDashboardView(
           governors: governors,

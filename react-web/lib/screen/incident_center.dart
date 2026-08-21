@@ -255,10 +255,10 @@ class _IncidentCenterScreenState extends State<IncidentCenterScreen> {
         ),
       );
     }
-    if (client == null || server?.state == ConnState.offline) {
+    if (client == null) {
       return _statePage(
         ReactorNotice(
-          title: reactorText(ReactorText.statusOffline),
+          title: 'Incident status unavailable',
           message: reactorText(ReactorText.incidentCenterLiveRequired),
           status: ReactorStatus.critical,
         ),
@@ -313,12 +313,6 @@ class _IncidentCenterScreenState extends State<IncidentCenterScreen> {
               size: ButtonSize.small,
               onPressed: () => _load(client),
             ),
-          )
-        else if (server?.state == ConnState.degraded)
-          const ReactorNotice(
-            title: 'Connection degraded',
-            message: 'Showing the most recent incident status from React.',
-            status: ReactorStatus.warning,
           ),
         IncidentCenterView(
           status: _status!,

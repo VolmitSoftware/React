@@ -2,7 +2,6 @@ library;
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
 import 'package:jaspr/dom.dart' as dom;
-import 'package:jaspr/jaspr.dart' show Component;
 
 import '../model/heatmap.dart';
 import '../localization/reactor_localizations.dart';
@@ -10,7 +9,6 @@ import '../model/sampler_sample.dart';
 import '../model/server_snapshot.dart';
 import '../service/react_client.dart';
 import '../service/react_exceptions.dart';
-import '../state/connection_manager.dart';
 import '../state/heatmap_scope.dart';
 import '../state/server_scope.dart';
 import '../ui/reactor_ui.dart';
@@ -98,8 +96,6 @@ class _HeatmapsScreenState extends State<HeatmapsScreen> {
   Widget build(BuildContext context) {
     final ServerScope? scope = ServerScope.of(context);
     final ServerSnapshot? snapshot = scope?.snapshot;
-    final bool offline = scope?.state == ConnState.offline;
-
     final List<Widget> tiles = <Widget>[];
     for (final (String id, ReactorText label) in _kSpatialSamplers) {
       final SamplerSample? s = snapshot?.sampler(id);
@@ -112,18 +108,6 @@ class _HeatmapsScreenState extends State<HeatmapsScreen> {
       title: reactorText(ReactorText.heatmapsTitle),
       subtitle: reactorText(ReactorText.heatmapsSubtitle),
       children: <Widget>[
-        if (offline)
-          ReactorNotice(
-            title: reactorText(ReactorText.statusOffline),
-            message: reactorText(ReactorText.heatmapsLiveRequired),
-            status: ReactorStatus.critical,
-          )
-        else if (scope?.state == ConnState.degraded)
-          const ReactorNotice(
-            title: 'Connection degraded',
-            message: 'Showing the most recent spatial samples from React.',
-            status: ReactorStatus.warning,
-          ),
         if (tiles.isNotEmpty)
           SectionPanel(
             label: reactorText(ReactorText.heatmapsSpatialMetrics),
@@ -133,7 +117,7 @@ class _HeatmapsScreenState extends State<HeatmapsScreen> {
         if (tiles.isEmpty)
           SectionPanel(
             label: reactorText(ReactorText.heatmapsSpatialMetrics),
-            child: snapshot == null && !offline
+            child: snapshot == null
                 ? ReactorLoadingState(
                     label: reactorText(ReactorText.metricsWaiting),
                   )
@@ -147,17 +131,17 @@ class _HeatmapsScreenState extends State<HeatmapsScreen> {
         SectionPanel(
           label: reactorText(ReactorText.heatmapsChunkHeatmaps),
           flush: true,
-          child: _chunkHeatmapState(offline),
+          child: _chunkHeatmapState(),
         ),
       ],
     );
   }
 
-  Widget _chunkHeatmapState(bool offline) {
+  Widget _chunkHeatmapState() {
     final IHeatmapClient? client = _client;
-    if (offline || client == null) {
+    if (client == null) {
       return ReactorNotice(
-        title: reactorText(ReactorText.statusOffline),
+        title: 'Heatmap endpoint unavailable',
         message: reactorText(ReactorText.heatmapsLiveRequired),
         status: ReactorStatus.critical,
       );
@@ -195,10 +179,7 @@ class _HeatmapsScreenState extends State<HeatmapsScreen> {
     }
     return dom.div(
       styles: const dom.Styles(
-        raw: <String, String>{
-          'display': 'flex',
-          'flex-direction': 'column',
-        },
+        raw: <String, String>{'display': 'flex', 'flex-direction': 'column'},
       ),
       <Widget>[
         for (final HeatmapGrid grid in grids) HeatmapGridView(grid: grid),

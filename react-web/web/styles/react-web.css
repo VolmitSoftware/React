@@ -184,6 +184,9 @@ pre,
 
 .arcane-card,
 .arcane-button,
+.arcane-floating,
+.arcane-sheet-panel,
+.arcane-toast,
 .arcane-select-dropdown,
 .arcane-select-trigger,
 .arcane-toggle-switch,
@@ -199,6 +202,13 @@ select {
 .arcane-card {
   background: var(--reactor-panel) !important;
   border-color: var(--reactor-border-soft) !important;
+  box-shadow: none !important;
+}
+
+.arcane-floating,
+.arcane-sheet-panel,
+.arcane-toast {
+  border-radius: 0 !important;
   box-shadow: none !important;
 }
 
@@ -795,10 +805,8 @@ select {
 
 .reactor-server-list-scroll {
   display: flex;
-  max-height: 152px;
   flex-direction: column;
   gap: 3px;
-  overflow: auto;
 }
 
 .reactor-server-row-name {
@@ -839,13 +847,31 @@ select {
   animation: reactor-enter 160ms ease-out both;
 }
 
+.reactor-connection-frame {
+  display: flex;
+  width: 100%;
+  min-height: 100%;
+  flex-direction: column;
+}
+
+.reactor-connection-frame > .reactor-notice {
+  width: 100%;
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+.reactor-connection-frame > .reactor-page {
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
 .reactor-page-header {
   display: flex;
-  min-height: 44px;
+  min-height: 34px;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 6px 12px;
+  padding: 4px 10px;
   border-bottom: 1px solid var(--reactor-border-soft);
   background: var(--reactor-panel);
 }
@@ -980,10 +1006,15 @@ select {
   border-left: 1px solid var(--reactor-border-soft);
 }
 
-.reactor-panel-body > .reactor-grid,
-.reactor-panel-body > .reactor-metric-bank {
+.reactor-panel-body:not(.is-flush) > .reactor-grid:first-child,
+.reactor-panel-body:not(.is-flush) > .reactor-metric-bank:first-child {
   width: calc(100% + 20px);
-  margin: -10px;
+  margin: -10px -10px 0;
+}
+
+.reactor-panel-body:not(.is-flush) > .reactor-grid:only-child,
+.reactor-panel-body:not(.is-flush) > .reactor-metric-bank:only-child {
+  margin-bottom: -10px;
 }
 
 .reactor-panel-body.is-flush > .reactor-grid,
@@ -994,13 +1025,20 @@ select {
 
 .reactor-metric-card,
 .reactor-stat-cell,
-.reactor-metric-cell {
+.reactor-metric-cell,
+.reactor-metric-bank > .reactor-gauge,
+.reactor-metric-bank > .reactor-stat {
   min-width: 0;
   min-height: 68px;
   border-right: 1px solid var(--reactor-border-soft);
   border-bottom: 1px solid var(--reactor-border-soft);
   background: var(--reactor-panel) !important;
   box-shadow: none !important;
+}
+
+.reactor-metric-bank > .reactor-gauge,
+.reactor-metric-bank > .reactor-stat {
+  padding: 9px 10px;
 }
 
 .reactor-stat-cell {
@@ -1093,7 +1131,9 @@ select {
 .reactor-panel-body.is-flush > .reactor-pane-state,
 .reactor-page-body > .reactor-pane-state,
 .reactor-page-body > .reactor-notice {
-  border-width: 0 0 1px;
+  width: 100%;
+  margin: 0;
+  border-width: 1px;
 }
 
 .reactor-pane-state-icon {
@@ -1189,7 +1229,7 @@ select {
 .reactor-board {
   display: grid;
   min-height: 100%;
-  grid-template-rows: 44px 54px minmax(0, 1fr);
+  grid-template-rows: 34px 54px minmax(0, 1fr);
   background: var(--reactor-bg);
   animation: reactor-enter 160ms ease-out both;
 }
@@ -1454,8 +1494,8 @@ select {
 }
 
 .reactor-metrics-table-wrap {
-  max-height: min(65dvh, 760px);
-  overflow: auto;
+  overflow-x: auto;
+  overflow-y: visible;
 }
 
 .reactor-metrics-table {
@@ -1912,14 +1952,20 @@ select {
   background: var(--reactor-panel);
 }
 
-.reactor-page input,
-.reactor-page textarea,
-.reactor-page select {
-  min-height: 30px;
+.reactor-page input:not([type="checkbox"]):not([type="radio"]),
+.reactor-page select,
+.reactor-page .arcane-select-trigger {
+  height: 30px !important;
+  min-height: 30px !important;
+}
+
+.reactor-page textarea {
+  min-height: 72px;
 }
 
 .reactor-page .arcane-button {
-  min-height: 28px;
+  height: 30px !important;
+  min-height: 30px !important;
 }
 
 @keyframes reactor-enter {
@@ -2116,6 +2162,14 @@ select {
     min-height: 44px;
     align-items: center;
     padding: 5px 8px;
+  }
+
+  .reactor-page input:not([type="checkbox"]):not([type="radio"]),
+  .reactor-page select,
+  .reactor-page .arcane-select-trigger,
+  .reactor-page .arcane-button {
+    height: 40px !important;
+    min-height: 40px !important;
   }
 
   .reactor-page-heading p {

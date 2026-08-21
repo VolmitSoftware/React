@@ -50,9 +50,7 @@ class TweaksListView extends StatelessWidget {
                   'flex-direction': 'column',
                 },
               ),
-              <Widget>[
-                for (final ControlItem tweak in items) _tweakRow(tweak),
-              ],
+              <Widget>[for (final ControlItem tweak in items) _tweakRow(tweak)],
             ),
     );
   }
@@ -213,10 +211,10 @@ class _TweaksScreenState extends State<TweaksScreen> {
         ReactorLoadingState(label: reactorText(ReactorText.tweaksLoading)),
       );
     }
-    if (_client == null || server?.state == ConnState.offline) {
+    if (_client == null) {
       return _statePage(
         ReactorNotice(
-          title: reactorText(ReactorText.statusOffline),
+          title: 'Tweaks unavailable',
           message: reactorText(ReactorText.tweaksLiveRequired),
           status: ReactorStatus.critical,
         ),
@@ -265,12 +263,6 @@ class _TweaksScreenState extends State<TweaksScreen> {
               size: ButtonSize.small,
               onPressed: controller.load,
             ),
-          )
-        else if (server?.state == ConnState.degraded)
-          const ReactorNotice(
-            title: 'Connection degraded',
-            message: 'Tweak state may be delayed until React reconnects.',
-            status: ReactorStatus.warning,
           ),
         TweaksListView(
           items: controller.items,

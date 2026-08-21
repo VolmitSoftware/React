@@ -7,9 +7,10 @@ import 'package:jaspr/jaspr.dart' show Component;
 import '../model/environment_info.dart';
 import '../localization/reactor_localizations.dart';
 import '../service/react_client.dart';
+import '../state/connection_manager.dart';
 import '../state/operate_scope.dart';
+import '../state/server_scope.dart';
 import '../ui/reactor_ui.dart';
-import '../widget/section_card.dart';
 
 const List<String> _kPreferredOrder = <String>[
   'cpu',
@@ -95,64 +96,72 @@ class EnvironmentView extends StatelessWidget {
     }
 
     return Collection(
-      gap: 16,
+      gap: 0,
       children: <Widget>[
         for (final String section in ordered)
-          sectionCard(
+          SectionPanel(
             label: _sectionLabel(section),
             flush: true,
-            child: dom.div(
-              styles: const dom.Styles(
-                raw: <String, String>{
-                  'display': 'flex',
-                  'flex-direction': 'column',
-                },
-              ),
-              <Widget>[
-                for (final MapEntry<String, Object?> entry in info.entriesOf(
-                  section,
-                ))
-                  dom.div(
+            child: info.entriesOf(section).isEmpty
+                ? const ReactorEmptyState(
+                    title: 'No values reported',
+                    description: 'This diagnostic section is empty.',
+                  )
+                : dom.div(
                     styles: const dom.Styles(
                       raw: <String, String>{
                         'display': 'flex',
-                        'justify-content': 'space-between',
-                        'align-items': 'center',
-                        'gap': '1rem',
-                        'padding': '0.6rem 1.15rem',
-                        'border-bottom': '1px solid $kReactorHairline',
+                        'flex-direction': 'column',
                       },
                     ),
                     <Widget>[
-                      dom.span(
-                        styles: const dom.Styles(
-                          raw: <String, String>{
-                            'color': 'var(--muted-foreground)',
-                            'font-size': '0.85rem',
-                          },
-                        ),
-                        <Widget>[Component.text(entry.key)],
-                      ),
-                      dom.span(
-                        styles: const dom.Styles(
-                          raw: <String, String>{
-                            'font-size': '0.85rem',
-                            'font-weight': '500',
-                            'color': 'var(--foreground)',
-                            'font-variant-numeric': 'tabular-nums',
-                            'text-align': 'right',
-                          },
-                        ),
-                        <Widget>[
-                          Component.text(
-                            _formatEnvValue(section, entry.key, entry.value),
+                      for (final MapEntry<String, Object?> entry
+                          in info.entriesOf(section))
+                        dom.div(
+                          styles: const dom.Styles(
+                            raw: <String, String>{
+                              'display': 'flex',
+                              'justify-content': 'space-between',
+                              'align-items': 'center',
+                              'gap': '1rem',
+                              'padding': '0.5rem 0.75rem',
+                              'border-bottom': '1px solid $kReactorHairline',
+                            },
                           ),
-                        ],
-                      ),
+                          <Widget>[
+                            dom.span(
+                              styles: const dom.Styles(
+                                raw: <String, String>{
+                                  'color': 'var(--muted-foreground)',
+                                  'font-size': '0.78rem',
+                                },
+                              ),
+                              <Widget>[Component.text(entry.key)],
+                            ),
+                            dom.code(
+                              styles: const dom.Styles(
+                                raw: <String, String>{
+                                  'font-size': '0.74rem',
+                                  'font-weight': '500',
+                                  'color': 'var(--foreground)',
+                                  'font-variant-numeric': 'tabular-nums',
+                                  'text-align': 'right',
+                                },
+                              ),
+                              <Widget>[
+                                Component.text(
+                                  _formatEnvValue(
+                                    section,
+                                    entry.key,
+                                    entry.value,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                     ],
                   ),
-              ],
-            ),
           ),
       ],
     );
@@ -167,7 +176,9 @@ class EnvironmentScreen extends StatefulWidget {
 }
 
 class _EnvironmentScreenState extends State<EnvironmentScreen> {
+  IEnvironmentClient? _client;
   EnvironmentInfo? _info;
+  Object? _error;
   bool _loading = false;
   bool _started = false;
 
@@ -177,75 +188,87 @@ class _EnvironmentScreenState extends State<EnvironmentScreen> {
     final IEnvironmentClient? client = OperateScope.of(context)?.client;
     if (client != null && !_started) {
       _started = true;
+      _client = client;
+      _load(client);
+    }
+  }
+
+  Future<void> _load(IEnvironmentClient client) async {
+    setState(() {
       _loading = true;
-      client
-          .environment()
-          .then((EnvironmentInfo info) {
-            if (!mounted) return;
-            setState(() {
-              _info = info;
-              _loading = false;
-            });
-          })
-          .catchError((Object e) {
-            if (!mounted) return;
-            setState(() {
-              _info = null;
-              _loading = false;
-            });
-          });
+      _error = null;
+    });
+    try {
+      final EnvironmentInfo info = await client.environment();
+      if (!mounted || client != _client) return;
+      setState(() {
+        _info = info;
+        _loading = false;
+      });
+    } on Object catch (error) {
+      if (!mounted || client != _client) return;
+      setState(() {
+        _error = error;
+        _loading = false;
+      });
     }
   }
 
   void _refresh() {
-    final IEnvironmentClient? client = OperateScope.of(context)?.client;
-    if (client == null) return;
-    setState(() => _loading = true);
-    client
-        .environment()
-        .then((EnvironmentInfo info) {
-          if (!mounted) return;
-          setState(() {
-            _info = info;
-            _loading = false;
-          });
-        })
-        .catchError((Object e) {
-          if (!mounted) return;
-          setState(() {
-            _info = null;
-            _loading = false;
-          });
-        });
+    final IEnvironmentClient? client = _client;
+    if (client != null) _load(client);
   }
 
   @override
   Widget build(BuildContext context) {
+    final ServerScope? server = ServerScope.of(context);
     final IEnvironmentClient? client = OperateScope.of(context)?.client;
 
+    if (server?.state == ConnState.connecting && client == null) {
+      return _statePage(
+        ReactorLoadingState(label: reactorText(ReactorText.environmentLoading)),
+      );
+    }
     if (client == null) {
-      return ReactorPage(
-        title: reactorText(ReactorText.environmentTitle),
-        subtitle: reactorText(ReactorText.environmentSubtitle),
-        children: <Widget>[
-          _note(reactorText(ReactorText.environmentLiveRequired)),
-        ],
+      return _statePage(
+        ReactorNotice(
+          title: 'Environment diagnostics unavailable',
+          message: reactorText(ReactorText.environmentLiveRequired),
+          status: ReactorStatus.critical,
+        ),
       );
     }
 
-    if (_loading) {
-      return ReactorPage(
-        title: reactorText(ReactorText.environmentTitle),
-        subtitle: reactorText(ReactorText.environmentSubtitle),
-        children: <Widget>[_note(reactorText(ReactorText.environmentLoading))],
+    if (_loading && _info == null) {
+      return _statePage(
+        ReactorLoadingState(label: reactorText(ReactorText.environmentLoading)),
       );
     }
 
-    if (_info == null) {
-      return ReactorPage(
-        title: reactorText(ReactorText.environmentTitle),
-        subtitle: reactorText(ReactorText.environmentSubtitle),
-        children: <Widget>[_note(reactorText(ReactorText.environmentNoData))],
+    final Object? error = _error;
+    if (error != null && _info == null) {
+      return _statePage(
+        ReactorNotice(
+          title: reactorText(ReactorText.environmentNoData),
+          message: error.toString(),
+          status: ReactorStatus.critical,
+          action: Button.secondary(
+            label: 'Retry',
+            size: ButtonSize.small,
+            onPressed: _refresh,
+          ),
+        ),
+      );
+    }
+
+    final EnvironmentInfo? info = _info;
+    if (info == null || info.sectionNames.isEmpty) {
+      return _statePage(
+        ReactorEmptyState(
+          title: reactorText(ReactorText.environmentNoData),
+          description: 'React returned no host or runtime diagnostics.',
+          icon: ArcaneIcon.serverCog(size: IconSize.sm),
+        ),
       );
     }
 
@@ -253,21 +276,41 @@ class _EnvironmentScreenState extends State<EnvironmentScreen> {
       title: reactorText(ReactorText.environmentTitle),
       subtitle: reactorText(ReactorText.environmentSubtitle),
       actions: Button.secondary(
-        label: reactorText(ReactorText.environmentRefresh),
+        label: _loading
+            ? reactorText(ReactorText.environmentLoading)
+            : reactorText(ReactorText.environmentRefresh),
         size: ButtonSize.small,
-        onPressed: _refresh,
+        disabled: _loading,
+        onPressed: _loading ? null : _refresh,
       ),
-      children: <Widget>[EnvironmentView(info: _info!)],
+      children: <Widget>[
+        if (error != null)
+          ReactorNotice(
+            title: 'Diagnostic refresh failed',
+            message: error.toString(),
+            status: ReactorStatus.warning,
+            action: Button.secondary(
+              label: 'Retry',
+              size: ButtonSize.small,
+              onPressed: _refresh,
+            ),
+          )
+        else if (_loading)
+          const ReactorNotice(
+            title: 'Refreshing diagnostics',
+            message: 'Keeping the previous values visible until React replies.',
+            status: ReactorStatus.info,
+          ),
+        EnvironmentView(info: info),
+      ],
     );
   }
 
-  Widget _note(String text) => dom.div(
-    styles: const dom.Styles(
-      raw: <String, String>{
-        'color': 'var(--muted-foreground)',
-        'font-size': '0.875rem',
-      },
-    ),
-    <Widget>[Component.text(text)],
-  );
+  Widget _statePage(Widget state) {
+    return ReactorPage(
+      title: reactorText(ReactorText.environmentTitle),
+      subtitle: reactorText(ReactorText.environmentSubtitle),
+      children: <Widget>[state],
+    );
+  }
 }

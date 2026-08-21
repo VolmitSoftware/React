@@ -84,11 +84,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _fetchRole(FleetManager fm, String id) async {
     final IRoleClient? client = fm.roleClientFor(id);
     if (client == null) {
-      if (!mounted) return;
-      setState(() {
-        _roles.remove(id);
-        _roleErrors[id] = 'Role endpoint unavailable';
-      });
+      _roles.remove(id);
+      _roleErrors[id] = 'Role endpoint unavailable';
       return;
     }
     try {

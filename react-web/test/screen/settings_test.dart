@@ -138,6 +138,37 @@ void main() {
         reason: 'Beta server label must appear in settings body',
       );
     });
+
+    testServer('renders role lookup failures as a warning state', (
+      ServerTester tester,
+    ) async {
+      final InMemoryFleetStorage storage = InMemoryFleetStorage();
+      final _FakeFleetController ctrl = _FakeFleetController(storage);
+      tester.pumpComponent(_wrapSettings(ctrl: ctrl));
+      final DocumentResponse res = await tester.request('/');
+
+      expect(res.statusCode, equals(200));
+      expect(res.body, contains('Some roles are unavailable'));
+      expect(res.body, contains('Unavailable'));
+      expect(res.body, contains('reactor-notice is-warning'));
+    });
+
+    testServer('renders a dedicated empty fleet state', (
+      ServerTester tester,
+    ) async {
+      final InMemoryFleetStorage storage = InMemoryFleetStorage();
+      final _FakeFleetController ctrl = _FakeFleetController(storage);
+      ctrl.fleetManager.clearAll();
+      tester.pumpComponent(_wrapSettings(ctrl: ctrl));
+      final DocumentResponse res = await tester.request('/');
+
+      expect(res.statusCode, equals(200));
+      expect(
+        res.body,
+        contains(ReactorText.settingsNoServersConfigured.english),
+      );
+      expect(res.body, contains('reactor-pane-state is-empty'));
+    });
   });
 
   group('SettingsScreen — threshold defaults', () {

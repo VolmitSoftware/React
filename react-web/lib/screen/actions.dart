@@ -10,12 +10,13 @@ import '../model/knob.dart';
 import '../model/role_info.dart';
 import '../service/react_client.dart';
 import '../state/actions_controller.dart';
+import '../state/connection_manager.dart';
 import '../state/operate_scope.dart';
 import '../state/role_scope.dart';
+import '../state/server_scope.dart';
 import '../ui/reactor_ui.dart';
 import '../widget/knob_editor.dart';
 import '../widget/role_badge.dart';
-import '../widget/section_card.dart';
 
 class ActionsConsoleView extends StatelessWidget {
   final List<ActionDescriptor> actions;
@@ -83,129 +84,199 @@ class ActionsConsoleView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Collection(
-      gap: 20,
+      gap: 0,
       children: <Widget>[
-        sectionCard(
+        SectionPanel(
           label: reactorText(ReactorText.actionsTitle),
-          child: statGrid(<Widget>[
-            for (final ActionDescriptor action in actions)
-              Card.flat(
-                fillWidth: true,
-                padding: EdgeInsets.zero,
-                borderRadius: BorderRadius.zero,
-                child: dom.div(
+          flush: true,
+          child: actions.isEmpty
+              ? ReactorEmptyState(
+                  title: 'No actions available',
+                  description:
+                      'React did not return any executable operations.',
+                  icon: ArcaneIcon.play(size: IconSize.sm),
+                )
+              : dom.div(
                   styles: const dom.Styles(
                     raw: <String, String>{
-                      'padding': '0.75rem',
                       'display': 'flex',
                       'flex-direction': 'column',
+                    },
+                  ),
+                  <Widget>[
+                    for (final ActionDescriptor action in actions)
+                      _actionRow(action),
+                  ],
+                ),
+        ),
+        SectionPanel(
+          label: reactorText(ReactorText.actionsRecentExecutions),
+          flush: true,
+          child: recent.isEmpty
+              ? ReactorEmptyState(
+                  title: reactorText(ReactorText.actionsNoneExecuted),
+                  description:
+                      'Executed operations and their tickets will appear here.',
+                  icon: ArcaneIcon.history(size: IconSize.sm),
+                )
+              : dom.div(
+                  styles: const dom.Styles(
+                    raw: <String, String>{
+                      'display': 'flex',
+                      'flex-direction': 'column',
+                    },
+                  ),
+                  <Widget>[
+                    for (final ActionExecution execution in recent)
+                      _executionRow(execution),
+                  ],
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _actionRow(ActionDescriptor action) {
+    return dom.section(
+      styles: const dom.Styles(
+        raw: <String, String>{
+          'display': 'flex',
+          'flex-direction': 'column',
+          'gap': '0.55rem',
+          'padding': '0.65rem 0.75rem',
+          'border-bottom': '1px solid $kReactorHairline',
+        },
+      ),
+      <Widget>[
+        dom.div(
+          styles: const dom.Styles(
+            raw: <String, String>{
+              'display': 'flex',
+              'align-items': 'flex-start',
+              'justify-content': 'space-between',
+              'gap': '0.75rem',
+            },
+          ),
+          <Widget>[
+            dom.div(
+              styles: const dom.Styles(
+                raw: <String, String>{
+                  'display': 'flex',
+                  'min-width': '0',
+                  'flex-direction': 'column',
+                  'gap': '0.2rem',
+                },
+              ),
+              <Widget>[
+                dom.div(
+                  styles: const dom.Styles(
+                    raw: <String, String>{
+                      'display': 'flex',
+                      'align-items': 'center',
                       'gap': '0.5rem',
                     },
                   ),
                   <Widget>[
-                    Text.heading3(action.name),
-                    Text(
-                      action.description,
-                      color: TextColor.muted,
-                      size: FontSize.sm,
+                    dom.strong(
+                      styles: const dom.Styles(
+                        raw: <String, String>{'font-size': '0.82rem'},
+                      ),
+                      <Widget>[Component.text(action.name)],
                     ),
                     if (action.destructive)
                       reactorBadge(
                         reactorText(ReactorText.actionsDestructive),
                         ReactorStatus.warning,
                       ),
-                    for (final ActionParam p in action.params)
-                      KnobEditor(
-                        knob: Knob(
-                          key: p.key,
-                          label: p.label,
-                          type: p.type,
-                          value:
-                              (paramValues[action.id] ??
-                                  const <String, Object?>{})[p.key] ??
-                              p.defaultValue,
-                          options: p.options,
-                        ),
-                        onChanged: (Object? v) =>
-                            onParamChanged?.call(action.id, p.key, v),
-                      ),
-                    if (pendingId == action.id)
-                      ArcaneConfirmDialog(
-                        title: reactorText(
-                          ReactorText.actionsConfirmTitle,
-                          <String, Object?>{'action': action.name},
-                        ),
-                        message: reactorText(
-                          ReactorText.actionsConfirmDestructive,
-                        ),
-                        destructive: true,
-                        confirmText: reactorText(ReactorText.actionsExecute),
-                        onConfirm: () {
-                          onExecute?.call(
-                            action.id,
-                            _collectedParams(action),
-                            true,
-                          );
-                          onPendingChanged?.call(null);
-                        },
-                        onCancel: () => onPendingChanged?.call(null),
-                      ),
-                    _executeButton(action),
                   ],
                 ),
-              ),
-          ]),
+                dom.code(
+                  styles: const dom.Styles(
+                    raw: <String, String>{
+                      'color': kReactorMuted,
+                      'font-size': '0.66rem',
+                    },
+                  ),
+                  <Widget>[Component.text(action.id)],
+                ),
+                dom.span(
+                  styles: const dom.Styles(
+                    raw: <String, String>{
+                      'color': kReactorMuted,
+                      'font-size': '0.75rem',
+                      'line-height': '1.4',
+                    },
+                  ),
+                  <Widget>[Component.text(action.description)],
+                ),
+              ],
+            ),
+            _executeButton(action),
+          ],
         ),
-        sectionCard(
-          label: reactorText(ReactorText.actionsRecentExecutions),
-          child: dom.div(
+        if (action.params.isNotEmpty)
+          dom.div(
             styles: const dom.Styles(
               raw: <String, String>{
-                'display': 'flex',
-                'flex-direction': 'column',
-                'gap': '0.5rem',
+                'display': 'grid',
+                'grid-template-columns': 'repeat(auto-fit, minmax(200px, 1fr))',
+                'gap': '0.65rem',
               },
             ),
             <Widget>[
-              if (recent.isEmpty)
-                dom.div(
-                  styles: const dom.Styles(
-                    raw: <String, String>{
-                      'color': 'var(--muted-foreground)',
-                      'font-size': '0.875rem',
-                    },
+              for (final ActionParam param in action.params)
+                KnobEditor(
+                  knob: Knob(
+                    key: param.key,
+                    label: param.label,
+                    type: param.type,
+                    value:
+                        (paramValues[action.id] ??
+                            const <String, Object?>{})[param.key] ??
+                        param.defaultValue,
+                    options: param.options,
                   ),
-                  <Widget>[
-                    Component.text(
-                      reactorText(ReactorText.actionsNoneExecuted),
-                    ),
-                  ],
-                ),
-              for (final ActionExecution exec in recent)
-                dom.div(
-                  styles: const dom.Styles(
-                    raw: <String, String>{
-                      'display': 'flex',
-                      'gap': '0.5rem',
-                      'font-size': '0.875rem',
-                      'align-items': 'center',
-                    },
-                  ),
-                  <Widget>[
-                    Component.text(
-                      reactorText(
-                        ReactorText.actionsExecutionSummary,
-                        <String, Object?>{
-                          'actionId': exec.actionId,
-                          'status': exec.status,
-                          'ticketId': exec.ticketId,
-                        },
-                      ),
-                    ),
-                  ],
+                  onChanged: (Object? value) =>
+                      onParamChanged?.call(action.id, param.key, value),
                 ),
             ],
           ),
+        if (pendingId == action.id)
+          ArcaneConfirmDialog(
+            title: reactorText(
+              ReactorText.actionsConfirmTitle,
+              <String, Object?>{'action': action.name},
+            ),
+            message: reactorText(ReactorText.actionsConfirmDestructive),
+            destructive: true,
+            confirmText: reactorText(ReactorText.actionsExecute),
+            onConfirm: () {
+              onExecute?.call(action.id, _collectedParams(action), true);
+              onPendingChanged?.call(null);
+            },
+            onCancel: () => onPendingChanged?.call(null),
+          ),
+      ],
+    );
+  }
+
+  Widget _executionRow(ActionExecution execution) {
+    return dom.div(
+      styles: const dom.Styles(
+        raw: <String, String>{
+          'padding': '0.5rem 0.75rem',
+          'border-bottom': '1px solid $kReactorHairline',
+          'font-family': 'var(--font-mono)',
+          'font-size': '0.72rem',
+        },
+      ),
+      <Widget>[
+        Component.text(
+          reactorText(ReactorText.actionsExecutionSummary, <String, Object?>{
+            'actionId': execution.actionId,
+            'status': execution.status,
+            'ticketId': execution.ticketId,
+          }),
         ),
       ],
     );
@@ -260,49 +331,43 @@ class _ActionsScreenState extends State<ActionsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final ServerScope? server = ServerScope.of(context);
+    if (server?.state == ConnState.connecting && _client == null) {
+      return _statePage(
+        ReactorLoadingState(label: reactorText(ReactorText.actionsLoading)),
+      );
+    }
     if (_client == null) {
-      return ReactorPage(
-        title: reactorText(ReactorText.actionsTitle),
-        subtitle: reactorText(ReactorText.actionsSubtitle),
-        children: <Widget>[
-          sectionCard(
-            label: reactorText(ReactorText.actionsTitle),
-            child: dom.div(
-              styles: const dom.Styles(
-                raw: <String, String>{
-                  'color': 'var(--muted-foreground)',
-                  'font-size': '0.875rem',
-                },
-              ),
-              <Widget>[
-                Component.text(reactorText(ReactorText.actionsLiveRequired)),
-              ],
-            ),
-          ),
-        ],
+      return _statePage(
+        ReactorNotice(
+          title: 'Actions unavailable',
+          message: reactorText(ReactorText.actionsLiveRequired),
+          status: ReactorStatus.critical,
+        ),
       );
     }
 
     final ActionsController controller = _controller!;
 
     if (controller.loading && controller.actions.isEmpty) {
-      return ReactorPage(
-        title: reactorText(ReactorText.actionsTitle),
-        subtitle: reactorText(ReactorText.actionsSubtitle),
-        children: <Widget>[
-          sectionCard(
-            label: reactorText(ReactorText.actionsTitle),
-            child: dom.div(
-              styles: const dom.Styles(
-                raw: <String, String>{
-                  'color': 'var(--muted-foreground)',
-                  'font-size': '0.875rem',
-                },
-              ),
-              <Widget>[Component.text(reactorText(ReactorText.actionsLoading))],
-            ),
+      return _statePage(
+        ReactorLoadingState(label: reactorText(ReactorText.actionsLoading)),
+      );
+    }
+
+    final Object? error = controller.error;
+    if (error != null && controller.actions.isEmpty) {
+      return _statePage(
+        ReactorNotice(
+          title: reactorText(ReactorText.actionsFailed),
+          message: error.toString(),
+          status: ReactorStatus.critical,
+          action: Button.secondary(
+            label: 'Retry',
+            size: ButtonSize.small,
+            onPressed: controller.load,
           ),
-        ],
+        ),
       );
     }
 
@@ -313,6 +378,17 @@ class _ActionsScreenState extends State<ActionsScreen> {
       subtitle: reactorText(ReactorText.actionsSubtitle),
       leading: RoleBadge(role: role),
       children: <Widget>[
+        if (error != null)
+          ReactorNotice(
+            title: reactorText(ReactorText.actionsFailed),
+            message: error.toString(),
+            status: ReactorStatus.warning,
+            action: Button.secondary(
+              label: 'Retry',
+              size: ButtonSize.small,
+              onPressed: controller.load,
+            ),
+          ),
         ActionsConsoleView(
           actions: controller.actions,
           recent: controller.recent,
@@ -334,6 +410,14 @@ class _ActionsScreenState extends State<ActionsScreen> {
           },
         ),
       ],
+    );
+  }
+
+  Widget _statePage(Widget state) {
+    return ReactorPage(
+      title: reactorText(ReactorText.actionsTitle),
+      subtitle: reactorText(ReactorText.actionsSubtitle),
+      children: <Widget>[state],
     );
   }
 }

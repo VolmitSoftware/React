@@ -26,7 +26,7 @@ class _MetricsExplorerScreenState extends State<MetricsExplorerScreen> {
     final ServerScope? scope = ServerScope.of(context);
     final ServerSnapshot? snapshot = scope?.snapshot;
 
-    if (scope == null || scope.state == ConnState.offline) {
+    if (scope == null) {
       return _statePage(
         const ReactorNotice(
           title: 'Metrics unavailable',
@@ -39,9 +39,7 @@ class _MetricsExplorerScreenState extends State<MetricsExplorerScreen> {
     if (snapshot == null) {
       if (scope.state == ConnState.connecting) {
         return _statePage(
-          ReactorLoadingState(
-            label: reactorText(ReactorText.metricsWaiting),
-          ),
+          ReactorLoadingState(label: reactorText(ReactorText.metricsWaiting)),
         );
       }
       return _statePage(
@@ -87,12 +85,6 @@ class _MetricsExplorerScreenState extends State<MetricsExplorerScreen> {
         ReactorStatus.neutral,
       ),
       children: <Widget>[
-        if (scope.state == ConnState.degraded)
-          const ReactorNotice(
-            title: 'Connection degraded',
-            message: 'Showing the most recent metrics received from React.',
-            status: ReactorStatus.warning,
-          ),
         SectionPanel(
           label: reactorText(ReactorText.metricsCatalog),
           description: reactorText(ReactorText.metricsCatalogDescription),
@@ -111,10 +103,9 @@ class _MetricsExplorerScreenState extends State<MetricsExplorerScreen> {
               ]),
               dom.span(classes: 'reactor-metrics-updated', <Widget>[
                 Component.text(
-                  reactorText(
-                    ReactorText.metricsSequence,
-                    <String, Object?>{'sequence': snapshot.seq},
-                  ),
+                  reactorText(ReactorText.metricsSequence, <String, Object?>{
+                    'sequence': snapshot.seq,
+                  }),
                 ),
               ]),
             ]),

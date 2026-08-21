@@ -8,16 +8,18 @@ import '../service/react_client.dart';
 import '../localization/reactor_localizations.dart';
 import '../model/role_info.dart';
 import '../service/react_log_socket.dart';
+import '../state/connection_manager.dart';
 import '../state/log_controller.dart';
 import '../state/operate_scope.dart';
 import '../state/role_scope.dart';
+import '../state/server_scope.dart';
 import '../ui/reactor_ui.dart';
-import '../widget/section_card.dart';
 
 class LogsView extends StatelessWidget {
   final List<String> lines;
   final bool paused;
   final String levelFilter;
+  final Widget? notice;
   final void Function(bool)? onPause;
   final void Function()? onClear;
   final void Function(String)? onLevelFilter;
@@ -34,6 +36,7 @@ class LogsView extends StatelessWidget {
     required this.onPause,
     required this.onClear,
     required this.onLevelFilter,
+    this.notice,
     this.command = '',
     this.consoleEnabled = false,
     this.consolePending = false,
@@ -71,7 +74,8 @@ class LogsView extends StatelessWidget {
         ],
       ),
       children: <Widget>[
-        sectionCard(
+        ?notice,
+        SectionPanel(
           label: reactorText(ReactorText.consoleTitle),
           description: reactorText(ReactorText.consoleDescription),
           child: dom.div(classes: 'reactor-console', <Widget>[
@@ -107,12 +111,14 @@ class LogsView extends StatelessWidget {
               ),
             ]),
             if (!consoleEnabled)
-              dom.div(classes: 'reactor-console-note', <Widget>[
-                Component.text(reactorText(ReactorText.consoleAdminRequired)),
-              ]),
+              ReactorNotice(
+                title: 'Console unavailable',
+                message: reactorText(ReactorText.consoleAdminRequired),
+                status: ReactorStatus.warning,
+              ),
           ]),
         ),
-        sectionCard(
+        SectionPanel(
           label: reactorText(ReactorText.logsStream),
           flush: true,
           trailing: ArcaneSelect(
@@ -127,30 +133,44 @@ class LogsView extends StatelessWidget {
             ],
             onChange: (String s) => onLevelFilter?.call(s),
           ),
-          child: ArcaneScrollArea.vertical(
-            height: '480px',
-            child: dom.div(
-              styles: const dom.Styles(
-                raw: <String, String>{
-                  'display': 'flex',
-                  'flex-direction': 'column',
-                },
-              ),
-              <Widget>[
-                for (final String line in lines)
-                  dom.div(
-                    styles: const dom.Styles(
-                      raw: <String, String>{
-                        'font-family': 'monospace',
-                        'font-size': '0.8rem',
-                        'white-space': 'pre-wrap',
-                      },
-                    ),
-                    <Widget>[Component.text(line)],
+          child: lines.isEmpty
+              ? ReactorEmptyState(
+                  title: 'No log lines',
+                  description:
+                      'New matching entries will appear here as React streams them.',
+                  icon: ArcaneIcon.scrollText(size: IconSize.sm),
+                )
+              : dom.div(
+                  attributes: const <String, String>{
+                    'role': 'log',
+                    'aria-live': 'polite',
+                  },
+                  styles: const dom.Styles(
+                    raw: <String, String>{
+                      'display': 'flex',
+                      'min-height': '100%',
+                      'flex-direction': 'column',
+                      'background': 'var(--reactor-bg)',
+                    },
                   ),
-              ],
-            ),
-          ),
+                  <Widget>[
+                    for (final String line in lines)
+                      dom.div(
+                        styles: const dom.Styles(
+                          raw: <String, String>{
+                            'padding': '0.3rem 0.7rem',
+                            'border-bottom': '1px solid $kReactorHairline',
+                            'font-family': 'var(--font-mono)',
+                            'font-size': '0.72rem',
+                            'line-height': '1.45',
+                            'white-space': 'pre-wrap',
+                            'overflow-wrap': 'anywhere',
+                          },
+                        ),
+                        <Widget>[Component.text(line)],
+                      ),
+                  ],
+                ),
         ),
       ],
     );
@@ -171,6 +191,7 @@ class _LogsScreenState extends State<LogsScreen> {
   bool _started = false;
   bool _consolePending = false;
   String _command = '';
+  Object? _error;
 
   @override
   void didChangeDependencies() {
@@ -186,10 +207,21 @@ class _LogsScreenState extends State<LogsScreen> {
         client,
         socket: factory?.call(),
         onChange: () => setState(() {}),
+        onError: (Object error) {
+          if (!mounted) return;
+          setState(() => _error = error);
+        },
       );
       _controller!.load();
       _controller!.start();
     }
+  }
+
+  void _retry() {
+    final LogController? controller = _controller;
+    if (controller == null) return;
+    setState(() => _error = null);
+    controller.load();
   }
 
   @override
@@ -230,38 +262,72 @@ class _LogsScreenState extends State<LogsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final ServerScope? server = ServerScope.of(context);
+    if (server?.state == ConnState.connecting && _client == null) {
+      return _statePage(
+        const ReactorLoadingState(label: 'Opening the log stream…'),
+      );
+    }
     if (_client == null) {
-      return ReactorPage(
-        title: reactorText(ReactorText.logsTitle),
-        subtitle: reactorText(ReactorText.logsSubtitle),
-        children: <Widget>[
-          sectionCard(
-            label: reactorText(ReactorText.logsTitle),
-            child: dom.div(
-              styles: const dom.Styles(
-                raw: <String, String>{
-                  'color': 'var(--muted-foreground)',
-                  'font-size': '0.875rem',
-                },
-              ),
-              <Widget>[
-                Component.text(reactorText(ReactorText.logsLiveRequired)),
-              ],
-            ),
-          ),
-        ],
+      return _statePage(
+        ReactorNotice(
+          title: 'Logs unavailable',
+          message: reactorText(ReactorText.logsLiveRequired),
+          status: ReactorStatus.critical,
+        ),
       );
     }
 
     final LogController controller = _controller!;
+    if (controller.loading && controller.lines.isEmpty) {
+      return _statePage(
+        const ReactorLoadingState(label: 'Loading recent log lines…'),
+      );
+    }
+
+    final Object? error = _error;
+    if (error != null && controller.lines.isEmpty) {
+      return _statePage(
+        ReactorNotice(
+          title: 'Log stream unavailable',
+          message: error.toString(),
+          status: ReactorStatus.critical,
+          action: Button.secondary(
+            label: 'Retry',
+            size: ButtonSize.small,
+            onPressed: _retry,
+          ),
+        ),
+      );
+    }
+
     final RoleInfo? role = RoleScope.of(context)?.role;
     final bool consoleEnabled =
         _consoleClient != null && (role?.canExecuteConsole ?? false);
+    final Widget? notice = error != null
+        ? ReactorNotice(
+            title: 'Log refresh failed',
+            message: error.toString(),
+            status: ReactorStatus.warning,
+            action: Button.secondary(
+              label: 'Retry',
+              size: ButtonSize.small,
+              onPressed: _retry,
+            ),
+          )
+        : controller.loading
+        ? const ReactorNotice(
+            title: 'Refreshing log history',
+            message: 'Existing streamed lines remain visible during refresh.',
+            status: ReactorStatus.info,
+          )
+        : null;
 
     return LogsView(
       lines: controller.visible,
       paused: controller.paused,
       levelFilter: controller.levelFilter,
+      notice: notice,
       onPause: (bool v) => setState(() => controller.setPaused(v)),
       onClear: () => setState(() => controller.clear()),
       onLevelFilter: (String level) =>
@@ -271,6 +337,14 @@ class _LogsScreenState extends State<LogsScreen> {
       consolePending: _consolePending,
       onCommandChanged: (String value) => setState(() => _command = value),
       onExecuteCommand: _executeConsole,
+    );
+  }
+
+  Widget _statePage(Widget state) {
+    return ReactorPage(
+      title: reactorText(ReactorText.logsTitle),
+      subtitle: reactorText(ReactorText.logsSubtitle),
+      children: <Widget>[state],
     );
   }
 }

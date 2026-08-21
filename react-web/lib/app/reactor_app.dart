@@ -418,10 +418,32 @@ class _LiveServerScopeState extends State<LiveServerScope> {
 
   @override
   Widget build(BuildContext context) {
+    final bool degraded = _state == ConnState.degraded;
+    final bool offline = _state == ConnState.offline;
     return ServerScope(
       snapshot: _snapshot,
       state: _state,
-      child: component.child,
+      child: dom.div(
+        classes: 'reactor-connection-frame',
+        <Widget>[
+          if (degraded)
+            const ReactorNotice(
+              title: 'Connection degraded',
+              message:
+                  'Showing the latest received snapshot while the live channel recovers.',
+              status: ReactorStatus.warning,
+            )
+          else if (offline)
+            ReactorNotice(
+              title: reactorText(ReactorText.statusOffline),
+              message: _snapshot == null
+                  ? 'No telemetry snapshot is available. React will retry automatically.'
+                  : 'Showing the most recent snapshot while React reconnects automatically.',
+              status: ReactorStatus.critical,
+            ),
+          component.child,
+        ],
+      ),
     );
   }
 }

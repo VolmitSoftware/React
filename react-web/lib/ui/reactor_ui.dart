@@ -402,13 +402,11 @@ class ReactorSparkline extends StatelessWidget {
   final List<double> values;
   final String color;
   final int height;
-  final bool area;
 
   const ReactorSparkline({
     required this.values,
     this.color = kReactorMuted,
     this.height = 40,
-    this.area = false,
     super.key,
   });
 

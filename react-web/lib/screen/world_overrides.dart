@@ -8,12 +8,13 @@ import '../model/role_info.dart';
 import '../localization/reactor_localizations.dart';
 import '../model/world_settings.dart';
 import '../service/react_client.dart';
+import '../state/connection_manager.dart';
 import '../state/control_scope.dart';
 import '../state/role_scope.dart';
+import '../state/server_scope.dart';
 import '../state/world_overrides_controller.dart';
 import '../ui/reactor_ui.dart';
 import '../widget/role_badge.dart';
-import '../widget/section_card.dart';
 
 class WorldOverridesView extends StatelessWidget {
   final List<WorldSettings> worlds;
@@ -26,12 +27,14 @@ class WorldOverridesView extends StatelessWidget {
   onSetBudget;
   final bool readOnly;
   final Widget? roleBadge;
+  final Widget? notice;
 
   const WorldOverridesView({
     required this.worlds,
     this.onSetBudget,
     this.readOnly = false,
     this.roleBadge,
+    this.notice,
     super.key,
   });
 
@@ -51,11 +54,13 @@ class WorldOverridesView extends StatelessWidget {
         subtitle: reactorText(ReactorText.worldOverridesSubtitle),
         leading: roleBadge,
         children: <Widget>[
-          ArcaneEmptyState.noData(
+          ?notice,
+          ReactorEmptyState(
             title: reactorText(ReactorText.worldOverridesNoWorlds),
             description: reactorText(
               ReactorText.worldOverridesNoWorldsDescription,
             ),
+            icon: ArcaneIcon.globe(size: IconSize.sm),
           ),
         ],
       );
@@ -65,69 +70,106 @@ class WorldOverridesView extends StatelessWidget {
       subtitle: reactorText(ReactorText.worldOverridesSubtitle),
       leading: roleBadge,
       children: <Widget>[
-        for (final WorldSettings world in worlds)
-          Card.flat(
-            fillWidth: true,
-            padding: EdgeInsets.zero,
-            borderRadius: BorderRadius.zero,
-            child: dom.div(
-              styles: const dom.Styles(
-                raw: <String, String>{
-                  'padding': '0.75rem',
-                  'display': 'flex',
-                  'flex-direction': 'column',
-                  'gap': '0.5rem',
-                },
-              ),
-              <Widget>[
-                Text.heading3(world.name),
-                _pressureBadge(world.pressureMode),
-                TextInput(
-                  label: reactorText(ReactorText.worldOverridesBudgetMs),
-                  type: TextInputType.number,
-                  value: world.budgetMs.toString(),
-                  disabled: readOnly,
-                  onChange: readOnly
-                      ? null
-                      : (String s) {
-                          final double? v = double.tryParse(s.trim());
-                          if (v != null) {
-                            onSetBudget?.call(world.name, budgetMs: v);
-                          }
-                        },
-                ),
-                TextInput(
-                  label: reactorText(ReactorText.worldOverridesPanicMs),
-                  type: TextInputType.number,
-                  value: world.panicMs.toString(),
-                  disabled: readOnly,
-                  onChange: readOnly
-                      ? null
-                      : (String s) {
-                          final double? v = double.tryParse(s.trim());
-                          if (v != null) {
-                            onSetBudget?.call(world.name, panicMs: v);
-                          }
-                        },
-                ),
-                TextInput(
-                  label: reactorText(ReactorText.worldOverridesReleaseMs),
-                  type: TextInputType.number,
-                  value: world.releaseMs.toString(),
-                  disabled: readOnly,
-                  onChange: readOnly
-                      ? null
-                      : (String s) {
-                          final double? v = double.tryParse(s.trim());
-                          if (v != null) {
-                            onSetBudget?.call(world.name, releaseMs: v);
-                          }
-                        },
-                ),
-              ],
+        ?notice,
+        SectionPanel(
+          label: reactorText(ReactorText.worldOverridesSection),
+          flush: true,
+          child: dom.div(
+            styles: const dom.Styles(
+              raw: <String, String>{
+                'display': 'flex',
+                'flex-direction': 'column',
+              },
             ),
+            <Widget>[
+              for (final WorldSettings world in worlds) _worldRow(world),
+            ],
           ),
+        ),
       ],
+    );
+  }
+
+  Widget _worldRow(WorldSettings world) {
+    return dom.section(
+      styles: const dom.Styles(
+        raw: <String, String>{
+          'display': 'flex',
+          'flex-direction': 'column',
+          'gap': '0.65rem',
+          'padding': '0.7rem 0.75rem',
+          'border-bottom': '1px solid $kReactorHairline',
+        },
+      ),
+      <Widget>[
+        dom.div(
+          styles: const dom.Styles(
+            raw: <String, String>{
+              'display': 'flex',
+              'align-items': 'center',
+              'justify-content': 'space-between',
+              'gap': '0.75rem',
+            },
+          ),
+          <Widget>[
+            dom.strong(
+              styles: const dom.Styles(
+                raw: <String, String>{'font-size': '0.82rem'},
+              ),
+              <Widget>[Component.text(world.name)],
+            ),
+            _pressureBadge(world.pressureMode),
+          ],
+        ),
+        dom.div(
+          styles: const dom.Styles(
+            raw: <String, String>{
+              'display': 'grid',
+              'grid-template-columns': 'repeat(auto-fit, minmax(180px, 1fr))',
+              'gap': '0.65rem',
+            },
+          ),
+          <Widget>[
+            _numberField(
+              label: reactorText(ReactorText.worldOverridesBudgetMs),
+              value: world.budgetMs,
+              onValue: (double value) =>
+                  onSetBudget?.call(world.name, budgetMs: value),
+            ),
+            _numberField(
+              label: reactorText(ReactorText.worldOverridesPanicMs),
+              value: world.panicMs,
+              onValue: (double value) =>
+                  onSetBudget?.call(world.name, panicMs: value),
+            ),
+            _numberField(
+              label: reactorText(ReactorText.worldOverridesReleaseMs),
+              value: world.releaseMs,
+              onValue: (double value) =>
+                  onSetBudget?.call(world.name, releaseMs: value),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _numberField({
+    required String label,
+    required double value,
+    required void Function(double value) onValue,
+  }) {
+    return TextInput(
+      label: label,
+      type: TextInputType.number,
+      value: value.toString(),
+      disabled: readOnly,
+      onChange: readOnly
+          ? null
+          : (String input) {
+              final double? parsed = double.tryParse(input.trim());
+              if (parsed != null) onValue(parsed);
+            },
     );
   }
 }
@@ -165,64 +207,79 @@ class _WorldOverridesScreenState extends State<WorldOverridesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final ServerScope? server = ServerScope.of(context);
+    if (server?.state == ConnState.connecting && _client == null) {
+      return _statePage(
+        ReactorLoadingState(
+          label: reactorText(ReactorText.commonLoadingWorlds),
+        ),
+      );
+    }
     if (_client == null) {
-      return ReactorPage(
-        title: reactorText(ReactorText.worldOverridesTitle),
-        subtitle: reactorText(ReactorText.worldOverridesSubtitle),
-        children: <Widget>[
-          sectionCard(
-            label: reactorText(ReactorText.worldOverridesSection),
-            child: dom.div(
-              styles: const dom.Styles(
-                raw: <String, String>{
-                  'color': 'var(--muted-foreground)',
-                  'font-size': '0.875rem',
-                },
-              ),
-              <Widget>[
-                Component.text(
-                  reactorText(ReactorText.worldOverridesLiveRequired),
-                ),
-              ],
-            ),
-          ),
-        ],
+      return _statePage(
+        ReactorNotice(
+          title: 'World overrides unavailable',
+          message: reactorText(ReactorText.worldOverridesLiveRequired),
+          status: ReactorStatus.critical,
+        ),
       );
     }
 
     final WorldOverridesController controller = _controller!;
 
     if (controller.loading && controller.worlds.isEmpty) {
-      return ReactorPage(
-        title: reactorText(ReactorText.worldOverridesTitle),
-        subtitle: reactorText(ReactorText.worldOverridesSubtitle),
-        children: <Widget>[
-          sectionCard(
-            label: reactorText(ReactorText.worldOverridesSection),
-            child: dom.div(
-              styles: const dom.Styles(
-                raw: <String, String>{
-                  'color': 'var(--muted-foreground)',
-                  'font-size': '0.875rem',
-                },
-              ),
-              <Widget>[
-                Component.text(reactorText(ReactorText.commonLoadingWorlds)),
-              ],
-            ),
+      return _statePage(
+        ReactorLoadingState(
+          label: reactorText(ReactorText.commonLoadingWorlds),
+        ),
+      );
+    }
+
+    final Object? error = controller.error;
+    if (error != null && controller.worlds.isEmpty) {
+      return _statePage(
+        ReactorNotice(
+          title: reactorText(ReactorText.commonUpdateFailed),
+          message: error.toString(),
+          status: ReactorStatus.critical,
+          action: Button.secondary(
+            label: 'Retry',
+            size: ButtonSize.small,
+            onPressed: controller.load,
           ),
-        ],
+        ),
       );
     }
 
     final RoleInfo? role = RoleScope.of(context)?.role;
     final bool readOnly = readOnlyFor(role);
 
+    final Widget? notice = error != null
+        ? ReactorNotice(
+            title: reactorText(ReactorText.commonUpdateFailed),
+            message: error.toString(),
+            status: ReactorStatus.warning,
+            action: Button.secondary(
+              label: 'Retry',
+              size: ButtonSize.small,
+              onPressed: controller.load,
+            ),
+          )
+        : null;
     return WorldOverridesView(
       worlds: controller.worlds,
       readOnly: readOnly,
       roleBadge: RoleBadge(role: role),
+      notice: notice,
       onSetBudget: readOnly ? null : controller.setBudget,
+    );
+  }
+
+  Widget _statePage(Widget state) {
+    return ReactorPage(
+      title: reactorText(ReactorText.worldOverridesTitle),
+      subtitle: reactorText(ReactorText.worldOverridesSubtitle),
+      children: <Widget>[state],
     );
   }
 }

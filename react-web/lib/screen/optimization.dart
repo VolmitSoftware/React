@@ -299,10 +299,10 @@ class _OptimizationScreenState extends State<OptimizationScreen> {
         ),
       );
     }
-    if (_client == null || server?.state == ConnState.offline) {
+    if (_client == null) {
       return _statePage(
         ReactorNotice(
-          title: reactorText(ReactorText.statusOffline),
+          title: 'Optimization unavailable',
           message: reactorText(ReactorText.optimizationLiveRequired),
           status: ReactorStatus.critical,
         ),
@@ -357,12 +357,6 @@ class _OptimizationScreenState extends State<OptimizationScreen> {
               size: ButtonSize.small,
               onPressed: controller.load,
             ),
-          )
-        : server?.state == ConnState.degraded
-        ? const ReactorNotice(
-            title: 'Connection degraded',
-            message: 'Feature state may be delayed until React reconnects.',
-            status: ReactorStatus.warning,
           )
         : null;
 
