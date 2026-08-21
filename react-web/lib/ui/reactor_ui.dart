@@ -35,19 +35,8 @@ Widget reactorBadge(String label, ReactorStatus status) => dom.span(
   <Widget>[Component.text(label)],
 );
 
-Widget reactorEyebrow(String text) => dom.span(
-  styles: const dom.Styles(
-    raw: <String, String>{
-      'font-size': '0.6875rem',
-      'font-weight': '600',
-      'letter-spacing': '0',
-      'text-transform': 'uppercase',
-      'color': 'var(--reactor-label)',
-      'line-height': '1',
-    },
-  ),
-  <Widget>[Component.text(text)],
-);
+Widget reactorEyebrow(String text) =>
+    dom.span(classes: 'reactor-eyebrow', <Widget>[Component.text(text)]);
 
 Widget reactorStatusDot(
   ReactorStatus status, {
@@ -56,9 +45,9 @@ Widget reactorStatusDot(
 }) {
   final String color = reactorStatusColor(status);
   final Widget icon = switch (status) {
-    ReactorStatus.healthy => ArcaneIcon.circleCheck(size: IconSize.xs),
+    ReactorStatus.healthy => ArcaneIcon.check(size: IconSize.xs),
     ReactorStatus.warning => ArcaneIcon.triangleAlert(size: IconSize.xs),
-    ReactorStatus.critical => ArcaneIcon.circleAlert(size: IconSize.xs),
+    ReactorStatus.critical => ArcaneIcon.siren(size: IconSize.xs),
     ReactorStatus.info => ArcaneIcon.activity(size: IconSize.xs),
     ReactorStatus.neutral => ArcaneIcon.minus(size: IconSize.xs),
   };
@@ -66,13 +55,9 @@ Widget reactorStatusDot(
     classes: 'reactor-state-symbol is-${status.name}',
     styles: dom.Styles(
       raw: <String, String>{
-        'display': 'inline-flex',
         'width': '${size + 6}px',
         'height': '${size + 6}px',
-        'align-items': 'center',
-        'justify-content': 'center',
         'color': color,
-        'flex': '0 0 auto',
       },
     ),
     attributes: label == null
@@ -84,14 +69,13 @@ Widget reactorStatusDot(
 
 Widget reactorGrid({
   required List<Widget> children,
-  String minWidth = '220px',
-  String gap = '8px',
+  String minWidth = '180px',
+  String gap = '0',
 }) {
   return dom.div(
-    classes: 'reactor-grid',
+    classes: 'reactor-grid reactor-metric-bank',
     styles: dom.Styles(
       raw: <String, String>{
-        'display': 'grid',
         'grid-template-columns': 'repeat(auto-fill, minmax($minWidth, 1fr))',
         'gap': gap,
       },
@@ -114,32 +98,25 @@ class ReactorPage extends StatelessWidget {
     this.actions,
     this.leading,
     this.children = const <Widget>[],
-    this.gap = 12,
+    this.gap = 0,
     super.key,
   });
 
   @override
   Widget build(BuildContext context) {
-    return dom.div(
-      classes: 'reactor-page',
-      styles: dom.Styles(
-        raw: <String, String>{
-          'display': 'flex',
-          'flex-direction': 'column',
-          'gap': '${gap}px',
-          'width': '100%',
-        },
+    return dom.div(classes: 'reactor-page', <Widget>[
+      ReactorPageHeader(
+        title: title,
+        subtitle: subtitle,
+        actions: actions,
+        leading: leading,
       ),
-      <Widget>[
-        ReactorPageHeader(
-          title: title,
-          subtitle: subtitle,
-          actions: actions,
-          leading: leading,
-        ),
-        ...children,
-      ],
-    );
+      dom.div(
+        classes: 'reactor-page-body',
+        styles: dom.Styles(raw: <String, String>{'gap': '${gap}px'}),
+        children,
+      ),
+    ]);
   }
 }
 
@@ -162,82 +139,16 @@ class ReactorPageHeader extends StatelessWidget {
     final String? sub = subtitle;
     final Widget? lead = leading;
     final Widget? act = actions;
-    return dom.div(
-      classes: 'reactor-page-header',
-      styles: const dom.Styles(
-        raw: <String, String>{
-          'display': 'flex',
-          'align-items': 'flex-start',
-          'justify-content': 'space-between',
-          'gap': '0.75rem',
-          'flex-wrap': 'wrap',
-          'padding': '0 0 0.65rem',
-          'border-bottom': '1px solid $kReactorHairline',
-        },
-      ),
-      <Widget>[
-        dom.div(
-          styles: const dom.Styles(
-            raw: <String, String>{
-              'display': 'flex',
-              'align-items': 'center',
-              'gap': '0.65rem',
-              'min-width': '0',
-            },
-          ),
-          <Widget>[
-            ?lead,
-            dom.div(
-              styles: const dom.Styles(
-                raw: <String, String>{
-                  'display': 'flex',
-                  'flex-direction': 'column',
-                  'gap': '0.2rem',
-                  'min-width': '0',
-                },
-              ),
-              <Widget>[
-                dom.div(
-                  styles: const dom.Styles(
-                    raw: <String, String>{
-                      'font-size': '1rem',
-                      'font-weight': '650',
-                      'letter-spacing': '0',
-                      'line-height': '1.1',
-                      'color': kReactorFg,
-                    },
-                  ),
-                  <Widget>[Component.text(title)],
-                ),
-                if (sub != null)
-                  dom.div(
-                    styles: const dom.Styles(
-                      raw: <String, String>{
-                        'font-size': '0.75rem',
-                        'color': kReactorMuted,
-                        'line-height': '1.4',
-                      },
-                    ),
-                    <Widget>[Component.text(sub)],
-                  ),
-              ],
-            ),
-          ],
-        ),
-        if (act != null)
-          dom.div(
-            styles: const dom.Styles(
-              raw: <String, String>{
-                'display': 'flex',
-                'align-items': 'center',
-                'gap': '0.5rem',
-                'flex-wrap': 'wrap',
-              },
-            ),
-            <Widget>[act],
-          ),
-      ],
-    );
+    return dom.div(classes: 'reactor-page-header', <Widget>[
+      dom.div(classes: 'reactor-page-heading', <Widget>[
+        ?lead,
+        dom.div(classes: 'reactor-page-heading-copy', <Widget>[
+          dom.h1(<Widget>[Component.text(title)]),
+          if (sub != null) dom.p(<Widget>[Component.text(sub)]),
+        ]),
+      ]),
+      if (act != null) dom.div(classes: 'reactor-page-actions', <Widget>[act]),
+    ]);
   }
 }
 
@@ -256,7 +167,7 @@ class SectionPanel extends StatelessWidget {
     this.trailing,
     this.child,
     this.children,
-    this.gap = 16,
+    this.gap = 0,
     this.flush = false,
     super.key,
   });
@@ -267,38 +178,15 @@ class SectionPanel extends StatelessWidget {
     final bool hasHeader =
         label != null || description != null || trailing != null;
     final bool hasBody = body.isNotEmpty;
-
-    return Card.flat(
-      fillWidth: true,
-      padding: EdgeInsets.zero,
-      borderRadius: BorderRadius.zero,
-      child: dom.div(
-        classes: 'reactor-panel',
-        styles: const dom.Styles(
-          raw: <String, String>{
-            'display': 'flex',
-            'flex-direction': 'column',
-            'overflow': 'hidden',
-            'border-radius': kReactorRadius,
-          },
+    return dom.section(classes: 'reactor-panel', <Widget>[
+      if (hasHeader) _header(hasBody),
+      if (hasBody)
+        dom.div(
+          classes: 'reactor-panel-body${flush ? ' is-flush' : ''}',
+          styles: dom.Styles(raw: <String, String>{'gap': '${gap}px'}),
+          body,
         ),
-        <Widget>[
-          if (hasHeader) _header(hasBody),
-          if (hasBody)
-            dom.div(
-              styles: dom.Styles(
-                raw: <String, String>{
-                  'padding': flush ? '0' : '0.75rem',
-                  'display': 'flex',
-                  'flex-direction': 'column',
-                  'gap': '${gap}px',
-                },
-              ),
-              body,
-            ),
-        ],
-      ),
-    );
+    ]);
   }
 
   Widget _header(bool hasBody) {
@@ -306,54 +194,17 @@ class SectionPanel extends StatelessWidget {
     final String? desc = description;
     final Widget? trail = trailing;
     return dom.div(
-      styles: dom.Styles(
-        raw: <String, String>{
-          'display': 'flex',
-          'align-items': 'center',
-          'justify-content': 'space-between',
-          'gap': '1rem',
-          'padding': '0.6rem 0.75rem',
-          if (hasBody) 'border-bottom': '1px solid $kReactorHairline',
-          'background': 'var(--reactor-surface)',
-        },
-      ),
+      classes: 'reactor-panel-header${hasBody ? ' has-body' : ''}',
       <Widget>[
-        dom.div(
-          styles: const dom.Styles(
-            raw: <String, String>{
-              'display': 'flex',
-              'flex-direction': 'column',
-              'gap': '0.25rem',
-              'min-width': '0',
-            },
-          ),
-          <Widget>[
-            if (lbl != null) reactorEyebrow(lbl),
-            if (desc != null)
-              dom.div(
-                styles: const dom.Styles(
-                  raw: <String, String>{
-                    'font-size': '0.8rem',
-                    'color': kReactorMuted,
-                    'line-height': '1.4',
-                  },
-                ),
-                <Widget>[Component.text(desc)],
-              ),
-          ],
-        ),
+        dom.div(classes: 'reactor-panel-heading', <Widget>[
+          if (lbl != null) reactorEyebrow(lbl),
+          if (desc != null)
+            dom.div(classes: 'reactor-panel-description', <Widget>[
+              Component.text(desc),
+            ]),
+        ]),
         if (trail != null)
-          dom.div(
-            styles: const dom.Styles(
-              raw: <String, String>{
-                'display': 'flex',
-                'align-items': 'center',
-                'gap': '0.5rem',
-                'flex': '0 0 auto',
-              },
-            ),
-            <Widget>[trail],
-          ),
+          dom.div(classes: 'reactor-panel-actions', <Widget>[trail]),
       ],
     );
   }
@@ -382,90 +233,27 @@ class MetricCard extends StatelessWidget {
     final String? val = value;
     final String? u = unit;
     final Widget? bdg = badge;
-    return Card.flat(
-      fillWidth: true,
-      padding: EdgeInsets.zero,
-      borderRadius: BorderRadius.zero,
-      child: dom.div(
-        classes: 'reactor-metric-card',
-        styles: const dom.Styles(
-          raw: <String, String>{
-            'display': 'flex',
-            'flex-direction': 'column',
-            'overflow': 'hidden',
-            'border-radius': kReactorRadius,
-          },
-        ),
-        <Widget>[
-          dom.div(
-            styles: const dom.Styles(
-              raw: <String, String>{
-                'display': 'flex',
-                'align-items': 'flex-end',
-                'justify-content': 'space-between',
-                'gap': '1rem',
-                'padding': '1rem 1.15rem 0.85rem',
-              },
-            ),
-            <Widget>[
-              dom.div(
-                styles: const dom.Styles(
-                  raw: <String, String>{
-                    'display': 'flex',
-                    'flex-direction': 'column',
-                    'gap': '0.45rem',
-                  },
-                ),
-                <Widget>[
-                  reactorEyebrow(title),
-                  if (val != null)
-                    dom.div(
-                      styles: const dom.Styles(
-                        raw: <String, String>{
-                          'display': 'flex',
-                          'align-items': 'baseline',
-                          'gap': '0.3rem',
-                        },
-                      ),
-                      <Widget>[
-                        dom.span(
-                          styles: const dom.Styles(
-                            raw: <String, String>{
-                              'font-size': '1.6rem',
-                              'font-weight': '700',
-                              'color': kReactorFg,
-                              'line-height': '1',
-                              'letter-spacing': '0',
-                              'font-variant-numeric': 'tabular-nums',
-                            },
-                          ),
-                          <Widget>[Component.text(val)],
-                        ),
-                        if (u != null)
-                          dom.span(
-                            styles: const dom.Styles(
-                              raw: <String, String>{
-                                'font-size': '0.85rem',
-                                'color': kReactorMuted,
-                              },
-                            ),
-                            <Widget>[Component.text(u)],
-                          ),
-                      ],
-                    ),
-                ],
-              ),
-              ?bdg,
-            ],
-          ),
-          dom.div(
-            styles: const dom.Styles(
-              raw: <String, String>{'padding': '0.25rem 1.15rem 1.1rem'},
-            ),
-            <Widget>[child],
-          ),
-        ],
-      ),
+    return dom.section(
+      classes: 'reactor-metric-card reactor-metric-cell is-${status.name}',
+      <Widget>[
+        dom.div(classes: 'reactor-metric-header', <Widget>[
+          dom.div(classes: 'reactor-metric-heading', <Widget>[
+            reactorEyebrow(title),
+            if (val != null)
+              dom.div(classes: 'reactor-metric-reading', <Widget>[
+                dom.span(classes: 'reactor-metric-value', <Widget>[
+                  Component.text(val),
+                ]),
+                if (u != null)
+                  dom.span(classes: 'reactor-metric-unit', <Widget>[
+                    Component.text(u),
+                  ]),
+              ]),
+          ]),
+          ?bdg,
+        ]),
+        dom.div(classes: 'reactor-metric-content', <Widget>[child]),
+      ],
     );
   }
 }
@@ -490,64 +278,121 @@ class ReactorStat extends StatelessWidget {
   Widget build(BuildContext context) {
     final String? u = unit;
     final String? cap = caption;
-    return dom.div(
-      styles: const dom.Styles(
-        raw: <String, String>{
-          'display': 'flex',
-          'flex-direction': 'column',
-          'gap': '0.4rem',
-          'min-width': '0',
-        },
-      ),
-      <Widget>[
-        reactorEyebrow(label),
+    return dom.div(classes: 'reactor-stat is-${status.name}', <Widget>[
+      reactorEyebrow(label),
+      dom.div(classes: 'reactor-stat-reading', <Widget>[
+        dom.span(classes: 'reactor-stat-value', <Widget>[
+          Component.text(value),
+        ]),
+        if (u != null)
+          dom.span(classes: 'reactor-stat-unit', <Widget>[Component.text(u)]),
+      ]),
+      if (cap != null)
         dom.div(
-          styles: const dom.Styles(
+          classes: 'reactor-stat-caption',
+          styles: dom.Styles(
             raw: <String, String>{
-              'display': 'flex',
-              'align-items': 'baseline',
-              'gap': '0.3rem',
+              'color': status == ReactorStatus.neutral
+                  ? kReactorMuted
+                  : reactorStatusColor(status),
             },
           ),
-          <Widget>[
-            dom.span(
-              styles: const dom.Styles(
-                raw: <String, String>{
-                  'font-size': '1.75rem',
-                  'font-weight': '700',
-                  'color': kReactorFg,
-                  'line-height': '1',
-                  'letter-spacing': '0',
-                  'font-variant-numeric': 'tabular-nums',
-                },
-              ),
-              <Widget>[Component.text(value)],
-            ),
-            if (u != null)
-              dom.span(
-                styles: const dom.Styles(
-                  raw: <String, String>{
-                    'font-size': '0.85rem',
-                    'color': kReactorMuted,
-                  },
-                ),
-                <Widget>[Component.text(u)],
-              ),
-          ],
+          <Widget>[Component.text(cap)],
         ),
-        if (cap != null)
-          dom.div(
-            styles: dom.Styles(
-              raw: <String, String>{
-                'font-size': '0.75rem',
-                'color': status == ReactorStatus.neutral
-                    ? kReactorMuted
-                    : reactorStatusColor(status),
-                'font-weight': '500',
-              },
-            ),
-            <Widget>[Component.text(cap)],
-          ),
+    ]);
+  }
+}
+
+class ReactorEmptyState extends StatelessWidget {
+  final String title;
+  final String description;
+  final Widget? action;
+  final Widget? icon;
+
+  const ReactorEmptyState({
+    required this.title,
+    required this.description,
+    this.action,
+    this.icon,
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final Widget? act = action;
+    return dom.div(
+      classes: 'reactor-pane-state is-empty',
+      attributes: const <String, String>{'role': 'status'},
+      <Widget>[
+        dom.div(classes: 'reactor-pane-state-icon', <Widget>[
+          icon ?? ArcaneIcon.minus(size: IconSize.sm),
+        ]),
+        dom.div(classes: 'reactor-pane-state-copy', <Widget>[
+          dom.strong(<Widget>[Component.text(title)]),
+          dom.span(<Widget>[Component.text(description)]),
+        ]),
+        if (act != null)
+          dom.div(classes: 'reactor-pane-state-action', <Widget>[act]),
+      ],
+    );
+  }
+}
+
+class ReactorNotice extends StatelessWidget {
+  final String title;
+  final String message;
+  final ReactorStatus status;
+  final Widget? action;
+
+  const ReactorNotice({
+    required this.title,
+    required this.message,
+    this.status = ReactorStatus.info,
+    this.action,
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final Widget? act = action;
+    return dom.div(
+      classes: 'reactor-notice is-${status.name}',
+      attributes: <String, String>{
+        'role': status == ReactorStatus.critical ? 'alert' : 'status',
+      },
+      <Widget>[
+        reactorStatusDot(status, label: title),
+        dom.div(classes: 'reactor-notice-copy', <Widget>[
+          dom.strong(<Widget>[Component.text(title)]),
+          dom.span(<Widget>[Component.text(message)]),
+        ]),
+        if (act != null)
+          dom.div(classes: 'reactor-notice-action', <Widget>[act]),
+      ],
+    );
+  }
+}
+
+class ReactorLoadingState extends StatelessWidget {
+  final String label;
+
+  const ReactorLoadingState({this.label = 'Waiting for live data', super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return dom.div(
+      classes: 'reactor-pane-state is-loading',
+      attributes: const <String, String>{
+        'role': 'status',
+        'aria-live': 'polite',
+      },
+      <Widget>[
+        dom.div(classes: 'reactor-pane-state-icon', <Widget>[
+          ArcaneIcon.activity(size: IconSize.sm),
+        ]),
+        dom.div(classes: 'reactor-pane-state-copy', <Widget>[
+          dom.strong(<Widget>[Component.text(label)]),
+        ]),
       ],
     );
   }
@@ -563,7 +408,7 @@ class ReactorSparkline extends StatelessWidget {
     required this.values,
     this.color = kReactorMuted,
     this.height = 40,
-    this.area = true,
+    this.area = false,
     super.key,
   });
 
@@ -572,6 +417,7 @@ class ReactorSparkline extends StatelessWidget {
     final List<double> v = values;
     if (v.length < 2) {
       return dom.div(
+        classes: 'reactor-sparkline is-empty',
         styles: dom.Styles(raw: <String, String>{'height': '${height}px'}),
         const <Widget>[],
       );
@@ -583,23 +429,21 @@ class ReactorSparkline extends StatelessWidget {
       if (d > hi) hi = d;
     }
     final double span = (hi - lo).abs() < 1e-9 ? 1.0 : (hi - lo);
-    const double w = 100.0;
-    const double h = 100.0;
+    const double width = 100.0;
+    const double chartHeight = 100.0;
     const double pad = 6.0;
-    final double step = w / (v.length - 1);
+    final double step = width / (v.length - 1);
     final StringBuffer line = StringBuffer();
     for (int i = 0; i < v.length; i++) {
       final double x = i * step;
       final double norm = (v[i] - lo) / span;
-      final double y = h - pad - norm * (h - pad * 2);
+      final double y = chartHeight - pad - norm * (chartHeight - pad * 2);
       line.write(i == 0 ? 'M ' : 'L ');
       line.write('${x.toStringAsFixed(2)} ${y.toStringAsFixed(2)} ');
     }
-    final String areaPath = '$line L ${w.toStringAsFixed(2)} $h L 0 $h Z';
-    final String gradId = 'spark-${identityHashCode(this)}';
-
     return Component.element(
       tag: 'svg',
+      classes: 'reactor-sparkline',
       attributes: <String, String>{
         'width': '100%',
         'height': '$height',
@@ -609,56 +453,14 @@ class ReactorSparkline extends StatelessWidget {
       },
       children: <Component>[
         Component.element(
-          tag: 'defs',
-          children: <Component>[
-            Component.element(
-              tag: 'linearGradient',
-              attributes: <String, String>{
-                'id': gradId,
-                'x1': '0',
-                'y1': '0',
-                'x2': '0',
-                'y2': '1',
-              },
-              children: <Component>[
-                Component.element(
-                  tag: 'stop',
-                  attributes: <String, String>{
-                    'offset': '0%',
-                    'stop-color': color,
-                    'stop-opacity': '0.28',
-                  },
-                ),
-                Component.element(
-                  tag: 'stop',
-                  attributes: <String, String>{
-                    'offset': '100%',
-                    'stop-color': color,
-                    'stop-opacity': '0',
-                  },
-                ),
-              ],
-            ),
-          ],
-        ),
-        if (area)
-          Component.element(
-            tag: 'path',
-            attributes: <String, String>{
-              'd': areaPath,
-              'fill': 'url(#$gradId)',
-              'stroke': 'none',
-            },
-          ),
-        Component.element(
           tag: 'path',
           attributes: <String, String>{
             'd': line.toString().trim(),
             'fill': 'none',
             'stroke': color,
-            'stroke-width': '2',
-            'stroke-linecap': 'round',
-            'stroke-linejoin': 'round',
+            'stroke-width': '1.5',
+            'stroke-linecap': 'square',
+            'stroke-linejoin': 'miter',
             'vector-effect': 'non-scaling-stroke',
           },
         ),

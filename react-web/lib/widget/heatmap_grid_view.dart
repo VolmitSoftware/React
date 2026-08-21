@@ -6,7 +6,7 @@ import 'package:jaspr/jaspr.dart' show Component;
 
 import '../model/heatmap.dart';
 import '../localization/reactor_localizations.dart';
-import '../widget/section_card.dart';
+import '../ui/reactor_ui.dart';
 
 class HeatmapGridView extends StatelessWidget {
   final HeatmapGrid grid;
@@ -22,23 +22,34 @@ class HeatmapGridView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Widget header = dom.div(styles: kSectionHeadingStyles, <Widget>[
-      Component.text(
-        grid.world.isNotEmpty ? '${grid.label} — ${grid.world}' : grid.label,
-      ),
-    ]);
+    final Widget header = dom.div(
+      classes: 'reactor-heatmap-header',
+      <Widget>[
+        dom.div(
+          classes: 'reactor-heatmap-heading',
+          <Widget>[
+            reactorEyebrow(grid.label),
+            if (grid.world.isNotEmpty)
+              dom.span(<Widget>[Component.text(grid.world)]),
+          ],
+        ),
+        dom.code(
+          <Widget>[
+            Component.text(
+              '${grid.centerChunkX}, ${grid.centerChunkZ} · r${grid.radius}',
+            ),
+          ],
+        ),
+      ],
+    );
 
     if (grid.cells.isEmpty) {
-      return dom.div(<Widget>[
+      return dom.section(classes: 'reactor-heatmap-view', <Widget>[
         header,
-        dom.div(
-          styles: const dom.Styles(
-            raw: <String, String>{
-              'color': 'var(--muted-foreground)',
-              'font-size': '0.875rem',
-            },
-          ),
-          <Widget>[Component.text(reactorText(ReactorText.commonNoActivity))],
+        ReactorEmptyState(
+          title: reactorText(ReactorText.commonNoActivity),
+          description: 'No scored chunks were returned for this heatmap.',
+          icon: ArcaneIcon.grid3x3(size: IconSize.sm),
         ),
       ]);
     }
@@ -57,6 +68,7 @@ class HeatmapGridView extends StatelessWidget {
         if (cell == null) {
           cellWidgets.add(
             dom.div(
+              classes: 'reactor-heatmap-cell is-empty',
               styles: const dom.Styles(
                 raw: <String, String>{'background': 'var(--muted)'},
               ),
@@ -73,11 +85,16 @@ class HeatmapGridView extends StatelessWidget {
           final String color = _colorFor(normalized);
           cellWidgets.add(
             dom.div(
+              classes: 'reactor-heatmap-cell',
               styles: dom.Styles(raw: <String, String>{'background': color}),
               attributes: <String, String>{
                 'data-cx': chunkX.toString(),
                 'data-cz': chunkZ.toString(),
                 'data-score': cell.score.toString(),
+                'title':
+                    'Chunk $chunkX, $chunkZ · ${cell.score.toStringAsFixed(2)}',
+                'aria-label':
+                    'Chunk $chunkX, $chunkZ score ${cell.score.toStringAsFixed(2)}',
               },
               const <Widget>[],
             ),
@@ -87,34 +104,41 @@ class HeatmapGridView extends StatelessWidget {
     }
 
     final Widget gridContainer = dom.div(
+      classes: 'reactor-heatmap-grid',
       styles: dom.Styles(
         raw: <String, String>{
-          'display': 'grid',
           'grid-template-columns': 'repeat($cols, 1fr)',
-          'gap': '1px',
-          'aspect-ratio': '1/1',
-          'width': '100%',
-          'max-width': '320px',
         },
       ),
       cellWidgets,
     );
 
     final Widget legend = dom.div(
-      styles: const dom.Styles(
-        raw: <String, String>{
-          'display': 'flex',
-          'justify-content': 'space-between',
-          'font-size': '0.75rem',
-          'color': 'var(--muted-foreground)',
-        },
-      ),
+      classes: 'reactor-heatmap-legend',
       <Widget>[
-        Component.text(grid.min.toStringAsFixed(2)),
-        Component.text(grid.max.toStringAsFixed(2)),
+        dom.span(
+          <Widget>[
+            Component.text('Low ${grid.min.toStringAsFixed(2)}'),
+          ],
+        ),
+        dom.span(
+          <Widget>[
+            Component.text('High ${grid.max.toStringAsFixed(2)}'),
+          ],
+        ),
       ],
     );
 
-    return dom.div(<Widget>[header, gridContainer, legend]);
+    return dom.section(
+      classes: 'reactor-heatmap-view',
+      <Widget>[
+        header,
+        dom.div(
+          classes: 'reactor-heatmap-canvas',
+          <Widget>[gridContainer],
+        ),
+        legend,
+      ],
+    );
   }
 }

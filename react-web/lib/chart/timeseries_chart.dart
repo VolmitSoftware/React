@@ -18,13 +18,41 @@ class TimeseriesChart extends StatefulComponent {
 class _TimeseriesChartState extends State<TimeseriesChart> {
   @override
   Component build(BuildContext context) {
-    final String hostHeight = '${component.height}px';
+    final bool hasSamples = component.series.any(
+      ((String, List<double>) item) => item.$2.isNotEmpty,
+    );
     return dom.div(
-      styles: dom.Styles(
-        raw: <String, String>{'width': '100%', 'height': hostHeight},
-      ),
+      classes: 'reactor-chart${hasSamples ? '' : ' is-empty'}',
       <Component>[
-        SvgFallbackChart(series: component.series, height: component.height),
+        if (hasSamples)
+          SvgFallbackChart(series: component.series, height: component.height)
+        else
+          dom.div(
+            classes: 'reactor-chart-empty',
+            styles: dom.Styles(
+              raw: <String, String>{'height': '${component.height}px'},
+            ),
+            const <Component>[
+              dom.strong(<Component>[Component.text('Awaiting samples')]),
+              dom.span(<Component>[
+                Component.text(
+                  'The chart will populate when the server publishes data.',
+                ),
+              ]),
+            ],
+          ),
+        if (hasSamples && component.series.isNotEmpty)
+          dom.div(classes: 'reactor-chart-legend', <Component>[
+            for (int index = 0; index < component.series.length; index++)
+              dom.span(classes: 'reactor-chart-legend-item', <Component>[
+                dom.span(
+                  classes:
+                      'reactor-chart-legend-line reactor-chart-series-$index',
+                  const <Component>[],
+                ),
+                Component.text(component.series[index].$1),
+              ]),
+          ]),
       ],
     );
   }

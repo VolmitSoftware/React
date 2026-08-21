@@ -8,7 +8,7 @@ import '../model/sampler_sample.dart';
 import '../model/server_snapshot.dart';
 import '../state/server_scope.dart';
 import '../ui/reactor_ui.dart';
-import '../widget/section_card.dart' show sectionCard, statGrid;
+import '../widget/section_card.dart' show statGrid;
 import '../widget/stat_tile.dart';
 
 const List<String> _kAdaptIds = <String>[
@@ -35,10 +35,9 @@ const List<String> _kWormholesIds = <String>[
   'wormholes-traversals',
 ];
 
-bool _hasAny(ServerSnapshot? s, List<String> ids) {
-  if (s == null) return false;
+bool _hasAny(ServerSnapshot snapshot, List<String> ids) {
   for (final String id in ids) {
-    if (s.byId.containsKey(id)) return true;
+    if (snapshot.byId.containsKey(id)) return true;
   }
   return false;
 }
@@ -50,6 +49,15 @@ class IntegrationsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final ServerScope? scope = ServerScope.of(context);
     final ServerSnapshot? snapshot = scope?.snapshot;
+    if (snapshot == null) {
+      return ReactorPage(
+        title: reactorText(ReactorText.integrationsTitle),
+        subtitle: reactorText(ReactorText.integrationsSubtitle),
+        children: <Widget>[
+          ReactorLoadingState(label: reactorText(ReactorText.metricsWaiting)),
+        ],
+      );
+    }
 
     final bool hasAdapt = _hasAny(snapshot, _kAdaptIds);
     final bool hasIris = _hasAny(snapshot, _kIrisIds);
@@ -60,7 +68,7 @@ class IntegrationsScreen extends StatelessWidget {
         title: reactorText(ReactorText.integrationsTitle),
         subtitle: reactorText(ReactorText.integrationsSubtitle),
         children: <Widget>[
-          ArcaneEmptyState.noData(
+          ReactorEmptyState(
             title: reactorText(ReactorText.integrationsNone),
             description: reactorText(ReactorText.integrationsNoneDescription),
           ),
@@ -89,7 +97,7 @@ class IntegrationsScreen extends StatelessWidget {
 }
 
 class _AdaptSection extends StatelessWidget {
-  final ServerSnapshot? snapshot;
+  final ServerSnapshot snapshot;
 
   const _AdaptSection({required this.snapshot});
 
@@ -97,40 +105,37 @@ class _AdaptSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final List<Widget> tiles = <Widget>[];
     for (final String id in _kAdaptIds) {
-      final SamplerSample? s = snapshot?.sampler(id);
+      final SamplerSample? s = snapshot.sampler(id);
       if (s != null) {
         tiles.add(StatTile(label: _labelFor(id), sample: s));
       }
     }
 
-    final SamplerSample? headline = snapshot?.sampler(
+    final SamplerSample? headline = snapshot.sampler(
       'adapt-world-policy-latency',
     );
 
-    return sectionCard(
+    return SectionPanel(
       label: 'Adapt',
-      child: Collection(
-        gap: 12,
-        children: <Widget>[
-          statGrid(tiles),
-          if (headline != null)
-            TimeseriesChart(
-              series: <(String, List<double>)>[
-                (
-                  reactorText(ReactorText.integrationsPolicyLatency),
-                  headline.history,
-                ),
-              ],
-              height: 100,
-            ),
-        ],
-      ),
+      children: <Widget>[
+        if (headline != null)
+          TimeseriesChart(
+            series: <(String, List<double>)>[
+              (
+                reactorText(ReactorText.integrationsPolicyLatency),
+                headline.history,
+              ),
+            ],
+            height: 100,
+          ),
+        statGrid(tiles),
+      ],
     );
   }
 }
 
 class _IrisSection extends StatelessWidget {
-  final ServerSnapshot? snapshot;
+  final ServerSnapshot snapshot;
 
   const _IrisSection({required this.snapshot});
 
@@ -138,38 +143,35 @@ class _IrisSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final List<Widget> tiles = <Widget>[];
     for (final String id in _kIrisIds) {
-      final SamplerSample? s = snapshot?.sampler(id);
+      final SamplerSample? s = snapshot.sampler(id);
       if (s != null) {
         tiles.add(StatTile(label: _labelFor(id), sample: s));
       }
     }
 
-    final SamplerSample? headline = snapshot?.sampler('iris-chunk-stream-ms');
+    final SamplerSample? headline = snapshot.sampler('iris-chunk-stream-ms');
 
-    return sectionCard(
+    return SectionPanel(
       label: 'Iris',
-      child: Collection(
-        gap: 12,
-        children: <Widget>[
-          statGrid(tiles),
-          if (headline != null)
-            TimeseriesChart(
-              series: <(String, List<double>)>[
-                (
-                  reactorText(ReactorText.integrationsChunkStreamMs),
-                  headline.history,
-                ),
-              ],
-              height: 100,
-            ),
-        ],
-      ),
+      children: <Widget>[
+        if (headline != null)
+          TimeseriesChart(
+            series: <(String, List<double>)>[
+              (
+                reactorText(ReactorText.integrationsChunkStreamMs),
+                headline.history,
+              ),
+            ],
+            height: 100,
+          ),
+        statGrid(tiles),
+      ],
     );
   }
 }
 
 class _WormholesSection extends StatelessWidget {
-  final ServerSnapshot? snapshot;
+  final ServerSnapshot snapshot;
 
   const _WormholesSection({required this.snapshot});
 
@@ -177,34 +179,31 @@ class _WormholesSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final List<Widget> tiles = <Widget>[];
     for (final String id in _kWormholesIds) {
-      final SamplerSample? s = snapshot?.sampler(id);
+      final SamplerSample? s = snapshot.sampler(id);
       if (s != null) {
         tiles.add(StatTile(label: _labelFor(id), sample: s));
       }
     }
 
-    final SamplerSample? headline = snapshot?.sampler(
+    final SamplerSample? headline = snapshot.sampler(
       'wormholes-projection-render-ms',
     );
 
-    return sectionCard(
+    return SectionPanel(
       label: 'Wormholes',
-      child: Collection(
-        gap: 12,
-        children: <Widget>[
-          statGrid(tiles),
-          if (headline != null)
-            TimeseriesChart(
-              series: <(String, List<double>)>[
-                (
-                  reactorText(ReactorText.integrationsProjectionRenderMs),
-                  headline.history,
-                ),
-              ],
-              height: 100,
-            ),
-        ],
-      ),
+      children: <Widget>[
+        if (headline != null)
+          TimeseriesChart(
+            series: <(String, List<double>)>[
+              (
+                reactorText(ReactorText.integrationsProjectionRenderMs),
+                headline.history,
+              ),
+            ],
+            height: 100,
+          ),
+        statGrid(tiles),
+      ],
     );
   }
 }

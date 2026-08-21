@@ -9,13 +9,14 @@ import '../localization/reactor_localizations.dart';
 import '../model/knob.dart';
 import '../model/role_info.dart';
 import '../service/react_client.dart';
+import '../state/connection_manager.dart';
 import '../state/control_list_controller.dart';
 import '../state/control_scope.dart';
 import '../state/role_scope.dart';
+import '../state/server_scope.dart';
 import '../ui/reactor_ui.dart';
 import '../widget/knob_editor.dart';
 import '../widget/role_badge.dart';
-import '../widget/section_card.dart';
 
 class TweaksListView extends StatelessWidget {
   final List<ControlItem> items;
@@ -33,67 +34,139 @@ class TweaksListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Collection(
-      gap: 12,
-      children: <Widget>[
-        for (final ControlItem tweak in items)
-          Card.flat(
-            fillWidth: true,
-            padding: EdgeInsets.zero,
-            borderRadius: BorderRadius.zero,
-            child: dom.div(
+    return SectionPanel(
+      label: reactorText(ReactorText.tweaksControl),
+      flush: true,
+      child: items.isEmpty
+          ? ReactorEmptyState(
+              title: 'No tweaks available',
+              description: 'React did not return any runtime tweaks.',
+              icon: ArcaneIcon.slidersHorizontal(size: IconSize.sm),
+            )
+          : dom.div(
               styles: const dom.Styles(
                 raw: <String, String>{
-                  'padding': '0.75rem',
                   'display': 'flex',
                   'flex-direction': 'column',
+                },
+              ),
+              <Widget>[
+                for (final ControlItem tweak in items) _tweakRow(tweak),
+              ],
+            ),
+    );
+  }
+
+  Widget _tweakRow(ControlItem tweak) {
+    return dom.div(
+      styles: const dom.Styles(
+        raw: <String, String>{
+          'display': 'flex',
+          'flex-direction': 'column',
+          'gap': '0.5rem',
+          'padding': '0.65rem 0.75rem',
+          'border-bottom': '1px solid $kReactorHairline',
+        },
+      ),
+      <Widget>[
+        dom.div(
+          styles: const dom.Styles(
+            raw: <String, String>{
+              'display': 'flex',
+              'align-items': 'flex-start',
+              'justify-content': 'space-between',
+              'gap': '0.75rem',
+            },
+          ),
+          <Widget>[
+            dom.div(
+              styles: const dom.Styles(
+                raw: <String, String>{
+                  'display': 'flex',
+                  'min-width': '0',
+                  'flex-direction': 'column',
+                  'gap': '0.2rem',
+                },
+              ),
+              <Widget>[
+                reactorEyebrow(tweak.category),
+                dom.strong(
+                  styles: const dom.Styles(
+                    raw: <String, String>{
+                      'font-size': '0.82rem',
+                      'line-height': '1.25',
+                    },
+                  ),
+                  <Widget>[Component.text(tweak.name)],
+                ),
+                dom.span(
+                  styles: const dom.Styles(
+                    raw: <String, String>{
+                      'color': kReactorMuted,
+                      'font-size': '0.75rem',
+                      'line-height': '1.4',
+                    },
+                  ),
+                  <Widget>[Component.text(tweak.description)],
+                ),
+              ],
+            ),
+            dom.div(
+              styles: const dom.Styles(
+                raw: <String, String>{
+                  'display': 'flex',
+                  'align-items': 'center',
                   'gap': '0.5rem',
                 },
               ),
               <Widget>[
-                Text.heading3(tweak.name),
-                Text(
-                  tweak.description,
-                  color: TextColor.muted,
-                  size: FontSize.sm,
-                ),
+                tweak.enabled
+                    ? reactorBadge(
+                        reactorText(ReactorText.commonEnabled),
+                        ReactorStatus.healthy,
+                      )
+                    : reactorBadge(
+                        reactorText(ReactorText.commonDisabled),
+                        ReactorStatus.neutral,
+                      ),
                 ArcaneToggleSwitch(
                   value: tweak.enabled,
                   disabled: readOnly,
                   onChanged: readOnly
                       ? null
-                      : (bool b) => onToggle?.call(tweak.id, b),
+                      : (bool enabled) => onToggle?.call(tweak.id, enabled),
                 ),
-                if (tweak.knobs.isNotEmpty)
-                  ArcaneAccordion(
-                    items: <ArcaneAccordionItem>[
-                      ArcaneAccordionItem(
-                        title: reactorText(
-                          ReactorText.tweaksConfigure,
-                          <String, Object?>{'count': tweak.knobs.length},
-                        ),
-                        customContent: Collection(
-                          gap: 8,
-                          children: <Widget>[
-                            for (final Knob k in tweak.knobs)
-                              KnobEditor(
-                                knob: k,
-                                disabled: readOnly,
-                                onChanged: readOnly
-                                    ? null
-                                    : (Object? v) => onKnobChanged?.call(
-                                        tweak.id,
-                                        k.key,
-                                        v,
-                                      ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
               ],
             ),
+          ],
+        ),
+        if (tweak.knobs.isNotEmpty)
+          ArcaneAccordion(
+            items: <ArcaneAccordionItem>[
+              ArcaneAccordionItem(
+                title: reactorText(
+                  ReactorText.tweaksConfigure,
+                  <String, Object?>{'count': tweak.knobs.length},
+                ),
+                customContent: Collection(
+                  gap: 8,
+                  children: <Widget>[
+                    for (final Knob knob in tweak.knobs)
+                      KnobEditor(
+                        knob: knob,
+                        disabled: readOnly,
+                        onChanged: readOnly
+                            ? null
+                            : (Object? value) => onKnobChanged?.call(
+                                tweak.id,
+                                knob.key,
+                                value,
+                              ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
           ),
       ],
     );
@@ -134,49 +207,43 @@ class _TweaksScreenState extends State<TweaksScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_client == null) {
-      return ReactorPage(
-        title: reactorText(ReactorText.tweaksTitle),
-        subtitle: reactorText(ReactorText.tweaksSubtitle),
-        children: <Widget>[
-          sectionCard(
-            label: reactorText(ReactorText.tweaksControl),
-            child: dom.div(
-              styles: const dom.Styles(
-                raw: <String, String>{
-                  'color': 'var(--muted-foreground)',
-                  'font-size': '0.875rem',
-                },
-              ),
-              <Widget>[
-                Component.text(reactorText(ReactorText.tweaksLiveRequired)),
-              ],
-            ),
-          ),
-        ],
+    final ServerScope? server = ServerScope.of(context);
+    if (server?.state == ConnState.connecting && _client == null) {
+      return _statePage(
+        ReactorLoadingState(label: reactorText(ReactorText.tweaksLoading)),
+      );
+    }
+    if (_client == null || server?.state == ConnState.offline) {
+      return _statePage(
+        ReactorNotice(
+          title: reactorText(ReactorText.statusOffline),
+          message: reactorText(ReactorText.tweaksLiveRequired),
+          status: ReactorStatus.critical,
+        ),
       );
     }
 
     final ControlListController controller = _controller!;
 
     if (controller.loading && controller.items.isEmpty) {
-      return ReactorPage(
-        title: reactorText(ReactorText.tweaksTitle),
-        subtitle: reactorText(ReactorText.tweaksSubtitle),
-        children: <Widget>[
-          sectionCard(
-            label: reactorText(ReactorText.tweaksControl),
-            child: dom.div(
-              styles: const dom.Styles(
-                raw: <String, String>{
-                  'color': 'var(--muted-foreground)',
-                  'font-size': '0.875rem',
-                },
-              ),
-              <Widget>[Component.text(reactorText(ReactorText.tweaksLoading))],
-            ),
+      return _statePage(
+        ReactorLoadingState(label: reactorText(ReactorText.tweaksLoading)),
+      );
+    }
+
+    final Object? error = controller.error;
+    if (error != null && controller.items.isEmpty) {
+      return _statePage(
+        ReactorNotice(
+          title: reactorText(ReactorText.commonUpdateFailed),
+          message: error.toString(),
+          status: ReactorStatus.critical,
+          action: Button.secondary(
+            label: 'Retry',
+            size: ButtonSize.small,
+            onPressed: controller.load,
           ),
-        ],
+        ),
       );
     }
 
@@ -188,6 +255,23 @@ class _TweaksScreenState extends State<TweaksScreen> {
       subtitle: reactorText(ReactorText.tweaksSubtitle),
       leading: RoleBadge(role: role),
       children: <Widget>[
+        if (error != null)
+          ReactorNotice(
+            title: reactorText(ReactorText.commonUpdateFailed),
+            message: error.toString(),
+            status: ReactorStatus.warning,
+            action: Button.secondary(
+              label: 'Retry',
+              size: ButtonSize.small,
+              onPressed: controller.load,
+            ),
+          )
+        else if (server?.state == ConnState.degraded)
+          const ReactorNotice(
+            title: 'Connection degraded',
+            message: 'Tweak state may be delayed until React reconnects.',
+            status: ReactorStatus.warning,
+          ),
         TweaksListView(
           items: controller.items,
           readOnly: readOnly,
@@ -195,6 +279,14 @@ class _TweaksScreenState extends State<TweaksScreen> {
           onKnobChanged: readOnly ? null : controller.setKnob,
         ),
       ],
+    );
+  }
+
+  Widget _statePage(Widget state) {
+    return ReactorPage(
+      title: reactorText(ReactorText.tweaksTitle),
+      subtitle: reactorText(ReactorText.tweaksSubtitle),
+      children: <Widget>[state],
     );
   }
 }

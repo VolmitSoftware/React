@@ -5,6 +5,7 @@ import 'package:arcane_jaspr/arcane_jaspr.dart';
 import '../chart/timeseries_chart.dart';
 import '../localization/reactor_localizations.dart';
 import '../model/sampler_sample.dart';
+import '../model/server_snapshot.dart';
 import '../state/server_scope.dart';
 import '../ui/reactor_ui.dart';
 import '../widget/section_card.dart';
@@ -16,21 +17,26 @@ class ChunksScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ServerScope? scope = ServerScope.of(context);
-    final SamplerSample? chunks = scope?.snapshot?.sampler('chunks');
-    final SamplerSample? chunksLoaded = scope?.snapshot?.sampler(
-      'chunks-loaded',
-    );
-    final SamplerSample? chunksGenerated = scope?.snapshot?.sampler(
-      'chunks-generated',
-    );
-    final SamplerSample? chunkLoadMs = scope?.snapshot?.sampler(
-      'chunk-load-ms',
-    );
-    final SamplerSample? chunkGenMs = scope?.snapshot?.sampler('chunk-gen-ms');
-    final SamplerSample? worldSaveDuration = scope?.snapshot?.sampler(
+    final ServerSnapshot? snapshot = scope?.snapshot;
+    if (snapshot == null) {
+      return ReactorPage(
+        title: reactorText(ReactorText.chunksTitle),
+        subtitle: reactorText(ReactorText.chunksSubtitle),
+        children: <Widget>[
+          ReactorLoadingState(label: reactorText(ReactorText.metricsWaiting)),
+        ],
+      );
+    }
+
+    final SamplerSample? chunks = snapshot.sampler('chunks');
+    final SamplerSample? chunksLoaded = snapshot.sampler('chunks-loaded');
+    final SamplerSample? chunksGenerated = snapshot.sampler('chunks-generated');
+    final SamplerSample? chunkLoadMs = snapshot.sampler('chunk-load-ms');
+    final SamplerSample? chunkGenMs = snapshot.sampler('chunk-gen-ms');
+    final SamplerSample? worldSaveDuration = snapshot.sampler(
       'world-save-duration',
     );
-    final SamplerSample? pdcWriteBatcher = scope?.snapshot?.sampler(
+    final SamplerSample? pdcWriteBatcher = snapshot.sampler(
       'pdc-write-batcher',
     );
 
@@ -49,34 +55,37 @@ class ChunksScreen extends StatelessWidget {
       title: reactorText(ReactorText.chunksTitle),
       subtitle: reactorText(ReactorText.chunksSubtitle),
       children: <Widget>[
-        sectionCard(
+        SectionPanel(
           label: reactorText(ReactorText.chunksLoadGenTime),
-          child: TimeseriesChart(series: timeSeries, height: 160),
+          children: <Widget>[
+            TimeseriesChart(series: timeSeries, height: 160),
+            statGrid(<Widget>[
+              StatTile(
+                label: reactorText(ReactorText.commonChunks),
+                sample: chunks,
+              ),
+              StatTile(
+                label: reactorText(ReactorText.chunksLoadedPerSecond),
+                sample: chunksLoaded,
+              ),
+              StatTile(
+                label: reactorText(ReactorText.chunksGeneratedPerSecond),
+                sample: chunksGenerated,
+              ),
+              StatTile(
+                label: reactorText(ReactorText.chunksLoadTime),
+                sample: chunkLoadMs,
+              ),
+              StatTile(
+                label: reactorText(ReactorText.chunksGenTime),
+                sample: chunkGenMs,
+              ),
+            ]),
+          ],
         ),
-        statGrid(<Widget>[
-          StatTile(
-            label: reactorText(ReactorText.commonChunks),
-            sample: chunks,
-          ),
-          StatTile(
-            label: reactorText(ReactorText.chunksLoadedPerSecond),
-            sample: chunksLoaded,
-          ),
-          StatTile(
-            label: reactorText(ReactorText.chunksGeneratedPerSecond),
-            sample: chunksGenerated,
-          ),
-          StatTile(
-            label: reactorText(ReactorText.chunksLoadTime),
-            sample: chunkLoadMs,
-          ),
-          StatTile(
-            label: reactorText(ReactorText.chunksGenTime),
-            sample: chunkGenMs,
-          ),
-        ]),
-        sectionCard(
+        SectionPanel(
           label: reactorText(ReactorText.chunksPersistence),
+          flush: true,
           child: statGrid(<Widget>[
             StatTile(
               label: reactorText(ReactorText.chunksWorldSave),

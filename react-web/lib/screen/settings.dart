@@ -1,5 +1,7 @@
 library;
 
+import 'dart:async' show unawaited;
+
 import 'package:arcane_jaspr/arcane_jaspr.dart';
 import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart' show Component;
@@ -15,8 +17,6 @@ import '../state/fleet_import_picker.dart';
 import '../state/fleet_manager.dart';
 import '../state/fleet_scope.dart';
 import '../ui/reactor_ui.dart';
-import '../widget/role_badge.dart';
-import '../widget/section_card.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -37,6 +37,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _memoryPressureWarn = '';
 
   final Map<String, RoleInfo?> _roles = <String, RoleInfo?>{};
+  final Map<String, String> _roleErrors = <String, String>{};
   final Set<String> _roleFetchStarted = <String>{};
 
   final Map<String, String> _renameLabels = <String, String>{};
@@ -70,7 +71,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _renameLabels[cred.id] = cred.label;
       _tagInputs[cred.id] = '';
       if (_roleFetchStarted.add(cred.id)) {
-        _fetchRole(ctrl.fleetManager, cred.id);
+        unawaited(_fetchRole(ctrl.fleetManager, cred.id));
       }
     }
   }
@@ -82,13 +83,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _fetchRole(FleetManager fm, String id) async {
     final IRoleClient? client = fm.roleClientFor(id);
-    if (client == null) return;
+    if (client == null) {
+      if (!mounted) return;
+      setState(() {
+        _roles.remove(id);
+        _roleErrors[id] = 'Role endpoint unavailable';
+      });
+      return;
+    }
     try {
       final RoleInfo info = await client.whoami();
       if (!mounted) return;
-      setState(() => _roles[id] = info);
-    } on Object {
-      return;
+      setState(() {
+        _roles[id] = info;
+        _roleErrors.remove(id);
+      });
+    } on Object catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _roles.remove(id);
+        _roleErrors[id] = error.toString();
+      });
     }
   }
 
@@ -142,6 +157,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _renameLabels.remove(id);
       _tagInputs.remove(id);
       _roles.remove(id);
+      _roleErrors.remove(id);
       _roleFetchStarted.remove(id);
     });
   }
@@ -158,6 +174,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _renameLabels.clear();
       _tagInputs.clear();
       _roles.clear();
+      _roleErrors.clear();
       _roleFetchStarted.clear();
     });
     ArcaneSonner.success(reactorText(ReactorText.settingsFleetCleared));
@@ -230,12 +247,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final FleetParseResult? pending = _pendingImport;
     if (pending == null || !pending.ok) return;
     ctrl.importFleet(pending.servers);
+    final List<String> roleIds = <String>[];
     setState(() {
       _pendingImport = null;
       _importError = null;
       _renameLabels.clear();
       _tagInputs.clear();
       _roles.clear();
+      _roleErrors.clear();
       _roleFetchStarted.clear();
       _confirmRemoveId = null;
       _confirmClearFleet = false;
@@ -243,10 +262,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _renameLabels[cred.id] = cred.label;
         _tagInputs[cred.id] = '';
         if (_roleFetchStarted.add(cred.id)) {
-          _fetchRole(ctrl.fleetManager, cred.id);
+          roleIds.add(cred.id);
         }
       }
     });
+    for (final String id in roleIds) {
+      unawaited(_fetchRole(ctrl.fleetManager, id));
+    }
     ArcaneSonner.success(
       reactorText(ReactorText.settingsFleetImported),
       description: reactorText(
@@ -271,9 +293,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         title: reactorText(ReactorText.settingsTitle),
         subtitle: reactorText(ReactorText.settingsSubtitle),
         children: <Widget>[
-          ArcaneEmptyState.noData(
-            title: reactorText(ReactorText.settingsFleetUnavailable),
-            description: reactorText(ReactorText.settingsFleetNotInitialized),
+          SectionPanel(
+            child: ReactorEmptyState(
+              title: reactorText(ReactorText.settingsFleetUnavailable),
+              description: reactorText(ReactorText.settingsFleetNotInitialized),
+              icon: ArcaneIcon.serverOff(size: IconSize.sm),
+            ),
           ),
         ],
       );
@@ -293,70 +318,158 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _rolesSection(List<ServerCredential> servers) {
-    return sectionCard(
+    final List<ServerCredential> failed = servers
+        .where((ServerCredential cred) => _roleErrors.containsKey(cred.id))
+        .toList();
+    final bool loading = servers.any(
+      (ServerCredential cred) =>
+          _roleFetchStarted.contains(cred.id) &&
+          !_roles.containsKey(cred.id) &&
+          !_roleErrors.containsKey(cred.id),
+    );
+    return SectionPanel(
       label: reactorText(ReactorText.settingsAccountRoles),
-      child: dom.div(
-        styles: const dom.Styles(
-          raw: <String, String>{
-            'display': 'flex',
-            'flex-direction': 'column',
-            'gap': '0.75rem',
-          },
-        ),
-        <Widget>[
-          if (servers.isEmpty)
-            dom.div(
-              styles: const dom.Styles(
-                raw: <String, String>{'color': 'var(--muted-foreground)'},
+      description: 'Effective access for each saved connection.',
+      flush: true,
+      child: servers.isEmpty
+          ? _inset(
+              ReactorEmptyState(
+                title: reactorText(ReactorText.settingsNoServersConfigured),
+                description: 'Pair a server to inspect its account role.',
+                icon: ArcaneIcon.shieldCheck(size: IconSize.sm),
               ),
-              <Widget>[
-                Component.text(
-                  reactorText(ReactorText.settingsNoServersConfigured),
+            )
+          : dom.div(<Widget>[
+              if (loading)
+                _inset(const ReactorLoadingState(label: 'Loading roles…')),
+              if (failed.isNotEmpty)
+                _inset(
+                  ReactorNotice(
+                    title: 'Some roles are unavailable',
+                    message:
+                        'Role lookup failed for ${failed.map((ServerCredential cred) => cred.label).join(', ')}.',
+                    status: ReactorStatus.warning,
+                  ),
                 ),
-              ],
-            ),
-          for (final ServerCredential cred in servers) _roleRow(cred),
-        ],
-      ),
+              dom.div(
+                styles: const dom.Styles(
+                  raw: <String, String>{
+                    'border-top': '1px solid var(--border)',
+                  },
+                ),
+                <Widget>[
+                  for (final ServerCredential cred in servers) _roleRow(cred),
+                ],
+              ),
+            ]),
     );
   }
 
   Widget _roleRow(ServerCredential cred) {
     final RoleInfo? role = _roles[cred.id];
-    final bool resolved = _roles.containsKey(cred.id);
+    final String? error = _roleErrors[cred.id];
+    final (String, ReactorStatus) state = error != null
+        ? ('Unavailable', ReactorStatus.warning)
+        : role == null
+        ? ('Loading…', ReactorStatus.info)
+        : switch (role.role) {
+            'admin' => (
+              reactorText(ReactorText.roleAdmin),
+              ReactorStatus.healthy,
+            ),
+            'operator' => (
+              reactorText(ReactorText.roleOperator),
+              ReactorStatus.info,
+            ),
+            _ => (reactorText(ReactorText.roleViewer), ReactorStatus.warning),
+          };
     return dom.div(
       styles: const dom.Styles(
         raw: <String, String>{
           'display': 'flex',
           'align-items': 'center',
-          'gap': '0.75rem',
+          'gap': '1rem',
+          'padding': '0.7rem 1rem',
+          'border-bottom': '1px solid var(--border)',
         },
       ),
       <Widget>[
         dom.div(
           styles: const dom.Styles(
-            raw: <String, String>{'flex': '1', 'font-weight': '500'},
+            raw: <String, String>{
+              'display': 'flex',
+              'flex-direction': 'column',
+              'gap': '0.15rem',
+              'min-width': '0',
+              'flex': '1',
+            },
           ),
-          <Widget>[Component.text(cred.label)],
+          <Widget>[
+            dom.strong(<Widget>[Component.text(cred.label)]),
+            dom.span(
+              styles: const dom.Styles(
+                raw: <String, String>{
+                  'color': 'var(--muted-foreground)',
+                  'font-family': 'monospace',
+                  'font-size': '0.75rem',
+                  'overflow': 'hidden',
+                  'text-overflow': 'ellipsis',
+                  'white-space': 'nowrap',
+                },
+              ),
+              <Widget>[Component.text(_endpoint(cred))],
+            ),
+          ],
         ),
-        if (resolved && role != null)
-          RoleBadge(role: role)
-        else
-          Component.text('—'),
+        dom.div(
+          styles: const dom.Styles(
+            raw: <String, String>{
+              'display': 'flex',
+              'align-items': 'center',
+              'gap': '0.4rem',
+              'font-size': '0.8125rem',
+            },
+          ),
+          attributes: error == null ? null : <String, String>{'title': error},
+          <Widget>[
+            reactorStatusDot(state.$2, size: 7, label: state.$1),
+            Component.text(state.$1),
+          ],
+        ),
       ],
     );
   }
 
   Widget _thresholdsSection(FleetController ctrl) {
-    return sectionCard(
+    return SectionPanel(
       label: reactorText(ReactorText.settingsAlertThresholds),
-      child: dom.div(
+      description: 'Fleet-wide warning and critical boundaries.',
+      trailing: dom.div(
         styles: const dom.Styles(
           raw: <String, String>{
             'display': 'flex',
-            'flex-direction': 'column',
-            'gap': '0.75rem',
+            'align-items': 'center',
+            'gap': '0.5rem',
+            'flex-wrap': 'wrap',
           },
+        ),
+        <Widget>[
+          Button.secondary(
+            label: reactorText(ReactorText.settingsResetDefaults),
+            size: ButtonSize.small,
+            onPressed: () => _resetThresholds(ctrl),
+          ),
+          Button.primary(
+            label: reactorText(ReactorText.settingsSaveThresholds),
+            size: ButtonSize.small,
+            onPressed: () => _saveThresholds(ctrl),
+          ),
+        ],
+      ),
+      flush: true,
+      child: dom.div(
+        styles: const dom.Styles(
+          raw: <String, String>{'border-top': '1px solid var(--border)'},
         ),
         <Widget>[
           _thresholdRow(
@@ -394,25 +507,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             value: _memoryPressureWarn,
             onChanged: (String v) => setState(() => _memoryPressureWarn = v),
           ),
-          dom.div(
-            styles: const dom.Styles(
-              raw: <String, String>{
-                'display': 'flex',
-                'gap': '0.5rem',
-                'padding-top': '0.25rem',
-              },
-            ),
-            <Widget>[
-              Button.primary(
-                label: reactorText(ReactorText.settingsSaveThresholds),
-                onPressed: () => _saveThresholds(ctrl),
-              ),
-              Button.secondary(
-                label: reactorText(ReactorText.settingsResetDefaults),
-                onPressed: () => _resetThresholds(ctrl),
-              ),
-            ],
-          ),
         ],
       ),
     );
@@ -426,9 +520,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return dom.div(
       styles: const dom.Styles(
         raw: <String, String>{
-          'display': 'flex',
+          'display': 'grid',
+          'grid-template-columns': 'minmax(180px, 1fr) 112px',
           'align-items': 'center',
-          'gap': '0.75rem',
+          'gap': '1rem',
+          'padding': '0.55rem 1rem',
+          'border-bottom': '1px solid var(--border)',
         },
       ),
       <Widget>[
@@ -437,103 +534,84 @@ class _SettingsScreenState extends State<SettingsScreen> {
             raw: <String, String>{
               'flex': '1',
               'font-size': '0.875rem',
-              'color': 'var(--muted-foreground)',
+              'font-weight': '500',
             },
           ),
           <Widget>[Component.text(label)],
         ),
-        dom.div(
-          styles: const dom.Styles(raw: <String, String>{'width': '100px'}),
-          <Widget>[
-            TextInput(
-              value: value,
-              type: TextInputType.text,
-              onChange: onChanged,
-              fullWidth: true,
-            ),
-          ],
+        TextInput(
+          value: value,
+          type: TextInputType.number,
+          onChange: onChanged,
+          fullWidth: true,
         ),
       ],
     );
   }
 
   Widget _serversSection(FleetController ctrl, List<ServerCredential> servers) {
-    return sectionCard(
+    return SectionPanel(
       label: reactorText(ReactorText.settingsSavedServers),
-      trailing: Button.destructive(
-        label: _confirmClearFleet
-            ? reactorText(ReactorText.settingsConfirmClearAll)
-            : reactorText(ReactorText.settingsClearAll),
-        size: ButtonSize.small,
-        disabled: servers.isEmpty,
-        onPressed: servers.isEmpty ? null : () => _clearFleet(ctrl),
-      ),
-      child: dom.div(
+      description:
+          '${servers.length} saved connection${servers.length == 1 ? '' : 's'}.',
+      trailing: dom.div(
         styles: const dom.Styles(
           raw: <String, String>{
             'display': 'flex',
-            'flex-direction': 'column',
-            'gap': '1.25rem',
+            'align-items': 'center',
+            'gap': '0.5rem',
+            'flex-wrap': 'wrap',
           },
         ),
         <Widget>[
-          dom.div(
-            styles: const dom.Styles(
-              raw: <String, String>{
-                'display': 'flex',
-                'align-items': 'center',
-                'gap': '0.5rem',
-                'flex-wrap': 'wrap',
-              },
-            ),
-            <Widget>[
-              Button.secondary(
-                label: reactorText(ReactorText.settingsExportConnections),
-                size: ButtonSize.small,
-                onPressed: () => _exportConnections(ctrl),
-              ),
-              Button.secondary(
-                label: reactorText(ReactorText.settingsImportConnections),
-                size: ButtonSize.small,
-                onPressed: () => _triggerImportPicker(),
-              ),
-            ],
+          Button.secondary(
+            label: reactorText(ReactorText.settingsExportConnections),
+            size: ButtonSize.small,
+            disabled: servers.isEmpty,
+            onPressed: servers.isEmpty ? null : () => _exportConnections(ctrl),
           ),
-          dom.div(
-            styles: const dom.Styles(
-              raw: <String, String>{
-                'font-size': '0.75rem',
-                'color': 'var(--muted-foreground)',
-              },
-            ),
-            <Widget>[
-              Component.text(reactorText(ReactorText.settingsExportSecurity)),
-            ],
+          Button.secondary(
+            label: reactorText(ReactorText.settingsImportConnections),
+            size: ButtonSize.small,
+            disabled: _pickerOpen,
+            onPressed: _pickerOpen ? null : _triggerImportPicker,
           ),
-          if (_importError != null)
-            dom.div(
-              styles: const dom.Styles(
-                raw: <String, String>{
-                  'padding': '0.6rem 0.75rem',
-                  'border-radius': kReactorRadius,
-                  'border':
-                      '1px solid color-mix(in srgb, var(--destructive) 40%, transparent)',
-                  'background':
-                      'color-mix(in srgb, var(--destructive) 12%, transparent)',
-                  'color': 'var(--destructive)',
-                  'font-size': '0.8rem',
-                },
+          Button.destructive(
+            label: _confirmClearFleet
+                ? reactorText(ReactorText.settingsConfirmClearAll)
+                : reactorText(ReactorText.settingsClearAll),
+            size: ButtonSize.small,
+            disabled: servers.isEmpty,
+            onPressed: servers.isEmpty ? null : () => _clearFleet(ctrl),
+          ),
+        ],
+      ),
+      flush: true,
+      child: dom.div(<Widget>[
+        _inset(
+          ReactorNotice(
+            title: reactorText(ReactorText.settingsExportConnections),
+            message: reactorText(ReactorText.settingsExportSecurity),
+            status: ReactorStatus.info,
+          ),
+        ),
+        if (_pickerOpen)
+          _inset(
+            const ReactorLoadingState(label: 'Waiting for connection file…'),
+          ),
+        if (_importError != null)
+          _inset(
+            ReactorNotice(
+              title: reactorText(ReactorText.settingsImportConnections),
+              message: reactorText(
+                ReactorText.settingsImportFailed,
+                <String, Object?>{'error': _importError},
               ),
-              <Widget>[
-                Component.text(
-                  reactorText(
-                    ReactorText.settingsImportFailed,
-                    <String, Object?>{'error': _importError},
-                  ),
-                ),
-              ],
+              status: ReactorStatus.critical,
             ),
-          if (_pendingImport != null && _pendingImport!.ok)
+          ),
+        if (_pendingImport != null && _pendingImport!.ok)
+          _inset(
             ArcaneConfirmDialog(
               title: reactorText(ReactorText.settingsReplaceFleet),
               message:
@@ -555,20 +633,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onConfirm: () => _confirmImport(ctrl),
               onCancel: _cancelImport,
             ),
-          if (servers.isEmpty)
-            dom.div(
-              styles: const dom.Styles(
-                raw: <String, String>{'color': 'var(--muted-foreground)'},
-              ),
-              <Widget>[
-                Component.text(
-                  reactorText(ReactorText.settingsNoServersConfigured),
-                ),
-              ],
+          ),
+        if (servers.isEmpty)
+          _inset(
+            ReactorEmptyState(
+              title: reactorText(ReactorText.settingsNoServersConfigured),
+              description:
+                  'Pair a server to manage its label, tags, and credentials.',
+              icon: ArcaneIcon.serverOff(size: IconSize.sm),
             ),
-          for (final ServerCredential cred in servers) _serverRow(ctrl, cred),
-        ],
-      ),
+          ),
+        if (servers.isNotEmpty)
+          dom.div(
+            styles: const dom.Styles(
+              raw: <String, String>{'border-top': '1px solid var(--border)'},
+            ),
+            <Widget>[
+              for (final ServerCredential cred in servers)
+                _serverRow(ctrl, cred),
+            ],
+          ),
+      ]),
     );
   }
 
@@ -577,100 +662,152 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final String tagInput = _tagInputs[cred.id] ?? '';
     final String renameLabel = _renameLabels[cred.id] ?? cred.label;
 
-    return Card.flat(
-      fillWidth: true,
-      padding: EdgeInsets.zero,
-      borderRadius: BorderRadius.zero,
-      child: dom.div(
-        styles: const dom.Styles(
-          raw: <String, String>{
-            'padding': '0.75rem',
-            'display': 'flex',
-            'flex-direction': 'column',
-            'gap': '0.75rem',
-          },
-        ),
-        <Widget>[
-          Text.heading3(cred.label),
-          dom.div(
-            styles: const dom.Styles(
-              raw: <String, String>{
-                'display': 'flex',
-                'align-items': 'center',
-                'gap': '0.5rem',
-              },
-            ),
-            <Widget>[
-              dom.div(
-                styles: const dom.Styles(raw: <String, String>{'flex': '1'}),
-                <Widget>[
-                  TextInput(
-                    value: renameLabel,
-                    placeholder: reactorText(ReactorText.settingsServerLabel),
-                    onChange: (String v) =>
-                        setState(() => _renameLabels[cred.id] = v),
-                    fullWidth: true,
-                  ),
-                ],
-              ),
-              Button.secondary(
-                label: reactorText(ReactorText.settingsRename),
-                size: ButtonSize.small,
-                onPressed: () => _doRename(ctrl, cred.id),
-              ),
-              Button.destructive(
-                label: reactorText(ReactorText.settingsRemove),
-                size: ButtonSize.small,
-                onPressed: () => setState(() => _confirmRemoveId = cred.id),
-              ),
-            ],
-          ),
-          if (_confirmRemoveId == cred.id)
-            ArcaneConfirmDialog(
-              title: reactorText(
-                ReactorText.settingsRemoveServer,
-                <String, Object?>{'server': cred.label},
-              ),
-              message: reactorText(ReactorText.settingsRemoveServerMessage),
-              destructive: true,
-              confirmText: reactorText(ReactorText.settingsRemove),
-              onConfirm: () => _removeServer(ctrl, cred.id),
-              onCancel: () => setState(() => _confirmRemoveId = null),
-            ),
-          dom.div(
-            styles: const dom.Styles(
-              raw: <String, String>{
-                'display': 'flex',
-                'flex-wrap': 'wrap',
-                'align-items': 'center',
-                'gap': '0.5rem',
-              },
-            ),
-            <Widget>[
-              for (final String tag in tags) _tagChip(ctrl, cred.id, tag),
-              dom.div(
-                styles: const dom.Styles(
-                  raw: <String, String>{'width': '140px'},
-                ),
-                <Widget>[
-                  TextInput(
-                    value: tagInput,
-                    placeholder: reactorText(ReactorText.settingsAddTag),
-                    onChange: (String v) =>
-                        setState(() => _tagInputs[cred.id] = v),
-                    fullWidth: true,
-                  ),
-                ],
-              ),
-              Button.secondary(
-                label: reactorText(ReactorText.settingsAddTag),
-                size: ButtonSize.small,
-                onPressed: () => _addTag(ctrl, cred.id),
-              ),
-            ],
-          ),
-        ],
+    return dom.div(
+      styles: const dom.Styles(
+        raw: <String, String>{
+          'padding': '0.8rem 1rem',
+          'display': 'flex',
+          'flex-direction': 'column',
+          'gap': '0.65rem',
+          'border-bottom': '1px solid var(--border)',
+        },
       ),
+      <Widget>[
+        dom.div(
+          styles: const dom.Styles(
+            raw: <String, String>{
+              'display': 'flex',
+              'align-items': 'center',
+              'gap': '0.5rem',
+              'flex-wrap': 'wrap',
+            },
+          ),
+          <Widget>[
+            dom.div(
+              styles: const dom.Styles(
+                raw: <String, String>{
+                  'display': 'flex',
+                  'flex-direction': 'column',
+                  'gap': '0.15rem',
+                  'min-width': '180px',
+                  'flex': '0 1 240px',
+                },
+              ),
+              <Widget>[
+                dom.strong(<Widget>[Component.text(cred.label)]),
+                dom.span(
+                  styles: const dom.Styles(
+                    raw: <String, String>{
+                      'color': 'var(--muted-foreground)',
+                      'font-family': 'monospace',
+                      'font-size': '0.72rem',
+                      'overflow': 'hidden',
+                      'text-overflow': 'ellipsis',
+                      'white-space': 'nowrap',
+                    },
+                  ),
+                  <Widget>[Component.text(_endpoint(cred))],
+                ),
+              ],
+            ),
+            dom.div(
+              styles: const dom.Styles(
+                raw: <String, String>{
+                  'min-width': '210px',
+                  'flex': '1 1 280px',
+                },
+              ),
+              <Widget>[
+                TextInput(
+                  value: renameLabel,
+                  placeholder: reactorText(ReactorText.settingsServerLabel),
+                  onChange: (String value) =>
+                      setState(() => _renameLabels[cred.id] = value),
+                  fullWidth: true,
+                ),
+              ],
+            ),
+            Button.secondary(
+              label: reactorText(ReactorText.settingsRename),
+              size: ButtonSize.small,
+              onPressed: () => _doRename(ctrl, cred.id),
+            ),
+            Button.destructive(
+              label: reactorText(ReactorText.settingsRemove),
+              size: ButtonSize.small,
+              onPressed: () => setState(() => _confirmRemoveId = cred.id),
+            ),
+          ],
+        ),
+        if (_confirmRemoveId == cred.id)
+          ArcaneConfirmDialog(
+            title: reactorText(
+              ReactorText.settingsRemoveServer,
+              <String, Object?>{'server': cred.label},
+            ),
+            message: reactorText(ReactorText.settingsRemoveServerMessage),
+            destructive: true,
+            confirmText: reactorText(ReactorText.settingsRemove),
+            onConfirm: () => _removeServer(ctrl, cred.id),
+            onCancel: () => setState(() => _confirmRemoveId = null),
+          ),
+        dom.div(
+          styles: const dom.Styles(
+            raw: <String, String>{
+              'display': 'flex',
+              'flex-wrap': 'wrap',
+              'align-items': 'center',
+              'gap': '0.4rem',
+              'padding-top': '0.55rem',
+              'border-top': '1px solid var(--border)',
+            },
+          ),
+          <Widget>[
+            dom.span(
+              styles: const dom.Styles(
+                raw: <String, String>{
+                  'color': 'var(--muted-foreground)',
+                  'font-size': '0.72rem',
+                  'font-weight': '600',
+                  'text-transform': 'uppercase',
+                  'letter-spacing': '0.06em',
+                },
+              ),
+              <Widget>[Component.text('Tags')],
+            ),
+            if (tags.isEmpty)
+              dom.span(
+                styles: const dom.Styles(
+                  raw: <String, String>{
+                    'color': 'var(--muted-foreground)',
+                    'font-size': '0.8rem',
+                  },
+                ),
+                <Widget>[Component.text('No tags')],
+              ),
+            for (final String tag in tags) _tagChip(ctrl, cred.id, tag),
+            dom.div(
+              styles: const dom.Styles(
+                raw: <String, String>{'width': '140px', 'margin-left': 'auto'},
+              ),
+              <Widget>[
+                TextInput(
+                  value: tagInput,
+                  placeholder: reactorText(ReactorText.settingsAddTag),
+                  onChange: (String value) =>
+                      setState(() => _tagInputs[cred.id] = value),
+                  fullWidth: true,
+                ),
+              ],
+            ),
+            Button.secondary(
+              label: reactorText(ReactorText.settingsAddTag),
+              size: ButtonSize.small,
+              onPressed: () => _addTag(ctrl, cred.id),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -678,13 +815,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return dom.div(
       styles: const dom.Styles(
         raw: <String, String>{
-          'display': 'flex',
+          'display': 'inline-flex',
           'align-items': 'center',
-          'gap': '0.25rem',
+          'border': '1px solid var(--border)',
+          'border-radius': '0',
+          'padding-left': '0.5rem',
+          'font-size': '0.75rem',
         },
       ),
       <Widget>[
-        reactorBadge(tag, ReactorStatus.neutral),
+        Component.text(tag),
         Button.ghost(
           label: '×',
           size: ButtonSize.small,
@@ -692,5 +832,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ],
     );
+  }
+
+  Widget _inset(Widget child) {
+    return dom.div(
+      styles: const dom.Styles(
+        raw: <String, String>{'padding': '0.75rem 1rem'},
+      ),
+      <Widget>[child],
+    );
+  }
+
+  String _endpoint(ServerCredential cred) {
+    if (cred.host.isEmpty) {
+      return cred.relayUrl ?? 'Relay connection';
+    }
+    final String scheme = cred.secure ? 'https' : 'http';
+    return '$scheme://${cred.host}:${cred.port}';
   }
 }

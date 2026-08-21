@@ -7,6 +7,7 @@ import 'package:jaspr/jaspr.dart' show Component;
 import '../localization/reactor_localizations.dart';
 import '../model/sampler_sample.dart';
 import '../model/server_snapshot.dart';
+import '../state/connection_manager.dart';
 import '../state/server_scope.dart';
 import '../ui/reactor_ui.dart';
 
@@ -22,9 +23,37 @@ class _MetricsExplorerScreenState extends State<MetricsExplorerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final ServerSnapshot? snapshot = ServerScope.of(context)?.snapshot;
-    final List<SamplerSample> samples =
-        snapshot?.byId.values.toList() ?? <SamplerSample>[];
+    final ServerScope? scope = ServerScope.of(context);
+    final ServerSnapshot? snapshot = scope?.snapshot;
+
+    if (scope == null || scope.state == ConnState.offline) {
+      return _statePage(
+        const ReactorNotice(
+          title: 'Metrics unavailable',
+          message: 'Metrics require a live server connection.',
+          status: ReactorStatus.critical,
+        ),
+      );
+    }
+
+    if (snapshot == null) {
+      if (scope.state == ConnState.connecting) {
+        return _statePage(
+          ReactorLoadingState(
+            label: reactorText(ReactorText.metricsWaiting),
+          ),
+        );
+      }
+      return _statePage(
+        const ReactorNotice(
+          title: 'Telemetry unavailable',
+          message: 'The server is connected but has not provided a snapshot.',
+          status: ReactorStatus.warning,
+        ),
+      );
+    }
+
+    final List<SamplerSample> samples = snapshot.byId.values.toList();
     samples.sort(
       (SamplerSample left, SamplerSample right) => left.id.compareTo(right.id),
     );
@@ -37,6 +66,16 @@ class _MetricsExplorerScreenState extends State<MetricsExplorerScreen> {
                 sample.suffix.toLowerCase().contains(normalizedQuery);
           }).toList();
 
+    if (samples.isEmpty) {
+      return _statePage(
+        ReactorEmptyState(
+          title: 'No metrics published',
+          description: 'This server snapshot contains no sampler values.',
+          icon: ArcaneIcon.listFilter(size: IconSize.sm),
+        ),
+      );
+    }
+
     return ReactorPage(
       title: reactorText(ReactorText.metricsTitle),
       subtitle: reactorText(ReactorText.metricsSubtitle),
@@ -48,9 +87,16 @@ class _MetricsExplorerScreenState extends State<MetricsExplorerScreen> {
         ReactorStatus.neutral,
       ),
       children: <Widget>[
+        if (scope.state == ConnState.degraded)
+          const ReactorNotice(
+            title: 'Connection degraded',
+            message: 'Showing the most recent metrics received from React.',
+            status: ReactorStatus.warning,
+          ),
         SectionPanel(
           label: reactorText(ReactorText.metricsCatalog),
           description: reactorText(ReactorText.metricsCatalogDescription),
+          flush: true,
           children: <Widget>[
             dom.div(classes: 'reactor-metrics-toolbar', <Widget>[
               dom.div(classes: 'reactor-metrics-search', <Widget>[
@@ -65,23 +111,19 @@ class _MetricsExplorerScreenState extends State<MetricsExplorerScreen> {
               ]),
               dom.span(classes: 'reactor-metrics-updated', <Widget>[
                 Component.text(
-                  snapshot == null
-                      ? reactorText(ReactorText.metricsWaiting)
-                      : reactorText(
-                          ReactorText.metricsSequence,
-                          <String, Object?>{'sequence': snapshot.seq},
-                        ),
+                  reactorText(
+                    ReactorText.metricsSequence,
+                    <String, Object?>{'sequence': snapshot.seq},
+                  ),
                 ),
               ]),
             ]),
             if (filtered.isEmpty)
-              dom.div(classes: 'reactor-metrics-empty', <Widget>[
-                Component.text(
-                  samples.isEmpty
-                      ? reactorText(ReactorText.metricsWaitingDescription)
-                      : reactorText(ReactorText.metricsNoMatches),
-                ),
-              ])
+              ReactorEmptyState(
+                title: reactorText(ReactorText.metricsNoMatches),
+                description: 'Try a different sampler name, id, or unit.',
+                icon: ArcaneIcon.searchX(size: IconSize.sm),
+              )
             else
               dom.div(classes: 'reactor-metrics-table-wrap', <Widget>[
                 dom.table(classes: 'reactor-metrics-table', <Widget>[
@@ -116,6 +158,14 @@ class _MetricsExplorerScreenState extends State<MetricsExplorerScreen> {
           ],
         ),
       ],
+    );
+  }
+
+  Widget _statePage(Widget state) {
+    return ReactorPage(
+      title: reactorText(ReactorText.metricsTitle),
+      subtitle: reactorText(ReactorText.metricsSubtitle),
+      children: <Widget>[state],
     );
   }
 

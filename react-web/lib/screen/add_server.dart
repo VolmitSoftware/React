@@ -213,6 +213,7 @@ class _AddServerScreenState extends State<AddServerScreen> {
   String? _pairingMessage;
   bool _confirmReset = false;
   bool _loading = false;
+  bool _pairingFailed = false;
 
   void _onCodeChanged(String value) {
     final String? validation = value.trim().isEmpty
@@ -224,6 +225,7 @@ class _AddServerScreenState extends State<AddServerScreen> {
       _validationMessage = validation;
       _pairingMessage = null;
       _confirmReset = false;
+      _pairingFailed = false;
     });
   }
 
@@ -234,6 +236,7 @@ class _AddServerScreenState extends State<AddServerScreen> {
       _validationMessage = null;
       _pairingMessage = null;
       _confirmReset = false;
+      _pairingFailed = false;
     });
   }
 
@@ -248,6 +251,7 @@ class _AddServerScreenState extends State<AddServerScreen> {
     setState(() {
       _confirmReset = false;
       _pairingMessage = reactorText(ReactorText.addServerFleetClearedMessage);
+      _pairingFailed = false;
     });
     ArcaneSonner.success(reactorText(ReactorText.addServerFleetReset));
   }
@@ -260,7 +264,8 @@ class _AddServerScreenState extends State<AddServerScreen> {
         _code = rawCode;
         _decoded = PairingCode.decode(rawCode);
         _validationMessage = validation;
-        _pairingMessage = validation;
+        _pairingMessage = null;
+        _pairingFailed = false;
       });
       return;
     }
@@ -270,6 +275,7 @@ class _AddServerScreenState extends State<AddServerScreen> {
       _validationMessage = null;
       _pairingMessage = reactorText(ReactorText.addServerConnectingIdentity);
       _loading = true;
+      _pairingFailed = false;
     });
     try {
       final ServerCredential cred = await AddServerScreen.pairServer(
@@ -287,6 +293,7 @@ class _AddServerScreenState extends State<AddServerScreen> {
           ReactorText.addServerInvalidPairingMessage,
         );
         _validationMessage = _pairingMessage;
+        _pairingFailed = true;
       });
       ArcaneSonner.error(
         reactorText(ReactorText.addServerInvalidPairingCode),
@@ -300,6 +307,7 @@ class _AddServerScreenState extends State<AddServerScreen> {
         _pairingMessage = reactorText(
           ReactorText.addServerConnectionFailedMessage,
         );
+        _pairingFailed = true;
       });
       ArcaneSonner.error(
         reactorText(ReactorText.addServerPairingFailed),
@@ -349,208 +357,147 @@ class _AddServerScreenState extends State<AddServerScreen> {
         ),
       ]),
       children: <Widget>[
-        dom.div(classes: 'reactor-add-layout', <Widget>[
-          SectionPanel(
-            label: reactorText(ReactorText.addServerPairingConsole),
-            description: reactorText(
-              ReactorText.addServerPairingConsoleDescription,
-            ),
-            trailing: _statusBadge(decoded, inputError),
-            children: <Widget>[
-              dom.div(classes: 'reactor-add-console', <Widget>[
-                dom.div(classes: 'reactor-add-console-head', <Widget>[
-                  dom.div(classes: 'reactor-add-console-title', <Widget>[
-                    reactorStatusDot(
-                      inputError != null
-                          ? ReactorStatus.warning
-                          : decoded == null
-                          ? ReactorStatus.info
-                          : ReactorStatus.healthy,
-                      size: 7,
-                    ),
-                    dom.span(<Widget>[
-                      Component.text(
-                        reactorText(ReactorText.addServerHandshake),
-                      ),
-                    ]),
-                  ]),
-                  reactorEyebrow(
-                    inputError != null
-                        ? reactorText(ReactorText.addServerNeedsFullCode)
-                        : decoded == null
-                        ? reactorText(ReactorText.addServerStandby)
-                        : reactorText(ReactorText.addServerDecoded),
-                  ),
-                ]),
-                dom.div(classes: 'reactor-add-console-body', <Widget>[
-                  TextInput(
-                    placeholder: reactorText(
-                      ReactorText.addServerInputPlaceholder,
-                    ),
-                    value: _code,
-                    onChange: _onCodeChanged,
-                    onSubmit: _onPair,
-                    error: inputError,
-                    helperText: reactorText(ReactorText.addServerInputHelper),
-                    fullWidth: true,
-                  ),
-                  if (_pairingMessage != null)
-                    dom.div(
-                      classes: inputError == null
-                          ? 'reactor-add-message info'
-                          : 'reactor-add-message warning',
-                      <Widget>[Component.text(_pairingMessage!)],
-                    ),
-                  _connectionDetails(decoded),
-                ]),
-              ]),
-            ],
+        SectionPanel(
+          label: reactorText(ReactorText.addServerPairingConsole),
+          description: reactorText(
+            ReactorText.addServerPairingConsoleDescription,
           ),
-          dom.div(classes: 'reactor-add-side', <Widget>[
-            SectionPanel(
-              label: reactorText(ReactorText.addServerConnectionFlow),
-              description: reactorText(
-                ReactorText.addServerConnectionFlowDescription,
+          children: <Widget>[
+            dom.div(
+              styles: const dom.Styles(
+                raw: <String, String>{
+                  'display': 'flex',
+                  'flex-direction': 'column',
+                  'gap': '0.75rem',
+                },
               ),
-              children: <Widget>[
-                dom.div(classes: 'reactor-add-step-list', <Widget>[
-                  _flowStep(
-                    '01',
-                    reactorText(ReactorText.addServerCopy),
-                    reactorText(ReactorText.addServerCopyDescription),
+              <Widget>[
+                TextInput(
+                  placeholder: reactorText(
+                    ReactorText.addServerInputPlaceholder,
                   ),
-                  _flowStep(
-                    '02',
-                    reactorText(ReactorText.addServerDecode),
-                    reactorText(ReactorText.addServerDecodeDescription),
-                  ),
-                  _flowStep(
-                    '03',
-                    reactorText(ReactorText.addServerMonitor),
-                    reactorText(ReactorText.addServerMonitorDescription),
-                  ),
-                ]),
+                  value: _code,
+                  onChange: _onCodeChanged,
+                  onSubmit: _onPair,
+                  error: inputError,
+                  helperText: reactorText(ReactorText.addServerInputHelper),
+                  fullWidth: true,
+                ),
+                if (inputError != null)
+                  ReactorNotice(
+                    title: reactorText(ReactorText.addServerCheckCode),
+                    message: inputError,
+                    status: ReactorStatus.warning,
+                  )
+                else if (_pairingFailed && _pairingMessage != null)
+                  ReactorNotice(
+                    title: reactorText(ReactorText.addServerPairingFailed),
+                    message: _pairingMessage!,
+                    status: ReactorStatus.critical,
+                  )
+                else if (_loading)
+                  ReactorLoadingState(
+                    label: reactorText(ReactorText.addServerConnectingIdentity),
+                  )
+                else if (_pairingMessage != null)
+                  ReactorNotice(
+                    title: reactorText(ReactorText.addServerFleetReset),
+                    message: _pairingMessage!,
+                    status: ReactorStatus.info,
+                  )
+                else if (decoded == null)
+                  ReactorEmptyState(
+                    title: reactorText(ReactorText.addServerAwaitingCode),
+                    description: reactorText(ReactorText.addServerInputHelper),
+                    icon: ArcaneIcon.serverCog(size: IconSize.sm),
+                  )
+                else
+                  _connectionDetails(decoded),
               ],
             ),
-            SectionPanel(
-              label: reactorText(ReactorText.addServerSecurity),
-              description: reactorText(
-                ReactorText.addServerSecurityDescription,
-              ),
-              trailing: reactorStatusDot(
-                ReactorStatus.info,
-                label: reactorText(ReactorText.addServerCredentialScope),
-              ),
-              children: <Widget>[
-                _detail(
-                  reactorText(ReactorText.addServerSavedServers),
-                  savedCount.toString(),
-                ),
-                _detail(reactorText(ReactorText.addServerFormat), 'RCT2'),
-                _detail(
-                  reactorText(ReactorText.addServerToken),
-                  decoded == null
-                      ? reactorText(ReactorText.addServerHiddenUntilDecoded)
-                      : 'Bearer',
-                ),
-                _detail(
-                  reactorText(ReactorText.addServerTransport),
-                  decoded?.relayUrl.isEmpty ?? true
-                      ? reactorText(ReactorText.addServerDirectHost)
-                      : reactorText(ReactorText.addServerRelayChannel),
-                ),
-              ],
-            ),
-          ]),
-        ]),
+          ],
+        ),
       ],
     );
   }
 
-  Widget _statusBadge(PairingCode? decoded, String? inputError) {
-    if (inputError != null) {
-      return reactorBadge(
-        reactorText(ReactorText.addServerCheckCode),
-        ReactorStatus.warning,
-      );
-    }
-    if (decoded == null) {
-      return reactorBadge(
-        reactorText(ReactorText.addServerAwaitingCode),
-        ReactorStatus.info,
-      );
-    }
-    return reactorBadge(
-      reactorText(ReactorText.addServerCodeReady),
-      ReactorStatus.healthy,
+  Widget _connectionDetails(PairingCode decoded) {
+    return dom.div(
+      styles: const dom.Styles(
+        raw: <String, String>{
+          'border-top': '1px solid var(--border)',
+          'border-bottom': '1px solid var(--border)',
+        },
+      ),
+      <Widget>[
+        _detailRow(
+          reactorText(ReactorText.addServerHost),
+          decoded.directUrl.isEmpty
+              ? reactorText(ReactorText.addServerRelayOnly)
+              : Uri.parse(decoded.directUrl).host,
+        ),
+        _detailRow(
+          reactorText(ReactorText.addServerPort),
+          decoded.directUrl.isEmpty
+              ? 'Relay'
+              : Uri.parse(decoded.directUrl).hasPort
+              ? Uri.parse(decoded.directUrl).port.toString()
+              : Uri.parse(decoded.directUrl).scheme == 'https'
+              ? '443'
+              : '80',
+        ),
+        _detailRow(
+          reactorText(ReactorText.addServerFingerprint),
+          decoded.fingerprint.substring(0, 16),
+        ),
+        _detailRow(
+          reactorText(ReactorText.addServerTransport),
+          decoded.relayUrl.isEmpty
+              ? reactorText(ReactorText.addServerDirectHost)
+              : reactorText(ReactorText.addServerRelayChannel),
+        ),
+      ],
     );
   }
 
-  Widget _connectionDetails(PairingCode? decoded) {
-    if (decoded == null) {
-      return dom.div(classes: 'reactor-add-detail-grid', <Widget>[
-        _detail(
-          reactorText(ReactorText.addServerStatus),
-          reactorText(ReactorText.addServerWaitingForCode),
+  Widget _detailRow(String label, String value) {
+    return dom.div(
+      styles: const dom.Styles(
+        raw: <String, String>{
+          'display': 'grid',
+          'grid-template-columns': 'minmax(120px, 0.35fr) minmax(0, 1fr)',
+          'align-items': 'center',
+          'gap': '1rem',
+          'padding': '0.65rem 0',
+          'border-bottom': '1px solid var(--border)',
+        },
+      ),
+      <Widget>[
+        dom.span(
+          styles: const dom.Styles(
+            raw: <String, String>{
+              'color': 'var(--muted-foreground)',
+              'font-size': '0.75rem',
+              'font-weight': '600',
+              'text-transform': 'uppercase',
+              'letter-spacing': '0.06em',
+            },
+          ),
+          <Widget>[Component.text(label)],
         ),
-        _detail(reactorText(ReactorText.addServerExpected), 'RCT2. payload'),
-        _detail(
-          reactorText(ReactorText.addServerValidation),
-          reactorText(ReactorText.addServerLocalDecode),
+        dom.span(
+          styles: const dom.Styles(
+            raw: <String, String>{
+              'min-width': '0',
+              'overflow': 'hidden',
+              'text-overflow': 'ellipsis',
+              'font-family': 'monospace',
+              'font-size': '0.8125rem',
+            },
+          ),
+          <Widget>[Component.text(value)],
         ),
-        _detail(
-          reactorText(ReactorText.addServerHandshake),
-          reactorText(ReactorText.addServerOneServer),
-        ),
-      ]);
-    }
-    return dom.div(classes: 'reactor-add-detail-grid', <Widget>[
-      _detail(
-        reactorText(ReactorText.addServerHost),
-        decoded.directUrl.isEmpty
-            ? reactorText(ReactorText.addServerRelayOnly)
-            : Uri.parse(decoded.directUrl).host,
-      ),
-      _detail(
-        reactorText(ReactorText.addServerPort),
-        decoded.directUrl.isEmpty
-            ? 'Relay'
-            : Uri.parse(decoded.directUrl).hasPort
-            ? Uri.parse(decoded.directUrl).port.toString()
-            : Uri.parse(decoded.directUrl).scheme == 'https'
-            ? '443'
-            : '80',
-      ),
-      _detail(
-        reactorText(ReactorText.addServerFingerprint),
-        decoded.fingerprint.substring(0, 16),
-      ),
-      _detail(
-        reactorText(ReactorText.addServerRelay),
-        decoded.relayUrl.isEmpty
-            ? reactorText(ReactorText.addServerNotUsed)
-            : reactorText(ReactorText.commonEnabled),
-      ),
-    ]);
-  }
-
-  Widget _detail(String label, String value) {
-    return dom.div(classes: 'reactor-add-detail', <Widget>[
-      dom.span(classes: 'reactor-add-detail-label', <Widget>[
-        Component.text(label),
-      ]),
-      dom.span(classes: 'reactor-add-detail-value', <Widget>[
-        Component.text(value),
-      ]),
-    ]);
-  }
-
-  Widget _flowStep(String label, String title, String copy) {
-    return dom.div(classes: 'reactor-add-step', <Widget>[
-      dom.span(classes: 'reactor-add-step-label', <Widget>[
-        Component.text('$label / $title'),
-      ]),
-      dom.div(classes: 'reactor-add-step-copy', <Widget>[Component.text(copy)]),
-    ]);
+      ],
+    );
   }
 }

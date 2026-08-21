@@ -128,53 +128,48 @@ class _FleetDashboardScreenState extends State<FleetDashboardScreen> {
   }
 
   Widget _rollupRow(FleetRollup rollup) {
-    return dom.div(
-      styles: const dom.Styles(
-        raw: <String, String>{
-          'display': 'flex',
-          'flex-wrap': 'wrap',
-          'gap': '2rem',
-          'justify-content': 'space-around',
-          'align-items': 'center',
-          'padding': '0.5rem 0',
-        },
-      ),
-      <Widget>[
-        Gauge(
-          label: reactorText(ReactorText.fleetMeanTps),
-          value: rollup.meanTps,
-          display: rollup.meanTps.toStringAsFixed(1),
-          max: 20.0,
-          thresholds: const (5.0, 10.0),
-          invertStatus: true,
-        ),
-        Gauge(
-          label: reactorText(ReactorText.fleetWorstTps),
-          value: rollup.worstTps,
-          display: rollup.worstTps.toStringAsFixed(1),
-          max: 20.0,
-          thresholds: const (5.0, 10.0),
-          invertStatus: true,
-        ),
-        Gauge(
-          label: reactorText(ReactorText.fleetCompositeHealth),
-          value: rollup.compositeHealth.toDouble(),
-          display: '${rollup.compositeHealth}%',
-          max: 100.0,
-          thresholds: const (20.0, 50.0),
-          invertStatus: true,
-        ),
-        ReactorStat(
-          label: reactorText(ReactorText.fleetTotalPlayers),
-          value: rollup.totalPlayers.toString(),
-        ),
-        ReactorStat(
-          label: reactorText(ReactorText.fleetWorstMspt),
-          value: rollup.worstMspt.toStringAsFixed(1),
-          unit: 'ms',
-        ),
-      ],
-    );
+    if (rollup.servers.isEmpty) {
+      return const ReactorEmptyState(
+        title: 'No servers match this filter',
+        description: 'Choose another tag to restore the fleet rollup.',
+      );
+    }
+    return dom
+        .div(classes: 'reactor-fleet-rollup reactor-metric-bank', <Widget>[
+          Gauge(
+            label: reactorText(ReactorText.fleetMeanTps),
+            value: rollup.meanTps,
+            display: rollup.meanTps.toStringAsFixed(1),
+            max: 20.0,
+            thresholds: const (5.0, 10.0),
+            invertStatus: true,
+          ),
+          Gauge(
+            label: reactorText(ReactorText.fleetWorstTps),
+            value: rollup.worstTps,
+            display: rollup.worstTps.toStringAsFixed(1),
+            max: 20.0,
+            thresholds: const (5.0, 10.0),
+            invertStatus: true,
+          ),
+          Gauge(
+            label: reactorText(ReactorText.fleetCompositeHealth),
+            value: rollup.compositeHealth.toDouble(),
+            display: '${rollup.compositeHealth}%',
+            max: 100.0,
+            thresholds: const (20.0, 50.0),
+            invertStatus: true,
+          ),
+          ReactorStat(
+            label: reactorText(ReactorText.fleetTotalPlayers),
+            value: rollup.totalPlayers.toString(),
+          ),
+          ReactorStat(
+            label: reactorText(ReactorText.fleetWorstMspt),
+            value: rollup.worstMspt.toStringAsFixed(1),
+            unit: 'ms',
+          ),
+        ]);
   }
 
   Widget _alertBadges(FleetRollup rollup) {
@@ -219,13 +214,28 @@ class _FleetDashboardScreenState extends State<FleetDashboardScreen> {
       description: reactorText(ReactorText.fleetPairedCount, <String, Object?>{
         'count': rollup.servers.length,
       }),
-      child: reactorGrid(
-        minWidth: '250px',
-        children: <Widget>[
-          for (final FleetServerHealth s in rollup.servers)
-            _ServerCard(server: s),
-        ],
-      ),
+      flush: true,
+      child: rollup.servers.isEmpty
+          ? const ReactorEmptyState(
+              title: 'No matching servers',
+              description: 'The selected fleet filter returned no servers.',
+            )
+          : dom.div(classes: 'reactor-server-table', <Widget>[
+              const dom.div(
+                classes: 'reactor-fleet-server-row reactor-table-header',
+                <Widget>[
+                  dom.span(<Widget>[Component.text('Server')]),
+                  dom.span(<Widget>[Component.text('State')]),
+                  dom.span(<Widget>[Component.text('TPS')]),
+                  dom.span(<Widget>[Component.text('Players')]),
+                  dom.span(<Widget>[Component.text('Alerts')]),
+                  dom.span(<Widget>[Component.text('Last seen')]),
+                  dom.span(<Widget>[]),
+                ],
+              ),
+              for (final FleetServerHealth s in rollup.servers)
+                _ServerCard(server: s),
+            ]),
     );
   }
 
@@ -233,20 +243,16 @@ class _FleetDashboardScreenState extends State<FleetDashboardScreen> {
     return sectionCard(
       label: reactorText(ReactorText.fleetNeedsAttention),
       child: rollup.needsAttention.isEmpty
-          ? dom.div(
-              styles: const dom.Styles(
-                raw: <String, String>{
-                  'display': 'flex',
-                  'align-items': 'center',
-                  'gap': '0.5rem',
-                  'color': kReactorMuted,
-                  'font-size': '0.875rem',
-                },
-              ),
-              <Widget>[
-                reactorStatusDot(ReactorStatus.healthy),
-                Component.text(reactorText(ReactorText.fleetAllHealthy)),
-              ],
+          ? ReactorEmptyState(
+              title: rollup.servers.isEmpty
+                  ? 'No servers in scope'
+                  : reactorText(ReactorText.fleetAllHealthy),
+              description: rollup.servers.isEmpty
+                  ? 'Choose another filter to inspect fleet health.'
+                  : 'No open health conditions require operator attention.',
+              icon: rollup.servers.isEmpty
+                  ? ArcaneIcon.minus(size: IconSize.sm)
+                  : ArcaneIcon.check(size: IconSize.sm),
             )
           : dom.div(
               styles: const dom.Styles(
@@ -313,23 +319,16 @@ class _ServerCard extends StatelessWidget {
     });
   }
 
-  Widget _miniStat(String label, String value, {ReactorStatus? accent}) {
+  Widget _cell(String label, String value, {ReactorStatus? accent}) {
     return dom.div(
-      styles: const dom.Styles(
-        raw: <String, String>{
-          'display': 'flex',
-          'flex-direction': 'column',
-          'gap': '0.2rem',
-          'min-width': '0',
-        },
-      ),
+      classes: 'reactor-server-cell',
+      attributes: <String, String>{'data-label': label},
       <Widget>[
-        reactorEyebrow(label),
         dom.span(
           styles: dom.Styles(
             raw: <String, String>{
-              'font-size': '0.95rem',
-              'font-weight': '600',
+              'font-size': '0.75rem',
+              'font-weight': '500',
               'font-variant-numeric': 'tabular-nums',
               'color': accent == null
                   ? 'var(--foreground)'
@@ -347,108 +346,38 @@ class _ServerCard extends StatelessWidget {
     final double? tps = server.tps;
     final (String, ReactorStatus) health = _health(server);
 
-    return Card.flat(
-      fillWidth: true,
-      padding: EdgeInsets.zero,
-      borderRadius: BorderRadius.zero,
-      child: dom.div(
-        styles: const dom.Styles(
-          raw: <String, String>{
-            'display': 'flex',
-            'flex-direction': 'column',
-            'overflow': 'hidden',
-            'border-radius': kReactorRadius,
-          },
-        ),
-        <Widget>[
-          dom.div(
-            styles: const dom.Styles(
-              raw: <String, String>{
-                'display': 'flex',
-                'align-items': 'center',
-                'justify-content': 'space-between',
-                'gap': '0.5rem',
-                'padding': '0.85rem 1rem 0.7rem',
-              },
-            ),
-            <Widget>[
-              dom.div(
-                styles: const dom.Styles(
-                  raw: <String, String>{
-                    'display': 'flex',
-                    'align-items': 'center',
-                    'gap': '0.55rem',
-                    'min-width': '0',
-                  },
-                ),
-                <Widget>[
-                  StatusDot(state: server.state),
-                  dom.span(
-                    styles: const dom.Styles(
-                      raw: <String, String>{
-                        'font-weight': '600',
-                        'font-size': '0.95rem',
-                        'color': 'var(--foreground)',
-                        'overflow': 'hidden',
-                        'text-overflow': 'ellipsis',
-                        'white-space': 'nowrap',
-                      },
-                    ),
-                    <Widget>[Component.text(server.name)],
-                  ),
-                ],
-              ),
-              reactorBadge(health.$1, health.$2),
-            ],
-          ),
-          dom.div(
-            styles: const dom.Styles(
-              raw: <String, String>{
-                'display': 'grid',
-                'grid-template-columns': 'repeat(2, 1fr)',
-                'gap': '0.75rem 1rem',
-                'padding': '0.5rem 1rem 0.9rem',
-                'border-top': '1px solid $kReactorHairline',
-              },
-            ),
-            <Widget>[
-              _miniStat(
-                reactorText(ReactorText.overviewTps),
-                tps != null ? tps.toStringAsFixed(1) : '--',
-              ),
-              _miniStat(
-                reactorText(ReactorText.commonPlayers),
-                server.players.toString(),
-              ),
-              _miniStat(
-                reactorText(ReactorText.fleetAlerts),
-                server.alertCount.toString(),
-                accent: server.alertCount > 0
-                    ? ReactorStatus.warning
-                    : ReactorStatus.neutral,
-              ),
-              _miniStat(
-                reactorText(ReactorText.fleetLastSeen),
-                _formatLastSeen(server.lastSeen),
-              ),
-            ],
-          ),
-          dom.div(
-            styles: const dom.Styles(
-              raw: <String, String>{'padding': '0 1rem 0.9rem'},
-            ),
-            <Widget>[
-              Button.secondary(
-                label: reactorText(ReactorText.fleetOpenDashboard),
-                size: ButtonSize.small,
-                fullWidth: true,
-                onPressed: () => ctx.push('/server/${server.id}/overview'),
-              ),
-            ],
-          ),
-        ],
+    return dom.div(classes: 'reactor-fleet-server-row', <Widget>[
+      dom.div(classes: 'reactor-server-identity', <Widget>[
+        StatusDot(state: server.state),
+        dom.span(<Widget>[Component.text(server.name)]),
+      ]),
+      dom.div(
+        classes: 'reactor-server-cell is-state',
+        attributes: const <String, String>{'data-label': 'State'},
+        <Widget>[reactorBadge(health.$1, health.$2)],
       ),
-    );
+      _cell(
+        reactorText(ReactorText.overviewTps),
+        tps != null ? tps.toStringAsFixed(1) : '--',
+      ),
+      _cell(reactorText(ReactorText.commonPlayers), server.players.toString()),
+      _cell(
+        reactorText(ReactorText.fleetAlerts),
+        server.alertCount.toString(),
+        accent: server.alertCount > 0
+            ? ReactorStatus.warning
+            : ReactorStatus.neutral,
+      ),
+      _cell(
+        reactorText(ReactorText.fleetLastSeen),
+        _formatLastSeen(server.lastSeen),
+      ),
+      Button.ghost(
+        label: reactorText(ReactorText.fleetOpenDashboard),
+        size: ButtonSize.small,
+        onPressed: () => ctx.push('/server/${server.id}/overview'),
+      ),
+    ]);
   }
 }
 

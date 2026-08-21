@@ -1,11 +1,11 @@
 library;
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
-import 'package:jaspr/dom.dart' as dom;
 
 import '../chart/timeseries_chart.dart';
 import '../localization/reactor_localizations.dart';
 import '../model/sampler_sample.dart';
+import '../model/server_snapshot.dart';
 import '../state/server_scope.dart';
 import '../ui/reactor_ui.dart';
 import '../widget/gauge.dart';
@@ -18,29 +18,33 @@ class InternalsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ServerScope? scope = ServerScope.of(context);
+    final ServerSnapshot? snapshot = scope?.snapshot;
+    if (snapshot == null) {
+      return ReactorPage(
+        title: reactorText(ReactorText.internalsTitle),
+        subtitle: reactorText(ReactorText.internalsSubtitle),
+        children: <Widget>[
+          ReactorLoadingState(label: reactorText(ReactorText.metricsWaiting)),
+        ],
+      );
+    }
 
-    final SamplerSample? asyncTickTime = scope?.snapshot?.sampler(
+    final SamplerSample? asyncTickTime = snapshot.sampler(
       'react-async-tick-time',
     );
-    final SamplerSample? syncTickTime = scope?.snapshot?.sampler(
+    final SamplerSample? syncTickTime = snapshot.sampler(
       'react-sync-tick-time',
     );
-    final SamplerSample? jobsQueue = scope?.snapshot?.sampler(
-      'react-jobs-queue',
-    );
-    final SamplerSample? jobQueueTime = scope?.snapshot?.sampler(
+    final SamplerSample? jobsQueue = snapshot.sampler('react-jobs-queue');
+    final SamplerSample? jobQueueTime = snapshot.sampler(
       'react-job-queue-time',
     );
-    final SamplerSample? jobBudget = scope?.snapshot?.sampler(
-      'react-job-budget',
-    );
-    final SamplerSample? systemLoad = scope?.snapshot?.sampler(
-      'processor-system-load',
-    );
-    final SamplerSample? processLoad = scope?.snapshot?.sampler(
+    final SamplerSample? jobBudget = snapshot.sampler('react-job-budget');
+    final SamplerSample? systemLoad = snapshot.sampler('processor-system-load');
+    final SamplerSample? processLoad = snapshot.sampler(
       'processor-process-load',
     );
-    final SamplerSample? outsideLoad = scope?.snapshot?.sampler(
+    final SamplerSample? outsideLoad = snapshot.sampler(
       'processor-outside-load',
     );
 
@@ -59,12 +63,13 @@ class InternalsScreen extends StatelessWidget {
       title: reactorText(ReactorText.internalsTitle),
       subtitle: reactorText(ReactorText.internalsSubtitle),
       children: <Widget>[
-        sectionCard(
+        SectionPanel(
           label: reactorText(ReactorText.internalsReactTickTime),
           child: TimeseriesChart(series: tickSeries, height: 160),
         ),
-        sectionCard(
+        SectionPanel(
           label: reactorText(ReactorText.internalsJobs),
+          flush: true,
           child: statGrid(<Widget>[
             StatTile(
               label: reactorText(ReactorText.commonQueue),
@@ -80,39 +85,32 @@ class InternalsScreen extends StatelessWidget {
             ),
           ]),
         ),
-        sectionCard(
+        SectionPanel(
           label: reactorText(ReactorText.internalsCpuLoad),
-          child: dom.div(
-            styles: const dom.Styles(
-              raw: <String, String>{
-                'display': 'flex',
-                'flex-direction': 'column',
-                'align-items': 'center',
-                'gap': '1rem',
-              },
-            ),
-            <Widget>[
-              Gauge(
-                label: reactorText(ReactorText.commonProcessLoad),
-                value: processLoad?.value ?? 0.0,
-                display: processLoad?.display,
-                max: 100.0,
-                thresholds: (60.0, 85.0),
-              ),
-              statGrid(<Widget>[
-                StatTile(
-                  label: reactorText(ReactorText.internalsSystemLoad),
-                  sample: systemLoad,
-                ),
+          flush: true,
+          child: reactorGrid(
+            children: <Widget>[
+              if (processLoad == null)
                 StatTile(
                   label: reactorText(ReactorText.commonProcessLoad),
-                  sample: processLoad,
+                  sample: null,
+                )
+              else
+                Gauge(
+                  label: reactorText(ReactorText.commonProcessLoad),
+                  value: processLoad.value,
+                  display: processLoad.display,
+                  max: 100.0,
+                  thresholds: (60.0, 85.0),
                 ),
-                StatTile(
-                  label: reactorText(ReactorText.internalsOutsideLoad),
-                  sample: outsideLoad,
-                ),
-              ]),
+              StatTile(
+                label: reactorText(ReactorText.internalsSystemLoad),
+                sample: systemLoad,
+              ),
+              StatTile(
+                label: reactorText(ReactorText.internalsOutsideLoad),
+                sample: outsideLoad,
+              ),
             ],
           ),
         ),

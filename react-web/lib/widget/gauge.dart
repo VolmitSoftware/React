@@ -52,81 +52,43 @@ class Gauge extends StatelessWidget {
     final String arcColor = _cssColorForStatus(status);
     final double fraction = max > 0.0 ? (value / max).clamp(0.0, 1.0) : 0.0;
 
-    return dom.div(
-      classes: 'reactor-gauge',
-      styles: const dom.Styles(
-        raw: <String, String>{
-          'display': 'grid',
-          'grid-template-columns': 'minmax(0, 1fr) auto',
-          'align-items': 'end',
-          'gap': '8px 12px',
-          'min-width': '150px',
-        },
+    return dom.div(classes: 'reactor-gauge is-${status.name}', <Widget>[
+      dom.div(classes: 'reactor-gauge-label', <Widget>[Component.text(label)]),
+      dom.div(
+        classes: 'reactor-gauge-value',
+        styles: dom.Styles(raw: <String, String>{'color': arcColor}),
+        <Widget>[Component.text(display ?? value.toStringAsFixed(1))],
       ),
-      <Widget>[
-        dom.div(
-          styles: const dom.Styles(
-            raw: <String, String>{
-              'color': 'var(--muted-foreground)',
-              'font-size': '0.68rem',
-              'font-weight': '600',
-              'letter-spacing': '0.08em',
-              'text-transform': 'uppercase',
-            },
-          ),
-          <Widget>[Component.text(label)],
-        ),
-        dom.div(
-          styles: dom.Styles(
-            raw: <String, String>{
-              'color': arcColor,
-              'font-size': '1.05rem',
-              'font-weight': '650',
-              'font-family': 'var(--font-mono)',
-              'font-variant-numeric': 'tabular-nums',
-              'line-height': '1',
-            },
-          ),
-          <Widget>[Component.text(display ?? value.toStringAsFixed(1))],
-        ),
-        dom.div(
-          classes: 'reactor-gauge-track',
-          attributes: <String, String>{
-            'role': 'meter',
-            'aria-label': label,
-            'aria-valuemin': '0',
-            'aria-valuemax': max.toString(),
-            'aria-valuenow': value.toString(),
-          },
-          <Widget>[
-            dom.div(
-              classes: 'reactor-gauge-fill',
-              styles: dom.Styles(
-                raw: <String, String>{
-                  'width': '${(fraction * 100).toStringAsFixed(2)}%',
-                  'background': arcColor,
-                },
-              ),
-              const <Widget>[],
-            ),
-          ],
-        ),
-        if (status != GaugeStatus.success)
-          dom.span(
+      dom.div(
+        classes: 'reactor-gauge-track',
+        attributes: <String, String>{
+          'role': 'meter',
+          'aria-label': label,
+          'aria-valuemin': '0',
+          'aria-valuemax': max.toString(),
+          'aria-valuenow': value.toString(),
+        },
+        <Widget>[
+          dom.div(
+            classes: 'reactor-gauge-fill',
             styles: dom.Styles(
               raw: <String, String>{
-                'color': arcColor,
-                'font-size': '0.62rem',
-                'font-weight': '600',
-                'letter-spacing': '0.06em',
-                'text-transform': 'uppercase',
+                'width': '${(fraction * 100).toStringAsFixed(2)}%',
+                'background': arcColor,
               },
             ),
-            <Widget>[Component.text(_statusWord(status))],
-          )
-        else
-          const dom.span(<Widget>[]),
-      ],
-    );
+            const <Widget>[],
+          ),
+        ],
+      ),
+      if (status != GaugeStatus.success)
+        dom.span(
+          classes: 'reactor-gauge-status',
+          styles: dom.Styles(raw: <String, String>{'color': arcColor}),
+          <Widget>[Component.text(_statusWord(status))],
+        )
+      else
+        const dom.span(<Widget>[]),
+    ]);
   }
 }

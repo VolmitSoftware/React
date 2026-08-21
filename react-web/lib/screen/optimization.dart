@@ -10,13 +10,14 @@ import '../model/control_item.dart';
 import '../localization/reactor_localizations.dart';
 import '../model/role_info.dart';
 import '../service/react_client.dart';
+import '../state/connection_manager.dart';
 import '../state/control_list_controller.dart';
 import '../state/control_scope.dart';
 import '../state/role_scope.dart';
+import '../state/server_scope.dart';
 import '../ui/reactor_ui.dart';
 import '../widget/config_sheet.dart';
 import '../widget/role_badge.dart';
-import '../widget/section_card.dart';
 
 class OptimizationGridView extends StatelessWidget {
   final List<ControlItem> items;
@@ -27,6 +28,7 @@ class OptimizationGridView extends StatelessWidget {
   final void Function(bool enabled)? onSetAll;
   final bool readOnly;
   final Widget? roleBadge;
+  final Widget? notice;
 
   const OptimizationGridView({
     required this.items,
@@ -37,6 +39,7 @@ class OptimizationGridView extends StatelessWidget {
     this.onSetAll,
     this.readOnly = false,
     this.roleBadge,
+    this.notice,
     super.key,
   });
 
@@ -79,9 +82,16 @@ class OptimizationGridView extends StatelessWidget {
         ],
       ),
       children: <Widget>[
+        ?notice,
+        if (items.isEmpty)
+          ReactorEmptyState(
+            title: 'No optimization features',
+            description: 'React did not return any configurable features.',
+            icon: ArcaneIcon.slidersHorizontal(size: IconSize.sm),
+          ),
         for (final MapEntry<String, List<ControlItem>> entry
             in byCategory.entries)
-          sectionCard(
+          SectionPanel(
             label: entry.key,
             description: reactorText(ReactorText.optimizationCategoryCount, <
               String,
@@ -90,9 +100,15 @@ class OptimizationGridView extends StatelessWidget {
               'enabled': entry.value.where((ControlItem i) => i.enabled).length,
               'total': entry.value.length,
             }),
-            child: reactorGrid(
-              minWidth: '260px',
-              children: <Widget>[
+            flush: true,
+            child: dom.div(
+              styles: const dom.Styles(
+                raw: <String, String>{
+                  'display': 'flex',
+                  'flex-direction': 'column',
+                },
+              ),
+              <Widget>[
                 for (final ControlItem item in entry.value)
                   _FeatureCard(
                     item: item,
@@ -124,99 +140,118 @@ class _FeatureCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool enabled = item.enabled;
-    return Card.flat(
-      fillWidth: true,
-      padding: EdgeInsets.zero,
-      borderRadius: BorderRadius.zero,
-      child: dom.div(
-        styles: dom.Styles(
-          raw: <String, String>{
-            'display': 'flex',
-            'flex-direction': 'column',
-            'gap': '0.75rem',
-            'padding': '0.85rem 0.95rem',
-            'overflow': 'hidden',
-            'border-radius': kReactorRadius,
-            'outline': enabled ? '1px solid $kReactorSuccess' : 'none',
-          },
-        ),
-        <Widget>[
-          dom.div(
-            styles: const dom.Styles(
-              raw: <String, String>{
-                'display': 'flex',
-                'align-items': 'flex-start',
-                'justify-content': 'space-between',
-                'gap': '0.75rem',
-              },
-            ),
-            <Widget>[
-              dom.div(
-                styles: const dom.Styles(
-                  raw: <String, String>{
-                    'display': 'flex',
-                    'flex-direction': 'column',
-                    'gap': '0.3rem',
-                    'min-width': '0',
-                  },
-                ),
-                <Widget>[
-                  dom.span(
-                    styles: const dom.Styles(
-                      raw: <String, String>{
-                        'font-size': '0.9rem',
-                        'font-weight': '600',
-                        'color': 'var(--foreground)',
-                        'line-height': '1.25',
-                      },
-                    ),
-                    <Widget>[Component.text(item.name)],
-                  ),
-                  dom.span(
-                    styles: const dom.Styles(
-                      raw: <String, String>{
-                        'font-size': '0.8rem',
-                        'color': kReactorMuted,
-                        'line-height': '1.4',
-                        'display': '-webkit-box',
-                        '-webkit-line-clamp': '2',
-                        '-webkit-box-orient': 'vertical',
-                        'overflow': 'hidden',
-                      },
-                    ),
-                    <Widget>[Component.text(item.description)],
-                  ),
-                ],
-              ),
-              ArcaneToggleSwitch(
-                value: enabled,
-                disabled: readOnly,
-                onChanged: readOnly
-                    ? null
-                    : (bool b) => onToggle?.call(item.id, b),
-              ),
-            ],
-          ),
-          dom.div(
-            styles: const dom.Styles(
-              raw: <String, String>{
-                'display': 'flex',
-                'justify-content': 'flex-end',
-                'border-top': '1px solid $kReactorHairline',
-                'padding-top': '0.6rem',
-              },
-            ),
-            <Widget>[
-              Button.ghost(
-                label: reactorText(ReactorText.optimizationConfigure),
-                size: ButtonSize.small,
-                disabled: readOnly,
-                onPressed: readOnly ? null : () => onConfigure?.call(item.id),
-              ),
-            ],
-          ),
-        ],
+    return dom.div(
+      styles: const dom.Styles(
+        raw: <String, String>{
+          'display': 'flex',
+          'flex-direction': 'column',
+          'gap': '0.5rem',
+          'padding': '0.65rem 0.75rem',
+          'border-bottom': '1px solid $kReactorHairline',
+        },
       ),
+      <Widget>[
+        dom.div(
+          styles: const dom.Styles(
+            raw: <String, String>{
+              'display': 'flex',
+              'align-items': 'flex-start',
+              'justify-content': 'space-between',
+              'gap': '0.75rem',
+            },
+          ),
+          <Widget>[
+            dom.div(
+              styles: const dom.Styles(
+                raw: <String, String>{
+                  'display': 'flex',
+                  'flex-direction': 'column',
+                  'gap': '0.2rem',
+                  'min-width': '0',
+                },
+              ),
+              <Widget>[
+                dom.span(
+                  styles: const dom.Styles(
+                    raw: <String, String>{
+                      'font-size': '0.82rem',
+                      'font-weight': '600',
+                      'color': 'var(--foreground)',
+                      'line-height': '1.25',
+                    },
+                  ),
+                  <Widget>[Component.text(item.name)],
+                ),
+                dom.code(
+                  styles: const dom.Styles(
+                    raw: <String, String>{
+                      'font-size': '0.66rem',
+                      'color': kReactorMuted,
+                    },
+                  ),
+                  <Widget>[Component.text(item.id)],
+                ),
+              ],
+            ),
+            dom.div(
+              styles: const dom.Styles(
+                raw: <String, String>{
+                  'display': 'flex',
+                  'align-items': 'center',
+                  'gap': '0.5rem',
+                },
+              ),
+              <Widget>[
+                enabled
+                    ? reactorBadge(
+                        reactorText(ReactorText.commonEnabled),
+                        ReactorStatus.healthy,
+                      )
+                    : reactorBadge(
+                        reactorText(ReactorText.commonDisabled),
+                        ReactorStatus.neutral,
+                      ),
+                ArcaneToggleSwitch(
+                  value: enabled,
+                  disabled: readOnly,
+                  onChanged: readOnly
+                      ? null
+                      : (bool value) => onToggle?.call(item.id, value),
+                ),
+              ],
+            ),
+          ],
+        ),
+        dom.div(
+          styles: const dom.Styles(
+            raw: <String, String>{
+              'display': 'flex',
+              'align-items': 'center',
+              'justify-content': 'space-between',
+              'gap': '0.75rem',
+            },
+          ),
+          <Widget>[
+            dom.span(
+              styles: const dom.Styles(
+                raw: <String, String>{
+                  'min-width': '0',
+                  'color': kReactorMuted,
+                  'font-size': '0.75rem',
+                  'line-height': '1.4',
+                },
+              ),
+              <Widget>[Component.text(item.description)],
+            ),
+            Button.ghost(
+              label: reactorText(ReactorText.optimizationConfigure),
+              size: ButtonSize.small,
+              disabled: readOnly,
+              onPressed: readOnly ? null : () => onConfigure?.call(item.id),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -256,53 +291,47 @@ class _OptimizationScreenState extends State<OptimizationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_client == null) {
-      return ReactorPage(
-        title: reactorText(ReactorText.optimizationTitle),
-        subtitle: reactorText(ReactorText.optimizationRuntimeControl),
-        children: <Widget>[
-          sectionCard(
-            label: reactorText(ReactorText.optimizationFeatureControl),
-            child: dom.div(
-              styles: const dom.Styles(
-                raw: <String, String>{
-                  'color': 'var(--muted-foreground)',
-                  'font-size': '0.875rem',
-                },
-              ),
-              <Widget>[
-                Component.text(
-                  reactorText(ReactorText.optimizationLiveRequired),
-                ),
-              ],
-            ),
-          ),
-        ],
+    final ServerScope? server = ServerScope.of(context);
+    if (server?.state == ConnState.connecting && _client == null) {
+      return _statePage(
+        ReactorLoadingState(
+          label: reactorText(ReactorText.optimizationLoading),
+        ),
+      );
+    }
+    if (_client == null || server?.state == ConnState.offline) {
+      return _statePage(
+        ReactorNotice(
+          title: reactorText(ReactorText.statusOffline),
+          message: reactorText(ReactorText.optimizationLiveRequired),
+          status: ReactorStatus.critical,
+        ),
       );
     }
 
     final ControlListController controller = _controller!;
 
     if (controller.loading && controller.items.isEmpty) {
-      return ReactorPage(
-        title: reactorText(ReactorText.optimizationTitle),
-        subtitle: reactorText(ReactorText.optimizationRuntimeControl),
-        children: <Widget>[
-          sectionCard(
-            label: reactorText(ReactorText.optimizationFeatureControl),
-            child: dom.div(
-              styles: const dom.Styles(
-                raw: <String, String>{
-                  'color': 'var(--muted-foreground)',
-                  'font-size': '0.875rem',
-                },
-              ),
-              <Widget>[
-                Component.text(reactorText(ReactorText.optimizationLoading)),
-              ],
-            ),
+      return _statePage(
+        ReactorLoadingState(
+          label: reactorText(ReactorText.optimizationLoading),
+        ),
+      );
+    }
+
+    final Object? error = controller.error;
+    if (error != null && controller.items.isEmpty) {
+      return _statePage(
+        ReactorNotice(
+          title: reactorText(ReactorText.commonUpdateFailed),
+          message: error.toString(),
+          status: ReactorStatus.critical,
+          action: Button.secondary(
+            label: 'Retry',
+            size: ButtonSize.small,
+            onPressed: controller.load,
           ),
-        ],
+        ),
       );
     }
 
@@ -318,6 +347,24 @@ class _OptimizationScreenState extends State<OptimizationScreen> {
     }
 
     final String? capturedId = _selectedId;
+    final Widget? notice = error != null
+        ? ReactorNotice(
+            title: reactorText(ReactorText.commonUpdateFailed),
+            message: error.toString(),
+            status: ReactorStatus.warning,
+            action: Button.secondary(
+              label: 'Retry',
+              size: ButtonSize.small,
+              onPressed: controller.load,
+            ),
+          )
+        : server?.state == ConnState.degraded
+        ? const ReactorNotice(
+            title: 'Connection degraded',
+            message: 'Feature state may be delayed until React reconnects.',
+            status: ReactorStatus.warning,
+          )
+        : null;
 
     return Component.fragment(<Widget>[
       OptimizationGridView(
@@ -328,6 +375,7 @@ class _OptimizationScreenState extends State<OptimizationScreen> {
             .length,
         readOnly: readOnly,
         roleBadge: RoleBadge(role: role),
+        notice: notice,
         onToggle: readOnly ? null : controller.toggle,
         onSetAll: readOnly ? null : controller.setAll,
         onConfigure: readOnly
@@ -340,9 +388,18 @@ class _OptimizationScreenState extends State<OptimizationScreen> {
         disabled: readOnly,
         onKnobChanged: (readOnly || capturedId == null)
             ? null
-            : (String k, Object? v) => controller.setKnob(capturedId, k, v),
+            : (String key, Object? value) =>
+                  controller.setKnob(capturedId, key, value),
         onClose: () => setState(() => _selectedId = null),
       ),
     ]);
+  }
+
+  Widget _statePage(Widget state) {
+    return ReactorPage(
+      title: reactorText(ReactorText.optimizationTitle),
+      subtitle: reactorText(ReactorText.optimizationRuntimeControl),
+      children: <Widget>[state],
+    );
   }
 }

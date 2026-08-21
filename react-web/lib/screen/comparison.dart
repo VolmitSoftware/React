@@ -11,7 +11,6 @@ import '../model/sampler_sample.dart';
 import '../state/fleet_live_scope.dart';
 import '../state/fleet_rollup.dart';
 import '../ui/reactor_ui.dart';
-import '../widget/section_card.dart';
 
 const List<String> _kComparableMetrics = <String>[
   'ticks-per-second',
@@ -63,7 +62,6 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
     final List<String> availableMetrics = _kComparableMetrics
         .where((String m) => presentMetrics.contains(m))
         .toList();
-
     final List<_ServerMetricEntry> activeEntries = servers
         .where(
           (FleetServerLive s) =>
@@ -100,19 +98,44 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
       subtitle: reactorText(ReactorText.comparisonSubtitle),
       actions: _metricFilter(availableMetrics),
       children: <Widget>[
-        _serversCard(servers: servers, selectedIds: selectedIds),
-        sectionCard(
-          label: reactorText(ReactorText.comparisonOverlay),
-          child: isEmpty
-              ? _emptyState(reactorText(ReactorText.comparisonNoData))
-              : TimeseriesChart(series: chartSeries, height: 220),
-        ),
-        sectionCard(
-          label: reactorText(ReactorText.comparisonLeaderboard),
+        SectionPanel(
+          label: reactorText(ReactorText.comparisonServers),
+          description: servers.isEmpty
+              ? 'Pair servers to compare telemetry.'
+              : '${selectedIds.length} of ${servers.length} selected',
           flush: true,
-          child: isEmpty
-              ? _emptyState(reactorText(ReactorText.comparisonNoData))
-              : _leaderboardTable(leaderboard),
+          children: <Widget>[
+            _serverSelector(servers: servers, selectedIds: selectedIds),
+            if (isEmpty)
+              ReactorEmptyState(
+                title: servers.isEmpty
+                    ? 'No servers available'
+                    : selectedIds.isEmpty
+                    ? 'No servers selected'
+                    : reactorText(ReactorText.comparisonNoData),
+                description: servers.isEmpty
+                    ? 'Pair at least one server to open the comparison workspace.'
+                    : selectedIds.isEmpty
+                    ? 'Select one or more servers from the toolbar above.'
+                    : 'The selected metric has not published comparable samples.',
+              )
+            else ...<Widget>[
+              dom.div(classes: 'reactor-comparison-ranking', <Widget>[
+                dom.div(classes: 'reactor-subsection-heading', <Widget>[
+                  reactorEyebrow(
+                    reactorText(ReactorText.comparisonLeaderboard),
+                  ),
+                ]),
+                _leaderboardTable(leaderboard),
+              ]),
+              dom.div(classes: 'reactor-comparison-chart', <Widget>[
+                dom.div(classes: 'reactor-subsection-heading', <Widget>[
+                  reactorEyebrow(reactorText(ReactorText.comparisonOverlay)),
+                ]),
+                TimeseriesChart(series: chartSeries, height: 240),
+              ]),
+            ],
+          ],
         ),
       ],
     );
@@ -129,127 +152,95 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
       ),
       <Widget>[
         reactorEyebrow(reactorText(ReactorText.comparisonMetric)),
-        ArcaneNativeSelect(
-          options: availableMetrics
-              .map((String m) => ArcaneSelectOption(label: m, value: m))
-              .toList(),
-          value: _selectedMetric,
-          onChange: (String v) => setState(() => _selectedMetric = v),
-        ),
+        if (availableMetrics.isEmpty)
+          reactorBadge('No sampled metrics', ReactorStatus.neutral)
+        else
+          ArcaneNativeSelect(
+            options: <ArcaneSelectOption>[
+              if (!availableMetrics.contains(_selectedMetric))
+                ArcaneSelectOption(
+                  label: '$_selectedMetric (unavailable)',
+                  value: _selectedMetric,
+                ),
+              ...availableMetrics.map(
+                (String m) => ArcaneSelectOption(label: m, value: m),
+              ),
+            ],
+            value: _selectedMetric,
+            onChange: (String v) => setState(() => _selectedMetric = v),
+          ),
       ],
     );
   }
 
-  Widget _serversCard({
+  Widget _serverSelector({
     required List<FleetServerLive> servers,
     required Set<String> selectedIds,
   }) {
-    return sectionCard(
-      label: reactorText(ReactorText.comparisonServers),
-      child: dom.div(
-        styles: const dom.Styles(
-          raw: <String, String>{
-            'display': 'flex',
-            'flex-wrap': 'wrap',
-            'gap': '0.75rem',
-          },
-        ),
-        <Widget>[
-          for (final FleetServerLive srv in servers)
-            ArcaneCheckbox(
-              label: srv.name,
-              checked: selectedIds.contains(srv.id),
-              onChanged: (bool checked) {
-                setState(() {
-                  final Set<String> next = Set<String>.from(selectedIds);
-                  if (checked) {
-                    next.add(srv.id);
-                  } else {
-                    next.remove(srv.id);
-                  }
-                  _selectedServerIds = next;
-                });
-              },
-            ),
-        ],
-      ),
+    return dom.div(
+      classes: 'reactor-comparison-selector reactor-filter-bar',
+      <Widget>[
+        for (final FleetServerLive srv in servers)
+          ArcaneCheckbox(
+            label: srv.name,
+            checked: selectedIds.contains(srv.id),
+            onChanged: (bool checked) {
+              setState(() {
+                final Set<String> next = Set<String>.from(selectedIds);
+                if (checked) {
+                  next.add(srv.id);
+                } else {
+                  next.remove(srv.id);
+                }
+                _selectedServerIds = next;
+              });
+            },
+          ),
+      ],
     );
   }
 
   Widget _leaderboardTable(List<_ServerMetricEntry> ranked) {
-    return dom.div(
-      styles: const dom.Styles(
-        raw: <String, String>{'display': 'flex', 'flex-direction': 'column'},
-      ),
-      <Widget>[
-        for (int i = 0; i < ranked.length; i++)
-          _leaderboardRow(rank: i + 1, entry: ranked[i]),
-      ],
-    );
+    return dom.div(classes: 'reactor-table reactor-leaderboard-table', <Widget>[
+      for (int i = 0; i < ranked.length; i++)
+        _leaderboardRow(rank: i + 1, entry: ranked[i]),
+    ]);
   }
 
   Widget _leaderboardRow({
     required int rank,
     required _ServerMetricEntry entry,
   }) {
-    return dom.div(
-      styles: const dom.Styles(
-        raw: <String, String>{
-          'display': 'flex',
-          'align-items': 'center',
-          'gap': '1rem',
-          'padding': '0.65rem 1.15rem',
-          'border-bottom': '1px solid var(--border)',
-        },
+    return dom.div(classes: 'reactor-leaderboard-row', <Widget>[
+      dom.div(
+        styles: const dom.Styles(
+          raw: <String, String>{
+            'min-width': '2rem',
+            'font-size': '0.75rem',
+            'color': 'var(--muted-foreground)',
+            'font-weight': '600',
+          },
+        ),
+        <Widget>[Component.text('#$rank')],
       ),
-      <Widget>[
-        dom.div(
-          styles: const dom.Styles(
-            raw: <String, String>{
-              'min-width': '2rem',
-              'font-size': '0.75rem',
-              'color': 'var(--muted-foreground)',
-              'font-weight': '600',
-            },
-          ),
-          <Widget>[Component.text('#$rank')],
+      dom.div(
+        styles: const dom.Styles(
+          raw: <String, String>{'flex': '1', 'font-size': '0.875rem'},
         ),
-        dom.div(
-          styles: const dom.Styles(
-            raw: <String, String>{'flex': '1', 'font-size': '0.875rem'},
-          ),
-          <Widget>[Component.text(entry.name)],
-        ),
-        dom.div(
-          styles: const dom.Styles(
-            raw: <String, String>{
-              'font-size': '0.875rem',
-              'font-weight': '500',
-            },
-          ),
-          <Widget>[
-            Component.text(
-              entry.suffix.isEmpty
-                  ? entry.display
-                  : '${entry.display} ${entry.suffix}',
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _emptyState(String message) {
-    return dom.div(
-      styles: const dom.Styles(
-        raw: <String, String>{
-          'padding': '2rem',
-          'text-align': 'center',
-          'color': 'var(--muted-foreground)',
-          'font-size': '0.875rem',
-        },
+        <Widget>[Component.text(entry.name)],
       ),
-      <Widget>[Component.text(message)],
-    );
+      dom.div(
+        styles: const dom.Styles(
+          raw: <String, String>{'font-size': '0.875rem', 'font-weight': '500'},
+        ),
+        <Widget>[
+          Component.text(
+            entry.suffix.isEmpty
+                ? entry.display
+                : '${entry.display} ${entry.suffix}',
+          ),
+        ],
+      ),
+    ]);
   }
 }

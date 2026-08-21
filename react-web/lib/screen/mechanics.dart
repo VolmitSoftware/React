@@ -5,6 +5,7 @@ import 'package:arcane_jaspr/arcane_jaspr.dart';
 import '../chart/timeseries_chart.dart';
 import '../localization/reactor_localizations.dart';
 import '../model/sampler_sample.dart';
+import '../model/server_snapshot.dart';
 import '../state/server_scope.dart';
 import '../ui/reactor_ui.dart';
 import '../widget/section_card.dart';
@@ -16,42 +17,48 @@ class MechanicsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ServerScope? scope = ServerScope.of(context);
+    final ServerSnapshot? snapshot = scope?.snapshot;
+    if (snapshot == null) {
+      return ReactorPage(
+        title: reactorText(ReactorText.mechanicsTitle),
+        subtitle: reactorText(ReactorText.mechanicsSubtitle),
+        children: <Widget>[
+          ReactorLoadingState(label: reactorText(ReactorText.metricsWaiting)),
+        ],
+      );
+    }
 
-    final SamplerSample? redstone = scope?.snapshot?.sampler('redstone');
-    final SamplerSample? redstoneBurstRate = scope?.snapshot?.sampler(
+    final SamplerSample? redstone = snapshot.sampler('redstone');
+    final SamplerSample? redstoneBurstRate = snapshot.sampler(
       'redstone-burst-rate',
     );
-    final SamplerSample? redstoneTickTime = scope?.snapshot?.sampler(
+    final SamplerSample? redstoneTickTime = snapshot.sampler(
       'redstone-tick-time',
     );
 
-    final SamplerSample? hopper = scope?.snapshot?.sampler('hopper');
-    final SamplerSample? hopperTickTime = scope?.snapshot?.sampler(
-      'hopper-tick-time',
-    );
-    final SamplerSample? hopperChainCoalescing = scope?.snapshot?.sampler(
+    final SamplerSample? hopper = snapshot.sampler('hopper');
+    final SamplerSample? hopperTickTime = snapshot.sampler('hopper-tick-time');
+    final SamplerSample? hopperChainCoalescing = snapshot.sampler(
       'hopper-chain-coalescing',
     );
 
-    final SamplerSample? physics = scope?.snapshot?.sampler('physics');
-    final SamplerSample? physicsTickTime = scope?.snapshot?.sampler(
+    final SamplerSample? physics = snapshot.sampler('physics');
+    final SamplerSample? physicsTickTime = snapshot.sampler(
       'physics-tick-time',
     );
-    final SamplerSample? fluid = scope?.snapshot?.sampler('fluid');
-    final SamplerSample? fluidTickTime = scope?.snapshot?.sampler(
-      'fluid-tick-time',
-    );
+    final SamplerSample? fluid = snapshot.sampler('fluid');
+    final SamplerSample? fluidTickTime = snapshot.sampler('fluid-tick-time');
 
-    final SamplerSample? cropFastForward = scope?.snapshot?.sampler(
+    final SamplerSample? cropFastForward = snapshot.sampler(
       'crop-fast-forward',
     );
-    final SamplerSample? lazyGravitySkipped = scope?.snapshot?.sampler(
+    final SamplerSample? lazyGravitySkipped = snapshot.sampler(
       'lazy-gravity-skipped',
     );
-    final SamplerSample? spawnerLightCacheSkipped = scope?.snapshot?.sampler(
+    final SamplerSample? spawnerLightCacheSkipped = snapshot.sampler(
       'spawner-light-cache-skipped',
     );
-    final SamplerSample? explosionPacketReduction = scope?.snapshot?.sampler(
+    final SamplerSample? explosionPacketReduction = snapshot.sampler(
       'explosion-packet-reduction',
     );
 
@@ -67,31 +74,29 @@ class MechanicsScreen extends StatelessWidget {
       title: reactorText(ReactorText.mechanicsTitle),
       subtitle: reactorText(ReactorText.mechanicsSubtitle),
       children: <Widget>[
-        sectionCard(
+        SectionPanel(
           label: reactorText(ReactorText.commonRedstone),
-          child: Collection(
-            gap: 12,
-            children: <Widget>[
-              statGrid(<Widget>[
-                StatTile(
-                  label: reactorText(ReactorText.commonRedstone),
-                  sample: redstone,
-                ),
-                StatTile(
-                  label: reactorText(ReactorText.mechanicsBurstRate),
-                  sample: redstoneBurstRate,
-                ),
-                StatTile(
-                  label: reactorText(ReactorText.commonTickTime),
-                  sample: redstoneTickTime,
-                ),
-              ]),
-              TimeseriesChart(series: redstoneTickSeries, height: 120),
-            ],
-          ),
+          children: <Widget>[
+            TimeseriesChart(series: redstoneTickSeries, height: 120),
+            statGrid(<Widget>[
+              StatTile(
+                label: reactorText(ReactorText.commonRedstone),
+                sample: redstone,
+              ),
+              StatTile(
+                label: reactorText(ReactorText.mechanicsBurstRate),
+                sample: redstoneBurstRate,
+              ),
+              StatTile(
+                label: reactorText(ReactorText.commonTickTime),
+                sample: redstoneTickTime,
+              ),
+            ]),
+          ],
         ),
-        sectionCard(
+        SectionPanel(
           label: reactorText(ReactorText.commonHoppers),
+          flush: true,
           child: statGrid(<Widget>[
             StatTile(
               label: reactorText(ReactorText.commonHoppers),
@@ -107,8 +112,9 @@ class MechanicsScreen extends StatelessWidget {
             ),
           ]),
         ),
-        sectionCard(
+        SectionPanel(
           label: reactorText(ReactorText.mechanicsPhysicsFluids),
+          flush: true,
           child: statGrid(<Widget>[
             StatTile(
               label: reactorText(ReactorText.commonPhysics),
@@ -128,8 +134,9 @@ class MechanicsScreen extends StatelessWidget {
             ),
           ]),
         ),
-        sectionCard(
+        SectionPanel(
           label: reactorText(ReactorText.commonOptimizations),
+          flush: true,
           child: statGrid(<Widget>[
             StatTile(
               label: reactorText(ReactorText.mechanicsCropFastForward),

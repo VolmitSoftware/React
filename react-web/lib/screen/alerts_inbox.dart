@@ -87,42 +87,34 @@ class _AlertsInboxScreenState extends State<AlertsInboxScreen> {
         if (open.isEmpty)
           sectionCard(
             label: reactorText(ReactorText.alertsTitle),
-            child: dom.div(
-              styles: const dom.Styles(
-                raw: <String, String>{
-                  'color': 'var(--muted-foreground)',
-                  'font-size': '0.875rem',
-                  'padding': '0.5rem 0',
-                },
-              ),
-              <Widget>[Component.text(reactorText(ReactorText.alertsNoneOpen))],
+            flush: true,
+            child: ReactorEmptyState(
+              title: _severityFilter != null || _serverIdFilter != null
+                  ? 'No alerts match these filters'
+                  : reactorText(ReactorText.alertsNoneOpen),
+              description: _severityFilter != null || _serverIdFilter != null
+                  ? 'Adjust severity or server scope to inspect other alerts.'
+                  : 'The fleet has no open conditions requiring attention.',
             ),
           )
         else
           sectionCard(
             label: reactorText(ReactorText.alertsTitle),
-            child: dom.div(
-              styles: const dom.Styles(
-                raw: <String, String>{
-                  'display': 'flex',
-                  'flex-direction': 'column',
-                  'gap': '0.75rem',
-                },
-              ),
-              <Widget>[
-                for (final FleetAlert alert in open)
-                  _AlertRow(
-                    alert: alert,
-                    isAcked: alertStore?.isAcked(alert.key) ?? false,
-                    onAck: alertStore == null
-                        ? null
-                        : () => setState(() => alertStore.ack(alert.key)),
-                    onResolve: alertStore == null
-                        ? null
-                        : () => setState(() => alertStore.resolve(alert.key)),
-                  ),
-              ],
-            ),
+            description: '${open.length} open',
+            flush: true,
+            child: dom.div(classes: 'reactor-alert-list', <Widget>[
+              for (final FleetAlert alert in open)
+                _AlertRow(
+                  alert: alert,
+                  isAcked: alertStore?.isAcked(alert.key) ?? false,
+                  onAck: alertStore == null
+                      ? null
+                      : () => setState(() => alertStore.ack(alert.key)),
+                  onResolve: alertStore == null
+                      ? null
+                      : () => setState(() => alertStore.resolve(alert.key)),
+                ),
+            ]),
           ),
       ],
     );
@@ -151,37 +143,27 @@ class _AlertsInboxScreenState extends State<AlertsInboxScreen> {
         ArcaneSelectOption(label: idToName[id] ?? id, value: id),
     ];
 
-    return dom.div(
-      styles: const dom.Styles(
-        raw: <String, String>{
-          'display': 'flex',
-          'align-items': 'center',
-          'gap': '0.75rem',
-          'flex-wrap': 'wrap',
-        },
+    return dom.div(classes: 'reactor-filter-bar', <Widget>[
+      ArcaneNativeSelect(
+        options: severityOptions,
+        value: _severityFilter == null ? '' : _severityFilter!.name,
+        onChange: (String v) => setState(() {
+          if (v.isEmpty) {
+            _severityFilter = null;
+          } else {
+            _severityFilter = AlertSeverity.values.firstWhere(
+              (AlertSeverity s) => s.name == v,
+            );
+          }
+        }),
       ),
-      <Widget>[
-        ArcaneNativeSelect(
-          options: severityOptions,
-          value: _severityFilter == null ? '' : _severityFilter!.name,
-          onChange: (String v) => setState(() {
-            if (v.isEmpty) {
-              _severityFilter = null;
-            } else {
-              _severityFilter = AlertSeverity.values.firstWhere(
-                (AlertSeverity s) => s.name == v,
-              );
-            }
-          }),
-        ),
-        ArcaneNativeSelect(
-          options: serverOptions,
-          value: _serverIdFilter ?? '',
-          onChange: (String v) =>
-              setState(() => _serverIdFilter = v.isEmpty ? null : v),
-        ),
-      ],
-    );
+      ArcaneNativeSelect(
+        options: serverOptions,
+        value: _serverIdFilter ?? '',
+        onChange: (String v) =>
+            setState(() => _serverIdFilter = v.isEmpty ? null : v),
+      ),
+    ]);
   }
 }
 
@@ -237,112 +219,46 @@ class _AlertRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card.flat(
-      fillWidth: true,
-      padding: EdgeInsets.zero,
-      borderRadius: BorderRadius.zero,
-      child: dom.div(
-        styles: const dom.Styles(
-          raw: <String, String>{
-            'display': 'flex',
-            'flex-direction': 'column',
-            'gap': '0.4rem',
-            'padding': '0.75rem 1rem',
-          },
-        ),
-        <Widget>[
-          dom.div(
-            styles: const dom.Styles(
-              raw: <String, String>{
-                'display': 'flex',
-                'align-items': 'center',
-                'gap': '0.5rem',
-                'flex-wrap': 'wrap',
-              },
-            ),
-            <Widget>[
-              _severityBadge(alert.severity),
-              dom.span(
-                styles: const dom.Styles(
-                  raw: <String, String>{
-                    'font-weight': '600',
-                    'font-size': '0.9rem',
-                  },
-                ),
-                <Widget>[Component.text(alert.serverName)],
-              ),
-              dom.span(
-                styles: const dom.Styles(
-                  raw: <String, String>{
-                    'font-weight': '500',
-                    'font-size': '0.875rem',
-                  },
-                ),
-                <Widget>[Component.text(alert.title)],
-              ),
-            ],
+    return dom.div(
+      classes: 'reactor-alert-row${isAcked ? ' is-acked' : ''}',
+      <Widget>[
+        dom.div(classes: 'reactor-alert-severity', <Widget>[
+          _severityBadge(alert.severity),
+        ]),
+        dom.div(classes: 'reactor-alert-copy', <Widget>[
+          dom.div(classes: 'reactor-alert-heading', <Widget>[
+            dom.strong(<Widget>[Component.text(alert.serverName)]),
+            dom.span(<Widget>[Component.text(alert.title)]),
+          ]),
+          dom.p(<Widget>[Component.text(alert.message)]),
+        ]),
+        dom.span(classes: 'reactor-alert-time', <Widget>[
+          Component.text(
+            reactorText(ReactorText.alertsFirstSeen, <String, Object?>{
+              'time': _formatTime(alert.firstSeen),
+            }),
           ),
-          dom.div(
-            styles: const dom.Styles(
-              raw: <String, String>{
-                'font-size': '0.8rem',
-                'color': 'var(--muted-foreground)',
-              },
+        ]),
+        dom.div(classes: 'reactor-alert-actions', <Widget>[
+          if (!isAcked)
+            Button.ghost(
+              label: reactorText(ReactorText.alertsAck),
+              size: ButtonSize.small,
+              onPressed: onAck,
+            )
+          else ...<Widget>[
+            reactorBadge(
+              reactorText(ReactorText.alertsAcked),
+              ReactorStatus.neutral,
             ),
-            <Widget>[Component.text(alert.message)],
-          ),
-          dom.div(
-            styles: const dom.Styles(
-              raw: <String, String>{
-                'font-size': '0.75rem',
-                'color': 'var(--muted-foreground)',
-              },
+            Button.ghost(
+              label: reactorText(ReactorText.alertsResolve),
+              size: ButtonSize.small,
+              onPressed: onResolve,
             ),
-            <Widget>[
-              Component.text(
-                reactorText(ReactorText.alertsFirstSeen, <String, Object?>{
-                  'time': _formatTime(alert.firstSeen),
-                }),
-              ),
-            ],
-          ),
-          dom.div(
-            styles: const dom.Styles(
-              raw: <String, String>{
-                'display': 'flex',
-                'gap': '0.5rem',
-                'align-items': 'center',
-              },
-            ),
-            <Widget>[
-              if (!isAcked)
-                Button.secondary(
-                  label: reactorText(ReactorText.alertsAck),
-                  size: ButtonSize.small,
-                  onPressed: onAck,
-                )
-              else ...<Widget>[
-                dom.span(
-                  styles: const dom.Styles(
-                    raw: <String, String>{
-                      'font-size': '0.8rem',
-                      'color': 'var(--muted-foreground)',
-                    },
-                  ),
-                  <Widget>[
-                    Component.text(reactorText(ReactorText.alertsAcked)),
-                  ],
-                ),
-                Button.secondary(
-                  label: reactorText(ReactorText.alertsResolve),
-                  size: ButtonSize.small,
-                  onPressed: onResolve,
-                ),
-              ],
-            ],
-          ),
-        ],
-      ),
+          ],
+        ]),
+      ],
     );
   }
 }

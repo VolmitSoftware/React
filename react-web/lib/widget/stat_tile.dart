@@ -34,76 +34,26 @@ class StatTile extends StatelessWidget {
         ? 'color-mix(in srgb, var(--muted-foreground) 70%, transparent)'
         : reactorStatusColor(status);
 
-    return Card.flat(
-      fillWidth: true,
-      padding: EdgeInsets.zero,
-      borderRadius: BorderRadius.zero,
-      child: dom.div(
-        classes: 'reactor-metric-card',
-        styles: const dom.Styles(
-          raw: <String, String>{
-            'display': 'flex',
-            'flex-direction': 'column',
-            'gap': '0.6rem',
-            'padding': '0.95rem 1rem',
-            'overflow': 'hidden',
-            'border-radius': kReactorRadius,
-          },
-        ),
-        <Widget>[
-          dom.div(
-            styles: const dom.Styles(
-              raw: <String, String>{
-                'display': 'flex',
-                'align-items': 'center',
-                'justify-content': 'space-between',
-                'gap': '0.5rem',
-              },
-            ),
-            <Widget>[
-              reactorEyebrow(label),
-              if (status != ReactorStatus.neutral)
-                reactorStatusDot(status, size: 7.0),
-            ],
-          ),
-          dom.div(
-            styles: const dom.Styles(
-              raw: <String, String>{
-                'display': 'flex',
-                'align-items': 'baseline',
-                'gap': '0.25rem',
-              },
-            ),
-            <Widget>[
-              dom.span(
-                styles: const dom.Styles(
-                  raw: <String, String>{
-                    'font-size': '1.7rem',
-                    'font-weight': '700',
-                    'color': kReactorFg,
-                    'line-height': '1',
-                    'letter-spacing': '0',
-                    'font-variant-numeric': 'tabular-nums',
-                  },
-                ),
-                <Widget>[Component.text(displayValue)],
-              ),
-              if (suffix.isNotEmpty)
-                dom.span(
-                  styles: const dom.Styles(
-                    raw: <String, String>{
-                      'font-size': '0.85rem',
-                      'color': kReactorMuted,
-                    },
-                  ),
-                  <Widget>[Component.text(suffix)],
-                ),
-            ],
-          ),
-          if (history.length >= 2)
-            ReactorSparkline(values: history, color: sparkColor, height: 34),
-        ],
-      ),
+    return dom.section(
+      classes: 'reactor-metric-card reactor-stat-cell is-${status.name}',
+      <Widget>[
+        dom.div(classes: 'reactor-stat-cell-heading', <Widget>[
+          reactorEyebrow(label),
+          if (status != ReactorStatus.neutral)
+            reactorStatusDot(status, size: 7.0, label: status.name),
+        ]),
+        dom.div(classes: 'reactor-stat-reading', <Widget>[
+          dom.span(classes: 'reactor-stat-value', <Widget>[
+            Component.text(displayValue),
+          ]),
+          if (suffix.isNotEmpty)
+            dom.span(classes: 'reactor-stat-unit', <Widget>[
+              Component.text(suffix),
+            ]),
+        ]),
+        if (history.length >= 2)
+          ReactorSparkline(values: history, color: sparkColor, height: 28),
+      ],
     );
   }
 }

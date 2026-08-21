@@ -10,11 +10,12 @@ import '../model/sampler_sample.dart';
 import '../model/server_snapshot.dart';
 import '../service/react_client.dart';
 import '../service/react_exceptions.dart';
+import '../state/connection_manager.dart';
 import '../state/heatmap_scope.dart';
 import '../state/server_scope.dart';
 import '../ui/reactor_ui.dart';
 import '../widget/heatmap_grid_view.dart';
-import '../widget/section_card.dart';
+import '../widget/section_card.dart' show statGrid;
 import '../widget/stat_tile.dart';
 
 const List<(String, ReactorText)> _kSpatialSamplers = <(String, ReactorText)>[
@@ -58,32 +59,38 @@ class HeatmapsScreen extends StatefulWidget {
 class _HeatmapsScreenState extends State<HeatmapsScreen> {
   IHeatmapClient? _client;
   List<HeatmapGrid>? _grids;
+  Object? _error;
   bool _loading = false;
-  bool _started = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final IHeatmapClient? c = HeatmapScope.of(context)?.client;
-    if (c != null && !_started) {
-      _started = true;
-      _client = c;
+    final IHeatmapClient? client = HeatmapScope.of(context)?.client;
+    if (client != null && client != _client) {
+      _client = client;
+      _load(client);
+    }
+  }
+
+  Future<void> _load(IHeatmapClient client) async {
+    setState(() {
       _loading = true;
-      loadHeatmapGrids(c)
-          .then((List<HeatmapGrid> g) {
-            if (!mounted) return;
-            setState(() {
-              _grids = g;
-              _loading = false;
-            });
-          })
-          .catchError((Object e) {
-            if (!mounted) return;
-            setState(() {
-              _grids = const <HeatmapGrid>[];
-              _loading = false;
-            });
-          });
+      _error = null;
+    });
+    try {
+      final List<HeatmapGrid> grids = await loadHeatmapGrids(client);
+      if (!mounted || client != _client) return;
+      setState(() {
+        _grids = grids;
+        _loading = false;
+      });
+    } on Object catch (error) {
+      if (!mounted || client != _client) return;
+      setState(() {
+        _error = error;
+        _grids = null;
+        _loading = false;
+      });
     }
   }
 
@@ -91,6 +98,7 @@ class _HeatmapsScreenState extends State<HeatmapsScreen> {
   Widget build(BuildContext context) {
     final ServerScope? scope = ServerScope.of(context);
     final ServerSnapshot? snapshot = scope?.snapshot;
+    final bool offline = scope?.state == ConnState.offline;
 
     final List<Widget> tiles = <Widget>[];
     for (final (String id, ReactorText label) in _kSpatialSamplers) {
@@ -104,51 +112,96 @@ class _HeatmapsScreenState extends State<HeatmapsScreen> {
       title: reactorText(ReactorText.heatmapsTitle),
       subtitle: reactorText(ReactorText.heatmapsSubtitle),
       children: <Widget>[
+        if (offline)
+          ReactorNotice(
+            title: reactorText(ReactorText.statusOffline),
+            message: reactorText(ReactorText.heatmapsLiveRequired),
+            status: ReactorStatus.critical,
+          )
+        else if (scope?.state == ConnState.degraded)
+          const ReactorNotice(
+            title: 'Connection degraded',
+            message: 'Showing the most recent spatial samples from React.',
+            status: ReactorStatus.warning,
+          ),
         if (tiles.isNotEmpty)
-          sectionCard(
+          SectionPanel(
             label: reactorText(ReactorText.heatmapsSpatialMetrics),
+            flush: true,
             child: statGrid(tiles),
           ),
-        if (_loading)
-          sectionCard(
-            label: reactorText(ReactorText.heatmapsChunkHeatmaps),
-            child: dom.div(
-              styles: const dom.Styles(
-                raw: <String, String>{
-                  'color': 'var(--muted-foreground)',
-                  'font-size': '0.875rem',
-                },
-              ),
-              <Widget>[
-                Component.text(reactorText(ReactorText.heatmapsLoading)),
-              ],
-            ),
+        if (tiles.isEmpty)
+          SectionPanel(
+            label: reactorText(ReactorText.heatmapsSpatialMetrics),
+            child: snapshot == null && !offline
+                ? ReactorLoadingState(
+                    label: reactorText(ReactorText.metricsWaiting),
+                  )
+                : ReactorEmptyState(
+                    title: 'No spatial metrics',
+                    description:
+                        'This snapshot contains no spatial sampler output.',
+                    icon: ArcaneIcon.map(size: IconSize.sm),
+                  ),
           ),
-        if (!_loading && _grids != null && _grids!.isNotEmpty)
-          sectionCard(
-            label: reactorText(ReactorText.heatmapsChunkHeatmaps),
-            child: Collection(
-              gap: 12,
-              children: <Widget>[
-                for (final HeatmapGrid g in _grids!) HeatmapGridView(grid: g),
-              ],
-            ),
-          ),
-        if (!_loading && _client == null)
-          sectionCard(
-            label: reactorText(ReactorText.heatmapsChunkHeatmaps),
-            child: dom.div(
-              styles: const dom.Styles(
-                raw: <String, String>{
-                  'color': 'var(--muted-foreground)',
-                  'font-size': '0.875rem',
-                },
-              ),
-              <Widget>[
-                Component.text(reactorText(ReactorText.heatmapsLiveRequired)),
-              ],
-            ),
-          ),
+        SectionPanel(
+          label: reactorText(ReactorText.heatmapsChunkHeatmaps),
+          flush: true,
+          child: _chunkHeatmapState(offline),
+        ),
+      ],
+    );
+  }
+
+  Widget _chunkHeatmapState(bool offline) {
+    final IHeatmapClient? client = _client;
+    if (offline || client == null) {
+      return ReactorNotice(
+        title: reactorText(ReactorText.statusOffline),
+        message: reactorText(ReactorText.heatmapsLiveRequired),
+        status: ReactorStatus.critical,
+      );
+    }
+    if (_loading) {
+      return ReactorLoadingState(
+        label: reactorText(ReactorText.heatmapsLoading),
+      );
+    }
+    final Object? error = _error;
+    if (error != null) {
+      return ReactorNotice(
+        title: 'Heatmap request failed',
+        message: error.toString(),
+        status: ReactorStatus.critical,
+        action: Button.secondary(
+          label: 'Retry',
+          size: ButtonSize.small,
+          onPressed: () => _load(client),
+        ),
+      );
+    }
+    final List<HeatmapGrid>? grids = _grids;
+    if (grids == null) {
+      return ReactorLoadingState(
+        label: reactorText(ReactorText.heatmapsLoading),
+      );
+    }
+    if (grids.isEmpty) {
+      return ReactorEmptyState(
+        title: 'No chunk heatmaps',
+        description: 'React did not publish any chunk heatmap grids.',
+        icon: ArcaneIcon.grid3x3(size: IconSize.sm),
+      );
+    }
+    return dom.div(
+      styles: const dom.Styles(
+        raw: <String, String>{
+          'display': 'flex',
+          'flex-direction': 'column',
+        },
+      ),
+      <Widget>[
+        for (final HeatmapGrid grid in grids) HeatmapGridView(grid: grid),
       ],
     );
   }

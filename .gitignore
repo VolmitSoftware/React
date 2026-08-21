@@ -16,3 +16,4 @@ react-web/service-account.json
 react-web/.firebase/
 react-web/firebase-debug.log
 react-web/relay/.dart_tool/
+react-web/.qa/

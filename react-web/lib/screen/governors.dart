@@ -8,12 +8,12 @@ import '../model/control_item.dart';
 import '../localization/reactor_localizations.dart';
 import '../model/sampler_sample.dart';
 import '../service/react_client.dart';
+import '../state/connection_manager.dart';
 import '../state/control_list_controller.dart';
 import '../state/control_scope.dart';
 import '../state/server_scope.dart';
 import '../ui/reactor_ui.dart';
-import '../widget/gauge.dart';
-import '../widget/section_card.dart';
+import '../widget/section_card.dart' show statGrid;
 import '../widget/stat_tile.dart';
 
 const Set<String> kGovernorFeatureIds = <String>{
@@ -51,73 +51,132 @@ class GovernorDashboardView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool hasMetrics = incidentScore != null ||
+        schedulerBacklog != null ||
+        backlogGrowthRate != null;
     return Collection(
-      gap: 20,
+      gap: 0,
       children: <Widget>[
+        if (hasMetrics)
+          SectionPanel(
+            label: 'Runtime pressure',
+            flush: true,
+            child: statGrid(<Widget>[
+              if (incidentScore != null)
+                StatTile(
+                  label: reactorText(ReactorText.commonIncidentScore),
+                  sample: incidentScore,
+                  status: _scoreStatus(incidentScore!.value),
+                ),
+              if (schedulerBacklog != null)
+                StatTile(
+                  label: reactorText(ReactorText.commonSchedulerBacklog),
+                  sample: schedulerBacklog,
+                ),
+              if (backlogGrowthRate != null)
+                StatTile(
+                  label: reactorText(ReactorText.governorsBacklogGrowthRate),
+                  sample: backlogGrowthRate,
+                ),
+            ]),
+          ),
+        SectionPanel(
+          label: reactorText(ReactorText.governorsSection),
+          flush: true,
+          child: governors.isEmpty
+              ? ReactorEmptyState(
+                  title: 'No governors available',
+                  description:
+                      'React did not return any adaptive governor features.',
+                  icon: ArcaneIcon.signal(size: IconSize.sm),
+                )
+              : dom.div(
+                  styles: const dom.Styles(
+                    raw: <String, String>{
+                      'display': 'flex',
+                      'flex-direction': 'column',
+                    },
+                  ),
+                  <Widget>[
+                    for (final ControlItem governor in governors)
+                      _governorRow(governor),
+                  ],
+                ),
+        ),
+      ],
+    );
+  }
+
+  ReactorStatus _scoreStatus(double score) {
+    if (score >= 70) return ReactorStatus.critical;
+    if (score >= 40) return ReactorStatus.warning;
+    return ReactorStatus.healthy;
+  }
+
+  Widget _governorRow(ControlItem governor) {
+    return dom.div(
+      styles: const dom.Styles(
+        raw: <String, String>{
+          'display': 'flex',
+          'align-items': 'center',
+          'justify-content': 'space-between',
+          'gap': '0.75rem',
+          'padding': '0.6rem 0.75rem',
+          'border-bottom': '1px solid $kReactorHairline',
+        },
+      ),
+      <Widget>[
         dom.div(
           styles: const dom.Styles(
             raw: <String, String>{
               'display': 'flex',
-              'justify-content': 'center',
-              'padding': '1rem 0',
+              'min-width': '0',
+              'flex-direction': 'column',
+              'gap': '0.2rem',
             },
           ),
           <Widget>[
-            Gauge(
-              label: reactorText(ReactorText.commonIncidentScore),
-              value: incidentScore?.value ?? 0.0,
-              display: incidentScore?.display,
-              max: 100.0,
-              thresholds: (40.0, 70.0),
+            dom.strong(
+              styles: const dom.Styles(
+                raw: <String, String>{'font-size': '0.8rem'},
+              ),
+              <Widget>[Component.text(governor.name)],
+            ),
+            dom.code(
+              styles: const dom.Styles(
+                raw: <String, String>{
+                  'color': kReactorMuted,
+                  'font-size': '0.66rem',
+                },
+              ),
+              <Widget>[Component.text(governor.id)],
             ),
           ],
         ),
-        statGrid(<Widget>[
-          StatTile(
-            label: reactorText(ReactorText.commonSchedulerBacklog),
-            sample: schedulerBacklog,
+        dom.div(
+          styles: const dom.Styles(
+            raw: <String, String>{
+              'display': 'flex',
+              'align-items': 'center',
+              'gap': '0.5rem',
+            },
           ),
-          StatTile(
-            label: reactorText(ReactorText.governorsBacklogGrowthRate),
-            sample: backlogGrowthRate,
-          ),
-        ]),
-        sectionCard(
-          label: reactorText(ReactorText.governorsSection),
-          child: statGrid(<Widget>[
-            for (final ControlItem governor in governors)
-              Card.flat(
-                fillWidth: true,
-                padding: EdgeInsets.zero,
-                borderRadius: BorderRadius.zero,
-                child: dom.div(
-                  styles: const dom.Styles(
-                    raw: <String, String>{
-                      'padding': '0.75rem',
-                      'display': 'flex',
-                      'flex-direction': 'column',
-                      'gap': '0.5rem',
-                    },
+          <Widget>[
+            governor.enabled
+                ? reactorBadge(
+                    reactorText(ReactorText.commonEnabled),
+                    ReactorStatus.healthy,
+                  )
+                : reactorBadge(
+                    reactorText(ReactorText.commonDisabled),
+                    ReactorStatus.neutral,
                   ),
-                  <Widget>[
-                    Text.heading3(governor.name),
-                    governor.enabled
-                        ? reactorBadge(
-                            reactorText(ReactorText.commonEnabled),
-                            ReactorStatus.healthy,
-                          )
-                        : reactorBadge(
-                            reactorText(ReactorText.commonDisabled),
-                            ReactorStatus.neutral,
-                          ),
-                    ArcaneToggleSwitch(
-                      value: governor.enabled,
-                      onChanged: (bool b) => onToggle?.call(governor.id, b),
-                    ),
-                  ],
-                ),
-              ),
-          ]),
+            ArcaneToggleSwitch(
+              value: governor.enabled,
+              onChanged: (bool enabled) =>
+                  onToggle?.call(governor.id, enabled),
+            ),
+          ],
         ),
       ],
     );
@@ -175,33 +234,40 @@ class _GovernorsScreenState extends State<GovernorsScreen> {
               .where((ControlItem i) => kGovernorFeatureIds.contains(i.id))
               .toList();
 
-    if (_client == null) {
-      return ReactorPage(
-        title: reactorText(ReactorText.governorsTitle),
-        subtitle: reactorText(ReactorText.governorsSubtitle),
-        children: <Widget>[
-          sectionCard(
-            label: reactorText(ReactorText.governorsControl),
-            child: dom.div(
-              styles: const dom.Styles(
-                raw: <String, String>{
-                  'color': 'var(--muted-foreground)',
-                  'font-size': '0.875rem',
-                },
-              ),
-              <Widget>[
-                Component.text(reactorText(ReactorText.governorsLiveRequired)),
-              ],
-            ),
+    if (scope?.state == ConnState.connecting && _client == null) {
+      return _statePage(
+        const ReactorLoadingState(label: 'Loading governor state'),
+      );
+    }
+    if (_client == null || scope?.state == ConnState.offline) {
+      return _statePage(
+        ReactorNotice(
+          title: reactorText(ReactorText.statusOffline),
+          message: reactorText(ReactorText.governorsLiveRequired),
+          status: ReactorStatus.critical,
+        ),
+      );
+    }
+
+    final ControlListController controller = _controller!;
+    if (controller.loading && controller.items.isEmpty) {
+      return _statePage(
+        const ReactorLoadingState(label: 'Loading governor state'),
+      );
+    }
+    final Object? error = controller.error;
+    if (error != null && controller.items.isEmpty) {
+      return _statePage(
+        ReactorNotice(
+          title: reactorText(ReactorText.commonUpdateFailed),
+          message: error.toString(),
+          status: ReactorStatus.critical,
+          action: Button.secondary(
+            label: 'Retry',
+            size: ButtonSize.small,
+            onPressed: controller.load,
           ),
-          GovernorDashboardView(
-            governors: const <ControlItem>[],
-            incidentScore: incidentScore,
-            schedulerBacklog: schedulerBacklog,
-            backlogGrowthRate: backlogGrowthRate,
-            onToggle: null,
-          ),
-        ],
+        ),
       );
     }
 
@@ -209,14 +275,39 @@ class _GovernorsScreenState extends State<GovernorsScreen> {
       title: reactorText(ReactorText.governorsTitle),
       subtitle: reactorText(ReactorText.governorsSubtitle),
       children: <Widget>[
+        if (error != null)
+          ReactorNotice(
+            title: reactorText(ReactorText.commonUpdateFailed),
+            message: error.toString(),
+            status: ReactorStatus.warning,
+            action: Button.secondary(
+              label: 'Retry',
+              size: ButtonSize.small,
+              onPressed: controller.load,
+            ),
+          )
+        else if (scope?.state == ConnState.degraded)
+          const ReactorNotice(
+            title: 'Connection degraded',
+            message: 'Governor state may be delayed until React reconnects.',
+            status: ReactorStatus.warning,
+          ),
         GovernorDashboardView(
           governors: governors,
           incidentScore: incidentScore,
           schedulerBacklog: schedulerBacklog,
           backlogGrowthRate: backlogGrowthRate,
-          onToggle: _controller!.toggle,
+          onToggle: controller.toggle,
         ),
       ],
+    );
+  }
+
+  Widget _statePage(Widget state) {
+    return ReactorPage(
+      title: reactorText(ReactorText.governorsTitle),
+      subtitle: reactorText(ReactorText.governorsSubtitle),
+      children: <Widget>[state],
     );
   }
 }

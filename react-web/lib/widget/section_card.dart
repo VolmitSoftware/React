@@ -7,11 +7,11 @@ import '../ui/reactor_ui.dart';
 
 const dom.Styles kSectionHeadingStyles = dom.Styles(
   raw: <String, String>{
-    'font-size': '0.6875rem',
-    'font-weight': '600',
+    'font-size': '0.64rem',
+    'font-weight': '650',
     'color': 'var(--muted-foreground)',
     'text-transform': 'uppercase',
-    'letter-spacing': '0',
+    'letter-spacing': '0.085em',
   },
 );
 

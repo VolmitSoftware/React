@@ -60,6 +60,50 @@ void main() {
       );
 
       expect(find.tag('polyline'), findsNComponents(2));
+      expect(
+        find.byComponentPredicate((Component component) {
+          return component is DomComponent &&
+              component.tag == 'polyline' &&
+              component.attributes?['fill'] == 'none' &&
+              component.attributes?['stroke'] == 'var(--reactor-chart-1)';
+        }),
+        findsOneComponent,
+      );
+      expect(
+        find.byComponentPredicate((Component component) {
+          return component is DomComponent &&
+              component.tag == 'polyline' &&
+              component.attributes?['fill'] == 'none' &&
+              component.attributes?['stroke'] == 'var(--reactor-chart-2)';
+        }),
+        findsOneComponent,
+      );
+      expect(find.tag('line'), findsNComponents(5));
+    });
+
+    testComponents('keeps constant series finite and centered', (
+      ComponentTester tester,
+    ) async {
+      tester.pumpComponent(
+        SvgFallbackChart(
+          series: <(String, List<double>)>[
+            ('constant', <double>[4.0, 4.0, 4.0]),
+          ],
+        ),
+      );
+
+      final Finder finitePolyline = find.byComponentPredicate((
+        Component component,
+      ) {
+        if (component is! DomComponent || component.tag != 'polyline') {
+          return false;
+        }
+        final String points = component.attributes?['points'] ?? '';
+        return points.isNotEmpty &&
+            !points.contains('NaN') &&
+            !points.contains('Infinity');
+      });
+      expect(finitePolyline, findsOneComponent);
     });
   });
 }

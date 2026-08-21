@@ -5,6 +5,7 @@ import 'package:arcane_jaspr/arcane_jaspr.dart';
 import '../chart/timeseries_chart.dart';
 import '../localization/reactor_localizations.dart';
 import '../model/sampler_sample.dart';
+import '../model/server_snapshot.dart';
 import '../state/server_scope.dart';
 import '../ui/reactor_ui.dart';
 import '../widget/section_card.dart';
@@ -16,13 +17,22 @@ class EventsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ServerScope? scope = ServerScope.of(context);
-    final SamplerSample? eventHandles = scope?.snapshot?.sampler(
+    final ServerSnapshot? snapshot = scope?.snapshot;
+    if (snapshot == null) {
+      return ReactorPage(
+        title: reactorText(ReactorText.eventsTitle),
+        subtitle: reactorText(ReactorText.eventsSubtitle),
+        children: <Widget>[
+          ReactorLoadingState(label: reactorText(ReactorText.metricsWaiting)),
+        ],
+      );
+    }
+
+    final SamplerSample? eventHandles = snapshot.sampler(
       'event-handles-per-tick',
     );
-    final SamplerSample? eventListeners = scope?.snapshot?.sampler(
-      'events-listeners',
-    );
-    final SamplerSample? eventTime = scope?.snapshot?.sampler('event-time');
+    final SamplerSample? eventListeners = snapshot.sampler('events-listeners');
+    final SamplerSample? eventTime = snapshot.sampler('event-time');
 
     final List<(String, List<double>)> eventTimeSeries =
         <(String, List<double>)>[
@@ -40,24 +50,26 @@ class EventsScreen extends StatelessWidget {
       title: reactorText(ReactorText.eventsTitle),
       subtitle: reactorText(ReactorText.eventsSubtitle),
       children: <Widget>[
-        sectionCard(
+        SectionPanel(
           label: reactorText(ReactorText.commonEventTime),
-          child: TimeseriesChart(series: eventTimeSeries, height: 160),
+          children: <Widget>[
+            TimeseriesChart(series: eventTimeSeries, height: 160),
+            statGrid(<Widget>[
+              StatTile(
+                label: reactorText(ReactorText.eventsHandlesPerTick),
+                sample: eventHandles,
+              ),
+              StatTile(
+                label: reactorText(ReactorText.eventsListeners),
+                sample: eventListeners,
+              ),
+              StatTile(
+                label: reactorText(ReactorText.commonEventTime),
+                sample: eventTime,
+              ),
+            ]),
+          ],
         ),
-        statGrid(<Widget>[
-          StatTile(
-            label: reactorText(ReactorText.eventsHandlesPerTick),
-            sample: eventHandles,
-          ),
-          StatTile(
-            label: reactorText(ReactorText.eventsListeners),
-            sample: eventListeners,
-          ),
-          StatTile(
-            label: reactorText(ReactorText.commonEventTime),
-            sample: eventTime,
-          ),
-        ]),
       ],
     );
   }

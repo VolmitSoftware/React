@@ -1,11 +1,10 @@
 library;
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
-import 'package:jaspr/dom.dart' as dom;
-
 import '../chart/timeseries_chart.dart';
 import '../localization/reactor_localizations.dart';
 import '../model/sampler_sample.dart';
+import '../model/server_snapshot.dart';
 import '../state/server_scope.dart';
 import '../ui/reactor_ui.dart';
 import '../widget/section_card.dart';
@@ -17,15 +16,24 @@ class PerformanceScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ServerScope? scope = ServerScope.of(context);
-    final SamplerSample? tickTime = scope?.snapshot?.sampler('tick-time');
-    final SamplerSample? p50 = scope?.snapshot?.sampler('tick-ms-p50');
-    final SamplerSample? p95 = scope?.snapshot?.sampler('tick-ms-p95');
-    final SamplerSample? p99 = scope?.snapshot?.sampler('tick-ms-p99');
-    final SamplerSample? spikeRate = scope?.snapshot?.sampler(
-      'tick-spike-rate',
-    );
-    final SamplerSample? worldMspt = scope?.snapshot?.sampler('top-world-mspt');
-    final SamplerSample? chunkCost = scope?.snapshot?.sampler('top-chunk-cost');
+    final ServerSnapshot? snapshot = scope?.snapshot;
+    if (snapshot == null) {
+      return ReactorPage(
+        title: reactorText(ReactorText.performanceTitle),
+        subtitle: reactorText(ReactorText.performanceSubtitle),
+        children: <Widget>[
+          ReactorLoadingState(label: reactorText(ReactorText.metricsWaiting)),
+        ],
+      );
+    }
+
+    final SamplerSample? tickTime = snapshot.sampler('tick-time');
+    final SamplerSample? p50 = snapshot.sampler('tick-ms-p50');
+    final SamplerSample? p95 = snapshot.sampler('tick-ms-p95');
+    final SamplerSample? p99 = snapshot.sampler('tick-ms-p99');
+    final SamplerSample? spikeRate = snapshot.sampler('tick-spike-rate');
+    final SamplerSample? worldMspt = snapshot.sampler('top-world-mspt');
+    final SamplerSample? chunkCost = snapshot.sampler('top-chunk-cost');
 
     final List<(String, List<double>)> tickSeries = <(String, List<double>)>[
       (
@@ -48,31 +56,28 @@ class PerformanceScreen extends StatelessWidget {
       title: reactorText(ReactorText.performanceTitle),
       subtitle: reactorText(ReactorText.performanceSubtitle),
       children: <Widget>[
-        sectionCard(
+        SectionPanel(
           label: reactorText(ReactorText.performanceTickDuration),
           child: TimeseriesChart(series: tickSeries, height: 180),
         ),
-        sectionCard(
+        SectionPanel(
           label: reactorText(ReactorText.performanceTickSpikeRate),
-          child: TimeseriesChart(series: spikeSeries, height: 80),
-        ),
-        dom.div(
-          styles: const dom.Styles(
-            raw: <String, String>{
-              'display': 'grid',
-              'grid-template-columns': 'repeat(auto-fill, minmax(200px, 1fr))',
-              'gap': '1rem',
-            },
-          ),
-          <Widget>[
-            StatTile(
-              label: reactorText(ReactorText.commonTopWorldMspt),
-              sample: worldMspt,
-            ),
-            StatTile(
-              label: reactorText(ReactorText.commonTopChunkCost),
-              sample: chunkCost,
-            ),
+          children: <Widget>[
+            TimeseriesChart(series: spikeSeries, height: 96),
+            statGrid(<Widget>[
+              StatTile(
+                label: reactorText(ReactorText.performanceSpikeRate),
+                sample: spikeRate,
+              ),
+              StatTile(
+                label: reactorText(ReactorText.commonTopWorldMspt),
+                sample: worldMspt,
+              ),
+              StatTile(
+                label: reactorText(ReactorText.commonTopChunkCost),
+                sample: chunkCost,
+              ),
+            ]),
           ],
         ),
       ],

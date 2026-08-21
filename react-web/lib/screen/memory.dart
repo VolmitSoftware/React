@@ -1,12 +1,11 @@
 library;
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
-import 'package:jaspr/dom.dart' as dom;
-import 'package:jaspr/jaspr.dart' show Component;
 
 import '../chart/timeseries_chart.dart';
 import '../localization/reactor_localizations.dart';
 import '../model/sampler_sample.dart';
+import '../model/server_snapshot.dart';
 import '../state/server_scope.dart';
 import '../ui/reactor_ui.dart';
 import '../widget/gauge.dart';
@@ -19,21 +18,24 @@ class MemoryScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ServerScope? scope = ServerScope.of(context);
-    final SamplerSample? memUsed = scope?.snapshot?.sampler('memory-used');
-    final SamplerSample? memFree = scope?.snapshot?.sampler('memory-free');
-    final SamplerSample? memAfterGc = scope?.snapshot?.sampler(
-      'memory-used-after-gc',
-    );
-    final SamplerSample? memPressure = scope?.snapshot?.sampler(
-      'memory-pressure',
-    );
-    final SamplerSample? gcTimePercent = scope?.snapshot?.sampler(
-      'gc-time-percent',
-    );
-    final SamplerSample? gcPauseP95 = scope?.snapshot?.sampler('gc-pause-p95');
-    final SamplerSample? memGarbage = scope?.snapshot?.sampler(
-      'memory-garbage',
-    );
+    final ServerSnapshot? snapshot = scope?.snapshot;
+    if (snapshot == null) {
+      return ReactorPage(
+        title: reactorText(ReactorText.memoryTitle),
+        subtitle: reactorText(ReactorText.memorySubtitle),
+        children: <Widget>[
+          ReactorLoadingState(label: reactorText(ReactorText.metricsWaiting)),
+        ],
+      );
+    }
+
+    final SamplerSample? memUsed = snapshot.sampler('memory-used');
+    final SamplerSample? memFree = snapshot.sampler('memory-free');
+    final SamplerSample? memAfterGc = snapshot.sampler('memory-used-after-gc');
+    final SamplerSample? memPressure = snapshot.sampler('memory-pressure');
+    final SamplerSample? gcTimePercent = snapshot.sampler('gc-time-percent');
+    final SamplerSample? gcPauseP95 = snapshot.sampler('gc-pause-p95');
+    final SamplerSample? memGarbage = snapshot.sampler('memory-garbage');
 
     final List<(String, List<double>)> heapSeries = <(String, List<double>)>[
       (
@@ -65,77 +67,60 @@ class MemoryScreen extends StatelessWidget {
       title: reactorText(ReactorText.memoryTitle),
       subtitle: reactorText(ReactorText.memorySubtitle),
       children: <Widget>[
-        sectionCard(
+        SectionPanel(
           label: reactorText(ReactorText.memoryHeapUsage),
-          child: TimeseriesChart(series: heapSeries, height: 180),
+          children: <Widget>[
+            TimeseriesChart(series: heapSeries, height: 180),
+            statGrid(<Widget>[
+              StatTile(
+                label: reactorText(ReactorText.commonMemoryUsed),
+                sample: memUsed,
+              ),
+              StatTile(
+                label: reactorText(ReactorText.memoryFree),
+                sample: memFree,
+              ),
+              StatTile(
+                label: reactorText(ReactorText.memoryAfterGc),
+                sample: memAfterGc,
+              ),
+              StatTile(
+                label: reactorText(ReactorText.memoryGarbage),
+                sample: memGarbage,
+              ),
+            ]),
+          ],
         ),
-        sectionCard(
+        SectionPanel(
           label: reactorText(ReactorText.memoryPressure),
-          child: TimeseriesChart(series: pressureSeries, height: 100),
+          children: <Widget>[
+            TimeseriesChart(series: pressureSeries, height: 112),
+            statGrid(<Widget>[
+              StatTile(
+                label: reactorText(ReactorText.memoryPressure),
+                sample: memPressure,
+              ),
+              if (gcTimePercent == null)
+                StatTile(
+                  label: reactorText(ReactorText.memoryGcTimePercent),
+                  sample: null,
+                )
+              else
+                Gauge(
+                  label: reactorText(ReactorText.memoryGcTimePercent),
+                  value: gcTimePercent.value,
+                  display: gcTimePercent.display,
+                  max: 100.0,
+                  thresholds: (5.0, 15.0),
+                ),
+            ]),
+          ],
         ),
-        sectionCard(
+        SectionPanel(
           label: reactorText(ReactorText.memoryGcPauseP95),
           child: TimeseriesChart(series: gcPauseSeries, height: 100),
         ),
-        dom.div(
-          styles: const dom.Styles(
-            raw: <String, String>{
-              'display': 'grid',
-              'grid-template-columns': 'repeat(auto-fill, minmax(200px, 1fr))',
-              'gap': '1rem',
-            },
-          ),
-          <Widget>[
-            _GcGaugeCard(gcTimePercent: gcTimePercent),
-            StatTile(
-              label: reactorText(ReactorText.commonMemoryUsed),
-              sample: memUsed,
-            ),
-            StatTile(
-              label: reactorText(ReactorText.memoryGarbage),
-              sample: memGarbage,
-            ),
-          ],
-        ),
       ],
-    );
-  }
-}
-
-class _GcGaugeCard extends StatelessWidget {
-  final SamplerSample? gcTimePercent;
-
-  const _GcGaugeCard({required this.gcTimePercent});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card.flat(
-      fillWidth: true,
-      padding: EdgeInsets.zero,
-      borderRadius: BorderRadius.zero,
-      child: dom.div(
-        styles: const dom.Styles(
-          raw: <String, String>{
-            'display': 'flex',
-            'flex-direction': 'column',
-            'align-items': 'center',
-            'gap': '0.5rem',
-            'padding': '1rem',
-          },
-        ),
-        <Widget>[
-          dom.div(styles: kSectionHeadingStyles, <Widget>[
-            Component.text(reactorText(ReactorText.commonGcTime)),
-          ]),
-          Gauge(
-            label: reactorText(ReactorText.memoryGcTimePercent),
-            value: gcTimePercent?.value ?? 0.0,
-            display: gcTimePercent?.display,
-            max: 100.0,
-            thresholds: (5.0, 15.0),
-          ),
-        ],
-      ),
     );
   }
 }
