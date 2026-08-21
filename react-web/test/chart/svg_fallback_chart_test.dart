@@ -105,5 +105,30 @@ void main() {
       });
       expect(finitePolyline, findsOneComponent);
     });
+
+    testComponents('cycles legend swatches through the six chart colors', (
+      ComponentTester tester,
+    ) async {
+      tester.pumpComponent(
+        TimeseriesChart(
+          series: List<(String, List<double>)>.generate(
+            7,
+            (int index) => ('server-$index', <double>[index.toDouble()]),
+          ),
+        ),
+      );
+
+      expect(
+        find.byComponentPredicate((Component component) {
+          if (component is! DomComponent || component.tag != 'span') {
+            return false;
+          }
+          return component.classes?.contains('reactor-chart-legend-line') ==
+                  true &&
+              component.classes?.contains('reactor-chart-series-0') == true;
+        }),
+        findsNComponents(2),
+      );
+    });
   });
 }

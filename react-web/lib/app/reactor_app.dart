@@ -57,6 +57,8 @@ import '../state/operate_scope.dart';
 import '../state/role_scope.dart';
 import '../state/server_scope.dart';
 import '../ui/reactor_ui.dart';
+import '../widget/pane_layout.dart';
+import '../widget/pane_splitter.dart';
 
 class _OfflineShadcnStylesheet extends ShadcnStylesheet {
   const _OfflineShadcnStylesheet({super.theme});
@@ -423,27 +425,24 @@ class _LiveServerScopeState extends State<LiveServerScope> {
     return ServerScope(
       snapshot: _snapshot,
       state: _state,
-      child: dom.div(
-        classes: 'reactor-connection-frame',
-        <Widget>[
-          if (degraded)
-            const ReactorNotice(
-              title: 'Connection degraded',
-              message:
-                  'Showing the latest received snapshot while the live channel recovers.',
-              status: ReactorStatus.warning,
-            )
-          else if (offline)
-            ReactorNotice(
-              title: reactorText(ReactorText.statusOffline),
-              message: _snapshot == null
-                  ? 'No telemetry snapshot is available. React will retry automatically.'
-                  : 'Showing the most recent snapshot while React reconnects automatically.',
-              status: ReactorStatus.critical,
-            ),
-          component.child,
-        ],
-      ),
+      child: dom.div(classes: 'reactor-connection-frame', <Widget>[
+        if (degraded)
+          const ReactorNotice(
+            title: 'Connection degraded',
+            message:
+                'Showing the latest received snapshot while the live channel recovers.',
+            status: ReactorStatus.warning,
+          )
+        else if (offline)
+          ReactorNotice(
+            title: reactorText(ReactorText.statusOffline),
+            message: _snapshot == null
+                ? 'No telemetry snapshot is available. React will retry automatically.'
+                : 'Showing the most recent snapshot while React reconnects automatically.',
+            status: ReactorStatus.critical,
+          ),
+        component.child,
+      ]),
     );
   }
 }
@@ -572,6 +571,7 @@ class ReactorShell extends StatefulWidget {
 
 class _ReactorShellState extends State<ReactorShell> {
   _ShellDrawer _drawer = _ShellDrawer.none;
+  ReactorPaneLayout _paneLayout = const ReactorPaneLayout();
 
   List<ServerEntry> get servers => component.servers;
 
@@ -648,11 +648,19 @@ class _ReactorShellState extends State<ReactorShell> {
             ]),
           ],
         ),
-        _splitter(),
+        ReactorPaneSplitter(
+          side: ReactorPaneSide.rail,
+          layout: _paneLayout,
+          onCommit: _commitPaneLayout,
+        ),
         dom.main_(classes: 'reactor-workspace', <Widget>[
           dom.div(classes: 'reactor-shell-content', <Widget>[body]),
         ]),
-        _splitter(),
+        ReactorPaneSplitter(
+          side: ReactorPaneSide.inspector,
+          layout: _paneLayout,
+          onCommit: _commitPaneLayout,
+        ),
         _inspector(),
         dom.button(
           classes: _drawer == _ShellDrawer.none
@@ -671,12 +679,8 @@ class _ReactorShellState extends State<ReactorShell> {
     ]);
   }
 
-  Widget _splitter() {
-    return const dom.div(
-      classes: 'reactor-splitter',
-      attributes: <String, String>{'aria-hidden': 'true'},
-      <Widget>[dom.span(<Widget>[])],
-    );
+  void _commitPaneLayout(ReactorPaneLayout layout) {
+    setState(() => _paneLayout = layout);
   }
 
   Widget _topBar(BuildContext context) {

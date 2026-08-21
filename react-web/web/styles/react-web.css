@@ -427,12 +427,25 @@ select {
   min-height: 0;
   place-items: stretch center;
   background: var(--reactor-bg);
+  cursor: col-resize;
+  outline: none;
+  touch-action: none;
 }
 
-.reactor-splitter > span {
+.reactor-splitter-grip {
   width: 1px;
   height: 100%;
   background: var(--reactor-border-soft);
+}
+
+.reactor-splitter:hover .reactor-splitter-grip,
+.reactor-splitter:focus-visible .reactor-splitter-grip {
+  background: var(--reactor-text);
+}
+
+.reactor-resizing {
+  cursor: col-resize;
+  user-select: none;
 }
 
 .reactor-shell-scrim {
@@ -1006,14 +1019,21 @@ select {
   border-left: 1px solid var(--reactor-border-soft);
 }
 
-.reactor-panel-body:not(.is-flush) > .reactor-grid:first-child,
-.reactor-panel-body:not(.is-flush) > .reactor-metric-bank:first-child {
+.reactor-panel-body:not(.is-flush) > .reactor-grid,
+.reactor-panel-body:not(.is-flush) > .reactor-metric-bank {
   width: calc(100% + 20px);
-  margin: -10px -10px 0;
+  margin-right: -10px;
+  margin-left: -10px;
 }
 
 .reactor-panel-body:not(.is-flush) > .reactor-grid:only-child,
 .reactor-panel-body:not(.is-flush) > .reactor-metric-bank:only-child {
+  margin-top: -10px;
+  margin-bottom: -10px;
+}
+
+.reactor-panel-body:not(.is-flush) > .reactor-grid:last-child,
+.reactor-panel-body:not(.is-flush) > .reactor-metric-bank:last-child {
   margin-bottom: -10px;
 }
 

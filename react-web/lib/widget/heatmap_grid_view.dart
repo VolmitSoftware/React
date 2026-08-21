@@ -22,26 +22,18 @@ class HeatmapGridView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Widget header = dom.div(
-      classes: 'reactor-heatmap-header',
-      <Widget>[
-        dom.div(
-          classes: 'reactor-heatmap-heading',
-          <Widget>[
-            reactorEyebrow(grid.label),
-            if (grid.world.isNotEmpty)
-              dom.span(<Widget>[Component.text(grid.world)]),
-          ],
+    final Widget header = dom.div(classes: 'reactor-heatmap-header', <Widget>[
+      dom.div(classes: 'reactor-heatmap-heading', <Widget>[
+        reactorEyebrow(grid.label),
+        if (grid.world.isNotEmpty)
+          dom.span(<Widget>[Component.text(grid.world)]),
+      ]),
+      dom.code(<Widget>[
+        Component.text(
+          '${grid.centerChunkX}, ${grid.centerChunkZ} · r${grid.radius}',
         ),
-        dom.code(
-          <Widget>[
-            Component.text(
-              '${grid.centerChunkX}, ${grid.centerChunkZ} · r${grid.radius}',
-            ),
-          ],
-        ),
-      ],
-    );
+      ]),
+    ]);
 
     if (grid.cells.isEmpty) {
       return dom.section(classes: 'reactor-heatmap-view', <Widget>[
@@ -106,39 +98,20 @@ class HeatmapGridView extends StatelessWidget {
     final Widget gridContainer = dom.div(
       classes: 'reactor-heatmap-grid',
       styles: dom.Styles(
-        raw: <String, String>{
-          'grid-template-columns': 'repeat($cols, 1fr)',
-        },
+        raw: <String, String>{'grid-template-columns': 'repeat($cols, 1fr)'},
       ),
       cellWidgets,
     );
 
-    final Widget legend = dom.div(
-      classes: 'reactor-heatmap-legend',
-      <Widget>[
-        dom.span(
-          <Widget>[
-            Component.text('Low ${grid.min.toStringAsFixed(2)}'),
-          ],
-        ),
-        dom.span(
-          <Widget>[
-            Component.text('High ${grid.max.toStringAsFixed(2)}'),
-          ],
-        ),
-      ],
-    );
+    final Widget legend = dom.div(classes: 'reactor-heatmap-legend', <Widget>[
+      dom.span(<Widget>[Component.text('Low ${grid.min.toStringAsFixed(2)}')]),
+      dom.span(<Widget>[Component.text('High ${grid.max.toStringAsFixed(2)}')]),
+    ]);
 
-    return dom.section(
-      classes: 'reactor-heatmap-view',
-      <Widget>[
-        header,
-        dom.div(
-          classes: 'reactor-heatmap-canvas',
-          <Widget>[gridContainer],
-        ),
-        legend,
-      ],
-    );
+    return dom.section(classes: 'reactor-heatmap-view', <Widget>[
+      header,
+      dom.div(classes: 'reactor-heatmap-canvas', <Widget>[gridContainer]),
+      legend,
+    ]);
   }
 }

@@ -125,6 +125,7 @@ void main() {
       tester.pumpComponent(
         _wrap(
           ReactorShell(
+            currentPath: '/server/srv1/overview',
             servers: const <ServerEntry>[
               ServerEntry(
                 id: 'srv1',

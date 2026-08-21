@@ -65,6 +65,7 @@ void main() {
         tester.pumpComponent(
           _wrapView(
             ReactorShell(
+              currentPath: '/server/srv1/world-overrides',
               servers: const <ServerEntry>[
                 ServerEntry(
                   id: 'srv1',

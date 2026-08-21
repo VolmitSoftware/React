@@ -252,7 +252,7 @@ class _WorldOverridesScreenState extends State<WorldOverridesScreen> {
     }
 
     final RoleInfo? role = RoleScope.of(context)?.role;
-    final bool readOnly = readOnlyFor(role);
+    final bool readOnly = readOnlyFor(role) || server?.state != ConnState.live;
 
     final Widget? notice = error != null
         ? ReactorNotice(
@@ -271,7 +271,22 @@ class _WorldOverridesScreenState extends State<WorldOverridesScreen> {
       readOnly: readOnly,
       roleBadge: RoleBadge(role: role),
       notice: notice,
-      onSetBudget: readOnly ? null : controller.setBudget,
+      onSetBudget: readOnly
+          ? null
+          : (
+              String name, {
+              double? budgetMs,
+              double? panicMs,
+              double? releaseMs,
+            }) {
+              if (ServerScope.of(context)?.state != ConnState.live) return;
+              controller.setBudget(
+                name,
+                budgetMs: budgetMs,
+                panicMs: panicMs,
+                releaseMs: releaseMs,
+              );
+            },
     );
   }
 

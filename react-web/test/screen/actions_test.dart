@@ -78,6 +78,7 @@ void main() {
       tester.pumpComponent(
         _wrapView(
           ReactorShell(
+            currentPath: '/server/srv1/actions',
             servers: const <ServerEntry>[
               ServerEntry(
                 id: 'srv1',

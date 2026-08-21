@@ -24,6 +24,7 @@ class ActionsConsoleView extends StatelessWidget {
   final String? pendingId;
   final Map<String, Map<String, Object?>> paramValues;
   final RoleInfo? role;
+  final bool connectionReadOnly;
   final void Function(String id, Map<String, Object?> params, bool confirm)?
   onExecute;
   final void Function(String? id)? onPendingChanged;
@@ -39,11 +40,12 @@ class ActionsConsoleView extends StatelessWidget {
     required this.onPendingChanged,
     required this.onParamChanged,
     this.role,
+    this.connectionReadOnly = false,
     super.key,
   });
 
   Widget _executeButton(ActionDescriptor action) {
-    final bool allDisabled = readOnlyFor(role);
+    final bool allDisabled = connectionReadOnly || readOnlyFor(role);
     final bool destructiveBlocked =
         action.destructive && adminGatedDisabled(role);
     final bool isDisabled = allDisabled || destructiveBlocked;
@@ -236,12 +238,15 @@ class ActionsConsoleView extends StatelessWidget {
                         param.defaultValue,
                     options: param.options,
                   ),
-                  onChanged: (Object? value) =>
-                      onParamChanged?.call(action.id, param.key, value),
+                  disabled: connectionReadOnly || readOnlyFor(role),
+                  onChanged: connectionReadOnly || readOnlyFor(role)
+                      ? null
+                      : (Object? value) =>
+                            onParamChanged?.call(action.id, param.key, value),
                 ),
             ],
           ),
-        if (pendingId == action.id)
+        if (pendingId == action.id && !connectionReadOnly && !readOnlyFor(role))
           ArcaneConfirmDialog(
             title: reactorText(
               ReactorText.actionsConfirmTitle,
@@ -372,6 +377,7 @@ class _ActionsScreenState extends State<ActionsScreen> {
     }
 
     final RoleInfo? role = RoleScope.of(context)?.role;
+    final bool live = server?.state == ConnState.live;
 
     return ReactorPage(
       title: reactorText(ReactorText.actionsTitle),
@@ -395,19 +401,31 @@ class _ActionsScreenState extends State<ActionsScreen> {
           pendingId: _pendingId,
           paramValues: _paramValues,
           role: role,
-          onExecute: (String id, Map<String, Object?> params, bool confirm) {
-            controller.execute(id, params, confirm);
-          },
-          onPendingChanged: (String? id) => setState(() => _pendingId = id),
-          onParamChanged: (String actionId, String paramKey, Object? value) {
-            setState(() {
-              _paramValues = Map<String, Map<String, Object?>>.of(_paramValues);
-              _paramValues[actionId] = Map<String, Object?>.of(
-                _paramValues[actionId] ?? <String, Object?>{},
-              );
-              _paramValues[actionId]![paramKey] = value;
-            });
-          },
+          connectionReadOnly: !live,
+          onExecute: !live
+              ? null
+              : (String id, Map<String, Object?> params, bool confirm) {
+                  if (ServerScope.of(context)?.state == ConnState.live) {
+                    controller.execute(id, params, confirm);
+                  }
+                },
+          onPendingChanged: !live
+              ? null
+              : (String? id) => setState(() => _pendingId = id),
+          onParamChanged: !live
+              ? null
+              : (String actionId, String paramKey, Object? value) {
+                  if (ServerScope.of(context)?.state != ConnState.live) return;
+                  setState(() {
+                    _paramValues = Map<String, Map<String, Object?>>.of(
+                      _paramValues,
+                    );
+                    _paramValues[actionId] = Map<String, Object?>.of(
+                      _paramValues[actionId] ?? <String, Object?>{},
+                    );
+                    _paramValues[actionId]![paramKey] = value;
+                  });
+                },
         ),
       ],
     );

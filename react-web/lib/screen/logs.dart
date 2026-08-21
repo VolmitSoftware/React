@@ -25,6 +25,7 @@ class LogsView extends StatelessWidget {
   final void Function(String)? onLevelFilter;
   final String command;
   final bool consoleEnabled;
+  final String? consoleUnavailableMessage;
   final bool consolePending;
   final void Function(String)? onCommandChanged;
   final void Function()? onExecuteCommand;
@@ -39,6 +40,7 @@ class LogsView extends StatelessWidget {
     this.notice,
     this.command = '',
     this.consoleEnabled = false,
+    this.consoleUnavailableMessage,
     this.consolePending = false,
     this.onCommandChanged,
     this.onExecuteCommand,
@@ -113,7 +115,9 @@ class LogsView extends StatelessWidget {
             if (!consoleEnabled)
               ReactorNotice(
                 title: 'Console unavailable',
-                message: reactorText(ReactorText.consoleAdminRequired),
+                message:
+                    consoleUnavailableMessage ??
+                    reactorText(ReactorText.consoleAdminRequired),
                 status: ReactorStatus.warning,
               ),
           ]),
@@ -235,7 +239,12 @@ class _LogsScreenState extends State<LogsScreen> {
     final String command = _command.trim();
     final RoleInfo? role = RoleScope.of(context)?.role;
     final bool allowed = role?.canExecuteConsole ?? false;
-    if (client == null || command.isEmpty || _consolePending || !allowed) {
+    final bool live = ServerScope.of(context)?.state == ConnState.live;
+    if (client == null ||
+        command.isEmpty ||
+        _consolePending ||
+        !allowed ||
+        !live) {
       return;
     }
 
@@ -302,8 +311,9 @@ class _LogsScreenState extends State<LogsScreen> {
     }
 
     final RoleInfo? role = RoleScope.of(context)?.role;
+    final bool live = server?.state == ConnState.live;
     final bool consoleEnabled =
-        _consoleClient != null && (role?.canExecuteConsole ?? false);
+        live && _consoleClient != null && (role?.canExecuteConsole ?? false);
     final Widget? notice = error != null
         ? ReactorNotice(
             title: 'Log refresh failed',
@@ -334,6 +344,9 @@ class _LogsScreenState extends State<LogsScreen> {
           setState(() => controller.setLevelFilter(level)),
       command: _command,
       consoleEnabled: consoleEnabled,
+      consoleUnavailableMessage: !live
+          ? 'Command execution is disabled until the connection is live.'
+          : null,
       consolePending: _consolePending,
       onCommandChanged: (String value) => setState(() => _command = value),
       onExecuteCommand: _executeConsole,

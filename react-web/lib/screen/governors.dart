@@ -265,6 +265,7 @@ class _GovernorsScreenState extends State<GovernorsScreen> {
     }
 
     final ControlListController controller = _controller!;
+    final bool live = scope?.state == ConnState.live;
     if (controller.loading && controller.items.isEmpty) {
       return _statePage(
         const ReactorLoadingState(label: 'Loading governor state'),
@@ -306,7 +307,13 @@ class _GovernorsScreenState extends State<GovernorsScreen> {
           incidentScore: incidentScore,
           schedulerBacklog: schedulerBacklog,
           backlogGrowthRate: backlogGrowthRate,
-          onToggle: controller.toggle,
+          onToggle: live
+              ? (String id, bool enabled) {
+                  if (ServerScope.of(context)?.state == ConnState.live) {
+                    controller.toggle(id, enabled);
+                  }
+                }
+              : null,
         ),
       ],
     );

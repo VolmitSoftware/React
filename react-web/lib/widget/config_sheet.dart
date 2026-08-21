@@ -7,6 +7,7 @@ import 'package:jaspr/jaspr.dart' show Component;
 import '../model/control_item.dart';
 import '../localization/reactor_localizations.dart';
 import '../model/knob.dart';
+import '../ui/reactor_ui.dart';
 import './knob_editor.dart';
 import './section_card.dart';
 
@@ -44,7 +45,7 @@ class ConfigSheetBody extends StatelessWidget {
           ],
         ),
         if (item.knobs.isEmpty)
-          ArcaneEmptyState.noData(
+          ReactorEmptyState(
             title: reactorText(ReactorText.configNoOptions),
             description: reactorText(ReactorText.configNoTunableKnobs),
           )

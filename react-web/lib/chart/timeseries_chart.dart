@@ -47,7 +47,8 @@ class _TimeseriesChartState extends State<TimeseriesChart> {
               dom.span(classes: 'reactor-chart-legend-item', <Component>[
                 dom.span(
                   classes:
-                      'reactor-chart-legend-line reactor-chart-series-$index',
+                      'reactor-chart-legend-line '
+                      'reactor-chart-series-${index % 6}',
                   const <Component>[],
                 ),
                 Component.text(component.series[index].$1),

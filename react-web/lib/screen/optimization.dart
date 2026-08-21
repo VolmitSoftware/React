@@ -336,7 +336,7 @@ class _OptimizationScreenState extends State<OptimizationScreen> {
     }
 
     final RoleInfo? role = RoleScope.of(context)?.role;
-    final bool readOnly = readOnlyFor(role);
+    final bool readOnly = readOnlyFor(role) || server?.state != ConnState.live;
 
     ControlItem? selectedItem;
     if (_selectedId != null) {
@@ -370,8 +370,20 @@ class _OptimizationScreenState extends State<OptimizationScreen> {
         readOnly: readOnly,
         roleBadge: RoleBadge(role: role),
         notice: notice,
-        onToggle: readOnly ? null : controller.toggle,
-        onSetAll: readOnly ? null : controller.setAll,
+        onToggle: readOnly
+            ? null
+            : (String id, bool enabled) {
+                if (ServerScope.of(context)?.state == ConnState.live) {
+                  controller.toggle(id, enabled);
+                }
+              },
+        onSetAll: readOnly
+            ? null
+            : (bool enabled) {
+                if (ServerScope.of(context)?.state == ConnState.live) {
+                  controller.setAll(enabled);
+                }
+              },
         onConfigure: readOnly
             ? null
             : (String id) => setState(() => _selectedId = id),
@@ -382,8 +394,11 @@ class _OptimizationScreenState extends State<OptimizationScreen> {
         disabled: readOnly,
         onKnobChanged: (readOnly || capturedId == null)
             ? null
-            : (String key, Object? value) =>
-                  controller.setKnob(capturedId, key, value),
+            : (String key, Object? value) {
+                if (ServerScope.of(context)?.state == ConnState.live) {
+                  controller.setKnob(capturedId, key, value);
+                }
+              },
         onClose: () => setState(() => _selectedId = null),
       ),
     ]);

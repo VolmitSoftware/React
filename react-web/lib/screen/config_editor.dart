@@ -24,6 +24,7 @@ class ConfigEditorView extends StatelessWidget {
   final void Function(String)? onPreset;
   final VoidCallback? onApply;
   final bool adminGated;
+  final bool connectionReadOnly;
   final Widget? roleBadge;
   final Widget? notice;
   final bool saving;
@@ -35,6 +36,7 @@ class ConfigEditorView extends StatelessWidget {
     this.onPreset,
     this.onApply,
     this.adminGated = false,
+    this.connectionReadOnly = false,
     this.roleBadge,
     this.notice,
     this.saving = false,
@@ -43,13 +45,17 @@ class ConfigEditorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool readOnly = adminGated || connectionReadOnly;
+    final String readOnlyMessage = adminGated
+        ? reactorText(ReactorText.commonRequiresAdminRole)
+        : 'Changes require a live server connection.';
     return ReactorPage(
       title: reactorText(ReactorText.configEditorTitle),
       subtitle: reactorText(ReactorText.configEditorSubtitle),
       leading: roleBadge,
-      actions: adminGated
+      actions: readOnly
           ? ArcaneTooltip(
-              text: reactorText(ReactorText.commonRequiresAdminRole),
+              text: readOnlyMessage,
               child: Button.primary(
                 label: saving
                     ? 'Applying…'
@@ -64,8 +70,8 @@ class ConfigEditorView extends StatelessWidget {
                   ? 'Applying…'
                   : reactorText(ReactorText.configEditorApplyChanges),
               size: ButtonSize.small,
-              disabled: saving,
-              onPressed: saving ? null : onApply,
+              disabled: saving || onApply == null,
+              onPressed: saving || onApply == null ? null : onApply,
             ),
       children: <Widget>[
         ?notice,
@@ -88,9 +94,9 @@ class ConfigEditorView extends StatelessWidget {
                     (ReactorText.configEditorPresetBalanced, 'balanced'),
                     (ReactorText.configEditorPresetHigh, 'high'),
                   ])
-                adminGated
+                readOnly
                     ? ArcaneTooltip(
-                        text: reactorText(ReactorText.commonRequiresAdminRole),
+                        text: readOnlyMessage,
                         child: Button.secondary(
                           label: reactorText(label),
                           disabled: true,
@@ -100,7 +106,10 @@ class ConfigEditorView extends StatelessWidget {
                     : Button.secondary(
                         label: reactorText(label),
                         size: ButtonSize.small,
-                        onPressed: () => onPreset?.call(key),
+                        disabled: onPreset == null,
+                        onPressed: onPreset == null
+                            ? null
+                            : () => onPreset?.call(key),
                       ),
             ],
           ),
@@ -133,8 +142,8 @@ class ConfigEditorView extends StatelessWidget {
                           ? pending[node.key]
                           : node.value,
                     ),
-                    disabled: adminGated,
-                    onChanged: adminGated
+                    disabled: readOnly,
+                    onChanged: readOnly
                         ? null
                         : (Object? v) => onEdit?.call(node.key, v),
                   ),
@@ -176,6 +185,7 @@ class _ConfigEditorScreenState extends State<ConfigEditorScreen> {
   }
 
   Future<void> _applyPreset(String name) async {
+    if (ServerScope.of(context)?.state != ConnState.live) return;
     await _controller?.applyPreset(name);
     if (_controller?.error == null) {
       ArcaneSonner.success(reactorText(ReactorText.configEditorApplied));
@@ -183,6 +193,7 @@ class _ConfigEditorScreenState extends State<ConfigEditorScreen> {
   }
 
   Future<void> _apply() async {
+    if (ServerScope.of(context)?.state != ConnState.live) return;
     await _controller?.apply();
     if (_controller?.error == null) {
       ArcaneSonner.success(reactorText(ReactorText.configEditorApplied));
@@ -237,6 +248,8 @@ class _ConfigEditorScreenState extends State<ConfigEditorScreen> {
 
     final RoleInfo? role = RoleScope.of(context)?.role;
     final bool adminGated = adminGatedDisabled(role);
+    final bool connectionReadOnly = server?.state != ConnState.live;
+    final bool readOnly = adminGated || connectionReadOnly;
     final Widget? notice = error != null
         ? ReactorNotice(
             title: reactorText(ReactorText.configEditorFailed),
@@ -260,12 +273,19 @@ class _ConfigEditorScreenState extends State<ConfigEditorScreen> {
       tree: controller.tree,
       pending: controller.pending,
       adminGated: adminGated,
+      connectionReadOnly: connectionReadOnly,
       roleBadge: RoleBadge(role: role),
       notice: notice,
       saving: controller.saving,
-      onEdit: adminGated ? null : controller.edit,
-      onPreset: adminGated ? null : _applyPreset,
-      onApply: (adminGated || !controller.dirty) ? null : _apply,
+      onEdit: readOnly
+          ? null
+          : (String key, Object? value) {
+              if (ServerScope.of(context)?.state == ConnState.live) {
+                controller.edit(key, value);
+              }
+            },
+      onPreset: readOnly ? null : _applyPreset,
+      onApply: (readOnly || !controller.dirty) ? null : _apply,
     );
   }
 

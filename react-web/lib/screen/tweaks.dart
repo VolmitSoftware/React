@@ -246,7 +246,7 @@ class _TweaksScreenState extends State<TweaksScreen> {
     }
 
     final RoleInfo? role = RoleScope.of(context)?.role;
-    final bool readOnly = readOnlyFor(role);
+    final bool readOnly = readOnlyFor(role) || server?.state != ConnState.live;
 
     return ReactorPage(
       title: reactorText(ReactorText.tweaksTitle),
@@ -267,8 +267,20 @@ class _TweaksScreenState extends State<TweaksScreen> {
         TweaksListView(
           items: controller.items,
           readOnly: readOnly,
-          onToggle: readOnly ? null : controller.toggle,
-          onKnobChanged: readOnly ? null : controller.setKnob,
+          onToggle: readOnly
+              ? null
+              : (String id, bool enabled) {
+                  if (ServerScope.of(context)?.state == ConnState.live) {
+                    controller.toggle(id, enabled);
+                  }
+                },
+          onKnobChanged: readOnly
+              ? null
+              : (String id, String key, Object? value) {
+                  if (ServerScope.of(context)?.state == ConnState.live) {
+                    controller.setKnob(id, key, value);
+                  }
+                },
         ),
       ],
     );
