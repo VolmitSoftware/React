@@ -514,36 +514,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required String value,
     required void Function(String) onChanged,
   }) {
-    return dom.div(
-      styles: const dom.Styles(
-        raw: <String, String>{
-          'display': 'grid',
-          'grid-template-columns': 'minmax(180px, 1fr) 112px',
-          'align-items': 'center',
-          'gap': '1rem',
-          'padding': '0.55rem 1rem',
-          'border-bottom': '1px solid var(--border)',
-        },
+    return dom.div(classes: 'reactor-settings-threshold-row', <Widget>[
+      dom.div(classes: 'reactor-settings-threshold-label', <Widget>[
+        Component.text(label),
+      ]),
+      TextInput(
+        value: value,
+        type: TextInputType.number,
+        onChange: onChanged,
+        fullWidth: true,
       ),
-      <Widget>[
-        dom.div(
-          styles: const dom.Styles(
-            raw: <String, String>{
-              'flex': '1',
-              'font-size': '0.875rem',
-              'font-weight': '500',
-            },
-          ),
-          <Widget>[Component.text(label)],
-        ),
-        TextInput(
-          value: value,
-          type: TextInputType.number,
-          onChange: onChanged,
-          fullWidth: true,
-        ),
-      ],
-    );
+    ]);
   }
 
   Widget _serversSection(FleetController ctrl, List<ServerCredential> servers) {

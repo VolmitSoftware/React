@@ -190,5 +190,40 @@ void main() {
             'ComparisonScreen must show an empty-state indicator when no server has the selected metric',
       );
     });
+
+    testServer('excludes cached snapshots from offline servers', (
+      ServerTester tester,
+    ) async {
+      final ServerSnapshot liveSnapshot = _snapshotFrom(<String, SamplerSample>{
+        'ticks-per-second': _sample('ticks-per-second', 20.0),
+      });
+      final ServerSnapshot cachedOfflineSnapshot = _snapshotFrom(
+        <String, SamplerSample>{
+          'ticks-per-second': _sample('ticks-per-second', 999.0),
+        },
+      );
+
+      tester.pumpComponent(
+        _wrap(<FleetServerLive>[
+          _liveServer('live', 'Live', snapshot: liveSnapshot),
+          _liveServer(
+            'offline',
+            'Offline cache',
+            state: ConnState.offline,
+            snapshot: cachedOfflineSnapshot,
+          ),
+        ]),
+      );
+
+      final DocumentResponse res = await tester.request('/');
+      expect(res.statusCode, equals(200));
+      expect(res.body, contains('Offline (excluded)'));
+      expect(res.body, contains('unavailable excluded'));
+      expect(
+        res.body,
+        isNot(contains('999.0')),
+        reason: 'Offline cached telemetry must not enter comparison results',
+      );
+    });
   });
 }

@@ -9,6 +9,7 @@ import '../localization/reactor_localizations.dart';
 import '../state/server_scope.dart';
 import '../ui/reactor_ui.dart';
 import '../widget/gauge.dart';
+import '../widget/server_snapshot_state.dart';
 import '../widget/stat_tile.dart';
 
 class OverviewScreen extends StatelessWidget {
@@ -18,15 +19,12 @@ class OverviewScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final ServerScope? scope = ServerScope.of(context);
     final ServerSnapshot? snapshot = scope?.snapshot;
-    if (snapshot == null) {
-      return ReactorPage(
-        title: reactorText(ReactorText.overviewTitle),
-        subtitle: reactorText(ReactorText.overviewSubtitle),
-        children: <Widget>[
-          ReactorLoadingState(label: reactorText(ReactorText.metricsWaiting)),
-        ],
-      );
-    }
+    final Widget? statePage = serverSnapshotStatePage(
+      scope: scope,
+      title: reactorText(ReactorText.overviewTitle),
+      subtitle: reactorText(ReactorText.overviewSubtitle),
+    );
+    if (snapshot == null) return statePage!;
 
     final SamplerSample? tps = snapshot.sampler('ticks-per-second');
     final SamplerSample? incidentScore = snapshot.sampler('incident-score');

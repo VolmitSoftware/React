@@ -14,6 +14,7 @@ import '../state/server_scope.dart';
 import '../ui/reactor_ui.dart';
 import '../widget/heatmap_grid_view.dart';
 import '../widget/section_card.dart' show statGrid;
+import '../widget/server_snapshot_state.dart';
 import '../widget/stat_tile.dart';
 
 const List<(String, ReactorText)> _kSpatialSamplers = <(String, ReactorText)>[
@@ -118,8 +119,9 @@ class _HeatmapsScreenState extends State<HeatmapsScreen> {
           SectionPanel(
             label: reactorText(ReactorText.heatmapsSpatialMetrics),
             child: snapshot == null
-                ? ReactorLoadingState(
-                    label: reactorText(ReactorText.metricsWaiting),
+                ? serverSnapshotState(
+                    scope: scope,
+                    icon: ArcaneIcon.map(size: IconSize.sm),
                   )
                 : ReactorEmptyState(
                     title: 'No spatial metrics',

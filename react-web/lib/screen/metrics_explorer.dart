@@ -7,9 +7,9 @@ import 'package:jaspr/jaspr.dart' show Component;
 import '../localization/reactor_localizations.dart';
 import '../model/sampler_sample.dart';
 import '../model/server_snapshot.dart';
-import '../state/connection_manager.dart';
 import '../state/server_scope.dart';
 import '../ui/reactor_ui.dart';
+import '../widget/server_snapshot_state.dart';
 
 class MetricsExplorerScreen extends StatefulWidget {
   const MetricsExplorerScreen({super.key});
@@ -25,31 +25,13 @@ class _MetricsExplorerScreenState extends State<MetricsExplorerScreen> {
   Widget build(BuildContext context) {
     final ServerScope? scope = ServerScope.of(context);
     final ServerSnapshot? snapshot = scope?.snapshot;
-
-    if (scope == null) {
-      return _statePage(
-        const ReactorNotice(
-          title: 'Metrics unavailable',
-          message: 'Metrics require a live server connection.',
-          status: ReactorStatus.critical,
-        ),
-      );
-    }
-
-    if (snapshot == null) {
-      if (scope.state == ConnState.connecting) {
-        return _statePage(
-          ReactorLoadingState(label: reactorText(ReactorText.metricsWaiting)),
-        );
-      }
-      return _statePage(
-        const ReactorNotice(
-          title: 'Telemetry unavailable',
-          message: 'The server is connected but has not provided a snapshot.',
-          status: ReactorStatus.warning,
-        ),
-      );
-    }
+    final Widget? statePage = serverSnapshotStatePage(
+      scope: scope,
+      title: reactorText(ReactorText.metricsTitle),
+      subtitle: reactorText(ReactorText.metricsSubtitle),
+      icon: ArcaneIcon.listFilter(size: IconSize.sm),
+    );
+    if (snapshot == null) return statePage!;
 
     final List<SamplerSample> samples = snapshot.byId.values.toList();
     samples.sort(

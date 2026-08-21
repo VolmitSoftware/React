@@ -96,7 +96,7 @@ jobs:
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v3
         with:
-          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_REACT_WEB_PLUGIN }}
+          credentials_json: ${{ secrets.SERVICE_ACCOUNT }}
 
       - name: Deploy Firebase Hosting
         working-directory: react-web

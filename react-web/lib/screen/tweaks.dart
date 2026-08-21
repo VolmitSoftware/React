@@ -139,30 +139,58 @@ class TweaksListView extends StatelessWidget {
           ],
         ),
         if (tweak.knobs.isNotEmpty)
-          ArcaneAccordion(
-            items: <ArcaneAccordionItem>[
-              ArcaneAccordionItem(
-                title: reactorText(
-                  ReactorText.tweaksConfigure,
-                  <String, Object?>{'count': tweak.knobs.length},
+          dom.details(
+            styles: const dom.Styles(
+              raw: <String, String>{
+                'margin': '0 -0.75rem -0.65rem',
+                'border-top': '1px solid $kReactorHairline',
+              },
+            ),
+            <Widget>[
+              dom.summary(
+                styles: const dom.Styles(
+                  raw: <String, String>{
+                    'min-height': '2rem',
+                    'padding': '0.42rem 0.75rem',
+                    'cursor': 'pointer',
+                    'color': 'var(--foreground)',
+                    'font-size': '0.72rem',
+                    'font-weight': '600',
+                    'line-height': '1.25',
+                    'user-select': 'none',
+                  },
                 ),
-                customContent: Collection(
-                  gap: 8,
-                  children: <Widget>[
-                    for (final Knob knob in tweak.knobs)
-                      KnobEditor(
-                        knob: knob,
-                        disabled: readOnly,
-                        onChanged: readOnly
-                            ? null
-                            : (Object? value) => onKnobChanged?.call(
-                                tweak.id,
-                                knob.key,
-                                value,
-                              ),
-                      ),
-                  ],
+                <Widget>[
+                  Component.text(
+                    reactorText(ReactorText.tweaksConfigure, <String, Object?>{
+                      'count': tweak.knobs.length,
+                    }),
+                  ),
+                ],
+              ),
+              dom.div(
+                styles: const dom.Styles(
+                  raw: <String, String>{
+                    'display': 'grid',
+                    'grid-template-columns':
+                        'repeat(auto-fit, minmax(200px, 1fr))',
+                    'gap': '0.65rem',
+                    'padding': '0.65rem 0.75rem',
+                    'border-top': '1px solid $kReactorHairline',
+                    'background': 'var(--reactor-panel-soft)',
+                  },
                 ),
+                <Widget>[
+                  for (final Knob knob in tweak.knobs)
+                    KnobEditor(
+                      knob: knob,
+                      disabled: readOnly,
+                      onChanged: readOnly
+                          ? null
+                          : (Object? value) =>
+                                onKnobChanged?.call(tweak.id, knob.key, value),
+                    ),
+                ],
               ),
             ],
           ),

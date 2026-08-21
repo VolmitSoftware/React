@@ -91,6 +91,7 @@ Widget _wrapWatcher(
   List<FleetServerLive> servers,
   Widget child, {
   _FakeFleetController? ctrl,
+  void Function(FleetAlert alert)? notifyCritical,
 }) {
   final _FakeFleetController controller = ctrl ?? _FakeFleetController();
   return ArcaneThemeProvider(
@@ -101,10 +102,24 @@ Widget _wrapWatcher(
       child: FleetLiveScope(
         servers: servers,
         revision: 1,
-        child: FleetAlertWatcher(child: child),
+        child: notifyCritical == null
+            ? FleetAlertWatcher(child: child)
+            : FleetAlertWatcher(notifyCritical: notifyCritical, child: child),
       ),
     ),
   );
+}
+
+class _BuildOrderProbe extends StatelessWidget {
+  final List<String> events;
+
+  const _BuildOrderProbe(this.events);
+
+  @override
+  Widget build(BuildContext context) {
+    events.add('child-build');
+    return dom.span(<Widget>[Component.text('ordered-probe')]);
+  }
 }
 
 void main() {
@@ -155,6 +170,38 @@ void main() {
   });
 
   group('FleetAlertWatcher render smoke test', () {
+    testServer('defers critical notification until after child rendering', (
+      ServerTester tester,
+    ) async {
+      final List<String> events = <String>[];
+      tester.pumpComponent(
+        _wrapWatcher(
+          <FleetServerLive>[
+            _liveServer(
+              'srv-a',
+              'ServerAlpha',
+              samplers: <String, double>{'ticks-per-second': 1.0},
+            ),
+          ],
+          _BuildOrderProbe(events),
+          notifyCritical: (FleetAlert alert) {
+            events.add('notify:${alert.key}');
+          },
+        ),
+      );
+
+      final DocumentResponse res = await tester.request('/');
+
+      expect(res.statusCode, equals(200));
+      expect(res.body.contains('ordered-probe'), isTrue);
+      expect(
+        events,
+        equals(<String>['child-build', 'notify:srv-a/ticks-per-second']),
+        reason:
+            'Toast dispatch must happen in the post-frame phase, after the child tree is rendered',
+      );
+    });
+
     testServer('renders child pass-through with critical alerts present', (
       ServerTester tester,
     ) async {
@@ -178,6 +225,56 @@ void main() {
         reason:
             'FleetAlertWatcher must pass through child unchanged in its rendered output',
       );
+    });
+
+    testServer('does not notify from an offline cached snapshot', (
+      ServerTester tester,
+    ) async {
+      final List<FleetAlert> notifications = <FleetAlert>[];
+      tester.pumpComponent(
+        _wrapWatcher(
+          <FleetServerLive>[
+            _liveServer(
+              'srv-a',
+              'ServerAlpha',
+              state: ConnState.offline,
+              samplers: <String, double>{'ticks-per-second': 1.0},
+            ),
+          ],
+          dom.span(<Widget>[Component.text('offline-probe')]),
+          notifyCritical: notifications.add,
+        ),
+      );
+
+      final DocumentResponse res = await tester.request('/');
+      expect(res.statusCode, equals(200));
+      expect(res.body, contains('offline-probe'));
+      expect(notifications, isEmpty);
+    });
+
+    testServer('notifies from a degraded cached snapshot', (
+      ServerTester tester,
+    ) async {
+      final List<FleetAlert> notifications = <FleetAlert>[];
+      tester.pumpComponent(
+        _wrapWatcher(
+          <FleetServerLive>[
+            _liveServer(
+              'srv-a',
+              'ServerAlpha',
+              state: ConnState.degraded,
+              samplers: <String, double>{'ticks-per-second': 1.0},
+            ),
+          ],
+          dom.span(<Widget>[Component.text('degraded-probe')]),
+          notifyCritical: notifications.add,
+        ),
+      );
+
+      final DocumentResponse res = await tester.request('/');
+      expect(res.statusCode, equals(200));
+      expect(notifications, hasLength(1));
+      expect(notifications.single.serverId, equals('srv-a'));
     });
 
     testServer('does not throw with healthy fleet', (

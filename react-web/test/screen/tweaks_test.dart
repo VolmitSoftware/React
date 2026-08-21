@@ -152,7 +152,7 @@ void main() {
       );
     });
 
-    testServer('renders Configure (1) accordion title for tweaks with knobs', (
+    testServer('renders Configure (1) row disclosure for tweaks with knobs', (
       ServerTester tester,
     ) async {
       tester.pumpComponent(
@@ -170,8 +170,10 @@ void main() {
         res.body.contains('Configure (1)'),
         isTrue,
         reason:
-            'accordion title Configure (1) must appear for tweaks with 1 knob',
+            'disclosure label Configure (1) must appear for tweaks with 1 knob',
       );
+      expect(res.body.contains('<details'), isTrue);
+      expect(res.body.contains('<summary'), isTrue);
     });
   });
 

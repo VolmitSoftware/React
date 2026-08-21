@@ -10,6 +10,7 @@ import '../state/server_scope.dart';
 import '../ui/reactor_ui.dart';
 import '../widget/gauge.dart';
 import '../widget/section_card.dart';
+import '../widget/server_snapshot_state.dart';
 import '../widget/stat_tile.dart';
 
 class IncidentsScreen extends StatelessWidget {
@@ -19,15 +20,12 @@ class IncidentsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final ServerScope? scope = ServerScope.of(context);
     final ServerSnapshot? snapshot = scope?.snapshot;
-    if (snapshot == null) {
-      return ReactorPage(
-        title: reactorText(ReactorText.incidentsTitle),
-        subtitle: reactorText(ReactorText.incidentsSubtitle),
-        children: <Widget>[
-          ReactorLoadingState(label: reactorText(ReactorText.metricsWaiting)),
-        ],
-      );
-    }
+    final Widget? statePage = serverSnapshotStatePage(
+      scope: scope,
+      title: reactorText(ReactorText.incidentsTitle),
+      subtitle: reactorText(ReactorText.incidentsSubtitle),
+    );
+    if (snapshot == null) return statePage!;
 
     final SamplerSample? incidentScore = snapshot.sampler('incident-score');
     final SamplerSample? backlogGrowthRate = snapshot.sampler(

@@ -9,6 +9,7 @@ import '../model/server_snapshot.dart';
 import '../state/server_scope.dart';
 import '../ui/reactor_ui.dart';
 import '../widget/section_card.dart';
+import '../widget/server_snapshot_state.dart';
 import '../widget/stat_tile.dart';
 
 class EntitiesScreen extends StatelessWidget {
@@ -18,15 +19,12 @@ class EntitiesScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final ServerScope? scope = ServerScope.of(context);
     final ServerSnapshot? snapshot = scope?.snapshot;
-    if (snapshot == null) {
-      return ReactorPage(
-        title: reactorText(ReactorText.entitiesTitle),
-        subtitle: reactorText(ReactorText.entitiesSubtitle),
-        children: <Widget>[
-          ReactorLoadingState(label: reactorText(ReactorText.metricsWaiting)),
-        ],
-      );
-    }
+    final Widget? statePage = serverSnapshotStatePage(
+      scope: scope,
+      title: reactorText(ReactorText.entitiesTitle),
+      subtitle: reactorText(ReactorText.entitiesSubtitle),
+    );
+    if (snapshot == null) return statePage!;
 
     final SamplerSample? entities = snapshot.sampler('entities');
     final SamplerSample? entityAiActive = snapshot.sampler(

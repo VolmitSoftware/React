@@ -200,6 +200,10 @@ void main() {
       fleet.setActive('two');
 
       expect(fleet.servers, hasLength(2));
+      expect(fleet.servers.map((ServerCredential c) => c.label), <String>[
+        'TestServer',
+        'TestServer',
+      ]);
       expect(fleet.activeManager, same(fleet.managerFor('two')));
       expect(storage.read(FleetManager.storageKey), isNotNull);
 

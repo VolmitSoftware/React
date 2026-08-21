@@ -203,6 +203,45 @@ void main() {
       );
     });
 
+    testServer('offline cached snapshot does not produce an active alert', (
+      ServerTester tester,
+    ) async {
+      tester.pumpComponent(
+        _wrap(<FleetServerLive>[
+          _liveServer(
+            'srv-a',
+            'ServerAlpha',
+            state: ConnState.offline,
+            samplers: <String, double>{'ticks-per-second': 1.0},
+          ),
+        ]),
+      );
+
+      final DocumentResponse res = await tester.request('/');
+      expect(res.statusCode, equals(200));
+      expect(res.body, contains(ReactorText.alertsNoneOpen.english));
+      expect(res.body, isNot(contains(ReactorText.alertLowTps.english)));
+    });
+
+    testServer('degraded cached snapshot remains eligible for alerts', (
+      ServerTester tester,
+    ) async {
+      tester.pumpComponent(
+        _wrap(<FleetServerLive>[
+          _liveServer(
+            'srv-a',
+            'ServerAlpha',
+            state: ConnState.degraded,
+            samplers: <String, double>{'ticks-per-second': 1.0},
+          ),
+        ]),
+      );
+
+      final DocumentResponse res = await tester.request('/');
+      expect(res.statusCode, equals(200));
+      expect(res.body, contains(ReactorText.alertLowTps.english));
+    });
+
     testServer('resolved alert is absent from feed', (
       ServerTester tester,
     ) async {

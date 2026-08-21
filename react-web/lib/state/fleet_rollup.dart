@@ -18,7 +18,15 @@ class FleetServerLive {
   });
 }
 
-enum FleetHealth { healthy, warning, critical, offline }
+ServerSnapshot? currentFleetSnapshot(FleetServerLive server) {
+  if (server.state == ConnState.connecting ||
+      server.state == ConnState.offline) {
+    return null;
+  }
+  return server.snapshot;
+}
+
+enum FleetHealth { healthy, warning, critical, pending, offline }
 
 class FleetServerHealth {
   final String id;
@@ -26,7 +34,7 @@ class FleetServerHealth {
   final ConnState state;
   final double? tps;
   final double? mspt;
-  final int players;
+  final int? players;
   final FleetHealth health;
   final int alertCount;
   final DateTime? lastSeen;
@@ -45,11 +53,11 @@ class FleetServerHealth {
 }
 
 class FleetRollup {
-  final double meanTps;
-  final double worstTps;
-  final int totalPlayers;
-  final double worstMspt;
-  final int compositeHealth;
+  final double? meanTps;
+  final double? worstTps;
+  final int? totalPlayers;
+  final double? worstMspt;
+  final int? compositeHealth;
   final Map<AlertSeverity, int> alertCounts;
   final List<FleetServerHealth> servers;
   final List<FleetServerHealth> needsAttention;
@@ -71,11 +79,11 @@ class FleetRollup {
   }) {
     if (servers.isEmpty) {
       return FleetRollup(
-        meanTps: 0.0,
-        worstTps: 0.0,
-        totalPlayers: 0,
-        worstMspt: 0.0,
-        compositeHealth: 0,
+        meanTps: null,
+        worstTps: null,
+        totalPlayers: null,
+        worstMspt: null,
+        compositeHealth: null,
         alertCounts: <AlertSeverity, int>{
           AlertSeverity.critical: 0,
           AlertSeverity.warning: 0,
@@ -97,22 +105,28 @@ class FleetRollup {
 
     final List<FleetServerHealth> healthList = <FleetServerHealth>[];
     int totalScore = 0;
+    int scoreCount = 0;
     double tpsSum = 0.0;
     int tpsCount = 0;
-    double worstTps = double.infinity;
-    double worstMspt = 0.0;
+    double? worstTps;
+    double? worstMspt;
     int totalPlayers = 0;
+    int playersCount = 0;
 
     for (final FleetServerLive srv in servers) {
-      final ServerSnapshot? snap = srv.snapshot;
-      final double? tps = snap?.sampler('ticks-per-second')?.value;
-      final double? mspt = snap?.sampler('tick-time')?.value;
-      final int players = (snap?.sampler('players')?.value ?? 0.0).round();
-      final double incident = snap?.sampler('incident-score')?.value ?? 0.0;
+      final ServerSnapshot? currentSnapshot = currentFleetSnapshot(srv);
+      final double? tps = currentSnapshot?.sampler('ticks-per-second')?.value;
+      final double? mspt = currentSnapshot?.sampler('tick-time')?.value;
+      final double? playerValue = currentSnapshot?.sampler('players')?.value;
+      final int? players = playerValue?.round();
+      final double incident =
+          currentSnapshot?.sampler('incident-score')?.value ?? 0.0;
 
-      int score;
+      int? score;
       if (srv.state == ConnState.offline) {
-        score = 0;
+        score = null;
+      } else if (currentSnapshot == null) {
+        score = null;
       } else {
         double base = ((tps ?? 0.0) / 20.0).clamp(0.0, 1.0) * 100.0;
         if ((mspt ?? 0.0) > 50.0) base -= 20.0;
@@ -123,6 +137,8 @@ class FleetRollup {
       FleetHealth health;
       if (srv.state == ConnState.offline) {
         health = FleetHealth.offline;
+      } else if (score == null) {
+        health = FleetHealth.pending;
       } else if (score <= 50) {
         health = FleetHealth.critical;
       } else if (score < 80) {
@@ -138,13 +154,19 @@ class FleetRollup {
       if (tps != null) {
         tpsSum += tps;
         tpsCount++;
-        if (tps < worstTps) worstTps = tps;
+        if (worstTps == null || tps < worstTps) worstTps = tps;
       }
-      if (mspt != null && mspt > worstMspt) {
+      if (mspt != null && (worstMspt == null || mspt > worstMspt)) {
         worstMspt = mspt;
       }
-      totalPlayers += players;
-      totalScore += score;
+      if (players != null) {
+        totalPlayers += players;
+        playersCount++;
+      }
+      if (score != null) {
+        totalScore += score;
+        scoreCount++;
+      }
 
       healthList.add(
         FleetServerHealth(
@@ -161,11 +183,10 @@ class FleetRollup {
       );
     }
 
-    final double meanTps = tpsCount > 0 ? tpsSum / tpsCount : 0.0;
-    final double finalWorstTps = tpsCount > 0
-        ? (worstTps == double.infinity ? 0.0 : worstTps)
-        : 0.0;
-    final int compositeHealth = (totalScore / servers.length).round();
+    final double? meanTps = tpsCount > 0 ? tpsSum / tpsCount : null;
+    final int? compositeHealth = scoreCount > 0
+        ? (totalScore / scoreCount).round()
+        : null;
 
     int healthOrder(FleetHealth h) {
       switch (h) {
@@ -175,8 +196,10 @@ class FleetRollup {
           return 1;
         case FleetHealth.warning:
           return 2;
-        case FleetHealth.healthy:
+        case FleetHealth.pending:
           return 3;
+        case FleetHealth.healthy:
+          return 4;
       }
     }
 
@@ -200,8 +223,8 @@ class FleetRollup {
 
     return FleetRollup(
       meanTps: meanTps,
-      worstTps: finalWorstTps,
-      totalPlayers: totalPlayers,
+      worstTps: worstTps,
+      totalPlayers: playersCount > 0 ? totalPlayers : null,
       worstMspt: worstMspt,
       compositeHealth: compositeHealth,
       alertCounts: alertCounts,

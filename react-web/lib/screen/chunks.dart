@@ -9,6 +9,7 @@ import '../model/server_snapshot.dart';
 import '../state/server_scope.dart';
 import '../ui/reactor_ui.dart';
 import '../widget/section_card.dart';
+import '../widget/server_snapshot_state.dart';
 import '../widget/stat_tile.dart';
 
 class ChunksScreen extends StatelessWidget {
@@ -18,15 +19,12 @@ class ChunksScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final ServerScope? scope = ServerScope.of(context);
     final ServerSnapshot? snapshot = scope?.snapshot;
-    if (snapshot == null) {
-      return ReactorPage(
-        title: reactorText(ReactorText.chunksTitle),
-        subtitle: reactorText(ReactorText.chunksSubtitle),
-        children: <Widget>[
-          ReactorLoadingState(label: reactorText(ReactorText.metricsWaiting)),
-        ],
-      );
-    }
+    final Widget? statePage = serverSnapshotStatePage(
+      scope: scope,
+      title: reactorText(ReactorText.chunksTitle),
+      subtitle: reactorText(ReactorText.chunksSubtitle),
+    );
+    if (snapshot == null) return statePage!;
 
     final SamplerSample? chunks = snapshot.sampler('chunks');
     final SamplerSample? chunksLoaded = snapshot.sampler('chunks-loaded');

@@ -55,7 +55,8 @@ class _FleetDashboardScreenState extends State<FleetDashboardScreen> {
     final List<({String id, String name, ServerSnapshot? snapshot})>
     serverData = filteredServers
         .map(
-          (FleetServerLive s) => (id: s.id, name: s.name, snapshot: s.snapshot),
+          (FleetServerLive s) =>
+              (id: s.id, name: s.name, snapshot: currentFleetSnapshot(s)),
         )
         .toList();
 
@@ -134,42 +135,55 @@ class _FleetDashboardScreenState extends State<FleetDashboardScreen> {
         description: 'Choose another tag to restore the fleet rollup.',
       );
     }
-    return dom
-        .div(classes: 'reactor-fleet-rollup reactor-metric-bank', <Widget>[
-          Gauge(
-            label: reactorText(ReactorText.fleetMeanTps),
-            value: rollup.meanTps,
-            display: rollup.meanTps.toStringAsFixed(1),
-            max: 20.0,
-            thresholds: const (5.0, 10.0),
-            invertStatus: true,
-          ),
-          Gauge(
-            label: reactorText(ReactorText.fleetWorstTps),
-            value: rollup.worstTps,
-            display: rollup.worstTps.toStringAsFixed(1),
-            max: 20.0,
-            thresholds: const (5.0, 10.0),
-            invertStatus: true,
-          ),
-          Gauge(
-            label: reactorText(ReactorText.fleetCompositeHealth),
-            value: rollup.compositeHealth.toDouble(),
-            display: '${rollup.compositeHealth}%',
-            max: 100.0,
-            thresholds: const (20.0, 50.0),
-            invertStatus: true,
-          ),
-          ReactorStat(
-            label: reactorText(ReactorText.fleetTotalPlayers),
-            value: rollup.totalPlayers.toString(),
-          ),
-          ReactorStat(
-            label: reactorText(ReactorText.fleetWorstMspt),
-            value: rollup.worstMspt.toStringAsFixed(1),
-            unit: 'ms',
-          ),
-        ]);
+    return dom.div(classes: 'reactor-fleet-rollup reactor-metric-bank', <
+      Widget
+    >[
+      if (rollup.meanTps == null)
+        ReactorStat(label: reactorText(ReactorText.fleetMeanTps), value: '--')
+      else
+        Gauge(
+          label: reactorText(ReactorText.fleetMeanTps),
+          value: rollup.meanTps!,
+          display: rollup.meanTps!.toStringAsFixed(1),
+          max: 20.0,
+          thresholds: const (5.0, 10.0),
+          invertStatus: true,
+        ),
+      if (rollup.worstTps == null)
+        ReactorStat(label: reactorText(ReactorText.fleetWorstTps), value: '--')
+      else
+        Gauge(
+          label: reactorText(ReactorText.fleetWorstTps),
+          value: rollup.worstTps!,
+          display: rollup.worstTps!.toStringAsFixed(1),
+          max: 20.0,
+          thresholds: const (5.0, 10.0),
+          invertStatus: true,
+        ),
+      if (rollup.compositeHealth == null)
+        ReactorStat(
+          label: reactorText(ReactorText.fleetCompositeHealth),
+          value: '--',
+        )
+      else
+        Gauge(
+          label: reactorText(ReactorText.fleetCompositeHealth),
+          value: rollup.compositeHealth!.toDouble(),
+          display: '${rollup.compositeHealth}%',
+          max: 100.0,
+          thresholds: const (20.0, 50.0),
+          invertStatus: true,
+        ),
+      ReactorStat(
+        label: reactorText(ReactorText.fleetTotalPlayers),
+        value: rollup.totalPlayers?.toString() ?? '--',
+      ),
+      ReactorStat(
+        label: reactorText(ReactorText.fleetWorstMspt),
+        value: rollup.worstMspt?.toStringAsFixed(1) ?? '--',
+        unit: 'ms',
+      ),
+    ]);
   }
 
   Widget _alertBadges(FleetRollup rollup) {
@@ -289,6 +303,14 @@ class _ServerCard extends StatelessWidget {
         reactorText(ReactorText.statusCritical),
         ReactorStatus.critical,
       ),
+      FleetHealth.pending => (
+        s.state == ConnState.connecting
+            ? reactorText(ReactorText.statusConnecting)
+            : 'Awaiting telemetry',
+        s.state == ConnState.degraded
+            ? ReactorStatus.warning
+            : ReactorStatus.neutral,
+      ),
       FleetHealth.offline => (
         reactorText(ReactorText.statusOffline),
         ReactorStatus.critical,
@@ -360,7 +382,10 @@ class _ServerCard extends StatelessWidget {
         reactorText(ReactorText.overviewTps),
         tps != null ? tps.toStringAsFixed(1) : '--',
       ),
-      _cell(reactorText(ReactorText.commonPlayers), server.players.toString()),
+      _cell(
+        reactorText(ReactorText.commonPlayers),
+        server.players?.toString() ?? '--',
+      ),
       _cell(
         reactorText(ReactorText.fleetAlerts),
         server.alertCount.toString(),
@@ -387,6 +412,18 @@ class _NeedsAttentionRow extends StatelessWidget {
   const _NeedsAttentionRow({required this.server});
 
   static (String, ReactorStatus) _reason(FleetServerHealth s) {
+    if (s.health == FleetHealth.pending) {
+      if (s.state == ConnState.connecting) {
+        return (
+          reactorText(ReactorText.statusConnecting),
+          ReactorStatus.neutral,
+        );
+      }
+      if (s.state == ConnState.degraded) {
+        return ('Degraded · awaiting telemetry', ReactorStatus.warning);
+      }
+      return ('Awaiting telemetry', ReactorStatus.neutral);
+    }
     if (s.state == ConnState.offline) {
       return (reactorText(ReactorText.statusOffline), ReactorStatus.critical);
     }

@@ -77,7 +77,7 @@ void main() {
       expect(r.meanTps, equals(20.0));
       expect(r.worstTps, equals(20.0));
       expect(r.totalPlayers, equals(15));
-      expect(r.worstMspt, equals(0.0));
+      expect(r.worstMspt, isNull);
       expect(r.compositeHealth, equals(100));
       expect(r.servers[0].health, equals(FleetHealth.healthy));
       expect(r.servers[1].health, equals(FleetHealth.healthy));
@@ -112,36 +112,76 @@ void main() {
       expect(r.needsAttention.first.id, equals('a'));
     });
 
-    test(
-      'offline server scores 0 health offline counted as 0 in composite',
-      () {
-        final List<FleetServerLive> servers = <FleetServerLive>[
-          _liveServer(
-            'a',
-            'Alpha',
-            samplers: <String, double>{'ticks-per-second': 20.0},
-          ),
-          _liveServer(
-            'b',
-            'Beta',
-            state: ConnState.offline,
-            samplers: <String, double>{'ticks-per-second': 20.0},
-          ),
-        ];
+    test('offline cached snapshot is excluded from live aggregates', () {
+      final List<FleetServerLive> servers = <FleetServerLive>[
+        _liveServer(
+          'a',
+          'Alpha',
+          samplers: <String, double>{
+            'ticks-per-second': 20.0,
+            'tick-time': 10.0,
+            'players': 5.0,
+          },
+        ),
+        _liveServer(
+          'b',
+          'Beta',
+          state: ConnState.offline,
+          samplers: <String, double>{
+            'ticks-per-second': 1.0,
+            'tick-time': 99.0,
+            'players': 500.0,
+          },
+        ),
+      ];
 
-        final FleetRollup r = FleetRollup.compute(
-          servers: servers,
-          openAlerts: const <FleetAlert>[],
-        );
+      final FleetRollup r = FleetRollup.compute(
+        servers: servers,
+        openAlerts: const <FleetAlert>[],
+      );
 
-        expect(r.servers[1].health, equals(FleetHealth.offline));
-        expect(r.compositeHealth, equals(50));
-        expect(
-          r.needsAttention.any((FleetServerHealth s) => s.id == 'b'),
-          isTrue,
-        );
-      },
-    );
+      expect(r.servers[1].health, equals(FleetHealth.offline));
+      expect(r.servers[1].tps, isNull);
+      expect(r.servers[1].mspt, isNull);
+      expect(r.servers[1].players, isNull);
+      expect(r.meanTps, equals(20.0));
+      expect(r.worstTps, equals(20.0));
+      expect(r.worstMspt, equals(10.0));
+      expect(r.totalPlayers, equals(5));
+      expect(r.compositeHealth, equals(100));
+      expect(
+        r.needsAttention.any((FleetServerHealth s) => s.id == 'b'),
+        isTrue,
+      );
+    });
+
+    test('connecting and no-snapshot servers remain pending and unknown', () {
+      final List<FleetServerLive> servers = <FleetServerLive>[
+        _liveServer(
+          'a',
+          'Alpha',
+          state: ConnState.connecting,
+          samplers: <String, double>{'ticks-per-second': 1.0, 'players': 500.0},
+        ),
+        _liveServer('b', 'Beta'),
+      ];
+
+      final FleetRollup r = FleetRollup.compute(
+        servers: servers,
+        openAlerts: const <FleetAlert>[],
+      );
+
+      expect(r.servers[0].health, equals(FleetHealth.pending));
+      expect(r.servers[1].health, equals(FleetHealth.pending));
+      expect(r.servers[0].tps, isNull);
+      expect(r.servers[0].players, isNull);
+      expect(r.meanTps, isNull);
+      expect(r.worstTps, isNull);
+      expect(r.worstMspt, isNull);
+      expect(r.totalPlayers, isNull);
+      expect(r.compositeHealth, isNull);
+      expect(r.needsAttention, hasLength(2));
+    });
 
     test('alerts grouped by severity per-server alertCount', () {
       final List<FleetServerLive> servers = <FleetServerLive>[
@@ -172,15 +212,15 @@ void main() {
     });
 
     test(
-      'empty servers list produces zero compositeHealth meanTps and empty needsAttention',
+      'empty servers list produces unknown aggregates and empty needsAttention',
       () {
         final FleetRollup r = FleetRollup.compute(
           servers: const <FleetServerLive>[],
           openAlerts: const <FleetAlert>[],
         );
 
-        expect(r.compositeHealth, equals(0));
-        expect(r.meanTps, equals(0.0));
+        expect(r.compositeHealth, isNull);
+        expect(r.meanTps, isNull);
         expect(r.needsAttention, isEmpty);
         expect(r.alertCounts[AlertSeverity.critical], equals(0));
         expect(r.alertCounts[AlertSeverity.warning], equals(0));

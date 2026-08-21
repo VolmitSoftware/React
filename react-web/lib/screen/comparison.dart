@@ -8,6 +8,7 @@ import 'package:jaspr/jaspr.dart' show Component;
 import '../chart/timeseries_chart.dart';
 import '../localization/reactor_localizations.dart';
 import '../model/sampler_sample.dart';
+import '../state/connection_manager.dart';
 import '../state/fleet_live_scope.dart';
 import '../state/fleet_rollup.dart';
 import '../ui/reactor_ui.dart';
@@ -33,6 +34,9 @@ typedef _ServerMetricEntry = ({
   List<double> history,
 });
 
+bool _hasComparableSnapshot(FleetServerLive server) =>
+    currentFleetSnapshot(server) != null;
+
 class ComparisonScreen extends StatefulWidget {
   const ComparisonScreen({super.key});
 
@@ -54,7 +58,7 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
 
     final Set<String> presentMetrics = <String>{};
     for (final FleetServerLive srv in servers) {
-      if (srv.snapshot != null) {
+      if (_hasComparableSnapshot(srv)) {
         presentMetrics.addAll(srv.snapshot!.byId.keys);
       }
     }
@@ -66,6 +70,7 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
         .where(
           (FleetServerLive s) =>
               selectedIds.contains(s.id) &&
+              _hasComparableSnapshot(s) &&
               s.snapshot?.sampler(_selectedMetric) != null,
         )
         .map((FleetServerLive s) {
@@ -92,6 +97,17 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
         .toList();
 
     final bool isEmpty = activeEntries.isEmpty;
+    final int selectedServerCount = servers
+        .where((FleetServerLive server) => selectedIds.contains(server.id))
+        .length;
+    final int selectedComparableCount = servers
+        .where(
+          (FleetServerLive server) =>
+              selectedIds.contains(server.id) && _hasComparableSnapshot(server),
+        )
+        .length;
+    final int selectedUnavailableCount =
+        selectedServerCount - selectedComparableCount;
 
     return ReactorPage(
       title: reactorText(ReactorText.comparisonTitle),
@@ -102,7 +118,8 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
           label: reactorText(ReactorText.comparisonServers),
           description: servers.isEmpty
               ? 'Pair servers to compare telemetry.'
-              : '${selectedIds.length} of ${servers.length} selected',
+              : '$selectedServerCount of ${servers.length} selected'
+                    '${selectedUnavailableCount > 0 ? ' · $selectedUnavailableCount unavailable excluded' : ''}',
           flush: true,
           children: <Widget>[
             _serverSelector(servers: servers, selectedIds: selectedIds),
@@ -110,13 +127,15 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
               ReactorEmptyState(
                 title: servers.isEmpty
                     ? 'No servers available'
-                    : selectedIds.isEmpty
+                    : selectedServerCount == 0
                     ? 'No servers selected'
                     : reactorText(ReactorText.comparisonNoData),
                 description: servers.isEmpty
                     ? 'Pair at least one server to open the comparison workspace.'
-                    : selectedIds.isEmpty
+                    : selectedServerCount == 0
                     ? 'Select one or more servers from the toolbar above.'
+                    : selectedComparableCount == 0
+                    ? 'Selected servers are offline or awaiting current telemetry.'
                     : 'The selected metric has not published comparable samples.',
               )
             else ...<Widget>[
@@ -182,7 +201,7 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
       <Widget>[
         for (final FleetServerLive srv in servers)
           ArcaneCheckbox(
-            label: srv.name,
+            label: _serverLabel(srv),
             checked: selectedIds.contains(srv.id),
             onChanged: (bool checked) {
               setState(() {
@@ -198,6 +217,24 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
           ),
       ],
     );
+  }
+
+  String _serverLabel(FleetServerLive server) {
+    if (server.state == ConnState.offline) {
+      return '${server.name} · Offline (excluded)';
+    }
+    if (server.state == ConnState.connecting) {
+      return '${server.name} · Connecting (excluded)';
+    }
+    if (server.state == ConnState.degraded) {
+      return server.snapshot == null
+          ? '${server.name} · Degraded (no telemetry)'
+          : '${server.name} · Degraded (last received)';
+    }
+    if (server.snapshot == null) {
+      return '${server.name} · Awaiting telemetry (excluded)';
+    }
+    return server.name;
   }
 
   Widget _leaderboardTable(List<_ServerMetricEntry> ranked) {

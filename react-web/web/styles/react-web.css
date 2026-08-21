@@ -207,9 +207,31 @@ select {
 
 .arcane-floating,
 .arcane-sheet-panel,
-.arcane-toast {
+.arcane-toast,
+.arcane-tooltip,
+.arcane-checkbox,
+.arcane-sheet-close,
+.arcane-toast-close,
+.arcane-toast-action {
   border-radius: 0 !important;
   box-shadow: none !important;
+}
+
+.arcane-dialog,
+[class*="arcane-dialog"] {
+  box-shadow: none !important;
+}
+
+.arcane-tooltip-arrow {
+  display: none !important;
+}
+
+.arcane-toast-progress {
+  border-radius: 0 !important;
+}
+
+#arcane-root *::-webkit-scrollbar-thumb {
+  border-radius: 0 !important;
 }
 
 .arcane-button {
@@ -401,11 +423,11 @@ select {
   position: relative;
   display: grid;
   grid-template-columns:
-    var(--reactor-rail)
+    min(var(--reactor-rail), 34vw)
     var(--reactor-splitter)
     minmax(0, 1fr)
     var(--reactor-splitter)
-    var(--reactor-inspector);
+    min(var(--reactor-inspector), 38vw);
   min-width: 0;
   min-height: 0;
   overflow: hidden;
@@ -1518,6 +1540,21 @@ select {
   overflow-y: visible;
 }
 
+.reactor-settings-threshold-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) 112px;
+  align-items: center;
+  gap: 16px;
+  padding: 9px 16px;
+  border-bottom: 1px solid var(--reactor-border-soft);
+}
+
+.reactor-settings-threshold-label {
+  min-width: 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
 .reactor-metrics-table {
   width: 100%;
   border-collapse: collapse;
@@ -1525,9 +1562,6 @@ select {
 }
 
 .reactor-metrics-table th {
-  position: sticky;
-  top: 0;
-  z-index: 2;
   padding: 9px 12px;
   border-bottom: 1px solid var(--reactor-border);
   background: var(--reactor-surface);
@@ -2101,6 +2135,12 @@ select {
 }
 
 @media (max-width: 700px) {
+  .reactor-settings-threshold-row {
+    grid-template-columns: minmax(0, 1fr) 92px;
+    gap: 8px;
+    padding: 8px;
+  }
+
   .reactor-shell {
     grid-template-rows: 88px minmax(0, 1fr) 26px;
   }

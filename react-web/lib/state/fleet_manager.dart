@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 
 import 'package:jaspr/jaspr.dart' show kIsWeb;
 
+import '../model/identity_info.dart';
 import '../model/server_credential.dart';
 import '../service/happy_eyeballs_client.dart';
 import '../service/react_client.dart';
@@ -72,10 +73,14 @@ class FleetManager {
 
   Future<void> add(ServerCredential cred) async {
     final IReactClient client = _resolveClient(cred);
-    await client.identity();
-    _clients[cred.id] = client;
-    _servers.add(cred);
-    _managers[cred.id] = _buildManager(cred, client);
+    final IdentityInfo identity = await client.identity();
+    final String verifiedName = identity.serverName.trim();
+    final ServerCredential verified = verifiedName.isEmpty
+        ? cred
+        : cred.copyWith(label: verifiedName);
+    _clients[verified.id] = client;
+    _servers.add(verified);
+    _managers[verified.id] = _buildManager(verified, client);
     _persist();
   }
 

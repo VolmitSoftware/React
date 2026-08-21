@@ -10,6 +10,7 @@ import 'package:jaspr_router/jaspr_router.dart';
 
 import '../model/server_credential.dart';
 import '../localization/reactor_localizations.dart';
+import '../model/sampler_sample.dart';
 import '../model/server_snapshot.dart';
 import '../screen/actions.dart';
 import '../screen/add_server.dart';
@@ -46,6 +47,7 @@ import '../state/alert_store.dart';
 import '../state/connection_manager.dart';
 import '../state/fleet_alert_watcher.dart';
 import '../state/fleet_live_model.dart';
+import '../state/fleet_rollup.dart';
 import '../state/fleet_live_scope.dart';
 import '../state/fleet_manager.dart';
 import '../state/fleet_scope.dart';
@@ -427,10 +429,11 @@ class _LiveServerScopeState extends State<LiveServerScope> {
       state: _state,
       child: dom.div(classes: 'reactor-connection-frame', <Widget>[
         if (degraded)
-          const ReactorNotice(
+          ReactorNotice(
             title: 'Connection degraded',
-            message:
-                'Showing the latest received snapshot while the live channel recovers.',
+            message: _snapshot == null
+                ? 'No telemetry snapshot is available while the live channel recovers.'
+                : 'Showing the latest received snapshot while the live channel recovers.',
             status: ReactorStatus.warning,
           )
         else if (offline)
@@ -818,6 +821,10 @@ class _ReactorShellState extends State<ReactorShell> {
 
   Widget _inspector() {
     final ServerEntry? active = _activeServer;
+    final FleetServerLive? liveServer = active == null
+        ? null
+        : _liveServer(active.id);
+    final ServerSnapshot? snapshot = liveServer?.snapshot;
     final ReactorStatus status = active == null
         ? _fleetStatus
         : _statusForState(active.state);
@@ -870,24 +877,94 @@ class _ReactorShellState extends State<ReactorShell> {
         if (active != null)
           _inspectorSection('Connection', <Widget>[
             _inspectorRow(reactorText(ReactorText.shellState), statusLabel),
-            _inspectorRow('Current view', _currentPageTitle),
+            _inspectorRow(
+              'Last sample',
+              snapshot == null ? 'Unavailable' : _snapshotTime(snapshot),
+            ),
+          ]),
+        if (active != null)
+          _inspectorSection('Workspace', <Widget>[
+            _inspectorRow('Active view', _currentPageTitle),
+            _inspectorRow('Area', _currentWorkspaceArea),
             _inspectorRow('Server ID', active.id),
           ]),
-        _inspectorSection(reactorText(ReactorText.fleetTitle), <Widget>[
-          if (active == null)
+        if (active != null)
+          _inspectorSection('Quick telemetry', <Widget>[
+            _inspectorRow('TPS', _sampleDisplay(snapshot, 'ticks-per-second')),
+            _inspectorRow(
+              reactorText(ReactorText.commonTickTime),
+              _sampleDisplay(snapshot, 'tick-time'),
+            ),
+            _inspectorRow(
+              reactorText(ReactorText.commonPlayers),
+              _sampleDisplay(snapshot, 'players'),
+            ),
+            _inspectorRow(
+              reactorText(ReactorText.commonMemoryUsed),
+              _sampleDisplay(snapshot, 'memory-used'),
+            ),
+            _inspectorRow(
+              reactorText(ReactorText.commonIncidentScore),
+              _sampleDisplay(snapshot, 'incident-score'),
+            ),
+            _inspectorRow(
+              'Snapshot',
+              snapshot == null ? 'Unavailable' : '#${snapshot.seq}',
+            ),
+          ])
+        else
+          _inspectorSection(reactorText(ReactorText.fleetTitle), <Widget>[
             _inspectorRow(reactorText(ReactorText.shellState), statusLabel),
-          _inspectorRow(
-            reactorText(ReactorText.shellPairedServers),
-            servers.length.toString(),
-          ),
-          _inspectorRow(
-            reactorText(ReactorText.statusLive),
-            _liveCount.toString(),
-          ),
-          _inspectorRow('Needs attention', attentionCount.toString()),
-        ]),
+            _inspectorRow(
+              reactorText(ReactorText.shellPairedServers),
+              servers.length.toString(),
+            ),
+            _inspectorRow(
+              reactorText(ReactorText.statusLive),
+              _liveCount.toString(),
+            ),
+            _inspectorRow('Needs attention', attentionCount.toString()),
+          ]),
       ],
     );
+  }
+
+  FleetServerLive? _liveServer(String id) {
+    final FleetLiveScope? scope = FleetLiveScope.of(context);
+    if (scope == null) return null;
+    for (final FleetServerLive server in scope.servers) {
+      if (server.id == id) return server;
+    }
+    return null;
+  }
+
+  String _sampleDisplay(ServerSnapshot? snapshot, String id) {
+    final SamplerSample? sample = snapshot?.sampler(id);
+    if (sample == null) return 'Unavailable';
+    final String display = sample.display.trim();
+    if (display.isNotEmpty) return display;
+    final String value = sample.value == sample.value.roundToDouble()
+        ? sample.value.toInt().toString()
+        : sample.value.toStringAsFixed(2);
+    final String suffix = sample.suffix.trim();
+    return suffix.isEmpty ? value : '$value $suffix';
+  }
+
+  String _snapshotTime(ServerSnapshot snapshot) => snapshot.at
+      .toLocal()
+      .toIso8601String()
+      .split('.')
+      .first
+      .replaceFirst('T', ' ');
+
+  String get _currentWorkspaceArea {
+    final String route = _serverRouteFromPath();
+    for (final _NavGroup group in _kServerNavGroups) {
+      for (final _NavEntry entry in group.entries) {
+        if (entry.route == route) return group.label;
+      }
+    }
+    return 'Monitor';
   }
 
   Widget _inspectorSection(String label, List<Widget> children) {

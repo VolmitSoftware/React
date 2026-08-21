@@ -6,13 +6,28 @@ import 'package:jaspr_router/jaspr_router.dart';
 import 'package:jaspr_test/server_test.dart';
 
 import 'package:react_web/app/reactor_app.dart';
+import 'package:react_web/model/sampler_sample.dart';
+import 'package:react_web/model/server_snapshot.dart';
 import 'package:react_web/state/connection_manager.dart';
+import 'package:react_web/state/fleet_live_scope.dart';
+import 'package:react_web/state/fleet_rollup.dart';
 import 'package:react_web/widget/status_dot.dart';
 
 const ShadcnStylesheet _sheet = ShadcnStylesheet(theme: ShadcnTheme.midnight);
 
 Widget _wrap(Widget child) =>
     ArcaneThemeProvider(stylesheet: _sheet, child: child);
+
+SamplerSample _sample(String id, double value, String display) => SamplerSample(
+  id: id,
+  name: id,
+  suffix: '',
+  value: value,
+  display: display,
+  min: value,
+  max: value,
+  history: <double>[value],
+);
 
 void main() {
   group('ReactorApp', () {
@@ -186,6 +201,83 @@ void main() {
         reason: 'workspace navigation should render once for the active server',
       );
     });
+
+    testServer('active server inspector renders route context and telemetry', (
+      ServerTester tester,
+    ) async {
+      final ServerSnapshot snapshot = ServerSnapshot(
+        byId: <String, SamplerSample>{
+          'ticks-per-second': _sample('ticks-per-second', 19.7, '19.7 TPS'),
+          'tick-time': _sample('tick-time', 31.2, '31.2 ms'),
+          'players': _sample('players', 12, '12'),
+          'memory-used': _sample('memory-used', 4198, '4.1 GB'),
+          'incident-score': _sample('incident-score', 22, '22 / 100'),
+        },
+        at: DateTime(2026, 8, 21, 12, 34),
+        seq: 42,
+      );
+      tester.pumpComponent(
+        _wrap(
+          FleetLiveScope(
+            servers: <FleetServerLive>[
+              FleetServerLive(
+                id: 'srv1',
+                name: 'Prod Server',
+                state: ConnState.live,
+                snapshot: snapshot,
+                lastSeen: snapshot.at,
+              ),
+            ],
+            revision: 1,
+            child: const ReactorShell(
+              currentPath: '/server/srv1/tweaks',
+              servers: <ServerEntry>[
+                ServerEntry(
+                  id: 'srv1',
+                  name: 'Prod Server',
+                  state: ConnState.live,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      final DocumentResponse response = await tester.request('/');
+      expect(response.statusCode, 200);
+      expect(response.body.contains('Quick telemetry'), isTrue);
+      expect(response.body.contains('Active view'), isTrue);
+      expect(response.body.contains('Tweaks'), isTrue);
+      expect(response.body.contains('Control'), isTrue);
+      expect(response.body.contains('19.7 TPS'), isTrue);
+      expect(response.body.contains('31.2 ms'), isTrue);
+      expect(response.body.contains('4.1 GB'), isTrue);
+      expect(response.body.contains('22 / 100'), isTrue);
+      expect(response.body.contains('#42'), isTrue);
+    });
+
+    testServer(
+      'active server inspector reports unavailable telemetry honestly',
+      (ServerTester tester) async {
+        tester.pumpComponent(
+          _wrap(
+            const ReactorShell(
+              currentPath: '/server/srv1/overview',
+              servers: <ServerEntry>[
+                ServerEntry(
+                  id: 'srv1',
+                  name: 'Prod Server',
+                  state: ConnState.connecting,
+                ),
+              ],
+            ),
+          ),
+        );
+        final DocumentResponse response = await tester.request('/');
+        expect(response.statusCode, 200);
+        expect(response.body.contains('Quick telemetry'), isTrue);
+        expect(response.body.contains('Unavailable'), isTrue);
+      },
+    );
   });
 
   group('StatusDot', () {

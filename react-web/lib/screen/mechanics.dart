@@ -9,6 +9,7 @@ import '../model/server_snapshot.dart';
 import '../state/server_scope.dart';
 import '../ui/reactor_ui.dart';
 import '../widget/section_card.dart';
+import '../widget/server_snapshot_state.dart';
 import '../widget/stat_tile.dart';
 
 class MechanicsScreen extends StatelessWidget {
@@ -18,15 +19,12 @@ class MechanicsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final ServerScope? scope = ServerScope.of(context);
     final ServerSnapshot? snapshot = scope?.snapshot;
-    if (snapshot == null) {
-      return ReactorPage(
-        title: reactorText(ReactorText.mechanicsTitle),
-        subtitle: reactorText(ReactorText.mechanicsSubtitle),
-        children: <Widget>[
-          ReactorLoadingState(label: reactorText(ReactorText.metricsWaiting)),
-        ],
-      );
-    }
+    final Widget? statePage = serverSnapshotStatePage(
+      scope: scope,
+      title: reactorText(ReactorText.mechanicsTitle),
+      subtitle: reactorText(ReactorText.mechanicsSubtitle),
+    );
+    if (snapshot == null) return statePage!;
 
     final SamplerSample? redstone = snapshot.sampler('redstone');
     final SamplerSample? redstoneBurstRate = snapshot.sampler(

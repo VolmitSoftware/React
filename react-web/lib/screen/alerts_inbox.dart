@@ -40,7 +40,8 @@ class _AlertsInboxScreenState extends State<AlertsInboxScreen> {
     final List<({String id, String name, ServerSnapshot? snapshot})>
     serverData = servers
         .map(
-          (FleetServerLive s) => (id: s.id, name: s.name, snapshot: s.snapshot),
+          (FleetServerLive s) =>
+              (id: s.id, name: s.name, snapshot: currentFleetSnapshot(s)),
         )
         .toList();
 
