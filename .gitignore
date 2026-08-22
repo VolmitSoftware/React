@@ -17,3 +17,8 @@ react-web/.firebase/
 react-web/firebase-debug.log
 react-web/relay/.dart_tool/
 react-web/.qa/
+
+# Local build tooling, not part of the project
+build-lt.sh
+BUILDS/
+.run/

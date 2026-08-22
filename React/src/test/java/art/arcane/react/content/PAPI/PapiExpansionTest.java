@@ -153,7 +153,7 @@ class PapiExpansionTest {
   @Test
   void shouldNotLogAnythingOnTheResolutionPath() throws Exception {
     for (Path source : Files.list(SOURCE_DIR).toList()) {
-      String body = Files.readString(source);
+      String body = Files.readString(source).replace("\r\n", "\n");
       assertFalse(body.contains("React.info("), source + " must never log on the placeholder resolution path");
       assertFalse(body.contains("React.debug("), source + " must never log on the placeholder resolution path");
       assertFalse(body.contains("React.warn("), source + " must never log on the placeholder resolution path");
@@ -162,7 +162,7 @@ class PapiExpansionTest {
 
   @Test
   void shouldKeepTheResolutionPathFreeOfBukkitAndPluginStatics() throws Exception {
-    String body = Files.readString(SOURCE_DIR.resolve("ReactPlaceholderSource.java"));
+    String body = Files.readString(SOURCE_DIR.resolve("ReactPlaceholderSource.java")).replace("\r\n", "\n");
 
     assertFalse(body.contains("org.bukkit"), "the resolver must never import a Bukkit type");
     assertFalse(body.contains("React.instance"), "the resolver must never read a plugin static");
@@ -172,7 +172,7 @@ class PapiExpansionTest {
 
   @Test
   void shouldRetainAndUnregisterThePlaceholderRuntimeAcrossTheDisablePath() throws Exception {
-    String source = Files.readString(PLUGIN_SOURCE);
+    String source = Files.readString(PLUGIN_SOURCE).replace("\r\n", "\n");
 
     assertTrue(source.contains("private volatile ReactPlaceholders papiExpansion;"),
         "the placeholder runtime must be retained on a plugin field");
@@ -185,7 +185,7 @@ class PapiExpansionTest {
   @Test
   @SuppressWarnings("unchecked")
   void shouldOrderReactAfterPlaceholderApiWheneverRegistrationGatesOnTheEnabledState() throws Exception {
-    String source = Files.readString(PLUGIN_SOURCE);
+    String source = Files.readString(PLUGIN_SOURCE).replace("\r\n", "\n");
     assertTrue(source.contains("isPluginEnabled(\"PlaceholderAPI\")"),
         "registration must gate on the enabled state of PlaceholderAPI");
 
