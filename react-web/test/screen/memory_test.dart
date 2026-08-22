@@ -110,14 +110,10 @@ void main() {
         isTrue,
         reason: 'GC Pause p95 section heading must appear in rendered HTML',
       );
-      // A line chart must not render the current value as a StatTile big
-      // number. gc-pause-p95=45.0 → StatTile formats to "45.0"; a
-      // TimeseriesChart does not render this text.
       expect(
-        res.body.contains('45.0'),
-        isFalse,
-        reason:
-            'gc-pause-p95 must render as line chart, not StatTile displaying "45.0"',
+        res.body.contains('reactor-chart-hit-target'),
+        isTrue,
+        reason: 'gc-pause-p95 must render as an interactive time series chart',
       );
     });
 

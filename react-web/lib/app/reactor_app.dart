@@ -511,7 +511,6 @@ class _NavItem extends StatelessWidget {
       attributes: <String, String>{
         'type': 'button',
         'aria-label': label,
-        'title': label,
         if (active) 'aria-current': 'page',
       },
       events: <String, EventCallback>{'click': (_) => onTap()},

@@ -52,36 +52,79 @@ class LogsView extends StatelessWidget {
     return ReactorPage(
       title: reactorText(ReactorText.logsTitle),
       subtitle: reactorText(ReactorText.logsSubtitle),
-      actions: dom.div(
-        styles: const dom.Styles(
-          raw: <String, String>{
-            'display': 'flex',
-            'align-items': 'center',
-            'gap': '0.5rem',
-          },
-        ),
-        <Widget>[
-          Button.secondary(
-            label: paused
-                ? reactorText(ReactorText.logsResume)
-                : reactorText(ReactorText.logsPause),
-            size: ButtonSize.small,
-            onPressed: () => onPause?.call(!paused),
-          ),
-          Button.ghost(
-            label: reactorText(ReactorText.logsClear),
-            size: ButtonSize.small,
-            onPressed: () => onClear?.call(),
-          ),
-        ],
-      ),
       children: <Widget>[
         ?notice,
         SectionPanel(
           label: reactorText(ReactorText.consoleTitle),
           description: reactorText(ReactorText.consoleDescription),
-          child: dom.div(classes: 'reactor-console', <Widget>[
-            dom.div(classes: 'reactor-console-command', <Widget>[
+          flush: true,
+          trailing: ArcaneSelect(
+            label: reactorText(ReactorText.logsLevel),
+            value: levelFilter,
+            options: const <ArcaneSelectOption>[
+              ArcaneSelectOption(label: 'ALL', value: 'ALL'),
+              ArcaneSelectOption(label: 'INFO', value: 'INFO'),
+              ArcaneSelectOption(label: 'WARN', value: 'WARN'),
+              ArcaneSelectOption(label: 'ERROR', value: 'ERROR'),
+              ArcaneSelectOption(label: 'DEBUG', value: 'DEBUG'),
+            ],
+            onChange: (String s) => onLevelFilter?.call(s),
+          ),
+          child: dom.div(classes: 'reactor-terminal', <Widget>[
+            dom.div(classes: 'reactor-terminal-toolbar', <Widget>[
+              dom.div(classes: 'reactor-terminal-state', <Widget>[
+                dom.span(
+                  classes: 'reactor-terminal-live${paused ? ' is-paused' : ''}',
+                  const <Widget>[],
+                ),
+                Component.text(
+                  paused
+                      ? 'Output paused'
+                      : '${reactorText(ReactorText.logsStream)} · ${lines.length} lines',
+                ),
+              ]),
+              dom.div(classes: 'reactor-terminal-actions', <Widget>[
+                Button.secondary(
+                  label: paused
+                      ? reactorText(ReactorText.logsResume)
+                      : reactorText(ReactorText.logsPause),
+                  size: ButtonSize.small,
+                  onPressed: () => onPause?.call(!paused),
+                ),
+                Button.ghost(
+                  label: reactorText(ReactorText.logsClear),
+                  size: ButtonSize.small,
+                  onPressed: () => onClear?.call(),
+                ),
+              ]),
+            ]),
+            dom.div(classes: 'reactor-terminal-output', <Widget>[
+              if (lines.isEmpty)
+                ReactorEmptyState(
+                  title: 'No log lines',
+                  description:
+                      'New matching entries will appear here as React streams them.',
+                  icon: ArcaneIcon.scrollText(size: IconSize.sm),
+                )
+              else
+                dom.div(
+                  attributes: const <String, String>{
+                    'role': 'log',
+                    'aria-live': 'off',
+                  },
+                  classes: 'reactor-terminal-lines',
+                  <Widget>[
+                    for (final String line in lines)
+                      dom.div(classes: _lineClasses(line), <Widget>[
+                        Component.text(line),
+                      ]),
+                  ],
+                ),
+            ]),
+            dom.div(classes: 'reactor-console', <Widget>[
+              dom.span(classes: 'reactor-console-prompt', <Widget>[
+                Component.text('>'),
+              ]),
               dom.div(classes: 'reactor-console-input', <Widget>[
                 TextInput(
                   value: command,
@@ -113,71 +156,30 @@ class LogsView extends StatelessWidget {
               ),
             ]),
             if (!consoleEnabled)
-              ReactorNotice(
-                title: 'Console unavailable',
-                message:
-                    consoleUnavailableMessage ??
-                    reactorText(ReactorText.consoleAdminRequired),
-                status: ReactorStatus.warning,
-              ),
-          ]),
-        ),
-        SectionPanel(
-          label: reactorText(ReactorText.logsStream),
-          flush: true,
-          trailing: ArcaneSelect(
-            label: reactorText(ReactorText.logsLevel),
-            value: levelFilter,
-            options: const <ArcaneSelectOption>[
-              ArcaneSelectOption(label: 'ALL', value: 'ALL'),
-              ArcaneSelectOption(label: 'INFO', value: 'INFO'),
-              ArcaneSelectOption(label: 'WARN', value: 'WARN'),
-              ArcaneSelectOption(label: 'ERROR', value: 'ERROR'),
-              ArcaneSelectOption(label: 'DEBUG', value: 'DEBUG'),
-            ],
-            onChange: (String s) => onLevelFilter?.call(s),
-          ),
-          child: lines.isEmpty
-              ? ReactorEmptyState(
-                  title: 'No log lines',
-                  description:
-                      'New matching entries will appear here as React streams them.',
-                  icon: ArcaneIcon.scrollText(size: IconSize.sm),
-                )
-              : dom.div(
-                  attributes: const <String, String>{
-                    'role': 'log',
-                    'aria-live': 'polite',
-                  },
-                  styles: const dom.Styles(
-                    raw: <String, String>{
-                      'display': 'flex',
-                      'min-height': '100%',
-                      'flex-direction': 'column',
-                      'background': 'var(--reactor-bg)',
-                    },
-                  ),
-                  <Widget>[
-                    for (final String line in lines)
-                      dom.div(
-                        styles: const dom.Styles(
-                          raw: <String, String>{
-                            'padding': '0.3rem 0.7rem',
-                            'border-bottom': '1px solid $kReactorHairline',
-                            'font-family': 'var(--font-mono)',
-                            'font-size': '0.72rem',
-                            'line-height': '1.45',
-                            'white-space': 'pre-wrap',
-                            'overflow-wrap': 'anywhere',
-                          },
-                        ),
-                        <Widget>[Component.text(line)],
-                      ),
-                  ],
+              dom.div(classes: 'reactor-console-disabled', <Widget>[
+                Component.text(
+                  consoleUnavailableMessage ??
+                      reactorText(ReactorText.consoleAdminRequired),
                 ),
+              ]),
+          ]),
         ),
       ],
     );
+  }
+
+  String _lineClasses(String line) {
+    final String normalized = line.toUpperCase();
+    if (normalized.contains('[ERROR]') || normalized.contains('[SEVERE]')) {
+      return 'reactor-terminal-line is-error';
+    }
+    if (normalized.contains('[WARN]')) {
+      return 'reactor-terminal-line is-warning';
+    }
+    if (normalized.contains('[DEBUG]') || normalized.contains('[TRACE]')) {
+      return 'reactor-terminal-line is-debug';
+    }
+    return 'reactor-terminal-line';
   }
 }
 

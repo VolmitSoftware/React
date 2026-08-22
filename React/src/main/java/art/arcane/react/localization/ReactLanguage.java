@@ -89,6 +89,45 @@ public final class ReactLanguage {
     return reload(hotloadSnapshot);
   }
 
+  public static PreparedReload prepareHotload(
+      File overrideFile,
+      String rawContent,
+      String configuredLocale
+  ) throws Exception {
+    String requestedLocale = configuredLocale == null || configuredLocale.isBlank()
+        ? CATALOG.englishLocale()
+        : configuredLocale.trim();
+    String normalizedLocale = normalizeLocale(configuredLocale);
+    OverrideHotloadSnapshot hotloadSnapshot = overrideFile == null || rawContent == null
+        ? null
+        : new OverrideHotloadSnapshot(normalizedPath(overrideFile), rawContent);
+    if (hotloadSnapshot != null) {
+      File activeOverride = new File(overrideFolder(), normalizedLocale + ".toml");
+      if (!hotloadSnapshot.path().equals(normalizedPath(activeOverride))) {
+        return new PreparedReload(null, requestedLocale, normalizedLocale, true);
+      }
+    }
+    LocalizationCandidate candidate = loadCandidate(normalizedLocale, hotloadSnapshot);
+    LocalizationSnapshot snapshot = LocalizationSnapshot.create(candidate);
+    return new PreparedReload(snapshot, requestedLocale, normalizedLocale, false);
+  }
+
+  public static boolean applyPreparedHotload(PreparedReload prepared) {
+    if (prepared == null || prepared.noOp()) {
+      return true;
+    }
+    LocalizationReloadResult result = MANAGER.install(prepared.snapshot());
+    if (!result.applied()) {
+      reportRejectedReload(prepared.requestedLocale(), result);
+      return false;
+    }
+    activeLocale = prepared.normalizedLocale();
+    int warningCount = result.validation().warnings().size();
+    React.info("Loaded locale " + prepared.requestedLocale() + " with " + warningCount + " fallback "
+        + (warningCount == 1 ? "entry" : "entries") + ".");
+    return true;
+  }
+
   private static boolean reload(OverrideHotloadSnapshot hotloadSnapshot) {
     String configuredLocale = ReactConfiguration.get().getLanguage();
     String requestedLocale = configuredLocale == null || configuredLocale.isBlank()
@@ -524,5 +563,13 @@ public final class ReactLanguage {
     if (result.failure() != null) {
       result.failure().printStackTrace();
     }
+  }
+
+  public record PreparedReload(
+      LocalizationSnapshot snapshot,
+      String requestedLocale,
+      String normalizedLocale,
+      boolean noOp
+  ) {
   }
 }

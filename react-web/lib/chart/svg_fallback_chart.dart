@@ -4,10 +4,20 @@ import 'package:jaspr/dom.dart';
 import 'package:jaspr/jaspr.dart';
 
 class SvgFallbackChart extends StatelessComponent {
-  const SvgFallbackChart({required this.series, this.height = 160, super.key});
+  const SvgFallbackChart({
+    required this.series,
+    this.height = 160,
+    this.hiddenSeries = const <int>{},
+    this.activeSample,
+    this.onSampleHover,
+    super.key,
+  });
 
   final List<(String, List<double>)> series;
   final int height;
+  final Set<int> hiddenSeries;
+  final int? activeSample;
+  final void Function(int?)? onSampleHover;
 
   @override
   Component build(BuildContext context) {
@@ -34,7 +44,28 @@ class SvgFallbackChart extends StatelessComponent {
               },
             ),
           for (int index = 0; index < series.length; index++)
-            _polylineFor(series[index].$2, bounds, index),
+            if (!hiddenSeries.contains(index))
+              _polylineFor(series[index].$2, bounds, index),
+          if (activeSample != null) _activeGuide(bounds, activeSample!),
+          for (int index = 0; index < _sampleCount; index++)
+            rect(
+              const <Component>[],
+              x: '${index * (100 / _sampleCount)}',
+              y: '0',
+              width: '${100 / _sampleCount}',
+              height: '100',
+              classes: 'reactor-chart-hit-target',
+              attributes: <String, String>{
+                'tabindex': '0',
+                'aria-label': _sampleLabel(index),
+              },
+              events: <String, EventCallback>{
+                'mouseenter': (_) => onSampleHover?.call(index),
+                'focus': (_) => onSampleHover?.call(index),
+                'mouseleave': (_) => onSampleHover?.call(null),
+                'blur': (_) => onSampleHover?.call(null),
+              },
+            ),
         ],
         viewBox: '0 0 100 100',
         classes: 'reactor-chart-svg',
@@ -54,7 +85,95 @@ class SvgFallbackChart extends StatelessComponent {
       span(classes: 'reactor-chart-scale is-min', <Component>[
         Component.text(_formatBound(bounds.$1)),
       ]),
+      if (activeSample != null)
+        div(
+          classes: 'reactor-chart-tooltip',
+          styles: Styles(
+            raw: <String, String>{'left': '${_samplePosition(activeSample!)}%'},
+          ),
+          <Component>[
+            span(classes: 'reactor-chart-tooltip-index', <Component>[
+              Component.text('Sample ${activeSample! + 1}'),
+            ]),
+            for (int index = 0; index < series.length; index++)
+              if (!hiddenSeries.contains(index) &&
+                  activeSample! < series[index].$2.length)
+                span(classes: 'reactor-chart-tooltip-row', <Component>[
+                  i(
+                    const <Component>[],
+                    classes: 'reactor-chart-tooltip-swatch',
+                    styles: Styles(
+                      raw: <String, String>{
+                        'background': 'var(--reactor-chart-${(index % 6) + 1})',
+                      },
+                    ),
+                  ),
+                  span(<Component>[Component.text(series[index].$1)]),
+                  strong(<Component>[
+                    Component.text(
+                      _formatValue(series[index].$2[activeSample!]),
+                    ),
+                  ]),
+                ]),
+          ],
+        ),
     ]);
+  }
+
+  int get _sampleCount {
+    int count = 0;
+    for (final (String _, List<double> values) in series) {
+      if (values.length > count) count = values.length;
+    }
+    return count;
+  }
+
+  Component _activeGuide((double, double) bounds, int sample) {
+    final double x = _samplePosition(sample);
+    return Component.fragment(<Component>[
+      line(
+        const <Component>[],
+        x1: '$x',
+        y1: '4',
+        x2: '$x',
+        y2: '96',
+        classes: 'reactor-chart-crosshair',
+      ),
+      for (int index = 0; index < series.length; index++)
+        if (!hiddenSeries.contains(index) && sample < series[index].$2.length)
+          circle(
+            const <Component>[],
+            cx: '$x',
+            cy: '${_pointY(series[index].$2[sample], bounds)}',
+            r: '2.2',
+            classes: 'reactor-chart-point',
+            attributes: <String, String>{
+              'fill': 'var(--reactor-chart-${(index % 6) + 1})',
+            },
+          ),
+    ]);
+  }
+
+  double _samplePosition(int index) {
+    if (_sampleCount <= 1) return 50.0;
+    return 2.0 + (index / (_sampleCount - 1)) * 96.0;
+  }
+
+  double _pointY(double value, (double, double) bounds) =>
+      94.0 - ((value - bounds.$1) / (bounds.$2 - bounds.$1)) * 88.0;
+
+  String _sampleLabel(int index) {
+    final List<String> values = <String>[];
+    for (int seriesIndex = 0; seriesIndex < series.length; seriesIndex++) {
+      if (hiddenSeries.contains(seriesIndex) ||
+          index >= series[seriesIndex].$2.length) {
+        continue;
+      }
+      values.add(
+        '${series[seriesIndex].$1} ${_formatValue(series[seriesIndex].$2[index])}',
+      );
+    }
+    return 'Sample ${index + 1}: ${values.join(', ')}';
   }
 
   (double, double) _globalBounds() {
@@ -120,6 +239,11 @@ class SvgFallbackChart extends StatelessComponent {
 
   String _formatBound(double value) {
     if (value.abs() >= 1000.0) return value.toStringAsFixed(0);
+    if (value.abs() >= 100.0) return value.toStringAsFixed(1);
+    return value.toStringAsFixed(2);
+  }
+
+  String _formatValue(double value) {
     if (value.abs() >= 100.0) return value.toStringAsFixed(1);
     return value.toStringAsFixed(2);
   }

@@ -59,6 +59,13 @@ public final class ConfigFileSupport {
     }
   }
 
+  public static <T> T parseSnapshot(File sourceFile, String raw, Class<T> type, String sourceTag) throws IOException {
+    Objects.requireNonNull(sourceFile, "sourceFile");
+    Objects.requireNonNull(raw, "raw");
+    Objects.requireNonNull(type, "type");
+    return loadPassiveSnapshot(sourceFile, raw, type, maxConfigBytesForSourceTag(sourceTag));
+  }
+
   public static <T> T load(
       File canonicalFile,
       File legacyFile,

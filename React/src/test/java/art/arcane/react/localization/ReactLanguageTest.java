@@ -9,6 +9,7 @@ import art.arcane.react.localization.catalog.TestMessages;
 import art.arcane.volmlib.util.localization.LocaleOverlay;
 import art.arcane.volmlib.util.localization.LocalizationCandidate;
 import art.arcane.volmlib.util.localization.LocalizationReloadResult;
+import art.arcane.volmlib.util.localization.LocalizationSnapshot;
 import art.arcane.volmlib.util.localization.LocalizationValidationResult;
 import art.arcane.volmlib.util.localization.LocalizationValidator;
 import art.arcane.volmlib.util.localization.MessageArgument;
@@ -270,6 +271,27 @@ public class ReactLanguageTest {
         "Version React 3.0",
         ReactLanguage.plain(CommandMessages.VERSION, MessageArgument.untrusted("version", "3.0"))
     );
+  }
+
+  @Test
+  public void preparedReloadInstallsTheExactValidatedSnapshot() {
+    LocaleOverlay overlay = LocaleOverlay.builder("prepared", "fr_FR")
+        .text(CommandMessages.VERSION.id(), "<aqua>Version préparée {version}</aqua>")
+        .build();
+    LocalizationSnapshot prepared = LocalizationSnapshot.create(new LocalizationCandidate(
+        ReactMessages.catalog(),
+        List.of(overlay),
+        PluralSelector.oneOther()
+    ));
+    ReactLanguage.PreparedReload reload = new ReactLanguage.PreparedReload(
+        prepared,
+        "fr_FR",
+        "fr_FR",
+        false
+    );
+
+    Assertions.assertTrue(ReactLanguage.applyPreparedHotload(reload));
+    Assertions.assertSame(prepared, ReactLanguage.snapshot());
   }
 
   @Test

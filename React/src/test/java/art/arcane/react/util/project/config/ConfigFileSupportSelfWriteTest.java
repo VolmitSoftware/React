@@ -145,6 +145,22 @@ class ConfigFileSupportSelfWriteTest {
     assertEquals(captured, Files.readString(legacy.toPath(), StandardCharsets.UTF_8));
   }
 
+  @Test
+  void parsesCapturedBytesWithoutReadingTheSourceFile(@TempDir Path temporaryDirectory) throws Exception {
+    File file = temporaryDirectory.resolve("feature.toml").toFile();
+    Files.writeString(file.toPath(), "enabled = false\n", StandardCharsets.UTF_8);
+
+    HotloadProbe loaded = ConfigFileSupport.parseSnapshot(
+        file,
+        "enabled = true\n",
+        HotloadProbe.class,
+        "feature:probe"
+    );
+
+    assertTrue(loaded.enabled);
+    assertEquals("enabled = false\n", Files.readString(file.toPath(), StandardCharsets.UTF_8));
+  }
+
   private String read(Path path) {
     try {
       return Files.readString(path, StandardCharsets.UTF_8);

@@ -26,15 +26,16 @@ import art.arcane.react.api.tweak.Tweak;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.RuntimeMessages;
 import art.arcane.react.model.ReactConfiguration;
-import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.common.scheduling.TickedObject;
 import art.arcane.react.util.plugin.IController;
 import art.arcane.react.util.project.config.ConfigDescription;
 import art.arcane.react.util.project.config.ConfigDoc;
 import art.arcane.react.util.project.config.ConfigFileSupport;
 import art.arcane.react.util.project.config.ConfigHotloadSnapshot;
+import art.arcane.react.util.project.registry.Registered;
 import art.arcane.volmlib.util.hotload.ConfigHotloadEngine;
 import art.arcane.volmlib.util.localization.MessageArgument;
+import art.arcane.volmlib.util.scheduling.FoliaScheduler;
 import com.google.gson.JsonElement;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
@@ -57,9 +58,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BooleanSupplier;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 
 @ConfigDescription("Watches React config files and hot-applies changes without requiring a full /react reload.")
@@ -72,36 +73,23 @@ public class HotloadController extends TickedObject implements IController {
   private static final String MISSING_DIGEST = "<missing>";
 
   @ConfigDoc(value = "Enables live hotloading for React managed configs.", impact = "Set to false to disable file watching and require manual reloads.")
-  private boolean enabled = true;
+  private volatile boolean enabled = true;
 
   @ConfigDoc(value = "Filesystem event polling interval in milliseconds.", impact = "Lower values detect delivered events sooner; automatic apply batches still run at most once every three seconds.")
-  private int pollIntervalMs = 500;
+  private volatile int pollIntervalMs = 500;
 
   @ConfigDoc(value = "Maximum number of key-level diff messages sent per changed file.", impact = "Lower values reduce operator chat noise on large config edits.")
-  private int maxDiffMessagesPerFile = 12;
+  private volatile int maxDiffMessagesPerFile = 12;
 
   @ConfigDoc(value = "Sends hotload change summaries to online operators.", impact = "Disable if you only want console logs and no in-game notifications.")
-  private boolean notifyOperators = true;
+  private volatile boolean notifyOperators = true;
 
   private transient File dataFolder;
   private transient File configToml;
   private transient File configLegacyJson;
   private transient File localeOverrideFolder;
-  private final transient ConfigHotloadEngine hotloadEngine = new ConfigHotloadEngine(
-      this::isManagedConfigFile,
-      this::listKnownConfigFiles,
-      this::readFileContent,
-      this::normalizeContent
-  );
-  private final transient HotloadPendingQueue pendingHotloads = new HotloadPendingQueue(
-      AUTOMATIC_HOTLOAD_COOLDOWN_NANOS,
-      TOMBSTONE_GRACE_NANOS,
-      System::nanoTime
-  );
-  private final transient Map<String, String> lastAppliedContents = new ConcurrentHashMap<>();
-  private final transient Map<String, String> lastObservedDigests = new ConcurrentHashMap<>();
+  private transient volatile HotloadRuntime hotloadRuntime;
   private transient volatile String lastSlowTickPollSummary = "poll=not-run";
-  private transient volatile boolean reconfigureAfterBatch;
 
   public HotloadController() {
     super("react", "hotload", 500);
@@ -114,28 +102,34 @@ public class HotloadController extends TickedObject implements IController {
 
   @Override
   public void start() {
-    pendingHotloads.clear();
-    lastAppliedContents.clear();
-    lastObservedDigests.clear();
-    reconfigureAfterBatch = false;
+    stopWorker();
     dataFolder = React.instance.getDataFolder();
     configToml = React.instance.getDataFile("config.toml");
     configLegacyJson = React.instance.getDataFile("config.json");
     localeOverrideFolder = ReactLanguage.overrideFolder();
-    primeAppliedContents();
-    reconfigureWatcher();
-    queueDiskDivergences();
+    HotloadTaskExecutor worker = new HotloadTaskExecutor(
+        "React-Hotload-IO",
+        failure -> logTransientFailure("React hotload IO worker failed", failure)
+    );
+    HotloadRuntime runtime = new HotloadRuntime(
+        createHotloadEngine(),
+        createPendingQueue(),
+        new HotloadRevisionTracker(),
+        new ConcurrentHashMap<>(),
+        new ConcurrentHashMap<>(),
+        new ConcurrentLinkedQueue<>(),
+        new AtomicBoolean(),
+        worker
+    );
+    hotloadRuntime = runtime;
     ConfigFileSupport.setSelfWriteListener(this::noteSelfWrite);
+    worker.execute(() -> initializeAsync(runtime));
   }
 
   @Override
   public void stop() {
     ConfigFileSupport.setSelfWriteListener(null);
-    hotloadEngine.clear();
-    pendingHotloads.clear();
-    lastAppliedContents.clear();
-    lastObservedDigests.clear();
-    reconfigureAfterBatch = false;
+    stopWorker();
     lastSlowTickPollSummary = "poll=stopped";
   }
 
@@ -144,16 +138,73 @@ public class HotloadController extends TickedObject implements IController {
 
   }
 
-  @Override
-  public void onTick() {
-    pollConfigChanges();
+  private ConfigHotloadEngine createHotloadEngine() {
+    return new ConfigHotloadEngine(
+        this::isManagedConfigFile,
+        this::listKnownConfigFiles,
+        this::readFileContent,
+        this::normalizeContent
+    );
   }
 
-  private void reconfigureWatcher() {
+  private HotloadPendingQueue createPendingQueue() {
+    return new HotloadPendingQueue(
+        AUTOMATIC_HOTLOAD_COOLDOWN_NANOS,
+        TOMBSTONE_GRACE_NANOS,
+        System::nanoTime
+    );
+  }
+
+  private void initializeAsync(HotloadRuntime runtime) {
+    if (!isCurrentRuntime(runtime)) {
+      return;
+    }
+    primeAppliedContents(runtime);
+    if (!isCurrentRuntime(runtime)) {
+      return;
+    }
+    reconfigureWatcher(runtime);
+    if (!isCurrentRuntime(runtime)) {
+      return;
+    }
+    queueDiskDivergences(runtime);
+    lastSlowTickPollSummary = "poll=initialized async=true";
+  }
+
+  private void stopWorker() {
+    HotloadRuntime runtime = hotloadRuntime;
+    hotloadRuntime = null;
+    if (runtime != null) {
+      runtime.executor().retire(() -> {
+        runtime.engine().clear();
+        runtime.queue().clear();
+        runtime.revisions().clear();
+        runtime.selfWriteNotices().clear();
+      });
+    }
+  }
+
+  private boolean isCurrentRuntime(HotloadRuntime runtime) {
+    return runtime != null && runtime == hotloadRuntime && !runtime.executor().isClosed();
+  }
+
+  @Override
+  public void onTick() {
+    HotloadRuntime runtime = hotloadRuntime;
+    if (!isCurrentRuntime(runtime)) {
+      lastSlowTickPollSummary = "poll=stopped";
+      return;
+    }
+    if (runtime.executor().requestPoll(() -> pollConfigChanges(runtime))) {
+      lastSlowTickPollSummary = "poll=queued async=true";
+    }
+  }
+
+  private void reconfigureWatcher(HotloadRuntime runtime) {
     long effectivePollInterval = Math.max(100, pollIntervalMs);
     setTinterval(effectivePollInterval);
     if (!enabled) {
-      hotloadEngine.clear();
+      runtime.engine().clear();
       lastSlowTickPollSummary = "poll=disabled";
       return;
     }
@@ -179,7 +230,7 @@ public class HotloadController extends TickedObject implements IController {
     }
     watchedDirectories.add(localeOverrideFolder);
 
-    hotloadEngine.configure(
+    runtime.engine().configure(
         effectivePollInterval,
         AUTOMATIC_HOTLOAD_COOLDOWN_MS,
         watchedFiles,
@@ -189,7 +240,14 @@ public class HotloadController extends TickedObject implements IController {
   }
 
   public void refreshAfterConfigReload() {
-    reconfigureWatcherPreservingQueue();
+    HotloadRuntime runtime = hotloadRuntime;
+    if (runtime != null) {
+      runtime.executor().execute(() -> {
+        if (isCurrentRuntime(runtime)) {
+          reconfigureWatcherPreservingQueue(runtime);
+        }
+      });
+    }
   }
 
   public String describeLastPollForSlowTick() {
@@ -201,77 +259,86 @@ public class HotloadController extends TickedObject implements IController {
     return summary;
   }
 
-  private void pollConfigChanges() {
+  private void pollConfigChanges(HotloadRuntime runtime) {
+    if (!isCurrentRuntime(runtime)) {
+      return;
+    }
     if (!enabled) {
       lastSlowTickPollSummary = "poll=disabled";
       return;
     }
 
     long pollStartNs = System.nanoTime();
-    Set<File> touched = hotloadEngine.pollTouchedFiles();
-    enqueueTouchedFiles(touched);
-    List<HotloadPendingQueue.ReadyChange> readyChanges = pendingHotloads.beginDrain();
+    drainSelfWriteNotices(runtime);
+    Set<File> touched = runtime.engine().pollTouchedFiles();
+    if (!isCurrentRuntime(runtime)) {
+      return;
+    }
+    enqueueTouchedFiles(runtime, touched);
+    List<HotloadPendingQueue.ReadyChange> readyChanges = runtime.queue().beginDrain();
     if (readyChanges.isEmpty()) {
       long pollMs = (System.nanoTime() - pollStartNs) / 1_000_000L;
-      lastSlowTickPollSummary = "poll=" + pollMs + "ms touched=" + touched.size()
-          + " queued=" + pendingHotloads.pendingCount()
-          + " applied=0 skipped=0 files=none";
+      lastSlowTickPollSummary = "ioPoll=" + pollMs + "ms async=true touched=" + touched.size()
+          + " queued=" + runtime.queue().pendingCount()
+          + " apply=none";
       return;
     }
 
-    List<HotloadPendingQueue.ReadyChange> orderedTouched = new ArrayList<>(readyChanges);
-    orderedTouched.sort(Comparator.comparing(change -> diagnosticRelativePath(change.path().toFile())));
-    List<String> touchedPreview = new ArrayList<>();
-    List<String> appliedPreview = new ArrayList<>();
-    int appliedCount = 0;
-    long slowestApplyMs = 0L;
-    String slowestFile = "";
-
     try {
+      List<HotloadPendingQueue.ReadyChange> orderedTouched = new ArrayList<>(readyChanges);
+      orderedTouched.sort(Comparator.comparing(change -> diagnosticRelativePath(change.path().toFile())));
+      List<PreparedChange> prepared = new ArrayList<>(orderedTouched.size());
+      List<String> touchedPreview = new ArrayList<>();
+      PreparationContext preparationContext = new PreparationContext(ReactConfiguration.get().getLanguage());
       for (HotloadPendingQueue.ReadyChange change : orderedTouched) {
+        if (!isCurrentRuntime(runtime)) {
+          return;
+        }
         File file = change.path().toFile();
-        String relative = diagnosticRelativePath(file);
-        addPreviewEntry(touchedPreview, relative, 5);
-        long applyStartNs = System.nanoTime();
-        QueuedApplyResult result = processQueuedChange(file, change.present());
-        long applyMs = (System.nanoTime() - applyStartNs) / 1_000_000L;
-        if (applyMs > slowestApplyMs) {
-          slowestApplyMs = applyMs;
-          slowestFile = relative;
-        }
-
-        if (result.applied()) {
-          appliedCount++;
-          addPreviewEntry(appliedPreview, relative, 5);
+        addPreviewEntry(touchedPreview, diagnosticRelativePath(file), 5);
+        PreparedChange candidate = prepareQueuedChange(runtime, preparationContext, file, change.present());
+        if (candidate != null) {
+          prepared.add(candidate);
         }
       }
-    } finally {
+      if (!isCurrentRuntime(runtime)) {
+        return;
+      }
+      if (prepared.isEmpty()) {
+        finishPreparedBatch(runtime, orderedTouched.size(), touchedPreview, List.of(), pollStartNs);
+        return;
+      }
+
+      lastSlowTickPollSummary = "ioPoll=" + ((System.nanoTime() - pollStartNs) / 1_000_000L)
+          + "ms async=true touched=" + orderedTouched.size()
+          + " prepared=" + prepared.size()
+          + " apply=queued files=" + formatPreview(touchedPreview, orderedTouched.size());
+      boolean scheduled;
       try {
-        applyDeferredWatcherReconfiguration();
-      } finally {
-        pendingHotloads.finishDrain();
+        scheduled = FoliaScheduler.runGlobal(
+            React.instance,
+            () -> applyPreparedBatch(runtime, orderedTouched.size(), touchedPreview, prepared, pollStartNs)
+        );
+      } catch (Throwable failure) {
+        logTransientFailure("Could not schedule the prepared hotload batch on the server thread", failure);
+        scheduled = false;
       }
+      if (!scheduled) {
+        for (PreparedChange change : prepared) {
+          enqueueChange(runtime, change.snapshot().path(), Files.isRegularFile(change.snapshot().path()));
+        }
+        finishPreparedBatch(runtime, orderedTouched.size(), touchedPreview, List.of(), pollStartNs);
+      }
+    } catch (Throwable failure) {
+      for (HotloadPendingQueue.ReadyChange change : readyChanges) {
+        enqueueChange(runtime, change.path(), Files.isRegularFile(change.path()));
+      }
+      runtime.queue().finishDrain();
+      logTransientFailure("Could not prepare the React hotload batch; retained it for retry", failure);
     }
-
-    long pollMs = (System.nanoTime() - pollStartNs) / 1_000_000L;
-    int touchedCount = orderedTouched.size();
-    int skippedCount = Math.max(0, touchedCount - appliedCount);
-    String summary = "poll=" + pollMs + "ms touched=" + touchedCount
-        + " queued=" + pendingHotloads.pendingCount()
-        + " applied=" + appliedCount
-        + " skipped=" + skippedCount
-        + " files=" + formatPreview(touchedPreview, touchedCount);
-    if (appliedCount > 0) {
-      summary += " appliedFiles=" + formatPreview(appliedPreview, appliedCount);
-    }
-    if (slowestApplyMs > 0L && !slowestFile.isBlank()) {
-      summary += " slowest=" + slowestFile + ":" + slowestApplyMs + "ms";
-    }
-
-    lastSlowTickPollSummary = summary;
   }
 
-  private void enqueueTouchedFiles(Set<File> touchedFiles) {
+  private void enqueueTouchedFiles(HotloadRuntime runtime, Set<File> touchedFiles) {
     if (touchedFiles == null || touchedFiles.isEmpty()) {
       return;
     }
@@ -279,186 +346,326 @@ public class HotloadController extends TickedObject implements IController {
       if (file == null || isTemporaryArtifact(file)) {
         continue;
       }
-      pendingHotloads.enqueue(file.toPath(), Files.isRegularFile(file.toPath()));
+      enqueueChange(runtime, file.toPath(), Files.isRegularFile(file.toPath()));
     }
   }
 
-  private QueuedApplyResult processQueuedChange(File file, boolean expectedPresent) {
+  private void enqueueChange(HotloadRuntime runtime, Path path, boolean present) {
+    runtime.revisions().touch(path);
+    runtime.queue().enqueue(path, present);
+  }
+
+  private PreparedChange prepareQueuedChange(
+      HotloadRuntime runtime,
+      PreparationContext preparationContext,
+      File file,
+      boolean expectedPresent
+  ) {
     Path path = file.toPath().toAbsolutePath().normalize();
+    long preparedRevision = runtime.revisions().current(path);
     if (!Files.isRegularFile(path)) {
       if (expectedPresent) {
-        pendingHotloads.enqueue(path, false);
-        return QueuedApplyResult.SKIPPED;
+        enqueueChange(runtime, path, false);
+        return null;
       }
       React.warn("Ignored config deletion after the hotload grace window; last-good state remains active: "
           + diagnosticRelativePath(file));
-      acknowledgeMissing(file);
-      return QueuedApplyResult.SKIPPED;
+      if (!runtime.revisions().runIfCurrent(
+          path,
+          preparedRevision,
+          () -> acknowledgeMissing(runtime, file)
+      )) {
+        enqueueChange(runtime, path, Files.isRegularFile(path));
+      }
+      return null;
     }
 
     ConfigHotloadSnapshot snapshot;
     try {
       snapshot = ConfigHotloadSnapshot.capture(path, MAX_HOTLOAD_FILE_BYTES);
     } catch (NoSuchFileException e) {
-      pendingHotloads.enqueue(path, false);
-      return QueuedApplyResult.SKIPPED;
+      enqueueChange(runtime, path, false);
+      return null;
     } catch (IOException e) {
       logTransientFailure("Could not capture a stable hotload snapshot for " + diagnosticRelativePath(file), e);
-      pendingHotloads.enqueue(path, Files.isRegularFile(path));
-      return QueuedApplyResult.SKIPPED;
+      enqueueChange(runtime, path, Files.isRegularFile(path));
+      return null;
+    }
+    if (!isCurrentRuntime(runtime)) {
+      return null;
     }
 
     String pathKey = normalizedPath(file);
-    String before = lastAppliedContents.get(pathKey);
+    String before = runtime.appliedContents().get(pathKey);
     if (Objects.equals(before, snapshot.normalizedContent())) {
-      acknowledgeSnapshot(snapshot);
-      requeueIfChanged(snapshot);
-      return QueuedApplyResult.SKIPPED;
-    }
-
-    ApplyOutcome outcome = applyConfigSnapshot(file, snapshot.rawContent());
-    if (outcome == ApplyOutcome.APPLIED) {
-      lastAppliedContents.put(pathKey, snapshot.normalizedContent());
-      acknowledgeSnapshot(snapshot);
-      try {
-        notifyOps(file, before, snapshot.rawContent());
-      } catch (Throwable e) {
-        logTransientFailure("Could not notify operators about the applied hotload for "
-            + diagnosticRelativePath(file), e);
+      if (!acknowledgeIfCurrent(runtime, snapshot, preparedRevision)) {
+        enqueueChange(runtime, path, Files.isRegularFile(path));
       }
-    } else if (outcome == ApplyOutcome.REJECTED) {
-      acknowledgeSnapshot(snapshot);
-    } else if (outcome == ApplyOutcome.RETRY) {
-      pendingHotloads.enqueue(path, Files.isRegularFile(path));
+      requeueIfChanged(runtime, snapshot);
+      return null;
     }
 
-    requeueIfChanged(snapshot);
-    return outcome == ApplyOutcome.APPLIED ? QueuedApplyResult.APPLIED : QueuedApplyResult.SKIPPED;
-  }
-
-  private ApplyOutcome applyConfigSnapshot(File file, String rawContent) {
+    PreparedApply preparedApply;
     try {
-      boolean applied = applyConfigChange(file, rawContent);
-      return applied ? ApplyOutcome.APPLIED : ApplyOutcome.REJECTED;
-    } catch (Throwable e) {
-      logTransientFailure("Hotload apply failed for " + diagnosticRelativePath(file), e);
-      return ApplyOutcome.RETRY;
+      preparedApply = prepareConfigSnapshot(preparationContext, file, snapshot.rawContent());
+    } catch (Throwable failure) {
+      React.warn("Skipped hotload for " + diagnosticRelativePath(file) + " due to invalid config: "
+          + failure.getMessage());
+      if (!acknowledgeIfCurrent(runtime, snapshot, preparedRevision)) {
+        enqueueChange(runtime, path, Files.isRegularFile(path));
+      }
+      requeueIfChanged(runtime, snapshot);
+      return null;
+    }
+    if (!isCurrentRuntime(runtime)) {
+      return null;
+    }
+    List<Component> notifications;
+    try {
+      notifications = prepareOperatorNotifications(file, before, snapshot.rawContent());
+    } catch (Throwable failure) {
+      logTransientFailure("Could not prepare operator notifications for " + diagnosticRelativePath(file), failure);
+      notifications = List.of();
+    }
+    return new PreparedChange(file, snapshot, preparedRevision, preparedApply, notifications);
+  }
+
+  private void applyPreparedBatch(
+      HotloadRuntime runtime,
+      int touchedCount,
+      List<String> touchedPreview,
+      List<PreparedChange> prepared,
+      long pollStartNs
+  ) {
+    if (!isCurrentRuntime(runtime)) {
+      return;
+    }
+    List<AppliedChange> results = new ArrayList<>(prepared.size());
+    for (PreparedChange change : prepared) {
+      ApplyOutcome outcome;
+      try {
+        HotloadRevisionTracker.GuardedBoolean guarded = runtime.revisions().runBooleanIfCurrent(
+            change.snapshot().path(),
+            change.revision(),
+            change.apply()::apply
+        );
+        if (!guarded.current()) {
+          outcome = ApplyOutcome.STALE;
+        } else {
+          outcome = guarded.value() ? ApplyOutcome.APPLIED : ApplyOutcome.REJECTED;
+        }
+      } catch (Throwable failure) {
+        logTransientFailure("Hotload apply failed for " + diagnosticRelativePath(change.file()), failure);
+        outcome = ApplyOutcome.RETRY;
+      }
+      if (outcome != ApplyOutcome.RETRY
+          && !runtime.revisions().isCurrent(change.snapshot().path(), change.revision())) {
+        outcome = ApplyOutcome.STALE;
+      }
+      if (outcome == ApplyOutcome.APPLIED) {
+        try {
+          deliverOperatorNotifications(change.notifications());
+        } catch (Throwable failure) {
+          logTransientFailure("Could not notify operators about the applied hotload for "
+              + diagnosticRelativePath(change.file()), failure);
+        }
+      }
+      results.add(new AppliedChange(change, outcome));
+    }
+    if (isCurrentRuntime(runtime)) {
+      runtime.executor().execute(() -> finishPreparedBatch(
+          runtime,
+          touchedCount,
+          touchedPreview,
+          results,
+          pollStartNs
+      ));
     }
   }
 
-  private void requeueIfChanged(ConfigHotloadSnapshot appliedSnapshot) {
+  private void finishPreparedBatch(
+      HotloadRuntime runtime,
+      int touchedCount,
+      List<String> touchedPreview,
+      List<AppliedChange> results,
+      long pollStartNs
+  ) {
+    if (!isCurrentRuntime(runtime)) {
+      return;
+    }
+    int appliedCount = 0;
+    List<String> appliedPreview = new ArrayList<>();
+    try {
+      for (AppliedChange result : results) {
+        PreparedChange change = result.change();
+        ConfigHotloadSnapshot snapshot = change.snapshot();
+        if (result.outcome() == ApplyOutcome.APPLIED) {
+          boolean current = runtime.revisions().runIfCurrent(
+              snapshot.path(),
+              change.revision(),
+              () -> {
+                runtime.appliedContents().put(normalizedPath(change.file()), snapshot.normalizedContent());
+                acknowledgeSnapshot(runtime, snapshot);
+              }
+          );
+          if (current) {
+            appliedCount++;
+            addPreviewEntry(appliedPreview, diagnosticRelativePath(change.file()), 5);
+          } else {
+            enqueueChange(runtime, snapshot.path(), Files.isRegularFile(snapshot.path()));
+          }
+        } else if (result.outcome() == ApplyOutcome.REJECTED) {
+          if (!acknowledgeIfCurrent(runtime, snapshot, change.revision())) {
+            enqueueChange(runtime, snapshot.path(), Files.isRegularFile(snapshot.path()));
+          }
+        } else {
+          enqueueChange(runtime, snapshot.path(), Files.isRegularFile(snapshot.path()));
+        }
+        requeueIfChanged(runtime, snapshot);
+      }
+      applyDeferredWatcherReconfiguration(runtime);
+    } finally {
+      runtime.queue().finishDrain();
+    }
+    int skippedCount = Math.max(0, touchedCount - appliedCount);
+    String summary = "cycle=" + ((System.nanoTime() - pollStartNs) / 1_000_000L)
+        + "ms async=true touched=" + touchedCount
+        + " queued=" + runtime.queue().pendingCount()
+        + " applied=" + appliedCount
+        + " skipped=" + skippedCount
+        + " files=" + formatPreview(touchedPreview, touchedCount);
+    if (appliedCount > 0) {
+      summary += " appliedFiles=" + formatPreview(appliedPreview, appliedCount);
+    }
+    lastSlowTickPollSummary = summary;
+  }
+
+  private void requeueIfChanged(HotloadRuntime runtime, ConfigHotloadSnapshot appliedSnapshot) {
     Path path = appliedSnapshot.path();
     try {
       ConfigHotloadSnapshot latest = ConfigHotloadSnapshot.capture(path, MAX_HOTLOAD_FILE_BYTES);
       if (!latest.digest().equals(appliedSnapshot.digest())) {
-        pendingHotloads.enqueue(path, true);
+        enqueueChange(runtime, path, true);
       }
     } catch (NoSuchFileException e) {
-      pendingHotloads.enqueue(path, false);
+      enqueueChange(runtime, path, false);
     } catch (IOException e) {
       logTransientFailure("Could not verify the applied hotload snapshot for " + diagnosticRelativePath(path.toFile()), e);
-      pendingHotloads.enqueue(path, Files.isRegularFile(path));
+      enqueueChange(runtime, path, Files.isRegularFile(path));
     }
   }
 
-  private void applyDeferredWatcherReconfiguration() {
-    if (!reconfigureAfterBatch) {
+  private void applyDeferredWatcherReconfiguration(HotloadRuntime runtime) {
+    if (!runtime.reconfigureAfterBatch().compareAndSet(true, false)) {
       return;
     }
-    reconfigureAfterBatch = false;
     try {
-      reconfigureWatcherPreservingQueue();
+      reconfigureWatcherPreservingQueue(runtime);
     } catch (Throwable e) {
       logTransientFailure("Could not reconfigure the React hotload watcher after applying its settings", e);
     }
   }
 
-  private void reconfigureWatcherPreservingQueue() {
-    queueDiskDivergences();
+  private void reconfigureWatcherPreservingQueue(HotloadRuntime runtime) {
+    queueDiskDivergences(runtime);
     try {
-      reconfigureWatcher();
+      reconfigureWatcher(runtime);
     } finally {
-      queueDiskDivergences();
+      queueDiskDivergences(runtime);
     }
   }
 
-  private boolean applyConfigChange(File file, String rawContent) {
+  private PreparedApply prepareConfigSnapshot(
+      PreparationContext preparationContext,
+      File file,
+      String rawContent
+  ) throws Exception {
     if (isShadowedLegacyJson(file)) {
       React.verbose("Ignoring legacy json hotload because canonical toml exists: " + file.getPath());
-      return false;
+      return () -> false;
     }
 
     if (isMainConfigFile(file)) {
-      boolean ok = ConfigFileSupport.withPassiveHotloadSnapshot(
-          file,
-          rawContent,
-          ReactConfiguration::reload
+      ReactConfiguration preparedConfig = ReactConfiguration.prepareHotloadSnapshot(file, rawContent);
+      ReactLanguage.PreparedReload preparedLanguage = ReactLanguage.prepareHotload(
+          null,
+          null,
+          preparedConfig.getLanguage()
       );
-      if (ok) {
+      preparationContext.setConfiguredLocale(preparedConfig.getLanguage());
+      return () -> {
+        ReactConfiguration.applyHotloadSnapshot(preparedConfig);
+        ReactLanguage.applyPreparedHotload(preparedLanguage);
         refreshGlobalRuntimeSettings();
-      } else {
-        React.warn("Skipped hotload for " + file.getPath() + " due to invalid config.");
-      }
-      return ok;
+        return true;
+      };
     }
 
     if (ReactLanguage.isOverrideFile(file)) {
-      return ReactLanguage.reload(file, rawContent);
+      ReactLanguage.PreparedReload preparedLanguage = ReactLanguage.prepareHotload(
+          file,
+          rawContent,
+          preparationContext.configuredLocale()
+      );
+      return () -> ReactLanguage.applyPreparedHotload(preparedLanguage);
     }
 
     ManagedConfig target = resolveManagedConfig(file);
     if (target != null) {
       return switch (target.category) {
-        case "core" -> reloadCoreConfig(target.id, file, rawContent);
-        case "feature" -> reloadFeatureConfig(target.id, file, rawContent);
-        case "tweak" -> reloadTweakConfig(target.id, file, rawContent);
-        case "action" -> reloadActionConfig(target.id, file, rawContent);
-        case "sampler" -> reloadSamplerConfig(target.id, file, rawContent);
-        default -> validateConfigSnapshot(file, rawContent);
+        case "core" -> prepareCoreConfig(target.id, file, rawContent);
+        case "feature" -> prepareFeatureConfig(target.id, file, rawContent);
+        case "tweak" -> prepareTweakConfig(target.id, file, rawContent);
+        case "action" -> prepareActionConfig(target.id, file, rawContent);
+        case "sampler" -> prepareSamplerConfig(target.id, file, rawContent);
+        default -> validatedNoOp(file, rawContent);
       };
     }
 
-    return validateConfigSnapshot(file, rawContent);
+    return validatedNoOp(file, rawContent);
   }
 
-  private boolean reloadCoreConfig(String id, File file, String rawContent) {
+  private PreparedApply prepareCoreConfig(String id, File file, String rawContent) throws IOException {
     if (id == null || React.instance.getControllerRegistry() == null) {
-      return validateConfigSnapshot(file, rawContent);
+      return validatedNoOp(file, rawContent);
     }
 
     IController controller = React.instance.getControllerRegistry().get(id);
     if (controller == null) {
-      return validateConfigSnapshot(file, rawContent);
+      return validatedNoOp(file, rawContent);
     }
-
-    return runSync(() -> ConfigFileSupport.withPassiveHotloadSnapshot(file, rawContent, () -> {
-      if (!controller.reloadConfiguration()) {
+    Object prepared = controller.prepareConfigurationSnapshot(file, rawContent);
+    return () -> {
+      if (!controller.applyConfigurationSnapshot(prepared)) {
         return false;
       }
       if (controller == this) {
-        reconfigureAfterBatch = true;
+        HotloadRuntime runtime = hotloadRuntime;
+        if (runtime != null) {
+          runtime.reconfigureAfterBatch().set(true);
+        }
       }
       if (controller instanceof PlayerController playerController) {
         playerController.updateMonitors();
       }
       return true;
-    }));
+    };
   }
 
-  private boolean reloadFeatureConfig(String id, File file, String rawContent) {
+  private PreparedApply prepareFeatureConfig(String id, File file, String rawContent) throws IOException {
     FeatureController controller = React.controller(FeatureController.class);
     if (controller == null || controller.getFeatures() == null || id == null) {
-      return validateConfigSnapshot(file, rawContent);
+      return validatedNoOp(file, rawContent);
     }
 
     Feature feature = controller.getFeatures().get(id);
     if (feature == null) {
-      return validateConfigSnapshot(file, rawContent);
+      return validatedNoOp(file, rawContent);
     }
-
-    return runSync(() -> ConfigFileSupport.withPassiveHotloadSnapshot(file, rawContent, () -> {
+    Object prepared = feature.prepareConfigurationSnapshot(file, rawContent);
+    return () -> {
       boolean wasActive = controller.getActiveFeatures().containsKey(feature.getId());
-      if (!feature.reloadConfiguration()) {
+      if (!feature.applyConfigurationSnapshot(prepared)) {
         return false;
       }
       boolean nowEnabled = feature.isEnabled();
@@ -473,23 +680,23 @@ public class HotloadController extends TickedObject implements IController {
       }
 
       return true;
-    }));
+    };
   }
 
-  private boolean reloadTweakConfig(String id, File file, String rawContent) {
+  private PreparedApply prepareTweakConfig(String id, File file, String rawContent) throws IOException {
     TweakController controller = React.controller(TweakController.class);
     if (controller == null || controller.getTweaks() == null || id == null) {
-      return validateConfigSnapshot(file, rawContent);
+      return validatedNoOp(file, rawContent);
     }
 
     Tweak tweak = controller.getTweaks().get(id);
     if (tweak == null) {
-      return validateConfigSnapshot(file, rawContent);
+      return validatedNoOp(file, rawContent);
     }
-
-    return runSync(() -> ConfigFileSupport.withPassiveHotloadSnapshot(file, rawContent, () -> {
+    Object prepared = tweak.prepareConfigurationSnapshot(file, rawContent);
+    return () -> {
       boolean wasActive = controller.getActiveTweaks().containsKey(tweak.getId());
-      if (!tweak.reloadConfiguration()) {
+      if (!tweak.applyConfigurationSnapshot(prepared)) {
         return false;
       }
       boolean nowEnabled = tweak.isEnabled();
@@ -504,44 +711,45 @@ public class HotloadController extends TickedObject implements IController {
       }
 
       return true;
-    }));
+    };
   }
 
-  private boolean reloadActionConfig(String id, File file, String rawContent) {
+  private PreparedApply prepareActionConfig(String id, File file, String rawContent) throws IOException {
     ActionController controller = React.controller(ActionController.class);
     if (controller == null || controller.getActions() == null || id == null) {
-      return validateConfigSnapshot(file, rawContent);
+      return validatedNoOp(file, rawContent);
     }
 
     Action<?> action = controller.getActions().get(id);
     if (action == null) {
-      return validateConfigSnapshot(file, rawContent);
+      return validatedNoOp(file, rawContent);
     }
-
-    return runSync(() -> ConfigFileSupport.withPassiveHotloadSnapshot(file, rawContent, () -> {
+    Object prepared = action.prepareConfigurationSnapshot(file, rawContent);
+    return () -> {
       boolean wasEnabled = action.isEnabled();
-      if (!action.reloadConfiguration()) {
+      if (!action.applyConfigurationSnapshot(prepared)) {
         return false;
       }
       if (!wasEnabled && action.isEnabled()) {
         action.onInit();
       }
       return true;
-    }));
+    };
   }
 
-  private boolean reloadSamplerConfig(String id, File file, String rawContent) {
+  private PreparedApply prepareSamplerConfig(String id, File file, String rawContent) throws IOException {
     SampleController controller = React.controller(SampleController.class);
     if (controller == null || controller.getSamplers() == null || id == null) {
-      return validateConfigSnapshot(file, rawContent);
+      return validatedNoOp(file, rawContent);
     }
 
-    if (controller.getSamplers().get(id) == null) {
-      return validateConfigSnapshot(file, rawContent);
+    Registered sampler = controller.getSamplers().get(id);
+    if (sampler == null) {
+      return validatedNoOp(file, rawContent);
     }
-
-    return runSync(() -> ConfigFileSupport.withPassiveHotloadSnapshot(file, rawContent, () -> {
-      boolean ok = controller.reloadSamplerConfig(id);
+    Object prepared = sampler.prepareConfigurationSnapshot(file, rawContent);
+    return () -> {
+      boolean ok = controller.applySamplerConfig(id, prepared);
       if (!ok) {
         return false;
       }
@@ -552,42 +760,26 @@ public class HotloadController extends TickedObject implements IController {
       }
 
       return true;
-    }));
+    };
   }
 
-  private boolean runSync(BooleanSupplier supplier) {
-    AtomicReference<Throwable> failure = new AtomicReference<>();
-    Boolean result = J.sResult(() -> {
-      try {
-        return supplier.getAsBoolean();
-      } catch (Throwable e) {
-        failure.set(e);
-        return false;
-      }
-    });
-    Throwable applyFailure = failure.get();
-    if (applyFailure != null) {
-      throw new IllegalStateException("Synchronous hotload application failed", applyFailure);
+  private PreparedApply validatedNoOp(File file, String rawContent) throws IOException {
+    if (!validateConfigSnapshot(file, rawContent)) {
+      throw new IOException("Config snapshot could not be parsed");
     }
-    if (result == null) {
-      throw new IllegalStateException("Synchronous hotload application was interrupted, timed out, or refused");
-    }
-    return Boolean.TRUE.equals(result);
+    return () -> true;
   }
 
   private void refreshGlobalRuntimeSettings() {
-    ReactLanguage.reload();
-    J.s(() -> {
-      EntityController entityController = React.controller(EntityController.class);
-      if (entityController != null) {
-        ReactConfiguration.get().getPriority().rebuildPriority();
-      }
+    EntityController entityController = React.controller(EntityController.class);
+    if (entityController != null) {
+      ReactConfiguration.get().getPriority().rebuildPriority();
+    }
 
-      PlayerController playerController = React.controller(PlayerController.class);
-      if (playerController != null) {
-        playerController.updateMonitors();
-      }
-    });
+    PlayerController playerController = React.controller(PlayerController.class);
+    if (playerController != null) {
+      playerController.updateMonitors();
+    }
   }
 
   private boolean validateConfigSnapshot(File file, String rawContent) {
@@ -757,19 +949,22 @@ public class HotloadController extends TickedObject implements IController {
     return files;
   }
 
-  private void primeAppliedContents() {
+  private void primeAppliedContents(HotloadRuntime runtime) {
     for (File file : listKnownConfigFiles()) {
+      if (!isCurrentRuntime(runtime)) {
+        return;
+      }
       if (file == null) {
         continue;
       }
       if (!Files.isRegularFile(file.toPath())) {
-        lastObservedDigests.putIfAbsent(normalizedPath(file), MISSING_DIGEST);
+        runtime.observedDigests().putIfAbsent(normalizedPath(file), MISSING_DIGEST);
         continue;
       }
       try {
         ConfigHotloadSnapshot snapshot = ConfigHotloadSnapshot.capture(file.toPath(), MAX_HOTLOAD_FILE_BYTES);
-        lastAppliedContents.putIfAbsent(normalizedPath(file), snapshot.normalizedContent());
-        lastObservedDigests.putIfAbsent(normalizedPath(file), snapshot.digest());
+        runtime.appliedContents().putIfAbsent(normalizedPath(file), snapshot.normalizedContent());
+        runtime.observedDigests().putIfAbsent(normalizedPath(file), snapshot.digest());
       } catch (IOException e) {
         logTransientFailure("Could not establish the hotload baseline for " + diagnosticRelativePath(file), e);
       }
@@ -777,77 +972,115 @@ public class HotloadController extends TickedObject implements IController {
   }
 
   private void noteSelfWrite(File file, String rawContent) {
-    hotloadEngine.noteSelfWrite(file, rawContent);
     if (file == null || rawContent == null || !isManagedConfigFile(file)) {
       return;
     }
-    lastAppliedContents.put(normalizedPath(file), normalizeContent(rawContent));
-    try {
-      ConfigHotloadSnapshot snapshot = ConfigHotloadSnapshot.capture(file.toPath(), MAX_HOTLOAD_FILE_BYTES);
-      if (Objects.equals(snapshot.normalizedContent(), normalizeContent(rawContent))) {
-        lastObservedDigests.put(normalizedPath(file), snapshot.digest());
-      } else {
-        pendingHotloads.enqueue(snapshot.path(), true);
-      }
-    } catch (IOException e) {
-      logTransientFailure("Could not record the completed config write for " + diagnosticRelativePath(file), e);
-      pendingHotloads.enqueue(file.toPath(), Files.isRegularFile(file.toPath()));
+    HotloadRuntime runtime = hotloadRuntime;
+    if (!isCurrentRuntime(runtime)) {
+      return;
+    }
+    runtime.revisions().touchAndRun(
+        file.toPath(),
+        () -> runtime.appliedContents().put(normalizedPath(file), normalizeContent(rawContent))
+    );
+    runtime.selfWriteNotices().add(new SelfWriteNotice(file, rawContent));
+    runtime.executor().requestPoll(() -> pollConfigChanges(runtime));
+  }
+
+  private void drainSelfWriteNotices(HotloadRuntime runtime) {
+    SelfWriteNotice notice;
+    while ((notice = runtime.selfWriteNotices().poll()) != null) {
+      recordSelfWrite(runtime, notice.file(), notice.rawContent());
     }
   }
 
-  private void acknowledgeSnapshot(ConfigHotloadSnapshot snapshot) {
+  private void recordSelfWrite(
+      HotloadRuntime runtime,
+      File file,
+      String rawContent
+  ) {
+    runtime.engine().noteSelfWrite(file, rawContent);
+    try {
+      ConfigHotloadSnapshot snapshot = ConfigHotloadSnapshot.capture(file.toPath(), MAX_HOTLOAD_FILE_BYTES);
+      if (Objects.equals(snapshot.normalizedContent(), normalizeContent(rawContent))) {
+        runtime.observedDigests().put(normalizedPath(file), snapshot.digest());
+      } else {
+        enqueueChange(runtime, snapshot.path(), true);
+      }
+    } catch (IOException e) {
+      logTransientFailure("Could not record the completed config write for " + diagnosticRelativePath(file), e);
+      enqueueChange(runtime, file.toPath(), Files.isRegularFile(file.toPath()));
+    }
+  }
+
+  private void acknowledgeSnapshot(HotloadRuntime runtime, ConfigHotloadSnapshot snapshot) {
     File file = snapshot.path().toFile();
-    lastObservedDigests.put(normalizedPath(file), snapshot.digest());
-    hotloadEngine.noteSelfWrite(file, snapshot.rawContent());
+    runtime.observedDigests().put(normalizedPath(file), snapshot.digest());
+    runtime.engine().noteSelfWrite(file, snapshot.rawContent());
   }
 
-  private void acknowledgeMissing(File file) {
-    lastObservedDigests.put(normalizedPath(file), MISSING_DIGEST);
-    hotloadEngine.noteSelfWrite(file, null);
+  private boolean acknowledgeIfCurrent(
+      HotloadRuntime runtime,
+      ConfigHotloadSnapshot snapshot,
+      long revision
+  ) {
+    return runtime.revisions().runIfCurrent(
+        snapshot.path(),
+        revision,
+        () -> acknowledgeSnapshot(runtime, snapshot)
+    );
   }
 
-  private void queueDiskDivergences() {
+  private void acknowledgeMissing(HotloadRuntime runtime, File file) {
+    runtime.observedDigests().put(normalizedPath(file), MISSING_DIGEST);
+    runtime.engine().noteSelfWrite(file, null);
+  }
+
+  private void queueDiskDivergences(HotloadRuntime runtime) {
     Set<String> seen = new HashSet<>();
     for (File file : listKnownConfigFiles()) {
+      if (!isCurrentRuntime(runtime)) {
+        return;
+      }
       if (file == null || !isManagedConfigFile(file)) {
         continue;
       }
       String pathKey = normalizedPath(file);
       seen.add(pathKey);
-      queueDiskDivergence(file, pathKey);
+      queueDiskDivergence(runtime, file, pathKey);
     }
 
-    for (String pathKey : new HashSet<>(lastObservedDigests.keySet())) {
+    for (String pathKey : new HashSet<>(runtime.observedDigests().keySet())) {
       if (seen.contains(pathKey)) {
         continue;
       }
       File file = new File(pathKey);
       if (isManagedConfigFile(file)) {
-        queueDiskDivergence(file, pathKey);
+        queueDiskDivergence(runtime, file, pathKey);
       }
     }
   }
 
-  private void queueDiskDivergence(File file, String pathKey) {
+  private void queueDiskDivergence(HotloadRuntime runtime, File file, String pathKey) {
     Path path = file.toPath().toAbsolutePath().normalize();
     if (!Files.isRegularFile(path)) {
-      if (!MISSING_DIGEST.equals(lastObservedDigests.get(pathKey))) {
-        pendingHotloads.enqueue(path, false);
+      if (!MISSING_DIGEST.equals(runtime.observedDigests().get(pathKey))) {
+        enqueueChange(runtime, path, false);
       }
       return;
     }
 
     try {
       ConfigHotloadSnapshot snapshot = ConfigHotloadSnapshot.capture(path, MAX_HOTLOAD_FILE_BYTES);
-      if (!snapshot.digest().equals(lastObservedDigests.get(pathKey))) {
-        pendingHotloads.enqueue(path, true);
+      if (!snapshot.digest().equals(runtime.observedDigests().get(pathKey))) {
+        enqueueChange(runtime, path, true);
       }
     } catch (NoSuchFileException e) {
-      pendingHotloads.enqueue(path, false);
+      enqueueChange(runtime, path, false);
     } catch (IOException e) {
       logTransientFailure("Could not reconcile config state while reconfiguring the watcher for "
           + diagnosticRelativePath(file), e);
-      pendingHotloads.enqueue(path, Files.isRegularFile(path));
+      enqueueChange(runtime, path, Files.isRegularFile(path));
     }
   }
 
@@ -905,6 +1138,23 @@ public class HotloadController extends TickedObject implements IController {
     return relativizeToDataFolder(file).replace('\\', '/');
   }
 
+  static String relativizeNormalized(File root, File file) {
+    if (file == null) {
+      return "<unknown>";
+    }
+    if (root == null) {
+      return file.getName();
+    }
+
+    try {
+      Path normalizedRoot = root.toPath().toAbsolutePath().normalize();
+      Path normalizedFile = file.toPath().toAbsolutePath().normalize();
+      return normalizedRoot.relativize(normalizedFile).toString();
+    } catch (RuntimeException failure) {
+      return file.getName();
+    }
+  }
+
   private void addPreviewEntry(List<String> preview, String value, int limit) {
     if (preview == null || value == null || value.isBlank()) {
       return;
@@ -943,9 +1193,9 @@ public class HotloadController extends TickedObject implements IController {
     return ConfigFileSupport.parseToJsonElement(raw, file);
   }
 
-  private void notifyOps(File file, String before, String after) {
+  private List<Component> prepareOperatorNotifications(File file, String before, String after) {
     if (!notifyOperators) {
-      return;
+      return List.of();
     }
 
     List<ConfigHotloadEngine.DiffEntry> diffs = ConfigHotloadEngine.computeStructuredDiff(
@@ -954,7 +1204,7 @@ public class HotloadController extends TickedObject implements IController {
         raw -> parseStructured(raw, null)
     );
     if (diffs.isEmpty()) {
-      return;
+      return List.of();
     }
 
     String relative = relativizeToDataFolder(file);
@@ -974,17 +1224,22 @@ public class HotloadController extends TickedObject implements IController {
       ));
     }
 
-    J.s(() -> {
-      for (Player player : Bukkit.getOnlinePlayers()) {
-        if (!player.isOp()) {
-          continue;
-        }
+    return List.copyOf(messages);
+  }
 
-        // audience delivery: spigot Player has no sendMessage(Component)
-        Audience audience = React.audiences().player(player);
-        messages.forEach(audience::sendMessage);
+  private void deliverOperatorNotifications(List<Component> messages) {
+    if (messages == null || messages.isEmpty()) {
+      return;
+    }
+    for (Player player : Bukkit.getOnlinePlayers()) {
+      if (!player.isOp()) {
+        continue;
       }
-    });
+
+      // audience delivery: spigot Player has no sendMessage(Component)
+      Audience audience = React.audiences().player(player);
+      messages.forEach(audience::sendMessage);
+    }
   }
 
   private Component formatHotloadMessage(String file, String key, String oldValue, String newValue) {
@@ -1002,22 +1257,66 @@ public class HotloadController extends TickedObject implements IController {
   }
 
   private String relativizeToDataFolder(File file) {
-    try {
-      return React.instance.getDataFolder().toPath().relativize(file.toPath()).toString();
-    } catch (Throwable e) {
-      return file == null ? "<unknown>" : file.getName();
+    File root = dataFolder;
+    if (root == null && React.instance != null) {
+      root = React.instance.getDataFolder();
     }
+    return relativizeNormalized(root, file);
   }
 
   private enum ApplyOutcome {
     APPLIED,
     REJECTED,
+    STALE,
     RETRY
   }
 
-  private record QueuedApplyResult(boolean applied) {
-    private static final QueuedApplyResult APPLIED = new QueuedApplyResult(true);
-    private static final QueuedApplyResult SKIPPED = new QueuedApplyResult(false);
+  @FunctionalInterface
+  private interface PreparedApply {
+    boolean apply();
+  }
+
+  private record PreparedChange(
+      File file,
+      ConfigHotloadSnapshot snapshot,
+      long revision,
+      PreparedApply apply,
+      List<Component> notifications
+  ) {
+  }
+
+  private record AppliedChange(PreparedChange change, ApplyOutcome outcome) {
+  }
+
+  private record SelfWriteNotice(File file, String rawContent) {
+  }
+
+  private record HotloadRuntime(
+      ConfigHotloadEngine engine,
+      HotloadPendingQueue queue,
+      HotloadRevisionTracker revisions,
+      Map<String, String> appliedContents,
+      Map<String, String> observedDigests,
+      ConcurrentLinkedQueue<SelfWriteNotice> selfWriteNotices,
+      AtomicBoolean reconfigureAfterBatch,
+      HotloadTaskExecutor executor
+  ) {
+  }
+
+  private static final class PreparationContext {
+    private String configuredLocale;
+
+    private PreparationContext(String configuredLocale) {
+      this.configuredLocale = configuredLocale;
+    }
+
+    private String configuredLocale() {
+      return configuredLocale;
+    }
+
+    private void setConfiguredLocale(String configuredLocale) {
+      this.configuredLocale = configuredLocale;
+    }
   }
 
   private record ManagedConfig(String category, String id) {

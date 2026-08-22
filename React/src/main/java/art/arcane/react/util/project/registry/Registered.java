@@ -28,6 +28,7 @@ import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Material;
 
 import java.io.File;
+import java.io.IOException;
 
 public interface Registered {
   default boolean autoRegister() {
@@ -57,6 +58,25 @@ public interface Registered {
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})
+  default Object prepareConfigurationSnapshot(File sourceFile, String rawContent) throws IOException {
+    return ConfigFileSupport.parseSnapshot(
+        sourceFile,
+        rawContent,
+        (Class) getClass(),
+        getConfigCategory() + ":" + getId()
+    );
+  }
+
+  default boolean applyConfigurationSnapshot(Object loadedObject) {
+    if (loadedObject == null || !getClass().isInstance(loadedObject)) {
+      return false;
+    }
+    copyConfigurationFields(loadedObject);
+    React.verbose("Loaded config for " + getName());
+    return true;
+  }
+
+  @SuppressWarnings({"unchecked", "rawtypes"})
   default boolean reloadFromDisk(boolean overwriteOnReadFailure) {
     File canonicalFile = React.instance.getDataFile(getConfigCategory(), getId() + ".toml");
     File legacyFile = React.instance.getDataFile(getConfigCategory(), getId() + ".json");
@@ -72,21 +92,25 @@ public interface Registered {
           "Created missing config [" + getConfigCategory() + "/" + getId() + ".toml] from defaults."
       );
 
-      CursedComponent loaded = Curse.on(loadedObject);
-      CursedComponent current = Curse.on(this);
-      current.instanceFields().filter(i -> !i.isFinal() && !i.isTransient()).forEach((self) -> {
-        CursedField from = loaded.field(self.field().getName());
-        Object oFrom = from.get();
-
-        if (oFrom != null) {
-          self.set(oFrom);
-        }
-      });
+      copyConfigurationFields(loadedObject);
       React.verbose("Loaded config for " + getName() + " in " + canonicalFile.getPath());
       return true;
     } catch (Throwable e) {
       React.warn("Failed to load config for " + getName() + ": " + e.getMessage());
       return false;
     }
+  }
+
+  private void copyConfigurationFields(Object loadedObject) {
+    CursedComponent loaded = Curse.on(loadedObject);
+    CursedComponent current = Curse.on(this);
+    current.instanceFields().filter(i -> !i.isFinal() && !i.isTransient()).forEach((self) -> {
+      CursedField from = loaded.field(self.field().getName());
+      Object oFrom = from.get();
+
+      if (oFrom != null) {
+        self.set(oFrom);
+      }
+    });
   }
 }

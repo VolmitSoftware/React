@@ -59,6 +59,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 @Data
 @ConfigDescription("Global React configuration. Controls default monitoring layout, value model tuning, and diagnostics behavior.")
@@ -133,6 +134,23 @@ public class ReactConfiguration {
         React.warn("Failed to reload config.toml: " + e.getMessage());
         return false;
       }
+    }
+  }
+
+  public static ReactConfiguration prepareHotloadSnapshot(File sourceFile, String rawContent) throws IOException {
+    ReactConfiguration prepared = ConfigFileSupport.parseSnapshot(
+        sourceFile,
+        rawContent,
+        ReactConfiguration.class,
+        "main-config"
+    );
+    prepared.normalize();
+    return prepared;
+  }
+
+  public static void applyHotloadSnapshot(ReactConfiguration prepared) {
+    synchronized (CONFIG_LOCK) {
+      configuration = Objects.requireNonNull(prepared, "prepared");
     }
   }
 

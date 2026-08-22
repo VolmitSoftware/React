@@ -215,6 +215,41 @@ public class SampleController extends TickedObject implements IController {
     }
   }
 
+  public boolean applySamplerConfig(String id, Object preparedConfiguration) {
+    if (id == null || id.isBlank() || samplers == null) {
+      return false;
+    }
+
+    Sampler sampler = samplers.get(id);
+    if (sampler == null) {
+      return false;
+    }
+
+    Object lock = samplerLocks.computeIfAbsent(id, k -> new Object());
+    synchronized (lock) {
+      setSamplerState(id, SamplerState.RELOADING);
+      try {
+        if (!sampler.applyConfigurationSnapshot(preparedConfiguration)) {
+          setSamplerState(id, SamplerState.STOPPED);
+          return false;
+        }
+        stopSamplerRuntime(sampler);
+        startSamplerRuntime(sampler);
+        return canSample(sampler);
+      } catch (Throwable e) {
+        setSamplerState(id, SamplerState.STOPPED);
+        React.warn(
+            "Sampler hotload apply failed: id=" + id
+                + " class=" + sampler.getClass().getSimpleName()
+                + " state=" + samplerStates.get(id)
+                + " cause=" + summarizeThrowable(e)
+                + " config=/plugins/React/sampler/" + id + ".toml"
+        );
+        return false;
+      }
+    }
+  }
+
   private void startSamplerRuntime(Sampler sampler) {
     if (sampler == null) {
       return;

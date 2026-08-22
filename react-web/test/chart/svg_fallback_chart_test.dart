@@ -28,6 +28,49 @@ void main() {
       }, description: 'polyline with 5 coordinate pairs');
       expect(fivePointPolyline, findsOneComponent);
     });
+
+    testComponents('renders an accessible hit target for each sample', (
+      ComponentTester tester,
+    ) async {
+      tester.pumpComponent(
+        SvgFallbackChart(
+          series: <(String, List<double>)>[
+            ('TPS', <double>[19.7, 19.9, 20.0]),
+          ],
+        ),
+      );
+
+      expect(
+        find.byComponentPredicate((Component component) {
+          return component is DomComponent &&
+              component.classes?.contains('reactor-chart-hit-target') == true;
+        }),
+        findsNComponents(3),
+      );
+    });
+
+    testComponents('renders the active sample guide and tooltip values', (
+      ComponentTester tester,
+    ) async {
+      tester.pumpComponent(
+        SvgFallbackChart(
+          series: <(String, List<double>)>[
+            ('TPS', <double>[19.7, 19.9]),
+          ],
+          activeSample: 1,
+        ),
+      );
+
+      expect(find.text('Sample 2'), findsOneComponent);
+      expect(find.text('19.90'), findsOneComponent);
+      expect(
+        find.byComponentPredicate((Component component) {
+          return component is DomComponent &&
+              component.classes?.contains('reactor-chart-crosshair') == true;
+        }),
+        findsOneComponent,
+      );
+    });
   });
 
   group('TimeseriesChart', () {
