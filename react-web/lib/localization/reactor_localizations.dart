@@ -820,33 +820,30 @@ enum ReactorText {
     'screen.add_server.input_helper',
     'You can paste the raw RCT2 token or the full console line.',
   ),
-  addServerConnectionFlow(
-    'screen.add_server.connection_flow',
-    'Connection Flow',
-  ),
+  addServerConnectionFlow('screen.add_server.connection_flow', 'How to pair'),
   addServerConnectionFlowDescription(
     'screen.add_server.connection_flow_description',
-    'The dashboard validates locally before opening telemetry.',
+    'Complete these steps on the Minecraft server, then paste its scoped connection code below.',
   ),
-  addServerCopy('screen.add_server.copy', 'Copy'),
+  addServerCopy('screen.add_server.copy', 'Make React reachable'),
   addServerCopyDescription(
     'screen.add_server.copy_description',
-    'Run the React pairing command and copy the full RCT2 value.',
+    'Set enabled = true in web.toml and restart. From this hosted dashboard, advertise an HTTPS URL or enable a WSS relay; browsers block plain HTTP.',
   ),
-  addServerDecode('screen.add_server.decode', 'Decode'),
+  addServerDecode('screen.add_server.decode', 'Generate a scoped code'),
   addServerDecodeDescription(
     'screen.add_server.decode_description',
-    'React Web checks the transport, token, public key, and server fingerprint.',
+    'Run the pairing command in game as an OP or player with react.use, or omit the leading slash in the dedicated server console. Choose viewer, operator, or admin; viewer is the default.',
   ),
-  addServerMonitor('screen.add_server.monitor', 'Monitor'),
+  addServerMonitor('screen.add_server.monitor', 'Paste and review'),
   addServerMonitorDescription(
     'screen.add_server.monitor_description',
-    'A live server workspace opens as soon as the fleet accepts it.',
+    'Copy the complete Pairing code value beginning with RCT2. Paste the token or full console line below, then check the transport and fingerprint.',
   ),
-  addServerSecurity('screen.add_server.security', 'Security'),
+  addServerSecurity('screen.add_server.security', 'Connect and retain control'),
   addServerSecurityDescription(
     'screen.add_server.security_description',
-    'Pairing credentials stay in browser storage for this console.',
+    'Select Pair to open the live workspace. Credentials stay in this browser. The pairing output also prints the token ID used to revoke access later.',
   ),
   addServerCredentialScope(
     'screen.add_server.credential_scope',

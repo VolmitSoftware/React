@@ -264,12 +264,18 @@ void main() {
       expect(response.body, contains('reactor-pane-state is-empty'));
       expect(
         response.body,
-        isNot(contains(ReactorText.addServerConnectionFlow.english)),
+        contains(ReactorText.addServerConnectionFlow.english),
       );
-      expect(
-        response.body,
-        isNot(contains(ReactorText.addServerSecurity.english)),
-      );
+      expect(response.body, contains(ReactorText.addServerSecurity.english));
+      expect(response.body, contains('plugins/React/web.toml'));
+      expect(response.body, contains('enabled = true'));
+      expect(response.body, contains('/react web pair my-server viewer'));
+      expect(response.body, contains('react.use'));
+      expect(response.body, contains('viewer, operator, or admin'));
+      expect(response.body, contains('Pairing code: RCT2.'));
+      expect(response.body, contains('/react web revoke &lt;token-id&gt;'));
+      expect(response.body, contains('role="list"'));
+      expect(response.body, contains('role="listitem"'));
     });
 
     test('pairs a valid direct server', () async {

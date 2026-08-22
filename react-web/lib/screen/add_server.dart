@@ -358,6 +358,14 @@ class _AddServerScreenState extends State<AddServerScreen> {
       ]),
       children: <Widget>[
         SectionPanel(
+          label: reactorText(ReactorText.addServerConnectionFlow),
+          description: reactorText(
+            ReactorText.addServerConnectionFlowDescription,
+          ),
+          flush: true,
+          child: _pairingGuide(),
+        ),
+        SectionPanel(
           label: reactorText(ReactorText.addServerPairingConsole),
           description: reactorText(
             ReactorText.addServerPairingConsoleDescription,
@@ -417,6 +425,63 @@ class _AddServerScreenState extends State<AddServerScreen> {
             ),
           ],
         ),
+      ],
+    );
+  }
+
+  Widget _pairingGuide() {
+    return dom.div(
+      classes: 'reactor-add-step-list',
+      attributes: const <String, String>{'role': 'list'},
+      <Widget>[
+        _pairingStep(
+          number: '01',
+          title: reactorText(ReactorText.addServerCopy),
+          description: reactorText(ReactorText.addServerCopyDescription),
+          command: 'plugins/React/web.toml: enabled = true',
+        ),
+        _pairingStep(
+          number: '02',
+          title: reactorText(ReactorText.addServerDecode),
+          description: reactorText(ReactorText.addServerDecodeDescription),
+          command: '/react web pair my-server viewer',
+        ),
+        _pairingStep(
+          number: '03',
+          title: reactorText(ReactorText.addServerMonitor),
+          description: reactorText(ReactorText.addServerMonitorDescription),
+          command: 'Pairing code: RCT2.\u2026',
+        ),
+        _pairingStep(
+          number: '04',
+          title: reactorText(ReactorText.addServerSecurity),
+          description: reactorText(ReactorText.addServerSecurityDescription),
+          command: '/react web revoke <token-id>',
+        ),
+      ],
+    );
+  }
+
+  Widget _pairingStep({
+    required String number,
+    required String title,
+    required String description,
+    required String command,
+  }) {
+    return dom.div(
+      classes: 'reactor-add-step',
+      attributes: const <String, String>{'role': 'listitem'},
+      <Widget>[
+        dom.span(classes: 'reactor-add-step-label', <Widget>[
+          Component.text(number),
+        ]),
+        dom.div(classes: 'reactor-add-step-copy', <Widget>[
+          dom.strong(<Widget>[Component.text(title)]),
+          dom.p(<Widget>[Component.text(description)]),
+          dom.code(classes: 'reactor-add-step-command', <Widget>[
+            Component.text(command),
+          ]),
+        ]),
       ],
     );
   }

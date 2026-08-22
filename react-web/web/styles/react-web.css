@@ -1454,9 +1454,39 @@ select {
 }
 
 .reactor-add-step-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
   color: var(--reactor-label);
   font-size: 0.7rem;
   line-height: 1.45;
+}
+
+.reactor-add-step-copy strong {
+  color: var(--reactor-text);
+  font-size: 0.76rem;
+  font-weight: 650;
+}
+
+.reactor-add-step-copy p {
+  max-width: 760px;
+  margin: 0;
+}
+
+.reactor-add-step-command {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 3px;
+  padding: 5px 7px;
+  overflow-x: auto;
+  border: 1px solid var(--reactor-border);
+  background: var(--reactor-bg);
+  color: var(--reactor-text);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  white-space: nowrap;
 }
 
 .reactor-add-actions {
