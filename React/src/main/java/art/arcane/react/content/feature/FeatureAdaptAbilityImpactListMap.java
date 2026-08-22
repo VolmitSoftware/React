@@ -71,10 +71,8 @@ public class FeatureAdaptAbilityImpactListMap extends ReactFeature implements Re
 
     int limit = Math.min(entries.size(), capacity);
     double maxTiming = Math.max(0D, entries.getFirst().executionTimingMs());
-    double maxExecutionOps = 0D;
     double totalTiming = 0D;
     for (AdaptAbilityImpactSeries.Entry entry : entries) {
-      maxExecutionOps = Math.max(maxExecutionOps, entry.executionOps());
       totalTiming += entry.executionTimingMs();
     }
 
@@ -85,7 +83,7 @@ public class FeatureAdaptAbilityImpactListMap extends ReactFeature implements Re
       }
 
       AdaptAbilityImpactSeries.Entry entry = entries.get(i);
-      double normalized = normalizedImpact(entry, maxTiming, maxExecutionOps);
+      double normalized = normalizedImpact(entry, maxTiming);
       double share = totalTiming <= 0D ? 0D : entry.executionTimingMs() / totalTiming;
       RendererLayout.listRow(this, i, row.withoutBottom(gutter), weights, gutter, normalized, columnValues(columns, i, share, entry));
     }
@@ -163,14 +161,10 @@ public class FeatureAdaptAbilityImpactListMap extends ReactFeature implements Re
 
   private double normalizedImpact(
       AdaptAbilityImpactSeries.Entry entry,
-      double maxTiming,
-      double maxExecutionOps
+      double maxTiming
   ) {
     if (maxTiming > 0D) {
       return Math.max(0D, Math.min(1D, entry.executionTimingMs() / maxTiming));
-    }
-    if (maxExecutionOps > 0D) {
-      return Math.max(0D, Math.min(1D, entry.executionOps() / maxExecutionOps));
     }
     return 0D;
   }

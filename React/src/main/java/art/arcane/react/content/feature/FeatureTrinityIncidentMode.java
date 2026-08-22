@@ -9,7 +9,6 @@ import art.arcane.react.content.sampler.SamplerIncidentScore;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.core.controller.FeatureController;
 import art.arcane.react.core.controller.IntegrationController;
-import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
 
@@ -29,8 +28,8 @@ public class FeatureTrinityIncidentMode extends ReactCapabilityFeature {
   private double enterIrisQueue = 340D;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Adapt session load threshold that can trigger incident handling in trinity incident mode (percent).", impact = "Higher values trigger later during heavier load; lower values trigger earlier.")
   private double enterAdaptSessionLoad = 72D;
-  @art.arcane.react.util.project.config.ConfigDoc(value = "Adapt ability-operations threshold that can trigger incident handling in trinity incident mode (ops/min).", impact = "Higher values trigger later during heavier ability traffic; lower values trigger earlier.")
-  private double enterAdaptAbilityOps = 280D;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Adapt ability timing-budget threshold that can trigger incident handling in trinity incident mode (percent).", impact = "Higher values require more measured Adapt guard-check cost before incident handling; lower values trigger earlier.")
+  private double enterAdaptAbilityTimingBudgetPercent = 100D;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Minimum engage ms required by trinity incident mode.", impact = "Higher values require stronger signals before action; lower values make this condition easier to satisfy.")
   private int minimumEngageMS = 12000;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Cooldown for playbook cooldown in trinity incident mode (milliseconds).", impact = "Higher values reduce repeat frequency; lower values allow reactions more often.")
@@ -109,22 +108,40 @@ public class FeatureTrinityIncidentMode extends ReactCapabilityFeature {
     double tickMS = sample(SamplerTickTime.ID);
     double irisQueue = metricOr("iris", IntegrationMetricSchema.IRIS_PREGEN_QUEUE, -1D);
     double adaptSessionLoad = metricOr("adapt", IntegrationMetricSchema.ADAPT_SESSION_LOAD, -1D);
-    double adaptAbilityOps = metricOr("adapt", ReactConfiguration.adaptAbilityOpsMetricKey(), -1D);
+    double adaptAbilityTimingBudget = metricOr(
+        "adapt",
+        IntegrationMetricSchema.ADAPT_ABILITY_TIMING_BUDGET,
+        -1D
+    );
 
     boolean irisPressure = irisQueue >= 0D && irisQueue >= enterIrisQueue;
-    boolean adaptPressure = (adaptSessionLoad >= 0D && adaptSessionLoad >= enterAdaptSessionLoad)
-        || (adaptAbilityOps >= 0D && adaptAbilityOps >= enterAdaptAbilityOps);
+    boolean adaptPressure = hasAdaptPressure(
+        adaptSessionLoad,
+        adaptAbilityTimingBudget,
+        enterAdaptSessionLoad,
+        enterAdaptAbilityTimingBudgetPercent
+    );
     boolean externalPressure = irisPressure || adaptPressure;
     if (!externalPressure) {
       return false;
     }
-
-    if (tickMS >= enterTickMS) {
-      return true;
-    }
-
     double incidentScore = sample(SamplerIncidentScore.ID);
-    return incidentScore >= enterIncidentScore;
+    return hasServerPressure(tickMS, incidentScore, enterTickMS, enterIncidentScore);
+  }
+
+  static boolean hasAdaptPressure(double sessionLoad,
+                                  double abilityTimingBudget,
+                                  double sessionLoadThreshold,
+                                  double timingBudgetThreshold) {
+    return (sessionLoad >= 0D && sessionLoad >= sessionLoadThreshold)
+        || (abilityTimingBudget >= 0D && abilityTimingBudget >= timingBudgetThreshold);
+  }
+
+  static boolean hasServerPressure(double tickMS,
+                                   double incidentScore,
+                                   double tickThreshold,
+                                   double incidentThreshold) {
+    return tickMS >= tickThreshold || incidentScore >= incidentThreshold;
   }
 
   private void coordinateMitigation(long now) {

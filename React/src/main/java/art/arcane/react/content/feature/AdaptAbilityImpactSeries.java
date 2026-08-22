@@ -136,7 +136,7 @@ final class AdaptAbilityImpactSeries {
       double guardTimingMs
   ) {
     boolean hasActivity() {
-      return executionOps > 0D || executionTimingMs > 0D;
+      return executionTimingMs > 0D;
     }
   }
 

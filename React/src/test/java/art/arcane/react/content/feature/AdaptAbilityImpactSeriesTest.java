@@ -78,6 +78,17 @@ class AdaptAbilityImpactSeriesTest {
   }
 
   @Test
+  void operationVolumeWithoutMeasuredExecutionTimeDoesNotCreateRankedRows() {
+    long now = System.currentTimeMillis();
+    Map<String, IntegrationMetricSample> samples = new HashMap<>();
+    putAbility(samples, "ops-only", 10_000D, 0D, 10_000D, 0D, now);
+
+    AdaptAbilityImpactSeries.Snapshot snapshot = AdaptAbilityImpactSeries.fromSamples(samples);
+
+    Assertions.assertTrue(snapshot.entries().isEmpty());
+  }
+
+  @Test
   void mismatchedDescriptorCannotAttributeValueToAnotherAbility() {
     long now = System.currentTimeMillis();
     String mapKey = detailKey("reported-ability", IntegrationMetricSchema.ADAPT_ABILITY_DETAIL_EXECUTION_TIMING_MS);

@@ -99,8 +99,8 @@ public class ReactConfiguration {
   private boolean metrics = true;
 
   @ConfigDoc(
-      value = "Selects which Adapt ability ops metric React uses for displays and thresholds. Options: SUCCESSFUL_CHECKS, ALL_CHECKS.",
-      impact = "SUCCESSFUL_CHECKS tracks only allowed checks. ALL_CHECKS is kept only for legacy config compatibility and is normalized to SUCCESSFUL_CHECKS at runtime."
+      value = "Selects which Adapt ability-operation rate React displays and includes as alert context. Options: SUCCESSFUL_CHECKS, ALL_CHECKS.",
+      impact = "This does not control performance-pressure thresholds. ALL_CHECKS is normalized to SUCCESSFUL_CHECKS at runtime."
   )
   private AdaptAbilityOpsMetricMode adaptAbilityOpsMetricMode = AdaptAbilityOpsMetricMode.SUCCESSFUL_CHECKS;
 

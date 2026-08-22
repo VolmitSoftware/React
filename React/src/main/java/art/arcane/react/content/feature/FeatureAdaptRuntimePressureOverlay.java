@@ -5,7 +5,6 @@ import art.arcane.react.api.feature.CapabilityGatedFeature;
 import art.arcane.react.core.controller.IntegrationController;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.RendererMessages;
-import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.util.data.TinyColor;
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
 import org.bukkit.Chunk;
@@ -39,11 +38,14 @@ public class FeatureAdaptRuntimePressureOverlay extends FeatureChunkHeatmapBase 
   protected double chunkScore(Chunk chunk) {
     double base = chunkTotalScore(chunk);
     double sessionLoad = metricOr(IntegrationMetricSchema.ADAPT_SESSION_LOAD, 0D);
-    double abilityOps = metricOr(ReactConfiguration.adaptAbilityOpsMetricKey(), 0D);
+    double abilityTimingBudget = metricOr(IntegrationMetricSchema.ADAPT_ABILITY_TIMING_BUDGET, 0D);
+    return pressureScore(base, sessionLoad, abilityTimingBudget);
+  }
 
+  static double pressureScore(double base, double sessionLoad, double abilityTimingBudget) {
     double loadPressure = Math.max(0D, sessionLoad) * 1.3D;
-    double opsPressure = Math.log10(1D + Math.max(0D, abilityOps)) * 18D;
-    return (base * 0.35D) + loadPressure + opsPressure;
+    double timingPressure = Math.log10(1D + Math.max(0D, abilityTimingBudget)) * 18D;
+    return (base * 0.35D) + loadPressure + timingPressure;
   }
 
   @Override

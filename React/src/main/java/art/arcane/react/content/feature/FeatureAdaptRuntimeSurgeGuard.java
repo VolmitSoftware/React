@@ -6,7 +6,6 @@ import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.core.controller.IntegrationController;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.RuntimeMessages;
-import art.arcane.react.model.ReactConfiguration;
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
 import art.arcane.volmlib.util.localization.TextKey;
 import org.bukkit.entity.Entity;
@@ -36,8 +35,8 @@ public class FeatureAdaptRuntimeSurgeGuard extends ReactCapabilityFeature implem
   private double triggerTickMS = 58D;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Trigger threshold for trigger session load percent in adapt runtime surge guard.", impact = "Higher values trigger mitigation later; lower values trigger earlier and more aggressively.")
   private double triggerSessionLoadPercent = 70D;
-  @art.arcane.react.util.project.config.ConfigDoc(value = "Trigger threshold for trigger ability ops minute in adapt runtime surge guard.", impact = "Higher values trigger mitigation later; lower values trigger earlier and more aggressively.")
-  private double triggerAbilityOpsPerMinute = 260D;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Adapt ability timing-budget threshold that triggers the runtime surge guard (percent).", impact = "Higher values require more measured Adapt guard-check cost before mitigation; lower values trigger earlier.")
+  private double triggerAbilityTimingBudgetPercent = 100D;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Rolling enforcement window length used by adapt runtime surge guard (milliseconds).", impact = "Longer windows smooth bursts but react slower; shorter windows react faster but are more sensitive.")
   private int windowMS = 1800;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum interactions allowed per window in adapt runtime surge guard.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
@@ -186,10 +185,26 @@ public class FeatureAdaptRuntimeSurgeGuard extends ReactCapabilityFeature implem
   private boolean isSurging() {
     double tickMS = sample(SamplerTickTime.ID);
     double sessionLoad = metricOr(IntegrationMetricSchema.ADAPT_SESSION_LOAD, -1D);
-    double abilityOps = metricOr(ReactConfiguration.adaptAbilityOpsMetricKey(), -1D);
+    double abilityTimingBudget = metricOr(IntegrationMetricSchema.ADAPT_ABILITY_TIMING_BUDGET, -1D);
+    return shouldSurge(
+        tickMS,
+        sessionLoad,
+        abilityTimingBudget,
+        triggerTickMS,
+        triggerSessionLoadPercent,
+        triggerAbilityTimingBudgetPercent
+    );
+  }
+
+  static boolean shouldSurge(double tickMS,
+                             double sessionLoad,
+                             double abilityTimingBudget,
+                             double triggerTickMS,
+                             double triggerSessionLoadPercent,
+                             double triggerAbilityTimingBudgetPercent) {
     return tickMS >= triggerTickMS
         || (sessionLoad >= 0D && sessionLoad >= triggerSessionLoadPercent)
-        || (abilityOps >= 0D && abilityOps >= triggerAbilityOpsPerMinute);
+        || (abilityTimingBudget >= 0D && abilityTimingBudget >= triggerAbilityTimingBudgetPercent);
   }
 
   private double metricOr(String key, double fallback) {

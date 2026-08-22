@@ -48,9 +48,9 @@ public class IntegrationController extends TickedObject implements IController {
   private static final long CORRELATION_COOLDOWN_MS = 10_000L;
   private static final long TIMELINE_RETENTION_MS = 180_000L;
   private static final double ADAPT_SESSION_LOAD_THRESHOLD = 65D;
-  private static final double ADAPT_ABILITY_OPS_THRESHOLD = 240D;
-  private static final int ADAPT_ABILITY_OPS_SUSTAINED_SAMPLES = 3;
-  private static final double ADAPT_ABILITY_OPS_MSPT_GATE = 50D;
+  private static final double ADAPT_ABILITY_TIMING_BUDGET_THRESHOLD = 100D;
+  private static final int ADAPT_ABILITY_TIMING_SUSTAINED_SAMPLES = 3;
+  private static final double ADAPT_ABILITY_TIMING_MSPT_GATE = 50D;
   private static final Set<String> PRIMARY_PLUGINS = Set.of("iris", "adapt", "wormholes");
 
   private final transient AtomicBoolean syncTickQueued = new AtomicBoolean(false);
@@ -64,7 +64,7 @@ public class IntegrationController extends TickedObject implements IController {
   private transient long lastCorrelationLogMs;
   private transient double previousIrisQueue;
   private transient String lastCorrelationMessage;
-  private transient int adaptAbilityOpsSampleStreak;
+  private transient int adaptAbilityTimingImpactSampleStreak;
 
   public IntegrationController() {
     super("react", "integration", 1000);
@@ -91,7 +91,7 @@ public class IntegrationController extends TickedObject implements IController {
     lastCorrelationLogMs = 0L;
     previousIrisQueue = -1D;
     lastCorrelationMessage = "";
-    adaptAbilityOpsSampleStreak = 0;
+    adaptAbilityTimingImpactSampleStreak = 0;
     nodes.clear();
     timeline.clear();
     activeThresholds.clear();
@@ -110,7 +110,7 @@ public class IntegrationController extends TickedObject implements IController {
     nodes.clear();
     timeline.clear();
     activeThresholds.clear();
-    adaptAbilityOpsSampleStreak = 0;
+    adaptAbilityTimingImpactSampleStreak = 0;
     if (remoteSamplerBridge != null) {
       remoteSamplerBridge.clear();
     }
@@ -522,6 +522,11 @@ public class IntegrationController extends TickedObject implements IController {
     double irisQueue = remoteSamplerBridge.valueOr("iris", IntegrationMetricSchema.IRIS_PREGEN_QUEUE, -1D);
     double adaptSessionLoad = remoteSamplerBridge.valueOr("adapt", IntegrationMetricSchema.ADAPT_SESSION_LOAD, -1D);
     double adaptAbilityOps = remoteSamplerBridge.valueOr("adapt", ReactConfiguration.adaptAbilityOpsMetricKey(), -1D);
+    double adaptAbilityTimingBudget = remoteSamplerBridge.valueOr(
+        "adapt",
+        IntegrationMetricSchema.ADAPT_ABILITY_TIMING_BUDGET,
+        -1D
+    );
     String adaptAbilityOpsMode = ReactConfiguration.adaptAbilityOpsMetricLabel();
     double tickMs = sampleTickMs();
 
@@ -539,68 +544,66 @@ public class IntegrationController extends TickedObject implements IController {
         String.format(Locale.ROOT, "Adapt session load recovered (%.1f%%)", Math.max(0D, adaptSessionLoad)),
         now
     );
-    boolean rawAbilityOpsHigh = adaptAbilityOps >= ADAPT_ABILITY_OPS_THRESHOLD;
-    if (rawAbilityOpsHigh) {
-      adaptAbilityOpsSampleStreak = Math.min(Integer.MAX_VALUE, adaptAbilityOpsSampleStreak + 1);
-    } else {
-      adaptAbilityOpsSampleStreak = 0;
-    }
-
-    evaluateThreshold(
-        "adapt.ability.ops.raw.high",
-        rawAbilityOpsHigh,
-        String.format(Locale.ROOT, "Adapt ability ops high [%s checks] (%.0f ops/min)", adaptAbilityOpsMode, adaptAbilityOps),
-        String.format(Locale.ROOT, "Adapt ability ops raw recovered [%s checks] (%.0f ops/min)", adaptAbilityOpsMode, Math.max(0D, adaptAbilityOps)),
-        now,
-        false
+    adaptAbilityTimingImpactSampleStreak = nextAdaptAbilityTimingImpactStreak(
+        adaptAbilityTimingImpactSampleStreak,
+        adaptAbilityTimingBudget,
+        tickMs
     );
-
-    boolean gatedAbilityOpsHigh = shouldReportSevereAdaptAbilityOps(
-        adaptAbilityOps,
-        adaptAbilityOpsSampleStreak,
+    boolean adaptAbilityTimingHigh = shouldReportAdaptAbilityTiming(
+        adaptAbilityTimingBudget,
+        adaptAbilityTimingImpactSampleStreak,
         tickMs
     );
 
     evaluateThreshold(
-        "adapt.ability.ops.high",
-        gatedAbilityOpsHigh,
+        "adapt.ability.guard-timing.high",
+        adaptAbilityTimingHigh,
         String.format(
             Locale.ROOT,
-            "Adapt ability ops elevated [%s checks] (%.0f ops/min, streak=%d, MSPT=%.1fms, session=%.1f%%)",
+            "Adapt ability guard-check timing pressure elevated [%s checks] (budget=%.1f%%, %.0f ops/min, streak=%d, MSPT=%.1fms, session=%.1f%%)",
             adaptAbilityOpsMode,
+            adaptAbilityTimingBudget,
             adaptAbilityOps,
-            adaptAbilityOpsSampleStreak,
+            adaptAbilityTimingImpactSampleStreak,
             tickMs,
             adaptSessionLoad
         ),
         String.format(
             Locale.ROOT,
-            "Adapt ability ops normalized [%s checks] (%.0f ops/min, streak=%d)",
+            "Adapt ability guard-check timing-pressure alert cleared [%s checks] (budget=%.1f%%, %.0f ops/min, MSPT=%.1fms)",
             adaptAbilityOpsMode,
+            Math.max(0D, adaptAbilityTimingBudget),
             Math.max(0D, adaptAbilityOps),
-            adaptAbilityOpsSampleStreak
+            Math.max(0D, tickMs)
         ),
         now
     );
   }
 
-  static boolean shouldReportSevereAdaptAbilityOps(double abilityOps, int sampleStreak, double tickMs) {
-    return Double.isFinite(abilityOps)
-        && abilityOps >= ADAPT_ABILITY_OPS_THRESHOLD
-        && sampleStreak >= ADAPT_ABILITY_OPS_SUSTAINED_SAMPLES
+  static int nextAdaptAbilityTimingImpactStreak(int currentStreak, double timingBudgetPercent, double tickMs) {
+    if (!hasAdaptAbilityTimingImpact(timingBudgetPercent, tickMs)) {
+      return 0;
+    }
+    return Math.min(Integer.MAX_VALUE, Math.max(0, currentStreak) + 1);
+  }
+
+  static boolean shouldReportAdaptAbilityTiming(double timingBudgetPercent, int impactSampleStreak, double tickMs) {
+    return hasAdaptAbilityTimingImpact(timingBudgetPercent, tickMs)
+        && impactSampleStreak >= ADAPT_ABILITY_TIMING_SUSTAINED_SAMPLES;
+  }
+
+  private static boolean hasAdaptAbilityTimingImpact(double timingBudgetPercent, double tickMs) {
+    return Double.isFinite(timingBudgetPercent)
+        && timingBudgetPercent >= ADAPT_ABILITY_TIMING_BUDGET_THRESHOLD
         && Double.isFinite(tickMs)
-        && tickMs >= ADAPT_ABILITY_OPS_MSPT_GATE;
+        && tickMs >= ADAPT_ABILITY_TIMING_MSPT_GATE;
   }
 
   private void evaluateThreshold(String key, boolean tripped, String tripMessage, String recoverMessage, long now) {
-    evaluateThreshold(key, tripped, tripMessage, recoverMessage, now, true);
-  }
-
-  private void evaluateThreshold(String key, boolean tripped, String tripMessage, String recoverMessage, long now, boolean severeTrip) {
     boolean wasActive = activeThresholds.getOrDefault(key, false);
     if (tripped && !wasActive) {
       activeThresholds.put(key, true);
-      addTimeline(tripMessage, now, severeTrip);
+      addTimeline(tripMessage, now, true);
       return;
     }
 

@@ -80,7 +80,7 @@ final class PluginEventImpactSeries {
     return new Snapshot(ranked, Math.max(0D, total));
   }
 
-  private static Map<String, Entry> mergeCurrent(Map<String, Double> timeByPlugin, Map<String, Integer> callsByPlugin) {
+  static Map<String, Entry> mergeCurrent(Map<String, Double> timeByPlugin, Map<String, Integer> callsByPlugin) {
     Map<String, Entry> merged = new HashMap<>();
     if (timeByPlugin != null) {
       for (Map.Entry<String, Double> entry : timeByPlugin.entrySet()) {
@@ -96,9 +96,7 @@ final class PluginEventImpactSeries {
         int calls = Math.max(0, entry.getValue() == null ? 0 : entry.getValue());
         Entry existing = merged.get(plugin);
         double currentMS = existing == null ? 0D : existing.currentMS();
-        // Calls are a light secondary weight so call-heavy plugins still surface when timing is sparse.
-        double impact = currentMS + (calls * 0.02D);
-        merged.put(plugin, new Entry(plugin, impact, currentMS, calls));
+        merged.put(plugin, new Entry(plugin, currentMS, currentMS, calls));
       }
     }
 
