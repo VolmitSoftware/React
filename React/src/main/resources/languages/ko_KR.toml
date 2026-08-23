@@ -171,6 +171,8 @@
 "command.runtime.web.invalid_role" = "<red>잘못된 역할: <white>{role}</white>. viewer, operator 또는 admin을 입력하세요.</red>"
 "command.runtime.web.no_tokens" = "<aqua>토큰 없음.</aqua>"
 "command.runtime.web.pairing_code" = "<aqua>페어링 코드:</aqua> {code}"
+"command.runtime.web.pairing_copy" = "<aqua>페어링 코드:</aqua> <yellow><underlined>클릭하여 복사</underlined></yellow>"
+"command.runtime.web.pairing_copy_hover" = "전체 페어링 코드 복사"
 "command.runtime.web.persist_failed" = "<red>persist 토큰에 실패: <white>{reason}</white></red>"
 "command.runtime.web.revoked" = "<aqua>토큰을 공개 :</aqua> {id}"
 "command.runtime.web.role" = "<aqua>역할:</aqua> {role}"

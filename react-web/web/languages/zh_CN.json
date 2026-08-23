@@ -385,7 +385,7 @@
   "screen.add_server.decode": "生成限定权限的代码",
   "screen.add_server.decode_description": "以 OP 或拥有 react.use 权限的玩家身份在游戏中运行配对命令；在专用服务器控制台中则省略开头的斜杠。选择只读用户、操作员或管理员；默认为只读用户。",
   "screen.add_server.monitor": "粘贴并查看",
-  "screen.add_server.monitor_description": "复制以 RCT2 开头的完整配对代码值。将令牌或完整控制台行粘贴到下面，然后检查传输和指纹。",
+  "screen.add_server.monitor_description": "在游戏中点击配对代码复制操作；在服务器控制台中复制完整的 RCT2 值。将其粘贴到下方，然后检查传输方式和指纹。",
   "screen.add_server.security": "连接并保持控制",
   "screen.add_server.security_description": "选择“配对”以打开实时工作区。凭据保留在此浏览器中。配对输出还会打印用于稍后撤销访问的令牌 ID。",
   "screen.add_server.credential_scope": "凭证范围",

@@ -171,6 +171,8 @@
 "command.runtime.web.invalid_role" = "<red>Geçersiz rol: <white>{role}</white>. viewer, operator veya admin bekleniyordu.</red>"
 "command.runtime.web.no_tokens" = "<aqua>Aktif jetler yok.</aqua>"
 "command.runtime.web.pairing_code" = "<aqua>Pairing kodu:</aqua> {code}"
+"command.runtime.web.pairing_copy" = "<aqua>Pairing kodu:</aqua> <yellow><underlined>Kopyalamak için tıklayın</underlined></yellow>"
+"command.runtime.web.pairing_copy_hover" = "Tam eşleştirme kodunu kopyala"
 "command.runtime.web.persist_failed" = "<red>Devam etmek için başarısız oldu: <white>{reason}</white></red>"
 "command.runtime.web.revoked" = "<aqua>İptal edilen belirteç:</aqua> {id}"
 "command.runtime.web.role" = "<aqua>Rol:</aqua> {role}"

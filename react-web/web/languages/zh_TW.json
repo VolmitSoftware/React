@@ -385,7 +385,7 @@
   "screen.add_server.decode": "產生限定權限的代碼",
   "screen.add_server.decode_description": "以 OP 或擁有 react.use 權限的玩家身分在遊戲中執行配對指令；在專用伺服器控制台中則省略開頭的斜線。選擇唯讀使用者、操作員或管理員；預設為唯讀使用者。",
   "screen.add_server.monitor": "貼上並查看",
-  "screen.add_server.monitor_description": "複製以 RCT2 開頭的完整配對代碼值。將令牌或完整控制台行貼到下面，然後檢查傳輸和指紋。",
+  "screen.add_server.monitor_description": "在遊戲中點擊配對碼複製操作；在伺服器控制台中複製完整的 RCT2 值。將其貼到下方，然後檢查傳輸方式和指紋。",
   "screen.add_server.security": "連接並保持控制",
   "screen.add_server.security_description": "選擇“配對”以開啟即時工作區。憑證保留在此瀏覽器中。配對輸出也會列印用於稍後撤銷存取的令牌 ID。",
   "screen.add_server.credential_scope": "憑證範圍",

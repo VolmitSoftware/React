@@ -385,7 +385,7 @@
   "screen.add_server.decode": "Luo rajattu koodi",
   "screen.add_server.decode_description": "Suorita pariliitoskomento pelissä operaattorina tai pelaajana react.use-sovelluksella tai jätä vinoviiva pois dedikoidusta palvelinkonsolista. Valitse katsoja, operaattori tai järjestelmänvalvoja; katsoja on oletuksena.",
   "screen.add_server.monitor": "Liitä ja tarkista",
-  "screen.add_server.monitor_description": "Kopioi täydellinen pariliitoskoodin arvo, joka alkaa kirjaimella RCT2. Liitä tunnus tai koko konsolirivi alle ja tarkista sitten kuljetus ja sormenjälki.",
+  "screen.add_server.monitor_description": "Napsauta pelissä pariliitoskoodin kopiointitoimintoa. Kopioi palvelinkonsolista koko RCT2-arvo. Liitä se alle ja tarkista sitten siirtotapa ja sormenjälki.",
   "screen.add_server.security": "Yhdistä ja säilytä hallinta",
   "screen.add_server.security_description": "Avaa live-työtila valitsemalla Pariliitos. Kirjautumistiedot pysyvät tässä selaimessa. Pariliitostuloste tulostaa myös tunnuksen, jota käytetään pääsyn peruuttamiseen myöhemmin.",
   "screen.add_server.credential_scope": "Valtuustietojen laajuus",

@@ -171,6 +171,8 @@
 "command.runtime.web.invalid_role" = "<red>תפקיד לא חוקי: <white>{role}</white>. הערכים הצפויים: viewer, operator או admin.</red>"
 "command.runtime.web.no_tokens" = "<aqua>לא אסימונים פעילים.</aqua>"
 "command.runtime.web.pairing_code" = "<aqua>קוד:</aqua> {code}"
+"command.runtime.web.pairing_copy" = "<aqua>קוד:</aqua> <yellow><underlined>לחץ להעתקה</underlined></yellow>"
+"command.runtime.web.pairing_copy_hover" = "העתק את קוד הצימוד המלא"
 "command.runtime.web.persist_failed" = "<red>נכשלת בסימון מתמשך: <white>{reason}</white></red>"
 "command.runtime.web.revoked" = "<aqua>טוקן מודגש:</aqua> {id}"
 "command.runtime.web.role" = "<aqua>תפקיד:</aqua> {role}"

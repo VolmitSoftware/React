@@ -385,7 +385,7 @@
   "screen.add_server.decode": "Generate a scoped code",
   "screen.add_server.decode_description": "Run the pairing command in game as an OP or player with react.use, or omit the leading slash in the dedicated server console. Choose viewer, operator, or admin; viewer is the default.",
   "screen.add_server.monitor": "Paste and review",
-  "screen.add_server.monitor_description": "Copy the complete Pairing code value beginning with RCT2. Paste the token or full console line below, then check the transport and fingerprint.",
+  "screen.add_server.monitor_description": "In game, click the pairing-code copy action. From the server console, copy the complete RCT2 value. Paste it below, then check the transport and fingerprint.",
   "screen.add_server.security": "Connect and retain control",
   "screen.add_server.security_description": "Select Pair to open the live workspace. Credentials stay in this browser. The pairing output also prints the token ID used to revoke access later.",
   "screen.add_server.credential_scope": "Credential scope",

@@ -385,7 +385,7 @@
   "screen.add_server.decode": "Tạo mã giới hạn quyền",
   "screen.add_server.decode_description": "Chạy lệnh ghép nối trong trò chơi với tư cách OP hoặc người chơi có quyền react.use; trong bảng điều khiển máy chủ chuyên dụng, hãy bỏ dấu gạch chéo ở đầu. Chọn người xem, nhân viên vận hành hoặc quản trị viên; người xem là mặc định.",
   "screen.add_server.monitor": "Dán và xem lại",
-  "screen.add_server.monitor_description": "Sao chép toàn bộ giá trị mã ghép nối bắt đầu bằng RCT2. Dán mã thông báo hoặc toàn bộ dòng bảng điều khiển bên dưới, sau đó kiểm tra phương thức truyền và dấu vân tay.",
+  "screen.add_server.monitor_description": "Trong trò chơi, nhấp vào thao tác sao chép mã ghép nối. Từ bảng điều khiển máy chủ, sao chép toàn bộ giá trị RCT2. Dán vào bên dưới, rồi kiểm tra phương thức truyền và dấu vân tay.",
   "screen.add_server.security": "Kết nối và duy trì quyền kiểm soát",
   "screen.add_server.security_description": "Chọn Ghép nối để mở không gian làm việc trực tiếp. Thông tin xác thực vẫn còn trong trình duyệt này. Đầu ra ghép nối cũng in ID mã thông báo được sử dụng để thu hồi quyền truy cập sau này.",
   "screen.add_server.credential_scope": "Phạm vi thông tin xác thực",

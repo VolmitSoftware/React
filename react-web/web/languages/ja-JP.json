@@ -385,7 +385,7 @@
   "screen.add_server.decode": "スコープ指定されたコードを生成する",
   "screen.add_server.decode_description": "ゲーム内では OP、または react.use 権限を持つプレイヤーとしてペアリングコマンドを実行します。専用サーバーコンソールでは先頭のスラッシュを省略してください。閲覧者、オペレーター、管理者のいずれかを選択します。デフォルトは閲覧者です。",
   "screen.add_server.monitor": "貼り付けてレビューする",
-  "screen.add_server.monitor_description": "RCT2 で始まる完全なペアリング コード値をコピーします。以下のトークンまたは完全なコンソール行を貼り付けて、トランスポートとフィンガープリントを確認します。",
+  "screen.add_server.monitor_description": "ゲーム内では、ペアリングコードのコピー操作をクリックします。サーバーコンソールでは、完全な RCT2 値をコピーします。下に貼り付けて、トランスポートとフィンガープリントを確認します。",
   "screen.add_server.security": "接続して制御を維持",
   "screen.add_server.security_description": "[ペアリング] を選択して、ライブ ワークスペースを開きます。資格情報はこのブラウザに残ります。ペアリング出力には、後でアクセスを取り消すために使用されるトークン ID も出力されます。",
   "screen.add_server.credential_scope": "資格情報の範囲",

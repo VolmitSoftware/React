@@ -171,6 +171,8 @@
 "command.runtime.web.invalid_role" = "<red>Netinkamas vaidmuo: <white>{role}</white>. Tikėtasi viewer, operator arba admin.</red>"
 "command.runtime.web.no_tokens" = "<aqua>Aktyvių žetonų nėra.</aqua>"
 "command.runtime.web.pairing_code" = "<aqua>Suporto kodas:</aqua> {code}"
+"command.runtime.web.pairing_copy" = "<aqua>Suporto kodas:</aqua> <yellow><underlined>Spustelėkite, kad nukopijuotumėte</underlined></yellow>"
+"command.runtime.web.pairing_copy_hover" = "Nukopijuoti visą susiejimo kodą"
 "command.runtime.web.persist_failed" = "<red>Nepavyko išlaikyti rakto: <white>{reason}</white></red>"
 "command.runtime.web.revoked" = "<aqua>Atšauktas raktas:</aqua> {id}"
 "command.runtime.web.role" = "<aqua>Vaidmuo:</aqua> {role}"

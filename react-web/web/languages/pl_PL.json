@@ -385,7 +385,7 @@
   "screen.add_server.decode": "Wygeneruj kod o określonym zakresie",
   "screen.add_server.decode_description": "Uruchom polecenie parowania w grze jako OP lub gracz z uprawnieniem react.use albo pomiń początkowy ukośnik w konsoli serwera dedykowanego. Wybierz rolę obserwatora, operatora systemu lub administratora; domyślny jest obserwator.",
   "screen.add_server.monitor": "Wklej i sprawdź",
-  "screen.add_server.monitor_description": "Skopiuj pełną wartość kodu parowania zaczynającą się od RCT2. Wklej poniżej token lub pełną linię konsoli, a następnie sprawdź transport i odcisk palca.",
+  "screen.add_server.monitor_description": "W grze kliknij akcję kopiowania kodu parowania. W konsoli serwera skopiuj pełną wartość RCT2. Wklej ją poniżej, a następnie sprawdź transport i odcisk palca.",
   "screen.add_server.security": "Połącz się i zachowaj kontrolę",
   "screen.add_server.security_description": "Wybierz opcję Paruj, aby otworzyć aktywny obszar roboczy. Poświadczenia pozostają w tej przeglądarce. Dane wyjściowe parowania wyświetlają również identyfikator tokena używany do późniejszego unieważnienia dostępu.",
   "screen.add_server.credential_scope": "Zakres uprawnień",

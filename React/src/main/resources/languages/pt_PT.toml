@@ -171,6 +171,8 @@
 "command.runtime.web.invalid_role" = "<red>Função inválida: <white>{role}</white>. Esperava-se viewer, operator ou admin.</red>"
 "command.runtime.web.no_tokens" = "<aqua>Sem fichas activas.</aqua>"
 "command.runtime.web.pairing_code" = "<aqua>Código de pareamento:</aqua> {code}"
+"command.runtime.web.pairing_copy" = "<aqua>Código de pareamento:</aqua> <yellow><underlined>Clique para copiar</underlined></yellow>"
+"command.runtime.web.pairing_copy_hover" = "Copiar o código de pareamento completo"
 "command.runtime.web.persist_failed" = "<red>Falha ao persistir no token: <white>{reason}</white></red>"
 "command.runtime.web.revoked" = "<aqua>Token renovado:</aqua> {id}"
 "command.runtime.web.role" = "<aqua>Papel:</aqua> {role}"

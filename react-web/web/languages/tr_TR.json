@@ -385,7 +385,7 @@
   "screen.add_server.decode": "Kapsamlandırılmış kod oluştur",
   "screen.add_server.decode_description": "Eşleştirme komutunu oyunda bir OP veya oyuncu olarak react.use ile çalıştırın veya özel sunucu konsolunda baştaki eğik çizgiyi atlayın. Görüntüleyiciyi, operatörü veya yöneticiyi seçin; görüntüleyici varsayılandır.",
   "screen.add_server.monitor": "Yapıştır ve incele",
-  "screen.add_server.monitor_description": "RCT2 ile başlayan eşleştirme kodu değerinin tamamını kopyalayın. Belirteci veya tam konsol satırını aşağıya yapıştırın, ardından aktarımı ve parmak izini kontrol edin.",
+  "screen.add_server.monitor_description": "Oyunda eşleştirme kodunu kopyalama eylemine tıklayın. Sunucu konsolunda tam RCT2 değerini kopyalayın. Aşağıya yapıştırın, ardından aktarımı ve parmak izini kontrol edin.",
   "screen.add_server.security": "Bağlan ve denetimi koru",
   "screen.add_server.security_description": "Canlı çalışma alanını açmak için Eşleştir'i seçin. Kimlik bilgileri bu tarayıcıda kalır. Eşleştirme çıktısı ayrıca daha sonra erişimi iptal etmek için kullanılan belirteç kimliğini de yazdırır.",
   "screen.add_server.credential_scope": "Kimlik bilgisi kapsamı",

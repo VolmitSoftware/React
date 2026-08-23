@@ -385,7 +385,7 @@
   "screen.add_server.decode": "범위가 지정된 코드 생성",
   "screen.add_server.decode_description": "게임에서는 OP 또는 react.use 권한이 있는 플레이어로 페어링 명령을 실행하세요. 전용 서버 콘솔에서는 앞의 슬래시를 생략합니다. 조회자, 운영자 또는 관리자 역할을 선택할 수 있으며 기본값은 조회자입니다.",
   "screen.add_server.monitor": "붙여넣고 검토하기",
-  "screen.add_server.monitor_description": "RCT2로 시작하는 전체 페어링 코드 값을 복사하세요. 아래에 토큰 또는 전체 콘솔 라인을 붙여넣은 후 전송 및 지문을 확인하세요.",
+  "screen.add_server.monitor_description": "게임에서는 페어링 코드 복사 작업을 클릭하세요. 서버 콘솔에서는 전체 RCT2 값을 복사하세요. 아래에 붙여넣은 다음 전송 및 지문을 확인하세요.",
   "screen.add_server.security": "연결 및 제어 유지",
   "screen.add_server.security_description": "페어링을 선택하여 라이브 작업 영역을 엽니다. 자격 증명은 이 브라우저에 유지됩니다. 페어링 출력에는 나중에 액세스 권한을 취소하는 데 사용되는 토큰 ID도 인쇄됩니다.",
   "screen.add_server.credential_scope": "자격 증명 범위",

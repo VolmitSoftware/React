@@ -171,6 +171,8 @@
 "command.runtime.web.invalid_role" = "<red>Ruolo non valido: <white>{role}</white>. Valori previsti: viewer, operator o admin.</red>"
 "command.runtime.web.no_tokens" = "<aqua>Nessun token attivo.</aqua>"
 "command.runtime.web.pairing_code" = "<aqua>Codice di accoppiamento:</aqua> {code}"
+"command.runtime.web.pairing_copy" = "<aqua>Codice di accoppiamento:</aqua> <yellow><underlined>Fai clic per copiare</underlined></yellow>"
+"command.runtime.web.pairing_copy_hover" = "Copia il codice di accoppiamento completo"
 "command.runtime.web.persist_failed" = "<red>Non ha resistito a token: <white>{reason}</white></red>"
 "command.runtime.web.revoked" = "<aqua>Token evocato:</aqua> {id}"
 "command.runtime.web.role" = "<aqua>Role:</aqua> {role}"

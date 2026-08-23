@@ -843,7 +843,7 @@ enum ReactorText {
   addServerMonitor('screen.add_server.monitor', 'Paste and review'),
   addServerMonitorDescription(
     'screen.add_server.monitor_description',
-    'Copy the complete Pairing code value beginning with RCT2. Paste the token or full console line below, then check the transport and fingerprint.',
+    'In game, click the pairing-code copy action. From the server console, copy the complete RCT2 value. Paste it below, then check the transport and fingerprint.',
   ),
   addServerSecurity('screen.add_server.security', 'Connect and retain control'),
   addServerSecurityDescription(

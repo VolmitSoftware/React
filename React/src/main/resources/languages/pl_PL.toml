@@ -171,6 +171,8 @@
 "command.runtime.web.invalid_role" = "<red>Nieprawidłowa rola: <white>{role}</white>. Oczekiwano viewer, operator lub admin.</red>"
 "command.runtime.web.no_tokens" = "<aqua>Żadnych aktywnych żetonów.</aqua>"
 "command.runtime.web.pairing_code" = "<aqua>Kod parowania:</aqua> {code}"
+"command.runtime.web.pairing_copy" = "<aqua>Kod parowania:</aqua> <yellow><underlined>Kliknij, aby skopiować</underlined></yellow>"
+"command.runtime.web.pairing_copy_hover" = "Skopiuj pełny kod parowania"
 "command.runtime.web.persist_failed" = "<red>Nie udało się utrzymać tokena: <white>{reason}</white></red>"
 "command.runtime.web.revoked" = "<aqua>Odwrócony token:</aqua> {id}"
 "command.runtime.web.role" = "<aqua>Rola:</aqua> {role}"

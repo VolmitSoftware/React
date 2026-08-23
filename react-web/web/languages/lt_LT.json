@@ -385,7 +385,7 @@
   "screen.add_server.decode": "Sugeneruokite taikomą kodą",
   "screen.add_server.decode_description": "Žaidime vykdykite susiejimo komandą kaip OP arba react.use teisę turintis žaidėjas, o specialiojo serverio konsolėje praleiskite pradinį pasvirąjį brūkšnį. Pasirinkite stebėtojo, operatoriaus arba administratoriaus vaidmenį; numatytasis yra stebėtojas.",
   "screen.add_server.monitor": "Įklijuoti ir peržiūrėti",
-  "screen.add_server.monitor_description": "Nukopijuokite visą susiejimo kodo reikšmę, prasidedančią RCT2. Toliau įklijuokite žetoną arba visą konsolės eilutę, tada patikrinkite transportavimą ir pirštų atspaudus.",
+  "screen.add_server.monitor_description": "Žaidime spustelėkite susiejimo kodo kopijavimo veiksmą. Serverio konsolėje nukopijuokite visą RCT2 reikšmę. Įklijuokite ją toliau, tada patikrinkite transportą ir piršto atspaudą.",
   "screen.add_server.security": "Prijunkite ir išlaikykite valdymą",
   "screen.add_server.security_description": "Pasirinkite Suporuoti, kad atidarytumėte tiesioginę darbo sritį. Kredencialai lieka šioje naršyklėje. Susiejimo išvestis taip pat išspausdina prieigos rakto ID, naudojamą vėliau atšaukti prieigą.",
   "screen.add_server.credential_scope": "Kredencialų apimtis",

@@ -385,7 +385,7 @@
   "screen.add_server.decode": "Générer un code étendu",
   "screen.add_server.decode_description": "Exécutez la commande d'appariement dans le jeu en tant qu'OP ou joueur avec React.use, ou omettez la barre oblique de début dans la console du serveur dédié. Choisissez un spectateur, un opérateur ou un administrateur ; la visionneuse est la valeur par défaut.",
   "screen.add_server.monitor": "Coller et réviser",
-  "screen.add_server.monitor_description": "Copiez la valeur complète du code d'appariement commençant par RCT2. Collez le jeton ou la ligne complète de la console ci-dessous, puis vérifiez le transport et l'empreinte digitale.",
+  "screen.add_server.monitor_description": "En jeu, cliquez sur l’action de copie du code d’appariement. Depuis la console du serveur, copiez la valeur RCT2 complète. Collez-la ci-dessous, puis vérifiez le transport et l’empreinte.",
   "screen.add_server.security": "Connectez-vous et gardez le contrôle",
   "screen.add_server.security_description": "Sélectionnez Paire pour ouvrir l’espace de travail en direct. Les informations d'identification restent dans ce navigateur. La sortie de couplage imprime également l’ID du jeton utilisé pour révoquer l’accès ultérieurement.",
   "screen.add_server.credential_scope": "Portée des informations d'identification",

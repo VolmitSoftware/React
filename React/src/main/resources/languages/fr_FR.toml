@@ -171,6 +171,8 @@
 "command.runtime.web.invalid_role" = "<red>Rôle invalide : <white>{role}</white>. Valeurs attendues : viewer, operator ou admin.</red>"
 "command.runtime.web.no_tokens" = "<aqua>Pas de jetons actifs.</aqua>"
 "command.runtime.web.pairing_code" = "<aqua>Code d'appariement:</aqua> {code}"
+"command.runtime.web.pairing_copy" = "<aqua>Code d'appariement:</aqua> <yellow><underlined>Cliquer pour copier</underlined></yellow>"
+"command.runtime.web.pairing_copy_hover" = "Copier le code d'appariement complet"
 "command.runtime.web.persist_failed" = "<red>Il a échoué à maintenir le jeton : <white>{reason}</white></red>"
 "command.runtime.web.revoked" = "<aqua>Jeton annulé :</aqua> {id}"
 "command.runtime.web.role" = "<aqua>Rôle:</aqua> {role}"

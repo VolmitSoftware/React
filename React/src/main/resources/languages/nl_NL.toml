@@ -171,6 +171,8 @@
 "command.runtime.web.invalid_role" = "<red>Ongeldige rol: <white>{role}</white>. Verwacht: viewer, operator of admin.</red>"
 "command.runtime.web.no_tokens" = "<aqua>Geen actieve tokens.</aqua>"
 "command.runtime.web.pairing_code" = "<aqua>Code van de paring:</aqua> {code}"
+"command.runtime.web.pairing_copy" = "<aqua>Code van de paring:</aqua> <yellow><underlined>Klik om te kopiëren</underlined></yellow>"
+"command.runtime.web.pairing_copy_hover" = "Volledige koppelcode kopiëren"
 "command.runtime.web.persist_failed" = "<red>Aantonen mislukt: <white>{reason}</white></red>"
 "command.runtime.web.revoked" = "<aqua>Ingetrokken token:</aqua> {id}"
 "command.runtime.web.role" = "<aqua>Rol:</aqua> {role}"

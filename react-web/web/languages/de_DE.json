@@ -385,7 +385,7 @@
   "screen.add_server.decode": "Generieren Sie einen Code mit Gültigkeitsbereich",
   "screen.add_server.decode_description": "Führen Sie den Pairing-Befehl im Spiel als OP oder Spieler mit „react.use“ aus oder lassen Sie den führenden Schrägstrich in der dedizierten Serverkonsole weg. Wählen Sie Betrachter, Operator oder Administrator; Viewer ist die Standardeinstellung.",
   "screen.add_server.monitor": "Einfügen und überprüfen",
-  "screen.add_server.monitor_description": "Kopieren Sie den vollständigen Pairing-Codewert beginnend mit RCT2. Fügen Sie unten das Token oder die vollständige Konsolenzeile ein und überprüfen Sie dann den Transport und den Fingerabdruck.",
+  "screen.add_server.monitor_description": "Klicken Sie im Spiel auf die Kopieraktion für den Pairing-Code. Kopieren Sie in der Serverkonsole den vollständigen RCT2-Wert. Fügen Sie ihn unten ein und überprüfen Sie dann Transport und Fingerabdruck.",
   "screen.add_server.security": "Verbinden und die Kontrolle behalten",
   "screen.add_server.security_description": "Wählen Sie „Koppeln“, um den Live-Arbeitsbereich zu öffnen. Anmeldeinformationen bleiben in diesem Browser. Die Pairing-Ausgabe gibt auch die Token-ID aus, die später zum Widerrufen des Zugriffs verwendet wird.",
   "screen.add_server.credential_scope": "Anmeldeinformationsbereich",

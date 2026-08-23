@@ -171,6 +171,8 @@
 "command.runtime.web.invalid_role" = "<red>Недопустимая роль: <white>{role}</white>. Ожидалось viewer, operator или admin.</red>"
 "command.runtime.web.no_tokens" = "<aqua>Никаких активных токенов.</aqua>"
 "command.runtime.web.pairing_code" = "<aqua>Парный код:</aqua> {code}"
+"command.runtime.web.pairing_copy" = "<aqua>Парный код:</aqua> <yellow><underlined>Нажмите, чтобы скопировать</underlined></yellow>"
+"command.runtime.web.pairing_copy_hover" = "Скопировать полный код сопряжения"
 "command.runtime.web.persist_failed" = "<red>Не удалось сохранить токен: <white>{reason}</white></red>"
 "command.runtime.web.revoked" = "<aqua>Отозванный токен:</aqua> {id}"
 "command.runtime.web.role" = "<aqua>Роль:</aqua> {role}"

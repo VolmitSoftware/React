@@ -385,7 +385,7 @@
   "screen.add_server.decode": "Genereer een bereikcode",
   "screen.add_server.decode_description": "Voer de koppelingsopdracht in de game uit als OP of speler met react.use, of laat de leidende slash in de speciale serverconsole weg. Kies kijker, operator of beheerder; kijker is de standaardinstelling.",
   "screen.add_server.monitor": "Plakken en beoordelen",
-  "screen.add_server.monitor_description": "Kopieer de volledige waarde van de koppelingscode, beginnend met RCT2. Plak het token of de volledige consoleregel hieronder en controleer vervolgens het transport en de vingerafdruk.",
+  "screen.add_server.monitor_description": "Klik in het spel op de kopieeractie voor de koppelcode. Kopieer vanuit de serverconsole de volledige RCT2-waarde. Plak die hieronder en controleer daarna het transport en de vingerafdruk.",
   "screen.add_server.security": "Verbind en behoud de controle",
   "screen.add_server.security_description": "Selecteer Koppelen om de live werkruimte te openen. Inloggegevens blijven in deze browser. De koppelingsuitvoer drukt ook de token-ID af die wordt gebruikt om de toegang later in te trekken.",
   "screen.add_server.credential_scope": "Referentiebereik",

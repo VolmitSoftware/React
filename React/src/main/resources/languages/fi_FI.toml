@@ -171,6 +171,8 @@
 "command.runtime.web.invalid_role" = "<red>Virheellinen rooli: <white>{role}</white>. Odotettu: viewer, operator tai admin.</red>"
 "command.runtime.web.no_tokens" = "<aqua>Ei aktiivisia kuponkia.</aqua>"
 "command.runtime.web.pairing_code" = "<aqua>Parikoodi:</aqua> {code}"
+"command.runtime.web.pairing_copy" = "<aqua>Parikoodi:</aqua> <yellow><underlined>Kopioi napsauttamalla</underlined></yellow>"
+"command.runtime.web.pairing_copy_hover" = "Kopioi koko parikoodi"
 "command.runtime.web.persist_failed" = "<red>Ei voitu jatkaa tokentaa: <white>{reason}</white></red>"
 "command.runtime.web.revoked" = "<aqua>Peruttu:</aqua> {id}"
 "command.runtime.web.role" = "<aqua>Tehtävä:</aqua> {role}"

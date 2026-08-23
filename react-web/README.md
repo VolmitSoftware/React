@@ -28,7 +28,7 @@ Production client output is written to `build/jaspr/` by `dart run jaspr_cli:jas
 
 ## Server connections
 
-Paste the full RCT2 value printed by `/react web pair <label> [role]`. React Web validates the server public key and full fingerprint before storing the profile locally in that browser. Multiple profiles can use a direct HTTPS endpoint, the outbound WebSocket relay, or both with automatic failover.
+Run `/react web pair <label> [role]`, then click the in-game copy action or copy the raw RCT2 value from the server console. React Web validates the server public key and full fingerprint before storing the profile locally in that browser. Multiple profiles can use a direct HTTPS endpoint, the outbound WebSocket relay, or both with automatic failover.
 
 The hosted client runs over HTTPS, so browsers block direct access to React's plain-HTTP listener as mixed content. Production servers must either advertise an HTTPS reverse-proxy URL or enable React's outbound relay with a deployed `wss://` endpoint. Set the relay's `ALLOWED_APP_ORIGINS` to `https://react.volmitsoftware.com`.
 

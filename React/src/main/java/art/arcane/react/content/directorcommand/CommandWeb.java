@@ -12,10 +12,14 @@ import art.arcane.react.core.controller.WebController;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.CommandMessages;
 import art.arcane.react.util.director.DirectorExecutor;
+import art.arcane.react.util.plugin.VolmitSender;
 import art.arcane.volmlib.util.director.DirectorOrigin;
 import art.arcane.volmlib.util.director.annotations.Director;
 import art.arcane.volmlib.util.director.annotations.Param;
 import art.arcane.volmlib.util.localization.MessageArgument;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -75,7 +79,7 @@ public class CommandWeb implements DirectorExecutor {
       return;
     }
     auditLog().append(sender().getName(), "pair", "label=" + label + " role=" + webRole.id(), "OK");
-    ReactLanguage.sendPrefixed(sender(), CommandMessages.WEB_PAIRING_CODE, MessageArgument.untrusted("code", code));
+    sendPairingCode(code);
     ReactLanguage.sendPrefixed(sender(), CommandMessages.WEB_SERVER_FINGERPRINT, MessageArgument.untrusted("fingerprint", id.fingerprint()));
     ReactLanguage.sendPrefixed(sender(), CommandMessages.WEB_TOKEN_FINGERPRINT, MessageArgument.untrusted("fingerprint", tokenFingerprint));
     ReactLanguage.sendPrefixed(sender(), CommandMessages.WEB_TOKEN_ID, MessageArgument.untrusted("id", tokenId));
@@ -137,6 +141,28 @@ public class CommandWeb implements DirectorExecutor {
 
   private static AuditLog auditLog() {
     return new AuditLog(React.instance.getDataFolder());
+  }
+
+  static Component playerPairingCodeComponent(String code) {
+    return ReactLanguage.prefixedComponent(CommandMessages.WEB_PAIRING_COPY)
+        .clickEvent(ClickEvent.copyToClipboard(code))
+        .hoverEvent(HoverEvent.showText(ReactLanguage.component(CommandMessages.WEB_PAIRING_COPY_HOVER)));
+  }
+
+  static Component consolePairingCodeComponent(String code) {
+    return ReactLanguage.prefixedComponent(
+        CommandMessages.WEB_PAIRING_CODE,
+        MessageArgument.untrusted("code", code)
+    );
+  }
+
+  private void sendPairingCode(String code) {
+    VolmitSender commandSender = sender();
+    if (!commandSender.isPlayer()) {
+      commandSender.sendComponent(consolePairingCodeComponent(code));
+      return;
+    }
+    commandSender.sendComponent(playerPairingCodeComponent(code));
   }
 
   private static String generateTokenId() {

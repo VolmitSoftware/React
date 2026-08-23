@@ -171,6 +171,8 @@
 "command.runtime.web.invalid_role" = "<red>Vai trò không hợp lệ: <white>{role}</white>. Cần viewer, operator hoặc admin.</red>"
 "command.runtime.web.no_tokens" = "<aqua>Không có dấu hiệu gì.</aqua>"
 "command.runtime.web.pairing_code" = "<aqua>Mã phân loại:</aqua> {code}"
+"command.runtime.web.pairing_copy" = "<aqua>Mã phân loại:</aqua> <yellow><underlined>Nhấp để sao chép</underlined></yellow>"
+"command.runtime.web.pairing_copy_hover" = "Sao chép toàn bộ mã ghép nối"
 "command.runtime.web.persist_failed" = "<red>Lỗi tiếp tục hiệu lực: <white>{reason}</white></red>"
 "command.runtime.web.revoked" = "<aqua>Ký hiệu đã hoàn tất:</aqua> {id}"
 "command.runtime.web.role" = "<aqua>Vai trò:</aqua> {role}"

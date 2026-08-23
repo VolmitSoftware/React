@@ -105,6 +105,8 @@ public final class CommandMessages {
   public static final TextKey WEB_INVALID_ROLE = TextKey.of("command.runtime.web.invalid_role", "<red>Invalid role: <white>{role}</white>. Expected viewer, operator, or admin.</red>");
   public static final TextKey WEB_PERSIST_FAILED = TextKey.of("command.runtime.web.persist_failed", "<red>Failed to persist token: <white>{reason}</white></red>");
   public static final TextKey WEB_PAIRING_CODE = TextKey.of("command.runtime.web.pairing_code", "<aqua>Pairing code:</aqua> {code}");
+  public static final TextKey WEB_PAIRING_COPY = TextKey.of("command.runtime.web.pairing_copy", "<aqua>Pairing code:</aqua> <yellow><underlined>Click to copy</underlined></yellow>");
+  public static final TextKey WEB_PAIRING_COPY_HOVER = TextKey.of("command.runtime.web.pairing_copy_hover", "Copy the full pairing code");
   public static final TextKey WEB_SERVER_FINGERPRINT = TextKey.of("command.runtime.web.server_fingerprint", "<aqua>Server fingerprint:</aqua> {fingerprint}");
   public static final TextKey WEB_TOKEN_FINGERPRINT = TextKey.of("command.runtime.web.token_fingerprint", "<aqua>Token fingerprint:</aqua> {fingerprint}");
   public static final TextKey WEB_TOKEN_ID = TextKey.of("command.runtime.web.token_id", "<aqua>Token ID:</aqua> {id}");
@@ -243,6 +245,8 @@ public final class CommandMessages {
     builder.add(WEB_INVALID_ROLE);
     builder.add(WEB_PERSIST_FAILED);
     builder.add(WEB_PAIRING_CODE);
+    builder.add(WEB_PAIRING_COPY);
+    builder.add(WEB_PAIRING_COPY_HOVER);
     builder.add(WEB_SERVER_FINGERPRINT);
     builder.add(WEB_TOKEN_FINGERPRINT);
     builder.add(WEB_TOKEN_ID);

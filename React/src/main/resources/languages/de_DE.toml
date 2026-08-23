@@ -171,6 +171,8 @@
 "command.runtime.web.invalid_role" = "<red>Ungültige Rolle: <white>{role}</white>. Erwartet: viewer, operator oder admin.</red>"
 "command.runtime.web.no_tokens" = "<aqua>Keine aktiven Token.</aqua>"
 "command.runtime.web.pairing_code" = "<aqua>Paarungscode:</aqua> {code}"
+"command.runtime.web.pairing_copy" = "<aqua>Paarungscode:</aqua> <yellow><underlined>Zum Kopieren klicken</underlined></yellow>"
+"command.runtime.web.pairing_copy_hover" = "Vollständigen Paarungscode kopieren"
 "command.runtime.web.persist_failed" = "<red>Persistenz-Token nicht möglich: <white>{reason}</white></red>"
 "command.runtime.web.revoked" = "<aqua>Entsagtes Token:</aqua> {id}"
 "command.runtime.web.role" = "<aqua>Rolle:</aqua> {role}"

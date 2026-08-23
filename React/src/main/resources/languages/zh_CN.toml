@@ -171,6 +171,8 @@
 "command.runtime.web.invalid_role" = "<red>角色无效：<white>{role}</white>。应为 viewer、operator 或 admin。</red>"
 "command.runtime.web.no_tokens" = "<aqua>没有活动符号 。</aqua>"
 "command.runtime.web.pairing_code" = "<aqua>配对代码 :</aqua> {code}"
+"command.runtime.web.pairing_copy" = "<aqua>配对代码 :</aqua> <yellow><underlined>点击复制</underlined></yellow>"
+"command.runtime.web.pairing_copy_hover" = "复制完整配对代码"
 "command.runtime.web.persist_failed" = "<red>无法坚持符号 : <white>{reason}</white></red>"
 "command.runtime.web.revoked" = "<aqua>已撤销的令牌 :</aqua> {id}"
 "command.runtime.web.role" = "<aqua>角色 :</aqua> {role}"

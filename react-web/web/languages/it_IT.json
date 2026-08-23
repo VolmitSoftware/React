@@ -385,7 +385,7 @@
   "screen.add_server.decode": "Generare un codice con ambito",
   "screen.add_server.decode_description": "Esegui il comando di accoppiamento nel gioco come OP o giocatore con react.use, oppure ometti la barra iniziale nella console del server dedicato. Scegli visualizzatore, operatore o amministratore; visualizzatore è l'impostazione predefinita.",
   "screen.add_server.monitor": "Incolla e rivedi",
-  "screen.add_server.monitor_description": "Copia il valore completo del codice di abbinamento che inizia con RCT2. Incolla il token o la riga completa della console di seguito, quindi controlla il trasporto e l'impronta digitale.",
+  "screen.add_server.monitor_description": "Nel gioco, fai clic sull'azione per copiare il codice di abbinamento. Dalla console del server, copia il valore RCT2 completo. Incollalo qui sotto, quindi controlla il trasporto e l'impronta digitale.",
   "screen.add_server.security": "Connettiti e mantieni il controllo",
   "screen.add_server.security_description": "Seleziona Associa per aprire l'area di lavoro live. Le credenziali rimangono in questo browser. L'output di associazione stampa anche l'ID token utilizzato per revocare l'accesso in un secondo momento.",
   "screen.add_server.credential_scope": "Ambito delle credenziali",

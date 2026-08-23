@@ -171,6 +171,8 @@
 "command.runtime.web.invalid_role" = "<red>無効なロール: <white>{role}</white>。viewer、operator、admin のいずれかを指定してください。</red>"
 "command.runtime.web.no_tokens" = "<aqua>アクティブなトークンはありません。</aqua>"
 "command.runtime.web.pairing_code" = "<aqua>ペアリングコード:</aqua> {code}"
+"command.runtime.web.pairing_copy" = "<aqua>ペアリングコード:</aqua> <yellow><underlined>クリックしてコピー</underlined></yellow>"
+"command.runtime.web.pairing_copy_hover" = "完全なペアリングコードをコピー"
 "command.runtime.web.persist_failed" = "<red>持続トークンに失敗しました: <white>{reason}</white></red>"
 "command.runtime.web.revoked" = "<aqua>トークンを回収:</aqua> {id}"
 "command.runtime.web.role" = "<aqua>役割:</aqua> {role}"

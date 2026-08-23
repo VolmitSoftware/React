@@ -385,7 +385,7 @@
   "screen.add_server.decode": "Gere um código com âmbito",
   "screen.add_server.decode_description": "Execute o comando de emparelhamento no jogo como OP ou jogador com a permissão react.use, ou omita a barra inicial na consola do servidor dedicado. Escolha leitor, operador ou administrador; leitor é a predefinição.",
   "screen.add_server.monitor": "Colar e rever",
-  "screen.add_server.monitor_description": "Copie o valor completo do código de emparelhamento começando por RCT2. Cole o token ou a linha completa da consola abaixo e verifique o transporte e a impressão digital.",
+  "screen.add_server.monitor_description": "No jogo, clique na ação para copiar o código de emparelhamento. Na consola do servidor, copie o valor RCT2 completo. Cole-o abaixo e verifique o transporte e a impressão digital.",
   "screen.add_server.security": "Ligue e mantenha o controle",
   "screen.add_server.security_description": "Selecione Emparelhar para abrir o espaço de trabalho ativo. As credenciais permanecem neste browser. A saída de emparelhamento também imprime o ID do token utilizado para revogar o acesso posteriormente.",
   "screen.add_server.credential_scope": "Âmbito da credencial",

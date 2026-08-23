@@ -385,7 +385,7 @@
   "screen.add_server.decode": "Generar un código de alcance",
   "screen.add_server.decode_description": "Ejecute el comando de emparejamiento en el juego como OP o jugador con react.use, u omita la barra diagonal inicial en la consola del servidor dedicado. Elija espectador, operador o administrador; El visor es el predeterminado.",
   "screen.add_server.monitor": "Pegar y revisar",
-  "screen.add_server.monitor_description": "Copie el valor completo del código de emparejamiento que comienza con RCT2. Pegue el token o la línea completa de la consola a continuación, luego verifique el transporte y la huella digital.",
+  "screen.add_server.monitor_description": "En el juego, haga clic en la acción para copiar el código de emparejamiento. Desde la consola del servidor, copie el valor RCT2 completo. Péguelo abajo y compruebe el transporte y la huella digital.",
   "screen.add_server.security": "Conecte y mantenga el control",
   "screen.add_server.security_description": "Seleccione Emparejar para abrir el espacio de trabajo en vivo. Las credenciales permanecen en este navegador. La salida de emparejamiento también imprime el ID del token utilizado para revocar el acceso más adelante.",
   "screen.add_server.credential_scope": "Alcance de la credencial",
