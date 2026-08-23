@@ -81,9 +81,7 @@ FleetParseResult parseFleetImportJson(String raw) {
       skipped: skipped,
       error: skipped > 0
           ? reactorText(
-              skipped == 1
-                  ? ReactorText.fleetImportNoValidServer
-                  : ReactorText.fleetImportNoValidServers,
+              ReactorText.fleetImportNoValidServers,
               <String, Object?>{'count': skipped},
             )
           : reactorText(ReactorText.fleetImportNoServers),

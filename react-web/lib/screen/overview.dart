@@ -5,6 +5,7 @@ import 'package:jaspr/dom.dart' as dom;
 
 import '../model/sampler_sample.dart';
 import '../model/server_snapshot.dart';
+import '../localization/reactor_locale.dart';
 import '../localization/reactor_localizations.dart';
 import '../state/server_scope.dart';
 import '../ui/reactor_ui.dart';
@@ -17,6 +18,7 @@ class OverviewScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     final ServerScope? scope = ServerScope.of(context);
     final ServerSnapshot? snapshot = scope?.snapshot;
     final Widget? statePage = serverSnapshotStatePage(
@@ -102,6 +104,7 @@ class _IncidentStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     final SamplerSample? score = incidentScore;
     if (score == null) {
       return SectionPanel(
@@ -167,6 +170,7 @@ class _IncidentBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     final double fraction = max > 0.0 ? (value / max).clamp(0.0, 1.0) : 0.0;
     final int heightPct = (fraction * 100).round().clamp(5, 100);
 

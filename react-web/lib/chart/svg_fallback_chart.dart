@@ -3,6 +3,9 @@ library;
 import 'package:jaspr/dom.dart';
 import 'package:jaspr/jaspr.dart';
 
+import '../localization/reactor_locale.dart';
+import '../localization/reactor_localizations.dart';
+
 class SvgFallbackChart extends StatelessComponent {
   const SvgFallbackChart({
     required this.series,
@@ -21,10 +24,15 @@ class SvgFallbackChart extends StatelessComponent {
 
   @override
   Component build(BuildContext context) {
+    dependOnReactorLocale(context);
     final (double, double) bounds = _globalBounds();
     final String accessibleLabel = series.isEmpty
-        ? 'No time series data'
-        : 'Time series chart: ${series.map(((String, List<double>) item) => item.$1).join(', ')}';
+        ? reactorText(ReactorText.chartNoTimeSeriesData)
+        : reactorText(ReactorText.chartTimeSeriesLabel, <String, Object?>{
+            'series': series
+                .map(((String, List<double>) item) => item.$1)
+                .join(', '),
+          });
     return div(classes: 'reactor-chart-plot', <Component>[
       span(classes: 'reactor-chart-scale is-max', <Component>[
         Component.text(_formatBound(bounds.$2)),
@@ -93,7 +101,11 @@ class SvgFallbackChart extends StatelessComponent {
           ),
           <Component>[
             span(classes: 'reactor-chart-tooltip-index', <Component>[
-              Component.text('Sample ${activeSample! + 1}'),
+              Component.text(
+                reactorText(ReactorText.chartSample, <String, Object?>{
+                  'number': activeSample! + 1,
+                }),
+              ),
             ]),
             for (int index = 0; index < series.length; index++)
               if (!hiddenSeries.contains(index) &&
@@ -173,7 +185,10 @@ class SvgFallbackChart extends StatelessComponent {
         '${series[seriesIndex].$1} ${_formatValue(series[seriesIndex].$2[index])}',
       );
     }
-    return 'Sample ${index + 1}: ${values.join(', ')}';
+    return reactorText(ReactorText.chartSampleValues, <String, Object?>{
+      'number': index + 1,
+      'values': values.join(', '),
+    });
   }
 
   (double, double) _globalBounds() {

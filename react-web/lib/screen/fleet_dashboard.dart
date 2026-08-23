@@ -7,6 +7,7 @@ import 'package:jaspr/jaspr.dart' show Component;
 import 'package:jaspr_router/jaspr_router.dart';
 
 import '../model/alert.dart';
+import '../localization/reactor_locale.dart';
 import '../localization/reactor_localizations.dart';
 import '../model/alert_thresholds.dart';
 import '../model/server_snapshot.dart';
@@ -34,6 +35,7 @@ class _FleetDashboardScreenState extends State<FleetDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     final FleetLiveScope? liveScope = FleetLiveScope.of(context);
     final FleetController? fleet = FleetScope.of(context);
 
@@ -130,9 +132,9 @@ class _FleetDashboardScreenState extends State<FleetDashboardScreen> {
 
   Widget _rollupRow(FleetRollup rollup) {
     if (rollup.servers.isEmpty) {
-      return const ReactorEmptyState(
-        title: 'No servers match this filter',
-        description: 'Choose another tag to restore the fleet rollup.',
+      return ReactorEmptyState(
+        title: reactorText(ReactorText.fleetNoFilterMatches),
+        description: reactorText(ReactorText.fleetChooseAnotherTag),
       );
     }
     return dom.div(classes: 'reactor-fleet-rollup reactor-metric-bank', <
@@ -230,21 +232,33 @@ class _FleetDashboardScreenState extends State<FleetDashboardScreen> {
       }),
       flush: true,
       child: rollup.servers.isEmpty
-          ? const ReactorEmptyState(
-              title: 'No matching servers',
-              description: 'The selected fleet filter returned no servers.',
+          ? ReactorEmptyState(
+              title: reactorText(ReactorText.fleetNoMatchingServers),
+              description: reactorText(ReactorText.fleetFilterEmpty),
             )
           : dom.div(classes: 'reactor-server-table', <Widget>[
-              const dom.div(
+              dom.div(
                 classes: 'reactor-fleet-server-row reactor-table-header',
                 <Widget>[
-                  dom.span(<Widget>[Component.text('Server')]),
-                  dom.span(<Widget>[Component.text('State')]),
-                  dom.span(<Widget>[Component.text('TPS')]),
-                  dom.span(<Widget>[Component.text('Players')]),
-                  dom.span(<Widget>[Component.text('Alerts')]),
-                  dom.span(<Widget>[Component.text('Last seen')]),
-                  dom.span(<Widget>[]),
+                  dom.span(<Widget>[
+                    Component.text(reactorText(ReactorText.commonServer)),
+                  ]),
+                  dom.span(<Widget>[
+                    Component.text(reactorText(ReactorText.commonState)),
+                  ]),
+                  dom.span(<Widget>[
+                    Component.text(reactorText(ReactorText.overviewTps)),
+                  ]),
+                  dom.span(<Widget>[
+                    Component.text(reactorText(ReactorText.commonPlayers)),
+                  ]),
+                  dom.span(<Widget>[
+                    Component.text(reactorText(ReactorText.commonAlerts)),
+                  ]),
+                  dom.span(<Widget>[
+                    Component.text(reactorText(ReactorText.commonLastSeen)),
+                  ]),
+                  const dom.span(<Widget>[]),
                 ],
               ),
               for (final FleetServerHealth s in rollup.servers)
@@ -259,11 +273,11 @@ class _FleetDashboardScreenState extends State<FleetDashboardScreen> {
       child: rollup.needsAttention.isEmpty
           ? ReactorEmptyState(
               title: rollup.servers.isEmpty
-                  ? 'No servers in scope'
+                  ? reactorText(ReactorText.fleetNoServersInScope)
                   : reactorText(ReactorText.fleetAllHealthy),
               description: rollup.servers.isEmpty
-                  ? 'Choose another filter to inspect fleet health.'
-                  : 'No open health conditions require operator attention.',
+                  ? reactorText(ReactorText.fleetChooseAnotherFilter)
+                  : reactorText(ReactorText.fleetNoHealthConditions),
               icon: rollup.servers.isEmpty
                   ? ArcaneIcon.minus(size: IconSize.sm)
                   : ArcaneIcon.check(size: IconSize.sm),
@@ -306,7 +320,7 @@ class _ServerCard extends StatelessWidget {
       FleetHealth.pending => (
         s.state == ConnState.connecting
             ? reactorText(ReactorText.statusConnecting)
-            : 'Awaiting telemetry',
+            : reactorText(ReactorText.fleetAwaitingTelemetry),
         s.state == ConnState.degraded
             ? ReactorStatus.warning
             : ReactorStatus.neutral,
@@ -375,7 +389,9 @@ class _ServerCard extends StatelessWidget {
       ]),
       dom.div(
         classes: 'reactor-server-cell is-state',
-        attributes: const <String, String>{'data-label': 'State'},
+        attributes: <String, String>{
+          'data-label': reactorText(ReactorText.commonState),
+        },
         <Widget>[reactorBadge(health.$1, health.$2)],
       ),
       _cell(
@@ -420,9 +436,15 @@ class _NeedsAttentionRow extends StatelessWidget {
         );
       }
       if (s.state == ConnState.degraded) {
-        return ('Degraded · awaiting telemetry', ReactorStatus.warning);
+        return (
+          reactorText(ReactorText.fleetDegradedAwaiting),
+          ReactorStatus.warning,
+        );
       }
-      return ('Awaiting telemetry', ReactorStatus.neutral);
+      return (
+        reactorText(ReactorText.fleetAwaitingTelemetry),
+        ReactorStatus.neutral,
+      );
     }
     if (s.state == ConnState.offline) {
       return (reactorText(ReactorText.statusOffline), ReactorStatus.critical);
@@ -449,6 +471,7 @@ class _NeedsAttentionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     final (String, ReactorStatus) reason = _reason(server);
     return dom.div(
       styles: const dom.Styles(

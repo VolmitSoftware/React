@@ -7,27 +7,30 @@ const String _configuredPath = String.fromEnvironment(
   defaultValue: 'reactor-language.json',
 );
 
-Future<List<String>> loadReactorLocalizationSources(String locale) async {
+Future<List<String>> loadReactorLocalizationSources(
+  String locale, {
+  required bool includeDeploymentOverride,
+}) async {
   final List<String> sources = <String>[];
-  if (locale != 'en_US') {
-    final List<File> bundledCandidates = <File>[
-      File('web/languages/$locale.json'),
-      File('languages/$locale.json'),
-    ];
-    final File? bundled = await _firstExisting(bundledCandidates);
-    if (bundled == null) {
-      throw StateError('Bundled Reactor locale is missing: $locale');
-    }
-    sources.add(await bundled.readAsString());
-  }
-
-  final List<File> overrideCandidates = <File>[
-    File(_configuredPath),
-    if (!File(_configuredPath).isAbsolute) File('web/$_configuredPath'),
+  final List<File> bundledCandidates = <File>[
+    File('web/languages/$locale.json'),
+    File('languages/$locale.json'),
   ];
-  final File? override = await _firstExisting(overrideCandidates);
-  if (override != null) {
-    sources.add(await override.readAsString());
+  final File? bundled = await _firstExisting(bundledCandidates);
+  if (bundled == null) {
+    throw StateError('Bundled Reactor locale is missing: $locale');
+  }
+  sources.add(await bundled.readAsString());
+
+  if (includeDeploymentOverride) {
+    final List<File> overrideCandidates = <File>[
+      File(_configuredPath),
+      if (!File(_configuredPath).isAbsolute) File('web/$_configuredPath'),
+    ];
+    final File? override = await _firstExisting(overrideCandidates);
+    if (override != null) {
+      sources.add(await override.readAsString());
+    }
   }
   return sources;
 }

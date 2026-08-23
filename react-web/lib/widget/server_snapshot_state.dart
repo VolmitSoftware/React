@@ -27,24 +27,22 @@ Widget serverSnapshotState({required ServerScope? scope, Widget? icon}) {
     ConnState.connecting => ReactorLoadingState(
       label: reactorText(ReactorText.metricsWaiting),
     ),
-    ConnState.live => const ReactorLoadingState(
-      label: 'Waiting for the first telemetry snapshot',
+    ConnState.live => ReactorLoadingState(
+      label: reactorText(ReactorText.snapshotWaitingFirst),
     ),
     ConnState.degraded => ReactorEmptyState(
-      title: 'No telemetry snapshot',
-      description:
-          'This view will populate after the connection recovers and React publishes a snapshot.',
+      title: reactorText(ReactorText.snapshotNone),
+      description: reactorText(ReactorText.snapshotAfterRecovery),
       icon: icon,
     ),
     ConnState.offline => ReactorEmptyState(
-      title: 'No telemetry snapshot',
-      description:
-          'This view will populate after React reconnects and publishes a snapshot.',
+      title: reactorText(ReactorText.snapshotNone),
+      description: reactorText(ReactorText.snapshotAfterReconnect),
       icon: icon,
     ),
-    null => const ReactorNotice(
-      title: 'Telemetry unavailable',
-      message: 'This view requires a server connection.',
+    null => ReactorNotice(
+      title: reactorText(ReactorText.snapshotUnavailable),
+      message: reactorText(ReactorText.snapshotConnectionRequired),
       status: ReactorStatus.critical,
     ),
   };

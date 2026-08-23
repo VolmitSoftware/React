@@ -4,6 +4,7 @@ import 'package:arcane_jaspr/arcane_jaspr.dart';
 import 'package:jaspr/dom.dart' as dom;
 
 import '../model/config_tree.dart';
+import '../localization/reactor_locale.dart';
 import '../localization/reactor_localizations.dart';
 import '../model/knob.dart';
 import '../model/role_info.dart';
@@ -45,10 +46,11 @@ class ConfigEditorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     final bool readOnly = adminGated || connectionReadOnly;
     final String readOnlyMessage = adminGated
         ? reactorText(ReactorText.commonRequiresAdminRole)
-        : 'Changes require a live server connection.';
+        : reactorText(ReactorText.configLiveRequired);
     return ReactorPage(
       title: reactorText(ReactorText.configEditorTitle),
       subtitle: reactorText(ReactorText.configEditorSubtitle),
@@ -58,7 +60,7 @@ class ConfigEditorView extends StatelessWidget {
               text: readOnlyMessage,
               child: Button.primary(
                 label: saving
-                    ? 'Applying…'
+                    ? reactorText(ReactorText.configApplyingShort)
                     : reactorText(ReactorText.configEditorApplyChanges),
                 size: ButtonSize.small,
                 disabled: true,
@@ -67,7 +69,7 @@ class ConfigEditorView extends StatelessWidget {
             )
           : Button.primary(
               label: saving
-                  ? 'Applying…'
+                  ? reactorText(ReactorText.configApplyingShort)
                   : reactorText(ReactorText.configEditorApplyChanges),
               size: ButtonSize.small,
               disabled: saving || onApply == null,
@@ -116,8 +118,8 @@ class ConfigEditorView extends StatelessWidget {
         ),
         if (tree.sections.isEmpty)
           ReactorEmptyState(
-            title: 'No configuration sections',
-            description: 'React returned an empty configuration tree.',
+            title: reactorText(ReactorText.configNoSections),
+            description: reactorText(ReactorText.configNoSectionsDescription),
             icon: ArcaneIcon.braces(size: IconSize.sm),
           ),
         for (final ConfigSection section in tree.sections)
@@ -177,7 +179,7 @@ class _ConfigEditorScreenState extends State<ConfigEditorScreen> {
         onChange: () => setState(() {}),
         onError: (Object e) => ArcaneSonner.error(
           reactorText(ReactorText.configEditorFailed),
-          description: e.toString(),
+          description: localizedReactorError(e),
         ),
       );
       _controller!.load();
@@ -202,6 +204,7 @@ class _ConfigEditorScreenState extends State<ConfigEditorScreen> {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     final ServerScope? server = ServerScope.of(context);
     if (server?.state == ConnState.connecting && _controller == null) {
       return _statePage(
@@ -213,7 +216,7 @@ class _ConfigEditorScreenState extends State<ConfigEditorScreen> {
     if (_controller == null) {
       return _statePage(
         ReactorNotice(
-          title: 'Configuration unavailable',
+          title: reactorText(ReactorText.configUnavailable),
           message: reactorText(ReactorText.configEditorLiveRequired),
           status: ReactorStatus.critical,
         ),
@@ -235,10 +238,10 @@ class _ConfigEditorScreenState extends State<ConfigEditorScreen> {
       return _statePage(
         ReactorNotice(
           title: reactorText(ReactorText.configEditorFailed),
-          message: error.toString(),
+          message: localizedReactorError(error),
           status: ReactorStatus.critical,
           action: Button.secondary(
-            label: 'Retry',
+            label: reactorText(ReactorText.commonRetry),
             size: ButtonSize.small,
             onPressed: controller.load,
           ),
@@ -253,18 +256,18 @@ class _ConfigEditorScreenState extends State<ConfigEditorScreen> {
     final Widget? notice = error != null
         ? ReactorNotice(
             title: reactorText(ReactorText.configEditorFailed),
-            message: error.toString(),
+            message: localizedReactorError(error),
             status: ReactorStatus.warning,
             action: Button.secondary(
-              label: 'Reload',
+              label: reactorText(ReactorText.configReload),
               size: ButtonSize.small,
               onPressed: controller.load,
             ),
           )
         : controller.saving
-        ? const ReactorNotice(
-            title: 'Applying configuration',
-            message: 'Waiting for React to confirm the updated values.',
+        ? ReactorNotice(
+            title: reactorText(ReactorText.configApplying),
+            message: reactorText(ReactorText.configApplyingDescription),
             status: ReactorStatus.info,
           )
         : null;

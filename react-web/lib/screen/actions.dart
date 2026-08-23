@@ -5,6 +5,7 @@ import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart' show Component;
 
 import '../model/action_descriptor.dart';
+import '../localization/reactor_locale.dart';
 import '../localization/reactor_localizations.dart';
 import '../model/knob.dart';
 import '../model/role_info.dart';
@@ -85,6 +86,7 @@ class ActionsConsoleView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     return Collection(
       gap: 0,
       children: <Widget>[
@@ -93,9 +95,10 @@ class ActionsConsoleView extends StatelessWidget {
           flush: true,
           child: actions.isEmpty
               ? ReactorEmptyState(
-                  title: 'No actions available',
-                  description:
-                      'React did not return any executable operations.',
+                  title: reactorText(ReactorText.actionsNoneAvailable),
+                  description: reactorText(
+                    ReactorText.actionsNoneAvailableDescription,
+                  ),
                   icon: ArcaneIcon.play(size: IconSize.sm),
                 )
               : dom.div(
@@ -117,8 +120,9 @@ class ActionsConsoleView extends StatelessWidget {
           child: recent.isEmpty
               ? ReactorEmptyState(
                   title: reactorText(ReactorText.actionsNoneExecuted),
-                  description:
-                      'Executed operations and their tickets will appear here.',
+                  description: reactorText(
+                    ReactorText.actionsHistoryEmptyDescription,
+                  ),
                   icon: ArcaneIcon.history(size: IconSize.sm),
                 )
               : dom.div(
@@ -327,7 +331,7 @@ class _ActionsScreenState extends State<ActionsScreen> {
         }),
         onError: (Object e) => ArcaneSonner.error(
           reactorText(ReactorText.actionsFailed),
-          description: e.toString(),
+          description: localizedReactorError(e),
         ),
       );
       _controller!.load();
@@ -336,6 +340,7 @@ class _ActionsScreenState extends State<ActionsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     final ServerScope? server = ServerScope.of(context);
     if (server?.state == ConnState.connecting && _client == null) {
       return _statePage(
@@ -345,7 +350,7 @@ class _ActionsScreenState extends State<ActionsScreen> {
     if (_client == null) {
       return _statePage(
         ReactorNotice(
-          title: 'Actions unavailable',
+          title: reactorText(ReactorText.actionsUnavailable),
           message: reactorText(ReactorText.actionsLiveRequired),
           status: ReactorStatus.critical,
         ),
@@ -365,10 +370,10 @@ class _ActionsScreenState extends State<ActionsScreen> {
       return _statePage(
         ReactorNotice(
           title: reactorText(ReactorText.actionsFailed),
-          message: error.toString(),
+          message: localizedReactorError(error),
           status: ReactorStatus.critical,
           action: Button.secondary(
-            label: 'Retry',
+            label: reactorText(ReactorText.commonRetry),
             size: ButtonSize.small,
             onPressed: controller.load,
           ),
@@ -387,10 +392,10 @@ class _ActionsScreenState extends State<ActionsScreen> {
         if (error != null)
           ReactorNotice(
             title: reactorText(ReactorText.actionsFailed),
-            message: error.toString(),
+            message: localizedReactorError(error),
             status: ReactorStatus.warning,
             action: Button.secondary(
-              label: 'Retry',
+              label: reactorText(ReactorText.commonRetry),
               size: ButtonSize.small,
               onPressed: controller.load,
             ),

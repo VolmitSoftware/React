@@ -5,6 +5,7 @@ import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart' show Component;
 
 import '../model/control_item.dart';
+import '../localization/reactor_locale.dart';
 import '../localization/reactor_localizations.dart';
 import '../model/knob.dart';
 import '../ui/reactor_ui.dart';
@@ -25,6 +26,7 @@ class ConfigSheetBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     return Collection(
       gap: 16,
       children: <Widget>[
@@ -81,6 +83,7 @@ class ConfigSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     return ArcaneSheet.end(
       isOpen: isOpen,
       onClose: onClose,

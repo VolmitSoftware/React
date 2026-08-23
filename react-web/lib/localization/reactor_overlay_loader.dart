@@ -12,22 +12,46 @@ const String _configuredLocale = String.fromEnvironment(
   defaultValue: reactorEnglishLocale,
 );
 
-String get configuredReactorLocale => canonicalReactorLocale(_configuredLocale);
+String get configuredReactorLocale => _configuredLocale;
 
-Future<String?> loadReactorLocalizationOverlay() async {
+Future<String?> loadReactorLocalizationOverlay(String locale) async {
+  final String canonicalLocale = canonicalReactorLocale(locale);
   final List<String> sources = await platform.loadReactorLocalizationSources(
-    configuredReactorLocale,
+    canonicalLocale,
+    includeDeploymentOverride: usesConfiguredReactorOverride(
+      canonicalLocale,
+      configuredReactorLocale,
+    ),
   );
   if (sources.isEmpty) {
     return null;
   }
-  final Map<String, dynamic> merged = <String, dynamic>{};
+  final ReactorOverlayResult bundledValidation = ReactorLocalizations()
+      .installCompleteCatalogJson(sources.first);
+  if (!bundledValidation.applied) {
+    throw FormatException(
+      bundledValidation.error ?? 'Bundled locale catalog is incomplete.',
+    );
+  }
+  final Map<String, Object?> merged = <String, Object?>{};
   for (final String source in sources) {
     final Object? decoded = jsonDecode(source);
-    if (decoded is! Map<String, dynamic>) {
+    if (decoded is! Map<String, Object?>) {
       throw const FormatException('Localization source must be a JSON object.');
     }
     merged.addAll(decoded);
   }
   return jsonEncode(merged);
+}
+
+bool usesConfiguredReactorOverride(
+  String selectedLocale,
+  String configuredLocale,
+) {
+  try {
+    return canonicalReactorLocale(selectedLocale) ==
+        canonicalReactorLocale(configuredLocale);
+  } on ArgumentError {
+    return false;
+  }
 }

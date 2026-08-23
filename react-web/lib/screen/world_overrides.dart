@@ -5,6 +5,7 @@ import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart' show Component;
 
 import '../model/role_info.dart';
+import '../localization/reactor_locale.dart';
 import '../localization/reactor_localizations.dart';
 import '../model/world_settings.dart';
 import '../service/react_client.dart';
@@ -40,14 +41,24 @@ class WorldOverridesView extends StatelessWidget {
 
   Widget _pressureBadge(PressureMode mode) {
     return switch (mode) {
-      PressureMode.normal => reactorBadge('NORMAL', ReactorStatus.healthy),
-      PressureMode.pressure => reactorBadge('PRESSURE', ReactorStatus.warning),
-      PressureMode.panic => reactorBadge('PANIC', ReactorStatus.critical),
+      PressureMode.normal => reactorBadge(
+        reactorText(ReactorText.pressureNormal),
+        ReactorStatus.healthy,
+      ),
+      PressureMode.pressure => reactorBadge(
+        reactorText(ReactorText.pressurePressure),
+        ReactorStatus.warning,
+      ),
+      PressureMode.panic => reactorBadge(
+        reactorText(ReactorText.pressurePanic),
+        ReactorStatus.critical,
+      ),
     };
   }
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     if (worlds.isEmpty) {
       return ReactorPage(
         title: reactorText(ReactorText.worldOverridesTitle),
@@ -198,7 +209,7 @@ class _WorldOverridesScreenState extends State<WorldOverridesScreen> {
         onChange: () => setState(() {}),
         onError: (Object e) => ArcaneSonner.error(
           reactorText(ReactorText.commonUpdateFailed),
-          description: e.toString(),
+          description: localizedReactorError(e),
         ),
       );
       _controller!.load();
@@ -207,6 +218,7 @@ class _WorldOverridesScreenState extends State<WorldOverridesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     final ServerScope? server = ServerScope.of(context);
     if (server?.state == ConnState.connecting && _client == null) {
       return _statePage(
@@ -218,7 +230,7 @@ class _WorldOverridesScreenState extends State<WorldOverridesScreen> {
     if (_client == null) {
       return _statePage(
         ReactorNotice(
-          title: 'World overrides unavailable',
+          title: reactorText(ReactorText.worldOverridesUnavailable),
           message: reactorText(ReactorText.worldOverridesLiveRequired),
           status: ReactorStatus.critical,
         ),
@@ -240,10 +252,10 @@ class _WorldOverridesScreenState extends State<WorldOverridesScreen> {
       return _statePage(
         ReactorNotice(
           title: reactorText(ReactorText.commonUpdateFailed),
-          message: error.toString(),
+          message: localizedReactorError(error),
           status: ReactorStatus.critical,
           action: Button.secondary(
-            label: 'Retry',
+            label: reactorText(ReactorText.commonRetry),
             size: ButtonSize.small,
             onPressed: controller.load,
           ),
@@ -257,10 +269,10 @@ class _WorldOverridesScreenState extends State<WorldOverridesScreen> {
     final Widget? notice = error != null
         ? ReactorNotice(
             title: reactorText(ReactorText.commonUpdateFailed),
-            message: error.toString(),
+            message: localizedReactorError(error),
             status: ReactorStatus.warning,
             action: Button.secondary(
-              label: 'Retry',
+              label: reactorText(ReactorText.commonRetry),
               size: ButtonSize.small,
               onPressed: controller.load,
             ),

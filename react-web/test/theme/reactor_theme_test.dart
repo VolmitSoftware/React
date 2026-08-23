@@ -55,9 +55,9 @@ void main() {
 
   group('React Web theme assets', () {
     test('pre-paint script allowlists the saved theme', () {
-      final String html = File('web/index.html').readAsStringSync();
-      expect(html, contains("localStorage.getItem('reactor.theme')"));
-      expect(html, contains("stored === 'light' || stored === 'dark'"));
+      final String bootstrap = File('web/bootstrap.js').readAsStringSync();
+      expect(bootstrap, contains("localStorage.getItem('reactor.theme')"));
+      expect(bootstrap, contains("stored === 'light' || stored === 'dark'"));
     });
 
     test('ships separate accessible light and dark palettes', () {

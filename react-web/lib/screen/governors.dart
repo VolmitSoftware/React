@@ -5,6 +5,7 @@ import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart' show Component;
 
 import '../model/control_item.dart';
+import '../localization/reactor_locale.dart';
 import '../localization/reactor_localizations.dart';
 import '../model/sampler_sample.dart';
 import '../service/react_client.dart';
@@ -51,6 +52,7 @@ class GovernorDashboardView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     final bool hasMetrics =
         incidentScore != null ||
         schedulerBacklog != null ||
@@ -60,7 +62,7 @@ class GovernorDashboardView extends StatelessWidget {
       children: <Widget>[
         if (hasMetrics)
           SectionPanel(
-            label: 'Runtime pressure',
+            label: reactorText(ReactorText.governorsRuntimePressure),
             flush: true,
             child: statGrid(<Widget>[
               if (incidentScore != null)
@@ -86,9 +88,10 @@ class GovernorDashboardView extends StatelessWidget {
           flush: true,
           child: governors.isEmpty
               ? ReactorEmptyState(
-                  title: 'No governors available',
-                  description:
-                      'React did not return any adaptive governor features.',
+                  title: reactorText(ReactorText.governorsNoneAvailable),
+                  description: reactorText(
+                    ReactorText.governorsNoneAvailableDescription,
+                  ),
                   icon: ArcaneIcon.signal(size: IconSize.sm),
                 )
               : dom.div(
@@ -211,7 +214,7 @@ class _GovernorsScreenState extends State<GovernorsScreen> {
         onChange: () => setState(() {}),
         onError: (Object e) => ArcaneSonner.error(
           reactorText(ReactorText.commonUpdateFailed),
-          description: e.toString(),
+          description: localizedReactorError(e),
         ),
       );
       _controller!.load();
@@ -220,6 +223,7 @@ class _GovernorsScreenState extends State<GovernorsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     final ServerScope? scope = ServerScope.of(context);
     final SamplerSample? incidentScore = scope?.snapshot?.sampler(
       'incident-score',
@@ -241,7 +245,9 @@ class _GovernorsScreenState extends State<GovernorsScreen> {
         scope?.snapshot == null &&
         _client == null) {
       return _statePage(
-        const ReactorLoadingState(label: 'Loading governor state'),
+        ReactorLoadingState(
+          label: reactorText(ReactorText.governorsLoadingState),
+        ),
       );
     }
     if (_client == null) {
@@ -250,7 +256,7 @@ class _GovernorsScreenState extends State<GovernorsScreen> {
         subtitle: reactorText(ReactorText.governorsSubtitle),
         children: <Widget>[
           ReactorNotice(
-            title: 'Governor controls unavailable',
+            title: reactorText(ReactorText.governorsUnavailable),
             message: reactorText(ReactorText.governorsLiveRequired),
             status: ReactorStatus.critical,
           ),
@@ -268,7 +274,9 @@ class _GovernorsScreenState extends State<GovernorsScreen> {
     final bool live = scope?.state == ConnState.live;
     if (controller.loading && controller.items.isEmpty) {
       return _statePage(
-        const ReactorLoadingState(label: 'Loading governor state'),
+        ReactorLoadingState(
+          label: reactorText(ReactorText.governorsLoadingState),
+        ),
       );
     }
     final Object? error = controller.error;
@@ -276,10 +284,10 @@ class _GovernorsScreenState extends State<GovernorsScreen> {
       return _statePage(
         ReactorNotice(
           title: reactorText(ReactorText.commonUpdateFailed),
-          message: error.toString(),
+          message: localizedReactorError(error),
           status: ReactorStatus.critical,
           action: Button.secondary(
-            label: 'Retry',
+            label: reactorText(ReactorText.commonRetry),
             size: ButtonSize.small,
             onPressed: controller.load,
           ),
@@ -294,10 +302,10 @@ class _GovernorsScreenState extends State<GovernorsScreen> {
         if (error != null)
           ReactorNotice(
             title: reactorText(ReactorText.commonUpdateFailed),
-            message: error.toString(),
+            message: localizedReactorError(error),
             status: ReactorStatus.warning,
             action: Button.secondary(
-              label: 'Retry',
+              label: reactorText(ReactorText.commonRetry),
               size: ButtonSize.small,
               onPressed: controller.load,
             ),

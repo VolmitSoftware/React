@@ -4,6 +4,10 @@ import 'package:arcane_jaspr/arcane_jaspr.dart';
 import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart' show Component;
 
+import '../localization/reactor_locale.dart';
+import '../localization/reactor_localizations.dart';
+import '../service/react_exceptions.dart';
+
 enum ReactorStatus { healthy, warning, critical, info, neutral }
 
 const String kReactorSuccess = 'var(--success)';
@@ -17,6 +21,16 @@ const String kReactorHairline =
     'color-mix(in srgb, var(--border) 64%, transparent)';
 const String kReactorPanel = 'var(--card)';
 const String kReactorRadius = '0';
+
+String localizedReactorError(Object error) => switch (error) {
+  ReactAuthException() => reactorText(ReactorText.errorAuthentication),
+  ReactUnavailable() => reactorText(ReactorText.errorUnavailable),
+  ReactBadRequest() => reactorText(ReactorText.errorBadRequest),
+  ReactForbidden() => reactorText(ReactorText.errorForbidden),
+  ReactNotFound() => reactorText(ReactorText.errorNotFound),
+  ReactConflict() => reactorText(ReactorText.errorConflict),
+  _ => reactorText(ReactorText.errorUnexpected),
+};
 
 String reactorStatusColor(ReactorStatus status) => switch (status) {
   ReactorStatus.healthy => kReactorSuccess,
@@ -104,6 +118,7 @@ class ReactorPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     return dom.div(classes: 'reactor-page', <Widget>[
       ReactorPageHeader(
         title: title,
@@ -136,6 +151,7 @@ class ReactorPageHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     final String? sub = subtitle;
     final Widget? lead = leading;
     final Widget? act = actions;
@@ -174,6 +190,7 @@ class SectionPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     final List<Widget> body = children ?? <Widget>[?child];
     final bool hasHeader =
         label != null || description != null || trailing != null;
@@ -230,6 +247,7 @@ class MetricCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     final String? val = value;
     final String? u = unit;
     final Widget? bdg = badge;
@@ -276,6 +294,7 @@ class ReactorStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     final String? u = unit;
     final String? cap = caption;
     return dom.div(classes: 'reactor-stat is-${status.name}', <Widget>[
@@ -319,6 +338,7 @@ class ReactorEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     final Widget? act = action;
     return dom.div(
       classes: 'reactor-pane-state is-empty',
@@ -354,6 +374,7 @@ class ReactorNotice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     final Widget? act = action;
     return dom.div(
       classes: 'reactor-notice is-${status.name}',
@@ -374,12 +395,13 @@ class ReactorNotice extends StatelessWidget {
 }
 
 class ReactorLoadingState extends StatelessWidget {
-  final String label;
+  final String? label;
 
-  const ReactorLoadingState({this.label = 'Waiting for live data', super.key});
+  const ReactorLoadingState({this.label, super.key});
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     return dom.div(
       classes: 'reactor-pane-state is-loading',
       attributes: const <String, String>{
@@ -391,7 +413,11 @@ class ReactorLoadingState extends StatelessWidget {
           ArcaneIcon.activity(size: IconSize.sm),
         ]),
         dom.div(classes: 'reactor-pane-state-copy', <Widget>[
-          dom.strong(<Widget>[Component.text(label)]),
+          dom.strong(<Widget>[
+            Component.text(
+              label ?? reactorText(ReactorText.loadingWaitingLiveData),
+            ),
+          ]),
         ]),
       ],
     );
@@ -412,6 +438,7 @@ class ReactorSparkline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     final List<double> v = values;
     if (v.length < 2) {
       return dom.div(

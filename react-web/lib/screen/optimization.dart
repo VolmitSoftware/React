@@ -7,6 +7,7 @@ import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart' show Component;
 
 import '../model/control_item.dart';
+import '../localization/reactor_locale.dart';
 import '../localization/reactor_localizations.dart';
 import '../model/role_info.dart';
 import '../service/react_client.dart';
@@ -45,6 +46,7 @@ class OptimizationGridView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     final LinkedHashMap<String, List<ControlItem>> byCategory =
         LinkedHashMap<String, List<ControlItem>>();
     for (final ControlItem item in items) {
@@ -85,8 +87,10 @@ class OptimizationGridView extends StatelessWidget {
         ?notice,
         if (items.isEmpty)
           ReactorEmptyState(
-            title: 'No optimization features',
-            description: 'React did not return any configurable features.',
+            title: reactorText(ReactorText.optimizationNoneAvailable),
+            description: reactorText(
+              ReactorText.optimizationNoneAvailableDescription,
+            ),
             icon: ArcaneIcon.slidersHorizontal(size: IconSize.sm),
           ),
         for (final MapEntry<String, List<ControlItem>> entry
@@ -139,6 +143,7 @@ class _FeatureCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     final bool enabled = item.enabled;
     return dom.div(
       styles: const dom.Styles(
@@ -282,7 +287,7 @@ class _OptimizationScreenState extends State<OptimizationScreen> {
         onChange: () => setState(() {}),
         onError: (Object e) => ArcaneSonner.error(
           reactorText(ReactorText.commonUpdateFailed),
-          description: e.toString(),
+          description: localizedReactorError(e),
         ),
       );
       _controller!.load();
@@ -291,6 +296,7 @@ class _OptimizationScreenState extends State<OptimizationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     final ServerScope? server = ServerScope.of(context);
     if (server?.state == ConnState.connecting && _client == null) {
       return _statePage(
@@ -302,7 +308,7 @@ class _OptimizationScreenState extends State<OptimizationScreen> {
     if (_client == null) {
       return _statePage(
         ReactorNotice(
-          title: 'Optimization unavailable',
+          title: reactorText(ReactorText.optimizationUnavailable),
           message: reactorText(ReactorText.optimizationLiveRequired),
           status: ReactorStatus.critical,
         ),
@@ -324,10 +330,10 @@ class _OptimizationScreenState extends State<OptimizationScreen> {
       return _statePage(
         ReactorNotice(
           title: reactorText(ReactorText.commonUpdateFailed),
-          message: error.toString(),
+          message: localizedReactorError(error),
           status: ReactorStatus.critical,
           action: Button.secondary(
-            label: 'Retry',
+            label: reactorText(ReactorText.commonRetry),
             size: ButtonSize.small,
             onPressed: controller.load,
           ),
@@ -350,10 +356,10 @@ class _OptimizationScreenState extends State<OptimizationScreen> {
     final Widget? notice = error != null
         ? ReactorNotice(
             title: reactorText(ReactorText.commonUpdateFailed),
-            message: error.toString(),
+            message: localizedReactorError(error),
             status: ReactorStatus.warning,
             action: Button.secondary(
-              label: 'Retry',
+              label: reactorText(ReactorText.commonRetry),
               size: ButtonSize.small,
               onPressed: controller.load,
             ),

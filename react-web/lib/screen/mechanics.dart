@@ -3,6 +3,7 @@ library;
 import 'package:arcane_jaspr/arcane_jaspr.dart';
 
 import '../chart/timeseries_chart.dart';
+import '../localization/reactor_locale.dart';
 import '../localization/reactor_localizations.dart';
 import '../model/sampler_sample.dart';
 import '../model/server_snapshot.dart';
@@ -17,6 +18,7 @@ class MechanicsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     final ServerScope? scope = ServerScope.of(context);
     final ServerSnapshot? snapshot = scope?.snapshot;
     final Widget? statePage = serverSnapshotStatePage(

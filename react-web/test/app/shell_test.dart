@@ -2,10 +2,13 @@ library;
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
 import 'package:arcane_jaspr_shadcn/arcane_jaspr_shadcn.dart';
+import 'package:jaspr/jaspr.dart' show Component, DomComponent;
 import 'package:jaspr_router/jaspr_router.dart';
 import 'package:jaspr_test/server_test.dart';
 
 import 'package:react_web/app/reactor_app.dart';
+import 'package:react_web/localization/reactor_locale.dart';
+import 'package:react_web/localization/reactor_localizations.dart';
 import 'package:react_web/model/sampler_sample.dart';
 import 'package:react_web/model/server_snapshot.dart';
 import 'package:react_web/state/connection_manager.dart';
@@ -13,6 +16,7 @@ import 'package:react_web/state/fleet_live_scope.dart';
 import 'package:react_web/state/fleet_rollup.dart';
 import 'package:react_web/theme/reactor_theme.dart';
 import 'package:react_web/widget/status_dot.dart';
+import 'package:react_web/widget/language_picker.dart';
 
 const ShadcnStylesheet _sheet = ShadcnStylesheet(theme: ShadcnTheme.midnight);
 
@@ -34,6 +38,11 @@ SamplerSample _sample(String id, double value, String display) => SamplerSample(
   min: value,
   max: value,
   history: <double>[value],
+);
+
+Finder _domId(String id) => find.byComponentPredicate(
+  (Component component) => component is DomComponent && component.id == id,
+  description: 'DOM element with id $id',
 );
 
 void main() {
@@ -131,6 +140,127 @@ void main() {
       expect(response.body, contains('aria-label="Switch to light theme"'));
     });
 
+    testServer('ReactorShell exposes every supported language at top right', (
+      ServerTester tester,
+    ) async {
+      tester.pumpComponent(
+        _wrap(
+          ReactorLocaleScope(
+            locale: reactorEnglishLocale,
+            loading: false,
+            onChanged: (String _) async {},
+            child: const ReactorShell(),
+          ),
+        ),
+      );
+      final DocumentResponse response = await tester.request('/');
+
+      expect(response.statusCode, 200);
+      expect(response.body, contains('Open language menu — English'));
+      expect(response.body, contains('aria-expanded="false"'));
+      expect(
+        response.body.lastIndexOf('reactor-language-picker'),
+        greaterThan(response.body.lastIndexOf('Open inspector')),
+      );
+    });
+
+    testComponents('ReactorLanguagePicker opens, selects, and closes', (
+      ComponentTester tester,
+    ) async {
+      String? selected;
+      tester.pumpComponent(
+        _wrap(
+          ReactorLocaleScope(
+            locale: reactorEnglishLocale,
+            loading: false,
+            onChanged: (String locale) async => selected = locale,
+            child: const ReactorLanguagePicker(),
+          ),
+        ),
+      );
+
+      expect(_domId('reactor-language-options'), findsNothing);
+      await tester.click(_domId('reactor-language-trigger'));
+      expect(_domId('reactor-language-options'), findsOneComponent);
+      expect(
+        find.byComponentPredicate(
+          (Component component) =>
+              component is DomComponent &&
+              component.id == 'reactor-language-options' &&
+              component.attributes?['role'] == 'menu' &&
+              component.attributes?['tabindex'] == '-1',
+          description: 'keyboard-managed language menu',
+        ),
+        findsOneComponent,
+      );
+      expect(
+        find.byComponentPredicate(
+          (Component component) =>
+              component is DomComponent &&
+              component.attributes?['role'] == 'menuitemradio' &&
+              component.attributes?['tabindex'] == '-1',
+          description: 'keyboard-managed language radio option',
+        ),
+        findsNComponents(reactorLocales.length),
+      );
+      expect(
+        find.byComponentPredicate(
+          (Component component) =>
+              component is DomComponent &&
+              component.id == 'reactor-language-en_US' &&
+              component.attributes?['aria-checked'] == 'true',
+          description: 'checked active language option',
+        ),
+        findsOneComponent,
+      );
+      expect(
+        find.byComponentPredicate(
+          (Component component) =>
+              component is DomComponent &&
+              component.id == 'reactor-language-he_IL' &&
+              component.attributes?['lang'] == 'he-IL' &&
+              component.attributes?['dir'] == 'rtl',
+          description: 'Hebrew RTL language option',
+        ),
+        findsOneComponent,
+      );
+
+      await tester.click(_domId('reactor-language-de_DE'));
+      expect(selected, 'de_DE');
+      expect(_domId('reactor-language-options'), findsNothing);
+
+      await tester.click(_domId('reactor-language-trigger'));
+      await tester.click(_domId('reactor-language-backdrop'));
+      expect(_domId('reactor-language-options'), findsNothing);
+    });
+
+    testServer('ReactorShell updates its picker copy after a locale switch', (
+      ServerTester tester,
+    ) async {
+      addTearDown(() => reactorLocalizations.installOverlayJson('{}'));
+      final ReactorOverlayResult installed = reactorLocalizations
+          .installOverlayJson(
+            '{"language.open":"Ouvrir le menu des langues — {language}",'
+            '"language.close":"Fermer le menu des langues",'
+            '"language.select":"Choisir la langue"}',
+          );
+      expect(installed.applied, isTrue);
+      tester.pumpComponent(
+        _wrap(
+          ReactorLocaleScope(
+            locale: 'fr_FR',
+            loading: false,
+            onChanged: (String _) async {},
+            child: const ReactorShell(),
+          ),
+        ),
+      );
+      final DocumentResponse response = await tester.request('/');
+
+      expect(response.statusCode, 200);
+      expect(response.body, contains('Ouvrir le menu des langues — Français'));
+    });
+
     testServer(
       'routed shell at / renders empty-state body inside the scaffold',
       (ServerTester tester) async {
@@ -203,7 +333,7 @@ void main() {
       final DocumentResponse res = await tester.request('/');
       expect(res.statusCode, 200);
       expect(
-        res.body.contains('Servers (24)'),
+        res.body.contains('Server count: 24'),
         isTrue,
         reason: 'large fleets should render as a bounded server selector',
       );

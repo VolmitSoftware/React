@@ -32,7 +32,31 @@ Paste the full RCT2 value printed by `/react web pair <label> [role]`. React Web
 
 The hosted client runs over HTTPS, so browsers block direct access to React's plain-HTTP listener as mixed content. Production servers must either advertise an HTTPS reverse-proxy URL or enable React's outbound relay with a deployed `wss://` endpoint. Set the relay's `ALLOWED_APP_ORIGINS` to `https://react.volmitsoftware.com`.
 
-`web/reactor-language.json` is the optional deployment-wide localization overlay. It ships as an empty object and can override any typed locale key without rebuilding Dart.
+## Languages
+
+The top-right language menu switches the complete client-owned interface at
+runtime. React Web supports 18 locales in `web/languages/`, persists the choice
+as `reactor.locale`, and starts with the saved choice, then the browser locale,
+then `REACTOR_LANGUAGE`, then English. A failed or superseded catalog request
+keeps the last complete language snapshot and does not change the saved choice.
+
+Each switch updates the document language, direction, title, description
+metadata, and install manifest. Hebrew uses right-to-left layout; logs,
+commands, pairing codes, identifiers, heatmaps, and charts remain left-to-right
+for readability. Translation instructions and the catalog and generated-
+manifest validator are in
+[`web/languages/README.md`](web/languages/README.md).
+
+`web/reactor-language.json` is an optional deployment overlay for the locale
+selected by `REACTOR_LANGUAGE`. It is merged after that locale's bundled
+catalog, so it can override typed keys without rebuilding Dart. Other language
+choices use only their own bundle, preventing a configured overlay from mixing
+languages. Malformed bundles or overlays are rejected atomically.
+
+Action descriptions, control names, configuration labels, sampler names, log
+content, and incident details received from a React server are server-provided
+data. React Web translates all client-owned framing around those values, while
+the server controls the language of the values themselves.
 
 ## Firebase Hosting
 

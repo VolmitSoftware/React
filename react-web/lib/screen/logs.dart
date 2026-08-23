@@ -5,6 +5,7 @@ import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart' show Component;
 
 import '../service/react_client.dart';
+import '../localization/reactor_locale.dart';
 import '../localization/reactor_localizations.dart';
 import '../model/role_info.dart';
 import '../service/react_log_socket.dart';
@@ -49,6 +50,7 @@ class LogsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     return ReactorPage(
       title: reactorText(ReactorText.logsTitle),
       subtitle: reactorText(ReactorText.logsSubtitle),
@@ -61,12 +63,15 @@ class LogsView extends StatelessWidget {
           trailing: ArcaneSelect(
             label: reactorText(ReactorText.logsLevel),
             value: levelFilter,
-            options: const <ArcaneSelectOption>[
-              ArcaneSelectOption(label: 'ALL', value: 'ALL'),
-              ArcaneSelectOption(label: 'INFO', value: 'INFO'),
-              ArcaneSelectOption(label: 'WARN', value: 'WARN'),
-              ArcaneSelectOption(label: 'ERROR', value: 'ERROR'),
-              ArcaneSelectOption(label: 'DEBUG', value: 'DEBUG'),
+            options: <ArcaneSelectOption>[
+              ArcaneSelectOption(
+                label: reactorText(ReactorText.logsAllLevels),
+                value: 'ALL',
+              ),
+              const ArcaneSelectOption(label: 'INFO', value: 'INFO'),
+              const ArcaneSelectOption(label: 'WARN', value: 'WARN'),
+              const ArcaneSelectOption(label: 'ERROR', value: 'ERROR'),
+              const ArcaneSelectOption(label: 'DEBUG', value: 'DEBUG'),
             ],
             onChange: (String s) => onLevelFilter?.call(s),
           ),
@@ -79,8 +84,11 @@ class LogsView extends StatelessWidget {
                 ),
                 Component.text(
                   paused
-                      ? 'Output paused'
-                      : '${reactorText(ReactorText.logsStream)} · ${lines.length} lines',
+                      ? reactorText(ReactorText.logsOutputPaused)
+                      : reactorText(
+                          ReactorText.logsStreamCount,
+                          <String, Object?>{'count': lines.length},
+                        ),
                 ),
               ]),
               dom.div(classes: 'reactor-terminal-actions', <Widget>[
@@ -101,9 +109,8 @@ class LogsView extends StatelessWidget {
             dom.div(classes: 'reactor-terminal-output', <Widget>[
               if (lines.isEmpty)
                 ReactorEmptyState(
-                  title: 'No log lines',
-                  description:
-                      'New matching entries will appear here as React streams them.',
+                  title: reactorText(ReactorText.logsNoLines),
+                  description: reactorText(ReactorText.logsNoLinesDescription),
                   icon: ArcaneIcon.scrollText(size: IconSize.sm),
                 )
               else
@@ -129,6 +136,7 @@ class LogsView extends StatelessWidget {
                 TextInput(
                   value: command,
                   type: TextInputType.text,
+                  attributes: const <String, String>{'dir': 'ltr'},
                   placeholder: reactorText(ReactorText.consolePlaceholder),
                   disabled: !consoleEnabled || consolePending,
                   onChange: consoleEnabled && !consolePending
@@ -264,7 +272,7 @@ class _LogsScreenState extends State<LogsScreen> {
       if (!mounted) return;
       ArcaneSonner.error(
         reactorText(ReactorText.consoleFailed),
-        description: error.toString(),
+        description: localizedReactorError(error),
       );
     } finally {
       if (mounted) setState(() => _consolePending = false);
@@ -273,16 +281,17 @@ class _LogsScreenState extends State<LogsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     final ServerScope? server = ServerScope.of(context);
     if (server?.state == ConnState.connecting && _client == null) {
       return _statePage(
-        const ReactorLoadingState(label: 'Opening the log stream…'),
+        ReactorLoadingState(label: reactorText(ReactorText.logsOpening)),
       );
     }
     if (_client == null) {
       return _statePage(
         ReactorNotice(
-          title: 'Logs unavailable',
+          title: reactorText(ReactorText.logsUnavailable),
           message: reactorText(ReactorText.logsLiveRequired),
           status: ReactorStatus.critical,
         ),
@@ -292,7 +301,7 @@ class _LogsScreenState extends State<LogsScreen> {
     final LogController controller = _controller!;
     if (controller.loading && controller.lines.isEmpty) {
       return _statePage(
-        const ReactorLoadingState(label: 'Loading recent log lines…'),
+        ReactorLoadingState(label: reactorText(ReactorText.logsLoadingHistory)),
       );
     }
 
@@ -300,11 +309,11 @@ class _LogsScreenState extends State<LogsScreen> {
     if (error != null && controller.lines.isEmpty) {
       return _statePage(
         ReactorNotice(
-          title: 'Log stream unavailable',
-          message: error.toString(),
+          title: reactorText(ReactorText.logsStreamUnavailable),
+          message: localizedReactorError(error),
           status: ReactorStatus.critical,
           action: Button.secondary(
-            label: 'Retry',
+            label: reactorText(ReactorText.commonRetry),
             size: ButtonSize.small,
             onPressed: _retry,
           ),
@@ -318,19 +327,19 @@ class _LogsScreenState extends State<LogsScreen> {
         live && _consoleClient != null && (role?.canExecuteConsole ?? false);
     final Widget? notice = error != null
         ? ReactorNotice(
-            title: 'Log refresh failed',
-            message: error.toString(),
+            title: reactorText(ReactorText.logsRefreshFailed),
+            message: localizedReactorError(error),
             status: ReactorStatus.warning,
             action: Button.secondary(
-              label: 'Retry',
+              label: reactorText(ReactorText.commonRetry),
               size: ButtonSize.small,
               onPressed: _retry,
             ),
           )
         : controller.loading
-        ? const ReactorNotice(
-            title: 'Refreshing log history',
-            message: 'Existing streamed lines remain visible during refresh.',
+        ? ReactorNotice(
+            title: reactorText(ReactorText.logsRefreshingHistory),
+            message: reactorText(ReactorText.logsRefreshingHistoryDescription),
             status: ReactorStatus.info,
           )
         : null;
@@ -347,7 +356,7 @@ class _LogsScreenState extends State<LogsScreen> {
       command: _command,
       consoleEnabled: consoleEnabled,
       consoleUnavailableMessage: !live
-          ? 'Command execution is disabled until the connection is live.'
+          ? reactorText(ReactorText.logsCommandDisabled)
           : null,
       consolePending: _consolePending,
       onCommandChanged: (String value) => setState(() => _command = value),

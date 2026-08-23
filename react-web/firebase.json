@@ -61,6 +61,15 @@
         ]
       },
       {
+        "source": "/bootstrap.js",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate, max-age=0"
+          }
+        ]
+      },
+      {
         "source": "/styles/**",
         "headers": [
           {
@@ -88,7 +97,7 @@
         ]
       },
       {
-        "source": "/manifest.webmanifest",
+        "source": "/manifests/**",
         "headers": [
           {
             "key": "Cache-Control",

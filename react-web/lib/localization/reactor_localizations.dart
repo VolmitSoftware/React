@@ -152,7 +152,7 @@ enum ReactorText {
   ),
   metricsVisibleCount(
     'screen.metrics.visible_count',
-    '{visible} of {total} samplers',
+    'Samplers: {visible}/{total}',
     <String>{'visible', 'total'},
   ),
   metricsSearchPlaceholder(
@@ -458,14 +458,14 @@ enum ReactorText {
   optimizationTitle('screen.optimization.title', 'Optimization'),
   optimizationEnabledCount(
     'screen.optimization.enabled_count',
-    '{enabled} / {total} enabled',
+    'Enabled: {enabled}/{total}',
     <String>{'enabled', 'total'},
   ),
   optimizationEnableAll('screen.optimization.enable_all', 'Enable all'),
   optimizationDisableAll('screen.optimization.disable_all', 'Disable all'),
   optimizationCategoryCount(
     'screen.optimization.category_count',
-    '{enabled} of {total} on',
+    'On: {enabled}/{total}',
     <String>{'enabled', 'total'},
   ),
   optimizationConfigure('screen.optimization.configure', 'Configure'),
@@ -532,19 +532,19 @@ enum ReactorText {
   commonMinutesAgo('common.minutes_ago', '{value}m ago', <String>{'value'}),
   commonHoursAgo('common.hours_ago', '{value}h ago', <String>{'value'}),
   commonDaysAgo('common.days_ago', '{value}d ago', <String>{'value'}),
-  fleetTitle('screen.fleet.title', 'Fleet'),
+  fleetTitle('screen.fleet.title', 'Server group'),
   fleetNoServersPaired('screen.fleet.no_servers_paired', 'No servers paired'),
   fleetAllServersNominal(
     'screen.fleet.all_servers_nominal',
-    'All {count} servers nominal',
+    'Nominal server count: {count}',
     <String>{'count'},
   ),
   fleetServersNeedAttention(
     'screen.fleet.servers_need_attention',
-    '{total} servers · {attention} need attention',
+    'Server count: {total} · Need attention: {attention}',
     <String>{'total', 'attention'},
   ),
-  fleetHealth('screen.fleet.health', 'Fleet Health'),
+  fleetHealth('screen.fleet.health', 'Server group health'),
   fleetTag('screen.fleet.tag', 'Tag'),
   fleetMeanTps('screen.fleet.mean_tps', 'Mean TPS'),
   fleetWorstTps('screen.fleet.worst_tps', 'Worst TPS'),
@@ -553,15 +553,15 @@ enum ReactorText {
   fleetWorstMspt('screen.fleet.worst_mspt', 'Worst MSPT'),
   fleetCriticalCount(
     'screen.fleet.critical_count',
-    '{count} critical',
+    'Critical: {count}',
     <String>{'count'},
   ),
-  fleetWarningCount('screen.fleet.warning_count', '{count} warning', <String>{
+  fleetWarningCount('screen.fleet.warning_count', 'Warning: {count}', <String>{
     'count',
   }),
-  fleetInfoCount('screen.fleet.info_count', '{count} info', <String>{'count'}),
+  fleetInfoCount('screen.fleet.info_count', 'Info: {count}', <String>{'count'}),
   fleetServers('screen.fleet.servers', 'Servers'),
-  fleetPairedCount('screen.fleet.paired_count', '{count} paired', <String>{
+  fleetPairedCount('screen.fleet.paired_count', 'Paired: {count}', <String>{
     'count',
   }),
   fleetNeedsAttention('screen.fleet.needs_attention', 'Needs Attention'),
@@ -569,11 +569,13 @@ enum ReactorText {
   fleetAlerts('screen.fleet.alerts', 'Alerts'),
   fleetLastSeen('screen.fleet.last_seen', 'Last Seen'),
   fleetOpenDashboard('screen.fleet.open_dashboard', 'Open dashboard'),
-  fleetAlertCount('screen.fleet.alert_count', 'Open alerts: {count}', <String>{
-    'count',
-  }),
+  fleetAlertCount(
+    'screen.fleet.alert_count',
+    'Open alert count: {count}',
+    <String>{'count'},
+  ),
   alertsTitle('screen.alerts.title', 'Alerts'),
-  alertsSubtitle('screen.alerts.subtitle', 'Open fleet alerts'),
+  alertsSubtitle('screen.alerts.subtitle', 'Open server-group alerts'),
   alertsNoneOpen('screen.alerts.none_open', 'No open alerts'),
   alertsSeverityCritical('screen.alerts.severity.critical', 'critical'),
   alertsSeverityWarning('screen.alerts.severity.warning', 'warning'),
@@ -625,7 +627,10 @@ enum ReactorText {
     'screen.settings.thresholds_saved',
     'Thresholds saved',
   ),
-  settingsFleetCleared('screen.settings.fleet_cleared', 'Saved fleet cleared'),
+  settingsFleetCleared(
+    'screen.settings.fleet_cleared',
+    'Saved server group cleared',
+  ),
   settingsNothingToExport(
     'screen.settings.nothing_to_export',
     'Nothing to export',
@@ -634,19 +639,22 @@ enum ReactorText {
     'screen.settings.no_servers_configured',
     'No servers configured.',
   ),
-  settingsFleetImported('screen.settings.fleet_imported', 'Fleet imported'),
+  settingsFleetImported(
+    'screen.settings.fleet_imported',
+    'Server group imported',
+  ),
   settingsServersLoaded(
     'screen.settings.servers_loaded',
-    'Servers loaded: {count}.',
+    'Loaded server count: {count}.',
     <String>{'count'},
   ),
   settingsFleetUnavailable(
     'screen.settings.fleet_unavailable',
-    'Fleet unavailable',
+    'Server group unavailable',
   ),
   settingsFleetNotInitialized(
     'screen.settings.fleet_not_initialized',
-    'No fleet has been initialized.',
+    'No server group has been initialized.',
   ),
   settingsAccountRoles('screen.settings.account_roles', 'Account / Roles'),
   settingsAlertThresholds(
@@ -688,41 +696,38 @@ enum ReactorText {
   ),
   settingsImportFailed(
     'screen.settings.import_failed',
-    'Import failed: {error}',
-    <String>{'error'},
+    'The connection file could not be imported.',
   ),
-  settingsReplaceFleet('screen.settings.replace_fleet', 'Replace fleet?'),
+  settingsReplaceFleet(
+    'screen.settings.replace_fleet',
+    'Replace server group?',
+  ),
   settingsReplaceFleetMessage(
     'screen.settings.replace_fleet_message',
-    'This will replace the current fleet ({current}) with the servers from the file ({incoming}).',
+    'This will replace the current server group ({current}) with the servers from the file ({incoming}).',
     <String>{'current', 'incoming'},
   ),
   settingsMalformedSkipped(
     'screen.settings.malformed_skipped',
-    ' Malformed entries to skip: {count}.',
+    ' Malformed entry count to skip: {count}.',
     <String>{'count'},
   ),
   fleetImportInvalidJson('fleet_import.invalid_json', 'Invalid JSON'),
   fleetImportInvalidFile(
     'fleet_import.invalid_file',
-    'Not a valid fleet export file',
+    'Not a valid server-group export file',
   ),
   fleetImportWrongKind(
     'fleet_import.wrong_kind',
-    'Not a reactor-fleet export file',
+    'Not a reactor-fleet server export file',
   ),
   fleetImportInvalidServerList(
     'fleet_import.invalid_server_list',
     'Missing or invalid servers list',
   ),
-  fleetImportNoValidServer(
-    'fleet_import.no_valid_server',
-    'No valid servers found ({count} malformed entry)',
-    <String>{'count'},
-  ),
   fleetImportNoValidServers(
     'fleet_import.no_valid_servers',
-    'No valid servers found ({count} malformed entries)',
+    'No valid servers found. Malformed entry count: {count}',
     <String>{'count'},
   ),
   fleetImportNoServers('fleet_import.no_servers', 'No servers in file'),
@@ -737,7 +742,7 @@ enum ReactorText {
   ),
   settingsRemoveServerMessage(
     'screen.settings.remove_server_message',
-    'This will disconnect and remove the server from your fleet.',
+    'This will disconnect and remove the server from your server group.',
   ),
   settingsAddTag('screen.settings.add_tag', 'Add tag'),
   addServerTitle('screen.add_server.title', 'Add Server'),
@@ -767,9 +772,9 @@ enum ReactorText {
   ),
   addServerFleetClearedMessage(
     'screen.add_server.fleet_cleared_message',
-    'Saved fleet cleared. Paste a new RCT2 code to reconnect.',
+    'Saved server group cleared. Paste a new RCT2 code to reconnect.',
   ),
-  addServerFleetReset('screen.add_server.fleet_reset', 'Fleet reset'),
+  addServerFleetReset('screen.add_server.fleet_reset', 'Server group reset'),
   addServerConnectingIdentity(
     'screen.add_server.connecting_identity',
     'Connecting to server identity endpoint...',
@@ -794,7 +799,7 @@ enum ReactorText {
   addServerPairingFailed('screen.add_server.pairing_failed', 'Pairing failed'),
   addServerClearCode('screen.add_server.clear_code', 'Clear code'),
   addServerConfirmReset('screen.add_server.confirm_reset', 'Confirm reset'),
-  addServerResetFleet('screen.add_server.reset_fleet', 'Reset fleet'),
+  addServerResetFleet('screen.add_server.reset_fleet', 'Reset server group'),
   addServerConnecting('screen.add_server.connecting', 'Connecting...'),
   addServerPair('screen.add_server.pair', 'Pair'),
   addServerPairingConsole(
@@ -877,46 +882,48 @@ enum ReactorText {
   addServerFingerprint('screen.add_server.fingerprint', 'Fingerprint'),
   addServerRelay('screen.add_server.relay', 'Relay'),
   addServerNotUsed('screen.add_server.not_used', 'Not used'),
-  shellFleetUnavailable('shell.fleet_unavailable', 'Fleet unavailable'),
+  shellFleetUnavailable('shell.fleet_unavailable', 'Server group unavailable'),
   shellFleetUnavailableDescription(
     'shell.fleet_unavailable_description',
-    'The server fleet has not been initialized yet.',
+    'The server group has not been initialized yet.',
   ),
   shellServerNotConnected('shell.server_not_connected', 'Server not connected'),
   shellServerNotConnectedDescription(
     'shell.server_not_connected_description',
-    'This server is not part of the live fleet. Pair it from the sidebar.',
+    'This server is not part of the live server group. Pair it from the sidebar.',
   ),
-  shellServerCount('shell.server_count', 'Server ({count})', <String>{'count'}),
-  shellServersCount('shell.servers_count', 'Servers ({count})', <String>{
+  shellServersCount('shell.servers_count', 'Server count: {count}', <String>{
     'count',
   }),
   shellWarn('shell.warn', 'Warn'),
   shellSyncing('shell.syncing', 'Syncing'),
   shellStandby('shell.standby', 'Standby'),
-  shellPairedCount('shell.paired_count', '{count} paired', <String>{'count'}),
-  shellLiveCount('shell.live_count', '{live}/{total} live', <String>{
+  shellPairedCount('shell.paired_count', 'Paired: {count}', <String>{'count'}),
+  shellLiveCount('shell.live_count', 'Live: {live}/{total}', <String>{
     'live',
     'total',
   }),
-  shellFleetMonitor('shell.fleet_monitor', 'Fleet Monitor'),
+  shellFleetMonitor('shell.fleet_monitor', 'Server Group Monitor'),
   shellState('shell.state', 'State'),
   shellServersLive(
     'shell.servers_live',
-    '{live}/{total} servers live',
+    'Live servers: {live}/{total}',
     <String>{'live', 'total'},
   ),
   shellReadyForPairing('shell.ready_for_pairing', 'Ready for pairing'),
   shellRealtimeTelemetry('shell.realtime_telemetry', 'Realtime telemetry'),
   shellPairServer('shell.pair_server', 'Pair Server'),
   shellWorkspace('shell.workspace', 'Workspace'),
-  shellFleetControlPlane('shell.fleet_control_plane', 'Fleet control plane'),
+  shellFleetControlPlane(
+    'shell.fleet_control_plane',
+    'Server group control console',
+  ),
   shellNoServersConnected('shell.no_servers_connected', 'No servers connected'),
   shellFirstRunDescription(
     'shell.first_run_description',
     'React Web is standing by for authenticated telemetry. Pair a React server to bring TPS, memory, entity pressure, alerts, and optimization controls into this console.',
   ),
-  shellFleetSettings('shell.fleet_settings', 'Fleet Settings'),
+  shellFleetSettings('shell.fleet_settings', 'Server Group Settings'),
   shellPairedServers('shell.paired_servers', 'Paired servers'),
   shellSecurePairing('shell.secure_pairing', 'Secure pairing'),
   shellTelemetryStream('shell.telemetry_stream', 'Telemetry stream'),
@@ -957,7 +964,508 @@ enum ReactorText {
   shellConnectionDegraded('shell.connection_degraded', 'Connection degraded'),
   shellReconnect('shell.reconnect', 'Reconnect'),
   shellServerOffline('shell.server_offline', 'Server offline'),
-  shellServerReconnected('shell.server_reconnected', 'Server reconnected');
+  shellServerReconnected('shell.server_reconnected', 'Server reconnected'),
+  languageSelect('language.select', 'Select language'),
+  languageOpen('language.open', 'Open language menu — {language}', <String>{
+    'language',
+  }),
+  languageClose('language.close', 'Close language menu'),
+  languageLoadFailed(
+    'language.load_failed',
+    'The selected language could not be loaded.',
+  ),
+  commonRetry('common.retry', 'Retry'),
+  commonUnavailable('common.unavailable', 'Unavailable'),
+  commonActive('common.active', 'Active'),
+  commonServer('common.server', 'Server'),
+  commonState('common.state', 'State'),
+  commonAlerts('common.alerts', 'Alerts'),
+  commonLastSeen('common.last_seen', 'Last seen'),
+  commonOpenCount('common.open_count', 'Open: {count}', <String>{'count'}),
+  commonLinesCount('common.lines_count', 'Line count: {count}', <String>{
+    'count',
+  }),
+  commonLowValue('common.low_value', 'Low {value}', <String>{'value'}),
+  commonHighValue('common.high_value', 'High {value}', <String>{'value'}),
+  pressureNormal('pressure.normal', 'Normal'),
+  pressurePressure('pressure.pressure', 'Pressure'),
+  pressurePanic('pressure.panic', 'Panic'),
+  shellConnectionNoSnapshotRecovering(
+    'shell.connection.no_snapshot_recovering',
+    'No telemetry snapshot is available while the live channel recovers.',
+  ),
+  shellConnectionShowingSnapshotRecovering(
+    'shell.connection.showing_snapshot_recovering',
+    'Showing the latest received snapshot while the live channel recovers.',
+  ),
+  shellConnectionNoSnapshotRetrying(
+    'shell.connection.no_snapshot_retrying',
+    'No telemetry snapshot is available. React will retry automatically.',
+  ),
+  shellConnectionShowingSnapshotRetrying(
+    'shell.connection.showing_snapshot_retrying',
+    'Showing the most recent snapshot while React reconnects automatically.',
+  ),
+  shellNavMonitor('shell.nav.monitor', 'Monitor'),
+  shellNavRuntime('shell.nav.runtime', 'Runtime'),
+  shellNavAnalyze('shell.nav.analyze', 'Analyze'),
+  shellNavControl('shell.nav.control', 'Control'),
+  shellNavSystem('shell.nav.system', 'System'),
+  shellFleetServerNavigation(
+    'shell.a11y.fleet_server_navigation',
+    'Server group and individual-server navigation',
+  ),
+  shellOpenNavigation('shell.a11y.open_navigation', 'Open navigation'),
+  shellCloseNavigation('shell.a11y.close_navigation', 'Close navigation'),
+  shellOpenInspector('shell.a11y.open_inspector', 'Open inspector'),
+  shellCloseInspector('shell.a11y.close_inspector', 'Close inspector'),
+  shellCloseSidePanel('shell.a11y.close_side_panel', 'Close side panel'),
+  shellFleetInspector('shell.a11y.fleet_inspector', 'Server group inspector'),
+  shellServerInspector('shell.a11y.server_inspector', 'Server inspector'),
+  shellApplicationStatus('shell.a11y.application_status', 'Application status'),
+  shellServerWorkspaceNavigation(
+    'shell.a11y.server_workspace_navigation',
+    '{server} workspace navigation',
+    <String>{'server'},
+  ),
+  shellActiveServer('shell.inspector.active_server', 'Active server'),
+  shellConnection('shell.inspector.connection', 'Connection'),
+  shellLastSample('shell.inspector.last_sample', 'Last sample'),
+  shellActiveView('shell.inspector.active_view', 'Active view'),
+  shellArea('shell.inspector.area', 'Area'),
+  shellServerId('shell.inspector.server_id', 'Server ID'),
+  shellQuickTelemetry('shell.inspector.quick_telemetry', 'Quick telemetry'),
+  shellSnapshot('shell.inspector.snapshot', 'Snapshot'),
+  shellNeedsAttention('shell.inspector.needs_attention', 'Needs attention'),
+  shellReady('shell.ready', 'Ready'),
+  chartNoTimeSeriesData('chart.no_time_series_data', 'No time series data'),
+  chartTimeSeriesLabel(
+    'chart.time_series_label',
+    'Time series chart: {series}',
+    <String>{'series'},
+  ),
+  chartSample('chart.sample', 'Sample {number}', <String>{'number'}),
+  chartSampleValues(
+    'chart.sample_values',
+    'Sample {number}: {values}',
+    <String>{'number', 'values'},
+  ),
+  chartAwaitingSamples('chart.awaiting_samples', 'Awaiting samples'),
+  chartAwaitingSamplesDescription(
+    'chart.awaiting_samples_description',
+    'The chart will populate when the server publishes data.',
+  ),
+  chartShowSeries('chart.show_series', 'Show {series}', <String>{'series'}),
+  chartHideSeries('chart.hide_series', 'Hide {series}', <String>{'series'}),
+  heatmapNoScoredChunks(
+    'heatmap.no_scored_chunks',
+    'No scored chunks were returned for this heatmap.',
+  ),
+  heatmapChunkTitle('heatmap.chunk_title', 'Chunk {x}, {z} · {score}', <String>{
+    'x',
+    'z',
+    'score',
+  }),
+  heatmapChunkScore(
+    'heatmap.chunk_score',
+    'Chunk {x}, {z} score {score}',
+    <String>{'x', 'z', 'score'},
+  ),
+  snapshotWaitingFirst(
+    'snapshot.waiting_first',
+    'Waiting for the first telemetry snapshot',
+  ),
+  snapshotNone('snapshot.none', 'No telemetry snapshot'),
+  snapshotAfterRecovery(
+    'snapshot.after_recovery',
+    'This view will populate after the connection recovers and React publishes a snapshot.',
+  ),
+  snapshotAfterReconnect(
+    'snapshot.after_reconnect',
+    'This view will populate after React reconnects and publishes a snapshot.',
+  ),
+  snapshotUnavailable('snapshot.unavailable', 'Telemetry unavailable'),
+  snapshotConnectionRequired(
+    'snapshot.connection_required',
+    'This view requires a server connection.',
+  ),
+  paneResizeNavigation('pane.resize_navigation', 'Resize server navigation'),
+  paneResizeInspector('pane.resize_inspector', 'Resize server inspector'),
+  paneWidthPixels('pane.width_pixels', '{width} pixels', <String>{'width'}),
+  loadingWaitingLiveData('loading.waiting_live_data', 'Waiting for live data'),
+  actionsNoneAvailable('screen.actions.none_available', 'No actions available'),
+  actionsNoneAvailableDescription(
+    'screen.actions.none_available_description',
+    'React did not return any executable operations.',
+  ),
+  actionsHistoryEmptyDescription(
+    'screen.actions.history_empty_description',
+    'Executed operations and their tickets will appear here.',
+  ),
+  actionsUnavailable('screen.actions.unavailable', 'Actions unavailable'),
+  alertsNoMatches('screen.alerts.no_matches', 'No alerts match these filters'),
+  alertsAdjustFilters(
+    'screen.alerts.adjust_filters',
+    'Adjust severity or server scope to inspect other alerts.',
+  ),
+  alertsNoOpenConditions(
+    'screen.alerts.no_open_conditions',
+    'The server group has no open conditions requiring attention.',
+  ),
+  comparisonPairServers(
+    'screen.comparison.pair_servers',
+    'Pair servers to compare telemetry.',
+  ),
+  comparisonSelectedCount(
+    'screen.comparison.selected_count',
+    'Selected: {selected}/{total}',
+    <String>{'selected', 'total'},
+  ),
+  comparisonUnavailableCount(
+    'screen.comparison.unavailable_count',
+    'Unavailable: {count}',
+    <String>{'count'},
+  ),
+  comparisonSelectionWithUnavailable(
+    'screen.comparison.selection_with_unavailable',
+    'Selected: {selected}/{total} · Unavailable excluded: {unavailable}',
+    <String>{'selected', 'total', 'unavailable'},
+  ),
+  comparisonNoServers('screen.comparison.no_servers', 'No servers available'),
+  comparisonNoneSelected(
+    'screen.comparison.none_selected',
+    'No servers selected',
+  ),
+  comparisonPairOne(
+    'screen.comparison.pair_one',
+    'Pair at least one server to open the comparison workspace.',
+  ),
+  comparisonSelectServers(
+    'screen.comparison.select_servers',
+    'Select one or more servers from the toolbar above.',
+  ),
+  comparisonOfflineOrWaiting(
+    'screen.comparison.offline_or_waiting',
+    'Selected servers are offline or awaiting current telemetry.',
+  ),
+  comparisonMetricMissing(
+    'screen.comparison.metric_missing',
+    'The selected metric has not published comparable samples.',
+  ),
+  comparisonNoSampledMetrics(
+    'screen.comparison.no_sampled_metrics',
+    'No sampled metrics',
+  ),
+  comparisonMetricUnavailable(
+    'screen.comparison.metric_unavailable',
+    '{metric} (unavailable)',
+    <String>{'metric'},
+  ),
+  comparisonServerOffline(
+    'screen.comparison.server_offline',
+    '{server} · Offline (excluded)',
+    <String>{'server'},
+  ),
+  comparisonServerConnecting(
+    'screen.comparison.server_connecting',
+    '{server} · Connecting (excluded)',
+    <String>{'server'},
+  ),
+  comparisonServerDegradedEmpty(
+    'screen.comparison.server_degraded_empty',
+    '{server} · Degraded (no telemetry)',
+    <String>{'server'},
+  ),
+  comparisonServerDegradedCached(
+    'screen.comparison.server_degraded_cached',
+    '{server} · Degraded (last received)',
+    <String>{'server'},
+  ),
+  comparisonServerAwaiting(
+    'screen.comparison.server_awaiting',
+    '{server} · Awaiting telemetry (excluded)',
+    <String>{'server'},
+  ),
+  configLiveRequired(
+    'screen.config_editor.changes_live_required',
+    'Changes require a live server connection.',
+  ),
+  configApplyingShort('screen.config_editor.applying_short', 'Applying…'),
+  configNoSections(
+    'screen.config_editor.no_sections',
+    'No configuration sections',
+  ),
+  configNoSectionsDescription(
+    'screen.config_editor.no_sections_description',
+    'React returned an empty configuration tree.',
+  ),
+  configUnavailable(
+    'screen.config_editor.unavailable',
+    'Configuration unavailable',
+  ),
+  configReload('screen.config_editor.reload', 'Reload'),
+  configApplying('screen.config_editor.applying', 'Applying configuration'),
+  configApplyingDescription(
+    'screen.config_editor.applying_description',
+    'Waiting for React to confirm the updated values.',
+  ),
+  environmentNoValues('screen.environment.no_values', 'No values reported'),
+  environmentEmptySection(
+    'screen.environment.empty_section',
+    'This diagnostic section is empty.',
+  ),
+  environmentUnavailable(
+    'screen.environment.unavailable',
+    'Environment diagnostics unavailable',
+  ),
+  environmentNoRuntimeData(
+    'screen.environment.no_runtime_data',
+    'React returned no host or runtime diagnostics.',
+  ),
+  environmentRefreshFailed(
+    'screen.environment.refresh_failed',
+    'Diagnostic refresh failed',
+  ),
+  environmentRefreshing(
+    'screen.environment.refreshing',
+    'Refreshing diagnostics',
+  ),
+  environmentRefreshingDescription(
+    'screen.environment.refreshing_description',
+    'Keeping the previous values visible until React replies.',
+  ),
+  fleetNoFilterMatches(
+    'screen.fleet.no_filter_matches',
+    'No servers match this filter',
+  ),
+  fleetChooseAnotherTag(
+    'screen.fleet.choose_another_tag',
+    'Choose another tag to restore the combined server overview.',
+  ),
+  fleetNoMatchingServers(
+    'screen.fleet.no_matching_servers',
+    'No matching servers',
+  ),
+  fleetFilterEmpty(
+    'screen.fleet.filter_empty',
+    'The selected server-group filter returned no servers.',
+  ),
+  fleetNoServersInScope(
+    'screen.fleet.no_servers_in_scope',
+    'No servers in scope',
+  ),
+  fleetChooseAnotherFilter(
+    'screen.fleet.choose_another_filter',
+    'Choose another filter to inspect server-group health.',
+  ),
+  fleetNoHealthConditions(
+    'screen.fleet.no_health_conditions',
+    'No open health conditions require operator attention.',
+  ),
+  fleetAwaitingTelemetry(
+    'screen.fleet.awaiting_telemetry',
+    'Awaiting telemetry',
+  ),
+  fleetDegradedAwaiting(
+    'screen.fleet.degraded_awaiting',
+    'Degraded · awaiting telemetry',
+  ),
+  governorsRuntimePressure(
+    'screen.governors.runtime_pressure',
+    'Runtime pressure',
+  ),
+  governorsNoneAvailable(
+    'screen.governors.none_available',
+    'No governors available',
+  ),
+  governorsNoneAvailableDescription(
+    'screen.governors.none_available_description',
+    'React did not return any adaptive governor features.',
+  ),
+  governorsLoadingState(
+    'screen.governors.loading_state',
+    'Loading governor state',
+  ),
+  governorsUnavailable(
+    'screen.governors.unavailable',
+    'Governor controls unavailable',
+  ),
+  heatmapsNoSpatialMetrics(
+    'screen.heatmaps.no_spatial_metrics',
+    'No spatial metrics',
+  ),
+  heatmapsNoSpatialMetricsDescription(
+    'screen.heatmaps.no_spatial_metrics_description',
+    'This snapshot contains no spatial sampler output.',
+  ),
+  heatmapsEndpointUnavailable(
+    'screen.heatmaps.endpoint_unavailable',
+    'Heatmap endpoint unavailable',
+  ),
+  heatmapsRequestFailed(
+    'screen.heatmaps.request_failed',
+    'Heatmap request failed',
+  ),
+  heatmapsNoChunkHeatmaps(
+    'screen.heatmaps.no_chunk_heatmaps',
+    'No chunk heatmaps',
+  ),
+  heatmapsNoChunkHeatmapsDescription(
+    'screen.heatmaps.no_chunk_heatmaps_description',
+    'React did not publish any chunk heatmap grids.',
+  ),
+  incidentCurrentState('screen.incident_center.current_state', 'Current state'),
+  incidentNoEvents('screen.incident_center.no_events', 'No incident events'),
+  incidentNoEventsDescription(
+    'screen.incident_center.no_events_description',
+    'React has not recorded an incident timeline.',
+  ),
+  incidentNoFactors(
+    'screen.incident_center.no_factors',
+    'No contributing factors',
+  ),
+  incidentNoFactorsDescription(
+    'screen.incident_center.no_factors_description',
+    'React did not attribute the current incident score.',
+  ),
+  incidentUnavailable(
+    'screen.incident_center.unavailable',
+    'Incident status unavailable',
+  ),
+  incidentRequestFailed(
+    'screen.incident_center.request_failed',
+    'Incident request failed',
+  ),
+  incidentNoStatus('screen.incident_center.no_status', 'No incident status'),
+  incidentNoStatusDescription(
+    'screen.incident_center.no_status_description',
+    'React returned no current incident record.',
+  ),
+  incidentRefreshFailed(
+    'screen.incident_center.refresh_failed',
+    'Incident refresh failed',
+  ),
+  logsAllLevels('screen.logs.all_levels', 'All levels'),
+  logsOutputPaused('screen.logs.output_paused', 'Output paused'),
+  logsStreamCount(
+    'screen.logs.stream_count',
+    'Stream line count: {count}',
+    <String>{'count'},
+  ),
+  logsNoLines('screen.logs.no_lines', 'No log lines'),
+  logsNoLinesDescription(
+    'screen.logs.no_lines_description',
+    'New matching entries will appear here as React streams them.',
+  ),
+  logsOpening('screen.logs.opening', 'Opening the log stream…'),
+  logsUnavailable('screen.logs.unavailable', 'Logs unavailable'),
+  logsLoadingHistory(
+    'screen.logs.loading_history',
+    'Loading recent log lines…',
+  ),
+  logsStreamUnavailable(
+    'screen.logs.stream_unavailable',
+    'Log stream unavailable',
+  ),
+  logsRefreshFailed('screen.logs.refresh_failed', 'Log refresh failed'),
+  logsRefreshingHistory(
+    'screen.logs.refreshing_history',
+    'Refreshing log history',
+  ),
+  logsRefreshingHistoryDescription(
+    'screen.logs.refreshing_history_description',
+    'Existing streamed lines remain visible during refresh.',
+  ),
+  logsCommandDisabled(
+    'screen.logs.command_disabled',
+    'Command execution is disabled until the connection is live.',
+  ),
+  metricsNonePublished('screen.metrics.none_published', 'No metrics published'),
+  metricsNonePublishedDescription(
+    'screen.metrics.none_published_description',
+    'This server snapshot contains no sampler values.',
+  ),
+  metricsTryDifferentFilter(
+    'screen.metrics.try_different_filter',
+    'Try a different sampler name, id, or unit.',
+  ),
+  optimizationNoneAvailable(
+    'screen.optimization.none_available',
+    'No optimization features',
+  ),
+  optimizationNoneAvailableDescription(
+    'screen.optimization.none_available_description',
+    'React did not return any configurable features.',
+  ),
+  optimizationUnavailable(
+    'screen.optimization.unavailable',
+    'Optimization unavailable',
+  ),
+  settingsRoleEndpointUnavailable(
+    'screen.settings.role_endpoint_unavailable',
+    'Role endpoint unavailable',
+  ),
+  settingsEffectiveAccess(
+    'screen.settings.effective_access',
+    'Effective access for each saved connection.',
+  ),
+  settingsPairForRole(
+    'screen.settings.pair_for_role',
+    'Pair a server to inspect its account role.',
+  ),
+  settingsLoadingRoles('screen.settings.loading_roles', 'Loading roles…'),
+  settingsSomeRolesUnavailable(
+    'screen.settings.some_roles_unavailable',
+    'Some roles are unavailable',
+  ),
+  settingsRoleLookupFailed(
+    'screen.settings.role_lookup_failed',
+    'Role lookup failed for {servers}.',
+    <String>{'servers'},
+  ),
+  settingsThresholdDescription(
+    'screen.settings.threshold_description',
+    'Warning and critical boundaries for the entire server group.',
+  ),
+  settingsSavedConnectionsCount(
+    'screen.settings.saved_connections_count',
+    'Saved connection count: {count}',
+    <String>{'count'},
+  ),
+  settingsWaitingForFile(
+    'screen.settings.waiting_for_file',
+    'Waiting for connection file…',
+  ),
+  settingsPairToManage(
+    'screen.settings.pair_to_manage',
+    'Pair a server to manage its label, tags, and credentials.',
+  ),
+  settingsTags('screen.settings.tags', 'Tags'),
+  settingsNoTags('screen.settings.no_tags', 'No tags'),
+  settingsRemoveTag('screen.settings.remove_tag', 'Remove tag {tag}', <String>{
+    'tag',
+  }),
+  settingsRelayConnection(
+    'screen.settings.relay_connection',
+    'Relay connection',
+  ),
+  tweaksNoneAvailable('screen.tweaks.none_available', 'No tweaks available'),
+  tweaksNoneAvailableDescription(
+    'screen.tweaks.none_available_description',
+    'React did not return any runtime tweaks.',
+  ),
+  tweaksUnavailable('screen.tweaks.unavailable', 'Tweaks unavailable'),
+  worldOverridesUnavailable(
+    'screen.world_overrides.unavailable',
+    'World overrides unavailable',
+  ),
+  errorAuthentication('error.authentication', 'Authentication failed.'),
+  errorUnavailable('error.unavailable', 'The React server is unavailable.'),
+  errorBadRequest('error.bad_request', 'The request was not accepted.'),
+  errorForbidden('error.forbidden', 'This account does not have access.'),
+  errorNotFound('error.not_found', 'The requested resource was not found.'),
+  errorConflict('error.conflict', 'The request conflicts with server state.'),
+  errorUnexpected('error.unexpected', 'An unexpected error occurred.');
 
   final String id;
   final String english;
@@ -1025,9 +1533,20 @@ final class ReactorLocalizations {
   }
 
   ReactorOverlayResult installOverlayJson(String source) {
+    return _installJson(source, requireComplete: false);
+  }
+
+  ReactorOverlayResult installCompleteCatalogJson(String source) {
+    return _installJson(source, requireComplete: true);
+  }
+
+  ReactorOverlayResult _installJson(
+    String source, {
+    required bool requireComplete,
+  }) {
     try {
       final Object? decoded = jsonDecode(source);
-      if (decoded is! Map<String, dynamic>) {
+      if (decoded is! Map<String, Object?>) {
         return const ReactorOverlayResult.rejected(
           'Localization overlay must be a JSON object.',
         );
@@ -1041,11 +1560,16 @@ final class ReactorLocalizations {
           'Localization key IDs must be unique.',
         );
       }
+      if (requireComplete && decoded.keys.toSet().length != keysById.length) {
+        return const ReactorOverlayResult.rejected(
+          'A locale catalog must define every localization key.',
+        );
+      }
 
       final Map<ReactorText, String> messages = <ReactorText, String>{
         for (final ReactorText key in ReactorText.values) key: key.english,
       };
-      for (final MapEntry<String, dynamic> entry in decoded.entries) {
+      for (final MapEntry<String, Object?> entry in decoded.entries) {
         final ReactorText? key = keysById[entry.key];
         if (key == null) {
           return ReactorOverlayResult.rejected(
@@ -1112,6 +1636,9 @@ final class ReactorLocalizations {
   }
 
   static String? _validateTemplate(ReactorText key, String template) {
+    if (template.trim().isEmpty) {
+      return 'Localization key ${key.id} must not be empty.';
+    }
     final Set<String> found = _extractPlaceholders(template);
     if (!_sameNames(found, key.placeholders)) {
       return 'Localization key ${key.id} must use placeholders '

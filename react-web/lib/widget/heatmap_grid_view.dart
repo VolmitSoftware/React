@@ -5,6 +5,7 @@ import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart' show Component;
 
 import '../model/heatmap.dart';
+import '../localization/reactor_locale.dart';
 import '../localization/reactor_localizations.dart';
 import '../ui/reactor_ui.dart';
 
@@ -22,6 +23,7 @@ class HeatmapGridView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     final Widget header = dom.div(classes: 'reactor-heatmap-header', <Widget>[
       dom.div(classes: 'reactor-heatmap-heading', <Widget>[
         reactorEyebrow(grid.label),
@@ -40,7 +42,7 @@ class HeatmapGridView extends StatelessWidget {
         header,
         ReactorEmptyState(
           title: reactorText(ReactorText.commonNoActivity),
-          description: 'No scored chunks were returned for this heatmap.',
+          description: reactorText(ReactorText.heatmapNoScoredChunks),
           icon: ArcaneIcon.grid3x3(size: IconSize.sm),
         ),
       ]);
@@ -83,10 +85,22 @@ class HeatmapGridView extends StatelessWidget {
                 'data-cx': chunkX.toString(),
                 'data-cz': chunkZ.toString(),
                 'data-score': cell.score.toString(),
-                'title':
-                    'Chunk $chunkX, $chunkZ · ${cell.score.toStringAsFixed(2)}',
-                'aria-label':
-                    'Chunk $chunkX, $chunkZ score ${cell.score.toStringAsFixed(2)}',
+                'title': reactorText(
+                  ReactorText.heatmapChunkTitle,
+                  <String, Object?>{
+                    'x': chunkX,
+                    'z': chunkZ,
+                    'score': cell.score.toStringAsFixed(2),
+                  },
+                ),
+                'aria-label': reactorText(
+                  ReactorText.heatmapChunkScore,
+                  <String, Object?>{
+                    'x': chunkX,
+                    'z': chunkZ,
+                    'score': cell.score.toStringAsFixed(2),
+                  },
+                ),
               },
               const <Widget>[],
             ),
@@ -104,8 +118,20 @@ class HeatmapGridView extends StatelessWidget {
     );
 
     final Widget legend = dom.div(classes: 'reactor-heatmap-legend', <Widget>[
-      dom.span(<Widget>[Component.text('Low ${grid.min.toStringAsFixed(2)}')]),
-      dom.span(<Widget>[Component.text('High ${grid.max.toStringAsFixed(2)}')]),
+      dom.span(<Widget>[
+        Component.text(
+          reactorText(ReactorText.commonLowValue, <String, Object?>{
+            'value': grid.min.toStringAsFixed(2),
+          }),
+        ),
+      ]),
+      dom.span(<Widget>[
+        Component.text(
+          reactorText(ReactorText.commonHighValue, <String, Object?>{
+            'value': grid.max.toStringAsFixed(2),
+          }),
+        ),
+      ]),
     ]);
 
     return dom.section(classes: 'reactor-heatmap-view', <Widget>[

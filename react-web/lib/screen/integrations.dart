@@ -3,6 +3,7 @@ library;
 import 'package:arcane_jaspr/arcane_jaspr.dart';
 
 import '../chart/timeseries_chart.dart';
+import '../localization/reactor_locale.dart';
 import '../localization/reactor_localizations.dart';
 import '../model/sampler_sample.dart';
 import '../model/server_snapshot.dart';
@@ -48,6 +49,7 @@ class IntegrationsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     final ServerScope? scope = ServerScope.of(context);
     final ServerSnapshot? snapshot = scope?.snapshot;
     final Widget? statePage = serverSnapshotStatePage(
@@ -101,6 +103,7 @@ class _AdaptSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     final List<Widget> tiles = <Widget>[];
     for (final String id in _kAdaptIds) {
       final SamplerSample? s = snapshot.sampler(id);
@@ -139,6 +142,7 @@ class _IrisSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     final List<Widget> tiles = <Widget>[];
     for (final String id in _kIrisIds) {
       final SamplerSample? s = snapshot.sampler(id);
@@ -175,6 +179,7 @@ class _WormholesSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     final List<Widget> tiles = <Widget>[];
     for (final String id in _kWormholesIds) {
       final SamplerSample? s = snapshot.sampler(id);

@@ -7,6 +7,7 @@ import 'dart:io';
 import 'package:jaspr_test/server_test.dart';
 
 import 'package:react_web/localization/reactor_localizations.dart';
+import 'package:react_web/localization/reactor_overlay_loader.dart';
 
 void main() {
   group('ReactorLocalizations', () {
@@ -39,13 +40,32 @@ void main() {
       final Set<String> expectedKeys = ReactorText.values
           .map((ReactorText key) => key.id)
           .toSet();
-      for (final String locale in reactorNonEnglishLocales) {
+      for (final String locale in reactorSupportedLocales) {
         final File file = File('web/languages/$locale.json');
         expect(file.existsSync(), isTrue, reason: locale);
         final Object? decoded = jsonDecode(file.readAsStringSync());
-        expect(decoded, isA<Map<String, dynamic>>(), reason: locale);
-        final Map<String, dynamic> messages = decoded! as Map<String, dynamic>;
+        expect(decoded, isA<Map<String, Object?>>(), reason: locale);
+        final Map<String, Object?> messages = decoded! as Map<String, Object?>;
         expect(messages.keys.toSet(), equals(expectedKeys), reason: locale);
+        final List<String> terminology = _highRiskTerminology[locale]!;
+        for (int index = 0; index < _highRiskKeys.length; index++) {
+          expect(
+            messages[_highRiskKeys[index]],
+            terminology[index],
+            reason:
+                '$locale: contextual terminology for ${_highRiskKeys[index]}',
+          );
+        }
+        final Map<String, String> forbiddenTranslations =
+            _forbiddenContextTranslations[locale] ?? <String, String>{};
+        for (final MapEntry<String, String> entry
+            in forbiddenTranslations.entries) {
+          expect(
+            messages[entry.key],
+            isNot(entry.value),
+            reason: '$locale: false friend in ${entry.key}',
+          );
+        }
 
         final ReactorLocalizations localizations = ReactorLocalizations();
         final ReactorOverlayResult result = localizations.installOverlayJson(
@@ -107,18 +127,36 @@ void main() {
           );
           if (translated != key.english) {
             changed++;
+          } else if (locale != reactorEnglishLocale) {
+            expect(
+              _englishInvariantKeys.contains(key.id) ||
+                  (_localeEnglishInvariantKeys[locale]?.contains(key.id) ??
+                      false),
+              isTrue,
+              reason: '$locale: untranslated natural-language key ${key.id}',
+            );
           }
         }
-        expect(
-          changed,
-          greaterThanOrEqualTo(ReactorText.values.length * 3 ~/ 4),
-          reason: '$locale is mostly English',
-        );
+        if (locale == reactorEnglishLocale) {
+          expect(changed, 0, reason: 'English must remain the source template');
+        } else {
+          expect(
+            changed,
+            greaterThanOrEqualTo(ReactorText.values.length * 3 ~/ 4),
+            reason: '$locale is mostly English',
+          );
+        }
       }
     });
 
     test('code-first English definitions are valid', () {
       expect(ReactorLocalizations.validateDefinitions(), isNull);
+    });
+
+    test('deployment overlay only applies to its configured locale', () {
+      expect(usesConfiguredReactorOverride('de_DE', 'de-DE'), isTrue);
+      expect(usesConfiguredReactorOverride('fr_FR', 'de_DE'), isFalse);
+      expect(usesConfiguredReactorOverride('en_US', 'invalid'), isFalse);
     });
 
     test('applies a partial JSON overlay', () {
@@ -134,6 +172,45 @@ void main() {
         localizations.text(ReactorText.appDescription),
         equals('Local-first React server monitoring and control'),
       );
+    });
+
+    test('complete catalogs reject partial input atomically', () {
+      final ReactorLocalizations localizations = ReactorLocalizations();
+      expect(
+        localizations.installOverlayJson('{"app.title":"Reaktor"}').applied,
+        isTrue,
+      );
+
+      final ReactorOverlayResult rejected = localizations
+          .installCompleteCatalogJson('{"app.title":"React Web français"}');
+
+      expect(rejected.applied, isFalse);
+      expect(rejected.error, contains('every localization key'));
+      expect(localizations.text(ReactorText.appTitle), equals('Reaktor'));
+    });
+
+    test('rejects blank overlay and complete-catalog values atomically', () {
+      final ReactorLocalizations localizations = ReactorLocalizations();
+      expect(
+        localizations.installOverlayJson('{"app.title":"Reaktor"}').applied,
+        isTrue,
+      );
+
+      final ReactorOverlayResult blankOverlay = localizations
+          .installOverlayJson('{"app.title":"  \\n\\t"}');
+      expect(blankOverlay.applied, isFalse);
+      expect(blankOverlay.error, contains('must not be empty'));
+      expect(localizations.text(ReactorText.appTitle), equals('Reaktor'));
+
+      final Map<String, String> complete = <String, String>{
+        for (final ReactorText key in ReactorText.values) key.id: key.english,
+      };
+      complete[ReactorText.appDescription.id] = ' \n\t ';
+      final ReactorOverlayResult blankCatalog = localizations
+          .installCompleteCatalogJson(jsonEncode(complete));
+      expect(blankCatalog.applied, isFalse);
+      expect(blankCatalog.error, contains('must not be empty'));
+      expect(localizations.text(ReactorText.appTitle), equals('Reaktor'));
     });
 
     test('keeps the last good snapshot after invalid JSON', () {
@@ -269,9 +346,392 @@ void main() {
   });
 }
 
+const List<String> _highRiskKeys = <String>[
+  "status.live",
+  "shell.state",
+  "shell.fleet_control_plane",
+  "screen.fleet.title",
+  "screen.internals.jobs",
+  "screen.worlds.title",
+  "common.players",
+  "common.entities",
+  "common.chunks",
+  "common.hoppers",
+  "screen.governors.title",
+  "screen.metrics.sampler",
+];
+const Map<String, List<String>> _highRiskTerminology = <String, List<String>>{
+  "en_US": <String>[
+    "Live",
+    "State",
+    "Server group control console",
+    "Server group",
+    "Jobs",
+    "Worlds",
+    "Players",
+    "Entities",
+    "Chunks",
+    "Hoppers",
+    "Governors",
+    "Sampler",
+  ],
+  "de_DE": <String>[
+    "Online",
+    "Status",
+    "Servergruppen-Leitstand",
+    "Servergruppe",
+    "Hintergrundaufgaben",
+    "Welten",
+    "Spieler",
+    "Entitäten",
+    "Chunks",
+    "Trichter",
+    "Lastregler",
+    "Messwertquelle",
+  ],
+  "es_ES": <String>[
+    "En línea",
+    "Estado",
+    "Consola de control del grupo de servidores",
+    "Grupo de servidores",
+    "Tareas en segundo plano",
+    "Mundos",
+    "Jugadores",
+    "Entidades",
+    "Chunks",
+    "Tolvas",
+    "Reguladores de carga",
+    "Muestreador",
+  ],
+  "fi_FI": <String>[
+    "Verkossa",
+    "Tila",
+    "Palvelinryhmän hallintakonsoli",
+    "Palvelinryhmä",
+    "Taustatehtävät",
+    "Maailmat",
+    "Pelaajat",
+    "Entiteetit",
+    "Lohkot",
+    "Suppilot",
+    "Kuormansäätimet",
+    "Mittauslähde",
+  ],
+  "fr_FR": <String>[
+    "En ligne",
+    "État",
+    "Console de contrôle du groupe de serveurs",
+    "Groupe de serveurs",
+    "Tâches en arrière-plan",
+    "Mondes",
+    "Joueurs",
+    "Entités",
+    "Chunks",
+    "Entonnoirs",
+    "Régulateurs de charge",
+    "Échantillonneur",
+  ],
+  "he_IL": <String>[
+    "מקוון",
+    "מצב",
+    "מסוף בקרת קבוצת השרתים",
+    "קבוצת שרתים",
+    "משימות רקע",
+    "עולמות",
+    "שחקנים",
+    "ישויות",
+    "חלקי עולם",
+    "משפכים",
+    "וסתי עומס",
+    "דוגם",
+  ],
+  "it_IT": <String>[
+    "Online",
+    "Stato",
+    "Console di controllo del gruppo di server",
+    "Gruppo di server",
+    "Attività in background",
+    "Mondi",
+    "Giocatori",
+    "Entità",
+    "Chunk",
+    "Tramogge",
+    "Regolatori di carico",
+    "Campionatore",
+  ],
+  "ja-JP": <String>[
+    "オンライン",
+    "状態",
+    "サーバー群管理コンソール",
+    "サーバー群",
+    "バックグラウンドタスク",
+    "ワールド",
+    "プレイヤー",
+    "エンティティ",
+    "チャンク",
+    "ホッパー",
+    "負荷ガバナー",
+    "サンプラー",
+  ],
+  "ko_KR": <String>[
+    "온라인",
+    "상태",
+    "서버군 제어 콘솔",
+    "서버군",
+    "백그라운드 작업",
+    "세계",
+    "플레이어",
+    "엔티티",
+    "청크",
+    "호퍼",
+    "부하 조절기",
+    "샘플러",
+  ],
+  "lt_LT": <String>[
+    "Veikia",
+    "Būsena",
+    "Serverių grupės valdymo pultas",
+    "Serverių grupė",
+    "Foninės užduotys",
+    "Pasauliai",
+    "Žaidėjai",
+    "Esybės",
+    "Pasaulio dalys",
+    "Piltuvai",
+    "Apkrovos reguliatoriai",
+    "Matuoklis",
+  ],
+  "nl_NL": <String>[
+    "Online",
+    "Status",
+    "Beheerconsole voor de servergroep",
+    "Servergroep",
+    "Achtergrondtaken",
+    "Werelden",
+    "Spelers",
+    "Entiteiten",
+    "Chunks",
+    "Trechters",
+    "Belastingsregelaars",
+    "Meetbron",
+  ],
+  "pl_PL": <String>[
+    "Online",
+    "Stan",
+    "Konsola zarządzania grupą serwerów",
+    "Grupa serwerów",
+    "Zadania w tle",
+    "Światy",
+    "Gracze",
+    "Byty",
+    "Chunki",
+    "Leje",
+    "Regulatory obciążenia",
+    "Próbnik",
+  ],
+  "pt_PT": <String>[
+    "Online",
+    "Estado",
+    "Consola de controlo do grupo de servidores",
+    "Grupo de servidores",
+    "Tarefas em segundo plano",
+    "Mundos",
+    "Jogadores",
+    "Entidades",
+    "Chunks",
+    "Funis",
+    "Reguladores de carga",
+    "Amostrador",
+  ],
+  "ru_RU": <String>[
+    "В сети",
+    "Состояние",
+    "Консоль управления группой серверов",
+    "Группа серверов",
+    "Фоновые задачи",
+    "Миры",
+    "Игроки",
+    "Сущности",
+    "Чанки",
+    "Воронки",
+    "Регуляторы нагрузки",
+    "Сэмплер",
+  ],
+  "tr_TR": <String>[
+    "Çevrimiçi",
+    "Durum",
+    "Sunucu grubu kontrol paneli",
+    "Sunucu grubu",
+    "Arka plan görevleri",
+    "Dünyalar",
+    "Oyuncular",
+    "Varlıklar",
+    "Chunk'lar",
+    "Huniler",
+    "Yük regülatörleri",
+    "Örnekleyici",
+  ],
+  "vi_VI": <String>[
+    "Trực tuyến",
+    "Trạng thái",
+    "Bảng điều khiển cụm máy chủ",
+    "Cụm máy chủ",
+    "Tác vụ nền",
+    "Thế giới",
+    "Người chơi",
+    "Thực thể",
+    "Chunk",
+    "Phễu",
+    "Bộ điều chỉnh tải",
+    "Bộ lấy mẫu",
+  ],
+  "zh_CN": <String>[
+    "在线",
+    "状态",
+    "服务器集群控制台",
+    "服务器集群",
+    "后台任务",
+    "世界",
+    "玩家",
+    "实体",
+    "区块",
+    "漏斗",
+    "负载调节器",
+    "采样器",
+  ],
+  "zh_TW": <String>[
+    "線上",
+    "狀態",
+    "伺服器叢集控制台",
+    "伺服器叢集",
+    "背景任務",
+    "世界",
+    "玩家",
+    "實體",
+    "區塊",
+    "漏斗",
+    "負載調節器",
+    "採樣器",
+  ],
+};
+
+const Map<String, Map<String, String>> _forbiddenContextTranslations =
+    <String, Map<String, String>>{
+      'de_DE': <String, String>{
+        'screen.actions.recent_executions': 'Aktuelle Hinrichtungen',
+        'shell.a11y.application_status': 'Bewerbungsstatus',
+        'screen.config_editor.applying_short': 'Bewerben…',
+        'shell.inspector.last_sample': 'Letzte Probe',
+        'chart.awaiting_samples': 'Warten auf Proben',
+      },
+      'es_ES': <String, String>{
+        'shell.a11y.application_status': 'Estado de la solicitud',
+        'screen.environment.title': 'Medio ambiente',
+      },
+      'fi_FI': <String, String>{
+        'screen.actions.recent_executions': 'Viimeaikaiset teloitukset',
+        'screen.config_editor.applying_short': 'Haetaan…',
+        'shell.inspector.last_sample': 'Viimeinen näyte',
+      },
+      'fr_FR': <String, String>{
+        'shell.a11y.application_status': 'Statut de la demande',
+        'screen.config_editor.applying_short': 'Candidature…',
+      },
+      'he_IL': <String, String>{
+        'screen.actions.recent_executions': 'הוצאות להורג אחרונות',
+        'shell.a11y.application_status': 'סטטוס הבקשה',
+        'screen.config_editor.applying_short': 'מגיש בקשה...',
+      },
+      'it_IT': <String, String>{
+        'shell.a11y.application_status': 'Stato della domanda',
+        'screen.comparison.metric': 'Metrico',
+      },
+      'ja-JP': <String, String>{
+        'screen.actions.recent_executions': '最近の執行',
+        'shell.a11y.application_status': '申請状況',
+        'screen.config_editor.applying_short': '申請中…',
+      },
+      'ko_KR': <String, String>{
+        'screen.actions.recent_executions': '최근 처형',
+        'shell.a11y.application_status': '신청현황',
+        'screen.config_editor.applying_short': '신청 중…',
+      },
+      'lt_LT': <String, String>{
+        'screen.performance.title': 'Spektaklis',
+        'screen.logs.title': 'Rąstai',
+        'screen.actions.recent_executions': 'Naujausi egzekucijos',
+        'shell.a11y.application_status': 'Paraiškos būsena',
+      },
+      'nl_NL': <String, String>{
+        'shell.inspector.last_sample': 'Laatste monster',
+        'chart.awaiting_samples': 'In afwachting van monsters',
+        'screen.comparison.metric': 'Metrisch',
+      },
+      'pl_PL': <String, String>{
+        'screen.actions.recent_executions': 'Ostatnie egzekucje',
+        'screen.comparison.metric': 'Metryczne',
+      },
+      'ru_RU': <String, String>{
+        'screen.actions.recent_executions': 'Недавние казни',
+        'shell.a11y.application_status': 'Статус заявки',
+        'screen.environment.title': 'Окружающая среда',
+      },
+      'tr_TR': <String, String>{
+        'config.no_tunable_knobs': 'Bu öğenin ayarlanabilir düğmeleri yoktur.',
+        'screen.actions.recent_executions': 'Son İnfazlar',
+        'shell.a11y.application_status': 'Başvuru durumu',
+        'screen.config_editor.applying_short': 'Başvuruluyor…',
+      },
+      'vi_VI': <String, String>{
+        'config.no_tunable_knobs': 'Mục này không có nút điều chỉnh.',
+        'alert.memory_pressure': 'Áp lực trí nhớ',
+        'shell.a11y.application_status': 'Trạng thái đơn đăng ký',
+      },
+      'zh_CN': <String, String>{
+        'config.no_tunable_knobs': '该产品没有可调旋钮。',
+        'screen.actions.recent_executions': '最近的处决',
+        'shell.a11y.application_status': '申请状态',
+        'screen.config_editor.applying_short': '正在申请…',
+        'screen.logs.console.dispatched': '指挥部出动',
+        'screen.comparison.metric': '公制',
+        'screen.add_server.direct_host': '直接主办',
+        'shell.inspector.last_sample': '最后一个样品',
+        'chart.awaiting_samples': '等待样品',
+      },
+      'zh_TW': <String, String>{
+        'config.no_tunable_knobs': '該產品沒有可調旋鈕。',
+        'screen.actions.recent_executions': '最近的處決',
+        'shell.a11y.application_status': '申請狀態',
+        'screen.config_editor.applying_short': '正在申請…',
+        'screen.logs.console.dispatched': '指揮部出動',
+        'screen.comparison.metric': '公制',
+        'screen.add_server.direct_host': '直接主辦',
+        'shell.inspector.last_sample': '最後一個樣品',
+        'chart.awaiting_samples': '等待樣品',
+      },
+    };
+
 final RegExp _protocolToken = RegExp(
   r'''(?:<=|>=|==|!=|<|>)\s*-?\d+(?:\.\d+)?|\{[a-z][a-zA-Z0-9_]*\}|<[^>\n]+>|\b(?:https?|[a-z][a-z0-9+.-]*)://\S+|\[(?:SKIP|PASS|FAIL|INFO|WARN)\]|\[customCommands\.day\]|\["value-a", "value-b"\]|/give\s+<item>\s+<amount>|/re\s+map|/(?:react|reload|give|more|gms|gmc|gmsp|rl)\b|\b(?:lazy-gravity|nms-bridge|nms-hooks|crop-fast-forward)\b|\b[A-Za-z][A-Za-z0-9_]*[a-z][A-Z][A-Za-z0-9_]*\b|\b[A-Za-z][A-Za-z0-9_]*\s*=\s*(?:"[^"\n]*"|'[^'\n]*'|true|false|-?\d+(?:\.\d+)?)|\bNORMAL/PRESSURE/PANIC\b|\btrue/false\b|\b(?:sample|reset)\(\)''',
 );
+const Set<String> _englishInvariantKeys = <String>{
+  'app.title',
+  'alert.critical_description',
+  'common.chunks',
+  'common.redstone',
+  'heatmap.chunk_title',
+  'screen.actions.execution_summary',
+  'screen.chunks.title',
+  'screen.overview.tps',
+};
+const Map<String, Set<String>> _localeEnglishInvariantKeys =
+    <String, Set<String>>{
+      'es_ES': <String>{'screen.events.listeners'},
+      'nl_NL': <String>{'screen.events.listeners'},
+      'pt_PT': <String>{'screen.events.listeners'},
+      'zh_CN': <String>{'common.ping_p95'},
+      'zh_TW': <String>{'common.ping_p95'},
+    };
 final RegExp _wordSeparator = RegExp(
   r'[^A-Za-z0-9_\u00C0-\uFFFF]+',
   unicode: true,

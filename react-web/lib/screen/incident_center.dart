@@ -5,6 +5,7 @@ import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart' show Component;
 
 import '../model/incident_status.dart';
+import '../localization/reactor_locale.dart';
 import '../localization/reactor_localizations.dart';
 import '../model/sampler_sample.dart';
 import '../service/react_client.dart';
@@ -22,15 +23,29 @@ Widget _stateChip(String? state) {
     );
   }
   final String upper = state.toUpperCase();
+  final String label = _localizedIncidentState(state);
   if (upper.contains('CRIT') || upper.contains('PANIC')) {
-    return reactorBadge(state, ReactorStatus.critical);
+    return reactorBadge(label, ReactorStatus.critical);
   }
   if (upper.contains('ELEV') ||
       upper.contains('WARN') ||
       upper.contains('PRESSURE')) {
-    return reactorBadge(state, ReactorStatus.warning);
+    return reactorBadge(label, ReactorStatus.warning);
   }
-  return reactorBadge(state, ReactorStatus.healthy);
+  return reactorBadge(label, ReactorStatus.healthy);
+}
+
+String _localizedIncidentState(String state) {
+  final String upper = state.trim().toUpperCase();
+  if (upper.contains('PANIC')) return reactorText(ReactorText.pressurePanic);
+  if (upper.contains('PRESSURE')) {
+    return reactorText(ReactorText.pressurePressure);
+  }
+  if (upper.contains('CRIT')) return reactorText(ReactorText.statusCritical);
+  if (upper.contains('ELEV')) return reactorText(ReactorText.statusElevated);
+  if (upper.contains('WARN')) return reactorText(ReactorText.commonWarning);
+  if (upper.contains('NORMAL')) return reactorText(ReactorText.pressureNormal);
+  return state;
 }
 
 class IncidentCenterView extends StatelessWidget {
@@ -47,6 +62,7 @@ class IncidentCenterView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     final double score = liveScore ?? status.score;
     final ReactorStatus scoreStatus = score >= 70
         ? ReactorStatus.critical
@@ -58,7 +74,7 @@ class IncidentCenterView extends StatelessWidget {
       gap: 0,
       children: <Widget>[
         SectionPanel(
-          label: 'Current state',
+          label: reactorText(ReactorText.incidentCurrentState),
           trailing: _stateChip(status.state),
           flush: true,
           child: statGrid(<Widget>[
@@ -69,7 +85,7 @@ class IncidentCenterView extends StatelessWidget {
             ),
             ReactorStat(
               label: reactorText(ReactorText.shellState),
-              value: status.state,
+              value: _localizedIncidentState(status.state),
               status: scoreStatus,
             ),
           ]),
@@ -79,8 +95,10 @@ class IncidentCenterView extends StatelessWidget {
           flush: true,
           child: status.timeline.isEmpty
               ? ReactorEmptyState(
-                  title: 'No incident events',
-                  description: 'React has not recorded an incident timeline.',
+                  title: reactorText(ReactorText.incidentNoEvents),
+                  description: reactorText(
+                    ReactorText.incidentNoEventsDescription,
+                  ),
                   icon: ArcaneIcon.clock(size: IconSize.sm),
                 )
               : dom.div(
@@ -111,9 +129,10 @@ class IncidentCenterView extends StatelessWidget {
           flush: true,
           child: status.contributors.isEmpty
               ? ReactorEmptyState(
-                  title: 'No contributing factors',
-                  description:
-                      'React did not attribute the current incident score.',
+                  title: reactorText(ReactorText.incidentNoFactors),
+                  description: reactorText(
+                    ReactorText.incidentNoFactorsDescription,
+                  ),
                   icon: ArcaneIcon.listFilter(size: IconSize.sm),
                 )
               : dom.div(
@@ -141,6 +160,7 @@ class _ContributorRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     final double fraction = contributor.weight.clamp(0.0, 1.0);
     final int widthPct = (fraction * 100).round();
 
@@ -244,6 +264,7 @@ class _IncidentCenterScreenState extends State<IncidentCenterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     final ServerScope? server = ServerScope.of(context);
     final SamplerSample? sample = server?.snapshot?.sampler('incident-score');
     final IIncidentClient? client = OperateScope.of(context)?.client;
@@ -258,7 +279,7 @@ class _IncidentCenterScreenState extends State<IncidentCenterScreen> {
     if (client == null) {
       return _statePage(
         ReactorNotice(
-          title: 'Incident status unavailable',
+          title: reactorText(ReactorText.incidentUnavailable),
           message: reactorText(ReactorText.incidentCenterLiveRequired),
           status: ReactorStatus.critical,
         ),
@@ -277,11 +298,11 @@ class _IncidentCenterScreenState extends State<IncidentCenterScreen> {
     if (error != null && _status == null) {
       return _statePage(
         ReactorNotice(
-          title: 'Incident request failed',
-          message: error.toString(),
+          title: reactorText(ReactorText.incidentRequestFailed),
+          message: localizedReactorError(error),
           status: ReactorStatus.critical,
           action: Button.secondary(
-            label: 'Retry',
+            label: reactorText(ReactorText.commonRetry),
             size: ButtonSize.small,
             onPressed: () => _load(client),
           ),
@@ -292,8 +313,8 @@ class _IncidentCenterScreenState extends State<IncidentCenterScreen> {
     if (_status == null) {
       return _statePage(
         ReactorEmptyState(
-          title: 'No incident status',
-          description: 'React returned no current incident record.',
+          title: reactorText(ReactorText.incidentNoStatus),
+          description: reactorText(ReactorText.incidentNoStatusDescription),
           icon: ArcaneIcon.shieldCheck(size: IconSize.sm),
         ),
       );
@@ -305,11 +326,11 @@ class _IncidentCenterScreenState extends State<IncidentCenterScreen> {
       children: <Widget>[
         if (error != null)
           ReactorNotice(
-            title: 'Incident refresh failed',
-            message: error.toString(),
+            title: reactorText(ReactorText.incidentRefreshFailed),
+            message: localizedReactorError(error),
             status: ReactorStatus.warning,
             action: Button.secondary(
-              label: 'Retry',
+              label: reactorText(ReactorText.commonRetry),
               size: ButtonSize.small,
               onPressed: () => _load(client),
             ),

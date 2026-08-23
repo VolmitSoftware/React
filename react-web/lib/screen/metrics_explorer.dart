@@ -4,6 +4,7 @@ import 'package:arcane_jaspr/arcane_jaspr.dart';
 import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart' show Component;
 
+import '../localization/reactor_locale.dart';
 import '../localization/reactor_localizations.dart';
 import '../model/sampler_sample.dart';
 import '../model/server_snapshot.dart';
@@ -23,6 +24,7 @@ class _MetricsExplorerScreenState extends State<MetricsExplorerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     final ServerScope? scope = ServerScope.of(context);
     final ServerSnapshot? snapshot = scope?.snapshot;
     final Widget? statePage = serverSnapshotStatePage(
@@ -49,8 +51,8 @@ class _MetricsExplorerScreenState extends State<MetricsExplorerScreen> {
     if (samples.isEmpty) {
       return _statePage(
         ReactorEmptyState(
-          title: 'No metrics published',
-          description: 'This server snapshot contains no sampler values.',
+          title: reactorText(ReactorText.metricsNonePublished),
+          description: reactorText(ReactorText.metricsNonePublishedDescription),
           icon: ArcaneIcon.listFilter(size: IconSize.sm),
         ),
       );
@@ -94,7 +96,7 @@ class _MetricsExplorerScreenState extends State<MetricsExplorerScreen> {
             if (filtered.isEmpty)
               ReactorEmptyState(
                 title: reactorText(ReactorText.metricsNoMatches),
-                description: 'Try a different sampler name, id, or unit.',
+                description: reactorText(ReactorText.metricsTryDifferentFilter),
                 icon: ArcaneIcon.searchX(size: IconSize.sm),
               )
             else

@@ -1,0 +1,17 @@
+{
+  "name": "React Web",
+  "short_name": "React",
+  "description": "Monitorização e controlo de servidores React com prioridade local",
+  "lang": "pt-PT",
+  "dir": "ltr",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0b",
+  "theme_color": "#0a0a0b",
+  "categories": [
+    "developer",
+    "utilities"
+  ]
+}

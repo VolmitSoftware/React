@@ -1,0 +1,17 @@
+{
+  "name": "React Web",
+  "short_name": "React",
+  "description": "로컬 우선 React 서버 모니터링 및 제어",
+  "lang": "ko-KR",
+  "dir": "ltr",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0b",
+  "theme_color": "#0a0a0b",
+  "categories": [
+    "developer",
+    "utilities"
+  ]
+}

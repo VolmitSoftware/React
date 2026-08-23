@@ -5,6 +5,7 @@ import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart' show Component;
 
 import '../model/environment_info.dart';
+import '../localization/reactor_locale.dart';
 import '../localization/reactor_localizations.dart';
 import '../service/react_client.dart';
 import '../state/connection_manager.dart';
@@ -87,6 +88,7 @@ class EnvironmentView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     final List<String> ordered = <String>[];
     for (final String k in _kPreferredOrder) {
       if (info.sectionNames.contains(k)) ordered.add(k);
@@ -103,9 +105,11 @@ class EnvironmentView extends StatelessWidget {
             label: _sectionLabel(section),
             flush: true,
             child: info.entriesOf(section).isEmpty
-                ? const ReactorEmptyState(
-                    title: 'No values reported',
-                    description: 'This diagnostic section is empty.',
+                ? ReactorEmptyState(
+                    title: reactorText(ReactorText.environmentNoValues),
+                    description: reactorText(
+                      ReactorText.environmentEmptySection,
+                    ),
                   )
                 : dom.div(
                     styles: const dom.Styles(
@@ -145,7 +149,7 @@ class EnvironmentView extends StatelessWidget {
                                   'font-weight': '500',
                                   'color': 'var(--foreground)',
                                   'font-variant-numeric': 'tabular-nums',
-                                  'text-align': 'right',
+                                  'text-align': 'end',
                                 },
                               ),
                               <Widget>[
@@ -221,6 +225,7 @@ class _EnvironmentScreenState extends State<EnvironmentScreen> {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     final ServerScope? server = ServerScope.of(context);
     final IEnvironmentClient? client = OperateScope.of(context)?.client;
 
@@ -232,7 +237,7 @@ class _EnvironmentScreenState extends State<EnvironmentScreen> {
     if (client == null) {
       return _statePage(
         ReactorNotice(
-          title: 'Environment diagnostics unavailable',
+          title: reactorText(ReactorText.environmentUnavailable),
           message: reactorText(ReactorText.environmentLiveRequired),
           status: ReactorStatus.critical,
         ),
@@ -250,10 +255,10 @@ class _EnvironmentScreenState extends State<EnvironmentScreen> {
       return _statePage(
         ReactorNotice(
           title: reactorText(ReactorText.environmentNoData),
-          message: error.toString(),
+          message: localizedReactorError(error),
           status: ReactorStatus.critical,
           action: Button.secondary(
-            label: 'Retry',
+            label: reactorText(ReactorText.commonRetry),
             size: ButtonSize.small,
             onPressed: _refresh,
           ),
@@ -266,7 +271,7 @@ class _EnvironmentScreenState extends State<EnvironmentScreen> {
       return _statePage(
         ReactorEmptyState(
           title: reactorText(ReactorText.environmentNoData),
-          description: 'React returned no host or runtime diagnostics.',
+          description: reactorText(ReactorText.environmentNoRuntimeData),
           icon: ArcaneIcon.serverCog(size: IconSize.sm),
         ),
       );
@@ -286,19 +291,19 @@ class _EnvironmentScreenState extends State<EnvironmentScreen> {
       children: <Widget>[
         if (error != null)
           ReactorNotice(
-            title: 'Diagnostic refresh failed',
-            message: error.toString(),
+            title: reactorText(ReactorText.environmentRefreshFailed),
+            message: localizedReactorError(error),
             status: ReactorStatus.warning,
             action: Button.secondary(
-              label: 'Retry',
+              label: reactorText(ReactorText.commonRetry),
               size: ButtonSize.small,
               onPressed: _refresh,
             ),
           )
         else if (_loading)
-          const ReactorNotice(
-            title: 'Refreshing diagnostics',
-            message: 'Keeping the previous values visible until React replies.',
+          ReactorNotice(
+            title: reactorText(ReactorText.environmentRefreshing),
+            message: reactorText(ReactorText.environmentRefreshingDescription),
             status: ReactorStatus.info,
           ),
         EnvironmentView(info: info),

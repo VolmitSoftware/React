@@ -1,0 +1,17 @@
+{
+  "name": "React Web",
+  "short_name": "React",
+  "description": "Surveillance et contrôle locaux des serveurs React",
+  "lang": "fr-FR",
+  "dir": "ltr",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0b",
+  "theme_color": "#0a0a0b",
+  "categories": [
+    "developer",
+    "utilities"
+  ]
+}

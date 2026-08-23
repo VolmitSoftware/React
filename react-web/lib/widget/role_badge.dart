@@ -4,6 +4,7 @@ import 'package:arcane_jaspr/arcane_jaspr.dart';
 import 'package:jaspr/jaspr.dart' show Component;
 
 import '../model/role_info.dart';
+import '../localization/reactor_locale.dart';
 import '../localization/reactor_localizations.dart';
 import '../ui/reactor_ui.dart';
 
@@ -14,6 +15,7 @@ class RoleBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     final RoleInfo? r = role;
     if (r == null) return Component.fragment(const <Widget>[]);
     return switch (r.role) {

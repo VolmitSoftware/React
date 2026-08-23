@@ -5,6 +5,7 @@ import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart' show Component;
 
 import '../model/control_item.dart';
+import '../localization/reactor_locale.dart';
 import '../localization/reactor_localizations.dart';
 import '../model/knob.dart';
 import '../model/role_info.dart';
@@ -34,13 +35,16 @@ class TweaksListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     return SectionPanel(
       label: reactorText(ReactorText.tweaksControl),
       flush: true,
       child: items.isEmpty
           ? ReactorEmptyState(
-              title: 'No tweaks available',
-              description: 'React did not return any runtime tweaks.',
+              title: reactorText(ReactorText.tweaksNoneAvailable),
+              description: reactorText(
+                ReactorText.tweaksNoneAvailableDescription,
+              ),
               icon: ArcaneIcon.slidersHorizontal(size: IconSize.sm),
             )
           : dom.div(
@@ -224,7 +228,7 @@ class _TweaksScreenState extends State<TweaksScreen> {
         onChange: () => setState(() {}),
         onError: (Object e) => ArcaneSonner.error(
           reactorText(ReactorText.commonUpdateFailed),
-          description: e.toString(),
+          description: localizedReactorError(e),
         ),
       );
       _controller!.load();
@@ -233,6 +237,7 @@ class _TweaksScreenState extends State<TweaksScreen> {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     final ServerScope? server = ServerScope.of(context);
     if (server?.state == ConnState.connecting && _client == null) {
       return _statePage(
@@ -242,7 +247,7 @@ class _TweaksScreenState extends State<TweaksScreen> {
     if (_client == null) {
       return _statePage(
         ReactorNotice(
-          title: 'Tweaks unavailable',
+          title: reactorText(ReactorText.tweaksUnavailable),
           message: reactorText(ReactorText.tweaksLiveRequired),
           status: ReactorStatus.critical,
         ),
@@ -262,10 +267,10 @@ class _TweaksScreenState extends State<TweaksScreen> {
       return _statePage(
         ReactorNotice(
           title: reactorText(ReactorText.commonUpdateFailed),
-          message: error.toString(),
+          message: localizedReactorError(error),
           status: ReactorStatus.critical,
           action: Button.secondary(
-            label: 'Retry',
+            label: reactorText(ReactorText.commonRetry),
             size: ButtonSize.small,
             onPressed: controller.load,
           ),
@@ -284,10 +289,10 @@ class _TweaksScreenState extends State<TweaksScreen> {
         if (error != null)
           ReactorNotice(
             title: reactorText(ReactorText.commonUpdateFailed),
-            message: error.toString(),
+            message: localizedReactorError(error),
             status: ReactorStatus.warning,
             action: Button.secondary(
-              label: 'Retry',
+              label: reactorText(ReactorText.commonRetry),
               size: ButtonSize.small,
               onPressed: controller.load,
             ),

@@ -7,6 +7,7 @@ import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart' show Component;
 
 import '../model/alert_thresholds.dart';
+import '../localization/reactor_locale.dart';
 import '../localization/reactor_localizations.dart';
 import '../model/role_info.dart';
 import '../model/server_credential.dart';
@@ -26,6 +27,8 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
+enum _RoleFailure { endpointUnavailable, requestFailed }
+
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _initialized = false;
 
@@ -38,7 +41,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _memoryPressureWarn = '';
 
   final Map<String, RoleInfo?> _roles = <String, RoleInfo?>{};
-  final Map<String, String> _roleErrors = <String, String>{};
+  final Map<String, _RoleFailure> _roleErrors = <String, _RoleFailure>{};
   final Set<String> _roleFetchStarted = <String>{};
 
   final Map<String, String> _renameLabels = <String, String>{};
@@ -49,7 +52,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _pickerOpen = false;
 
   FleetParseResult? _pendingImport;
-  String? _importError;
+  bool _importFailed = false;
 
   @override
   void didChangeDependencies() {
@@ -86,7 +89,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final IRoleClient? client = fm.roleClientFor(id);
     if (client == null) {
       _roles.remove(id);
-      _roleErrors[id] = 'Role endpoint unavailable';
+      _roleErrors[id] = _RoleFailure.endpointUnavailable;
       return;
     }
     try {
@@ -96,11 +99,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _roles[id] = info;
         _roleErrors.remove(id);
       });
-    } on Object catch (error) {
+    } on Object {
       if (!mounted) return;
       setState(() {
         _roles.remove(id);
-        _roleErrors[id] = error.toString();
+        _roleErrors[id] = _RoleFailure.requestFailed;
       });
     }
   }
@@ -217,7 +220,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _pickerOpen = true;
     setState(() {
       _pendingImport = null;
-      _importError = null;
+      _importFailed = false;
     });
     pickFleetImportFile((String raw) {
       if (!mounted) {
@@ -228,7 +231,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (!result.ok) {
         setState(() {
           _pickerOpen = false;
-          _importError = result.error;
+          _importFailed = true;
           _pendingImport = null;
         });
         return;
@@ -236,7 +239,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       setState(() {
         _pickerOpen = false;
         _pendingImport = result;
-        _importError = null;
+        _importFailed = false;
       });
     });
   }
@@ -248,7 +251,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final List<String> roleIds = <String>[];
     setState(() {
       _pendingImport = null;
-      _importError = null;
+      _importFailed = false;
       _renameLabels.clear();
       _tagInputs.clear();
       _roles.clear();
@@ -279,12 +282,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _cancelImport() {
     setState(() {
       _pendingImport = null;
-      _importError = null;
+      _importFailed = false;
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     final ReactorThemeScope theme = ReactorThemeScope.of(context);
     final FleetController? ctrl = FleetScope.of(context);
     if (ctrl == null) {
@@ -375,7 +379,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         if (selected)
           dom.span(classes: 'reactor-theme-option-state', <Widget>[
             ArcaneIcon.check(size: IconSize.sm),
-            Component.text('Active'),
+            Component.text(reactorText(ReactorText.commonActive)),
           ]),
       ],
     );
@@ -393,25 +397,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
     return SectionPanel(
       label: reactorText(ReactorText.settingsAccountRoles),
-      description: 'Effective access for each saved connection.',
+      description: reactorText(ReactorText.settingsEffectiveAccess),
       flush: true,
       child: servers.isEmpty
           ? _inset(
               ReactorEmptyState(
                 title: reactorText(ReactorText.settingsNoServersConfigured),
-                description: 'Pair a server to inspect its account role.',
+                description: reactorText(ReactorText.settingsPairForRole),
                 icon: ArcaneIcon.shieldCheck(size: IconSize.sm),
               ),
             )
           : dom.div(<Widget>[
               if (loading)
-                _inset(const ReactorLoadingState(label: 'Loading roles…')),
+                _inset(
+                  ReactorLoadingState(
+                    label: reactorText(ReactorText.settingsLoadingRoles),
+                  ),
+                ),
               if (failed.isNotEmpty)
                 _inset(
                   ReactorNotice(
-                    title: 'Some roles are unavailable',
-                    message:
-                        'Role lookup failed for ${failed.map((ServerCredential cred) => cred.label).join(', ')}.',
+                    title: reactorText(
+                      ReactorText.settingsSomeRolesUnavailable,
+                    ),
+                    message: reactorText(
+                      ReactorText.settingsRoleLookupFailed,
+                      <String, Object?>{
+                        'servers': failed
+                            .map((ServerCredential cred) => cred.label)
+                            .join(', '),
+                      },
+                    ),
                     status: ReactorStatus.warning,
                   ),
                 ),
@@ -431,11 +447,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _roleRow(ServerCredential cred) {
     final RoleInfo? role = _roles[cred.id];
-    final String? error = _roleErrors[cred.id];
+    final _RoleFailure? failure = _roleErrors[cred.id];
+    final String? error = switch (failure) {
+      _RoleFailure.endpointUnavailable => reactorText(
+        ReactorText.settingsRoleEndpointUnavailable,
+      ),
+      _RoleFailure.requestFailed => reactorText(ReactorText.errorUnavailable),
+      null => null,
+    };
     final (String, ReactorStatus) state = error != null
-        ? ('Unavailable', ReactorStatus.warning)
+        ? (reactorText(ReactorText.commonUnavailable), ReactorStatus.warning)
         : role == null
-        ? ('Loading…', ReactorStatus.info)
+        ? (reactorText(ReactorText.settingsLoadingRoles), ReactorStatus.info)
         : switch (role.role) {
             'admin' => (
               reactorText(ReactorText.roleAdmin),
@@ -471,6 +494,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           <Widget>[
             dom.strong(<Widget>[Component.text(cred.label)]),
             dom.span(
+              classes: 'reactor-ltr',
               styles: const dom.Styles(
                 raw: <String, String>{
                   'color': 'var(--muted-foreground)',
@@ -507,7 +531,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _thresholdsSection(FleetController ctrl) {
     return SectionPanel(
       label: reactorText(ReactorText.settingsAlertThresholds),
-      description: 'Fleet-wide warning and critical boundaries.',
+      description: reactorText(ReactorText.settingsThresholdDescription),
       trailing: dom.div(
         styles: const dom.Styles(
           raw: <String, String>{
@@ -597,8 +621,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _serversSection(FleetController ctrl, List<ServerCredential> servers) {
     return SectionPanel(
       label: reactorText(ReactorText.settingsSavedServers),
-      description:
-          '${servers.length} saved connection${servers.length == 1 ? '' : 's'}.',
+      description: reactorText(
+        ReactorText.settingsSavedConnectionsCount,
+        <String, Object?>{'count': servers.length},
+      ),
       trailing: dom.div(
         styles: const dom.Styles(
           raw: <String, String>{
@@ -642,16 +668,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         if (_pickerOpen)
           _inset(
-            const ReactorLoadingState(label: 'Waiting for connection file…'),
+            ReactorLoadingState(
+              label: reactorText(ReactorText.settingsWaitingForFile),
+            ),
           ),
-        if (_importError != null)
+        if (_importFailed)
           _inset(
             ReactorNotice(
               title: reactorText(ReactorText.settingsImportConnections),
-              message: reactorText(
-                ReactorText.settingsImportFailed,
-                <String, Object?>{'error': _importError},
-              ),
+              message: reactorText(ReactorText.settingsImportFailed),
               status: ReactorStatus.critical,
             ),
           ),
@@ -683,8 +708,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _inset(
             ReactorEmptyState(
               title: reactorText(ReactorText.settingsNoServersConfigured),
-              description:
-                  'Pair a server to manage its label, tags, and credentials.',
+              description: reactorText(ReactorText.settingsPairToManage),
               icon: ArcaneIcon.serverOff(size: IconSize.sm),
             ),
           ),
@@ -741,6 +765,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               <Widget>[
                 dom.strong(<Widget>[Component.text(cred.label)]),
                 dom.span(
+                  classes: 'reactor-ltr',
                   styles: const dom.Styles(
                     raw: <String, String>{
                       'color': 'var(--muted-foreground)',
@@ -818,7 +843,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   'letter-spacing': '0.06em',
                 },
               ),
-              <Widget>[Component.text('Tags')],
+              <Widget>[Component.text(reactorText(ReactorText.settingsTags))],
             ),
             if (tags.isEmpty)
               dom.span(
@@ -828,12 +853,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     'font-size': '0.8rem',
                   },
                 ),
-                <Widget>[Component.text('No tags')],
+                <Widget>[
+                  Component.text(reactorText(ReactorText.settingsNoTags)),
+                ],
               ),
             for (final String tag in tags) _tagChip(ctrl, cred.id, tag),
             dom.div(
               styles: const dom.Styles(
-                raw: <String, String>{'width': '140px', 'margin-left': 'auto'},
+                raw: <String, String>{
+                  'width': '140px',
+                  'margin-inline-start': 'auto',
+                },
               ),
               <Widget>[
                 TextInput(
@@ -864,7 +894,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           'align-items': 'center',
           'border': '1px solid var(--border)',
           'border-radius': '0',
-          'padding-left': '0.5rem',
+          'padding-inline-start': '0.5rem',
           'font-size': '0.75rem',
         },
       ),
@@ -872,6 +902,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
         Component.text(tag),
         Button.ghost(
           label: '×',
+          attributes: <String, String>{
+            'aria-label': reactorText(
+              ReactorText.settingsRemoveTag,
+              <String, Object?>{'tag': tag},
+            ),
+            'title': reactorText(
+              ReactorText.settingsRemoveTag,
+              <String, Object?>{'tag': tag},
+            ),
+          },
           size: ButtonSize.small,
           onPressed: () => _removeTag(ctrl, id, tag),
         ),
@@ -890,7 +930,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   String _endpoint(ServerCredential cred) {
     if (cred.host.isEmpty) {
-      return cred.relayUrl ?? 'Relay connection';
+      return cred.relayUrl ?? reactorText(ReactorText.settingsRelayConnection);
     }
     final String scheme = cred.secure ? 'https' : 'http';
     return '$scheme://${cred.host}:${cred.port}';

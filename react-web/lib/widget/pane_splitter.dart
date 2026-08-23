@@ -3,6 +3,8 @@ library;
 import 'package:arcane_jaspr/arcane_jaspr.dart';
 import 'package:jaspr/dom.dart' as dom;
 
+import '../localization/reactor_locale.dart';
+import '../localization/reactor_localizations.dart';
 import 'pane_dom.dart';
 import 'pane_layout.dart';
 
@@ -23,8 +25,8 @@ class ReactorPaneSplitter extends StatefulWidget {
       : 'reactor-splitter-inspector';
 
   String get label => side == ReactorPaneSide.rail
-      ? 'Resize server navigation'
-      : 'Resize server inspector';
+      ? reactorText(ReactorText.paneResizeNavigation)
+      : reactorText(ReactorText.paneResizeInspector);
 
   @override
   State<ReactorPaneSplitter> createState() => _ReactorPaneSplitterState();
@@ -129,6 +131,7 @@ class _ReactorPaneSplitterState extends State<ReactorPaneSplitter> {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     _scheduleInstall();
     final ReactorPaneSide side = component.side;
     final double width = component.layout.widthOf(side);
@@ -142,7 +145,10 @@ class _ReactorPaneSplitterState extends State<ReactorPaneSplitter> {
         'aria-valuemin': ReactorPaneLayout.minOf(side).round().toString(),
         'aria-valuemax': ReactorPaneLayout.maxOf(side).round().toString(),
         'aria-valuenow': width.round().toString(),
-        'aria-valuetext': '${width.round()} pixels',
+        'aria-valuetext': reactorText(
+          ReactorText.paneWidthPixels,
+          <String, Object?>{'width': width.round()},
+        ),
         'tabindex': '0',
       },
       const <Widget>[

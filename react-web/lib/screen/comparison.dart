@@ -6,6 +6,7 @@ import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart' show Component;
 
 import '../chart/timeseries_chart.dart';
+import '../localization/reactor_locale.dart';
 import '../localization/reactor_localizations.dart';
 import '../model/sampler_sample.dart';
 import '../state/connection_manager.dart';
@@ -50,6 +51,7 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     final List<FleetServerLive> servers =
         FleetLiveScope.of(context)?.servers ?? <FleetServerLive>[];
 
@@ -117,26 +119,40 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
         SectionPanel(
           label: reactorText(ReactorText.comparisonServers),
           description: servers.isEmpty
-              ? 'Pair servers to compare telemetry.'
-              : '$selectedServerCount of ${servers.length} selected'
-                    '${selectedUnavailableCount > 0 ? ' · $selectedUnavailableCount unavailable excluded' : ''}',
+              ? reactorText(ReactorText.comparisonPairServers)
+              : selectedUnavailableCount > 0
+              ? reactorText(
+                  ReactorText.comparisonSelectionWithUnavailable,
+                  <String, Object?>{
+                    'selected': selectedServerCount,
+                    'total': servers.length,
+                    'unavailable': selectedUnavailableCount,
+                  },
+                )
+              : reactorText(
+                  ReactorText.comparisonSelectedCount,
+                  <String, Object?>{
+                    'selected': selectedServerCount,
+                    'total': servers.length,
+                  },
+                ),
           flush: true,
           children: <Widget>[
             _serverSelector(servers: servers, selectedIds: selectedIds),
             if (isEmpty)
               ReactorEmptyState(
                 title: servers.isEmpty
-                    ? 'No servers available'
+                    ? reactorText(ReactorText.comparisonNoServers)
                     : selectedServerCount == 0
-                    ? 'No servers selected'
+                    ? reactorText(ReactorText.comparisonNoneSelected)
                     : reactorText(ReactorText.comparisonNoData),
                 description: servers.isEmpty
-                    ? 'Pair at least one server to open the comparison workspace.'
+                    ? reactorText(ReactorText.comparisonPairOne)
                     : selectedServerCount == 0
-                    ? 'Select one or more servers from the toolbar above.'
+                    ? reactorText(ReactorText.comparisonSelectServers)
                     : selectedComparableCount == 0
-                    ? 'Selected servers are offline or awaiting current telemetry.'
-                    : 'The selected metric has not published comparable samples.',
+                    ? reactorText(ReactorText.comparisonOfflineOrWaiting)
+                    : reactorText(ReactorText.comparisonMetricMissing),
               )
             else ...<Widget>[
               dom.div(classes: 'reactor-comparison-ranking', <Widget>[
@@ -172,13 +188,19 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
       <Widget>[
         reactorEyebrow(reactorText(ReactorText.comparisonMetric)),
         if (availableMetrics.isEmpty)
-          reactorBadge('No sampled metrics', ReactorStatus.neutral)
+          reactorBadge(
+            reactorText(ReactorText.comparisonNoSampledMetrics),
+            ReactorStatus.neutral,
+          )
         else
           ArcaneNativeSelect(
             options: <ArcaneSelectOption>[
               if (!availableMetrics.contains(_selectedMetric))
                 ArcaneSelectOption(
-                  label: '$_selectedMetric (unavailable)',
+                  label: reactorText(
+                    ReactorText.comparisonMetricUnavailable,
+                    <String, Object?>{'metric': _selectedMetric},
+                  ),
                   value: _selectedMetric,
                 ),
               ...availableMetrics.map(
@@ -221,18 +243,32 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
 
   String _serverLabel(FleetServerLive server) {
     if (server.state == ConnState.offline) {
-      return '${server.name} · Offline (excluded)';
+      return reactorText(ReactorText.comparisonServerOffline, <String, Object?>{
+        'server': server.name,
+      });
     }
     if (server.state == ConnState.connecting) {
-      return '${server.name} · Connecting (excluded)';
+      return reactorText(
+        ReactorText.comparisonServerConnecting,
+        <String, Object?>{'server': server.name},
+      );
     }
     if (server.state == ConnState.degraded) {
       return server.snapshot == null
-          ? '${server.name} · Degraded (no telemetry)'
-          : '${server.name} · Degraded (last received)';
+          ? reactorText(
+              ReactorText.comparisonServerDegradedEmpty,
+              <String, Object?>{'server': server.name},
+            )
+          : reactorText(
+              ReactorText.comparisonServerDegradedCached,
+              <String, Object?>{'server': server.name},
+            );
     }
     if (server.snapshot == null) {
-      return '${server.name} · Awaiting telemetry (excluded)';
+      return reactorText(
+        ReactorText.comparisonServerAwaiting,
+        <String, Object?>{'server': server.name},
+      );
     }
     return server.name;
   }

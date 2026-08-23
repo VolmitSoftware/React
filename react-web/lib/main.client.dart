@@ -3,6 +3,8 @@ library;
 import 'package:jaspr/client.dart';
 
 import 'app/reactor_app.dart';
+import 'localization/reactor_locale.dart';
+import 'localization/reactor_locale_platform.dart';
 import 'localization/reactor_localizations.dart';
 import 'localization/reactor_overlay_loader.dart';
 import 'main.client.options.dart';
@@ -17,8 +19,28 @@ import 'theme/reactor_theme_web.dart';
 
 Future<void> main() async {
   Jaspr.initializeApp(options: defaultClientOptions);
-  await reactorLocalizations.loadOverlayOnce(loadReactorLocalizationOverlay);
   final WebFleetStorage storage = WebFleetStorage();
+  final String initialLocale = resolveInitialReactorLocale(
+    storage: storage,
+    browserLocales: browserReactorLocales(),
+    configuredLocale: configuredReactorLocale,
+  );
+  final ReactorLocaleManager localeManager = ReactorLocaleManager(
+    initialLocale: reactorEnglishLocale,
+    loader: loadReactorLocalizationOverlay,
+    storage: storage,
+  );
+  await localeManager.switchTo(initialLocale);
+  final ReactorLocaleDefinition locale = reactorLocaleDefinition(
+    localeManager.locale,
+  );
+  updateReactorDocumentLocale(
+    localeCode: locale.code,
+    languageTag: locale.languageTag,
+    rtl: locale.rtl,
+    title: reactorText(ReactorText.appTitle),
+    description: reactorText(ReactorText.appDescription),
+  );
   final FleetManager fleet = FleetManager(
     storage: storage,
     clientFactory: (ServerCredential cred) =>
@@ -40,6 +62,10 @@ Future<void> main() async {
     },
   );
   runApp(
-    ReactorApp(fleetManager: fleet, onThemeChanged: updateReactorThemeMetadata),
+    ReactorApp(
+      fleetManager: fleet,
+      localeManager: localeManager,
+      onThemeChanged: updateReactorThemeMetadata,
+    ),
   );
 }

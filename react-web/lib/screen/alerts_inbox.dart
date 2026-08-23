@@ -6,6 +6,7 @@ import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart' show Component;
 
 import '../model/alert.dart';
+import '../localization/reactor_locale.dart';
 import '../localization/reactor_localizations.dart';
 import '../model/alert_thresholds.dart';
 import '../model/server_snapshot.dart';
@@ -30,6 +31,7 @@ class _AlertsInboxScreenState extends State<AlertsInboxScreen> {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     final FleetLiveScope? liveScope = FleetLiveScope.of(context);
     final FleetController? fleet = FleetScope.of(context);
 
@@ -91,17 +93,20 @@ class _AlertsInboxScreenState extends State<AlertsInboxScreen> {
             flush: true,
             child: ReactorEmptyState(
               title: _severityFilter != null || _serverIdFilter != null
-                  ? 'No alerts match these filters'
+                  ? reactorText(ReactorText.alertsNoMatches)
                   : reactorText(ReactorText.alertsNoneOpen),
               description: _severityFilter != null || _serverIdFilter != null
-                  ? 'Adjust severity or server scope to inspect other alerts.'
-                  : 'The fleet has no open conditions requiring attention.',
+                  ? reactorText(ReactorText.alertsAdjustFilters)
+                  : reactorText(ReactorText.alertsNoOpenConditions),
             ),
           )
         else
           sectionCard(
             label: reactorText(ReactorText.alertsTitle),
-            description: '${open.length} open',
+            description: reactorText(
+              ReactorText.commonOpenCount,
+              <String, Object?>{'count': open.length},
+            ),
             flush: true,
             child: dom.div(classes: 'reactor-alert-list', <Widget>[
               for (final FleetAlert alert in open)
@@ -220,6 +225,7 @@ class _AlertRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     return dom.div(
       classes: 'reactor-alert-row${isAcked ? ' is-acked' : ''}',
       <Widget>[

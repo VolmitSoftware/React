@@ -114,7 +114,10 @@ void main() {
     });
 
     test('reports an incomplete payload', () {
-      expect(PairingCode.validationMessage('RCT2.A'), contains('incomplete'));
+      expect(
+        PairingCode.validationMessage('RCT2.A'),
+        ReactorText.addServerCodeIncomplete,
+      );
     });
 
     test('rejects an inconsistent public key fingerprint', () {
@@ -272,7 +275,7 @@ void main() {
       expect(response.body, contains('/react web pair my-server viewer'));
       expect(response.body, contains('react.use'));
       expect(response.body, contains('viewer, operator, or admin'));
-      expect(response.body, contains('Pairing code: RCT2.'));
+      expect(response.body, contains('RCT2.…'));
       expect(response.body, contains('/react web revoke &lt;token-id&gt;'));
       expect(response.body, contains('role="list"'));
       expect(response.body, contains('role="listitem"'));

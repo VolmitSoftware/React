@@ -5,6 +5,7 @@ import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart' show Component;
 
 import '../state/connection_manager.dart';
+import '../localization/reactor_locale.dart';
 import '../localization/reactor_localizations.dart';
 import '../ui/reactor_ui.dart';
 
@@ -30,6 +31,7 @@ class StatusDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     final ReactorStatus status = statusFor(state);
     final Widget dot = reactorStatusDot(status, label: labelFor(state));
     if (!showLabel) return dot;

@@ -4,6 +4,7 @@ import 'package:arcane_jaspr/arcane_jaspr.dart';
 import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart' show Component;
 
+import '../localization/reactor_locale.dart';
 import '../localization/reactor_localizations.dart';
 
 enum GaugeStatus { success, warning, error }
@@ -46,6 +47,7 @@ class Gauge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     final GaugeStatus status = invertStatus
         ? statusFor(max - value, thresholds)
         : statusFor(value, thresholds);

@@ -4,6 +4,7 @@ import 'package:arcane_jaspr/arcane_jaspr.dart';
 import 'package:jaspr/dom.dart' as dom;
 
 import '../model/heatmap.dart';
+import '../localization/reactor_locale.dart';
 import '../localization/reactor_localizations.dart';
 import '../model/sampler_sample.dart';
 import '../model/server_snapshot.dart';
@@ -95,6 +96,7 @@ class _HeatmapsScreenState extends State<HeatmapsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     final ServerScope? scope = ServerScope.of(context);
     final ServerSnapshot? snapshot = scope?.snapshot;
     final List<Widget> tiles = <Widget>[];
@@ -124,9 +126,10 @@ class _HeatmapsScreenState extends State<HeatmapsScreen> {
                     icon: ArcaneIcon.map(size: IconSize.sm),
                   )
                 : ReactorEmptyState(
-                    title: 'No spatial metrics',
-                    description:
-                        'This snapshot contains no spatial sampler output.',
+                    title: reactorText(ReactorText.heatmapsNoSpatialMetrics),
+                    description: reactorText(
+                      ReactorText.heatmapsNoSpatialMetricsDescription,
+                    ),
                     icon: ArcaneIcon.map(size: IconSize.sm),
                   ),
           ),
@@ -143,7 +146,7 @@ class _HeatmapsScreenState extends State<HeatmapsScreen> {
     final IHeatmapClient? client = _client;
     if (client == null) {
       return ReactorNotice(
-        title: 'Heatmap endpoint unavailable',
+        title: reactorText(ReactorText.heatmapsEndpointUnavailable),
         message: reactorText(ReactorText.heatmapsLiveRequired),
         status: ReactorStatus.critical,
       );
@@ -156,11 +159,11 @@ class _HeatmapsScreenState extends State<HeatmapsScreen> {
     final Object? error = _error;
     if (error != null) {
       return ReactorNotice(
-        title: 'Heatmap request failed',
-        message: error.toString(),
+        title: reactorText(ReactorText.heatmapsRequestFailed),
+        message: localizedReactorError(error),
         status: ReactorStatus.critical,
         action: Button.secondary(
-          label: 'Retry',
+          label: reactorText(ReactorText.commonRetry),
           size: ButtonSize.small,
           onPressed: () => _load(client),
         ),
@@ -174,8 +177,10 @@ class _HeatmapsScreenState extends State<HeatmapsScreen> {
     }
     if (grids.isEmpty) {
       return ReactorEmptyState(
-        title: 'No chunk heatmaps',
-        description: 'React did not publish any chunk heatmap grids.',
+        title: reactorText(ReactorText.heatmapsNoChunkHeatmaps),
+        description: reactorText(
+          ReactorText.heatmapsNoChunkHeatmapsDescription,
+        ),
         icon: ArcaneIcon.grid3x3(size: IconSize.sm),
       );
     }

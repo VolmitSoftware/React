@@ -108,14 +108,14 @@ void main() {
           reason: 'world_nether name must appear in rendered HTML',
         );
         expect(
-          res.body.contains('NORMAL'),
+          res.body.contains('Normal'),
           isTrue,
-          reason: 'NORMAL pressure badge must appear for world',
+          reason: 'Localized normal pressure badge must appear for world',
         );
         expect(
-          res.body.contains('PANIC'),
+          res.body.contains('Panic'),
           isTrue,
-          reason: 'PANIC pressure badge must appear for world_nether',
+          reason: 'Localized panic pressure badge must appear for world_nether',
         );
         expect(
           res.body.contains('Budget (ms)'),

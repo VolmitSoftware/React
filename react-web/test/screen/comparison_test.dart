@@ -218,7 +218,7 @@ void main() {
       final DocumentResponse res = await tester.request('/');
       expect(res.statusCode, equals(200));
       expect(res.body, contains('Offline (excluded)'));
-      expect(res.body, contains('unavailable excluded'));
+      expect(res.body, contains('Unavailable excluded'));
       expect(
         res.body,
         isNot(contains('999.0')),

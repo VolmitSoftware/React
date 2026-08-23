@@ -3,6 +3,8 @@ library;
 import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart';
 
+import '../localization/reactor_locale.dart';
+import '../localization/reactor_localizations.dart';
 import 'svg_fallback_chart.dart';
 
 class TimeseriesChart extends StatefulComponent {
@@ -21,6 +23,7 @@ class _TimeseriesChartState extends State<TimeseriesChart> {
 
   @override
   Component build(BuildContext context) {
+    dependOnReactorLocale(context);
     final bool hasSamples = component.series.any(
       ((String, List<double>) item) => item.$2.isNotEmpty,
     );
@@ -42,11 +45,13 @@ class _TimeseriesChartState extends State<TimeseriesChart> {
           styles: dom.Styles(
             raw: <String, String>{'height': '${component.height}px'},
           ),
-          const <Component>[
-            dom.strong(<Component>[Component.text('Awaiting samples')]),
+          <Component>[
+            dom.strong(<Component>[
+              Component.text(reactorText(ReactorText.chartAwaitingSamples)),
+            ]),
             dom.span(<Component>[
               Component.text(
-                'The chart will populate when the server publishes data.',
+                reactorText(ReactorText.chartAwaitingSamplesDescription),
               ),
             ]),
           ],
@@ -61,8 +66,14 @@ class _TimeseriesChartState extends State<TimeseriesChart> {
                 'type': 'button',
                 'aria-pressed': (!_hiddenSeries.contains(index)).toString(),
                 'title': _hiddenSeries.contains(index)
-                    ? 'Show ${component.series[index].$1}'
-                    : 'Hide ${component.series[index].$1}',
+                    ? reactorText(
+                        ReactorText.chartShowSeries,
+                        <String, Object?>{'series': component.series[index].$1},
+                      )
+                    : reactorText(
+                        ReactorText.chartHideSeries,
+                        <String, Object?>{'series': component.series[index].$1},
+                      ),
               },
               events: <String, EventCallback>{
                 'click': (_) => _toggleSeries(index),

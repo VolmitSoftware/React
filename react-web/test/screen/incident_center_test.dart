@@ -112,16 +112,18 @@ void main() {
   });
 
   group('IncidentCenterView render', () {
-    testServer('renders CRITICAL state label', (ServerTester tester) async {
+    testServer('renders localized critical state label', (
+      ServerTester tester,
+    ) async {
       tester.pumpComponent(
         _wrapView(const IncidentCenterView(status: _fakeStatus)),
       );
       final DocumentResponse res = await tester.request('/');
       expect(res.statusCode, equals(200));
       expect(
-        res.body.contains('CRITICAL'),
+        res.body.contains('Critical'),
         isTrue,
-        reason: 'CRITICAL state string must appear as chip label',
+        reason: 'Localized critical state must appear as chip label',
       );
     });
 

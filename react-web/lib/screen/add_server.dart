@@ -6,6 +6,7 @@ import 'package:jaspr/jaspr.dart' show Component;
 import 'package:jaspr_router/jaspr_router.dart';
 
 import '../model/server_credential.dart';
+import '../localization/reactor_locale.dart';
 import '../localization/reactor_localizations.dart';
 import '../service/relay_identity.dart';
 import '../state/fleet_manager.dart';
@@ -117,21 +118,21 @@ class PairingCode {
     }
   }
 
-  static String? validationMessage(String code) {
+  static ReactorText? validationMessage(String code) {
     final String normalized = normalizeInput(code);
     if (normalized.isEmpty) {
-      return reactorText(ReactorText.addServerPasteFullCode);
+      return ReactorText.addServerPasteFullCode;
     }
     if (!normalized.startsWith(_prefix)) {
-      return reactorText(ReactorText.addServerPrefixRequired);
+      return ReactorText.addServerPrefixRequired;
     }
     final String b64 = normalized.substring(_prefix.length);
-    if (b64.isEmpty) return reactorText(ReactorText.addServerPayloadMissing);
+    if (b64.isEmpty) return ReactorText.addServerPayloadMissing;
     if (b64.length % 4 == 1) {
-      return reactorText(ReactorText.addServerCodeIncomplete);
+      return ReactorText.addServerCodeIncomplete;
     }
     if (decode(normalized) == null) {
-      return reactorText(ReactorText.addServerDecodeFailed);
+      return ReactorText.addServerDecodeFailed;
     }
     return null;
   }
@@ -209,14 +210,14 @@ class AddServerScreen extends StatefulWidget {
 class _AddServerScreenState extends State<AddServerScreen> {
   String _code = '';
   PairingCode? _decoded;
-  String? _validationMessage;
-  String? _pairingMessage;
+  ReactorText? _validationMessage;
+  ReactorText? _pairingMessage;
   bool _confirmReset = false;
   bool _loading = false;
   bool _pairingFailed = false;
 
   void _onCodeChanged(String value) {
-    final String? validation = value.trim().isEmpty
+    final ReactorText? validation = value.trim().isEmpty
         ? null
         : PairingCode.validationMessage(value);
     setState(() {
@@ -250,7 +251,7 @@ class _AddServerScreenState extends State<AddServerScreen> {
     fleet.clearFleet();
     setState(() {
       _confirmReset = false;
-      _pairingMessage = reactorText(ReactorText.addServerFleetClearedMessage);
+      _pairingMessage = ReactorText.addServerFleetClearedMessage;
       _pairingFailed = false;
     });
     ArcaneSonner.success(reactorText(ReactorText.addServerFleetReset));
@@ -258,7 +259,7 @@ class _AddServerScreenState extends State<AddServerScreen> {
 
   Future<void> _onPair([String? submittedCode]) async {
     final String rawCode = submittedCode ?? _code;
-    final String? validation = PairingCode.validationMessage(rawCode);
+    final ReactorText? validation = PairingCode.validationMessage(rawCode);
     if (validation != null) {
       setState(() {
         _code = rawCode;
@@ -273,7 +274,7 @@ class _AddServerScreenState extends State<AddServerScreen> {
       _code = rawCode;
       _decoded = PairingCode.decode(rawCode);
       _validationMessage = null;
-      _pairingMessage = reactorText(ReactorText.addServerConnectingIdentity);
+      _pairingMessage = ReactorText.addServerConnectingIdentity;
       _loading = true;
       _pairingFailed = false;
     });
@@ -289,9 +290,7 @@ class _AddServerScreenState extends State<AddServerScreen> {
     } on ArgumentError {
       if (!mounted) return;
       setState(() {
-        _pairingMessage = reactorText(
-          ReactorText.addServerInvalidPairingMessage,
-        );
+        _pairingMessage = ReactorText.addServerInvalidPairingMessage;
         _validationMessage = _pairingMessage;
         _pairingFailed = true;
       });
@@ -304,14 +303,12 @@ class _AddServerScreenState extends State<AddServerScreen> {
     } on Object catch (e) {
       if (!mounted) return;
       setState(() {
-        _pairingMessage = reactorText(
-          ReactorText.addServerConnectionFailedMessage,
-        );
+        _pairingMessage = ReactorText.addServerConnectionFailedMessage;
         _pairingFailed = true;
       });
       ArcaneSonner.error(
         reactorText(ReactorText.addServerPairingFailed),
-        description: e.toString(),
+        description: localizedReactorError(e),
       );
     } finally {
       if (mounted) {
@@ -324,11 +321,14 @@ class _AddServerScreenState extends State<AddServerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     final PairingCode? decoded = _decoded;
     final FleetController? fleet = FleetScope.of(context);
     final int savedCount = fleet?.fleetManager.servers.length ?? 0;
     final bool canPair = !_loading && decoded != null;
-    final String? inputError = _validationMessage;
+    final String? inputError = _validationMessage == null
+        ? null
+        : reactorText(_validationMessage!);
     return ReactorPage(
       title: reactorText(ReactorText.addServerTitle),
       subtitle: reactorText(ReactorText.addServerSubtitle),
@@ -384,6 +384,7 @@ class _AddServerScreenState extends State<AddServerScreen> {
                   placeholder: reactorText(
                     ReactorText.addServerInputPlaceholder,
                   ),
+                  attributes: const <String, String>{'dir': 'ltr'},
                   value: _code,
                   onChange: _onCodeChanged,
                   onSubmit: _onPair,
@@ -400,7 +401,7 @@ class _AddServerScreenState extends State<AddServerScreen> {
                 else if (_pairingFailed && _pairingMessage != null)
                   ReactorNotice(
                     title: reactorText(ReactorText.addServerPairingFailed),
-                    message: _pairingMessage!,
+                    message: reactorText(_pairingMessage!),
                     status: ReactorStatus.critical,
                   )
                 else if (_loading)
@@ -410,7 +411,7 @@ class _AddServerScreenState extends State<AddServerScreen> {
                 else if (_pairingMessage != null)
                   ReactorNotice(
                     title: reactorText(ReactorText.addServerFleetReset),
-                    message: _pairingMessage!,
+                    message: reactorText(_pairingMessage!),
                     status: ReactorStatus.info,
                   )
                 else if (decoded == null)
@@ -450,7 +451,7 @@ class _AddServerScreenState extends State<AddServerScreen> {
           number: '03',
           title: reactorText(ReactorText.addServerMonitor),
           description: reactorText(ReactorText.addServerMonitorDescription),
-          command: 'Pairing code: RCT2.\u2026',
+          command: 'RCT2.\u2026',
         ),
         _pairingStep(
           number: '04',
@@ -504,7 +505,7 @@ class _AddServerScreenState extends State<AddServerScreen> {
         _detailRow(
           reactorText(ReactorText.addServerPort),
           decoded.directUrl.isEmpty
-              ? 'Relay'
+              ? reactorText(ReactorText.addServerRelay)
               : Uri.parse(decoded.directUrl).hasPort
               ? Uri.parse(decoded.directUrl).port.toString()
               : Uri.parse(decoded.directUrl).scheme == 'https'

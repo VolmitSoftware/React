@@ -179,9 +179,9 @@ void main() {
       final DocumentResponse res = await tester.request('/');
       expect(res.statusCode, equals(200));
       expect(
-        res.body.contains('1 / 2 enabled'),
+        res.body.contains('Enabled: 1/2'),
         isTrue,
-        reason: 'Summary text 1 / 2 enabled must appear',
+        reason: 'Localized enabled count must appear',
       );
     });
 

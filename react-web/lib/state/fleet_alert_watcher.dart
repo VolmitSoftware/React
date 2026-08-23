@@ -3,6 +3,7 @@ library;
 import 'package:arcane_jaspr/arcane_jaspr.dart';
 
 import '../model/alert.dart';
+import '../localization/reactor_locale.dart';
 import '../localization/reactor_localizations.dart';
 import '../model/alert_thresholds.dart';
 import '../model/server_snapshot.dart';
@@ -124,6 +125,7 @@ class _FleetAlertWatcherState extends State<FleetAlertWatcher> {
 
   @override
   Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
     _scheduleCriticalCheck(context);
     return component.child;
   }
