@@ -20,10 +20,10 @@
 package art.arcane.react.content.feature;
 
 import art.arcane.react.content.sampler.SamplerRedstoneUpdates;
+import art.arcane.react.api.web.heatmap.HeatmapWorldRef;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.RendererMessages;
 import art.arcane.react.util.data.TinyColor;
-import org.bukkit.Chunk;
 
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Redstone Activity Heatmap feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureRedstoneActivityHeatmap extends FeatureChunkHeatmapBase {
@@ -49,8 +49,8 @@ public class FeatureRedstoneActivityHeatmap extends FeatureChunkHeatmapBase {
   }
 
   @Override
-  protected double chunkScore(Chunk chunk) {
-    return chunkSample(chunk, SamplerRedstoneUpdates.ID);
+  protected double chunkScore(HeatmapWorldRef world, int chunkX, int chunkZ) {
+    return chunkSample(world, chunkX, chunkZ, SamplerRedstoneUpdates.ID);
   }
 
   @Override

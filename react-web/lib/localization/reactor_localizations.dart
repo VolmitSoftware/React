@@ -350,6 +350,10 @@ enum ReactorText {
   heatmapsSpatialMetrics('screen.heatmaps.spatial_metrics', 'Spatial Metrics'),
   heatmapsChunkHeatmaps('screen.heatmaps.chunk_heatmaps', 'Chunk Heatmaps'),
   heatmapsLoading('screen.heatmaps.loading', 'Loading heatmaps...'),
+  heatmapsWorld('screen.heatmaps.world', 'World'),
+  heatmapsCenterChunkX('screen.heatmaps.center_chunk_x', 'Center chunk X'),
+  heatmapsCenterChunkZ('screen.heatmaps.center_chunk_z', 'Center chunk Z'),
+  heatmapsRadiusChunks('screen.heatmaps.radius_chunks', 'Radius (chunks)'),
   heatmapsLiveRequired(
     'screen.heatmaps.live_required',
     'Grid heatmaps require a live connection.',
@@ -833,7 +837,7 @@ enum ReactorText {
   addServerCopy('screen.add_server.copy', 'Make React reachable'),
   addServerCopyDescription(
     'screen.add_server.copy_description',
-    'Set enabled = true in web.toml and restart. From this hosted dashboard, advertise an HTTPS URL or enable a WSS relay; browsers block plain HTTP.',
+    'React defaults to listenerEnabled = true and listens on all interfaces. Forward TCP 9696 to the server, then advertise its reachable URL or enter that URL as Direct host. Hosted HTTPS dashboards require HTTPS or a WSS relay.',
   ),
   addServerDecode('screen.add_server.decode', 'Generate a scoped code'),
   addServerDecodeDescription(

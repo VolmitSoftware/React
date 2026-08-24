@@ -1,13 +1,12 @@
 package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
+import art.arcane.react.api.web.heatmap.HeatmapWorldRef;
 import art.arcane.react.api.feature.CapabilityGatedFeature;
 import art.arcane.react.core.controller.IntegrationController;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.RendererMessages;
 import art.arcane.react.util.data.TinyColor;
-import art.arcane.volmlib.util.bukkit.WorldIdentity;
-import org.bukkit.Chunk;
 
 import java.util.Set;
 
@@ -35,11 +34,11 @@ public class FeatureIrisGenerationPressureOverlay extends FeatureChunkHeatmapBas
   }
 
   @Override
-  protected double chunkScore(Chunk chunk) {
-    if (chunk == null || chunk.getWorld() == null || !isManagedWorld(chunk)) {
+  protected double chunkScore(HeatmapWorldRef world, int chunkX, int chunkZ) {
+    if (world == null || !isManagedWorld(world)) {
       return 0D;
     }
-    return chunkTotalScore(chunk);
+    return chunkTotalScore(world, chunkX, chunkZ);
   }
 
   @Override
@@ -52,7 +51,7 @@ public class FeatureIrisGenerationPressureOverlay extends FeatureChunkHeatmapBas
     return Set.of("iris");
   }
 
-  private boolean isManagedWorld(Chunk chunk) {
+  private boolean isManagedWorld(HeatmapWorldRef world) {
     IntegrationController controller = React.controller(IntegrationController.class);
     if (controller == null || controller.getRemoteSamplerBridge() == null) {
       return false;
@@ -60,7 +59,7 @@ public class FeatureIrisGenerationPressureOverlay extends FeatureChunkHeatmapBas
     return controller.getRemoteSamplerBridge().getGroup(
         "iris",
         "world",
-        WorldIdentity.serialize(chunk.getWorld())
+        world.worldKey()
     ) != null;
   }
 }

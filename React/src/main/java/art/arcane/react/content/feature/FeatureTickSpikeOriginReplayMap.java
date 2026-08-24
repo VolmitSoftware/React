@@ -24,14 +24,17 @@ import art.arcane.react.api.rendering.MapTheme;
 import art.arcane.react.api.rendering.MegamapGrid;
 import art.arcane.react.api.rendering.Region;
 import art.arcane.react.api.rendering.RendererLayout;
+import art.arcane.react.api.web.heatmap.HeatmapWorldRef;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.core.controller.ObserverController;
+import art.arcane.react.core.controller.ObserverController.LoadedChunkCoordinate;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.RendererMessages;
 import art.arcane.react.model.SampledChunk;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.data.TinyColor;
-import org.bukkit.Chunk;
+import org.bukkit.Bukkit;
+import org.bukkit.World;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -122,8 +125,8 @@ public class FeatureTickSpikeOriginReplayMap extends FeatureChunkHeatmapBase {
   }
 
   @Override
-  protected double chunkScore(Chunk chunk) {
-    ChunkKey key = new ChunkKey(chunk.getWorld().getUID(), chunk.getX(), chunk.getZ());
+  protected double chunkScore(HeatmapWorldRef world, int chunkX, int chunkZ) {
+    ChunkKey key = new ChunkKey(world.worldId(), chunkX, chunkZ);
     HeatCell cell = replayHeat.get(key);
     return cell == null ? 0D : Math.max(0D, cell.heat);
   }
@@ -138,20 +141,20 @@ public class FeatureTickSpikeOriginReplayMap extends FeatureChunkHeatmapBase {
   }
 
   @Override
-  protected void renderOverlay(Map<Chunk, Double> score, double min, double max) {
+  protected void renderOverlay(Map<LoadedChunkCoordinate, Double> score, double min, double max) {
     MegamapGrid.MegamapDetail detail = megamapDetail();
     if (score.isEmpty() || !detail.atLeast(MegamapGrid.MegamapDetail.EXPANDED)) {
       return;
     }
 
     int limit = detail.atLeast(MegamapGrid.MegamapDetail.RICH) ? 8 : 3;
-    List<Map.Entry<Chunk, Double>> ranked = highest(score, limit);
+    List<Map.Entry<LoadedChunkCoordinate, Double>> ranked = highest(score, limit);
 
     int scale = uiScale();
     int marker = Math.max(2, 3 * scale);
     for (int i = 0; i < ranked.size(); i++) {
-      Map.Entry<Chunk, Double> entry = ranked.get(i);
-      Chunk chunk = entry.getKey();
+      Map.Entry<LoadedChunkCoordinate, Double> entry = ranked.get(i);
+      LoadedChunkCoordinate chunk = entry.getKey();
       Pixel pixel = projectChunk(chunk);
       Region badge = new Region(pixel.x() - marker, pixel.y() - marker, (2 * marker) + 1, (2 * marker) + 1);
       border(badge, MapTheme.TEXT_STRONG, Math.max(1, scale));
@@ -161,9 +164,12 @@ public class FeatureTickSpikeOriginReplayMap extends FeatureChunkHeatmapBase {
     }
   }
 
-  private List<Map.Entry<Chunk, Double>> highest(Map<Chunk, Double> score, int limit) {
-    List<Map.Entry<Chunk, Double>> ranked = new ArrayList<>(limit);
-    for (Map.Entry<Chunk, Double> candidate : score.entrySet()) {
+  private List<Map.Entry<LoadedChunkCoordinate, Double>> highest(
+      Map<LoadedChunkCoordinate, Double> score,
+      int limit
+  ) {
+    List<Map.Entry<LoadedChunkCoordinate, Double>> ranked = new ArrayList<>(limit);
+    for (Map.Entry<LoadedChunkCoordinate, Double> candidate : score.entrySet()) {
       double value = candidate.getValue() == null ? 0D : candidate.getValue();
       if (ranked.size() >= limit && value <= ranked.get(ranked.size() - 1).getValue()) {
         continue;
@@ -190,29 +196,35 @@ public class FeatureTickSpikeOriginReplayMap extends FeatureChunkHeatmapBase {
     }
 
     SampledChunk worst = observer.absoluteWorst();
-    if (worst == null || worst.getChunk() == null || worst.getChunk().getWorld() == null) {
+    if (worst == null || worst.getWorldId() == null || worst.getWorldKey() == null) {
       return;
     }
 
-    Chunk origin = worst.getChunk();
     int radius = Math.max(0, captureRadiusChunks);
     double spikePressure = Math.max(1D, tickMS - spikeThresholdMS + 1D);
+    UUID worldId = worst.getWorldId();
+    String worldKey = worst.getWorldKey();
+    int originX = worst.getChunkX();
+    int originZ = worst.getChunkZ();
 
-    for (Chunk chunk : origin.getWorld().getLoadedChunks()) {
-      int dx = chunk.getX() - origin.getX();
-      int dz = chunk.getZ() - origin.getZ();
-      if (Math.abs(dx) > radius || Math.abs(dz) > radius) {
-        continue;
-      }
-
+    for (LoadedChunkCoordinate coordinate : observer.loadedChunkCoordinatesInRadius(
+        worldId,
+        originX,
+        originZ,
+        radius
+    )) {
+      int dx = coordinate.chunkX() - originX;
+      int dz = coordinate.chunkZ() - originZ;
       double distance = Math.sqrt((dx * dx) + (dz * dz));
-      double localScore = Math.max(0D, chunkTotalScore(chunk));
+      double localScore = Math.max(0D, observer.sampledChunk(worldKey, coordinate.chunkX(), coordinate.chunkZ())
+          .map(SampledChunk::totalScore)
+          .orElse(0D));
       double distanceWeight = 1D / (1D + distance);
       double scoreWeight = 1D + (Math.min(localScore, 250D) / 120D);
-      addHeat(chunk, spikePressure * distanceWeight * scoreWeight, now);
+      addHeat(worldId, coordinate.chunkX(), coordinate.chunkZ(), spikePressure * distanceWeight * scoreWeight, now);
     }
 
-    addHeat(origin, spikePressure * 1.8D, now);
+    addHeat(worldId, originX, originZ, spikePressure * 1.8D, now);
   }
 
   private void captureSpikeFolia(long now, double tickMS) {
@@ -222,25 +234,28 @@ public class FeatureTickSpikeOriginReplayMap extends FeatureChunkHeatmapBase {
     }
 
     SampledChunk worst = observer.absoluteWorst();
-    if (worst == null || worst.getChunk() == null || worst.getChunk().getWorld() == null) {
+    if (worst == null || worst.getWorldId() == null) {
       return;
     }
 
-    Chunk origin = worst.getChunk();
-    int y = Math.max(origin.getWorld().getMinHeight() + 1, 64);
-    J.s(origin.getBlock(8, y, 8).getLocation(), () -> captureSpikeAroundOrigin(origin, now, tickMS), 0);
+    World world = Bukkit.getWorld(worst.getWorldId());
+    if (world == null) {
+      return;
+    }
+
+    UUID worldId = worst.getWorldId();
+    int originX = worst.getChunkX();
+    int originZ = worst.getChunkZ();
+    J.runChunk(world, originX, originZ, () -> captureSpikeAroundOrigin(worldId, originX, originZ, now, tickMS));
   }
 
-  private void captureSpikeAroundOrigin(Chunk origin, long now, double tickMS) {
-    if (origin == null || origin.getWorld() == null) {
+  private void captureSpikeAroundOrigin(UUID world, int originX, int originZ, long now, double tickMS) {
+    if (world == null) {
       return;
     }
 
     int radius = Math.max(0, captureRadiusChunks);
     double spikePressure = Math.max(1D, tickMS - spikeThresholdMS + 1D);
-    UUID world = origin.getWorld().getUID();
-    int originX = origin.getX();
-    int originZ = origin.getZ();
 
     for (int dx = -radius; dx <= radius; dx++) {
       for (int dz = -radius; dz <= radius; dz++) {
@@ -251,14 +266,6 @@ public class FeatureTickSpikeOriginReplayMap extends FeatureChunkHeatmapBase {
     }
 
     addHeat(world, originX, originZ, spikePressure * 1.8D, now);
-  }
-
-  private void addHeat(Chunk chunk, double heat, long now) {
-    if (chunk == null || chunk.getWorld() == null || heat <= 0D) {
-      return;
-    }
-
-    addHeat(chunk.getWorld().getUID(), chunk.getX(), chunk.getZ(), heat, now);
   }
 
   private void addHeat(UUID worldId, int chunkX, int chunkZ, double heat, long now) {

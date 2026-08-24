@@ -1,12 +1,14 @@
 package art.arcane.react.api.web;
 
 import art.arcane.react.api.web.dto.ControlItemDto;
+import art.arcane.react.api.web.dto.KnobDto;
 import art.arcane.react.util.project.registry.Registered;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -68,7 +70,9 @@ public class RegistryControlBackend<T extends Registered> implements ControlBack
         if (item == null) {
             return null;
         }
-        mutator.apply(pathPrefix + "." + id + ".enabled", enabled);
+        if (!mutator.apply(pathPrefix + "." + id + ".enabled", enabled)) {
+            throw new IllegalStateException("Failed to apply web control state: " + pathPrefix + "." + id);
+        }
         return get(id);
     }
 
@@ -78,9 +82,36 @@ public class RegistryControlBackend<T extends Registered> implements ControlBack
         if (item == null) {
             return null;
         }
+        ControlItemDto before = serializer.toDto(item, enabledFn.test(item));
+        Map<String, Object> originalValues = new LinkedHashMap<>();
+        for (KnobDto knob : before.knobs) {
+            originalValues.put(knob.key, knob.value);
+        }
+        for (String key : knobs.keySet()) {
+            if (!originalValues.containsKey(key)) {
+                throw new IllegalArgumentException("Unknown web control value: " + pathPrefix + "." + id + "." + key);
+            }
+        }
+
+        List<String> applied = new ArrayList<>();
         for (Map.Entry<String, Object> entry : knobs.entrySet()) {
-            mutator.apply(pathPrefix + "." + id + "." + entry.getKey(), entry.getValue());
+            String path = pathPrefix + "." + id + "." + entry.getKey();
+            if (!mutator.apply(path, entry.getValue())) {
+                rollback(id, originalValues, applied);
+                throw new IllegalStateException("Failed to apply web control value: " + path);
+            }
+            applied.add(entry.getKey());
         }
         return get(id);
+    }
+
+    private void rollback(String id, Map<String, Object> originalValues, List<String> applied) {
+        for (int index = applied.size() - 1; index >= 0; index--) {
+            String key = applied.get(index);
+            String path = pathPrefix + "." + id + "." + key;
+            if (!mutator.apply(path, originalValues.get(key))) {
+                throw new IllegalStateException("Failed to restore web control value after rejection: " + path);
+            }
+        }
     }
 }

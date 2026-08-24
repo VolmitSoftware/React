@@ -42,6 +42,7 @@ import art.arcane.react.util.common.scheduling.TickedObject;
 import art.arcane.react.util.plugin.IController;
 import art.arcane.react.util.project.config.ConfigDescription;
 import art.arcane.react.util.project.config.ConfigDoc;
+import art.arcane.volmlib.util.scheduling.FoliaScheduler;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.bukkit.Bukkit;
@@ -57,6 +58,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
@@ -64,8 +66,11 @@ import org.bukkit.event.hanging.HangingBreakEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.event.world.ChunkLoadEvent;
+import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.event.world.EntitiesLoadEvent;
 import org.bukkit.event.world.EntitiesUnloadEvent;
+import org.bukkit.event.world.WorldUnloadEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.MapMeta;
 import org.bukkit.map.MapRenderer;
@@ -75,6 +80,7 @@ import org.bukkit.persistence.PersistentDataType;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -83,8 +89,10 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
 @EqualsAndHashCode(callSuper = true)
@@ -94,11 +102,9 @@ public class MapController extends TickedObject implements IController, Listener
   private static final NamespacedKey nsReact = new NamespacedKey(React.instance, "react");
   private static final NamespacedKey nsRenderer = new NamespacedKey(React.instance, "react-renderer");
   private static final NamespacedKey nsMapToken = new NamespacedKey(React.instance, "react-map-token");
-  private static final Set<String> disabledRendererIds = Set.of(
-      "iris-biome-chunk-share-pie-map"
-  );
   private static final int megamapSplitsPerPass = 8;
   private static final int megamapRotationResetsPerPass = 8;
+  private static final AtomicLong rendererPipeOwnerSequence = new AtomicLong();
   @ConfigDoc(value = "Main maintenance cadence for map repair logic in milliseconds.", impact = "Lower values repair inventories and item-frames sooner after reload; higher values reduce maintenance overhead.")
   private long maintenanceTickIntervalMs = 500L;
   @ConfigDoc(value = "Cadence for scanning player inventories for React map repair in milliseconds.", impact = "Lower values repair map metadata and renderers faster; higher values reduce per-tick work.")
@@ -137,6 +143,8 @@ public class MapController extends TickedObject implements IController, Listener
   private long frameMapRedrawIntervalMs = 300L;
   @ConfigDoc(value = "Interval between full item-stack revalidations of tracked frame maps in milliseconds.", impact = "Lower values detect swapped frame items sooner; higher values avoid repeated item metadata reads every maintenance tick.")
   private long frameMapValidateIntervalMs = 2_000L;
+  @ConfigDoc(value = "Maximum tracked item-frame maps considered for packet pushes per maintenance pass.", impact = "Higher values refresh very large map walls sooner; lower values cap scheduler and entity-lookup pressure.")
+  private int frameMapPushBatchSize = 128;
   @ConfigDoc(value = "Combines adjacent item-frame React maps with the same renderer into one large tiled megamap display.", impact = "Disable to render every frame map as an independent 128x128 dashboard.")
   private boolean megamapEnabled = true;
   @ConfigDoc(value = "Total tile budget for one combined megamap wall.", impact = "Walls larger than the budget fall back to zoomed single-dashboard rendering.")
@@ -153,6 +161,10 @@ public class MapController extends TickedObject implements IController, Listener
   private transient Map<FramePushKey, Long> frameMapPushMsByViewerKey;
   private transient Map<Integer, Long> frameMapLastSeenByMapId;
   private transient Map<UUID, ActiveFrameMap> activeFrameMaps;
+  private transient ConcurrentLinkedQueue<ActiveFrameMap> activeFrameMapQueue;
+  private transient Map<UUID, Map<Long, FrameChunkRepair>> frameChunkRepairsByWorld;
+  private transient ConcurrentLinkedQueue<FrameChunkRepair> frameChunkRepairQueue;
+  private transient ConcurrentLinkedQueue<FrameChunkSeed> frameChunkSeedQueue;
   private transient Map<Integer, UUID> frameIdsByMapId;
   private transient Set<UUID> megamapSplitsInFlight;
   // Declared as Listener so the Paper-only listener type never leaks into a generated
@@ -160,13 +172,15 @@ public class MapController extends TickedObject implements IController, Listener
   private transient Listener frameChangeListener;
   private transient boolean frameChangeEventsAvailable;
   private transient AtomicBoolean maintenanceTickQueued;
+  private transient Map<MapRendererPipe, MapView> ownedRendererPipes;
+  private transient volatile boolean rendererPipesActive;
+  private transient volatile long rendererPipeOwnerId;
   private transient Method itemFrameSetItemSilentMethod;
   private transient boolean itemFrameSetItemSilentMethodResolved;
   private transient long lastInventoryRepairMs;
   private transient long lastItemFrameRepairMs;
+  private transient long lastFramePushStatePruneMs;
   private transient int inventoryRepairCursor;
-  private transient int itemFrameWorldCursor;
-  private transient int itemFrameChunkCursor;
   private transient List<ReactRenderer> irisMetricsRenderers;
   private transient ReactRenderer adaptMetricsRenderer;
   private transient ReactRenderer wormholesMetricsRenderer;
@@ -181,14 +195,12 @@ public class MapController extends TickedObject implements IController, Listener
   }
 
   public void updateMapView(MapView view, ReactRenderer newRenderer) {
-    clearRenderers(view);
-    view.addRenderer(new MapRendererPipe(newRenderer));
+    installRendererPipe(view, newRenderer, rendererPipeOwnerId, ownedRendererPipes);
   }
 
   public MapView createView(World world, ReactRenderer renderer) {
     MapView view = Bukkit.createMap(world);
-    clearRenderers(view);
-    view.addRenderer(new MapRendererPipe(renderer));
+    installRendererPipe(view, renderer, rendererPipeOwnerId, ownedRendererPipes);
     return view;
   }
 
@@ -439,6 +451,7 @@ public class MapController extends TickedObject implements IController, Listener
 
   @EventHandler
   public void on(EntitiesLoadEvent e) {
+    trackFrameRepairChunk(e.getChunk());
     // Chunk entities are not populated at ChunkLoadEvent time on modern Paper; this
     // handler already runs on the owning region thread, so refresh frames inline.
     Supplier<FrameMapViewerSnapshot> viewerSnapshot = memoizedViewerSnapshot();
@@ -460,6 +473,21 @@ public class MapController extends TickedObject implements IController, Listener
         untrackFrameMap(frame.getUniqueId());
       }
     }
+  }
+
+  @EventHandler(priority = EventPriority.MONITOR)
+  public void on(ChunkLoadEvent e) {
+    trackFrameRepairChunk(e.getChunk());
+  }
+
+  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+  public void on(ChunkUnloadEvent e) {
+    removeFrameRepairChunk(e.getChunk());
+  }
+
+  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+  public void on(WorldUnloadEvent e) {
+    removeFrameRepairWorld(e.getWorld().getUID());
   }
 
   @EventHandler(ignoreCancelled = true)
@@ -532,12 +560,20 @@ public class MapController extends TickedObject implements IController, Listener
 
   @Override
   public void start() {
+    rendererPipesActive = false;
+    detachOwnedRendererPipes(ownedRendererPipes);
+    ownedRendererPipes = new ConcurrentHashMap<>();
+    rendererPipeOwnerId = rendererPipeOwnerSequence.incrementAndGet();
     renderers = new ConcurrentHashMap<>();
     resolvedRenderers = new ConcurrentHashMap<>();
     rendererMetadata = new ConcurrentHashMap<>();
     frameMapPushMsByViewerKey = new ConcurrentHashMap<>();
     frameMapLastSeenByMapId = new ConcurrentHashMap<>();
     activeFrameMaps = new ConcurrentHashMap<>();
+    activeFrameMapQueue = new ConcurrentLinkedQueue<>();
+    frameChunkRepairsByWorld = new ConcurrentHashMap<>();
+    frameChunkRepairQueue = new ConcurrentLinkedQueue<>();
+    frameChunkSeedQueue = new ConcurrentLinkedQueue<>();
     frameIdsByMapId = new ConcurrentHashMap<>();
     megamapSplitsInFlight = ConcurrentHashMap.newKeySet();
     frameChangeListener = null;
@@ -551,9 +587,8 @@ public class MapController extends TickedObject implements IController, Listener
     itemFrameSetItemSilentMethodResolved = false;
     lastInventoryRepairMs = 0L;
     lastItemFrameRepairMs = 0L;
+    lastFramePushStatePruneMs = 0L;
     inventoryRepairCursor = 0;
-    itemFrameWorldCursor = 0;
-    itemFrameChunkCursor = 0;
     renderers.put(FeatureUnknown.ID, new RendererUnknown());
     irisMetricsRenderers = new ArrayList<>();
     irisMetricsRenderers.addAll(RendererIrisMetrics.dashboards());
@@ -566,13 +601,16 @@ public class MapController extends TickedObject implements IController, Listener
     reactMetricsRenderer = new RendererReactMetrics();
     startupBoostUntilMs = System.currentTimeMillis() + Math.max(0L, startupBoostDurationMs);
     applyMaintenanceTickInterval();
+    rendererPipesActive = true;
   }
 
   @Override
   public void stop() {
+    rendererPipesActive = false;
     if (maintenanceTickQueued != null) {
       maintenanceTickQueued.set(false);
     }
+    detachOwnedRendererPipes(ownedRendererPipes);
     if (frameMapPushMsByViewerKey != null) {
       frameMapPushMsByViewerKey.clear();
     }
@@ -581,6 +619,18 @@ public class MapController extends TickedObject implements IController, Listener
     }
     if (activeFrameMaps != null) {
       activeFrameMaps.clear();
+    }
+    if (activeFrameMapQueue != null) {
+      activeFrameMapQueue.clear();
+    }
+    if (frameChunkRepairsByWorld != null) {
+      frameChunkRepairsByWorld.clear();
+    }
+    if (frameChunkRepairQueue != null) {
+      frameChunkRepairQueue.clear();
+    }
+    if (frameChunkSeedQueue != null) {
+      frameChunkSeedQueue.clear();
     }
     if (frameIdsByMapId != null) {
       frameIdsByMapId.clear();
@@ -634,7 +684,7 @@ public class MapController extends TickedObject implements IController, Listener
     }
 
     registerFrameChangeListener();
-    refreshLoadedItemFrames();
+    captureLoadedFrameRepairSeeds();
   }
 
   private void registerFrameChangeListener() {
@@ -662,8 +712,15 @@ public class MapController extends TickedObject implements IController, Listener
   @Override
   public void onTick() {
     applyMaintenanceTickInterval();
+    long ownerId = rendererPipeOwnerId;
+    Map<MapRendererPipe, MapView> pipeRegistry = ownedRendererPipes;
+    AtomicBoolean queued = maintenanceTickQueued;
     Runnable maintenanceTick = () -> {
       try {
+        if (!isRendererRuntimeActive(ownerId, pipeRegistry)) {
+          return;
+        }
+
         // Building the viewer snapshot touches every online player; memoize lazily so
         // ticks with no frame-map work cost nothing per player.
         Supplier<FrameMapViewerSnapshot> viewerSnapshot = memoizedViewerSnapshot();
@@ -675,8 +732,8 @@ public class MapController extends TickedObject implements IController, Listener
           reconcileMegamapDefects();
         }
       } finally {
-        if (maintenanceTickQueued != null) {
-          maintenanceTickQueued.set(false);
+        if (queued != null) {
+          queued.set(false);
         }
       }
     };
@@ -686,7 +743,7 @@ public class MapController extends TickedObject implements IController, Listener
       return;
     }
 
-    if (maintenanceTickQueued != null && maintenanceTickQueued.compareAndSet(false, true)) {
+    if (queued != null && queued.compareAndSet(false, true)) {
       J.sync(maintenanceTick);
     }
   }
@@ -777,13 +834,6 @@ public class MapController extends TickedObject implements IController, Listener
     }
 
     String normalized = normalizeRendererId(renderer.getId());
-    if (disabledRendererIds.contains(normalized)) {
-      if (renderers.remove(renderer.getId()) != null) {
-        invalidateRendererCaches();
-      }
-      return;
-    }
-
     if (renderers.put(renderer.getId(), renderer) != renderer) {
       invalidateRendererCaches();
     }
@@ -941,7 +991,7 @@ public class MapController extends TickedObject implements IController, Listener
     MapView fresh = createView(world, renderer);
     meta.setMapView(fresh);
     applyRendererMetadata(meta, renderer);
-    React.verbose("Megamap re-keyed inventory copy of wall map " + mapId + " -> " + mapIdOf(fresh));
+    React.verbose(() -> "Megamap re-keyed inventory copy of wall map " + mapId + " -> " + mapIdOf(fresh));
     return true;
   }
 
@@ -1037,7 +1087,9 @@ public class MapController extends TickedObject implements IController, Listener
       return false;
     }
 
-    return pipe.getNormalizedRendererId().equals(metadataFor(renderer.getId()).normalizedId());
+    return pipe.isActive()
+        && pipe.isOwnedBy(rendererPipeOwnerId)
+        && pipe.getNormalizedRendererId().equals(metadataFor(renderer.getId()).normalizedId());
   }
 
   private String rendererIdFromView(MapView view) {
@@ -1059,25 +1111,166 @@ public class MapController extends TickedObject implements IController, Listener
     return FeatureUnknown.ID;
   }
 
-  private void refreshLoadedItemFrames() {
-    Supplier<FrameMapViewerSnapshot> viewerSnapshot = memoizedViewerSnapshot();
+  private void captureLoadedFrameRepairSeeds() {
+    ConcurrentLinkedQueue<FrameChunkSeed> seedQueue = frameChunkSeedQueue;
+    if (seedQueue == null) {
+      return;
+    }
     for (World world : Bukkit.getWorlds()) {
-      for (Chunk chunk : world.getLoadedChunks()) {
-        refreshChunkItemFrames(chunk, true, viewerSnapshot);
+      Chunk[] loadedChunks = world.getLoadedChunks();
+      if (loadedChunks.length > 0) {
+        seedQueue.offer(new FrameChunkSeed(world.getUID(), loadedChunks));
       }
     }
   }
 
-  private void refreshChunkItemFrames(Chunk chunk, boolean forceRendererUpdate, Supplier<FrameMapViewerSnapshot> viewerSnapshot) {
-    if (chunk == null) {
+  private void seedFrameRepairQueue(int seedBudget) {
+    ConcurrentLinkedQueue<FrameChunkSeed> seedQueue = frameChunkSeedQueue;
+    if (seedQueue == null || seedQueue.isEmpty() || seedBudget <= 0) {
+      return;
+    }
+
+    int remaining = seedBudget;
+    List<FrameChunkSeed> requeue = new ArrayList<>();
+    while (remaining > 0) {
+      FrameChunkSeed seed = seedQueue.poll();
+      if (seed == null) {
+        break;
+      }
+      if (Bukkit.getWorld(seed.worldId) == null) {
+        continue;
+      }
+
+      remaining -= seedNextFrameRepairChunks(seed, remaining);
+      if (seed.hasRemaining()) {
+        requeue.add(seed);
+      }
+    }
+
+    for (FrameChunkSeed seed : requeue) {
+      seedQueue.offer(seed);
+    }
+  }
+
+  private int seedNextFrameRepairChunks(FrameChunkSeed seed, int maximum) {
+    int start = seed.nextIndex;
+    int end = start + Math.min(maximum, seed.loadedChunks.length - start);
+    for (int index = start; index < end; index++) {
+      Chunk chunk = seed.loadedChunks[index];
+      if (chunk != null) {
+        trackFrameRepairChunk(seed.worldId, chunk.getX(), chunk.getZ());
+      }
+    }
+    seed.nextIndex = end;
+    return end - start;
+  }
+
+  private void trackFrameRepairChunk(Chunk chunk) {
+    if (chunk == null || chunk.getWorld() == null) {
+      return;
+    }
+    trackFrameRepairChunk(chunk.getWorld().getUID(), chunk.getX(), chunk.getZ());
+  }
+
+  private void trackFrameRepairChunk(UUID worldId, int chunkX, int chunkZ) {
+    Map<UUID, Map<Long, FrameChunkRepair>> repairsByWorld = frameChunkRepairsByWorld;
+    ConcurrentLinkedQueue<FrameChunkRepair> repairQueue = frameChunkRepairQueue;
+    if (!rendererPipesActive || worldId == null || repairsByWorld == null || repairQueue == null) {
+      return;
+    }
+
+    Map<Long, FrameChunkRepair> worldRepairs = repairsByWorld.computeIfAbsent(
+        worldId,
+        ignored -> new ConcurrentHashMap<>()
+    );
+    long key = chunkKey(chunkX, chunkZ);
+    FrameChunkRepair repair = new FrameChunkRepair(worldId, key, chunkX, chunkZ);
+    if (worldRepairs.putIfAbsent(key, repair) == null) {
+      repairQueue.offer(repair);
+    }
+  }
+
+  private void removeFrameRepairChunk(Chunk chunk) {
+    if (chunk == null || chunk.getWorld() == null) {
+      return;
+    }
+    removeFrameRepairChunk(chunk.getWorld().getUID(), chunkKey(chunk.getX(), chunk.getZ()));
+  }
+
+  private void removeFrameRepairChunk(FrameChunkRepair repair) {
+    if (repair == null) {
+      return;
+    }
+
+    Map<UUID, Map<Long, FrameChunkRepair>> repairsByWorld = frameChunkRepairsByWorld;
+    if (repairsByWorld == null) {
+      return;
+    }
+    Map<Long, FrameChunkRepair> worldRepairs = repairsByWorld.get(repair.worldId);
+    if (worldRepairs != null) {
+      worldRepairs.remove(repair.chunkKey, repair);
+    }
+  }
+
+  private void removeFrameRepairChunk(UUID worldId, long chunkKey) {
+    Map<UUID, Map<Long, FrameChunkRepair>> repairsByWorld = frameChunkRepairsByWorld;
+    if (repairsByWorld == null || worldId == null) {
+      return;
+    }
+    Map<Long, FrameChunkRepair> worldRepairs = repairsByWorld.get(worldId);
+    if (worldRepairs == null) {
+      return;
+    }
+    worldRepairs.remove(chunkKey);
+  }
+
+  private void removeFrameRepairWorld(UUID worldId) {
+    if (frameChunkRepairsByWorld != null && worldId != null) {
+      frameChunkRepairsByWorld.remove(worldId);
+    }
+  }
+
+  private boolean isFrameChunkRepairActive(FrameChunkRepair repair) {
+    if (repair == null || frameChunkRepairsByWorld == null) {
+      return false;
+    }
+    Map<Long, FrameChunkRepair> worldRepairs = frameChunkRepairsByWorld.get(repair.worldId);
+    return worldRepairs != null && worldRepairs.get(repair.chunkKey) == repair;
+  }
+
+  private void scheduleFrameChunkRepair(
+      FrameChunkRepair repair,
+      boolean forceRendererUpdate,
+      Supplier<FrameMapViewerSnapshot> viewerSnapshot
+  ) {
+    if (!isFrameChunkRepairActive(repair) || !repair.inFlight.compareAndSet(false, true)) {
+      return;
+    }
+
+    World world = Bukkit.getWorld(repair.worldId);
+    if (world == null) {
+      repair.inFlight.set(false);
+      removeFrameRepairChunk(repair);
       return;
     }
 
     Runnable work = () -> {
-      for (Entity entity : chunk.getEntities()) {
-        if (entity instanceof ItemFrame frame) {
-          refreshItemFrame(frame, forceRendererUpdate, viewerSnapshot);
+      try {
+        if (!isFrameChunkRepairActive(repair)) {
+          return;
         }
+        if (!world.isChunkLoaded(repair.chunkX, repair.chunkZ)) {
+          removeFrameRepairChunk(repair);
+          return;
+        }
+
+        for (Entity entity : world.getChunkAt(repair.chunkX, repair.chunkZ).getEntities()) {
+          if (entity instanceof ItemFrame frame) {
+            refreshItemFrame(frame, forceRendererUpdate, viewerSnapshot);
+          }
+        }
+      } finally {
+        repair.inFlight.set(false);
       }
     };
 
@@ -1086,14 +1279,15 @@ public class MapController extends TickedObject implements IController, Listener
       return;
     }
 
-    World world = chunk.getWorld();
-    Location anchor = new Location(world, (chunk.getX() << 4) + 8.0D, 64.0D, (chunk.getZ() << 4) + 8.0D);
+    Location anchor = new Location(world, (repair.chunkX << 4) + 8.0D, 64.0D, (repair.chunkZ << 4) + 8.0D);
     if (J.isOwnedByCurrentRegion(anchor)) {
       work.run();
       return;
     }
 
-    J.runChunk(world, chunk.getX(), chunk.getZ(), work);
+    if (!J.runChunk(world, repair.chunkX, repair.chunkZ, work)) {
+      repair.inFlight.set(false);
+    }
   }
 
   private void runFrameRegion(Entity anchor, Runnable work) {
@@ -1150,8 +1344,10 @@ public class MapController extends TickedObject implements IController, Listener
       frameMapLastSeenByMapId.put(mapId, now);
     }
 
+    AtomicBoolean created = new AtomicBoolean(false);
     ActiveFrameMap tracked = activeFrameMaps.compute(frameId, (id, existing) -> {
       if (existing == null || !existing.worldId.equals(worldId)) {
+        created.set(true);
         return new ActiveFrameMap(frameId, worldId, mapId, location, now);
       }
 
@@ -1160,6 +1356,10 @@ public class MapController extends TickedObject implements IController, Listener
       existing.lastSeenMs = now;
       return existing;
     });
+    if (created.get() && activeFrameMapQueue != null) {
+      activeFrameMapQueue.offer(tracked);
+    }
+    tracked.nextPushDispatchMs = now + effectiveFrameMapPushIntervalMs();
     indexFrameMapId(mapId, frameId);
     if (tracked.gridMapId < 0) {
       invalidateMegamapGrid();
@@ -1421,7 +1621,7 @@ public class MapController extends TickedObject implements IController, Listener
     indexFrameMapId(freshMapId, tracked.frameId);
     captureFrameGridState(tracked, frame, view);
     invalidateMegamapGrid();
-    React.verbose("Megamap split duplicate map " + duplicateMapId + " -> " + freshMapId + " frame=" + tracked.frameId);
+    React.verbose(() -> "Megamap split duplicate map " + duplicateMapId + " -> " + freshMapId + " frame=" + tracked.frameId);
   }
 
   private void resetRotatedFrameMaps(MegamapGrid.MegamapSolution solution) {
@@ -1457,7 +1657,7 @@ public class MapController extends TickedObject implements IController, Listener
 
     if (frame.getRotation() != Rotation.NONE) {
       frame.setRotation(Rotation.NONE);
-      React.verbose("Megamap rotation reset map=" + tracked.mapId + " frame=" + tracked.frameId);
+      React.verbose(() -> "Megamap rotation reset map=" + tracked.mapId + " frame=" + tracked.frameId);
     }
 
     if (!tracked.rotationAligned) {
@@ -1470,9 +1670,9 @@ public class MapController extends TickedObject implements IController, Listener
     try {
       return Bukkit.getEntity(frameId);
     } catch (Throwable ex) {
-      React.verbose("Failed to resolve tracked map frame entity " + frameId + ": "
+      React.verbose(() -> "Failed to resolve tracked map frame entity " + frameId + ": "
           + ex.getClass().getSimpleName()
-          + (ex.getMessage() == null ? "" : " - " + ex.getMessage()));
+          + (ex.getMessage() == null ? "" : " - " + ex.getMessage()), ex);
       return null;
     }
   }
@@ -1540,35 +1740,88 @@ public class MapController extends TickedObject implements IController, Listener
   }
 
   private void pushTrackedFrameMaps(Supplier<FrameMapViewerSnapshot> viewerSnapshot) {
-    if (activeFrameMaps == null || activeFrameMaps.isEmpty()) {
+    if (activeFrameMaps == null
+        || activeFrameMaps.isEmpty()
+        || activeFrameMapQueue == null
+        || activeFrameMapQueue.isEmpty()) {
       pruneFramePushState();
       return;
     }
 
-    for (ActiveFrameMap tracked : activeFrameMaps.values()) {
-      if (tracked == null || tracked.worldId == null) {
-        if (tracked != null) {
-          untrackFrameMap(tracked.frameId);
-        }
+    long now = System.currentTimeMillis();
+    int remaining = Math.max(1, frameMapPushBatchSize);
+    while (remaining-- > 0) {
+      ActiveFrameMap tracked = activeFrameMapQueue.poll();
+      if (tracked == null) {
+        break;
+      }
+
+      if (activeFrameMaps.get(tracked.frameId) != tracked) {
         continue;
       }
 
-      World world = Bukkit.getWorld(tracked.worldId);
-      if (world == null) {
-        untrackFrameMap(tracked.frameId);
-        continue;
-      }
-
-      Entity entity = resolveFrameEntity(tracked.frameId);
-      if (entity == null) {
-        untrackFrameMap(tracked.frameId);
-        continue;
-      }
-
-      runFrameRegion(entity, () -> validateAndPushTrackedFrame(tracked, entity, viewerSnapshot));
+      activeFrameMapQueue.offer(tracked);
+      scheduleTrackedFrameMaintenance(tracked, viewerSnapshot, now);
     }
 
     pruneFramePushState();
+  }
+
+  private void scheduleTrackedFrameMaintenance(
+      ActiveFrameMap tracked,
+      Supplier<FrameMapViewerSnapshot> viewerSnapshot,
+      long now
+  ) {
+    if (tracked == null || tracked.worldId == null || now < tracked.nextPushDispatchMs) {
+      return;
+    }
+
+    if (!tracked.pushDispatchInFlight.compareAndSet(false, true)) {
+      return;
+    }
+
+    tracked.nextPushDispatchMs = now + effectiveFrameMapPushIntervalMs();
+    World world = Bukkit.getWorld(tracked.worldId);
+    if (world == null) {
+      tracked.pushDispatchInFlight.set(false);
+      untrackFrameMap(tracked.frameId);
+      return;
+    }
+
+    Entity entity = resolveFrameEntity(tracked.frameId);
+    if (entity == null) {
+      tracked.pushDispatchInFlight.set(false);
+      untrackFrameMap(tracked.frameId);
+      return;
+    }
+
+    long ownerId = rendererPipeOwnerId;
+    Map<MapRendererPipe, MapView> pipeRegistry = ownedRendererPipes;
+    Runnable completion = () -> tracked.pushDispatchInFlight.set(false);
+    Runnable retirement = () -> {
+      tracked.nextPushDispatchMs = now;
+      completion.run();
+    };
+    Runnable work = () -> {
+      try {
+        if (activeFrameMaps.get(tracked.frameId) == tracked
+            && isRendererRuntimeActive(ownerId, pipeRegistry)) {
+          validateAndPushTrackedFrame(tracked, entity, viewerSnapshot);
+        }
+      } finally {
+        completion.run();
+      }
+    };
+
+    if (!J.isFoliaThreading() || J.isOwnedByCurrentRegion(entity)) {
+      work.run();
+      return;
+    }
+
+    if (!J.runEntity(entity, work, 0, retirement)) {
+      tracked.nextPushDispatchMs = now;
+      completion.run();
+    }
   }
 
   private void validateAndPushTrackedFrame(ActiveFrameMap tracked, Entity entity, Supplier<FrameMapViewerSnapshot> viewerSnapshot) {
@@ -1625,6 +1878,11 @@ public class MapController extends TickedObject implements IController, Listener
   private void pruneFramePushState() {
     long now = System.currentTimeMillis();
     long retentionMs = effectiveFrameMapPushStateRetentionMs();
+    long pruneIntervalMs = Math.max(5_000L, Math.min(60_000L, retentionMs / 4L));
+    if (now - lastFramePushStatePruneMs < pruneIntervalMs) {
+      return;
+    }
+    lastFramePushStatePruneMs = now;
     if (frameMapPushMsByViewerKey != null && !frameMapPushMsByViewerKey.isEmpty()) {
       frameMapPushMsByViewerKey.entrySet().removeIf(entry -> now - entry.getValue() > retentionMs);
     }
@@ -1633,15 +1891,24 @@ public class MapController extends TickedObject implements IController, Listener
     }
   }
 
-  private void clearRenderers(MapView view) {
+  private boolean clearRenderers(MapView view) {
     if (view == null) {
-      return;
+      return true;
     }
 
+    boolean cleared = true;
     for (MapRenderer renderer : new ArrayList<>(view.getRenderers())) {
+      if (renderer instanceof MapRendererPipe pipe) {
+        pipe.close();
+      }
+
       try {
         view.removeRenderer(renderer);
+        if (renderer instanceof MapRendererPipe pipe && ownedRendererPipes != null) {
+          ownedRendererPipes.remove(pipe, view);
+        }
       } catch (Throwable e) {
+        cleared = false;
         Integer mapId = mapIdOf(view);
         String mapText = mapId == null ? "unknown" : String.valueOf(mapId);
         String rendererClass = renderer == null ? "unknown" : renderer.getClass().getSimpleName();
@@ -1649,8 +1916,85 @@ public class MapController extends TickedObject implements IController, Listener
             "Map renderer cleanup failed: mapId=" + mapText
                 + " renderer=" + rendererClass
                 + " cause=" + summarizeThrowable(e)
-                + " action=kept-existing-renderer"
+                + " action=kept-existing-renderer",
+            e
         );
+      }
+    }
+    return cleared;
+  }
+
+  private void installRendererPipe(
+      MapView view,
+      ReactRenderer renderer,
+      long ownerId,
+      Map<MapRendererPipe, MapView> pipeRegistry
+  ) {
+    if (view == null || renderer == null || !isRendererRuntimeActive(ownerId, pipeRegistry)) {
+      return;
+    }
+
+    synchronized (view) {
+      if (!isRendererRuntimeActive(ownerId, pipeRegistry)) {
+        return;
+      }
+
+      if (!clearRenderers(view) || !isRendererRuntimeActive(ownerId, pipeRegistry)) {
+        return;
+      }
+
+      MapRendererPipe pipe = new MapRendererPipe(renderer, ownerId);
+      boolean added = false;
+      try {
+        view.addRenderer(pipe);
+        added = true;
+        pipeRegistry.put(pipe, view);
+      } finally {
+        if (!added || !isRendererRuntimeActive(ownerId, pipeRegistry)) {
+          detachRendererPipe(view, pipe, pipeRegistry);
+        }
+      }
+    }
+  }
+
+  private boolean isRendererRuntimeActive(
+      long ownerId,
+      Map<MapRendererPipe, MapView> pipeRegistry
+  ) {
+    return rendererPipesActive
+        && rendererPipeOwnerId == ownerId
+        && ownedRendererPipes == pipeRegistry;
+  }
+
+  private void detachOwnedRendererPipes(Map<MapRendererPipe, MapView> pipeRegistry) {
+    if (pipeRegistry == null || pipeRegistry.isEmpty()) {
+      return;
+    }
+
+    for (Map.Entry<MapRendererPipe, MapView> entry : new ArrayList<>(pipeRegistry.entrySet())) {
+      detachRendererPipe(entry.getValue(), entry.getKey(), pipeRegistry);
+    }
+    pipeRegistry.clear();
+  }
+
+  private void detachRendererPipe(
+      MapView view,
+      MapRendererPipe pipe,
+      Map<MapRendererPipe, MapView> pipeRegistry
+  ) {
+    pipe.close();
+    try {
+      synchronized (view) {
+        view.removeRenderer(pipe);
+      }
+    } catch (Throwable e) {
+      React.reportError(new IllegalStateException(
+          "Failed to detach React map renderer pipe during controller lifecycle cleanup",
+          e
+      ));
+    } finally {
+      if (pipeRegistry != null) {
+        pipeRegistry.remove(pipe, view);
       }
     }
   }
@@ -1662,46 +2006,34 @@ public class MapController extends TickedObject implements IController, Listener
     }
     lastItemFrameRepairMs = now;
 
-    List<World> worlds = Bukkit.getWorlds();
-    if (worlds.isEmpty()) {
-      itemFrameWorldCursor = 0;
-      itemFrameChunkCursor = 0;
+    ConcurrentLinkedQueue<FrameChunkRepair> repairQueue = frameChunkRepairQueue;
+    if (repairQueue == null) {
       return;
     }
 
-    int remaining = effectiveItemFrameChunkBatchSize();
+    int pollBudget = effectiveItemFrameChunkBatchSize();
+    seedFrameRepairQueue(pollBudget);
+    if (repairQueue.isEmpty()) {
+      return;
+    }
     boolean forceRendererUpdate = inStartupBoost();
-    int worldCount = worlds.size();
-    int worldsVisited = 0;
-
-    // getLoadedChunks() copies the full loaded-chunk array, so fetch it once per
-    // world per pass and serve the whole batch from it instead of per chunk.
-    while (remaining > 0 && worldsVisited < worldCount) {
-      if (itemFrameWorldCursor >= worldCount) {
-        itemFrameWorldCursor = 0;
-        itemFrameChunkCursor = 0;
+    List<FrameChunkRepair> requeue = new ArrayList<>(pollBudget);
+    for (int polled = 0; polled < pollBudget; polled++) {
+      FrameChunkRepair repair = repairQueue.poll();
+      if (repair == null) {
+        break;
       }
-
-      World world = worlds.get(itemFrameWorldCursor);
-      Chunk[] loadedChunks = world.getLoadedChunks();
-      if (itemFrameChunkCursor >= loadedChunks.length) {
-        itemFrameWorldCursor = (itemFrameWorldCursor + 1) % worldCount;
-        itemFrameChunkCursor = 0;
-        worldsVisited++;
+      if (!isFrameChunkRepairActive(repair)) {
         continue;
       }
 
-      int end = Math.min(loadedChunks.length, itemFrameChunkCursor + remaining);
-      for (int i = itemFrameChunkCursor; i < end; i++) {
-        refreshChunkItemFrames(loadedChunks[i], forceRendererUpdate, viewerSnapshot);
-      }
+      requeue.add(repair);
+      scheduleFrameChunkRepair(repair, forceRendererUpdate, viewerSnapshot);
+    }
 
-      remaining -= end - itemFrameChunkCursor;
-      itemFrameChunkCursor = end;
-      if (itemFrameChunkCursor >= loadedChunks.length) {
-        itemFrameWorldCursor = (itemFrameWorldCursor + 1) % worldCount;
-        itemFrameChunkCursor = 0;
-        worldsVisited++;
+    for (FrameChunkRepair repair : requeue) {
+      if (isFrameChunkRepairActive(repair)) {
+        repairQueue.offer(repair);
       }
     }
   }
@@ -1724,8 +2056,6 @@ public class MapController extends TickedObject implements IController, Listener
       return;
     }
 
-    // On regionized servers the global viewer snapshot would read player state across
-    // region threads; serve viewers region-locally from the frame's owning thread instead.
     if (J.isFoliaThreading()) {
       pushMapToNearbyPlayersRegionLocal(frame, view, mapId);
       return;
@@ -1799,54 +2129,184 @@ public class MapController extends TickedObject implements IController, Listener
         player.sendMap(view);
         frameMapPushMsByViewerKey.put(pushKey, now);
       } catch (Throwable ex) {
-        React.verbose("Failed to push map " + mapId + " to player " + player.getName() + ": "
+        React.verbose(() -> "Failed to push map " + mapId + " to player " + player.getName() + ": "
             + ex.getClass().getSimpleName()
-            + (ex.getMessage() == null ? "" : " - " + ex.getMessage()));
+            + (ex.getMessage() == null ? "" : " - " + ex.getMessage()), ex);
       }
     }
   }
 
   private void pushMapToNearbyPlayersRegionLocal(ItemFrame frame, MapView view, int mapId) {
+    World world = frame.getWorld();
     Location source = frame.getLocation();
+    Map<FramePushKey, Long> pushState = frameMapPushMsByViewerKey;
+    if (world == null || source.getWorld() == null || pushState == null) {
+      return;
+    }
+
     double radius = Math.max(1D, frameMapPushRadiusBlocks);
-    double radiusSq = radius * radius;
-    long now = System.currentTimeMillis();
-    long activeInterval = effectiveFrameMapPushIntervalMs();
-    long idleInterval = effectiveFrameMapIdlePushIntervalMs();
-    double lookDotThreshold = effectiveFrameMapLookDotThreshold();
-    for (Entity nearby : frame.getWorld().getNearbyEntities(source, radius, radius, radius)) {
-      if (!(nearby instanceof Player player) || !player.isOnline()) {
-        continue;
-      }
+    RegionLocalFramePush push = new RegionLocalFramePush(
+        world.getUID(),
+        source.getX(),
+        source.getY(),
+        source.getZ(),
+        mapId,
+        view,
+        radius * radius,
+        System.currentTimeMillis(),
+        effectiveFrameMapPushIntervalMs(),
+        effectiveFrameMapIdlePushIntervalMs(),
+        effectiveFrameMapLookDotThreshold(),
+        frameMapRequireLineOfSight,
+        frameMapPushOutsideRangeWhenHolding,
+        rendererPipeOwnerId,
+        ownedRendererPipes,
+        pushState
+    );
+    if (!FoliaScheduler.runGlobal(React.instance, () -> dispatchRegionLocalFramePush(push, radius))) {
+      React.verbose(() -> "Failed to schedule Folia frame-map candidate resolution for map " + mapId);
+    }
+  }
 
-      if (player.getLocation().distanceSquared(source) > radiusSq) {
-        continue;
-      }
+  private void dispatchRegionLocalFramePush(RegionLocalFramePush push, double radius) {
+    if (!isRegionLocalFramePushActive(push)) {
+      return;
+    }
 
-      boolean holding = isHoldingMap(player, mapId);
-      boolean activelyWatching = holding || isLikelyLookingAtFrame(player, source, lookDotThreshold);
-      long requiredInterval = activelyWatching ? activeInterval : idleInterval;
-      FramePushKey pushKey = new FramePushKey(mapId, player.getUniqueId());
-      long seededLastPush = now - requiredInterval + initialPushOffsetMs(pushKey, requiredInterval);
-      long lastPush = frameMapPushMsByViewerKey.getOrDefault(pushKey, seededLastPush);
-      if (now - lastPush < requiredInterval) {
-        continue;
-      }
+    for (Player player : collectRegionLocalFrameMapCandidates(push, radius)) {
+      J.runEntity(player, () -> pushMapToPlayerRegionLocal(player, push));
+    }
+  }
 
-      boolean holdingBypassesRange = holding && frameMapPushOutsideRangeWhenHolding;
-      if (!holdingBypassesRange && frameMapRequireLineOfSight && !player.hasLineOfSight(frame)) {
-        continue;
-      }
+  private List<Player> collectRegionLocalFrameMapCandidates(RegionLocalFramePush push, double radius) {
+    if (push.outsideRangeWhenHolding()) {
+      return foliaPlayerSnapshot();
+    }
 
-      try {
-        player.sendMap(view);
-        frameMapPushMsByViewerKey.put(pushKey, now);
-      } catch (Throwable ex) {
-        React.verbose("Failed to push map " + mapId + " to player " + player.getName() + ": "
-            + ex.getClass().getSimpleName()
-            + (ex.getMessage() == null ? "" : " - " + ex.getMessage()));
+    NearbyPlayerIndexController playerIndex = React.controller(NearbyPlayerIndexController.class);
+    Map<UUID, Map<Long, Set<UUID>>> indexedPlayers = playerIndex == null
+        ? null
+        : playerIndex.getPlayersByWorldChunk();
+    if (indexedPlayers == null) {
+      return foliaPlayerSnapshot();
+    }
+
+    Map<Long, Set<UUID>> worldBuckets = indexedPlayers.get(push.worldId());
+    if (worldBuckets == null || worldBuckets.isEmpty()) {
+      return List.of();
+    }
+
+    int minChunkX = chunkCoordinate(push.sourceX() - radius);
+    int maxChunkX = chunkCoordinate(push.sourceX() + radius);
+    int minChunkZ = chunkCoordinate(push.sourceZ() - radius);
+    int maxChunkZ = chunkCoordinate(push.sourceZ() + radius);
+    Set<UUID> candidateIds = new HashSet<>();
+    for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+      for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
+        Set<UUID> bucket = worldBuckets.get(chunkKey(chunkX, chunkZ));
+        if (bucket != null) {
+          candidateIds.addAll(bucket);
+        }
       }
     }
+
+    if (candidateIds.isEmpty()) {
+      return List.of();
+    }
+
+    List<Player> candidates = new ArrayList<>(candidateIds.size());
+    for (UUID playerId : candidateIds) {
+      Player player = Bukkit.getPlayer(playerId);
+      if (player != null) {
+        candidates.add(player);
+      }
+    }
+    return candidates;
+  }
+
+  private List<Player> foliaPlayerSnapshot() {
+    EntityController entityController = React.controller(EntityController.class);
+    if (entityController == null) {
+      return List.of();
+    }
+
+    Player[] players = entityController.getFoliaPlayers();
+    if (players == null || players.length == 0) {
+      return List.of();
+    }
+
+    List<Player> candidates = new ArrayList<>(players.length);
+    for (Player player : players) {
+      if (player != null) {
+        candidates.add(player);
+      }
+    }
+    return candidates;
+  }
+
+  private void pushMapToPlayerRegionLocal(Player player, RegionLocalFramePush push) {
+    if (!isRegionLocalFramePushActive(push)
+        || !J.isOwnedByCurrentRegion(player)
+        || !player.isOnline()) {
+      return;
+    }
+
+    World playerWorld = player.getWorld();
+    if (playerWorld == null) {
+      return;
+    }
+
+    boolean holding = isHoldingMap(player, push.mapId());
+    boolean holdingBypassesRange = holding && push.outsideRangeWhenHolding();
+    boolean sameWorld = push.worldId().equals(playerWorld.getUID());
+    if (!holdingBypassesRange && !sameWorld) {
+      return;
+    }
+
+    if (!holdingBypassesRange) {
+      Location playerLocation = player.getLocation();
+      double dx = playerLocation.getX() - push.sourceX();
+      double dy = playerLocation.getY() - push.sourceY();
+      double dz = playerLocation.getZ() - push.sourceZ();
+      if ((dx * dx) + (dy * dy) + (dz * dz) > push.radiusSq()) {
+        return;
+      }
+    }
+
+    Location source = new Location(playerWorld, push.sourceX(), push.sourceY(), push.sourceZ());
+    boolean activelyWatching = holding || isLikelyLookingAtFrame(player, source, push.lookDotThreshold());
+    long requiredInterval = activelyWatching ? push.activeInterval() : push.idleInterval();
+    FramePushKey pushKey = new FramePushKey(push.mapId(), player.getUniqueId());
+    long seededLastPush = push.now() - requiredInterval + initialPushOffsetMs(pushKey, requiredInterval);
+    long lastPush = push.pushState().getOrDefault(pushKey, seededLastPush);
+    if (push.now() - lastPush < requiredInterval) {
+      return;
+    }
+
+    if (!holdingBypassesRange && push.requireLineOfSight()) {
+      if (!sameWorld || !J.isOwnedByCurrentRegion(source) || !player.hasLineOfSight(source)) {
+        return;
+      }
+    }
+
+    if (!isRegionLocalFramePushActive(push)) {
+      return;
+    }
+
+    try {
+      player.sendMap(push.view());
+      push.pushState().put(pushKey, push.now());
+    } catch (Throwable ex) {
+      React.verbose(() -> "Failed to push map " + push.mapId() + " to player " + player.getName() + ": "
+          + ex.getClass().getSimpleName()
+          + (ex.getMessage() == null ? "" : " - " + ex.getMessage()), ex);
+    }
+  }
+
+  private boolean isRegionLocalFramePushActive(RegionLocalFramePush push) {
+    return push != null
+        && isRendererRuntimeActive(push.ownerId(), push.pipeRegistry())
+        && frameMapPushMsByViewerKey == push.pushState();
   }
 
   private boolean isLikelyLookingAtFrame(Player player, Location source, double lookDotThreshold) {
@@ -1923,8 +2383,8 @@ public class MapController extends TickedObject implements IController, Listener
     try {
       return view.getId();
     } catch (Throwable ex) {
-      React.verbose("Failed to read map view id: " + ex.getClass().getSimpleName()
-          + (ex.getMessage() == null ? "" : " - " + ex.getMessage()));
+      React.verbose(() -> "Failed to read map view id: " + ex.getClass().getSimpleName()
+          + (ex.getMessage() == null ? "" : " - " + ex.getMessage()), ex);
       return null;
     }
   }
@@ -2128,9 +2588,9 @@ public class MapController extends TickedObject implements IController, Listener
       try {
         itemFrameSetItemSilentMethod = ItemFrame.class.getMethod("setItem", ItemStack.class, boolean.class);
       } catch (Throwable ex) {
-        React.verbose("Silent ItemFrame#setItem(ItemStack, boolean) not available: "
+        React.verbose(() -> "Silent ItemFrame#setItem(ItemStack, boolean) not available: "
             + ex.getClass().getSimpleName()
-            + (ex.getMessage() == null ? "" : " - " + ex.getMessage()));
+            + (ex.getMessage() == null ? "" : " - " + ex.getMessage()), ex);
         itemFrameSetItemSilentMethod = null;
       }
     }
@@ -2140,9 +2600,9 @@ public class MapController extends TickedObject implements IController, Listener
         itemFrameSetItemSilentMethod.invoke(frame, item, false);
         return;
       } catch (Throwable ex) {
-        React.verbose("Failed invoking silent ItemFrame setter, falling back: "
+        React.verbose(() -> "Failed invoking silent ItemFrame setter, falling back: "
             + ex.getClass().getSimpleName()
-            + (ex.getMessage() == null ? "" : " - " + ex.getMessage()));
+            + (ex.getMessage() == null ? "" : " - " + ex.getMessage()), ex);
       }
     }
 
@@ -2657,6 +3117,38 @@ public class MapController extends TickedObject implements IController, Listener
     return Math.max(0D, Math.min(0.999D, frameMapLookDotThreshold));
   }
 
+  private static final class FrameChunkRepair {
+    private final UUID worldId;
+    private final long chunkKey;
+    private final int chunkX;
+    private final int chunkZ;
+    private final AtomicBoolean inFlight;
+
+    private FrameChunkRepair(UUID worldId, long chunkKey, int chunkX, int chunkZ) {
+      this.worldId = worldId;
+      this.chunkKey = chunkKey;
+      this.chunkX = chunkX;
+      this.chunkZ = chunkZ;
+      inFlight = new AtomicBoolean(false);
+    }
+  }
+
+  private static final class FrameChunkSeed {
+    private final UUID worldId;
+    private final Chunk[] loadedChunks;
+    private int nextIndex;
+
+    private FrameChunkSeed(UUID worldId, Chunk[] loadedChunks) {
+      this.worldId = worldId;
+      this.loadedChunks = loadedChunks;
+      nextIndex = 0;
+    }
+
+    private boolean hasRemaining() {
+      return nextIndex < loadedChunks.length;
+    }
+  }
+
   private static final class FrameMapViewerSnapshot {
     private final Map<UUID, Map<Long, List<FrameMapViewer>>> viewersByWorldChunk;
     private final Map<Integer, List<FrameMapViewer>> viewersHoldingMap;
@@ -2748,11 +3240,13 @@ public class MapController extends TickedObject implements IController, Listener
     private final UUID frameId;
     private final UUID worldId;
     private final long firstSeenMs;
+    private final AtomicBoolean pushDispatchInFlight;
     private volatile int mapId;
     private volatile int gridMapId = -1;
     private volatile Location location;
     private volatile long lastSeenMs;
     private volatile long lastValidatedMs;
+    private volatile long nextPushDispatchMs;
     private volatile MapView view;
     private volatile BlockFace facing;
     private volatile boolean rotationAligned;
@@ -2768,9 +3262,30 @@ public class MapController extends TickedObject implements IController, Listener
       this.location = location;
       this.lastSeenMs = lastSeenMs;
       this.firstSeenMs = lastSeenMs;
+      this.pushDispatchInFlight = new AtomicBoolean(false);
     }
   }
 
   private record FramePushKey(int mapId, UUID playerId) {
+  }
+
+  private record RegionLocalFramePush(
+      UUID worldId,
+      double sourceX,
+      double sourceY,
+      double sourceZ,
+      int mapId,
+      MapView view,
+      double radiusSq,
+      long now,
+      long activeInterval,
+      long idleInterval,
+      double lookDotThreshold,
+      boolean requireLineOfSight,
+      boolean outsideRangeWhenHolding,
+      long ownerId,
+      Map<MapRendererPipe, MapView> pipeRegistry,
+      Map<FramePushKey, Long> pushState
+  ) {
   }
 }

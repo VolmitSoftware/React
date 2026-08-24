@@ -121,19 +121,19 @@ class ReactClient
     : _http = client ?? http.Client(),
       _counter = counter ?? MonotonicCounter(InMemoryFleetStorage());
 
-  String get _base =>
-      '${cred.secure ? 'https' : 'http'}://${cred.host}:${cred.port}/api/v1';
-
   Map<String, String> get _headers => <String, String>{
     'Authorization': 'Bearer ${cred.bearer}',
     'Content-Type': 'application/json',
   };
 
-  Future<http.Response> _get(String path) async {
-    final Uri uri = Uri.parse('$_base$path');
+  Future<http.Response> _get(String path, {bool authenticated = true}) async {
+    final Uri uri = cred.directEndpoint('api/v1$path');
     try {
       final http.Response response = await _http
-          .get(uri, headers: _headers)
+          .get(
+            uri,
+            headers: authenticated ? _headers : const <String, String>{},
+          )
           .timeout(const Duration(seconds: 2));
       if (response.statusCode == 401) {
         throw const ReactAuthException();
@@ -152,7 +152,11 @@ class ReactClient
 
   Map<String, dynamic> _decodeJson(String body) {
     try {
-      return jsonDecode(body) as Map<String, dynamic>;
+      final Object? decoded = jsonDecode(body);
+      if (decoded is! Map<String, dynamic>) {
+        throw const ReactUnavailable('Malformed response: expected an object');
+      }
+      return decoded;
     } on FormatException catch (e) {
       throw ReactUnavailable(e.message);
     }
@@ -201,7 +205,7 @@ class ReactClient
     String path,
     Map<String, Object?> body,
   ) async {
-    final Uri uri = Uri.parse('$_base$path');
+    final Uri uri = cred.directEndpoint('api/v1$path');
     final Map<String, String> headers = <String, String>{
       'Authorization': 'Bearer ${cred.bearer}',
       'Content-Type': 'application/json',
@@ -252,7 +256,7 @@ class ReactClient
     String path,
     Map<String, Object?> body,
   ) async {
-    final Uri uri = Uri.parse('$_base$path');
+    final Uri uri = cred.directEndpoint('api/v1$path');
     final Map<String, String> headers = <String, String>{
       'Authorization': 'Bearer ${cred.bearer}',
       'Content-Type': 'application/json',
@@ -302,8 +306,17 @@ class ReactClient
 
   @override
   Future<ServerCapabilities> ping() async {
-    final http.Response response = await _get('/ping');
-    return ServerCapabilities.fromJson(_decodeData(response.body));
+    final http.Response response = await _get('/ping', authenticated: false);
+    if (response.statusCode != 200) {
+      throw ReactUnavailable(_errorMessage(response.body));
+    }
+    try {
+      return ServerCapabilities.fromJson(_decodeData(response.body));
+    } on ReactUnavailable {
+      rethrow;
+    } on FormatException catch (error) {
+      throw ReactUnavailable(error.message);
+    }
   }
 
   @override

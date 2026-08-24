@@ -7,6 +7,7 @@ import art.arcane.react.api.web.relay.RelayClient;
 import art.arcane.react.core.controller.SampleController;
 import art.arcane.react.core.controller.WebController;
 import art.arcane.react.util.project.registry.Registry;
+import io.javalin.Javalin;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -51,6 +52,8 @@ public class WebControllerRelayTest {
     private TestWebController buildInspectableController(WebConfiguration config) {
         TestWebController c = new TestWebController();
         c.setConfig(config);
+        c.setApp(Javalin.create());
+        c.setBoundPort(config.getPort());
         return c;
     }
 
@@ -71,8 +74,8 @@ public class WebControllerRelayTest {
         when(registry.all()).thenReturn(List.of());
 
         WebConfiguration config = new WebConfiguration();
-        config.setEnabled(true);
-        config.setBindAddress("127.0.0.1");
+        config.setListenerEnabled(true);
+        config.setListenAddress("127.0.0.1");
         config.setPort(0);
         config.setRelayEnabled(false);
 
@@ -94,8 +97,8 @@ public class WebControllerRelayTest {
         when(registry.all()).thenReturn(List.of());
 
         WebConfiguration config = new WebConfiguration();
-        config.setEnabled(true);
-        config.setBindAddress("127.0.0.1");
+        config.setListenerEnabled(true);
+        config.setListenAddress("127.0.0.1");
         config.setPort(0);
         config.setRelayEnabled(true);
         config.setRelayUrl("wss://127.0.0.1:1");
@@ -135,7 +138,7 @@ public class WebControllerRelayTest {
     @Test
     void blankAdvertisedUrlUsesHttpListenerFallback() {
         WebConfiguration config = new WebConfiguration();
-        config.setBindAddress("0.0.0.0");
+        config.setListenAddress("0.0.0.0");
         config.setPort(9697);
         TestWebController c = buildInspectableController(config);
 
@@ -149,6 +152,15 @@ public class WebControllerRelayTest {
         TestWebController c = buildInspectableController(config);
 
         assertThrows(IllegalArgumentException.class, c::resolveDirectUrl);
+    }
+
+    @Test
+    void unboundListenerCannotProduceDirectUrl() {
+        WebConfiguration config = new WebConfiguration();
+        TestWebController c = new TestWebController();
+        c.setConfig(config);
+
+        assertThrows(IllegalStateException.class, c::resolveDirectUrl);
     }
 
     private static final class TestWebController extends WebController {

@@ -1,13 +1,13 @@
 package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
+import art.arcane.react.api.web.heatmap.HeatmapWorldRef;
 import art.arcane.react.api.feature.CapabilityGatedFeature;
 import art.arcane.react.core.controller.IntegrationController;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.RendererMessages;
 import art.arcane.react.util.data.TinyColor;
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
-import org.bukkit.Chunk;
 
 import java.util.Set;
 
@@ -35,8 +35,8 @@ public class FeatureAdaptRuntimePressureOverlay extends FeatureChunkHeatmapBase 
   }
 
   @Override
-  protected double chunkScore(Chunk chunk) {
-    double base = chunkTotalScore(chunk);
+  protected double chunkScore(HeatmapWorldRef world, int chunkX, int chunkZ) {
+    double base = chunkTotalScore(world, chunkX, chunkZ);
     double sessionLoad = metricOr(IntegrationMetricSchema.ADAPT_SESSION_LOAD, 0D);
     double abilityTimingBudget = metricOr(IntegrationMetricSchema.ADAPT_ABILITY_TIMING_BUDGET, 0D);
     return pressureScore(base, sessionLoad, abilityTimingBudget);

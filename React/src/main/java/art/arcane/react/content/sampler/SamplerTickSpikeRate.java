@@ -41,6 +41,15 @@ public class SamplerTickSpikeRate extends ReactCachedSampler implements Listener
   }
 
   @Override
+  public void start() {
+    synchronized (spikes) {
+      spikes.clear();
+    }
+    lastTickMS = 0L;
+    super.start();
+  }
+
+  @Override
   public Material getIcon() {
     return Material.REPEATER;
   }
@@ -48,7 +57,7 @@ public class SamplerTickSpikeRate extends ReactCachedSampler implements Listener
   @EventHandler(priority = EventPriority.MONITOR)
   public void on(ServerTickEvent event) {
     long now = System.currentTimeMillis();
-    if (lastTickMS > 0 && now - lastTickMS >= spikeThresholdMS) {
+    if (lastTickMS > 0 && now - lastTickMS >= Math.max(1, spikeThresholdMS)) {
       synchronized (spikes) {
         spikes.addLast(now);
         cleanup(now);
@@ -62,14 +71,19 @@ public class SamplerTickSpikeRate extends ReactCachedSampler implements Listener
   public double onSample() {
     synchronized (spikes) {
       cleanup(System.currentTimeMillis());
-      return spikes.size() * (60000D / Math.max(1000D, windowMS));
+      return spikes.size() * (60000D / effectiveWindowMS());
     }
   }
 
   private void cleanup(long now) {
-    while (!spikes.isEmpty() && now - spikes.peekFirst() > windowMS) {
+    int effectiveWindowMS = effectiveWindowMS();
+    while (!spikes.isEmpty() && now - spikes.peekFirst() > effectiveWindowMS) {
       spikes.removeFirst();
     }
+  }
+
+  private int effectiveWindowMS() {
+    return Math.max(1000, windowMS);
   }
 
   @Override

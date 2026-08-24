@@ -103,6 +103,8 @@ public final class CommandMessages {
   public static final TextKey INTEGRATION_TIMELINE_HEADER = TextKey.of("command.runtime.integration.timeline_header", "<gray>Incident Timeline:</gray>");
   public static final TextKey INTEGRATION_TIMELINE_ENTRY = TextKey.of("command.runtime.integration.timeline_entry", "<dark_gray>  {entry}</dark_gray>");
   public static final TextKey WEB_INVALID_ROLE = TextKey.of("command.runtime.web.invalid_role", "<red>Invalid role: <white>{role}</white>. Expected viewer, operator, or admin.</red>");
+  public static final TextKey WEB_MUTATION_NOTICE = TextKey.of("command.runtime.web.mutation_notice", "<yellow>Web change by <white>{actor}</white>: <aqua>{target}</aqua> — <white>{detail}</white>.</yellow>");
+  public static final TextKey WEB_PAIR_UNAVAILABLE = TextKey.of("command.runtime.web.pair_unavailable", "<red>Web pairing is unavailable: <white>{reason}</white></red>");
   public static final TextKey WEB_PERSIST_FAILED = TextKey.of("command.runtime.web.persist_failed", "<red>Failed to persist token: <white>{reason}</white></red>");
   public static final TextKey WEB_PAIRING_CODE = TextKey.of("command.runtime.web.pairing_code", "<aqua>Pairing code:</aqua> {code}");
   public static final TextKey WEB_PAIRING_COPY = TextKey.of("command.runtime.web.pairing_copy", "<aqua>Pairing code:</aqua> <yellow><underlined>Click to copy</underlined></yellow>");
@@ -243,6 +245,8 @@ public final class CommandMessages {
     builder.add(INTEGRATION_TIMELINE_HEADER);
     builder.add(INTEGRATION_TIMELINE_ENTRY);
     builder.add(WEB_INVALID_ROLE);
+    builder.add(WEB_MUTATION_NOTICE);
+    builder.add(WEB_PAIR_UNAVAILABLE);
     builder.add(WEB_PERSIST_FAILED);
     builder.add(WEB_PAIRING_CODE);
     builder.add(WEB_PAIRING_COPY);

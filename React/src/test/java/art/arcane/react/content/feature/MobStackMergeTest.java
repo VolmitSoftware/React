@@ -1,11 +1,18 @@
 package art.arcane.react.content.feature;
 
+import art.arcane.react.React;
+import art.arcane.react.api.protect.ReactProtection;
+import art.arcane.react.content.sampler.SamplerEntities;
+import art.arcane.react.core.NMS;
 import art.arcane.react.util.common.scheduling.J;
+import com.google.common.util.concurrent.AtomicDouble;
 import net.jqwik.api.ForAll;
 import net.jqwik.api.Property;
 import net.jqwik.api.constraints.DoubleRange;
 import net.jqwik.api.constraints.IntRange;
+import org.bukkit.Chunk;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.AnimalTamer;
 import org.bukkit.entity.Cat;
@@ -16,12 +23,21 @@ import org.bukkit.entity.MagmaCube;
 import org.bukkit.entity.Slime;
 import org.bukkit.entity.Tameable;
 import org.bukkit.entity.Wolf;
+import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.EntityRemoveEvent;
+import org.bukkit.event.entity.EntitySpawnEvent;
 import org.bukkit.event.entity.EntityTameEvent;
+import org.bukkit.inventory.EntityEquipment;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.util.BoundingBox;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -135,6 +151,91 @@ class MobStackMergeTest {
   }
 
   @Test
+  void foliaStackPassReadsOnlyTheOwnedExactChunk() throws ReflectiveOperationException {
+    FeatureMobStacking feature = new FeatureMobStacking();
+    World world = Mockito.mock(World.class);
+    Chunk chunk = Mockito.mock(Chunk.class);
+    LivingEntity owned = Mockito.mock(LivingEntity.class);
+    LivingEntity foreign = Mockito.mock(LivingEntity.class);
+    Field active = FeatureMobStacking.class.getDeclaredField("active");
+    active.setAccessible(true);
+    active.setBoolean(feature, true);
+    Mockito.when(world.isChunkLoaded(4, -3)).thenReturn(true);
+    Mockito.when(world.getChunkAt(4, -3)).thenReturn(chunk);
+    Mockito.when(chunk.getEntities()).thenReturn(new Entity[]{owned, foreign});
+    Mockito.when(owned.getType()).thenReturn(EntityType.ZOMBIE);
+    Mockito.when(owned.isDead()).thenReturn(false);
+    Mockito.clearInvocations(owned, foreign);
+    Method stackChunk = FeatureMobStacking.class.getDeclaredMethod("stackChunk", World.class, int.class, int.class);
+    stackChunk.setAccessible(true);
+
+    try (MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
+      scheduling.when(J::isFoliaThreading).thenReturn(true);
+      scheduling.when(() -> J.isOwnedByCurrentRegion(owned)).thenReturn(true);
+      scheduling.when(() -> J.isOwnedByCurrentRegion(foreign)).thenReturn(false);
+
+      stackChunk.invoke(feature, world, 4, -3);
+    }
+
+    Mockito.verify(chunk).getEntities();
+    Mockito.verify(world).getChunkAt(4, -3);
+    Mockito.verify(world, Mockito.never()).getNearbyEntities(
+        Mockito.any(BoundingBox.class),
+        Mockito.any()
+    );
+    Mockito.verifyNoInteractions(foreign);
+    Mockito.verify(owned, Mockito.atLeastOnce()).getType();
+  }
+
+  @Test
+  void mergedMobRemovalIsCountedOnlyByTheEntityRemoveEvent() throws ReflectiveOperationException {
+    FeatureMobStacking feature = Mockito.spy(new FeatureMobStacking());
+    SamplerEntities sampler = Mockito.spy(new SamplerEntities());
+    Entity source = Mockito.mock(Entity.class);
+    Entity target = Mockito.mock(Entity.class);
+    Location location = Mockito.mock(Location.class);
+    Chunk chunk = Mockito.mock(Chunk.class);
+    EntitySpawnEvent spawn = Mockito.mock(EntitySpawnEvent.class);
+    AtomicDouble chunkCount = new AtomicDouble();
+    UUID sourceId = UUID.randomUUID();
+    World world = Mockito.mock(World.class);
+    Mockito.when(world.getUID()).thenReturn(UUID.randomUUID());
+    Mockito.when(chunk.getWorld()).thenReturn(world);
+    Field active = FeatureMobStacking.class.getDeclaredField("active");
+    active.setAccessible(true);
+    active.setBoolean(feature, true);
+    Mockito.when(source.getUniqueId()).thenReturn(sourceId);
+    Mockito.when(source.getEntityId()).thenReturn(1);
+    Mockito.when(target.getEntityId()).thenReturn(2);
+    Mockito.when(source.getLocation()).thenReturn(location);
+    Mockito.when(location.getChunk()).thenReturn(chunk);
+    Mockito.when(spawn.getEntity()).thenReturn(source);
+    Mockito.when(spawn.getLocation()).thenReturn(location);
+    Mockito.doReturn(chunkCount).when(sampler).getChunkCounter(chunk);
+    Mockito.doReturn(true).when(feature).canMerge(source, target);
+    Mockito.doReturn(1).when(feature).getStackCount(source);
+    Mockito.doReturn(1).when(feature).getStackCount(target);
+    Mockito.doNothing().when(feature).setStackCount(Mockito.eq(target), Mockito.eq(2));
+
+    try (MockedStatic<React> react = Mockito.mockStatic(React.class);
+         MockedStatic<ReactProtection> protection = Mockito.mockStatic(ReactProtection.class);
+         MockedStatic<NMS> nms = Mockito.mockStatic(NMS.class);
+         MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
+      react.when(() -> React.sampler(SamplerEntities.ID)).thenReturn(sampler);
+      sampler.start();
+      sampler.on(spawn);
+
+      Assertions.assertTrue(feature.merge(source, target));
+      sampler.on(new EntityRemoveEvent(source, EntityRemoveEvent.Cause.PLUGIN));
+      sampler.stop();
+    }
+
+    Mockito.verify(source).remove();
+    Assertions.assertEquals(0, sampler.getEntities().get());
+    Assertions.assertEquals(0D, chunkCount.get());
+  }
+
+  @Test
   void withinMergeRadiusAcceptsAxisAlignedBoundary() {
     Assertions.assertTrue(FeatureMobStacking.withinMergeRadius(0, 0, 0, 6, 0, 0, 6));
     Assertions.assertTrue(FeatureMobStacking.withinMergeRadius(0, 0, 0, 6, 6, 6, 6));
@@ -203,6 +304,61 @@ class MobStackMergeTest {
     Mockito.when(wolf.isTamed()).thenReturn(false);
 
     Assertions.assertFalse(FeatureMobStacking.isTamedPet(wolf));
+  }
+
+  @Test
+  void equippedMobsCannotMergeAndLoseTheirEquipment() {
+    FeatureMobStacking feature = Mockito.spy(new FeatureMobStacking());
+    LivingEntity source = Mockito.mock(LivingEntity.class);
+    LivingEntity target = Mockito.mock(LivingEntity.class);
+    EntityEquipment equipment = Mockito.mock(EntityEquipment.class);
+    ItemStack sword = Mockito.mock(ItemStack.class);
+    stubMergeIdentity(source, target, EntityType.ZOMBIE);
+    Mockito.doReturn(true).when(feature).isStackableType(EntityType.ZOMBIE);
+    Mockito.when(source.getEquipment()).thenReturn(equipment);
+    Mockito.when(equipment.getItemInMainHand()).thenReturn(sword);
+    Mockito.when(sword.getType()).thenReturn(Material.IRON_SWORD);
+    Mockito.when(sword.isEmpty()).thenReturn(false);
+
+    Assertions.assertFalse(feature.canMerge(source, target));
+    Mockito.verify(source, Mockito.never()).remove();
+    Mockito.verify(target, Mockito.never()).remove();
+  }
+
+  @Test
+  void deathReplacementCopiesLegacyStackEquipmentEffectsAndHealth() {
+    FeatureMobStacking feature = Mockito.spy(new FeatureMobStacking());
+    LivingEntity source = Mockito.mock(LivingEntity.class);
+    LivingEntity replacement = Mockito.mock(LivingEntity.class);
+    EntityDeathEvent event = Mockito.mock(EntityDeathEvent.class);
+    World world = Mockito.mock(World.class);
+    Location location = Mockito.mock(Location.class);
+    EntityEquipment sourceEquipment = Mockito.mock(EntityEquipment.class);
+    EntityEquipment targetEquipment = Mockito.mock(EntityEquipment.class);
+    ItemStack mainHand = Mockito.mock(ItemStack.class);
+    ItemStack mainHandCopy = Mockito.mock(ItemStack.class);
+    Mockito.when(event.getEntity()).thenReturn(source);
+    Mockito.when(source.getWorld()).thenReturn(world);
+    Mockito.when(source.getLocation()).thenReturn(location);
+    Mockito.when(source.getType()).thenReturn(EntityType.ZOMBIE);
+    Mockito.when(world.spawnEntity(location, EntityType.ZOMBIE)).thenReturn(replacement);
+    Mockito.when(source.getEquipment()).thenReturn(sourceEquipment);
+    Mockito.when(replacement.getEquipment()).thenReturn(targetEquipment);
+    Mockito.when(sourceEquipment.getArmorContents()).thenReturn(new ItemStack[0]);
+    Mockito.when(sourceEquipment.getItemInMainHand()).thenReturn(mainHand);
+    Mockito.when(mainHand.clone()).thenReturn(mainHandCopy);
+    Mockito.when(source.getActivePotionEffects()).thenReturn(List.of());
+    Mockito.when(source.getMaxHealth()).thenReturn(40D);
+    Mockito.doReturn(2).when(feature).getStackCount(source);
+    Mockito.doNothing().when(feature).setStackCount(Mockito.any(Entity.class), Mockito.anyInt());
+
+    feature.onEntityDeath(event);
+
+    Mockito.verify(targetEquipment).setItemInMainHand(mainHandCopy);
+    Mockito.verify(replacement).addPotionEffects(List.of());
+    Mockito.verify(replacement).setMaxHealth(40D);
+    Mockito.verify(replacement).setHealth(40D);
+    Mockito.verify(feature).setStackCount(replacement, 1);
   }
 
   @Test

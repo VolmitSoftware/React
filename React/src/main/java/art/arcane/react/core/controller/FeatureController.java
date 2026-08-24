@@ -41,17 +41,22 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class FeatureController extends TickedObject implements IController {
   private static final long GATE_RECONCILE_INTERVAL_MS = 2000L;
-  private transient final AtomicBoolean gateReconcileQueued = new AtomicBoolean(false);
+  private transient final AtomicLong gateReconcileQueuedGeneration = new AtomicLong(-1L);
+  private transient final AtomicLong lifecycleGeneration = new AtomicLong();
+  private transient final AtomicBoolean stopFailed = new AtomicBoolean(false);
   private transient Registry<Feature> features;
   private transient Map<String, Feature> activeFeatures;
   private transient Map<String, ReactTickedFeature> tickedFeatures;
   private transient long lastGateReconcileMS;
   private transient volatile boolean reconcilePaused;
+  private transient volatile boolean stopped;
+  private transient volatile boolean stopping;
 
   private Feature unknown;
 
@@ -61,7 +66,7 @@ public class FeatureController extends TickedObject implements IController {
 
   @Override
   public void onTick() {
-    if (!React.instance.isEnabled() || !React.instance.isReady()) {
+    if (stopped || stopping || !React.instance.isEnabled() || !React.instance.isReady()) {
       return;
     }
 
@@ -75,20 +80,23 @@ public class FeatureController extends TickedObject implements IController {
     }
 
     lastGateReconcileMS = now;
-    if (!gateReconcileQueued.compareAndSet(false, true)) {
+    long generation = lifecycleGeneration.get();
+    if (!gateReconcileQueuedGeneration.compareAndSet(-1L, generation)) {
       return;
     }
 
-    J.s(() -> {
-      try {
-        if (!React.instance.isEnabled() || !React.instance.isReady()) {
-          return;
+    try {
+      J.s(() -> {
+        try {
+          reconcileFeatureGates(generation);
+        } finally {
+          gateReconcileQueuedGeneration.compareAndSet(generation, -1L);
         }
-        reconcileFeatureGates();
-      } finally {
-        gateReconcileQueued.set(false);
-      }
-    });
+      });
+    } catch (RuntimeException | Error failure) {
+      gateReconcileQueuedGeneration.compareAndSet(generation, -1L);
+      throw failure;
+    }
   }
 
   @Override
@@ -108,86 +116,195 @@ public class FeatureController extends TickedObject implements IController {
     return s;
   }
 
-  public void activateFeature(Feature feature) {
-    if (feature == null || !React.instance.isEnabled() || !isAllowedByRuntimeMode(feature)) {
+  public synchronized void activateFeature(Feature feature) {
+    if (feature == null
+        || stopped
+        || stopping
+        || React.instance == null
+        || activeFeatures == null
+        || tickedFeatures == null) {
       return;
     }
 
-    if (!activeFeatures.containsKey(feature.getId())) {
-      activeFeatures.put(feature.getId(), feature);
+    String id;
+    try {
+      if (!shouldActivateFeature(feature)) {
+        return;
+      }
+      id = feature.getId();
+    } catch (Throwable failure) {
+      reportFeatureLifecycleFailure("activate", feature.getClass().getSimpleName(), failure);
+      return;
+    }
+
+    if (id == null || id.isBlank() || activeFeatures.containsKey(id)) {
+      return;
+    }
+
+    ReactTickedFeature scheduled = null;
+    boolean listenerRegistrationAttempted = false;
+    try {
       feature.onActivate();
-      if (feature instanceof Listener l) {
-        React.instance.registerListener(l);
+      if (feature instanceof Listener listener && !(feature instanceof FeatureIntegrityListener)) {
+        listenerRegistrationAttempted = true;
+        React.instance.registerListener(listener);
       }
 
       if (feature.getTickInterval() > 0) {
-        tickedFeatures.put(feature.getId(), new ReactTickedFeature(feature));
+        scheduled = new ReactTickedFeature(feature);
+        tickedFeatures.put(id, scheduled);
       }
 
-      React.verbose("Activated Feature: " + feature.getName());
+      activeFeatures.put(id, feature);
+    } catch (Throwable failure) {
+      rollbackFeatureActivation(feature, id, scheduled, listenerRegistrationAttempted, failure);
+      return;
     }
+
+    React.verbose("Activated Feature: " + id);
   }
 
-  public void deactivateFeature(Feature feature) {
-    if (feature instanceof Listener l && !(feature instanceof FeatureIntegrityListener)) {
-      React.instance.unregisterListener(l);
+  public synchronized void deactivateFeature(Feature feature) {
+    if (feature == null || activeFeatures == null || tickedFeatures == null) {
+      return;
     }
-    activeFeatures.remove(feature.getId());
-    ReactTickedFeature t = tickedFeatures.remove(feature.getId());
 
-    if (t != null) {
-      t.unregister();
+    String id;
+    try {
+      id = feature.getId();
+    } catch (Throwable failure) {
+      reportFeatureLifecycleFailure("deactivate", feature.getClass().getSimpleName(), failure);
+      return;
     }
-    feature.onDeactivate()
-    ;
-    React.verbose("Deactivated Feature: " + feature.getName());
+
+    Feature removed = activeFeatures.remove(id);
+    ReactTickedFeature scheduled = tickedFeatures.remove(id);
+    if (removed == null && scheduled == null) {
+      return;
+    }
+
+    Feature component = removed == null ? feature : removed;
+    Throwable failure = null;
+    if (scheduled != null) {
+      try {
+        scheduled.unregister();
+      } catch (Throwable cleanupFailure) {
+        failure = appendFailure(failure, cleanupFailure);
+      }
+    }
+
+    if (component instanceof Listener listener && !(component instanceof FeatureIntegrityListener)) {
+      try {
+        React.instance.unregisterListener(listener);
+      } catch (Throwable cleanupFailure) {
+        failure = appendFailure(failure, cleanupFailure);
+      }
+    }
+
+    try {
+      component.onDeactivate();
+    } catch (Throwable cleanupFailure) {
+      failure = appendFailure(failure, cleanupFailure);
+    }
+
+    if (failure != null) {
+      reportFeatureLifecycleFailure("deactivate", id, failure);
+      return;
+    }
+
+    React.verbose("Deactivated Feature: " + id);
   }
 
   @Override
-  public void start() {
+  public synchronized void start() {
     // Concurrent: bStats chart callables read this from their own daemon thread on Folia
     activeFeatures = new ConcurrentHashMap<>();
     tickedFeatures = new HashMap<>();
     features = new Registry<>(Feature.class, "art.arcane.react.content.feature");
     lastGateReconcileMS = 0L;
+    stopping = false;
+    stopped = false;
+    reconcilePaused = false;
+    lifecycleGeneration.incrementAndGet();
+    gateReconcileQueuedGeneration.set(-1L);
   }
 
-  public void postStart() {
-    React.info("Registered " + features.size() + " Features");
+  public synchronized void postStart() {
+    React.verbose("Registered " + features.size() + " Features");
 
     for (String i : features.ids()) {
-      Feature f = features.get(i);
+      try {
+        Feature f = features.get(i);
+        if (f == null) {
+          continue;
+        }
 
-      if (f instanceof FeatureIntegrityListener listener) {
-        React.instance.registerListener(listener);
-      }
+        if (f instanceof FeatureIntegrityListener listener) {
+          React.instance.registerListener(listener);
+        }
 
-      if (shouldActivateFeature(f)) {
-        activateFeature(f);
-      } else if (f instanceof CapabilityGatedFeature gated) {
-        React.verbose("Skipped gated feature " + f.getId() + " requires=" + gated.requirementLabel());
+        if (shouldActivateFeature(f)) {
+          activateFeature(f);
+        } else if (f instanceof CapabilityGatedFeature gated) {
+          React.verbose("Skipped gated feature " + f.getId() + " requires=" + gated.requirementLabel());
+        }
+      } catch (Throwable failure) {
+        reportFeatureLifecycleFailure("start", i, failure);
       }
     }
 
-    React.info("Activated " + activeFeatures.size() + " Features");
+    React.verbose("Activated " + activeFeatures.size() + " Features");
   }
 
   @Override
-  public void stop() {
-    new ArrayList<>(activeFeatures.values()).forEach(this::deactivateFeature);
-    for (Feature feature : features.all()) {
-      if (feature instanceof FeatureIntegrityListener listener) {
-        React.instance.unregisterListener(listener);
+  public synchronized void stop() {
+    stopping = true;
+    stopped = true;
+    lifecycleGeneration.incrementAndGet();
+    gateReconcileQueuedGeneration.set(-1L);
+    stopFailed.set(false);
+    try {
+      if (activeFeatures != null) {
+        for (Feature feature : new ArrayList<>(activeFeatures.values())) {
+          try {
+            deactivateFeature(feature);
+          } catch (Throwable failure) {
+            reportFeatureLifecycleFailure("stop", feature == null ? "unknown" : feature.getClass().getSimpleName(), failure);
+          }
+        }
       }
+
+      if (features != null) {
+        for (Feature feature : features.all()) {
+          if (!(feature instanceof FeatureIntegrityListener listener)) {
+            continue;
+          }
+
+          try {
+            React.instance.unregisterListener(listener);
+          } catch (Throwable failure) {
+            reportFeatureLifecycleFailure("stop integrity listener", feature.getClass().getSimpleName(), failure);
+          }
+        }
+      }
+    } finally {
+      stopping = false;
+    }
+    if (stopFailed.get()) {
+      throw new IllegalStateException("One or more features failed to stop cleanly");
     }
   }
 
-  public void reconcileRuntimeMode() {
-    reconcileFeatureGates();
+  public synchronized void reconcileRuntimeMode() {
+    reconcileFeatureGates(lifecycleGeneration.get());
   }
 
-  private void reconcileFeatureGates() {
-    if (!React.instance.isEnabled() || !React.instance.isReady()) {
+  private synchronized void reconcileFeatureGates(long expectedGeneration) {
+    if (stopped
+        || stopping
+        || expectedGeneration != lifecycleGeneration.get()
+        || !React.instance.isEnabled()
+        || !React.instance.isReady()) {
       return;
     }
 
@@ -196,6 +313,10 @@ public class FeatureController extends TickedObject implements IController {
     }
 
     for (Feature feature : features.all()) {
+      if (stopped || stopping || expectedGeneration != lifecycleGeneration.get()) {
+        return;
+      }
+
       if (feature == null) {
         continue;
       }
@@ -212,14 +333,17 @@ public class FeatureController extends TickedObject implements IController {
           deactivateFeature(feature);
         }
       } catch (Throwable e) {
-        React.error("Failed to reconcile feature " + feature.getId() + ".");
-        React.reportError(e);
+        React.reportError("Failed to reconcile feature " + feature.getId() + ".", e);
       }
     }
   }
 
-  private boolean shouldActivateFeature(Feature feature) {
-    if (feature == null || !feature.isEnabled() || !isAllowedByRuntimeMode(feature)) {
+  public boolean shouldActivateFeature(Feature feature) {
+    if (feature == null
+        || React.instance == null
+        || !React.instance.isEnabled()
+        || !feature.isEnabled()
+        || !isAllowedByRuntimeMode(feature)) {
       return false;
     }
 
@@ -243,5 +367,57 @@ public class FeatureController extends TickedObject implements IController {
 
   private boolean isAllowedByRuntimeMode(Feature feature) {
     return !React.instance.isMonitoringOnly() || feature instanceof ReactRenderer;
+  }
+
+  private void rollbackFeatureActivation(
+      Feature feature,
+      String id,
+      ReactTickedFeature scheduled,
+      boolean listenerRegistrationAttempted,
+      Throwable failure
+  ) {
+    activeFeatures.remove(id, feature);
+    ReactTickedFeature registered = tickedFeatures.remove(id);
+    ReactTickedFeature scheduledForCleanup = registered == null ? scheduled : registered;
+    if (scheduledForCleanup != null) {
+      try {
+        scheduledForCleanup.unregister();
+      } catch (Throwable cleanupFailure) {
+        failure = appendFailure(failure, cleanupFailure);
+      }
+    }
+
+    if (listenerRegistrationAttempted && feature instanceof Listener listener) {
+      try {
+        React.instance.unregisterListener(listener);
+      } catch (Throwable cleanupFailure) {
+        failure = appendFailure(failure, cleanupFailure);
+      }
+    }
+
+    try {
+      feature.onDeactivate();
+    } catch (Throwable cleanupFailure) {
+      failure = appendFailure(failure, cleanupFailure);
+    }
+
+    reportFeatureLifecycleFailure("activate", id, failure);
+  }
+
+  private Throwable appendFailure(Throwable failure, Throwable additionalFailure) {
+    if (failure == null) {
+      return additionalFailure;
+    }
+    if (failure != additionalFailure) {
+      failure.addSuppressed(additionalFailure);
+    }
+    return failure;
+  }
+
+  private void reportFeatureLifecycleFailure(String operation, String id, Throwable failure) {
+    if (stopping) {
+      stopFailed.set(true);
+    }
+    React.reportError("Failed to " + operation + " feature " + id + ".", failure);
   }
 }

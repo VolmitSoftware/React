@@ -137,8 +137,23 @@ class PairingCode {
     return null;
   }
 
-  ServerCredential toCredential({required String id, required String label}) {
-    final Uri? direct = directUrl.isEmpty ? null : Uri.tryParse(directUrl);
+  ServerCredential toCredential({
+    required String id,
+    required String label,
+    String? directUrlOverride,
+  }) {
+    final String effectiveDirectUrl = directUrlOverride?.trim() ?? directUrl;
+    if (!_validDirectUrl(effectiveDirectUrl) ||
+        (effectiveDirectUrl.isEmpty && relayUrl.isEmpty)) {
+      throw ArgumentError.value(
+        directUrlOverride,
+        'directUrlOverride',
+        'Invalid direct URL override',
+      );
+    }
+    final Uri? direct = effectiveDirectUrl.isEmpty
+        ? null
+        : Uri.tryParse(effectiveDirectUrl);
     return ServerCredential(
       id: id,
       label: label,
@@ -152,6 +167,7 @@ class PairingCode {
           : 80,
       bearer: '$tokenId.$tokenSig',
       secure: direct?.scheme == 'https',
+      basePath: direct == null || direct.path == '/' ? '' : direct.path,
       relayUrl: relayUrl.isEmpty ? null : relayUrl,
       serverPubKey: serverPubKey,
       fingerprint: fingerprint,
@@ -163,11 +179,10 @@ class PairingCode {
     final Uri? uri = Uri.tryParse(value);
     if (uri == null || !uri.hasAuthority || uri.host.isEmpty) return false;
     if (uri.scheme != 'http' && uri.scheme != 'https') return false;
-    return uri.userInfo.isEmpty &&
-        uri.query.isEmpty &&
-        uri.fragment.isEmpty &&
-        (uri.path.isEmpty || uri.path == '/');
+    return uri.userInfo.isEmpty && uri.query.isEmpty && uri.fragment.isEmpty;
   }
+
+  static bool isValidDirectUrl(String value) => _validDirectUrl(value.trim());
 
   static bool _validRelayUrl(String value) {
     if (value.isEmpty) return true;
@@ -185,20 +200,26 @@ class AddServerScreen extends StatefulWidget {
 
   static Future<ServerCredential> pairServer(
     String code,
-    FleetManager fm,
-  ) async {
+    FleetManager fm, {
+    String? directUrlOverride,
+  }) async {
     final PairingCode? pc = PairingCode.decode(code);
     if (pc == null) {
       throw ArgumentError.value(code, 'code', 'Invalid RCT2 pairing code');
     }
     final String id = DateTime.now().microsecondsSinceEpoch.toRadixString(36);
-    final Uri? direct = pc.directUrl.isEmpty
+    final String effectiveDirectUrl = directUrlOverride?.trim() ?? pc.directUrl;
+    final Uri? direct = effectiveDirectUrl.isEmpty
         ? null
-        : Uri.tryParse(pc.directUrl);
+        : Uri.tryParse(effectiveDirectUrl);
     final String label = direct?.host.isNotEmpty == true
         ? direct!.host
         : 'React ${pc.fingerprint.substring(0, 12)}';
-    final ServerCredential cred = pc.toCredential(id: id, label: label);
+    final ServerCredential cred = pc.toCredential(
+      id: id,
+      label: label,
+      directUrlOverride: directUrlOverride,
+    );
     await fm.add(cred);
     return cred;
   }
@@ -209,6 +230,7 @@ class AddServerScreen extends StatefulWidget {
 
 class _AddServerScreenState extends State<AddServerScreen> {
   String _code = '';
+  String _directUrl = '';
   PairingCode? _decoded;
   ReactorText? _validationMessage;
   ReactorText? _pairingMessage;
@@ -217,12 +239,14 @@ class _AddServerScreenState extends State<AddServerScreen> {
   bool _pairingFailed = false;
 
   void _onCodeChanged(String value) {
+    final PairingCode? decoded = PairingCode.decode(value);
     final ReactorText? validation = value.trim().isEmpty
         ? null
         : PairingCode.validationMessage(value);
     setState(() {
       _code = value;
-      _decoded = PairingCode.decode(value);
+      _decoded = decoded;
+      _directUrl = decoded?.directUrl ?? '';
       _validationMessage = validation;
       _pairingMessage = null;
       _confirmReset = false;
@@ -230,9 +254,23 @@ class _AddServerScreenState extends State<AddServerScreen> {
     });
   }
 
+  void _onDirectUrlChanged(String value) {
+    setState(() {
+      _directUrl = value;
+      _pairingMessage = null;
+      _pairingFailed = false;
+    });
+  }
+
+  bool _directUrlIsValid(PairingCode decoded) {
+    return PairingCode.isValidDirectUrl(_directUrl) &&
+        (_directUrl.trim().isNotEmpty || decoded.relayUrl.isNotEmpty);
+  }
+
   void _clearCode() {
     setState(() {
       _code = '';
+      _directUrl = '';
       _decoded = null;
       _validationMessage = null;
       _pairingMessage = null;
@@ -282,6 +320,7 @@ class _AddServerScreenState extends State<AddServerScreen> {
       final ServerCredential cred = await AddServerScreen.pairServer(
         rawCode,
         component.fleetManager,
+        directUrlOverride: _directUrl,
       );
       component.fleetManager.setActive(cred.id);
       FleetScope.of(context)?.trackPaired(cred.id);
@@ -325,7 +364,8 @@ class _AddServerScreenState extends State<AddServerScreen> {
     final PairingCode? decoded = _decoded;
     final FleetController? fleet = FleetScope.of(context);
     final int savedCount = fleet?.fleetManager.servers.length ?? 0;
-    final bool canPair = !_loading && decoded != null;
+    final bool directUrlValid = decoded != null && _directUrlIsValid(decoded);
+    final bool canPair = !_loading && decoded != null && directUrlValid;
     final String? inputError = _validationMessage == null
         ? null
         : reactorText(_validationMessage!);
@@ -392,6 +432,23 @@ class _AddServerScreenState extends State<AddServerScreen> {
                   helperText: reactorText(ReactorText.addServerInputHelper),
                   fullWidth: true,
                 ),
+                if (decoded != null)
+                  TextInput(
+                    label: reactorText(ReactorText.addServerDirectHost),
+                    placeholder: 'https://play.example.com/react',
+                    attributes: const <String, String>{'dir': 'ltr'},
+                    value: _directUrl,
+                    onChange: _onDirectUrlChanged,
+                    error: directUrlValid
+                        ? null
+                        : reactorText(
+                            ReactorText.addServerConnectionFailedMessage,
+                          ),
+                    helperText: reactorText(
+                      ReactorText.addServerCopyDescription,
+                    ),
+                    fullWidth: true,
+                  ),
                 if (inputError != null)
                   ReactorNotice(
                     title: reactorText(ReactorText.addServerCheckCode),
@@ -421,7 +478,7 @@ class _AddServerScreenState extends State<AddServerScreen> {
                     icon: ArcaneIcon.serverCog(size: IconSize.sm),
                   )
                 else
-                  _connectionDetails(decoded),
+                  _connectionDetails(decoded, _directUrl),
               ],
             ),
           ],
@@ -439,7 +496,7 @@ class _AddServerScreenState extends State<AddServerScreen> {
           number: '01',
           title: reactorText(ReactorText.addServerCopy),
           description: reactorText(ReactorText.addServerCopyDescription),
-          command: 'plugins/React/web.toml: enabled = true',
+          command: 'TCP 9696 -> server | web.toml: advertisedUrl = public URL',
         ),
         _pairingStep(
           number: '02',
@@ -487,7 +544,10 @@ class _AddServerScreenState extends State<AddServerScreen> {
     );
   }
 
-  Widget _connectionDetails(PairingCode decoded) {
+  Widget _connectionDetails(PairingCode decoded, String directUrl) {
+    final Uri? direct = directUrl.trim().isEmpty
+        ? null
+        : Uri.tryParse(directUrl.trim());
     return dom.div(
       styles: const dom.Styles(
         raw: <String, String>{
@@ -498,17 +558,17 @@ class _AddServerScreenState extends State<AddServerScreen> {
       <Widget>[
         _detailRow(
           reactorText(ReactorText.addServerHost),
-          decoded.directUrl.isEmpty
+          direct == null
               ? reactorText(ReactorText.addServerRelayOnly)
-              : Uri.parse(decoded.directUrl).host,
+              : direct.host,
         ),
         _detailRow(
           reactorText(ReactorText.addServerPort),
-          decoded.directUrl.isEmpty
+          direct == null
               ? reactorText(ReactorText.addServerRelay)
-              : Uri.parse(decoded.directUrl).hasPort
-              ? Uri.parse(decoded.directUrl).port.toString()
-              : Uri.parse(decoded.directUrl).scheme == 'https'
+              : direct.hasPort
+              ? direct.port.toString()
+              : direct.scheme == 'https'
               ? '443'
               : '80',
         ),

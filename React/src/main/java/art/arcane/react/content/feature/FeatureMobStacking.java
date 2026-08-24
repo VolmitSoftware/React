@@ -22,7 +22,6 @@ package art.arcane.react.content.feature;
 import art.arcane.react.React;
 import art.arcane.react.api.feature.FeatureIntegrityListener;
 import art.arcane.react.api.feature.ReactFeature;
-import art.arcane.react.content.sampler.SamplerEntities;
 import art.arcane.react.core.NMS;
 import art.arcane.react.core.controller.EntityController;
 import art.arcane.react.localization.ReactLanguage;
@@ -37,9 +36,12 @@ import art.arcane.react.api.protect.ReactProtection;
 import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Chunk;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.AnimalTamer;
 import org.bukkit.entity.Ageable;
 import org.bukkit.entity.Entity;
@@ -53,23 +55,29 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.EntityRemoveEvent;
 import org.bukkit.event.entity.EntitySpawnEvent;
 import org.bukkit.event.entity.EntityTameEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.EntityEquipment;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
-import org.bukkit.util.BoundingBox;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Mob Stacking feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
@@ -115,6 +123,13 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
   }
 
   public static final String ID = "mob-stacking";
+  private static final int MAX_CHUNK_SUBMISSIONS_PER_TICK = 64;
+  static final int MAX_CHUNK_INSPECTIONS_PER_TICK = 128;
+  private static final int MAX_INDEXED_ENTITIES = 65_536;
+  private static final int MAX_NEIGHBOR_CHUNKS_PER_WORK = 64;
+  private static final int MAX_NEIGHBOR_ENTITIES_PER_WORK = 256;
+  static final int MAX_ENTITIES_PER_CHUNK_CALLBACK = 256;
+  static final int MAX_COMPARISONS_PER_CHUNK_CALLBACK = 4096;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum stack size allowed by mob stacking.", impact = "Higher values allow more throughput before intervention; lower values make mitigation more aggressive.")
   private int maxStackSize = 10;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum health allowed by mob stacking.", impact = "Higher values allow more throughput before intervention; lower values make mitigation more aggressive.")
@@ -136,9 +151,13 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
 
   private transient final Map<EntityType, String> formattedBaseNames = new ConcurrentHashMap<>();
   private transient final Map<UUID, Set<Long>> dirtyChunks = new ConcurrentHashMap<>();
+  private transient final Map<UUID, Set<Long>> inFlightChunks = new ConcurrentHashMap<>();
+  private transient final Map<ChunkWorkKey, ChunkWork> chunkWork = new ConcurrentHashMap<>();
+  private transient final Map<UUID, IndexedStackEntity> indexedEntities = new ConcurrentHashMap<>();
+  private transient final Map<ChunkWorkKey, Map<UUID, IndexedStackEntity>> indexedChunks = new ConcurrentHashMap<>();
   private transient final Consumer<Entity> entityTickListener = this::onTick;
+  private transient final AtomicLong lifecycleGeneration = new AtomicLong(0L);
   private transient volatile boolean active;
-  private transient SamplerEntities entitiesSampler;
   private transient volatile StackableIndex stackableIndex;
 
   public FeatureMobStacking() {
@@ -165,8 +184,13 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
 
   @Override
   public void onActivate() {
+    lifecycleGeneration.incrementAndGet();
     active = true;
     dirtyChunks.clear();
+    inFlightChunks.clear();
+    chunkWork.clear();
+    indexedEntities.clear();
+    indexedChunks.clear();
     rebuildStackableIndex();
     for (EntityType i : stackableTypes) {
       React.controller(EntityController.class).registerEntityTickListener(i, entityTickListener);
@@ -378,6 +402,15 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
     target.setRemainingAir(source.getRemainingAir());
     target.setNoDamageTicks(source.getNoDamageTicks());
 
+    copyEquipment(source.getEquipment(), target.getEquipment());
+    target.addPotionEffects(source.getActivePotionEffects());
+
+    double sourceMaxHealth = source.getMaxHealth();
+    if (Double.isFinite(sourceMaxHealth) && sourceMaxHealth > 0D) {
+      target.setMaxHealth(sourceMaxHealth);
+      target.setHealth(sourceMaxHealth);
+    }
+
     if (source.hasMetadata("SpawnedBySpawner")) {
       target.setMetadata("SpawnedBySpawner", new FixedMetadataValue(React.instance, true));
     }
@@ -389,6 +422,34 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
     if (source.hasMetadata("UniqueMobStack")) {
       target.setMetadata("UniqueMobStack", new FixedMetadataValue(React.instance, true));
     }
+  }
+
+  private void copyEquipment(EntityEquipment source, EntityEquipment target) {
+    if (source == null || target == null) {
+      return;
+    }
+
+    target.setArmorContents(cloneItems(source.getArmorContents()));
+    target.setItemInMainHand(cloneItem(source.getItemInMainHand()));
+    target.setItemInOffHand(cloneItem(source.getItemInOffHand()));
+    target.setItemInMainHandDropChance(source.getItemInMainHandDropChance());
+    target.setItemInOffHandDropChance(source.getItemInOffHandDropChance());
+    target.setHelmetDropChance(source.getHelmetDropChance());
+    target.setChestplateDropChance(source.getChestplateDropChance());
+    target.setLeggingsDropChance(source.getLeggingsDropChance());
+    target.setBootsDropChance(source.getBootsDropChance());
+  }
+
+  private ItemStack[] cloneItems(ItemStack[] items) {
+    ItemStack[] cloned = new ItemStack[items.length];
+    for (int i = 0; i < items.length; i++) {
+      cloned[i] = cloneItem(items[i]);
+    }
+    return cloned;
+  }
+
+  private ItemStack cloneItem(ItemStack item) {
+    return item == null ? null : item.clone();
   }
 
 
@@ -404,12 +465,6 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
         NMS.sendCollectPacket(a, 64, a.getEntityId(), into.getEntityId(), 1);
       }
       a.remove();
-      if (entitiesSampler == null) {
-        entitiesSampler = React.sampler(SamplerEntities.ID);
-      }
-      if (entitiesSampler != null) {
-        entitiesSampler.getEntities().decrementAndGet();
-      }
       return true;
     }
 
@@ -437,7 +492,7 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
     }
 
     // Check if entities == living entities
-    if (!(a instanceof LivingEntity la)) {
+    if (!(a instanceof LivingEntity la) || !(into instanceof LivingEntity li)) {
       return false;
     }
 
@@ -477,6 +532,10 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
       }
     }
 
+    if (!hasSafeMergeState(la, li)) {
+      return false;
+    }
+
     // Check if entities are stackable via config
     if (skipCustomMobs && (CustomMobChecker.isCustom(a) || CustomMobChecker.isCustom(into))) {
       return false;
@@ -498,11 +557,79 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
     }
 
     // Check health
-    if (into instanceof LivingEntity li) {
-      return withinHealthLimit(la.getAttribute(Attribute.MAX_HEALTH).getValue(), li.getAttribute(Attribute.MAX_HEALTH).getValue(), maxHealth);
+    return withinHealthLimit(
+        la.getAttribute(Attribute.MAX_HEALTH).getValue(),
+        li.getAttribute(Attribute.MAX_HEALTH).getValue(),
+        maxHealth
+    );
+  }
+
+  private boolean hasSafeMergeState(LivingEntity source, LivingEntity target) {
+    if (hasEquipment(source) || hasEquipment(target)) {
+      return false;
+    }
+    if (!source.getActivePotionEffects().isEmpty() || !target.getActivePotionEffects().isEmpty()) {
+      return false;
+    }
+    if (hasUserCustomName(source) || hasUserCustomName(target)) {
+      return false;
+    }
+    if (isVariantBearingType(source.getType()) || isVariantBearingType(target.getType())) {
+      return false;
     }
 
-    return true;
+    AttributeInstance sourceMaxHealth = source.getAttribute(Attribute.MAX_HEALTH);
+    AttributeInstance targetMaxHealth = target.getAttribute(Attribute.MAX_HEALTH);
+    if (sourceMaxHealth == null || targetMaxHealth == null) {
+      return false;
+    }
+    if (!sourceMaxHealth.getModifiers().isEmpty() || !targetMaxHealth.getModifiers().isEmpty()) {
+      return false;
+    }
+    if (Math.abs(sourceMaxHealth.getValue() - targetMaxHealth.getValue()) > 0.0001D) {
+      return false;
+    }
+    return Math.abs(source.getHealth() - sourceMaxHealth.getValue()) <= 0.0001D
+        && Math.abs(target.getHealth() - targetMaxHealth.getValue()) <= 0.0001D;
+  }
+
+  private boolean hasEquipment(LivingEntity entity) {
+    EntityEquipment equipment = entity.getEquipment();
+    if (equipment == null) {
+      return false;
+    }
+    if (isItem(equipment.getItemInMainHand()) || isItem(equipment.getItemInOffHand())) {
+      return true;
+    }
+    for (ItemStack item : equipment.getArmorContents()) {
+      if (isItem(item)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private boolean isItem(ItemStack item) {
+    return item != null && item.getType() != Material.AIR && !item.isEmpty();
+  }
+
+  private boolean hasUserCustomName(LivingEntity entity) {
+    String name = entity.getCustomName();
+    return getStackCount(entity) <= 1 && name != null && !name.isBlank();
+  }
+
+  private boolean isVariantBearingType(EntityType type) {
+    return switch (type.name()) {
+      case "AXOLOTL", "BEE", "BOGGED", "CAMEL", "CAT", "CHICKEN", "COW", "CREEPER",
+           "DONKEY", "ENDER_DRAGON", "ENDERMAN", "FOX", "FROG", "GHAST", "GOAT", "HOGLIN",
+           "HORSE", "IRON_GOLEM", "LLAMA", "MOOSHROOM", "MULE",
+           "MUSHROOM_COW", "OCELOT", "PANDA", "PARROT", "PHANTOM", "PIG", "PIGLIN",
+           "PIGLIN_BRUTE", "RABBIT", "SALMON", "SHEEP", "SKELETON_HORSE",
+           "SNIFFER", "SNOW_GOLEM", "STRIDER", "TRADER_LLAMA", "TROPICAL_FISH", "VEX",
+           "VILLAGER", "WANDERING_TRADER", "WOLF", "ZOMBIE_HORSE",
+           "ZOMBIE_NAUTILUS", "ZOMBIE_VILLAGER", "ZOMBIFIED_PIGLIN" -> true;
+      default -> false;
+    };
   }
 
 
@@ -546,11 +673,16 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
   }
 
   public void onTick(Entity entity) {
-    if (entity == null || entity.isDead()) {
+    if (entity == null) {
+      return;
+    }
+    if (entity.isDead()) {
+      removeIndexed(entity);
       return;
     }
 
     if (entity instanceof LivingEntity living && isTamedPet(entity)) {
+      removeIndexed(entity);
       splitTamedStack(living);
       return;
     }
@@ -569,13 +701,93 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
       return;
     }
 
-    dirtyChunks.computeIfAbsent(world.getUID(), ignored -> ConcurrentHashMap.newKeySet())
-        .add(packChunkKey(location.getBlockX() >> 4, location.getBlockZ() >> 4));
+    UUID worldId = world.getUID();
+    long chunkKey = packChunkKey(location.getBlockX() >> 4, location.getBlockZ() >> 4);
+    indexEntity(entity, worldId, chunkKey);
+    Set<Long> pending = dirtyChunks.computeIfAbsent(worldId, ignored -> ConcurrentHashMap.newKeySet());
+    pending.add(chunkKey);
+    addCanonicalNeighborAnchors(worldId, chunkKey, pending);
+  }
+
+  @EventHandler
+  public void on(EntityRemoveEvent event) {
+    removeIndexed(event.getEntity());
+  }
+
+  private synchronized void indexEntity(Entity entity, UUID worldId, long chunkKey) {
+    UUID entityId = entity.getUniqueId();
+    IndexedStackEntity previous = indexedEntities.get(entityId);
+    ChunkWorkKey workKey = new ChunkWorkKey(worldId, chunkKey);
+    if (previous != null && previous.chunkKey().equals(workKey) && previous.reference().get() == entity) {
+      return;
+    }
+    if (previous == null && indexedEntities.size() >= MAX_INDEXED_ENTITIES) {
+      return;
+    }
+
+    IndexedStackEntity indexed = new IndexedStackEntity(entityId, workKey, new WeakReference<>(entity));
+    indexedEntities.put(entityId, indexed);
+    if (previous != null && !previous.chunkKey().equals(workKey)) {
+      removeIndexedFromChunk(previous);
+    }
+    indexedChunks.computeIfAbsent(workKey, ignored -> new ConcurrentHashMap<>()).put(entityId, indexed);
+  }
+
+  private synchronized void removeIndexed(Entity entity) {
+    UUID entityId = entity.getUniqueId();
+    if (entityId == null) {
+      return;
+    }
+    IndexedStackEntity indexed = indexedEntities.remove(entityId);
+    if (indexed != null) {
+      removeIndexedFromChunk(indexed);
+    }
+  }
+
+  private void removeIndexedFromChunk(IndexedStackEntity indexed) {
+    Map<UUID, IndexedStackEntity> chunk = indexedChunks.get(indexed.chunkKey());
+    if (chunk == null) {
+      return;
+    }
+    chunk.remove(indexed.entityId(), indexed);
+    if (chunk.isEmpty()) {
+      indexedChunks.remove(indexed.chunkKey(), chunk);
+    }
+  }
+
+  private void addCanonicalNeighborAnchors(UUID worldId, long chunkKey, Set<Long> pending) {
+    int chunkRadius = neighborChunkRadius();
+    if (chunkRadius == 0) {
+      return;
+    }
+
+    int chunkX = chunkKeyX(chunkKey);
+    int chunkZ = chunkKeyZ(chunkKey);
+    int inspected = 0;
+    for (int distance = 1; distance <= chunkRadius && inspected < MAX_NEIGHBOR_CHUNKS_PER_WORK; distance++) {
+      for (int offsetX = -distance; offsetX <= distance && inspected < MAX_NEIGHBOR_CHUNKS_PER_WORK; offsetX++) {
+        for (int offsetZ = -distance; offsetZ <= distance && inspected < MAX_NEIGHBOR_CHUNKS_PER_WORK; offsetZ++) {
+          if (Math.max(Math.abs(offsetX), Math.abs(offsetZ)) != distance) {
+            continue;
+          }
+          inspected++;
+          long neighborKey = packChunkKey(chunkX + offsetX, chunkZ + offsetZ);
+          if (Long.compare(neighborKey, chunkKey) >= 0) {
+            continue;
+          }
+          Map<UUID, IndexedStackEntity> neighbor = indexedChunks.get(new ChunkWorkKey(worldId, neighborKey));
+          if (neighbor != null && !neighbor.isEmpty()) {
+            pending.add(neighborKey);
+          }
+        }
+      }
+    }
   }
 
   @Override
   public void onTick() {
-    if (!active) {
+    long generation = lifecycleGeneration.get();
+    if (!isActive(generation)) {
       dirtyChunks.clear();
       return;
     }
@@ -584,120 +796,379 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
       return;
     }
 
-    List<WorldBatch> batches = new ArrayList<>();
-    for (UUID worldId : new ArrayList<>(dirtyChunks.keySet())) {
-      Set<Long> keys = dirtyChunks.remove(worldId);
-      if (keys == null || keys.isEmpty()) {
+    int availableSubmissions = MAX_CHUNK_SUBMISSIONS_PER_TICK - countInFlightChunks();
+    if (availableSubmissions <= 0) {
+      return;
+    }
+
+    boolean folia = J.isFoliaThreading();
+    List<ChunkClaim> claims = new ArrayList<>(availableSubmissions);
+    int submitted = 0;
+    int inspected = 0;
+    for (Map.Entry<UUID, Set<Long>> entry : dirtyChunks.entrySet()) {
+      if (!isActive(generation)
+          || submitted >= availableSubmissions
+          || inspected >= MAX_CHUNK_INSPECTIONS_PER_TICK) {
+        break;
+      }
+
+      UUID worldId = entry.getKey();
+      Set<Long> pending = entry.getValue();
+      if (pending == null || pending.isEmpty()) {
         continue;
       }
 
       World world = Bukkit.getWorld(worldId);
       if (world == null) {
+        pending.clear();
+        chunkWork.keySet().removeIf(workKey -> workKey.worldId().equals(worldId));
         continue;
       }
 
-      batches.add(new WorldBatch(world, new ArrayList<>(keys)));
+      Iterator<Long> pendingIterator = pending.iterator();
+      while (isActive(generation)
+          && submitted < availableSubmissions
+          && inspected < MAX_CHUNK_INSPECTIONS_PER_TICK
+          && pendingIterator.hasNext()) {
+        Long boxedKey = pendingIterator.next();
+        inspected++;
+        if (boxedKey == null) {
+          continue;
+        }
+
+        long key = boxedKey;
+        if (!claimChunk(worldId, pending, key)) {
+          continue;
+        }
+
+        claims.add(new ChunkClaim(worldId, world, key, generation));
+        submitted++;
+      }
     }
 
-    if (batches.isEmpty()) {
+    if (claims.isEmpty()) {
       return;
     }
-
-    if (J.isFoliaThreading()) {
-      for (WorldBatch batch : batches) {
-        for (long key : batch.keys()) {
-          int chunkX = chunkKeyX(key);
-          int chunkZ = chunkKeyZ(key);
-          J.runChunk(batch.world(), chunkX, chunkZ, () -> stackChunk(batch.world(), chunkX, chunkZ));
-        }
+    if (folia) {
+      for (ChunkClaim claim : claims) {
+        submitFoliaChunkClaim(claim);
       }
       return;
     }
 
-    J.s(() -> {
-      for (WorldBatch batch : batches) {
-        for (long key : batch.keys()) {
-          stackChunk(batch.world(), chunkKeyX(key), chunkKeyZ(key));
+    try {
+      J.s(() -> {
+        for (ChunkClaim claim : claims) {
+          runChunkClaim(claim);
         }
+      });
+    } catch (Throwable throwable) {
+      React.reportError(throwable);
+      for (ChunkClaim claim : claims) {
+        completeChunkClaim(claim, false);
       }
-    });
+    }
   }
 
-  private void stackChunk(World world, int chunkX, int chunkZ) {
+  private int countInFlightChunks() {
+    int count = 0;
+    for (Set<Long> inFlight : inFlightChunks.values()) {
+      count += inFlight.size();
+      if (count >= MAX_CHUNK_SUBMISSIONS_PER_TICK) {
+        return MAX_CHUNK_SUBMISSIONS_PER_TICK;
+      }
+    }
+    return count;
+  }
+
+  private boolean claimChunk(UUID worldId, Set<Long> pending, long key) {
+    Set<Long> existing = inFlightChunks.get(worldId);
+    if (existing != null && existing.contains(key)) {
+      return false;
+    }
+    if (!pending.remove(key)) {
+      return false;
+    }
+
+    Set<Long> inFlight = inFlightChunks.computeIfAbsent(worldId, ignored -> ConcurrentHashMap.newKeySet());
+    if (inFlight.add(key)) {
+      return true;
+    }
+
+    pending.add(key);
+    return false;
+  }
+
+  private void submitFoliaChunkClaim(ChunkClaim claim) {
+    boolean scheduled = false;
+    try {
+      scheduled = J.runChunk(
+          claim.world(),
+          chunkKeyX(claim.key()),
+          chunkKeyZ(claim.key()),
+          () -> runChunkClaim(claim)
+      );
+    } catch (Throwable throwable) {
+      React.reportError(throwable);
+    } finally {
+      if (!scheduled) {
+        completeChunkClaim(claim, false);
+      }
+    }
+  }
+
+  private void runChunkClaim(ChunkClaim claim) {
+    boolean completed = false;
+    try {
+      if (!isActive(claim.generation())) {
+        return;
+      }
+      completed = stackChunk(claim.world(), chunkKeyX(claim.key()), chunkKeyZ(claim.key()));
+    } catch (Throwable throwable) {
+      chunkWork.remove(new ChunkWorkKey(claim.worldId(), claim.key()));
+      React.reportError(throwable);
+    } finally {
+      completeChunkClaim(claim, completed);
+    }
+  }
+
+  private void completeChunkClaim(ChunkClaim claim, boolean completed) {
+    if (claim.generation() != lifecycleGeneration.get()) {
+      return;
+    }
+
+    Set<Long> inFlight = inFlightChunks.get(claim.worldId());
+    if (inFlight != null) {
+      inFlight.remove(claim.key());
+    }
+    if (!completed && isActive(claim.generation())) {
+      dirtyChunks.computeIfAbsent(claim.worldId(), ignored -> ConcurrentHashMap.newKeySet())
+          .add(claim.key());
+    }
+  }
+
+  private boolean stackChunk(World world, int chunkX, int chunkZ) {
+    ChunkWorkKey workKey = new ChunkWorkKey(world.getUID(), packChunkKey(chunkX, chunkZ));
     if (!active || !world.isChunkLoaded(chunkX, chunkZ)) {
-      return;
+      chunkWork.remove(workKey);
+      return true;
     }
 
-    double minX = (chunkX << 4) - searchRadius;
-    double minZ = (chunkZ << 4) - searchRadius;
-    double maxX = (chunkX << 4) + 16 + searchRadius;
-    double maxZ = (chunkZ << 4) + 16 + searchRadius;
-    BoundingBox box = new BoundingBox(minX, world.getMinHeight(), minZ, maxX, world.getMaxHeight(), maxZ);
-    Collection<Entity> candidates = world.getNearbyEntities(box, this::isStackCandidate);
-    if (candidates.size() < 2) {
-      return;
+    ChunkWork work = chunkWork.get(workKey);
+    if (work == null) {
+      Chunk chunk = world.getChunkAt(chunkX, chunkZ);
+      Entity[] chunkEntities = chunk.getEntities();
+      Entity[] candidates = collectChunkCandidates(workKey, chunkX, chunkZ, chunkEntities);
+      if (candidates.length < 2) {
+        return true;
+      }
+
+      ChunkWork created = new ChunkWork(candidates);
+      ChunkWork existing = chunkWork.putIfAbsent(workKey, created);
+      work = existing == null ? created : existing;
     }
 
-    boolean folia = J.isFoliaThreading();
-    Map<StackBucket, List<Entity>> buckets = new HashMap<>();
-    for (Entity entity : candidates) {
+    boolean completed = advanceChunkWork(work, J.isFoliaThreading());
+    if (completed) {
+      chunkWork.remove(workKey, work);
+    }
+    return completed;
+  }
+
+  private Entity[] collectChunkCandidates(
+      ChunkWorkKey anchorKey,
+      int chunkX,
+      int chunkZ,
+      Entity[] exactChunkEntities
+  ) {
+    int chunkRadius = neighborChunkRadius();
+    if (chunkRadius == 0) {
+      return exactChunkEntities;
+    }
+
+    List<Entity> candidates = new ArrayList<>(exactChunkEntities.length + MAX_NEIGHBOR_ENTITIES_PER_WORK);
+    Set<Entity> seen = Collections.newSetFromMap(new IdentityHashMap<>());
+    for (Entity entity : exactChunkEntities) {
+      if (seen.add(entity)) {
+        candidates.add(entity);
+      }
+    }
+
+    int inspectedChunks = 0;
+    int addedEntities = 0;
+    for (int distance = 1;
+         distance <= chunkRadius
+             && inspectedChunks < MAX_NEIGHBOR_CHUNKS_PER_WORK
+             && addedEntities < MAX_NEIGHBOR_ENTITIES_PER_WORK;
+         distance++) {
+      for (int offsetX = -distance;
+           offsetX <= distance
+               && inspectedChunks < MAX_NEIGHBOR_CHUNKS_PER_WORK
+               && addedEntities < MAX_NEIGHBOR_ENTITIES_PER_WORK;
+           offsetX++) {
+        for (int offsetZ = -distance;
+             offsetZ <= distance
+                 && inspectedChunks < MAX_NEIGHBOR_CHUNKS_PER_WORK
+                 && addedEntities < MAX_NEIGHBOR_ENTITIES_PER_WORK;
+             offsetZ++) {
+          if (Math.max(Math.abs(offsetX), Math.abs(offsetZ)) != distance) {
+            continue;
+          }
+          inspectedChunks++;
+          long neighbor = packChunkKey(chunkX + offsetX, chunkZ + offsetZ);
+          if (Long.compare(neighbor, anchorKey.key()) <= 0) {
+            continue;
+          }
+
+          ChunkWorkKey neighborKey = new ChunkWorkKey(anchorKey.worldId(), neighbor);
+          Map<UUID, IndexedStackEntity> indexed = indexedChunks.get(neighborKey);
+          if (indexed == null) {
+            continue;
+          }
+          for (IndexedStackEntity candidate : indexed.values()) {
+            if (addedEntities >= MAX_NEIGHBOR_ENTITIES_PER_WORK) {
+              break;
+            }
+            if (!candidate.chunkKey().equals(neighborKey)) {
+              continue;
+            }
+            Entity entity = candidate.reference().get();
+            if (entity == null) {
+              indexed.remove(candidate.entityId(), candidate);
+              indexedEntities.remove(candidate.entityId(), candidate);
+              continue;
+            }
+            if (seen.add(entity)) {
+              candidates.add(entity);
+              addedEntities++;
+            }
+          }
+          if (indexed.isEmpty()) {
+            indexedChunks.remove(neighborKey, indexed);
+          }
+        }
+      }
+    }
+    return candidates.toArray(Entity[]::new);
+  }
+
+  private int neighborChunkRadius() {
+    return Math.max(0, (int) Math.ceil(Math.max(0D, searchRadius) / 16D));
+  }
+
+  private boolean advanceChunkWork(ChunkWork work, boolean folia) {
+    int entitiesRemaining = MAX_ENTITIES_PER_CHUNK_CALLBACK;
+    while (work.scanCursor < work.chunkEntities.length && entitiesRemaining > 0) {
+      Entity entity = work.chunkEntities[work.scanCursor++];
+      entitiesRemaining--;
       if (folia && !J.isOwnedByCurrentRegion(entity)) {
         continue;
       }
-
-      buckets.computeIfAbsent(bucketOf(entity), ignored -> new ArrayList<>()).add(entity);
-    }
-
-    for (List<Entity> bucket : buckets.values()) {
-      collapseBucket(bucket);
-    }
-  }
-
-  private void collapseBucket(List<Entity> bucket) {
-    if (bucket.size() < 2) {
-      return;
-    }
-
-    List<Entity> survivors = new ArrayList<>(bucket.size());
-    List<Location> survivorLocations = new ArrayList<>(bucket.size());
-    int[] survivorProtection = new int[bucket.size()];
-    for (Entity entity : bucket) {
-      if (entity.isDead()) {
+      if (!isStackCandidate(entity)) {
         continue;
       }
 
-      int protection = ReactProtection.operationsFor(entity);
-      Location at = entity.getLocation();
-      boolean merged = false;
-      if (!ReactOperations.covers(protection, ReactOperation.STACK)) {
-        for (int i = 0; i < survivors.size(); i++) {
-          if (ReactOperations.covers(survivorProtection[i], ReactOperation.STACK)) {
-            continue;
-          }
+      work.buildingBuckets.computeIfAbsent(bucketOf(entity), ignored -> new ArrayList<>()).add(entity);
+    }
+    if (work.scanCursor < work.chunkEntities.length) {
+      return false;
+    }
 
-          Entity survivor = survivors.get(i);
-          if (survivor.isDead()) {
-            continue;
-          }
+    if (work.buckets == null) {
+      work.buckets = new ArrayList<>(work.buildingBuckets.values());
+      work.buildingBuckets.clear();
+      work.startCollapse();
+    }
 
-          Location to = survivorLocations.get(i);
-          if (!withinMergeRadius(at.getX(), at.getY(), at.getZ(), to.getX(), to.getY(), to.getZ(), searchRadius)) {
-            continue;
-          }
+    int comparisonsRemaining = MAX_COMPARISONS_PER_CHUNK_CALLBACK;
+    while (work.bucketCursor < work.buckets.size()) {
+      List<Entity> bucket = work.buckets.get(work.bucketCursor);
+      if (bucket.size() < 2) {
+        work.nextBucket();
+        continue;
+      }
 
-          if (merge(entity, survivor)) {
-            merged = true;
-            break;
-          }
+      if (work.entityCursor >= bucket.size()) {
+        work.nextBucket();
+        continue;
+      }
+
+      if (work.currentEntity == null) {
+        if (entitiesRemaining <= 0) {
+          return false;
+        }
+        entitiesRemaining--;
+        Entity entity = bucket.get(work.entityCursor);
+        if (folia && !J.isOwnedByCurrentRegion(entity)) {
+          work.finishCurrent(false);
+          continue;
+        }
+        if (entity.isDead()) {
+          work.finishCurrent(false);
+          continue;
+        }
+
+        int protection = ReactProtection.operationsFor(entity);
+        Location location = entity.getLocation();
+        work.beginCurrent(entity, location, protection);
+        if (ReactOperations.covers(protection, ReactOperation.STACK)) {
+          work.finishCurrent(true);
+          continue;
         }
       }
 
-      if (!merged) {
-        survivorProtection[survivors.size()] = protection;
-        survivors.add(entity);
-        survivorLocations.add(at);
+      if (folia && !J.isOwnedByCurrentRegion(work.currentEntity)) {
+        work.finishCurrent(false);
+        continue;
       }
+      if (work.currentEntity.isDead()) {
+        work.finishCurrent(false);
+        continue;
+      }
+
+      boolean merged = false;
+      while (work.survivorCursor < work.survivors.size()) {
+        if (comparisonsRemaining <= 0) {
+          return false;
+        }
+        comparisonsRemaining--;
+
+        int survivorIndex = work.survivorCursor++;
+        if (ReactOperations.covers(work.survivorProtection[survivorIndex], ReactOperation.STACK)) {
+          continue;
+        }
+
+        Entity survivor = work.survivors.get(survivorIndex);
+        if (folia && !J.isOwnedByCurrentRegion(survivor)) {
+          continue;
+        }
+        if (survivor.isDead()) {
+          continue;
+        }
+
+        Location to = work.survivorLocations.get(survivorIndex);
+        if (!withinMergeRadius(
+            work.currentLocation.getX(),
+            work.currentLocation.getY(),
+            work.currentLocation.getZ(),
+            to.getX(),
+            to.getY(),
+            to.getZ(),
+            searchRadius
+        )) {
+          continue;
+        }
+
+        if (merge(work.currentEntity, survivor)) {
+          merged = true;
+          break;
+        }
+      }
+
+      work.finishCurrent(!merged);
     }
+
+    return true;
   }
 
   private boolean isStackCandidate(Entity entity) {
@@ -719,7 +1190,84 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
   private record StackBucket(EntityType type, int size, boolean adult, Object color, Object profession) {
   }
 
-  private record WorldBatch(World world, List<Long> keys) {
+  private boolean isActive(long generation) {
+    return active && generation == lifecycleGeneration.get();
+  }
+
+  private record ChunkClaim(UUID worldId, World world, long key, long generation) {
+  }
+
+  private record ChunkWorkKey(UUID worldId, long key) {
+  }
+
+  private record IndexedStackEntity(
+      UUID entityId,
+      ChunkWorkKey chunkKey,
+      WeakReference<Entity> reference
+  ) {
+  }
+
+  private static final class ChunkWork {
+    private final Entity[] chunkEntities;
+    private final Map<StackBucket, List<Entity>> buildingBuckets;
+    private List<List<Entity>> buckets;
+    private List<Entity> survivors;
+    private List<Location> survivorLocations;
+    private int[] survivorProtection;
+    private int scanCursor;
+    private int bucketCursor;
+    private int entityCursor;
+    private int survivorCursor;
+    private Entity currentEntity;
+    private Location currentLocation;
+    private int currentProtection;
+
+    private ChunkWork(Entity[] chunkEntities) {
+      this.chunkEntities = chunkEntities;
+      this.buildingBuckets = new HashMap<>();
+      this.survivors = new ArrayList<>();
+      this.survivorLocations = new ArrayList<>();
+      this.survivorProtection = new int[0];
+    }
+
+    private void beginCurrent(Entity entity, Location location, int protection) {
+      currentEntity = entity;
+      currentLocation = location;
+      currentProtection = protection;
+      survivorCursor = 0;
+    }
+
+    private void startCollapse() {
+      survivorProtection = buckets.isEmpty() ? new int[0] : new int[buckets.getFirst().size()];
+    }
+
+    private void finishCurrent(boolean keep) {
+      if (keep && currentEntity != null) {
+        int survivorIndex = survivors.size();
+        survivorProtection[survivorIndex] = currentProtection;
+        survivors.add(currentEntity);
+        survivorLocations.add(currentLocation);
+      }
+      currentEntity = null;
+      currentLocation = null;
+      currentProtection = 0;
+      survivorCursor = 0;
+      entityCursor++;
+    }
+
+    private void nextBucket() {
+      bucketCursor++;
+      entityCursor = 0;
+      survivorCursor = 0;
+      currentEntity = null;
+      currentLocation = null;
+      currentProtection = 0;
+      survivors = new ArrayList<>();
+      survivorLocations = new ArrayList<>();
+      survivorProtection = bucketCursor < buckets.size()
+          ? new int[buckets.get(bucketCursor).size()]
+          : new int[0];
+    }
   }
 
   private record StackableIndex(Set<EntityType> source, EnumSet<EntityType> types) {
@@ -728,11 +1276,16 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
   @Override
   public void onDeactivate() {
     active = false;
+    lifecycleGeneration.incrementAndGet();
     EntityController controller = React.controller(EntityController.class);
     if (controller != null) {
       controller.unregisterEntityTickListener(entityTickListener);
     }
     dirtyChunks.clear();
+    inFlightChunks.clear();
+    chunkWork.clear();
+    indexedEntities.clear();
+    indexedChunks.clear();
   }
 
   @Override

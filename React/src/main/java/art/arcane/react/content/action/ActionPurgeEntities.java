@@ -24,22 +24,24 @@ import art.arcane.react.api.action.ActionParams;
 import art.arcane.react.api.action.ActionTicket;
 import art.arcane.react.api.action.ReactAction;
 import art.arcane.react.core.controller.ActionController;
+import art.arcane.react.core.controller.ObserverController.LoadedChunkTarget;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.ActionMessages;
 import art.arcane.react.model.AreaActionParams;
 import art.arcane.react.model.FilterParams;
 import art.arcane.react.util.common.scheduling.J;
+import art.arcane.react.util.project.world.EntityRemovalPolicy;
 import art.arcane.volmlib.util.bukkit.WorldIdentity;
 import art.arcane.react.api.protect.ReactOperation;
 import art.arcane.react.api.protect.internal.ProtectionGuards;
 import art.arcane.volmlib.util.format.Form;
 import art.arcane.volmlib.util.localization.MessageArgument;
-import art.arcane.volmlib.util.math.Spiraler;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
+import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
@@ -70,8 +72,10 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
   ));
   @art.arcane.react.util.project.config.ConfigDoc(value = "Controls whether purge entities applies default blacklist.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
   private boolean defaultBlacklist = true;
-  @art.arcane.react.util.project.config.ConfigDoc(value = "Minimum age in seconds before purge entities removes matching entities.", impact = "Lower values purge newer entities sooner; higher values allow entities to remain longer.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Countdown baseline in seconds before purge entities removes matching entities.", impact = "Higher values give players more warning time; lower values purge sooner.")
   private int secondsToPurge = 5;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Protects player-named entities from purge entities.", impact = "Keep enabled to exclude entities with a custom name; disable it to make named entities eligible for removal.")
+  private boolean protectNamedEntities = true;
 
   private transient int lowerBound = secondsToPurge - 1;
   private transient int upperBound = secondsToPurge + 2;
@@ -81,20 +85,8 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
     super(ID);
   }
 
-  List<Chunk> pullChunks(ActionTicket<Params> ticket, int max) {
-    List<Chunk> c = new ArrayList<>();
-
-    for (int i = 0; i < max; i++) {
-      Chunk cc = ticket.getParams().getArea().popChunk();
-
-      if (cc == null) {
-        break;
-      }
-
-      c.add(cc);
-    }
-
-    return c;
+  List<LoadedChunkTarget> pullChunks(ActionTicket<Params> ticket, int max) {
+    return ticket.getParams().getArea().popChunks(max);
   }
 
   @Override
@@ -113,21 +105,24 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
   }
 
   private void workOnAsync(ActionTicket<Params> ticket) {
-    List<Chunk> chunks = pullChunks(ticket, React.controller(ActionController.class).getActionSpeedMultiplier());
+    List<LoadedChunkTarget> chunks = pullChunks(ticket, React.controller(ActionController.class).getActionSpeedMultiplier());
 
-    if (ticket.getTotalWork() <= 1 && ticket.getParams().getArea().getChunks() != null) {
-      ticket.setTotalWork(Math.max(1, ticket.getParams().getArea().getChunks().size() + chunks.size()));
+    if (ticket.getTotalWork() <= 1) {
+      ticket.setTotalWork(Math.max(1, ticket.getParams().getArea().estimatedTotalWork()));
     }
 
     if (!chunks.isEmpty()) {
-      for (Chunk chunk : chunks) {
+      for (LoadedChunkTarget chunk : chunks) {
         purgeChunkFolia(chunk, ticket.getParams());
       }
       ticket.addWork(chunks.size());
     }
 
     ticket.setCount(ticket.getParams().getPurgedEntities().get());
-    if (chunks.isEmpty() && ticket.getParams().getInFlightChunks().get() <= 0) {
+    if (chunks.isEmpty()
+        && ticket.getParams().getInFlightChunks().get() <= 0
+        && !ticket.getParams().getArea().isSelectionPending()) {
+      ticket.setTotalWork(Math.max(1, ticket.getWork()));
       ticket.complete();
     }
   }
@@ -139,25 +134,42 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
             .types(blacklist)
             .blacklist(defaultBlacklist)
             .build())
+        .protectNamedEntities(protectNamedEntities)
         .build();
   }
 
 
-  private void purge(Entity entity) {
+  private void purge(Entity entity, Params params) {
     int delay = (int) (20 * Math.random());
-    if (!J.runEntity(entity, () -> React.kill(entity, randomDelay), delay)) {
-      React.kill(entity, randomDelay);
+    Runnable removal = () -> {
+      if (canPurge(entity, params) && ProtectionGuards.allows(entity, ReactOperation.PURGE)) {
+        React.kill(entity, randomDelay);
+      }
+    };
+    if (!J.runEntity(entity, removal, delay)) {
+      removal.run();
     }
   }
 
-  private void purgeChunkFolia(Chunk chunk, Params params) {
-    if (chunk == null || chunk.getWorld() == null || params == null) {
+  boolean canPurge(Entity entity, Params params) {
+    return entity != null
+        && !entity.isDead()
+        && params != null
+        && params.getEntityFilter().allows(entity.getType())
+        && !EntityRemovalPolicy.protectsNamedEntity(entity, params.isProtectNamedEntities());
+  }
+
+  private void purgeChunkFolia(LoadedChunkTarget chunk, Params params) {
+    if (chunk == null || params == null) {
       return;
     }
 
-    World world = chunk.getWorld();
-    int chunkX = chunk.getX();
-    int chunkZ = chunk.getZ();
+    World world = Bukkit.getWorld(chunk.worldId());
+    if (world == null) {
+      return;
+    }
+    int chunkX = chunk.chunkX();
+    int chunkZ = chunk.chunkZ();
     params.getInFlightChunks().incrementAndGet();
     boolean scheduled = J.runChunk(world, chunkX, chunkZ, () -> {
       try {
@@ -168,7 +180,7 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
         Chunk loadedChunk = world.getChunkAt(chunkX, chunkZ);
         int removed = 0;
         for (Entity entity : loadedChunk.getEntities()) {
-          if (!params.getEntityFilter().allows(entity.getType())) {
+          if (!canPurge(entity, params)) {
             continue;
           }
 
@@ -176,7 +188,7 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
             continue;
           }
 
-          purge(entity);
+          purge(entity, params);
           removed++;
         }
 
@@ -213,6 +225,9 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
     @art.arcane.react.util.project.config.ConfigDoc(value = "Filter definition for entity filter used by purge entities.", impact = "Narrow this list to target fewer cases, or broaden it to include more matching entries.")
     private FilterParams<EntityType> entityFilter = FilterParams.<EntityType>builder().build();
     @Builder.Default
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Protects player-named entities from purge entities.", impact = "Keep enabled to exclude entities with a custom name; disable it to make named entities eligible for removal.")
+    private boolean protectNamedEntities = true;
+    @Builder.Default
     private transient AtomicInteger inFlightChunks = new AtomicInteger(0);
     @Builder.Default
     private transient AtomicInteger purgedEntities = new AtomicInteger(0);
@@ -224,8 +239,7 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
     }
 
     public Params addRadius(World world, int x, int z, int radius) {
-      area.setChunks(area.getChunks() == null ? new ArrayList<>() : new ArrayList<>(area.getChunks()));
-      new Spiraler(radius * 2, radius * 2, (xx, zz) -> area.getChunks().add(world.getChunkAt(x + xx, z + zz))).drain();
+      area.selectLoadedRadius(world, x, z, radius);
       return this;
     }
   }

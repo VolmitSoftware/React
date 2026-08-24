@@ -151,6 +151,20 @@ class ProtectedEntityGateTest {
   }
 
   @Test
+  void crowdPreventionSkipsPlayerNamedEntityByDefault() {
+    bindProtecting(ReactOperations.NONE);
+    TweakEntityCrowdPrevention tweak = new TweakEntityCrowdPrevention();
+    Entity cow = Mockito.mock(Entity.class);
+    Mockito.when(cow.getCustomName()).thenReturn("Betsy");
+
+    try (MockedStatic<ReactEntity> entities = Mockito.mockStatic(ReactEntity.class)) {
+      tweak.onCrowdCheck(cow);
+
+      entities.verify(() -> ReactEntity.getCrowding(cow), Mockito.never());
+    }
+  }
+
+  @Test
   void crowdPreventionStillRunsForAnUnprotectedEntity() {
     bindProtecting(ReactOperations.NONE);
     TweakEntityCrowdPrevention tweak = new TweakEntityCrowdPrevention();

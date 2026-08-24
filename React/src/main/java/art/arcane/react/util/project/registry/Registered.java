@@ -79,12 +79,11 @@ public interface Registered {
   @SuppressWarnings({"unchecked", "rawtypes"})
   default boolean reloadFromDisk(boolean overwriteOnReadFailure) {
     File canonicalFile = React.instance.getDataFile(getConfigCategory(), getId() + ".toml");
-    File legacyFile = React.instance.getDataFile(getConfigCategory(), getId() + ".json");
 
     try {
       Object loadedObject = ConfigFileSupport.load(
           canonicalFile,
-          legacyFile,
+          null,
           (Class) getClass(),
           this,
           overwriteOnReadFailure,
@@ -96,7 +95,7 @@ public interface Registered {
       React.verbose("Loaded config for " + getName() + " in " + canonicalFile.getPath());
       return true;
     } catch (Throwable e) {
-      React.warn("Failed to load config for " + getName() + ": " + e.getMessage());
+      React.warn("Failed to load config for " + getName() + ": " + e.getMessage(), e);
       return false;
     }
   }

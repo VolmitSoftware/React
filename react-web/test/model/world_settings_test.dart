@@ -39,6 +39,7 @@ void main() {
   group('WorldSettings.fromJson', () {
     test('parses all fields correctly', () {
       final Map<String, dynamic> json = {
+        'key': 'minecraft:world',
         'name': 'world',
         'pressureMode': 'PANIC',
         'budgetMs': 50.0,
@@ -46,6 +47,7 @@ void main() {
         'releaseMs': 45.0,
       };
       final WorldSettings ws = WorldSettings.fromJson(json);
+      expect(ws.key, equals('minecraft:world'));
       expect(ws.name, equals('world'));
       expect(ws.pressureMode, equals(PressureMode.panic));
       expect(ws.budgetMs, equals(50.0));
@@ -55,6 +57,7 @@ void main() {
 
     test('integer json values coerce to double', () {
       final Map<String, dynamic> json = {
+        'key': 'minecraft:w2',
         'name': 'w2',
         'pressureMode': 'NORMAL',
         'budgetMs': 20,
@@ -71,6 +74,7 @@ void main() {
   group('WorldSettings.copyWith', () {
     test('copyWith(budgetMs:) changes only budgetMs', () {
       final Map<String, dynamic> json = {
+        'key': 'minecraft:world',
         'name': 'world',
         'pressureMode': 'NORMAL',
         'budgetMs': 50.0,
@@ -80,6 +84,7 @@ void main() {
       final WorldSettings ws = WorldSettings.fromJson(json);
       final WorldSettings copy = ws.copyWith(budgetMs: 30.0);
       expect(copy.budgetMs, equals(30.0));
+      expect(copy.key, equals('minecraft:world'));
       expect(copy.name, equals('world'));
       expect(copy.pressureMode, equals(PressureMode.normal));
       expect(copy.panicMs, equals(55.0));
@@ -90,6 +95,7 @@ void main() {
   group('WorldSettings.toJson round-trip', () {
     test('toJson encodes pressureMode as wire string', () {
       final Map<String, dynamic> json = {
+        'key': 'minecraft:world',
         'name': 'world',
         'pressureMode': 'PRESSURE',
         'budgetMs': 40.0,
@@ -99,6 +105,7 @@ void main() {
       final WorldSettings ws = WorldSettings.fromJson(json);
       final Map<String, dynamic> out = ws.toJson();
       expect(out['pressureMode'], equals('PRESSURE'));
+      expect(out['key'], equals('minecraft:world'));
       expect(out['name'], equals('world'));
       expect(out['budgetMs'], equals(40.0));
     });

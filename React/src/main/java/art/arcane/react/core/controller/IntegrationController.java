@@ -221,7 +221,7 @@ public class IntegrationController extends TickedObject implements IController {
       registry.reconcile(now);
     } catch (Throwable e) {
       React.warn("[metric] third-party metric reconcile failed: " + e.getClass().getSimpleName()
-          + (e.getMessage() == null ? "" : " - " + e.getMessage()));
+          + (e.getMessage() == null ? "" : " - " + e.getMessage()), e);
     }
   }
 
@@ -636,7 +636,7 @@ public class IntegrationController extends TickedObject implements IController {
     if (severe) {
       React.warn("[integration-timeline] " + message);
     } else {
-      React.info("[integration-timeline] " + message);
+      React.verbose(() -> "[integration-timeline] " + message);
     }
   }
 
@@ -658,7 +658,7 @@ public class IntegrationController extends TickedObject implements IController {
   }
 
   private void logLifecycle(String event, String pluginId, String detail) {
-    React.verbose("[integration] event=" + event + " plugin=" + pluginId + " detail=" + detail);
+    React.verbose(() -> "[integration] event=" + event + " plugin=" + pluginId + " detail=" + detail);
   }
 
   private String normalize(String pluginId) {

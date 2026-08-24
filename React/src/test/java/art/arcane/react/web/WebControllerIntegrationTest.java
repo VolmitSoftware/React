@@ -105,8 +105,8 @@ public class WebControllerIntegrationTest {
         when(sampleController.getSampler("wc-tick-time")).thenReturn(s1);
 
         WebConfiguration config = new WebConfiguration();
-        config.setEnabled(true);
-        config.setBindAddress("127.0.0.1");
+        config.setListenerEnabled(true);
+        config.setListenAddress("127.0.0.1");
         config.setPort(0);
 
         controller = buildController(config, dataFolder, sampleController);
@@ -222,8 +222,8 @@ public class WebControllerIntegrationTest {
         when(registry.all()).thenReturn(List.of(s1, s2));
 
         WebConfiguration config = new WebConfiguration();
-        config.setEnabled(true);
-        config.setBindAddress("127.0.0.1");
+        config.setListenerEnabled(true);
+        config.setListenAddress("127.0.0.1");
         config.setPort(0);
         config.setRequireTokenForReads(false);
 
@@ -282,8 +282,8 @@ public class WebControllerIntegrationTest {
         when(registry.all()).thenReturn(List.of());
 
         WebConfiguration config = new WebConfiguration();
-        config.setEnabled(true);
-        config.setBindAddress("127.0.0.1");
+        config.setListenerEnabled(true);
+        config.setListenAddress("127.0.0.1");
         config.setPort(0);
 
         controller = buildController(config, dataFolder, sampleController);
@@ -347,8 +347,8 @@ public class WebControllerIntegrationTest {
         when(sampleController.getSampler("does-not-exist")).thenReturn(null);
 
         WebConfiguration config = new WebConfiguration();
-        config.setEnabled(true);
-        config.setBindAddress("127.0.0.1");
+        config.setListenerEnabled(true);
+        config.setListenAddress("127.0.0.1");
         config.setPort(0);
 
         controller = buildController(config, dataFolder, sampleController);
@@ -412,7 +412,7 @@ public class WebControllerIntegrationTest {
         sizeField.set(g, history.length);
         Field lastPushField = Graph.class.getDeclaredField("lastPushMs");
         lastPushField.setAccessible(true);
-        lastPushField.set(g, System.currentTimeMillis());
+        lastPushField.set(g, Long.MAX_VALUE);
         graphsMap.put(name, g);
         injectedGraphKeys.add(name);
         return g;

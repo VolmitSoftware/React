@@ -96,6 +96,7 @@ public class PairingTokenTest {
     String bearer = PairingToken.mint(secret, rec.id(), rec.label(), rec.issuedAt(), rec.scopes());
     PairingToken token = PairingToken.verify(secret, bearer, store).orElseThrow();
     assertEquals("admin", token.role());
+    assertEquals("admin-device", token.label());
     assertTrue(token.hasScope("admin"));
     assertTrue(token.hasScope("console:read"));
     assertTrue(token.hasScope("console:execute"));

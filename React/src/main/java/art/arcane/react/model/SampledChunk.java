@@ -22,26 +22,30 @@ package art.arcane.react.model;
 import art.arcane.chrono.ChronoLatch;
 import com.google.common.util.concurrent.AtomicDouble;
 import lombok.Data;
-import org.bukkit.Chunk;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.DoubleUnaryOperator;
 
 @Data
 public class SampledChunk {
   private static final DoubleUnaryOperator HALF = (v) -> v * 0.5D;
-  private final Chunk chunk;
-  private final SampledWorld world;
+  private final UUID worldId;
+  private final String worldKey;
+  private final int chunkX;
+  private final int chunkZ;
   private final ChronoLatch cleaner;
-  private Map<String, AtomicDouble> values;
+  private final Map<String, AtomicDouble> values;
 
-  public SampledChunk(Chunk chunk, SampledWorld world) {
-    this.chunk = chunk;
-    this.world = world;
-    this.values = new ConcurrentHashMap<>();
-    this.cleaner = new ChronoLatch(1000);
+  public SampledChunk(UUID worldId, String worldKey, int chunkX, int chunkZ) {
+    this.worldId = worldId;
+    this.worldKey = worldKey;
+    this.chunkX = chunkX;
+    this.chunkZ = chunkZ;
+    values = new ConcurrentHashMap<>();
+    cleaner = new ChronoLatch(1000);
   }
 
   public double highestSubScore() {

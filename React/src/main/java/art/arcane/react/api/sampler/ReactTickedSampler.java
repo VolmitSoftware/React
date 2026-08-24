@@ -26,17 +26,22 @@ import art.arcane.react.util.common.scheduling.TickedObject;
 import java.util.concurrent.atomic.AtomicLong;
 
 public abstract class ReactTickedSampler extends TickedObject implements Sampler {
+  private static final long FAILURE_LOG_INTERVAL_MS = 10_000L;
   private transient final RollingSequence ssequence;
   private transient final AtomicLong slastSample;
+  private transient final AtomicLong slastFailureLog;
   private transient final long sactiveInterval;
-  private transient boolean ssleeping;
-  private transient boolean sregistered;
+  private transient final Object sequenceLock;
+  private transient volatile boolean ssleeping;
+  private transient volatile boolean sregistered;
 
   public ReactTickedSampler(String id, long tickInterval, int memory) {
     super("sampler", id, tickInterval);
     this.ssequence = new RollingSequence(memory);
     this.sactiveInterval = tickInterval;
     this.slastSample = new AtomicLong(0);
+    this.slastFailureLog = new AtomicLong(0L);
+    this.sequenceLock = new Object();
     this.ssleeping = true;
     this.sregistered = true;
   }
@@ -70,14 +75,19 @@ public abstract class ReactTickedSampler extends TickedObject implements Sampler
       setSsleeping(false);
     }
 
-    return ssequence.getAverage();
+    synchronized (sequenceLock) {
+      return ssequence.getAverage();
+    }
   }
 
   private void setSsleeping(boolean ssleeping) {
+    boolean wasSleeping = this.ssleeping;
     this.ssleeping = ssleeping;
     setTinterval(ssleeping ? 1000 : sactiveInterval);
-    if (!this.ssleeping && ssleeping) {
-      ssequence.resetExtremes();
+    if (!wasSleeping && ssleeping) {
+      synchronized (sequenceLock) {
+        ssequence.resetExtremes();
+      }
     }
   }
 
@@ -89,12 +99,21 @@ public abstract class ReactTickedSampler extends TickedObject implements Sampler
 
     if (System.currentTimeMillis() - slastSample.get() > 1000) {
       setSsleeping(true);
+      return;
     }
 
     try {
-      ssequence.put(onSample());
+      double sample = onSample();
+      synchronized (sequenceLock) {
+        ssequence.put(sample);
+      }
     } catch (Throwable e) {
-
+      long now = System.currentTimeMillis();
+      long last = slastFailureLog.get();
+      if (now - last >= FAILURE_LOG_INTERVAL_MS && slastFailureLog.compareAndSet(last, now)) {
+        React.reportError("Sampler " + getId() + " failed: " + e.getClass().getSimpleName()
+            + (e.getMessage() == null ? "" : " - " + e.getMessage()), e);
+      }
     }
   }
 

@@ -16,6 +16,7 @@ WorldSettings _world(
   double panicMs = 80.0,
   double releaseMs = 40.0,
 }) => WorldSettings(
+  key: 'minecraft:$name',
   name: name,
   pressureMode: PressureMode.normal,
   budgetMs: budgetMs,

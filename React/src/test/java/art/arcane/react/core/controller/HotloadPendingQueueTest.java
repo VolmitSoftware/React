@@ -106,7 +106,7 @@ class HotloadPendingQueueTest {
   void missingTargetWaitsForTombstoneGrace() {
     AtomicLong clock = new AtomicLong();
     HotloadPendingQueue queue = new HotloadPendingQueue(THREE_SECONDS, THREE_SECONDS, clock::get);
-    Path config = temporaryDirectory.resolve("config.toml");
+    Path config = temporaryDirectory.resolve("react.toml");
 
     queue.enqueue(config, false);
     assertTrue(queue.beginDrain().isEmpty());
@@ -126,7 +126,7 @@ class HotloadPendingQueueTest {
   void reappearingTargetCancelsTombstoneDelay() {
     AtomicLong clock = new AtomicLong();
     HotloadPendingQueue queue = new HotloadPendingQueue(THREE_SECONDS, THREE_SECONDS, clock::get);
-    Path config = temporaryDirectory.resolve("config.toml");
+    Path config = temporaryDirectory.resolve("react.toml");
 
     queue.enqueue(config, false);
     clock.set(TimeUnit.SECONDS.toNanos(1L));
@@ -143,7 +143,7 @@ class HotloadPendingQueueTest {
   void disappearanceDuringApplyStartsANewTombstoneGrace() {
     AtomicLong clock = new AtomicLong();
     HotloadPendingQueue queue = new HotloadPendingQueue(THREE_SECONDS, THREE_SECONDS, clock::get);
-    Path config = temporaryDirectory.resolve("config.toml");
+    Path config = temporaryDirectory.resolve("react.toml");
 
     queue.enqueue(config, true);
     assertEquals(
@@ -168,12 +168,12 @@ class HotloadPendingQueueTest {
 
   @Test
   void recognizesCommonTemporaryArtifacts() {
-    assertTrue(HotloadController.isTemporaryArtifactName(".config.toml"));
+    assertTrue(HotloadController.isTemporaryArtifactName(".react.toml"));
     assertTrue(HotloadController.isTemporaryArtifactName("config.tmp.toml"));
-    assertTrue(HotloadController.isTemporaryArtifactName("config.toml.part"));
-    assertTrue(HotloadController.isTemporaryArtifactName("config.toml.filepart"));
-    assertTrue(HotloadController.isTemporaryArtifactName("config.toml.___jb_tmp___"));
-    assertTrue(HotloadController.isTemporaryArtifactName("config.toml~"));
+    assertTrue(HotloadController.isTemporaryArtifactName("react.toml.part"));
+    assertTrue(HotloadController.isTemporaryArtifactName("react.toml.filepart"));
+    assertTrue(HotloadController.isTemporaryArtifactName("react.toml.___jb_tmp___"));
+    assertTrue(HotloadController.isTemporaryArtifactName("react.toml~"));
     assertFalse(HotloadController.isTemporaryArtifactName("temperature.toml"));
   }
 }

@@ -1,6 +1,7 @@
 package art.arcane.react.api.web.ws;
 
 import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -14,6 +15,14 @@ public final class CoalescingWsChannel implements WsChannel {
     public CoalescingWsChannel(WsChannel delegate, Executor sender) {
         this.delegate = delegate;
         this.sender = sender;
+    }
+
+    public static CoalescingWsChannel broadcastTo(
+        String channelId,
+        WebSocketSessions sessions,
+        Executor sender
+    ) {
+        return new CoalescingWsChannel(new BroadcastChannel(channelId, sessions), sender);
     }
 
     @Override
@@ -34,7 +43,11 @@ public final class CoalescingWsChannel implements WsChannel {
 
     private void scheduleDrain() {
         if (draining.compareAndSet(false, true)) {
-            sender.execute(this::drain);
+            try {
+                sender.execute(this::drain);
+            } catch (RejectedExecutionException failure) {
+                draining.set(false);
+            }
         }
     }
 
@@ -53,6 +66,31 @@ public final class CoalescingWsChannel implements WsChannel {
             } catch (Throwable t) {
                 // swallow; broadcaster/WebSocketSessions already prune closed channels
             }
+        }
+    }
+
+    private static final class BroadcastChannel implements WsChannel {
+        private final String channelId;
+        private final WebSocketSessions sessions;
+
+        private BroadcastChannel(String channelId, WebSocketSessions sessions) {
+            this.channelId = channelId;
+            this.sessions = sessions;
+        }
+
+        @Override
+        public String id() {
+            return channelId;
+        }
+
+        @Override
+        public boolean isOpen() {
+            return true;
+        }
+
+        @Override
+        public void send(String text) {
+            sessions.broadcast(text);
         }
     }
 }

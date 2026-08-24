@@ -1,22 +1,20 @@
 package art.arcane.react.api.web;
 
+import art.arcane.react.React;
 import art.arcane.react.api.web.dto.ConfigNodeDto;
 import art.arcane.react.api.web.dto.ConfigSectionDto;
 import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.util.project.config.ConfigDoc;
 import art.arcane.react.util.project.config.ConfigLocalization;
+import art.arcane.volmlib.util.localization.VolmitLocales;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 
 public class ConfigTreeSerializer {
-
-    private static final Logger LOG = Logger.getLogger(ConfigTreeSerializer.class.getName());
-
     public ConfigSectionDto[] serialize(ReactConfiguration config) {
         List<ConfigSectionDto> sections = new ArrayList<>();
         List<ConfigNodeDto> generalNodes = new ArrayList<>();
@@ -79,7 +77,11 @@ public class ConfigTreeSerializer {
         ConfigDoc annotation = field.getAnnotation(ConfigDoc.class);
         node.doc = annotation == null ? "" : ConfigLocalization.fieldSummary(field);
 
-        if (normalized != null && normalized.isEnum()) {
+        if ("main.language".equals(key)) {
+            node.type = "enum";
+            node.value = rawValue;
+            node.options = VolmitLocales.all().toArray(new String[0]);
+        } else if (normalized != null && normalized.isEnum()) {
             node.value = rawValue != null ? ((Enum<?>) rawValue).name() : null;
             Object[] constants = normalized.getEnumConstants();
             String[] options = constants == null ? new String[0] : new String[constants.length];
@@ -128,8 +130,8 @@ public class ConfigTreeSerializer {
             field.setAccessible(true);
             return field.get(target);
         } catch (Throwable t) {
-            LOG.fine("ConfigTreeSerializer: failed to read field " + field.getDeclaringClass().getSimpleName()
-                    + "." + field.getName() + ": " + t.getClass().getSimpleName() + ": " + t.getMessage());
+            React.verbose("Config tree serialization could not read "
+                    + field.getDeclaringClass().getSimpleName() + "." + field.getName(), t);
             return null;
         }
     }

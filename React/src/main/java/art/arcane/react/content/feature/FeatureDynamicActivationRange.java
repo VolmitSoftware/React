@@ -25,6 +25,7 @@ import art.arcane.react.api.protect.ReactProtection;
 import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.content.feature.perworld.PerWorldPressure;
 import art.arcane.react.content.sampler.SamplerTickTime;
+import art.arcane.react.core.controller.EntityController;
 import art.arcane.react.model.ReactEntity;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.project.world.WorldEntitySnapshots;
@@ -39,14 +40,24 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityTargetEvent;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Dynamic Activation Range feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureDynamicActivationRange extends ReactFeature implements Listener {
   public static final String ID = "dynamic-activation-range";
+  private transient final AtomicBoolean activationRangeScanQueued = new AtomicBoolean(false);
+  private transient final AtomicInteger nextEntitySample = new AtomicInteger(0);
+  private transient final AtomicInteger nextFoliaAnchor = new AtomicInteger(0);
+  private transient final AtomicInteger nextWorldSample = new AtomicInteger(0);
+  private transient final AtomicLong lifecycleGeneration = new AtomicLong(0L);
+  private transient final Object lifecycleLock = new Object();
+  private transient volatile boolean active;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Main evaluation interval for dynamic activation range in milliseconds.", impact = "Lower values react faster but consume more CPU; higher values reduce overhead but react later.")
   private int tickIntervalMS = 1000;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum entities sampled allowed per cycle in dynamic activation range.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
@@ -56,7 +67,7 @@ public class FeatureDynamicActivationRange extends ReactFeature implements Liste
   @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum activation range allowed by dynamic activation range.", impact = "Higher values allow more throughput before intervention; lower values make mitigation more aggressive.")
   private double maximumActivationRange = 64;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Activation radius used by dynamic activation range (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
-  private double currentActivationRange = maximumActivationRange;
+  private volatile double currentActivationRange = maximumActivationRange;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Tick-time threshold for target tick ms in dynamic activation range (milliseconds).", impact = "Higher values delay activation or exit; lower values make this threshold easier to cross.")
   private double targetTickMS = 45;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Tick-time threshold for critical in dynamic activation range (milliseconds).", impact = "Higher values delay activation or exit; lower values make this threshold easier to cross.")
@@ -74,12 +85,26 @@ public class FeatureDynamicActivationRange extends ReactFeature implements Liste
 
   @Override
   public void onActivate() {
-    currentActivationRange = maximumActivationRange;
+    synchronized (lifecycleLock) {
+      active = false;
+      lifecycleGeneration.incrementAndGet();
+      activationRangeScanQueued.set(false);
+      nextEntitySample.set(0);
+      nextFoliaAnchor.set(0);
+      nextWorldSample.set(0);
+      currentActivationRange = maximumActivationRange;
+      active = true;
+    }
   }
 
   @Override
   public void onDeactivate() {
-
+    synchronized (lifecycleLock) {
+      active = false;
+      lifecycleGeneration.incrementAndGet();
+      activationRangeScanQueued.set(false);
+    }
+    ReactEntity.releasePauseOwner(ReactEntity.PauseOwner.DYNAMIC_ACTIVATION_RANGE);
   }
 
   @Override
@@ -89,15 +114,49 @@ public class FeatureDynamicActivationRange extends ReactFeature implements Liste
 
   @Override
   public void onTick() {
-    double tickTime = React.sampler(SamplerTickTime.ID).sample();
-    tuneRange(tickTime);
-
-    if (J.isFoliaThreading()) {
-      applyFoliaActivationRange();
+    if (!active) {
       return;
     }
 
-    J.s(this::applyActivationRange);
+    long generation = lifecycleGeneration.get();
+    double tickTime = React.sampler(SamplerTickTime.ID).sample();
+    double activationRange;
+    synchronized (lifecycleLock) {
+      if (!isCurrent(generation)) {
+        return;
+      }
+      tuneRange(tickTime);
+      activationRange = currentActivationRange;
+    }
+
+    if (!activationRangeScanQueued.compareAndSet(false, true)) {
+      return;
+    }
+    if (!isCurrent(generation)) {
+      activationRangeScanQueued.set(false);
+      return;
+    }
+
+    ScanFlight flight = new ScanFlight(generation);
+    if (J.isFoliaThreading()) {
+      applyFoliaActivationRange(flight, generation, activationRange);
+      return;
+    }
+
+    try {
+      J.s(() -> {
+        try {
+          applyActivationRange(generation, activationRange);
+        } catch (Throwable throwable) {
+          React.reportError(throwable);
+        } finally {
+          flight.complete();
+        }
+      });
+    } catch (Throwable throwable) {
+      flight.complete();
+      React.reportError(throwable);
+    }
   }
 
   private void tuneRange(double tickTime) {
@@ -114,25 +173,36 @@ public class FeatureDynamicActivationRange extends ReactFeature implements Liste
     currentActivationRange = Math.min(maximumActivationRange, currentActivationRange + 1);
   }
 
-  private void applyActivationRange() {
-    int budget = Math.max(1, maxEntitiesSampledPerCycle);
-    ThreadLocalRandom random = ThreadLocalRandom.current();
+  private void applyActivationRange(long generation, double activationRange) {
+    if (generation != lifecycleGeneration.get()) {
+      return;
+    }
 
-    for (World world : Bukkit.getWorlds()) {
-      if (budget <= 0) {
+    int budget = Math.max(1, maxEntitiesSampledPerCycle);
+    List<World> worlds = Bukkit.getWorlds();
+    if (worlds.isEmpty()) {
+      return;
+    }
+    int worldStart = Math.floorMod(nextWorldSample.getAndIncrement(), worlds.size());
+
+    for (int worldIndex = 0; worldIndex < worlds.size(); worldIndex++) {
+      if (generation != lifecycleGeneration.get() || budget <= 0) {
         return;
       }
 
-      List<Entity> entities = WorldEntitySnapshots.get(world);
+      World world = worlds.get((worldStart + worldIndex) % worlds.size());
+      List<Entity> entities = WorldEntitySnapshots.next(world, budget);
       if (entities.isEmpty()) {
         continue;
       }
 
-      int sample = Math.min(budget, entities.size());
-      for (int i = 0; i < sample; i++) {
-        Entity entity = entities.get(random.nextInt(entities.size()));
+      for (Entity entity : entities) {
+        if (generation != lifecycleGeneration.get()) {
+          return;
+        }
+
         budget--;
-        manage(entity);
+        manage(entity, generation, activationRange, null, null);
         if (budget <= 0) {
           return;
         }
@@ -140,77 +210,124 @@ public class FeatureDynamicActivationRange extends ReactFeature implements Liste
     }
   }
 
-  private void applyFoliaActivationRange() {
-    List<Player> players = new ArrayList<>(Bukkit.getOnlinePlayers());
-    if (players.isEmpty()) {
+  private void applyFoliaActivationRange(ScanFlight flight, long generation, double activationRange) {
+    EntityController controller = React.controller(EntityController.class);
+    Player[] players = controller == null ? null : controller.getFoliaPlayers();
+    if (generation != lifecycleGeneration.get() || players == null || players.length == 0) {
+      flight.complete();
       return;
     }
 
-    AtomicInteger remaining = new AtomicInteger(Math.max(1, maxEntitiesSampledPerCycle));
-    ThreadLocalRandom random = ThreadLocalRandom.current();
-    int playerSamples = Math.min(players.size(), Math.max(1, remaining.get() / 8));
-    for (int i = 0; i < playerSamples && remaining.get() > 0; i++) {
-      Player player = players.get(random.nextInt(players.size()));
-      J.runEntity(player, () -> sampleAroundPlayer(player, remaining));
+    int budget = Math.max(1, maxEntitiesSampledPerCycle);
+    int playerSamples = Math.min(players.length, Math.max(1, ((budget - 1) / 8) + 1));
+    int quota = budget / playerSamples;
+    int extra = budget % playerSamples;
+    int start = Math.floorMod(nextFoliaAnchor.getAndAdd(playerSamples), players.length);
+    Set<UUID> sampledEntities = ConcurrentHashMap.newKeySet();
+
+    for (int i = 0; i < playerSamples; i++) {
+      Player player = players[(start + i) % players.length];
+      int playerQuota = quota + (i < extra ? 1 : 0);
+      flight.schedule(player, () -> sampleAroundPlayer(
+          player,
+          playerQuota,
+          sampledEntities,
+          flight,
+          generation,
+          activationRange
+      ));
     }
+
+    flight.complete();
   }
 
-  private void sampleAroundPlayer(Player player, AtomicInteger remaining) {
-    if (player == null || !player.isOnline() || !J.isOwnedByCurrentRegion(player)) {
+  private void sampleAroundPlayer(
+      Player player,
+      int quota,
+      Set<UUID> sampledEntities,
+      ScanFlight flight,
+      long generation,
+      double activationRange
+  ) {
+    if (generation != lifecycleGeneration.get()
+        || player == null
+        || !player.isOnline()
+        || !J.isOwnedByCurrentRegion(player)) {
       return;
     }
 
     List<Entity> nearby = player.getNearbyEntities(
-        currentActivationRange + 16,
-        Math.max(32, currentActivationRange),
-        currentActivationRange + 16
+        activationRange + 16,
+        Math.max(32, activationRange),
+        activationRange + 16
     );
     if (nearby.isEmpty()) {
       return;
     }
 
-    ThreadLocalRandom random = ThreadLocalRandom.current();
-    int sample = Math.min(nearby.size(), Math.max(1, remaining.get() / 2));
+    int sample = Math.min(nearby.size(), quota);
+    int start = Math.floorMod(nextEntitySample.getAndAdd(sample), nearby.size());
     for (int i = 0; i < sample; i++) {
-      if (remaining.getAndDecrement() <= 0) {
+      if (generation != lifecycleGeneration.get()) {
         return;
       }
 
-      Entity entity = nearby.get(random.nextInt(nearby.size()));
-      manage(entity);
+      Entity entity = nearby.get((start + i) % nearby.size());
+      if (entity == null) {
+        continue;
+      }
+
+      manage(entity, generation, activationRange, flight, sampledEntities);
     }
   }
 
-  private void manage(Entity entity) {
-    if (entity == null) {
+  private void manage(
+      Entity entity,
+      long generation,
+      double activationRange,
+      ScanFlight flight,
+      Set<UUID> sampledEntities
+  ) {
+    if (!isCurrent(generation) || entity == null) {
       return;
     }
 
     if (J.isFoliaThreading() && !J.isOwnedByCurrentRegion(entity)) {
-      J.runEntity(entity, () -> manage(entity));
+      if (flight != null) {
+        flight.schedule(entity, () -> manage(entity, generation, activationRange, flight, sampledEntities));
+      }
       return;
+    }
+
+    if (sampledEntities != null) {
+      UUID entityId = entity.getUniqueId();
+      if (entityId == null || !sampledEntities.add(entityId)) {
+        return;
+      }
     }
 
     if (!canManage(entity)) {
-      wake(entity);
+      wake(entity, generation);
       return;
     }
 
-    double effectiveRange = currentActivationRange;
+    double effectiveRange = activationRange;
     PerWorldPressure pressure = PerWorldPressure.get(entity.getWorld());
     if (pressure.isPanic()) {
       effectiveRange = minimumActivationRange;
     } else if (pressure.isPressure()) {
-      effectiveRange = Math.max(minimumActivationRange, currentActivationRange * 0.5D);
+      effectiveRange = Math.max(minimumActivationRange, activationRange * 0.5D);
     }
 
     if (React.hasNearbyPlayer(entity.getLocation(), effectiveRange)) {
-      wake(entity);
+      wake(entity, generation);
       return;
     }
 
-    if (!ReactEntity.isPaused(entity)) {
-      ReactEntity.setPaused(entity, true);
+    synchronized (lifecycleLock) {
+      if (isCurrent(generation)) {
+        ReactEntity.requestPause(entity, ReactEntity.PauseOwner.DYNAMIC_ACTIVATION_RANGE);
+      }
     }
   }
 
@@ -238,19 +355,91 @@ public class FeatureDynamicActivationRange extends ReactFeature implements Liste
   }
 
   private void wake(Entity entity) {
-    if (entity != null && !entity.isDead() && ReactEntity.isPaused(entity)) {
-      ReactEntity.setPaused(entity, false);
+    if (entity != null && !entity.isDead()) {
+      ReactEntity.releasePause(entity, ReactEntity.PauseOwner.DYNAMIC_ACTIVATION_RANGE);
     }
+  }
+
+  private void wake(Entity entity, long generation) {
+    synchronized (lifecycleLock) {
+      if (isCurrent(generation)) {
+        wake(entity);
+      }
+    }
+  }
+
+  private void wakeOnOwner(Entity entity, long generation) {
+    if (!isCurrent(generation) || entity == null) {
+      return;
+    }
+
+    if (J.isFoliaThreading() && !J.isOwnedByCurrentRegion(entity)) {
+      J.runEntity(entity, () -> wake(entity, generation));
+      return;
+    }
+
+    wake(entity, generation);
+  }
+
+  private boolean isCurrent(long generation) {
+    return active && generation == lifecycleGeneration.get();
   }
 
   @EventHandler(ignoreCancelled = true)
   public void on(EntityDamageEvent event) {
-    wake(event.getEntity());
+    long generation = lifecycleGeneration.get();
+    wakeOnOwner(event.getEntity(), generation);
   }
 
   @EventHandler(ignoreCancelled = true)
   public void on(EntityTargetEvent event) {
-    wake(event.getEntity());
-    wake(event.getTarget());
+    long generation = lifecycleGeneration.get();
+    wakeOnOwner(event.getEntity(), generation);
+    wakeOnOwner(event.getTarget(), generation);
+  }
+
+  private final class ScanFlight {
+    private final long generation;
+    private final AtomicInteger pending = new AtomicInteger(1);
+
+    private ScanFlight(long generation) {
+      this.generation = generation;
+    }
+
+    private void schedule(Entity entity, Runnable work) {
+      pending.incrementAndGet();
+      AtomicBoolean dispatchComplete = new AtomicBoolean(false);
+      Runnable completeDispatch = () -> {
+        if (dispatchComplete.compareAndSet(false, true)) {
+          complete();
+        }
+      };
+      boolean scheduled = false;
+      try {
+        scheduled = J.runEntity(entity, () -> {
+          try {
+            if (isCurrent(generation)) {
+              work.run();
+            }
+          } catch (Throwable throwable) {
+            React.reportError(throwable);
+          } finally {
+            completeDispatch.run();
+          }
+        }, 0, completeDispatch);
+      } catch (Throwable throwable) {
+        React.reportError(throwable);
+      } finally {
+        if (!scheduled) {
+          completeDispatch.run();
+        }
+      }
+    }
+
+    private void complete() {
+      if (pending.decrementAndGet() == 0 && isCurrent(generation)) {
+        activationRangeScanQueued.set(false);
+      }
+    }
   }
 }

@@ -87,7 +87,7 @@ public final class ThirdPartyMetricRegistry {
         SourceState state = states.remove(goneSourceId);
         retireSamplers(state);
         store.withdrawSource(goneSourceId);
-        React.verbose("[metric] source " + goneSourceId + " withdrawn");
+        React.verbose(() -> "[metric] source " + goneSourceId + " withdrawn");
       }
     }
 
@@ -118,7 +118,7 @@ public final class ThirdPartyMetricRegistry {
       syncSamplers(state, accepted);
 
       if (fresh) {
-        React.verbose("[metric] source " + sourceId + " from " + owners.get(sourceId)
+        React.verbose(() -> "[metric] source " + sourceId + " from " + owners.get(sourceId)
             + " declared " + accepted.size() + "/" + declared.size() + " metrics");
       }
     }
@@ -134,7 +134,7 @@ public final class ThirdPartyMetricRegistry {
       return found == null ? List.of() : found;
     } catch (Throwable e) {
       React.warn("[metric] source discovery failed: " + e.getClass().getSimpleName()
-          + (e.getMessage() == null ? "" : " - " + e.getMessage()));
+          + (e.getMessage() == null ? "" : " - " + e.getMessage()), e);
       return List.of();
     }
   }

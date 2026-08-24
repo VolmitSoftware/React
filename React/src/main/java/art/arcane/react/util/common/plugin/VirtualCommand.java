@@ -20,6 +20,7 @@
 package art.arcane.react.util.plugin;
 
 
+import art.arcane.react.React;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.RuntimeMessages;
 import art.arcane.react.util.common.scheduling.J;
@@ -63,8 +64,7 @@ public class VirtualCommand {
           new V(command, true, true).set(i.getName(), cmd);
           children.put(cmd.getAllNodes(), new VirtualCommand(cmd, cc.value().trim().isEmpty() ? tag : cc.value().trim()));
         } catch (Exception e) {
-          e.printStackTrace();
-          e.printStackTrace();
+          React.reportError("Failed to construct virtual command field " + i.getName(), e);
         }
       }
     }

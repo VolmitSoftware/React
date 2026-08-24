@@ -19,19 +19,29 @@
 
 package art.arcane.react.api.entity;
 
+import art.arcane.react.React;
+import art.arcane.react.core.controller.NearbyPlayerIndexController;
 import art.arcane.react.model.ReactEntity;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.project.value.MaterialValue;
 import art.arcane.volmlib.util.math.M;
 import lombok.Getter;
+import org.bukkit.Location;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
-import org.bukkit.entity.*;
+import org.bukkit.entity.Breedable;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Item;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
+import org.bukkit.entity.Tameable;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Getter
 public class EntityPriority {
@@ -84,22 +94,18 @@ public class EntityPriority {
       return;
     }
 
-    if (J.isFoliaThreading() && !J.isOwnedByCurrentRegion(e)) {
+    boolean folia = J.isFoliaThreading();
+    if (folia && !J.isOwnedByCurrentRegion(e)) {
       J.runEntity(e, () -> updateDistanceToPlayer(e));
       return;
     }
 
-    double distance = Double.MAX_VALUE;
-    double d;
-    for (Player i : e.getWorld().getPlayers()) {
-      d = i.getLocation().distanceSquared(e.getLocation());
-
-      if (d < distance) {
-        distance = d;
-      }
-    }
-
-    d = farPlayerMultiplier;
+    Location location = e.getLocation();
+    NearbyPlayerIndexController playerIndex = React.controller(NearbyPlayerIndexController.class);
+    double distance = playerIndex == null
+        ? Double.POSITIVE_INFINITY
+        : playerIndex.nearestDistanceSquared(location, nearbyPlayerMaxDistance);
+    double d = farPlayerMultiplier;
     if (distance < nearbyPlayerMaxDistance * nearbyPlayerMaxDistance) {
       d = M.lerp(nearbyPlayerMultiplier, farPlayerMultiplier, M.lerpInverse(0, nearbyPlayerMaxDistance * nearbyPlayerMaxDistance, distance));
     }
@@ -113,11 +119,13 @@ public class EntityPriority {
       return;
     }
 
-    if (J.isFoliaThreading() && !J.isOwnedByCurrentRegion(e)) {
+    boolean folia = J.isFoliaThreading();
+    if (folia && !J.isOwnedByCurrentRegion(e)) {
       J.runEntity(e, () -> updateCrowd(e));
       return;
     }
 
+    UUID sourceId = e.getUniqueId();
     List<Entity> ees = e.getNearbyEntities(8, 8, 8);
     double priority = getPriority(e);
     double minPriority = priority * 0.25;
@@ -125,11 +133,15 @@ public class EntityPriority {
     double count = 1;
 
     for (Entity i : ees) {
-      if (i == null || i.getUniqueId().equals(e.getUniqueId())) {
+      if (i == null) {
         continue;
       }
 
-      if (J.isFoliaThreading() && !J.isOwnedByCurrentRegion(i)) {
+      if (folia && !J.isOwnedByCurrentRegion(i)) {
+        continue;
+      }
+
+      if (sourceId.equals(i.getUniqueId())) {
         continue;
       }
 

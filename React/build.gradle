@@ -157,6 +157,7 @@ dependencies {
     slim('net.kyori:adventure-platform-bukkit:4.4.1')
     compileOnly('io.javalin:javalin:6.4.0')
     slim('io.javalin:javalin:6.4.0')
+    slim('org.slf4j:slf4j-nop:2.0.16')
     compileOnly('com.fasterxml.jackson.core:jackson-annotations:2.17.2')
 
     // Random API's
@@ -220,6 +221,7 @@ slimJar {
     relocate('net.bytebuddy', "${lib}.bytebuddy")
     // bStats refuses to enable unless its classes are relocated out of org.bstats
     relocate('org.bstats', "${lib}.bstats")
+    relocate('org.slf4j', "${lib}.slf4j")
 }
 
 java {

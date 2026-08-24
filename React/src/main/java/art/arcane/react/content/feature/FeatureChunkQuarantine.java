@@ -140,9 +140,9 @@ public class FeatureChunkQuarantine extends ReactFeature implements Listener {
       });
     } catch (Throwable ex) {
       maintenanceQueued.set(false);
-      React.warn("Failed to schedule chunk quarantine maintenance: " + ex.getClass().getSimpleName()
-          + (ex.getMessage() == null ? "" : " - " + ex.getMessage()));
-      React.reportError(ex);
+      React.reportError("Failed to schedule chunk quarantine maintenance: "
+          + ex.getClass().getSimpleName()
+          + (ex.getMessage() == null ? "" : " - " + ex.getMessage()), ex);
     }
   }
 

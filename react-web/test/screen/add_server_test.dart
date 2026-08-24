@@ -6,31 +6,63 @@ import 'package:jaspr_test/server_test.dart';
 
 import 'package:react_web/localization/reactor_localizations.dart';
 import 'package:react_web/model/identity_info.dart';
+import 'package:react_web/model/server_capabilities.dart';
 import 'package:react_web/model/server_credential.dart';
 import 'package:react_web/model/server_snapshot.dart';
 import 'package:react_web/screen/add_server.dart';
 import 'package:react_web/service/react_client.dart';
+import 'package:react_web/service/react_exceptions.dart';
 import 'package:react_web/service/relay_identity.dart';
 import 'package:react_web/state/connection_manager.dart';
 import 'package:react_web/state/fleet_manager.dart';
 
-class _SuccessClient implements IReactClient {
+class _SuccessClient implements IReactClient, IPingClient {
+  final String serverFingerprint;
+  final Object? pingFailure;
+  int identityCallCount = 0;
+  int pingCallCount = 0;
+
+  _SuccessClient({String? serverFingerprint, this.pingFailure})
+    : serverFingerprint = serverFingerprint ?? _fingerprint;
+
   @override
-  Future<IdentityInfo> identity() async => IdentityInfo(
-    serverName: 'TestServer',
-    version: '1.0.0',
-    folia: false,
-    serverId: 'server-test',
-  );
+  Future<IdentityInfo> identity() async {
+    identityCallCount++;
+    return IdentityInfo(
+      serverName: 'TestServer',
+      version: '1.0.0',
+      folia: false,
+      serverId: serverFingerprint,
+    );
+  }
+
+  @override
+  Future<ServerCapabilities> ping() async {
+    pingCallCount++;
+    final Object? failure = pingFailure;
+    if (failure != null) throw failure;
+    return ServerCapabilities(
+      protocolVersion: 2,
+      serverFingerprint: serverFingerprint,
+      relayAvailable: false,
+    );
+  }
 
   @override
   Future<ServerSnapshot> metrics() async => throw UnimplementedError();
 }
 
-class _FailClient implements IReactClient {
+class _FailClient implements IReactClient, IPingClient {
   @override
   Future<IdentityInfo> identity() async =>
       throw Exception('connection refused');
+
+  @override
+  Future<ServerCapabilities> ping() async => ServerCapabilities(
+    protocolVersion: 2,
+    serverFingerprint: _fingerprint,
+    relayAvailable: false,
+  );
 
   @override
   Future<ServerSnapshot> metrics() async => throw UnimplementedError();
@@ -163,6 +195,24 @@ void main() {
       expect(credential.fingerprint, equals(_fingerprint));
     });
 
+    test('preserves a reverse-proxy path and bracketed IPv6 host', () {
+      final PairingCode code = PairingCode.decode(
+        _validCode(directUrl: 'https://[2001:db8::1]:9443/proxy/react'),
+      )!;
+      final ServerCredential credential = code.toCredential(
+        id: 'server-1',
+        label: 'IPv6 proxy',
+      );
+
+      expect(credential.host, equals('2001:db8::1'));
+      expect(credential.port, equals(9443));
+      expect(credential.basePath, equals('/proxy/react'));
+      expect(
+        credential.directEndpoint('api/v1/identity').toString(),
+        equals('https://[2001:db8::1]:9443/proxy/react/api/v1/identity'),
+      );
+    });
+
     test('creates a relay-only credential', () {
       final PairingCode code = PairingCode.decode(
         _validCode(directUrl: '', relayUrl: 'wss://relay.example.com'),
@@ -270,8 +320,8 @@ void main() {
         contains(ReactorText.addServerConnectionFlow.english),
       );
       expect(response.body, contains(ReactorText.addServerSecurity.english));
-      expect(response.body, contains('plugins/React/web.toml'));
-      expect(response.body, contains('enabled = true'));
+      expect(response.body, contains('TCP 9696 -&gt; server'));
+      expect(response.body, contains('advertisedUrl = public URL'));
       expect(response.body, contains('/react web pair my-server viewer'));
       expect(response.body, contains('react.use'));
       expect(response.body, contains('viewer, operator, or admin'));
@@ -282,9 +332,10 @@ void main() {
     });
 
     test('pairs a valid direct server', () async {
+      final _SuccessClient client = _SuccessClient();
       final FleetManager fleet = FleetManager(
         storage: _MemStorage(),
-        clientFactory: (ServerCredential _) => _SuccessClient(),
+        clientFactory: (ServerCredential _) => client,
       );
 
       final ServerCredential credential = await AddServerScreen.pairServer(
@@ -294,6 +345,94 @@ void main() {
 
       expect(fleet.servers, hasLength(1));
       expect(credential.label, equals('server.example.com'));
+      expect(client.pingCallCount, equals(1));
+      expect(client.identityCallCount, equals(1));
+    });
+
+    test(
+      'rejects a mismatched direct fingerprint without persisting',
+      () async {
+        final _MemStorage storage = _MemStorage();
+        final _SuccessClient client = _SuccessClient(
+          serverFingerprint: List<String>.filled(64, '0').join(),
+        );
+        final FleetManager fleet = FleetManager(
+          storage: storage,
+          clientFactory: (ServerCredential _) => client,
+        );
+
+        await expectLater(
+          AddServerScreen.pairServer(
+            _validCode(directUrl: 'http://server.example.com:7979'),
+            fleet,
+          ),
+          throwsA(isA<ReactAuthException>()),
+        );
+
+        expect(client.pingCallCount, equals(1));
+        expect(client.identityCallCount, equals(0));
+        expect(fleet.servers, isEmpty);
+        expect(storage.read(FleetManager.storageKey), isNull);
+      },
+    );
+
+    test('does not persist when the direct ping is unreachable', () async {
+      final _MemStorage storage = _MemStorage();
+      final _SuccessClient client = _SuccessClient(
+        pingFailure: const ReactUnavailable('connection refused'),
+      );
+      final FleetManager fleet = FleetManager(
+        storage: storage,
+        clientFactory: (ServerCredential _) => client,
+      );
+
+      await expectLater(
+        AddServerScreen.pairServer(_validCode(), fleet),
+        throwsA(isA<ReactUnavailable>()),
+      );
+
+      expect(client.identityCallCount, equals(0));
+      expect(fleet.servers, isEmpty);
+      expect(storage.read(FleetManager.storageKey), isNull);
+    });
+
+    test('does not persist when the direct ping is malformed', () async {
+      final _MemStorage storage = _MemStorage();
+      final _SuccessClient client = _SuccessClient(
+        pingFailure: const FormatException('malformed ping'),
+      );
+      final FleetManager fleet = FleetManager(
+        storage: storage,
+        clientFactory: (ServerCredential _) => client,
+      );
+
+      await expectLater(
+        AddServerScreen.pairServer(_validCode(), fleet),
+        throwsA(isA<FormatException>()),
+      );
+
+      expect(client.identityCallCount, equals(0));
+      expect(fleet.servers, isEmpty);
+      expect(storage.read(FleetManager.storageKey), isNull);
+    });
+
+    test('overrides an unusable loopback pairing address', () async {
+      final FleetManager fleet = FleetManager(
+        storage: _MemStorage(),
+        clientFactory: (ServerCredential _) => _SuccessClient(),
+      );
+
+      final ServerCredential credential = await AddServerScreen.pairServer(
+        _validCode(directUrl: 'http://127.0.0.1:9696'),
+        fleet,
+        directUrlOverride: 'https://panel.example.net/react',
+      );
+
+      expect(credential.host, equals('panel.example.net'));
+      expect(credential.secure, isTrue);
+      expect(credential.basePath, equals('/react'));
+      expect(credential.bearer, equals('tid1.tsig1'));
+      expect(credential.fingerprint, equals(_fingerprint));
     });
 
     test('gives relay-only servers a fingerprint label', () async {

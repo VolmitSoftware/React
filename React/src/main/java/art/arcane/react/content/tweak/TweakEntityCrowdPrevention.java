@@ -24,6 +24,7 @@ import art.arcane.react.api.tweak.ReactTweak;
 import art.arcane.react.core.controller.EntityController;
 import art.arcane.react.model.ReactEntity;
 import art.arcane.react.util.common.scheduling.J;
+import art.arcane.react.util.project.world.EntityRemovalPolicy;
 import art.arcane.react.api.protect.ReactOperation;
 import art.arcane.react.api.protect.ReactProtection;
 import org.bukkit.entity.Entity;
@@ -58,6 +59,8 @@ public class TweakEntityCrowdPrevention extends ReactTweak implements Listener {
    */
   @art.arcane.react.util.project.config.ConfigDoc(value = "Controls whether entity crowd prevention applies prevent entity bubbling.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
   private boolean preventEntityBubbling = true;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Protects player-named entities from entity crowd prevention.", impact = "Keep enabled to exclude entities with a custom name; disable it to make named entities eligible for removal.")
+  private boolean protectNamedEntities = true;
 
   public TweakEntityCrowdPrevention() {
     super(ID);
@@ -74,6 +77,10 @@ public class TweakEntityCrowdPrevention extends ReactTweak implements Listener {
    * Checks if the entity is crowded
    */
   public void onCrowdCheck(Entity entity) {
+    if (EntityRemovalPolicy.protectsNamedEntity(entity, protectNamedEntities)) {
+      return;
+    }
+
     if (ReactProtection.isProtected(entity, ReactOperation.PURGE)) {
       return;
     }
@@ -89,8 +96,14 @@ public class TweakEntityCrowdPrevention extends ReactTweak implements Listener {
 
   private void kill(Entity entity) {
     int delay = (int) (20 * Math.random());
-    if (!J.runEntity(entity, () -> React.kill(entity, 3), delay)) {
-      React.kill(entity, 3);
+    Runnable removal = () -> {
+      if (!EntityRemovalPolicy.protectsNamedEntity(entity, protectNamedEntities)
+          && !ReactProtection.isProtected(entity, ReactOperation.PURGE)) {
+        React.kill(entity, 3);
+      }
+    };
+    if (!J.runEntity(entity, removal, delay)) {
+      removal.run();
     }
   }
 }

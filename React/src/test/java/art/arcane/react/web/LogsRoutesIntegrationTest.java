@@ -87,8 +87,8 @@ public class LogsRoutesIntegrationTest {
     @Test
     void get_logs_without_token_returns_401(@TempDir File dataFolder) throws Exception {
         WebConfiguration config = new WebConfiguration();
-        config.setEnabled(true);
-        config.setBindAddress("127.0.0.1");
+        config.setListenerEnabled(true);
+        config.setListenAddress("127.0.0.1");
         config.setPort(0);
         config.setRequireTokenForReads(true);
 
@@ -129,8 +129,8 @@ public class LogsRoutesIntegrationTest {
         store.save(tokensFile);
 
         WebConfiguration config = new WebConfiguration();
-        config.setEnabled(true);
-        config.setBindAddress("127.0.0.1");
+        config.setListenerEnabled(true);
+        config.setListenAddress("127.0.0.1");
         config.setPort(0);
         config.setRequireTokenForReads(true);
 
@@ -197,8 +197,8 @@ public class LogsRoutesIntegrationTest {
         store.save(tokensFile);
 
         WebConfiguration config = new WebConfiguration();
-        config.setEnabled(true);
-        config.setBindAddress("127.0.0.1");
+        config.setListenerEnabled(true);
+        config.setListenAddress("127.0.0.1");
         config.setPort(0);
 
         controller = buildController(config, dataFolder);
@@ -213,13 +213,14 @@ public class LogsRoutesIntegrationTest {
         AtomicReference<String> firstFrame = new AtomicReference<>(null);
 
         HttpClient client = HttpClient.newHttpClient();
-        URI wsUri = URI.create("ws://127.0.0.1:" + port + "/ws/logs?token=" + adminBearer);
+        URI wsUri = URI.create("ws://127.0.0.1:" + port + "/ws/logs");
 
         CompletableFuture<WebSocket> wsFuture = client.newWebSocketBuilder()
             .buildAsync(wsUri, new WebSocket.Listener() {
                 @Override
                 public void onOpen(WebSocket webSocket) {
                     webSocket.request(Long.MAX_VALUE);
+                    webSocket.sendText(authFrame(adminBearer), true);
                 }
 
                 @Override
@@ -267,8 +268,8 @@ public class LogsRoutesIntegrationTest {
     @Test
     void ws_logs_viewer_scope_closes_with_1008(@TempDir File dataFolder) throws Exception {
         WebConfiguration config = new WebConfiguration();
-        config.setEnabled(true);
-        config.setBindAddress("127.0.0.1");
+        config.setListenerEnabled(true);
+        config.setListenAddress("127.0.0.1");
         config.setPort(0);
         config.setRequireTokenForReads(true);
 
@@ -293,13 +294,14 @@ public class LogsRoutesIntegrationTest {
         AtomicInteger textFrameCount = new AtomicInteger(0);
 
         HttpClient client = HttpClient.newHttpClient();
-        URI wsUri = URI.create("ws://127.0.0.1:" + port + "/ws/logs?token=" + viewerBearer);
+        URI wsUri = URI.create("ws://127.0.0.1:" + port + "/ws/logs");
 
         CompletableFuture<WebSocket> wsFuture = client.newWebSocketBuilder()
             .buildAsync(wsUri, new WebSocket.Listener() {
                 @Override
                 public void onOpen(WebSocket webSocket) {
                     webSocket.request(Long.MAX_VALUE);
+                    webSocket.sendText(authFrame(viewerBearer), true);
                 }
 
                 @Override
@@ -328,5 +330,12 @@ public class LogsRoutesIntegrationTest {
         assertEquals(1008, closeCode.get(),
             "Expected WS close code 1008 for unauthorized; got: " + closeCode.get());
         assertEquals(0, textFrameCount.get(), "Unauthorized socket must receive no text frames");
+    }
+
+    private static String authFrame(String bearer) {
+        JsonObject frame = new JsonObject();
+        frame.addProperty("type", "auth");
+        frame.addProperty("token", bearer);
+        return frame.toString();
     }
 }

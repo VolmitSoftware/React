@@ -66,13 +66,15 @@ public class FeatureWorldBackend implements WorldBackend {
             FeaturePerWorldTickBudget feature = React.feature(FeaturePerWorldTickBudget.ID);
             if (feature != null) {
                 feature.setWorldOverride(canonicalWorldKey, budgetMs, panicMs, releaseMs);
+                Throwable persistenceFailure = null;
                 try {
                     IO.writeAll(
                         React.instance.getDataFile("feature", FeaturePerWorldTickBudget.ID + ".toml"),
                         TomlCodec.toToml(feature, "feature:" + FeaturePerWorldTickBudget.ID)
                     );
                 } catch (Throwable t) {
-                    React.warn("Failed to persist world override for " + canonicalWorldKey + ": " + t.getMessage());
+                    persistenceFailure = t;
+                    React.reportError(t);
                 }
                 FeatureController featureController = React.controller(FeatureController.class);
                 if (featureController != null && featureController.getFeatures() != null) {
@@ -87,6 +89,12 @@ public class FeatureWorldBackend implements WorldBackend {
                         featureController.deactivateFeature(feature);
                         featureController.activateFeature(feature);
                     }
+                }
+                if (persistenceFailure != null) {
+                    throw new IllegalStateException(
+                        "Failed to persist world override for " + canonicalWorldKey,
+                        persistenceFailure
+                    );
                 }
             }
             WorldDto dto = new WorldDto();

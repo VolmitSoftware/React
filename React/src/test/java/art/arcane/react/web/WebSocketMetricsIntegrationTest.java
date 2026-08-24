@@ -104,8 +104,8 @@ public class WebSocketMetricsIntegrationTest {
         when(registry.all()).thenReturn(List.of(s1, s2));
 
         WebConfiguration config = new WebConfiguration();
-        config.setEnabled(true);
-        config.setBindAddress("127.0.0.1");
+        config.setListenerEnabled(true);
+        config.setListenAddress("127.0.0.1");
         config.setPort(0);
         config.setWsPushHz(20);
 
@@ -121,13 +121,14 @@ public class WebSocketMetricsIntegrationTest {
         AtomicReference<String> firstFrame = new AtomicReference<>(null);
 
         HttpClient client = HttpClient.newHttpClient();
-        URI wsUri = URI.create("ws://127.0.0.1:" + port + "/ws/metrics?token=" + bearer);
+        URI wsUri = URI.create("ws://127.0.0.1:" + port + "/ws/metrics");
 
         CompletableFuture<WebSocket> wsFuture = client.newWebSocketBuilder()
             .buildAsync(wsUri, new WebSocket.Listener() {
                 @Override
                 public void onOpen(WebSocket webSocket) {
                     webSocket.request(Long.MAX_VALUE);
+                    webSocket.sendText(authFrame(bearer), true);
                 }
 
                 @Override
@@ -180,8 +181,8 @@ public class WebSocketMetricsIntegrationTest {
         when(registry.all()).thenReturn(List.of(s1, s2));
 
         WebConfiguration config = new WebConfiguration();
-        config.setEnabled(true);
-        config.setBindAddress("127.0.0.1");
+        config.setListenerEnabled(true);
+        config.setListenAddress("127.0.0.1");
         config.setPort(0);
         config.setRequireTokenForReads(true);
         config.setWsPushHz(20);
@@ -206,6 +207,7 @@ public class WebSocketMetricsIntegrationTest {
                 @Override
                 public void onOpen(WebSocket webSocket) {
                     webSocket.request(Long.MAX_VALUE);
+                    webSocket.sendText(authFrame("invalid-bearer"), true);
                 }
 
                 @Override
@@ -247,8 +249,8 @@ public class WebSocketMetricsIntegrationTest {
         when(registry.all()).thenReturn(List.of(s1, s2));
 
         WebConfiguration config = new WebConfiguration();
-        config.setEnabled(true);
-        config.setBindAddress("127.0.0.1");
+        config.setListenerEnabled(true);
+        config.setListenAddress("127.0.0.1");
         config.setPort(0);
         config.setRequireTokenForReads(false);
         config.setWsPushHz(20);
@@ -301,6 +303,140 @@ public class WebSocketMetricsIntegrationTest {
 
         assertTrue(received, "Expected a text frame within 5s for open (no auth) connection");
         assertFalse(firstFrame.get() == null, "Must have received at least one non-null frame");
+    }
+
+    @Test
+    void query_bearer_does_not_authenticate_without_first_frame(@TempDir File dataFolder) throws Exception {
+        byte[] secret = WebSecret.load(dataFolder);
+        TokenRecord record = new TokenRecord("tok-ws-query", "query-device", 1000L, Set.of("read"), "viewer");
+        String bearer = PairingToken.mint(secret, record.id(), record.label(), record.issuedAt(), record.scopes());
+        File tokens = new File(dataFolder, "web/tokens.toml");
+        TokenStore store = TokenStore.fromToml(tokens);
+        store.add(record);
+        store.save(tokens);
+
+        FakeSampler sampler = new FakeSampler("ws-query-tick", 12.0, "ms", new double[]{12.0});
+        SampleController sampleController = mock(SampleController.class);
+        @SuppressWarnings("unchecked")
+        Registry<Sampler> registry = mock(Registry.class);
+        when(sampleController.getSamplers()).thenReturn(registry);
+        when(registry.all()).thenReturn(List.of(sampler));
+
+        WebConfiguration config = new WebConfiguration();
+        config.setListenerEnabled(true);
+        config.setListenAddress("127.0.0.1");
+        config.setPort(0);
+        config.setRequireTokenForReads(true);
+        config.setWsPushHz(20);
+
+        controller = buildController(config, dataFolder, sampleController);
+        controller.start();
+        controller.postStart();
+        controller.awaitStart(5000);
+
+        CountDownLatch textLatch = new CountDownLatch(1);
+        AtomicInteger textFrames = new AtomicInteger();
+        HttpClient client = HttpClient.newHttpClient();
+        URI wsUri = URI.create(
+            "ws://127.0.0.1:" + controller.getBoundPort() + "/ws/metrics?token=" + bearer
+        );
+        WebSocket socket = client.newWebSocketBuilder()
+            .buildAsync(wsUri, new WebSocket.Listener() {
+                @Override
+                public void onOpen(WebSocket webSocket) {
+                    webSocket.request(Long.MAX_VALUE);
+                }
+
+                @Override
+                public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
+                    textFrames.incrementAndGet();
+                    textLatch.countDown();
+                    return null;
+                }
+            })
+            .get(5, TimeUnit.SECONDS);
+
+        Thread.sleep(250L);
+        assertEquals(0, controller.getMetricsSessions().size());
+        assertEquals(0, textFrames.get());
+
+        socket.sendText(authFrame(bearer), true).get(2, TimeUnit.SECONDS);
+        assertTrue(textLatch.await(5, TimeUnit.SECONDS));
+        assertEquals(1, controller.getMetricsSessions().size());
+        socket.sendClose(WebSocket.NORMAL_CLOSURE, "done").get(2, TimeUnit.SECONDS);
+    }
+
+    @Test
+    void malformed_and_repeated_auth_frames_close_with_1008(@TempDir File dataFolder) throws Exception {
+        byte[] secret = WebSecret.load(dataFolder);
+        TokenRecord record = new TokenRecord("tok-ws-policy", "policy-device", 1000L, Set.of("read"), "viewer");
+        String bearer = PairingToken.mint(secret, record.id(), record.label(), record.issuedAt(), record.scopes());
+        File tokens = new File(dataFolder, "web/tokens.toml");
+        TokenStore store = TokenStore.fromToml(tokens);
+        store.add(record);
+        store.save(tokens);
+
+        SampleController sampleController = mock(SampleController.class);
+        @SuppressWarnings("unchecked")
+        Registry<Sampler> registry = mock(Registry.class);
+        when(sampleController.getSamplers()).thenReturn(registry);
+        when(registry.all()).thenReturn(List.of());
+
+        WebConfiguration config = new WebConfiguration();
+        config.setListenerEnabled(true);
+        config.setListenAddress("127.0.0.1");
+        config.setPort(0);
+        config.setRequireTokenForReads(true);
+        controller = buildController(config, dataFolder, sampleController);
+        controller.start();
+        controller.postStart();
+        controller.awaitStart(5000L);
+
+        URI uri = URI.create("ws://127.0.0.1:" + controller.getBoundPort() + "/ws/metrics");
+        assertEquals(1008, closeCodeForFrames(uri, List.of("{\"type\":\"auth\"}")));
+        assertEquals(1008, closeCodeForFrames(uri, List.of(authFrame(bearer), authFrame(bearer))));
+    }
+
+    private static int closeCodeForFrames(URI uri, List<String> frames) throws Exception {
+        CountDownLatch closeLatch = new CountDownLatch(1);
+        AtomicInteger closeCode = new AtomicInteger(-1);
+        HttpClient.newHttpClient().newWebSocketBuilder()
+            .buildAsync(uri, new WebSocket.Listener() {
+                @Override
+                public void onOpen(WebSocket webSocket) {
+                    webSocket.request(Long.MAX_VALUE);
+                    for (String frame : frames) {
+                        webSocket.sendText(frame, true);
+                    }
+                }
+
+                @Override
+                public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
+                    return null;
+                }
+
+                @Override
+                public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
+                    closeCode.set(statusCode);
+                    closeLatch.countDown();
+                    return null;
+                }
+
+                @Override
+                public void onError(WebSocket webSocket, Throwable error) {
+                    closeLatch.countDown();
+                }
+            })
+            .get(5, TimeUnit.SECONDS);
+        assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
+        return closeCode.get();
+    }
+
+    private static String authFrame(String bearer) {
+        JsonObject frame = new JsonObject();
+        frame.addProperty("type", "auth");
+        frame.addProperty("token", bearer);
+        return frame.toString();
     }
 
     private Graph injectGraph(String name, double[] history) throws Exception {

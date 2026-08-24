@@ -29,10 +29,10 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.projectiles.ProjectileSource;
 
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Projectile Limiter tweak. Applies per-player and per-chunk projectile burst caps to prevent projectile spam spikes.")
 public class TweakProjectileLimiter extends ReactTweak implements Listener {
@@ -53,9 +53,9 @@ public class TweakProjectileLimiter extends ReactTweak implements Listener {
   private boolean limitChunkProjectiles = true;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Permission node string checked before projectile limiter enforcement.", impact = "Change this to match your permission model for bypass behavior.")
   private String bypassPermission = "react.bypass.projectile-limit";
-  private transient Map<UUID, BurstWindow> playerBursts = new HashMap<>();
-  private transient Map<ChunkKey, BurstWindow> chunkBursts = new HashMap<>();
-  private transient long lastCleanup = 0;
+  private transient Map<UUID, BurstWindow> playerBursts = new ConcurrentHashMap<>();
+  private transient Map<ChunkKey, BurstWindow> chunkBursts = new ConcurrentHashMap<>();
+  private transient final AtomicLong lastCleanup = new AtomicLong(0L);
 
   public TweakProjectileLimiter() {
     super(ID);
@@ -63,9 +63,9 @@ public class TweakProjectileLimiter extends ReactTweak implements Listener {
 
   @Override
   public void onActivate() {
-    playerBursts = new HashMap<>();
-    chunkBursts = new HashMap<>();
-    lastCleanup = 0;
+    playerBursts = new ConcurrentHashMap<>();
+    chunkBursts = new ConcurrentHashMap<>();
+    lastCleanup.set(0L);
   }
 
   @Override
@@ -104,27 +104,18 @@ public class TweakProjectileLimiter extends ReactTweak implements Listener {
   }
 
   private void cleanup(long now) {
-    if (lastCleanup > 0 && now - lastCleanup < cleanupIntervalMS) {
+    long previous = lastCleanup.get();
+    if (previous > 0L && now - previous < cleanupIntervalMS) {
+      return;
+    }
+    if (!lastCleanup.compareAndSet(previous, now)) {
       return;
     }
 
-    lastCleanup = now;
     long playerExpiry = Math.max(1000L, playerWindowMS * 4L);
     long chunkExpiry = Math.max(1000L, chunkWindowMS * 4L);
-
-    Iterator<Map.Entry<UUID, BurstWindow>> playerIterator = playerBursts.entrySet().iterator();
-    while (playerIterator.hasNext()) {
-      if (now - playerIterator.next().getValue().lastHit > playerExpiry) {
-        playerIterator.remove();
-      }
-    }
-
-    Iterator<Map.Entry<ChunkKey, BurstWindow>> chunkIterator = chunkBursts.entrySet().iterator();
-    while (chunkIterator.hasNext()) {
-      if (now - chunkIterator.next().getValue().lastHit > chunkExpiry) {
-        chunkIterator.remove();
-      }
-    }
+    playerBursts.entrySet().removeIf(entry -> now - entry.getValue().lastHit > playerExpiry);
+    chunkBursts.entrySet().removeIf(entry -> now - entry.getValue().lastHit > chunkExpiry);
   }
 
   @Override
@@ -137,21 +128,21 @@ public class TweakProjectileLimiter extends ReactTweak implements Listener {
     cleanup(System.currentTimeMillis());
   }
 
-  private static final class BurstWindow {
+  static final class BurstWindow {
     @art.arcane.react.util.project.config.ConfigDoc(value = "Internal timestamp used by projectile limiter to track timing windows and decay.", impact = "Primarily runtime state; changing this manually can distort cooldown or throttling behavior.")
     private long start;
     @art.arcane.react.util.project.config.ConfigDoc(value = "Internal timestamp used by projectile limiter to track timing windows and decay.", impact = "Primarily runtime state; changing this manually can distort cooldown or throttling behavior.")
-    private long lastHit;
+    private volatile long lastHit;
     @art.arcane.react.util.project.config.ConfigDoc(value = "Internal counter used by projectile limiter while tracking burst activity.", impact = "Primarily runtime state; React updates this automatically during live evaluation.")
     private int count;
 
-    private BurstWindow(long now) {
+    BurstWindow(long now) {
       start = now;
       lastHit = now;
       count = 0;
     }
 
-    private boolean increment(int windowMS, int limit, long now) {
+    synchronized boolean increment(int windowMS, int limit, long now) {
       if (windowMS <= 0) {
         return true;
       }

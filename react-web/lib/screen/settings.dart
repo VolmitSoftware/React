@@ -929,10 +929,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   String _endpoint(ServerCredential cred) {
-    if (cred.host.isEmpty) {
+    final Uri? direct = cred.directBaseUri;
+    if (direct == null) {
       return cred.relayUrl ?? reactorText(ReactorText.settingsRelayConnection);
     }
-    final String scheme = cred.secure ? 'https' : 'http';
-    return '$scheme://${cred.host}:${cred.port}';
+    return direct.toString();
   }
 }

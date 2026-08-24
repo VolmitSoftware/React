@@ -105,8 +105,7 @@ public final class TweakShorthands extends ReactTweak {
       if (nextService != null) {
         unregister(nextService);
       }
-      React.warn("Failed to register shorthand commands: " + throwable.getMessage());
-      React.reportError(throwable);
+      React.reportError("Failed to register shorthand commands: " + throwable.getMessage(), throwable);
     }
   }
 
@@ -126,8 +125,7 @@ public final class TweakShorthands extends ReactTweak {
     try {
       service.unregister();
     } catch (Throwable throwable) {
-      React.warn("Failed to unregister shorthand commands: " + throwable.getMessage());
-      React.reportError(throwable);
+      React.reportError("Failed to unregister shorthand commands: " + throwable.getMessage(), throwable);
     }
   }
 

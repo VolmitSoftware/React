@@ -25,6 +25,7 @@ import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.content.sampler.SamplerIncidentScore;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.util.common.scheduling.J;
+import art.arcane.volmlib.util.scheduling.FoliaScheduler;
 import org.bukkit.Bukkit;
 import org.bukkit.GameRule;
 import org.bukkit.GameRules;
@@ -33,6 +34,10 @@ import org.bukkit.World;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Random Tick Governor feature. Temporarily lowers the random tick speed gamerule while the server is under sustained pressure, restoring it once the server recovers. Crop, leaf, and similar random-tick growth slows only during the governed window.")
 public class FeatureRandomTickGovernor extends ReactFeature {
@@ -61,6 +66,9 @@ public class FeatureRandomTickGovernor extends ReactFeature {
   private int reducedRandomTickSpeed = 1;
   private transient Map<UUID, Integer> originalByWorld;
   private transient final PressureGate gate = new PressureGate();
+  private transient final AtomicLong lifecycleGeneration = new AtomicLong();
+  private transient final Object lifecycleLock = new Object();
+  private transient volatile boolean active;
 
   // GameRules constants are paper-only; the legacy GameRule constant survives on spigot
   private static volatile GameRule<Integer> randomTickSpeedRule;
@@ -85,16 +93,24 @@ public class FeatureRandomTickGovernor extends ReactFeature {
 
   @Override
   public void onActivate() {
-    originalByWorld = new ConcurrentHashMap<>();
-    gate.reset();
+    synchronized (lifecycleLock) {
+      if (originalByWorld == null) {
+        originalByWorld = new ConcurrentHashMap<>();
+      }
+      lifecycleGeneration.incrementAndGet();
+      active = true;
+      gate.reset();
+    }
   }
 
   @Override
   public void onDeactivate() {
-    if (gate.isEngaged()) {
+    synchronized (lifecycleLock) {
+      active = false;
+      lifecycleGeneration.incrementAndGet();
       gate.reset();
-      release();
     }
+    restoreAuthoritatively();
   }
 
   @Override
@@ -116,48 +132,141 @@ public class FeatureRandomTickGovernor extends ReactFeature {
       engage();
     } else if (wasEngaged && !nowEngaged) {
       release();
+    } else if (!nowEngaged && originalByWorld != null && !originalByWorld.isEmpty()) {
+      release();
     }
   }
 
   private void engage() {
     int reduced = Math.max(0, reducedRandomTickSpeed);
+    long generation = lifecycleGeneration.get();
+    J.s(() -> applyEngage(generation, reduced));
+  }
 
-    J.s(() -> {
+  private void applyEngage(long generation, int reduced) {
+    synchronized (lifecycleLock) {
+      if (!active || generation != lifecycleGeneration.get() || !gate.isEngaged()) {
+        return;
+      }
+
       int governed = 0;
       for (World world : Bukkit.getWorlds()) {
-        Integer current = world.getGameRuleValue(randomTickSpeedRule());
+        Integer current = readRandomTickSpeed(world);
         if (current == null || current <= reduced) {
           continue;
         }
 
-        originalByWorld.put(world.getUID(), current);
-        world.setGameRule(randomTickSpeedRule(), reduced);
-        governed++;
+        UUID worldId = world.getUID();
+        originalByWorld.putIfAbsent(worldId, current);
+        if (writeRandomTickSpeed(world, reduced)) {
+          governed++;
+        } else {
+          originalByWorld.remove(worldId, current);
+        }
       }
 
       if (governed > 0) {
         React.verbose("Random tick governor engaged: " + governed + " worlds -> randomTickSpeed " + reduced);
       }
-    });
+    }
   }
 
   private void release() {
-    J.s(() -> {
-      int restored = 0;
-      for (Map.Entry<UUID, Integer> entry : originalByWorld.entrySet()) {
-        World world = Bukkit.getWorld(entry.getKey());
-        if (world == null) {
-          continue;
-        }
+    long generation = lifecycleGeneration.get();
+    J.s(() -> applyRelease(generation));
+  }
 
-        world.setGameRule(randomTickSpeedRule(), entry.getValue());
-        restored++;
+  private void applyRelease(long generation) {
+    synchronized (lifecycleLock) {
+      if (!active || generation != lifecycleGeneration.get() || gate.isEngaged()) {
+        return;
       }
-
-      originalByWorld.clear();
+      int restored = restoreOwnedWorlds();
       if (restored > 0) {
         React.verbose("Random tick governor released: restored " + restored + " worlds");
       }
+    }
+  }
+
+  private void restoreAuthoritatively() {
+    if (originalByWorld == null || originalByWorld.isEmpty()) {
+      return;
+    }
+
+    if (J.isPrimaryThread()) {
+      synchronized (lifecycleLock) {
+        requireCompleteRestore();
+      }
+      return;
+    }
+
+    CountDownLatch completed = new CountDownLatch(1);
+    AtomicReference<Throwable> failure = new AtomicReference<>();
+    boolean scheduled = FoliaScheduler.runGlobal(React.instance, () -> {
+      try {
+        synchronized (lifecycleLock) {
+          requireCompleteRestore();
+        }
+      } catch (Throwable throwable) {
+        failure.set(throwable);
+      } finally {
+        completed.countDown();
+      }
     });
+    if (!scheduled) {
+      throw new IllegalStateException("Failed to schedule random tick governor restoration");
+    }
+
+    try {
+      if (!completed.await(30L, TimeUnit.SECONDS)) {
+        throw new IllegalStateException("Timed out restoring random tick governor state");
+      }
+    } catch (InterruptedException exception) {
+      Thread.currentThread().interrupt();
+      throw new IllegalStateException("Interrupted while restoring random tick governor state", exception);
+    }
+
+    Throwable restoreFailure = failure.get();
+    if (restoreFailure instanceof RuntimeException runtimeException) {
+      throw runtimeException;
+    }
+    if (restoreFailure != null) {
+      throw new IllegalStateException("Failed to restore random tick governor state", restoreFailure);
+    }
+  }
+
+  private void requireCompleteRestore() {
+    int restored = restoreOwnedWorlds();
+    if (!originalByWorld.isEmpty()) {
+      throw new IllegalStateException(
+          "Random tick governor retained " + originalByWorld.size() + " unrestored worlds"
+      );
+    }
+    if (restored > 0) {
+      React.verbose("Random tick governor released: restored " + restored + " worlds");
+    }
+  }
+
+  private int restoreOwnedWorlds() {
+    int restored = 0;
+    for (Map.Entry<UUID, Integer> entry : originalByWorld.entrySet()) {
+      World world = Bukkit.getWorld(entry.getKey());
+      if (world == null || !writeRandomTickSpeed(world, entry.getValue())) {
+        continue;
+      }
+
+      if (originalByWorld.remove(entry.getKey(), entry.getValue())) {
+        restored++;
+      }
+    }
+    return restored;
+  }
+
+  Integer readRandomTickSpeed(World world) {
+    return world.getGameRuleValue(randomTickSpeedRule());
+  }
+
+  boolean writeRandomTickSpeed(World world, int value) {
+    return world.setGameRule(randomTickSpeedRule(), value);
   }
 }

@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -187,6 +188,23 @@ public class CoalescingWsChannelTest {
         };
         CoalescingWsChannel coalescing = new CoalescingWsChannel(throwingDelegate, Runnable::run);
         assertFalse(throwsAny(() -> coalescing.send("boom")), "CoalescingWsChannel must swallow delegate exceptions");
+    }
+
+    @Test
+    void it_recovers_the_latest_frame_after_executor_rejection() {
+        FakeWsChannel delegate = new FakeWsChannel("rejected");
+        AtomicBoolean rejectNext = new AtomicBoolean(true);
+        CoalescingWsChannel coalescing = new CoalescingWsChannel(delegate, runnable -> {
+            if (rejectNext.compareAndSet(true, false)) {
+                throw new RejectedExecutionException("full");
+            }
+            runnable.run();
+        });
+
+        coalescing.send("first");
+        coalescing.send("latest");
+
+        assertEquals(List.of("latest"), delegate.received());
     }
 
     private boolean throwsAny(Runnable r) {

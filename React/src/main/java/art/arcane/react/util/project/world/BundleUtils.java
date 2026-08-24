@@ -106,8 +106,7 @@ public class BundleUtils {
     } catch (RuntimeException exception) {
       String failureKey = exception.getClass().getName() + ":" + exception.getMessage();
       if (REPORTED_BUNDLE_FAILURES.add(failureKey)) {
-        React.warn("Could not create a React item bundle; bundle creation was skipped to preserve its contents.");
-        exception.printStackTrace();
+        React.warn("Could not create a React item bundle; bundle creation was skipped to preserve its contents.", exception);
       }
       return null;
     }

@@ -18,10 +18,8 @@ import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.TestMessages;
 import art.arcane.react.model.AreaActionParams;
 import art.arcane.volmlib.util.localization.MessageArgument;
-import art.arcane.volmlib.util.bukkit.WorldIdentity;
 import art.arcane.react.util.project.registry.Registry;
 import org.bukkit.Bukkit;
-import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.World;
 
@@ -135,13 +133,24 @@ public class ActionSuiteCheck implements ReactAsyncSubsystemCheck {
     }
 
     AtomicBoolean advanced = new AtomicBoolean(false);
-    ticket.onComplete((completed) -> {
+    ticket.onTerminal((completed) -> {
       if (!advanced.compareAndSet(false, true)) {
         return;
       }
 
       try {
-        report.pass(SUBSYSTEM, stepId, completedMessage(stepAction, completed));
+        if (completed.isFailed()) {
+          report.fail(
+              SUBSYSTEM,
+              stepId,
+              ReactLanguage.raw(
+                  TestMessages.ACTION_FAILED,
+                  MessageArgument.untrusted("reason", describe(completed.getFailure()))
+              )
+          );
+        } else {
+          report.pass(SUBSYSTEM, stepId, completedMessage(stepAction, completed));
+        }
       } catch (Throwable e) {
         report.fail(
             SUBSYSTEM,
@@ -168,9 +177,7 @@ public class ActionSuiteCheck implements ReactAsyncSubsystemCheck {
         purgeEntitiesParams.setArea(area);
       }
 
-      area.setWorld(WorldIdentity.serialize(world));
-      area.setChunks(collectLoadedChunks(world, centerChunkX, centerChunkZ, PURGE_RADIUS));
-      area.setAllChunks(false);
+      area.selectLoadedRadius(world, centerChunkX, centerChunkZ, PURGE_RADIUS);
       return purgeEntitiesParams;
     }
 
@@ -181,9 +188,7 @@ public class ActionSuiteCheck implements ReactAsyncSubsystemCheck {
         purgeChunksParams.setArea(area);
       }
 
-      area.setWorld(WorldIdentity.serialize(world));
-      area.setChunks(collectLoadedChunks(world, centerChunkX, centerChunkZ, PURGE_RADIUS));
-      area.setAllChunks(false);
+      area.selectLoadedRadius(world, centerChunkX, centerChunkZ, PURGE_RADIUS);
       return purgeChunksParams;
     }
 
@@ -213,25 +218,6 @@ public class ActionSuiteCheck implements ReactAsyncSubsystemCheck {
     }
 
     return params;
-  }
-
-  private List<Chunk> collectLoadedChunks(World world, int centerX, int centerZ, int radius) {
-    List<Chunk> chunks = new ArrayList<Chunk>();
-    for (int chunkX = centerX - radius; chunkX <= centerX + radius; chunkX++) {
-      for (int chunkZ = centerZ - radius; chunkZ <= centerZ + radius; chunkZ++) {
-        if (!world.isChunkLoaded(chunkX, chunkZ)) {
-          continue;
-        }
-
-        chunks.add(world.getChunkAt(chunkX, chunkZ));
-      }
-    }
-
-    if (chunks.isEmpty() && world.isChunkLoaded(centerX, centerZ)) {
-      chunks.add(world.getChunkAt(centerX, centerZ));
-    }
-
-    return chunks;
   }
 
   @SuppressWarnings({"rawtypes", "unchecked"})

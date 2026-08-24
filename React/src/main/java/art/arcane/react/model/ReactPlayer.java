@@ -19,7 +19,6 @@
 
 package art.arcane.react.model;
 
-import art.arcane.volmlib.util.bukkit.WorldIdentity;
 import art.arcane.chrono.ChronoLatch;
 import art.arcane.react.React;
 import art.arcane.react.api.monitor.ActionBarMonitor;
@@ -29,11 +28,11 @@ import art.arcane.react.util.common.scheduling.TickedObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
-import org.bukkit.util.Vector;
+
+import java.util.Objects;
 
 @Data
 @EqualsAndHashCode(callSuper = false)
@@ -41,28 +40,33 @@ public class ReactPlayer extends TickedObject {
   private static final int ACTIVE_RATE = 50;
   private static final int INACTIVE_RATE = 1000;
   private static final int INACTIVE_DELAY = 10000;
+  private transient final Object motionLock = new Object();
   private final ChronoLatch saveLatch;
   private final Player player;
   private PlayerSettings settings;
-  private ActionBarMonitor actionBarMonitor;
-  private int scrollPosition;
-  private long lastActive;
-  private boolean sneaking;
+  private volatile ActionBarMonitor actionBarMonitor;
+  private volatile int scrollPosition;
+  private volatile long lastActive;
+  private volatile boolean sneaking;
   private double yawPosition;
   private float yaw;
   private float pitch;
   private long lastShift;
-  private boolean locked;
-  private Vector velocity;
-  private boolean speedValidForMonitor;
-  private int speedTickCooldown;
+  private volatile boolean locked;
+  private volatile double verticalVelocity;
+  private volatile boolean speedValidForMonitor;
+  private volatile int speedTickCooldown;
   private int lastHash;
-  private boolean running;
+  private volatile boolean running;
 
   public ReactPlayer(Player player) {
+    this(player, PlayerSettings.get(player.getUniqueId()));
+  }
+
+  public ReactPlayer(Player player, PlayerSettings settings) {
     super("react", player.getUniqueId().toString(), ACTIVE_RATE);
-    settings = PlayerSettings.get(player.getUniqueId());
-    lastHash = settings.hashCode();
+    this.settings = Objects.requireNonNull(settings);
+    lastHash = this.settings.hashCode();
     this.player = player;
     saveLatch = new ChronoLatch(60000);
     scrollPosition = 0;
@@ -70,11 +74,13 @@ public class ReactPlayer extends TickedObject {
     yaw = 0f;
     pitch = 0f;
     yawPosition = 0;
+    lastActive = System.currentTimeMillis();
     lastShift = 0;
     speedTickCooldown = 0;
     locked = false;
-    velocity = new Vector(0, 0, 0);
+    verticalVelocity = 0D;
     speedValidForMonitor = true;
+    running = true;
   }
 
 
@@ -85,7 +91,7 @@ public class ReactPlayer extends TickedObject {
   public void saveSettings(boolean force) {
     if (force || lastHash != settings.hashCode()) {
       PlayerSettings.saveSettings(player.getUniqueId(), settings);
-      React.verbose("Saved " + player.getName() + "'s settings");
+      React.verbose(() -> "Saved " + player.getName() + "'s settings");
     }
 
     lastHash = settings.hashCode();
@@ -109,21 +115,10 @@ public class ReactPlayer extends TickedObject {
   }
 
   public int getScrollPosition(int maxRemainder) {
-    int pos = scrollPosition;
-
-    if (scrollPosition < 0) {
-      pos += ((-scrollPosition / maxRemainder) * maxRemainder) + maxRemainder + maxRemainder;
-    }
-
-    return pos % maxRemainder;
+    return Math.floorMod(scrollPosition, maxRemainder);
   }
 
-  @EventHandler
-  public void on(PlayerMoveEvent e) {
-    if (!e.getPlayer().equals(player)) {
-      return;
-    }
-
+  public void handleMove(PlayerMoveEvent e) {
     wakeUp();
 
     if (e.getTo() != null) {
@@ -135,17 +130,15 @@ public class ReactPlayer extends TickedObject {
         yawPosition = 1000000;
       }
 
-      if (WorldIdentity.key(e.getFrom().getWorld()).equals(WorldIdentity.key(e.getTo().getWorld()))) {
-        velocity = e.getTo().toVector().subtract(e.getFrom().toVector()).clone().add(velocity);
+      if (e.getFrom().getWorld().equals(e.getTo().getWorld())) {
+        synchronized (motionLock) {
+          verticalVelocity += e.getTo().getY() - e.getFrom().getY();
+        }
       }
     }
   }
 
-  @EventHandler
-  public void on(PlayerToggleSneakEvent e) {
-    if (!e.getPlayer().equals(player)) {
-      return;
-    }
+  public void handleToggleSneak(PlayerToggleSneakEvent e) {
     sneaking = e.isSneaking();
     wakeUp(true);
 
@@ -163,9 +156,8 @@ public class ReactPlayer extends TickedObject {
     }
   }
 
-  @EventHandler
-  public void on(PlayerItemHeldEvent e) {
-    if (!e.getPlayer().equals(player) || !e.getPlayer().isSneaking()) {
+  public void handleItemHeld(PlayerItemHeldEvent e) {
+    if (!e.getPlayer().isSneaking()) {
       return;
     }
 
@@ -181,13 +173,12 @@ public class ReactPlayer extends TickedObject {
       ReactLanguage.sendPrefixed(getPlayer(), RuntimeMessages.MONITOR_ENABLED);
     }
 
-    React.instance.registerListener(this);
   }
 
   public void onQuit() {
+    running = false;
     setActionBarMonitoring(false, false);
     saveSettings(true);
-    React.instance.unregisterListener(this);
   }
 
   public boolean isActionBarMonitoring() {
@@ -222,24 +213,41 @@ public class ReactPlayer extends TickedObject {
 
   @Override
   public boolean shouldTick() {
-    return true;
+    return isTickDue(System.currentTimeMillis(), getTlastTick(), getTinterval());
   }
 
   @Override
   public void onTick() {
-    if (getTinterval() > ACTIVE_RATE && System.currentTimeMillis() - lastActive > INACTIVE_DELAY) {
+    if (!running) {
+      return;
+    }
+
+    long now = System.currentTimeMillis();
+    if (shouldUseInactiveRate(now, lastActive, getTinterval())) {
       setTinterval(INACTIVE_RATE);
     }
 
-    velocity.multiply(0.75);
-    velocity.setX(velocity.getX() < 0.01 && velocity.getX() > -0.01 ? 0 : velocity.getX());
-    velocity.setY(velocity.getY() < 0.01 && velocity.getY() > -0.01 ? 0 : velocity.getY());
-    velocity.setZ(velocity.getZ() < 0.01 && velocity.getZ() > -0.01 ? 0 : velocity.getZ());
-    speedTickCooldown--;
-    speedValidForMonitor = velocity.getY() > -1;
+    synchronized (motionLock) {
+      verticalVelocity *= 0.75D;
+      if (verticalVelocity < 0.01D && verticalVelocity > -0.01D) {
+        verticalVelocity = 0D;
+      }
+      speedValidForMonitor = verticalVelocity > -1D;
+    }
+    if (speedTickCooldown > 0) {
+      speedTickCooldown--;
+    }
     if (saveLatch.flip()) {
       saveSettings();
     }
+  }
+
+  static boolean isTickDue(long now, long lastTick, long interval) {
+    return now - lastTick >= interval;
+  }
+
+  static boolean shouldUseInactiveRate(long now, long lastActive, long interval) {
+    return interval <= ACTIVE_RATE && now - lastActive > INACTIVE_DELAY;
   }
 
   public void updateMonitors() {

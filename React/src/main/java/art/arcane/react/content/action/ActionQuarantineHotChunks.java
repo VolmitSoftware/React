@@ -23,7 +23,10 @@ import art.arcane.react.React;
 import art.arcane.react.api.action.ActionParams;
 import art.arcane.react.api.action.ActionTicket;
 import art.arcane.react.api.action.ReactAction;
+import art.arcane.react.api.protect.ReactOperation;
+import art.arcane.react.api.protect.ReactProtection;
 import art.arcane.react.core.controller.ActionController;
+import art.arcane.react.core.controller.NearbyPlayerIndexController;
 import art.arcane.react.core.controller.ObserverController;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.ActionMessages;
@@ -31,8 +34,6 @@ import art.arcane.react.model.SampledChunk;
 import art.arcane.react.model.SampledWorld;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.volmlib.util.bukkit.WorldIdentity;
-import art.arcane.react.api.protect.ReactOperation;
-import art.arcane.react.api.protect.ReactProtection;
 import art.arcane.volmlib.util.format.Form;
 import art.arcane.volmlib.util.localization.MessageArgument;
 import lombok.AllArgsConstructor;
@@ -40,9 +41,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
-import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
-import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.EnderDragon;
 import org.bukkit.entity.Entity;
@@ -57,7 +56,6 @@ import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -153,27 +151,24 @@ public class ActionQuarantineHotChunks extends ReactAction<ActionQuarantineHotCh
 
     Map<ChunkRef, Double> weighted = new HashMap<>();
     for (SampledWorld sampledWorld : observer.getSampled().getWorlds().values()) {
-      World world = sampledWorld.getWorld();
-      if (world == null) {
+      String worldKey = sampledWorld.getWorldKey();
+      if (worldKey == null) {
         continue;
       }
 
-      if (params.getWorld() != null && !params.getWorld().isBlank() && !WorldIdentity.serialize(world).equals(params.getWorld())) {
+      if (params.getWorld() != null && !params.getWorld().isBlank() && !worldKey.equals(params.getWorld())) {
         continue;
       }
 
       for (SampledChunk sampledChunk : sampledWorld.getChunks().values()) {
-        Chunk chunk = sampledChunk.getChunk();
-        if (chunk == null || chunk.getWorld() == null) {
-          continue;
-        }
-
         double score = sampledChunk.totalScore();
         if (score < params.getMinimumChunkScore()) {
           continue;
         }
 
-        ChunkRef ref = ChunkRef.of(chunk);
+        int chunkX = sampledChunk.getChunkX();
+        int chunkZ = sampledChunk.getChunkZ();
+        ChunkRef ref = new ChunkRef(worldKey, chunkX, chunkZ);
         weighted.merge(ref, score, Math::max);
 
         if (params.isIncludeNeighborRing()) {
@@ -183,7 +178,7 @@ public class ActionQuarantineHotChunks extends ReactAction<ActionQuarantineHotCh
                 continue;
               }
 
-              ChunkRef neighbor = new ChunkRef(WorldIdentity.serialize(world), chunk.getX() + dx, chunk.getZ() + dz);
+              ChunkRef neighbor = new ChunkRef(worldKey, chunkX + dx, chunkZ + dz);
               weighted.merge(neighbor, score * 0.55D, Math::max);
             }
           }
@@ -298,30 +293,19 @@ public class ActionQuarantineHotChunks extends ReactAction<ActionQuarantineHotCh
     return true;
   }
 
-  private boolean hasNearbyPlayer(World world, int chunkX, int chunkZ, double radiusBlocks) {
+  boolean hasNearbyPlayer(World world, int chunkX, int chunkZ, double radiusBlocks) {
     double centerX = (chunkX << 4) + 8.0;
     double centerZ = (chunkZ << 4) + 8.0;
-    double radiusSquared = radiusBlocks * radiusBlocks;
-    for (Player player : world.getPlayers()) {
-      Location location = player.getLocation();
-      double dx = location.getX() - centerX;
-      double dz = location.getZ() - centerZ;
-      if ((dx * dx) + (dz * dz) <= radiusSquared) {
-        return true;
-      }
-    }
-
-    return false;
+    NearbyPlayerIndexController playerIndex = React.controller(NearbyPlayerIndexController.class);
+    return playerIndex == null
+        || !playerIndex.isInitialSeedReady()
+        || playerIndex.hasNearbyPlayerInColumn(world, centerX, centerZ, radiusBlocks);
   }
 
   private record QuarantineResult(boolean chunkUnloaded, int entitiesCulled) {
   }
 
   private record ChunkRef(String world, int x, int z) {
-    private static ChunkRef of(Chunk chunk) {
-      Objects.requireNonNull(chunk.getWorld(), "chunk.world");
-      return new ChunkRef(WorldIdentity.serialize(chunk.getWorld()), chunk.getX(), chunk.getZ());
-    }
   }
 
   @Builder

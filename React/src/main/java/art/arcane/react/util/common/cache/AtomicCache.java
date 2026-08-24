@@ -68,7 +68,7 @@ public class AtomicCache<T> {
       try {
         return t.get();
       } catch (Throwable e) {
-        e.printStackTrace();
+        React.reportError("Atomic cache supplier failed", e);
         return null;
       }
     });
@@ -98,8 +98,7 @@ public class AtomicCache<T> {
         set.set(true);
       }
     } catch (Throwable e) {
-      React.error("Atomic cache failure!");
-      e.printStackTrace();
+      React.reportError("Atomic cache population failed", e);
     }
 
     lock.unlock();

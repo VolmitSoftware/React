@@ -33,7 +33,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 abstract class SamplerChunkEventDurationBase extends ReactCachedSampler implements Listener {
-  private final transient RollingSequence average;
+  private transient volatile RollingSequence average;
   private final transient ConcurrentHashMap<Integer, Long> starts;
   private final transient ConcurrentHashMap<Integer, Long> startCreated;
   private int maxHistory = 48;
@@ -41,9 +41,17 @@ abstract class SamplerChunkEventDurationBase extends ReactCachedSampler implemen
 
   protected SamplerChunkEventDurationBase(String id) {
     super(id, 1000);
-    this.average = new RollingSequence(maxHistory);
+    this.average = createAverage();
     this.starts = new ConcurrentHashMap<>();
     this.startCreated = new ConcurrentHashMap<>();
+  }
+
+  @Override
+  public void start() {
+    average = createAverage();
+    starts.clear();
+    startCreated.clear();
+    super.start();
   }
 
   @Override
@@ -79,24 +87,31 @@ abstract class SamplerChunkEventDurationBase extends ReactCachedSampler implemen
 
     double durationMS = Math.max(0D, (System.nanoTime() - started) / 1_000_000D);
     getChunkCounter(event.getChunk()).addAndGet(durationMS);
-    synchronized (average) {
-      average.put(durationMS);
+    RollingSequence currentAverage = average;
+    synchronized (currentAverage) {
+      currentAverage.put(durationMS);
     }
   }
 
   @Override
   public double onSample() {
     cleanupStarts(System.currentTimeMillis());
-    synchronized (average) {
-      return average.getAverage();
+    RollingSequence currentAverage = average;
+    synchronized (currentAverage) {
+      return currentAverage.getAverage();
     }
   }
 
+  private RollingSequence createAverage() {
+    return new RollingSequence(Math.max(1, maxHistory));
+  }
+
   private void cleanupStarts(long now) {
+    int effectiveStaleStartMS = Math.max(0, staleStartMS);
     Iterator<Map.Entry<Integer, Long>> iterator = startCreated.entrySet().iterator();
     while (iterator.hasNext()) {
       Map.Entry<Integer, Long> entry = iterator.next();
-      if (now - entry.getValue() > staleStartMS) {
+      if (now - entry.getValue() > effectiveStaleStartMS) {
         starts.remove(entry.getKey());
         iterator.remove();
       }

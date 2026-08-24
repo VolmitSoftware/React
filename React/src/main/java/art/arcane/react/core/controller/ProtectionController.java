@@ -154,7 +154,7 @@ public class ProtectionController extends TickedObject implements IController, L
       }
     } catch (Throwable e) {
       React.warn("[protect] provider discovery failed: " + e.getClass().getSimpleName()
-          + (e.getMessage() == null ? "" : " - " + e.getMessage()));
+          + (e.getMessage() == null ? "" : " - " + e.getMessage()), e);
       return;
     }
 

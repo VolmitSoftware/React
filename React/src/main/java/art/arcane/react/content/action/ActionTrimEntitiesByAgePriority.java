@@ -211,22 +211,20 @@ public class ActionTrimEntitiesByAgePriority extends ReactAction<ActionTrimEntit
 
     List<Map.Entry<ChunkRef, Double>> weighted = new ArrayList<>();
     for (SampledWorld sampledWorld : observer.getSampled().getWorlds().values()) {
-      World world = sampledWorld.getWorld();
-      if (world == null) {
+      String worldKey = sampledWorld.getWorldKey();
+      if (worldKey == null) {
         continue;
       }
 
-      if (params.getWorld() != null && !params.getWorld().isBlank() && !WorldIdentity.serialize(world).equals(params.getWorld())) {
+      if (params.getWorld() != null && !params.getWorld().isBlank() && !worldKey.equals(params.getWorld())) {
         continue;
       }
 
       for (SampledChunk sampledChunk : sampledWorld.getChunks().values()) {
-        Chunk chunk = sampledChunk.getChunk();
-        if (chunk == null || chunk.getWorld() == null) {
-          continue;
-        }
-
-        weighted.add(Map.entry(ChunkRef.of(chunk), sampledChunk.totalScore()));
+        weighted.add(Map.entry(
+            new ChunkRef(worldKey, sampledChunk.getChunkX(), sampledChunk.getChunkZ()),
+            sampledChunk.totalScore()
+        ));
       }
     }
 
@@ -430,9 +428,6 @@ public class ActionTrimEntitiesByAgePriority extends ReactAction<ActionTrimEntit
   }
 
   private record ChunkRef(String world, int x, int z) {
-    private static ChunkRef of(Chunk chunk) {
-      return new ChunkRef(WorldIdentity.serialize(chunk.getWorld()), chunk.getX(), chunk.getZ());
-    }
   }
 
   @Builder

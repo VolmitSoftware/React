@@ -1,5 +1,6 @@
 package art.arcane.react.util.project.hardware;
 
+import art.arcane.react.React;
 import art.arcane.volmlib.util.collection.KList;
 import art.arcane.volmlib.util.format.Form;
 import oshi.SystemInfo;
@@ -56,7 +57,7 @@ public class getHardware {
       String cpuModel = processor.getProcessorIdentifier().getName();
       return cpuModel.isEmpty() ? "Unknown CPU Model" : cpuModel;
     } catch (Exception e) {
-      e.printStackTrace();
+      React.verbose("Hardware CPU model query failed", e);
       return "Unknown CPU Model";
     }
   }
@@ -73,7 +74,7 @@ public class getHardware {
       sensors.add("CPU voltage: " + (voltage > 0.0 ? Form.f(voltage, 2) + " V" : "Unavailable"));
       sensors.add("Fan speeds: " + (fanSpeeds.length == 0 ? "Unavailable" : Arrays.toString(fanSpeeds)));
     } catch (Exception e) {
-      e.printStackTrace();
+      React.verbose("Hardware sensor query failed", e);
     }
     if (sensors.isEmpty()) {
       sensors.add("No sensors reported.");
@@ -91,7 +92,7 @@ public class getHardware {
         gpus.add("- Video memory: " + (gpu.getVRam() > 0L ? Form.memSize(gpu.getVRam()) : "Unavailable"));
       }
     } catch (Exception e) {
-      e.printStackTrace();
+      React.verbose("Graphics-card query failed", e);
     }
     if (gpus.isEmpty()) {
       gpus.add("No graphics cards reported.");
@@ -128,7 +129,7 @@ public class getHardware {
         systemDisks.add("- Free space: " + Form.memSize(store.getFreeSpace()));
       }
     } catch (Exception e) {
-      e.printStackTrace();
+      React.verbose("Disk query failed", e);
     }
     if (systemDisks.isEmpty()) {
       systemDisks.add("No disks reported.");
@@ -150,7 +151,7 @@ public class getHardware {
         systemPowerSources.add("- Cycle count: " + powersource.getCycleCount());
       }
     } catch (Exception e) {
-      e.printStackTrace();
+      React.verbose("Power-source query failed", e);
     }
     if (systemPowerSources.isEmpty()) {
       systemPowerSources.add("No power sources reported.");
@@ -174,7 +175,7 @@ public class getHardware {
         }
       }
     } catch (Exception e) {
-      e.printStackTrace();
+      React.verbose("Display query failed", e);
     }
     if (systemEDID.isEmpty()) {
       systemEDID.add("No displays reported.");
@@ -199,7 +200,7 @@ public class getHardware {
         }
       }
     } catch (Exception e) {
-      e.printStackTrace();
+      React.verbose("Network-interface query failed", e);
     }
     if (interfaces.isEmpty()) {
       interfaces.add("No network interfaces reported.");

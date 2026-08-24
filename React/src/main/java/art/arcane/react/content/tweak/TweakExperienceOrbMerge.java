@@ -20,6 +20,7 @@
 package art.arcane.react.content.tweak;
 
 import art.arcane.react.api.tweak.ReactTweak;
+import art.arcane.react.util.common.scheduling.J;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.ExperienceOrb;
 import org.bukkit.event.EventHandler;
@@ -43,31 +44,68 @@ public class TweakExperienceOrbMerge extends ReactTweak implements Listener {
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void on(EntitySpawnEvent event) {
-    if (!(event.getEntity() instanceof ExperienceOrb orb) || orb.isDead()) {
+    if (!(event.getEntity() instanceof ExperienceOrb orb)) {
+      return;
+    }
+
+    boolean folia = J.isFoliaThreading();
+    if (folia && !J.isOwnedByCurrentRegion(orb)) {
+      J.runEntity(orb, () -> mergeNearbyOwned(orb));
+      return;
+    }
+
+    mergeNearbyOwned(orb);
+  }
+
+  private void mergeNearbyOwned(ExperienceOrb orb) {
+    if (orb.isDead()) {
       return;
     }
 
     int merges = 0;
-    int totalExperience = orb.getExperience();
+    int totalExperience = Math.max(0, orb.getExperience());
+    int experienceLimit = Math.max(1, maxExperiencePerOrb);
+    boolean folia = J.isFoliaThreading();
 
     for (Entity nearby : orb.getNearbyEntities(mergeRadius, mergeRadius, mergeRadius)) {
-      if (nearby.isDead() || nearby.getUniqueId().equals(orb.getUniqueId())) {
+      if (!(nearby instanceof ExperienceOrb other) || other == orb) {
         continue;
       }
 
-      if (nearby instanceof ExperienceOrb other) {
-        totalExperience += Math.max(0, other.getExperience());
-        other.remove();
-        merges++;
+      if (folia && !J.isOwnedByCurrentRegion(other)) {
+        continue;
+      }
+      if (other.isDead() || other.getUniqueId().equals(orb.getUniqueId())) {
+        continue;
+      }
 
-        if (merges >= maxNearbyOrbsPerMerge) {
-          break;
-        }
+      int capacity = Math.max(0, experienceLimit - totalExperience);
+      if (capacity == 0) {
+        break;
+      }
+
+      int sourceExperience = Math.max(0, other.getExperience());
+      int transferred = Math.min(sourceExperience, capacity);
+      if (transferred <= 0) {
+        continue;
+      }
+
+      totalExperience += transferred;
+      int remainder = sourceExperience - transferred;
+      if (remainder == 0) {
+        other.remove();
+      } else {
+        other.setExperience(remainder);
+      }
+      merges++;
+
+      if (merges >= Math.max(1, maxNearbyOrbsPerMerge)) {
+        break;
       }
     }
 
     if (merges > 0) {
-      orb.setExperience(Math.min(maxExperiencePerOrb, Math.max(1, totalExperience)));
+      orb.setExperience(Math.max(1, totalExperience));
     }
   }
 }

@@ -379,6 +379,7 @@ void main() {
         final Map<String, dynamic> body = <String, dynamic>{
           'data': <Map<String, dynamic>>[
             <String, dynamic>{
+              'key': 'minecraft:world',
               'name': 'world',
               'pressureMode': 'NORMAL',
               'budgetMs': 40.0,
@@ -386,6 +387,7 @@ void main() {
               'releaseMs': 30.0,
             },
             <String, dynamic>{
+              'key': 'minecraft:world_nether',
               'name': 'world_nether',
               'pressureMode': 'PRESSURE',
               'budgetMs': 35.0,
@@ -410,6 +412,7 @@ void main() {
         final List<WorldSettings> settings = await client.worlds();
 
         expect(settings.length, equals(2));
+        expect(settings[0].key, equals('minecraft:world'));
         expect(settings[0].name, equals('world'));
         expect(settings[0].pressureMode, equals(PressureMode.normal));
         expect(settings[1].name, equals('world_nether'));
@@ -422,6 +425,7 @@ void main() {
     test('PUTs only non-null fields and decodes WorldSettings', () async {
       final Map<String, dynamic> responseBody = <String, dynamic>{
         'data': <String, dynamic>{
+          'key': 'minecraft:world',
           'name': 'world',
           'pressureMode': 'NORMAL',
           'budgetMs': 45.0,
@@ -452,6 +456,7 @@ void main() {
       expect(sentBody.containsKey('releaseMs'), isFalse);
       expect(captured!.headers['x-react-counter'], isNotNull);
       expect(ws.budgetMs, equals(45.0));
+      expect(ws.key, equals('minecraft:world'));
       expect(ws.name, equals('world'));
     });
   });

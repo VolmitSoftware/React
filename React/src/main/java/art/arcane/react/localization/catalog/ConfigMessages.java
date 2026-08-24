@@ -16,7 +16,7 @@ public final class ConfigMessages {
       summary("maxRecipeListPrecaution", "Safety cap used while exploring recipe chains to avoid runaway cost loops."),
       summary("monitorConfiguration", "Default monitor layout and sampler grouping."),
       summary("updateCooldownSeconds", "Cooldown between dynamic updates to reduce jitter and churn."),
-      summary("secondsToPurge", "Delay before purge actions start removing entities."),
+      summary("secondsToPurge", "Countdown baseline before purge actions remove entities."),
       summary("countUpTickTimeThresholdMS", "Threshold after which TPS sampler switches to elapsed-time reporting.")
   );
   private static final Map<String, TextKey> IMPACTS = Map.ofEntries(

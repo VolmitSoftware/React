@@ -23,6 +23,7 @@ Widget _wrapScreen({required Widget child}) => ArcaneThemeProvider(
 
 final List<WorldSettings> _fakeWorlds = <WorldSettings>[
   const WorldSettings(
+    key: 'minecraft:world',
     name: 'world',
     pressureMode: PressureMode.normal,
     budgetMs: 50.0,
@@ -30,6 +31,7 @@ final List<WorldSettings> _fakeWorlds = <WorldSettings>[
     releaseMs: 45.0,
   ),
   const WorldSettings(
+    key: 'minecraft:world_nether',
     name: 'world_nether',
     pressureMode: PressureMode.panic,
     budgetMs: 50.0,

@@ -20,9 +20,12 @@
 package art.arcane.react.content.sampler;
 
 import art.arcane.react.React;
+import art.arcane.react.core.controller.ObserverController;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.project.world.WorldEntitySnapshots;
+import art.arcane.volmlib.util.scheduling.FoliaScheduler;
 import org.bukkit.Bukkit;
+import org.bukkit.Chunk;
 import org.bukkit.World;
 import org.bukkit.entity.AbstractVillager;
 import org.bukkit.entity.Animals;
@@ -30,31 +33,46 @@ import org.bukkit.entity.Enemy;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.FallingBlock;
 import org.bukkit.entity.Item;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.entity.TNTPrimed;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 final class EntityCensusTracker {
   private static final Object LOCK = new Object();
   private static final long REFRESH_INTERVAL_MS = 2000L;
+  private static final int MAX_PAPER_ENTITIES_PER_WORLD_REFRESH = 128;
+  private static final int MAX_FOLIA_CHUNKS_PER_REFRESH = 32;
+  private static final int MAX_FOLIA_ENTITIES_PER_CHUNK = 128;
+  private static final int GROUND_ITEM = 1;
+  private static final int HOSTILE = 1 << 1;
+  private static final int ANIMAL = 1 << 2;
+  private static final int VILLAGER = 1 << 3;
+  private static final int PROJECTILE = 1 << 4;
+  private static final int PHYSICS = 1 << 5;
+  private static final int ACTIVE_AI = 1 << 6;
   private static final AtomicLong lastRefreshMS = new AtomicLong(0L);
-  private static int references = 0;
-  private static volatile int groundItems = 0;
-  private static volatile int hostile = 0;
-  private static volatile int animals = 0;
-  private static volatile int villagers = 0;
-  private static volatile int projectiles = 0;
-  private static volatile int physics = 0;
+  private static final AtomicLong lifecycleGeneration = new AtomicLong(0L);
+  private static final AtomicBoolean foliaRefreshInFlight = new AtomicBoolean(false);
+  private static final Map<UUID, Integer> observedCategories = new ConcurrentHashMap<>();
+  private static final Map<UUID, Map<Long, ChunkScanCursor>> chunkScanCursors = new ConcurrentHashMap<>();
+  private static final AtomicInteger groundItems = new AtomicInteger(0);
+  private static final AtomicInteger hostile = new AtomicInteger(0);
+  private static final AtomicInteger animals = new AtomicInteger(0);
+  private static final AtomicInteger villagers = new AtomicInteger(0);
+  private static final AtomicInteger projectiles = new AtomicInteger(0);
+  private static final AtomicInteger physics = new AtomicInteger(0);
+  private static final AtomicInteger activeAi = new AtomicInteger(0);
+  private static volatile boolean accepting;
+  private static int references;
 
   private EntityCensusTracker() {
   }
@@ -62,6 +80,7 @@ final class EntityCensusTracker {
   static void acquire() {
     synchronized (LOCK) {
       references++;
+      accepting = true;
     }
   }
 
@@ -72,38 +91,99 @@ final class EntityCensusTracker {
         return;
       }
 
+      accepting = false;
+      lifecycleGeneration.incrementAndGet();
       lastRefreshMS.set(0L);
-      groundItems = 0;
-      hostile = 0;
-      animals = 0;
-      villagers = 0;
-      projectiles = 0;
-      physics = 0;
+      foliaRefreshInFlight.set(false);
+      chunkScanCursors.clear();
+      observedCategories.clear();
+      store(0, 0, 0, 0, 0, 0, 0);
     }
   }
 
   static int groundItems() {
-    return groundItems;
+    return Math.max(0, groundItems.get());
   }
 
   static int hostile() {
-    return hostile;
+    return Math.max(0, hostile.get());
   }
 
   static int animals() {
-    return animals;
+    return Math.max(0, animals.get());
   }
 
   static int villagers() {
-    return villagers;
+    return Math.max(0, villagers.get());
   }
 
   static int projectiles() {
-    return projectiles;
+    return Math.max(0, projectiles.get());
   }
 
   static int physics() {
-    return physics;
+    return Math.max(0, physics.get());
+  }
+
+  static int activeAi() {
+    return Math.max(0, activeAi.get());
+  }
+
+  static void observe(Entity entity) {
+    if (!accepting || entity == null) {
+      return;
+    }
+
+    UUID entityId = entity.getUniqueId();
+    int categories = classify(entity);
+    observedCategories.compute(entityId, (ignored, existing) -> {
+      int previous = existing == null ? 0 : existing;
+      if (previous == categories) {
+        return existing;
+      }
+
+      adjust(previous, -1);
+      adjust(categories, 1);
+      return categories == 0 ? null : categories;
+    });
+  }
+
+  static void forget(Entity entity) {
+    if (entity != null) {
+      forget(entity.getUniqueId());
+    }
+  }
+
+  static void forget(UUID entityId) {
+    if (!accepting || entityId == null) {
+      return;
+    }
+
+    observedCategories.computeIfPresent(entityId, (ignored, categories) -> {
+      adjust(categories, -1);
+      return null;
+    });
+  }
+
+  static void chunkUnloaded(UUID worldId, int chunkX, int chunkZ) {
+    if (worldId == null) {
+      return;
+    }
+
+    Map<Long, ChunkScanCursor> worldCursors = chunkScanCursors.get(worldId);
+    if (worldCursors == null) {
+      return;
+    }
+    worldCursors.remove(packChunk(chunkX, chunkZ));
+    if (worldCursors.isEmpty()) {
+      chunkScanCursors.remove(worldId, worldCursors);
+    }
+  }
+
+  static void worldUnloaded(UUID worldId) {
+    if (worldId != null) {
+      chunkScanCursors.remove(worldId);
+    }
   }
 
   static void refreshMainThread() {
@@ -111,108 +191,165 @@ final class EntityCensusTracker {
       return;
     }
 
-    int ground = 0;
-    int enemy = 0;
-    int passive = 0;
-    int trader = 0;
-    int flying = 0;
-    int falling = 0;
-
     for (World world : Bukkit.getWorlds()) {
-      for (Entity entity : WorldEntitySnapshots.get(world)) {
-        if (entity instanceof Item) {
-          ground++;
-        }
-        if (entity instanceof Enemy) {
-          enemy++;
-        }
-        if (entity instanceof Animals) {
-          passive++;
-        }
-        if (entity instanceof AbstractVillager) {
-          trader++;
-        }
-        if (entity instanceof Projectile) {
-          flying++;
-        }
-        if (entity instanceof TNTPrimed || entity instanceof FallingBlock) {
-          falling++;
-        }
+      for (Entity entity : WorldEntitySnapshots.next(world, MAX_PAPER_ENTITIES_PER_WORLD_REFRESH)) {
+        SamplerEntities.reconcileCurrentChunk(entity, entity.getChunk());
+        observe(entity);
       }
     }
-
-    store(ground, enemy, passive, trader, flying, falling);
   }
 
   static void refreshFolia() {
-    if (!claimWindow()) {
-      return;
+    long generation;
+    synchronized (LOCK) {
+      if (!foliaRefreshInFlight.compareAndSet(false, true)) {
+        return;
+      }
+      if (!claimWindow()) {
+        foliaRefreshInFlight.set(false);
+        return;
+      }
+      generation = lifecycleGeneration.get();
     }
 
-    List<Player> players = new ArrayList<>(Bukkit.getOnlinePlayers());
-    if (players.isEmpty()) {
-      store(0, 0, 0, 0, 0, 0);
+    boolean scheduled;
+    try {
+      scheduled = FoliaScheduler.runGlobal(React.instance, () -> dispatchFoliaChunks(generation));
+    } catch (Throwable failure) {
+      React.reportError(failure);
+      releaseFoliaRefresh(generation);
       return;
     }
+    if (!scheduled) {
+      releaseFoliaRefresh(generation);
+    }
+  }
 
-    AtomicInteger ground = new AtomicInteger();
-    AtomicInteger enemy = new AtomicInteger();
-    AtomicInteger passive = new AtomicInteger();
-    AtomicInteger trader = new AtomicInteger();
-    AtomicInteger flying = new AtomicInteger();
-    AtomicInteger falling = new AtomicInteger();
-    Set<UUID> seen = ConcurrentHashMap.newKeySet();
-    CountDownLatch latch = new CountDownLatch(players.size());
+  static long coverageHorizonMS(int loadedChunkCount) {
+    if (loadedChunkCount <= 0) {
+      return 0L;
+    }
 
-    for (Player player : players) {
-      boolean scheduled = J.runEntity(player, () -> {
+    long batches = (loadedChunkCount + (long) MAX_FOLIA_CHUNKS_PER_REFRESH - 1L)
+        / MAX_FOLIA_CHUNKS_PER_REFRESH;
+    return batches * REFRESH_INTERVAL_MS;
+  }
+
+  static long coverageHorizonMS(int loadedChunkCount, int maximumEntitiesPerChunk) {
+    if (loadedChunkCount <= 0 || maximumEntitiesPerChunk <= 0) {
+      return 0L;
+    }
+
+    long entityPasses = (maximumEntitiesPerChunk + (long) MAX_FOLIA_ENTITIES_PER_CHUNK - 1L)
+        / MAX_FOLIA_ENTITIES_PER_CHUNK;
+    long chunkPassMS = coverageHorizonMS(loadedChunkCount);
+    if (entityPasses > Long.MAX_VALUE / chunkPassMS) {
+      return Long.MAX_VALUE;
+    }
+    return entityPasses * chunkPassMS;
+  }
+
+  private static void dispatchFoliaChunks(long generation) {
+    try {
+      if (!isCurrent(generation)) {
+        return;
+      }
+
+      ObserverController observer = React.controller(ObserverController.class);
+      List<ObserverController.LoadedChunkTarget> targets = observer == null
+          ? List.of()
+          : observer.nextLoadedChunkCoordinateBatch(MAX_FOLIA_CHUNKS_PER_REFRESH);
+      if (targets.isEmpty()) {
+        releaseFoliaRefresh(generation);
+        return;
+      }
+
+      AtomicInteger remaining = new AtomicInteger(targets.size());
+      for (ObserverController.LoadedChunkTarget target : targets) {
+        AtomicBoolean completed = new AtomicBoolean(false);
+        Runnable completion = () -> {
+          if (completed.compareAndSet(false, true) && remaining.decrementAndGet() == 0) {
+            releaseFoliaRefresh(generation);
+          }
+        };
+        Runnable scan = () -> {
+          try {
+            if (isCurrent(generation)) {
+              scanFoliaChunk(target, generation);
+            }
+          } catch (Throwable failure) {
+            React.reportError(failure);
+          } finally {
+            completion.run();
+          }
+        };
+
+        boolean scheduled;
         try {
-          if (player == null || !player.isOnline() || !J.isOwnedByCurrentRegion(player)) {
-            return;
-          }
-
-          for (Entity entity : player.getNearbyEntities(80, 48, 80)) {
-            if (!seen.add(entity.getUniqueId())) {
-              continue;
-            }
-
-            if (entity instanceof Item) {
-              ground.incrementAndGet();
-            }
-            if (entity instanceof Enemy) {
-              enemy.incrementAndGet();
-            }
-            if (entity instanceof Animals) {
-              passive.incrementAndGet();
-            }
-            if (entity instanceof AbstractVillager) {
-              trader.incrementAndGet();
-            }
-            if (entity instanceof Projectile) {
-              flying.incrementAndGet();
-            }
-            if (entity instanceof TNTPrimed || entity instanceof FallingBlock) {
-              falling.incrementAndGet();
-            }
-          }
-        } finally {
-          latch.countDown();
+          World world = Bukkit.getWorld(target.worldId());
+          scheduled = world != null && J.runChunk(world, target.chunkX(), target.chunkZ(), scan);
+        } catch (Throwable failure) {
+          React.reportError(failure);
+          scheduled = false;
         }
-      });
+        if (!scheduled) {
+          completion.run();
+        }
+      }
+    } catch (Throwable failure) {
+      React.reportError(failure);
+      releaseFoliaRefresh(generation);
+    }
+  }
 
-      if (!scheduled) {
-        latch.countDown();
+  private static void scanFoliaChunk(ObserverController.LoadedChunkTarget target, long generation) {
+    World world = Bukkit.getWorld(target.worldId());
+    if (!isCurrent(generation)
+        || world == null
+        || !world.isChunkLoaded(target.chunkX(), target.chunkZ())) {
+      chunkUnloaded(target.worldId(), target.chunkX(), target.chunkZ());
+      return;
+    }
+
+    Chunk chunk = world.getChunkAt(target.chunkX(), target.chunkZ(), false);
+    if (!chunk.isEntitiesLoaded()) {
+      return;
+    }
+    Entity[] entities = chunk.getEntities();
+    if (entities.length == 0) {
+      chunkUnloaded(target.worldId(), target.chunkX(), target.chunkZ());
+      return;
+    }
+
+    Map<Long, ChunkScanCursor> worldCursors = chunkScanCursors.computeIfAbsent(
+        target.worldId(),
+        ignored -> new ConcurrentHashMap<>()
+    );
+    ChunkScanCursor cursor = worldCursors.computeIfAbsent(
+        packChunk(target.chunkX(), target.chunkZ()),
+        ignored -> new ChunkScanCursor()
+    );
+    int count = Math.min(MAX_FOLIA_ENTITIES_PER_CHUNK, entities.length);
+    int start = cursor.claim(entities.length, count);
+    for (int offset = 0; offset < count; offset++) {
+      Entity entity = entities[(start + offset) % entities.length];
+      if (entity != null && J.isOwnedByCurrentRegion(entity)) {
+        SamplerEntities.reconcileCurrentChunk(entity, chunk);
+        observe(entity);
       }
     }
+  }
 
-    try {
-      latch.await(200, TimeUnit.MILLISECONDS);
-    } catch (InterruptedException ex) {
-      Thread.currentThread().interrupt();
-      React.verbose("EntityCensusTracker wait interrupted while gathering Folia approximation.");
+  private static long packChunk(int chunkX, int chunkZ) {
+    return ((long) chunkX << 32) ^ (chunkZ & 0xffffffffL);
+  }
+
+  private static void releaseFoliaRefresh(long generation) {
+    synchronized (LOCK) {
+      if (generation == lifecycleGeneration.get()) {
+        foliaRefreshInFlight.set(false);
+      }
     }
-
-    store(ground.get(), enemy.get(), passive.get(), trader.get(), flying.get(), falling.get());
   }
 
   private static boolean claimWindow() {
@@ -225,12 +362,85 @@ final class EntityCensusTracker {
     return lastRefreshMS.compareAndSet(last, now);
   }
 
-  private static void store(int ground, int enemy, int passive, int trader, int flying, int falling) {
-    groundItems = ground;
-    hostile = enemy;
-    animals = passive;
-    villagers = trader;
-    projectiles = flying;
-    physics = falling;
+  private static boolean isCurrent(long generation) {
+    return accepting && generation == lifecycleGeneration.get();
+  }
+
+  private static int classify(Entity entity) {
+    int categories = 0;
+    if (entity instanceof Item) {
+      categories |= GROUND_ITEM;
+    }
+    if (entity instanceof Enemy) {
+      categories |= HOSTILE;
+    }
+    if (entity instanceof Animals) {
+      categories |= ANIMAL;
+    }
+    if (entity instanceof AbstractVillager) {
+      categories |= VILLAGER;
+    }
+    if (entity instanceof Projectile) {
+      categories |= PROJECTILE;
+    }
+    if (entity instanceof TNTPrimed || entity instanceof FallingBlock) {
+      categories |= PHYSICS;
+    }
+    if (entity instanceof LivingEntity living
+        && !(entity instanceof Player)
+        && !living.isDead()
+        && living.hasAI()) {
+      categories |= ACTIVE_AI;
+    }
+    return categories;
+  }
+
+  private static void adjust(int categories, int delta) {
+    if ((categories & GROUND_ITEM) != 0) {
+      groundItems.addAndGet(delta);
+    }
+    if ((categories & HOSTILE) != 0) {
+      hostile.addAndGet(delta);
+    }
+    if ((categories & ANIMAL) != 0) {
+      animals.addAndGet(delta);
+    }
+    if ((categories & VILLAGER) != 0) {
+      villagers.addAndGet(delta);
+    }
+    if ((categories & PROJECTILE) != 0) {
+      projectiles.addAndGet(delta);
+    }
+    if ((categories & PHYSICS) != 0) {
+      physics.addAndGet(delta);
+    }
+    if ((categories & ACTIVE_AI) != 0) {
+      activeAi.addAndGet(delta);
+    }
+  }
+
+  private static void store(int ground, int enemy, int passive, int trader, int flying, int falling, int active) {
+    groundItems.set(ground);
+    hostile.set(enemy);
+    animals.set(passive);
+    villagers.set(trader);
+    projectiles.set(flying);
+    physics.set(falling);
+    activeAi.set(active);
+  }
+
+  static final class ChunkScanCursor {
+    private int next;
+
+    synchronized int claim(int entityCount, int limit) {
+      if (entityCount <= 0 || limit <= 0) {
+        next = 0;
+        return 0;
+      }
+
+      int start = Math.floorMod(next, entityCount);
+      next = (int) (((long) start + Math.min(entityCount, limit)) % entityCount);
+      return start;
+    }
   }
 }

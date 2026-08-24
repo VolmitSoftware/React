@@ -29,16 +29,24 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.bukkit.event.Listener;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class TweakController extends TickedObject implements IController {
+  private transient final AtomicBoolean stopFailed = new AtomicBoolean(false);
   private transient Registry<Tweak> tweaks;
   private transient Map<String, Tweak> activeTweaks;
   private transient Map<String, ReactTickedTweak> tickedTweaks;
 
   private Tweak unknown;
+  private transient volatile boolean stopping;
 
   public TweakController() {
     super("react", "tweak", 50);
@@ -69,39 +77,100 @@ public class TweakController extends TickedObject implements IController {
   }
 
   public void activateTweak(Tweak tweak) {
-    if (React.instance.isMonitoringOnly()) {
+    if (tweak == null
+        || React.instance == null
+        || activeTweaks == null
+        || tickedTweaks == null) {
       return;
     }
 
-    if (!activeTweaks.containsKey(tweak.getId())) {
-      activeTweaks.put(tweak.getId(), tweak);
+    String id;
+    try {
+      if (!shouldActivateTweak(tweak)) {
+        return;
+      }
+      id = tweak.getId();
+    } catch (Throwable failure) {
+      reportTweakLifecycleFailure("activate", tweak.getClass().getSimpleName(), failure);
+      return;
+    }
+
+    if (id == null || id.isBlank() || activeTweaks.containsKey(id)) {
+      return;
+    }
+
+    ReactTickedTweak scheduled = null;
+    boolean listenerRegistrationAttempted = false;
+    try {
       tweak.onActivate();
-      if (tweak instanceof Listener l) {
-        React.instance.registerListener(l);
+      if (tweak instanceof Listener listener) {
+        listenerRegistrationAttempted = true;
+        React.instance.registerListener(listener);
       }
 
       if (tweak.getTickInterval() > 0) {
-        tickedTweaks.put(tweak.getId(), new ReactTickedTweak(tweak));
+        scheduled = new ReactTickedTweak(tweak);
+        tickedTweaks.put(id, scheduled);
       }
 
-      React.verbose("Activated Tweak: " + tweak.getName());
+      activeTweaks.put(id, tweak);
+    } catch (Throwable failure) {
+      rollbackTweakActivation(tweak, id, scheduled, listenerRegistrationAttempted, failure);
+      return;
     }
+
+    React.verbose("Activated Tweak: " + id);
   }
 
   public void deactivateTweak(Tweak tweak) {
-    activeTweaks.remove(tweak.getId());
-    ReactTickedTweak t = tickedTweaks.remove(tweak.getId());
-
-    if (t != null) {
-      t.unregister();
+    if (tweak == null || activeTweaks == null || tickedTweaks == null) {
+      return;
     }
 
-    if (tweak instanceof Listener l) {
-      React.instance.unregisterListener(l);
+    String id;
+    try {
+      id = tweak.getId();
+    } catch (Throwable failure) {
+      reportTweakLifecycleFailure("deactivate", tweak.getClass().getSimpleName(), failure);
+      return;
     }
 
-    tweak.onDeactivate();
-    React.verbose("Deactivated Tweak: " + tweak.getName());
+    Tweak removed = activeTweaks.remove(id);
+    ReactTickedTweak scheduled = tickedTweaks.remove(id);
+    if (removed == null && scheduled == null) {
+      return;
+    }
+
+    Tweak component = removed == null ? tweak : removed;
+    Throwable failure = null;
+    if (scheduled != null) {
+      try {
+        scheduled.unregister();
+      } catch (Throwable cleanupFailure) {
+        failure = appendFailure(failure, cleanupFailure);
+      }
+    }
+
+    if (component instanceof Listener listener) {
+      try {
+        React.instance.unregisterListener(listener);
+      } catch (Throwable cleanupFailure) {
+        failure = appendFailure(failure, cleanupFailure);
+      }
+    }
+
+    try {
+      component.onDeactivate();
+    } catch (Throwable cleanupFailure) {
+      failure = appendFailure(failure, cleanupFailure);
+    }
+
+    if (failure != null) {
+      reportTweakLifecycleFailure("deactivate", id, failure);
+      return;
+    }
+
+    React.verbose("Deactivated Tweak: " + id);
   }
 
   @Override
@@ -112,22 +181,42 @@ public class TweakController extends TickedObject implements IController {
   }
 
   public void postStart() {
-    React.info("Registered " + tweaks.size() + " Tweaks");
+    React.verbose("Registered " + tweaks.size() + " Tweaks");
 
     for (String i : tweaks.ids()) {
-      Tweak f = tweaks.get(i);
-
-      if (f.isEnabled()) {
-        activateTweak(f);
+      try {
+        Tweak tweak = tweaks.get(i);
+        if (tweak != null) {
+          activateTweak(tweak);
+        }
+      } catch (Throwable failure) {
+        reportTweakLifecycleFailure("start", i, failure);
       }
     }
 
-    React.info("Activated " + activeTweaks.size() + " Tweaks");
+    React.verbose("Activated " + activeTweaks.size() + " Tweaks");
   }
 
   @Override
   public void stop() {
-    new ArrayList<>(activeTweaks.values()).forEach(this::deactivateTweak);
+    stopping = true;
+    stopFailed.set(false);
+    try {
+      if (activeTweaks != null) {
+        for (Tweak tweak : new ArrayList<>(activeTweaks.values())) {
+          try {
+            deactivateTweak(tweak);
+          } catch (Throwable failure) {
+            reportTweakLifecycleFailure("stop", tweak == null ? "unknown" : tweak.getClass().getSimpleName(), failure);
+          }
+        }
+      }
+    } finally {
+      stopping = false;
+    }
+    if (stopFailed.get()) {
+      throw new IllegalStateException("One or more tweaks failed to stop cleanly");
+    }
   }
 
   public void reconcileRuntimeMode() {
@@ -135,30 +224,33 @@ public class TweakController extends TickedObject implements IController {
       return;
     }
 
-    if (React.instance.isMonitoringOnly()) {
-      for (Tweak tweak : new ArrayList<>(activeTweaks.values())) {
-        try {
+    for (Tweak tweak : new ArrayList<>(activeTweaks.values())) {
+      try {
+        if (!shouldActivateTweak(tweak)) {
           deactivateTweak(tweak);
-        } catch (Throwable e) {
-          React.error("Failed to pause tweak " + tweak.getId() + ".");
-          React.reportError(e);
         }
+      } catch (Throwable failure) {
+        reportTweakLifecycleFailure("reconcile", tweak.getClass().getSimpleName(), failure);
       }
-      return;
     }
 
     for (Tweak tweak : tweaks.all()) {
-      if (tweak == null || !tweak.isEnabled() || activeTweaks.containsKey(tweak.getId())) {
-        continue;
-      }
-
       try {
-        activateTweak(tweak);
-      } catch (Throwable e) {
-        React.error("Failed to restore tweak " + tweak.getId() + ".");
-        React.reportError(e);
+        if (shouldActivateTweak(tweak) && !activeTweaks.containsKey(tweak.getId())) {
+          activateTweak(tweak);
+        }
+      } catch (Throwable failure) {
+        reportTweakLifecycleFailure("reconcile", tweak == null ? "unknown" : tweak.getClass().getSimpleName(), failure);
       }
     }
+  }
+
+  private boolean shouldActivateTweak(Tweak tweak) {
+    return tweak != null
+        && React.instance != null
+        && React.instance.isEnabled()
+        && !React.instance.isMonitoringOnly()
+        && tweak.isEnabled();
   }
 
   private String previewIds(Collection<String> ids, int limit) {
@@ -181,5 +273,57 @@ public class TweakController extends TickedObject implements IController {
     }
 
     return String.join(", ", shownIds) + ", +" + remaining + " more";
+  }
+
+  private void rollbackTweakActivation(
+      Tweak tweak,
+      String id,
+      ReactTickedTweak scheduled,
+      boolean listenerRegistrationAttempted,
+      Throwable failure
+  ) {
+    activeTweaks.remove(id, tweak);
+    ReactTickedTweak registered = tickedTweaks.remove(id);
+    ReactTickedTweak scheduledForCleanup = registered == null ? scheduled : registered;
+    if (scheduledForCleanup != null) {
+      try {
+        scheduledForCleanup.unregister();
+      } catch (Throwable cleanupFailure) {
+        failure = appendFailure(failure, cleanupFailure);
+      }
+    }
+
+    if (listenerRegistrationAttempted && tweak instanceof Listener listener) {
+      try {
+        React.instance.unregisterListener(listener);
+      } catch (Throwable cleanupFailure) {
+        failure = appendFailure(failure, cleanupFailure);
+      }
+    }
+
+    try {
+      tweak.onDeactivate();
+    } catch (Throwable cleanupFailure) {
+      failure = appendFailure(failure, cleanupFailure);
+    }
+
+    reportTweakLifecycleFailure("activate", id, failure);
+  }
+
+  private Throwable appendFailure(Throwable failure, Throwable additionalFailure) {
+    if (failure == null) {
+      return additionalFailure;
+    }
+    if (failure != additionalFailure) {
+      failure.addSuppressed(additionalFailure);
+    }
+    return failure;
+  }
+
+  private void reportTweakLifecycleFailure(String operation, String id, Throwable failure) {
+    if (stopping) {
+      stopFailed.set(true);
+    }
+    React.reportError("Failed to " + operation + " tweak " + id + ".", failure);
   }
 }

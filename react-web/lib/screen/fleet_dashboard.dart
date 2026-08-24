@@ -122,6 +122,7 @@ class _FleetDashboardScreenState extends State<FleetDashboardScreen> {
       <Widget>[
         reactorEyebrow(reactorText(ReactorText.fleetTag)),
         ArcaneNativeSelect(
+          size: ComponentSize.sm,
           options: options,
           value: _selectedTag,
           onChange: (String v) => setState(() => _selectedTag = v),

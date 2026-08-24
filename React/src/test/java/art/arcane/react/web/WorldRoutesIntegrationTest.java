@@ -92,8 +92,8 @@ public class WorldRoutesIntegrationTest {
         when(registry.all()).thenReturn(List.of());
 
         WebConfiguration config = new WebConfiguration();
-        config.setEnabled(true);
-        config.setBindAddress("127.0.0.1");
+        config.setListenerEnabled(true);
+        config.setListenAddress("127.0.0.1");
         config.setPort(0);
 
         controller = buildController(config, dataFolder, sampleController);

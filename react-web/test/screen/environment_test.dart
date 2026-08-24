@@ -24,6 +24,51 @@ EnvironmentInfo _fakeInfo() => EnvironmentInfo(
       'server': <String, Object?>{'brand': 'Purpur'},
     },
   ),
+  disks: const <EnvironmentDisk>[
+    EnvironmentDisk(
+      name: 'disk0',
+      model: 'Fast Disk',
+      sizeBytes: 1000,
+      readBytes: 400,
+      writeBytes: 250,
+      reads: 4,
+      writes: 2,
+      queueLength: 0,
+      transferTimeMillis: 10,
+      timestampMillis: 100,
+    ),
+  ],
+  mounts: const <EnvironmentMount>[
+    EnvironmentMount(
+      name: 'root',
+      mount: '/',
+      description: 'Root',
+      type: 'apfs',
+      totalBytes: 1000,
+      freeBytes: 300,
+      usableBytes: 250,
+    ),
+  ],
+  network: const <EnvironmentNetworkInterface>[
+    EnvironmentNetworkInterface(
+      name: 'en0',
+      displayName: 'Primary network',
+      mtu: 1500,
+      macAddress: '',
+      ipv4Addresses: <String>['127.0.0.1'],
+      ipv6Addresses: <String>[],
+      speedBitsPerSecond: 1000000000,
+      receivedBytes: 800,
+      sentBytes: 500,
+      receivedPackets: 8,
+      sentPackets: 5,
+      receiveErrors: 0,
+      sendErrors: 0,
+      receiveDrops: 0,
+      collisions: 0,
+      timestampMillis: 100,
+    ),
+  ],
 );
 
 Widget _wrapView(Widget child) =>
@@ -171,6 +216,27 @@ void main() {
         isTrue,
         reason: 'Server section heading must appear in rendered HTML',
       );
+    });
+
+    testServer('renders hoverable Disk and Network charts', (
+      ServerTester tester,
+    ) async {
+      tester.pumpComponent(
+        _wrapView(
+          EnvironmentView(
+            info: _fakeInfo(),
+            diskReadHistory: const <double>[0, 128],
+            diskWriteHistory: const <double>[0, 64],
+            networkReceiveHistory: const <double>[0, 256],
+            networkSendHistory: const <double>[0, 96],
+          ),
+        ),
+      );
+      final DocumentResponse res = await tester.request('/');
+      expect(res.body.contains('Read / write throughput'), isTrue);
+      expect(res.body.contains('Receive / send throughput'), isTrue);
+      expect(res.body.contains('reactor-chart-hit-target'), isTrue);
+      expect(res.body.contains('Primary network'), isTrue);
     });
   });
 

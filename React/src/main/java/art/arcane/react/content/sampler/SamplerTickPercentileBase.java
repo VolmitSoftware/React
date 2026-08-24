@@ -44,6 +44,15 @@ abstract class SamplerTickPercentileBase extends ReactCachedSampler implements L
     this.suffix = suffix;
   }
 
+  @Override
+  public void start() {
+    synchronized (tickDurations) {
+      tickDurations.clear();
+    }
+    lastTickMS = 0L;
+    super.start();
+  }
+
   @EventHandler(priority = EventPriority.MONITOR)
   public void on(ServerTickEvent event) {
     long now = System.currentTimeMillis();
@@ -51,7 +60,8 @@ abstract class SamplerTickPercentileBase extends ReactCachedSampler implements L
       double tickMS = Math.max(0D, now - lastTickMS);
       synchronized (tickDurations) {
         tickDurations.addLast(tickMS);
-        while (tickDurations.size() > historyTicks) {
+        int historyLimit = Math.max(1, historyTicks);
+        while (tickDurations.size() > historyLimit) {
           tickDurations.removeFirst();
         }
       }

@@ -54,7 +54,8 @@ public class WorldResourceTest {
         readToken = PairingToken.verify(secret, readBearer, store).orElseThrow();
 
         fakeBackend = new FakeWorldBackend();
-        resource = new WorldResource(fakeBackend);
+        resource = new WorldResource(fakeBackend, (context, mutation) -> {
+        });
     }
 
     @Test

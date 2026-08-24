@@ -9,7 +9,7 @@ enum VisualQaProfile {
     tokenSig: 'visual',
     keySeed: 17,
   ),
-  beta(label: 'QA Beta', tokenId: 'qa-beta', tokenSig: 'visual', keySeed: 83);
+  beta(label: 'QA Beta', tokenId: 'qa-beta', tokenSig: 'visual', keySeed: 17);
 
   final String label;
   final String tokenId;
@@ -626,6 +626,7 @@ abstract final class VisualQaFixtures {
   static List<Map<String, dynamic>> worlds(VisualQaProfile profile) =>
       <Map<String, dynamic>>[
         <String, dynamic>{
+          'key': 'minecraft:world',
           'name': 'world',
           'pressureMode': profile.isCritical ? 'PRESSURE' : 'NORMAL',
           'budgetMs': 32.0,
@@ -633,6 +634,7 @@ abstract final class VisualQaFixtures {
           'releaseMs': 28.0,
         },
         <String, dynamic>{
+          'key': 'minecraft:world_nether',
           'name': 'world_nether',
           'pressureMode': 'PRESSURE',
           'budgetMs': 18.0,
@@ -640,6 +642,7 @@ abstract final class VisualQaFixtures {
           'releaseMs': 15.0,
         },
         <String, dynamic>{
+          'key': 'minecraft:world_the_end',
           'name': 'world_the_end',
           'pressureMode': profile.isCritical ? 'PANIC' : 'NORMAL',
           'budgetMs': 12.0,
@@ -749,6 +752,51 @@ abstract final class VisualQaFixtures {
           'react': '1.7.4-qa',
           'onlineMode': true,
         },
+        'disks': <Map<String, Object?>>[
+          <String, Object?>{
+            'name': 'nvme0n1',
+            'model': 'QA NVMe Storage',
+            'sizeBytes': 1000000000000,
+            'readBytes': profile.isCritical ? 780000000000 : 420000000000,
+            'writeBytes': profile.isCritical ? 510000000000 : 190000000000,
+            'reads': 1800000,
+            'writes': 950000,
+            'queueLength': profile.isCritical ? 14 : 1,
+            'transferTimeMillis': 930000,
+            'timestampMillis': 100000,
+          },
+        ],
+        'mounts': <Map<String, Object?>>[
+          <String, Object?>{
+            'name': 'world-storage',
+            'mount': '/srv/minecraft',
+            'description': 'QA world storage',
+            'type': 'ext4',
+            'totalBytes': 1000000000000,
+            'freeBytes': profile.isCritical ? 83000000000 : 470000000000,
+            'usableBytes': profile.isCritical ? 78000000000 : 450000000000,
+          },
+        ],
+        'network': <Map<String, Object?>>[
+          <String, Object?>{
+            'name': 'eth0',
+            'displayName': 'Primary network',
+            'mtu': 1500,
+            'macAddress': '02:00:00:00:00:01',
+            'ipv4Addresses': <String>['10.0.0.42'],
+            'ipv6Addresses': <String>[],
+            'speedBitsPerSecond': 1000000000,
+            'receivedBytes': profile.isCritical ? 980000000000 : 360000000000,
+            'sentBytes': profile.isCritical ? 720000000000 : 210000000000,
+            'receivedPackets': 64000000,
+            'sentPackets': 41000000,
+            'receiveErrors': 0,
+            'sendErrors': 0,
+            'receiveDrops': profile.isCritical ? 140 : 0,
+            'collisions': 0,
+            'timestampMillis': 100000,
+          },
+        ],
       };
 
   static Map<String, dynamic> config(VisualQaProfile profile) =>
@@ -757,6 +805,33 @@ abstract final class VisualQaFixtures {
           <String, dynamic>{
             'name': 'Performance',
             'nodes': <Map<String, dynamic>>[
+              _knob(
+                key: 'main.language',
+                label: 'Language',
+                type: 'enum',
+                value: 'en_US',
+                options: const <String>[
+                  'en_US',
+                  'de_DE',
+                  'es_ES',
+                  'fi_FI',
+                  'fr_FR',
+                  'he_IL',
+                  'it_IT',
+                  'ja-JP',
+                  'ko_KR',
+                  'lt_LT',
+                  'nl_NL',
+                  'pl_PL',
+                  'pt_PT',
+                  'ru_RU',
+                  'tr_TR',
+                  'vi_VI',
+                  'zh_CN',
+                  'zh_TW',
+                ],
+                doc: 'Language used by React for in-game messages.',
+              ),
               _knob(
                 key: 'tick-budget-ms',
                 label: 'Tick Budget',
@@ -806,7 +881,14 @@ abstract final class VisualQaFixtures {
     <String, dynamic>{'id': 'qa-entity-density', 'label': 'QA Entity Density'},
   ];
 
-  static Map<String, dynamic>? heatmap(VisualQaProfile profile, String id) {
+  static Map<String, dynamic>? heatmap(
+    VisualQaProfile profile,
+    String id, {
+    String? world,
+    int? centerX,
+    int? centerZ,
+    int? radius,
+  }) {
     final String label = switch (id) {
       'qa-chunk-pressure' => 'QA Chunk Pressure',
       'qa-entity-density' => 'QA Entity Density',
@@ -814,19 +896,27 @@ abstract final class VisualQaFixtures {
     };
     if (label.isEmpty) return null;
 
-    const int radius = 2;
+    final String resolvedWorld =
+        world ??
+        (id == 'qa-chunk-pressure'
+            ? 'minecraft:world_nether'
+            : 'minecraft:world');
+    final int resolvedCenterX = centerX ?? 148;
+    final int resolvedCenterZ = centerZ ?? -73;
+    final int resolvedRadius = (radius ?? 2).clamp(1, 16);
     final List<Map<String, dynamic>> cells = <Map<String, dynamic>>[];
-    for (int z = -radius; z <= radius; z++) {
-      for (int x = -radius; x <= radius; x++) {
+    for (int z = -resolvedRadius; z <= resolvedRadius; z++) {
+      for (int x = -resolvedRadius; x <= resolvedRadius; x++) {
         final int distance = x.abs() + z.abs();
         final double baseline = id == 'qa-chunk-pressure' ? 88.0 : 72.0;
         final double profileOffset = profile.isCritical ? 8.0 : -19.0;
         final double score = (baseline + profileOffset - distance * 9.0)
             .clamp(0.0, 100.0)
             .toDouble();
+        if (score <= 0.0) continue;
         cells.add(<String, dynamic>{
-          'x': 148 + x,
-          'z': -73 + z,
+          'x': resolvedCenterX + x,
+          'z': resolvedCenterZ + z,
           'score': score,
         });
       }
@@ -834,10 +924,10 @@ abstract final class VisualQaFixtures {
     return <String, dynamic>{
       'id': id,
       'label': label,
-      'world': id == 'qa-chunk-pressure' ? 'world_nether' : 'world',
-      'centerChunkX': 148,
-      'centerChunkZ': -73,
-      'radius': radius,
+      'world': resolvedWorld,
+      'centerChunkX': resolvedCenterX,
+      'centerChunkZ': resolvedCenterZ,
+      'radius': resolvedRadius,
       'min': 0.0,
       'max': 100.0,
       'cells': cells,

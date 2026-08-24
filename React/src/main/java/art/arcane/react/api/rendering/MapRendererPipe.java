@@ -45,10 +45,12 @@ public class MapRendererPipe extends MapRenderer {
 
   private final String rendererId;
   private final String normalizedRendererId;
+  private final long ownerId;
   private final AtomicLong nextDrawAtMs = new AtomicLong(0L);
   @Getter(AccessLevel.NONE)
   private final ReentrantLock composeLock = new ReentrantLock();
   private volatile ReactRenderer renderer;
+  private volatile boolean active = true;
   @Getter(AccessLevel.NONE)
   private volatile MegamapAssignment appliedAssignment = MegamapAssignment.NONE;
   @Getter(AccessLevel.NONE)
@@ -58,14 +60,38 @@ public class MapRendererPipe extends MapRenderer {
   @Getter(AccessLevel.NONE)
   private MapCanvas boundCanvas;
 
-  public MapRendererPipe(ReactRenderer renderer) {
+  public MapRendererPipe(ReactRenderer renderer, long ownerId) {
     this.renderer = renderer;
     this.rendererId = renderer == null ? FeatureUnknown.ID : renderer.getId();
     this.normalizedRendererId = Objects.toString(this.rendererId, "").toLowerCase(Locale.ROOT).trim();
+    this.ownerId = ownerId;
+  }
+
+  public boolean isOwnedBy(long expectedOwnerId) {
+    return ownerId == expectedOwnerId;
+  }
+
+  public void close() {
+    active = false;
+    composeLock.lock();
+    try {
+      renderer = null;
+      appliedAssignment = MegamapAssignment.NONE;
+      surface = null;
+      shadow = null;
+      boundCanvas = null;
+      nextDrawAtMs.set(0L);
+    } finally {
+      composeLock.unlock();
+    }
   }
 
   @Override
   public void render(@NotNull MapView map, @NotNull MapCanvas canvas, @NotNull Player player) {
+    if (!active) {
+      return;
+    }
+
     try {
       MapController controller = React.controller(MapController.class);
       if (controller != null && !controller.shouldRenderForPlayer(map, player)) {
@@ -94,45 +120,49 @@ public class MapRendererPipe extends MapRenderer {
         return;
       }
 
-      ReactRenderer resolved = resolveRenderer();
-      ReactRenderContext.Builder context = ReactRenderContext.builder()
-          .player(player)
-          .view(map)
-          .canvas(canvas);
-
-      MegamapGrid.MegamapViewport letterbox = null;
-      boolean covered = true;
-      String notice;
-      if (tile == null) {
-        context.width(ReactRenderer.CANVAS_SIZE).height(ReactRenderer.CANVAS_SIZE);
-        notice = noticeForDefect(defectReason);
-      } else {
-        MegamapGrid.MegamapViewport viewport = MegamapGrid.viewportFor(
-            tile,
-            resolved.megamapCapability(),
-            megamapTileBudget(controller),
-            ReactRenderer.CANVAS_SIZE
-        );
-        applyViewport(context, tile, viewport);
-        if (viewport.adaptive()) {
-          notice = null;
-        } else {
-          letterbox = viewport;
-          covered = viewport.coversAnything(ReactRenderer.CANVAS_SIZE);
-          notice = covered
-              ? ReactLanguage.raw(
-                  viewport.capped() ? MapMessages.MEGAMAP_CAPPED : MapMessages.MEGAMAP_ZOOMED,
-                  MessageArgument.untrusted("grid", tile.gridWidth() + "x" + tile.gridHeight())
-              )
-              : null;
-        }
-      }
-
       if (!composeLock.tryLock()) {
         return;
       }
 
       try {
+        if (!active) {
+          return;
+        }
+
+        ReactRenderer resolved = resolveRenderer();
+        ReactRenderContext.Builder context = ReactRenderContext.builder()
+            .player(player)
+            .view(map)
+            .canvas(canvas);
+
+        MegamapGrid.MegamapViewport letterbox = null;
+        boolean covered = true;
+        String notice;
+        if (tile == null) {
+          context.width(ReactRenderer.CANVAS_SIZE).height(ReactRenderer.CANVAS_SIZE);
+          notice = noticeForDefect(defectReason);
+        } else {
+          MegamapGrid.MegamapViewport viewport = MegamapGrid.viewportFor(
+              tile,
+              resolved.megamapCapability(),
+              megamapTileBudget(controller),
+              ReactRenderer.CANVAS_SIZE
+          );
+          applyViewport(context, tile, viewport);
+          if (viewport.adaptive()) {
+            notice = null;
+          } else {
+            letterbox = viewport;
+            covered = viewport.coversAnything(ReactRenderer.CANVAS_SIZE);
+            notice = covered
+                ? ReactLanguage.raw(
+                    viewport.capped() ? MapMessages.MEGAMAP_CAPPED : MapMessages.MEGAMAP_ZOOMED,
+                    MessageArgument.untrusted("grid", tile.gridWidth() + "x" + tile.gridHeight())
+                )
+                : null;
+          }
+        }
+
         boolean fullFlush = bindCanvas(canvas);
         if (applyAssignment(tile, defectReason)) {
           fullFlush = true;
@@ -167,7 +197,7 @@ public class MapRendererPipe extends MapRenderer {
         composeLock.unlock();
       }
     } catch (Throwable e) {
-      e.printStackTrace();
+      React.verbose(() -> "Map renderer " + rendererId + " failed for player " + player.getName(), e);
     }
   }
 

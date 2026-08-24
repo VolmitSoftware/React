@@ -10,13 +10,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class WebConfigurationTest {
 
   @Test
-  void defaultsAreSafeAndDisabled() {
+  void defaultsOpenAuthenticatedListenerForExternalConnections() {
     WebConfiguration c = new WebConfiguration();
-    assertFalse(c.isEnabled());
-    assertEquals("127.0.0.1", c.getBindAddress());
+    assertTrue(c.isListenerEnabled());
+    assertEquals("::", c.getListenAddress());
     assertEquals(9696, c.getPort());
     assertEquals("", c.getAdvertisedUrl());
-    assertFalse(c.isRequireTokenForReads() == false && c.isEnabled());
+    assertTrue(c.isRequireTokenForReads());
   }
 
   @Test

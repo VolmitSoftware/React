@@ -86,4 +86,16 @@ public class ConfigRoundTripTest {
     Assertions.assertTrue(toml.contains("slowTickLogMode = \"OFF\""));
     Assertions.assertEquals(ReactConfiguration.SlowTickLogMode.OFF, parsed.slowTickLogMode);
   }
+
+  @Test
+  public void globalConfigStartsWithLanguageThenMetrics() {
+    String toml = TomlCodec.toToml(new ReactConfiguration(), "main-config");
+
+    int language = toml.indexOf("language = \"en_US\"");
+    int metrics = toml.indexOf("metrics = true");
+    int customColors = toml.indexOf("customColors = true");
+    Assertions.assertTrue(language >= 0);
+    Assertions.assertTrue(metrics > language);
+    Assertions.assertTrue(customColors > metrics);
+  }
 }

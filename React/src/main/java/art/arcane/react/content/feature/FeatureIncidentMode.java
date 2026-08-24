@@ -24,6 +24,7 @@ import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.api.web.IncidentTimeline;
 import art.arcane.react.content.sampler.SamplerIncidentScore;
 import art.arcane.react.content.sampler.SamplerTickTime;
+import art.arcane.react.util.common.scheduling.J;
 import org.bukkit.Location;
 import org.bukkit.block.Hopper;
 import org.bukkit.event.EventHandler;
@@ -35,12 +36,13 @@ import org.bukkit.event.entity.EntityPortalEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
 
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Incident Mode feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureIncidentMode extends ReactFeature implements Listener {
   public static final String ID = "incident-mode";
-  private transient final AtomicBoolean evaluationQueued = new AtomicBoolean(false);
+  private transient final AtomicLong evaluationQueuedGeneration = new AtomicLong(-1L);
+  private transient final AtomicLong lifecycleGeneration = new AtomicLong();
   @art.arcane.react.util.project.config.ConfigDoc(value = "Main evaluation interval for incident mode in milliseconds.", impact = "Lower values react faster but consume more CPU; higher values reduce overhead but react later.")
   private int tickIntervalMS = 1000;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Trigger threshold for enter incident score in incident mode.", impact = "Higher values trigger mitigation later; lower values trigger earlier and more aggressively.")
@@ -74,14 +76,10 @@ public class FeatureIncidentMode extends ReactFeature implements Listener {
   @art.arcane.react.util.project.config.ConfigDoc(value = "Enables extra logging for verbose transitions in incident mode.", impact = "Enable for diagnostics; disable to reduce chat or log noise.")
   private boolean verboseTransitions = true;
   private transient volatile boolean incident;
+  private transient volatile boolean active;
   private transient volatile long incidentSince;
   private transient volatile long activatedAtMS;
-  private transient long windowStartMS;
-  private transient int spawnerSpawns;
-  private transient int naturalSpawns;
-  private transient int portalEvents;
-  private transient int hopperMoves;
-  private transient int redstoneTransitions;
+  private transient final RateWindow<RateCounter> rateWindow = new RateWindow<>(RateCounter.values().length);
 
   public FeatureIncidentMode() {
     super(ID);
@@ -90,20 +88,20 @@ public class FeatureIncidentMode extends ReactFeature implements Listener {
   @Override
   public void onActivate() {
     long now = System.currentTimeMillis();
+    lifecycleGeneration.incrementAndGet();
+    active = true;
     incident = false;
     incidentSince = 0L;
     activatedAtMS = now;
-    windowStartMS = now;
-    spawnerSpawns = 0;
-    naturalSpawns = 0;
-    portalEvents = 0;
-    hopperMoves = 0;
-    redstoneTransitions = 0;
-    evaluationQueued.set(false);
+    rateWindow.reset(now);
+    evaluationQueuedGeneration.set(-1L);
   }
 
   @Override
   public void onDeactivate() {
+    active = false;
+    lifecycleGeneration.incrementAndGet();
+    evaluationQueuedGeneration.set(-1L);
     incident = false;
   }
 
@@ -122,17 +120,29 @@ public class FeatureIncidentMode extends ReactFeature implements Listener {
 
   @Override
   public void onTick() {
-    if (!evaluationQueued.compareAndSet(false, true)) {
+    if (!active) {
       return;
     }
 
-    art.arcane.react.util.common.scheduling.J.s(() -> {
-      try {
-        evaluateIncident();
-      } finally {
-        evaluationQueued.set(false);
-      }
-    });
+    long generation = lifecycleGeneration.get();
+    if (!evaluationQueuedGeneration.compareAndSet(-1L, generation)) {
+      return;
+    }
+
+    try {
+      J.s(() -> {
+        try {
+          if (active && lifecycleGeneration.get() == generation) {
+            evaluateIncident();
+          }
+        } finally {
+          evaluationQueuedGeneration.compareAndSet(generation, -1L);
+        }
+      });
+    } catch (RuntimeException | Error failure) {
+      evaluationQueuedGeneration.compareAndSet(generation, -1L);
+      throw failure;
+    }
   }
 
   private void evaluateIncident() {
@@ -184,17 +194,14 @@ public class FeatureIncidentMode extends ReactFeature implements Listener {
       default -> false;
     };
 
-    long now = System.currentTimeMillis();
-    rolloverWindow(now);
-
     if (spawner) {
-      if (++spawnerSpawns > maxSpawnerSpawnsPerWindow) {
+      if (!rateWindow.tryAcquire(RateCounter.SPAWNER, maxSpawnerSpawnsPerWindow, System.currentTimeMillis(), rateWindowMS)) {
         event.setCancelled(true);
       }
       return;
     }
 
-    if (natural && ++naturalSpawns > maxNaturalSpawnsPerWindow) {
+    if (natural && !rateWindow.tryAcquire(RateCounter.NATURAL, maxNaturalSpawnsPerWindow, System.currentTimeMillis(), rateWindowMS)) {
       event.setCancelled(true);
     }
   }
@@ -210,9 +217,7 @@ public class FeatureIncidentMode extends ReactFeature implements Listener {
       return;
     }
 
-    long now = System.currentTimeMillis();
-    rolloverWindow(now);
-    if (++portalEvents > maxPortalEventsPerWindow) {
+    if (!rateWindow.tryAcquire(RateCounter.PORTAL, maxPortalEventsPerWindow, System.currentTimeMillis(), rateWindowMS)) {
       event.setCancelled(true);
     }
   }
@@ -228,9 +233,7 @@ public class FeatureIncidentMode extends ReactFeature implements Listener {
       return;
     }
 
-    long now = System.currentTimeMillis();
-    rolloverWindow(now);
-    if (++portalEvents > maxPortalEventsPerWindow) {
+    if (!rateWindow.tryAcquire(RateCounter.PORTAL, maxPortalEventsPerWindow, System.currentTimeMillis(), rateWindowMS)) {
       event.setCancelled(true);
     }
   }
@@ -246,9 +249,7 @@ public class FeatureIncidentMode extends ReactFeature implements Listener {
       return;
     }
 
-    long now = System.currentTimeMillis();
-    rolloverWindow(now);
-    if (++hopperMoves > maxHopperMovesPerWindow) {
+    if (!rateWindow.tryAcquire(RateCounter.HOPPER, maxHopperMovesPerWindow, System.currentTimeMillis(), rateWindowMS)) {
       event.setCancelled(true);
     }
   }
@@ -264,24 +265,9 @@ public class FeatureIncidentMode extends ReactFeature implements Listener {
       return;
     }
 
-    long now = System.currentTimeMillis();
-    rolloverWindow(now);
-    if (++redstoneTransitions > maxRedstoneTransitionsPerWindow) {
+    if (!rateWindow.tryAcquire(RateCounter.REDSTONE, maxRedstoneTransitionsPerWindow, System.currentTimeMillis(), rateWindowMS)) {
       event.setNewCurrent(event.getOldCurrent());
     }
-  }
-
-  private void rolloverWindow(long now) {
-    if (now - windowStartMS <= rateWindowMS) {
-      return;
-    }
-
-    windowStartMS = now;
-    spawnerSpawns = 0;
-    naturalSpawns = 0;
-    portalEvents = 0;
-    hopperMoves = 0;
-    redstoneTransitions = 0;
   }
 
   private boolean shouldBypass(Location location) {
@@ -298,5 +284,13 @@ public class FeatureIncidentMode extends ReactFeature implements Listener {
     }
 
     return null;
+  }
+
+  private enum RateCounter {
+    SPAWNER,
+    NATURAL,
+    PORTAL,
+    HOPPER,
+    REDSTONE
   }
 }

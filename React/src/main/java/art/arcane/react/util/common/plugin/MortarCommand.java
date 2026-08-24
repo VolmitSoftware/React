@@ -20,6 +20,7 @@
 package art.arcane.react.util.plugin;
 
 
+import art.arcane.react.React;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.RuntimeMessages;
 import art.arcane.volmlib.util.collection.KList;
@@ -183,8 +184,7 @@ public abstract class MortarCommand implements ICommand {
                  InstantiationException |
                  InvocationTargetException | NoSuchMethodException |
                  SecurityException e) {
-          e.printStackTrace();
-          e.printStackTrace();
+          React.reportError("Failed to construct command field " + i.getName(), e);
         }
       }
     }

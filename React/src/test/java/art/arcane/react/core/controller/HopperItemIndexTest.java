@@ -5,6 +5,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -30,7 +32,7 @@ public class HopperItemIndexTest {
     public void addItemAppearsInChunkBucket() {
         UUID item = UUID.randomUUID();
         index.addItem(worldA, 0, 0, item);
-        Set<UUID> items = index.itemsInChunk(worldA, 0, 0);
+        Set<UUID> items = itemSet(index.itemIdsInChunk(worldA, 0, 0));
         Assertions.assertNotNull(items);
         Assertions.assertTrue(items.contains(item));
     }
@@ -40,7 +42,7 @@ public class HopperItemIndexTest {
         UUID item = UUID.randomUUID();
         index.addItem(worldA, 0, 0, item);
         index.removeItem(item);
-        Set<UUID> items = index.itemsInChunk(worldA, 0, 0);
+        Set<UUID> items = itemSet(index.itemIdsInChunk(worldA, 0, 0));
         Assertions.assertFalse(items.contains(item));
     }
 
@@ -57,7 +59,7 @@ public class HopperItemIndexTest {
 
     @Test
     public void queryNeverPresentReturnsEmpty() {
-        Set<UUID> items = index.itemsInChunk(worldA, 42, 42);
+        Set<UUID> items = itemSet(index.itemIdsInChunk(worldA, 42, 42));
         Assertions.assertNotNull(items);
         Assertions.assertTrue(items.isEmpty());
     }
@@ -90,7 +92,7 @@ public class HopperItemIndexTest {
         index.addItem(worldA, 5, 5, item);
         Assertions.assertFalse(index.hasItemsAbove(worldA, 0, 0));
         Assertions.assertTrue(index.hasItemsAbove(worldA, 5, 5));
-        Assertions.assertTrue(index.itemsInChunk(worldA, 5, 5).contains(item));
+        Assertions.assertTrue(itemSet(index.itemIdsInChunk(worldA, 5, 5)).contains(item));
     }
 
     @Test
@@ -98,17 +100,41 @@ public class HopperItemIndexTest {
         UUID item = UUID.randomUUID();
         index.addItem(worldA, 0, 0, item);
         index.addItem(worldA, 0, 0, item);
-        Assertions.assertEquals(1, index.itemsInChunk(worldA, 0, 0).size());
+        Assertions.assertEquals(1, index.itemIdsInChunk(worldA, 0, 0).length);
         Assertions.assertEquals(1, index.size());
     }
 
     @Test
-    public void itemsInChunkReturnsSnapshot() {
-        UUID item = UUID.randomUUID();
-        index.addItem(worldA, 0, 0, item);
-        Set<UUID> snapshot = index.itemsInChunk(worldA, 0, 0);
-        index.removeItem(item);
-        Assertions.assertTrue(snapshot.contains(item));
+    public void itemIdsInChunkReturnsOneSnapshotForTheChunk() {
+        UUID item1 = UUID.randomUUID();
+        UUID item2 = UUID.randomUUID();
+        index.addItem(worldA, 4, -2, item1);
+        index.addItem(worldA, 4, -2, item2);
+
+        UUID[] snapshot = index.itemIdsInChunk(worldA, 4, -2);
+        index.removeItem(item1);
+
+        Assertions.assertEquals(Set.of(item1, item2), new HashSet<>(Arrays.asList(snapshot)));
+        Assertions.assertArrayEquals(new UUID[0], index.itemIdsInChunk(worldA, 99, 99));
+    }
+
+    @Test
+    public void itemChunkKeysContainOnlyPopulatedChunks() {
+        UUID removed = UUID.randomUUID();
+        index.addItem(worldA, -3, 7, UUID.randomUUID());
+        index.addItem(worldA, 2, -5, UUID.randomUUID());
+        index.addItem(worldA, 10, 10, removed);
+        index.removeItem(removed);
+
+        long[] keys = index.itemChunkKeys(worldA);
+        Set<Long> actual = new HashSet<>();
+        for (int i = 0; i < keys.length; i++) {
+            actual.add(keys[i]);
+        }
+        Assertions.assertEquals(
+            Set.of(HopperItemIndex.chunkKey(-3, 7), HopperItemIndex.chunkKey(2, -5)),
+            actual);
+        Assertions.assertArrayEquals(new long[0], index.itemChunkKeys(worldB));
     }
 
     @Test
@@ -121,8 +147,8 @@ public class HopperItemIndexTest {
         index.addItem(worldA, 1, 0, item3);
         index.removeChunk(worldA, 0, 0);
         Assertions.assertFalse(index.hasItemsAbove(worldA, 0, 0));
-        Assertions.assertFalse(index.itemsInChunk(worldA, 0, 0).contains(item1));
-        Assertions.assertFalse(index.itemsInChunk(worldA, 0, 0).contains(item2));
+        Assertions.assertFalse(itemSet(index.itemIdsInChunk(worldA, 0, 0)).contains(item1));
+        Assertions.assertFalse(itemSet(index.itemIdsInChunk(worldA, 0, 0)).contains(item2));
         Assertions.assertTrue(index.hasItemsAbove(worldA, 1, 0));
         Assertions.assertEquals(1, index.size());
     }
@@ -167,5 +193,101 @@ public class HopperItemIndexTest {
 
         Assertions.assertTrue(latch.await(10, TimeUnit.SECONDS));
         executor.shutdown();
+    }
+
+    @Test
+    public void concurrentRelocationKeepsOneBucketForTheItem() throws InterruptedException {
+        UUID item = UUID.randomUUID();
+        int threads = 4;
+        int movesPerThread = 500;
+        ExecutorService executor = Executors.newFixedThreadPool(threads);
+        CountDownLatch latch = new CountDownLatch(threads);
+
+        for (int thread = 0; thread < threads; thread++) {
+            int offset = thread * movesPerThread;
+            executor.submit(() -> {
+                try {
+                    for (int i = 0; i < movesPerThread; i++) {
+                        int chunk = offset + i;
+                        index.addItem(worldA, chunk, -chunk, item);
+                    }
+                } finally {
+                    latch.countDown();
+                }
+            });
+        }
+
+        Assertions.assertTrue(latch.await(10, TimeUnit.SECONDS));
+        executor.shutdown();
+
+        Assertions.assertEquals(1, countOccurrences(worldA, item));
+        Assertions.assertEquals(1, index.size());
+    }
+
+    @Test
+    public void concurrentChunkRemovalAndRelocationLeaveNoGhostBucket() throws InterruptedException {
+        UUID item = UUID.randomUUID();
+        int iterations = 1_000;
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        CountDownLatch start = new CountDownLatch(1);
+        CountDownLatch done = new CountDownLatch(2);
+
+        executor.submit(() -> {
+            try {
+                start.await();
+                for (int i = 0; i < iterations; i++) {
+                    index.addItem(worldA, 0, 0, item);
+                    index.removeChunk(worldA, 0, 0);
+                }
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+            } finally {
+                done.countDown();
+            }
+        });
+        executor.submit(() -> {
+            try {
+                start.await();
+                for (int i = 0; i < iterations; i++) {
+                    index.addItem(worldA, 1, 0, item);
+                    index.addItem(worldA, 0, 0, item);
+                }
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+            } finally {
+                done.countDown();
+            }
+        });
+
+        start.countDown();
+        Assertions.assertTrue(done.await(10, TimeUnit.SECONDS));
+        executor.shutdown();
+        index.addItem(worldA, 9, 9, item);
+
+        Assertions.assertEquals(1, countOccurrences(worldA, item));
+        Assertions.assertTrue(itemSet(index.itemIdsInChunk(worldA, 9, 9)).contains(item));
+        Assertions.assertEquals(1, index.size());
+    }
+
+    private int countOccurrences(UUID worldId, UUID item) {
+        int occurrences = 0;
+        long[] chunkKeys = index.itemChunkKeys(worldId);
+        for (int i = 0; i < chunkKeys.length; i++) {
+            long chunkKey = chunkKeys[i];
+            UUID[] items = index.itemIdsInChunk(
+                worldId,
+                HopperPositionIndex.unpackChunkX(chunkKey),
+                HopperPositionIndex.unpackChunkZ(chunkKey));
+            for (int j = 0; j < items.length; j++) {
+                if (item.equals(items[j])) {
+                    occurrences++;
+                }
+            }
+        }
+        return occurrences;
+    }
+
+    private static Set<UUID> itemSet(UUID[] items) {
+        return new HashSet<>(Arrays.asList(items));
     }
 }

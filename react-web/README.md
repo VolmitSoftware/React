@@ -28,13 +28,13 @@ Production client output is written to `build/jaspr/` by `dart run jaspr_cli:jas
 
 ## Server connections
 
-Run `/react web pair <label> [role]`, then click the in-game copy action or copy the raw RCT2 value from the server console. React Web validates the server public key and full fingerprint before storing the profile locally in that browser. Multiple profiles can use a direct HTTPS endpoint, the outbound WebSocket relay, or both with automatic failover.
+Run `/react web pair <label> [role=viewer]`, then click the in-game copy action or copy the raw RCT2 value from the server console. React Web validates the server public key and full fingerprint before storing the profile locally in that browser. Multiple profiles can use a direct HTTPS endpoint, the outbound WebSocket relay, or both with automatic failover. Fresh React installations use `listenerEnabled = true` and `listenAddress = "::"` on port `9696`; rented or NAT-hosted servers must forward the public TCP port to `9696` and either set `advertisedUrl` or replace the decoded loopback value in the **Direct host** field. Run `/react reload` or restart after changing `web.toml`. Use `listenAddress = "0.0.0.0"` on IPv4-only hosts. IPv6 authorities and reverse-proxy base paths are supported.
 
 The hosted client runs over HTTPS, so browsers block direct access to React's plain-HTTP listener as mixed content. Production servers must either advertise an HTTPS reverse-proxy URL or enable React's outbound relay with a deployed `wss://` endpoint. Set the relay's `ALLOWED_APP_ORIGINS` to `https://react.volmitsoftware.com`.
 
 ## Languages
 
-The top-right language menu switches the complete client-owned interface at
+The top-right language dropdown shows the active language and switches the complete client-owned interface at
 runtime. React Web supports 18 locales in `web/languages/`, persists the choice
 as `reactor.locale`, and starts with the saved choice, then the browser locale,
 then `REACTOR_LANGUAGE`, then English. A failed or superseded catalog request
@@ -57,6 +57,12 @@ Action descriptions, control names, configuration labels, sampler names, log
 content, and incident details received from a React server are server-provided
 data. React Web translates all client-owned framing around those values, while
 the server controls the language of the values themselves.
+
+The browser-language dropdown is independent from React's server language. The global configuration editor renders `main.language` as a supported-locale dropdown; saving it updates `react.toml`, reloads live in-game messages, and replaces the editor state with the authoritative server response.
+
+## Environment diagnostics
+
+The Environment workspace polls typed disk and network counters every five seconds while it is open. Disk read/write and network receive/send charts retain a bounded local rate history with hover and keyboard details, while mounted-volume capacity bars and device/interface summaries expose the current totals. Compact Arcane selects are used in filters, panel actions, and enum configuration fields so short values such as `ALL` do not clip.
 
 ## Firebase Hosting
 

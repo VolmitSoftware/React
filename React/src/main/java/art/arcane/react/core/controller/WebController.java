@@ -11,6 +11,7 @@ import art.arcane.react.api.web.ActionParamCoercer;
 import art.arcane.react.api.web.ActionParamSerializer;
 import art.arcane.react.api.web.AuditLog;
 import art.arcane.react.api.web.BukkitConsoleCommandDispatcher;
+import art.arcane.react.api.web.BukkitWebMutationReporter;
 import art.arcane.react.api.web.ConfigApplier;
 import art.arcane.react.api.web.ConfigTreeSerializer;
 import art.arcane.react.api.web.ControlBackend;
@@ -26,7 +27,9 @@ import art.arcane.react.api.web.RegistryControlBackend;
 import art.arcane.react.api.web.TokenStore;
 import art.arcane.react.api.web.WebAuth;
 import art.arcane.react.api.web.WebConfiguration;
+import art.arcane.react.api.web.WebConfigurationSchema;
 import art.arcane.react.api.web.WebSecret;
+import art.arcane.react.api.web.WebMutationReporter;
 import art.arcane.react.api.web.relay.ReactIdentityStore;
 import art.arcane.react.api.web.relay.ReactServerIdentity;
 import art.arcane.react.api.web.relay.RelayBackoff;
@@ -66,6 +69,7 @@ import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.api.web.ws.CoalescingWsChannel;
 import art.arcane.react.api.web.ws.JavalinWsChannel;
 import art.arcane.react.api.web.ws.WebSocketSessions;
+import art.arcane.react.api.web.ws.WsAuthenticationGate;
 import art.arcane.react.api.web.ws.WsMetricsBroadcaster;
 import art.arcane.react.core.controller.ActionController;
 import art.arcane.react.core.gui.ReactConfigGUI;
@@ -73,10 +77,11 @@ import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.plugin.IController;
 import art.arcane.react.util.project.config.ConfigFileSupport;
+import com.google.gson.Gson;
 import io.javalin.Javalin;
 import io.javalin.http.HttpResponseException;
 import io.javalin.http.NotFoundResponse;
-import io.javalin.websocket.WsConnectContext;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -89,17 +94,26 @@ import java.util.function.DoubleSupplier;
 import java.util.function.IntFunction;
 import java.util.function.Supplier;
 import java.util.UUID;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
 @Getter
 @Setter
 public class WebController implements IController {
+
+    private static final int WS_SEND_THREADS = 4;
+    private static final int WS_SEND_QUEUE_CAPACITY = 2048;
+    private static final int WS_UNAUTHENTICATED_CAPACITY = 2048;
+    private static final long WS_AUTHENTICATION_TIMEOUT_MILLIS = 5000L;
+    private static final long WS_AUTHENTICATION_SWEEP_MILLIS = 1000L;
 
     private WebConfiguration config = new WebConfiguration();
     private transient volatile File dataFolder;
@@ -137,8 +151,15 @@ public class WebController implements IController {
     private transient volatile RingLogHandler logHandler;
     private transient volatile IntFunction<List<String>> logLinesSupplier;
     private transient volatile WebSocketSessions logSessions;
+    private transient volatile WsAuthenticationGate wsAuthenticationGate;
     private transient volatile Logger attachedLogger;
     private transient volatile Log4jConsoleCapture log4jConsoleCapture;
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private transient long lifecycleGeneration;
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private transient boolean starting;
 
     public WebController() {
     }
@@ -155,6 +176,34 @@ public class WebController implements IController {
 
     protected void executeAsync(Runnable r) {
         J.a(r);
+    }
+
+    protected ExecutorService createWsSendExecutor() {
+        AtomicInteger threadSequence = new AtomicInteger();
+        ThreadFactory threadFactory = runnable -> {
+            Thread thread = new Thread(runnable, "react-ws-send-" + threadSequence.incrementAndGet());
+            thread.setDaemon(true);
+            return thread;
+        };
+        ThreadPoolExecutor executor = new ThreadPoolExecutor(
+            WS_SEND_THREADS,
+            WS_SEND_THREADS,
+            30L,
+            TimeUnit.SECONDS,
+            new ArrayBlockingQueue<>(WS_SEND_QUEUE_CAPACITY),
+            threadFactory,
+            new ThreadPoolExecutor.AbortPolicy()
+        );
+        executor.allowCoreThreadTimeOut(true);
+        return executor;
+    }
+
+    protected ScheduledExecutorService createWsPushExecutor() {
+        return Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread thread = new Thread(r, "react-ws-push");
+            thread.setDaemon(true);
+            return thread;
+        });
     }
 
     @Override
@@ -180,19 +229,25 @@ public class WebController implements IController {
             return;
         }
         File canonical = React.instance.getDataFile("web.toml");
-        File legacy = React.instance.getDataFile("web.json");
+        File obsoleteJson = React.instance.getDataFile("web.json");
         try {
+            WebConfigurationSchema.requireCurrent(canonical, obsoleteJson);
             config = ConfigFileSupport.load(
                 canonical,
-                legacy,
+                null,
                 WebConfiguration.class,
                 new WebConfiguration(),
-                true,
+                false,
                 "web-config",
                 "Created missing config [web.toml] from defaults."
             );
+            startFailure = null;
         } catch (IOException e) {
-            React.warn("Failed to load web.toml: " + e.getMessage());
+            WebConfiguration failedConfiguration = new WebConfiguration();
+            failedConfiguration.setListenerEnabled(false);
+            config = failedConfiguration;
+            startFailure = e;
+            React.reportError("Failed to load web.toml: " + e.getMessage(), e);
         }
     }
 
@@ -261,6 +316,10 @@ public class WebController implements IController {
     }
 
     public String resolveDirectUrl() {
+        String unavailableReason = pairingUnavailableReason();
+        if (unavailableReason != null) {
+            throw new IllegalStateException(unavailableReason);
+        }
         String advertisedUrl = config.getAdvertisedUrl();
         if (advertisedUrl != null && !advertisedUrl.isBlank()) {
             String normalized = advertisedUrl.trim();
@@ -272,14 +331,32 @@ public class WebController implements IController {
                 return normalized;
             }
         }
-        String host = config.getBindAddress();
+        String host = config.getListenAddress();
         if (host == null || host.isBlank() || host.equals("0.0.0.0") || host.equals("::") || host.equals("[::]")) {
             host = "127.0.0.1";
         } else if (host.indexOf(':') >= 0 && !host.startsWith("[")) {
             host = "[" + host + "]";
         }
-        int directPort = boundPort > 0 ? boundPort : config.getPort();
-        return "http://" + host + ":" + directPort;
+        return "http://" + host + ":" + boundPort;
+    }
+
+    public synchronized String pairingUnavailableReason() {
+        if (starting) {
+            return "The React web listener is still starting";
+        }
+        if (startFailure != null) {
+            String message = startFailure.getMessage();
+            return message == null || message.isBlank()
+                ? "The React web listener failed to start"
+                : "The React web listener failed to start: " + message;
+        }
+        if (!config.isListenerEnabled()) {
+            return "The React web listener is disabled";
+        }
+        if (app == null || boundPort < 1) {
+            return "The React web listener is not bound";
+        }
+        return null;
     }
 
     private static void validateAdvertisedUrl(String url) {
@@ -293,15 +370,44 @@ public class WebController implements IController {
 
     @Override
     public void postStart() {
-        if (!config.isEnabled()) {
+        if (!config.isListenerEnabled()) {
             return;
         }
-        loadAuth();
         CountDownLatch latch = new CountDownLatch(1);
-        startLatch = latch;
-        startFailure = null;
-        executeAsync(() -> {
-            try {
+        long generation = beginStartup(latch);
+        if (generation < 0L) {
+            return;
+        }
+        try {
+            loadAuth();
+            if (!isCurrentGeneration(generation)) {
+                finishStartup(generation, latch);
+                return;
+            }
+            executeAsync(() -> runStartupWithPluginClassLoader(generation, latch));
+        } catch (Throwable failure) {
+            recordStartupFailure(generation, failure);
+            finishStartup(generation, latch);
+        }
+    }
+
+    private void runStartupWithPluginClassLoader(long generation, CountDownLatch latch) {
+        Thread thread = Thread.currentThread();
+        ClassLoader previous = thread.getContextClassLoader();
+        ClassLoader pluginClassLoader = WebController.class.getClassLoader();
+        try {
+            thread.setContextClassLoader(pluginClassLoader);
+            runStartup(generation, latch);
+        } finally {
+            thread.setContextClassLoader(previous);
+        }
+    }
+
+    private void runStartup(long generation, CountDownLatch latch) {
+        WebRuntime runtime = new WebRuntime();
+        boolean published = false;
+        boolean requireTokenForReads = config.isRequireTokenForReads();
+        try {
                 MetricsResource metrics = new MetricsResource(sampleController, new MetricsSerializer());
                 IdentityResource identity = new IdentityResource(this::resolveIdentity);
                 WebAuth auth = new WebAuth(secret, tokenStore);
@@ -315,12 +421,13 @@ public class WebController implements IController {
                         }
                     }
                 })));
+                runtime.app = javalin;
                 javalin.exception(HttpResponseException.class, (e, ctx) -> {
                     String msg = e.getMessage() == null ? defaultMessageFor(e.getStatus()) : e.getMessage();
                     ctx.status(e.getStatus()).json(new ErrorEnvelope(new ErrorEnvelope.Message(msg)));
                 });
                 javalin.exception(Exception.class, (e, ctx) -> {
-                    React.warn("Unhandled web exception: " + e.getMessage());
+                    React.warn("Unhandled web exception: " + e.getMessage(), e);
                     ctx.status(500).json(new ErrorEnvelope(new ErrorEnvelope.Message("Internal server error")));
                 });
                 CapabilityResource capabilityResource = new CapabilityResource(
@@ -374,9 +481,21 @@ public class WebController implements IController {
                         tcMutator
                     );
                 }
-                ControlResource featureResource = new ControlResource(featureControlBackend);
-                ControlResource tweakResource = new ControlResource(tweakControlBackend);
-                if (config.isRequireTokenForReads()) {
+                if (auditLog == null) {
+                    auditLog = new AuditLog(resolveDataFolder());
+                }
+                WebMutationReporter mutationReporter = new BukkitWebMutationReporter(auditLog);
+                ControlResource featureResource = new ControlResource(
+                    featureControlBackend,
+                    "feature",
+                    mutationReporter
+                );
+                ControlResource tweakResource = new ControlResource(
+                    tweakControlBackend,
+                    "tweak",
+                    mutationReporter
+                );
+                if (requireTokenForReads) {
                     javalin.before("/api/v1/identity", auth);
                     javalin.before("/api/v1/metrics", auth);
                     javalin.before("/api/v1/metrics/{id}/history", auth);
@@ -416,7 +535,7 @@ public class WebController implements IController {
                     return out;
                 }, sampler, hs, 8, 16);
                 HeatmapResource heatmaps = new HeatmapResource(provider);
-                if (config.isRequireTokenForReads()) {
+                if (requireTokenForReads) {
                     javalin.before("/api/v1/heatmaps", auth);
                     javalin.before("/api/v1/heatmaps/{id}", auth);
                 }
@@ -436,15 +555,15 @@ public class WebController implements IController {
                         return ic == null ? java.util.List.of() : ic.recentTimeline(limit);
                     }
                 );
-                if (config.isRequireTokenForReads()) {
+                if (requireTokenForReads) {
                     javalin.before("/api/v1/integrations", auth);
                 }
                 javalin.get("/api/v1/integrations", integrations::get);
                 if (worldBackend == null) {
                     worldBackend = new FeatureWorldBackend();
                 }
-                WorldResource worldResource = new WorldResource(worldBackend);
-                if (config.isRequireTokenForReads()) {
+                WorldResource worldResource = new WorldResource(worldBackend, mutationReporter);
+                if (requireTokenForReads) {
                     javalin.before("/api/v1/worlds", auth);
                 }
                 javalin.before("/api/v1/worlds/update", auth);
@@ -456,9 +575,6 @@ public class WebController implements IController {
                 javalin.get("/api/v1/worlds", worldResource::list);
                 javalin.put("/api/v1/worlds/update", worldResource::update);
                 javalin.put("/api/v1/worlds/{name}", worldResource::updateNamed);
-                if (auditLog == null) {
-                    auditLog = new AuditLog(resolveDataFolder());
-                }
                 if (actionBackend == null) {
                     actionBackend = new RegistryActionBackend(
                         () -> {
@@ -484,8 +600,12 @@ public class WebController implements IController {
                         return new ActionDispatcher.DispatchResult(ticketId, "queued");
                     };
                 }
-                ActionResource actionResource = new ActionResource(actionBackend, actionDispatcher, auditLog);
-                if (config.isRequireTokenForReads()) {
+                ActionResource actionResource = new ActionResource(
+                    actionBackend,
+                    actionDispatcher,
+                    mutationReporter
+                );
+                if (requireTokenForReads) {
                     javalin.before("/api/v1/actions", auth);
                 }
                 javalin.before("/api/v1/actions/{id}/execute", auth);
@@ -494,7 +614,11 @@ public class WebController implements IController {
                 if (consoleCommandDispatcher == null) {
                     consoleCommandDispatcher = new BukkitConsoleCommandDispatcher();
                 }
-                ConsoleResource consoleResource = new ConsoleResource(consoleCommandDispatcher, auditLog);
+                ConsoleResource consoleResource = new ConsoleResource(
+                    consoleCommandDispatcher,
+                    auditLog,
+                    mutationReporter
+                );
                 javalin.before("/api/v1/console/execute", auth);
                 javalin.post("/api/v1/console/execute", consoleResource::execute);
                 if (incidentScoreSupplier == null) {
@@ -530,15 +654,16 @@ public class WebController implements IController {
                     incidentTimelineSupplier,
                     incidentContributorsSupplier
                 );
-                if (config.isRequireTokenForReads()) {
+                if (requireTokenForReads) {
                     javalin.before("/api/v1/incidents", auth);
                 }
                 javalin.get("/api/v1/incidents", incidentResource::get);
                 if (environmentSnapshotSupplier == null) {
-                    environmentSnapshotSupplier = () -> new EnvironmentSnapshotProvider(this::resolveIdentity).snapshot();
+                    EnvironmentSnapshotProvider environmentProvider = new EnvironmentSnapshotProvider(this::resolveIdentity);
+                    environmentSnapshotSupplier = environmentProvider::snapshot;
                 }
                 EnvironmentResource environmentResource = new EnvironmentResource(environmentSnapshotSupplier);
-                if (config.isRequireTokenForReads()) {
+                if (requireTokenForReads) {
                     javalin.before("/api/v1/environment", auth);
                 }
                 javalin.get("/api/v1/environment", environmentResource::get);
@@ -551,8 +676,13 @@ public class WebController implements IController {
                 if (presetApplier == null) {
                     presetApplier = name -> J.sResult(() -> ReactConfigGUI.applyPresetHeadless(name));
                 }
-                ConfigResource configResource = new ConfigResource(configTreeSupplier, configApplier, presetApplier);
-                if (config.isRequireTokenForReads()) {
+                ConfigResource configResource = new ConfigResource(
+                    configTreeSupplier,
+                    configApplier,
+                    presetApplier,
+                    mutationReporter
+                );
+                if (requireTokenForReads) {
                     javalin.before("/api/v1/config", auth);
                 } else {
                     javalin.before("/api/v1/config", ctx -> {
@@ -565,103 +695,325 @@ public class WebController implements IController {
                 javalin.get("/api/v1/config", configResource::get);
                 javalin.put("/api/v1/config", configResource::put);
                 javalin.post("/api/v1/config/preset/{name}", configResource::preset);
-                if (logHandler == null) {
-                    logHandler = new RingLogHandler();
-                }
-                if (logLinesSupplier == null) {
-                    RingLogHandler capturedHandler = logHandler;
-                    logLinesSupplier = n -> capturedHandler.recent(n);
+                RingLogHandler localLogHandler = new RingLogHandler();
+                runtime.logHandler = localLogHandler;
+                IntFunction<List<String>> activeLogLinesSupplier = logLinesSupplier;
+                if (activeLogLinesSupplier == null) {
+                    activeLogLinesSupplier = localLogHandler::recent;
                 }
                 Logger consoleLogger = resolveConsoleLogger();
-                consoleLogger.addHandler(logHandler);
-                attachedLogger = consoleLogger;
+                runtime.attachedLogger = consoleLogger;
+                consoleLogger.addHandler(localLogHandler);
                 try {
-                    log4jConsoleCapture = Log4jConsoleCapture.attach(logHandler);
+                    runtime.log4jConsoleCapture = Log4jConsoleCapture.attach(localLogHandler);
                 } catch (ReflectiveOperationException | SecurityException | LinkageError e) {
                     if (React.instance != null) {
-                        consoleLogger.log(Level.WARNING, "Unable to attach React web console capture to Log4j", e);
+                        React.warn("Unable to attach React web console capture to Log4j", e);
                     }
                 }
-                LogsResource logsResource = new LogsResource(logLinesSupplier);
+                LogsResource logsResource = new LogsResource(activeLogLinesSupplier);
                 javalin.before("/api/v1/logs", auth);
                 javalin.get("/api/v1/logs", logsResource::list);
-                javalin.start(config.getBindAddress(), config.getPort());
-                app = javalin;
-                boundPort = javalin.port();
-                metricsSessions = new WebSocketSessions();
-                ExecutorService sendExecutor = Executors.newCachedThreadPool(r -> {
-                    Thread t = new Thread(r, "react-ws-send");
-                    t.setDaemon(true);
-                    return t;
-                });
-                wsSendExecutor = sendExecutor;
+                if (!isCurrentGeneration(generation)) {
+                    return;
+                }
+                WebSocketSessions localMetricsSessions = new WebSocketSessions();
+                runtime.metricsSessions = localMetricsSessions;
+                WebSocketSessions localLogSessions = new WebSocketSessions();
+                runtime.logSessions = localLogSessions;
+                ExecutorService sendExecutor = createWsSendExecutor();
+                runtime.wsSendExecutor = sendExecutor;
+                WsAuthenticationGate authenticationGate = new WsAuthenticationGate(
+                    WS_UNAUTHENTICATED_CAPACITY,
+                    WS_AUTHENTICATION_TIMEOUT_MILLIS,
+                    this::authorizeWsScope
+                );
+                runtime.wsAuthenticationGate = authenticationGate;
                 javalin.ws("/ws/metrics", ws -> {
                     ws.onConnect(ctx -> {
-                        if (!authorizeWsRead(ctx)) {
-                            ctx.closeSession(1008, "Unauthorized");
+                        CoalescingWsChannel channel = new CoalescingWsChannel(new JavalinWsChannel(ctx), sendExecutor);
+                        if (!requireTokenForReads) {
+                            localMetricsSessions.add(channel);
                             return;
                         }
-                        metricsSessions.add(new CoalescingWsChannel(new JavalinWsChannel(ctx), sendExecutor));
+                        authenticationGate.register(
+                            channel,
+                            reason -> ctx.closeSession(1008, reason),
+                            "read",
+                            localMetricsSessions
+                        );
                     });
-                    ws.onClose(ctx -> metricsSessions.remove(ctx.sessionId()));
-                    ws.onError(ctx -> metricsSessions.remove(ctx.sessionId()));
+                    ws.onMessage(ctx -> {
+                        if (!requireTokenForReads) {
+                            authenticationGate.authenticateOptional(
+                                ctx.sessionId(),
+                                ctx.message(),
+                                "read",
+                                localMetricsSessions,
+                                reason -> ctx.closeSession(1008, reason)
+                            );
+                            return;
+                        }
+                        authenticationGate.authenticate(
+                            ctx.sessionId(),
+                            ctx.message(),
+                            localMetricsSessions,
+                            reason -> ctx.closeSession(1008, reason)
+                        );
+                    });
+                    ws.onBinaryMessage(ctx -> authenticationGate.reject(
+                        ctx.sessionId(),
+                        localMetricsSessions,
+                        reason -> ctx.closeSession(1008, reason),
+                        "Authentication frame must be JSON text"
+                    ));
+                    ws.onClose(ctx -> {
+                        authenticationGate.remove(ctx.sessionId());
+                        localMetricsSessions.remove(ctx.sessionId());
+                    });
+                    ws.onError(ctx -> {
+                        authenticationGate.remove(ctx.sessionId());
+                        localMetricsSessions.remove(ctx.sessionId());
+                    });
                 });
-                metricsBroadcaster = new WsMetricsBroadcaster(
+                Gson gson = new Gson();
+                WsMetricsBroadcaster localMetricsBroadcaster = new WsMetricsBroadcaster(
                     metrics::snapshotData,
-                    metricsSessions,
-                    arr -> new com.google.gson.Gson().toJson(new MetricsResource.SnapshotResponse(arr))
+                    localMetricsSessions,
+                    arr -> gson.toJson(new MetricsResource.SnapshotResponse(arr))
                 );
-                logSessions = new WebSocketSessions();
-                WebSocketSessions capturedLogSessions = logSessions;
-                ExecutorService capturedSendExecutor = sendExecutor;
+                runtime.metricsBroadcaster = localMetricsBroadcaster;
                 javalin.ws("/ws/logs", ws -> {
-                    ws.onConnect(ctx -> {
-                        if (!authorizeWsConsoleRead(ctx)) {
-                            ctx.closeSession(1008, "Unauthorized");
-                            return;
-                        }
-                        capturedLogSessions.add(new JavalinWsChannel(ctx));
+                    ws.onConnect(ctx -> authenticationGate.register(
+                        new CoalescingWsChannel(new JavalinWsChannel(ctx), sendExecutor),
+                        reason -> ctx.closeSession(1008, reason),
+                        "console:read",
+                        localLogSessions
+                    ));
+                    ws.onMessage(ctx -> authenticationGate.authenticate(
+                        ctx.sessionId(),
+                        ctx.message(),
+                        localLogSessions,
+                        reason -> ctx.closeSession(1008, reason)
+                    ));
+                    ws.onBinaryMessage(ctx -> authenticationGate.reject(
+                        ctx.sessionId(),
+                        localLogSessions,
+                        reason -> ctx.closeSession(1008, reason),
+                        "Authentication frame must be JSON text"
+                    ));
+                    ws.onClose(ctx -> {
+                        authenticationGate.remove(ctx.sessionId());
+                        localLogSessions.remove(ctx.sessionId());
                     });
-                    ws.onClose(ctx -> capturedLogSessions.remove(ctx.sessionId()));
-                    ws.onError(ctx -> capturedLogSessions.remove(ctx.sessionId()));
+                    ws.onError(ctx -> {
+                        authenticationGate.remove(ctx.sessionId());
+                        localLogSessions.remove(ctx.sessionId());
+                    });
                 });
-                logHandler.setLineListener(line -> {
-                    WebSocketSessions sessions = logSessions;
-                    if (sessions != null && !sessions.isEmpty()) {
-                        String frame = new com.google.gson.Gson().toJson(new LogFrame("log", line));
-                        capturedSendExecutor.execute(() -> sessions.broadcast(frame));
+                CoalescingWsChannel logBroadcaster = CoalescingWsChannel.broadcastTo(
+                    "react-log-broadcast",
+                    localLogSessions,
+                    sendExecutor
+                );
+                localLogHandler.setLineListener(line -> {
+                    if (!localLogSessions.isEmpty()) {
+                        String frame = gson.toJson(new LogFrame("log", line));
+                        logBroadcaster.send(frame);
                     }
                 });
                 long periodMs = Math.max(1L, 1000L / Math.max(1, config.getWsPushHz()));
-                ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(r -> {
-                    Thread t = new Thread(r, "react-ws-push");
-                    t.setDaemon(true);
-                    return t;
-                });
-                wsPushExecutor = executor;
+                ScheduledExecutorService executor = createWsPushExecutor();
+                runtime.wsPushExecutor = executor;
+                if (!isCurrentGeneration(generation)) {
+                    return;
+                }
+                executor.scheduleAtFixedRate(
+                    authenticationGate::expire,
+                    WS_AUTHENTICATION_SWEEP_MILLIS,
+                    WS_AUTHENTICATION_SWEEP_MILLIS,
+                    TimeUnit.MILLISECONDS
+                );
                 executor.scheduleAtFixedRate(() -> {
                     try {
-                        metricsBroadcaster.broadcastOnce();
+                        localMetricsBroadcaster.broadcastOnce();
                     } catch (Throwable t) {
-                        React.warn("ws metrics push failed: " + t.getMessage());
+                        React.verbose("WebSocket metrics push failed", t);
                     }
                 }, periodMs, periodMs, TimeUnit.MILLISECONDS);
+                if (!isCurrentGeneration(generation)) {
+                    return;
+                }
+                javalin.start(config.getListenAddress(), config.getPort());
+                runtime.boundPort = javalin.port();
+                if (!isCurrentGeneration(generation)) {
+                    return;
+                }
                 if (config.isRelayEnabled() && config.getRelayUrl() != null && !config.getRelayUrl().isBlank()) {
                     try {
-                        RelayLoopbackBridge bridge = createRelayLoopbackBridge(boundPort);
+                        RelayLoopbackBridge bridge = createRelayLoopbackBridge(runtime.boundPort);
                         RelayClient client = new RelayClient(config.getRelayUrl(), WebController.this.identity, bridge, new RelayBackoff(1000L, 30000L));
+                        runtime.relayClient = client;
                         client.start();
-                        relayClient = client;
                     } catch (Throwable t) {
-                        React.warn("RelayClient startup failed (relay will be unavailable): " + t.getMessage());
+                        React.warn("RelayClient startup failed; relay will be unavailable", t);
+                        closeRelayClient(runtime);
                     }
                 }
-            } catch (Throwable t) {
-                startFailure = t;
-                React.warn("WebController failed to start: " + t.getMessage());
+                if (publishRuntime(generation, runtime)) {
+                    published = true;
+                }
+        } catch (Throwable failure) {
+            recordStartupFailure(generation, failure);
+        } finally {
+            if (!published) {
+                closeRuntime(runtime);
             }
-            latch.countDown();
-        });
+            finishStartup(generation, latch);
+        }
+    }
+
+    private synchronized long beginStartup(CountDownLatch latch) {
+        if (starting || app != null) {
+            return -1L;
+        }
+        lifecycleGeneration++;
+        starting = true;
+        startLatch = latch;
+        startFailure = null;
+        return lifecycleGeneration;
+    }
+
+    private synchronized boolean isCurrentGeneration(long generation) {
+        return starting && lifecycleGeneration == generation;
+    }
+
+    private synchronized boolean publishRuntime(long generation, WebRuntime runtime) {
+        if (!starting || lifecycleGeneration != generation) {
+            return false;
+        }
+        app = runtime.app;
+        boundPort = runtime.boundPort;
+        relayClient = runtime.relayClient;
+        metricsSessions = runtime.metricsSessions;
+        metricsBroadcaster = runtime.metricsBroadcaster;
+        wsPushExecutor = runtime.wsPushExecutor;
+        wsSendExecutor = runtime.wsSendExecutor;
+        logHandler = runtime.logHandler;
+        logSessions = runtime.logSessions;
+        wsAuthenticationGate = runtime.wsAuthenticationGate;
+        attachedLogger = runtime.attachedLogger;
+        log4jConsoleCapture = runtime.log4jConsoleCapture;
+        return true;
+    }
+
+    private synchronized void recordStartupFailure(long generation, Throwable failure) {
+        if (lifecycleGeneration != generation) {
+            return;
+        }
+        startFailure = failure;
+        React.reportError("WebController failed to start: " + failure.getMessage(), failure);
+    }
+
+    private void finishStartup(long generation, CountDownLatch latch) {
+        synchronized (this) {
+            if (lifecycleGeneration == generation) {
+                starting = false;
+            }
+        }
+        latch.countDown();
+    }
+
+    private void closeRuntime(WebRuntime runtime) {
+        WsAuthenticationGate authenticationGate = runtime.wsAuthenticationGate;
+        if (authenticationGate != null) {
+            try {
+                authenticationGate.close();
+            } catch (Throwable failure) {
+                reportCleanupFailure("WebSocket authentication gate", failure);
+            }
+        }
+
+        RingLogHandler handler = runtime.logHandler;
+        if (handler != null) {
+            try {
+                handler.clearLineListener();
+            } catch (Throwable failure) {
+                reportCleanupFailure("log listener", failure);
+            }
+        }
+
+        Log4jConsoleCapture capture = runtime.log4jConsoleCapture;
+        if (capture != null) {
+            try {
+                capture.close();
+            } catch (Throwable failure) {
+                reportCleanupFailure("Log4j console capture", failure);
+            }
+        }
+
+        Logger logger = runtime.attachedLogger;
+        if (logger != null && handler != null) {
+            try {
+                logger.removeHandler(handler);
+            } catch (Throwable failure) {
+                reportCleanupFailure("console log handler", failure);
+            }
+        }
+
+        if (handler != null) {
+            try {
+                handler.close();
+            } catch (Throwable failure) {
+                reportCleanupFailure("ring log handler", failure);
+            }
+        }
+
+        ScheduledExecutorService pushExecutor = runtime.wsPushExecutor;
+        if (pushExecutor != null) {
+            try {
+                pushExecutor.shutdownNow();
+            } catch (Throwable failure) {
+                reportCleanupFailure("WebSocket push executor", failure);
+            }
+        }
+
+        ExecutorService sendExecutor = runtime.wsSendExecutor;
+        if (sendExecutor != null) {
+            try {
+                sendExecutor.shutdownNow();
+            } catch (Throwable failure) {
+                reportCleanupFailure("WebSocket send executor", failure);
+            }
+        }
+
+        closeRelayClient(runtime);
+
+        Javalin localApp = runtime.app;
+        if (localApp != null) {
+            try {
+                localApp.stop();
+            } catch (Throwable failure) {
+                reportCleanupFailure("HTTP server", failure);
+            }
+        }
+    }
+
+    private void closeRelayClient(WebRuntime runtime) {
+        RelayClient client = runtime.relayClient;
+        runtime.relayClient = null;
+        if (client == null) {
+            return;
+        }
+        try {
+            client.stop();
+        } catch (Throwable failure) {
+            reportCleanupFailure("relay client", failure);
+        }
+    }
+
+    private void reportCleanupFailure(String resource, Throwable failure) {
+        React.reportError("Failed to close WebController " + resource + ".", failure);
     }
 
     private static String defaultMessageFor(int status) {
@@ -675,20 +1027,8 @@ public class WebController implements IController {
         };
     }
 
-    private boolean authorizeWsRead(WsConnectContext ctx) {
-        if (!config.isRequireTokenForReads()) {
-            return true;
-        }
-        return authorizeWsScope(ctx, "read");
-    }
-
-    private boolean authorizeWsConsoleRead(WsConnectContext ctx) {
-        return authorizeWsScope(ctx, "console:read");
-    }
-
-    private boolean authorizeWsScope(WsConnectContext ctx, String scope) {
-        String token = ctx.queryParam("token");
-        if (token == null) {
+    private boolean authorizeWsScope(String token, String scope) {
+        if (token == null || token.isBlank()) {
             return false;
         }
         return PairingToken.verify(secret, token, tokenStore)
@@ -716,50 +1056,65 @@ public class WebController implements IController {
 
     @Override
     public void stop() {
-        RingLogHandler handler = logHandler;
-        if (handler != null) {
-            handler.clearLineListener();
-            Log4jConsoleCapture capture = log4jConsoleCapture;
-            if (capture != null) {
-                try {
-                    capture.close();
-                } catch (ReflectiveOperationException e) {
-                    Logger logger = attachedLogger;
-                    if (logger != null) {
-                        logger.log(Level.WARNING, "Unable to detach React web console capture from Log4j", e);
-                    }
-                }
-                log4jConsoleCapture = null;
+        WebRuntime runtime;
+        CountDownLatch cancelledLatch;
+        synchronized (this) {
+            lifecycleGeneration++;
+            cancelledLatch = starting ? startLatch : null;
+            if (starting) {
+                startFailure = new IllegalStateException("WebController stopped during startup");
             }
-            Logger logger = attachedLogger;
-            if (logger != null) {
-                logger.removeHandler(handler);
-                attachedLogger = null;
-            }
-            handler.close();
-            logHandler = null;
+            starting = false;
+            runtime = detachRuntime();
         }
-        logSessions = null;
-        ScheduledExecutorService executor = wsPushExecutor;
-        if (executor != null) {
-            executor.shutdownNow();
-            wsPushExecutor = null;
+        if (cancelledLatch != null) {
+            cancelledLatch.countDown();
         }
-        ExecutorService sendExecutor = wsSendExecutor;
-        if (sendExecutor != null) {
-            sendExecutor.shutdownNow();
-            wsSendExecutor = null;
-        }
+        closeRuntime(runtime);
+    }
+
+    private WebRuntime detachRuntime() {
+        WebRuntime runtime = new WebRuntime();
+        runtime.app = app;
+        runtime.boundPort = boundPort;
+        runtime.relayClient = relayClient;
+        runtime.metricsSessions = metricsSessions;
+        runtime.metricsBroadcaster = metricsBroadcaster;
+        runtime.wsPushExecutor = wsPushExecutor;
+        runtime.wsSendExecutor = wsSendExecutor;
+        runtime.logHandler = logHandler;
+        runtime.logSessions = logSessions;
+        runtime.wsAuthenticationGate = wsAuthenticationGate;
+        runtime.attachedLogger = attachedLogger;
+        runtime.log4jConsoleCapture = log4jConsoleCapture;
+
+        app = null;
+        boundPort = 0;
+        relayClient = null;
         metricsSessions = null;
-        RelayClient rc = relayClient;
-        if (rc != null) {
-            rc.stop();
-            relayClient = null;
-        }
-        Javalin localApp = app;
-        if (localApp != null) {
-            localApp.stop();
-            app = null;
-        }
+        metricsBroadcaster = null;
+        wsPushExecutor = null;
+        wsSendExecutor = null;
+        logHandler = null;
+        logSessions = null;
+        wsAuthenticationGate = null;
+        attachedLogger = null;
+        log4jConsoleCapture = null;
+        return runtime;
+    }
+
+    private static final class WebRuntime {
+        private Javalin app;
+        private int boundPort;
+        private RelayClient relayClient;
+        private WebSocketSessions metricsSessions;
+        private WsMetricsBroadcaster metricsBroadcaster;
+        private ScheduledExecutorService wsPushExecutor;
+        private ExecutorService wsSendExecutor;
+        private RingLogHandler logHandler;
+        private WebSocketSessions logSessions;
+        private WsAuthenticationGate wsAuthenticationGate;
+        private Logger attachedLogger;
+        private Log4jConsoleCapture log4jConsoleCapture;
     }
 }

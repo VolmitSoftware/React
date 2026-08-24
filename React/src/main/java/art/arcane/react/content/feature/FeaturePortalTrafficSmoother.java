@@ -34,9 +34,14 @@ import org.bukkit.event.entity.EntityPortalEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Portal Traffic Smoother feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeaturePortalTrafficSmoother extends ReactFeature implements Listener {
@@ -55,7 +60,7 @@ public class FeaturePortalTrafficSmoother extends ReactFeature implements Listen
   private int playerDelayTicks = 2;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Entity delay duration used by portal traffic smoother (ticks).", impact = "Higher values keep state active longer; lower values expire or apply changes sooner.")
   private int entityDelayTicks = 4;
-  @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum queued delays allowed by portal traffic smoother.", impact = "Higher values allow more throughput before intervention; lower values make mitigation more aggressive.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Global maximum queued delays allowed by portal traffic smoother across all regions.", impact = "Higher values allow more delayed portal throughput; lower values bound queued entity work more aggressively.")
   private int maxQueuedDelays = 512;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Controls whether portal traffic smoother applies only during pressure.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
   private boolean onlyDuringPressure = true;
@@ -67,23 +72,26 @@ public class FeaturePortalTrafficSmoother extends ReactFeature implements Listen
   private boolean bypassNearPlayers = true;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Bypass player radius used by portal traffic smoother (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
   private double bypassPlayerRadius = 10;
-  private transient Map<ChunkKey, PortalWindow> windows = new ConcurrentHashMap<>();
-  private transient Map<UUID, Long> delayed = new ConcurrentHashMap<>();
+  private final transient AtomicLong lifecycleGeneration = new AtomicLong();
+  private transient volatile PortalState state = new PortalState(0L, false);
 
   public FeaturePortalTrafficSmoother() {
     super(ID);
   }
 
   @Override
-  public void onActivate() {
-    windows = new ConcurrentHashMap<>();
-    delayed = new ConcurrentHashMap<>();
+  public synchronized void onActivate() {
+    long generation = lifecycleGeneration.incrementAndGet();
+    state.retire();
+    state = new PortalState(generation, true);
   }
 
   @Override
-  public void onDeactivate() {
-    windows.clear();
-    delayed.clear();
+  public synchronized void onDeactivate() {
+    long generation = lifecycleGeneration.incrementAndGet();
+    PortalState previous = state;
+    previous.retire();
+    state = new PortalState(generation, false);
   }
 
   @Override
@@ -93,25 +101,31 @@ public class FeaturePortalTrafficSmoother extends ReactFeature implements Listen
 
   @Override
   public void onTick() {
+    PortalState current = state;
+    if (!isCurrent(current)) {
+      return;
+    }
+
     long now = System.currentTimeMillis();
     long windowExpiry = Math.max(windowMS * 5L, cooloffMS * 2L);
 
-    for (Map.Entry<ChunkKey, PortalWindow> entry : windows.entrySet()) {
+    for (Map.Entry<ChunkKey, PortalWindow> entry : current.windows.entrySet()) {
       PortalWindow window = entry.getValue();
-      if (now - window.lastHit > windowExpiry && now >= window.throttleUntil) {
-        windows.remove(entry.getKey(), window);
+      if (window.isExpired(now, windowExpiry)) {
+        current.windows.remove(entry.getKey(), window);
       }
     }
 
-    for (Map.Entry<UUID, Long> entry : delayed.entrySet()) {
-      if (entry.getValue() <= now) {
-        delayed.remove(entry.getKey(), entry.getValue());
-      }
-    }
+    current.delayed.expire(now);
   }
 
   @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
   public void on(PlayerPortalEvent event) {
+    PortalState current = state;
+    if (!isCurrent(current)) {
+      return;
+    }
+
     Location destination = event.getTo();
     if (destination == null) {
       return;
@@ -121,39 +135,29 @@ public class FeaturePortalTrafficSmoother extends ReactFeature implements Listen
       return;
     }
 
-    if (!isThrottled(destination, true)) {
+    if (!isThrottled(current, destination, true)) {
       return;
     }
 
     Player player = event.getPlayer();
-    if (delayed.size() >= maxQueuedDelays) {
-      event.setCancelled(true);
-      return;
-    }
-
     long now = System.currentTimeMillis();
     UUID id = player.getUniqueId();
-    if (now < delayed.getOrDefault(id, 0L)) {
-      event.setCancelled(true);
+    DelayedClaim claim = current.delayed.claim(id, current.generation, now, now + 10000L, maxQueuedDelays);
+    if (claim == null) {
       return;
     }
 
     event.setCancelled(true);
-    delayed.put(id, now + 10000L);
-    Location to = destination.clone();
-    int delay = Math.max(1, playerDelayTicks);
-    if (!J.runEntity(player, () -> {
-      if (player.isOnline() && !player.isDead()) {
-        player.teleport(to, PlayerTeleportEvent.TeleportCause.PLUGIN);
-      }
-      delayed.remove(id);
-    }, delay)) {
-      delayed.remove(id);
-    }
+    schedulePlayerTeleport(current, player, id, claim, destination.clone());
   }
 
   @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
   public void on(EntityPortalEvent event) {
+    PortalState current = state;
+    if (!isCurrent(current)) {
+      return;
+    }
+
     if (event.getEntity() instanceof Player) {
       return;
     }
@@ -167,35 +171,20 @@ public class FeaturePortalTrafficSmoother extends ReactFeature implements Listen
       return;
     }
 
-    if (!isThrottled(destination, false)) {
-      return;
-    }
-
-    if (delayed.size() >= maxQueuedDelays) {
-      event.setCancelled(true);
+    if (!isThrottled(current, destination, false)) {
       return;
     }
 
     Entity entity = event.getEntity();
     UUID id = entity.getUniqueId();
     long now = System.currentTimeMillis();
-    if (now < delayed.getOrDefault(id, 0L)) {
-      event.setCancelled(true);
+    DelayedClaim claim = current.delayed.claim(id, current.generation, now, now + 10000L, maxQueuedDelays);
+    if (claim == null) {
       return;
     }
 
     event.setCancelled(true);
-    delayed.put(id, now + 10000L);
-    Location to = destination.clone();
-    int delay = Math.max(1, entityDelayTicks);
-    if (!J.runEntity(entity, () -> {
-      if (entity.isValid() && !entity.isDead()) {
-        entity.teleport(to);
-      }
-      delayed.remove(id);
-    }, delay)) {
-      delayed.remove(id);
-    }
+    scheduleEntityTeleport(current, entity, id, claim, destination.clone());
   }
 
   private boolean shouldManage(Location location) {
@@ -211,33 +200,163 @@ public class FeaturePortalTrafficSmoother extends ReactFeature implements Listen
         || sample(SamplerIncidentScore.ID) >= pressureIncidentScore;
   }
 
-  private boolean isThrottled(Location location, boolean player) {
+  private boolean isThrottled(PortalState current, Location location, boolean player) {
     if (location.getWorld() == null) {
       return false;
     }
 
     long now = System.currentTimeMillis();
     ChunkKey key = new ChunkKey(location.getWorld().getUID(), location.getBlockX() >> 4, location.getBlockZ() >> 4);
-    PortalWindow window = windows.computeIfAbsent(key, k -> new PortalWindow(now));
-    window.rollover(windowMS, now);
-
-    if (player) {
-      window.players++;
-    } else {
-      window.entities++;
+    PortalWindow window = current.windows.computeIfAbsent(key, ignored -> new PortalWindow(now));
+    if (!isCurrent(current)) {
+      return false;
     }
 
-    int limit = player ? maxPlayerPortalsPerChunkWindow : maxEntityPortalsPerChunkWindow;
-    int count = player ? window.players : window.entities;
-
-    if (count > limit) {
-      window.throttleUntil = Math.max(window.throttleUntil, now + cooloffMS);
-    }
-
-    return now < window.throttleUntil;
+    return window.record(
+        player,
+        maxPlayerPortalsPerChunkWindow,
+        maxEntityPortalsPerChunkWindow,
+        windowMS,
+        cooloffMS,
+        now
+    );
   }
 
-  private static final class PortalWindow {
+  private void schedulePlayerTeleport(
+      PortalState current,
+      Player player,
+      UUID id,
+      DelayedClaim claim,
+      Location destination
+  ) {
+    AtomicBoolean completed = new AtomicBoolean();
+    Runnable completion = () -> completeClaim(current, id, claim, completed);
+    Runnable teleport = () -> {
+      if (!beginClaim(current, id, claim)) {
+        completion.run();
+        return;
+      }
+
+      try {
+        if (!player.isOnline() || player.isDead()) {
+          completion.run();
+          return;
+        }
+
+        CompletableFuture<Boolean> traversal = player.teleportAsync(
+            destination,
+            PlayerTeleportEvent.TeleportCause.PLUGIN
+        );
+        completeWhenTraversalSettles(traversal, completion);
+      } catch (RuntimeException | Error failure) {
+        completion.run();
+        throw failure;
+      }
+    };
+
+    boolean scheduled;
+    try {
+      scheduled = J.runEntity(player, teleport, Math.max(1, playerDelayTicks), completion);
+    } catch (RuntimeException | Error failure) {
+      completion.run();
+      throw failure;
+    }
+
+    if (!scheduled) {
+      completion.run();
+    }
+  }
+
+  private void scheduleEntityTeleport(
+      PortalState current,
+      Entity entity,
+      UUID id,
+      DelayedClaim claim,
+      Location destination
+  ) {
+    AtomicBoolean completed = new AtomicBoolean();
+    Runnable completion = () -> completeClaim(current, id, claim, completed);
+    Runnable teleport = () -> {
+      if (!beginClaim(current, id, claim)) {
+        completion.run();
+        return;
+      }
+
+      try {
+        if (!entity.isValid() || entity.isDead()) {
+          completion.run();
+          return;
+        }
+
+        CompletableFuture<Boolean> traversal = entity.teleportAsync(
+            destination,
+            PlayerTeleportEvent.TeleportCause.PLUGIN
+        );
+        completeWhenTraversalSettles(traversal, completion);
+      } catch (RuntimeException | Error failure) {
+        completion.run();
+        throw failure;
+      }
+    };
+
+    boolean scheduled;
+    try {
+      scheduled = J.runEntity(entity, teleport, Math.max(1, entityDelayTicks), completion);
+    } catch (RuntimeException | Error failure) {
+      completion.run();
+      throw failure;
+    }
+
+    if (!scheduled) {
+      completion.run();
+    }
+  }
+
+  private boolean beginClaim(PortalState current, UUID id, DelayedClaim claim) {
+    return isCurrent(current)
+        && claim.generation == current.generation
+        && current.delayed.begin(id, claim);
+  }
+
+  private void completeWhenTraversalSettles(
+      CompletableFuture<Boolean> traversal,
+      Runnable completion
+  ) {
+    if (traversal == null) {
+      completion.run();
+      React.reportError(new IllegalStateException("Portal teleportAsync returned no completion future."));
+      return;
+    }
+
+    traversal.whenComplete((ignored, failure) -> {
+      try {
+        if (failure != null) {
+          React.reportError(failure);
+        }
+      } finally {
+        completion.run();
+      }
+    });
+  }
+
+  private void completeClaim(
+      PortalState current,
+      UUID id,
+      DelayedClaim claim,
+      AtomicBoolean completed
+  ) {
+    if (completed.compareAndSet(false, true)) {
+      current.delayed.release(id, claim);
+    }
+  }
+
+  private boolean isCurrent(PortalState candidate) {
+    return candidate.active
+        && candidate == state
+        && candidate.generation == lifecycleGeneration.get();
+  }
+
+  static final class PortalWindow {
     @art.arcane.react.util.project.config.ConfigDoc(value = "Internal timestamp used by portal traffic smoother to track timing windows and decay.", impact = "Primarily runtime state; changing this manually can distort cooldown or throttling behavior.")
     private long start;
     @art.arcane.react.util.project.config.ConfigDoc(value = "Internal timestamp used by portal traffic smoother to track timing windows and decay.", impact = "Primarily runtime state; changing this manually can distort cooldown or throttling behavior.")
@@ -249,20 +368,149 @@ public class FeaturePortalTrafficSmoother extends ReactFeature implements Listen
     @art.arcane.react.util.project.config.ConfigDoc(value = "Internal counter used by portal traffic smoother while tracking burst activity.", impact = "Primarily runtime state; React updates this automatically during live evaluation.")
     private int entities;
 
-    private PortalWindow(long now) {
+    PortalWindow(long now) {
       start = now;
       lastHit = now;
       throttleUntil = 0;
     }
 
-    private void rollover(int windowMS, long now) {
-      if (now - start > windowMS) {
-        start = now;
+    synchronized boolean record(
+        boolean player,
+        int playerLimit,
+        int entityLimit,
+        int windowMS,
+        int cooloffMS,
+        long now
+    ) {
+      long effectiveNow = Math.max(now, lastHit);
+      if (effectiveNow - start > windowMS) {
+        start = effectiveNow;
         players = 0;
         entities = 0;
       }
 
-      lastHit = now;
+      lastHit = effectiveNow;
+      if (player) {
+        players = increment(players);
+      } else {
+        entities = increment(entities);
+      }
+
+      int limit = player ? playerLimit : entityLimit;
+      int count = player ? players : entities;
+      if (count > limit) {
+        throttleUntil = Math.max(throttleUntil, effectiveNow + cooloffMS);
+      }
+
+      return effectiveNow < throttleUntil;
+    }
+
+    synchronized boolean isExpired(long now, long expiryMS) {
+      return now - lastHit > expiryMS && now >= throttleUntil;
+    }
+
+    private int increment(int value) {
+      return value == Integer.MAX_VALUE ? value : value + 1;
+    }
+  }
+
+  static final class DelayedRegistry {
+    private final Map<UUID, DelayedClaim> claims = new HashMap<>();
+    private boolean accepting;
+
+    DelayedRegistry(boolean accepting) {
+      this.accepting = accepting;
+    }
+
+    synchronized DelayedClaim claim(
+        UUID id,
+        long generation,
+        long now,
+        long expiresAt,
+        int capacity
+    ) {
+      if (!accepting || capacity <= 0) {
+        return null;
+      }
+
+      DelayedClaim existing = claims.get(id);
+      if (existing != null) {
+        if (existing.executing || existing.expiresAt > now) {
+          return null;
+        }
+        claims.remove(id, existing);
+      }
+
+      if (claims.size() >= capacity) {
+        return null;
+      }
+
+      DelayedClaim claim = new DelayedClaim(generation, expiresAt);
+      claims.put(id, claim);
+      return claim;
+    }
+
+    synchronized boolean begin(UUID id, DelayedClaim claim) {
+      if (!accepting || claim.executing || claims.get(id) != claim) {
+        return false;
+      }
+
+      claim.executing = true;
+      return true;
+    }
+
+    synchronized boolean release(UUID id, DelayedClaim claim) {
+      return claims.remove(id, claim);
+    }
+
+    synchronized void expire(long now) {
+      Iterator<Map.Entry<UUID, DelayedClaim>> iterator = claims.entrySet().iterator();
+      while (iterator.hasNext()) {
+        DelayedClaim claim = iterator.next().getValue();
+        if (!claim.executing && claim.expiresAt <= now) {
+          iterator.remove();
+        }
+      }
+    }
+
+    synchronized void retire() {
+      accepting = false;
+      claims.clear();
+    }
+
+    synchronized int size() {
+      return claims.size();
+    }
+  }
+
+  static final class DelayedClaim {
+    private final long generation;
+    private final long expiresAt;
+    private boolean executing;
+
+    private DelayedClaim(long generation, long expiresAt) {
+      this.generation = generation;
+      this.expiresAt = expiresAt;
+    }
+  }
+
+  private static final class PortalState {
+    private final long generation;
+    private final Map<ChunkKey, PortalWindow> windows;
+    private final DelayedRegistry delayed;
+    private volatile boolean active;
+
+    private PortalState(long generation, boolean active) {
+      this.generation = generation;
+      this.windows = new ConcurrentHashMap<>();
+      this.delayed = new DelayedRegistry(active);
+      this.active = active;
+    }
+
+    private synchronized void retire() {
+      active = false;
+      windows.clear();
+      delayed.retire();
     }
   }
 

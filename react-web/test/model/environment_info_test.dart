@@ -10,6 +10,31 @@ void main() {
       'memory': {'totalMb': 32768, 'usedMb': 18000},
       'jvm': {'version': '25', 'heapMb': 8192},
       'server': {'brand': 'Purpur', 'folia': true},
+      'disks': <Map<String, Object?>>[
+        <String, Object?>{
+          'name': 'disk0',
+          'model': 'Fast Disk',
+          'sizeBytes': 1000,
+          'readBytes': 400,
+          'writeBytes': 250,
+        },
+      ],
+      'mounts': <Map<String, Object?>>[
+        <String, Object?>{
+          'name': 'root',
+          'mount': '/',
+          'totalBytes': 1000,
+          'freeBytes': 300,
+          'usableBytes': 250,
+        },
+      ],
+      'network': <Map<String, Object?>>[
+        <String, Object?>{
+          'name': 'eth0',
+          'receivedBytes': 800,
+          'sentBytes': 500,
+        },
+      ],
     };
 
     test('sectionNames contains all four sections', () {
@@ -39,6 +64,18 @@ void main() {
     test('entriesOf jvm has length 2', () {
       final EnvironmentInfo info = EnvironmentInfo.fromJson(raw);
       expect(info.entriesOf('jvm').length, equals(2));
+    });
+
+    test('typed disk, mount, and network counters are decoded', () {
+      final EnvironmentInfo info = EnvironmentInfo.fromJson(raw);
+      expect(info.disks.single.model, equals('Fast Disk'));
+      expect(info.mounts.single.usedBytes, equals(700));
+      expect(info.mounts.single.usedFraction, closeTo(0.7, 0.001));
+      expect(info.network.single.name, equals('eth0'));
+      expect(info.totalDiskReadBytes, equals(400));
+      expect(info.totalDiskWriteBytes, equals(250));
+      expect(info.totalNetworkReceivedBytes, equals(800));
+      expect(info.totalNetworkSentBytes, equals(500));
     });
 
     test('unknown extra section keys are preserved', () {
@@ -81,8 +118,9 @@ void main() {
 
     test('toJson returns the sections map', () {
       final EnvironmentInfo info = EnvironmentInfo.fromJson(raw);
-      final Map<String, Map<String, Object?>> json = info.toJson();
-      expect(json['cpu']!['model'], equals('Apple M3'));
+      final Map<String, Object?> json = info.toJson();
+      final Map<String, Object?> cpu = json['cpu']! as Map<String, Object?>;
+      expect(cpu['model'], equals('Apple M3'));
       expect(
         json.keys,
         containsAll(<String>['cpu', 'memory', 'jvm', 'server']),

@@ -267,8 +267,8 @@ public class DirectorCommandController implements IController, CommandExecutor, 
     try {
       return getDirector().execute(new DirectorInvocation(new BukkitDirectorSender(sender), label, Arrays.asList(args)));
     } catch (Throwable e) {
-      React.warn("Director command execution failed: " + e.getClass().getSimpleName() + " " + e.getMessage());
-      React.reportError(e);
+      React.reportError("Director command execution failed: "
+          + e.getClass().getSimpleName() + " " + e.getMessage(), e);
       return DirectorExecutionResult.notHandled();
     }
   }
@@ -277,7 +277,8 @@ public class DirectorCommandController implements IController, CommandExecutor, 
     try {
       return getDirector().tabComplete(new DirectorInvocation(new BukkitDirectorSender(sender), alias, Arrays.asList(args)));
     } catch (Throwable e) {
-      React.warn("Director tab completion failed: " + e.getClass().getSimpleName() + " " + e.getMessage());
+      React.warn("Director tab completion failed: " + e.getClass().getSimpleName()
+          + " " + e.getMessage(), e);
       return List.of();
     }
   }

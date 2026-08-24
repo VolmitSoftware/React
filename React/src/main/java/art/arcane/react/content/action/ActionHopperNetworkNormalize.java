@@ -23,7 +23,6 @@ import art.arcane.react.React;
 import art.arcane.react.api.action.ActionParams;
 import art.arcane.react.api.action.ActionTicket;
 import art.arcane.react.api.action.ReactAction;
-import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.content.sampler.SamplerHopperUpdates;
 import art.arcane.react.core.controller.ActionController;
 import art.arcane.react.core.controller.ObserverController;
@@ -153,8 +152,7 @@ public class ActionHopperNetworkNormalize extends ReactAction<ActionHopperNetwor
 
   private List<ChunkTarget> buildQueueSync(Params params) {
     List<ChunkTarget> targets = new ArrayList<>();
-    Sampler hopperSampler = React.sampler(SamplerHopperUpdates.ID);
-    if (hopperSampler == null) {
+    if (React.sampler(SamplerHopperUpdates.ID) == null) {
       return targets;
     }
 
@@ -164,27 +162,29 @@ public class ActionHopperNetworkNormalize extends ReactAction<ActionHopperNetwor
     }
 
     for (SampledWorld sampledWorld : observer.getSampled().getWorlds().values()) {
-      World world = sampledWorld.getWorld();
-      if (world == null) {
+      String worldKey = sampledWorld.getWorldKey();
+      if (worldKey == null) {
         continue;
       }
 
-      if (params.getWorld() != null && !params.getWorld().isBlank() && !WorldIdentity.serialize(world).equals(params.getWorld())) {
+      if (params.getWorld() != null && !params.getWorld().isBlank() && !worldKey.equals(params.getWorld())) {
         continue;
       }
 
       for (SampledChunk sampledChunk : sampledWorld.getChunks().values()) {
-        Chunk chunk = sampledChunk.getChunk();
-        if (chunk == null || chunk.getWorld() == null) {
-          continue;
-        }
-
-        double rate = hopperSampler.sample(chunk);
+        double rate = sampledChunk.optional(SamplerHopperUpdates.ID)
+            .map(value -> value.get())
+            .orElse(0D);
         if (rate < params.getMinimumHopperUpdatesPerChunk()) {
           continue;
         }
 
-        targets.add(new ChunkTarget(WorldIdentity.serialize(world), chunk.getX(), chunk.getZ(), rate));
+        targets.add(new ChunkTarget(
+            worldKey,
+            sampledChunk.getChunkX(),
+            sampledChunk.getChunkZ(),
+            rate
+        ));
       }
     }
 

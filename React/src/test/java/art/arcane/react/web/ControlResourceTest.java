@@ -53,7 +53,8 @@ public class ControlResourceTest {
         readToken = PairingToken.verify(secret, readBearer, store).orElseThrow();
 
         fakeBackend = new FakeControlBackend();
-        resource = new ControlResource(fakeBackend);
+        resource = new ControlResource(fakeBackend, "feature", (context, mutation) -> {
+        });
     }
 
     @Test

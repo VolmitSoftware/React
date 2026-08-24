@@ -59,6 +59,7 @@ class KnobEditor extends StatelessWidget {
         onChange: disabled ? null : (String s) => onChanged?.call(s),
       ),
       KnobType.enumType => ArcaneSelect(
+        size: ComponentSize.sm,
         label: knob.label,
         value: knob.stringValue,
         disabled: disabled,

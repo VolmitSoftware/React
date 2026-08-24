@@ -48,7 +48,7 @@ public class MaterialValue {
         Material m = Material.valueOf(k.toUpperCase());
         valueMultipliers.put(m, v);
       } catch (Exception e) {
-        React.verbose("Invalid material value multiplier: " + k);
+        React.verbose(() -> "Invalid material value multiplier: " + k, e);
       }
     });
   }
@@ -64,7 +64,7 @@ public class MaterialValue {
     try {
       IO.writeAll(l, new JSONObject(new Gson().toJson(valueCache)).toString(4));
     } catch (IOException e) {
-      React.verbose("Failed to save value cache");
+      React.warn("Failed to save material value cache", e);
     }
   }
 
@@ -77,7 +77,7 @@ public class MaterialValue {
         try {
           IO.writeAll(l, new JSONObject(new Gson().toJson(dummy)).toString(4));
         } catch (IOException e) {
-          e.printStackTrace();
+          React.warn("Failed to create material value cache; using in-memory defaults", e);
           valueCache = dummy;
           return dummy;
         }
@@ -86,7 +86,7 @@ public class MaterialValue {
       try {
         valueCache = new Gson().fromJson(IO.readAll(l), MaterialValue.class);
       } catch (IOException e) {
-        e.printStackTrace();
+        React.warn("Failed to read material value cache; using in-memory defaults", e);
         valueCache = new MaterialValue();
       }
     }
@@ -100,7 +100,7 @@ public class MaterialValue {
 
   private static void debugValue(Material m, int ind, int x, Set<MaterialRecipe> ignore) {
     PrecisionStopwatch p = PrecisionStopwatch.start();
-    React.verbose(Form.repeat("  ", ind) + m.name() + ": " + getValue(m) + (x == 1 ? "" : " (x" + x + ")"));
+    React.verbose(() -> Form.repeat("  ", ind) + m.name() + ": " + getValue(m) + (x == 1 ? "" : " (x" + x + ")"));
 
     int r = 0;
     for (MaterialRecipe i : getRecipes(m)) {
@@ -110,12 +110,13 @@ public class MaterialValue {
 
       ignore.add(i);
       if (ignore.size() > ReactConfiguration.get().getValue().getMaxRecipeListPrecaution()) {
-        React.verbose("Avoiding infinite loop on " + m.name() + " from " + i.toString());
+        React.verbose(() -> "Avoiding infinite loop on " + m.name() + " from " + i);
         return;
       }
 
       int o = i.getOutput().getAmount();
-      React.verbose(Form.repeat("  ", ind) + "# Recipe [" + ind + "x" + r + (o == 1 ? "]" : "] (x" + o + ") "));
+      int recipeIndex = r;
+      React.verbose(() -> Form.repeat("  ", ind) + "# Recipe [" + ind + "x" + recipeIndex + (o == 1 ? "]" : "] (x" + o + ") "));
 
       for (MaterialCount j : i.getInput()) {
         debugValue(j.getMaterial(), ind + 1, j.getAmount(), ignore);
@@ -123,7 +124,7 @@ public class MaterialValue {
 
       r++;
     }
-    React.verbose(Form.repeat("  ", ind) + " took " + Form.duration(p.getMilliseconds(), 0));
+    React.verbose(() -> Form.repeat("  ", ind) + " took " + Form.duration(p.getMilliseconds(), 0));
   }
 
   private static double getMultiplier(Material m) {
@@ -186,7 +187,7 @@ public class MaterialValue {
       try {
         is.setDurability((short) -1);
       } catch (Throwable e) {
-        React.verbose("Failed to set durability of " + mat.name());
+        React.verbose(() -> "Failed to set durability of " + mat.name(), e);
       }
       Bukkit.getRecipesFor(is).forEach(i -> {
         MaterialRecipe rx = toMaterial(i);
@@ -195,7 +196,7 @@ public class MaterialValue {
         }
       });
     } catch (Throwable e) {
-      React.verbose("Failed to get recipes for " + mat.name());
+      React.verbose(() -> "Failed to get recipes for " + mat.name(), e);
     }
     return r;
   }
@@ -247,7 +248,7 @@ public class MaterialValue {
             .build();
       }
     } catch (Throwable e) {
-      e.printStackTrace();
+      React.verbose(() -> "Failed to inspect recipe " + (r == null ? "null" : r.getClass().getSimpleName()), e);
     }
 
     return null;

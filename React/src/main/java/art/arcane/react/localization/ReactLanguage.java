@@ -123,7 +123,7 @@ public final class ReactLanguage {
     }
     activeLocale = prepared.normalizedLocale();
     int warningCount = result.validation().warnings().size();
-    React.info("Loaded locale " + prepared.requestedLocale() + " with " + warningCount + " fallback "
+    React.verbose("Loaded locale " + prepared.requestedLocale() + " with " + warningCount + " fallback "
         + (warningCount == 1 ? "entry" : "entries") + ".");
     return true;
   }
@@ -143,7 +143,7 @@ public final class ReactLanguage {
 
     activeLocale = normalizeLocale(configuredLocale);
     int warningCount = result.validation().warnings().size();
-    React.info("Loaded locale " + requestedLocale + " with " + warningCount + " fallback "
+    React.verbose("Loaded locale " + requestedLocale + " with " + warningCount + " fallback "
         + (warningCount == 1 ? "entry" : "entries") + ".");
     return true;
   }
@@ -561,7 +561,7 @@ public final class ReactLanguage {
       React.error((issues.size() - MAX_REPORTED_ISSUES) + " additional locale errors were omitted.");
     }
     if (result.failure() != null) {
-      result.failure().printStackTrace();
+      React.reportError("Locale reload failed for " + locale, result.failure());
     }
   }
 

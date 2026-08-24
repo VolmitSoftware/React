@@ -194,6 +194,7 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
           )
         else
           ArcaneNativeSelect(
+            size: ComponentSize.sm,
             options: <ArcaneSelectOption>[
               if (!availableMetrics.contains(_selectedMetric))
                 ArcaneSelectOption(

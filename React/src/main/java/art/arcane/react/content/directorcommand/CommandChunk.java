@@ -30,7 +30,9 @@ import art.arcane.react.util.director.DirectorExecutor;
 import art.arcane.volmlib.util.director.DirectorOrigin;
 import art.arcane.volmlib.util.director.annotations.Director;
 import art.arcane.volmlib.util.localization.MessageArgument;
-import org.bukkit.block.Block;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 
 @Director(
@@ -76,9 +78,27 @@ public class CommandChunk implements DirectorExecutor {
     SampledChunk c = React.instance.controller(ObserverController.class).absoluteWorst();
 
     if (c != null) {
-      Block b = c.getChunk().getBlock(8, 0, 8);
+      World world = Bukkit.getWorld(c.getWorldId());
+      if (world == null) {
+        ReactLanguage.sendPrefixed(sender(), CommandMessages.NO_CHUNKS_SAMPLED);
+        return;
+      }
+
+      int chunkX = c.getChunkX();
+      int chunkZ = c.getChunkZ();
+      int blockX = (chunkX << 4) + 8;
+      int blockZ = (chunkZ << 4) + 8;
       Player p = player();
-      J.runEntity(p, () -> p.teleport(c.getChunk().getWorld().getHighestBlockAt(b.getX(), b.getZ()).getLocation()));
+      if (!J.runChunk(world, chunkX, chunkZ, () -> {
+        Location destination = world.getHighestBlockAt(blockX, blockZ).getLocation().add(0.5D, 1D, 0.5D);
+        p.teleportAsync(destination).whenComplete((teleported, failure) -> {
+          if (failure != null) {
+            React.reportError(new IllegalStateException("Failed to teleport to worst sampled chunk", failure));
+          }
+        });
+      })) {
+        React.reportError(new IllegalStateException("Failed to schedule worst sampled chunk destination lookup"));
+      }
 
       for (String i : c.getValues().keySet()) {
         Sampler s = React.sampler(i);

@@ -19,6 +19,7 @@
 
 package art.arcane.react.util.inventorygui;
 
+import art.arcane.react.React;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
@@ -43,7 +44,7 @@ public class CustomUIElement extends art.arcane.volmlib.util.inventorygui.UIElem
 
       return is;
     } catch (Throwable e) {
-      e.printStackTrace();
+      React.reportError("Failed to build inventory UI element " + getId(), e);
     }
 
     return null;

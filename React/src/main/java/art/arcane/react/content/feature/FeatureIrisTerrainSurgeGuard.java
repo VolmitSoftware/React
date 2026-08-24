@@ -49,9 +49,7 @@ public class FeatureIrisTerrainSurgeGuard extends ReactCapabilityFeature impleme
   @art.arcane.react.util.project.config.ConfigDoc(value = "Permission node string checked before iris terrain surge guard enforcement.", impact = "Change this to match your permission model for bypass behavior.")
   private String bypassPermission = "react.secret.iris.bypass";
 
-  private transient long windowStartMS;
-  private transient int moveAttempts;
-  private transient int teleportAttempts;
+  private transient final RateWindow<RateCounter> rateWindow = new RateWindow<>(RateCounter.values().length);
   private transient Map<UUID, Long> lastMessageByPlayer = new ConcurrentHashMap<>();
 
   public FeatureIrisTerrainSurgeGuard() {
@@ -70,9 +68,7 @@ public class FeatureIrisTerrainSurgeGuard extends ReactCapabilityFeature impleme
 
   @Override
   public void onActivate() {
-    windowStartMS = System.currentTimeMillis();
-    moveAttempts = 0;
-    teleportAttempts = 0;
+    rateWindow.reset(System.currentTimeMillis());
     lastMessageByPlayer = new ConcurrentHashMap<>();
   }
 
@@ -88,7 +84,6 @@ public class FeatureIrisTerrainSurgeGuard extends ReactCapabilityFeature impleme
 
   @Override
   public void onTick() {
-    rolloverWindow(System.currentTimeMillis());
   }
 
   @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
@@ -107,9 +102,7 @@ public class FeatureIrisTerrainSurgeGuard extends ReactCapabilityFeature impleme
     }
 
     long now = System.currentTimeMillis();
-    rolloverWindow(now);
-    moveAttempts++;
-    if (moveAttempts <= maxUngeneratedChunkMovesPerWindow) {
+    if (rateWindow.tryAcquire(RateCounter.MOVE, maxUngeneratedChunkMovesPerWindow, now, windowMS)) {
       return;
     }
 
@@ -129,9 +122,7 @@ public class FeatureIrisTerrainSurgeGuard extends ReactCapabilityFeature impleme
     }
 
     long now = System.currentTimeMillis();
-    rolloverWindow(now);
-    teleportAttempts++;
-    if (teleportAttempts <= maxUngeneratedChunkTeleportsPerWindow) {
+    if (rateWindow.tryAcquire(RateCounter.TELEPORT, maxUngeneratedChunkTeleportsPerWindow, now, windowMS)) {
       return;
     }
 
@@ -198,16 +189,6 @@ public class FeatureIrisTerrainSurgeGuard extends ReactCapabilityFeature impleme
     return sample == null ? fallback : sample.valueOr(fallback);
   }
 
-  private void rolloverWindow(long now) {
-    if (now - windowStartMS <= windowMS) {
-      return;
-    }
-
-    windowStartMS = now;
-    moveAttempts = 0;
-    teleportAttempts = 0;
-  }
-
   private boolean bypass(Player player) {
     return player == null || (bypassPermission != null && !bypassPermission.isBlank() && player.hasPermission(bypassPermission));
   }
@@ -224,5 +205,10 @@ public class FeatureIrisTerrainSurgeGuard extends ReactCapabilityFeature impleme
 
     lastMessageByPlayer.put(player.getUniqueId(), now);
     ReactLanguage.send(player, message);
+  }
+
+  private enum RateCounter {
+    MOVE,
+    TELEPORT
   }
 }

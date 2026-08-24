@@ -18,7 +18,7 @@ class ConfigHotloadSnapshotTest {
 
   @Test
   void digestDetectsSameSizeSameTimestampReplacement() throws Exception {
-    Path config = temporaryDirectory.resolve("config.toml");
+    Path config = temporaryDirectory.resolve("react.toml");
     FileTime timestamp = FileTime.fromMillis(1_700_000_000_000L);
     Files.writeString(config, "aaaa", StandardCharsets.UTF_8);
     Files.setLastModifiedTime(config, timestamp);

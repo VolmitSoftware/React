@@ -117,12 +117,12 @@ public final class RelayClient {
                 .buildAsync(uri, new AgentListener())
                 .whenComplete((ws, ex) -> {
                     if (ex != null) {
-                        React.warn("RelayClient: connect failed: " + ex.getMessage());
+                        React.verbose("RelayClient: connect failed", ex);
                         scheduleReconnect();
                     }
                 });
         } catch (Exception e) {
-            React.warn("RelayClient: connect error: " + e.getMessage());
+            React.verbose("RelayClient: connect error", e);
             scheduleReconnect();
         }
     }
@@ -164,7 +164,7 @@ public final class RelayClient {
                 RelayFrame frame = RelayFrame.parse(text);
                 handleFrame(webSocket, frame);
             } catch (Exception e) {
-                React.warn("RelayClient: frame parse error: " + e.getMessage());
+                React.warn("RelayClient: frame parse error: " + e.getMessage(), e);
             }
             return null;
         }
@@ -185,7 +185,7 @@ public final class RelayClient {
             if (activeSocket == webSocket) {
                 activeSocket = null;
             }
-            React.warn("RelayClient: WS error: " + (error.getMessage() != null ? error.getMessage() : error.getClass().getSimpleName()));
+            React.verbose("RelayClient: WebSocket error", error);
             scheduleReconnect();
         }
     }
@@ -220,7 +220,7 @@ public final class RelayClient {
             RelayFrame registerFrame = new RelayFrame("register", identity.fingerprint(), "hs", registerPayload);
             webSocket.sendText(registerFrame.toJson(), true);
         } catch (Exception e) {
-            React.warn("RelayClient: challenge handling error: " + e.getMessage());
+            React.warn("RelayClient: challenge handling error: " + e.getMessage(), e);
         }
     }
 
@@ -259,7 +259,7 @@ public final class RelayClient {
             RelayFrame dataFrame = new RelayFrame("data", identity.fingerprint(), requestId, dataPayload);
             webSocket.sendText(dataFrame.toJson(), true);
         } catch (Exception e) {
-            React.warn("RelayClient: route dispatch error: " + (e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName()));
+            React.warn("RelayClient: route dispatch error: " + (e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName()), e);
             sendErrorData(webSocket, requestId, e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName());
         }
     }

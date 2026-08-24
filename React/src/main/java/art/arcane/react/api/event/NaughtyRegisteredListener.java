@@ -28,15 +28,22 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredListener;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.concurrent.atomic.LongAdder;
+
 public class NaughtyRegisteredListener extends RegisteredListener {
   public final String pluginName;
-  public long timeNanos;
-  public int calls;
+  private final long instrumentationOwner;
+  private final LongAdder timeNanos;
+  private final LongAdder calls;
 
   public NaughtyRegisteredListener(@NotNull final Listener listener, @NotNull final EventExecutor executor,
-                                   @NotNull final EventPriority priority, @NotNull final Plugin plugin, final boolean ignoreCancelled) {
+                                   @NotNull final EventPriority priority, @NotNull final Plugin plugin,
+                                   final boolean ignoreCancelled, long instrumentationOwner) {
     super(listener, executor, priority, plugin, ignoreCancelled);
     this.pluginName = resolvePluginName(plugin);
+    this.instrumentationOwner = instrumentationOwner;
+    this.timeNanos = new LongAdder();
+    this.calls = new LongAdder();
   }
 
   private static String resolvePluginName(Plugin plugin) {
@@ -56,8 +63,26 @@ public class NaughtyRegisteredListener extends RegisteredListener {
    */
   public void callEvent(@NotNull final Event event) throws EventException {
     long start = System.nanoTime();
-    super.callEvent(event);
-    timeNanos += System.nanoTime() - start;
-    calls++;
+    try {
+      super.callEvent(event);
+    } finally {
+      record(System.nanoTime() - start);
+    }
+  }
+
+  public boolean isOwnedBy(long owner) {
+    return instrumentationOwner == owner;
+  }
+
+  public CounterSnapshot drainCounters() {
+    return new CounterSnapshot(timeNanos.sumThenReset(), calls.sumThenReset());
+  }
+
+  private void record(long elapsedNanos) {
+    timeNanos.add(Math.max(0L, elapsedNanos));
+    calls.increment();
+  }
+
+  public record CounterSnapshot(long timeNanos, long calls) {
   }
 }

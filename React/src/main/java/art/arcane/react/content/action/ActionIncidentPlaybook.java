@@ -173,7 +173,7 @@ public class ActionIncidentPlaybook extends ReactAction<ActionIncidentPlaybook.P
       action.createForceful(params).queue();
       return true;
     } catch (Throwable e) {
-      React.warn("Incident playbook failed to queue action " + id + ": " + e.getMessage());
+      React.warn("Incident playbook failed to queue action " + id + ": " + e.getMessage(), e);
       return false;
     }
   }

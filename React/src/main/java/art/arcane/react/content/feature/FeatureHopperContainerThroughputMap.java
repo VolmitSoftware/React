@@ -20,10 +20,10 @@
 package art.arcane.react.content.feature;
 
 import art.arcane.react.content.sampler.SamplerHopperUpdates;
+import art.arcane.react.api.web.heatmap.HeatmapWorldRef;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.RendererMessages;
 import art.arcane.react.util.data.TinyColor;
-import org.bukkit.Chunk;
 
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -52,8 +52,8 @@ public class FeatureHopperContainerThroughputMap extends FeatureChunkHeatmapBase
   }
 
   @Override
-  protected double chunkScore(Chunk chunk) {
-    return chunkSample(chunk, SamplerHopperUpdates.ID);
+  protected double chunkScore(HeatmapWorldRef world, int chunkX, int chunkZ) {
+    return chunkSample(world, chunkX, chunkZ, SamplerHopperUpdates.ID);
   }
 
   @Override

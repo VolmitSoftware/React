@@ -282,8 +282,8 @@ class HookInstallAccountingTest {
     }
 
     @Override
-    public int broadcastMergedExplosion(World world, double x, double y, double z, float radius, double rangeBlocks) {
-      return 0;
+    public boolean broadcastMergedExplosion(World world, double x, double y, double z, float radius, double rangeBlocks) {
+      return true;
     }
   }
 }

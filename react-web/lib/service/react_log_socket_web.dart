@@ -7,6 +7,7 @@ import 'dart:js_interop';
 import 'package:web/web.dart' as web;
 
 import '../model/server_credential.dart';
+import 'direct_web_socket_handshake.dart';
 import 'react_log_socket_interface.dart';
 
 class _WebLogSocket implements ILogSocket {
@@ -16,10 +17,19 @@ class _WebLogSocket implements ILogSocket {
   bool _closed = false;
 
   _WebLogSocket(ServerCredential cred) {
-    final String scheme = cred.secure ? 'wss' : 'ws';
-    final String url =
-        '$scheme://${cred.host}:${cred.port}/ws/logs?token=${Uri.encodeComponent(cred.bearer)}';
-    _ws = web.WebSocket(url);
+    final DirectWebSocketHandshake handshake = DirectWebSocketHandshake(
+      cred,
+      'ws/logs',
+    );
+    _ws = web.WebSocket(handshake.endpoint.toString());
+
+    _ws.addEventListener(
+      'open',
+      ((web.Event _) {
+        if (_closed) return;
+        _ws.send(handshake.authFrame.toJS);
+      }).toJS,
+    );
 
     _ws.addEventListener(
       'message',

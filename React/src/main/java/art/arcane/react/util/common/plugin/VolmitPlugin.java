@@ -104,8 +104,7 @@ public abstract class VolmitPlugin extends JavaPlugin implements Listener {
       outputCommandInfo();
       outputPermissionInfo();
     } catch (Throwable e) {
-      e.printStackTrace();
-
+      React.reportError("Failed to write React plugin metadata", e);
     }
   }
 
@@ -179,9 +178,7 @@ public abstract class VolmitPlugin extends JavaPlugin implements Listener {
                  InstantiationException |
                  InvocationTargetException | NoSuchMethodException |
                  SecurityException e) {
-          e.printStackTrace();
-          w("Failed to register permission (field " + i.getName() + ")");
-          e.printStackTrace();
+          React.reportError("Failed to register permission field " + i.getName(), e);
         }
       }
     }
@@ -190,8 +187,7 @@ public abstract class VolmitPlugin extends JavaPlugin implements Listener {
       try {
         Bukkit.getPluginManager().addPermission(i);
       } catch (Throwable e) {
-        e.printStackTrace();
-
+        React.reportError("Failed to add permission " + i.getName(), e);
       }
     }
   }
@@ -206,8 +202,7 @@ public abstract class VolmitPlugin extends JavaPlugin implements Listener {
           g.addAll(computePermissions(x));
         } catch (IllegalArgumentException | IllegalAccessException |
                  SecurityException e) {
-          e.printStackTrace();
-          e.printStackTrace();
+          React.reportError("Failed to read permission field " + i.getName(), e);
         }
       }
     }
@@ -275,9 +270,7 @@ public abstract class VolmitPlugin extends JavaPlugin implements Listener {
           v("Registered Instance " + i.getName());
         } catch (IllegalArgumentException | IllegalAccessException |
                  SecurityException e) {
-          w("Failed to register instance (field " + i.getName() + ")");
-          e.printStackTrace();
-          e.printStackTrace();
+          React.reportError("Failed to register instance field " + i.getName(), e);
         }
       }
     }
@@ -295,9 +288,7 @@ public abstract class VolmitPlugin extends JavaPlugin implements Listener {
           v("Unregistered Instance " + i.getName());
         } catch (IllegalArgumentException | IllegalAccessException |
                  SecurityException e) {
-          w("Failed to unregister instance (field " + i.getName() + ")");
-          e.printStackTrace();
-          e.printStackTrace();
+          React.reportError("Failed to unregister instance field " + i.getName(), e);
         }
       }
     }
@@ -323,9 +314,7 @@ public abstract class VolmitPlugin extends JavaPlugin implements Listener {
                  InstantiationException |
                  InvocationTargetException | NoSuchMethodException |
                  SecurityException e) {
-          w("Failed to register command (field " + i.getName() + ")");
-          e.printStackTrace();
-          e.printStackTrace();
+          React.reportError("Failed to register command field " + i.getName(), e);
         }
       }
     }
@@ -427,14 +416,13 @@ public abstract class VolmitPlugin extends JavaPlugin implements Listener {
               it.remove();
               v("Unregistered Command /" + cmd.getNode());
             } else {
-              Bukkit.getConsoleSender().sendMessage(getTag() + "Failed to unregister command " + c.getName());
+              w("Failed to unregister command " + c.getName());
             }
           }
         }
       }
     } catch (Throwable e) {
-      e.printStackTrace();
-      e.printStackTrace();
+      React.reportError("Failed to unregister command " + cmd.getNode(), e);
     }
   }
 
@@ -480,8 +468,7 @@ public abstract class VolmitPlugin extends JavaPlugin implements Listener {
       try {
         unregisterCommand(i.getCommand());
       } catch (Throwable e) {
-        e.printStackTrace();
-
+        React.reportError("Failed to unregister command " + i.getCommand().getNode(), e);
       }
     }
   }

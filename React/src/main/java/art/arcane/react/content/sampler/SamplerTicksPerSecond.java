@@ -24,25 +24,33 @@ import art.arcane.react.util.common.scheduling.J;
 import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Material;
 
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class SamplerTicksPerSecond extends ReactTickedSampler {
   public static final String ID = "ticks-per-second";
-  private transient final AtomicInteger ticks;
   private transient final AtomicLong lastTick;
   private transient final AtomicLong lastTickDuration;
   private transient final AtomicLong lastTickDurationSync;
-  private transient final int stickid;
+  private transient int syncTaskId;
   private int countUpTickTimeThresholdMS = 3000;
 
   public SamplerTicksPerSecond() {
     super(ID, 50, 7);
-    this.ticks = new AtomicInteger(0);
     this.lastTickDuration = new AtomicLong(50);
     this.lastTickDurationSync = new AtomicLong(50);
     this.lastTick = new AtomicLong(System.currentTimeMillis());
-    stickid = J.sr(this::onSyncTick, 0);
+    this.syncTaskId = -1;
+  }
+
+  @Override
+  public void start() {
+    super.start();
+    if (syncTaskId < 0) {
+      lastTick.set(System.currentTimeMillis());
+      lastTickDuration.set(50L);
+      lastTickDurationSync.set(50L);
+      syncTaskId = J.sr(this::onSyncTick, 0);
+    }
   }
 
   @Override
@@ -51,14 +59,21 @@ public class SamplerTicksPerSecond extends ReactTickedSampler {
   }
 
   private void onSyncTick() {
-    lastTick.set(System.currentTimeMillis());
-    ticks.incrementAndGet();
-    lastTickDurationSync.set(System.currentTimeMillis() - lastTick.get());
+    onSyncTick(System.currentTimeMillis());
+  }
+
+  void onSyncTick(long now) {
+    long previousTick = lastTick.getAndSet(now);
+    lastTickDurationSync.set(Math.max(0L, now - previousTick));
   }
 
   @Override
   public double onSample() {
-    lastTickDuration.set(System.currentTimeMillis() - lastTick.get());
+    return onSample(System.currentTimeMillis());
+  }
+
+  double onSample(long now) {
+    lastTickDuration.set(Math.max(0L, now - lastTick.get()));
     return 1000D / Math.max(50D, Math.max((double) lastTickDuration.get(), (double) lastTickDurationSync.get()));
   }
 
@@ -66,7 +81,7 @@ public class SamplerTicksPerSecond extends ReactTickedSampler {
   public String formattedValue(double t) {
     long dur = System.currentTimeMillis() - lastTick.get();
 
-    if (dur > countUpTickTimeThresholdMS) {
+    if (dur > Math.max(1, countUpTickTimeThresholdMS)) {
       return Form.durationSplit(dur, 1)[0];
     }
 
@@ -81,7 +96,7 @@ public class SamplerTicksPerSecond extends ReactTickedSampler {
   public String formattedSuffix(double t) {
     long dur = System.currentTimeMillis() - lastTick.get();
 
-    if (dur > countUpTickTimeThresholdMS) {
+    if (dur > Math.max(1, countUpTickTimeThresholdMS)) {
       return Form.durationSplit(dur, 1)[1];
     }
 
@@ -90,7 +105,10 @@ public class SamplerTicksPerSecond extends ReactTickedSampler {
 
   @Override
   public void unregister() {
-    J.csr(stickid);
+    if (syncTaskId >= 0) {
+      J.csr(syncTaskId);
+      syncTaskId = -1;
+    }
     super.unregister();
   }
 }

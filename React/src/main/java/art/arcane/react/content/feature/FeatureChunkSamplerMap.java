@@ -20,12 +20,12 @@
 package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
+import art.arcane.react.api.web.heatmap.HeatmapWorldRef;
 import art.arcane.react.core.controller.ObserverController;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.RendererMessages;
 import art.arcane.react.model.SampledChunk;
 import art.arcane.react.util.data.TinyColor;
-import org.bukkit.Chunk;
 
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Chunk Sampler Map feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureChunkSamplerMap extends FeatureChunkHeatmapBase {
@@ -46,14 +46,16 @@ public class FeatureChunkSamplerMap extends FeatureChunkHeatmapBase {
   }
 
   @Override
-  protected double chunkScore(Chunk chunk) {
+  protected double chunkScore(HeatmapWorldRef world, int chunkX, int chunkZ) {
     ObserverController observer = React.controller(ObserverController.class);
-    if (observer == null || observer.getSampled() == null || chunk == null) {
+    if (observer == null || observer.getSampled() == null || world == null) {
       return 0D;
     }
 
-    SampledChunk sampledChunk = observer.getSampled().getChunk(chunk);
-    return sampledChunk == null ? 0D : Math.max(0D, sampledChunk.totalScore());
+    return observer.sampledChunk(world.worldKey(), chunkX, chunkZ)
+        .map(SampledChunk::totalScore)
+        .map(score -> Math.max(0D, score))
+        .orElse(0D);
   }
 
   @Override

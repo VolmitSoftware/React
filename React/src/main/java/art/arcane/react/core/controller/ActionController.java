@@ -31,13 +31,18 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.bukkit.event.Listener;
 
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class ActionController extends TickedObject implements IController {
   private transient final Deque<ActionTicket<?>> ticketQueue = new ArrayDeque<>();
   private transient final List<ActionTicket<?>> ticketRuntime = new ArrayList<>();
+  private transient final AtomicBoolean acceptingTickets = new AtomicBoolean(true);
   private transient Registry<Action<?>> actions;
   private int actionSpeedMultiplier;
 
@@ -55,12 +60,21 @@ public class ActionController extends TickedObject implements IController {
       return;
     }
 
+    if (ticket.isDone()) {
+      return;
+    }
+
     if (!ticket.getAction().isEnabled()) {
-      React.verbose("Ignored queue request for disabled action: " + ticket.getAction().getId());
+      ticket.fail(new IllegalStateException("Action is disabled: " + ticket.getAction().getId()));
+      React.verbose(() -> "Ignored queue request for disabled action: " + ticket.getAction().getId());
       return;
     }
 
     synchronized (ticketQueue) {
+      if (!acceptingTickets.get()) {
+        ticket.fail(new IllegalStateException("Action controller is stopped"));
+        return;
+      }
       ticketQueue.addLast(ticket);
     }
   }
@@ -71,6 +85,7 @@ public class ActionController extends TickedObject implements IController {
 
   @Override
   public void start() {
+    acceptingTickets.set(true);
     actionSpeedMultiplier = 128;
     actions = new Registry<>(Action.class, "art.arcane.react.content.action");
   }
@@ -91,37 +106,40 @@ public class ActionController extends TickedObject implements IController {
       enabledActions++;
     }
 
-    React.info("Registered " + actions.size() + " Actions (" + enabledActions + " enabled)");
+    React.verbose("Registered " + actions.size() + " Actions (" + enabledActions + " enabled)");
   }
 
   @Override
   public void stop() {
-    actions.all().forEach(((a) -> {
-      if (a instanceof Listener l) {
-        React.instance.unregisterListener(l);
-      }
-    }));
+    acceptingTickets.set(false);
+    failPendingTickets();
+    if (actions != null) {
+      actions.all().forEach(((a) -> {
+        if (a instanceof Listener l) {
+          React.instance.unregisterListener(l);
+        }
+      }));
+    }
   }
 
   @Override
   public void onTick() {
+    reapTerminalTickets();
+    if (!acceptingTickets.get()) {
+      return;
+    }
+
     ActionTicket<?> next = null;
-    synchronized (ticketQueue) {
-      if (!ticketQueue.isEmpty() && ticketRuntime.size() < maxRuntimeActions()) {
-        next = ticketQueue.pollFirst();
+    if (hasRuntimeCapacity()) {
+      synchronized (ticketQueue) {
+        if (acceptingTickets.get()) {
+          next = ticketQueue.pollFirst();
+        }
       }
     }
 
     if (next != null) {
-      if (!next.getAction().isEnabled()) {
-        React.verbose("Skipping queued action because it is now disabled: " + next.getAction().getId());
-      } else {
-        next.start();
-        synchronized (ticketRuntime) {
-          ticketRuntime.add(next);
-        }
-        React.info("Action " + next.getAction().getId() + " started");
-      }
+      startTicket(next);
     }
 
     List<ActionTicket<?>> snapshot;
@@ -133,45 +151,135 @@ public class ActionController extends TickedObject implements IController {
       snapshot = new ArrayList<>(ticketRuntime);
     }
 
-    List<ActionTicket<?>> completed = null;
     for (ActionTicket<?> ticket : snapshot) {
-      if (ticket == null || !ticket.isRunning() || ticket.isDone()) {
+      if (ticket == null || ticket.isDone()) {
         continue;
       }
 
-      invoke(ticket);
+      if (!ticket.isRunning()) {
+        ticket.fail(new IllegalStateException("Runtime action ticket is not running"));
+        continue;
+      }
 
-      if (ticket.isDone()) {
-        if (completed == null) {
-          completed = new ArrayList<>();
-        }
-        completed.add(ticket);
+      try {
+        invoke(ticket);
+      } catch (Throwable throwable) {
+        ticket.fail(throwable);
+        React.reportError(throwable);
       }
     }
 
-    if (completed == null) {
+    reapTerminalTickets();
+  }
+
+  private void failPendingTickets() {
+    IllegalStateException failure = new IllegalStateException("Action controller stopped before ticket completion");
+    synchronized (ticketQueue) {
+      ActionTicket<?> ticket;
+      while ((ticket = ticketQueue.pollFirst()) != null) {
+        ticket.fail(failure);
+      }
+    }
+
+    synchronized (ticketRuntime) {
+      for (ActionTicket<?> ticket : ticketRuntime) {
+        if (ticket != null) {
+          ticket.fail(failure);
+        }
+      }
+      ticketRuntime.clear();
+    }
+  }
+
+  private void startTicket(ActionTicket<?> ticket) {
+    if (ticket.isDone()) {
+      return;
+    }
+
+    if (!ticket.getAction().isEnabled()) {
+      ticket.fail(new IllegalStateException("Action was disabled before it started: " + ticket.getAction().getId()));
+      React.verbose(() -> "Skipping queued action because it is now disabled: " + ticket.getAction().getId());
+      return;
+    }
+
+    try {
+      ticket.start();
+    } catch (Throwable throwable) {
+      ticket.fail(throwable);
+      React.reportError(throwable);
+      return;
+    }
+
+    if (ticket.isDone() || !ticket.isRunning()) {
+      logTerminalTicket(ticket);
       return;
     }
 
     synchronized (ticketRuntime) {
-      for (ActionTicket<?> ticket : completed) {
-        if (removeByIdentity(ticketRuntime, ticket)) {
-          long runtime = System.currentTimeMillis() - ticket.getStartedAt();
-          React.success("Action " + ticket.getAction().getId() + " completed in " + Form.duration(runtime, 1));
+      if (!acceptingTickets.get()) {
+        ticket.fail(new IllegalStateException("Action controller stopped before ticket startup completed"));
+        return;
+      }
+
+      for (ActionTicket<?> running : ticketRuntime) {
+        if (running == ticket) {
+          return;
         }
       }
+      ticketRuntime.add(ticket);
+    }
+
+    React.verbose(() -> "Action " + ticket.getAction().getId() + " started");
+  }
+
+  private boolean hasRuntimeCapacity() {
+    synchronized (ticketRuntime) {
+      return ticketRuntime.size() < maxRuntimeActions();
     }
   }
 
-  private boolean removeByIdentity(List<ActionTicket<?>> list, ActionTicket<?> target) {
-    for (int i = 0; i < list.size(); i++) {
-      if (list.get(i) == target) {
-        list.remove(i);
-        return true;
+  private void reapTerminalTickets() {
+    List<ActionTicket<?>> terminal = null;
+    synchronized (ticketRuntime) {
+      for (int index = ticketRuntime.size() - 1; index >= 0; index--) {
+        ActionTicket<?> ticket = ticketRuntime.get(index);
+        if (ticket != null && !ticket.isDone()) {
+          continue;
+        }
+
+        ticketRuntime.remove(index);
+        if (ticket != null) {
+          if (terminal == null) {
+            terminal = new ArrayList<>();
+          }
+          terminal.add(ticket);
+        }
       }
     }
 
-    return false;
+    if (terminal == null) {
+      return;
+    }
+
+    for (ActionTicket<?> ticket : terminal) {
+      logTerminalTicket(ticket);
+    }
+  }
+
+  private void logTerminalTicket(ActionTicket<?> ticket) {
+    long runtime = ticket.getStartedAt() == 0
+        ? 0
+        : Math.max(0, ticket.getCompletedAt() - ticket.getStartedAt());
+    if (ticket.isFailed()) {
+      Throwable failure = ticket.getFailure();
+      String detail = failure == null ? "unknown failure" : failure.getClass().getSimpleName()
+          + (failure.getMessage() == null ? "" : " - " + failure.getMessage());
+      React.error("Action " + ticket.getAction().getId() + " failed after "
+          + Form.duration(runtime, 1) + ": " + detail, failure);
+      return;
+    }
+
+    React.verbose(() -> "Action " + ticket.getAction().getId() + " completed in " + Form.duration(runtime, 1));
   }
 
   private int maxRuntimeActions() {

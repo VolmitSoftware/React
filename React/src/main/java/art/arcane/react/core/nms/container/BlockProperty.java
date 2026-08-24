@@ -4,7 +4,13 @@ import art.arcane.volmlib.util.json.JSONArray;
 import art.arcane.volmlib.util.json.JSONObject;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.Function;
 
 public class BlockProperty {
@@ -90,7 +96,7 @@ public class BlockProperty {
   }
 
   public JSONObject buildJson() {
-    var json = new JSONObject();
+    JSONObject json = new JSONObject();
     json.put("type", jsonType());
     json.put("default", defaultValueAsJson());
     if (!values.isEmpty()) {
@@ -120,7 +126,7 @@ public class BlockProperty {
     if (obj == null || obj.getClass() != this.getClass()) {
       return false;
     }
-    var that = (BlockProperty) obj;
+    BlockProperty that = (BlockProperty) obj;
     return Objects.equals(this.name, that.name) &&
         Objects.equals(this.values, that.values) &&
         Objects.equals(this.type, that.type);

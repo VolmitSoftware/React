@@ -66,6 +66,12 @@ import java.util.Objects;
 public class ReactConfiguration {
   private static final Object CONFIG_LOCK = new Object();
   private static ReactConfiguration configuration;
+  @ConfigDoc(value = "Locale used for React player and operator interfaces.", impact = "Code-owned English remains the fallback; optional TOML overrides are loaded from languages/overrides.")
+  private String language = "en_US";
+
+  @ConfigDoc(value = "Enables anonymous bStats usage reporting for React.", impact = "Set to false to disable React's bStats submissions entirely. Requires a restart to take effect.")
+  private boolean metrics = true;
+
   @ConfigDoc(value = "Entity priority model used by multiple React subsystems.", impact = "Changing these weights can alter culling, queueing, and visibility behavior.")
   private EntityPriority priority = new EntityPriority();
 
@@ -81,9 +87,6 @@ public class ReactConfiguration {
   @ConfigDoc(value = "Enables debug logging and additional diagnostics.", impact = "Use during debugging sessions; disable for normal production runtime.")
   private boolean debug = false;
 
-  @ConfigDoc(value = "Locale used for React player and operator interfaces.", impact = "Code-owned English remains the fallback; optional TOML overrides are loaded from languages/overrides.")
-  private String language = "en_US";
-
   @ConfigDoc(
       value = "Controls how slow tick warnings are logged. Options: OFF, BLAME, SHORT, DETAILED.",
       impact = "OFF suppresses slow tick warnings. BLAME highlights likely plugin/workload responsibility. SHORT logs minimal timing only. DETAILED logs the full diagnostic payload."
@@ -95,9 +98,6 @@ public class ReactConfiguration {
 
   @ConfigDoc(value = "Eagerly attaches React's general ByteBuddy agent during startup.", impact = "Disabled by default. Versioned NMS features can still attach their own instrumentation when activated. Any attached instrumentation remains until the JVM restarts.")
   private boolean unsafeBytecode = false;
-
-  @ConfigDoc(value = "Enables anonymous bStats usage reporting for React.", impact = "Set to false to disable React's bStats submissions entirely. Requires a restart to take effect.")
-  private boolean metrics = true;
 
   @ConfigDoc(
       value = "Selects which Adapt ability-operation rate React displays and includes as alert context. Options: SUCCESSFUL_CHECKS, ALL_CHECKS.",
@@ -115,7 +115,7 @@ public class ReactConfiguration {
           configuration = loadConfig(new ReactConfiguration(), true);
           configuration.normalize();
         } catch (Throwable e) {
-          e.printStackTrace();
+          React.reportError("Failed to load react.toml; using in-memory defaults", e);
           configuration = new ReactConfiguration();
         }
       }
@@ -131,7 +131,7 @@ public class ReactConfiguration {
         configuration.normalize();
         return true;
       } catch (Throwable e) {
-        React.warn("Failed to reload config.toml: " + e.getMessage());
+        React.warn("Failed to reload react.toml: " + e.getMessage(), e);
         return false;
       }
     }
@@ -155,16 +155,15 @@ public class ReactConfiguration {
   }
 
   private static ReactConfiguration loadConfig(ReactConfiguration fallback, boolean overwriteOnFailure) throws IOException {
-    File canonicalFile = React.instance.getDataFile("config.toml");
-    File legacyFile = React.instance.getDataFile("config.json");
+    File canonicalFile = React.instance.getDataFile("react.toml");
     return ConfigFileSupport.load(
         canonicalFile,
-        legacyFile,
+        null,
         ReactConfiguration.class,
         fallback,
         overwriteOnFailure,
         "main-config",
-        "Created missing config [config.toml] from defaults."
+        "Created missing config [react.toml] from defaults."
     );
   }
 

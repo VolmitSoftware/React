@@ -25,24 +25,34 @@ import art.arcane.react.api.protect.ReactProtection;
 import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.content.feature.perworld.PerWorldPressure;
 import art.arcane.react.content.sampler.SamplerTickTime;
+import art.arcane.react.core.controller.EntityController;
 import art.arcane.react.model.ReactEntity;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.project.world.WorldEntitySnapshots;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.NamespacedKey;
 import org.bukkit.World;
-import org.bukkit.entity.*;
+import org.bukkit.entity.EnderDragon;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Mob;
+import org.bukkit.entity.Player;
+import org.bukkit.entity.Tameable;
+import org.bukkit.entity.Villager;
+import org.bukkit.entity.Warden;
+import org.bukkit.entity.Wither;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityTargetEvent;
-import org.bukkit.persistence.PersistentDataType;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Adaptive Entity Sleep feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureAdaptiveEntitySleep extends ReactFeature implements Listener {
@@ -55,7 +65,11 @@ public class FeatureAdaptiveEntitySleep extends ReactFeature implements Listener
   }
 
   public static final String ID = "adaptive-entity-sleep";
-  private static final NamespacedKey nsDozing = new NamespacedKey(React.instance, "react-dozing");
+  private transient final AtomicLong sleepScanGeneration = new AtomicLong(0L);
+  private transient final AtomicInteger nextFoliaAnchor = new AtomicInteger(0);
+  private transient final AtomicLong lifecycleGeneration = new AtomicLong(0L);
+  private transient final AtomicReference<FoliaScanFlight> foliaScanFlight = new AtomicReference<>();
+  private transient final ReentrantReadWriteLock lifecycleLock = new ReentrantReadWriteLock(true);
   @art.arcane.react.util.project.config.ConfigDoc(value = "Main evaluation interval for adaptive entity sleep in milliseconds.", impact = "Lower values react faster but consume more CPU; higher values reduce overhead but react later.")
   private int tickIntervalMS = 1000;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum entities sampled allowed per cycle in adaptive entity sleep.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
@@ -87,8 +101,9 @@ public class FeatureAdaptiveEntitySleep extends ReactFeature implements Listener
   @art.arcane.react.util.project.config.ConfigDoc(value = "Average tick milliseconds required before duty-cycling engages.", impact = "Lower values engage AI shedding earlier; higher values reserve it for heavier load.")
   private double dutyCycleMinTickMs = 42;
   private transient boolean dutyCycleSupported;
-  private transient int dutyCycleIndex;
-  private transient double lastTickMs;
+  private transient volatile int dutyCycleIndex;
+  private transient volatile double lastTickMs;
+  private transient volatile boolean active;
 
   public FeatureAdaptiveEntitySleep() {
     super(ID);
@@ -96,51 +111,87 @@ public class FeatureAdaptiveEntitySleep extends ReactFeature implements Listener
 
   @Override
   public void onActivate() {
-    dutyCycleSupported = false;
-    dutyCycleIndex = 0;
-    lastTickMs = 0;
+    lifecycleLock.writeLock().lock();
     try {
-      Mob.class.getMethod("setAware", boolean.class);
-      Mob.class.getMethod("isAware");
-      dutyCycleSupported = true;
-    } catch (NoSuchMethodException e) {
-      React.verbose("Adaptive entity sleep duty-cycling unavailable: Mob#setAware not present on this server software.");
+      active = false;
+      lifecycleGeneration.incrementAndGet();
+      sleepScanGeneration.set(0L);
+      foliaScanFlight.set(null);
+      nextFoliaAnchor.set(0);
+      dutyCycleSupported = false;
+      dutyCycleIndex = 0;
+      lastTickMs = 0;
+      try {
+        Mob.class.getMethod("setAware", boolean.class);
+        Mob.class.getMethod("isAware");
+        dutyCycleSupported = true;
+      } catch (NoSuchMethodException e) {
+        React.verbose("Adaptive entity sleep duty-cycling unavailable: Mob#setAware not present on this server software.");
+      }
+      active = true;
+    } finally {
+      lifecycleLock.writeLock().unlock();
     }
   }
 
   @Override
   public void onDeactivate() {
-    if (J.isFoliaThreading()) {
-      return;
-    }
-
-    J.s(() -> {
-      for (World world : Bukkit.getWorlds()) {
-        for (Entity entity : world.getEntities()) {
-          if (entity instanceof Mob mob) {
-            undoze(mob);
-          }
-        }
+    lifecycleLock.writeLock().lock();
+    try {
+      active = false;
+      lifecycleGeneration.incrementAndGet();
+      sleepScanGeneration.set(0L);
+      FoliaScanFlight flight = foliaScanFlight.getAndSet(null);
+      if (flight != null) {
+        flight.cancel();
       }
-    });
+      ReactEntity.releasePauseOwner(ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
+      ReactEntity.releaseAllDozes();
+    } finally {
+      lifecycleLock.writeLock().unlock();
+    }
   }
 
   @Override
   public int getTickInterval() {
-    return tickIntervalMS;
+    return Math.max(50, tickIntervalMS);
   }
 
   @Override
   public void onTick() {
-    dutyCycleIndex++;
-    lastTickMs = sampleTickMs();
-
-    if (J.isFoliaThreading()) {
-      applyFoliaSleepScan();
+    long generation = lifecycleGeneration.get();
+    if (!isActive(generation)) {
       return;
     }
 
-    J.s(this::applySleepScan);
+    double sampledTickMs = sampleTickMs();
+    if (!isActive(generation)) {
+      return;
+    }
+    dutyCycleIndex++;
+    lastTickMs = sampledTickMs;
+
+    if (J.isFoliaThreading()) {
+      FoliaScanFlight flight = new FoliaScanFlight(generation);
+      if (foliaScanFlight.compareAndSet(null, flight)) {
+        applyFoliaSleepScan(flight);
+      }
+      return;
+    }
+
+    if (!sleepScanGeneration.compareAndSet(0L, generation)) {
+      return;
+    }
+
+    J.s(() -> {
+      try {
+        if (isActive(generation)) {
+          applySleepScan(generation);
+        }
+      } finally {
+        sleepScanGeneration.compareAndSet(generation, 0L);
+      }
+    });
   }
 
   private double sampleTickMs() {
@@ -152,24 +203,27 @@ public class FeatureAdaptiveEntitySleep extends ReactFeature implements Listener
     }
   }
 
-  private void applySleepScan() {
-    int budget = Math.max(1, maxEntitiesSampledPerCycle);
-    ThreadLocalRandom random = ThreadLocalRandom.current();
+  private void applySleepScan(long generation) {
+    if (!isActive(generation)) {
+      return;
+    }
 
+    int budget = Math.max(1, maxEntitiesSampledPerCycle);
     for (World world : Bukkit.getWorlds()) {
       if (budget <= 0) {
         return;
       }
 
-      List<Entity> entities = WorldEntitySnapshots.get(world);
+      List<Entity> entities = WorldEntitySnapshots.next(world, budget);
       if (entities.isEmpty()) {
         continue;
       }
 
-      int sampleCount = Math.min(entities.size(), budget);
-      for (int i = 0; i < sampleCount; i++) {
-        Entity entity = entities.get(random.nextInt(entities.size()));
-        manageEntity(entity);
+      for (Entity entity : entities) {
+        if (!isActive(generation)) {
+          return;
+        }
+        manageEntity(entity, generation);
         budget--;
 
         if (budget <= 0) {
@@ -179,24 +233,68 @@ public class FeatureAdaptiveEntitySleep extends ReactFeature implements Listener
     }
   }
 
-  private void applyFoliaSleepScan() {
-    List<Player> players = new ArrayList<>(Bukkit.getOnlinePlayers());
-    if (players.isEmpty()) {
+  private void applyFoliaSleepScan(FoliaScanFlight flight) {
+    long generation = flight.generation;
+    if (!isActive(generation) || !flight.isCurrent(lifecycleGeneration.get())) {
+      finishFoliaScheduling(flight);
       return;
     }
 
-    AtomicInteger remaining = new AtomicInteger(Math.max(1, maxEntitiesSampledPerCycle));
-    ThreadLocalRandom random = ThreadLocalRandom.current();
-    int playerSamples = Math.min(players.size(), Math.max(1, remaining.get() / 8));
+    EntityController controller = React.controller(EntityController.class);
+    Player[] players = controller == null ? null : controller.getFoliaPlayers();
+    if (!isActive(generation) || players == null || players.length == 0) {
+      finishFoliaScheduling(flight);
+      return;
+    }
+
+    int budget = Math.max(1, maxEntitiesSampledPerCycle);
+    AtomicInteger remaining = new AtomicInteger(budget);
+    int playerSamples = Math.min(players.length, Math.max(1, (budget + 7) / 8));
+    int perAnchor = Math.max(1, (budget + playerSamples - 1) / playerSamples);
+    int start = Math.floorMod(nextFoliaAnchor.getAndAdd(playerSamples), players.length);
 
     for (int i = 0; i < playerSamples && remaining.get() > 0; i++) {
-      Player player = players.get(random.nextInt(players.size()));
-      J.runEntity(player, () -> sampleAroundPlayer(player, remaining));
+      if (!isActive(generation) || !flight.isCurrent(lifecycleGeneration.get())) {
+        break;
+      }
+      Player player = players[(start + i) % players.length];
+      scheduleFoliaTask(
+          flight,
+          player,
+          () -> runFoliaAnchor(player, remaining, perAnchor, flight)
+      );
+    }
+    finishFoliaScheduling(flight);
+  }
+
+  private void runFoliaAnchor(
+      Player player,
+      AtomicInteger remaining,
+      int perAnchor,
+      FoliaScanFlight flight
+  ) {
+    lifecycleLock.readLock().lock();
+    try {
+      if (isActive(flight.generation) && flight.isCurrent(lifecycleGeneration.get())) {
+        sampleAroundPlayer(player, remaining, perAnchor, flight);
+      }
+    } finally {
+      lifecycleLock.readLock().unlock();
     }
   }
 
-  private void sampleAroundPlayer(Player player, AtomicInteger remaining) {
-    if (player == null || !player.isOnline() || !J.isOwnedByCurrentRegion(player)) {
+  private void sampleAroundPlayer(
+      Player player,
+      AtomicInteger remaining,
+      int perAnchor,
+      FoliaScanFlight flight
+  ) {
+    long generation = flight.generation;
+    if (!isActive(generation)
+        || !flight.isCurrent(lifecycleGeneration.get())
+        || player == null
+        || !player.isOnline()
+        || !J.isOwnedByCurrentRegion(player)) {
       return;
     }
 
@@ -209,53 +307,112 @@ public class FeatureAdaptiveEntitySleep extends ReactFeature implements Listener
       return;
     }
 
-    ThreadLocalRandom random = ThreadLocalRandom.current();
-    int samples = Math.min(nearby.size(), Math.max(1, remaining.get() / 2));
+    int samples = Math.min(nearby.size(), perAnchor);
+    int start = ThreadLocalRandom.current().nextInt(nearby.size());
     for (int i = 0; i < samples; i++) {
-      if (remaining.getAndDecrement() <= 0) {
+      if (!isActive(generation)
+          || !flight.isCurrent(lifecycleGeneration.get())
+          || remaining.getAndDecrement() <= 0) {
         return;
       }
 
-      Entity entity = nearby.get(random.nextInt(nearby.size()));
-      manageEntity(entity);
+      Entity entity = nearby.get((start + i) % nearby.size());
+      manageEntity(entity, generation, flight);
     }
   }
 
-  private void manageEntity(Entity entity) {
-    if (entity == null) {
+  private void manageEntity(Entity entity, long generation) {
+    manageEntity(entity, generation, null);
+  }
+
+  private void manageEntity(Entity entity, long generation, FoliaScanFlight flight) {
+    if (!isActive(generation) || entity == null) {
       return;
     }
 
     if (J.isFoliaThreading() && !J.isOwnedByCurrentRegion(entity)) {
-      J.runEntity(entity, () -> manageEntity(entity));
+      if (flight == null) {
+        J.runEntity(entity, () -> manageEntity(entity, generation));
+      } else {
+        scheduleFoliaTask(flight, entity, () -> manageEntity(entity, generation, flight));
+      }
       return;
     }
 
+    lifecycleLock.readLock().lock();
+    try {
+      if (!isActive(generation)) {
+        return;
+      }
+      manageOwnedEntity(entity);
+    } finally {
+      lifecycleLock.readLock().unlock();
+    }
+  }
+
+  private void scheduleFoliaTask(FoliaScanFlight flight, Entity entity, Runnable operation) {
+    if (entity == null || !flight.tryRegisterTask()) {
+      return;
+    }
+
+    AtomicBoolean completionClaimed = new AtomicBoolean(false);
+    Runnable completed = () -> {
+      if (completionClaimed.compareAndSet(false, true) && flight.completeTask()) {
+        foliaScanFlight.compareAndSet(flight, null);
+      }
+    };
+    try {
+      boolean scheduled = J.runEntity(
+          entity,
+          () -> {
+            try {
+              if (isActive(flight.generation) && flight.isCurrent(lifecycleGeneration.get())) {
+                operation.run();
+              }
+            } finally {
+              completed.run();
+            }
+          },
+          0,
+          completed
+      );
+      if (!scheduled) {
+        completed.run();
+      }
+    } catch (Throwable failure) {
+      completed.run();
+      React.reportError(failure);
+    }
+  }
+
+  private void finishFoliaScheduling(FoliaScanFlight flight) {
+    if (flight.seal()) {
+      foliaScanFlight.compareAndSet(flight, null);
+    }
+  }
+
+  private void manageOwnedEntity(Entity entity) {
     if (!canManage(entity)) {
-      wake(entity);
+      wakeOwned(entity);
       return;
     }
 
     Location location = entity.getLocation();
     if (React.hasNearbyPlayer(location, dutyCycleStartDistance)) {
-      wake(entity);
+      wakeOwned(entity);
       return;
     }
 
     if (React.hasNearbyPlayer(location, sleepBeyondNearestPlayer)) {
-      if (ReactEntity.isPaused(entity)) {
-        ReactEntity.setPaused(entity, false);
-      }
-      applyDutyCycle(entity);
+      ReactEntity.releasePause(entity, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
+      applyDutyCycleOwned(entity);
       return;
     }
 
-    if (!ReactEntity.isPaused(entity)) {
-      ReactEntity.setPaused(entity, true);
-    }
+    ReactEntity.requestPause(entity, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
   }
 
-  private void applyDutyCycle(Entity entity) {
+  private void applyDutyCycleOwned(Entity entity) {
     if (!dutyCycleSupported || !dutyCycleEnabled || !(entity instanceof Mob mob)) {
       return;
     }
@@ -266,38 +423,30 @@ public class FeatureAdaptiveEntitySleep extends ReactFeature implements Listener
     }
 
     if (shouldDoze(effectiveTickMs, dutyCycleMinTickMs, dutyCycleSlots, mob.getEntityId(), dutyCycleIndex)) {
-      doze(mob);
+      dozeOwned(mob);
     } else {
-      undoze(mob);
+      undozeOwned(mob);
     }
   }
 
-  private void doze(Mob mob) {
-    if (isDozing(mob)) {
+  private void dozeOwned(Mob mob) {
+    if (ReactEntity.isDozing(mob)) {
       return;
     }
 
-    // A mob that is already unaware without our flag was set by vanilla or another
-    // plugin; leave external awareness state alone.
     if (!mob.isAware()) {
       return;
     }
 
-    mob.getPersistentDataContainer().set(nsDozing, PersistentDataType.BYTE, (byte) 1);
-    mob.setAware(false);
+    ReactEntity.requestDoze(mob);
   }
 
-  private void undoze(Mob mob) {
-    if (!dutyCycleSupported || !isDozing(mob)) {
+  private void undozeOwned(Mob mob) {
+    if (!dutyCycleSupported || !ReactEntity.isDozing(mob)) {
       return;
     }
 
-    mob.setAware(true);
-    mob.getPersistentDataContainer().remove(nsDozing);
-  }
-
-  private boolean isDozing(Mob mob) {
-    return mob.getPersistentDataContainer().getOrDefault(nsDozing, PersistentDataType.BYTE, (byte) 0) == 1;
+    ReactEntity.releaseDoze(mob);
   }
 
   private boolean canManage(Entity entity) {
@@ -343,34 +492,104 @@ public class FeatureAdaptiveEntitySleep extends ReactFeature implements Listener
     return entity instanceof EnderDragon || entity instanceof Wither || entity instanceof Warden;
   }
 
-  private void wake(Entity entity) {
+  private void wake(Entity entity, long generation) {
+    if (!isActive(generation)) {
+      return;
+    }
+
+    lifecycleLock.readLock().lock();
+    try {
+      if (isActive(generation)) {
+        wakeOwned(entity);
+      }
+    } finally {
+      lifecycleLock.readLock().unlock();
+    }
+  }
+
+  private void wakeOnOwner(Entity entity, long generation) {
+    if (!isActive(generation) || entity == null) {
+      return;
+    }
+
+    if (J.isFoliaThreading() && !J.isOwnedByCurrentRegion(entity)) {
+      J.runEntity(entity, () -> wake(entity, generation));
+      return;
+    }
+
+    wake(entity, generation);
+  }
+
+  private void wakeOwned(Entity entity) {
     if (entity == null || entity.isDead()) {
       return;
     }
 
-    if (ReactEntity.isPaused(entity)) {
-      ReactEntity.setPaused(entity, false);
-    }
+    ReactEntity.releasePause(entity, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
 
     if (entity instanceof Mob mob) {
-      undoze(mob);
+      undozeOwned(mob);
     }
+  }
+
+  private boolean isActive(long generation) {
+    return active && generation == lifecycleGeneration.get();
   }
 
   @EventHandler(ignoreCancelled = true)
   public void on(EntityDamageEvent event) {
-    if (wakeOnDamage) {
-      wake(event.getEntity());
+    long generation = lifecycleGeneration.get();
+    if (wakeOnDamage && isActive(generation)) {
+      wakeOnOwner(event.getEntity(), generation);
     }
   }
 
   @EventHandler(ignoreCancelled = true)
   public void on(EntityTargetEvent event) {
-    if (!wakeOnTarget) {
+    long generation = lifecycleGeneration.get();
+    if (!wakeOnTarget || !isActive(generation)) {
       return;
     }
 
-    wake(event.getEntity());
-    wake(event.getTarget());
+    wakeOnOwner(event.getEntity(), generation);
+    wakeOnOwner(event.getTarget(), generation);
+  }
+
+  private static final class FoliaScanFlight {
+    private final long generation;
+    private boolean canceled;
+    private boolean sealed;
+    private int pendingTasks = 1;
+
+    private FoliaScanFlight(long generation) {
+      this.generation = generation;
+    }
+
+    private synchronized boolean tryRegisterTask() {
+      if (canceled || pendingTasks == 0) {
+        return false;
+      }
+      pendingTasks++;
+      return true;
+    }
+
+    private synchronized boolean isCurrent(long currentGeneration) {
+      return !canceled && generation == currentGeneration;
+    }
+
+    private synchronized boolean completeTask() {
+      pendingTasks--;
+      return sealed && pendingTasks == 0;
+    }
+
+    private synchronized boolean seal() {
+      sealed = true;
+      pendingTasks--;
+      return pendingTasks == 0;
+    }
+
+    private synchronized void cancel() {
+      canceled = true;
+    }
   }
 }

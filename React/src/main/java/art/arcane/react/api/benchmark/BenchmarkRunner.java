@@ -144,7 +144,7 @@ public final class BenchmarkRunner {
     try {
       BenchmarkReport.send(sender, measure(target));
     } catch (Throwable failure) {
-      failure.printStackTrace();
+      React.reportError("Benchmark " + target.name() + " failed", failure);
       ReactLanguage.send(
           sender,
           BenchmarkMessages.FAILED,

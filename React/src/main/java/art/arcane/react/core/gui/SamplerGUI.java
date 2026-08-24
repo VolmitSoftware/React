@@ -114,7 +114,7 @@ public class SamplerGUI {
 
       window.open();
     })) {
-      React.warn("Failed to schedule sampler picker UI for " + p.getName());
+      React.verbose(() -> "Failed to schedule sampler picker UI for " + p.getName());
     }
   }
 
@@ -141,7 +141,7 @@ public class SamplerGUI {
       int pge = page;
       if (samplers.size() <= pge * (9 * 2)) {
         pge = 0;
-        React.warn("Pagination Issue!");
+        React.verbose(() -> "Sampler picker reset an out-of-range page for " + p.getName());
       }
 
       samplers = samplers.subList(pge * (9 * 2), Math.min(samplers.size(), (pge + 1) * (9 * 2)));
@@ -198,7 +198,7 @@ public class SamplerGUI {
 
       window.open();
     })) {
-      React.warn("Failed to schedule sampler picker UI for " + p.getName());
+      React.verbose(() -> "Failed to schedule sampler picker UI for " + p.getName());
     }
   }
 

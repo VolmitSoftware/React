@@ -12,7 +12,9 @@ import art.arcane.react.core.controller.WebController;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.CommandMessages;
 import art.arcane.react.util.director.DirectorExecutor;
+import art.arcane.react.util.director.handlers.StringHandler;
 import art.arcane.react.util.plugin.VolmitSender;
+import art.arcane.volmlib.util.collection.KList;
 import art.arcane.volmlib.util.director.DirectorOrigin;
 import art.arcane.volmlib.util.director.annotations.Director;
 import art.arcane.volmlib.util.director.annotations.Param;
@@ -46,7 +48,14 @@ public class CommandWeb implements DirectorExecutor {
   public void pair(
       @Param(name = "label", description = "Human-readable label for this token", descriptionKey = "command.parameter.web.label")
       String label,
-      @Param(name = "role", description = "Role for this token: viewer, operator, or admin", descriptionKey = "command.parameter.web.role", defaultValue = "viewer", aliases = {"r"})
+      @Param(
+          name = "role",
+          description = "Role for this token: viewer, operator, or admin",
+          descriptionKey = "command.parameter.web.role",
+          defaultValue = "viewer",
+          aliases = {"r"},
+          customHandler = WebRoleHandler.class
+      )
       String role
   ) {
     WebRole webRole = WebRole.fromId(role);
@@ -55,35 +64,96 @@ public class CommandWeb implements DirectorExecutor {
       return;
     }
     WebController wc = React.controller(WebController.class);
-    wc.loadAuth();
-    ReactServerIdentity id = wc.getIdentity();
-    byte[] secret = wc.getSecret();
-    TokenStore store = wc.getTokenStore();
-    String tokenId = generateTokenId();
-    long issuedAt = System.currentTimeMillis();
-    Set<String> scopes = webRole.scopes();
-    String bearer = PairingToken.mint(secret, tokenId, label, issuedAt, scopes);
-    int dotPos = bearer.indexOf('.');
-    String tokenSig = dotPos >= 0 ? bearer.substring(dotPos + 1) : bearer;
-    String directUrl = wc.resolveDirectUrl();
-    String relayUrl = wc.getConfig().isRelayEnabled() ? wc.getConfig().getRelayUrl() : "";
-    String code = PairingCode.encode(directUrl, relayUrl, id.publicKeyBase64(), id.fingerprint(), tokenId, tokenSig);
-    String tokenFingerprint = sha256Hex(bearer);
-    TokenRecord record = new TokenRecord(tokenId, label, issuedAt, scopes, webRole.id());
-    store.add(record);
+    String unavailableReason = wc.pairingUnavailableReason();
+    if (unavailableReason != null) {
+      ReactLanguage.sendPrefixed(
+          sender(),
+          CommandMessages.WEB_PAIR_UNAVAILABLE,
+          MessageArgument.untrusted("reason", unavailableReason)
+      );
+      return;
+    }
+
+    PairingMaterial material;
     try {
-      store.save(wc.tokensFile());
+      material = createPairing(wc, label, webRole);
+    } catch (IllegalArgumentException e) {
+      ReactLanguage.sendPrefixed(
+          sender(),
+          CommandMessages.WEB_PAIR_UNAVAILABLE,
+          MessageArgument.untrusted("reason", e.getMessage())
+      );
+      return;
     } catch (IOException e) {
-      store.remove(tokenId);
+      ReactLanguage.sendPrefixed(sender(), CommandMessages.WEB_PERSIST_FAILED, MessageArgument.untrusted("reason", e.getMessage()));
+      return;
+    } catch (IllegalStateException e) {
+      String currentUnavailableReason = wc.pairingUnavailableReason();
+      if (currentUnavailableReason != null) {
+        ReactLanguage.sendPrefixed(
+            sender(),
+            CommandMessages.WEB_PAIR_UNAVAILABLE,
+            MessageArgument.untrusted("reason", currentUnavailableReason)
+        );
+        return;
+      }
+      React.reportError(e);
       ReactLanguage.sendPrefixed(sender(), CommandMessages.WEB_PERSIST_FAILED, MessageArgument.untrusted("reason", e.getMessage()));
       return;
     }
     auditLog().append(sender().getName(), "pair", "label=" + label + " role=" + webRole.id(), "OK");
-    sendPairingCode(code);
-    ReactLanguage.sendPrefixed(sender(), CommandMessages.WEB_SERVER_FINGERPRINT, MessageArgument.untrusted("fingerprint", id.fingerprint()));
-    ReactLanguage.sendPrefixed(sender(), CommandMessages.WEB_TOKEN_FINGERPRINT, MessageArgument.untrusted("fingerprint", tokenFingerprint));
-    ReactLanguage.sendPrefixed(sender(), CommandMessages.WEB_TOKEN_ID, MessageArgument.untrusted("id", tokenId));
+    sendPairingCode(material.code());
+    ReactLanguage.sendPrefixed(sender(), CommandMessages.WEB_SERVER_FINGERPRINT, MessageArgument.untrusted("fingerprint", material.serverFingerprint()));
+    ReactLanguage.sendPrefixed(sender(), CommandMessages.WEB_TOKEN_FINGERPRINT, MessageArgument.untrusted("fingerprint", material.tokenFingerprint()));
+    ReactLanguage.sendPrefixed(sender(), CommandMessages.WEB_TOKEN_ID, MessageArgument.untrusted("id", material.tokenId()));
     ReactLanguage.sendPrefixed(sender(), CommandMessages.WEB_ROLE, MessageArgument.untrusted("role", webRole.id()));
+  }
+
+  static PairingMaterial createPairing(WebController controller, String label, WebRole role) throws IOException {
+    synchronized (controller) {
+      return createPairingWhileBound(controller, label, role);
+    }
+  }
+
+  private static PairingMaterial createPairingWhileBound(
+      WebController controller,
+      String label,
+      WebRole role
+  ) throws IOException {
+    String directUrl = controller.resolveDirectUrl();
+    controller.loadAuth();
+    ReactServerIdentity identity = controller.getIdentity();
+    byte[] secret = controller.getSecret();
+    TokenStore store = controller.getTokenStore();
+    String tokenId = generateTokenId();
+    long issuedAt = System.currentTimeMillis();
+    Set<String> scopes = role.scopes();
+    String bearer = PairingToken.mint(secret, tokenId, label, issuedAt, scopes);
+    int dotPosition = bearer.indexOf('.');
+    String tokenSignature = dotPosition >= 0 ? bearer.substring(dotPosition + 1) : bearer;
+    String relayUrl = controller.getConfig().isRelayEnabled() ? controller.getConfig().getRelayUrl() : "";
+    String code = PairingCode.encode(
+        directUrl,
+        relayUrl,
+        identity.publicKeyBase64(),
+        identity.fingerprint(),
+        tokenId,
+        tokenSignature
+    );
+    TokenRecord record = new TokenRecord(tokenId, label, issuedAt, scopes, role.id());
+    store.add(record);
+    try {
+      store.save(controller.tokensFile());
+    } catch (IOException failure) {
+      store.remove(tokenId);
+      throw failure;
+    }
+    return new PairingMaterial(
+        code,
+        identity.fingerprint(),
+        sha256Hex(bearer),
+        tokenId
+    );
   }
 
   @Director(
@@ -187,5 +257,24 @@ public class CommandWeb implements DirectorExecutor {
     } catch (NoSuchAlgorithmException e) {
       throw new IllegalStateException("SHA-256 unavailable", e);
     }
+  }
+
+  public static final class WebRoleHandler extends StringHandler {
+    @Override
+    public KList<String> getPossibilities() {
+      KList<String> roles = new KList<>();
+      for (WebRole role : WebRole.values()) {
+        roles.add(role.id());
+      }
+      return roles;
+    }
+  }
+
+  record PairingMaterial(
+      String code,
+      String serverFingerprint,
+      String tokenFingerprint,
+      String tokenId
+  ) {
   }
 }

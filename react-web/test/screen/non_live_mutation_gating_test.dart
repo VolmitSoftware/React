@@ -115,6 +115,7 @@ void main() {
           WorldOverridesView(
             worlds: const <WorldSettings>[
               WorldSettings(
+                key: 'minecraft:world',
                 name: 'world',
                 pressureMode: PressureMode.normal,
                 budgetMs: 45,

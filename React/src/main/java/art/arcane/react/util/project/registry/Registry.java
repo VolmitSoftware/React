@@ -117,7 +117,8 @@ public class Registry<T extends Registered> {
     try {
       instance = (T) candidate.getConstructor().newInstance();
     } catch (Throwable e) {
-      React.warn("Failed to instantiate " + type.getSimpleName() + " " + candidate.getName() + ": " + e.getMessage());
+      React.warn("Failed to instantiate " + type.getSimpleName() + " " + candidate.getName()
+          + ": " + e.getMessage(), e);
       return;
     }
 

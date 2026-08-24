@@ -75,6 +75,15 @@ void main() {
         isTrue,
         reason: 'radius=1 produces a 3x3 grid and must use repeat(3,',
       );
+      expect(res.body, contains('reactor-heatmap-plane'));
+      expect(res.body, contains('data-origin-x="-1"'));
+      expect(res.body, contains('data-origin-z="-1"'));
+      expect(res.body, contains('data-center-x="0"'));
+      expect(res.body, contains('data-center-z="0"'));
+      expect(res.body, contains('data-axis-x="-1"'));
+      expect(res.body, contains('data-axis-z="1"'));
+      expect(res.body, contains('N −Z'));
+      expect(res.body, contains('E +X'));
     });
 
     testServer('renders scored cells with data-score attributes', (
@@ -122,6 +131,18 @@ void main() {
         isTrue,
         reason: 'scored cell must carry data-cz attribute',
       );
+      expect(
+        RegExp(
+          r'class="[^"]*reactor-heatmap-cell[^"]*is-center',
+        ).hasMatch(res.body),
+        isTrue,
+        reason: 'the requested center chunk must have a complete center ring',
+      );
+      expect(
+        res.body.contains('data-cx="-1"') && res.body.contains('data-cz="-1"'),
+        isTrue,
+        reason: 'unscored chunks remain explicit coordinate-plane cells',
+      );
     });
 
     testServer('renders min and max legend values', (
@@ -158,7 +179,7 @@ void main() {
       );
     });
 
-    testServer('empty cells renders No activity and no grid', (
+    testServer('empty cells retains the outlined coordinate plane', (
       ServerTester tester,
     ) async {
       tester.pumpComponent(
@@ -187,9 +208,12 @@ void main() {
       );
       expect(
         res.body.contains('repeat('),
-        isFalse,
-        reason: 'empty grid must not render a CSS grid repeat container',
+        isTrue,
+        reason: 'empty results must retain the world-coordinate plane',
       );
+      expect('reactor-heatmap-cell is-empty'.allMatches(res.body).length, 9);
+      expect(res.body, contains('data-origin-x="-1"'));
+      expect(res.body, contains('data-origin-z="-1"'));
     });
 
     testServer('min==max degenerate scale does not divide by zero', (

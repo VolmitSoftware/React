@@ -26,7 +26,6 @@ import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientboundExplodePacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.players.PlayerList;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
@@ -198,9 +197,9 @@ public final class NmsBridgeImpl implements NmsBridge {
     }
 
     @Override
-    public int broadcastMergedExplosion(World world, double x, double y, double z, float radius, double rangeBlocks) {
+    public boolean broadcastMergedExplosion(World world, double x, double y, double z, float radius, double rangeBlocks) {
         if (world == null) {
-            return 0;
+            return false;
         }
         try {
             ServerLevel serverLevel = ((CraftWorld) world).getHandle();
@@ -212,20 +211,11 @@ public final class NmsBridgeImpl implements NmsBridge {
             WeightedList<ExplosionParticleInfo> blockParticles = WeightedList.of();
             Packet<?> packet = new ClientboundExplodePacket(center, radius, 0, Optional.<Vec3>empty(), explosionParticle, explosionSound, blockParticles);
             playerList.broadcast(null, x, y, z, rangeBlocks, serverLevel.dimension(), packet);
-            int reached = 0;
-            for (ServerPlayer player : serverLevel.players()) {
-                double dx = player.getX() - x;
-                double dy = player.getY() - y;
-                double dz = player.getZ() - z;
-                if (dx * dx + dy * dy + dz * dz <= rangeBlocks * rangeBlocks) {
-                    reached++;
-                }
-            }
-            return reached;
+            return true;
         } catch (Throwable t) {
             LOG.log(Level.WARNING, "[React] broadcastMergedExplosion failed: " + t.getClass().getSimpleName()
-                    + (t.getMessage() == null ? "" : " - " + t.getMessage()));
-            return -1;
+                    + (t.getMessage() == null ? "" : " - " + t.getMessage()), t);
+            return false;
         }
     }
 
@@ -320,6 +310,7 @@ public final class NmsBridgeImpl implements NmsBridge {
                             .and(ElementMatchers.takesArguments(Packet.class));
             new ByteBuddy()
                     .redefine(targetClass)
+                    .visit(Advice.to(ExplosionPacketScopeAdvice.class).on(targetMethod))
                     .visit(MemberSubstitution.relaxed()
                             .method(sendMatcher)
                             .replaceWith(replacement)
@@ -332,7 +323,7 @@ public final class NmsBridgeImpl implements NmsBridge {
         } catch (Throwable t) {
             LOG.log(Level.WARNING, "[React] NMS substitution install failed for " + key + ": "
                     + t.getClass().getSimpleName()
-                    + (t.getMessage() == null ? "" : " - " + t.getMessage()));
+                    + (t.getMessage() == null ? "" : " - " + t.getMessage()), t);
             return false;
         }
     }
@@ -403,7 +394,7 @@ public final class NmsBridgeImpl implements NmsBridge {
             return true;
         } catch (Throwable t) {
             LOG.log(Level.WARNING, "[React] NMS advice install failed for " + key + ": " + t.getClass().getSimpleName()
-                    + (t.getMessage() == null ? "" : " - " + t.getMessage()));
+                    + (t.getMessage() == null ? "" : " - " + t.getMessage()), t);
             return false;
         }
     }
@@ -419,7 +410,7 @@ public final class NmsBridgeImpl implements NmsBridge {
         } catch (Throwable t) {
             LOG.log(Level.WARNING, "[React] NMS hook configure failed for " + targetClassName + " using "
                     + hookOwnerClass.getName() + ": " + t.getClass().getSimpleName()
-                    + (t.getMessage() == null ? "" : " - " + t.getMessage()));
+                    + (t.getMessage() == null ? "" : " - " + t.getMessage()), t);
             return false;
         }
     }
@@ -474,7 +465,7 @@ public final class NmsBridgeImpl implements NmsBridge {
                 System.setProperty(shadedPrefix + ".experimental", "true");
                 cachedInstrumentation = ByteBuddyAgent.install();
             } catch (Throwable t) {
-                LOG.log(Level.WARNING, "[React] ByteBuddyAgent install failed: " + t.getMessage());
+                LOG.log(Level.WARNING, "[React] ByteBuddyAgent install failed: " + t.getMessage(), t);
             }
             return cachedInstrumentation;
         }

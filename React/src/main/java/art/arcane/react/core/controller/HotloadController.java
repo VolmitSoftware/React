@@ -61,7 +61,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Level;
 
 @ConfigDescription("Watches React config files and hot-applies changes without requiring a full /react reload.")
 public class HotloadController extends TickedObject implements IController {
@@ -85,8 +84,7 @@ public class HotloadController extends TickedObject implements IController {
   private volatile boolean notifyOperators = true;
 
   private transient File dataFolder;
-  private transient File configToml;
-  private transient File configLegacyJson;
+  private transient File reactToml;
   private transient File localeOverrideFolder;
   private transient volatile HotloadRuntime hotloadRuntime;
   private transient volatile String lastSlowTickPollSummary = "poll=not-run";
@@ -104,8 +102,7 @@ public class HotloadController extends TickedObject implements IController {
   public void start() {
     stopWorker();
     dataFolder = React.instance.getDataFolder();
-    configToml = React.instance.getDataFile("config.toml");
-    configLegacyJson = React.instance.getDataFile("config.json");
+    reactToml = React.instance.getDataFile("react.toml");
     localeOverrideFolder = ReactLanguage.overrideFolder();
     HotloadTaskExecutor worker = new HotloadTaskExecutor(
         "React-Hotload-IO",
@@ -213,16 +210,12 @@ public class HotloadController extends TickedObject implements IController {
       dataFolder = React.instance.getDataFolder();
     }
 
-    if (configToml == null) {
-      configToml = React.instance.getDataFile("config.toml");
-    }
-    if (configLegacyJson == null) {
-      configLegacyJson = React.instance.getDataFile("config.json");
+    if (reactToml == null) {
+      reactToml = React.instance.getDataFile("react.toml");
     }
 
     List<File> watchedFiles = new ArrayList<>();
-    watchedFiles.add(configToml);
-    watchedFiles.add(configLegacyJson);
+    watchedFiles.add(reactToml);
     List<File> watchedDirectories = new ArrayList<>();
     for (String category : MANAGED_CATEGORIES) {
       File categoryFolder = React.instance.getDataFolderNoCreate(category);
@@ -236,7 +229,7 @@ public class HotloadController extends TickedObject implements IController {
         watchedFiles,
         watchedDirectories
     );
-    React.info("Config hotload watcher enabled for config.toml and managed component configs.");
+    React.verbose("Config hotload watcher enabled for react.toml and managed component configs.");
   }
 
   public void refreshAfterConfigReload() {
@@ -580,11 +573,6 @@ public class HotloadController extends TickedObject implements IController {
       File file,
       String rawContent
   ) throws Exception {
-    if (isShadowedLegacyJson(file)) {
-      React.verbose("Ignoring legacy json hotload because canonical toml exists: " + file.getPath());
-      return () -> false;
-    }
-
     if (isMainConfigFile(file)) {
       ReactConfiguration preparedConfig = ReactConfiguration.prepareHotloadSnapshot(file, rawContent);
       ReactLanguage.PreparedReload preparedLanguage = ReactLanguage.prepareHotload(
@@ -668,19 +656,20 @@ public class HotloadController extends TickedObject implements IController {
       if (!feature.applyConfigurationSnapshot(prepared)) {
         return false;
       }
-      boolean nowEnabled = feature.isEnabled();
-
-      if (wasActive && !nowEnabled) {
-        controller.deactivateFeature(feature);
-      } else if (!wasActive && nowEnabled) {
-        controller.activateFeature(feature);
-      } else if (wasActive) {
-        controller.deactivateFeature(feature);
-        controller.activateFeature(feature);
-      }
+      reconcileFeatureActivation(controller, feature, wasActive);
 
       return true;
     };
+  }
+
+  static void reconcileFeatureActivation(FeatureController controller, Feature feature, boolean wasActive) {
+    boolean shouldBeActive = controller.shouldActivateFeature(feature);
+    if (wasActive) {
+      controller.deactivateFeature(feature);
+    }
+    if (shouldBeActive) {
+      controller.activateFeature(feature);
+    }
   }
 
   private PreparedApply prepareTweakConfig(String id, File file, String rawContent) throws IOException {
@@ -825,28 +814,11 @@ public class HotloadController extends TickedObject implements IController {
   }
 
   private boolean isMainConfigFile(File file) {
-    return sameFile(file, configToml) || sameFile(file, configLegacyJson);
-  }
-
-  private boolean isShadowedLegacyJson(File file) {
-    if (file == null || !file.getName().toLowerCase(Locale.ROOT).endsWith(".json")) {
-      return false;
-    }
-
-    if (sameFile(file, configLegacyJson) && configToml != null && configToml.exists()) {
-      return true;
-    }
-
-    ManagedConfig managed = resolveManagedConfig(file);
-    if (managed != null) {
-      return ConfigFileSupport.toTomlFile(file).exists();
-    }
-
-    return false;
+    return sameFile(file, reactToml);
   }
 
   private boolean isManagedConfigFile(File file) {
-    if (file == null || isTemporaryArtifact(file) || !ConfigFileSupport.isSupportedConfigFile(file)) {
+    if (file == null || isTemporaryArtifact(file) || !ConfigFileSupport.isTomlFile(file)) {
       return false;
     }
 
@@ -855,7 +827,7 @@ public class HotloadController extends TickedObject implements IController {
     }
 
     String relative = relativizeToDataFolder(file).replace('\\', '/').toLowerCase(Locale.ROOT);
-    if ("config.toml".equals(relative) || "config.json".equals(relative)) {
+    if ("react.toml".equals(relative)) {
       return true;
     }
 
@@ -912,8 +884,7 @@ public class HotloadController extends TickedObject implements IController {
     List<File> files = new ArrayList<>();
     Set<String> added = new HashSet<>();
 
-    addIfConfig(files, added, configToml);
-    addIfConfig(files, added, configLegacyJson);
+    addIfConfig(files, added, reactToml);
 
     if (dataFolder == null) {
       dataFolder = React.instance == null ? null : React.instance.getDataFolder();
@@ -1119,12 +1090,7 @@ public class HotloadController extends TickedObject implements IController {
   }
 
   private void logTransientFailure(String message, Throwable failure) {
-    if (React.instance != null) {
-      React.instance.getLogger().log(Level.WARNING, message, failure);
-      return;
-    }
-    System.err.println("[React] " + message);
-    failure.printStackTrace();
+    React.warn(message, failure);
   }
 
   private String normalizeContent(String text) {

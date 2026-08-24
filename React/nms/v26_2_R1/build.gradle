@@ -19,6 +19,12 @@ dependencies {
     compileOnly('net.bytebuddy:byte-buddy:1.14.19')
     compileOnly('net.bytebuddy:byte-buddy-agent:1.14.19')
     compileOnly('it.unimi.dsi:fastutil:8.5.8')
+    testImplementation(project(':bridge-api'))
+    testImplementation('org.junit.jupiter:junit-jupiter:5.11.4')
+    testRuntimeOnly('org.junit.platform:junit-platform-launcher:1.11.4')
+    testImplementation('org.mockito:mockito-core:5.18.0')
+    testImplementation('net.bytebuddy:byte-buddy:1.17.6')
+    testImplementation('net.bytebuddy:byte-buddy-agent:1.17.6')
 }
 
 java {
@@ -31,4 +37,10 @@ tasks.named('compileJava', JavaCompile).configure {
     options.compilerArgs.add('-parameters')
     options.encoding = 'UTF-8'
     options.release.set(25)
+}
+
+tasks.named('test', Test).configure {
+    useJUnitPlatform()
+    systemProperty('net.bytebuddy.experimental', 'true')
+    jvmArgs('-XX:+EnableDynamicAgentLoading')
 }

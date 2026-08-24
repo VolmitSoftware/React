@@ -115,6 +115,13 @@ final class VisualQaServer {
         await _writeError(request, HttpStatus.notFound, 'Route not found');
         return;
       }
+      if (segments.length == 3 && segments[2] == 'ping') {
+        await _requireGetAndWrite(
+          request,
+          VisualQaFixtures.capabilities(VisualQaProfile.alpha),
+        );
+        return;
+      }
       final _VisualQaSession? session = _sessionForAuthorization(request);
       if (session == null) {
         await _writeError(request, HttpStatus.unauthorized, 'Invalid QA token');
@@ -140,13 +147,6 @@ final class VisualQaServer {
     List<String> segments,
   ) async {
     final String resource = segments.first;
-    if (resource == 'ping' && segments.length == 1) {
-      await _requireGetAndWrite(
-        request,
-        VisualQaFixtures.capabilities(session.profile),
-      );
-      return;
-    }
     if (resource == 'identity' && segments.length == 1) {
       await _requireGetAndWrite(
         request,
@@ -287,9 +287,36 @@ final class VisualQaServer {
       return;
     }
     if (segments.length == 2) {
+      final Map<String, String> query = request.uri.queryParameters;
+      final String? centerXValue = query['centerX'];
+      final String? centerZValue = query['centerZ'];
+      final String? radiusValue = query['radius'];
+      final int? centerX = centerXValue == null
+          ? null
+          : int.tryParse(centerXValue);
+      final int? centerZ = centerZValue == null
+          ? null
+          : int.tryParse(centerZValue);
+      final int? radius = radiusValue == null
+          ? null
+          : int.tryParse(radiusValue);
+      if ((centerXValue != null && centerX == null) ||
+          (centerZValue != null && centerZ == null) ||
+          (radiusValue != null && radius == null)) {
+        await _writeError(
+          request,
+          HttpStatus.badRequest,
+          'Heatmap coordinates and radius must be integers',
+        );
+        return;
+      }
       final Map<String, dynamic>? heatmap = VisualQaFixtures.heatmap(
         session.profile,
         segments[1],
+        world: query['world'],
+        centerX: centerX,
+        centerZ: centerZ,
+        radius: radius,
       );
       if (heatmap == null) {
         await _writeError(
@@ -527,28 +554,68 @@ final class VisualQaServer {
       await _writeError(request, HttpStatus.notFound, 'Socket not found');
       return;
     }
-    final String? token = request.uri.queryParameters['token'];
-    final _VisualQaSession? session = token == null ? null : _sessions[token];
-    if (session == null) {
-      await _writeError(request, HttpStatus.unauthorized, 'Invalid QA token');
-      return;
-    }
     final WebSocket socket = await WebSocketTransformer.upgrade(request);
-    if (path == '/ws/metrics') {
-      _metricsSockets[socket] = session.profile;
-      socket.add(jsonEncode(VisualQaFixtures.metrics(session.profile)));
-    } else {
-      _logSockets[socket] = session.profile;
-      for (final String line in session.logs) {
-        socket.add(jsonEncode(<String, Object?>{'type': 'log', 'line': line}));
+    bool authenticated = false;
+    late final Timer authenticationTimeout;
+    authenticationTimeout = Timer(const Duration(seconds: 2), () {
+      if (!authenticated) {
+        unawaited(
+          socket.close(
+            WebSocketStatus.policyViolation,
+            'Authentication timed out',
+          ),
+        );
       }
-    }
+    });
     socket.listen(
-      (dynamic _) {},
-      onError: (Object _) => _removeSocket(socket),
-      onDone: () => _removeSocket(socket),
+      (Object? frame) {
+        if (authenticated) return;
+        final _VisualQaSession? session = _sessionForSocketAuth(frame);
+        if (session == null) {
+          authenticationTimeout.cancel();
+          unawaited(
+            socket.close(WebSocketStatus.policyViolation, 'Invalid QA token'),
+          );
+          return;
+        }
+        authenticated = true;
+        authenticationTimeout.cancel();
+        if (path == '/ws/metrics') {
+          _metricsSockets[socket] = session.profile;
+          socket.add(jsonEncode(VisualQaFixtures.metrics(session.profile)));
+          return;
+        }
+        _logSockets[socket] = session.profile;
+        for (final String line in session.logs) {
+          socket.add(
+            jsonEncode(<String, Object?>{'type': 'log', 'line': line}),
+          );
+        }
+      },
+      onError: (Object _) {
+        authenticationTimeout.cancel();
+        _removeSocket(socket);
+      },
+      onDone: () {
+        authenticationTimeout.cancel();
+        _removeSocket(socket);
+      },
       cancelOnError: true,
     );
+  }
+
+  _VisualQaSession? _sessionForSocketAuth(Object? frame) {
+    if (frame is! String) return null;
+    try {
+      final Object? decoded = jsonDecode(frame);
+      if (decoded is! Map<String, dynamic> || decoded['type'] != 'auth') {
+        return null;
+      }
+      final Object? token = decoded['token'];
+      return token is String ? _sessions[token] : null;
+    } on Object {
+      return null;
+    }
   }
 
   _VisualQaSession? _sessionForAuthorization(HttpRequest request) {

@@ -52,7 +52,8 @@ public class FeatureHopperTokenBucket extends ReactFeature implements Listener {
   private boolean bypassWhenNearbyPlayers = true;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Bypass player radius used by hopper token bucket (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
   private double bypassPlayerRadius = 16;
-  private transient Map<UUID, Long2ObjectOpenHashMap<Bucket>> buckets = new ConcurrentHashMap<>();
+  private transient volatile Map<UUID, Long2ObjectOpenHashMap<Bucket>> buckets = new ConcurrentHashMap<>();
+  private transient volatile boolean active;
 
   public FeatureHopperTokenBucket() {
     super(ID);
@@ -61,11 +62,13 @@ public class FeatureHopperTokenBucket extends ReactFeature implements Listener {
   @Override
   public void onActivate() {
     buckets = new ConcurrentHashMap<>();
+    active = true;
   }
 
   @Override
   public void onDeactivate() {
-    buckets.clear();
+    active = false;
+    buckets = new ConcurrentHashMap<>();
   }
 
   @Override
@@ -77,7 +80,8 @@ public class FeatureHopperTokenBucket extends ReactFeature implements Listener {
   public void onTick() {
     long now = System.currentTimeMillis();
     long expiry = 60000L;
-    Iterator<Map.Entry<UUID, Long2ObjectOpenHashMap<Bucket>>> worldIterator = buckets.entrySet().iterator();
+    Map<UUID, Long2ObjectOpenHashMap<Bucket>> currentBuckets = buckets;
+    Iterator<Map.Entry<UUID, Long2ObjectOpenHashMap<Bucket>>> worldIterator = currentBuckets.entrySet().iterator();
     while (worldIterator.hasNext()) {
       Map.Entry<UUID, Long2ObjectOpenHashMap<Bucket>> worldEntry = worldIterator.next();
       Long2ObjectOpenHashMap<Bucket> chunkMap = worldEntry.getValue();
@@ -99,14 +103,30 @@ public class FeatureHopperTokenBucket extends ReactFeature implements Listener {
       return;
     }
 
+    if (!tryConsume(location)) {
+      event.setCancelled(true);
+    }
+  }
+
+  boolean tryConsume(Location location) {
+    if (!active) {
+      return true;
+    }
+    if (location == null || location.getWorld() == null) {
+      return false;
+    }
     if (bypassWhenNearbyPlayers && React.hasNearbyPlayer(location, bypassPlayerRadius)) {
-      return;
+      return true;
     }
 
     long now = System.currentTimeMillis();
     UUID worldId = location.getWorld().getUID();
     long chunkKey = packChunk(location.getBlockX() >> 4, location.getBlockZ() >> 4);
-    Long2ObjectOpenHashMap<Bucket> chunkMap = buckets.computeIfAbsent(worldId, ignored -> new Long2ObjectOpenHashMap<>());
+    Map<UUID, Long2ObjectOpenHashMap<Bucket>> currentBuckets = buckets;
+    Long2ObjectOpenHashMap<Bucket> chunkMap = currentBuckets.computeIfAbsent(
+        worldId,
+        ignored -> new Long2ObjectOpenHashMap<>()
+    );
     Bucket bucket;
     synchronized (chunkMap) {
       bucket = chunkMap.get(chunkKey);
@@ -115,10 +135,11 @@ public class FeatureHopperTokenBucket extends ReactFeature implements Listener {
         chunkMap.put(chunkKey, bucket);
       }
     }
+    return bucket.consume(now, bucketCapacity, refillPerSecond, costPerMove);
+  }
 
-    if (!bucket.consume(now, bucketCapacity, refillPerSecond, costPerMove)) {
-      event.setCancelled(true);
-    }
+  boolean isEnforcing() {
+    return active;
   }
 
   private Location resolveHopperLocation(InventoryMoveItemEvent event) {
@@ -141,7 +162,7 @@ public class FeatureHopperTokenBucket extends ReactFeature implements Listener {
     @art.arcane.react.util.project.config.ConfigDoc(value = "Internal timestamp used by hopper token bucket to track timing windows and decay.", impact = "Primarily runtime state; changing this manually can distort cooldown or throttling behavior.")
     private long lastRefill;
     @art.arcane.react.util.project.config.ConfigDoc(value = "Internal timestamp used by hopper token bucket to track timing windows and decay.", impact = "Primarily runtime state; changing this manually can distort cooldown or throttling behavior.")
-    private long lastUse;
+    private volatile long lastUse;
 
     private Bucket(long now, double capacity) {
       tokens = Math.max(1D, capacity);
@@ -149,7 +170,7 @@ public class FeatureHopperTokenBucket extends ReactFeature implements Listener {
       lastUse = now;
     }
 
-    private boolean consume(long now, double capacity, double refillPerSecond, double cost) {
+    private synchronized boolean consume(long now, double capacity, double refillPerSecond, double cost) {
       double elapsedSeconds = Math.max(0D, (now - lastRefill) / 1000D);
       if (elapsedSeconds > 0) {
         tokens = Math.min(capacity, tokens + (elapsedSeconds * refillPerSecond));

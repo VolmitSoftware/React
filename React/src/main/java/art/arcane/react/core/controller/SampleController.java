@@ -78,7 +78,7 @@ public class SampleController extends TickedObject implements IController {
         React.instance.registerListener(l);
       }
     }));
-    React.info("Registered " + samplers.size() + " Samplers");
+    React.verbose("Registered " + samplers.size() + " Samplers");
     J.s(() -> React.controller(PlayerController.class).updateMonitors());
   }
 
@@ -208,7 +208,8 @@ public class SampleController extends TickedObject implements IController {
                 + " class=" + sampler.getClass().getSimpleName()
                 + " state=" + samplerStates.get(id)
                 + " cause=" + summarizeThrowable(e)
-                + " config=/plugins/React/sampler/" + id + ".toml"
+                + " config=/plugins/React/sampler/" + id + ".toml",
+            e
         );
         return false;
       }
@@ -243,7 +244,8 @@ public class SampleController extends TickedObject implements IController {
                 + " class=" + sampler.getClass().getSimpleName()
                 + " state=" + samplerStates.get(id)
                 + " cause=" + summarizeThrowable(e)
-                + " config=/plugins/React/sampler/" + id + ".toml"
+                + " config=/plugins/React/sampler/" + id + ".toml",
+            e
         );
         return false;
       }
@@ -265,7 +267,8 @@ public class SampleController extends TickedObject implements IController {
           "Sampler start failed: id=" + sampler.getId()
               + " class=" + sampler.getClass().getSimpleName()
               + " cause=" + summarizeThrowable(e)
-              + " config=/plugins/React/sampler/" + sampler.getId() + ".toml"
+              + " config=/plugins/React/sampler/" + sampler.getId() + ".toml",
+          e
       );
     }
   }
@@ -282,7 +285,8 @@ public class SampleController extends TickedObject implements IController {
       React.warn(
           "Sampler stop failed: id=" + sampler.getId()
               + " class=" + sampler.getClass().getSimpleName()
-              + " cause=" + summarizeThrowable(e)
+              + " cause=" + summarizeThrowable(e),
+          e
       );
     } finally {
       setSamplerState(sampler.getId(), SamplerState.STOPPED);

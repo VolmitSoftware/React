@@ -29,6 +29,7 @@ enum PressureMode {
 }
 
 class WorldSettings {
+  final String key;
   final String name;
   final PressureMode pressureMode;
   final double budgetMs;
@@ -36,6 +37,7 @@ class WorldSettings {
   final double releaseMs;
 
   const WorldSettings({
+    required this.key,
     required this.name,
     required this.pressureMode,
     required this.budgetMs,
@@ -45,6 +47,7 @@ class WorldSettings {
 
   factory WorldSettings.fromJson(Map<String, dynamic> j) {
     return WorldSettings(
+      key: j['key'] as String,
       name: j['name'] as String,
       pressureMode: PressureMode.fromWire(j['pressureMode'] as String),
       budgetMs: (j['budgetMs'] as num).toDouble(),
@@ -54,6 +57,7 @@ class WorldSettings {
   }
 
   Map<String, dynamic> toJson() => <String, dynamic>{
+    'key': key,
     'name': name,
     'pressureMode': pressureMode.wire,
     'budgetMs': budgetMs,
@@ -68,6 +72,7 @@ class WorldSettings {
     double? releaseMs,
   }) {
     return WorldSettings(
+      key: key,
       name: name,
       pressureMode: pressureMode ?? this.pressureMode,
       budgetMs: budgetMs ?? this.budgetMs,

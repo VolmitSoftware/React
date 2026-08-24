@@ -12,6 +12,7 @@ class SvgFallbackChart extends StatelessComponent {
     this.height = 160,
     this.hiddenSeries = const <int>{},
     this.activeSample,
+    this.valueFormatter,
     this.onSampleHover,
     super.key,
   });
@@ -20,6 +21,7 @@ class SvgFallbackChart extends StatelessComponent {
   final int height;
   final Set<int> hiddenSeries;
   final int? activeSample;
+  final String Function(double value)? valueFormatter;
   final void Function(int?)? onSampleHover;
 
   @override
@@ -253,12 +255,16 @@ class SvgFallbackChart extends StatelessComponent {
   }
 
   String _formatBound(double value) {
+    final String Function(double value)? formatter = valueFormatter;
+    if (formatter != null) return formatter(value);
     if (value.abs() >= 1000.0) return value.toStringAsFixed(0);
     if (value.abs() >= 100.0) return value.toStringAsFixed(1);
     return value.toStringAsFixed(2);
   }
 
   String _formatValue(double value) {
+    final String Function(double value)? formatter = valueFormatter;
+    if (formatter != null) return formatter(value);
     if (value.abs() >= 100.0) return value.toStringAsFixed(1);
     return value.toStringAsFixed(2);
   }

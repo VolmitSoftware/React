@@ -27,7 +27,11 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 public class SamplerPingJitter extends ReactCachedSampler {
   public static final String ID = "ping-jitter";
@@ -44,7 +48,7 @@ public class SamplerPingJitter extends ReactCachedSampler {
   @Override
   public void start() {
     super.start();
-    avg = new RollingSequence(averagingSamples);
+    avg = new RollingSequence(Math.max(1, averagingSamples));
     lastPing = new HashMap<>();
   }
 

@@ -69,4 +69,17 @@ public final class ReactScopedPressure {
   public static boolean isEnabled() {
     return enabled;
   }
+
+  public static boolean isAnyPressure() {
+    if (!enabled) {
+      return false;
+    }
+
+    for (PerWorldPressure pressure : STATE.values()) {
+      if (pressure.isPressure()) {
+        return true;
+      }
+    }
+    return false;
+  }
 }

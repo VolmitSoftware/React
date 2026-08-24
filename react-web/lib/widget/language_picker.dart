@@ -83,8 +83,8 @@ class _ReactorLanguagePickerState extends State<ReactorLanguagePicker> {
         dom.button(
           id: 'reactor-language-trigger',
           classes: _open
-              ? 'reactor-bar-button is-compact is-active'
-              : 'reactor-bar-button is-compact',
+              ? 'reactor-bar-button reactor-language-trigger is-active'
+              : 'reactor-bar-button reactor-language-trigger',
           attributes: <String, String>{
             'type': 'button',
             'aria-label': triggerLabel,
@@ -93,7 +93,13 @@ class _ReactorLanguagePickerState extends State<ReactorLanguagePicker> {
             'aria-controls': 'reactor-language-options',
           },
           events: <String, EventCallback>{'click': (_) => _toggle()},
-          <Widget>[ArcaneIcon.languages(size: IconSize.sm)],
+          <Widget>[
+            ArcaneIcon.languages(size: IconSize.sm),
+            dom.span(classes: 'reactor-language-trigger-label', <Widget>[
+              Component.text(active.nativeName),
+            ]),
+            ArcaneIcon.chevronDown(size: IconSize.xs),
+          ],
         ),
         if (_open) ...<Widget>[
           dom.div(

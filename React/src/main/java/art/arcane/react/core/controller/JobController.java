@@ -21,6 +21,7 @@ package art.arcane.react.core.controller;
 
 import art.arcane.chrono.ChronoLatch;
 import art.arcane.chrono.PrecisionStopwatch;
+import art.arcane.react.React;
 import art.arcane.react.api.event.layer.ServerTickEvent;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.plugin.IController;
@@ -119,7 +120,7 @@ public class JobController implements IController {
       try {
         job.run();
       } catch (Throwable e) {
-        e.printStackTrace();
+        React.reportError("React scheduler job failed", e);
       }
 
       executed++;

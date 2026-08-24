@@ -82,8 +82,8 @@ public class EnvironmentRoutesIntegrationTest {
         when(registry.all()).thenReturn(List.of());
 
         WebConfiguration config = new WebConfiguration();
-        config.setEnabled(true);
-        config.setBindAddress("127.0.0.1");
+        config.setListenerEnabled(true);
+        config.setListenAddress("127.0.0.1");
         config.setPort(0);
         config.setRequireTokenForReads(true);
 
@@ -121,6 +121,9 @@ public class EnvironmentRoutesIntegrationTest {
         assertNotNull(data.getAsJsonObject("memory"), "data.memory must be present");
         assertNotNull(data.getAsJsonObject("jvm"), "data.jvm must be present");
         assertNotNull(data.getAsJsonObject("server"), "data.server must be present");
+        assertNotNull(data.getAsJsonArray("disks"), "data.disks must be present");
+        assertNotNull(data.getAsJsonArray("mounts"), "data.mounts must be present");
+        assertNotNull(data.getAsJsonArray("network"), "data.network must be present");
         assertEquals("9.9.9-test", data.getAsJsonObject("server").get("version").getAsString(),
             "data.server.version must match injected identity");
     }

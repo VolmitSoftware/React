@@ -23,6 +23,9 @@ import art.arcane.react.React;
 import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.content.sampler.SamplerIncidentScore;
 import art.arcane.react.content.sampler.SamplerTickTime;
+import art.arcane.react.core.controller.FeatureController;
+import art.arcane.react.core.controller.ObserverController;
+import art.arcane.react.core.controller.ObserverController.LoadedChunkTarget;
 import art.arcane.react.nms.HopperTickHook;
 import art.arcane.react.nms.NmsBridge;
 import art.arcane.react.nms.NmsBridges;
@@ -30,8 +33,6 @@ import art.arcane.react.nms.TickDecision;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.project.config.ConfigDescription;
 import art.arcane.react.util.project.config.ConfigDoc;
-import it.unimi.dsi.fastutil.longs.Long2LongMap;
-import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import lombok.Getter;
@@ -52,14 +53,19 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPistonExtendEvent;
 import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.world.ChunkLoadEvent;
+import org.bukkit.event.world.ChunkUnloadEvent;
+import org.bukkit.event.world.WorldUnloadEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.HashMap;
-import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.Queue;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -68,6 +74,17 @@ public class FeatureHopperChainCoalescing extends ReactFeature implements Listen
   public static final String ID = "hopper-chain-coalescing";
   private static final int MAX_CHAIN_LENGTH = 256;
   private static final int CHAIN_REBUILD_DEBOUNCE_MS = 250;
+  private static final int MAX_PENDING_REPAIRS = 8192;
+  private static final int MAX_PENDING_TRANSFERS = 8192;
+  private static final int MAX_COORDINATE_REPAIRS_PER_TICK = 256;
+  private static final int MAX_CHAIN_TRANSFERS_PER_TICK = 128;
+  private static final BlockFace[] UPSTREAM_FACES = {
+      BlockFace.NORTH,
+      BlockFace.SOUTH,
+      BlockFace.EAST,
+      BlockFace.WEST,
+      BlockFace.UP
+  };
 
   @ConfigDoc(value = "Main evaluation interval for hopper chain coalescing in milliseconds.", impact = "Lower values rebuild stale chains faster but consume more CPU; higher values reduce overhead.")
   private int tickIntervalMS = 1000;
@@ -75,8 +92,10 @@ public class FeatureHopperChainCoalescing extends ReactFeature implements Listen
   private int bypassRadius = 16;
   @ConfigDoc(value = "Minimum chain length to count as a coalesceable chain.", impact = "Higher values count only large sorting chains; lower values include shorter chains at extra accounting cost.")
   private int minChainLength = 4;
-  @ConfigDoc(value = "Interval between full chain index rebuilds (ticks).", impact = "Higher values reuse existing chains longer but drift if block edits race the listeners; lower values rebuild more often.")
+  @ConfigDoc(value = "Interval before a chunk coordinate becomes eligible for maintenance repair (ticks).", impact = "Higher values rely longer on block and chunk events; lower values revisit indexed coordinates more often.")
   private int rebuildIntervalTicks = 200;
+  @ConfigDoc(value = "Maximum chunk coordinates repaired per maintenance tick.", impact = "Higher values discover existing hopper chains faster; lower values spread region work across more ticks.")
+  private int repairChunksPerTick = 32;
   @ConfigDoc(value = "Trigger threshold for engaging coalescing accounting rather than passive detection (incident score).", impact = "Higher values reserve coalescing for severe incidents; lower values engage earlier.")
   private double engageOnIncident = 60;
   @ConfigDoc(value = "Tick-time threshold for engaging coalescing accounting (milliseconds).", impact = "Higher values delay activation; lower values make this threshold easier to cross.")
@@ -89,15 +108,25 @@ public class FeatureHopperChainCoalescing extends ReactFeature implements Listen
   private boolean featureBucketBypass = false;
 
   private transient Map<UUID, Long2ObjectOpenHashMap<HopperChain>> chainsByWorldChunk;
-  private transient Map<UUID, Long2LongOpenHashMap> chainHeadByHopper;
-  private transient Map<UUID, Long2LongOpenHashMap> rebuildDebounce;
+  private transient Map<ChunkCoordinate, Set<Long>> chainHeadsByChunk;
+  private transient Map<UUID, Long2ObjectOpenHashMap<HopperNode>> hopperNodesByWorld;
+  private transient Map<ChunkCoordinate, long[]> hopperPositionsByChunk;
+  private transient Map<ChunkCoordinate, Long> lastRepairTickByChunk;
+  private transient Map<ChunkCoordinate, Long> rebuildDebounce;
+  private transient Queue<ChunkCoordinate> repairQueue;
+  private transient Set<ChunkCoordinate> queuedRepairs;
+  private transient Queue<ChainTarget> transferRotation;
+  private transient Set<ChainTarget> queuedTransfers;
+  private transient final AtomicLong lifecycleGeneration = new AtomicLong();
   private transient final AtomicLong chainsDetected = new AtomicLong(0L);
   private transient final AtomicLong chainLengthSum = new AtomicLong(0L);
   private transient final AtomicLong fastPathChainCount = new AtomicLong(0L);
   private transient final AtomicLong ticksSavedAccumulator = new AtomicLong(0L);
-  private transient volatile long lastRebuildTick;
+  private transient final AtomicLong ticksSavedPerEvaluation = new AtomicLong(0L);
   private transient volatile long tickCounter;
   private transient volatile boolean engaged;
+  private transient volatile boolean active;
+  private transient volatile FeatureHopperTokenBucket hopperTokenBucket;
   @Getter
   private transient volatile boolean bridgeActive;
   private transient final AtomicLong skippedHopperTicks = new AtomicLong(0L);
@@ -110,34 +139,72 @@ public class FeatureHopperChainCoalescing extends ReactFeature implements Listen
 
   @Override
   public void onActivate() {
+    lifecycleGeneration.incrementAndGet();
+    active = true;
     chainsByWorldChunk = new ConcurrentHashMap<>();
-    chainHeadByHopper = new ConcurrentHashMap<>();
+    chainHeadsByChunk = new ConcurrentHashMap<>();
+    hopperNodesByWorld = new ConcurrentHashMap<>();
+    hopperPositionsByChunk = new ConcurrentHashMap<>();
+    lastRepairTickByChunk = new ConcurrentHashMap<>();
     rebuildDebounce = new ConcurrentHashMap<>();
+    repairQueue = new ArrayBlockingQueue<>(MAX_PENDING_REPAIRS);
+    queuedRepairs = ConcurrentHashMap.newKeySet();
+    transferRotation = new ArrayBlockingQueue<>(MAX_PENDING_TRANSFERS);
+    queuedTransfers = ConcurrentHashMap.newKeySet();
     chainsDetected.set(0L);
     chainLengthSum.set(0L);
     fastPathChainCount.set(0L);
     ticksSavedAccumulator.set(0L);
+    ticksSavedPerEvaluation.set(0L);
     skippedHopperTicks.set(0L);
     synthesizedTransfers.set(0L);
     middleHopperToChain.clear();
-    lastRebuildTick = 0L;
     tickCounter = 0L;
     engaged = false;
+    hopperTokenBucket = resolveHopperTokenBucket();
     installBridgeHook();
   }
 
   @Override
   public void onDeactivate() {
+    active = false;
+    lifecycleGeneration.incrementAndGet();
     if (chainsByWorldChunk != null) {
       chainsByWorldChunk.clear();
     }
-    if (chainHeadByHopper != null) {
-      chainHeadByHopper.clear();
+    if (chainHeadsByChunk != null) {
+      chainHeadsByChunk.clear();
+    }
+    if (hopperNodesByWorld != null) {
+      hopperNodesByWorld.clear();
+    }
+    if (hopperPositionsByChunk != null) {
+      hopperPositionsByChunk.clear();
+    }
+    if (lastRepairTickByChunk != null) {
+      lastRepairTickByChunk.clear();
     }
     if (rebuildDebounce != null) {
       rebuildDebounce.clear();
     }
+    if (repairQueue != null) {
+      repairQueue.clear();
+    }
+    if (queuedRepairs != null) {
+      queuedRepairs.clear();
+    }
+    if (transferRotation != null) {
+      transferRotation.clear();
+    }
+    if (queuedTransfers != null) {
+      queuedTransfers.clear();
+    }
+    chainsDetected.set(0L);
+    chainLengthSum.set(0L);
+    fastPathChainCount.set(0L);
+    ticksSavedPerEvaluation.set(0L);
     middleHopperToChain.clear();
+    hopperTokenBucket = null;
     uninstallBridgeHook();
   }
 
@@ -183,6 +250,9 @@ public class FeatureHopperChainCoalescing extends ReactFeature implements Listen
       if (chain.length() < 3) {
         return TickDecision.RUN_VANILLA;
       }
+      if (requiresBucketPermit() && !chain.bucketPermit) {
+        return TickDecision.RUN_VANILLA;
+      }
       long head = chain.positions[0];
       long tail = chain.positions[chain.length() - 1];
       if (packed == head || packed == tail) {
@@ -202,49 +272,30 @@ public class FeatureHopperChainCoalescing extends ReactFeature implements Listen
     bridgeActive = false;
   }
 
-  private void publishMiddleMapping() {
-    Map<UUID, Long2ObjectOpenHashMap<HopperChain>> next = new HashMap<>();
-    for (Map.Entry<UUID, Long2ObjectOpenHashMap<HopperChain>> worldEntry : chainsByWorldChunk.entrySet()) {
-      Long2ObjectOpenHashMap<HopperChain> mapping = next.computeIfAbsent(worldEntry.getKey(), ignored -> new Long2ObjectOpenHashMap<>());
-      Long2ObjectOpenHashMap<HopperChain> chunkChains = worldEntry.getValue();
-      synchronized (chunkChains) {
-        Iterator<Long2ObjectOpenHashMap.Entry<HopperChain>> iterator = chunkChains.long2ObjectEntrySet().fastIterator();
-        while (iterator.hasNext()) {
-          HopperChain chain = iterator.next().getValue();
-          if (!chain.fastPathEligible || chain.bypassedByPlayer || chain.length() < 3) {
-            continue;
-          }
-          for (int i = 1; i < chain.length() - 1; i++) {
-            mapping.put(chain.positions[i], chain);
-          }
-        }
+  private void synthesizeChainTransfers(long generation) {
+    int remaining = MAX_CHAIN_TRANSFERS_PER_TICK;
+    while (remaining-- > 0 && isActive(generation)) {
+      ChainTarget target = transferRotation.poll();
+      if (target == null) {
+        return;
       }
-    }
-    middleHopperToChain.clear();
-    middleHopperToChain.putAll(next);
-  }
-
-  private void synthesizeChainTransfers() {
-    for (Map.Entry<UUID, Long2ObjectOpenHashMap<HopperChain>> worldEntry : chainsByWorldChunk.entrySet()) {
-      World world = Bukkit.getWorld(worldEntry.getKey());
-      if (world == null) {
+      if (!queuedTransfers.contains(target)) {
         continue;
       }
-      Long2ObjectOpenHashMap<HopperChain> chunkChains = worldEntry.getValue();
-      synchronized (chunkChains) {
-        Iterator<Long2ObjectOpenHashMap.Entry<HopperChain>> iterator = chunkChains.long2ObjectEntrySet().fastIterator();
-        while (iterator.hasNext()) {
-          HopperChain chain = iterator.next().getValue();
-          if (!chain.fastPathEligible || chain.bypassedByPlayer || chain.length() < 3) {
-            continue;
-          }
-          synthesizeChainTransfer(world, chain);
-        }
+      HopperChain chain = chain(target);
+      if (chain == null || !chain.fastPathEligible || chain.bypassedByPlayer || chain.length() < 3) {
+        queuedTransfers.remove(target);
+        continue;
+      }
+      transferRotation.offer(target);
+      World world = Bukkit.getWorld(target.worldId);
+      if (world != null) {
+        synthesizeChainTransfer(world, chain, generation);
       }
     }
   }
 
-  private void synthesizeChainTransfer(World world, HopperChain chain) {
+  private void synthesizeChainTransfer(World world, HopperChain chain, long generation) {
     long head = chain.positions[0];
     long tail = chain.positions[chain.length() - 1];
     int hx = unpackX(head);
@@ -256,10 +307,29 @@ public class FeatureHopperChainCoalescing extends ReactFeature implements Listen
     int dx = chain.direction.getModX();
     int dy = chain.direction.getModY();
     int dz = chain.direction.getModZ();
-    J.runChunk(world, hx >> 4, hz >> 4, () -> applyChainTransfer(world, hx, hy, hz, tx, ty, tz, dx, dy, dz));
+    J.runChunk(world, hx >> 4, hz >> 4, () -> {
+      if (isActive(generation) && engaged) {
+        applyChainTransfer(world, chain, hx, hy, hz, tx, ty, tz, dx, dy, dz);
+      }
+    });
   }
 
-  private void applyChainTransfer(World world, int hx, int hy, int hz, int tx, int ty, int tz, int dx, int dy, int dz) {
+  private void applyChainTransfer(
+      World world,
+      HopperChain chain,
+      int hx,
+      int hy,
+      int hz,
+      int tx,
+      int ty,
+      int tz,
+      int dx,
+      int dy,
+      int dz
+  ) {
+    if (!featureBucketBypass) {
+      chain.bucketPermit = false;
+    }
     if (!world.isChunkLoaded(hx >> 4, hz >> 4) || !world.isChunkLoaded(tx >> 4, tz >> 4)) {
       return;
     }
@@ -284,6 +354,9 @@ public class FeatureHopperChainCoalescing extends ReactFeature implements Listen
       }
       ItemStack transfer = stack.clone();
       transfer.setAmount(1);
+      if (!tryConsumeFeatureBucket(new Location(world, hx, hy, hz))) {
+        return;
+      }
       Map<Integer, ItemStack> overflow = tailRecipient.addItem(transfer);
       if (!overflow.isEmpty()) {
         break;
@@ -297,8 +370,36 @@ public class FeatureHopperChainCoalescing extends ReactFeature implements Listen
     }
     if (moved > 0) {
       headInv.setStorageContents(contents);
+      chain.bucketPermit = true;
       synthesizedTransfers.incrementAndGet();
     }
+  }
+
+  private boolean tryConsumeFeatureBucket(Location sourceLocation) {
+    if (featureBucketBypass) {
+      return true;
+    }
+    FeatureHopperTokenBucket tokenBucket = hopperTokenBucket;
+    return tokenBucket == null || tokenBucket.tryConsume(sourceLocation);
+  }
+
+  private boolean requiresBucketPermit() {
+    if (featureBucketBypass) {
+      return false;
+    }
+    FeatureHopperTokenBucket tokenBucket = hopperTokenBucket;
+    return tokenBucket != null && tokenBucket.isEnforcing();
+  }
+
+  private FeatureHopperTokenBucket resolveHopperTokenBucket() {
+    if (React.instance == null) {
+      return null;
+    }
+    FeatureController controller = React.controller(FeatureController.class);
+    if (controller == null || controller.getFeatures() == null) {
+      return null;
+    }
+    return controller.getFeatures().get(FeatureHopperTokenBucket.class);
   }
 
   private Inventory inventoryAt(World world, int x, int y, int z) {
@@ -315,31 +416,26 @@ public class FeatureHopperChainCoalescing extends ReactFeature implements Listen
 
   @Override
   public int getTickInterval() {
-    return tickIntervalMS;
+    return Math.max(250, tickIntervalMS);
   }
 
   @Override
   public void onTick() {
-    long featureTickServerTicks = Math.max(1L, tickIntervalMS / 50L);
-    tickCounter += featureTickServerTicks;
-    updateEngagement();
-    if (!engaged) {
-      pruneStaleChains();
-      if (featureActMode && bridgeActive) {
-        middleHopperToChain.clear();
-      }
+    long generation = lifecycleGeneration.get();
+    if (!isActive(generation)) {
       return;
     }
-    if (tickCounter - lastRebuildTick >= Math.max(1, rebuildIntervalTicks)) {
-      lastRebuildTick = tickCounter;
-      J.s(this::rebuildAllChains);
-    } else {
-      accumulateTicksSaved();
-      pruneStaleChains();
+    long featureTickServerTicks = Math.max(1L, tickIntervalMS / 50L);
+    tickCounter += featureTickServerTicks;
+    enqueueMaintenanceRepairs();
+    processCoordinateRepairs(generation);
+    updateEngagement();
+    if (!engaged) {
+      return;
     }
+    ticksSavedAccumulator.addAndGet(ticksSavedPerEvaluation.get());
     if (featureActMode && bridgeActive) {
-      publishMiddleMapping();
-      synthesizeChainTransfers();
+      synthesizeChainTransfers(generation);
     }
   }
 
@@ -366,211 +462,239 @@ public class FeatureHopperChainCoalescing extends ReactFeature implements Listen
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void on(BlockPlaceEvent event) {
     Block block = event.getBlock();
-    if (block.getType() != Material.HOPPER && !isPotentialHopperNeighbor(block)) {
-      return;
-    }
-    scheduleChunkRebuild(block);
+    queueAffectedChunkRepairs(block);
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void on(BlockBreakEvent event) {
     Block block = event.getBlock();
-    if (block.getType() != Material.HOPPER && !isPotentialHopperNeighbor(block)) {
-      return;
-    }
-    scheduleChunkRebuild(block);
+    queueAffectedChunkRepairs(block);
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void on(BlockPistonExtendEvent event) {
-    scheduleChunkRebuild(event.getBlock());
+    queueAffectedChunkRepairs(event.getBlock());
+    for (Block block : event.getBlocks()) {
+      queueAffectedChunkRepairs(block);
+    }
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void on(BlockPistonRetractEvent event) {
-    scheduleChunkRebuild(event.getBlock());
+    queueAffectedChunkRepairs(event.getBlock());
+    for (Block block : event.getBlocks()) {
+      queueAffectedChunkRepairs(block);
+    }
   }
 
-  private boolean isPotentialHopperNeighbor(Block block) {
-    World world = block.getWorld();
-    int x = block.getX();
-    int y = block.getY();
-    int z = block.getZ();
-    if (worldHasHopperAt(world, x + 1, y, z)) {
-      return true;
-    }
-    if (worldHasHopperAt(world, x - 1, y, z)) {
-      return true;
-    }
-    if (worldHasHopperAt(world, x, y + 1, z)) {
-      return true;
-    }
-    if (worldHasHopperAt(world, x, y - 1, z)) {
-      return true;
-    }
-    if (worldHasHopperAt(world, x, y, z + 1)) {
-      return true;
-    }
-    return worldHasHopperAt(world, x, y, z - 1);
+  @EventHandler(priority = EventPriority.MONITOR)
+  public void on(ChunkLoadEvent event) {
+    queueRepair(ChunkCoordinate.of(event.getChunk()), true);
   }
 
-  private boolean worldHasHopperAt(World world, int x, int y, int z) {
-    if (!world.isChunkLoaded(x >> 4, z >> 4)) {
-      return false;
-    }
-    return world.getBlockAt(x, y, z).getType() == Material.HOPPER;
+  @EventHandler(priority = EventPriority.MONITOR)
+  public void on(ChunkUnloadEvent event) {
+    removeChunkState(ChunkCoordinate.of(event.getChunk()));
   }
 
-  private void scheduleChunkRebuild(Block block) {
-    if (chainsByWorldChunk == null || rebuildDebounce == null) {
+  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+  public void on(WorldUnloadEvent event) {
+    removeWorldState(event.getWorld().getUID());
+  }
+
+  private void queueAffectedChunkRepairs(Block block) {
+    if (block == null || !isRepairRelevant(block)) {
       return;
     }
     World world = block.getWorld();
-    if (world == null) {
-      return;
-    }
     UUID worldId = world.getUID();
-    long chunkKey = packChunk(block.getX() >> 4, block.getZ() >> 4);
+    int chunkX = block.getX() >> 4;
+    int chunkZ = block.getZ() >> 4;
+    for (int deltaX = -1; deltaX <= 1; deltaX++) {
+      for (int deltaZ = -1; deltaZ <= 1; deltaZ++) {
+        queueRepair(new ChunkCoordinate(worldId, chunkX + deltaX, chunkZ + deltaZ), true);
+      }
+    }
+  }
+
+  private boolean isRepairRelevant(Block block) {
+    Material material = block.getType();
+    if (material == Material.HOPPER
+        || material == Material.COMPARATOR
+        || material == Material.REPEATER
+        || material == Material.DROPPER
+        || material == Material.DISPENSER) {
+      return true;
+    }
+    return block.getState() instanceof InventoryHolder;
+  }
+
+  private void queueRepair(ChunkCoordinate coordinate, boolean authoritative) {
+    if (!active || coordinate == null || repairQueue == null || queuedRepairs == null) {
+      return;
+    }
     long now = System.currentTimeMillis();
-    Long2LongOpenHashMap worldDebounce = rebuildDebounce.computeIfAbsent(worldId, ignored -> {
-      Long2LongOpenHashMap created = new Long2LongOpenHashMap();
-      created.defaultReturnValue(Long.MIN_VALUE);
-      return created;
-    });
-    synchronized (worldDebounce) {
-      long last = worldDebounce.get(chunkKey);
-      if (last != Long.MIN_VALUE && now - last < CHAIN_REBUILD_DEBOUNCE_MS) {
+    if (authoritative) {
+      Long previous = rebuildDebounce.put(coordinate, now);
+      if (previous != null && now - previous < CHAIN_REBUILD_DEBOUNCE_MS) {
         return;
       }
-      worldDebounce.put(chunkKey, now);
     }
-    rebuildChunkChains(world, block.getX() >> 4, block.getZ() >> 4);
-  }
-
-  private void rebuildAllChains() {
-    for (World world : Bukkit.getWorlds()) {
-      UUID worldId = world.getUID();
-      Long2ObjectOpenHashMap<HopperChain> existing = chainsByWorldChunk.get(worldId);
-      if (existing != null) {
-        synchronized (existing) {
-          existing.clear();
-        }
-      }
-      Long2LongOpenHashMap headMap = chainHeadByHopper.get(worldId);
-      if (headMap != null) {
-        synchronized (headMap) {
-          headMap.clear();
-        }
-      }
-      for (Chunk chunk : world.getLoadedChunks()) {
-        rebuildChunkChains(world, chunk.getX(), chunk.getZ());
-      }
-    }
-    accumulateTicksSaved();
-  }
-
-  private void rebuildChunkChains(World world, int chunkX, int chunkZ) {
-    UUID worldId = world.getUID();
-    LongOpenHashSet hopperPositions = collectChunkHopperPositions(world, chunkX, chunkZ);
-    if (hopperPositions.isEmpty()) {
-      removeChainsForChunk(worldId, chunkX, chunkZ);
+    if (!queuedRepairs.add(coordinate)) {
       return;
     }
+    if (!repairQueue.offer(coordinate)) {
+      queuedRepairs.remove(coordinate);
+      rebuildDebounce.remove(coordinate, now);
+    }
+  }
 
-    Long2ObjectOpenHashMap<HopperChain> chunkChains = chainsByWorldChunk
-        .computeIfAbsent(worldId, ignored -> new Long2ObjectOpenHashMap<>());
-    Long2LongOpenHashMap headByHopper = chainHeadByHopper
-        .computeIfAbsent(worldId, ignored -> {
-          Long2LongOpenHashMap created = new Long2LongOpenHashMap();
-          created.defaultReturnValue(Long.MIN_VALUE);
-          return created;
-        });
+  private void enqueueMaintenanceRepairs() {
+    if (React.instance == null) {
+      return;
+    }
+    ObserverController observer = React.controller(ObserverController.class);
+    if (observer == null) {
+      return;
+    }
+    int budget = repairBudget();
+    List<LoadedChunkTarget> targets = observer.nextLoadedChunkCoordinateBatch(budget);
+    for (LoadedChunkTarget target : targets) {
+      ChunkCoordinate coordinate = new ChunkCoordinate(target.worldId(), target.chunkX(), target.chunkZ());
+      Long lastRepair = lastRepairTickByChunk.get(coordinate);
+      if (lastRepair == null || tickCounter - lastRepair >= Math.max(1, rebuildIntervalTicks)) {
+        queueRepair(coordinate, false);
+      }
+    }
+  }
 
-    long chunkKey = packChunk(chunkX, chunkZ);
-    synchronized (chunkChains) {
-      Iterator<Long2ObjectOpenHashMap.Entry<HopperChain>> iterator = chunkChains.long2ObjectEntrySet().fastIterator();
-      while (iterator.hasNext()) {
-        Long2ObjectOpenHashMap.Entry<HopperChain> entry = iterator.next();
-        HopperChain chain = entry.getValue();
-        if (chain.touchesChunk(chunkKey)) {
-          synchronized (headByHopper) {
-            for (long pos : chain.positions) {
-              headByHopper.remove(pos);
-            }
+  private void processCoordinateRepairs(long generation) {
+    int remaining = repairBudget();
+    while (remaining-- > 0 && isActive(generation)) {
+      ChunkCoordinate coordinate = repairQueue.poll();
+      if (coordinate == null) {
+        return;
+      }
+      if (!queuedRepairs.contains(coordinate)) {
+        continue;
+      }
+      World world = Bukkit.getWorld(coordinate.worldId);
+      if (world == null) {
+        finishRepair(coordinate, false, generation);
+        removeChunkState(coordinate);
+        continue;
+      }
+      boolean scheduled = J.runChunk(world, coordinate.chunkX, coordinate.chunkZ, () -> {
+        boolean completed = false;
+        try {
+          if (!isActive(generation)) {
+            return;
           }
-          iterator.remove();
+          World currentWorld = Bukkit.getWorld(coordinate.worldId);
+          if (currentWorld == null || !currentWorld.isChunkLoaded(coordinate.chunkX, coordinate.chunkZ)) {
+            removeChunkState(coordinate);
+            return;
+          }
+          rebuildChunkChains(currentWorld, coordinate, generation);
+          completed = true;
+        } finally {
+          finishRepair(coordinate, completed, generation);
         }
+      });
+      if (!scheduled) {
+        finishRepair(coordinate, false, generation);
       }
     }
+  }
 
+  private void finishRepair(ChunkCoordinate coordinate, boolean completed, long generation) {
+    if (generation != lifecycleGeneration.get()) {
+      return;
+    }
+    queuedRepairs.remove(coordinate);
+    rebuildDebounce.remove(coordinate);
+    if (completed) {
+      lastRepairTickByChunk.put(coordinate, tickCounter);
+    }
+  }
+
+  private void rebuildChunkChains(World world, ChunkCoordinate coordinate, long generation) {
+    if (!isActive(generation)) {
+      return;
+    }
+    Chunk chunk = world.getChunkAt(coordinate.chunkX, coordinate.chunkZ);
+    Long2ObjectOpenHashMap<HopperNode> scannedNodes = new Long2ObjectOpenHashMap<>();
+    for (BlockState state : chunk.getTileEntities()) {
+      if (!(state instanceof Hopper)) {
+        continue;
+      }
+      Location location = state.getLocation();
+      BlockFace facing = hopperFacing(state.getBlockData());
+      if (facing == null) {
+        continue;
+      }
+      long position = packPos(location.getBlockX(), location.getBlockY(), location.getBlockZ());
+      scannedNodes.put(position, new HopperNode(facing));
+    }
+    publishChunkNodes(coordinate, scannedNodes);
+    rebuildChainsFromSnapshot(world, coordinate);
+  }
+
+  private void publishChunkNodes(
+      ChunkCoordinate coordinate,
+      Long2ObjectOpenHashMap<HopperNode> scannedNodes
+  ) {
+    Long2ObjectOpenHashMap<HopperNode> worldNodes = hopperNodesByWorld.computeIfAbsent(
+        coordinate.worldId,
+        ignored -> new Long2ObjectOpenHashMap<>()
+    );
+    long[] previousPositions = hopperPositionsByChunk.put(coordinate, scannedNodes.keySet().toLongArray());
+    synchronized (worldNodes) {
+      if (previousPositions != null) {
+        for (long position : previousPositions) {
+          worldNodes.remove(position);
+        }
+      }
+      worldNodes.putAll(scannedNodes);
+    }
+  }
+
+  private void rebuildChainsFromSnapshot(World world, ChunkCoordinate coordinate) {
+    removeChainsForChunk(coordinate.worldId, coordinate.chunkX, coordinate.chunkZ);
+    long[] positions = hopperPositionsByChunk.get(coordinate);
+    if (positions == null || positions.length == 0) {
+      return;
+    }
+    Long2ObjectOpenHashMap<HopperNode> worldNodes = hopperNodesByWorld.get(coordinate.worldId);
+    if (worldNodes == null) {
+      return;
+    }
     LongOpenHashSet visited = new LongOpenHashSet();
-    LongOpenHashSet allHoppers = collectNeighborhoodHoppers(world, chunkX, chunkZ);
-    long[] positions = hopperPositions.toLongArray();
-    for (int i = 0; i < positions.length; i++) {
-      long packed = positions[i];
-      if (visited.contains(packed)) {
-        continue;
-      }
-      long headPacked = walkBackToChainHead(world, packed, allHoppers);
-      if (visited.contains(headPacked)) {
-        continue;
-      }
-      HopperChain chain = walkForwardFromHead(world, headPacked, allHoppers, visited);
-      if (chain == null || chain.length() < Math.max(2, minChainLength)) {
-        continue;
-      }
-      chain.fastPathEligible = computeFastPathEligible(world, chain);
-      chain.bypassedByPlayer = isChainNearPlayer(world, chain);
-      synchronized (chunkChains) {
-        chunkChains.put(chainKey(chain.positions[0]), chain);
-      }
-      synchronized (headByHopper) {
-        for (long pos : chain.positions) {
-          headByHopper.put(pos, chain.positions[0]);
-        }
-      }
-    }
-  }
-
-  private LongOpenHashSet collectChunkHopperPositions(World world, int chunkX, int chunkZ) {
-    LongOpenHashSet result = new LongOpenHashSet();
-    if (!world.isChunkLoaded(chunkX, chunkZ)) {
-      return result;
-    }
-    Chunk chunk = world.getChunkAt(chunkX, chunkZ);
-    addHopperPositions(chunk, result);
-    return result;
-  }
-
-  private LongOpenHashSet collectNeighborhoodHoppers(World world, int chunkX, int chunkZ) {
-    LongOpenHashSet result = new LongOpenHashSet();
-    for (int dx = -1; dx <= 1; dx++) {
-      for (int dz = -1; dz <= 1; dz++) {
-        int cx = chunkX + dx;
-        int cz = chunkZ + dz;
-        if (!world.isChunkLoaded(cx, cz)) {
+    synchronized (worldNodes) {
+      for (long packed : positions) {
+        if (visited.contains(packed)) {
           continue;
         }
-        addHopperPositions(world.getChunkAt(cx, cz), result);
+        long headPacked = walkBackToChainHead(packed, worldNodes);
+        if (visited.contains(headPacked)) {
+          continue;
+        }
+        HopperChain chain = walkForwardFromHead(headPacked, worldNodes, visited);
+        if (chain == null || chain.length() < Math.max(2, minChainLength)) {
+          continue;
+        }
+        chain.fastPathEligible = computeFastPathEligible(world, chain);
+        chain.bypassedByPlayer = isChainNearPlayer(world, chain);
+        publishChain(coordinate.worldId, chain);
       }
     }
-    return result;
   }
 
-  private void addHopperPositions(Chunk chunk, LongOpenHashSet result) {
-    for (BlockState state : chunk.getTileEntities()) {
-      if (state instanceof Hopper) {
-        Location loc = state.getLocation();
-        result.add(packPos(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
-      }
-    }
-  }
-
-  private long walkBackToChainHead(World world, long packed, LongOpenHashSet hopperPositions) {
+  private long walkBackToChainHead(long packed, Long2ObjectOpenHashMap<HopperNode> hopperNodes) {
     long current = packed;
     int steps = 0;
     while (steps < MAX_CHAIN_LENGTH) {
-      long upstream = findUpstreamHopper(world, current, hopperPositions);
+      long upstream = findUpstreamHopper(current, hopperNodes);
       if (upstream == -1L) {
         return current;
       }
@@ -580,26 +704,22 @@ public class FeatureHopperChainCoalescing extends ReactFeature implements Listen
     return current;
   }
 
-  private long findUpstreamHopper(World world, long packed, LongOpenHashSet hopperPositions) {
+  private long findUpstreamHopper(long packed, Long2ObjectOpenHashMap<HopperNode> hopperNodes) {
     int x = unpackX(packed);
     int y = unpackY(packed);
     int z = unpackZ(packed);
     long candidate = -1L;
     int candidateCount = 0;
-    BlockFace[] faces = new BlockFace[] {BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST, BlockFace.UP};
-    for (int i = 0; i < faces.length; i++) {
-      BlockFace face = faces[i];
+    for (BlockFace face : UPSTREAM_FACES) {
       int nx = x + face.getModX();
       int ny = y + face.getModY();
       int nz = z + face.getModZ();
       long npacked = packPos(nx, ny, nz);
-      if (!hopperPositions.contains(npacked)) {
+      HopperNode upstream = hopperNodes.get(npacked);
+      if (upstream == null) {
         continue;
       }
-      BlockFace upstreamFacing = hopperFacing(world, nx, ny, nz);
-      if (upstreamFacing == null) {
-        continue;
-      }
+      BlockFace upstreamFacing = upstream.facing;
       int tx = nx + upstreamFacing.getModX();
       int ty = ny + upstreamFacing.getModY();
       int tz = nz + upstreamFacing.getModZ();
@@ -614,18 +734,23 @@ public class FeatureHopperChainCoalescing extends ReactFeature implements Listen
     return candidate;
   }
 
-  private HopperChain walkForwardFromHead(World world, long headPacked, LongOpenHashSet hopperPositions, LongOpenHashSet visited) {
+  private HopperChain walkForwardFromHead(
+      long headPacked,
+      Long2ObjectOpenHashMap<HopperNode> hopperNodes,
+      LongOpenHashSet visited
+  ) {
     long[] sequence = new long[MAX_CHAIN_LENGTH];
     int length = 0;
     long current = headPacked;
     BlockFace direction = null;
-    while (length < MAX_CHAIN_LENGTH && hopperPositions.contains(current) && !visited.contains(current)) {
+    while (length < MAX_CHAIN_LENGTH && hopperNodes.containsKey(current) && !visited.contains(current)) {
       sequence[length++] = current;
       visited.add(current);
-      BlockFace facing = hopperFacing(world, unpackX(current), unpackY(current), unpackZ(current));
-      if (facing == null) {
+      HopperNode currentNode = hopperNodes.get(current);
+      if (currentNode == null) {
         break;
       }
+      BlockFace facing = currentNode.facing;
       if (direction == null) {
         direction = facing;
       } else if (direction != facing) {
@@ -635,10 +760,10 @@ public class FeatureHopperChainCoalescing extends ReactFeature implements Listen
       int ny = unpackY(current) + facing.getModY();
       int nz = unpackZ(current) + facing.getModZ();
       long nextPacked = packPos(nx, ny, nz);
-      if (!hopperPositions.contains(nextPacked)) {
+      if (!hopperNodes.containsKey(nextPacked)) {
         break;
       }
-      if (hasBranch(world, current, facing, hopperPositions)) {
+      if (hasBranch(current, facing, hopperNodes)) {
         break;
       }
       current = nextPacked;
@@ -651,25 +776,25 @@ public class FeatureHopperChainCoalescing extends ReactFeature implements Listen
     return new HopperChain(trimmed, direction);
   }
 
-  private boolean hasBranch(World world, long packed, BlockFace forward, LongOpenHashSet hopperPositions) {
+  private boolean hasBranch(
+      long packed,
+      BlockFace forward,
+      Long2ObjectOpenHashMap<HopperNode> hopperNodes
+  ) {
     int x = unpackX(packed);
     int y = unpackY(packed);
     int z = unpackZ(packed);
-    BlockFace[] faces = new BlockFace[] {BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST, BlockFace.UP};
     int feedersIntoCurrent = 0;
-    for (int i = 0; i < faces.length; i++) {
-      BlockFace face = faces[i];
+    for (BlockFace face : UPSTREAM_FACES) {
       int nx = x + face.getModX();
       int ny = y + face.getModY();
       int nz = z + face.getModZ();
       long npacked = packPos(nx, ny, nz);
-      if (!hopperPositions.contains(npacked)) {
+      HopperNode neighbor = hopperNodes.get(npacked);
+      if (neighbor == null) {
         continue;
       }
-      BlockFace neighborFacing = hopperFacing(world, nx, ny, nz);
-      if (neighborFacing == null) {
-        continue;
-      }
+      BlockFace neighborFacing = neighbor.facing;
       int tx = nx + neighborFacing.getModX();
       int ty = ny + neighborFacing.getModY();
       int tz = nz + neighborFacing.getModZ();
@@ -680,15 +805,7 @@ public class FeatureHopperChainCoalescing extends ReactFeature implements Listen
     return feedersIntoCurrent > 1;
   }
 
-  private BlockFace hopperFacing(World world, int x, int y, int z) {
-    if (!world.isChunkLoaded(x >> 4, z >> 4)) {
-      return null;
-    }
-    Block block = world.getBlockAt(x, y, z);
-    if (block.getType() != Material.HOPPER) {
-      return null;
-    }
-    BlockData data = block.getBlockData();
+  private BlockFace hopperFacing(BlockData data) {
     if (data instanceof org.bukkit.block.data.type.Hopper hopperData) {
       BlockFace facing = hopperData.getFacing();
       if (facing == BlockFace.DOWN || facing == BlockFace.NORTH || facing == BlockFace.SOUTH || facing == BlockFace.EAST || facing == BlockFace.WEST) {
@@ -706,7 +823,11 @@ public class FeatureHopperChainCoalescing extends ReactFeature implements Listen
     int hx = unpackX(headPacked);
     int hy = unpackY(headPacked);
     int hz = unpackZ(headPacked);
-    Block above = world.getBlockAt(hx, hy + 1, hz);
+    Location aboveLocation = new Location(world, hx, hy + 1, hz);
+    if (!J.isOwnedByCurrentRegion(aboveLocation)) {
+      return false;
+    }
+    Block above = world.getBlockAt(aboveLocation);
     if (above.getType() == Material.COMPARATOR || above.getType() == Material.REPEATER) {
       return false;
     }
@@ -717,7 +838,11 @@ public class FeatureHopperChainCoalescing extends ReactFeature implements Listen
     int dx = chain.direction.getModX();
     int dy = chain.direction.getModY();
     int dz = chain.direction.getModZ();
-    Block tailTarget = world.getBlockAt(tx + dx, ty + dy, tz + dz);
+    Location tailTargetLocation = new Location(world, tx + dx, ty + dy, tz + dz);
+    if (!J.isOwnedByCurrentRegion(tailTargetLocation)) {
+      return false;
+    }
+    Block tailTarget = world.getBlockAt(tailTargetLocation);
     if (tailTarget.getType() == Material.HOPPER || tailTarget.getType() == Material.DROPPER || tailTarget.getType() == Material.DISPENSER) {
       return false;
     }
@@ -730,87 +855,165 @@ public class FeatureHopperChainCoalescing extends ReactFeature implements Listen
     return React.hasNearbyPlayer(midLocation, bypassRadius);
   }
 
-  private void accumulateTicksSaved() {
-    long chains = 0L;
-    long lengthSum = 0L;
-    long fastPath = 0L;
-    long ticksSaved = 0L;
-    for (Map.Entry<UUID, Long2ObjectOpenHashMap<HopperChain>> worldEntry : chainsByWorldChunk.entrySet()) {
-      Long2ObjectOpenHashMap<HopperChain> chunkChains = worldEntry.getValue();
-      synchronized (chunkChains) {
-        Iterator<Long2ObjectOpenHashMap.Entry<HopperChain>> iterator = chunkChains.long2ObjectEntrySet().fastIterator();
-        while (iterator.hasNext()) {
-          HopperChain chain = iterator.next().getValue();
-          chains++;
-          lengthSum += chain.length();
-          if (chain.fastPathEligible && !chain.bypassedByPlayer) {
-            fastPath++;
-            ticksSaved += chain.length() - 1L;
+  private void publishChain(UUID worldId, HopperChain chain) {
+    Long2ObjectOpenHashMap<HopperChain> chunkChains = chainsByWorldChunk.computeIfAbsent(
+        worldId,
+        ignored -> new Long2ObjectOpenHashMap<>()
+    );
+    synchronized (chunkChains) {
+      HopperChain previous = chunkChains.put(chainKey(chain.positions[0]), chain);
+      if (previous != null) {
+        unregisterChain(worldId, previous);
+      }
+      registerChain(worldId, chain);
+    }
+  }
+
+  private void registerChain(UUID worldId, HopperChain chain) {
+    chainsDetected.incrementAndGet();
+    chainLengthSum.addAndGet(chain.length());
+    LongOpenHashSet touchedChunks = chain.touchedChunks();
+    for (long chunkKey : touchedChunks) {
+      ChunkCoordinate coordinate = new ChunkCoordinate(worldId, unpackChunkX(chunkKey), unpackChunkZ(chunkKey));
+      chainHeadsByChunk.computeIfAbsent(coordinate, ignored -> ConcurrentHashMap.newKeySet())
+          .add(chain.positions[0]);
+    }
+    if (!chain.fastPathEligible || chain.bypassedByPlayer || chain.length() < 3) {
+      return;
+    }
+    fastPathChainCount.incrementAndGet();
+    ticksSavedPerEvaluation.addAndGet(chain.length() - 1L);
+    Long2ObjectOpenHashMap<HopperChain> mapping = middleHopperToChain.computeIfAbsent(
+        worldId,
+        ignored -> new Long2ObjectOpenHashMap<>()
+    );
+    synchronized (mapping) {
+      for (int index = 1; index < chain.length() - 1; index++) {
+        mapping.put(chain.positions[index], chain);
+      }
+    }
+    ChainTarget target = new ChainTarget(worldId, chain.positions[0], chain);
+    if (queuedTransfers.add(target) && !transferRotation.offer(target)) {
+      queuedTransfers.remove(target);
+    }
+  }
+
+  private void unregisterChain(UUID worldId, HopperChain chain) {
+    chainsDetected.decrementAndGet();
+    chainLengthSum.addAndGet(-chain.length());
+    LongOpenHashSet touchedChunks = chain.touchedChunks();
+    for (long chunkKey : touchedChunks) {
+      ChunkCoordinate coordinate = new ChunkCoordinate(worldId, unpackChunkX(chunkKey), unpackChunkZ(chunkKey));
+      Set<Long> heads = chainHeadsByChunk.get(coordinate);
+      if (heads != null) {
+        heads.remove(chain.positions[0]);
+        if (heads.isEmpty()) {
+          chainHeadsByChunk.remove(coordinate, heads);
+        }
+      }
+    }
+    if (chain.fastPathEligible && !chain.bypassedByPlayer && chain.length() >= 3) {
+      fastPathChainCount.decrementAndGet();
+      ticksSavedPerEvaluation.addAndGet(-(chain.length() - 1L));
+    }
+    Long2ObjectOpenHashMap<HopperChain> mapping = middleHopperToChain.get(worldId);
+    if (mapping != null) {
+      synchronized (mapping) {
+        for (int index = 1; index < chain.length() - 1; index++) {
+          if (mapping.get(chain.positions[index]) == chain) {
+            mapping.remove(chain.positions[index]);
           }
         }
       }
     }
-    chainsDetected.set(chains);
-    chainLengthSum.set(lengthSum);
-    fastPathChainCount.set(fastPath);
-    ticksSavedAccumulator.addAndGet(ticksSaved);
+    queuedTransfers.remove(new ChainTarget(worldId, chain.positions[0], chain));
   }
 
   private void removeChainsForChunk(UUID worldId, int chunkX, int chunkZ) {
+    ChunkCoordinate coordinate = new ChunkCoordinate(worldId, chunkX, chunkZ);
+    Set<Long> indexedHeads = chainHeadsByChunk.remove(coordinate);
+    if (indexedHeads == null || indexedHeads.isEmpty()) {
+      return;
+    }
     Long2ObjectOpenHashMap<HopperChain> chunkChains = chainsByWorldChunk.get(worldId);
     if (chunkChains == null) {
       return;
     }
     long touchKey = packChunk(chunkX, chunkZ);
-    Long2LongOpenHashMap headByHopper = chainHeadByHopper.get(worldId);
     synchronized (chunkChains) {
-      Iterator<Long2ObjectOpenHashMap.Entry<HopperChain>> iterator = chunkChains.long2ObjectEntrySet().fastIterator();
-      while (iterator.hasNext()) {
-        Long2ObjectOpenHashMap.Entry<HopperChain> entry = iterator.next();
-        HopperChain chain = entry.getValue();
-        if (chain.touchesChunk(touchKey)) {
-          if (headByHopper != null) {
-            synchronized (headByHopper) {
-              for (long pos : chain.positions) {
-                headByHopper.remove(pos);
-              }
-            }
-          }
-          iterator.remove();
+      List<Long> heads = List.copyOf(indexedHeads);
+      for (Long head : heads) {
+        HopperChain chain = chunkChains.get(head.longValue());
+        if (chain != null && chain.touchesChunk(touchKey)) {
+          unregisterChain(worldId, chain);
+          chunkChains.remove(head.longValue());
         }
+      }
+      if (chunkChains.isEmpty()) {
+        chainsByWorldChunk.remove(worldId, chunkChains);
       }
     }
   }
 
-  private void pruneStaleChains() {
-    Iterator<Map.Entry<UUID, Long2ObjectOpenHashMap<HopperChain>>> worldIterator = chainsByWorldChunk.entrySet().iterator();
-    while (worldIterator.hasNext()) {
-      Map.Entry<UUID, Long2ObjectOpenHashMap<HopperChain>> entry = worldIterator.next();
-      Long2ObjectOpenHashMap<HopperChain> chunkChains = entry.getValue();
-      synchronized (chunkChains) {
-        if (chunkChains.isEmpty()) {
-          worldIterator.remove();
+  private HopperChain chain(ChainTarget target) {
+    Long2ObjectOpenHashMap<HopperChain> chains = chainsByWorldChunk.get(target.worldId);
+    if (chains == null) {
+      return null;
+    }
+    synchronized (chains) {
+      HopperChain chain = chains.get(target.headPosition);
+      return chain == target.chain ? chain : null;
+    }
+  }
+
+  private void removeChunkState(ChunkCoordinate coordinate) {
+    if (coordinate == null || hopperPositionsByChunk == null) {
+      return;
+    }
+    long[] positions = hopperPositionsByChunk.remove(coordinate);
+    Long2ObjectOpenHashMap<HopperNode> worldNodes = hopperNodesByWorld.get(coordinate.worldId);
+    if (positions != null && worldNodes != null) {
+      synchronized (worldNodes) {
+        for (long position : positions) {
+          worldNodes.remove(position);
+        }
+        if (worldNodes.isEmpty()) {
+          hopperNodesByWorld.remove(coordinate.worldId, worldNodes);
         }
       }
     }
-    Iterator<Map.Entry<UUID, Long2LongOpenHashMap>> debounceIterator = rebuildDebounce.entrySet().iterator();
-    long now = System.currentTimeMillis();
-    while (debounceIterator.hasNext()) {
-      Map.Entry<UUID, Long2LongOpenHashMap> entry = debounceIterator.next();
-      Long2LongOpenHashMap worldDebounce = entry.getValue();
-      synchronized (worldDebounce) {
-        Iterator<Long2LongMap.Entry> chunkIterator = worldDebounce.long2LongEntrySet().fastIterator();
-        while (chunkIterator.hasNext()) {
-          Long2LongMap.Entry chunkEntry = chunkIterator.next();
-          if (now - chunkEntry.getLongValue() > Math.max(CHAIN_REBUILD_DEBOUNCE_MS, 60_000L)) {
-            chunkIterator.remove();
-          }
+    removeChainsForChunk(coordinate.worldId, coordinate.chunkX, coordinate.chunkZ);
+    lastRepairTickByChunk.remove(coordinate);
+    rebuildDebounce.remove(coordinate);
+    queuedRepairs.remove(coordinate);
+  }
+
+  private void removeWorldState(UUID worldId) {
+    Long2ObjectOpenHashMap<HopperChain> chains = chainsByWorldChunk.remove(worldId);
+    if (chains != null) {
+      synchronized (chains) {
+        for (HopperChain chain : chains.values()) {
+          unregisterChain(worldId, chain);
         }
-        if (worldDebounce.isEmpty()) {
-          debounceIterator.remove();
-        }
+        chains.clear();
       }
     }
+    hopperNodesByWorld.remove(worldId);
+    middleHopperToChain.remove(worldId);
+    chainHeadsByChunk.keySet().removeIf(coordinate -> coordinate.worldId.equals(worldId));
+    hopperPositionsByChunk.keySet().removeIf(coordinate -> coordinate.worldId.equals(worldId));
+    lastRepairTickByChunk.keySet().removeIf(coordinate -> coordinate.worldId.equals(worldId));
+    rebuildDebounce.keySet().removeIf(coordinate -> coordinate.worldId.equals(worldId));
+    queuedRepairs.removeIf(coordinate -> coordinate.worldId.equals(worldId));
+    queuedTransfers.removeIf(target -> target.worldId.equals(worldId));
+  }
+
+  private boolean isActive(long generation) {
+    return active && generation == lifecycleGeneration.get();
+  }
+
+  private int repairBudget() {
+    return Math.max(1, Math.min(repairChunksPerTick, MAX_COORDINATE_REPAIRS_PER_TICK));
   }
 
   private void updateEngagement() {
@@ -829,6 +1032,14 @@ public class FeatureHopperChainCoalescing extends ReactFeature implements Listen
 
   private static long packChunk(int cx, int cz) {
     return (((long) cx) << 32) ^ (cz & 0xFFFFFFFFL);
+  }
+
+  private static int unpackChunkX(long packed) {
+    return (int) (packed >> 32);
+  }
+
+  private static int unpackChunkZ(long packed) {
+    return (int) packed;
   }
 
   private static long packPos(int x, int y, int z) {
@@ -853,11 +1064,24 @@ public class FeatureHopperChainCoalescing extends ReactFeature implements Listen
     return headPacked;
   }
 
+  private record ChunkCoordinate(UUID worldId, int chunkX, int chunkZ) {
+    private static ChunkCoordinate of(Chunk chunk) {
+      return new ChunkCoordinate(chunk.getWorld().getUID(), chunk.getX(), chunk.getZ());
+    }
+  }
+
+  private record HopperNode(BlockFace facing) {
+  }
+
+  private record ChainTarget(UUID worldId, long headPosition, HopperChain chain) {
+  }
+
   private static final class HopperChain {
     private final long[] positions;
     private final BlockFace direction;
     private volatile boolean fastPathEligible;
     private volatile boolean bypassedByPlayer;
+    private volatile boolean bucketPermit;
 
     private HopperChain(long[] positions, BlockFace direction) {
       this.positions = positions;
@@ -877,6 +1101,14 @@ public class FeatureHopperChainCoalescing extends ReactFeature implements Listen
         }
       }
       return false;
+    }
+
+    private LongOpenHashSet touchedChunks() {
+      LongOpenHashSet chunks = new LongOpenHashSet();
+      for (long position : positions) {
+        chunks.add(packChunk(unpackX(position) >> 4, unpackZ(position) >> 4));
+      }
+      return chunks;
     }
   }
 }

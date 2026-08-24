@@ -19,20 +19,25 @@
 
 package art.arcane.react.content.feature;
 
+import art.arcane.react.React;
+import art.arcane.react.api.web.heatmap.HeatmapWorldRef;
 import art.arcane.react.content.sampler.SamplerEntities;
 import art.arcane.react.content.sampler.SamplerHopperUpdates;
 import art.arcane.react.content.sampler.SamplerRedstoneUpdates;
+import art.arcane.react.core.controller.NearbyPlayerIndexController;
+import art.arcane.react.core.controller.NearbyPlayerIndexController.PlayerViewSnapshot;
+import art.arcane.react.core.controller.ObserverController.LoadedChunkCoordinate;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.RendererMessages;
 import art.arcane.react.util.data.TinyColor;
-import org.bukkit.Chunk;
-import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Player Impact Overlay feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeaturePlayerImpactOverlay extends FeatureChunkHeatmapBase {
@@ -62,11 +67,11 @@ public class FeaturePlayerImpactOverlay extends FeatureChunkHeatmapBase {
   }
 
   @Override
-  protected double chunkScore(Chunk chunk) {
-    double base = chunkTotalScore(chunk);
-    base += chunkSample(chunk, SamplerEntities.ID) * 0.50D;
-    base += chunkSample(chunk, SamplerRedstoneUpdates.ID) * 0.30D;
-    base += chunkSample(chunk, SamplerHopperUpdates.ID) * 0.20D;
+  protected double chunkScore(HeatmapWorldRef world, int chunkX, int chunkZ) {
+    double base = chunkTotalScore(world, chunkX, chunkZ);
+    base += chunkSample(world, chunkX, chunkZ, SamplerEntities.ID) * 0.50D;
+    base += chunkSample(world, chunkX, chunkZ, SamplerRedstoneUpdates.ID) * 0.30D;
+    base += chunkSample(world, chunkX, chunkZ, SamplerHopperUpdates.ID) * 0.20D;
     return base;
   }
 
@@ -76,27 +81,48 @@ public class FeaturePlayerImpactOverlay extends FeatureChunkHeatmapBase {
   }
 
   @Override
-  protected void renderOverlay(Map<Chunk, Double> score, double min, double max) {
+  protected void renderOverlay(Map<LoadedChunkCoordinate, Double> score, double min, double max) {
     Player viewer = player();
-    if (viewer == null || viewer.getWorld() == null) {
+    ProjectionAnchor anchor = projectionAnchor();
+    if (anchor == null) {
       return;
     }
 
-    Location viewerLocation = viewer.getLocation();
+    NearbyPlayerIndexController playerIndex = React.controller(NearbyPlayerIndexController.class);
+    if (playerIndex == null) {
+      return;
+    }
+
+    Map<Long, Double> scoreByChunk = new HashMap<>(score.size());
+    for (Map.Entry<LoadedChunkCoordinate, Double> entry : score.entrySet()) {
+      LoadedChunkCoordinate chunk = entry.getKey();
+      scoreByChunk.put(chunkKey(chunk.chunkX(), chunk.chunkZ()), entry.getValue());
+    }
+
     List<PlayerImpact> impacts = new ArrayList<>();
-    for (Player player : viewer.getWorld().getPlayers()) {
-      impacts.add(new PlayerImpact(player, playerImpact(player)));
+    for (PlayerViewSnapshot snapshot : playerIndex.playerSnapshotsInColumn(
+        anchor.worldId(),
+        anchor.x(),
+        anchor.z(),
+        visibleRadiusBlocks()
+    )) {
+      impacts.add(new PlayerImpact(snapshot, playerImpact(snapshot, scoreByChunk)));
     }
 
     impacts.sort(Comparator.comparingDouble(PlayerImpact::impact).reversed());
-    if (impacts.size() > maxPlayersDrawn) {
-      impacts = impacts.subList(0, maxPlayersDrawn);
+    int drawLimit = Math.max(0, maxPlayersDrawn);
+    if (impacts.size() > drawLimit) {
+      impacts = impacts.subList(0, drawLimit);
     }
 
-    double maxImpact = impacts.stream().mapToDouble(PlayerImpact::impact).max().orElse(0D);
+    double maxImpact = 0D;
     for (PlayerImpact impact : impacts) {
-      Location playerLocation = impact.player().getLocation();
-      Pixel pixel = projectBlockDelta(viewerLocation, playerLocation);
+      maxImpact = Math.max(maxImpact, impact.impact());
+    }
+    UUID viewerId = viewer == null || projectionFrameAnchored() ? null : viewer.getUniqueId();
+    for (PlayerImpact impact : impacts) {
+      PlayerViewSnapshot snapshot = impact.snapshot();
+      Pixel pixel = projectBlockDelta(anchor, snapshot.x(), snapshot.z());
       int x = pixel.x();
       int y = pixel.y();
       if (x < 0 || y < 0 || x >= width() || y >= height()) {
@@ -112,10 +138,10 @@ public class FeaturePlayerImpactOverlay extends FeatureChunkHeatmapBase {
       set(x, y - 1, marker);
       set(x, y + 1, marker);
 
-      if (impact.player().getUniqueId().equals(viewer.getUniqueId())) {
+      if (viewerId != null && snapshot.playerId().equals(viewerId)) {
         set(x, y, new TinyColor(255, 255, 255));
       } else if (showPlayerInitials) {
-        String n = impact.player().getName();
+        String n = snapshot.name();
         if (!n.isEmpty()) {
           text(Math.max(0, x + 2), Math.max(0, y - 2), n.substring(0, 1).toUpperCase());
         }
@@ -123,19 +149,24 @@ public class FeaturePlayerImpactOverlay extends FeatureChunkHeatmapBase {
     }
   }
 
-  private double playerImpact(Player player) {
-    Chunk chunk = player.getLocation().getChunk();
-    double impact = chunkScore(chunk);
-    impact += Math.min(3D, player.getVelocity().length()) * 2D;
-    if (player.isGliding()) {
+  private double playerImpact(PlayerViewSnapshot player, Map<Long, Double> scoreByChunk) {
+    int chunkX = (int) Math.floor(player.x() / 16D);
+    int chunkZ = (int) Math.floor(player.z() / 16D);
+    double impact = scoreByChunk.getOrDefault(chunkKey(chunkX, chunkZ), 0D);
+    impact += Math.min(3D, Math.max(0D, player.speed())) * 2D;
+    if (player.gliding()) {
       impact += 2D;
     }
-    if (player.getVehicle() != null) {
+    if (player.mounted()) {
       impact += 1D;
     }
     return impact;
   }
 
-  private record PlayerImpact(Player player, double impact) {
+  private long chunkKey(int chunkX, int chunkZ) {
+    return (((long) chunkX) << 32) ^ (chunkZ & 0xffffffffL);
+  }
+
+  private record PlayerImpact(PlayerViewSnapshot snapshot, double impact) {
   }
 }

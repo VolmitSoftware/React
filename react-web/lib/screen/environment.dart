@@ -1,10 +1,14 @@
 library;
 
+import 'dart:async' show Timer;
+
 import 'package:arcane_jaspr/arcane_jaspr.dart';
 import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart' show Component;
 
+import '../chart/timeseries_chart.dart';
 import '../model/environment_info.dart';
+import '../model/ring_buffer.dart';
 import '../localization/reactor_locale.dart';
 import '../localization/reactor_localizations.dart';
 import '../service/react_client.dart';
@@ -41,6 +45,8 @@ String _humanBytes(double bytes) {
       : v.toStringAsFixed(v >= 100.0 ? 0 : 1);
   return '$text ${units[i]}';
 }
+
+String _humanRate(double bytesPerSecond) => '${_humanBytes(bytesPerSecond)}/s';
 
 bool _looksLikeBytes(String section, String key) {
   final String k = key.toLowerCase().replaceAll(' ', '');
@@ -83,8 +89,19 @@ String _formatEnvValue(String section, String key, Object? value) {
 
 class EnvironmentView extends StatelessWidget {
   final EnvironmentInfo info;
+  final List<double> diskReadHistory;
+  final List<double> diskWriteHistory;
+  final List<double> networkReceiveHistory;
+  final List<double> networkSendHistory;
 
-  const EnvironmentView({required this.info, super.key});
+  const EnvironmentView({
+    required this.info,
+    this.diskReadHistory = const <double>[],
+    this.diskWriteHistory = const <double>[],
+    this.networkReceiveHistory = const <double>[],
+    this.networkSendHistory = const <double>[],
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -167,6 +184,140 @@ class EnvironmentView extends StatelessWidget {
                     ],
                   ),
           ),
+        if (info.disks.isNotEmpty || info.mounts.isNotEmpty) _diskPanel(),
+        if (info.network.isNotEmpty) _networkPanel(),
+      ],
+    );
+  }
+
+  Widget _diskPanel() {
+    return SectionPanel(
+      label: 'Disk',
+      flush: true,
+      child: dom.div(classes: 'reactor-environment-section', <Widget>[
+        dom.div(classes: 'reactor-environment-chart', <Widget>[
+          dom.div(classes: 'reactor-subsection-heading', <Widget>[
+            reactorEyebrow('Read / write throughput'),
+          ]),
+          TimeseriesChart(
+            series: <(String, List<double>)>[
+              ('Read /s', diskReadHistory),
+              ('Write /s', diskWriteHistory),
+            ],
+            height: 180,
+            valueFormatter: _humanRate,
+          ),
+        ]),
+        if (info.mounts.isNotEmpty)
+          dom.div(classes: 'reactor-environment-capacity-list', <Widget>[
+            for (final EnvironmentMount mount in info.mounts)
+              _mountCapacity(mount),
+          ]),
+        if (info.disks.isNotEmpty)
+          dom.div(classes: 'reactor-environment-device-grid', <Widget>[
+            for (final EnvironmentDisk disk in info.disks)
+              _deviceCard(
+                title: disk.name,
+                subtitle: disk.model,
+                values: <String>[
+                  'Capacity ${_humanBytes(disk.sizeBytes.toDouble())}',
+                  'Read ${_humanBytes(disk.readBytes.toDouble())}',
+                  'Written ${_humanBytes(disk.writeBytes.toDouble())}',
+                ],
+              ),
+          ]),
+      ]),
+    );
+  }
+
+  Widget _networkPanel() {
+    return SectionPanel(
+      label: 'Network',
+      flush: true,
+      child: dom.div(classes: 'reactor-environment-section', <Widget>[
+        dom.div(classes: 'reactor-environment-chart', <Widget>[
+          dom.div(classes: 'reactor-subsection-heading', <Widget>[
+            reactorEyebrow('Receive / send throughput'),
+          ]),
+          TimeseriesChart(
+            series: <(String, List<double>)>[
+              ('Received /s', networkReceiveHistory),
+              ('Sent /s', networkSendHistory),
+            ],
+            height: 180,
+            valueFormatter: _humanRate,
+          ),
+        ]),
+        dom.div(classes: 'reactor-environment-device-grid', <Widget>[
+          for (final EnvironmentNetworkInterface item in info.network)
+            _deviceCard(
+              title: item.displayName.isEmpty ? item.name : item.displayName,
+              subtitle: item.displayName.isEmpty ? '' : item.name,
+              values: <String>[
+                'MTU ${item.mtu}',
+                if (item.speedBitsPerSecond > 0)
+                  'Link ${_humanRate(item.speedBitsPerSecond / 8)}',
+                'Received ${_humanBytes(item.receivedBytes.toDouble())}',
+                'Sent ${_humanBytes(item.sentBytes.toDouble())}',
+              ],
+            ),
+        ]),
+      ]),
+    );
+  }
+
+  Widget _mountCapacity(EnvironmentMount mount) {
+    final String label = mount.mount.isEmpty ? mount.name : mount.mount;
+    final String details =
+        '${_humanBytes(mount.usedBytes.toDouble())} used · '
+        '${_humanBytes(mount.freeBytes.toDouble())} free · '
+        '${_humanBytes(mount.totalBytes.toDouble())} total';
+    return dom.div(
+      classes: 'reactor-environment-capacity',
+      attributes: <String, String>{'title': '$label — $details'},
+      <Widget>[
+        dom.div(classes: 'reactor-environment-capacity-label', <Widget>[
+          dom.strong(<Widget>[Component.text(label)]),
+          dom.span(<Widget>[Component.text(details)]),
+        ]),
+        dom.div(
+          classes: 'reactor-environment-capacity-track',
+          attributes: <String, String>{
+            'role': 'img',
+            'aria-label': '$label — $details',
+          },
+          <Widget>[
+            dom.span(
+              classes: 'reactor-environment-capacity-used',
+              styles: dom.Styles(
+                raw: <String, String>{
+                  'width': '${(mount.usedFraction * 100).toStringAsFixed(2)}%',
+                },
+              ),
+              const <Widget>[],
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _deviceCard({
+    required String title,
+    required String subtitle,
+    required List<String> values,
+  }) {
+    final String details = values.join(' · ');
+    return dom.div(
+      classes: 'reactor-environment-device',
+      attributes: <String, String>{'title': details},
+      <Widget>[
+        dom.strong(<Widget>[Component.text(title)]),
+        if (subtitle.isNotEmpty)
+          dom.span(classes: 'reactor-environment-device-subtitle', <Widget>[
+            Component.text(subtitle),
+          ]),
+        dom.code(<Widget>[Component.text(details)]),
       ],
     );
   }
@@ -180,33 +331,57 @@ class EnvironmentScreen extends StatefulWidget {
 }
 
 class _EnvironmentScreenState extends State<EnvironmentScreen> {
+  static const Duration _pollInterval = Duration(seconds: 5);
+
   IEnvironmentClient? _client;
   EnvironmentInfo? _info;
+  Timer? _pollTimer;
+  final RingBuffer _diskReadHistory = RingBuffer(48);
+  final RingBuffer _diskWriteHistory = RingBuffer(48);
+  final RingBuffer _networkReceiveHistory = RingBuffer(48);
+  final RingBuffer _networkSendHistory = RingBuffer(48);
+  int? _previousDiskReadBytes;
+  int? _previousDiskWriteBytes;
+  int? _previousNetworkReceiveBytes;
+  int? _previousNetworkSendBytes;
+  int? _previousSampleMillis;
   Object? _error;
   bool _loading = false;
-  bool _started = false;
+  bool _requesting = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     final IEnvironmentClient? client = OperateScope.of(context)?.client;
-    if (client != null && !_started) {
-      _started = true;
-      _client = client;
+    if (client == _client) {
+      return;
+    }
+    _pollTimer?.cancel();
+    _client = client;
+    if (client != null) {
       _load(client);
+      _pollTimer = Timer.periodic(_pollInterval, (Timer _) {
+        _load(client, announce: false);
+      });
     }
   }
 
-  Future<void> _load(IEnvironmentClient client) async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+  Future<void> _load(IEnvironmentClient client, {bool announce = true}) async {
+    if (_requesting) return;
+    _requesting = true;
+    if (announce) {
+      setState(() {
+        _loading = true;
+        _error = null;
+      });
+    }
     try {
       final EnvironmentInfo info = await client.environment();
       if (!mounted || client != _client) return;
+      _recordSample(info);
       setState(() {
         _info = info;
+        _error = null;
         _loading = false;
       });
     } on Object catch (error) {
@@ -215,12 +390,70 @@ class _EnvironmentScreenState extends State<EnvironmentScreen> {
         _error = error;
         _loading = false;
       });
+    } finally {
+      _requesting = false;
     }
+  }
+
+  void _recordSample(EnvironmentInfo info) {
+    final int now = DateTime.now().millisecondsSinceEpoch;
+    final int? previous = _previousSampleMillis;
+    final double seconds = previous == null
+        ? 0
+        : ((now - previous) / 1000).clamp(0.001, 60.0);
+    _appendRate(
+      _diskReadHistory,
+      info.totalDiskReadBytes,
+      _previousDiskReadBytes,
+      seconds,
+    );
+    _appendRate(
+      _diskWriteHistory,
+      info.totalDiskWriteBytes,
+      _previousDiskWriteBytes,
+      seconds,
+    );
+    _appendRate(
+      _networkReceiveHistory,
+      info.totalNetworkReceivedBytes,
+      _previousNetworkReceiveBytes,
+      seconds,
+    );
+    _appendRate(
+      _networkSendHistory,
+      info.totalNetworkSentBytes,
+      _previousNetworkSendBytes,
+      seconds,
+    );
+    _previousDiskReadBytes = info.totalDiskReadBytes;
+    _previousDiskWriteBytes = info.totalDiskWriteBytes;
+    _previousNetworkReceiveBytes = info.totalNetworkReceivedBytes;
+    _previousNetworkSendBytes = info.totalNetworkSentBytes;
+    _previousSampleMillis = now;
+  }
+
+  void _appendRate(
+    RingBuffer history,
+    int current,
+    int? previous,
+    double seconds,
+  ) {
+    if (previous == null || seconds <= 0 || current < previous) {
+      history.add(0);
+      return;
+    }
+    history.add((current - previous) / seconds);
   }
 
   void _refresh() {
     final IEnvironmentClient? client = _client;
     if (client != null) _load(client);
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -306,7 +539,13 @@ class _EnvironmentScreenState extends State<EnvironmentScreen> {
             message: reactorText(ReactorText.environmentRefreshingDescription),
             status: ReactorStatus.info,
           ),
-        EnvironmentView(info: info),
+        EnvironmentView(
+          info: info,
+          diskReadHistory: _diskReadHistory.toList(),
+          diskWriteHistory: _diskWriteHistory.toList(),
+          networkReceiveHistory: _networkReceiveHistory.toList(),
+          networkSendHistory: _networkSendHistory.toList(),
+        ),
       ],
     );
   }

@@ -10,10 +10,18 @@ class ServerCapabilities {
   });
 
   factory ServerCapabilities.fromJson(Map<String, dynamic> json) {
+    final Object? protocolVersion = json['protocolVersion'];
+    final Object? serverFingerprint = json['serverFingerprint'];
+    final Object? relayAvailable = json['relayAvailable'];
+    if (protocolVersion is! int ||
+        serverFingerprint is! String ||
+        relayAvailable is! bool) {
+      throw const FormatException('Malformed server capabilities');
+    }
     return ServerCapabilities(
-      protocolVersion: json['protocolVersion'] as int,
-      serverFingerprint: json['serverFingerprint'] as String,
-      relayAvailable: json['relayAvailable'] as bool,
+      protocolVersion: protocolVersion,
+      serverFingerprint: serverFingerprint,
+      relayAvailable: relayAvailable,
     );
   }
 

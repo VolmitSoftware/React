@@ -298,11 +298,13 @@ public class Ticker {
       }
 
       try {
-        React.warn("Tick task crashed: " + describeTicked(ticked) + " cause=" + summarizeThrowable(exxx));
-        exxx.printStackTrace();
+        React.reportError("Tick task crashed: " + describeTicked(ticked)
+            + " cause=" + summarizeThrowable(exxx), exxx);
       } catch (Throwable logFailure) {
         System.err.println("[React] Failed to emit tick crash log: " + logFailure.getClass().getSimpleName()
             + (logFailure.getMessage() == null ? "" : " - " + logFailure.getMessage()));
+        logFailure.printStackTrace(System.err);
+        exxx.printStackTrace(System.err);
       }
     }
   }
@@ -418,11 +420,14 @@ public class Ticker {
               + " paused=" + snapshot.backoffMS + "ms"
               + " failures=" + snapshot.failures
               + " cause=" + summarizeThrowable(throwable)
-              + " owner=" + slowTickOwner(ticked)
+              + " owner=" + slowTickOwner(ticked),
+          throwable
       );
     } catch (Throwable logFailure) {
       System.err.println("[React] Failed to emit Folia ownership violation log: " + logFailure.getClass().getSimpleName()
           + (logFailure.getMessage() == null ? "" : " - " + logFailure.getMessage()));
+      logFailure.printStackTrace(System.err);
+      throwable.printStackTrace(System.err);
     }
   }
 
@@ -972,8 +977,8 @@ public class Ticker {
       double value = sampler.sample();
       return Double.isFinite(value) ? value : fallback;
     } catch (Throwable ex) {
-      React.verbose("Failed to sample '" + samplerId + "': " + ex.getClass().getSimpleName()
-          + (ex.getMessage() == null ? "" : " - " + ex.getMessage()));
+      React.verbose(() -> "Failed to sample '" + samplerId + "': " + ex.getClass().getSimpleName()
+          + (ex.getMessage() == null ? "" : " - " + ex.getMessage()), ex);
       return fallback;
     }
   }

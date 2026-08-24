@@ -43,7 +43,7 @@ public class TweakServerHibernator extends ReactTweak implements Listener {
   @Override
   public void onActivate() {
     if (!imACloudServerEnableMe) {
-      React.info("React Server Hibernator Disabled. Enable imACloudServerEnableMe in the config, if you know what you are doing.");
+      React.verbose("React Server Hibernator Disabled. Enable imACloudServerEnableMe in the config, if you know what you are doing.");
       return;
     }
     taskId = J.sr(() -> {
@@ -57,12 +57,9 @@ public class TweakServerHibernator extends ReactTweak implements Listener {
           this.firstRun = false;
         } catch (InterruptedException ex) {
           Thread.currentThread().interrupt();
-          React.warn("Server hibernator sleep interrupted: " + ex.getClass().getSimpleName()
-              + (ex.getMessage() == null ? "" : " - " + ex.getMessage()));
+          React.verbose("Server hibernator sleep interrupted", ex);
         } catch (Exception ex) {
-          React.warn("Server hibernator sleep failed: " + ex.getClass().getSimpleName()
-              + (ex.getMessage() == null ? "" : " - " + ex.getMessage()));
-          React.reportError(ex);
+          React.warn("Server hibernator sleep failed", ex);
         }
       } else {
         if (!firstRun) {
@@ -78,7 +75,7 @@ public class TweakServerHibernator extends ReactTweak implements Listener {
   @Override
   public void onDeactivate() {
     if (!imACloudServerEnableMe) {
-      React.info("React Server Hibernator Disabled. Enable imACloudServerEnableMe in the config, if you know what you are doing.");
+      React.verbose("React Server Hibernator Disabled. Enable imACloudServerEnableMe in the config, if you know what you are doing.");
       return;
     }
     if (taskId != -1) {

@@ -42,6 +42,15 @@ public class SamplerRedstoneBurstRate extends ReactCachedSampler implements List
   }
 
   @Override
+  public void start() {
+    synchronized (bursts) {
+      bursts.clear();
+      tickUpdates = 0;
+    }
+    super.start();
+  }
+
+  @Override
   public Material getIcon() {
     return Material.REPEATER;
   }
@@ -57,7 +66,7 @@ public class SamplerRedstoneBurstRate extends ReactCachedSampler implements List
   public void on(ServerTickEvent event) {
     long now = System.currentTimeMillis();
     synchronized (bursts) {
-      if (tickUpdates >= burstThresholdPerTick) {
+      if (tickUpdates >= Math.max(1, burstThresholdPerTick)) {
         bursts.addLast(now);
       }
       tickUpdates = 0;
@@ -70,14 +79,19 @@ public class SamplerRedstoneBurstRate extends ReactCachedSampler implements List
     long now = System.currentTimeMillis();
     synchronized (bursts) {
       cleanup(now);
-      return bursts.size() * (60000D / Math.max(1000D, windowMS));
+      return bursts.size() * (60000D / effectiveWindowMS());
     }
   }
 
   private void cleanup(long now) {
-    while (!bursts.isEmpty() && now - bursts.peekFirst() > windowMS) {
+    int effectiveWindowMS = effectiveWindowMS();
+    while (!bursts.isEmpty() && now - bursts.peekFirst() > effectiveWindowMS) {
       bursts.removeFirst();
     }
+  }
+
+  private int effectiveWindowMS() {
+    return Math.max(1000, windowMS);
   }
 
   @Override

@@ -26,19 +26,24 @@ import lombok.Data;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 @Data
 public class ActionTicket<T extends ActionParams> {
   private Action<T> action;
   private T params;
-  private boolean done;
-  private boolean running;
+  private volatile boolean done;
+  private volatile boolean failed;
+  private volatile boolean running;
+  private volatile Throwable failure;
   private long completedAt;
   private double duration;
   private long startedAt;
   private List<Consumer<ActionTicket<T>>> onComplete;
   private List<Consumer<ActionTicket<T>>> onStart;
+  private List<Consumer<ActionTicket<T>>> onTerminal;
+  private boolean terminalCallbacksInvoked;
   private int work;
   private int totalWork;
   private int count;
@@ -49,6 +54,7 @@ public class ActionTicket<T extends ActionParams> {
     this.params = params;
     this.onComplete = new ArrayList<>();
     this.onStart = new ArrayList<>();
+    this.onTerminal = new ArrayList<>();
     this.startedAt = 0;
     this.completedAt = 0;
     work = 0;
@@ -77,13 +83,18 @@ public class ActionTicket<T extends ActionParams> {
     return getWork() / (double) getTotalWork();
   }
 
-  public ActionTicket<T> onComplete(Consumer<ActionTicket<T>> r) {
-    onComplete.add(r);
+  public synchronized ActionTicket<T> onComplete(Consumer<ActionTicket<T>> r) {
+    onComplete.add(Objects.requireNonNull(r, "callback"));
     return this;
   }
 
-  public ActionTicket<T> onStart(Consumer<ActionTicket<T>> r) {
-    onStart.add(r);
+  public synchronized ActionTicket<T> onStart(Consumer<ActionTicket<T>> r) {
+    onStart.add(Objects.requireNonNull(r, "callback"));
+    return this;
+  }
+
+  public synchronized ActionTicket<T> onTerminal(Consumer<ActionTicket<T>> r) {
+    onTerminal.add(Objects.requireNonNull(r, "callback"));
     return this;
   }
 
@@ -92,20 +103,92 @@ public class ActionTicket<T extends ActionParams> {
   }
 
   public void start() {
-    psw = PrecisionStopwatch.start();
-    startedAt = System.currentTimeMillis();
-    running = true;
-    onStart.forEach(i -> i.accept(this));
+    List<Consumer<ActionTicket<T>>> callbacks;
+    synchronized (this) {
+      if (done || running) {
+        return;
+      }
+
+      psw = PrecisionStopwatch.start();
+      startedAt = System.currentTimeMillis();
+      running = true;
+      callbacks = List.copyOf(onStart);
+    }
+
+    invokeCallbacks(callbacks);
   }
 
   public void complete() {
-    duration = psw.getMilliseconds();
-    completedAt = System.currentTimeMillis();
-    if (done) {
-      return;
+    List<Consumer<ActionTicket<T>>> callbacks;
+    synchronized (this) {
+      if (done) {
+        return;
+      }
+
+      finish();
+      callbacks = List.copyOf(onComplete);
     }
 
+    invokeCallbacks(callbacks);
+    invokeTerminalCallbacks();
+  }
+
+  public void fail(Throwable throwable) {
+    Throwable failureCause = Objects.requireNonNull(throwable, "throwable");
+    synchronized (this) {
+      if (failed || done && terminalCallbacksInvoked) {
+        return;
+      }
+
+      if (!done) {
+        finish();
+      }
+      failure = failureCause;
+      failed = true;
+    }
+    invokeTerminalCallbacks();
+  }
+
+  private void finish() {
+    duration = psw == null ? 0D : psw.getMilliseconds();
+    completedAt = System.currentTimeMillis();
+    running = false;
     done = true;
-    onComplete.forEach(i -> i.accept(this));
+  }
+
+  private void invokeCallbacks(List<Consumer<ActionTicket<T>>> callbacks) {
+    try {
+      for (Consumer<ActionTicket<T>> callback : callbacks) {
+        callback.accept(this);
+      }
+    } catch (Throwable throwable) {
+      fail(throwable);
+      if (throwable instanceof Error error) {
+        throw error;
+      }
+      if (throwable instanceof RuntimeException runtimeException) {
+        throw runtimeException;
+      }
+      throw new IllegalStateException("Action ticket callback failed", throwable);
+    }
+  }
+
+  private void invokeTerminalCallbacks() {
+    List<Consumer<ActionTicket<T>>> callbacks;
+    synchronized (this) {
+      if (terminalCallbacksInvoked) {
+        return;
+      }
+      terminalCallbacksInvoked = true;
+      callbacks = List.copyOf(onTerminal);
+    }
+
+    for (Consumer<ActionTicket<T>> callback : callbacks) {
+      try {
+        callback.accept(this);
+      } catch (Throwable throwable) {
+        React.reportError(new IllegalStateException("Action ticket terminal callback failed", throwable));
+      }
+    }
   }
 }

@@ -1,6 +1,8 @@
 package art.arcane.react.api.web.resource;
 
 import art.arcane.react.api.web.ControlBackend;
+import art.arcane.react.api.web.WebMutation;
+import art.arcane.react.api.web.WebMutationReporter;
 import art.arcane.react.api.web.WebAuth;
 import art.arcane.react.api.web.dto.ControlItemDto;
 import art.arcane.react.api.web.dto.Envelope;
@@ -13,9 +15,13 @@ import java.util.Map;
 public class ControlResource {
 
     private final ControlBackend backend;
+    private final String controlType;
+    private final WebMutationReporter reporter;
 
-    public ControlResource(ControlBackend backend) {
+    public ControlResource(ControlBackend backend, String controlType, WebMutationReporter reporter) {
         this.backend = backend;
+        this.controlType = controlType;
+        this.reporter = reporter;
     }
 
     public record ListResponse(ControlItemDto[] data) {}
@@ -46,6 +52,12 @@ public class ControlResource {
         if (item == null) {
             throw new NotFoundResponse("Unknown id: " + id);
         }
+        reporter.report(ctx, new WebMutation(
+            "control.toggle",
+            controlType + ":" + id,
+            body.enabled() ? "enabled" : "disabled",
+            "APPLIED"
+        ));
         ctx.json(new Envelope<>(item));
     }
 
@@ -61,6 +73,12 @@ public class ControlResource {
         if (item == null) {
             throw new NotFoundResponse("Unknown id: " + id);
         }
+        reporter.report(ctx, new WebMutation(
+            "control.config",
+            controlType + ":" + id,
+            "updated " + knobs.size() + " value(s): " + String.join(", ", knobs.keySet()),
+            "APPLIED"
+        ));
         ctx.json(new Envelope<>(item));
     }
 }

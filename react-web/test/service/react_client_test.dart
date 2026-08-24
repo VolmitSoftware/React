@@ -5,6 +5,7 @@ import 'package:http/testing.dart';
 import 'package:test/test.dart';
 
 import 'package:react_web/model/heatmap.dart';
+import 'package:react_web/model/server_capabilities.dart';
 import 'package:react_web/model/server_credential.dart';
 import 'package:react_web/model/server_snapshot.dart';
 import 'package:react_web/model/sampler_sample.dart';
@@ -20,6 +21,52 @@ void main() {
     port: 9696,
     bearer: 'tok-abc',
   );
+
+  group('ReactClient.ping()', () {
+    test('uses the unauthenticated direct ping endpoint', () async {
+      final MockClient mock = MockClient((http.Request request) async {
+        expect(request.url.path, equals('/api/v1/ping'));
+        expect(request.headers, isNot(contains('authorization')));
+        return http.Response(
+          jsonEncode(<String, dynamic>{
+            'data': <String, dynamic>{
+              'protocolVersion': 2,
+              'serverFingerprint': 'fingerprint',
+              'relayAvailable': false,
+            },
+          }),
+          200,
+        );
+      });
+
+      final ServerCapabilities capabilities = await ReactClient(
+        cred,
+        client: mock,
+      ).ping();
+
+      expect(capabilities.serverFingerprint, equals('fingerprint'));
+    });
+
+    test('fails closed on a malformed ping response', () async {
+      final MockClient mock = MockClient((http.Request _) async {
+        return http.Response(
+          jsonEncode(<String, dynamic>{
+            'data': <String, dynamic>{
+              'protocolVersion': 'two',
+              'serverFingerprint': 42,
+              'relayAvailable': 'false',
+            },
+          }),
+          200,
+        );
+      });
+
+      await expectLater(
+        ReactClient(cred, client: mock).ping(),
+        throwsA(isA<ReactUnavailable>()),
+      );
+    });
+  });
 
   group('ReactClient.metrics()', () {
     test('decodes a 2-sampler body', () async {
@@ -223,6 +270,36 @@ void main() {
       final ServerSnapshot snapshot = await client.metrics();
       expect(snapshot.byId.isEmpty, isTrue);
     });
+
+    test('preserves reverse-proxy path and IPv6 authority', () async {
+      const ServerCredential proxyCredential = ServerCredential(
+        id: 'proxy-test',
+        label: 'Proxy',
+        host: '2001:db8::1',
+        port: 9443,
+        bearer: 'tok-proxy',
+        secure: true,
+        basePath: '/proxy/react',
+      );
+      final MockClient mock = MockClient((http.Request request) async {
+        expect(request.url.host, equals('2001:db8::1'));
+        expect(request.url.port, equals(9443));
+        expect(request.url.path, equals('/proxy/react/api/v1/identity'));
+        return http.Response(
+          jsonEncode(<String, dynamic>{
+            'data': <String, dynamic>{
+              'version': '1.0.0',
+              'serverName': 'Proxy',
+              'folia': false,
+              'serverId': 'proxy',
+            },
+          }),
+          200,
+        );
+      });
+
+      await ReactClient(proxyCredential, client: mock).identity();
+    });
   });
 
   group('ReactClient error handling', () {
@@ -377,7 +454,7 @@ void main() {
         expect(
           req.url.queryParameters,
           equals(<String, String>{
-            'world': 'world_nether',
+            'world': 'minecraft:world_nether',
             'centerX': '3',
             'centerZ': '-2',
             'radius': '8',
@@ -388,7 +465,7 @@ void main() {
             'data': <String, dynamic>{
               'id': 'id',
               'label': 'Label',
-              'world': 'world_nether',
+              'world': 'minecraft:world_nether',
               'centerChunkX': 3,
               'centerChunkZ': -2,
               'radius': 8,
@@ -405,7 +482,7 @@ void main() {
       final ReactClient client = ReactClient(cred, client: mock);
       await client.heatmap(
         'id',
-        world: 'world_nether',
+        world: 'minecraft:world_nether',
         centerX: 3,
         centerZ: -2,
         radius: 8,

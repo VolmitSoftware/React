@@ -1464,7 +1464,7 @@ public final class ReactConfigGUI {
           "main-config",
           ReactConfiguration.get(),
           objectPath,
-          React.instance.getDataFile("config.toml"),
+          React.instance.getDataFile("react.toml"),
           ReactConfigGUI::reloadMainConfig,
           () -> {
           }
@@ -1611,10 +1611,11 @@ public final class ReactConfigGUI {
 
   private static boolean reloadMainConfig() {
     boolean loaded = ReactConfiguration.reload();
-    if (loaded) {
-      refreshGlobalRuntimeSettings();
+    if (!loaded || !ReactLanguage.reload()) {
+      return false;
     }
-    return loaded;
+    refreshGlobalRuntimeSettings();
+    return true;
   }
 
   private static boolean reloadCoreConfig(String id) {
@@ -1737,7 +1738,7 @@ public final class ReactConfigGUI {
       try {
         return supplier.getAsBoolean();
       } catch (Throwable e) {
-        React.warn("Config GUI apply failed: " + e.getMessage());
+        React.warn("Config GUI apply failed: " + e.getMessage(), e);
         return false;
       }
     });

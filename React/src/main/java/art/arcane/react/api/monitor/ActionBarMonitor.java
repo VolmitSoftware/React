@@ -50,6 +50,7 @@ import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ActionBarMonitor extends PlayerMonitor {
   private int viewportIndex;
@@ -74,6 +75,7 @@ public class ActionBarMonitor extends PlayerMonitor {
   // arrives from sampler-churn/hotload threads; both must mutate the render state
   // under the same lock.
   private final Object renderLock = new Object();
+  private final AtomicBoolean flushQueued = new AtomicBoolean();
 
   public ActionBarMonitor(ReactPlayer player) {
     super("actionbar", player, 50);
@@ -313,12 +315,14 @@ public class ActionBarMonitor extends PlayerMonitor {
     Component result = Component.empty();
     boolean first = true;
     for (int m = 0; m < viewportLimit; m++) {
+      String samplerId = "unknown";
       try {
         int calculatedIndex = (viewportIndex + m) % focus.getSamplers().size();
         if (calculatedIndex < 0) {
           calculatedIndex += focus.getSamplers().size();
         }
-        Sampler i = React.sampler(focus.getSamplers().get(calculatedIndex));
+        samplerId = focus.getSamplers().get(calculatedIndex);
+        Sampler i = React.sampler(samplerId);
         if (i == null) {
           continue;
         }
@@ -349,7 +353,8 @@ public class ActionBarMonitor extends PlayerMonitor {
           result = result.append(Component.text(" ".repeat(max - l)));
         }
       } catch (Throwable e) {
-        e.printStackTrace();
+        String failedSamplerId = samplerId;
+        React.verbose(() -> "Action-bar monitor could not render sampler " + failedSamplerId, e);
         viewportIndexes.put(focus, 0);
       }
     }
@@ -440,13 +445,50 @@ public class ActionBarMonitor extends PlayerMonitor {
       return;
     }
 
-    if (J.isFoliaThreading() && !J.isOwnedByCurrentRegion(getPlayer().getPlayer())) {
-      J.runEntity(getPlayer().getPlayer(), this::flush);
+    Player player = getPlayer().getPlayer();
+    if (J.isFoliaThreading() && !J.isOwnedByCurrentRegion(player)) {
+      queueOwnedFlush(player);
       return;
     }
 
     synchronized (renderLock) {
       flushLocked();
+    }
+  }
+
+  private void queueOwnedFlush(Player player) {
+    if (!flushQueued.compareAndSet(false, true)) {
+      return;
+    }
+
+    AtomicBoolean completed = new AtomicBoolean();
+    Runnable completion = () -> {
+      if (completed.compareAndSet(false, true)) {
+        flushQueued.set(false);
+      }
+    };
+    Runnable operation = () -> {
+      try {
+        if (!running || focusClaim == null
+            || (J.isFoliaThreading() && !J.isOwnedByCurrentRegion(player))) {
+          return;
+        }
+
+        synchronized (renderLock) {
+          flushLocked();
+        }
+      } finally {
+        completion.run();
+      }
+    };
+
+    try {
+      if (!J.runEntity(player, operation, 0, completion)) {
+        completion.run();
+      }
+    } catch (RuntimeException | Error failure) {
+      completion.run();
+      throw failure;
     }
   }
 

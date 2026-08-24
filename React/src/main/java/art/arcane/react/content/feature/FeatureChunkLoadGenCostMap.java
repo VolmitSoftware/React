@@ -23,10 +23,10 @@ import art.arcane.react.content.sampler.SamplerChunkGenMS;
 import art.arcane.react.content.sampler.SamplerChunkLoadMS;
 import art.arcane.react.content.sampler.SamplerChunksGenerated;
 import art.arcane.react.content.sampler.SamplerChunksLoaded;
+import art.arcane.react.api.web.heatmap.HeatmapWorldRef;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.RendererMessages;
 import art.arcane.react.util.data.TinyColor;
-import org.bukkit.Chunk;
 
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Chunk Load Gen Cost Map feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureChunkLoadGenCostMap extends FeatureChunkHeatmapBase {
@@ -52,11 +52,11 @@ public class FeatureChunkLoadGenCostMap extends FeatureChunkHeatmapBase {
   }
 
   @Override
-  protected double chunkScore(Chunk chunk) {
-    double loadMS = chunkSample(chunk, SamplerChunkLoadMS.ID);
-    double genMS = chunkSample(chunk, SamplerChunkGenMS.ID);
-    double loadRate = chunkSample(chunk, SamplerChunksLoaded.ID);
-    double genRate = chunkSample(chunk, SamplerChunksGenerated.ID);
+  protected double chunkScore(HeatmapWorldRef world, int chunkX, int chunkZ) {
+    double loadMS = chunkSample(world, chunkX, chunkZ, SamplerChunkLoadMS.ID);
+    double genMS = chunkSample(world, chunkX, chunkZ, SamplerChunkGenMS.ID);
+    double loadRate = chunkSample(world, chunkX, chunkZ, SamplerChunksLoaded.ID);
+    double genRate = chunkSample(world, chunkX, chunkZ, SamplerChunksGenerated.ID);
 
     // Generation spikes are usually more expensive than plain chunk loads.
     return (loadMS * 1.00D) + (genMS * 1.35D) + (loadRate * 0.4D) + (genRate * 0.7D);

@@ -151,6 +151,7 @@ class _AlertsInboxScreenState extends State<AlertsInboxScreen> {
 
     return dom.div(classes: 'reactor-filter-bar', <Widget>[
       ArcaneNativeSelect(
+        size: ComponentSize.sm,
         options: severityOptions,
         value: _severityFilter == null ? '' : _severityFilter!.name,
         onChange: (String v) => setState(() {
@@ -164,6 +165,7 @@ class _AlertsInboxScreenState extends State<AlertsInboxScreen> {
         }),
       ),
       ArcaneNativeSelect(
+        size: ComponentSize.sm,
         options: serverOptions,
         value: _serverIdFilter ?? '',
         onChange: (String v) =>

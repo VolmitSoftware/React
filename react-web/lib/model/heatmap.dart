@@ -63,11 +63,13 @@ class HeatmapGrid {
 
   int get size => radius * 2 + 1;
 
+  Map<(int, int), HeatmapCell> indexCells() => <(int, int), HeatmapCell>{
+    for (final HeatmapCell cell in cells) (cell.x, cell.z): cell,
+  };
+
   HeatmapCell? cellAt(int chunkX, int chunkZ) {
     for (final HeatmapCell cell in cells) {
-      if (cell.x == chunkX && cell.z == chunkZ) {
-        return cell;
-      }
+      if (cell.x == chunkX && cell.z == chunkZ) return cell;
     }
     return null;
   }

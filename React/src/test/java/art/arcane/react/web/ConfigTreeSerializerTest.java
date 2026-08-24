@@ -4,6 +4,7 @@ import art.arcane.react.api.web.ConfigTreeSerializer;
 import art.arcane.react.api.web.dto.ConfigNodeDto;
 import art.arcane.react.api.web.dto.ConfigSectionDto;
 import art.arcane.react.model.ReactConfiguration;
+import art.arcane.volmlib.util.localization.VolmitLocales;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -76,6 +77,18 @@ public class ConfigTreeSerializerTest {
         assertTrue(opts.contains("BLAME"), "options must contain BLAME");
         assertTrue(opts.contains("SHORT"), "options must contain SHORT");
         assertTrue(opts.contains("DETAILED"), "options must contain DETAILED");
+    }
+
+    @Test
+    void it_emits_main_language_as_supported_locale_dropdown() {
+        ConfigTreeSerializer serializer = new ConfigTreeSerializer();
+        ConfigSectionDto[] sections = serializer.serialize(new ReactConfiguration());
+        ConfigNodeDto language = findNode(flattenNodes(sections), "main.language");
+
+        assertNotNull(language, "Expected node with key main.language");
+        assertEquals("enum", language.type);
+        assertEquals("en_US", language.value);
+        assertEquals(VolmitLocales.all(), Arrays.asList(language.options));
     }
 
     @Test

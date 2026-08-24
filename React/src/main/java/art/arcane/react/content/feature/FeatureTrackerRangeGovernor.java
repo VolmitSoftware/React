@@ -23,17 +23,22 @@ import art.arcane.react.React;
 import art.arcane.react.api.feature.PressureGate;
 import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.content.sampler.SamplerTickTime;
+import art.arcane.react.util.common.scheduling.J;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Tracker Range Governor feature. Temporarily scales down per-world entity tracking ranges (items, misc, displays, animals, monsters) while the server is under sustained pressure, shrinking entity-tracker and packet fanout. Changes apply to entities as they become tracked, so fast-churning entities like items react within seconds; ranges are restored once the server recovers.")
 public class FeatureTrackerRangeGovernor extends ReactFeature {
@@ -81,6 +86,12 @@ public class FeatureTrackerRangeGovernor extends ReactFeature {
   private transient boolean resolved;
   private transient boolean supported;
   private transient final PressureGate gate = new PressureGate();
+  private transient final Object worldMutationLock = new Object();
+  private transient final Deque<RetiredWorldState> pendingReleases = new ArrayDeque<>();
+  private transient volatile AtomicInteger mutationRequests = new AtomicInteger(0);
+  private transient final AtomicLong lifecycleGeneration = new AtomicLong(0L);
+  private transient volatile boolean requestedEngaged;
+  private transient volatile boolean active;
 
   public FeatureTrackerRangeGovernor() {
     super(ID);
@@ -88,18 +99,46 @@ public class FeatureTrackerRangeGovernor extends ReactFeature {
 
   @Override
   public void onActivate() {
-    baselinesByWorld = new ConcurrentHashMap<>();
-    resolved = false;
-    supported = false;
-    gate.reset();
+    synchronized (worldMutationLock) {
+      active = false;
+      lifecycleGeneration.incrementAndGet();
+      baselinesByWorld = new ConcurrentHashMap<>();
+      resolved = false;
+      supported = false;
+      gate.reset();
+      mutationRequests = new AtomicInteger(0);
+      requestedEngaged = false;
+      active = true;
+    }
   }
 
   @Override
   public void onDeactivate() {
-    if (gate.isEngaged()) {
+    Map<UUID, Map<String, Integer>> retiredBaselines;
+    RetiredWorldState retiredState;
+    synchronized (worldMutationLock) {
+      active = false;
+      lifecycleGeneration.incrementAndGet();
       gate.reset();
-      release();
+      requestedEngaged = false;
+      mutationRequests = new AtomicInteger(0);
+      retiredBaselines = baselinesByWorld;
+      retiredState = new RetiredWorldState(retiredBaselines);
+      if (retiredState.hasState()) {
+        pendingReleases.addLast(retiredState);
+      }
     }
+
+    if (!retiredState.hasState()) {
+      return;
+    }
+
+    if (J.isPrimaryThread()) {
+      releaseRetiredState(retiredState);
+      return;
+    }
+
+    J.sync(() -> releaseRetiredState(retiredState));
   }
 
   @Override
@@ -109,17 +148,90 @@ public class FeatureTrackerRangeGovernor extends ReactFeature {
 
   @Override
   public void onTick() {
+    long generation = lifecycleGeneration.get();
+    if (!isActive(generation)) {
+      return;
+    }
+
     double tickMs = sample(SamplerTickTime.ID);
+    if (!isActive(generation)) {
+      return;
+    }
     boolean pressure = !(tickMs < engageTickTimeMs);
     boolean calm = !(tickMs > releaseTickTimeMs);
     long now = System.currentTimeMillis();
-    boolean wasEngaged = gate.isEngaged();
-    boolean nowEngaged = gate.update(now, pressure, calm, sustainEngageMs, sustainReleaseMs);
+    boolean wasEngaged;
+    boolean nowEngaged;
+    synchronized (worldMutationLock) {
+      if (!isActive(generation)) {
+        return;
+      }
+      wasEngaged = gate.isEngaged();
+      nowEngaged = gate.update(now, pressure, calm, sustainEngageMs, sustainReleaseMs);
+    }
 
     if (!wasEngaged && nowEngaged) {
-      engage();
+      requestWorldState(true, generation);
     } else if (wasEngaged && !nowEngaged) {
-      release();
+      requestWorldState(false, generation);
+    }
+  }
+
+  private void requestWorldState(boolean engaged, long generation) {
+    AtomicInteger requests;
+    synchronized (worldMutationLock) {
+      if (!isActive(generation)) {
+        return;
+      }
+      requestedEngaged = engaged;
+      requests = mutationRequests;
+    }
+
+    if (J.isPrimaryThread()) {
+      applyRequestedWorldState(generation);
+      return;
+    }
+    if (requests.getAndIncrement() != 0) {
+      return;
+    }
+
+    J.sync(() -> {
+      if (isActive(generation)) {
+        drainWorldStateRequests(requests, generation);
+      }
+    });
+  }
+
+  private void drainWorldStateRequests(AtomicInteger requests, long generation) {
+    int completed = 1;
+    while (true) {
+      if (!isActive(generation)) {
+        requests.set(0);
+        return;
+      }
+      applyRequestedWorldState(generation);
+      int remaining = requests.addAndGet(-completed);
+      if (remaining == 0) {
+        return;
+      }
+      completed = remaining;
+    }
+  }
+
+  private void applyRequestedWorldState(long generation) {
+    synchronized (worldMutationLock) {
+      if (!isActive(generation)) {
+        return;
+      }
+      releasePendingState();
+      if (!isActive(generation)) {
+        return;
+      }
+      if (requestedEngaged) {
+        engage();
+      } else {
+        release(baselinesByWorld);
+      }
     }
   }
 
@@ -168,13 +280,13 @@ public class FeatureTrackerRangeGovernor extends ReactFeature {
     }
   }
 
-  private void release() {
-    if (baselinesByWorld == null || baselinesByWorld.isEmpty()) {
+  private void release(Map<UUID, Map<String, Integer>> rangeBaselines) {
+    if (rangeBaselines == null || rangeBaselines.isEmpty()) {
       return;
     }
 
     int restored = 0;
-    for (Map.Entry<UUID, Map<String, Integer>> worldEntry : baselinesByWorld.entrySet()) {
+    for (Map.Entry<UUID, Map<String, Integer>> worldEntry : rangeBaselines.entrySet()) {
       World world = Bukkit.getWorld(worldEntry.getKey());
       if (world == null) {
         continue;
@@ -199,10 +311,30 @@ public class FeatureTrackerRangeGovernor extends ReactFeature {
       }
     }
 
-    baselinesByWorld.clear();
+    rangeBaselines.clear();
     if (restored > 0) {
       React.verbose("Tracker range governor released: restored " + restored + " tracking ranges");
     }
+  }
+
+  private void releaseRetiredState(RetiredWorldState retiredState) {
+    synchronized (worldMutationLock) {
+      if (!pendingReleases.remove(retiredState)) {
+        return;
+      }
+      release(retiredState.rangeBaselines);
+    }
+  }
+
+  private void releasePendingState() {
+    RetiredWorldState retiredState;
+    while ((retiredState = pendingReleases.pollFirst()) != null) {
+      release(retiredState.rangeBaselines);
+    }
+  }
+
+  private boolean isActive(long generation) {
+    return active && generation == lifecycleGeneration.get();
   }
 
   private double factorFor(String fieldName) {
@@ -287,6 +419,19 @@ public class FeatureTrackerRangeGovernor extends ReactFeature {
   private void failRuntime(Throwable e) {
     supported = false;
     setEnabled(false);
-    React.warn("Tracker Range Governor disabled due to runtime incompatibility: " + e.getClass().getSimpleName() + ": " + e.getMessage());
+    React.reportError("Tracker Range Governor disabled due to runtime incompatibility: "
+        + e.getClass().getSimpleName() + ": " + e.getMessage(), e);
+  }
+
+  private static final class RetiredWorldState {
+    private final Map<UUID, Map<String, Integer>> rangeBaselines;
+
+    private RetiredWorldState(Map<UUID, Map<String, Integer>> rangeBaselines) {
+      this.rangeBaselines = rangeBaselines;
+    }
+
+    private boolean hasState() {
+      return rangeBaselines != null && !rangeBaselines.isEmpty();
+    }
   }
 }

@@ -2,7 +2,6 @@ package art.arcane.react.core.controller;
 
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -10,6 +9,9 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class HopperItemIndex {
+    private static final long[] EMPTY_CHUNKS = new long[0];
+    private static final UUID[] EMPTY_ITEMS = new UUID[0];
+
     private Map<UUID, Long2ObjectOpenHashMap<Set<UUID>>> itemsByWorldChunk;
     private Map<UUID, ItemBucketRef> bucketByItem;
 
@@ -20,22 +22,23 @@ public class HopperItemIndex {
 
     public void addItem(UUID worldId, int chunkX, int chunkZ, UUID itemId) {
         long key = chunkKey(chunkX, chunkZ);
-        ItemBucketRef existing = bucketByItem.get(itemId);
-        if (existing != null && existing.worldId.equals(worldId) && existing.chunkKey == key) {
-            return;
-        }
-        if (existing != null) {
-            removeFromBucket(itemId, existing.worldId, existing.chunkKey);
-        }
-        addToBucket(itemId, worldId, key);
-        bucketByItem.put(itemId, new ItemBucketRef(worldId, key));
+        bucketByItem.compute(itemId, (ignored, existing) -> {
+            if (existing != null && existing.worldId.equals(worldId) && existing.chunkKey == key) {
+                return existing;
+            }
+            if (existing != null) {
+                removeFromBucket(itemId, existing.worldId, existing.chunkKey);
+            }
+            addToBucket(itemId, worldId, key);
+            return new ItemBucketRef(worldId, key);
+        });
     }
 
     public void removeItem(UUID itemId) {
-        ItemBucketRef ref = bucketByItem.remove(itemId);
-        if (ref != null) {
+        bucketByItem.computeIfPresent(itemId, (ignored, ref) -> {
             removeFromBucket(itemId, ref.worldId, ref.chunkKey);
-        }
+            return null;
+        });
     }
 
     public boolean hasItemsAbove(UUID worldId, int chunkX, int chunkZ) {
@@ -50,43 +53,48 @@ public class HopperItemIndex {
         }
     }
 
-    public Set<UUID> itemsInChunk(UUID worldId, int chunkX, int chunkZ) {
+    public long[] itemChunkKeys(UUID worldId) {
         Long2ObjectOpenHashMap<Set<UUID>> worldBuckets = itemsByWorldChunk.get(worldId);
         if (worldBuckets == null) {
-            return Collections.emptySet();
+            return EMPTY_CHUNKS;
+        }
+        synchronized (worldBuckets) {
+            return worldBuckets.isEmpty() ? EMPTY_CHUNKS : worldBuckets.keySet().toLongArray();
+        }
+    }
+
+    public UUID[] itemIdsInChunk(UUID worldId, int chunkX, int chunkZ) {
+        Long2ObjectOpenHashMap<Set<UUID>> worldBuckets = itemsByWorldChunk.get(worldId);
+        if (worldBuckets == null) {
+            return EMPTY_ITEMS;
         }
         long key = chunkKey(chunkX, chunkZ);
         synchronized (worldBuckets) {
             Set<UUID> bucket = worldBuckets.get(key);
-            if (bucket == null || bucket.isEmpty()) {
-                return Collections.emptySet();
-            }
-            return new HashSet<>(bucket);
+            return bucket == null || bucket.isEmpty() ? EMPTY_ITEMS : bucket.toArray(new UUID[bucket.size()]);
         }
     }
 
     public void removeChunk(UUID worldId, int chunkX, int chunkZ) {
-        Long2ObjectOpenHashMap<Set<UUID>> worldBuckets = itemsByWorldChunk.get(worldId);
-        if (worldBuckets == null) {
-            return;
-        }
         long key = chunkKey(chunkX, chunkZ);
-        Set<UUID> removed;
-        boolean worldEmpty;
-        synchronized (worldBuckets) {
-            removed = worldBuckets.remove(key);
-            worldEmpty = worldBuckets.isEmpty();
-        }
-        if (removed != null) {
-            for (UUID itemId : removed) {
-                ItemBucketRef ref = bucketByItem.get(itemId);
-                if (ref != null && worldId.equals(ref.worldId) && ref.chunkKey == key) {
-                    bucketByItem.remove(itemId);
+        Set<UUID> removedItems = new HashSet<>();
+        itemsByWorldChunk.computeIfPresent(worldId, (ignored, worldBuckets) -> {
+            synchronized (worldBuckets) {
+                Set<UUID> removed = worldBuckets.remove(key);
+                if (removed != null) {
+                    removedItems.addAll(removed);
                 }
+                return worldBuckets.isEmpty() ? null : worldBuckets;
             }
-        }
-        if (worldEmpty) {
-            itemsByWorldChunk.remove(worldId, worldBuckets);
+        });
+        for (UUID itemId : removedItems) {
+            bucketByItem.computeIfPresent(itemId, (ignored, ref) -> {
+                if (!worldId.equals(ref.worldId) || ref.chunkKey != key) {
+                    return ref;
+                }
+                removeFromBucket(itemId, ref.worldId, ref.chunkKey);
+                return null;
+            });
         }
     }
 
@@ -95,15 +103,20 @@ public class HopperItemIndex {
         if (worldBuckets == null) {
             return;
         }
+        Set<UUID> removedItems = new HashSet<>();
         synchronized (worldBuckets) {
             for (Set<UUID> bucket : worldBuckets.values()) {
-                for (UUID itemId : bucket) {
-                    ItemBucketRef ref = bucketByItem.get(itemId);
-                    if (ref != null && worldId.equals(ref.worldId)) {
-                        bucketByItem.remove(itemId);
-                    }
-                }
+                removedItems.addAll(bucket);
             }
+        }
+        for (UUID itemId : removedItems) {
+            bucketByItem.computeIfPresent(itemId, (ignored, ref) -> {
+                if (!worldId.equals(ref.worldId)) {
+                    return ref;
+                }
+                removeFromBucket(itemId, ref.worldId, ref.chunkKey);
+                return null;
+            });
         }
     }
 
@@ -121,38 +134,36 @@ public class HopperItemIndex {
     }
 
     private void addToBucket(UUID itemId, UUID worldId, long key) {
-        Long2ObjectOpenHashMap<Set<UUID>> worldBuckets = itemsByWorldChunk
-            .computeIfAbsent(worldId, ignored -> new Long2ObjectOpenHashMap<>());
-        synchronized (worldBuckets) {
-            Set<UUID> bucket = worldBuckets.get(key);
-            if (bucket == null) {
-                bucket = new HashSet<>();
-                worldBuckets.put(key, bucket);
+        itemsByWorldChunk.compute(worldId, (ignored, current) -> {
+            Long2ObjectOpenHashMap<Set<UUID>> worldBuckets = current == null
+                ? new Long2ObjectOpenHashMap<>()
+                : current;
+            synchronized (worldBuckets) {
+                Set<UUID> bucket = worldBuckets.get(key);
+                if (bucket == null) {
+                    bucket = new HashSet<>();
+                    worldBuckets.put(key, bucket);
+                }
+                bucket.add(itemId);
             }
-            bucket.add(itemId);
-        }
+            return worldBuckets;
+        });
     }
 
     private void removeFromBucket(UUID itemId, UUID worldId, long key) {
-        Long2ObjectOpenHashMap<Set<UUID>> worldBuckets = itemsByWorldChunk.get(worldId);
-        if (worldBuckets == null) {
-            return;
-        }
-        boolean worldEmpty;
-        synchronized (worldBuckets) {
-            Set<UUID> bucket = worldBuckets.get(key);
-            if (bucket == null) {
-                return;
+        itemsByWorldChunk.computeIfPresent(worldId, (ignored, worldBuckets) -> {
+            synchronized (worldBuckets) {
+                Set<UUID> bucket = worldBuckets.get(key);
+                if (bucket == null) {
+                    return worldBuckets;
+                }
+                bucket.remove(itemId);
+                if (bucket.isEmpty()) {
+                    worldBuckets.remove(key);
+                }
+                return worldBuckets.isEmpty() ? null : worldBuckets;
             }
-            bucket.remove(itemId);
-            if (bucket.isEmpty()) {
-                worldBuckets.remove(key);
-            }
-            worldEmpty = worldBuckets.isEmpty();
-        }
-        if (worldEmpty) {
-            itemsByWorldChunk.remove(worldId, worldBuckets);
-        }
+        });
     }
 
     public static long chunkKey(int chunkX, int chunkZ) {

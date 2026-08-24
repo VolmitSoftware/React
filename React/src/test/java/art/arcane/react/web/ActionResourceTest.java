@@ -3,6 +3,7 @@ package art.arcane.react.web;
 import art.arcane.react.api.web.ActionBackend;
 import art.arcane.react.api.web.ActionDispatcher;
 import art.arcane.react.api.web.AuditLog;
+import art.arcane.react.api.web.BukkitWebMutationReporter;
 import art.arcane.react.api.web.PairingToken;
 import art.arcane.react.api.web.TokenRecord;
 import art.arcane.react.api.web.TokenStore;
@@ -74,7 +75,7 @@ public class ActionResourceTest {
                 r.run();
             }
         };
-        resource = new ActionResource(fakeBackend, fakeDispatcher, audit);
+        resource = new ActionResource(fakeBackend, fakeDispatcher, new BukkitWebMutationReporter(audit));
     }
 
     @Test

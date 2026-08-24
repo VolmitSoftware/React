@@ -118,6 +118,7 @@ public abstract class TickedObject implements Ticked, Listener, Registered {
 
     tlastTick.set(M.ms());
     tburst.decrementAndGet();
+    tticks.incrementAndGet();
     onTick();
   }
 

@@ -442,9 +442,9 @@ public class TweakFastFluids extends ReactTweak implements Listener {
       return;
     }
 
-    React.warn("Fast Fluids runtime bridge failure on the fluid tick path: " + throwable.getClass().getName()
-        + (throwable.getMessage() == null ? "" : ": " + throwable.getMessage()));
-    React.reportError(throwable);
+    React.reportError("Fast Fluids runtime bridge failure on the fluid tick path: "
+        + throwable.getClass().getName()
+        + (throwable.getMessage() == null ? "" : ": " + throwable.getMessage()), throwable);
   }
 
   private TickResult tickFluidAt(Object worldHandle, Object blockPos, Block block) {

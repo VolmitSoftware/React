@@ -65,11 +65,8 @@ public class J {
     SchedulerBridge.setSyncRepeatingScheduler(J::sr);
     SchedulerBridge.setAsyncRepeatingScheduler(J::ar);
     SchedulerBridge.setCancelScheduler(J::car);
-    SchedulerBridge.setErrorHandler(e -> {
-      React.reportError(e);
-      e.printStackTrace();
-    });
-    SchedulerBridge.setInfoLogger(React::info);
+    SchedulerBridge.setErrorHandler(e -> React.reportError("Scheduler bridge task failed", e));
+    SchedulerBridge.setInfoLogger(React::verbose);
   }
 
   public static void dofor(int a, Function<Integer, Boolean> c, int ch, Consumer<Integer> d) {
@@ -157,8 +154,24 @@ public class J {
       return false;
     }
 
+    Runnable scheduledRunnable = runnable;
+    Runnable scheduledRetired = retired;
+    if (retired != null) {
+      AtomicBoolean terminal = new AtomicBoolean(false);
+      scheduledRunnable = () -> {
+        if (terminal.compareAndSet(false, true)) {
+          runnable.run();
+        }
+      };
+      scheduledRetired = () -> {
+        if (terminal.compareAndSet(false, true)) {
+          retired.run();
+        }
+      };
+    }
+
     int safeDelayTicks = Math.max(0, delayTicks);
-    Runnable guarded = guardEntityTask(entity, runnable, retired);
+    Runnable guarded = guardEntityTask(entity, scheduledRunnable, scheduledRetired);
     if (!isFoliaThreading()) {
       if (safeDelayTicks <= 0) {
         sync(guarded);
@@ -173,12 +186,20 @@ public class J {
       return true;
     }
 
-    if (FoliaScheduler.runEntity(React.instance, entity, runnable, safeDelayTicks, retired)) {
+    if (FoliaScheduler.runEntity(
+        React.instance,
+        entity,
+        scheduledRunnable,
+        safeDelayTicks,
+        scheduledRetired
+    )) {
       return true;
     }
 
-    Location location = safeEntityLocation(entity);
-    return location != null && runRegion(location, guarded, safeDelayTicks);
+    if (scheduledRetired != null) {
+      scheduledRetired.run();
+    }
+    return false;
   }
 
   private static Runnable guardEntityTask(Entity entity, Runnable runnable, Runnable retired) {
@@ -327,8 +348,8 @@ public class J {
       try {
         cancelAction.run();
       } catch (Throwable ex) {
-        React.verbose("Failed to run cancel action: " + ex.getClass().getSimpleName()
-            + (ex.getMessage() == null ? "" : " - " + ex.getMessage()));
+        React.verbose(() -> "Failed to run cancel action: " + ex.getClass().getSimpleName()
+            + (ex.getMessage() == null ? "" : " - " + ex.getMessage()), ex);
       }
     }
     REPEATING_CANCELLERS.clear();
@@ -350,9 +371,15 @@ public class J {
 
     AtomicBoolean finished = new AtomicBoolean(false);
     AtomicReference<T> result = new AtomicReference<>();
+    AtomicReference<Throwable> failure = new AtomicReference<>();
     J.s(() -> {
-      result.set(t.get());
-      finished.set(true);
+      try {
+        result.set(t.get());
+      } catch (Throwable throwable) {
+        failure.set(throwable);
+      } finally {
+        finished.set(true);
+      }
     });
 
     long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(15);
@@ -371,6 +398,11 @@ public class J {
       }
     }
 
+    Throwable throwable = failure.get();
+    if (throwable != null) {
+      React.reportError(throwable);
+      return null;
+    }
     return result.get();
   }
 
@@ -435,11 +467,16 @@ public class J {
   }
 
   public static void sync(Runnable r, int delay) {
-    if (!isPluginActive()) {
+    if (r == null || !isPluginActive()) {
       return;
     }
 
     if (delay <= 0) {
+      if (isPrimaryThread()) {
+        r.run();
+        return;
+      }
+
       if (isFoliaThreading()) {
         retrySyncOnUnsupported(r);
         return;
@@ -705,16 +742,6 @@ public class J {
 
   private static boolean runAsyncDelayed(Runnable runnable, int delayTicks) {
     return FoliaScheduler.runAsync(React.instance, runnable, Math.max(0, delayTicks));
-  }
-
-  private static Location safeEntityLocation(Entity entity) {
-    try {
-      return entity.getLocation();
-    } catch (Throwable ex) {
-      React.verbose("Failed to resolve entity location safely: " + ex.getClass().getSimpleName()
-          + (ex.getMessage() == null ? "" : " - " + ex.getMessage()));
-      return null;
-    }
   }
 
   private static boolean isPluginActive() {

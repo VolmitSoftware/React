@@ -1,6 +1,7 @@
 package art.arcane.react.web;
 
 import art.arcane.react.api.web.heatmap.ChunkGridExporter;
+import art.arcane.react.api.web.heatmap.HeatmapWorldRef;
 import art.arcane.react.api.web.heatmap.HeatmapCellDto;
 import art.arcane.react.api.web.heatmap.HeatmapChunkSampler;
 import art.arcane.react.api.web.heatmap.HeatmapDto;
@@ -8,7 +9,6 @@ import art.arcane.react.api.web.heatmap.HeatmapScan;
 import art.arcane.react.api.web.heatmap.HeatmapSerializer;
 import art.arcane.react.api.web.heatmap.HeatmapSummaryDto;
 import art.arcane.react.api.web.heatmap.ReactHeatmapCellProvider;
-import org.bukkit.Chunk;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -33,7 +33,7 @@ public class ReactHeatmapCellProviderTest {
             }
 
             @Override
-            public double scoreChunk(Chunk chunk) {
+            public double scoreChunk(HeatmapWorldRef world, int chunkX, int chunkZ) {
                 return 0D;
             }
         };

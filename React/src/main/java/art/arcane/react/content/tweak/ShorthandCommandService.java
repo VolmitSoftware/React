@@ -200,8 +200,8 @@ final class ShorthandCommandService {
       command.unregister(commandMap);
       restoreIfMissing(knownCommands, label, previousDirect);
       restoreIfMissing(knownCommands, namespacedLabel, previousNamespaced);
-      React.warn("Failed to register shorthand command /" + label + ": " + throwable.getMessage());
-      React.reportError(throwable);
+      React.reportError("Failed to register shorthand command /" + label
+          + ": " + throwable.getMessage(), throwable);
     }
   }
 
@@ -230,8 +230,8 @@ final class ShorthandCommandService {
           ShorthandMessages.CONFIGURED_FAILED,
           MessageArgument.untrusted("label", label)
       );
-      React.warn("Custom shorthand /" + label + " failed: " + throwable.getMessage());
-      React.reportError(throwable);
+      React.reportError("Custom shorthand /" + label + " failed: "
+          + throwable.getMessage(), throwable);
     } finally {
       exitCustomAlias(label);
     }
@@ -251,8 +251,8 @@ final class ShorthandCommandService {
       return completions == null ? List.of() : completions;
     } catch (Throwable throwable) {
       if (reportedCompletionFailures.add(label)) {
-        React.warn("Tab completion failed for custom shorthand /" + label + ": " + throwable.getMessage());
-        React.reportError(throwable);
+        React.reportError("Tab completion failed for custom shorthand /" + label
+            + ": " + throwable.getMessage(), throwable);
       }
       return List.of();
     } finally {

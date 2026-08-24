@@ -61,6 +61,7 @@ class LogsView extends StatelessWidget {
           description: reactorText(ReactorText.consoleDescription),
           flush: true,
           trailing: ArcaneSelect(
+            size: ComponentSize.sm,
             label: reactorText(ReactorText.logsLevel),
             value: levelFilter,
             options: <ArcaneSelectOption>[

@@ -27,19 +27,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Data
-@ConfigDescription("Embedded HTTP/WebSocket management API configuration for React.")
+@ConfigDescription("Embedded HTTP/WebSocket management API configuration for React. Changes apply after a React reload or server restart.")
 public class WebConfiguration {
 
-  @ConfigDoc(value = "Enables the embedded web server.", impact = "When false, no HTTP or WebSocket listeners are bound. All other settings in this section are ignored.")
-  private boolean enabled = false;
+  @ConfigDoc(value = "Enables the embedded web listener.", impact = "React opens the authenticated API by default. Set false to bind no HTTP or WebSocket listener.")
+  private boolean listenerEnabled = true;
 
-  @ConfigDoc(value = "IP address the web server binds to.", impact = "Use 127.0.0.1 to restrict access to localhost. Set to 0.0.0.0 to accept external connections.")
-  private String bindAddress = "127.0.0.1";
+  @ConfigDoc(value = "IP address the web listener binds to.", impact = "The default :: wildcard accepts IPv6 and IPv4-mapped traffic for LAN, container, and port-forwarded access. Use a loopback address only behind a same-host reverse proxy or relay.")
+  private String listenAddress = "::";
 
   @ConfigDoc(value = "TCP port the web server listens on.", impact = "Ensure this port is not already in use. Requires a server restart to take effect.")
   private int port = 9696;
 
-  @ConfigDoc(value = "Public base URL advertised to direct API clients.", impact = "Set this to the HTTPS URL of a reverse proxy when the listener is exposed beyond localhost. React's embedded listener remains HTTP-only.")
+  @ConfigDoc(value = "Public base URL advertised to direct API clients.", impact = "Set this to the HTTPS URL of a reverse proxy when the listener is exposed beyond localhost. React's embedded listener remains HTTP-only. Requires a React reload or server restart to take effect.")
   private String advertisedUrl = "";
 
   @ConfigDoc(value = "List of allowed CORS origins for the HTTP API.", impact = "An empty list allows all origins. Add specific origins to restrict cross-origin access.")

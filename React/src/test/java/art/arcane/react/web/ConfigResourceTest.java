@@ -5,6 +5,7 @@ import art.arcane.react.api.web.PresetApplier;
 import art.arcane.react.api.web.PairingToken;
 import art.arcane.react.api.web.TokenRecord;
 import art.arcane.react.api.web.TokenStore;
+import art.arcane.react.api.web.WebMutation;
 import art.arcane.react.api.web.dto.ConfigSectionDto;
 import art.arcane.react.api.web.dto.ConfigNodeDto;
 import art.arcane.react.api.web.dto.Envelope;
@@ -12,6 +13,7 @@ import art.arcane.react.api.web.resource.ConfigResource;
 import io.javalin.http.BadRequestResponse;
 import io.javalin.http.Context;
 import io.javalin.http.ForbiddenResponse;
+import io.javalin.http.InternalServerErrorResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -19,6 +21,7 @@ import org.mockito.ArgumentCaptor;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -37,6 +40,7 @@ public class ConfigResourceTest {
     private PairingToken readToken;
     private RecordingConfigApplier recordingApplier;
     private RecordingPresetApplier recordingPresetApplier;
+    private List<WebMutation> mutations;
     private ConfigResource resource;
 
     @BeforeEach
@@ -59,7 +63,13 @@ public class ConfigResourceTest {
 
         recordingApplier = new RecordingConfigApplier();
         recordingPresetApplier = new RecordingPresetApplier();
-        resource = new ConfigResource(this::buildFakeTree, recordingApplier, recordingPresetApplier);
+        mutations = new ArrayList<>();
+        resource = new ConfigResource(
+            this::buildFakeTree,
+            recordingApplier,
+            recordingPresetApplier,
+            (context, mutation) -> mutations.add(mutation)
+        );
     }
 
     private ConfigSectionDto[] buildFakeTree() {
@@ -72,7 +82,14 @@ public class ConfigResourceTest {
         node.value = Boolean.FALSE;
         node.options = new String[0];
         node.doc = "";
-        section.nodes = new ConfigNodeDto[]{node};
+        ConfigNodeDto debug = new ConfigNodeDto();
+        debug.key = "main.debug";
+        debug.label = "Debug";
+        debug.type = "bool";
+        debug.value = Boolean.FALSE;
+        debug.options = new String[0];
+        debug.doc = "";
+        section.nodes = new ConfigNodeDto[]{node, debug};
         return new ConfigSectionDto[]{section};
     }
 
@@ -105,6 +122,8 @@ public class ConfigResourceTest {
         @SuppressWarnings("unchecked")
         Envelope<ConfigResource.ConfigData> envelope = (Envelope<ConfigResource.ConfigData>) captor.getValue();
         assertNotNull(envelope.data().sections());
+        assertEquals(1, mutations.size());
+        assertEquals("config.update", mutations.get(0).operation());
     }
 
     @Test
@@ -125,6 +144,34 @@ public class ConfigResourceTest {
 
         assertThrows(BadRequestResponse.class, () -> resource.put(ctx));
         assertTrue(recordingApplier.invocations.isEmpty(), "Applier must not be invoked on empty body");
+    }
+
+    @Test
+    void put_rolls_back_prior_values_and_does_not_report_when_a_later_value_fails() {
+        Context ctx = mock(Context.class);
+        when(ctx.<PairingToken>attribute("token")).thenReturn(adminToken);
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("main.verbose", Boolean.TRUE);
+        body.put("main.debug", Boolean.TRUE);
+        when(ctx.bodyAsClass(Map.class)).thenReturn(body);
+        List<String> calls = new ArrayList<>();
+        ConfigResource rejecting = new ConfigResource(
+            this::buildFakeTree,
+            (path, value) -> {
+                calls.add(path + "=" + value);
+                return !"main.debug".equals(path);
+            },
+            recordingPresetApplier,
+            (context, mutation) -> mutations.add(mutation)
+        );
+
+        assertThrows(InternalServerErrorResponse.class, () -> rejecting.put(ctx));
+        assertEquals(List.of(
+            "main.verbose=true",
+            "main.debug=true",
+            "main.verbose=false"
+        ), calls);
+        assertTrue(mutations.isEmpty());
     }
 
     @Test

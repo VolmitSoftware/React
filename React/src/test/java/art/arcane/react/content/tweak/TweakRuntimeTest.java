@@ -75,6 +75,15 @@ public class TweakRuntimeTest {
     Assertions.assertTrue(readDoubleField(tweak, "idleStretchMinTickMs") > 0.0D);
   }
 
+  @Test
+  public void hopperItemChunkBudgetIsBoundedByDefault() throws Exception {
+    TweakHopperIndex tweak = new TweakHopperIndex();
+    int budget = readIntField(tweak, "itemChunkBudgetPerTick");
+    int maximum = readStaticIntField(TweakHopperIndex.class, "MAX_ITEM_CHUNK_BUDGET");
+    Assertions.assertTrue(budget >= 1);
+    Assertions.assertTrue(budget <= maximum);
+  }
+
   private static void setFluidFlags(TweakFastFluids tweak, boolean water, boolean lava) throws Exception {
     Field waterField = TweakFastFluids.class.getDeclaredField("accelerateWater");
     waterField.setAccessible(true);

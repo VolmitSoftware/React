@@ -8,7 +8,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -107,6 +109,79 @@ public class HopperPositionIndexTest {
         List<Long> found = new ArrayList<>();
         index.forEachHopperInChunk(worldA, 0, 0, found::add);
         Assertions.assertEquals(1, found.size());
+        Assertions.assertEquals(1, index.hopperCount(worldA));
+    }
+
+    @Test
+    public void hopperCountTracksIndividualChunkAndWorldRemoval() {
+        index.addHopper(worldA, 0, 64, 0);
+        index.addHopper(worldA, 16, 64, 0);
+        index.addHopper(worldA, 32, 64, 0);
+        Assertions.assertEquals(3, index.hopperCount(worldA));
+
+        index.removeHopper(worldA, 16, 64, 0);
+        Assertions.assertEquals(2, index.hopperCount(worldA));
+
+        index.removeChunk(worldA, 0, 0);
+        Assertions.assertEquals(1, index.hopperCount(worldA));
+
+        index.removeWorld(worldA);
+        Assertions.assertEquals(0, index.hopperCount(worldA));
+    }
+
+    @Test
+    public void boundedBatchEventuallyVisitsEveryHopper() {
+        int hopperCount = 100;
+        int maximumBatchSize = 17;
+        Set<Long> expected = new HashSet<>();
+        for (int i = 0; i < hopperCount; i++) {
+            int x = i * 2;
+            index.addHopper(worldA, x, 64, 0);
+            expected.add(HopperPositionIndex.packPos(x, 64, 0));
+        }
+
+        Set<Long> visited = new HashSet<>();
+        for (int i = 0; i < 6; i++) {
+            long[] batch = index.nextHopperBatch(worldA, 1, maximumBatchSize);
+            Assertions.assertTrue(batch.length <= maximumBatchSize);
+            for (int j = 0; j < batch.length; j++) {
+                visited.add(batch[j]);
+            }
+        }
+
+        Assertions.assertEquals(expected, visited);
+    }
+
+    @Test
+    public void sparseBatchHonorsConfiguredSpread() {
+        long packed = HopperPositionIndex.packPos(0, 64, 0);
+        index.addHopper(worldA, 0, 64, 0);
+
+        Assertions.assertEquals(0, index.nextHopperBatch(worldA, 3, 10).length);
+        Assertions.assertEquals(0, index.nextHopperBatch(worldA, 3, 10).length);
+        Assertions.assertArrayEquals(new long[]{packed}, index.nextHopperBatch(worldA, 3, 10));
+    }
+
+    @Test
+    public void removedHopperNeverAppearsInSubsequentBatch() {
+        long removed = HopperPositionIndex.packPos(16, 64, 0);
+        index.addHopper(worldA, 0, 64, 0);
+        index.addHopper(worldA, 16, 64, 0);
+        index.addHopper(worldA, 32, 64, 0);
+        index.removeHopper(worldA, 16, 64, 0);
+
+        long[] batch = index.nextHopperBatch(worldA, 1, 10);
+        Assertions.assertEquals(2, batch.length);
+        for (int i = 0; i < batch.length; i++) {
+            Assertions.assertNotEquals(removed, batch[i]);
+        }
+    }
+
+    @Test
+    public void chunkKeyRoundTripsSignedCoordinates() {
+        long key = HopperPositionIndex.chunkKey(-12345, 67890);
+        Assertions.assertEquals(-12345, HopperPositionIndex.unpackChunkX(key));
+        Assertions.assertEquals(67890, HopperPositionIndex.unpackChunkZ(key));
     }
 
     @Test

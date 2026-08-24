@@ -20,6 +20,7 @@
 package art.arcane.react.util.format;
 
 
+import art.arcane.react.React;
 import art.arcane.react.util.plugin.VolmitSender;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.md_5.bungee.api.chat.BaseComponent;
@@ -459,7 +460,7 @@ public enum C {
       C c = BY_CHAR.get(code);
       return c == null ? C.WHITE : c;
     } catch (Exception e) {
-      e.printStackTrace();
+      React.verbose(() -> "Color lookup failed for code '" + code + "'", e);
       return C.WHITE;
     }
   }
@@ -478,7 +479,7 @@ public enum C {
 
       return BY_CHAR.get(code.charAt(0));
     } catch (Exception e) {
-      e.printStackTrace();
+      React.verbose(() -> "Color lookup failed for value '" + code + "'", e);
       return C.WHITE;
     }
   }

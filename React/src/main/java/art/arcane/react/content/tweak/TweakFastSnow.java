@@ -22,6 +22,7 @@ package art.arcane.react.content.tweak;
 import art.arcane.react.api.tweak.ReactTweak;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.project.world.FastWorld;
+import org.bukkit.Location;
 import org.bukkit.block.data.type.Snow;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -40,7 +41,7 @@ public class TweakFastSnow extends ReactTweak implements Listener {
   public void on(BlockFormEvent e) {
     if (e.getBlock().getBlockData() instanceof Snow s) {
       e.setCancelled(true);
-      var location = e.getBlock().getLocation().clone();
+      Location location = e.getBlock().getLocation();
       J.s(location, () -> FastWorld.set(location.getBlock(), s), 0);
     }
   }
@@ -49,7 +50,7 @@ public class TweakFastSnow extends ReactTweak implements Listener {
   public void on(BlockFadeEvent e) {
     if (e.getBlock().getBlockData() instanceof Snow s) {
       e.setCancelled(true);
-      var location = e.getBlock().getLocation().clone();
+      Location location = e.getBlock().getLocation();
       J.s(location, () -> FastWorld.breakNaturally(location.getBlock()), 0);
     }
   }

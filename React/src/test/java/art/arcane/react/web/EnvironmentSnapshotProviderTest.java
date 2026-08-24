@@ -59,5 +59,8 @@ public class EnvironmentSnapshotProviderTest {
         assertEquals("TestBrand", dto.server.brand, "server.brand must match injected identity serverName");
         assertEquals("9.9.9-test", dto.server.version, "server.version must match injected identity version");
         assertTrue(dto.server.folia, "server.folia must match injected identity folia");
+        assertNotNull(dto.disks, "disks must not be null");
+        assertNotNull(dto.mounts, "mounts must not be null");
+        assertNotNull(dto.network, "network must not be null");
     }
 }

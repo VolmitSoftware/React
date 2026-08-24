@@ -22,19 +22,21 @@ package art.arcane.react.model;
 import art.arcane.react.util.cache.Cache;
 import lombok.Data;
 import org.bukkit.Chunk;
-import org.bukkit.World;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Data
 public class SampledWorld {
-  private final World world;
+  private final UUID worldId;
+  private final String worldKey;
   private final Map<Long, SampledChunk> chunks;
 
-  public SampledWorld(World world) {
-    this.world = world;
+  public SampledWorld(UUID worldId, String worldKey) {
+    this.worldId = worldId;
+    this.worldKey = worldKey;
     chunks = new ConcurrentHashMap<>();
   }
 
@@ -47,8 +49,11 @@ public class SampledWorld {
   }
 
   public Optional<SampledChunk> optionalChunk(Chunk c) {
-    long k = Cache.key(c.getX(), c.getZ());
-    return Optional.ofNullable(chunks.get(k));
+    return optionalChunk(c.getX(), c.getZ());
+  }
+
+  public Optional<SampledChunk> optionalChunk(int x, int z) {
+    return Optional.ofNullable(chunks.get(Cache.key(x, z)));
   }
 
   public SampledChunk getChunk(Chunk c) {
@@ -56,6 +61,9 @@ public class SampledWorld {
   }
 
   public SampledChunk getChunk(int x, int z) {
-    return chunks.computeIfAbsent(Cache.key(x, z), (k) -> new SampledChunk(world.getChunkAt(x, z), this));
+    return chunks.computeIfAbsent(
+        Cache.key(x, z),
+        ignored -> new SampledChunk(worldId, worldKey, x, z)
+    );
   }
 }

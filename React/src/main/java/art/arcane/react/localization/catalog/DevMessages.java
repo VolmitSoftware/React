@@ -42,6 +42,7 @@ public final class DevMessages {
   public static final TextKey SUITE_FINISHED = TextKey.of("dev.suite.finished", "<green>React dev test suite finished.</green>");
   public static final TextKey SUITE_SKIPPED = TextKey.of("dev.suite.step.skipped", "<yellow>[{index}/{total}] Skipped {action} because it is unavailable.</yellow>");
   public static final TextKey SUITE_CREATE_FAILED = TextKey.of("dev.suite.step.create_failed", "<red>[{index}/{total}] Failed to create {action}: {detail}</red>");
+  public static final TextKey SUITE_FAILED = TextKey.of("dev.suite.step.failed", "<red>[{index}/{total}] {action} failed: {detail}</red>");
   public static final TextKey SUITE_STARTING = TextKey.of("dev.suite.step.starting", "<aqua>[{index}/{total}] Starting {action}</aqua>");
   public static final TextKey SUITE_COMPLETED = TextKey.of("dev.suite.step.completed", "<green>[{index}/{total}] {message}</green>");
   public static final TextKey SUITE_QUEUED = TextKey.of("dev.suite.step.queued", "<gray>[{index}/{total}] Queued {action}</gray>");
@@ -88,6 +89,7 @@ public final class DevMessages {
     builder.add(SUITE_FINISHED);
     builder.add(SUITE_SKIPPED);
     builder.add(SUITE_CREATE_FAILED);
+    builder.add(SUITE_FAILED);
     builder.add(SUITE_STARTING);
     builder.add(SUITE_COMPLETED);
     builder.add(SUITE_QUEUED);

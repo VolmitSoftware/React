@@ -22,6 +22,7 @@ package art.arcane.react.content.tweak;
 import art.arcane.react.api.tweak.ReactTweak;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.project.world.FastWorld;
+import org.bukkit.Location;
 import org.bukkit.block.data.type.Fire;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -41,7 +42,7 @@ public class TweakFastFire extends ReactTweak implements Listener {
   public void on(BlockSpreadEvent e) {
     if (e.getBlock().getBlockData() instanceof Fire f) {
       e.setCancelled(true);
-      var location = e.getBlock().getLocation().clone();
+      Location location = e.getBlock().getLocation();
       J.s(location, () -> FastWorld.set(location.getBlock(), f), 0);
     }
   }
@@ -50,7 +51,7 @@ public class TweakFastFire extends ReactTweak implements Listener {
   public void on(BlockFadeEvent e) {
     if (e.getBlock().getBlockData() instanceof Fire) {
       e.setCancelled(true);
-      var location = e.getBlock().getLocation().clone();
+      Location location = e.getBlock().getLocation();
       J.s(location, () -> FastWorld.breakNaturally(location.getBlock()), 0);
     }
   }
@@ -58,7 +59,7 @@ public class TweakFastFire extends ReactTweak implements Listener {
   @EventHandler
   public void on(BlockBurnEvent e) {
     e.setCancelled(true);
-    var location = e.getBlock().getLocation().clone();
+    Location location = e.getBlock().getLocation();
     J.s(location, () -> FastWorld.breakNaturally(location.getBlock()), 0);
   }
 }

@@ -40,7 +40,7 @@ public class SamplerBacklogGrowthRate extends ReactCachedSampler {
   @Override
   public void start() {
     super.start();
-    avg = new RollingSequence(averagingSamples);
+    avg = new RollingSequence(Math.max(1, averagingSamples));
     lastSize = 0;
     lastSampleMS = 0;
   }

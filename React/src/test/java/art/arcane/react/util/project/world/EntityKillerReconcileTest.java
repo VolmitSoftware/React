@@ -26,11 +26,11 @@ import org.mockito.Mockito;
 
 class EntityKillerReconcileTest {
   @Test
-  void reconcileStripsCountdownNameAndStampWhenStamped() {
+  void reconcileStripsCountdownNameAndStampFromOriginallyUnnamedEntity() {
     Entity entity = Mockito.mock(Entity.class);
     PersistentDataContainer container = Mockito.mock(PersistentDataContainer.class);
     Mockito.when(entity.getPersistentDataContainer()).thenReturn(container);
-    Mockito.when(container.has(Mockito.any(NamespacedKey.class), Mockito.eq(PersistentDataType.BYTE))).thenReturn(true);
+    Mockito.when(container.get(Mockito.any(NamespacedKey.class), Mockito.eq(PersistentDataType.BYTE))).thenReturn((byte) 0);
 
     EntityKiller.reconcile(entity);
 
@@ -40,11 +40,25 @@ class EntityKillerReconcileTest {
   }
 
   @Test
+  void reconcilePreservesPlayerNameWhenCountdownWasAppliedToNamedEntity() {
+    Entity entity = Mockito.mock(Entity.class);
+    PersistentDataContainer container = Mockito.mock(PersistentDataContainer.class);
+    Mockito.when(entity.getPersistentDataContainer()).thenReturn(container);
+    Mockito.when(container.get(Mockito.any(NamespacedKey.class), Mockito.eq(PersistentDataType.BYTE))).thenReturn((byte) 1);
+
+    EntityKiller.reconcile(entity);
+
+    Mockito.verify(container).remove(Mockito.any(NamespacedKey.class));
+    Mockito.verify(entity, Mockito.never()).setCustomName(Mockito.any());
+    Mockito.verify(entity, Mockito.never()).setCustomNameVisible(Mockito.anyBoolean());
+  }
+
+  @Test
   void reconcileLeavesUnstampedEntityUntouched() {
     Entity entity = Mockito.mock(Entity.class);
     PersistentDataContainer container = Mockito.mock(PersistentDataContainer.class);
     Mockito.when(entity.getPersistentDataContainer()).thenReturn(container);
-    Mockito.when(container.has(Mockito.any(NamespacedKey.class), Mockito.eq(PersistentDataType.BYTE))).thenReturn(false);
+    Mockito.when(container.get(Mockito.any(NamespacedKey.class), Mockito.eq(PersistentDataType.BYTE))).thenReturn(null);
 
     EntityKiller.reconcile(entity);
 

@@ -46,7 +46,6 @@ import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.CommandMessages;
 import art.arcane.react.localization.catalog.DevMessages;
 import art.arcane.react.model.AreaActionParams;
-import art.arcane.volmlib.util.bukkit.WorldIdentity;
 import art.arcane.react.nms.NmsBridge;
 import art.arcane.react.nms.NmsBridges;
 import art.arcane.react.util.common.scheduling.J;
@@ -58,7 +57,6 @@ import art.arcane.volmlib.util.director.annotations.Director;
 import art.arcane.volmlib.util.director.annotations.Param;
 import art.arcane.volmlib.util.localization.MessageArgument;
 import org.bukkit.Bukkit;
-import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -445,9 +443,12 @@ public class CommandDev implements DirectorExecutor {
         purgeEntitiesParams.setArea(area);
       }
 
-      area.setWorld(WorldIdentity.serialize(world));
-      area.setChunks(collectLoadedChunks(world, executingPlayer.getLocation().getChunk().getX(), executingPlayer.getLocation().getChunk().getZ(), radius));
-      area.setAllChunks(false);
+      area.selectLoadedRadius(
+          world,
+          executingPlayer.getLocation().getChunk().getX(),
+          executingPlayer.getLocation().getChunk().getZ(),
+          radius
+      );
       return purgeEntitiesParams;
     }
 
@@ -458,9 +459,12 @@ public class CommandDev implements DirectorExecutor {
         purgeChunksParams.setArea(area);
       }
 
-      area.setWorld(WorldIdentity.serialize(world));
-      area.setChunks(collectLoadedChunks(world, executingPlayer.getLocation().getChunk().getX(), executingPlayer.getLocation().getChunk().getZ(), radius));
-      area.setAllChunks(false);
+      area.selectLoadedRadius(
+          world,
+          executingPlayer.getLocation().getChunk().getX(),
+          executingPlayer.getLocation().getChunk().getZ(),
+          radius
+      );
       return purgeChunksParams;
     }
 
@@ -490,25 +494,6 @@ public class CommandDev implements DirectorExecutor {
     }
 
     return params;
-  }
-
-  private List<Chunk> collectLoadedChunks(World world, int centerX, int centerZ, int radius) {
-    List<Chunk> chunks = new ArrayList<>();
-    for (int chunkX = centerX - radius; chunkX <= centerX + radius; chunkX++) {
-      for (int chunkZ = centerZ - radius; chunkZ <= centerZ + radius; chunkZ++) {
-        if (!world.isChunkLoaded(chunkX, chunkZ)) {
-          continue;
-        }
-
-        chunks.add(world.getChunkAt(chunkX, chunkZ));
-      }
-    }
-
-    if (chunks.isEmpty() && world.isChunkLoaded(centerX, centerZ)) {
-      chunks.add(world.getChunkAt(centerX, centerZ));
-    }
-
-    return chunks;
   }
 
   private void queueStep(VolmitSender commandSender, List<ActionTestStep> steps, int index) {
@@ -557,14 +542,30 @@ public class CommandDev implements DirectorExecutor {
             MessageArgument.untrusted("total", steps.size()),
             MessageArgument.untrusted("action", queuedAction.getId())
         ))
-        .onComplete((completed) -> {
-          ReactLanguage.sendPrefixed(
-              commandSender,
-              DevMessages.SUITE_COMPLETED,
-              MessageArgument.untrusted("index", index + 1),
-              MessageArgument.untrusted("total", steps.size()),
-              MessageArgument.untrusted("message", completedMessage(queuedAction, completed))
-          );
+        .onTerminal((completed) -> {
+          if (completed.isFailed()) {
+            Throwable failure = completed.getFailure();
+            String detail = failure == null
+                ? "unknown failure"
+                : failure.getClass().getSimpleName()
+                + (failure.getMessage() == null ? "" : " - " + failure.getMessage());
+            ReactLanguage.sendPrefixed(
+                commandSender,
+                DevMessages.SUITE_FAILED,
+                MessageArgument.untrusted("index", index + 1),
+                MessageArgument.untrusted("total", steps.size()),
+                MessageArgument.untrusted("action", queuedAction.getId()),
+                MessageArgument.untrusted("detail", detail)
+            );
+          } else {
+            ReactLanguage.sendPrefixed(
+                commandSender,
+                DevMessages.SUITE_COMPLETED,
+                MessageArgument.untrusted("index", index + 1),
+                MessageArgument.untrusted("total", steps.size()),
+                MessageArgument.untrusted("message", completedMessage(queuedAction, completed))
+            );
+          }
           queueStep(commandSender, steps, index + 1);
         });
 

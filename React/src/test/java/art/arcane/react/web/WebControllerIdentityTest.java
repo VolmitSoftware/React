@@ -33,7 +33,7 @@ public class WebControllerIdentityTest {
             }
         };
         WebConfiguration cfg = new WebConfiguration();
-        cfg.setEnabled(false);
+        cfg.setListenerEnabled(false);
         c.setConfig(cfg);
         c.setDataFolder(dataFolder);
         return c;

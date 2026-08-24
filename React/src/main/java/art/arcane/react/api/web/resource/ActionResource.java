@@ -2,9 +2,9 @@ package art.arcane.react.api.web.resource;
 
 import art.arcane.react.api.web.ActionBackend;
 import art.arcane.react.api.web.ActionDispatcher;
-import art.arcane.react.api.web.AuditLog;
-import art.arcane.react.api.web.PairingToken;
 import art.arcane.react.api.web.WebAuth;
+import art.arcane.react.api.web.WebMutation;
+import art.arcane.react.api.web.WebMutationReporter;
 import art.arcane.react.api.web.dto.ActionDescriptorDto;
 import art.arcane.react.api.web.dto.Envelope;
 import io.javalin.http.ConflictResponse;
@@ -17,12 +17,15 @@ public class ActionResource {
 
     private final ActionBackend backend;
     private final ActionDispatcher dispatcher;
-    private final AuditLog audit;
+    private final WebMutationReporter reporter;
 
-    public ActionResource(ActionBackend backend, ActionDispatcher dispatcher, AuditLog audit) {
+    public ActionResource(
+            ActionBackend backend,
+            ActionDispatcher dispatcher,
+            WebMutationReporter reporter) {
         this.backend = backend;
         this.dispatcher = dispatcher;
-        this.audit = audit;
+        this.reporter = reporter;
     }
 
     public record ListResponse(ActionDescriptorDto[] data) {}
@@ -52,15 +55,12 @@ public class ActionResource {
             throw new ConflictResponse("Destructive action requires confirm:true");
         }
         ActionDispatcher.DispatchResult result = dispatcher.dispatch(id, params);
-        String actor = resolveActor(ctx);
-        audit.append(actor, "action.execute",
-                "id=" + id + " destructive=" + descriptor.destructive + " confirm=" + confirm,
-                "QUEUED:" + result.ticketId());
+        reporter.report(ctx, new WebMutation(
+            "action.execute",
+            "action:" + id,
+            descriptor.destructive ? "queued destructive action" : "queued action",
+            "QUEUED:" + result.ticketId()
+        ));
         ctx.status(202).json(new Envelope<>(new TicketDto(result.ticketId(), result.status())));
-    }
-
-    private String resolveActor(Context ctx) {
-        PairingToken token = ctx.attribute("token");
-        return token == null ? "web" : "web:" + token.tokenId();
     }
 }

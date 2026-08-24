@@ -71,6 +71,22 @@ void main() {
         findsOneComponent,
       );
     });
+
+    testComponents('uses the supplied value formatter for hover details', (
+      ComponentTester tester,
+    ) async {
+      tester.pumpComponent(
+        SvgFallbackChart(
+          series: <(String, List<double>)>[
+            ('Read /s', <double>[1024]),
+          ],
+          activeSample: 0,
+          valueFormatter: (double value) => 'rate:${value.toStringAsFixed(0)}',
+        ),
+      );
+
+      expect(find.text('rate:1024'), findsOneComponent);
+    });
   });
 
   group('TimeseriesChart', () {

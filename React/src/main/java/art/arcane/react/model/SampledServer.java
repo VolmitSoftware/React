@@ -44,6 +44,14 @@ public class SampledServer {
     return optionalWorld(c.getWorld()).flatMap((w) -> w.optionalChunk(c));
   }
 
+  public Optional<SampledChunk> optionalChunk(World world, int chunkX, int chunkZ) {
+    return optionalWorld(world).flatMap(sampledWorld -> sampledWorld.optionalChunk(chunkX, chunkZ));
+  }
+
+  public Optional<SampledChunk> optionalChunk(String worldKey, int chunkX, int chunkZ) {
+    return optionalWorld(worldKey).flatMap(sampledWorld -> sampledWorld.optionalChunk(chunkX, chunkZ));
+  }
+
   public boolean hasWorld(String world) {
     return worlds.containsKey(world);
   }
@@ -67,18 +75,19 @@ public class SampledServer {
   }
 
   public SampledWorld getWorld(World world) {
-    return getWorld(WorldIdentity.serialize(world));
+    String worldKey = WorldIdentity.serialize(world);
+    return worlds.computeIfAbsent(
+        worldKey,
+        ignored -> new SampledWorld(world.getUID(), worldKey)
+    );
   }
 
   public Optional<SampledWorld> optionalWorld(World world) {
     return Optional.ofNullable(worlds.get(WorldIdentity.serialize(world)));
   }
 
-  public SampledWorld getWorld(String worldKey) {
-    return worlds.computeIfAbsent(
-        worldKey,
-        key -> new SampledWorld(WorldIdentity.resolve(key).orElseThrow(() ->
-            new IllegalStateException("World is not loaded: " + key)))
-    );
+  public Optional<SampledWorld> optionalWorld(String worldKey) {
+    return Optional.ofNullable(worlds.get(worldKey));
   }
+
 }

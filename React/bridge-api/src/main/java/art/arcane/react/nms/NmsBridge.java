@@ -41,5 +41,5 @@ public interface NmsBridge {
 
     boolean supportsHopperTickHook();
 
-    int broadcastMergedExplosion(World world, double x, double y, double z, float radius, double rangeBlocks);
+    boolean broadcastMergedExplosion(World world, double x, double y, double z, float radius, double rangeBlocks);
 }

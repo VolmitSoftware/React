@@ -28,15 +28,16 @@ import art.arcane.react.api.rendering.Region;
 import art.arcane.react.api.rendering.RendererLayout;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.api.web.heatmap.ChunkGridExporter;
+import art.arcane.react.api.web.heatmap.HeatmapWorldRef;
 import art.arcane.react.core.controller.MapController;
 import art.arcane.react.core.controller.ObserverController;
+import art.arcane.react.core.controller.ObserverController.LoadedChunkCoordinate;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.MapMessages;
 import art.arcane.react.localization.catalog.RendererMessages;
 import art.arcane.react.model.SampledChunk;
 import art.arcane.react.util.data.TinyColor;
 import art.arcane.volmlib.util.localization.MessageArgument;
-import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -44,6 +45,7 @@ import org.bukkit.entity.Player;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Chunk Heatmap Base feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRenderer, ChunkGridExporter {
@@ -51,12 +53,14 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
   private static final int RAMP_STEPS = 16;
   private static final ThreadLocal<ScanCache> SCAN_CACHE = ThreadLocal.withInitial(ScanCache::new);
   private static final ThreadLocal<Projection> PROJECTION = ThreadLocal.withInitial(Projection::new);
+  private static final AtomicLong NEXT_SCAN_CACHE_OWNER_ID = new AtomicLong();
   private static final TinyColor FRAME_CENTER = MapTheme.INFO;
   private static final TinyColor HELD_CENTER = MapTheme.OK;
   private static final TinyColor FRAME_VALUE = MapTheme.INFO;
   private static final TinyColor COOL_LOW = new TinyColor(16, 78, 180);
   private static final TinyColor COOL_HIGH = new TinyColor(60, 175, 235);
   private static final TinyColor HOT_HIGH = new TinyColor(255, 98, 42);
+  private final long scanCacheOwnerId;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Pixel scale used when chunk heatmap base draws each chunk on the map.", impact = "Higher values make chunks larger and reduce visible radius; lower values show more area with finer detail.")
   private int chunkPixelSize = 5;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Map chunks radius used by chunk heatmap base (chunks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
@@ -72,6 +76,7 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
 
   protected FeatureChunkHeatmapBase(String id) {
     super(id);
+    scanCacheOwnerId = NEXT_SCAN_CACHE_OWNER_ID.incrementAndGet();
   }
 
   @Override
@@ -85,8 +90,8 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
   }
 
   @Override
-  public double scoreChunk(Chunk chunk) {
-    return Math.max(0D, chunkScore(chunk));
+  public double scoreChunk(HeatmapWorldRef world, int chunkX, int chunkZ) {
+    return Math.max(0D, chunkScore(world, chunkX, chunkZ));
   }
 
   @Override
@@ -135,7 +140,8 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
     fill(rootRegion(), backgroundColor());
 
     Region body = bodyRegion();
-    Chunk center = anchor.getChunk();
+    int centerChunkX = (int) Math.floor(anchor.getX() / 16D);
+    int centerChunkZ = (int) Math.floor(anchor.getZ() / 16D);
     int zoom = effectiveZoom();
     int radius = effectiveRadius(mapWorld, body, zoom);
     double pixelsPerBlock = zoom / 16D;
@@ -148,17 +154,22 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
     Projection projection = PROJECTION.get();
     projection.centerX = body.centerX();
     projection.centerY = body.centerY();
-    projection.centerChunkX = center.getX();
-    projection.centerChunkZ = center.getZ();
+    projection.centerChunkX = centerChunkX;
+    projection.centerChunkZ = centerChunkZ;
     projection.offsetX = -(localX * pixelsPerBlock);
     projection.offsetZ = -(localZ * pixelsPerBlock);
     projection.cos = Math.cos(radians);
     projection.sin = Math.sin(radians);
     projection.rotate = rotateWithPlayer;
     projection.zoom = zoom;
+    projection.radiusChunks = radius;
+    projection.anchorWorldId = mapWorld.getUID();
+    projection.anchorX = anchor.getX();
+    projection.anchorZ = anchor.getZ();
+    projection.frameAnchored = frameAnchored;
 
-    ScanCache scan = scan(mapWorld, center, radius);
-    Map<Chunk, Double> score = scan.score;
+    ScanCache scan = scan(mapWorld, centerChunkX, centerChunkZ, radius);
+    Map<LoadedChunkCoordinate, Double> score = scan.score;
     double min = scan.min;
     double max = scan.max;
     boolean quiet = max < minSignificantScore;
@@ -168,10 +179,10 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
       Region drawBounds = clipRegion().intersect(tileRegion());
       if (!quiet && !drawBounds.isEmpty()) {
         boolean axisAligned = projection.axisAligned();
-        for (Map.Entry<Chunk, Double> entry : score.entrySet()) {
-          Chunk chunk = entry.getKey();
-          int baseX = (chunk.getX() - center.getX()) * zoom;
-          int baseZ = (chunk.getZ() - center.getZ()) * zoom;
+        for (Map.Entry<LoadedChunkCoordinate, Double> entry : score.entrySet()) {
+          LoadedChunkCoordinate chunk = entry.getKey();
+          int baseX = (chunk.chunkX() - centerChunkX) * zoom;
+          int baseZ = (chunk.chunkZ() - centerChunkZ) * zoom;
           Region cell = projection.cellBounds(baseX, baseZ, zoom);
           if (!cell.intersects(drawBounds)) {
             continue;
@@ -237,7 +248,7 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
     int base = mapRadiusChunks > 0 ? mapRadiusChunks : Math.max(2, world.getViewDistance() * 2);
     int expansion = canvasExtent();
     int fit = (Math.max(body.width(), body.height()) / (2 * Math.max(1, zoom))) + 2;
-    return Math.max(base, Math.min(fit, base * expansion));
+    return Math.max(2, Math.min(fit, base * expansion));
   }
 
   // Maps spanning the shorter canvas axis: 1 for a single map, for a 1xN strip and for
@@ -252,44 +263,60 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
     return Math.max(1, Math.max(width(), height()) / ReactRenderer.CANVAS_SIZE);
   }
 
-  protected Pixel projectChunk(Chunk chunk) {
+  protected Pixel projectChunk(LoadedChunkCoordinate chunk) {
     Projection projection = PROJECTION.get();
     int zoom = Math.max(1, projection.zoom);
     return projection.project(
-        ((chunk.getX() - projection.centerChunkX) * zoom) + (zoom / 2),
-        ((chunk.getZ() - projection.centerChunkZ) * zoom) + (zoom / 2)
+        ((chunk.chunkX() - projection.centerChunkX) * zoom) + (zoom / 2),
+        ((chunk.chunkZ() - projection.centerChunkZ) * zoom) + (zoom / 2)
     );
   }
 
-  private ScanCache scan(World world, Chunk center, int radius) {
+  private ScanCache scan(World world, int centerChunkX, int centerChunkZ, int radius) {
     ScanCache cache = SCAN_CACHE.get();
     long now = System.currentTimeMillis();
     UUID worldId = world.getUID();
-    if (cache.owner == this
+    if (cache.ownerId == scanCacheOwnerId
         && worldId.equals(cache.world)
-        && cache.centerX == center.getX()
-        && cache.centerZ == center.getZ()
+        && cache.centerX == centerChunkX
+        && cache.centerZ == centerChunkZ
         && cache.radius == radius
         && (now - cache.stampMs) < SCAN_CACHE_TTL_MS) {
       return cache;
     }
 
-    cache.owner = this;
+    cache.ownerId = scanCacheOwnerId;
     cache.world = worldId;
-    cache.centerX = center.getX();
-    cache.centerZ = center.getZ();
+    cache.centerX = centerChunkX;
+    cache.centerZ = centerChunkZ;
     cache.radius = radius;
     cache.stampMs = now;
     cache.score.clear();
 
     double max = 0D;
     double min = Double.MAX_VALUE;
-    for (Chunk chunk : world.getLoadedChunks()) {
-      if (!within(center, chunk, radius)) {
-        continue;
-      }
+    ObserverController observer = React.controller(ObserverController.class);
+    if (observer == null) {
+      cache.min = 0D;
+      cache.max = 0D;
+      return cache;
+    }
 
-      double value = Math.max(0D, chunkScore(chunk));
+    HeatmapWorldRef heatmapWorld = observer.heatmapWorld(worldId).orElse(null);
+    if (heatmapWorld == null) {
+      cache.min = 0D;
+      cache.max = 0D;
+      return cache;
+    }
+
+    for (LoadedChunkCoordinate chunk : observer.loadedChunkCoordinatesInRadius(
+        worldId,
+        centerChunkX,
+        centerChunkZ,
+        radius
+    )) {
+
+      double value = scoreChunk(heatmapWorld, chunk.chunkX(), chunk.chunkZ());
       if (value <= 0D) {
         continue;
       }
@@ -329,7 +356,7 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
     return getName();
   }
 
-  protected abstract double chunkScore(Chunk chunk);
+  protected abstract double chunkScore(HeatmapWorldRef world, int chunkX, int chunkZ);
 
   protected TinyColor colorFor(double normalized, double rawScore) {
     if (normalized < 0.5D) {
@@ -338,22 +365,26 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
     return gradient((normalized - 0.5D) * 2D, COOL_HIGH, HOT_HIGH);
   }
 
-  protected void renderOverlay(Map<Chunk, Double> score, double min, double max) {
+  protected void renderOverlay(Map<LoadedChunkCoordinate, Double> score, double min, double max) {
 
   }
 
-  protected double chunkSample(Chunk chunk, String samplerId) {
+  protected double chunkSample(HeatmapWorldRef world, int chunkX, int chunkZ, String samplerId) {
     Sampler sampler = React.sampler(samplerId);
-    return sampler == null ? 0D : Math.max(0D, sampler.sample(chunk));
+    ObserverController observer = React.controller(ObserverController.class);
+    if (sampler == null || observer == null) {
+      return 0D;
+    }
+    return Math.max(0D, observer.sample(world.worldKey(), chunkX, chunkZ, sampler).orElse(0D));
   }
 
-  protected double chunkTotalScore(Chunk chunk) {
+  protected double chunkTotalScore(HeatmapWorldRef world, int chunkX, int chunkZ) {
     ObserverController observer = React.controller(ObserverController.class);
     if (observer == null || observer.getSampled() == null) {
       return 0D;
     }
 
-    return observer.getSampled().optionalChunk(chunk).map(SampledChunk::totalScore).orElse(0D);
+    return observer.sampledChunk(world.worldKey(), chunkX, chunkZ).map(SampledChunk::totalScore).orElse(0D);
   }
 
   protected TinyColor gradient(double normalized, TinyColor low, TinyColor high) {
@@ -371,12 +402,29 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
     );
   }
 
-  protected Pixel projectBlockDelta(Location viewerLocation, Location targetLocation) {
+  protected Pixel projectBlockDelta(ProjectionAnchor anchor, double targetX, double targetZ) {
     Projection projection = PROJECTION.get();
     double pixelsPerBlock = Math.max(1, projection.zoom) / 16D;
-    double a = (targetLocation.getX() - viewerLocation.getX()) * pixelsPerBlock;
-    double b = (targetLocation.getZ() - viewerLocation.getZ()) * pixelsPerBlock;
+    double a = (targetX - anchor.x()) * pixelsPerBlock;
+    double b = (targetZ - anchor.z()) * pixelsPerBlock;
     return projection.projectRaw(a, b);
+  }
+
+  protected double visibleRadiusBlocks() {
+    return (Math.max(0, PROJECTION.get().radiusChunks) + 1D) * 16D;
+  }
+
+  protected ProjectionAnchor projectionAnchor() {
+    Projection projection = PROJECTION.get();
+    UUID worldId = projection.anchorWorldId;
+    if (worldId == null) {
+      return null;
+    }
+    return new ProjectionAnchor(worldId, projection.anchorX, projection.anchorZ);
+  }
+
+  protected boolean projectionFrameAnchored() {
+    return PROJECTION.get().frameAnchored;
   }
 
   private void drawLegend(double min, double max, boolean quiet, int radius, boolean frameAnchored) {
@@ -449,12 +497,6 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
     return String.format("%.2f", value);
   }
 
-  private boolean within(Chunk a, Chunk b, int radius) {
-    int dx = a.getX() - b.getX();
-    int dz = a.getZ() - b.getZ();
-    return (dx * dx) + (dz * dz) <= radius * radius;
-  }
-
   private double normalize(double value, double min, double max) {
     // With a single distinct score there is no relative scale; render mid-heat
     // instead of painting trivial lone activity as maximum pressure.
@@ -485,17 +527,25 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
     }
   }
 
+  protected record ProjectionAnchor(UUID worldId, double x, double z) {
+  }
+
   private static final class Projection {
     private int centerX = 63;
     private int centerY = 63;
     private int centerChunkX;
     private int centerChunkZ;
     private int zoom = 1;
+    private int radiusChunks;
     private double offsetX;
     private double offsetZ;
     private double cos = 1D;
     private double sin;
     private boolean rotate;
+    private UUID anchorWorldId;
+    private double anchorX;
+    private double anchorZ;
+    private boolean frameAnchored;
 
     private Pixel project(double localX, double localZ) {
       return projectRaw(localX + offsetX, localZ + offsetZ);
@@ -550,8 +600,8 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
   }
 
   private static final class ScanCache {
-    private final HashMap<Chunk, Double> score = new HashMap<>();
-    private Object owner;
+    private final HashMap<LoadedChunkCoordinate, Double> score = new HashMap<>();
+    private long ownerId;
     private UUID world;
     private int centerX;
     private int centerZ;

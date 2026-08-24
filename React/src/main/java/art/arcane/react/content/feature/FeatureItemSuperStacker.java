@@ -23,14 +23,15 @@ import art.arcane.chrono.ChronoLatch;
 import art.arcane.react.React;
 import art.arcane.react.api.feature.FeatureIntegrityListener;
 import art.arcane.react.api.feature.ReactFeature;
-import art.arcane.react.content.sampler.SamplerEntities;
 import art.arcane.react.core.controller.EntityController;
+import art.arcane.react.core.controller.NearbyPlayerIndexController;
 import art.arcane.react.core.integration.GlossDropNameIntegration;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.project.world.BundleUtils;
 import art.arcane.volmlib.util.math.RNG;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.sound.Sound;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.World;
@@ -41,6 +42,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityRemoveEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -50,13 +52,20 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Queue;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 /**
@@ -67,6 +76,12 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
   public static final String ID = "item-super-stacker";
   private static final long GLOSS_REPUBLISH_INTERVAL_MS = 30_000L;
   private static final long GLOSS_CACHE_SWEEP_INTERVAL_MS = 60_000L;
+  private static final int MAX_INDEXED_ITEMS = 65_536;
+  private static final int MAX_QUEUED_BUCKETS = 4096;
+  private static final int MAX_BUCKET_SUBMISSIONS_PER_TICK = 64;
+  private static final int MAX_CANDIDATES_PER_BUCKET_PASS = 65;
+  private static final double MERGE_SOUND_RADIUS = 32D;
+  private static final int MAX_MERGE_SOUND_RECIPIENTS = 64;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum items allowed per bundle in item super stacker.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
   private int maxItemsPerBundle = 64;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Search radius used by item super stacker (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
@@ -89,6 +104,15 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
   private transient final Consumer<Entity> entityTickListener = this::onItemTick;
   private transient final GlossDropNameIntegration glossDropNames;
   private transient final Map<UUID, Long> glossRefreshes;
+  private transient final Map<UUID, IndexedItem> indexedItems = new ConcurrentHashMap<>();
+  private transient final Map<ItemBucketKey, Map<UUID, IndexedItem>> itemBuckets = new ConcurrentHashMap<>();
+  private transient final Map<ItemBucketKey, Long> queuedBuckets = new ConcurrentHashMap<>();
+  private transient final Queue<ItemBucketKey> bucketQueue = new ConcurrentLinkedQueue<>();
+  private transient final Map<ItemBucketKey, BucketFlight> bucketFlights = new ConcurrentHashMap<>();
+  private transient final AtomicLong lifecycleGeneration = new AtomicLong();
+  private transient final Object itemIndexLock = new Object();
+  private transient final Object queueLock = new Object();
+  private transient final Object lifecycleMutationLock = new Object();
   private transient volatile long lastGlossCacheSweepMs;
   private transient volatile boolean active;
 
@@ -130,38 +154,216 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
     }
 
     if (cl.flip()) {
-      // audience delivery: spigot Player has no playSound(net.kyori Sound)
-      item.getWorld().getPlayers().forEach(player ->
-          React.audiences().player(player).playSound(Sound.sound(
-              Key.key("minecraft:item.bundle.insert"),
-              Sound.Source.NEUTRAL,
-              0.5f,
-              1.2f + RNG.r.f(-0.1f, 0.1f)
-          ), item.getLocation().getX(), item.getLocation().getY(), item.getLocation().getZ())
-      );
+      playMergeSound(source);
     }
   }
 
-  public void mergeWithNearbyItems(Item item) {
-    if (!active || item.isDead() || !item.isValid()) {
+  void playMergeSound(Location source) {
+    World world = source.getWorld();
+    if (world == null) {
       return;
     }
 
-    double radius = effectiveSearchRadius();
-    Collection<Entity> nearby = item.getWorld().getNearbyEntities(item.getLocation(), radius, radius, radius);
-    Item collector = item;
+    UUID worldId = world.getUID();
+    double x = source.getX();
+    double y = source.getY();
+    double z = source.getZ();
+    Sound sound = Sound.sound(
+        Key.key("minecraft:item.bundle.insert"),
+        Sound.Source.NEUTRAL,
+        0.5f,
+        1.2f + RNG.r.f(-0.1f, 0.1f)
+    );
+    NearbyPlayerIndexController controller = React.controller(NearbyPlayerIndexController.class);
+    if (controller == null) {
+      return;
+    }
+
+    List<NearbyPlayerIndexController.PlayerViewSnapshot> recipients = controller.playerSnapshotsInColumn(
+        world,
+        x,
+        z,
+        MERGE_SOUND_RADIUS,
+        MAX_MERGE_SOUND_RECIPIENTS
+    );
+    for (NearbyPlayerIndexController.PlayerViewSnapshot recipient : recipients) {
+      Player player = Bukkit.getPlayer(recipient.playerId());
+      if (player == null) {
+        continue;
+      }
+
+      try {
+        J.runEntity(
+            player,
+            () -> playMergeSoundOwned(player, worldId, x, y, z, sound),
+            0,
+            null
+        );
+      } catch (Throwable throwable) {
+        React.reportError(throwable);
+      }
+    }
+  }
+
+  private void playMergeSoundOwned(Player player, UUID worldId, double x, double y, double z, Sound sound) {
+    if (!J.isOwnedByCurrentRegion(player)) {
+      return;
+    }
+
+    playMergeSound(player, worldId, x, y, z, sound);
+  }
+
+  private void playMergeSound(Player player, UUID worldId, double x, double y, double z, Sound sound) {
+    if (!player.isOnline()) {
+      return;
+    }
+
+    World playerWorld = player.getWorld();
+    if (playerWorld == null || !worldId.equals(playerWorld.getUID())) {
+      return;
+    }
+
+    React.audiences().player(player).playSound(sound, x, y, z);
+  }
+
+  public void mergeWithNearbyItems(Item item) {
+    if (!active) {
+      return;
+    }
+
+    if (J.isFoliaThreading() && !J.isOwnedByCurrentRegion(item)) {
+      J.runEntity(item, () -> mergeWithNearbyItems(item), 0, null);
+      return;
+    }
+
+    synchronized (lifecycleMutationLock) {
+      if (!active || item.isDead() || !item.isValid()) {
+        return;
+      }
+      ItemBucketKey bucketKey = indexItem(item);
+      if (bucketKey != null) {
+        mergeBucketOwned(item, bucketKey);
+      }
+    }
+  }
+
+  @Override
+  public void onTick() {
+    long generation = lifecycleGeneration.get();
+    if (!isActive(generation)) {
+      return;
+    }
+
+    int available = Math.min(MAX_BUCKET_SUBMISSIONS_PER_TICK, bucketQueue.size());
+    long now = System.currentTimeMillis();
+    for (int processed = 0; processed < available; processed++) {
+      ItemBucketKey bucketKey = bucketQueue.poll();
+      if (bucketKey == null) {
+        return;
+      }
+
+      Long dueAt = queuedBuckets.get(bucketKey);
+      if (dueAt == null) {
+        continue;
+      }
+      if (dueAt > now) {
+        bucketQueue.offer(bucketKey);
+        continue;
+      }
+      if (!queuedBuckets.remove(bucketKey, dueAt)) {
+        continue;
+      }
+
+      BucketFlight flight = new BucketFlight(bucketKey, generation);
+      if (bucketFlights.putIfAbsent(bucketKey, flight) != null) {
+        queueBucket(bucketKey, 0);
+        continue;
+      }
+      Item anchor = findAnchor(bucketKey);
+      if (anchor == null) {
+        completeBucketFlight(flight, false);
+        continue;
+      }
+      scheduleBucketFlight(anchor, flight);
+    }
+  }
+
+  private void scheduleBucketFlight(Item anchor, BucketFlight flight) {
+    Runnable retired = () -> completeBucketFlight(flight, true);
+    boolean scheduled;
+    try {
+      scheduled = J.runEntity(
+          anchor,
+          () -> executeBucketFlight(anchor, flight),
+          0,
+          retired
+      );
+    } catch (RuntimeException | Error failure) {
+      React.reportError(failure);
+      retired.run();
+      return;
+    }
+    if (!scheduled) {
+      retired.run();
+    }
+  }
+
+  private void executeBucketFlight(Item anchor, BucketFlight flight) {
+    boolean continueWork = false;
+    try {
+      synchronized (lifecycleMutationLock) {
+        if (!isActive(flight.generation)
+            || (J.isFoliaThreading() && !J.isOwnedByCurrentRegion(anchor))
+            || anchor.isDead()
+            || !anchor.isValid()) {
+          removeIndexedItem(anchor);
+          continueWork = true;
+        } else {
+          ItemBucketKey currentKey = indexItem(anchor);
+          if (currentKey != null && !currentKey.equals(flight.bucketKey)) {
+            queueBucket(currentKey, 0);
+          } else if (currentKey != null) {
+            continueWork = mergeBucketOwned(anchor, currentKey);
+          }
+        }
+      }
+    } catch (Throwable failure) {
+      React.reportError(failure);
+      continueWork = true;
+    } finally {
+      completeBucketFlight(flight, continueWork);
+    }
+  }
+
+  private boolean mergeBucketOwned(Item anchor, ItemBucketKey bucketKey) {
+    boolean folia = J.isFoliaThreading();
+    List<Item> candidates = collectCandidates(
+        bucketKey,
+        anchor,
+        Math.min(MAX_CANDIDATES_PER_BUCKET_PASS, effectiveMaxMergesPerPass() + 1)
+    );
+    Item collector = anchor;
     int merged = 0;
     boolean effectPlayed = false;
-    boolean folia = J.isFoliaThreading();
-    for (Entity entity : nearby) {
-      if (merged >= effectiveMaxMergesPerPass() || collector.isDead() || !collector.isValid()) {
+    if (collector.isDead() || !collector.isValid()) {
+      removeIndexedItem(collector);
+      return false;
+    }
+    for (Item target : candidates) {
+      if (merged >= effectiveMaxMergesPerPass()) {
         break;
       }
-      if (!(entity instanceof Item target) || target.isDead() || !target.isValid()
-          || target.getUniqueId().equals(collector.getUniqueId())) {
+      if (target == collector) {
         continue;
       }
       if (folia && !J.isOwnedByCurrentRegion(target)) {
+        continue;
+      }
+      if (target.isDead() || !target.isValid()) {
+        removeIndexedItem(target);
+        continue;
+      }
+      if (!withinMergeRadius(collector, target)) {
         continue;
       }
 
@@ -172,6 +374,29 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
         merged++;
       }
     }
+
+    if (merged >= effectiveMaxMergesPerPass() && !collector.isDead() && collector.isValid()) {
+      ItemBucketKey continuationKey = indexItem(collector);
+      if (continuationKey != null) {
+        queueBucket(continuationKey, 0);
+      }
+    }
+    return false;
+  }
+
+  private boolean withinMergeRadius(Item source, Item target) {
+    Location sourceLocation = source.getLocation();
+    Location targetLocation = target.getLocation();
+    World sourceWorld = sourceLocation.getWorld();
+    World targetWorld = targetLocation.getWorld();
+    if (sourceWorld == null || targetWorld == null || sourceWorld != targetWorld) {
+      return false;
+    }
+
+    double radius = effectiveSearchRadius();
+    return Math.abs(sourceLocation.getX() - targetLocation.getX()) <= radius
+        && Math.abs(sourceLocation.getY() - targetLocation.getY()) <= radius
+        && Math.abs(sourceLocation.getZ() - targetLocation.getZ()) <= radius;
   }
 
   private Item mergePair(Item source, Item target, boolean playEffect) {
@@ -283,8 +508,16 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void on(ItemSpawnEvent e) {
-    Item item = e.getEntity();
-    J.runEntity(item, () -> mergeWithNearbyItems(item), effectiveSpawnMergeDelayTicks());
+    if (active) {
+      queueItem(e.getEntity(), effectiveSpawnMergeDelayTicks());
+    }
+  }
+
+  @EventHandler
+  public void on(EntityRemoveEvent event) {
+    if (event.getEntity() instanceof Item item) {
+      removeIndexedItem(item);
+    }
   }
 
   @EventHandler(priority = EventPriority.MONITOR)
@@ -293,8 +526,11 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
       return;
     }
     for (Entity entity : event.getEntities()) {
-      if (entity instanceof Item item && isSuperStack(item)) {
-        refreshGloss(item);
+      if (entity instanceof Item item) {
+        queueItem(item, 0);
+        if (isSuperStack(item)) {
+          refreshGloss(item);
+        }
       }
     }
   }
@@ -316,7 +552,11 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
 
   @Override
   public void onActivate() {
-    active = true;
+    synchronized (lifecycleMutationLock) {
+      lifecycleGeneration.incrementAndGet();
+      active = true;
+      clearMergeIndex();
+    }
     glossRefreshes.clear();
     EntityController controller = React.controller(EntityController.class);
     if (controller != null) {
@@ -326,7 +566,11 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
 
   @Override
   public void onDeactivate() {
-    active = false;
+    synchronized (lifecycleMutationLock) {
+      active = false;
+      lifecycleGeneration.incrementAndGet();
+      clearMergeIndex();
+    }
     glossRefreshes.clear();
     EntityController controller = React.controller(EntityController.class);
     if (controller != null) {
@@ -338,7 +582,7 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
     if (!active || !(entity instanceof Item item) || item.isDead() || !item.isValid()) {
       return;
     }
-    mergeWithNearbyItems(item);
+    queueItem(item, 0);
     if (!item.isDead() && item.isValid() && isSuperStack(item)) {
       refreshGlossIfDue(item);
     }
@@ -373,6 +617,186 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
     glossRefreshes.entrySet().removeIf(entry -> now - entry.getValue() >= GLOSS_CACHE_SWEEP_INTERVAL_MS);
   }
 
+  private void queueItem(Item item, int delayTicks) {
+    synchronized (lifecycleMutationLock) {
+      if (!active) {
+        return;
+      }
+      ItemBucketKey bucketKey = indexItem(item);
+      if (bucketKey != null) {
+        queueBucket(bucketKey, delayTicks);
+      }
+    }
+  }
+
+  private ItemBucketKey indexItem(Item item) {
+    UUID itemId = item.getUniqueId();
+    Location location = item.getLocation();
+    World world = location.getWorld();
+    if (itemId == null || world == null) {
+      return null;
+    }
+
+    ItemBucketKey bucketKey = new ItemBucketKey(
+        world.getUID(),
+        packChunk(location.getBlockX() >> 4, location.getBlockZ() >> 4)
+    );
+    synchronized (itemIndexLock) {
+      IndexedItem previous = indexedItems.get(itemId);
+      if (previous == null && indexedItems.size() >= MAX_INDEXED_ITEMS) {
+        return null;
+      }
+
+      IndexedItem indexed = new IndexedItem(itemId, bucketKey, new WeakReference<>(item));
+      indexedItems.put(itemId, indexed);
+      if (previous != null && !previous.bucketKey.equals(bucketKey)) {
+        removeFromBucket(previous);
+      }
+      itemBuckets.computeIfAbsent(bucketKey, ignored -> new ConcurrentHashMap<>()).put(itemId, indexed);
+    }
+    return bucketKey;
+  }
+
+  private void removeIndexedItem(Item item) {
+    UUID itemId = item.getUniqueId();
+    if (itemId == null) {
+      return;
+    }
+
+    synchronized (itemIndexLock) {
+      IndexedItem indexed = indexedItems.remove(itemId);
+      if (indexed != null) {
+        removeFromBucket(indexed);
+      }
+    }
+  }
+
+  private void removeFromBucket(IndexedItem indexed) {
+    Map<UUID, IndexedItem> bucket = itemBuckets.get(indexed.bucketKey);
+    if (bucket == null) {
+      return;
+    }
+    bucket.remove(indexed.itemId, indexed);
+    if (bucket.isEmpty()) {
+      itemBuckets.remove(indexed.bucketKey, bucket);
+    }
+  }
+
+  private void queueBucket(ItemBucketKey bucketKey, int delayTicks) {
+    long dueAt = System.currentTimeMillis() + (Math.max(0, delayTicks) * 50L);
+    synchronized (queueLock) {
+      Long existing = queuedBuckets.get(bucketKey);
+      if (existing != null) {
+        if (dueAt < existing) {
+          queuedBuckets.put(bucketKey, dueAt);
+        }
+        return;
+      }
+      if (queuedBuckets.size() >= MAX_QUEUED_BUCKETS) {
+        return;
+      }
+      queuedBuckets.put(bucketKey, dueAt);
+      bucketQueue.offer(bucketKey);
+    }
+  }
+
+  private Item findAnchor(ItemBucketKey bucketKey) {
+    Map<UUID, IndexedItem> bucket = itemBuckets.get(bucketKey);
+    if (bucket == null) {
+      return null;
+    }
+    for (IndexedItem indexed : bucket.values()) {
+      Item item = indexed.reference.get();
+      if (item != null) {
+        return item;
+      }
+      bucket.remove(indexed.itemId, indexed);
+      indexedItems.remove(indexed.itemId, indexed);
+    }
+    if (bucket.isEmpty()) {
+      itemBuckets.remove(bucketKey, bucket);
+    }
+    return null;
+  }
+
+  private List<Item> collectCandidates(ItemBucketKey anchorKey, Item anchor, int maximum) {
+    List<Item> candidates = new ArrayList<>(maximum);
+    Set<Item> seen = Collections.newSetFromMap(new IdentityHashMap<>());
+    seen.add(anchor);
+    candidates.add(anchor);
+    int anchorX = chunkX(anchorKey.chunkKey);
+    int anchorZ = chunkZ(anchorKey.chunkKey);
+    int chunkRadius = Math.max(0, (int) Math.ceil(effectiveSearchRadius() / 16D));
+    for (int offsetX = -chunkRadius; offsetX <= chunkRadius && candidates.size() < maximum; offsetX++) {
+      for (int offsetZ = -chunkRadius; offsetZ <= chunkRadius && candidates.size() < maximum; offsetZ++) {
+        ItemBucketKey bucketKey = new ItemBucketKey(
+            anchorKey.worldId,
+            packChunk(anchorX + offsetX, anchorZ + offsetZ)
+        );
+        Map<UUID, IndexedItem> bucket = itemBuckets.get(bucketKey);
+        if (bucket == null) {
+          continue;
+        }
+        for (IndexedItem indexed : bucket.values()) {
+          if (candidates.size() >= maximum) {
+            break;
+          }
+          Item item = indexed.reference.get();
+          if (item == null) {
+            bucket.remove(indexed.itemId, indexed);
+            indexedItems.remove(indexed.itemId, indexed);
+            continue;
+          }
+          if (seen.add(item)) {
+            candidates.add(item);
+          }
+        }
+        if (bucket.isEmpty()) {
+          itemBuckets.remove(bucketKey, bucket);
+        }
+      }
+    }
+    return candidates;
+  }
+
+  private void completeBucketFlight(BucketFlight flight, boolean retry) {
+    if (!flight.terminal.compareAndSet(false, true)) {
+      return;
+    }
+    bucketFlights.remove(flight.bucketKey, flight);
+    if (retry && isActive(flight.generation)) {
+      queueBucket(flight.bucketKey, 0);
+    }
+  }
+
+  private void clearMergeIndex() {
+    synchronized (itemIndexLock) {
+      indexedItems.clear();
+      itemBuckets.clear();
+    }
+    synchronized (queueLock) {
+      queuedBuckets.clear();
+      bucketQueue.clear();
+    }
+    bucketFlights.clear();
+  }
+
+  private boolean isActive(long generation) {
+    return active && generation == lifecycleGeneration.get();
+  }
+
+  private static long packChunk(int chunkX, int chunkZ) {
+    return (((long) chunkX) << 32) ^ (chunkZ & 0xffffffffL);
+  }
+
+  private static int chunkX(long chunkKey) {
+    return (int) (chunkKey >> 32);
+  }
+
+  private static int chunkZ(long chunkKey) {
+    return (int) chunkKey;
+  }
+
   private List<ItemStack> insertContents(Inventory inventory, List<ItemStack> contents) {
     List<ItemStack> leftovers = new ArrayList<>();
     for (ItemStack content : contents) {
@@ -383,6 +807,7 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
   }
 
   private void removeTrackedItem(Item item) {
+    removeIndexedItem(item);
     glossDropNames.remove(item);
     glossRefreshes.remove(item.getUniqueId());
     if (React.instance != null) {
@@ -391,10 +816,6 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
         hopperItemIndex.getItemIndex().removeItem(item.getUniqueId());
       }
 
-      SamplerEntities sampler = React.sampler(SamplerEntities.ID);
-      if (sampler != null) {
-        sampler.getEntities().decrementAndGet();
-      }
     }
     item.remove();
   }
@@ -413,5 +834,37 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
 
   private int effectiveSpawnMergeDelayTicks() {
     return Math.max(1, Math.min(spawnMergeDelayTicks, 20));
+  }
+
+  @Override
+  public int getTickInterval() {
+    return 50;
+  }
+
+  private record ItemBucketKey(UUID worldId, long chunkKey) {
+  }
+
+  private static final class IndexedItem {
+    private final UUID itemId;
+    private final ItemBucketKey bucketKey;
+    private final WeakReference<Item> reference;
+
+    private IndexedItem(UUID itemId, ItemBucketKey bucketKey, WeakReference<Item> reference) {
+      this.itemId = itemId;
+      this.bucketKey = bucketKey;
+      this.reference = reference;
+    }
+  }
+
+  private static final class BucketFlight {
+    private final ItemBucketKey bucketKey;
+    private final long generation;
+    private final AtomicBoolean terminal;
+
+    private BucketFlight(ItemBucketKey bucketKey, long generation) {
+      this.bucketKey = bucketKey;
+      this.generation = generation;
+      this.terminal = new AtomicBoolean(false);
+    }
   }
 }

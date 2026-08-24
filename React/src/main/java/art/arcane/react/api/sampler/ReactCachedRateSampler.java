@@ -64,7 +64,7 @@ public abstract class ReactCachedRateSampler extends ReactCachedSampler {
   @Override
   public void start() {
     super.start();
-    avg = new RollingSequence(rollingAverageSamples);
+    avg = new RollingSequence(Math.max(1, rollingAverageSamples));
     hits = new AtomicInteger(0);
     lastHit = 0L;
     lastSample = 0L;

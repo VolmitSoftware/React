@@ -4,9 +4,11 @@ import 'dart:developer' as developer;
 import 'package:jaspr/jaspr.dart' show kIsWeb;
 
 import '../model/identity_info.dart';
+import '../model/server_capabilities.dart';
 import '../model/server_credential.dart';
 import '../service/happy_eyeballs_client.dart';
 import '../service/react_client.dart';
+import '../service/react_exceptions.dart';
 import '../service/react_log_socket.dart';
 import '../service/react_socket.dart';
 import 'connection_manager.dart';
@@ -73,6 +75,7 @@ class FleetManager {
 
   Future<void> add(ServerCredential cred) async {
     final IReactClient client = _resolveClient(cred);
+    await _verifyDirectFingerprint(cred, client);
     final IdentityInfo identity = await client.identity();
     final String verifiedName = identity.serverName.trim();
     final ServerCredential verified = verifiedName.isEmpty
@@ -218,6 +221,25 @@ class FleetManager {
       relay: relay,
       pinnedFingerprint: cred.fingerprint,
     );
+  }
+
+  Future<void> _verifyDirectFingerprint(
+    ServerCredential cred,
+    IReactClient client,
+  ) async {
+    if (cred.relayUrl != null && cred.relayUrl!.isNotEmpty) return;
+    final String? pinnedFingerprint = cred.fingerprint;
+    if (pinnedFingerprint == null || pinnedFingerprint.isEmpty) return;
+    if (client is! IPingClient) {
+      throw const ReactUnavailable(
+        'Direct server does not support RCT2 fingerprint verification',
+      );
+    }
+    final ServerCapabilities capabilities = await (client as IPingClient)
+        .ping();
+    if (capabilities.serverFingerprint != pinnedFingerprint) {
+      throw const ReactAuthException('RCT2 server fingerprint mismatch');
+    }
   }
 
   ConnectionManager _buildManager(ServerCredential cred, IReactClient client) {

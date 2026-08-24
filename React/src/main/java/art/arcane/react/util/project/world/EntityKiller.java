@@ -20,19 +20,22 @@
 package art.arcane.react.util.project.world;
 
 import art.arcane.react.React;
-import art.arcane.react.content.sampler.SamplerEntities;
 import art.arcane.react.core.controller.EntityController;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.RuntimeMessages;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.format.C;
 import art.arcane.volmlib.util.localization.MessageArgument;
+import art.arcane.volmlib.util.scheduling.FoliaScheduler;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.sound.Sound;
 import org.bukkit.Color;
+import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
+import org.bukkit.World;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -41,34 +44,129 @@ import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class EntityKiller {
+  private static final long DEFAULT_CLEANUP_TIMEOUT_MS = 30_000L;
   private static final NamespacedKey nsKillerCountdown = Objects.requireNonNull(NamespacedKey.fromString("react:react-killer-countdown"));
+  private static final Sound DEATH_SOUND = Sound.sound(
+      Key.key("minecraft:particle.soul_escape"),
+      Sound.Source.NEUTRAL,
+      0.5f,
+      0.9f
+  );
   private static final Map<UUID, EntityKiller> ACTIVE = new ConcurrentHashMap<>();
+  private static final Object REGISTRY_LOCK = new Object();
   private static final Object LISTENER_LOCK = new Object();
   private static SharedListener sharedListener;
-  private Entity entity;
+  private static boolean accepting = true;
+  private static int cleanupInFlight;
+  private final Entity entity;
+  private final UUID entityId;
+  private final AtomicBoolean cleanupComplete;
+  private final AtomicBoolean owned;
+  private final AtomicBoolean stopping;
   private int seconds;
   private int tt;
   private boolean stamped;
+  private boolean preserveCustomName;
 
   public EntityKiller(Entity e, int seconds) {
-    if (React.controller(EntityController.class).getKilling().contains(e)) {
-      return;
+    this.entity = Objects.requireNonNull(e, "entity");
+    this.entityId = Objects.requireNonNull(e.getUniqueId(), "entity unique id");
+    this.cleanupComplete = new AtomicBoolean(false);
+    this.owned = new AtomicBoolean(false);
+    this.stopping = new AtomicBoolean(false);
+    this.seconds = seconds;
+    this.tt = 0;
+    synchronized (REGISTRY_LOCK) {
+      if (!accepting || ACTIVE.putIfAbsent(entityId, this) != null) {
+        return;
+      }
+
+      owned.set(true);
+      cleanupInFlight++;
+      try {
+        ensureListener();
+        tt = J.sr(this::tick, 20);
+      } catch (RuntimeException | Error throwable) {
+        completeCleanup();
+        throw throwable;
+      }
+    }
+  }
+
+  public static void startAccepting() {
+    synchronized (REGISTRY_LOCK) {
+      accepting = true;
+    }
+  }
+
+  public static void stopAll() {
+    if (!stopAll(DEFAULT_CLEANUP_TIMEOUT_MS)) {
+      throw new IllegalStateException(
+          "Entity killer cleanup did not drain within " + DEFAULT_CLEANUP_TIMEOUT_MS + "ms"
+      );
+    }
+  }
+
+  public static boolean stopAll(long timeoutMs) {
+    List<EntityKiller> active;
+    synchronized (REGISTRY_LOCK) {
+      accepting = false;
+      active = new ArrayList<>(ACTIVE.values());
     }
 
-    React.controller(EntityController.class).getKilling().add(e);
-    React.controller(EntityController.class).getKillers().add(this);
-    ACTIVE.put(e.getUniqueId(), this);
-    ensureListener();
-    this.entity = e;
-    this.seconds = seconds;
-    this.tt = seconds;
-    tt = J.sr(this::tick, 20);
+    for (EntityKiller killer : active) {
+      try {
+        killer.stop();
+      } catch (Throwable throwable) {
+        React.reportError(throwable);
+        killer.completeCleanup();
+      }
+    }
+
+    boolean drained = awaitCleanup(timeoutMs);
+    releaseListenerIfIdle();
+    return drained;
+  }
+
+  static int activeCount() {
+    return ACTIVE.size();
+  }
+
+  static int cleanupInFlightCount() {
+    synchronized (REGISTRY_LOCK) {
+      return cleanupInFlight;
+    }
+  }
+
+  private static boolean awaitCleanup(long timeoutMs) {
+    long remainingNanos = Math.max(0L, TimeUnit.MILLISECONDS.toNanos(timeoutMs));
+    long deadline = System.nanoTime() + remainingNanos;
+    synchronized (REGISTRY_LOCK) {
+      while (cleanupInFlight > 0) {
+        if (remainingNanos <= 0L) {
+          return false;
+        }
+
+        try {
+          TimeUnit.NANOSECONDS.timedWait(REGISTRY_LOCK, remainingNanos);
+        } catch (InterruptedException exception) {
+          Thread.currentThread().interrupt();
+          return false;
+        }
+        remainingNanos = deadline - System.nanoTime();
+      }
+    }
+    return true;
   }
 
   private static void ensureListener() {
@@ -92,62 +190,120 @@ public class EntityKiller {
   }
 
   public void stop() {
-    Entity target = entity;
-    if (target == null) {
-      cleanup();
-      return;
+    synchronized (REGISTRY_LOCK) {
+      if (!owned.get() || !stopping.compareAndSet(false, true)) {
+        return;
+      }
     }
 
-    if (J.runEntity(target, () -> {
-      target.setCustomNameVisible(false);
-      target.setCustomName(null);
-      target.getPersistentDataContainer().remove(nsKillerCountdown);
-      cleanup();
-    }, 0, this::cleanup)) {
-      return;
+    try {
+      if (J.runEntity(entity, this::cleanupOwned, 0, this::completeCleanup)) {
+        return;
+      }
+    } catch (RuntimeException | Error throwable) {
+      completeCleanup();
+      throw throwable;
     }
 
-    cleanup();
+    completeCleanup();
   }
 
   public static void reconcile(Entity entity) {
     PersistentDataContainer container = entity.getPersistentDataContainer();
-    if (!container.has(nsKillerCountdown, PersistentDataType.BYTE)) {
+    Byte hadCustomName = container.get(nsKillerCountdown, PersistentDataType.BYTE);
+    if (hadCustomName == null) {
       return;
     }
 
     container.remove(nsKillerCountdown);
+    if (hadCustomName != 0) {
+      return;
+    }
+
     entity.setCustomNameVisible(false);
     entity.setCustomName(null);
   }
 
-  private void cleanup() {
-    if (entity != null) {
-      ACTIVE.remove(entity.getUniqueId(), this);
-    }
-
-    releaseListenerIfIdle();
-
-    EntityController controller = null;
-    try {
-      controller = React.controller(EntityController.class);
-    } catch (Throwable ex) {
-      if (React.instance != null && React.instance.isEnabled()) {
-        React.warn("EntityKiller cleanup failed to resolve EntityController: "
-            + ex.getClass().getSimpleName()
-            + (ex.getMessage() == null ? "" : " - " + ex.getMessage()));
-        React.reportError(ex);
+  private void cleanupOwned() {
+    Throwable failure = null;
+    if (stamped && !preserveCustomName) {
+      try {
+        entity.setCustomNameVisible(false);
+      } catch (Throwable throwable) {
+        failure = throwable;
+      }
+      try {
+        entity.setCustomName(null);
+      } catch (Throwable throwable) {
+        failure = combineCleanupFailure(failure, throwable);
       }
     }
-
-    if (controller != null && entity != null) {
-      controller.getKilling().remove(entity);
+    try {
+      entity.getPersistentDataContainer().remove(nsKillerCountdown);
+    } catch (Throwable throwable) {
+      failure = combineCleanupFailure(failure, throwable);
+    }
+    try {
+      completeCleanup();
+    } catch (Throwable throwable) {
+      failure = combineCleanupFailure(failure, throwable);
     }
 
-    if (controller != null) {
-      controller.getKillers().remove(this);
+    if (failure instanceof RuntimeException runtimeException) {
+      throw runtimeException;
+    }
+    if (failure instanceof Error error) {
+      throw error;
+    }
+    if (failure != null) {
+      throw new IllegalStateException("Entity killer cleanup failed", failure);
+    }
+  }
+
+  private Throwable combineCleanupFailure(Throwable first, Throwable next) {
+    if (first == null) {
+      return next;
+    }
+    if (first != next) {
+      first.addSuppressed(next);
+    }
+    return first;
+  }
+
+  private void completeCleanup() {
+    if (!cleanupComplete.compareAndSet(false, true)) {
+      return;
     }
 
+    Throwable failure = null;
+    synchronized (REGISTRY_LOCK) {
+      ACTIVE.remove(entityId, this);
+      owned.set(false);
+      stopping.set(true);
+      try {
+        cancelTimer();
+      } catch (Throwable throwable) {
+        failure = throwable;
+      }
+      cleanupInFlight--;
+      REGISTRY_LOCK.notifyAll();
+    }
+
+    try {
+      releaseListenerIfIdle();
+    } catch (Throwable throwable) {
+      failure = combineCleanupFailure(failure, throwable);
+    }
+
+    if (failure instanceof RuntimeException runtimeException) {
+      throw runtimeException;
+    }
+    if (failure instanceof Error error) {
+      throw error;
+    }
+  }
+
+  private void cancelTimer() {
     if (tt != 0) {
       J.csr(tt);
       tt = 0;
@@ -155,18 +311,20 @@ public class EntityKiller {
   }
 
   private void tick() {
-    Entity target = entity;
-    if (target == null) {
-      stop();
+    if (!owned.get() || stopping.get()) {
       return;
     }
 
-    if (!J.runEntity(target, this::tickOwned, 0, this::cleanup)) {
+    if (!J.runEntity(entity, this::tickOwned, 0, this::completeCleanup)) {
       stop();
     }
   }
 
   private void tickOwned() {
+    if (!owned.get() || stopping.get()) {
+      return;
+    }
+
     if (entity.isDead()) {
       stop();
       return;
@@ -179,6 +337,10 @@ public class EntityKiller {
     }
 
     stampCountdown();
+    if (preserveCustomName) {
+      return;
+    }
+
     entity.setCustomName(C.RED + ReactLanguage.plain(
         RuntimeMessages.ENTITY_KILLER_COUNTDOWN,
         MessageArgument.untrusted("seconds", seconds)
@@ -192,40 +354,99 @@ public class EntityKiller {
     }
 
     stamped = true;
-    byte hadCustomName = (byte) (entity.getCustomName() != null ? 1 : 0);
+    preserveCustomName = entity.getCustomName() != null;
+    byte hadCustomName = (byte) (preserveCustomName ? 1 : 0);
     entity.getPersistentDataContainer().set(nsKillerCountdown, PersistentDataType.BYTE, hadCustomName);
   }
 
   public void kill() {
-    Entity target = entity;
-    if (target == null) {
-      stop();
+    if (!owned.get() || stopping.get()) {
       return;
     }
 
-    if (!J.runEntity(target, this::killOwned, 0, this::cleanup)) {
+    if (!J.runEntity(entity, this::killOwned, 0, this::completeCleanup)) {
       stop();
     }
   }
 
   private void killOwned() {
+    if (!owned.get() || stopping.get()) {
+      return;
+    }
+
     if (entity.isDead()) {
+      stop();
       return;
     }
 
     stop();
-    entity.getWorld().spawnParticle(Particle.FLASH, entity.getLocation(), 1, Color.WHITE);
-    // audience delivery: spigot Player has no playSound(net.kyori Sound)
-    entity.getWorld().getPlayers().forEach(player ->
-        React.audiences().player(player).playSound(Sound.sound(
-            Key.key("minecraft:particle.soul_escape"),
-            Sound.Source.NEUTRAL,
-            0.5f,
-            0.9f
-        ), entity.getLocation().getX(), entity.getLocation().getY(), entity.getLocation().getZ())
-    );
+    Location location = entity.getLocation();
+    entity.getWorld().spawnParticle(Particle.FLASH, location, 1, Color.WHITE);
+    playDeathSound(location);
     entity.remove();
-    ((SamplerEntities) React.sampler(SamplerEntities.ID)).getEntities().decrementAndGet();
+  }
+
+  void playDeathSound(Location location) {
+    World world = location.getWorld();
+    if (world == null) {
+      return;
+    }
+
+    UUID worldId = world.getUID();
+    double x = location.getX();
+    double y = location.getY();
+    double z = location.getZ();
+    if (!J.isFoliaThreading()) {
+      for (Player player : world.getPlayers()) {
+        playDeathSound(player, worldId, x, y, z, DEATH_SOUND);
+      }
+      return;
+    }
+
+    EntityController controller = React.controller(EntityController.class);
+    Player[] players = controller == null ? null : controller.getFoliaPlayers();
+    if (players == null) {
+      return;
+    }
+
+    for (Player player : players) {
+      if (player == null) {
+        continue;
+      }
+
+      try {
+        FoliaScheduler.runEntity(
+            React.instance,
+            player,
+            () -> playDeathSoundOwned(player, worldId, x, y, z, DEATH_SOUND),
+            0,
+            null
+        );
+      } catch (Throwable throwable) {
+        React.reportError(throwable);
+      }
+    }
+  }
+
+  private void playDeathSoundOwned(Player player, UUID worldId, double x, double y, double z, Sound sound) {
+    if (!J.isOwnedByCurrentRegion(player)) {
+      return;
+    }
+
+    playDeathSound(player, worldId, x, y, z, sound);
+  }
+
+  private void playDeathSound(Player player, UUID worldId, double x, double y, double z, Sound sound) {
+    if (!player.isOnline()) {
+      return;
+    }
+
+    World playerWorld = player.getWorld();
+    if (playerWorld == null || !worldId.equals(playerWorld.getUID())) {
+      return;
+    }
+
+    React.audiences().player(player).playSound(sound, x, y, z);
   }
 
 
@@ -245,7 +466,7 @@ public class EntityKiller {
         return;
       }
 
-      React.verbose("EntityKiller: countdown cancelled by player " + event.getPlayer().getName());
+      React.verbose(() -> "EntityKiller: countdown cancelled by player " + event.getPlayer().getName());
       killer.stop();
     }
   }

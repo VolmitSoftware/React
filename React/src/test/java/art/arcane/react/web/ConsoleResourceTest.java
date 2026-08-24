@@ -1,6 +1,7 @@
 package art.arcane.react.web;
 
 import art.arcane.react.api.web.AuditLog;
+import art.arcane.react.api.web.BukkitWebMutationReporter;
 import art.arcane.react.api.web.ConsoleCommandDispatcher;
 import art.arcane.react.api.web.PairingToken;
 import art.arcane.react.api.web.TokenRecord;
@@ -76,7 +77,11 @@ public class ConsoleResourceTest {
             dispatchedCommand.set(command);
             return true;
         };
-        ConsoleResource resource = new ConsoleResource(dispatcher, auditLog);
+        ConsoleResource resource = new ConsoleResource(
+            dispatcher,
+            auditLog,
+            new BukkitWebMutationReporter(auditLog)
+        );
         Context ctx = context(adminToken, "  /lp user alice permission set bearer-secret  ");
         when(ctx.status(202)).thenReturn(ctx);
         ArgumentCaptor<Object> responseCaptor = ArgumentCaptor.forClass(Object.class);
@@ -101,7 +106,11 @@ public class ConsoleResourceTest {
     @Test
     void operatorCannotExecuteConsoleCommands() {
         ConsoleCommandDispatcher dispatcher = mock(ConsoleCommandDispatcher.class);
-        ConsoleResource resource = new ConsoleResource(dispatcher, auditLog);
+        ConsoleResource resource = new ConsoleResource(
+            dispatcher,
+            auditLog,
+            new BukkitWebMutationReporter(auditLog)
+        );
         Context ctx = context(operatorToken, "say denied");
 
         assertThrows(ForbiddenResponse.class, () -> resource.execute(ctx));
@@ -111,7 +120,11 @@ public class ConsoleResourceTest {
     @Test
     void blankOverlongAndControlCharacterCommandsAreRejected() {
         ConsoleCommandDispatcher dispatcher = mock(ConsoleCommandDispatcher.class);
-        ConsoleResource resource = new ConsoleResource(dispatcher, auditLog);
+        ConsoleResource resource = new ConsoleResource(
+            dispatcher,
+            auditLog,
+            new BukkitWebMutationReporter(auditLog)
+        );
         List<String> invalidCommands = List.of(
             " ",
             "x".repeat(ConsoleResource.MAX_COMMAND_LENGTH + 1),

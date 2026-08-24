@@ -19,6 +19,7 @@ import 'package:react_web/model/server_credential.dart';
 import 'package:react_web/model/server_snapshot.dart';
 import 'package:react_web/model/world_settings.dart';
 import 'package:react_web/screen/add_server.dart';
+import 'package:react_web/service/direct_web_socket_handshake.dart';
 import 'package:react_web/service/react_client.dart';
 import '../../tool/visual_qa/fixtures.dart';
 import '../../tool/visual_qa/server.dart';
@@ -99,7 +100,13 @@ void main() {
       final ServerSnapshot snapshot = await client.metrics();
       final SamplerSample history = await client.history('tick-time');
       final List<HeatmapSummary> heatmaps = await client.heatmaps();
-      final HeatmapGrid heatmap = await client.heatmap(heatmaps.first.id);
+      final HeatmapGrid heatmap = await client.heatmap(
+        heatmaps.first.id,
+        world: 'minecraft:world_the_end',
+        centerX: 31,
+        centerZ: -17,
+        radius: 3,
+      );
       final List<ControlItem> features = await client.features();
       final ControlItem feature = await client.feature('mob-stacking');
       final List<ControlItem> tweaks = await client.tweaks();
@@ -126,7 +133,19 @@ void main() {
         heatmaps.map((HeatmapSummary item) => item.label),
         contains('QA Chunk Pressure'),
       );
-      expect(heatmap.cells, hasLength(25));
+      expect(heatmap.world, equals('minecraft:world_the_end'));
+      expect(heatmap.centerChunkX, equals(31));
+      expect(heatmap.centerChunkZ, equals(-17));
+      expect(heatmap.radius, equals(3));
+      expect(heatmap.cells, hasLength(49));
+      expect(
+        heatmap.cells.map((HeatmapCell cell) => cell.x),
+        containsAll(<int>[28, 34]),
+      );
+      expect(
+        heatmap.cells.map((HeatmapCell cell) => cell.z),
+        containsAll(<int>[-20, -14]),
+      );
       expect(
         features.map((ControlItem item) => item.name),
         contains('Mob Stacking'),
@@ -144,6 +163,10 @@ void main() {
       expect(
         worlds.map((WorldSettings world) => world.name),
         contains('world_nether'),
+      );
+      expect(
+        worlds.map((WorldSettings world) => world.key),
+        contains('minecraft:world_nether'),
       );
       expect(
         actions.map((ActionDescriptor action) => action.name),
@@ -231,23 +254,33 @@ void main() {
       'streams metric and log frames over the production socket paths',
       () async {
         final String origin = VisualQaServer.defaultAllowedOrigin;
+        final ServerCredential credential = _credential(
+          server,
+          VisualQaProfile.beta,
+        );
+        final DirectWebSocketHandshake metricsHandshake =
+            DirectWebSocketHandshake(credential, 'ws/metrics');
         final WebSocket metricsSocket = await WebSocket.connect(
-          'ws://127.0.0.1:${server.port}/ws/metrics'
-          '?token=${VisualQaProfile.beta.bearer}',
+          metricsHandshake.endpoint.toString(),
           headers: <String, dynamic>{'Origin': origin},
         );
         addTearDown(metricsSocket.close);
+        metricsSocket.add(metricsHandshake.authFrame);
         final String metricsRaw = await metricsSocket.first as String;
         final Map<String, dynamic> metrics =
             jsonDecode(metricsRaw) as Map<String, dynamic>;
         final ServerSnapshot snapshot = ServerSnapshot.fromJson(metrics);
 
+        final DirectWebSocketHandshake logsHandshake = DirectWebSocketHandshake(
+          credential,
+          'ws/logs',
+        );
         final WebSocket logsSocket = await WebSocket.connect(
-          'ws://127.0.0.1:${server.port}/ws/logs'
-          '?token=${VisualQaProfile.beta.bearer}',
+          logsHandshake.endpoint.toString(),
           headers: <String, dynamic>{'Origin': origin},
         );
         addTearDown(logsSocket.close);
+        logsSocket.add(logsHandshake.authFrame);
         final String logsRaw = await logsSocket.first as String;
         final Map<String, dynamic> logFrame =
             jsonDecode(logsRaw) as Map<String, dynamic>;
@@ -257,6 +290,20 @@ void main() {
         expect(logFrame['line'], equals('[INFO] QA fixture ready'));
       },
     );
+
+    test('does not accept a bearer token from a socket query', () async {
+      final WebSocket socket = await WebSocket.connect(
+        'ws://127.0.0.1:${server.port}/ws/metrics'
+        '?token=${VisualQaProfile.beta.bearer}',
+        headers: <String, dynamic>{
+          'Origin': VisualQaServer.defaultAllowedOrigin,
+        },
+      );
+      addTearDown(socket.close);
+      socket.add('{"type":"not-auth"}');
+
+      await expectLater(socket, emitsDone);
+    });
   });
 
   group('visual QA transport boundaries', () {

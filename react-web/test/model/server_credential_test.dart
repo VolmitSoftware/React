@@ -2,6 +2,7 @@ library;
 
 import 'package:test/test.dart';
 import 'package:react_web/model/server_credential.dart';
+import 'package:react_web/service/direct_web_socket_handshake.dart';
 
 void main() {
   group('ServerCredential.copyWith', () {
@@ -125,6 +126,70 @@ void main() {
       expect(cred.relayUrl, isNull);
       expect(cred.serverPubKey, isNull);
       expect(cred.fingerprint, isNull);
+    });
+  });
+
+  group('ServerCredential direct endpoints', () {
+    test('builds IPv6 HTTP and WebSocket URLs with the proxy path', () {
+      const ServerCredential credential = ServerCredential(
+        id: 'ipv6',
+        label: 'IPv6',
+        host: '2001:db8::1',
+        port: 9443,
+        bearer: 'token value',
+        secure: true,
+        basePath: '/proxy/react',
+      );
+
+      expect(
+        credential.directEndpoint('api/v1/metrics').toString(),
+        equals('https://[2001:db8::1]:9443/proxy/react/api/v1/metrics'),
+      );
+      final DirectWebSocketHandshake metrics = DirectWebSocketHandshake(
+        credential,
+        'ws/metrics',
+      );
+      final DirectWebSocketHandshake logs = DirectWebSocketHandshake(
+        credential,
+        'ws/logs',
+      );
+      expect(
+        metrics.endpoint.toString(),
+        equals('wss://[2001:db8::1]:9443/proxy/react/ws/metrics'),
+      );
+      expect(
+        logs.endpoint.toString(),
+        equals('wss://[2001:db8::1]:9443/proxy/react/ws/logs'),
+      );
+      expect(metrics.endpoint.hasQuery, isFalse);
+      expect(logs.endpoint.hasQuery, isFalse);
+      expect(
+        metrics.authFrame,
+        equals('{"type":"auth","token":"token value"}'),
+      );
+      expect(logs.authFrame, equals(metrics.authFrame));
+    });
+
+    test('round-trips the reverse-proxy path', () {
+      const ServerCredential credential = ServerCredential(
+        id: 'path',
+        label: 'Path',
+        host: 'example.com',
+        port: 443,
+        bearer: 'token',
+        secure: true,
+        basePath: '/proxy/react',
+      );
+
+      final ServerCredential restored = ServerCredential.fromJson(
+        credential.toJson(),
+      );
+
+      expect(restored.basePath, equals('/proxy/react'));
+      expect(
+        restored.directBaseUri.toString(),
+        equals('https://example.com/proxy/react'),
+      );
     });
   });
 }

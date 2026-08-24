@@ -5,8 +5,11 @@
 React/libs/
 
 .codegraph/
+.perf/
+.release-gate/
 
 React/.jqwik-database
+React/nms/*/logs/
 
 # Dart/Jaspr and local web tooling
 **/.dart_tool/

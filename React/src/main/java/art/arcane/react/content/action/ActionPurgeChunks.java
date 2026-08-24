@@ -24,6 +24,7 @@ import art.arcane.react.api.action.ActionParams;
 import art.arcane.react.api.action.ActionTicket;
 import art.arcane.react.api.action.ReactAction;
 import art.arcane.react.core.controller.ActionController;
+import art.arcane.react.core.controller.ObserverController.LoadedChunkTarget;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.ActionMessages;
 import art.arcane.react.model.AreaActionParams;
@@ -36,10 +37,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
-import org.bukkit.Chunk;
+import org.bukkit.Bukkit;
 import org.bukkit.World;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -51,20 +51,8 @@ public class ActionPurgeChunks extends ReactAction<ActionPurgeChunks.Params> {
     super(ID);
   }
 
-  List<Chunk> pullChunks(ActionTicket<Params> ticket, int max) {
-    List<Chunk> c = new ArrayList<>();
-
-    for (int i = 0; i < max; i++) {
-      Chunk cc = ticket.getParams().getArea().popChunk();
-
-      if (cc == null) {
-        break;
-      }
-
-      c.add(cc);
-    }
-
-    return c;
+  List<LoadedChunkTarget> pullChunks(ActionTicket<Params> ticket, int max) {
+    return ticket.getParams().getArea().popChunks(max);
   }
 
   @Override
@@ -82,14 +70,14 @@ public class ActionPurgeChunks extends ReactAction<ActionPurgeChunks.Params> {
   }
 
   private void workOnAsync(ActionTicket<Params> ticket) {
-    List<Chunk> chunks = pullChunks(ticket, React.controller(ActionController.class).getActionSpeedMultiplier());
+    List<LoadedChunkTarget> chunks = pullChunks(ticket, React.controller(ActionController.class).getActionSpeedMultiplier());
 
-    if (ticket.getTotalWork() <= 1 && ticket.getParams().getArea().getChunks() != null) {
-      ticket.setTotalWork(Math.max(1, ticket.getParams().getArea().getChunks().size() + chunks.size()));
+    if (ticket.getTotalWork() <= 1) {
+      ticket.setTotalWork(Math.max(1, ticket.getParams().getArea().estimatedTotalWork()));
     }
 
     if (!chunks.isEmpty()) {
-      for (Chunk chunk : chunks) {
+      for (LoadedChunkTarget chunk : chunks) {
         purgeFolia(chunk, ticket.getParams());
       }
 
@@ -97,7 +85,10 @@ public class ActionPurgeChunks extends ReactAction<ActionPurgeChunks.Params> {
     }
 
     ticket.setCount(ticket.getParams().getPurgedChunks().get());
-    if (chunks.isEmpty() && ticket.getParams().getInFlightChunks().get() <= 0) {
+    if (chunks.isEmpty()
+        && ticket.getParams().getInFlightChunks().get() <= 0
+        && !ticket.getParams().getArea().isSelectionPending()) {
+      ticket.setTotalWork(Math.max(1, ticket.getWork()));
       ticket.complete();
     }
   }
@@ -112,14 +103,17 @@ public class ActionPurgeChunks extends ReactAction<ActionPurgeChunks.Params> {
 
   }
 
-  private void purgeFolia(Chunk chunk, Params params) {
-    if (chunk == null || chunk.getWorld() == null || params == null) {
+  private void purgeFolia(LoadedChunkTarget chunk, Params params) {
+    if (chunk == null || params == null) {
       return;
     }
 
-    World world = chunk.getWorld();
-    int chunkX = chunk.getX();
-    int chunkZ = chunk.getZ();
+    World world = Bukkit.getWorld(chunk.worldId());
+    if (world == null) {
+      return;
+    }
+    int chunkX = chunk.chunkX();
+    int chunkZ = chunk.chunkZ();
     params.getInFlightChunks().incrementAndGet();
     boolean scheduled = J.runChunk(world, chunkX, chunkZ, () -> {
       try {

@@ -24,7 +24,7 @@ public class ConfigRewriteReporter {
     String sourceTag = source == null || source.isBlank() ? "config" : source;
 
     if (changes.isEmpty()) {
-      React.info("Canonicalized " + sourceTag + " [" + path + "] (format/order only).");
+      React.verbose("Canonicalized " + sourceTag + " [" + path + "] (format/order only).");
       return;
     }
 

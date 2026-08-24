@@ -34,17 +34,28 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockGrowEvent;
+import org.bukkit.event.world.WorldUnloadEvent;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Farm Burst Smoother feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureFarmBurstSmoother extends ReactFeature implements Listener {
   public static final String ID = "farm-burst-smoother";
+  private static final int SHUTDOWN_BATCH_SIZE = 256;
+  private static final int SHUTDOWN_RETRY_PASSES = 2;
+  private static final long RETRY_DELAY_MS = 200L;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Main evaluation interval for farm burst smoother in milliseconds.", impact = "Lower values react faster but consume more CPU; higher values reduce overhead but react later.")
   private int tickIntervalMS = 100;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Rolling window length for burst checks (milliseconds).", impact = "Longer windows smooth bursts but react slower; shorter windows react faster but are more sensitive.")
@@ -59,8 +70,10 @@ public class FeatureFarmBurstSmoother extends ReactFeature implements Listener {
   private int maxAppliesPerCycle = 24;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum pending updates allowed by farm burst smoother.", impact = "Higher values allow more throughput before intervention; lower values make mitigation more aggressive.")
   private int maxPendingUpdates = 2500;
-  @art.arcane.react.util.project.config.ConfigDoc(value = "Stale pending duration used by farm burst smoother (milliseconds).", impact = "Higher values keep state active longer; lower values expire or apply changes sooner.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Age at which pending growth is force-applied instead of remaining delayed (milliseconds).", impact = "Higher values preserve smoothing delays longer; lower values force valid cancelled growth sooner.")
   private int stalePendingMS = 15000;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum time spent waiting for owner-thread growth application during deactivation (milliseconds).", impact = "Higher values give busy regions longer to preserve cancelled growth; a nonempty remainder fails deactivation instead of being discarded.")
+  private int shutdownDrainTimeoutMS = 2000;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Controls whether farm burst smoother applies only during pressure.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
   private boolean onlyDuringPressure = true;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Trigger threshold for pressure incident score in farm burst smoother.", impact = "Higher values trigger mitigation later; lower values trigger earlier and more aggressively.")
@@ -71,10 +84,12 @@ public class FeatureFarmBurstSmoother extends ReactFeature implements Listener {
   private boolean bypassNearPlayers = true;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Bypass player radius used by farm burst smoother (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
   private double bypassPlayerRadius = 10;
-  private transient Map<BlockKey, PendingGrowth> pending = new ConcurrentHashMap<>();
-  private transient volatile long windowStartMS;
-  private transient volatile int windowEvents;
-  private transient volatile long smoothUntilMS;
+  private transient final Object pendingLock = new Object();
+  private transient final AtomicBoolean applyQueued = new AtomicBoolean(false);
+  private transient final AtomicLong lifecycleGeneration = new AtomicLong(0L);
+  private transient final BurstState burstState = new BurstState();
+  private transient final Map<BlockKey, PendingGrowth> pending = new ConcurrentHashMap<>();
+  private transient volatile boolean accepting;
 
   public FeatureFarmBurstSmoother() {
     super(ID);
@@ -82,16 +97,33 @@ public class FeatureFarmBurstSmoother extends ReactFeature implements Listener {
 
   @Override
   public void onActivate() {
-    pending = new ConcurrentHashMap<>();
+    accepting = false;
+    long generation = lifecycleGeneration.incrementAndGet();
+    for (PendingGrowth growth : pending.values()) {
+      growth.retireClaimBefore(generation);
+    }
     long now = System.currentTimeMillis();
-    windowStartMS = now;
-    smoothUntilMS = now;
-    windowEvents = 0;
+    burstState.reset(now);
+    applyQueued.set(false);
+    accepting = true;
   }
 
   @Override
   public void onDeactivate() {
-    pending.clear();
+    accepting = false;
+    long generation;
+    synchronized (pendingLock) {
+      generation = lifecycleGeneration.incrementAndGet();
+    }
+    applyQueued.set(false);
+    for (PendingGrowth growth : pending.values()) {
+      growth.retireClaimBefore(generation);
+    }
+    drainPendingGrowth(generation);
+    if (!pending.isEmpty()) {
+      throw new IllegalStateException("Farm burst smoother could not apply " + pending.size()
+          + " cancelled growth changes before the shutdown deadline; pending changes were retained.");
+    }
   }
 
   @Override
@@ -101,39 +133,53 @@ public class FeatureFarmBurstSmoother extends ReactFeature implements Listener {
 
   @Override
   public void onTick() {
-    pruneOverflow();
+    if (!accepting) {
+      return;
+    }
+    long generation = lifecycleGeneration.get();
     if (J.isFoliaThreading()) {
-      applyPendingGrowthFolia();
+      applyPendingGrowthFolia(generation);
       return;
     }
 
-    J.s(this::applyPendingGrowth);
+    if (!applyQueued.compareAndSet(false, true)) {
+      return;
+    }
+
+    try {
+      J.s(() -> {
+        try {
+          if (accepting && generation == lifecycleGeneration.get()) {
+            applyPendingGrowth(generation);
+          }
+        } finally {
+          if (generation == lifecycleGeneration.get()) {
+            applyQueued.set(false);
+          }
+        }
+      });
+    } catch (Throwable throwable) {
+      applyQueued.set(false);
+      React.reportError(throwable);
+    }
   }
 
   @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
   public void on(BlockGrowEvent event) {
+    if (!accepting) {
+      return;
+    }
     Block block = event.getBlock();
     if (!isFarmGrowth(block.getType())) {
       return;
     }
 
     long now = System.currentTimeMillis();
-    rollWindow(now);
-    windowEvents++;
-
-    if (windowEvents >= burstTriggerCount) {
-      smoothUntilMS = now + burstWindowMS;
-    }
-
-    if (now > smoothUntilMS) {
+    if (!burstState.record(now, burstWindowMS, burstTriggerCount)) {
       return;
     }
 
     if (!shouldSmooth(block.getLocation())) {
-      return;
-    }
-
-    if (pending.size() >= maxPendingUpdates) {
       return;
     }
 
@@ -153,8 +199,27 @@ public class FeatureFarmBurstSmoother extends ReactFeature implements Listener {
         now
     );
 
-    pending.put(key, growth);
-    event.setCancelled(true);
+    if (queueGrowth(key, growth)) {
+      event.setCancelled(true);
+    }
+  }
+
+  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+  public void on(WorldUnloadEvent event) {
+    if (event.isCancelled()) {
+      return;
+    }
+
+    UUID worldId = event.getWorld().getUID();
+    synchronized (pendingLock) {
+      for (Map.Entry<BlockKey, PendingGrowth> entry : pending.entrySet()) {
+        BlockKey key = entry.getKey();
+        PendingGrowth growth = entry.getValue();
+        if (key.world.equals(worldId) && pending.remove(key, growth)) {
+          growth.retireClaim();
+        }
+      }
+    }
   }
 
   private boolean shouldSmooth(Location location) {
@@ -170,14 +235,124 @@ public class FeatureFarmBurstSmoother extends ReactFeature implements Listener {
         || sample(SamplerIncidentScore.ID) >= pressureIncidentScore;
   }
 
-  private void rollWindow(long now) {
-    if (now - windowStartMS > burstWindowMS) {
-      windowStartMS = now;
-      windowEvents = 0;
+  private void drainPendingGrowth(long generation) {
+    if (pending.isEmpty()) {
+      return;
+    }
+
+    long timeoutNanos = TimeUnit.MILLISECONDS.toNanos(Math.max(1, shutdownDrainTimeoutMS));
+    long deadlineNanos = System.nanoTime() + timeoutNanos;
+    if (J.isFoliaThreading()) {
+      drainPendingGrowthFolia(generation, deadlineNanos);
+      return;
+    }
+    if (J.isPrimaryThread()) {
+      drainPendingGrowthPaper(generation, deadlineNanos);
+      return;
+    }
+
+    CompletableFuture<Void> completion = new CompletableFuture<>();
+    try {
+      J.s(() -> {
+        try {
+          drainPendingGrowthPaper(generation, deadlineNanos);
+        } finally {
+          completion.complete(null);
+        }
+      });
+    } catch (Throwable throwable) {
+      completion.complete(null);
+      React.reportError(throwable);
+    }
+    awaitCompletion(completion, deadlineNanos);
+  }
+
+  private void drainPendingGrowthPaper(long generation, long deadlineNanos) {
+    for (int pass = 0; pass < SHUTDOWN_RETRY_PASSES && System.nanoTime() < deadlineNanos; pass++) {
+      List<PendingRef> snapshot = snapshotPending();
+      if (snapshot.isEmpty()) {
+        return;
+      }
+      for (PendingRef ref : snapshot) {
+        if (System.nanoTime() >= deadlineNanos || generation != lifecycleGeneration.get()) {
+          return;
+        }
+        applyPendingGrowthAt(ref.key(), ref.growth(), generation, true);
+      }
     }
   }
 
-  private void applyPendingGrowth() {
+  private void drainPendingGrowthFolia(long generation, long deadlineNanos) {
+    for (int pass = 0; pass < SHUTDOWN_RETRY_PASSES && System.nanoTime() < deadlineNanos; pass++) {
+      List<PendingRef> snapshot = snapshotPending();
+      if (snapshot.isEmpty()) {
+        return;
+      }
+
+      List<CompletableFuture<Void>> completions = new ArrayList<>(SHUTDOWN_BATCH_SIZE);
+      for (PendingRef ref : snapshot) {
+        if (System.nanoTime() >= deadlineNanos || generation != lifecycleGeneration.get()) {
+          return;
+        }
+        CompletableFuture<Void> completion = scheduleFoliaGrowth(
+            ref.key(),
+            ref.growth(),
+            generation,
+            true);
+        if (completion != null) {
+          completions.add(completion);
+        }
+        if (completions.size() >= SHUTDOWN_BATCH_SIZE) {
+          if (!awaitCompletions(completions, deadlineNanos)) {
+            return;
+          }
+          completions.clear();
+        }
+      }
+      if (!awaitCompletions(completions, deadlineNanos)) {
+        return;
+      }
+    }
+  }
+
+  private List<PendingRef> snapshotPending() {
+    List<PendingRef> snapshot = new ArrayList<>(pending.size());
+    for (Map.Entry<BlockKey, PendingGrowth> entry : pending.entrySet()) {
+      snapshot.add(new PendingRef(entry.getKey(), entry.getValue()));
+    }
+    return snapshot;
+  }
+
+  private boolean awaitCompletions(List<CompletableFuture<Void>> completions, long deadlineNanos) {
+    if (completions.isEmpty()) {
+      return System.nanoTime() < deadlineNanos;
+    }
+    CompletableFuture<Void> completion = CompletableFuture.allOf(
+        completions.toArray(new CompletableFuture[0]));
+    return awaitCompletion(completion, deadlineNanos);
+  }
+
+  private boolean awaitCompletion(CompletableFuture<Void> completion, long deadlineNanos) {
+    long remainingNanos = deadlineNanos - System.nanoTime();
+    if (remainingNanos <= 0L) {
+      return false;
+    }
+    try {
+      completion.get(remainingNanos, TimeUnit.NANOSECONDS);
+      return true;
+    } catch (InterruptedException exception) {
+      Thread.currentThread().interrupt();
+      return false;
+    } catch (TimeoutException exception) {
+      return false;
+    } catch (ExecutionException exception) {
+      Throwable cause = exception.getCause();
+      React.reportError(cause == null ? exception : cause);
+      return true;
+    }
+  }
+
+  private void applyPendingGrowth(long generation) {
     if (pending.isEmpty()) {
       return;
     }
@@ -187,55 +362,26 @@ public class FeatureFarmBurstSmoother extends ReactFeature implements Listener {
     int scanned = 0;
     int maxApplies = Math.max(1, maxAppliesPerCycle);
     int maxScan = Math.max(maxApplies * 8, 96);
-    List<BlockKey> remove = new ArrayList<>();
 
     for (Map.Entry<BlockKey, PendingGrowth> entry : pending.entrySet()) {
-      if (scanned++ >= maxScan) {
+      if (scanned++ >= maxScan || generation != lifecycleGeneration.get()) {
         break;
       }
 
       PendingGrowth growth = entry.getValue();
-      if (now - growth.createdAtMS > stalePendingMS) {
-        remove.add(entry.getKey());
+      boolean force = isStale(growth, now);
+      if (!force && growth.applyAtMS > now) {
         continue;
       }
 
-      if (growth.applyAtMS > now) {
-        continue;
-      }
-
-      World world = Bukkit.getWorld(growth.world);
-      if (world == null) {
-        remove.add(entry.getKey());
-        continue;
-      }
-
-      Block block = world.getBlockAt(growth.x, growth.y, growth.z);
-      if (block.getType() != growth.expectedType) {
-        remove.add(entry.getKey());
-        continue;
-      }
-
-      if (bypassNearPlayers && React.hasNearbyPlayer(block.getLocation(), bypassPlayerRadius)) {
-        growth.applyAtMS = now + 200L;
-        continue;
-      }
-
-      block.setBlockData(growth.targetData, false);
-      remove.add(entry.getKey());
-      applied++;
-
-      if (applied >= maxApplies) {
+      GrowthResult result = applyPendingGrowthAt(entry.getKey(), growth, generation, force);
+      if (result == GrowthResult.APPLIED && ++applied >= maxApplies) {
         break;
       }
     }
-
-    for (BlockKey key : remove) {
-      pending.remove(key);
-    }
   }
 
-  private void applyPendingGrowthFolia() {
+  private void applyPendingGrowthFolia(long generation) {
     if (pending.isEmpty()) {
       return;
     }
@@ -245,88 +391,132 @@ public class FeatureFarmBurstSmoother extends ReactFeature implements Listener {
     int scanned = 0;
     int maxApplies = Math.max(1, maxAppliesPerCycle);
     int maxScan = Math.max(maxApplies * 8, 96);
-    List<BlockKey> remove = new ArrayList<>();
 
     for (Map.Entry<BlockKey, PendingGrowth> entry : pending.entrySet()) {
-      if (scanned++ >= maxScan) {
+      if (scanned++ >= maxScan || generation != lifecycleGeneration.get()) {
         break;
       }
 
       BlockKey key = entry.getKey();
       PendingGrowth growth = entry.getValue();
-      if (now - growth.createdAtMS > stalePendingMS) {
-        remove.add(key);
+      boolean force = isStale(growth, now);
+      if (!force && growth.applyAtMS > now) {
         continue;
       }
 
-      if (growth.applyAtMS > now) {
-        continue;
+      if (scheduleFoliaGrowth(key, growth, generation, force) != null) {
+        scheduled++;
       }
-
-      World world = Bukkit.getWorld(growth.world);
-      if (world == null) {
-        remove.add(key);
-        continue;
-      }
-
-      Location location = new Location(world, growth.x, growth.y, growth.z);
-      J.s(location, () -> applyPendingGrowthAt(key, growth), 0);
-      scheduled++;
       if (scheduled >= maxApplies) {
         break;
       }
     }
-
-    for (BlockKey key : remove) {
-      pending.remove(key);
-    }
   }
 
-  private void applyPendingGrowthAt(BlockKey key, PendingGrowth growth) {
-    PendingGrowth current = pending.get(key);
-    if (current != growth) {
-      return;
-    }
-
-    long now = System.currentTimeMillis();
-    if (now - growth.createdAtMS > stalePendingMS) {
-      pending.remove(key, growth);
-      return;
+  private CompletableFuture<Void> scheduleFoliaGrowth(
+      BlockKey key,
+      PendingGrowth growth,
+      long generation,
+      boolean force) {
+    if (generation != lifecycleGeneration.get()) {
+      return null;
     }
 
     World world = Bukkit.getWorld(growth.world);
     if (world == null) {
-      pending.remove(key, growth);
-      return;
+      scheduleRetry(growth);
+      return null;
     }
 
-    Block block = world.getBlockAt(growth.x, growth.y, growth.z);
-    if (block.getType() != growth.expectedType) {
-      pending.remove(key, growth);
-      return;
+    GrowthClaim claim = growth.tryClaim(generation);
+    if (claim == null) {
+      return null;
     }
 
-    if (bypassNearPlayers && React.hasNearbyPlayer(block.getLocation(), bypassPlayerRadius)) {
-      growth.applyAtMS = now + 200L;
-      return;
-    }
+    Location location = new Location(world, growth.x, growth.y, growth.z);
+    Runnable task = () -> {
+      try {
+        if (generation == lifecycleGeneration.get()) {
+          applyPendingGrowthAt(key, growth, generation, force);
+        }
+      } finally {
+        growth.releaseClaim(claim);
+      }
+    };
 
-    block.setBlockData(growth.targetData, false);
-    pending.remove(key, growth);
+    try {
+      if (J.isOwnedByCurrentRegion(location)) {
+        task.run();
+      } else {
+        J.s(location, task, 0);
+      }
+    } catch (Throwable throwable) {
+      growth.releaseClaim(claim);
+      scheduleRetry(growth);
+      React.reportError(throwable);
+    }
+    return claim.completion();
   }
 
-  private void pruneOverflow() {
-    int overflow = pending.size() - maxPendingUpdates;
-    if (overflow <= 0) {
-      return;
+  private GrowthResult applyPendingGrowthAt(
+      BlockKey key,
+      PendingGrowth growth,
+      long generation,
+      boolean force) {
+    if (generation != lifecycleGeneration.get()) {
+      return GrowthResult.SKIPPED;
+    }
+    PendingGrowth current = pending.get(key);
+    if (current != growth) {
+      return GrowthResult.SKIPPED;
     }
 
-    for (Map.Entry<BlockKey, PendingGrowth> entry : pending.entrySet()) {
-      pending.remove(entry.getKey(), entry.getValue());
-      overflow--;
-      if (overflow <= 0) {
-        return;
+    World world = Bukkit.getWorld(growth.world);
+    if (world == null) {
+      scheduleRetry(growth);
+      return GrowthResult.RETRY;
+    }
+
+    try {
+      Block block = world.getBlockAt(growth.x, growth.y, growth.z);
+      if (block.getType() != growth.expectedType) {
+        pending.remove(key, growth);
+        return GrowthResult.INVALID;
       }
+
+      if (!force && bypassNearPlayers && React.hasNearbyPlayer(block.getLocation(), bypassPlayerRadius)) {
+        scheduleRetry(growth);
+        return GrowthResult.RETRY;
+      }
+
+      block.setBlockData(growth.targetData, false);
+      pending.remove(key, growth);
+      return GrowthResult.APPLIED;
+    } catch (Throwable throwable) {
+      scheduleRetry(growth);
+      React.reportError(throwable);
+      return GrowthResult.RETRY;
+    }
+  }
+
+  private boolean isStale(PendingGrowth growth, long now) {
+    return now - growth.createdAtMS > Math.max(0, stalePendingMS);
+  }
+
+  private void scheduleRetry(PendingGrowth growth) {
+    growth.applyAtMS = System.currentTimeMillis() + RETRY_DELAY_MS;
+  }
+
+  private boolean queueGrowth(BlockKey key, PendingGrowth growth) {
+    synchronized (pendingLock) {
+      if (!accepting) {
+        return false;
+      }
+      if (!pending.containsKey(key) && pending.size() >= Math.max(0, maxPendingUpdates)) {
+        return false;
+      }
+      pending.put(key, growth);
+      return true;
     }
   }
 
@@ -351,6 +541,7 @@ public class FeatureFarmBurstSmoother extends ReactFeature implements Listener {
   }
 
   private static final class PendingGrowth {
+    private final AtomicReference<GrowthClaim> claim = new AtomicReference<>();
     @art.arcane.react.util.project.config.ConfigDoc(value = "World identifier used by farm burst smoother internal tracking.", impact = "This is runtime identity data and should normally be left to automatic updates.")
     private final UUID world;
     @art.arcane.react.util.project.config.ConfigDoc(value = "X-axis coordinate used by farm burst smoother internal tracking.", impact = "This is internal state data and should not normally be changed manually.")
@@ -377,6 +568,75 @@ public class FeatureFarmBurstSmoother extends ReactFeature implements Listener {
       this.targetData = targetData;
       this.applyAtMS = applyAtMS;
       this.createdAtMS = createdAtMS;
+    }
+
+    private GrowthClaim tryClaim(long generation) {
+      GrowthClaim offered = new GrowthClaim(generation, new CompletableFuture<>());
+      return claim.compareAndSet(null, offered) ? offered : null;
+    }
+
+    private void releaseClaim(GrowthClaim expected) {
+      claim.compareAndSet(expected, null);
+      expected.completion().complete(null);
+    }
+
+    private void retireClaimBefore(long generation) {
+      while (true) {
+        GrowthClaim current = claim.get();
+        if (current == null || current.generation() >= generation) {
+          return;
+        }
+        if (claim.compareAndSet(current, null)) {
+          current.completion().complete(null);
+          return;
+        }
+      }
+    }
+
+    private void retireClaim() {
+      GrowthClaim current = claim.getAndSet(null);
+      if (current != null) {
+        current.completion().complete(null);
+      }
+    }
+  }
+
+  private enum GrowthResult {
+    APPLIED,
+    INVALID,
+    RETRY,
+    SKIPPED
+  }
+
+  private record GrowthClaim(long generation, CompletableFuture<Void> completion) {
+  }
+
+  private record PendingRef(BlockKey key, PendingGrowth growth) {
+  }
+
+  static final class BurstState {
+    private long windowStartMS;
+    private int windowEvents;
+    private long smoothUntilMS;
+
+    synchronized boolean record(long now, int windowMS, int triggerCount) {
+      int safeWindowMS = Math.max(0, windowMS);
+      if (now - windowStartMS > safeWindowMS) {
+        windowStartMS = now;
+        windowEvents = 0;
+      }
+
+      windowEvents++;
+      if (windowEvents >= Math.max(1, triggerCount)) {
+        smoothUntilMS = Math.max(smoothUntilMS, now + safeWindowMS);
+      }
+      return now <= smoothUntilMS;
+    }
+
+    synchronized void reset(long now) {
+      windowStartMS = now;
+      windowEvents = 0;
+      smoothUntilMS = 0L;
     }
   }
 

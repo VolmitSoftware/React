@@ -8,10 +8,16 @@ import '../localization/reactor_localizations.dart';
 import 'svg_fallback_chart.dart';
 
 class TimeseriesChart extends StatefulComponent {
-  const TimeseriesChart({required this.series, this.height = 160, super.key});
+  const TimeseriesChart({
+    required this.series,
+    this.height = 160,
+    this.valueFormatter,
+    super.key,
+  });
 
   final List<(String, List<double>)> series;
   final int height;
+  final String Function(double value)? valueFormatter;
 
   @override
   State<TimeseriesChart> createState() => _TimeseriesChartState();
@@ -36,6 +42,7 @@ class _TimeseriesChartState extends State<TimeseriesChart> {
           height: component.height,
           hiddenSeries: _hiddenSeries,
           activeSample: _activeSample,
+          valueFormatter: component.valueFormatter,
           onSampleHover: (int? sample) =>
               setState(() => _activeSample = sample),
         )

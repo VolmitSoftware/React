@@ -158,8 +158,7 @@ public final class GlossDropNameIntegration {
         : exception;
     String failureKey = failure.getClass().getName() + ":" + failure.getMessage();
     if (REPORTED_FAILURES.add(failureKey)) {
-      React.warn("Could not update a Gloss drop presentation; the integration will retry discovery.");
-      failure.printStackTrace();
+      React.warn("Could not update a Gloss drop presentation; the integration will retry discovery.", failure);
     }
   }
 

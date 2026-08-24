@@ -167,7 +167,7 @@ public final class ConfigFileSupport {
       React.warn("Config [" + legacyPath(file) + "] for [" + (sourceTag == null ? "config" : sourceTag)
           + "] could not be parsed and was reset to defaults. Your previous values are preserved in [" + legacyPath(backup) + "].");
     } catch (Throwable e) {
-      React.warn("Config [" + legacyPath(file) + "] could not be parsed and the recovery backup also failed: " + e.getMessage());
+      React.warn("Config [" + legacyPath(file) + "] could not be parsed and the recovery backup also failed: " + e.getMessage(), e);
     }
   }
 
@@ -290,7 +290,7 @@ public final class ConfigFileSupport {
       }
       return deleted;
     } catch (Throwable e) {
-      React.warn("Failed to delete migrated legacy config [" + legacyPath(legacyFile) + "]: " + e.getMessage());
+      React.warn("Failed to delete migrated legacy config [" + legacyPath(legacyFile) + "]: " + e.getMessage(), e);
       return false;
     }
   }

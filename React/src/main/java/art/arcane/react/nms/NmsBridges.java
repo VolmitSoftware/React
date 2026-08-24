@@ -1,15 +1,13 @@
 package art.arcane.react.nms;
 
+import art.arcane.react.React;
 import org.bukkit.Bukkit;
 
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class NmsBridges {
-    private static final Logger LOG = Logger.getLogger("React-NMS");
     private static volatile NmsBridge bridge;
     private static volatile boolean attempted;
     private static volatile String failureReason = "";
@@ -54,7 +52,7 @@ public final class NmsBridges {
         String detected = detectVersionTag();
         if (detected.isEmpty()) {
             failureReason = "Could not detect server NMS version tag";
-            LOG.log(Level.INFO, "[React] NMS bridge disabled: " + failureReason);
+            React.info("NMS bridge disabled: " + failureReason);
             return null;
         }
 
@@ -67,19 +65,19 @@ public final class NmsBridges {
                 Class<?> implClass = Class.forName(candidate);
                 Object instance = implClass.getDeclaredConstructor().newInstance();
                 if (instance instanceof NmsBridge resolved) {
-                    LOG.log(Level.INFO, "[React] NMS bridge active: " + candidate);
+                    React.info("NMS bridge active: " + candidate);
                     return resolved;
                 }
             } catch (ClassNotFoundException ignored) {
             } catch (Throwable t) {
                 failureReason = t.getClass().getSimpleName() + ": " + t.getMessage();
-                LOG.log(Level.WARNING, "[React] NMS bridge load failed for " + candidate + " — " + failureReason, t);
+                React.reportError("NMS bridge load failed for " + candidate + " — " + failureReason, t);
                 return null;
             }
         }
 
         failureReason = "No matching NMS bridge implementation for tag '" + detected + "'";
-        LOG.log(Level.INFO, "[React] " + failureReason + " — features remain measurement-only");
+        React.info(failureReason + " — features remain measurement-only");
         return null;
     }
 

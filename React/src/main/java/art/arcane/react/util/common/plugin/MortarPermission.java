@@ -19,6 +19,7 @@
 
 package art.arcane.react.util.plugin;
 
+import art.arcane.react.React;
 import art.arcane.volmlib.util.collection.KList;
 import org.bukkit.command.CommandSender;
 
@@ -40,8 +41,7 @@ public abstract class MortarPermission {
                  InstantiationException |
                  InvocationTargetException | NoSuchMethodException |
                  SecurityException e) {
-          e.printStackTrace();
-          e.printStackTrace();
+          React.reportError("Failed to construct permission field " + i.getName(), e);
         }
       }
     }
@@ -56,8 +56,7 @@ public abstract class MortarPermission {
           p.add((MortarPermission) i.get(Modifier.isStatic(i.getModifiers()) ? null : this));
         } catch (IllegalArgumentException | IllegalAccessException |
                  SecurityException e) {
-          e.printStackTrace();
-          e.printStackTrace();
+          React.reportError("Failed to read permission field " + i.getName(), e);
         }
       }
     }

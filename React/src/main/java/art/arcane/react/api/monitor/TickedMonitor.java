@@ -129,8 +129,7 @@ public abstract class TickedMonitor extends TickedObject implements Monitor {
             }
           }
         } catch (Throwable e) {
-          React.error("Failed to sample " + i.getId() + " for monitor " + getTid());
-          e.printStackTrace();
+          React.verbose(() -> "Failed to sample " + i.getId() + " for monitor " + getTid(), e);
         }
       }
     }

@@ -172,7 +172,7 @@ public class MonitorConfigGUI {
         }
       });
     })) {
-      React.warn("Failed to schedule monitor group config UI for " + p.getName());
+      React.verbose(() -> "Failed to schedule monitor group config UI for " + p.getName());
     }
   }
 
@@ -238,7 +238,7 @@ public class MonitorConfigGUI {
         saver.accept(configuration);
       });
     })) {
-      React.warn("Failed to schedule monitor config UI for " + p.getName());
+      React.verbose(() -> "Failed to schedule monitor config UI for " + p.getName());
     }
   }
 }

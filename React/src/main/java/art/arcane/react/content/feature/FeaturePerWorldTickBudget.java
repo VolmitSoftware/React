@@ -26,6 +26,7 @@ import art.arcane.react.content.feature.perworld.PerWorldPressure;
 import art.arcane.react.content.feature.perworld.ReactScopedPressure;
 import art.arcane.react.content.feature.perworld.WorldBudgetOverride;
 import art.arcane.react.content.sampler.SamplerPerWorldTickTime;
+import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.project.config.ConfigDescription;
 import art.arcane.react.util.project.config.ConfigDoc;
 import art.arcane.volmlib.util.bukkit.WorldIdentity;
@@ -39,6 +40,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 @ConfigDescription("Configuration for Per-World Tick Budget feature. Measures rolling per-world tick-time share, applies engage and release hysteresis, and publishes NORMAL/PRESSURE/PANIC for each world. Adaptive entity sleep, dynamic activation range, item backpressure, and pathfinder budget consume this state when applying per-world pressure behavior.")
 public class FeaturePerWorldTickBudget extends ReactFeature {
@@ -61,6 +64,8 @@ public class FeaturePerWorldTickBudget extends ReactFeature {
   private Map<String, WorldBudgetOverride> worldOverrides = new ConcurrentHashMap<>();
 
   private transient final Map<UUID, WorldState> stateByWorld = new ConcurrentHashMap<>();
+  private transient final AtomicBoolean evaluationQueued = new AtomicBoolean(false);
+  private transient final AtomicLong lifecycleGeneration = new AtomicLong(0L);
 
   public FeaturePerWorldTickBudget() {
     super(ID);
@@ -104,6 +109,8 @@ public class FeaturePerWorldTickBudget extends ReactFeature {
 
   @Override
   public void onActivate() {
+    lifecycleGeneration.incrementAndGet();
+    evaluationQueued.set(false);
     normalizeWorldOverrides();
     stateByWorld.clear();
     ReactScopedPressure.clearAll();
@@ -112,6 +119,8 @@ public class FeaturePerWorldTickBudget extends ReactFeature {
 
   @Override
   public void onDeactivate() {
+    lifecycleGeneration.incrementAndGet();
+    evaluationQueued.set(false);
     ReactScopedPressure.setEnabled(false);
     ReactScopedPressure.clearAll();
     stateByWorld.clear();
@@ -129,6 +138,25 @@ public class FeaturePerWorldTickBudget extends ReactFeature {
       perWorldSampler.sample();
     }
 
+    if (!evaluationQueued.compareAndSet(false, true)) {
+      return;
+    }
+
+    long generation = lifecycleGeneration.get();
+    J.sync(() -> {
+      try {
+        if (generation == lifecycleGeneration.get()) {
+          evaluateWorlds();
+        }
+      } finally {
+        if (generation == lifecycleGeneration.get()) {
+          evaluationQueued.set(false);
+        }
+      }
+    });
+  }
+
+  private void evaluateWorlds() {
     Set<UUID> live = new HashSet<>();
     for (World world : Bukkit.getWorlds()) {
       UUID worldId = world.getUID();
@@ -269,7 +297,7 @@ public class FeaturePerWorldTickBudget extends ReactFeature {
   }
 
   private static final class WorldState {
-    private PerWorldPressure.Mode mode = PerWorldPressure.Mode.NORMAL;
+    private volatile PerWorldPressure.Mode mode = PerWorldPressure.Mode.NORMAL;
     private int aboveStreak = 0;
     private int belowStreak = 0;
   }

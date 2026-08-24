@@ -19,6 +19,7 @@ public final class TestMessages {
   public static final TextKey ACTION_DISABLED = TextKey.of("test.action.disabled", "Action is disabled in config.");
   public static final TextKey ACTION_PREPARE_FAILED = TextKey.of("test.action.prepare_failed", "Failed to prepare params: {reason}");
   public static final TextKey ACTION_CREATE_FAILED = TextKey.of("test.action.create_failed", "Failed to create action: {reason}");
+  public static final TextKey ACTION_FAILED = TextKey.of("test.action.failed", "Action failed: {reason}");
   public static final TextKey ACTION_COMPLETION_FAILED = TextKey.of("test.action.completion_failed", "Completion handler threw: {reason}");
   public static final TextKey BRIDGE_REGISTRY_UNAVAILABLE = TextKey.of("test.bridge.registry_unavailable", "Bridge registry unavailable (plugin not fully started).");
   public static final TextKey BRIDGE_HEALTHY = TextKey.of("test.bridge.healthy", "{available} bridge handle(s) available, 0 unavailable.");
@@ -130,6 +131,7 @@ public final class TestMessages {
     builder.add(ACTION_DISABLED);
     builder.add(ACTION_PREPARE_FAILED);
     builder.add(ACTION_CREATE_FAILED);
+    builder.add(ACTION_FAILED);
     builder.add(ACTION_COMPLETION_FAILED);
     builder.add(BRIDGE_REGISTRY_UNAVAILABLE);
     builder.add(BRIDGE_HEALTHY);

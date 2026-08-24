@@ -23,17 +23,22 @@ import art.arcane.react.React;
 import art.arcane.react.api.feature.PressureGate;
 import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.content.sampler.SamplerTickTime;
+import art.arcane.react.util.common.scheduling.J;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Activation Range Governor feature. Temporarily scales down per-world entity activation ranges while the server is under sustained pressure, so the server itself deactivates distant entities instead of ticking them. Unlike dynamic-activation-range (which samples and pauses entities one by one), these ranges are read by the server every tick and apply to all entities instantly. Ranges and villager ticking are restored once the server recovers.")
 public class FeatureActivationRangeGovernor extends ReactFeature {
@@ -85,6 +90,12 @@ public class FeatureActivationRangeGovernor extends ReactFeature {
   private transient boolean resolved;
   private transient boolean supported;
   private transient final PressureGate gate = new PressureGate();
+  private transient final Object worldMutationLock = new Object();
+  private transient final Deque<RetiredWorldState> pendingReleases = new ArrayDeque<>();
+  private transient volatile AtomicInteger mutationRequests = new AtomicInteger(0);
+  private transient final AtomicLong lifecycleGeneration = new AtomicLong(0L);
+  private transient volatile boolean requestedEngaged;
+  private transient volatile boolean active;
 
   public FeatureActivationRangeGovernor() {
     super(ID);
@@ -92,19 +103,49 @@ public class FeatureActivationRangeGovernor extends ReactFeature {
 
   @Override
   public void onActivate() {
-    baselinesByWorld = new ConcurrentHashMap<>();
-    villagerTickBaselines = new ConcurrentHashMap<>();
-    resolved = false;
-    supported = false;
-    gate.reset();
+    synchronized (worldMutationLock) {
+      active = false;
+      lifecycleGeneration.incrementAndGet();
+      baselinesByWorld = new ConcurrentHashMap<>();
+      villagerTickBaselines = new ConcurrentHashMap<>();
+      resolved = false;
+      supported = false;
+      gate.reset();
+      mutationRequests = new AtomicInteger(0);
+      requestedEngaged = false;
+      active = true;
+    }
   }
 
   @Override
   public void onDeactivate() {
-    if (gate.isEngaged()) {
+    Map<UUID, Map<String, Integer>> retiredBaselines;
+    Map<UUID, Boolean> retiredVillagerBaselines;
+    RetiredWorldState retiredState;
+    synchronized (worldMutationLock) {
+      active = false;
+      lifecycleGeneration.incrementAndGet();
       gate.reset();
-      release();
+      requestedEngaged = false;
+      mutationRequests = new AtomicInteger(0);
+      retiredBaselines = baselinesByWorld;
+      retiredVillagerBaselines = villagerTickBaselines;
+      retiredState = new RetiredWorldState(retiredBaselines, retiredVillagerBaselines);
+      if (retiredState.hasState()) {
+        pendingReleases.addLast(retiredState);
+      }
     }
+
+    if (!retiredState.hasState()) {
+      return;
+    }
+
+    if (J.isPrimaryThread()) {
+      releaseRetiredState(retiredState);
+      return;
+    }
+
+    J.sync(() -> releaseRetiredState(retiredState));
   }
 
   @Override
@@ -114,17 +155,90 @@ public class FeatureActivationRangeGovernor extends ReactFeature {
 
   @Override
   public void onTick() {
+    long generation = lifecycleGeneration.get();
+    if (!isActive(generation)) {
+      return;
+    }
+
     double tickMs = sample(SamplerTickTime.ID);
+    if (!isActive(generation)) {
+      return;
+    }
     boolean pressure = !(tickMs < engageTickTimeMs);
     boolean calm = !(tickMs > releaseTickTimeMs);
     long now = System.currentTimeMillis();
-    boolean wasEngaged = gate.isEngaged();
-    boolean nowEngaged = gate.update(now, pressure, calm, sustainEngageMs, sustainReleaseMs);
+    boolean wasEngaged;
+    boolean nowEngaged;
+    synchronized (worldMutationLock) {
+      if (!isActive(generation)) {
+        return;
+      }
+      wasEngaged = gate.isEngaged();
+      nowEngaged = gate.update(now, pressure, calm, sustainEngageMs, sustainReleaseMs);
+    }
 
     if (!wasEngaged && nowEngaged) {
-      engage();
+      requestWorldState(true, generation);
     } else if (wasEngaged && !nowEngaged) {
-      release();
+      requestWorldState(false, generation);
+    }
+  }
+
+  private void requestWorldState(boolean engaged, long generation) {
+    AtomicInteger requests;
+    synchronized (worldMutationLock) {
+      if (!isActive(generation)) {
+        return;
+      }
+      requestedEngaged = engaged;
+      requests = mutationRequests;
+    }
+
+    if (J.isPrimaryThread()) {
+      applyRequestedWorldState(generation);
+      return;
+    }
+    if (requests.getAndIncrement() != 0) {
+      return;
+    }
+
+    J.sync(() -> {
+      if (isActive(generation)) {
+        drainWorldStateRequests(requests, generation);
+      }
+    });
+  }
+
+  private void drainWorldStateRequests(AtomicInteger requests, long generation) {
+    int completed = 1;
+    while (true) {
+      if (!isActive(generation)) {
+        requests.set(0);
+        return;
+      }
+      applyRequestedWorldState(generation);
+      int remaining = requests.addAndGet(-completed);
+      if (remaining == 0) {
+        return;
+      }
+      completed = remaining;
+    }
+  }
+
+  private void applyRequestedWorldState(long generation) {
+    synchronized (worldMutationLock) {
+      if (!isActive(generation)) {
+        return;
+      }
+      releasePendingState();
+      if (!isActive(generation)) {
+        return;
+      }
+      if (requestedEngaged) {
+        engage();
+      } else {
+        release(baselinesByWorld, villagerTickBaselines);
+      }
     }
   }
 
@@ -182,13 +296,16 @@ public class FeatureActivationRangeGovernor extends ReactFeature {
     }
   }
 
-  private void release() {
-    if (baselinesByWorld == null) {
+  private void release(
+      Map<UUID, Map<String, Integer>> rangeBaselines,
+      Map<UUID, Boolean> inactiveVillagerBaselines
+  ) {
+    if (rangeBaselines == null) {
       return;
     }
 
     int restored = 0;
-    for (Map.Entry<UUID, Map<String, Integer>> worldEntry : baselinesByWorld.entrySet()) {
+    for (Map.Entry<UUID, Map<String, Integer>> worldEntry : rangeBaselines.entrySet()) {
       World world = Bukkit.getWorld(worldEntry.getKey());
       if (world == null) {
         continue;
@@ -213,7 +330,12 @@ public class FeatureActivationRangeGovernor extends ReactFeature {
       }
     }
 
-    for (Map.Entry<UUID, Boolean> entry : villagerTickBaselines.entrySet()) {
+    if (inactiveVillagerBaselines == null) {
+      rangeBaselines.clear();
+      return;
+    }
+
+    for (Map.Entry<UUID, Boolean> entry : inactiveVillagerBaselines.entrySet()) {
       World world = Bukkit.getWorld(entry.getKey());
       if (world == null || tickInactiveVillagersField == null) {
         continue;
@@ -231,11 +353,31 @@ public class FeatureActivationRangeGovernor extends ReactFeature {
       }
     }
 
-    baselinesByWorld.clear();
-    villagerTickBaselines.clear();
+    rangeBaselines.clear();
+    inactiveVillagerBaselines.clear();
     if (restored > 0) {
       React.verbose("Activation range governor released: restored " + restored + " activation settings");
     }
+  }
+
+  private void releaseRetiredState(RetiredWorldState retiredState) {
+    synchronized (worldMutationLock) {
+      if (!pendingReleases.remove(retiredState)) {
+        return;
+      }
+      release(retiredState.rangeBaselines, retiredState.inactiveVillagerBaselines);
+    }
+  }
+
+  private void releasePendingState() {
+    RetiredWorldState retiredState;
+    while ((retiredState = pendingReleases.pollFirst()) != null) {
+      release(retiredState.rangeBaselines, retiredState.inactiveVillagerBaselines);
+    }
+  }
+
+  private boolean isActive(long generation) {
+    return active && generation == lifecycleGeneration.get();
   }
 
   private double factorFor(String fieldName) {
@@ -326,6 +468,25 @@ public class FeatureActivationRangeGovernor extends ReactFeature {
   private void failRuntime(Throwable e) {
     supported = false;
     setEnabled(false);
-    React.warn("Activation Range Governor disabled due to runtime incompatibility: " + e.getClass().getSimpleName() + ": " + e.getMessage());
+    React.reportError("Activation Range Governor disabled due to runtime incompatibility: "
+        + e.getClass().getSimpleName() + ": " + e.getMessage(), e);
+  }
+
+  private static final class RetiredWorldState {
+    private final Map<UUID, Map<String, Integer>> rangeBaselines;
+    private final Map<UUID, Boolean> inactiveVillagerBaselines;
+
+    private RetiredWorldState(
+        Map<UUID, Map<String, Integer>> rangeBaselines,
+        Map<UUID, Boolean> inactiveVillagerBaselines
+    ) {
+      this.rangeBaselines = rangeBaselines;
+      this.inactiveVillagerBaselines = inactiveVillagerBaselines;
+    }
+
+    private boolean hasState() {
+      return rangeBaselines != null && !rangeBaselines.isEmpty()
+          || inactiveVillagerBaselines != null && !inactiveVillagerBaselines.isEmpty();
+    }
   }
 }

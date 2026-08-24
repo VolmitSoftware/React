@@ -24,34 +24,48 @@ import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.content.feature.perworld.PerWorldPressure;
 import art.arcane.react.content.sampler.SamplerEntities;
 import art.arcane.react.content.sampler.SamplerTickTime;
+import art.arcane.react.core.controller.EntityController;
 import art.arcane.react.util.common.scheduling.J;
+import art.arcane.react.util.project.world.WorldEntitySnapshots;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Item;
-import org.bukkit.entity.Player;
 
-import java.util.ArrayList;
+import java.lang.ref.WeakReference;
 import java.util.List;
+import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Item Backpressure feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureItemBackpressure extends ReactFeature {
-  static boolean shouldThrottle(double tickTimeMs, double triggerTickTimeMs, double entityCount, double triggerEntityCount) {
-    return tickTimeMs >= triggerTickTimeMs || entityCount >= triggerEntityCount;
-  }
+  private static final int MAX_INDEXED_ITEMS = 65_536;
 
   public static final String ID = "item-backpressure";
+  private transient final AtomicBoolean itemScanQueued = new AtomicBoolean(false);
+  private transient final AtomicInteger nextPaperWorld = new AtomicInteger(0);
+  private transient final AtomicLong lifecycleGeneration = new AtomicLong(0L);
+  private transient final Map<UUID, IndexedItem> indexedItems = new ConcurrentHashMap<>();
+  private transient final Queue<UUID> indexedItemOrder = new ConcurrentLinkedQueue<>();
+  private transient final Consumer<Entity> entityTickListener = this::indexItem;
+  private transient final Object lifecycleMutationLock = new Object();
   @art.arcane.react.util.project.config.ConfigDoc(value = "Main evaluation interval for item backpressure in milliseconds.", impact = "Lower values react faster but consume more CPU; higher values reduce overhead but react later.")
   private int tickIntervalMS = 1000;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Tick-time threshold for trigger time in item backpressure (milliseconds).", impact = "Higher values delay activation or exit; lower values make this threshold easier to cross.")
   private double triggerTickTimeMS = 60;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Trigger threshold for trigger entity count in item backpressure.", impact = "Higher values trigger mitigation later; lower values trigger earlier and more aggressively.")
   private int triggerEntityCount = 5000;
-  @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum items scanned allowed per world in item backpressure.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum entity candidates scanned per cycle by item backpressure.", impact = "Higher values inspect drops faster at greater per-cycle cost; lower values impose a tighter fixed work bound.")
   private int maxItemsScannedPerWorld = 220;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum items removed allowed per cycle in item backpressure.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
   private int maxItemsRemovedPerCycle = 90;
@@ -71,160 +85,296 @@ public class FeatureItemBackpressure extends ReactFeature {
       Material.ELYTRA,
       Material.TOTEM_OF_UNDYING
   );
+  private transient volatile EntityController registeredController;
+  private transient volatile boolean active;
 
   public FeatureItemBackpressure() {
     super(ID);
   }
 
+  static boolean shouldThrottle(double tickTimeMs, double triggerTickTimeMs, double entityCount, double triggerEntityCount) {
+    return tickTimeMs >= triggerTickTimeMs || entityCount >= triggerEntityCount;
+  }
+
   @Override
   public void onActivate() {
+    synchronized (lifecycleMutationLock) {
+      lifecycleGeneration.incrementAndGet();
+      itemScanQueued.set(false);
+      nextPaperWorld.set(0);
+      indexedItems.clear();
+      indexedItemOrder.clear();
+      active = true;
+    }
 
+    if (J.isFoliaThreading()) {
+      EntityController controller = React.controller(EntityController.class);
+      if (controller != null) {
+        controller.registerEntityTickListener(EntityType.ITEM, entityTickListener);
+        registeredController = controller;
+      }
+    }
   }
 
   @Override
   public void onDeactivate() {
+    synchronized (lifecycleMutationLock) {
+      active = false;
+      lifecycleGeneration.incrementAndGet();
+      itemScanQueued.set(false);
+    }
 
+    EntityController controller = registeredController;
+    registeredController = null;
+    if (controller != null) {
+      controller.unregisterEntityTickListener(entityTickListener);
+    }
+    indexedItems.clear();
+    indexedItemOrder.clear();
   }
 
   @Override
   public int getTickInterval() {
-    return tickIntervalMS;
+    return Math.max(50, tickIntervalMS);
   }
 
   @Override
   public void onTick() {
+    if (!active) {
+      return;
+    }
+
     boolean globalTrigger = shouldApplyBackpressure();
-    if (!globalTrigger && !anyWorldPressured()) {
+    long generation = lifecycleGeneration.get();
+    if (!itemScanQueued.compareAndSet(false, true)) {
       return;
     }
 
     if (J.isFoliaThreading()) {
-      removeRemoteItemsFolia();
+      scheduleFoliaScan(globalTrigger, generation);
       return;
     }
 
-    J.s(() -> removeRemoteItems(globalTrigger));
-  }
-
-  private boolean anyWorldPressured() {
-    for (World world : Bukkit.getWorlds()) {
-      if (PerWorldPressure.get(world).isPressure()) {
-        return true;
+    J.s(() -> {
+      try {
+        removeRemoteItems(globalTrigger, generation);
+      } finally {
+        finishScan(generation);
       }
-    }
-
-    return false;
+    });
   }
 
   private boolean shouldApplyBackpressure() {
-    double tickTime = React.sampler(SamplerTickTime.ID).sample();
+    double tickTime = sample(SamplerTickTime.ID, 0D);
     if (tickTime >= triggerTickTimeMS) {
       return true;
     }
 
-    double entityCount = React.sampler(SamplerEntities.ID).sample();
+    double entityCount = sample(SamplerEntities.ID, 0D);
     return shouldThrottle(tickTime, triggerTickTimeMS, entityCount, triggerEntityCount);
   }
 
-  private void removeRemoteItems(boolean includeAllWorlds) {
-    int budget = Math.max(1, maxItemsRemovedPerCycle);
-    int sampleCap = Math.max(1, maxItemsScannedPerWorld);
-    ThreadLocalRandom random = ThreadLocalRandom.current();
+  private void removeRemoteItems(boolean includeAllWorlds, long generation) {
+    if (!isCurrent(generation)) {
+      return;
+    }
 
-    for (World world : Bukkit.getWorlds()) {
-      if (budget <= 0) {
+    List<World> worlds = Bukkit.getWorlds();
+    if (worlds.isEmpty()) {
+      return;
+    }
+
+    int remainingScans = Math.max(1, maxItemsScannedPerWorld);
+    int remainingRemovals = Math.max(1, maxItemsRemovedPerCycle);
+    int worldStart = Math.floorMod(nextPaperWorld.getAndIncrement(), worlds.size());
+    for (int worldOffset = 0; worldOffset < worlds.size(); worldOffset++) {
+      if (!isCurrent(generation) || remainingScans <= 0 || remainingRemovals <= 0) {
         return;
       }
 
+      World world = worlds.get((worldStart + worldOffset) % worlds.size());
       if (!includeAllWorlds && !PerWorldPressure.get(world).isPressure()) {
         continue;
       }
 
-      List<Item> sampled = sampleItems(world, sampleCap, random);
-      if (sampled.isEmpty()) {
+      List<Entity> entities = WorldEntitySnapshots.next(world, remainingScans);
+      if (entities.isEmpty()) {
         continue;
       }
 
-      for (Item item : sampled) {
-        if (budget <= 0) {
+      for (Entity entity : entities) {
+        if (!isCurrent(generation)) {
           return;
         }
-
-        if (!canRemove(item)) {
+        remainingScans--;
+        if (!(entity instanceof Item item) || !canRemove(item)) {
           continue;
         }
 
-        item.remove();
-        budget--;
+        if (!removeOwnedItem(item, generation)) {
+          return;
+        }
+        remainingRemovals--;
+        if (remainingRemovals <= 0) {
+          return;
+        }
       }
     }
   }
 
-  private List<Item> sampleItems(World world, int sampleCap, ThreadLocalRandom random) {
-    List<Item> reservoir = new ArrayList<>(Math.min(sampleCap, 64));
-    int seen = 0;
+  private void scheduleFoliaScan(boolean includeAllWorlds, long generation) {
+    if (!isCurrent(generation)) {
+      finishScan(generation);
+      return;
+    }
 
-    for (Item item : world.getEntitiesByClass(Item.class)) {
-      seen++;
-      if (reservoir.size() < sampleCap) {
-        reservoir.add(item);
+    int scanBudget = Math.max(1, maxItemsScannedPerWorld);
+    AtomicInteger pending = new AtomicInteger(1);
+    AtomicInteger remainingRemovals = new AtomicInteger(Math.max(1, maxItemsRemovedPerCycle));
+    for (int i = 0; i < scanBudget; i++) {
+      UUID entityId = indexedItemOrder.poll();
+      if (entityId == null) {
+        break;
+      }
+
+      IndexedItem candidate = indexedItems.get(entityId);
+      if (candidate == null || candidate.generation != generation) {
+        if (candidate != null) {
+          indexedItems.remove(entityId, candidate);
+        }
         continue;
       }
 
-      int candidate = random.nextInt(seen);
-      if (candidate < sampleCap) {
-        reservoir.set(candidate, item);
+      Item item = candidate.reference.get();
+      if (item == null) {
+        indexedItems.remove(entityId, candidate);
+        continue;
+      }
+
+      indexedItemOrder.offer(entityId);
+      pending.incrementAndGet();
+      AtomicBoolean completionClaimed = new AtomicBoolean(false);
+      Runnable completed = () -> {
+        if (completionClaimed.compareAndSet(false, true)) {
+          finishFoliaCandidate(pending, generation);
+        }
+      };
+      Runnable retired = () -> {
+        indexedItems.remove(entityId, candidate);
+        completed.run();
+      };
+      try {
+        boolean scheduled = J.runEntity(
+            item,
+            () -> {
+              try {
+                removeIndexedItem(candidate, item, includeAllWorlds, remainingRemovals, generation);
+              } finally {
+                completed.run();
+              }
+            },
+            0,
+            retired
+        );
+        if (!scheduled) {
+          retired.run();
+        }
+      } catch (Throwable failure) {
+        retired.run();
+        React.reportError(failure);
       }
     }
-
-    return reservoir;
+    finishFoliaCandidate(pending, generation);
   }
 
-  private void removeRemoteItemsFolia() {
-    List<Player> players = new ArrayList<>(Bukkit.getOnlinePlayers());
-    if (players.isEmpty()) {
+  private void removeIndexedItem(
+      IndexedItem candidate,
+      Item item,
+      boolean includeAllWorlds,
+      AtomicInteger remainingRemovals,
+      long generation
+  ) {
+    if (!isCurrent(generation)
+        || !J.isOwnedByCurrentRegion(item)) {
       return;
     }
 
-    AtomicInteger budget = new AtomicInteger(Math.max(1, maxItemsRemovedPerCycle));
-    ThreadLocalRandom random = ThreadLocalRandom.current();
-    int playerSamples = Math.min(players.size(), Math.max(1, maxItemsScannedPerWorld / 16));
+    if (!includeAllWorlds && !PerWorldPressure.get(item.getWorld()).isPressure()) {
+      return;
+    }
 
-    for (int i = 0; i < playerSamples && budget.get() > 0; i++) {
-      Player player = players.get(random.nextInt(players.size()));
-      J.runEntity(player, () -> removeAroundPlayer(player, budget));
+    if (!canRemove(item) || !claimBudget(remainingRemovals)) {
+      return;
+    }
+
+    if (removeOwnedItem(item, generation)) {
+      indexedItems.remove(candidate.entityId, candidate);
     }
   }
 
-  private void removeAroundPlayer(Player player, AtomicInteger budget) {
-    if (player == null || !player.isOnline() || !J.isOwnedByCurrentRegion(player)) {
-      return;
-    }
-
-    List<Entity> nearby = player.getNearbyEntities(noPlayerRadius + 24, Math.max(32, noPlayerRadius), noPlayerRadius + 24);
-    if (nearby.isEmpty()) {
-      return;
-    }
-
-    ThreadLocalRandom random = ThreadLocalRandom.current();
-    int scan = Math.min(maxItemsScannedPerWorld, nearby.size());
-    for (int i = 0; i < scan; i++) {
-      if (budget.get() <= 0) {
-        return;
-      }
-
-      Entity sampled = nearby.get(random.nextInt(nearby.size()));
-      if (!(sampled instanceof Item item)) {
-        continue;
-      }
-
-      if (!canRemove(item)) {
-        continue;
+  private boolean removeOwnedItem(Item item, long generation) {
+    synchronized (lifecycleMutationLock) {
+      if (!isCurrent(generation)) {
+        return false;
       }
 
       item.remove();
-      budget.decrementAndGet();
+      return true;
     }
+  }
+
+  private void indexItem(Entity entity) {
+    if (!(entity instanceof Item item)) {
+      return;
+    }
+
+    long generation = lifecycleGeneration.get();
+    if (!isCurrent(generation)) {
+      return;
+    }
+
+    UUID entityId = item.getUniqueId();
+    IndexedItem replacement = new IndexedItem(entityId, generation, new WeakReference<>(item));
+    IndexedItem existing = indexedItems.putIfAbsent(entityId, replacement);
+    if (existing == null) {
+      if (indexedItems.size() > MAX_INDEXED_ITEMS) {
+        indexedItems.remove(entityId, replacement);
+        return;
+      }
+      indexedItemOrder.offer(entityId);
+      return;
+    }
+
+    if (existing.generation != generation || existing.reference.get() != item) {
+      indexedItems.replace(entityId, existing, replacement);
+    }
+  }
+
+  private boolean claimBudget(AtomicInteger budget) {
+    int current = budget.get();
+    while (current > 0) {
+      if (budget.compareAndSet(current, current - 1)) {
+        return true;
+      }
+      current = budget.get();
+    }
+    return false;
+  }
+
+  private void finishFoliaCandidate(AtomicInteger pending, long generation) {
+    if (pending.decrementAndGet() == 0) {
+      finishScan(generation);
+    }
+  }
+
+  private void finishScan(long generation) {
+    if (generation == lifecycleGeneration.get()) {
+      itemScanQueued.set(false);
+    }
+  }
+
+  private boolean isCurrent(long generation) {
+    return active && generation == lifecycleGeneration.get();
   }
 
   private boolean canRemove(Item item) {
@@ -249,5 +399,17 @@ public class FeatureItemBackpressure extends ReactFeature {
     }
 
     return !React.hasNearbyPlayer(item.getLocation(), noPlayerRadius);
+  }
+
+  private static final class IndexedItem {
+    private final UUID entityId;
+    private final long generation;
+    private final WeakReference<Item> reference;
+
+    private IndexedItem(UUID entityId, long generation, WeakReference<Item> reference) {
+      this.entityId = entityId;
+      this.generation = generation;
+      this.reference = reference;
+    }
   }
 }

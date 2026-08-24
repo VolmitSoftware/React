@@ -140,27 +140,24 @@ public class ActionPrewarmCriticalChunks extends ReactAction<ActionPrewarmCritic
     ObserverController observer = React.controller(ObserverController.class);
     if (observer != null && observer.getSampled() != null) {
       for (SampledWorld sampledWorld : observer.getSampled().getWorlds().values()) {
-        World world = sampledWorld.getWorld();
-        if (world == null) {
+        String worldKey = sampledWorld.getWorldKey();
+        if (worldKey == null) {
           continue;
         }
 
-        if (params.getWorld() != null && !params.getWorld().isBlank() && !WorldIdentity.serialize(world).equals(params.getWorld())) {
+        if (params.getWorld() != null && !params.getWorld().isBlank() && !worldKey.equals(params.getWorld())) {
           continue;
         }
 
         for (SampledChunk sampledChunk : sampledWorld.getChunks().values()) {
-          Chunk chunk = sampledChunk.getChunk();
-          if (chunk == null || chunk.getWorld() == null) {
-            continue;
-          }
-
           double score = sampledChunk.totalScore();
           if (score <= 0D) {
             continue;
           }
 
-          addWeighted(weighted, ChunkRef.of(chunk), score);
+          int chunkX = sampledChunk.getChunkX();
+          int chunkZ = sampledChunk.getChunkZ();
+          addWeighted(weighted, new ChunkRef(worldKey, chunkX, chunkZ), score);
           for (int dx = -params.getNeighborRadius(); dx <= params.getNeighborRadius(); dx++) {
             for (int dz = -params.getNeighborRadius(); dz <= params.getNeighborRadius(); dz++) {
               if (dx == 0 && dz == 0) {
@@ -168,7 +165,7 @@ public class ActionPrewarmCriticalChunks extends ReactAction<ActionPrewarmCritic
               }
 
               double dist = Math.sqrt((dx * dx) + (dz * dz));
-              addWeighted(weighted, new ChunkRef(WorldIdentity.serialize(world), chunk.getX() + dx, chunk.getZ() + dz), score * (0.7D / (1D + dist)));
+              addWeighted(weighted, new ChunkRef(worldKey, chunkX + dx, chunkZ + dz), score * (0.7D / (1D + dist)));
             }
           }
         }

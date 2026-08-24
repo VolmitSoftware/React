@@ -1,5 +1,6 @@
 package art.arcane.react.core.bridge;
 
+import art.arcane.react.React;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -12,12 +13,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 
 public final class MappingsLoader {
     public record MappingEntry(List<String> classNames, String memberName) {}
 
-    private static final Logger LOG = Logger.getLogger("React");
     private final Map<String, MappingEntry> entries;
 
     public MappingsLoader() {
@@ -64,7 +63,7 @@ public final class MappingsLoader {
         }
         Map<String, MappingEntry> result = parseStream(stream);
         if (result == null) {
-            LOG.warning("[React] Mappings file " + path + " could not be parsed — using fuzzy name resolution only.");
+            React.warn("Mappings file " + path + " could not be parsed — using fuzzy name resolution only.");
         }
         return result;
     }

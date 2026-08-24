@@ -4,6 +4,8 @@ import art.arcane.react.api.web.AuditLog;
 import art.arcane.react.api.web.ConsoleCommandDispatcher;
 import art.arcane.react.api.web.PairingToken;
 import art.arcane.react.api.web.WebAuth;
+import art.arcane.react.api.web.WebMutation;
+import art.arcane.react.api.web.WebMutationReporter;
 import art.arcane.react.api.web.dto.Envelope;
 import io.javalin.http.BadRequestResponse;
 import io.javalin.http.Context;
@@ -17,10 +19,15 @@ public final class ConsoleResource {
 
     private final ConsoleCommandDispatcher dispatcher;
     private final AuditLog auditLog;
+    private final WebMutationReporter reporter;
 
-    public ConsoleResource(ConsoleCommandDispatcher dispatcher, AuditLog auditLog) {
+    public ConsoleResource(
+            ConsoleCommandDispatcher dispatcher,
+            AuditLog auditLog,
+            WebMutationReporter reporter) {
         this.dispatcher = dispatcher;
         this.auditLog = auditLog;
+        this.reporter = reporter;
     }
 
     public record ExecuteBody(String command) {}
@@ -34,7 +41,16 @@ public final class ConsoleResource {
         String detail = auditDetail(command);
         try {
             boolean dispatched = dispatcher.dispatch(command);
-            auditLog.append(actor, "console.execute", detail, dispatched ? "DISPATCHED" : "REJECTED");
+            if (dispatched) {
+                reporter.report(ctx, new WebMutation(
+                    "console.execute",
+                    "console",
+                    detail,
+                    "DISPATCHED"
+                ));
+            } else {
+                auditLog.append(actor, "console.execute", detail, "REJECTED");
+            }
             ctx.status(202).json(new Envelope<>(new ExecuteResult(dispatched)));
         } catch (RuntimeException e) {
             auditLog.append(actor, "console.execute", detail, "ERROR:" + e.getClass().getSimpleName());
