@@ -26,6 +26,8 @@ import art.arcane.volmlib.util.localization.ResolvedLines;
 import art.arcane.volmlib.util.localization.ResolvedText;
 import art.arcane.volmlib.util.localization.TextKey;
 import art.arcane.volmlib.util.localization.TextValue;
+import art.arcane.volmlib.util.plugin.ComponentMessenger;
+import art.arcane.volmlib.util.plugin.ComponentText;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -238,9 +240,7 @@ public final class ReactLanguage {
 
   public static void send(CommandSender sender, MessageKey key, MessageArgument... arguments) {
     if (sender != null) {
-      // audience delivery: spigot CommandSender has no sendMessage(Component); the router
-      // sends console/RCON via the legacy String path (facade drops console chat on spigot)
-      React.audiences().sender(sender).sendMessage(component(key, arguments));
+      ComponentMessenger.send(sender, ComponentText.component(component(key, arguments)));
     }
   }
 
@@ -252,7 +252,7 @@ public final class ReactLanguage {
 
   public static void sendPrefixed(CommandSender sender, MessageKey key, MessageArgument... arguments) {
     if (sender != null) {
-      React.audiences().sender(sender).sendMessage(prefixedComponent(key, arguments));
+      ComponentMessenger.send(sender, ComponentText.component(prefixedComponent(key, arguments)));
     }
   }
 

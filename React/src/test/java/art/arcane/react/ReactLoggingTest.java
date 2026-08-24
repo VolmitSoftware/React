@@ -64,6 +64,7 @@ class ReactLoggingTest {
     Assertions.assertTrue(records.get(0).getMessage().contains("information"));
     Assertions.assertTrue(records.get(1).getMessage().contains("warning"));
     Assertions.assertTrue(records.get(2).getMessage().contains("failure"));
+    Assertions.assertTrue(records.stream().noneMatch(record -> record.getMessage().contains("\u00a7")));
   }
 
   @Test

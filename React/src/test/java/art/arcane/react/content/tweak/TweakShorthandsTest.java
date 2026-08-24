@@ -1,7 +1,7 @@
 package art.arcane.react.content.tweak;
 
 import art.arcane.react.util.project.config.TomlCodec;
-import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 
 public class TweakShorthandsTest {
+  private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
   private static final PlainTextComponentSerializer PLAIN = PlainTextComponentSerializer.plainText();
 
   @Test
@@ -305,10 +306,10 @@ public class TweakShorthandsTest {
       give.execute(player, "give", new String[]{"minecraft:stone", "6401"});
 
       Mockito.verify(inventory, Mockito.never()).addItem(Mockito.any(ItemStack[].class));
-      ArgumentCaptor<Component> feedback = ArgumentCaptor.forClass(Component.class);
-      Mockito.verify(player, Mockito.times(3)).sendMessage(feedback.capture());
-      for (Component message : feedback.getAllValues()) {
-        Assertions.assertEquals("Amount must be between 1 and 6400.", PLAIN.serialize(message));
+      ArgumentCaptor<String> feedback = ArgumentCaptor.forClass(String.class);
+      Mockito.verify(player, Mockito.times(3)).sendRichMessage(feedback.capture());
+      for (String message : feedback.getAllValues()) {
+        Assertions.assertEquals("Amount must be between 1 and 6400.", plainFeedback(message));
       }
     }
   }
@@ -328,10 +329,10 @@ public class TweakShorthandsTest {
       give.execute(player, "give", new String[0]);
       give.execute(player, "give", new String[]{"minecraft:missing", "1"});
 
-      ArgumentCaptor<Component> feedback = ArgumentCaptor.forClass(Component.class);
-      Mockito.verify(player, Mockito.times(2)).sendMessage(feedback.capture());
-      Assertions.assertEquals("Usage: /give <item> <amount>", PLAIN.serialize(feedback.getAllValues().get(0)));
-      Assertions.assertEquals("Unknown or unavailable item: minecraft:missing", PLAIN.serialize(feedback.getAllValues().get(1)));
+      ArgumentCaptor<String> feedback = ArgumentCaptor.forClass(String.class);
+      Mockito.verify(player, Mockito.times(2)).sendRichMessage(feedback.capture());
+      Assertions.assertEquals("Usage: /give <item> <amount>", plainFeedback(feedback.getAllValues().get(0)));
+      Assertions.assertEquals("Unknown or unavailable item: minecraft:missing", plainFeedback(feedback.getAllValues().get(1)));
     }
   }
 
@@ -383,15 +384,15 @@ public class TweakShorthandsTest {
       Mockito.verify(player).setGameMode(GameMode.SURVIVAL);
       Mockito.verify(player).setGameMode(GameMode.SPECTATOR);
       Mockito.verify(player).setGameMode(GameMode.CREATIVE);
-      ArgumentCaptor<Component> feedback = ArgumentCaptor.forClass(Component.class);
-      Mockito.verify(player, Mockito.times(3)).sendMessage(feedback.capture());
+      ArgumentCaptor<String> feedback = ArgumentCaptor.forClass(String.class);
+      Mockito.verify(player, Mockito.times(3)).sendRichMessage(feedback.capture());
       Assertions.assertEquals(
           List.of(
               "Game mode set to survival.",
               "Game mode set to spectator.",
               "Game mode set to creative."
           ),
-          feedback.getAllValues().stream().map(PLAIN::serialize).toList()
+          feedback.getAllValues().stream().map(TweakShorthandsTest::plainFeedback).toList()
       );
     }
   }
@@ -417,9 +418,13 @@ public class TweakShorthandsTest {
   }
 
   private static String singleFeedback(Player player) {
-    ArgumentCaptor<Component> feedback = ArgumentCaptor.forClass(Component.class);
-    Mockito.verify(player).sendMessage(feedback.capture());
-    return PLAIN.serialize(feedback.getValue());
+    ArgumentCaptor<String> feedback = ArgumentCaptor.forClass(String.class);
+    Mockito.verify(player).sendRichMessage(feedback.capture());
+    return plainFeedback(feedback.getValue());
+  }
+
+  private static String plainFeedback(String miniMessage) {
+    return PLAIN.serialize(MINI_MESSAGE.deserialize(miniMessage));
   }
 
   private static Player permittedPlayer() {

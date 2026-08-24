@@ -21,6 +21,8 @@ package art.arcane.react.api.benchmark;
 
 import art.arcane.react.React;
 import art.arcane.react.localization.ReactLanguage;
+import art.arcane.volmlib.util.plugin.ComponentMessenger;
+import art.arcane.volmlib.util.plugin.ComponentText;
 import art.arcane.react.localization.catalog.EnvironmentMessages;
 import art.arcane.react.util.reflect.Platform;
 import art.arcane.volmlib.util.format.Form;
@@ -65,8 +67,7 @@ public class Hastebin {
       Component message = ReactLanguage.component(EnvironmentMessages.HASTEBIN_LINK)
           .clickEvent(ClickEvent.openUrl(hastebinUrl));
 
-      // audience delivery: spigot CommandSender has no sendMessage(Component)
-      React.audiences().sender(sender).sendMessage(message);
+      ComponentMessenger.send(sender, ComponentText.component(message));
     } catch (Exception e) {
       // Error occurred during upload
       ReactLanguage.send(sender, EnvironmentMessages.HASTEBIN_FAILED);

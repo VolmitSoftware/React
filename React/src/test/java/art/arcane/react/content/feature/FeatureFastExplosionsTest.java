@@ -5,6 +5,7 @@ import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.data.B;
 import art.arcane.react.util.project.world.FastWorld;
 import org.bukkit.Bukkit;
+import org.bukkit.ExplosionResult;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Server;
@@ -76,16 +77,39 @@ class FeatureFastExplosionsTest {
   }
 
   @Test
-  void nonTntEntityExplosionsUseTheFastBlockPath() {
+  void destructiveEntityExplosionResultsUseTheFastBlockPath() {
     FeatureFastExplosions feature = new FeatureFastExplosions();
-    EntityExplodeEvent event = Mockito.mock(EntityExplodeEvent.class);
-    Mockito.when(event.getEntityType()).thenReturn(EntityType.CREEPER);
-    Mockito.when(event.blockList()).thenReturn(new ArrayList<>());
+    for (ExplosionResult result : List.of(
+        ExplosionResult.DESTROY,
+        ExplosionResult.DESTROY_WITH_DECAY
+    )) {
+      EntityExplodeEvent event = explosionEvent(EntityType.CREEPER, new ArrayList<>(), 0F, result);
 
-    feature.on(event);
+      feature.on(event);
 
-    Mockito.verify(event, Mockito.atLeastOnce()).blockList();
-    Mockito.verify(event).getYield();
+      Mockito.verify(event).blockList();
+      Mockito.verify(event).getYield();
+    }
+  }
+
+  @Test
+  void nonDestructiveEntityExplosionResultsStayOutOfTheFastBlockPath() {
+    FeatureFastExplosions feature = new FeatureFastExplosions();
+    World world = Mockito.mock(World.class);
+    Block block = block(world, 0, 64, 0, Material.STONE);
+    for (ExplosionResult result : List.of(
+        ExplosionResult.KEEP,
+        ExplosionResult.TRIGGER_BLOCK
+    )) {
+      List<Block> blocks = new ArrayList<>(List.of(block));
+      EntityExplodeEvent event = explosionEvent(EntityType.CREEPER, blocks, 0F, result);
+
+      feature.on(event);
+
+      Assertions.assertEquals(List.of(block), blocks);
+      Mockito.verify(event, Mockito.never()).blockList();
+      Mockito.verify(event, Mockito.never()).getYield();
+    }
   }
 
   @Test
@@ -489,10 +513,20 @@ class FeatureFastExplosionsTest {
   }
 
   private EntityExplodeEvent explosionEvent(EntityType entityType, List<Block> blocks, float yield) {
+    return explosionEvent(entityType, blocks, yield, ExplosionResult.DESTROY_WITH_DECAY);
+  }
+
+  private EntityExplodeEvent explosionEvent(
+      EntityType entityType,
+      List<Block> blocks,
+      float yield,
+      ExplosionResult result
+  ) {
     EntityExplodeEvent event = Mockito.mock(EntityExplodeEvent.class);
     Mockito.when(event.getEntityType()).thenReturn(entityType);
     Mockito.when(event.blockList()).thenReturn(blocks);
     Mockito.when(event.getYield()).thenReturn(yield);
+    Mockito.when(event.getExplosionResult()).thenReturn(result);
     return event;
   }
 

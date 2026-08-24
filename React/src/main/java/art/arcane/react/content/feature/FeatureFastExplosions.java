@@ -27,6 +27,7 @@ import art.arcane.react.util.project.world.FastWorld;
 import art.arcane.volmlib.util.math.M;
 import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
 import org.bukkit.Bukkit;
+import org.bukkit.ExplosionResult;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -165,6 +166,10 @@ public class FeatureFastExplosions extends ReactFeature implements Listener {
 
   @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
   public void on(EntityExplodeEvent e) {
+    if (!destroysBlocks(e.getExplosionResult())) {
+      return;
+    }
+
     processExplosion(e.blockList(), e.getYield());
   }
 
@@ -177,6 +182,13 @@ public class FeatureFastExplosions extends ReactFeature implements Listener {
 
     event.setCancelled(true);
     retryPendingWorldBatches(world, MAX_RETRY_BATCHES_PER_TICK);
+  }
+
+  private boolean destroysBlocks(ExplosionResult result) {
+    return switch (result) {
+      case DESTROY, DESTROY_WITH_DECAY -> true;
+      case KEEP, TRIGGER_BLOCK -> false;
+    };
   }
 
   private void processExplosion(List<Block> eventBlocks, float yield) {

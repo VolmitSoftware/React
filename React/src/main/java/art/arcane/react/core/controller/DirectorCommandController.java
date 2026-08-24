@@ -43,6 +43,7 @@ import art.arcane.volmlib.util.director.runtime.DirectorRuntimeNode;
 import art.arcane.volmlib.util.director.runtime.DirectorSender;
 import art.arcane.volmlib.util.math.RNG;
 import art.arcane.volmlib.util.localization.MessageArgument;
+import art.arcane.volmlib.util.plugin.ComponentMessenger;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.sound.Sound;
@@ -351,7 +352,7 @@ public class DirectorCommandController implements IController, CommandExecutor, 
     @Override
     public void sendMessage(String message) {
       if (message != null && !message.trim().isEmpty()) {
-        sender.sendMessage(message);
+        ComponentMessenger.sendLiteral(sender, message);
       }
     }
   }

@@ -40,7 +40,6 @@ import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.util.common.plugin.SplashScreen;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.common.scheduling.Ticker;
-import art.arcane.react.util.common.plugin.ConsoleLegacyAudience;
 import art.arcane.react.util.format.C;
 import art.arcane.react.util.plugin.IController;
 import art.arcane.react.core.NMS;
@@ -55,6 +54,7 @@ import art.arcane.volmlib.util.format.Form;
 import art.arcane.volmlib.util.hud.HudActionBar;
 import art.arcane.volmlib.util.hud.HudTitleService;
 import art.arcane.volmlib.util.io.JarScanner;
+import art.arcane.volmlib.util.plugin.ComponentLog;
 import io.github.slimjar.app.builder.SpigotApplicationBuilder;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
@@ -255,15 +255,7 @@ public class React extends VolmitPlugin implements ReloadAware {
   }
 
   private static void log(Level level, String message, Throwable failure) {
-    React plugin = instance;
-    if (plugin != null) {
-      try {
-        plugin.getLogger().log(level, message, failure);
-        return;
-      } catch (Throwable ignored) {
-      }
-    }
-    FALLBACK_LOGGER.log(level, "[React] " + message, failure);
+    ComponentLog.logLegacy(instance, FALLBACK_LOGGER, "[React] ", level, message, failure);
   }
 
   private static boolean isVerboseEnabled() {
@@ -360,11 +352,6 @@ public class React extends VolmitPlugin implements ReloadAware {
     }
   }
 
-  // Paper senders natively implement Audience; the adventure-platform facade is only built on
-  // plain spigot. Console/RCON senders never ride the facade: it silently drops console chat
-  // on spigot (facet errors swallowed), so they get the legacy String path instead.
-  // Lazy: adventure-platform is slimjar-provided and must not resolve before
-  // ApplicationBuilder.build().
   public static final class Audiences {
     private Audiences() {
     }
@@ -376,9 +363,6 @@ public class React extends VolmitPlugin implements ReloadAware {
     public Audience sender(CommandSender sender) {
       if (sender instanceof Audience audience) {
         return audience;
-      }
-      if (ConsoleLegacyAudience.isConsoleLike(sender)) {
-        return new ConsoleLegacyAudience(sender);
       }
       return provider().sender(sender);
     }

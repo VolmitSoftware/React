@@ -20,14 +20,14 @@
 package art.arcane.react.util.plugin;
 
 
-import art.arcane.react.React;
 import art.arcane.react.util.format.C;
 import art.arcane.volmlib.util.format.Form;
 import art.arcane.volmlib.util.math.M;
+import art.arcane.volmlib.util.plugin.ComponentMessenger;
+import art.arcane.volmlib.util.plugin.ComponentText;
 import lombok.Getter;
 import lombok.Setter;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Server;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -203,7 +203,7 @@ public class VolmitSender implements CommandSender {
   }
 
   public void hr() {
-    s.sendMessage("========================================================");
+    ComponentMessenger.sendLiteral(s, "========================================================");
   }
 
   @SuppressWarnings("BooleanMethodIsAlwaysInverted")
@@ -211,41 +211,25 @@ public class VolmitSender implements CommandSender {
     return volmitSender.isPlayer() ? useCustomColorsIngame : useConsoleCustomColors;
   }
 
-  private Component createComponent(String message) {
-    return MiniMessage.miniMessage().deserialize(createMiniMessage(message));
+  private ComponentText createComponent(String message) {
+    return canUseCustomColors(this)
+        ? ComponentText.markup(createMiniMessage(message))
+        : ComponentText.legacyOnly(getTag() + message);
   }
 
   private String createMiniMessage(String message) {
-    if (!canUseCustomColors(this)) {
-      String t = C.translateAlternateColorCodes('&', MiniMessage.miniMessage().stripTags(getTag() + message));
-      return t;
-    }
-
     String t = C.translateAlternateColorCodes('&', getTag() + message);
     return C.aura(t, spinh, spins, spinb);
   }
 
-  private Component createComponentRaw(String message) {
-    return MiniMessage.miniMessage().deserialize(createMiniMessageRaw(message));
+  private ComponentText createComponentRaw(String message) {
+    return canUseCustomColors(this)
+        ? ComponentText.markup(createMiniMessageRaw(message))
+        : ComponentText.legacyOnly(getTag() + message);
   }
 
   private String createMiniMessageRaw(String message) {
-    if (!canUseCustomColors(this)) {
-      String t = C.translateAlternateColorCodes('&', MiniMessage.miniMessage().stripTags(getTag() + message));
-      return t;
-    }
-
-    String t = C.translateAlternateColorCodes('&', getTag() + message);
-    return t;
-  }
-
-  private boolean deliverRichMessage(String miniMessage) {
-    try {
-      s.getClass().getMethod("sendRichMessage", String.class).invoke(s, miniMessage);
-      return true;
-    } catch (Throwable ignored) {
-      return false;
-    }
+    return C.translateAlternateColorCodes('&', getTag() + message);
   }
 
   @Override
@@ -255,30 +239,26 @@ public class VolmitSender implements CommandSender {
     }
 
     if ((!useCustomColorsIngame && s instanceof Player) || !useConsoleCustomColors) {
-      s.sendMessage(C.translateAlternateColorCodes('&', getTag() + message));
+      ComponentMessenger.send(s, ComponentText.legacyOnly(getTag() + message));
       return;
     }
 
     if (message.contains("<NOMINI>")) {
-      s.sendMessage(C.translateAlternateColorCodes('&', getTag() + message.replaceAll("\\Q<NOMINI>\\E", "")));
+      ComponentMessenger.sendLegacy(s, getTag() + message.replace("<NOMINI>", ""));
       return;
     }
 
-    if (deliverRichMessage(createMiniMessage(message))) {
-      return;
-    }
-
-    s.sendMessage(C.translateAlternateColorCodes('&', getTag() + message));
+    ComponentMessenger.send(s, createComponent(message));
   }
 
   public void sendComponent(Component component) {
     if (component != null && !(s instanceof CommandDummy)) {
-      React.audiences().sender(s).sendMessage(component);
+      ComponentMessenger.send(s, ComponentText.component(component));
     }
   }
 
   public void sendMessageBasic(String message) {
-    s.sendMessage(C.translateAlternateColorCodes('&', getTag() + message));
+    ComponentMessenger.sendLegacy(s, getTag() + message);
   }
 
   public void sendMessageRaw(String message) {
@@ -287,20 +267,16 @@ public class VolmitSender implements CommandSender {
     }
 
     if ((!useCustomColorsIngame && s instanceof Player) || !useConsoleCustomColors) {
-      s.sendMessage(C.translateAlternateColorCodes('&', message));
+      ComponentMessenger.send(s, ComponentText.legacyOnly(message));
       return;
     }
 
     if (message.contains("<NOMINI>")) {
-      s.sendMessage(message.replaceAll("\\Q<NOMINI>\\E", ""));
+      ComponentMessenger.sendLegacy(s, message.replace("<NOMINI>", ""));
       return;
     }
 
-    if (deliverRichMessage(createMiniMessageRaw(message))) {
-      return;
-    }
-
-    s.sendMessage(C.translateAlternateColorCodes('&', getTag() + message));
+    ComponentMessenger.send(s, createComponentRaw(message));
   }
 
   @Override
