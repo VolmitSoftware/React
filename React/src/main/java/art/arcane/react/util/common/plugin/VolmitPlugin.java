@@ -64,19 +64,19 @@ public abstract class VolmitPlugin extends JavaPlugin implements Listener {
   }
 
   public void l(Object l) {
-    React.info("[" + getName() + "]: " + l);
+    React.info(String.valueOf(l));
   }
 
   public void w(Object l) {
-    React.warn("[" + getName() + "]: " + l);
+    React.warn(String.valueOf(l));
   }
 
   public void f(Object l) {
-    React.error("[" + getName() + "]: " + l);
+    React.error(String.valueOf(l));
   }
 
   public void v(Object l) {
-    React.verbose("[" + getName() + "]: " + l);
+    React.verbose(String.valueOf(l));
   }
 
   public void onEnable() {

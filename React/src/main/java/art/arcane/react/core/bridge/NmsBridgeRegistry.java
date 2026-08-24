@@ -46,7 +46,7 @@ public final class NmsBridgeRegistry {
         for (NmsBridgeHandle handle : handles.values()) {
             BridgeResolution r = handle.resolution();
             if (!r.available() && warnedIds.add(r.logicalId())) {
-                logger.accept("[React] NMS bridge unavailable: " + r.logicalId() + " — " + r.failureReason());
+                logger.accept("NMS bridge unavailable: " + r.logicalId() + " — " + r.failureReason());
             }
         }
     }
