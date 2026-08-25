@@ -67,22 +67,26 @@ class _FakeMetricsClient implements IMetricsClient {
 // Helpers
 // ---------------------------------------------------------------------------
 
-ServerSnapshot _makeSnapshot({String id = 'cpu', double value = 50.0}) =>
-    ServerSnapshot(
-      byId: <String, SamplerSample>{
-        id: SamplerSample(
-          id: id,
-          name: id.toUpperCase(),
-          suffix: '%',
-          value: value,
-          display: value.toString(),
-          min: 0.0,
-          max: 100.0,
-          history: <double>[],
-        ),
-      },
-      at: DateTime.now(),
-    );
+ServerSnapshot _makeSnapshot({
+  String id = 'cpu',
+  double value = 50.0,
+  int seq = 1,
+}) => ServerSnapshot(
+  byId: <String, SamplerSample>{
+    id: SamplerSample(
+      id: id,
+      name: id.toUpperCase(),
+      suffix: '%',
+      value: value,
+      display: value.toString(),
+      min: 0.0,
+      max: 100.0,
+      history: <double>[],
+    ),
+  },
+  at: DateTime.now(),
+  seq: seq,
+);
 
 Future<void> pump([int count = 20]) async {
   for (int i = 0; i < count; i++) {
@@ -183,9 +187,9 @@ void main() {
       manager.snapshots.listen((ServerSnapshot s) => seqs.add(s.seq));
 
       manager.start();
-      socket.emit(_makeSnapshot(value: 1.0));
+      socket.emit(_makeSnapshot(value: 1.0, seq: 1));
       await pump();
-      socket.emit(_makeSnapshot(value: 2.0));
+      socket.emit(_makeSnapshot(value: 2.0, seq: 2));
       await pump();
 
       expect(seqs.length, greaterThanOrEqualTo(2));

@@ -23,8 +23,8 @@ public class HeatmapResource {
     public void detail(Context ctx) {
         String id = ctx.pathParam("id");
         String world = ctx.queryParam("world");
-        String centerXParam = ctx.queryParam("centerX");
-        String centerZParam = ctx.queryParam("centerZ");
+        String centerXParam = ctx.queryParam("centerChunkX");
+        String centerZParam = ctx.queryParam("centerChunkZ");
         String radiusParam = ctx.queryParam("radius");
         Integer centerX = null;
         Integer centerZ = null;
@@ -42,7 +42,12 @@ public class HeatmapResource {
         } catch (NumberFormatException e) {
             throw new BadRequestResponse();
         }
-        HeatmapDto dto = provider.compute(id, world, centerX, centerZ, radius);
+        HeatmapDto dto;
+        try {
+            dto = provider.compute(id, world, centerX, centerZ, radius);
+        } catch (IllegalArgumentException e) {
+            throw new BadRequestResponse();
+        }
         if (dto == null) {
             throw new NotFoundResponse();
         }

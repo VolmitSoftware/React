@@ -65,8 +65,9 @@ class FeaturePlayerImpactOverlayAnchorTest {
     Mockito.when(mapController.resolveMapAnchor(view, viewer)).thenReturn(frameAnchor);
     Mockito.when(mapController.hasFrameAnchor(view)).thenReturn(true);
     Mockito.when(mapController.redrawIntervalMsFor(view)).thenReturn(0L);
-    Mockito.when(observer.loadedChunkCoordinatesInRadius(
+    Mockito.when(observer.loadedChunkCoordinatesInBounds(
         Mockito.eq(world.getUID()),
+        Mockito.anyInt(),
         Mockito.anyInt(),
         Mockito.anyInt(),
         Mockito.anyInt()

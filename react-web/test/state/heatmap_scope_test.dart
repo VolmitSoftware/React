@@ -19,8 +19,8 @@ class _FakeHeatmapClient implements IHeatmapClient {
   Future<HeatmapGrid> heatmap(
     String id, {
     String? world,
-    int? centerX,
-    int? centerZ,
+    int? centerChunkX,
+    int? centerChunkZ,
     int? radius,
   }) async => throw UnimplementedError();
 }

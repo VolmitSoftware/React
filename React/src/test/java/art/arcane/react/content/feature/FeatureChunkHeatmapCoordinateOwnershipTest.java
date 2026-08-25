@@ -69,10 +69,20 @@ class FeatureChunkHeatmapCoordinateOwnershipTest {
     Mockito.when(mapController.resolveMapAnchor(view, viewer)).thenReturn(anchor);
     Mockito.when(mapController.redrawIntervalMsFor(view)).thenReturn(0L);
     Mockito.when(observer.heatmapWorld(worldId)).thenReturn(Optional.of(
-        new HeatmapWorldRef(worldId, "minecraft:overworld", "world", 0, 0)
+        new HeatmapWorldRef(
+            worldId,
+            "minecraft:overworld",
+            "world",
+            0,
+            0,
+            0D,
+            0D,
+            60_000_000D
+        )
     ));
-    Mockito.when(observer.loadedChunkCoordinatesInRadius(
+    Mockito.when(observer.loadedChunkCoordinatesInBounds(
         Mockito.eq(worldId),
+        Mockito.anyInt(),
         Mockito.anyInt(),
         Mockito.anyInt(),
         Mockito.anyInt()
@@ -111,10 +121,20 @@ class FeatureChunkHeatmapCoordinateOwnershipTest {
     Mockito.when(mapController.resolveMapAnchor(view, viewer)).thenReturn(anchor);
     Mockito.when(mapController.redrawIntervalMsFor(view)).thenReturn(0L);
     Mockito.when(observer.heatmapWorld(worldId)).thenReturn(Optional.of(
-        new HeatmapWorldRef(worldId, "minecraft:overworld", "world", 0, 0)
+        new HeatmapWorldRef(
+            worldId,
+            "minecraft:overworld",
+            "world",
+            0,
+            0,
+            0D,
+            0D,
+            60_000_000D
+        )
     ));
-    Mockito.when(observer.loadedChunkCoordinatesInRadius(
+    Mockito.when(observer.loadedChunkCoordinatesInBounds(
         Mockito.eq(worldId),
+        Mockito.anyInt(),
         Mockito.anyInt(),
         Mockito.anyInt(),
         Mockito.anyInt()

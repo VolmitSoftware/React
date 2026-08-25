@@ -7,6 +7,7 @@ class SamplerSample {
   final double min;
   final double max;
   final List<double> history;
+  final bool available;
 
   const SamplerSample({
     required this.id,
@@ -17,10 +18,10 @@ class SamplerSample {
     required this.min,
     required this.max,
     required this.history,
+    this.available = true,
   });
 
   factory SamplerSample.fromJson(Map<String, dynamic> json) {
-    final List<dynamic> rawHistory = json['history'] as List<dynamic>;
     final double value = (json['value'] as num).toDouble();
     return SamplerSample(
       id: json['id'] as String,
@@ -28,9 +29,30 @@ class SamplerSample {
       suffix: json['suffix'] as String,
       value: value,
       display: (json['display'] as String?) ?? value.toString(),
-      min: (json['min'] as num).toDouble(),
-      max: (json['max'] as num).toDouble(),
-      history: rawHistory.map((dynamic e) => (e as num).toDouble()).toList(),
+      min: value,
+      max: value,
+      history: const <double>[],
+      available: (json['available'] as bool?) ?? true,
+    );
+  }
+
+  SamplerSample withLiveHistory(List<double> values) {
+    double minimum = value;
+    double maximum = value;
+    for (final double sample in values) {
+      if (sample < minimum) minimum = sample;
+      if (sample > maximum) maximum = sample;
+    }
+    return SamplerSample(
+      id: id,
+      name: name,
+      suffix: suffix,
+      value: value,
+      display: display,
+      min: minimum,
+      max: maximum,
+      history: values,
+      available: available,
     );
   }
 
@@ -43,5 +65,6 @@ class SamplerSample {
     'min': min,
     'max': max,
     'history': history,
+    'available': available,
   };
 }

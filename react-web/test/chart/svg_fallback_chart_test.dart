@@ -49,6 +49,29 @@ void main() {
       );
     });
 
+    testComponents('bounds hit targets for long history series', (
+      ComponentTester tester,
+    ) async {
+      tester.pumpComponent(
+        SvgFallbackChart(
+          series: <(String, List<double>)>[
+            (
+              'TPS',
+              List<double>.generate(1200, (int index) => index.toDouble()),
+            ),
+          ],
+        ),
+      );
+
+      expect(
+        find.byComponentPredicate((Component component) {
+          return component is DomComponent &&
+              component.classes?.contains('reactor-chart-hit-target') == true;
+        }),
+        findsNComponents(160),
+      );
+    });
+
     testComponents('renders the active sample guide and tooltip values', (
       ComponentTester tester,
     ) async {
@@ -86,6 +109,30 @@ void main() {
       );
 
       expect(find.text('rate:1024'), findsOneComponent);
+    });
+
+    testComponents('uses wall-clock positions and splits long gaps', (
+      ComponentTester tester,
+    ) async {
+      final DateTime start = DateTime.utc(2026, 1, 1);
+      tester.pumpComponent(
+        TimeseriesChart(
+          series: <(String, List<double>)>[
+            ('TPS', <double>[20, 19, 20, 18]),
+          ],
+          sampleLabels: const <String>['00:00', '00:01', '00:02', '00:20'],
+          sampleTimestamps: <DateTime>[
+            start,
+            start.add(const Duration(minutes: 1)),
+            start.add(const Duration(minutes: 2)),
+            start.add(const Duration(minutes: 20)),
+          ],
+        ),
+      );
+
+      expect(find.tag('polyline'), findsNComponents(2));
+      expect(find.text('00:00'), findsOneComponent);
+      expect(find.text('00:20'), findsOneComponent);
     });
   });
 

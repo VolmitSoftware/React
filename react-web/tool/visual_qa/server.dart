@@ -181,6 +181,10 @@ final class VisualQaServer {
       await _handleWorlds(request, session, segments);
       return;
     }
+    if (resource == 'players') {
+      await _handlePlayers(request, session, segments);
+      return;
+    }
     if (resource == 'actions') {
       await _handleActions(request, session, segments);
       return;
@@ -245,32 +249,40 @@ final class VisualQaServer {
     List<String> segments,
   ) async {
     if (!await _isMethod(request, 'GET')) return;
-    final Map<String, dynamic> metrics = VisualQaFixtures.metrics(
-      session.profile,
-    );
     if (segments.length == 1) {
-      await _writeJson(request, metrics);
+      await _writeJson(request, VisualQaFixtures.metrics(session.profile));
       return;
     }
-    if (segments.length == 3 && segments[2] == 'history') {
-      final List<dynamic> data = metrics['data'] as List<dynamic>;
-      Map<String, dynamic>? match;
-      for (final dynamic item in data) {
-        final Map<String, dynamic> sample = item as Map<String, dynamic>;
-        if (sample['id'] == segments[1]) {
-          match = sample;
-          break;
-        }
-      }
-      if (match == null) {
+    if (segments.length == 2 && segments[1] == 'catalog') {
+      await _writeData(
+        request,
+        VisualQaFixtures.metricHistoryCatalog(session.profile),
+      );
+      return;
+    }
+    if (segments.length == 2 && segments[1] == 'history') {
+      final String? id = request.uri.queryParameters['ids'];
+      final int? from = int.tryParse(request.uri.queryParameters['from'] ?? '');
+      final int? to = int.tryParse(request.uri.queryParameters['to'] ?? '');
+      if (id == null || from == null || to == null) {
         await _writeError(
           request,
-          HttpStatus.notFound,
-          'Unknown sampler: ${segments[1]}',
+          HttpStatus.badRequest,
+          'Invalid history query',
         );
         return;
       }
-      await _writeData(request, match);
+      final Map<String, dynamic>? page = VisualQaFixtures.metricHistoryPage(
+        session.profile,
+        id,
+        from,
+        to,
+      );
+      if (page == null) {
+        await _writeError(request, HttpStatus.notFound, 'Unknown sampler: $id');
+        return;
+      }
+      await _writeData(request, page);
       return;
     }
     await _writeError(request, HttpStatus.notFound, 'Metric route not found');
@@ -288,20 +300,20 @@ final class VisualQaServer {
     }
     if (segments.length == 2) {
       final Map<String, String> query = request.uri.queryParameters;
-      final String? centerXValue = query['centerX'];
-      final String? centerZValue = query['centerZ'];
+      final String? centerChunkXValue = query['centerChunkX'];
+      final String? centerChunkZValue = query['centerChunkZ'];
       final String? radiusValue = query['radius'];
-      final int? centerX = centerXValue == null
+      final int? centerChunkX = centerChunkXValue == null
           ? null
-          : int.tryParse(centerXValue);
-      final int? centerZ = centerZValue == null
+          : int.tryParse(centerChunkXValue);
+      final int? centerChunkZ = centerChunkZValue == null
           ? null
-          : int.tryParse(centerZValue);
+          : int.tryParse(centerChunkZValue);
       final int? radius = radiusValue == null
           ? null
           : int.tryParse(radiusValue);
-      if ((centerXValue != null && centerX == null) ||
-          (centerZValue != null && centerZ == null) ||
+      if ((centerChunkXValue != null && centerChunkX == null) ||
+          (centerChunkZValue != null && centerChunkZ == null) ||
           (radiusValue != null && radius == null)) {
         await _writeError(
           request,
@@ -314,8 +326,8 @@ final class VisualQaServer {
         session.profile,
         segments[1],
         world: query['world'],
-        centerX: centerX,
-        centerZ: centerZ,
+        centerChunkX: centerChunkX,
+        centerChunkZ: centerChunkZ,
         radius: radius,
       );
       if (heatmap == null) {
@@ -445,6 +457,63 @@ final class VisualQaServer {
       }
     }
     await _writeData(request, world);
+  }
+
+  Future<void> _handlePlayers(
+    HttpRequest request,
+    _VisualQaSession session,
+    List<String> segments,
+  ) async {
+    if (segments.length == 1) {
+      if (!await _isMethod(request, 'GET')) return;
+      await _writeData(request, session.players);
+      return;
+    }
+    if (segments.length != 3 ||
+        segments[2] != 'teleport' ||
+        request.method != 'POST') {
+      await _writeError(
+        request,
+        HttpStatus.methodNotAllowed,
+        'Method not allowed',
+      );
+      return;
+    }
+    if (!await _requireCounter(request)) return;
+    Map<String, dynamic>? player;
+    for (final Map<String, dynamic> candidate in session.players) {
+      if (candidate['id'] == segments[1]) {
+        player = candidate;
+        break;
+      }
+    }
+    if (player == null) {
+      await _writeError(request, HttpStatus.notFound, 'Player is not online');
+      return;
+    }
+    final Map<String, dynamic> body = await _readBody(request);
+    final Object? worldKey = body['worldKey'];
+    final Object? blockX = body['blockX'];
+    final Object? blockZ = body['blockZ'];
+    if (worldKey is! String ||
+        blockX is! int ||
+        blockZ is! int ||
+        body['confirm'] != true) {
+      await _writeError(
+        request,
+        HttpStatus.badRequest,
+        'Confirmed integral teleport target required',
+      );
+      return;
+    }
+    await _writeData(request, <String, dynamic>{
+      'playerId': player['id'],
+      'playerName': player['name'],
+      'status': 'queued',
+      'worldKey': worldKey,
+      'blockX': blockX,
+      'blockZ': blockZ,
+    }, statusCode: HttpStatus.accepted);
   }
 
   Future<void> _handleActions(
@@ -763,6 +832,7 @@ final class _VisualQaSession {
   final List<Map<String, dynamic>> features;
   final List<Map<String, dynamic>> tweaks;
   final List<Map<String, dynamic>> worlds;
+  final List<Map<String, dynamic>> players;
   final Map<String, dynamic> config;
   final List<String> logs;
 
@@ -770,6 +840,7 @@ final class _VisualQaSession {
     : features = VisualQaFixtures.features(profile),
       tweaks = VisualQaFixtures.tweaks(profile),
       worlds = VisualQaFixtures.worlds(profile),
+      players = VisualQaFixtures.players(profile),
       config = VisualQaFixtures.config(profile),
       logs = VisualQaFixtures.logs(profile);
 }

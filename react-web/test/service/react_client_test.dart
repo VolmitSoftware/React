@@ -5,10 +5,11 @@ import 'package:http/testing.dart';
 import 'package:test/test.dart';
 
 import 'package:react_web/model/heatmap.dart';
+import 'package:react_web/model/metric_history.dart';
+import 'package:react_web/model/player_navigation.dart';
 import 'package:react_web/model/server_capabilities.dart';
 import 'package:react_web/model/server_credential.dart';
 import 'package:react_web/model/server_snapshot.dart';
-import 'package:react_web/model/sampler_sample.dart';
 import 'package:react_web/model/identity_info.dart';
 import 'package:react_web/service/react_client.dart';
 import 'package:react_web/service/react_exceptions.dart';
@@ -71,26 +72,28 @@ void main() {
   group('ReactClient.metrics()', () {
     test('decodes a 2-sampler body', () async {
       final Map<String, dynamic> body = <String, dynamic>{
-        'data': <Map<String, dynamic>>[
-          <String, dynamic>{
-            'id': 'cpu',
-            'name': 'CPU Usage',
-            'value': 45.0,
-            'suffix': '%',
-            'min': 0.0,
-            'max': 100.0,
-            'history': <double>[40.0, 42.0, 45.0],
-          },
-          <String, dynamic>{
-            'id': 'mem',
-            'name': 'Memory',
-            'value': 70.0,
-            'suffix': 'MB',
-            'min': 0.0,
-            'max': 8192.0,
-            'history': <double>[68.0, 69.0, 70.0],
-          },
-        ],
+        'data': <String, dynamic>{
+          'sequence': 7,
+          'capturedAtMs': 1750000000000,
+          'samplers': <Map<String, dynamic>>[
+            <String, dynamic>{
+              'id': 'cpu',
+              'name': 'CPU Usage',
+              'value': 45.0,
+              'suffix': '%',
+              'display': '45%',
+              'available': true,
+            },
+            <String, dynamic>{
+              'id': 'mem',
+              'name': 'Memory',
+              'value': 70.0,
+              'suffix': 'MB',
+              'display': '70 MB',
+              'available': true,
+            },
+          ],
+        },
       };
 
       final MockClient mock = MockClient((http.Request req) async {
@@ -111,26 +114,58 @@ void main() {
       expect(snapshot.byId.containsKey('mem'), isTrue);
       expect(snapshot.byId['cpu']!.value, equals(45.0));
       expect(snapshot.byId['mem']!.suffix, equals('MB'));
+      expect(snapshot.seq, equals(7));
     });
   });
 
-  group('ReactClient.history()', () {
-    test('GETs /metrics/{id}/history and decodes the data envelope', () async {
+  group('ReactClient history API', () {
+    test('decodes the catalog and a paged tuple response', () async {
+      int requests = 0;
       final Map<String, dynamic> body = <String, dynamic>{
         'data': <String, dynamic>{
-          'id': 'tps',
-          'name': 'TPS',
-          'value': 19.5,
-          'suffix': ' tps',
-          'min': 0.0,
-          'max': 20.0,
-          'history': <double>[18.0, 19.0, 19.5],
+          'requestedFromMs': 1000,
+          'requestedToMs': 3000,
+          'pageFromMs': 1000,
+          'pageToMs': 3000,
+          'actualResolutionMs': 1000,
+          'throughSequence': 9,
+          'throughMs': 3000,
+          'nextCursor': null,
+          'series': <Map<String, dynamic>>[
+            <String, dynamic>{
+              'id': 'tps',
+              'name': 'TPS',
+              'suffix': ' tps',
+              'points': <List<num>>[
+                <num>[1000, 19.5, 19.0, 20.0, 19.8, 2],
+              ],
+            },
+          ],
         },
       };
 
       final MockClient mock = MockClient((http.Request req) async {
-        expect(req.url.path, equals('/api/v1/metrics/tps/history'));
+        requests++;
         expect(req.headers['authorization'], equals('Bearer tok-abc'));
+        if (req.url.path.endsWith('/catalog')) {
+          return http.Response(
+            jsonEncode(<String, dynamic>{
+              'data': <Map<String, dynamic>>[
+                <String, dynamic>{
+                  'id': 'tps',
+                  'name': 'TPS',
+                  'suffix': ' tps',
+                  'firstTimestampMs': 1000,
+                  'lastTimestampMs': 3000,
+                  'active': true,
+                },
+              ],
+            }),
+            200,
+          );
+        }
+        expect(req.url.path, equals('/api/v1/metrics/history'));
+        expect(req.url.queryParameters['ids'], equals('tps'));
         return http.Response(
           jsonEncode(body),
           200,
@@ -139,17 +174,19 @@ void main() {
       });
 
       final ReactClient client = ReactClient(cred, client: mock);
-      final SamplerSample sample = await client.history('tps');
-
-      expect(sample.id, equals('tps'));
-      expect(sample.value, equals(19.5));
-      expect(
-        sample.display,
-        equals('19.5'),
-        reason:
-            'display falls back to value.toString() when absent from the payload',
+      final List<MetricHistoryDescriptor> catalog = await client
+          .historyCatalog();
+      final MetricHistoryPage page = await client.historyPage(
+        ids: <String>['tps'],
+        from: DateTime.fromMillisecondsSinceEpoch(1000),
+        to: DateTime.fromMillisecondsSinceEpoch(3000),
       );
-      expect(sample.history, equals(<double>[18.0, 19.0, 19.5]));
+
+      expect(requests, equals(2));
+      expect(catalog.single.id, equals('tps'));
+      expect(page.resolution, equals(const Duration(seconds: 1)));
+      expect(page.series.single.points.single.average, equals(19.5));
+      expect(page.series.single.points.single.count, equals(2));
     });
   });
 
@@ -229,6 +266,91 @@ void main() {
     });
   });
 
+  group('ReactClient player navigation', () {
+    test(
+      'lists players and posts a confirmed integral teleport target',
+      () async {
+        int requests = 0;
+        final MockClient mock = MockClient((http.Request request) async {
+          requests++;
+          expect(request.headers['authorization'], equals('Bearer tok-abc'));
+          if (request.method == 'GET') {
+            expect(request.url.path, equals('/api/v1/players'));
+            return http.Response(
+              jsonEncode(<String, dynamic>{
+                'data': <Map<String, dynamic>>[
+                  <String, dynamic>{'id': 'player-id', 'name': 'Alice'},
+                ],
+              }),
+              200,
+            );
+          }
+          expect(request.method, equals('POST'));
+          expect(
+            request.url.path,
+            equals('/api/v1/players/player-id/teleport'),
+          );
+          expect(
+            int.tryParse(request.headers['x-react-counter'] ?? ''),
+            isNotNull,
+          );
+          expect(
+            jsonDecode(request.body),
+            equals(<String, dynamic>{
+              'worldKey': 'minecraft:overworld',
+              'blockX': -24,
+              'blockZ': 40,
+              'confirm': true,
+            }),
+          );
+          return http.Response(
+            jsonEncode(<String, dynamic>{
+              'data': <String, dynamic>{
+                'playerId': 'player-id',
+                'playerName': 'Alice',
+                'status': 'queued',
+                'worldKey': 'minecraft:overworld',
+                'blockX': -24,
+                'blockZ': 40,
+              },
+            }),
+            202,
+          );
+        });
+        final ReactClient client = ReactClient(cred, client: mock);
+
+        final List<OnlinePlayerInfo> players = await client.players();
+        final PlayerTeleportResult result = await client.teleportPlayer(
+          players.single.id,
+          worldKey: 'minecraft:overworld',
+          blockX: -24,
+          blockZ: 40,
+        );
+
+        expect(requests, equals(2));
+        expect(players.single.name, equals('Alice'));
+        expect(result.status, equals('queued'));
+        expect(result.blockX, equals(-24));
+      },
+    );
+
+    test('surfaces an admin-scope rejection from player listing', () async {
+      final MockClient mock = MockClient((http.Request request) async {
+        return http.Response(
+          jsonEncode(<String, dynamic>{
+            'error': <String, dynamic>{'message': 'Insufficient scope: admin'},
+          }),
+          403,
+        );
+      });
+
+      await expectLater(
+        ReactClient(cred, client: mock).players(),
+        throwsA(isA<ReactForbidden>()),
+      );
+    });
+  });
+
   group('ReactClient URL scheme', () {
     test('uses https:// scheme when secure is true', () async {
       const ServerCredential secureCred = ServerCredential(
@@ -245,7 +367,13 @@ void main() {
         expect(req.url.host, equals('example.com'));
         expect(req.url.port, equals(443));
         return http.Response(
-          jsonEncode(<String, dynamic>{'data': <Map<String, dynamic>>[]}),
+          jsonEncode(<String, dynamic>{
+            'data': <String, dynamic>{
+              'sequence': 1,
+              'capturedAtMs': 1750000000000,
+              'samplers': <Map<String, dynamic>>[],
+            },
+          }),
           200,
           headers: <String, String>{'content-type': 'application/json'},
         );
@@ -260,7 +388,13 @@ void main() {
       final MockClient mock = MockClient((http.Request req) async {
         expect(req.url.scheme, equals('http'));
         return http.Response(
-          jsonEncode(<String, dynamic>{'data': <Map<String, dynamic>>[]}),
+          jsonEncode(<String, dynamic>{
+            'data': <String, dynamic>{
+              'sequence': 1,
+              'capturedAtMs': 1750000000000,
+              'samplers': <Map<String, dynamic>>[],
+            },
+          }),
           200,
           headers: <String, String>{'content-type': 'application/json'},
         );
@@ -313,7 +447,7 @@ void main() {
       await expectLater(client.metrics(), throwsA(isA<ReactAuthException>()));
     });
 
-    test('401 on history throws ReactAuthException', () async {
+    test('401 on history catalog throws ReactAuthException', () async {
       final MockClient mock = MockClient((http.Request req) async {
         return http.Response('Unauthorized', 401);
       });
@@ -321,7 +455,7 @@ void main() {
       final ReactClient client = ReactClient(cred, client: mock);
 
       await expectLater(
-        client.history('cpu'),
+        client.historyCatalog(),
         throwsA(isA<ReactAuthException>()),
       );
     });
@@ -418,11 +552,33 @@ void main() {
           'centerChunkX': 0,
           'centerChunkZ': 0,
           'radius': 8,
+          'originChunkX': -8,
+          'originChunkZ': -8,
+          'width': 17,
+          'height': 17,
+          'cellSizeChunks': 1,
+          'capturedAtMs': 1750000000000,
+          'spawnChunkX': 0,
+          'spawnChunkZ': 0,
           'min': 3.0,
           'max': 7.0,
           'cells': <Map<String, dynamic>>[
-            <String, dynamic>{'x': 0, 'z': 0, 'score': 3.0},
-            <String, dynamic>{'x': 1, 'z': 0, 'score': 7.0},
+            <String, dynamic>{
+              'x': 0,
+              'z': 0,
+              'sizeChunks': 1,
+              'score': 3.0,
+              'averageScore': 2.5,
+              'samples': 4,
+            },
+            <String, dynamic>{
+              'x': 1,
+              'z': 0,
+              'sizeChunks': 1,
+              'score': 7.0,
+              'averageScore': 6.0,
+              'samples': 5,
+            },
           ],
         },
       };
@@ -455,8 +611,8 @@ void main() {
           req.url.queryParameters,
           equals(<String, String>{
             'world': 'minecraft:world_nether',
-            'centerX': '3',
-            'centerZ': '-2',
+            'centerChunkX': '3',
+            'centerChunkZ': '-2',
             'radius': '8',
           }),
         );
@@ -469,6 +625,14 @@ void main() {
               'centerChunkX': 3,
               'centerChunkZ': -2,
               'radius': 8,
+              'originChunkX': -5,
+              'originChunkZ': -10,
+              'width': 17,
+              'height': 17,
+              'cellSizeChunks': 1,
+              'capturedAtMs': 1750000000000,
+              'spawnChunkX': 0,
+              'spawnChunkZ': 0,
               'min': 0.0,
               'max': 0.0,
               'cells': <dynamic>[],
@@ -483,8 +647,8 @@ void main() {
       await client.heatmap(
         'id',
         world: 'minecraft:world_nether',
-        centerX: 3,
-        centerZ: -2,
+        centerChunkX: 3,
+        centerChunkZ: -2,
         radius: 8,
       );
     });
@@ -511,6 +675,14 @@ void main() {
           'centerChunkX': 0,
           'centerChunkZ': 0,
           'radius': 4,
+          'originChunkX': -4,
+          'originChunkZ': -4,
+          'width': 9,
+          'height': 9,
+          'cellSizeChunks': 1,
+          'capturedAtMs': 1750000000000,
+          'spawnChunkX': 0,
+          'spawnChunkZ': 0,
           'min': 0.0,
           'max': 0.0,
           'cells': <dynamic>[],

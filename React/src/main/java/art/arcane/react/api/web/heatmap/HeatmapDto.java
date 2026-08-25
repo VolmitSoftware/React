@@ -7,6 +7,15 @@ public class HeatmapDto {
     public int centerChunkX;
     public int centerChunkZ;
     public int radius;
+    public int originChunkX;
+    public int originChunkZ;
+    public int width;
+    public int height;
+    public int cellSizeChunks;
+    public long capturedAtMs;
+    public int spawnChunkX;
+    public int spawnChunkZ;
+    public HeatmapWorldBorderDto worldBorder;
     public double min;
     public double max;
     public HeatmapCellDto[] cells;

@@ -29,12 +29,15 @@ import art.arcane.react.util.common.scheduling.TickedObject;
 import art.arcane.react.util.plugin.IController;
 import art.arcane.volmlib.util.bukkit.WorldIdentity;
 import com.google.common.util.concurrent.AtomicDouble;
+import io.papermc.paper.event.world.border.WorldBorderBoundsChangeEvent;
+import io.papermc.paper.event.world.border.WorldBorderCenterChangeEvent;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.WorldBorder;
 import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -284,6 +287,54 @@ public class ObserverController extends TickedObject implements IController {
     return result;
   }
 
+  public List<LoadedChunkCoordinate> loadedChunkCoordinatesInBounds(
+      UUID worldId,
+      int minimumChunkX,
+      int maximumChunkX,
+      int minimumChunkZ,
+      int maximumChunkZ
+  ) {
+    if (worldId == null
+        || loadedChunksByWorld == null
+        || minimumChunkX > maximumChunkX
+        || minimumChunkZ > maximumChunkZ) {
+      return List.of();
+    }
+
+    LoadedWorldChunkIndex worldIndex = loadedChunksByWorld.get(worldId);
+    if (worldIndex == null || worldIndex.isEmpty()) {
+      return List.of();
+    }
+    Map<Long, LoadedChunkRef> chunks = worldIndex.chunks();
+    long width = ((long) maximumChunkX - minimumChunkX) + 1L;
+    long height = ((long) maximumChunkZ - minimumChunkZ) + 1L;
+    long cells = saturatedMultiply(width, height);
+    List<LoadedChunkCoordinate> result = new ArrayList<>(
+        Math.min(chunks.size(), cells > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) cells)
+    );
+    if (chunks.size() <= cells) {
+      for (LoadedChunkRef ref : chunks.values()) {
+        if (ref.chunkX() >= minimumChunkX
+            && ref.chunkX() <= maximumChunkX
+            && ref.chunkZ() >= minimumChunkZ
+            && ref.chunkZ() <= maximumChunkZ) {
+          result.add(new LoadedChunkCoordinate(ref.chunkX(), ref.chunkZ()));
+        }
+      }
+      return result;
+    }
+
+    for (long chunkX = minimumChunkX; chunkX <= maximumChunkX; chunkX++) {
+      for (long chunkZ = minimumChunkZ; chunkZ <= maximumChunkZ; chunkZ++) {
+        LoadedChunkRef ref = chunks.get(Cache.key((int) chunkX, (int) chunkZ));
+        if (ref != null) {
+          result.add(new LoadedChunkCoordinate(ref.chunkX(), ref.chunkZ()));
+        }
+      }
+    }
+    return result;
+  }
+
   public List<LoadedChunkTarget> nextLoadedChunkCoordinateBatch(int maximum) {
     if (!indexingLoadedChunks || loadedChunksByWorld == null || maximum <= 0) {
       return List.of();
@@ -358,6 +409,24 @@ public class ObserverController extends TickedObject implements IController {
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+  public void on(WorldBorderCenterChangeEvent event) {
+    indexWorld(
+        event.getWorld(),
+        event.getNewCenter(),
+        event.getWorldBorder().getSize()
+    );
+  }
+
+  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+  public void on(WorldBorderBoundsChangeEvent event) {
+    indexWorld(
+        event.getWorld(),
+        event.getWorldBorder().getCenter(),
+        event.getNewSize()
+    );
+  }
+
+  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void on(WorldUnloadEvent event) {
     if (event.isCancelled()) {
       return;
@@ -396,13 +465,26 @@ public class ObserverController extends TickedObject implements IController {
     if (world == null || heatmapWorldsById == null) {
       return;
     }
+    WorldBorder border = world.getWorldBorder();
+    Location borderCenter = border == null ? null : border.getCenter();
+    double borderSize = border == null ? 0D : border.getSize();
+    indexWorld(world, borderCenter, borderSize);
+  }
+
+  private void indexWorld(World world, Location borderCenter, double borderSize) {
+    if (world == null || heatmapWorldsById == null) {
+      return;
+    }
     Location spawn = world.getSpawnLocation();
     HeatmapWorldRef snapshot = new HeatmapWorldRef(
         world.getUID(),
         WorldIdentity.serialize(world),
         world.getName(),
         spawn.getBlockX() >> 4,
-        spawn.getBlockZ() >> 4
+        spawn.getBlockZ() >> 4,
+        borderCenter == null ? 0D : borderCenter.getX(),
+        borderCenter == null ? 0D : borderCenter.getZ(),
+        Double.isFinite(borderSize) && borderSize >= 0D ? borderSize : 0D
     );
     heatmapWorldsById.put(snapshot.worldId(), snapshot);
     publishHeatmapWorldSnapshot();
@@ -416,6 +498,16 @@ public class ObserverController extends TickedObject implements IController {
     List<HeatmapWorldRef> worlds = new ArrayList<>(heatmapWorldsById.values());
     worlds.sort(Comparator.comparing(HeatmapWorldRef::worldKey));
     heatmapWorldSnapshot = List.copyOf(worlds);
+  }
+
+  private long saturatedMultiply(long left, long right) {
+    if (left <= 0L || right <= 0L) {
+      return 0L;
+    }
+    if (left > Long.MAX_VALUE / right) {
+      return Long.MAX_VALUE;
+    }
+    return left * right;
   }
 
   private void indexLoadedChunk(Chunk chunk) {

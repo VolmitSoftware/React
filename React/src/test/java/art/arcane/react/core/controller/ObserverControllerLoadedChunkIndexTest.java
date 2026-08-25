@@ -3,11 +3,14 @@ package art.arcane.react.core.controller;
 import art.arcane.react.React;
 import art.arcane.react.api.web.heatmap.HeatmapWorldRef;
 import art.arcane.react.util.common.scheduling.Ticker;
+import io.papermc.paper.event.world.border.WorldBorderBoundsChangeEvent;
+import io.papermc.paper.event.world.border.WorldBorderCenterChangeEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;
+import org.bukkit.WorldBorder;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
@@ -71,6 +74,16 @@ class ObserverControllerLoadedChunkIndexTest {
       for (int viewer = 0; viewer < 1_000; viewer++) {
         Assertions.assertEquals(13, controller.loadedChunkCoordinatesInRadius(world, 0, 0, 2).size());
       }
+      List<ObserverController.LoadedChunkCoordinate> square = controller.loadedChunkCoordinatesInBounds(
+          world.getUID(),
+          -2,
+          2,
+          -2,
+          2
+      );
+      Assertions.assertEquals(25, square.size());
+      Assertions.assertTrue(square.contains(new ObserverController.LoadedChunkCoordinate(-2, -2)));
+      Assertions.assertTrue(square.contains(new ObserverController.LoadedChunkCoordinate(2, 2)));
 
       Mockito.verify(world, Mockito.times(1)).getLoadedChunks();
 
@@ -152,6 +165,55 @@ class ObserverControllerLoadedChunkIndexTest {
       Mockito.verifyNoInteractions(quiet, active);
       bukkit.verify(Bukkit::getWorlds);
       bukkit.verifyNoMoreInteractions();
+      controller.stop();
+    }
+  }
+
+  @Test
+  void world_border_metadata_is_snapshotted_and_refreshed_from_owner_events() {
+    World world = world("border", 3, -5);
+    WorldBorder border = Mockito.mock(WorldBorder.class);
+    Location initialCenter = new Location(world, 12.5D, 0D, -4.5D);
+    Location movedCenter = new Location(world, -64D, 0D, 96D);
+    Mockito.when(world.getWorldBorder()).thenReturn(border);
+    Mockito.when(border.getCenter()).thenReturn(initialCenter, movedCenter);
+    Mockito.when(border.getSize()).thenReturn(1_000D);
+    Mockito.when(world.getLoadedChunks()).thenReturn(new Chunk[0]);
+
+    try (MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class)) {
+      bukkit.when(Bukkit::getWorlds).thenReturn(List.of(world));
+      ObserverController controller = new ObserverController();
+      controller.start();
+
+      HeatmapWorldRef initial = controller.heatmapWorld("react-test:border").orElseThrow();
+      Assertions.assertEquals(12.5D, initial.borderCenterBlockX(), 1e-9);
+      Assertions.assertEquals(-4.5D, initial.borderCenterBlockZ(), 1e-9);
+      Assertions.assertEquals(1_000D, initial.borderSizeBlocks(), 1e-9);
+
+      WorldBorderCenterChangeEvent centerEvent = new WorldBorderCenterChangeEvent(
+          world,
+          border,
+          initialCenter,
+          movedCenter
+      );
+      controller.on(centerEvent);
+      HeatmapWorldRef centered = controller.heatmapWorld("react-test:border").orElseThrow();
+      Assertions.assertEquals(-64D, centered.borderCenterBlockX(), 1e-9);
+      Assertions.assertEquals(96D, centered.borderCenterBlockZ(), 1e-9);
+
+      WorldBorderBoundsChangeEvent boundsEvent = new WorldBorderBoundsChangeEvent(
+          world,
+          border,
+          WorldBorderBoundsChangeEvent.Type.INSTANT_MOVE,
+          1_000D,
+          512D,
+          0L
+      );
+      controller.on(boundsEvent);
+      HeatmapWorldRef resized = controller.heatmapWorld("react-test:border").orElseThrow();
+      Assertions.assertEquals(-64D, resized.borderCenterBlockX(), 1e-9);
+      Assertions.assertEquals(96D, resized.borderCenterBlockZ(), 1e-9);
+      Assertions.assertEquals(512D, resized.borderSizeBlocks(), 1e-9);
       controller.stop();
     }
   }

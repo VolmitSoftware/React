@@ -7,6 +7,9 @@ public record HeatmapWorldRef(
     String worldKey,
     String worldName,
     int spawnChunkX,
-    int spawnChunkZ
+    int spawnChunkZ,
+    double borderCenterBlockX,
+    double borderCenterBlockZ,
+    double borderSizeBlocks
 ) {
 }

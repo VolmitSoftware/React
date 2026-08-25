@@ -54,7 +54,7 @@ abstract class RemoteIntegrationSampler extends ReactCachedSampler {
 
   @Override
   public String formattedValue(double t) {
-    if (!isAvailable()) {
+    if (!isSampleAvailable()) {
       return "---";
     }
     return Form.f(t, decimals);
@@ -62,13 +62,14 @@ abstract class RemoteIntegrationSampler extends ReactCachedSampler {
 
   @Override
   public String formattedSuffix(double t) {
-    if (!isAvailable()) {
+    if (!isSampleAvailable()) {
       return "";
     }
     return suffix;
   }
 
-  protected boolean isAvailable() {
+  @Override
+  public boolean isSampleAvailable() {
     IntegrationController controller = React.controller(IntegrationController.class);
     if (controller == null || controller.getRemoteSamplerBridge() == null) {
       return false;

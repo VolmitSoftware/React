@@ -458,8 +458,30 @@ abstract final class VisualQaFixtures {
         'scopes': <String>['read', 'op:execute', 'console:execute', 'admin'],
       };
 
+  static List<Map<String, dynamic>> players(VisualQaProfile profile) =>
+      <Map<String, dynamic>>[
+        <String, dynamic>{
+          'id': profile == VisualQaProfile.alpha
+              ? '11111111-1111-4111-8111-111111111111'
+              : '22222222-2222-4222-8222-222222222222',
+          'name': profile == VisualQaProfile.alpha ? 'Alex' : 'Morgan',
+        },
+        <String, dynamic>{
+          'id': profile == VisualQaProfile.alpha
+              ? '33333333-3333-4333-8333-333333333333'
+              : '44444444-4444-4444-8444-444444444444',
+          'name': profile == VisualQaProfile.alpha ? 'Builder' : 'Scout',
+        },
+      ];
+
   static Map<String, dynamic> metrics(VisualQaProfile profile) =>
-      <String, dynamic>{'data': metricData(profile)};
+      <String, dynamic>{
+        'data': <String, dynamic>{
+          'sequence': 1,
+          'capturedAtMs': DateTime.now().millisecondsSinceEpoch,
+          'samplers': metricData(profile),
+        },
+      };
 
   static List<Map<String, dynamic>> metricData(VisualQaProfile profile) {
     return _metrics.map((_MetricFixture fixture) {
@@ -470,11 +492,70 @@ abstract final class VisualQaFixtures {
         'suffix': fixture.suffix,
         'value': value,
         'display': _displayValue(value),
-        'min': 0.0,
-        'max': fixture.max,
-        'history': _history(value, fixture.max, fixture.id.hashCode),
+        'available': true,
       };
     }).toList();
+  }
+
+  static List<Map<String, dynamic>> metricHistoryCatalog(
+    VisualQaProfile profile,
+  ) {
+    final int now = DateTime.now().millisecondsSinceEpoch;
+    return metricData(profile).map((Map<String, dynamic> metric) {
+      return <String, dynamic>{
+        'id': metric['id'],
+        'name': metric['name'],
+        'suffix': metric['suffix'],
+        'firstTimestampMs': now - const Duration(days: 30).inMilliseconds,
+        'lastTimestampMs': now,
+        'active': true,
+      };
+    }).toList();
+  }
+
+  static Map<String, dynamic>? metricHistoryPage(
+    VisualQaProfile profile,
+    String id,
+    int from,
+    int to,
+  ) {
+    final _MetricFixture? fixture = _metric(id);
+    if (fixture == null) return null;
+    final double value = profile.isCritical ? fixture.beta : fixture.alpha;
+    final List<double> history = _history(value, fixture.max, id.hashCode);
+    final int resolution = ((to - from) ~/ history.length).clamp(1000, 3600000);
+    final List<List<num>> points = <List<num>>[];
+    for (int index = 0; index < history.length; index++) {
+      final int timestamp = from + index * resolution;
+      if (timestamp >= to) break;
+      final double sample = history[index];
+      points.add(<num>[timestamp, sample, sample, sample, sample, 1]);
+    }
+    return <String, dynamic>{
+      'requestedFromMs': from,
+      'requestedToMs': to,
+      'pageFromMs': from,
+      'pageToMs': to,
+      'actualResolutionMs': resolution,
+      'throughSequence': 1,
+      'throughMs': to,
+      'nextCursor': null,
+      'series': <Map<String, dynamic>>[
+        <String, dynamic>{
+          'id': fixture.id,
+          'name': _displayName(fixture.id),
+          'suffix': fixture.suffix,
+          'points': points,
+        },
+      ],
+    };
+  }
+
+  static _MetricFixture? _metric(String id) {
+    for (final _MetricFixture fixture in _metrics) {
+      if (fixture.id == id) return fixture;
+    }
+    return null;
   }
 
   static List<Map<String, dynamic>> features(
@@ -885,8 +966,8 @@ abstract final class VisualQaFixtures {
     VisualQaProfile profile,
     String id, {
     String? world,
-    int? centerX,
-    int? centerZ,
+    int? centerChunkX,
+    int? centerChunkZ,
     int? radius,
   }) {
     final String label = switch (id) {
@@ -901,23 +982,48 @@ abstract final class VisualQaFixtures {
         (id == 'qa-chunk-pressure'
             ? 'minecraft:world_nether'
             : 'minecraft:world');
-    final int resolvedCenterX = centerX ?? 148;
-    final int resolvedCenterZ = centerZ ?? -73;
-    final int resolvedRadius = (radius ?? 2).clamp(1, 16);
+    final int resolvedCenterX = centerChunkX ?? 148;
+    final int resolvedCenterZ = centerChunkZ ?? -73;
+    final int resolvedRadius = (radius ?? 8).clamp(1, 1875000);
+    final int diameter = resolvedRadius * 2 + 1;
+    int cellSizeChunks = 1;
+    final int minimumCellSize = (diameter / 33).ceil();
+    while (cellSizeChunks < minimumCellSize) {
+      cellSizeChunks *= 2;
+    }
+    final int originChunkX =
+        ((resolvedCenterX - resolvedRadius) / cellSizeChunks).floor() *
+        cellSizeChunks;
+    final int originChunkZ =
+        ((resolvedCenterZ - resolvedRadius) / cellSizeChunks).floor() *
+        cellSizeChunks;
+    final int width =
+        ((resolvedCenterX + resolvedRadius - originChunkX + 1) / cellSizeChunks)
+            .ceil();
+    final int height =
+        ((resolvedCenterZ + resolvedRadius - originChunkZ + 1) / cellSizeChunks)
+            .ceil();
     final List<Map<String, dynamic>> cells = <Map<String, dynamic>>[];
-    for (int z = -resolvedRadius; z <= resolvedRadius; z++) {
-      for (int x = -resolvedRadius; x <= resolvedRadius; x++) {
-        final int distance = x.abs() + z.abs();
+    for (int row = 0; row < height; row++) {
+      for (int column = 0; column < width; column++) {
+        final int chunkX = originChunkX + column * cellSizeChunks;
+        final int chunkZ = originChunkZ + row * cellSizeChunks;
+        final int distance =
+            (chunkX - resolvedCenterX).abs() + (chunkZ - resolvedCenterZ).abs();
         final double baseline = id == 'qa-chunk-pressure' ? 88.0 : 72.0;
         final double profileOffset = profile.isCritical ? 8.0 : -19.0;
-        final double score = (baseline + profileOffset - distance * 9.0)
-            .clamp(0.0, 100.0)
-            .toDouble();
-        if (score <= 0.0) continue;
+        final double score =
+            (baseline + profileOffset - (distance / cellSizeChunks) * 5.0)
+                .clamp(0.0, 100.0)
+                .toDouble();
+        if (score <= 0.0 || (row + column) % 11 == 0) continue;
         cells.add(<String, dynamic>{
-          'x': resolvedCenterX + x,
-          'z': resolvedCenterZ + z,
+          'x': chunkX,
+          'z': chunkZ,
+          'sizeChunks': cellSizeChunks,
           'score': score,
+          'averageScore': (score * 0.74).clamp(0.0, 100.0),
+          'samples': 4 + (row * width + column) % 37,
         });
       }
     }
@@ -928,6 +1034,19 @@ abstract final class VisualQaFixtures {
       'centerChunkX': resolvedCenterX,
       'centerChunkZ': resolvedCenterZ,
       'radius': resolvedRadius,
+      'originChunkX': originChunkX,
+      'originChunkZ': originChunkZ,
+      'width': width,
+      'height': height,
+      'cellSizeChunks': cellSizeChunks,
+      'capturedAtMs': DateTime.now().millisecondsSinceEpoch,
+      'spawnChunkX': 148,
+      'spawnChunkZ': -73,
+      'worldBorder': <String, dynamic>{
+        'centerBlockX': 2368.0,
+        'centerBlockZ': -1168.0,
+        'sizeBlocks': 512.0,
+      },
       'min': 0.0,
       'max': 100.0,
       'cells': cells,

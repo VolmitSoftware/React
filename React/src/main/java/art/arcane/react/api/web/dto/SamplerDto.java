@@ -6,7 +6,5 @@ public class SamplerDto {
     public double value;
     public String suffix;
     public String display;
-    public double min;
-    public double max;
-    public double[] history;
+    public boolean available;
 }

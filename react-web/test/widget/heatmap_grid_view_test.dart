@@ -12,237 +12,223 @@ const ShadcnStylesheet _sheet = ShadcnStylesheet(theme: ShadcnTheme.midnight);
 Widget _wrap(Widget child) =>
     ArcaneThemeProvider(stylesheet: _sheet, child: child);
 
+HeatmapGrid _grid({
+  int originChunkX = -1,
+  int originChunkZ = -1,
+  int width = 3,
+  int height = 3,
+  int cellSizeChunks = 1,
+  int centerChunkX = 0,
+  int centerChunkZ = 0,
+  HeatmapWorldBorder? worldBorder,
+  List<HeatmapCell> cells = const <HeatmapCell>[],
+}) => HeatmapGrid(
+  id: 'test',
+  label: 'Entity Pressure',
+  world: 'minecraft:world_nether',
+  centerChunkX: centerChunkX,
+  centerChunkZ: centerChunkZ,
+  radius: 64,
+  originChunkX: originChunkX,
+  originChunkZ: originChunkZ,
+  width: width,
+  height: height,
+  cellSizeChunks: cellSizeChunks,
+  capturedAtMs: 1750000000000,
+  spawnChunkX: 0,
+  spawnChunkZ: 0,
+  worldBorder: worldBorder,
+  min: 0,
+  max: 10,
+  cells: cells,
+);
+
+const HeatmapCell _sample = HeatmapCell(
+  x: 0,
+  z: 0,
+  sizeChunks: 1,
+  score: 7,
+  averageScore: 4.5,
+  samples: 12,
+);
+
 void main() {
   group('HeatmapGridView', () {
-    testServer('renders the heatmap label and world', (
+    testServer('renders a literal north-up coordinate plane from grid cells', (
       ServerTester tester,
     ) async {
       tester.pumpComponent(
         _wrap(
-          const HeatmapGridView(
-            grid: HeatmapGrid(
-              id: 'test',
-              label: 'Entity Pressure',
-              world: 'world',
-              centerChunkX: 0,
-              centerChunkZ: 0,
-              radius: 1,
-              min: 0.0,
-              max: 10.0,
-              cells: <HeatmapCell>[],
+          HeatmapGridView(grid: _grid(cells: const <HeatmapCell>[_sample])),
+        ),
+      );
+      final DocumentResponse response = await tester.request('/');
+
+      expect(response.statusCode, equals(200));
+      expect(response.body, contains('Entity Pressure'));
+      expect(response.body, contains('minecraft:world_nether'));
+      expect(response.body, contains('repeat(3,'));
+      expect(response.body, contains('data-origin-x="-1"'));
+      expect(response.body, contains('data-origin-z="-1"'));
+      expect(response.body, contains('data-axis-x="-1"'));
+      expect(response.body, contains('data-axis-z="1"'));
+      expect(response.body, contains('N −Z'));
+      expect(response.body, contains('E +X'));
+    });
+
+    testServer('renders peak, average, samples, and explicit sparse no-data', (
+      ServerTester tester,
+    ) async {
+      tester.pumpComponent(
+        _wrap(
+          HeatmapGridView(grid: _grid(cells: const <HeatmapCell>[_sample])),
+        ),
+      );
+      final DocumentResponse response = await tester.request('/');
+
+      expect(response.body, contains('data-score="7'));
+      expect(response.body, contains('data-average-score="4.5"'));
+      expect(response.body, contains('data-samples="12"'));
+      expect(response.body, contains('Peak 7.00'));
+      expect(response.body, contains('Average 4.50'));
+      expect(response.body, contains('12 samples'));
+      expect('is-empty'.allMatches(response.body).length, equals(8));
+      expect(response.body, contains('No data'));
+    });
+
+    testServer('uses one grid tab stop and a complete selected-cell ring', (
+      ServerTester tester,
+    ) async {
+      tester.pumpComponent(
+        _wrap(
+          HeatmapGridView(grid: _grid(cells: const <HeatmapCell>[_sample])),
+        ),
+      );
+      final DocumentResponse response = await tester.request('/');
+
+      expect('tabindex="0"'.allMatches(response.body).length, equals(1));
+      expect(response.body, contains('role="grid"'));
+      expect(response.body, contains('aria-activedescendant='));
+      expect(
+        RegExp(
+          r'class="[^"]*reactor-heatmap-cell[^"]*is-selected',
+        ).hasMatch(response.body),
+        isTrue,
+      );
+      expect(response.body, contains('aria-selected="true"'));
+    });
+
+    testServer('labels negative MCA regions on 32-chunk boundaries', (
+      ServerTester tester,
+    ) async {
+      tester.pumpComponent(
+        _wrap(
+          HeatmapGridView(
+            grid: _grid(
+              originChunkX: -64,
+              originChunkZ: -64,
+              width: 5,
+              height: 5,
+              cellSizeChunks: 32,
             ),
           ),
         ),
       );
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('Entity Pressure'),
-        isTrue,
-        reason: 'label must appear in rendered HTML',
-      );
-      expect(
-        res.body.contains('world'),
-        isTrue,
-        reason: 'world must appear in rendered HTML',
-      );
+      final DocumentResponse response = await tester.request('/');
+
+      expect(response.body, contains('data-region-x="-2"'));
+      expect(response.body, contains('data-region-z="-2"'));
+      expect(response.body, contains('is-region-west'));
+      expect(response.body, contains('is-region-north'));
+      expect(response.body, contains('MCA r.0.0'));
     });
 
-    testServer('renders a CSS grid sized to radius', (
+    testServer('renders four actual world-border edges when fitted', (
       ServerTester tester,
     ) async {
       tester.pumpComponent(
         _wrap(
-          const HeatmapGridView(
-            grid: HeatmapGrid(
-              id: 'test',
-              label: 'Test',
-              world: '',
-              centerChunkX: 0,
-              centerChunkZ: 0,
-              radius: 1,
-              min: 0.0,
-              max: 10.0,
-              cells: <HeatmapCell>[HeatmapCell(x: 0, z: 0, score: 5.0)],
+          HeatmapGridView(
+            grid: _grid(
+              originChunkX: -32,
+              originChunkZ: -32,
+              width: 65,
+              height: 65,
+              worldBorder: const HeatmapWorldBorder(
+                centerBlockX: 0,
+                centerBlockZ: 0,
+                sizeBlocks: 512,
+              ),
             ),
           ),
         ),
       );
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
+      final DocumentResponse response = await tester.request('/');
+
+      expect(response.body, contains('data-border-size="512.0"'));
       expect(
-        res.body.contains('repeat(3,'),
-        isTrue,
-        reason: 'radius=1 produces a 3x3 grid and must use repeat(3,',
+        'reactor-heatmap-world-border-edge'.allMatches(response.body).length,
+        equals(4),
       );
-      expect(res.body, contains('reactor-heatmap-plane'));
-      expect(res.body, contains('data-origin-x="-1"'));
-      expect(res.body, contains('data-origin-z="-1"'));
-      expect(res.body, contains('data-center-x="0"'));
-      expect(res.body, contains('data-center-z="0"'));
-      expect(res.body, contains('data-axis-x="-1"'));
-      expect(res.body, contains('data-axis-z="1"'));
-      expect(res.body, contains('N −Z'));
-      expect(res.body, contains('E +X'));
+      expect(response.body, contains('is-left'));
+      expect(response.body, contains('is-right'));
+      expect(response.body, contains('is-top'));
+      expect(response.body, contains('is-bottom'));
     });
 
-    testServer('renders scored cells with data-score attributes', (
+    testServer('does not invent viewport edges for an enclosing border', (
       ServerTester tester,
     ) async {
       tester.pumpComponent(
         _wrap(
-          const HeatmapGridView(
-            grid: HeatmapGrid(
-              id: 'test',
-              label: 'Test',
-              world: '',
-              centerChunkX: 0,
-              centerChunkZ: 0,
-              radius: 1,
-              min: 3.0,
-              max: 7.0,
-              cells: <HeatmapCell>[
-                HeatmapCell(x: 0, z: 0, score: 3.0),
-                HeatmapCell(x: 1, z: 0, score: 7.0),
+          HeatmapGridView(
+            grid: _grid(
+              worldBorder: const HeatmapWorldBorder(
+                centerBlockX: 0,
+                centerBlockZ: 0,
+                sizeBlocks: 4096,
+              ),
+            ),
+          ),
+        ),
+      );
+      final DocumentResponse response = await tester.request('/');
+
+      expect(response.body, isNot(contains('reactor-heatmap-world-border')));
+    });
+
+    testServer('renders negative selected chunk and block ranges correctly', (
+      ServerTester tester,
+    ) async {
+      tester.pumpComponent(
+        _wrap(
+          HeatmapGridView(
+            grid: _grid(
+              originChunkX: -8,
+              originChunkZ: -16,
+              width: 2,
+              height: 2,
+              cellSizeChunks: 8,
+              centerChunkX: -7,
+              centerChunkZ: -15,
+              cells: const <HeatmapCell>[
+                HeatmapCell(
+                  x: -8,
+                  z: -16,
+                  sizeChunks: 8,
+                  score: 5,
+                  averageScore: 3,
+                  samples: 9,
+                ),
               ],
             ),
           ),
         ),
       );
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('data-score="3'),
-        isTrue,
-        reason: 'cell with score 3.0 must carry data-score attribute',
-      );
-      expect(
-        res.body.contains('data-score="7'),
-        isTrue,
-        reason: 'cell with score 7.0 must carry data-score attribute',
-      );
-      expect(
-        res.body.contains('data-cx="0"'),
-        isTrue,
-        reason: 'scored cell must carry data-cx attribute',
-      );
-      expect(
-        res.body.contains('data-cz="0"'),
-        isTrue,
-        reason: 'scored cell must carry data-cz attribute',
-      );
-      expect(
-        RegExp(
-          r'class="[^"]*reactor-heatmap-cell[^"]*is-center',
-        ).hasMatch(res.body),
-        isTrue,
-        reason: 'the requested center chunk must have a complete center ring',
-      );
-      expect(
-        res.body.contains('data-cx="-1"') && res.body.contains('data-cz="-1"'),
-        isTrue,
-        reason: 'unscored chunks remain explicit coordinate-plane cells',
-      );
-    });
+      final DocumentResponse response = await tester.request('/');
 
-    testServer('renders min and max legend values', (
-      ServerTester tester,
-    ) async {
-      tester.pumpComponent(
-        _wrap(
-          const HeatmapGridView(
-            grid: HeatmapGrid(
-              id: 'test',
-              label: 'Test',
-              world: '',
-              centerChunkX: 0,
-              centerChunkZ: 0,
-              radius: 1,
-              min: 3.0,
-              max: 7.0,
-              cells: <HeatmapCell>[HeatmapCell(x: 0, z: 0, score: 3.0)],
-            ),
-          ),
-        ),
-      );
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('3.00') || res.body.contains('>3<'),
-        isTrue,
-        reason: 'min value 3 must appear as text in the legend',
-      );
-      expect(
-        res.body.contains('7.00') || res.body.contains('>7<'),
-        isTrue,
-        reason: 'max value 7 must appear as text in the legend',
-      );
-    });
-
-    testServer('empty cells retains the outlined coordinate plane', (
-      ServerTester tester,
-    ) async {
-      tester.pumpComponent(
-        _wrap(
-          const HeatmapGridView(
-            grid: HeatmapGrid(
-              id: 'test',
-              label: 'Test',
-              world: '',
-              centerChunkX: 0,
-              centerChunkZ: 0,
-              radius: 1,
-              min: 0.0,
-              max: 0.0,
-              cells: <HeatmapCell>[],
-            ),
-          ),
-        ),
-      );
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('No activity'),
-        isTrue,
-        reason: 'empty grid must render No activity text',
-      );
-      expect(
-        res.body.contains('repeat('),
-        isTrue,
-        reason: 'empty results must retain the world-coordinate plane',
-      );
-      expect('reactor-heatmap-cell is-empty'.allMatches(res.body).length, 9);
-      expect(res.body, contains('data-origin-x="-1"'));
-      expect(res.body, contains('data-origin-z="-1"'));
-    });
-
-    testServer('min==max degenerate scale does not divide by zero', (
-      ServerTester tester,
-    ) async {
-      tester.pumpComponent(
-        _wrap(
-          const HeatmapGridView(
-            grid: HeatmapGrid(
-              id: 'test',
-              label: 'Test',
-              world: '',
-              centerChunkX: 0,
-              centerChunkZ: 0,
-              radius: 1,
-              min: 5.0,
-              max: 5.0,
-              cells: <HeatmapCell>[HeatmapCell(x: 0, z: 0, score: 5.0)],
-            ),
-          ),
-        ),
-      );
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('data-score="5'),
-        isTrue,
-        reason: 'degenerate min==max must still render the scored cell',
-      );
+      expect(response.body, contains('Chunks X -8…-1 · Z -16…-9'));
+      expect(response.body, contains('Blocks X -128…-1 · Z -256…-129'));
     });
   });
 }

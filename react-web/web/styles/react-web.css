@@ -1896,6 +1896,118 @@ html[dir="rtl"] .reactor-bar-actions > * {
   background: var(--reactor-surface);
 }
 
+.reactor-metrics-table tbody tr.is-selected td {
+  background: var(--reactor-raised);
+  box-shadow: inset 0 1px 0 var(--reactor-border),
+    inset 0 -1px 0 var(--reactor-border);
+}
+
+.reactor-metric-select {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.reactor-metric-select:focus-visible {
+  outline: 1px solid var(--reactor-text);
+  outline-offset: 4px;
+}
+
+.reactor-history-panel {
+  min-width: 0;
+  background: var(--reactor-panel);
+}
+
+.reactor-history-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--reactor-border-soft);
+}
+
+.reactor-history-heading {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.reactor-history-heading strong {
+  color: var(--reactor-text);
+  font-size: 0.8rem;
+}
+
+.reactor-history-heading code {
+  overflow: hidden;
+  color: var(--reactor-label);
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  text-overflow: ellipsis;
+}
+
+.reactor-history-ranges {
+  display: inline-flex;
+  padding: 2px;
+  border: 1px solid var(--reactor-border);
+  background: var(--reactor-surface);
+}
+
+.reactor-history-range {
+  min-width: 40px;
+  padding: 5px 8px;
+  border: 0;
+  background: transparent;
+  color: var(--reactor-label);
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  cursor: pointer;
+}
+
+.reactor-history-range:hover,
+.reactor-history-range:focus-visible {
+  background: var(--reactor-raised);
+  color: var(--reactor-text);
+}
+
+.reactor-history-range.is-selected {
+  background: var(--reactor-text);
+  color: var(--reactor-panel);
+}
+
+.reactor-history-meta,
+.reactor-history-summary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--reactor-border-soft);
+  color: var(--reactor-label);
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+}
+
+.reactor-history-state {
+  min-height: 112px;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  color: var(--reactor-label);
+  font-size: 0.76rem;
+  text-align: center;
+}
+
+.reactor-history-state.is-error {
+  color: var(--reactor-danger);
+}
+
 .reactor-metric-name {
   color: var(--reactor-text);
   font-weight: 560;
@@ -2179,7 +2291,7 @@ html[dir="rtl"] .reactor-bar-actions > * {
 .reactor-chart-plot {
   position: relative;
   min-width: 0;
-  padding: 10px 42px 4px 8px;
+  padding: 10px 42px 24px 8px;
   isolation: isolate;
 }
 
@@ -2197,6 +2309,35 @@ html[dir="rtl"] .reactor-bar-actions > * {
   stroke-width: 1.5;
   filter: drop-shadow(0 0 3px color-mix(in srgb, currentColor 22%, transparent));
   transition: opacity var(--reactor-transition);
+}
+
+.reactor-chart-series.is-secondary {
+  stroke-dasharray: 3 3;
+  opacity: 0.58;
+}
+
+.reactor-chart-series-0 {
+  stroke: var(--reactor-chart-1);
+}
+
+.reactor-chart-series-1 {
+  stroke: var(--reactor-chart-2);
+}
+
+.reactor-chart-series-2 {
+  stroke: var(--reactor-chart-3);
+}
+
+.reactor-chart-series-3 {
+  stroke: var(--reactor-chart-4);
+}
+
+.reactor-chart-series-4 {
+  stroke: var(--reactor-chart-5);
+}
+
+.reactor-chart-series-5 {
+  stroke: var(--reactor-chart-6);
 }
 
 .reactor-chart-hit-target {
@@ -2262,6 +2403,35 @@ html[dir="rtl"] .reactor-bar-actions > * {
 
 .reactor-chart-tooltip-row strong {
   font-weight: 600;
+}
+
+.reactor-chart-time-axis {
+  position: absolute;
+  right: 42px;
+  bottom: 5px;
+  left: 8px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--reactor-label);
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.reactor-chart-time-axis span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reactor-chart-time-axis span:nth-child(2) {
+  text-align: center;
+}
+
+.reactor-chart-time-axis span:last-child {
+  text-align: end;
 }
 
 .reactor-chart-scale {
@@ -2554,6 +2724,49 @@ html[dir="rtl"] .reactor-bar-actions > * {
   background: var(--reactor-panel);
 }
 
+.reactor-heatmap-viewport {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--reactor-border-soft);
+}
+
+.reactor-heatmap-viewport-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+  align-items: end;
+  gap: 0.65rem;
+  padding: 0.8rem;
+}
+
+.reactor-heatmap-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0 0.8rem 0.8rem;
+}
+
+.reactor-heatmap-result {
+  position: relative;
+  min-width: 0;
+}
+
+.reactor-heatmap-refreshing {
+  position: absolute;
+  z-index: 5;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 4px 8px;
+  border: 1px solid var(--reactor-border-strong);
+  border-radius: 999px;
+  color: var(--reactor-label);
+  background: color-mix(in srgb, var(--reactor-panel) 90%, transparent);
+  box-shadow: var(--reactor-shadow-sm);
+  font-size: 0.66rem;
+}
+
 .reactor-heatmap-header,
 .reactor-heatmap-legend {
   display: flex;
@@ -2591,6 +2804,7 @@ html[dir="rtl"] .reactor-bar-actions > * {
 
 .reactor-heatmap-coordinate-key {
   display: flex;
+  flex-wrap: wrap;
   min-height: 28px;
   align-items: center;
   justify-content: center;
@@ -2600,6 +2814,10 @@ html[dir="rtl"] .reactor-bar-actions > * {
   color: var(--reactor-label);
   background: var(--reactor-panel);
   font-size: 0.64rem;
+}
+
+.reactor-heatmap-coordinate-key > span {
+  color: var(--reactor-muted);
 }
 
 .reactor-heatmap-quiet {
@@ -2612,9 +2830,9 @@ html[dir="rtl"] .reactor-bar-actions > * {
 
 .reactor-heatmap-plane {
   display: grid;
-  width: min(100%, 730px);
-  grid-template-columns: 42px minmax(0, 1fr);
-  grid-template-rows: 24px minmax(0, 1fr);
+  width: min(100%, 920px);
+  grid-template-columns: 52px minmax(0, 1fr);
+  grid-template-rows: 26px minmax(0, 1fr);
   align-items: stretch;
 }
 
@@ -2642,6 +2860,7 @@ html[dir="rtl"] .reactor-bar-actions > * {
   min-height: 0;
   place-items: center;
   overflow: visible;
+  white-space: nowrap;
 }
 
 .reactor-heatmap-axis span.is-center {
@@ -2659,44 +2878,227 @@ html[dir="rtl"] .reactor-bar-actions > * {
   grid-row: 2;
 }
 
-.reactor-heatmap-grid {
-  display: grid;
+.reactor-heatmap-grid-stage {
+  position: relative;
   width: 100%;
-  max-height: 680px;
+  min-width: 0;
+  min-height: 0;
+  max-height: 760px;
   grid-column: 2;
   grid-row: 2;
-  gap: 0;
-  aspect-ratio: 1 / 1;
+  overflow: hidden;
   border: 1px solid var(--reactor-border-soft);
   background: var(--reactor-bg);
 }
 
+.reactor-heatmap-grid {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  gap: 0;
+  outline: none;
+  cursor: grab;
+  touch-action: none;
+}
+
+.reactor-heatmap-grid.is-dragging {
+  cursor: grabbing;
+}
+
+.reactor-heatmap-grid:focus-visible {
+  outline: 2px solid var(--reactor-text);
+  outline-offset: -2px;
+}
+
 .reactor-heatmap-cell {
+  position: relative;
+  display: flex;
   min-width: 0;
   min-height: 0;
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--reactor-border-soft) 72%, transparent);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  color: white;
+  background: var(--heatmap-cell-color, var(--reactor-bg));
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--reactor-border-soft) 82%, transparent);
+  font-family: var(--font-mono);
+  font-size: clamp(0.45rem, 1vw, 0.68rem);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
 }
 
 .reactor-heatmap-cell.is-empty {
-  opacity: 0.42;
+  color: var(--reactor-muted);
+  background:
+    repeating-linear-gradient(
+      135deg,
+      transparent 0,
+      transparent 5px,
+      color-mix(in srgb, var(--reactor-border-soft) 38%, transparent) 5px,
+      color-mix(in srgb, var(--reactor-border-soft) 38%, transparent) 7px
+    ),
+    var(--reactor-bg);
 }
 
 .reactor-heatmap-cell.is-world-axis {
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--reactor-label) 55%, transparent);
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--reactor-label) 78%, transparent);
 }
 
 .reactor-heatmap-cell.is-center {
   box-shadow:
     inset 0 0 0 1px var(--reactor-text),
-    inset 0 0 0 2px color-mix(in srgb, var(--reactor-bg) 64%, transparent);
+    inset 0 0 0 3px color-mix(in srgb, var(--reactor-bg) 72%, transparent);
 }
 
-.reactor-heatmap-cell:focus-visible,
+.reactor-heatmap-cell.is-spawn::after {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 6px;
+  height: 6px;
+  border: 1px solid var(--reactor-bg);
+  border-radius: 50%;
+  background: var(--reactor-text);
+  content: "";
+}
+
+.reactor-heatmap-cell.is-region-west {
+  border-left: 2px solid
+    color-mix(in srgb, var(--reactor-text) 76%, transparent);
+}
+
+.reactor-heatmap-cell.is-region-north {
+  border-top: 2px solid
+    color-mix(in srgb, var(--reactor-text) 76%, transparent);
+}
+
+.reactor-heatmap-cell.is-selected {
+  z-index: 3;
+  outline: 3px solid var(--reactor-text);
+  outline-offset: -3px;
+  box-shadow:
+    inset 0 0 0 1px var(--reactor-bg),
+    inset 0 0 0 4px color-mix(in srgb, var(--reactor-text) 26%, transparent);
+}
+
 .reactor-heatmap-cell:hover {
-  position: relative;
-  z-index: 1;
-  outline: 2px solid var(--reactor-text);
-  outline-offset: -2px;
+  z-index: 2;
+  filter: brightness(1.12);
+}
+
+.reactor-heatmap-cell-coordinate,
+.reactor-heatmap-cell-empty-label {
+  opacity: 0.82;
+  white-space: nowrap;
+}
+
+.reactor-heatmap-cell-score {
+  font-size: 1.08em;
+  white-space: nowrap;
+}
+
+.reactor-heatmap-region-label {
+  position: absolute;
+  top: 2px;
+  left: 3px;
+  max-width: calc(100% - 6px);
+  overflow: hidden;
+  opacity: 0.74;
+  font-size: 0.52rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reactor-heatmap-world-border {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  pointer-events: none;
+}
+
+.reactor-heatmap-world-border-edge {
+  position: absolute;
+  display: block;
+  background: var(--reactor-danger, #ff5c68);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--reactor-bg) 58%, transparent);
+}
+
+.reactor-heatmap-world-border-edge.is-left,
+.reactor-heatmap-world-border-edge.is-right {
+  width: 3px;
+  transform: translateX(-1.5px);
+}
+
+.reactor-heatmap-world-border-edge.is-top,
+.reactor-heatmap-world-border-edge.is-bottom {
+  height: 3px;
+  transform: translateY(-1.5px);
+}
+
+.reactor-heatmap-inspector {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
+  align-items: center;
+  gap: 6px 16px;
+  min-height: 42px;
+  padding: 7px 10px;
+  border-top: 1px solid var(--reactor-border-soft);
+  color: var(--reactor-label);
+  background: var(--reactor-surface);
+  font-size: 0.68rem;
+}
+
+.reactor-heatmap-inspector strong {
+  color: var(--reactor-text);
+}
+
+.reactor-heatmap-inspector code {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reactor-heatmap-target-actions {
+  display: flex;
+  min-width: 0;
+  align-items: end;
+  gap: 8px;
+  padding: 9px 10px;
+  border-top: 1px solid var(--reactor-border-soft);
+  background: var(--reactor-surface);
+  flex-wrap: wrap;
+}
+
+.reactor-heatmap-target-coordinate {
+  display: flex;
+  min-width: min(100%, 240px);
+  flex: 1 1 280px;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.reactor-heatmap-target-coordinate strong {
+  color: var(--reactor-text);
+  font-size: 0.7rem;
+}
+
+.reactor-heatmap-target-coordinate code,
+.reactor-heatmap-target-note {
+  color: var(--reactor-label);
+  font-size: 0.66rem;
+}
+
+.reactor-heatmap-player-select {
+  min-width: min(100%, 190px);
+  flex: 0 1 220px;
+}
+
+.reactor-heatmap-teleport-confirm {
+  width: 100%;
+  padding-top: 2px;
 }
 
 .reactor-heatmap-legend {
@@ -2704,6 +3106,29 @@ html[dir="rtl"] .reactor-bar-actions > * {
   border-top: 1px solid var(--reactor-border-soft);
   border-bottom: 0;
   background: var(--reactor-panel);
+}
+
+.reactor-heatmap-legend-scale {
+  width: min(38vw, 260px);
+  height: 8px;
+  border: 1px solid var(--reactor-border-soft);
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgb(38, 104, 176), rgb(255, 66, 48));
+}
+
+@media (max-width: 680px) {
+  .reactor-heatmap-canvas {
+    min-height: 260px;
+    padding: 8px 4px 10px;
+  }
+
+  .reactor-heatmap-plane {
+    grid-template-columns: 38px minmax(0, 1fr);
+  }
+
+  .reactor-heatmap-coordinate-key > span {
+    display: none;
+  }
 }
 
 .reactor-page input:not([type="checkbox"]):not([type="radio"]) {

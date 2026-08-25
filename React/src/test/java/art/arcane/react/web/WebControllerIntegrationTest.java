@@ -11,8 +11,14 @@ import art.arcane.react.api.web.dto.IdentityDto;
 import art.arcane.react.core.controller.IntegrationController;
 import art.arcane.react.core.controller.IntegrationController.Health;
 import art.arcane.react.core.controller.IntegrationController.IntegrationStatus;
+import art.arcane.react.core.controller.HistoryController;
 import art.arcane.react.core.controller.SampleController;
 import art.arcane.react.core.controller.WebController;
+import art.arcane.react.core.history.HistoryPoint;
+import art.arcane.react.core.history.HistoryQueryResult;
+import art.arcane.react.core.history.HistoryQuerySeries;
+import art.arcane.react.core.history.MetricDescriptor;
+import art.arcane.react.core.history.MetricSnapshot;
 import art.arcane.react.util.project.registry.Registry;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -37,6 +43,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -46,6 +54,15 @@ public class WebControllerIntegrationTest {
     private final List<String> injectedGraphKeys = new ArrayList<>();
 
     private WebController buildController(WebConfiguration config, File dataFolder, SampleController sampleController) {
+        return buildController(config, dataFolder, sampleController, null);
+    }
+
+    private WebController buildController(
+        WebConfiguration config,
+        File dataFolder,
+        SampleController sampleController,
+        HistoryController historyController
+    ) {
         WebController c = new WebController() {
             @Override
             protected void executeAsync(Runnable r) {
@@ -65,6 +82,7 @@ public class WebControllerIntegrationTest {
         c.setConfig(config);
         c.setDataFolder(dataFolder);
         c.setSampleController(sampleController);
+        c.setHistoryController(historyController);
         return c;
     }
 
@@ -104,12 +122,38 @@ public class WebControllerIntegrationTest {
         when(registry.all()).thenReturn(List.of(s1, s2));
         when(sampleController.getSampler("wc-tick-time")).thenReturn(s1);
 
+        HistoryController historyController = mock(HistoryController.class);
+        when(historyController.latest()).thenReturn(MetricSnapshot.empty());
+        when(historyController.descriptors()).thenReturn(List.of(
+            new MetricDescriptor("wc-tick-time", "wc-tick-time", "ms", 1_000L, 3_000L, true)
+        ));
+        when(historyController.effectiveMaxQuerySeries()).thenReturn(16);
+        when(historyController.effectiveMaxQueryPoints()).thenReturn(4_096);
+        when(historyController.effectiveQueryPagePoints()).thenReturn(256);
+        when(historyController.knowsMetric("wc-tick-time")).thenReturn(true);
+        when(historyController.knowsMetric("does-not-exist")).thenReturn(false);
+        when(historyController.selectResolution(anyLong(), anyLong(), anyInt())).thenReturn(1_000L);
+        when(historyController.query(anyList(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong()))
+            .thenReturn(new HistoryQueryResult(
+                1_000L,
+                3_000L,
+                1_000L,
+                7L,
+                3_000L,
+                List.of(new HistoryQuerySeries(
+                    "wc-tick-time",
+                    "wc-tick-time",
+                    "ms",
+                    List.of(new HistoryPoint(1_000L, 1_000L, 42D, 40D, 43D, 84D, 42D, 2L))
+                ))
+            ));
+
         WebConfiguration config = new WebConfiguration();
         config.setListenerEnabled(true);
         config.setListenAddress("127.0.0.1");
         config.setPort(0);
 
-        controller = buildController(config, dataFolder, sampleController);
+        controller = buildController(config, dataFolder, sampleController, historyController);
         controller.start();
         controller.postStart();
         controller.awaitStart(5000);
@@ -149,14 +193,17 @@ public class WebControllerIntegrationTest {
             .build();
         HttpResponse<String> metricsResponse = client.send(metricsRequest, HttpResponse.BodyHandlers.ofString());
         assertEquals(200, metricsResponse.statusCode());
-        assertEquals(2, parseDataArrayLength(metricsResponse.body()),
-            "Expected 2 samplers in data array, body was: " + metricsResponse.body());
+        assertEquals(2, parseSamplerArrayLength(metricsResponse.body()),
+            "Expected 2 samplers in scalar snapshot, body was: " + metricsResponse.body());
         JsonObject firstSampler = JsonParser.parseString(metricsResponse.body())
-            .getAsJsonObject().getAsJsonArray("data").get(0).getAsJsonObject();
+            .getAsJsonObject().getAsJsonObject("data").getAsJsonArray("samplers").get(0).getAsJsonObject();
         assertTrue(firstSampler.has("display"), "each sampler in the metrics array must carry a display string");
+        assertTrue(firstSampler.has("available"), "each sampler must expose availability");
+        assertTrue(!firstSampler.has("history"), "live snapshots must not duplicate historical arrays");
 
         HttpRequest historyRequest = HttpRequest.newBuilder()
-            .uri(URI.create("http://127.0.0.1:" + port + "/api/v1/metrics/wc-tick-time/history"))
+            .uri(URI.create("http://127.0.0.1:" + port
+                + "/api/v1/metrics/history?ids=wc-tick-time&from=1000&to=3000"))
             .header("Authorization", "Bearer " + bearer)
             .GET()
             .build();
@@ -164,14 +211,23 @@ public class WebControllerIntegrationTest {
         assertEquals(200, historyResponse.statusCode());
         JsonObject historyData = JsonParser.parseString(historyResponse.body())
             .getAsJsonObject().getAsJsonObject("data");
-        assertEquals("wc-tick-time", historyData.get("id").getAsString());
-        assertTrue(historyData.has("display"), "history.data should carry a formatted display string");
-        assertEquals("42.0", historyData.get("display").getAsString());
-        assertTrue(historyData.has("history"), "history.data should carry history array");
-        assertEquals(3, historyData.getAsJsonArray("history").size());
+        assertEquals(1_000L, historyData.get("actualResolutionMs").getAsLong());
+        JsonObject historySeries = historyData.getAsJsonArray("series").get(0).getAsJsonObject();
+        assertEquals("wc-tick-time", historySeries.get("id").getAsString());
+        assertEquals(6, historySeries.getAsJsonArray("points").get(0).getAsJsonArray().size());
+
+        HttpRequest catalogRequest = HttpRequest.newBuilder()
+            .uri(URI.create("http://127.0.0.1:" + port + "/api/v1/metrics/catalog"))
+            .header("Authorization", "Bearer " + bearer)
+            .GET()
+            .build();
+        HttpResponse<String> catalogResponse = client.send(catalogRequest, HttpResponse.BodyHandlers.ofString());
+        assertEquals(200, catalogResponse.statusCode());
+        assertEquals(1, parseDataArrayLength(catalogResponse.body()));
 
         HttpRequest unknownHistory = HttpRequest.newBuilder()
-            .uri(URI.create("http://127.0.0.1:" + port + "/api/v1/metrics/does-not-exist/history"))
+            .uri(URI.create("http://127.0.0.1:" + port
+                + "/api/v1/metrics/history?ids=does-not-exist&from=1000&to=3000"))
             .header("Authorization", "Bearer " + bearer)
             .GET()
             .build();
@@ -179,7 +235,8 @@ public class WebControllerIntegrationTest {
         assertEquals(404, unknownResponse.statusCode());
 
         HttpRequest historyNoAuth = HttpRequest.newBuilder()
-            .uri(URI.create("http://127.0.0.1:" + port + "/api/v1/metrics/wc-tick-time/history"))
+            .uri(URI.create("http://127.0.0.1:" + port
+                + "/api/v1/metrics/history?ids=wc-tick-time&from=1000&to=3000"))
             .GET()
             .build();
         HttpResponse<String> historyNoAuthResponse = client.send(historyNoAuth, HttpResponse.BodyHandlers.ofString());
@@ -244,8 +301,8 @@ public class WebControllerIntegrationTest {
         HttpResponse<String> metricsResponse = client.send(metricsNoAuth, HttpResponse.BodyHandlers.ofString());
         assertEquals(200, metricsResponse.statusCode(),
             "Metrics should be accessible without auth when requireTokenForReads=false");
-        assertEquals(2, parseDataArrayLength(metricsResponse.body()),
-            "Expected 2 samplers in data array");
+        assertEquals(2, parseSamplerArrayLength(metricsResponse.body()),
+            "Expected 2 samplers in scalar snapshot");
 
         HttpRequest identityNoAuth = HttpRequest.newBuilder()
             .uri(URI.create("http://127.0.0.1:" + port + "/api/v1/identity"))
@@ -286,7 +343,14 @@ public class WebControllerIntegrationTest {
         config.setListenAddress("127.0.0.1");
         config.setPort(0);
 
-        controller = buildController(config, dataFolder, sampleController);
+        HistoryController historyController = mock(HistoryController.class);
+        when(historyController.latest()).thenReturn(MetricSnapshot.empty());
+        when(historyController.effectiveMaxQuerySeries()).thenReturn(16);
+        when(historyController.effectiveMaxQueryPoints()).thenReturn(4_096);
+        when(historyController.effectiveQueryPagePoints()).thenReturn(256);
+        when(historyController.knowsMetric("does-not-exist")).thenReturn(false);
+        when(historyController.selectResolution(anyLong(), anyLong(), anyInt())).thenReturn(1_000L);
+        controller = buildController(config, dataFolder, sampleController, historyController);
         controller.setIntegrationController(mockIc);
         controller.start();
         controller.postStart();
@@ -351,7 +415,14 @@ public class WebControllerIntegrationTest {
         config.setListenAddress("127.0.0.1");
         config.setPort(0);
 
-        controller = buildController(config, dataFolder, sampleController);
+        HistoryController historyController = mock(HistoryController.class);
+        when(historyController.latest()).thenReturn(MetricSnapshot.empty());
+        when(historyController.effectiveMaxQuerySeries()).thenReturn(16);
+        when(historyController.effectiveMaxQueryPoints()).thenReturn(4_096);
+        when(historyController.effectiveQueryPagePoints()).thenReturn(256);
+        when(historyController.knowsMetric("does-not-exist")).thenReturn(false);
+        when(historyController.selectResolution(anyLong(), anyLong(), anyInt())).thenReturn(1_000L);
+        controller = buildController(config, dataFolder, sampleController, historyController);
         controller.start();
         controller.postStart();
         controller.awaitStart(5000);
@@ -360,7 +431,8 @@ public class WebControllerIntegrationTest {
         HttpClient client = HttpClient.newHttpClient();
 
         HttpRequest notFoundRequest = HttpRequest.newBuilder()
-            .uri(URI.create("http://127.0.0.1:" + port + "/api/v1/metrics/does-not-exist/history"))
+            .uri(URI.create("http://127.0.0.1:" + port
+                + "/api/v1/metrics/history?ids=does-not-exist&from=1000&to=3000"))
             .header("Authorization", "Bearer " + bearer)
             .GET()
             .build();
@@ -390,6 +462,16 @@ public class WebControllerIntegrationTest {
             return 0;
         }
         return data.size();
+    }
+
+    private int parseSamplerArrayLength(String json) {
+        JsonObject root = JsonParser.parseString(json).getAsJsonObject();
+        JsonObject data = root.getAsJsonObject("data");
+        if (data == null) {
+            return 0;
+        }
+        JsonArray samplers = data.getAsJsonArray("samplers");
+        return samplers == null ? 0 : samplers.size();
     }
 
     private Graph injectGraph(String name, double[] history) throws Exception {

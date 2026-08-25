@@ -5,6 +5,7 @@ import 'package:jaspr/jaspr.dart';
 
 import '../localization/reactor_locale.dart';
 import '../localization/reactor_localizations.dart';
+import 'chart_timeline.dart';
 import 'svg_fallback_chart.dart';
 
 class TimeseriesChart extends StatefulComponent {
@@ -12,12 +13,18 @@ class TimeseriesChart extends StatefulComponent {
     required this.series,
     this.height = 160,
     this.valueFormatter,
+    this.sampleLabels,
+    this.sampleTimestamps,
+    this.secondarySeries = const <int>{},
     super.key,
   });
 
   final List<(String, List<double>)> series;
   final int height;
   final String Function(double value)? valueFormatter;
+  final List<String>? sampleLabels;
+  final List<DateTime>? sampleTimestamps;
+  final Set<int> secondarySeries;
 
   @override
   State<TimeseriesChart> createState() => _TimeseriesChartState();
@@ -33,6 +40,10 @@ class _TimeseriesChartState extends State<TimeseriesChart> {
     final bool hasSamples = component.series.any(
       ((String, List<double>) item) => item.$2.isNotEmpty,
     );
+    final List<DateTime>? timestamps = component.sampleTimestamps;
+    final ChartTimeline? timeline = timestamps == null
+        ? null
+        : ChartTimeline.fromTimestamps(timestamps);
     return dom.div(classes: 'reactor-chart${hasSamples ? '' : ' is-empty'}', <
       Component
     >[
@@ -43,6 +54,10 @@ class _TimeseriesChartState extends State<TimeseriesChart> {
           hiddenSeries: _hiddenSeries,
           activeSample: _activeSample,
           valueFormatter: component.valueFormatter,
+          sampleLabels: component.sampleLabels,
+          samplePositions: timeline?.positions,
+          breakBeforeSamples: timeline?.breakBefore ?? const <int>{},
+          secondarySeries: component.secondarySeries,
           onSampleHover: (int? sample) =>
               setState(() => _activeSample = sample),
         )

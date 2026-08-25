@@ -10,8 +10,9 @@ import '../model/environment_info.dart';
 import '../model/heatmap.dart';
 import '../model/identity_info.dart';
 import '../model/incident_status.dart';
+import '../model/metric_history.dart';
+import '../model/player_navigation.dart';
 import '../model/role_info.dart';
-import '../model/sampler_sample.dart';
 import '../model/server_capabilities.dart';
 import '../model/server_credential.dart';
 import '../model/server_snapshot.dart';
@@ -22,6 +23,18 @@ import 'react_exceptions.dart';
 
 abstract interface class IMetricsClient {
   Future<ServerSnapshot> metrics();
+}
+
+abstract interface class IHistoryClient {
+  Future<List<MetricHistoryDescriptor>> historyCatalog();
+  Future<MetricHistoryPage> historyPage({
+    List<String>? ids,
+    DateTime? from,
+    DateTime? to,
+    int maxPoints,
+    int pageSize,
+    String? cursor,
+  });
 }
 
 abstract interface class IReactClient implements IMetricsClient {
@@ -37,9 +50,19 @@ abstract interface class IHeatmapClient {
   Future<HeatmapGrid> heatmap(
     String id, {
     String? world,
-    int? centerX,
-    int? centerZ,
+    int? centerChunkX,
+    int? centerChunkZ,
     int? radius,
+  });
+}
+
+abstract interface class IPlayerClient {
+  Future<List<OnlinePlayerInfo>> players();
+  Future<PlayerTeleportResult> teleportPlayer(
+    String playerId, {
+    required String worldKey,
+    required int blockX,
+    required int blockZ,
   });
 }
 
@@ -109,10 +132,12 @@ class ReactClient
         IReactClient,
         IPingClient,
         IHeatmapClient,
+        IPlayerClient,
         IControlClient,
         IOperateClient,
         IConsoleClient,
-        IRoleClient {
+        IRoleClient,
+        IHistoryClient {
   final ServerCredential cred;
   final http.Client _http;
   final MonotonicCounter _counter;
@@ -337,9 +362,55 @@ class ReactClient
     return ServerSnapshot.fromJson(_decodeJson(response.body));
   }
 
-  Future<SamplerSample> history(String id) async {
-    final http.Response response = await _get('/metrics/$id/history');
-    return SamplerSample.fromJson(_decodeData(response.body));
+  @override
+  Future<List<MetricHistoryDescriptor>> historyCatalog() async {
+    final http.Response response = await _get('/metrics/catalog');
+    if (response.statusCode != 200) {
+      throw ReactUnavailable(_errorMessage(response.body));
+    }
+    final Object? data = _decodeJson(response.body)['data'];
+    if (data is! List<dynamic>) {
+      throw const ReactUnavailable('Malformed history catalog response');
+    }
+    return data
+        .map(
+          (dynamic value) =>
+              MetricHistoryDescriptor.fromJson(value as Map<String, dynamic>),
+        )
+        .toList();
+  }
+
+  @override
+  Future<MetricHistoryPage> historyPage({
+    List<String>? ids,
+    DateTime? from,
+    DateTime? to,
+    int maxPoints = 1200,
+    int pageSize = 256,
+    String? cursor,
+  }) async {
+    final String path;
+    if (cursor != null) {
+      path = '/metrics/history?cursor=${Uri.encodeQueryComponent(cursor)}';
+    } else {
+      if (ids == null || ids.isEmpty || from == null || to == null) {
+        throw ArgumentError('ids, from, and to are required without a cursor');
+      }
+      final Map<String, String> query = <String, String>{
+        'ids': ids.join(','),
+        'from': from.millisecondsSinceEpoch.toString(),
+        'to': to.millisecondsSinceEpoch.toString(),
+        'maxPoints': maxPoints.toString(),
+        'pageSize': pageSize.toString(),
+      };
+      path =
+          '/metrics/history?${query.entries.map((MapEntry<String, String> entry) => '${Uri.encodeQueryComponent(entry.key)}=${Uri.encodeQueryComponent(entry.value)}').join('&')}';
+    }
+    final http.Response response = await _get(path);
+    if (response.statusCode != 200) {
+      throw ReactUnavailable(_errorMessage(response.body));
+    }
+    return MetricHistoryPage.fromJson(_decodeData(response.body));
   }
 
   @override
@@ -359,14 +430,18 @@ class ReactClient
   Future<HeatmapGrid> heatmap(
     String id, {
     String? world,
-    int? centerX,
-    int? centerZ,
+    int? centerChunkX,
+    int? centerChunkZ,
     int? radius,
   }) async {
     final Map<String, String> params = <String, String>{};
     if (world != null) params['world'] = world;
-    if (centerX != null) params['centerX'] = centerX.toString();
-    if (centerZ != null) params['centerZ'] = centerZ.toString();
+    if (centerChunkX != null) {
+      params['centerChunkX'] = centerChunkX.toString();
+    }
+    if (centerChunkZ != null) {
+      params['centerChunkZ'] = centerChunkZ.toString();
+    }
     if (radius != null) params['radius'] = radius.toString();
     final String query = params.isEmpty
         ? ''
@@ -377,6 +452,49 @@ class ReactClient
       throw ReactUnavailable('Unknown heatmap: $id');
     }
     return HeatmapGrid.fromJson(_decodeData(r.body));
+  }
+
+  @override
+  Future<List<OnlinePlayerInfo>> players() async {
+    final http.Response response = await _get('/players');
+    switch (response.statusCode) {
+      case 200:
+        final Object? data = _decodeJson(response.body)['data'];
+        if (data is! List<dynamic>) {
+          throw const ReactUnavailable('Malformed players response');
+        }
+        return data
+            .map(
+              (dynamic value) =>
+                  OnlinePlayerInfo.fromJson(value as Map<String, dynamic>),
+            )
+            .toList(growable: false);
+      case 403:
+        throw ReactForbidden(_errorMessage(response.body));
+      case 404:
+        throw ReactNotFound(_errorMessage(response.body));
+      default:
+        throw ReactUnavailable(_errorMessage(response.body));
+    }
+  }
+
+  @override
+  Future<PlayerTeleportResult> teleportPlayer(
+    String playerId, {
+    required String worldKey,
+    required int blockX,
+    required int blockZ,
+  }) async {
+    final Map<String, dynamic> data = await _postData(
+      '/players/${Uri.encodeComponent(playerId)}/teleport',
+      <String, Object?>{
+        'worldKey': worldKey,
+        'blockX': blockX,
+        'blockZ': blockZ,
+        'confirm': true,
+      },
+    );
+    return PlayerTeleportResult.fromJson(data);
   }
 
   @override

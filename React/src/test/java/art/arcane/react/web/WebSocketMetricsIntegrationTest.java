@@ -160,13 +160,17 @@ public class WebSocketMetricsIntegrationTest {
         String frame = firstFrame.get();
         JsonObject root = JsonParser.parseString(frame).getAsJsonObject();
         assertTrue(root.has("data"), "Frame must have a 'data' field; got: " + frame);
-        JsonArray data = root.getAsJsonArray("data");
-        assertEquals(2, data.size(), "Expected data array of length 2; got: " + data.size());
+        JsonObject data = root.getAsJsonObject("data");
+        assertTrue(data.has("sequence"), "Frame data must carry a sequence");
+        assertTrue(data.has("capturedAtMs"), "Frame data must carry a capture timestamp");
+        JsonArray samplers = data.getAsJsonArray("samplers");
+        assertEquals(2, samplers.size(), "Expected samplers array of length 2; got: " + samplers.size());
 
-        JsonObject firstSampler = data.get(0).getAsJsonObject();
+        JsonObject firstSampler = samplers.get(0).getAsJsonObject();
         assertTrue(firstSampler.has("id"), "Sampler entry must have 'id'; got: " + firstSampler);
         assertTrue(firstSampler.has("value"), "Sampler entry must have 'value'; got: " + firstSampler);
-        assertTrue(firstSampler.has("history"), "Sampler entry must have 'history'; got: " + firstSampler);
+        assertFalse(firstSampler.has("history"), "Scalar frame must omit duplicated history; got: " + firstSampler);
+        assertTrue(firstSampler.has("available"), "Sampler entry must carry availability; got: " + firstSampler);
     }
 
     @Test

@@ -42,6 +42,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -402,6 +403,30 @@ public class NearbyPlayerIndexController implements IController, Listener {
       lock.unlockRead(stamp);
     }
     return result;
+  }
+
+  public List<PlayerViewSnapshot> playerSnapshots() {
+    Map<UUID, PlayerSnapshot> snapshots = snapshotsByPlayer;
+    if (snapshots == null || snapshots.isEmpty()) {
+      return List.of();
+    }
+    List<PlayerViewSnapshot> result = new ArrayList<>(snapshots.size());
+    for (Map.Entry<UUID, PlayerSnapshot> entry : snapshots.entrySet()) {
+      PlayerSnapshot snapshot = entry.getValue();
+      if (snapshot != null) {
+        result.add(snapshot.view(entry.getKey()));
+      }
+    }
+    return List.copyOf(result);
+  }
+
+  public Optional<PlayerViewSnapshot> playerSnapshot(UUID playerId) {
+    Map<UUID, PlayerSnapshot> snapshots = snapshotsByPlayer;
+    if (playerId == null || snapshots == null) {
+      return Optional.empty();
+    }
+    PlayerSnapshot snapshot = snapshots.get(playerId);
+    return snapshot == null ? Optional.empty() : Optional.of(snapshot.view(playerId));
   }
 
   private boolean withinRange(

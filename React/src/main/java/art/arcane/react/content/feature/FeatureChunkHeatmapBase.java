@@ -33,50 +33,49 @@ import art.arcane.react.core.controller.MapController;
 import art.arcane.react.core.controller.ObserverController;
 import art.arcane.react.core.controller.ObserverController.LoadedChunkCoordinate;
 import art.arcane.react.localization.ReactLanguage;
-import art.arcane.react.localization.catalog.MapMessages;
 import art.arcane.react.localization.catalog.RendererMessages;
 import art.arcane.react.model.SampledChunk;
 import art.arcane.react.util.data.TinyColor;
-import art.arcane.volmlib.util.localization.MessageArgument;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicLong;
 
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Chunk Heatmap Base feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRenderer, ChunkGridExporter {
-  private static final long SCAN_CACHE_TTL_MS = 45L;
-  private static final int RAMP_STEPS = 16;
-  private static final ThreadLocal<ScanCache> SCAN_CACHE = ThreadLocal.withInitial(ScanCache::new);
+  private static final long SCAN_CACHE_TTL_MS = 300L;
+  private static final int COLOR_RAMP_STEPS = 64;
+  private static final int LEGEND_RAMP_STEPS = 16;
   private static final ThreadLocal<Projection> PROJECTION = ThreadLocal.withInitial(Projection::new);
-  private static final AtomicLong NEXT_SCAN_CACHE_OWNER_ID = new AtomicLong();
   private static final TinyColor FRAME_CENTER = MapTheme.INFO;
   private static final TinyColor HELD_CENTER = MapTheme.OK;
   private static final TinyColor FRAME_VALUE = MapTheme.INFO;
+  private static final TinyColor UNLOADED_CELL = MapTheme.SURFACE_0;
+  private static final TinyColor LOADED_QUIET_CELL = MapTheme.SURFACE_3;
+  private static final TinyColor CELL_BORDER = MapTheme.LINE;
+  private static final TinyColor MCA_BORDER = MapTheme.LINE_STRONG;
   private static final TinyColor COOL_LOW = new TinyColor(16, 78, 180);
   private static final TinyColor COOL_HIGH = new TinyColor(60, 175, 235);
   private static final TinyColor HOT_HIGH = new TinyColor(255, 98, 42);
-  private final long scanCacheOwnerId;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Pixel scale used when chunk heatmap base draws each chunk on the map.", impact = "Higher values make chunks larger and reduce visible radius; lower values show more area with finer detail.")
   private int chunkPixelSize = 5;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Map chunks radius used by chunk heatmap base (chunks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
   private int mapRadiusChunks = 0;
-  @art.arcane.react.util.project.config.ConfigDoc(value = "Controls whether chunk heatmap base rotates map output with player heading.", impact = "Enable for orientation-aware maps; disable for fixed north-up rendering.")
-  private boolean rotateWithPlayer = true;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Controls whether chunk heatmap base renders draw center marker on map output.", impact = "Enable to show this visual layer; disable for a cleaner map and slightly lower render cost.")
   private boolean drawCenterMarker = true;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Controls whether chunk heatmap base renders draw label on map output.", impact = "Enable to show this visual layer; disable for a cleaner map and slightly lower render cost.")
   private boolean drawLabel = true;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Minimum peak chunk score required before the heatmap renders activity.", impact = "Below this the map shows an explicit quiet state instead of amplifying measurement noise into full-scale colors.")
-  private double minSignificantScore = 0.001;
+  private double minSignificantScore = 0.001D;
+  private transient volatile ScanSnapshot cachedScan = ScanSnapshot.empty();
 
   protected FeatureChunkHeatmapBase(String id) {
     super(id);
-    scanCacheOwnerId = NEXT_SCAN_CACHE_OWNER_ID.incrementAndGet();
   }
 
   @Override
@@ -91,7 +90,8 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
 
   @Override
   public double scoreChunk(HeatmapWorldRef world, int chunkX, int chunkZ) {
-    return Math.max(0D, chunkScore(world, chunkX, chunkZ));
+    double score = chunkScore(world, chunkX, chunkZ);
+    return Double.isFinite(score) ? Math.max(0D, score) : 0D;
   }
 
   @Override
@@ -103,14 +103,14 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
   public void render() {
     Player viewer = player();
     MapController mapController = React.controller(MapController.class);
-    Location anchor = mapController == null ? (viewer == null ? null : viewer.getLocation().clone()) : mapController.resolveMapAnchor(view(), viewer);
+    Location anchor = mapController == null
+        ? viewer == null ? null : viewer.getLocation().clone()
+        : mapController.resolveMapAnchor(view(), viewer);
     World mapWorld = view() != null && view().getWorld() != null
         ? view().getWorld()
-        : anchor == null ? (viewer == null ? null : viewer.getWorld()) : anchor.getWorld();
+        : anchor == null ? viewer == null ? null : viewer.getWorld() : anchor.getWorld();
 
     if (mapWorld == null) {
-      // No world resolves for this view yet (fresh map, headless render); paint the
-      // dashboard shell instead of leaving the frame blank.
       fill(rootRegion(), backgroundColor());
       RendererLayout.emptyState(
           this,
@@ -136,204 +136,64 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
     }
 
     boolean frameAnchored = mapController != null && mapController.hasFrameAnchor(view());
-
     fill(rootRegion(), backgroundColor());
-
     Region body = bodyRegion();
-    int centerChunkX = (int) Math.floor(anchor.getX() / 16D);
-    int centerChunkZ = (int) Math.floor(anchor.getZ() / 16D);
-    int zoom = effectiveZoom();
-    int radius = effectiveRadius(mapWorld, body, zoom);
-    double pixelsPerBlock = zoom / 16D;
-
-    int localX = Math.floorMod(anchor.getBlockX(), 16);
-    int localZ = Math.floorMod(anchor.getBlockZ(), 16);
-    double yaw = rotateWithPlayer && !frameAnchored && viewer != null ? ((-viewer.getLocation().getYaw()) + 180D) : 0D;
-    double radians = Math.toRadians(yaw);
+    int centerChunkX = Math.floorDiv(anchor.getBlockX(), 16);
+    int centerChunkZ = Math.floorDiv(anchor.getBlockZ(), 16);
+    int axisLeft = textWidth("-000") + MapTheme.gutter(uiScale());
+    int axisTop = textHeight() + Math.max(1, uiScale());
+    ChunkHeatmapLayout layout = ChunkHeatmapLayout.create(
+        body,
+        centerChunkX,
+        centerChunkZ,
+        effectiveZoom(),
+        mapRadiusChunks,
+        axisLeft,
+        axisTop
+    );
 
     Projection projection = PROJECTION.get();
-    projection.centerX = body.centerX();
-    projection.centerY = body.centerY();
-    projection.centerChunkX = centerChunkX;
-    projection.centerChunkZ = centerChunkZ;
-    projection.offsetX = -(localX * pixelsPerBlock);
-    projection.offsetZ = -(localZ * pixelsPerBlock);
-    projection.cos = Math.cos(radians);
-    projection.sin = Math.sin(radians);
-    projection.rotate = rotateWithPlayer;
-    projection.zoom = zoom;
-    projection.radiusChunks = radius;
+    projection.gridX = layout.grid().x();
+    projection.gridY = layout.grid().y();
+    projection.minChunkX = layout.minChunkX();
+    projection.minChunkZ = layout.minChunkZ();
+    projection.cellSize = layout.cellSize();
+    projection.radiusChunks = layout.radiusChunks();
     projection.anchorWorldId = mapWorld.getUID();
     projection.anchorX = anchor.getX();
     projection.anchorZ = anchor.getZ();
     projection.frameAnchored = frameAnchored;
 
-    ScanCache scan = scan(mapWorld, centerChunkX, centerChunkZ, radius);
-    Map<LoadedChunkCoordinate, Double> score = scan.score;
-    double min = scan.min;
-    double max = scan.max;
-    boolean quiet = max < minSignificantScore;
-
+    ScanSnapshot scan = scan(mapWorld.getUID(), layout);
     pushClip(body);
     try {
       Region drawBounds = clipRegion().intersect(tileRegion());
-      if (!quiet && !drawBounds.isEmpty()) {
-        boolean axisAligned = projection.axisAligned();
-        for (Map.Entry<LoadedChunkCoordinate, Double> entry : score.entrySet()) {
-          LoadedChunkCoordinate chunk = entry.getKey();
-          int baseX = (chunk.chunkX() - centerChunkX) * zoom;
-          int baseZ = (chunk.chunkZ() - centerChunkZ) * zoom;
-          Region cell = projection.cellBounds(baseX, baseZ, zoom);
-          if (!cell.intersects(drawBounds)) {
-            continue;
-          }
-
-          double normalized = normalize(entry.getValue(), min, max);
-          TinyColor color = colorFor(normalized, entry.getValue());
-          if (axisAligned) {
-            set(cell.x(), cell.y(), zoom, zoom, color);
-            continue;
-          }
-
-          for (int dx = 0; dx < zoom; dx++) {
-            for (int dz = 0; dz < zoom; dz++) {
-              set(
-                  projection.projectedX(baseX + dx, baseZ + dz),
-                  projection.projectedY(baseX + dx, baseZ + dz),
-                  color
-              );
-            }
-          }
-        }
-      }
-
+      drawGrid(layout, scan, scan.colorRamp, drawBounds);
+      renderOverlay(scan.scale.quiet() ? Map.of() : scan.positiveScores, 0D, scan.scale.maximum());
       if (drawCenterMarker) {
-        TinyColor centerColor = frameAnchored ? FRAME_CENTER : HELD_CENTER;
-        int marker = Math.max(1, uiScale());
-        set(body.centerX() - marker, body.centerY(), (2 * marker) + 1, 1, centerColor);
-        set(body.centerX(), body.centerY() - marker, 1, (2 * marker) + 1, centerColor);
+        drawCenterRing(layout, frameAnchored ? FRAME_CENTER : HELD_CENTER);
       }
-
-      if (quiet) {
-        String message = ReactLanguage.raw(RendererMessages.HEATMAP_NO_ACTIVITY);
-        textCenteredIn(body, Math.max(0, (body.height() - textHeight()) / 2), message, MapTheme.TEXT_MUTED);
-      }
-
-      renderOverlay(quiet ? Map.of() : score, min, max);
+      drawAxes(layout);
     } finally {
       popClip();
     }
 
     dashHeader(
         drawLabel ? mapLabel() : null,
-        frameAnchored ? ReactLanguage.raw(RendererMessages.STATUS_FRAME) : null,
+        coordinateLabel(centerChunkX, centerChunkZ, frameAnchored),
         headerColor(frameAnchored),
         FRAME_VALUE
     );
-    drawLegend(min, max, quiet, radius, frameAnchored);
+    drawLegend(scan.scale, layout.cellSize(), frameAnchored, scan.colorRamp);
   }
 
   protected int effectiveZoom() {
-    int zoom = Math.max(1, chunkPixelSize);
-    // Megamap detail tiers on tile count, so a 1xN strip gets promoted like a square
-    // wall even though neither axis gained room. Key off the canvas instead: zoom only
-    // shrinks once the shorter axis actually spans more than one map.
-    if (canvasSpan() >= 2) {
-      return Math.max(2, zoom - 2);
-    }
-    return zoom;
-  }
-
-  protected int effectiveRadius(World world, Region body, int zoom) {
-    int base = mapRadiusChunks > 0 ? mapRadiusChunks : Math.max(2, world.getViewDistance() * 2);
-    int expansion = canvasExtent();
-    int fit = (Math.max(body.width(), body.height()) / (2 * Math.max(1, zoom))) + 2;
-    return Math.max(2, Math.min(fit, base * expansion));
-  }
-
-  // Maps spanning the shorter canvas axis: 1 for a single map, for a 1xN strip and for
-  // any magnified megamap that fell back to a 128px canvas, 2 for a 2x2 wall.
-  private int canvasSpan() {
-    return Math.max(1, Math.min(width(), height()) / ReactRenderer.CANVAS_SIZE);
-  }
-
-  // Maps spanning the longer canvas axis, which bounds how far the loaded-chunk scan
-  // may reach past the configured radius.
-  private int canvasExtent() {
-    return Math.max(1, Math.max(width(), height()) / ReactRenderer.CANVAS_SIZE);
+    int zoom = Math.max(3, chunkPixelSize);
+    return canvasSpan() >= 2 ? Math.max(3, zoom - 2) : zoom;
   }
 
   protected Pixel projectChunk(LoadedChunkCoordinate chunk) {
-    Projection projection = PROJECTION.get();
-    int zoom = Math.max(1, projection.zoom);
-    return projection.project(
-        ((chunk.chunkX() - projection.centerChunkX) * zoom) + (zoom / 2),
-        ((chunk.chunkZ() - projection.centerChunkZ) * zoom) + (zoom / 2)
-    );
-  }
-
-  private ScanCache scan(World world, int centerChunkX, int centerChunkZ, int radius) {
-    ScanCache cache = SCAN_CACHE.get();
-    long now = System.currentTimeMillis();
-    UUID worldId = world.getUID();
-    if (cache.ownerId == scanCacheOwnerId
-        && worldId.equals(cache.world)
-        && cache.centerX == centerChunkX
-        && cache.centerZ == centerChunkZ
-        && cache.radius == radius
-        && (now - cache.stampMs) < SCAN_CACHE_TTL_MS) {
-      return cache;
-    }
-
-    cache.ownerId = scanCacheOwnerId;
-    cache.world = worldId;
-    cache.centerX = centerChunkX;
-    cache.centerZ = centerChunkZ;
-    cache.radius = radius;
-    cache.stampMs = now;
-    cache.score.clear();
-
-    double max = 0D;
-    double min = Double.MAX_VALUE;
-    ObserverController observer = React.controller(ObserverController.class);
-    if (observer == null) {
-      cache.min = 0D;
-      cache.max = 0D;
-      return cache;
-    }
-
-    HeatmapWorldRef heatmapWorld = observer.heatmapWorld(worldId).orElse(null);
-    if (heatmapWorld == null) {
-      cache.min = 0D;
-      cache.max = 0D;
-      return cache;
-    }
-
-    for (LoadedChunkCoordinate chunk : observer.loadedChunkCoordinatesInRadius(
-        worldId,
-        centerChunkX,
-        centerChunkZ,
-        radius
-    )) {
-
-      double value = scoreChunk(heatmapWorld, chunk.chunkX(), chunk.chunkZ());
-      if (value <= 0D) {
-        continue;
-      }
-
-      cache.score.put(chunk, value);
-      max = Math.max(max, value);
-      min = Math.min(min, value);
-    }
-
-    if (cache.score.isEmpty()) {
-      min = 0D;
-      max = 0D;
-    }
-
-    cache.min = min;
-    cache.max = max;
-    return cache;
+    return PROJECTION.get().projectChunk(chunk.chunkX(), chunk.chunkZ());
   }
 
   protected TinyColor backgroundColor() {
@@ -342,10 +202,7 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
 
   protected TinyColor headerColor(boolean frameAnchored) {
     TinyColor base = headerColor();
-    if (!frameAnchored) {
-      return base;
-    }
-    return tint(base, 1.12D);
+    return frameAnchored ? tint(base, 1.12D) : base;
   }
 
   protected TinyColor headerColor() {
@@ -383,7 +240,6 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
     if (observer == null || observer.getSampled() == null) {
       return 0D;
     }
-
     return observer.sampledChunk(world.worldKey(), chunkX, chunkZ).map(SampledChunk::totalScore).orElse(0D);
   }
 
@@ -391,23 +247,8 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
     return new TinyColor(gradientRgb(normalized, low, high));
   }
 
-  private TinyColor tint(TinyColor color, double factor) {
-    int r = (int) Math.round(color.getRed() * factor);
-    int g = (int) Math.round(color.getGreen() * factor);
-    int b = (int) Math.round(color.getBlue() * factor);
-    return new TinyColor(
-        Math.max(0, Math.min(255, r)),
-        Math.max(0, Math.min(255, g)),
-        Math.max(0, Math.min(255, b))
-    );
-  }
-
   protected Pixel projectBlockDelta(ProjectionAnchor anchor, double targetX, double targetZ) {
-    Projection projection = PROJECTION.get();
-    double pixelsPerBlock = Math.max(1, projection.zoom) / 16D;
-    double a = (targetX - anchor.x()) * pixelsPerBlock;
-    double b = (targetZ - anchor.z()) * pixelsPerBlock;
-    return projection.projectRaw(a, b);
+    return PROJECTION.get().projectBlock(targetX, targetZ);
   }
 
   protected double visibleRadiusBlocks() {
@@ -416,68 +257,272 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
 
   protected ProjectionAnchor projectionAnchor() {
     Projection projection = PROJECTION.get();
-    UUID worldId = projection.anchorWorldId;
-    if (worldId == null) {
-      return null;
-    }
-    return new ProjectionAnchor(worldId, projection.anchorX, projection.anchorZ);
+    return projection.anchorWorldId == null
+        ? null
+        : new ProjectionAnchor(projection.anchorWorldId, projection.anchorX, projection.anchorZ);
   }
 
   protected boolean projectionFrameAnchored() {
     return PROJECTION.get().frameAnchored;
   }
 
-  private void drawLegend(double min, double max, boolean quiet, int radius, boolean frameAnchored) {
+  private int canvasSpan() {
+    return Math.max(1, Math.min(width(), height()) / ReactRenderer.CANVAS_SIZE);
+  }
+
+  private ScanSnapshot scan(UUID worldId, ChunkHeatmapLayout layout) {
+    long now = System.currentTimeMillis();
+    ScanSnapshot current = cachedScan;
+    if (current.matches(worldId, layout, minSignificantScore, now)) {
+      return current;
+    }
+
+    double[] cellScores = new double[layout.columns() * layout.rows()];
+    Arrays.fill(cellScores, Double.NaN);
+    HashMap<LoadedChunkCoordinate, Double> positiveScores = new HashMap<>();
+    ObserverController observer = React.controller(ObserverController.class);
+    HeatmapWorldRef heatmapWorld = observer == null ? null : observer.heatmapWorld(worldId).orElse(null);
+    if (observer != null && heatmapWorld != null) {
+      for (LoadedChunkCoordinate chunk : observer.loadedChunkCoordinatesInBounds(
+          worldId,
+          layout.minChunkX(),
+          layout.maxChunkX(),
+          layout.minChunkZ(),
+          layout.maxChunkZ()
+      )) {
+        int index = layout.indexOf(chunk.chunkX(), chunk.chunkZ());
+        if (index < 0) {
+          continue;
+        }
+        double value = scoreChunk(heatmapWorld, chunk.chunkX(), chunk.chunkZ());
+        cellScores[index] = value;
+        if (value > 0D) {
+          positiveScores.put(chunk, value);
+        }
+      }
+    }
+
+    ChunkHeatmapScale scale = ChunkHeatmapScale.fromValues(cellScores, minSignificantScore);
+    ScanSnapshot refreshed = new ScanSnapshot(
+        worldId,
+        layout.minChunkX(),
+        layout.maxChunkX(),
+        layout.minChunkZ(),
+        layout.maxChunkZ(),
+        minSignificantScore,
+        now,
+        cellScores,
+        positiveScores.isEmpty() ? Map.of() : Map.copyOf(positiveScores),
+        scale,
+        buildColorRamp(scale)
+    );
+    cachedScan = refreshed;
+    return refreshed;
+  }
+
+  private void drawGrid(
+      ChunkHeatmapLayout layout,
+      ScanSnapshot scan,
+      TinyColor[] colorRamp,
+      Region drawBounds
+  ) {
+    int cellSize = layout.cellSize();
+    for (int chunkZ = layout.minChunkZ(); chunkZ <= layout.maxChunkZ(); chunkZ++) {
+      int y = layout.cellY(chunkZ);
+      if (y >= drawBounds.bottom() || y + cellSize <= drawBounds.y()) {
+        continue;
+      }
+      for (int chunkX = layout.minChunkX(); chunkX <= layout.maxChunkX(); chunkX++) {
+        int x = layout.cellX(chunkX);
+        if (x >= drawBounds.right() || x + cellSize <= drawBounds.x()) {
+          continue;
+        }
+        double value = scan.cellScores[layout.indexOf(chunkX, chunkZ)];
+        drawCell(x, y, cellSize, cellColor(value, scan.scale, colorRamp), CELL_BORDER);
+        drawMcaEdges(x, y, cellSize, chunkX, chunkZ);
+      }
+    }
+  }
+
+  private TinyColor cellColor(double value, ChunkHeatmapScale scale, TinyColor[] colorRamp) {
+    if (Double.isNaN(value)) {
+      return UNLOADED_CELL;
+    }
+    if (value <= 0D || colorRamp.length == 0) {
+      return LOADED_QUIET_CELL;
+    }
+    return colorRamp[scale.rampIndex(value, colorRamp.length)];
+  }
+
+  private void drawCell(int x, int y, int size, TinyColor fillColor, TinyColor borderColor) {
+    set(x, y, size, size, fillColor);
+    drawRing(x, y, size, borderColor);
+  }
+
+  private void drawRing(int x, int y, int size, TinyColor color) {
+    set(x, y, size, 1, color);
+    set(x, y + size - 1, size, 1, color);
+    set(x, y + 1, 1, Math.max(0, size - 2), color);
+    set(x + size - 1, y + 1, 1, Math.max(0, size - 2), color);
+  }
+
+  private void drawMcaEdges(int x, int y, int size, int chunkX, int chunkZ) {
+    if (ChunkHeatmapLayout.startsMcaRegion(chunkX)) {
+      set(x, y, 1, size, MCA_BORDER);
+    }
+    if (ChunkHeatmapLayout.endsMcaRegion(chunkX)) {
+      set(x + size - 1, y, 1, size, MCA_BORDER);
+    }
+    if (ChunkHeatmapLayout.startsMcaRegion(chunkZ)) {
+      set(x, y, size, 1, MCA_BORDER);
+    }
+    if (ChunkHeatmapLayout.endsMcaRegion(chunkZ)) {
+      set(x, y + size - 1, size, 1, MCA_BORDER);
+    }
+  }
+
+  private void drawCenterRing(ChunkHeatmapLayout layout, TinyColor color) {
+    int x = layout.cellX(layout.centerChunkX());
+    int y = layout.cellY(layout.centerChunkZ());
+    int size = layout.cellSize();
+    int thickness = Math.max(1, Math.min(uiScale(), Math.max(1, size / 3)));
+    for (int inset = 0; inset < thickness; inset++) {
+      drawRing(x + inset, y + inset, size - (2 * inset), color);
+    }
+  }
+
+  private void drawAxes(ChunkHeatmapLayout layout) {
+    Region body = bodyRegion();
+    int labelY = Math.max(body.y(), layout.grid().y() - textHeight() - 1);
+    text(body.x(), labelY, "N", MapTheme.TEXT_STRONG);
+    text(body.x() + textWidth("N") + MapTheme.gutter(uiScale()), labelY, "X", MapTheme.TEXT_MUTED);
+    drawCenteredAxisLabel(
+        relativeLabel(layout.minChunkX() - layout.centerChunkX()),
+        layout.cellX(layout.minChunkX()) + (layout.cellSize() / 2),
+        labelY
+    );
+    if (layout.columns() > 1) {
+      drawCenteredAxisLabel("0", layout.cellX(layout.centerChunkX()) + (layout.cellSize() / 2), labelY);
+      drawCenteredAxisLabel(
+          relativeLabel(layout.maxChunkX() - layout.centerChunkX()),
+          layout.cellX(layout.maxChunkX()) + (layout.cellSize() / 2),
+          labelY
+      );
+    }
+
+    int labelRight = layout.grid().x() - MapTheme.gutter(uiScale());
+    text(body.x(), layout.grid().y(), "Z", MapTheme.TEXT_MUTED);
+    drawRightAxisLabel(
+        relativeLabel(layout.minChunkZ() - layout.centerChunkZ()),
+        labelRight,
+        layout.cellY(layout.minChunkZ()) + (layout.cellSize() / 2)
+    );
+    if (layout.rows() > 1) {
+      drawRightAxisLabel("0", labelRight, layout.cellY(layout.centerChunkZ()) + (layout.cellSize() / 2));
+      drawRightAxisLabel(
+          relativeLabel(layout.maxChunkZ() - layout.centerChunkZ()),
+          labelRight,
+          layout.cellY(layout.maxChunkZ()) + (layout.cellSize() / 2)
+      );
+    }
+  }
+
+  private void drawCenteredAxisLabel(String label, int centerX, int y) {
+    text(centerX - (textWidth(label) / 2), y, label, MapTheme.TEXT_MUTED);
+  }
+
+  private void drawRightAxisLabel(String label, int right, int centerY) {
+    text(right - textWidth(label), centerY - (textHeight() / 2), label, MapTheme.TEXT_MUTED);
+  }
+
+  private String relativeLabel(int offset) {
+    return offset > 0 ? "+" + offset : Integer.toString(offset);
+  }
+
+  private String coordinateLabel(int chunkX, int chunkZ, boolean frameAnchored) {
+    String label = (frameAnchored ? "F " : "") + "X" + chunkX + " Z" + chunkZ;
+    return textWidth(label) <= Math.max(1, width() / 2) ? label : null;
+  }
+
+  private TinyColor[] buildColorRamp(ChunkHeatmapScale scale) {
+    if (scale.maximum() <= 0D) {
+      return new TinyColor[0];
+    }
+    TinyColor[] ramp = new TinyColor[COLOR_RAMP_STEPS];
+    for (int step = 0; step < ramp.length; step++) {
+      double normalized = step / (double) (ramp.length - 1);
+      ramp[step] = colorFor(normalized, scale.maximum() * normalized);
+    }
+    return ramp;
+  }
+
+  private TinyColor tint(TinyColor color, double factor) {
+    int red = (int) Math.round(color.getRed() * factor);
+    int green = (int) Math.round(color.getGreen() * factor);
+    int blue = (int) Math.round(color.getBlue() * factor);
+    return new TinyColor(
+        Math.max(0, Math.min(255, red)),
+        Math.max(0, Math.min(255, green)),
+        Math.max(0, Math.min(255, blue))
+    );
+  }
+
+  private void drawLegend(
+      ChunkHeatmapScale scale,
+      int cellSize,
+      boolean frameAnchored,
+      TinyColor[] colorRamp
+  ) {
     Region footer = footerRegion();
     if (footer.isEmpty()) {
       return;
     }
-
-    int scale = uiScale();
     fill(footer, MapTheme.SURFACE_2);
     hSeparator(footer, 0, headerColor(frameAnchored));
-
     Region content = RendererLayout.footerContent(this);
     if (content.isEmpty()) {
       return;
     }
 
     int baseline = RendererLayout.baseline(this, content);
-    String scaleLabel = ReactLanguage.raw(
-        MapMessages.SCALE_CHUNKS,
-        MessageArgument.untrusted("radius", Integer.toString(radius))
-    );
-
-    if (quiet) {
+    String cellScale = "1C=" + cellSize + "px";
+    if (scale.quiet()) {
       textIn(content, 0, baseline, ReactLanguage.raw(RendererMessages.HEATMAP_QUIET), MapTheme.TEXT_MUTED);
-      textRightIn(content, 0, baseline, scaleLabel, MapTheme.TEXT_MUTED);
+      textRightIn(content, 0, baseline, cellScale, MapTheme.TEXT_MUTED);
       return;
     }
 
-    String lowLabel = compact(min);
-    String highLabel = compact(max);
-    int gutter = MapTheme.gutter(scale);
+    String lowLabel = "0";
+    String highLabel = compact(scale.maximum());
+    int gutter = MapTheme.gutter(uiScale());
     int lowWidth = textWidth(lowLabel);
     int highWidth = textWidth(highLabel);
-
+    int scaleWidth = textWidth(cellScale);
     textIn(content, 0, baseline, lowLabel, MapTheme.TEXT_MUTED);
-    textRightIn(content, 0, baseline, highLabel, MapTheme.TEXT_MUTED);
+    textRightIn(content, 0, baseline, cellScale, MapTheme.TEXT_MUTED);
+    Region highRegion = new Region(
+        content.right() - scaleWidth - gutter - highWidth,
+        content.y(),
+        highWidth,
+        content.height()
+    );
+    textIn(highRegion, 0, baseline, highLabel, MapTheme.TEXT_MUTED);
 
     Region ramp = content
         .withoutLeft(lowWidth + gutter)
-        .withoutRight(highWidth + gutter)
-        .inset(0, 2 * scale, 0, 2 * scale);
-    if (ramp.width() < (RAMP_STEPS * scale)) {
+        .withoutRight(scaleWidth + highWidth + (3 * gutter))
+        .inset(0, 2 * uiScale(), 0, 2 * uiScale());
+    if (ramp.width() < LEGEND_RAMP_STEPS || colorRamp.length == 0) {
       return;
     }
-
-    double range = Math.max(0.0001D, max - min);
-    int stepWidth = Math.max(1, ramp.width() / RAMP_STEPS);
-    for (int step = 0; step < RAMP_STEPS; step++) {
-      double n = step / (double) (RAMP_STEPS - 1);
+    int stepWidth = Math.max(1, ramp.width() / LEGEND_RAMP_STEPS);
+    for (int step = 0; step < LEGEND_RAMP_STEPS; step++) {
       int x = ramp.x() + (step * stepWidth);
-      int width = step == RAMP_STEPS - 1 ? ramp.right() - x : stepWidth;
-      fill(new Region(x, ramp.y(), width, ramp.height()), colorFor(n, min + (range * n)));
+      int width = step == LEGEND_RAMP_STEPS - 1 ? ramp.right() - x : stepWidth;
+      int rampIndex = (int) Math.round(
+          (step / (double) (LEGEND_RAMP_STEPS - 1)) * (colorRamp.length - 1)
+      );
+      fill(new Region(x, ramp.y(), width, ramp.height()), colorRamp[rampIndex]);
     }
   }
 
@@ -486,25 +531,15 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
       return "0";
     }
     if (Math.abs(value) >= 1000D) {
-      return String.format("%.1fk", value / 1000D);
+      return String.format(Locale.ROOT, "%.1fk", value / 1000D);
     }
     if (Math.abs(value) >= 100D) {
-      return String.format("%.0f", value);
+      return String.format(Locale.ROOT, "%.0f", value);
     }
     if (Math.abs(value) >= 10D) {
-      return String.format("%.1f", value);
+      return String.format(Locale.ROOT, "%.1f", value);
     }
-    return String.format("%.2f", value);
-  }
-
-  private double normalize(double value, double min, double max) {
-    // With a single distinct score there is no relative scale; render mid-heat
-    // instead of painting trivial lone activity as maximum pressure.
-    if (max <= min + 0.0001D) {
-      return value > 0D ? 0.5D : 0D;
-    }
-
-    return Math.max(0D, Math.min(1D, (value - min) / (max - min)));
+    return String.format(Locale.ROOT, "%.2f", value);
   }
 
   protected static final class Pixel {
@@ -531,83 +566,101 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
   }
 
   private static final class Projection {
-    private int centerX = 63;
-    private int centerY = 63;
-    private int centerChunkX;
-    private int centerChunkZ;
-    private int zoom = 1;
+    private int gridX;
+    private int gridY;
+    private int minChunkX;
+    private int minChunkZ;
+    private int cellSize = 1;
     private int radiusChunks;
-    private double offsetX;
-    private double offsetZ;
-    private double cos = 1D;
-    private double sin;
-    private boolean rotate;
     private UUID anchorWorldId;
     private double anchorX;
     private double anchorZ;
     private boolean frameAnchored;
 
-    private Pixel project(double localX, double localZ) {
-      return projectRaw(localX + offsetX, localZ + offsetZ);
+    private Pixel projectChunk(int chunkX, int chunkZ) {
+      int x = gridX + ((chunkX - minChunkX) * cellSize) + (cellSize / 2);
+      int y = gridY + ((chunkZ - minChunkZ) * cellSize) + (cellSize / 2);
+      return new Pixel(x, y);
     }
 
-    private Pixel projectRaw(double a, double b) {
-      int rx = rotate ? (int) Math.round((cos * a) - (sin * b)) : (int) Math.round(a);
-      int rz = rotate ? (int) Math.round((sin * a) + (cos * b)) : (int) Math.round(b);
-      return new Pixel(centerX + rx, centerY + rz);
-    }
-
-    private boolean axisAligned() {
-      return !rotate || (sin == 0D && cos == 1D);
-    }
-
-    private int projectedX(double localX, double localZ) {
-      double a = localX + offsetX;
-      double b = localZ + offsetZ;
-      return centerX + (rotate ? (int) Math.round((cos * a) - (sin * b)) : (int) Math.round(a));
-    }
-
-    private int projectedY(double localX, double localZ) {
-      double a = localX + offsetX;
-      double b = localZ + offsetZ;
-      return centerY + (rotate ? (int) Math.round((sin * a) + (cos * b)) : (int) Math.round(b));
-    }
-
-    private Region cellBounds(int baseX, int baseZ, int zoom) {
-      int span = Math.max(1, zoom);
-      if (axisAligned()) {
-        return new Region(projectedX(baseX, baseZ), projectedY(baseX, baseZ), span, span);
-      }
-
-      int edge = span - 1;
-      int minX = Integer.MAX_VALUE;
-      int minY = Integer.MAX_VALUE;
-      int maxX = Integer.MIN_VALUE;
-      int maxY = Integer.MIN_VALUE;
-      for (int corner = 0; corner < 4; corner++) {
-        int cornerX = baseX + ((corner & 1) == 0 ? 0 : edge);
-        int cornerZ = baseZ + ((corner & 2) == 0 ? 0 : edge);
-        int px = projectedX(cornerX, cornerZ);
-        int py = projectedY(cornerX, cornerZ);
-        minX = Math.min(minX, px);
-        maxX = Math.max(maxX, px);
-        minY = Math.min(minY, py);
-        maxY = Math.max(maxY, py);
-      }
-
-      return new Region(minX, minY, (maxX - minX) + 1, (maxY - minY) + 1);
+    private Pixel projectBlock(double blockX, double blockZ) {
+      double originX = minChunkX * 16D;
+      double originZ = minChunkZ * 16D;
+      int x = gridX + (int) Math.floor(((blockX - originX) * cellSize) / 16D);
+      int y = gridY + (int) Math.floor(((blockZ - originZ) * cellSize) / 16D);
+      return new Pixel(x, y);
     }
   }
 
-  private static final class ScanCache {
-    private final HashMap<LoadedChunkCoordinate, Double> score = new HashMap<>();
-    private long ownerId;
-    private UUID world;
-    private int centerX;
-    private int centerZ;
-    private int radius;
-    private long stampMs;
-    private double min;
-    private double max;
+  private static final class ScanSnapshot {
+    private final UUID worldId;
+    private final int minChunkX;
+    private final int maxChunkX;
+    private final int minChunkZ;
+    private final int maxChunkZ;
+    private final double significantThreshold;
+    private final long stampMs;
+    private final double[] cellScores;
+    private final Map<LoadedChunkCoordinate, Double> positiveScores;
+    private final ChunkHeatmapScale scale;
+    private final TinyColor[] colorRamp;
+
+    private ScanSnapshot(
+        UUID worldId,
+        int minChunkX,
+        int maxChunkX,
+        int minChunkZ,
+        int maxChunkZ,
+        double significantThreshold,
+        long stampMs,
+        double[] cellScores,
+        Map<LoadedChunkCoordinate, Double> positiveScores,
+        ChunkHeatmapScale scale,
+        TinyColor[] colorRamp
+    ) {
+      this.worldId = worldId;
+      this.minChunkX = minChunkX;
+      this.maxChunkX = maxChunkX;
+      this.minChunkZ = minChunkZ;
+      this.maxChunkZ = maxChunkZ;
+      this.significantThreshold = significantThreshold;
+      this.stampMs = stampMs;
+      this.cellScores = cellScores;
+      this.positiveScores = positiveScores;
+      this.scale = scale;
+      this.colorRamp = colorRamp;
+    }
+
+    private static ScanSnapshot empty() {
+      return new ScanSnapshot(
+          null,
+          0,
+          -1,
+          0,
+          -1,
+          0D,
+          0L,
+          new double[0],
+          Map.of(),
+          ChunkHeatmapScale.fromValues(new double[0], 0D),
+          new TinyColor[0]
+      );
+    }
+
+    private boolean matches(
+        UUID requestedWorldId,
+        ChunkHeatmapLayout layout,
+        double requestedThreshold,
+        long now
+    ) {
+      return requestedWorldId.equals(worldId)
+          && minChunkX == layout.minChunkX()
+          && maxChunkX == layout.maxChunkX()
+          && minChunkZ == layout.minChunkZ()
+          && maxChunkZ == layout.maxChunkZ()
+          && Double.compare(significantThreshold, requestedThreshold) == 0
+          && now - stampMs >= 0L
+          && now - stampMs < SCAN_CACHE_TTL_MS;
+    }
   }
 }

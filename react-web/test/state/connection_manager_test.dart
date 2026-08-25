@@ -114,8 +114,8 @@ void main() {
 
     test('emitted snapshot has incrementing seq', () async {
       final List<Object> responses = <Object>[
-        _makeSnapshot(cpuValue: 1.0),
-        _makeSnapshot(cpuValue: 2.0),
+        _makeSnapshot(seq: 1, cpuValue: 1.0),
+        _makeSnapshot(seq: 2, cpuValue: 2.0),
       ];
       final ConnectionManager manager = ConnectionManager(
         _FakeMetricsClient(responses),

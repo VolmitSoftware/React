@@ -176,6 +176,40 @@ enum ReactorText {
   metricsMinimum('screen.metrics.minimum', 'Minimum'),
   metricsMaximum('screen.metrics.maximum', 'Maximum'),
   metricsSamples('screen.metrics.samples', 'Samples'),
+  metricsHistory('screen.metrics.history', 'Historical Data'),
+  metricsHistoryDescription(
+    'screen.metrics.history_description',
+    'Select a sampler and time range. Only the visible range is loaded from disk.',
+  ),
+  metricsSelectHistory(
+    'screen.metrics.select_history',
+    'Select a sampler to inspect its stored history.',
+  ),
+  metricsLoadingHistory(
+    'screen.metrics.loading_history',
+    'Loading historical data…',
+  ),
+  metricsHistoryUnavailable(
+    'screen.metrics.history_unavailable',
+    'Historical data is unavailable for this server.',
+  ),
+  metricsAverage('screen.metrics.average', 'Average'),
+  metricsLast('screen.metrics.last', 'Last'),
+  metricsResolution(
+    'screen.metrics.resolution',
+    'Resolution: {resolution}',
+    <String>{'resolution'},
+  ),
+  metricsPointCount('screen.metrics.point_count', '{count} points', <String>{
+    'count',
+  }),
+  metricsStoredCoverage(
+    'screen.metrics.stored_coverage',
+    'Stored {from} – {to}',
+    <String>{'from', 'to'},
+  ),
+  metricsActive('screen.metrics.active', 'Active'),
+  metricsDormant('screen.metrics.dormant', 'Historical'),
   memoryTitle('screen.memory.title', 'Memory'),
   memorySubtitle('screen.memory.subtitle', 'Heap usage and garbage collection'),
   memoryFree('screen.memory.free', 'Memory Free'),
@@ -354,6 +388,11 @@ enum ReactorText {
   heatmapsCenterChunkX('screen.heatmaps.center_chunk_x', 'Center chunk X'),
   heatmapsCenterChunkZ('screen.heatmaps.center_chunk_z', 'Center chunk Z'),
   heatmapsRadiusChunks('screen.heatmaps.radius_chunks', 'Radius (chunks)'),
+  heatmapsZoomIn('screen.heatmaps.zoom_in', 'Zoom in'),
+  heatmapsZoomOut('screen.heatmaps.zoom_out', 'Zoom out'),
+  heatmapsCenterSpawn('screen.heatmaps.center_spawn', 'Center spawn'),
+  heatmapsFitBorder('screen.heatmaps.fit_border', 'Fit border'),
+  heatmapsRefreshing('screen.heatmaps.refreshing', 'Refreshing…'),
   heatmapsLiveRequired(
     'screen.heatmaps.live_required',
     'Grid heatmaps require a live connection.',
@@ -1074,6 +1113,82 @@ enum ReactorText {
     'heatmap.chunk_score',
     'Chunk {x}, {z} score {score}',
     <String>{'x', 'z', 'score'},
+  ),
+  heatmapCellScale('heatmap.cell_scale', 'Cell size: {size} chunks', <String>{
+    'size',
+  }),
+  heatmapInteractionHint(
+    'heatmap.interaction_hint',
+    'Wheel to zoom · drag to pan',
+  ),
+  heatmapNoLoadedSamples(
+    'heatmap.no_loaded_samples',
+    'No currently loaded samples',
+  ),
+  heatmapNoData('heatmap.no_data', 'No data'),
+  heatmapChunkCoordinate('heatmap.chunk_coordinate', 'Chunk {x}, {z}', <String>{
+    'x',
+    'z',
+  }),
+  heatmapChunkRange(
+    'heatmap.chunk_range',
+    'Chunks X {minX}…{maxX} · Z {minZ}…{maxZ}',
+    <String>{'minX', 'maxX', 'minZ', 'maxZ'},
+  ),
+  heatmapBlockRange(
+    'heatmap.block_range',
+    'Blocks X {minX}…{maxX} · Z {minZ}…{maxZ}',
+    <String>{'minX', 'maxX', 'minZ', 'maxZ'},
+  ),
+  heatmapStatistics(
+    'heatmap.statistics',
+    'Peak {peak} · Average {average} · {samples} samples',
+    <String>{'peak', 'average', 'samples'},
+  ),
+  heatmapNorthUpGrid(
+    'heatmap.north_up_grid',
+    '{label}, north-up coordinate grid',
+    <String>{'label'},
+  ),
+  heatmapWorldBorderLabel(
+    'heatmap.world_border_label',
+    'World border centered at block {x}, {z}, size {size}',
+    <String>{'x', 'z', 'size'},
+  ),
+  heatmapCellCenter(
+    'heatmap.cell_center',
+    'Cell center · X {x} · Z {z}',
+    <String>{'x', 'z'},
+  ),
+  heatmapCopyPosition('heatmap.copy_position', 'Copy position'),
+  heatmapPositionCopied('heatmap.position_copied', 'Position copied'),
+  heatmapClipboardUnavailable(
+    'heatmap.clipboard_unavailable',
+    'Clipboard unavailable',
+  ),
+  heatmapPlayer('heatmap.player', 'Player'),
+  heatmapSelectOnlinePlayer(
+    'heatmap.select_online_player',
+    'Select an online player',
+  ),
+  heatmapNoOnlinePlayers('heatmap.no_online_players', 'No online players'),
+  heatmapPlayersLoading('heatmap.players_loading', 'Loading online players…'),
+  heatmapTeleport('heatmap.teleport', 'Teleport…'),
+  heatmapTeleportConfirmTitle(
+    'heatmap.teleport_confirm_title',
+    'Teleport {player}?',
+    <String>{'player'},
+  ),
+  heatmapTeleportConfirmMessage(
+    'heatmap.teleport_confirm_message',
+    '{player} will be moved to {world} at X {x}, Z {z}. React will resolve a safe Y and may load or generate the target chunk.',
+    <String>{'player', 'world', 'x', 'z'},
+  ),
+  heatmapTeleportQueued('heatmap.teleport_queued', 'Teleport queued'),
+  heatmapTeleportFailed('heatmap.teleport_failed', 'Teleport failed'),
+  heatmapTeleportAdminRequired(
+    'heatmap.teleport_admin_required',
+    'Admin role required',
   ),
   snapshotWaitingFirst(
     'snapshot.waiting_first',

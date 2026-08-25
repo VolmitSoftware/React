@@ -22,8 +22,6 @@ class ConnectionManager {
   bool _running = false;
   bool _pollActive = false;
   int _failures = 0;
-  int _seq = 0;
-
   bool _wsHadFrames = false;
 
   IMetricsSocket? _activeSocket;
@@ -176,16 +174,21 @@ class ConnectionManager {
 
   void _onSuccess(ServerSnapshot raw) {
     _failures = 0;
-    _seq++;
+    final Map<String, SamplerSample> samples = <String, SamplerSample>{};
     for (final MapEntry<String, SamplerSample> entry in raw.byId.entries) {
-      _rings
-          .putIfAbsent(entry.key, () => RingBuffer(128))
-          .add(entry.value.value);
+      final RingBuffer ring = _rings.putIfAbsent(
+        entry.key,
+        () => RingBuffer(128),
+      );
+      if (entry.value.available) {
+        ring.add(entry.value.value);
+      }
+      samples[entry.key] = entry.value.withLiveHistory(ring.toList());
     }
     final ServerSnapshot stamped = ServerSnapshot(
-      byId: raw.byId,
+      byId: samples,
       at: raw.at,
-      seq: _seq,
+      seq: raw.seq,
     );
     final ConnState prev = _state;
     _state = ConnState.live;

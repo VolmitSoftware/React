@@ -4,7 +4,9 @@ import 'dart:async';
 
 import 'package:test/test.dart';
 
+import 'package:react_web/model/heatmap.dart';
 import 'package:react_web/model/identity_info.dart';
+import 'package:react_web/model/player_navigation.dart';
 import 'package:react_web/model/relay_frame.dart';
 import 'package:react_web/model/server_credential.dart';
 import 'package:react_web/model/server_snapshot.dart';
@@ -97,24 +99,26 @@ void main() {
   });
 
   group('RelayReactClient.metrics()', () {
-    test('returns ServerSnapshot from 200 with data list', () async {
+    test('returns ServerSnapshot from a timestamped scalar response', () async {
       final _FakeRelayConnection conn = _FakeRelayConnection(
         <String, RelayResponse>{
           '/api/v1/metrics': RelayResponse(
             status: 200,
             body: <String, dynamic>{
-              'data': <Map<String, dynamic>>[
-                <String, dynamic>{
-                  'id': 'cpu',
-                  'name': 'CPU',
-                  'value': 1.0,
-                  'suffix': '%',
-                  'min': 0.0,
-                  'max': 100.0,
-                  'display': '1',
-                  'history': <double>[],
-                },
-              ],
+              'data': <String, dynamic>{
+                'sequence': 5,
+                'capturedAtMs': 1750000000000,
+                'samplers': <Map<String, dynamic>>[
+                  <String, dynamic>{
+                    'id': 'cpu',
+                    'name': 'CPU',
+                    'value': 1.0,
+                    'suffix': '%',
+                    'display': '1',
+                    'available': true,
+                  },
+                ],
+              },
             },
           ),
         },
@@ -125,6 +129,64 @@ void main() {
 
       expect(snapshot.byId.containsKey('cpu'), isTrue);
       expect(snapshot.byId['cpu']!.value, equals(1.0));
+      expect(snapshot.seq, equals(5));
+    });
+  });
+
+  group('RelayReactClient.heatmap()', () {
+    test('uses the coordinate viewport query and decodes aggregates', () async {
+      const String path =
+          '/api/v1/heatmaps/entity-pressure?world=minecraft%3Aworld_nether&centerChunkX=-31&centerChunkZ=17&radius=64';
+      final _FakeRelayConnection conn = _FakeRelayConnection(
+        <String, RelayResponse>{
+          path: RelayResponse(
+            status: 200,
+            body: <String, dynamic>{
+              'data': <String, dynamic>{
+                'id': 'entity-pressure',
+                'label': 'Entity Pressure',
+                'world': 'minecraft:world_nether',
+                'centerChunkX': -31,
+                'centerChunkZ': 17,
+                'radius': 64,
+                'originChunkX': -96,
+                'originChunkZ': -48,
+                'width': 17,
+                'height': 17,
+                'cellSizeChunks': 8,
+                'capturedAtMs': 1750000000000,
+                'spawnChunkX': 0,
+                'spawnChunkZ': 0,
+                'worldBorder': null,
+                'min': 0.0,
+                'max': 9.0,
+                'cells': <Map<String, dynamic>>[
+                  <String, dynamic>{
+                    'x': -32,
+                    'z': 16,
+                    'sizeChunks': 8,
+                    'score': 9.0,
+                    'averageScore': 6.5,
+                    'samples': 20,
+                  },
+                ],
+              },
+            },
+          ),
+        },
+      );
+
+      final HeatmapGrid grid = await RelayReactClient(conn, cred).heatmap(
+        'entity-pressure',
+        world: 'minecraft:world_nether',
+        centerChunkX: -31,
+        centerChunkZ: 17,
+        radius: 64,
+      );
+
+      expect(conn.lastPath, equals(path));
+      expect(grid.columns, equals(17));
+      expect(grid.cells.single.averageScore, equals(6.5));
     });
   });
 
@@ -149,6 +211,57 @@ void main() {
       expect(conn.lastBody, equals('{"command":"say relay"}'));
       expect(
         int.tryParse(conn.lastHeaders?['X-React-Counter'] ?? ''),
+        isNotNull,
+      );
+    });
+  });
+
+  group('RelayReactClient player navigation', () {
+    test('lists and teleports an explicit player through relay RPC', () async {
+      final _FakeRelayConnection connection = _FakeRelayConnection(
+        <String, RelayResponse>{
+          '/api/v1/players': RelayResponse(
+            status: 200,
+            body: <String, dynamic>{
+              'data': <Map<String, dynamic>>[
+                <String, dynamic>{'id': 'player-id', 'name': 'Alice'},
+              ],
+            },
+          ),
+          '/api/v1/players/player-id/teleport': RelayResponse(
+            status: 202,
+            body: <String, dynamic>{
+              'data': <String, dynamic>{
+                'playerId': 'player-id',
+                'playerName': 'Alice',
+                'status': 'queued',
+                'worldKey': 'minecraft:overworld',
+                'blockX': -24,
+                'blockZ': 40,
+              },
+            },
+          ),
+        },
+      );
+      final RelayReactClient client = RelayReactClient(connection, cred);
+      final List<OnlinePlayerInfo> players = await client.players();
+      final PlayerTeleportResult result = await client.teleportPlayer(
+        players.single.id,
+        worldKey: 'minecraft:overworld',
+        blockX: -24,
+        blockZ: 40,
+      );
+
+      expect(result.status, equals('queued'));
+      expect(connection.lastMethod, equals('POST'));
+      expect(
+        connection.lastBody,
+        equals(
+          '{"worldKey":"minecraft:overworld","blockX":-24,"blockZ":40,"confirm":true}',
+        ),
+      );
+      expect(
+        int.tryParse(connection.lastHeaders?['X-React-Counter'] ?? ''),
         isNotNull,
       );
     });

@@ -136,6 +136,16 @@ class FleetManager {
     return c is IHeatmapClient ? c as IHeatmapClient : null;
   }
 
+  IPlayerClient? playerClientFor(String id) {
+    final IReactClient? client = _clients[id];
+    return client is IPlayerClient ? client as IPlayerClient : null;
+  }
+
+  IHistoryClient? historyClientFor(String id) {
+    final IReactClient? client = _clients[id];
+    return client is IHistoryClient ? client as IHistoryClient : null;
+  }
+
   IControlClient? controlClientFor(String id) {
     final IReactClient? c = _clients[id];
     return c is IControlClient ? c as IControlClient : null;

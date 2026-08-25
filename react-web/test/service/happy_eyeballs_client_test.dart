@@ -3,16 +3,18 @@ library;
 import 'package:test/test.dart';
 
 import 'package:react_web/model/identity_info.dart';
+import 'package:react_web/model/player_navigation.dart';
 import 'package:react_web/model/sampler_sample.dart';
 import 'package:react_web/model/server_snapshot.dart';
 import 'package:react_web/service/happy_eyeballs_client.dart';
 import 'package:react_web/service/react_client.dart';
 import 'package:react_web/service/react_exceptions.dart';
 
-class _FakeClient implements IReactClient {
+class _FakeClient implements IReactClient, IPlayerClient {
   String serverId;
   Duration delay;
   bool shouldThrow;
+  int teleportCalls = 0;
 
   _FakeClient({
     required this.serverId,
@@ -37,6 +39,29 @@ class _FakeClient implements IReactClient {
     if (delay > Duration.zero) await Future<void>.delayed(delay);
     if (shouldThrow) throw const ReactUnavailable();
     return ServerSnapshot(byId: <String, SamplerSample>{}, at: DateTime.now());
+  }
+
+  @override
+  Future<List<OnlinePlayerInfo>> players() async => <OnlinePlayerInfo>[
+    const OnlinePlayerInfo(id: 'player-id', name: 'Alice'),
+  ];
+
+  @override
+  Future<PlayerTeleportResult> teleportPlayer(
+    String playerId, {
+    required String worldKey,
+    required int blockX,
+    required int blockZ,
+  }) async {
+    teleportCalls++;
+    return PlayerTeleportResult(
+      playerId: playerId,
+      playerName: 'Alice',
+      status: 'queued',
+      worldKey: worldKey,
+      blockX: blockX,
+      blockZ: blockZ,
+    );
   }
 }
 
@@ -176,6 +201,22 @@ void main() {
       await client.identity();
 
       expect(client.activePath, equals(RelayPath.direct));
+    });
+
+    test('player navigation uses the resolved active transport', () async {
+      final _FakeClient direct = _FakeClient(serverId: 'fp:direct');
+      final HappyEyeballsClient client = HappyEyeballsClient(direct: direct);
+
+      final List<OnlinePlayerInfo> players = await client.players();
+      final PlayerTeleportResult result = await client.teleportPlayer(
+        players.single.id,
+        worldKey: 'minecraft:overworld',
+        blockX: 8,
+        blockZ: -8,
+      );
+
+      expect(direct.teleportCalls, equals(1));
+      expect(result.blockZ, equals(-8));
     });
   });
 }

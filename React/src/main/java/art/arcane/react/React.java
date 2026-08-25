@@ -85,6 +85,7 @@ import java.util.logging.Logger;
 @Getter
 public class React extends VolmitPlugin implements ReloadAware {
   private static final Logger FALLBACK_LOGGER = Logger.getLogger("React");
+  private static final String LOG_DISCRIMINATOR = ComponentLog.discriminator("React", "&b");
   private final AtomicBoolean alreadyDrained = new AtomicBoolean(false);
   private static final boolean SLIMJAR_DEBUG = Boolean.getBoolean("react.debug-slimjar");
   public static React instance;
@@ -255,7 +256,7 @@ public class React extends VolmitPlugin implements ReloadAware {
   }
 
   private static void log(Level level, String message, Throwable failure) {
-    ComponentLog.logLegacy(instance, FALLBACK_LOGGER, "[React] ", level, message, failure);
+    ComponentLog.logLegacy(instance, FALLBACK_LOGGER, LOG_DISCRIMINATOR, level, message, failure);
   }
 
   private static boolean isVerboseEnabled() {

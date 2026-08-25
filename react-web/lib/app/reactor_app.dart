@@ -59,6 +59,7 @@ import '../state/server_tags_store.dart';
 import '../state/control_scope.dart';
 import '../state/heatmap_scope.dart';
 import '../state/operate_scope.dart';
+import '../state/player_scope.dart';
 import '../state/role_scope.dart';
 import '../state/server_scope.dart';
 import '../theme/reactor_theme.dart';
@@ -332,9 +333,16 @@ Widget _buildServerPage(BuildContext context, RouteState state, Widget screen) {
       logSocketFactory: fleet.fleetManager.logSocketFactoryFor(id),
       child: ControlScope(
         client: fleet.fleetManager.controlClientFor(id),
-        child: HeatmapScope(
-          client: fleet.fleetManager.heatmapClientFor(id),
-          child: LiveServerScope(manager: manager, child: screen),
+        child: PlayerScope(
+          client: fleet.fleetManager.playerClientFor(id),
+          child: HeatmapScope(
+            client: fleet.fleetManager.heatmapClientFor(id),
+            child: LiveServerScope(
+              manager: manager,
+              historyClient: fleet.fleetManager.historyClientFor(id),
+              child: screen,
+            ),
+          ),
         ),
       ),
     ),
@@ -441,10 +449,12 @@ class _ReactorAppState extends State<ReactorApp> {
 
 class LiveServerScope extends StatefulWidget {
   final ConnectionManager manager;
+  final IHistoryClient? historyClient;
   final Widget child;
 
   const LiveServerScope({
     required this.manager,
+    this.historyClient,
     required this.child,
     super.key,
   });
@@ -508,6 +518,7 @@ class _LiveServerScopeState extends State<LiveServerScope> {
     return ServerScope(
       snapshot: _snapshot,
       state: _state,
+      historyClient: component.historyClient,
       child: dom.div(classes: 'reactor-connection-frame', <Widget>[
         if (degraded)
           ReactorNotice(

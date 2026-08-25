@@ -8,15 +8,18 @@ import art.arcane.react.api.web.heatmap.HeatmapDto;
 import art.arcane.react.api.web.heatmap.HeatmapScan;
 import art.arcane.react.api.web.heatmap.HeatmapSerializer;
 import art.arcane.react.api.web.heatmap.HeatmapSummaryDto;
+import art.arcane.react.api.web.heatmap.HeatmapViewportPlanner;
 import art.arcane.react.api.web.heatmap.ReactHeatmapCellProvider;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ReactHeatmapCellProviderTest {
 
@@ -41,10 +44,11 @@ public class ReactHeatmapCellProviderTest {
 
     @Test
     void it_summaries_map_each_exporter() {
-        ChunkGridExporter a = makeExporter("entity-pressure", "Entity Pressure");
         ChunkGridExporter b = makeExporter("redstone-activity", "Redstone Activity");
+        ChunkGridExporter a = makeExporter("entity-pressure", "Entity Pressure");
+        ChunkGridExporter duplicate = makeExporter("entity-pressure", "Duplicate");
         ReactHeatmapCellProvider provider = new ReactHeatmapCellProvider(
-            () -> List.of(a, b),
+            () -> List.of(b, a, duplicate),
             (HeatmapChunkSampler) (exp, world, cx, cz, r) -> null,
             new HeatmapSerializer(),
             8, 16
@@ -71,10 +75,15 @@ public class ReactHeatmapCellProviderTest {
     @Test
     void it_compute_known_id_assembles_dto_with_minmax() {
         ChunkGridExporter exporter = makeExporter("entity-pressure", "Entity Pressure");
-        HeatmapScan fixedScan = new HeatmapScan("w", 2, 3, List.of(
-            new HeatmapCellDto(0, 0, 3.0),
-            new HeatmapCellDto(1, 0, 7.0)
-        ));
+        HeatmapScan fixedScan = new HeatmapScan(
+            world("w", 2, 3),
+            new HeatmapViewportPlanner().plan(2, 3, 8),
+            100L,
+            List.of(
+                new HeatmapCellDto(0, 0, 1, 3D, 3D, 1),
+                new HeatmapCellDto(1, 0, 1, 7D, 7D, 1)
+            )
+        );
         ReactHeatmapCellProvider provider = new ReactHeatmapCellProvider(
             () -> List.of(exporter),
             (HeatmapChunkSampler) (exp, world, cx, cz, r) -> fixedScan,
@@ -88,37 +97,58 @@ public class ReactHeatmapCellProviderTest {
         assertEquals("w", dto.world);
         assertEquals(2, dto.centerChunkX);
         assertEquals(3, dto.centerChunkZ);
-        assertEquals(3.0, dto.min, 0.0001);
+        assertEquals(0.0, dto.min, 0.0001);
         assertEquals(7.0, dto.max, 0.0001);
         assertEquals(2, dto.cells.length);
     }
 
     @Test
-    void it_compute_clamps_radius() {
+    void it_compute_accepts_the_maximum_radius_and_rejects_out_of_range_values() {
         ChunkGridExporter exporter = makeExporter("entity-pressure", "Entity Pressure");
         AtomicInteger lastRadius = new AtomicInteger(-1);
-        HeatmapScan scanFor = new HeatmapScan("w", 0, 0, List.of());
         ReactHeatmapCellProvider provider = new ReactHeatmapCellProvider(
             () -> List.of(exporter),
             (HeatmapChunkSampler) (exp, world, cx, cz, r) -> {
                 lastRadius.set(r);
-                return scanFor;
+                return new HeatmapScan(
+                    ReactHeatmapCellProviderTest.world("w", 0, 0),
+                    new HeatmapViewportPlanner().plan(0, 0, r),
+                    100L,
+                    List.of()
+                );
             },
             new HeatmapSerializer(),
-            8, 16
+            8, HeatmapViewportPlanner.MAX_RADIUS
         );
 
-        HeatmapDto dtoOver = provider.compute("entity-pressure", null, null, null, 999);
-        assertEquals(16, lastRadius.get());
-        assertEquals(16, dtoOver.radius);
+        HeatmapDto dtoMax = provider.compute(
+            "entity-pressure",
+            null,
+            null,
+            null,
+            HeatmapViewportPlanner.MAX_RADIUS
+        );
+        assertEquals(HeatmapViewportPlanner.MAX_RADIUS, lastRadius.get());
+        assertEquals(HeatmapViewportPlanner.MAX_RADIUS, dtoMax.radius);
 
         HeatmapDto dtoNull = provider.compute("entity-pressure", null, null, null, null);
         assertEquals(8, lastRadius.get());
         assertEquals(8, dtoNull.radius);
 
-        HeatmapDto dtoZero = provider.compute("entity-pressure", null, null, null, 0);
-        assertEquals(1, lastRadius.get());
-        assertEquals(1, dtoZero.radius);
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> provider.compute("entity-pressure", null, null, null, 0)
+        );
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> provider.compute(
+                "entity-pressure",
+                null,
+                null,
+                null,
+                HeatmapViewportPlanner.MAX_RADIUS + 1
+            )
+        );
     }
 
     @Test
@@ -136,5 +166,18 @@ public class ReactHeatmapCellProviderTest {
         assertEquals(0.0, dto.min, 0.0001);
         assertEquals(0.0, dto.max, 0.0001);
         assertEquals(5, dto.radius);
+    }
+
+    private static HeatmapWorldRef world(String key, int spawnChunkX, int spawnChunkZ) {
+        return new HeatmapWorldRef(
+            UUID.randomUUID(),
+            key,
+            key,
+            spawnChunkX,
+            spawnChunkZ,
+            0D,
+            0D,
+            60_000_000D
+        );
     }
 }

@@ -11,6 +11,7 @@ import art.arcane.react.api.web.ActionParamCoercer;
 import art.arcane.react.api.web.ActionParamSerializer;
 import art.arcane.react.api.web.AuditLog;
 import art.arcane.react.api.web.BukkitConsoleCommandDispatcher;
+import art.arcane.react.api.web.BukkitPlayerBackend;
 import art.arcane.react.api.web.BukkitWebMutationReporter;
 import art.arcane.react.api.web.ConfigApplier;
 import art.arcane.react.api.web.ConfigTreeSerializer;
@@ -21,6 +22,7 @@ import art.arcane.react.api.web.ConsoleCommandDispatcher;
 import art.arcane.react.api.web.FeatureWorldBackend;
 import art.arcane.react.api.web.MetricsSerializer;
 import art.arcane.react.api.web.PairingToken;
+import art.arcane.react.api.web.PlayerBackend;
 import art.arcane.react.api.web.PresetApplier;
 import art.arcane.react.api.web.RegistryActionBackend;
 import art.arcane.react.api.web.RegistryControlBackend;
@@ -37,11 +39,13 @@ import art.arcane.react.api.web.relay.RelayClient;
 import art.arcane.react.api.web.relay.RelayLoopbackBridge;
 import art.arcane.react.api.web.WorldBackend;
 import art.arcane.react.api.web.dto.ConfigSectionDto;
+import art.arcane.react.api.web.dto.Envelope;
 import art.arcane.react.api.web.dto.ErrorEnvelope;
 import art.arcane.react.api.web.dto.IdentityDto;
 import art.arcane.react.api.web.heatmap.BukkitHeatmapChunkSampler;
 import art.arcane.react.api.web.heatmap.ChunkGridExporter;
 import art.arcane.react.api.web.heatmap.HeatmapSerializer;
+import art.arcane.react.api.web.heatmap.HeatmapViewportPlanner;
 import art.arcane.react.api.web.heatmap.ReactHeatmapCellProvider;
 import art.arcane.react.api.web.EnvironmentSnapshotProvider;
 import art.arcane.react.api.web.RingLogHandler;
@@ -59,6 +63,7 @@ import art.arcane.react.api.web.resource.IncidentResource;
 import art.arcane.react.api.web.resource.IntegrationResource;
 import art.arcane.react.api.web.resource.LogsResource;
 import art.arcane.react.api.web.resource.MetricsResource;
+import art.arcane.react.api.web.resource.PlayerResource;
 import art.arcane.react.api.web.resource.WhoamiResource;
 import art.arcane.react.api.web.resource.WorldResource;
 import art.arcane.react.api.web.ws.LogFrame;
@@ -121,6 +126,7 @@ public class WebController implements IController {
     private transient volatile TokenStore tokenStore;
     private transient volatile ReactServerIdentity identity;
     private transient volatile SampleController sampleController;
+    private transient volatile HistoryController historyController;
     private transient volatile FeatureController featureController;
     private transient volatile TweakController tweakController;
     private transient volatile IntegrationController integrationController;
@@ -140,6 +146,7 @@ public class WebController implements IController {
     private transient volatile ActionBackend actionBackend;
     private transient volatile ActionDispatcher actionDispatcher;
     private transient volatile ConsoleCommandDispatcher consoleCommandDispatcher;
+    private transient volatile PlayerBackend playerBackend;
     private transient volatile DoubleSupplier incidentScoreSupplier;
     private transient volatile Supplier<String> incidentStateSupplier;
     private transient volatile IntFunction<List<String>> incidentTimelineSupplier;
@@ -210,6 +217,9 @@ public class WebController implements IController {
     public void start() {
         if (sampleController == null && React.instance != null) {
             sampleController = React.controller(SampleController.class);
+        }
+        if (historyController == null && React.instance != null) {
+            historyController = React.controller(HistoryController.class);
         }
         if (featureController == null && React.instance != null) {
             featureController = React.controller(FeatureController.class);
@@ -408,7 +418,11 @@ public class WebController implements IController {
         boolean published = false;
         boolean requireTokenForReads = config.isRequireTokenForReads();
         try {
-                MetricsResource metrics = new MetricsResource(sampleController, new MetricsSerializer());
+                MetricsResource metrics = new MetricsResource(
+                    sampleController,
+                    historyController,
+                    new MetricsSerializer()
+                );
                 IdentityResource identity = new IdentityResource(this::resolveIdentity);
                 WebAuth auth = new WebAuth(secret, tokenStore);
                 List<String> origins = config.getCorsOrigins();
@@ -498,7 +512,8 @@ public class WebController implements IController {
                 if (requireTokenForReads) {
                     javalin.before("/api/v1/identity", auth);
                     javalin.before("/api/v1/metrics", auth);
-                    javalin.before("/api/v1/metrics/{id}/history", auth);
+                    javalin.before("/api/v1/metrics/catalog", auth);
+                    javalin.before("/api/v1/metrics/history", auth);
                     javalin.before("/api/v1/features", auth);
                     javalin.before("/api/v1/tweaks", auth);
                 }
@@ -510,7 +525,8 @@ public class WebController implements IController {
                 javalin.before("/api/v1/whoami", auth);
                 javalin.get("/api/v1/whoami", new WhoamiResource()::get);
                 javalin.get("/api/v1/metrics", metrics::snapshot);
-                javalin.get("/api/v1/metrics/{id}/history", metrics::history);
+                javalin.get("/api/v1/metrics/catalog", metrics::historyCatalog);
+                javalin.get("/api/v1/metrics/history", metrics::history);
                 javalin.get("/api/v1/features", featureResource::list);
                 javalin.get("/api/v1/features/{id}", featureResource::get);
                 javalin.put("/api/v1/features/{id}", featureResource::toggle);
@@ -533,7 +549,7 @@ public class WebController implements IController {
                         }
                     }
                     return out;
-                }, sampler, hs, 8, 16);
+                }, sampler, hs, 8, HeatmapViewportPlanner.MAX_RADIUS);
                 HeatmapResource heatmaps = new HeatmapResource(provider);
                 if (requireTokenForReads) {
                     javalin.before("/api/v1/heatmaps", auth);
@@ -575,6 +591,14 @@ public class WebController implements IController {
                 javalin.get("/api/v1/worlds", worldResource::list);
                 javalin.put("/api/v1/worlds/update", worldResource::update);
                 javalin.put("/api/v1/worlds/{name}", worldResource::updateNamed);
+                if (playerBackend == null) {
+                    playerBackend = new BukkitPlayerBackend();
+                }
+                PlayerResource playerResource = new PlayerResource(playerBackend, mutationReporter);
+                javalin.before("/api/v1/players", auth);
+                javalin.before("/api/v1/players/{id}/teleport", auth);
+                javalin.get("/api/v1/players", playerResource::list);
+                javalin.post("/api/v1/players/{id}/teleport", playerResource::teleport);
                 if (actionBackend == null) {
                     actionBackend = new RegistryActionBackend(
                         () -> {
@@ -780,7 +804,7 @@ public class WebController implements IController {
                 WsMetricsBroadcaster localMetricsBroadcaster = new WsMetricsBroadcaster(
                     metrics::snapshotData,
                     localMetricsSessions,
-                    arr -> gson.toJson(new MetricsResource.SnapshotResponse(arr))
+                    snapshot -> gson.toJson(new Envelope<>(snapshot))
                 );
                 runtime.metricsBroadcaster = localMetricsBroadcaster;
                 javalin.ws("/ws/logs", ws -> {

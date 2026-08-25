@@ -9,6 +9,8 @@ import '../model/environment_info.dart';
 import '../model/heatmap.dart';
 import '../model/identity_info.dart';
 import '../model/incident_status.dart';
+import '../model/metric_history.dart';
+import '../model/player_navigation.dart';
 import '../model/role_info.dart';
 import '../model/server_capabilities.dart';
 import '../model/server_snapshot.dart';
@@ -24,10 +26,12 @@ class HappyEyeballsClient
         IReactClient,
         IPingClient,
         IHeatmapClient,
+        IPlayerClient,
         IControlClient,
         IOperateClient,
         IConsoleClient,
-        IRoleClient {
+        IRoleClient,
+        IHistoryClient {
   final IReactClient? _direct;
   final IReactClient? _relay;
   final String? _pinnedFingerprint;
@@ -151,6 +155,13 @@ class HappyEyeballsClient
     throw const ReactUnavailable('Active transport does not support controls');
   }
 
+  IPlayerClient _players(IReactClient client) {
+    if (client is IPlayerClient) return client as IPlayerClient;
+    throw const ReactUnavailable(
+      'Active transport does not support player navigation',
+    );
+  }
+
   IOperateClient _operations(IReactClient client) {
     if (client is IOperateClient) return client as IOperateClient;
     throw const ReactUnavailable(
@@ -170,6 +181,13 @@ class HappyEyeballsClient
     );
   }
 
+  IHistoryClient _history(IReactClient client) {
+    if (client is IHistoryClient) return client as IHistoryClient;
+    throw const ReactUnavailable(
+      'Active transport does not support metric history',
+    );
+  }
+
   @override
   Future<ServerCapabilities> ping() => _execute((IReactClient client) {
     if (client is IPingClient) return (client as IPingClient).ping();
@@ -185,6 +203,29 @@ class HappyEyeballsClient
       _execute((IReactClient client) => client.metrics());
 
   @override
+  Future<List<MetricHistoryDescriptor>> historyCatalog() =>
+      _execute((IReactClient client) => _history(client).historyCatalog());
+
+  @override
+  Future<MetricHistoryPage> historyPage({
+    List<String>? ids,
+    DateTime? from,
+    DateTime? to,
+    int maxPoints = 1200,
+    int pageSize = 256,
+    String? cursor,
+  }) => _execute(
+    (IReactClient client) => _history(client).historyPage(
+      ids: ids,
+      from: from,
+      to: to,
+      maxPoints: maxPoints,
+      pageSize: pageSize,
+      cursor: cursor,
+    ),
+  );
+
+  @override
   Future<RoleInfo> whoami() =>
       _execute((IReactClient client) => _roles(client).whoami());
 
@@ -196,16 +237,35 @@ class HappyEyeballsClient
   Future<HeatmapGrid> heatmap(
     String id, {
     String? world,
-    int? centerX,
-    int? centerZ,
+    int? centerChunkX,
+    int? centerChunkZ,
     int? radius,
   }) => _execute(
     (IReactClient client) => _heatmaps(client).heatmap(
       id,
       world: world,
-      centerX: centerX,
-      centerZ: centerZ,
+      centerChunkX: centerChunkX,
+      centerChunkZ: centerChunkZ,
       radius: radius,
+    ),
+  );
+
+  @override
+  Future<List<OnlinePlayerInfo>> players() =>
+      _execute((IReactClient client) => _players(client).players());
+
+  @override
+  Future<PlayerTeleportResult> teleportPlayer(
+    String playerId, {
+    required String worldKey,
+    required int blockX,
+    required int blockZ,
+  }) => _execute(
+    (IReactClient client) => _players(client).teleportPlayer(
+      playerId,
+      worldKey: worldKey,
+      blockX: blockX,
+      blockZ: blockZ,
     ),
   );
 

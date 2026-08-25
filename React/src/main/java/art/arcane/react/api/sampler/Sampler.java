@@ -48,6 +48,10 @@ public interface Sampler extends Registered, ReactRenderer {
 
   double sample();
 
+  default boolean isSampleAvailable() {
+    return true;
+  }
+
   default double sample(Chunk c) {
     return React.controller(ObserverController.class).sample(c, this).orElse(0D);
   }

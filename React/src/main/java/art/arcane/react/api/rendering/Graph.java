@@ -20,6 +20,9 @@
 package art.arcane.react.api.rendering;
 
 import art.arcane.react.api.sampler.Sampler;
+import art.arcane.react.React;
+import art.arcane.react.core.controller.HistoryController;
+import art.arcane.react.core.history.MetricSnapshotValue;
 import art.arcane.volmlib.util.math.RollingSequence;
 import lombok.Getter;
 
@@ -49,12 +52,20 @@ public class Graph {
   private boolean minMaxDirty = true;
 
   public static Graph of(Sampler sampler) {
-    Graph g = graphs.computeIfAbsent(sampler.getName(), (k) -> new Graph());
+    String id = sampler.getId() == null || sampler.getId().isBlank() ? sampler.getName() : sampler.getId();
+    Graph g = graphs.computeIfAbsent(id, (k) -> new Graph());
     long now = System.currentTimeMillis();
     synchronized (g) {
       if (now - g.lastPushMs >= PUSH_INTERVAL_MS) {
-        g.lastPushMs = now;
-        g.push(sampler.sample());
+        HistoryController history = React.instance == null ? null : React.controller(HistoryController.class);
+        MetricSnapshotValue snapshot = history == null ? null : history.latest().value(sampler.getId());
+        if (snapshot == null) {
+          g.lastPushMs = now;
+          g.push(sampler.sample());
+        } else if (snapshot.available()) {
+          g.lastPushMs = now;
+          g.push(snapshot.value());
+        }
       }
     }
     return g;

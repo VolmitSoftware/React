@@ -12,7 +12,8 @@ import 'package:react_web/model/heatmap.dart';
 import 'package:react_web/model/identity_info.dart';
 import 'package:react_web/model/incident_status.dart';
 import 'package:react_web/model/knob.dart';
-import 'package:react_web/model/sampler_sample.dart';
+import 'package:react_web/model/metric_history.dart';
+import 'package:react_web/model/player_navigation.dart';
 import 'package:react_web/model/role_info.dart';
 import 'package:react_web/model/server_capabilities.dart';
 import 'package:react_web/model/server_credential.dart';
@@ -98,13 +99,19 @@ void main() {
       final IdentityInfo identity = await client.identity();
       final RoleInfo role = await client.whoami();
       final ServerSnapshot snapshot = await client.metrics();
-      final SamplerSample history = await client.history('tick-time');
+      final List<MetricHistoryDescriptor> historyCatalog = await client
+          .historyCatalog();
+      final MetricHistoryPage history = await client.historyPage(
+        ids: <String>['tick-time'],
+        from: DateTime.now().subtract(const Duration(hours: 24)),
+        to: DateTime.now(),
+      );
       final List<HeatmapSummary> heatmaps = await client.heatmaps();
       final HeatmapGrid heatmap = await client.heatmap(
         heatmaps.first.id,
         world: 'minecraft:world_the_end',
-        centerX: 31,
-        centerZ: -17,
+        centerChunkX: 31,
+        centerChunkZ: -17,
         radius: 3,
       );
       final List<ControlItem> features = await client.features();
@@ -112,6 +119,7 @@ void main() {
       final List<ControlItem> tweaks = await client.tweaks();
       final ControlItem tweak = await client.tweak('async-chunk-io');
       final List<WorldSettings> worlds = await client.worlds();
+      final List<OnlinePlayerInfo> players = await client.players();
       final List<ActionDescriptor> actions = await client.actions();
       final IncidentStatus incidents = await client.incidents();
       final EnvironmentInfo environment = await client.environment();
@@ -128,7 +136,11 @@ void main() {
       expect(snapshot.byId, contains('wormholes-projection-render-ms'));
       expect(snapshot.byId, contains('entity-pressure-heatmap'));
       expect(snapshot.sampler('ticks-per-second')!.value, equals(8.9));
-      expect(history.history, hasLength(24));
+      expect(
+        historyCatalog.map((MetricHistoryDescriptor item) => item.id),
+        contains('tick-time'),
+      );
+      expect(history.series.single.points, hasLength(24));
       expect(
         heatmaps.map((HeatmapSummary item) => item.label),
         contains('QA Chunk Pressure'),
@@ -137,7 +149,7 @@ void main() {
       expect(heatmap.centerChunkX, equals(31));
       expect(heatmap.centerChunkZ, equals(-17));
       expect(heatmap.radius, equals(3));
-      expect(heatmap.cells, hasLength(49));
+      expect(heatmap.cells, hasLength(46));
       expect(
         heatmap.cells.map((HeatmapCell cell) => cell.x),
         containsAll(<int>[28, 34]),
@@ -169,6 +181,10 @@ void main() {
         contains('minecraft:world_nether'),
       );
       expect(
+        players.map((OnlinePlayerInfo player) => player.name),
+        contains('Scout'),
+      );
+      expect(
         actions.map((ActionDescriptor action) => action.name),
         contains('Force GC'),
       );
@@ -179,6 +195,28 @@ void main() {
       expect(environment.cpu['model'], equals('QA 16-Core'));
       expect(config.node('tick-budget-ms')!.label, equals('Tick Budget'));
       expect(logs, contains('[INFO] QA fixture ready'));
+    });
+
+    test('accepts a confirmed player teleport target end to end', () async {
+      final http.Client transport = http.Client();
+      addTearDown(transport.close);
+      final ReactClient client = ReactClient(
+        _credential(server, VisualQaProfile.alpha),
+        client: transport,
+      );
+      final OnlinePlayerInfo player = (await client.players()).first;
+
+      final PlayerTeleportResult result = await client.teleportPlayer(
+        player.id,
+        worldKey: 'minecraft:world_nether',
+        blockX: -24,
+        blockZ: 40,
+      );
+
+      expect(result.status, equals('queued'));
+      expect(result.playerName, equals(player.name));
+      expect(result.blockX, equals(-24));
+      expect(result.blockZ, equals(40));
     });
 
     test(

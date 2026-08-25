@@ -9,6 +9,8 @@ import '../model/environment_info.dart';
 import '../model/heatmap.dart';
 import '../model/identity_info.dart';
 import '../model/incident_status.dart';
+import '../model/metric_history.dart';
+import '../model/player_navigation.dart';
 import '../model/relay_frame.dart';
 import '../model/role_info.dart';
 import '../model/server_capabilities.dart';
@@ -26,10 +28,12 @@ class RelayReactClient
         IReactClient,
         IPingClient,
         IHeatmapClient,
+        IPlayerClient,
         IControlClient,
         IOperateClient,
         IConsoleClient,
-        IRoleClient {
+        IRoleClient,
+        IHistoryClient {
   final IRelayConnection _connection;
   final ServerCredential _cred;
   final MonotonicCounter _counter;
@@ -157,6 +161,47 @@ class RelayReactClient
   }
 
   @override
+  Future<List<MetricHistoryDescriptor>> historyCatalog() async {
+    final RelayResponse response = await _get('/metrics/catalog');
+    return _decodeList(response.body)
+        .map(
+          (dynamic value) =>
+              MetricHistoryDescriptor.fromJson(value as Map<String, dynamic>),
+        )
+        .toList();
+  }
+
+  @override
+  Future<MetricHistoryPage> historyPage({
+    List<String>? ids,
+    DateTime? from,
+    DateTime? to,
+    int maxPoints = 1200,
+    int pageSize = 256,
+    String? cursor,
+  }) async {
+    final String path;
+    if (cursor != null) {
+      path = '/metrics/history?cursor=${Uri.encodeQueryComponent(cursor)}';
+    } else {
+      if (ids == null || ids.isEmpty || from == null || to == null) {
+        throw ArgumentError('ids, from, and to are required without a cursor');
+      }
+      final Map<String, String> query = <String, String>{
+        'ids': ids.join(','),
+        'from': from.millisecondsSinceEpoch.toString(),
+        'to': to.millisecondsSinceEpoch.toString(),
+        'maxPoints': maxPoints.toString(),
+        'pageSize': pageSize.toString(),
+      };
+      path =
+          '/metrics/history?${query.entries.map((MapEntry<String, String> entry) => '${Uri.encodeQueryComponent(entry.key)}=${Uri.encodeQueryComponent(entry.value)}').join('&')}';
+    }
+    final RelayResponse response = await _get(path);
+    return MetricHistoryPage.fromJson(_decodeData(response.body));
+  }
+
+  @override
   Future<List<HeatmapSummary>> heatmaps() async {
     final RelayResponse response = await _get('/heatmaps');
     return _decodeList(response.body)
@@ -171,14 +216,14 @@ class RelayReactClient
   Future<HeatmapGrid> heatmap(
     String id, {
     String? world,
-    int? centerX,
-    int? centerZ,
+    int? centerChunkX,
+    int? centerChunkZ,
     int? radius,
   }) async {
     final Map<String, String> query = <String, String>{
       'world': ?world,
-      if (centerX != null) 'centerX': centerX.toString(),
-      if (centerZ != null) 'centerZ': centerZ.toString(),
+      if (centerChunkX != null) 'centerChunkX': centerChunkX.toString(),
+      if (centerChunkZ != null) 'centerChunkZ': centerChunkZ.toString(),
       if (radius != null) 'radius': radius.toString(),
     };
     final String suffix = query.isEmpty
@@ -186,6 +231,36 @@ class RelayReactClient
         : '?${query.entries.map((MapEntry<String, String> entry) => '${Uri.encodeQueryComponent(entry.key)}=${Uri.encodeQueryComponent(entry.value)}').join('&')}';
     final RelayResponse response = await _get('/heatmaps/$id$suffix');
     return HeatmapGrid.fromJson(_decodeData(response.body));
+  }
+
+  @override
+  Future<List<OnlinePlayerInfo>> players() async {
+    final RelayResponse response = await _get('/players');
+    return _decodeList(response.body)
+        .map(
+          (dynamic entry) =>
+              OnlinePlayerInfo.fromJson(entry as Map<String, dynamic>),
+        )
+        .toList(growable: false);
+  }
+
+  @override
+  Future<PlayerTeleportResult> teleportPlayer(
+    String playerId, {
+    required String worldKey,
+    required int blockX,
+    required int blockZ,
+  }) async {
+    final Map<String, dynamic> data = await _postData(
+      '/players/${Uri.encodeComponent(playerId)}/teleport',
+      <String, Object?>{
+        'worldKey': worldKey,
+        'blockX': blockX,
+        'blockZ': blockZ,
+        'confirm': true,
+      },
+    );
+    return PlayerTeleportResult.fromJson(data);
   }
 
   @override

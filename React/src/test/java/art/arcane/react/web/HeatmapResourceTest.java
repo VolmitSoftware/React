@@ -60,8 +60,8 @@ public class HeatmapResourceTest {
         Context ctx = mock(Context.class);
         when(ctx.pathParam("id")).thenReturn("entity-pressure-heatmap");
         when(ctx.queryParam("world")).thenReturn(null);
-        when(ctx.queryParam("centerX")).thenReturn(null);
-        when(ctx.queryParam("centerZ")).thenReturn(null);
+        when(ctx.queryParam("centerChunkX")).thenReturn(null);
+        when(ctx.queryParam("centerChunkZ")).thenReturn(null);
         when(ctx.queryParam("radius")).thenReturn(null);
 
         ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
@@ -82,8 +82,8 @@ public class HeatmapResourceTest {
         Context ctx = mock(Context.class);
         when(ctx.pathParam("id")).thenReturn("unknown-id");
         when(ctx.queryParam("world")).thenReturn(null);
-        when(ctx.queryParam("centerX")).thenReturn(null);
-        when(ctx.queryParam("centerZ")).thenReturn(null);
+        when(ctx.queryParam("centerChunkX")).thenReturn(null);
+        when(ctx.queryParam("centerChunkZ")).thenReturn(null);
         when(ctx.queryParam("radius")).thenReturn(null);
 
         assertThrows(NotFoundResponse.class, () -> resource.detail(ctx));
@@ -97,9 +97,66 @@ public class HeatmapResourceTest {
         Context ctx = mock(Context.class);
         when(ctx.pathParam("id")).thenReturn("entity-pressure-heatmap");
         when(ctx.queryParam("world")).thenReturn(null);
-        when(ctx.queryParam("centerX")).thenReturn(null);
-        when(ctx.queryParam("centerZ")).thenReturn(null);
+        when(ctx.queryParam("centerChunkX")).thenReturn(null);
+        when(ctx.queryParam("centerChunkZ")).thenReturn(null);
         when(ctx.queryParam("radius")).thenReturn("abc");
+
+        assertThrows(BadRequestResponse.class, () -> resource.detail(ctx));
+    }
+
+    @Test
+    void it_detail_forwards_hard_break_coordinate_query_names() {
+        HeatmapCellProvider provider = mock(HeatmapCellProvider.class);
+        HeatmapDto fixedDto = new HeatmapDto();
+        when(provider.compute("entity-pressure-heatmap", "minecraft:world", -31, 17, 64))
+            .thenReturn(fixedDto);
+
+        HeatmapResource resource = new HeatmapResource(provider);
+        Context ctx = mock(Context.class);
+        when(ctx.pathParam("id")).thenReturn("entity-pressure-heatmap");
+        when(ctx.queryParam("world")).thenReturn("minecraft:world");
+        when(ctx.queryParam("centerChunkX")).thenReturn("-31");
+        when(ctx.queryParam("centerChunkZ")).thenReturn("17");
+        when(ctx.queryParam("radius")).thenReturn("64");
+
+        resource.detail(ctx);
+
+        verify(provider).compute("entity-pressure-heatmap", "minecraft:world", -31, 17, 64);
+    }
+
+    @Test
+    void it_detail_ignores_legacy_coordinate_query_names() {
+        HeatmapCellProvider provider = mock(HeatmapCellProvider.class);
+        HeatmapDto fixedDto = new HeatmapDto();
+        when(provider.compute("entity-pressure-heatmap", null, null, null, null))
+            .thenReturn(fixedDto);
+        HeatmapResource resource = new HeatmapResource(provider);
+        Context ctx = mock(Context.class);
+        when(ctx.pathParam("id")).thenReturn("entity-pressure-heatmap");
+        when(ctx.queryParam("world")).thenReturn(null);
+        when(ctx.queryParam("centerX")).thenReturn("31");
+        when(ctx.queryParam("centerZ")).thenReturn("17");
+        when(ctx.queryParam("centerChunkX")).thenReturn(null);
+        when(ctx.queryParam("centerChunkZ")).thenReturn(null);
+        when(ctx.queryParam("radius")).thenReturn(null);
+
+        resource.detail(ctx);
+
+        verify(provider).compute("entity-pressure-heatmap", null, null, null, null);
+    }
+
+    @Test
+    void it_detail_400_when_provider_rejects_radius() {
+        HeatmapCellProvider provider = mock(HeatmapCellProvider.class);
+        when(provider.compute("entity-pressure-heatmap", null, null, null, 1_875_001))
+            .thenThrow(new IllegalArgumentException("radius"));
+        HeatmapResource resource = new HeatmapResource(provider);
+        Context ctx = mock(Context.class);
+        when(ctx.pathParam("id")).thenReturn("entity-pressure-heatmap");
+        when(ctx.queryParam("world")).thenReturn(null);
+        when(ctx.queryParam("centerChunkX")).thenReturn(null);
+        when(ctx.queryParam("centerChunkZ")).thenReturn(null);
+        when(ctx.queryParam("radius")).thenReturn("1875001");
 
         assertThrows(BadRequestResponse.class, () -> resource.detail(ctx));
     }

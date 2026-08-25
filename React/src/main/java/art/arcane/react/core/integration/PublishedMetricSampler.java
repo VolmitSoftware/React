@@ -76,7 +76,7 @@ public class PublishedMetricSampler extends ReactCachedSampler {
 
   @Override
   public String formattedValue(double t) {
-    if (!isAvailable()) {
+    if (!isSampleAvailable()) {
       return "---";
     }
 
@@ -85,7 +85,7 @@ public class PublishedMetricSampler extends ReactCachedSampler {
 
   @Override
   public String formattedSuffix(double t) {
-    if (!isAvailable()) {
+    if (!isSampleAvailable()) {
       return "";
     }
 
@@ -115,7 +115,8 @@ public class PublishedMetricSampler extends ReactCachedSampler {
     };
   }
 
-  private boolean isAvailable() {
+  @Override
+  public boolean isSampleAvailable() {
     return store.available(metric.key(), System.currentTimeMillis());
   }
 }

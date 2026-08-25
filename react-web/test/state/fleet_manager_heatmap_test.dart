@@ -6,12 +6,13 @@ import 'package:test/test.dart';
 
 import 'package:react_web/model/heatmap.dart';
 import 'package:react_web/model/identity_info.dart';
+import 'package:react_web/model/player_navigation.dart';
 import 'package:react_web/model/server_snapshot.dart';
 import 'package:react_web/service/react_client.dart';
 import 'package:react_web/state/fleet_manager.dart';
 import 'package:react_web/state/memory_fleet_storage.dart';
 
-class _DualClient implements IReactClient, IHeatmapClient {
+class _DualClient implements IReactClient, IHeatmapClient, IPlayerClient {
   @override
   Future<IdentityInfo> identity() async => IdentityInfo(
     serverName: 'Dual',
@@ -30,9 +31,20 @@ class _DualClient implements IReactClient, IHeatmapClient {
   Future<HeatmapGrid> heatmap(
     String id, {
     String? world,
-    int? centerX,
-    int? centerZ,
+    int? centerChunkX,
+    int? centerChunkZ,
     int? radius,
+  }) async => throw UnimplementedError();
+
+  @override
+  Future<List<OnlinePlayerInfo>> players() async => <OnlinePlayerInfo>[];
+
+  @override
+  Future<PlayerTeleportResult> teleportPlayer(
+    String playerId, {
+    required String worldKey,
+    required int blockX,
+    required int blockZ,
   }) async => throw UnimplementedError();
 }
 
@@ -101,6 +113,25 @@ void main() {
         clientFactory: (_) => _MetricsOnlyClient(),
       );
       expect(fm.heatmapClientFor('srv-1'), isNull);
+    });
+  });
+
+  group('FleetManager.playerClientFor', () {
+    test('returns only a player-capable client for a known server', () {
+      final _DualClient dual = _DualClient();
+      final FleetManager fleet = _seededFleetManager(
+        storage: InMemoryFleetStorage(),
+        clientFactory: (_) => dual,
+      );
+      expect(fleet.playerClientFor('srv-1'), same(dual));
+    });
+
+    test('returns null for a metrics-only client', () {
+      final FleetManager fleet = _seededFleetManager(
+        storage: InMemoryFleetStorage(),
+        clientFactory: (_) => _MetricsOnlyClient(),
+      );
+      expect(fleet.playerClientFor('srv-1'), isNull);
     });
   });
 }

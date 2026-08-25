@@ -13,6 +13,10 @@ class SvgFallbackChart extends StatelessComponent {
     this.hiddenSeries = const <int>{},
     this.activeSample,
     this.valueFormatter,
+    this.sampleLabels,
+    this.samplePositions,
+    this.breakBeforeSamples = const <int>{},
+    this.secondarySeries = const <int>{},
     this.onSampleHover,
     super.key,
   });
@@ -22,12 +26,17 @@ class SvgFallbackChart extends StatelessComponent {
   final Set<int> hiddenSeries;
   final int? activeSample;
   final String Function(double value)? valueFormatter;
+  final List<String>? sampleLabels;
+  final List<double>? samplePositions;
+  final Set<int> breakBeforeSamples;
+  final Set<int> secondarySeries;
   final void Function(int?)? onSampleHover;
 
   @override
   Component build(BuildContext context) {
     dependOnReactorLocale(context);
     final (double, double) bounds = _globalBounds();
+    final List<int> interactiveSamples = _interactiveSamples;
     final String accessibleLabel = series.isEmpty
         ? reactorText(ReactorText.chartNoTimeSeriesData)
         : reactorText(ReactorText.chartTimeSeriesLabel, <String, Object?>{
@@ -53,16 +62,14 @@ class SvgFallbackChart extends StatelessComponent {
                 'vector-effect': 'non-scaling-stroke',
               },
             ),
-          for (int index = 0; index < series.length; index++)
-            if (!hiddenSeries.contains(index))
-              _polylineFor(series[index].$2, bounds, index),
+          ..._seriesLines(bounds),
           if (activeSample != null) _activeGuide(bounds, activeSample!),
-          for (int index = 0; index < _sampleCount; index++)
+          for (final (int targetIndex, int index) in interactiveSamples.indexed)
             rect(
               const <Component>[],
-              x: '${index * (100 / _sampleCount)}',
+              x: '${targetIndex * (100 / interactiveSamples.length)}',
               y: '0',
-              width: '${100 / _sampleCount}',
+              width: '${100 / interactiveSamples.length}',
               height: '100',
               classes: 'reactor-chart-hit-target',
               attributes: <String, String>{
@@ -95,6 +102,14 @@ class SvgFallbackChart extends StatelessComponent {
       span(classes: 'reactor-chart-scale is-min', <Component>[
         Component.text(_formatBound(bounds.$1)),
       ]),
+      if (_sampleCount > 0 && sampleLabels != null)
+        div(classes: 'reactor-chart-time-axis', <Component>[
+          span(<Component>[Component.text(_sampleTitle(0))]),
+          if (_sampleCount > 2)
+            span(<Component>[Component.text(_sampleTitle(_sampleCount ~/ 2))]),
+          if (_sampleCount > 1)
+            span(<Component>[Component.text(_sampleTitle(_sampleCount - 1))]),
+        ]),
       if (activeSample != null)
         div(
           classes: 'reactor-chart-tooltip',
@@ -103,11 +118,7 @@ class SvgFallbackChart extends StatelessComponent {
           ),
           <Component>[
             span(classes: 'reactor-chart-tooltip-index', <Component>[
-              Component.text(
-                reactorText(ReactorText.chartSample, <String, Object?>{
-                  'number': activeSample! + 1,
-                }),
-              ),
+              Component.text(_sampleTitle(activeSample!)),
             ]),
             for (int index = 0; index < series.length; index++)
               if (!hiddenSeries.contains(index) &&
@@ -142,6 +153,19 @@ class SvgFallbackChart extends StatelessComponent {
     return count;
   }
 
+  List<int> get _interactiveSamples {
+    const int maximumTargets = 160;
+    if (_sampleCount <= maximumTargets) {
+      return List<int>.generate(_sampleCount, (int index) => index);
+    }
+    return List<int>.generate(
+      maximumTargets,
+      (int index) =>
+          (index * (_sampleCount - 1) / (maximumTargets - 1)).round(),
+      growable: false,
+    );
+  }
+
   Component _activeGuide((double, double) bounds, int sample) {
     final double x = _samplePosition(sample);
     return Component.fragment(<Component>[
@@ -170,7 +194,11 @@ class SvgFallbackChart extends StatelessComponent {
 
   double _samplePosition(int index) {
     if (_sampleCount <= 1) return 50.0;
-    return 2.0 + (index / (_sampleCount - 1)) * 96.0;
+    final List<double>? positions = samplePositions;
+    final double normalized = positions != null && index < positions.length
+        ? positions[index].clamp(0.0, 1.0)
+        : index / (_sampleCount - 1);
+    return 2.0 + normalized * 96.0;
   }
 
   double _pointY(double value, (double, double) bounds) =>
@@ -187,9 +215,14 @@ class SvgFallbackChart extends StatelessComponent {
         '${series[seriesIndex].$1} ${_formatValue(series[seriesIndex].$2[index])}',
       );
     }
-    return reactorText(ReactorText.chartSampleValues, <String, Object?>{
+    return '${_sampleTitle(index)}: ${values.join(', ')}';
+  }
+
+  String _sampleTitle(int index) {
+    final List<String>? labels = sampleLabels;
+    if (labels != null && index < labels.length) return labels[index];
+    return reactorText(ReactorText.chartSample, <String, Object?>{
       'number': index + 1,
-      'values': values.join(', '),
     });
   }
 
@@ -211,47 +244,65 @@ class SvgFallbackChart extends StatelessComponent {
     return (minimum - padding, maximum + padding);
   }
 
-  Component _polylineFor(
+  List<Component> _seriesLines((double, double) bounds) {
+    final List<Component> lines = <Component>[];
+    for (int index = 0; index < series.length; index++) {
+      if (hiddenSeries.contains(index)) continue;
+      lines.addAll(_polylinesFor(series[index].$2, bounds, index));
+    }
+    return lines;
+  }
+
+  List<Component> _polylinesFor(
     List<double> values,
     (double, double) bounds,
     int index,
   ) {
     if (values.isEmpty) {
-      return polyline(
-        const <Component>[],
-        points: '',
-        classes: 'reactor-chart-series reactor-chart-series-$index',
-        attributes: <String, String>{
-          'fill': 'none',
-          'stroke': 'var(--reactor-chart-${(index % 6) + 1})',
-        },
-      );
+      return <Component>[
+        polyline(
+          const <Component>[],
+          points: '',
+          classes: _seriesClasses(index),
+          attributes: <String, String>{
+            'fill': 'none',
+            'stroke': 'var(--reactor-chart-${(index % 6) + 1})',
+          },
+        ),
+      ];
     }
     final double minimum = bounds.$1;
     final double range = bounds.$2 - bounds.$1;
     final int count = values.length;
-    final StringBuffer points = StringBuffer();
+    final List<StringBuffer> segments = <StringBuffer>[StringBuffer()];
     for (int pointIndex = 0; pointIndex < count; pointIndex++) {
-      final double x = count == 1
-          ? 50.0
-          : 2.0 + (pointIndex / (count - 1)) * 96.0;
+      if (pointIndex > 0 && breakBeforeSamples.contains(pointIndex)) {
+        segments.add(StringBuffer());
+      }
+      final double x = _samplePosition(pointIndex);
       final double y = 94.0 - ((values[pointIndex] - minimum) / range) * 88.0;
-      if (pointIndex > 0) points.write(' ');
+      final StringBuffer points = segments.last;
+      if (points.isNotEmpty) points.write(' ');
       points.write('${x.toStringAsFixed(2)},${y.toStringAsFixed(2)}');
     }
-    return polyline(
-      const <Component>[],
-      points: points.toString(),
-      classes: 'reactor-chart-series reactor-chart-series-$index',
-      attributes: <String, String>{
-        'fill': 'none',
-        'stroke': 'var(--reactor-chart-${(index % 6) + 1})',
-        'stroke-width': '1.5',
-        'stroke-linecap': 'square',
-        'stroke-linejoin': 'miter',
-        'vector-effect': 'non-scaling-stroke',
-      },
-    );
+    return segments
+        .where((StringBuffer points) => points.isNotEmpty)
+        .map(
+          (StringBuffer points) => polyline(
+            const <Component>[],
+            points: points.toString(),
+            classes: _seriesClasses(index),
+            attributes: <String, String>{
+              'fill': 'none',
+              'stroke': 'var(--reactor-chart-${(index % 6) + 1})',
+              'stroke-width': '1.5',
+              'stroke-linecap': 'square',
+              'stroke-linejoin': 'miter',
+              'vector-effect': 'non-scaling-stroke',
+            },
+          ),
+        )
+        .toList(growable: false);
   }
 
   String _formatBound(double value) {
@@ -261,6 +312,10 @@ class SvgFallbackChart extends StatelessComponent {
     if (value.abs() >= 100.0) return value.toStringAsFixed(1);
     return value.toStringAsFixed(2);
   }
+
+  String _seriesClasses(int index) =>
+      'reactor-chart-series reactor-chart-series-$index'
+      '${secondarySeries.contains(index) ? ' is-secondary' : ''}';
 
   String _formatValue(double value) {
     final String Function(double value)? formatter = valueFormatter;

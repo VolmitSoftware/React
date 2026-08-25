@@ -1,34 +1,53 @@
 package art.arcane.react.api.web.heatmap;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class HeatmapSerializer {
 
-    public HeatmapDto toDto(String id, String label, String world, int centerChunkX, int centerChunkZ, int radius, List<HeatmapCellDto> cells) {
-        double min = 0.0;
-        double max = 0.0;
-        if (!cells.isEmpty()) {
-            min = cells.get(0).score;
-            max = cells.get(0).score;
-            for (HeatmapCellDto cell : cells) {
-                if (cell.score < min) {
-                    min = cell.score;
-                }
-                if (cell.score > max) {
-                    max = cell.score;
-                }
-            }
-        }
+    public HeatmapDto toDto(String id, String label, HeatmapScan scan) {
+        HeatmapWorldRef world = scan.world();
+        HeatmapViewportPlanner.HeatmapViewportPlan viewport = scan.viewport();
+        List<HeatmapCellDto> cells = scan.cells();
         HeatmapDto dto = new HeatmapDto();
         dto.id = id;
         dto.label = label;
-        dto.world = world;
-        dto.centerChunkX = centerChunkX;
-        dto.centerChunkZ = centerChunkZ;
-        dto.radius = radius;
-        dto.min = min;
-        dto.max = max;
+        dto.world = world.worldKey() == null ? "" : world.worldKey();
+        dto.centerChunkX = viewport.centerChunkX();
+        dto.centerChunkZ = viewport.centerChunkZ();
+        dto.radius = viewport.radius();
+        dto.originChunkX = viewport.originChunkX();
+        dto.originChunkZ = viewport.originChunkZ();
+        dto.width = viewport.width();
+        dto.height = viewport.height();
+        dto.cellSizeChunks = viewport.cellSizeChunks();
+        dto.capturedAtMs = scan.capturedAtMs();
+        dto.spawnChunkX = world.spawnChunkX();
+        dto.spawnChunkZ = world.spawnChunkZ();
+        dto.worldBorder = new HeatmapWorldBorderDto(
+            world.borderCenterBlockX(),
+            world.borderCenterBlockZ(),
+            world.borderSizeBlocks()
+        );
+        dto.min = 0D;
+        dto.max = robustPositiveScale(cells);
         dto.cells = cells.toArray(new HeatmapCellDto[0]);
         return dto;
+    }
+
+    private double robustPositiveScale(List<HeatmapCellDto> cells) {
+        List<Double> positivePeaks = new ArrayList<>(cells.size());
+        for (HeatmapCellDto cell : cells) {
+            if (Double.isFinite(cell.score) && cell.score > 0D) {
+                positivePeaks.add(cell.score);
+            }
+        }
+        if (positivePeaks.isEmpty()) {
+            return 0D;
+        }
+        Collections.sort(positivePeaks);
+        int percentileIndex = Math.max(0, (int) Math.ceil(positivePeaks.size() * 0.95D) - 1);
+        return positivePeaks.get(percentileIndex);
     }
 }

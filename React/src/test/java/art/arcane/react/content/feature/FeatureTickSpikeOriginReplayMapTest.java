@@ -72,7 +72,16 @@ class FeatureTickSpikeOriginReplayMapTest {
         Mockito.anyInt(),
         Mockito.anyInt()
     );
-    HeatmapWorldRef worldRef = new HeatmapWorldRef(worldId, "minecraft:test", "test", 0, 0);
+    HeatmapWorldRef worldRef = new HeatmapWorldRef(
+        worldId,
+        "minecraft:test",
+        "test",
+        0,
+        0,
+        0D,
+        0D,
+        60_000_000D
+    );
     Assertions.assertTrue(feature.chunkScore(worldRef, 40, -20) > 0D);
     Assertions.assertEquals(0D, feature.chunkScore(worldRef, 44, -20));
   }
