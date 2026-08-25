@@ -405,9 +405,7 @@ public class WebSocketMetricsIntegrationTest {
                 @Override
                 public void onOpen(WebSocket webSocket) {
                     webSocket.request(Long.MAX_VALUE);
-                    for (String frame : frames) {
-                        webSocket.sendText(frame, true);
-                    }
+                    sendFrames(webSocket, frames, 0);
                 }
 
                 @Override
@@ -430,6 +428,13 @@ public class WebSocketMetricsIntegrationTest {
             .get(5, TimeUnit.SECONDS);
         assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
         return closeCode.get();
+    }
+
+    private static void sendFrames(WebSocket webSocket, List<String> frames, int index) {
+        if (index >= frames.size()) {
+            return;
+        }
+        webSocket.sendText(frames.get(index), true).thenRun(() -> sendFrames(webSocket, frames, index + 1));
     }
 
     private static String authFrame(String bearer) {

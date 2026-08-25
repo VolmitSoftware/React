@@ -1,10 +1,12 @@
 package art.arcane.react;
 
 import art.arcane.react.model.ReactConfiguration;
+import net.kyori.adventure.text.logger.slf4j.ComponentLogger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
 import java.lang.reflect.Field;
@@ -23,6 +25,7 @@ class ReactLoggingTest {
   private Logger logger;
   private RecordingHandler handler;
   private ReactConfiguration configuration;
+  private MockedStatic<ComponentLogger> componentLoggerFactory;
 
   @BeforeEach
   void setUp() throws ReflectiveOperationException {
@@ -38,6 +41,9 @@ class ReactLoggingTest {
     handler.setLevel(Level.ALL);
     logger.addHandler(handler);
 
+    componentLoggerFactory = Mockito.mockStatic(ComponentLogger.class);
+    componentLoggerFactory.when(ComponentLogger::logger).thenReturn(null);
+
     React plugin = Mockito.mock(React.class);
     Mockito.when(plugin.getLogger()).thenReturn(logger);
     React.instance = plugin;
@@ -45,6 +51,7 @@ class ReactLoggingTest {
 
   @AfterEach
   void tearDown() throws ReflectiveOperationException {
+    componentLoggerFactory.close();
     logger.removeHandler(handler);
     React.instance = previousInstance;
     writeConfiguration(previousConfiguration);

@@ -1,24 +1,34 @@
 package art.arcane.react.core.integration;
 
 import art.arcane.react.React;
+import art.arcane.react.api.metric.ReactMetrics;
+import art.arcane.react.content.sampler.SamplerUnknown;
 import art.arcane.volmlib.integration.IntegrationHandshakeRequest;
 import art.arcane.volmlib.integration.IntegrationHandshakeResponse;
 import art.arcane.volmlib.integration.IntegrationHeartbeat;
 import art.arcane.volmlib.integration.IntegrationMetricDescriptor;
 import art.arcane.volmlib.integration.IntegrationMetricSample;
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
+import art.arcane.volmlib.integration.IntegrationMetricType;
 import art.arcane.volmlib.integration.IntegrationProtocolNegotiator;
 import art.arcane.volmlib.integration.IntegrationProtocolVersion;
 import art.arcane.volmlib.integration.IntegrationServiceContract;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.ServicePriority;
 
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class ReactIntegrationService implements IntegrationServiceContract {
+  private static final long SAMPLER_FAILURE_LOG_INTERVAL_MS = 10_000L;
+  private static final String SAMPLER_METRIC_PREFIX = "react.sampler.";
   private static final IntegrationProtocolVersion CURRENT_PROTOCOL = new IntegrationProtocolVersion(1, 2);
   private static final Set<IntegrationProtocolVersion> SUPPORTED_PROTOCOLS = Set.of(
       new IntegrationProtocolVersion(1, 0),
@@ -31,6 +41,7 @@ public class ReactIntegrationService implements IntegrationServiceContract {
       "metrics",
       "react-status"
   );
+  private final AtomicLong lastSamplerFailureLogMs = new AtomicLong(0L);
 
   public void register() {
     Bukkit.getServicesManager().register(IntegrationServiceContract.class, this, React.instance, ServicePriority.Normal);
@@ -72,7 +83,12 @@ public class ReactIntegrationService implements IntegrationServiceContract {
 
   @Override
   public Set<IntegrationMetricDescriptor> metricDescriptors() {
-    return Set.of();
+    List<String> samplerIds = samplerIds();
+    Set<IntegrationMetricDescriptor> descriptors = new LinkedHashSet<>(samplerIds.size());
+    for (String samplerId : samplerIds) {
+      descriptors.add(samplerDescriptor(samplerId));
+    }
+    return Collections.unmodifiableSet(descriptors);
   }
 
   @Override
@@ -128,19 +144,124 @@ public class ReactIntegrationService implements IntegrationServiceContract {
 
   @Override
   public Map<String, IntegrationMetricSample> sampleMetrics(Set<String> metricKeys) {
-    Map<String, IntegrationMetricSample> out = new HashMap<>();
-    if (metricKeys == null) {
-      return out;
+    Map<String, IntegrationMetricSample> samples = new LinkedHashMap<>();
+    if (metricKeys == null || metricKeys.isEmpty()) {
+      return samples;
     }
 
-    long now = System.currentTimeMillis();
-    for (String key : metricKeys) {
-      out.put(key, IntegrationMetricSample.unavailable(
-          IntegrationMetricSchema.descriptor(key),
-          "react-does-not-publish-this-metric",
-          now
-      ));
+    List<String> requestedKeys = new ArrayList<>(metricKeys.size());
+    for (String metricKey : metricKeys) {
+      if (metricKey != null && !metricKey.isBlank()) {
+        requestedKeys.add(metricKey);
+      }
     }
-    return out;
+    Collections.sort(requestedKeys);
+
+    Set<String> availableSamplerIds = Set.copyOf(samplerIds());
+    long now = System.currentTimeMillis();
+    for (String metricKey : requestedKeys) {
+      if (!isSamplerMetricKey(metricKey)) {
+        samples.put(metricKey, IntegrationMetricSample.unavailable(
+            IntegrationMetricSchema.descriptor(metricKey),
+            "react-does-not-publish-this-metric",
+            now
+        ));
+        continue;
+      }
+
+      String samplerId = samplerId(metricKey);
+      IntegrationMetricDescriptor descriptor = samplerDescriptor(samplerId);
+      if (!availableSamplerIds.contains(samplerId)) {
+        samples.put(metricKey, IntegrationMetricSample.unavailable(
+            descriptor,
+            "react-sampler-not-registered",
+            now
+        ));
+        continue;
+      }
+
+      samples.put(metricKey, sampleSampler(descriptor, samplerId, now));
+    }
+    return samples;
+  }
+
+  private List<String> samplerIds() {
+    Set<String> registeredIds = ReactMetrics.hostMetricKeys();
+    if (registeredIds.isEmpty()) {
+      return List.of();
+    }
+
+    List<String> samplerIds = new ArrayList<>(registeredIds.size());
+    for (String samplerId : registeredIds) {
+      if (samplerId == null
+          || samplerId.isBlank()
+          || SamplerUnknown.ID.equals(samplerId)) {
+        continue;
+      }
+      samplerIds.add(samplerId);
+    }
+    Collections.sort(samplerIds);
+    return samplerIds;
+  }
+
+  private IntegrationMetricDescriptor samplerDescriptor(String samplerId) {
+    return new IntegrationMetricDescriptor(
+        SAMPLER_METRIC_PREFIX + samplerId,
+        IntegrationMetricType.DOUBLE,
+        "",
+        Map.of(
+            "plugin", "react",
+            "domain", "sampler",
+            "scope", "global",
+            "sampler-id", samplerId
+        )
+    );
+  }
+
+  private IntegrationMetricSample sampleSampler(
+      IntegrationMetricDescriptor descriptor,
+      String samplerId,
+      long now
+  ) {
+    double value;
+    try {
+      value = ReactMetrics.readHostMetric(samplerId);
+    } catch (Throwable e) {
+      reportSamplerFailure(samplerId, e, now);
+      return IntegrationMetricSample.unavailable(
+          descriptor,
+          "react-sampler-error:" + e.getClass().getSimpleName(),
+          now
+      );
+    }
+
+    if (!Double.isFinite(value)) {
+      return IntegrationMetricSample.unavailable(
+          descriptor,
+          "react-sampler-value-unavailable",
+          now
+      );
+    }
+
+    return IntegrationMetricSample.available(descriptor, value, now);
+  }
+
+  private void reportSamplerFailure(String samplerId, Throwable failure, long now) {
+    long last = lastSamplerFailureLogMs.get();
+    if (now - last < SAMPLER_FAILURE_LOG_INTERVAL_MS
+        || !lastSamplerFailureLogMs.compareAndSet(last, now)) {
+      return;
+    }
+
+    React.warn("Integration sampler read failed: id=" + samplerId, failure);
+  }
+
+  private boolean isSamplerMetricKey(String metricKey) {
+    return metricKey.startsWith(SAMPLER_METRIC_PREFIX)
+        && metricKey.length() > SAMPLER_METRIC_PREFIX.length();
+  }
+
+  private String samplerId(String metricKey) {
+    return metricKey.substring(SAMPLER_METRIC_PREFIX.length());
   }
 }
