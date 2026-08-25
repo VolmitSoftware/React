@@ -1,75 +1,79 @@
-/*
- *  Copyright (c) 2016-2025 Arcane Arts (Volmit Software)
- *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
- *
- */
-
 package art.arcane.react.model;
 
 import art.arcane.volmlib.util.math.BlockPosition;
-import art.arcane.volmlib.util.math.M;
-import lombok.Data;
-import org.bukkit.block.Block;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
-@Data
-public class Circuit {
+public final class Circuit {
   private final long id;
   private final Set<BlockPosition> positions;
-  private final AtomicInteger events;
-  private final AtomicInteger eventBuffer;
-  private final AtomicLong lastEvent;
-  private final AtomicBoolean stop;
+  private int events;
+  private int pendingEvents;
+  private long lastEventMs;
+  private volatile long blockedUntilMs;
 
-  public Circuit(long id) {
+  public Circuit(long id, long now) {
     this.id = id;
-    this.positions = new HashSet<>();
-    this.events = new AtomicInteger(0);
-    this.eventBuffer = new AtomicInteger(0);
-    this.lastEvent = new AtomicLong(M.ms());
-    this.stop = new AtomicBoolean(false);
+    positions = new HashSet<>();
+    lastEventMs = now;
+  }
+
+  public long getId() {
+    return id;
   }
 
   public int countBlocks() {
     return positions.size();
   }
 
-  public void write(Block block) {
-    positions.add(new BlockPosition(block));
-    eventBuffer.incrementAndGet();
-    lastEvent.set(M.ms());
+  public int getEvents() {
+    return events;
   }
 
-  public void remove(BlockPosition block) {
-    positions.remove(block);
+  public long getLastEventMs() {
+    return lastEventMs;
   }
 
-  public void stop() {
-    stop.set(true);
+  public long getBlockedUntilMs() {
+    return blockedUntilMs;
   }
 
-  public void tick() {
-    events.set(eventBuffer.getAndSet(0));
-    if (M.ms() - lastEvent.get() > 10000) {
-      positions.clear();
-    }
+  public boolean isBlocked(long now) {
+    return blockedUntilMs > now;
+  }
+
+  Set<BlockPosition> positions() {
+    return positions;
+  }
+
+  void add(BlockPosition position) {
+    positions.add(position);
+  }
+
+  void remove(BlockPosition position) {
+    positions.remove(position);
+  }
+
+  void recordEvent(long now) {
+    pendingEvents++;
+    lastEventMs = now;
+  }
+
+  void merge(Circuit other) {
+    positions.addAll(other.positions);
+    events += other.events;
+    pendingEvents += other.pendingEvents;
+    lastEventMs = Math.max(lastEventMs, other.lastEventMs);
+    blockedUntilMs = Math.max(blockedUntilMs, other.blockedUntilMs);
+  }
+
+  void rollWindow() {
+    events = pendingEvents;
+    pendingEvents = 0;
+  }
+
+  void blockUntil(long untilMs) {
+    blockedUntilMs = Math.max(blockedUntilMs, untilMs);
   }
 }

@@ -22,6 +22,7 @@ package art.arcane.react.core.controller;
 import art.arcane.react.React;
 import art.arcane.react.api.event.NaughtyRegisteredListener;
 import art.arcane.react.api.event.layer.MinecartSpawnEvent;
+import art.arcane.react.api.event.layer.ServerTickEvent;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.common.scheduling.TickedObject;
 import art.arcane.react.util.plugin.IController;
@@ -60,6 +61,7 @@ public class EventController extends TickedObject implements IController, Listen
   private transient volatile int listenerCount;
   private transient volatile double totalTime;
   private transient volatile int calls;
+  private transient volatile double callsPerTick;
   private transient volatile Map<String, Double> pluginEventTimeMS = Map.of();
   private transient volatile Map<String, Integer> pluginEventCalls = Map.of();
   private transient final AtomicBoolean running = new AtomicBoolean(false);
@@ -67,6 +69,7 @@ public class EventController extends TickedObject implements IController, Listen
   private transient final AtomicBoolean instrumentationRequested = new AtomicBoolean(false);
   private transient final AtomicLong lifecycleGeneration = new AtomicLong();
   private transient final AtomicLong mutationRevision = new AtomicLong();
+  private transient final AtomicLong measuredTicks = new AtomicLong();
   private transient volatile boolean spiesInjected = false;
   private transient volatile long lastSamplerActivity = 0;
   private transient volatile long instrumentationOwner;
@@ -160,6 +163,13 @@ public class EventController extends TickedObject implements IController, Listen
     }
   }
 
+  @EventHandler(priority = EventPriority.MONITOR)
+  public void on(ServerTickEvent event) {
+    if (spiesInjected) {
+      measuredTicks.incrementAndGet();
+    }
+  }
+
   private static boolean resolveHandlerFields() {
     if (handlerFieldsResolved) {
       return allListsField != null;
@@ -247,6 +257,11 @@ public class EventController extends TickedObject implements IController, Listen
 
   public Map<String, Integer> snapshotPluginEventCalls() {
     return new HashMap<>(pluginEventCalls);
+  }
+
+  public double getPluginEventTimeMS(String pluginName) {
+    Double time = pluginEventTimeMS.get(pluginName);
+    return time == null ? 0D : time;
   }
 
   private void requestReconciliation() {
@@ -448,6 +463,7 @@ public class EventController extends TickedObject implements IController, Listen
     listenerCount = listeners;
     totalTime = totals.timeNanos / 1.0E6D;
     calls = saturatingInt(totals.calls);
+    callsPerTick = averageCallsPerTick(totals.calls, measuredTicks.getAndSet(0L));
     pluginEventTimeMS = Map.copyOf(totals.pluginTime);
     pluginEventCalls = Map.copyOf(totals.pluginCalls);
   }
@@ -456,6 +472,8 @@ public class EventController extends TickedObject implements IController, Listen
     listenerCount = 0;
     totalTime = 0D;
     calls = 0;
+    callsPerTick = 0D;
+    measuredTicks.set(0L);
     pluginEventTimeMS = Map.of();
     pluginEventCalls = Map.of();
   }
@@ -487,6 +505,14 @@ public class EventController extends TickedObject implements IController, Listen
 
   private static int saturatingAdd(int left, int right) {
     return saturatingInt((long) left + right);
+  }
+
+  static double averageCallsPerTick(long calls, long ticks) {
+    if (calls <= 0L || ticks <= 0L) {
+      return 0D;
+    }
+
+    return (double) calls / ticks;
   }
 
   private static final class WindowTotals {

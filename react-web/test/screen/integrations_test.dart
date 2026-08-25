@@ -17,17 +17,20 @@ const ShadcnStylesheet _sheet = ShadcnStylesheet(theme: ShadcnTheme.midnight);
 SamplerSample _sample(
   String id,
   double value, {
+  String? name,
   String suffix = 'ms',
   double max = 100.0,
+  bool available = true,
 }) => SamplerSample(
   id: id,
-  name: id,
+  name: name ?? id,
   value: value,
   display: value.toString(),
   suffix: suffix,
   min: 0.0,
   max: max,
   history: <double>[value, value * 0.9, value * 1.1],
+  available: available,
 );
 
 ServerSnapshot _fakeSnapshotWithIntegrations() {
@@ -36,8 +39,11 @@ ServerSnapshot _fakeSnapshotWithIntegrations() {
     _sample('adapt-ability-ops', 7.0),
     _sample('adapt-session-load', 0.3),
     _sample('adapt-world-policy-latency', 2.1),
-    _sample('iris-biome-cache-hit-rate', 0.95, suffix: '%'),
-    _sample('iris-chunk-stream-ms', 8.4),
+    _sample('biletools-reloads', 3.0, name: 'Reloads'),
+    _sample('gloss-holograms', 8.0, name: 'Holograms'),
+    _sample('hiddenore-drops', 4.0, name: 'Drops'),
+    _sample('iris-chunks-per-second', 8.4, name: 'Chunks Per Second'),
+    _sample('iris-generation-total-ms', 12.5, name: 'Generation Total'),
     _sample('iris-pregen-queue', 12.0),
     _sample('wormholes-block-changes', 34.0),
     _sample('wormholes-packets', 220.0),
@@ -71,6 +77,39 @@ Widget _wrapWith(Widget child, ServerSnapshot snapshot) => ArcaneThemeProvider(
 
 void main() {
   group('IntegrationsScreen — all integrations present', () {
+    test(
+      'groups every available integration prefix and excludes unavailable',
+      () {
+        final ServerSnapshot snapshot = _fakeSnapshotWithIntegrations();
+        snapshot.byId['gloss-unavailable'] = _sample(
+          'gloss-unavailable',
+          0.0,
+          available: false,
+        );
+
+        final Map<String, List<SamplerSample>> groups =
+            availableIntegrationSamples(snapshot);
+
+        expect(
+          groups.keys,
+          orderedEquals(<String>[
+            'Adapt',
+            'BileTools',
+            'Gloss',
+            'HiddenOre',
+            'Iris',
+            'Wormholes',
+          ]),
+        );
+        expect(
+          groups['Gloss']!.any(
+            (SamplerSample sample) => sample.id == 'gloss-unavailable',
+          ),
+          isFalse,
+        );
+      },
+    );
+
     testServer('renders Adapt section when adapt-* samplers are present', (
       ServerTester tester,
     ) async {
@@ -123,6 +162,21 @@ void main() {
       },
     );
 
+    testServer('renders BileTools, Gloss, and HiddenOre sections', (
+      ServerTester tester,
+    ) async {
+      tester.pumpComponent(
+        _wrapWith(const IntegrationsScreen(), _fakeSnapshotWithIntegrations()),
+      );
+      final DocumentResponse res = await tester.request('/');
+
+      expect(res.statusCode, equals(200));
+      expect(res.body.contains('BileTools'), isTrue);
+      expect(res.body.contains('Gloss'), isTrue);
+      expect(res.body.contains('HiddenOre'), isTrue);
+      expect(res.body.contains('Holograms'), isTrue);
+    });
+
     testServer('renders at least one sampler value from the snapshot', (
       ServerTester tester,
     ) async {
@@ -161,7 +215,7 @@ void main() {
         );
         expect(
           res.body.contains(
-            'No Adapt, Iris, or Wormholes metrics are being reported by this server.',
+            'No integration metrics are being reported by this server.',
           ),
           isTrue,
           reason: 'empty-state description must match spec exactly',

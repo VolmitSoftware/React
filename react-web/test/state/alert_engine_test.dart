@@ -14,6 +14,7 @@ SamplerSample _sample(
   String suffix = '',
   double min = 0.0,
   double max = 100.0,
+  bool available = true,
 }) => SamplerSample(
   id: id,
   name: id,
@@ -23,6 +24,7 @@ SamplerSample _sample(
   min: min,
   max: max,
   history: <double>[value],
+  available: available,
 );
 
 ServerSnapshot _snapshotFrom(Map<String, double> values) {
@@ -272,6 +274,31 @@ void main() {
         alerts.where((FleetAlert a) => a.metricId == 'tick-time'),
         isEmpty,
       );
+    });
+
+    test('unavailable samples never produce alerts', () {
+      final ServerSnapshot snapshot = ServerSnapshot(
+        byId: <String, SamplerSample>{
+          'ticks-per-second': _sample(
+            'ticks-per-second',
+            0.0,
+            available: false,
+          ),
+          'tick-time': _sample('tick-time', 100.0, available: false),
+          'incident-score': _sample('incident-score', 100.0, available: false),
+        },
+        at: _now,
+      );
+
+      final List<FleetAlert> alerts = AlertEngine.computeForServer(
+        serverId: 's1',
+        serverName: 'Server 1',
+        snapshot: snapshot,
+        thresholds: _thresholds,
+        now: _now,
+      );
+
+      expect(alerts, isEmpty);
     });
 
     test('snapshot tripping TPS-crit + incident + mspt produces 3 alerts', () {

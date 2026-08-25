@@ -125,10 +125,10 @@ class FleetRollup {
       int? score;
       if (srv.state == ConnState.offline) {
         score = null;
-      } else if (currentSnapshot == null) {
+      } else if (currentSnapshot == null || tps == null) {
         score = null;
       } else {
-        double base = ((tps ?? 0.0) / 20.0).clamp(0.0, 1.0) * 100.0;
+        double base = (tps / 20.0).clamp(0.0, 1.0) * 100.0;
         if ((mspt ?? 0.0) > 50.0) base -= 20.0;
         if (incident > 50.0) base -= 20.0;
         score = base.clamp(0.0, 100.0).round();

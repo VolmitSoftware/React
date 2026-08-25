@@ -38,10 +38,55 @@ Widget _wrapScreen(Widget child) => ArcaneThemeProvider(
 
 const IncidentStatus _fakeStatus = IncidentStatus(
   score: 55.0,
-  state: 'CRITICAL',
-  timeline: <String>['spike at t0'],
+  scoreAvailable: true,
+  sampledAtMs: 1770000000000,
+  state: 'ACTIVE',
   contributors: <IncidentContributor>[
-    IncidentContributor(name: 'mspt', weight: 0.6, value: 18.2),
+    IncidentContributor(
+      id: 'tick-ms-p95',
+      label: 'Tick P95',
+      available: true,
+      weight: 0.6,
+      value: 120,
+      display: '120 ms',
+      pressure: 0.7,
+      scorePoints: 21,
+      minimum: 50,
+      maximum: 150,
+    ),
+  ],
+  incidents: <IncidentRecord>[
+    IncidentRecord(
+      id: 'event-id',
+      incidentId: 'incident-id',
+      kind: 'REDSTONE_CIRCUIT',
+      phase: 'THROTTLED',
+      severity: 'WARNING',
+      occurredAtMs: 1770000000000,
+      startedAtMs: 1770000000000,
+      source: 'circuit-manager',
+      title: 'Redstone activity component throttled',
+      summary: 'React temporarily blocked the busiest component.',
+      cause: 'Redstone event span crossed its threshold.',
+      location: IncidentLocation(
+        worldId: 'world-id',
+        world: 'world',
+        x: 10,
+        y: 64,
+        z: 20,
+      ),
+      evidence: <IncidentContributor>[],
+      actions: <IncidentAction>[
+        IncidentAction(
+          id: 'circuit-throttle',
+          label: 'Temporary circuit throttle',
+          status: 'ACTIVE',
+          detail: 'Blocked for 10000 ms.',
+          occurredAtMs: 1770000000000,
+        ),
+      ],
+      context: <String, String>{'activeNodes': '8'},
+    ),
   ],
 );
 
@@ -112,7 +157,7 @@ void main() {
   });
 
   group('IncidentCenterView render', () {
-    testServer('renders localized critical state label', (
+    testServer('renders localized active state label', (
       ServerTester tester,
     ) async {
       tester.pumpComponent(
@@ -121,13 +166,13 @@ void main() {
       final DocumentResponse res = await tester.request('/');
       expect(res.statusCode, equals(200));
       expect(
-        res.body.contains('Critical'),
+        res.body.contains('Active'),
         isTrue,
-        reason: 'Localized critical state must appear as chip label',
+        reason: 'Localized active state must appear as chip label',
       );
     });
 
-    testServer('renders spike at t0 timeline entry', (
+    testServer('renders structured incident cause and location', (
       ServerTester tester,
     ) async {
       tester.pumpComponent(
@@ -136,22 +181,25 @@ void main() {
       final DocumentResponse res = await tester.request('/');
       expect(res.statusCode, equals(200));
       expect(
-        res.body.contains('spike at t0'),
+        res.body.contains('Redstone event span crossed its threshold.') &&
+            res.body.contains('world · 10, 64, 20'),
         isTrue,
-        reason: 'timeline entry must appear in Incident Timeline section',
+        reason: 'structured cause and location must appear in incident history',
       );
     });
 
-    testServer('renders contributor name mspt', (ServerTester tester) async {
+    testServer('renders contributor label and actual score points', (
+      ServerTester tester,
+    ) async {
       tester.pumpComponent(
         _wrapView(const IncidentCenterView(status: _fakeStatus)),
       );
       final DocumentResponse res = await tester.request('/');
       expect(res.statusCode, equals(200));
       expect(
-        res.body.contains('mspt'),
+        res.body.contains('Tick P95') && res.body.contains('21.0 points'),
         isTrue,
-        reason: 'contributor name must appear in Contributing Factors section',
+        reason: 'contributor evidence must show its actual score points',
       );
     });
 
@@ -170,7 +218,7 @@ void main() {
       );
     });
 
-    testServer('renders Incident Timeline section heading', (
+    testServer('renders Incident history section heading', (
       ServerTester tester,
     ) async {
       tester.pumpComponent(
@@ -179,9 +227,9 @@ void main() {
       final DocumentResponse res = await tester.request('/');
       expect(res.statusCode, equals(200));
       expect(
-        res.body.contains('Incident Timeline'),
+        res.body.contains('Incident history'),
         isTrue,
-        reason: 'Incident Timeline section heading must appear',
+        reason: 'Incident history section heading must appear',
       );
     });
   });

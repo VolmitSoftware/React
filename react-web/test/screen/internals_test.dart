@@ -40,7 +40,10 @@ ServerSnapshot _fakeSnapshot() {
     _sample('react-job-budget', 50.0, suffix: 'ms'),
     _sample('processor-system-load', 45.0, suffix: '%'),
     _sample('processor-process-load', 72.0, suffix: '%'),
-    _sample('processor-outside-load', 30.0, suffix: '%'),
+    _sample('processor-outside', 30.0, suffix: '%'),
+    _sample('react-history-dropped-snapshots', 2.0),
+    _sample('react-websocket-sessions', 4.0),
+    _sample('jvm-heap-utilization', 62.0, suffix: '%'),
   ];
   final Map<String, SamplerSample> byId = <String, SamplerSample>{
     for (final SamplerSample s in samples) s.id: s,
@@ -57,7 +60,7 @@ ServerSnapshot _highCpuSnapshot() {
     _sample('react-job-budget', 50.0, suffix: 'ms'),
     _sample('processor-system-load', 95.0, suffix: '%'),
     _sample('processor-process-load', 90.0, suffix: '%'),
-    _sample('processor-outside-load', 5.0, suffix: '%'),
+    _sample('processor-outside', 5.0, suffix: '%'),
   ];
   final Map<String, SamplerSample> byId = <String, SamplerSample>{
     for (final SamplerSample s in samples) s.id: s,
@@ -120,6 +123,19 @@ void main() {
         isTrue,
         reason: 'react-jobs-queue value 14.0 must appear in rendered HTML',
       );
+    });
+
+    testServer('renders telemetry, web, and JVM sections', (
+      ServerTester tester,
+    ) async {
+      tester.pumpComponent(_wrap(const InternalsScreen()));
+      final DocumentResponse res = await tester.request('/');
+
+      expect(res.statusCode, equals(200));
+      expect(res.body.contains('Telemetry Pipeline'), isTrue);
+      expect(res.body.contains('Web Telemetry'), isTrue);
+      expect(res.body.contains('JVM Runtime'), isTrue);
+      expect(res.body.contains('62.0'), isTrue);
     });
 
     testServer(

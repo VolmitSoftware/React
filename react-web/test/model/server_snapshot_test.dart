@@ -37,7 +37,8 @@ void main() {
     expect(snapshot.at.millisecondsSinceEpoch, equals(1750000000123));
     expect(snapshot.byId.keys, containsAll(<String>['cpu', 'mem']));
     expect(snapshot.sampler('cpu')!.display, equals('45%'));
-    expect(snapshot.sampler('mem')!.available, isFalse);
+    expect(snapshot.sampler('mem'), isNull);
+    expect(snapshot.byId['mem']!.available, isFalse);
     expect(snapshot.sampler('unknown'), isNull);
   });
 

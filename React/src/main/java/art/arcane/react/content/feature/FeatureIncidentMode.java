@@ -21,9 +21,12 @@ package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
 import art.arcane.react.api.feature.ReactFeature;
-import art.arcane.react.api.web.IncidentTimeline;
 import art.arcane.react.content.sampler.SamplerIncidentScore;
 import art.arcane.react.content.sampler.SamplerTickTime;
+import art.arcane.react.core.controller.IncidentController;
+import art.arcane.react.core.incident.IncidentAction;
+import art.arcane.react.core.incident.IncidentEvidence;
+import art.arcane.react.core.incident.IncidentRecord;
 import art.arcane.react.util.common.scheduling.J;
 import org.bukkit.Location;
 import org.bukkit.block.Hopper;
@@ -36,7 +39,14 @@ import org.bukkit.event.entity.EntityPortalEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicLongArray;
 
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Incident Mode feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureIncidentMode extends ReactFeature implements Listener {
@@ -79,7 +89,9 @@ public class FeatureIncidentMode extends ReactFeature implements Listener {
   private transient volatile boolean active;
   private transient volatile long incidentSince;
   private transient volatile long activatedAtMS;
+  private transient volatile String activeIncidentId;
   private transient final RateWindow<RateCounter> rateWindow = new RateWindow<>(RateCounter.values().length);
+  private transient final AtomicLongArray mitigations = new AtomicLongArray(RateCounter.values().length);
 
   public FeatureIncidentMode() {
     super(ID);
@@ -93,16 +105,28 @@ public class FeatureIncidentMode extends ReactFeature implements Listener {
     incident = false;
     incidentSince = 0L;
     activatedAtMS = now;
+    activeIncidentId = null;
     rateWindow.reset(now);
+    resetMitigations();
     evaluationQueuedGeneration.set(-1L);
   }
 
   @Override
   public void onDeactivate() {
+    if (incident && activeIncidentId != null) {
+      recordResolution(
+          System.currentTimeMillis(),
+          "DISABLED",
+          "Incident mode was disabled while its rate guardrails were active.",
+          "The feature stopped by configuration or plugin lifecycle before recovery thresholds were observed."
+      );
+    }
     active = false;
     lifecycleGeneration.incrementAndGet();
     evaluationQueuedGeneration.set(-1L);
     incident = false;
+    incidentSince = 0L;
+    activeIncidentId = null;
   }
 
   public boolean isIncidentActive() {
@@ -154,13 +178,16 @@ public class FeatureIncidentMode extends ReactFeature implements Listener {
         return;
       }
 
-      double incidentScore = sample(SamplerIncidentScore.ID);
+      SamplerIncidentScore.IncidentScoreSnapshot snapshot = incidentScoreSnapshot();
+      double incidentScore = snapshot.score();
       if (incidentScore >= enterIncidentScore || tickMS >= enterTickMS) {
         incident = true;
         incidentSince = now;
-        IncidentTimeline.global().record("incident-mode entered (score " + String.format("%.1f", incidentScore) + ", tick " + String.format("%.1f", tickMS) + "ms)");
+        activeIncidentId = UUID.randomUUID().toString();
+        resetMitigations();
+        recordStart(now, snapshot, tickMS);
         if (verboseTransitions) {
-          React.warn("Incident mode enabled (score " + String.format("%.1f", incidentScore) + ", tick " + String.format("%.1f", tickMS) + "ms)");
+          React.warn("Incident mode enabled (score " + format(incidentScore) + ", tick " + format(tickMS) + "ms)");
         }
       }
       return;
@@ -170,12 +197,20 @@ public class FeatureIncidentMode extends ReactFeature implements Listener {
       return;
     }
 
-    double incidentScore = sample(SamplerIncidentScore.ID);
+    SamplerIncidentScore.IncidentScoreSnapshot snapshot = incidentScoreSnapshot();
+    double incidentScore = snapshot.score();
     if (incidentScore <= exitIncidentScore) {
       incident = false;
-      IncidentTimeline.global().record("incident-mode exited (score " + String.format("%.1f", incidentScore) + ", tick " + String.format("%.1f", tickMS) + "ms)");
+      recordResolution(
+          now,
+          "RESOLVED",
+          "Server pressure recovered below the configured exit thresholds.",
+          "Incident score reached " + format(incidentScore) + " and tick time reached " + format(tickMS) + " ms."
+      );
+      incidentSince = 0L;
+      activeIncidentId = null;
       if (verboseTransitions) {
-        React.info("Incident mode disabled (score " + String.format("%.1f", incidentScore) + ", tick " + String.format("%.1f", tickMS) + "ms)");
+        React.info("Incident mode disabled (score " + format(incidentScore) + ", tick " + format(tickMS) + "ms)");
       }
     }
   }
@@ -197,12 +232,14 @@ public class FeatureIncidentMode extends ReactFeature implements Listener {
     if (spawner) {
       if (!rateWindow.tryAcquire(RateCounter.SPAWNER, maxSpawnerSpawnsPerWindow, System.currentTimeMillis(), rateWindowMS)) {
         event.setCancelled(true);
+        mitigations.incrementAndGet(RateCounter.SPAWNER.ordinal());
       }
       return;
     }
 
     if (natural && !rateWindow.tryAcquire(RateCounter.NATURAL, maxNaturalSpawnsPerWindow, System.currentTimeMillis(), rateWindowMS)) {
       event.setCancelled(true);
+      mitigations.incrementAndGet(RateCounter.NATURAL.ordinal());
     }
   }
 
@@ -219,6 +256,7 @@ public class FeatureIncidentMode extends ReactFeature implements Listener {
 
     if (!rateWindow.tryAcquire(RateCounter.PORTAL, maxPortalEventsPerWindow, System.currentTimeMillis(), rateWindowMS)) {
       event.setCancelled(true);
+      mitigations.incrementAndGet(RateCounter.PORTAL.ordinal());
     }
   }
 
@@ -235,6 +273,7 @@ public class FeatureIncidentMode extends ReactFeature implements Listener {
 
     if (!rateWindow.tryAcquire(RateCounter.PORTAL, maxPortalEventsPerWindow, System.currentTimeMillis(), rateWindowMS)) {
       event.setCancelled(true);
+      mitigations.incrementAndGet(RateCounter.PORTAL.ordinal());
     }
   }
 
@@ -251,6 +290,7 @@ public class FeatureIncidentMode extends ReactFeature implements Listener {
 
     if (!rateWindow.tryAcquire(RateCounter.HOPPER, maxHopperMovesPerWindow, System.currentTimeMillis(), rateWindowMS)) {
       event.setCancelled(true);
+      mitigations.incrementAndGet(RateCounter.HOPPER.ordinal());
     }
   }
 
@@ -267,7 +307,141 @@ public class FeatureIncidentMode extends ReactFeature implements Listener {
 
     if (!rateWindow.tryAcquire(RateCounter.REDSTONE, maxRedstoneTransitionsPerWindow, System.currentTimeMillis(), rateWindowMS)) {
       event.setNewCurrent(event.getOldCurrent());
+      mitigations.incrementAndGet(RateCounter.REDSTONE.ordinal());
     }
+  }
+
+  private void recordStart(long now, SamplerIncidentScore.IncidentScoreSnapshot snapshot, double tickMS) {
+    IncidentController controller = React.controller(IncidentController.class);
+    if (controller == null || activeIncidentId == null) {
+      return;
+    }
+    boolean scoreTrigger = snapshot.available() && snapshot.score() >= enterIncidentScore;
+    boolean tickTrigger = tickMS >= enterTickMS;
+    IncidentEvidence primary = snapshot.evidence().stream()
+        .filter(IncidentEvidence::available)
+        .max(Comparator.comparingDouble(IncidentEvidence::scorePoints))
+        .orElse(null);
+    String trigger = scoreTrigger && tickTrigger
+        ? "Both the composite incident score and tick time crossed their entry thresholds."
+        : scoreTrigger
+        ? "The composite incident score crossed its entry threshold."
+        : "Tick time crossed its entry threshold.";
+    String primaryCause = primary == null || primary.scorePoints() <= 0D
+        ? trigger
+        : trigger + " The strongest measured contributor was " + primary.label() + " at " + primary.display() + ".";
+    List<IncidentEvidence> evidence = new ArrayList<>(snapshot.evidence());
+    evidence.add(tickEvidence(tickMS, enterTickMS));
+    controller.record(new IncidentRecord(
+        UUID.randomUUID().toString(),
+        activeIncidentId,
+        "SERVER_PRESSURE",
+        "STARTED",
+        snapshot.score() >= 75D || tickMS >= 75D ? "CRITICAL" : "WARNING",
+        now,
+        now,
+        ID,
+        "Incident mode engaged",
+        "React enabled spawn, portal, hopper, and redstone rate guardrails.",
+        primaryCause,
+        null,
+        evidence,
+        List.of(new IncidentAction(
+            "incident-rate-guards",
+            "Runtime rate guardrails",
+            "ACTIVE",
+            "Excess events are limited while server pressure remains elevated.",
+            now
+        )),
+        Map.of(
+            "incidentScoreThreshold", format(enterIncidentScore),
+            "tickThresholdMs", format(enterTickMS)
+        )
+    ));
+  }
+
+  private void recordResolution(long now, String phase, String summary, String cause) {
+    IncidentController controller = React.controller(IncidentController.class);
+    if (controller == null || activeIncidentId == null) {
+      return;
+    }
+    controller.record(new IncidentRecord(
+        UUID.randomUUID().toString(),
+        activeIncidentId,
+        "SERVER_PRESSURE",
+        phase,
+        "INFO",
+        now,
+        incidentSince,
+        ID,
+        "Incident mode released",
+        summary,
+        cause,
+        null,
+        incidentScoreSnapshot().evidence(),
+        List.of(new IncidentAction(
+            "incident-rate-guards",
+            "Runtime rate guardrails",
+            "COMPLETED",
+            mitigationSummary(),
+            now
+        )),
+        mitigationContext()
+    ));
+  }
+
+  private SamplerIncidentScore.IncidentScoreSnapshot incidentScoreSnapshot() {
+    SamplerIncidentScore sampler = React.sampler(SamplerIncidentScore.class);
+    if (sampler == null) {
+      return SamplerIncidentScore.IncidentScoreSnapshot.empty();
+    }
+    sampler.sample();
+    return sampler.snapshot();
+  }
+
+  private IncidentEvidence tickEvidence(double tickMS, double threshold) {
+    double maximum = Math.max(threshold + 1D, 150D);
+    double pressure = Math.max(0D, Math.min(1D, (tickMS - threshold) / (maximum - threshold)));
+    return new IncidentEvidence(
+        SamplerTickTime.ID,
+        "Tick Time",
+        true,
+        tickMS,
+        format(tickMS) + " ms",
+        pressure,
+        0D,
+        0D,
+        threshold,
+        maximum
+    );
+  }
+
+  private Map<String, String> mitigationContext() {
+    return Map.of(
+        "spawnerSpawnsBlocked", Long.toString(mitigations.get(RateCounter.SPAWNER.ordinal())),
+        "naturalSpawnsBlocked", Long.toString(mitigations.get(RateCounter.NATURAL.ordinal())),
+        "portalEventsBlocked", Long.toString(mitigations.get(RateCounter.PORTAL.ordinal())),
+        "hopperMovesBlocked", Long.toString(mitigations.get(RateCounter.HOPPER.ordinal())),
+        "redstoneTransitionsBlocked", Long.toString(mitigations.get(RateCounter.REDSTONE.ordinal()))
+    );
+  }
+
+  private String mitigationSummary() {
+    long total = 0L;
+    for (RateCounter counter : RateCounter.values()) {
+      total += mitigations.get(counter.ordinal());
+    }
+    return total + " excess runtime events were limited during this incident.";
+  }
+
+  private void resetMitigations() {
+    for (RateCounter counter : RateCounter.values()) {
+      mitigations.set(counter.ordinal(), 0L);
+    }
+  }
+
+  private String format(double value) {
+    return String.format(Locale.ROOT, "%.1f", value);
   }
 
   private boolean shouldBypass(Location location) {

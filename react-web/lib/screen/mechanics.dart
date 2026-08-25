@@ -32,22 +32,24 @@ class MechanicsScreen extends StatelessWidget {
     final SamplerSample? redstoneBurstRate = snapshot.sampler(
       'redstone-burst-rate',
     );
-    final SamplerSample? redstoneTickTime = snapshot.sampler(
-      'redstone-tick-time',
+    final SamplerSample? redstoneEventSpan = snapshot.sampler(
+      'redstone-event-span',
     );
 
     final SamplerSample? hopper = snapshot.sampler('hopper');
-    final SamplerSample? hopperTickTime = snapshot.sampler('hopper-tick-time');
+    final SamplerSample? hopperEventSpan = snapshot.sampler(
+      'hopper-event-span',
+    );
     final SamplerSample? hopperChainCoalescing = snapshot.sampler(
       'hopper-chain-coalescing',
     );
 
     final SamplerSample? physics = snapshot.sampler('physics');
-    final SamplerSample? physicsTickTime = snapshot.sampler(
-      'physics-tick-time',
+    final SamplerSample? physicsEventSpan = snapshot.sampler(
+      'physics-event-span',
     );
     final SamplerSample? fluid = snapshot.sampler('fluid');
-    final SamplerSample? fluidTickTime = snapshot.sampler('fluid-tick-time');
+    final SamplerSample? fluidEventSpan = snapshot.sampler('fluid-event-span');
 
     final SamplerSample? cropFastForward = snapshot.sampler(
       'crop-fast-forward',
@@ -62,11 +64,12 @@ class MechanicsScreen extends StatelessWidget {
       'explosion-packet-reduction',
     );
 
-    final List<(String, List<double>)> redstoneTickSeries =
+    final List<(String, List<double>)> redstoneEventSeries =
         <(String, List<double>)>[
           (
-            reactorText(ReactorText.mechanicsRedstoneTickTime),
-            redstoneTickTime?.history ?? const <double>[],
+            redstoneEventSpan?.name ??
+                reactorText(ReactorText.mechanicsRedstoneEventSpan),
+            redstoneEventSpan?.history ?? const <double>[],
           ),
         ];
 
@@ -77,7 +80,7 @@ class MechanicsScreen extends StatelessWidget {
         SectionPanel(
           label: reactorText(ReactorText.commonRedstone),
           children: <Widget>[
-            TimeseriesChart(series: redstoneTickSeries, height: 120),
+            TimeseriesChart(series: redstoneEventSeries, height: 120),
             statGrid(<Widget>[
               StatTile(
                 label: reactorText(ReactorText.commonRedstone),
@@ -88,8 +91,10 @@ class MechanicsScreen extends StatelessWidget {
                 sample: redstoneBurstRate,
               ),
               StatTile(
-                label: reactorText(ReactorText.commonTickTime),
-                sample: redstoneTickTime,
+                label:
+                    redstoneEventSpan?.name ??
+                    reactorText(ReactorText.mechanicsRedstoneEventSpan),
+                sample: redstoneEventSpan,
               ),
             ]),
           ],
@@ -103,8 +108,10 @@ class MechanicsScreen extends StatelessWidget {
               sample: hopper,
             ),
             StatTile(
-              label: reactorText(ReactorText.commonTickTime),
-              sample: hopperTickTime,
+              label:
+                  hopperEventSpan?.name ??
+                  reactorText(ReactorText.mechanicsHopperEventSpan),
+              sample: hopperEventSpan,
             ),
             StatTile(
               label: reactorText(ReactorText.mechanicsChainCoalescing),
@@ -121,16 +128,20 @@ class MechanicsScreen extends StatelessWidget {
               sample: physics,
             ),
             StatTile(
-              label: reactorText(ReactorText.mechanicsPhysicsTickTime),
-              sample: physicsTickTime,
+              label:
+                  physicsEventSpan?.name ??
+                  reactorText(ReactorText.mechanicsPhysicsEventSpan),
+              sample: physicsEventSpan,
             ),
             StatTile(
               label: reactorText(ReactorText.commonFluid),
               sample: fluid,
             ),
             StatTile(
-              label: reactorText(ReactorText.mechanicsFluidTickTime),
-              sample: fluidTickTime,
+              label:
+                  fluidEventSpan?.name ??
+                  reactorText(ReactorText.mechanicsFluidEventSpan),
+              sample: fluidEventSpan,
             ),
           ]),
         ),

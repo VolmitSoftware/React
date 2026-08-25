@@ -57,7 +57,6 @@ import art.arcane.react.api.web.resource.ControlResource;
 import art.arcane.react.api.web.resource.EnvironmentResource;
 import art.arcane.react.api.web.resource.HeatmapResource;
 import art.arcane.react.api.web.resource.IdentityResource;
-import art.arcane.react.api.web.IncidentTimeline;
 import art.arcane.react.api.web.Log4jConsoleCapture;
 import art.arcane.react.api.web.resource.IncidentResource;
 import art.arcane.react.api.web.resource.IntegrationResource;
@@ -78,6 +77,8 @@ import art.arcane.react.api.web.ws.WsAuthenticationGate;
 import art.arcane.react.api.web.ws.WsMetricsBroadcaster;
 import art.arcane.react.core.controller.ActionController;
 import art.arcane.react.core.gui.ReactConfigGUI;
+import art.arcane.react.core.telemetry.HostTelemetrySnapshot;
+import art.arcane.react.core.incident.IncidentRecord;
 import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.plugin.IController;
@@ -95,7 +96,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.DoubleSupplier;
 import java.util.function.IntFunction;
 import java.util.function.Supplier;
 import java.util.UUID;
@@ -147,10 +147,9 @@ public class WebController implements IController {
     private transient volatile ActionDispatcher actionDispatcher;
     private transient volatile ConsoleCommandDispatcher consoleCommandDispatcher;
     private transient volatile PlayerBackend playerBackend;
-    private transient volatile DoubleSupplier incidentScoreSupplier;
+    private transient volatile Supplier<SamplerIncidentScore.IncidentScoreSnapshot> incidentSnapshotSupplier;
     private transient volatile Supplier<String> incidentStateSupplier;
-    private transient volatile IntFunction<List<String>> incidentTimelineSupplier;
-    private transient volatile Supplier<List<SamplerIncidentScore.Contribution>> incidentContributorsSupplier;
+    private transient volatile IntFunction<List<IncidentRecord>> incidentRecordsSupplier;
     private transient volatile Supplier<EnvironmentDto> environmentSnapshotSupplier;
     private transient volatile Supplier<ConfigSectionDto[]> configTreeSupplier;
     private transient volatile ConfigApplier configApplier;
@@ -179,6 +178,14 @@ public class WebController implements IController {
     @Override
     public String getName() {
         return "Web";
+    }
+
+    public int activeWebSocketSessions() {
+        WebSocketSessions localMetricsSessions = metricsSessions;
+        WebSocketSessions localLogSessions = logSessions;
+        int metricCount = localMetricsSessions == null ? 0 : localMetricsSessions.size();
+        int logCount = localLogSessions == null ? 0 : localLogSessions.size();
+        return metricCount + logCount;
     }
 
     protected void executeAsync(Runnable r) {
@@ -645,10 +652,16 @@ public class WebController implements IController {
                 );
                 javalin.before("/api/v1/console/execute", auth);
                 javalin.post("/api/v1/console/execute", consoleResource::execute);
-                if (incidentScoreSupplier == null) {
-                    incidentScoreSupplier = () -> {
-                        Sampler s = React.instance != null ? React.sampler(SamplerIncidentScore.ID) : null;
-                        return s == null ? 0D : s.sample();
+                if (incidentSnapshotSupplier == null) {
+                    incidentSnapshotSupplier = () -> {
+                        SamplerIncidentScore incidentSampler = React.instance != null
+                            ? React.sampler(SamplerIncidentScore.class)
+                            : null;
+                        if (incidentSampler == null) {
+                            return SamplerIncidentScore.IncidentScoreSnapshot.empty();
+                        }
+                        incidentSampler.sample();
+                        return incidentSampler.snapshot();
                     };
                 }
                 if (incidentStateSupplier == null) {
@@ -663,27 +676,33 @@ public class WebController implements IController {
                         return f.isIncidentActive() ? "ACTIVE" : "NORMAL";
                     };
                 }
-                if (incidentTimelineSupplier == null) {
-                    incidentTimelineSupplier = limit -> IncidentTimeline.global().recent(limit);
-                }
-                if (incidentContributorsSupplier == null) {
-                    incidentContributorsSupplier = () -> {
-                        SamplerIncidentScore s = React.instance != null ? React.sampler(SamplerIncidentScore.class) : null;
-                        return s == null ? java.util.List.of() : s.contributions();
+                if (incidentRecordsSupplier == null) {
+                    incidentRecordsSupplier = limit -> {
+                        IncidentController controller = React.instance != null
+                            ? React.controller(IncidentController.class)
+                            : null;
+                        return controller == null ? java.util.List.of() : controller.recent(limit);
                     };
                 }
                 IncidentResource incidentResource = new IncidentResource(
-                    incidentScoreSupplier,
+                    incidentSnapshotSupplier,
                     incidentStateSupplier,
-                    incidentTimelineSupplier,
-                    incidentContributorsSupplier
+                    incidentRecordsSupplier
                 );
                 if (requireTokenForReads) {
                     javalin.before("/api/v1/incidents", auth);
                 }
                 javalin.get("/api/v1/incidents", incidentResource::get);
                 if (environmentSnapshotSupplier == null) {
-                    EnvironmentSnapshotProvider environmentProvider = new EnvironmentSnapshotProvider(this::resolveIdentity);
+                    EnvironmentSnapshotProvider environmentProvider = new EnvironmentSnapshotProvider(
+                        this::resolveIdentity,
+                        () -> {
+                            TelemetryController telemetryController = React.controller(TelemetryController.class);
+                            return telemetryController == null
+                                ? HostTelemetrySnapshot.empty()
+                                : telemetryController.hostSnapshot();
+                        }
+                    );
                     environmentSnapshotSupplier = environmentProvider::snapshot;
                 }
                 EnvironmentResource environmentResource = new EnvironmentResource(environmentSnapshotSupplier);

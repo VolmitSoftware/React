@@ -158,7 +158,17 @@ public final class ThirdPartyMetricRegistry {
       wanted.add(samplerId);
 
       if (state.samplerIds.contains(samplerId)) {
-        continue;
+        Sampler current = controller.getSampler(samplerId);
+        if (current instanceof PublishedMetricSampler publishedMetricSampler) {
+          publishedMetricSampler.updateMetric(metric);
+          continue;
+        }
+
+        state.samplerIds.remove(samplerId);
+        if (current != null) {
+          React.warn("[metric] sampler id " + samplerId + " for " + metric.key() + " is already taken; skipping");
+          continue;
+        }
       }
 
       Sampler existing = controller.getSampler(samplerId);

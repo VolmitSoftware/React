@@ -4,29 +4,27 @@ import art.arcane.react.api.web.dto.Envelope;
 import art.arcane.react.api.web.dto.IncidentContributorDto;
 import art.arcane.react.api.web.dto.IncidentDto;
 import art.arcane.react.content.sampler.SamplerIncidentScore;
+import art.arcane.react.core.incident.IncidentEvidence;
+import art.arcane.react.core.incident.IncidentRecord;
 import io.javalin.http.Context;
 
 import java.util.List;
-import java.util.function.DoubleSupplier;
 import java.util.function.IntFunction;
 import java.util.function.Supplier;
 
 public class IncidentResource {
 
-    private final DoubleSupplier scoreSupplier;
+    private final Supplier<SamplerIncidentScore.IncidentScoreSnapshot> snapshotSupplier;
     private final Supplier<String> stateSupplier;
-    private final IntFunction<List<String>> timelineSupplier;
-    private final Supplier<List<SamplerIncidentScore.Contribution>> contributorsSupplier;
+    private final IntFunction<List<IncidentRecord>> recordsSupplier;
 
     public IncidentResource(
-            DoubleSupplier scoreSupplier,
+            Supplier<SamplerIncidentScore.IncidentScoreSnapshot> snapshotSupplier,
             Supplier<String> stateSupplier,
-            IntFunction<List<String>> timelineSupplier,
-            Supplier<List<SamplerIncidentScore.Contribution>> contributorsSupplier) {
-        this.scoreSupplier = scoreSupplier;
+            IntFunction<List<IncidentRecord>> recordsSupplier) {
+        this.snapshotSupplier = snapshotSupplier;
         this.stateSupplier = stateSupplier;
-        this.timelineSupplier = timelineSupplier;
-        this.contributorsSupplier = contributorsSupplier;
+        this.recordsSupplier = recordsSupplier;
     }
 
     public void get(Context ctx) {
@@ -44,18 +42,31 @@ public class IncidentResource {
         }
 
         IncidentDto dto = new IncidentDto();
-        dto.score = scoreSupplier.getAsDouble();
+        SamplerIncidentScore.IncidentScoreSnapshot snapshot = snapshotSupplier.get();
+        if (snapshot == null) {
+            snapshot = SamplerIncidentScore.IncidentScoreSnapshot.empty();
+        }
+        dto.score = snapshot.score();
+        dto.scoreAvailable = snapshot.available();
+        dto.sampledAtMs = snapshot.sampledAtMs();
         dto.state = stateSupplier.get();
-        dto.timeline = timelineSupplier.apply(limit).toArray(new String[0]);
+        dto.incidents = recordsSupplier.apply(limit).toArray(new IncidentRecord[0]);
 
-        List<SamplerIncidentScore.Contribution> rawContribs = contributorsSupplier.get();
+        List<IncidentEvidence> rawContribs = snapshot.evidence();
         IncidentContributorDto[] contribs = new IncidentContributorDto[rawContribs.size()];
         for (int i = 0; i < rawContribs.size(); i++) {
-            SamplerIncidentScore.Contribution c = rawContribs.get(i);
+            IncidentEvidence c = rawContribs.get(i);
             IncidentContributorDto cdto = new IncidentContributorDto();
-            cdto.name = c.name();
+            cdto.id = c.metricId();
+            cdto.label = c.label();
+            cdto.available = c.available();
             cdto.weight = c.weight();
             cdto.value = c.value();
+            cdto.display = c.display();
+            cdto.pressure = c.pressure();
+            cdto.scorePoints = c.scorePoints();
+            cdto.minimum = c.minimum();
+            cdto.maximum = c.maximum();
             contribs[i] = cdto;
         }
         dto.contributors = contribs;

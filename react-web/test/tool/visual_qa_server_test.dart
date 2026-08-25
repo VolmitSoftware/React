@@ -132,7 +132,7 @@ void main() {
       expect(role.isAdmin, isTrue);
       expect(snapshot.byId, contains('ticks-per-second'));
       expect(snapshot.byId, contains('adapt-world-policy-latency'));
-      expect(snapshot.byId, contains('iris-chunk-stream-ms'));
+      expect(snapshot.byId, contains('iris-generation-total-ms'));
       expect(snapshot.byId, contains('wormholes-projection-render-ms'));
       expect(snapshot.byId, contains('entity-pressure-heatmap'));
       expect(snapshot.sampler('ticks-per-second')!.value, equals(8.9));
@@ -189,7 +189,7 @@ void main() {
         contains('Force GC'),
       );
       expect(
-        incidents.contributors.map((IncidentContributor item) => item.name),
+        incidents.contributors.map((IncidentContributor item) => item.label),
         contains('Scheduler backlog'),
       );
       expect(environment.cpu['model'], equals('QA 16-Core'));

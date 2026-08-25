@@ -26,11 +26,24 @@ void main() {
         final Map<String, dynamic> body = <String, dynamic>{
           'data': <String, dynamic>{
             'score': 55.0,
+            'scoreAvailable': true,
+            'sampledAtMs': 1234,
             'state': 'CRITICAL',
-            'timeline': <String>['x'],
             'contributors': <Map<String, dynamic>>[
-              <String, dynamic>{'name': 'mspt', 'weight': 0.5, 'value': 20.0},
+              <String, dynamic>{
+                'id': 'tick-ms-p95',
+                'label': 'Tick P95',
+                'available': true,
+                'weight': 0.5,
+                'value': 120.0,
+                'display': '120 ms',
+                'pressure': 0.7,
+                'scorePoints': 35.0,
+                'minimum': 50.0,
+                'maximum': 150.0,
+              },
             ],
+            'incidents': <Map<String, dynamic>>[],
           },
         };
 
@@ -51,7 +64,7 @@ void main() {
         expect(status.score, equals(55.0));
         expect(status.state, equals('CRITICAL'));
         expect(status.contributors.length, equals(1));
-        expect(status.contributors[0].name, equals('mspt'));
+        expect(status.contributors[0].label, equals('Tick P95'));
       },
     );
 

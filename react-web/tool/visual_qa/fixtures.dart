@@ -135,7 +135,7 @@ abstract final class VisualQaFixtures {
     (id: 'chunk-load-ms', suffix: 'ms', alpha: 3.7, beta: 16.4, max: 25.0),
     (id: 'chunk-gen-ms', suffix: 'ms', alpha: 8.4, beta: 31.7, max: 45.0),
     (
-      id: 'world-save-duration',
+      id: 'world-save-event-interval',
       suffix: 'ms',
       alpha: 31.0,
       beta: 164.0,
@@ -156,9 +156,15 @@ abstract final class VisualQaFixtures {
       beta: 29.0,
       max: 40.0,
     ),
-    (id: 'redstone-tick-time', suffix: 'ms', alpha: 2.8, beta: 15.6, max: 24.0),
+    (
+      id: 'redstone-event-span',
+      suffix: 'ms',
+      alpha: 2.8,
+      beta: 15.6,
+      max: 24.0,
+    ),
     (id: 'hopper', suffix: '/tick', alpha: 93.0, beta: 413.0, max: 600.0),
-    (id: 'hopper-tick-time', suffix: 'ms', alpha: 1.9, beta: 9.4, max: 15.0),
+    (id: 'hopper-event-span', suffix: 'ms', alpha: 1.9, beta: 9.4, max: 15.0),
     (
       id: 'hopper-chain-coalescing',
       suffix: '%',
@@ -167,9 +173,9 @@ abstract final class VisualQaFixtures {
       max: 100.0,
     ),
     (id: 'physics', suffix: '/tick', alpha: 72.0, beta: 317.0, max: 450.0),
-    (id: 'physics-tick-time', suffix: 'ms', alpha: 1.6, beta: 7.8, max: 12.0),
+    (id: 'physics-event-span', suffix: 'ms', alpha: 1.6, beta: 7.8, max: 12.0),
     (id: 'fluid', suffix: '/tick', alpha: 51.0, beta: 286.0, max: 400.0),
-    (id: 'fluid-tick-time', suffix: 'ms', alpha: 1.2, beta: 6.9, max: 10.0),
+    (id: 'fluid-event-span', suffix: 'ms', alpha: 1.2, beta: 6.9, max: 10.0),
     (
       id: 'crop-fast-forward',
       suffix: '/tick',
@@ -244,13 +250,7 @@ abstract final class VisualQaFixtures {
       beta: 87.0,
       max: 100.0,
     ),
-    (
-      id: 'processor-outside-load',
-      suffix: '%',
-      alpha: 12.0,
-      beta: 6.0,
-      max: 100.0,
-    ),
+    (id: 'processor-outside', suffix: '%', alpha: 12.0, beta: 6.0, max: 100.0),
     (
       id: 'scheduler-backlog',
       suffix: 'jobs',
@@ -295,14 +295,14 @@ abstract final class VisualQaFixtures {
       max: 12.0,
     ),
     (
-      id: 'iris-biome-cache-hit-rate',
-      suffix: '%',
-      alpha: 94.0,
-      beta: 71.0,
-      max: 100.0,
+      id: 'iris-chunks-per-second',
+      suffix: '/s',
+      alpha: 18.0,
+      beta: 7.0,
+      max: 50.0,
     ),
     (
-      id: 'iris-chunk-stream-ms',
+      id: 'iris-generation-total-ms',
       suffix: 'ms',
       alpha: 7.2,
       beta: 29.4,
@@ -777,33 +777,80 @@ abstract final class VisualQaFixtures {
   static Map<String, dynamic> incidents(VisualQaProfile profile) =>
       <String, dynamic>{
         'score': profile.isCritical ? 72.0 : 22.0,
+        'scoreAvailable': true,
+        'sampledAtMs': 1770000000000,
         'state': profile.isCritical ? 'CRITICAL' : 'NORMAL',
-        'timeline': profile.isCritical
-            ? <String>[
-                '18:42:08 Tick latency crossed the pressure threshold',
-                '18:42:14 Scheduler queue growth accelerated',
-                '18:42:21 Incident mode activated protective governors',
-              ]
-            : <String>[
-                '18:40:00 Sampling window opened',
-                '18:41:00 Tick budget remained within target',
-                '18:42:00 No operator intervention required',
-              ],
         'contributors': <Map<String, dynamic>>[
           <String, dynamic>{
-            'name': 'Scheduler backlog',
-            'weight': profile.isCritical ? 0.84 : 0.18,
+            'id': 'scheduler-backlog',
+            'label': 'Scheduler backlog',
+            'available': true,
+            'weight': 0.12,
             'value': profile.isCritical ? 127.0 : 6.0,
+            'display': profile.isCritical ? '127 jobs' : '6 jobs',
+            'pressure': profile.isCritical ? 0.84 : 0.0,
+            'scorePoints': profile.isCritical ? 10.1 : 0.0,
+            'minimum': 10.0,
+            'maximum': 300.0,
           },
           <String, dynamic>{
-            'name': 'World tick time',
-            'weight': profile.isCritical ? 0.72 : 0.22,
+            'id': 'tick-ms-p95',
+            'label': 'World tick time',
+            'available': true,
+            'weight': 0.30,
             'value': profile.isCritical ? 42.8 : 18.6,
+            'display': profile.isCritical ? '42.8 ms' : '18.6 ms',
+            'pressure': profile.isCritical ? 0.72 : 0.0,
+            'scorePoints': profile.isCritical ? 21.6 : 0.0,
+            'minimum': 50.0,
+            'maximum': 150.0,
           },
           <String, dynamic>{
-            'name': 'Memory pressure',
-            'weight': profile.isCritical ? 0.61 : 0.31,
+            'id': 'gc-time-percent',
+            'label': 'Memory pressure',
+            'available': true,
+            'weight': 0.10,
             'value': profile.isCritical ? 94.0 : 61.0,
+            'display': profile.isCritical ? '94%' : '61%',
+            'pressure': profile.isCritical ? 0.61 : 0.0,
+            'scorePoints': profile.isCritical ? 6.1 : 0.0,
+            'minimum': 2.0,
+            'maximum': 25.0,
+          },
+        ],
+        'incidents': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'id': 'qa-event',
+            'incidentId': 'qa-incident',
+            'kind': profile.isCritical ? 'SERVER_PRESSURE' : 'RECOVERY',
+            'phase': profile.isCritical ? 'STARTED' : 'RESOLVED',
+            'severity': profile.isCritical ? 'CRITICAL' : 'INFO',
+            'occurredAtMs': 1770000000000,
+            'startedAtMs': 1769999940000,
+            'source': 'incident-mode',
+            'title': profile.isCritical
+                ? 'Incident mode engaged'
+                : 'Incident mode released',
+            'summary': profile.isCritical
+                ? 'Runtime rate guardrails are active.'
+                : 'Server pressure returned below exit thresholds.',
+            'cause': profile.isCritical
+                ? 'Scheduler backlog and tick latency crossed their thresholds.'
+                : 'The incident score and tick time recovered.',
+            'location': null,
+            'evidence': <Map<String, dynamic>>[],
+            'actions': <Map<String, dynamic>>[
+              <String, dynamic>{
+                'id': 'incident-rate-guards',
+                'label': 'Runtime rate guardrails',
+                'status': profile.isCritical ? 'ACTIVE' : 'COMPLETED',
+                'detail': profile.isCritical
+                    ? 'Excess events are limited.'
+                    : 'The incident window ended.',
+                'occurredAtMs': 1770000000000,
+              },
+            ],
+            'context': <String, String>{'profile': profile.name},
           },
         ],
       };

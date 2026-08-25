@@ -8,16 +8,18 @@ import 'package:react_web/model/server_snapshot.dart';
 import 'package:react_web/state/connection_manager.dart';
 import 'package:react_web/state/fleet_rollup.dart';
 
-SamplerSample _sample(String id, double value) => SamplerSample(
-  id: id,
-  name: id,
-  suffix: '',
-  value: value,
-  display: value.toString(),
-  min: 0.0,
-  max: 100.0,
-  history: <double>[value],
-);
+SamplerSample _sample(String id, double value, {bool available = true}) =>
+    SamplerSample(
+      id: id,
+      name: id,
+      suffix: '',
+      value: value,
+      display: value.toString(),
+      min: 0.0,
+      max: 100.0,
+      history: <double>[value],
+      available: available,
+    );
 
 ServerSnapshot _snapshotFrom(Map<String, double> values) {
   final Map<String, SamplerSample> byId = <String, SamplerSample>{};
@@ -181,6 +183,38 @@ void main() {
       expect(r.totalPlayers, isNull);
       expect(r.compositeHealth, isNull);
       expect(r.needsAttention, hasLength(2));
+    });
+
+    test('unavailable values are excluded from health and aggregates', () {
+      final ServerSnapshot snapshot = ServerSnapshot(
+        byId: <String, SamplerSample>{
+          'ticks-per-second': _sample(
+            'ticks-per-second',
+            0.0,
+            available: false,
+          ),
+          'tick-time': _sample('tick-time', 100.0, available: false),
+          'players': _sample('players', 500.0, available: false),
+          'incident-score': _sample('incident-score', 100.0, available: false),
+        },
+        at: DateTime(2026, 6, 28),
+      );
+      final FleetRollup result = FleetRollup.compute(
+        servers: <FleetServerLive>[
+          FleetServerLive(
+            id: 'a',
+            name: 'Alpha',
+            state: ConnState.live,
+            snapshot: snapshot,
+          ),
+        ],
+        openAlerts: const <FleetAlert>[],
+      );
+
+      expect(result.meanTps, isNull);
+      expect(result.worstMspt, isNull);
+      expect(result.totalPlayers, isNull);
+      expect(result.servers.single.health, FleetHealth.pending);
     });
 
     test('alerts grouped by severity per-server alertCount', () {

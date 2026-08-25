@@ -87,6 +87,7 @@ import art.arcane.react.content.tweak.TweakVehicleIdleBrake;
 import art.arcane.react.core.controller.ConfigInputController;
 import art.arcane.react.core.controller.HotloadController;
 import art.arcane.react.core.controller.HistoryController;
+import art.arcane.react.core.controller.IncidentController;
 import art.arcane.react.core.controller.MapController;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.model.ReactConfiguration;
@@ -257,6 +258,7 @@ public final class ConfigLocalization {
         ConfigInputController.class,
         HistoryController.class,
         HotloadController.class,
+        IncidentController.class,
         MapController.class,
         ReactConfiguration.class
     ));

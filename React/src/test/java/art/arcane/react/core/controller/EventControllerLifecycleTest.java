@@ -2,6 +2,7 @@ package art.arcane.react.core.controller;
 
 import art.arcane.react.React;
 import art.arcane.react.api.event.NaughtyRegisteredListener;
+import art.arcane.react.api.event.layer.ServerTickEvent;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.common.scheduling.Ticker;
 import art.arcane.volmlib.util.scheduling.FoliaScheduler;
@@ -62,18 +63,21 @@ class EventControllerLifecycleTest {
       );
       for (int call = 0; call < 5; call++) {
         measured.callEvent(Mockito.mock(Event.class));
+        controller.on(new ServerTickEvent());
       }
 
       controller.markSamplerActivity();
       controller.onTick();
       scheduler.runFirst();
       Assertions.assertEquals(5, controller.getCalls());
+      Assertions.assertEquals(1D, controller.getCallsPerTick());
       Assertions.assertEquals(5, controller.snapshotPluginEventCalls().get("MeasuredPlugin"));
 
       controller.markSamplerActivity();
       controller.onTick();
       scheduler.runFirst();
       Assertions.assertEquals(0, controller.getCalls());
+      Assertions.assertEquals(0D, controller.getCallsPerTick());
       Assertions.assertEquals(0, controller.snapshotPluginEventCalls().get("MeasuredPlugin"));
 
       controller.stop();
@@ -82,6 +86,13 @@ class EventControllerLifecycleTest {
     } finally {
       fixture.close();
     }
+  }
+
+  @Test
+  void eventCallsAreNormalizedByObservedServerTicks() {
+    Assertions.assertEquals(2.5D, EventController.averageCallsPerTick(250L, 100L));
+    Assertions.assertEquals(0D, EventController.averageCallsPerTick(250L, 0L));
+    Assertions.assertEquals(0D, EventController.averageCallsPerTick(0L, 100L));
   }
 
   @Test

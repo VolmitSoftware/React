@@ -3,9 +3,11 @@ package art.arcane.react.api.web.ws;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 public final class CoalescingWsChannel implements WsChannel {
+    private static final AtomicLong COALESCED_FRAMES = new AtomicLong();
 
     private final WsChannel delegate;
     private final Executor sender;
@@ -37,8 +39,14 @@ public final class CoalescingWsChannel implements WsChannel {
 
     @Override
     public void send(String text) {
-        pending.set(text);
+        if (pending.getAndSet(text) != null) {
+            COALESCED_FRAMES.incrementAndGet();
+        }
         scheduleDrain();
+    }
+
+    public static long coalescedFrames() {
+        return COALESCED_FRAMES.get();
     }
 
     private void scheduleDrain() {

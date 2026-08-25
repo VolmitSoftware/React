@@ -40,8 +40,11 @@ public class AsyncRequest<T> {
     if (!active.get()) {
       active.set(true);
       React.burst.lazy(() -> {
-        value.set(supplier.get());
-        active.set(false);
+        try {
+          value.set(supplier.get());
+        } finally {
+          active.set(false);
+        }
       });
     }
 

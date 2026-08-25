@@ -67,8 +67,10 @@ public final class PublishedMetricStore implements MetricBinding {
 
     if (previous != null) {
       for (ReactMetric metric : previous) {
-        metricsByKey.remove(metric.key());
-        readings.remove(metric.key());
+        if (!seen.contains(metric.key())) {
+          metricsByKey.remove(metric.key());
+          readings.remove(metric.key());
+        }
       }
     }
 

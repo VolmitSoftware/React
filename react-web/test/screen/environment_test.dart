@@ -9,6 +9,8 @@ import 'package:jaspr_test/server_test.dart';
 
 import 'package:react_web/app/reactor_app.dart';
 import 'package:react_web/model/environment_info.dart';
+import 'package:react_web/model/sampler_sample.dart';
+import 'package:react_web/model/server_snapshot.dart';
 import 'package:react_web/screen/environment.dart';
 import 'package:react_web/state/connection_manager.dart';
 import 'package:react_web/state/operate_scope.dart';
@@ -71,6 +73,23 @@ EnvironmentInfo _fakeInfo() => EnvironmentInfo(
   ],
 );
 
+ServerSnapshot _hostSnapshot() {
+  final SamplerSample memory = SamplerSample(
+    id: 'physical-memory-used',
+    name: 'Physical Memory Used',
+    value: 1024.0,
+    display: '1',
+    suffix: 'KB',
+    min: 1024.0,
+    max: 1024.0,
+    history: const <double>[512.0, 1024.0],
+  );
+  return ServerSnapshot(
+    byId: <String, SamplerSample>{memory.id: memory},
+    at: DateTime(2026, 8, 25),
+  );
+}
+
 Widget _wrapView(Widget child) =>
     ArcaneThemeProvider(stylesheet: _sheet, child: child);
 
@@ -122,6 +141,21 @@ void main() {
   });
 
   group('EnvironmentView', () {
+    testServer('renders persistent host telemetry when sampled', (
+      ServerTester tester,
+    ) async {
+      tester.pumpComponent(
+        _wrapView(
+          EnvironmentView(info: _fakeInfo(), snapshot: _hostSnapshot()),
+        ),
+      );
+      final DocumentResponse res = await tester.request('/');
+
+      expect(res.statusCode, equals(200));
+      expect(res.body.contains('Persistent Host Telemetry'), isTrue);
+      expect(res.body.contains('Physical Memory Used'), isTrue);
+    });
+
     testServer('renders Apple M3 value from cpu section', (
       ServerTester tester,
     ) async {

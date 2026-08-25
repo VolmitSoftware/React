@@ -73,6 +73,7 @@ public class CoalescingWsChannelTest {
         FakeWsChannel delegate = new FakeWsChannel("ch2");
         List<Runnable> captured = new ArrayList<>();
         CoalescingWsChannel coalescing = new CoalescingWsChannel(delegate, captured::add);
+        long coalescedBefore = CoalescingWsChannel.coalescedFrames();
 
         coalescing.send("A");
         coalescing.send("B");
@@ -83,6 +84,7 @@ public class CoalescingWsChannelTest {
         captured.get(0).run();
 
         assertEquals(List.of("C"), delegate.received());
+        assertEquals(coalescedBefore + 2L, CoalescingWsChannel.coalescedFrames());
     }
 
     @Test

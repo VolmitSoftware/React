@@ -20,9 +20,10 @@ SamplerSample _sample(
   String suffix = '',
   double min = 0.0,
   double max = 100.0,
+  String? name,
 }) => SamplerSample(
   id: id,
-  name: id,
+  name: name ?? id,
   value: value,
   display: value.toString(),
   suffix: suffix,
@@ -38,8 +39,18 @@ ServerSnapshot _fakeSnapshot() {
     _sample('chunks-generated', 3.0, suffix: '/s', max: 200.0),
     _sample('chunk-load-ms', 3.2, suffix: 'ms', max: 50.0),
     _sample('chunk-gen-ms', 8.5, suffix: 'ms', max: 100.0),
-    _sample('world-save-duration', 45.0, suffix: 'ms', max: 5000.0),
+    _sample(
+      'world-save-event-interval',
+      45.0,
+      name: 'World Save Event Interval',
+      suffix: 'ms',
+      max: 5000.0,
+    ),
     _sample('pdc-write-batcher', 12.0, suffix: 'ms', max: 1000.0),
+    _sample('chunks-force-loaded', 6.0),
+    _sample('chunk-tickets', 23.0),
+    _sample('chunk-unloads', 4.0, suffix: '/s'),
+    _sample('worlds', 3.0),
   ];
   final Map<String, SamplerSample> byId = <String, SamplerSample>{
     for (final SamplerSample s in samples) s.id: s,
@@ -82,14 +93,14 @@ void main() {
       );
     });
 
-    testServer('renders World Save stat tile label', (
+    testServer('renders World Save Event Interval stat tile label', (
       ServerTester tester,
     ) async {
       tester.pumpComponent(_wrap(const ChunksScreen()));
       final DocumentResponse res = await tester.request('/');
       expect(res.statusCode, equals(200));
       expect(
-        res.body.contains('World Save'),
+        res.body.contains('World Save Event Interval'),
         isTrue,
         reason: 'World Save stat tile label must appear in rendered HTML',
       );
@@ -118,6 +129,15 @@ void main() {
         reason:
             'Chunk Load/Gen Time section heading must appear in rendered HTML',
       );
+    });
+
+    testServer('renders residency metrics', (ServerTester tester) async {
+      tester.pumpComponent(_wrap(const ChunksScreen()));
+      final DocumentResponse res = await tester.request('/');
+
+      expect(res.statusCode, equals(200));
+      expect(res.body.contains('Residency'), isTrue);
+      expect(res.body.contains('23.0'), isTrue);
     });
   });
 

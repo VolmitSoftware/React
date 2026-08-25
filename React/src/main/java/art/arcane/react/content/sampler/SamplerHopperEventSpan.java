@@ -19,68 +19,64 @@
 
 package art.arcane.react.content.sampler;
 
-import art.arcane.chrono.PrecisionStopwatch;
 import art.arcane.react.api.event.layer.ServerTickEvent;
 import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.volmlib.util.format.Form;
 import art.arcane.volmlib.util.math.RollingSequence;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
-import org.bukkit.block.data.Levelled;
+import org.bukkit.block.Hopper;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.BlockFromToEvent;
+import org.bukkit.event.inventory.InventoryMoveItemEvent;
 
-public class SamplerFluidTickTime extends ReactCachedSampler implements Listener {
-  public static final String ID = "fluid-tick-time";
+import java.util.concurrent.atomic.LongAccumulator;
+
+public class SamplerHopperEventSpan extends ReactCachedSampler implements Listener {
+  public static final String ID = "hopper-event-span";
   private int tickAverage = 15;
-  private transient double maxDuration;
-  private transient PrecisionStopwatch stopwatch;
+  private transient final LongAccumulator firstEventNanos = new LongAccumulator(Math::min, Long.MAX_VALUE);
+  private transient final LongAccumulator lastEventNanos = new LongAccumulator(Math::max, 0L);
   private transient RollingSequence average;
-  private transient boolean running;
 
-  public SamplerFluidTickTime() {
+  public SamplerHopperEventSpan() {
     super(ID, 50);
   }
 
   @Override
   public void start() {
     super.start();
-    ensureRuntime();
-    running = false;
-    maxDuration = 0;
+    average = new RollingSequence(Math.max(1, tickAverage));
+    firstEventNanos.reset();
+    lastEventNanos.reset();
   }
 
   @Override
   public Material getIcon() {
-    return Material.MILK_BUCKET;
+    return Material.HOPPER;
   }
 
   @EventHandler
   public void on(ServerTickEvent e) {
-    ensureRuntime();
-    average.put(maxDuration);
-    running = false;
-    maxDuration = 0;
+    RollingSequence currentAverage = average;
+    long first = firstEventNanos.getThenReset();
+    long last = lastEventNanos.getThenReset();
+    if (currentAverage != null) {
+      currentAverage.put(first == Long.MAX_VALUE || last <= first ? 0D : (last - first) / 1.0E6D);
+    }
   }
 
   @EventHandler
-  public void on(BlockFromToEvent e) {
-    ensureRuntime();
-    if (e.getBlock().getBlockData() instanceof Levelled || e.getToBlock().getBlockData() instanceof Levelled) {
-      if (!running) {
-        stopwatch.resetAndBegin();
-        running = true;
-      } else {
-        maxDuration = stopwatch.getMilliseconds();
-      }
+  public void on(InventoryMoveItemEvent e) {
+    if ((e.getSource().getHolder() instanceof Hopper) || (e.getDestination().getHolder() instanceof Hopper)) {
+      recordEvent();
     }
   }
 
   @Override
   public double onSample() {
-    ensureRuntime();
-    return average == null ? 0D : average.getAverage();
+    RollingSequence currentAverage = average;
+    return currentAverage == null ? 0D : currentAverage.getAverage();
   }
 
   @Override
@@ -100,15 +96,12 @@ public class SamplerFluidTickTime extends ReactCachedSampler implements Listener
 
   @Override
   public String formattedSuffix(double t) {
-    return Form.durationSplit(t, 2)[1] + " FLU";
+    return Form.durationSplit(t, 2)[1] + " HOP EVT SPAN";
   }
 
-  private synchronized void ensureRuntime() {
-    if (average == null) {
-      average = new RollingSequence(Math.max(1, tickAverage));
-    }
-    if (stopwatch == null) {
-      stopwatch = new PrecisionStopwatch();
-    }
+  private void recordEvent() {
+    long now = System.nanoTime();
+    firstEventNanos.accumulate(now);
+    lastEventNanos.accumulate(now);
   }
 }

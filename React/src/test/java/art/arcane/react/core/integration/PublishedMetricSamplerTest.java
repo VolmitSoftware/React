@@ -98,6 +98,32 @@ class PublishedMetricSamplerTest {
   }
 
   @Test
+  void descriptorRefreshUpdatesPresentationWithoutReplacingTheSampler() {
+    PublishedMetricStore store = new PublishedMetricStore();
+    PublishedMetricSampler sampler = sampler(store, ReactMetric.gauge(LIVE, "Live Pets", " pets"));
+    ReactMetric replacement = ReactMetric.rate(LIVE, "Active Pets", " /min")
+        .withIcon(Material.CLOCK)
+        .withDecimals(2);
+
+    store.declare(SOURCE, List.of(replacement));
+    sampler.updateMetric(store.metric(LIVE));
+
+    Assertions.assertEquals("Active Pets", sampler.getName());
+    Assertions.assertEquals(Material.CLOCK, sampler.getIcon());
+    Assertions.assertEquals("/min", PublishedMetricSampler.suffixFor(sampler.metric()));
+    Assertions.assertEquals(2, sampler.metric().decimals());
+  }
+
+  @Test
+  void descriptorRefreshRejectsAKeyChange() {
+    PublishedMetricStore store = new PublishedMetricStore();
+    PublishedMetricSampler sampler = sampler(store, ReactMetric.gauge(LIVE, "Live Pets", " pets"));
+
+    Assertions.assertThrows(IllegalArgumentException.class, () -> sampler.updateMetric(
+        ReactMetric.gauge(SOURCE + ".other", "Other", "")));
+  }
+
+  @Test
   void suffixFallsBackToTheKindWhenNoUnitIsDeclared() {
     Assertions.assertEquals("%", PublishedMetricSampler.suffixFor(
         new ReactMetric(LIVE, ReactMetricKind.PERCENT, "", "P", Material.SLIME_BALL, 0)));

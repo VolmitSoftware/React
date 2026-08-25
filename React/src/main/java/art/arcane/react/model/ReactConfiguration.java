@@ -29,22 +29,22 @@ import art.arcane.react.content.sampler.SamplerAdaptSessionLoad;
 import art.arcane.react.content.sampler.SamplerAdaptWorldPolicyLatency;
 import art.arcane.react.content.sampler.SamplerChunks;
 import art.arcane.react.content.sampler.SamplerEntities;
-import art.arcane.react.content.sampler.SamplerFluidTickTime;
-import art.arcane.react.content.sampler.SamplerHopperTickTime;
+import art.arcane.react.content.sampler.SamplerFluidEventSpan;
+import art.arcane.react.content.sampler.SamplerHopperEventSpan;
 import art.arcane.react.content.sampler.SamplerIrisChunksPerSecond;
 import art.arcane.react.content.sampler.SamplerIrisGenerationTotalMS;
 import art.arcane.react.content.sampler.SamplerIrisPregenQueue;
 import art.arcane.react.content.sampler.SamplerIrisPregenThroughput;
 import art.arcane.react.content.sampler.SamplerMemoryPressure;
 import art.arcane.react.content.sampler.SamplerMemoryUsedAfterGC;
-import art.arcane.react.content.sampler.SamplerPhysicsTickTime;
+import art.arcane.react.content.sampler.SamplerPhysicsEventSpan;
 import art.arcane.react.content.sampler.SamplerPlayers;
 import art.arcane.react.content.sampler.SamplerProcessorOutsideLoad;
 import art.arcane.react.content.sampler.SamplerProcessorProcessLoad;
 import art.arcane.react.content.sampler.SamplerProcessorSystemLoad;
 import art.arcane.react.content.sampler.SamplerReactAsyncTickTime;
 import art.arcane.react.content.sampler.SamplerReactJobsQueue;
-import art.arcane.react.content.sampler.SamplerRedstoneTickTime;
+import art.arcane.react.content.sampler.SamplerRedstoneEventSpan;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.content.sampler.SamplerTicksPerSecond;
 import art.arcane.react.util.project.config.ConfigDescription;
@@ -299,11 +299,11 @@ public class ReactConfiguration {
         .group(MonitorGroup.builder()
             .name("Physics")
             .color("#f25a02")
-            .head(SamplerPhysicsTickTime.ID)
-            .sampler(SamplerPhysicsTickTime.ID)
-            .sampler(SamplerRedstoneTickTime.ID)
-            .sampler(SamplerFluidTickTime.ID)
-            .sampler(SamplerHopperTickTime.ID)
+            .head(SamplerPhysicsEventSpan.ID)
+            .sampler(SamplerPhysicsEventSpan.ID)
+            .sampler(SamplerRedstoneEventSpan.ID)
+            .sampler(SamplerFluidEventSpan.ID)
+            .sampler(SamplerHopperEventSpan.ID)
             .build())
         .group(MonitorGroup.builder()
             .name("Iris")

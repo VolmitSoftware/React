@@ -19,6 +19,7 @@ SamplerSample _fakeSample({
   String? display,
   double min = 0.0,
   double max = 100.0,
+  bool available = true,
 }) => SamplerSample(
   id: 'test-id',
   name: 'CPU Usage',
@@ -28,6 +29,7 @@ SamplerSample _fakeSample({
   min: min,
   max: max,
   history: <double>[10.0, 20.0, 30.0, 40.0, 42.5],
+  available: available,
 );
 
 void main() {
@@ -39,6 +41,15 @@ void main() {
     test('non-null sample returns the formatted display string', () {
       final SamplerSample sample = _fakeSample(value: 42.5, display: '42.5');
       expect(StatTile.formatValue(sample), equals('42.5'));
+    });
+
+    test('unavailable sample returns "--"', () {
+      final SamplerSample sample = _fakeSample(
+        value: 0.0,
+        display: '0',
+        available: false,
+      );
+      expect(StatTile.formatValue(sample), equals('--'));
     });
 
     test('uses the human display, not the raw value', () {

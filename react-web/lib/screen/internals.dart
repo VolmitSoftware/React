@@ -14,6 +14,44 @@ import '../widget/section_card.dart';
 import '../widget/server_snapshot_state.dart';
 import '../widget/stat_tile.dart';
 
+const List<String> _kTelemetryPipelineIds = <String>[
+  'react-history-writer-queue',
+  'react-history-writer-capacity',
+  'react-history-dropped-snapshots',
+  'react-history-drop-rate',
+  'react-history-persist-lag',
+  'react-history-storage-operational',
+  'react-history-storage-error',
+  'react-history-capture-ms',
+  'react-history-write-ms',
+  'react-history-disk-bytes',
+  'react-history-wal-bytes',
+  'react-samplers-registered',
+  'react-samplers-available',
+  'react-samplers-unavailable',
+  'react-samplers-failed',
+  'react-published-metrics-accepted',
+  'react-published-metrics-dropped',
+];
+
+const List<String> _kWebTelemetryIds = <String>[
+  'react-websocket-sessions',
+  'react-websocket-coalesced-frames',
+];
+
+const List<String> _kJvmRuntimeIds = <String>[
+  'jvm-threads',
+  'jvm-heap-max',
+  'jvm-heap-committed',
+  'jvm-heap-utilization',
+  'jvm-nonheap-used',
+  'jvm-direct-buffer-bytes',
+  'jvm-direct-buffer-count',
+  'jvm-loaded-classes',
+  'jvm-gc-collections-rate',
+  'jvm-process-uptime',
+];
+
 class InternalsScreen extends StatelessWidget {
   const InternalsScreen({super.key});
 
@@ -44,9 +82,16 @@ class InternalsScreen extends StatelessWidget {
     final SamplerSample? processLoad = snapshot.sampler(
       'processor-process-load',
     );
-    final SamplerSample? outsideLoad = snapshot.sampler(
-      'processor-outside-load',
+    final SamplerSample? outsideLoad = snapshot.sampler('processor-outside');
+    final List<SamplerSample> telemetryPipeline = _samples(
+      snapshot,
+      _kTelemetryPipelineIds,
     );
+    final List<SamplerSample> webTelemetry = _samples(
+      snapshot,
+      _kWebTelemetryIds,
+    );
+    final List<SamplerSample> jvmRuntime = _samples(snapshot, _kJvmRuntimeIds);
 
     final List<(String, List<double>)> tickSeries = <(String, List<double>)>[
       (
@@ -114,7 +159,43 @@ class InternalsScreen extends StatelessWidget {
             ],
           ),
         ),
+        if (telemetryPipeline.isNotEmpty)
+          _sampleSection(
+            reactorText(ReactorText.internalsTelemetryPipeline),
+            telemetryPipeline,
+          ),
+        if (webTelemetry.isNotEmpty)
+          _sampleSection(
+            reactorText(ReactorText.internalsWebTelemetry),
+            webTelemetry,
+          ),
+        if (jvmRuntime.isNotEmpty)
+          _sampleSection(
+            reactorText(ReactorText.internalsJvmRuntime),
+            jvmRuntime,
+          ),
       ],
+    );
+  }
+
+  List<SamplerSample> _samples(ServerSnapshot snapshot, List<String> ids) {
+    return ids
+        .map(snapshot.sampler)
+        .whereType<SamplerSample>()
+        .toList(growable: false);
+  }
+
+  Widget _sampleSection(String label, List<SamplerSample> samples) {
+    return SectionPanel(
+      label: label,
+      flush: true,
+      child: statGrid(
+        samples
+            .map((SamplerSample sample) {
+              return StatTile(label: sample.name, sample: sample);
+            })
+            .toList(growable: false),
+      ),
     );
   }
 }

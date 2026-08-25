@@ -32,21 +32,28 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class SamplerWorldSaveDuration extends ReactCachedSampler implements Listener {
-  public static final String ID = "world-save-duration";
+public class SamplerWorldSaveEventInterval extends ReactCachedSampler implements Listener {
+  public static final String ID = "world-save-event-interval";
 
-  private transient final Map<UUID, AtomicLong> saveStartNanosByWorld;
-  private transient final AtomicLong lastSaveDurationMs;
+  private transient final Map<UUID, AtomicLong> lastSaveNanosByWorld;
+  private transient final AtomicLong lastSaveIntervalMs;
 
-  public SamplerWorldSaveDuration() {
+  public SamplerWorldSaveEventInterval() {
     super(ID, 250);
-    saveStartNanosByWorld = new ConcurrentHashMap<>();
-    lastSaveDurationMs = new AtomicLong(0L);
+    lastSaveNanosByWorld = new ConcurrentHashMap<>();
+    lastSaveIntervalMs = new AtomicLong(0L);
   }
 
   @Override
   public Material getIcon() {
     return Material.WRITABLE_BOOK;
+  }
+
+  @Override
+  public void start() {
+    lastSaveNanosByWorld.clear();
+    lastSaveIntervalMs.set(0L);
+    super.start();
   }
 
   @EventHandler(priority = EventPriority.MONITOR)
@@ -57,21 +64,21 @@ public class SamplerWorldSaveDuration extends ReactCachedSampler implements List
 
     UUID worldId = event.getWorld().getUID();
     long now = System.nanoTime();
-    AtomicLong start = saveStartNanosByWorld.get(worldId);
-    if (start != null) {
-      long prev = start.getAndSet(now);
+    AtomicLong lastSave = lastSaveNanosByWorld.get(worldId);
+    if (lastSave != null) {
+      long prev = lastSave.getAndSet(now);
       if (prev > 0L) {
-        long durationMs = Math.max(0L, (now - prev) / 1_000_000L);
-        lastSaveDurationMs.set(durationMs);
+        long intervalMs = Math.max(0L, (now - prev) / 1_000_000L);
+        lastSaveIntervalMs.set(intervalMs);
       }
     } else {
-      saveStartNanosByWorld.put(worldId, new AtomicLong(now));
+      lastSaveNanosByWorld.put(worldId, new AtomicLong(now));
     }
   }
 
   @Override
   public double onSample() {
-    return lastSaveDurationMs.get();
+    return lastSaveIntervalMs.get();
   }
 
   @Override
@@ -81,6 +88,6 @@ public class SamplerWorldSaveDuration extends ReactCachedSampler implements List
 
   @Override
   public String formattedSuffix(double t) {
-    return " SAV";
+    return " SAVE GAP";
   }
 }

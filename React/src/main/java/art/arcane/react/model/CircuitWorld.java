@@ -1,216 +1,282 @@
-/*
- *  Copyright (c) 2016-2025 Arcane Arts (Volmit Software)
- *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
- *
- */
-
 package art.arcane.react.model;
 
-import art.arcane.react.util.math.Direction;
 import art.arcane.volmlib.util.math.BlockPosition;
-import art.arcane.volmlib.util.math.M;
-import art.arcane.volmlib.util.math.RNG;
-import lombok.Data;
-import org.bukkit.World;
-import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
-import org.bukkit.block.data.BlockData;
-import org.bukkit.block.data.Powerable;
-import org.bukkit.block.data.type.Repeater;
 
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-@Data
-public class CircuitWorld {
-  private final World world;
+public final class CircuitWorld {
+  private static final int[][] NEIGHBORS = {
+      {1, 0, 0}, {-1, 0, 0},
+      {0, 1, 0}, {0, -1, 0},
+      {0, 0, 1}, {0, 0, -1}
+  };
+
+  private final String worldId;
+  private final String world;
   private final Map<Long, Circuit> circuits;
   private final Map<BlockPosition, Long> blocks;
+  private long nextId;
 
-  public CircuitWorld(World world) {
+  public CircuitWorld(String worldId, String world) {
+    this.worldId = worldId;
     this.world = world;
-    this.circuits = new HashMap<>();
-    this.blocks = new HashMap<>();
+    circuits = new HashMap<>();
+    blocks = new HashMap<>();
+    nextId = 1L;
   }
 
-  public Circuit worst() {
-    return circuits.values().stream()
-        .max(Comparator.comparingInt(a -> a.getEvents().get()))
+  public synchronized CircuitObservation event(BlockPosition position, long now) {
+    Set<Long> neighbors = neighborCircuitIds(position);
+    Circuit winner = selectWinner(neighbors);
+    if (winner == null) {
+      winner = new Circuit(nextId++, now);
+      circuits.put(winner.getId(), winner);
+    }
+    mergeInto(winner, neighbors);
+    Long previousId = blocks.put(position, winner.getId());
+    if (previousId != null && previousId != winner.getId()) {
+      Circuit previous = circuits.get(previousId);
+      if (previous != null) {
+        previous.remove(position);
+        removeIfEmpty(previous);
+      }
+    }
+    winner.add(position);
+    winner.recordEvent(now);
+    return new CircuitObservation(winner.getId(), winner.isBlocked(now), winner.getBlockedUntilMs());
+  }
+
+  public synchronized void remove(BlockPosition position, long now) {
+    Long circuitId = blocks.remove(position);
+    if (circuitId == null) {
+      return;
+    }
+    Circuit circuit = circuits.get(circuitId);
+    if (circuit == null) {
+      return;
+    }
+    circuit.remove(position);
+    if (circuit.countBlocks() == 0) {
+      circuits.remove(circuitId);
+      return;
+    }
+    splitDisconnected(circuit, now);
+  }
+
+  public synchronized void rollWindow(long now, long inactivityMs) {
+    List<Long> expired = new ArrayList<>();
+    for (Circuit circuit : circuits.values()) {
+      circuit.rollWindow();
+      if (now - circuit.getLastEventMs() > Math.max(1000L, inactivityMs)) {
+        expired.add(circuit.getId());
+      }
+    }
+    for (Long id : expired) {
+      removeCircuit(id);
+    }
+  }
+
+  public synchronized CircuitSnapshot worst(long now) {
+    Circuit worst = circuits.values().stream()
+        .filter(circuit -> circuit.getEvents() > 0)
+        .filter(circuit -> !circuit.isBlocked(now))
+        .max(Comparator.comparingInt(Circuit::getEvents))
         .orElse(null);
+    return snapshot(worst);
   }
 
-  public void writeCircuit(Block block, long id) {
-    writeCircuitDirect(block, id);
-    BlockData b = block.getBlockData();
-    writeCircuitDirect(block.getRelative(BlockFace.DOWN), id);
-
-    if (b instanceof Powerable) {
-      if (b instanceof Repeater r) {
-        writeCircuitDirect(block.getRelative(r.getFacing()), id);
-      } else {
-        writeCircuitDirect(block.getRelative(BlockFace.DOWN), id);
-      }
-    } else {
-      writeCircuitDirect(block.getRelative(BlockFace.DOWN), id);
-      writeCircuitDirect(block.getRelative(BlockFace.UP), id);
+  public synchronized CircuitSnapshot throttle(long circuitId, long now, long durationMs) {
+    Circuit circuit = circuits.get(circuitId);
+    if (circuit == null || circuit.isBlocked(now)) {
+      return null;
     }
+    circuit.blockUntil(now + Math.max(1L, durationMs));
+    return snapshot(circuit);
   }
 
-  private void writeCircuitDirect(Block block, long id) {
-    blocks.put(new BlockPosition(block), id);
-    getOrCreateCircuit(id).write(block);
-  }
-
-  public long getBiggestCircuit(Set<Long> s) {
-    if (s.isEmpty()) {
-      throw new RuntimeException();
-    }
-
-    int size = -1;
-    long winner = -1;
-    int z;
-
-    for (Long i : s) {
-      Circuit c = getCircuit(i);
-      if (c != null) {
-        z = c.countBlocks();
-        if (z > size) {
-          size = z;
-          winner = i;
-        }
-      }
-    }
-
-    return winner;
-  }
-
-  public long getNeighborCircuit(Block block) {
-    Block neighbor;
-    Long id = getCircuitId(block);
-    Set<Long> conflict = new HashSet<>();
-
-    if (id != null) {
-      conflict.add(id);
-    }
-
-    for (Direction i : Direction.udnews()) {
-      neighbor = block.getRelative(i.getFace());
-      id = getCircuitId(neighbor);
-
-      if (id != null) {
-        conflict.add(id);
-      }
-    }
-
-    if (conflict.isEmpty()) {
-      id = RNG.r.lmax();
-      conflict.add(id);
-      writeCircuit(block, id);
-    }
-
-    if (conflict.size() > 1) {
-      id = getBiggestCircuit(conflict);
-      writeCircuit(block, id);
-    } else {
-      id = conflict.stream().findFirst().get();
-      writeCircuit(block, id);
-    }
-
-    return id;
-  }
-
-  public Circuit getCircuitAt(BlockPosition p) {
-    Long id = getCircuitId(p);
-
-    if (id != null) {
-      return getCircuit(id);
-    }
-
-    return null;
-  }
-
-  public Long getCircuitId(BlockPosition p) {
-    return blocks.get(p);
-  }
-
-  public Long getCircuitId(Block p) {
-    return getCircuitId(new BlockPosition(p));
-  }
-
-  public Circuit createCircuit() {
-    return createCircuit(RNG.r.lmax());
-  }
-
-  public Circuit createCircuit(long id) {
-    Circuit c = new Circuit(id);
-    circuits.put(id, c);
-    return c;
-  }
-
-  public Circuit getCircuit(long id) {
-    return circuits.get(id);
-  }
-
-  public Circuit getOrCreateCircuit(long id) {
-    Circuit c = getCircuit(id);
-
-    if (c == null) {
-      c = createCircuit(id);
-    }
-
-    return c;
-  }
-
-  public int countCircuits() {
+  public synchronized int countCircuits() {
     return circuits.size();
   }
 
-  public int countBlocks() {
+  public synchronized int countBlocks() {
     return blocks.size();
   }
 
-  public void remove(BlockPosition block) {
-    Long id = blocks.remove(block);
+  public synchronized boolean isConsistent() {
+    for (Map.Entry<BlockPosition, Long> entry : blocks.entrySet()) {
+      Circuit circuit = circuits.get(entry.getValue());
+      if (circuit == null || !circuit.positions().contains(entry.getKey())) {
+        return false;
+      }
+    }
+    for (Circuit circuit : circuits.values()) {
+      for (BlockPosition position : circuit.positions()) {
+        if (!Long.valueOf(circuit.getId()).equals(blocks.get(position))) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
 
-    if (id != null) {
-      Circuit c = getCircuit(id);
+  private Set<Long> neighborCircuitIds(BlockPosition position) {
+    Set<Long> ids = new HashSet<>();
+    addExistingId(ids, blocks.get(position));
+    for (int[] offset : NEIGHBORS) {
+      addExistingId(ids, blocks.get(position.add(offset[0], offset[1], offset[2])));
+    }
+    return ids;
+  }
 
-      if (c != null) {
-        c.remove(block);
+  private void addExistingId(Set<Long> ids, Long id) {
+    if (id == null) {
+      return;
+    }
+    if (circuits.containsKey(id)) {
+      ids.add(id);
+      return;
+    }
+    blocks.entrySet().removeIf(entry -> id.equals(entry.getValue()));
+  }
+
+  private Circuit selectWinner(Set<Long> ids) {
+    Circuit winner = null;
+    for (Long id : ids) {
+      Circuit candidate = circuits.get(id);
+      if (candidate == null) {
+        continue;
+      }
+      if (winner == null
+          || candidate.countBlocks() > winner.countBlocks()
+          || candidate.countBlocks() == winner.countBlocks() && candidate.getId() < winner.getId()) {
+        winner = candidate;
+      }
+    }
+    return winner;
+  }
+
+  private void mergeInto(Circuit winner, Set<Long> ids) {
+    for (Long id : ids) {
+      if (id == winner.getId()) {
+        continue;
+      }
+      Circuit losing = circuits.remove(id);
+      if (losing == null) {
+        continue;
+      }
+      winner.merge(losing);
+      for (BlockPosition position : losing.positions()) {
+        blocks.put(position, winner.getId());
       }
     }
   }
 
-  public void tick() {
-    circuits.entrySet().removeIf(i -> {
-      i.getValue().tick();
-      return i.getValue().countBlocks() == 0;
-    });
-
-    blocks.entrySet().removeIf(i -> {
-      if (M.r(0.05)) {
-        Circuit c = circuits.get(i.getValue());
-
-        if (c != null) {
-          c.remove(i.getKey());
-        }
-
-        return true;
+  private void splitDisconnected(Circuit circuit, long now) {
+    List<Set<BlockPosition>> components = connectedComponents(circuit.positions());
+    if (components.size() <= 1) {
+      return;
+    }
+    components.sort(Comparator.comparingInt(Set<BlockPosition>::size).reversed());
+    circuit.positions().clear();
+    for (BlockPosition position : components.getFirst()) {
+      circuit.add(position);
+      blocks.put(position, circuit.getId());
+    }
+    for (int index = 1; index < components.size(); index++) {
+      Circuit split = new Circuit(nextId++, now);
+      if (circuit.isBlocked(now)) {
+        split.blockUntil(circuit.getBlockedUntilMs());
       }
+      for (BlockPosition position : components.get(index)) {
+        split.add(position);
+        blocks.put(position, split.getId());
+      }
+      circuits.put(split.getId(), split);
+    }
+  }
 
-      return false;
-    });
+  private List<Set<BlockPosition>> connectedComponents(Set<BlockPosition> positions) {
+    Set<BlockPosition> remaining = new HashSet<>(positions);
+    List<Set<BlockPosition>> components = new ArrayList<>();
+    while (!remaining.isEmpty()) {
+      BlockPosition first = remaining.iterator().next();
+      remaining.remove(first);
+      Set<BlockPosition> component = new HashSet<>();
+      ArrayDeque<BlockPosition> queue = new ArrayDeque<>();
+      queue.add(first);
+      while (!queue.isEmpty()) {
+        BlockPosition current = queue.removeFirst();
+        component.add(current);
+        for (int[] offset : NEIGHBORS) {
+          BlockPosition neighbor = current.add(offset[0], offset[1], offset[2]);
+          if (remaining.remove(neighbor)) {
+            queue.addLast(neighbor);
+          }
+        }
+      }
+      components.add(component);
+    }
+    return components;
+  }
+
+  private CircuitSnapshot snapshot(Circuit circuit) {
+    if (circuit == null || circuit.positions().isEmpty()) {
+      return null;
+    }
+    BlockPosition representative = circuit.positions().iterator().next();
+    int minX = representative.getX();
+    int minY = representative.getY();
+    int minZ = representative.getZ();
+    int maxX = minX;
+    int maxY = minY;
+    int maxZ = minZ;
+    for (BlockPosition position : circuit.positions()) {
+      minX = Math.min(minX, position.getX());
+      minY = Math.min(minY, position.getY());
+      minZ = Math.min(minZ, position.getZ());
+      maxX = Math.max(maxX, position.getX());
+      maxY = Math.max(maxY, position.getY());
+      maxZ = Math.max(maxZ, position.getZ());
+    }
+    return new CircuitSnapshot(
+        circuit.getId(),
+        worldId,
+        world,
+        circuit.getEvents(),
+        circuit.countBlocks(),
+        representative.getX(),
+        representative.getY(),
+        representative.getZ(),
+        minX,
+        minY,
+        minZ,
+        maxX,
+        maxY,
+        maxZ,
+        circuit.getBlockedUntilMs()
+    );
+  }
+
+  private void removeCircuit(long id) {
+    Circuit removed = circuits.remove(id);
+    if (removed == null) {
+      return;
+    }
+    for (BlockPosition position : removed.positions()) {
+      blocks.remove(position, id);
+    }
+  }
+
+  private void removeIfEmpty(Circuit circuit) {
+    if (circuit.countBlocks() == 0) {
+      circuits.remove(circuit.getId());
+    }
   }
 }

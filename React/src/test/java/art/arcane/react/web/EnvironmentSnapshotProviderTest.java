@@ -3,6 +3,7 @@ package art.arcane.react.web;
 import art.arcane.react.api.web.EnvironmentSnapshotProvider;
 import art.arcane.react.api.web.dto.EnvironmentDto;
 import art.arcane.react.api.web.dto.IdentityDto;
+import art.arcane.react.core.telemetry.HostTelemetrySnapshot;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -20,9 +21,18 @@ public class EnvironmentSnapshotProviderTest {
         return dto;
     }
 
+    private HostTelemetrySnapshot fakeTelemetry() {
+        HostTelemetrySnapshot snapshot = HostTelemetrySnapshot.empty();
+        snapshot.environment().cpu.cores = Runtime.getRuntime().availableProcessors();
+        snapshot.environment().memory.physicalTotal = 16L * 1024L * 1024L;
+        snapshot.environment().jvm.javaVersion = System.getProperty("java.version");
+        snapshot.environment().jvm.heapMax = Runtime.getRuntime().maxMemory();
+        return snapshot;
+    }
+
     @Test
     void snapshotCpuIsNonNullAndCoresMatchRuntime() {
-        EnvironmentSnapshotProvider provider = new EnvironmentSnapshotProvider(this::fakeIdentity);
+        EnvironmentSnapshotProvider provider = new EnvironmentSnapshotProvider(this::fakeIdentity, this::fakeTelemetry);
         EnvironmentDto dto = provider.snapshot();
 
         assertNotNull(dto.cpu, "cpu must not be null");
@@ -32,7 +42,7 @@ public class EnvironmentSnapshotProviderTest {
 
     @Test
     void snapshotMemoryIsNonNullAndPhysicalTotalPositive() {
-        EnvironmentSnapshotProvider provider = new EnvironmentSnapshotProvider(this::fakeIdentity);
+        EnvironmentSnapshotProvider provider = new EnvironmentSnapshotProvider(this::fakeIdentity, this::fakeTelemetry);
         EnvironmentDto dto = provider.snapshot();
 
         assertNotNull(dto.memory, "memory must not be null");
@@ -41,7 +51,7 @@ public class EnvironmentSnapshotProviderTest {
 
     @Test
     void snapshotJvmIsNonNullAndVersionNonBlank() {
-        EnvironmentSnapshotProvider provider = new EnvironmentSnapshotProvider(this::fakeIdentity);
+        EnvironmentSnapshotProvider provider = new EnvironmentSnapshotProvider(this::fakeIdentity, this::fakeTelemetry);
         EnvironmentDto dto = provider.snapshot();
 
         assertNotNull(dto.jvm, "jvm must not be null");
@@ -52,7 +62,7 @@ public class EnvironmentSnapshotProviderTest {
 
     @Test
     void snapshotServerFieldsMatchInjectedIdentity() {
-        EnvironmentSnapshotProvider provider = new EnvironmentSnapshotProvider(this::fakeIdentity);
+        EnvironmentSnapshotProvider provider = new EnvironmentSnapshotProvider(this::fakeIdentity, this::fakeTelemetry);
         EnvironmentDto dto = provider.snapshot();
 
         assertNotNull(dto.server, "server must not be null");

@@ -26,5 +26,8 @@ class ServerSnapshot {
     );
   }
 
-  SamplerSample? sampler(String id) => byId[id];
+  SamplerSample? sampler(String id) {
+    final SamplerSample? sample = byId[id];
+    return sample != null && sample.available ? sample : null;
+  }
 }

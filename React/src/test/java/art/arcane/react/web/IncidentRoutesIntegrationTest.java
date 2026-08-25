@@ -10,6 +10,8 @@ import art.arcane.react.api.web.dto.IdentityDto;
 import art.arcane.react.content.sampler.SamplerIncidentScore;
 import art.arcane.react.core.controller.SampleController;
 import art.arcane.react.core.controller.WebController;
+import art.arcane.react.core.incident.IncidentEvidence;
+import art.arcane.react.core.incident.IncidentRecord;
 import art.arcane.react.util.project.registry.Registry;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -24,6 +26,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -89,12 +92,42 @@ public class IncidentRoutesIntegrationTest {
         config.setPort(0);
 
         controller = buildController(config, dataFolder, sampleController);
-        controller.setIncidentScoreSupplier(() -> 58.0);
-        controller.setIncidentStateSupplier(() -> "ACTIVE");
-        controller.setIncidentTimelineSupplier(l -> List.of("e1"));
-        controller.setIncidentContributorsSupplier(
-            () -> List.of(new SamplerIncidentScore.Contribution("gc-time-percent", 0.10, 12.0))
+        IncidentEvidence evidence = new IncidentEvidence(
+            "gc-time-percent",
+            "GC Time",
+            true,
+            12D,
+            "12%",
+            0.43D,
+            0.10D,
+            4.3D,
+            2D,
+            25D
         );
+        controller.setIncidentSnapshotSupplier(() -> new SamplerIncidentScore.IncidentScoreSnapshot(
+            1234L,
+            58D,
+            true,
+            List.of(evidence)
+        ));
+        controller.setIncidentStateSupplier(() -> "ACTIVE");
+        controller.setIncidentRecordsSupplier(limit -> List.of(new IncidentRecord(
+            "event-id",
+            "incident-id",
+            "SERVER_PRESSURE",
+            "STARTED",
+            "WARNING",
+            1234L,
+            1234L,
+            "incident-mode",
+            "Incident mode engaged",
+            "Guardrails active",
+            "GC time was elevated",
+            null,
+            List.of(evidence),
+            List.of(),
+            Map.of()
+        )));
         controller.start();
         controller.postStart();
         controller.awaitStart(5000);
@@ -126,15 +159,21 @@ public class IncidentRoutesIntegrationTest {
         assertNotNull(data, "Response should contain 'data' object");
         assertEquals(58.0, data.get("score").getAsDouble(), 1e-9);
         assertEquals("ACTIVE", data.get("state").getAsString());
-        JsonArray timeline = data.getAsJsonArray("timeline");
-        assertNotNull(timeline, "data should contain 'timeline' array");
-        assertEquals(1, timeline.size());
+        assertTrue(data.get("scoreAvailable").getAsBoolean());
+        assertEquals(1234L, data.get("sampledAtMs").getAsLong());
+        JsonArray incidents = data.getAsJsonArray("incidents");
+        assertNotNull(incidents, "data should contain 'incidents' array");
+        assertEquals(1, incidents.size());
+        assertEquals("GC time was elevated", incidents.get(0).getAsJsonObject().get("cause").getAsString());
         JsonArray contributors = data.getAsJsonArray("contributors");
         assertNotNull(contributors, "data should contain 'contributors' array");
         assertEquals(1, contributors.size());
         JsonObject contrib = contributors.get(0).getAsJsonObject();
-        assertEquals("gc-time-percent", contrib.get("name").getAsString());
+        assertEquals("gc-time-percent", contrib.get("id").getAsString());
+        assertEquals("GC Time", contrib.get("label").getAsString());
+        assertTrue(contrib.get("available").getAsBoolean());
         assertEquals(0.10, contrib.get("weight").getAsDouble(), 1e-9);
         assertEquals(12.0, contrib.get("value").getAsDouble(), 1e-9);
+        assertEquals(4.3, contrib.get("scorePoints").getAsDouble(), 1e-9);
     }
 }

@@ -61,7 +61,9 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
     final Set<String> presentMetrics = <String>{};
     for (final FleetServerLive srv in servers) {
       if (_hasComparableSnapshot(srv)) {
-        presentMetrics.addAll(srv.snapshot!.byId.keys);
+        for (final String id in _kComparableMetrics) {
+          if (srv.snapshot!.sampler(id) != null) presentMetrics.add(id);
+        }
       }
     }
 

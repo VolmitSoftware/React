@@ -140,6 +140,21 @@ class PublishedMetricStoreTest {
   }
 
   @Test
+  void redeclaringARetainedKeyPreservesItsReadingAndRefreshesItsDescriptor() {
+    PublishedMetricStore store = storeWithLive();
+    store.publish(SOURCE, LIVE, 5D, 1000L, 1000L);
+    ReactMetric replacement = ReactMetric.rate(LIVE, "Active Pets", " /min")
+        .withIcon(Material.CLOCK)
+        .withDecimals(2);
+
+    store.declare(SOURCE, List.of(replacement));
+
+    Assertions.assertTrue(store.available(LIVE, 1000L));
+    Assertions.assertEquals(5D, store.valueOr(LIVE, -1D, 1000L));
+    Assertions.assertEquals(replacement, store.metric(LIVE));
+  }
+
+  @Test
   void publishingAnUndeclaredKeyIsDropped() {
     PublishedMetricStore store = storeWithLive();
     Assertions.assertFalse(store.publish(SOURCE, SOURCE + ".unknown", 1D, 1000L, 1000L));

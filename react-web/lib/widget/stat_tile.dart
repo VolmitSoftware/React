@@ -20,13 +20,13 @@ class StatTile extends StatelessWidget {
   });
 
   static String formatValue(SamplerSample? sample) {
-    if (sample == null) return '--';
+    if (sample == null || !sample.available) return '--';
     return sample.display;
   }
 
   @override
   Widget build(BuildContext context) {
-    final SamplerSample? s = sample;
+    final SamplerSample? s = sample?.available == true ? sample : null;
     final String displayValue = formatValue(s);
     final String suffix = s?.suffix ?? '';
     final List<double> history = s?.history ?? <double>[];

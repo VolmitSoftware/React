@@ -39,6 +39,12 @@ public class SamplerChunksForceLoaded extends ReactCachedSampler {
   }
 
   @Override
+  public void start() {
+    available = true;
+    super.start();
+  }
+
+  @Override
   public double onSample() {
     return sampleOnMainThread(() -> {
       if (!available) {
@@ -72,5 +78,10 @@ public class SamplerChunksForceLoaded extends ReactCachedSampler {
   @Override
   public String formattedSuffix(double t) {
     return " chunks";
+  }
+
+  @Override
+  public boolean isSampleAvailable() {
+    return available;
   }
 }

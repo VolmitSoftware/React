@@ -21,14 +21,14 @@ package art.arcane.react.content.tweak;
 
 import art.arcane.react.React;
 import art.arcane.react.api.tweak.ReactTweak;
-import art.arcane.react.content.sampler.SamplerHopperTickTime;
+import art.arcane.react.content.sampler.SamplerHopperEventSpan;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Hopper;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 
-@art.arcane.react.util.project.config.ConfigDescription("Configuration for Hopper Limit tweak. Cancels hopper transfers when hopper tick-time pressure exceeds the configured threshold.")
+@art.arcane.react.util.project.config.ConfigDescription("Configuration for Hopper Limit tweak. Cancels hopper transfers when hopper event-span pressure exceeds the configured threshold.")
 public class TweakHopperLimit extends ReactTweak implements Listener {
   public static final String ID = "hopper-limit";
   private static final BlockFace[] directions = new BlockFace[]{
@@ -37,8 +37,8 @@ public class TweakHopperLimit extends ReactTweak implements Listener {
       BlockFace.SOUTH,
       BlockFace.WEST
   };
-  @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum hopper tick time allowed by hopper limit.", impact = "Higher values allow more throughput before intervention; lower values make mitigation more aggressive.")
-  private double maxHopperTickTime = 0.75;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum hopper event span allowed by hopper limit.", impact = "Higher values allow more throughput before intervention; lower values make mitigation more aggressive.")
+  private double maxHopperEventSpan = 0.75;
 
   public TweakHopperLimit() {
     super(ID);
@@ -46,12 +46,12 @@ public class TweakHopperLimit extends ReactTweak implements Listener {
 
   /**
    * This is the method that is called when a hopper moves an item. and it
-   * denies the hopper from moving the item if the tick time is too high.
+   * denies the hopper from moving the item if the hopper event span is too high.
    */
   @EventHandler(priority = org.bukkit.event.EventPriority.LOW, ignoreCancelled = true)
   public void on(InventoryMoveItemEvent e) {
     if (e.getDestination().getHolder() instanceof Hopper) {
-      if (React.sampler(SamplerHopperTickTime.class).sample() > maxHopperTickTime) {
+      if (React.sampler(SamplerHopperEventSpan.class).sample() > maxHopperEventSpan) {
         e.setCancelled(true);
       }
     }

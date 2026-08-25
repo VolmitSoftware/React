@@ -13,6 +13,13 @@ import '../widget/section_card.dart';
 import '../widget/server_snapshot_state.dart';
 import '../widget/stat_tile.dart';
 
+const List<String> _kChunkResidencyIds = <String>[
+  'chunks-force-loaded',
+  'chunk-tickets',
+  'chunk-unloads',
+  'worlds',
+];
+
 class ChunksScreen extends StatelessWidget {
   const ChunksScreen({super.key});
 
@@ -33,12 +40,16 @@ class ChunksScreen extends StatelessWidget {
     final SamplerSample? chunksGenerated = snapshot.sampler('chunks-generated');
     final SamplerSample? chunkLoadMs = snapshot.sampler('chunk-load-ms');
     final SamplerSample? chunkGenMs = snapshot.sampler('chunk-gen-ms');
-    final SamplerSample? worldSaveDuration = snapshot.sampler(
-      'world-save-duration',
+    final SamplerSample? worldSaveEventInterval = snapshot.sampler(
+      'world-save-event-interval',
     );
     final SamplerSample? pdcWriteBatcher = snapshot.sampler(
       'pdc-write-batcher',
     );
+    final List<SamplerSample> residency = _kChunkResidencyIds
+        .map(snapshot.sampler)
+        .whereType<SamplerSample>()
+        .toList(growable: false);
 
     final List<(String, List<double>)> timeSeries = <(String, List<double>)>[
       (
@@ -88,8 +99,10 @@ class ChunksScreen extends StatelessWidget {
           flush: true,
           child: statGrid(<Widget>[
             StatTile(
-              label: reactorText(ReactorText.chunksWorldSave),
-              sample: worldSaveDuration,
+              label:
+                  worldSaveEventInterval?.name ??
+                  reactorText(ReactorText.chunksWorldSaveEventInterval),
+              sample: worldSaveEventInterval,
             ),
             StatTile(
               label: reactorText(ReactorText.chunksPdcBatcher),
@@ -97,6 +110,18 @@ class ChunksScreen extends StatelessWidget {
             ),
           ]),
         ),
+        if (residency.isNotEmpty)
+          SectionPanel(
+            label: reactorText(ReactorText.chunksResidency),
+            flush: true,
+            child: statGrid(
+              residency
+                  .map((SamplerSample sample) {
+                    return StatTile(label: sample.name, sample: sample);
+                  })
+                  .toList(growable: false),
+            ),
+          ),
       ],
     );
   }

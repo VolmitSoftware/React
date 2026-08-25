@@ -39,6 +39,10 @@ ServerSnapshot _fakeSnapshot() {
     _sample('players', 42.0, max: 200.0),
     _sample('player-ping-p95', 55.0, suffix: 'ms', max: 500.0),
     _sample('ping-jitter', 8.0, suffix: 'ms', max: 500.0),
+    _sample('entities-hostile', 63.0, max: 5000.0),
+    _sample('block-entities-ticking', 17.0, max: 5000.0),
+    _sample('player-joins-rate', 2.5, suffix: '/min'),
+    _sample('players-unique-24h', 91.0),
   ];
   final Map<String, SamplerSample> byId = <String, SamplerSample>{
     for (final SamplerSample s in samples) s.id: s,
@@ -114,6 +118,19 @@ void main() {
         isTrue,
         reason: 'Players value 42.0 must appear in rendered HTML',
       );
+    });
+
+    testServer('renders entity breakdown and player activity', (
+      ServerTester tester,
+    ) async {
+      tester.pumpComponent(_wrap(const EntitiesScreen()));
+      final DocumentResponse res = await tester.request('/');
+
+      expect(res.statusCode, equals(200));
+      expect(res.body.contains('Entity Breakdown'), isTrue);
+      expect(res.body.contains('Player Activity'), isTrue);
+      expect(res.body.contains('63.0'), isTrue);
+      expect(res.body.contains('91.0'), isTrue);
     });
   });
 

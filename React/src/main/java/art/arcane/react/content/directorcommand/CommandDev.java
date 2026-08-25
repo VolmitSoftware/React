@@ -102,7 +102,7 @@ public class CommandDev implements DirectorExecutor {
       "pdc-write-batcher",
       "explosion-packet-reduction",
       "per-world-tick-time",
-      "world-save-duration"
+      "world-save-event-interval"
   );
 
   @Director(

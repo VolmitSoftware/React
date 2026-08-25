@@ -4,15 +4,15 @@ import art.arcane.react.api.web.dto.Envelope;
 import art.arcane.react.api.web.dto.IncidentDto;
 import art.arcane.react.api.web.resource.IncidentResource;
 import art.arcane.react.content.sampler.SamplerIncidentScore;
+import art.arcane.react.core.incident.IncidentEvidence;
+import art.arcane.react.core.incident.IncidentRecord;
 import io.javalin.http.BadRequestResponse;
 import io.javalin.http.Context;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.List;
-import java.util.function.DoubleSupplier;
-import java.util.function.IntFunction;
-import java.util.function.Supplier;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -21,46 +21,80 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class IncidentResourceTest {
+  @Test
+  @SuppressWarnings("unchecked")
+  void returnsAtomicSnapshotAndStructuredIncidents() {
+    IncidentEvidence evidence = new IncidentEvidence(
+        "tick-ms-p95",
+        "Tick P95",
+        true,
+        120D,
+        "120 ms",
+        0.7D,
+        0.3D,
+        21D,
+        50D,
+        150D
+    );
+    SamplerIncidentScore.IncidentScoreSnapshot snapshot = new SamplerIncidentScore.IncidentScoreSnapshot(
+        1234L,
+        58D,
+        true,
+        List.of(evidence)
+    );
+    IncidentRecord record = new IncidentRecord(
+        "event-id",
+        "incident-id",
+        "SERVER_PRESSURE",
+        "STARTED",
+        "WARNING",
+        1200L,
+        1200L,
+        "incident-mode",
+        "Incident mode engaged",
+        "Guardrails active",
+        "Tick P95 was elevated",
+        null,
+        List.of(evidence),
+        List.of(),
+        Map.of()
+    );
+    IncidentResource resource = new IncidentResource(
+        () -> snapshot,
+        () -> "ACTIVE",
+        limit -> List.of(record)
+    );
+    Context context = mock(Context.class);
+    when(context.queryParam("limit")).thenReturn(null);
 
-    @Test
-    @SuppressWarnings("unchecked")
-    void it_returns_envelope_with_score_state_timeline_contributors() {
-        DoubleSupplier scoreSupplier = () -> 58.0;
-        Supplier<String> stateSupplier = () -> "ACTIVE";
-        IntFunction<List<String>> timelineSupplier = l -> List.of("x entered", "x exited");
-        Supplier<List<SamplerIncidentScore.Contribution>> contributorsSupplier =
-            () -> List.of(new SamplerIncidentScore.Contribution("tick-ms-p95", 0.30, 120.0));
+    ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
+    resource.get(context);
+    verify(context).json(captor.capture());
 
-        IncidentResource resource = new IncidentResource(scoreSupplier, stateSupplier, timelineSupplier, contributorsSupplier);
-        Context ctx = mock(Context.class);
-        when(ctx.queryParam("limit")).thenReturn(null);
+    Envelope<IncidentDto> envelope = (Envelope<IncidentDto>) captor.getValue();
+    IncidentDto dto = envelope.data();
+    assertEquals(58D, dto.score, 1.0E-9D);
+    assertEquals(1234L, dto.sampledAtMs);
+    assertEquals(true, dto.scoreAvailable);
+    assertEquals("ACTIVE", dto.state);
+    assertEquals(1, dto.incidents.length);
+    assertEquals("Tick P95 was elevated", dto.incidents[0].cause());
+    assertEquals(1, dto.contributors.length);
+    assertEquals("tick-ms-p95", dto.contributors[0].id);
+    assertEquals("120 ms", dto.contributors[0].display);
+    assertEquals(21D, dto.contributors[0].scorePoints, 1.0E-9D);
+  }
 
-        ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
-        resource.get(ctx);
-        verify(ctx).json(captor.capture());
+  @Test
+  void throwsBadRequestForNonNumericLimit() {
+    IncidentResource resource = new IncidentResource(
+        SamplerIncidentScore.IncidentScoreSnapshot::empty,
+        () -> "NORMAL",
+        limit -> List.of()
+    );
+    Context context = mock(Context.class);
+    when(context.queryParam("limit")).thenReturn("abc");
 
-        Envelope<IncidentDto> envelope = (Envelope<IncidentDto>) captor.getValue();
-        IncidentDto dto = envelope.data();
-        assertEquals(58.0, dto.score, 1e-9);
-        assertEquals("ACTIVE", dto.state);
-        assertEquals(2, dto.timeline.length);
-        assertEquals(1, dto.contributors.length);
-        assertEquals("tick-ms-p95", dto.contributors[0].name);
-        assertEquals(0.30, dto.contributors[0].weight, 1e-9);
-        assertEquals(120.0, dto.contributors[0].value, 1e-9);
-    }
-
-    @Test
-    void it_throws_bad_request_for_non_numeric_limit() {
-        IncidentResource resource = new IncidentResource(
-            () -> 0.0,
-            () -> "NORMAL",
-            l -> List.of(),
-            List::of
-        );
-        Context ctx = mock(Context.class);
-        when(ctx.queryParam("limit")).thenReturn("abc");
-
-        assertThrows(BadRequestResponse.class, () -> resource.get(ctx));
-    }
+    assertThrows(BadRequestResponse.class, () -> resource.get(context));
+  }
 }

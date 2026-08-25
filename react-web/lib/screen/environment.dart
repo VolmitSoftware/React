@@ -9,6 +9,8 @@ import 'package:jaspr/jaspr.dart' show Component;
 import '../chart/timeseries_chart.dart';
 import '../model/environment_info.dart';
 import '../model/ring_buffer.dart';
+import '../model/sampler_sample.dart';
+import '../model/server_snapshot.dart';
 import '../localization/reactor_locale.dart';
 import '../localization/reactor_localizations.dart';
 import '../service/react_client.dart';
@@ -16,6 +18,21 @@ import '../state/connection_manager.dart';
 import '../state/operate_scope.dart';
 import '../state/server_scope.dart';
 import '../ui/reactor_ui.dart';
+import '../widget/section_card.dart' show statGrid;
+import '../widget/stat_tile.dart';
+
+const List<String> _kHostTelemetryIds = <String>[
+  'physical-memory-used',
+  'physical-memory-free',
+  'disk-usable',
+  'disk-read-rate',
+  'disk-write-rate',
+  'network-receive-rate',
+  'network-send-rate',
+  'network-receive-drops',
+  'network-receive-errors',
+  'network-send-errors',
+];
 
 const List<String> _kPreferredOrder = <String>[
   'cpu',
@@ -89,6 +106,7 @@ String _formatEnvValue(String section, String key, Object? value) {
 
 class EnvironmentView extends StatelessWidget {
   final EnvironmentInfo info;
+  final ServerSnapshot? snapshot;
   final List<double> diskReadHistory;
   final List<double> diskWriteHistory;
   final List<double> networkReceiveHistory;
@@ -96,6 +114,7 @@ class EnvironmentView extends StatelessWidget {
 
   const EnvironmentView({
     required this.info,
+    this.snapshot,
     this.diskReadHistory = const <double>[],
     this.diskWriteHistory = const <double>[],
     this.networkReceiveHistory = const <double>[],
@@ -106,6 +125,10 @@ class EnvironmentView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     dependOnReactorLocale(context);
+    final List<SamplerSample> hostTelemetry = _kHostTelemetryIds
+        .map((String id) => snapshot?.sampler(id))
+        .whereType<SamplerSample>()
+        .toList(growable: false);
     final List<String> ordered = <String>[];
     for (final String k in _kPreferredOrder) {
       if (info.sectionNames.contains(k)) ordered.add(k);
@@ -117,6 +140,7 @@ class EnvironmentView extends StatelessWidget {
     return Collection(
       gap: 0,
       children: <Widget>[
+        if (hostTelemetry.isNotEmpty) _hostTelemetryPanel(hostTelemetry),
         for (final String section in ordered)
           SectionPanel(
             label: _sectionLabel(section),
@@ -191,6 +215,10 @@ class EnvironmentView extends StatelessWidget {
   }
 
   Widget _diskPanel() {
+    final List<double> readHistory =
+        snapshot?.sampler('disk-read-rate')?.history ?? diskReadHistory;
+    final List<double> writeHistory =
+        snapshot?.sampler('disk-write-rate')?.history ?? diskWriteHistory;
     return SectionPanel(
       label: 'Disk',
       flush: true,
@@ -201,8 +229,8 @@ class EnvironmentView extends StatelessWidget {
           ]),
           TimeseriesChart(
             series: <(String, List<double>)>[
-              ('Read /s', diskReadHistory),
-              ('Write /s', diskWriteHistory),
+              ('Read /s', readHistory),
+              ('Write /s', writeHistory),
             ],
             height: 180,
             valueFormatter: _humanRate,
@@ -231,6 +259,11 @@ class EnvironmentView extends StatelessWidget {
   }
 
   Widget _networkPanel() {
+    final List<double> receiveHistory =
+        snapshot?.sampler('network-receive-rate')?.history ??
+        networkReceiveHistory;
+    final List<double> sendHistory =
+        snapshot?.sampler('network-send-rate')?.history ?? networkSendHistory;
     return SectionPanel(
       label: 'Network',
       flush: true,
@@ -241,8 +274,8 @@ class EnvironmentView extends StatelessWidget {
           ]),
           TimeseriesChart(
             series: <(String, List<double>)>[
-              ('Received /s', networkReceiveHistory),
-              ('Sent /s', networkSendHistory),
+              ('Received /s', receiveHistory),
+              ('Sent /s', sendHistory),
             ],
             height: 180,
             valueFormatter: _humanRate,
@@ -263,6 +296,20 @@ class EnvironmentView extends StatelessWidget {
             ),
         ]),
       ]),
+    );
+  }
+
+  Widget _hostTelemetryPanel(List<SamplerSample> samples) {
+    return SectionPanel(
+      label: reactorText(ReactorText.environmentPersistentHostTelemetry),
+      flush: true,
+      child: statGrid(
+        samples
+            .map((SamplerSample sample) {
+              return StatTile(label: sample.name, sample: sample);
+            })
+            .toList(growable: false),
+      ),
     );
   }
 
@@ -541,6 +588,7 @@ class _EnvironmentScreenState extends State<EnvironmentScreen> {
           ),
         EnvironmentView(
           info: info,
+          snapshot: server?.snapshot,
           diskReadHistory: _diskReadHistory.toList(),
           diskWriteHistory: _diskWriteHistory.toList(),
           networkReceiveHistory: _networkReceiveHistory.toList(),

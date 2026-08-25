@@ -13,6 +13,24 @@ import '../widget/section_card.dart';
 import '../widget/server_snapshot_state.dart';
 import '../widget/stat_tile.dart';
 
+const List<String> _kEntityBreakdownIds = <String>[
+  'entities-animals',
+  'entities-hostile',
+  'villagers',
+  'ground-items',
+  'projectiles',
+  'block-entities',
+  'block-entities-ticking',
+  'physics-entities',
+  'spawner-spawns',
+];
+
+const List<String> _kPlayerActivityIds = <String>[
+  'player-joins-rate',
+  'player-quits-rate',
+  'players-unique-24h',
+];
+
 class EntitiesScreen extends StatelessWidget {
   const EntitiesScreen({super.key});
 
@@ -36,6 +54,14 @@ class EntitiesScreen extends StatelessWidget {
     final SamplerSample? players = snapshot.sampler('players');
     final SamplerSample? pingP95 = snapshot.sampler('player-ping-p95');
     final SamplerSample? pingJitter = snapshot.sampler('ping-jitter');
+    final List<SamplerSample> entityBreakdown = _samples(
+      snapshot,
+      _kEntityBreakdownIds,
+    );
+    final List<SamplerSample> playerActivity = _samples(
+      snapshot,
+      _kPlayerActivityIds,
+    );
 
     final List<(String, List<double>)> entityCountSeries =
         <(String, List<double>)>[
@@ -99,7 +125,38 @@ class EntitiesScreen extends StatelessWidget {
             ]),
           ],
         ),
+        if (entityBreakdown.isNotEmpty)
+          _sampleSection(
+            reactorText(ReactorText.entitiesBreakdown),
+            entityBreakdown,
+          ),
+        if (playerActivity.isNotEmpty)
+          _sampleSection(
+            reactorText(ReactorText.entitiesPlayerActivity),
+            playerActivity,
+          ),
       ],
+    );
+  }
+
+  List<SamplerSample> _samples(ServerSnapshot snapshot, List<String> ids) {
+    return ids
+        .map(snapshot.sampler)
+        .whereType<SamplerSample>()
+        .toList(growable: false);
+  }
+
+  Widget _sampleSection(String label, List<SamplerSample> samples) {
+    return SectionPanel(
+      label: label,
+      flush: true,
+      child: statGrid(
+        samples
+            .map((SamplerSample sample) {
+              return StatTile(label: sample.name, sample: sample);
+            })
+            .toList(growable: false),
+      ),
     );
   }
 }

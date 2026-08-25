@@ -47,4 +47,9 @@ public class SamplerBukkitPendingTasks extends ReactCachedSampler {
   public String formattedSuffix(double t) {
     return " tasks";
   }
+
+  @Override
+  public boolean isSampleAvailable() {
+    return !schedulerUnsupported;
+  }
 }

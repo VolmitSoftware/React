@@ -7,8 +7,10 @@ import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Material;
 
+import java.util.Objects;
+
 public class PublishedMetricSampler extends ReactCachedSampler {
-  private final transient ReactMetric metric;
+  private transient volatile ReactMetric metric;
   private final transient PublishedMetricStore store;
   private final transient String samplerId;
   private transient double lastAvailableValue;
@@ -25,6 +27,15 @@ public class PublishedMetricSampler extends ReactCachedSampler {
     return metric;
   }
 
+  public void updateMetric(ReactMetric metric) {
+    ReactMetric replacement = Objects.requireNonNull(metric, "metric");
+    if (!this.metric.key().equals(replacement.key())) {
+      throw new IllegalArgumentException("Metric key cannot change for an existing sampler");
+    }
+
+    this.metric = replacement;
+  }
+
   @Override
   public String getId() {
     return samplerId;
@@ -32,12 +43,12 @@ public class PublishedMetricSampler extends ReactCachedSampler {
 
   @Override
   public String getName() {
-    return metric.displayName();
+    return metric().displayName();
   }
 
   @Override
   public Material getIcon() {
-    return metric.icon();
+    return metric().icon();
   }
 
   @Override
@@ -59,12 +70,13 @@ public class PublishedMetricSampler extends ReactCachedSampler {
   @Override
   public double onSample() {
     long now = System.currentTimeMillis();
+    ReactMetric currentMetric = metric();
 
-    if (!store.available(metric.key(), now)) {
+    if (!store.available(currentMetric.key(), now)) {
       return hasAvailableValue ? lastAvailableValue : 0D;
     }
 
-    double value = store.valueOr(metric.key(), 0D, now);
+    double value = store.valueOr(currentMetric.key(), 0D, now);
 
     if (Double.isFinite(value)) {
       lastAvailableValue = value;
@@ -80,7 +92,7 @@ public class PublishedMetricSampler extends ReactCachedSampler {
       return "---";
     }
 
-    return Form.f(t, metric.decimals());
+    return Form.f(t, metric().decimals());
   }
 
   @Override
@@ -89,7 +101,7 @@ public class PublishedMetricSampler extends ReactCachedSampler {
       return "";
     }
 
-    return suffixFor(metric);
+    return suffixFor(metric());
   }
 
   static String suffixFor(ReactMetric metric) {
@@ -117,6 +129,6 @@ public class PublishedMetricSampler extends ReactCachedSampler {
 
   @Override
   public boolean isSampleAvailable() {
-    return store.available(metric.key(), System.currentTimeMillis());
+    return store.available(metric().key(), System.currentTimeMillis());
   }
 }

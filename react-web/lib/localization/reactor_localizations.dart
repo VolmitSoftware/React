@@ -95,7 +95,11 @@ enum ReactorText {
   chunksLoadTime('screen.chunks.load_time', 'Load Time'),
   chunksGenTime('screen.chunks.gen_time', 'Gen Time'),
   chunksPersistence('screen.chunks.persistence', 'Persistence'),
-  chunksWorldSave('screen.chunks.world_save', 'World Save'),
+  chunksWorldSaveEventInterval(
+    'screen.chunks.world_save_event_interval',
+    'World Save Event Interval',
+  ),
+  chunksResidency('screen.chunks.residency', 'Residency'),
   chunksPdcBatcher('screen.chunks.pdc_batcher', 'PDC Batcher'),
   entitiesTitle('screen.entities.title', 'Entities'),
   entitiesSubtitle('screen.entities.subtitle', 'Entity counts and AI load'),
@@ -105,6 +109,8 @@ enum ReactorText {
   entitiesSpawnsPerSecond('screen.entities.spawns_per_second', 'Spawns/s'),
   entitiesPingJitter('screen.entities.ping_jitter', 'Ping Jitter'),
   entitiesJitter('screen.entities.series.jitter', 'Jitter'),
+  entitiesBreakdown('screen.entities.breakdown', 'Entity Breakdown'),
+  entitiesPlayerActivity('screen.entities.player_activity', 'Player Activity'),
   eventsTitle('screen.events.title', 'Events'),
   eventsSubtitle('screen.events.subtitle', 'Event dispatch and listeners'),
   eventsHandlesPerTick('screen.events.handles_per_tick', 'Handles/Tick'),
@@ -231,6 +237,12 @@ enum ReactorText {
   internalsCpuLoad('screen.internals.cpu_load', 'CPU Load'),
   internalsSystemLoad('screen.internals.system_load', 'System Load'),
   internalsOutsideLoad('screen.internals.outside_load', 'Outside Load'),
+  internalsTelemetryPipeline(
+    'screen.internals.telemetry_pipeline',
+    'Telemetry Pipeline',
+  ),
+  internalsWebTelemetry('screen.internals.web_telemetry', 'Web Telemetry'),
+  internalsJvmRuntime('screen.internals.jvm_runtime', 'JVM Runtime'),
   overviewTitle('screen.overview.title', 'Overview'),
   overviewSubtitle(
     'screen.overview.subtitle',
@@ -248,21 +260,28 @@ enum ReactorText {
   ),
   mechanicsTitle('screen.mechanics.title', 'Mechanics'),
   mechanicsSubtitle('screen.mechanics.subtitle', 'Game mechanic optimizations'),
-  mechanicsRedstoneTickTime(
-    'screen.mechanics.redstone_tick_time',
-    'Redstone Tick Time',
-  ),
   mechanicsBurstRate('screen.mechanics.burst_rate', 'Burst Rate'),
   mechanicsChainCoalescing(
     'screen.mechanics.chain_coalescing',
     'Chain Coalescing',
   ),
   mechanicsPhysicsFluids('screen.mechanics.physics_fluids', 'Physics & Fluids'),
-  mechanicsPhysicsTickTime(
-    'screen.mechanics.physics_tick_time',
-    'Physics Tick Time',
+  mechanicsRedstoneEventSpan(
+    'screen.mechanics.redstone_event_span',
+    'Redstone Event Span',
   ),
-  mechanicsFluidTickTime('screen.mechanics.fluid_tick_time', 'Fluid Tick Time'),
+  mechanicsHopperEventSpan(
+    'screen.mechanics.hopper_event_span',
+    'Hopper Event Span',
+  ),
+  mechanicsPhysicsEventSpan(
+    'screen.mechanics.physics_event_span',
+    'Physics Event Span',
+  ),
+  mechanicsFluidEventSpan(
+    'screen.mechanics.fluid_event_span',
+    'Fluid Event Span',
+  ),
   mechanicsCropFastForward(
     'screen.mechanics.crop_fast_forward',
     'Crop Fast-Forward',
@@ -331,7 +350,7 @@ enum ReactorText {
   integrationsNone('screen.integrations.none', 'No integrations detected'),
   integrationsNoneDescription(
     'screen.integrations.none_description',
-    'No Adapt, Iris, or Wormholes metrics are being reported by this server.',
+    'No integration metrics are being reported by this server.',
   ),
   integrationsPolicyLatency(
     'screen.integrations.policy_latency',
@@ -567,6 +586,10 @@ enum ReactorText {
     'No environment data available.',
   ),
   environmentRefresh('screen.environment.refresh', 'Refresh'),
+  environmentPersistentHostTelemetry(
+    'screen.environment.persistent_host_telemetry',
+    'Persistent Host Telemetry',
+  ),
   commonAll('common.all', 'All'),
   commonHealthy('common.healthy', 'Healthy'),
   commonWarning('common.warning', 'Warning'),
@@ -1434,10 +1457,35 @@ enum ReactorText {
     'React did not publish any chunk heatmap grids.',
   ),
   incidentCurrentState('screen.incident_center.current_state', 'Current state'),
+  incidentSampledAt('screen.incident_center.sampled_at', 'Sampled at'),
+  incidentCurrentDiagnosis(
+    'screen.incident_center.current_diagnosis',
+    'Current diagnosis',
+  ),
+  incidentNoDominantCause(
+    'screen.incident_center.no_dominant_cause',
+    'No measured factor is currently contributing score points.',
+  ),
+  incidentScoreUnavailable(
+    'screen.incident_center.score_unavailable',
+    'The incident score inputs are currently unavailable.',
+  ),
+  incidentPrimaryCauseValue(
+    'screen.incident_center.primary_cause_value',
+    '{metric} at {value} contributed {points} score points.',
+    <String>{'metric', 'value', 'points'},
+  ),
+  incidentHistory('screen.incident_center.history', 'Incident history'),
+  incidentScorePoints('screen.incident_center.score_points', 'points'),
+  incidentCause('screen.incident_center.cause', 'Cause'),
+  incidentLocation('screen.incident_center.location', 'Location'),
+  incidentActions('screen.incident_center.actions', 'Actions'),
+  incidentEvidence('screen.incident_center.evidence', 'Evidence'),
+  incidentDetails('screen.incident_center.details', 'Details'),
   incidentNoEvents('screen.incident_center.no_events', 'No incident events'),
   incidentNoEventsDescription(
     'screen.incident_center.no_events_description',
-    'React has not recorded an incident timeline.',
+    'React has not recorded a structured incident yet.',
   ),
   incidentNoFactors(
     'screen.incident_center.no_factors',

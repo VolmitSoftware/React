@@ -23,6 +23,7 @@ import art.arcane.react.React;
 import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.core.controller.SampleController;
+import art.arcane.react.core.incident.IncidentEvidence;
 import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Material;
 
@@ -31,8 +32,18 @@ import java.util.List;
 
 public class SamplerIncidentScore extends ReactCachedSampler {
   public static final String ID = "incident-score";
+  private static final List<MetricSpec> METRICS = List.of(
+      new MetricSpec(SamplerTickMsP95.ID, 0.30D, 50D, 150D),
+      new MetricSpec(SamplerTickSpikeRate.ID, 0.15D, 5D, 120D),
+      new MetricSpec(SamplerGcTimePercent.ID, 0.10D, 2D, 25D),
+      new MetricSpec(SamplerSchedulerBacklog.ID, 0.12D, 10D, 300D),
+      new MetricSpec(SamplerBacklogGrowthRate.ID, 0.08D, 1D, 80D),
+      new MetricSpec(SamplerPlayerPingP95.ID, 0.10D, 80D, 350D),
+      new MetricSpec(SamplerTopChunkCost.ID, 0.08D, 2D, 25D),
+      new MetricSpec(SamplerRedstoneBurstRate.ID, 0.07D, 2D, 80D)
+  );
 
-  public record Contribution(String name, double weight, double value) {}
+  private transient volatile IncidentScoreSnapshot latestSnapshot = IncidentScoreSnapshot.empty();
 
   public SamplerIncidentScore() {
     super(ID, 1000);
@@ -51,64 +62,104 @@ public class SamplerIncidentScore extends ReactCachedSampler {
 
   @Override
   public double onSample() {
-    return sampleOnMainThread(this::computeScore);
+    return sampleOnMainThread(this::captureSnapshot);
   }
 
-  public List<Contribution> contributions() {
-    double tickP95 = sample(SamplerTickMsP95.ID);
-    double tickSpikeRate = sample(SamplerTickSpikeRate.ID);
-    double gcPercent = sample(SamplerGcTimePercent.ID);
-    double backlog = sample(SamplerSchedulerBacklog.ID);
-    double backlogGrowth = Math.max(0D, sample(SamplerBacklogGrowthRate.ID));
-    double pingP95 = sample(SamplerPlayerPingP95.ID);
-    double topChunkCost = sample(SamplerTopChunkCost.ID);
-    double redstoneBurstRate = sample(SamplerRedstoneBurstRate.ID);
-
-    List<Contribution> list = new ArrayList<>(8);
-    list.add(new Contribution(SamplerTickMsP95.ID, 0.30, tickP95));
-    list.add(new Contribution(SamplerTickSpikeRate.ID, 0.15, tickSpikeRate));
-    list.add(new Contribution(SamplerGcTimePercent.ID, 0.10, gcPercent));
-    list.add(new Contribution(SamplerSchedulerBacklog.ID, 0.12, backlog));
-    list.add(new Contribution(SamplerBacklogGrowthRate.ID, 0.08, backlogGrowth));
-    list.add(new Contribution(SamplerPlayerPingP95.ID, 0.10, pingP95));
-    list.add(new Contribution(SamplerTopChunkCost.ID, 0.08, topChunkCost));
-    list.add(new Contribution(SamplerRedstoneBurstRate.ID, 0.07, redstoneBurstRate));
-    return list;
+  @Override
+  public boolean isSampleAvailable() {
+    return latestSnapshot.available();
   }
 
-  private double computeScore() {
-    double tickP95 = sample(SamplerTickMsP95.ID);
-    double tickSpikeRate = sample(SamplerTickSpikeRate.ID);
-    double gcPercent = sample(SamplerGcTimePercent.ID);
-    double backlog = sample(SamplerSchedulerBacklog.ID);
-    double backlogGrowth = Math.max(0D, sample(SamplerBacklogGrowthRate.ID));
-    double pingP95 = sample(SamplerPlayerPingP95.ID);
-    double topChunkCost = sample(SamplerTopChunkCost.ID);
-    double redstoneBurstRate = sample(SamplerRedstoneBurstRate.ID);
-
-    double score = 0;
-    score += norm(tickP95, 50, 150) * 0.30;
-    score += norm(tickSpikeRate, 5, 120) * 0.15;
-    score += norm(gcPercent, 2, 25) * 0.10;
-    score += norm(backlog, 10, 300) * 0.12;
-    score += norm(backlogGrowth, 1, 80) * 0.08;
-    score += norm(pingP95, 80, 350) * 0.10;
-    score += norm(topChunkCost, 2, 25) * 0.08;
-    score += norm(redstoneBurstRate, 2, 80) * 0.07;
-    return SamplerMath.clip(score * 100D, 0, 100);
+  public IncidentScoreSnapshot snapshot() {
+    return latestSnapshot;
   }
 
-  private double sample(String id) {
-    Sampler sampler = getSampler(id);
-    return sampler == null ? 0D : sampler.sample();
+  public List<IncidentEvidence> contributions() {
+    return latestSnapshot.evidence();
   }
 
-  private double norm(double value, double min, double max) {
-    if (max <= min) {
-      return 0;
+  @Override
+  public void start() {
+    latestSnapshot = IncidentScoreSnapshot.empty();
+    super.start();
+  }
+
+  private double captureSnapshot() {
+    List<CapturedMetric> captured = new ArrayList<>(METRICS.size());
+    double availableWeight = 0D;
+    for (MetricSpec spec : METRICS) {
+      Sampler sampler = getSampler(spec.id());
+      boolean available = sampler != null && sampler.isSampleAvailable();
+      double value = 0D;
+      if (available) {
+        value = sampler.sample();
+        available = Double.isFinite(value);
+      }
+      if (available && SamplerBacklogGrowthRate.ID.equals(spec.id())) {
+        value = Math.max(0D, value);
+      }
+      if (available) {
+        availableWeight += spec.weight();
+      }
+      captured.add(new CapturedMetric(spec, sampler, available, value));
     }
 
-    return SamplerMath.clip((value - min) / (max - min), 0, 1);
+    List<IncidentEvidence> evidence = new ArrayList<>(captured.size());
+    double score = 0D;
+    for (CapturedMetric metric : captured) {
+      MetricSpec spec = metric.spec();
+      double pressure = metric.available()
+          ? SamplerMath.clip((metric.value() - spec.minimum()) / (spec.maximum() - spec.minimum()), 0D, 1D)
+          : 0D;
+      double scorePoints = metric.available() && availableWeight > 0D
+          ? pressure * (spec.weight() / availableWeight) * 100D
+          : 0D;
+      score += scorePoints;
+      evidence.add(new IncidentEvidence(
+          spec.id(),
+          metric.sampler() == null ? title(spec.id()) : metric.sampler().getName(),
+          metric.available(),
+          metric.value(),
+          metric.available() ? display(metric.sampler(), metric.value()) : "Unavailable",
+          pressure,
+          spec.weight(),
+          scorePoints,
+          spec.minimum(),
+          spec.maximum()
+      ));
+    }
+
+    double clippedScore = SamplerMath.clip(score, 0D, 100D);
+    latestSnapshot = new IncidentScoreSnapshot(
+        System.currentTimeMillis(),
+        clippedScore,
+        availableWeight > 0D,
+        evidence
+    );
+    return clippedScore;
+  }
+
+  private String display(Sampler sampler, double value) {
+    if (sampler == null) {
+      return Form.f(value, 2);
+    }
+    String suffix = sampler.formattedSuffix(value);
+    return sampler.formattedValue(value) + (suffix == null || suffix.isBlank() ? "" : " " + suffix);
+  }
+
+  private String title(String id) {
+    String[] words = id.split("-");
+    StringBuilder title = new StringBuilder(id.length());
+    for (String word : words) {
+      if (word.isEmpty()) {
+        continue;
+      }
+      if (!title.isEmpty()) {
+        title.append(' ');
+      }
+      title.append(Character.toUpperCase(word.charAt(0))).append(word.substring(1));
+    }
+    return title.toString();
   }
 
   @Override
@@ -119,5 +170,26 @@ public class SamplerIncidentScore extends ReactCachedSampler {
   @Override
   public String formattedSuffix(double t) {
     return "INCIDENT";
+  }
+
+  private record MetricSpec(String id, double weight, double minimum, double maximum) {
+  }
+
+  private record CapturedMetric(MetricSpec spec, Sampler sampler, boolean available, double value) {
+  }
+
+  public record IncidentScoreSnapshot(
+      long sampledAtMs,
+      double score,
+      boolean available,
+      List<IncidentEvidence> evidence
+  ) {
+    public IncidentScoreSnapshot {
+      evidence = List.copyOf(evidence);
+    }
+
+    public static IncidentScoreSnapshot empty() {
+      return new IncidentScoreSnapshot(0L, 0D, false, List.of());
+    }
   }
 }

@@ -19,7 +19,6 @@
 
 package art.arcane.react.content.sampler;
 
-import art.arcane.chrono.PrecisionStopwatch;
 import art.arcane.react.api.event.layer.ServerTickEvent;
 import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.volmlib.util.format.Form;
@@ -30,24 +29,25 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockRedstoneEvent;
 
-public class SamplerRedstoneTickTime extends ReactCachedSampler implements Listener {
-  public static final String ID = "redstone-tick-time";
-  private int tickAverage = 15;
-  private transient double maxDuration;
-  private transient PrecisionStopwatch stopwatch;
-  private transient RollingSequence average;
-  private transient boolean running;
+import java.util.concurrent.atomic.LongAccumulator;
 
-  public SamplerRedstoneTickTime() {
+public class SamplerRedstoneEventSpan extends ReactCachedSampler implements Listener {
+  public static final String ID = "redstone-event-span";
+  private int tickAverage = 15;
+  private transient final LongAccumulator firstEventNanos = new LongAccumulator(Math::min, Long.MAX_VALUE);
+  private transient final LongAccumulator lastEventNanos = new LongAccumulator(Math::max, 0L);
+  private transient RollingSequence average;
+
+  public SamplerRedstoneEventSpan() {
     super(ID, 50);
   }
 
   @Override
   public void start() {
     super.start();
-    ensureRuntime();
-    running = false;
-    maxDuration = 0;
+    average = new RollingSequence(Math.max(1, tickAverage));
+    firstEventNanos.reset();
+    lastEventNanos.reset();
   }
 
   @Override
@@ -57,27 +57,23 @@ public class SamplerRedstoneTickTime extends ReactCachedSampler implements Liste
 
   @EventHandler
   public void on(ServerTickEvent e) {
-    ensureRuntime();
-    average.put(maxDuration);
-    running = false;
-    maxDuration = 0;
+    RollingSequence currentAverage = average;
+    long first = firstEventNanos.getThenReset();
+    long last = lastEventNanos.getThenReset();
+    if (currentAverage != null) {
+      currentAverage.put(first == Long.MAX_VALUE || last <= first ? 0D : (last - first) / 1.0E6D);
+    }
   }
 
   @EventHandler
   public void on(BlockRedstoneEvent e) {
-    ensureRuntime();
-    if (!running) {
-      stopwatch.resetAndBegin();
-      running = true;
-    } else {
-      maxDuration = stopwatch.getMilliseconds();
-    }
+    recordEvent();
   }
 
   @Override
   public double onSample() {
-    ensureRuntime();
-    return average == null ? 0D : average.getAverage();
+    RollingSequence currentAverage = average;
+    return currentAverage == null ? 0D : currentAverage.getAverage();
   }
 
   @Override
@@ -97,15 +93,12 @@ public class SamplerRedstoneTickTime extends ReactCachedSampler implements Liste
 
   @Override
   public String formattedSuffix(double t) {
-    return Form.durationSplit(t, 2)[1] + " RED";
+    return Form.durationSplit(t, 2)[1] + " RED EVT SPAN";
   }
 
-  private synchronized void ensureRuntime() {
-    if (average == null) {
-      average = new RollingSequence(Math.max(1, tickAverage));
-    }
-    if (stopwatch == null) {
-      stopwatch = new PrecisionStopwatch();
-    }
+  private void recordEvent() {
+    long now = System.nanoTime();
+    firstEventNanos.accumulate(now);
+    lastEventNanos.accumulate(now);
   }
 }

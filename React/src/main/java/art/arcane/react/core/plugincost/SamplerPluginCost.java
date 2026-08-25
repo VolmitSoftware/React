@@ -67,8 +67,7 @@ public class SamplerPluginCost extends ReactCachedSampler {
     }
 
     controller.markSamplerActivity();
-    Double harvested = controller.snapshotPluginEventTimeMS().get(pluginName);
-    average.put(harvested == null ? 0D : harvested);
+    average.put(controller.getPluginEventTimeMS(pluginName));
     double windowSeconds = Math.max(1L, controller.getTinterval()) / 1000.0D;
     return average.getAverage() / windowSeconds;
   }

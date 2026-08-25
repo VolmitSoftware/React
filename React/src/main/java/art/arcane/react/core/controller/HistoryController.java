@@ -22,6 +22,7 @@ import lombok.Data;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumMap;
@@ -74,11 +75,14 @@ public class HistoryController implements IController {
   private transient AtomicReference<MetricSnapshot> latestSnapshot;
   private transient AtomicLong sequence;
   private transient AtomicLong droppedSnapshots;
+  private transient AtomicLong lastCaptureDurationNanos;
+  private transient AtomicLong lastWriteDurationNanos;
+  private transient AtomicLong lastSuccessfulPersistMs;
   private transient ScheduledExecutorService captureExecutor;
   private transient ThreadPoolExecutor writerExecutor;
-  private transient HistoryStore historyStore;
+  private transient volatile HistoryStore historyStore;
   private transient HistoryWal wal;
-  private transient HistoryQueryEngine queryEngine;
+  private transient volatile HistoryQueryEngine queryEngine;
   private transient HistorySegment activeSegment;
   private transient Object activeSegmentLock;
   private transient Map<String, Long> samplerFailureLogMs;
@@ -86,18 +90,25 @@ public class HistoryController implements IController {
   private transient volatile boolean stopping;
   private transient volatile Throwable storageFailure;
   private transient long lastCaptureNanos;
-  private transient long lastPersistedBucket;
+  private transient AtomicLong lastPersistedBucket;
   private transient long lastWalForceMs;
   private transient long lastWriterFailureLogMs;
   private transient long lastQueueFailureLogMs;
+  private transient volatile int registeredSamplerCount;
+  private transient volatile int availableSamplerCount;
+  private transient volatile int unavailableSamplerCount;
+  private transient volatile int failedSamplerCount;
 
   public HistoryController() {
     latestSnapshot = new AtomicReference<>(MetricSnapshot.empty());
     sequence = new AtomicLong();
     droppedSnapshots = new AtomicLong();
+    lastCaptureDurationNanos = new AtomicLong();
+    lastWriteDurationNanos = new AtomicLong();
+    lastSuccessfulPersistMs = new AtomicLong();
+    lastPersistedBucket = new AtomicLong(Long.MIN_VALUE);
     activeSegmentLock = new Object();
     samplerFailureLogMs = new HashMap<>();
-    lastPersistedBucket = Long.MIN_VALUE;
   }
 
   @Override
@@ -115,16 +126,26 @@ public class HistoryController implements IController {
     latestSnapshot.set(MetricSnapshot.empty());
     sequence.set(0L);
     droppedSnapshots.set(0L);
+    lastCaptureDurationNanos.set(0L);
+    lastWriteDurationNanos.set(0L);
+    lastSuccessfulPersistMs.set(0L);
     samplerFailureLogMs.clear();
     storageOperational = false;
     stopping = false;
     storageFailure = null;
+    historyStore = null;
+    wal = null;
+    queryEngine = null;
     activeSegment = null;
     lastCaptureNanos = 0L;
-    lastPersistedBucket = Long.MIN_VALUE;
+    lastPersistedBucket.set(Long.MIN_VALUE);
     lastWalForceMs = 0L;
     lastWriterFailureLogMs = 0L;
     lastQueueFailureLogMs = 0L;
+    registeredSamplerCount = 0;
+    availableSamplerCount = 0;
+    unavailableSamplerCount = 0;
+    failedSamplerCount = 0;
   }
 
   @Override
@@ -230,7 +251,9 @@ public class HistoryController implements IController {
           .toList();
       return new HistoryQueryResult(fromMs, toMs, resolutionMs, throughSequence, throughMs, empty);
     }
-    return engine.query(ids, fromMs, toMs, resolutionMs, throughSequence, throughMs);
+    synchronized (activeSegmentLock) {
+      return engine.query(ids, fromMs, toMs, resolutionMs, throughSequence, throughMs);
+    }
   }
 
   public int effectiveMaxQuerySeries() {
@@ -250,13 +273,43 @@ public class HistoryController implements IController {
     return store == null ? 0L : store.diskBytes();
   }
 
+  public long walDiskBytes() throws IOException {
+    HistoryStore store = historyStore;
+    return store == null || !Files.exists(store.walPath()) ? 0L : Files.size(store.walPath());
+  }
+
+  public int writerQueueDepth() {
+    ThreadPoolExecutor writer = writerExecutor;
+    return writer == null ? 0 : writer.getQueue().size();
+  }
+
+  public int writerQueueCapacity() {
+    return WRITER_QUEUE_CAPACITY;
+  }
+
+  public long droppedSnapshotsTotal() {
+    return droppedSnapshots.get();
+  }
+
+  public long persistLagMs(long nowMs) {
+    long persistedAtMs = lastSuccessfulPersistMs.get();
+    return persistedAtMs == 0L ? 0L : Math.max(0L, nowMs - persistedAtMs);
+  }
+
+  public double lastCaptureDurationMs() {
+    return lastCaptureDurationNanos.get() / 1_000_000D;
+  }
+
+  public double lastWriteDurationMs() {
+    return lastWriteDurationNanos.get() / 1_000_000D;
+  }
+
   private void initializeStorage() {
     File root = React.instance.getDataFile("history");
     HistoryStore store = new HistoryStore(root.toPath(), effectiveCompressionLevel());
     try {
       store.initialize();
       historyStore = store;
-      queryEngine = new HistoryQueryEngine(store, this::activePoints);
       if (enabled) {
         HistoryWal localWal = new HistoryWal(store.walPath());
         HistoryWal.WalRecovery recovery = localWal.open();
@@ -269,6 +322,7 @@ public class HistoryController implements IController {
           React.warn("Recovered React history through the last valid journal frame after an incomplete or corrupt tail.");
         }
       }
+      queryEngine = new HistoryQueryEngine(store, this::activePoints);
     } catch (Throwable failure) {
       storageFailure = failure;
       storageOperational = false;
@@ -337,6 +391,7 @@ public class HistoryController implements IController {
       return;
     }
     lastCaptureNanos = nowNanos;
+    long captureStartedNanos = System.nanoTime();
     try {
       MetricSnapshot snapshot = captureSnapshot();
       latestSnapshot.set(snapshot);
@@ -345,12 +400,19 @@ public class HistoryController implements IController {
         store.updateLiveDescriptors(snapshot);
       }
       long bucket = rawBucket(snapshot.capturedAtMs());
-      if (enabled && storageOperational && bucket != lastPersistedBucket) {
-        lastPersistedBucket = bucket;
-        enqueue(snapshot);
+      long previousBucket = lastPersistedBucket.get();
+      if (enabled
+          && storageOperational
+          && bucket != previousBucket
+          && lastPersistedBucket.compareAndSet(previousBucket, bucket)) {
+        if (!enqueue(snapshot)) {
+          lastPersistedBucket.compareAndSet(bucket, previousBucket);
+        }
       }
     } catch (Throwable failure) {
       React.reportError("React metric history capture failed", failure);
+    } finally {
+      lastCaptureDurationNanos.set(System.nanoTime() - captureStartedNanos);
     }
   }
 
@@ -360,15 +422,27 @@ public class HistoryController implements IController {
     long capturedAtMs = System.currentTimeMillis();
     long currentSequence = sequence.incrementAndGet();
     if (registry == null) {
+      registeredSamplerCount = 0;
+      availableSamplerCount = 0;
+      unavailableSamplerCount = 0;
+      failedSamplerCount = 0;
       return MetricSnapshot.of(currentSequence, capturedAtMs, List.of());
     }
     List<Sampler> samplers = new ArrayList<>(registry.all());
     samplers.sort(Comparator.comparing(Sampler::getId));
     List<MetricSnapshotValue> values = new ArrayList<>(samplers.size());
+    int availableCount = 0;
+    int unavailableCount = 0;
+    int failureCount = 0;
     for (Sampler sampler : samplers) {
       try {
         double value = sampler.sample();
         boolean available = sampler.isSampleAvailable() && Double.isFinite(value);
+        if (available) {
+          availableCount++;
+        } else {
+          unavailableCount++;
+        }
         String suffix = sampler.formattedSuffix(value);
         String display = sampler.formattedValue(value);
         values.add(new MetricSnapshotValue(
@@ -380,6 +454,8 @@ public class HistoryController implements IController {
             available
         ));
       } catch (Throwable failure) {
+        unavailableCount++;
+        failureCount++;
         recordSamplerFailure(sampler, failure, capturedAtMs);
         values.add(new MetricSnapshotValue(
             sampler.getId(),
@@ -391,17 +467,22 @@ public class HistoryController implements IController {
         ));
       }
     }
+    registeredSamplerCount = samplers.size();
+    availableSamplerCount = availableCount;
+    unavailableSamplerCount = unavailableCount;
+    failedSamplerCount = failureCount;
     return MetricSnapshot.of(currentSequence, capturedAtMs, values);
   }
 
-  private void enqueue(MetricSnapshot snapshot) {
+  private boolean enqueue(MetricSnapshot snapshot) {
     ThreadPoolExecutor writer = writerExecutor;
     if (writer == null || writer.isShutdown()) {
       droppedSnapshots.incrementAndGet();
-      return;
+      return false;
     }
     try {
       writer.execute(() -> persistSafely(snapshot));
+      return true;
     } catch (RejectedExecutionException failure) {
       droppedSnapshots.incrementAndGet();
       long nowMs = System.currentTimeMillis();
@@ -409,19 +490,27 @@ public class HistoryController implements IController {
         lastQueueFailureLogMs = nowMs;
         React.warn("React history writer queue is saturated; the affected sample is recorded as a gap.", failure);
       }
+      return false;
     }
   }
 
   private void persistSafely(MetricSnapshot snapshot) {
+    long writeStartedNanos = System.nanoTime();
     try {
       persist(snapshot);
+      storageFailure = null;
+      lastSuccessfulPersistMs.set(System.currentTimeMillis());
     } catch (Throwable failure) {
       storageFailure = failure;
+      long failedBucket = rawBucket(snapshot.capturedAtMs());
+      lastPersistedBucket.compareAndSet(failedBucket, Long.MIN_VALUE);
       long nowMs = System.currentTimeMillis();
       if (nowMs - lastWriterFailureLogMs >= FAILURE_LOG_INTERVAL_MS) {
         lastWriterFailureLogMs = nowMs;
         React.reportError("Failed to persist React metric history", failure);
       }
+    } finally {
+      lastWriteDurationNanos.set(System.nanoTime() - writeStartedNanos);
     }
   }
 
