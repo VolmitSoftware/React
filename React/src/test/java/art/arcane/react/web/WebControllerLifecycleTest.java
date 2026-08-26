@@ -22,11 +22,13 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 
@@ -60,6 +62,34 @@ class WebControllerLifecycleTest {
 
         assertStopped(blockingController);
         Assertions.assertEquals(0, logger.getHandlers().length);
+        assertPortAvailable(port);
+    }
+
+    @Test
+    void stoppedStartupCannotBindAfterReplacementStarts(@TempDir File dataFolder) throws Exception {
+        int port = reservePort();
+        Logger logger = Logger.getLogger("react-web-bind-generation-" + System.nanoTime());
+        BindBlockingWebController bindBlockingController = new BindBlockingWebController(logger);
+        controller = bindBlockingController;
+        configure(bindBlockingController, dataFolder, port);
+
+        bindBlockingController.start();
+        bindBlockingController.postStart();
+        Assertions.assertTrue(bindBlockingController.awaitFirstBind(5, TimeUnit.SECONDS));
+
+        bindBlockingController.stop();
+        bindBlockingController.start();
+        bindBlockingController.postStart();
+        bindBlockingController.awaitStart(5000L);
+        bindBlockingController.releaseFirstBind();
+        Assertions.assertTrue(bindBlockingController.awaitAsyncCompletions(5, TimeUnit.SECONDS));
+
+        Assertions.assertEquals(port, bindBlockingController.getBoundPort());
+        Assertions.assertNull(bindBlockingController.getStartFailure());
+        assertPing(port);
+
+        bindBlockingController.stop();
+        assertStopped(bindBlockingController);
         assertPortAvailable(port);
     }
 
@@ -103,26 +133,55 @@ class WebControllerLifecycleTest {
     }
 
     @Test
-    void bindFailureLeavesListenerUnboundAndPairingUnavailable(@TempDir File dataFolder) throws Exception {
-        Logger logger = Logger.getLogger("react-web-bind-failure-" + System.nanoTime());
+    void occupiedConfiguredPortFallsForwardToTheNextAvailablePort(@TempDir File dataFolder) throws Exception {
+        Logger logger = Logger.getLogger("react-web-bind-fallback-" + System.nanoTime());
         AsyncWebController asyncController = new AsyncWebController(logger);
         controller = asyncController;
 
-        try (ServerSocket occupied = new ServerSocket()) {
-            occupied.bind(new InetSocketAddress("127.0.0.1", 0));
-            configure(asyncController, dataFolder, occupied.getLocalPort());
+        try (PortReservation occupied = reserveConsecutivePorts(3)) {
+            int requestedPort = occupied.firstPort();
+            configure(asyncController, dataFolder, requestedPort);
 
             asyncController.start();
             asyncController.postStart();
-            Assertions.assertThrows(RuntimeException.class, () -> asyncController.awaitStart(5000L));
+            asyncController.awaitStart(5000L);
 
-            Assertions.assertNull(asyncController.getApp());
-            Assertions.assertEquals(0, asyncController.getBoundPort());
-            Assertions.assertNotNull(asyncController.getStartFailure());
-            Assertions.assertTrue(asyncController.pairingUnavailableReason().contains("failed to start"));
-            Assertions.assertThrows(IllegalStateException.class, asyncController::resolveDirectUrl);
+            Assertions.assertEquals(requestedPort + 3, asyncController.getBoundPort());
+            Assertions.assertNull(asyncController.getStartFailure());
+            Assertions.assertNull(asyncController.pairingUnavailableReason());
+            Assertions.assertEquals(
+                "http://127.0.0.1:" + (requestedPort + 3),
+                asyncController.resolveDirectUrl()
+            );
+            assertPing(asyncController.getBoundPort());
             Assertions.assertTrue(asyncController.getTokenStore().all().isEmpty());
             Assertions.assertFalse(asyncController.tokensFile().exists());
+        }
+    }
+
+    @Test
+    void exhaustedPortSearchUsesConciseBindFailurePath(@TempDir File dataFolder) throws Exception {
+        Logger logger = Logger.getLogger("react-web-bind-exhaustion-" + System.nanoTime());
+        LimitedPortWebController limitedController = new LimitedPortWebController(logger, 1);
+        controller = limitedController;
+
+        try (PortReservation occupied = reserveConsecutivePorts(1)) {
+            int requestedPort = occupied.firstPort();
+            configure(limitedController, dataFolder, requestedPort);
+
+            limitedController.start();
+            limitedController.postStart();
+            Assertions.assertThrows(RuntimeException.class, () -> limitedController.awaitStart(5000L));
+
+            Assertions.assertNull(limitedController.getApp());
+            Assertions.assertEquals(0, limitedController.getBoundPort());
+            Assertions.assertNotNull(limitedController.getStartFailure());
+            Assertions.assertTrue(limitedController.pairingUnavailableReason().contains("failed to start"));
+            Assertions.assertEquals(
+                "React web listener could not bind to port range " + requestedPort
+                    + "; listener remains disabled.",
+                limitedController.getBindFailureMessage()
+            );
         }
     }
 
@@ -212,6 +271,44 @@ class WebControllerLifecycleTest {
         }
     }
 
+    private PortReservation reserveConsecutivePorts(int occupiedCount) throws IOException {
+        for (int candidatePort = 20000; candidatePort < 65000 - occupiedCount; candidatePort++) {
+            List<ServerSocket> occupied = new ArrayList<>(occupiedCount);
+            try {
+                for (int offset = 0; offset < occupiedCount; offset++) {
+                    ServerSocket socket = new ServerSocket();
+                    socket.bind(new InetSocketAddress("127.0.0.1", candidatePort + offset));
+                    occupied.add(socket);
+                }
+                try (ServerSocket successor = new ServerSocket()) {
+                    successor.bind(new InetSocketAddress("127.0.0.1", candidatePort + occupiedCount));
+                }
+                return new PortReservation(candidatePort, occupied);
+            } catch (IOException failure) {
+                closeSockets(occupied);
+            }
+        }
+        throw new IOException("Could not reserve consecutive occupied ports with an available successor");
+    }
+
+    private static void closeSockets(List<ServerSocket> sockets) throws IOException {
+        IOException closeFailure = null;
+        for (ServerSocket socket : sockets) {
+            try {
+                socket.close();
+            } catch (IOException failure) {
+                if (closeFailure == null) {
+                    closeFailure = failure;
+                } else {
+                    closeFailure.addSuppressed(failure);
+                }
+            }
+        }
+        if (closeFailure != null) {
+            throw closeFailure;
+        }
+    }
+
     private void assertPortAvailable(int port) throws IOException {
         try (ServerSocket socket = new ServerSocket()) {
             socket.setReuseAddress(true);
@@ -244,6 +341,35 @@ class WebControllerLifecycleTest {
         @Override
         protected Logger resolveConsoleLogger() {
             return logger;
+        }
+    }
+
+    private static final class LimitedPortWebController extends AsyncWebController {
+        private final int attempts;
+        private final AtomicReference<String> bindFailureMessage = new AtomicReference<>();
+
+        private LimitedPortWebController(Logger logger, int attempts) {
+            super(logger);
+            this.attempts = attempts;
+        }
+
+        @Override
+        protected int portSearchAttempts() {
+            return attempts;
+        }
+
+        @Override
+        protected void reportPortBindFailure(int requestedPort, int lastPort) {
+            String ports = requestedPort == lastPort
+                ? Integer.toString(requestedPort)
+                : requestedPort + "-" + lastPort;
+            bindFailureMessage.set(
+                "React web listener could not bind to port range " + ports + "; listener remains disabled."
+            );
+        }
+
+        private String getBindFailureMessage() {
+            return bindFailureMessage.get();
         }
     }
 
@@ -294,6 +420,56 @@ class WebControllerLifecycleTest {
         }
     }
 
+    private static final class BindBlockingWebController extends AsyncWebController {
+        private final AtomicBoolean blockFirstBind = new AtomicBoolean(true);
+        private final CountDownLatch firstBind = new CountDownLatch(1);
+        private final CountDownLatch releaseFirstBind = new CountDownLatch(1);
+        private final CountDownLatch asyncCompletions = new CountDownLatch(2);
+
+        private BindBlockingWebController(Logger logger) {
+            super(logger);
+        }
+
+        @Override
+        protected void executeAsync(Runnable runnable) {
+            Thread.ofVirtual().start(() -> {
+                try {
+                    runnable.run();
+                } finally {
+                    asyncCompletions.countDown();
+                }
+            });
+        }
+
+        @Override
+        protected void beforeListenerBind() {
+            if (!blockFirstBind.compareAndSet(true, false)) {
+                return;
+            }
+            firstBind.countDown();
+            try {
+                if (!releaseFirstBind.await(5, TimeUnit.SECONDS)) {
+                    throw new IllegalStateException("Timed out waiting to release WebController listener bind");
+                }
+            } catch (InterruptedException failure) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("Interrupted while waiting to release WebController listener bind", failure);
+            }
+        }
+
+        private boolean awaitFirstBind(long timeout, TimeUnit unit) throws InterruptedException {
+            return firstBind.await(timeout, unit);
+        }
+
+        private void releaseFirstBind() {
+            releaseFirstBind.countDown();
+        }
+
+        private boolean awaitAsyncCompletions(long timeout, TimeUnit unit) throws InterruptedException {
+            return asyncCompletions.await(timeout, unit);
+        }
+    }
+
     private static final class ContextClassLoaderWebController extends AsyncWebController {
         private final ClassLoader marker;
         private final AtomicReference<ClassLoader> startupContextClassLoader = new AtomicReference<>();
@@ -335,6 +511,13 @@ class WebControllerLifecycleTest {
 
         private ClassLoader getRestoredContextClassLoader() {
             return restoredContextClassLoader.get();
+        }
+    }
+
+    private record PortReservation(int firstPort, List<ServerSocket> sockets) implements AutoCloseable {
+        @Override
+        public void close() throws IOException {
+            closeSockets(sockets);
         }
     }
 }

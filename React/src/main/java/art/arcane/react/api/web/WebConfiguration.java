@@ -36,7 +36,7 @@ public class WebConfiguration {
   @ConfigDoc(value = "IP address the web listener binds to.", impact = "The default :: wildcard accepts IPv6 and IPv4-mapped traffic for LAN, container, and port-forwarded access. Use a loopback address only behind a same-host reverse proxy or relay.")
   private String listenAddress = "::";
 
-  @ConfigDoc(value = "TCP port the web server listens on.", impact = "Ensure this port is not already in use. Requires a server restart to take effect.")
+  @ConfigDoc(value = "Preferred TCP port for the web server.", impact = "If this port is occupied, React tries the next 99 ports in order and uses the actual bound port for relay loopback and generated direct URLs when advertisedUrl is empty. Requires a React reload or server restart to take effect.")
   private int port = 9696;
 
   @ConfigDoc(value = "Public base URL advertised to direct API clients.", impact = "Set this to the HTTPS URL of a reverse proxy when the listener is exposed beyond localhost. React's embedded listener remains HTTP-only. Requires a React reload or server restart to take effect.")

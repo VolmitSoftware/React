@@ -87,13 +87,20 @@ import com.google.gson.Gson;
 import io.javalin.Javalin;
 import io.javalin.http.HttpResponseException;
 import io.javalin.http.NotFoundResponse;
+import io.javalin.util.JavalinBindException;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.BindException;
 import java.net.URI;
+import java.nio.channels.ServerSocketChannel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.IntFunction;
@@ -117,6 +124,7 @@ public class WebController implements IController {
     private static final int WS_SEND_THREADS = 4;
     private static final int WS_SEND_QUEUE_CAPACITY = 2048;
     private static final int WS_UNAUTHENTICATED_CAPACITY = 2048;
+    private static final int PORT_SEARCH_ATTEMPTS = 100;
     private static final long WS_AUTHENTICATION_TIMEOUT_MILLIS = 5000L;
     private static final long WS_AUTHENTICATION_SWEEP_MILLIS = 1000L;
 
@@ -218,6 +226,20 @@ public class WebController implements IController {
             thread.setDaemon(true);
             return thread;
         });
+    }
+
+    protected int portSearchAttempts() {
+        return PORT_SEARCH_ATTEMPTS;
+    }
+
+    protected void reportPortBindFailure(int requestedPort, int lastPort) {
+        String ports = requestedPort == lastPort
+            ? Integer.toString(requestedPort)
+            : requestedPort + "-" + lastPort;
+        React.warn("React web listener could not bind to port range " + ports + "; listener remains disabled.");
+    }
+
+    protected void beforeListenerBind() {
     }
 
     @Override
@@ -433,15 +455,27 @@ public class WebController implements IController {
                 IdentityResource identity = new IdentityResource(this::resolveIdentity);
                 WebAuth auth = new WebAuth(secret, tokenStore);
                 List<String> origins = config.getCorsOrigins();
-                Javalin javalin = Javalin.create(cfg -> cfg.bundledPlugins.enableCors(cors -> cors.addRule(rule -> {
-                    if (origins.isEmpty()) {
-                        rule.anyHost();
-                    } else {
-                        for (String origin : origins) {
-                            rule.allowHost(origin);
+                String listenAddress = config.getListenAddress();
+                int requestedPort = config.getPort();
+                int searchAttempts = Math.max(1, portSearchAttempts());
+                Javalin javalin = Javalin.create(cfg -> {
+                    cfg.bundledPlugins.enableCors(cors -> cors.addRule(rule -> {
+                        if (origins.isEmpty()) {
+                            rule.anyHost();
+                        } else {
+                            for (String origin : origins) {
+                                rule.allowHost(origin);
+                            }
                         }
-                    }
-                })));
+                    }));
+                    cfg.jetty.addConnector((server, httpConfiguration) -> new IncrementingPortConnector(
+                        server,
+                        httpConfiguration,
+                        listenAddress,
+                        requestedPort,
+                        searchAttempts
+                    ));
+                });
                 runtime.app = javalin;
                 javalin.exception(HttpResponseException.class, (e, ctx) -> {
                     String msg = e.getMessage() == null ? defaultMessageFor(e.getStatus()) : e.getMessage();
@@ -887,25 +921,8 @@ public class WebController implements IController {
                 if (!isCurrentGeneration(generation)) {
                     return;
                 }
-                javalin.start(config.getListenAddress(), config.getPort());
-                runtime.boundPort = javalin.port();
-                if (!isCurrentGeneration(generation)) {
-                    return;
-                }
-                if (config.isRelayEnabled() && config.getRelayUrl() != null && !config.getRelayUrl().isBlank()) {
-                    try {
-                        RelayLoopbackBridge bridge = createRelayLoopbackBridge(runtime.boundPort);
-                        RelayClient client = new RelayClient(config.getRelayUrl(), WebController.this.identity, bridge, new RelayBackoff(1000L, 30000L));
-                        runtime.relayClient = client;
-                        client.start();
-                    } catch (Throwable t) {
-                        React.warn("RelayClient startup failed; relay will be unavailable", t);
-                        closeRelayClient(runtime);
-                    }
-                }
-                if (publishRuntime(generation, runtime)) {
-                    published = true;
-                }
+                beforeListenerBind();
+                published = bindAndPublishRuntime(generation, runtime, javalin, requestedPort);
         } catch (Throwable failure) {
             recordStartupFailure(generation, failure);
         } finally {
@@ -950,12 +967,73 @@ public class WebController implements IController {
         return true;
     }
 
+    private boolean bindAndPublishRuntime(
+        long generation,
+        WebRuntime runtime,
+        Javalin javalin,
+        int requestedPort
+    ) {
+        synchronized (this) {
+            if (!starting || lifecycleGeneration != generation) {
+                return false;
+            }
+            javalin.start();
+            runtime.boundPort = javalin.port();
+            if (requestedPort > 0 && runtime.boundPort != requestedPort) {
+                React.warn("React web port " + requestedPort + " was unavailable; listener started on "
+                    + runtime.boundPort + ".");
+            }
+            if (config.isRelayEnabled() && config.getRelayUrl() != null && !config.getRelayUrl().isBlank()) {
+                try {
+                    RelayLoopbackBridge bridge = createRelayLoopbackBridge(runtime.boundPort);
+                    RelayClient client = new RelayClient(
+                        config.getRelayUrl(),
+                        WebController.this.identity,
+                        bridge,
+                        new RelayBackoff(1000L, 30000L)
+                    );
+                    runtime.relayClient = client;
+                    client.start();
+                } catch (Throwable failure) {
+                    React.warn("RelayClient startup failed; relay will be unavailable", failure);
+                    closeRelayClient(runtime);
+                }
+            }
+            return publishRuntime(generation, runtime);
+        }
+    }
+
     private synchronized void recordStartupFailure(long generation, Throwable failure) {
         if (lifecycleGeneration != generation) {
             return;
         }
         startFailure = failure;
+        if (failure instanceof JavalinBindException && isBindFailure(failure)) {
+            int requestedPort = config.getPort();
+            int lastPort = lastSearchPort(requestedPort, portSearchAttempts());
+            reportPortBindFailure(requestedPort, lastPort);
+            return;
+        }
         React.reportError("WebController failed to start: " + failure.getMessage(), failure);
+    }
+
+    private static int lastSearchPort(int requestedPort, int searchAttempts) {
+        if (requestedPort < 1 || requestedPort > 65535) {
+            return requestedPort;
+        }
+        long lastPort = (long) requestedPort + Math.max(1, searchAttempts) - 1L;
+        return (int) Math.min(65535L, lastPort);
+    }
+
+    private static boolean isBindFailure(Throwable failure) {
+        Throwable cause = failure;
+        while (cause != null) {
+            if (cause instanceof BindException) {
+                return true;
+            }
+            cause = cause.getCause();
+        }
+        return false;
     }
 
     private void finishStartup(long generation, CountDownLatch latch) {
@@ -1159,5 +1237,42 @@ public class WebController implements IController {
         private WsAuthenticationGate wsAuthenticationGate;
         private Logger attachedLogger;
         private Log4jConsoleCapture log4jConsoleCapture;
+    }
+
+    private static final class IncrementingPortConnector extends ServerConnector {
+        private final int lastPort;
+
+        private IncrementingPortConnector(
+            Server server,
+            HttpConfiguration httpConfiguration,
+            String host,
+            int requestedPort,
+            int searchAttempts
+        ) {
+            super(server, new HttpConnectionFactory(httpConfiguration));
+            setHost(host);
+            setPort(requestedPort);
+            lastPort = lastSearchPort(requestedPort, searchAttempts);
+        }
+
+        @Override
+        protected ServerSocketChannel openAcceptChannel() throws IOException {
+            int requestedPort = getPort();
+            if (requestedPort < 1 || requestedPort > 65535) {
+                return super.openAcceptChannel();
+            }
+            int candidatePort = requestedPort;
+            while (true) {
+                setPort(candidatePort);
+                try {
+                    return super.openAcceptChannel();
+                } catch (IOException failure) {
+                    if (!isBindFailure(failure) || candidatePort >= lastPort) {
+                        throw failure;
+                    }
+                    candidatePort++;
+                }
+            }
+        }
     }
 }
