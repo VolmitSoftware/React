@@ -67,6 +67,14 @@ void createOutputTask(String name, String path) {
         rename { String fileName ->
             fileName.replace("React-${project.version}.jar", 'React.jar')
         }
+        if (name == 'PsychoLT') {
+            doLast {
+                project.copy {
+                    from(shadowJarTask.get().archiveFile.get().asFile)
+                    into(project.file('../../PluginOuts'))
+                }
+            }
+        }
     }
 }
 
