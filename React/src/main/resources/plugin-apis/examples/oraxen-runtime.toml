@@ -1,0 +1,69 @@
+schema = "react.plugin-api/v1"
+id = "example.oraxen-runtime"
+version = "1.0.0"
+name = "Oraxen Runtime"
+authors = ["Volmit Software"]
+enabled = true
+trusted = false
+targetPlugin = "Oraxen"
+targetVersions = ["*"]
+
+[[metrics]]
+id = "items"
+displayName = "Oraxen Items"
+kind = "gauge"
+unit = " items"
+icon = "DIAMOND_SWORD"
+decimals = 0
+sampleEveryMs = 5000
+staleAfterMs = 30000
+
+[metrics.source]
+type = "oraxen"
+key = "items"
+foliaSafe = true
+
+[[metrics]]
+id = "blocks"
+displayName = "Oraxen Blocks"
+kind = "gauge"
+unit = " blocks"
+icon = "NOTE_BLOCK"
+decimals = 0
+sampleEveryMs = 5000
+staleAfterMs = 30000
+
+[metrics.source]
+type = "oraxen"
+key = "blocks"
+foliaSafe = true
+
+[[metrics]]
+id = "furniture"
+displayName = "Oraxen Furniture"
+kind = "gauge"
+unit = " entries"
+icon = "ITEM_FRAME"
+decimals = 0
+sampleEveryMs = 5000
+staleAfterMs = 30000
+
+[metrics.source]
+type = "oraxen"
+key = "furniture"
+foliaSafe = true
+
+[[metrics]]
+id = "furniture-placements"
+displayName = "Oraxen Furniture Placements"
+kind = "counter"
+unit = " placements"
+icon = "ARMOR_STAND"
+decimals = 0
+sampleEveryMs = 1000
+staleAfterMs = 15000
+
+[metrics.source]
+type = "event-counter"
+eventClass = "io.th0rgal.oraxen.api.events.furniture.OraxenFurniturePlaceEvent"
+foliaSafe = true

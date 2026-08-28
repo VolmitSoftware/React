@@ -458,6 +458,112 @@ abstract final class VisualQaFixtures {
         'scopes': <String>['read', 'op:execute', 'console:execute', 'admin'],
       };
 
+  static Map<String, dynamic> pluginApiPacks(VisualQaProfile profile) =>
+      <String, dynamic>{
+        'folder': '/plugins/React/plugin-apis',
+        'packs': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'id': 'example.adapt-earth-mover',
+            'version': '1.0.0',
+            'name': 'Adapt Earth Mover',
+            'authors': <String>['Volmit Software'],
+            'targetPlugin': 'Adapt',
+            'targetVersion': '2.4.0',
+            'targetVersions': <String>['*'],
+            'enabled': true,
+            'trusted': false,
+            'state': profile.isCritical ? 'DEGRADED' : 'HEALTHY',
+            'detail': profile.isCritical
+                ? '2/3 metrics available'
+                : 'all-metrics-available',
+            'fileName': 'adapt-ability-ops.toml',
+            'rawContent':
+                'schema = "react.plugin-api/v1"\n'
+                'id = "example.adapt-earth-mover"\n'
+                'version = "1.0.0"\n'
+                'name = "Adapt Earth Mover"\n'
+                'authors = ["Volmit Software"]\n'
+                'enabled = true\n'
+                'trusted = false\n'
+                'targetPlugin = "Adapt"\n'
+                'targetVersions = ["*"]\n',
+            'metrics': <Map<String, dynamic>>[
+              _pluginApiMetric(
+                id: 'execution-ops',
+                name: 'Earth Mover Executions',
+                source: 'integration',
+                available: true,
+              ),
+              _pluginApiMetric(
+                id: 'execution-timing',
+                name: 'Earth Mover Execution Time',
+                source: 'integration',
+                available: !profile.isCritical,
+              ),
+              _pluginApiMetric(
+                id: 'guard-checks',
+                name: 'Earth Mover Guard Checks',
+                source: 'integration',
+                available: true,
+              ),
+            ],
+          },
+          <String, dynamic>{
+            'id': 'example.placeholderapi-server',
+            'version': '1.0.0',
+            'name': 'PlaceholderAPI Server',
+            'authors': <String>['Volmit Software'],
+            'targetPlugin': 'PlaceholderAPI',
+            'targetVersion': '2.11.6',
+            'targetVersions': <String>['*'],
+            'enabled': true,
+            'trusted': true,
+            'state': 'HEALTHY',
+            'detail': 'all-metrics-available',
+            'fileName': 'placeholderapi-server.toml',
+            'rawContent':
+                'schema = "react.plugin-api/v1"\n'
+                'id = "example.placeholderapi-server"\n'
+                'trusted = true\n',
+            'metrics': <Map<String, dynamic>>[
+              _pluginApiMetric(
+                id: 'online-players',
+                name: 'Online Players',
+                source: 'placeholder',
+                available: true,
+              ),
+            ],
+          },
+        ],
+        'errors': profile.isCritical
+            ? <Map<String, dynamic>>[
+                <String, dynamic>{
+                  'fileName': 'community-broken.toml',
+                  'message': 'Unknown key root.legacyMode',
+                },
+              ]
+            : <Map<String, dynamic>>[],
+      };
+
+  static Map<String, dynamic> _pluginApiMetric({
+    required String id,
+    required String name,
+    required String source,
+    required bool available,
+  }) => <String, dynamic>{
+    'id': id,
+    'samplerId': 'plugin-api-example-$id',
+    'displayName': name,
+    'sourceType': source,
+    'available': available,
+    'availabilityReason': available ? '' : 'source-unavailable',
+    'sampledAtMs': DateTime.now().millisecondsSinceEpoch,
+    'sampleDurationMs': 1,
+    'acceptedSamples': 40,
+    'failedSamples': available ? 0 : 2,
+    'quarantined': false,
+  };
+
   static List<Map<String, dynamic>> players(VisualQaProfile profile) =>
       <Map<String, dynamic>>[
         <String, dynamic>{

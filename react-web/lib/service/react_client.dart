@@ -12,6 +12,7 @@ import '../model/identity_info.dart';
 import '../model/incident_status.dart';
 import '../model/metric_history.dart';
 import '../model/player_navigation.dart';
+import '../model/plugin_api_pack.dart';
 import '../model/role_info.dart';
 import '../model/server_capabilities.dart';
 import '../model/server_credential.dart';
@@ -119,6 +120,13 @@ abstract interface class IRoleClient {
   Future<RoleInfo> whoami();
 }
 
+abstract interface class IPluginApiPackClient {
+  Future<PluginApiCatalog> pluginApiPacks();
+  Future<PluginApiValidationResult> validatePluginApiPack(String content);
+  Future<PluginApiPack> installPluginApiPack(String id, String content);
+  Future<PluginApiCatalog> removePluginApiPack(String id);
+}
+
 abstract interface class IOperateClient
     implements
         IActionClient,
@@ -137,7 +145,8 @@ class ReactClient
         IOperateClient,
         IConsoleClient,
         IRoleClient,
-        IHistoryClient {
+        IHistoryClient,
+        IPluginApiPackClient {
   final ServerCredential cred;
   final http.Client _http;
   final MonotonicCounter _counter;
@@ -326,6 +335,50 @@ class ReactClient
       throw ReactUnavailable(e.message ?? 'Request timed out');
     } on Exception catch (e) {
       throw ReactUnavailable(e.toString());
+    }
+  }
+
+  Future<Map<String, dynamic>> _deleteData(String path) async {
+    final Uri uri = cred.directEndpoint('api/v1$path');
+    final Map<String, String> headers = <String, String>{
+      'Authorization': 'Bearer ${cred.bearer}',
+      'Content-Type': 'application/json',
+      'X-React-Counter': _counter.next(cred.id).toString(),
+    };
+    try {
+      final http.Response response = await _http
+          .delete(uri, headers: headers)
+          .timeout(const Duration(seconds: 2));
+      switch (response.statusCode) {
+        case 200:
+          return _decodeData(response.body);
+        case 400:
+          throw ReactBadRequest(_errorMessage(response.body));
+        case 401:
+          throw const ReactAuthException();
+        case 403:
+          throw ReactForbidden(_errorMessage(response.body));
+        case 404:
+          throw ReactNotFound(_errorMessage(response.body));
+        default:
+          throw ReactUnavailable(_errorMessage(response.body));
+      }
+    } on ReactAuthException {
+      rethrow;
+    } on ReactBadRequest {
+      rethrow;
+    } on ReactForbidden {
+      rethrow;
+    } on ReactNotFound {
+      rethrow;
+    } on ReactUnavailable {
+      rethrow;
+    } on http.ClientException catch (error) {
+      throw ReactUnavailable(error.message);
+    } on TimeoutException catch (error) {
+      throw ReactUnavailable(error.message ?? 'Request timed out');
+    } on Exception catch (error) {
+      throw ReactUnavailable(error.toString());
     }
   }
 
@@ -677,5 +730,39 @@ class ReactClient
       );
     }
     return dispatched;
+  }
+
+  @override
+  Future<PluginApiCatalog> pluginApiPacks() async {
+    final http.Response response = await _get('/plugin-api-packs');
+    return PluginApiCatalog.fromJson(_decodeData(response.body));
+  }
+
+  @override
+  Future<PluginApiValidationResult> validatePluginApiPack(
+    String content,
+  ) async {
+    final Map<String, dynamic> data = await _postData(
+      '/plugin-api-packs/validate',
+      <String, Object?>{'content': content},
+    );
+    return PluginApiValidationResult.fromJson(data);
+  }
+
+  @override
+  Future<PluginApiPack> installPluginApiPack(String id, String content) async {
+    final Map<String, dynamic> data = await _putData(
+      '/plugin-api-packs/${Uri.encodeComponent(id)}',
+      <String, Object?>{'content': content},
+    );
+    return PluginApiPack.fromJson(data);
+  }
+
+  @override
+  Future<PluginApiCatalog> removePluginApiPack(String id) async {
+    final Map<String, dynamic> data = await _deleteData(
+      '/plugin-api-packs/${Uri.encodeComponent(id)}',
+    );
+    return PluginApiCatalog.fromJson(data);
   }
 }

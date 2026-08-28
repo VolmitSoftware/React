@@ -1,0 +1,57 @@
+schema = "react.plugin-api/v1"
+id = "example.adapt-earth-mover"
+version = "1.0.0"
+name = "Adapt Earth Mover"
+authors = ["Volmit Software"]
+enabled = true
+trusted = false
+targetPlugin = "Adapt"
+targetVersions = ["*"]
+
+[[metrics]]
+id = "execution-ops"
+displayName = "Earth Mover Executions"
+kind = "rate"
+unit = " ops/min"
+icon = "IRON_PICKAXE"
+decimals = 0
+sampleEveryMs = 1000
+staleAfterMs = 15000
+
+[metrics.source]
+type = "integration"
+pluginId = "adapt"
+key = "adapt.ability-detail.excavation-earth-mover.execution-ops"
+foliaSafe = true
+
+[[metrics]]
+id = "execution-timing"
+displayName = "Earth Mover Execution Time"
+kind = "millis"
+unit = " ms"
+icon = "CLOCK"
+decimals = 3
+sampleEveryMs = 1000
+staleAfterMs = 15000
+
+[metrics.source]
+type = "integration"
+pluginId = "adapt"
+key = "adapt.ability-detail.excavation-earth-mover.execution-timing-ms"
+foliaSafe = true
+
+[[metrics]]
+id = "guard-checks"
+displayName = "Earth Mover Guard Checks"
+kind = "rate"
+unit = " checks/min"
+icon = "SHIELD"
+decimals = 0
+sampleEveryMs = 1000
+staleAfterMs = 15000
+
+[metrics.source]
+type = "integration"
+pluginId = "adapt"
+key = "adapt.ability-detail.excavation-earth-mover.guard-checks"
+foliaSafe = true

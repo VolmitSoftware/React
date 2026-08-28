@@ -165,6 +165,10 @@ final class VisualQaServer {
       await _handleMetrics(request, session, segments);
       return;
     }
+    if (resource == 'plugin-api-packs') {
+      await _handlePluginApiPacks(request, session, segments);
+      return;
+    }
     if (resource == 'heatmaps') {
       await _handleHeatmaps(request, session, segments);
       return;
@@ -241,6 +245,101 @@ final class VisualQaServer {
       return;
     }
     await _writeError(request, HttpStatus.notFound, 'Route not found');
+  }
+
+  Future<void> _handlePluginApiPacks(
+    HttpRequest request,
+    _VisualQaSession session,
+    List<String> segments,
+  ) async {
+    final List<dynamic> packs =
+        session.pluginApiCatalog['packs'] as List<dynamic>;
+    if (segments.length == 1 && request.method == 'GET') {
+      await _writeData(request, session.pluginApiCatalog);
+      return;
+    }
+    if (segments.length == 2 && segments[1] == 'validate') {
+      if (!await _isMethod(request, 'POST')) return;
+      final Map<String, dynamic> body = await _readBody(request);
+      final String content = body['content'] as String? ?? '';
+      final RegExpMatch? idMatch = RegExp(
+        r'^id\s*=\s*"([a-z0-9][a-z0-9._-]+)"',
+        multiLine: true,
+      ).firstMatch(content);
+      final bool valid =
+          content.contains('schema = "react.plugin-api/v1"') &&
+          idMatch != null &&
+          content.contains('[[metrics]]');
+      await _writeData(request, <String, dynamic>{
+        'valid': valid,
+        'id': idMatch?.group(1) ?? '',
+        'metricCount': RegExp(
+          r'^\[\[metrics\]\]$',
+          multiLine: true,
+        ).allMatches(content).length,
+        'message': valid ? 'Pack is valid' : 'Invalid visual QA pack',
+      });
+      return;
+    }
+    if (segments.length != 2) {
+      await _writeError(request, HttpStatus.notFound, 'Pack route not found');
+      return;
+    }
+    final String id = Uri.decodeComponent(segments[1]);
+    final int existingIndex = packs.indexWhere(
+      (dynamic item) => (item as Map<String, dynamic>)['id'] == id,
+    );
+    if (request.method == 'GET') {
+      if (existingIndex < 0) {
+        await _writeError(request, HttpStatus.notFound, 'Unknown pack: $id');
+        return;
+      }
+      await _writeData(request, packs[existingIndex]);
+      return;
+    }
+    if (request.method == 'PUT') {
+      if (!await _requireCounter(request)) return;
+      final Map<String, dynamic> body = await _readBody(request);
+      final String content = body['content'] as String? ?? '';
+      final Map<String, dynamic> pack = <String, dynamic>{
+        'id': id,
+        'version': '1.0.0',
+        'name': 'Community Example',
+        'authors': <String>['Visual QA'],
+        'targetPlugin': 'ExamplePlugin',
+        'targetVersion': '1.0.0',
+        'targetVersions': <String>['*'],
+        'enabled': true,
+        'trusted': false,
+        'state': 'DEGRADED',
+        'detail': 'target-plugin-unavailable',
+        'fileName': '$id.toml',
+        'rawContent': content,
+        'metrics': <Map<String, dynamic>>[],
+      };
+      if (existingIndex < 0) {
+        packs.add(pack);
+      } else {
+        packs[existingIndex] = pack;
+      }
+      await _writeData(request, pack);
+      return;
+    }
+    if (request.method == 'DELETE') {
+      if (!await _requireCounter(request)) return;
+      if (existingIndex < 0) {
+        await _writeError(request, HttpStatus.notFound, 'Unknown pack: $id');
+        return;
+      }
+      packs.removeAt(existingIndex);
+      await _writeData(request, session.pluginApiCatalog);
+      return;
+    }
+    await _writeError(
+      request,
+      HttpStatus.methodNotAllowed,
+      'Method not allowed',
+    );
   }
 
   Future<void> _handleMetrics(
@@ -834,6 +933,7 @@ final class _VisualQaSession {
   final List<Map<String, dynamic>> worlds;
   final List<Map<String, dynamic>> players;
   final Map<String, dynamic> config;
+  final Map<String, dynamic> pluginApiCatalog;
   final List<String> logs;
 
   _VisualQaSession(this.profile)
@@ -842,6 +942,7 @@ final class _VisualQaSession {
       worlds = VisualQaFixtures.worlds(profile),
       players = VisualQaFixtures.players(profile),
       config = VisualQaFixtures.config(profile),
+      pluginApiCatalog = VisualQaFixtures.pluginApiPacks(profile),
       logs = VisualQaFixtures.logs(profile);
 }
 

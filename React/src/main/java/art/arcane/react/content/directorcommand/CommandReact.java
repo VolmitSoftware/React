@@ -57,6 +57,7 @@ public class CommandReact implements DirectorExecutor {
   private CommandDebug debug;
   private CommandDev dev;
   private CommandIntegration integration;
+  private CommandPluginApi pluginApi;
   private CommandBridge bridge;
   private CommandTest test;
   private CommandWeb web;

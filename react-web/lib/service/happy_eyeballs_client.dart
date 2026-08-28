@@ -11,6 +11,7 @@ import '../model/identity_info.dart';
 import '../model/incident_status.dart';
 import '../model/metric_history.dart';
 import '../model/player_navigation.dart';
+import '../model/plugin_api_pack.dart';
 import '../model/role_info.dart';
 import '../model/server_capabilities.dart';
 import '../model/server_snapshot.dart';
@@ -31,7 +32,8 @@ class HappyEyeballsClient
         IOperateClient,
         IConsoleClient,
         IRoleClient,
-        IHistoryClient {
+        IHistoryClient,
+        IPluginApiPackClient {
   final IReactClient? _direct;
   final IReactClient? _relay;
   final String? _pinnedFingerprint;
@@ -185,6 +187,13 @@ class HappyEyeballsClient
     if (client is IHistoryClient) return client as IHistoryClient;
     throw const ReactUnavailable(
       'Active transport does not support metric history',
+    );
+  }
+
+  IPluginApiPackClient _pluginApiPacks(IReactClient client) {
+    if (client is IPluginApiPackClient) return client as IPluginApiPackClient;
+    throw const ReactUnavailable(
+      'Active transport does not support Plugin API packs',
     );
   }
 
@@ -368,5 +377,29 @@ class HappyEyeballsClient
   @override
   Future<bool> executeConsole(String command) => _execute(
     (IReactClient client) => _console(client).executeConsole(command),
+  );
+
+  @override
+  Future<PluginApiCatalog> pluginApiPacks() => _execute(
+    (IReactClient client) => _pluginApiPacks(client).pluginApiPacks(),
+  );
+
+  @override
+  Future<PluginApiValidationResult> validatePluginApiPack(String content) =>
+      _execute(
+        (IReactClient client) =>
+            _pluginApiPacks(client).validatePluginApiPack(content),
+      );
+
+  @override
+  Future<PluginApiPack> installPluginApiPack(String id, String content) =>
+      _execute(
+        (IReactClient client) =>
+            _pluginApiPacks(client).installPluginApiPack(id, content),
+      );
+
+  @override
+  Future<PluginApiCatalog> removePluginApiPack(String id) => _execute(
+    (IReactClient client) => _pluginApiPacks(client).removePluginApiPack(id),
   );
 }

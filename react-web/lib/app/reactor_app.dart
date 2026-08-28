@@ -30,6 +30,7 @@ import '../screen/incidents.dart';
 import '../screen/governors.dart';
 import '../screen/heatmaps.dart';
 import '../screen/integrations.dart';
+import '../screen/plugin_api_packs.dart';
 import '../screen/optimization.dart';
 import '../screen/tweaks.dart';
 import '../screen/internals.dart';
@@ -60,6 +61,7 @@ import '../state/control_scope.dart';
 import '../state/heatmap_scope.dart';
 import '../state/operate_scope.dart';
 import '../state/player_scope.dart';
+import '../state/plugin_api_pack_scope.dart';
 import '../state/role_scope.dart';
 import '../state/server_scope.dart';
 import '../theme/reactor_theme.dart';
@@ -117,6 +119,7 @@ const String kRouteServerInternals = '/server/:id/internals';
 const String kRouteServerIncidents = '/server/:id/incidents';
 const String kRouteServerWorlds = '/server/:id/worlds';
 const String kRouteServerIntegrations = '/server/:id/integrations';
+const String kRouteServerPluginApi = '/server/:id/plugin-api-packs';
 const String kRouteServerHeatmaps = '/server/:id/heatmaps';
 const String kRouteServerOptimization = '/server/:id/optimization';
 const String kRouteServerTweaks = '/server/:id/tweaks';
@@ -208,6 +211,11 @@ List<RouteBase> buildReactorRoutes() => <RouteBase>[
     path: kRouteServerIntegrations,
     builder: (BuildContext ctx, RouteState state) =>
         _buildServerPage(ctx, state, const IntegrationsScreen()),
+  ),
+  Route(
+    path: kRouteServerPluginApi,
+    builder: (BuildContext ctx, RouteState state) =>
+        _buildServerPage(ctx, state, const PluginApiPacksScreen()),
   ),
   Route(
     path: kRouteServerHeatmaps,
@@ -337,10 +345,13 @@ Widget _buildServerPage(BuildContext context, RouteState state, Widget screen) {
           client: fleet.fleetManager.playerClientFor(id),
           child: HeatmapScope(
             client: fleet.fleetManager.heatmapClientFor(id),
-            child: LiveServerScope(
-              manager: manager,
-              historyClient: fleet.fleetManager.historyClientFor(id),
-              child: screen,
+            child: PluginApiPackScope(
+              client: fleet.fleetManager.pluginApiPackClientFor(id),
+              child: LiveServerScope(
+                manager: manager,
+                historyClient: fleet.fleetManager.historyClientFor(id),
+                child: screen,
+              ),
             ),
           ),
         ),
@@ -640,6 +651,11 @@ final List<_NavGroup> _kServerNavGroups = <_NavGroup>[
     ),
     _NavEntry(ReactorText.configEditorTitle, 'config', ArcaneIcon.braces),
     _NavEntry(ReactorText.integrationsTitle, 'integrations', ArcaneIcon.plug),
+    _NavEntry(
+      ReactorText.pluginApiTitle,
+      'plugin-api-packs',
+      ArcaneIcon.packageOpen,
+    ),
     _NavEntry(ReactorText.logsTitle, 'logs', ArcaneIcon.scrollText),
   ]),
 ];

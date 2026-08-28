@@ -1,0 +1,54 @@
+schema = "react.plugin-api/v1"
+id = "example.placeholderapi-server"
+version = "1.0.0"
+name = "PlaceholderAPI Server"
+authors = ["Volmit Software"]
+enabled = true
+trusted = true
+targetPlugin = "PlaceholderAPI"
+targetVersions = ["*"]
+
+[[metrics]]
+id = "online-players"
+displayName = "Online Players"
+kind = "gauge"
+unit = " players"
+icon = "PLAYER_HEAD"
+decimals = 0
+sampleEveryMs = 1000
+staleAfterMs = 15000
+
+[metrics.source]
+type = "placeholder"
+placeholder = "%server_online%"
+foliaSafe = true
+
+[[metrics]]
+id = "tps-1m"
+displayName = "Server TPS (1m)"
+kind = "gauge"
+unit = " TPS"
+icon = "REDSTONE_TORCH"
+decimals = 2
+sampleEveryMs = 1000
+staleAfterMs = 15000
+
+[metrics.source]
+type = "placeholder"
+placeholder = "%server_tps_1%"
+foliaSafe = true
+
+[[metrics]]
+id = "ram-used"
+displayName = "Server RAM Used"
+kind = "gauge"
+unit = " MB"
+icon = "COMPARATOR"
+decimals = 0
+sampleEveryMs = 5000
+staleAfterMs = 30000
+
+[metrics.source]
+type = "placeholder"
+placeholder = "%server_ram_used%"
+foliaSafe = true

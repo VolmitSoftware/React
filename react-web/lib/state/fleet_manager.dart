@@ -166,6 +166,13 @@ class FleetManager {
     return c is IConsoleClient ? c as IConsoleClient : null;
   }
 
+  IPluginApiPackClient? pluginApiPackClientFor(String id) {
+    final IReactClient? client = _clients[id];
+    return client is IPluginApiPackClient
+        ? client as IPluginApiPackClient
+        : null;
+  }
+
   ILogSocket Function()? logSocketFactoryFor(String id) {
     if (!kIsWeb) return null;
     ServerCredential? cred;

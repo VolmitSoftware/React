@@ -7,12 +7,18 @@ import 'package:test/test.dart';
 import 'package:react_web/model/heatmap.dart';
 import 'package:react_web/model/identity_info.dart';
 import 'package:react_web/model/player_navigation.dart';
+import 'package:react_web/model/plugin_api_pack.dart';
 import 'package:react_web/model/server_snapshot.dart';
 import 'package:react_web/service/react_client.dart';
 import 'package:react_web/state/fleet_manager.dart';
 import 'package:react_web/state/memory_fleet_storage.dart';
 
-class _DualClient implements IReactClient, IHeatmapClient, IPlayerClient {
+class _DualClient
+    implements
+        IReactClient,
+        IHeatmapClient,
+        IPlayerClient,
+        IPluginApiPackClient {
   @override
   Future<IdentityInfo> identity() async => IdentityInfo(
     serverName: 'Dual',
@@ -46,6 +52,31 @@ class _DualClient implements IReactClient, IHeatmapClient, IPlayerClient {
     required int blockX,
     required int blockZ,
   }) async => throw UnimplementedError();
+
+  @override
+  Future<PluginApiCatalog> pluginApiPacks() async => const PluginApiCatalog(
+    folder: '',
+    packs: <PluginApiPack>[],
+    errors: <PluginApiValidationError>[],
+  );
+
+  @override
+  Future<PluginApiValidationResult> validatePluginApiPack(
+    String content,
+  ) async => const PluginApiValidationResult(
+    valid: true,
+    id: 'test',
+    metricCount: 1,
+    message: 'valid',
+  );
+
+  @override
+  Future<PluginApiPack> installPluginApiPack(String id, String content) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<PluginApiCatalog> removePluginApiPack(String id) async =>
+      throw UnimplementedError();
 }
 
 class _MetricsOnlyClient implements IReactClient {
@@ -132,6 +163,25 @@ void main() {
         clientFactory: (_) => _MetricsOnlyClient(),
       );
       expect(fleet.playerClientFor('srv-1'), isNull);
+    });
+  });
+
+  group('FleetManager.pluginApiPackClientFor', () {
+    test('returns only a Plugin API pack-capable client', () {
+      final _DualClient dual = _DualClient();
+      final FleetManager fleet = _seededFleetManager(
+        storage: InMemoryFleetStorage(),
+        clientFactory: (_) => dual,
+      );
+      expect(fleet.pluginApiPackClientFor('srv-1'), same(dual));
+    });
+
+    test('returns null for a metrics-only client', () {
+      final FleetManager fleet = _seededFleetManager(
+        storage: InMemoryFleetStorage(),
+        clientFactory: (_) => _MetricsOnlyClient(),
+      );
+      expect(fleet.pluginApiPackClientFor('srv-1'), isNull);
     });
   });
 }

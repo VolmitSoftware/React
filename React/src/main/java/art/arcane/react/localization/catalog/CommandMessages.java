@@ -25,6 +25,9 @@ public final class CommandMessages {
   public static final TextKey DEBUG_ENTITY_DESCRIPTION = TextKey.of("command.description.debug.entity", "Show data for the entity being looked at");
   public static final TextKey INTEGRATION_DESCRIPTION = TextKey.of("command.description.integration", "Cross-plugin integration status");
   public static final TextKey INTEGRATION_STATUS_DESCRIPTION = TextKey.of("command.description.integration.status", "Show Iris, Adapt, Wormholes, Gloss, HiddenOre, and BileTools integration health");
+  public static final TextKey PLUGIN_API_DESCRIPTION = TextKey.of("command.description.plugin_api", "Manage community Plugin API metric packs");
+  public static final TextKey PLUGIN_API_STATUS_DESCRIPTION = TextKey.of("command.description.plugin_api.status", "Show loaded Plugin API packs and validation errors");
+  public static final TextKey PLUGIN_API_RELOAD_DESCRIPTION = TextKey.of("command.description.plugin_api.reload", "Rescan the Plugin API pack folder");
   public static final TextKey BENCHMARK_DESCRIPTION = TextKey.of("command.description.benchmark", "Relative system benchmark commands");
   public static final TextKey BENCHMARK_CPU_DESCRIPTION = TextKey.of("command.description.benchmark.cpu", "Benchmark the CPU");
   public static final TextKey BENCHMARK_DRIVE_DESCRIPTION = TextKey.of("command.description.benchmark.drive", "Benchmark the storage drive");
@@ -102,6 +105,12 @@ public final class CommandMessages {
   public static final TextKey INTEGRATION_CORRELATION = TextKey.of("command.runtime.integration.correlation", "<gray>Correlation: <white>{detail}</white></gray>");
   public static final TextKey INTEGRATION_TIMELINE_HEADER = TextKey.of("command.runtime.integration.timeline_header", "<gray>Incident Timeline:</gray>");
   public static final TextKey INTEGRATION_TIMELINE_ENTRY = TextKey.of("command.runtime.integration.timeline_entry", "<dark_gray>  {entry}</dark_gray>");
+  public static final TextKey PLUGIN_API_NOT_READY = TextKey.of("command.runtime.plugin_api.not_ready", "<red>Plugin API packs are not ready.</red>");
+  public static final TextKey PLUGIN_API_HEADER = TextKey.of("command.runtime.plugin_api.header", "<aqua>Plugin API Packs ({count})</aqua>");
+  public static final TextKey PLUGIN_API_ENTRY = TextKey.of("command.runtime.plugin_api.entry", "<gray>- <aqua>{id}</aqua> state=<white>{state}</white> target=<white>{target}</white> metrics=<white>{metrics}</white> detail=<white>{detail}</white></gray>");
+  public static final TextKey PLUGIN_API_ERROR_HEADER = TextKey.of("command.runtime.plugin_api.error_header", "<red>Validation errors ({count}):</red>");
+  public static final TextKey PLUGIN_API_ERROR_ENTRY = TextKey.of("command.runtime.plugin_api.error_entry", "<gray>- <white>{file}</white>: <red>{detail}</red></gray>");
+  public static final TextKey PLUGIN_API_RELOAD_QUEUED = TextKey.of("command.runtime.plugin_api.reload_queued", "<green>Plugin API pack rescan queued.</green>");
   public static final TextKey WEB_INVALID_ROLE = TextKey.of("command.runtime.web.invalid_role", "<red>Invalid role: <white>{role}</white>. Expected viewer, operator, or admin.</red>");
   public static final TextKey WEB_MUTATION_NOTICE = TextKey.of("command.runtime.web.mutation_notice", "<yellow>Web change by <white>{actor}</white>: <aqua>{target}</aqua> — <white>{detail}</white>.</yellow>");
   public static final TextKey WEB_PAIR_UNAVAILABLE = TextKey.of("command.runtime.web.pair_unavailable", "<red>Web pairing is unavailable: <white>{reason}</white></red>");
@@ -167,6 +176,9 @@ public final class CommandMessages {
     builder.add(DEBUG_ENTITY_DESCRIPTION);
     builder.add(INTEGRATION_DESCRIPTION);
     builder.add(INTEGRATION_STATUS_DESCRIPTION);
+    builder.add(PLUGIN_API_DESCRIPTION);
+    builder.add(PLUGIN_API_STATUS_DESCRIPTION);
+    builder.add(PLUGIN_API_RELOAD_DESCRIPTION);
     builder.add(BENCHMARK_DESCRIPTION);
     builder.add(BENCHMARK_CPU_DESCRIPTION);
     builder.add(BENCHMARK_DRIVE_DESCRIPTION);
@@ -244,6 +256,12 @@ public final class CommandMessages {
     builder.add(INTEGRATION_CORRELATION);
     builder.add(INTEGRATION_TIMELINE_HEADER);
     builder.add(INTEGRATION_TIMELINE_ENTRY);
+    builder.add(PLUGIN_API_NOT_READY);
+    builder.add(PLUGIN_API_HEADER);
+    builder.add(PLUGIN_API_ENTRY);
+    builder.add(PLUGIN_API_ERROR_HEADER);
+    builder.add(PLUGIN_API_ERROR_ENTRY);
+    builder.add(PLUGIN_API_RELOAD_QUEUED);
     builder.add(WEB_INVALID_ROLE);
     builder.add(WEB_MUTATION_NOTICE);
     builder.add(WEB_PAIR_UNAVAILABLE);

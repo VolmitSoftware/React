@@ -63,6 +63,7 @@ import art.arcane.react.api.web.resource.IntegrationResource;
 import art.arcane.react.api.web.resource.LogsResource;
 import art.arcane.react.api.web.resource.MetricsResource;
 import art.arcane.react.api.web.resource.PlayerResource;
+import art.arcane.react.api.web.resource.PluginApiPackResource;
 import art.arcane.react.api.web.resource.WhoamiResource;
 import art.arcane.react.api.web.resource.WorldResource;
 import art.arcane.react.api.web.ws.LogFrame;
@@ -138,6 +139,7 @@ public class WebController implements IController {
     private transient volatile FeatureController featureController;
     private transient volatile TweakController tweakController;
     private transient volatile IntegrationController integrationController;
+    private transient volatile PluginApiPackController pluginApiPackController;
     private transient volatile ControlBackend featureControlBackend;
     private transient volatile ControlBackend tweakControlBackend;
     private transient volatile WorldBackend worldBackend;
@@ -258,6 +260,9 @@ public class WebController implements IController {
         }
         if (integrationController == null && React.instance != null) {
             integrationController = React.controller(IntegrationController.class);
+        }
+        if (pluginApiPackController == null && React.instance != null) {
+            pluginApiPackController = React.controller(PluginApiPackController.class);
         }
         loadConfiguration();
     }
@@ -616,6 +621,26 @@ public class WebController implements IController {
                     javalin.before("/api/v1/integrations", auth);
                 }
                 javalin.get("/api/v1/integrations", integrations::get);
+                PluginApiPackResource pluginApiPacks = new PluginApiPackResource(
+                    () -> pluginApiPackController != null
+                        ? pluginApiPackController
+                        : (React.instance != null ? React.controller(PluginApiPackController.class) : null),
+                    mutationReporter
+                );
+                if (requireTokenForReads) {
+                    javalin.before("/api/v1/plugin-api-packs", auth);
+                }
+                javalin.before("/api/v1/plugin-api-packs/validate", auth);
+                javalin.before("/api/v1/plugin-api-packs/{id}", ctx -> {
+                    if (requireTokenForReads || !"GET".equals(ctx.method().name())) {
+                        auth.handle(ctx);
+                    }
+                });
+                javalin.get("/api/v1/plugin-api-packs", pluginApiPacks::list);
+                javalin.get("/api/v1/plugin-api-packs/{id}", pluginApiPacks::get);
+                javalin.post("/api/v1/plugin-api-packs/validate", pluginApiPacks::validate);
+                javalin.put("/api/v1/plugin-api-packs/{id}", pluginApiPacks::put);
+                javalin.delete("/api/v1/plugin-api-packs/{id}", pluginApiPacks::delete);
                 if (worldBackend == null) {
                     worldBackend = new FeatureWorldBackend();
                 }

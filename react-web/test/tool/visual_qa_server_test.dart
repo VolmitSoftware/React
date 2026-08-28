@@ -14,6 +14,7 @@ import 'package:react_web/model/incident_status.dart';
 import 'package:react_web/model/knob.dart';
 import 'package:react_web/model/metric_history.dart';
 import 'package:react_web/model/player_navigation.dart';
+import 'package:react_web/model/plugin_api_pack.dart';
 import 'package:react_web/model/role_info.dart';
 import 'package:react_web/model/server_capabilities.dart';
 import 'package:react_web/model/server_credential.dart';
@@ -98,6 +99,7 @@ void main() {
       final ServerCapabilities capabilities = await client.ping();
       final IdentityInfo identity = await client.identity();
       final RoleInfo role = await client.whoami();
+      final PluginApiCatalog pluginApiCatalog = await client.pluginApiPacks();
       final ServerSnapshot snapshot = await client.metrics();
       final List<MetricHistoryDescriptor> historyCatalog = await client
           .historyCatalog();
@@ -130,6 +132,8 @@ void main() {
       expect(capabilities.serverFingerprint, equals(identity.serverId));
       expect(identity.serverName, equals('QA Beta'));
       expect(role.isAdmin, isTrue);
+      expect(pluginApiCatalog.packs, hasLength(2));
+      expect(pluginApiCatalog.folder, equals('/plugins/React/plugin-apis'));
       expect(snapshot.byId, contains('ticks-per-second'));
       expect(snapshot.byId, contains('adapt-world-policy-latency'));
       expect(snapshot.byId, contains('iris-generation-total-ms'));
@@ -195,6 +199,37 @@ void main() {
       expect(environment.cpu['model'], equals('QA 16-Core'));
       expect(config.node('tick-budget-ms')!.label, equals('Tick Budget'));
       expect(logs, contains('[INFO] QA fixture ready'));
+    });
+
+    test('supports the Plugin API pack editor workflow', () async {
+      final http.Client transport = http.Client();
+      addTearDown(transport.close);
+      final ReactClient client = ReactClient(
+        _credential(server, VisualQaProfile.alpha),
+        client: transport,
+      );
+      const String content =
+          'schema = "react.plugin-api/v1"\n'
+          'id = "community.example"\n'
+          '[[metrics]]\n';
+
+      final PluginApiValidationResult validation = await client
+          .validatePluginApiPack(content);
+      final PluginApiPack installed = await client.installPluginApiPack(
+        'community.example',
+        content,
+      );
+      final PluginApiCatalog removed = await client.removePluginApiPack(
+        'community.example',
+      );
+
+      expect(validation.valid, isTrue);
+      expect(validation.metricCount, equals(1));
+      expect(installed.id, equals('community.example'));
+      expect(
+        removed.packs.map((PluginApiPack pack) => pack.id),
+        isNot(contains('community.example')),
+      );
     });
 
     test('accepts a confirmed player teleport target end to end', () async {

@@ -11,6 +11,7 @@ import '../model/identity_info.dart';
 import '../model/incident_status.dart';
 import '../model/metric_history.dart';
 import '../model/player_navigation.dart';
+import '../model/plugin_api_pack.dart';
 import '../model/relay_frame.dart';
 import '../model/role_info.dart';
 import '../model/server_capabilities.dart';
@@ -33,7 +34,8 @@ class RelayReactClient
         IOperateClient,
         IConsoleClient,
         IRoleClient,
-        IHistoryClient {
+        IHistoryClient,
+        IPluginApiPackClient {
   final IRelayConnection _connection;
   final ServerCredential _cred;
   final MonotonicCounter _counter;
@@ -98,6 +100,11 @@ class RelayReactClient
     Map<String, Object?> body,
   ) async {
     final RelayResponse response = await _request('POST', path, body: body);
+    return _decodeData(response.body);
+  }
+
+  Future<Map<String, dynamic>> _deleteData(String path) async {
+    final RelayResponse response = await _request('DELETE', path);
     return _decodeData(response.body);
   }
 
@@ -430,5 +437,39 @@ class RelayReactClient
       );
     }
     return dispatched;
+  }
+
+  @override
+  Future<PluginApiCatalog> pluginApiPacks() async {
+    final RelayResponse response = await _get('/plugin-api-packs');
+    return PluginApiCatalog.fromJson(_decodeData(response.body));
+  }
+
+  @override
+  Future<PluginApiValidationResult> validatePluginApiPack(
+    String content,
+  ) async {
+    final Map<String, dynamic> data = await _postData(
+      '/plugin-api-packs/validate',
+      <String, Object?>{'content': content},
+    );
+    return PluginApiValidationResult.fromJson(data);
+  }
+
+  @override
+  Future<PluginApiPack> installPluginApiPack(String id, String content) async {
+    final Map<String, dynamic> data = await _putData(
+      '/plugin-api-packs/${Uri.encodeComponent(id)}',
+      <String, Object?>{'content': content},
+    );
+    return PluginApiPack.fromJson(data);
+  }
+
+  @override
+  Future<PluginApiCatalog> removePluginApiPack(String id) async {
+    final Map<String, dynamic> data = await _deleteData(
+      '/plugin-api-packs/${Uri.encodeComponent(id)}',
+    );
+    return PluginApiCatalog.fromJson(data);
   }
 }

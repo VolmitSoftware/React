@@ -25,3 +25,5 @@ react-web/.qa/
 build-lt.sh
 BUILDS/
 .run/
+
+React/AGENTS.md
