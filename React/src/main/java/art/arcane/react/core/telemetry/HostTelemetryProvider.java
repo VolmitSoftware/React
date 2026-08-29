@@ -57,6 +57,7 @@ public final class HostTelemetryProvider {
 
   public HostTelemetryProvider(Path dataPath) {
     this.dataPath = dataPath;
+    WindowsSensorWmiQueryHandler.installIfWindows();
     SystemInfo systemInfo = new SystemInfo();
     this.hardware = systemInfo.getHardware();
     this.operatingSystem = systemInfo.getOperatingSystem();

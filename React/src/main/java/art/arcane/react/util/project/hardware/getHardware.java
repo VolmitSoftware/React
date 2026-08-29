@@ -1,6 +1,7 @@
 package art.arcane.react.util.project.hardware;
 
 import art.arcane.react.React;
+import art.arcane.react.core.telemetry.WindowsSensorWmiQueryHandler;
 import art.arcane.volmlib.util.collection.KList;
 import art.arcane.volmlib.util.format.Form;
 import oshi.SystemInfo;
@@ -65,6 +66,7 @@ public class getHardware {
   public static KList<String> getSensors() {
     KList<String> sensors = new KList<>();
     try {
+      WindowsSensorWmiQueryHandler.installIfWindows();
       SystemInfo systemInfo = new SystemInfo();
       Sensors hardwareSensors = systemInfo.getHardware().getSensors();
       double temperature = hardwareSensors.getCpuTemperature();

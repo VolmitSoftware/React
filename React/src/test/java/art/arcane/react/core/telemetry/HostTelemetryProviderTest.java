@@ -16,6 +16,23 @@ class HostTelemetryProviderTest {
   }
 
   @Test
+  void suppressesOnlyUnsupportedWindowsThermalZoneQueries() {
+    Assertions.assertTrue(WindowsSensorWmiQueryHandler.shouldSuppress(
+        "MSAcpi_ThermalZoneTemperature",
+        0x8004100C
+    ));
+    Assertions.assertFalse(WindowsSensorWmiQueryHandler.shouldSuppress(
+        "MSAcpi_ThermalZoneTemperature",
+        0x80041010
+    ));
+    Assertions.assertFalse(WindowsSensorWmiQueryHandler.shouldSuppress("Win32_Processor", 0x8004100C));
+    Assertions.assertFalse(WindowsSensorWmiQueryHandler.shouldSuppress(
+        "MSAcpi_ThermalZoneTemperature",
+        null
+    ));
+  }
+
+  @Test
   void captureProvidesOneCompleteCachedHostSnapshot(@TempDir Path dataPath) throws Exception {
     HostTelemetryProvider provider = new HostTelemetryProvider(dataPath);
     HostTelemetrySnapshot snapshot = provider.capture();
