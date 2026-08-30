@@ -33,6 +33,18 @@ class HostTelemetryProviderTest {
   }
 
   @Test
+  void skipsLegacyWindowsSensorQueriesOnlyWhenLibreHardwareMonitorIsMissing() {
+    Assertions.assertFalse(WindowsSensorWmiQueryHandler.shouldQuerySensors("Windows Server 2025", "6.9.0", false));
+    Assertions.assertFalse(WindowsSensorWmiQueryHandler.shouldQuerySensors("Windows 11", "6.10.0", false));
+    Assertions.assertFalse(WindowsSensorWmiQueryHandler.shouldQuerySensors("Windows 11", null, false));
+    Assertions.assertFalse(WindowsSensorWmiQueryHandler.shouldQuerySensors("Windows 11", "invalid", false));
+    Assertions.assertTrue(WindowsSensorWmiQueryHandler.shouldQuerySensors("Windows 11", "6.11.0", false));
+    Assertions.assertTrue(WindowsSensorWmiQueryHandler.shouldQuerySensors("Windows 11", "7.0.0", false));
+    Assertions.assertTrue(WindowsSensorWmiQueryHandler.shouldQuerySensors("Windows 11", "6.9.0", true));
+    Assertions.assertTrue(WindowsSensorWmiQueryHandler.shouldQuerySensors("Linux", "6.9.0", false));
+  }
+
+  @Test
   void captureProvidesOneCompleteCachedHostSnapshot(@TempDir Path dataPath) throws Exception {
     HostTelemetryProvider provider = new HostTelemetryProvider(dataPath);
     HostTelemetrySnapshot snapshot = provider.capture();

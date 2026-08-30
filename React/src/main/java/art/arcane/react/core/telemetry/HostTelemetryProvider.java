@@ -42,6 +42,7 @@ public final class HostTelemetryProvider {
   private final List<GarbageCollectorMXBean> garbageCollectorBeans;
   private final List<BufferPoolMXBean> bufferPoolBeans;
   private final OperatingSystemMXBean operatingSystemBean;
+  private final boolean sensorQueriesEnabled;
   private final String cpuModel;
   private final String[] graphicsCards;
   private long[] processorTicks;
@@ -69,6 +70,7 @@ public final class HostTelemetryProvider {
     this.bufferPoolBeans = ManagementFactory.getPlatformMXBeans(BufferPoolMXBean.class);
     java.lang.management.OperatingSystemMXBean platformBean = ManagementFactory.getOperatingSystemMXBean();
     this.operatingSystemBean = platformBean instanceof OperatingSystemMXBean bean ? bean : null;
+    this.sensorQueriesEnabled = WindowsSensorWmiQueryHandler.shouldQuerySensors();
     this.cpuModel = processor.getProcessorIdentifier().getName();
     this.graphicsCards = buildGraphicsCards();
     this.processorTicks = processor.getSystemCpuLoadTicks();
@@ -333,6 +335,9 @@ public final class HostTelemetryProvider {
   }
 
   private String[] buildSensors() {
+    if (!sensorQueriesEnabled) {
+      return new String[0];
+    }
     Sensors hardwareSensors = hardware.getSensors();
     List<String> values = new ArrayList<>(3);
     double temperature = hardwareSensors.getCpuTemperature();

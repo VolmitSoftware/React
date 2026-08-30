@@ -9,6 +9,7 @@ import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.common.scheduling.TickedObject;
 import art.arcane.react.util.plugin.IController;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -39,11 +40,11 @@ public final class PluginApiPackController extends TickedObject implements ICont
       "oraxen-runtime.toml"
   );
 
-  private final AtomicBoolean collectionQueued = new AtomicBoolean();
-  private final AtomicBoolean running = new AtomicBoolean();
-  private final AtomicBoolean scanQueued = new AtomicBoolean();
-  private final Map<String, PluginApiPackRuntime> packs = new LinkedHashMap<>();
-  private final Map<String, String> validationErrors = new LinkedHashMap<>();
+  private final transient AtomicBoolean collectionQueued = new AtomicBoolean();
+  private final transient AtomicBoolean running = new AtomicBoolean();
+  private final transient AtomicBoolean scanQueued = new AtomicBoolean();
+  private final transient Map<String, PluginApiPackRuntime> packs = new LinkedHashMap<>();
+  private final transient Map<String, String> validationErrors = new LinkedHashMap<>();
   private transient ExecutorService ioExecutor;
   private transient Path packFolder;
   private transient long lastScanMs;
@@ -55,6 +56,25 @@ public final class PluginApiPackController extends TickedObject implements ICont
   @Override
   public String getName() {
     return "Plugin API Packs";
+  }
+
+  @Override
+  public void loadConfiguration() {
+  }
+
+  @Override
+  public boolean reloadConfiguration() {
+    return true;
+  }
+
+  @Override
+  public Object prepareConfigurationSnapshot(File sourceFile, String rawContent) {
+    return this;
+  }
+
+  @Override
+  public boolean applyConfigurationSnapshot(Object loadedObject) {
+    return loadedObject == this;
   }
 
   @Override

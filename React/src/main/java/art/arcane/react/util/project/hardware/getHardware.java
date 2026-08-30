@@ -65,6 +65,10 @@ public class getHardware {
 
   public static KList<String> getSensors() {
     KList<String> sensors = new KList<>();
+    if (!WindowsSensorWmiQueryHandler.shouldQuerySensors()) {
+      sensors.add("No sensors reported.");
+      return sensors;
+    }
     try {
       WindowsSensorWmiQueryHandler.installIfWindows();
       SystemInfo systemInfo = new SystemInfo();
