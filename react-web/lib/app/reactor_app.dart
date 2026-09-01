@@ -74,9 +74,6 @@ class _OfflineShadcnStylesheet extends ShadcnStylesheet {
   const _OfflineShadcnStylesheet({super.theme});
 
   @override
-  List<String> get externalCssUrls => const <String>[];
-
-  @override
   FontConfig get fonts => const FontConfig(
     sans:
         "'Geist', ui-sans-serif, system-ui, -apple-system, "
