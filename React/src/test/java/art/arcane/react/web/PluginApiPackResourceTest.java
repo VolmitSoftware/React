@@ -42,7 +42,7 @@ class PluginApiPackResourceTest {
     verify(context).json(response.capture());
     @SuppressWarnings("unchecked")
     Envelope<PluginApiCatalogDto> envelope = (Envelope<PluginApiCatalogDto>) response.getValue();
-    assertEquals("/plugins/React/plugin-apis", envelope.data().folder());
+    assertEquals(Path.of("/plugins/React/plugin-apis").toString(), envelope.data().folder());
     assertEquals("community.example", envelope.data().packs()[0].id());
     assertEquals("broken.toml", envelope.data().errors()[0].fileName());
   }
