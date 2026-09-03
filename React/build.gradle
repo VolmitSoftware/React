@@ -28,7 +28,7 @@ plugins {
 
 apply from: 'nms-jars.gradle'
 
-version = '2.0.2-26.2' // Needs to be version specific
+version = '2.0.3-26.2' // Needs to be version specific
 def apiVersion = '26.1'
 def pluginName = rootProject.name // Defined in settings.gradle.kts
 String mainClass = 'art.arcane.react.React'

@@ -7,7 +7,7 @@
 set -uo pipefail
 
 MPX="/Users/brianfopiano/Developer/RemoteGit/[Minecraft Server]"
-REACT_JAR="/Users/brianfopiano/Developer/RemoteGit/VolmitSoftware/React/React/build/libs/React-2.0.0-26.2.jar"
+REACT_JAR="/Users/brianfopiano/Developer/RemoteGit/VolmitSoftware/React/React/build/libs/React-2.0.3-26.2.jar"
 SMOKE="/Users/brianfopiano/Developer/react-sim/smoke-react.sh"
 INSTANCE="reacttest"
 MC="26.2"
