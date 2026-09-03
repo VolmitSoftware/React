@@ -1,3 +1,5 @@
+"command.description.debugdump" = "Tanılama raporu oluştur ve isteğe bağlı olarak yükle"
+"command.parameter.debugdump_upload" = "Raporu mclo.gs üzerine yükle"
 # Complete bundled translation. Code-owned English remains the canonical fallback.
 "action.collect_garbage.no_reclaim" = "Garbage koleksiyonu hemen heap reclaimed ile tamamlandı ({used} Kullanım) {duration}"
 "action.collect_garbage.reclaimed" = "Freed {freed} ({before} -> {after}) {duration}"

@@ -1,3 +1,5 @@
+"command.description.debugdump" = "Maak een diagnostisch rapport en upload het desgewenst"
+"command.parameter.debugdump_upload" = "Upload het rapport naar mclo.gs"
 # Complete bundled translation. Code-owned English remains the canonical fallback.
 "action.collect_garbage.no_reclaim" = "Afvalverzameling voltooid zonder onmiddellijke ophaling ({used} gebruikt) in {duration}"
 "action.collect_garbage.reclaimed" = "Vrij {freed} ({before} -> {after}) in {duration}"

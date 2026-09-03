@@ -89,7 +89,7 @@ public class ReactLanguageTest {
   }
 
   @Test
-  public void everySharedNonEnglishLocaleHasOneBundledResource() throws Exception {
+  public void everySharedNonEnglishLocaleHasOneDownloadableResource() throws Exception {
     Set<String> bundled = new HashSet<>();
     try (Stream<Path> files = Files.list(LANGUAGE_ROOT)) {
       files.filter(path -> path.getFileName().toString().endsWith(".toml"))
@@ -101,7 +101,7 @@ public class ReactLanguageTest {
   }
 
   @Test
-  public void everyBundledLocaleCoversAndValidatesTheEntireCatalog() throws Exception {
+  public void everyDownloadableLocaleCoversAndValidatesTheEntireCatalog() throws Exception {
     MessageCatalog catalog = ReactMessages.catalog();
     for (String locale : VolmitLocales.nonEnglish()) {
       Path localeFile = LANGUAGE_ROOT.resolve(locale + ".toml");

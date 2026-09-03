@@ -5,7 +5,18 @@ import art.arcane.react.localization.catalog.RuntimeMessages;
 import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.util.plugin.VolmitSender;
 import art.arcane.react.util.project.config.ConfigFileSupport;
+import art.arcane.react.util.project.config.TomlCodec;
 import art.arcane.volmlib.util.director.DirectorTextResolver;
+import art.arcane.volmlib.util.director.help.DirectorMiniMenu;
+import art.arcane.volmlib.util.io.AtomicFileIO;
+import art.arcane.volmlib.util.localization.PluginLanguageService;
+import art.arcane.volmlib.util.localization.PluginLanguageEditor;
+import art.arcane.volmlib.util.localization.LanguageFileEditor;
+import art.arcane.volmlib.util.localization.TomlLanguageEditor;
+import art.arcane.volmlib.util.localization.RemoteLanguageCatalog;
+import art.arcane.volmlib.util.localization.BukkitLanguageSwitcher;
+import art.arcane.volmlib.util.localization.LanguageAudience;
+import art.arcane.volmlib.util.localization.VolmitLocales;
 import art.arcane.volmlib.util.localization.LinesKey;
 import art.arcane.volmlib.util.localization.LinesValue;
 import art.arcane.volmlib.util.localization.LocaleOverlay;
@@ -28,6 +39,7 @@ import art.arcane.volmlib.util.localization.TextKey;
 import art.arcane.volmlib.util.localization.TextValue;
 import art.arcane.volmlib.util.plugin.ComponentMessenger;
 import art.arcane.volmlib.util.plugin.ComponentText;
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -36,9 +48,12 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 
 import java.io.File;
-import java.io.InputStream;
+import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Path;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -49,6 +64,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 public final class ReactLanguage {
+  private static final Object SNAPSHOT_LOCK = new Object();
   private static final long MAX_LOCALE_BYTES = 2L * 1024L * 1024L;
   private static final int MAX_REPORTED_ISSUES = 12;
   private static final Pattern LOCALE_NAME = Pattern.compile("[A-Za-z0-9_-]+");
@@ -61,6 +77,9 @@ public final class ReactLanguage {
       LocalizationCandidate.english(CATALOG, PluralSelector.oneOther())
   );
   private static volatile String activeLocale = CATALOG.englishLocale();
+  private static RemoteLanguageCatalog remoteCatalog;
+  private static PluginLanguageService languageService;
+  private static BukkitLanguageSwitcher languageSwitcher;
 
   static {
     validateCatalogTemplates();
@@ -70,7 +89,85 @@ public final class ReactLanguage {
   }
 
   public static boolean initialize() {
-    return reload();
+    close();
+    remoteCatalog = RemoteLanguageCatalog.load(new RemoteLanguageCatalog.Options(
+        "React", URI.create("https://raw.githubusercontent.com/VolmitSoftware/React/"),
+        "React/src/main/resources/languages", ".toml", "language-source.properties",
+        React.instance.getDataFolder().toPath().resolve("languages/cache"), ReactLanguage.class.getClassLoader()));
+    boolean loaded = reload();
+    languageService = new PluginLanguageService(new PluginLanguageService.Options(
+        React.instance.getDataFolder().toPath().resolve("language-preferences.properties"), VolmitLocales::all,
+        () -> ReactConfiguration.get().getLanguage(), MANAGER::snapshot,
+        locale -> LocalizationSnapshot.create(loadCandidate(locale, null)), ReactLanguage::selectDefault,
+        React.instance.getLogger()));
+    languageSwitcher = BukkitLanguageSwitcher.register(React.instance, languageService,
+        new BukkitLanguageSwitcher.Options("react", "react.use",
+            DirectorMiniMenu.Theme.reactBlue(), directorResolver(), editorOptions()));
+    return loaded;
+  }
+
+  public static void close() {
+    if (languageSwitcher != null) {
+      languageSwitcher.close();
+      languageSwitcher = null;
+    }
+    if (languageService != null) {
+      languageService.close();
+      languageService = null;
+    }
+    if (remoteCatalog != null) {
+      remoteCatalog.close();
+      remoteCatalog = null;
+    }
+  }
+
+  public static BukkitLanguageSwitcher switcher() {
+    return languageSwitcher;
+  }
+
+  public static PluginLanguageEditor.Options editorOptions() {
+    return new PluginLanguageEditor.Options(
+        locale -> LocalizationSnapshot.create(loadCandidate(locale, null)), ReactLanguage::writeMessage);
+  }
+
+  private static LocalizationSnapshot writeMessage(PluginLanguageEditor.Edit edit) throws IOException {
+    File file = new File(overrideFolder(), edit.locale() + ".toml");
+    LocalizationSnapshot prepared = LanguageFileEditor.update(file.toPath(), raw -> {
+      LocalizationSnapshot current = editorSnapshot(edit.locale(), file, raw);
+      if (!current.value(CATALOG.require(edit.key())).equals(edit.expected())) {
+        throw new IOException("Language message changed; reopen it before saving");
+      }
+      String updated = TomlLanguageEditor.upsert(raw, edit.key(), edit.value()).content();
+      return new LanguageFileEditor.Prepared<>(updated, editorSnapshot(edit.locale(), file, updated));
+    });
+    synchronized (SNAPSHOT_LOCK) {
+      if (edit.locale().equals(activeLocale)) {
+        MANAGER.install(prepared);
+      }
+    }
+    return prepared;
+  }
+
+  private static LocalizationSnapshot editorSnapshot(String locale, File file, String raw) throws IOException {
+    try {
+      return LocalizationSnapshot.create(loadCandidate(locale, new OverrideHotloadSnapshot(normalizedPath(file), raw)));
+    } catch (Exception failure) {
+      throw new IOException("Could not validate React language " + locale, failure);
+    }
+  }
+
+  private static void selectDefault(String locale, LocalizationSnapshot prepared) throws Exception {
+    File file = React.instance.getDataFile("react.toml");
+    JsonObject configuration = ConfigFileSupport.parseToJsonElement(Files.readString(file.toPath()), file).getAsJsonObject();
+    configuration.addProperty("language", locale);
+    ReactConfiguration next = new Gson().fromJson(configuration, ReactConfiguration.class);
+    String raw = TomlCodec.toToml(next, "main-config");
+    AtomicFileIO.writeString(file.toPath(), raw);
+    ReactConfiguration.applyHotloadSnapshot(next);
+    synchronized (SNAPSHOT_LOCK) {
+      MANAGER.install(prepared);
+      activeLocale = locale;
+    }
   }
 
   public static boolean reload() {
@@ -118,12 +215,20 @@ public final class ReactLanguage {
     if (prepared == null || prepared.noOp()) {
       return true;
     }
-    LocalizationReloadResult result = MANAGER.install(prepared.snapshot());
+    LocalizationReloadResult result;
+    synchronized (SNAPSHOT_LOCK) {
+      result = MANAGER.install(prepared.snapshot());
+      if (result.applied()) {
+        activeLocale = prepared.normalizedLocale();
+      }
+    }
     if (!result.applied()) {
       reportRejectedReload(prepared.requestedLocale(), result);
       return false;
     }
-    activeLocale = prepared.normalizedLocale();
+    if (languageService != null) {
+      languageService.invalidate();
+    }
     int warningCount = result.validation().warnings().size();
     React.verbose("Loaded locale " + prepared.requestedLocale() + " with " + warningCount + " fallback "
         + (warningCount == 1 ? "entry" : "entries") + ".");
@@ -135,15 +240,21 @@ public final class ReactLanguage {
     String requestedLocale = configuredLocale == null || configuredLocale.isBlank()
         ? CATALOG.englishLocale()
         : configuredLocale.trim();
-    LocalizationReloadResult result = MANAGER.reload(
-        () -> loadCandidate(normalizeLocale(configuredLocale), hotloadSnapshot)
-    );
+    LocalizationReloadResult result;
+    synchronized (SNAPSHOT_LOCK) {
+      result = MANAGER.reload(() -> loadCandidate(normalizeLocale(configuredLocale), hotloadSnapshot));
+      if (result.applied()) {
+        activeLocale = normalizeLocale(configuredLocale);
+      }
+    }
     if (!result.applied()) {
       reportRejectedReload(requestedLocale, result);
       return false;
     }
 
-    activeLocale = normalizeLocale(configuredLocale);
+    if (languageService != null) {
+      languageService.invalidate();
+    }
     int warningCount = result.validation().warnings().size();
     React.verbose("Loaded locale " + requestedLocale + " with " + warningCount + " fallback "
         + (warningCount == 1 ? "entry" : "entries") + ".");
@@ -175,7 +286,7 @@ public final class ReactLanguage {
   }
 
   public static Component component(MessageKey key, MessageArgs arguments) {
-    LocalizationSnapshot snapshot = MANAGER.snapshot();
+    LocalizationSnapshot snapshot = selectedSnapshot();
     return render(snapshot, key, arguments);
   }
 
@@ -188,7 +299,7 @@ public final class ReactLanguage {
   }
 
   public static Component prefixedComponent(MessageKey key, MessageArgs arguments) {
-    LocalizationSnapshot snapshot = MANAGER.snapshot();
+    LocalizationSnapshot snapshot = selectedSnapshot();
     Component prefix = render(snapshot, RuntimeMessages.PREFIX, MessageArgs.empty());
     return prefix.append(render(snapshot, key, arguments));
   }
@@ -222,7 +333,7 @@ public final class ReactLanguage {
   }
 
   public static String raw(MessageKey key, MessageArgs arguments) {
-    LocalizationSnapshot snapshot = MANAGER.snapshot();
+    LocalizationSnapshot snapshot = selectedSnapshot();
     if (!(key instanceof TextKey textKey)) {
       throw new IllegalArgumentException("Raw messages must use text keys: " + key.id());
     }
@@ -240,25 +351,29 @@ public final class ReactLanguage {
 
   public static void send(CommandSender sender, MessageKey key, MessageArgument... arguments) {
     if (sender != null) {
-      ComponentMessenger.send(sender, ComponentText.component(component(key, arguments)));
+      LanguageAudience.run(sender instanceof Player player ? player.getUniqueId() : null,
+          () -> ComponentMessenger.send(sender, ComponentText.component(component(key, arguments))));
     }
   }
 
   public static void send(VolmitSender sender, MessageKey key, MessageArgument... arguments) {
     if (sender != null) {
-      sender.sendComponent(component(key, arguments));
+      LanguageAudience.run(sender.isPlayer() ? sender.player().getUniqueId() : null,
+          () -> sender.sendComponent(component(key, arguments)));
     }
   }
 
   public static void sendPrefixed(CommandSender sender, MessageKey key, MessageArgument... arguments) {
     if (sender != null) {
-      ComponentMessenger.send(sender, ComponentText.component(prefixedComponent(key, arguments)));
+      LanguageAudience.run(sender instanceof Player player ? player.getUniqueId() : null,
+          () -> ComponentMessenger.send(sender, ComponentText.component(prefixedComponent(key, arguments))));
     }
   }
 
   public static void sendPrefixed(VolmitSender sender, MessageKey key, MessageArgument... arguments) {
     if (sender != null) {
-      sender.sendComponent(prefixedComponent(key, arguments));
+      LanguageAudience.run(sender.isPlayer() ? sender.player().getUniqueId() : null,
+          () -> sender.sendComponent(prefixedComponent(key, arguments)));
     }
   }
 
@@ -280,6 +395,10 @@ public final class ReactLanguage {
     return MANAGER.snapshot();
   }
 
+  private static LocalizationSnapshot selectedSnapshot() {
+    return languageService == null ? MANAGER.snapshot() : languageService.snapshot();
+  }
+
   private static LocalizationCandidate loadCandidate(
       String locale,
       OverrideHotloadSnapshot hotloadSnapshot
@@ -296,9 +415,9 @@ public final class ReactLanguage {
     }
 
     if (!CATALOG.englishLocale().equalsIgnoreCase(locale)) {
-      LocaleOverlay bundled = loadBundledOverlay(locale);
-      if (bundled != null) {
-        overlays.add(bundled);
+      LocaleOverlay downloaded = loadDownloadedOverlay(locale);
+      if (downloaded != null) {
+        overlays.add(downloaded);
       }
     }
     return new LocalizationCandidate(CATALOG, overlays, PluralSelector.oneOther());
@@ -325,17 +444,12 @@ public final class ReactLanguage {
     return file.toPath().toAbsolutePath().normalize().toString();
   }
 
-  private static LocaleOverlay loadBundledOverlay(String locale) throws Exception {
-    String resourceName = "languages/" + locale + ".toml";
-    InputStream input = React.instance.getResource(resourceName);
-    if (input == null) {
-      React.warn("No bundled locale exists for " + locale + "; code-owned English will be used.");
-      return null;
-    }
-    try (InputStream stream = input) {
-      String raw = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
-      return parseOverlay("bundled:" + resourceName, locale, raw);
-    }
+  private static LocaleOverlay loadDownloadedOverlay(String locale) throws Exception {
+    Path file = React.instance.getDataFolder().toPath().resolve("languages").resolve(locale + ".toml");
+    String raw = remoteCatalog.readOrInstall(locale, file, (selectedLocale, content) ->
+        LocalizationSnapshot.create(new LocalizationCandidate(CATALOG,
+            List.of(parseOverlay(file.toString(), selectedLocale, content)), PluralSelector.oneOther())));
+    return parseOverlay(file.toString(), locale, raw);
   }
 
   static LocaleOverlay parseOverlay(String source, String locale, String raw) {

@@ -1,3 +1,5 @@
+"command.description.debugdump" = "Sukurti diagnostikos ataskaitą ir pasirinktinai ją įkelti"
+"command.parameter.debugdump_upload" = "Įkelti ataskaitą į mclo.gs"
 # Complete bundled translation. Code-owned English remains the canonical fallback.
 "action.collect_garbage.no_reclaim" = "Šiukšlių surinkimas baigtas nedelsiant negavus pakartotos krūvos ({used} naudota) n {duration}"
 "action.collect_garbage.reclaimed" = "Laisva {freed} ({before} -> {after}) {duration}"

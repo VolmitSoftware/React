@@ -42,6 +42,10 @@ tasks.named('jar', org.gradle.api.tasks.bundling.Jar).configure {
     archiveClassifier.set('thin')
 }
 
+tasks.withType(org.gradle.api.tasks.bundling.Jar).configureEach {
+    exclude('languages/**')
+}
+
 void registerCustomOutputTask(String name, String path) {
     if (!System.getProperty('os.name').toLowerCase().contains('windows')) {
         return

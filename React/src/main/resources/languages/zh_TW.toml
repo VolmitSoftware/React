@@ -1,3 +1,5 @@
+"command.description.debugdump" = "建立診斷報告並選擇是否上傳"
+"command.parameter.debugdump_upload" = "將報告上傳至 mclo.gs"
 # Complete bundled translation. Code-owned English remains the canonical fallback.
 "action.collect_garbage.no_reclaim" = "垃圾收集工作完成,沒有立即回收堆積({used} 用於) {duration}"
 "action.collect_garbage.reclaimed" = "釋放 {freed} ({before} -> {after}) 中, {duration}"

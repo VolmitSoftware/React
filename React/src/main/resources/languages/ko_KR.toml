@@ -1,3 +1,5 @@
+"command.description.debugdump" = "진단 보고서를 생성하고 선택적으로 업로드"
+"command.parameter.debugdump_upload" = "보고서를 mclo.gs에 업로드"
 # Complete bundled translation. Code-owned English remains the canonical fallback.
 "action.collect_garbage.no_reclaim" = "즉시 출혈이 없는 Garbage 컬렉션(Garbage collection{used} 사용) {duration}"
 "action.collect_garbage.reclaimed" = "무료 다운로드 {freed} ({before} -> {after}) 에서 {duration}"

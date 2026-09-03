@@ -1,3 +1,5 @@
+"command.description.debugdump" = "Создать диагностический отчёт и при желании загрузить его"
+"command.parameter.debugdump_upload" = "Загрузить отчёт на mclo.gs"
 # Complete bundled translation. Code-owned English remains the canonical fallback.
 "action.collect_garbage.no_reclaim" = "Сбор мусора завершен без немедленной утилизации кучи ({used} используемый) в {duration}"
 "action.collect_garbage.reclaimed" = "освобожденный {freed} ({before} -> {after}) в {duration}"

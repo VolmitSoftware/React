@@ -12,6 +12,12 @@ commands:
   react:
     aliases: [ re ]
 permissions:
+  react.debugdump:
+    description: Allows creating and optionally uploading diagnostic reports.
+    default: op
+  react.language.self:
+    description: Allows choosing your own language for this plugin.
+    default: true
   react.use:
     description: Allows using the /react command root.
     default: op
@@ -19,6 +25,8 @@ permissions:
     description: Allows using all /react commands.
     default: op
     children:
+      react.debugdump: true
+      react.language.self: true
       react.use: true
       react.shorthands.*: true
   react.shorthands.*:

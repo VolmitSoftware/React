@@ -22,6 +22,7 @@ package art.arcane.react.core.controller;
 import art.arcane.react.React;
 import art.arcane.react.content.directorcommand.CommandReact;
 import art.arcane.react.localization.ReactLanguage;
+import art.arcane.volmlib.util.localization.LanguageAudience;
 import art.arcane.react.localization.catalog.RuntimeMessages;
 import art.arcane.react.util.cache.AtomicCache;
 import art.arcane.react.util.common.scheduling.J;
@@ -116,6 +117,12 @@ public class DirectorCommandController implements IController, CommandExecutor, 
 
   private DirectorContextRegistry buildDirectorContexts() {
     DirectorContextRegistry contexts = new DirectorContextRegistry();
+    contexts.register(CommandSender.class, (invocation, map) -> {
+      if (invocation.getSender() instanceof BukkitDirectorSender sender) {
+        return sender.sender();
+      }
+      return null;
+    });
 
     for (Map.Entry<Class<?>, DirectorContextHandler<?>> entry : DirectorContextHandler.contextHandlers.entrySet()) {
       registerContextHandler(contexts, entry.getKey(), entry.getValue());
@@ -164,6 +171,9 @@ public class DirectorCommandController implements IController, CommandExecutor, 
       return List.of();
     }
 
+    if (args.length > 0 && args[0].equalsIgnoreCase("language")) {
+      return ReactLanguage.switcher().complete(sender, Arrays.copyOfRange(args, 1, args.length));
+    }
     List<String> v = runDirectorTab(sender, alias, args);
 
     if (sender instanceof Player) {
@@ -185,13 +195,19 @@ public class DirectorCommandController implements IController, CommandExecutor, 
       return false;
     }
 
-    if (!sender.hasPermission(ROOT_PERMISSION) && !sender.hasPermission("react.*") && !sender.isOp()) {
+    if (args.length > 0 && args[0].equalsIgnoreCase("language")) {
+      ReactLanguage.switcher().command(sender, Arrays.copyOfRange(args, 1, args.length));
+      return true;
+    }
+    if (!(args.length > 0 && args[0].equalsIgnoreCase("debugdump"))
+        && !sender.hasPermission(ROOT_PERMISSION) && !sender.hasPermission("react.*") && !sender.isOp()) {
       ReactLanguage.send(sender, RuntimeMessages.MISSING_PERMISSION,
           MessageArgument.untrusted("permission", ROOT_PERMISSION));
       return true;
     }
 
-    executeCommand(sender, label, normalizeLegacyArgs(args));
+    LanguageAudience.run(sender instanceof Player player ? player.getUniqueId() : null,
+        () -> executeCommand(sender, label, normalizeLegacyArgs(args)));
     return true;
   }
 

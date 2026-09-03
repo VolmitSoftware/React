@@ -19,6 +19,7 @@
 
 package art.arcane.react.api.monitor;
 
+import art.arcane.volmlib.util.localization.LanguageAudience;
 import art.arcane.react.React;
 import art.arcane.react.api.monitor.configuration.MonitorConfiguration;
 import art.arcane.react.api.monitor.configuration.MonitorGroup;
@@ -493,6 +494,10 @@ public class ActionBarMonitor extends PlayerMonitor {
   }
 
   private void flushLocked() {
+    LanguageAudience.run(getPlayer().getPlayer().getUniqueId(), this::renderForPlayer);
+  }
+
+  private void renderForPlayer() {
     clearVisibility();
     MonitorGroup f = focus;
 

@@ -63,6 +63,19 @@ public class CommandReact implements DirectorExecutor {
   private CommandWeb web;
 
 
+  @Director(name = "debugdump", sync = true, description = "Create and optionally upload a diagnostic report", descriptionKey = "command.description.debugdump")
+  public void debugdump(
+    @Param(name = "upload", defaultValue = "true", description = "Upload the report to mclo.gs", descriptionKey = "command.parameter.debugdump_upload") boolean upload,
+    @Param(name = "sender", contextual = true) CommandSender sender
+  ) {
+    React.instance.debugDump().request(sender, upload);
+  }
+
+  @Director(name = "language", description = "Choose your language or the server language")
+  public void language() {
+    ReactLanguage.switcher().open(sender().getS());
+  }
+
   @Director(
       name = "monitor",
       aliases = {"m", "mon"},

@@ -1,3 +1,5 @@
+"command.description.debugdump" = "Luo diagnostiikkaraportti ja lähetä se halutessasi"
+"command.parameter.debugdump_upload" = "Lähetä raportti mclo.gs-palveluun"
 # Complete bundled translation. Code-owned English remains the canonical fallback.
 "action.collect_garbage.no_reclaim" = "Roskankeruu on suoritettu ilman välitöntä kasaa regeneroitua ({used} ilu) {duration}"
 "action.collect_garbage.reclaimed" = "Freed {freed} ({before} -> {after}) {duration}"

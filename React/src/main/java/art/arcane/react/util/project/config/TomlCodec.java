@@ -1,5 +1,7 @@
 package art.arcane.react.util.project.config;
 
+import art.arcane.volmlib.util.localization.LanguageAudience;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.moandjiezana.toml.Toml;
@@ -42,7 +44,7 @@ public final class TomlCodec {
   }
 
   public static String toToml(Object object, String sourceTag) {
-    return new ReflectiveTomlWriter(sourceTag).write(object);
+    return LanguageAudience.call(null, () -> new ReflectiveTomlWriter(sourceTag).write(object));
   }
 
   public static String toToml(JsonElement element) {

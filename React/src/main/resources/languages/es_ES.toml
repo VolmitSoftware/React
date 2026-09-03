@@ -1,3 +1,5 @@
+"command.description.debugdump" = "Crear y subir opcionalmente un informe de diagnóstico"
+"command.parameter.debugdump_upload" = "Subir el informe a mclo.gs"
 # Complete bundled translation. Code-owned English remains the canonical fallback.
 "action.collect_garbage.no_reclaim" = "Colección de basura completada sin ningún atraco inmediato reclamado ({used} usados) en {duration}"
 "action.collect_garbage.reclaimed" = "Liberado {freed} ({before} -> {after}) en {duration}"

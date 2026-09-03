@@ -1,3 +1,5 @@
+"command.description.debugdump" = "יצירת דוח אבחון והעלאתו לפי בחירה"
+"command.parameter.debugdump_upload" = "העלאת הדוח אל mclo.gs"
 # Complete bundled translation. Code-owned English remains the canonical fallback.
 "action.collect_garbage.no_reclaim" = "אוסף Garbage הושלם ללא החזר מיידי (ללא תשלום מיידי{used} שימוש) {duration}"
 "action.collect_garbage.reclaimed" = "חופשי {freed} ({before} -> {after}ב) {duration}"

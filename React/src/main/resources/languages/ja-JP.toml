@@ -1,3 +1,5 @@
+"command.description.debugdump" = "診断レポートを作成し、必要に応じてアップロードする"
+"command.parameter.debugdump_upload" = "レポートを mclo.gs にアップロードする"
 # Complete bundled translation. Code-owned English remains the canonical fallback.
 "action.collect_garbage.no_reclaim" = "即時のヒープが返された状態で完了したゴミ収集({used} 使用される)で {duration}"
 "action.collect_garbage.reclaimed" = "フリガナ {freed} ({before} -> {after}) で {duration}"

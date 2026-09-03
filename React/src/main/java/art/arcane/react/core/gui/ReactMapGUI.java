@@ -26,6 +26,7 @@ import art.arcane.react.api.rendering.RendererUnknown;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.core.controller.MapController;
 import art.arcane.react.localization.ReactLanguage;
+import art.arcane.volmlib.util.localization.LanguageAudience;
 import art.arcane.react.localization.catalog.GuiMessages;
 import art.arcane.react.localization.catalog.MapMessages;
 import art.arcane.react.localization.catalog.RendererMessages;
@@ -73,6 +74,12 @@ public final class ReactMapGUI {
   }
 
   private static void openHub(Player player) {
+    if (player != null) {
+      LanguageAudience.run(player.getUniqueId(), () -> openHubForPlayer(player));
+    }
+  }
+
+  private static void openHubForPlayer(Player player) {
     if (player == null) {
       return;
     }
@@ -158,6 +165,12 @@ public final class ReactMapGUI {
   }
 
   private static void openGroup(Player player, int groupOrder, int page) {
+    if (player != null) {
+      LanguageAudience.run(player.getUniqueId(), () -> openGroupForPlayer(player, groupOrder, page));
+    }
+  }
+
+  private static void openGroupForPlayer(Player player, int groupOrder, int page) {
     if (player == null) {
       return;
     }

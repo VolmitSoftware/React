@@ -33,6 +33,7 @@ import art.arcane.react.core.controller.PlayerController;
 import art.arcane.react.core.controller.SampleController;
 import art.arcane.react.core.controller.TweakController;
 import art.arcane.react.localization.ReactLanguage;
+import art.arcane.volmlib.util.localization.LanguageAudience;
 import art.arcane.react.localization.catalog.GuiMessages;
 import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.util.common.scheduling.J;
@@ -117,6 +118,12 @@ public final class ReactConfigGUI {
   }
 
   public static void open(Player player, String sectionPath, int page) {
+    if (player != null) {
+      LanguageAudience.run(player.getUniqueId(), () -> openForPlayer(player, sectionPath, page));
+    }
+  }
+
+  private static void openForPlayer(Player player, String sectionPath, int page) {
     if (player == null) {
       return;
     }
@@ -1226,6 +1233,11 @@ public final class ReactConfigGUI {
       }
       case NUMBER, STRING -> {
         element.onLeftClick((e) -> {
+          if (entry.field().getDeclaringClass() == ReactConfiguration.class && entry.field().getName().equals("language")) {
+            player.closeInventory();
+            ReactLanguage.switcher().command(player, new String[]{"server"});
+            return;
+          }
           ConfigInputController inputController = React.controller(ConfigInputController.class);
           if (inputController == null) {
             ReactLanguage.send(player, GuiMessages.CONFIG_INPUT_UNAVAILABLE);

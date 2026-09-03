@@ -4,6 +4,8 @@ import art.arcane.volmlib.util.localization.MessageCatalog;
 import art.arcane.volmlib.util.localization.TextKey;
 
 public final class CommandMessages {
+  public static final TextKey DEBUG_DUMP_DESCRIPTION = TextKey.of("command.description.debugdump", "Create and optionally upload a diagnostic report");
+  public static final TextKey DEBUG_DUMP_UPLOAD = TextKey.of("command.parameter.debugdump_upload", "Upload the report to mclo.gs");
   public static final TextKey ROOT_DESCRIPTION = TextKey.of("command.description.root", "The root React command");
   public static final TextKey MONITOR_DESCRIPTION = TextKey.of("command.description.monitor", "Monitor the server through the action bar");
   public static final TextKey VIEW_DISTANCE_DESCRIPTION = TextKey.of("command.description.view_distance", "Set the current world's view and simulation distance");
@@ -155,6 +157,8 @@ public final class CommandMessages {
   }
 
   public static void addTo(MessageCatalog.Builder builder) {
+    builder.add(DEBUG_DUMP_DESCRIPTION);
+    builder.add(DEBUG_DUMP_UPLOAD);
     builder.add(ROOT_DESCRIPTION);
     builder.add(MONITOR_DESCRIPTION);
     builder.add(VIEW_DISTANCE_DESCRIPTION);

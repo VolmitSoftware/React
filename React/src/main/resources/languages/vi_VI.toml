@@ -1,3 +1,5 @@
+"command.description.debugdump" = "Tạo báo cáo chẩn đoán và tải lên nếu muốn"
+"command.parameter.debugdump_upload" = "Tải báo cáo lên mclo.gs"
 # Complete bundled translation. Code-owned English remains the canonical fallback.
 "action.collect_garbage.no_reclaim" = "Bộ sưu tập rác được hoàn tất mà không có chất đống ngay lập tức được tái tạo ({used} đã dùng) trong {duration}"
 "action.collect_garbage.reclaimed" = "Tự do {freed} ({before} -> {after}) trong {duration}"

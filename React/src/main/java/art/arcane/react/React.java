@@ -19,6 +19,8 @@
 
 package art.arcane.react;
 
+import art.arcane.volmlib.util.diagnostics.BukkitDebugDump;
+import art.arcane.volmlib.util.diagnostics.DebugDumpContributor;
 import art.arcane.chrono.PrecisionStopwatch;
 import art.arcane.multiburst.MultiBurst;
 import art.arcane.react.api.action.Action;
@@ -111,6 +113,7 @@ public class React extends VolmitPlugin implements ReloadAware {
   private volatile ReactPlaceholders papiExpansion;
   // ReactMetrics owns all bstats types; never reference them from this class (slimjar link trap)
   private ReactMetrics metrics;
+  private BukkitDebugDump debugDump;
   private volatile boolean monitoringOnly;
   private boolean ready;
 
@@ -443,6 +446,15 @@ public class React extends VolmitPlugin implements ReloadAware {
     getDataFolder().mkdirs();
   }
 
+  private DebugDumpContributor.Report captureDebugState() {
+    String state = "Ready: " + ready + "\nMonitoring only: " + monitoringOnly + "\nReported errors: " + reportedErrorCounter.get();
+    return () -> state;
+  }
+
+  public BukkitDebugDump debugDump() {
+    return debugDump;
+  }
+
   public File jar() {
     return getFile();
   }
@@ -456,6 +468,7 @@ public class React extends VolmitPlugin implements ReloadAware {
     PrecisionStopwatch psw = PrecisionStopwatch.start();
     ReactConfiguration.get();
     ReactLanguage.initialize();
+    debugDump = BukkitDebugDump.create(this, new BukkitDebugDump.Options(() -> true, this::captureDebugState));
     startupTasks = new CopyOnWriteArrayList<>();
     prejobs = new CopyOnWriteArrayList<>();
     burst = new MultiBurst("React", Thread.MIN_PRIORITY);
@@ -551,6 +564,11 @@ public class React extends VolmitPlugin implements ReloadAware {
     boolean drained = true;
     ready = false;
     unregisterPapiExpansion();
+    if (debugDump != null) {
+      debugDump.close();
+      debugDump = null;
+    }
+    ReactLanguage.close();
     closeAudienceProvider();
     if (metrics != null) {
       metrics.shutdown();

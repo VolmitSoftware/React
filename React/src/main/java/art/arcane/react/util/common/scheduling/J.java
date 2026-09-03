@@ -25,6 +25,7 @@ import art.arcane.volmlib.util.function.NastyFunction;
 import art.arcane.volmlib.util.function.NastyFuture;
 import art.arcane.volmlib.util.function.NastyRunnable;
 import art.arcane.volmlib.util.math.FinalInteger;
+import art.arcane.volmlib.util.localization.LanguageAudience;
 import art.arcane.volmlib.util.scheduling.AR;
 import art.arcane.volmlib.util.scheduling.FoliaScheduler;
 import art.arcane.volmlib.util.scheduling.JSupport;
@@ -35,6 +36,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.IllegalPluginAccessException;
 import org.bukkit.plugin.Plugin;
 
@@ -203,8 +205,10 @@ public class J {
   }
 
   private static Runnable guardEntityTask(Entity entity, Runnable runnable, Runnable retired) {
+    Runnable localized = entity instanceof Player player
+        ? () -> LanguageAudience.run(player.getUniqueId(), runnable) : runnable;
     if (retired == null) {
-      return runnable;
+      return localized;
     }
 
     return () -> {
@@ -216,7 +220,7 @@ public class J {
       }
 
       if (active) {
-        runnable.run();
+        localized.run();
       } else {
         retired.run();
       }
