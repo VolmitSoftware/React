@@ -52,6 +52,23 @@ class CommandTreeTest {
     assertExactPath(root, "mo");
   }
 
+  @Test
+  void reactDirectorTreeResolvesIndependentDistancePaths() {
+    DirectorRuntimeNode root = reactRoot();
+    assertExactPath(root, "distance", "world", "view");
+    assertExactPath(root, "distance", "world", "simulation");
+    assertExactPath(root, "distance", "world", "send");
+    assertExactPath(root, "distance", "server", "view");
+    assertExactPath(root, "distance", "server", "simulation");
+    assertExactPath(root, "distance", "server", "send");
+    assertExactPath(root, "distance", "player", "view");
+    assertExactPath(root, "distance", "player", "simulation");
+    assertExactPath(root, "distance", "player", "send");
+    assertExactPath(root, "distances", "world", "view-distance");
+    assertExactPath(root, "distance", "server", "simulation-distance");
+    assertExactPath(root, "distance", "player", "send-view-distance");
+  }
+
   private static DirectorRuntimeNode reactRoot() {
     DirectorRuntimeEngine engine = DirectorEngineFactory.create(new CommandReact());
     return engine.getRoot();

@@ -19,7 +19,6 @@
 
 package art.arcane.react.content.directorcommand;
 
-import art.arcane.curse.Curse;
 import art.arcane.react.React;
 import art.arcane.react.api.rendering.ReactRenderer;
 import art.arcane.react.core.controller.FeatureController;
@@ -33,7 +32,6 @@ import art.arcane.react.localization.catalog.RuntimeMessages;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.director.DirectorExecutor;
 import art.arcane.react.util.director.handlers.ReactRendererHandler;
-import art.arcane.react.util.project.world.WorldDistanceSupport;
 import art.arcane.volmlib.util.director.DirectorOrigin;
 import art.arcane.volmlib.util.director.annotations.Director;
 import art.arcane.volmlib.util.director.annotations.Param;
@@ -50,6 +48,7 @@ import org.bukkit.command.CommandSender;
 )
 public class CommandReact implements DirectorExecutor {
   private CommandConfig config;
+  private CommandDistance distance;
   private CommandAction action;
   private CommandChunk chunk;
   private CommandEnvironment environment;
@@ -88,41 +87,6 @@ public class CommandReact implements DirectorExecutor {
     boolean enabled = React.controller(PlayerController.class).getPlayer(player()).isActionBarMonitoring();
     ReactLanguage.sendPrefixed(sender(), enabled ? RuntimeMessages.MONITOR_ENABLED : RuntimeMessages.MONITOR_DISABLED);
   }
-
-
-  @Director(
-      name = "set-player-view-distance",
-      aliases = {"vd", "view-distance"},
-      description = "Set the current world's view and simulation distance",
-      descriptionKey = "command.description.view_distance",
-      origin = DirectorOrigin.PLAYER
-  )
-  public void vd(
-      @Param(
-          name = "distance",
-          description = "The view and simulation distance in chunks",
-          descriptionKey = "command.parameter.view_distance.distance"
-      )
-      int d) {
-    if (!WorldDistanceSupport.supportsWorldDistanceSetters()) {
-      ReactLanguage.sendPrefixed(sender(), CommandMessages.PAPER_REQUIRED);
-      return;
-    }
-
-    if (d > 32) {
-      d = 32;
-    }
-
-    Curse.on(player().getWorld()).method("setViewDistance", int.class).invoke(d);
-    Curse.on(player().getWorld()).method("setSimulationDistance", int.class).invoke(d);
-    ReactLanguage.sendPrefixed(
-        sender(),
-        CommandMessages.VIEW_DISTANCE_SET,
-        MessageArgument.untrusted("world", player().getWorld().getName()),
-        MessageArgument.untrusted("distance", d)
-    );
-  }
-
   @Director(
       name = "map",
       description = "Open or select a React map renderer",

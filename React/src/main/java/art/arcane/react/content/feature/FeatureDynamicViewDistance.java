@@ -24,7 +24,7 @@ import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.model.MinMax;
 import art.arcane.react.util.common.scheduling.J;
-import art.arcane.react.util.project.world.WorldDistanceSupport;
+import art.arcane.react.util.project.world.DistanceSupport;
 import art.arcane.volmlib.util.math.M;
 import art.arcane.volmlib.util.math.RollingSequence;
 import art.arcane.volmlib.util.scheduling.FoliaScheduler;
@@ -143,7 +143,7 @@ public class FeatureDynamicViewDistance extends ReactFeature implements Listener
       originalDistances = new ConcurrentHashMap<>();
     }
 
-    if (!WorldDistanceSupport.supportsWorldDistanceSetters()) {
+    if (!DistanceSupport.supportsWorldDistanceSetters()) {
       setEnabled(false);
       React.warn("Dynamic View Distance disabled: this server software does not expose world distance setters. Use Paper/Purpur to enable this feature.");
       return;
