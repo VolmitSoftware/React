@@ -56,6 +56,18 @@ class AlertStore {
     _persistSet(_resolvedKey, _resolved);
   }
 
+  void clearServer(String serverId) {
+    final String prefix = '$serverId/';
+    _acked.removeWhere((String key) => key.startsWith(prefix));
+    _resolved.removeWhere((String key) => key.startsWith(prefix));
+    _firstSeenByKey.removeWhere(
+      (String key, DateTime _) => key.startsWith(prefix),
+    );
+    _previousCriticalKeys.removeWhere((String key) => key.startsWith(prefix));
+    _persistSet(_ackedKey, _acked);
+    _persistSet(_resolvedKey, _resolved);
+  }
+
   List<FleetAlert> reconcile(List<FleetAlert> live) {
     final Set<String> liveKeys = <String>{};
     for (final FleetAlert a in live) {

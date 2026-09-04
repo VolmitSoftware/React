@@ -8,6 +8,10 @@ String reactorKeyboardKey(Object event) => '';
 
 void focusReactorElement(String elementId) {}
 
+void focusReactorDialog(String elementId) {}
+
+bool trapReactorDialogFocus(Object event, String elementId) => false;
+
 void focusReactorLanguageMenu(String elementId) {}
 
 bool moveReactorLanguageMenuFocus(Object event, String elementId) => false;

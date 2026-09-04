@@ -1641,12 +1641,16 @@ class ReactorFleetObserverState extends State<ReactorFleetObserver>
   @override
   void removeServer(String id) {
     final int idx = _servers.indexWhere((_ActiveServer s) => s.id == id);
-    if (idx < 0) return;
-    final _ActiveServer entry = _servers[idx];
-    entry.sub.cancel();
+    if (idx >= 0) {
+      _servers[idx].sub.cancel();
+    }
     _fleet.remove(id);
+    _tagsStore.setTags(id, const <String>[]);
+    _alertStore.clearServer(id);
     setState(() {
-      _servers.removeAt(idx);
+      if (idx >= 0) {
+        _servers.removeAt(idx);
+      }
       _revision++;
     });
   }

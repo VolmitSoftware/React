@@ -102,6 +102,39 @@ void main() {
     });
   });
 
+  group('AlertStore.clearServer', () {
+    test('removes only the selected server persisted alert state', () {
+      final InMemoryFleetStorage storage = InMemoryFleetStorage();
+      final AlertStore store = AlertStore(storage);
+      store.ack('s1/tps');
+      store.resolve('s1/mspt');
+      store.ack('s2/tps');
+      store.resolve('s2/mspt');
+
+      store.clearServer('s1');
+
+      final AlertStore reloaded = AlertStore(storage);
+      expect(reloaded.isAcked('s1/tps'), isFalse);
+      expect(reloaded.isResolved('s1/mspt'), isFalse);
+      expect(reloaded.isAcked('s2/tps'), isTrue);
+      expect(reloaded.isResolved('s2/mspt'), isTrue);
+    });
+
+    test('allows a removed server critical alert to be detected again', () {
+      final AlertStore store = AlertStore(InMemoryFleetStorage());
+      final FleetAlert alert = _alert(
+        's1',
+        'tps',
+        severity: AlertSeverity.critical,
+      );
+      store.detectNewCritical(<FleetAlert>[alert]);
+
+      store.clearServer('s1');
+
+      expect(store.detectNewCritical(<FleetAlert>[alert]), <String>{alert.key});
+    });
+  });
+
   group('AlertStore.reconcile firstSeen preservation', () {
     test('earliest firstSeen is preserved across reconcile calls', () {
       final AlertStore store = AlertStore(InMemoryFleetStorage());

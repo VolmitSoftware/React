@@ -2,6 +2,7 @@ library;
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
 import 'package:arcane_jaspr_shadcn/arcane_jaspr_shadcn.dart';
+import 'package:jaspr/jaspr.dart' show Component, DomComponent;
 import 'package:jaspr_router/jaspr_router.dart';
 import 'package:jaspr_test/server_test.dart';
 
@@ -24,6 +25,7 @@ const ShadcnStylesheet _sheet = ShadcnStylesheet(theme: ShadcnTheme.midnight);
 
 class _FakeFleetController implements FleetController {
   final InMemoryFleetStorage _storage = InMemoryFleetStorage();
+  final List<String> removedIds = <String>[];
   late final AlertStore _alertStore = AlertStore(_storage);
   late final ServerTagsStore _tagsStore = ServerTagsStore(_storage);
 
@@ -40,7 +42,7 @@ class _FakeFleetController implements FleetController {
   void trackPaired(String id) {}
 
   @override
-  void removeServer(String id) {}
+  void removeServer(String id) => removedIds.add(id);
 
   @override
   void clearFleet() {}
@@ -119,6 +121,23 @@ Widget _wrapRouter(List<FleetServerLive> servers) {
   );
 }
 
+Finder _domId(String id) => find.byComponentPredicate(
+  (Component component) => component is DomComponent && component.id == id,
+  description: 'DOM element with id $id',
+);
+
+Finder _dialogSurface() => find.byComponentPredicate(
+  (Component component) =>
+      component is DomComponent &&
+      component.attributes?['data-arcane-surface'] == 'dialog',
+  description: 'open dialog surface',
+);
+
+Finder _dialogButton(String label) => find.descendant(
+  of: _dialogSurface(),
+  matching: find.ancestor(of: find.text(label), matching: find.tag('button')),
+);
+
 void main() {
   group('FleetDashboardScreen', () {
     testServer('renders both server names A and B', (
@@ -157,6 +176,65 @@ void main() {
         isTrue,
         reason: 'Server name B must appear in rendered HTML',
       );
+    });
+
+    testServer('renders a contextual remove control for every server', (
+      ServerTester tester,
+    ) async {
+      tester.pumpComponent(
+        _wrap(<FleetServerLive>[_liveServer('a', 'A'), _liveServer('b', 'B')]),
+      );
+      final DocumentResponse response = await tester.request('/');
+      final String removeA = reactorText(
+        ReactorText.settingsRemoveServer,
+        <String, Object?>{'server': 'A'},
+      );
+      final String removeB = reactorText(
+        ReactorText.settingsRemoveServer,
+        <String, Object?>{'server': 'B'},
+      );
+
+      expect(response.statusCode, equals(200));
+      expect(response.body, contains('id="reactor-remove-server-a"'));
+      expect(response.body, contains('aria-label="$removeA"'));
+      expect(response.body, contains('id="reactor-remove-server-b"'));
+      expect(response.body, contains('aria-label="$removeB"'));
+    });
+
+    testComponents('cancel preserves servers and confirm removes only A', (
+      ComponentTester tester,
+    ) async {
+      final _FakeFleetController controller = _FakeFleetController();
+      final String removeA = reactorText(
+        ReactorText.settingsRemoveServer,
+        <String, Object?>{'server': 'A'},
+      );
+      tester.pumpComponent(
+        _wrap(<FleetServerLive>[
+          _liveServer('a', 'A'),
+          _liveServer('b', 'B'),
+        ], ctrl: controller),
+      );
+      await tester.pump();
+
+      await tester.click(_domId('reactor-remove-server-a'));
+      expect(find.text(removeA), findsOneComponent);
+      expect(
+        find.text(reactorText(ReactorText.settingsRemoveServerMessage)),
+        findsOneComponent,
+      );
+
+      await tester.click(_dialogButton('Cancel'));
+      expect(controller.removedIds, isEmpty);
+      expect(find.text(removeA), findsNothing);
+
+      await tester.click(_domId('reactor-remove-server-a'));
+      await tester.click(
+        _dialogButton(reactorText(ReactorText.settingsRemove)),
+      );
+
+      expect(controller.removedIds, equals(<String>['a']));
+      expect(find.text(removeA), findsNothing);
     });
 
     testServer('renders a TPS value from fleet data', (

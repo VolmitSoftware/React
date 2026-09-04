@@ -2563,18 +2563,22 @@ html[dir="rtl"] .reactor-bar-actions > * {
   flex-direction: column;
 }
 
+.reactor-fleet-servers-section {
+  min-width: 0;
+}
+
 .reactor-fleet-server-row {
   display: grid;
   min-width: 0;
   min-height: 40px;
   grid-template-columns:
-    minmax(160px, 1.4fr)
-    minmax(90px, 0.7fr)
-    minmax(56px, 0.45fr)
-    minmax(68px, 0.5fr)
-    minmax(58px, 0.45fr)
-    minmax(82px, 0.65fr)
-    auto;
+    minmax(128px, 1.4fr)
+    minmax(72px, 0.7fr)
+    minmax(44px, 0.45fr)
+    minmax(52px, 0.5fr)
+    minmax(44px, 0.45fr)
+    minmax(64px, 0.65fr)
+    minmax(134px, auto);
   align-items: center;
   gap: 8px;
   padding: 5px 10px;
@@ -2617,6 +2621,14 @@ html[dir="rtl"] .reactor-bar-actions > * {
   font-family: var(--font-mono);
   font-size: 0.7rem;
   font-variant-numeric: tabular-nums;
+}
+
+.reactor-fleet-server-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
 }
 
 .reactor-alert-row {
@@ -3426,8 +3438,27 @@ html[dir="rtl"] .reactor-bar-actions > * {
   }
 
   .reactor-server-identity,
-  .reactor-fleet-server-row > button {
+  .reactor-fleet-server-actions {
     grid-column: 1 / -1;
+  }
+
+  .reactor-fleet-server-actions > .arcane-button {
+    min-height: 44px !important;
+  }
+
+  [data-arcane-surface="dialog"] .arcane-button {
+    min-height: 44px !important;
+  }
+
+  [data-arcane-surface="dialog"] .arcane-dialog-header {
+    padding-inline-end: 72px !important;
+  }
+
+  [data-arcane-surface="dialog"] .arcane-dialog-close {
+    width: 44px !important;
+    min-width: 44px;
+    height: 44px !important;
+    min-height: 44px;
   }
 
   .reactor-server-cell {
@@ -3522,6 +3553,15 @@ html[dir="rtl"] .reactor-bar-actions > * {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .reactor-fleet-server-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .reactor-fleet-server-actions > .arcane-button {
+    width: 100%;
+  }
+
   .reactor-server-cell {
     grid-template-columns: 82px minmax(0, 1fr);
   }
@@ -3548,6 +3588,22 @@ html[dir="rtl"] .reactor-bar-actions > * {
 @media (pointer: coarse) {
   .reactor-nav-item,
   .reactor-server-row {
+    min-height: 44px;
+  }
+
+  .reactor-fleet-server-actions > .arcane-button,
+  [data-arcane-surface="dialog"] .arcane-button {
+    min-height: 44px !important;
+  }
+
+  [data-arcane-surface="dialog"] .arcane-dialog-header {
+    padding-inline-end: 72px !important;
+  }
+
+  [data-arcane-surface="dialog"] .arcane-dialog-close {
+    width: 44px !important;
+    min-width: 44px;
+    height: 44px !important;
     min-height: 44px;
   }
 

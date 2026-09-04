@@ -13,6 +13,12 @@ String reactorKeyboardKey(Object event) => platform.reactorKeyboardKey(event);
 void focusReactorElement(String elementId) =>
     platform.focusReactorElement(elementId);
 
+void focusReactorDialog(String elementId) =>
+    platform.focusReactorDialog(elementId);
+
+bool trapReactorDialogFocus(Object event, String elementId) =>
+    platform.trapReactorDialogFocus(event, elementId);
+
 void focusReactorLanguageMenu(String elementId) =>
     platform.focusReactorLanguageMenu(elementId);
 

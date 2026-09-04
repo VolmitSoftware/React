@@ -1,11 +1,18 @@
 library;
 
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:arcane_jaspr/arcane_jaspr.dart';
 import 'package:arcane_jaspr_shadcn/arcane_jaspr_shadcn.dart';
+import 'package:jaspr/jaspr.dart' show GlobalStateKey;
 import 'package:jaspr_test/server_test.dart';
 
 import 'package:react_web/app/reactor_app.dart';
+import 'package:react_web/model/identity_info.dart';
 import 'package:react_web/model/server_credential.dart';
+import 'package:react_web/model/server_snapshot.dart';
+import 'package:react_web/service/react_client.dart';
 import 'package:react_web/state/alert_store.dart';
 import 'package:react_web/state/connection_manager.dart';
 import 'package:react_web/state/fleet_manager.dart';
@@ -17,6 +24,34 @@ const ShadcnStylesheet _sheet = ShadcnStylesheet(theme: ShadcnTheme.midnight);
 
 Widget _wrap(Widget child) =>
     ArcaneThemeProvider(stylesheet: _sheet, child: child);
+
+const ServerCredential _credential = ServerCredential(
+  id: 'server-1',
+  label: 'Paper',
+  host: 'localhost',
+  port: 8111,
+  bearer: 'token',
+);
+
+class _StubReactClient implements IReactClient {
+  final Completer<ServerSnapshot> _snapshot = Completer<ServerSnapshot>();
+
+  @override
+  Future<IdentityInfo> identity() async => const IdentityInfo(
+    serverName: 'Paper',
+    version: '1.21.11',
+    folia: false,
+    serverId: 'server-1',
+  );
+
+  @override
+  Future<ServerSnapshot> metrics() => _snapshot.future;
+}
+
+FleetManager _fleetManager(InMemoryFleetStorage storage) => FleetManager(
+  storage: storage,
+  clientFactory: (ServerCredential _) => _StubReactClient(),
+);
 
 class _StoreProbe extends StatelessWidget {
   const _StoreProbe();
@@ -114,5 +149,67 @@ void main() {
       final DocumentResponse res = await tester.request('/');
       expect(res.statusCode, 200);
     });
+
+    testComponents('removing a tracked server clears its persisted state', (
+      ComponentTester tester,
+    ) async {
+      final InMemoryFleetStorage storage = InMemoryFleetStorage();
+      storage.write(
+        FleetManager.storageKey,
+        jsonEncode(<Map<String, dynamic>>[_credential.toJson()]),
+      );
+      ServerTagsStore(storage).setTags(_credential.id, <String>['survival']);
+      final FleetManager fleet = _fleetManager(storage);
+      final GlobalStateKey<ReactorFleetObserverState> key =
+          GlobalStateKey<ReactorFleetObserverState>();
+
+      tester.pumpComponent(
+        _wrap(ReactorFleetObserver(key: key, fleetManager: fleet)),
+      );
+      await tester.pump();
+      final ReactorFleetObserverState state = key.currentState!;
+      state.alertStore.ack('${_credential.id}/tps');
+      state.alertStore.resolve('${_credential.id}/mspt');
+      state.removeServer(_credential.id);
+      await tester.pump();
+
+      expect(fleet.servers, isEmpty);
+      expect(jsonDecode(storage.read(FleetManager.storageKey)!), isEmpty);
+      expect(ServerTagsStore(storage).tagsFor(_credential.id), isEmpty);
+      expect(AlertStore(storage).isAcked('${_credential.id}/tps'), isFalse);
+      expect(AlertStore(storage).isResolved('${_credential.id}/mspt'), isFalse);
+    });
+
+    testComponents(
+      'removing an untracked server still clears its persisted state',
+      (ComponentTester tester) async {
+        final InMemoryFleetStorage storage = InMemoryFleetStorage();
+        final FleetManager fleet = _fleetManager(storage);
+        final GlobalStateKey<ReactorFleetObserverState> key =
+            GlobalStateKey<ReactorFleetObserverState>();
+
+        tester.pumpComponent(
+          _wrap(ReactorFleetObserver(key: key, fleetManager: fleet)),
+        );
+        await tester.pump();
+        await fleet.add(_credential);
+        ServerTagsStore(storage).setTags(_credential.id, <String>['survival']);
+        final ReactorFleetObserverState state = key.currentState!;
+        state.alertStore.ack('${_credential.id}/tps');
+        state.alertStore.resolve('${_credential.id}/mspt');
+
+        state.removeServer(_credential.id);
+        await tester.pump();
+
+        expect(fleet.servers, isEmpty);
+        expect(jsonDecode(storage.read(FleetManager.storageKey)!), isEmpty);
+        expect(ServerTagsStore(storage).tagsFor(_credential.id), isEmpty);
+        expect(AlertStore(storage).isAcked('${_credential.id}/tps'), isFalse);
+        expect(
+          AlertStore(storage).isResolved('${_credential.id}/mspt'),
+          isFalse,
+        );
+      },
+    );
   });
 }

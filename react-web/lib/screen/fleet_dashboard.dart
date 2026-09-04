@@ -3,11 +3,12 @@ library;
 import 'package:arcane_jaspr/arcane_jaspr.dart';
 import 'package:arcane_jaspr/component/input/native_select.dart';
 import 'package:jaspr/dom.dart' as dom;
-import 'package:jaspr/jaspr.dart' show Component;
+import 'package:jaspr/jaspr.dart' show Component, EventCallback;
 import 'package:jaspr_router/jaspr_router.dart';
 
 import '../model/alert.dart';
 import '../localization/reactor_locale.dart';
+import '../localization/reactor_locale_platform.dart';
 import '../localization/reactor_localizations.dart';
 import '../model/alert_thresholds.dart';
 import '../model/server_snapshot.dart';
@@ -31,7 +32,12 @@ class FleetDashboardScreen extends StatefulWidget {
 }
 
 class _FleetDashboardScreenState extends State<FleetDashboardScreen> {
+  static const String _removeDialogShellId =
+      'reactor-remove-server-dialog-shell';
+  static const String _serverSectionFocusId = 'reactor-fleet-servers-section';
+
   String _selectedTag = '';
+  String? _confirmRemoveId;
 
   @override
   Widget build(BuildContext context) {
@@ -99,10 +105,54 @@ class _FleetDashboardScreenState extends State<FleetDashboardScreen> {
           trailing: _alertBadges(rollup),
           child: _rollupRow(rollup),
         ),
-        _serverGrid(rollup),
+        _serverGrid(rollup, fleet),
         _needsAttentionSection(rollup),
       ],
     );
+  }
+
+  void _removeServer(
+    FleetController fleet,
+    String id,
+    String focusAfterRemoval,
+  ) {
+    fleet.removeServer(id);
+    setState(() {
+      _confirmRemoveId = null;
+      if (_selectedTag.isNotEmpty &&
+          !fleet.tagsStore.allTags().contains(_selectedTag)) {
+        _selectedTag = '';
+      }
+    });
+    context.binding.addPostFrameCallback(() {
+      if (mounted) focusReactorElement(focusAfterRemoval);
+    });
+  }
+
+  void _showRemoveConfirmation(String id) {
+    setState(() => _confirmRemoveId = id);
+    context.binding.addPostFrameCallback(() {
+      if (mounted && _confirmRemoveId == id) {
+        focusReactorDialog(_removeDialogShellId);
+      }
+    });
+  }
+
+  void _closeRemoveConfirmation() {
+    final String? id = _confirmRemoveId;
+    if (id == null) return;
+    setState(() => _confirmRemoveId = null);
+    context.binding.addPostFrameCallback(() {
+      if (mounted) focusReactorElement('reactor-remove-server-$id');
+    });
+  }
+
+  void _onRemoveDialogKeyDown(Object event) {
+    if (consumeReactorEscape(event)) {
+      _closeRemoveConfirmation();
+      return;
+    }
+    trapReactorDialogFocus(event, _removeDialogShellId);
   }
 
   Widget _tagFilter(List<String> allTags) {
@@ -225,46 +275,111 @@ class _FleetDashboardScreenState extends State<FleetDashboardScreen> {
     );
   }
 
-  Widget _serverGrid(FleetRollup rollup) {
-    return sectionCard(
-      label: reactorText(ReactorText.fleetServers),
-      description: reactorText(ReactorText.fleetPairedCount, <String, Object?>{
-        'count': rollup.servers.length,
-      }),
-      flush: true,
-      child: rollup.servers.isEmpty
-          ? ReactorEmptyState(
-              title: reactorText(ReactorText.fleetNoMatchingServers),
-              description: reactorText(ReactorText.fleetFilterEmpty),
-            )
-          : dom.div(classes: 'reactor-server-table', <Widget>[
-              dom.div(
-                classes: 'reactor-fleet-server-row reactor-table-header',
-                <Widget>[
-                  dom.span(<Widget>[
-                    Component.text(reactorText(ReactorText.commonServer)),
-                  ]),
-                  dom.span(<Widget>[
-                    Component.text(reactorText(ReactorText.commonState)),
-                  ]),
-                  dom.span(<Widget>[
-                    Component.text(reactorText(ReactorText.overviewTps)),
-                  ]),
-                  dom.span(<Widget>[
-                    Component.text(reactorText(ReactorText.commonPlayers)),
-                  ]),
-                  dom.span(<Widget>[
-                    Component.text(reactorText(ReactorText.commonAlerts)),
-                  ]),
-                  dom.span(<Widget>[
-                    Component.text(reactorText(ReactorText.commonLastSeen)),
-                  ]),
-                  const dom.span(<Widget>[]),
-                ],
-              ),
-              for (final FleetServerHealth s in rollup.servers)
-                _ServerCard(server: s),
-            ]),
+  Widget _serverGrid(FleetRollup rollup, FleetController? fleet) {
+    FleetServerHealth? pendingRemoval;
+    int pendingRemovalIndex = -1;
+    for (int index = 0; index < rollup.servers.length; index += 1) {
+      final FleetServerHealth server = rollup.servers[index];
+      if (server.id == _confirmRemoveId) {
+        pendingRemoval = server;
+        pendingRemovalIndex = index;
+        break;
+      }
+    }
+    String focusAfterRemoval = _serverSectionFocusId;
+    if (pendingRemovalIndex >= 0) {
+      if (pendingRemovalIndex + 1 < rollup.servers.length) {
+        focusAfterRemoval =
+            'reactor-remove-server-${rollup.servers[pendingRemovalIndex + 1].id}';
+      } else if (pendingRemovalIndex > 0) {
+        focusAfterRemoval =
+            'reactor-remove-server-${rollup.servers[pendingRemovalIndex - 1].id}';
+      }
+    }
+
+    return dom.div(
+      id: _serverSectionFocusId,
+      classes: 'reactor-fleet-servers-section',
+      attributes: <String, String>{
+        'role': 'region',
+        'tabindex': '-1',
+        'aria-label': reactorText(ReactorText.fleetServers),
+      },
+      <Widget>[
+        sectionCard(
+          label: reactorText(ReactorText.fleetServers),
+          description: reactorText(
+            ReactorText.fleetPairedCount,
+            <String, Object?>{'count': rollup.servers.length},
+          ),
+          flush: true,
+          child: rollup.servers.isEmpty
+              ? ReactorEmptyState(
+                  title: reactorText(ReactorText.fleetNoMatchingServers),
+                  description: reactorText(ReactorText.fleetFilterEmpty),
+                )
+              : dom.div(classes: 'reactor-server-table', <Widget>[
+                  dom.div(
+                    classes: 'reactor-fleet-server-row reactor-table-header',
+                    <Widget>[
+                      dom.span(<Widget>[
+                        Component.text(reactorText(ReactorText.commonServer)),
+                      ]),
+                      dom.span(<Widget>[
+                        Component.text(reactorText(ReactorText.commonState)),
+                      ]),
+                      dom.span(<Widget>[
+                        Component.text(reactorText(ReactorText.overviewTps)),
+                      ]),
+                      dom.span(<Widget>[
+                        Component.text(reactorText(ReactorText.commonPlayers)),
+                      ]),
+                      dom.span(<Widget>[
+                        Component.text(reactorText(ReactorText.commonAlerts)),
+                      ]),
+                      dom.span(<Widget>[
+                        Component.text(reactorText(ReactorText.commonLastSeen)),
+                      ]),
+                      const dom.span(<Widget>[]),
+                    ],
+                  ),
+                  for (final FleetServerHealth s in rollup.servers)
+                    _ServerCard(
+                      server: s,
+                      onRemove: fleet == null
+                          ? null
+                          : () => _showRemoveConfirmation(s.id),
+                    ),
+                  if (fleet != null && pendingRemoval != null)
+                    dom.div(
+                      id: _removeDialogShellId,
+                      events: <String, EventCallback>{
+                        'keydown': _onRemoveDialogKeyDown,
+                      },
+                      <Widget>[
+                        ArcaneConfirmDialog(
+                          title: reactorText(
+                            ReactorText.settingsRemoveServer,
+                            <String, Object?>{'server': pendingRemoval.name},
+                          ),
+                          message: reactorText(
+                            ReactorText.settingsRemoveServerMessage,
+                          ),
+                          destructive: true,
+                          confirmText: reactorText(ReactorText.settingsRemove),
+                          cancelText: reactorText(ReactorText.pluginApiCancel),
+                          onConfirm: () => _removeServer(
+                            fleet,
+                            pendingRemoval!.id,
+                            focusAfterRemoval,
+                          ),
+                          onCancel: _closeRemoveConfirmation,
+                        ),
+                      ],
+                    ),
+                ]),
+        ),
+      ],
     );
   }
 
@@ -301,8 +416,9 @@ class _FleetDashboardScreenState extends State<FleetDashboardScreen> {
 
 class _ServerCard extends StatelessWidget {
   final FleetServerHealth server;
+  final void Function()? onRemove;
 
-  const _ServerCard({required this.server});
+  const _ServerCard({required this.server, required this.onRemove});
 
   static (String, ReactorStatus) _health(FleetServerHealth s) {
     return switch (s.health) {
@@ -414,11 +530,26 @@ class _ServerCard extends StatelessWidget {
         reactorText(ReactorText.fleetLastSeen),
         _formatLastSeen(server.lastSeen),
       ),
-      Button.ghost(
-        label: reactorText(ReactorText.fleetOpenDashboard),
-        size: ButtonSize.small,
-        onPressed: () => ctx.push('/server/${server.id}/overview'),
-      ),
+      dom.div(classes: 'reactor-fleet-server-actions', <Widget>[
+        Button.ghost(
+          label: reactorText(ReactorText.fleetOpenDashboard),
+          size: ButtonSize.small,
+          onPressed: () => ctx.push('/server/${server.id}/overview'),
+        ),
+        if (onRemove != null)
+          Button.destructive(
+            id: 'reactor-remove-server-${server.id}',
+            label: reactorText(ReactorText.settingsRemove),
+            size: ButtonSize.small,
+            attributes: <String, String>{
+              'aria-label': reactorText(
+                ReactorText.settingsRemoveServer,
+                <String, Object?>{'server': server.name},
+              ),
+            },
+            onPressed: onRemove,
+          ),
+      ]),
     ]);
   }
 }

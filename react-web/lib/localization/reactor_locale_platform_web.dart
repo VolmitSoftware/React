@@ -38,6 +38,58 @@ void focusReactorElement(String elementId) {
   (element as web.HTMLElement).focus();
 }
 
+void focusReactorDialog(String elementId) {
+  final web.Element? shell = web.document.getElementById(elementId);
+  if (shell == null) return;
+  final web.Element? action = shell.querySelector(
+    '[role="dialog"] .arcane-dialog-footer button:not([disabled])',
+  );
+  final web.Element? fallback = shell.querySelector(
+    '[role="dialog"] button:not([disabled]), '
+    '[role="dialog"] [href], '
+    '[role="dialog"] input:not([disabled]), '
+    '[role="dialog"] select:not([disabled]), '
+    '[role="dialog"] textarea:not([disabled]), '
+    '[role="dialog"] [tabindex]:not([tabindex="-1"])',
+  );
+  final web.Element? target = action ?? fallback;
+  if (target == null || !target.isA<web.HTMLElement>()) return;
+  (target as web.HTMLElement).focus();
+}
+
+bool trapReactorDialogFocus(Object event, String elementId) {
+  final JSObject jsEvent = event as JSObject;
+  if (!jsEvent.isA<web.KeyboardEvent>()) return false;
+  final web.KeyboardEvent keyboard = jsEvent as web.KeyboardEvent;
+  if (keyboard.key != 'Tab') return false;
+  final web.Element? shell = web.document.getElementById(elementId);
+  if (shell == null) return false;
+  final web.NodeList focusable = shell.querySelectorAll(
+    '[role="dialog"] button:not([disabled]), '
+    '[role="dialog"] [href], '
+    '[role="dialog"] input:not([disabled]), '
+    '[role="dialog"] select:not([disabled]), '
+    '[role="dialog"] textarea:not([disabled]), '
+    '[role="dialog"] [tabindex]:not([tabindex="-1"])',
+  );
+  if (focusable.length == 0) return false;
+  final web.Element? active = web.document.activeElement;
+  final web.Element? first = focusable.item(0) as web.Element?;
+  final web.Element? last =
+      focusable.item(focusable.length - 1) as web.Element?;
+  final bool wrapBackward =
+      keyboard.shiftKey &&
+      (identical(active, first) || active == null || !shell.contains(active));
+  final bool wrapForward = !keyboard.shiftKey && identical(active, last);
+  if (!wrapBackward && !wrapForward) return false;
+  final web.Element? target = wrapBackward ? last : first;
+  if (target == null || !target.isA<web.HTMLElement>()) return false;
+  keyboard.preventDefault();
+  keyboard.stopPropagation();
+  (target as web.HTMLElement).focus();
+  return true;
+}
+
 void focusReactorLanguageMenu(String elementId) {
   final web.Element? menu = web.document.getElementById(elementId);
   if (menu == null) return;
