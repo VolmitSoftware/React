@@ -19,12 +19,24 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import io.github.slimjar.resolver.data.Mirror
 
+buildscript {
+    repositories {
+        mavenCentral()
+        maven { url = uri('https://jitpack.io') }
+    }
+    dependencies {
+        classpath('com.github.VolmitSoftware.VolmLib:packaging:master-SNAPSHOT')
+    }
+}
+
 plugins {
     id 'java'
     id 'java-library'
     id 'com.gradleup.shadow' version '9.0.0-rc3'
     id 'de.crazydev22.slimjar' version '2.1.9'
 }
+
+apply plugin: 'art.arcane.volmit-packaging'
 
 apply from: 'nms-jars.gradle'
 
@@ -295,4 +307,15 @@ if (!JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_25)) {
     System.err.println('=========================================================================================================')
     System.err.println()
     System.exit(69)
+}
+
+pluginPackaging {
+    artifacts {
+        create('distribution') {
+            taskName = 'shadowJar'
+            policyName = 'React'
+            prunePrefixes = ['art/arcane/react/util/arcane/volmlib/']
+            keepPrefixes = ['art/arcane/react/util/arcane/volmlib/util/matter/slices/']
+        }
+    }
 }

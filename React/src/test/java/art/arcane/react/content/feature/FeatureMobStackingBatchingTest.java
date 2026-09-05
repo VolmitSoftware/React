@@ -290,6 +290,7 @@ class FeatureMobStackingBatchingTest {
     Mockito.when(adjacent.getType()).thenReturn(EntityType.ZOMBIE);
     Mockito.when(adjacent.isDead()).thenReturn(false);
     Mockito.when(adjacent.getLocation()).thenReturn(adjacentLocation);
+    Mockito.doReturn(1).when(feature).getStackCount(adjacent);
     Mockito.doReturn(true).when(feature).merge(adjacent, anchor);
     feature.onTick(adjacent);
 

@@ -24,6 +24,7 @@ import art.arcane.react.api.feature.FeatureIntegrityListener;
 import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.core.NMS;
 import art.arcane.react.core.controller.EntityController;
+import art.arcane.react.core.integration.GlossEntityOverlayIntegration;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.RuntimeMessages;
 import art.arcane.react.model.ReactEntity;
@@ -39,6 +40,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
@@ -63,6 +65,7 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.persistence.PersistentDataType;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -74,6 +77,7 @@ import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -123,6 +127,8 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
   }
 
   public static final String ID = "mob-stacking";
+  private static final NamespacedKey STACK_LABEL_KEY = new NamespacedKey("react", "mob-stack-label");
+  private static final long PRESENTATION_REFRESH_MS = 5_000L;
   private static final int MAX_CHUNK_SUBMISSIONS_PER_TICK = 64;
   static final int MAX_CHUNK_INSPECTIONS_PER_TICK = 128;
   private static final int MAX_INDEXED_ENTITIES = 65_536;
@@ -136,7 +142,7 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
   private double maxHealth = 100;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Filter definition for stackable types used by mob stacking.", impact = "Narrow this list to target fewer cases, or broaden it to include more matching entries.")
   private Set<EntityType> stackableTypes = defaultStackableTypes();
-  @art.arcane.react.util.project.config.ConfigDoc(value = "Controls whether mob stacking applies custom names.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Shows native stack names when Gloss entity overlays are unavailable.", impact = "Gloss receives stack counts regardless of this setting and owns the combined entity overlay when enabled.")
   private boolean customNames = true;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Search radius used by mob stacking (blocks).", impact = "Higher values widen the search area and cost more work; lower values narrow scope and run cheaper.")
   private double searchRadius = 6;
@@ -150,6 +156,8 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
   private int batchIntervalMs = 250;
 
   private transient final Map<EntityType, String> formattedBaseNames = new ConcurrentHashMap<>();
+  private transient final GlossEntityOverlayIntegration glossEntityOverlays;
+  private transient final Map<UUID, Long> presentationRefreshes = new ConcurrentHashMap<>();
   private transient final Map<UUID, Set<Long>> dirtyChunks = new ConcurrentHashMap<>();
   private transient final Map<UUID, Set<Long>> inFlightChunks = new ConcurrentHashMap<>();
   private transient final Map<ChunkWorkKey, ChunkWork> chunkWork = new ConcurrentHashMap<>();
@@ -161,7 +169,12 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
   private transient volatile StackableIndex stackableIndex;
 
   public FeatureMobStacking() {
+    this(new GlossEntityOverlayIntegration());
+  }
+
+  FeatureMobStacking(GlossEntityOverlayIntegration glossEntityOverlays) {
     super(ID);
+    this.glossEntityOverlays = Objects.requireNonNull(glossEntityOverlays);
   }
 
   public static Set<EntityType> defaultStackableTypes() {
@@ -191,6 +204,7 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
     chunkWork.clear();
     indexedEntities.clear();
     indexedChunks.clear();
+    presentationRefreshes.clear();
     rebuildStackableIndex();
     for (EntityType i : stackableTypes) {
       React.controller(EntityController.class).registerEntityTickListener(i, entityTickListener);
@@ -283,13 +297,7 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
 
   // Method to update entity custom name based on its stack count
   public void updateEntityCustomName(Entity e) {
-    int count = getStackCount(e);
-    if (count > 1) {
-      e.setCustomName(ChatColor.BOLD + "" + count + "x " + ChatColor.RESET + ChatColor.GRAY + "" + Form.capitalizeWords(e.getType().name().toLowerCase().replaceAll("\\Q_\\E", " ")));
-    } else {
-      String uniqueLabel = ReactLanguage.plain(RuntimeMessages.MOB_STACKING_UNIQUE);
-      e.setCustomName(ChatColor.GOLD + "" + count + "x " + uniqueLabel + ChatColor.RESET + ChatColor.GRAY + "" + Form.capitalizeWords(e.getType().name().toLowerCase().replaceAll("\\Q_\\E", " ")));
-    }
+    refreshStackPresentation(e, getStackCount(e));
   }
 
 
@@ -304,7 +312,7 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
     }
 
     if (currentStack > 1 || entity.hasMetadata("UniqueMobStack")) {
-      entity.setCustomName(null);
+      clearStackName(entity, currentStack);
     }
   }
 
@@ -387,6 +395,9 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
 
     target.setAI(source.hasAI());
     target.setCollidable(source.isCollidable());
+    if (hasUserCustomName(source)) {
+      target.setCustomName(source.getCustomName());
+    }
     target.setCustomNameVisible(source.isCustomNameVisible());
     target.setGlowing(source.isGlowing());
     target.setGravity(source.hasGravity());
@@ -615,7 +626,7 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
 
   private boolean hasUserCustomName(LivingEntity entity) {
     String name = entity.getCustomName();
-    return getStackCount(entity) <= 1 && name != null && !name.isBlank();
+    return name != null && !name.isBlank() && !ownsStackName(entity, name, getStackCount(entity));
   }
 
   private boolean isVariantBearingType(EntityType type) {
@@ -642,16 +653,54 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
   }
 
   public void setStackCount(Entity e, int i) {
+    clearStackName(e, getStackCount(e));
     ReactEntity.setStackCount(e, i);
+    refreshStackPresentation(e, i);
+  }
 
-    if (customNames) {
-      if (i > 1) {
-        String baseName = formattedBaseNames.computeIfAbsent(e.getType(), t -> Form.capitalizeWords(t.name().toLowerCase().replaceAll("\\Q_\\E", " ")));
-        e.setCustomName(ChatColor.BOLD + "" + i + "x " + ChatColor.RESET + ChatColor.GRAY + "" + baseName);
-      } else {
-        e.setCustomName(null);
+  void refreshStackPresentation(Entity entity, int count) {
+    boolean handled = entity instanceof LivingEntity living && glossEntityOverlays.refresh(living, count);
+    String currentName = entity.getCustomName();
+    if (handled || !customNames || (count <= 1 && !entity.hasMetadata("UniqueMobStack"))) {
+      clearStackName(entity, count);
+    } else if (currentName == null || currentName.isBlank() || ownsStackName(entity, currentName, count)) {
+      String stackName = nativeStackName(entity, count);
+      if (!stackName.equals(currentName)) {
+        entity.setCustomName(stackName);
       }
+      entity.getPersistentDataContainer().set(STACK_LABEL_KEY, PersistentDataType.STRING, stackName);
     }
+    UUID entityId = entity.getUniqueId();
+    if (entityId != null) {
+      presentationRefreshes.put(entityId, System.currentTimeMillis());
+    }
+  }
+
+  private void clearStackName(Entity entity, int count) {
+    String name = entity.getCustomName();
+    if (name == null) {
+      return;
+    }
+    if (ownsStackName(entity, name, count)) {
+      entity.setCustomName(null);
+    }
+    entity.getPersistentDataContainer().remove(STACK_LABEL_KEY);
+  }
+
+  private boolean ownsStackName(Entity entity, String name, int count) {
+    String storedName = entity.getPersistentDataContainer().get(STACK_LABEL_KEY, PersistentDataType.STRING);
+    return name.equals(storedName)
+        || ((count > 1 || entity.hasMetadata("UniqueMobStack")) && name.equals(nativeStackName(entity, count)));
+  }
+
+  private String nativeStackName(Entity entity, int count) {
+    String baseName = formattedBaseNames.computeIfAbsent(entity.getType(),
+        type -> Form.capitalizeWords(type.name().toLowerCase().replace('_', ' ')));
+    if (count > 1) {
+      return ChatColor.BOLD + "" + count + "x " + ChatColor.RESET + ChatColor.GRAY + "" + baseName;
+    }
+    return ChatColor.GOLD + "" + count + "x " + ReactLanguage.plain(RuntimeMessages.MOB_STACKING_UNIQUE)
+        + ChatColor.RESET + ChatColor.GRAY + "" + baseName;
   }
 
   public int getStackCount(Entity e) {
@@ -691,6 +740,12 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
       return;
     }
 
+    if (entity instanceof LivingEntity && (getStackCount(entity) > 1 || entity.hasMetadata("UniqueMobStack"))) {
+      Long lastRefresh = presentationRefreshes.get(entity.getUniqueId());
+      if (lastRefresh == null || System.currentTimeMillis() - lastRefresh >= PRESENTATION_REFRESH_MS) {
+        updateEntityCustomName(entity);
+      }
+    }
     markDirty(entity);
   }
 
@@ -738,6 +793,7 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
     if (entityId == null) {
       return;
     }
+    presentationRefreshes.remove(entityId);
     IndexedStackEntity indexed = indexedEntities.remove(entityId);
     if (indexed != null) {
       removeIndexedFromChunk(indexed);
@@ -1286,6 +1342,7 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
     chunkWork.clear();
     indexedEntities.clear();
     indexedChunks.clear();
+    presentationRefreshes.clear();
   }
 
   @Override
