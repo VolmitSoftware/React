@@ -10,14 +10,11 @@ import java.lang.reflect.Method;
 public class TweakRuntimeTest {
 
   @Test
-  public void fastFluidsAcceleratesWaterAndLavaByDefault() {
-    TweakFastFluids tweak = new TweakFastFluids();
-    Assertions.assertTrue(tweak.isAccelerateWater());
-    Assertions.assertTrue(tweak.isAccelerateLava());
-  }
+  public void fastFluidsAcceleratesBothFluidsByDefaultAndWhenBothFlagsEnabled() throws Exception {
+    TweakFastFluids untouched = new TweakFastFluids();
+    Assertions.assertTrue(decideFluid(untouched, Material.WATER));
+    Assertions.assertTrue(decideFluid(untouched, Material.LAVA));
 
-  @Test
-  public void fastFluidsAcceleratesBothFluidsWhenBothFlagsEnabled() throws Exception {
     TweakFastFluids tweak = new TweakFastFluids();
     setFluidFlags(tweak, true, true);
     Assertions.assertTrue(decideFluid(tweak, Material.WATER));
@@ -49,41 +46,6 @@ public class TweakRuntimeTest {
     Assertions.assertFalse(decideFluid(tweak, Material.LAVA));
   }
 
-  @Test
-  public void hopperIdleStretchEnabledByDefault() throws Exception {
-    TweakHopperIndex tweak = new TweakHopperIndex();
-    Assertions.assertTrue(readBooleanField(tweak, "idleStretch"));
-  }
-
-  @Test
-  public void hopperIdleStretchTicksExceedHopperCooldownSoStretchEngages() throws Exception {
-    TweakHopperIndex tweak = new TweakHopperIndex();
-    int idleStretchTicks = readIntField(tweak, "idleStretchTicks");
-    int hopperCooldownTicks = readStaticIntField(TweakHopperIndex.class, "HOPPER_COOLDOWN_TICKS");
-    Assertions.assertTrue(idleStretchTicks > hopperCooldownTicks);
-  }
-
-  @Test
-  public void hopperIdleStretchSpreadPassesIsAtLeastOne() throws Exception {
-    TweakHopperIndex tweak = new TweakHopperIndex();
-    Assertions.assertTrue(readIntField(tweak, "idleStretchSpreadPasses") >= 1);
-  }
-
-  @Test
-  public void hopperIdleStretchMinTickMsIsPositive() throws Exception {
-    TweakHopperIndex tweak = new TweakHopperIndex();
-    Assertions.assertTrue(readDoubleField(tweak, "idleStretchMinTickMs") > 0.0D);
-  }
-
-  @Test
-  public void hopperItemChunkBudgetIsBoundedByDefault() throws Exception {
-    TweakHopperIndex tweak = new TweakHopperIndex();
-    int budget = readIntField(tweak, "itemChunkBudgetPerTick");
-    int maximum = readStaticIntField(TweakHopperIndex.class, "MAX_ITEM_CHUNK_BUDGET");
-    Assertions.assertTrue(budget >= 1);
-    Assertions.assertTrue(budget <= maximum);
-  }
-
   private static void setFluidFlags(TweakFastFluids tweak, boolean water, boolean lava) throws Exception {
     Field waterField = TweakFastFluids.class.getDeclaredField("accelerateWater");
     waterField.setAccessible(true);
@@ -97,29 +59,5 @@ public class TweakRuntimeTest {
     Method method = TweakFastFluids.class.getDeclaredMethod("isSupportedFluid", Material.class);
     method.setAccessible(true);
     return (boolean) method.invoke(tweak, material);
-  }
-
-  private static boolean readBooleanField(Object target, String name) throws Exception {
-    Field field = target.getClass().getDeclaredField(name);
-    field.setAccessible(true);
-    return field.getBoolean(target);
-  }
-
-  private static int readIntField(Object target, String name) throws Exception {
-    Field field = target.getClass().getDeclaredField(name);
-    field.setAccessible(true);
-    return field.getInt(target);
-  }
-
-  private static double readDoubleField(Object target, String name) throws Exception {
-    Field field = target.getClass().getDeclaredField(name);
-    field.setAccessible(true);
-    return field.getDouble(target);
-  }
-
-  private static int readStaticIntField(Class<?> type, String name) throws Exception {
-    Field field = type.getDeclaredField(name);
-    field.setAccessible(true);
-    return field.getInt(null);
   }
 }

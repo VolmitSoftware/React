@@ -6,6 +6,8 @@ import art.arcane.volmlib.util.director.runtime.DirectorRuntimeMessages;
 import art.arcane.volmlib.util.localization.MessageArgument;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 public class LegacyCodeArgumentTest {
   @Test
@@ -18,34 +20,20 @@ public class LegacyCodeArgumentTest {
     Assertions.assertEquals(" Gpu Model: AMD Radeon(TM) Graphics", rendered);
   }
 
-  @Test
-  public void legacyCodesAreStrippedFromEveryUntrustedArgument() {
+  @ParameterizedTest(name = "{0} -> {1}")
+  @CsvSource({
+      "§l§n1.2.3§r, React 1.2.3",
+      "1.2.3§, React 1.2.3",
+      "1.2.3§ build, React 1.2.3 build",
+      "§c<red>unsafe</red>, React <red>unsafe</red>"
+  })
+  public void legacyCodesAreStrippedFromEveryUntrustedArgument(String version, String expected) {
     String rendered = ReactLanguage.plain(
         CommandMessages.VERSION,
-        MessageArgument.untrusted("version", "§l§n1.2.3§r")
+        MessageArgument.untrusted("version", version)
     );
 
-    Assertions.assertEquals("React 1.2.3", rendered);
-  }
-
-  @Test
-  public void aTrailingSectionSignIsDroppedRatherThanCrashing() {
-    String rendered = ReactLanguage.plain(
-        CommandMessages.VERSION,
-        MessageArgument.untrusted("version", "1.2.3§")
-    );
-
-    Assertions.assertEquals("React 1.2.3", rendered);
-  }
-
-  @Test
-  public void aSectionSignBeforeAnUnknownCharacterIsDropped() {
-    String rendered = ReactLanguage.plain(
-        CommandMessages.VERSION,
-        MessageArgument.untrusted("version", "1.2.3§ build")
-    );
-
-    Assertions.assertEquals("React 1.2.3 build", rendered);
+    Assertions.assertEquals(expected, rendered);
   }
 
   @Test
@@ -58,15 +46,5 @@ public class LegacyCodeArgumentTest {
 
     Assertions.assertFalse(rendered.contains("§"), rendered);
     Assertions.assertTrue(rendered.contains("Gpu Model: AMD"), rendered);
-  }
-
-  @Test
-  public void untrustedArgumentsStillCannotInjectMiniMessageTags() {
-    String rendered = ReactLanguage.plain(
-        CommandMessages.VERSION,
-        MessageArgument.untrusted("version", "§c<red>unsafe</red>")
-    );
-
-    Assertions.assertEquals("React <red>unsafe</red>", rendered);
   }
 }

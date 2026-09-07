@@ -1,55 +1,32 @@
 package art.arcane.react.content.feature;
 
-import art.arcane.react.React;
 import net.jqwik.api.ForAll;
 import net.jqwik.api.Property;
 import net.jqwik.api.constraints.DoubleRange;
 import net.jqwik.api.constraints.IntRange;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class AdaptiveSleepDecisionTest {
 
-  static {
-    if (React.instance == null) {
-      React react = Mockito.mock(React.class);
-      Mockito.when(react.getName()).thenReturn("react");
-      Mockito.when(react.namespace()).thenReturn("react");
-      React.instance = react;
-    }
-  }
-
-  @Test
-  void neverDozesBelowLoadThreshold() {
-    Assertions.assertFalse(FeatureAdaptiveEntitySleep.shouldDoze(10.0, 42.0, 4, 1, 0));
-  }
-
-  @Test
-  void awakeSlotDoesNotDoze() {
-    Assertions.assertFalse(FeatureAdaptiveEntitySleep.shouldDoze(50.0, 42.0, 4, 0, 0));
-  }
-
-  @Test
-  void nonAwakeSlotDozesUnderLoad() {
-    Assertions.assertTrue(FeatureAdaptiveEntitySleep.shouldDoze(50.0, 42.0, 4, 1, 0));
-  }
-
-  @Test
-  void slotCountClampedToTwoSplitsAwakeAndDoze() {
-    Assertions.assertFalse(FeatureAdaptiveEntitySleep.shouldDoze(50.0, 42.0, 1, 0, 0));
-    Assertions.assertTrue(FeatureAdaptiveEntitySleep.shouldDoze(50.0, 42.0, 1, 1, 0));
-  }
-
-  @Test
-  void negativeEntityIdUsesFloorModResidue() {
-    Assertions.assertTrue(FeatureAdaptiveEntitySleep.shouldDoze(50.0, 42.0, 4, -1, 0));
-  }
-
-  @Test
-  void loadAtThresholdEngagesSlotDecision() {
-    Assertions.assertFalse(FeatureAdaptiveEntitySleep.shouldDoze(42.0, 42.0, 4, 0, 0));
-    Assertions.assertTrue(FeatureAdaptiveEntitySleep.shouldDoze(42.0, 42.0, 4, 1, 0));
+  @ParameterizedTest(name = "load={0} threshold={1} slots={2} entity={3} -> doze={4}")
+  @CsvSource({
+      "10.0, 42.0, 4, 1, false",
+      "50.0, 42.0, 4, 0, false",
+      "50.0, 42.0, 4, 1, true",
+      "50.0, 42.0, 1, 0, false",
+      "50.0, 42.0, 1, 1, true",
+      "50.0, 42.0, 4, -1, true",
+      "42.0, 42.0, 4, 0, false",
+      "42.0, 42.0, 4, 1, true"
+  })
+  void dozesOnlyOffTheAwakeSlotOnceLoadReachesTheThreshold(double lastTickMs,
+                                                           double minTickMs,
+                                                           int slots,
+                                                           int entityId,
+                                                           boolean expected) {
+    Assertions.assertEquals(expected, FeatureAdaptiveEntitySleep.shouldDoze(lastTickMs, minTickMs, slots, entityId, 0));
   }
 
   @Property(tries = 200)

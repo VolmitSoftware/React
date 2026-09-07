@@ -6,118 +6,84 @@ import net.jqwik.api.Property;
 import net.jqwik.api.constraints.DoubleRange;
 import net.jqwik.api.constraints.IntRange;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class GovernorDecisionTest {
 
-  @Test
-  void randomTickPressureEngagesWhenTickTimeAtThreshold() {
-    Assertions.assertTrue(FeatureRandomTickGovernor.isUnderPressure(60.0, 60.0, 0.0, 62.0));
+  @ParameterizedTest(name = "tickMs={0} incident={2} -> pressure={4}")
+  @CsvSource({
+      "60.0, 60.0, 0.0, 62.0, true",
+      "80.0, 60.0, 0.0, 62.0, true",
+      "10.0, 60.0, 62.0, 62.0, true",
+      "59.999, 60.0, 61.999, 62.0, false"
+  })
+  void randomTickIsUnderPressureWhenEitherTickTimeOrIncidentReachesItsThreshold(double tickMs,
+                                                                               double engageTickTimeMs,
+                                                                               double incident,
+                                                                               double engageIncidentScore,
+                                                                               boolean expected) {
+    Assertions.assertEquals(expected, FeatureRandomTickGovernor.isUnderPressure(tickMs, engageTickTimeMs, incident, engageIncidentScore));
   }
 
-  @Test
-  void randomTickPressureEngagesWhenTickTimeAboveThreshold() {
-    Assertions.assertTrue(FeatureRandomTickGovernor.isUnderPressure(80.0, 60.0, 0.0, 62.0));
+  @ParameterizedTest(name = "tickMs={0} incident={2} -> calm={4}")
+  @CsvSource({
+      "45.0, 45.0, 10.0, 62.0, true",
+      "50.0, 45.0, 10.0, 62.0, false",
+      "40.0, 45.0, 62.0, 62.0, false"
+  })
+  void randomTickIsCalmOnlyWhenTickTimeAtReleaseAndIncidentBelowEngageScore(double tickMs,
+                                                                           double releaseTickTimeMs,
+                                                                           double incident,
+                                                                           double engageIncidentScore,
+                                                                           boolean expected) {
+    Assertions.assertEquals(expected, FeatureRandomTickGovernor.isCalm(tickMs, releaseTickTimeMs, incident, engageIncidentScore));
   }
 
-  @Test
-  void randomTickPressureEngagesWhenIncidentAtThreshold() {
-    Assertions.assertTrue(FeatureRandomTickGovernor.isUnderPressure(10.0, 60.0, 62.0, 62.0));
+  @ParameterizedTest(name = "base={0} factor={1} floor={2} -> {3}")
+  @CsvSource({
+      "64, 0.5, 16, 32",
+      "20, 0.5, 16, 16",
+      "64, 0.0, 16, 16",
+      "3, 0.0, 0, 1"
+  })
+  void trackerScaledRangeScalesBaseThenClampsToAtLeastOneAndTheConfiguredFloor(int base,
+                                                                              double factor,
+                                                                              int minimumRangeBlocks,
+                                                                              int expected) {
+    Assertions.assertEquals(expected, FeatureTrackerRangeGovernor.scaledRange(base, factor, minimumRangeBlocks));
   }
 
-  @Test
-  void randomTickPressureStaysCalmWhenBothBelowThresholds() {
-    Assertions.assertFalse(FeatureRandomTickGovernor.isUnderPressure(59.999, 60.0, 61.999, 62.0));
-  }
-
-  @Test
-  void randomTickCalmWhenTickAtReleaseAndIncidentBelowEngage() {
-    Assertions.assertTrue(FeatureRandomTickGovernor.isCalm(45.0, 45.0, 10.0, 62.0));
-  }
-
-  @Test
-  void randomTickNotCalmWhenTickAboveRelease() {
-    Assertions.assertFalse(FeatureRandomTickGovernor.isCalm(50.0, 45.0, 10.0, 62.0));
-  }
-
-  @Test
-  void randomTickNotCalmWhenIncidentAtEngageScore() {
-    Assertions.assertFalse(FeatureRandomTickGovernor.isCalm(40.0, 45.0, 62.0, 62.0));
-  }
-
-  @Test
-  void trackerScaledRangeHalvesAboveFloor() {
-    Assertions.assertEquals(32, FeatureTrackerRangeGovernor.scaledRange(64, 0.5, 16));
-  }
-
-  @Test
-  void trackerScaledRangeClampsToMinimumFloor() {
-    Assertions.assertEquals(16, FeatureTrackerRangeGovernor.scaledRange(20, 0.5, 16));
-  }
-
-  @Test
-  void trackerScaledRangeZeroFactorClampsToFloor() {
-    Assertions.assertEquals(16, FeatureTrackerRangeGovernor.scaledRange(64, 0.0, 16));
-  }
-
-  @Test
-  void trackerScaledRangeFloorAtLeastOneWhenMinimumZero() {
-    Assertions.assertEquals(1, FeatureTrackerRangeGovernor.scaledRange(3, 0.0, 0));
-  }
-
-  @Test
-  void viewDistanceLerpReturnsOutputMaxAtRangeMin() {
+  @ParameterizedTest(name = "inRange={0} -> {1}")
+  @CsvSource({
+      "45.0, 16.0",
+      "140.0, 6.0",
+      "92.5, 11.0",
+      "0.0, 16.0",
+      "200.0, 6.0"
+  })
+  void viewDistanceLerpInvertsLoadAcrossOutputRangeAndClampsOutsideTheInputRange(double inRange, double expected) {
     MinMax range = new MinMax(45.0, 140.0);
     MinMax output = new MinMax(6.0, 16.0);
-    Assertions.assertEquals(16.0, FeatureDynamicViewDistance.lerp(range, output, 45.0), 1e-9);
+    Assertions.assertEquals(expected, FeatureDynamicViewDistance.lerp(range, output, inRange), 1e-9);
   }
 
-  @Test
-  void viewDistanceLerpReturnsOutputMinAtRangeMax() {
-    MinMax range = new MinMax(45.0, 140.0);
-    MinMax output = new MinMax(6.0, 16.0);
-    Assertions.assertEquals(6.0, FeatureDynamicViewDistance.lerp(range, output, 140.0), 1e-9);
+  @ParameterizedTest(name = "idleAfterSeconds={0} -> {1}ms")
+  @CsvSource({
+      "180, 180000",
+      "5, 10000"
+  })
+  void afkIdleThresholdConvertsSecondsToMillisAboveTheTenSecondFloor(int idleAfterSeconds, long expected) {
+    Assertions.assertEquals(expected, FeatureAfkViewShedding.idleThresholdMs(idleAfterSeconds));
   }
 
-  @Test
-  void viewDistanceLerpReturnsMidpointAtRangeMidpoint() {
-    MinMax range = new MinMax(45.0, 140.0);
-    MinMax output = new MinMax(6.0, 16.0);
-    Assertions.assertEquals(11.0, FeatureDynamicViewDistance.lerp(range, output, 92.5), 1e-9);
-  }
-
-  @Test
-  void viewDistanceLerpClampsToMaxBelowRange() {
-    MinMax range = new MinMax(45.0, 140.0);
-    MinMax output = new MinMax(6.0, 16.0);
-    Assertions.assertEquals(16.0, FeatureDynamicViewDistance.lerp(range, output, 0.0), 1e-9);
-  }
-
-  @Test
-  void viewDistanceLerpClampsToMinAboveRange() {
-    MinMax range = new MinMax(45.0, 140.0);
-    MinMax output = new MinMax(6.0, 16.0);
-    Assertions.assertEquals(6.0, FeatureDynamicViewDistance.lerp(range, output, 200.0), 1e-9);
-  }
-
-  @Test
-  void afkIdleThresholdUsesConfiguredSeconds() {
-    Assertions.assertEquals(180_000L, FeatureAfkViewShedding.idleThresholdMs(180));
-  }
-
-  @Test
-  void afkIdleThresholdClampsToTenSecondFloor() {
-    Assertions.assertEquals(10_000L, FeatureAfkViewShedding.idleThresholdMs(5));
-  }
-
-  @Test
-  void afkPressureCapClampsToTwoBlocksFloor() {
-    Assertions.assertEquals(2, FeatureAfkViewShedding.pressureCap(1));
-  }
-
-  @Test
-  void afkPressureCapPassesThroughAboveFloor() {
-    Assertions.assertEquals(8, FeatureAfkViewShedding.pressureCap(8));
+  @ParameterizedTest(name = "cap={0} -> {1}")
+  @CsvSource({
+      "1, 2",
+      "8, 8"
+  })
+  void afkPressureCapClampsToTwoBlocksAndOtherwisePassesThrough(int pressureSendViewDistanceCap, int expected) {
+    Assertions.assertEquals(expected, FeatureAfkViewShedding.pressureCap(pressureSendViewDistanceCap));
   }
 
   @Property(tries = 200)

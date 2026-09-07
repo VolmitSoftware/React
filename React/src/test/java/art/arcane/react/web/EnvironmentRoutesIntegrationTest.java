@@ -1,5 +1,6 @@
 package art.arcane.react.web;
 
+import art.arcane.react.React;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.api.web.PairingToken;
 import art.arcane.react.api.web.TokenRecord;
@@ -13,6 +14,7 @@ import art.arcane.react.util.project.registry.Registry;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -33,6 +35,16 @@ import static org.mockito.Mockito.when;
 public class EnvironmentRoutesIntegrationTest {
 
     private WebController controller;
+    private React previousInstance;
+
+    @BeforeEach
+    void installPluginInstance() {
+        previousInstance = React.instance;
+        React plugin = mock(React.class);
+        when(plugin.getName()).thenReturn("React");
+        when(plugin.namespace()).thenReturn("react");
+        React.instance = plugin;
+    }
 
     private WebController buildController(WebConfiguration config, File dataFolder, SampleController sampleController) {
         WebController c = new WebController() {
@@ -63,6 +75,7 @@ public class EnvironmentRoutesIntegrationTest {
             controller.stop();
             controller = null;
         }
+        React.instance = previousInstance;
     }
 
     @Test

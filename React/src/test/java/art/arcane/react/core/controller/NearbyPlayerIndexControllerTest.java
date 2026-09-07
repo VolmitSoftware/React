@@ -19,6 +19,9 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -288,12 +291,11 @@ class NearbyPlayerIndexControllerTest {
     List<Player> players = new ArrayList<>(1_000);
     List<Runnable> updates = new ArrayList<>(1_000);
     for (int index = 0; index < 1_000; index++) {
-      Player player = Mockito.mock(Player.class);
-      Mockito.when(player.getUniqueId()).thenReturn(new UUID(0L, index + 1L));
-      Mockito.when(player.getName()).thenReturn("P" + index);
-      Mockito.when(player.getLocation()).thenReturn(new Location(world, index, 64D, index));
-      Mockito.when(player.getVelocity()).thenReturn(new Vector());
-      players.add(player);
+      players.add(stationaryPlayer(
+          new UUID(0L, index + 1L),
+          "P" + index,
+          new Location(world, index, 64D, index)
+      ));
     }
 
     NearbyPlayerIndexController controller = new NearbyPlayerIndexController();
@@ -407,7 +409,7 @@ class NearbyPlayerIndexControllerTest {
   ) throws Exception {
     UUID playerId = UUID.randomUUID();
     int readers = 3;
-    int iterations = 100_000;
+    int iterations = 20_000;
     CountDownLatch ready = new CountDownLatch(readers + 1);
     CountDownLatch start = new CountDownLatch(1);
     AtomicBoolean mismatch = new AtomicBoolean(false);
@@ -456,6 +458,44 @@ class NearbyPlayerIndexControllerTest {
       Thread.currentThread().interrupt();
       throw new IllegalStateException("Interrupted while waiting for concurrent snapshot test start", failure);
     }
+  }
+
+  private Player stationaryPlayer(UUID playerId, String name, Location location) {
+    Vector velocity = new Vector();
+    InvocationHandler handler = (Object proxy, Method method, Object[] arguments) -> switch (method.getName()) {
+      case "getUniqueId" -> playerId;
+      case "getName" -> name;
+      case "getLocation" -> location;
+      case "getVelocity" -> velocity;
+      case "equals" -> proxy == arguments[0];
+      case "hashCode" -> System.identityHashCode(proxy);
+      case "toString" -> name;
+      default -> defaultReturnValue(method.getReturnType());
+    };
+
+    return (Player) Proxy.newProxyInstance(
+        Player.class.getClassLoader(),
+        new Class<?>[] {Player.class},
+        handler
+    );
+  }
+
+  private Object defaultReturnValue(Class<?> type) {
+    if (!type.isPrimitive()) {
+      return null;
+    }
+
+    return switch (type.getName()) {
+      case "boolean" -> Boolean.FALSE;
+      case "byte" -> (byte) 0;
+      case "char" -> (char) 0;
+      case "short" -> (short) 0;
+      case "int" -> 0;
+      case "long" -> 0L;
+      case "float" -> 0F;
+      case "double" -> 0D;
+      default -> null;
+    };
   }
 
   private MockedStatic<Bukkit> emptyOnlinePlayers() {

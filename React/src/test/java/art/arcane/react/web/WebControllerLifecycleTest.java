@@ -33,6 +33,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 
 class WebControllerLifecycleTest {
+    private static final int EPHEMERAL_PORT_BASE = 49152;
+    private static final int PORT_SCAN_BASE = portScanBase();
+
     private WebController controller;
 
     @AfterEach
@@ -252,6 +255,15 @@ class WebControllerLifecycleTest {
         Assertions.assertNull(target.getLog4jConsoleCapture());
     }
 
+    private static int portScanBase() {
+        String worker = System.getProperty("org.gradle.test.worker", "0");
+        try {
+            return 20000 + Math.floorMod(Integer.parseInt(worker), 32) * 800;
+        } catch (NumberFormatException failure) {
+            return 20000;
+        }
+    }
+
     private void assertPing(int port) throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
             .uri(URI.create("http://127.0.0.1:" + port + "/api/v1/ping"))
@@ -265,14 +277,19 @@ class WebControllerLifecycleTest {
     }
 
     private int reservePort() throws IOException {
-        try (ServerSocket socket = new ServerSocket()) {
-            socket.bind(new InetSocketAddress("127.0.0.1", 0));
-            return socket.getLocalPort();
+        for (int candidatePort = PORT_SCAN_BASE; candidatePort < EPHEMERAL_PORT_BASE; candidatePort++) {
+            try (ServerSocket socket = new ServerSocket()) {
+                socket.bind(new InetSocketAddress("127.0.0.1", candidatePort));
+                return candidatePort;
+            } catch (IOException failure) {
+                continue;
+            }
         }
+        throw new IOException("Could not reserve a free port outside the ephemeral range");
     }
 
     private PortReservation reserveConsecutivePorts(int occupiedCount) throws IOException {
-        for (int candidatePort = 20000; candidatePort < 65000 - occupiedCount; candidatePort++) {
+        for (int candidatePort = PORT_SCAN_BASE; candidatePort < EPHEMERAL_PORT_BASE - occupiedCount; candidatePort++) {
             List<ServerSocket> occupied = new ArrayList<>(occupiedCount);
             try {
                 for (int offset = 0; offset < occupiedCount; offset++) {

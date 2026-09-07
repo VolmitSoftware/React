@@ -30,6 +30,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -44,12 +48,18 @@ public class WebSocketMetricsIntegrationTest {
 
     private WebController controller;
     private final List<String> injectedGraphKeys = new ArrayList<>();
+    private final Semaphore metricsPushCycles = new Semaphore(0);
 
     private WebController buildController(WebConfiguration config, File dataFolder, SampleController sampleController) {
         WebController c = new WebController() {
             @Override
             protected void executeAsync(Runnable r) {
                 Thread.ofVirtual().start(r);
+            }
+
+            @Override
+            protected ScheduledExecutorService createWsPushExecutor() {
+                return new CountingPushExecutor(config.getWsPushHz(), metricsPushCycles);
             }
 
             @Override
@@ -360,7 +370,11 @@ public class WebSocketMetricsIntegrationTest {
             })
             .get(5, TimeUnit.SECONDS);
 
-        Thread.sleep(250L);
+        metricsPushCycles.drainPermits();
+        assertTrue(
+            metricsPushCycles.tryAcquire(2, 5, TimeUnit.SECONDS),
+            "Expected two server-side metrics push cycles within 5s while the query-param socket was connected"
+        );
         assertEquals(0, controller.getMetricsSessions().size());
         assertEquals(0, textFrames.get());
 
@@ -472,6 +486,32 @@ public class WebSocketMetricsIntegrationTest {
         graphsMap.put(name, g);
         injectedGraphKeys.add(name);
         return g;
+    }
+
+    private static final class CountingPushExecutor extends ScheduledThreadPoolExecutor {
+        private final long pushPeriodMillis;
+        private final Semaphore cycles;
+
+        private CountingPushExecutor(int pushHz, Semaphore cycles) {
+            super(1, runnable -> {
+                Thread thread = new Thread(runnable, "react-ws-push");
+                thread.setDaemon(true);
+                return thread;
+            });
+            this.pushPeriodMillis = Math.max(1L, 1000L / Math.max(1, pushHz));
+            this.cycles = cycles;
+        }
+
+        @Override
+        public ScheduledFuture<?> scheduleAtFixedRate(Runnable command, long initialDelay, long period, TimeUnit unit) {
+            if (unit.toMillis(period) != pushPeriodMillis) {
+                return super.scheduleAtFixedRate(command, initialDelay, period, unit);
+            }
+            return super.scheduleAtFixedRate(() -> {
+                command.run();
+                cycles.release();
+            }, initialDelay, period, unit);
+        }
     }
 
     private final class FakeSampler implements Sampler {

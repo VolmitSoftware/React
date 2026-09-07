@@ -18,8 +18,10 @@ import java.io.File;
 import java.util.Base64;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -55,6 +57,7 @@ public class RelayClientIntegrationTest {
     @Test
     void registersAndAnswersRouteFrame(@TempDir File dataFolder) throws Exception {
         AtomicReference<RelayFrame> dataFrameReceived = new AtomicReference<>();
+        CountDownLatch dataFrameLatch = new CountDownLatch(1);
 
         AtomicReference<String> invokedMethod = new AtomicReference<>();
         AtomicReference<String> invokedPath = new AtomicReference<>();
@@ -95,6 +98,7 @@ public class RelayClientIntegrationTest {
                     ctx.send(new RelayFrame("route", frame.serverId(), "req-1", routePayload).toJson());
                 } else if ("data".equals(frame.type())) {
                     dataFrameReceived.set(frame);
+                    dataFrameLatch.countDown();
                 }
             });
         });
@@ -115,16 +119,13 @@ public class RelayClientIntegrationTest {
         client = new RelayClient("ws://127.0.0.1:" + port, identity, stubBridge, new RelayBackoff(100, 1000), scheduler);
         client.start();
 
-        long deadline = System.currentTimeMillis() + 5000;
-        while (!client.isRegistered() && System.currentTimeMillis() < deadline) {
-            Thread.sleep(20);
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+        while (!client.isRegistered() && System.nanoTime() < deadline) {
+            Thread.onSpinWait();
         }
         assertTrue(client.isRegistered(), "Client must register within 5s");
 
-        deadline = System.currentTimeMillis() + 5000;
-        while (dataFrameReceived.get() == null && System.currentTimeMillis() < deadline) {
-            Thread.sleep(20);
-        }
+        assertTrue(dataFrameLatch.await(5, TimeUnit.SECONDS), "Broker must receive a data frame within 5s");
 
         RelayFrame dataFrame = dataFrameReceived.get();
         assertNotNull(dataFrame, "Broker must receive a data frame within 5s");
@@ -144,6 +145,7 @@ public class RelayClientIntegrationTest {
     @Test
     void reconnectsAfterBrokerClose(@TempDir File dataFolder) throws Exception {
         AtomicInteger registerCount = new AtomicInteger(0);
+        CountDownLatch registerLatch = new CountDownLatch(2);
 
         ConcurrentHashMap<String, byte[]> sessionNonces = new ConcurrentHashMap<>();
 
@@ -165,6 +167,7 @@ public class RelayClientIntegrationTest {
 
                     if (ReactServerIdentity.verify(pubKey, sig, nonce)) {
                         registerCount.incrementAndGet();
+                        registerLatch.countDown();
                         ctx.send(new RelayFrame("registered", null, "hs", new JsonObject()).toJson());
                         ctx.closeSession(1000, "reconnect test");
                     }
@@ -182,10 +185,10 @@ public class RelayClientIntegrationTest {
         client = new RelayClient("ws://127.0.0.1:" + port, identity, stubBridge, new RelayBackoff(20, 100), scheduler);
         client.start();
 
-        long deadline = System.currentTimeMillis() + 10000;
-        while (registerCount.get() < 2 && System.currentTimeMillis() < deadline) {
-            Thread.sleep(20);
-        }
+        assertTrue(
+            registerLatch.await(10, TimeUnit.SECONDS),
+            "Broker must observe >= 2 register handshakes; got: " + registerCount.get()
+        );
         assertTrue(registerCount.get() >= 2, "Broker must observe >= 2 register handshakes; got: " + registerCount.get());
     }
 }

@@ -225,10 +225,18 @@ class PlayerControllerTest {
       profiles.when(() -> PlayerSettings.flushPendingSaves(Mockito.anyLong())).thenReturn(true);
       controller.start();
 
+      CountDownLatch stopStarted = new CountDownLatch(1);
+      AtomicReference<Thread> stopThread = new AtomicReference<>();
       Future<ReactPlayer> joined = executor.submit(() -> controller.join(player));
       Assertions.assertTrue(constructed.await(2, TimeUnit.SECONDS));
-      Future<?> stopped = executor.submit(controller::stop);
-      Thread.sleep(50L);
+      Future<?> stopped = executor.submit(() -> {
+        stopThread.set(Thread.currentThread());
+        stopStarted.countDown();
+        controller.stop();
+      });
+      Assertions.assertTrue(stopStarted.await(2, TimeUnit.SECONDS));
+      Assertions.assertTrue(awaitQueuedWriter(controller, stopThread.get(), stopped),
+          "Timed out waiting for stop() to queue on the lifecycle write lock");
       Assertions.assertFalse(stopped.isDone());
 
       releaseConstruction.countDown();

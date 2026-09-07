@@ -1,13 +1,18 @@
 package art.arcane.react.util.project.world;
 
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.MagmaCube;
 import org.bukkit.entity.Slime;
 import org.bukkit.entity.Zombie;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 /**
  * Runs against the 26.1.2 paper-api test classpath, where org.bukkit.entity.AbstractCubeMob does
@@ -17,32 +22,21 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 class CubeMobsTest {
 
-  @Test
-  void slimeIsCubeMob() {
-    Assertions.assertTrue(CubeMobs.isCubeMob(Mockito.mock(Slime.class)));
+  private static Stream<Arguments> cubeMobCandidates() {
+    return Stream.of(
+        Arguments.of(Slime.class, true),
+        Arguments.of(MagmaCube.class, true),
+        Arguments.of(Zombie.class, false),
+        Arguments.of(null, false)
+    );
   }
 
-  @Test
-  void magmaCubeIsCubeMob() {
-    Assertions.assertTrue(CubeMobs.isCubeMob(Mockito.mock(MagmaCube.class)));
-  }
+  @ParameterizedTest(name = "{0} -> cubeMob={1}")
+  @MethodSource("cubeMobCandidates")
+  void isCubeMobRecognisesOnlyCubeEntities(Class<? extends Entity> entityType, boolean expected) {
+    Entity entity = entityType == null ? null : Mockito.mock(entityType);
 
-  @Test
-  void nonCubeEntityIsNotCubeMob() {
-    Assertions.assertFalse(CubeMobs.isCubeMob(Mockito.mock(Zombie.class)));
-  }
-
-  @Test
-  void nullEntityIsNotCubeMob() {
-    Assertions.assertFalse(CubeMobs.isCubeMob(null));
-  }
-
-  @Test
-  void getSizeReadsEntitySize() {
-    Slime slime = Mockito.mock(Slime.class);
-    Mockito.when(slime.getSize()).thenReturn(3);
-
-    Assertions.assertEquals(3, CubeMobs.getSize(slime));
+    Assertions.assertEquals(expected, CubeMobs.isCubeMob(entity));
   }
 
   @Test

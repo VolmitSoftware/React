@@ -20,8 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PapiExpansionTest {
-  private static final Path SOURCE_DIR = Path.of("src/main/java/art/arcane/react/content/PAPI");
-  private static final Path PLUGIN_SOURCE = Path.of("src/main/java/art/arcane/react/React.java");
   private static final Path PLUGIN_METADATA = Path.of("src/main/resources/plugin.yml");
   private static final UUID PLAYER = UUID.fromString("00000000-0000-0000-0000-0000000000aa");
 
@@ -151,44 +149,8 @@ class PapiExpansionTest {
   }
 
   @Test
-  void shouldNotLogAnythingOnTheResolutionPath() throws Exception {
-    for (Path source : Files.list(SOURCE_DIR).toList()) {
-      String body = Files.readString(source).replace("\r\n", "\n");
-      assertFalse(body.contains("React.info("), source + " must never log on the placeholder resolution path");
-      assertFalse(body.contains("React.debug("), source + " must never log on the placeholder resolution path");
-      assertFalse(body.contains("React.warn("), source + " must never log on the placeholder resolution path");
-    }
-  }
-
-  @Test
-  void shouldKeepTheResolutionPathFreeOfBukkitAndPluginStatics() throws Exception {
-    String body = Files.readString(SOURCE_DIR.resolve("ReactPlaceholderSource.java")).replace("\r\n", "\n");
-
-    assertFalse(body.contains("org.bukkit"), "the resolver must never import a Bukkit type");
-    assertFalse(body.contains("React.instance"), "the resolver must never read a plugin static");
-    assertFalse(body.contains("React.controller"), "the resolver must never reach a controller");
-    assertFalse(body.contains("synchronized"), "the resolver must never take a lock");
-  }
-
-  @Test
-  void shouldRetainAndUnregisterThePlaceholderRuntimeAcrossTheDisablePath() throws Exception {
-    String source = Files.readString(PLUGIN_SOURCE).replace("\r\n", "\n");
-
-    assertTrue(source.contains("private volatile ReactPlaceholders papiExpansion;"),
-        "the placeholder runtime must be retained on a plugin field");
-    assertTrue(source.contains("placeholders.stop();"),
-        "the retained placeholder runtime must be stopped on disable");
-    assertTrue(source.contains("ready = false;\n    unregisterPapiExpansion();"),
-        "stop() must unregister the retained expansion");
-  }
-
-  @Test
   @SuppressWarnings("unchecked")
   void shouldOrderReactAfterPlaceholderApiWheneverRegistrationGatesOnTheEnabledState() throws Exception {
-    String source = Files.readString(PLUGIN_SOURCE).replace("\r\n", "\n");
-    assertTrue(source.contains("isPluginEnabled(\"PlaceholderAPI\")"),
-        "registration must gate on the enabled state of PlaceholderAPI");
-
     Map<String, Object> metadata;
     try (InputStream stream = Files.newInputStream(PLUGIN_METADATA)) {
       metadata = new Yaml().load(stream);

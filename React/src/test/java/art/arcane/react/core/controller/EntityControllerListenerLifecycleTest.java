@@ -11,7 +11,9 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
@@ -24,6 +26,22 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 class EntityControllerListenerLifecycleTest {
+  private React previousInstance;
+
+  @BeforeEach
+  void installPluginInstance() {
+    previousInstance = React.instance;
+    React plugin = Mockito.mock(React.class);
+    Mockito.when(plugin.getName()).thenReturn("React");
+    Mockito.when(plugin.namespace()).thenReturn("react");
+    React.instance = plugin;
+  }
+
+  @AfterEach
+  void restorePluginInstance() {
+    React.instance = previousInstance;
+  }
+
   @Test
   void unregisterRemovesEveryRegistrationForListenerIdentity() {
     EntityController controller = new EntityController();

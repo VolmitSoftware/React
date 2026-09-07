@@ -225,10 +225,11 @@ tasks.named('test', Test).configure {
     useJUnitPlatform {
         includeEngines('junit-jupiter', 'jqwik')
     }
+    maxParallelForks = Math.max(1, (int) (Runtime.runtime.availableProcessors() / 2))
     systemProperty('net.bytebuddy.experimental', 'true')
     jvmArgs('-XX:+EnableDynamicAgentLoading')
     testLogging {
-        events('passed', 'skipped', 'failed')
+        events('skipped', 'failed')
     }
 }
 

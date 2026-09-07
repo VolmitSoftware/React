@@ -32,6 +32,8 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.BoundingBox;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
@@ -43,54 +45,44 @@ import java.util.concurrent.atomic.AtomicReference;
 
 class MobStackMergeTest {
 
-  @Test
-  void stackLimitNotExceededWhenSumUnderMax() {
-    Assertions.assertFalse(FeatureMobStacking.exceedsStackLimit(5, 3, 10));
+  @ParameterizedTest(name = "into={0} source={1} max={2} -> exceeds={3}")
+  @CsvSource({
+      "5, 3, 10, false",
+      "7, 4, 10, true",
+      "5, 5, 10, false"
+  })
+  void stackLimitIsExceededOnlyWhenTheCombinedCountPassesTheMax(int intoCount,
+                                                                int sourceCount,
+                                                                int maxStackSize,
+                                                                boolean expected) {
+    Assertions.assertEquals(expected, FeatureMobStacking.exceedsStackLimit(intoCount, sourceCount, maxStackSize));
   }
 
-  @Test
-  void stackLimitExceededWhenSumOverMax() {
-    Assertions.assertTrue(FeatureMobStacking.exceedsStackLimit(7, 4, 10));
+  @ParameterizedTest(name = "source={0} into={1} max={2} -> within={3}")
+  @CsvSource({
+      "20.0, 20.0, 100.0, true",
+      "60.0, 50.0, 100.0, false",
+      "50.0, 50.0, 100.0, true"
+  })
+  void healthLimitHoldsUntilTheCombinedHealthPassesTheMax(double sourceHealth,
+                                                          double intoHealth,
+                                                          double maxHealth,
+                                                          boolean expected) {
+    Assertions.assertEquals(expected, FeatureMobStacking.withinHealthLimit(sourceHealth, intoHealth, maxHealth));
   }
 
-  @Test
-  void stackLimitNotExceededWhenSumEqualsMax() {
-    Assertions.assertFalse(FeatureMobStacking.exceedsStackLimit(5, 5, 10));
-  }
-
-  @Test
-  void healthLimitWithinWhenCombinedUnderMax() {
-    Assertions.assertTrue(FeatureMobStacking.withinHealthLimit(20.0, 20.0, 100.0));
-  }
-
-  @Test
-  void healthLimitExceededWhenCombinedOverMax() {
-    Assertions.assertFalse(FeatureMobStacking.withinHealthLimit(60.0, 50.0, 100.0));
-  }
-
-  @Test
-  void healthLimitWithinWhenCombinedEqualsMax() {
-    Assertions.assertTrue(FeatureMobStacking.withinHealthLimit(50.0, 50.0, 100.0));
-  }
-
-  @Test
-  void theoreticalMaxStackCountFromHealthRatio() {
-    Assertions.assertEquals(5, FeatureMobStacking.theoreticalMaxStackCount(100.0, 20.0, 10));
-  }
-
-  @Test
-  void theoreticalMaxStackCountClampedByConfiguredMax() {
-    Assertions.assertEquals(3, FeatureMobStacking.theoreticalMaxStackCount(100.0, 20.0, 3));
-  }
-
-  @Test
-  void theoreticalMaxStackCountClampedByMaxWhenRatioHigher() {
-    Assertions.assertEquals(10, FeatureMobStacking.theoreticalMaxStackCount(100.0, 7.0, 10));
-  }
-
-  @Test
-  void theoreticalMaxStackCountZeroWhenEntityHealthExceedsBudget() {
-    Assertions.assertEquals(0, FeatureMobStacking.theoreticalMaxStackCount(15.0, 20.0, 10));
+  @ParameterizedTest(name = "budget={0} entity={1} max={2} -> {3}")
+  @CsvSource({
+      "100.0, 20.0, 10, 5",
+      "100.0, 20.0, 3, 3",
+      "100.0, 7.0, 10, 10",
+      "15.0, 20.0, 10, 0"
+  })
+  void theoreticalMaxStackCountClampsTheHealthRatioToTheConfiguredMax(double maxHealth,
+                                                                      double entityMaxHealth,
+                                                                      int maxStackSize,
+                                                                      int expected) {
+    Assertions.assertEquals(expected, FeatureMobStacking.theoreticalMaxStackCount(maxHealth, entityMaxHealth, maxStackSize));
   }
 
   @Property(tries = 200)

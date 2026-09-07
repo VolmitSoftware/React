@@ -19,6 +19,7 @@ import org.mockito.Mockito;
 import java.lang.reflect.Field;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 class FeatureFarmBurstSmootherLifecycleTest {
@@ -140,7 +141,7 @@ class FeatureFarmBurstSmootherLifecycleTest {
         setField(feature, "stalePendingMS", -1);
         feature.onActivate();
         feature.on(growth.event());
-        Thread.sleep(2L);
+        awaitMillisecondClockAdvance();
 
         try (MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class);
              MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
@@ -273,6 +274,18 @@ class FeatureFarmBurstSmootherLifecycleTest {
 
         Assertions.assertEquals(1, pendingSize(feature));
         Mockito.verify(growth.block(), Mockito.never()).setBlockData(Mockito.any(BlockData.class), Mockito.anyBoolean());
+    }
+
+    private static void awaitMillisecondClockAdvance() {
+        long start = System.currentTimeMillis();
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
+        while (System.currentTimeMillis() == start) {
+            Assertions.assertTrue(
+                System.nanoTime() < deadline,
+                "Timed out after 2s waiting for the millisecond clock to advance past " + start
+            );
+            Thread.onSpinWait();
+        }
     }
 
     private static FeatureFarmBurstSmoother configuredFeature() throws Exception {

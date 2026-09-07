@@ -2,23 +2,27 @@ package art.arcane.react.api.rendering;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 public class MegamapDuplicateSplitterTest {
 
     private static final UUID LOW = new UUID(0L, 1L);
     private static final UUID HIGH = new UUID(0L, 2L);
 
-    private MegamapDuplicateSplitter.DuplicateFrame frame(UUID frameId, int mapId, long firstSeenMs) {
+    private static MegamapDuplicateSplitter.DuplicateFrame frame(UUID frameId, int mapId, long firstSeenMs) {
         return new MegamapDuplicateSplitter.DuplicateFrame(frameId, mapId, "tps", firstSeenMs);
     }
 
-    private MegamapDuplicateSplitter.DuplicateFrame frame(UUID frameId, int mapId, String rendererId, long firstSeenMs) {
+    private static MegamapDuplicateSplitter.DuplicateFrame frame(UUID frameId, int mapId, String rendererId, long firstSeenMs) {
         return new MegamapDuplicateSplitter.DuplicateFrame(frameId, mapId, rendererId, firstSeenMs);
     }
 
@@ -111,44 +115,30 @@ public class MegamapDuplicateSplitterTest {
         Assertions.assertTrue(plan.isEmpty());
     }
 
-    @Test
-    public void emptyRendererFramesAreIgnoredSoTheGroupCollapses() {
-        Set<UUID> plan = MegamapDuplicateSplitter.plan(List.of(
-                frame(UUID.randomUUID(), 7, "", 100L),
-                frame(UUID.randomUUID(), 7, "tps", 200L)
-        ));
-
-        Assertions.assertTrue(plan.isEmpty());
+    private static Stream<Arguments> framesThatCollapseTheGroup() {
+        return Stream.of(
+                Arguments.of("empty renderer id", List.of(
+                        frame(UUID.randomUUID(), 7, "", 100L),
+                        frame(UUID.randomUUID(), 7, "tps", 200L))),
+                Arguments.of("null renderer id", List.of(
+                        frame(UUID.randomUUID(), 7, null, 100L),
+                        frame(UUID.randomUUID(), 7, "tps", 200L))),
+                Arguments.of("negative map id", List.of(
+                        frame(UUID.randomUUID(), -1, 100L),
+                        frame(UUID.randomUUID(), -1, 200L))),
+                Arguments.of("null frame id", List.of(
+                        frame(null, 7, 100L),
+                        frame(UUID.randomUUID(), 7, 200L)))
+        );
     }
 
-    @Test
-    public void nullRendererFramesAreIgnoredSoTheGroupCollapses() {
-        Set<UUID> plan = MegamapDuplicateSplitter.plan(List.of(
-                frame(UUID.randomUUID(), 7, null, 100L),
-                frame(UUID.randomUUID(), 7, "tps", 200L)
-        ));
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("framesThatCollapseTheGroup")
+    public void unusableFramesAreIgnoredSoTheGroupCollapses(
+            String label, List<MegamapDuplicateSplitter.DuplicateFrame> frames) {
+        Set<UUID> plan = MegamapDuplicateSplitter.plan(frames);
 
-        Assertions.assertTrue(plan.isEmpty());
-    }
-
-    @Test
-    public void negativeMapIdFramesAreIgnoredSoTheGroupCollapses() {
-        Set<UUID> plan = MegamapDuplicateSplitter.plan(List.of(
-                frame(UUID.randomUUID(), -1, 100L),
-                frame(UUID.randomUUID(), -1, 200L)
-        ));
-
-        Assertions.assertTrue(plan.isEmpty());
-    }
-
-    @Test
-    public void nullFrameIdFramesAreIgnoredSoTheGroupCollapses() {
-        Set<UUID> plan = MegamapDuplicateSplitter.plan(List.of(
-                frame(null, 7, 100L),
-                frame(UUID.randomUUID(), 7, 200L)
-        ));
-
-        Assertions.assertTrue(plan.isEmpty());
+        Assertions.assertTrue(plan.isEmpty(), label);
     }
 
     @Test

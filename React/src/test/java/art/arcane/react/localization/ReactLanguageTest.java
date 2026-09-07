@@ -33,6 +33,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -103,58 +108,33 @@ public class ReactLanguageTest {
   @Test
   public void everyDownloadableLocaleCoversAndValidatesTheEntireCatalog() throws Exception {
     MessageCatalog catalog = ReactMessages.catalog();
-    for (String locale : VolmitLocales.nonEnglish()) {
-      Path localeFile = LANGUAGE_ROOT.resolve(locale + ".toml");
-      LocaleOverlay overlay = ReactLanguage.parseOverlay(
-          localeFile.toString(),
-          locale,
-          Files.readString(localeFile)
-      );
-      LocalizationValidationResult validation = LocalizationValidator.validate(catalog, List.of(overlay));
+    Map<String, EnglishFacts> englishFacts = englishFacts(catalog);
+    List<String> locales = new ArrayList<>(VolmitLocales.nonEnglish());
+    ExecutorService executor = Executors.newFixedThreadPool(
+        Math.min(locales.size(), Math.max(2, Runtime.getRuntime().availableProcessors() / 2))
+    );
+    List<Future<?>> futures = new ArrayList<>(locales.size());
 
-      Assertions.assertTrue(validation.errors().isEmpty(), localeFile + ": " + validation.errors());
-      Assertions.assertEquals(catalog.byId().keySet(), overlay.values().keySet(), localeFile.toString());
-      int changed = 0;
-      for (MessageKey key : catalog.keys()) {
-        MessageValue translated = overlay.value(key.id());
-        Assertions.assertInstanceOf(TextValue.class, translated, key.id());
-        String template = ((TextValue) translated).template();
-        Assertions.assertFalse(template.contains("\uFFFD"), localeFile + ": " + key.id());
-        Assertions.assertFalse(template.contains("⟬"), localeFile + ": " + key.id());
-        Assertions.assertFalse(template.contains("⟭"), localeFile + ": " + key.id());
-        Assertions.assertFalse(
-            FORBIDDEN_TRANSLATION_ARTIFACT.matcher(template).find(),
-            localeFile + ": known translation artifact in " + key.id()
-        );
-        Assertions.assertFalse(
-            hasUnexpectedScript(locale, template),
-            localeFile + ": unexpected writing system in " + key.id()
-        );
-        String english = ((TextValue) key.englishValue()).template();
-        Assertions.assertEquals(
-            tokenCounts(english),
-            tokenCounts(template),
-            localeFile + ": protocol drift in " + key.id()
-        );
-        if (hasBalancedStructuralDelimiters(english)) {
-          Assertions.assertTrue(
-              hasBalancedStructuralDelimiters(template),
-              localeFile + ": unbalanced structural delimiters in " + key.id()
-          );
-        }
-        Assertions.assertTrue(
-            template.length() <= Math.max(300, english.length() * 4 + 80),
-            localeFile + ": overlong translation in " + key.id()
-        );
-        Assertions.assertFalse(
-            addsRepeatedNgram(english, template),
-            localeFile + ": repeated translation in " + key.id()
-        );
-        if (!translated.equals(key.englishValue())) {
-          changed++;
+    try {
+      for (String locale : locales) {
+        Callable<Void> task = () -> {
+          assertLocaleCoversAndValidatesTheEntireCatalog(catalog, englishFacts, locale);
+          return null;
+        };
+        futures.add(executor.submit(task));
+      }
+      for (Future<?> future : futures) {
+        try {
+          future.get();
+        } catch (ExecutionException failure) {
+          if (failure.getCause() instanceof Error error) {
+            throw error;
+          }
+          throw failure;
         }
       }
-      Assertions.assertTrue(changed >= catalog.keys().size() * 3 / 4, localeFile + " is mostly English");
+    } finally {
+      executor.shutdownNow();
     }
   }
 
@@ -330,6 +310,78 @@ public class ReactLanguageTest {
     Assertions.assertEquals("custom-check-id", TestMessages.nameLabel("custom-check-id"));
   }
 
+  private void assertLocaleCoversAndValidatesTheEntireCatalog(
+      MessageCatalog catalog,
+      Map<String, EnglishFacts> englishFacts,
+      String locale
+  ) throws Exception {
+    Path localeFile = LANGUAGE_ROOT.resolve(locale + ".toml");
+    LocaleOverlay overlay = ReactLanguage.parseOverlay(
+        localeFile.toString(),
+        locale,
+        Files.readString(localeFile)
+    );
+    LocalizationValidationResult validation = LocalizationValidator.validate(catalog, List.of(overlay));
+
+    Assertions.assertTrue(validation.errors().isEmpty(), localeFile + ": " + validation.errors());
+    Assertions.assertEquals(catalog.byId().keySet(), overlay.values().keySet(), localeFile.toString());
+    int changed = 0;
+    for (MessageKey key : catalog.keys()) {
+      MessageValue translated = overlay.value(key.id());
+      Assertions.assertInstanceOf(TextValue.class, translated, key.id());
+      String template = ((TextValue) translated).template();
+      Assertions.assertFalse(template.contains("\uFFFD"), localeFile + ": " + key.id());
+      Assertions.assertFalse(template.contains("⟬"), localeFile + ": " + key.id());
+      Assertions.assertFalse(template.contains("⟭"), localeFile + ": " + key.id());
+      Assertions.assertFalse(
+          FORBIDDEN_TRANSLATION_ARTIFACT.matcher(template).find(),
+          localeFile + ": known translation artifact in " + key.id()
+      );
+      Assertions.assertFalse(
+          hasUnexpectedScript(locale, template),
+          localeFile + ": unexpected writing system in " + key.id()
+      );
+      EnglishFacts english = englishFacts.get(key.id());
+      Assertions.assertEquals(
+          english.tokens(),
+          tokenCounts(template),
+          localeFile + ": protocol drift in " + key.id()
+      );
+      if (english.balanced()) {
+        Assertions.assertTrue(
+            hasBalancedStructuralDelimiters(template),
+            localeFile + ": unbalanced structural delimiters in " + key.id()
+        );
+      }
+      Assertions.assertTrue(
+          template.length() <= Math.max(300, english.length() * 4 + 80),
+          localeFile + ": overlong translation in " + key.id()
+      );
+      Assertions.assertFalse(
+          addsRepeatedNgram(english, template),
+          localeFile + ": repeated translation in " + key.id()
+      );
+      if (!translated.equals(key.englishValue())) {
+        changed++;
+      }
+    }
+    Assertions.assertTrue(changed >= catalog.keys().size() * 3 / 4, localeFile + " is mostly English");
+  }
+
+  private Map<String, EnglishFacts> englishFacts(MessageCatalog catalog) {
+    Map<String, EnglishFacts> facts = new HashMap<>();
+    for (MessageKey key : catalog.keys()) {
+      String english = ((TextValue) key.englishValue()).template();
+      facts.put(key.id(), new EnglishFacts(
+          tokenCounts(english),
+          hasBalancedStructuralDelimiters(english),
+          hasPathologicalRepetition(english),
+          english.length()
+      ));
+    }
+    return facts;
+  }
+
   private Map<String, Integer> tokenCounts(String value) {
     Map<String, Integer> counts = new HashMap<>();
     Matcher matcher = PROTOCOL_TOKEN.matcher(value);
@@ -356,8 +408,8 @@ public class ReactLanguageTest {
     return expected.isEmpty();
   }
 
-  private boolean addsRepeatedNgram(String english, String translated) {
-    return hasPathologicalRepetition(translated) && !hasPathologicalRepetition(english);
+  private boolean addsRepeatedNgram(EnglishFacts english, String translated) {
+    return !english.repeated() && hasPathologicalRepetition(translated);
   }
 
   private boolean hasPathologicalRepetition(String value) {
@@ -395,5 +447,8 @@ public class ReactLanguageTest {
       words.add(matcher.group());
     }
     return words;
+  }
+
+  private record EnglishFacts(Map<String, Integer> tokens, boolean balanced, boolean repeated, int length) {
   }
 }

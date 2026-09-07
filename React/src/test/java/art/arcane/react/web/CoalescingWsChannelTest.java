@@ -22,6 +22,7 @@ public class CoalescingWsChannelTest {
     private static final class FakeWsChannel implements WsChannel {
         private final String channelId;
         private final List<String> received = new ArrayList<>();
+        private final CountDownLatch delivered = new CountDownLatch(1);
         private volatile CountDownLatch blockLatch;
 
         FakeWsChannel(String channelId) {
@@ -49,10 +50,15 @@ public class CoalescingWsChannelTest {
                 }
             }
             received.add(text);
+            delivered.countDown();
         }
 
         List<String> received() {
             return received;
+        }
+
+        CountDownLatch delivered() {
+            return delivered;
         }
 
         void setBlockLatch(CountDownLatch latch) {
@@ -113,10 +119,10 @@ public class CoalescingWsChannelTest {
 
         blockLatch.countDown();
 
-        long deadline = System.currentTimeMillis() + 5000L;
-        while (delegate.received().isEmpty() && System.currentTimeMillis() < deadline) {
-            Thread.sleep(10);
-        }
+        assertTrue(
+            delegate.delivered().await(5, TimeUnit.SECONDS),
+            "Frame must be delivered within 5s after the delegate latch is released"
+        );
         assertEquals(List.of("X"), delegate.received(), "Frame must eventually be delivered after latch released");
 
         executor.shutdownNow();

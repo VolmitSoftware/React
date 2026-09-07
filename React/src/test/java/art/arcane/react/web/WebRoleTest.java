@@ -1,98 +1,71 @@
 package art.arcane.react.web;
 
 import art.arcane.react.api.web.WebRole;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class WebRoleTest {
 
-    @Test
-    void viewerScopesContainOnlyRead() {
-        assertEquals(Set.of("read"), WebRole.VIEWER.scopes());
-    }
-
-    @Test
-    void operatorScopesContainReadAndOpExecute() {
-        assertEquals(Set.of("read", "op:execute"), WebRole.OPERATOR.scopes());
-    }
-
-    @Test
-    void adminScopesContainReadOperationsAndConsoleAuthority() {
-        assertEquals(
-            Set.of("read", "op:execute", "admin", "console:read", "console:execute"),
-            WebRole.ADMIN.scopes()
+    static Stream<Arguments> fromIdCases() {
+        return Stream.of(
+            Arguments.of("viewer", WebRole.VIEWER, "viewer"),
+            Arguments.of("OPERATOR", WebRole.OPERATOR, "operator"),
+            Arguments.of(" Admin ", WebRole.ADMIN, "admin"),
+            Arguments.of(null, null, null),
+            Arguments.of("", null, null),
+            Arguments.of("superuser", null, null)
         );
     }
 
-    @Test
-    void fromIdCaseInsensitiveLowercase() {
-        assertEquals(WebRole.VIEWER, WebRole.fromId("viewer"));
+    static Stream<Arguments> roleScopes() {
+        return Stream.of(
+            Arguments.of(WebRole.VIEWER, Set.of("read")),
+            Arguments.of(WebRole.OPERATOR, Set.of("read", "op:execute")),
+            Arguments.of(WebRole.ADMIN, Set.of("read", "op:execute", "admin", "console:read", "console:execute"))
+        );
     }
 
-    @Test
-    void fromIdCaseInsensitiveUppercase() {
-        assertEquals(WebRole.OPERATOR, WebRole.fromId("OPERATOR"));
+    static Stream<Arguments> scopesForCases() {
+        return Stream.of(
+            Arguments.of(null, WebRole.VIEWER.scopes()),
+            Arguments.of("operator", WebRole.OPERATOR.scopes()),
+            Arguments.of("bogus", Set.of())
+        );
     }
 
-    @Test
-    void fromIdCaseInsensitiveMixedWithWhitespace() {
-        assertEquals(WebRole.ADMIN, WebRole.fromId(" Admin "));
+    @ParameterizedTest(name = "fromId({0})")
+    @MethodSource("fromIdCases")
+    void fromIdTrimsAndLowercasesKnownIdsAndReturnsNullForBlankOrUnknownIds(String id, WebRole expectedRole, String expectedCanonicalId) {
+        WebRole role = WebRole.fromId(id);
+        assertEquals(expectedRole, role);
+        assertEquals(expectedCanonicalId, role == null ? null : role.id());
     }
 
-    @Test
-    void fromIdNullReturnsNull() {
-        assertNull(WebRole.fromId(null));
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("roleScopes")
+    void roleScopesGrantExactlyTheAuthorityForThatRole(WebRole role, Set<String> expectedScopes) {
+        assertEquals(expectedScopes, role.scopes());
     }
 
-    @Test
-    void fromIdBlankReturnsNull() {
-        assertNull(WebRole.fromId(""));
+    @ParameterizedTest(name = "scopesFor({0})")
+    @MethodSource("scopesForCases")
+    void scopesForFallsBackToViewerForNullAndYieldsNothingForUnknownIds(String id, Set<String> expectedScopes) {
+        assertEquals(expectedScopes, WebRole.scopesFor(id));
     }
 
-    @Test
-    void fromIdUnknownReturnsNull() {
-        assertNull(WebRole.fromId("superuser"));
-    }
-
-    @Test
-    void scopesForNullReturnsViewerScopes() {
-        assertEquals(WebRole.VIEWER.scopes(), WebRole.scopesFor(null));
-    }
-
-    @Test
-    void scopesForOperatorReturnsOperatorScopes() {
-        assertEquals(WebRole.OPERATOR.scopes(), WebRole.scopesFor("operator"));
-    }
-
-    @Test
-    void scopesForBogusReturnsEmptySet() {
-        assertTrue(WebRole.scopesFor("bogus").isEmpty());
-    }
-
-    @Test
-    void resolveRoleIdNullReturnsDefaultViewer() {
-        assertEquals("viewer", WebRole.resolveRoleId(null));
-    }
-
-    @Test
-    void resolveRoleIdViewerReturnsViewer() {
-        assertEquals("viewer", WebRole.resolveRoleId("viewer"));
-    }
-
-    @Test
-    void defaultRoleIdIsViewer() {
-        assertEquals("viewer", WebRole.DEFAULT_ROLE_ID);
-    }
-
-    @Test
-    void idMethodReturnsCanonicalLowercaseId() {
-        assertEquals("viewer", WebRole.VIEWER.id());
-        assertEquals("operator", WebRole.OPERATOR.id());
-        assertEquals("admin", WebRole.ADMIN.id());
+    @ParameterizedTest(name = "resolveRoleId({0})")
+    @CsvSource(value = {
+        "NIL, viewer",
+        "viewer, viewer"
+    }, nullValues = "NIL")
+    void resolveRoleIdDefaultsToViewerAndEchoesKnownIds(String id, String expected) {
+        assertEquals(expected, WebRole.resolveRoleId(id));
     }
 }

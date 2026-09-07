@@ -245,7 +245,7 @@ public class LogsRoutesIntegrationTest {
 
         wsFuture.get(5, TimeUnit.SECONDS);
 
-        Thread.sleep(200);
+        awaitLogSession(1);
 
         RingLogHandler handler = controller.getLogHandler();
         assertNotNull(handler, "WebController must expose logHandler after start");
@@ -330,6 +330,18 @@ public class LogsRoutesIntegrationTest {
         assertEquals(1008, closeCode.get(),
             "Expected WS close code 1008 for unauthorized; got: " + closeCode.get());
         assertEquals(0, textFrameCount.get(), "Unauthorized socket must receive no text frames");
+    }
+
+    private void awaitLogSession(int expected) {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+        while (controller.getLogSessions().size() != expected) {
+            assertTrue(
+                System.nanoTime() < deadline,
+                "Timed out after 5s waiting for " + expected + " registered /ws/logs session(s); got: "
+                    + controller.getLogSessions().size()
+            );
+            Thread.onSpinWait();
+        }
     }
 
     private static String authFrame(String bearer) {

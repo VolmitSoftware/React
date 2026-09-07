@@ -59,7 +59,7 @@ class ReactCachedSamplerTest {
 
   @Test
   void recomputesValueAfterCacheWindowElapses() {
-    CountingCachedSampler sampler = new CountingCachedSampler("tick-time-test", 40L, 13.0D);
+    CountingCachedSampler sampler = new CountingCachedSampler("tick-time-test", 1L, 13.0D);
 
     try (MockedStatic<React> react = Mockito.mockStatic(React.class)) {
       sampler.start();
@@ -69,21 +69,13 @@ class ReactCachedSamplerTest {
       long deadline = System.currentTimeMillis() + 3000L;
       while (sampler.sampleCalls.get() < 2 && System.currentTimeMillis() < deadline) {
         sampler.sample();
-        sleepQuietly(5L);
+        Thread.onSpinWait();
       }
     }
 
     Assertions.assertTrue(
         sampler.sampleCalls.get() >= 2,
         "expected at least a second recompute after the cache window, got " + sampler.sampleCalls.get());
-  }
-
-  private static void sleepQuietly(long ms) {
-    try {
-      Thread.sleep(ms);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-    }
   }
 
   private static final class CountingCachedSampler extends ReactCachedSampler {

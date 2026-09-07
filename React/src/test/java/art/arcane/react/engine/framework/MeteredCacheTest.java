@@ -6,43 +6,34 @@ import net.jqwik.api.Property;
 import net.jqwik.api.constraints.LongRange;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 public class MeteredCacheTest {
 
-  @Test
-  public void usageIsZeroWhenCacheEmpty() {
-    MeteredCache cache = new FakeMeteredCache(0L, 100L, false);
-    Assertions.assertEquals(0.0D, cache.getUsage(), 0.0D);
+  @ParameterizedTest(name = "size={0} maxSize={1} -> usage={2}")
+  @CsvSource({
+      "0, 100, 0.0",
+      "100, 100, 1.0",
+      "25, 100, 0.25",
+      "150, 100, 1.5"
+  })
+  public void usageIsTheUnclampedRatioOfSizeToMaxSize(long size, long maxSize, double expected) {
+    MeteredCache cache = new FakeMeteredCache(size, maxSize, false);
+    Assertions.assertEquals(expected, cache.getUsage(), 0.0D);
   }
 
-  @Test
-  public void usageIsOneWhenCacheFull() {
-    MeteredCache cache = new FakeMeteredCache(100L, 100L, false);
-    Assertions.assertEquals(1.0D, cache.getUsage(), 0.0D);
-  }
+  @ParameterizedTest(name = "size={0} maxSize=0 -> nan={1}")
+  @CsvSource({
+      "0, true",
+      "5, false"
+  })
+  public void usageIsUndefinedWhenMaxSizeIsZero(long size, boolean expectNaN) {
+    MeteredCache cache = new FakeMeteredCache(size, 0L, false);
+    double usage = cache.getUsage();
 
-  @Test
-  public void usageIsRatioOfSizeToMaxSize() {
-    MeteredCache cache = new FakeMeteredCache(25L, 100L, false);
-    Assertions.assertEquals(0.25D, cache.getUsage(), 0.0D);
-  }
-
-  @Test
-  public void usageIsNotClampedWhenSizeExceedsMaxSize() {
-    MeteredCache cache = new FakeMeteredCache(150L, 100L, false);
-    Assertions.assertEquals(1.5D, cache.getUsage(), 0.0D);
-  }
-
-  @Test
-  public void usageIsNanWhenMaxSizeIsZeroAndEmpty() {
-    MeteredCache cache = new FakeMeteredCache(0L, 0L, false);
-    Assertions.assertTrue(Double.isNaN(cache.getUsage()));
-  }
-
-  @Test
-  public void usageIsInfiniteWhenMaxSizeIsZeroAndNonEmpty() {
-    MeteredCache cache = new FakeMeteredCache(5L, 0L, false);
-    Assertions.assertTrue(Double.isInfinite(cache.getUsage()));
+    Assertions.assertEquals(expectNaN, Double.isNaN(usage));
+    Assertions.assertEquals(!expectNaN, Double.isInfinite(usage));
   }
 
   @Test

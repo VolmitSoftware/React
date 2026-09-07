@@ -2,17 +2,26 @@ package art.arcane.react.api.protect.internal;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import java.util.stream.Stream;
 
 class ProtectionTextTest {
 
-  @Test
-  void controlCharactersAreStripped() {
-    Assertions.assertEquals("abc", ProtectionText.sanitize("a\u0000b\u001Fc\u007F"));
+  private static Stream<Arguments> unsafeDisplayText() {
+    return Stream.of(
+        Arguments.of("a\u0000b\u001Fc\u007F", "abc"),
+        Arguments.of("one\ntwo", "onetwo"),
+        Arguments.of("  name  ", "name")
+    );
   }
 
-  @Test
-  void newlinesCannotSurviveIntoDisplayText() {
-    Assertions.assertEquals("onetwo", ProtectionText.sanitize("one\ntwo"));
+  @ParameterizedTest(name = "{1}")
+  @MethodSource("unsafeDisplayText")
+  void sanitizeStripsControlCharactersAndSurroundingWhitespace(String raw, String expected) {
+    Assertions.assertEquals(expected, ProtectionText.sanitize(raw));
   }
 
   @Test
@@ -25,11 +34,6 @@ class ProtectionTextTest {
   void nullAndEmptyBecomeEmpty() {
     Assertions.assertEquals("", ProtectionText.sanitize(null));
     Assertions.assertEquals("", ProtectionText.sanitize(""));
-  }
-
-  @Test
-  void surroundingWhitespaceIsStripped() {
-    Assertions.assertEquals("name", ProtectionText.sanitize("  name  "));
   }
 
   @Test

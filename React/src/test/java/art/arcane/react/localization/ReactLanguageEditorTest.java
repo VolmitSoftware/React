@@ -11,6 +11,7 @@ import art.arcane.volmlib.util.localization.RemoteLanguageCatalog;
 import art.arcane.volmlib.util.localization.TextValue;
 import art.arcane.volmlib.util.localization.VolmitLocales;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -33,6 +34,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class ReactLanguageEditorTest {
+  private static byte[] frenchLocale;
+
   @TempDir
   Path directory;
 
@@ -41,6 +44,11 @@ class ReactLanguageEditorTest {
   private RemoteLanguageCatalog remote;
   private PluginLanguageService languages;
   private PluginLanguageEditor editor;
+
+  @BeforeAll
+  static void readBundledFrenchLocale() throws Exception {
+    frenchLocale = Files.readAllBytes(Path.of("src/main/resources/languages/fr_FR.toml"));
+  }
 
   @BeforeEach
   void prepareEditor() throws Exception {
@@ -57,7 +65,7 @@ class ReactLanguageEditorTest {
         directory.resolve("languages/cache"), ReactLanguage.class.getClassLoader()));
     field.set(null, remote);
     Files.createDirectories(directory.resolve("languages"));
-    Files.copy(Path.of("src/main/resources/languages/fr_FR.toml"), directory.resolve("languages/fr_FR.toml"));
+    Files.write(directory.resolve("languages/fr_FR.toml"), frenchLocale);
     PluginLanguageEditor.Options options = ReactLanguage.editorOptions();
     LocalizationSnapshot english = LocalizationSnapshot.create(
         LocalizationCandidate.english(ReactMessages.catalog(), PluralSelector.oneOther()));

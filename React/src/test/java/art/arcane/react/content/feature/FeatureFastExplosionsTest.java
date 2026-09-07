@@ -113,10 +113,51 @@ class FeatureFastExplosionsTest {
   }
 
   @Test
-  void counterBudgetsResetOnThePerTickCadence() {
+  void counterBudgetsResetOnThePerTickCadence() throws ReflectiveOperationException {
     FeatureFastExplosions feature = new FeatureFastExplosions();
-
     Assertions.assertEquals(50, feature.getTickInterval());
+    setBoolean(feature, "explosionChainReactions", true);
+    setInt(feature, "maxPrimesPerTick", 0);
+    setInt(feature, "maxExplosionChainsPerTick", 1);
+    World world = Mockito.mock(World.class);
+    Block permitted = block(world, 0, 64, 0, Material.TNT);
+    Block overflow = block(world, 16, 64, 0, Material.TNT);
+    Block nextWindow = block(world, 32, 64, 0, Material.TNT);
+    List<ScheduledBatch> scheduled = new ArrayList<>();
+    BlockData air = Mockito.mock(BlockData.class);
+
+    try (MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class)) {
+      bukkit.when(() -> Bukkit.createBlockData(Material.AIR)).thenReturn(air);
+      try (MockedStatic<J> scheduler = Mockito.mockStatic(J.class);
+           MockedStatic<B> blockData = Mockito.mockStatic(B.class);
+           MockedStatic<FastWorld> fastWorld = Mockito.mockStatic(FastWorld.class)) {
+        captureScheduledBatches(scheduler, scheduled, true);
+        blockData.when(B::getAir).thenReturn(air);
+
+        feature.on(explosionEvent(EntityType.TNT, new ArrayList<>(List.of(permitted, overflow)), 0F));
+        for (ScheduledBatch batch : scheduled) {
+          batch.task().run();
+        }
+
+        Assertions.assertEquals(2, scheduled.size());
+        Mockito.verify(world).createExplosion(permitted.getLocation(), 4F, false, true);
+        Mockito.verify(world, Mockito.never()).createExplosion(overflow.getLocation(), 4F, false, true);
+
+        feature.onTick();
+        scheduled.clear();
+
+        feature.on(explosionEvent(EntityType.TNT, new ArrayList<>(List.of(nextWindow)), 0F));
+        for (ScheduledBatch batch : scheduled) {
+          batch.task().run();
+        }
+
+        Assertions.assertEquals(1, scheduled.size());
+        Mockito.verify(world).createExplosion(nextWindow.getLocation(), 4F, false, true);
+        fastWorld.verify(
+            () -> FastWorld.set(Mockito.any(Block.class), Mockito.same(air), Mockito.eq(true)),
+            Mockito.times(3));
+      }
+    }
   }
 
   @Test

@@ -4,48 +4,44 @@ import art.arcane.volmlib.util.director.compat.DirectorEngineFactory;
 import art.arcane.volmlib.util.director.runtime.DirectorRuntimeEngine;
 import art.arcane.volmlib.util.director.runtime.DirectorRuntimeNode;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import java.util.stream.Stream;
 
 class CommandTreeTest {
 
-  @Test  void reactDirectorTreeResolvesTestPath() {
-    DirectorRuntimeNode root = reactRoot();
-    assertExactPath(root, "test");
+  private static DirectorRuntimeNode root;
+
+  @BeforeAll
+  static void buildReactRoot() {
+    DirectorRuntimeEngine engine = DirectorEngineFactory.create(new CommandReact());
+    root = engine.getRoot();
   }
 
-  @Test  void reactDirectorTreeResolvesTestRunPath() {
-    DirectorRuntimeNode root = reactRoot();
-    assertExactPath(root, "test", "run");
+  static Stream<Arguments> commandPaths() {
+    return Stream.of(
+        Arguments.of((Object) new String[]{"test"}),
+        Arguments.of((Object) new String[]{"test", "run"}),
+        Arguments.of((Object) new String[]{"test", "loadtest"}),
+        Arguments.of((Object) new String[]{"web"}),
+        Arguments.of((Object) new String[]{"web", "pair"}),
+        Arguments.of((Object) new String[]{"web", "list"}),
+        Arguments.of((Object) new String[]{"web", "revoke"})
+    );
   }
 
-  @Test  void reactDirectorTreeResolvesTestLoadtestPath() {
-    DirectorRuntimeNode root = reactRoot();
-    assertExactPath(root, "test", "loadtest");
-  }
-
-  @Test  void reactDirectorTreeResolvesWebPath() {
-    DirectorRuntimeNode root = reactRoot();
-    assertExactPath(root, "web");
-  }
-
-  @Test  void reactDirectorTreeResolvesWebPairPath() {
-    DirectorRuntimeNode root = reactRoot();
-    assertExactPath(root, "web", "pair");
-  }
-
-  @Test  void reactDirectorTreeResolvesWebListPath() {
-    DirectorRuntimeNode root = reactRoot();
-    assertExactPath(root, "web", "list");
-  }
-
-  @Test  void reactDirectorTreeResolvesWebRevokePath() {
-    DirectorRuntimeNode root = reactRoot();
-    assertExactPath(root, "web", "revoke");
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("commandPaths")
+  void reactDirectorTreeResolvesEveryDocumentedCommandPath(String[] path) {
+    assertExactPath(root, path);
   }
 
   @Test
   void reactDirectorTreeResolvesMonitoringOnlyPaths() {
-    DirectorRuntimeNode root = reactRoot();
     assertExactPath(root, "monitoring-only");
     assertExactPath(root, "monitor-only");
     assertExactPath(root, "monitoring-mode");
@@ -54,7 +50,6 @@ class CommandTreeTest {
 
   @Test
   void reactDirectorTreeResolvesIndependentDistancePaths() {
-    DirectorRuntimeNode root = reactRoot();
     assertExactPath(root, "distance", "world", "view");
     assertExactPath(root, "distance", "world", "simulation");
     assertExactPath(root, "distance", "world", "send");
@@ -69,13 +64,8 @@ class CommandTreeTest {
     assertExactPath(root, "distance", "player", "send-view-distance");
   }
 
-  private static DirectorRuntimeNode reactRoot() {
-    DirectorRuntimeEngine engine = DirectorEngineFactory.create(new CommandReact());
-    return engine.getRoot();
-  }
-
-  private static void assertExactPath(DirectorRuntimeNode root, String... path) {
-    DirectorRuntimeNode cursor = root;
+  private static void assertExactPath(DirectorRuntimeNode start, String... path) {
+    DirectorRuntimeNode cursor = start;
     for (String token : path) {
       cursor = findExactChild(cursor, token);
       Assertions.assertNotNull(cursor, "Missing Director token: " + token);

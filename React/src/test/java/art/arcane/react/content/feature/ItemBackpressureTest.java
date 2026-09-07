@@ -4,33 +4,25 @@ import net.jqwik.api.ForAll;
 import net.jqwik.api.Property;
 import net.jqwik.api.constraints.DoubleRange;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class ItemBackpressureTest {
 
-  @Test
-  void throttlesWhenTickTimeOverThreshold() {
-    Assertions.assertTrue(FeatureItemBackpressure.shouldThrottle(70.0, 60.0, 0.0, 5000.0));
-  }
-
-  @Test
-  void throttlesWhenEntityCountOverThreshold() {
-    Assertions.assertTrue(FeatureItemBackpressure.shouldThrottle(10.0, 60.0, 6000.0, 5000.0));
-  }
-
-  @Test
-  void doesNotThrottleWhenBothBelowThresholds() {
-    Assertions.assertFalse(FeatureItemBackpressure.shouldThrottle(10.0, 60.0, 100.0, 5000.0));
-  }
-
-  @Test
-  void throttlesWhenTickTimeAtThreshold() {
-    Assertions.assertTrue(FeatureItemBackpressure.shouldThrottle(60.0, 60.0, 0.0, 5000.0));
-  }
-
-  @Test
-  void throttlesWhenEntityCountAtThreshold() {
-    Assertions.assertTrue(FeatureItemBackpressure.shouldThrottle(10.0, 60.0, 5000.0, 5000.0));
+  @ParameterizedTest(name = "tick={0}/{1} entities={2}/{3} -> throttle={4}")
+  @CsvSource({
+      "70.0, 60.0, 0.0, 5000.0, true",
+      "10.0, 60.0, 6000.0, 5000.0, true",
+      "10.0, 60.0, 100.0, 5000.0, false",
+      "60.0, 60.0, 0.0, 5000.0, true",
+      "10.0, 60.0, 5000.0, 5000.0, true"
+  })
+  void throttlesOnceEitherTickTimeOrEntityCountReachesItsThreshold(double tickTimeMs,
+                                                                   double triggerTickTimeMs,
+                                                                   double entityCount,
+                                                                   double triggerEntityCount,
+                                                                   boolean expected) {
+    Assertions.assertEquals(expected, FeatureItemBackpressure.shouldThrottle(tickTimeMs, triggerTickTimeMs, entityCount, triggerEntityCount));
   }
 
   @Property(tries = 200)
