@@ -317,6 +317,16 @@ pluginPackaging {
             policyName = 'React'
             prunePrefixes = ['art/arcane/react/util/arcane/volmlib/']
             keepPrefixes = ['art/arcane/react/util/arcane/volmlib/util/matter/slices/']
+            shrinkRules = [file('packaging/shrink.pro')]
+            shrinkLibraries.from(provider { project(':nms:v26_2_R1').configurations.compileClasspath })
+            shrinkRelocations = [
+                'net.bytebuddy': "${lib}.bytebuddy",
+                'art.arcane.chrono': "${lib}.chrono",
+                'art.arcane.curse': "${lib}.curse",
+                'art.arcane.multiburst': "${lib}.multiburst",
+                'org.bstats': "${lib}.bstats",
+                'org.slf4j': "${lib}.slf4j"
+            ]
         }
     }
 }
