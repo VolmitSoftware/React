@@ -225,7 +225,10 @@ public class DirectorCommandController implements IController, CommandExecutor, 
     }
 
     playFailureSound(sender);
-    ReactLanguage.send(sender, RuntimeMessages.UNKNOWN_COMMAND);
+
+    if (!result.isHandled()) {
+      ReactLanguage.send(sender, RuntimeMessages.UNKNOWN_COMMAND);
+    }
   }
 
   private boolean sendHelpIfRequested(CommandSender sender, String[] args) {

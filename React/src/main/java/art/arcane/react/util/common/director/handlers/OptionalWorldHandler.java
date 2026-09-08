@@ -20,11 +20,25 @@
 package art.arcane.react.util.director.handlers;
 
 import art.arcane.react.util.director.DirectorParameterHandler;
+import art.arcane.volmlib.util.bukkit.WorldIdentity;
+import art.arcane.volmlib.util.director.exceptions.DirectorParsingException;
 import art.arcane.volmlib.util.director.handlers.base.OptionalWorldHandlerBase;
 
 public class OptionalWorldHandler extends OptionalWorldHandlerBase implements DirectorParameterHandler<String> {
+  private final WorldHandler worlds = new WorldHandler();
+
   @Override
   protected String excludedPrefix() {
     return "iris/";
+  }
+
+  @Override
+  public String parse(String in, boolean force) throws DirectorParsingException {
+    String value = in == null ? "" : in.trim();
+    if ("ALL".equalsIgnoreCase(value)) {
+      return "ALL";
+    }
+
+    return WorldIdentity.serialize(worlds.parse(value, force));
   }
 }
