@@ -56,7 +56,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params> {
   public static final String ID = "purge-entities";
   private List<EntityType> blacklist = new ArrayList<>(List.of(
-      EntityType.ITEM_DISPLAY, EntityType.PLAYER, EntityType.ARMOR_STAND, EntityType.ITEM_FRAME, EntityType.PAINTING, EntityType.LEASH_KNOT,
+      EntityType.ENDER_DRAGON, EntityType.ITEM_DISPLAY, EntityType.PLAYER, EntityType.ARMOR_STAND, EntityType.ITEM_FRAME, EntityType.PAINTING, EntityType.LEASH_KNOT,
       EntityType.MINECART, EntityType.CHEST_MINECART, EntityType.COMMAND_BLOCK_MINECART, EntityType.FURNACE_MINECART,
       EntityType.HOPPER_MINECART, EntityType.SPAWNER_MINECART, EntityType.TNT_MINECART,
       EntityType.ACACIA_BOAT, EntityType.BAMBOO_RAFT, EntityType.BIRCH_BOAT, EntityType.CHERRY_BOAT, EntityType.DARK_OAK_BOAT,
@@ -154,6 +154,7 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
   boolean canPurge(Entity entity, Params params) {
     return entity != null
         && !entity.isDead()
+        && entity.getType() != EntityType.ENDER_DRAGON
         && params != null
         && params.getEntityFilter().allows(entity.getType())
         && !EntityRemovalPolicy.protectsNamedEntity(entity, params.isProtectNamedEntities());
