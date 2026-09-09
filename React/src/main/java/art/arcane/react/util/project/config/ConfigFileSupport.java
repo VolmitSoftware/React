@@ -35,6 +35,10 @@ public final class ConfigFileSupport {
 
   public static void writeConfig(File file, String content) throws IOException {
     IO.writeAll(file, content);
+    noteSelfWrite(file, content);
+  }
+
+  public static void noteSelfWrite(File file, String content) {
     BiConsumer<File, String> listener = selfWriteListener;
     if (listener != null) {
       listener.accept(file, content);

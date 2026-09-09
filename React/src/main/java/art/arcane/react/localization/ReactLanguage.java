@@ -137,20 +137,22 @@ public final class ReactLanguage {
 
   private static LocalizationSnapshot writeMessage(PluginLanguageEditor.Edit edit) throws IOException {
     File file = new File(languageFolder(), edit.locale() + ".toml");
-    LocalizationSnapshot prepared = LanguageFileEditor.update(file.toPath(), raw -> {
+    SavedLanguage saved = LanguageFileEditor.update(file.toPath(), raw -> {
       LocalizationSnapshot current = editorSnapshot(edit.locale(), file, raw);
       if (!current.value(CATALOG.require(edit.key())).equals(edit.expected())) {
         throw new IOException("Language message changed; reopen it before saving");
       }
       String updated = TomlLanguageEditor.upsert(raw, edit.key(), edit.value()).content();
-      return new LanguageFileEditor.Prepared<>(updated, editorSnapshot(edit.locale(), file, updated));
+      SavedLanguage prepared = new SavedLanguage(updated, editorSnapshot(edit.locale(), file, updated));
+      return new LanguageFileEditor.Prepared<>(updated, prepared);
     });
+    ConfigFileSupport.noteSelfWrite(file, saved.rawContent());
     synchronized (SNAPSHOT_LOCK) {
       if (edit.locale().equals(activeLocale)) {
-        MANAGER.install(prepared);
+        MANAGER.install(saved.snapshot());
       }
     }
-    return prepared;
+    return saved.snapshot();
   }
 
   private static LocalizationSnapshot editorSnapshot(String locale, File file, String raw) throws IOException {
@@ -173,6 +175,7 @@ public final class ReactLanguage {
       MANAGER.install(prepared);
       activeLocale = locale;
     }
+    ConfigFileSupport.noteSelfWrite(file, raw);
   }
 
   public static boolean reload() {
@@ -452,7 +455,9 @@ public final class ReactLanguage {
     if (Files.exists(english)) {
       return;
     }
-    AtomicFileIO.writeString(english, ReactLanguageReference.englishCatalog());
+    String raw = ReactLanguageReference.englishCatalog();
+    AtomicFileIO.writeString(english, raw);
+    ConfigFileSupport.noteSelfWrite(english.toFile(), raw);
   }
 
   private static LocaleOverlay loadFileOverlay(File file, String locale) throws Exception {
@@ -481,7 +486,9 @@ public final class ReactLanguage {
     String raw = remoteCatalog.readOrInstall(locale, file, (selectedLocale, content) ->
         LocalizationSnapshot.create(new LocalizationCandidate(CATALOG,
             List.of(parseOverlay(file.toString(), selectedLocale, content)), PluralSelector.oneOther())));
-    return parseOverlay(file.toString(), locale, raw);
+    LocaleOverlay overlay = parseOverlay(file.toString(), locale, raw);
+    ConfigFileSupport.noteSelfWrite(file.toFile(), raw);
+    return overlay;
   }
 
   static LocaleOverlay parseOverlay(String source, String locale, String raw) {
@@ -527,6 +534,9 @@ public final class ReactLanguage {
   }
 
   private record LanguageHotloadSnapshot(String path, String rawContent) {
+  }
+
+  private record SavedLanguage(String rawContent, LocalizationSnapshot snapshot) {
   }
 
   private static List<String> readLines(String key, JsonArray array) {
