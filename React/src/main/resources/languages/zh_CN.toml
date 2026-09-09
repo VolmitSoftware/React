@@ -1,6 +1,179 @@
+# React 语言：zh_CN
+#
+# 可直接编辑 languages 文件夹中的此文件，也可通过 /react language server edit 编辑。
+# React 仅在语言文件缺失时创建或下载文件。本地修改会保留。
+# 缺失的消息使用内置英文目录中的内容。
+#
+# 格式
+#   聊天消息使用 MiniMessage：<red>文本</red>, <bold>文本</bold>。
+#   RGB 颜色使用 <color:#RRGGBB>文本</color>。请按与打开顺序相反的顺序关闭标签。
+#   共享的 language.* 编辑器消息也支持 &e 和 &r 等传统的 & 颜色代码。
+#   其他消息不会转换 & 颜色代码。请确保 TOML 的引号和转义写法有效。
+#   在带引号的 TOML 字符串中使用 \n 换行。双花括号 {{ 和 }} 会显示花括号本身。
+#   renderer.* 和 config.documentation.annotation.* 的值为纯文本。
+#   test.* 的值为纯文本，但 test.result.* 消息使用 MiniMessage。
+#
+# 占位符
+# 每条消息仅接受其自身的占位符。请勿更改占位符名称。
+# 请在消息文本中使用占位符，并将其放在 MiniMessage 标签之外。
+#   {action}          操作名称或颜色调整方向
+#   {actions}         队列中的操作数或已排除的操作名称列表
+#   {active}          活跃的功能或调优项数量
+#   {actor}           执行修改的网页用户
+#   {added}           功能激活后是否重新加入活跃注册表
+#   {after}           更改后的配置值、语言消息或堆使用量
+#   {age}             集成数据的存在时间，单位为秒
+#   {amount}          要给予的物品数量
+#   {architecture}    CPU 架构
+#   {argument}        意外的命令参数
+#   {available}       可用的 NMS 桥接句柄数量
+#   {average}         平均 TPS 或每刻毫秒数
+#   {avg_mspt}        一轮负载测试中的平均每刻毫秒数
+#   {avg_tps}         一轮负载测试中的平均每秒刻数
+#   {bar}             带格式的基准测试得分条
+#   {before}          更改前的配置值、语言消息或堆使用量
+#   {checked}         已检查的采样器数量
+#   {chunks}          受操作影响的区块数量
+#   {code}            网页配对码
+#   {command}         命令路径
+#   {count}           条目、模块、更改或测试发现的数量
+#   {current}         当前页码
+#   {delta_heap}      React 与基线在结束时的堆使用量差值，单位为 MB
+#   {delta_mspt}      React 与基线的平均刻耗时差值，单位为 ms
+#   {delta_tps}       React 与基线的平均 TPS 差值
+#   {detail}          桥接、集成、操作或测试的诊断详情
+#   {dimensions}      检测到的地图墙网格尺寸
+#   {direction}       旋转所选颜色色相的方向
+#   {distance}        请求的视距或模拟距离
+#   {duration}        已用时间；负载测试开始消息使用秒
+#   {enabled}         启用状态或已启用的模块数量
+#   {entities}        受操作影响的实体数量
+#   {entry}           集成时间线条目
+#   {exceptions}      一轮负载测试中记录的 React 异常
+#   {fail}            未通过的检查数量
+#   {file}            配置、语言或插件 API 文件名
+#   {fingerprint}     服务器或网页令牌指纹
+#   {finite}          返回有限值的采样器数量
+#   {frames}          活跃地图墙中的物品展示框数量
+#   {free}            可用的物理或虚拟内存
+#   {freed}           垃圾回收释放的堆内存
+#   {from}            当前页面的首个条目编号
+#   {grid}            地图墙网格尺寸
+#   {ground_y}        重力测试的地面高度
+#   {group}           监控、采样器、地图、配置或语言消息分组
+#   {growth}          负载测试期间的堆增长量，单位为 MB
+#   {health}          集成的健康状态
+#   {heap_end}        一轮负载测试结束时的堆使用量，单位为 MB
+#   {heap_start}      一轮负载测试开始时的堆使用量，单位为 MB
+#   {heartbeat}       自集成最近一次心跳以来的时间
+#   {height}          测试画布高度，单位为像素
+#   {hoppers}         已规范化的漏斗数量
+#   {id}              桥接句柄、采样器、地图、操作、包或令牌标识符
+#   {impact}          配置效果描述或插件开销，单位为 ms/s
+#   {incident}        从开发测试套件排除的递归事件操作标识符
+#   {index}           开发测试套件的当前步骤编号
+#   {invalid}         读数无效的采样器数量
+#   {issued_at}       网页令牌创建时间
+#   {item}            物品名称或标识符
+#   {items}           已合并的物品实体数量
+#   {key}             命令参数键、配置键或语言消息 ID
+#   {label}           基准测试、指标、设置、命令或网页令牌标签
+#   {line}            正在编辑的多行消息中的行号
+#   {lines}           已扫描的服务器日志行数
+#   {loaded}          预热期间新加载的区块数量
+#   {locale}          正在显示、选择或编辑的语言代码
+#   {matched}         自动保存状态与测试基线一致的世界
+#   {max_tick}        负载测试中观察到的最长刻间隔，单位为 ms
+#   {maximum}         最大物品数量、刻耗时阈值或编辑器输入长度
+#   {message}         已完成操作的摘要或集成状态消息
+#   {metrics}         插件 API 包提供的指标数量
+#   {minecraft}       Minecraft 版本
+#   {minimum}         可接受的最低 TPS
+#   {missing}         注册表中缺少的必要采样器数量
+#   {mode}            所选游戏模式或能力模式
+#   {model}           CPU 型号
+#   {name}            基准测试、模块、渲染器或测试检查名称
+#   {note}            未扫描服务器日志的原因
+#   {offenders}       返回非有限值的采样器数量
+#   {operations}      每分钟能力回调操作数
+#   {options}         允许的配置值
+#   {p95}             负载测试中刻耗时的第 95 百分位数，单位为 ms
+#   {parameter}       命令参数名称
+#   {parameters}      已忽略的命令参数
+#   {pass}            通过的检查数量
+#   {path}            配置键路径或报告文件路径
+#   {percent}         颜色调整百分比或插件影响占比
+#   {permission}      所需权限节点
+#   {personal}        玩家选择的语言代码
+#   {phase}           正在测试的功能生命周期阶段
+#   {pixels}          地图测试渲染的非空白像素数量
+#   {platform}        操作系统或 Minecraft 服务器平台
+#   {players}         负载测试中的模拟玩家数量
+#   {plugin}          插件名称
+#   {process_load}    服务器进程的 CPU 负载
+#   {processors}      可用的 CPU 处理器数量
+#   {profile}         React 配置方案名称
+#   {protocol}        集成协议版本
+#   {radius}          地图或开发测试套件操作的区块半径
+#   {range}           允许的视距或模拟距离范围
+#   {rate}            配置的作物生长加速倍率
+#   {rating}          带格式的基准测试评级
+#   {react_errors}    服务器日志中发现的 React 错误行数
+#   {reason}          失败、拒绝或不可用状态的原因
+#   {registered}      已注册的模块数量
+#   {removed_first}   首次停用是否将功能从活跃注册表移除
+#   {removed_second}  再次停用是否将功能从活跃注册表移除
+#   {renderer}        地图渲染器名称或标识符
+#   {renderers}       标识符为空的地图渲染器列表
+#   {role}            网页访问角色：viewer、operator 或 admin
+#   {sampler}         采样器名称或标识符
+#   {samplers}        集成采样器或发生故障的采样器列表
+#   {scope}           地图范围或距离设置的作用范围
+#   {score}           基准测试得分
+#   {seconds}         倒计时或负载测试时长，单位为秒
+#   {section}         配置节名称
+#   {server}          Minecraft 服务器实现及版本
+#   {shown}           当前显示的行数
+#   {since_run}       本次测试开始以来报告的错误
+#   {size}            地图墙的最大或当前使用尺寸
+#   {skip}            已跳过的检查数量
+#   {spawn_y}         重力测试方块的生成高度
+#   {state}           操作或插件 API 包的状态
+#   {status}          集成状态或配置状态标签
+#   {subject}         配置帮助中描述的模块或设置
+#   {subsystem}       测试子系统名称
+#   {summary}         操作审计摘要
+#   {system_load}     整个系统的 CPU 负载
+#   {target}          操作针对的世界、玩家、插件、设置或插件组
+#   {threading}       服务器线程模式
+#   {tick}            超过冻结阈值的刻耗时，单位为 ms
+#   {tick_crashes}    服务器日志中发现的游戏刻崩溃行数
+#   {tier}            事件响应手册的严重性级别
+#   {timing}          每分钟能力回调耗时，单位为毫秒
+#   {to}              当前页面的最后一个条目编号
+#   {total}           消息中的条目、模块、世界、检查或内存总量
+#   {type}            命令参数、配置值、地图或距离类型
+#   {unavailable}     不可用的 NMS 桥接句柄数量
+#   {unit}            饼图总量的单位标签
+#   {unknown}         从开发测试套件排除的未知操作标识符
+#   {unreadable}      无法读取的采样器数量
+#   {uptime}          主机操作系统运行时间
+#   {url}             已上传诊断报告的 URL
+#   {usage}           命令用法语法
+#   {used}            已使用的物理内存、虚拟内存或堆
+#   {value}           带格式的设置、测量值或硬件详情
+#   {values}          开发测试套件报告中列出的采样值
+#   {variables}       正在编辑的消息接受的占位符名称
+#   {vendor}          Java 供应商
+#   {verdict}         总体测试结论
+#   {version}         React、Java 或平台版本
+#   {warmed}          已预热的区块数量
+#   {warn}            带警告的检查数量
+#   {width}           测试画布宽度，单位为像素
+#   {world}           Minecraft 世界名称
+
 "command.description.debugdump" = "创建诊断报告并选择是否上传"
 "command.parameter.debugdump_upload" = "将报告上传到 mclo.gs"
-# Complete bundled translation. Code-owned English remains the canonical fallback.
 "action.collect_garbage.no_reclaim" = "垃圾收集工作完成,没有立即回收堆积({used} 用于) {duration}"
 "action.collect_garbage.reclaimed" = "释放 {freed} ({before} -> {after}) 中, {duration}"
 "action.completed" = "已完成 {action} 输入 {duration}"
@@ -911,8 +1084,8 @@
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.description" = "移动堆栈特性配置 。 此功能持续监控服务器行为,并在运行时间应用守护符."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.batchintervalms.impact" = "低值堆积新产的暴徒,更早地以更高的排程成本;高值批次的每段通关工作会更多合并."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.batchintervalms.summary" = "在毫秒内,排队区块的处理量是多少次."
-"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.impact" = "启用应用此行为; 禁用以保持此路径不活动 。"
-"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.summary" = "控制黑帮堆叠是否应用自定义名称 。"
+"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.impact" = "无论此设置如何，Gloss 都会接收堆叠数量，并在组合实体显示启用时管理该显示。"
+"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.summary" = "当 Gloss 实体显示不可用时，通过原生名称显示方式显示生物堆叠名称。"
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.maxhealth.impact" = "较高的数值允许干预前的更多吞吐量;较低的数值使得缓解更具有积极性."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.maxhealth.summary" = "最大健康允许 通过暴徒堆积。"
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.maxstacksize.impact" = "较高的数值允许干预前的更多吞吐量;较低的数值使得缓解更具有积极性."
@@ -1333,8 +1506,8 @@
 "config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.maxdiffmessagesperfile.summary" = "每个更改的文件发送的密钥级别 diff 消息的最大数量 。"
 "config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.notifyoperators.impact" = "如果您仅想要控制台日志, 且没有游戏中通知, 则禁用 。"
 "config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.notifyoperators.summary" = "将热载更改摘要发送到在线操作员."
-"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.impact" = "更低的值处理更快地交付文件系统事件;操作系统交付延迟时间可能更长。"
-"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.summary" = "配置监视器用毫秒表示的排队-排队间隔 。"
+"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.impact" = "较小的值能更早检测到已收到的事件；自动更改仍然最多每三秒批量应用一次。"
+"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.summary" = "文件系统事件的轮询间隔，单位为毫秒。"
 "config.documentation.annotation.art.arcane.react.core.controller.historycontroller.description" = "一次采集 React 采样器，存储压缩的历史遥测数据，并处理有界时间范围查询。"
 "config.documentation.annotation.art.arcane.react.core.controller.historycontroller.field.compressionlevel.impact" = "较高的值可能会降低磁盘用量，但会增加写入时的 CPU 开销。"
 "config.documentation.annotation.art.arcane.react.core.controller.historycontroller.field.compressionlevel.summary" = "仅在能缩小编码指标列时使用的 DEFLATE 级别。"
@@ -1412,7 +1585,7 @@
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.debug.summary" = "启用调试记录和额外的诊断。"
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsecretsenabled.impact" = "默认禁用 。 启用允许 Iris/Adapt 当依赖存在时, 密钥捆绑。"
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsecretsenabled.summary" = "启用插件加码的秘密集成功能。"
-"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.impact" = "密码属英文仍是倒置;可选 TOML 覆盖从 languages/overrides."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.impact" = "代码内置的英语仍作为后备语言；可编辑的 TOML 语言目录从 languages 文件夹加载。"
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.summary" = "用于 React 播放器和操作员界面。"
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.impact" = "设为 false 可完全关闭 React 的 bStats 数据上报。需要重启后生效。"
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.summary" = "启用 React 的匿名 bStats 使用情况统计上报。"
@@ -1422,8 +1595,8 @@
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.priority.summary" = "多个实体使用的实体优先模式 React 子系统。"
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.slowticklogmode.impact" = "关闭抑制缓慢的游戏刻警告.BLAME突出可能的插件/工作负载责任. SHORT记录只有最小时间.详细记录完整的诊断数据载荷."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.slowticklogmode.summary" = "控制 游戏刻 警告记录速度. 选择:关闭,责怪,短暂,详细."
-"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.impact" = "默认禁用 。 一旦启用,代理件附着,则无法不重新启动 JVM. 当前发行时没有注册转换."
-"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.summary" = "启用可选选项 ByteBuddy 高级运行时仪器的字节码代理 。"
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.impact" = "默认禁用。针对特定版本的 NMS 功能仍可在激活时连接自身的插桩机制。已连接的插桩机制会保留到 JVM 重启。"
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.summary" = "在启动时立即连接 React 的通用 ByteBuddy 代理。"
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.value.impact" = "较高的值可以增加昂贵项目在计算中的影响."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.value.summary" = "用于食谱/价值分析的材料价值调试。"
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.verbose.impact" = "用于排除故障但可以产生大量日志噪声."
@@ -2576,3 +2749,125 @@
 "config.documentation.annotation.art.arcane.react.core.controller.incidentcontroller.field.persistenceenabled.summary" = "将结构化事件历史保存到 plugins/React/incidents.json。"
 "config.documentation.annotation.art.arcane.react.core.controller.incidentcontroller.field.retention.impact" = "值越大，保留的历史越多，同时占用更多内存和磁盘空间。"
 "config.documentation.annotation.art.arcane.react.core.controller.incidentcontroller.field.retention.summary" = "保留的结构化事件记录的最大数量。"
+
+"language.menu.your_language" = "你的语言"
+"language.menu.reset_your_language" = "重置你的语言"
+"language.menu.server_default" = "服务器默认语言"
+"language.menu.edit_messages" = "编辑语言消息"
+"language.menu.use_server_default" = "使用服务器默认语言"
+"language.menu.current" = "当前：{locale}"
+"language.menu.current_with_personal" = "当前：{locale}（你的：{personal}）"
+"language.menu.your_description" = "仅更改你看到的消息。"
+"language.menu.reset_description" = "使用服务器默认语言。"
+"language.menu.server_description" = "更改服务器默认语言。"
+"language.menu.edit_description" = "打开各语言的消息编辑器。"
+"language.menu.select_description" = "点击以选择此语言。"
+"language.menu.remove_personal_description" = "移除你的个人语言选择。"
+"language.menu.no_controls" = "你无权使用语言设置。"
+"language.menu.command" = "命令: {command}"
+"language.menu.selected" = "选中"
+"language.menu.all-volmit-plugins" = "全部 Volmit 插件"
+"language.error.stopping" = "插件停止时无法选择语言."
+"language.error.editor-player-only" = "在游戏中打开语言编辑器."
+"language.usage.editor" = "用法：/{command} language server edit [locale]"
+"language.usage.selection" = "用法：/{command} language self [locale|reset] or server [locale]"
+"language.usage.volmit-selection" = "用法：/volmit plugins languages [locale]"
+"language.error.no-providers" = "没有 Volmit 语言提供者可用."
+"language.error.numeric-page" = "请用数字指定语言页码。"
+"language.error.personal-player-only" = "玩家的语言偏好必须在游戏中设置。"
+"language.error.personal-permission" = "您没有权限选择您的语言."
+"language.error.plugin-personal-permission" = "你没有权限选择自己在 {plugin} 中使用的语言。"
+"language.error.plugin-server-permission" = "你没有权限更改 {plugin} 的服务器语言。"
+"language.error.server-locale-required" = "请选择 en_US 等区域代码作为服务器的默认语言。"
+"language.error.unavailable-for-all" = "所选插件中有插件不支持语言 {locale}。"
+"language.selection.preparing" = "正在为 {target} 准备语言 {locale}..."
+"language.selection.save-failed" = "{plugin}: 无法保存语言选择; 检查服务器控制台."
+"language.selection.english-fallback" = "{plugin}: {locale} 不可用; 使用英语 (en_US)."
+"language.selection.personal-selected" = "{plugin}：你的语言已设为 {locale}。"
+"language.selection.server-selected" = "{plugin}: 服务器语言现在是 {locale}."
+"language.selection.server-default-selected" = "{plugin}: 您的语言现在使用服务器默认值."
+"language.editor.section.languages" = "语言"
+"language.editor.section.search" = "搜索"
+"language.editor.section.search-title" = "{locale} / 搜索"
+"language.editor.section.group-title" = "{locale} / {group}"
+"language.editor.loading" = "正在加载 {locale} 的消息..."
+"language.editor.prompt.search" = "搜索消息键或文本。输入 cancel 返回。"
+"language.editor.prompt.value" = "请在聊天中输入 {key} 的新值。"
+"language.editor.prompt.current" = "当前值： {value}"
+"language.editor.prompt.variables" = "变量: {variables}"
+"language.editor.prompt.guidance" = "使用 \\n 表示换行，使用 \\\\ 表示反斜杠，或输入 cancel 返回。"
+"language.editor.input.expired" = "语言编辑器输入过期."
+"language.editor.input.too-long" = "编辑器输入最多只能包含 {maximum} 个字符。"
+"language.editor.input.unable-to-save" = "无法保存: {reason}"
+"language.editor.navigation.back" = "&e返回&r"
+"language.editor.navigation.close" = "&c关闭&r"
+"language.editor.navigation.previous-page" = "&e上一页&r"
+"language.editor.navigation.next-page" = "&e下一页&r"
+"language.editor.search.messages" = "搜索消息"
+"language.editor.search.messages-lore" = "点击以搜索所有消息。"
+"language.editor.search.clear" = "清除搜索"
+"language.editor.message.current-value" = "&7当前值:&r"
+"language.editor.message.variables" = "&8{variables}&r"
+"language.editor.message.edit-plural" = "&7单击以编辑复数形式.&r"
+"language.editor.message.edit-lines" = "&7单击以编辑单个行.&r"
+"language.editor.message.edit-chat" = "&7点击在聊天中编辑.&r"
+"language.editor.locale.open" = "&8点击打开此语言.&r"
+"language.editor.category.message-count" = "&7{count} 条消息&r"
+"language.editor.category.open" = "&8点击打开此分类.&r"
+"language.editor.error.no-permission" = "你没有权限编辑 {plugin} 的语言。"
+"language.editor.error.unable-to-edit" = "无法编辑: {reason}"
+"language.editor.saved.summary" = "已保存 {locale}. 语言选择不变."
+"language.editor.saved.change" = "{key}: “{before}” 改为 “{after}”."
+"language.editor.part.line" = "第 {line} 行"
+"language.editor.value.none" = "无"
+"language.editor.value.empty" = "(空)"
+"test.map.megamap_capacity_fail" = "Megamap 功能参数计算错误："
+"test.map.megamap_capacity_pass" = "Megamap 的列数、行数和细节级别由网格计算得出。"
+"test.map.megamap_viewport_fail" = "Megamap 视口几何形状错误："
+"test.map.megamap_viewport_pass" = "自适应地图墙使用一个逻辑画布，放大的地图墙保持统一缩放，并通过留白保持宽高比。"
+"test.map.megamap_defects_fail" = "未能诊断出有问题的地图墙："
+"test.map.megamap_defects_pass" = "不规则、旋转、重复和混合的地图墙均会报告原因。"
+"test.map.megamap_expansion_fail" = "渲染器在扩展地图墙上运行失败："
+"test.map.renderer_containment_skip" = "无法在无图形界面环境中测试任何渲染器。"
+"test.map.megamap_expansion_pass" = "每个渲染器都能填满 1x1、2x1、1x2、1x3、2x2、3x1、3x3 和 5x3 地图墙中的每个物品展示框。"
+"test.map.palette_fail" = "主题颜色在地图调色板中无法区分："
+"test.map.palette_pass" = "每种主题颜色都与地图调色板中一个独立的颜色条目完全匹配。"
+"test.map.clip_fail" = "绘制内容超出了当前裁剪矩形。"
+"test.map.clip_blank" = "裁剪测试未在其区域内绘制任何内容。"
+"test.map.clip_restore_fail" = "popClip 未恢复上一个裁剪矩形。"
+"test.map.clip_pass" = "线条、文本和填充均保持在压入栈的裁剪矩形内。"
+"test.map.text_bounds_fail" = "适配后的文本超出了宽度限制。"
+"test.map.text_bounds_pass" = "适配后的文本在任何界面缩放比例下都不会超出限制。"
+"test.map.renderer_containment_fail" = "渲染器在其裁剪矩形外绘制了内容："
+"test.map.renderer_containment_pass" = "每个渲染器都保持在压入栈的裁剪矩形内。"
+"test.map.flush_fidelity_fail" = "缓冲区写出未能重现合成后的画面："
+"test.map.flush_fidelity_pass" = "写出的每个像素在 1x1、2x2 和 3x3 尺寸下均与合成后的画面一致。"
+"test.map.flush_stability_fail" = "重绘相同内容时仍向画布写入了像素："
+"test.map.flush_stability_pass" = "重绘相同内容时不会向画布写入任何像素。"
+"test.map.frame_wall_disabled" = "Megamap 拼接已禁用，相邻的物品展示框不会组成地图墙。"
+"test.map.frame_wall_no_worlds" = "没有已加载的世界，无法搭建实际的物品展示框墙。"
+"test.map.frame_wall_setup_failed" = "无法搭建实际的物品展示框墙："
+"test.map.frame_wall_no_space" = "出生点附近没有可用于搭建双框地图墙的空闲竖直空间。"
+"test.map.frame_wall_probe_failed" = "实际物品展示框墙的检测失败："
+"test.map.frame_wall_pass" = "相邻物品展示框中复制的 React 地图已分配不同的 ID，并被识别为双格地图墙。"
+"test.map.frame_wall_fail" = "相邻的物品展示框始终未能组成双格 Megamap 地图墙："
+"command.description.language" = "选择个人语言或服务器语言"
+"debug.error.missing-permission" = "缺少权限：{permission}"
+"debug.error.already-preparing" = "已有一份 {plugin} 的诊断报告正在准备中。"
+"debug.error.already-preparing-short" = "已有诊断报告正在准备中。"
+"debug.preparing" = "正在准备 {plugin} 的诊断报告..."
+"debug.error.schedule-failed" = "无法安排诊断报告生成任务。"
+"debug.error.provider-closed" = "诊断服务已关闭。"
+"debug.error.closed-before-capture" = "诊断服务在收集报告之前已关闭。"
+"debug.error.writer-schedule-failed" = "无法安排诊断报告写入任务。"
+"debug.error.capture-failed" = "无法收集诊断报告，请检查服务器控制台。"
+"debug.error.closed-before-write" = "诊断服务在写入报告之前已关闭。"
+"debug.error.write-failed" = "无法写入诊断报告，请检查服务器控制台。"
+"debug.upload.interrupted" = "诊断报告上传已中断，本地报告已保存。"
+"debug.upload.failed" = "诊断报告上传失败，本地报告已保存。"
+"debug.upload.completed" = "已以 VolmitSoftware - {plugin} - v{version} 为标题上传。"
+"debug.action.open" = "打开：{url}"
+"debug.action.open-description" = "打开已上传的诊断报告。"
+"debug.saved" = "已将 {plugin} 的诊断报告保存至 {path}。"
+"debug.action.copy-path" = "复制本地路径"
+"debug.action.copy-path-description" = "复制报告的本地路径。"

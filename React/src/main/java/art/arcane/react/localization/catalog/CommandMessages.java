@@ -7,6 +7,7 @@ public final class CommandMessages {
   public static final TextKey DEBUG_DUMP_DESCRIPTION = TextKey.of("command.description.debugdump", "Create and optionally upload a diagnostic report");
   public static final TextKey DEBUG_DUMP_UPLOAD = TextKey.of("command.parameter.debugdump_upload", "Upload the report to mclo.gs");
   public static final TextKey ROOT_DESCRIPTION = TextKey.of("command.description.root", "The root React command");
+  public static final TextKey LANGUAGE_DESCRIPTION = TextKey.of("command.description.language", "Choose your language or the server language");
   public static final TextKey MONITOR_DESCRIPTION = TextKey.of("command.description.monitor", "Monitor the server through the action bar");
   public static final TextKey DISTANCE_DESCRIPTION = TextKey.of("command.description.distance", "Set a server, world, or player view, simulation, or send distance");
   public static final TextKey DISTANCE_VALUE_PARAM = TextKey.of("command.parameter.distance.value", "Distance in chunks; use -1 where inheritance is supported");
@@ -164,6 +165,7 @@ public final class CommandMessages {
     builder.add(DEBUG_DUMP_DESCRIPTION);
     builder.add(DEBUG_DUMP_UPLOAD);
     builder.add(ROOT_DESCRIPTION);
+    builder.add(LANGUAGE_DESCRIPTION);
     builder.add(MONITOR_DESCRIPTION);
     builder.add(DISTANCE_DESCRIPTION);
     builder.add(DISTANCE_VALUE_PARAM);

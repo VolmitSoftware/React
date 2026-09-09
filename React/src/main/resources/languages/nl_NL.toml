@@ -1,6 +1,179 @@
+# React-taal: nl_NL
+#
+# Bewerk dit bestand rechtstreeks in de map languages of via /react language server edit.
+# React maakt of downloadt taalbestanden alleen als ze ontbreken. Lokale wijzigingen blijven behouden.
+# Ontbrekende berichten gebruiken de ingebouwde Engelse catalogus.
+#
+# Opmaak
+#   Chatberichten gebruiken MiniMessage: <red>tekst</red>, <bold>tekst</bold>.
+#   RGB-kleuren gebruiken <color:#RRGGBB>tekst</color>. Sluit tags in de omgekeerde volgorde van openen.
+#   De gedeelde editorberichten onder language.* ondersteunen ook klassieke kleurcodes met & zoals &e en &r.
+#   Andere berichten zetten kleurcodes met & niet om. Houd TOML-aanhalingstekens en escape-reeksen geldig.
+#   Gebruik \n in TOML-tekenreeksen tussen aanhalingstekens voor een nieuwe regel. Dubbele accolades {{ en }} tonen letterlijke accolades.
+#   Waarden onder renderer.* en config.documentation.annotation.* zijn platte tekst.
+#   Waarden onder test.* zijn platte tekst, behalve berichten onder test.result.*, die MiniMessage gebruiken.
+#
+# Variabelen
+# Elk bericht accepteert alleen zijn eigen variabelen. Laat hun namen ongewijzigd.
+# Gebruik variabelen in de berichttekst, buiten MiniMessage-tags.
+#   {action}          Actienaam of richting van de kleuraanpassing
+#   {actions}         Aantal acties in de wachtrij of lijst met uitgesloten actienamen
+#   {active}          Aantal actieve functies of aanpassingen
+#   {actor}           Webgebruiker die een wijziging heeft aangebracht
+#   {added}           Of een functie na activering weer in het actieve register staat
+#   {after}           Configuratiewaarde, taalbericht of heapgebruik na een wijziging
+#   {age}             Leeftijd van integratiegegevens in seconden
+#   {amount}          Aantal te geven voorwerpen
+#   {architecture}    CPU-architectuur
+#   {argument}        Onverwacht commandoargument
+#   {available}       Aantal beschikbare NMS-brugverwijzingen
+#   {average}         Gemiddelde TPS of milliseconden per tick
+#   {avg_mspt}        Gemiddelde milliseconden per tick tijdens een belastingtestronde
+#   {avg_tps}         Gemiddelde ticks per seconde tijdens een belastingtestronde
+#   {bar}             Opgemaakte balk met de benchmarkscore
+#   {before}          Configuratiewaarde, taalbericht of heapgebruik vóór een wijziging
+#   {checked}         Aantal gecontroleerde samplers
+#   {chunks}          Aantal chunks waarop een actie van invloed is
+#   {code}            Webkoppelcode
+#   {command}         Commandopad
+#   {count}           Aantal vermeldingen, modules, wijzigingen of testbevindingen
+#   {current}         Huidig paginanummer
+#   {delta_heap}      Verschil in eindgebruik van de heap tussen React en de referentiemeting, in MB
+#   {delta_mspt}      Verschil in gemiddelde ticktijd tussen React en de referentiemeting, in ms
+#   {delta_tps}       Verschil in gemiddelde TPS tussen React en de referentiemeting
+#   {detail}          Diagnostische details van de brug, integratie, actie of test
+#   {dimensions}      Gedetecteerde rasterafmetingen van de kaartenwand
+#   {direction}       Draairichting van de tint van de geselecteerde kleur
+#   {distance}        Gevraagde zicht- of simulatieafstand
+#   {duration}        Verstreken tijd; startberichten voor belastingtests gebruiken seconden
+#   {enabled}         Inschakelstatus of aantal ingeschakelde modules
+#   {entities}        Aantal entiteiten waarop een actie van invloed is
+#   {entry}           Vermelding in de integratietijdlijn
+#   {exceptions}      React-excepties die tijdens een belastingtestronde zijn vastgelegd
+#   {fail}            Aantal mislukte controles
+#   {file}            Bestandsnaam van een configuratie, taal of plugin-API
+#   {fingerprint}     Vingerafdruk van de server of het webtoken
+#   {finite}          Aantal samplers dat eindige waarden teruggeeft
+#   {frames}          Aantal voorwerplijsten in de actieve kaartenwand
+#   {free}            Vrij fysiek of virtueel geheugen
+#   {freed}           Heapgeheugen dat door geheugenopruiming is vrijgemaakt
+#   {from}            Nummer van de eerste vermelding op de huidige pagina
+#   {grid}            Rasterafmetingen van de kaartenwand
+#   {ground_y}        Grondhoogte voor de zwaartekrachttest
+#   {group}           Monitor-, sampler-, kaart-, configuratie- of taalberichtgroep
+#   {growth}          Groei van de heap tijdens een belastingtest, in MB
+#   {health}          Gezondheidstoestand van de integratie
+#   {heap_end}        Heapgebruik aan het einde van een belastingtestronde, in MB
+#   {heap_start}      Heapgebruik aan het begin van een belastingtestronde, in MB
+#   {heartbeat}       Tijd sinds het laatste levensteken van de integratie
+#   {height}          Hoogte van het testtekenvlak in pixels
+#   {hoppers}         Aantal genormaliseerde trechters
+#   {id}              Identificatie van een brugverwijzing, sampler, kaart, actie, pakket of token
+#   {impact}          Beschrijving van het configuratie-effect of pluginbelasting in ms/s
+#   {incident}        Identificatie van de recursieve incidentactie die van de ontwikkeltests is uitgesloten
+#   {index}           Nummer van de huidige stap in de ontwikkeltests
+#   {invalid}         Aantal samplers met ongeldige metingen
+#   {issued_at}       Aanmaaktijd van het webtoken
+#   {item}            Naam of identificatie van het voorwerp
+#   {items}           Aantal samengevoegde voorwerpentiteiten
+#   {key}             Commandoparametersleutel, configuratiesleutel of ID van een taalbericht
+#   {label}           Label van een benchmark, meetwaarde, instelling, commando of webtoken
+#   {line}            Nummer van de regel die wordt bewerkt in een bericht met meerdere regels
+#   {lines}           Aantal doorzochte regels in het serverlogboek
+#   {loaded}          Aantal chunks dat tijdens het voorladen nieuw is geladen
+#   {locale}          Taalcode die wordt weergegeven, geselecteerd of bewerkt
+#   {matched}         Werelden waarvan de automatische opslagstatus overeenkomt met de testreferentie
+#   {max_tick}        Langste waargenomen tijd tussen ticks tijdens een belastingtest, in ms
+#   {maximum}         Maximaal aantal voorwerpen, drempel voor ticktijd of invoerlengte in de editor
+#   {message}         Samenvatting van een voltooide actie of statusbericht van de integratie
+#   {metrics}         Aantal meetwaarden dat een plugin-API-pakket levert
+#   {minecraft}       Minecraft-versie
+#   {minimum}         Minimaal aanvaardbare TPS
+#   {missing}         Aantal vereiste samplers dat in het register ontbreekt
+#   {mode}            Geselecteerde spelmodus of vaardigheidsmodus
+#   {model}           CPU-model
+#   {name}            Naam van een benchmark, module, renderer of testcontrole
+#   {note}            Reden waarom het serverlogboek niet is doorzocht
+#   {offenders}       Aantal samplers dat niet-eindige waarden teruggeeft
+#   {operations}      Aantal callbackbewerkingen voor vaardigheden per minuut
+#   {options}         Geaccepteerde configuratiewaarden
+#   {p95}             95e percentiel van de ticktijd tijdens een belastingtest, in ms
+#   {parameter}       Naam van de commandoparameter
+#   {parameters}      Genegeerde commandoparameters
+#   {pass}            Aantal geslaagde controles
+#   {path}            Pad naar de configuratiesleutel of het rapportbestand
+#   {percent}         Percentage van de kleuraanpassing of aandeel in de pluginbelasting
+#   {permission}      Vereiste machtigingssleutel
+#   {personal}        Door de speler geselecteerde taalcode
+#   {phase}           Fase van de functielevenscyclus die wordt getest
+#   {pixels}          Aantal niet-lege pixels dat een kaarttest heeft getekend
+#   {platform}        Besturingssysteem of Minecraft-serverplatform
+#   {players}         Aantal synthetische spelers in een belastingtest
+#   {plugin}          Naam van de plugin
+#   {process_load}    CPU-belasting van het serverproces
+#   {processors}      Aantal beschikbare CPU-processoren
+#   {profile}         Naam van het React-configuratieprofiel
+#   {protocol}        Versie van het integratieprotocol
+#   {radius}          Straal in chunks voor een kaartactie of ontwikkeltestactie
+#   {range}           Geaccepteerd bereik voor de zicht- of simulatieafstand
+#   {rate}            Ingestelde versnellingsfactor voor gewasgroei
+#   {rating}          Opgemaakte benchmarkbeoordeling
+#   {react_errors}    Aantal React-foutregels dat in het serverlogboek is gevonden
+#   {reason}          Uitleg van een fout, afwijzing of onbeschikbare toestand
+#   {registered}      Aantal geregistreerde modules
+#   {removed_first}   Of de eerste deactivering een functie uit het actieve register heeft verwijderd
+#   {removed_second}  Of herhaalde deactivering een functie uit het actieve register heeft verwijderd
+#   {renderer}        Naam of identificatie van de kaartrenderer
+#   {renderers}       Lijst met kaartrenderers zonder identificatie
+#   {role}            Webtoegangsrol: viewer, operator of admin
+#   {sampler}         Naam of identificatie van de sampler
+#   {samplers}        Lijst met integratiesamplers of falende samplers
+#   {scope}           Toepassingsgebied van de kaart of afstandsinstelling
+#   {score}           Score van de benchmark
+#   {seconds}         Afteltijd of duur van de belastingtest in seconden
+#   {section}         Naam van het configuratiegedeelte
+#   {server}          Implementatie en versie van de Minecraft-server
+#   {shown}           Aantal momenteel weergegeven rijen
+#   {since_run}       Fouten die sinds het begin van de huidige test zijn gemeld
+#   {size}            Maximale of actieve afmetingen van de kaartenwand
+#   {skip}            Aantal overgeslagen controles
+#   {spawn_y}         Hoogte waarop het blok voor de zwaartekrachttest is geplaatst
+#   {state}           Status van de actie of het plugin-API-pakket
+#   {status}          Label voor de integratiestatus of configuratietoestand
+#   {subject}         Module of instelling die de configuratiehulp beschrijft
+#   {subsystem}       Naam van het geteste subsysteem
+#   {summary}         Samenvatting van de actiecontrole
+#   {system_load}     CPU-belasting van het hele systeem
+#   {target}          Wereld, speler, plugin, instelling of plugingroep waarop een bewerking is gericht
+#   {threading}       Threadmodus van de server
+#   {tick}            Tickduur die de vastloopdrempel heeft overschreden, in ms
+#   {tick_crashes}    Aantal regels over tickcrashes dat in het serverlogboek is gevonden
+#   {tier}            Ernstniveau van het incidentdraaiboek
+#   {timing}          Callbacktijd voor vaardigheden in milliseconden per minuut
+#   {to}              Nummer van de laatste vermelding op de huidige pagina
+#   {total}           Totaal aan vermeldingen, modules, werelden, controles of geheugen in het bericht
+#   {type}            Type commandoparameter, configuratiewaarde, kaart of afstand
+#   {unavailable}     Aantal niet-beschikbare NMS-brugverwijzingen
+#   {unit}            Eenheid voor het totaal van een cirkeldiagram
+#   {unknown}         Identificatie van de onbekende actie die van de ontwikkeltests is uitgesloten
+#   {unreadable}      Aantal samplers dat niet kon worden gelezen
+#   {uptime}          Bedrijfstijd van het besturingssysteem van de host
+#   {url}             URL van het geüploade diagnostische rapport
+#   {usage}           Syntaxis voor het gebruik van het commando
+#   {used}            Gebruikt fysiek geheugen, virtueel geheugen of heapgeheugen
+#   {value}           Opgemaakte instelling, meting of hardwaregegevens
+#   {values}          Bemonsterde waarden in een ontwikkeltestrapport
+#   {variables}       Variabelenamen die het bewerkte bericht accepteert
+#   {vendor}          Leverancier van Java
+#   {verdict}         Eindoordeel van de test
+#   {version}         Versie van React, Java of het platform
+#   {warmed}          Aantal voorgeladen chunks
+#   {warn}            Aantal controles met waarschuwingen
+#   {width}           Breedte van het testtekenvlak in pixels
+#   {world}           Naam van de Minecraft-wereld
+
 "command.description.debugdump" = "Maak een diagnostisch rapport en upload het desgewenst"
 "command.parameter.debugdump_upload" = "Upload het rapport naar mclo.gs"
-# Complete bundled translation. Code-owned English remains the canonical fallback.
 "action.collect_garbage.no_reclaim" = "Afvalverzameling voltooid zonder onmiddellijke ophaling ({used} gebruikt) in {duration}"
 "action.collect_garbage.reclaimed" = "Vrij {freed} ({before} -> {after}) in {duration}"
 "action.completed" = "Voltooid {action} in {duration}"
@@ -911,8 +1084,8 @@
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.description" = "Configuratie voor Mob Stacking functie. Deze functie bewaakt voortdurend servergedrag en past vangrails toe tijdens de looptijd."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.batchintervalms.impact" = "Lagere waarden stapel vers voortgebrachte mobs eerder tegen meer planningskosten; hogere waardes batch meer merge werk per pas."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.batchintervalms.summary" = "Hoe vaak wordt chunks in de rij verwerkt voor stapeling, in milliseconden."
-"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.impact" = "Dit gedrag toepassen; dit pad inactief houden kan niet worden uitgevoerd."
-"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.summary" = "Bepaalt of mob stacking aangepaste namen toepast."
+"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.impact" = "Gloss ontvangt de stapelgroottes ongeacht deze instelling en beheert de gecombineerde entiteitsweergave wanneer die is ingeschakeld."
+"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.summary" = "Toont de standaardnamen van mobstapels wanneer de entiteitsweergaven van Gloss niet beschikbaar zijn."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.maxhealth.impact" = "Hogere waarden maken meer doorvoer mogelijk voor interventie; lagere waarden maken mitigatie agressiever."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.maxhealth.summary" = "Maximale gezondheid toegestaan door de maffia stapelen."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.maxstacksize.impact" = "Hogere waarden maken meer doorvoer mogelijk voor interventie; lagere waarden maken mitigatie agressiever."
@@ -1333,8 +1506,8 @@
 "config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.maxdiffmessagesperfile.summary" = "Maximum aantal diff-berichten op sleutelniveau per gewijzigd bestand verzonden."
 "config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.notifyoperators.impact" = "Schakel uit als u alleen console logs wilt en geen in-game meldingen."
 "config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.notifyoperators.summary" = "Stuurt hotload wijzigingen samenvattingen naar online operators."
-"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.impact" = "Lagere waarden proces geleverd bestandssysteem gebeurtenissen eerder; Besturingssysteem levering latency kan langer."
-"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.summary" = "Wachtrij-drain interval gebruikt door de config watcher in milliseconden."
+"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.impact" = "Lagere waarden detecteren ontvangen gebeurtenissen eerder; automatische wijzigingen worden nog steeds hoogstens eenmaal per drie seconden gebundeld toegepast."
+"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.summary" = "Interval voor het opvragen van bestandssysteemgebeurtenissen in milliseconden."
 "config.documentation.annotation.art.arcane.react.core.controller.historycontroller.description" = "Legt de React-samplers eenmaal vast, bewaart gecomprimeerde historische telemetrie en verwerkt begrensde tijdsbereikquery's."
 "config.documentation.annotation.art.arcane.react.core.controller.historycontroller.field.compressionlevel.impact" = "Hogere waarden kunnen het schijfgebruik verlagen ten koste van extra CPU-belasting tijdens het schrijven."
 "config.documentation.annotation.art.arcane.react.core.controller.historycontroller.field.compressionlevel.summary" = "DEFLATE-niveau dat alleen wordt gebruikt wanneer het een gecodeerde metriekkolom verkleint."
@@ -1412,7 +1585,7 @@
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.debug.summary" = "Inschakelt debug logging en aanvullende diagnostiek."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsecretsenabled.impact" = "Standaard uitgeschakeld. Inschakelen Iris/Adapt geheime bundels wanneer afhankelijkheden aanwezig zijn."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsecretsenabled.summary" = "Activeert plugin-gaated geheime integratie functies."
-"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.impact" = "Code-owned English blijft de fallback; optioneel TOML overrides worden geladen van languages/overrides."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.impact" = "Het Engels in de code blijft de terugvaltaal; bewerkbare TOML-catalogi worden geladen uit languages."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.summary" = "Lokaal gebruikt voor React interfaces voor spelers en exploitanten."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.impact" = "Zet op false om de bStats-inzendingen van React volledig uit te schakelen. Vereist een herstart."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.summary" = "Schakelt anonieme bStats-gebruiksrapportage voor React in."
@@ -1422,8 +1595,8 @@
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.priority.summary" = "Door meerdere entiteiten gebruikte prioriteitsmodel React subsystemen."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.slowticklogmode.impact" = "OFF onderdrukt langzame tick-waarschuwingen. BLAME benadrukt waarschijnlijk plugin/werklast verantwoordelijkheid. SHORT logt slechts minimale timing. DETAILED logt de volledige diagnostische gegevenslading."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.slowticklogmode.summary" = "Beheer hoe langzaam tick-waarschuwingen worden geregistreerd. Opties: OFF, BLAME, SHORT, DETAILED."
-"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.impact" = "Standaard uitgeschakeld. Als het apparaat eenmaal ingeschakeld is en de verbinding bevestigd wordt, kan het niet losgekoppeld worden zonder opnieuw te starten met JVM. Er zijn geen transformaties geregistreerd in de huidige release."
-"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.summary" = "Schakel de optie in ByteBuddy bytecode-agent voor geavanceerde runtime instrumentatie."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.impact" = "Standaard uitgeschakeld. Versiegebonden NMS-functies kunnen bij activering nog steeds hun eigen instrumentatie koppelen. Gekoppelde instrumentatie blijft aanwezig totdat de JVM opnieuw wordt gestart."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.summary" = "Koppelt de algemene ByteBuddy-agent van React al tijdens het opstarten."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.value.impact" = "Hogere waarden kunnen de invloed van dure items in berekeningen verhogen."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.value.summary" = "Materiaalwaarde-tuning gebruikt voor recept/waarde analyse."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.verbose.impact" = "Handig voor probleemoplossing maar kan veel loggeluid creëren."
@@ -2576,3 +2749,125 @@
 "config.documentation.annotation.art.arcane.react.core.controller.incidentcontroller.field.persistenceenabled.summary" = "Slaat de gestructureerde incidentgeschiedenis op in plugins/React/incidents.json."
 "config.documentation.annotation.art.arcane.react.core.controller.incidentcontroller.field.retention.impact" = "Hogere waarden bewaren meer geschiedenis en gebruiken meer geheugen en schijfruimte."
 "config.documentation.annotation.art.arcane.react.core.controller.incidentcontroller.field.retention.summary" = "Maximumaantal bewaarde gestructureerde incidentgebeurtenissen."
+
+"language.menu.your_language" = "Jouw taal"
+"language.menu.reset_your_language" = "Jouw taalkeuze herstellen"
+"language.menu.server_default" = "Standaardtaal van de server"
+"language.menu.edit_messages" = "Taalberichten bewerken"
+"language.menu.use_server_default" = "Standaardtaal van de server gebruiken"
+"language.menu.current" = "Huidig: {locale}"
+"language.menu.current_with_personal" = "Huidig: {locale} (Jouw keuze: {personal})"
+"language.menu.your_description" = "Wijzig alleen de berichten die jij ziet."
+"language.menu.reset_description" = "Gebruik de standaardtaal van de server."
+"language.menu.server_description" = "Wijzig de standaardtaal van de server."
+"language.menu.edit_description" = "Open de berichteneditor voor elke taal."
+"language.menu.select_description" = "Klik om deze taal te selecteren."
+"language.menu.remove_personal_description" = "Verwijder jouw persoonlijke taalkeuze."
+"language.menu.no_controls" = "Je hebt geen toegang tot taalinstellingen."
+"language.menu.command" = "Commando: {command}"
+"language.menu.selected" = "geselecteerd"
+"language.menu.all-volmit-plugins" = "alle Volmit plugins"
+"language.error.stopping" = "Taalselectie is niet beschikbaar terwijl de plugin stopt."
+"language.error.editor-player-only" = "Open de taalbewerker in het spel."
+"language.usage.editor" = "Gebruik: /{command} language server edit [locale]"
+"language.usage.selection" = "Gebruik: /{command} language self [locale|reset] or server [locale]"
+"language.usage.volmit-selection" = "Gebruik: /volmit plugins languages [locale]"
+"language.error.no-providers" = "Er zijn geen Volmit-taalproviders beschikbaar."
+"language.error.numeric-page" = "Voer een paginanummer voor de talenlijst in."
+"language.error.personal-player-only" = "Spelertaalvoorkeuren moeten in het spel worden geselecteerd."
+"language.error.personal-permission" = "U hebt geen toestemming om uw taal te selecteren."
+"language.error.plugin-personal-permission" = "U heeft geen toestemming om uw taal te selecteren voor {plugin}."
+"language.error.plugin-server-permission" = "U heeft geen rechten om de servertaal te wijzigen voor {plugin}."
+"language.error.server-locale-required" = "Kies een taalcode zoals en_US als standaardtaal van de server."
+"language.error.unavailable-for-all" = "Taal {locale} is niet beschikbaar voor elke geselecteerde plugin."
+"language.selection.preparing" = "Taal {locale} voorbereiden voor {target}..."
+"language.selection.save-failed" = "{plugin}: kan taalselectie niet opslaan; controleer de serverconsole."
+"language.selection.english-fallback" = "{plugin}: {locale} is niet beschikbaar; Engels gebruiken (en_US)."
+"language.selection.personal-selected" = "{plugin}: uw taal is nu {locale}."
+"language.selection.server-selected" = "{plugin}: servertaal is nu {locale}."
+"language.selection.server-default-selected" = "{plugin}: je gebruikt nu de standaardtaal van de server."
+"language.editor.section.languages" = "Talen"
+"language.editor.section.search" = "Zoeken"
+"language.editor.section.search-title" = "{locale} / Zoeken"
+"language.editor.section.group-title" = "{locale} / {group}"
+"language.editor.loading" = "Berichten voor {locale} laden..."
+"language.editor.prompt.search" = "Zoek op berichtsleutels of tekst. Typ cancel om terug te keren."
+"language.editor.prompt.value" = "Typ een nieuwe waarde voor {key} in het gesprek."
+"language.editor.prompt.current" = "Huidige waarde: {value}"
+"language.editor.prompt.variables" = "Variabelen: {variables}"
+"language.editor.prompt.guidance" = "Gebruik \\n voor een nieuwe regel en \\\\ voor een backslash, of typ cancel om terug te keren."
+"language.editor.input.expired" = "Taalbewerkerinvoer verlopen."
+"language.editor.input.too-long" = "De invoer mag maximaal {maximum} tekens bevatten."
+"language.editor.input.unable-to-save" = "Kon niet opslaan: {reason}"
+"language.editor.navigation.back" = "&eTerug&r"
+"language.editor.navigation.close" = "&cSluiten&r"
+"language.editor.navigation.previous-page" = "&eVorige pagina&r"
+"language.editor.navigation.next-page" = "&eVolgende pagina&r"
+"language.editor.search.messages" = "Berichten doorzoeken"
+"language.editor.search.messages-lore" = "Klik om alle berichten te zoeken."
+"language.editor.search.clear" = "Zoeken wissen"
+"language.editor.message.current-value" = "&7Huidige waarde:&r"
+"language.editor.message.variables" = "&8{variables}&r"
+"language.editor.message.edit-plural" = "&7Klik om een meervoudsvorm te bewerken.&r"
+"language.editor.message.edit-lines" = "&7Klik om individuele regels te bewerken.&r"
+"language.editor.message.edit-chat" = "&7Klik om te bewerken in de chat.&r"
+"language.editor.locale.open" = "&8Klik om deze taal te openen.&r"
+"language.editor.category.message-count" = "&7{count} berichten&r"
+"language.editor.category.open" = "&8Klik om deze categorie te openen.&r"
+"language.editor.error.no-permission" = "Je hebt geen toestemming om de talen van {plugin} te bewerken."
+"language.editor.error.unable-to-edit" = "Kan niet bewerken: {reason}"
+"language.editor.saved.summary" = "Opgeslagen {locale}. Taalselecties zijn ongewijzigd."
+"language.editor.saved.change" = "{key}: “{before}” veranderd in “{after}”."
+"language.editor.part.line" = "Regel {line}"
+"language.editor.value.none" = "Geen"
+"language.editor.value.empty" = "(leeg)"
+"test.map.megamap_capacity_fail" = "Het afleiden van de mogelijkheden van Megamap klopt niet:"
+"test.map.megamap_capacity_pass" = "De mogelijkheden van Megamap leiden kolommen, rijen en detailniveau af uit het raster."
+"test.map.megamap_viewport_fail" = "De geometrie van het weergavegebied van Megamap klopt niet:"
+"test.map.megamap_viewport_pass" = "Adaptieve wanden krijgen één logisch tekenvlak en vergrote wanden behouden een uniforme schaal met opvulbalken."
+"test.map.megamap_defects_fail" = "Defecte kaartwanden zijn niet herkend:"
+"test.map.megamap_defects_pass" = "Onregelmatige, gedraaide, dubbele en gemengde kaartwanden melden allemaal een reden."
+"test.map.megamap_expansion_fail" = "Renderers werkten niet op een vergrote wand:"
+"test.map.renderer_containment_skip" = "Geen enkele renderer kon zonder grafische interface worden getest."
+"test.map.megamap_expansion_pass" = "Elke renderer vult elke lijst van een wand van 1x1, 2x1, 1x2, 1x3, 2x2, 3x1, 3x3 en 5x3."
+"test.map.palette_fail" = "Themakleuren vallen samen in het kaartpalet:"
+"test.map.palette_pass" = "Elke themakleur komt overeen met een exacte, afzonderlijke kleur in het kaartpalet."
+"test.map.clip_fail" = "De tekening kwam buiten de actieve uitsnederechthoek."
+"test.map.clip_blank" = "De uitsnedetest tekende niets binnen zijn gebied."
+"test.map.clip_restore_fail" = "popClip herstelde de vorige uitsnederechthoek niet."
+"test.map.clip_pass" = "Lijnen, tekst en opvullingen bleven binnen de ingestelde uitsnederechthoek."
+"test.map.text_bounds_fail" = "Passend gemaakte tekst overschreed zijn maximale breedte."
+"test.map.text_bounds_pass" = "Passend gemaakte tekst overschrijdt zijn grens bij geen enkele interfaceschaal."
+"test.map.renderer_containment_fail" = "Renderers tekenden buiten hun uitsnederechthoek:"
+"test.map.renderer_containment_pass" = "Elke renderer bleef binnen de ingestelde uitsnederechthoek."
+"test.map.flush_fidelity_fail" = "De overdracht uit de buffer gaf het samengestelde oppervlak niet correct weer:"
+"test.map.flush_fidelity_pass" = "Elke overgedragen pixel komt overeen met het samengestelde oppervlak bij 1x1, 2x2 en 3x3."
+"test.map.flush_stability_fail" = "Het opnieuw tekenen van identieke inhoud schreef nog steeds op het tekenvlak:"
+"test.map.flush_stability_pass" = "Het opnieuw tekenen van identieke inhoud schrijft geen pixels op het tekenvlak."
+"test.map.frame_wall_disabled" = "De tegelindeling van Megamap is uitgeschakeld; aangrenzende lijsten vormen geen wand."
+"test.map.frame_wall_no_worlds" = "Er zijn geen werelden geladen; er kan geen echte wand van lijsten worden gebouwd."
+"test.map.frame_wall_setup_failed" = "Er kon geen echte wand van lijsten worden gebouwd:"
+"test.map.frame_wall_no_space" = "Er is geen vrije luchtkolom bij het spawnpunt om een kaartwand met twee lijsten te bouwen."
+"test.map.frame_wall_probe_failed" = "Het controleren van de echte wand van lijsten is mislukt:"
+"test.map.frame_wall_pass" = "Gekloonde React-kaarten in aangrenzende lijsten kregen verschillende ID's en vormden een wand met twee tegels."
+"test.map.frame_wall_fail" = "Aangrenzende lijsten vormden geen stabiele Megamap-wand met twee tegels:"
+"command.description.language" = "Kies je eigen taal of de servertaal"
+"debug.error.missing-permission" = "Ontbrekende toestemming: {permission}"
+"debug.error.already-preparing" = "Er wordt al een diagnoserapport voor {plugin} voorbereid."
+"debug.error.already-preparing-short" = "Er wordt al een diagnoserapport voorbereid."
+"debug.preparing" = "Diagnoserapport voor {plugin} voorbereiden..."
+"debug.error.schedule-failed" = "Het maken van het diagnoserapport kon niet worden ingepland."
+"debug.error.provider-closed" = "De diagnosedienst is afgesloten."
+"debug.error.closed-before-capture" = "De diagnosedienst is afgesloten voordat het rapport werd verzameld."
+"debug.error.writer-schedule-failed" = "Het schrijven van het diagnoserapport kon niet worden ingepland."
+"debug.error.capture-failed" = "Het diagnoserapport kon niet worden verzameld. Controleer de serverconsole."
+"debug.error.closed-before-write" = "De diagnosedienst is afgesloten voordat het rapport werd geschreven."
+"debug.error.write-failed" = "Het diagnoserapport kon niet worden geschreven. Controleer de serverconsole."
+"debug.upload.interrupted" = "Het uploaden van het diagnoserapport is onderbroken. Het lokale rapport is opgeslagen."
+"debug.upload.failed" = "Het uploaden van het diagnoserapport is mislukt. Het lokale rapport is opgeslagen."
+"debug.upload.completed" = "Geüpload als VolmitSoftware - {plugin} - v{version}."
+"debug.action.open" = "Openen: {url}"
+"debug.action.open-description" = "Het geüploade diagnoserapport openen."
+"debug.saved" = "Diagnoserapport voor {plugin} opgeslagen in {path}."
+"debug.action.copy-path" = "Lokaal pad kopiëren"
+"debug.action.copy-path-description" = "Het lokale pad van het rapport kopiëren."

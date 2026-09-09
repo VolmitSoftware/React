@@ -1,6 +1,179 @@
+# React の言語: ja-JP
+#
+# このファイルは languages フォルダー内で直接、または /react language server edit で編集できます。
+# React は存在しない言語ファイルだけを作成またはダウンロードします。ローカルでの変更は保持されます。
+# 不足するメッセージには内蔵の英語カタログが使われます。
+#
+# 書式
+#   チャットメッセージは MiniMessage を使用します: <red>テキスト</red>, <bold>テキスト</bold>。
+#   RGB 色には <color:#RRGGBB>テキスト</color> を使います。タグは開いた順と逆の順に閉じてください。
+#   共通の language.* エディターメッセージでは、&e や &r などの従来のアンパサンド色コードも使えます。
+#   その他のメッセージではアンパサンド色コードは変換されません。TOML の引用符とエスケープを正しく記述してください。
+#   引用符で囲んだ TOML 文字列内では \n で改行します。二重波括弧 {{ と }} は波括弧そのものを表示します。
+#   renderer.* と config.documentation.annotation.* の値はプレーンテキストです。
+#   test.* の値はプレーンテキストですが、test.result.* メッセージには MiniMessage を使います。
+#
+# プレースホルダー
+# 各メッセージで使えるのは、そのメッセージ固有のプレースホルダーだけです。名前は変更しないでください。
+# プレースホルダーは MiniMessage タグの外側のメッセージ本文に記述してください。
+#   {action}          アクション名または色調整の方向
+#   {actions}         待機中のアクション数または除外されたアクション名の一覧
+#   {active}          有効な機能または調整項目の数
+#   {actor}           変更を行った Web ユーザー
+#   {added}           有効化後に機能がアクティブレジストリへ再登録されたか
+#   {after}           変更後の設定値、言語メッセージ、またはヒープ使用量
+#   {age}             連携データの経過時間（秒）
+#   {amount}          付与するアイテム数
+#   {architecture}    CPU アーキテクチャ
+#   {argument}        想定外のコマンド引数
+#   {available}       利用可能な NMS ブリッジハンドル数
+#   {average}         平均 TPS または 1 ティックあたりのミリ秒数
+#   {avg_mspt}        負荷テストの各試行における平均ティック処理時間（ミリ秒）
+#   {avg_tps}         負荷テストの各試行における 1 秒あたりの平均ティック数
+#   {bar}             書式設定済みのベンチマークスコアバー
+#   {before}          変更前の設定値、言語メッセージ、またはヒープ使用量
+#   {checked}         確認したサンプラー数
+#   {chunks}          アクションの影響を受けたチャンク数
+#   {code}            Web ペアリングコード
+#   {command}         コマンドパス
+#   {count}           項目、モジュール、変更、またはテスト結果の数
+#   {current}         現在のページ番号
+#   {delta_heap}      終了時のヒープ使用量の React とベースラインとの差（MB）
+#   {delta_mspt}      平均ティック時間の React とベースラインとの差（ms）
+#   {delta_tps}       平均 TPS の React とベースラインとの差
+#   {detail}          ブリッジ、連携、アクション、またはテストの診断詳細
+#   {dimensions}      検出されたマップウォールのグリッド寸法
+#   {direction}       選択した色の色相を回転させる方向
+#   {distance}        要求された描画距離またはシミュレーション距離
+#   {duration}        経過時間。負荷テスト開始メッセージでは秒単位
+#   {enabled}         有効状態または有効なモジュール数
+#   {entities}        アクションの影響を受けたエンティティ数
+#   {entry}           連携タイムラインの項目
+#   {exceptions}      負荷テストの各試行中に記録された React の例外
+#   {fail}            失敗したチェック数
+#   {file}            設定、言語、またはプラグイン API のファイル名
+#   {fingerprint}     サーバーまたは Web トークンのフィンガープリント
+#   {finite}          有限値を返すサンプラー数
+#   {frames}          使用中のマップウォールにある額縁数
+#   {free}            空き物理メモリまたは空き仮想メモリ
+#   {freed}           ガベージコレクションで回収されたヒープメモリ
+#   {from}            現在のページの最初の項目番号
+#   {grid}            マップウォールのグリッド寸法
+#   {ground_y}        重力テストの地面の高さ
+#   {group}           モニター、サンプラー、マップ、設定、または言語メッセージのグループ
+#   {growth}          負荷テスト中のヒープ増加量（MB）
+#   {health}          連携の健全性状態
+#   {heap_end}        負荷テストの各試行終了時のヒープ使用量（MB）
+#   {heap_start}      負荷テストの各試行開始時のヒープ使用量（MB）
+#   {heartbeat}       連携の最新ハートビートからの経過時間
+#   {height}          テストキャンバスの高さ（ピクセル）
+#   {hoppers}         正規化したホッパー数
+#   {id}              ブリッジハンドル、サンプラー、マップ、アクション、パック、またはトークンの識別子
+#   {impact}          設定の影響の説明またはプラグインの処理コスト（ms/s）
+#   {incident}        開発テスト一式から除外された再帰的インシデントアクションの識別子
+#   {index}           開発テスト一式の現在のステップ番号
+#   {invalid}         無効な測定値を返すサンプラー数
+#   {issued_at}       Web トークンの作成時刻
+#   {item}            アイテム名または識別子
+#   {items}           統合したアイテムエンティティ数
+#   {key}             コマンドパラメーターキー、設定キー、または言語メッセージ ID
+#   {label}           ベンチマーク、指標、設定、コマンド、または Web トークンのラベル
+#   {line}            複数行メッセージで編集中の行番号
+#   {lines}           走査したサーバーログの行数
+#   {loaded}          事前読み込み中に新たに読み込んだチャンク数
+#   {locale}          表示、選択、または編集中の言語コード
+#   {matched}         自動保存状態がテストのベースラインと一致するワールド
+#   {max_tick}        負荷テストで観測した最長のティック間隔（ms）
+#   {maximum}         最大アイテム数、ティック時間のしきい値、またはエディターの入力長
+#   {message}         完了したアクションの概要または連携の状態メッセージ
+#   {metrics}         プラグイン API パックが提供する指標数
+#   {minecraft}       Minecraft のバージョン
+#   {minimum}         許容される最低 TPS
+#   {missing}         レジストリにない必須サンプラー数
+#   {mode}            選択したゲームモードまたはアビリティモード
+#   {model}           CPU モデル
+#   {name}            ベンチマーク、モジュール、レンダラー、またはテストチェック名
+#   {note}            サーバーログを走査しなかった理由
+#   {offenders}       非有限値を返すサンプラー数
+#   {operations}      アビリティのコールバック操作数（毎分）
+#   {options}         受け付ける設定値
+#   {p95}             負荷テスト中のティック時間の 95 パーセンタイル（ms）
+#   {parameter}       コマンドパラメーター名
+#   {parameters}      無視されたコマンドパラメーター
+#   {pass}            合格したチェック数
+#   {path}            設定キーのパスまたはレポートファイルのパス
+#   {percent}         色調整の割合またはプラグインの影響の割合
+#   {permission}      必要な権限ノード
+#   {personal}        プレイヤーが選択した言語コード
+#   {phase}           テスト中の機能ライフサイクル段階
+#   {pixels}          マップテストで描画した空白でないピクセル数
+#   {platform}        OS または Minecraft サーバープラットフォーム
+#   {players}         負荷テストの模擬プレイヤー数
+#   {plugin}          プラグイン名
+#   {process_load}    サーバープロセスの CPU 負荷
+#   {processors}      利用可能な CPU プロセッサー数
+#   {profile}         React 設定プロファイル名
+#   {protocol}        連携プロトコルのバージョン
+#   {radius}          マップまたは開発テストのアクションのチャンク半径
+#   {range}           許容される描画距離またはシミュレーション距離の範囲
+#   {rate}            設定された作物の成長早送り速度
+#   {rating}          書式設定済みのベンチマーク評価
+#   {react_errors}    サーバーログで見つかった React エラーの行数
+#   {reason}          失敗、拒否、または利用不可状態の理由
+#   {registered}      登録済みモジュール数
+#   {removed_first}   最初の無効化で機能がアクティブレジストリから削除されたか
+#   {removed_second}  繰り返しの無効化で機能がアクティブレジストリから削除されたか
+#   {renderer}        マップレンダラー名または識別子
+#   {renderers}       識別子が空のマップレンダラー一覧
+#   {role}            Web アクセスロール: viewer、operator、または admin
+#   {sampler}         サンプラー名または識別子
+#   {samplers}        連携サンプラーまたは失敗したサンプラーの一覧
+#   {scope}           マップの適用範囲または距離設定の適用範囲
+#   {score}           ベンチマークスコア
+#   {seconds}         カウントダウンまたは負荷テストの時間（秒）
+#   {section}         設定セクション名
+#   {server}          Minecraft サーバーの実装とバージョン
+#   {shown}           現在表示中の行数
+#   {since_run}       現在のテスト開始以降に報告されたエラー
+#   {size}            マップウォールの最大寸法または使用中の寸法
+#   {skip}            スキップしたチェック数
+#   {spawn_y}         重力テストのブロックを生成した高さ
+#   {state}           アクションまたはプラグイン API パックの状態
+#   {status}          連携の状態または設定状態のラベル
+#   {subject}         設定ヘルプで説明されるモジュールまたは設定
+#   {subsystem}       テストサブシステム名
+#   {summary}         アクション監査の概要
+#   {system_load}     システム全体の CPU 負荷
+#   {target}          操作対象のワールド、プレイヤー、プラグイン、設定、またはプラグイングループ
+#   {threading}       サーバーのスレッド動作モード
+#   {tick}            フリーズしきい値を超えたティック時間（ms）
+#   {tick_crashes}    サーバーログで見つかったティッククラッシュの行数
+#   {tier}            インシデント対応手順の重大度レベル
+#   {timing}          1 分あたりのアビリティのコールバック時間（ミリ秒）
+#   {to}              現在のページの最後の項目番号
+#   {total}           メッセージ内の項目、モジュール、ワールド、チェック、またはメモリの合計
+#   {type}            コマンドパラメーター、設定値、マップ、または距離の種類
+#   {unavailable}     利用不可の NMS ブリッジハンドル数
+#   {unit}            円グラフの合計値の単位ラベル
+#   {unknown}         開発テスト一式から除外された不明なアクションの識別子
+#   {unreadable}      読み取れなかったサンプラー数
+#   {uptime}          ホスト OS の稼働時間
+#   {url}             アップロードした診断レポートの URL
+#   {usage}           コマンドの使用構文
+#   {used}            使用中の物理メモリ、仮想メモリ、またはヒープ
+#   {value}           書式設定済みの設定、測定値、またはハードウェア詳細
+#   {values}          開発テスト一式のレポートに記載されたサンプル値
+#   {variables}       編集中のメッセージで使えるプレースホルダー名
+#   {vendor}          Java ベンダー
+#   {verdict}         テスト全体の判定
+#   {version}         React、Java、またはプラットフォームのバージョン
+#   {warmed}          事前読み込み済みのチャンク数
+#   {warn}            警告のあるチェック数
+#   {width}           テストキャンバスの幅（ピクセル）
+#   {world}           Minecraft ワールド名
+
 "command.description.debugdump" = "診断レポートを作成し、必要に応じてアップロードする"
 "command.parameter.debugdump_upload" = "レポートを mclo.gs にアップロードする"
-# Complete bundled translation. Code-owned English remains the canonical fallback.
 "action.collect_garbage.no_reclaim" = "即時のヒープが返された状態で完了したゴミ収集({used} 使用される)で {duration}"
 "action.collect_garbage.reclaimed" = "フリガナ {freed} ({before} -> {after}) で {duration}"
 "action.completed" = "完了しました {action} でん {duration}"
@@ -911,8 +1084,8 @@
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.description" = "Mob Stacking機能の構成。 サーバの動作を継続的に監視し、ランタイム中にガードレールを適用します。"
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.batchintervalms.impact" = "よりスケジューリングコストで、より高速にスポーンされたモブをスタックする値が下がります。より高い値は、パスごとに作業をマージします。"
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.batchintervalms.summary" = "列のチャンクが何度堆積されるかミリ秒で処理されます."
-"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.impact" = "この動作を適用することを可能にし、このパスを非アクティブに保つために無効にします。"
-"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.summary" = "mob のスタッキングがカスタム名を適用するかどうかを制御する。"
+"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.impact" = "Glossはこの設定に関係なくスタック数を受け取り、統合されたエンティティ表示が有効な場合はその表示を管理します。"
+"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.summary" = "Glossのエンティティ表示が利用できない場合に、Mobのスタック名を通常の名前表示で表示します。"
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.maxhealth.impact" = "より高い値により、介入前のスループットが増加します。低値でミシグレーションがより攻撃的になります。"
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.maxhealth.summary" = "モブスタッキングで許される最大健康。"
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.maxstacksize.impact" = "より高い値により、介入前のスループットが増加します。低値でミシグレーションがより攻撃的になります。"
@@ -1333,8 +1506,8 @@
 "config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.maxdiffmessagesperfile.summary" = "変更されたファイルごとに送信されるキーレベルの差分メッセージの最大数。"
 "config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.notifyoperators.impact" = "コンソールログとゲーム内通知を望んだだけに無効化できます。"
 "config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.notifyoperators.summary" = "オンラインでのオペレーターにホットロード変更要約を送信。"
-"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.impact" = "値下げプロセスは、ファイルシステムイベントを早く配信しました。オペレーティングシステムの配送遅延が長くなることがあります。"
-"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.summary" = "ミリ秒単位でコンフィグのカウンダが使用するキュードレイン間隔。"
+"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.impact" = "値を小さくすると受信済みイベントを早く検出できますが、自動変更の一括適用は引き続き最大でも3秒に1回です。"
+"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.summary" = "ファイルシステムイベントを確認する間隔（ミリ秒）。"
 "config.documentation.annotation.art.arcane.react.core.controller.historycontroller.description" = "React のサンプラーを一度取得し、圧縮した履歴テレメトリーを保存して、時間範囲を制限したクエリを処理します。"
 "config.documentation.annotation.art.arcane.react.core.controller.historycontroller.field.compressionlevel.impact" = "値を高くすると、書き込み時の CPU 負荷と引き換えにディスク使用量を削減できる場合があります。"
 "config.documentation.annotation.art.arcane.react.core.controller.historycontroller.field.compressionlevel.summary" = "エンコード済みメトリクス列が小さくなる場合にのみ使用する DEFLATE レベル。"
@@ -1412,7 +1585,7 @@
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.debug.summary" = "デバッグロギングと追加の診断を有効にします。"
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsecretsenabled.impact" = "デフォルトで無効にしました。 許可する有効 Iris/Adapt 依存関係が存在するときの秘密束。"
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsecretsenabled.summary" = "プラグインをゲートしたシークレット統合機能を有効にします。"
-"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.impact" = "コード所有の英語はフォールバックのままです。オプション TOML オーバーライドはからロードされます languages/overrides."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.impact" = "コード内の英語を引き続きフォールバックとして使用します。編集可能なTOMLカタログはlanguagesから読み込みます。"
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.summary" = "ロケール使用 React プレーヤーおよびオペレータはインターフェイスします。"
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.impact" = "false に設定すると React の bStats 送信を完全に無効化します。反映には再起動が必要です。"
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.summary" = "React の匿名 bStats 利用統計レポートを有効にします。"
@@ -1422,8 +1595,8 @@
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.priority.summary" = "複数回使用したエンティティティ優先モデル React サブシステム。"
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.slowticklogmode.impact" = "OFF は,遅い ティック 警告を抑制します.BLAME は可能なプラグイン/ワークロードの責任を強調します. SHORT は最小限のタイミングのみを記録します.DETAILED は完全な診断 データペイロード をログします."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.slowticklogmode.summary" = "遅い ティック アワルテーションの記録を制御します オプション:オフ,BLEAME,SHORT,DETAILED."
-"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.impact" = "デフォルトで無効にしました。 有効化し、エージェントが添付すると、再起動せずに削除することはできません。 JVM. 現行リリースでは、変換は登録されません。"
-"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.summary" = "オプションを有効にします。 ByteBuddy バイトコードエージェントは、高度なランタイムインストゥルメントを実現します。"
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.impact" = "デフォルトでは無効です。バージョン別のNMS機能は、有効化時に独自の計装を接続することがあります。接続した計装はJVMを再起動するまで残ります。"
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.summary" = "起動時にReactの汎用ByteBuddyエージェントを接続します。"
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.value.impact" = "高価な値が計算中の高価な項目の影響を増加させることができます。"
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.value.summary" = "レシピ/値分析に使用する材料値調整。"
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.verbose.impact" = "トラブルシューティングに便利なが、多くのログノイズを作成できます。"
@@ -2576,3 +2749,125 @@
 "config.documentation.annotation.art.arcane.react.core.controller.incidentcontroller.field.persistenceenabled.summary" = "構造化されたインシデント履歴を plugins/React/incidents.json に保存します。"
 "config.documentation.annotation.art.arcane.react.core.controller.incidentcontroller.field.retention.impact" = "値を大きくすると履歴を多く保持しますが、メモリとディスク容量を多く使用します。"
 "config.documentation.annotation.art.arcane.react.core.controller.incidentcontroller.field.retention.summary" = "保持する構造化インシデントイベントの最大数。"
+
+"language.menu.your_language" = "あなたの言語"
+"language.menu.reset_your_language" = "自分の言語をリセット"
+"language.menu.server_default" = "サーバーのデフォルト"
+"language.menu.edit_messages" = "言語メッセージを編集"
+"language.menu.use_server_default" = "サーバーのデフォルトを使用"
+"language.menu.current" = "現在: {locale}"
+"language.menu.current_with_personal" = "現在: {locale} (あなた: {personal})"
+"language.menu.your_description" = "表示されるメッセージだけを変更します。"
+"language.menu.reset_description" = "サーバーのデフォルト言語を使用します。"
+"language.menu.server_description" = "サーバーのデフォルト言語を変更します。"
+"language.menu.edit_description" = "言語ごとのメッセージエディターを開きます。"
+"language.menu.select_description" = "クリックしてこの言語を選択します。"
+"language.menu.remove_personal_description" = "個人の言語選択を削除します。"
+"language.menu.no_controls" = "利用できる言語設定はありません。"
+"language.menu.command" = "コマンド: {command}"
+"language.menu.selected" = "選択済み"
+"language.menu.all-volmit-plugins" = "すべての Volmit プラグイン"
+"language.error.stopping" = "プラグインの停止処理中は言語を選択できません。"
+"language.error.editor-player-only" = "ゲーム内の言語エディタを開く."
+"language.usage.editor" = "使用方法: /{command} language server edit [locale]"
+"language.usage.selection" = "使用方法: /{command} language self [locale|reset] or server [locale]"
+"language.usage.volmit-selection" = "使用方法: /volmit plugins languages [locale]"
+"language.error.no-providers" = "利用可能な Volmit 言語プロバイダーがありません。"
+"language.error.numeric-page" = "言語ページは番号で指定してください。"
+"language.error.personal-player-only" = "プレイヤーの言語設定はゲームで選択する必要があります."
+"language.error.personal-permission" = "言語を選択する権限はありません."
+"language.error.plugin-personal-permission" = "{plugin} で使用する自分の言語を選択する権限がありません。"
+"language.error.plugin-server-permission" = "{plugin} のサーバー言語を変更する権限がありません。"
+"language.error.server-locale-required" = "サーバーのデフォルト言語には、en_US などのロケールを指定してください。"
+"language.error.unavailable-for-all" = "選択したプラグインの中に、言語 {locale} を利用できないものがあります。"
+"language.selection.preparing" = "{target} 用の言語 {locale} を準備しています..."
+"language.selection.save-failed" = "{plugin}: 言語選択を保存できません。サーバーコンソールを確認してください."
+"language.selection.english-fallback" = "{plugin}: {locale} は利用できません。英語 (en_US) を使用します。"
+"language.selection.personal-selected" = "{plugin}: あなたの言語を {locale} に変更しました。"
+"language.selection.server-selected" = "{plugin}: サーバー言語を {locale} に変更しました。"
+"language.selection.server-default-selected" = "{plugin}: お使いの言語はサーバーのデフォルトを使用します."
+"language.editor.section.languages" = "言語"
+"language.editor.section.search" = "検索"
+"language.editor.section.search-title" = "{locale} / 検索"
+"language.editor.section.group-title" = "{locale} / {group}"
+"language.editor.loading" = "{locale} のメッセージを読み込んでいます..."
+"language.editor.prompt.search" = "メッセージのキーまたは本文を検索します。戻るには cancel と入力してください。"
+"language.editor.prompt.value" = "{key} の新しい値をチャットに入力してください。"
+"language.editor.prompt.current" = "現在の値: {value}"
+"language.editor.prompt.variables" = "変数: {variables}"
+"language.editor.prompt.guidance" = "改行には \\n、バックスラッシュには \\\\ を使用してください。戻るには cancel と入力してください。"
+"language.editor.input.expired" = "言語エディターの入力期限が切れました。"
+"language.editor.input.too-long" = "入力できる文字数は最大 {maximum} 文字です。"
+"language.editor.input.unable-to-save" = "保存できない: {reason}"
+"language.editor.navigation.back" = "&e戻る&r"
+"language.editor.navigation.close" = "&c閉じる&r"
+"language.editor.navigation.previous-page" = "&e前のページ&r"
+"language.editor.navigation.next-page" = "&e次のページ&r"
+"language.editor.search.messages" = "メッセージの検索"
+"language.editor.search.messages-lore" = "すべてのメッセージを検索するにはクリック."
+"language.editor.search.clear" = "検索をクリア"
+"language.editor.message.current-value" = "&7現在の値:&r"
+"language.editor.message.variables" = "&8{variables}&r"
+"language.editor.message.edit-plural" = "&7クリックして複数形を編集します。&r"
+"language.editor.message.edit-lines" = "&7クリックして個々の行を編集する.&r"
+"language.editor.message.edit-chat" = "&7クリックしてチャットで編集します。&r"
+"language.editor.locale.open" = "&8クリックして、この言語を開く.&r"
+"language.editor.category.message-count" = "&7{count} メッセージ&r"
+"language.editor.category.open" = "&8クリックしてこのカテゴリーを開きます。&r"
+"language.editor.error.no-permission" = "{plugin} の言語を編集する権限がありません。"
+"language.editor.error.unable-to-edit" = "編集できない: {reason}"
+"language.editor.saved.summary" = "保存済み {locale}. 言語選択は変更されません."
+"language.editor.saved.change" = "{key}: “{before}” を “{after}” に変更しました。"
+"language.editor.part.line" = "ライン {line}"
+"language.editor.value.none" = "なし"
+"language.editor.value.empty" = "(空)"
+"test.map.megamap_capacity_fail" = "Megamapの機能情報の算出が正しくありません:"
+"test.map.megamap_capacity_pass" = "Megamapの列数、行数、詳細度はグリッドから算出されます。"
+"test.map.megamap_viewport_fail" = "Megamapの表示領域の形状が正しくありません:"
+"test.map.megamap_viewport_pass" = "可変サイズの壁では論理キャンバスが1つ作られ、拡大表示の壁では縦横比と均一な倍率を保つように余白が付きます。"
+"test.map.megamap_defects_fail" = "不正なマップ壁を診断できませんでした:"
+"test.map.megamap_defects_pass" = "不揃い、回転、重複、混在のあるマップ壁では、すべて原因が報告されます。"
+"test.map.megamap_expansion_fail" = "拡張した壁でレンダラーが失敗しました:"
+"test.map.renderer_containment_skip" = "ヘッドレス環境で実行できるレンダラーがありませんでした。"
+"test.map.megamap_expansion_pass" = "すべてのレンダラーが1x1、2x1、1x2、1x3、2x2、3x1、3x3、5x3の壁の全額縁を描画します。"
+"test.map.palette_fail" = "テーマの色がマップのパレットで区別できなくなっています:"
+"test.map.palette_pass" = "各テーマ色はマップパレットの互いに異なる色と完全に一致します。"
+"test.map.clip_fail" = "描画が有効なクリップ矩形からはみ出しました。"
+"test.map.clip_blank" = "クリップの検査では領域内に何も描画されませんでした。"
+"test.map.clip_restore_fail" = "popClipが直前のクリップ矩形を復元しませんでした。"
+"test.map.clip_pass" = "線、テキスト、塗りつぶしはスタックに追加したクリップ矩形内に収まりました。"
+"test.map.text_bounds_fail" = "幅に合わせたテキストが幅の上限を超えました。"
+"test.map.text_bounds_pass" = "幅に合わせたテキストは、どのUI倍率でも上限を超えません。"
+"test.map.renderer_containment_fail" = "レンダラーがクリップ矩形の外に描画しました:"
+"test.map.renderer_containment_pass" = "すべてのレンダラーがスタックに追加したクリップ矩形内に収まりました。"
+"test.map.flush_fidelity_fail" = "バッファーからの書き出しで合成済みの描画面を再現できませんでした:"
+"test.map.flush_fidelity_pass" = "書き出した全ピクセルが1x1、2x2、3x3で合成済みの描画面と一致します。"
+"test.map.flush_stability_fail" = "同一内容の再描画でもキャンバスへの書き込みが発生しました:"
+"test.map.flush_stability_pass" = "同一内容の再描画ではキャンバスへのピクセル書き込みは発生しません。"
+"test.map.frame_wall_disabled" = "Megamapのタイル結合が無効です。隣接する額縁は壁を構成しません。"
+"test.map.frame_wall_no_worlds" = "読み込まれたワールドがないため、実際の額縁の壁を作成できません。"
+"test.map.frame_wall_setup_failed" = "実際の額縁の壁を作成できませんでした:"
+"test.map.frame_wall_no_space" = "スポーン地点付近に、2つの額縁からなるマップ壁を作成できる空いた縦方向の空間がありません。"
+"test.map.frame_wall_probe_failed" = "実際の額縁の壁の検査に失敗しました:"
+"test.map.frame_wall_pass" = "隣接する額縁内の複製されたReactマップに別々のIDが割り当てられ、2タイルの壁として認識されました。"
+"test.map.frame_wall_fail" = "隣接する額縁が2タイルのMegamap壁として認識されませんでした:"
+"command.description.language" = "自分の言語またはサーバーの言語を選択"
+"debug.error.missing-permission" = "必要な権限がありません: {permission}"
+"debug.error.already-preparing" = "{plugin} の診断レポートはすでに準備中です。"
+"debug.error.already-preparing-short" = "診断レポートはすでに準備中です。"
+"debug.preparing" = "{plugin} の診断レポートを準備しています..."
+"debug.error.schedule-failed" = "診断レポートの作成をスケジュールできませんでした。"
+"debug.error.provider-closed" = "診断サービスは終了しています。"
+"debug.error.closed-before-capture" = "レポートを収集する前に診断サービスが終了しました。"
+"debug.error.writer-schedule-failed" = "診断レポートの書き込みをスケジュールできませんでした。"
+"debug.error.capture-failed" = "診断レポートを収集できませんでした。サーバーコンソールを確認してください。"
+"debug.error.closed-before-write" = "レポートを書き込む前に診断サービスが終了しました。"
+"debug.error.write-failed" = "診断レポートを書き込めませんでした。サーバーコンソールを確認してください。"
+"debug.upload.interrupted" = "診断レポートのアップロードが中断されました。ローカルのレポートは保存されています。"
+"debug.upload.failed" = "診断レポートのアップロードに失敗しました。ローカルのレポートは保存されています。"
+"debug.upload.completed" = "VolmitSoftware - {plugin} - v{version} としてアップロードしました。"
+"debug.action.open" = "開く: {url}"
+"debug.action.open-description" = "アップロードした診断レポートを開きます。"
+"debug.saved" = "{plugin} の診断レポートを {path} に保存しました。"
+"debug.action.copy-path" = "ローカルパスをコピー"
+"debug.action.copy-path-description" = "レポートのローカルパスをコピーします。"

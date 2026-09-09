@@ -6,6 +6,8 @@ import art.arcane.react.localization.catalog.RendererMessages;
 import art.arcane.react.localization.catalog.RuntimeMessages;
 import art.arcane.react.localization.catalog.ShorthandMessages;
 import art.arcane.react.localization.catalog.TestMessages;
+import art.arcane.volmlib.util.diagnostics.BukkitDebugMessages;
+import art.arcane.volmlib.util.localization.BukkitLanguageMessages;
 import art.arcane.volmlib.util.localization.LocaleOverlay;
 import art.arcane.volmlib.util.localization.LocalizationCandidate;
 import art.arcane.volmlib.util.localization.LocalizationReloadResult;
@@ -61,6 +63,13 @@ public class ReactLanguageTest {
           + "|\\b(?:sample|reset)\\(\\)"
   );
   private static final Pattern WORD = Pattern.compile("[\\p{L}\\p{N}_]+");
+  private static final Map<String, List<String>> LANGUAGE_INPUT_TOKENS = Map.of(
+      "language.usage.editor", List.of("/{command} language server edit [locale]"),
+      "language.usage.selection", List.of("/{command} language self [locale|reset]", "server [locale]"),
+      "language.usage.volmit-selection", List.of("/volmit plugins languages [locale]"),
+      "language.editor.prompt.search", List.of("cancel"),
+      "language.editor.prompt.guidance", List.of("cancel", "\\n", "\\\\")
+  );
   private static final Pattern HANGUL = Pattern.compile("[\u1100-\u11FF\u3130-\u318F\uAC00-\uD7AF]");
   private static final Pattern HEBREW = Pattern.compile("[\u0590-\u05FF]");
   private static final Pattern CYRILLIC = Pattern.compile("[\u0400-\u052F]");
@@ -91,6 +100,22 @@ public class ReactLanguageTest {
     );
 
     Assertions.assertEquals("React 1.2.3", rendered);
+  }
+
+  @Test
+  public void sharedLanguageAndDebugFeedbackUsesLocalizedTemplatesAndArguments() {
+    LocaleOverlay overlay = LocaleOverlay.builder("shared-feedback", "de_DE")
+        .text(BukkitLanguageMessages.SERVER_SELECTED.id(), "{plugin}: Serversprache ist jetzt {locale}.")
+        .text(BukkitDebugMessages.OPEN_LABEL.id(), "Öffnen: {url}")
+        .build();
+    Assertions.assertTrue(ReactLanguage.reloadCandidate(new LocalizationCandidate(
+        ReactMessages.catalog(), List.of(overlay), PluralSelector.oneOther())).applied());
+
+    Assertions.assertEquals("React: Serversprache ist jetzt de_DE.", ReactLanguage.directorResolver().resolve(
+        BukkitLanguageMessages.SERVER_SELECTED,
+        MessageArgument.untrusted("plugin", "React"), MessageArgument.untrusted("locale", "de_DE")));
+    Assertions.assertEquals("Öffnen: https://example.test/report", ReactLanguage.directorResolver().resolve(
+        BukkitDebugMessages.OPEN_LABEL, MessageArgument.untrusted("url", "https://example.test/report")));
   }
 
   @Test
@@ -330,6 +355,9 @@ public class ReactLanguageTest {
       MessageValue translated = overlay.value(key.id());
       Assertions.assertInstanceOf(TextValue.class, translated, key.id());
       String template = ((TextValue) translated).template();
+      for (String token : LANGUAGE_INPUT_TOKENS.getOrDefault(key.id(), List.of())) {
+        Assertions.assertTrue(template.contains(token), localeFile + ": missing input " + token + " in " + key.id());
+      }
       Assertions.assertFalse(template.contains("\uFFFD"), localeFile + ": " + key.id());
       Assertions.assertFalse(template.contains("⟬"), localeFile + ": " + key.id());
       Assertions.assertFalse(template.contains("⟭"), localeFile + ": " + key.id());

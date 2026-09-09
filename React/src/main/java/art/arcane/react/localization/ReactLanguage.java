@@ -22,9 +22,11 @@ import art.arcane.volmlib.util.localization.LinesValue;
 import art.arcane.volmlib.util.localization.LocaleOverlay;
 import art.arcane.volmlib.util.localization.LocalizationCandidate;
 import art.arcane.volmlib.util.localization.LocalizationIssue;
+import art.arcane.volmlib.util.localization.LocalizationIssueCode;
 import art.arcane.volmlib.util.localization.LocalizationManager;
 import art.arcane.volmlib.util.localization.LocalizationReloadResult;
 import art.arcane.volmlib.util.localization.LocalizationSnapshot;
+import art.arcane.volmlib.util.localization.LocalizationValidationResult;
 import art.arcane.volmlib.util.localization.MessageArgument;
 import art.arcane.volmlib.util.localization.MessageArgumentKind;
 import art.arcane.volmlib.util.localization.MessageArgs;
@@ -63,12 +65,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import static art.arcane.volmlib.util.config.TomlCodec.toJsonElement;
+
 public final class ReactLanguage {
   private static final Object SNAPSHOT_LOCK = new Object();
   private static final long MAX_LOCALE_BYTES = 2L * 1024L * 1024L;
   private static final int MAX_REPORTED_ISSUES = 12;
   private static final Pattern LOCALE_NAME = Pattern.compile("[A-Za-z0-9_-]+");
   private static final String LEGACY_CODES = "0123456789abcdefklmnorx";
+  private static final String ENGLISH_FALLBACK_SOURCE = "code-owned-English:";
   private static final MessageCatalog CATALOG = ReactMessages.catalog();
   private static final MiniMessage MINI_MESSAGE = MiniMessage.builder().strict(true).build();
   private static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.legacySection();
@@ -131,7 +136,7 @@ public final class ReactLanguage {
   }
 
   private static LocalizationSnapshot writeMessage(PluginLanguageEditor.Edit edit) throws IOException {
-    File file = new File(overrideFolder(), edit.locale() + ".toml");
+    File file = new File(languageFolder(), edit.locale() + ".toml");
     LocalizationSnapshot prepared = LanguageFileEditor.update(file.toPath(), raw -> {
       LocalizationSnapshot current = editorSnapshot(edit.locale(), file, raw);
       if (!current.value(CATALOG.require(edit.key())).equals(edit.expected())) {
@@ -150,7 +155,7 @@ public final class ReactLanguage {
 
   private static LocalizationSnapshot editorSnapshot(String locale, File file, String raw) throws IOException {
     try {
-      return LocalizationSnapshot.create(loadCandidate(locale, new OverrideHotloadSnapshot(normalizedPath(file), raw)));
+      return LocalizationSnapshot.create(loadCandidate(locale, new LanguageHotloadSnapshot(normalizedPath(file), raw)));
     } catch (Exception failure) {
       throw new IOException("Could not validate React language " + locale, failure);
     }
@@ -174,14 +179,14 @@ public final class ReactLanguage {
     return reload(null);
   }
 
-  public static boolean reload(File overrideFile, String rawContent) {
-    OverrideHotloadSnapshot hotloadSnapshot = overrideFile == null || rawContent == null
+  public static boolean reload(File languageFile, String rawContent) {
+    LanguageHotloadSnapshot hotloadSnapshot = languageFile == null || rawContent == null
         ? null
-        : new OverrideHotloadSnapshot(normalizedPath(overrideFile), rawContent);
+        : new LanguageHotloadSnapshot(normalizedPath(languageFile), rawContent);
     if (hotloadSnapshot != null) {
       String configuredLocale = normalizeLocale(ReactConfiguration.get().getLanguage());
-      File activeOverride = new File(overrideFolder(), configuredLocale + ".toml");
-      if (!hotloadSnapshot.path().equals(normalizedPath(activeOverride))) {
+      File activeLanguage = new File(languageFolder(), configuredLocale + ".toml");
+      if (!hotloadSnapshot.path().equals(normalizedPath(activeLanguage))) {
         return true;
       }
     }
@@ -189,7 +194,7 @@ public final class ReactLanguage {
   }
 
   public static PreparedReload prepareHotload(
-      File overrideFile,
+      File languageFile,
       String rawContent,
       String configuredLocale
   ) throws Exception {
@@ -197,12 +202,12 @@ public final class ReactLanguage {
         ? CATALOG.englishLocale()
         : configuredLocale.trim();
     String normalizedLocale = normalizeLocale(configuredLocale);
-    OverrideHotloadSnapshot hotloadSnapshot = overrideFile == null || rawContent == null
+    LanguageHotloadSnapshot hotloadSnapshot = languageFile == null || rawContent == null
         ? null
-        : new OverrideHotloadSnapshot(normalizedPath(overrideFile), rawContent);
+        : new LanguageHotloadSnapshot(normalizedPath(languageFile), rawContent);
     if (hotloadSnapshot != null) {
-      File activeOverride = new File(overrideFolder(), normalizedLocale + ".toml");
-      if (!hotloadSnapshot.path().equals(normalizedPath(activeOverride))) {
+      File activeLanguage = new File(languageFolder(), normalizedLocale + ".toml");
+      if (!hotloadSnapshot.path().equals(normalizedPath(activeLanguage))) {
         return new PreparedReload(null, requestedLocale, normalizedLocale, true);
       }
     }
@@ -229,13 +234,13 @@ public final class ReactLanguage {
     if (languageService != null) {
       languageService.invalidate();
     }
-    int warningCount = result.validation().warnings().size();
+    int warningCount = fallbackEntryCount(result.validation());
     React.verbose("Loaded locale " + prepared.requestedLocale() + " with " + warningCount + " fallback "
         + (warningCount == 1 ? "entry" : "entries") + ".");
     return true;
   }
 
-  private static boolean reload(OverrideHotloadSnapshot hotloadSnapshot) {
+  private static boolean reload(LanguageHotloadSnapshot hotloadSnapshot) {
     String configuredLocale = ReactConfiguration.get().getLanguage();
     String requestedLocale = configuredLocale == null || configuredLocale.isBlank()
         ? CATALOG.englishLocale()
@@ -255,7 +260,7 @@ public final class ReactLanguage {
     if (languageService != null) {
       languageService.invalidate();
     }
-    int warningCount = result.validation().warnings().size();
+    int warningCount = fallbackEntryCount(result.validation());
     React.verbose("Loaded locale " + requestedLocale + " with " + warningCount + " fallback "
         + (warningCount == 1 ? "entry" : "entries") + ".");
     return true;
@@ -265,16 +270,16 @@ public final class ReactLanguage {
     return activeLocale;
   }
 
-  public static File overrideFolder() {
-    return new File(React.instance.getDataFolder(), "languages/overrides");
+  public static File languageFolder() {
+    return new File(React.instance.getDataFolder(), "languages");
   }
 
-  public static boolean isOverrideFile(File file) {
+  public static boolean isLanguageFile(File file) {
     if (file == null || !file.getName().toLowerCase(Locale.ROOT).endsWith(".toml")) {
       return false;
     }
     File parent = file.getParentFile();
-    return parent != null && parent.getAbsoluteFile().equals(overrideFolder().getAbsoluteFile());
+    return parent != null && normalizedPath(parent).equals(normalizedPath(languageFolder()));
   }
 
   public static Component component(MessageKey key) {
@@ -395,47 +400,74 @@ public final class ReactLanguage {
     return MANAGER.snapshot();
   }
 
+  static int fallbackEntryCount(LocalizationValidationResult validation) {
+    int count = 0;
+    for (LocalizationIssue issue : validation.warnings()) {
+      if (issue.code() == LocalizationIssueCode.MISSING_KEY && !issue.source().startsWith(ENGLISH_FALLBACK_SOURCE)) {
+        count++;
+      }
+    }
+    return count;
+  }
+
   private static LocalizationSnapshot selectedSnapshot() {
     return languageService == null ? MANAGER.snapshot() : languageService.snapshot();
   }
 
   private static LocalizationCandidate loadCandidate(
       String locale,
-      OverrideHotloadSnapshot hotloadSnapshot
+      LanguageHotloadSnapshot hotloadSnapshot
   ) throws Exception {
     if (hotloadSnapshot == null) {
-      Files.createDirectories(overrideFolder().toPath());
+      createEnglishLanguageIfMissing();
     }
-    List<LocaleOverlay> overlays = new ArrayList<>();
-    File override = new File(overrideFolder(), locale + ".toml");
-    if (hotloadSnapshot != null && hotloadSnapshot.path().equals(normalizedPath(override))) {
-      overlays.add(loadSnapshotOverlay(override, locale, hotloadSnapshot.rawContent()));
-    } else if (override.exists()) {
-      overlays.add(loadFileOverlay(override, locale));
+    List<LocaleOverlay> overlays = new ArrayList<>(2);
+    File languageFile = new File(languageFolder(), locale + ".toml");
+    if (hotloadSnapshot != null && hotloadSnapshot.path().equals(normalizedPath(languageFile))) {
+      overlays.add(loadSnapshotOverlay(languageFile, locale, hotloadSnapshot.rawContent()));
+    } else if (languageFile.exists()) {
+      overlays.add(loadFileOverlay(languageFile, locale));
+    } else if (!CATALOG.englishLocale().equalsIgnoreCase(locale)) {
+      overlays.add(loadDownloadedOverlay(locale));
     }
-
-    if (!CATALOG.englishLocale().equalsIgnoreCase(locale)) {
-      LocaleOverlay downloaded = loadDownloadedOverlay(locale);
-      if (downloaded != null) {
-        overlays.add(downloaded);
+    if (!CATALOG.englishLocale().equalsIgnoreCase(locale) && !overlays.isEmpty()) {
+      LocaleOverlay selected = overlays.getFirst();
+      LocaleOverlay.Builder englishFallback = LocaleOverlay.builder(ENGLISH_FALLBACK_SOURCE + locale, locale);
+      boolean missingMessages = false;
+      for (MessageKey key : CATALOG.keys()) {
+        if (selected.value(key.id()) == null) {
+          englishFallback.put(key.id(), key.englishValue());
+          missingMessages = true;
+        }
+      }
+      if (missingMessages) {
+        overlays.add(englishFallback.build());
       }
     }
     return new LocalizationCandidate(CATALOG, overlays, PluralSelector.oneOther());
   }
 
+  private static void createEnglishLanguageIfMissing() throws IOException {
+    Path english = languageFolder().toPath().resolve(CATALOG.englishLocale() + ".toml");
+    if (Files.exists(english)) {
+      return;
+    }
+    AtomicFileIO.writeString(english, ReactLanguageReference.englishCatalog());
+  }
+
   private static LocaleOverlay loadFileOverlay(File file, String locale) throws Exception {
     if (!file.isFile()) {
-      throw new IllegalArgumentException("Locale override is not a regular file: " + file.getPath());
+      throw new IllegalArgumentException("Locale file is not a regular file: " + file.getPath());
     }
     if (file.length() > MAX_LOCALE_BYTES) {
-      throw new IllegalArgumentException("Locale override is too large: " + file.getPath());
+      throw new IllegalArgumentException("Locale file is too large: " + file.getPath());
     }
     return parseOverlay(file.getPath(), locale, Files.readString(file.toPath()));
   }
 
   private static LocaleOverlay loadSnapshotOverlay(File file, String locale, String rawContent) {
     if (rawContent.getBytes(StandardCharsets.UTF_8).length > MAX_LOCALE_BYTES) {
-      throw new IllegalArgumentException("Locale override is too large: " + file.getPath());
+      throw new IllegalArgumentException("Locale file is too large: " + file.getPath());
     }
     return parseOverlay(file.getPath(), locale, rawContent);
   }
@@ -445,7 +477,7 @@ public final class ReactLanguage {
   }
 
   private static LocaleOverlay loadDownloadedOverlay(String locale) throws Exception {
-    Path file = React.instance.getDataFolder().toPath().resolve("languages").resolve(locale + ".toml");
+    Path file = languageFolder().toPath().resolve(locale + ".toml");
     String raw = remoteCatalog.readOrInstall(locale, file, (selectedLocale, content) ->
         LocalizationSnapshot.create(new LocalizationCandidate(CATALOG,
             List.of(parseOverlay(file.toString(), selectedLocale, content)), PluralSelector.oneOther())));
@@ -457,7 +489,12 @@ public final class ReactLanguage {
     if (raw == null || raw.isBlank()) {
       return builder.build();
     }
-    JsonElement parsed = ConfigFileSupport.parseToJsonElement(raw, new File(locale + ".toml"));
+    JsonElement parsed;
+    try {
+      parsed = toJsonElement(raw);
+    } catch (IOException exception) {
+      throw new IllegalArgumentException("Locale source is not valid TOML: " + source, exception);
+    }
     if (parsed == null || !parsed.isJsonObject()) {
       throw new IllegalArgumentException("Locale source is not valid TOML: " + source);
     }
@@ -467,7 +504,7 @@ public final class ReactLanguage {
 
   private static void appendOverlay(LocaleOverlay.Builder builder, JsonObject object, String prefix, String source) {
     for (Map.Entry<String, JsonElement> entry : object.entrySet()) {
-      String entryKey = normalizeOverlayKey(entry.getKey());
+      String entryKey = entry.getKey();
       String key = prefix.isEmpty() ? entryKey : prefix + "." + entryKey;
       JsonElement value = entry.getValue();
       if (value == null || value.isJsonNull()) {
@@ -489,19 +526,7 @@ public final class ReactLanguage {
     }
   }
 
-  private record OverrideHotloadSnapshot(String path, String rawContent) {
-  }
-
-  private static String normalizeOverlayKey(String key) {
-    if (key.length() < 2) {
-      return key;
-    }
-    char first = key.charAt(0);
-    char last = key.charAt(key.length() - 1);
-    if ((first == '"' && last == '"') || (first == '\'' && last == '\'')) {
-      return key.substring(1, key.length() - 1);
-    }
-    return key;
+  private record LanguageHotloadSnapshot(String path, String rawContent) {
   }
 
   private static List<String> readLines(String key, JsonArray array) {

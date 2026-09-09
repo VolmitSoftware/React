@@ -1,6 +1,179 @@
+# שפת React: he_IL
+#
+# ערוך קובץ זה ישירות בתיקייה languages או באמצעות /react language server edit.
+# React יוצר או מוריד קובצי שפה רק אם הם חסרים. שינויים מקומיים נשמרים.
+# הודעות חסרות משתמשות בקטלוג האנגלי המובנה.
+#
+# עיצוב
+#   הודעות צ'אט משתמשות ב-MiniMessage: <red>טקסט</red>, <bold>טקסט</bold>.
+#   צבעי RGB משתמשים ב-<color:#RRGGBB>טקסט</color>. סגור תגיות בסדר הפוך לפתיחתן.
+#   הודעות העורך המשותפות language.* תומכות גם בקודי צבע רגילים עם אמפרסנד, כגון &e ו-&r.
+#   הודעות אחרות אינן ממירות קודי צבע עם אמפרסנד. שמור על מירכאות ורצפי מילוט תקינים ב-TOML.
+#   השתמש ב-\n בתוך מחרוזות TOML במירכאות למעבר שורה. סוגריים מסולסלים כפולים {{ ו-}} מציגים סוגריים מסולסלים מילוליים.
+#   הערכים של renderer.* ושל config.documentation.annotation.* הם טקסט פשוט.
+#   הערכים של test.* הם טקסט פשוט, פרט להודעות test.result.* המשתמשות ב-MiniMessage.
+#
+# מצייני מיקום
+# כל הודעה מקבלת רק את מצייני המיקום שלה. אל תשנה את שמותיהם.
+# השתמש במצייני מיקום בטקסט ההודעה, מחוץ לתגיות MiniMessage.
+#   {action}          שם הפעולה או כיוון התאמת הצבע
+#   {actions}         מספר הפעולות בתור או רשימת שמות הפעולות שהוחרגו
+#   {active}          מספר התכונות או הכוונונים הפעילים
+#   {actor}           משתמש האינטרנט שביצע שינוי
+#   {added}           האם תכונה הצטרפה מחדש למרשם הפעיל לאחר הפעלתה
+#   {after}           ערך תצורה, הודעת שפה או שימוש בערימה לאחר שינוי
+#   {age}             גיל נתוני האינטגרציה בשניות
+#   {amount}          מספר הפריטים להענקה
+#   {architecture}    ארכיטקטורת CPU
+#   {argument}        ארגומנט פקודה לא צפוי
+#   {available}       מספר ידיות גשר NMS הזמינות
+#   {average}         ממוצע TPS או אלפיות שנייה לטיק
+#   {avg_mspt}        ממוצע אלפיות שנייה לטיק במהלך סבב בדיקת עומס
+#   {avg_tps}         ממוצע טיקים לשנייה במהלך סבב בדיקת עומס
+#   {bar}             סרגל ציון ביצועים מעוצב
+#   {before}          ערך תצורה, הודעת שפה או שימוש בערימה לפני שינוי
+#   {checked}         מספר הדוגמים שנבדקו
+#   {chunks}          מספר הצ'אנקים שהושפעו מפעולה
+#   {code}            קוד צימוד לממשק האינטרנט
+#   {command}         נתיב הפקודה
+#   {count}           מספר הרשומות, המודולים, השינויים או ממצאי הבדיקה
+#   {current}         מספר העמוד הנוכחי
+#   {delta_heap}      הפרש השימוש בערימה בסיום בין React לקו הבסיס, ב-MB
+#   {delta_mspt}      הפרש זמן הטיק הממוצע בין React לקו הבסיס, ב-ms
+#   {delta_tps}       הפרש ה-TPS הממוצע בין React לקו הבסיס
+#   {detail}          פרטי אבחון של גשר, אינטגרציה, פעולה או בדיקה
+#   {dimensions}      מידות רשת קיר המפות שזוהו
+#   {direction}       כיוון סיבוב הגוון של הצבע שנבחר
+#   {distance}        מרחק התצוגה או הסימולציה המבוקש
+#   {duration}        זמן שחלף; הודעות תחילת בדיקת עומס משתמשות בשניות
+#   {enabled}         מצב ההפעלה או מספר המודולים המופעלים
+#   {entities}        מספר הישויות שהושפעו מפעולה
+#   {entry}           רשומה בציר הזמן של האינטגרציה
+#   {exceptions}      חריגות React שתועדו במהלך סבב בדיקת עומס
+#   {fail}            מספר הבדיקות שנכשלו
+#   {file}            שם קובץ תצורה, שפה או API של תוסף
+#   {fingerprint}     טביעת אצבע של השרת או של אסימון אינטרנט
+#   {finite}          מספר הדוגמים שמחזירים ערכים סופיים
+#   {frames}          מספר מסגרות הפריטים בקיר המפות הפעיל
+#   {free}            זיכרון פיזי או וירטואלי פנוי
+#   {freed}           זיכרון ערימה שפונה באיסוף אשפה
+#   {from}            מספר הרשומה הראשונה בעמוד הנוכחי
+#   {grid}            מידות רשת קיר המפות
+#   {ground_y}        גובה הקרקע לבדיקת הכבידה
+#   {group}           קבוצת ניטור, דוגמים, מפות, תצורה או הודעות שפה
+#   {growth}          גידול הערימה במהלך בדיקת עומס, ב-MB
+#   {health}          מצב תקינות האינטגרציה
+#   {heap_end}        שימוש בערימה בסיום סבב בדיקת עומס, ב-MB
+#   {heap_start}      שימוש בערימה בתחילת סבב בדיקת עומס, ב-MB
+#   {heartbeat}       הזמן מאז אות החיים האחרון של האינטגרציה
+#   {height}          גובה משטח הבדיקה בפיקסלים
+#   {hoppers}         מספר המשפכים שנורמלו
+#   {id}              מזהה של ידית גשר, דוגם, מפה, פעולה, חבילה או אסימון
+#   {impact}          תיאור השפעת התצורה או עלות התוסף ב-ms/s
+#   {incident}        מזהה פעולת האירוע הרקורסיבית שהוחרגה מחבילת בדיקות הפיתוח
+#   {index}           מספר השלב הנוכחי בחבילת בדיקות הפיתוח
+#   {invalid}         מספר הדוגמים עם קריאות לא תקינות
+#   {issued_at}       זמן יצירת אסימון האינטרנט
+#   {item}            שם או מזהה הפריט
+#   {items}           מספר ישויות הפריטים שמוזגו
+#   {key}             מפתח פרמטר פקודה, מפתח תצורה או מזהה הודעת שפה
+#   {label}           תווית של בדיקת ביצועים, מדד, הגדרה, פקודה או אסימון אינטרנט
+#   {line}            מספר השורה הנערכת בהודעה מרובת שורות
+#   {lines}           מספר שורות יומן השרת שנסרקו
+#   {loaded}          מספר הצ'אנקים שנטענו לראשונה במהלך טעינה מקדימה
+#   {locale}          קוד השפה המוצגת, הנבחרת או הנערכת
+#   {matched}         עולמות שמצב השמירה האוטומטית שלהם תואם לקו הבסיס של הבדיקה
+#   {max_tick}        הפער הארוך ביותר שנמדד בין טיקים בבדיקת עומס, ב-ms
+#   {maximum}         מספר פריטים מרבי, סף זמן טיק או אורך קלט העורך
+#   {message}         סיכום פעולה שהושלמה או הודעת מצב אינטגרציה
+#   {metrics}         מספר המדדים שסופקו על ידי חבילת API של תוסף
+#   {minecraft}       גרסת Minecraft
+#   {minimum}         ערך TPS מזערי קביל
+#   {missing}         מספר הדוגמים הנדרשים שחסרים במרשם
+#   {mode}            מצב המשחק או מצב היכולת שנבחר
+#   {model}           דגם CPU
+#   {name}            שם בדיקת הביצועים, המודול, המרנדר או בדיקת האימות
+#   {note}            הסיבה שיומן השרת לא נסרק
+#   {offenders}       מספר הדוגמים שמחזירים ערכים לא סופיים
+#   {operations}      פעולות קריאה חוזרת של יכולת בדקה
+#   {options}         ערכי התצורה המותרים
+#   {p95}             האחוזון ה-95 של זמן הטיק בבדיקת עומס, ב-ms
+#   {parameter}       שם פרמטר הפקודה
+#   {parameters}      פרמטרי פקודה שלא נעשה בהם שימוש
+#   {pass}            מספר הבדיקות שעברו
+#   {path}            נתיב מפתח תצורה או נתיב קובץ דוח
+#   {percent}         אחוז התאמת צבע או חלקו היחסי של התוסף בהשפעה
+#   {permission}      צומת ההרשאה הנדרש
+#   {personal}        קוד השפה שבחר השחקן
+#   {phase}           שלב מחזור החיים של התכונה הנבדקת
+#   {pixels}          מספר הפיקסלים שאינם ריקים שצוירו בבדיקת מפה
+#   {platform}        מערכת ההפעלה או פלטפורמת שרת Minecraft
+#   {players}         מספר השחקנים המדומים בבדיקת עומס
+#   {plugin}          שם התוסף
+#   {process_load}    עומס CPU של תהליך השרת
+#   {processors}      מספר מעבדי CPU הזמינים
+#   {profile}         שם פרופיל התצורה של React
+#   {protocol}        גרסת פרוטוקול האינטגרציה
+#   {radius}          רדיוס בצ'אנקים למפה או לפעולה בחבילת בדיקות הפיתוח
+#   {range}           טווח מרחקי התצוגה או הסימולציה המותר
+#   {rate}            קצב האצת גידול היבולים שהוגדר
+#   {rating}          דירוג ביצועים מעוצב
+#   {react_errors}    מספר שורות השגיאה של React שנמצאו ביומן השרת
+#   {reason}          הסבר לכשל, לדחייה או למצב לא זמין
+#   {registered}      מספר המודולים הרשומים
+#   {removed_first}   האם הכיבוי הראשון הסיר תכונה מהמרשם הפעיל
+#   {removed_second}  האם כיבוי חוזר הסיר תכונה מהמרשם הפעיל
+#   {renderer}        שם או מזהה מרנדר המפה
+#   {renderers}       רשימת מרנדרי מפות עם מזהים ריקים
+#   {role}            תפקיד גישה לאינטרנט: viewer, operator או admin
+#   {sampler}         שם או מזהה הדוגם
+#   {samplers}        רשימת דוגמי האינטגרציה או הדוגמים שנכשלו
+#   {scope}           תחום המפה או תחום הגדרת המרחק
+#   {score}           ציון בדיקת הביצועים
+#   {seconds}         ספירה לאחור או משך בדיקת עומס בשניות
+#   {section}         שם מקטע התצורה
+#   {server}          מימוש שרת Minecraft וגרסתו
+#   {shown}           מספר השורות המוצגות כעת
+#   {since_run}       שגיאות שדווחו מאז תחילת הבדיקה הנוכחית
+#   {size}            מידות מרביות או פעילות של קיר המפות
+#   {skip}            מספר הבדיקות שדולגו
+#   {spawn_y}         הגובה שבו נוצר בלוק בדיקת הכבידה
+#   {state}           מצב פעולה או חבילת API של תוסף
+#   {status}          מצב האינטגרציה או תווית מצב התצורה
+#   {subject}         המודול או ההגדרה המתוארים בעזרת התצורה
+#   {subsystem}       שם תת-המערכת הנבדקת
+#   {summary}         סיכום ביקורת פעולה
+#   {system_load}     עומס CPU של המערכת כולה
+#   {target}          עולם, שחקן, תוסף, הגדרה או קבוצת תוספים שאליהם מכוונת הפעולה
+#   {threading}       מצב התהליכונים של השרת
+#   {tick}            משך הטיק שחרג מסף הקפיאה, ב-ms
+#   {tick_crashes}    מספר שורות קריסת טיק שנמצאו ביומן השרת
+#   {tier}            דרגת החומרה בנוהל תגובה לאירוע
+#   {timing}          זמן קריאות חוזרות של יכולת, באלפיות שנייה לדקה
+#   {to}              מספר הרשומה האחרונה בעמוד הנוכחי
+#   {total}           סך הרשומות, המודולים, העולמות, הבדיקות או הזיכרון בהודעה
+#   {type}            סוג פרמטר פקודה, ערך תצורה, מפה או מרחק
+#   {unavailable}     מספר ידיות גשר NMS שאינן זמינות
+#   {unit}            תווית יחידה לסך הכול בתרשים עוגה
+#   {unknown}         מזהה הפעולה הלא מוכרת שהוחרגה מחבילת בדיקות הפיתוח
+#   {unreadable}      מספר הדוגמים שלא ניתן היה לקרוא
+#   {uptime}          משך הפעולה הרציפה של מערכת ההפעלה המארחת
+#   {url}             כתובת URL של דוח האבחון שהועלה
+#   {usage}           תחביר השימוש בפקודה
+#   {used}            זיכרון פיזי, זיכרון וירטואלי או ערימה שנמצאים בשימוש
+#   {value}           הגדרה, מדידה או פרט חומרה מעוצבים
+#   {values}          ערכים שנדגמו ומופיעים בדוח חבילת בדיקות הפיתוח
+#   {variables}       שמות מצייני המיקום שההודעה הנערכת מקבלת
+#   {vendor}          ספק Java
+#   {verdict}         תוצאת הבדיקה הכוללת
+#   {version}         גרסת React, Java או הפלטפורמה
+#   {warmed}          מספר הצ'אנקים שנטענו מראש
+#   {warn}            מספר הבדיקות עם אזהרות
+#   {width}           רוחב משטח הבדיקה בפיקסלים
+#   {world}           שם עולם Minecraft
+
 "command.description.debugdump" = "יצירת דוח אבחון והעלאתו לפי בחירה"
 "command.parameter.debugdump_upload" = "העלאת הדוח אל mclo.gs"
-# Complete bundled translation. Code-owned English remains the canonical fallback.
 "action.collect_garbage.no_reclaim" = "אוסף Garbage הושלם ללא החזר מיידי (ללא תשלום מיידי{used} שימוש) {duration}"
 "action.collect_garbage.reclaimed" = "חופשי {freed} ({before} -> {after}ב) {duration}"
 "action.completed" = "שלם {action} פנימה {duration}"
@@ -911,8 +1084,8 @@
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.description" = "מצגת עבור מאפיקינג תכונה. תכונה זו עוקבת באופן קבוע התנהגות השרת ותקף משמרות במהלך שעות ריצה."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.batchintervalms.impact" = "ערכים נמוכים יותר ערימה טרייה יצרה מקהלות מוקדם יותר בעלות לוח הזמנים; ערכים גבוהים יותר מספקים עבודה מתמזגת יותר לחלוף."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.batchintervalms.summary" = "כמה פעמים צ'אנקים במצבים מעובדים כדי להתאפס, במיליסעקונדים."
-"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.impact" = "ניתן ליישם התנהגות זו; בלתי אפשרי לשמור על נתיב זה לא פעיל."
-"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.summary" = "שליטה אם ערימה של גיוס חל על שמות מותאמים אישית."
+"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.impact" = "Gloss מקבל את מספר היצורים בערימות ללא תלות בהגדרה זו, ומנהל את תצוגת הישויות המשולבת כשהתצוגה מופעלת."
+"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.summary" = "מציג את השמות המובנים של ערימות היצורים כאשר תצוגות הישויות של Gloss אינן זמינות."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.maxhealth.impact" = "ערכים גבוהים יותר מאפשרים יותר באמצעות מגע לפני התערבות; ערכים נמוכים הופכים את ההפחתה אגרסיבית יותר."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.maxhealth.summary" = "בריאות מקסימלית מותר על ידי גיוס ערימה."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.maxstacksize.impact" = "ערכים גבוהים יותר מאפשרים יותר באמצעות מגע לפני התערבות; ערכים נמוכים הופכים את ההפחתה אגרסיבית יותר."
@@ -1333,8 +1506,8 @@
 "config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.maxdiffmessagesperfile.summary" = "מספר מקסימלי של הודעות טבול ברמה מרכזית שנשלחות לקובץ השתנה."
 "config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.notifyoperators.impact" = "אם אתה רק רוצה יומני קונסולות ולא הודעות בתוך המשחק."
 "config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.notifyoperators.summary" = "שלח שינוי עומס חם מסכם למפעילים מקוונים."
-"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.impact" = "תהליך ערכים נמוך יותר סיפק אירועים במערכת קבצים מוקדם יותר; שקיפות של מערכת ההפעלה עשויה להיות ארוכה יותר."
-"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.summary" = "מרווח Queue-drain המשמש את ה- config Watcher במילימטרים."
+"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.impact" = "ערכים נמוכים יותר מזהים מוקדם יותר אירועים שהתקבלו; השינויים האוטומטיים עדיין מוחלים בקבוצות לכל היותר פעם בשלוש שניות."
+"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.summary" = "מרווח בדיקת האירועים של מערכת הקבצים באלפיות שנייה."
 "config.documentation.annotation.art.arcane.react.core.controller.historycontroller.description" = "לוכד פעם אחת את דוגמי React, שומר טלמטריה היסטורית דחוסה ומטפל בשאילתות מוגבלות לטווח זמן."
 "config.documentation.annotation.art.arcane.react.core.controller.historycontroller.field.compressionlevel.impact" = "ערכים גבוהים יותר עשויים לצמצם את השימוש בדיסק במחיר של עומס מעבד נוסף בתהליך הכתיבה."
 "config.documentation.annotation.art.arcane.react.core.controller.historycontroller.field.compressionlevel.summary" = "רמת DEFLATE המשמשת רק כאשר היא מקטינה עמודת מדדים מקודדת."
@@ -1412,7 +1585,7 @@
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.debug.summary" = "Enables debug logging ואבחון נוסף."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsecretsenabled.impact" = "נכים כברירת מחדל לאפשר Iris/Adapt חבילות סוד כאשר התלויים נמצאים."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsecretsenabled.summary" = "תכונות שילוב חשאיות של תוסף."
-"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.impact" = "אנגלית בבעלות קוד נותרה הנפילה; אופציונלית TOML מעלים טעון languages/overrides."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.impact" = "האנגלית המובנית בקוד נשארת שפת הגיבוי; קטלוגי TOML הניתנים לעריכה נטענים מתוך languages."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.summary" = "מקומי המשמש לשימוש React ממשקי שחקן ומפעיל."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.impact" = "הגדר ל-false כדי לבטל לחלוטין את שליחות bStats של React. נדרשת הפעלה מחדש."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.summary" = "מפעיל דיווח שימוש אנונימי של bStats עבור React."
@@ -1422,8 +1595,8 @@
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.priority.summary" = "מודל עדיפות Entity המשמש מספר רב React תת-מערכות"
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.slowticklogmode.impact" = "OFF מדכא אזהרות טיק איטיות. BLAME מדגיש אחריות סבירה על תוספת/צורה של עבודה. SHORT מעיד רק את הזמן המינימלי. DETAILED מעיד את מטען נתונים הדיאגנוסטי המלא."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.slowticklogmode.summary" = "פיקוח כמה איטי טיק אזהרות נרשמו. אפשרויות: OFF, אשמה, קצרה, פרטים."
-"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.impact" = "נכים כברירת מחדל לאחר שתאפשר והסוכן מצורף, אין באפשרותו להתנתק מבלי לחדש את התוספת. JVM. אין שינויים רשומים בשחרור הנוכחי."
-"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.summary" = "מאפשר את האופציונלי ByteBuddy סוכן קוד עבור כלי ריצה מתקדם."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.impact" = "מושבת כברירת מחדל. תכונות NMS התלויות בגרסה עדיין יכולות לחבר מכשור משלהן בעת הפעלתן. כל מכשור שחובר נשאר פעיל עד להפעלה מחדש של ה-JVM."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.summary" = "מחבר את סוכן ByteBuddy הכללי של React כבר בזמן האתחול."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.value.impact" = "ערכים גבוהים יותר יכולים להגדיל את ההשפעה של פריטים יקרים בחישובים."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.value.summary" = "ערך חומרי כוונון המשמש לניתוח מתכון / ערכי."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.verbose.impact" = "שימושי לפתרון בעיות, אבל יכול ליצור הרבה רעשי לב."
@@ -2576,3 +2749,125 @@
 "config.documentation.annotation.art.arcane.react.core.controller.incidentcontroller.field.persistenceenabled.summary" = "שומר את היסטוריית התקריות המובנית בקובץ plugins/React/incidents.json."
 "config.documentation.annotation.art.arcane.react.core.controller.incidentcontroller.field.retention.impact" = "ערכים גבוהים יותר שומרים יותר היסטוריה ומשתמשים ביותר זיכרון ושטח דיסק."
 "config.documentation.annotation.art.arcane.react.core.controller.incidentcontroller.field.retention.summary" = "המספר המרבי של אירועי תקרית מובנים שיישמרו."
+
+"language.menu.your_language" = "השפה שלך"
+"language.menu.reset_your_language" = "איפוס השפה שלך"
+"language.menu.server_default" = "ברירת המחדל של השרת"
+"language.menu.edit_messages" = "עריכת הודעות השפה"
+"language.menu.use_server_default" = "שימוש בברירת המחדל של השרת"
+"language.menu.current" = "נוכחית: {locale}"
+"language.menu.current_with_personal" = "נוכחית: {locale} (שלך: {personal})"
+"language.menu.your_description" = "שנה רק את ההודעות שאתה רואה."
+"language.menu.reset_description" = "השתמש בשפת ברירת המחדל של השרת."
+"language.menu.server_description" = "שנה את שפת ברירת המחדל של השרת."
+"language.menu.edit_description" = "פתח את עורך ההודעות לכל שפה."
+"language.menu.select_description" = "לחץ כדי לבחור בשפה זו."
+"language.menu.remove_personal_description" = "הסר את בחירת השפה האישית שלך."
+"language.menu.no_controls" = "אין לך גישה להגדרות שפה."
+"language.menu.command" = "פקודה: {command}"
+"language.menu.selected" = "נבחר"
+"language.menu.all-volmit-plugins" = "כל התוספים של Volmit"
+"language.error.stopping" = "בחירת שפה אינה זמינה בזמן כיבוי התוסף."
+"language.error.editor-player-only" = "פתח את עורך השפה במשחק."
+"language.usage.editor" = "שימוש: /{command} language server edit [locale]"
+"language.usage.selection" = "שימוש: /{command} language self [locale|reset] or server [locale]"
+"language.usage.volmit-selection" = "שימוש: /volmit plugins languages [locale]"
+"language.error.no-providers" = "אין ספקי שפה זמינים של Volmit."
+"language.error.numeric-page" = "הזן מספר עמוד עבור רשימת השפות."
+"language.error.personal-player-only" = "יש לבחור העדפות שפה של שחקן במשחק."
+"language.error.personal-permission" = "אין לך רשות לבחור את השפה שלך."
+"language.error.plugin-personal-permission" = "אין לך הרשאה לבחור את השפה שלך עבור {plugin}."
+"language.error.plugin-server-permission" = "אין לך הרשאה לשנות את שפת השרת עבור {plugin}."
+"language.error.server-locale-required" = "בחר קוד שפה, כגון en_US, לשפת ברירת המחדל של השרת."
+"language.error.unavailable-for-all" = "השפה {locale} אינה זמינה בכל התוספים שנבחרו."
+"language.selection.preparing" = "מכין את השפה {locale} עבור {target}..."
+"language.selection.save-failed" = "{plugin}: לא ניתן לשמור את בחירת השפה; בדוק את קונסולת השרת."
+"language.selection.english-fallback" = "{plugin}: {locale} אינו זמין; שימוש באנגלית (en_US)."
+"language.selection.personal-selected" = "{plugin}: השפה שלך עכשיו {locale}."
+"language.selection.server-selected" = "{plugin}: שפת השרת עכשיו {locale}."
+"language.selection.server-default-selected" = "{plugin}: השפה שלך מוגדרת כעת לפי ברירת המחדל של השרת."
+"language.editor.section.languages" = "שפות"
+"language.editor.section.search" = "חיפוש"
+"language.editor.section.search-title" = "{locale} / חיפוש"
+"language.editor.section.group-title" = "{locale} / {group}"
+"language.editor.loading" = "טוען הודעות בשפה {locale}..."
+"language.editor.prompt.search" = "חפש מפתחות הודעות או טקסט. הקלד cancel כדי לחזור."
+"language.editor.prompt.value" = "הקלד בצ'אט ערך חדש עבור {key}."
+"language.editor.prompt.current" = "ערך נוכחי: {value}"
+"language.editor.prompt.variables" = "משתנים: {variables}"
+"language.editor.prompt.guidance" = "השתמש ב-\\n למעבר לשורה חדשה, ב-\\\\ לקו נטוי הפוך, או הקלד cancel כדי לחזור."
+"language.editor.input.expired" = "פג תוקף הקלט בעורך השפה."
+"language.editor.input.too-long" = "הקלט בעורך יכול להכיל לכל היותר {maximum} תווים."
+"language.editor.input.unable-to-save" = "לא ניתן לשמור: {reason}"
+"language.editor.navigation.back" = "&eחזרה&r"
+"language.editor.navigation.close" = "&cסגור&r"
+"language.editor.navigation.previous-page" = "&eהעמוד הקודם&r"
+"language.editor.navigation.next-page" = "&eדף הבא&r"
+"language.editor.search.messages" = "חיפוש הודעות"
+"language.editor.search.messages-lore" = "לחץ כדי לחפש בכל ההודעות."
+"language.editor.search.clear" = "ניקוי החיפוש"
+"language.editor.message.current-value" = "&7ערך נוכחי:&r"
+"language.editor.message.variables" = "&8{variables}&r"
+"language.editor.message.edit-plural" = "&7לחץ כדי לערוך צורת רבים.&r"
+"language.editor.message.edit-lines" = "&7לחץ כדי לערוך שורות נפרדות.&r"
+"language.editor.message.edit-chat" = "&7לחץ לערוך בצ'אט.&r"
+"language.editor.locale.open" = "&8לחץ לפתוח את השפה.&r"
+"language.editor.category.message-count" = "&7{count} הודעות&r"
+"language.editor.category.open" = "&8לחץ לפתוח קטגוריה זו.&r"
+"language.editor.error.no-permission" = "אין לך הרשאה לערוך את השפות של {plugin}."
+"language.editor.error.unable-to-edit" = "בלתי אפשרי לערוך: {reason}"
+"language.editor.saved.summary" = "{locale} נשמרה. בחירות השפה לא השתנו."
+"language.editor.saved.change" = "{key}: הערך “{before}” שונה ל-“{after}”."
+"language.editor.part.line" = "שורה {line}"
+"language.editor.value.none" = "ללא"
+"language.editor.value.empty" = "(ריק)"
+"test.map.megamap_capacity_fail" = "חישוב היכולות של Megamap שגוי:"
+"test.map.megamap_capacity_pass" = "יכולות Megamap מחשבות את העמודות, השורות ורמת הפירוט לפי הרשת."
+"test.map.megamap_viewport_fail" = "הגאומטריה של אזור התצוגה ב-Megamap שגויה:"
+"test.map.megamap_viewport_pass" = "קירות מסתגלים מקבלים משטח ציור לוגי אחד, וקירות מוגדלים נשארים אחידים עם שוליים לשמירת יחס התמונה."
+"test.map.megamap_defects_fail" = "לא אובחנו קירות מפות פגומים:"
+"test.map.megamap_defects_pass" = "קירות מפות לא אחידים, מסובבים, משוכפלים ומעורבים מדווחים כולם על סיבה."
+"test.map.megamap_expansion_fail" = "מנועי הציור נכשלו בקיר מורחב:"
+"test.map.renderer_containment_skip" = "לא ניתן היה לבדוק אף מנוע ציור ללא ממשק גרפי."
+"test.map.megamap_expansion_pass" = "כל מנוע ציור ממלא כל מסגרת בקירות בגודל 1x1, 2x1, 1x2, 1x3, 2x2, 3x1, 3x3 ו-5x3."
+"test.map.palette_fail" = "צבעי ערכת הנושא מתמזגים בלוח הצבעים של המפה:"
+"test.map.palette_pass" = "כל צבע בערכת הנושא תואם בדיוק לערך נפרד בלוח הצבעים של המפה."
+"test.map.clip_fail" = "הציור חרג ממלבן החיתוך הפעיל."
+"test.map.clip_blank" = "בדיקת החיתוך לא ציירה דבר בתוך האזור שלה."
+"test.map.clip_restore_fail" = "popClip לא שחזר את מלבן החיתוך הקודם."
+"test.map.clip_pass" = "קווים, טקסט ומילויים נשארו בתוך מלבן החיתוך שנוסף למחסנית."
+"test.map.text_bounds_fail" = "הטקסט המותאם חרג ממגבלת הרוחב שלו."
+"test.map.text_bounds_pass" = "טקסט מותאם אינו חורג מהמגבלה שלו בכל קנה מידה של הממשק."
+"test.map.renderer_containment_fail" = "מנועי הציור ציירו מחוץ למלבן החיתוך שלהם:"
+"test.map.renderer_containment_pass" = "כל מנוע ציור נשאר בתוך מלבן החיתוך שנוסף למחסנית."
+"test.map.flush_fidelity_fail" = "העברת הנתונים מהמאגר לא שחזרה את משטח הציור המורכב:"
+"test.map.flush_fidelity_pass" = "כל פיקסל שהועבר תואם למשטח הציור המורכב בגדלים 1x1, 2x2 ו-3x3."
+"test.map.flush_stability_fail" = "ציור חוזר של תוכן זהה עדיין כתב למשטח הציור:"
+"test.map.flush_stability_pass" = "ציור חוזר של תוכן זהה אינו כותב אף פיקסל למשטח הציור."
+"test.map.frame_wall_disabled" = "ריצוף Megamap מושבת; מסגרות סמוכות אינן יוצרות קיר."
+"test.map.frame_wall_no_worlds" = "אין עולמות טעונים; לא ניתן לבנות קיר מסגרות חפצים בעולם פעיל."
+"test.map.frame_wall_setup_failed" = "לא ניתן היה לבנות קיר מסגרות חפצים בעולם פעיל:"
+"test.map.frame_wall_no_space" = "אין עמודת אוויר פנויה ליד נקודת ההופעה לבניית קיר מפות משתי מסגרות."
+"test.map.frame_wall_probe_failed" = "בדיקת קיר מסגרות החפצים בעולם הפעיל נכשלה:"
+"test.map.frame_wall_pass" = "מפות React משוכפלות במסגרות סמוכות קיבלו מזהים נפרדים וזוהו כקיר בן שני אריחים."
+"test.map.frame_wall_fail" = "מסגרות חפצים סמוכות לא התגבשו לקיר Megamap בן שני אריחים:"
+"command.description.language" = "בחירת השפה שלך או שפת השרת"
+"debug.error.missing-permission" = "חסרה הרשאה: {permission}"
+"debug.error.already-preparing" = "דוח אבחון עבור {plugin} כבר נמצא בהכנה."
+"debug.error.already-preparing-short" = "דוח אבחון כבר נמצא בהכנה."
+"debug.preparing" = "מכין דוח אבחון עבור {plugin}..."
+"debug.error.schedule-failed" = "לא ניתן לתזמן את יצירת דוח האבחון."
+"debug.error.provider-closed" = "שירות האבחון סגור."
+"debug.error.closed-before-capture" = "שירות האבחון נסגר לפני איסוף הדוח."
+"debug.error.writer-schedule-failed" = "לא ניתן לתזמן את כתיבת דוח האבחון."
+"debug.error.capture-failed" = "לא ניתן לאסוף את דוח האבחון. יש לבדוק את מסוף השרת."
+"debug.error.closed-before-write" = "שירות האבחון נסגר לפני כתיבת הדוח."
+"debug.error.write-failed" = "לא ניתן לכתוב את דוח האבחון. יש לבדוק את מסוף השרת."
+"debug.upload.interrupted" = "העלאת דוח האבחון נקטעה. הדוח המקומי נשמר."
+"debug.upload.failed" = "העלאת דוח האבחון נכשלה. הדוח המקומי נשמר."
+"debug.upload.completed" = "הועלה בשם VolmitSoftware - {plugin} - v{version}."
+"debug.action.open" = "פתיחה: {url}"
+"debug.action.open-description" = "פתיחת דוח האבחון שהועלה."
+"debug.saved" = "דוח האבחון של {plugin} נשמר בנתיב {path}."
+"debug.action.copy-path" = "העתקת הנתיב המקומי"
+"debug.action.copy-path-description" = "העתקת הנתיב המקומי של הדוח."

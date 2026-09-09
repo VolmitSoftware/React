@@ -1,6 +1,179 @@
+# React dili: tr_TR
+#
+# Bu dosyayı doğrudan languages klasöründe veya /react language server edit komutuyla düzenleyin.
+# React dil dosyalarını yalnızca eksik olduklarında oluşturur veya indirir. Yerel değişiklikler korunur.
+# Eksik iletiler için yerleşik İngilizce katalog kullanılır.
+#
+# Biçimlendirme
+#   Sohbet iletileri MiniMessage kullanır: <red>metin</red>, <bold>metin</bold>.
+#   RGB renkleri için <color:#RRGGBB>metin</color> kullanılır. Etiketleri açılış sırasının tersine kapatın.
+#   Paylaşılan language.* düzenleyici iletileri &e ve &r gibi & işaretiyle başlayan klasik renk kodlarını da destekler.
+#   Diğer iletiler & işaretiyle başlayan renk kodlarını dönüştürmez. TOML tırnak ve kaçış kurallarına uyun.
+#   Yeni satır için tırnak içindeki TOML metinlerinde \n kullanın. {{ ve }} çift süslü ayraçları, süslü ayraçları olduğu gibi gösterir.
+#   renderer.* ve config.documentation.annotation.* değerleri düz metindir.
+#   test.* değerleri, MiniMessage kullanan test.result.* iletileri dışında düz metindir.
+#
+# Yer tutucular
+# Her ileti yalnızca kendi yer tutucularını kabul eder. Yer tutucu adlarını değiştirmeyin.
+# Yer tutucuları MiniMessage etiketlerinin dışında, ileti metninde kullanın.
+#   {action}          Eylem adı veya renk ayarlama yönü
+#   {actions}         Kuyruktaki eylem sayısı veya hariç tutulan eylem adları listesi
+#   {active}          Etkin özellik veya ince ayar sayısı
+#   {actor}           Değişikliği yapan web kullanıcısı
+#   {added}           Etkinleştirmeden sonra özelliğin etkin kayıt listesine yeniden katılıp katılmadığı
+#   {after}           Değişiklikten sonraki yapılandırma değeri, dil iletisi veya yığın bellek kullanımı
+#   {age}             Entegrasyon verisinin saniye cinsinden yaşı
+#   {amount}          Verilecek eşya sayısı
+#   {architecture}    CPU mimarisi
+#   {argument}        Beklenmeyen komut argümanı
+#   {available}       Kullanılabilir NMS köprü erişimlerinin sayısı
+#   {average}         Ortalama TPS veya tik başına milisaniye
+#   {avg_mspt}        Bir yük testi turunda tik başına ortalama milisaniye
+#   {avg_tps}         Bir yük testi turunda saniye başına ortalama tik sayısı
+#   {bar}             Biçimlendirilmiş performans testi puan çubuğu
+#   {before}          Değişiklikten önceki yapılandırma değeri, dil iletisi veya yığın bellek kullanımı
+#   {checked}         Kontrol edilen örnekleyici sayısı
+#   {chunks}          Bir eylemden etkilenen parça sayısı
+#   {code}            Web eşleştirme kodu
+#   {command}         Komut yolu
+#   {count}           Kayıt, modül, değişiklik veya test bulgusu sayısı
+#   {current}         Geçerli sayfa numarası
+#   {delta_heap}      React ve başlangıç ölçümü arasındaki son yığın bellek kullanımı farkı, MB cinsinden
+#   {delta_mspt}      React ve başlangıç ölçümü arasındaki ortalama tik süresi farkı, ms cinsinden
+#   {delta_tps}       React ve başlangıç ölçümü arasındaki ortalama TPS farkı
+#   {detail}          Köprü, entegrasyon, eylem veya test tanılama ayrıntıları
+#   {dimensions}      Algılanan harita duvarı ızgara boyutları
+#   {direction}       Seçili rengin tonunu döndürme yönü
+#   {distance}        İstenen görüş veya simülasyon mesafesi
+#   {duration}        Geçen süre; yük testi başlangıç iletilerinde saniye kullanılır
+#   {enabled}         Etkinlik durumu veya etkin modül sayısı
+#   {entities}        Bir eylemden etkilenen varlık sayısı
+#   {entry}           Entegrasyon zaman çizelgesi kaydı
+#   {exceptions}      Bir yük testi turunda kaydedilen React istisnaları
+#   {fail}            Başarısız kontrol sayısı
+#   {file}            Yapılandırma, dil veya eklenti API dosyasının adı
+#   {fingerprint}     Sunucu veya web erişim belirtecinin parmak izi
+#   {finite}          Sonlu değer döndüren örnekleyici sayısı
+#   {frames}          Etkin harita duvarındaki eşya çerçevesi sayısı
+#   {free}            Boş fiziksel veya sanal bellek
+#   {freed}           Çöp toplama ile geri kazanılan yığın bellek
+#   {from}            Geçerli sayfadaki ilk kayıt numarası
+#   {grid}            Harita duvarı ızgara boyutları
+#   {ground_y}        Yerçekimi testinin zemin yüksekliği
+#   {group}           İzleyici, örnekleyici, harita, yapılandırma veya dil iletisi grubu
+#   {growth}          Yük testi sırasında yığın bellek artışı, MB cinsinden
+#   {health}          Entegrasyonun sağlık durumu
+#   {heap_end}        Bir yük testi turunun sonundaki yığın bellek kullanımı, MB cinsinden
+#   {heap_start}      Bir yük testi turunun başındaki yığın bellek kullanımı, MB cinsinden
+#   {heartbeat}       Entegrasyonun son canlılık sinyalinden bu yana geçen süre
+#   {height}          Test tuvalinin piksel cinsinden yüksekliği
+#   {hoppers}         Normalleştirilen huni sayısı
+#   {id}              Köprü erişimi, örnekleyici, harita, eylem, paket veya erişim belirtecinin kimliği
+#   {impact}          Yapılandırma etkisinin açıklaması veya eklenti maliyeti, ms/s cinsinden
+#   {incident}        Geliştirici testlerinden çıkarılan özyinelemeli olay eyleminin kimliği
+#   {index}           Geçerli geliştirici testi adımının numarası
+#   {invalid}         Geçersiz ölçüm döndüren örnekleyici sayısı
+#   {issued_at}       Web erişim belirtecinin oluşturulma zamanı
+#   {item}            Eşya adı veya kimliği
+#   {items}           Birleştirilen eşya varlığı sayısı
+#   {key}             Komut parametresi anahtarı, yapılandırma anahtarı veya dil iletisi kimliği
+#   {label}           Performans testi, ölçüm, ayar, komut veya web erişim belirteci etiketi
+#   {line}            Çok satırlı iletide düzenlenen satırın numarası
+#   {lines}           Taranan sunucu günlüğü satırlarının sayısı
+#   {loaded}          Ön yükleme sırasında yeni yüklenen parça sayısı
+#   {locale}          Görüntülenen, seçilen veya düzenlenen dil kodu
+#   {matched}         Otomatik kaydetme durumu testin başlangıç durumuyla eşleşen dünyalar
+#   {max_tick}        Yük testi sırasında gözlenen en uzun tik aralığı, ms cinsinden
+#   {maximum}         Azami eşya sayısı, tik süresi eşiği veya düzenleyici girdi uzunluğu
+#   {message}         Tamamlanan eylemin özeti veya entegrasyon durum iletisi
+#   {metrics}         Bir eklenti API paketi tarafından sağlanan ölçüm sayısı
+#   {minecraft}       Minecraft sürümü
+#   {minimum}         Kabul edilebilir en düşük TPS
+#   {missing}         Kayıt listesinde eksik olan zorunlu örnekleyici sayısı
+#   {mode}            Seçilen oyun veya yetenek modu
+#   {model}           CPU modeli
+#   {name}            Performans testi, modül, çizici veya test kontrolünün adı
+#   {note}            Sunucu günlüğünün taranmama nedeni
+#   {offenders}       Sonlu olmayan değer döndüren örnekleyici sayısı
+#   {operations}      Dakikadaki yetenek geri çağrısı işlem sayısı
+#   {options}         Kabul edilen yapılandırma değerleri
+#   {p95}             Yük testi sırasında tik süresinin 95. yüzdelik değeri, ms cinsinden
+#   {parameter}       Komut parametresinin adı
+#   {parameters}      Yok sayılan komut parametreleri
+#   {pass}            Başarılı kontrol sayısı
+#   {path}            Yapılandırma anahtarı yolu veya rapor dosyası yolu
+#   {percent}         Renk ayarlama yüzdesi veya eklenti etki payı
+#   {permission}      Gerekli izin düğümü
+#   {personal}        Oyuncunun seçtiği dil kodu
+#   {phase}           Test edilen özellik yaşam döngüsü aşaması
+#   {pixels}          Bir harita testinde çizilen boş olmayan piksel sayısı
+#   {platform}        İşletim sistemi veya Minecraft sunucu platformu
+#   {players}         Yük testindeki sentetik oyuncu sayısı
+#   {plugin}          Eklenti adı
+#   {process_load}    Sunucu işleminin CPU yükü
+#   {processors}      Kullanılabilir CPU işlemcisi sayısı
+#   {profile}         React yapılandırma profilinin adı
+#   {protocol}        Entegrasyon protokol sürümü
+#   {radius}          Harita veya geliştirici testi eyleminin parça cinsinden yarıçapı
+#   {range}           Kabul edilen görüş veya simülasyon mesafesi aralığı
+#   {rate}            Yapılandırılan mahsul büyümesini hızlandırma oranı
+#   {rating}          Biçimlendirilmiş performans testi derecesi
+#   {react_errors}    Sunucu günlüğünde bulunan React hata satırlarının sayısı
+#   {reason}          Hata, ret veya kullanılamama durumunun açıklaması
+#   {registered}      Kayıtlı modül sayısı
+#   {removed_first}   İlk devre dışı bırakmanın özelliği etkin kayıt listesinden çıkarıp çıkarmadığı
+#   {removed_second}  Tekrarlanan devre dışı bırakmanın özelliği etkin kayıt listesinden çıkarıp çıkarmadığı
+#   {renderer}        Harita çizicisinin adı veya kimliği
+#   {renderers}       Kimlikleri boş olan harita çizicilerinin listesi
+#   {role}            Web erişim rolü: viewer, operator veya admin
+#   {sampler}         Örnekleyici adı veya kimliği
+#   {samplers}        Entegrasyon örnekleyicilerinin veya başarısız örnekleyicilerin listesi
+#   {scope}           Harita kapsamı veya mesafe ayarının kapsamı
+#   {score}           Performans testi puanı
+#   {seconds}         Geri sayım veya yük testi süresi, saniye cinsinden
+#   {section}         Yapılandırma bölümünün adı
+#   {server}          Minecraft sunucu uygulaması ve sürümü
+#   {shown}           Görüntülenen satırların sayısı
+#   {since_run}       Geçerli testin başlangıcından bu yana bildirilen hatalar
+#   {size}            Harita duvarının azami veya etkin boyutları
+#   {skip}            Atlanan kontrol sayısı
+#   {spawn_y}         Yerçekimi testi bloğunun oluşturulduğu yükseklik
+#   {state}           Eylemin veya eklenti API paketinin durumu
+#   {status}          Entegrasyon veya yapılandırma durum etiketi
+#   {subject}         Yapılandırma yardımında açıklanan modül veya ayar
+#   {subsystem}       Test alt sisteminin adı
+#   {summary}         Eylem denetimi özeti
+#   {system_load}     Tüm sistemin CPU yükü
+#   {target}          İşlemin hedeflediği dünya, oyuncu, eklenti, ayar veya eklenti grubu
+#   {threading}       Sunucunun iş parçacığı çalışma modu
+#   {tick}            Donma eşiğini aşan tik süresi, ms cinsinden
+#   {tick_crashes}    Sunucu günlüğünde bulunan tik çökmesi satırlarının sayısı
+#   {tier}            Olay müdahale planının önem derecesi
+#   {timing}          Dakika başına yetenek geri çağrısı süresi, milisaniye cinsinden
+#   {to}              Geçerli sayfadaki son kayıt numarası
+#   {total}           İletideki toplam kayıt, modül, dünya, kontrol veya bellek miktarı
+#   {type}            Komut parametresi, yapılandırma değeri, harita veya mesafe türü
+#   {unavailable}     Kullanılamayan NMS köprü erişimlerinin sayısı
+#   {unit}            Pasta grafik toplamının birim etiketi
+#   {unknown}         Geliştirici testlerinden çıkarılan bilinmeyen eylemin kimliği
+#   {unreadable}      Okunamayan örnekleyici sayısı
+#   {uptime}          Sunucu makinesinin işletim sistemi çalışma süresi
+#   {url}             Yüklenen tanılama raporunun URL adresi
+#   {usage}           Komut kullanım söz dizimi
+#   {used}            Kullanılan fiziksel, sanal veya yığın bellek
+#   {value}           Biçimlendirilmiş ayar, ölçüm veya donanım ayrıntısı
+#   {values}          Geliştirici testi raporunda listelenen örneklenmiş değerler
+#   {variables}       Düzenlenen iletinin kabul ettiği yer tutucu adları
+#   {vendor}          Java sağlayıcısı
+#   {verdict}         Genel test sonucu
+#   {version}         React, Java veya platform sürümü
+#   {warmed}          Önceden yüklenen parça sayısı
+#   {warn}            Uyarı veren kontrol sayısı
+#   {width}           Test tuvalinin piksel cinsinden genişliği
+#   {world}           Minecraft dünyasının adı
+
 "command.description.debugdump" = "Tanılama raporu oluştur ve isteğe bağlı olarak yükle"
 "command.parameter.debugdump_upload" = "Raporu mclo.gs üzerine yükle"
-# Complete bundled translation. Code-owned English remains the canonical fallback.
 "action.collect_garbage.no_reclaim" = "Garbage koleksiyonu hemen heap reclaimed ile tamamlandı ({used} Kullanım) {duration}"
 "action.collect_garbage.reclaimed" = "Freed {freed} ({before} -> {after}) {duration}"
 "action.completed" = "{action}, {duration} içinde tamamlandı"
@@ -911,8 +1084,8 @@
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.description" = "Mob Stacking özelliği için yapılandırın. Bu özellik sürekli olarak sunucu davranışını izler ve runtime sırasında bekçileri uygular."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.batchintervalms.impact" = "Daha düşük değerler taze bir şekilde dağınık çeteler daha erken daha fazla zamanlama maliyetinde; yüksek değer toplu geçiş başına daha fazla birleşme çalışması."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.batchintervalms.summary" = "Sırada chunk'lar'in nasıl bir dizi olarak yığılmasına, milisaniyede işlenmesi."
-"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.impact" = "Bu davranışı uygulamak mümkün; bu yolu aktif tutmak için devre dışı bırakmak."
-"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.summary" = "mob yığınının özel isimleri geçerli olup olmadığını kontroller."
+"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.impact" = "Gloss bu ayardan bağımsız olarak yığınlardaki yaratık sayılarını alır ve birleşik varlık görünümü etkin olduğunda bu görünümü yönetir."
+"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.summary" = "Gloss varlık görünümleri kullanılamadığında yaratık yığınlarının adlarını standart ad gösterimiyle gösterir."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.maxhealth.impact" = "Yüksek değerler müdahaleden önce daha fazla bağlantıya izin verir; düşük değerler daha agresif hale getirir."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.maxhealth.summary" = "mob Chip tarafından izin verilen maksimum sağlık."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.maxstacksize.impact" = "Yüksek değerler müdahaleden önce daha fazla bağlantıya izin verir; düşük değerler daha agresif hale getirir."
@@ -1333,8 +1506,8 @@
 "config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.maxdiffmessagesperfile.summary" = "Değiştirilen dosyaya gönderilen en önemli seviye diff mesajların sayısı."
 "config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.notifyoperators.impact" = "Sadece konsol logları istiyorsanız ve oyun içi bildirimler istemiyorsanız."
 "config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.notifyoperators.summary" = "Sıcak yük değişim summaryları online operatörlere gönderin."
-"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.impact" = "Alt değerler süreci dosya sistemi olayları er teslim etti; işletim sistemi teslimat gecikme süresi daha uzun olabilir."
-"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.summary" = "Sepiyer tarafından milisaniyelerde kullanılan Queue-drain aralığı."
+"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.impact" = "Daha düşük değerler alınan olayları daha erken algılar; otomatik değişiklikler yine en fazla üç saniyede bir toplu olarak uygulanır."
+"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.summary" = "Dosya sistemi olaylarını yoklama aralığı (milisaniye)."
 "config.documentation.annotation.art.arcane.react.core.controller.historycontroller.description" = "React örnekleyicilerini bir kez yakalar, sıkıştırılmış geçmiş telemetrisini saklar ve sınırlandırılmış zaman aralığı sorgularını işler."
 "config.documentation.annotation.art.arcane.react.core.controller.historycontroller.field.compressionlevel.impact" = "Daha yüksek değerler, yazma sırasında ek CPU yükü karşılığında disk kullanımını azaltabilir."
 "config.documentation.annotation.art.arcane.react.core.controller.historycontroller.field.compressionlevel.summary" = "Yalnızca kodlanmış bir metrik sütununu küçülttüğünde kullanılan DEFLATE düzeyi."
@@ -1412,7 +1585,7 @@
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.debug.summary" = "Enables debug log ve ek tanılar."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsecretsenabled.impact" = "Varsayılan olarak devre dışıdır. Bağımlılıklar mevcut olduğunda Iris/Adapt gizli paketlerine izin vermek için etkinleştirin."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsecretsenabled.summary" = "Enables eklentili gizli entegrasyon özellikleri."
-"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.impact" = "Kod sahibi İngilizce geri çekilmeye devam ediyor; Seçmeli TOML Overrides is installed from overrides are installed from languages/overrides."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.impact" = "Koda gömülü İngilizce yedek dil olarak kullanılmaya devam eder; düzenlenebilir TOML katalogları languages klasöründen yüklenir."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.summary" = "Locale için kullanılır React oyuncu ve operatör arabirimleri."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.impact" = "React'in bStats gönderimlerini tamamen kapatmak için false yapın. Yeniden başlatma gerektirir."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.summary" = "React için anonim bStats kullanım raporlamasını etkinleştirir."
@@ -1422,8 +1595,8 @@
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.priority.summary" = "Entity önceliği modeli, birden çok React alt sistemler."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.slowticklogmode.impact" = "OFF yavaş tik uyarıları bastırır. BLAME muhtemelen eklenti / iş yükü sorumluluğunu vurguluyor. SHORT yalnızca minimal zamanlama kayıtları yapar. DETAILED tam teşhis veri yükü'i kaydeder."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.slowticklogmode.summary" = "Hızlı tik uyarılarının kaydedildiğini kontrol eder. Seçenekler: Kaldır, Sıkıştır, Kısa, Ayrıntılı."
-"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.impact" = "Varsayılan olarak ayırt edilebilir. etkinleştirilen ve ajan bağlanırsa, yeniden başlatmadan silinemez. JVM. Mevcut sürümde hiçbir dönüşüm kaydedilmiyor."
-"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.summary" = "Enables the optional ByteBuddy İleri runtime enstrümanı için kodlayıcı ajan."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.impact" = "Varsayılan olarak devre dışıdır. Sürüme özgü NMS özellikleri etkinleştirildiğinde kendi enstrümantasyonlarını bağlamaya devam edebilir. Bağlanan enstrümantasyon JVM yeniden başlatılana kadar kalır."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.summary" = "React'in genel ByteBuddy aracısını başlangıç sırasında bağlar."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.value.impact" = "Yüksek değerler, hesaplamalarda pahalı maddelerin etkisini artırabilir."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.value.summary" = "Donanım / değer analizi için kullanılan malzeme değeri ayar."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.verbose.impact" = "Sorunları gidermek için kullanışlı ama çok fazla günlük gürültü oluşturabilir."
@@ -2576,3 +2749,125 @@
 "config.documentation.annotation.art.arcane.react.core.controller.incidentcontroller.field.persistenceenabled.summary" = "Yapılandırılmış olay geçmişini plugins/React/incidents.json dosyasında saklar."
 "config.documentation.annotation.art.arcane.react.core.controller.incidentcontroller.field.retention.impact" = "Daha yüksek değerler daha fazla geçmişi korur ve daha fazla bellek ile disk alanı kullanır."
 "config.documentation.annotation.art.arcane.react.core.controller.incidentcontroller.field.retention.summary" = "Saklanan yapılandırılmış olayların azami sayısı."
+
+"language.menu.your_language" = "Diliniz"
+"language.menu.reset_your_language" = "Dil seçiminizi sıfırla"
+"language.menu.server_default" = "Sunucu varsayılanı"
+"language.menu.edit_messages" = "Dil mesajlarını düzenle"
+"language.menu.use_server_default" = "Sunucu varsayılanını kullan"
+"language.menu.current" = "Geçerli: {locale}"
+"language.menu.current_with_personal" = "Geçerli: {locale} (Sizin: {personal})"
+"language.menu.your_description" = "Yalnızca gördüğünüz mesajları değiştirin."
+"language.menu.reset_description" = "Sunucunun varsayılan dilini kullanın."
+"language.menu.server_description" = "Sunucunun varsayılan dilini değiştirin."
+"language.menu.edit_description" = "Her dil için mesaj düzenleyicisini açın."
+"language.menu.select_description" = "Bu dili seçmek için tıklayın."
+"language.menu.remove_personal_description" = "Kişisel dil seçiminizi kaldırın."
+"language.menu.no_controls" = "Kullanabileceğiniz dil ayarı yok."
+"language.menu.command" = "Komut: {command}"
+"language.menu.selected" = "seçili"
+"language.menu.all-volmit-plugins" = "tüm Volmit eklentileri"
+"language.error.stopping" = "Eklenti durdurulurken dil seçimi kullanılamaz."
+"language.error.editor-player-only" = "Dil düzenleyicisini oyun içinde açın."
+"language.usage.editor" = "Kullanımı: /{command} language server edit [locale]"
+"language.usage.selection" = "Kullanımı: /{command} language self [locale|reset] or server [locale]"
+"language.usage.volmit-selection" = "Kullanımı: /volmit plugins languages [locale]"
+"language.error.no-providers" = "Kullanılabilir Volmit dil sağlayıcısı yok."
+"language.error.numeric-page" = "Dil listesi için bir sayfa numarası girin."
+"language.error.personal-player-only" = "Oyuncu dili tercihleri oyunda seçilmelidir."
+"language.error.personal-permission" = "Dilinizi seçmek için izniniz yok."
+"language.error.plugin-personal-permission" = "{plugin} için dilinizi seçme izniniz yok."
+"language.error.plugin-server-permission" = "{plugin} için sunucu dilini değiştirme izniniz yok."
+"language.error.server-locale-required" = "Sunucu varsayılanı için en_US gibi bir dil kodu seçin."
+"language.error.unavailable-for-all" = "{locale} dili seçilen eklentilerin tümü için kullanılamıyor."
+"language.selection.preparing" = "{target} için {locale} dili hazırlanıyor..."
+"language.selection.save-failed" = "{plugin}: dil seçimi kaydedilemedi. Sunucu konsolunu kontrol edin."
+"language.selection.english-fallback" = "{plugin}: {locale} kullanılamıyor. İngilizce (en_US) kullanılıyor."
+"language.selection.personal-selected" = "{plugin}: Diliniz şimdi {locale}."
+"language.selection.server-selected" = "{plugin}: sunucu dili şimdi {locale}."
+"language.selection.server-default-selected" = "{plugin}: artık sunucunun varsayılan dilini kullanıyorsunuz."
+"language.editor.section.languages" = "Diller"
+"language.editor.section.search" = "Arama"
+"language.editor.section.search-title" = "{locale} / Arama"
+"language.editor.section.group-title" = "{locale} / {group}"
+"language.editor.loading" = "{locale} mesajları yükleniyor..."
+"language.editor.prompt.search" = "Mesaj anahtarlarında veya metinlerinde arayın. Geri dönmek için cancel yazın."
+"language.editor.prompt.value" = "Sohbete {key} için yeni bir değer yazın."
+"language.editor.prompt.current" = "Geçerli değer: {value}"
+"language.editor.prompt.variables" = "Değişkenler: {variables}"
+"language.editor.prompt.guidance" = "Yeni satır için \\n, ters eğik çizgi için \\\\ kullanın. Geri dönmek için cancel yazın."
+"language.editor.input.expired" = "Dil editörü girişi sona erdi."
+"language.editor.input.too-long" = "Düzenleyici girdisi en fazla {maximum} karakter olabilir."
+"language.editor.input.unable-to-save" = "Kaydedilemedi: {reason}"
+"language.editor.navigation.back" = "&eGeri&r"
+"language.editor.navigation.close" = "&cKapat&r"
+"language.editor.navigation.previous-page" = "&eÖnceki Sayfa&r"
+"language.editor.navigation.next-page" = "&eSonraki sayfa&r"
+"language.editor.search.messages" = "Mesajlarda ara"
+"language.editor.search.messages-lore" = "Tüm mesajları aramak için tıklayın."
+"language.editor.search.clear" = "Aramayı temizle"
+"language.editor.message.current-value" = "&7Mevcut Değer:&r"
+"language.editor.message.variables" = "&8{variables}&r"
+"language.editor.message.edit-plural" = "&7Çoğul formu düzenlemek için tıklayın.&r"
+"language.editor.message.edit-lines" = "&7Satırları tek tek düzenlemek için tıklayın.&r"
+"language.editor.message.edit-chat" = "&7Sohbette düzenlemek için tıklayın.&r"
+"language.editor.locale.open" = "&8Bu dili açmak için tıklayın.&r"
+"language.editor.category.message-count" = "&7{count} mesaj&r"
+"language.editor.category.open" = "&8Bu kategoriyi açmak için tıklayın.&r"
+"language.editor.error.no-permission" = "{plugin} dillerini düzenleme izniniz yok."
+"language.editor.error.unable-to-edit" = "Değiştirilemez: {reason}"
+"language.editor.saved.summary" = "{locale} kaydedildi. Dil seçimleri değişmedi."
+"language.editor.saved.change" = "{key}: “{before}” değeri “{after}” olarak değiştirildi."
+"language.editor.part.line" = "Satır {line}"
+"language.editor.value.none" = "Hiçbir şey yok"
+"language.editor.value.empty" = "(boş)"
+"test.map.megamap_capacity_fail" = "Megamap yeteneklerinin hesaplanması yanlış:"
+"test.map.megamap_capacity_pass" = "Megamap sütun, satır ve ayrıntı düzeyini ızgaradan hesaplar."
+"test.map.megamap_viewport_fail" = "Megamap görüntü alanı geometrisi yanlış:"
+"test.map.megamap_viewport_pass" = "Uyarlanabilir duvarlar tek bir mantıksal tuval kullanır; büyütülen duvarlar eşit ölçeği ve kenar boşluklarıyla en boy oranını korur."
+"test.map.megamap_defects_fail" = "Bozuk harita duvarları teşhis edilemedi:"
+"test.map.megamap_defects_pass" = "Düzensiz, döndürülmüş, yinelenmiş ve karışık harita duvarlarının tümü bir neden bildirir."
+"test.map.megamap_expansion_fail" = "Genişletilmiş duvarda çiziciler başarısız oldu:"
+"test.map.renderer_containment_skip" = "Grafik arayüz olmadan hiçbir çizici sınanamadı."
+"test.map.megamap_expansion_pass" = "Her çizici 1x1, 2x1, 1x2, 1x3, 2x2, 3x1, 3x3 ve 5x3 duvarların tüm çerçevelerini doldurur."
+"test.map.palette_fail" = "Tema renkleri harita paletinde birbirine karışıyor:"
+"test.map.palette_pass" = "Her tema rengi harita paletindeki ayrı bir renkle tam olarak eşleşir."
+"test.map.clip_fail" = "Çizim etkin kırpma dikdörtgeninin dışına çıktı."
+"test.map.clip_blank" = "Kırpma denemesi kendi bölgesinde hiçbir şey çizmedi."
+"test.map.clip_restore_fail" = "popClip önceki kırpma dikdörtgenini geri yüklemedi."
+"test.map.clip_pass" = "Çizgiler, metin ve dolgular yığına eklenen kırpma dikdörtgeninin içinde kaldı."
+"test.map.text_bounds_fail" = "Sığdırılan metin genişlik sınırını aştı."
+"test.map.text_bounds_pass" = "Sığdırılan metin hiçbir arayüz ölçeğinde sınırını aşmaz."
+"test.map.renderer_containment_fail" = "Çiziciler kırpma dikdörtgenlerinin dışına çizdi:"
+"test.map.renderer_containment_pass" = "Her çizici yığına eklenen kırpma dikdörtgeninin içinde kaldı."
+"test.map.flush_fidelity_fail" = "Tamponun aktarılması birleştirilmiş yüzeyi yeniden üretemedi:"
+"test.map.flush_fidelity_pass" = "Aktarılan her piksel 1x1, 2x2 ve 3x3 boyutlarında birleştirilmiş yüzeyle eşleşir."
+"test.map.flush_stability_fail" = "Aynı içeriğin yeniden çizilmesi hâlâ tuvale yazdı:"
+"test.map.flush_stability_pass" = "Aynı içeriğin yeniden çizilmesi tuvale hiçbir piksel yazmaz."
+"test.map.frame_wall_disabled" = "Megamap döşeme birleştirmesi devre dışı; bitişik çerçeveler duvar oluşturmaz."
+"test.map.frame_wall_no_worlds" = "Yüklenmiş dünya yok; gerçek bir eşya çerçevesi duvarı oluşturulamıyor."
+"test.map.frame_wall_setup_failed" = "Gerçek bir eşya çerçevesi duvarı oluşturulamadı:"
+"test.map.frame_wall_no_space" = "Doğma noktası yakınında iki çerçeveli harita duvarı için boş bir hava sütunu yok."
+"test.map.frame_wall_probe_failed" = "Gerçek eşya çerçevesi duvarının sınanması başarısız oldu:"
+"test.map.frame_wall_pass" = "Bitişik çerçevelerdeki klonlanmış React haritaları farklı kimlikler aldı ve iki döşemeli bir duvar olarak tanındı."
+"test.map.frame_wall_fail" = "Bitişik eşya çerçeveleri iki döşemeli bir Megamap duvarına dönüşmedi:"
+"command.description.language" = "Kendi dilinizi veya sunucu dilini seçin"
+"debug.error.missing-permission" = "Eksik izin: {permission}"
+"debug.error.already-preparing" = "{plugin} için bir tanılama raporu zaten hazırlanıyor."
+"debug.error.already-preparing-short" = "Bir tanılama raporu zaten hazırlanıyor."
+"debug.preparing" = "{plugin} tanılama raporu hazırlanıyor..."
+"debug.error.schedule-failed" = "Tanılama raporu oluşturma işlemi zamanlanamadı."
+"debug.error.provider-closed" = "Tanılama hizmeti kapalı."
+"debug.error.closed-before-capture" = "Rapor toplanmadan önce tanılama hizmeti kapandı."
+"debug.error.writer-schedule-failed" = "Tanılama raporu yazma işlemi zamanlanamadı."
+"debug.error.capture-failed" = "Tanılama raporu toplanamadı. Sunucu konsolunu kontrol edin."
+"debug.error.closed-before-write" = "Rapor yazılmadan önce tanılama hizmeti kapandı."
+"debug.error.write-failed" = "Tanılama raporu yazılamadı. Sunucu konsolunu kontrol edin."
+"debug.upload.interrupted" = "Tanılama raporu yüklemesi kesildi. Yerel rapor kaydedildi."
+"debug.upload.failed" = "Tanılama raporu yüklenemedi. Yerel rapor kaydedildi."
+"debug.upload.completed" = "VolmitSoftware - {plugin} - v{version} adıyla yüklendi."
+"debug.action.open" = "Aç: {url}"
+"debug.action.open-description" = "Yüklenen tanılama raporunu aç."
+"debug.saved" = "{plugin} tanılama raporu {path} konumuna kaydedildi."
+"debug.action.copy-path" = "Yerel yolu kopyala"
+"debug.action.copy-path-description" = "Raporun yerel yolunu kopyala."

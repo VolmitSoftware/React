@@ -52,6 +52,7 @@ import art.arcane.react.util.project.registry.Registry;
 import art.arcane.react.util.project.world.EntityKiller;
 import art.arcane.volmlib.integration.ReloadAware;
 import art.arcane.volmlib.util.collection.KList;
+import art.arcane.volmlib.util.director.help.DirectorMiniMenu;
 import art.arcane.volmlib.util.format.Form;
 import art.arcane.volmlib.util.hud.HudActionBar;
 import art.arcane.volmlib.util.hud.HudTitleService;
@@ -468,7 +469,12 @@ public class React extends VolmitPlugin implements ReloadAware {
     PrecisionStopwatch psw = PrecisionStopwatch.start();
     ReactConfiguration.get();
     ReactLanguage.initialize();
-    debugDump = BukkitDebugDump.create(this, new BukkitDebugDump.Options(() -> true, this::captureDebugState));
+    debugDump = BukkitDebugDump.create(this, new BukkitDebugDump.Options(
+        () -> true,
+        this::captureDebugState,
+        new BukkitDebugDump.Presentation(
+            "/react debugdump", "/react", DirectorMiniMenu.Theme.reactBlue(), ReactLanguage.directorResolver())
+    ));
     startupTasks = new CopyOnWriteArrayList<>();
     prejobs = new CopyOnWriteArrayList<>();
     burst = new MultiBurst("React", Thread.MIN_PRIORITY);

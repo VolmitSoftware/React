@@ -66,7 +66,7 @@ import java.util.Objects;
 public class ReactConfiguration {
   private static final Object CONFIG_LOCK = new Object();
   private static ReactConfiguration configuration;
-  @ConfigDoc(value = "Locale used for React player and operator interfaces.", impact = "Code-owned English remains the fallback; optional TOML overrides are loaded from languages/overrides.")
+  @ConfigDoc(value = "Locale used for React player and operator interfaces.", impact = "Code-owned English remains the fallback; editable TOML catalogs are loaded from languages.")
   private String language = "en_US";
 
   @ConfigDoc(value = "Enables anonymous bStats usage reporting for React.", impact = "Set to false to disable React's bStats submissions entirely. Requires a restart to take effect.")

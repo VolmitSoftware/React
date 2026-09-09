@@ -14,6 +14,8 @@ import art.arcane.react.localization.catalog.ShorthandMessages;
 import art.arcane.react.localization.catalog.TaxonomyMessages;
 import art.arcane.react.localization.catalog.TestMessages;
 import art.arcane.volmlib.util.director.DirectorMessages;
+import art.arcane.volmlib.util.diagnostics.BukkitDebugMessages;
+import art.arcane.volmlib.util.localization.BukkitLanguageMessages;
 import art.arcane.volmlib.util.localization.MessageCatalog;
 import art.arcane.volmlib.util.localization.MessageKey;
 import art.arcane.react.util.project.config.ConfigLocalization;
@@ -35,6 +37,8 @@ public final class ReactMessages {
   private static MessageCatalog createCatalog() {
     MessageCatalog.Builder builder = MessageCatalog.builder("en_US");
     builder.addAll(DirectorMessages.keys());
+    builder.addAll(BukkitLanguageMessages.keys());
+    builder.addAll(BukkitDebugMessages.keys());
     ActionMessages.addTo(builder);
     BenchmarkMessages.addTo(builder);
     CommandMessages.addTo(builder);

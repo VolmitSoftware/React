@@ -1,6 +1,179 @@
+# Langue de React : fr_FR
+#
+# Modifiez ce fichier directement dans le dossier languages ou avec /react language server edit.
+# React crée ou télécharge uniquement les fichiers de langue manquants. Les modifications locales sont conservées.
+# Les messages manquants utilisent le catalogue anglais intégré.
+#
+# Mise en forme
+#   Les messages de discussion utilisent MiniMessage : <red>texte</red>, <bold>texte</bold>.
+#   Les couleurs RGB utilisent <color:#RRGGBB>texte</color>. Fermez les balises dans l'ordre inverse de leur ouverture.
+#   Les messages partagés de l'éditeur sous language.* acceptent aussi les codes couleur classiques avec & comme &e et &r.
+#   Les autres messages ne convertissent pas les codes couleur avec &. Conservez des guillemets et des séquences d'échappement TOML valides.
+#   Utilisez \n dans les chaînes TOML entre guillemets pour un saut de ligne. Les doubles accolades {{ et }} affichent des accolades littérales.
+#   Les valeurs sous renderer.* et config.documentation.annotation.* sont en texte brut.
+#   Les valeurs sous test.* sont en texte brut, sauf les messages sous test.result.*, qui utilisent MiniMessage.
+#
+# Variables
+# Chaque message accepte uniquement ses propres variables. Ne modifiez pas leurs noms.
+# Placez les variables dans le texte du message, en dehors des balises MiniMessage.
+#   {action}          Nom de l'action ou sens du réglage de couleur
+#   {actions}         Nombre d'actions en attente ou liste des noms d'actions exclues
+#   {active}          Nombre de fonctionnalités ou d'ajustements actifs
+#   {actor}           Utilisateur web ayant effectué une modification
+#   {added}           Indique si une fonctionnalité a rejoint le registre actif après son activation
+#   {after}           Valeur de configuration, message de langue ou utilisation du tas après une modification
+#   {age}             Âge des données d'intégration en secondes
+#   {amount}          Nombre d'objets à donner
+#   {architecture}    Architecture du CPU
+#   {argument}        Argument de commande inattendu
+#   {available}       Nombre de références disponibles du pont NMS
+#   {average}         TPS moyens ou millisecondes moyennes par tick
+#   {avg_mspt}        Millisecondes moyennes par tick pendant une passe de test de charge
+#   {avg_tps}         Nombre moyen de ticks par seconde pendant une passe de test de charge
+#   {bar}             Barre de score de performance mise en forme
+#   {before}          Valeur de configuration, message de langue ou utilisation du tas avant une modification
+#   {checked}         Nombre d'échantillonneurs vérifiés
+#   {chunks}          Nombre de chunks affectés par une action
+#   {code}            Code d'association web
+#   {command}         Chemin de la commande
+#   {count}           Nombre d'entrées, de modules, de modifications ou de résultats de tests
+#   {current}         Numéro de la page actuelle
+#   {delta_heap}      Écart d'utilisation finale du tas entre React et la référence, en MB
+#   {delta_mspt}      Écart de durée moyenne des ticks entre React et la référence, en ms
+#   {delta_tps}       Écart de TPS moyens entre React et la référence
+#   {detail}          Détails de diagnostic du pont, de l'intégration, de l'action ou du test
+#   {dimensions}      Dimensions détectées de la grille du mur de cartes
+#   {direction}       Sens de rotation de la teinte de la couleur sélectionnée
+#   {distance}        Distance de vue ou de simulation demandée
+#   {duration}        Temps écoulé ; les messages de lancement des tests de charge utilisent des secondes
+#   {enabled}         État d'activation ou nombre de modules activés
+#   {entities}        Nombre d'entités affectées par une action
+#   {entry}           Entrée de la chronologie de l'intégration
+#   {exceptions}      Exceptions React enregistrées pendant une passe de test de charge
+#   {fail}            Nombre de vérifications échouées
+#   {file}            Nom du fichier de configuration, de langue ou d'API de plugins
+#   {fingerprint}     Empreinte du serveur ou du jeton web
+#   {finite}          Nombre d'échantillonneurs renvoyant des valeurs finies
+#   {frames}          Nombre de cadres dans le mur de cartes actif
+#   {free}            Mémoire physique ou virtuelle libre
+#   {freed}           Mémoire du tas libérée par le ramasse-miettes
+#   {from}            Numéro de la première entrée de la page actuelle
+#   {grid}            Dimensions de la grille du mur de cartes
+#   {ground_y}        Hauteur du sol pour le test de gravité
+#   {group}           Groupe de moniteurs, d'échantillonneurs, de cartes, de configuration ou de messages de langue
+#   {growth}          Augmentation du tas pendant un test de charge, en MB
+#   {health}          État de fonctionnement de l'intégration
+#   {heap_end}        Utilisation du tas à la fin d'une passe de test de charge, en MB
+#   {heap_start}      Utilisation du tas au début d'une passe de test de charge, en MB
+#   {heartbeat}       Temps écoulé depuis le dernier signal d'activité de l'intégration
+#   {height}          Hauteur de la surface de dessin du test en pixels
+#   {hoppers}         Nombre d'entonnoirs normalisés
+#   {id}              Identifiant d'une référence du pont, d'un échantillonneur, d'une carte, d'une action, d'un paquet ou d'un jeton
+#   {impact}          Description de l'effet de la configuration ou coût du plugin en ms/s
+#   {incident}        Identifiant de l'action récursive d'incident exclue des tests de développement
+#   {index}           Numéro de l'étape actuelle des tests de développement
+#   {invalid}         Nombre d'échantillonneurs avec des mesures invalides
+#   {issued_at}       Date et heure de création du jeton web
+#   {item}            Nom ou identifiant de l'objet
+#   {items}           Nombre d'entités d'objets fusionnées
+#   {key}             Clé du paramètre de commande, clé de configuration ou ID du message de langue
+#   {label}           Libellé du test de performance, de la mesure, du réglage, de la commande ou du jeton web
+#   {line}            Numéro de la ligne modifiée dans un message multiligne
+#   {lines}           Nombre de lignes du journal du serveur examinées
+#   {loaded}          Nombre de chunks nouvellement chargés pendant le préchargement
+#   {locale}          Code de langue affiché, sélectionné ou modifié
+#   {matched}         Mondes dont l'état de sauvegarde automatique correspond à la référence du test
+#   {max_tick}        Plus grand intervalle observé entre les ticks pendant un test de charge, en ms
+#   {maximum}         Nombre maximal d'objets, seuil de durée des ticks ou longueur de saisie dans l'éditeur
+#   {message}         Résumé de l'action terminée ou message d'état de l'intégration
+#   {metrics}         Nombre de mesures fournies par un paquet d'API de plugins
+#   {minecraft}       Version de Minecraft
+#   {minimum}         TPS minimaux acceptables
+#   {missing}         Nombre d'échantillonneurs requis absents du registre
+#   {mode}            Mode de jeu ou de capacité sélectionné
+#   {model}           Modèle du CPU
+#   {name}            Nom du test de performance, du module, du moteur de rendu ou de la vérification
+#   {note}            Raison pour laquelle le journal du serveur n'a pas été examiné
+#   {offenders}       Nombre d'échantillonneurs renvoyant des valeurs non finies
+#   {operations}      Opérations de rappel de capacité par minute
+#   {options}         Valeurs de configuration acceptées
+#   {p95}             95e centile de la durée des ticks pendant un test de charge, en ms
+#   {parameter}       Nom du paramètre de commande
+#   {parameters}      Paramètres de commande ignorés
+#   {pass}            Nombre de vérifications réussies
+#   {path}            Chemin de la clé de configuration ou du fichier de rapport
+#   {percent}         Pourcentage du réglage de couleur ou part de l'impact du plugin
+#   {permission}      Nœud de permission requis
+#   {personal}        Code de langue sélectionné par le joueur
+#   {phase}           Phase du cycle de vie de la fonctionnalité testée
+#   {pixels}          Nombre de pixels non vides dessinés par un test de cartes
+#   {platform}        Système d'exploitation ou plateforme du serveur Minecraft
+#   {players}         Nombre de joueurs synthétiques dans un test de charge
+#   {plugin}          Nom du plugin
+#   {process_load}    Charge CPU du processus du serveur
+#   {processors}      Nombre de processeurs CPU disponibles
+#   {profile}         Nom du profil de configuration React
+#   {protocol}        Version du protocole d'intégration
+#   {radius}          Rayon en chunks pour une action de carte ou des tests de développement
+#   {range}           Plage de distance de vue ou de simulation acceptée
+#   {rate}            Vitesse d'accélération des cultures configurée
+#   {rating}          Évaluation de performance mise en forme
+#   {react_errors}    Nombre de lignes d'erreur React trouvées dans le journal du serveur
+#   {reason}          Explication de l'échec, du rejet ou de l'indisponibilité
+#   {registered}      Nombre de modules enregistrés
+#   {removed_first}   Indique si la première désactivation a retiré une fonctionnalité du registre actif
+#   {removed_second}  Indique si une désactivation répétée a retiré une fonctionnalité du registre actif
+#   {renderer}        Nom ou identifiant du moteur de rendu de cartes
+#   {renderers}       Liste des moteurs de rendu de cartes aux identifiants vides
+#   {role}            Rôle d'accès web : viewer, operator ou admin
+#   {sampler}         Nom ou identifiant de l'échantillonneur
+#   {samplers}        Liste des échantillonneurs d'intégration ou défaillants
+#   {scope}           Portée de la carte ou du réglage de distance
+#   {score}           Score de performance
+#   {seconds}         Compte à rebours ou durée du test de charge en secondes
+#   {section}         Nom de la section de configuration
+#   {server}          Implémentation et version du serveur Minecraft
+#   {shown}           Nombre de lignes actuellement affichées
+#   {since_run}       Erreurs signalées depuis le début du test actuel
+#   {size}            Dimensions maximales ou actives du mur de cartes
+#   {skip}            Nombre de vérifications ignorées
+#   {spawn_y}         Hauteur d'apparition du bloc du test de gravité
+#   {state}           État de l'action ou du paquet d'API de plugins
+#   {status}          Libellé de l'état d'intégration ou de configuration
+#   {subject}         Module ou réglage décrit par l'aide de configuration
+#   {subsystem}       Nom du sous-système de test
+#   {summary}         Résumé de l'audit des actions
+#   {system_load}     Charge CPU de l'ensemble du système
+#   {target}          Monde, joueur, plugin, réglage ou groupe de plugins visé par une opération
+#   {threading}       Mode de gestion des threads du serveur
+#   {tick}            Durée du tick ayant dépassé le seuil de blocage, en ms
+#   {tick_crashes}    Nombre de lignes de plantage de ticks trouvées dans le journal du serveur
+#   {tier}            Niveau de gravité du scénario d'incident
+#   {timing}          Durée des rappels de capacité en millisecondes par minute
+#   {to}              Numéro de la dernière entrée de la page actuelle
+#   {total}           Total des entrées, modules, mondes, vérifications ou quantité de mémoire du message
+#   {type}            Type du paramètre de commande, de la valeur de configuration, de la carte ou de la distance
+#   {unavailable}     Nombre de références indisponibles du pont NMS
+#   {unit}            Libellé d'unité pour le total d'un diagramme circulaire
+#   {unknown}         Identifiant de l'action inconnue exclue des tests de développement
+#   {unreadable}      Nombre d'échantillonneurs qui n'ont pas pu être lus
+#   {uptime}          Durée de fonctionnement du système d'exploitation hôte
+#   {url}             URL du rapport de diagnostic téléversé
+#   {usage}           Syntaxe d'utilisation de la commande
+#   {used}            Mémoire physique, mémoire virtuelle ou tas utilisé
+#   {value}           Réglage, mesure ou détail matériel mis en forme
+#   {values}          Valeurs échantillonnées figurant dans un rapport des tests de développement
+#   {variables}       Noms de variables acceptés par le message en cours de modification
+#   {vendor}          Fournisseur de Java
+#   {verdict}         Résultat global du test
+#   {version}         Version de React, de Java ou de la plateforme
+#   {warmed}          Nombre de chunks préchargés
+#   {warn}            Nombre de vérifications avec avertissements
+#   {width}           Largeur de la surface de dessin du test en pixels
+#   {world}           Nom du monde Minecraft
+
 "command.description.debugdump" = "Créer un rapport de diagnostic et le publier si souhaité"
 "command.parameter.debugdump_upload" = "Publier le rapport sur mclo.gs"
-# Complete bundled translation. Code-owned English remains the canonical fallback.
 "action.collect_garbage.no_reclaim" = "Collecte d'ordures terminée sans aucun tas immédiatement récupéré ({used} utilisés) en {duration}"
 "action.collect_garbage.reclaimed" = "Libéré {freed} ({before} -> {after}) en {duration}"
 "action.completed" = "Terminé {action} dans {duration}"
@@ -911,8 +1084,8 @@
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.description" = "Configuration pour la fonction d'affichage de Mob. Cette fonction surveille en permanence le comportement du serveur et applique des garde-corps pendant l'exécution."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.batchintervalms.impact" = "Les valeurs inférieures empilent les mafieux fraîchement frayés plus tôt à un coût de planification plus élevé; les valeurs supérieures lotent plus de travail de fusion par passe."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.batchintervalms.summary" = "Combien de fois chunks en file d'attente est traité pour l'empilage, en millisecondes."
-"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.impact" = "Activer pour appliquer ce comportement ; désactiver pour garder ce chemin inactif."
-"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.summary" = "Contrôle si le cumul de mafieux applique des noms personnalisés."
+"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.impact" = "Gloss reçoit la taille des piles quel que soit ce réglage et gère l'affichage combiné des entités lorsque celui-ci est activé."
+"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.summary" = "Affiche les noms natifs des piles de créatures lorsque les affichages d'entités de Gloss sont indisponibles."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.maxhealth.impact" = "Des valeurs plus élevées permettent un débit plus élevé avant l'intervention; des valeurs plus faibles rendent l'atténuation plus agressive."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.maxhealth.summary" = "La santé maximale est permise par la foule qui s'empile."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.maxstacksize.impact" = "Des valeurs plus élevées permettent un débit plus élevé avant l'intervention; des valeurs plus faibles rendent l'atténuation plus agressive."
@@ -1333,8 +1506,8 @@
 "config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.maxdiffmessagesperfile.summary" = "Nombre maximal de messages diff au niveau des clés envoyés par fichier modifié."
 "config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.notifyoperators.impact" = "Désactiver si vous voulez seulement des journaux de console et aucune notification dans le jeu."
 "config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.notifyoperators.summary" = "Envoie des résumés de changement à des opérateurs en ligne."
-"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.impact" = "Les valeurs inférieures sont les événements du système de fichiers livrés plus tôt; la latence de livraison du système d'exploitation peut être plus longue."
-"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.summary" = "Intervalle de fuite des files d'attente utilisé par le moniteur config en millisecondes."
+"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.impact" = "Des valeurs plus faibles détectent plus tôt les événements reçus ; les modifications automatiques restent appliquées par lots au maximum une fois toutes les trois secondes."
+"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.summary" = "Intervalle d'interrogation des événements du système de fichiers, en millisecondes."
 "config.documentation.annotation.art.arcane.react.core.controller.historycontroller.description" = "Capture une fois les échantillonneurs de React, stocke une télémétrie historique compressée et traite des requêtes bornées par intervalle de temps."
 "config.documentation.annotation.art.arcane.react.core.controller.historycontroller.field.compressionlevel.impact" = "Des valeurs plus élevées peuvent réduire l'espace disque utilisé au prix d'une charge processeur d'écriture accrue."
 "config.documentation.annotation.art.arcane.react.core.controller.historycontroller.field.compressionlevel.summary" = "Niveau DEFLATE utilisé uniquement lorsqu'il réduit la taille d'une colonne de métriques encodée."
@@ -1412,7 +1585,7 @@
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.debug.summary" = "Permet la débogage et des diagnostics supplémentaires."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsecretsenabled.impact" = "Désactivé par défaut. Activer pour autoriser Iris/Adapt des faisceaux secrets lorsque des dépendances sont présentes."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsecretsenabled.summary" = "Active les fonctionnalités d'intégration secrètes avec plugin."
-"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.impact" = "L'anglais appartenant au code reste le retour; facultatif TOML les valeurs de rechange sont chargées à partir languages/overrides."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.impact" = "L'anglais intégré au code reste la langue de secours ; les catalogues TOML modifiables sont chargés depuis languages."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.summary" = "Locale utilisée pour React interfaces de lecteur et opérateur."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.impact" = "Définissez sur false pour désactiver entièrement les envois bStats de React. Nécessite un redémarrage."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.summary" = "Active les rapports d'utilisation anonymes bStats pour React."
@@ -1422,8 +1595,8 @@
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.priority.summary" = "Modèle de priorité d'entité utilisé par plusieurs React les sous-systèmes."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.slowticklogmode.impact" = "OFF supprime les alertes tick lentes. BLAME met en évidence la responsabilité probable du plugin/charge de travail. SHORT ne logue que le temps minimal. DETAILED logs le charge utile de données diagnostique complet."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.slowticklogmode.summary" = "Contrôle la façon dont les alertes tick lent sont enregistrées. Options: OFF, BLAME, SHORT, DETAILED."
-"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.impact" = "Désactivé par défaut. Une fois activé et l'agent attaché, il ne peut pas être détaché sans redémarrer le JVM. Aucune transformation n'est enregistrée dans la version actuelle."
-"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.summary" = "Active l'optionnel ByteBuddy agent de code octet pour instrumentation avancée d'exécution."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.impact" = "Désactivé par défaut. Les fonctions NMS propres à chaque version peuvent toujours attacher leur propre instrumentation lors de leur activation. Toute instrumentation attachée reste en place jusqu'au redémarrage de la JVM."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.summary" = "Attache l'agent ByteBuddy général de React dès le démarrage."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.value.impact" = "Des valeurs plus élevées peuvent accroître l'influence des articles coûteux dans les calculs."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.value.summary" = "Réglage de la valeur matérielle utilisée pour l'analyse des recettes/valeurs."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.verbose.impact" = "Utile pour le dépannage mais peut créer beaucoup de bruit de log."
@@ -2576,3 +2749,125 @@
 "config.documentation.annotation.art.arcane.react.core.controller.incidentcontroller.field.persistenceenabled.summary" = "Conserve l’historique structuré des incidents dans plugins/React/incidents.json."
 "config.documentation.annotation.art.arcane.react.core.controller.incidentcontroller.field.retention.impact" = "Des valeurs plus élevées conservent davantage d’historique et utilisent plus de mémoire et d’espace disque."
 "config.documentation.annotation.art.arcane.react.core.controller.incidentcontroller.field.retention.summary" = "Nombre maximal d’événements d’incident structurés conservés."
+
+"language.menu.your_language" = "Votre langue"
+"language.menu.reset_your_language" = "Réinitialiser votre langue"
+"language.menu.server_default" = "Langue par défaut du serveur"
+"language.menu.edit_messages" = "Modifier les messages de langue"
+"language.menu.use_server_default" = "Utiliser la langue par défaut du serveur"
+"language.menu.current" = "Langue actuelle : {locale}"
+"language.menu.current_with_personal" = "Langue actuelle : {locale} (La vôtre : {personal})"
+"language.menu.your_description" = "Modifiez uniquement les messages que vous voyez."
+"language.menu.reset_description" = "Utilisez la langue par défaut du serveur."
+"language.menu.server_description" = "Modifiez la langue par défaut du serveur."
+"language.menu.edit_description" = "Ouvrez l’éditeur de messages pour chaque langue."
+"language.menu.select_description" = "Cliquez pour sélectionner cette langue."
+"language.menu.remove_personal_description" = "Supprimez votre choix de langue personnel."
+"language.menu.no_controls" = "Aucune option de langue ne vous est accessible."
+"language.menu.command" = "Commande: {command}"
+"language.menu.selected" = "sélectionné"
+"language.menu.all-volmit-plugins" = "tous les plugins Volmit"
+"language.error.stopping" = "La sélection de la langue est indisponible pendant que le plugin s'arrête."
+"language.error.editor-player-only" = "Ouvrez l'éditeur de langue dans le jeu."
+"language.usage.editor" = "Utilisation: /{command} language server edit [locale]"
+"language.usage.selection" = "Utilisation: /{command} language self [locale|reset] or server [locale]"
+"language.usage.volmit-selection" = "Utilisation: /volmit plugins languages [locale]"
+"language.error.no-providers" = "Aucun fournisseur de langues Volmit n'est disponible."
+"language.error.numeric-page" = "Indiquez un numéro de page pour la liste des langues."
+"language.error.personal-player-only" = "Les préférences linguistiques du joueur doivent être sélectionnées dans le jeu."
+"language.error.personal-permission" = "Vous n'avez pas la permission de sélectionner votre langue."
+"language.error.plugin-personal-permission" = "Vous n'avez pas la permission de sélectionner votre langue pour {plugin}."
+"language.error.plugin-server-permission" = "Vous n'avez pas la permission de changer la langue du serveur pour {plugin}."
+"language.error.server-locale-required" = "Choisissez un code de langue comme en_US pour la langue par défaut du serveur."
+"language.error.unavailable-for-all" = "La langue {locale} n'est pas disponible pour tous les plugins sélectionnés."
+"language.selection.preparing" = "Préparation de la langue {locale} pour {target}..."
+"language.selection.save-failed" = "{plugin}: Impossible de sauvegarder la sélection de la langue; vérifiez la console du serveur."
+"language.selection.english-fallback" = "{plugin} : {locale} n'est pas disponible. L'anglais (en_US) sera utilisé."
+"language.selection.personal-selected" = "{plugin}: votre langue est maintenant {locale}."
+"language.selection.server-selected" = "{plugin}: la langue du serveur est maintenant {locale}."
+"language.selection.server-default-selected" = "{plugin} : vous utilisez maintenant la langue par défaut du serveur."
+"language.editor.section.languages" = "Langues"
+"language.editor.section.search" = "Recherche"
+"language.editor.section.search-title" = "{locale} / Recherche"
+"language.editor.section.group-title" = "{locale} / {group}"
+"language.editor.loading" = "Chargement des messages en {locale}..."
+"language.editor.prompt.search" = "Recherchez des clés de message ou du texte. Tapez cancel pour revenir."
+"language.editor.prompt.value" = "Saisissez une nouvelle valeur pour {key} dans le chat."
+"language.editor.prompt.current" = "Valeur actuelle : {value}"
+"language.editor.prompt.variables" = "Variables disponibles : {variables}"
+"language.editor.prompt.guidance" = "Utilisez \\n pour un saut de ligne et \\\\ pour une barre oblique inversée, ou tapez cancel pour revenir."
+"language.editor.input.expired" = "Entrée de l'éditeur de langue expirée."
+"language.editor.input.too-long" = "La saisie dans l'éditeur doit contenir au maximum {maximum} caractères."
+"language.editor.input.unable-to-save" = "Impossible d'enregistrer: {reason}"
+"language.editor.navigation.back" = "&eRetour&r"
+"language.editor.navigation.close" = "&cFermer&r"
+"language.editor.navigation.previous-page" = "&ePage précédente&r"
+"language.editor.navigation.next-page" = "&ePage suivante&r"
+"language.editor.search.messages" = "Rechercher des messages"
+"language.editor.search.messages-lore" = "Cliquez pour rechercher tous les messages."
+"language.editor.search.clear" = "Effacer la recherche"
+"language.editor.message.current-value" = "&7Valeur actuelle:&r"
+"language.editor.message.variables" = "&8{variables}&r"
+"language.editor.message.edit-plural" = "&7Cliquez pour modifier une forme plurielle.&r"
+"language.editor.message.edit-lines" = "&7Cliquez pour modifier les lignes individuelles.&r"
+"language.editor.message.edit-chat" = "&7Cliquez pour modifier dans le chat.&r"
+"language.editor.locale.open" = "&8Cliquez pour ouvrir cette langue.&r"
+"language.editor.category.message-count" = "&7{count} messages disponibles&r"
+"language.editor.category.open" = "&8Cliquez pour ouvrir cette catégorie.&r"
+"language.editor.error.no-permission" = "Vous n'avez pas la permission de modifier les langues de {plugin}."
+"language.editor.error.unable-to-edit" = "Impossible de modifier: {reason}"
+"language.editor.saved.summary" = "{locale} enregistré. Les choix de langue restent inchangés."
+"language.editor.saved.change" = "{key}: “{before}” modifié en “{after}”."
+"language.editor.part.line" = "Ligne {line}"
+"language.editor.value.none" = "Aucune"
+"language.editor.value.empty" = "(vide)"
+"test.map.megamap_capacity_fail" = "Le calcul des capacités de Megamap est incorrect :"
+"test.map.megamap_capacity_pass" = "Les capacités de Megamap déterminent les colonnes, les lignes et le niveau de détail à partir de la grille."
+"test.map.megamap_viewport_fail" = "La géométrie de la zone d'affichage de Megamap est incorrecte :"
+"test.map.megamap_viewport_pass" = "Les murs adaptatifs utilisent un seul canevas logique et les murs agrandis conservent une échelle uniforme avec des bandes de remplissage."
+"test.map.megamap_defects_fail" = "Les murs de cartes défectueux n'ont pas été diagnostiqués :"
+"test.map.megamap_defects_pass" = "Les murs de cartes irréguliers, pivotés, dupliqués et mixtes signalent tous la cause du problème."
+"test.map.megamap_expansion_fail" = "Des moteurs de rendu ont échoué sur un mur agrandi :"
+"test.map.renderer_containment_skip" = "Aucun moteur de rendu n'a pu être testé sans interface graphique."
+"test.map.megamap_expansion_pass" = "Chaque moteur de rendu remplit tous les cadres d'un mur de 1x1, 2x1, 1x2, 1x3, 2x2, 3x1, 3x3 et 5x3."
+"test.map.palette_fail" = "Des couleurs du thème se confondent dans la palette des cartes :"
+"test.map.palette_pass" = "Chaque couleur du thème correspond à une entrée exacte et distincte de la palette des cartes."
+"test.map.clip_fail" = "Le dessin est sorti du rectangle de découpage actif."
+"test.map.clip_blank" = "Le test de découpage n'a rien dessiné dans sa zone."
+"test.map.clip_restore_fail" = "popClip n'a pas restauré le rectangle de découpage précédent."
+"test.map.clip_pass" = "Les lignes, le texte et les remplissages sont restés dans le rectangle de découpage défini."
+"test.map.text_bounds_fail" = "Le texte ajusté a dépassé sa largeur maximale."
+"test.map.text_bounds_pass" = "Le texte ajusté ne dépasse jamais sa limite, quelle que soit l'échelle de l'interface."
+"test.map.renderer_containment_fail" = "Des moteurs de rendu ont dessiné hors de leur rectangle de découpage :"
+"test.map.renderer_containment_pass" = "Chaque moteur de rendu est resté dans le rectangle de découpage défini."
+"test.map.flush_fidelity_fail" = "Le transfert du tampon n'a pas reproduit la surface composée :"
+"test.map.flush_fidelity_pass" = "Chaque pixel transféré correspond à la surface composée en 1x1, 2x2 et 3x3."
+"test.map.flush_stability_fail" = "Redessiner un contenu identique a encore écrit sur le canevas :"
+"test.map.flush_stability_pass" = "Redessiner un contenu identique n'écrit aucun pixel sur le canevas."
+"test.map.frame_wall_disabled" = "L'assemblage en mosaïque de Megamap est désactivé ; les cadres adjacents ne forment pas de mur."
+"test.map.frame_wall_no_worlds" = "Aucun monde n'est chargé ; impossible de construire un mur de cadres dans le monde."
+"test.map.frame_wall_setup_failed" = "Impossible de construire un mur de cadres dans le monde :"
+"test.map.frame_wall_no_space" = "Aucune colonne d'air libre près du point d'apparition ne permet de construire un mur de cartes à deux cadres."
+"test.map.frame_wall_probe_failed" = "La vérification du mur de cadres dans le monde a échoué :"
+"test.map.frame_wall_pass" = "Les cartes React clonées dans des cadres adjacents ont reçu des identifiants distincts et ont formé un mur de deux tuiles."
+"test.map.frame_wall_fail" = "Les cadres adjacents n'ont pas fini par former un mur Megamap stable de deux tuiles :"
+"command.description.language" = "Choisir votre langue ou celle du serveur"
+"debug.error.missing-permission" = "Permission manquante : {permission}"
+"debug.error.already-preparing" = "Un rapport de diagnostic est déjà en cours de préparation pour {plugin}."
+"debug.error.already-preparing-short" = "Un rapport de diagnostic est déjà en cours de préparation."
+"debug.preparing" = "Préparation du rapport de diagnostic de {plugin}..."
+"debug.error.schedule-failed" = "Impossible de planifier la création du rapport de diagnostic."
+"debug.error.provider-closed" = "Le service de diagnostic est fermé."
+"debug.error.closed-before-capture" = "Le service de diagnostic s'est fermé avant la collecte du rapport."
+"debug.error.writer-schedule-failed" = "Impossible de planifier l'écriture du rapport de diagnostic."
+"debug.error.capture-failed" = "Impossible de collecter le rapport de diagnostic. Consultez la console du serveur."
+"debug.error.closed-before-write" = "Le service de diagnostic s'est fermé avant l'écriture du rapport."
+"debug.error.write-failed" = "Impossible d'écrire le rapport de diagnostic. Consultez la console du serveur."
+"debug.upload.interrupted" = "L'envoi du rapport de diagnostic a été interrompu. Le rapport local est enregistré."
+"debug.upload.failed" = "L'envoi du rapport de diagnostic a échoué. Le rapport local est enregistré."
+"debug.upload.completed" = "Envoyé sous le nom VolmitSoftware - {plugin} - v{version}."
+"debug.action.open" = "Ouvrir : {url}"
+"debug.action.open-description" = "Ouvrir le rapport de diagnostic envoyé."
+"debug.saved" = "Rapport de diagnostic de {plugin} enregistré dans {path}."
+"debug.action.copy-path" = "Copier le chemin local"
+"debug.action.copy-path-description" = "Copier le chemin local du rapport."

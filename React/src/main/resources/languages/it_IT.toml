@@ -1,6 +1,179 @@
+# Lingua di React: it_IT
+#
+# Modifica questo file direttamente nella cartella languages o tramite /react language server edit.
+# React crea o scarica i file di lingua solo se mancanti. Le modifiche locali vengono conservate.
+# I messaggi mancanti usano il catalogo inglese integrato.
+#
+# Formattazione
+#   I messaggi di chat usano MiniMessage: <red>testo</red>, <bold>testo</bold>.
+#   I colori RGB usano <color:#RRGGBB>testo</color>. Chiudi i tag in ordine inverso rispetto all'apertura.
+#   I messaggi condivisi dell'editor sotto language.* supportano anche i codici colore classici con & come &e e &r.
+#   Gli altri messaggi non convertono i codici colore con &. Mantieni valide le virgolette e le sequenze di escape TOML.
+#   Usa \n nelle stringhe TOML tra virgolette per andare a capo. Le doppie parentesi {{ e }} mostrano parentesi graffe letterali.
+#   I valori sotto renderer.* e config.documentation.annotation.* sono testo semplice.
+#   I valori sotto test.* sono testo semplice, tranne i messaggi sotto test.result.*, che usano MiniMessage.
+#
+# Segnaposto
+# Ogni messaggio accetta solo i propri segnaposto. Non modificarne i nomi.
+# Usa i segnaposto nel testo del messaggio, fuori dai tag MiniMessage.
+#   {action}          Nome dell'azione o direzione della regolazione del colore
+#   {actions}         Numero di azioni in coda o elenco dei nomi delle azioni escluse
+#   {active}          Numero di funzionalità o ottimizzazioni attive
+#   {actor}           Utente web che ha apportato una modifica
+#   {added}           Indica se una funzionalità è rientrata nel registro attivo dopo l'attivazione
+#   {after}           Valore di configurazione, messaggio di lingua o utilizzo dell'heap dopo una modifica
+#   {age}             Età dei dati di integrazione in secondi
+#   {amount}          Numero di oggetti da dare
+#   {architecture}    Architettura della CPU
+#   {argument}        Argomento di comando imprevisto
+#   {available}       Numero di riferimenti disponibili del bridge NMS
+#   {average}         TPS medi o millisecondi medi per tick
+#   {avg_mspt}        Millisecondi medi per tick durante un ciclo del test di carico
+#   {avg_tps}         Tick medi al secondo durante un ciclo del test di carico
+#   {bar}             Barra formattata del punteggio del benchmark
+#   {before}          Valore di configurazione, messaggio di lingua o utilizzo dell'heap prima di una modifica
+#   {checked}         Numero di campionatori controllati
+#   {chunks}          Numero di chunk interessati da un'azione
+#   {code}            Codice di associazione web
+#   {command}         Percorso del comando
+#   {count}           Numero di voci, moduli, modifiche o risultati dei test
+#   {current}         Numero della pagina corrente
+#   {delta_heap}      Differenza nell'utilizzo finale dell'heap tra React e il riferimento, in MB
+#   {delta_mspt}      Differenza nel tempo medio dei tick tra React e il riferimento, in ms
+#   {delta_tps}       Differenza nei TPS medi tra React e il riferimento
+#   {detail}          Dettagli diagnostici del bridge, dell'integrazione, dell'azione o del test
+#   {dimensions}      Dimensioni rilevate della griglia della parete di mappe
+#   {direction}       Direzione di rotazione della tonalità del colore selezionato
+#   {distance}        Distanza di visualizzazione o simulazione richiesta
+#   {duration}        Tempo trascorso; i messaggi di avvio dei test di carico usano i secondi
+#   {enabled}         Stato di attivazione o numero di moduli attivati
+#   {entities}        Numero di entità interessate da un'azione
+#   {entry}           Voce della cronologia dell'integrazione
+#   {exceptions}      Eccezioni di React registrate durante un ciclo del test di carico
+#   {fail}            Numero di controlli falliti
+#   {file}            Nome del file di configurazione, lingua o API dei plugin
+#   {fingerprint}     Impronta del server o del token web
+#   {finite}          Numero di campionatori che restituiscono valori finiti
+#   {frames}          Numero di cornici nella parete di mappe attiva
+#   {free}            Memoria fisica o virtuale libera
+#   {freed}           Memoria heap liberata dalla raccolta dei rifiuti
+#   {from}            Numero della prima voce nella pagina corrente
+#   {grid}            Dimensioni della griglia della parete di mappe
+#   {ground_y}        Altezza del terreno per il test di gravità
+#   {group}           Gruppo di monitor, campionatori, mappe, configurazione o messaggi di lingua
+#   {growth}          Crescita dell'heap durante un test di carico, in MB
+#   {health}          Stato di funzionamento dell'integrazione
+#   {heap_end}        Utilizzo dell'heap alla fine di un ciclo del test di carico, in MB
+#   {heap_start}      Utilizzo dell'heap all'inizio di un ciclo del test di carico, in MB
+#   {heartbeat}       Tempo dall'ultimo segnale di attività dell'integrazione
+#   {height}          Altezza dell'area di disegno del test in pixel
+#   {hoppers}         Numero di tramogge normalizzate
+#   {id}              Identificatore del riferimento del bridge, campionatore, mappa, azione, pacchetto o token
+#   {impact}          Descrizione dell'effetto della configurazione o costo del plugin in ms/s
+#   {incident}        Identificatore dell'azione ricorsiva per incidenti esclusa dai test di sviluppo
+#   {index}           Numero del passaggio corrente dei test di sviluppo
+#   {invalid}         Numero di campionatori con letture non valide
+#   {issued_at}       Data e ora di creazione del token web
+#   {item}            Nome o identificatore dell'oggetto
+#   {items}           Numero di entità oggetto unite
+#   {key}             Chiave del parametro di comando, chiave di configurazione o ID del messaggio di lingua
+#   {label}           Etichetta del benchmark, metrica, impostazione, comando o token web
+#   {line}            Numero della riga in modifica in un messaggio su più righe
+#   {lines}           Numero di righe del registro del server esaminate
+#   {loaded}          Numero di chunk caricati per la prima volta durante il precaricamento
+#   {locale}          Codice di lingua visualizzato, selezionato o modificato
+#   {matched}         Mondi il cui stato di salvataggio automatico corrisponde al riferimento del test
+#   {max_tick}        Intervallo massimo osservato tra tick durante un test di carico, in ms
+#   {maximum}         Numero massimo di oggetti, soglia del tempo dei tick o lunghezza dell'input dell'editor
+#   {message}         Riepilogo dell'azione completata o messaggio di stato dell'integrazione
+#   {metrics}         Numero di metriche fornite da un pacchetto API dei plugin
+#   {minecraft}       Versione di Minecraft
+#   {minimum}         TPS minimi accettabili
+#   {missing}         Numero di campionatori necessari mancanti nel registro
+#   {mode}            Modalità di gioco o abilità selezionata
+#   {model}           Modello della CPU
+#   {name}            Nome del benchmark, modulo, renderer o controllo di test
+#   {note}            Motivo per cui il registro del server non è stato esaminato
+#   {offenders}       Numero di campionatori che restituiscono valori non finiti
+#   {operations}      Operazioni di callback delle abilità al minuto
+#   {options}         Valori di configurazione accettati
+#   {p95}             95º percentile del tempo dei tick durante un test di carico, in ms
+#   {parameter}       Nome del parametro di comando
+#   {parameters}      Parametri di comando ignorati
+#   {pass}            Numero di controlli superati
+#   {path}            Percorso della chiave di configurazione o del file di rapporto
+#   {percent}         Percentuale di regolazione del colore o quota dell'impatto del plugin
+#   {permission}      Nodo di permesso richiesto
+#   {personal}        Codice di lingua selezionato dal giocatore
+#   {phase}           Fase del ciclo di vita della funzionalità sottoposta a test
+#   {pixels}          Numero di pixel non vuoti disegnati da un test delle mappe
+#   {platform}        Sistema operativo o piattaforma del server Minecraft
+#   {players}         Numero di giocatori sintetici in un test di carico
+#   {plugin}          Nome del plugin
+#   {process_load}    Carico della CPU del processo del server
+#   {processors}      Numero di processori CPU disponibili
+#   {profile}         Nome del profilo di configurazione di React
+#   {protocol}        Versione del protocollo di integrazione
+#   {radius}          Raggio in chunk per un'azione delle mappe o dei test di sviluppo
+#   {range}           Intervallo accettato della distanza di visualizzazione o simulazione
+#   {rate}            Velocità configurata di avanzamento rapido delle colture
+#   {rating}          Valutazione formattata del benchmark
+#   {react_errors}    Numero di righe di errore di React trovate nel registro del server
+#   {reason}          Spiegazione del fallimento, rifiuto o stato non disponibile
+#   {registered}      Numero di moduli registrati
+#   {removed_first}   Indica se la prima disattivazione ha rimosso una funzionalità dal registro attivo
+#   {removed_second}  Indica se una disattivazione ripetuta ha rimosso una funzionalità dal registro attivo
+#   {renderer}        Nome o identificatore del renderer delle mappe
+#   {renderers}       Elenco dei renderer delle mappe con identificatori vuoti
+#   {role}            Ruolo di accesso web: viewer, operator o admin
+#   {sampler}         Nome o identificatore del campionatore
+#   {samplers}        Elenco dei campionatori di integrazione o con errori
+#   {scope}           Ambito della mappa o dell'impostazione della distanza
+#   {score}           Punteggio del benchmark
+#   {seconds}         Conto alla rovescia o durata del test di carico in secondi
+#   {section}         Nome della sezione di configurazione
+#   {server}          Implementazione e versione del server Minecraft
+#   {shown}           Numero di righe attualmente visualizzate
+#   {since_run}       Errori segnalati dall'inizio del test corrente
+#   {size}            Dimensioni massime o attive della parete di mappe
+#   {skip}            Numero di controlli saltati
+#   {spawn_y}         Altezza alla quale è stato generato il blocco del test di gravità
+#   {state}           Stato dell'azione o del pacchetto API dei plugin
+#   {status}          Etichetta dello stato dell'integrazione o della configurazione
+#   {subject}         Modulo o impostazione descritti dalla guida alla configurazione
+#   {subsystem}       Nome del sottosistema di test
+#   {summary}         Riepilogo della verifica delle azioni
+#   {system_load}     Carico della CPU dell'intero sistema
+#   {target}          Mondo, giocatore, plugin, impostazione o gruppo di plugin destinatari di un'operazione
+#   {threading}       Modalità di gestione dei thread del server
+#   {tick}            Durata del tick che ha superato la soglia di blocco, in ms
+#   {tick_crashes}    Numero di righe di arresto anomalo dei tick trovate nel registro del server
+#   {tier}            Livello di gravità della procedura per incidenti
+#   {timing}          Tempo di callback delle abilità in millisecondi al minuto
+#   {to}              Numero dell'ultima voce nella pagina corrente
+#   {total}           Totale di voci, moduli, mondi, controlli o memoria nel messaggio
+#   {type}            Tipo del parametro di comando, valore di configurazione, mappa o distanza
+#   {unavailable}     Numero di riferimenti non disponibili del bridge NMS
+#   {unit}            Etichetta dell'unità per il totale di un grafico a torta
+#   {unknown}         Identificatore dell'azione sconosciuta esclusa dai test di sviluppo
+#   {unreadable}      Numero di campionatori che non è stato possibile leggere
+#   {uptime}          Tempo di attività del sistema operativo host
+#   {url}             URL del rapporto diagnostico caricato
+#   {usage}           Sintassi di utilizzo del comando
+#   {used}            Memoria fisica, memoria virtuale o heap utilizzati
+#   {value}           Impostazione, misura o dettaglio hardware formattati
+#   {values}          Valori campionati elencati in un rapporto dei test di sviluppo
+#   {variables}       Nomi dei segnaposto accettati dal messaggio in modifica
+#   {vendor}          Fornitore di Java
+#   {verdict}         Esito complessivo del test
+#   {version}         Versione di React, Java o della piattaforma
+#   {warmed}          Numero di chunk precaricati
+#   {warn}            Numero di controlli con avvisi
+#   {width}           Larghezza dell'area di disegno del test in pixel
+#   {world}           Nome del mondo Minecraft
+
 "command.description.debugdump" = "Crea un rapporto diagnostico e caricalo facoltativamente"
 "command.parameter.debugdump_upload" = "Carica il rapporto su mclo.gs"
-# Complete bundled translation. Code-owned English remains the canonical fallback.
 "action.collect_garbage.no_reclaim" = "Collezione di Garbage completata senza recupero immediato ({used} usato) in {duration}"
 "action.collect_garbage.reclaimed" = "Libera {freed} ({before} -> {after}) in {duration}"
 "action.completed" = "Completato {action} in {duration}"
@@ -911,8 +1084,8 @@
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.description" = "Configurazione per la funzione di Stacking Mob. Questa funzione monitora continuamente il comportamento del server e applica i guardrails durante l'esecuzione."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.batchintervalms.impact" = "Valori inferiori impilano appena deposte mob prima a più costo di pianificazione; più alto valore lotto più lavoro di fusione per passaggio."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.batchintervalms.summary" = "Quante volte chunk in coda vengono elaborati per l'impilamento, in millisecondi."
-"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.impact" = "Attivare questo comportamento; disabilitare il mantenimento di tale percorso inattivo."
-"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.summary" = "Controlla se impilamento della mafia applica nomi personalizzati."
+"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.impact" = "Gloss riceve il numero di creature nei gruppi indipendentemente da questa impostazione e gestisce la visualizzazione combinata delle entità quando è abilitata."
+"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.summary" = "Mostra i nomi nativi dei gruppi di creature quando le visualizzazioni delle entità di Gloss non sono disponibili."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.maxhealth.impact" = "I valori più elevati permettono un maggiore throughput prima dell'intervento; i valori inferiori rendono la mitigazione più aggressiva."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.maxhealth.summary" = "Massima salute consentita da impilamento della mafia."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.maxstacksize.impact" = "I valori più elevati permettono un maggiore throughput prima dell'intervento; i valori inferiori rendono la mitigazione più aggressiva."
@@ -1333,8 +1506,8 @@
 "config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.maxdiffmessagesperfile.summary" = "Numero massimo di messaggi diff a livello chiave inviati per file modificato."
 "config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.notifyoperators.impact" = "Disattivare se si desidera solo log di console e nessuna notifica in-game."
 "config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.notifyoperators.summary" = "Invia a operatori online i riassunti di cambiamento di carico caldo."
-"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.impact" = "I valori più bassi processo di eventi del filesystem consegnati prima; latenza di distribuzione del sistema operativo può essere più lunga."
-"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.summary" = "Intervallo di coda usato dal config watcher in millisecondi."
+"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.impact" = "Valori più bassi rilevano prima gli eventi ricevuti; le modifiche automatiche vengono comunque applicate in gruppi al massimo una volta ogni tre secondi."
+"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.summary" = "Intervallo di interrogazione degli eventi del file system in millisecondi."
 "config.documentation.annotation.art.arcane.react.core.controller.historycontroller.description" = "Acquisisce una volta i campionatori di React, memorizza telemetria storica compressa e gestisce query limitate a un intervallo temporale."
 "config.documentation.annotation.art.arcane.react.core.controller.historycontroller.field.compressionlevel.impact" = "Valori più alti possono ridurre l'uso del disco al costo di un maggiore carico CPU in scrittura."
 "config.documentation.annotation.art.arcane.react.core.controller.historycontroller.field.compressionlevel.summary" = "Livello DEFLATE usato solo quando riduce una colonna di metriche codificata."
@@ -1412,7 +1585,7 @@
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.debug.summary" = "Consente di eseguire il debug e la diagnostica aggiuntiva."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsecretsenabled.impact" = "Disabilitato per impostazione predefinita. Attivare per consentire Iris/Adapt pacchetti segreti quando le dipendenze sono presenti."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsecretsenabled.summary" = "Consente di integrare le funzioni segrete con plugin-gated."
-"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.impact" = "L'inglese in codice rimane il fallback; opzionale TOML i sovrascritti sono caricati da languages/overrides."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.impact" = "L'inglese incluso nel codice rimane la lingua di riserva; i cataloghi TOML modificabili vengono caricati da languages."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.summary" = "Locale utilizzato per React Interfacce di giocatore e operatore."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.impact" = "Imposta su false per disattivare completamente gli invii bStats di React. Richiede un riavvio."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.summary" = "Abilita la segnalazione anonima di utilizzo bStats per React."
@@ -1422,8 +1595,8 @@
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.priority.summary" = "Modello di priorità d'ingresso utilizzato da più React sottosistemi."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.slowticklogmode.impact" = "OFF sopprime gli avvertimenti tick lenti. BLAME mette in evidenza la probabile responsabilità del plugin/carico di lavoro. SHORT registra solo il minimo tempo. DETAILED registra il payload dati diagnostico completo."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.slowticklogmode.summary" = "Controlla la registrazione delle avvertenze tick lente. Opzioni: OFF, BLAAME, SHORT, DETAILED."
-"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.impact" = "Disabilitato per impostazione predefinita. Una volta abilitato e l'agente si attacca, non può essere staccato senza riavviare il JVM. Nessuna trasformazione è registrata nel rilascio corrente."
-"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.summary" = "Consente l'opzione ByteBuddy bytecode agent per strumentazione runtime avanzata."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.impact" = "Disabilitato per impostazione predefinita. Le funzionalità NMS specifiche della versione possono comunque collegare la propria strumentazione quando vengono attivate. La strumentazione collegata rimane fino al riavvio della JVM."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.summary" = "Collega l'agente ByteBuddy generale di React già durante l'avvio."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.value.impact" = "I valori più elevati possono aumentare l'influenza di elementi costosi nei calcoli."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.value.summary" = "Valore materiale di tuning utilizzato per l'analisi della ricetta/valore."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.verbose.impact" = "Utile per la risoluzione dei problemi, ma può creare un sacco di rumore del registro."
@@ -2576,3 +2749,125 @@
 "config.documentation.annotation.art.arcane.react.core.controller.incidentcontroller.field.persistenceenabled.summary" = "Conserva la cronologia strutturata degli incidenti in plugins/React/incidents.json."
 "config.documentation.annotation.art.arcane.react.core.controller.incidentcontroller.field.retention.impact" = "Valori maggiori conservano più cronologia e usano più memoria e spazio su disco."
 "config.documentation.annotation.art.arcane.react.core.controller.incidentcontroller.field.retention.summary" = "Numero massimo di eventi di incidente strutturati conservati."
+
+"language.menu.your_language" = "La tua lingua"
+"language.menu.reset_your_language" = "Reimposta la tua lingua"
+"language.menu.server_default" = "Lingua predefinita del server"
+"language.menu.edit_messages" = "Modifica i messaggi della lingua"
+"language.menu.use_server_default" = "Usa la lingua predefinita del server"
+"language.menu.current" = "Attuale: {locale}"
+"language.menu.current_with_personal" = "Attuale: {locale} (La tua: {personal})"
+"language.menu.your_description" = "Modifica solo i messaggi che vedi."
+"language.menu.reset_description" = "Usa la lingua predefinita del server."
+"language.menu.server_description" = "Cambia la lingua predefinita del server."
+"language.menu.edit_description" = "Apri l'editor dei messaggi per ogni lingua."
+"language.menu.select_description" = "Fai clic per selezionare questa lingua."
+"language.menu.remove_personal_description" = "Rimuovi la tua scelta personale della lingua."
+"language.menu.no_controls" = "Non hai accesso alle impostazioni della lingua."
+"language.menu.command" = "Comando: {command}"
+"language.menu.selected" = "selezionato"
+"language.menu.all-volmit-plugins" = "tutti i plugin Volmit"
+"language.error.stopping" = "La selezione linguistica non è disponibile mentre il plugin si ferma."
+"language.error.editor-player-only" = "Aprire l'editor di lingua in gioco."
+"language.usage.editor" = "Utilizzo: /{command} language server edit [locale]"
+"language.usage.selection" = "Utilizzo: /{command} language self [locale|reset] or server [locale]"
+"language.usage.volmit-selection" = "Utilizzo: /volmit plugins languages [locale]"
+"language.error.no-providers" = "Nessun servizio linguistico Volmit è disponibile."
+"language.error.numeric-page" = "Inserisci un numero di pagina per l'elenco delle lingue."
+"language.error.personal-player-only" = "Le preferenze della lingua del giocatore devono essere selezionate in gioco."
+"language.error.personal-permission" = "Non hai il permesso di selezionare la tua lingua."
+"language.error.plugin-personal-permission" = "Non hai il permesso di selezionare la tua lingua per {plugin}."
+"language.error.plugin-server-permission" = "Non hai il permesso di cambiare la lingua del server per {plugin}."
+"language.error.server-locale-required" = "Seleziona un codice lingua come en_US per la lingua predefinita del server."
+"language.error.unavailable-for-all" = "La lingua {locale} non è disponibile per tutti i plugin selezionati."
+"language.selection.preparing" = "Preparazione della lingua {locale} per {target}..."
+"language.selection.save-failed" = "{plugin}: impossibile salvare la selezione della lingua. Controlla la console del server."
+"language.selection.english-fallback" = "{plugin}: {locale} non è disponibile. Verrà usato l'inglese (en_US)."
+"language.selection.personal-selected" = "{plugin}: la tua lingua è ora {locale}."
+"language.selection.server-selected" = "{plugin}: lingua del server è ora {locale}."
+"language.selection.server-default-selected" = "{plugin}: ora usi la lingua predefinita del server."
+"language.editor.section.languages" = "Lingue"
+"language.editor.section.search" = "Ricerca"
+"language.editor.section.search-title" = "{locale} / Ricerca"
+"language.editor.section.group-title" = "{locale} / {group}"
+"language.editor.loading" = "Caricamento dei messaggi in {locale}..."
+"language.editor.prompt.search" = "Cerca chiavi dei messaggi o testo. Digita cancel per tornare indietro."
+"language.editor.prompt.value" = "Digitare un nuovo valore per {key} in chat."
+"language.editor.prompt.current" = "Valore attuale: {value}"
+"language.editor.prompt.variables" = "Variabili: {variables}"
+"language.editor.prompt.guidance" = "Usa \\n per andare a capo e \\\\ per una barra rovesciata, oppure digita cancel per tornare indietro."
+"language.editor.input.expired" = "Input dell'editor di lingua scaduto."
+"language.editor.input.too-long" = "L'ingresso dell'editor deve essere al massimo {maximum} caratteri."
+"language.editor.input.unable-to-save" = "Incapace di salvare: {reason}"
+"language.editor.navigation.back" = "&eIndietro&r"
+"language.editor.navigation.close" = "&cChiudi&r"
+"language.editor.navigation.previous-page" = "&ePagina precedente&r"
+"language.editor.navigation.next-page" = "&ePagina successiva&r"
+"language.editor.search.messages" = "Cerca messaggi"
+"language.editor.search.messages-lore" = "Clicca per cercare tutti i messaggi."
+"language.editor.search.clear" = "Cancella ricerca"
+"language.editor.message.current-value" = "&7Valore attuale:&r"
+"language.editor.message.variables" = "&8{variables}&r"
+"language.editor.message.edit-plural" = "&7Fai clic per modificare una forma plurale.&r"
+"language.editor.message.edit-lines" = "&7Fare clic per modificare le singole linee.&r"
+"language.editor.message.edit-chat" = "&7Clicca per modificare in chat.&r"
+"language.editor.locale.open" = "&8Clicca per aprire questa lingua.&r"
+"language.editor.category.message-count" = "&7{count} messaggi&r"
+"language.editor.category.open" = "&8Clicca per aprire questa categoria.&r"
+"language.editor.error.no-permission" = "Non hai il permesso di modificare le lingue di {plugin}."
+"language.editor.error.unable-to-edit" = "Incapace di modificare: {reason}"
+"language.editor.saved.summary" = "{locale} salvato. Le selezioni della lingua restano invariate."
+"language.editor.saved.change" = "{key}: “{before}” è stato modificato in “{after}”."
+"language.editor.part.line" = "Linea {line}"
+"language.editor.value.none" = "Nessuno"
+"language.editor.value.empty" = "(vuoto)"
+"test.map.megamap_capacity_fail" = "Il calcolo delle capacità di Megamap è errato:"
+"test.map.megamap_capacity_pass" = "Le capacità di Megamap ricavano colonne, righe e livello di dettaglio dalla griglia."
+"test.map.megamap_viewport_fail" = "La geometria dell'area di visualizzazione di Megamap è errata:"
+"test.map.megamap_viewport_pass" = "Le pareti adattive usano un'unica area di disegno logica e quelle ingrandite mantengono una scala uniforme con bande di riempimento."
+"test.map.megamap_defects_fail" = "Le pareti di mappe difettose non sono state diagnosticate:"
+"test.map.megamap_defects_pass" = "Le pareti di mappe irregolari, ruotate, duplicate e miste segnalano tutte il motivo del problema."
+"test.map.megamap_expansion_fail" = "I renderer hanno fallito su una parete espansa:"
+"test.map.renderer_containment_skip" = "Non è stato possibile provare alcun renderer senza interfaccia grafica."
+"test.map.megamap_expansion_pass" = "Ogni renderer riempie tutte le cornici di una parete di 1x1, 2x1, 1x2, 1x3, 2x2, 3x1, 3x3 e 5x3."
+"test.map.palette_fail" = "Alcuni colori del tema coincidono nella tavolozza delle mappe:"
+"test.map.palette_pass" = "Ogni colore del tema corrisponde a una voce esatta e distinta della tavolozza delle mappe."
+"test.map.clip_fail" = "Il disegno ha oltrepassato il rettangolo di ritaglio attivo."
+"test.map.clip_blank" = "La prova di ritaglio non ha disegnato nulla nella propria area."
+"test.map.clip_restore_fail" = "popClip non ha ripristinato il rettangolo di ritaglio precedente."
+"test.map.clip_pass" = "Linee, testo e riempimenti sono rimasti all'interno del rettangolo di ritaglio impostato."
+"test.map.text_bounds_fail" = "Il testo adattato ha superato il limite di larghezza."
+"test.map.text_bounds_pass" = "Il testo adattato non supera mai il proprio limite, a qualsiasi scala dell'interfaccia."
+"test.map.renderer_containment_fail" = "I renderer hanno disegnato fuori dal proprio rettangolo di ritaglio:"
+"test.map.renderer_containment_pass" = "Ogni renderer è rimasto all'interno del rettangolo di ritaglio impostato."
+"test.map.flush_fidelity_fail" = "Il trasferimento dal buffer non ha riprodotto la superficie composta:"
+"test.map.flush_fidelity_pass" = "Ogni pixel trasferito corrisponde alla superficie composta nelle dimensioni 1x1, 2x2 e 3x3."
+"test.map.flush_stability_fail" = "Ridisegnare contenuti identici ha comunque scritto nell'area di disegno:"
+"test.map.flush_stability_pass" = "Ridisegnare contenuti identici non scrive alcun pixel nell'area di disegno."
+"test.map.frame_wall_disabled" = "La composizione a mosaico di Megamap è disabilitata; le cornici adiacenti non formano una parete."
+"test.map.frame_wall_no_worlds" = "Nessun mondo è caricato; impossibile costruire una parete di cornici nel mondo."
+"test.map.frame_wall_setup_failed" = "Impossibile costruire una parete di cornici nel mondo:"
+"test.map.frame_wall_no_space" = "Non c'è una colonna d'aria libera vicino al punto di comparsa per costruire una parete di mappe con due cornici."
+"test.map.frame_wall_probe_failed" = "La verifica della parete di cornici nel mondo è fallita:"
+"test.map.frame_wall_pass" = "Le mappe React clonate in cornici adiacenti hanno ricevuto identificatori distinti e formato una parete di due tessere."
+"test.map.frame_wall_fail" = "Le cornici adiacenti non hanno formato una parete Megamap stabile di due tessere:"
+"command.description.language" = "Scegli la tua lingua o quella del server"
+"debug.error.missing-permission" = "Permesso mancante: {permission}"
+"debug.error.already-preparing" = "È già in preparazione un rapporto diagnostico per {plugin}."
+"debug.error.already-preparing-short" = "È già in preparazione un rapporto diagnostico."
+"debug.preparing" = "Preparazione del rapporto diagnostico di {plugin}..."
+"debug.error.schedule-failed" = "Impossibile pianificare la creazione del rapporto diagnostico."
+"debug.error.provider-closed" = "Il servizio di diagnostica è chiuso."
+"debug.error.closed-before-capture" = "Il servizio di diagnostica si è chiuso prima della raccolta del rapporto."
+"debug.error.writer-schedule-failed" = "Impossibile pianificare la scrittura del rapporto diagnostico."
+"debug.error.capture-failed" = "Impossibile raccogliere il rapporto diagnostico. Controlla la console del server."
+"debug.error.closed-before-write" = "Il servizio di diagnostica si è chiuso prima della scrittura del rapporto."
+"debug.error.write-failed" = "Impossibile scrivere il rapporto diagnostico. Controlla la console del server."
+"debug.upload.interrupted" = "Il caricamento del rapporto diagnostico è stato interrotto. Il rapporto locale è salvato."
+"debug.upload.failed" = "Il caricamento del rapporto diagnostico non è riuscito. Il rapporto locale è salvato."
+"debug.upload.completed" = "Caricato come VolmitSoftware - {plugin} - v{version}."
+"debug.action.open" = "Apri: {url}"
+"debug.action.open-description" = "Apri il rapporto diagnostico caricato."
+"debug.saved" = "Rapporto diagnostico di {plugin} salvato in {path}."
+"debug.action.copy-path" = "Copia il percorso locale"
+"debug.action.copy-path-description" = "Copia il percorso locale del rapporto."

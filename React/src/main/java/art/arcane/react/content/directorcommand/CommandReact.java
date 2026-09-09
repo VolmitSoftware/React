@@ -70,7 +70,12 @@ public class CommandReact implements DirectorExecutor {
     React.instance.debugDump().request(sender, upload);
   }
 
-  @Director(name = "language", description = "Choose your language or the server language")
+  @Director(
+      name = "language",
+      aliases = {"languages"},
+      description = "Choose your language or the server language",
+      descriptionKey = "command.description.language"
+  )
   public void language() {
     ReactLanguage.switcher().open(sender().getS());
   }

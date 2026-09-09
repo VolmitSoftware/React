@@ -1,6 +1,179 @@
+# React 언어: ko_KR
+#
+# languages 폴더에서 이 파일을 직접 편집하거나 /react language server edit 명령어를 사용하세요.
+# React는 없는 언어 파일만 생성하거나 다운로드합니다. 로컬 변경 사항은 유지됩니다.
+# 누락된 메시지는 내장 영어 카탈로그를 사용합니다.
+#
+# 서식
+#   채팅 메시지는 MiniMessage를 사용합니다: <red>텍스트</red>, <bold>텍스트</bold>.
+#   RGB 색상에는 <color:#RRGGBB>텍스트</color>를 사용합니다. 태그는 연 순서의 역순으로 닫으세요.
+#   공통 language.* 편집기 메시지는 &e, &r 같은 기존 앰퍼샌드 색상 코드도 지원합니다.
+#   다른 메시지는 앰퍼샌드 색상 코드를 변환하지 않습니다. TOML의 따옴표와 이스케이프를 올바르게 유지하세요.
+#   따옴표로 감싼 TOML 문자열에서 \n으로 줄을 바꿉니다. 이중 중괄호 {{ 및 }}는 중괄호 자체를 표시합니다.
+#   renderer.* 및 config.documentation.annotation.* 값은 일반 텍스트입니다.
+#   test.* 값은 일반 텍스트이며, test.result.* 메시지는 MiniMessage를 사용합니다.
+#
+# 자리 표시자
+# 각 메시지는 해당 메시지의 자리 표시자만 허용합니다. 이름을 변경하지 마세요.
+# 자리 표시자는 MiniMessage 태그 밖의 메시지 본문에 사용하세요.
+#   {action}          작업 이름 또는 색상 조정 방향
+#   {actions}         대기 중인 작업 수 또는 제외된 작업 이름 목록
+#   {active}          활성 기능 또는 조정 항목 수
+#   {actor}           변경한 웹 사용자
+#   {added}           활성화 후 기능이 활성 레지스트리에 다시 등록되었는지 여부
+#   {after}           변경 후 설정 값, 언어 메시지 또는 힙 사용량
+#   {age}             연동 데이터의 경과 시간(초)
+#   {amount}          지급할 아이템 수
+#   {architecture}    CPU 아키텍처
+#   {argument}        예상하지 못한 명령어 인수
+#   {available}       사용 가능한 NMS 브리지 핸들 수
+#   {average}         평균 TPS 또는 틱당 밀리초
+#   {avg_mspt}        부하 테스트 회차의 평균 틱당 밀리초
+#   {avg_tps}         부하 테스트 회차의 평균 초당 틱 수
+#   {bar}             서식이 적용된 벤치마크 점수 막대
+#   {before}          변경 전 설정 값, 언어 메시지 또는 힙 사용량
+#   {checked}         검사한 샘플러 수
+#   {chunks}          작업의 영향을 받은 청크 수
+#   {code}            웹 페어링 코드
+#   {command}         명령어 경로
+#   {count}           항목, 모듈, 변경 사항 또는 테스트 결과 수
+#   {current}         현재 페이지 번호
+#   {delta_heap}      종료 시 React와 기준 상태 간 힙 사용량 차이(MB)
+#   {delta_mspt}      React와 기준 상태 간 평균 틱 시간 차이(ms)
+#   {delta_tps}       React와 기준 상태 간 평균 TPS 차이
+#   {detail}          브리지, 연동, 작업 또는 테스트 진단 세부 정보
+#   {dimensions}      감지된 지도 벽 격자 크기
+#   {direction}       선택한 색상의 색조를 회전할 방향
+#   {distance}        요청한 시야 거리 또는 시뮬레이션 거리
+#   {duration}        경과 시간. 부하 테스트 시작 메시지에서는 초 단위
+#   {enabled}         활성화 상태 또는 활성화된 모듈 수
+#   {entities}        작업의 영향을 받은 개체 수
+#   {entry}           연동 타임라인 항목
+#   {exceptions}      부하 테스트 회차 중 기록된 React 예외
+#   {fail}            실패한 검사 수
+#   {file}            설정, 언어 또는 플러그인 API 파일 이름
+#   {fingerprint}     서버 또는 웹 토큰 지문
+#   {finite}          유한 값을 반환하는 샘플러 수
+#   {frames}          활성 지도 벽의 아이템 액자 수
+#   {free}            사용 가능한 물리 메모리 또는 가상 메모리
+#   {freed}           가비지 컬렉션으로 회수한 힙 메모리
+#   {from}            현재 페이지의 첫 항목 번호
+#   {grid}            지도 벽 격자 크기
+#   {ground_y}        중력 테스트의 지면 높이
+#   {group}           모니터, 샘플러, 지도, 설정 또는 언어 메시지 그룹
+#   {growth}          부하 테스트 중 힙 증가량(MB)
+#   {health}          연동 상태의 정상 여부
+#   {heap_end}        부하 테스트 회차 종료 시 힙 사용량(MB)
+#   {heap_start}      부하 테스트 회차 시작 시 힙 사용량(MB)
+#   {heartbeat}       연동의 마지막 하트비트 이후 경과 시간
+#   {height}          테스트 캔버스 높이(픽셀)
+#   {hoppers}         정규화한 호퍼 수
+#   {id}              브리지 핸들, 샘플러, 지도, 작업, 팩 또는 토큰 식별자
+#   {impact}          설정 영향 설명 또는 플러그인 처리 비용(ms/s)
+#   {incident}        개발 테스트 모음에서 제외한 재귀적 사고 대응 작업 식별자
+#   {index}           개발 테스트 모음의 현재 단계 번호
+#   {invalid}         유효하지 않은 측정값을 가진 샘플러 수
+#   {issued_at}       웹 토큰 생성 시간
+#   {item}            아이템 이름 또는 식별자
+#   {items}           병합한 아이템 개체 수
+#   {key}             명령어 매개변수 키, 설정 키 또는 언어 메시지 ID
+#   {label}           벤치마크, 지표, 설정, 명령어 또는 웹 토큰 레이블
+#   {line}            여러 줄 메시지에서 편집 중인 줄 번호
+#   {lines}           검색한 서버 로그 줄 수
+#   {loaded}          사전 로딩 중 새로 불러온 청크 수
+#   {locale}          표시, 선택 또는 편집 중인 언어 코드
+#   {matched}         자동 저장 상태가 테스트 기준과 일치하는 월드
+#   {max_tick}        부하 테스트에서 관측한 가장 긴 틱 간격(ms)
+#   {maximum}         최대 아이템 수, 틱 시간 임계값 또는 편집기 입력 길이
+#   {message}         완료된 작업 요약 또는 연동 상태 메시지
+#   {metrics}         플러그인 API 팩이 제공하는 지표 수
+#   {minecraft}       Minecraft 버전
+#   {minimum}         허용되는 최소 TPS
+#   {missing}         레지스트리에 없는 필수 샘플러 수
+#   {mode}            선택한 게임 모드 또는 능력 모드
+#   {model}           CPU 모델
+#   {name}            벤치마크, 모듈, 렌더러 또는 테스트 검사 이름
+#   {note}            서버 로그를 검색하지 않은 이유
+#   {offenders}       유한하지 않은 값을 반환하는 샘플러 수
+#   {operations}      분당 능력 콜백 작업 수
+#   {options}         허용되는 설정 값
+#   {p95}             부하 테스트의 틱 시간 95백분위수(ms)
+#   {parameter}       명령어 매개변수 이름
+#   {parameters}      무시된 명령어 매개변수
+#   {pass}            통과한 검사 수
+#   {path}            설정 키 경로 또는 보고서 파일 경로
+#   {percent}         색상 조정 비율 또는 플러그인 영향 비중
+#   {permission}      필요한 권한 노드
+#   {personal}        플레이어가 선택한 언어 코드
+#   {phase}           테스트 중인 기능 수명 주기 단계
+#   {pixels}          지도 테스트에서 렌더링한 비어 있지 않은 픽셀 수
+#   {platform}        운영 체제 또는 Minecraft 서버 플랫폼
+#   {players}         부하 테스트의 가상 플레이어 수
+#   {plugin}          플러그인 이름
+#   {process_load}    서버 프로세스의 CPU 부하
+#   {processors}      사용 가능한 CPU 프로세서 수
+#   {profile}         React 설정 프로필 이름
+#   {protocol}        연동 프로토콜 버전
+#   {radius}          지도 또는 개발 테스트 작업의 청크 반경
+#   {range}           허용되는 시야 거리 또는 시뮬레이션 거리 범위
+#   {rate}            설정된 작물 성장 가속 비율
+#   {rating}          서식이 적용된 벤치마크 등급
+#   {react_errors}    서버 로그에서 찾은 React 오류 줄 수
+#   {reason}          실패, 거부 또는 사용 불가 상태의 이유
+#   {registered}      등록된 모듈 수
+#   {removed_first}   첫 비활성화로 기능이 활성 레지스트리에서 제거되었는지 여부
+#   {removed_second}  반복 비활성화로 기능이 활성 레지스트리에서 제거되었는지 여부
+#   {renderer}        지도 렌더러 이름 또는 식별자
+#   {renderers}       식별자가 비어 있는 지도 렌더러 목록
+#   {role}            웹 접근 역할: viewer, operator 또는 admin
+#   {sampler}         샘플러 이름 또는 식별자
+#   {samplers}        연동 샘플러 또는 실패한 샘플러 목록
+#   {scope}           지도 범위 또는 거리 설정 범위
+#   {score}           벤치마크 점수
+#   {seconds}         카운트다운 또는 부하 테스트 시간(초)
+#   {section}         설정 섹션 이름
+#   {server}          Minecraft 서버 구현체와 버전
+#   {shown}           현재 표시되는 행 수
+#   {since_run}       현재 테스트 시작 이후 보고된 오류
+#   {size}            지도 벽의 최대 크기 또는 사용 중인 크기
+#   {skip}            건너뛴 검사 수
+#   {spawn_y}         중력 테스트 블록이 생성된 높이
+#   {state}           작업 또는 플러그인 API 팩 상태
+#   {status}          연동 상태 또는 설정 상태 레이블
+#   {subject}         설정 도움말에서 설명하는 모듈 또는 설정
+#   {subsystem}       테스트 하위 시스템 이름
+#   {summary}         작업 감사 요약
+#   {system_load}     전체 시스템의 CPU 부하
+#   {target}          작업 대상 월드, 플레이어, 플러그인, 설정 또는 플러그인 그룹
+#   {threading}       서버 스레딩 모드
+#   {tick}            멈춤 임계값을 초과한 틱 시간(ms)
+#   {tick_crashes}    서버 로그에서 찾은 틱 크래시 줄 수
+#   {tier}            사고 대응 절차의 심각도 단계
+#   {timing}          분당 능력 콜백 시간(밀리초)
+#   {to}              현재 페이지의 마지막 항목 번호
+#   {total}           메시지의 전체 항목, 모듈, 월드, 검사 수 또는 메모리 양
+#   {type}            명령어 매개변수, 설정 값, 지도 또는 거리 유형
+#   {unavailable}     사용할 수 없는 NMS 브리지 핸들 수
+#   {unit}            원형 차트 합계의 단위 레이블
+#   {unknown}         개발 테스트 모음에서 제외한 알 수 없는 작업 식별자
+#   {unreadable}      읽을 수 없었던 샘플러 수
+#   {uptime}          호스트 운영 체제 가동 시간
+#   {url}             업로드한 진단 보고서 URL
+#   {usage}           명령어 사용 구문
+#   {used}            사용 중인 물리 메모리, 가상 메모리 또는 힙
+#   {value}           서식이 적용된 설정, 측정값 또는 하드웨어 세부 정보
+#   {values}          개발 테스트 모음 보고서에 나열된 샘플 값
+#   {variables}       편집 중인 메시지에서 허용하는 자리 표시자 이름
+#   {vendor}          Java 공급업체
+#   {verdict}         전체 테스트 판정
+#   {version}         React, Java 또는 플랫폼 버전
+#   {warmed}          사전 로딩한 청크 수
+#   {warn}            경고가 있는 검사 수
+#   {width}           테스트 캔버스 너비(픽셀)
+#   {world}           Minecraft 월드 이름
+
 "command.description.debugdump" = "진단 보고서를 생성하고 선택적으로 업로드"
 "command.parameter.debugdump_upload" = "보고서를 mclo.gs에 업로드"
-# Complete bundled translation. Code-owned English remains the canonical fallback.
 "action.collect_garbage.no_reclaim" = "즉시 출혈이 없는 Garbage 컬렉션(Garbage collection{used} 사용) {duration}"
 "action.collect_garbage.reclaimed" = "무료 다운로드 {freed} ({before} -> {after}) 에서 {duration}"
 "action.completed" = "의제휴 {action} 으로 {duration}"
@@ -911,8 +1084,8 @@
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.description" = "Mob Stacking 기능 구성. 이 기능은 지속적으로 서버 동작을 모니터링하고 실행 중에 가드 레일을 적용합니다."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.batchintervalms.impact" = "더 많은 스케줄링 비용에 신선하게 spawned mobs 빨리 낮추십시오; 더 높은 가치 배치는 통행 당 더 합병한 일을 더 묶습니다."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.batchintervalms.summary" = "몇 번이나 줄을 서 있는 청크가 밀리초에 겹치도록 처리되는지."
-"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.impact" = "이 행동을 적용 할 수 있습니다.이 경로 활성화를 유지 할 수 없습니다."
-"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.summary" = "mob stacking이 사용자 정의 이름을 적용 여부를 제어합니다."
+"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.impact" = "Gloss는 이 설정과 관계없이 스택 수를 전달받으며, 통합 엔티티 표시가 활성화되어 있으면 해당 표시를 관리합니다."
+"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.summary" = "Gloss의 엔티티 표시를 사용할 수 없을 때 기본 이름 표시 방식으로 몹 스택 이름을 표시합니다."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.maxhealth.impact" = "높은 값은 개입 전에 더 많은 처리량을 허용; 낮은 가치는 더 공격적인 완화를 만듭니다."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.maxhealth.summary" = "모기장에 의해 허용되는 최대 건강."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.maxstacksize.impact" = "높은 값은 개입 전에 더 많은 처리량을 허용; 낮은 가치는 더 공격적인 완화를 만듭니다."
@@ -1333,8 +1506,8 @@
 "config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.maxdiffmessagesperfile.summary" = "변경된 파일 당 전송되는 키 레벨 디프 메시지의 최대 수."
 "config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.notifyoperators.impact" = "콘솔 로그와 게임 알림을 원할 경우 비활성화."
 "config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.notifyoperators.summary" = "온라인 연산자에 핫로드 변경 summaries를 전송합니다."
-"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.impact" = "낮은 값 프로세스는 파일 시스템 이벤트를 빨리 전달; 운영 체제 배달 대기 시간은 더 길 수 있습니다."
-"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.summary" = "config watcher에 의해 사용되는 Queue-drain 간격은 밀리 초입니다."
+"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.impact" = "값이 낮을수록 수신된 이벤트를 더 빨리 감지하지만, 자동 변경 사항은 여전히 최대 3초에 한 번 일괄 적용됩니다."
+"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.summary" = "파일 시스템 이벤트를 확인하는 간격(밀리초)입니다."
 "config.documentation.annotation.art.arcane.react.core.controller.historycontroller.description" = "React 샘플러를 한 번 수집하고 압축된 과거 원격 측정 데이터를 저장하며 제한된 시간 범위 쿼리를 처리합니다."
 "config.documentation.annotation.art.arcane.react.core.controller.historycontroller.field.compressionlevel.impact" = "값이 높을수록 기록 CPU 사용량이 늘어나는 대신 디스크 사용량을 줄일 수 있습니다."
 "config.documentation.annotation.art.arcane.react.core.controller.historycontroller.field.compressionlevel.summary" = "인코딩된 메트릭 열이 더 작아질 때만 사용하는 DEFLATE 수준입니다."
@@ -1412,7 +1585,7 @@
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.debug.summary" = "디버그 로깅 및 추가 진단을 가능하게 합니다."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsecretsenabled.impact" = "기본적으로 비활성화. 허용하기 Iris/Adapt 종속성이 존재할 때 비밀 번들."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsecretsenabled.summary" = "플러그인을 활성화된 비밀 통합 기능."
-"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.impact" = "Code-owned English는 미화폐로 남아 있습니다. TOML overrides는에서 적재됩니다 languages/overrides."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.impact" = "코드에 포함된 영어를 계속 대체 언어로 사용하며, 편집 가능한 TOML 카탈로그는 languages에서 불러옵니다."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.summary" = "현지에 사용 React 플레이어 및 운영자 인터페이스."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.impact" = "false로 설정하면 React의 bStats 전송을 완전히 비활성화합니다. 적용하려면 재시작이 필요합니다."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.summary" = "React의 익명 bStats 사용 통계 보고를 활성화합니다."
@@ -1422,8 +1595,8 @@
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.priority.summary" = "여러 가지에 의해 사용되는 필수 우선 모델 React 서브시스템"
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.slowticklogmode.impact" = "OFF는 느린 틱 경고를 억제합니다. BLAME은 플러그인/워크로드의 책임 가능성을 강조합니다. SHORT는 최소한의 타이밍을 기록합니다. DETAILED는 완전한 진단 데이터 페이로드를 기록합니다."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.slowticklogmode.summary" = "느린 틱 경고가 얼마나 기록되는지 제어합니다. 옵션: 종료, 비난, 단기, 세부 사항."
-"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.impact" = "기본적으로 비활성화. 활성화 및 에이전트 첨부, 그것은 다시 시작 없이 detached 될 수 없습니다 JVM. 현재 릴리스에 변환되지 않습니다."
-"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.summary" = "선택 사항 ByteBuddy 고급 런타임 계측용 바이트코드 에이전트."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.impact" = "기본적으로 비활성화되어 있습니다. 버전별 NMS 기능은 활성화될 때 자체 계측 기능을 연결할 수 있습니다. 연결된 계측 기능은 JVM을 다시 시작할 때까지 유지됩니다."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.summary" = "시작 시 React의 범용 ByteBuddy 에이전트를 미리 연결합니다."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.value.impact" = "높은 값은 계산에 비싼 항목의 영향을 증가 할 수 있습니다."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.value.summary" = "재료 값 튜닝은 조리법 / 가치 분석에 사용됩니다."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.verbose.impact" = "문제 해결에 도움이되지만 많은 로그 소음을 만들 수 있습니다."
@@ -2576,3 +2749,125 @@
 "config.documentation.annotation.art.arcane.react.core.controller.incidentcontroller.field.persistenceenabled.summary" = "구조화된 사고 기록을 plugins/React/incidents.json에 저장합니다."
 "config.documentation.annotation.art.arcane.react.core.controller.incidentcontroller.field.retention.impact" = "값이 클수록 기록을 더 많이 보존하고 메모리와 디스크 공간을 더 사용합니다."
 "config.documentation.annotation.art.arcane.react.core.controller.incidentcontroller.field.retention.summary" = "보존할 구조화된 사고 이벤트의 최대 수입니다."
+
+"language.menu.your_language" = "내 언어"
+"language.menu.reset_your_language" = "내 언어 재설정"
+"language.menu.server_default" = "서버 기본값"
+"language.menu.edit_messages" = "언어 메시지 편집"
+"language.menu.use_server_default" = "서버 기본값 사용"
+"language.menu.current" = "현재: {locale}"
+"language.menu.current_with_personal" = "현재: {locale} (내 언어: {personal})"
+"language.menu.your_description" = "나에게 표시되는 메시지만 변경합니다."
+"language.menu.reset_description" = "서버 기본 언어를 사용합니다."
+"language.menu.server_description" = "서버 기본 언어를 변경합니다."
+"language.menu.edit_description" = "언어별 메시지 편집기를 엽니다."
+"language.menu.select_description" = "클릭하여 이 언어를 선택합니다."
+"language.menu.remove_personal_description" = "개인 언어 선택을 제거합니다."
+"language.menu.no_controls" = "사용할 수 있는 언어 설정이 없습니다."
+"language.menu.command" = "명령어: {command}"
+"language.menu.selected" = "선택됨"
+"language.menu.all-volmit-plugins" = "모든 Volmit 플러그인"
+"language.error.stopping" = "플러그인이 중지되는 동안 언어 선택은 사용할 수 없습니다.."
+"language.error.editor-player-only" = "게임 안에서 언어 편집기를 여세요."
+"language.usage.editor" = "사용법: /{command} language server edit [locale]"
+"language.usage.selection" = "사용법: /{command} language self [locale|reset] or server [locale]"
+"language.usage.volmit-selection" = "사용법: /volmit plugins languages [locale]"
+"language.error.no-providers" = "사용 가능한 Volmit 언어 제공자가 없습니다."
+"language.error.numeric-page" = "언어 페이지를 숫자로 지정하세요."
+"language.error.personal-player-only" = "플레이어 언어 선호도는 게임에서 선택해야합니다.."
+"language.error.personal-permission" = "내 언어를 선택할 권한이 없습니다."
+"language.error.plugin-personal-permission" = "{plugin}에서 사용할 내 언어를 선택할 권한이 없습니다."
+"language.error.plugin-server-permission" = "{plugin}의 서버 언어를 변경할 권한이 없습니다."
+"language.error.server-locale-required" = "서버 기본 언어로 en_US와 같은 로케일을 선택하세요."
+"language.error.unavailable-for-all" = "선택한 플러그인 중 {locale} 언어를 사용할 수 없는 플러그인이 있습니다."
+"language.selection.preparing" = "{target}에서 사용할 {locale} 언어를 준비하는 중..."
+"language.selection.save-failed" = "{plugin}: 언어 선택을 저장할 수 없습니다. 서버 콘솔을 확인하세요."
+"language.selection.english-fallback" = "{plugin}: {locale} 언어를 사용할 수 없어 영어 (en_US)를 사용합니다."
+"language.selection.personal-selected" = "{plugin}: 내 언어가 {locale}(으)로 변경되었습니다."
+"language.selection.server-selected" = "{plugin}: 서버 언어가 {locale}(으)로 변경되었습니다."
+"language.selection.server-default-selected" = "{plugin}: 이제 귀하의 언어는 서버 기본값을 사용합니다.."
+"language.editor.section.languages" = "언어"
+"language.editor.section.search" = "검색"
+"language.editor.section.search-title" = "{locale} / 검색"
+"language.editor.section.group-title" = "{locale} / {group}"
+"language.editor.loading" = "{locale} 메시지를 불러오는 중..."
+"language.editor.prompt.search" = "메시지 키나 텍스트를 검색하세요. 돌아가려면 cancel을 입력하세요."
+"language.editor.prompt.value" = "채팅에 {key}의 새 값을 입력하세요."
+"language.editor.prompt.current" = "현재 값: {value}"
+"language.editor.prompt.variables" = "변수: {variables}"
+"language.editor.prompt.guidance" = "줄바꿈에는 \\n, 역슬래시에는 \\\\를 사용하세요. 돌아가려면 cancel을 입력하세요."
+"language.editor.input.expired" = "언어 편집기의 입력 시간이 만료되었습니다."
+"language.editor.input.too-long" = "편집기에는 최대 {maximum}자까지 입력할 수 있습니다."
+"language.editor.input.unable-to-save" = "저장할 수 없음: {reason}"
+"language.editor.navigation.back" = "&e뒤로&r"
+"language.editor.navigation.close" = "&c닫기&r"
+"language.editor.navigation.previous-page" = "&e이전 페이지&r"
+"language.editor.navigation.next-page" = "&e다음 페이지&r"
+"language.editor.search.messages" = "메시지 검색"
+"language.editor.search.messages-lore" = "클릭하여 모든 메시지를 검색합니다."
+"language.editor.search.clear" = "검색 지우기"
+"language.editor.message.current-value" = "&7현재 값:&r"
+"language.editor.message.variables" = "&8{variables}&r"
+"language.editor.message.edit-plural" = "&7클릭하여 복수형을 편집합니다.&r"
+"language.editor.message.edit-lines" = "&7클릭하여 각 줄을 편집합니다.&r"
+"language.editor.message.edit-chat" = "&7클릭하여 채팅에서 편집합니다.&r"
+"language.editor.locale.open" = "&8클릭하여 이 언어를 엽니다.&r"
+"language.editor.category.message-count" = "&7메시지 {count}개&r"
+"language.editor.category.open" = "&8클릭하여 이 카테고리를 엽니다.&r"
+"language.editor.error.no-permission" = "{plugin}의 언어를 편집할 권한이 없습니다."
+"language.editor.error.unable-to-edit" = "편집 할 수 없음: {reason}"
+"language.editor.saved.summary" = "{locale}을(를) 저장했습니다. 언어 선택은 변경되지 않았습니다."
+"language.editor.saved.change" = "{key}: “{before}”에서 “{after}”(으)로 변경했습니다."
+"language.editor.part.line" = "{line}행"
+"language.editor.value.none" = "없음"
+"language.editor.value.empty" = "(비어 있음)"
+"test.map.megamap_capacity_fail" = "Megamap 기능 정보 계산이 잘못되었습니다:"
+"test.map.megamap_capacity_pass" = "Megamap의 열 수, 행 수와 세부 수준은 격자에서 계산됩니다."
+"test.map.megamap_viewport_fail" = "Megamap 표시 영역의 기하 구조가 잘못되었습니다:"
+"test.map.megamap_viewport_pass" = "적응형 벽에는 하나의 논리 캔버스가 제공되며, 확대된 벽은 일정한 배율과 여백으로 화면 비율을 유지합니다."
+"test.map.megamap_defects_fail" = "잘못된 지도 벽을 진단하지 못했습니다:"
+"test.map.megamap_defects_pass" = "불규칙하거나 회전되거나 중복되거나 혼합된 지도 벽은 모두 원인을 보고합니다."
+"test.map.megamap_expansion_fail" = "확장된 벽에서 렌더러가 실패했습니다:"
+"test.map.renderer_containment_skip" = "그래픽 화면 없이 실행할 수 있는 렌더러가 없습니다."
+"test.map.megamap_expansion_pass" = "모든 렌더러가 1x1, 2x1, 1x2, 1x3, 2x2, 3x1, 3x3 및 5x3 벽의 모든 액자를 채웁니다."
+"test.map.palette_fail" = "지도 팔레트에서 테마 색상이 서로 구별되지 않습니다:"
+"test.map.palette_pass" = "모든 테마 색상은 지도 팔레트의 서로 다른 색상과 정확히 일치합니다."
+"test.map.clip_fail" = "그리기가 활성 클리핑 사각형을 벗어났습니다."
+"test.map.clip_blank" = "클리핑 검사에서 해당 영역 안에 아무것도 그려지지 않았습니다."
+"test.map.clip_restore_fail" = "popClip이 이전 클리핑 사각형을 복원하지 못했습니다."
+"test.map.clip_pass" = "선, 텍스트 및 채우기가 스택에 추가된 클리핑 사각형 안에 유지되었습니다."
+"test.map.text_bounds_fail" = "너비에 맞춘 텍스트가 너비 제한을 초과했습니다."
+"test.map.text_bounds_pass" = "너비에 맞춘 텍스트는 어떤 UI 배율에서도 제한을 초과하지 않습니다."
+"test.map.renderer_containment_fail" = "렌더러가 클리핑 사각형 밖에 그렸습니다:"
+"test.map.renderer_containment_pass" = "모든 렌더러가 스택에 추가된 클리핑 사각형 안에 유지되었습니다."
+"test.map.flush_fidelity_fail" = "버퍼를 내보낸 결과가 합성된 그리기 표면을 재현하지 못했습니다:"
+"test.map.flush_fidelity_pass" = "내보낸 모든 픽셀은 1x1, 2x2 및 3x3에서 합성된 그리기 표면과 일치합니다."
+"test.map.flush_stability_fail" = "같은 내용을 다시 그려도 캔버스에 쓰기가 발생했습니다:"
+"test.map.flush_stability_pass" = "같은 내용을 다시 그리면 캔버스에 픽셀을 쓰지 않습니다."
+"test.map.frame_wall_disabled" = "Megamap 타일 결합이 비활성화되어 인접한 액자가 벽을 구성하지 않습니다."
+"test.map.frame_wall_no_worlds" = "불러온 월드가 없어 실제 아이템 액자 벽을 만들 수 없습니다."
+"test.map.frame_wall_setup_failed" = "실제 아이템 액자 벽을 만들지 못했습니다:"
+"test.map.frame_wall_no_space" = "스폰 지점 근처에 액자 두 개로 지도 벽을 만들 수 있는 빈 수직 공간이 없습니다."
+"test.map.frame_wall_probe_failed" = "실제 아이템 액자 벽 검사에 실패했습니다:"
+"test.map.frame_wall_pass" = "인접한 액자에 복제된 React 지도가 서로 다른 ID를 받고 두 타일 벽으로 인식되었습니다."
+"test.map.frame_wall_fail" = "인접한 아이템 액자가 두 타일 Megamap 벽으로 인식되지 않았습니다:"
+"command.description.language" = "개인 언어 또는 서버 언어 선택"
+"debug.error.missing-permission" = "필요한 권한이 없습니다: {permission}"
+"debug.error.already-preparing" = "{plugin}의 진단 보고서를 이미 준비 중입니다."
+"debug.error.already-preparing-short" = "진단 보고서를 이미 준비 중입니다."
+"debug.preparing" = "{plugin}의 진단 보고서를 준비하는 중..."
+"debug.error.schedule-failed" = "진단 보고서 생성 작업을 예약하지 못했습니다."
+"debug.error.provider-closed" = "진단 서비스가 종료되었습니다."
+"debug.error.closed-before-capture" = "보고서를 수집하기 전에 진단 서비스가 종료되었습니다."
+"debug.error.writer-schedule-failed" = "진단 보고서 쓰기 작업을 예약하지 못했습니다."
+"debug.error.capture-failed" = "진단 보고서를 수집하지 못했습니다. 서버 콘솔을 확인하세요."
+"debug.error.closed-before-write" = "보고서를 쓰기 전에 진단 서비스가 종료되었습니다."
+"debug.error.write-failed" = "진단 보고서를 쓰지 못했습니다. 서버 콘솔을 확인하세요."
+"debug.upload.interrupted" = "진단 보고서 업로드가 중단되었습니다. 로컬 보고서는 저장되었습니다."
+"debug.upload.failed" = "진단 보고서 업로드에 실패했습니다. 로컬 보고서는 저장되었습니다."
+"debug.upload.completed" = "VolmitSoftware - {plugin} - v{version} 이름으로 업로드했습니다."
+"debug.action.open" = "열기: {url}"
+"debug.action.open-description" = "업로드한 진단 보고서를 엽니다."
+"debug.saved" = "{plugin}의 진단 보고서를 {path}에 저장했습니다."
+"debug.action.copy-path" = "로컬 경로 복사"
+"debug.action.copy-path-description" = "보고서의 로컬 경로를 복사합니다."

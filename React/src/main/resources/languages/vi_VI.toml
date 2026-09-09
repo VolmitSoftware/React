@@ -1,6 +1,179 @@
+# Ngôn ngữ React: vi_VI
+#
+# Sửa tệp này trực tiếp trong thư mục languages hoặc bằng lệnh /react language server edit.
+# React chỉ tạo hoặc tải tệp ngôn ngữ khi tệp còn thiếu. Các chỉnh sửa cục bộ được giữ lại.
+# Thông điệp còn thiếu sẽ dùng danh mục tiếng Anh tích hợp.
+#
+# Định dạng
+#   Thông điệp trò chuyện dùng MiniMessage: <red>văn bản</red>, <bold>văn bản</bold>.
+#   Màu RGB dùng <color:#RRGGBB>văn bản</color>. Đóng các thẻ theo thứ tự ngược với khi mở.
+#   Thông điệp trình sửa dùng chung language.* cũng hỗ trợ mã màu kiểu cũ bắt đầu bằng dấu &, như &e và &r.
+#   Các thông điệp khác không chuyển đổi mã màu bắt đầu bằng dấu &. Giữ đúng dấu ngoặc kép và ký tự thoát của TOML.
+#   Dùng \n trong chuỗi TOML có dấu ngoặc kép để xuống dòng. Cặp dấu {{ và }} hiển thị dấu ngoặc nhọn nguyên dạng.
+#   Giá trị renderer.* và config.documentation.annotation.* là văn bản thuần.
+#   Giá trị test.* là văn bản thuần, ngoại trừ thông điệp test.result.* dùng MiniMessage.
+#
+# Biến thay thế
+# Mỗi thông điệp chỉ chấp nhận các biến thay thế riêng của nó. Giữ nguyên tên biến.
+# Đặt biến thay thế trong nội dung thông điệp, bên ngoài các thẻ MiniMessage.
+#   {action}          Tên hành động hoặc hướng điều chỉnh màu
+#   {actions}         Số hành động trong hàng đợi hoặc danh sách tên hành động bị loại trừ
+#   {active}          Số tính năng hoặc tinh chỉnh đang hoạt động
+#   {actor}           Người dùng web thực hiện thay đổi
+#   {added}           Tính năng có được đưa lại vào danh sách đăng ký đang hoạt động sau khi kích hoạt hay không
+#   {after}           Giá trị cấu hình, thông điệp ngôn ngữ hoặc mức dùng bộ nhớ heap sau thay đổi
+#   {age}             Tuổi của dữ liệu tích hợp, tính bằng giây
+#   {amount}          Số vật phẩm cần cấp
+#   {architecture}    Kiến trúc CPU
+#   {argument}        Đối số lệnh không mong đợi
+#   {available}       Số điểm truy cập cầu nối NMS khả dụng
+#   {average}         TPS trung bình hoặc số mili giây mỗi nhịp
+#   {avg_mspt}        Số mili giây trung bình mỗi nhịp trong một lượt kiểm thử tải
+#   {avg_tps}         Số nhịp trung bình mỗi giây trong một lượt kiểm thử tải
+#   {bar}             Thanh điểm kiểm thử hiệu năng đã định dạng
+#   {before}          Giá trị cấu hình, thông điệp ngôn ngữ hoặc mức dùng bộ nhớ heap trước thay đổi
+#   {checked}         Số bộ lấy mẫu đã kiểm tra
+#   {chunks}          Số vùng khối chịu tác động của một hành động
+#   {code}            Mã ghép nối web
+#   {command}         Đường dẫn lệnh
+#   {count}           Số mục, mô-đun, thay đổi hoặc phát hiện trong kiểm thử
+#   {current}         Số trang hiện tại
+#   {delta_heap}      Chênh lệch mức dùng bộ nhớ heap khi kết thúc giữa React và lần đo cơ sở, tính bằng MB
+#   {delta_mspt}      Chênh lệch thời gian nhịp trung bình giữa React và lần đo cơ sở, tính bằng ms
+#   {delta_tps}       Chênh lệch TPS trung bình giữa React và lần đo cơ sở
+#   {detail}          Chi tiết chẩn đoán cầu nối, tích hợp, hành động hoặc kiểm thử
+#   {dimensions}      Kích thước lưới tường bản đồ đã phát hiện
+#   {direction}       Hướng xoay sắc độ của màu đang chọn
+#   {distance}        Khoảng cách nhìn hoặc mô phỏng được yêu cầu
+#   {duration}        Thời gian đã trôi qua; thông điệp bắt đầu kiểm thử tải dùng đơn vị giây
+#   {enabled}         Trạng thái bật hoặc số mô-đun đang bật
+#   {entities}        Số thực thể chịu tác động của một hành động
+#   {entry}           Mục trong dòng thời gian tích hợp
+#   {exceptions}      Các ngoại lệ React ghi nhận trong một lượt kiểm thử tải
+#   {fail}            Số phép kiểm tra thất bại
+#   {file}            Tên tệp cấu hình, ngôn ngữ hoặc API phần bổ trợ
+#   {fingerprint}     Dấu vân tay máy chủ hoặc mã truy cập web
+#   {finite}          Số bộ lấy mẫu trả về giá trị hữu hạn
+#   {frames}          Số khung vật phẩm trong tường bản đồ đang hoạt động
+#   {free}            Bộ nhớ vật lý hoặc bộ nhớ ảo còn trống
+#   {freed}           Bộ nhớ heap được thu hồi khi dọn rác
+#   {from}            Số thứ tự mục đầu tiên trên trang hiện tại
+#   {grid}            Kích thước lưới tường bản đồ
+#   {ground_y}        Độ cao mặt đất của kiểm thử trọng lực
+#   {group}           Nhóm giám sát, bộ lấy mẫu, bản đồ, cấu hình hoặc thông điệp ngôn ngữ
+#   {growth}          Mức tăng bộ nhớ heap trong kiểm thử tải, tính bằng MB
+#   {health}          Tình trạng hoạt động của tích hợp
+#   {heap_end}        Mức dùng bộ nhớ heap khi kết thúc một lượt kiểm thử tải, tính bằng MB
+#   {heap_start}      Mức dùng bộ nhớ heap khi bắt đầu một lượt kiểm thử tải, tính bằng MB
+#   {heartbeat}       Thời gian từ tín hiệu duy trì kết nối gần nhất của tích hợp
+#   {height}          Chiều cao khung vẽ kiểm thử, tính bằng điểm ảnh
+#   {hoppers}         Số phễu đã chuẩn hóa
+#   {id}              Định danh điểm truy cập cầu nối, bộ lấy mẫu, bản đồ, hành động, gói hoặc mã truy cập
+#   {impact}          Mô tả tác động cấu hình hoặc chi phí phần bổ trợ, tính bằng ms/s
+#   {incident}        Định danh hành động sự cố đệ quy bị loại khỏi bộ kiểm thử dành cho nhà phát triển
+#   {index}           Số thứ tự bước hiện tại trong bộ kiểm thử dành cho nhà phát triển
+#   {invalid}         Số bộ lấy mẫu có kết quả đo không hợp lệ
+#   {issued_at}       Thời điểm tạo mã truy cập web
+#   {item}            Tên hoặc định danh vật phẩm
+#   {items}           Số thực thể vật phẩm đã gộp
+#   {key}             Khóa tham số lệnh, khóa cấu hình hoặc định danh thông điệp ngôn ngữ
+#   {label}           Nhãn kiểm thử hiệu năng, chỉ số, thiết lập, lệnh hoặc mã truy cập web
+#   {line}            Số dòng đang sửa trong thông điệp nhiều dòng
+#   {lines}           Số dòng nhật ký máy chủ đã quét
+#   {loaded}          Số vùng khối mới được tải trong giai đoạn tải trước
+#   {locale}          Mã ngôn ngữ đang hiển thị, chọn hoặc sửa
+#   {matched}         Các thế giới có trạng thái tự lưu khớp với trạng thái cơ sở của kiểm thử
+#   {max_tick}        Khoảng cách dài nhất giữa các nhịp ghi nhận trong kiểm thử tải, tính bằng ms
+#   {maximum}         Số vật phẩm tối đa, ngưỡng thời gian nhịp hoặc độ dài đầu vào của trình sửa
+#   {message}         Tóm tắt hành động đã hoàn tất hoặc thông điệp trạng thái tích hợp
+#   {metrics}         Số chỉ số do một gói API phần bổ trợ cung cấp
+#   {minecraft}       Phiên bản Minecraft
+#   {minimum}         TPS tối thiểu có thể chấp nhận
+#   {missing}         Số bộ lấy mẫu bắt buộc còn thiếu trong danh sách đăng ký
+#   {mode}            Chế độ chơi hoặc chế độ kỹ năng đang chọn
+#   {model}           Mẫu CPU
+#   {name}            Tên kiểm thử hiệu năng, mô-đun, bộ kết xuất hoặc phép kiểm tra
+#   {note}            Lý do không quét nhật ký máy chủ
+#   {offenders}       Số bộ lấy mẫu trả về giá trị không hữu hạn
+#   {operations}      Số thao tác gọi lại kỹ năng mỗi phút
+#   {options}         Các giá trị cấu hình được chấp nhận
+#   {p95}             Phân vị thứ 95 của thời gian nhịp trong kiểm thử tải, tính bằng ms
+#   {parameter}       Tên tham số lệnh
+#   {parameters}      Các tham số lệnh bị bỏ qua
+#   {pass}            Số phép kiểm tra thành công
+#   {path}            Đường dẫn khóa cấu hình hoặc tệp báo cáo
+#   {percent}         Phần trăm điều chỉnh màu hoặc tỉ trọng tác động của phần bổ trợ
+#   {permission}      Nút quyền bắt buộc
+#   {personal}        Mã ngôn ngữ người chơi đã chọn
+#   {phase}           Giai đoạn vòng đời tính năng đang được kiểm thử
+#   {pixels}          Số điểm ảnh không trống được vẽ trong kiểm thử bản đồ
+#   {platform}        Hệ điều hành hoặc nền tảng máy chủ Minecraft
+#   {players}         Số người chơi mô phỏng trong kiểm thử tải
+#   {plugin}          Tên phần bổ trợ
+#   {process_load}    Tải CPU của tiến trình máy chủ
+#   {processors}      Số bộ xử lý CPU khả dụng
+#   {profile}         Tên hồ sơ cấu hình React
+#   {protocol}        Phiên bản giao thức tích hợp
+#   {radius}          Bán kính theo vùng khối của bản đồ hoặc hành động kiểm thử dành cho nhà phát triển
+#   {range}           Khoảng giá trị khoảng cách nhìn hoặc mô phỏng được chấp nhận
+#   {rate}            Tốc độ tăng nhanh sinh trưởng cây trồng đã cấu hình
+#   {rating}          Mức đánh giá kiểm thử hiệu năng đã định dạng
+#   {react_errors}    Số dòng lỗi React tìm thấy trong nhật ký máy chủ
+#   {reason}          Giải thích lỗi, việc từ chối hoặc trạng thái không khả dụng
+#   {registered}      Số mô-đun đã đăng ký
+#   {removed_first}   Lần vô hiệu hóa đầu tiên có xóa tính năng khỏi danh sách đăng ký đang hoạt động hay không
+#   {removed_second}  Lần vô hiệu hóa lặp lại có xóa tính năng khỏi danh sách đăng ký đang hoạt động hay không
+#   {renderer}        Tên hoặc định danh bộ kết xuất bản đồ
+#   {renderers}       Danh sách bộ kết xuất bản đồ có định danh trống
+#   {role}            Vai trò truy cập web: viewer, operator hoặc admin
+#   {sampler}         Tên hoặc định danh bộ lấy mẫu
+#   {samplers}        Danh sách bộ lấy mẫu tích hợp hoặc bộ lấy mẫu bị lỗi
+#   {scope}           Phạm vi bản đồ hoặc phạm vi thiết lập khoảng cách
+#   {score}           Điểm kiểm thử hiệu năng
+#   {seconds}         Thời lượng đếm ngược hoặc kiểm thử tải, tính bằng giây
+#   {section}         Tên phần cấu hình
+#   {server}          Bản triển khai máy chủ Minecraft và phiên bản
+#   {shown}           Số hàng đang hiển thị
+#   {since_run}       Các lỗi được báo từ khi bắt đầu kiểm thử hiện tại
+#   {size}            Kích thước tối đa hoặc kích thước đang dùng của tường bản đồ
+#   {skip}            Số phép kiểm tra bị bỏ qua
+#   {spawn_y}         Độ cao khối kiểm thử trọng lực được tạo ra
+#   {state}           Trạng thái hành động hoặc gói API phần bổ trợ
+#   {status}          Nhãn trạng thái tích hợp hoặc cấu hình
+#   {subject}         Mô-đun hoặc thiết lập được mô tả trong trợ giúp cấu hình
+#   {subsystem}       Tên hệ thống con được kiểm thử
+#   {summary}         Tóm tắt kiểm tra hành động
+#   {system_load}     Tải CPU của toàn hệ thống
+#   {target}          Thế giới, người chơi, phần bổ trợ, thiết lập hoặc nhóm phần bổ trợ mà thao tác nhắm đến
+#   {threading}       Chế độ luồng của máy chủ
+#   {tick}            Thời lượng nhịp vượt ngưỡng treo, tính bằng ms
+#   {tick_crashes}    Số dòng báo lỗi sập trong nhịp tìm thấy ở nhật ký máy chủ
+#   {tier}            Mức độ nghiêm trọng của kịch bản xử lý sự cố
+#   {timing}          Thời gian gọi lại kỹ năng mỗi phút, tính bằng mili giây
+#   {to}              Số thứ tự mục cuối cùng trên trang hiện tại
+#   {total}           Tổng số mục, mô-đun, thế giới, phép kiểm tra hoặc dung lượng bộ nhớ trong thông điệp
+#   {type}            Loại tham số lệnh, giá trị cấu hình, bản đồ hoặc khoảng cách
+#   {unavailable}     Số điểm truy cập cầu nối NMS không khả dụng
+#   {unit}            Nhãn đơn vị cho tổng của biểu đồ tròn
+#   {unknown}         Định danh hành động không rõ bị loại khỏi bộ kiểm thử dành cho nhà phát triển
+#   {unreadable}      Số bộ lấy mẫu không đọc được
+#   {uptime}          Thời gian hoạt động của hệ điều hành máy chủ
+#   {url}             URL của báo cáo chẩn đoán đã tải lên
+#   {usage}           Cú pháp sử dụng lệnh
+#   {used}            Bộ nhớ vật lý, bộ nhớ ảo hoặc bộ nhớ heap đã dùng
+#   {value}           Thiết lập, số đo hoặc chi tiết phần cứng đã định dạng
+#   {values}          Các giá trị lấy mẫu được liệt kê trong báo cáo kiểm thử dành cho nhà phát triển
+#   {variables}       Tên các biến thay thế mà thông điệp đang sửa chấp nhận
+#   {vendor}          Nhà cung cấp Java
+#   {verdict}         Kết luận chung của kiểm thử
+#   {version}         Phiên bản React, Java hoặc nền tảng
+#   {warmed}          Số vùng khối được tải trước
+#   {warn}            Số phép kiểm tra có cảnh báo
+#   {width}           Chiều rộng khung vẽ kiểm thử, tính bằng điểm ảnh
+#   {world}           Tên thế giới Minecraft
+
 "command.description.debugdump" = "Tạo báo cáo chẩn đoán và tải lên nếu muốn"
 "command.parameter.debugdump_upload" = "Tải báo cáo lên mclo.gs"
-# Complete bundled translation. Code-owned English remains the canonical fallback.
 "action.collect_garbage.no_reclaim" = "Bộ sưu tập rác được hoàn tất mà không có chất đống ngay lập tức được tái tạo ({used} đã dùng) trong {duration}"
 "action.collect_garbage.reclaimed" = "Tự do {freed} ({before} -> {after}) trong {duration}"
 "action.completed" = "Hoàn tất {action} in {duration}"
@@ -911,8 +1084,8 @@
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.description" = "Cấu hình cho nhóm Mob Stacksing. Tính năng này liên tục theo dõi hành vi của máy phục vụ và áp dụng thanh tác vụ bảo vệ trong thời gian chạy."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.batchintervalms.impact" = "Giá trị thấp hơn chồng chất đám đông mới sinh ra càng sớm với chi phí dự kiến cao hơn; giá trị cao hơn đổ nhiều công việc nhập vào mỗi người."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.batchintervalms.summary" = "Bao nhiêu lần các chunk xếp hàng được xử lý để chồng lên, trong vài millisecond."
-"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.impact" = "Bật để áp dụng hành động này; tắt để giữ đường dẫn này bị động."
-"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.summary" = "Kiểm soát việc xếp chồng tên theo tập tục hay không."
+"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.impact" = "Gloss nhận số lượng sinh vật trong nhóm bất kể cài đặt này và quản lý lớp hiển thị thực thể kết hợp khi lớp đó được bật."
+"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.summary" = "Hiển thị tên gốc của nhóm sinh vật khi không thể dùng lớp hiển thị thực thể của Gloss."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.maxhealth.impact" = "Các giá trị cao hơn cho phép nhiều thông qua trước khi can thiệp; các giá trị thấp hơn làm giảm nhẹ sự tích cực hơn."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.maxhealth.summary" = "Sức khỏe tối đa được phép bởi đám đông chất đống."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.maxstacksize.impact" = "Các giá trị cao hơn cho phép nhiều thông qua trước khi can thiệp; các giá trị thấp hơn làm giảm nhẹ sự tích cực hơn."
@@ -1333,8 +1506,8 @@
 "config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.maxdiffmessagesperfile.summary" = "Số lần gửi thông điệp di chuyển cấp phím tối đa cho mỗi tập tin đã thay đổi."
 "config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.notifyoperators.impact" = "Tắt nếu bạn muốn bản ghi bàn điều khiển và không có thông báo trong trò chơi."
 "config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.notifyoperators.summary" = "Gửi bản tóm tắt về việc thay đổi hàng nóng tới những nhà điều hành trực tuyến."
-"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.impact" = "Quá trình hạ giá trị đã đưa ra các sự kiện hệ thống tập tin sớm hơn; hiệu ứng giao hàng hệ thống có thể dài hơn."
-"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.summary" = "Khoảng cách hàng đợi được sử dụng bởi bộ xem cấu tạo trong phần nghìn giây."
+"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.impact" = "Giá trị thấp hơn giúp phát hiện sự kiện đã nhận sớm hơn; các thay đổi tự động vẫn được áp dụng theo đợt, tối đa một lần mỗi ba giây."
+"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.summary" = "Khoảng thời gian thăm dò sự kiện hệ thống tệp, tính bằng mili giây."
 "config.documentation.annotation.art.arcane.react.core.controller.historycontroller.description" = "Thu thập các bộ lấy mẫu React một lần, lưu dữ liệu đo từ xa lịch sử đã nén và xử lý các truy vấn có giới hạn khoảng thời gian."
 "config.documentation.annotation.art.arcane.react.core.controller.historycontroller.field.compressionlevel.impact" = "Giá trị cao hơn có thể giảm dung lượng đĩa nhưng làm tăng tải CPU khi ghi."
 "config.documentation.annotation.art.arcane.react.core.controller.historycontroller.field.compressionlevel.summary" = "Mức DEFLATE chỉ được dùng khi làm cột số liệu đã mã hóa nhỏ hơn."
@@ -1412,7 +1585,7 @@
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.debug.summary" = "Cho phép ghi nhật ký gỡ lỗi và chẩn đoán bổ sung."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsecretsenabled.impact" = "Đã tắt theo mặc định. Bật Iris/Adapt gói giữ bí mật khi có phụ thuộc."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsecretsenabled.summary" = "Kích hoạt tính năng tích hợp bí mật bổ sung."
-"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.impact" = "Tiếng Anh nổi tiếng mã vẫn còn lại sự sao chép; tùy chọn TOML Ghi đè languages/overrides."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.impact" = "Tiếng Anh có sẵn trong mã vẫn là ngôn ngữ dự phòng; các danh mục TOML có thể chỉnh sửa được tải từ languages."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.summary" = "Miền địa phương dùng cho React Người chơi và người điều khiển giao diện."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.impact" = "Đặt thành false để tắt hoàn toàn việc gửi dữ liệu bStats của React. Cần khởi động lại."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.summary" = "Bật báo cáo sử dụng ẩn danh bStats cho React."
@@ -1422,8 +1595,8 @@
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.priority.summary" = "Mô hình ưu tiên số lượng sử dụng bởi nhiều React Hệ thống phụ."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.slowticklogmode.impact" = "OFF ngăn chặn các cảnh báo tick chậm. BLAME nhấn mạnh khả năng trách nhiệm plugin / tải công việc. SHORT chỉ ghi thời gian tối thiểu. DETAILED ghi toàn bộ tải dữ liệu chẩn đoán."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.slowticklogmode.summary" = "Điều khiển các cảnh báo tick chậm được ghi lại. Các tùy chọn: OFF, BLOAME, SHORT, DETAILED."
-"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.impact" = "Đã tắt theo mặc định. Một khi đã bật và các liên kết tác vụ, nó không thể được tách rời mà không khởi chạy lại các JVM. Không có biến đổi nào được đăng ký trong bản phát hành hiện thời."
-"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.summary" = "Hiệu lực tùy chọn ByteBuddy Đặc vụ byte mã cho việc sử dụng thời gian cao cấp."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.impact" = "Mặc định tắt. Các tính năng NMS dành riêng cho từng phiên bản vẫn có thể kết nối cơ chế đo đạc riêng khi được kích hoạt. Cơ chế đã kết nối sẽ tồn tại cho đến khi JVM khởi động lại."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.summary" = "Kết nối tác nhân ByteBuddy dùng chung của React ngay trong lúc khởi động."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.value.impact" = "Các giá trị cao hơn có thể gia tăng ảnh hưởng của các vật đắt tiền trong việc tính toán."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.value.summary" = "Giá trị vật chất hiệu chỉnh được dùng cho phân tích công thức/ giá trị."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.verbose.impact" = "Có ích cho việc bắn súng nhưng có thể tạo ra rất nhiều tiếng ồn nhật ký."
@@ -2576,3 +2749,125 @@
 "config.documentation.annotation.art.arcane.react.core.controller.incidentcontroller.field.persistenceenabled.summary" = "Lưu lịch sử sự cố có cấu trúc vào plugins/React/incidents.json."
 "config.documentation.annotation.art.arcane.react.core.controller.incidentcontroller.field.retention.impact" = "Giá trị cao hơn giữ nhiều lịch sử hơn và dùng nhiều bộ nhớ cùng dung lượng đĩa hơn."
 "config.documentation.annotation.art.arcane.react.core.controller.incidentcontroller.field.retention.summary" = "Số sự kiện sự cố có cấu trúc tối đa được lưu."
+
+"language.menu.your_language" = "Ngôn ngữ của bạn"
+"language.menu.reset_your_language" = "Đặt lại ngôn ngữ của bạn"
+"language.menu.server_default" = "Ngôn ngữ mặc định của máy chủ"
+"language.menu.edit_messages" = "Chỉnh sửa thông báo ngôn ngữ"
+"language.menu.use_server_default" = "Dùng ngôn ngữ mặc định của máy chủ"
+"language.menu.current" = "Hiện tại: {locale}"
+"language.menu.current_with_personal" = "Hiện tại: {locale} (Của bạn: {personal})"
+"language.menu.your_description" = "Chỉ thay đổi những thông báo bạn thấy."
+"language.menu.reset_description" = "Dùng ngôn ngữ mặc định của máy chủ."
+"language.menu.server_description" = "Thay đổi ngôn ngữ mặc định của máy chủ."
+"language.menu.edit_description" = "Mở trình chỉnh sửa thông báo cho từng ngôn ngữ."
+"language.menu.select_description" = "Nhấp để chọn ngôn ngữ này."
+"language.menu.remove_personal_description" = "Xóa lựa chọn ngôn ngữ cá nhân của bạn."
+"language.menu.no_controls" = "Bạn không có quyền dùng các tùy chọn ngôn ngữ."
+"language.menu.command" = "Câu lệnh: {command}"
+"language.menu.selected" = "Đã chọn"
+"language.menu.all-volmit-plugins" = "tất cả plugin Volmit"
+"language.error.stopping" = "Không thể chọn ngôn ngữ khi plugin đang dừng."
+"language.error.editor-player-only" = "Mở trình soạn thảo ngôn ngữ trong trò chơi."
+"language.usage.editor" = "Sử dụng: /{command} language server edit [locale]"
+"language.usage.selection" = "Sử dụng: /{command} language self [locale|reset] or server [locale]"
+"language.usage.volmit-selection" = "Sử dụng: /volmit plugins languages [locale]"
+"language.error.no-providers" = "Không có nhà cung cấp ngôn ngữ Volmit nào khả dụng."
+"language.error.numeric-page" = "Hãy nhập số trang của danh sách ngôn ngữ."
+"language.error.personal-player-only" = "Bạn phải chọn ngôn ngữ cá nhân trong trò chơi."
+"language.error.personal-permission" = "Bạn không có quyền chọn ngôn ngữ của mình."
+"language.error.plugin-personal-permission" = "Bạn không có quyền chọn ngôn ngữ cho {plugin}."
+"language.error.plugin-server-permission" = "Bạn không có quyền thay đổi ngôn ngữ máy phục vụ cho {plugin}."
+"language.error.server-locale-required" = "Chọn một mã ngôn ngữ như en_US làm ngôn ngữ mặc định của máy chủ."
+"language.error.unavailable-for-all" = "Ngôn ngữ {locale} không có sẵn cho tất cả plugin đã chọn."
+"language.selection.preparing" = "Đang chuẩn bị ngôn ngữ {locale} cho {target}..."
+"language.selection.save-failed" = "{plugin}: không thể lưu lựa chọn ngôn ngữ. Hãy kiểm tra bảng điều khiển máy chủ."
+"language.selection.english-fallback" = "{plugin}: {locale} không sẵn sàng; dùng tiếng Anh (en_US)."
+"language.selection.personal-selected" = "{plugin}: ngôn ngữ của bạn hiện là {locale}."
+"language.selection.server-selected" = "{plugin}: ngôn ngữ của máy chủ hiện là {locale}."
+"language.selection.server-default-selected" = "{plugin}: bạn hiện dùng ngôn ngữ mặc định của máy chủ."
+"language.editor.section.languages" = "Ngôn ngữ"
+"language.editor.section.search" = "Tìm kiếm"
+"language.editor.section.search-title" = "{locale} / Tìm kiếm"
+"language.editor.section.group-title" = "{locale} / {group}"
+"language.editor.loading" = "Đang tải thông báo bằng ngôn ngữ {locale}..."
+"language.editor.prompt.search" = "Tìm theo khóa thông báo hoặc nội dung. Nhập cancel để quay lại."
+"language.editor.prompt.value" = "Gõ một giá trị mới cho {key} trong trò chuyện."
+"language.editor.prompt.current" = "Giá trị hiện tại: {value}"
+"language.editor.prompt.variables" = "Biến: {variables}"
+"language.editor.prompt.guidance" = "Dùng \\n để xuống dòng và \\\\ để nhập dấu gạch chéo ngược, hoặc nhập cancel để quay lại."
+"language.editor.input.expired" = "Đã hết thời gian nhập trong trình chỉnh sửa ngôn ngữ."
+"language.editor.input.too-long" = "Nội dung nhập trong trình chỉnh sửa không được vượt quá {maximum} ký tự."
+"language.editor.input.unable-to-save" = "Không thể lưu: {reason}"
+"language.editor.navigation.back" = "&eQuay lại&r"
+"language.editor.navigation.close" = "&cĐóng&r"
+"language.editor.navigation.previous-page" = "&eTrang trước&r"
+"language.editor.navigation.next-page" = "&eTrang kế&r"
+"language.editor.search.messages" = "Tìm kiếm tin nhắn"
+"language.editor.search.messages-lore" = "Nhấn vào để tìm kiếm mọi tin nhắn."
+"language.editor.search.clear" = "Xoá tìm kiếm"
+"language.editor.message.current-value" = "&7Giá trị hiện có:&r"
+"language.editor.message.variables" = "&8{variables}&r"
+"language.editor.message.edit-plural" = "&7Nhấn vào để sửa đổi một dạng số nhiều.&r"
+"language.editor.message.edit-lines" = "&7Nhấp để chỉnh sửa từng dòng.&r"
+"language.editor.message.edit-chat" = "&7Nhấn vào để sửa đổi trong trò chuyện.&r"
+"language.editor.locale.open" = "&8Nhấn vào để mở ngôn ngữ này.&r"
+"language.editor.category.message-count" = "&7{count} tin nhắn&r"
+"language.editor.category.open" = "&8Nhấn vào để mở phân loại này.&r"
+"language.editor.error.no-permission" = "Bạn không có quyền chỉnh sửa các ngôn ngữ của {plugin}."
+"language.editor.error.unable-to-edit" = "Không thể sửa: {reason}"
+"language.editor.saved.summary" = "Đã lưu {locale}. Chọn ngôn ngữ không thay đổi."
+"language.editor.saved.change" = "{key}: “{before}” đã đổi thành “{after}”."
+"language.editor.part.line" = "Dòng {line}"
+"language.editor.value.none" = "Không có"
+"language.editor.value.empty" = "(trống)"
+"test.map.megamap_capacity_fail" = "Các khả năng của Megamap được tính sai:"
+"test.map.megamap_capacity_pass" = "Số cột, số hàng và mức chi tiết của Megamap được tính từ lưới."
+"test.map.megamap_viewport_fail" = "Hình học vùng hiển thị của Megamap không đúng:"
+"test.map.megamap_viewport_pass" = "Tường thích ứng dùng một khung vẽ logic duy nhất, còn tường phóng đại giữ tỉ lệ đồng đều và thêm viền để bảo toàn tỉ lệ khung hình."
+"test.map.megamap_defects_fail" = "Không chẩn đoán được các tường bản đồ bị lỗi:"
+"test.map.megamap_defects_pass" = "Tường bản đồ không đều, bị xoay, bị trùng hoặc hỗn hợp đều báo nguyên nhân."
+"test.map.megamap_expansion_fail" = "Các bộ kết xuất thất bại trên tường mở rộng:"
+"test.map.renderer_containment_skip" = "Không thể thử bộ kết xuất nào trong môi trường không có giao diện đồ họa."
+"test.map.megamap_expansion_pass" = "Mỗi bộ kết xuất lấp đầy mọi khung của tường 1x1, 2x1, 1x2, 1x3, 2x2, 3x1, 3x3 và 5x3."
+"test.map.palette_fail" = "Các màu giao diện bị trùng nhau trong bảng màu bản đồ:"
+"test.map.palette_pass" = "Mỗi màu giao diện khớp chính xác với một mục riêng biệt trong bảng màu bản đồ."
+"test.map.clip_fail" = "Nét vẽ vượt ra ngoài hình chữ nhật cắt đang áp dụng."
+"test.map.clip_blank" = "Phép thử cắt không vẽ gì bên trong vùng của nó."
+"test.map.clip_restore_fail" = "popClip không khôi phục hình chữ nhật cắt trước đó."
+"test.map.clip_pass" = "Đường, chữ và vùng tô đều nằm trong hình chữ nhật cắt đã đưa vào ngăn xếp."
+"test.map.text_bounds_fail" = "Văn bản đã căn vừa vượt quá giới hạn chiều rộng."
+"test.map.text_bounds_pass" = "Văn bản đã căn vừa không vượt quá giới hạn ở bất kỳ tỉ lệ giao diện nào."
+"test.map.renderer_containment_fail" = "Các bộ kết xuất vẽ ra ngoài hình chữ nhật cắt của chúng:"
+"test.map.renderer_containment_pass" = "Mỗi bộ kết xuất đều nằm trong hình chữ nhật cắt đã đưa vào ngăn xếp."
+"test.map.flush_fidelity_fail" = "Việc xuất bộ đệm không tái tạo được bề mặt đã tổng hợp:"
+"test.map.flush_fidelity_pass" = "Mọi điểm ảnh được xuất đều khớp với bề mặt đã tổng hợp ở kích thước 1x1, 2x2 và 3x3."
+"test.map.flush_stability_fail" = "Vẽ lại nội dung giống hệt vẫn ghi vào khung vẽ:"
+"test.map.flush_stability_pass" = "Vẽ lại nội dung giống hệt không ghi điểm ảnh nào vào khung vẽ."
+"test.map.frame_wall_disabled" = "Ghép ô Megamap đang tắt; các khung liền kề không tạo thành tường."
+"test.map.frame_wall_no_worlds" = "Chưa có thế giới nào được tải; không thể dựng tường khung vật phẩm thực tế."
+"test.map.frame_wall_setup_failed" = "Không thể dựng tường khung vật phẩm thực tế:"
+"test.map.frame_wall_no_space" = "Không có cột không khí trống gần điểm xuất hiện để dựng tường bản đồ gồm hai khung."
+"test.map.frame_wall_probe_failed" = "Kiểm tra tường khung vật phẩm thực tế thất bại:"
+"test.map.frame_wall_pass" = "Các bản đồ React được nhân bản trong khung liền kề đã nhận ID riêng và được nhận diện thành tường hai ô."
+"test.map.frame_wall_fail" = "Các khung vật phẩm liền kề không tạo thành tường Megamap hai ô:"
+"command.description.language" = "Chọn ngôn ngữ của bạn hoặc của máy chủ"
+"debug.error.missing-permission" = "Thiếu quyền: {permission}"
+"debug.error.already-preparing" = "Đã có một báo cáo chẩn đoán đang được chuẩn bị cho {plugin}."
+"debug.error.already-preparing-short" = "Đã có một báo cáo chẩn đoán đang được chuẩn bị."
+"debug.preparing" = "Đang chuẩn bị báo cáo chẩn đoán của {plugin}..."
+"debug.error.schedule-failed" = "Không thể lên lịch tạo báo cáo chẩn đoán."
+"debug.error.provider-closed" = "Dịch vụ chẩn đoán đã đóng."
+"debug.error.closed-before-capture" = "Dịch vụ chẩn đoán đã đóng trước khi thu thập báo cáo."
+"debug.error.writer-schedule-failed" = "Không thể lên lịch ghi báo cáo chẩn đoán."
+"debug.error.capture-failed" = "Không thể thu thập báo cáo chẩn đoán. Hãy kiểm tra bảng điều khiển máy chủ."
+"debug.error.closed-before-write" = "Dịch vụ chẩn đoán đã đóng trước khi ghi báo cáo."
+"debug.error.write-failed" = "Không thể ghi báo cáo chẩn đoán. Hãy kiểm tra bảng điều khiển máy chủ."
+"debug.upload.interrupted" = "Quá trình tải báo cáo chẩn đoán lên bị gián đoạn. Báo cáo đã được lưu cục bộ."
+"debug.upload.failed" = "Không thể tải báo cáo chẩn đoán lên. Báo cáo đã được lưu cục bộ."
+"debug.upload.completed" = "Đã tải lên với tên VolmitSoftware - {plugin} - v{version}."
+"debug.action.open" = "Mở: {url}"
+"debug.action.open-description" = "Mở báo cáo chẩn đoán đã tải lên."
+"debug.saved" = "Đã lưu báo cáo chẩn đoán của {plugin} vào {path}."
+"debug.action.copy-path" = "Sao chép đường dẫn cục bộ"
+"debug.action.copy-path-description" = "Sao chép đường dẫn cục bộ của báo cáo."

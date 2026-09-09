@@ -49,6 +49,13 @@ class CommandTreeTest {
   }
 
   @Test
+  void languagePluralAliasResolvesToTheLanguageCommand() {
+    DirectorRuntimeNode language = findExactChild(root, "language");
+    Assertions.assertNotNull(language);
+    Assertions.assertSame(language, findExactChild(root, "languages"));
+  }
+
+  @Test
   void reactDirectorTreeResolvesIndependentDistancePaths() {
     assertExactPath(root, "distance", "world", "view");
     assertExactPath(root, "distance", "world", "simulation");

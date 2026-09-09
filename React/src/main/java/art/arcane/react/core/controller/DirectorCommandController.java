@@ -171,7 +171,7 @@ public class DirectorCommandController implements IController, CommandExecutor, 
       return List.of();
     }
 
-    if (args.length > 0 && args[0].equalsIgnoreCase("language")) {
+    if (isLanguageCommand(args)) {
       return ReactLanguage.switcher().complete(sender, Arrays.copyOfRange(args, 1, args.length));
     }
     List<String> v = runDirectorTab(sender, alias, args);
@@ -195,7 +195,7 @@ public class DirectorCommandController implements IController, CommandExecutor, 
       return false;
     }
 
-    if (args.length > 0 && args[0].equalsIgnoreCase("language")) {
+    if (isLanguageCommand(args)) {
       ReactLanguage.switcher().command(sender, Arrays.copyOfRange(args, 1, args.length));
       return true;
     }
@@ -209,6 +209,11 @@ public class DirectorCommandController implements IController, CommandExecutor, 
     LanguageAudience.run(sender instanceof Player player ? player.getUniqueId() : null,
         () -> executeCommand(sender, label, normalizeLegacyArgs(args)));
     return true;
+  }
+
+  private static boolean isLanguageCommand(String[] args) {
+    return args.length > 0
+        && ("language".equalsIgnoreCase(args[0]) || "languages".equalsIgnoreCase(args[0]));
   }
 
   private void executeCommand(CommandSender sender, String label, String[] args) {

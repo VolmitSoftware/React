@@ -1,6 +1,179 @@
+# React kalba: lt_LT
+#
+# Redaguokite šį failą tiesiogiai aplanke languages arba komanda /react language server edit.
+# React sukuria arba atsisiunčia kalbos failus tik tada, kai jų trūksta. Vietiniai pakeitimai išsaugomi.
+# Trūkstami pranešimai imami iš integruoto angliško katalogo.
+#
+# Formatavimas
+#   Pokalbio pranešimai naudoja MiniMessage: <red>tekstas</red>, <bold>tekstas</bold>.
+#   RGB spalvos rašomos taip: <color:#RRGGBB>tekstas</color>. Žymas uždarykite atvirkštine atidarymo tvarka.
+#   Bendri language.* redaktoriaus pranešimai taip pat palaiko įprastus spalvų kodus, pvz., &e ir &r.
+#   Kiti pranešimai nekonvertuoja spalvų kodų su &. Išlaikykite taisyklingas TOML kabutes ir ekranavimo sekas.
+#   TOML eilutėse su kabutėmis naujai eilutei naudokite \n. Dvigubi skliaustai {{ ir }} išveda pačius riestinius skliaustus.
+#   renderer.* ir config.documentation.annotation.* reikšmės yra paprastas tekstas.
+#   test.* reikšmės yra paprastas tekstas, išskyrus test.result.* pranešimus, kurie naudoja MiniMessage.
+#
+# Kintamieji
+# Kiekvienas pranešimas priima tik savo kintamuosius. Nekeiskite jų pavadinimų.
+# Kintamuosius naudokite pranešimo tekste, ne MiniMessage žymose.
+#   {action}          Veiksmo pavadinimas arba spalvos keitimo kryptis
+#   {actions}         Veiksmų eilėje skaičius arba praleistų veiksmų pavadinimai
+#   {active}          Aktyvių funkcijų arba patobulinimų skaičius
+#   {actor}           Pakeitimą atlikęs žiniatinklio naudotojas
+#   {added}           Ar po aktyvinimo funkcija grįžo į aktyvų registrą
+#   {after}           Nustatymo reikšmė, kalbos pranešimas arba kaupo atmintis po pakeitimo
+#   {age}             Integracijos duomenų amžius sekundėmis
+#   {amount}          Duodamų daiktų skaičius
+#   {architecture}    CPU architektūra
+#   {argument}        Netikėtas komandos argumentas
+#   {available}       Pasiekiamų NMS jungties nuorodų skaičius
+#   {average}         Vidutinis TPS arba milisekundės vienam žaidimo ciklui
+#   {avg_mspt}        Vidutinė žaidimo ciklo trukmė milisekundėmis apkrovos testo etape
+#   {avg_tps}         Vidutinis žaidimo ciklų skaičius per sekundę apkrovos testo etape
+#   {bar}             Suformatuota našumo testo balų juosta
+#   {before}          Nustatymo reikšmė, kalbos pranešimas arba kaupo atmintis prieš pakeitimą
+#   {checked}         Patikrintų matuoklių skaičius
+#   {chunks}          Veiksmo paveiktų pasaulio segmentų skaičius
+#   {code}            Žiniatinklio susiejimo kodas
+#   {command}         Komandos kelias
+#   {count}           Įrašų, modulių, pakeitimų arba testo rezultatų skaičius
+#   {current}         Dabartinio puslapio numeris
+#   {delta_heap}      React ir bazinio matavimo kaupo atminties skirtumas testo pabaigoje, MB
+#   {delta_mspt}      React ir bazinio matavimo vidutinės ciklo trukmės skirtumas, ms
+#   {delta_tps}       React ir bazinio matavimo vidutinio TPS skirtumas
+#   {detail}          Jungties, integracijos, veiksmo arba testo diagnostikos detalės
+#   {dimensions}      Aptiktos žemėlapių sienos tinklelio matmenys
+#   {direction}       Pasirinktos spalvos atspalvio sukimo kryptis
+#   {distance}        Prašomas matymo arba simuliacijos atstumas
+#   {duration}        Praėjęs laikas; apkrovos testo pradžios pranešime sekundėmis
+#   {enabled}         Įjungimo būsena arba įjungtų modulių skaičius
+#   {entities}        Veiksmo paveiktų objektų skaičius
+#   {entry}           Integracijos laiko juostos įrašas
+#   {exceptions}      Apkrovos testo etape užregistruotos React išimtys
+#   {fail}            Nepavykusių patikrų skaičius
+#   {file}            Nustatymų, kalbos arba įskiepio API failo pavadinimas
+#   {fingerprint}     Serverio arba žiniatinklio žetono kontrolinis atspaudas
+#   {finite}          Baigtines reikšmes grąžinančių matuoklių skaičius
+#   {frames}          Daiktų rėmelių skaičius aktyvioje žemėlapių sienoje
+#   {free}            Laisva fizinė arba virtualioji atmintis
+#   {freed}           Šiukšlių surinkimo atlaisvinta kaupo atmintis
+#   {from}            Pirmojo dabartinio puslapio įrašo numeris
+#   {grid}            Žemėlapių sienos tinklelio matmenys
+#   {ground_y}        Žemės aukštis gravitacijos teste
+#   {group}           Stebėjimo, matuoklių, žemėlapių, nustatymų arba kalbos pranešimų grupė
+#   {growth}          Kaupo atminties augimas apkrovos teste, MB
+#   {health}          Integracijos veikimo būklė
+#   {heap_end}        Kaupo atminties naudojimas apkrovos testo etapo pabaigoje, MB
+#   {heap_start}      Kaupo atminties naudojimas apkrovos testo etapo pradžioje, MB
+#   {heartbeat}       Laikas nuo paskutinio integracijos gyvybingumo signalo
+#   {height}          Testo piešimo srities aukštis pikseliais
+#   {hoppers}         Normalizuotų piltuvų skaičius
+#   {id}              Jungties nuorodos, matuoklio, žemėlapio, veiksmo, paketo arba žetono ID
+#   {impact}          Nustatymo poveikio aprašymas arba įskiepio sąnaudos, ms/s
+#   {incident}        Iš kūrėjo testų rinkinio pašalinto rekursinio incidento veiksmo ID
+#   {index}           Dabartinio kūrėjo testų rinkinio žingsnio numeris
+#   {invalid}         Matuoklių su neteisingais rodmenimis skaičius
+#   {issued_at}       Žiniatinklio žetono sukūrimo laikas
+#   {item}            Daikto pavadinimas arba ID
+#   {items}           Sujungtų daiktų objektų skaičius
+#   {key}             Komandos parametro raktas, nustatymo raktas arba kalbos pranešimo ID
+#   {label}           Našumo testo, rodiklio, nustatymo, komandos arba žiniatinklio žetono žyma
+#   {line}            Redaguojamos eilutės numeris kelių eilučių pranešime
+#   {lines}           Patikrintų serverio žurnalo eilučių skaičius
+#   {loaded}          Išankstinio paruošimo metu naujai įkeltų pasaulio segmentų skaičius
+#   {locale}          Rodomas, pasirenkamas arba redaguojamas kalbos kodas
+#   {matched}         Pasauliai, kurių automatinis išsaugojimas atitinka bazinę testo būseną
+#   {max_tick}        Ilgiausias stebėtas tarpas tarp žaidimo ciklų apkrovos teste, ms
+#   {maximum}         Didžiausias daiktų skaičius, ciklo trukmės riba arba redaktoriaus įvesties ilgis
+#   {message}         Baigto veiksmo santrauka arba integracijos būsenos pranešimas
+#   {metrics}         Įskiepio API paketo teikiamų rodiklių skaičius
+#   {minecraft}       Minecraft versija
+#   {minimum}         Mažiausias priimtinas TPS
+#   {missing}         Registre trūkstamų privalomų matuoklių skaičius
+#   {mode}            Pasirinktas žaidimo arba gebėjimo režimas
+#   {model}           CPU modelis
+#   {name}            Našumo testo, modulio, piešiklio arba patikros pavadinimas
+#   {note}            Priežastis, kodėl serverio žurnalas nebuvo tikrintas
+#   {offenders}       Nebaigtines reikšmes grąžinančių matuoklių skaičius
+#   {operations}      Gebėjimų atgalinių iškvietimų operacijos per minutę
+#   {options}         Leidžiamos nustatymo reikšmės
+#   {p95}             Žaidimo ciklo trukmės 95-asis procentilis apkrovos teste, ms
+#   {parameter}       Komandos parametro pavadinimas
+#   {parameters}      Praleisti komandos parametrai
+#   {pass}            Sėkmingų patikrų skaičius
+#   {path}            Nustatymo rakto kelias arba ataskaitos failo kelias
+#   {percent}         Spalvos keitimo procentas arba įskiepio poveikio dalis
+#   {permission}      Privalomas leidimo raktas
+#   {personal}        Žaidėjo pasirinktas kalbos kodas
+#   {phase}           Tikrinamas funkcijos gyvavimo ciklo etapas
+#   {pixels}          Žemėlapio teste nupieštų netuščių pikselių skaičius
+#   {platform}        Operacinė sistema arba Minecraft serverio platforma
+#   {players}         Dirbtinių žaidėjų skaičius apkrovos teste
+#   {plugin}          Įskiepio pavadinimas
+#   {process_load}    Serverio proceso CPU apkrova
+#   {processors}      Pasiekiamų CPU procesorių skaičius
+#   {profile}         React nustatymų profilio pavadinimas
+#   {protocol}        Integracijos protokolo versija
+#   {radius}          Žemėlapio arba kūrėjo testo veiksmo spindulys pasaulio segmentais
+#   {range}           Leidžiamas matymo arba simuliacijos atstumų intervalas
+#   {rate}            Nustatytas augalų augimo spartinimo greitis
+#   {rating}          Suformatuotas našumo testo įvertinimas
+#   {react_errors}    Serverio žurnale rastų React klaidų eilučių skaičius
+#   {reason}          Klaidos, atmetimo arba nepasiekiamumo paaiškinimas
+#   {registered}      Registruotų modulių skaičius
+#   {removed_first}   Ar pirmas išjungimas pašalino funkciją iš aktyvaus registro
+#   {removed_second}  Ar pakartotinis išjungimas pašalino funkciją iš aktyvaus registro
+#   {renderer}        Žemėlapio piešiklio pavadinimas arba ID
+#   {renderers}       Žemėlapių piešikliai su tuščiais ID
+#   {role}            Žiniatinklio prieigos vaidmuo: viewer, operator arba admin
+#   {sampler}         Matuoklio pavadinimas arba ID
+#   {samplers}        Integracijos arba netinkamai veikiančių matuoklių sąrašas
+#   {scope}           Žemėlapio arba atstumo nustatymo taikymo sritis
+#   {score}           Našumo testo balas
+#   {seconds}         Atgalinio skaičiavimo arba apkrovos testo trukmė sekundėmis
+#   {section}         Nustatymų skyriaus pavadinimas
+#   {server}          Minecraft serverio realizacija ir versija
+#   {shown}           Šiuo metu rodomų eilučių skaičius
+#   {since_run}       Nuo dabartinio testo pradžios praneštos klaidos
+#   {size}            Didžiausi arba aktyvūs žemėlapių sienos matmenys
+#   {skip}            Praleistų patikrų skaičius
+#   {spawn_y}         Aukštis, kuriame sukurtas gravitacijos testo blokas
+#   {state}           Veiksmo arba įskiepio API paketo būsena
+#   {status}          Integracijos būsena arba nustatymo būsenos žyma
+#   {subject}         Nustatymų žinyne aprašomas modulis arba nustatymas
+#   {subsystem}       Tikrinamo posistemio pavadinimas
+#   {summary}         Veiksmo audito santrauka
+#   {system_load}     Visos sistemos CPU apkrova
+#   {target}          Veiksmo taikinys: pasaulis, žaidėjas, įskiepis, nustatymas arba įskiepių grupė
+#   {threading}       Serverio gijų veikimo režimas
+#   {tick}            Užstrigimo ribą viršijusio žaidimo ciklo trukmė, ms
+#   {tick_crashes}    Serverio žurnale rastų ciklo lūžių eilučių skaičius
+#   {tier}            Incidento veiksmų plano rimtumo lygis
+#   {timing}          Gebėjimų atgalinių iškvietimų laikas milisekundėmis per minutę
+#   {to}              Paskutinio dabartinio puslapio įrašo numeris
+#   {total}           Bendras pranešime minimų įrašų, modulių, pasaulių, patikrų arba atminties kiekis
+#   {type}            Komandos parametro, nustatymo reikšmės, žemėlapio arba atstumo tipas
+#   {unavailable}     Nepasiekiamų NMS jungties nuorodų skaičius
+#   {unit}            Skritulinės diagramos bendros sumos vienetas
+#   {unknown}         Iš kūrėjo testų rinkinio pašalinto nežinomo veiksmo ID
+#   {unreadable}      Matuoklių, kurių nepavyko nuskaityti, skaičius
+#   {uptime}          Pagrindinio kompiuterio operacinės sistemos veikimo laikas
+#   {url}             Įkeltos diagnostikos ataskaitos URL
+#   {usage}           Komandos naudojimo sintaksė
+#   {used}            Naudojama fizinė, virtualioji arba kaupo atmintis
+#   {value}           Suformatuotas nustatymas, matavimas arba aparatinės įrangos detalė
+#   {values}          Kūrėjo testo ataskaitoje pateiktos išmatuotos reikšmės
+#   {variables}       Redaguojamo pranešimo priimamų kintamųjų pavadinimai
+#   {vendor}          Java tiekėjas
+#   {verdict}         Bendras testo rezultatas
+#   {version}         React, Java arba platformos versija
+#   {warmed}          Iš anksto paruoštų pasaulio segmentų skaičius
+#   {warn}            Patikrų su įspėjimais skaičius
+#   {width}           Testo piešimo srities plotis pikseliais
+#   {world}           Minecraft pasaulio pavadinimas
+
 "command.description.debugdump" = "Sukurti diagnostikos ataskaitą ir pasirinktinai ją įkelti"
 "command.parameter.debugdump_upload" = "Įkelti ataskaitą į mclo.gs"
-# Complete bundled translation. Code-owned English remains the canonical fallback.
 "action.collect_garbage.no_reclaim" = "Šiukšlių surinkimas baigtas nedelsiant negavus pakartotos krūvos ({used} naudota) n {duration}"
 "action.collect_garbage.reclaimed" = "Laisva {freed} ({before} -> {after}) {duration}"
 "action.completed" = "Baigta {action} n {duration}"
@@ -911,8 +1084,8 @@
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.description" = "Mob Krovimo funkcijos konfigūravimas. Ši funkcija nuolat stebi serverio elgesį ir taiko guardrails per bėgimo laiką."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.batchintervalms.impact" = "Mažesnės vertės kamino šviežiai neršiančių mobs anksčiau, tuo daugiau planavimo išlaidų; didesnės vertės partijos daugiau sujungti darbą per perdavimą."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.batchintervalms.summary" = "Kaip dažnai eilės pasaulio segmentai tvarkomi, kad būtų sudedami, milisekundų."
-"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.impact" = "Įjungti šio elgesio taikymą; išjungti išlaikyti šį kelią neaktyvų."
-"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.summary" = "Kontroliuoja, ar mob krovimas taiko pasirinktinius pavadinimus."
+"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.impact" = "Gloss gauna būtybių skaičių grupėse nepriklausomai nuo šio nustatymo ir valdo bendrą esybių rodinį, kai jis įjungtas."
+"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.summary" = "Rodo įprastus būtybių grupių pavadinimus, kai Gloss esybių rodiniai nepasiekiami."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.maxhealth.impact" = "Didesnės vertės leidžia pasiekti didesnį našumą prieš intervenciją, mažesnės vertės daro klimato kaitos švelninimą agresyvesnį."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.maxhealth.summary" = "Didžiausia leidžiama minios sveikata."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.maxstacksize.impact" = "Didesnės vertės leidžia pasiekti didesnį našumą prieš intervenciją, mažesnės vertės daro klimato kaitos švelninimą agresyvesnį."
@@ -1333,8 +1506,8 @@
 "config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.maxdiffmessagesperfile.summary" = "Maksimalus per pakeistą failą išsiųstų rakto lygio diff pranešimų skaičius."
 "config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.notifyoperators.impact" = "Išjungti, jei norite tik konsolės žurnalus ir ne žaidimo pranešimus."
 "config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.notifyoperators.summary" = "Siunčia hotship pakeitimų santraukas interneto operatoriams."
-"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.impact" = "Mažesnių reikšmių procesas pristato failų sistemos įvykius greičiau; operating- sistema pristatymo vėlavimas gali būti ilgesnis."
-"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.summary" = "Sekundės, kurias milisekundėmis naudoja konfigų stebėtojas."
+"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.impact" = "Mažesnės reikšmės leidžia greičiau aptikti gautus įvykius; automatiniai pakeitimai vis tiek taikomi paketais ne dažniau kaip kartą per tris sekundes."
+"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.summary" = "Failų sistemos įvykių tikrinimo intervalas milisekundėmis."
 "config.documentation.annotation.art.arcane.react.core.controller.historycontroller.description" = "Vieną kartą nuskaito React mėginių ėmiklius, saugo suglaudintą istorinę telemetriją ir vykdo riboto laiko intervalo užklausas."
 "config.documentation.annotation.art.arcane.react.core.controller.historycontroller.field.compressionlevel.impact" = "Didesnės reikšmės gali sumažinti disko naudojimą, tačiau rašymui reikės daugiau procesoriaus išteklių."
 "config.documentation.annotation.art.arcane.react.core.controller.historycontroller.field.compressionlevel.summary" = "DEFLATE lygis, naudojamas tik tada, kai sumažina užkoduotą metrikos stulpelį."
@@ -1412,7 +1585,7 @@
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.debug.summary" = "Įjungia derinimo žurnalą ir papildomą diagnostiką."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsecretsenabled.impact" = "Pagal nutylėjimą išjungta. Įjungti leidimą Iris/Adapt slapti ryšuliai, kai yra priklausomybių."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsecretsenabled.summary" = "Įjungia slapto integravimo į tinklą funkcijas."
-"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.impact" = "Kodo priklausanti anglų lieka atsarginis; neprivaloma TOML perkrautos yra pakrautos iš languages/overrides."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.impact" = "Kode esanti anglų kalba lieka atsargine kalba; redaguojami TOML katalogai įkeliami iš languages."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.summary" = "Lokalas naudojamas React grotuvo ir operatoriaus sąsajos."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.impact" = "Nustatykite false, kad visiškai išjungtumėte React bStats siuntimą. Reikia paleisti serverį iš naujo."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.summary" = "Įjungia anoniminį bStats naudojimo ataskaitų teikimą React įskiepiui."
@@ -1422,8 +1595,8 @@
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.priority.summary" = "Subjekto prioriteto modelis, kurį naudoja keli subjektai React posistemius."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.slowticklogmode.impact" = "OFF slopina lėtas žaidimo taktas įspėjimus. BLAME pabrėžia tikėtiną papildymo / darbo apkrovos atsakomybę. SHORT registruoja tik minimalų laiko kiekį. DETAILED registruoja visą diagnostinę duomenų naudingoji apkrova."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.slowticklogmode.summary" = "Valdo, kaip lėtai įrašomi žaidimo taktas įspėjimai."
-"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.impact" = "Pagal nutylėjimą išjungta. Įjungus ir pritvirtinus agentą, jo negalima nuimti neatnaujinant JVM. Dabartiniame leidime nėra registruojami jokie pokyčiai."
-"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.summary" = "Leidžia pasirinkti ByteBuddy \"Biketodo\" medžiaga pažangiems kilimo laiko matavimo įrenginiams."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.impact" = "Pagal numatytuosius nustatymus išjungta. Nuo versijos priklausančios NMS funkcijos vis tiek gali prijungti savo instrumentavimą, kai yra aktyvinamos. Prijungtas instrumentavimas išlieka iki JVM paleidimo iš naujo."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.summary" = "Prijungia bendrąjį React ByteBuddy agentą jau paleidimo metu."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.value.impact" = "Didesnės vertės gali padidinti brangių daiktų įtaką skaičiavimams."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.value.summary" = "Medžiagų vertės koregavimas, naudojamas atliekant receptą / vertės analizę."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.verbose.impact" = "Naudinga trikčių šalinimo, bet gali sukurti rąstinio triukšmo daug."
@@ -2576,3 +2749,125 @@
 "config.documentation.annotation.art.arcane.react.core.controller.incidentcontroller.field.persistenceenabled.summary" = "Saugo struktūrizuotą incidentų istoriją faile plugins/React/incidents.json."
 "config.documentation.annotation.art.arcane.react.core.controller.incidentcontroller.field.retention.impact" = "Didesnės reikšmės išsaugo daugiau istorijos ir naudoja daugiau atminties bei disko vietos."
 "config.documentation.annotation.art.arcane.react.core.controller.incidentcontroller.field.retention.summary" = "Didžiausias saugomų struktūrizuotų incidentų įvykių skaičius."
+
+"language.menu.your_language" = "Jūsų kalba"
+"language.menu.reset_your_language" = "Atkurti jūsų kalbą"
+"language.menu.server_default" = "Numatytoji serverio kalba"
+"language.menu.edit_messages" = "Redaguoti kalbos pranešimus"
+"language.menu.use_server_default" = "Naudoti numatytąją serverio kalbą"
+"language.menu.current" = "Dabartinė: {locale}"
+"language.menu.current_with_personal" = "Dabartinė: {locale} (Jūsų: {personal})"
+"language.menu.your_description" = "Keiskite tik jums rodomus pranešimus."
+"language.menu.reset_description" = "Naudokite numatytąją serverio kalbą."
+"language.menu.server_description" = "Keiskite numatytąją serverio kalbą."
+"language.menu.edit_description" = "Atverkite kiekvienos kalbos pranešimų redaktorių."
+"language.menu.select_description" = "Spustelėkite, kad pasirinktumėte šią kalbą."
+"language.menu.remove_personal_description" = "Pašalinkite asmeninį kalbos pasirinkimą."
+"language.menu.no_controls" = "Jums nepasiekiami kalbos nustatymai."
+"language.menu.command" = "Komanda: {command}"
+"language.menu.selected" = "pasirinkta"
+"language.menu.all-volmit-plugins" = "visi Volmit įskiepiai"
+"language.error.stopping" = "Kol įskiepis stabdomas, kalbos pasirinkti negalima."
+"language.error.editor-player-only" = "Atverti kalbos rengyklę žaidime."
+"language.usage.editor" = "Naudojimas: /{command} language server edit [locale]"
+"language.usage.selection" = "Naudojimas: /{command} language self [locale|reset] or server [locale]"
+"language.usage.volmit-selection" = "Naudojimas: /volmit plugins languages [locale]"
+"language.error.no-providers" = "Nėra pasiekiamų Volmit kalbų teikėjų."
+"language.error.numeric-page" = "Įveskite kalbų sąrašo puslapio numerį."
+"language.error.personal-player-only" = "Žaidžiant turi būti pasirinkti žaidėjų kalbos nustatymai."
+"language.error.personal-permission" = "Jūs neturite leidimo pasirinkti savo kalbą."
+"language.error.plugin-personal-permission" = "Neturite leidimo pasirinkti savo kalbos įskiepiui {plugin}."
+"language.error.plugin-server-permission" = "Neturite leidimo keisti įskiepio {plugin} serverio kalbos."
+"language.error.server-locale-required" = "Pasirinkite kalbos kodą, pvz., en_US, kaip numatytąją serverio kalbą."
+"language.error.unavailable-for-all" = "Kalba {locale} pasiekiama ne visiems pasirinktiems įskiepiams."
+"language.selection.preparing" = "Ruošiama kalba {locale}, skirta {target}..."
+"language.selection.save-failed" = "{plugin}: nepavyko išsaugoti kalbos pasirinkimo. Patikrinkite serverio konsolę."
+"language.selection.english-fallback" = "{plugin}: kalba {locale} nepasiekiama. Naudojama anglų kalba (en_US)."
+"language.selection.personal-selected" = "{plugin}: dabar jūsų kalba {locale}."
+"language.selection.server-selected" = "{plugin}: serverio kalba yra dabar {locale}."
+"language.selection.server-default-selected" = "{plugin}: dabar naudojate numatytąją serverio kalbą."
+"language.editor.section.languages" = "Kalbos"
+"language.editor.section.search" = "Ieškoti"
+"language.editor.section.search-title" = "{locale} / Ieškoti"
+"language.editor.section.group-title" = "{locale} / {group}"
+"language.editor.loading" = "Įkeliami kalbos {locale} pranešimai..."
+"language.editor.prompt.search" = "Ieškokite pranešimų raktų arba teksto. Norėdami grįžti, įveskite cancel."
+"language.editor.prompt.value" = "Pokalbyje įveskite naują rakto {key} reikšmę."
+"language.editor.prompt.current" = "Dabartinė reikšmė: {value}"
+"language.editor.prompt.variables" = "Kintamieji: {variables}"
+"language.editor.prompt.guidance" = "Naudokite \\n naujai eilutei ir \\\\ pasvirajam brūkšniui atgal. Norėdami grįžti, įveskite cancel."
+"language.editor.input.expired" = "Kalbos redaktoriaus įvestis baigė galioti."
+"language.editor.input.too-long" = "Redaktoriaus įvestyje gali būti ne daugiau kaip {maximum} simbolių."
+"language.editor.input.unable-to-save" = "Nepavyko įrašyti: {reason}"
+"language.editor.navigation.back" = "&eAtgal&r"
+"language.editor.navigation.close" = "&cUždaryti&r"
+"language.editor.navigation.previous-page" = "&eAnkstesnis puslapis&r"
+"language.editor.navigation.next-page" = "&eKitas puslapis&r"
+"language.editor.search.messages" = "Ieškoti pranešimų"
+"language.editor.search.messages-lore" = "Spustelėkite, kad ieškotumėte visuose pranešimuose."
+"language.editor.search.clear" = "Išvalyti paiešką"
+"language.editor.message.current-value" = "&7Dabartinė vertė:&r"
+"language.editor.message.variables" = "&8{variables}&r"
+"language.editor.message.edit-plural" = "&7Spustelėkite norėdami redaguoti daugiskaitinę formą.&r"
+"language.editor.message.edit-lines" = "&7Spustelėkite, jei norite redaguoti atskiras eilutes.&r"
+"language.editor.message.edit-chat" = "&7Spustelėkite norėdami redaguoti pokalbyje.&r"
+"language.editor.locale.open" = "&8Spauskite norėdami atverti šią kalbą.&r"
+"language.editor.category.message-count" = "&7Pranešimų: {count}&r"
+"language.editor.category.open" = "&8Spustelėkite norėdami atverti šią kategoriją.&r"
+"language.editor.error.no-permission" = "Neturite leidimo redaguoti įskiepio {plugin} kalbų."
+"language.editor.error.unable-to-edit" = "Nepavyko redaguoti: {reason}"
+"language.editor.saved.summary" = "Išsaugota {locale}. Kalbų pasirinkimas nesikeičia."
+"language.editor.saved.change" = "{key}: “{before}” pakeistas į “{after}”."
+"language.editor.part.line" = "Eilutė {line}"
+"language.editor.value.none" = "Nėra"
+"language.editor.value.empty" = "(tuščia)"
+"test.map.megamap_capacity_fail" = "Megamap galimybės apskaičiuotos klaidingai:"
+"test.map.megamap_capacity_pass" = "Megamap stulpelių, eilučių skaičius ir detalumas apskaičiuojami pagal tinklelį."
+"test.map.megamap_viewport_fail" = "Megamap rodinio srities geometrija klaidinga:"
+"test.map.megamap_viewport_pass" = "Prisitaikančioms sienoms skiriama viena loginė drobė, o padidintos sienos išlaiko vienodą mastelį ir proporcijas su paraštėmis."
+"test.map.megamap_defects_fail" = "Sugedusios žemėlapių sienos nebuvo diagnozuotos:"
+"test.map.megamap_defects_pass" = "Nelygios, pasuktos, dubliuotos ir mišrios žemėlapių sienos visos nurodo priežastį."
+"test.map.megamap_expansion_fail" = "Atvaizdavimo moduliai nesuveikė išplėstoje sienoje:"
+"test.map.renderer_containment_skip" = "Nė vieno atvaizdavimo modulio nepavyko paleisti be grafinės sąsajos."
+"test.map.megamap_expansion_pass" = "Kiekvienas atvaizdavimo modulis užpildo visus 1x1, 2x1, 1x2, 1x3, 2x2, 3x1, 3x3 ir 5x3 sienų rėmelius."
+"test.map.palette_fail" = "Temos spalvos žemėlapio paletėje susilieja:"
+"test.map.palette_pass" = "Kiekviena temos spalva tiksliai atitinka atskirą žemėlapio paletės įrašą."
+"test.map.clip_fail" = "Piešinys išėjo už aktyvaus kirpimo stačiakampio ribų."
+"test.map.clip_blank" = "Kirpimo patikra savo srityje nieko nenupiešė."
+"test.map.clip_restore_fail" = "popClip neatkūrė ankstesnio kirpimo stačiakampio."
+"test.map.clip_pass" = "Linijos, tekstas ir užpildai liko į dėklą įtraukto kirpimo stačiakampio ribose."
+"test.map.text_bounds_fail" = "Pritaikytas tekstas viršijo pločio ribą."
+"test.map.text_bounds_pass" = "Pritaikytas tekstas neviršija savo ribos esant jokiam sąsajos masteliui."
+"test.map.renderer_containment_fail" = "Atvaizdavimo moduliai piešė už savo kirpimo stačiakampio ribų:"
+"test.map.renderer_containment_pass" = "Kiekvienas atvaizdavimo modulis liko į dėklą įtraukto kirpimo stačiakampio ribose."
+"test.map.flush_fidelity_fail" = "Išvedant buferį nepavyko atkurti sukomponuoto paviršiaus:"
+"test.map.flush_fidelity_pass" = "Kiekvienas išvestas pikselis atitinka sukomponuotą paviršių esant 1x1, 2x2 ir 3x3 dydžiams."
+"test.map.flush_stability_fail" = "Perpiešiant tą patį turinį vis tiek buvo rašoma į drobę:"
+"test.map.flush_stability_pass" = "Perpiešiant tą patį turinį neįrašomas nė vienas drobės pikselis."
+"test.map.frame_wall_disabled" = "Megamap jungimas iš plytelių išjungtas; gretimi rėmeliai nesudaro sienos."
+"test.map.frame_wall_no_worlds" = "Nėra įkeltų pasaulių; negalima pastatyti tikros daiktų rėmelių sienos."
+"test.map.frame_wall_setup_failed" = "Nepavyko pastatyti tikros daiktų rėmelių sienos:"
+"test.map.frame_wall_no_space" = "Prie atsiradimo vietos nėra laisvo oro stulpelio dviejų rėmelių žemėlapių sienai."
+"test.map.frame_wall_probe_failed" = "Tikros daiktų rėmelių sienos patikra nepavyko:"
+"test.map.frame_wall_pass" = "Gretimuose rėmeliuose klonuoti React žemėlapiai gavo skirtingus ID ir buvo atpažinti kaip dviejų plytelių siena."
+"test.map.frame_wall_fail" = "Gretimi daiktų rėmeliai taip ir nesudarė dviejų plytelių Megamap sienos:"
+"command.description.language" = "Pasirinkite savo arba serverio kalbą"
+"debug.error.missing-permission" = "Trūksta leidimo: {permission}"
+"debug.error.already-preparing" = "Įskiepio {plugin} diagnostikos ataskaita jau ruošiama."
+"debug.error.already-preparing-short" = "Diagnostikos ataskaita jau ruošiama."
+"debug.preparing" = "Ruošiama įskiepio {plugin} diagnostikos ataskaita..."
+"debug.error.schedule-failed" = "Nepavyko suplanuoti diagnostikos ataskaitos kūrimo."
+"debug.error.provider-closed" = "Diagnostikos tarnyba uždaryta."
+"debug.error.closed-before-capture" = "Diagnostikos tarnyba buvo uždaryta prieš surenkant ataskaitą."
+"debug.error.writer-schedule-failed" = "Nepavyko suplanuoti diagnostikos ataskaitos rašymo."
+"debug.error.capture-failed" = "Nepavyko surinkti diagnostikos ataskaitos. Patikrinkite serverio konsolę."
+"debug.error.closed-before-write" = "Diagnostikos tarnyba buvo uždaryta prieš įrašant ataskaitą."
+"debug.error.write-failed" = "Nepavyko įrašyti diagnostikos ataskaitos. Patikrinkite serverio konsolę."
+"debug.upload.interrupted" = "Diagnostikos ataskaitos įkėlimas nutrauktas. Vietinė ataskaita išsaugota."
+"debug.upload.failed" = "Diagnostikos ataskaitos įkelti nepavyko. Vietinė ataskaita išsaugota."
+"debug.upload.completed" = "Įkelta pavadinimu VolmitSoftware - {plugin} - v{version}."
+"debug.action.open" = "Atidaryti: {url}"
+"debug.action.open-description" = "Atidaryti įkeltą diagnostikos ataskaitą."
+"debug.saved" = "Įskiepio {plugin} diagnostikos ataskaita išsaugota: {path}."
+"debug.action.copy-path" = "Kopijuoti vietinį kelią"
+"debug.action.copy-path-description" = "Kopijuoti vietinį ataskaitos kelią."

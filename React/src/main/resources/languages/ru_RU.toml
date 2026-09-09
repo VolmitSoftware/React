@@ -1,6 +1,179 @@
+# Язык React: ru_RU
+#
+# Редактируйте этот файл в папке languages или командой /react language server edit.
+# React создаёт или скачивает языковые файлы только при их отсутствии. Локальные изменения сохраняются.
+# Отсутствующие сообщения берутся из встроенного английского каталога.
+#
+# Форматирование
+#   Сообщения чата используют MiniMessage: <red>текст</red>, <bold>текст</bold>.
+#   Цвета RGB задаются так: <color:#RRGGBB>текст</color>. Закрывайте теги в порядке, обратном открытию.
+#   Общие сообщения редактора language.* также поддерживают обычные коды цветов, например &e и &r.
+#   Остальные сообщения не преобразуют коды цветов с &. Соблюдайте правила кавычек и экранирования TOML.
+#   В строках TOML в кавычках используйте \n для новой строки. Двойные скобки {{ и }} выводят обычные фигурные скобки.
+#   Значения renderer.* и config.documentation.annotation.* содержат обычный текст.
+#   Значения test.* содержат обычный текст, кроме сообщений test.result.*, которые используют MiniMessage.
+#
+# Переменные
+# Каждое сообщение принимает только свои переменные. Не меняйте их имена.
+# Используйте переменные в тексте сообщения, вне тегов MiniMessage.
+#   {action}          Название действия или направление изменения цвета
+#   {actions}         Число действий в очереди или список названий исключённых действий
+#   {active}          Число активных функций или настроек оптимизации
+#   {actor}           Пользователь веб-интерфейса, внёсший изменение
+#   {added}           Вернулась ли функция в реестр активных функций после активации
+#   {after}           Значение настройки, языковое сообщение или использование кучи после изменения
+#   {age}             Возраст данных интеграции в секундах
+#   {amount}          Количество выдаваемых предметов
+#   {architecture}    Архитектура CPU
+#   {argument}        Неожиданный аргумент команды
+#   {available}       Число доступных дескрипторов моста NMS
+#   {average}         Средний TPS или число миллисекунд на тик
+#   {avg_mspt}        Среднее число миллисекунд на тик за проход нагрузочного теста
+#   {avg_tps}         Среднее число тиков в секунду за проход нагрузочного теста
+#   {bar}             Оформленная шкала баллов теста производительности
+#   {before}          Значение настройки, языковое сообщение или использование кучи до изменения
+#   {checked}         Число проверенных измерителей
+#   {chunks}          Число чанков, затронутых действием
+#   {code}            Код сопряжения веб-интерфейса
+#   {command}         Путь команды
+#   {count}           Число записей, модулей, изменений или результатов теста
+#   {current}         Номер текущей страницы
+#   {delta_heap}      Разница конечного использования кучи между React и базовым замером, в MB
+#   {delta_mspt}      Разница среднего времени тика между React и базовым замером, в ms
+#   {delta_tps}       Разница среднего TPS между React и базовым замером
+#   {detail}          Диагностические сведения о мосте, интеграции, действии или тесте
+#   {dimensions}      Обнаруженные размеры сетки стены карт
+#   {direction}       Направление поворота оттенка выбранного цвета
+#   {distance}        Запрошенная дальность прорисовки или симуляции
+#   {duration}        Прошедшее время; в сообщениях о запуске нагрузочного теста — секунды
+#   {enabled}         Состояние включения или число включённых модулей
+#   {entities}        Число сущностей, затронутых действием
+#   {entry}           Запись на временной шкале интеграции
+#   {exceptions}      Исключения React, записанные за проход нагрузочного теста
+#   {fail}            Число неудачных проверок
+#   {file}            Имя файла настроек, языка или API плагина
+#   {fingerprint}     Отпечаток сервера или токена веб-интерфейса
+#   {finite}          Число измерителей, возвращающих конечные значения
+#   {frames}          Число рамок для предметов в активной стене карт
+#   {free}            Свободная физическая или виртуальная память
+#   {freed}           Память кучи, освобождённая сборкой мусора
+#   {from}            Номер первой записи на текущей странице
+#   {grid}            Размеры сетки стены карт
+#   {ground_y}        Высота поверхности в тесте гравитации
+#   {group}           Группа мониторов, измерителей, карт, настроек или языковых сообщений
+#   {growth}          Рост использования кучи во время нагрузочного теста, в MB
+#   {health}          Состояние работоспособности интеграции
+#   {heap_end}        Использование кучи в конце прохода нагрузочного теста, в MB
+#   {heap_start}      Использование кучи в начале прохода нагрузочного теста, в MB
+#   {heartbeat}       Время с последнего сигнала активности интеграции
+#   {height}          Высота области рисования теста в пикселях
+#   {hoppers}         Число нормализованных воронок
+#   {id}              Идентификатор дескриптора моста, измерителя, карты, действия, пакета или токена
+#   {impact}          Описание влияния настройки или затраты плагина в ms/s
+#   {incident}        Идентификатор рекурсивного действия инцидента, исключённого из набора тестов разработчика
+#   {index}           Номер текущего шага набора тестов разработчика
+#   {invalid}         Число измерителей с некорректными показаниями
+#   {issued_at}       Время создания токена веб-интерфейса
+#   {item}            Название или идентификатор предмета
+#   {items}           Число объединённых сущностей предметов
+#   {key}             Ключ параметра команды, ключ настройки или ID языкового сообщения
+#   {label}           Метка теста производительности, метрики, настройки, команды или токена веб-интерфейса
+#   {line}            Номер редактируемой строки в многострочном сообщении
+#   {lines}           Число проверенных строк журнала сервера
+#   {loaded}          Число чанков, впервые загруженных при предварительной подготовке
+#   {locale}          Код отображаемого, выбираемого или редактируемого языка
+#   {matched}         Миры, состояние автосохранения которых совпадает с базовым состоянием теста
+#   {max_tick}        Наибольший наблюдаемый интервал между тиками в нагрузочном тесте, в ms
+#   {maximum}         Максимальное число предметов, порог времени тика или длина ввода в редакторе
+#   {message}         Сводка завершённого действия или сообщение о состоянии интеграции
+#   {metrics}         Число метрик, предоставляемых пакетом API плагина
+#   {minecraft}       Версия Minecraft
+#   {minimum}         Минимальный допустимый TPS
+#   {missing}         Число обязательных измерителей, отсутствующих в реестре
+#   {mode}            Выбранный режим игры или способности
+#   {model}           Модель CPU
+#   {name}            Название теста производительности, модуля, средства отрисовки или проверки
+#   {note}            Причина, по которой журнал сервера не был проверен
+#   {offenders}       Число измерителей, возвращающих неконечные значения
+#   {operations}      Число операций обратных вызовов способностей в минуту
+#   {options}         Допустимые значения настройки
+#   {p95}             95-й процентиль времени тика в нагрузочном тесте, в ms
+#   {parameter}       Имя параметра команды
+#   {parameters}      Проигнорированные параметры команды
+#   {pass}            Число успешных проверок
+#   {path}            Путь ключа настройки или файла отчёта
+#   {percent}         Процент изменения цвета или доля влияния плагина
+#   {permission}      Требуемый узел разрешения
+#   {personal}        Код языка, выбранного игроком
+#   {phase}           Проверяемый этап жизненного цикла функции
+#   {pixels}          Число непустых пикселей, нарисованных в тесте карты
+#   {platform}        Операционная система или платформа сервера Minecraft
+#   {players}         Число искусственных игроков в нагрузочном тесте
+#   {plugin}          Название плагина
+#   {process_load}    Нагрузка CPU процессом сервера
+#   {processors}      Число доступных процессоров CPU
+#   {profile}         Название профиля настроек React
+#   {protocol}        Версия протокола интеграции
+#   {radius}          Радиус карты или действия тестов разработчика в чанках
+#   {range}           Допустимый диапазон дальности прорисовки или симуляции
+#   {rate}            Настроенная скорость ускоренного роста культур
+#   {rating}          Оформленная оценка теста производительности
+#   {react_errors}    Число строк с ошибками React в журнале сервера
+#   {reason}          Объяснение сбоя, отказа или недоступности
+#   {registered}      Число зарегистрированных модулей
+#   {removed_first}   Удалило ли первое отключение функцию из реестра активных функций
+#   {removed_second}  Удалило ли повторное отключение функцию из реестра активных функций
+#   {renderer}        Название или идентификатор средства отрисовки карты
+#   {renderers}       Список средств отрисовки карт с пустыми идентификаторами
+#   {role}            Роль доступа к веб-интерфейсу: viewer, operator или admin
+#   {sampler}         Название или идентификатор измерителя
+#   {samplers}        Список измерителей интеграции или измерителей со сбоями
+#   {scope}           Область действия карты или настройки расстояния
+#   {score}           Балл теста производительности
+#   {seconds}         Обратный отсчёт или длительность нагрузочного теста в секундах
+#   {section}         Название раздела настроек
+#   {server}          Реализация и версия сервера Minecraft
+#   {shown}           Число строк, отображаемых сейчас
+#   {since_run}       Ошибки, зарегистрированные с начала текущего теста
+#   {size}            Максимальные или активные размеры стены карт
+#   {skip}            Число пропущенных проверок
+#   {spawn_y}         Высота, на которой создан блок теста гравитации
+#   {state}           Состояние действия или пакета API плагина
+#   {status}          Состояние интеграции или метка состояния настройки
+#   {subject}         Модуль или настройка, описанные в справке по настройкам
+#   {subsystem}       Название проверяемой подсистемы
+#   {summary}         Сводка аудита действия
+#   {system_load}     Нагрузка CPU всей системой
+#   {target}          Мир, игрок, плагин, настройка или группа плагинов, на которые направлена операция
+#   {threading}       Режим работы потоков сервера
+#   {tick}            Длительность тика, превысившая порог зависания, в ms
+#   {tick_crashes}    Число строк об авариях тика в журнале сервера
+#   {tier}            Уровень серьёзности плана реагирования на инцидент
+#   {timing}          Время обратных вызовов способностей в миллисекундах за минуту
+#   {to}              Номер последней записи на текущей странице
+#   {total}           Общее число записей, модулей, миров, проверок или объём памяти в сообщении
+#   {type}            Тип параметра команды, значения настройки, карты или расстояния
+#   {unavailable}     Число недоступных дескрипторов моста NMS
+#   {unit}            Единица измерения итоговой суммы круговой диаграммы
+#   {unknown}         Идентификатор неизвестного действия, исключённого из набора тестов разработчика
+#   {unreadable}      Число измерителей, которые не удалось прочитать
+#   {uptime}          Время работы операционной системы хоста
+#   {url}             URL загруженного диагностического отчёта
+#   {usage}           Синтаксис использования команды
+#   {used}            Используемая физическая, виртуальная память или память кучи
+#   {value}           Оформленная настройка, измерение или сведения об оборудовании
+#   {values}          Измеренные значения в отчёте тестов разработчика
+#   {variables}       Имена переменных, допустимых в редактируемом сообщении
+#   {vendor}          Поставщик Java
+#   {verdict}         Общий результат теста
+#   {version}         Версия React, Java или платформы
+#   {warmed}          Число предварительно подготовленных чанков
+#   {warn}            Число проверок с предупреждениями
+#   {width}           Ширина области рисования теста в пикселях
+#   {world}           Название мира Minecraft
+
 "command.description.debugdump" = "Создать диагностический отчёт и при желании загрузить его"
 "command.parameter.debugdump_upload" = "Загрузить отчёт на mclo.gs"
-# Complete bundled translation. Code-owned English remains the canonical fallback.
 "action.collect_garbage.no_reclaim" = "Сбор мусора завершен без немедленной утилизации кучи ({used} используемый) в {duration}"
 "action.collect_garbage.reclaimed" = "освобожденный {freed} ({before} -> {after}) в {duration}"
 "action.completed" = "завершенный {action} в {duration}"
@@ -911,8 +1084,8 @@
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.description" = "Конфигурация для функции Mob Stacking. Эта функция постоянно контролирует поведение сервера и применяет ограждения во время выполнения."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.batchintervalms.impact" = "Более низкие значения складываются свежеиспеченными толпами раньше при более высокой стоимости планирования; более высокие значения больше объединяют работу за пропуск."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.batchintervalms.summary" = "Как часто чанки-коды обрабатываются для накладки, в миллисекундах."
-"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.impact" = "Способен применять это поведение; неспособен держать этот путь в бездействии."
-"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.summary" = "Контроль, применяет ли укладка толпы пользовательские имена."
+"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.impact" = "Gloss получает число мобов в группах независимо от этой настройки и управляет общим отображением сущностей, когда оно включено."
+"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.summary" = "Показывает стандартные имена групп мобов, когда отображение сущностей через Gloss недоступно."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.maxhealth.impact" = "Более высокие значения позволяют увеличить пропускную способность перед вмешательством; более низкие значения делают смягчение более агрессивным."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.maxhealth.summary" = "Максимальное здоровье, допустимое укладкой толпы."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.maxstacksize.impact" = "Более высокие значения позволяют увеличить пропускную способность перед вмешательством; более низкие значения делают смягчение более агрессивным."
@@ -1333,8 +1506,8 @@
 "config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.maxdiffmessagesperfile.summary" = "Максимальное количество сообщений дифф-кода на уровне ключа, отправляемых в измененный файл."
 "config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.notifyoperators.impact" = "Отключите, если вам нужны только журналы консоли и никаких внутриигровых уведомлений."
 "config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.notifyoperators.summary" = "Отправляет резюме изменений горячей загрузки онлайн-операторам."
-"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.impact" = "Более низкие значения процесса доставляют события файловой системы раньше; задержка доставки операционной системы может быть дольше."
-"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.summary" = "Интервал вытяжки, используемый наблюдателем конфигураций в миллисекундах."
+"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.impact" = "Меньшие значения позволяют раньше обнаруживать полученные события; автоматические изменения по-прежнему применяются пакетами не чаще одного раза в три секунды."
+"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.summary" = "Интервал опроса событий файловой системы в миллисекундах."
 "config.documentation.annotation.art.arcane.react.core.controller.historycontroller.description" = "Однократно собирает данные с измерителей React, сохраняет сжатую историческую телеметрию и обслуживает ограниченные запросы по диапазону времени."
 "config.documentation.annotation.art.arcane.react.core.controller.historycontroller.field.compressionlevel.impact" = "Более высокие значения могут уменьшить использование диска ценой дополнительной нагрузки на процессор при записи."
 "config.documentation.annotation.art.arcane.react.core.controller.historycontroller.field.compressionlevel.summary" = "Уровень DEFLATE, используемый только тогда, когда он уменьшает закодированный столбец метрик."
@@ -1412,7 +1585,7 @@
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.debug.summary" = "Позволяет отлаживать лесозаготовки и дополнительную диагностику."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsecretsenabled.impact" = "Отключен по умолчанию. позволяет разрешить Iris/Adapt Секретные пучки, когда присутствуют зависимости."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsecretsenabled.summary" = "Включает функции секретной интеграции, связанные с плагином."
-"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.impact" = "Кодовый английский остается запасным; факультативный TOML Для этого открываются languages/overrides."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.impact" = "Встроенный в код английский остаётся резервным языком; редактируемые каталоги TOML загружаются из languages."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.summary" = "Локальные, используемые для React Интерфейсы игрока и оператора."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.impact" = "Установите false, чтобы полностью отключить отправку данных bStats из React. Требуется перезапуск."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.summary" = "Включает анонимную отправку статистики использования bStats для React."
@@ -1422,8 +1595,8 @@
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.priority.summary" = "Модель приоритета организации, используемая несколькими React подсистемы."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.slowticklogmode.impact" = "ОFF подавляет медленные тик-предупреждения. BLAME подчеркивает вероятную ответственность плагина/нагрузки на работу. SHORT регистрирует только минимальное время. DETAILED регистрирует полный диагностический полезная нагрузка данных."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.slowticklogmode.summary" = "Управляет тем, как медленно записываются предупреждения тик. Опции: Офф, ВОПЛЯМНЫЕ, КОРТКИЙ, ДЕТЕЛЬЗЫЙ."
-"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.impact" = "Отключен по умолчанию. После включения и прикрепления агента его нельзя отделить, не перезапустив JVM. Никаких преобразований в текущем выпуске не зарегистрировано."
-"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.summary" = "Позволяет факультативный ByteBuddy байт-код агента для продвинутых инструментов времени выполнения."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.impact" = "По умолчанию отключено. Функции NMS для отдельных версий по-прежнему могут подключать собственную инструментацию при активации. Подключённая инструментация сохраняется до перезапуска JVM."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.summary" = "Подключает общий агент ByteBuddy React уже при запуске."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.value.impact" = "Более высокие значения могут увеличить влияние дорогостоящих предметов в расчетах."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.value.summary" = "Настройка ценности материала, используемая для анализа рецепта / стоимости."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.verbose.impact" = "Полезен для устранения неполадок, но может создать много бревенчатого шума."
@@ -2576,3 +2749,125 @@
 "config.documentation.annotation.art.arcane.react.core.controller.incidentcontroller.field.persistenceenabled.summary" = "Хранит структурированную историю инцидентов в plugins/React/incidents.json."
 "config.documentation.annotation.art.arcane.react.core.controller.incidentcontroller.field.retention.impact" = "Большие значения сохраняют больше истории и используют больше памяти и места на диске."
 "config.documentation.annotation.art.arcane.react.core.controller.incidentcontroller.field.retention.summary" = "Максимальное число сохраняемых структурированных событий инцидента."
+
+"language.menu.your_language" = "Ваш язык"
+"language.menu.reset_your_language" = "Сбросить выбор языка"
+"language.menu.server_default" = "Язык сервера по умолчанию"
+"language.menu.edit_messages" = "Изменить языковые сообщения"
+"language.menu.use_server_default" = "Использовать язык сервера по умолчанию"
+"language.menu.current" = "Текущий: {locale}"
+"language.menu.current_with_personal" = "Текущий: {locale} (Ваш: {personal})"
+"language.menu.your_description" = "Изменить только сообщения, которые видите вы."
+"language.menu.reset_description" = "Использовать язык сервера по умолчанию."
+"language.menu.server_description" = "Изменить язык сервера по умолчанию."
+"language.menu.edit_description" = "Открыть редактор сообщений для каждого языка."
+"language.menu.select_description" = "Нажмите, чтобы выбрать этот язык."
+"language.menu.remove_personal_description" = "Удалить ваш личный выбор языка."
+"language.menu.no_controls" = "У вас нет доступа к настройкам языка."
+"language.menu.command" = "Команда: {command}"
+"language.menu.selected" = "выбранный"
+"language.menu.all-volmit-plugins" = "все плагины Volmit"
+"language.error.stopping" = "Выбор языка недоступен, пока плагин останавливается."
+"language.error.editor-player-only" = "Откройте редактор языка в игре."
+"language.usage.editor" = "использование: /{command} language server edit [locale]"
+"language.usage.selection" = "использование: /{command} language self [locale|reset] or server [locale]"
+"language.usage.volmit-selection" = "использование: /volmit plugins languages [locale]"
+"language.error.no-providers" = "Нет доступных поставщиков языков Volmit."
+"language.error.numeric-page" = "Укажите номер страницы списка языков."
+"language.error.personal-player-only" = "Личный язык игрока нужно выбирать в игре."
+"language.error.personal-permission" = "У вас нет разрешения на выбор языка."
+"language.error.plugin-personal-permission" = "У вас нет разрешения на выбор языка для {plugin}."
+"language.error.plugin-server-permission" = "Вы не имеете права изменять язык сервера для {plugin}."
+"language.error.server-locale-required" = "Выберите код языка, например en_US, для языка сервера по умолчанию."
+"language.error.unavailable-for-all" = "Язык {locale} доступен не для всех выбранных плагинов."
+"language.selection.preparing" = "Подготовка языка {locale} для {target}..."
+"language.selection.save-failed" = "{plugin}: не удалось сохранить выбор языка. Проверьте консоль сервера."
+"language.selection.english-fallback" = "{plugin}: язык {locale} недоступен. Используется английский (en_US)."
+"language.selection.personal-selected" = "{plugin}: Ваш язык сейчас {locale}."
+"language.selection.server-selected" = "{plugin}: Язык сервера теперь {locale}."
+"language.selection.server-default-selected" = "{plugin}: теперь вы используете язык сервера по умолчанию."
+"language.editor.section.languages" = "Языки"
+"language.editor.section.search" = "Поиск"
+"language.editor.section.search-title" = "{locale} / Поиск"
+"language.editor.section.group-title" = "{locale} / {group}"
+"language.editor.loading" = "Загрузка сообщений на языке {locale}..."
+"language.editor.prompt.search" = "Ищите по ключам сообщений или тексту. Введите cancel, чтобы вернуться."
+"language.editor.prompt.value" = "Введите новое значение для {key} в чате."
+"language.editor.prompt.current" = "Текущее значение: {value}"
+"language.editor.prompt.variables" = "Переменные: {variables}"
+"language.editor.prompt.guidance" = "Используйте \\n для новой строки и \\\\ для обратной косой черты. Введите cancel, чтобы вернуться."
+"language.editor.input.expired" = "Время ввода в редакторе языка истекло."
+"language.editor.input.too-long" = "Текст в редакторе должен содержать не более {maximum} символов."
+"language.editor.input.unable-to-save" = "Не удалось сохранить: {reason}"
+"language.editor.navigation.back" = "&eНазад&r"
+"language.editor.navigation.close" = "&cЗакрыть&r"
+"language.editor.navigation.previous-page" = "&eПредыдущая страница&r"
+"language.editor.navigation.next-page" = "&eСледующая страница&r"
+"language.editor.search.messages" = "Поиск сообщений"
+"language.editor.search.messages-lore" = "Нажмите для поиска всех сообщений."
+"language.editor.search.clear" = "Очистить поиск"
+"language.editor.message.current-value" = "&7Текущее значение:&r"
+"language.editor.message.variables" = "&8{variables}&r"
+"language.editor.message.edit-plural" = "&7Нажмите, чтобы отредактировать форму множественного числа.&r"
+"language.editor.message.edit-lines" = "&7Нажмите, чтобы редактировать отдельные строки.&r"
+"language.editor.message.edit-chat" = "&7Нажмите, чтобы редактировать в чате.&r"
+"language.editor.locale.open" = "&8Нажмите, чтобы открыть этот язык.&r"
+"language.editor.category.message-count" = "&7Сообщений: {count}&r"
+"language.editor.category.open" = "&8Нажмите, чтобы открыть эту категорию.&r"
+"language.editor.error.no-permission" = "У вас нет прав на редактирование языков плагина {plugin}."
+"language.editor.error.unable-to-edit" = "Невозможно редактировать: {reason}"
+"language.editor.saved.summary" = "{locale} сохранён. Выбор языка не изменился."
+"language.editor.saved.change" = "{key}: «{before}» изменено на «{after}»."
+"language.editor.part.line" = "Строка {line}"
+"language.editor.value.none" = "Нет"
+"language.editor.value.empty" = "(пустой)"
+"test.map.megamap_capacity_fail" = "Параметры Megamap определены неверно:"
+"test.map.megamap_capacity_pass" = "Число столбцов, строк и детализация Megamap определяются по сетке."
+"test.map.megamap_viewport_fail" = "Геометрия области просмотра Megamap неверна:"
+"test.map.megamap_viewport_pass" = "Адаптивные стены получают единый логический холст, а увеличенные стены сохраняют одинаковый масштаб и пропорции с полями."
+"test.map.megamap_defects_fail" = "Некорректные стены карт не были выявлены:"
+"test.map.megamap_defects_pass" = "Неровные, повёрнутые, дублированные и смешанные стены карт сообщают причину ошибки."
+"test.map.megamap_expansion_fail" = "Отрисовщики не справились с расширенной стеной:"
+"test.map.renderer_containment_skip" = "Не удалось проверить ни один отрисовщик без графической среды."
+"test.map.megamap_expansion_pass" = "Каждый отрисовщик заполняет все рамки стен размером 1x1, 2x1, 1x2, 1x3, 2x2, 3x1, 3x3 и 5x3."
+"test.map.palette_fail" = "Цвета темы сливаются в палитре карты:"
+"test.map.palette_pass" = "Каждый цвет темы точно соответствует отдельному цвету палитры карты."
+"test.map.clip_fail" = "Рисование вышло за пределы активного прямоугольника отсечения."
+"test.map.clip_blank" = "Проверка отсечения ничего не нарисовала внутри своей области."
+"test.map.clip_restore_fail" = "popClip не восстановил предыдущий прямоугольник отсечения."
+"test.map.clip_pass" = "Линии, текст и заливки остались внутри добавленного в стек прямоугольника отсечения."
+"test.map.text_bounds_fail" = "Подогнанный текст превысил ограничение ширины."
+"test.map.text_bounds_pass" = "Подогнанный текст не превышает ограничение при любом масштабе интерфейса."
+"test.map.renderer_containment_fail" = "Отрисовщики рисовали за пределами своих прямоугольников отсечения:"
+"test.map.renderer_containment_pass" = "Каждый отрисовщик остался внутри добавленного в стек прямоугольника отсечения."
+"test.map.flush_fidelity_fail" = "Вывод буфера не воспроизвёл скомпонованную поверхность:"
+"test.map.flush_fidelity_pass" = "Каждый выведенный пиксель совпадает со скомпонованной поверхностью при размерах 1x1, 2x2 и 3x3."
+"test.map.flush_stability_fail" = "Повторная отрисовка одинакового содержимого всё ещё записывала пиксели на холст:"
+"test.map.flush_stability_pass" = "Повторная отрисовка одинакового содержимого не записывает ни одного пикселя на холст."
+"test.map.frame_wall_disabled" = "Объединение плиток Megamap отключено; соседние рамки не образуют стену."
+"test.map.frame_wall_no_worlds" = "Нет загруженных миров; невозможно построить настоящую стену из рамок."
+"test.map.frame_wall_setup_failed" = "Не удалось построить настоящую стену из рамок:"
+"test.map.frame_wall_no_space" = "Рядом с точкой появления нет свободного воздушного столбца для стены карт из двух рамок."
+"test.map.frame_wall_probe_failed" = "Проверка настоящей стены из рамок не удалась:"
+"test.map.frame_wall_pass" = "Клонированные карты React в соседних рамках получили разные ID и были распознаны как стена из двух плиток."
+"test.map.frame_wall_fail" = "Соседние рамки так и не образовали стену Megamap из двух плиток:"
+"command.description.language" = "Выбрать свой язык или язык сервера"
+"debug.error.missing-permission" = "Недостаточно прав: {permission}"
+"debug.error.already-preparing" = "Диагностический отчёт для {plugin} уже готовится."
+"debug.error.already-preparing-short" = "Диагностический отчёт уже готовится."
+"debug.preparing" = "Подготовка диагностического отчёта для {plugin}..."
+"debug.error.schedule-failed" = "Не удалось запланировать создание диагностического отчёта."
+"debug.error.provider-closed" = "Служба диагностики завершена."
+"debug.error.closed-before-capture" = "Служба диагностики завершилась до сбора отчёта."
+"debug.error.writer-schedule-failed" = "Не удалось запланировать запись диагностического отчёта."
+"debug.error.capture-failed" = "Не удалось собрать диагностический отчёт. Проверьте консоль сервера."
+"debug.error.closed-before-write" = "Служба диагностики завершилась до записи отчёта."
+"debug.error.write-failed" = "Не удалось записать диагностический отчёт. Проверьте консоль сервера."
+"debug.upload.interrupted" = "Отправка диагностического отчёта прервана. Локальный отчёт сохранён."
+"debug.upload.failed" = "Не удалось отправить диагностический отчёт. Локальный отчёт сохранён."
+"debug.upload.completed" = "Отправлено под именем VolmitSoftware - {plugin} - v{version}."
+"debug.action.open" = "Открыть: {url}"
+"debug.action.open-description" = "Открыть отправленный диагностический отчёт."
+"debug.saved" = "Диагностический отчёт для {plugin} сохранён в {path}."
+"debug.action.copy-path" = "Копировать локальный путь"
+"debug.action.copy-path-description" = "Копировать локальный путь к отчёту."

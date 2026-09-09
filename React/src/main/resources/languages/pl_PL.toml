@@ -1,6 +1,179 @@
+# Język React: pl_PL
+#
+# Edytuj ten plik bezpośrednio w folderze languages lub poleceniem /react language server edit.
+# React tworzy lub pobiera pliki językowe tylko wtedy, gdy ich brakuje. Lokalne zmiany zostają zachowane.
+# Brakujące wiadomości pochodzą z wbudowanego katalogu angielskiego.
+#
+# Formatowanie
+#   Wiadomości czatu używają MiniMessage: <red>tekst</red>, <bold>tekst</bold>.
+#   Kolory RGB mają postać <color:#RRGGBB>tekst</color>. Zamykaj znaczniki w kolejności odwrotnej do otwierania.
+#   Wspólne wiadomości edytora language.* obsługują też klasyczne kody kolorów, np. &e i &r.
+#   Pozostałe wiadomości nie przekształcają kodów kolorów z &. Zachowaj poprawne cudzysłowy i sekwencje specjalne TOML.
+#   W tekstach TOML ujętych w cudzysłowy użyj \n, aby rozpocząć nowy wiersz. Podwójne klamry {{ i }} wyświetlają dosłowne klamry.
+#   Wartości renderer.* i config.documentation.annotation.* są zwykłym tekstem.
+#   Wartości test.* są zwykłym tekstem, z wyjątkiem wiadomości test.result.*, które używają MiniMessage.
+#
+# Zmienne
+# Każda wiadomość przyjmuje tylko własne zmienne. Nie zmieniaj ich nazw.
+# Używaj zmiennych w tekście wiadomości, poza znacznikami MiniMessage.
+#   {action}          Nazwa działania lub kierunek zmiany koloru
+#   {actions}         Liczba działań w kolejce lub lista nazw pominiętych działań
+#   {active}          Liczba aktywnych funkcji lub usprawnień
+#   {actor}           Użytkownik panelu WWW, który wprowadził zmianę
+#   {added}           Czy funkcja wróciła do rejestru aktywnych funkcji po włączeniu
+#   {after}           Wartość ustawienia, wiadomość językowa lub użycie sterty po zmianie
+#   {age}             Wiek danych integracji w sekundach
+#   {amount}          Liczba przedmiotów do przekazania
+#   {architecture}    Architektura CPU
+#   {argument}        Nieoczekiwany argument polecenia
+#   {available}       Liczba dostępnych uchwytów mostka NMS
+#   {average}         Średnie TPS lub milisekundy na takt
+#   {avg_mspt}        Średnia liczba milisekund na takt w przebiegu testu obciążenia
+#   {avg_tps}         Średnia liczba taktów na sekundę w przebiegu testu obciążenia
+#   {bar}             Sformatowany pasek wyniku testu wydajności
+#   {before}          Wartość ustawienia, wiadomość językowa lub użycie sterty przed zmianą
+#   {checked}         Liczba sprawdzonych próbników
+#   {chunks}          Liczba chunków objętych działaniem
+#   {code}            Kod parowania panelu WWW
+#   {command}         Ścieżka polecenia
+#   {count}           Liczba wpisów, modułów, zmian lub ustaleń testu
+#   {current}         Numer bieżącej strony
+#   {delta_heap}      Różnica końcowego użycia sterty między React a pomiarem bazowym, w MB
+#   {delta_mspt}      Różnica średniego czasu taktu między React a pomiarem bazowym, w ms
+#   {delta_tps}       Różnica średniego TPS między React a pomiarem bazowym
+#   {detail}          Szczegóły diagnostyczne mostka, integracji, działania lub testu
+#   {dimensions}      Wykryte wymiary siatki ściany map
+#   {direction}       Kierunek obrotu odcienia wybranego koloru
+#   {distance}        Żądany zasięg widzenia lub symulacji
+#   {duration}        Czas, który upłynął; w wiadomościach startowych testu obciążenia w sekundach
+#   {enabled}         Stan włączenia lub liczba włączonych modułów
+#   {entities}        Liczba bytów objętych działaniem
+#   {entry}           Wpis na osi czasu integracji
+#   {exceptions}      Wyjątki React zarejestrowane w przebiegu testu obciążenia
+#   {fail}            Liczba nieudanych kontroli
+#   {file}            Nazwa pliku konfiguracji, języka lub API wtyczki
+#   {fingerprint}     Odcisk serwera lub tokenu panelu WWW
+#   {finite}          Liczba próbników zwracających wartości skończone
+#   {frames}          Liczba ramek na przedmioty w aktywnej ścianie map
+#   {free}            Wolna pamięć fizyczna lub wirtualna
+#   {freed}           Pamięć sterty odzyskana przez odśmiecanie
+#   {from}            Numer pierwszego wpisu na bieżącej stronie
+#   {grid}            Wymiary siatki ściany map
+#   {ground_y}        Wysokość podłoża w teście grawitacji
+#   {group}           Grupa monitorów, próbników, map, ustawień lub wiadomości językowych
+#   {growth}          Wzrost użycia sterty w teście obciążenia, w MB
+#   {health}          Stan sprawności integracji
+#   {heap_end}        Użycie sterty na końcu przebiegu testu obciążenia, w MB
+#   {heap_start}      Użycie sterty na początku przebiegu testu obciążenia, w MB
+#   {heartbeat}       Czas od ostatniego sygnału aktywności integracji
+#   {height}          Wysokość obszaru rysowania testu w pikselach
+#   {hoppers}         Liczba znormalizowanych lejów
+#   {id}              Identyfikator uchwytu mostka, próbnika, mapy, działania, pakietu lub tokenu
+#   {impact}          Opis wpływu ustawienia lub koszt wtyczki w ms/s
+#   {incident}        Identyfikator rekurencyjnego działania incydentu pominiętego w zestawie testów deweloperskich
+#   {index}           Numer bieżącego kroku zestawu testów deweloperskich
+#   {invalid}         Liczba próbników z nieprawidłowymi odczytami
+#   {issued_at}       Czas utworzenia tokenu panelu WWW
+#   {item}            Nazwa lub identyfikator przedmiotu
+#   {items}           Liczba połączonych bytów przedmiotów
+#   {key}             Klucz parametru polecenia, klucz ustawienia lub ID wiadomości językowej
+#   {label}           Etykieta testu wydajności, metryki, ustawienia, polecenia lub tokenu panelu WWW
+#   {line}            Numer edytowanego wiersza w wiadomości wielowierszowej
+#   {lines}           Liczba sprawdzonych wierszy dziennika serwera
+#   {loaded}          Liczba chunków nowo wczytanych podczas przygotowania
+#   {locale}          Kod języka wyświetlanego, wybieranego lub edytowanego
+#   {matched}         Światy, których stan automatycznego zapisu odpowiada stanowi bazowemu testu
+#   {max_tick}        Najdłuższa zaobserwowana przerwa między taktami w teście obciążenia, w ms
+#   {maximum}         Maksymalna liczba przedmiotów, próg czasu taktu lub długość tekstu w edytorze
+#   {message}         Podsumowanie ukończonego działania lub wiadomość o stanie integracji
+#   {metrics}         Liczba metryk dostarczanych przez pakiet API wtyczki
+#   {minecraft}       Wersja Minecraft
+#   {minimum}         Minimalne akceptowalne TPS
+#   {missing}         Liczba wymaganych próbników brakujących w rejestrze
+#   {mode}            Wybrany tryb gry lub zdolności
+#   {model}           Model CPU
+#   {name}            Nazwa testu wydajności, modułu, modułu renderowania lub kontroli testowej
+#   {note}            Powód pominięcia sprawdzania dziennika serwera
+#   {offenders}       Liczba próbników zwracających wartości nieskończone lub NaN
+#   {operations}      Operacje wywołań zwrotnych zdolności na minutę
+#   {options}         Dozwolone wartości ustawienia
+#   {p95}             95. percentyl czasu taktu w teście obciążenia, w ms
+#   {parameter}       Nazwa parametru polecenia
+#   {parameters}      Pominięte parametry polecenia
+#   {pass}            Liczba udanych kontroli
+#   {path}            Ścieżka klucza ustawienia lub pliku raportu
+#   {percent}         Procent zmiany koloru lub udział we wpływie wtyczek
+#   {permission}      Wymagany węzeł uprawnienia
+#   {personal}        Kod języka wybranego przez gracza
+#   {phase}           Testowana faza cyklu życia funkcji
+#   {pixels}          Liczba niepustych pikseli narysowanych w teście mapy
+#   {platform}        System operacyjny lub platforma serwera Minecraft
+#   {players}         Liczba sztucznych graczy w teście obciążenia
+#   {plugin}          Nazwa wtyczki
+#   {process_load}    Obciążenie CPU przez proces serwera
+#   {processors}      Liczba dostępnych procesorów CPU
+#   {profile}         Nazwa profilu konfiguracji React
+#   {protocol}        Wersja protokołu integracji
+#   {radius}          Promień mapy lub działania testu deweloperskiego w chunkach
+#   {range}           Dozwolony zakres zasięgu widzenia lub symulacji
+#   {rate}            Skonfigurowane tempo przyspieszania wzrostu upraw
+#   {rating}          Sformatowana ocena testu wydajności
+#   {react_errors}    Liczba wierszy błędów React znalezionych w dzienniku serwera
+#   {reason}          Wyjaśnienie błędu, odrzucenia lub niedostępności
+#   {registered}      Liczba zarejestrowanych modułów
+#   {removed_first}   Czy pierwsze wyłączenie usunęło funkcję z rejestru aktywnych funkcji
+#   {removed_second}  Czy ponowne wyłączenie usunęło funkcję z rejestru aktywnych funkcji
+#   {renderer}        Nazwa lub identyfikator modułu renderowania mapy
+#   {renderers}       Lista modułów renderowania map z pustymi identyfikatorami
+#   {role}            Rola dostępu do panelu WWW: viewer, operator lub admin
+#   {sampler}         Nazwa lub identyfikator próbnika
+#   {samplers}        Lista próbników integracji lub próbników z błędami
+#   {scope}           Zakres mapy lub ustawienia odległości
+#   {score}           Wynik punktowy testu wydajności
+#   {seconds}         Odliczanie lub czas trwania testu obciążenia w sekundach
+#   {section}         Nazwa sekcji konfiguracji
+#   {server}          Implementacja i wersja serwera Minecraft
+#   {shown}           Liczba obecnie wyświetlanych wierszy
+#   {since_run}       Błędy zgłoszone od rozpoczęcia bieżącego testu
+#   {size}            Maksymalne lub aktywne wymiary ściany map
+#   {skip}            Liczba pominiętych kontroli
+#   {spawn_y}         Wysokość, na której utworzono blok testu grawitacji
+#   {state}           Stan działania lub pakietu API wtyczki
+#   {status}          Stan integracji lub etykieta stanu ustawienia
+#   {subject}         Moduł lub ustawienie opisane w pomocy konfiguracji
+#   {subsystem}       Nazwa testowanego podsystemu
+#   {summary}         Podsumowanie audytu działania
+#   {system_load}     Obciążenie CPU całego systemu
+#   {target}          Świat, gracz, wtyczka, ustawienie lub grupa wtyczek objęta operacją
+#   {threading}       Tryb obsługi wątków serwera
+#   {tick}            Czas trwania taktu, który przekroczył próg zawieszenia, w ms
+#   {tick_crashes}    Liczba wierszy awarii taktu znalezionych w dzienniku serwera
+#   {tier}            Poziom ważności planu reakcji na incydent
+#   {timing}          Czas wywołań zwrotnych zdolności w milisekundach na minutę
+#   {to}              Numer ostatniego wpisu na bieżącej stronie
+#   {total}           Łączna liczba wpisów, modułów, światów, kontroli lub ilość pamięci w wiadomości
+#   {type}            Typ parametru polecenia, wartości ustawienia, mapy lub odległości
+#   {unavailable}     Liczba niedostępnych uchwytów mostka NMS
+#   {unit}            Jednostka sumy na wykresie kołowym
+#   {unknown}         Identyfikator nieznanego działania pominiętego w zestawie testów deweloperskich
+#   {unreadable}      Liczba próbników, których nie udało się odczytać
+#   {uptime}          Czas działania systemu operacyjnego hosta
+#   {url}             URL przesłanego raportu diagnostycznego
+#   {usage}           Składnia użycia polecenia
+#   {used}            Używana pamięć fizyczna, wirtualna lub sterta
+#   {value}           Sformatowane ustawienie, pomiar lub dane sprzętu
+#   {values}          Odczytane wartości wymienione w raporcie testów deweloperskich
+#   {variables}       Nazwy zmiennych akceptowanych przez edytowaną wiadomość
+#   {vendor}          Dostawca Java
+#   {verdict}         Ogólny wynik testu
+#   {version}         Wersja React, Java lub platformy
+#   {warmed}          Liczba wstępnie przygotowanych chunków
+#   {warn}            Liczba kontroli z ostrzeżeniami
+#   {width}           Szerokość obszaru rysowania testu w pikselach
+#   {world}           Nazwa świata Minecraft
+
 "command.description.debugdump" = "Utwórz raport diagnostyczny i opcjonalnie go prześlij"
 "command.parameter.debugdump_upload" = "Prześlij raport do mclo.gs"
-# Complete bundled translation. Code-owned English remains the canonical fallback.
 "action.collect_garbage.no_reclaim" = "Zbiór śmieci zakończony bez natychmiastowej odzyskiwania zbiornika ({used} używane) w {duration}"
 "action.collect_garbage.reclaimed" = "Wyzwolona {freed} ({before} -> {after}) w {duration}"
 "action.completed" = "Zakończono {action} w {duration}"
@@ -911,8 +1084,8 @@
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.description" = "Konfiguracja funkcji układania mafii. Funkcja ta stale monitoruje zachowanie serwera i stosuje barierki podczas biegu."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.batchintervalms.impact" = "Niższe wartości stosuj świeżo wyhodowane moby wcześniej przy wyższych kosztach rozkładowych; wyższe wartości wsadowe więcej pracy połączenia na przełęcz."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.batchintervalms.summary" = "Jak często chunki w kolejce jest przetwarzany do układania, w milisekundach."
-"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.impact" = "Włącz stosowanie tego zachowania; wyłączcie, aby ta ścieżka była nieaktywna."
-"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.summary" = "Kontroluje, czy mafia stosuje niestandardowe nazwy."
+"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.impact" = "Gloss otrzymuje liczebność stosów niezależnie od tego ustawienia i zarządza wspólną nakładką encji, gdy jest ona włączona."
+"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.summary" = "Wyświetla standardowe nazwy stosów mobów, gdy nakładki encji Gloss są niedostępne."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.maxhealth.impact" = "Wyższe wartości umożliwiają większą przepustowość przed interwencją; niższe wartości sprawiają, że łagodzenie skutków jest bardziej agresywne."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.maxhealth.summary" = "Maksymalne zdrowie dozwolone przez układanie mafii."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.maxstacksize.impact" = "Wyższe wartości umożliwiają większą przepustowość przed interwencją; niższe wartości sprawiają, że łagodzenie skutków jest bardziej agresywne."
@@ -1333,8 +1506,8 @@
 "config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.maxdiffmessagesperfile.summary" = "Maksymalna liczba wiadomości o poziomie klucza wysłanych w zmienionym pliku."
 "config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.notifyoperators.impact" = "Wyłącz, jeśli chcesz tylko dzienniki konsoli i żadnych powiadomień w grze."
 "config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.notifyoperators.summary" = "Wysyła podsumowania zmian obciążenia w trybie hotload do operatorów internetowych."
-"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.impact" = "Niższe wartości procesu dostarczono wcześniej zdarzenia systemu plików; opóźnienie dostawy systemu operacyjnego może być dłuższe."
-"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.summary" = "Odstęp między odciekami w ciągu kilku milisekund, używany przez obserwatora konfitur."
+"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.impact" = "Niższe wartości pozwalają szybciej wykryć odebrane zdarzenia; automatyczne zmiany są nadal stosowane partiami najwyżej raz na trzy sekundy."
+"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.summary" = "Odstęp między sprawdzaniem zdarzeń systemu plików, w milisekundach."
 "config.documentation.annotation.art.arcane.react.core.controller.historycontroller.description" = "Jednorazowo przechwytuje próbniki React, zapisuje skompresowaną telemetrię historyczną i obsługuje ograniczone zapytania o zakres czasu."
 "config.documentation.annotation.art.arcane.react.core.controller.historycontroller.field.compressionlevel.impact" = "Wyższe wartości mogą zmniejszyć użycie dysku kosztem większego obciążenia procesora podczas zapisu."
 "config.documentation.annotation.art.arcane.react.core.controller.historycontroller.field.compressionlevel.summary" = "Poziom DEFLATE używany tylko wtedy, gdy zmniejsza zakodowaną kolumnę metryk."
@@ -1412,7 +1585,7 @@
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.debug.summary" = "Umożliwia logowanie debugowania i dodatkową diagnostykę."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsecretsenabled.impact" = "Domyślnie wyłączone. Włącz Iris/Adapt tajnych pakietów, gdy są obecne zależności."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsecretsenabled.summary" = "Umożliwia wtykowe funkcje integracji."
-"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.impact" = "Angielski będący własnością Codea pozostaje zapasem; opcjonalne TOML nadjazdy są ładowane z languages/overrides."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.impact" = "Angielski zapisany w kodzie pozostaje językiem zapasowym; edytowalne katalogi TOML są wczytywane z languages."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.summary" = "Locale stosowane do React interfejsy odtwarzacza i operatora."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.impact" = "Ustaw na false, aby całkowicie wyłączyć wysyłanie danych bStats przez Reacta. Wymaga restartu."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.summary" = "Włącza anonimowe raportowanie użycia bStats dla Reacta."
@@ -1422,8 +1595,8 @@
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.priority.summary" = "Wzór priorytetowy jednostki stosowany przez wiele podmiotów React podsystemy."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.slowticklogmode.impact" = "OFF tłumi wolne ostrzeżenia tick. BLAME podkreśla prawdopodobną odpowiedzialność za wtyczkę/obciążenie pracą. SHORT zapisuje tylko minimalny czas. DETAILED zapisuje pełny diagnostyczny ładunek danych."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.slowticklogmode.summary" = "Kontrola, jak wolne tick ostrzeżenia są zapisane. Opcje: OFF, BLAAME, SHORT, DETAILED."
-"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.impact" = "Domyślnie wyłączone. Po włączeniu i przymocowaniu czynnika, nie można go odłączyć bez ponownego uruchomienia JVM. W bieżącym wydaniu nie zarejestrowano żadnych przekształceń."
-"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.summary" = "Włącza opcjonalne ByteBuddy środek bytecode do zaawansowanej oprzyrządowania runtime."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.impact" = "Domyślnie wyłączone. Funkcje NMS zależne od wersji nadal mogą podłączać własną instrumentację po aktywacji. Podłączona instrumentacja pozostaje do ponownego uruchomienia JVM."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.summary" = "Podłącza ogólnego agenta ByteBuddy w React już podczas uruchamiania."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.value.impact" = "Wyższe wartości mogą zwiększyć wpływ kosztownych elementów w obliczeniach."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.value.summary" = "Wartość materialna tuning stosowana do analizy receptury / wartości."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.verbose.impact" = "Przydatne do rozwiązywania problemów, ale może stworzyć wiele hałasu log."
@@ -2576,3 +2749,125 @@
 "config.documentation.annotation.art.arcane.react.core.controller.incidentcontroller.field.persistenceenabled.summary" = "Przechowuje ustrukturyzowaną historię incydentów w plugins/React/incidents.json."
 "config.documentation.annotation.art.arcane.react.core.controller.incidentcontroller.field.retention.impact" = "Wyższe wartości zachowują więcej historii i zużywają więcej pamięci oraz miejsca na dysku."
 "config.documentation.annotation.art.arcane.react.core.controller.incidentcontroller.field.retention.summary" = "Maksymalna liczba przechowywanych ustrukturyzowanych zdarzeń incydentu."
+
+"language.menu.your_language" = "Twój język"
+"language.menu.reset_your_language" = "Zresetuj swój język"
+"language.menu.server_default" = "Domyślny język serwera"
+"language.menu.edit_messages" = "Edytuj komunikaty językowe"
+"language.menu.use_server_default" = "Użyj domyślnego języka serwera"
+"language.menu.current" = "Bieżący: {locale}"
+"language.menu.current_with_personal" = "Bieżący: {locale} (Twój: {personal})"
+"language.menu.your_description" = "Zmień tylko komunikaty, które widzisz."
+"language.menu.reset_description" = "Użyj domyślnego języka serwera."
+"language.menu.server_description" = "Zmień domyślny język serwera."
+"language.menu.edit_description" = "Otwórz edytor komunikatów dla każdego języka."
+"language.menu.select_description" = "Kliknij, aby wybrać ten język."
+"language.menu.remove_personal_description" = "Usuń swój osobisty wybór języka."
+"language.menu.no_controls" = "Nie masz dostępu do ustawień języka."
+"language.menu.command" = "Polecenie: {command}"
+"language.menu.selected" = "wybrany"
+"language.menu.all-volmit-plugins" = "wszystkie wtyczki Volmit"
+"language.error.stopping" = "Wybór języka jest niedostępny podczas zatrzymywania wtyczki."
+"language.error.editor-player-only" = "Otwórz edytor języka w grze."
+"language.usage.editor" = "Stosowanie: /{command} language server edit [locale]"
+"language.usage.selection" = "Stosowanie: /{command} language self [locale|reset] or server [locale]"
+"language.usage.volmit-selection" = "Stosowanie: /volmit plugins languages [locale]"
+"language.error.no-providers" = "Brak dostępnych dostawców języków Volmit."
+"language.error.numeric-page" = "Podaj numer strony listy języków."
+"language.error.personal-player-only" = "Preferencje językowe gracza muszą być wybrane w grze."
+"language.error.personal-permission" = "Nie masz pozwolenia na wybranie języka."
+"language.error.plugin-personal-permission" = "Nie masz pozwolenia na wybranie języka dla {plugin}."
+"language.error.plugin-server-permission" = "Nie masz pozwolenia na zmianę języka serwera dla {plugin}."
+"language.error.server-locale-required" = "Wybierz kod języka, np. en_US, jako domyślny język serwera."
+"language.error.unavailable-for-all" = "Język {locale} nie jest dostępny we wszystkich wybranych wtyczkach."
+"language.selection.preparing" = "Przygotowywanie języka {locale} dla {target}..."
+"language.selection.save-failed" = "{plugin}: nie można zapisać wyboru języka; sprawdź konsolę serwera."
+"language.selection.english-fallback" = "{plugin}: język {locale} jest niedostępny. Zostanie użyty angielski (en_US)."
+"language.selection.personal-selected" = "{plugin}: Twój język jest teraz {locale}."
+"language.selection.server-selected" = "{plugin}: język serwera jest teraz {locale}."
+"language.selection.server-default-selected" = "{plugin}: używasz teraz domyślnego języka serwera."
+"language.editor.section.languages" = "Języki"
+"language.editor.section.search" = "Szukaj"
+"language.editor.section.search-title" = "{locale} / Szukaj"
+"language.editor.section.group-title" = "{locale} / {group}"
+"language.editor.loading" = "Wczytywanie wiadomości w języku {locale}..."
+"language.editor.prompt.search" = "Wyszukaj klucze wiadomości lub tekst. Wpisz cancel, aby wrócić."
+"language.editor.prompt.value" = "Wpisz nową wartość dla {key} w czacie."
+"language.editor.prompt.current" = "Bieżąca wartość: {value}"
+"language.editor.prompt.variables" = "Zmienne: {variables}"
+"language.editor.prompt.guidance" = "Użyj \\n, aby wstawić nowy wiersz, i \\\\, aby wstawić ukośnik wsteczny. Wpisz cancel, aby wrócić."
+"language.editor.input.expired" = "Wpis edytora języka wygasł."
+"language.editor.input.too-long" = "Wprowadzony tekst może mieć najwyżej {maximum} znaków."
+"language.editor.input.unable-to-save" = "Nie można zapisać: {reason}"
+"language.editor.navigation.back" = "&eWstecz&r"
+"language.editor.navigation.close" = "&cZamknij&r"
+"language.editor.navigation.previous-page" = "&ePoprzednia strona&r"
+"language.editor.navigation.next-page" = "&eNastępna strona&r"
+"language.editor.search.messages" = "Wyszukaj wiadomości"
+"language.editor.search.messages-lore" = "Kliknij, aby przeszukać wszystkie wiadomości."
+"language.editor.search.clear" = "Wyczyść wyszukiwanie"
+"language.editor.message.current-value" = "&7Bieżąca wartość:&r"
+"language.editor.message.variables" = "&8{variables}&r"
+"language.editor.message.edit-plural" = "&7Kliknij, aby edytować formę mnogą.&r"
+"language.editor.message.edit-lines" = "&7Kliknij, aby edytować poszczególne linie.&r"
+"language.editor.message.edit-chat" = "&7Kliknij aby edytować w czacie.&r"
+"language.editor.locale.open" = "&8Kliknij, aby otworzyć ten język.&r"
+"language.editor.category.message-count" = "&7{count} wiadomości&r"
+"language.editor.category.open" = "&8Kliknij, aby otworzyć tę kategorię.&r"
+"language.editor.error.no-permission" = "Nie masz uprawnień do edycji języków wtyczki {plugin}."
+"language.editor.error.unable-to-edit" = "Nie można edytować: {reason}"
+"language.editor.saved.summary" = "Zapisano {locale}. Wybrane języki pozostają bez zmian."
+"language.editor.saved.change" = "{key}: zmieniono „{before}” na „{after}”."
+"language.editor.part.line" = "Linia {line}"
+"language.editor.value.none" = "Brak"
+"language.editor.value.empty" = "(pusty)"
+"test.map.megamap_capacity_fail" = "Wyznaczanie możliwości Megamap jest nieprawidłowe:"
+"test.map.megamap_capacity_pass" = "Możliwości Megamap określają kolumny, wiersze i poziom szczegółowości na podstawie siatki."
+"test.map.megamap_viewport_fail" = "Geometria obszaru wyświetlania Megamap jest nieprawidłowa:"
+"test.map.megamap_viewport_pass" = "Ściany adaptacyjne korzystają z jednego logicznego płótna, a powiększone ściany zachowują jednolitą skalę z pasami wypełnienia."
+"test.map.megamap_defects_fail" = "Nie rozpoznano wadliwych ścian map:"
+"test.map.megamap_defects_pass" = "Nieregularne, obrócone, zduplikowane i mieszane ściany map zgłaszają przyczynę problemu."
+"test.map.megamap_expansion_fail" = "Mechanizmy renderowania nie zadziałały na powiększonej ścianie:"
+"test.map.renderer_containment_skip" = "Nie można było przetestować żadnego mechanizmu renderowania bez interfejsu graficznego."
+"test.map.megamap_expansion_pass" = "Każdy mechanizm renderowania wypełnia wszystkie ramki ściany o wymiarach 1x1, 2x1, 1x2, 1x3, 2x2, 3x1, 3x3 i 5x3."
+"test.map.palette_fail" = "Kolory motywu zlewają się w palecie map:"
+"test.map.palette_pass" = "Każdy kolor motywu odpowiada dokładnemu, odrębnemu wpisowi w palecie map."
+"test.map.clip_fail" = "Rysunek wykroczył poza aktywny prostokąt przycinania."
+"test.map.clip_blank" = "Test przycinania nie narysował niczego wewnątrz swojego obszaru."
+"test.map.clip_restore_fail" = "popClip nie przywrócił poprzedniego prostokąta przycinania."
+"test.map.clip_pass" = "Linie, tekst i wypełnienia pozostały wewnątrz ustawionego prostokąta przycinania."
+"test.map.text_bounds_fail" = "Dopasowany tekst przekroczył dopuszczalną szerokość."
+"test.map.text_bounds_pass" = "Dopasowany tekst nigdy nie przekracza limitu, niezależnie od skali interfejsu."
+"test.map.renderer_containment_fail" = "Mechanizmy renderowania rysowały poza swoim prostokątem przycinania:"
+"test.map.renderer_containment_pass" = "Każdy mechanizm renderowania pozostał wewnątrz ustawionego prostokąta przycinania."
+"test.map.flush_fidelity_fail" = "Przeniesienie zawartości bufora nie odtworzyło złożonej powierzchni:"
+"test.map.flush_fidelity_pass" = "Każdy przeniesiony piksel odpowiada złożonej powierzchni przy wymiarach 1x1, 2x2 i 3x3."
+"test.map.flush_stability_fail" = "Ponowne rysowanie identycznej zawartości nadal zapisywało piksele na płótnie:"
+"test.map.flush_stability_pass" = "Ponowne rysowanie identycznej zawartości nie zapisuje żadnego piksela na płótnie."
+"test.map.frame_wall_disabled" = "Układ kafelków Megamap jest wyłączony; sąsiadujące ramki nie tworzą ściany."
+"test.map.frame_wall_no_worlds" = "Żaden świat nie jest wczytany; nie można zbudować ściany ramek w świecie."
+"test.map.frame_wall_setup_failed" = "Nie udało się zbudować ściany ramek w świecie:"
+"test.map.frame_wall_no_space" = "W pobliżu punktu odrodzenia nie ma wolnej kolumny powietrza na ścianę map z dwiema ramkami."
+"test.map.frame_wall_probe_failed" = "Sprawdzenie ściany ramek w świecie nie powiodło się:"
+"test.map.frame_wall_pass" = "Sklonowane mapy React w sąsiadujących ramkach otrzymały odrębne identyfikatory i utworzyły ścianę z dwóch kafelków."
+"test.map.frame_wall_fail" = "Sąsiadujące ramki nie utworzyły stabilnej ściany Megamap z dwóch kafelków:"
+"command.description.language" = "Wybierz swój język lub język serwera"
+"debug.error.missing-permission" = "Brak uprawnienia: {permission}"
+"debug.error.already-preparing" = "Raport diagnostyczny dla {plugin} jest już przygotowywany."
+"debug.error.already-preparing-short" = "Raport diagnostyczny jest już przygotowywany."
+"debug.preparing" = "Przygotowywanie raportu diagnostycznego dla {plugin}..."
+"debug.error.schedule-failed" = "Nie udało się zaplanować utworzenia raportu diagnostycznego."
+"debug.error.provider-closed" = "Usługa diagnostyczna została zamknięta."
+"debug.error.closed-before-capture" = "Usługa diagnostyczna została zamknięta przed zebraniem raportu."
+"debug.error.writer-schedule-failed" = "Nie udało się zaplanować zapisu raportu diagnostycznego."
+"debug.error.capture-failed" = "Nie udało się zebrać raportu diagnostycznego. Sprawdź konsolę serwera."
+"debug.error.closed-before-write" = "Usługa diagnostyczna została zamknięta przed zapisaniem raportu."
+"debug.error.write-failed" = "Nie udało się zapisać raportu diagnostycznego. Sprawdź konsolę serwera."
+"debug.upload.interrupted" = "Przesyłanie raportu diagnostycznego zostało przerwane. Raport lokalny jest zapisany."
+"debug.upload.failed" = "Nie udało się przesłać raportu diagnostycznego. Raport lokalny jest zapisany."
+"debug.upload.completed" = "Przesłano jako VolmitSoftware - {plugin} - v{version}."
+"debug.action.open" = "Otwórz: {url}"
+"debug.action.open-description" = "Otwórz przesłany raport diagnostyczny."
+"debug.saved" = "Raport diagnostyczny dla {plugin} zapisano w {path}."
+"debug.action.copy-path" = "Kopiuj ścieżkę lokalną"
+"debug.action.copy-path-description" = "Skopiuj lokalną ścieżkę raportu."

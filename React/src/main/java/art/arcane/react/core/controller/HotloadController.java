@@ -85,7 +85,7 @@ public class HotloadController extends TickedObject implements IController {
 
   private transient File dataFolder;
   private transient File reactToml;
-  private transient File localeOverrideFolder;
+  private transient File localeFolder;
   private transient volatile HotloadRuntime hotloadRuntime;
   private transient volatile String lastSlowTickPollSummary = "poll=not-run";
 
@@ -103,7 +103,7 @@ public class HotloadController extends TickedObject implements IController {
     stopWorker();
     dataFolder = React.instance.getDataFolder();
     reactToml = React.instance.getDataFile("react.toml");
-    localeOverrideFolder = ReactLanguage.overrideFolder();
+    localeFolder = ReactLanguage.languageFolder();
     HotloadTaskExecutor worker = new HotloadTaskExecutor(
         "React-Hotload-IO",
         failure -> logTransientFailure("React hotload IO worker failed", failure)
@@ -221,7 +221,7 @@ public class HotloadController extends TickedObject implements IController {
       File categoryFolder = React.instance.getDataFolderNoCreate(category);
       watchedDirectories.add(categoryFolder);
     }
-    watchedDirectories.add(localeOverrideFolder);
+    watchedDirectories.add(localeFolder);
 
     runtime.engine().configure(
         effectivePollInterval,
@@ -589,7 +589,7 @@ public class HotloadController extends TickedObject implements IController {
       };
     }
 
-    if (ReactLanguage.isOverrideFile(file)) {
+    if (ReactLanguage.isLanguageFile(file)) {
       ReactLanguage.PreparedReload preparedLanguage = ReactLanguage.prepareHotload(
           file,
           rawContent,
@@ -822,7 +822,7 @@ public class HotloadController extends TickedObject implements IController {
       return false;
     }
 
-    if (ReactLanguage.isOverrideFile(file)) {
+    if (ReactLanguage.isLanguageFile(file)) {
       return true;
     }
 
@@ -910,7 +910,7 @@ public class HotloadController extends TickedObject implements IController {
       }
     }
 
-    File[] localeFiles = localeOverrideFolder == null ? null : localeOverrideFolder.listFiles();
+    File[] localeFiles = localeFolder == null ? null : localeFolder.listFiles();
     if (localeFiles != null) {
       for (File localeFile : localeFiles) {
         addIfConfig(files, added, localeFile);

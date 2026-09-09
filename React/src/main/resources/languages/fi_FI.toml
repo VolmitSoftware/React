@@ -1,6 +1,179 @@
+# React-kieli: fi_FI
+#
+# Muokkaa tätä tiedostoa suoraan languages-kansiossa tai komennolla /react language server edit.
+# React luo tai lataa kielitiedostot vain, jos ne puuttuvat. Paikalliset muutokset säilyvät.
+# Puuttuvat viestit haetaan sisäisestä englanninkielisestä luettelosta.
+#
+# Muotoilu
+#   Chat-viestit käyttävät MiniMessage-muotoilua: <red>teksti</red>, <bold>teksti</bold>.
+#   RGB-värit käyttävät muotoa <color:#RRGGBB>teksti</color>. Sulje tunnisteet päinvastaisessa järjestyksessä kuin avasit ne.
+#   Yhteisen language.*-editorin viestit tukevat myös perinteisiä värikoodeja, kuten &e ja &r.
+#   Muut viestit eivät muunna &-värikoodeja. Säilytä TOML-lainausmerkit ja ohjausmerkkien kirjoitusasu kelvollisina.
+#   Käytä \n rivinvaihtoon lainatuissa TOML-merkkijonoissa. Kaksoisaaltosulkeet {{ ja }} tulostavat kirjaimelliset aaltosulkeet.
+#   renderer.*- ja config.documentation.annotation.*-arvot ovat pelkkää tekstiä.
+#   test.*-arvot ovat pelkkää tekstiä, paitsi test.result.*-viestit, jotka käyttävät MiniMessage-muotoilua.
+#
+# Muuttujat
+# Kukin viesti hyväksyy vain omat muuttujansa. Säilytä niiden nimet ennallaan.
+# Käytä muuttujia viestin tekstissä MiniMessage-tunnisteiden ulkopuolella.
+#   {action}          Toiminnon nimi tai värisäädön suunta
+#   {actions}         Jonossa olevien toimintojen määrä tai ohitettujen toimintojen nimilista
+#   {active}          Aktiivisten ominaisuuksien tai säätöjen määrä
+#   {actor}           Muutoksen tehnyt verkkokäyttäjä
+#   {added}           Palasiko ominaisuus aktiiviseen rekisteriin aktivoinnin jälkeen
+#   {after}           Asetusarvo, kieliviesti tai kekomuistin käyttö muutoksen jälkeen
+#   {age}             Integraatiotiedon ikä sekunteina
+#   {amount}          Annettavien esineiden määrä
+#   {architecture}    CPU-arkkitehtuuri
+#   {argument}        Odottamaton komennon argumentti
+#   {available}       Käytettävissä olevien NMS-siltakahvojen määrä
+#   {average}         Keskimääräinen TPS tai millisekunnit pelipäivitystä kohti
+#   {avg_mspt}        Keskimääräinen pelipäivityksen kesto millisekunteina kuormitustestissä
+#   {avg_tps}         Keskimääräiset pelipäivitykset sekunnissa kuormitustestissä
+#   {bar}             Muotoiltu suorituskykytestin pistepalkki
+#   {before}          Asetusarvo, kieliviesti tai kekomuistin käyttö ennen muutosta
+#   {checked}         Tarkistettujen mittaajien määrä
+#   {chunks}          Toiminnon käsittelemien lohkoalueiden määrä
+#   {code}            Verkkoliittymän parituskoodi
+#   {command}         Komennon polku
+#   {count}           Rivien, moduulien, muutosten tai testihavaintojen määrä
+#   {current}         Nykyisen sivun numero
+#   {delta_heap}      Reactin ja vertailutason loppuhetken kekomuistin käytön ero, MB
+#   {delta_mspt}      Reactin ja vertailutason keskimääräisen pelipäivitysajan ero, ms
+#   {delta_tps}       Reactin ja vertailutason keskimääräisen TPS:n ero
+#   {detail}          Sillan, integraation, toiminnon tai testin diagnostiikkatiedot
+#   {dimensions}      Havaitun karttaseinän ruudukon mitat
+#   {direction}       Valitun värin sävyn kiertosuunta
+#   {distance}        Pyydetty näkymä- tai simulointietäisyys
+#   {duration}        Kulunut aika; kuormitustestin aloitusviestissä sekunteina
+#   {enabled}         Käyttöönottotila tai käytössä olevien moduulien määrä
+#   {entities}        Toiminnon käsittelemien entiteettien määrä
+#   {entry}           Integraation aikajanan merkintä
+#   {exceptions}      Kuormitustestissä tallennetut React-poikkeukset
+#   {fail}            Epäonnistuneiden tarkistusten määrä
+#   {file}            Asetus-, kieli- tai lisäosan API-tiedoston nimi
+#   {fingerprint}     Palvelimen tai verkkoliittymän tunnisteen sormenjälki
+#   {finite}          Äärellisiä arvoja palauttavien mittaajien määrä
+#   {frames}          Aktiivisen karttaseinän esinekehysten määrä
+#   {free}            Vapaa fyysinen tai virtuaalinen muisti
+#   {freed}           Roskienkeruun vapauttama kekomuisti
+#   {from}            Nykyisen sivun ensimmäisen merkinnän numero
+#   {grid}            Karttaseinän ruudukon mitat
+#   {ground_y}        Maan korkeus painovoimatestissä
+#   {group}           Valvonnan, mittaajan, kartan, asetusten tai kieliviestien ryhmä
+#   {growth}          Kekomuistin kasvu kuormitustestissä, MB
+#   {health}          Integraation toimintakunto
+#   {heap_end}        Kekomuistin käyttö kuormitustestin lopussa, MB
+#   {heap_start}      Kekomuistin käyttö kuormitustestin alussa, MB
+#   {heartbeat}       Aika integraation viimeisestä elossaoloviestistä
+#   {height}          Testin piirtoalueen korkeus pikseleinä
+#   {hoppers}         Normalisoitujen suppiloiden määrä
+#   {id}              Siltakahvan, mittaajan, kartan, toiminnon, paketin tai tunnisteen ID
+#   {impact}          Asetuksen vaikutuskuvaus tai lisäosan kuormitus, ms/s
+#   {incident}        Kehitystestistä suljetun rekursiivisen häiriötoiminnon tunniste
+#   {index}           Kehitystestin nykyisen vaiheen numero
+#   {invalid}         Virheellisiä lukemia antavien mittaajien määrä
+#   {issued_at}       Verkkoliittymän tunnisteen luontiaika
+#   {item}            Esineen nimi tai tunniste
+#   {items}           Yhdistettyjen esine-entiteettien määrä
+#   {key}             Komentoparametrin avain, asetusavain tai kieliviestin ID
+#   {label}           Testin, mittarin, asetuksen, komennon tai verkkotunnisteen nimiö
+#   {line}            Muokattavan rivin numero monirivisessä viestissä
+#   {lines}           Tarkistettujen palvelinlokin rivien määrä
+#   {loaded}          Esilämmityksen aikana juuri ladattujen lohkoalueiden määrä
+#   {locale}          Näytettävä, valittava tai muokattava kielikoodi
+#   {matched}         Maailmat, joiden automaattitallennus vastaa testin vertailutilaa
+#   {max_tick}        Pisin havaittu pelipäivitysten väli kuormitustestissä, ms
+#   {maximum}         Esinemäärän, päivitysajan tai editorisyötteen pituuden yläraja
+#   {message}         Valmistuneen toiminnon yhteenveto tai integraation tilaviesti
+#   {metrics}         Lisäosan API-paketin tarjoamien mittareiden määrä
+#   {minecraft}       Minecraft-versio
+#   {minimum}         Pienin hyväksyttävä TPS
+#   {missing}         Rekisteristä puuttuvien pakollisten mittaajien määrä
+#   {mode}            Valittu peli- tai kykymoodi
+#   {model}           CPU-malli
+#   {name}            Suorituskykytestin, moduulin, piirtimen tai tarkistuksen nimi
+#   {note}            Syy siihen, ettei palvelinlokia tarkistettu
+#   {offenders}       Ei-äärellisiä arvoja palauttavien mittaajien määrä
+#   {operations}      Kykyjen takaisinkutsujen määrä minuutissa
+#   {options}         Sallitut asetusarvot
+#   {p95}             Pelipäivitysajan 95. persentiili kuormitustestissä, ms
+#   {parameter}       Komentoparametrin nimi
+#   {parameters}      Ohitetut komentoparametrit
+#   {pass}            Onnistuneiden tarkistusten määrä
+#   {path}            Asetusavaimen polku tai raporttitiedoston polku
+#   {percent}         Värisäädön prosentti tai lisäosan kuormitusosuus
+#   {permission}      Vaadittu oikeusavain
+#   {personal}        Pelaajan valitsema kielikoodi
+#   {phase}           Testattava ominaisuuden elinkaarivaihe
+#   {pixels}          Karttatestin piirtämien ei-tyhjien pikselien määrä
+#   {platform}        Käyttöjärjestelmä tai Minecraft-palvelinalusta
+#   {players}         Kuormitustestin keinotekoisten pelaajien määrä
+#   {plugin}          Lisäosan nimi
+#   {process_load}    Palvelinprosessin CPU-kuormitus
+#   {processors}      Käytettävissä olevien CPU-suorittimien määrä
+#   {profile}         React-asetusprofiilin nimi
+#   {protocol}        Integraatioprotokollan versio
+#   {radius}          Kartan tai kehitystestitoiminnon säde lohkoalueina
+#   {range}           Sallittu näkymä- tai simulointietäisyyden alue
+#   {rate}            Asetettu kasvien kasvun nopeutuskerroin
+#   {rating}          Muotoiltu suorituskykytestin arvio
+#   {react_errors}    Palvelinlokista löytyneiden React-virherivien määrä
+#   {reason}          Virheen, hylkäyksen tai käytöstä poissaolon syy
+#   {registered}      Rekisteröityjen moduulien määrä
+#   {removed_first}   Poistiko ensimmäinen käytöstäpoisto ominaisuuden aktiivisesta rekisteristä
+#   {removed_second}  Poistiko toistettu käytöstäpoisto ominaisuuden aktiivisesta rekisteristä
+#   {renderer}        Karttapiirtimen nimi tai tunniste
+#   {renderers}       Lista karttapiirtimistä, joiden tunniste on tyhjä
+#   {role}            Verkkokäyttörooli: viewer, operator tai admin
+#   {sampler}         Mittaajan nimi tai tunniste
+#   {samplers}        Lista integraatiomittaajista tai virheellisistä mittaajista
+#   {scope}           Kartan tai etäisyysasetuksen kohdealue
+#   {score}           Suorituskykytestin pistemäärä
+#   {seconds}         Lähtölaskennan tai kuormitustestin kesto sekunteina
+#   {section}         Asetusosion nimi
+#   {server}          Minecraft-palvelintoteutus ja versio
+#   {shown}           Näkyvissä olevien rivien määrä
+#   {since_run}       Nykyisen testin alkamisen jälkeen ilmoitetut virheet
+#   {size}            Karttaseinän enimmäismitat tai aktiiviset mitat
+#   {skip}            Ohitettujen tarkistusten määrä
+#   {spawn_y}         Korkeus, johon painovoimatestin lohko luotiin
+#   {state}           Toiminnon tai lisäosan API-paketin tila
+#   {status}          Integraation tila tai asetustilan nimiö
+#   {subject}         Asetusohjeen kuvaama moduuli tai asetus
+#   {subsystem}       Testattavan alijärjestelmän nimi
+#   {summary}         Toiminnon tarkastusyhteenveto
+#   {system_load}     Koko järjestelmän CPU-kuormitus
+#   {target}          Toiminnon kohdemaailma, pelaaja, lisäosa, asetus tai lisäosaryhmä
+#   {threading}       Palvelimen säikeistystapa
+#   {tick}            Jumiutumiskynnyksen ylittäneen pelipäivityksen kesto, ms
+#   {tick_crashes}    Palvelinlokista löytyneiden päivityskaatumisrivien määrä
+#   {tier}            Häiriötoimintasuunnitelman vakavuustaso
+#   {timing}          Kykyjen takaisinkutsujen aika millisekunteina minuutissa
+#   {to}              Nykyisen sivun viimeisen merkinnän numero
+#   {total}           Viestin merkintöjen, moduulien, maailmojen, tarkistusten tai muistin kokonaismäärä
+#   {type}            Komentoparametrin, asetusarvon, kartan tai etäisyyden tyyppi
+#   {unavailable}     Käytöstä poissa olevien NMS-siltakahvojen määrä
+#   {unit}            Ympyräkaavion kokonaismäärän yksikkö
+#   {unknown}         Kehitystestistä suljetun tuntemattoman toiminnon tunniste
+#   {unreadable}      Niiden mittaajien määrä, joita ei voitu lukea
+#   {uptime}          Isäntäkoneen käyttöjärjestelmän käynnissäoloaika
+#   {url}             Lähetetyn diagnostiikkaraportin URL
+#   {usage}           Komennon käyttömuoto
+#   {used}            Käytetty fyysinen muisti, virtuaalimuisti tai kekomuisti
+#   {value}           Muotoiltu asetus, mittaus tai laitteistotieto
+#   {values}          Kehitystestiraportissa luetellut mittausarvot
+#   {variables}       Muokattavan viestin hyväksymien muuttujien nimet
+#   {vendor}          Java-toimittaja
+#   {verdict}         Testin kokonaistulos
+#   {version}         React-, Java- tai alustaversio
+#   {warmed}          Esilämmitettyjen lohkoalueiden määrä
+#   {warn}            Varoituksia antaneiden tarkistusten määrä
+#   {width}           Testin piirtoalueen leveys pikseleinä
+#   {world}           Minecraft-maailman nimi
+
 "command.description.debugdump" = "Luo diagnostiikkaraportti ja lähetä se halutessasi"
 "command.parameter.debugdump_upload" = "Lähetä raportti mclo.gs-palveluun"
-# Complete bundled translation. Code-owned English remains the canonical fallback.
 "action.collect_garbage.no_reclaim" = "Roskankeruu on suoritettu ilman välitöntä kasaa regeneroitua ({used} ilu) {duration}"
 "action.collect_garbage.reclaimed" = "Freed {freed} ({before} -> {after}) {duration}"
 "action.completed" = "Valmis {action} in {duration}"
@@ -911,8 +1084,8 @@
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.description" = "Asetukset mafia pinoaminen ominaisuus. Tämä ominaisuus seuraa jatkuvasti palvelinten käyttäytymistä ja käyttää suojakaiteita ajon aikana."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.batchintervalms.impact" = "Alemmat arvot pinoavat vasta kutevia mafioita nopeammin enemmän aikataulutushintaan; korkeammat arvot erä enemmän yhdistämistyötä per pass."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.batchintervalms.summary" = "Kuinka usein jonossa olevaa chunkit-a käsitellään, millisekunnissa."
-"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.impact" = "Pystyt soveltamaan tätä käytöstä; poista polku käytöstä."
-"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.summary" = "Valvoo, onko mafia pinoaminen soveltaa omia nimiä."
+"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.impact" = "Gloss saa pinojen määrät tästä asetuksesta riippumatta ja hallitsee yhdistettyä entiteettinäyttöä, kun näyttö on käytössä."
+"config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.customnames.summary" = "Näyttää mobipinojen tavalliset nimet, kun Glossin entiteettinäytöt eivät ole käytettävissä."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.maxhealth.impact" = "Suuremmat arvot mahdollistavat enemmän suoritusta ennen interventiota; pienemmät arvot tekevät hillinnästä aggressiivisempaa."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.maxhealth.summary" = "Mafian pinoaminen sallii mafiassa mahdollisimman hyvän terveyden."
 "config.documentation.annotation.art.arcane.react.content.feature.featuremobstacking.field.maxstacksize.impact" = "Suuremmat arvot mahdollistavat enemmän suoritusta ennen interventiota; pienemmät arvot tekevät hillinnästä aggressiivisempaa."
@@ -1333,8 +1506,8 @@
 "config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.maxdiffmessagesperfile.summary" = "Avaintason diff-viestien enimmäismäärä kutakin muutettua tiedostoa kohti."
 "config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.notifyoperators.impact" = "Poista käytöstä, jos haluat vain konsolilokit eikä pelin sisäisiä ilmoituksia."
 "config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.notifyoperators.summary" = "Lähettää nippujen muutos yhteenvetoja online-operaattoreille."
-"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.impact" = "Alemmat arvot prosessi toimitetaan tiedostojärjestelmä tapahtumia aikaisemmin; käyttöjärjestelmän toimitus viive voi olla pidempi."
-"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.summary" = "Jono-valaisuväli, jota config-tarkkailija käyttää millisekunti."
+"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.impact" = "Pienemmät arvot havaitsevat saapuneet tapahtumat nopeammin; automaattiset muutokset otetaan silti käyttöön erissä enintään kerran kolmessa sekunnissa."
+"config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms.summary" = "Tiedostojärjestelmän tapahtumien kyselyväli millisekunteina."
 "config.documentation.annotation.art.arcane.react.core.controller.historycontroller.description" = "Kaappaa React-näytteenottimet kerran, tallentaa pakatun historiallisen telemetrian ja palvelee rajattuja aikavälikyselyjä."
 "config.documentation.annotation.art.arcane.react.core.controller.historycontroller.field.compressionlevel.impact" = "Suuremmat arvot voivat vähentää levytilan käyttöä kirjoittamisen suuremman suoritinkuorman kustannuksella."
 "config.documentation.annotation.art.arcane.react.core.controller.historycontroller.field.compressionlevel.summary" = "DEFLATE-taso, jota käytetään vain, jos se pienentää koodattua metriikkasaraketta."
@@ -1412,7 +1585,7 @@
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.debug.summary" = "Mahdollistaa vianetsinnän ja lisädiagnostiikan."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsecretsenabled.impact" = "Oletusrajoitteinen. Sallitaan Iris/Adapt salaiset nippuja, kun riippuvuudet ovat läsnä."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsecretsenabled.summary" = "Mahdollistaa plugin- gated salaisia integraation ominaisuuksia."
-"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.impact" = "Koodiomisteinen englanti on edelleen varasuunnitelma; valinnainen TOML ohitus on ladattu languages/overrides."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.impact" = "Koodiin sisältyvä englanti säilyy varakielenä; muokattavat TOML-katalogit ladataan languages-kansiosta."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language.summary" = "Paikallinen React pelaaja- ja operaattoriliitännät."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.impact" = "Aseta arvoksi false poistaaksesi Reactin bStats-lähetykset kokonaan käytöstä. Vaatii uudelleenkäynnistyksen."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.metrics.summary" = "Ottaa käyttöön nimettömän bStats-käyttötilastoinnin Reactille."
@@ -1422,8 +1595,8 @@
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.priority.summary" = "Josta: React Osajärjestelmät."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.slowticklogmode.impact" = "OFF suppressaa hitaat tick-varoitukset. BLAME korostaa todennäköistä plugin/työvauhtia vastuu. SHORT logittaa vain minimitiivisen ajankohtaisuuden. DETAILED logii täydellisen diagnostisen tietosisältö:n."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.slowticklogmode.summary" = "Hallitaan, kuinka hitaasti tick-varoituksia tallennetaan."
-"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.impact" = "Oletusrajoitteinen. Kun se on käytössä ja agentti kiinnittyy, sitä ei voi irrottaa ilman JVM. Nykyiseen julkaisuun ei ole kirjattu muutoksia."
-"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.summary" = "Käytä valinnaista ByteBuddy tavukoodiagentti kehittyneille ajo-laitteille."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.impact" = "Oletuksena pois käytöstä. Versiokohtaiset NMS-toiminnot voivat silti liittää oman instrumentointinsa aktivoituessaan. Liitetty instrumentointi säilyy JVM:n uudelleenkäynnistykseen asti."
+"config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.unsafebytecode.summary" = "Liittää Reactin yleisen ByteBuddy-agentin jo käynnistyksen aikana."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.value.impact" = "Korkeammat arvot voivat lisätä kalliiden tuotteiden vaikutusta laskelmissa."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.value.summary" = "Resepti-/arvoanalyysissä käytetty materiaaliarvo."
 "config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.verbose.impact" = "Hyödyllinen vianmääritys, mutta voi luoda paljon log-melua."
@@ -2576,3 +2749,125 @@
 "config.documentation.annotation.art.arcane.react.core.controller.incidentcontroller.field.persistenceenabled.summary" = "Tallentaa rakenteisen häiriöhistorian tiedostoon plugins/React/incidents.json."
 "config.documentation.annotation.art.arcane.react.core.controller.incidentcontroller.field.retention.impact" = "Suuremmat arvot säilyttävät enemmän historiaa ja käyttävät enemmän muistia sekä levytilaa."
 "config.documentation.annotation.art.arcane.react.core.controller.incidentcontroller.field.retention.summary" = "Säilytettävien rakenteisten häiriötapahtumien enimmäismäärä."
+
+"language.menu.your_language" = "Oma kielesi"
+"language.menu.reset_your_language" = "Palauta oma kielesi"
+"language.menu.server_default" = "Palvelimen oletuskieli"
+"language.menu.edit_messages" = "Muokkaa kieliviestejä"
+"language.menu.use_server_default" = "Käytä palvelimen oletuskieltä"
+"language.menu.current" = "Nykyinen: {locale}"
+"language.menu.current_with_personal" = "Nykyinen: {locale} (Omasi: {personal})"
+"language.menu.your_description" = "Vaihda vain näkemäsi viestit."
+"language.menu.reset_description" = "Käytä palvelimen oletuskieltä."
+"language.menu.server_description" = "Vaihda palvelimen oletuskieli."
+"language.menu.edit_description" = "Avaa kielikohtainen viestieditori."
+"language.menu.select_description" = "Napsauta valitaksesi tämän kielen."
+"language.menu.remove_personal_description" = "Poista henkilökohtainen kielivalintasi."
+"language.menu.no_controls" = "Sinulla ei ole käytettävissä kieliasetuksia."
+"language.menu.command" = "Komento: {command}"
+"language.menu.selected" = "valittu"
+"language.menu.all-volmit-plugins" = "kaikki Volmit liitännäiset"
+"language.error.stopping" = "Kieltä ei voi valita lisäosan pysähtyessä."
+"language.error.editor-player-only" = "Avaa kielieditori pelissä."
+"language.usage.editor" = "Käyttö: /{command} language server edit [locale]"
+"language.usage.selection" = "Käyttö: /{command} language self [locale|reset] or server [locale]"
+"language.usage.volmit-selection" = "Käyttö: /volmit plugins languages [locale]"
+"language.error.no-providers" = "Volmit-kielipalveluita ei ole saatavilla."
+"language.error.numeric-page" = "Anna kielisivun numero."
+"language.error.personal-player-only" = "Pelaajan kieliasetukset on valittava pelissä."
+"language.error.personal-permission" = "Sinulla ei ole lupaa valita kieltäsi."
+"language.error.plugin-personal-permission" = "Sinulla ei ole lupaa valita kieltä lisäosalle {plugin}."
+"language.error.plugin-server-permission" = "Sinulla ei ole lupaa muuttaa lisäosan {plugin} palvelinkieltä."
+"language.error.server-locale-required" = "Valitse palvelimen oletuskieleksi kielikoodi, kuten en_US."
+"language.error.unavailable-for-all" = "Kieli {locale} ei ole saatavilla jokaiselle valitulle liitännäiselle."
+"language.selection.preparing" = "Valmistellaan kieltä {locale} kohteelle {target}..."
+"language.selection.save-failed" = "{plugin}: ei voitu tallentaa kielivalintaa; tarkista palvelinkonsoli."
+"language.selection.english-fallback" = "{plugin}: {locale} ei ole saatavilla. Käytetään englantia (en_US)."
+"language.selection.personal-selected" = "{plugin}: kieli on nyt {locale}."
+"language.selection.server-selected" = "{plugin}: palvelinkieli on nyt {locale}."
+"language.selection.server-default-selected" = "{plugin}: käytät nyt palvelimen oletuskieltä."
+"language.editor.section.languages" = "Kielet"
+"language.editor.section.search" = "Etsi"
+"language.editor.section.search-title" = "{locale} / Etsi"
+"language.editor.section.group-title" = "{locale} / {group}"
+"language.editor.loading" = "Ladataan kielen {locale} viestejä..."
+"language.editor.prompt.search" = "Etsi viestiavaimia tai tekstiä. Kirjoita cancel palataksesi takaisin."
+"language.editor.prompt.value" = "Kirjoita avaimen {key} uusi arvo chattiin."
+"language.editor.prompt.current" = "Nykyinen arvo: {value}"
+"language.editor.prompt.variables" = "Muuttujat: {variables}"
+"language.editor.prompt.guidance" = "Käytä \\n rivinvaihtoon ja \\\\ kenoviivaan, tai kirjoita cancel palataksesi takaisin."
+"language.editor.input.expired" = "Kielieditorin syöttöaika päättyi."
+"language.editor.input.too-long" = "Editorin syöte saa olla enintään {maximum} merkkiä pitkä."
+"language.editor.input.unable-to-save" = "Ei voitu tallentaa: {reason}"
+"language.editor.navigation.back" = "&eTakaisin&r"
+"language.editor.navigation.close" = "&cSulje&r"
+"language.editor.navigation.previous-page" = "&eEdellinen sivu&r"
+"language.editor.navigation.next-page" = "&eSeuraava sivu&r"
+"language.editor.search.messages" = "Etsi viestejä"
+"language.editor.search.messages-lore" = "Napsauta etsiäksesi kaikista viesteistä."
+"language.editor.search.clear" = "Tyhjennä haku"
+"language.editor.message.current-value" = "&7Nykyinen arvo:&r"
+"language.editor.message.variables" = "&8{variables}&r"
+"language.editor.message.edit-plural" = "&7Napsauta muokataksesi monikkomuotoa.&r"
+"language.editor.message.edit-lines" = "&7Napsauta muokataksesi yksittäisiä rivejä.&r"
+"language.editor.message.edit-chat" = "&7Napsauta muokataksesi chatissa.&r"
+"language.editor.locale.open" = "&8Avaa tämä kieli napsauttamalla.&r"
+"language.editor.category.message-count" = "&7Viestejä: {count}&r"
+"language.editor.category.open" = "&8Avaa tämä luokka napsauttamalla.&r"
+"language.editor.error.no-permission" = "Sinulla ei ole lupaa muokata lisäosan {plugin} kieliä."
+"language.editor.error.unable-to-edit" = "Ei voitu muokata: {reason}"
+"language.editor.saved.summary" = "{locale} tallennettu. Kielivalinnat pysyvät ennallaan."
+"language.editor.saved.change" = "{key}: ”{before}” muutettiin arvoon ”{after}”."
+"language.editor.part.line" = "Rivi {line}"
+"language.editor.value.none" = "Ei ole"
+"language.editor.value.empty" = "(tyhjä)"
+"test.map.megamap_capacity_fail" = "Megamap-ominaisuuksien johtaminen on virheellistä:"
+"test.map.megamap_capacity_pass" = "Megamap-ominaisuudet määrittävät sarakkeet, rivit ja yksityiskohtaisuuden ruudukon perusteella."
+"test.map.megamap_viewport_fail" = "Megamap-näkymäalueen geometria on virheellinen:"
+"test.map.megamap_viewport_pass" = "Mukautuvat seinät saavat yhden loogisen piirtoalueen, ja suurennetut seinät säilyttävät tasaisen mittakaavan täytepalkkien avulla."
+"test.map.megamap_defects_fail" = "Virheellisiä karttaseiniä ei tunnistettu:"
+"test.map.megamap_defects_pass" = "Epäsäännölliset, käännetyt, kahdennetut ja sekoitetut karttaseinät ilmoittavat kaikki virheen syyn."
+"test.map.megamap_expansion_fail" = "Renderöijät epäonnistuivat laajennetulla seinällä:"
+"test.map.renderer_containment_skip" = "Yhtäkään renderöijää ei voitu testata ilman graafista käyttöliittymää."
+"test.map.megamap_expansion_pass" = "Jokainen renderöijä täyttää seinän kaikki kehykset koossa 1x1, 2x1, 1x2, 1x3, 2x2, 3x1, 3x3 ja 5x3."
+"test.map.palette_fail" = "Teeman värit sulautuvat yhteen karttapaletissa:"
+"test.map.palette_pass" = "Jokainen teeman väri vastaa täsmälleen omaa erillistä karttapaletin väriään."
+"test.map.clip_fail" = "Piirros ylitti aktiivisen rajausalueen."
+"test.map.clip_blank" = "Rajaustesti ei piirtänyt mitään oman alueensa sisälle."
+"test.map.clip_restore_fail" = "popClip ei palauttanut edellistä rajausaluetta."
+"test.map.clip_pass" = "Viivat, teksti ja täytöt pysyivät asetetun rajausalueen sisällä."
+"test.map.text_bounds_fail" = "Sovitettu teksti ylitti enimmäisleveytensä."
+"test.map.text_bounds_pass" = "Sovitettu teksti ei ylitä rajaansa millään käyttöliittymän mittakaavalla."
+"test.map.renderer_containment_fail" = "Renderöijät piirsivät rajausalueensa ulkopuolelle:"
+"test.map.renderer_containment_pass" = "Jokainen renderöijä pysyi asetetun rajausalueen sisällä."
+"test.map.flush_fidelity_fail" = "Puskurin siirto ei toisintanut koostettua pintaa:"
+"test.map.flush_fidelity_pass" = "Jokainen siirretty pikseli vastaa koostettua pintaa koossa 1x1, 2x2 ja 3x3."
+"test.map.flush_stability_fail" = "Saman sisällön piirtäminen uudelleen kirjoitti edelleen piirtoalueelle:"
+"test.map.flush_stability_pass" = "Saman sisällön piirtäminen uudelleen ei kirjoita yhtäkään pikseliä piirtoalueelle."
+"test.map.frame_wall_disabled" = "Megamap-laatoitus on pois käytöstä; vierekkäiset kehykset eivät muodosta seinää."
+"test.map.frame_wall_no_worlds" = "Yhtään maailmaa ei ole ladattu; maailmaan ei voida rakentaa esinekehysseinää."
+"test.map.frame_wall_setup_failed" = "Esinekehysseinää ei voitu rakentaa maailmaan:"
+"test.map.frame_wall_no_space" = "Syntymäpisteen lähellä ei ole vapaata ilmapylvästä kahden kehyksen karttaseinää varten."
+"test.map.frame_wall_probe_failed" = "Maailmaan rakennetun esinekehysseinän tarkistus epäonnistui:"
+"test.map.frame_wall_pass" = "Vierekkäisissä kehyksissä olevat kopioidut React-kartat saivat eri tunnisteet ja muodostivat kahden laatan seinän."
+"test.map.frame_wall_fail" = "Vierekkäiset esinekehykset eivät muodostaneet vakaata kahden laatan Megamap-seinää:"
+"command.description.language" = "Valitse oma kielesi tai palvelimen kieli"
+"debug.error.missing-permission" = "Puuttuva oikeus: {permission}"
+"debug.error.already-preparing" = "Lisäosalle {plugin} valmistellaan jo diagnostiikkaraporttia."
+"debug.error.already-preparing-short" = "Diagnostiikkaraporttia valmistellaan jo."
+"debug.preparing" = "Valmistellaan lisäosan {plugin} diagnostiikkaraporttia..."
+"debug.error.schedule-failed" = "Diagnostiikkaraportin luontia ei voitu ajoittaa."
+"debug.error.provider-closed" = "Diagnostiikkapalvelu on suljettu."
+"debug.error.closed-before-capture" = "Diagnostiikkapalvelu suljettiin ennen raportin keräämistä."
+"debug.error.writer-schedule-failed" = "Diagnostiikkaraportin kirjoittamista ei voitu ajoittaa."
+"debug.error.capture-failed" = "Diagnostiikkaraporttia ei voitu kerätä. Tarkista palvelimen konsoli."
+"debug.error.closed-before-write" = "Diagnostiikkapalvelu suljettiin ennen raportin kirjoittamista."
+"debug.error.write-failed" = "Diagnostiikkaraporttia ei voitu kirjoittaa. Tarkista palvelimen konsoli."
+"debug.upload.interrupted" = "Diagnostiikkaraportin lähetys keskeytyi. Paikallinen raportti on tallennettu."
+"debug.upload.failed" = "Diagnostiikkaraportin lähetys epäonnistui. Paikallinen raportti on tallennettu."
+"debug.upload.completed" = "Lähetetty nimellä VolmitSoftware - {plugin} - v{version}."
+"debug.action.open" = "Avaa: {url}"
+"debug.action.open-description" = "Avaa lähetetty diagnostiikkaraportti."
+"debug.saved" = "Lisäosan {plugin} diagnostiikkaraportti tallennettiin polkuun {path}."
+"debug.action.copy-path" = "Kopioi paikallinen polku"
+"debug.action.copy-path-description" = "Kopioi raportin paikallinen polku."
