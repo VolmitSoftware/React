@@ -650,7 +650,7 @@ public final class ReactLanguage {
       MessageArgument argument = arguments.require(name);
       String replacement = String.valueOf(argument.value());
       if (escapeMiniMessage && argument.kind() == MessageArgumentKind.UNTRUSTED) {
-        replacement = MINI_MESSAGE.escapeTags(stripLegacyCodes(replacement));
+        replacement = stripLegacyCodes(replacement).replace("\\", "\\\\").replace("<", "\\<");
       }
       output.append(replacement);
       index = end + 1;

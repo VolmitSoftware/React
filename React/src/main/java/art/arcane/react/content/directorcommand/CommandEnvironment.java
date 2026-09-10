@@ -20,7 +20,7 @@
 package art.arcane.react.content.directorcommand;
 
 import art.arcane.react.React;
-import art.arcane.react.api.benchmark.Hastebin;
+import art.arcane.react.api.benchmark.EnvironmentReport;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.EnvironmentMessages;
 import art.arcane.react.util.director.DirectorExecutor;
@@ -31,6 +31,7 @@ import art.arcane.volmlib.util.director.DirectorOrigin;
 import art.arcane.volmlib.util.director.annotations.Director;
 import art.arcane.volmlib.util.format.Form;
 import art.arcane.volmlib.util.localization.MessageArgument;
+import art.arcane.volmlib.util.web.MclogsClient;
 import org.bukkit.Bukkit;
 import oshi.SystemInfo;
 
@@ -42,6 +43,7 @@ import oshi.SystemInfo;
     descriptionKey = "command.description.environment"
 )
 public class CommandEnvironment implements DirectorExecutor {
+  private final EnvironmentReport report = new EnvironmentReport(new MclogsClient());
 
   @Director(
       name = "info",
@@ -128,7 +130,7 @@ public class CommandEnvironment implements DirectorExecutor {
     for (String power : powersources) {
       ReactLanguage.send(sender(), EnvironmentMessages.POWER_ENTRY, MessageArgument.untrusted("value", power));
     }
-    Hastebin.enviornment(sender());
+    report.upload(sender().getS());
 
   }
 }

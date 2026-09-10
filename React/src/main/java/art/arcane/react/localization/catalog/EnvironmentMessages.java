@@ -30,8 +30,8 @@ public final class EnvironmentMessages {
   public static final TextKey SENSOR_ENTRY = TextKey.of("environment.sensor_entry", "&b {value}&r");
   public static final TextKey POWER_HEADER = TextKey.of("environment.header.power", "&3&l -- == Power Information == -- &r");
   public static final TextKey POWER_ENTRY = TextKey.of("environment.power_entry", "&b {value}&r");
-  public static final TextKey HASTEBIN_LINK = TextKey.of("environment.hastebin_link", "&b[Open environment report]&r");
-  public static final TextKey HASTEBIN_FAILED = TextKey.of("environment.hastebin_failed", "&4Failed to upload server information.&r");
+  public static final TextKey UPLOAD_LINK = TextKey.of("environment.upload_link", "&b[Open environment report]&r");
+  public static final TextKey UPLOAD_FAILED = TextKey.of("environment.upload_failed", "&4Failed to upload server information.&r");
 
   private EnvironmentMessages() {
   }
@@ -63,7 +63,7 @@ public final class EnvironmentMessages {
     builder.add(SENSOR_ENTRY);
     builder.add(POWER_HEADER);
     builder.add(POWER_ENTRY);
-    builder.add(HASTEBIN_LINK);
-    builder.add(HASTEBIN_FAILED);
+    builder.add(UPLOAD_LINK);
+    builder.add(UPLOAD_FAILED);
   }
 }

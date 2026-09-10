@@ -1,6 +1,7 @@
 package art.arcane.react.localization;
 
 import art.arcane.react.localization.catalog.CommandMessages;
+import art.arcane.react.localization.catalog.EnvironmentMessages;
 import art.arcane.react.localization.catalog.RendererMessages;
 import art.arcane.volmlib.util.config.TomlCodec;
 import art.arcane.volmlib.util.localization.LocaleOverlay;
@@ -9,6 +10,7 @@ import art.arcane.volmlib.util.localization.MessageArgument;
 import art.arcane.volmlib.util.localization.PluralSelector;
 import com.google.gson.JsonObject;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.junit.jupiter.api.AfterEach;
@@ -80,6 +82,41 @@ class ReactLanguageColorTest {
     String version = "&a&#123456[abcdef]<bold>value</bold>";
 
     assertEquals(Component.text("React " + version, TextColor.color(0xff5555)), renderVersion(version));
+  }
+
+  @Test
+  void storageEntriesPreserveWindowsMountPaths() {
+    assertEquals(Component.text(" Mount: C:\\", NamedTextColor.AQUA),
+        ReactLanguage.component(EnvironmentMessages.STORAGE_ENTRY,
+            MessageArgument.untrusted("value", "Mount: C:\\")));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"C:\\", "\\\\server\\share\\", "C:\\\\", "C:\\folder\\file.txt",
+      "\\<red>value</red>\\", "\\\\<bold>value</bold>", "\\<unknown>&c[value]\\"})
+  void untrustedBackslashesRemainLiteralInBothTemplateFormats(String value) throws Exception {
+    for (String template : List.of("&cReact {version}&r", "<red>React {version}</red>")) {
+      install(template);
+
+      assertEquals(Component.text("React " + value, NamedTextColor.RED), renderVersion(value));
+    }
+  }
+
+  @Test
+  void adjacentArgumentsCannotCombineIntoFormatting() {
+    LocaleOverlay overlay = LocaleOverlay.builder("adjacent-arguments", "de_DE")
+        .text(EnvironmentMessages.PLATFORM.id(), "&b{version}{platform}&r").build();
+    assertTrue(ReactLanguage.reloadCandidate(new LocalizationCandidate(
+        ReactMessages.catalog(), List.of(overlay), PluralSelector.oneOther())).applied());
+
+    assertEquals(Component.text("<red>value</red>", NamedTextColor.AQUA),
+        ReactLanguage.component(EnvironmentMessages.PLATFORM,
+            MessageArgument.untrusted("version", "<red"),
+            MessageArgument.untrusted("platform", ">value</red>")));
+    assertEquals(Component.text("\\<red>value</red>", NamedTextColor.AQUA),
+        ReactLanguage.component(EnvironmentMessages.PLATFORM,
+            MessageArgument.untrusted("version", "\\"),
+            MessageArgument.untrusted("platform", "<red>value</red>")));
   }
 
   @Test
