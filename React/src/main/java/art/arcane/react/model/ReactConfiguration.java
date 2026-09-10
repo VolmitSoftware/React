@@ -69,7 +69,7 @@ public class ReactConfiguration {
   @ConfigDoc(value = "Locale used for React player and operator interfaces.", impact = "Code-owned English remains the fallback; editable TOML catalogs are loaded from languages.")
   private String language = "en_US";
 
-  @ConfigDoc(value = "Enables anonymous bStats usage reporting for React.", impact = "Set to false to disable React's bStats submissions entirely. Requires a restart to take effect.")
+  @ConfigDoc(value = "Enables anonymous bStats usage reporting for React.", impact = "Set to false to stop React's bStats submissions. Changes apply automatically.")
   private boolean metrics = true;
 
   @ConfigDoc(value = "Entity priority model used by multiple React subsystems.", impact = "Changing these weights can alter culling, queueing, and visibility behavior.")
@@ -96,7 +96,7 @@ public class ReactConfiguration {
   @ConfigDoc(value = "Enables plugin-gated secret integration features.", impact = "Disabled by default. Enable to allow Iris/Adapt secret bundles when dependencies are present.")
   private boolean integrationSecretsEnabled = false;
 
-  @ConfigDoc(value = "Eagerly attaches React's general ByteBuddy agent during startup.", impact = "Disabled by default. Versioned NMS features can still attach their own instrumentation when activated. Any attached instrumentation remains until the JVM restarts.")
+  @ConfigDoc(value = "Attaches React's general ByteBuddy agent at startup or when enabled live.", impact = "Disabled by default. Versioned NMS features can still attach their own instrumentation when activated. Any attached instrumentation remains until the JVM restarts.")
   private boolean unsafeBytecode = false;
 
   @ConfigDoc(

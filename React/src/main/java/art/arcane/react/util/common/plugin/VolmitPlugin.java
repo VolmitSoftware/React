@@ -24,7 +24,6 @@ import art.arcane.react.React;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.volmlib.util.collection.KList;
 import art.arcane.volmlib.util.collection.KMap;
-import art.arcane.volmlib.util.io.IO;
 import art.arcane.volmlib.util.reflect.V;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -32,8 +31,6 @@ import org.bukkit.command.CommandMap;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.command.SimpleCommandMap;
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.permissions.PermissionDefault;
@@ -41,7 +38,6 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
@@ -55,8 +51,6 @@ import java.util.Set;
 public abstract class VolmitPlugin extends JavaPlugin implements Listener {
   public static final boolean bad = false;
   private KMap<KList<String>, VirtualCommand> commands;
-  private KList<MortarCommand> commandCache;
-  private KList<MortarPermission> permissionCache;
   private Set<Listener> registeredListeners;
 
   public File getJarFile() {
@@ -84,7 +78,6 @@ public abstract class VolmitPlugin extends JavaPlugin implements Listener {
     registerInstance();
     registerPermissions();
     registerCommands();
-    J.a(this::outputInfo);
     registerListener(this);
     start();
   }
@@ -96,75 +89,7 @@ public abstract class VolmitPlugin extends JavaPlugin implements Listener {
     unregisterInstance();
   }
 
-  private void outputInfo() {
-    try {
-      IO.delete(getDataFolder("info"));
-      getDataFolder("info").mkdirs();
-      outputPluginInfo();
-      outputCommandInfo();
-      outputPermissionInfo();
-    } catch (Throwable e) {
-      React.reportError("Failed to write React plugin metadata", e);
-    }
-  }
-
-  private void outputPermissionInfo() throws IOException {
-    FileConfiguration fc = new YamlConfiguration();
-
-    for (MortarPermission i : permissionCache) {
-      chain(i, fc);
-    }
-
-    fc.save(getDataFile("info", "permissions.yml"));
-  }
-
-  private void chain(MortarPermission i, FileConfiguration fc) {
-    KList<String> ff = new KList<>();
-
-    for (MortarPermission j : i.getChildren()) {
-      ff.add(j.getFullNode());
-    }
-
-    fc.set(i.getFullNode().replaceAll("\\Q.\\E", ",") + "." + "description", i.getDescription());
-    fc.set(i.getFullNode().replaceAll("\\Q.\\E", ",") + "." + "default", i.isDefault());
-    fc.set(i.getFullNode().replaceAll("\\Q.\\E", ",") + "." + "children", ff);
-
-    for (MortarPermission j : i.getChildren()) {
-      chain(j, fc);
-    }
-  }
-
-  private void outputCommandInfo() throws IOException {
-    FileConfiguration fc = new YamlConfiguration();
-
-    for (MortarCommand i : commandCache) {
-      chain(i, "/", fc);
-    }
-
-    fc.save(getDataFile("info", "commands.yml"));
-  }
-
-  private void chain(MortarCommand i, String c, FileConfiguration fc) {
-    String n = c + (c.length() == 1 ? "" : " ") + i.getNode();
-    fc.set(n + "." + "description", i.getDescription());
-    fc.set(n + "." + "required-permissions", i.getRequiredPermissions());
-    fc.set(n + "." + "aliases", i.getAllNodes());
-
-    for (MortarCommand j : i.getChildren()) {
-      chain(j, n, fc);
-    }
-  }
-
-  private void outputPluginInfo() throws IOException {
-    FileConfiguration fc = new YamlConfiguration();
-    fc.set("version", getDescription().getVersion());
-    fc.set("name", getDescription().getName());
-    fc.save(getDataFile("info", "plugin.yml"));
-  }
-
   private void registerPermissions() {
-    permissionCache = new KList<>();
-
     for (Field i : getClass().getDeclaredFields()) {
       if (i.isAnnotationPresent(Permission.class)) {
         try {
@@ -172,7 +97,6 @@ public abstract class VolmitPlugin extends JavaPlugin implements Listener {
           MortarPermission pc = (MortarPermission) i.getType().getConstructor().newInstance();
           i.set(Modifier.isStatic(i.getModifiers()) ? null : this, pc);
           registerPermission(pc);
-          permissionCache.add(pc);
           v("Registered Permissions " + pc.getFullNode() + " (" + i.getName() + ")");
         } catch (IllegalArgumentException | IllegalAccessException |
                  InstantiationException |
@@ -299,7 +223,6 @@ public abstract class VolmitPlugin extends JavaPlugin implements Listener {
       return;
     }
     commands = new KMap<>();
-    commandCache = new KList<>();
 
     for (Field i : getClass().getDeclaredFields()) {
       if (i.isAnnotationPresent(art.arcane.react.util.plugin.Command.class)) {
@@ -308,7 +231,6 @@ public abstract class VolmitPlugin extends JavaPlugin implements Listener {
           MortarCommand pc = (MortarCommand) i.getType().getConstructor().newInstance();
           art.arcane.react.util.plugin.Command c = i.getAnnotation(art.arcane.react.util.plugin.Command.class);
           registerCommand(pc, c.value());
-          commandCache.add(pc);
           v("Registered Commands /" + pc.getNode() + " (" + i.getName() + ")");
         } catch (IllegalArgumentException | IllegalAccessException |
                  InstantiationException |

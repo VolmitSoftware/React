@@ -46,6 +46,7 @@ import art.arcane.react.util.format.C;
 import art.arcane.react.util.plugin.IController;
 import art.arcane.react.core.NMS;
 import art.arcane.react.core.bridge.NmsBridgeRegistry;
+import art.arcane.react.core.bridge.BytecodeAgent;
 import art.arcane.react.util.plugin.VolmitPlugin;
 import art.arcane.react.util.project.config.ConfigFileSupport;
 import art.arcane.react.util.project.registry.Registry;
@@ -90,6 +91,9 @@ public class React extends VolmitPlugin implements ReloadAware {
   private static final Logger FALLBACK_LOGGER = Logger.getLogger("React");
   private static final String LOG_DISCRIMINATOR = ComponentLog.discriminator("React", "&b");
   private final AtomicBoolean alreadyDrained = new AtomicBoolean(false);
+  private final Object runtimeSettingsLock = new Object();
+  private final Object runtimeSettingsSubmissionLock = new Object();
+  private volatile RuntimeSettings runtimeSettings;
   private static final boolean SLIMJAR_DEBUG = Boolean.getBoolean("react.debug-slimjar");
   public static React instance;
   public static Thread serverThread;
@@ -116,7 +120,7 @@ public class React extends VolmitPlugin implements ReloadAware {
   private ReactMetrics metrics;
   private BukkitDebugDump debugDump;
   private volatile boolean monitoringOnly;
-  private boolean ready;
+  private volatile boolean ready;
 
   public React() {
     instance = this;
@@ -473,7 +477,7 @@ public class React extends VolmitPlugin implements ReloadAware {
         () -> true,
         this::captureDebugState,
         new BukkitDebugDump.Presentation(
-            "/react debugdump", "/react", DirectorMiniMenu.Theme.reactBlue(), ReactLanguage.directorResolver())
+            "/react debug dump", "/react", DirectorMiniMenu.Theme.reactBlue(), ReactLanguage.directorResolver())
     ));
     startupTasks = new CopyOnWriteArrayList<>();
     prejobs = new CopyOnWriteArrayList<>();
@@ -484,12 +488,7 @@ public class React extends VolmitPlugin implements ReloadAware {
     bridgeRegistry = new NmsBridgeRegistry();
     bridgeRegistry.setMappingsLoader(new art.arcane.react.core.bridge.MappingsLoader());
     NMS.reset();
-    if (ReactConfiguration.get().isUnsafeBytecode()) {
-      art.arcane.react.core.bridge.BytecodeAgent.install();
-      if (art.arcane.react.core.bridge.BytecodeAgent.isInstalled()) {
-        info("Bytecode agent attached.");
-      }
-    }
+    attachConfiguredBytecodeAgent(ReactConfiguration.get().isUnsafeBytecode());
     controllerRegistry = new Registry<>(IController.class, "art.arcane.react.core.controller");
 
     for (Runnable i : startupTasks) {
@@ -528,15 +527,61 @@ public class React extends VolmitPlugin implements ReloadAware {
     ConfigFileSupport.flushCreatedConfigSummary();
     React.info("React Started in " + Form.duration(psw.getMilliseconds(), 0));
     registerPapiExpansion();
-    setupMetrics();
+    refreshRuntimeSettings(ReactConfiguration.get());
   }
 
-  private void setupMetrics() {
-    if (BSTATS_PLUGIN_ID <= 0 || !ReactConfiguration.get().isMetrics()) {
+  public void refreshRuntimeSettings(ReactConfiguration configuration) {
+    synchronized (runtimeSettingsSubmissionLock) {
+      MultiBurst runtime = burst;
+      if (!ready || runtime == null) {
+        return;
+      }
+      runtimeSettings = new RuntimeSettings(configuration.isMetrics(), configuration.isUnsafeBytecode());
+      runtime.lazy(() -> applyRuntimeSettings(runtime));
+    }
+  }
+
+  private void applyRuntimeSettings(MultiBurst runtime) {
+    synchronized (runtimeSettingsLock) {
+      if (!ready || runtime != burst) {
+        return;
+      }
+      RuntimeSettings settings = runtimeSettings;
+      try {
+        setupMetrics(settings.metrics());
+      } catch (Throwable failure) {
+        reportError("Could not apply React's usage metrics setting", failure);
+      }
+      attachConfiguredBytecodeAgent(settings.unsafeBytecode());
+    }
+  }
+
+  private void setupMetrics(boolean enabled) {
+    if (!enabled) {
+      stopMetrics();
       return;
     }
+    if (metrics == null) {
+      metrics = ReactMetrics.start(this, BSTATS_PLUGIN_ID);
+      verbose("React usage metrics started.");
+    }
+  }
 
-    metrics = ReactMetrics.start(this, BSTATS_PLUGIN_ID);
+  private void stopMetrics() {
+    if (metrics != null) {
+      metrics.shutdown();
+      metrics = null;
+      verbose("React usage metrics stopped.");
+    }
+  }
+
+  private void attachConfiguredBytecodeAgent(boolean enabled) {
+    if (enabled && !BytecodeAgent.isInstalled()) {
+      BytecodeAgent.install();
+      if (BytecodeAgent.isInstalled()) {
+        info("Bytecode agent attached.");
+      }
+    }
   }
 
   private void registerPapiExpansion() {
@@ -568,7 +613,9 @@ public class React extends VolmitPlugin implements ReloadAware {
       return;
     }
     boolean drained = true;
-    ready = false;
+    synchronized (runtimeSettingsSubmissionLock) {
+      ready = false;
+    }
     unregisterPapiExpansion();
     if (debugDump != null) {
       debugDump.close();
@@ -576,9 +623,8 @@ public class React extends VolmitPlugin implements ReloadAware {
     }
     ReactLanguage.close();
     closeAudienceProvider();
-    if (metrics != null) {
-      metrics.shutdown();
-      metrics = null;
+    synchronized (runtimeSettingsLock) {
+      stopMetrics();
     }
     if (ticker != null) {
       drained = ticker.close();
@@ -674,20 +720,6 @@ public class React extends VolmitPlugin implements ReloadAware {
     }
   }
 
-  public boolean reload() {
-    try {
-      onDisable();
-      if (!shutdownDrained) {
-        error("React reload stopped safely because the previous runtime did not finish shutting down. Restart the server before enabling React again.");
-        return false;
-      }
-      onEnable();
-      return true;
-    } catch (Throwable ex) {
-      error("React reload failed: " + ex.getClass().getSimpleName() + (ex.getMessage() == null ? "" : " - " + ex.getMessage()));
-      reportError(ex);
-      return false;
-    }
-
+  private record RuntimeSettings(boolean metrics, boolean unsafeBytecode) {
   }
 }

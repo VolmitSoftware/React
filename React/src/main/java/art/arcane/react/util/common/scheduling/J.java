@@ -17,7 +17,6 @@
 
 package art.arcane.react.util.common.scheduling;
 
-import art.arcane.curse.Curse;
 import art.arcane.multiburst.MultiBurst;
 import art.arcane.react.React;
 import art.arcane.react.core.controller.JobController;
@@ -43,7 +42,6 @@ import org.bukkit.plugin.Plugin;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -84,7 +82,7 @@ public class J {
   }
 
   public static <T> Future<T> a(Callable<T> a) {
-    return ((ExecutorService) Curse.on(MultiBurst.burst).get("service")).submit(a);
+    return MultiBurst.burst.lazySubmit(a);
   }
 
   public static void attemptAsync(NastyRunnable r) {

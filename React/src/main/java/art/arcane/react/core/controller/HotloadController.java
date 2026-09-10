@@ -26,6 +26,7 @@ import art.arcane.react.api.tweak.Tweak;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.RuntimeMessages;
 import art.arcane.react.model.ReactConfiguration;
+import art.arcane.react.api.web.WebConfiguration;
 import art.arcane.react.util.common.scheduling.TickedObject;
 import art.arcane.react.util.plugin.IController;
 import art.arcane.react.util.project.config.ConfigDescription;
@@ -62,7 +63,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-@ConfigDescription("Watches React config files and hot-applies changes without requiring a full /react reload.")
+@ConfigDescription("Watches React configuration and language files and applies changes automatically.")
 public class HotloadController extends TickedObject implements IController {
   private static final String[] MANAGED_CATEGORIES = {"core", "feature", "tweak", "action", "sampler"};
   private static final long AUTOMATIC_HOTLOAD_COOLDOWN_MS = 3_000L;
@@ -70,9 +71,6 @@ public class HotloadController extends TickedObject implements IController {
   private static final long TOMBSTONE_GRACE_NANOS = TimeUnit.SECONDS.toNanos(3L);
   private static final long MAX_HOTLOAD_FILE_BYTES = 2L * 1024L * 1024L;
   private static final String MISSING_DIGEST = "<missing>";
-
-  @ConfigDoc(value = "Enables live hotloading for React managed configs.", impact = "Set to false to disable file watching and require manual reloads.")
-  private volatile boolean enabled = true;
 
   @ConfigDoc(value = "Filesystem event polling interval in milliseconds.", impact = "Lower values detect delivered events sooner; automatic apply batches still run at most once every three seconds.")
   private volatile int pollIntervalMs = 500;
@@ -85,6 +83,7 @@ public class HotloadController extends TickedObject implements IController {
 
   private transient File dataFolder;
   private transient File reactToml;
+  private transient File webToml;
   private transient File localeFolder;
   private transient volatile HotloadRuntime hotloadRuntime;
   private transient volatile String lastSlowTickPollSummary = "poll=not-run";
@@ -103,6 +102,7 @@ public class HotloadController extends TickedObject implements IController {
     stopWorker();
     dataFolder = React.instance.getDataFolder();
     reactToml = React.instance.getDataFile("react.toml");
+    webToml = React.instance.getDataFile("web.toml");
     localeFolder = ReactLanguage.languageFolder();
     HotloadTaskExecutor worker = new HotloadTaskExecutor(
         "React-Hotload-IO",
@@ -200,12 +200,6 @@ public class HotloadController extends TickedObject implements IController {
   private void reconfigureWatcher(HotloadRuntime runtime) {
     long effectivePollInterval = Math.max(100, pollIntervalMs);
     setTinterval(effectivePollInterval);
-    if (!enabled) {
-      runtime.engine().clear();
-      lastSlowTickPollSummary = "poll=disabled";
-      return;
-    }
-
     if (dataFolder == null) {
       dataFolder = React.instance.getDataFolder();
     }
@@ -213,9 +207,13 @@ public class HotloadController extends TickedObject implements IController {
     if (reactToml == null) {
       reactToml = React.instance.getDataFile("react.toml");
     }
+    if (webToml == null) {
+      webToml = React.instance.getDataFile("web.toml");
+    }
 
     List<File> watchedFiles = new ArrayList<>();
     watchedFiles.add(reactToml);
+    watchedFiles.add(webToml);
     List<File> watchedDirectories = new ArrayList<>();
     for (String category : MANAGED_CATEGORIES) {
       File categoryFolder = React.instance.getDataFolderNoCreate(category);
@@ -229,7 +227,7 @@ public class HotloadController extends TickedObject implements IController {
         watchedFiles,
         watchedDirectories
     );
-    React.verbose("Config hotload watcher enabled for react.toml and managed component configs.");
+    React.verbose("Config hotload watcher enabled for react.toml, web.toml, language files and managed component configs.");
   }
 
   public void refreshAfterConfigReload() {
@@ -256,11 +254,6 @@ public class HotloadController extends TickedObject implements IController {
     if (!isCurrentRuntime(runtime)) {
       return;
     }
-    if (!enabled) {
-      lastSlowTickPollSummary = "poll=disabled";
-      return;
-    }
-
     long pollStartNs = System.nanoTime();
     drainSelfWriteNotices(runtime);
     Set<File> touched = runtime.engine().pollTouchedFiles();
@@ -302,6 +295,19 @@ public class HotloadController extends TickedObject implements IController {
         return;
       }
 
+      List<AppliedChange> applied = new ArrayList<>(prepared.size());
+      List<PreparedChange> globalChanges = new ArrayList<>(prepared.size());
+      for (PreparedChange change : prepared) {
+        if (!isCurrentRuntime(runtime)) {
+          return;
+        }
+        if (sameFile(change.file(), webToml)) {
+          applied.add(applyPreparedChange(runtime, change));
+        } else {
+          globalChanges.add(change);
+        }
+      }
+
       lastSlowTickPollSummary = "ioPoll=" + ((System.nanoTime() - pollStartNs) / 1_000_000L)
           + "ms async=true touched=" + orderedTouched.size()
           + " prepared=" + prepared.size()
@@ -310,17 +316,17 @@ public class HotloadController extends TickedObject implements IController {
       try {
         scheduled = FoliaScheduler.runGlobal(
             React.instance,
-            () -> applyPreparedBatch(runtime, orderedTouched.size(), touchedPreview, prepared, pollStartNs)
+            () -> applyPreparedBatch(runtime, orderedTouched.size(), touchedPreview, globalChanges, applied, pollStartNs)
         );
       } catch (Throwable failure) {
         logTransientFailure("Could not schedule the prepared hotload batch on the server thread", failure);
         scheduled = false;
       }
       if (!scheduled) {
-        for (PreparedChange change : prepared) {
+        for (PreparedChange change : globalChanges) {
           enqueueChange(runtime, change.snapshot().path(), Files.isRegularFile(change.snapshot().path()));
         }
-        finishPreparedBatch(runtime, orderedTouched.size(), touchedPreview, List.of(), pollStartNs);
+        finishPreparedBatch(runtime, orderedTouched.size(), touchedPreview, applied, pollStartNs);
       }
     } catch (Throwable failure) {
       for (HotloadPendingQueue.ReadyChange change : readyChanges) {
@@ -428,34 +434,19 @@ public class HotloadController extends TickedObject implements IController {
       int touchedCount,
       List<String> touchedPreview,
       List<PreparedChange> prepared,
+      List<AppliedChange> results,
       long pollStartNs
   ) {
     if (!isCurrentRuntime(runtime)) {
       return;
     }
-    List<AppliedChange> results = new ArrayList<>(prepared.size());
     for (PreparedChange change : prepared) {
-      ApplyOutcome outcome;
-      try {
-        HotloadRevisionTracker.GuardedBoolean guarded = runtime.revisions().runBooleanIfCurrent(
-            change.snapshot().path(),
-            change.revision(),
-            change.apply()::apply
-        );
-        if (!guarded.current()) {
-          outcome = ApplyOutcome.STALE;
-        } else {
-          outcome = guarded.value() ? ApplyOutcome.APPLIED : ApplyOutcome.REJECTED;
-        }
-      } catch (Throwable failure) {
-        logTransientFailure("Hotload apply failed for " + diagnosticRelativePath(change.file()), failure);
-        outcome = ApplyOutcome.RETRY;
-      }
-      if (outcome != ApplyOutcome.RETRY
-          && !runtime.revisions().isCurrent(change.snapshot().path(), change.revision())) {
-        outcome = ApplyOutcome.STALE;
-      }
-      if (outcome == ApplyOutcome.APPLIED) {
+      results.add(applyPreparedChange(runtime, change));
+    }
+    for (AppliedChange result : results) {
+      PreparedChange change = result.change();
+      if (result.outcome() == ApplyOutcome.APPLIED
+          && runtime.revisions().isCurrent(change.snapshot().path(), change.revision())) {
         try {
           deliverOperatorNotifications(change.notifications());
         } catch (Throwable failure) {
@@ -463,7 +454,6 @@ public class HotloadController extends TickedObject implements IController {
               + diagnosticRelativePath(change.file()), failure);
         }
       }
-      results.add(new AppliedChange(change, outcome));
     }
     if (isCurrentRuntime(runtime)) {
       runtime.executor().execute(() -> finishPreparedBatch(
@@ -474,6 +464,25 @@ public class HotloadController extends TickedObject implements IController {
           pollStartNs
       ));
     }
+  }
+
+  private AppliedChange applyPreparedChange(HotloadRuntime runtime, PreparedChange change) {
+    ApplyOutcome outcome;
+    try {
+      HotloadRevisionTracker.GuardedBoolean guarded = runtime.revisions().runBooleanIfCurrent(
+          change.snapshot().path(), change.revision(), change.apply()::apply
+      );
+      outcome = !guarded.current() ? ApplyOutcome.STALE
+          : guarded.value() ? ApplyOutcome.APPLIED : ApplyOutcome.REJECTED;
+    } catch (Throwable failure) {
+      logTransientFailure("Hotload apply failed for " + diagnosticRelativePath(change.file()), failure);
+      outcome = ApplyOutcome.RETRY;
+    }
+    if (outcome != ApplyOutcome.RETRY
+        && !runtime.revisions().isCurrent(change.snapshot().path(), change.revision())) {
+      outcome = ApplyOutcome.STALE;
+    }
+    return new AppliedChange(change, outcome);
   }
 
   private void finishPreparedBatch(
@@ -584,9 +593,18 @@ public class HotloadController extends TickedObject implements IController {
       return () -> {
         ReactConfiguration.applyHotloadSnapshot(preparedConfig);
         ReactLanguage.applyPreparedHotload(preparedLanguage);
-        refreshGlobalRuntimeSettings();
+        refreshGlobalRuntimeSettings(preparedConfig);
         return true;
       };
+    }
+
+    if (sameFile(file, webToml)) {
+      WebController controller = React.controller(WebController.class);
+      if (controller == null) {
+        throw new IllegalStateException("Web controller is unavailable");
+      }
+      WebConfiguration prepared = WebController.prepareHotloadSnapshot(file, rawContent);
+      return () -> controller.applyHotloadSnapshot(prepared);
     }
 
     if (ReactLanguage.isLanguageFile(file)) {
@@ -759,7 +777,12 @@ public class HotloadController extends TickedObject implements IController {
     return () -> true;
   }
 
-  private void refreshGlobalRuntimeSettings() {
+  private void refreshGlobalRuntimeSettings(ReactConfiguration configuration) {
+    React.instance.refreshRuntimeSettings(configuration);
+    FeatureController featureController = React.controller(FeatureController.class);
+    if (featureController != null) {
+      featureController.reconcileRuntimeMode();
+    }
     EntityController entityController = React.controller(EntityController.class);
     if (entityController != null) {
       ReactConfiguration.get().getPriority().rebuildPriority();
@@ -827,7 +850,7 @@ public class HotloadController extends TickedObject implements IController {
     }
 
     String relative = relativizeToDataFolder(file).replace('\\', '/').toLowerCase(Locale.ROOT);
-    if ("react.toml".equals(relative)) {
+    if ("react.toml".equals(relative) || "web.toml".equals(relative)) {
       return true;
     }
 
@@ -885,6 +908,7 @@ public class HotloadController extends TickedObject implements IController {
     Set<String> added = new HashSet<>();
 
     addIfConfig(files, added, reactToml);
+    addIfConfig(files, added, webToml);
 
     if (dataFolder == null) {
       dataFolder = React.instance == null ? null : React.instance.getDataFolder();

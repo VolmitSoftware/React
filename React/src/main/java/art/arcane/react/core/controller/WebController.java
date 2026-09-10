@@ -85,6 +85,7 @@ import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.plugin.IController;
 import art.arcane.react.util.project.config.ConfigFileSupport;
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import io.javalin.Javalin;
 import io.javalin.http.HttpResponseException;
 import io.javalin.http.NotFoundResponse;
@@ -104,6 +105,7 @@ import java.net.URI;
 import java.nio.channels.ServerSocketChannel;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.IntFunction;
 import java.util.function.Supplier;
 import java.util.UUID;
@@ -129,7 +131,10 @@ public class WebController implements IController {
     private static final long WS_AUTHENTICATION_TIMEOUT_MILLIS = 5000L;
     private static final long WS_AUTHENTICATION_SWEEP_MILLIS = 1000L;
 
-    private WebConfiguration config = new WebConfiguration();
+    private volatile WebConfiguration config = new WebConfiguration();
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private final transient Object hotloadLock = new Object();
     private transient volatile File dataFolder;
     private transient volatile byte[] secret;
     private transient volatile TokenStore tokenStore;
@@ -176,6 +181,9 @@ public class WebController implements IController {
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
     private transient boolean starting;
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private transient boolean stopped;
 
     public WebController() {
     }
@@ -246,6 +254,9 @@ public class WebController implements IController {
 
     @Override
     public void start() {
+        synchronized (this) {
+            stopped = false;
+        }
         if (sampleController == null && React.instance != null) {
             sampleController = React.controller(SampleController.class);
         }
@@ -285,14 +296,130 @@ public class WebController implements IController {
                 "web-config",
                 "Created missing config [web.toml] from defaults."
             );
+            config = validatedConfiguration(config);
             startFailure = null;
-        } catch (IOException e) {
+        } catch (IOException | IllegalArgumentException e) {
             WebConfiguration failedConfiguration = new WebConfiguration();
             failedConfiguration.setListenerEnabled(false);
             config = failedConfiguration;
             startFailure = e;
             React.reportError("Failed to load web.toml: " + e.getMessage(), e);
         }
+    }
+
+    public static WebConfiguration prepareHotloadSnapshot(File sourceFile, String rawContent) throws IOException {
+        JsonObject root = ConfigFileSupport.parseSnapshot(sourceFile, rawContent, JsonObject.class, "web-config");
+        if (!root.has("listenerEnabled") || !root.has("listenAddress")) {
+            throw new IOException("web.toml requires listenerEnabled and listenAddress.");
+        }
+        try {
+            return validatedConfiguration(new Gson().fromJson(root, WebConfiguration.class));
+        } catch (RuntimeException failure) {
+            throw new IOException("Invalid web.toml configuration: " + failure.getMessage(), failure);
+        }
+    }
+
+    public boolean applyHotloadSnapshot(WebConfiguration prepared) {
+        WebConfiguration candidate = validatedConfiguration(prepared);
+        synchronized (hotloadLock) {
+            WebRuntime previousRuntime;
+            WebConfiguration previousConfiguration;
+            CountDownLatch cancelledLatch;
+            CountDownLatch latch = new CountDownLatch(1);
+            boolean restoreListener;
+            long generation;
+            synchronized (this) {
+                if (stopped) {
+                    return false;
+                }
+                if (!starting && candidate.equals(config) && (app != null || !candidate.isListenerEnabled())) {
+                    return true;
+                }
+                previousConfiguration = config;
+                restoreListener = app != null || (starting && config.isListenerEnabled());
+                cancelledLatch = starting ? startLatch : null;
+                previousRuntime = detachRuntime();
+                generation = ++lifecycleGeneration;
+                starting = true;
+                startLatch = latch;
+                startFailure = null;
+            }
+            if (cancelledLatch != null) {
+                cancelledLatch.countDown();
+            }
+            closeRuntime(previousRuntime);
+            if (!candidate.isListenerEnabled()) {
+                synchronized (this) {
+                    if (!isCurrentGeneration(generation)) {
+                        latch.countDown();
+                        return false;
+                    }
+                    config = candidate;
+                    starting = false;
+                }
+                latch.countDown();
+                return true;
+            }
+            if (runStartupWithPluginClassLoader(generation, latch, candidate)) {
+                return true;
+            }
+            reportHotloadBindFailure();
+            CountDownLatch rollbackLatch = new CountDownLatch(1);
+            synchronized (this) {
+                if (lifecycleGeneration != generation || stopped || !restoreListener) {
+                    return false;
+                }
+                generation = ++lifecycleGeneration;
+                starting = true;
+                startLatch = rollbackLatch;
+                startFailure = null;
+            }
+            if (!runStartupWithPluginClassLoader(generation, rollbackLatch, previousConfiguration)) {
+                reportHotloadBindFailure();
+            }
+            return false;
+        }
+    }
+
+    private void reportHotloadBindFailure() {
+        Throwable failure = startFailure;
+        if (failure instanceof JavalinBindException && isBindFailure(failure)) {
+            React.reportError("WebController could not bind while applying web.toml.", failure);
+        }
+    }
+
+    private static WebConfiguration validatedConfiguration(WebConfiguration source) {
+        Objects.requireNonNull(source, "configuration");
+        WebConfiguration snapshot = new WebConfiguration();
+        snapshot.setListenerEnabled(source.isListenerEnabled());
+        snapshot.setListenAddress(source.getListenAddress() == null ? "" : source.getListenAddress().trim());
+        snapshot.setPort(source.getPort());
+        snapshot.setAdvertisedUrl(source.getAdvertisedUrl() == null ? "" : source.getAdvertisedUrl().trim());
+        snapshot.setCorsOrigins(source.getCorsOrigins() == null ? List.of() : List.copyOf(source.getCorsOrigins()));
+        snapshot.setWsPushHz(source.getWsPushHz());
+        snapshot.setRequireTokenForReads(source.isRequireTokenForReads());
+        snapshot.setRelayEnabled(source.isRelayEnabled());
+        snapshot.setRelayUrl(source.getRelayUrl() == null ? "" : source.getRelayUrl().trim());
+        if (snapshot.getListenAddress().isBlank()) {
+            throw new IllegalArgumentException("listenAddress must not be blank");
+        }
+        if (snapshot.getPort() < 0 || snapshot.getPort() > 65535) {
+            throw new IllegalArgumentException("port must be between 0 and 65535");
+        }
+        if (snapshot.getWsPushHz() < 1 || snapshot.getWsPushHz() > 1000) {
+            throw new IllegalArgumentException("wsPushHz must be between 1 and 1000");
+        }
+        if (!snapshot.getAdvertisedUrl().isBlank()) {
+            validateAdvertisedUrl(snapshot.getAdvertisedUrl());
+        }
+        if (snapshot.isRelayEnabled() && !snapshot.getRelayUrl().isBlank()) {
+            URI uri = URI.create(snapshot.getRelayUrl());
+            if ((!"ws".equalsIgnoreCase(uri.getScheme()) && !"wss".equalsIgnoreCase(uri.getScheme()))
+                || uri.getHost() == null) {
+                throw new IllegalArgumentException("relayUrl must be an absolute WS or WSS URL");
+            }
+        }
+        return snapshot;
     }
 
     public synchronized void loadAuth() {
@@ -414,7 +541,8 @@ public class WebController implements IController {
 
     @Override
     public void postStart() {
-        if (!config.isListenerEnabled()) {
+        WebConfiguration startupConfiguration = config;
+        if (!startupConfiguration.isListenerEnabled()) {
             return;
         }
         CountDownLatch latch = new CountDownLatch(1);
@@ -423,35 +551,34 @@ public class WebController implements IController {
             return;
         }
         try {
-            loadAuth();
-            if (!isCurrentGeneration(generation)) {
-                finishStartup(generation, latch);
-                return;
-            }
-            executeAsync(() -> runStartupWithPluginClassLoader(generation, latch));
+            executeAsync(() -> runStartupWithPluginClassLoader(generation, latch, startupConfiguration));
         } catch (Throwable failure) {
-            recordStartupFailure(generation, failure);
+            recordStartupFailure(generation, failure, startupConfiguration.getPort());
             finishStartup(generation, latch);
         }
     }
 
-    private void runStartupWithPluginClassLoader(long generation, CountDownLatch latch) {
+    private boolean runStartupWithPluginClassLoader(long generation, CountDownLatch latch, WebConfiguration startupConfiguration) {
         Thread thread = Thread.currentThread();
         ClassLoader previous = thread.getContextClassLoader();
         ClassLoader pluginClassLoader = WebController.class.getClassLoader();
         try {
             thread.setContextClassLoader(pluginClassLoader);
-            runStartup(generation, latch);
+            return runStartup(generation, latch, startupConfiguration);
         } finally {
             thread.setContextClassLoader(previous);
         }
     }
 
-    private void runStartup(long generation, CountDownLatch latch) {
+    private boolean runStartup(long generation, CountDownLatch latch, WebConfiguration startupConfiguration) {
         WebRuntime runtime = new WebRuntime();
         boolean published = false;
-        boolean requireTokenForReads = config.isRequireTokenForReads();
+        boolean requireTokenForReads = startupConfiguration.isRequireTokenForReads();
         try {
+                if (!isCurrentGeneration(generation)) {
+                    return false;
+                }
+                loadAuth();
                 MetricsResource metrics = new MetricsResource(
                     sampleController,
                     historyController,
@@ -459,9 +586,9 @@ public class WebController implements IController {
                 );
                 IdentityResource identity = new IdentityResource(this::resolveIdentity);
                 WebAuth auth = new WebAuth(secret, tokenStore);
-                List<String> origins = config.getCorsOrigins();
-                String listenAddress = config.getListenAddress();
-                int requestedPort = config.getPort();
+                List<String> origins = startupConfiguration.getCorsOrigins();
+                String listenAddress = startupConfiguration.getListenAddress();
+                int requestedPort = startupConfiguration.getPort();
                 int searchAttempts = Math.max(1, portSearchAttempts());
                 Javalin javalin = Javalin.create(cfg -> {
                     cfg.bundledPlugins.enableCors(cors -> cors.addRule(rule -> {
@@ -817,7 +944,7 @@ public class WebController implements IController {
                 javalin.before("/api/v1/logs", auth);
                 javalin.get("/api/v1/logs", logsResource::list);
                 if (!isCurrentGeneration(generation)) {
-                    return;
+                    return false;
                 }
                 WebSocketSessions localMetricsSessions = new WebSocketSessions();
                 runtime.metricsSessions = localMetricsSessions;
@@ -924,11 +1051,11 @@ public class WebController implements IController {
                         logBroadcaster.send(frame);
                     }
                 });
-                long periodMs = Math.max(1L, 1000L / Math.max(1, config.getWsPushHz()));
+                long periodMs = Math.max(1L, 1000L / Math.max(1, startupConfiguration.getWsPushHz()));
                 ScheduledExecutorService executor = createWsPushExecutor();
                 runtime.wsPushExecutor = executor;
                 if (!isCurrentGeneration(generation)) {
-                    return;
+                    return false;
                 }
                 executor.scheduleAtFixedRate(
                     authenticationGate::expire,
@@ -944,22 +1071,23 @@ public class WebController implements IController {
                     }
                 }, periodMs, periodMs, TimeUnit.MILLISECONDS);
                 if (!isCurrentGeneration(generation)) {
-                    return;
+                    return false;
                 }
                 beforeListenerBind();
-                published = bindAndPublishRuntime(generation, runtime, javalin, requestedPort);
+                published = bindAndPublishRuntime(generation, runtime, javalin, startupConfiguration);
         } catch (Throwable failure) {
-            recordStartupFailure(generation, failure);
+            recordStartupFailure(generation, failure, startupConfiguration.getPort());
         } finally {
             if (!published) {
                 closeRuntime(runtime);
             }
             finishStartup(generation, latch);
         }
+        return published;
     }
 
     private synchronized long beginStartup(CountDownLatch latch) {
-        if (starting || app != null) {
+        if (stopped || starting || app != null) {
             return -1L;
         }
         lifecycleGeneration++;
@@ -973,10 +1101,11 @@ public class WebController implements IController {
         return starting && lifecycleGeneration == generation;
     }
 
-    private synchronized boolean publishRuntime(long generation, WebRuntime runtime) {
+    private synchronized boolean publishRuntime(long generation, WebRuntime runtime, WebConfiguration startupConfiguration) {
         if (!starting || lifecycleGeneration != generation) {
             return false;
         }
+        config = startupConfiguration;
         app = runtime.app;
         boundPort = runtime.boundPort;
         relayClient = runtime.relayClient;
@@ -996,7 +1125,7 @@ public class WebController implements IController {
         long generation,
         WebRuntime runtime,
         Javalin javalin,
-        int requestedPort
+        WebConfiguration startupConfiguration
     ) {
         synchronized (this) {
             if (!starting || lifecycleGeneration != generation) {
@@ -1004,37 +1133,32 @@ public class WebController implements IController {
             }
             javalin.start();
             runtime.boundPort = javalin.port();
+            int requestedPort = startupConfiguration.getPort();
             if (requestedPort > 0 && runtime.boundPort != requestedPort) {
                 React.warn("React web port " + requestedPort + " was unavailable; listener started on "
                     + runtime.boundPort + ".");
             }
-            if (config.isRelayEnabled() && config.getRelayUrl() != null && !config.getRelayUrl().isBlank()) {
-                try {
-                    RelayLoopbackBridge bridge = createRelayLoopbackBridge(runtime.boundPort);
-                    RelayClient client = new RelayClient(
-                        config.getRelayUrl(),
-                        WebController.this.identity,
-                        bridge,
-                        new RelayBackoff(1000L, 30000L)
-                    );
-                    runtime.relayClient = client;
-                    client.start();
-                } catch (Throwable failure) {
-                    React.warn("RelayClient startup failed; relay will be unavailable", failure);
-                    closeRelayClient(runtime);
-                }
+            if (startupConfiguration.isRelayEnabled() && startupConfiguration.getRelayUrl() != null && !startupConfiguration.getRelayUrl().isBlank()) {
+                RelayLoopbackBridge bridge = createRelayLoopbackBridge(runtime.boundPort);
+                RelayClient client = new RelayClient(
+                    startupConfiguration.getRelayUrl(),
+                    WebController.this.identity,
+                    bridge,
+                    new RelayBackoff(1000L, 30000L)
+                );
+                runtime.relayClient = client;
+                client.start();
             }
-            return publishRuntime(generation, runtime);
+            return publishRuntime(generation, runtime, startupConfiguration);
         }
     }
 
-    private synchronized void recordStartupFailure(long generation, Throwable failure) {
+    private synchronized void recordStartupFailure(long generation, Throwable failure, int requestedPort) {
         if (lifecycleGeneration != generation) {
             return;
         }
         startFailure = failure;
         if (failure instanceof JavalinBindException && isBindFailure(failure)) {
-            int requestedPort = config.getPort();
             int lastPort = lastSearchPort(requestedPort, portSearchAttempts());
             reportPortBindFailure(requestedPort, lastPort);
             return;
@@ -1205,6 +1329,7 @@ public class WebController implements IController {
         WebRuntime runtime;
         CountDownLatch cancelledLatch;
         synchronized (this) {
+            stopped = true;
             lifecycleGeneration++;
             cancelledLatch = starting ? startLatch : null;
             if (starting) {

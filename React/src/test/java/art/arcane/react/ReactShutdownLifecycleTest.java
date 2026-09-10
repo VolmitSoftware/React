@@ -127,6 +127,8 @@ class ReactShutdownLifecycleTest {
       Mockito.doNothing().when(plugin).unregisterAll();
 
       setField(plugin, "alreadyDrained", new AtomicBoolean(false));
+      setField(plugin, "runtimeSettingsLock", new Object());
+      setField(plugin, "runtimeSettingsSubmissionLock", new Object());
       setField(plugin, "controllerRegistry", controllers);
       setField(plugin, "bridgeRegistry", bridgeRegistry);
       React.instance = plugin;

@@ -27,6 +27,7 @@ import art.arcane.volmlib.util.localization.LocalizationManager;
 import art.arcane.volmlib.util.localization.LocalizationReloadResult;
 import art.arcane.volmlib.util.localization.LocalizationSnapshot;
 import art.arcane.volmlib.util.localization.LocalizationValidationResult;
+import art.arcane.volmlib.util.localization.LocalizationValidator;
 import art.arcane.volmlib.util.localization.MessageArgument;
 import art.arcane.volmlib.util.localization.MessageArgumentKind;
 import art.arcane.volmlib.util.localization.MessageArgs;
@@ -63,6 +64,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 import static art.arcane.volmlib.util.config.TomlCodec.toJsonElement;
@@ -71,6 +73,8 @@ public final class ReactLanguage {
   private static final Object SNAPSHOT_LOCK = new Object();
   private static final long MAX_LOCALE_BYTES = 2L * 1024L * 1024L;
   private static final int MAX_REPORTED_ISSUES = 12;
+  private static final int MAX_NORMALIZED_TEMPLATES = 4096;
+  private static final Map<String, String> NORMALIZED_TEMPLATES = new ConcurrentHashMap<>();
   private static final Pattern LOCALE_NAME = Pattern.compile("[A-Za-z0-9_-]+");
   private static final String LEGACY_CODES = "0123456789abcdefklmnorx";
   private static final String ENGLISH_FALLBACK_SOURCE = "code-owned-English:";
@@ -98,10 +102,10 @@ public final class ReactLanguage {
     remoteCatalog = RemoteLanguageCatalog.load(new RemoteLanguageCatalog.Options(
         "React", URI.create("https://raw.githubusercontent.com/VolmitSoftware/React/"),
         "React/src/main/resources/languages", ".toml", "language-source.properties",
-        React.instance.getDataFolder().toPath().resolve("languages/cache"), ReactLanguage.class.getClassLoader()));
+        ReactLanguage.class.getClassLoader()));
     boolean loaded = reload();
     languageService = new PluginLanguageService(new PluginLanguageService.Options(
-        React.instance.getDataFolder().toPath().resolve("language-preferences.properties"), VolmitLocales::all,
+        languageFolder().toPath().resolve("language-preferences.properties"), VolmitLocales::all,
         () -> ReactConfiguration.get().getLanguage(), MANAGER::snapshot,
         locale -> LocalizationSnapshot.create(loadCandidate(locale, null)), ReactLanguage::selectDefault,
         React.instance.getLogger()));
@@ -112,6 +116,7 @@ public final class ReactLanguage {
   }
 
   public static void close() {
+    NORMALIZED_TEMPLATES.clear();
     if (languageSwitcher != null) {
       languageSwitcher.close();
       languageSwitcher = null;
@@ -136,6 +141,13 @@ public final class ReactLanguage {
   }
 
   private static LocalizationSnapshot writeMessage(PluginLanguageEditor.Edit edit) throws IOException {
+    LocaleOverlay proposed = LocaleOverlay.builder("language editor", edit.locale()).put(edit.key(), edit.value()).build();
+    LocalizationSnapshot.create(new LocalizationCandidate(CATALOG, List.of(proposed), PluralSelector.oneOther()));
+    if (edit.value() instanceof TextValue text) {
+      validateTemplate(edit.key(), edit.key(), text.template());
+    } else if (edit.value() instanceof LinesValue lines) {
+      validateLines(edit.key(), edit.key(), lines.lines());
+    }
     File file = new File(languageFolder(), edit.locale() + ".toml");
     SavedLanguage saved = LanguageFileEditor.update(file.toPath(), raw -> {
       LocalizationSnapshot current = editorSnapshot(edit.locale(), file, raw);
@@ -147,6 +159,7 @@ public final class ReactLanguage {
       return new LanguageFileEditor.Prepared<>(updated, prepared);
     });
     ConfigFileSupport.noteSelfWrite(file, saved.rawContent());
+    NORMALIZED_TEMPLATES.clear();
     synchronized (SNAPSHOT_LOCK) {
       if (edit.locale().equals(activeLocale)) {
         MANAGER.install(saved.snapshot());
@@ -157,7 +170,8 @@ public final class ReactLanguage {
 
   private static LocalizationSnapshot editorSnapshot(String locale, File file, String raw) throws IOException {
     try {
-      return LocalizationSnapshot.create(loadCandidate(locale, new LanguageHotloadSnapshot(normalizedPath(file), raw)));
+      return LocalizationSnapshot.create(new LocalizationCandidate(CATALOG,
+          List.of(parseRuntimeOverlay(file.toString(), locale, raw)), PluralSelector.oneOther()));
     } catch (Exception failure) {
       throw new IOException("Could not validate React language " + locale, failure);
     }
@@ -173,27 +187,26 @@ public final class ReactLanguage {
     ReactConfiguration.applyHotloadSnapshot(next);
     synchronized (SNAPSHOT_LOCK) {
       MANAGER.install(prepared);
+      NORMALIZED_TEMPLATES.clear();
       activeLocale = locale;
     }
     ConfigFileSupport.noteSelfWrite(file, raw);
   }
 
   public static boolean reload() {
-    return reload(null);
+    return reload(null, null);
   }
 
   public static boolean reload(File languageFile, String rawContent) {
-    LanguageHotloadSnapshot hotloadSnapshot = languageFile == null || rawContent == null
-        ? null
-        : new LanguageHotloadSnapshot(normalizedPath(languageFile), rawContent);
-    if (hotloadSnapshot != null) {
-      String configuredLocale = normalizeLocale(ReactConfiguration.get().getLanguage());
-      File activeLanguage = new File(languageFolder(), configuredLocale + ".toml");
-      if (!hotloadSnapshot.path().equals(normalizedPath(activeLanguage))) {
-        return true;
-      }
+    String configuredLocale = ReactConfiguration.get().getLanguage();
+    try {
+      return applyPreparedHotload(prepareHotload(languageFile, rawContent, configuredLocale));
+    } catch (Exception failure) {
+      LocalizationSnapshot retained = MANAGER.snapshot();
+      reportRejectedReload(configuredLocale, new LocalizationReloadResult(
+          false, retained, retained, LocalizationValidationResult.empty(), failure));
+      return false;
     }
-    return reload(hotloadSnapshot);
   }
 
   public static PreparedReload prepareHotload(
@@ -201,72 +214,74 @@ public final class ReactLanguage {
       String rawContent,
       String configuredLocale
   ) throws Exception {
-    String requestedLocale = configuredLocale == null || configuredLocale.isBlank()
-        ? CATALOG.englishLocale()
-        : configuredLocale.trim();
     String normalizedLocale = normalizeLocale(configuredLocale);
-    LanguageHotloadSnapshot hotloadSnapshot = languageFile == null || rawContent == null
+    boolean serverDefault = languageFile == null || rawContent == null;
+    LanguageHotloadSnapshot hotloadSnapshot = serverDefault
         ? null
         : new LanguageHotloadSnapshot(normalizedPath(languageFile), rawContent);
     if (hotloadSnapshot != null) {
-      File activeLanguage = new File(languageFolder(), normalizedLocale + ".toml");
-      if (!hotloadSnapshot.path().equals(normalizedPath(activeLanguage))) {
-        return new PreparedReload(null, requestedLocale, normalizedLocale, true);
+      if (!isLanguageFile(languageFile)) {
+        throw new IllegalArgumentException("Not a React language file: " + languageFile);
+      }
+      normalizedLocale = normalizeLocale(languageFile.getName().substring(0, languageFile.getName().length() - 5));
+    } else {
+      createEnglishLanguageIfMissing();
+      if (languageService != null) {
+        synchronized (SNAPSHOT_LOCK) {
+          if (normalizedLocale.equals(activeLocale)) {
+            return new PreparedReload(MANAGER.snapshot(), normalizedLocale, normalizedLocale, true, true);
+          }
+        }
+        File selectedFile = new File(languageFolder(), normalizedLocale + ".toml");
+        if (selectedFile.isFile()) {
+          if (selectedFile.length() > MAX_LOCALE_BYTES) {
+            throw new IllegalArgumentException("Locale file is too large: " + selectedFile.getPath());
+          }
+          hotloadSnapshot = new LanguageHotloadSnapshot(normalizedPath(selectedFile), Files.readString(selectedFile.toPath()));
+        }
       }
     }
     LocalizationCandidate candidate = loadCandidate(normalizedLocale, hotloadSnapshot);
     LocalizationSnapshot snapshot = LocalizationSnapshot.create(candidate);
-    return new PreparedReload(snapshot, requestedLocale, normalizedLocale, false);
+    return new PreparedReload(snapshot, normalizedLocale, normalizedLocale,
+        serverDefault, false);
   }
 
   public static boolean applyPreparedHotload(PreparedReload prepared) {
-    if (prepared == null || prepared.noOp()) {
+    if (prepared.unchanged()) {
       return true;
     }
-    LocalizationReloadResult result;
-    synchronized (SNAPSHOT_LOCK) {
-      result = MANAGER.install(prepared.snapshot());
-      if (result.applied()) {
-        activeLocale = prepared.normalizedLocale();
+    PluginLanguageService service = languageService;
+    try {
+      if (service == null) {
+        installPreparedSnapshot(prepared, null);
+      } else {
+        service.commitUpdate(() -> {
+          installPreparedSnapshot(prepared, service);
+          return null;
+        });
       }
-    }
-    if (!result.applied()) {
-      reportRejectedReload(prepared.requestedLocale(), result);
+    } catch (IOException | IllegalStateException failure) {
+      React.reportError("Locale reload failed for " + prepared.requestedLocale(), failure);
       return false;
     }
-    if (languageService != null) {
-      languageService.invalidate();
-    }
-    int warningCount = fallbackEntryCount(result.validation());
+    int warningCount = fallbackEntryCount(prepared.snapshot().validation());
     React.verbose("Loaded locale " + prepared.requestedLocale() + " with " + warningCount + " fallback "
         + (warningCount == 1 ? "entry" : "entries") + ".");
     return true;
   }
 
-  private static boolean reload(LanguageHotloadSnapshot hotloadSnapshot) {
-    String configuredLocale = ReactConfiguration.get().getLanguage();
-    String requestedLocale = configuredLocale == null || configuredLocale.isBlank()
-        ? CATALOG.englishLocale()
-        : configuredLocale.trim();
-    LocalizationReloadResult result;
+  private static void installPreparedSnapshot(PreparedReload prepared, PluginLanguageService service) {
     synchronized (SNAPSHOT_LOCK) {
-      result = MANAGER.reload(() -> loadCandidate(normalizeLocale(configuredLocale), hotloadSnapshot));
-      if (result.applied()) {
-        activeLocale = normalizeLocale(configuredLocale);
+      if (prepared.serverDefault() || prepared.normalizedLocale().equals(activeLocale)) {
+        MANAGER.install(prepared.snapshot());
+        activeLocale = prepared.normalizedLocale();
       }
+      NORMALIZED_TEMPLATES.clear();
     }
-    if (!result.applied()) {
-      reportRejectedReload(requestedLocale, result);
-      return false;
+    if (service != null) {
+      service.cache(prepared.normalizedLocale(), prepared.snapshot());
     }
-
-    if (languageService != null) {
-      languageService.invalidate();
-    }
-    int warningCount = fallbackEntryCount(result.validation());
-    React.verbose("Loaded locale " + requestedLocale + " with " + warningCount + " fallback "
-        + (warningCount == 1 ? "entry" : "entries") + ".");
-    return true;
   }
 
   public static String activeLocale() {
@@ -396,6 +411,7 @@ public final class ReactLanguage {
   }
 
   static LocalizationReloadResult reloadCandidate(LocalizationCandidate candidate) {
+    NORMALIZED_TEMPLATES.clear();
     return MANAGER.reload(candidate);
   }
 
@@ -467,14 +483,14 @@ public final class ReactLanguage {
     if (file.length() > MAX_LOCALE_BYTES) {
       throw new IllegalArgumentException("Locale file is too large: " + file.getPath());
     }
-    return parseOverlay(file.getPath(), locale, Files.readString(file.toPath()));
+    return parseRuntimeOverlay(file.getPath(), locale, Files.readString(file.toPath()));
   }
 
   private static LocaleOverlay loadSnapshotOverlay(File file, String locale, String rawContent) {
     if (rawContent.getBytes(StandardCharsets.UTF_8).length > MAX_LOCALE_BYTES) {
       throw new IllegalArgumentException("Locale file is too large: " + file.getPath());
     }
-    return parseOverlay(file.getPath(), locale, rawContent);
+    return LocalizationValidator.validValues(CATALOG, parseOverlay(file.getPath(), locale, rawContent, true));
   }
 
   private static String normalizedPath(File file) {
@@ -485,13 +501,26 @@ public final class ReactLanguage {
     Path file = languageFolder().toPath().resolve(locale + ".toml");
     String raw = remoteCatalog.readOrInstall(locale, file, (selectedLocale, content) ->
         LocalizationSnapshot.create(new LocalizationCandidate(CATALOG,
-            List.of(parseOverlay(file.toString(), selectedLocale, content)), PluralSelector.oneOther())));
-    LocaleOverlay overlay = parseOverlay(file.toString(), locale, raw);
+            List.of(parseRuntimeOverlay(file.toString(), selectedLocale, content)), PluralSelector.oneOther())));
+    LocaleOverlay overlay = parseRuntimeOverlay(file.toString(), locale, raw);
     ConfigFileSupport.noteSelfWrite(file.toFile(), raw);
     return overlay;
   }
 
   static LocaleOverlay parseOverlay(String source, String locale, String raw) {
+    return parseOverlay(source, locale, raw, false);
+  }
+
+  static LocaleOverlay parseRuntimeOverlay(String source, String locale, String raw) {
+    try {
+      return LocalizationValidator.validValues(CATALOG, parseOverlay(source, locale, raw, true));
+    } catch (IllegalArgumentException invalid) {
+      React.reportError("Using English for unreadable language file " + source, invalid);
+      return LocaleOverlay.builder(source, locale).build();
+    }
+  }
+
+  private static LocaleOverlay parseOverlay(String source, String locale, String raw, boolean tolerant) {
     LocaleOverlay.Builder builder = LocaleOverlay.builder(source, locale);
     if (raw == null || raw.isBlank()) {
       return builder.build();
@@ -505,30 +534,36 @@ public final class ReactLanguage {
     if (parsed == null || !parsed.isJsonObject()) {
       throw new IllegalArgumentException("Locale source is not valid TOML: " + source);
     }
-    appendOverlay(builder, parsed.getAsJsonObject(), "", source);
+    appendOverlay(builder, parsed.getAsJsonObject(), "", source, tolerant);
     return builder.build();
   }
 
-  private static void appendOverlay(LocaleOverlay.Builder builder, JsonObject object, String prefix, String source) {
+  private static void appendOverlay(LocaleOverlay.Builder builder, JsonObject object, String prefix, String source, boolean tolerant) {
     for (Map.Entry<String, JsonElement> entry : object.entrySet()) {
       String entryKey = entry.getKey();
       String key = prefix.isEmpty() ? entryKey : prefix + "." + entryKey;
       JsonElement value = entry.getValue();
-      if (value == null || value.isJsonNull()) {
-        throw new IllegalArgumentException("Locale value cannot be null: " + key);
-      }
-      if (value.isJsonObject()) {
-        appendOverlay(builder, value.getAsJsonObject(), key, source);
-      } else if (value.isJsonArray()) {
-        List<String> lines = readLines(key, value.getAsJsonArray());
-        validateLines(source + ":" + key, key, lines);
-        builder.lines(key, lines);
-      } else if (value.isJsonPrimitive() && value.getAsJsonPrimitive().isString()) {
-        String template = value.getAsString();
-        validateTemplate(source + ":" + key, key, template);
-        builder.text(key, template);
-      } else {
-        throw new IllegalArgumentException("Unsupported locale value: " + key);
+      try {
+        if (value == null || value.isJsonNull()) {
+          throw new IllegalArgumentException("Locale value cannot be null: " + key);
+        }
+        if (value.isJsonObject()) {
+          appendOverlay(builder, value.getAsJsonObject(), key, source, tolerant);
+        } else if (value.isJsonArray()) {
+          List<String> lines = readLines(key, value.getAsJsonArray());
+          validateLines(source + ":" + key, key, lines);
+          builder.lines(key, lines);
+        } else if (value.isJsonPrimitive() && value.getAsJsonPrimitive().isString()) {
+          String template = value.getAsString();
+          validateTemplate(source + ":" + key, key, template);
+          builder.text(key, template);
+        } else {
+          throw new IllegalArgumentException("Unsupported locale value: " + key);
+        }
+      } catch (IllegalArgumentException invalid) {
+        if (!tolerant) {
+          throw invalid;
+        }
       }
     }
   }
@@ -553,17 +588,41 @@ public final class ReactLanguage {
   private static Component render(LocalizationSnapshot snapshot, MessageKey key, MessageArgs arguments) {
     if (key instanceof TextKey textKey) {
       ResolvedText resolved = snapshot.resolve(textKey, arguments);
-      return MINI_MESSAGE.deserialize(interpolate(resolved.template(), resolved.arguments(), true));
+      return renderTemplate(key, resolved.template(), resolved.arguments());
     }
     if (key instanceof LinesKey linesKey) {
       ResolvedLines resolved = snapshot.resolve(linesKey, arguments);
-      return MINI_MESSAGE.deserialize(interpolate(String.join("\n", resolved.lines()), resolved.arguments(), true));
+      return renderTemplate(key, String.join("\n", resolved.lines()), resolved.arguments());
     }
     if (key instanceof PluralKey pluralKey) {
       ResolvedText resolved = snapshot.resolve(pluralKey, arguments);
-      return MINI_MESSAGE.deserialize(interpolate(resolved.template(), resolved.arguments(), true));
+      return renderTemplate(key, resolved.template(), resolved.arguments());
     }
     throw new IllegalArgumentException("Unsupported message key: " + key.id());
+  }
+
+  private static Component renderTemplate(MessageKey key, String template, MessageArgs arguments) {
+    if (isRawTextKey(key.id())) {
+      return Component.text(interpolate(template, arguments, false));
+    }
+    return MINI_MESSAGE.deserialize(interpolate(normalizeTemplate(template), arguments, true));
+  }
+
+  private static String normalizeTemplate(String template) {
+    String cached = NORMALIZED_TEMPLATES.get(template);
+    if (cached != null) {
+      return cached;
+    }
+    String normalized = MINI_MESSAGE.stripTags(template).equals(template)
+        ? MINI_MESSAGE.serialize(MiniMessage.miniMessage().deserialize(ComponentText.normalizeMarkup(template)))
+        : template;
+    synchronized (NORMALIZED_TEMPLATES) {
+      if (NORMALIZED_TEMPLATES.size() >= MAX_NORMALIZED_TEMPLATES) {
+        NORMALIZED_TEMPLATES.clear();
+      }
+      NORMALIZED_TEMPLATES.put(template, normalized);
+    }
+    return normalized;
   }
 
   private static String interpolate(String template, MessageArgs arguments, boolean escapeMiniMessage) {
@@ -665,7 +724,7 @@ public final class ReactLanguage {
       arguments.untrusted(placeholder, "value");
     }
     try {
-      MINI_MESSAGE.deserialize(interpolate(template, arguments.build(), true));
+      MINI_MESSAGE.deserialize(interpolate(normalizeTemplate(template), arguments.build(), true));
     } catch (RuntimeException exception) {
       throw new IllegalArgumentException(path + ": invalid MiniMessage", exception);
     }
@@ -718,7 +777,8 @@ public final class ReactLanguage {
       LocalizationSnapshot snapshot,
       String requestedLocale,
       String normalizedLocale,
-      boolean noOp
+      boolean serverDefault,
+      boolean unchanged
   ) {
   }
 }

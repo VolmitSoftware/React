@@ -27,7 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Data
-@ConfigDescription("Embedded HTTP/WebSocket management API configuration for React. Changes apply after a React reload or server restart.")
+@ConfigDescription("Embedded HTTP/WebSocket management API configuration for React. Changes apply automatically when web.toml is saved.")
 public class WebConfiguration {
 
   @ConfigDoc(value = "Enables the embedded web listener.", impact = "React opens the authenticated API by default. Set false to bind no HTTP or WebSocket listener.")
@@ -36,10 +36,10 @@ public class WebConfiguration {
   @ConfigDoc(value = "IP address the web listener binds to.", impact = "The default :: wildcard accepts IPv6 and IPv4-mapped traffic for LAN, container, and port-forwarded access. Use a loopback address only behind a same-host reverse proxy or relay.")
   private String listenAddress = "::";
 
-  @ConfigDoc(value = "Preferred TCP port for the web server.", impact = "If this port is occupied, React tries the next 99 ports in order and uses the actual bound port for relay loopback and generated direct URLs when advertisedUrl is empty. Requires a React reload or server restart to take effect.")
+  @ConfigDoc(value = "Preferred TCP port for the web server.", impact = "If this port is occupied, React tries the next 99 ports in order and uses the actual bound port for relay loopback and generated direct URLs when advertisedUrl is empty. Saving web.toml restarts the listener automatically.")
   private int port = 9696;
 
-  @ConfigDoc(value = "Public base URL advertised to direct API clients.", impact = "Set this to the HTTPS URL of a reverse proxy when the listener is exposed beyond localhost. React's embedded listener remains HTTP-only. Requires a React reload or server restart to take effect.")
+  @ConfigDoc(value = "Public base URL advertised to direct API clients.", impact = "Set this to the HTTPS URL of a reverse proxy when the listener is exposed beyond localhost. React's embedded listener remains HTTP-only. Changes apply automatically when web.toml is saved.")
   private String advertisedUrl = "";
 
   @ConfigDoc(value = "List of allowed CORS origins for the HTTP API.", impact = "An empty list allows all origins. Add specific origins to restrict cross-origin access.")

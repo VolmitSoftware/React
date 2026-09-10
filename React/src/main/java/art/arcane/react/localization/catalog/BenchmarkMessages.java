@@ -4,15 +4,15 @@ import art.arcane.volmlib.util.localization.MessageCatalog;
 import art.arcane.volmlib.util.localization.TextKey;
 
 public final class BenchmarkMessages {
-  public static final TextKey HEADER = TextKey.of("benchmark.header", "<dark_gray>-=[ </dark_gray><aqua>React Benchmark</aqua><dark_gray> ]=-</dark_gray>");
-  public static final TextKey RUNNING = TextKey.of("benchmark.running", "<gray>Running the {name} benchmark. The server is briefly put under load.</gray>");
-  public static final TextKey BUSY = TextKey.of("benchmark.busy", "<red>A benchmark is already running.</red>");
-  public static final TextKey FAILED = TextKey.of("benchmark.failed", "<red>The {name} benchmark failed: {reason}</red>");
-  public static final TextKey SECTION = TextKey.of("benchmark.section", "<bold><aqua>{name}</aqua></bold>");
-  public static final TextKey LINE = TextKey.of("benchmark.line", "<dark_gray> - </dark_gray><gray>{label}</gray><dark_gray>: </dark_gray><white>{value}</white>");
-  public static final TextKey LINE_SCORED = TextKey.of("benchmark.line_scored", "<dark_gray> - </dark_gray><gray>{label}</gray><dark_gray>: </dark_gray><white>{value}</white> <dark_gray>[</dark_gray>{bar}<dark_gray>]</dark_gray> <aqua>{score}</aqua> <dark_gray>|</dark_gray> {rating}");
-  public static final TextKey OVERALL = TextKey.of("benchmark.overall", "<dark_gray> - </dark_gray><gray>{label}</gray><dark_gray>: </dark_gray><aqua>{score}</aqua> <dark_gray>|</dark_gray> {rating} <dark_gray>in</dark_gray> <gray>{duration}</gray>");
-  public static final TextKey SCALE = TextKey.of("benchmark.scale", "<dark_gray>A score of 100 matches the reference machine. Higher is better.</dark_gray>");
+  public static final TextKey HEADER = TextKey.of("benchmark.header", "&8-=[ &bReact Benchmark&8 ]=-&r");
+  public static final TextKey RUNNING = TextKey.of("benchmark.running", "&7Running the {name} benchmark. The server is briefly put under load.&r");
+  public static final TextKey BUSY = TextKey.of("benchmark.busy", "&cA benchmark is already running.&r");
+  public static final TextKey FAILED = TextKey.of("benchmark.failed", "&cThe {name} benchmark failed: {reason}&r");
+  public static final TextKey SECTION = TextKey.of("benchmark.section", "&b&l{name}&r");
+  public static final TextKey LINE = TextKey.of("benchmark.line", "&8 - &7{label}&8: &f{value}&r");
+  public static final TextKey LINE_SCORED = TextKey.of("benchmark.line_scored", "&8 - &7{label}&8: &f{value}&r &8[&r{bar}&8]&r &b{score}&r &8|&r {rating}");
+  public static final TextKey OVERALL = TextKey.of("benchmark.overall", "&8 - &7{label}&8: &b{score}&r &8|&r {rating} &8in&r &7{duration}&r");
+  public static final TextKey SCALE = TextKey.of("benchmark.scale", "&8A score of 100 matches the reference machine. Higher is better.&r");
 
   public static final TextKey NAME_CPU = TextKey.of("benchmark.name.cpu", "Processor");
   public static final TextKey NAME_MEMORY = TextKey.of("benchmark.name.memory", "Memory");

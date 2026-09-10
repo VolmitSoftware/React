@@ -4,6 +4,7 @@ import art.arcane.react.React;
 import art.arcane.react.api.feature.CapabilityGatedFeature;
 import art.arcane.react.api.feature.Feature;
 import art.arcane.react.api.feature.ReactTickedFeature;
+import art.arcane.react.api.feature.ReactCapabilityFeature;
 import art.arcane.react.core.integration.IntegrationCapabilitySupport;
 import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.util.common.scheduling.J;
@@ -81,6 +82,43 @@ class FeatureControllerLifecycleTest {
       Mockito.verify(runtimeBlocked, Mockito.never()).onActivate();
       Mockito.verify(secretBlocked, Mockito.never()).onActivate();
       Mockito.verify(capabilityBlocked, Mockito.never()).onActivate();
+    }
+  }
+
+  @Test
+  void secretFeaturesRemainRegisteredAndFollowTheLiveConfigurationGate() {
+    ReactCapabilityFeature feature = Mockito.mock(ReactCapabilityFeature.class);
+    stubFeature(feature, "secret-live", true, -1);
+    Mockito.when(feature.isSecretBundle()).thenReturn(true);
+    Mockito.when(feature.requiredCapabilities()).thenReturn(Set.of("iris"));
+    Mockito.when(feature.autoRegister()).thenCallRealMethod();
+    Mockito.when(plugin.isReady()).thenReturn(true);
+    ReactConfiguration configuration = new ReactConfiguration();
+    controller.setFeatures(registry(Map.of(feature.getId(), feature)));
+
+    try (MockedStatic<React> react = Mockito.mockStatic(React.class);
+         MockedStatic<ReactConfiguration> configurations = Mockito.mockStatic(ReactConfiguration.class);
+         MockedStatic<IntegrationCapabilitySupport> capabilities = Mockito.mockStatic(IntegrationCapabilitySupport.class)) {
+      configurations.when(ReactConfiguration::get).thenReturn(configuration);
+      capabilities.when(() -> IntegrationCapabilitySupport.isPluginInstalled("iris")).thenReturn(true);
+      capabilities.when(() -> IntegrationCapabilitySupport.hasCapability(null, "iris")).thenReturn(true);
+
+      Assertions.assertTrue(feature.autoRegister());
+      controller.reconcileRuntimeMode();
+      Assertions.assertTrue(controller.getActiveFeatures().isEmpty());
+
+      configuration.setIntegrationSecretsEnabled(true);
+      controller.reconcileRuntimeMode();
+      Assertions.assertEquals(Set.of("secret-live"), controller.getActiveFeatures().keySet());
+      Mockito.verify(feature).onActivate();
+
+      configuration.setIntegrationSecretsEnabled(false);
+      controller.reconcileRuntimeMode();
+      Assertions.assertTrue(controller.getActiveFeatures().isEmpty());
+      Mockito.verify(feature).onDeactivate();
+
+      capabilities.when(() -> IntegrationCapabilitySupport.isPluginInstalled("iris")).thenReturn(false);
+      Assertions.assertFalse(feature.autoRegister());
     }
   }
 

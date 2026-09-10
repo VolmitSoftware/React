@@ -199,7 +199,9 @@ public class DirectorCommandController implements IController, CommandExecutor, 
       ReactLanguage.switcher().command(sender, Arrays.copyOfRange(args, 1, args.length));
       return true;
     }
-    if (!(args.length > 0 && args[0].equalsIgnoreCase("debugdump"))
+    if (!(args.length > 0 && args[0].equalsIgnoreCase("debug")
+        && (args.length > 1 && args[1].equalsIgnoreCase("dump")
+            || args.length == 1 && sender.hasPermission("react.debugdump")))
         && !sender.hasPermission(ROOT_PERMISSION) && !sender.hasPermission("react.*") && !sender.isOp()) {
       ReactLanguage.send(sender, RuntimeMessages.MISSING_PERMISSION,
           MessageArgument.untrusted("permission", ROOT_PERMISSION));

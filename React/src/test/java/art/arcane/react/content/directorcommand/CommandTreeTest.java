@@ -56,6 +56,14 @@ class CommandTreeTest {
   }
 
   @Test
+  void reloadIsOnlyAvailableForPluginApiPackRescans() {
+    Assertions.assertNull(findExactChild(root, "reload"));
+    Assertions.assertNull(findExactChild(root, "rl"));
+    assertExactPath(root, "plugin-api", "reload");
+    assertExactPath(root, "plugin-api", "rl");
+  }
+
+  @Test
   void reactDirectorTreeResolvesIndependentDistancePaths() {
     assertExactPath(root, "distance", "world", "view");
     assertExactPath(root, "distance", "world", "simulation");

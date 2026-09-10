@@ -8,11 +8,11 @@ import art.arcane.volmlib.util.localization.TextKey;
 import java.util.Map;
 
 public final class TestMessages {
-  public static final TextKey RESULT_PASS = TextKey.of("test.result.pass", "  <green>[PASS]</green> <white>{subsystem}/{name}</white><gray> — {detail}</gray>");
-  public static final TextKey RESULT_FAIL = TextKey.of("test.result.fail", "  <red>[FAIL]</red> <white>{subsystem}/{name}</white><gray> — {detail}</gray>");
-  public static final TextKey RESULT_WARN = TextKey.of("test.result.warn", "  <yellow>[WARN]</yellow> <white>{subsystem}/{name}</white><gray> — {detail}</gray>");
-  public static final TextKey RESULT_SKIP = TextKey.of("test.result.skip", "  <yellow>[SKIP]</yellow> <white>{subsystem}/{name}</white><gray> — {detail}</gray>");
-  public static final TextKey RESULT_INFO = TextKey.of("test.result.info", "  <gray>[INFO]</gray> <white>{subsystem}/{name}</white><gray> — {detail}</gray>");
+  public static final TextKey RESULT_PASS = TextKey.of("test.result.pass", "  &a[PASS]&r &f{subsystem}/{name}&7 — {detail}&r");
+  public static final TextKey RESULT_FAIL = TextKey.of("test.result.fail", "  &c[FAIL]&r &f{subsystem}/{name}&7 — {detail}&r");
+  public static final TextKey RESULT_WARN = TextKey.of("test.result.warn", "  &e[WARN]&r &f{subsystem}/{name}&7 — {detail}&r");
+  public static final TextKey RESULT_SKIP = TextKey.of("test.result.skip", "  &e[SKIP]&r &f{subsystem}/{name}&7 — {detail}&r");
+  public static final TextKey RESULT_INFO = TextKey.of("test.result.info", "  &7[INFO]&r &f{subsystem}/{name}&7 — {detail}&r");
   public static final TextKey ACTION_CONTROLLER_UNAVAILABLE = TextKey.of("test.action.controller_unavailable", "Action controller is unavailable; cannot run the direct action suite.");
   public static final TextKey ACTION_NO_WORLDS = TextKey.of("test.action.no_worlds", "No worlds are loaded; cannot run actions around a world spawn.");
   public static final TextKey ACTION_NOT_REGISTERED = TextKey.of("test.action.not_registered", "Action is not registered.");

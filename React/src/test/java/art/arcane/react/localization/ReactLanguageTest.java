@@ -169,15 +169,15 @@ public class ReactLanguageTest {
     Assertions.assertEquals("Gives the caster a Minecraft item.", ShorthandMessages.GIVE_DESCRIPTION.english());
     Assertions.assertEquals("Gives one maximum-size copy of the exact held item.", ShorthandMessages.MORE_DESCRIPTION.english());
     Assertions.assertEquals("Invokes the server's bare reload command.", ShorthandMessages.RELOAD_DESCRIPTION.english());
-    Assertions.assertEquals("<red>This command can only be used by a player.</red>", ShorthandMessages.PLAYER_ONLY.english());
-    Assertions.assertEquals("<red>Usage: {usage}</red>", ShorthandMessages.USAGE.english());
-    Assertions.assertEquals("<green>Game mode set to {mode}.</green>", ShorthandMessages.GAME_MODE_SET.english());
-    Assertions.assertEquals("<red>Unknown or unavailable item: {item}</red>", ShorthandMessages.ITEM_UNAVAILABLE.english());
-    Assertions.assertEquals("<red>Amount must be between 1 and {maximum}.</red>", ShorthandMessages.AMOUNT_OUT_OF_RANGE.english());
-    Assertions.assertEquals("<green>Gave {amount} {item}.</green>", ShorthandMessages.ITEM_GIVEN.english());
-    Assertions.assertEquals("<red>Hold an item before using /more.</red>", ShorthandMessages.MORE_EMPTY_HAND.english());
-    Assertions.assertEquals("<green>Gave one exact stack of the held item.</green>", ShorthandMessages.MORE_GIVEN.english());
-    Assertions.assertEquals("<red>The server's /reload command is unavailable.</red>", ShorthandMessages.RELOAD_UNAVAILABLE.english());
+    Assertions.assertEquals("&cThis command can only be used by a player.&r", ShorthandMessages.PLAYER_ONLY.english());
+    Assertions.assertEquals("&cUsage: {usage}&r", ShorthandMessages.USAGE.english());
+    Assertions.assertEquals("&aGame mode set to {mode}.&r", ShorthandMessages.GAME_MODE_SET.english());
+    Assertions.assertEquals("&cUnknown or unavailable item: {item}&r", ShorthandMessages.ITEM_UNAVAILABLE.english());
+    Assertions.assertEquals("&cAmount must be between 1 and {maximum}.&r", ShorthandMessages.AMOUNT_OUT_OF_RANGE.english());
+    Assertions.assertEquals("&aGave {amount} {item}.&r", ShorthandMessages.ITEM_GIVEN.english());
+    Assertions.assertEquals("&cHold an item before using /more.&r", ShorthandMessages.MORE_EMPTY_HAND.english());
+    Assertions.assertEquals("&aGave one exact stack of the held item.&r", ShorthandMessages.MORE_GIVEN.english());
+    Assertions.assertEquals("&cThe server's /reload command is unavailable.&r", ShorthandMessages.RELOAD_UNAVAILABLE.english());
     Assertions.assertEquals("Stopped recursive shorthand /{label}.", ShorthandMessages.RECURSIVE_STOPPED.english());
     Assertions.assertEquals("The configured command for /{label} is unavailable.", ShorthandMessages.CONFIGURED_UNAVAILABLE.english());
     Assertions.assertEquals("The configured command for /{label} failed.", ShorthandMessages.CONFIGURED_FAILED.english());
@@ -187,6 +187,18 @@ public class ReactLanguageTest {
   public void visibleRuntimeLabelsRetainCodeOwnedEnglishDefaults() {
     Assertions.assertEquals("UNIQUE", RuntimeMessages.MOB_STACKING_UNIQUE.english());
     Assertions.assertEquals("{seconds}s", RuntimeMessages.ENTITY_KILLER_COUNTDOWN.english());
+  }
+
+  @Test
+  public void runtimeLocaleRetainsValidEntriesAndFallsBackIndividually() {
+    String raw = "\"" + CommandMessages.VERSION.id() + "\" = \"Wersja {version}\"\n"
+        + "\"runtime.prefix\" = \"<broken>{invalid}\"\n";
+    LocaleOverlay overlay = ReactLanguage.parseRuntimeOverlay("partial.toml", "pl_PL", raw);
+    LocalizationSnapshot snapshot = LocalizationSnapshot.create(new LocalizationCandidate(
+        ReactMessages.catalog(), List.of(overlay), PluralSelector.oneOther()));
+    Assertions.assertEquals(new TextValue("Wersja {version}"), snapshot.value(CommandMessages.VERSION));
+    Assertions.assertEquals(RuntimeMessages.PREFIX.englishValue(), snapshot.value(RuntimeMessages.PREFIX));
+    Assertions.assertEquals(CommandMessages.DEBUG_DUMP_DESCRIPTION.englishValue(), snapshot.value(CommandMessages.DEBUG_DUMP_DESCRIPTION));
   }
 
   @Test
@@ -292,6 +304,7 @@ public class ReactLanguageTest {
         prepared,
         "fr_FR",
         "fr_FR",
+        true,
         false
     );
 

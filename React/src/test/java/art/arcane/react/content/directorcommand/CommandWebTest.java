@@ -89,14 +89,23 @@ public class CommandWebTest {
     starting.setDataFolder(dataFolder);
     starting.postStart();
 
-    Assertions.assertTrue(starting.pairingUnavailableReason().contains("starting"));
-    Assertions.assertThrows(
-        IllegalStateException.class,
-        () -> CommandWeb.createPairing(starting, "device", WebRole.VIEWER)
-    );
-    Assertions.assertTrue(starting.getTokenStore().all().isEmpty());
-    Assertions.assertFalse(starting.tokensFile().exists());
-    starting.stop();
+    try {
+      Assertions.assertTrue(starting.pairingUnavailableReason().contains("starting"));
+      assertPairingRefusedWithoutToken(starting, dataFolder);
+      Assertions.assertNull(starting.getSecret());
+      Assertions.assertNull(starting.getIdentity());
+
+      starting.loadAuth();
+
+      Assertions.assertThrows(
+          IllegalStateException.class,
+          () -> CommandWeb.createPairing(starting, "device", WebRole.VIEWER)
+      );
+      Assertions.assertTrue(starting.getTokenStore().all().isEmpty());
+      Assertions.assertFalse(starting.tokensFile().exists());
+    } finally {
+      starting.stop();
+    }
   }
 
   private static WebController controller(File dataFolder) {

@@ -62,14 +62,6 @@ public class CommandReact implements DirectorExecutor {
   private CommandWeb web;
 
 
-  @Director(name = "debugdump", sync = true, description = "Create and optionally upload a diagnostic report", descriptionKey = "command.description.debugdump")
-  public void debugdump(
-    @Param(name = "upload", defaultValue = "true", description = "Upload the report to mclo.gs", descriptionKey = "command.parameter.debugdump_upload") boolean upload,
-    @Param(name = "sender", contextual = true) CommandSender sender
-  ) {
-    React.instance.debugDump().request(sender, upload);
-  }
-
   @Director(
       name = "language",
       aliases = {"languages"},
@@ -133,36 +125,6 @@ public class CommandReact implements DirectorExecutor {
     }
 
     toggle.run();
-  }
-
-  @Director(
-      name = "reload",
-      aliases = {"rl"},
-      description = "Reload React",
-      descriptionKey = "command.description.reload")
-  public void reload() {
-    CommandSender commandSender = sender();
-    ReactLanguage.send(commandSender, CommandMessages.RELOAD_STARTING);
-    Runnable reload = () -> {
-      if (React.instance.reload()) {
-        ReactLanguage.send(
-            commandSender,
-            CommandMessages.RELOAD_SUCCESS,
-            MessageArgument.untrusted("version", React.instance.getDescription().getVersion())
-        );
-      } else {
-        ReactLanguage.send(commandSender, CommandMessages.RELOAD_FAILED);
-      }
-    };
-
-    if (J.isFoliaThreading()) {
-      if (!FoliaScheduler.runGlobal(React.instance, reload)) {
-        ReactLanguage.send(commandSender, CommandMessages.RELOAD_SCHEDULE_FAILED);
-      }
-      return;
-    }
-
-    reload.run();
   }
 
   @Director(

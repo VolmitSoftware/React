@@ -35,6 +35,7 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -50,6 +51,8 @@ class ReactLanguageEditorTest {
   private RemoteLanguageCatalog previousRemote;
   private RemoteLanguageCatalog remote;
   private PluginLanguageService languages;
+  private PluginLanguageService previousLanguages;
+  private String previousActiveLocale;
   private PluginLanguageEditor editor;
 
   @BeforeAll
@@ -60,6 +63,10 @@ class ReactLanguageEditorTest {
   @BeforeEach
   void prepareEditor() throws Exception {
     previous = React.instance;
+    previousActiveLocale = ReactLanguage.activeLocale();
+    Field activeField = ReactLanguage.class.getDeclaredField("activeLocale");
+    activeField.setAccessible(true);
+    activeField.set(null, "en_US");
     React plugin = mock(React.class);
     when(plugin.getDataFolder()).thenReturn(directory.toFile());
     React.instance = plugin;
@@ -69,7 +76,7 @@ class ReactLanguageEditorTest {
     remote = RemoteLanguageCatalog.load(new RemoteLanguageCatalog.Options(
         "React", URI.create("https://raw.githubusercontent.com/VolmitSoftware/React/"),
         "React/src/main/resources/languages", ".toml", "language-source.properties",
-        directory.resolve("languages/cache"), ReactLanguage.class.getClassLoader()));
+        ReactLanguage.class.getClassLoader()));
     field.set(null, remote);
     Files.createDirectories(directory.resolve("languages"));
     Files.write(directory.resolve("languages/fr_FR.toml"), frenchLocale);
@@ -77,11 +84,15 @@ class ReactLanguageEditorTest {
     LocalizationSnapshot english = LocalizationSnapshot.create(
         LocalizationCandidate.english(ReactMessages.catalog(), PluralSelector.oneOther()));
     languages = new PluginLanguageService(new PluginLanguageService.Options(
-        directory.resolve("players.properties"), VolmitLocales::all, () -> "en_US", () -> english,
+        directory.resolve("languages/language-preferences.properties"), VolmitLocales::all, () -> "en_US", () -> english,
         options.loader()::load, (locale, snapshot) -> {
           throw new AssertionError("Editing must not select a server language");
         }, Logger.getLogger("ReactLanguageEditorTest")));
     editor = new PluginLanguageEditor(languages, options);
+    Field serviceField = ReactLanguage.class.getDeclaredField("languageService");
+    serviceField.setAccessible(true);
+    previousLanguages = (PluginLanguageService) serviceField.get(null);
+    serviceField.set(null, languages);
   }
 
   @AfterEach
@@ -92,6 +103,12 @@ class ReactLanguageEditorTest {
     Field field = ReactLanguage.class.getDeclaredField("remoteCatalog");
     field.setAccessible(true);
     field.set(null, previousRemote);
+    Field serviceField = ReactLanguage.class.getDeclaredField("languageService");
+    serviceField.setAccessible(true);
+    serviceField.set(null, previousLanguages);
+    Field activeField = ReactLanguage.class.getDeclaredField("activeLocale");
+    activeField.setAccessible(true);
+    activeField.set(null, previousActiveLocale);
     ReactLanguage.reloadCandidate(LocalizationCandidate.english(ReactMessages.catalog(), PluralSelector.oneOther()));
     React.instance = previous;
   }
@@ -170,7 +187,7 @@ class ReactLanguageEditorTest {
 
     assertEquals("pl_PL", languages.playerLocale(player).orElseThrow());
     assertEquals(new TextValue("Wersja React {version}"), languages.snapshot(player).value(CommandMessages.VERSION));
-    assertEquals(CommandMessages.RELOAD_STARTING.englishValue(), languages.snapshot(player).value(CommandMessages.RELOAD_STARTING));
+    assertEquals(CommandMessages.MONITOR_DESCRIPTION.englishValue(), languages.snapshot(player).value(CommandMessages.MONITOR_DESCRIPTION));
 
     AtomicReference<String> serverLocale = new AtomicReference<>("en_US");
     AtomicReference<LocalizationSnapshot> serverSnapshot = new AtomicReference<>(languages.snapshot());
@@ -184,18 +201,19 @@ class ReactLanguageEditorTest {
 
       assertEquals("pl_PL", server.defaultLocale());
       assertEquals(new TextValue("Wersja React {version}"), server.snapshot().value(CommandMessages.VERSION));
-      assertEquals(CommandMessages.RELOAD_STARTING.englishValue(), server.snapshot().value(CommandMessages.RELOAD_STARTING));
+      assertEquals(CommandMessages.MONITOR_DESCRIPTION.englishValue(), server.snapshot().value(CommandMessages.MONITOR_DESCRIPTION));
     }
     assertEquals(raw, Files.readString(polish));
   }
 
   @Test
-  void missingRequiredPlaceholderStillRejectsTheLocaleWithoutRewritingIt() throws Exception {
+  void missingRequiredPlaceholderFallsBackWithoutRewritingTheLocale() throws Exception {
     Path polish = directory.resolve("languages/pl_PL.toml");
     String raw = "\"" + CommandMessages.VERSION.id() + "\" = \"Wersja React\"\n";
     Files.writeString(polish, raw);
 
-    assertThrows(IllegalArgumentException.class, () -> ReactLanguage.editorOptions().loader().load("pl_PL"));
+    LocalizationSnapshot snapshot = ReactLanguage.editorOptions().loader().load("pl_PL");
+    assertEquals(CommandMessages.VERSION.englishValue(), snapshot.value(CommandMessages.VERSION));
     assertEquals(raw, Files.readString(polish));
   }
 
@@ -230,7 +248,7 @@ class ReactLanguageEditorTest {
     Path english = directory.resolve("languages/en_US.toml");
     String raw = Files.readString(english);
     LocaleOverlay overlay = ReactLanguage.parseOverlay(english.toString(), "en_US", raw);
-    assertTrue(raw.startsWith("# React language: en_US"));
+    assertTrue(raw.startsWith("# React — en_US"));
     assertEquals(ReactMessages.catalog().byId().keySet(), overlay.values().keySet());
     assertEquals(CommandMessages.VERSION.englishValue(), overlay.value(CommandMessages.VERSION.id()));
     try (Stream<Path> children = Files.list(directory.resolve("languages"))) {
@@ -264,11 +282,108 @@ class ReactLanguageEditorTest {
     String raw = "\"" + CommandMessages.VERSION.id() + "\" = \"Hotloaded React {version}\"\n";
     ReactLanguage.PreparedReload prepared = ReactLanguage.prepareHotload(french.toFile(), raw, "fr_FR");
 
-    assertFalse(prepared.noOp());
+    assertFalse(prepared.serverDefault());
     assertEquals(new TextValue("Hotloaded React {version}"), prepared.snapshot().value(CommandMessages.VERSION));
     assertArrayEquals(frenchLocale, Files.readAllBytes(french));
     assertTrue(ReactLanguage.isLanguageFile(french.toFile()));
-    assertFalse(ReactLanguage.isLanguageFile(directory.resolve("languages/cache/fr_FR.toml").toFile()));
+    assertFalse(ReactLanguage.isLanguageFile(directory.resolve("languages/nested/fr_FR.toml").toFile()));
     assertFalse(ReactLanguage.isLanguageFile(directory.resolve("languages/language-preferences.properties").toFile()));
+  }
+
+  @Test
+  void hotloadsPersonalLocaleWithoutChangingTheServerOrReadingNewerDiskContent() throws Exception {
+    UUID player = UUID.randomUUID();
+    languages.selectPlayer(player, "fr_FR").get(5, TimeUnit.SECONDS);
+    LocalizationSnapshot server = ReactLanguage.snapshot();
+    Path french = directory.resolve("languages/fr_FR.toml");
+    String captured = "\"" + CommandMessages.VERSION.id() + "\" = \"Captured React {version}\"\n";
+    ReactLanguage.PreparedReload prepared = ReactLanguage.prepareHotload(french.toFile(), captured, "en_US");
+    Files.writeString(french, "\"" + CommandMessages.VERSION.id() + "\" = \"Newer React {version}\"\n");
+
+    assertFalse(prepared.serverDefault());
+    assertTrue(ReactLanguage.applyPreparedHotload(prepared));
+    assertSame(prepared.snapshot(), languages.snapshot(player));
+    assertSame(server, ReactLanguage.snapshot());
+    assertEquals("en_US", ReactLanguage.activeLocale());
+    assertEquals("fr_FR", languages.playerLocale(player).orElseThrow());
+  }
+
+  @Test
+  void invalidPersonalLanguageKeepsItsLastGoodSnapshotAcrossServerHotload() throws Exception {
+    UUID player = UUID.randomUUID();
+    languages.selectPlayer(player, "fr_FR").get(5, TimeUnit.SECONDS);
+    LocalizationSnapshot french = languages.snapshot(player);
+    Path file = directory.resolve("languages/fr_FR.toml");
+    Files.writeString(file, "not valid TOML = [");
+
+    assertThrows(Exception.class, () -> ReactLanguage.prepareHotload(file.toFile(), Files.readString(file), "en_US"));
+    ReactLanguage.PreparedReload english = ReactLanguage.prepareHotload(null, null, "en_US");
+    assertTrue(ReactLanguage.applyPreparedHotload(english));
+
+    assertSame(french, languages.snapshot(player));
+    assertEquals("fr_FR", languages.playerLocale(player).orElseThrow());
+    assertSame(english.snapshot(), ReactLanguage.snapshot());
+  }
+
+  @Test
+  void unrelatedMainConfigChangesKeepTheActiveLocaleWhenItsFileIsUnreadable() throws Exception {
+    Path file = directory.resolve("languages/fr_FR.toml");
+    ReactLanguage.PreparedReload initial = ReactLanguage.prepareHotload(null, null, "fr_FR");
+    assertTrue(ReactLanguage.applyPreparedHotload(initial));
+    Files.writeString(file, "not valid TOML = [");
+
+    ReactLanguage.PreparedReload unchanged = ReactLanguage.prepareHotload(null, null, "fr_FR");
+    assertSame(initial.snapshot(), unchanged.snapshot());
+    assertTrue(ReactLanguage.applyPreparedHotload(unchanged));
+    assertSame(initial.snapshot(), ReactLanguage.snapshot());
+    assertEquals("fr_FR", ReactLanguage.activeLocale());
+
+    ReactLanguage.PreparedReload english = ReactLanguage.prepareHotload(null, null, "en_US");
+    assertTrue(ReactLanguage.applyPreparedHotload(english));
+    assertThrows(IllegalArgumentException.class, () -> ReactLanguage.prepareHotload(null, null, "fr_FR"));
+    assertSame(english.snapshot(), ReactLanguage.snapshot());
+    assertEquals("en_US", ReactLanguage.activeLocale());
+  }
+
+  @Test
+  void unchangedMainConfigPreparationDoesNotUndoANewerLanguageEdit() throws Exception {
+    Path file = directory.resolve("languages/en_US.toml");
+    ReactLanguage.PreparedReload mainConfig = ReactLanguage.prepareHotload(null, null, "en_US");
+    String raw = "\"" + CommandMessages.VERSION.id() + "\" = \"Newer English {version}\"\n";
+    ReactLanguage.PreparedReload languageEdit = ReactLanguage.prepareHotload(file.toFile(), raw, "en_US");
+
+    assertTrue(ReactLanguage.applyPreparedHotload(languageEdit));
+    assertTrue(ReactLanguage.applyPreparedHotload(mainConfig));
+
+    assertSame(languageEdit.snapshot(), ReactLanguage.snapshot());
+    assertEquals("en_US", ReactLanguage.activeLocale());
+  }
+
+  @Test
+  void preparedLocaleFileEditDoesNotUndoANewerServerLanguageSelection() throws Exception {
+    Path file = directory.resolve("languages/en_US.toml");
+    String raw = "\"" + CommandMessages.VERSION.id() + "\" = \"Edited English {version}\"\n";
+    ReactLanguage.PreparedReload fileEdit = ReactLanguage.prepareHotload(file.toFile(), raw, "en_US");
+    ReactLanguage.PreparedReload french = ReactLanguage.prepareHotload(null, null, "fr_FR");
+
+    assertTrue(ReactLanguage.applyPreparedHotload(french));
+    assertTrue(ReactLanguage.applyPreparedHotload(fileEdit));
+
+    assertSame(french.snapshot(), ReactLanguage.snapshot());
+    assertEquals("fr_FR", ReactLanguage.activeLocale());
+  }
+
+  @Test
+  void hotloadsExplicitEnglishPreferenceAlongsideTheServerDefault() throws Exception {
+    UUID player = UUID.randomUUID();
+    languages.selectPlayer(player, "en_US").get(5, TimeUnit.SECONDS);
+    Path english = directory.resolve("languages/en_US.toml");
+    String raw = "\"" + CommandMessages.VERSION.id() + "\" = \"Edited English {version}\"\n";
+    ReactLanguage.PreparedReload prepared = ReactLanguage.prepareHotload(english.toFile(), raw, "en_US");
+
+    assertTrue(ReactLanguage.applyPreparedHotload(prepared));
+
+    assertSame(prepared.snapshot(), ReactLanguage.snapshot());
+    assertSame(prepared.snapshot(), languages.snapshot(player));
   }
 }

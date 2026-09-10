@@ -49,6 +49,7 @@ import art.arcane.volmlib.util.inventorygui.UIElement;
 import art.arcane.volmlib.util.inventorygui.UIWindow;
 import art.arcane.volmlib.util.inventorygui.WindowResolution;
 import art.arcane.volmlib.util.localization.MessageArgument;
+import com.google.gson.Gson;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -71,6 +72,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BooleanSupplier;
 
 public final class ReactConfigGUI {
+  private static final Gson JSON = new Gson();
   private static final String ROOT_MAIN = "main";
   private static final String ROOT_CORE = "core";
   private static final String ROOT_FEATURE = "feature";
@@ -1474,7 +1476,7 @@ public final class ReactConfigGUI {
 
       return new EditTarget(
           "main-config",
-          ReactConfiguration.get(),
+          JSON.fromJson(JSON.toJsonTree(ReactConfiguration.get()), ReactConfiguration.class),
           objectPath,
           React.instance.getDataFile("react.toml"),
           ReactConfigGUI::reloadMainConfig,
@@ -1757,7 +1759,12 @@ public final class ReactConfigGUI {
   }
 
   private static void refreshGlobalRuntimeSettings() {
+    React.instance.refreshRuntimeSettings(ReactConfiguration.get());
     J.s(() -> {
+      FeatureController featureController = React.controller(FeatureController.class);
+      if (featureController != null) {
+        featureController.reconcileRuntimeMode();
+      }
       EntityController entityController = React.controller(EntityController.class);
       if (entityController != null) {
         ReactConfiguration.get().getPriority().rebuildPriority();

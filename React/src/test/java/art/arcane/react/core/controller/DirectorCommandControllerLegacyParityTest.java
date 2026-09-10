@@ -34,8 +34,6 @@ public class DirectorCommandControllerLegacyParityTest {
 
         assertExactPath(root, "version");
         assertExactPath(root, "v");
-        assertExactPath(root, "reload");
-        assertExactPath(root, "rl");
         assertExactPath(root, "benchmark", "cpu");
         assertExactPath(root, "benchmark", "processor");
         assertExactPath(root, "bench", "processor");

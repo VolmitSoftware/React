@@ -19,6 +19,7 @@
 
 package art.arcane.react.content.directorcommand;
 
+import art.arcane.react.React;
 import art.arcane.react.model.ReactEntity;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.CommandMessages;
@@ -26,9 +27,11 @@ import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.director.DirectorExecutor;
 import art.arcane.volmlib.util.director.DirectorOrigin;
 import art.arcane.volmlib.util.director.annotations.Director;
+import art.arcane.volmlib.util.director.annotations.Param;
 import art.arcane.volmlib.util.format.Form;
 import art.arcane.volmlib.util.localization.MessageArgument;
 import org.bukkit.Location;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.potion.PotionEffect;
@@ -42,6 +45,14 @@ import org.bukkit.util.Vector;
     descriptionKey = "command.description.debug"
 )
 public class CommandDebug implements DirectorExecutor {
+  @Director(name = "dump", sync = true, description = "Create and optionally upload a diagnostic report", descriptionKey = "command.description.debugdump")
+  public void dump(
+      @Param(name = "upload", defaultValue = "true", description = "Upload the report to mclo.gs", descriptionKey = "command.parameter.debugdump_upload") boolean upload,
+      @Param(name = "sender", contextual = true) CommandSender sender
+  ) {
+    React.instance.debugDump().request(sender, upload);
+  }
+
   @Director(
       name = "entity-data",
       aliases = {"ed"},
