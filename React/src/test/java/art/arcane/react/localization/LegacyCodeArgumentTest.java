@@ -1,6 +1,5 @@
 package art.arcane.react.localization;
 
-import art.arcane.react.localization.catalog.CommandMessages;
 import art.arcane.react.localization.catalog.EnvironmentMessages;
 import art.arcane.volmlib.util.director.runtime.DirectorRuntimeMessages;
 import art.arcane.volmlib.util.localization.MessageArgument;
@@ -22,14 +21,14 @@ public class LegacyCodeArgumentTest {
 
   @ParameterizedTest(name = "{0} -> {1}")
   @CsvSource({
-      "§l§n1.2.3§r, React 1.2.3",
-      "1.2.3§, React 1.2.3",
-      "1.2.3§ build, React 1.2.3 build",
-      "§c<red>unsafe</red>, React <red>unsafe</red>"
+      "§l§n1.2.3§r, React version: 1.2.3",
+      "1.2.3§, React version: 1.2.3",
+      "1.2.3§ build, React version: 1.2.3 build",
+      "§c<red>unsafe</red>, React version: <red>unsafe</red>"
   })
   public void legacyCodesAreStrippedFromEveryUntrustedArgument(String version, String expected) {
     String rendered = ReactLanguage.plain(
-        CommandMessages.VERSION,
+        EnvironmentMessages.REACT_VERSION,
         MessageArgument.untrusted("version", version)
     );
 

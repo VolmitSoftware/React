@@ -1,6 +1,5 @@
 package art.arcane.react.localization;
 
-import art.arcane.react.localization.catalog.CommandMessages;
 import art.arcane.react.localization.catalog.EnvironmentMessages;
 import art.arcane.react.localization.catalog.RendererMessages;
 import art.arcane.volmlib.util.config.TomlCodec;
@@ -55,7 +54,7 @@ class ReactLanguageColorTest {
     install(code + "React {version}");
 
     assertEquals(TextColor.color(0x12abef), renderVersion("2.0").color());
-    assertEquals("React 2.0", ReactLanguage.plain(CommandMessages.VERSION,
+    assertEquals("React 2.0", ReactLanguage.plain(EnvironmentMessages.REACT_VERSION,
         MessageArgument.untrusted("version", "2.0")));
   }
 
@@ -168,11 +167,11 @@ class ReactLanguageColorTest {
 
   private static LocaleOverlay parse(String template) throws Exception {
     JsonObject messages = new JsonObject();
-    messages.addProperty(CommandMessages.VERSION.id(), template);
+    messages.addProperty(EnvironmentMessages.REACT_VERSION.id(), template);
     return ReactLanguage.parseOverlay("color-test", "de_DE", TomlCodec.toToml(messages));
   }
 
   private static Component renderVersion(String version) {
-    return ReactLanguage.component(CommandMessages.VERSION, MessageArgument.untrusted("version", version));
+    return ReactLanguage.component(EnvironmentMessages.REACT_VERSION, MessageArgument.untrusted("version", version));
   }
 }

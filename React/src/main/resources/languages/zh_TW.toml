@@ -273,7 +273,6 @@ chunk_not_sampled = "&c 這個區塊尚未測量;在第二個時刻再檢查.&r"
 chunk_sample = "&b{sampler}&r: {value}"
 config_permission = "&c您沒有開啟配置編輯器的許可權 。&r"
 no_chunks_sampled = "&c尚未測量區塊;在第二秒內再檢查.&r"
-version = "&bReact {version}&r"
 
 [command.runtime.action]
 audit_entry = "&7- &f{id}&7 [{state}] {summary}&r"

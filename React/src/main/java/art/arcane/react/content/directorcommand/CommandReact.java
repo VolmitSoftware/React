@@ -130,14 +130,11 @@ public class CommandReact implements DirectorExecutor {
   @Director(
       name = "version",
       aliases = {"v"},
+      hidden = true,
       description = "Show the React version",
       descriptionKey = "command.description.version")
   public void version() {
-    ReactLanguage.send(
-        sender(),
-        CommandMessages.VERSION,
-        MessageArgument.untrusted("version", React.instance.getDescription().getVersion())
-    );
+    debug.version();
   }
 
   private void toggleMonitoringOnly(CommandSender commandSender) {

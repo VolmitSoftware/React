@@ -59,6 +59,7 @@ import art.arcane.volmlib.util.hud.HudActionBar;
 import art.arcane.volmlib.util.hud.HudTitleService;
 import art.arcane.volmlib.util.io.JarScanner;
 import art.arcane.volmlib.util.plugin.ComponentLog;
+import art.arcane.volmlib.util.plugin.ComponentText;
 import io.github.slimjar.app.builder.SpigotApplicationBuilder;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
@@ -477,7 +478,8 @@ public class React extends VolmitPlugin implements ReloadAware {
         () -> true,
         this::captureDebugState,
         new BukkitDebugDump.Presentation(
-            "/react debug dump", "/react", DirectorMiniMenu.Theme.reactBlue(), ReactLanguage.directorResolver())
+            "/react debug dump", "/react", DirectorMiniMenu.Theme.reactBlue(),
+            (key, arguments) -> ComponentText.literal(ReactLanguage.directorResolver().resolve(key, arguments)))
     ));
     startupTasks = new CopyOnWriteArrayList<>();
     prejobs = new CopyOnWriteArrayList<>();

@@ -3,7 +3,7 @@ package art.arcane.react.core.controller;
 import art.arcane.react.React;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.ReactMessages;
-import art.arcane.react.localization.catalog.CommandMessages;
+import art.arcane.react.localization.catalog.EnvironmentMessages;
 import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.util.common.scheduling.Ticker;
 import art.arcane.react.util.project.config.ConfigFileSupport;
@@ -143,7 +143,7 @@ class LanguageInstallHotloadTest {
     ReactLanguage.PreparedReload prepared = ReactLanguage.prepareHotload(null, null, "en_US");
 
     Path english = languageFile("en_US");
-    assertEquals(CommandMessages.VERSION.englishValue(), prepared.snapshot().value(CommandMessages.VERSION));
+    assertEquals(EnvironmentMessages.REACT_VERSION.englishValue(), prepared.snapshot().value(EnvironmentMessages.REACT_VERSION));
     assertTrue(Files.isRegularFile(english));
     assertTrue(prepareChanges(english).isEmpty(),
         "Creating the startup English reference must not look like a manual catalog edit");
@@ -218,7 +218,7 @@ class LanguageInstallHotloadTest {
 
     LocalizationSnapshot loaded = ReactLanguage.editorOptions().loader().load("de_DE");
 
-    assertEquals(new TextValue("Meine React-Version {version}"), loaded.value(CommandMessages.VERSION));
+    assertEquals(new TextValue("Meine React-Version {version}"), loaded.value(EnvironmentMessages.REACT_VERSION));
     assertManualVersionChange(prepareChanges(german), german, edited);
   }
 
@@ -230,10 +230,10 @@ class LanguageInstallHotloadTest {
     PluginLanguageEditor.Document original = editor.load("de_DE").get(5, TimeUnit.SECONDS);
     TextValue updated = new TextValue("Bearbeitete React-Version {version}");
 
-    editor.save(new PluginLanguageEditor.Edit("de_DE", CommandMessages.VERSION.id(),
-        original.snapshot().value(CommandMessages.VERSION), updated)).get(5, TimeUnit.SECONDS);
+    editor.save(new PluginLanguageEditor.Edit("de_DE", EnvironmentMessages.REACT_VERSION.id(),
+        original.snapshot().value(EnvironmentMessages.REACT_VERSION), updated)).get(5, TimeUnit.SECONDS);
 
-    assertEquals(updated, editor.load("de_DE").get(5, TimeUnit.SECONDS).snapshot().value(CommandMessages.VERSION));
+    assertEquals(updated, editor.load("de_DE").get(5, TimeUnit.SECONDS).snapshot().value(EnvironmentMessages.REACT_VERSION));
     assertTrue(prepareChanges(german).isEmpty(),
         "The editor already confirms its own save; watcher events must not repeat the template diff");
   }
@@ -243,7 +243,7 @@ class LanguageInstallHotloadTest {
   }
 
   private String editVersion(Path file, String value) throws Exception {
-    String edited = TomlLanguageEditor.upsert(Files.readString(file), CommandMessages.VERSION.id(),
+    String edited = TomlLanguageEditor.upsert(Files.readString(file), EnvironmentMessages.REACT_VERSION.id(),
         new TextValue(value)).content();
     Files.writeString(file, edited);
     return edited;
@@ -282,7 +282,7 @@ class LanguageInstallHotloadTest {
     assertEquals(1, notifications.size());
     String notification = PLAIN.serialize((Component) notifications.getFirst());
     assertTrue(notification.replace('\\', '/').contains("languages/de_DE.toml"));
-    assertTrue(notification.contains(CommandMessages.VERSION.id()));
+    assertTrue(notification.contains(EnvironmentMessages.REACT_VERSION.id()));
     assertFalse(notification.contains("<missing>"));
   }
 

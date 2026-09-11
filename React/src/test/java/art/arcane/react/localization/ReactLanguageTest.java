@@ -1,6 +1,7 @@
 package art.arcane.react.localization;
 
 import art.arcane.react.localization.catalog.CommandMessages;
+import art.arcane.react.localization.catalog.EnvironmentMessages;
 import art.arcane.react.localization.catalog.MapMessages;
 import art.arcane.react.localization.catalog.RendererMessages;
 import art.arcane.react.localization.catalog.RuntimeMessages;
@@ -95,11 +96,11 @@ public class ReactLanguageTest {
   @Test
   public void codeOwnedEnglishRendersWithoutExternalFiles() {
     String rendered = ReactLanguage.plain(
-        CommandMessages.VERSION,
+        EnvironmentMessages.REACT_VERSION,
         MessageArgument.untrusted("version", "1.2.3")
     );
 
-    Assertions.assertEquals("React 1.2.3", rendered);
+    Assertions.assertEquals("React version: 1.2.3", rendered);
   }
 
   @Test
@@ -191,12 +192,12 @@ public class ReactLanguageTest {
 
   @Test
   public void runtimeLocaleRetainsValidEntriesAndFallsBackIndividually() {
-    String raw = "\"" + CommandMessages.VERSION.id() + "\" = \"Wersja {version}\"\n"
+    String raw = "\"" + EnvironmentMessages.REACT_VERSION.id() + "\" = \"Wersja {version}\"\n"
         + "\"runtime.prefix\" = \"<broken>{invalid}\"\n";
     LocaleOverlay overlay = ReactLanguage.parseRuntimeOverlay("partial.toml", "pl_PL", raw);
     LocalizationSnapshot snapshot = LocalizationSnapshot.create(new LocalizationCandidate(
         ReactMessages.catalog(), List.of(overlay), PluralSelector.oneOther()));
-    Assertions.assertEquals(new TextValue("Wersja {version}"), snapshot.value(CommandMessages.VERSION));
+    Assertions.assertEquals(new TextValue("Wersja {version}"), snapshot.value(EnvironmentMessages.REACT_VERSION));
     Assertions.assertEquals(RuntimeMessages.PREFIX.englishValue(), snapshot.value(RuntimeMessages.PREFIX));
     Assertions.assertEquals(CommandMessages.DEBUG_DUMP_DESCRIPTION.englishValue(), snapshot.value(CommandMessages.DEBUG_DUMP_DESCRIPTION));
   }
@@ -204,7 +205,7 @@ public class ReactLanguageTest {
   @Test
   public void validOverlayReplacesEnglishTemplate() {
     LocaleOverlay overlay = LocaleOverlay.builder("test", "de_DE")
-        .text(CommandMessages.VERSION.id(), "<aqua>React-Version {version}</aqua>")
+        .text(EnvironmentMessages.REACT_VERSION.id(), "<aqua>React-Version {version}</aqua>")
         .build();
     LocalizationCandidate candidate = new LocalizationCandidate(
         ReactMessages.catalog(),
@@ -217,7 +218,7 @@ public class ReactLanguageTest {
     Assertions.assertTrue(result.applied());
     Assertions.assertEquals(
         "React-Version 2.0",
-        ReactLanguage.plain(CommandMessages.VERSION, MessageArgument.untrusted("version", "2.0"))
+        ReactLanguage.plain(EnvironmentMessages.REACT_VERSION, MessageArgument.untrusted("version", "2.0"))
     );
   }
 
@@ -253,17 +254,17 @@ public class ReactLanguageTest {
   @Test
   public void untrustedArgumentsCannotInjectMiniMessageFormatting() {
     String rendered = ReactLanguage.plain(
-        CommandMessages.VERSION,
+        EnvironmentMessages.REACT_VERSION,
         MessageArgument.untrusted("version", "<red>unsafe</red>")
     );
 
-    Assertions.assertEquals("React <red>unsafe</red>", rendered);
+    Assertions.assertEquals("React version: <red>unsafe</red>", rendered);
   }
 
   @Test
   public void rejectedOverlayRetainsLastGoodSnapshot() {
     LocaleOverlay goodOverlay = LocaleOverlay.builder("good", "fr_FR")
-        .text(CommandMessages.VERSION.id(), "<aqua>Version React {version}</aqua>")
+        .text(EnvironmentMessages.REACT_VERSION.id(), "<aqua>Version React {version}</aqua>")
         .build();
     LocalizationCandidate goodCandidate = new LocalizationCandidate(
         ReactMessages.catalog(),
@@ -273,7 +274,7 @@ public class ReactLanguageTest {
     Assertions.assertTrue(ReactLanguage.reloadCandidate(goodCandidate).applied());
 
     LocaleOverlay invalidOverlay = LocaleOverlay.builder("invalid", "fr_FR")
-        .text(CommandMessages.VERSION.id(), "<aqua>Version React</aqua>")
+        .text(EnvironmentMessages.REACT_VERSION.id(), "<aqua>Version React</aqua>")
         .build();
     LocalizationCandidate invalidCandidate = new LocalizationCandidate(
         ReactMessages.catalog(),
@@ -286,14 +287,14 @@ public class ReactLanguageTest {
     Assertions.assertFalse(rejected.applied());
     Assertions.assertEquals(
         "Version React 3.0",
-        ReactLanguage.plain(CommandMessages.VERSION, MessageArgument.untrusted("version", "3.0"))
+        ReactLanguage.plain(EnvironmentMessages.REACT_VERSION, MessageArgument.untrusted("version", "3.0"))
     );
   }
 
   @Test
   public void preparedReloadInstallsTheExactValidatedSnapshot() {
     LocaleOverlay overlay = LocaleOverlay.builder("prepared", "fr_FR")
-        .text(CommandMessages.VERSION.id(), "<aqua>Version préparée {version}</aqua>")
+        .text(EnvironmentMessages.REACT_VERSION.id(), "<aqua>Version préparée {version}</aqua>")
         .build();
     LocalizationSnapshot prepared = LocalizationSnapshot.create(new LocalizationCandidate(
         ReactMessages.catalog(),

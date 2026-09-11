@@ -273,7 +273,6 @@ chunk_not_sampled = "&c이 청크는 아직 측정되지 않았습니다. 2초 �
 chunk_sample = "&b{sampler}&r: {value}"
 config_permission = "&c구성 편집기를 열 권한이 없습니다.&r"
 no_chunks_sampled = "&c 아직 청크 측정되지 않았습니다. 2초 후에 다시 확인합니다.&r"
-version = "&bReact {version}&r"
 
 [command.runtime.action]
 audit_entry = "&7- &f{id}&7 [{state}] {summary}&r"

@@ -273,7 +273,6 @@ chunk_not_sampled = "&cDit chunk is nog niet gemeten; controleer opnieuw in een 
 chunk_sample = "&b{sampler}&r: {value}"
 config_permission = "&cU heeft geen rechten om de configuratie-editor te openen.&r"
 no_chunks_sampled = "&cGeen chunks is nog gemeten; controleer opnieuw in een seconde.&r"
-version = "&bReact {version}&r"
 
 [command.runtime.action]
 audit_entry = "&7- &f{id}&7 [{state}] {summary}&r"

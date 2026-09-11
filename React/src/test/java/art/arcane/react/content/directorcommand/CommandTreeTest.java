@@ -1,6 +1,7 @@
 package art.arcane.react.content.directorcommand;
 
 import art.arcane.volmlib.util.director.compat.DirectorEngineFactory;
+import art.arcane.volmlib.util.director.help.DirectorMiniMenu;
 import art.arcane.volmlib.util.director.runtime.DirectorRuntimeEngine;
 import art.arcane.volmlib.util.director.runtime.DirectorRuntimeNode;
 import org.junit.jupiter.api.Assertions;
@@ -11,14 +12,16 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.stream.Stream;
+import java.util.List;
 
 class CommandTreeTest {
 
   private static DirectorRuntimeNode root;
+  private static DirectorRuntimeEngine engine;
 
   @BeforeAll
   static void buildReactRoot() {
-    DirectorRuntimeEngine engine = DirectorEngineFactory.create(new CommandReact());
+    engine = DirectorEngineFactory.create(new CommandReact());
     root = engine.getRoot();
   }
 
@@ -38,6 +41,17 @@ class CommandTreeTest {
   @MethodSource("commandPaths")
   void reactDirectorTreeResolvesEveryDocumentedCommandPath(String[] path) {
     assertExactPath(root, path);
+  }
+
+  @Test
+  void versionAppearsOnlyInDebugHelpAndBothRootSpellingsResolve() {
+    DirectorMiniMenu.DirectorHelpPage help = DirectorMiniMenu.resolveHelp(engine, List.of()).orElseThrow();
+    DirectorMiniMenu.DirectorHelpPage debug = DirectorMiniMenu.resolveHelp(engine, List.of("debug")).orElseThrow();
+    Assertions.assertFalse(help.entries().stream().anyMatch(node -> node.getDescriptor().getName().equals("version")));
+    Assertions.assertTrue(debug.entries().stream().anyMatch(node -> node.getDescriptor().getName().equals("version")));
+    assertExactPath(root, "version");
+    assertExactPath(root, "v");
+    assertExactPath(root, "debug", "version");
   }
 
   @Test

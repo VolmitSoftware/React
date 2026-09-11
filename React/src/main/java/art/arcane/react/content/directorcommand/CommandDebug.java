@@ -28,6 +28,8 @@ import art.arcane.react.util.director.DirectorExecutor;
 import art.arcane.volmlib.util.director.DirectorOrigin;
 import art.arcane.volmlib.util.director.annotations.Director;
 import art.arcane.volmlib.util.director.annotations.Param;
+import art.arcane.volmlib.util.director.help.DirectorMiniMenu;
+import art.arcane.volmlib.util.plugin.ComponentMessenger;
 import art.arcane.volmlib.util.format.Form;
 import art.arcane.volmlib.util.localization.MessageArgument;
 import org.bukkit.Location;
@@ -45,6 +47,12 @@ import org.bukkit.util.Vector;
     descriptionKey = "command.description.debug"
 )
 public class CommandDebug implements DirectorExecutor {
+  @Director(name = "version", description = "Show the React version", descriptionKey = "command.description.version")
+  public void version() {
+    ComponentMessenger.sendMarkup(sender().getS(), DirectorMiniMenu.version("React",
+        React.instance.getDescription().getVersion(), DirectorMiniMenu.Theme.reactBlue()));
+  }
+
   @Director(name = "dump", sync = true, description = "Create and optionally upload a diagnostic report", descriptionKey = "command.description.debugdump")
   public void dump(
       @Param(name = "upload", defaultValue = "true", description = "Upload the report to mclo.gs", descriptionKey = "command.parameter.debugdump_upload") boolean upload,

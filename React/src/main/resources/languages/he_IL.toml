@@ -273,7 +273,6 @@ chunk_not_sampled = "&cצ'אנק זה לא למדוד עדיין; לבדוק ש�
 chunk_sample = "&b{sampler}&r: {value}"
 config_permission = "&cאין לך רשות לפתוח את עורך ה-config.&r"
 no_chunks_sampled = "&cאין צ'אנקים כבר מודד; לבדוק שוב בשנייה.&r"
-version = "&bReact {version}&r"
 
 [command.runtime.action]
 audit_entry = "&7- &f{id}&7 [{state}] {summary}&r"

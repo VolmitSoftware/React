@@ -82,7 +82,6 @@ public final class CommandMessages {
   public static final TextKey DISTANCE_SET = TextKey.of("command.runtime.distance.set", "&aSet &f{scope} {target}&a &b{type}&a distance to &f{distance}&a.&r");
   public static final TextKey DISTANCE_SCHEDULE_FAILED = TextKey.of("command.runtime.distance.schedule_failed", "&cThe distance change could not be scheduled on the required server thread.&r");
   public static final TextKey DISTANCE_FAILED = TextKey.of("command.runtime.distance.failed", "&cFailed to set &f{scope} {target}&c &b{type}&c distance. Check the console for the full error.&r");
-  public static final TextKey VERSION = TextKey.of("command.runtime.version", "&bReact {version}&r");
   public static final TextKey MONITORING_ONLY_ENABLED = TextKey.of("command.runtime.monitoring_only.enabled", "&aMonitoring-only mode enabled.&r &7Features and tweaks are paused; monitoring, statistics, maps, manual actions, and commands remain available.&r");
   public static final TextKey MONITORING_ONLY_DISABLED = TextKey.of("command.runtime.monitoring_only.disabled", "&aMonitoring-only mode disabled.&r &7Configured features and tweaks are active again.&r");
   public static final TextKey MONITORING_ONLY_UNAVAILABLE = TextKey.of("command.runtime.monitoring_only.unavailable", "&cMonitoring-only mode is unavailable because the feature controller is not ready.&r");
@@ -235,7 +234,6 @@ public final class CommandMessages {
     builder.add(DISTANCE_SET);
     builder.add(DISTANCE_SCHEDULE_FAILED);
     builder.add(DISTANCE_FAILED);
-    builder.add(VERSION);
     builder.add(MONITORING_ONLY_ENABLED);
     builder.add(MONITORING_ONLY_DISABLED);
     builder.add(MONITORING_ONLY_UNAVAILABLE);

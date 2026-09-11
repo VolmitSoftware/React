@@ -2,6 +2,7 @@ package art.arcane.react.localization;
 
 import art.arcane.react.React;
 import art.arcane.react.localization.catalog.CommandMessages;
+import art.arcane.react.localization.catalog.EnvironmentMessages;
 import art.arcane.volmlib.util.localization.LocalizationCandidate;
 import art.arcane.volmlib.util.localization.LocaleOverlay;
 import art.arcane.volmlib.util.localization.LocalizationSnapshot;
@@ -120,8 +121,8 @@ class ReactLanguageEditorTest {
     String active = ReactLanguage.activeLocale();
     PluginLanguageEditor.Document original = editor.load("fr_FR").get(5, TimeUnit.SECONDS);
     TextValue value = new TextValue("React version {version}");
-    editor.save(new PluginLanguageEditor.Edit("fr_FR", CommandMessages.VERSION.id(),
-        original.snapshot().value(CommandMessages.VERSION), value)).get(5, TimeUnit.SECONDS);
+    editor.save(new PluginLanguageEditor.Edit("fr_FR", EnvironmentMessages.REACT_VERSION.id(),
+        original.snapshot().value(EnvironmentMessages.REACT_VERSION), value)).get(5, TimeUnit.SECONDS);
 
     String saved = Files.readString(directory.resolve("languages/fr_FR.toml"));
     assertTrue(saved.contains("React version {version}"));
@@ -129,8 +130,8 @@ class ReactLanguageEditorTest {
         .takeWhile(line -> line.startsWith("#")).collect(Collectors.joining("\n"));
     String savedHeader = saved.lines().takeWhile(line -> line.startsWith("#")).collect(Collectors.joining("\n"));
     assertEquals(originalHeader, savedHeader);
-    assertEquals(value, ReactLanguage.editorOptions().loader().load("fr_FR").value(CommandMessages.VERSION));
-    assertEquals(value, languages.snapshot(player).value(CommandMessages.VERSION));
+    assertEquals(value, ReactLanguage.editorOptions().loader().load("fr_FR").value(EnvironmentMessages.REACT_VERSION));
+    assertEquals(value, languages.snapshot(player).value(EnvironmentMessages.REACT_VERSION));
     assertEquals("fr_FR", languages.playerLocale(player).orElseThrow());
     assertEquals("en_US", languages.defaultLocale());
     assertEquals(active, ReactLanguage.activeLocale());
@@ -140,15 +141,15 @@ class ReactLanguageEditorTest {
   @Test
   void invalidMessageLeavesTheLocaleFileIntact() throws Exception {
     PluginLanguageEditor.Document original = editor.load("fr_FR").get(5, TimeUnit.SECONDS);
-    editor.save(new PluginLanguageEditor.Edit("fr_FR", CommandMessages.VERSION.id(),
-        original.snapshot().value(CommandMessages.VERSION), new TextValue("React version {version}")))
+    editor.save(new PluginLanguageEditor.Edit("fr_FR", EnvironmentMessages.REACT_VERSION.id(),
+        original.snapshot().value(EnvironmentMessages.REACT_VERSION), new TextValue("React version {version}")))
         .get(5, TimeUnit.SECONDS);
     Path file = directory.resolve("languages/fr_FR.toml");
     byte[] before = Files.readAllBytes(file);
     PluginLanguageEditor.Document saved = editor.load("fr_FR").get(5, TimeUnit.SECONDS);
 
     assertThrows(ExecutionException.class, () -> editor.save(new PluginLanguageEditor.Edit("fr_FR",
-        CommandMessages.VERSION.id(), saved.snapshot().value(CommandMessages.VERSION),
+        EnvironmentMessages.REACT_VERSION.id(), saved.snapshot().value(EnvironmentMessages.REACT_VERSION),
         new TextValue("Missing placeholder"))).get(5, TimeUnit.SECONDS));
     assertArrayEquals(before, Files.readAllBytes(file));
   }
@@ -158,9 +159,9 @@ class ReactLanguageEditorTest {
     Files.writeString(directory.resolve("languages/fr_FR.toml"), "");
     PluginLanguageEditor.Document original = editor.load("fr_FR").get(5, TimeUnit.SECONDS);
     TextValue value = new TextValue("React version {version}");
-    PluginLanguageEditor.Document saved = editor.save(new PluginLanguageEditor.Edit("fr_FR", CommandMessages.VERSION.id(),
-        original.snapshot().value(CommandMessages.VERSION), value)).get(5, TimeUnit.SECONDS);
-    assertEquals(value, saved.snapshot().value(CommandMessages.VERSION));
+    PluginLanguageEditor.Document saved = editor.save(new PluginLanguageEditor.Edit("fr_FR", EnvironmentMessages.REACT_VERSION.id(),
+        original.snapshot().value(EnvironmentMessages.REACT_VERSION), value)).get(5, TimeUnit.SECONDS);
+    assertEquals(value, saved.snapshot().value(EnvironmentMessages.REACT_VERSION));
     assertEquals("en_US", languages.defaultLocale());
   }
 
@@ -180,13 +181,13 @@ class ReactLanguageEditorTest {
   @Test
   void selectsPartialPolishForPlayersAndServerWithoutRewritingIt() throws Exception {
     Path polish = directory.resolve("languages/pl_PL.toml");
-    String raw = "# Server wording\n\"" + CommandMessages.VERSION.id() + "\" = \"Wersja React {version}\"\n";
+    String raw = "# Server wording\n\"" + EnvironmentMessages.REACT_VERSION.id() + "\" = \"Wersja React {version}\"\n";
     Files.writeString(polish, raw);
     UUID player = UUID.randomUUID();
     languages.selectPlayer(player, "pl_PL").get(5, TimeUnit.SECONDS);
 
     assertEquals("pl_PL", languages.playerLocale(player).orElseThrow());
-    assertEquals(new TextValue("Wersja React {version}"), languages.snapshot(player).value(CommandMessages.VERSION));
+    assertEquals(new TextValue("Wersja React {version}"), languages.snapshot(player).value(EnvironmentMessages.REACT_VERSION));
     assertEquals(CommandMessages.MONITOR_DESCRIPTION.englishValue(), languages.snapshot(player).value(CommandMessages.MONITOR_DESCRIPTION));
 
     AtomicReference<String> serverLocale = new AtomicReference<>("en_US");
@@ -200,7 +201,7 @@ class ReactLanguageEditorTest {
       server.selectDefault("pl_PL").get(5, TimeUnit.SECONDS);
 
       assertEquals("pl_PL", server.defaultLocale());
-      assertEquals(new TextValue("Wersja React {version}"), server.snapshot().value(CommandMessages.VERSION));
+      assertEquals(new TextValue("Wersja React {version}"), server.snapshot().value(EnvironmentMessages.REACT_VERSION));
       assertEquals(CommandMessages.MONITOR_DESCRIPTION.englishValue(), server.snapshot().value(CommandMessages.MONITOR_DESCRIPTION));
     }
     assertEquals(raw, Files.readString(polish));
@@ -209,24 +210,24 @@ class ReactLanguageEditorTest {
   @Test
   void missingRequiredPlaceholderFallsBackWithoutRewritingTheLocale() throws Exception {
     Path polish = directory.resolve("languages/pl_PL.toml");
-    String raw = "\"" + CommandMessages.VERSION.id() + "\" = \"Wersja React\"\n";
+    String raw = "\"" + EnvironmentMessages.REACT_VERSION.id() + "\" = \"Wersja React\"\n";
     Files.writeString(polish, raw);
 
     LocalizationSnapshot snapshot = ReactLanguage.editorOptions().loader().load("pl_PL");
-    assertEquals(CommandMessages.VERSION.englishValue(), snapshot.value(CommandMessages.VERSION));
+    assertEquals(EnvironmentMessages.REACT_VERSION.englishValue(), snapshot.value(EnvironmentMessages.REACT_VERSION));
     assertEquals(raw, Files.readString(polish));
   }
 
   @Test
   void countsOnlyTheMessageMissingFromTheEditedCatalog() throws Exception {
     Path french = directory.resolve("languages/fr_FR.toml");
-    String raw = TomlLanguageEditor.remove(Files.readString(french), CommandMessages.VERSION.id()).content();
+    String raw = TomlLanguageEditor.remove(Files.readString(french), EnvironmentMessages.REACT_VERSION.id()).content();
     Files.writeString(french, raw);
 
     LocalizationSnapshot snapshot = ReactLanguage.editorOptions().loader().load("fr_FR");
 
     assertEquals(1, ReactLanguage.fallbackEntryCount(snapshot.validation()));
-    assertEquals(CommandMessages.VERSION.englishValue(), snapshot.value(CommandMessages.VERSION));
+    assertEquals(EnvironmentMessages.REACT_VERSION.englishValue(), snapshot.value(EnvironmentMessages.REACT_VERSION));
     assertEquals(raw, Files.readString(french));
   }
 
@@ -237,7 +238,7 @@ class ReactLanguageEditorTest {
 
     ReactLanguage.PreparedReload prepared = ReactLanguage.prepareHotload(null, null, "en_US");
 
-    assertEquals(CommandMessages.VERSION.englishValue(), prepared.snapshot().value(CommandMessages.VERSION));
+    assertEquals(EnvironmentMessages.REACT_VERSION.englishValue(), prepared.snapshot().value(EnvironmentMessages.REACT_VERSION));
     assertTrue(Files.isRegularFile(directory.resolve("languages/en_US.toml")));
   }
 
@@ -250,7 +251,7 @@ class ReactLanguageEditorTest {
     LocaleOverlay overlay = ReactLanguage.parseOverlay(english.toString(), "en_US", raw);
     assertTrue(raw.startsWith("# React — en_US"));
     assertEquals(ReactMessages.catalog().byId().keySet(), overlay.values().keySet());
-    assertEquals(CommandMessages.VERSION.englishValue(), overlay.value(CommandMessages.VERSION.id()));
+    assertEquals(EnvironmentMessages.REACT_VERSION.englishValue(), overlay.value(EnvironmentMessages.REACT_VERSION.id()));
     try (Stream<Path> children = Files.list(directory.resolve("languages"))) {
       assertEquals(Set.of("en_US.toml", "fr_FR.toml"),
           children.map(path -> path.getFileName().toString()).collect(Collectors.toSet()));
@@ -260,18 +261,18 @@ class ReactLanguageEditorTest {
   @Test
   void keepsEnglishEditsAcrossPreparationAndSupportsDirectEditing() throws Exception {
     Path english = directory.resolve("languages/en_US.toml");
-    String raw = "# Server wording\n\"" + CommandMessages.VERSION.id() + "\" = \"Custom React {version}\"\n";
+    String raw = "# Server wording\n\"" + EnvironmentMessages.REACT_VERSION.id() + "\" = \"Custom React {version}\"\n";
     Files.writeString(english, raw);
 
     PluginLanguageEditor.Document original = editor.load("en_US").get(5, TimeUnit.SECONDS);
     assertEquals(raw, Files.readString(english));
-    assertEquals(new TextValue("Custom React {version}"), original.snapshot().value(CommandMessages.VERSION));
+    assertEquals(new TextValue("Custom React {version}"), original.snapshot().value(EnvironmentMessages.REACT_VERSION));
     TextValue edited = new TextValue("Server React {version}");
-    editor.save(new PluginLanguageEditor.Edit("en_US", CommandMessages.VERSION.id(),
-        original.snapshot().value(CommandMessages.VERSION), edited)).get(5, TimeUnit.SECONDS);
+    editor.save(new PluginLanguageEditor.Edit("en_US", EnvironmentMessages.REACT_VERSION.id(),
+        original.snapshot().value(EnvironmentMessages.REACT_VERSION), edited)).get(5, TimeUnit.SECONDS);
 
     byte[] saved = Files.readAllBytes(english);
-    assertEquals(edited, editor.load("en_US").get(5, TimeUnit.SECONDS).snapshot().value(CommandMessages.VERSION));
+    assertEquals(edited, editor.load("en_US").get(5, TimeUnit.SECONDS).snapshot().value(EnvironmentMessages.REACT_VERSION));
     assertArrayEquals(saved, Files.readAllBytes(english));
     assertTrue(Files.readString(english).startsWith("# Server wording"));
   }
@@ -279,11 +280,11 @@ class ReactLanguageEditorTest {
   @Test
   void preparesHotloadFromDirectLanguageFileWithoutReplacingDisk() throws Exception {
     Path french = directory.resolve("languages/fr_FR.toml");
-    String raw = "\"" + CommandMessages.VERSION.id() + "\" = \"Hotloaded React {version}\"\n";
+    String raw = "\"" + EnvironmentMessages.REACT_VERSION.id() + "\" = \"Hotloaded React {version}\"\n";
     ReactLanguage.PreparedReload prepared = ReactLanguage.prepareHotload(french.toFile(), raw, "fr_FR");
 
     assertFalse(prepared.serverDefault());
-    assertEquals(new TextValue("Hotloaded React {version}"), prepared.snapshot().value(CommandMessages.VERSION));
+    assertEquals(new TextValue("Hotloaded React {version}"), prepared.snapshot().value(EnvironmentMessages.REACT_VERSION));
     assertArrayEquals(frenchLocale, Files.readAllBytes(french));
     assertTrue(ReactLanguage.isLanguageFile(french.toFile()));
     assertFalse(ReactLanguage.isLanguageFile(directory.resolve("languages/nested/fr_FR.toml").toFile()));
@@ -296,9 +297,9 @@ class ReactLanguageEditorTest {
     languages.selectPlayer(player, "fr_FR").get(5, TimeUnit.SECONDS);
     LocalizationSnapshot server = ReactLanguage.snapshot();
     Path french = directory.resolve("languages/fr_FR.toml");
-    String captured = "\"" + CommandMessages.VERSION.id() + "\" = \"Captured React {version}\"\n";
+    String captured = "\"" + EnvironmentMessages.REACT_VERSION.id() + "\" = \"Captured React {version}\"\n";
     ReactLanguage.PreparedReload prepared = ReactLanguage.prepareHotload(french.toFile(), captured, "en_US");
-    Files.writeString(french, "\"" + CommandMessages.VERSION.id() + "\" = \"Newer React {version}\"\n");
+    Files.writeString(french, "\"" + EnvironmentMessages.REACT_VERSION.id() + "\" = \"Newer React {version}\"\n");
 
     assertFalse(prepared.serverDefault());
     assertTrue(ReactLanguage.applyPreparedHotload(prepared));
@@ -349,7 +350,7 @@ class ReactLanguageEditorTest {
   void unchangedMainConfigPreparationDoesNotUndoANewerLanguageEdit() throws Exception {
     Path file = directory.resolve("languages/en_US.toml");
     ReactLanguage.PreparedReload mainConfig = ReactLanguage.prepareHotload(null, null, "en_US");
-    String raw = "\"" + CommandMessages.VERSION.id() + "\" = \"Newer English {version}\"\n";
+    String raw = "\"" + EnvironmentMessages.REACT_VERSION.id() + "\" = \"Newer English {version}\"\n";
     ReactLanguage.PreparedReload languageEdit = ReactLanguage.prepareHotload(file.toFile(), raw, "en_US");
 
     assertTrue(ReactLanguage.applyPreparedHotload(languageEdit));
@@ -362,7 +363,7 @@ class ReactLanguageEditorTest {
   @Test
   void preparedLocaleFileEditDoesNotUndoANewerServerLanguageSelection() throws Exception {
     Path file = directory.resolve("languages/en_US.toml");
-    String raw = "\"" + CommandMessages.VERSION.id() + "\" = \"Edited English {version}\"\n";
+    String raw = "\"" + EnvironmentMessages.REACT_VERSION.id() + "\" = \"Edited English {version}\"\n";
     ReactLanguage.PreparedReload fileEdit = ReactLanguage.prepareHotload(file.toFile(), raw, "en_US");
     ReactLanguage.PreparedReload french = ReactLanguage.prepareHotload(null, null, "fr_FR");
 
@@ -378,7 +379,7 @@ class ReactLanguageEditorTest {
     UUID player = UUID.randomUUID();
     languages.selectPlayer(player, "en_US").get(5, TimeUnit.SECONDS);
     Path english = directory.resolve("languages/en_US.toml");
-    String raw = "\"" + CommandMessages.VERSION.id() + "\" = \"Edited English {version}\"\n";
+    String raw = "\"" + EnvironmentMessages.REACT_VERSION.id() + "\" = \"Edited English {version}\"\n";
     ReactLanguage.PreparedReload prepared = ReactLanguage.prepareHotload(english.toFile(), raw, "en_US");
 
     assertTrue(ReactLanguage.applyPreparedHotload(prepared));
