@@ -138,7 +138,7 @@
 #   {scope}  Zakres mapy lub ustawienia odległości
 #   {score}  Wynik punktowy testu wydajności
 #   {seconds}  Odliczanie lub czas trwania testu obciążenia w sekundach
-#   {section}  Nazwa sekcji konfiguracji
+#   {section}  Sekcja konfiguracji lub edytora języków
 #   {server}  Implementacja i wersja serwera Minecraft
 #   {shown}  Liczba obecnie wyświetlanych wierszy
 #   {since_run}  Błędy zgłoszone od rozpoczęcia bieżącego testu
@@ -3270,9 +3270,6 @@ optional = "Ten parametr jest opcjonalny."
 required = "Ten parametr jest wymagany."
 type = "Ten parametr jest typu {type}."
 
-[director.runtime]
-usage = "Użycie: {usage}"
-
 [director.runtime.error]
 conversion_failed = "Nie można przekonwertować \"{value}\" na {type} dla {parameter}"
 default_parse_failed = "Nie można odczytać wartości domyślnej parametru {parameter}"
@@ -4168,8 +4165,10 @@ movement_throttled = "&eOchrona terenu Iris przed skokami obciążenia ograniczy
 teleport_throttled = "&eIris grona przeciwprzepięciowa zagłuszała teleport do niegenerowanego terenu.&r"
 
 [runtime.hotload]
-diff = "&aHotloaded konfiguracyjny:&r &f[{file}]&r &b[{key}]&r &7[{before} -> {after}]&r"
-truncated = "&7{count} w przypadku &f{file}&7.&r"
+diff = "&aKonfiguracja wczytana ponownie:&r &f[{file}]&r &b[{key}]&r &7[{before} -> {after}]&r"
+truncated = "&7Nie wyświetlono {count} dodatkowych zmian w &f{file}&7.&r"
+missing = "nie ustawiono"
+removed = "usunięto"
 
 [runtime.legacy_command]
 insufficient_permissions = "&cNiewystarczające pozwolenia.&r"
@@ -4448,6 +4447,7 @@ server-selected = "{plugin}: język serwera jest teraz {locale}."
 server-default-selected = "{plugin}: twój język jest teraz zgodny z domyślnym językiem serwera."
 
 [language.editor]
+title = "{plugin} › {section}"
 loading = "Wczytywanie wiadomości w języku {locale}..."
 
 [language.editor.section]

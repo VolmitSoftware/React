@@ -334,6 +334,7 @@ class MobStackMergeTest {
     Mockito.when(source.getLocation()).thenReturn(location);
     Mockito.when(source.getType()).thenReturn(EntityType.ZOMBIE);
     Mockito.when(world.spawnEntity(location, EntityType.ZOMBIE)).thenReturn(replacement);
+    Mockito.when(replacement.isValid()).thenReturn(true);
     Mockito.when(source.getEquipment()).thenReturn(sourceEquipment);
     Mockito.when(replacement.getEquipment()).thenReturn(targetEquipment);
     Mockito.when(sourceEquipment.getArmorContents()).thenReturn(new ItemStack[0]);
@@ -418,6 +419,7 @@ class MobStackMergeTest {
     Mockito.when(pet.getLocation()).thenReturn(location);
     Mockito.when(pet.getType()).thenReturn(EntityType.WOLF);
     Mockito.when(world.spawnEntity(location, EntityType.WOLF)).thenReturn(remainder);
+    Mockito.when(remainder.isValid()).thenReturn(true);
     Mockito.doReturn(3).when(feature).getStackCount(pet);
     Mockito.doNothing().when(feature).setStackCount(Mockito.any(Entity.class), Mockito.anyInt());
 
@@ -489,6 +491,7 @@ class MobStackMergeTest {
     Mockito.when(pet.getLocation()).thenReturn(location);
     Mockito.when(pet.getType()).thenReturn(type);
     Mockito.when(world.spawnEntity(location, type)).thenReturn(remainder);
+    Mockito.when(remainder.isValid()).thenReturn(true);
     Mockito.doReturn(5).when(feature).getStackCount(pet);
     Mockito.doNothing().when(feature).setStackCount(Mockito.any(Entity.class), Mockito.anyInt());
 

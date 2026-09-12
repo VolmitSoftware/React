@@ -68,6 +68,7 @@ class FeatureMobStackingLifecycleTest {
     Mockito.when(source.getLocation()).thenReturn(location);
     Mockito.when(source.getType()).thenReturn(EntityType.ZOMBIE);
     Mockito.when(world.spawnEntity(location, EntityType.ZOMBIE)).thenReturn(replacement);
+    Mockito.when(replacement.isValid()).thenReturn(true);
     Mockito.doReturn(3).when(feature).getStackCount(source);
     Mockito.doNothing().when(feature).setStackCount(Mockito.any(Entity.class), Mockito.anyInt());
 
@@ -92,6 +93,7 @@ class FeatureMobStackingLifecycleTest {
     Mockito.when(source.getCustomName()).thenReturn("Sentinel");
     Mockito.when(source.getPersistentDataContainer()).thenReturn(Mockito.mock(PersistentDataContainer.class));
     Mockito.when(world.spawnEntity(location, EntityType.ZOMBIE)).thenReturn(replacement);
+    Mockito.when(replacement.isValid()).thenReturn(true);
     Mockito.doReturn(3).when(feature).getStackCount(source);
     Mockito.doNothing().when(feature).setStackCount(Mockito.any(Entity.class), Mockito.anyInt());
 

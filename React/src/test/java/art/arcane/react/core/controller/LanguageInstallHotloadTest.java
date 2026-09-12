@@ -4,12 +4,14 @@ import art.arcane.react.React;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.ReactMessages;
 import art.arcane.react.localization.catalog.EnvironmentMessages;
+import art.arcane.react.localization.catalog.RuntimeMessages;
 import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.util.common.scheduling.Ticker;
 import art.arcane.react.util.project.config.ConfigFileSupport;
 import art.arcane.react.util.project.config.ConfigHotloadSnapshot;
 import art.arcane.volmlib.util.hotload.ConfigHotloadEngine;
 import art.arcane.volmlib.util.localization.LocalizationCandidate;
+import art.arcane.volmlib.util.localization.LanguageAudience;
 import art.arcane.volmlib.util.localization.LocalizationManager;
 import art.arcane.volmlib.util.localization.LocalizationSnapshot;
 import art.arcane.volmlib.util.localization.PluginLanguageEditor;
@@ -27,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -42,8 +45,13 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -238,6 +246,148 @@ class LanguageInstallHotloadTest {
         "The editor already confirms its own save; watcher events must not repeat the template diff");
   }
 
+  @Test
+  void preparedNoticesUseTheRecipientsCurrentLanguageAndUpdatedTemplates() throws Exception {
+    Field serviceField = field(ReactLanguage.class, "languageService");
+    Object previousService = serviceField.get(null);
+    serviceField.set(null, languages);
+    try {
+      List<?> notices = (List<?>) invoke(controller, "prepareOperatorNotifications",
+          directory.resolve("react.toml").toFile(), "language = \"en_US\"", "language = \"de_DE\"");
+      assertEquals(1, notices.size());
+      Object notice = notices.getFirst();
+      String english = PLAIN.serialize((Component) invoke(notice, "render"));
+
+      UUID player = UUID.randomUUID();
+      languages.selectPlayer(player, "de_DE").get(5, TimeUnit.SECONDS);
+      PluginLanguageEditor.Document original = editor.load("de_DE").get(5, TimeUnit.SECONDS);
+      TextValue updated = new TextValue("Neu geladen [{file}] [{key}] [{before} -> {after}]");
+      editor.save(new PluginLanguageEditor.Edit("de_DE", RuntimeMessages.HOTLOAD_DIFF.id(),
+          original.snapshot().value(RuntimeMessages.HOTLOAD_DIFF), updated)).get(5, TimeUnit.SECONDS);
+
+      AtomicReference<String> german = new AtomicReference<>();
+      LanguageAudience.run(player, () -> german.set(PLAIN.serialize((Component) invoke(notice, "render"))));
+      assertTrue(english.contains("Config hotloaded"));
+      assertTrue(german.get().contains("Neu geladen"));
+      assertTrue(german.get().contains("$.language"));
+      assertTrue(german.get().contains("en_US"));
+      assertTrue(german.get().contains("de_DE"));
+    } finally {
+      serviceField.set(null, previousService);
+    }
+  }
+
+  @Test
+  void deletedPersonalLanguageUsesEnglishAndRestoringIdenticalContentReloadsIt() throws Exception {
+    Field serviceField = field(ReactLanguage.class, "languageService");
+    Object previousService = serviceField.get(null);
+    serviceField.set(null, languages);
+    try {
+      UUID player = UUID.randomUUID();
+      languages.selectPlayer(player, "de_DE").get(5, TimeUnit.SECONDS);
+      Path german = languageFile("de_DE");
+      assertTrue(prepareChanges(languageFile("en_US"), german).isEmpty());
+      LocalizationSnapshot translated = languages.snapshot(player);
+
+      Files.delete(german);
+      assertTrue(prepareChanges(german).isEmpty());
+
+      assertEquals(EnvironmentMessages.REACT_VERSION.englishValue(),
+          languages.snapshot(player).value(EnvironmentMessages.REACT_VERSION));
+      assertEquals("de_DE", languages.playerLocale(player).orElseThrow());
+      assertEquals("en_US", languages.defaultLocale());
+      assertFalse(Files.exists(german));
+      assertFalse(appliedContents.containsKey(german.toString()));
+
+      Files.writeString(german, germanSource);
+      List<Object> restored = prepareChanges(german);
+      assertEquals(1, restored.size());
+      Object result = invoke(controller, "applyPreparedChange", runtime, restored.getFirst());
+      assertEquals("APPLIED", invoke(result, "outcome").toString());
+      assertEquals(translated.value(EnvironmentMessages.REACT_VERSION),
+          languages.snapshot(player).value(EnvironmentMessages.REACT_VERSION));
+      assertEquals("de_DE", languages.playerLocale(player).orElseThrow());
+    } finally {
+      serviceField.set(null, previousService);
+    }
+  }
+
+  @Test
+  void selfWriteSupersedesQueuedServerLanguageChangeWhilePublicationWaits() throws Exception {
+    Field serviceField = field(ReactLanguage.class, "languageService");
+    Object previousService = serviceField.get(null);
+    Field configurationField = field(ReactConfiguration.class, "configuration");
+    Object previousConfiguration = configurationField.get(null);
+    LocalizationManager manager = (LocalizationManager) field(ReactLanguage.class, "MANAGER").get(null);
+    LocalizationSnapshot previousSnapshot = manager.snapshot();
+    serviceField.set(null, languages);
+    ReactConfiguration.applyHotloadSnapshot(new ReactConfiguration());
+    Path mainConfig = directory.resolve("react.toml").toAbsolutePath().normalize();
+    when(React.instance.getDataFile("react.toml")).thenReturn(mainConfig.toFile());
+    CountDownLatch commitHeld = new CountDownLatch(1);
+    CountDownLatch releaseCommit = new CountDownLatch(1);
+    ExecutorService workers = Executors.newFixedThreadPool(3);
+    try {
+      languages.selectPlayer(UUID.randomUUID(), "de_DE").get(5, TimeUnit.SECONDS);
+      Files.writeString(mainConfig, "language = \"de_DE\"\n");
+      List<Object> changes = prepareChanges(mainConfig);
+      assertEquals(1, changes.size());
+      Object change = changes.getFirst();
+      Future<?> selection = workers.submit(() -> languages.commitUpdate(() -> {
+        commitHeld.countDown();
+        awaitRelease(releaseCommit);
+        return null;
+      }));
+      assertTrue(commitHeld.await(2, TimeUnit.SECONDS));
+      AtomicReference<Thread> applyingThread = new AtomicReference<>();
+      Future<Object> hotload = workers.submit(() -> {
+        applyingThread.set(Thread.currentThread());
+        return invoke(controller, "applyPreparedChange", runtime, change);
+      });
+      long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
+      while ((applyingThread.get() == null || applyingThread.get().getState() != Thread.State.BLOCKED)
+          && System.nanoTime() < deadline) {
+        Thread.sleep(5);
+      }
+      assertTrue(applyingThread.get() != null && applyingThread.get().getState() == Thread.State.BLOCKED,
+          "Hotload should wait for the in-flight language selection");
+
+      String selectedConfig = "language = \"en_US\"\n";
+      Future<?> selfWrite = workers.submit(() -> {
+        Files.writeString(mainConfig, selectedConfig);
+        ConfigFileSupport.noteSelfWrite(mainConfig.toFile(), selectedConfig);
+        return null;
+      });
+      selfWrite.get(2, TimeUnit.SECONDS);
+      releaseCommit.countDown();
+      selection.get(2, TimeUnit.SECONDS);
+      Object result = hotload.get(2, TimeUnit.SECONDS);
+
+      assertEquals("STALE", invoke(result, "outcome").toString());
+      assertEquals("en_US", ReactConfiguration.get().getLanguage());
+      assertEquals(selectedConfig, Files.readString(mainConfig));
+      assertEquals(ConfigFileSupport.normalize(selectedConfig), appliedContents.get(mainConfig.toString()));
+    } finally {
+      releaseCommit.countDown();
+      workers.shutdown();
+      assertTrue(workers.awaitTermination(5, TimeUnit.SECONDS));
+      serviceField.set(null, previousService);
+      configurationField.set(null, previousConfiguration);
+      manager.install(previousSnapshot);
+    }
+  }
+
+  private static void awaitRelease(CountDownLatch release) throws IOException {
+    try {
+      if (!release.await(5, TimeUnit.SECONDS)) {
+        throw new IOException("Timed out waiting for the language selection to finish");
+      }
+    } catch (InterruptedException failure) {
+      Thread.currentThread().interrupt();
+      throw new IOException("Interrupted while holding the language selection commit", failure);
+    }
+  }
+
   private Path languageFile(String locale) {
     return directory.resolve("languages").resolve(locale + ".toml").toAbsolutePath().normalize();
   }
@@ -280,7 +430,7 @@ class LanguageInstallHotloadTest {
     assertEquals(edited, snapshot.rawContent());
     List<?> notifications = (List<?>) invoke(change, "notifications");
     assertEquals(1, notifications.size());
-    String notification = PLAIN.serialize((Component) notifications.getFirst());
+    String notification = PLAIN.serialize((Component) invoke(notifications.getFirst(), "render"));
     assertTrue(notification.replace('\\', '/').contains("languages/de_DE.toml"));
     assertTrue(notification.contains(EnvironmentMessages.REACT_VERSION.id()));
     assertFalse(notification.contains("<missing>"));

@@ -138,7 +138,7 @@
 #   {scope}  地图范围或距离设置的作用范围
 #   {score}  基准测试得分
 #   {seconds}  倒计时或负载测试时长，单位为秒
-#   {section}  配置节名称
+#   {section}  配置或语言编辑器分区
 #   {server}  Minecraft 服务器实现及版本
 #   {shown}  当前显示的行数
 #   {since_run}  本次测试开始以来报告的错误
@@ -3270,9 +3270,6 @@ optional = "此参数为可选项。"
 required = "此参数为必填项。"
 type = "此参数的类型为 {type}。"
 
-[director.runtime]
-usage = "用法: {usage}"
-
 [director.runtime.error]
 conversion_failed = "无法将 \"{value}\" 转换为 {parameter} 所需的 {type}"
 default_parse_failed = "无法解析参数 {parameter} 的默认值"
@@ -4168,8 +4165,10 @@ movement_throttled = "&eIris 地形负载突增保护已限制移动到新区块
 teleport_throttled = "&eIris 地形突袭的护卫 将电传传送到未生成的地形&r"
 
 [runtime.hotload]
-diff = "&a配置热载 :&r &f[{file}]&r &b[{key}]&r &7[{before} -> {after}]&r"
-truncated = "&7{count} 省略了其他改动 &f{file}&7.&r"
+diff = "&a配置已重新加载:&r &f[{file}]&r &b[{key}]&r &7[{before} -> {after}]&r"
+truncated = "&7&f{file}&7 中还有 {count} 项更改未显示。&r"
+missing = "未设置"
+removed = "已移除"
 
 [runtime.legacy_command]
 insufficient_permissions = "&c权限不足。&r"
@@ -4448,6 +4447,7 @@ server-selected = "{plugin}：服务器语言现在是 {locale}。"
 server-default-selected = "{plugin}：你的语言现在跟随服务器默认语言。"
 
 [language.editor]
+title = "{plugin} › {section}"
 loading = "正在加载 {locale} 的消息..."
 
 [language.editor.section]

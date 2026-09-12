@@ -138,7 +138,7 @@
 #   {scope}  Toepassingsgebied van de kaart of afstandsinstelling
 #   {score}  Score van de benchmark
 #   {seconds}  Afteltijd of duur van de belastingtest in seconden
-#   {section}  Naam van het configuratiegedeelte
+#   {section}  Configuratieonderdeel of onderdeel van de taaleditor
 #   {server}  Implementatie en versie van de Minecraft-server
 #   {shown}  Aantal momenteel weergegeven rijen
 #   {since_run}  Fouten die sinds het begin van de huidige test zijn gemeld
@@ -3270,9 +3270,6 @@ optional = "Deze parameter is optioneel."
 required = "Deze parameter is verplicht."
 type = "Deze parameter is van het type {type}."
 
-[director.runtime]
-usage = "Gebruik: {usage}"
-
 [director.runtime.error]
 conversion_failed = "Kan \"{value}\" voor {parameter} niet naar {type} converteren"
 default_parse_failed = "Kan de standaardwaarde voor parameter {parameter} niet verwerken"
@@ -4168,8 +4165,10 @@ movement_throttled = "&eDe Iris-terreinpiekbeveiliging heeft verplaatsingen naar
 teleport_throttled = "&eIris De terreingolfwachter heeft teleport naar ongegeneerd terrein geduwd.&r"
 
 [runtime.hotload]
-diff = "&aGeconfigureerd warm geladen:&r &f[{file}]&r &b[{key}]&r &7[{before} -> {after}]&r"
-truncated = "&7{count} De Commissie heeft geen aanvullende wijzigingen aangebracht voor &f{file}&7.&r"
+diff = "&aConfiguratie opnieuw geladen:&r &f[{file}]&r &b[{key}]&r &7[{before} -> {after}]&r"
+truncated = "&7{count} overige wijzigingen in &f{file}&7 worden niet weergegeven.&r"
+missing = "niet ingesteld"
+removed = "verwijderd"
 
 [runtime.legacy_command]
 insufficient_permissions = "&cOnvoldoende toestemmingen.&r"
@@ -4448,6 +4447,7 @@ server-selected = "{plugin}: servertaal is nu {locale}."
 server-default-selected = "{plugin}: je taal volgt nu de standaardtaal van de server."
 
 [language.editor]
+title = "{plugin} › {section}"
 loading = "Berichten voor {locale} laden..."
 
 [language.editor.section]

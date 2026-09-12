@@ -35,6 +35,7 @@ import art.arcane.react.api.protect.ReactOperation;
 import art.arcane.react.api.protect.ReactOperations;
 import art.arcane.react.api.protect.ReactProtection;
 import art.arcane.volmlib.util.format.Form;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
@@ -44,18 +45,28 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.AnimalTamer;
 import org.bukkit.entity.Ageable;
+import org.bukkit.entity.Animals;
+import org.bukkit.entity.Chicken;
+import org.bukkit.entity.Cow;
+import org.bukkit.entity.Creeper;
+import org.bukkit.entity.Enderman;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Pig;
 import org.bukkit.entity.Sheep;
 import org.bukkit.entity.Tameable;
 import org.bukkit.entity.Villager;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.Cancellable;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.CreatureSpawnEvent;
+import org.bukkit.event.entity.CreeperPowerEvent;
+import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityRemoveEvent;
 import org.bukkit.event.entity.EntitySpawnEvent;
@@ -251,8 +262,11 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
     J.runEntity(entity, () -> completeTamedStackSplit(entity, ownerId), 1);
   }
 
-  @EventHandler
+  @EventHandler(ignoreCancelled = true)
   public void onPlayerInteractEntity(PlayerInteractEntityEvent event) {
+    if (event.isCancelled()) {
+      return;
+    }
     // Check for sneak and right click
     if (event.getPlayer().isSneaking() && event.getHand().equals(EquipmentSlot.HAND)) {
       Entity clickedEntity = event.getRightClicked();
@@ -265,22 +279,20 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
         int remainingStackCount = getStackCount(clickedEntity) - newStackCount;
 
         // Create new entity with half of the original stack count
-        LivingEntity newEntity;
-        if (clickedEntity instanceof Sheep) {
-          Sheep oldSheep = (Sheep) clickedEntity;
-          newEntity = (LivingEntity) clickedEntity.getWorld().spawnEntity(clickedEntity.getLocation().add(0, 0.5, 0), clickedEntity.getType());
-          ((Sheep) newEntity).setColor(oldSheep.getColor()); // setting the new sheep color
-        } else if (CubeMobs.isCubeMob(clickedEntity)) {
-          newEntity = (LivingEntity) clickedEntity.getWorld().spawnEntity(clickedEntity.getLocation().add(0, 0.5, 0), clickedEntity.getType());
-          int oldSize = CubeMobs.getSize(clickedEntity);
-          if (oldSize > 1) { // This is to ensure no infinite loop of cube mob spawning
-            CubeMobs.setSize(newEntity, oldSize / 2); // setting the new size
-          } else {
-            CubeMobs.setSize(newEntity, oldSize);
-          }
-        } else {
-          newEntity = (LivingEntity) clickedEntity.getWorld().spawnEntity(clickedEntity.getLocation().add(0, 0.5, 0), clickedEntity.getType());
+        LivingEntity newEntity = (LivingEntity) clickedEntity.getWorld().spawnEntity(clickedEntity.getLocation().add(0, 0.5, 0), clickedEntity.getType());
+        if (!newEntity.isValid()) {
+          newEntity.remove();
+          React.warn("Could not split " + clickedEntity.getType() + " stack; the replacement spawn was rejected.");
+          return;
         }
+        try {
+          copyState((LivingEntity) clickedEntity, newEntity);
+        } catch (RuntimeException failure) {
+          newEntity.remove();
+          React.warn("Could not split " + clickedEntity.getType() + " stack; the original stack remains unchanged.", failure);
+          return;
+        }
+        newEntity.setHealth(((LivingEntity) clickedEntity).getHealth());
         setStackCount(newEntity, newStackCount);
         newEntity.setMetadata("DoNotStack", new FixedMetadataValue(React.instance, true));
         newEntity.setMetadata("UniqueMobStack", new FixedMetadataValue(React.instance, true));
@@ -316,25 +328,74 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
     }
   }
 
+  @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
+  public void onCreeperPower(CreeperPowerEvent event) {
+    boolean powered = event.getCause() != CreeperPowerEvent.PowerCause.SET_OFF;
+    if (!event.isCancelled() && powered != event.getEntity().isPowered()) {
+      splitBeforeStateChange(event.getEntity(), event);
+    }
+  }
+
+  @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
+  public void onEndermanChangeBlock(EntityChangeBlockEvent event) {
+    if (!event.isCancelled() && event.getEntity() instanceof Enderman enderman) {
+      splitBeforeStateChange(enderman, event);
+    }
+  }
+
+  private void splitBeforeStateChange(LivingEntity source, Cancellable event) {
+    int count = getStackCount(source);
+    if (count <= 1) {
+      return;
+    }
+    try {
+      LivingEntity replacement = createReplacement(source);
+      if (replacement == null) {
+        event.setCancelled(true);
+        React.warn("Could not split " + source.getType() + " stack before its state changed; the change was cancelled.");
+        return;
+      }
+      setStackCount(replacement, count - 1);
+      setStackCount(source, 1);
+    } catch (RuntimeException failure) {
+      event.setCancelled(true);
+      React.warn("Could not split " + source.getType() + " stack before its state changed; the change was cancelled.", failure);
+    }
+  }
+
   private boolean spawnReplacement(LivingEntity source, int nextStackCount) {
     if (nextStackCount <= 0 || source.getWorld() == null) {
       return false;
     }
 
-    Location spawnLocation = source.getLocation();
-    Entity created = source.getWorld().spawnEntity(spawnLocation, source.getType());
-    if (!(created instanceof LivingEntity replacement)) {
-      created.remove();
+    LivingEntity replacement = createReplacement(source);
+    if (replacement == null) {
       return false;
     }
+    setStackCount(replacement, nextStackCount);
+    return true;
+  }
 
-    copyState(source, replacement);
+  private LivingEntity createReplacement(LivingEntity source) {
+    if (source.getWorld() == null) {
+      return null;
+    }
+    Entity created = source.getWorld().spawnEntity(source.getLocation(), source.getType());
+    if (!(created instanceof LivingEntity replacement) || !replacement.isValid()) {
+      created.remove();
+      return null;
+    }
+    try {
+      copyState(source, replacement);
+    } catch (RuntimeException failure) {
+      replacement.remove();
+      throw failure;
+    }
     if (replacement instanceof Tameable tameable) {
       tameable.setOwner(null);
       tameable.setTamed(false);
     }
-    setStackCount(replacement, nextStackCount);
-    return true;
+    return replacement;
   }
 
   private void completeTamedStackSplit(LivingEntity entity, UUID ownerId) {
@@ -383,6 +444,7 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
 
     if (source instanceof Sheep sourceSheep && target instanceof Sheep targetSheep) {
       targetSheep.setColor(sourceSheep.getColor());
+      targetSheep.setSheared(sourceSheep.isSheared());
     }
 
     if (source instanceof Ageable sourceAgeable && target instanceof Ageable targetAgeable) {
@@ -391,7 +453,16 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
       } else {
         targetAgeable.setBaby();
       }
+      targetAgeable.setAge(sourceAgeable.getAge());
+      targetAgeable.setAgeLock(sourceAgeable.getAgeLock());
     }
+
+    if (source instanceof Animals sourceAnimal && target instanceof Animals targetAnimal) {
+      targetAnimal.setBreedCause(sourceAnimal.getBreedCause());
+      targetAnimal.setLoveModeTicks(sourceAnimal.getLoveModeTicks());
+    }
+    copyFarmVariant(source, target);
+    copyHostileState(source, target);
 
     target.setAI(source.hasAI());
     target.setCollidable(source.isCollidable());
@@ -576,6 +647,12 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
   }
 
   private boolean hasSafeMergeState(LivingEntity source, LivingEntity target) {
+    if (!hasMatchingHostileState(source, target)) {
+      return false;
+    }
+    if (!hasMatchingFarmState(source, target)) {
+      return false;
+    }
     if (hasEquipment(source) || hasEquipment(target)) {
       return false;
     }
@@ -631,16 +708,108 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
 
   private boolean isVariantBearingType(EntityType type) {
     return switch (type.name()) {
-      case "AXOLOTL", "BEE", "BOGGED", "CAMEL", "CAT", "CHICKEN", "COW", "CREEPER",
-           "DONKEY", "ENDER_DRAGON", "ENDERMAN", "FOX", "FROG", "GHAST", "GOAT", "HOGLIN",
+      case "AXOLOTL", "BEE", "BOGGED", "CAMEL", "CAT",
+           "DONKEY", "ENDER_DRAGON", "FOX", "FROG", "GHAST", "GOAT", "HOGLIN",
            "HORSE", "IRON_GOLEM", "LLAMA", "MOOSHROOM", "MULE",
-           "MUSHROOM_COW", "OCELOT", "PANDA", "PARROT", "PHANTOM", "PIG", "PIGLIN",
-           "PIGLIN_BRUTE", "RABBIT", "SALMON", "SHEEP", "SKELETON_HORSE",
+           "MUSHROOM_COW", "OCELOT", "PANDA", "PARROT", "PHANTOM", "PIGLIN",
+           "PIGLIN_BRUTE", "RABBIT", "SALMON", "SKELETON_HORSE",
            "SNIFFER", "SNOW_GOLEM", "STRIDER", "TRADER_LLAMA", "TROPICAL_FISH", "VEX",
            "VILLAGER", "WANDERING_TRADER", "WOLF", "ZOMBIE_HORSE",
            "ZOMBIE_NAUTILUS", "ZOMBIE_VILLAGER", "ZOMBIFIED_PIGLIN" -> true;
       default -> false;
     };
+  }
+
+  private boolean hasMatchingHostileState(LivingEntity source, LivingEntity target) {
+    if ((source instanceof Creeper || source instanceof Enderman)
+        && (source.isInsideVehicle() || target.isInsideVehicle()
+            || !source.getPassengers().isEmpty() || !target.getPassengers().isEmpty())) {
+      return false;
+    }
+    if (source instanceof Creeper left && target instanceof Creeper right) {
+      return left.isPowered() == right.isPowered()
+          && left.getMaxFuseTicks() == right.getMaxFuseTicks()
+          && left.getExplosionRadius() == right.getExplosionRadius()
+          && !left.isIgnited() && !right.isIgnited()
+          && left.getFuseTicks() == 0 && right.getFuseTicks() == 0;
+    }
+    if (source instanceof Enderman left && target instanceof Enderman right) {
+      return Objects.equals(left.getCarriedBlock(), right.getCarriedBlock())
+          && left.getTarget() == null && right.getTarget() == null
+          && !left.isScreaming() && !right.isScreaming()
+          && !left.hasBeenStaredAt() && !right.hasBeenStaredAt();
+    }
+    return true;
+  }
+
+  private void copyHostileState(LivingEntity source, LivingEntity target) {
+    if (source instanceof Creeper left && target instanceof Creeper right) {
+      right.setPowered(left.isPowered());
+      if (right.isPowered() != left.isPowered()) {
+        throw new IllegalStateException("The replacement creeper's powered state was rejected.");
+      }
+      right.setMaxFuseTicks(left.getMaxFuseTicks());
+      right.setExplosionRadius(left.getExplosionRadius());
+      right.setFuseTicks(0);
+      right.setIgnited(false);
+    } else if (source instanceof Enderman left && target instanceof Enderman right) {
+      BlockData carried = left.getCarriedBlock();
+      right.setCarriedBlock(carried == null ? null : carried.clone());
+      right.setScreaming(left.isScreaming());
+      right.setHasBeenStaredAt(left.hasBeenStaredAt());
+    }
+  }
+
+  private boolean hasMatchingFarmState(LivingEntity source, LivingEntity target) {
+    if (!(source instanceof Animals sourceAnimal) || !(target instanceof Animals targetAnimal)) {
+      return true;
+    }
+    if (sourceAnimal.getAge() != targetAnimal.getAge()
+        || sourceAnimal.getAgeLock() != targetAnimal.getAgeLock()
+        || sourceAnimal.canBreed() != targetAnimal.canBreed()
+        || sourceAnimal.getLoveModeTicks() != targetAnimal.getLoveModeTicks()
+        || !Objects.equals(sourceAnimal.getBreedCause(), targetAnimal.getBreedCause())
+        || sourceAnimal.isLeashed() || targetAnimal.isLeashed()
+        || sourceAnimal.isInsideVehicle() || targetAnimal.isInsideVehicle()
+        || !sourceAnimal.getPassengers().isEmpty() || !targetAnimal.getPassengers().isEmpty()) {
+      return false;
+    }
+    if (source instanceof Cow left && target instanceof Cow right) {
+      return Objects.equals(left.getVariant(), right.getVariant())
+          && Objects.equals(left.getSoundVariant(), right.getSoundVariant());
+    }
+    if (source instanceof Chicken left && target instanceof Chicken right) {
+      return Objects.equals(left.getVariant(), right.getVariant())
+          && Objects.equals(left.getSoundVariant(), right.getSoundVariant())
+          && left.isChickenJockey() == right.isChickenJockey();
+    }
+    if (source instanceof Pig left && target instanceof Pig right) {
+      return Objects.equals(left.getVariant(), right.getVariant())
+          && Objects.equals(left.getSoundVariant(), right.getSoundVariant())
+          && left.hasSaddle() == right.hasSaddle()
+          && left.getBoostTicks() == right.getBoostTicks()
+          && left.getCurrentBoostTicks() == right.getCurrentBoostTicks();
+    }
+    return !(source instanceof Sheep left) || !(target instanceof Sheep right)
+        || left.isSheared() == right.isSheared();
+  }
+
+  private void copyFarmVariant(LivingEntity source, LivingEntity target) {
+    if (source instanceof Cow left && target instanceof Cow right) {
+      right.setVariant(left.getVariant());
+      right.setSoundVariant(left.getSoundVariant());
+    } else if (source instanceof Chicken left && target instanceof Chicken right) {
+      right.setVariant(left.getVariant());
+      right.setSoundVariant(left.getSoundVariant());
+      right.setIsChickenJockey(left.isChickenJockey());
+      right.setEggLayTime(left.getEggLayTime());
+    } else if (source instanceof Pig left && target instanceof Pig right) {
+      right.setVariant(left.getVariant());
+      right.setSoundVariant(left.getSoundVariant());
+      right.setSaddle(left.hasSaddle());
+      right.setBoostTicks(left.getBoostTicks());
+      right.setCurrentBoostTicks(left.getCurrentBoostTicks());
+    }
   }
 
 
@@ -668,7 +837,10 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
       if (!stackName.equals(currentName)) {
         entity.setCustomName(stackName);
       }
-      entity.getPersistentDataContainer().set(STACK_LABEL_KEY, PersistentDataType.STRING, stackName);
+      String appliedName = entity.getCustomName();
+      if (appliedName != null) {
+        entity.getPersistentDataContainer().set(STACK_LABEL_KEY, PersistentDataType.STRING, appliedName);
+      }
     }
     UUID entityId = entity.getUniqueId();
     if (entityId != null) {
@@ -689,8 +861,20 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
 
   private boolean ownsStackName(Entity entity, String name, int count) {
     String storedName = entity.getPersistentDataContainer().get(STACK_LABEL_KEY, PersistentDataType.STRING);
-    return name.equals(storedName)
-        || ((count > 1 || entity.hasMetadata("UniqueMobStack")) && name.equals(nativeStackName(entity, count)));
+    return sameFormattedName(name, storedName)
+        || ((count > 1 || entity.hasMetadata("UniqueMobStack")) && sameFormattedName(name, nativeStackName(entity, count)));
+  }
+
+  private boolean sameFormattedName(String name, String expected) {
+    if (expected == null) {
+      return false;
+    }
+    if (name.equals(expected)) {
+      return true;
+    }
+    LegacyComponentSerializer serializer = LegacyComponentSerializer.legacySection();
+    return serializer.serialize(serializer.deserialize(name))
+        .equals(serializer.serialize(serializer.deserialize(expected)));
   }
 
   private String nativeStackName(Entity entity, int count) {
@@ -766,7 +950,26 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
 
   @EventHandler
   public void on(EntityRemoveEvent event) {
-    removeIndexed(event.getEntity());
+    try {
+      if (event.getCause() == EntityRemoveEvent.Cause.EXPLODE && event.getEntity() instanceof Creeper creeper) {
+        int count = getStackCount(creeper);
+        if (count > 1) {
+          LivingEntity replacement = createReplacement(creeper);
+          if (replacement instanceof Creeper remainder) {
+            setStackCount(remainder, count - 1);
+          } else {
+            if (replacement != null) {
+              replacement.remove();
+            }
+            React.warn("Could not restore the remaining " + (count - 1) + " creepers after a stack exploded.");
+          }
+        }
+      }
+    } catch (RuntimeException failure) {
+      React.warn("Could not restore creeper stack after explosion at " + event.getEntity().getLocation(), failure);
+    } finally {
+      removeIndexed(event.getEntity());
+    }
   }
 
   private synchronized void indexEntity(Entity entity, UUID worldId, long chunkKey) {

@@ -138,7 +138,7 @@
 #   {scope}  지도 범위 또는 거리 설정 범위
 #   {score}  벤치마크 점수
 #   {seconds}  카운트다운 또는 부하 테스트 시간(초)
-#   {section}  설정 섹션 이름
+#   {section}  설정 또는 언어 편집기 섹션
 #   {server}  Minecraft 서버 구현체와 버전
 #   {shown}  현재 표시되는 행 수
 #   {since_run}  현재 테스트 시작 이후 보고된 오류
@@ -3270,9 +3270,6 @@ optional = "이 매개변수는 선택 사항입니다."
 required = "이 매개변수는 필수입니다."
 type = "이 매개변수의 유형은 {type}입니다."
 
-[director.runtime]
-usage = "사용법: {usage}"
-
 [director.runtime.error]
 conversion_failed = "\"{value}\" 값을 {parameter}용 {type} 형식으로 변환할 수 없습니다"
 default_parse_failed = "매개변수 {parameter}의 기본값을 분석할 수 없습니다"
@@ -4168,8 +4165,10 @@ movement_throttled = "&eIris 지형 부하 급증 보호가 새 청크로의 이
 teleport_throttled = "&eIris 지형 서지 감시 throttled teleport로 ungenerated 지형.&r"
 
 [runtime.hotload]
-diff = "&aConfig는 뜨거웠습니다:&r &f[{file}]&r &b[{key}]&r &7[{before} -> {after}]&r"
-truncated = "&7{count} 추가 변경은 omitted &f{file}&7.&r"
+diff = "&a설정을 다시 불러왔습니다:&r &f[{file}]&r &b[{key}]&r &7[{before} -> {after}]&r"
+truncated = "&7&f{file}&7의 추가 변경 사항 {count}개는 표시하지 않습니다.&r"
+missing = "설정되지 않음"
+removed = "삭제됨"
 
 [runtime.legacy_command]
 insufficient_permissions = "&c충분한 권한.&r"
@@ -4448,6 +4447,7 @@ server-selected = "{plugin}: 서버 언어를 {locale}으로 변경했습니다.
 server-default-selected = "{plugin}: 개인 언어가 이제 서버 기본 언어를 따릅니다."
 
 [language.editor]
+title = "{plugin} › {section}"
 loading = "{locale} 메시지를 불러오는 중..."
 
 [language.editor.section]

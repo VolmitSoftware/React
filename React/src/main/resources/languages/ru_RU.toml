@@ -138,7 +138,7 @@
 #   {scope}  Область действия карты или настройки расстояния
 #   {score}  Балл теста производительности
 #   {seconds}  Обратный отсчёт или длительность нагрузочного теста в секундах
-#   {section}  Название раздела настроек
+#   {section}  Раздел конфигурации или редактора языков
 #   {server}  Реализация и версия сервера Minecraft
 #   {shown}  Число строк, отображаемых сейчас
 #   {since_run}  Ошибки, зарегистрированные с начала текущего теста
@@ -3270,9 +3270,6 @@ optional = "Этот параметр является необязательн�
 required = "Этот параметр является обязательным."
 type = "Этот параметр имеет тип {type}."
 
-[director.runtime]
-usage = "Использование: {usage}"
-
 [director.runtime.error]
 conversion_failed = "Невозможно преобразовать \"{value}\" в {type} для {parameter}"
 default_parse_failed = "Невозможно разобрать значение по умолчанию параметра {parameter}"
@@ -4168,8 +4165,10 @@ movement_throttled = "&eЗащита рельефа Iris от скачков н�
 teleport_throttled = "&eIris Охрана наземного наступления задушила телепортацию в несгенерированную местность.&r"
 
 [runtime.hotload]
-diff = "&aНастройка горячая:&r &f[{file}]&r &b[{key}]&r &7[{before} -> {after}]&r"
-truncated = "&7{count} Дополнительные изменения были исключены для &f{file}&7.&r"
+diff = "&aКонфигурация перезагружена:&r &f[{file}]&r &b[{key}]&r &7[{before} -> {after}]&r"
+truncated = "&7Не показано дополнительных изменений в &f{file}&7: {count}.&r"
+missing = "не задано"
+removed = "удалено"
 
 [runtime.legacy_command]
 insufficient_permissions = "&cНедостаточные разрешения.&r"
@@ -4448,6 +4447,7 @@ server-selected = "{plugin}: Язык сервера теперь {locale}."
 server-default-selected = "{plugin}: теперь ваш язык соответствует языку сервера по умолчанию."
 
 [language.editor]
+title = "{plugin} › {section}"
 loading = "Загрузка сообщений для {locale}..."
 
 [language.editor.section]

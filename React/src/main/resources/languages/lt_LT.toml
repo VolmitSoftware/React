@@ -138,7 +138,7 @@
 #   {scope}  Žemėlapio arba atstumo nustatymo taikymo sritis
 #   {score}  Našumo testo balas
 #   {seconds}  Atgalinio skaičiavimo arba apkrovos testo trukmė sekundėmis
-#   {section}  Nustatymų skyriaus pavadinimas
+#   {section}  Konfigūracijos arba kalbų redaktoriaus skiltis
 #   {server}  Minecraft serverio realizacija ir versija
 #   {shown}  Šiuo metu rodomų eilučių skaičius
 #   {since_run}  Nuo dabartinio testo pradžios praneštos klaidos
@@ -3270,9 +3270,6 @@ optional = "Šis parametras yra neprivalomas."
 required = "Šis parametras yra privalomas."
 type = "Šio parametro tipas yra {type}."
 
-[director.runtime]
-usage = "Naudojimas: {usage}"
-
 [director.runtime.error]
 conversion_failed = "Reikšmės \"{value}\" nepavyko konvertuoti į {type} parametrui {parameter}"
 default_parse_failed = "Nepavyko nuskaityti parametro {parameter} numatytosios reikšmės"
@@ -4168,8 +4165,10 @@ movement_throttled = "&e„Iris“ vietovės apkrovos šuolių apsauga apribojo 
 teleport_throttled = "&eIris reljefo apsaugos suspaudus teleportą į negeneruotą teritoriją.&r"
 
 [runtime.hotload]
-diff = "&aKonfigūruoti įkeltą:&r &f[{file}]&r &b[{key}]&r &7[{before} -> {after}]&r"
-truncated = "&7{count} Papildomi pakeitimai nebuvo įtraukti į &f{file}&7.&r"
+diff = "&aKonfigūracija įkelta iš naujo:&r &f[{file}]&r &b[{key}]&r &7[{before} -> {after}]&r"
+truncated = "&7{count} kitų failo &f{file}&7 pakeitimų nerodoma.&r"
+missing = "nenustatyta"
+removed = "pašalinta"
 
 [runtime.legacy_command]
 insufficient_permissions = "&cNepakankami leidimai.&r"
@@ -4448,6 +4447,7 @@ server-selected = "{plugin}: serverio kalba yra dabar {locale}."
 server-default-selected = "{plugin}: jūsų kalba dabar atitinka numatytąją serverio kalbą."
 
 [language.editor]
+title = "{plugin} › {section}"
 loading = "Įkeliami kalbos {locale} pranešimai..."
 
 [language.editor.section]

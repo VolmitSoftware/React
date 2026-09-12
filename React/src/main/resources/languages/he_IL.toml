@@ -138,7 +138,7 @@
 #   {scope}  תחום המפה או תחום הגדרת המרחק
 #   {score}  ציון בדיקת הביצועים
 #   {seconds}  ספירה לאחור או משך בדיקת עומס בשניות
-#   {section}  שם מקטע התצורה
+#   {section}  מקטע בהגדרות או בעורך השפות
 #   {server}  מימוש שרת Minecraft וגרסתו
 #   {shown}  מספר השורות המוצגות כעת
 #   {since_run}  שגיאות שדווחו מאז תחילת הבדיקה הנוכחית
@@ -3270,9 +3270,6 @@ optional = "פרמטר זה הוא אופציונלי."
 required = "פרמטר זה הוא חובה."
 type = "פרמטר זה הוא מסוג {type}."
 
-[director.runtime]
-usage = "שימוש: {usage}"
-
 [director.runtime.error]
 conversion_failed = "לא ניתן להמיר את \"{value}\" ל-{type} עבור {parameter}"
 default_parse_failed = "לא ניתן לנתח את ערך ברירת המחדל של הפרמטר {parameter}"
@@ -4168,8 +4165,10 @@ movement_throttled = "&eהגנת עומסי השטח של Iris הגבילה תנ
 teleport_throttled = "&eIris משמר שטח קפץ אל תוך השטח הלא מחוספס.&r"
 
 [runtime.hotload]
-diff = "&a«התחמם:&r &f[{file}]&r &b[{key}]&r &7[{before} -> {after}]&r"
-truncated = "&7{count} שינויים נוספים הונחו &f{file}&7.&r"
+diff = "&aהתצורה נטענה מחדש:&r &f[{file}]&r &b[{key}]&r &7[{before} -> {after}]&r"
+truncated = "&7{count} שינויים נוספים בקובץ &f{file}&7 אינם מוצגים.&r"
+missing = "לא הוגדר"
+removed = "הוסר"
 
 [runtime.legacy_command]
 insufficient_permissions = "&cהרשאות בלתי מוגבלות&r"
@@ -4448,6 +4447,7 @@ server-selected = "{plugin}: שפת השרת עכשיו {locale}."
 server-default-selected = "{plugin}: השפה שלך תואמת כעת לשפת ברירת המחדל של השרת."
 
 [language.editor]
+title = "{plugin} › {section}"
 loading = "טוען הודעות עבור {locale}..."
 
 [language.editor.section]

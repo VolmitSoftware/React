@@ -2,6 +2,7 @@ package art.arcane.react.localization;
 
 import art.arcane.react.localization.catalog.EnvironmentMessages;
 import art.arcane.react.localization.catalog.RendererMessages;
+import art.arcane.react.localization.catalog.RuntimeMessages;
 import art.arcane.volmlib.util.config.TomlCodec;
 import art.arcane.volmlib.util.localization.LocaleOverlay;
 import art.arcane.volmlib.util.localization.LocalizationCandidate;
@@ -12,6 +13,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -31,6 +33,22 @@ class ReactLanguageColorTest {
   void restoreEnglish() {
     assertTrue(ReactLanguage.reloadCandidate(LocalizationCandidate.english(
         ReactMessages.catalog(), PluralSelector.oneOther())).applied());
+  }
+
+  @Test
+  void hotloadValuesKeepMessageTemplatesAndWindowsPathsLiteral() {
+    String file = "languages\\en_US.toml";
+    String key = "$.runtime.hotload.diff";
+    String before = "&cBefore {file} C:\\";
+    String after = "<click:run_command:'/stop'><red>After</red></click>";
+    Component rendered = ReactLanguage.component(RuntimeMessages.HOTLOAD_DIFF,
+        MessageArgument.untrusted("file", file),
+        MessageArgument.untrusted("key", key),
+        MessageArgument.untrusted("before", before),
+        MessageArgument.untrusted("after", after));
+    assertEquals("Config hotloaded: [" + file + "] [" + key + "] [" + before + " -> " + after + "]",
+        PlainTextComponentSerializer.plainText().serialize(rendered));
+    assertTrue(MINI_MESSAGE.serialize(rendered).contains("\\<click:run_command:"));
   }
 
   @ParameterizedTest

@@ -138,7 +138,7 @@
 #   {scope}  Portée de la carte ou du réglage de distance
 #   {score}  Score de performance
 #   {seconds}  Compte à rebours ou durée du test de charge en secondes
-#   {section}  Nom de la section de configuration
+#   {section}  Section de configuration ou de l’éditeur de langues
 #   {server}  Implémentation et version du serveur Minecraft
 #   {shown}  Nombre de lignes actuellement affichées
 #   {since_run}  Erreurs signalées depuis le début du test actuel
@@ -3270,9 +3270,6 @@ optional = "Ce paramètre est facultatif."
 required = "Ce paramètre est obligatoire."
 type = "Ce paramètre est de type {type}."
 
-[director.runtime]
-usage = "Utilisation: {usage}"
-
 [director.runtime.error]
 conversion_failed = "Impossible de convertir \"{value}\" en {type} pour {parameter}"
 default_parse_failed = "Impossible d'analyser la valeur par défaut du paramètre {parameter}"
@@ -4168,8 +4165,10 @@ movement_throttled = "&eLa protection contre les pics de terrain d'Iris a limit�
 teleport_throttled = "&eIris Le téléportage a été tronqué par un surpresseur de terrain dans un terrain non généré.&r"
 
 [runtime.hotload]
-diff = "&aConfig chaud chargé:&r &f[{file}]&r &b[{key}]&r &7[{before} -> {after}]&r"
-truncated = "&7{count} des modifications supplémentaires ont été omises pour &f{file}&7.&r"
+diff = "&aConfiguration rechargée:&r &f[{file}]&r &b[{key}]&r &7[{before} -> {after}]&r"
+truncated = "&7{count} autres modifications de &f{file}&7 ne sont pas affichées.&r"
+missing = "non défini"
+removed = "supprimé"
 
 [runtime.legacy_command]
 insufficient_permissions = "&cLes permissions sont insuffisantes.&r"
@@ -4448,6 +4447,7 @@ server-selected = "{plugin}: la langue du serveur est maintenant {locale}."
 server-default-selected = "{plugin} : votre langue suit désormais la langue par défaut du serveur."
 
 [language.editor]
+title = "{plugin} › {section}"
 loading = "Chargement des messages en {locale}..."
 
 [language.editor.section]

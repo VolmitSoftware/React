@@ -1,25 +1,25 @@
 package art.arcane.react.util.project.config;
 
 import art.arcane.react.React;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
+import art.arcane.volmlib.util.hotload.ConfigHotloadEngine;
 
 import java.io.File;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 public class ConfigRewriteReporter {
   private static final int MAX_KEYS_PER_CATEGORY = 8;
-  private static final String MISSING = "<missing>";
-  private static final String REMOVED = "<removed>";
 
-  public static void reportRewrite(File file, String source, String beforeRaw, String afterRaw) {
+  public static void reportRewrite(File file, String source, String beforeRaw, String afterRaw, Class<?> type) {
     String before = normalize(beforeRaw);
     String after = normalize(afterRaw);
     if (Objects.equals(before, after)) {
       return;
     }
 
-    List<Change> changes = computeDiff(before, after);
+    List<ConfigHotloadEngine.DiffEntry> changes = ConfigHotloadEngine.computeStructuredDiff(
+        before, after, raw -> ConfigFileSupport.parseToJsonElement(raw, file), type);
     String path = relativize(file);
     String sourceTag = source == null || source.isBlank() ? "config" : source;
 
@@ -34,16 +34,16 @@ public class ConfigRewriteReporter {
     List<String> removedKeys = new ArrayList<>();
     List<String> addedKeys = new ArrayList<>();
     List<String> changedKeys = new ArrayList<>();
-    for (Change changeEntry : changes) {
-      if (changeEntry.type == ChangeType.REMOVED) {
+    for (ConfigHotloadEngine.DiffEntry changeEntry : changes) {
+      if (ConfigHotloadEngine.REMOVED.equals(changeEntry.newValue())) {
         removed++;
-        removedKeys.add(changeEntry.key);
-      } else if (changeEntry.type == ChangeType.ADDED) {
+        removedKeys.add(changeEntry.key());
+      } else if (ConfigHotloadEngine.MISSING.equals(changeEntry.oldValue())) {
         added++;
-        addedKeys.add(changeEntry.key);
+        addedKeys.add(changeEntry.key());
       } else {
         changed++;
-        changedKeys.add(changeEntry.key);
+        changedKeys.add(changeEntry.key());
       }
     }
 
@@ -64,97 +64,6 @@ public class ConfigRewriteReporter {
     String sourceTag = source == null || source.isBlank() ? "config" : source;
     String reasonText = reason == null || reason.isBlank() ? "invalid/unsupported content" : reason;
     React.warn("Rewrote " + sourceTag + " [" + path + "] using fallback defaults (" + reasonText + ").");
-  }
-
-  private static List<Change> computeDiff(String before, String after) {
-    Map<String, String> left = flattenForDiff(before);
-    Map<String, String> right = flattenForDiff(after);
-    Set<String> keys = new HashSet<>(left.keySet());
-    keys.addAll(right.keySet());
-
-    List<String> ordered = new ArrayList<>(keys);
-    ordered.sort(String::compareTo);
-
-    List<Change> out = new ArrayList<>();
-    for (String key : ordered) {
-      boolean inLeft = left.containsKey(key);
-      boolean inRight = right.containsKey(key);
-      String oldValue = inLeft ? left.get(key) : MISSING;
-      String newValue = inRight ? right.get(key) : REMOVED;
-      if (Objects.equals(oldValue, newValue)) {
-        continue;
-      }
-
-      ChangeType type;
-      if (inLeft && !inRight) {
-        type = ChangeType.REMOVED;
-      } else if (!inLeft && inRight) {
-        type = ChangeType.ADDED;
-      } else {
-        type = ChangeType.CHANGED;
-      }
-
-      out.add(new Change(type, key));
-    }
-
-    return out;
-  }
-
-  private static Map<String, String> flattenForDiff(String raw) {
-    JsonElement element = parseStructured(raw);
-    if (element == null) {
-      Map<String, String> fallback = new HashMap<>();
-      if (raw != null && !raw.isBlank()) {
-        fallback.put("$", normalize(raw));
-      }
-      return fallback;
-    }
-
-    Map<String, String> out = new HashMap<>();
-    flattenJson("$", element, out);
-    return out;
-  }
-
-  private static void flattenJson(String path, JsonElement element, Map<String, String> out) {
-    if (element == null || element.isJsonNull()) {
-      out.put(path, "null");
-      return;
-    }
-
-    if (element.isJsonPrimitive()) {
-      out.put(path, element.toString());
-      return;
-    }
-
-    if (element.isJsonArray()) {
-      if (element.getAsJsonArray().size() == 0) {
-        out.put(path, "[]");
-        return;
-      }
-
-      for (int i = 0; i < element.getAsJsonArray().size(); i++) {
-        flattenJson(path + "[" + i + "]", element.getAsJsonArray().get(i), out);
-      }
-      return;
-    }
-
-    JsonObject object = element.getAsJsonObject();
-    if (object.entrySet().isEmpty()) {
-      out.put(path, "{}");
-      return;
-    }
-
-    for (Map.Entry<String, JsonElement> entry : object.entrySet()) {
-      flattenJson(path + "." + entry.getKey(), entry.getValue(), out);
-    }
-  }
-
-  private static JsonElement parseStructured(String raw) {
-    if (raw == null || raw.isBlank()) {
-      return null;
-    }
-
-    return ConfigFileSupport.parseToJsonElement(raw, null);
   }
 
   private static String summarizeKeys(List<String> keys) {
@@ -201,19 +110,4 @@ public class ConfigRewriteReporter {
     }
   }
 
-  private enum ChangeType {
-    REMOVED,
-    ADDED,
-    CHANGED
-  }
-
-  private static class Change {
-    private final ChangeType type;
-    private final String key;
-
-    private Change(ChangeType type, String key) {
-      this.type = type;
-      this.key = key;
-    }
-  }
 }

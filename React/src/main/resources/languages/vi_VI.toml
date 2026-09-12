@@ -138,7 +138,7 @@
 #   {scope}  Phạm vi bản đồ hoặc phạm vi thiết lập khoảng cách
 #   {score}  Điểm kiểm thử hiệu năng
 #   {seconds}  Thời lượng đếm ngược hoặc kiểm thử tải, tính bằng giây
-#   {section}  Tên phần cấu hình
+#   {section}  Mục cấu hình hoặc mục trong trình chỉnh sửa ngôn ngữ
 #   {server}  Bản triển khai máy chủ Minecraft và phiên bản
 #   {shown}  Số hàng đang hiển thị
 #   {since_run}  Các lỗi được báo từ khi bắt đầu kiểm thử hiện tại
@@ -3270,9 +3270,6 @@ optional = "Tham số này là tùy chọn."
 required = "Tham số này là bắt buộc."
 type = "Tham số này có kiểu {type}."
 
-[director.runtime]
-usage = "Cách dùng: {usage}"
-
 [director.runtime.error]
 conversion_failed = "Không thể chuyển \"{value}\" thành {type} cho {parameter}"
 default_parse_failed = "Không thể phân tích giá trị mặc định của tham số {parameter}"
@@ -4168,8 +4165,10 @@ movement_throttled = "&eBộ bảo vệ đột biến tải địa hình Iris đ
 teleport_throttled = "&eIris Lực đẩy bảo vệ dịch chuyển đã bị bóp cò vào địa hình không được tạo ra.&r"
 
 [runtime.hotload]
-diff = "&aNạp nóng cấu hình:&r &f[{file}]&r &b[{key}]&r &7[{before} -> {after}]&r"
-truncated = "&7{count} Các thay đổi thêm đã bị bỏ qua cho &f{file}&7.&r"
+diff = "&aĐã tải lại cấu hình:&r &f[{file}]&r &b[{key}]&r &7[{before} -> {after}]&r"
+truncated = "&7Không hiển thị thêm {count} thay đổi trong &f{file}&7.&r"
+missing = "chưa đặt"
+removed = "đã xóa"
 
 [runtime.legacy_command]
 insufficient_permissions = "&cKhông đủ quyền.&r"
@@ -4448,6 +4447,7 @@ server-selected = "{plugin}: ngôn ngữ máy chủ hiện là {locale}."
 server-default-selected = "{plugin}: ngôn ngữ của bạn hiện theo ngôn ngữ mặc định của máy chủ."
 
 [language.editor]
+title = "{plugin} › {section}"
 loading = "Đang tải tin nhắn cho {locale}..."
 
 [language.editor.section]

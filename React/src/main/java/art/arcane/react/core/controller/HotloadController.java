@@ -36,6 +36,8 @@ import art.arcane.react.util.project.config.ConfigHotloadSnapshot;
 import art.arcane.react.util.project.registry.Registered;
 import art.arcane.volmlib.util.hotload.ConfigHotloadEngine;
 import art.arcane.volmlib.util.localization.MessageArgument;
+import art.arcane.volmlib.util.localization.LanguageAudience;
+import art.arcane.volmlib.util.localization.PluginLanguageService;
 import art.arcane.volmlib.util.scheduling.FoliaScheduler;
 import com.google.gson.JsonElement;
 import net.kyori.adventure.audience.Audience;
@@ -62,6 +64,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BooleanSupplier;
 
 @ConfigDescription("Watches React configuration and language files and applies changes automatically.")
 public class HotloadController extends TickedObject implements IController {
@@ -367,6 +370,10 @@ public class HotloadController extends TickedObject implements IController {
         enqueueChange(runtime, path, false);
         return null;
       }
+      if (ReactLanguage.isLanguageFile(file)) {
+        applyDeletedLanguage(runtime, preparationContext, file, preparedRevision);
+        return null;
+      }
       React.warn("Ignored config deletion after the hotload grace window; last-good state remains active: "
           + diagnosticRelativePath(file));
       if (!runtime.revisions().runIfCurrent(
@@ -408,8 +415,7 @@ public class HotloadController extends TickedObject implements IController {
     try {
       preparedApply = prepareConfigSnapshot(preparationContext, file, snapshot.rawContent());
     } catch (Throwable failure) {
-      React.warn("Skipped hotload for " + diagnosticRelativePath(file) + " due to invalid config: "
-          + failure.getMessage());
+      logTransientFailure("Skipped hotload for " + diagnosticRelativePath(file) + " due to invalid config", failure);
       if (!acknowledgeIfCurrent(runtime, snapshot, preparedRevision)) {
         enqueueChange(runtime, path, Files.isRegularFile(path));
       }
@@ -419,7 +425,7 @@ public class HotloadController extends TickedObject implements IController {
     if (!isCurrentRuntime(runtime)) {
       return null;
     }
-    List<Component> notifications;
+    List<HotloadNotice> notifications;
     try {
       notifications = prepareOperatorNotifications(file, before, snapshot.rawContent());
     } catch (Throwable failure) {
@@ -427,6 +433,38 @@ public class HotloadController extends TickedObject implements IController {
       notifications = List.of();
     }
     return new PreparedChange(file, snapshot, preparedRevision, preparedApply, notifications);
+  }
+
+  private void applyDeletedLanguage(
+      HotloadRuntime runtime,
+      PreparationContext context,
+      File file,
+      long revision
+  ) {
+    Path path = file.toPath().toAbsolutePath().normalize();
+    try {
+      ReactLanguage.PreparedReload prepared = ReactLanguage.prepareHotload(file, null, context.configuredLocale());
+      BooleanSupplier apply = () -> publishDeletedLanguage(runtime, file, prepared);
+      PluginLanguageService languages = ReactLanguage.selections();
+      HotloadRevisionTracker.GuardedBoolean result = languages == null
+          ? runtime.revisions().runBooleanIfCurrent(path, revision, apply)
+          : languages.commitUpdate(() -> runtime.revisions().runBooleanIfCurrent(path, revision, apply));
+      if (!result.current() || !result.value()) {
+        enqueueChange(runtime, path, Files.isRegularFile(path));
+      }
+    } catch (Exception failure) {
+      logTransientFailure("Could not apply English fallback for deleted language " + diagnosticRelativePath(file), failure);
+      enqueueChange(runtime, path, Files.isRegularFile(path));
+    }
+  }
+
+  private boolean publishDeletedLanguage(HotloadRuntime runtime, File file, ReactLanguage.PreparedReload prepared) {
+    if (Files.isRegularFile(file.toPath()) || !ReactLanguage.applyPreparedHotload(prepared)) {
+      return false;
+    }
+    runtime.appliedContents().remove(normalizedPath(file));
+    acknowledgeMissing(runtime, file);
+    return true;
   }
 
   private void applyPreparedBatch(
@@ -469,9 +507,15 @@ public class HotloadController extends TickedObject implements IController {
   private AppliedChange applyPreparedChange(HotloadRuntime runtime, PreparedChange change) {
     ApplyOutcome outcome;
     try {
-      HotloadRevisionTracker.GuardedBoolean guarded = runtime.revisions().runBooleanIfCurrent(
-          change.snapshot().path(), change.revision(), change.apply()::apply
-      );
+      PluginLanguageService languages = ReactLanguage.selections();
+      HotloadRevisionTracker.GuardedBoolean guarded;
+      if (languages != null && (isMainConfigFile(change.file()) || ReactLanguage.isLanguageFile(change.file()))) {
+        guarded = languages.commitUpdate(() -> runtime.revisions().runBooleanIfCurrent(
+            change.snapshot().path(), change.revision(), change.apply()::apply));
+      } else {
+        guarded = runtime.revisions().runBooleanIfCurrent(
+            change.snapshot().path(), change.revision(), change.apply()::apply);
+      }
       outcome = !guarded.current() ? ApplyOutcome.STALE
           : guarded.value() ? ApplyOutcome.APPLIED : ApplyOutcome.REJECTED;
     } catch (Throwable failure) {
@@ -1183,7 +1227,34 @@ public class HotloadController extends TickedObject implements IController {
     return ConfigFileSupport.parseToJsonElement(raw, file);
   }
 
-  private List<Component> prepareOperatorNotifications(File file, String before, String after) {
+  private Class<?> configType(File file) {
+    if (isMainConfigFile(file)) {
+      return ReactConfiguration.class;
+    }
+    if (sameFile(file, webToml)) {
+      return WebConfiguration.class;
+    }
+    ManagedConfig target = resolveManagedConfig(file);
+    if (target == null || React.instance == null) {
+      return null;
+    }
+    Registered registered = switch (target.category()) {
+      case "core" -> React.instance.getControllerRegistry() == null
+          ? null : React.instance.getControllerRegistry().get(target.id());
+      case "feature" -> React.controller(FeatureController.class) == null
+          ? null : React.controller(FeatureController.class).getFeatures().get(target.id());
+      case "tweak" -> React.controller(TweakController.class) == null
+          ? null : React.controller(TweakController.class).getTweaks().get(target.id());
+      case "action" -> React.controller(ActionController.class) == null
+          ? null : React.controller(ActionController.class).getActions().get(target.id());
+      case "sampler" -> React.controller(SampleController.class) == null
+          ? null : React.controller(SampleController.class).getSamplers().get(target.id());
+      default -> null;
+    };
+    return registered == null ? null : registered.getClass();
+  }
+
+  private List<HotloadNotice> prepareOperatorNotifications(File file, String before, String after) {
     if (!notifyOperators) {
       return List.of();
     }
@@ -1191,33 +1262,30 @@ public class HotloadController extends TickedObject implements IController {
     List<ConfigHotloadEngine.DiffEntry> diffs = ConfigHotloadEngine.computeStructuredDiff(
         before,
         after,
-        raw -> parseStructured(raw, null)
+        raw -> parseStructured(raw, file),
+        configType(file)
     );
     if (diffs.isEmpty()) {
       return List.of();
     }
 
     String relative = relativizeToDataFolder(file);
-    List<Component> messages = new ArrayList<>();
+    List<HotloadNotice> messages = new ArrayList<>();
     int shown = Math.min(Math.max(1, maxDiffMessagesPerFile), diffs.size());
     for (int i = 0; i < shown; i++) {
       ConfigHotloadEngine.DiffEntry diff = diffs.get(i);
-      messages.add(formatHotloadMessage(relative, diff.key(), diff.oldValue(), diff.newValue()));
+      messages.add(new DiffNotice(relative, diff));
     }
 
     if (diffs.size() > shown) {
       int remaining = diffs.size() - shown;
-      messages.add(ReactLanguage.prefixedComponent(
-          RuntimeMessages.HOTLOAD_TRUNCATED,
-          MessageArgument.untrusted("count", remaining),
-          MessageArgument.untrusted("file", relative)
-      ));
+      messages.add(new TruncatedNotice(relative, remaining));
     }
 
     return List.copyOf(messages);
   }
 
-  private void deliverOperatorNotifications(List<Component> messages) {
+  private void deliverOperatorNotifications(List<HotloadNotice> messages) {
     if (messages == null || messages.isEmpty()) {
       return;
     }
@@ -1228,11 +1296,15 @@ public class HotloadController extends TickedObject implements IController {
 
       // audience delivery: spigot Player has no sendMessage(Component)
       Audience audience = React.audiences().player(player);
-      messages.forEach(audience::sendMessage);
+      LanguageAudience.run(player.getUniqueId(), () -> {
+        for (HotloadNotice message : messages) {
+          audience.sendMessage(message.render());
+        }
+      });
     }
   }
 
-  private Component formatHotloadMessage(String file, String key, String oldValue, String newValue) {
+  private static Component formatHotloadMessage(String file, String key, String oldValue, String newValue) {
     return ReactLanguage.prefixedComponent(
         RuntimeMessages.HOTLOAD_DIFF,
         MessageArgument.untrusted("file", file),
@@ -1242,7 +1314,13 @@ public class HotloadController extends TickedObject implements IController {
     );
   }
 
-  private String formatValue(String value) {
+  private static String formatValue(String value) {
+    if (ConfigHotloadEngine.MISSING.equals(value)) {
+      return ReactLanguage.plain(RuntimeMessages.HOTLOAD_MISSING);
+    }
+    if (ConfigHotloadEngine.REMOVED.equals(value)) {
+      return ReactLanguage.plain(RuntimeMessages.HOTLOAD_REMOVED);
+    }
     return ConfigHotloadEngine.compactValue(value, 120);
   }
 
@@ -1271,8 +1349,30 @@ public class HotloadController extends TickedObject implements IController {
       ConfigHotloadSnapshot snapshot,
       long revision,
       PreparedApply apply,
-      List<Component> notifications
+      List<HotloadNotice> notifications
   ) {
+  }
+
+  private interface HotloadNotice {
+    Component render();
+  }
+
+  private record DiffNotice(String file, ConfigHotloadEngine.DiffEntry diff) implements HotloadNotice {
+    @Override
+    public Component render() {
+      return formatHotloadMessage(file, diff.key(), diff.oldValue(), diff.newValue());
+    }
+  }
+
+  private record TruncatedNotice(String file, int count) implements HotloadNotice {
+    @Override
+    public Component render() {
+      return ReactLanguage.prefixedComponent(
+          RuntimeMessages.HOTLOAD_TRUNCATED,
+          MessageArgument.untrusted("count", count),
+          MessageArgument.untrusted("file", file)
+      );
+    }
   }
 
   private record AppliedChange(PreparedChange change, ApplyOutcome outcome) {

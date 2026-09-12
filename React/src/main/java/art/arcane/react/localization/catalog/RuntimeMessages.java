@@ -15,6 +15,8 @@ public final class RuntimeMessages {
   public static final TextKey MONITOR_DISABLED = TextKey.of("runtime.monitor.disabled", "&eAction bar monitor disabled.&r");
   public static final TextKey HOTLOAD_DIFF = TextKey.of("runtime.hotload.diff", "&aConfig hotloaded:&r &f[{file}]&r &b[{key}]&r &7[{before} -> {after}]&r");
   public static final TextKey HOTLOAD_TRUNCATED = TextKey.of("runtime.hotload.truncated", "&7{count} additional changes were omitted for &f{file}&7.&r");
+  public static final TextKey HOTLOAD_MISSING = TextKey.of("runtime.hotload.missing", "not set");
+  public static final TextKey HOTLOAD_REMOVED = TextKey.of("runtime.hotload.removed", "removed");
   public static final TextKey ADAPT_INTERACTION_THROTTLED = TextKey.of("runtime.guard.adapt.interaction_throttled", "&eAdapt runtime surge guard smoothed rapid interaction burst.&r");
   public static final TextKey ADAPT_COMBAT_THROTTLED = TextKey.of("runtime.guard.adapt.combat_throttled", "&eAdapt runtime surge guard smoothed combat ability burst.&r");
   public static final TextKey ADAPT_CONSUME_THROTTLED = TextKey.of("runtime.guard.adapt.consume_throttled", "&eAdapt runtime surge guard smoothed item-consume burst.&r");
@@ -42,6 +44,8 @@ public final class RuntimeMessages {
     builder.add(MONITOR_DISABLED);
     builder.add(HOTLOAD_DIFF);
     builder.add(HOTLOAD_TRUNCATED);
+    builder.add(HOTLOAD_MISSING);
+    builder.add(HOTLOAD_REMOVED);
     builder.add(ADAPT_INTERACTION_THROTTLED);
     builder.add(ADAPT_COMBAT_THROTTLED);
     builder.add(ADAPT_CONSUME_THROTTLED);

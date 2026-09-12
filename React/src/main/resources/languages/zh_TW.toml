@@ -138,7 +138,7 @@
 #   {scope}  地圖範圍或距離設定的套用範圍
 #   {score}  基準測試分數
 #   {seconds}  倒數計時或負載測試時間，單位為秒
-#   {section}  設定區段名稱
+#   {section}  設定或語言編輯器區段
 #   {server}  Minecraft 伺服器實作及版本
 #   {shown}  目前顯示的列數
 #   {since_run}  本次測試開始以來回報的錯誤
@@ -3270,9 +3270,6 @@ optional = "此參數為可選項。"
 required = "此參數為必填項。"
 type = "此參數的類型為 {type}。"
 
-[director.runtime]
-usage = "用法: {usage}"
-
 [director.runtime.error]
 conversion_failed = "無法將 \"{value}\" 轉換為 {parameter} 所需的 {type}"
 default_parse_failed = "無法解析參數 {parameter} 的預設值"
@@ -4168,8 +4165,10 @@ movement_throttled = "&eIris 地形負載突增保護已限制移動到新區塊
 teleport_throttled = "&eIris 地形突襲的護衛 將電傳傳送到未生成的地形&r"
 
 [runtime.hotload]
-diff = "&a配置熱載 :&r &f[{file}]&r &b[{key}]&r &7[{before} -> {after}]&r"
-truncated = "&7{count} 省略了其他改動 &f{file}&7.&r"
+diff = "&a設定已重新載入:&r &f[{file}]&r &b[{key}]&r &7[{before} -> {after}]&r"
+truncated = "&7&f{file}&7 中還有 {count} 項變更未顯示。&r"
+missing = "未設定"
+removed = "已移除"
 
 [runtime.legacy_command]
 insufficient_permissions = "&c許可權不足。&r"
@@ -4448,6 +4447,7 @@ server-selected = "{plugin}：伺服器語言現在是 {locale}。"
 server-default-selected = "{plugin}：你的語言現在跟隨伺服器預設語言。"
 
 [language.editor]
+title = "{plugin} › {section}"
 loading = "正在載入 {locale} 的訊息..."
 
 [language.editor.section]

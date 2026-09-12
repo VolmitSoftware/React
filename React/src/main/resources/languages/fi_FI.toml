@@ -138,7 +138,7 @@
 #   {scope}  Kartan tai etäisyysasetuksen kohdealue
 #   {score}  Suorituskykytestin pistemäärä
 #   {seconds}  Lähtölaskennan tai kuormitustestin kesto sekunteina
-#   {section}  Asetusosion nimi
+#   {section}  Asetusten tai kielieditorin osio
 #   {server}  Minecraft-palvelintoteutus ja versio
 #   {shown}  Näkyvissä olevien rivien määrä
 #   {since_run}  Nykyisen testin alkamisen jälkeen ilmoitetut virheet
@@ -3270,9 +3270,6 @@ optional = "Tämä parametri on valinnainen."
 required = "Tämä parametri on pakollinen."
 type = "Tämän parametrin tyyppi on {type}."
 
-[director.runtime]
-usage = "Käyttö: {usage}"
-
 [director.runtime.error]
 conversion_failed = "Arvoa \"{value}\" ei voi muuntaa tyypiksi {type} parametrille {parameter}"
 default_parse_failed = "Parametrin {parameter} oletusarvoa ei voi jäsentää"
@@ -4168,8 +4165,10 @@ movement_throttled = "&eIrisin maaston kuormituspiikkisuoja rajoitti liikkumista
 teleport_throttled = "&eIris Maastopiikkisuojattu teleportti synnyttömään maastoon.&r"
 
 [runtime.hotload]
-diff = "&aMäärittele nowloaded:&r &f[{file}]&r &b[{key}]&r &7[{before} -> {after}]&r"
-truncated = "&7{count} Muita muutoksia ei tehty &f{file}&7.&r"
+diff = "&aAsetukset ladattu uudelleen:&r &f[{file}]&r &b[{key}]&r &7[{before} -> {after}]&r"
+truncated = "&7Tiedoston &f{file}&7 {count} muuta muutosta jätettiin näyttämättä.&r"
+missing = "ei asetettu"
+removed = "poistettu"
 
 [runtime.legacy_command]
 insufficient_permissions = "&c- Riittämättömät luvat.&r"
@@ -4448,6 +4447,7 @@ server-selected = "{plugin}: palvelinkieli on nyt {locale}."
 server-default-selected = "{plugin}: kielesi noudattaa nyt palvelimen oletuskieltä."
 
 [language.editor]
+title = "{plugin} › {section}"
 loading = "Ladataan kielen {locale} viestejä..."
 
 [language.editor.section]

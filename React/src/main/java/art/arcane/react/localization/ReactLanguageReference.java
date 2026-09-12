@@ -148,7 +148,7 @@ final class ReactLanguageReference {
                       Map.entry("scope", "Map scope or distance-setting scope"),
                       Map.entry("score", "Benchmark score"),
                       Map.entry("seconds", "Countdown or load-test duration in seconds"),
-                      Map.entry("section", "Configuration section name"),
+                      Map.entry("section", "Configuration or language editor section"),
                       Map.entry("server", "Minecraft server implementation and version"),
                       Map.entry("shown", "Number of rows currently displayed"),
                       Map.entry("since_run", "Errors reported since the current test started"),

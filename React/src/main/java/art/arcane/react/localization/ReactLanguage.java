@@ -135,6 +135,10 @@ public final class ReactLanguage {
     return languageSwitcher;
   }
 
+  public static PluginLanguageService selections() {
+    return languageService;
+  }
+
   public static PluginLanguageEditor.Options editorOptions() {
     return new PluginLanguageEditor.Options(
         locale -> LocalizationSnapshot.create(loadCandidate(locale, null)), ReactLanguage::writeMessage);
@@ -215,7 +219,16 @@ public final class ReactLanguage {
       String configuredLocale
   ) throws Exception {
     String normalizedLocale = normalizeLocale(configuredLocale);
-    boolean serverDefault = languageFile == null || rawContent == null;
+    boolean serverDefault = languageFile == null;
+    if (!serverDefault && rawContent == null) {
+      if (!isLanguageFile(languageFile)) {
+        throw new IllegalArgumentException("Not a React language file: " + languageFile);
+      }
+      String deletedLocale = normalizeLocale(languageFile.getName().substring(0, languageFile.getName().length() - 5));
+      LocalizationSnapshot english = LocalizationSnapshot.create(
+          LocalizationCandidate.english(CATALOG, PluralSelector.oneOther()));
+      return new PreparedReload(english, deletedLocale, deletedLocale, false, false);
+    }
     LanguageHotloadSnapshot hotloadSnapshot = serverDefault
         ? null
         : new LanguageHotloadSnapshot(normalizedPath(languageFile), rawContent);

@@ -138,7 +138,7 @@
 #   {scope}  Harita kapsamı veya mesafe ayarının kapsamı
 #   {score}  Performans testi puanı
 #   {seconds}  Geri sayım veya yük testi süresi, saniye cinsinden
-#   {section}  Yapılandırma bölümünün adı
+#   {section}  Yapılandırma veya dil düzenleyicisi bölümü
 #   {server}  Minecraft sunucu uygulaması ve sürümü
 #   {shown}  Görüntülenen satırların sayısı
 #   {since_run}  Geçerli testin başlangıcından bu yana bildirilen hatalar
@@ -3270,9 +3270,6 @@ optional = "Bu parametre isteğe bağlıdır."
 required = "Bu parametre zorunludur."
 type = "Bu parametrenin türü {type}."
 
-[director.runtime]
-usage = "Kullanım: {usage}"
-
 [director.runtime.error]
 conversion_failed = "\"{value}\", {parameter} için {type} türüne dönüştürülemiyor"
 default_parse_failed = "{parameter} parametresinin varsayılan değeri ayrıştırılamıyor"
@@ -4168,8 +4165,10 @@ movement_throttled = "&eIris arazi yük artışı koruması yeni chunk'lara hare
 teleport_throttled = "&eIris Arazi, üretilen araziye sertleşen teleportuyu koruyor.&r"
 
 [runtime.hotload]
-diff = "&aKonj sıcak yüklendi:&r &f[{file}]&r &b[{key}]&r &7[{before} -> {after}]&r"
-truncated = "&7{count} Ek değişiklikler için ihmal edildi &f{file}&7.&r"
+diff = "&aYapılandırma yeniden yüklendi:&r &f[{file}]&r &b[{key}]&r &7[{before} -> {after}]&r"
+truncated = "&7&f{file}&7 dosyasındaki {count} ek değişiklik gösterilmiyor.&r"
+missing = "ayarlanmamış"
+removed = "kaldırıldı"
 
 [runtime.legacy_command]
 insufficient_permissions = "&cYetersiz izinler.&r"
@@ -4448,6 +4447,7 @@ server-selected = "{plugin}: sunucu dili şimdi {locale}."
 server-default-selected = "{plugin}: diliniz artık sunucunun varsayılan dilini kullanıyor."
 
 [language.editor]
+title = "{plugin} › {section}"
 loading = "{locale} mesajları yükleniyor..."
 
 [language.editor.section]

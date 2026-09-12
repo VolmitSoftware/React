@@ -5,6 +5,10 @@ import org.bukkit.ChatColor;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Entity;
+import org.bukkit.World;
+import org.bukkit.Location;
+import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.junit.jupiter.api.Test;
@@ -12,6 +16,7 @@ import org.mockito.Mockito;
 
 import java.lang.reflect.Field;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
 class FeatureMobStackingPresentationTest {
   private static final NamespacedKey STACK_LABEL_KEY = new NamespacedKey("react", "mob-stack-label");
@@ -91,12 +96,40 @@ class FeatureMobStackingPresentationTest {
     Mockito.verify(entity).setCustomName(null);
   }
 
+  @Test
+  void deathReplacementDoesNotInheritCanonicalizedStackName() {
+    FeatureMobStacking feature = Mockito.spy(new FeatureMobStacking(Mockito.mock(GlossEntityOverlayIntegration.class)));
+    LivingEntity source = entity(ChatColor.BOLD + "3x " + ChatColor.GRAY + "Zombie");
+    LivingEntity replacement = entity(null);
+    World world = Mockito.mock(World.class);
+    Location location = Mockito.mock(Location.class);
+    EntityDeathEvent event = Mockito.mock(EntityDeathEvent.class);
+    Mockito.when(source.getPersistentDataContainer().get(STACK_LABEL_KEY, PersistentDataType.STRING)).thenReturn(STACK_NAME);
+    Mockito.when(source.getWorld()).thenReturn(world);
+    Mockito.when(source.getLocation()).thenReturn(location);
+    Mockito.when(world.spawnEntity(location, EntityType.ZOMBIE)).thenReturn(replacement);
+    Mockito.when(replacement.isValid()).thenReturn(true);
+    Mockito.when(event.getEntity()).thenReturn(source);
+    Mockito.doReturn(3).when(feature).getStackCount(source);
+    Mockito.doNothing().when(feature).setStackCount(Mockito.any(Entity.class), Mockito.anyInt());
+
+    feature.onEntityDeath(event);
+
+    Mockito.verify(replacement, Mockito.never()).setCustomName(Mockito.anyString());
+    Mockito.verify(feature).setStackCount(replacement, 2);
+  }
+
   private LivingEntity entity(String name) {
     LivingEntity entity = Mockito.mock(LivingEntity.class);
     PersistentDataContainer data = Mockito.mock(PersistentDataContainer.class);
     Mockito.when(entity.getUniqueId()).thenReturn(UUID.randomUUID());
     Mockito.when(entity.getType()).thenReturn(EntityType.ZOMBIE);
-    Mockito.when(entity.getCustomName()).thenReturn(name);
+    AtomicReference<String> currentName = new AtomicReference<>(name);
+    Mockito.when(entity.getCustomName()).thenAnswer(invocation -> currentName.get());
+    Mockito.doAnswer(invocation -> {
+      currentName.set(invocation.getArgument(0));
+      return null;
+    }).when(entity).setCustomName(Mockito.any());
     Mockito.when(entity.getPersistentDataContainer()).thenReturn(data);
     return entity;
   }

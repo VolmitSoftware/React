@@ -99,13 +99,13 @@ public final class ConfigFileSupport {
         if (canonicalizeExisting) {
           String canonical = serialize(loaded, canonicalFile, sourceTag);
           if (!normalize(canonical).equals(normalize(raw))) {
-            ConfigRewriteReporter.reportRewrite(canonicalFile, sourceTag, raw, canonical);
+            ConfigRewriteReporter.reportRewrite(canonicalFile, sourceTag, raw, canonical, type);
             writeConfig(canonicalFile, canonical);
           }
         } else if (shouldBackfillCanonicalComments(sourceTag, raw)) {
           String canonical = serialize(loaded, canonicalFile, sourceTag);
           if (!normalize(canonical).equals(normalize(raw))) {
-            ConfigRewriteReporter.reportRewrite(canonicalFile, sourceTag, raw, canonical);
+            ConfigRewriteReporter.reportRewrite(canonicalFile, sourceTag, raw, canonical, type);
             writeConfig(canonicalFile, canonical);
           }
         }

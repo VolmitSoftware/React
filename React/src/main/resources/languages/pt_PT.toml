@@ -138,7 +138,7 @@
 #   {scope}  Âmbito do mapa ou da definição de distância
 #   {score}  Pontuação do teste de desempenho
 #   {seconds}  Contagem decrescente ou duração do teste de carga em segundos
-#   {section}  Nome da secção de configuração
+#   {section}  Secção da configuração ou do editor de idiomas
 #   {server}  Implementação e versão do servidor Minecraft
 #   {shown}  Número de linhas atualmente apresentadas
 #   {since_run}  Erros comunicados desde o início do teste atual
@@ -3270,9 +3270,6 @@ optional = "Este parâmetro é opcional."
 required = "Este parâmetro é obrigatório."
 type = "Este parâmetro é do tipo {type}."
 
-[director.runtime]
-usage = "Utilização: {usage}"
-
 [director.runtime.error]
 conversion_failed = "Não foi possível converter \"{value}\" em {type} para {parameter}"
 default_parse_failed = "Não foi possível interpretar o valor predefinido do parâmetro {parameter}"
@@ -4168,8 +4165,10 @@ movement_throttled = "&eA proteção contra picos de terreno do Iris limitou o m
 teleport_throttled = "&eIris O terreno de pico protege o teletransporte em terrenos não gerados.&r"
 
 [runtime.hotload]
-diff = "&aConfiguração de carga quente:&r &f[{file}]&r &b[{key}]&r &7[{before} -> {after}]&r"
-truncated = "&7{count} foram omitidas alterações adicionais para &f{file}&7.&r"
+diff = "&aConfiguração recarregada:&r &f[{file}]&r &b[{key}]&r &7[{before} -> {after}]&r"
+truncated = "&7Foram omitidas {count} alterações adicionais de &f{file}&7.&r"
+missing = "não definido"
+removed = "removido"
 
 [runtime.legacy_command]
 insufficient_permissions = "&cPermissões insuficientes.&r"
@@ -4448,6 +4447,7 @@ server-selected = "{plugin}: o idioma do servidor agora é {locale}."
 server-default-selected = "{plugin}: o seu idioma segue agora o idioma predefinido do servidor."
 
 [language.editor]
+title = "{plugin} › {section}"
 loading = "A carregar as mensagens de {locale}..."
 
 [language.editor.section]
