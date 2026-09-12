@@ -4449,7 +4449,6 @@ server-default-selected = "{plugin}: jūsų kalba dabar atitinka numatytąją se
 [language.editor]
 title = "{plugin} › {section}"
 loading = "Įkeliami kalbos {locale} pranešimai..."
-title = "{plugin} / {section}"
 
 [language.editor.section]
 languages = "Kalbos"

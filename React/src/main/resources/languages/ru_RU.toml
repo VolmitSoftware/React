@@ -4449,7 +4449,6 @@ server-default-selected = "{plugin}: теперь ваш язык соответ
 [language.editor]
 title = "{plugin} › {section}"
 loading = "Загрузка сообщений для {locale}..."
-title = "{plugin} / {section}"
 
 [language.editor.section]
 languages = "Языки"

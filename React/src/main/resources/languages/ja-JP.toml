@@ -4449,7 +4449,6 @@ server-default-selected = "{plugin}: 個人言語はサーバーの既定の言�
 [language.editor]
 title = "{plugin} › {section}"
 loading = "{locale}のメッセージを読み込んでいます..."
-title = "{plugin} / {section}"
 
 [language.editor.section]
 languages = "言語"
