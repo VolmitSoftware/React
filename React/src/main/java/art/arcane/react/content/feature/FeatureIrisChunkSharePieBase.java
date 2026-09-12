@@ -611,7 +611,7 @@ abstract class FeatureIrisChunkSharePieBase extends ReactFeature implements List
       if (!irisAccessLookupAttempted) {
         irisAccessLookupAttempted = true;
         try {
-          Class<?> toolbelt = Class.forName("art.arcane.iris.core.tools.IrisToolbelt");
+          Class<?> toolbelt = Class.forName("art.arcane.iris.world.IrisToolbelt");
           Method method = toolbelt.getMethod("access", World.class);
           method.setAccessible(true);
           irisAccessMethod = method;

@@ -4449,6 +4449,7 @@ server-default-selected = "{plugin} : votre langue suit désormais la langue par
 [language.editor]
 title = "{plugin} › {section}"
 loading = "Chargement des messages en {locale}..."
+title = "{plugin} / {section}"
 
 [language.editor.section]
 languages = "Langues"

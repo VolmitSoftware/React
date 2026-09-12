@@ -4449,6 +4449,7 @@ server-default-selected = "{plugin}：你的语言现在跟随服务器默认语
 [language.editor]
 title = "{plugin} › {section}"
 loading = "正在加载 {locale} 的消息..."
+title = "{plugin} / {section}"
 
 [language.editor.section]
 languages = "语言"
