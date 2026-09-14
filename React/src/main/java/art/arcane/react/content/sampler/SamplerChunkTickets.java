@@ -19,7 +19,11 @@
 
 package art.arcane.react.content.sampler;
 
+import art.arcane.react.React;
 import art.arcane.react.api.sampler.ReactCachedSampler;
+import art.arcane.react.nms.NmsBridge;
+import art.arcane.react.nms.NmsBridges;
+import art.arcane.react.util.common.scheduling.J;
 import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
@@ -49,25 +53,7 @@ public class SamplerChunkTickets extends ReactCachedSampler {
 
   @Override
   public double onSample() {
-    return sampleOnMainThread(() -> {
-      if (!available) {
-        return 0D;
-      }
-
-      try {
-        long total = 0L;
-        for (World world : Bukkit.getWorlds()) {
-          for (Collection<Chunk> tickets : world.getPluginChunkTickets().values()) {
-            total += tickets.size();
-          }
-        }
-
-        return (double) total;
-      } catch (Throwable ex) {
-        available = false;
-        return 0D;
-      }
-    });
+    return sampleOnMainThread(this::countTickets);
   }
 
   @Override
@@ -88,5 +74,36 @@ public class SamplerChunkTickets extends ReactCachedSampler {
   @Override
   public boolean isSampleAvailable() {
     return available;
+  }
+
+  private double countTickets() {
+    if (!available) {
+      return 0D;
+    }
+
+    try {
+      boolean folia = J.isFoliaThreading();
+      NmsBridge bridge = folia ? NmsBridges.get() : null;
+      if (folia && bridge == null) {
+        available = false;
+        return 0D;
+      }
+
+      long total = 0L;
+      for (World world : Bukkit.getWorlds()) {
+        if (folia) {
+          total += bridge.countPluginChunkTickets(world);
+        } else {
+          for (Collection<Chunk> tickets : world.getPluginChunkTickets().values()) {
+            total += tickets.size();
+          }
+        }
+      }
+      return (double) total;
+    } catch (RuntimeException | LinkageError failure) {
+      available = false;
+      React.warn("Could not sample plugin chunk tickets. The metric is unavailable until its sampler restarts.", failure);
+      return 0D;
+    }
   }
 }

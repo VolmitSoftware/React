@@ -176,6 +176,7 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
   private transient final Map<ChunkWorkKey, Map<UUID, IndexedStackEntity>> indexedChunks = new ConcurrentHashMap<>();
   private transient final Consumer<Entity> entityTickListener = this::onTick;
   private transient final AtomicLong lifecycleGeneration = new AtomicLong(0L);
+  private transient final MobStackRecovery recovery = new MobStackRecovery(this);
   private transient volatile boolean active;
   private transient volatile StackableIndex stackableIndex;
 
@@ -541,7 +542,7 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
       return false;
     }
 
-    if (active && canMerge(a, into)) {
+    if (active && isEnabled() && canMerge(a, into)) {
       setStackCount(into, getStackCount(into) + getStackCount(a));
       if (vacuumEffect) {
         NMS.sendCollectPacket(a, 64, a.getEntityId(), into.getEntityId(), 1);
@@ -889,6 +890,67 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
 
   public int getStackCount(Entity e) {
     return ReactEntity.getStackCount(e);
+  }
+
+  @Override
+  public void onIntegrityTick() {
+    recovery.tick(lifecycleGeneration.get());
+  }
+
+  boolean shouldRecoverStacks(long generation) {
+    return !isEnabled() && generation == lifecycleGeneration.get()
+        && React.instance != null && React.instance.isEnabled() && React.instance.isReady();
+  }
+
+  int restoreStack(LivingEntity source, int maximum, long generation) {
+    int restored = 0;
+    while (restored < maximum && shouldRecoverStacks(generation) && source.isValid() && !source.isDead()) {
+      int count = getStackCount(source);
+      if (count <= 1) {
+        if (source.hasMetadata("UniqueMobStack") || source.getPersistentDataContainer().has(STACK_LABEL_KEY)) {
+          finishStackRecovery(source, count);
+        }
+        break;
+      }
+
+      LivingEntity replacement = createReplacement(source);
+      if (replacement == null) {
+        recovery.warnRejectedSpawn(source);
+        break;
+      }
+      if (!shouldRecoverStacks(generation) || !source.isValid() || source.isDead()
+          || getStackCount(source) != count) {
+        replacement.remove();
+        break;
+      }
+      try {
+        replacement.setHealth(Math.min(replacement.getMaxHealth(), source.getHealth()));
+        replacement.removeMetadata("UniqueMobStack", React.instance);
+        replacement.removeMetadata("DoNotStack", React.instance);
+        ReactEntity.setStackCount(replacement, 1);
+        ReactEntity.setStackCount(source, count - 1);
+      } catch (RuntimeException failure) {
+        replacement.remove();
+        throw failure;
+      }
+      restored++;
+      clearStackName(source, count);
+      if (count == 2) {
+        finishStackRecovery(source, 1);
+      } else {
+        refreshStackPresentation(source, count - 1);
+      }
+      finishStackRecovery(replacement, 1);
+    }
+    return restored;
+  }
+
+  private void finishStackRecovery(LivingEntity entity, int previousCount) {
+    clearStackName(entity, previousCount);
+    entity.removeMetadata("UniqueMobStack", React.instance);
+    entity.removeMetadata("DoNotStack", React.instance);
+    refreshStackPresentation(entity, 1);
+    presentationRefreshes.remove(entity.getUniqueId());
   }
 
   @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)

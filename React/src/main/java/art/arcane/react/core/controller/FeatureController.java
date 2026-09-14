@@ -74,6 +74,18 @@ public class FeatureController extends TickedObject implements IController {
       return;
     }
 
+    if (features != null) {
+      for (Feature feature : features.all()) {
+        if (feature instanceof FeatureIntegrityListener listener) {
+          try {
+            listener.onIntegrityTick();
+          } catch (Throwable failure) {
+            reportFeatureLifecycleFailure("reconcile integrity", feature.getId(), failure);
+          }
+        }
+      }
+    }
+
     long now = System.currentTimeMillis();
     if (now - lastGateReconcileMS < GATE_RECONCILE_INTERVAL_MS) {
       return;

@@ -5,6 +5,8 @@ import org.bukkit.World;
 public interface NmsBridge {
     String version();
 
+    long countPluginChunkTickets(World world);
+
     boolean installFurnaceTickHook(FurnaceTickHook hook);
 
     boolean installBrewingTickHook(BrewingTickHook hook);

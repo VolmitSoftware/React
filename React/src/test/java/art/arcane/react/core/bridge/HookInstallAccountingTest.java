@@ -192,6 +192,11 @@ class HookInstallAccountingTest {
     }
 
     @Override
+    public long countPluginChunkTickets(World world) {
+      return 0L;
+    }
+
+    @Override
     public boolean installFurnaceTickHook(FurnaceTickHook hook) {
       return install("furnace");
     }

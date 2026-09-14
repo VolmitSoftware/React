@@ -3,6 +3,7 @@ package art.arcane.react.core.controller;
 import art.arcane.react.React;
 import art.arcane.react.api.feature.CapabilityGatedFeature;
 import art.arcane.react.api.feature.Feature;
+import art.arcane.react.api.feature.FeatureIntegrityListener;
 import art.arcane.react.api.feature.ReactTickedFeature;
 import art.arcane.react.api.feature.ReactCapabilityFeature;
 import art.arcane.react.core.integration.IntegrationCapabilitySupport;
@@ -216,6 +217,78 @@ class FeatureControllerLifecycleTest {
       Assertions.assertTrue(controller.getActiveFeatures().isEmpty());
       Mockito.verify(feature, Mockito.never()).onActivate();
     }
+  }
+
+  @Test
+  void disabledIntegrityFeatureKeepsReceivingTicksWithoutActivation() {
+    Feature feature = integrityFeature("mob-stacking", false);
+    FeatureIntegrityListener listener = (FeatureIntegrityListener) feature;
+    controller.setFeatures(registry(Map.of(feature.getId(), feature)));
+    Mockito.when(plugin.isReady()).thenReturn(true);
+
+    try (MockedStatic<React> react = Mockito.mockStatic(React.class);
+         MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
+      controller.postStart();
+      controller.onTick();
+      controller.onTick();
+
+      Mockito.verify(plugin).registerListener(listener);
+      Mockito.verify(listener, Mockito.times(2)).onIntegrityTick();
+      Mockito.verify(feature, Mockito.never()).onActivate();
+      Assertions.assertTrue(controller.getActiveFeatures().isEmpty());
+      Assertions.assertTrue(controller.getTickedFeatures().isEmpty());
+    }
+  }
+
+  @Test
+  void integrityTicksWaitForReadinessAndPauseDuringReloadAndStop() {
+    Feature feature = integrityFeature("mob-stacking", false);
+    FeatureIntegrityListener listener = (FeatureIntegrityListener) feature;
+    controller.setFeatures(registry(Map.of(feature.getId(), feature)));
+
+    try (MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
+      controller.onTick();
+      Mockito.verify(listener, Mockito.never()).onIntegrityTick();
+      Mockito.when(plugin.isReady()).thenReturn(true);
+      controller.setReconcilePaused(true);
+      controller.onTick();
+      Mockito.verify(listener, Mockito.never()).onIntegrityTick();
+      controller.setReconcilePaused(false);
+      controller.onTick();
+      controller.stop();
+      controller.onTick();
+
+      Mockito.verify(listener).onIntegrityTick();
+      Mockito.verify(plugin).unregisterListener(listener);
+    }
+  }
+
+  @Test
+  void integrityFailureDoesNotPreventOtherFeaturesFromRecovering() {
+    Feature broken = integrityFeature("broken", false);
+    Feature healthy = integrityFeature("healthy", false);
+    RuntimeException failure = new IllegalStateException("recovery failed");
+    Mockito.doThrow(failure).when((FeatureIntegrityListener) broken).onIntegrityTick();
+    Map<String, Feature> features = new LinkedHashMap<>();
+    features.put(broken.getId(), broken);
+    features.put(healthy.getId(), healthy);
+    controller.setFeatures(registry(features));
+    Mockito.when(plugin.isReady()).thenReturn(true);
+
+    try (MockedStatic<React> react = Mockito.mockStatic(React.class);
+         MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
+      Assertions.assertDoesNotThrow(controller::onTick);
+
+      Mockito.verify((FeatureIntegrityListener) healthy).onIntegrityTick();
+      react.verify(() -> React.reportError("Failed to reconcile integrity feature broken.", failure));
+    }
+  }
+
+  private Feature integrityFeature(String id, boolean enabled) {
+    Feature feature = Mockito.mock(Feature.class,
+        Mockito.withSettings().extraInterfaces(FeatureIntegrityListener.class));
+    stubFeature(feature, id, enabled, -1);
+    return feature;
   }
 
   private Feature feature(String id, boolean enabled, int tickInterval) {

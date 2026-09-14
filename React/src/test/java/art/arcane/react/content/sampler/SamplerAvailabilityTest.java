@@ -1,5 +1,6 @@
 package art.arcane.react.content.sampler;
 
+import art.arcane.react.React;
 import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.react.util.common.scheduling.J;
 import org.bukkit.Bukkit;
@@ -24,7 +25,8 @@ class SamplerAvailabilityTest {
     Mockito.when(forceLoadedWorld.getForceLoadedChunks()).thenThrow(UnsupportedOperationException.class);
     Mockito.when(chunkTicketsWorld.getPluginChunkTickets()).thenThrow(UnsupportedOperationException.class);
 
-    try (MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class);
+    try (MockedStatic<React> react = Mockito.mockStatic(React.class);
+         MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
       scheduling.when(J::isPrimaryThread).thenReturn(true);
       assertUnavailableAfterFailure(new SamplerBlockEntities(), blockEntitiesWorld, bukkit);

@@ -26,6 +26,8 @@ import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientboundExplodePacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.Ticket;
+import net.minecraft.server.level.TicketType;
 import net.minecraft.server.players.PlayerList;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
@@ -38,6 +40,7 @@ import org.bukkit.craftbukkit.CraftWorld;
 
 import java.lang.instrument.Instrumentation;
 import java.lang.reflect.Method;
+import java.util.Collection;
 import java.util.Map;
 import java.util.HashSet;
 import java.util.Optional;
@@ -59,6 +62,20 @@ public final class NmsBridgeImpl implements NmsBridge {
     @Override
     public String version() {
         return "v26_2_R1";
+    }
+
+    @Override
+    public long countPluginChunkTickets(World world) {
+        ServerLevel serverLevel = ((CraftWorld) world).getHandle();
+        long total = 0L;
+        for (Collection<Ticket> tickets : serverLevel.moonrise$getChunkTaskScheduler().chunkHolderManager.getTicketsCopy().values()) {
+            for (Ticket<?> ticket : tickets) {
+                if (ticket.getType() == TicketType.PLUGIN_TICKET) {
+                    total++;
+                }
+            }
+        }
+        return total;
     }
 
     @Override
