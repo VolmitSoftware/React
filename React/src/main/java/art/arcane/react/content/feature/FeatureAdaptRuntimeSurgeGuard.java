@@ -1,5 +1,6 @@
 package art.arcane.react.content.feature;
 
+import art.arcane.volmlib.util.event.ProtectionProbe;
 import art.arcane.react.React;
 import art.arcane.react.api.feature.ReactCapabilityFeature;
 import art.arcane.react.content.sampler.SamplerTickTime;
@@ -100,6 +101,9 @@ public class FeatureAdaptRuntimeSurgeGuard extends ReactCapabilityFeature implem
 
   @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
   public void on(PlayerInteractEvent event) {
+    if (ProtectionProbe.isProbe(event)) {
+      return;
+    }
     if (!surge) {
       return;
     }

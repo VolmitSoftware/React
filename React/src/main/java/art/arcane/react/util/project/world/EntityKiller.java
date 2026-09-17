@@ -19,6 +19,7 @@
 
 package art.arcane.react.util.project.world;
 
+import art.arcane.volmlib.util.event.ProtectionProbe;
 import art.arcane.react.React;
 import art.arcane.react.core.controller.EntityController;
 import art.arcane.react.localization.ReactLanguage;
@@ -461,6 +462,9 @@ public class EntityKiller {
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void on(PlayerInteractEntityEvent event) {
+      if (ProtectionProbe.isProbe(event)) {
+        return;
+      }
       EntityKiller killer = ACTIVE.get(event.getRightClicked().getUniqueId());
       if (killer == null) {
         return;

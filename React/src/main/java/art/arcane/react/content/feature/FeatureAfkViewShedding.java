@@ -19,6 +19,7 @@
 
 package art.arcane.react.content.feature;
 
+import art.arcane.volmlib.util.event.ProtectionProbe;
 import art.arcane.react.React;
 import art.arcane.react.api.feature.PressureGate;
 import art.arcane.react.api.feature.ReactFeature;
@@ -535,6 +536,9 @@ public class FeatureAfkViewShedding extends ReactFeature implements Listener {
 
   @EventHandler
   public void on(PlayerInteractEvent e) {
+    if (ProtectionProbe.isProbe(e)) {
+      return;
+    }
     markActive(e.getPlayer());
   }
 

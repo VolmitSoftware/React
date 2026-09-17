@@ -19,6 +19,7 @@
 
 package art.arcane.react.content.feature;
 
+import art.arcane.volmlib.util.event.ProtectionProbe;
 import art.arcane.react.React;
 import art.arcane.react.api.feature.FeatureIntegrityListener;
 import art.arcane.react.api.feature.ReactFeature;
@@ -265,7 +266,7 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
 
   @EventHandler(ignoreCancelled = true)
   public void onPlayerInteractEntity(PlayerInteractEntityEvent event) {
-    if (event.isCancelled()) {
+    if (ProtectionProbe.isProbe(event) || event.isCancelled()) {
       return;
     }
     // Check for sneak and right click
