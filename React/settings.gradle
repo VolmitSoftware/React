@@ -51,3 +51,4 @@ if (useLocalVolmLib && localVolmLibDirectory != null) {
 
 include(':bridge-api')
 include(':nms:v26_2_R1')
+include(':nms:v26_3_R1')

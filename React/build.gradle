@@ -157,6 +157,7 @@ dependencies {
 
     // NMS submodule (Mojang-mapped, shaded into final jar)
     implementation(project(':nms:v26_2_R1'))
+    implementation(project(':nms:v26_3_R1'))
 
     // Shaded
     implementation('de.crazydev22.slimjar.helper:spigot:2.1.9')
@@ -272,6 +273,7 @@ tasks.named('shadowJar', ShadowJar).configure {
         // NmsBridges resolves art.arcane.react.nms.<tag>.NmsBridgeImpl by Class.forName presence
         // probe, and the advice/runtime classes underneath it are only ever named by ByteBuddy.
         exclude(project(':nms:v26_2_R1'))
+        exclude(project(':nms:v26_3_R1'))
         exclude(project(':bridge-api'))
     }
     dependsOn(tasks.named('processResources'))
@@ -290,6 +292,21 @@ tasks.named('shadowJar', ShadowJar).configure {
 
 tasks.named('build').configure {
     dependsOn('shadowJar')
+}
+
+sourceSets {
+    runtimeProbe {
+        java.srcDir('src/test/runtime/java')
+        resources.srcDir('src/test/runtime/resources')
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+    }
+}
+
+tasks.register('runtimeProbeJar', Jar) {
+    dependsOn(tasks.named('runtimeProbeClasses'))
+    archiveBaseName.set('ReactRuntimeProbe')
+    archiveVersion.set('')
+    from(sourceSets.runtimeProbe.output)
 }
 
 if (!JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_25)) {
@@ -318,6 +335,7 @@ pluginPackaging {
             prunePrefixes = ['art/arcane/react/util/arcane/volmlib/']
             keepPrefixes = ['art/arcane/react/util/arcane/volmlib/util/matter/slices/']
             shrinkRules = [file('packaging/shrink.pro')]
+            shrinkDontwarn = ['net.minecraft.network.protocol.game.ClientboundExplodePacket']
             shrinkLibraries.from(provider { project(':nms:v26_2_R1').configurations.compileClasspath })
             shrinkRelocations = [
                 'net.bytebuddy': "${lib}.bytebuddy",

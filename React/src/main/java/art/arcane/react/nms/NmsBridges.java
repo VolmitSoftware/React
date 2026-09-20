@@ -117,8 +117,8 @@ public final class NmsBridges {
         String major = matcher.group(1);
         String minor = matcher.group(2);
         String patch = matcher.group(3);
-        if ("26".equals(major) && "2".equals(minor)) {
-            return "26.2";
+        if ("26".equals(major) && ("2".equals(minor) || "3".equals(minor))) {
+            return major + "." + minor;
         }
         if (patch == null) {
             return major + "." + minor;
@@ -132,6 +132,7 @@ public final class NmsBridges {
         }
         return switch (mcVersion) {
             case "26.2", "26.1.2", "1.21.11" -> "v26_2_R1";
+            case "26.3" -> "v26_3_R1";
             default -> "";
         };
     }

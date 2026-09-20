@@ -20,6 +20,8 @@ public class NmsBridgesTest {
             "'26.2', '26.2'",
             "'26.2.0', '26.2'",
             "'26.2.7', '26.2'",
+            "'26.3-R0.1-SNAPSHOT', '26.3'",
+            "'26.3.0', '26.3'",
             "'1.21', '1.21'",
             "'1.20.4', '1.20.4'"
     })
@@ -40,7 +42,7 @@ public class NmsBridgesTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"1.21", "1.20.4", "26.1", "26.1.1", "26.3", "27.0"})
+    @ValueSource(strings = {"1.21", "1.20.4", "26.1", "26.1.1", "26.4", "27.0"})
     public void tagFor_unsupportedVersionsReturnEmpty(String mcVersion) {
         Assertions.assertEquals("", NmsBridges.tagFor(mcVersion));
     }
@@ -49,6 +51,12 @@ public class NmsBridgesTest {
     public void tagFor_nullOrEmptyReturnsEmpty() {
         Assertions.assertEquals("", NmsBridges.tagFor(null));
         Assertions.assertEquals("", NmsBridges.tagFor(""));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"26.3", "26.3.0", "26.3-R0.1-SNAPSHOT", "git-Paper-25 (MC: 26.3)"})
+    public void minecraft26_3UsesItsOwnBridge(String raw) {
+        Assertions.assertEquals("v26_3_R1", NmsBridges.tagFor(NmsBridges.extractMcVersion(raw)));
     }
 
     @ParameterizedTest
