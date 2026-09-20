@@ -1,7 +1,7 @@
 package art.arcane.react.content.sampler;
 
 import art.arcane.react.React;
-import art.arcane.react.nms.NmsBridge;
+import art.arcane.volmlib.nativelib.monitor.NativeMonitor;
 import art.arcane.react.nms.NmsBridges;
 import art.arcane.react.util.common.scheduling.J;
 import org.bukkit.Bukkit;
@@ -24,7 +24,7 @@ class SamplerChunkTicketsTest {
   private MockedStatic<J> scheduling;
   private MockedStatic<NmsBridges> bridges;
   private MockedStatic<React> logging;
-  private NmsBridge bridge;
+  private NativeMonitor bridge;
   private World firstWorld;
   private World secondWorld;
   private SamplerChunkTickets sampler;
@@ -37,7 +37,7 @@ class SamplerChunkTicketsTest {
     logging = Mockito.mockStatic(React.class);
     scheduling.when(J::isPrimaryThread).thenReturn(true);
     scheduling.when(J::isFoliaThreading).thenReturn(true);
-    bridge = Mockito.mock(NmsBridge.class);
+    bridge = Mockito.mock(NativeMonitor.class);
     bridges.when(NmsBridges::get).thenReturn(bridge);
     firstWorld = Mockito.mock(World.class);
     secondWorld = Mockito.mock(World.class);

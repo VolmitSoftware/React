@@ -24,10 +24,10 @@ import art.arcane.react.api.feature.PressureGate;
 import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.content.sampler.SamplerIncidentScore;
 import art.arcane.react.content.sampler.SamplerTickTime;
-import art.arcane.react.nms.ExplosionDecision;
-import art.arcane.react.nms.ExplosionHook;
-import art.arcane.react.nms.ExplosionPacketSuppressor;
-import art.arcane.react.nms.NmsBridge;
+import art.arcane.volmlib.nativelib.monitor.ExplosionDecision;
+import art.arcane.volmlib.nativelib.monitor.ExplosionHook;
+import art.arcane.volmlib.nativelib.monitor.ExplosionPacketSuppressor;
+import art.arcane.volmlib.nativelib.monitor.NativeMonitor;
 import art.arcane.react.nms.NmsBridges;
 import art.arcane.react.util.common.scheduling.J;
 import lombok.Getter;
@@ -174,7 +174,7 @@ public class FeatureExplosionPacketBatching extends ReactFeature implements List
   }
 
   private void installBridgeHook() {
-    NmsBridge bridge = NmsBridges.get();
+    NativeMonitor bridge = NmsBridges.get();
     if (bridge == null) {
       bridgeActive = false;
       suppressorActive = false;
@@ -207,7 +207,7 @@ public class FeatureExplosionPacketBatching extends ReactFeature implements List
   }
 
   private void uninstallBridgeHook() {
-    NmsBridge bridge = NmsBridges.get();
+    NativeMonitor bridge = NmsBridges.get();
     if (bridge != null) {
       bridge.uninstallExplosionHook();
       bridge.uninstallExplosionPacketSuppressor();
@@ -418,7 +418,7 @@ public class FeatureExplosionPacketBatching extends ReactFeature implements List
     retainedBroadcasts.offer(new BroadcastBatch(worldId, world, retained));
   }
 
-  int drainRetainedBroadcasts(NmsBridge bridge, int maximumBroadcasts) {
+  int drainRetainedBroadcasts(NativeMonitor bridge, int maximumBroadcasts) {
     if (bridge == null || maximumBroadcasts <= 0) {
       return 0;
     }
@@ -433,7 +433,7 @@ public class FeatureExplosionPacketBatching extends ReactFeature implements List
     }
   }
 
-  private int drainRetainedBroadcastsLocked(NmsBridge bridge, int maximumBroadcasts, long deadlineNanos) {
+  private int drainRetainedBroadcastsLocked(NativeMonitor bridge, int maximumBroadcasts, long deadlineNanos) {
     int range = Math.max(16, mergedBroadcastRangeBlocks);
     int completed = 0;
     int attempts = 0;
@@ -538,7 +538,7 @@ public class FeatureExplosionPacketBatching extends ReactFeature implements List
   }
 
   private void drainRetainedBroadcasts() {
-    NmsBridge bridge = NmsBridges.get();
+    NativeMonitor bridge = NmsBridges.get();
     if (bridge == null) {
       return;
     }
@@ -550,7 +550,7 @@ public class FeatureExplosionPacketBatching extends ReactFeature implements List
     if (!hasRetainedSuppressionDebt()) {
       return;
     }
-    NmsBridge bridge = NmsBridges.get();
+    NativeMonitor bridge = NmsBridges.get();
     if (bridge == null) {
       throw retainedShutdownFailure("has no NMS bridge available for its shutdown drain");
     }

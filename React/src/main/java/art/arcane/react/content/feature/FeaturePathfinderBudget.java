@@ -20,16 +20,14 @@
 package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
+import art.arcane.volmlib.nativelib.NativeAdapters;
+import art.arcane.volmlib.nativelib.monitor.NativeWorldAccess;
 import art.arcane.react.api.feature.FeatureIntegrityListener;
 import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.content.feature.perworld.PerWorldPressure;
 import art.arcane.react.content.feature.perworld.ReactScopedPressure;
 import art.arcane.react.content.sampler.SamplerTickTime;
-import art.arcane.react.core.bridge.BridgeKind;
-import art.arcane.react.core.bridge.NmsBridgeDescriptor;
-import art.arcane.react.core.bridge.NmsBridgeHandle;
-import art.arcane.react.core.bridge.NmsBridgeRegistry;
 import art.arcane.react.core.controller.EntityController;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.project.world.WorldEntitySnapshots;
@@ -50,7 +48,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -65,9 +62,6 @@ import java.util.function.Consumer;
 public class FeaturePathfinderBudget extends ReactFeature implements FeatureIntegrityListener {
   private static final int MAX_INDEXED_MOBS = 65_536;
   public static final String ID = "pathfinder-budget";
-  public static final String BRIDGE_GET_NAVIGATION = "Mob.getNavigation";
-  public static final String BRIDGE_SET_MAX_VISITED = "PathNavigation.setMaxVisitedNodesMultiplier";
-  public static final String BRIDGE_RESET_MAX_VISITED = "PathNavigation.resetMaxVisitedNodesMultiplier";
   private static final NamespacedKey NS_BUDGETED = new NamespacedKey(React.instance, "react-path-budget");
   private static final int CLAIM_CLEANUP_BATCH_SIZE = 256;
   private static final long CLAIM_CLEANUP_TIMEOUT_MS = 30_000L;
@@ -100,9 +94,7 @@ public class FeaturePathfinderBudget extends ReactFeature implements FeatureInte
   private double budgetMultiplier = 0.4;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Mobs within this distance of a player always keep their full pathfinding budget (blocks).", impact = "Higher values protect more mobs from budgeting; lower values shed more pathfinding cost near players.")
   private double fullBudgetWithinDistance = 16;
-  private transient volatile NmsBridgeHandle bridgeGetNavigation;
-  private transient volatile NmsBridgeHandle bridgeSetMaxVisited;
-  private transient volatile NmsBridgeHandle bridgeResetMaxVisited;
+  private transient volatile NativeWorldAccess nativeAccess;
   private transient volatile EntityController registeredController;
   private transient volatile boolean bridgesAvailable;
   private transient volatile boolean active;
@@ -110,32 +102,6 @@ public class FeaturePathfinderBudget extends ReactFeature implements FeatureInte
 
   public FeaturePathfinderBudget() {
     super(ID);
-  }
-
-  public static List<NmsBridgeDescriptor> pathfinderBridgeDescriptors() {
-    List<String> mobClasses = List.of(
-        "net.minecraft.world.entity.Mob",
-        "net.minecraft.world.entity.EntityInsentient");
-    List<String> navigationClasses = List.of(
-        "net.minecraft.world.entity.ai.navigation.PathNavigation",
-        "net.minecraft.world.entity.ai.navigation.NavigationAbstract");
-    return List.of(
-        new NmsBridgeDescriptor(
-            BRIDGE_GET_NAVIGATION, BridgeKind.METHOD, mobClasses, "getNavigation",
-            List.of(List.of()),
-            navigationClasses.get(0),
-            Optional.of("Mob.getNavigation")),
-        new NmsBridgeDescriptor(
-            BRIDGE_SET_MAX_VISITED, BridgeKind.METHOD, navigationClasses, "setMaxVisitedNodesMultiplier",
-            List.of(List.of("float")),
-            "void",
-            Optional.of("PathNavigation.setMaxVisitedNodesMultiplier")),
-        new NmsBridgeDescriptor(
-            BRIDGE_RESET_MAX_VISITED, BridgeKind.METHOD, navigationClasses, "resetMaxVisitedNodesMultiplier",
-            List.of(List.of()),
-            "void",
-            Optional.of("PathNavigation.resetMaxVisitedNodesMultiplier"))
-    );
   }
 
   @Override
@@ -410,14 +376,11 @@ public class FeaturePathfinderBudget extends ReactFeature implements FeatureInte
       }
 
       try {
-        Object navigation = navigationOf(mob);
-        if (navigation == null) {
+        float multiplier = (float) Math.max(0.05D, Math.min(1D, budgetMultiplier));
+        if (!nativeAccess.setNavigationBudget(mob, multiplier)) {
           budgetedMobs.remove(entityId, claim);
           return;
         }
-
-        float multiplier = (float) Math.max(0.05D, Math.min(1D, budgetMultiplier));
-        bridgeSetMaxVisited.methodHandle().invokeWithArguments(navigation, multiplier);
         mob.getPersistentDataContainer().set(NS_BUDGETED, PersistentDataType.BYTE, (byte) 1);
       } catch (Throwable failure) {
         if (budgetedMobs.remove(entityId, claim)) {
@@ -455,10 +418,7 @@ public class FeaturePathfinderBudget extends ReactFeature implements FeatureInte
   private void resetBudgetState(Mob mob) throws Throwable {
     Throwable failure = null;
     try {
-      Object navigation = navigationOf(mob);
-      if (navigation != null) {
-        bridgeResetMaxVisited.methodHandle().invokeWithArguments(navigation);
-      }
+      nativeAccess.resetNavigationBudget(mob);
     } catch (Throwable throwable) {
       failure = throwable;
     } finally {
@@ -468,15 +428,6 @@ public class FeaturePathfinderBudget extends ReactFeature implements FeatureInte
     if (failure != null) {
       throw failure;
     }
-  }
-
-  private Object navigationOf(Mob mob) throws Throwable {
-    Object handle = mob.getClass().getMethod("getHandle").invoke(mob);
-    if (handle == null) {
-      return null;
-    }
-
-    return bridgeGetNavigation.methodHandle().invokeWithArguments(handle);
   }
 
   private void releaseGeneration(long generation) {
@@ -685,32 +636,10 @@ public class FeaturePathfinderBudget extends ReactFeature implements FeatureInte
   }
 
   private synchronized boolean resolveBridges() {
-    if (bridgeGetNavigation != null && bridgeSetMaxVisited != null && bridgeResetMaxVisited != null) {
-      bridgesAvailable = bridgeGetNavigation.available()
-          && bridgeSetMaxVisited.available()
-          && bridgeResetMaxVisited.available();
-      return bridgesAvailable;
+    if (nativeAccess == null) {
+      nativeAccess = NativeAdapters.find(NativeWorldAccess.class).orElse(null);
     }
-
-    NmsBridgeRegistry registry;
-    try {
-      registry = React.bridgeRegistry();
-    } catch (Throwable failure) {
-      bridgesAvailable = false;
-      return false;
-    }
-    if (registry == null) {
-      bridgesAvailable = false;
-      return false;
-    }
-
-    List<NmsBridgeDescriptor> descriptors = pathfinderBridgeDescriptors();
-    bridgeGetNavigation = registry.resolve(descriptors.get(0));
-    bridgeSetMaxVisited = registry.resolve(descriptors.get(1));
-    bridgeResetMaxVisited = registry.resolve(descriptors.get(2));
-    bridgesAvailable = bridgeGetNavigation.available()
-        && bridgeSetMaxVisited.available()
-        && bridgeResetMaxVisited.available();
+    bridgesAvailable = nativeAccess != null;
     return bridgesAvailable;
   }
 

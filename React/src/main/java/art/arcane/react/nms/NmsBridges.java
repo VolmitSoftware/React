@@ -3,18 +3,17 @@ package art.arcane.react.nms;
 import art.arcane.react.React;
 import org.bukkit.Bukkit;
 
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import art.arcane.volmlib.nativelib.NativeAdapters;
+import art.arcane.volmlib.nativelib.monitor.NativeMonitor;
 
 public final class NmsBridges {
-    private static volatile NmsBridge bridge;
+    private static volatile NativeMonitor bridge;
     private static volatile boolean attempted;
     private static volatile String failureReason = "";
 
     private NmsBridges() {}
 
-    public static NmsBridge get() {
+    public static NativeMonitor get() {
         if (attempted) {
             return bridge;
         }
@@ -48,92 +47,24 @@ public final class NmsBridges {
         }
     }
 
-    private static NmsBridge resolve() {
-        String detected = detectVersionTag();
-        if (detected.isEmpty()) {
-            failureReason = "Could not detect server NMS version tag";
-            React.info("NMS bridge disabled: " + failureReason);
+    private static NativeMonitor resolve() {
+        try {
+            NativeMonitor resolved = NativeAdapters.find(NativeMonitor.class).orElse(null);
+            if (resolved == null) {
+                failureReason = "No native monitoring backend for " + Bukkit.getMinecraftVersion();
+                React.info(failureReason);
+            } else {
+                React.info("Native monitoring backend active: " + resolved.version());
+            }
+            return resolved;
+        } catch (Throwable failure) {
+            failureReason = failure.getClass().getSimpleName() + ": " + failure.getMessage();
+            React.reportError("Native monitoring backend failed to load", failure);
             return null;
         }
-
-        List<String> candidates = List.of(
-                "art.arcane.react.nms." + detected + ".NmsBridgeImpl"
-        );
-
-        for (String candidate : candidates) {
-            try {
-                Class<?> implClass = Class.forName(candidate);
-                Object instance = implClass.getDeclaredConstructor().newInstance();
-                if (instance instanceof NmsBridge resolved) {
-                    React.info("NMS bridge active: " + candidate);
-                    return resolved;
-                }
-            } catch (ClassNotFoundException ignored) {
-            } catch (Throwable t) {
-                failureReason = t.getClass().getSimpleName() + ": " + t.getMessage();
-                React.reportError("NMS bridge load failed for " + candidate + " — " + failureReason, t);
-                return null;
-            }
-        }
-
-        failureReason = "No matching NMS bridge implementation for tag '" + detected + "'";
-        React.info(failureReason + " — features remain measurement-only");
-        return null;
     }
-
-    private static final Pattern MC_VERSION_PATTERN = Pattern.compile("(\\d+)\\.(\\d+)(?:\\.(\\d+))?");
 
     public static boolean onBundledVersion() {
-        return !detectVersionTag().isEmpty();
-    }
-
-    private static String detectVersionTag() {
-        try {
-            String bukkitVersion = Bukkit.getBukkitVersion();
-            if (bukkitVersion != null && !bukkitVersion.isEmpty()) {
-                String tag = tagFor(extractMcVersion(bukkitVersion));
-                if (!tag.isEmpty()) {
-                    return tag;
-                }
-            }
-            String serverVersion = Bukkit.getVersion();
-            if (serverVersion != null && !serverVersion.isEmpty()) {
-                String tag = tagFor(extractMcVersion(serverVersion));
-                if (!tag.isEmpty()) {
-                    return tag;
-                }
-            }
-            return "";
-        } catch (Throwable ignored) {
-            return "";
-        }
-    }
-
-    static String extractMcVersion(String raw) {
-        Matcher matcher = MC_VERSION_PATTERN.matcher(raw);
-        if (!matcher.find()) {
-            return "";
-        }
-        String major = matcher.group(1);
-        String minor = matcher.group(2);
-        String patch = matcher.group(3);
-        if ("26".equals(major) && ("2".equals(minor) || "3".equals(minor))) {
-            return major + "." + minor;
-        }
-        if (patch == null) {
-            return major + "." + minor;
-        }
-        return major + "." + minor + "." + patch;
-    }
-
-    static String tagFor(String mcVersion) {
-        if (mcVersion == null || mcVersion.isEmpty()) {
-            return "";
-        }
-        return switch (mcVersion) {
-            case "26.2", "26.1.2", "1.21.11" -> "v26_2_R1";
-            case "26.3" -> "v26_3_R1";
-            default -> "";
-        };
+        return get() != null;
     }
 }

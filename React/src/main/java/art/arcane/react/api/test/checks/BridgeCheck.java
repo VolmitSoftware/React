@@ -7,7 +7,7 @@ import art.arcane.react.core.bridge.BridgeHealthReport;
 import art.arcane.react.core.bridge.NmsBridgeRegistry;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.TestMessages;
-import art.arcane.react.nms.NmsBridge;
+import art.arcane.volmlib.nativelib.monitor.NativeMonitor;
 import art.arcane.react.nms.NmsBridges;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.volmlib.util.localization.MessageArgument;
@@ -57,7 +57,7 @@ public final class BridgeCheck implements ReactAsyncSubsystemCheck {
     }
 
     String unavailableDetail = describeUnavailable(health);
-    NmsBridge bridge = NmsBridges.get();
+    NativeMonitor bridge = NmsBridges.get();
     boolean onBundledVersion = NmsBridges.onBundledVersion();
 
     if (bridge == null || !onBundledVersion) {

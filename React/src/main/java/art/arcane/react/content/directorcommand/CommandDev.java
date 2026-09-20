@@ -46,7 +46,7 @@ import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.CommandMessages;
 import art.arcane.react.localization.catalog.DevMessages;
 import art.arcane.react.model.AreaActionParams;
-import art.arcane.react.nms.NmsBridge;
+import art.arcane.volmlib.nativelib.monitor.NativeMonitor;
 import art.arcane.react.nms.NmsBridges;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.director.DirectorExecutor;
@@ -184,7 +184,7 @@ public class CommandDev implements DirectorExecutor {
   }
 
   private void verifyBridge(VolmitSender out) {
-    NmsBridge bridge = NmsBridges.get();
+    NativeMonitor bridge = NmsBridges.get();
     if (bridge == null) {
       ReactLanguage.send(
           out,

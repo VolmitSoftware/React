@@ -20,146 +20,48 @@
 package art.arcane.react.core;
 
 import art.arcane.react.React;
-import art.arcane.react.core.bridge.NmsAccessors;
-import art.arcane.react.core.bridge.NmsBridgeRegistry;
+import art.arcane.volmlib.nativelib.NativeAdapters;
+import art.arcane.volmlib.nativelib.monitor.NativeWorldAccess;
 import org.bukkit.Location;
-import org.bukkit.World;
-import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
 public final class NMS {
-  private static volatile NmsAccessors accessors;
-  private static volatile boolean registryWarningIssued;
-  private static volatile boolean collectPacketDisabled;
-  private static volatile boolean collectPacketWarningIssued;
+    private static volatile boolean collectPacketDisabled;
+    private static volatile NativeWorldAccess nativeAccess;
 
-  private NMS() {
-  }
-
-  public static void reset() {
-    synchronized (NMS.class) {
-      accessors = null;
-      registryWarningIssued = false;
-      collectPacketDisabled = false;
-      collectPacketWarningIssued = false;
-    }
-  }
-
-  public static Object getWorldServer(World world) {
-    if (world == null) {
-      return null;
+    private NMS() {
     }
 
-    NmsAccessors resolved = accessors();
-    if (!resolved.worldHandleAvailable()) {
-      return null;
+    public static void reset() {
+        collectPacketDisabled = false;
+        nativeAccess = null;
     }
 
-    return resolved.worldHandle(world);
-  }
-
-  public static Object getHandle(Entity entity) {
-    return accessors().entityHandle(entity);
-  }
-
-  public static Object getConnection(Player player) {
-    return accessors().connection(getHandle(player));
-  }
-
-  public static void sendPacket(Player player, Object packet) {
-    if (packet == null) {
-      return;
+    public static void sendCollectPacket(Entity at, int radius, int entity, int toCollect, int count) {
+        if (collectPacketDisabled) {
+            return;
+        }
+        try {
+            NativeWorldAccess access = nativeAccess;
+            if (access == null) {
+                access = NativeAdapters.find(NativeWorldAccess.class).orElse(null);
+                nativeAccess = access;
+            }
+            if (access == null) {
+                collectPacketDisabled = true;
+                React.warn("Mob stacking vacuum packets disabled: native world access is unavailable.");
+                return;
+            }
+            Location location = at.getLocation();
+            for (Player player : location.getWorld().getPlayers()) {
+                if (player.getLocation().distanceSquared(location) < (double) radius * radius) {
+                    access.sendCollectPacket(player, entity, toCollect, count);
+                }
+            }
+        } catch (Throwable failure) {
+            collectPacketDisabled = true;
+            React.reportError("Mob stacking vacuum packets disabled", failure);
+        }
     }
-
-    accessors().send(getConnection(player), packet);
-  }
-
-  public static Object collectPacket(int entity, int toCollect, int count) {
-    NmsAccessors resolved = accessors();
-    if (!resolved.collectPacketAvailable()) {
-      return null;
-    }
-
-    return resolved.collectPacket(entity, toCollect, count);
-  }
-
-  public static void sendCollectPacket(Entity at, int radius, int entity, int toCollect, int count) {
-    if (collectPacketDisabled) {
-      return;
-    }
-
-    try {
-      Object packet = collectPacket(entity, toCollect, count);
-      if (packet == null) {
-        disableCollectPacket("collect packet class was not found for this server runtime.", null);
-        return;
-      }
-
-      sendPacket(at, radius, packet);
-    } catch (Throwable e) {
-      String message = e.getMessage();
-      disableCollectPacket(e.getClass().getSimpleName() + (message == null || message.isBlank() ? "" : ": " + message), e);
-    }
-  }
-
-  public static void sendPacket(Block at, int radius, Object packet) {
-    sendPacket(at.getLocation(), radius, packet);
-  }
-
-  public static void sendPacket(Entity at, int radius, Object packet) {
-    sendPacket(at.getLocation(), radius, packet);
-  }
-
-  public static void sendPacket(Location at, int radius, Object packet) {
-    for (Player i : at.getWorld().getPlayers()) {
-      if (i.getLocation().distanceSquared(at) < radius * radius) {
-        sendPacket(i, packet);
-      }
-    }
-  }
-
-  private static NmsAccessors accessors() {
-    NmsAccessors resolved = accessors;
-    if (resolved != null) {
-      return resolved;
-    }
-
-    synchronized (NMS.class) {
-      if (accessors != null) {
-        return accessors;
-      }
-
-      NmsBridgeRegistry registry = React.instance == null ? null : React.bridgeRegistry();
-      if (registry == null) {
-        warnRegistryUnavailable();
-        return NmsAccessors.unresolved();
-      }
-
-      accessors = NmsAccessors.resolve(registry, NmsAccessors.defaultDescriptors(), React::warn);
-      return accessors;
-    }
-  }
-
-  private static void warnRegistryUnavailable() {
-    if (registryWarningIssued) {
-      return;
-    }
-
-    registryWarningIssued = true;
-    React.warn("NMS accessors are inactive: the React bridge registry has not been initialised.");
-  }
-
-  private static void disableCollectPacket(String reason, Throwable cause) {
-    collectPacketDisabled = true;
-    if (collectPacketWarningIssued) {
-      return;
-    }
-
-    collectPacketWarningIssued = true;
-    React.warn("Mob stacking vacuum packets disabled: " + reason);
-    if (cause != null) {
-      React.reportError(cause);
-    }
-  }
 }

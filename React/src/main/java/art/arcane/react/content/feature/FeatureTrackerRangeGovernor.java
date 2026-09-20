@@ -27,12 +27,16 @@ import art.arcane.react.util.common.scheduling.J;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
+import art.arcane.volmlib.nativelib.NativeAdapters;
+import art.arcane.volmlib.nativelib.monitor.NativeWorldAccess;
+import art.arcane.volmlib.nativelib.monitor.EntityRangeSettings;
+import art.arcane.volmlib.nativelib.monitor.EntityRangeSettings.Range;
+
+import java.util.EnumSet;
+import java.util.Set;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -47,14 +51,13 @@ public class FeatureTrackerRangeGovernor extends ReactFeature {
   }
 
   public static final String ID = "tracker-range-governor";
-  private static final String[] GOVERNED_FIELDS = {
-      "itemTrackingRange",
-      "miscTrackingRange",
-      "displayTrackingRange",
-      "animalTrackingRange",
-      "monsterTrackingRange",
-      "otherTrackingRange"
-  };
+  private static final Set<Range> GOVERNED_RANGES = EnumSet.of(
+      Range.TRACKING_ITEM,
+      Range.TRACKING_MISC,
+      Range.TRACKING_DISPLAY,
+      Range.TRACKING_ANIMAL,
+      Range.TRACKING_MONSTER,
+      Range.TRACKING_OTHER);
   @art.arcane.react.util.project.config.ConfigDoc(value = "Main evaluation interval for tracker range governor in milliseconds.", impact = "Lower values react faster but consume more CPU; higher values reduce overhead but react later.")
   private int tickIntervalMS = 2000;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Average tick milliseconds required before the governor engages.", impact = "Lower values shrink tracking ranges earlier; higher values reserve it for heavier load.")
@@ -79,10 +82,9 @@ public class FeatureTrackerRangeGovernor extends ReactFeature {
   private double otherRangeFactor = 0.75;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Minimum tracking range in blocks after scaling.", impact = "Higher values cap how aggressively ranges shrink; lower values allow deeper cuts.")
   private int minimumRangeBlocks = 16;
-  private transient Method getHandleMethod;
-  private transient Field spigotConfigField;
-  private transient Map<String, Field> rangeFields;
-  private transient Map<UUID, Map<String, Integer>> baselinesByWorld;
+  private transient NativeWorldAccess nativeAccess;
+  private transient Set<Range> rangeTypes;
+  private transient Map<UUID, Map<Range, Integer>> baselinesByWorld;
   private transient boolean resolved;
   private transient boolean supported;
   private transient final PressureGate gate = new PressureGate();
@@ -114,7 +116,7 @@ public class FeatureTrackerRangeGovernor extends ReactFeature {
 
   @Override
   public void onDeactivate() {
-    Map<UUID, Map<String, Integer>> retiredBaselines;
+    Map<UUID, Map<Range, Integer>> retiredBaselines;
     RetiredWorldState retiredState;
     synchronized (worldMutationLock) {
       active = false;
@@ -243,26 +245,25 @@ public class FeatureTrackerRangeGovernor extends ReactFeature {
     int governed = 0;
     for (World world : Bukkit.getWorlds()) {
       try {
-        Object config = spigotConfig(world);
+        EntityRangeSettings config = nativeAccess.entityRanges(world);
         if (config == null) {
           continue;
         }
 
-        Map<String, Integer> baselines = new HashMap<>();
-        for (Map.Entry<String, Field> entry : rangeFields.entrySet()) {
-          Field field = entry.getValue();
-          int base = field.getInt(config);
+        Map<Range, Integer> baselines = new HashMap<>();
+        for (Range type : rangeTypes) {
+          int base = config.range(type);
           if (base <= 0) {
             continue;
           }
 
-          int target = scaledRange(base, factorFor(entry.getKey()), minimumRangeBlocks);
+          int target = scaledRange(base, factorFor(type), minimumRangeBlocks);
           if (target >= base) {
             continue;
           }
 
-          baselines.put(entry.getKey(), base);
-          field.setInt(config, target);
+          baselines.put(type, base);
+          config.range(type, target);
           governed++;
         }
 
@@ -280,30 +281,27 @@ public class FeatureTrackerRangeGovernor extends ReactFeature {
     }
   }
 
-  private void release(Map<UUID, Map<String, Integer>> rangeBaselines) {
+  private void release(Map<UUID, Map<Range, Integer>> rangeBaselines) {
     if (rangeBaselines == null || rangeBaselines.isEmpty()) {
       return;
     }
 
     int restored = 0;
-    for (Map.Entry<UUID, Map<String, Integer>> worldEntry : rangeBaselines.entrySet()) {
+    for (Map.Entry<UUID, Map<Range, Integer>> worldEntry : rangeBaselines.entrySet()) {
       World world = Bukkit.getWorld(worldEntry.getKey());
       if (world == null) {
         continue;
       }
 
       try {
-        Object config = spigotConfig(world);
+        EntityRangeSettings config = nativeAccess.entityRanges(world);
         if (config == null) {
           continue;
         }
 
-        for (Map.Entry<String, Integer> entry : worldEntry.getValue().entrySet()) {
-          Field field = rangeFields.get(entry.getKey());
-          if (field != null) {
-            field.setInt(config, entry.getValue());
-            restored++;
-          }
+        for (Map.Entry<Range, Integer> entry : worldEntry.getValue().entrySet()) {
+          config.range(entry.getKey(), entry.getValue());
+          restored++;
         }
       } catch (Throwable e) {
         failRuntime(e);
@@ -337,13 +335,13 @@ public class FeatureTrackerRangeGovernor extends ReactFeature {
     return active && generation == lifecycleGeneration.get();
   }
 
-  private double factorFor(String fieldName) {
-    return switch (fieldName) {
-      case "itemTrackingRange" -> itemRangeFactor;
-      case "miscTrackingRange" -> miscRangeFactor;
-      case "displayTrackingRange" -> displayRangeFactor;
-      case "animalTrackingRange" -> animalRangeFactor;
-      case "monsterTrackingRange" -> monsterRangeFactor;
+  private double factorFor(Range type) {
+    return switch (type) {
+      case TRACKING_ITEM -> itemRangeFactor;
+      case TRACKING_MISC -> miscRangeFactor;
+      case TRACKING_DISPLAY -> displayRangeFactor;
+      case TRACKING_ANIMAL -> animalRangeFactor;
+      case TRACKING_MONSTER -> monsterRangeFactor;
       default -> otherRangeFactor;
     };
   }
@@ -361,59 +359,20 @@ public class FeatureTrackerRangeGovernor extends ReactFeature {
     }
 
     try {
-      World world = worlds.get(0);
-      getHandleMethod = world.getClass().getMethod("getHandle");
-      getHandleMethod.setAccessible(true);
-      Object handle = getHandleMethod.invoke(world);
-      spigotConfigField = findField(handle.getClass(), "spigotConfig");
-      if (spigotConfigField == null) {
-        React.warn("Tracker Range Governor disabled: spigotConfig is not present on this server software.");
+      nativeAccess = NativeAdapters.find(NativeWorldAccess.class).orElse(null);
+      if (nativeAccess == null) {
+        React.warn("Tracker Range Governor disabled: native world settings are unavailable.");
         setEnabled(false);
         return false;
       }
-
-      Object config = spigotConfigField.get(handle);
-      Map<String, Field> fields = new LinkedHashMap<>();
-      for (String name : GOVERNED_FIELDS) {
-        Field field = findField(config.getClass(), name);
-        if (field != null && field.getType() == int.class) {
-          fields.put(name, field);
-        }
-      }
-
-      if (fields.isEmpty()) {
-        React.warn("Tracker Range Governor disabled: no tracking range fields resolved on this server software.");
-        setEnabled(false);
-        return false;
-      }
-
-      rangeFields = fields;
+      rangeTypes = EnumSet.copyOf(GOVERNED_RANGES);
+      rangeTypes.retainAll(nativeAccess.entityRanges(worlds.getFirst()).supportedRanges());
       supported = true;
       return true;
     } catch (Throwable e) {
       failRuntime(e);
       return false;
     }
-  }
-
-  private Object spigotConfig(World world) throws ReflectiveOperationException {
-    Object handle = getHandleMethod.invoke(world);
-    return handle == null ? null : spigotConfigField.get(handle);
-  }
-
-  private Field findField(Class<?> owner, String name) {
-    Class<?> current = owner;
-    while (current != null && current != Object.class) {
-      try {
-        Field field = current.getDeclaredField(name);
-        field.setAccessible(true);
-        return field;
-      } catch (NoSuchFieldException ignored) {
-        current = current.getSuperclass();
-      }
-    }
-
-    return null;
   }
 
   private void failRuntime(Throwable e) {
@@ -424,9 +383,9 @@ public class FeatureTrackerRangeGovernor extends ReactFeature {
   }
 
   private static final class RetiredWorldState {
-    private final Map<UUID, Map<String, Integer>> rangeBaselines;
+    private final Map<UUID, Map<Range, Integer>> rangeBaselines;
 
-    private RetiredWorldState(Map<UUID, Map<String, Integer>> rangeBaselines) {
+    private RetiredWorldState(Map<UUID, Map<Range, Integer>> rangeBaselines) {
       this.rangeBaselines = rangeBaselines;
     }
 

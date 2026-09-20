@@ -24,11 +24,11 @@ import art.arcane.react.api.feature.PressureGate;
 import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.content.sampler.SamplerIncidentScore;
 import art.arcane.react.content.sampler.SamplerTickTime;
-import art.arcane.react.nms.BrewingTickHook;
-import art.arcane.react.nms.BrewingTickResult;
-import art.arcane.react.nms.FurnaceTickHook;
-import art.arcane.react.nms.FurnaceTickResult;
-import art.arcane.react.nms.NmsBridge;
+import art.arcane.volmlib.nativelib.monitor.BrewingTickHook;
+import art.arcane.volmlib.nativelib.monitor.BrewingTickResult;
+import art.arcane.volmlib.nativelib.monitor.FurnaceTickHook;
+import art.arcane.volmlib.nativelib.monitor.FurnaceTickResult;
+import art.arcane.volmlib.nativelib.monitor.NativeMonitor;
 import art.arcane.react.nms.NmsBridges;
 import art.arcane.react.core.controller.ObserverController;
 import art.arcane.react.core.controller.ObserverController.LoadedChunkTarget;
@@ -194,7 +194,7 @@ public class FeatureFurnaceBrewBatching extends ReactFeature implements Listener
   }
 
   private void installBridgeHooks() {
-    NmsBridge bridge = NmsBridges.get();
+    NativeMonitor bridge = NmsBridges.get();
     if (bridge == null) {
       bridgeActive = false;
       return;
@@ -245,7 +245,7 @@ public class FeatureFurnaceBrewBatching extends ReactFeature implements Listener
   }
 
   private void uninstallBridgeHooks() {
-    NmsBridge bridge = NmsBridges.get();
+    NativeMonitor bridge = NmsBridges.get();
     if (bridge != null) {
       bridge.uninstallFurnaceTickHook();
       bridge.uninstallBrewingTickHook();

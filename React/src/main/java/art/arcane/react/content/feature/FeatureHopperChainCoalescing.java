@@ -26,10 +26,10 @@ import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.core.controller.FeatureController;
 import art.arcane.react.core.controller.ObserverController;
 import art.arcane.react.core.controller.ObserverController.LoadedChunkTarget;
-import art.arcane.react.nms.HopperTickHook;
-import art.arcane.react.nms.NmsBridge;
+import art.arcane.volmlib.nativelib.monitor.HopperTickHook;
+import art.arcane.volmlib.nativelib.monitor.NativeMonitor;
 import art.arcane.react.nms.NmsBridges;
-import art.arcane.react.nms.TickDecision;
+import art.arcane.volmlib.nativelib.monitor.TickDecision;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.project.config.ConfigDescription;
 import art.arcane.react.util.project.config.ConfigDoc;
@@ -225,7 +225,7 @@ public class FeatureHopperChainCoalescing extends ReactFeature implements Listen
       bridgeActive = false;
       return;
     }
-    NmsBridge bridge = NmsBridges.get();
+    NativeMonitor bridge = NmsBridges.get();
     if (bridge == null) {
       bridgeActive = false;
       return;
@@ -265,7 +265,7 @@ public class FeatureHopperChainCoalescing extends ReactFeature implements Listen
   }
 
   private void uninstallBridgeHook() {
-    NmsBridge bridge = NmsBridges.get();
+    NativeMonitor bridge = NmsBridges.get();
     if (bridge != null) {
       bridge.uninstallHopperTickHook();
     }

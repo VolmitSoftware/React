@@ -1,6 +1,12 @@
 package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
+import art.arcane.volmlib.nativelib.NativeAdapters;
+import art.arcane.volmlib.nativelib.monitor.NativeWorldAccess;
+import art.arcane.volmlib.nativelib.monitor.EntityRangeSettings;
+import art.arcane.volmlib.nativelib.monitor.EntityRangeSettings.Range;
+import java.util.Optional;
+import java.util.Set;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.util.common.scheduling.J;
 import org.bukkit.Bukkit;
@@ -42,7 +48,8 @@ class FeatureRangeGovernorLifecycleTest {
 
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class);
-         MockedStatic<Bukkit> bukkit = worlds(world)) {
+         MockedStatic<Bukkit> bukkit = worlds(world);
+         MockedStatic<NativeAdapters> natives = nativeSettings(world, config)) {
       scheduling.when(J::isPrimaryThread).thenReturn(true);
       feature.onActivate();
       requestWorldState(feature, true);
@@ -65,7 +72,8 @@ class FeatureRangeGovernorLifecycleTest {
 
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class);
-         MockedStatic<Bukkit> bukkit = worlds(world)) {
+         MockedStatic<Bukkit> bukkit = worlds(world);
+         MockedStatic<NativeAdapters> natives = nativeSettings(world, config)) {
       scheduling.when(J::isPrimaryThread).thenReturn(true);
       feature.onActivate();
       requestWorldState(feature, true);
@@ -88,7 +96,8 @@ class FeatureRangeGovernorLifecycleTest {
 
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class);
-         MockedStatic<Bukkit> bukkit = worlds(world)) {
+         MockedStatic<Bukkit> bukkit = worlds(world);
+         MockedStatic<NativeAdapters> natives = nativeSettings(world, config)) {
       scheduling.when(J::isPrimaryThread).thenAnswer(invocation -> primary.get());
       scheduling.when(() -> J.sync(Mockito.any(Runnable.class))).thenAnswer(invocation -> {
         queued.add(invocation.getArgument(0));
@@ -118,7 +127,8 @@ class FeatureRangeGovernorLifecycleTest {
 
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class);
-         MockedStatic<Bukkit> bukkit = worlds(world)) {
+         MockedStatic<Bukkit> bukkit = worlds(world);
+         MockedStatic<NativeAdapters> natives = nativeSettings(world, config)) {
       scheduling.when(J::isPrimaryThread).thenAnswer(invocation -> primary.get());
       scheduling.when(() -> J.sync(Mockito.any(Runnable.class))).thenAnswer(invocation -> {
         queued.add(invocation.getArgument(0));
@@ -147,7 +157,8 @@ class FeatureRangeGovernorLifecycleTest {
 
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class);
-         MockedStatic<Bukkit> bukkit = worlds(world)) {
+         MockedStatic<Bukkit> bukkit = worlds(world);
+         MockedStatic<NativeAdapters> natives = nativeSettings(world, config)) {
       scheduling.when(J::isPrimaryThread).thenAnswer(invocation -> primary.get());
       scheduling.when(() -> J.sync(Mockito.any(Runnable.class))).thenAnswer(invocation -> {
         queued.add(invocation.getArgument(0));
@@ -178,7 +189,8 @@ class FeatureRangeGovernorLifecycleTest {
 
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class);
-         MockedStatic<Bukkit> bukkit = worlds(world)) {
+         MockedStatic<Bukkit> bukkit = worlds(world);
+         MockedStatic<NativeAdapters> natives = nativeSettings(world, config)) {
       scheduling.when(J::isPrimaryThread).thenAnswer(invocation -> primary.get());
       scheduling.when(() -> J.sync(Mockito.any(Runnable.class))).thenAnswer(invocation -> {
         queued.add(invocation.getArgument(0));
@@ -209,7 +221,8 @@ class FeatureRangeGovernorLifecycleTest {
 
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class);
-         MockedStatic<Bukkit> bukkit = worlds(world)) {
+         MockedStatic<Bukkit> bukkit = worlds(world);
+         MockedStatic<NativeAdapters> natives = nativeSettings(world, config)) {
       scheduling.when(J::isPrimaryThread).thenAnswer(invocation -> primary.get());
       scheduling.when(() -> J.sync(Mockito.any(Runnable.class))).thenAnswer(invocation -> {
         queued.add(invocation.getArgument(0));
@@ -249,7 +262,8 @@ class FeatureRangeGovernorLifecycleTest {
 
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class);
-         MockedStatic<Bukkit> bukkit = worlds(world)) {
+         MockedStatic<Bukkit> bukkit = worlds(world);
+         MockedStatic<NativeAdapters> natives = nativeSettings(world, config)) {
       scheduling.when(J::isPrimaryThread).thenAnswer(invocation -> primary.get());
       scheduling.when(() -> J.sync(Mockito.any(Runnable.class))).thenAnswer(invocation -> {
         queued.add(invocation.getArgument(0));
@@ -295,23 +309,38 @@ class FeatureRangeGovernorLifecycleTest {
   }
 
   private static World world(Object config) {
-    World world = Mockito.mock(World.class, Mockito.withSettings().extraInterfaces(HandleAccess.class));
-    UUID worldId = UUID.randomUUID();
-    Mockito.when(world.getUID()).thenReturn(worldId);
-    Mockito.when(((HandleAccess) world).getHandle()).thenReturn(new Handle(config));
+    World world = Mockito.mock(World.class);
+    Mockito.when(world.getUID()).thenReturn(UUID.randomUUID());
     return world;
   }
 
-  public interface HandleAccess {
-    Object getHandle();
-  }
-
-  private static final class Handle {
-    private final Object spigotConfig;
-
-    private Handle(Object spigotConfig) {
-      this.spigotConfig = spigotConfig;
+  private static MockedStatic<NativeAdapters> nativeSettings(World world, Object config) {
+    NativeWorldAccess access = Mockito.mock(NativeWorldAccess.class);
+    EntityRangeSettings settings = Mockito.mock(EntityRangeSettings.class);
+    Mockito.when(access.entityRanges(world)).thenReturn(settings);
+    if (config instanceof ActivationConfig activation) {
+      Mockito.when(settings.supportedRanges()).thenReturn(Set.of(Range.ACTIVATION_ANIMAL));
+      Mockito.when(settings.range(Range.ACTIVATION_ANIMAL)).thenAnswer(invocation -> activation.animalActivationRange);
+      Mockito.doAnswer(invocation -> {
+        activation.animalActivationRange = invocation.getArgument(1);
+        return null;
+      }).when(settings).range(Mockito.eq(Range.ACTIVATION_ANIMAL), Mockito.anyInt());
+      Mockito.when(settings.tickInactiveVillagers()).thenAnswer(invocation -> activation.tickInactiveVillagers);
+      Mockito.doAnswer(invocation -> {
+        activation.tickInactiveVillagers = invocation.getArgument(0);
+        return null;
+      }).when(settings).tickInactiveVillagers(Mockito.anyBoolean());
+    } else if (config instanceof TrackerConfig tracker) {
+      Mockito.when(settings.supportedRanges()).thenReturn(Set.of(Range.TRACKING_ITEM));
+      Mockito.when(settings.range(Range.TRACKING_ITEM)).thenAnswer(invocation -> tracker.itemTrackingRange);
+      Mockito.doAnswer(invocation -> {
+        tracker.itemTrackingRange = invocation.getArgument(1);
+        return null;
+      }).when(settings).range(Mockito.eq(Range.TRACKING_ITEM), Mockito.anyInt());
     }
+    MockedStatic<NativeAdapters> natives = Mockito.mockStatic(NativeAdapters.class);
+    natives.when(() -> NativeAdapters.find(NativeWorldAccess.class)).thenReturn(Optional.of(access));
+    return natives;
   }
 
   private static final class ActivationConfig {

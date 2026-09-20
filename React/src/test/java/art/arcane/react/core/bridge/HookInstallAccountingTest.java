@@ -1,13 +1,13 @@
 package art.arcane.react.core.bridge;
 
 import art.arcane.react.content.feature.FeatureLazyGravity;
-import art.arcane.react.nms.BrewingTickHook;
-import art.arcane.react.nms.ExplosionHook;
-import art.arcane.react.nms.ExplosionPacketSuppressor;
-import art.arcane.react.nms.FallingBlockTickHook;
-import art.arcane.react.nms.FurnaceTickHook;
-import art.arcane.react.nms.HopperTickHook;
-import art.arcane.react.nms.NmsBridge;
+import art.arcane.volmlib.nativelib.monitor.BrewingTickHook;
+import art.arcane.volmlib.nativelib.monitor.ExplosionHook;
+import art.arcane.volmlib.nativelib.monitor.ExplosionPacketSuppressor;
+import art.arcane.volmlib.nativelib.monitor.FallingBlockTickHook;
+import art.arcane.volmlib.nativelib.monitor.FurnaceTickHook;
+import art.arcane.volmlib.nativelib.monitor.HopperTickHook;
+import art.arcane.volmlib.nativelib.monitor.NativeMonitor;
 import art.arcane.react.nms.NmsBridges;
 import org.bukkit.World;
 import org.junit.jupiter.api.AfterEach;
@@ -119,7 +119,7 @@ class HookInstallAccountingTest {
   @Test
   void everyInstallHookHasAMatchingUninstallHook() {
     Set<String> methodNames = new HashSet<>();
-    for (Method method : NmsBridge.class.getMethods()) {
+    for (Method method : NativeMonitor.class.getMethods()) {
       methodNames.add(method.getName());
     }
 
@@ -137,15 +137,15 @@ class HookInstallAccountingTest {
     Assertions.assertEquals(6, installMethods);
   }
 
-  private static void injectActiveBridge(NmsBridge bridge) throws Exception {
+  private static void injectActiveBridge(NativeMonitor bridge) throws Exception {
     setStaticField("bridge", bridge);
     setStaticField("attempted", Boolean.TRUE);
   }
 
-  private static NmsBridge readStaticBridge() throws Exception {
+  private static NativeMonitor readStaticBridge() throws Exception {
     Field field = NmsBridges.class.getDeclaredField("bridge");
     field.setAccessible(true);
-    return (NmsBridge) field.get(null);
+    return (NativeMonitor) field.get(null);
   }
 
   private static void setStaticField(String name, Object value) throws Exception {
@@ -154,7 +154,7 @@ class HookInstallAccountingTest {
     field.set(null, value);
   }
 
-  private static final class CountingNmsBridge implements NmsBridge {
+  private static final class CountingNmsBridge implements NativeMonitor {
     private final Set<String> installed = new HashSet<>();
     private int installCalls;
     private int uninstallCalls;

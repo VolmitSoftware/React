@@ -4,7 +4,7 @@ import art.arcane.react.React;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.content.feature.perworld.ReactScopedPressure;
 import art.arcane.react.content.sampler.SamplerTickTime;
-import art.arcane.react.core.bridge.NmsBridgeHandle;
+import art.arcane.volmlib.nativelib.monitor.NativeWorldAccess;
 import art.arcane.react.util.common.scheduling.J;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
@@ -21,9 +21,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -40,7 +37,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 class FeaturePathfinderBudgetLifecycleTest {
-  private static final Object ENTITY_HANDLE = new Object();
   private static final Object NAVIGATION = new Object();
   private static React previous;
 
@@ -410,21 +406,21 @@ class FeaturePathfinderBudgetLifecycleTest {
 
   private FeaturePathfinderBudget configuredFeature(NavigationState navigation, long generation) throws Exception {
     FeaturePathfinderBudget feature = new FeaturePathfinderBudget();
-    setField(feature, "bridgeGetNavigation", bridge(navigation.navigationHandle()));
-    setField(feature, "bridgeSetMaxVisited", bridge(navigation.applyHandle()));
-    setField(feature, "bridgeResetMaxVisited", bridge(navigation.resetHandle()));
+    NativeWorldAccess access = Mockito.mock(NativeWorldAccess.class);
+    Mockito.when(access.setNavigationBudget(Mockito.any(Mob.class), Mockito.anyFloat())).thenAnswer(invocation -> {
+      navigation.apply(NAVIGATION, invocation.getArgument(1));
+      return true;
+    });
+    Mockito.doAnswer(invocation -> {
+      navigation.reset(NAVIGATION);
+      return null;
+    }).when(access).resetNavigationBudget(Mockito.any(Mob.class));
+    setField(feature, "nativeAccess", access);
     setBoolean(feature, "bridgesAvailable", true);
     setBoolean(feature, "active", true);
     setDouble(feature, "lastTickMs", 100D);
     lifecycle(feature).set(generation);
     return feature;
-  }
-
-  private NmsBridgeHandle bridge(MethodHandle methodHandle) {
-    NmsBridgeHandle bridge = Mockito.mock(NmsBridgeHandle.class);
-    Mockito.when(bridge.available()).thenReturn(true);
-    Mockito.when(bridge.methodHandle()).thenReturn(methodHandle);
-    return bridge;
   }
 
   private Mob managedMob(AtomicBoolean marker) {
@@ -447,8 +443,7 @@ class FeaturePathfinderBudgetLifecycleTest {
       return null;
     }).when(container).remove(Mockito.any(NamespacedKey.class));
 
-    Mob mob = Mockito.mock(Mob.class, Mockito.withSettings().extraInterfaces(PathfinderMobHandle.class));
-    Mockito.when(((PathfinderMobHandle) mob).getHandle()).thenReturn(ENTITY_HANDLE);
+    Mob mob = Mockito.mock(Mob.class);
     Mockito.when(mob.getUniqueId()).thenReturn(UUID.randomUUID());
     Mockito.when(mob.getPersistentDataContainer()).thenReturn(container);
     return mob;
@@ -521,10 +516,6 @@ class FeaturePathfinderBudgetLifecycleTest {
     private volatile CountDownLatch applyEntered;
     private volatile CountDownLatch allowApply;
 
-    private Object navigation(Object handle) {
-      return handle == ENTITY_HANDLE ? NAVIGATION : null;
-    }
-
     private void apply(Object navigation, float multiplier) {
       if (navigation == NAVIGATION && multiplier > 0F) {
         CountDownLatch entered = applyEntered;
@@ -548,24 +539,6 @@ class FeaturePathfinderBudgetLifecycleTest {
       if (navigation == NAVIGATION) {
         reset.incrementAndGet();
       }
-    }
-
-    private MethodHandle navigationHandle() throws NoSuchMethodException, IllegalAccessException {
-      return MethodHandles.lookup()
-          .findVirtual(NavigationState.class, "navigation", MethodType.methodType(Object.class, Object.class))
-          .bindTo(this);
-    }
-
-    private MethodHandle applyHandle() throws NoSuchMethodException, IllegalAccessException {
-      return MethodHandles.lookup()
-          .findVirtual(NavigationState.class, "apply", MethodType.methodType(void.class, Object.class, float.class))
-          .bindTo(this);
-    }
-
-    private MethodHandle resetHandle() throws NoSuchMethodException, IllegalAccessException {
-      return MethodHandles.lookup()
-          .findVirtual(NavigationState.class, "reset", MethodType.methodType(void.class, Object.class))
-          .bindTo(this);
     }
 
     private void pauseApply(CountDownLatch entered, CountDownLatch allowed) {

@@ -38,7 +38,6 @@ plugins {
 
 apply plugin: 'art.arcane.volmit-packaging'
 
-apply from: 'nms-jars.gradle'
 
 version = '2.0.5-26.2' // Needs to be version specific
 def apiVersion = '26.1'
@@ -152,12 +151,10 @@ dependencies {
     compileOnly('io.papermc:paperlib:1.0.7')
     testImplementation('io.papermc.paper:paper-api:26.1.2.build.74-stable')
 
-    // Bridge API interfaces shared with NMS submodule
-    implementation(project(':bridge-api'))
-
-    // NMS submodule (Mojang-mapped, shaded into final jar)
-    implementation(project(':nms:v26_2_R1'))
-    implementation(project(':nms:v26_3_R1'))
+    implementation('com.github.VolmitSoftware.VolmLib:native-api:master-SNAPSHOT')
+    implementation('com.github.VolmitSoftware.VolmLib:native-v1_21_R7:master-SNAPSHOT')
+    implementation('com.github.VolmitSoftware.VolmLib:native-v26_2_R1:master-SNAPSHOT')
+    implementation('com.github.VolmitSoftware.VolmLib:native-v26_3_R1:master-SNAPSHOT')
 
     // Shaded
     implementation('de.crazydev22.slimjar.helper:spigot:2.1.9')
@@ -264,17 +261,24 @@ tasks.named('compileJava', JavaCompile).configure {
 }
 
 tasks.named('shadowJar', ShadowJar).configure {
+    exclude('com/fren_gor/**')
+    exclude { FileTreeElement entry ->
+        String nativePrefix = 'art/arcane/volmlib/nativelib/'
+        if (entry.isDirectory() || !entry.path.startsWith(nativePrefix)) {
+            return false
+        }
+        String relative = entry.path.substring(nativePrefix.length())
+        return relative.contains('/') && !relative.startsWith('monitor/')
+                && !(relative ==~ /v[^\/]+\/monitor\/.*/)
+    }
+
     // Configure React for shading
     minimize {
         // slimjar bootstraps itself reflectively before any static reference exists, and its
         // ByteBuddy agent factory names byte-buddy types only as strings.
         exclude(dependency('de.crazydev22.slimjar.helper:.*:.*'))
         exclude(dependency('io.github.slimjar:.*:.*'))
-        // NmsBridges resolves art.arcane.react.nms.<tag>.NmsBridgeImpl by Class.forName presence
-        // probe, and the advice/runtime classes underneath it are only ever named by ByteBuddy.
-        exclude(project(':nms:v26_2_R1'))
-        exclude(project(':nms:v26_3_R1'))
-        exclude(project(':bridge-api'))
+        exclude(dependency('com.github.VolmitSoftware.VolmLib:.*:.*'))
     }
     dependsOn(tasks.named('processResources'))
     from(sourceSets.main.output)
@@ -302,7 +306,10 @@ sourceSets {
     }
 }
 
-tasks.register('runtimeProbeJar', Jar) {
+tasks.register('runtimeProbeJar', ShadowJar) {
+    configurations = []
+    archiveClassifier.set('')
+    relocate('art.arcane.volmlib', "${lib}.volmlib")
     dependsOn(tasks.named('runtimeProbeClasses'))
     archiveBaseName.set('ReactRuntimeProbe')
     archiveVersion.set('')
@@ -333,10 +340,9 @@ pluginPackaging {
             taskName = 'shadowJar'
             policyName = 'React'
             prunePrefixes = ['art/arcane/react/util/arcane/volmlib/']
-            keepPrefixes = ['art/arcane/react/util/arcane/volmlib/util/matter/slices/']
+            keepPrefixes = ['art/arcane/react/util/arcane/volmlib/util/matter/slices/', 'art/arcane/react/util/arcane/volmlib/nativelib/']
             shrinkRules = [file('packaging/shrink.pro')]
-            shrinkDontwarn = ['net.minecraft.network.protocol.game.ClientboundExplodePacket']
-            shrinkLibraries.from(provider { project(':nms:v26_2_R1').configurations.compileClasspath })
+            shrinkDontwarn = ['net.minecraft.**', 'org.bukkit.craftbukkit.**', 'org.spigotmc.SpigotWorldConfig', 'ca.spottedleaf.**', 'java.lang.invoke.MethodHandle']
             shrinkRelocations = [
                 'net.bytebuddy': "${lib}.bytebuddy",
                 'art.arcane.chrono': "${lib}.chrono",

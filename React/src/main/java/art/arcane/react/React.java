@@ -46,6 +46,8 @@ import art.arcane.react.util.format.C;
 import art.arcane.react.util.plugin.IController;
 import art.arcane.react.core.NMS;
 import art.arcane.react.core.bridge.NmsBridgeRegistry;
+import art.arcane.volmlib.nativelib.monitor.NativeMonitor;
+import art.arcane.volmlib.nativelib.monitor.NativeWorldAccess;
 import art.arcane.react.core.bridge.BytecodeAgent;
 import art.arcane.react.util.plugin.VolmitPlugin;
 import art.arcane.react.util.project.config.ConfigFileSupport;
@@ -488,7 +490,8 @@ public class React extends VolmitPlugin implements ReloadAware {
     hudBar = new HudActionBar(this);
     hudTitles = new HudTitleService(this);
     bridgeRegistry = new NmsBridgeRegistry();
-    bridgeRegistry.setMappingsLoader(new art.arcane.react.core.bridge.MappingsLoader());
+    bridgeRegistry.register(NativeMonitor.class);
+    bridgeRegistry.register(NativeWorldAccess.class);
     NMS.reset();
     attachConfiguredBytecodeAgent(ReactConfiguration.get().isUnsafeBytecode());
     controllerRegistry = new Registry<>(IController.class, "art.arcane.react.core.controller");

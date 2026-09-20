@@ -27,12 +27,16 @@ import art.arcane.react.util.common.scheduling.J;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
+import art.arcane.volmlib.nativelib.NativeAdapters;
+import art.arcane.volmlib.nativelib.monitor.NativeWorldAccess;
+import art.arcane.volmlib.nativelib.monitor.EntityRangeSettings;
+import art.arcane.volmlib.nativelib.monitor.EntityRangeSettings.Range;
+
+import java.util.EnumSet;
+import java.util.Set;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -43,16 +47,14 @@ import java.util.concurrent.atomic.AtomicLong;
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Activation Range Governor feature. Temporarily scales down per-world entity activation ranges while the server is under sustained pressure, so the server itself deactivates distant entities instead of ticking them. Unlike dynamic-activation-range (which samples and pauses entities one by one), these ranges are read by the server every tick and apply to all entities instantly. Ranges and villager ticking are restored once the server recovers.")
 public class FeatureActivationRangeGovernor extends ReactFeature {
   public static final String ID = "activation-range-governor";
-  private static final String[] GOVERNED_FIELDS = {
-      "animalActivationRange",
-      "monsterActivationRange",
-      "raiderActivationRange",
-      "miscActivationRange",
-      "waterActivationRange",
-      "villagerActivationRange",
-      "flyingMonsterActivationRange"
-  };
-  private static final String TICK_INACTIVE_VILLAGERS_FIELD = "tickInactiveVillagers";
+  private static final Set<Range> GOVERNED_RANGES = EnumSet.of(
+      Range.ACTIVATION_ANIMAL,
+      Range.ACTIVATION_MONSTER,
+      Range.ACTIVATION_RAIDER,
+      Range.ACTIVATION_MISC,
+      Range.ACTIVATION_WATER,
+      Range.ACTIVATION_VILLAGER,
+      Range.ACTIVATION_FLYING_MONSTER);
   @art.arcane.react.util.project.config.ConfigDoc(value = "Main evaluation interval for activation range governor in milliseconds.", impact = "Lower values react faster but consume more CPU; higher values reduce overhead but react later.")
   private int tickIntervalMS = 2000;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Average tick milliseconds required before the governor engages.", impact = "Lower values shrink activation ranges earlier; higher values reserve it for heavier load.")
@@ -81,11 +83,9 @@ public class FeatureActivationRangeGovernor extends ReactFeature {
   private int minimumRangeBlocks = 8;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Also suspends ticking of inactive villagers while engaged.", impact = "Enable to stop inactive villager restock/brain ticking during pressure windows; disable to only scale ranges.")
   private boolean suspendInactiveVillagerTicking = true;
-  private transient Method getHandleMethod;
-  private transient Field spigotConfigField;
-  private transient Map<String, Field> rangeFields;
-  private transient Field tickInactiveVillagersField;
-  private transient Map<UUID, Map<String, Integer>> baselinesByWorld;
+  private transient NativeWorldAccess nativeAccess;
+  private transient Set<Range> rangeTypes;
+  private transient Map<UUID, Map<Range, Integer>> baselinesByWorld;
   private transient Map<UUID, Boolean> villagerTickBaselines;
   private transient boolean resolved;
   private transient boolean supported;
@@ -119,7 +119,7 @@ public class FeatureActivationRangeGovernor extends ReactFeature {
 
   @Override
   public void onDeactivate() {
-    Map<UUID, Map<String, Integer>> retiredBaselines;
+    Map<UUID, Map<Range, Integer>> retiredBaselines;
     Map<UUID, Boolean> retiredVillagerBaselines;
     RetiredWorldState retiredState;
     synchronized (worldMutationLock) {
@@ -250,26 +250,25 @@ public class FeatureActivationRangeGovernor extends ReactFeature {
     int governed = 0;
     for (World world : Bukkit.getWorlds()) {
       try {
-        Object config = spigotConfig(world);
+        EntityRangeSettings config = nativeAccess.entityRanges(world);
         if (config == null) {
           continue;
         }
 
-        Map<String, Integer> baselines = new HashMap<>();
-        for (Map.Entry<String, Field> entry : rangeFields.entrySet()) {
-          Field field = entry.getValue();
-          int base = field.getInt(config);
+        Map<Range, Integer> baselines = new HashMap<>();
+        for (Range type : rangeTypes) {
+          int base = config.range(type);
           if (base <= 0) {
             continue;
           }
 
-          int target = Math.max(Math.max(1, minimumRangeBlocks), (int) Math.round(base * factorFor(entry.getKey())));
+          int target = Math.max(Math.max(1, minimumRangeBlocks), (int) Math.round(base * factorFor(type)));
           if (target >= base) {
             continue;
           }
 
-          baselines.put(entry.getKey(), base);
-          field.setInt(config, target);
+          baselines.put(type, base);
+          config.range(type, target);
           governed++;
         }
 
@@ -277,11 +276,11 @@ public class FeatureActivationRangeGovernor extends ReactFeature {
           baselinesByWorld.put(world.getUID(), baselines);
         }
 
-        if (suspendInactiveVillagerTicking && tickInactiveVillagersField != null) {
-          boolean base = tickInactiveVillagersField.getBoolean(config);
+        if (suspendInactiveVillagerTicking) {
+          boolean base = config.tickInactiveVillagers();
           if (base) {
             villagerTickBaselines.put(world.getUID(), true);
-            tickInactiveVillagersField.setBoolean(config, false);
+            config.tickInactiveVillagers(false);
             governed++;
           }
         }
@@ -297,7 +296,7 @@ public class FeatureActivationRangeGovernor extends ReactFeature {
   }
 
   private void release(
-      Map<UUID, Map<String, Integer>> rangeBaselines,
+      Map<UUID, Map<Range, Integer>> rangeBaselines,
       Map<UUID, Boolean> inactiveVillagerBaselines
   ) {
     if (rangeBaselines == null) {
@@ -305,24 +304,21 @@ public class FeatureActivationRangeGovernor extends ReactFeature {
     }
 
     int restored = 0;
-    for (Map.Entry<UUID, Map<String, Integer>> worldEntry : rangeBaselines.entrySet()) {
+    for (Map.Entry<UUID, Map<Range, Integer>> worldEntry : rangeBaselines.entrySet()) {
       World world = Bukkit.getWorld(worldEntry.getKey());
       if (world == null) {
         continue;
       }
 
       try {
-        Object config = spigotConfig(world);
+        EntityRangeSettings config = nativeAccess.entityRanges(world);
         if (config == null) {
           continue;
         }
 
-        for (Map.Entry<String, Integer> entry : worldEntry.getValue().entrySet()) {
-          Field field = rangeFields.get(entry.getKey());
-          if (field != null) {
-            field.setInt(config, entry.getValue());
-            restored++;
-          }
+        for (Map.Entry<Range, Integer> entry : worldEntry.getValue().entrySet()) {
+          config.range(entry.getKey(), entry.getValue());
+          restored++;
         }
       } catch (Throwable e) {
         failRuntime(e);
@@ -337,14 +333,14 @@ public class FeatureActivationRangeGovernor extends ReactFeature {
 
     for (Map.Entry<UUID, Boolean> entry : inactiveVillagerBaselines.entrySet()) {
       World world = Bukkit.getWorld(entry.getKey());
-      if (world == null || tickInactiveVillagersField == null) {
+      if (world == null) {
         continue;
       }
 
       try {
-        Object config = spigotConfig(world);
+        EntityRangeSettings config = nativeAccess.entityRanges(world);
         if (config != null) {
-          tickInactiveVillagersField.setBoolean(config, entry.getValue());
+          config.tickInactiveVillagers(entry.getValue());
           restored++;
         }
       } catch (Throwable e) {
@@ -380,14 +376,14 @@ public class FeatureActivationRangeGovernor extends ReactFeature {
     return active && generation == lifecycleGeneration.get();
   }
 
-  private double factorFor(String fieldName) {
-    return switch (fieldName) {
-      case "animalActivationRange" -> animalRangeFactor;
-      case "monsterActivationRange" -> monsterRangeFactor;
-      case "raiderActivationRange" -> raiderRangeFactor;
-      case "miscActivationRange" -> miscRangeFactor;
-      case "waterActivationRange" -> waterRangeFactor;
-      case "villagerActivationRange" -> villagerRangeFactor;
+  private double factorFor(Range type) {
+    return switch (type) {
+      case ACTIVATION_ANIMAL -> animalRangeFactor;
+      case ACTIVATION_MONSTER -> monsterRangeFactor;
+      case ACTIVATION_RAIDER -> raiderRangeFactor;
+      case ACTIVATION_MISC -> miscRangeFactor;
+      case ACTIVATION_WATER -> waterRangeFactor;
+      case ACTIVATION_VILLAGER -> villagerRangeFactor;
       default -> flyingMonsterRangeFactor;
     };
   }
@@ -405,64 +401,20 @@ public class FeatureActivationRangeGovernor extends ReactFeature {
     }
 
     try {
-      World world = worlds.get(0);
-      getHandleMethod = world.getClass().getMethod("getHandle");
-      getHandleMethod.setAccessible(true);
-      Object handle = getHandleMethod.invoke(world);
-      spigotConfigField = findField(handle.getClass(), "spigotConfig");
-      if (spigotConfigField == null) {
-        React.warn("Activation Range Governor disabled: spigotConfig is not present on this server software.");
+      nativeAccess = NativeAdapters.find(NativeWorldAccess.class).orElse(null);
+      if (nativeAccess == null) {
+        React.warn("Activation Range Governor disabled: native world settings are unavailable.");
         setEnabled(false);
         return false;
       }
-
-      Object config = spigotConfigField.get(handle);
-      Map<String, Field> fields = new LinkedHashMap<>();
-      for (String name : GOVERNED_FIELDS) {
-        Field field = findField(config.getClass(), name);
-        if (field != null && field.getType() == int.class) {
-          fields.put(name, field);
-        }
-      }
-
-      Field villagerTick = findField(config.getClass(), TICK_INACTIVE_VILLAGERS_FIELD);
-      if (villagerTick != null && villagerTick.getType() == boolean.class) {
-        tickInactiveVillagersField = villagerTick;
-      }
-
-      if (fields.isEmpty() && tickInactiveVillagersField == null) {
-        React.warn("Activation Range Governor disabled: no activation range fields resolved on this server software.");
-        setEnabled(false);
-        return false;
-      }
-
-      rangeFields = fields;
+      rangeTypes = EnumSet.copyOf(GOVERNED_RANGES);
+      rangeTypes.retainAll(nativeAccess.entityRanges(worlds.getFirst()).supportedRanges());
       supported = true;
       return true;
     } catch (Throwable e) {
       failRuntime(e);
       return false;
     }
-  }
-
-  private Object spigotConfig(World world) throws ReflectiveOperationException {
-    Object handle = getHandleMethod.invoke(world);
-    return handle == null ? null : spigotConfigField.get(handle);
-  }
-
-  private Field findField(Class<?> owner, String name) {
-    Class<?> current = owner;
-    while (current != null && current != Object.class) {
-      try {
-        Field field = current.getDeclaredField(name);
-        field.setAccessible(true);
-        return field;
-      } catch (NoSuchFieldException ignored) {
-        current = current.getSuperclass();
-      }
-    }
-
-    return null;
   }
 
   private void failRuntime(Throwable e) {
@@ -473,11 +425,11 @@ public class FeatureActivationRangeGovernor extends ReactFeature {
   }
 
   private static final class RetiredWorldState {
-    private final Map<UUID, Map<String, Integer>> rangeBaselines;
+    private final Map<UUID, Map<Range, Integer>> rangeBaselines;
     private final Map<UUID, Boolean> inactiveVillagerBaselines;
 
     private RetiredWorldState(
-        Map<UUID, Map<String, Integer>> rangeBaselines,
+        Map<UUID, Map<Range, Integer>> rangeBaselines,
         Map<UUID, Boolean> inactiveVillagerBaselines
     ) {
       this.rangeBaselines = rangeBaselines;

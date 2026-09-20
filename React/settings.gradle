@@ -45,10 +45,10 @@ if (useLocalVolmLib && localVolmLibDirectory != null) {
             substitute(module('com.github.VolmitSoftware.VolmLib:shared')).using(project(':shared'))
             substitute(module('com.github.VolmitSoftware.VolmLib:packaging')).using(project(':packaging'))
             substitute(module('com.github.VolmitSoftware.VolmLib:volmlib-shared')).using(project(':shared'))
+            substitute(module('com.github.VolmitSoftware.VolmLib:native-api')).using(project(':native-api'))
+            substitute(module('com.github.VolmitSoftware.VolmLib:native-v1_21_R7')).using(project(':native:v1_21_R7'))
+            substitute(module('com.github.VolmitSoftware.VolmLib:native-v26_2_R1')).using(project(':native:v26_2_R1'))
+            substitute(module('com.github.VolmitSoftware.VolmLib:native-v26_3_R1')).using(project(':native:v26_3_R1'))
         }
     }
 }
-
-include(':bridge-api')
-include(':nms:v26_2_R1')
-include(':nms:v26_3_R1')

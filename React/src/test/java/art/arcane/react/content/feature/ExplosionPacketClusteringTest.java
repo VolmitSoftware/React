@@ -1,7 +1,7 @@
 package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
-import art.arcane.react.nms.NmsBridge;
+import art.arcane.volmlib.nativelib.monitor.NativeMonitor;
 import art.arcane.react.nms.NmsBridges;
 import art.arcane.react.util.common.scheduling.J;
 import org.bukkit.Bukkit;
@@ -114,7 +114,7 @@ class ExplosionPacketClusteringTest {
   @Test
   void foliaKeepsPacketBatchingMeasurementOnly() {
     FeatureExplosionPacketBatching feature = new FeatureExplosionPacketBatching();
-    NmsBridge bridge = Mockito.mock(NmsBridge.class);
+    NativeMonitor bridge = Mockito.mock(NativeMonitor.class);
     Mockito.when(bridge.installExplosionHook(Mockito.any())).thenReturn(true);
 
     try (MockedStatic<NmsBridges> bridges = Mockito.mockStatic(NmsBridges.class);
@@ -134,7 +134,7 @@ class ExplosionPacketClusteringTest {
   void fourThousandClustersCapThousandRecipientFanoutAndFlushWithinSixtyFourTicks() {
     FeatureExplosionPacketBatching feature = new FeatureExplosionPacketBatching();
     World world = Mockito.mock(World.class);
-    NmsBridge bridge = Mockito.mock(NmsBridge.class);
+    NativeMonitor bridge = Mockito.mock(NativeMonitor.class);
     AtomicLong recipientDeliveries = new AtomicLong();
     Mockito.when(bridge.broadcastMergedExplosion(
         Mockito.same(world),
@@ -218,7 +218,7 @@ class ExplosionPacketClusteringTest {
         world,
         List.of(new FeatureExplosionPacketBatching.MergedCluster(1D, 64D, 1D, 1))
     );
-    NmsBridge bridge = Mockito.mock(NmsBridge.class);
+    NativeMonitor bridge = Mockito.mock(NativeMonitor.class);
     Mockito.when(bridge.broadcastMergedExplosion(
         Mockito.same(world),
         Mockito.anyDouble(),
@@ -264,7 +264,7 @@ class ExplosionPacketClusteringTest {
       clusters.add(new FeatureExplosionPacketBatching.MergedCluster(i, 64D, 0D, 1));
     }
     feature.retainClusters(world, clusters);
-    NmsBridge bridge = Mockito.mock(NmsBridge.class);
+    NativeMonitor bridge = Mockito.mock(NativeMonitor.class);
     Mockito.when(bridge.broadcastMergedExplosion(
         Mockito.same(world),
         Mockito.anyDouble(),
@@ -302,7 +302,7 @@ class ExplosionPacketClusteringTest {
         world,
         List.of(new FeatureExplosionPacketBatching.MergedCluster(1D, 64D, 1D, 1))
     );
-    NmsBridge bridge = Mockito.mock(NmsBridge.class);
+    NativeMonitor bridge = Mockito.mock(NativeMonitor.class);
     Mockito.when(bridge.broadcastMergedExplosion(
         Mockito.same(world),
         Mockito.anyDouble(),
@@ -350,7 +350,7 @@ class ExplosionPacketClusteringTest {
         world,
         List.of(new FeatureExplosionPacketBatching.MergedCluster(1D, 64D, 1D, 1))
     );
-    NmsBridge bridge = Mockito.mock(NmsBridge.class);
+    NativeMonitor bridge = Mockito.mock(NativeMonitor.class);
     Mockito.when(bridge.broadcastMergedExplosion(
         Mockito.same(world),
         Mockito.anyDouble(),
@@ -416,7 +416,7 @@ class ExplosionPacketClusteringTest {
     );
     Server server = Mockito.mock(Server.class);
     Mockito.when(server.getWorld(missingWorldId)).thenReturn(null);
-    NmsBridge bridge = Mockito.mock(NmsBridge.class);
+    NativeMonitor bridge = Mockito.mock(NativeMonitor.class);
     Mockito.when(bridge.broadcastMergedExplosion(
         Mockito.same(availableWorld),
         Mockito.anyDouble(),
@@ -459,7 +459,7 @@ class ExplosionPacketClusteringTest {
         UUID.randomUUID(),
         List.of(new FeatureExplosionPacketBatching.MergedCluster(1D, 64D, 1D, 1))
     );
-    NmsBridge bridge = Mockito.mock(NmsBridge.class);
+    NativeMonitor bridge = Mockito.mock(NativeMonitor.class);
 
     try (MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class);
          MockedStatic<React> errors = Mockito.mockStatic(React.class)) {
@@ -485,7 +485,7 @@ class ExplosionPacketClusteringTest {
     );
     Server server = Mockito.mock(Server.class);
     Mockito.when(server.getWorld(missingWorldId)).thenReturn(null);
-    NmsBridge bridge = Mockito.mock(NmsBridge.class);
+    NativeMonitor bridge = Mockito.mock(NativeMonitor.class);
     Mockito.when(bridge.installExplosionHook(Mockito.any())).thenReturn(true);
     Mockito.when(bridge.installExplosionPacketSuppressor(Mockito.any())).thenReturn(true);
 

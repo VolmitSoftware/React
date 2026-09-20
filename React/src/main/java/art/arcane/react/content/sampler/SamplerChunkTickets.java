@@ -21,7 +21,7 @@ package art.arcane.react.content.sampler;
 
 import art.arcane.react.React;
 import art.arcane.react.api.sampler.ReactCachedSampler;
-import art.arcane.react.nms.NmsBridge;
+import art.arcane.volmlib.nativelib.monitor.NativeMonitor;
 import art.arcane.react.nms.NmsBridges;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.volmlib.util.format.Form;
@@ -83,7 +83,7 @@ public class SamplerChunkTickets extends ReactCachedSampler {
 
     try {
       boolean folia = J.isFoliaThreading();
-      NmsBridge bridge = folia ? NmsBridges.get() : null;
+      NativeMonitor bridge = folia ? NmsBridges.get() : null;
       if (folia && bridge == null) {
         available = false;
         return 0D;

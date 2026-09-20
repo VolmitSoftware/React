@@ -20,11 +20,9 @@
 package art.arcane.react.content.tweak;
 
 import art.arcane.react.React;
+import art.arcane.volmlib.nativelib.NativeAdapters;
+import art.arcane.volmlib.nativelib.monitor.NativeWorldAccess;
 import art.arcane.react.api.tweak.ReactTweak;
-import art.arcane.react.core.NMS;
-import art.arcane.react.core.bridge.BridgeKind;
-import art.arcane.react.core.bridge.NmsBridgeDescriptor;
-import art.arcane.react.core.bridge.NmsBridgeHandle;
 import art.arcane.react.util.common.scheduling.J;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -40,12 +38,8 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockFromToEvent;
 import org.bukkit.event.block.FluidLevelChangeEvent;
 
-import java.lang.invoke.MethodType;
-import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
@@ -56,13 +50,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Fast Fluids tweak. Fast-forwards water and lava spread chains into bounded burst updates to reduce repeated per-step fluid churn.")
 public class TweakFastFluids extends ReactTweak implements Listener {
   public static final String ID = "fast-fluids";
-  public static final String BRIDGE_GET_FLUID_STATE = "Level.getFluidState";
-  public static final String BRIDGE_BLOCK_POS_CTOR = "BlockPos.constructor";
-  public static final String BRIDGE_IS_EMPTY = "FluidState.isEmpty";
-  public static final String BRIDGE_GET_TYPE = "FluidState.getType";
-  public static final String BRIDGE_WORLD_TICK_FLUID = "Level.tickFluid";
-  public static final String BRIDGE_FLUID_TYPE_TICK = "FluidType.tick";
-  public static final String BRIDGE_FLUID_STATE_TICK = "FluidState.tick";
   private static final BlockFace[] DRAIN_NEIGHBORS = new BlockFace[]{
       BlockFace.DOWN,
       BlockFace.UP,
@@ -70,19 +57,6 @@ public class TweakFastFluids extends ReactTweak implements Listener {
       BlockFace.EAST,
       BlockFace.SOUTH,
       BlockFace.WEST
-  };
-  private static final ClassValue<FluidKind> FLUID_KIND_BY_TYPE = new ClassValue<FluidKind>() {
-    @Override
-    protected FluidKind computeValue(Class<?> type) {
-      String className = type.getName().toLowerCase(Locale.ROOT);
-      if (className.contains("water")) {
-        return FluidKind.WATER;
-      }
-      if (className.contains("lava")) {
-        return FluidKind.LAVA;
-      }
-      return FluidKind.OTHER;
-    }
   };
   @art.arcane.react.util.project.config.ConfigDoc(value = "Controls whether fast fluids applies water acceleration.", impact = "Enable to accelerate water flow chains; disable to leave water at vanilla timing.")
   private boolean accelerateWater = true;
@@ -98,13 +72,7 @@ public class TweakFastFluids extends ReactTweak implements Listener {
   private boolean accelerateDrain = true;
   private transient Map<FluidPulseKey, FluidPulse> pendingPulses;
   private transient Queue<FluidPulseKey> pulseOrder;
-  private transient NmsBridgeHandle bridgeGetFluidState;
-  private transient NmsBridgeHandle bridgeBlockPosCtor;
-  private transient NmsBridgeHandle bridgeIsEmpty;
-  private transient NmsBridgeHandle bridgeGetType;
-  private transient NmsBridgeHandle bridgeWorldTickFluid;
-  private transient NmsBridgeHandle bridgeFluidTypeTick;
-  private transient NmsBridgeHandle bridgeFluidStateTick;
+  private transient NativeWorldAccess nativeAccess;
   private transient boolean fluidBridgesAvailable;
   private transient BridgeFailureGate bridgeFailureGate;
   private transient int pulseTaskId;
@@ -121,75 +89,6 @@ public class TweakFastFluids extends ReactTweak implements Listener {
     return accelerateLava;
   }
 
-  public static List<NmsBridgeDescriptor> fluidBridgeDescriptors() {
-    List<String> levelClasses = List.of(
-        "net.minecraft.world.level.Level",
-        "net.minecraft.server.level.ServerLevel",
-        "net.minecraft.server.level.WorldServer");
-    List<String> blockPosClasses = List.of(
-        "net.minecraft.core.BlockPos",
-        "net.minecraft.core.BlockPosition");
-    List<String> fluidStateClasses = List.of(
-        "net.minecraft.world.level.material.FluidState",
-        "net.minecraft.world.level.material.IFluidState");
-    List<String> fluidTypeClasses = List.of(
-        "net.minecraft.world.level.material.Fluid",
-        "net.minecraft.world.level.material.FlowingFluid",
-        "net.minecraft.world.level.material.FluidType",
-        "net.minecraft.world.level.material.FluidTypeFlowing");
-    return List.of(
-        new NmsBridgeDescriptor(
-            BRIDGE_GET_FLUID_STATE, BridgeKind.METHOD, levelClasses, "getFluidState",
-            List.of(
-                List.of("net.minecraft.core.BlockPos"),
-                List.of("net.minecraft.core.BlockPosition")),
-            "net.minecraft.world.level.material.FluidState",
-            Optional.empty()),
-        new NmsBridgeDescriptor(
-            BRIDGE_BLOCK_POS_CTOR, BridgeKind.CONSTRUCTOR, blockPosClasses, "<init>",
-            List.of(List.of("int", "int", "int")),
-            blockPosClasses.get(0),
-            Optional.empty()),
-        new NmsBridgeDescriptor(
-            BRIDGE_IS_EMPTY, BridgeKind.METHOD, fluidStateClasses, "isEmpty",
-            List.of(List.of()),
-            "boolean",
-            Optional.empty()),
-        new NmsBridgeDescriptor(
-            BRIDGE_GET_TYPE, BridgeKind.METHOD, fluidStateClasses, "getType",
-            List.of(List.of()),
-            "net.minecraft.world.level.material.Fluid",
-            Optional.empty()),
-        new NmsBridgeDescriptor(
-            BRIDGE_WORLD_TICK_FLUID, BridgeKind.METHOD, levelClasses, "tickFluid",
-            List.of(
-                List.of("net.minecraft.core.BlockPos", "net.minecraft.world.level.material.Fluid"),
-                List.of("net.minecraft.core.BlockPos", "net.minecraft.world.level.material.FluidType"),
-                List.of("net.minecraft.core.BlockPosition", "net.minecraft.world.level.material.Fluid"),
-                List.of("net.minecraft.core.BlockPosition", "net.minecraft.world.level.material.FluidType")),
-            "void",
-            Optional.empty()),
-        new NmsBridgeDescriptor(
-            BRIDGE_FLUID_TYPE_TICK, BridgeKind.METHOD, fluidTypeClasses, "tick",
-            List.of(
-                List.of("net.minecraft.server.level.ServerLevel", "net.minecraft.core.BlockPos", "net.minecraft.world.level.block.state.BlockState", "net.minecraft.world.level.material.FluidState"),
-                List.of("net.minecraft.world.level.Level", "net.minecraft.core.BlockPos", "net.minecraft.world.level.material.FluidState"),
-                List.of("net.minecraft.world.level.Level", "net.minecraft.core.BlockPosition", "net.minecraft.world.level.material.FluidState"),
-                List.of("net.minecraft.server.level.ServerLevel", "net.minecraft.core.BlockPos", "net.minecraft.world.level.material.FluidState")),
-            "void",
-            Optional.empty()),
-        new NmsBridgeDescriptor(
-            BRIDGE_FLUID_STATE_TICK, BridgeKind.METHOD, fluidStateClasses, "tick",
-            List.of(
-                List.of("net.minecraft.server.level.ServerLevel", "net.minecraft.core.BlockPos", "net.minecraft.world.level.block.state.BlockState"),
-                List.of("net.minecraft.world.level.Level", "net.minecraft.core.BlockPos"),
-                List.of("net.minecraft.server.level.ServerLevel", "net.minecraft.core.BlockPos"),
-                List.of("net.minecraft.world.level.Level", "net.minecraft.core.BlockPosition")),
-            "void",
-            Optional.empty())
-    );
-  }
-
   @Override
   public void onActivate() {
     extraVanillaTicksPerEvent = clampInt(extraVanillaTicksPerEvent, 0, 4);
@@ -199,15 +98,8 @@ public class TweakFastFluids extends ReactTweak implements Listener {
     pulseOrder = new ConcurrentLinkedQueue<>();
     bridgeFailureGate = new BridgeFailureGate(
         clampInt(Integer.getInteger("react.fastfluids.bridgeFailureThreshold", 8), 1, 64));
-    List<NmsBridgeDescriptor> descriptors = fluidBridgeDescriptors();
-    bridgeGetFluidState = React.bridgeRegistry().resolve(descriptors.get(0));
-    bridgeBlockPosCtor = React.bridgeRegistry().resolve(descriptors.get(1));
-    bridgeIsEmpty = React.bridgeRegistry().resolve(descriptors.get(2));
-    bridgeGetType = React.bridgeRegistry().resolve(descriptors.get(3));
-    bridgeWorldTickFluid = React.bridgeRegistry().resolve(descriptors.get(4));
-    bridgeFluidTypeTick = React.bridgeRegistry().resolve(descriptors.get(5));
-    bridgeFluidStateTick = React.bridgeRegistry().resolve(descriptors.get(6));
-    fluidBridgesAvailable = checkFluidBridgesAvailable();
+    nativeAccess = NativeAdapters.find(NativeWorldAccess.class).orElse(null);
+    fluidBridgesAvailable = nativeAccess != null;
     if (!fluidBridgesAvailable) {
       React.warn("Fast Fluids acceleration is passive: no usable fluid bridge resolved");
     }
@@ -287,19 +179,6 @@ public class TweakFastFluids extends ReactTweak implements Listener {
     bridgeFailureGate = null;
   }
 
-  private boolean checkFluidBridgesAvailable() {
-    if (!bridgeGetFluidState.available()) {
-      return false;
-    }
-    if (!bridgeBlockPosCtor.available()) {
-      return false;
-    }
-    if (!bridgeWorldTickFluid.available() && !bridgeFluidTypeTick.available() && !bridgeFluidStateTick.available()) {
-      return false;
-    }
-    return true;
-  }
-
   private void flushPulseQueue() {
     if (!fluidBridgesAvailable) {
       return;
@@ -376,39 +255,16 @@ public class TweakFastFluids extends ReactTweak implements Listener {
       return;
     }
 
-    Object worldHandle = NMS.getWorldServer(world);
-    if (worldHandle == null) {
-      recordBridgeFailure();
-      return;
-    }
-
-    Object blockPos;
     try {
-      blockPos = bridgeBlockPosCtor.methodHandle().invokeWithArguments(x, y, z);
-    } catch (Throwable throwable) {
-      reportBridgeThrowable(throwable);
+      for (int i = 0; i < Math.max(1, burstTicks); i++) {
+        if (!nativeAccess.tickFluid(world, x, y, z, accelerateWater, accelerateLava)) {
+          break;
+        }
+      }
+    } catch (Throwable failure) {
+      reportBridgeThrowable(failure);
       recordBridgeFailure();
       return;
-    }
-
-    if (blockPos == null) {
-      recordBridgeFailure();
-      return;
-    }
-
-    Block block = world.getBlockAt(x, y, z);
-    int safeBurstTicks = Math.max(1, burstTicks);
-    for (int i = 0; i < safeBurstTicks; i++) {
-      TickResult result = tickFluidAt(worldHandle, blockPos, block);
-      if (result == TickResult.SKIPPED) {
-        resetBridgeFailures();
-        return;
-      }
-
-      if (result == TickResult.FAILED) {
-        recordBridgeFailure();
-        return;
-      }
     }
 
     resetBridgeFailures();
@@ -445,166 +301,6 @@ public class TweakFastFluids extends ReactTweak implements Listener {
     React.reportError("Fast Fluids runtime bridge failure on the fluid tick path: "
         + throwable.getClass().getName()
         + (throwable.getMessage() == null ? "" : ": " + throwable.getMessage()), throwable);
-  }
-
-  private TickResult tickFluidAt(Object worldHandle, Object blockPos, Block block) {
-    try {
-      Object fluidState = bridgeGetFluidState.methodHandle().invokeWithArguments(worldHandle, blockPos);
-      if (fluidState == null) {
-        return TickResult.SKIPPED;
-      }
-
-      if (bridgeIsEmpty.available()) {
-        Object isEmpty = bridgeIsEmpty.methodHandle().invokeWithArguments(fluidState);
-        if (Boolean.TRUE.equals(isEmpty)) {
-          return TickResult.SKIPPED;
-        }
-      }
-
-      Material blockMaterial = block.getType();
-      if (blockMaterial == Material.WATER && !accelerateWater) {
-        return TickResult.SKIPPED;
-      }
-      if (blockMaterial == Material.LAVA && !accelerateLava) {
-        return TickResult.SKIPPED;
-      }
-
-      Object fluidType = null;
-      if (bridgeGetType.available()) {
-        fluidType = bridgeGetType.methodHandle().invokeWithArguments(fluidState);
-      }
-      if (fluidType == null) {
-        fluidType = fluidState;
-      }
-
-      if (blockMaterial != Material.WATER && blockMaterial != Material.LAVA) {
-        FluidKind kind = resolveFluidKind(fluidType, blockMaterial);
-        if (kind == FluidKind.WATER && !accelerateWater) {
-          return TickResult.SKIPPED;
-        }
-        if (kind == FluidKind.LAVA && !accelerateLava) {
-          return TickResult.SKIPPED;
-        }
-      }
-
-      if (bridgeWorldTickFluid.available()) {
-        MethodType wtt = bridgeWorldTickFluid.methodHandle().type();
-        Class<?> fluidArgType = wtt.parameterType(2);
-        Object fluidArg = fluidArgType.isInstance(fluidType) ? fluidType
-            : (fluidArgType.isInstance(fluidState) ? fluidState : null);
-        if (fluidArg != null) {
-          bridgeWorldTickFluid.methodHandle().invokeWithArguments(worldHandle, blockPos, fluidArg);
-          return TickResult.TICKED;
-        }
-      }
-
-      if (bridgeFluidTypeTick.available() && fluidType != fluidState) {
-        MethodType ftt = bridgeFluidTypeTick.methodHandle().type();
-        if (ftt.parameterType(0).isInstance(fluidType)) {
-          Object[] args = buildFixedTickArgs(ftt, fluidType, worldHandle, blockPos, fluidState, fluidType);
-          if (args != null) {
-            bridgeFluidTypeTick.methodHandle().invokeWithArguments(args);
-            return TickResult.TICKED;
-          }
-        }
-      }
-
-      if (bridgeFluidStateTick.available()) {
-        MethodType fst = bridgeFluidStateTick.methodHandle().type();
-        Object receiver = fst.parameterType(0).isInstance(fluidState) ? fluidState
-            : (fst.parameterType(0).isInstance(fluidType) ? fluidType : null);
-        if (receiver != null) {
-          Object[] args = buildFixedTickArgs(fst, receiver, worldHandle, blockPos, fluidState, fluidType);
-          if (args != null) {
-            bridgeFluidStateTick.methodHandle().invokeWithArguments(args);
-            return TickResult.TICKED;
-          }
-        }
-      }
-
-      return TickResult.FAILED;
-    } catch (Throwable throwable) {
-      reportBridgeThrowable(throwable);
-      return TickResult.FAILED;
-    }
-  }
-
-  private static Object[] buildFixedTickArgs(MethodType type, Object receiver,
-      Object worldHandle, Object blockPos, Object fluidState, Object fluidType) {
-    int paramCount = type.parameterCount();
-    if (paramCount < 3) {
-      return null;
-    }
-    Object[] args = new Object[paramCount];
-    args[0] = receiver;
-    args[1] = worldHandle;
-    args[2] = blockPos;
-    for (int i = 3; i < paramCount; i++) {
-      Class<?> paramType = type.parameterType(i);
-      if (fluidState != null && paramType.isInstance(fluidState)) {
-        args[i] = fluidState;
-      } else if (fluidType != null && paramType.isInstance(fluidType)) {
-        args[i] = fluidType;
-      } else {
-        args[i] = primitiveDefault(paramType);
-      }
-    }
-    return args;
-  }
-
-  private static Object primitiveDefault(Class<?> type) {
-    if (type == boolean.class) {
-      return false;
-    }
-    if (type == byte.class) {
-      return (byte) 0;
-    }
-    if (type == short.class) {
-      return (short) 0;
-    }
-    if (type == int.class) {
-      return 0;
-    }
-    if (type == long.class) {
-      return 0L;
-    }
-    if (type == float.class) {
-      return 0.0F;
-    }
-    if (type == double.class) {
-      return 0.0D;
-    }
-    if (type == char.class) {
-      return '\0';
-    }
-    return null;
-  }
-
-  private static FluidKind resolveFluidKind(Object fluidType, Material blockMaterial) {
-    if (blockMaterial == Material.WATER) {
-      return FluidKind.WATER;
-    }
-    if (blockMaterial == Material.LAVA) {
-      return FluidKind.LAVA;
-    }
-    if (fluidType == null) {
-      return FluidKind.OTHER;
-    }
-
-    FluidKind kindByClass = FLUID_KIND_BY_TYPE.get(fluidType.getClass());
-    if (kindByClass != FluidKind.OTHER) {
-      return kindByClass;
-    }
-
-    String typeString = fluidType.toString().toLowerCase(Locale.ROOT);
-    if (typeString.contains("water")) {
-      return FluidKind.WATER;
-    }
-    if (typeString.contains("lava")) {
-      return FluidKind.LAVA;
-    }
-
-    return FluidKind.OTHER;
   }
 
   private void enqueueForTicks(Block block, int extraTicks) {
@@ -745,18 +441,6 @@ public class TweakFastFluids extends ReactTweak implements Listener {
 
   private int clampInt(int value, int min, int max) {
     return Math.max(min, Math.min(max, value));
-  }
-
-  private enum TickResult {
-    TICKED,
-    SKIPPED,
-    FAILED
-  }
-
-  private enum FluidKind {
-    WATER,
-    LAVA,
-    OTHER
   }
 
   private static final class BridgeFailureGate {

@@ -24,10 +24,10 @@ import art.arcane.react.api.feature.PressureGate;
 import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.content.sampler.SamplerIncidentScore;
 import art.arcane.react.content.sampler.SamplerTickTime;
-import art.arcane.react.nms.FallingBlockTickHook;
-import art.arcane.react.nms.NmsBridge;
+import art.arcane.volmlib.nativelib.monitor.FallingBlockTickHook;
+import art.arcane.volmlib.nativelib.monitor.NativeMonitor;
 import art.arcane.react.nms.NmsBridges;
-import art.arcane.react.nms.TickDecision;
+import art.arcane.volmlib.nativelib.monitor.TickDecision;
 import art.arcane.react.util.project.config.ConfigDescription;
 import art.arcane.react.util.project.config.ConfigDoc;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
@@ -124,7 +124,7 @@ public class FeatureLazyGravity extends ReactFeature implements Listener {
   }
 
   private void installBridgeHook() {
-    NmsBridge bridge = NmsBridges.get();
+    NativeMonitor bridge = NmsBridges.get();
     if (bridge == null) {
       bridgeActive = false;
       return;
@@ -154,7 +154,7 @@ public class FeatureLazyGravity extends ReactFeature implements Listener {
   }
 
   private void uninstallBridgeHook() {
-    NmsBridge bridge = NmsBridges.get();
+    NativeMonitor bridge = NmsBridges.get();
     if (bridge != null) {
       bridge.uninstallFallingBlockTickHook();
     }

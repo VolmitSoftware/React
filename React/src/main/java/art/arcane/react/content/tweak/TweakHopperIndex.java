@@ -1,14 +1,12 @@
 package art.arcane.react.content.tweak;
 
 import art.arcane.react.React;
+import art.arcane.volmlib.nativelib.NativeAdapters;
+import art.arcane.volmlib.nativelib.monitor.NativeWorldAccess;
 import art.arcane.react.api.tweak.ReactTweak;
 import art.arcane.react.content.feature.FeatureHopperContainerThroughputMap;
 import art.arcane.react.content.feature.FeatureHopperItemIndex;
 import art.arcane.react.content.sampler.SamplerTickTime;
-import art.arcane.react.core.NMS;
-import art.arcane.react.core.bridge.BridgeKind;
-import art.arcane.react.core.bridge.NmsBridgeDescriptor;
-import art.arcane.react.core.bridge.NmsBridgeHandle;
 import art.arcane.react.core.controller.HopperItemIndex;
 import art.arcane.react.core.controller.HopperPositionIndex;
 import art.arcane.react.util.common.scheduling.J;
@@ -27,7 +25,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -38,11 +35,6 @@ import java.util.concurrent.atomic.AtomicLong;
 @ConfigDescription("Pre-ticks hoppers using a spatial item index to short-circuit vanilla's per-tick AABB entity scan. Fails closed to vanilla if any required NMS bridge is unavailable.")
 public class TweakHopperIndex extends ReactTweak {
     public static final String ID = "hopper-index";
-    public static final String BRIDGE_ADD_ITEM = "HopperBlockEntity.addItem";
-    public static final String BRIDGE_COOLDOWN_TIME = "HopperBlockEntity.cooldownTime";
-    public static final String BRIDGE_GET_BLOCK_ENTITY = "Level.getBlockEntity";
-    public static final String BRIDGE_BLOCK_POS_CTOR = "BlockPos.constructor";
-    public static final String BRIDGE_IS_EMPTY = "HopperBlockEntity.isEmpty";
 
     private static final int HOPPER_COOLDOWN_TICKS = 8;
     private static final double COLLECTION_HALF_EXTENT_H = 0.6;
@@ -50,7 +42,6 @@ public class TweakHopperIndex extends ReactTweak {
     private static final double COLLECTION_Y_MAX_OFFSET = 2.1;
     private static final int MAX_IDLE_STRETCH_PROBES_PER_TICK = 256;
     private static final int MAX_ITEM_CHUNK_BUDGET = 4096;
-    private static final Object UNAVAILABLE_ITEM_HANDLE = new Object();
 
     @art.arcane.react.util.project.config.ConfigDoc(value = "Stretches the transfer cooldown of empty, idle hoppers while the server is under load so vanilla skips re-polling them.", impact = "Enable to shed idle hopper tick cost on hopper-heavy servers; item pickup through the index fast-path stays instant.")
     private boolean idleStretch = true;
@@ -69,11 +60,7 @@ public class TweakHopperIndex extends ReactTweak {
     private transient final AtomicLong itemChunkPass = new AtomicLong(0L);
     private transient final AtomicLong lifecycleGeneration = new AtomicLong(0L);
     private transient final AtomicBoolean idleStretchFailureReported = new AtomicBoolean();
-    private transient NmsBridgeHandle bridgeAddItem;
-    private transient NmsBridgeHandle bridgeCooldownTime;
-    private transient NmsBridgeHandle bridgeGetBlockEntity;
-    private transient NmsBridgeHandle bridgeBlockPosCtor;
-    private transient NmsBridgeHandle bridgeIsEmpty;
+    private transient NativeWorldAccess nativeAccess;
     private transient boolean bridgesAvailable;
     private transient volatile boolean active = true;
     private transient int tickTaskId;
@@ -84,64 +71,16 @@ public class TweakHopperIndex extends ReactTweak {
         super(ID);
     }
 
-    public static List<NmsBridgeDescriptor> hopperBridgeDescriptors() {
-        List<String> hopperClasses = List.of(
-            "net.minecraft.world.level.block.entity.HopperBlockEntity",
-            "net.minecraft.world.level.block.entity.TileEntityHopper");
-        List<String> levelClasses = List.of(
-            "net.minecraft.world.level.Level",
-            "net.minecraft.world.level.World");
-        List<String> blockPosClasses = List.of(
-            "net.minecraft.core.BlockPos",
-            "net.minecraft.core.BlockPosition");
-        return List.of(
-            new NmsBridgeDescriptor(
-                BRIDGE_ADD_ITEM, BridgeKind.STATIC_METHOD, hopperClasses, "addItem",
-                List.of(
-                    List.of("net.minecraft.world.Container", "net.minecraft.world.entity.item.ItemEntity"),
-                    List.of("net.minecraft.world.IInventory", "net.minecraft.world.entity.item.EntityItem")),
-                "boolean",
-                Optional.of("HopperBlockEntity.addItem")),
-            new NmsBridgeDescriptor(
-                BRIDGE_COOLDOWN_TIME, BridgeKind.FIELD, hopperClasses, "cooldownTime",
-                List.of(),
-                "int",
-                Optional.of("HopperBlockEntity.cooldownTime")),
-            new NmsBridgeDescriptor(
-                BRIDGE_GET_BLOCK_ENTITY, BridgeKind.METHOD, levelClasses, "getBlockEntity",
-                List.of(
-                    List.of("net.minecraft.core.BlockPos"),
-                    List.of("net.minecraft.core.BlockPosition")),
-                "net.minecraft.world.level.block.entity.BlockEntity",
-                Optional.of("Level.getBlockEntity")),
-            new NmsBridgeDescriptor(
-                BRIDGE_BLOCK_POS_CTOR, BridgeKind.CONSTRUCTOR, blockPosClasses, "<init>",
-                List.of(List.of("int", "int", "int")),
-                blockPosClasses.get(0),
-                Optional.empty()),
-            new NmsBridgeDescriptor(
-                BRIDGE_IS_EMPTY, BridgeKind.METHOD, hopperClasses, "isEmpty",
-                List.of(List.of()),
-                "boolean",
-                Optional.of("HopperBlockEntity.isEmpty"))
-        );
-    }
-
     @Override
     public void onActivate() {
         active = false;
         lifecycleGeneration.incrementAndGet();
         idleStretchFailureReported.set(false);
         resetItemChunkState(null);
-        List<NmsBridgeDescriptor> descriptors = hopperBridgeDescriptors();
-        bridgeAddItem = React.bridgeRegistry().resolve(descriptors.get(0));
-        bridgeCooldownTime = React.bridgeRegistry().resolve(descriptors.get(1));
-        bridgeGetBlockEntity = React.bridgeRegistry().resolve(descriptors.get(2));
-        bridgeBlockPosCtor = React.bridgeRegistry().resolve(descriptors.get(3));
-        bridgeIsEmpty = React.bridgeRegistry().resolve(descriptors.get(4));
-        bridgesAvailable = checkBridgesAvailable();
+        nativeAccess = NativeAdapters.find(NativeWorldAccess.class).orElse(null);
+        bridgesAvailable = nativeAccess != null;
         if (!bridgesAvailable) {
-            logUnavailableBridge();
+            React.warn("Hopper index fast-path disabled: native world access is unavailable");
             return;
         }
         active = true;
@@ -159,27 +98,6 @@ public class TweakHopperIndex extends ReactTweak {
         bridgesAvailable = false;
         indexFeature = null;
         resetItemChunkState(null);
-    }
-
-    private boolean checkBridgesAvailable() {
-        return bridgeAddItem.available()
-            && bridgeCooldownTime.available()
-            && bridgeGetBlockEntity.available()
-            && bridgeBlockPosCtor.available();
-    }
-
-    private void logUnavailableBridge() {
-        String failing = "";
-        if (!bridgeAddItem.available()) {
-            failing = BRIDGE_ADD_ITEM;
-        } else if (!bridgeCooldownTime.available()) {
-            failing = BRIDGE_COOLDOWN_TIME;
-        } else if (!bridgeGetBlockEntity.available()) {
-            failing = BRIDGE_GET_BLOCK_ENTITY;
-        } else if (!bridgeBlockPosCtor.available()) {
-            failing = BRIDGE_BLOCK_POS_CTOR;
-        }
-        React.warn("Hopper index fast-path disabled: NMS bridge unavailable (" + failing + ")");
     }
 
     void tickAllWorlds() {
@@ -207,7 +125,6 @@ public class TweakHopperIndex extends ReactTweak {
         int stretchCooldown = effectiveIdleStretchCooldown(idleStretchTicks, spread);
         boolean stretchEligible = idleStretch
             && stretchCooldown > HOPPER_COOLDOWN_TICKS
-            && bridgeIsEmpty.available()
             && sample(SamplerTickTime.ID) >= idleStretchMinTickMs;
         boolean foliaThreading = J.isFoliaThreading();
         List<World> worlds = Bukkit.getWorlds();
@@ -393,18 +310,6 @@ public class TweakHopperIndex extends ReactTweak {
             FeatureHopperContainerThroughputMap.suckInItemsInvocations.addAndGet(hoppers.length);
             return;
         }
-        Object worldHandle;
-        try {
-            worldHandle = NMS.getWorldServer(world);
-        } catch (Throwable throwable) {
-            FeatureHopperContainerThroughputMap.suckInItemsInvocations.addAndGet(hoppers.length);
-            return;
-        }
-        if (worldHandle == null) {
-            FeatureHopperContainerThroughputMap.suckInItemsInvocations.addAndGet(hoppers.length);
-            return;
-        }
-
         UUID[] itemIds = adjacentItemIds(itemIndex, worldId, chunkX, chunkZ, hoppers);
         if (itemIds.length == 0) {
             FeatureHopperContainerThroughputMap.suckInItemsInvocations.addAndGet(hoppers.length);
@@ -412,7 +317,6 @@ public class TweakHopperIndex extends ReactTweak {
         }
         Item[] items = new Item[itemIds.length];
         Location[] itemLocations = new Location[itemIds.length];
-        Object[] itemHandles = new Object[itemIds.length];
         Long2ObjectOpenHashMap<IntArrayList> itemIndicesByHopper = createPickupCells(hoppers);
         int itemCount = 0;
         for (int i = 0; i < itemIds.length; i++) {
@@ -441,27 +345,21 @@ public class TweakHopperIndex extends ReactTweak {
         for (int i = 0; i < hoppers.length; i++) {
             long packed = hoppers[i];
             tryConsumeItemsAboveHopper(
-                worldHandle,
+                world,
                 HopperPositionIndex.unpackX(packed),
                 HopperPositionIndex.unpackY(packed),
                 HopperPositionIndex.unpackZ(packed),
                 items,
                 itemLocations,
-                itemHandles,
                 itemIndicesByHopper.get(packed));
         }
     }
 
-    private void tryConsumeItemsAboveHopper(Object worldHandle, int x, int y, int z, Item[] items,
-            Location[] itemLocations, Object[] itemHandles, IntArrayList itemIndices) {
+    private void tryConsumeItemsAboveHopper(World world, int x, int y, int z, Item[] items,
+            Location[] itemLocations, IntArrayList itemIndices) {
         try {
-            Object blockPos = bridgeBlockPosCtor.methodHandle().invokeWithArguments(x, y, z);
-            if (blockPos == null) {
-                FeatureHopperContainerThroughputMap.suckInItemsInvocations.incrementAndGet();
-                return;
-            }
-            Object blockEntity = bridgeGetBlockEntity.methodHandle().invokeWithArguments(worldHandle, blockPos);
-            if (blockEntity == null) {
+            NativeWorldAccess.HopperAccess hopper = nativeAccess.hopper(world, x, y, z);
+            if (hopper == null) {
                 FeatureHopperContainerThroughputMap.suckInItemsInvocations.incrementAndGet();
                 return;
             }
@@ -477,29 +375,12 @@ public class TweakHopperIndex extends ReactTweak {
                 if (!isWithinPickupBounds(itemLocation.getX(), itemLocation.getY(), itemLocation.getZ(), x, y, z)) {
                     continue;
                 }
-                Object itemHandle = itemHandles[i];
-                if (itemHandle == null) {
-                    try {
-                        itemHandle = NMS.getHandle(item);
-                    } catch (Throwable throwable) {
-                        itemHandle = UNAVAILABLE_ITEM_HANDLE;
-                    }
-                    if (itemHandle == null) {
-                        itemHandle = UNAVAILABLE_ITEM_HANDLE;
-                    }
-                    itemHandles[i] = itemHandle;
-                }
-                if (itemHandle == UNAVAILABLE_ITEM_HANDLE) {
-                    continue;
-                }
-                Boolean consumed = (Boolean) bridgeAddItem.methodHandle()
-                    .invokeWithArguments(blockEntity, itemHandle);
-                if (Boolean.TRUE.equals(consumed)) {
+                if (hopper.addItem(item)) {
                     anyConsumed = true;
                 }
             }
             if (anyConsumed) {
-                bridgeCooldownTime.varHandle().set(blockEntity, HOPPER_COOLDOWN_TICKS);
+                hopper.cooldown(HOPPER_COOLDOWN_TICKS);
             } else {
                 FeatureHopperContainerThroughputMap.suckInItemsInvocations.incrementAndGet();
             }
@@ -696,34 +577,15 @@ public class TweakHopperIndex extends ReactTweak {
         if (!world.isChunkLoaded(chunkX, chunkZ)) {
             return;
         }
-        Object worldHandle;
-        try {
-            worldHandle = NMS.getWorldServer(world);
-        } catch (Throwable throwable) {
-            reportIdleStretchFailure(throwable);
-            return;
-        }
-        if (worldHandle == null) {
-            return;
-        }
         for (int i = 0; i < positions.size(); i++) {
             long packed = positions.getLong(i);
             int x = HopperPositionIndex.unpackX(packed);
             int y = HopperPositionIndex.unpackY(packed);
             int z = HopperPositionIndex.unpackZ(packed);
             try {
-                Object blockPos = bridgeBlockPosCtor.methodHandle().invokeWithArguments(x, y, z);
-                Object blockEntity = bridgeGetBlockEntity.methodHandle().invokeWithArguments(worldHandle, blockPos);
-                if (blockEntity == null) {
-                    continue;
-                }
-                Boolean empty = (Boolean) bridgeIsEmpty.methodHandle().invokeWithArguments(blockEntity);
-                if (!Boolean.TRUE.equals(empty)) {
-                    continue;
-                }
-                int cooldown = (int) bridgeCooldownTime.varHandle().get(blockEntity);
-                if (cooldown < stretchCooldown) {
-                    bridgeCooldownTime.varHandle().set(blockEntity, stretchCooldown);
+                NativeWorldAccess.HopperAccess hopper = nativeAccess.hopper(world, x, y, z);
+                if (hopper != null && hopper.isEmpty() && hopper.cooldown() < stretchCooldown) {
+                    hopper.cooldown(stretchCooldown);
                 }
             } catch (Throwable throwable) {
                 reportIdleStretchFailure(throwable);

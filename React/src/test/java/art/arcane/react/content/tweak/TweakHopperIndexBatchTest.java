@@ -5,8 +5,7 @@ import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.content.feature.FeatureHopperContainerThroughputMap;
 import art.arcane.react.content.feature.FeatureHopperItemIndex;
 import art.arcane.react.content.sampler.SamplerTickTime;
-import art.arcane.react.core.NMS;
-import art.arcane.react.core.bridge.NmsBridgeHandle;
+import art.arcane.volmlib.nativelib.monitor.NativeWorldAccess;
 import art.arcane.react.core.controller.HopperItemIndex;
 import art.arcane.react.core.controller.HopperPositionIndex;
 import art.arcane.react.util.common.scheduling.J;
@@ -22,10 +21,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
-import java.lang.invoke.VarHandle;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,37 +33,6 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 class TweakHopperIndexBatchTest {
-    private static final MethodHandle ADD_ITEM_HANDLE;
-    private static final MethodHandle BLOCK_POS_HANDLE;
-    private static final MethodHandle GET_BLOCK_ENTITY_HANDLE;
-    private static final MethodHandle IS_EMPTY_HANDLE;
-    private static final VarHandle COOLDOWN_HANDLE;
-
-    static {
-        try {
-            MethodHandles.Lookup lookup = MethodHandles.lookup();
-            ADD_ITEM_HANDLE = lookup.findStatic(
-                TweakHopperIndexBatchTest.class,
-                "addItem",
-                MethodType.methodType(boolean.class, TestHopper.class, TestItemHandle.class));
-            BLOCK_POS_HANDLE = lookup.findStatic(
-                TweakHopperIndexBatchTest.class,
-                "blockPos",
-                MethodType.methodType(TestBlockPos.class, int.class, int.class, int.class));
-            GET_BLOCK_ENTITY_HANDLE = lookup.findStatic(
-                TweakHopperIndexBatchTest.class,
-                "getBlockEntity",
-                MethodType.methodType(TestHopper.class, TestWorldHandle.class, TestBlockPos.class));
-            IS_EMPTY_HANDLE = lookup.findStatic(
-                TweakHopperIndexBatchTest.class,
-                "isEmpty",
-                MethodType.methodType(boolean.class, TestHopper.class));
-            COOLDOWN_HANDLE = lookup.findVarHandle(TestHopper.class, "cooldown", int.class);
-        } catch (ReflectiveOperationException exception) {
-            throw new ExceptionInInitializerError(exception);
-        }
-    }
-
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
     void overlappingHoppersRetainHopperFirstCompetition(boolean foliaThreading) throws Exception {
@@ -237,7 +201,6 @@ class TweakHopperIndexBatchTest {
             Assertions.assertTrue(context.worldHandle.attempts.isEmpty());
             Assertions.assertEquals(1L, context.metricCount());
             Assertions.assertEquals(foliaThreading ? 1 : 0, context.tasks.size());
-            context.nms.verify(() -> NMS.getHandle(Mockito.any(Entity.class)), Mockito.never());
         }
     }
 
@@ -254,7 +217,6 @@ class TweakHopperIndexBatchTest {
             Mockito.verify(movedItem.bukkit, Mockito.never()).isValid();
             Mockito.verify(movedItem.bukkit, Mockito.never()).isDead();
             Mockito.verify(movedItem.bukkit, Mockito.never()).getLocation();
-            context.nms.verify(() -> NMS.getHandle(movedItem.bukkit), Mockito.never());
         }
     }
 
@@ -476,30 +438,8 @@ class TweakHopperIndexBatchTest {
         return true;
     }
 
-    private static TestBlockPos blockPos(int x, int y, int z) {
-        return new TestBlockPos(x, y, z);
-    }
-
-    private static TestHopper getBlockEntity(TestWorldHandle world, TestBlockPos position) {
-        return world.hoppers.get(position);
-    }
-
     private static boolean isEmpty(TestHopper hopper) {
         return hopper.accepted == 0;
-    }
-
-    private static NmsBridgeHandle methodBridge(MethodHandle methodHandle) {
-        NmsBridgeHandle bridge = Mockito.mock(NmsBridgeHandle.class);
-        Mockito.when(bridge.available()).thenReturn(true);
-        Mockito.when(bridge.methodHandle()).thenReturn(methodHandle);
-        return bridge;
-    }
-
-    private static NmsBridgeHandle cooldownBridge() {
-        NmsBridgeHandle bridge = Mockito.mock(NmsBridgeHandle.class);
-        Mockito.when(bridge.available()).thenReturn(true);
-        Mockito.when(bridge.varHandle()).thenReturn(COOLDOWN_HANDLE);
-        return bridge;
     }
 
     private static void setField(Object target, String name, Object value) throws Exception {
@@ -517,13 +457,13 @@ class TweakHopperIndexBatchTest {
         private final TestWorldHandle worldHandle;
         private final TweakHopperIndex tweak;
         private final Map<UUID, Entity> entities;
-        private final Map<Entity, Object> handles;
+        private final Map<Entity, TestItemHandle> handles;
         private final Set<UUID> throwingLookups;
         private final AtomicInteger itemValidityReads;
         private final MockedStatic<React> react;
         private final MockedStatic<Bukkit> bukkit;
         private final MockedStatic<J> scheduler;
-        private final MockedStatic<NMS> nms;
+        private final NativeWorldAccess nativeAccess;
         private final List<ChunkTask> tasks;
         private boolean executeTasks;
         private boolean acceptTasks;
@@ -548,7 +488,7 @@ class TweakHopperIndexBatchTest {
             react = Mockito.mockStatic(React.class);
             bukkit = Mockito.mockStatic(Bukkit.class);
             scheduler = Mockito.mockStatic(J.class);
-            nms = Mockito.mockStatic(NMS.class);
+            nativeAccess = Mockito.mock(NativeWorldAccess.class);
             FeatureHopperContainerThroughputMap.suckInItemsInvocations.set(0L);
 
             Mockito.when(world.getUID()).thenReturn(worldId);
@@ -579,9 +519,24 @@ class TweakHopperIndexBatchTest {
                     }
                     return acceptTasks;
                 });
-            nms.when(() -> NMS.getWorldServer(world)).thenReturn(worldHandle);
-            nms.when(() -> NMS.getHandle(Mockito.any(Entity.class)))
-                .thenAnswer(invocation -> handles.get(invocation.getArgument(0)));
+            Mockito.when(nativeAccess.hopper(Mockito.eq(world), Mockito.anyInt(), Mockito.anyInt(), Mockito.anyInt()))
+                .thenAnswer(invocation -> {
+                    TestHopper hopper = worldHandle.hoppers.get(new TestBlockPos(
+                        invocation.getArgument(1), invocation.getArgument(2), invocation.getArgument(3)));
+                    if (hopper == null) {
+                        return null;
+                    }
+                    NativeWorldAccess.HopperAccess access = Mockito.mock(NativeWorldAccess.HopperAccess.class);
+                    Mockito.when(access.addItem(Mockito.any(Item.class)))
+                        .thenAnswer(call -> TweakHopperIndexBatchTest.addItem(hopper, handles.get(call.getArgument(0))));
+                    Mockito.when(access.isEmpty()).thenAnswer(call -> isEmpty(hopper));
+                    Mockito.when(access.cooldown()).thenAnswer(call -> hopper.cooldown);
+                    Mockito.doAnswer(call -> {
+                        hopper.cooldown = call.getArgument(0);
+                        return null;
+                    }).when(access).cooldown(Mockito.anyInt());
+                    return access;
+                });
 
             Sampler tickSampler = Mockito.mock(Sampler.class);
             Mockito.when(tickSampler.sample()).thenReturn(100D);
@@ -590,11 +545,7 @@ class TweakHopperIndexBatchTest {
             FeatureHopperItemIndex feature = Mockito.mock(FeatureHopperItemIndex.class);
             Mockito.when(feature.getItemIndex()).thenReturn(itemIndex);
             Mockito.when(feature.getPositionIndex()).thenReturn(positionIndex);
-            setField(tweak, "bridgeAddItem", methodBridge(ADD_ITEM_HANDLE));
-            setField(tweak, "bridgeCooldownTime", cooldownBridge());
-            setField(tweak, "bridgeGetBlockEntity", methodBridge(GET_BLOCK_ENTITY_HANDLE));
-            setField(tweak, "bridgeBlockPosCtor", methodBridge(BLOCK_POS_HANDLE));
-            setField(tweak, "bridgeIsEmpty", methodBridge(IS_EMPTY_HANDLE));
+            setField(tweak, "nativeAccess", nativeAccess);
             setField(tweak, "bridgesAvailable", true);
             setField(tweak, "indexFeature", feature);
             setField(tweak, "idleStretch", false);
@@ -661,19 +612,16 @@ class TweakHopperIndexBatchTest {
         private void verifyResolvedOnce(IndexedItem item) {
             bukkit.verify(() -> Bukkit.getEntity(item.id), Mockito.times(1));
             Mockito.verify(item.bukkit, Mockito.times(1)).getLocation();
-            nms.verify(() -> NMS.getHandle(item.bukkit), Mockito.times(1));
         }
 
         private void verifyNotResolved(IndexedItem item) {
             bukkit.verify(() -> Bukkit.getEntity(item.id), Mockito.times(1));
             Mockito.verify(item.bukkit, Mockito.times(1)).getLocation();
-            nms.verify(() -> NMS.getHandle(item.bukkit), Mockito.never());
         }
 
         @Override
         public void close() {
             FeatureHopperContainerThroughputMap.suckInItemsInvocations.set(0L);
-            nms.close();
             scheduler.close();
             bukkit.close();
             react.close();

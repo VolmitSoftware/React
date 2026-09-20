@@ -1,10 +1,10 @@
 package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
-import art.arcane.react.nms.HopperTickHook;
-import art.arcane.react.nms.NmsBridge;
+import art.arcane.volmlib.nativelib.monitor.HopperTickHook;
+import art.arcane.volmlib.nativelib.monitor.NativeMonitor;
 import art.arcane.react.nms.NmsBridges;
-import art.arcane.react.nms.TickDecision;
+import art.arcane.volmlib.nativelib.monitor.TickDecision;
 import art.arcane.react.util.common.scheduling.J;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import org.bukkit.Location;
@@ -83,7 +83,7 @@ class HopperChainTokenBucketTest {
     React.instance = null;
     FeatureHopperChainCoalescing feature = new FeatureHopperChainCoalescing();
     setBoolean(feature, "featureActMode", true);
-    NmsBridge bridge = Mockito.mock(NmsBridge.class);
+    NativeMonitor bridge = Mockito.mock(NativeMonitor.class);
     AtomicReference<HopperTickHook> installedHook = new AtomicReference<>();
     Mockito.when(bridge.installHopperTickHook(Mockito.any(HopperTickHook.class))).thenAnswer(invocation -> {
       installedHook.set(invocation.getArgument(0));
