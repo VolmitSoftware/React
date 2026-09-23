@@ -1,0 +1,11 @@
+name: ReactGameplayObserver
+version: '1.0'
+main: art.arcane.react.test.GameplayObserver
+api-version: '26.1'
+depend: [React]
+commands:
+  reactqa:
+    permission: reactqa.admin
+permissions:
+  reactqa.admin:
+    default: op

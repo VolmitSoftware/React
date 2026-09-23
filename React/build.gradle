@@ -354,3 +354,29 @@ pluginPackaging {
         }
     }
 }
+
+sourceSets {
+    gameplayObserver {
+        java.srcDir('src/test/gameplay/fixture/java')
+        resources.srcDir('src/test/gameplay/fixture/resources')
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+    }
+}
+
+tasks.register('gameplayObserverJar', ShadowJar) {
+    configurations = []
+    archiveClassifier.set('')
+    archiveBaseName.set('ReactGameplayObserver')
+    archiveVersion.set('')
+    relocate('art.arcane.volmlib', "${lib}.volmlib")
+    dependsOn(tasks.named('gameplayObserverClasses'))
+    from(sourceSets.gameplayObserver.output)
+}
+
+tasks.register('gameplayContractTest', Exec) {
+    commandLine('node', '--test', 'src/test/gameplay/metrics.test.mjs')
+}
+
+tasks.named('check').configure {
+    dependsOn('gameplayObserverJar', 'gameplayContractTest')
+}
