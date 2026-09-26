@@ -39,7 +39,7 @@ plugins {
 apply plugin: 'art.arcane.volmit-packaging'
 
 
-version = '2.0.5-26.2' // Needs to be version specific
+version = '2.0.6-26.2' // Needs to be version specific
 def apiVersion = '26.1'
 def pluginName = rootProject.name // Defined in settings.gradle.kts
 String mainClass = 'art.arcane.react.React'
@@ -75,18 +75,16 @@ void createOutputTask(String name, String path) {
     tasks.register("build${name}", Copy) {
         group = 'development'
         outputs.upToDateWhen { false }
-        TaskProvider<ShadowJar> shadowJarTask = tasks.named('shadowJar', ShadowJar)
-        dependsOn(shadowJarTask)
-        from(shadowJarTask.flatMap { ShadowJar task -> task.archiveFile })
+        dependsOn('packedJar')
+        from({ tasks.named('packedJar').get().outputJar })
         into(file(path))
-        rename { String fileName ->
-            fileName.replace("React-${project.version}.jar", 'React.jar')
-        }
+        rename { String ignored -> 'React.jar' }
         if (name == 'PsychoLT') {
             doLast {
                 project.copy {
-                    from(shadowJarTask.get().archiveFile.get().asFile)
+                    from(tasks.named('packedJar').get().outputJar.get().asFile)
                     into(project.file('../../PluginOuts'))
+                    rename { String fileName -> fileName.replaceFirst(/-packed\.jar$/, '.jar') }
                 }
             }
         }
@@ -337,6 +335,8 @@ if (!JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_25)) {
 pluginPackaging {
     artifacts {
         create('distribution') {
+            packed = true
+            packedJarAccessors = ['art/arcane/react/React#jar']
             taskName = 'shadowJar'
             policyName = 'React'
             prunePrefixes = ['art/arcane/react/util/arcane/volmlib/']
