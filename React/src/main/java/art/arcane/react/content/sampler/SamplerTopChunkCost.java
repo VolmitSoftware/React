@@ -22,11 +22,9 @@ package art.arcane.react.content.sampler;
 import art.arcane.react.React;
 import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.react.core.controller.ObserverController;
-import art.arcane.react.model.SampledWorld;
+import art.arcane.react.model.CostSnapshot;
 import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Material;
-
-import java.util.Map;
 
 public class SamplerTopChunkCost extends ReactCachedSampler {
   public static final String ID = "top-chunk-cost";
@@ -42,16 +40,18 @@ public class SamplerTopChunkCost extends ReactCachedSampler {
 
   @Override
   public double onSample() {
-    return sampleOnMainThread(() -> {
-      Map<String, SampledWorld> worlds = React.controller(ObserverController.class).getSampled().getWorlds();
-      SampledCostMath.CostSnapshot snapshot = SampledCostMath.snapshot(worlds);
-      if (snapshot.total() <= 0D) {
-        return 0D;
-      }
+    ObserverController observer = React.controller(ObserverController.class);
+    if (observer == null) {
+      return 0D;
+    }
 
-      double tickMS = React.sampler(SamplerTickTime.ID).sample();
-      return Math.max(0D, (snapshot.maxChunk() / snapshot.total()) * tickMS);
-    });
+    CostSnapshot snapshot = observer.costSnapshot();
+    if (snapshot.total() <= 0D) {
+      return 0D;
+    }
+
+    double tickMS = React.sampler(SamplerTickTime.ID).sample();
+    return Math.max(0D, (snapshot.maxChunk() / snapshot.total()) * tickMS);
   }
 
   @Override

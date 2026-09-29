@@ -21,9 +21,9 @@ package art.arcane.react.core.controller;
 
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.api.web.heatmap.HeatmapWorldRef;
+import art.arcane.react.model.CostSnapshot;
 import art.arcane.react.model.SampledChunk;
 import art.arcane.react.model.SampledServer;
-import art.arcane.react.model.SampledWorld;
 import art.arcane.react.util.cache.Cache;
 import art.arcane.react.util.common.scheduling.TickedObject;
 import art.arcane.react.util.plugin.IController;
@@ -31,8 +31,10 @@ import art.arcane.volmlib.util.bukkit.WorldIdentity;
 import com.google.common.util.concurrent.AtomicDouble;
 import io.papermc.paper.event.world.border.WorldBorderBoundsChangeEvent;
 import io.papermc.paper.event.world.border.WorldBorderCenterChangeEvent;
+import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
@@ -59,6 +61,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicReference;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -66,6 +69,8 @@ public class ObserverController extends TickedObject implements IController {
   private static final int INITIAL_CHUNK_SEED_BATCH = 256;
   private transient final SampledServer sampled;
   private transient final Object loadedWorldRotationLock;
+  @Getter(AccessLevel.NONE)
+  private transient final AtomicReference<CostSnapshot> costSnapshot;
   private transient Map<UUID, LoadedWorldChunkIndex> loadedChunksByWorld;
   private transient Set<UUID> loadedWorldRotation;
   private transient Map<UUID, InitialLoadedChunkSeed> initialChunkSeedsByWorld;
@@ -78,12 +83,15 @@ public class ObserverController extends TickedObject implements IController {
     super("react", "observer", 1000);
     sampled = new SampledServer();
     loadedWorldRotationLock = new Object();
+    costSnapshot = new AtomicReference<>(CostSnapshot.EMPTY);
   }
 
 
   @Override
   public void onTick() {
     seedInitialLoadedChunkCoordinates();
+    costSnapshot.set(CostSnapshot.capture(sampled));
+    sampled.decay();
   }
 
   @Override
@@ -135,6 +143,7 @@ public class ObserverController extends TickedObject implements IController {
       heatmapWorldsById.clear();
     }
     heatmapWorldSnapshot = List.of();
+    costSnapshot.set(CostSnapshot.EMPTY);
   }
 
   @Override
@@ -142,32 +151,20 @@ public class ObserverController extends TickedObject implements IController {
 
   }
 
+  public CostSnapshot costSnapshot() {
+    return costSnapshot.get();
+  }
+
   public SampledChunk absoluteWorst() {
-    SampledChunk worst = null;
-    double worstTotal = Double.NEGATIVE_INFINITY;
-    double worstSub = Double.NEGATIVE_INFINITY;
-
-    for (SampledWorld world : sampled.getWorlds().values()) {
-      for (SampledChunk chunk : world.getChunks().values()) {
-        double total = chunk.totalScore();
-        double sub = chunk.highestSubScore();
-        if (total > worstTotal || (total == worstTotal && sub > worstSub)) {
-          worst = chunk;
-          worstTotal = total;
-          worstSub = sub;
-        }
-      }
-    }
-
-    return worst;
+    return costSnapshot.get().worstChunk();
   }
 
   public AtomicDouble get(Block b, Sampler sampler) {
-    return get(b.getChunk(), sampler);
+    return counter(sampled.getChunk(b.getWorld(), b.getX() >> 4, b.getZ() >> 4), sampler);
   }
 
   public AtomicDouble get(Chunk c, Sampler sampler) {
-    return sampled.getChunk(c).get(sampler.getId());
+    return counter(sampled.getChunk(c), sampler);
   }
 
   public Optional<Double> sample(Chunk c, Sampler s) {
@@ -437,6 +434,10 @@ public class ObserverController extends TickedObject implements IController {
       publishHeatmapWorldSnapshot();
     }
     sampled.removeWorld(event.getWorld());
+  }
+
+  private AtomicDouble counter(SampledChunk chunk, Sampler sampler) {
+    return sampler.isChunkGauge() ? chunk.gauge(sampler.getId()) : chunk.get(sampler.getId());
   }
 
   private HeatmapWorldRef defaultHeatmapWorld(List<HeatmapWorldRef> worlds) {

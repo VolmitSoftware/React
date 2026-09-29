@@ -17,23 +17,19 @@
  *
  */
 
-package art.arcane.react.content.sampler;
+package art.arcane.react.model;
 
-import art.arcane.react.model.SampledChunk;
-import art.arcane.react.model.SampledWorld;
+public record CostSnapshot(double total, double maxChunk, double maxWorld, SampledChunk worstChunk) {
+  public static final CostSnapshot EMPTY = new CostSnapshot(0D, 0D, 0D, null);
 
-import java.util.Map;
-
-final class SampledCostMath {
-  private SampledCostMath() {
-  }
-
-  static CostSnapshot snapshot(Map<String, SampledWorld> worlds) {
+  public static CostSnapshot capture(SampledServer server) {
     double total = 0D;
     double maxChunk = 0D;
     double maxWorld = 0D;
+    SampledChunk worst = null;
+    double worstTotal = 0D;
 
-    for (SampledWorld world : worlds.values()) {
+    for (SampledWorld world : server.getWorlds().values()) {
       double worldScore = 0D;
       for (SampledChunk chunk : world.getChunks().values()) {
         double chunkScore = chunk.totalScore();
@@ -42,6 +38,12 @@ final class SampledCostMath {
         if (chunkScore > maxChunk) {
           maxChunk = chunkScore;
         }
+        if (worst == null
+            || chunkScore > worstTotal
+            || (chunkScore == worstTotal && chunk.highestSubScore() > worst.highestSubScore())) {
+          worst = chunk;
+          worstTotal = chunkScore;
+        }
       }
 
       if (worldScore > maxWorld) {
@@ -49,21 +51,6 @@ final class SampledCostMath {
       }
     }
 
-    return new CostSnapshot(total, maxChunk, maxWorld);
-  }
-
-  static double totalScore(Map<String, SampledWorld> worlds) {
-    return snapshot(worlds).total();
-  }
-
-  static double maxWorldScore(Map<String, SampledWorld> worlds) {
-    return snapshot(worlds).maxWorld();
-  }
-
-  static double maxChunkScore(Map<String, SampledWorld> worlds) {
-    return snapshot(worlds).maxChunk();
-  }
-
-  record CostSnapshot(double total, double maxChunk, double maxWorld) {
+    return worst == null ? EMPTY : new CostSnapshot(total, maxChunk, maxWorld, worst);
   }
 }
