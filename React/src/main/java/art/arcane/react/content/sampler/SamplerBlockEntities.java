@@ -82,6 +82,6 @@ public class SamplerBlockEntities extends ReactCachedSampler {
 
   @Override
   public boolean isSampleAvailable() {
-    return available;
+    return available && super.isSampleAvailable();
   }
 }

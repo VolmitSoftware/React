@@ -22,52 +22,49 @@ package art.arcane.react.api.sampler;
 import art.arcane.volmlib.util.math.M;
 import art.arcane.volmlib.util.math.RollingSequence;
 
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.LongAdder;
+import java.util.function.LongSupplier;
 
 public abstract class ReactCachedRateSampler extends ReactCachedSampler {
   private static final double D1_OVER_SECONDS = 1.0 / 1000D;
-  private transient AtomicInteger hits;
+  private transient final LongSupplier clock;
+  private transient LongAdder hits;
   private transient RollingSequence avg;
-  private transient long lastHit = 0L;
   private transient long lastSample = 0L;
   private int rollingAverageSamples = 5;
 
   public ReactCachedRateSampler(String id, long sampleDelay) {
+    this(id, sampleDelay, M::ms);
+  }
+
+  ReactCachedRateSampler(String id, long sampleDelay, LongSupplier clock) {
     super(id, sampleDelay);
+    this.clock = clock;
   }
 
   @Override
   public double onSample() {
-    if (hits == null || avg == null) {
+    LongAdder localHits = hits;
+    RollingSequence localAvg = avg;
+    if (localHits == null || localAvg == null) {
       return 0D;
     }
 
-    if (lastSample == 0) {
-      lastSample = M.ms();
-    }
-
-    long t = M.ms();
-
-    if (t - lastHit > sampleDelay) {
-      avg.put(0);
-      lastHit = t;
-    }
-
-    int r = hits.getAndSet(0);
-    long dur = Math.max(M.ms() - lastSample, 1000);
+    long t = clock.getAsLong();
+    long r = localHits.sumThenReset();
+    long dur = Math.max(t - lastSample, 1000);
     lastSample = t;
-    avg.put(r / (dur * D1_OVER_SECONDS));
+    localAvg.put(r / (dur * D1_OVER_SECONDS));
 
-    return Math.max(0, avg.getAverage());
+    return Math.max(0, localAvg.getAverage());
   }
 
   @Override
   public void start() {
     super.start();
     avg = new RollingSequence(Math.max(1, rollingAverageSamples));
-    hits = new AtomicInteger(0);
-    lastHit = 0L;
-    lastSample = 0L;
+    hits = new LongAdder();
+    lastSample = clock.getAsLong();
   }
 
   @Override
@@ -75,21 +72,20 @@ public abstract class ReactCachedRateSampler extends ReactCachedSampler {
     super.stop();
     avg = null;
     hits = null;
-    lastHit = 0L;
     lastSample = 0L;
   }
 
   public void increment(int amount) {
-    AtomicInteger local = hits;
+    LongAdder local = hits;
     if (local != null) {
-      local.addAndGet(amount);
+      local.add(amount);
     }
   }
 
   public void increment() {
-    AtomicInteger local = hits;
+    LongAdder local = hits;
     if (local != null) {
-      local.incrementAndGet();
+      local.increment();
     }
   }
 }

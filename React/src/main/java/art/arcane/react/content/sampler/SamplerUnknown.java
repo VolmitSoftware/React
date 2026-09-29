@@ -38,6 +38,11 @@ public class SamplerUnknown extends ReactCachedSampler {
   }
 
   @Override
+  public boolean isSampleAvailable() {
+    return false;
+  }
+
+  @Override
   public String formattedValue(double t) {
     return "---";
   }

@@ -55,6 +55,18 @@ class SamplerAvailabilityTest {
     }
   }
 
+  @Test
+  void unknownSamplerIsNeverReportedAsAvailable() {
+    SamplerUnknown sampler = new SamplerUnknown();
+
+    try (MockedStatic<React> react = Mockito.mockStatic(React.class)) {
+      sampler.start();
+      sampler.sample();
+    }
+
+    Assertions.assertFalse(sampler.isSampleAvailable());
+  }
+
   private static void assertUnavailableAfterFailure(
       ReactCachedSampler sampler,
       World world,

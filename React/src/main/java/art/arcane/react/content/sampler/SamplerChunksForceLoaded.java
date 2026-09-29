@@ -82,6 +82,6 @@ public class SamplerChunksForceLoaded extends ReactCachedSampler {
 
   @Override
   public boolean isSampleAvailable() {
-    return available;
+    return available && super.isSampleAvailable();
   }
 }
