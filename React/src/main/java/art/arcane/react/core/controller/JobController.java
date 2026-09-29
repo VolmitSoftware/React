@@ -36,14 +36,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Data
 public class JobController implements IController {
   private static final double MIN_COMPUTE_TIME_MS = 0.05;
+  private static final double MIN_COMPUTE_TARGET_MS = 0.01;
+  private static final double DEFAULT_MAX_COMPUTE_TIME_MS = 1D;
+  private static final double DEFAULT_HIGH_UTILIZATION = 0.75;
+  private static final double DEFAULT_LOW_UTILIZATION = 0.25;
   private transient final RollingSequence usageCyclePercent;
   private transient final ConcurrentLinkedDeque<Runnable> jobs;
   private transient final AtomicInteger queueDepth;
-  private double maxComputeTime = 1;
+  private double maxComputeTime = DEFAULT_MAX_COMPUTE_TIME_MS;
   private long maxSpikeInterval = 250;
-  private double currentComputeTarget = 0.01;
-  private double highUtilizationThresholdPercent = 0.75;
-  private double lowUtilizationThresholdPercent = 0.25;
+  private double currentComputeTarget = MIN_COMPUTE_TARGET_MS;
+  private double highUtilizationThresholdPercent = DEFAULT_HIGH_UTILIZATION;
+  private double lowUtilizationThresholdPercent = DEFAULT_LOW_UTILIZATION;
   private transient ServerTickEvent ste = new ServerTickEvent();
   private transient RollingSequence usage = new RollingSequence(20);
   private transient double costPerJob = 0.1;
@@ -150,10 +154,10 @@ public class JobController implements IController {
     if (usageCyclePercent.getAverage() > highUtilizationThresholdPercent) {
       currentComputeTarget = M.lerp(currentComputeTarget, maxComputeTime, 0.01);
     } else if (usageCyclePercent.getAverage() < lowUtilizationThresholdPercent) {
-      currentComputeTarget = M.lerp(currentComputeTarget, 0.01, 0.01);
+      currentComputeTarget = M.lerp(currentComputeTarget, MIN_COMPUTE_TARGET_MS, 0.01);
     }
 
-    currentComputeTarget = M.clip(currentComputeTarget, 0.01, maxComputeTime);
+    currentComputeTarget = M.clip(currentComputeTarget, MIN_COMPUTE_TARGET_MS, maxComputeTime);
   }
 
   public void queue(Runnable r) {
@@ -166,9 +170,14 @@ public class JobController implements IController {
   }
 
   private void clampConfiguration() {
-    maxComputeTime = Math.max(MIN_COMPUTE_TIME_MS, maxComputeTime);
-    highUtilizationThresholdPercent = M.clip(highUtilizationThresholdPercent, 0D, 1D);
-    lowUtilizationThresholdPercent = M.clip(lowUtilizationThresholdPercent, 0D, 1D);
+    maxComputeTime = Math.max(MIN_COMPUTE_TIME_MS, finiteOr(maxComputeTime, DEFAULT_MAX_COMPUTE_TIME_MS));
+    currentComputeTarget = finiteOr(currentComputeTarget, MIN_COMPUTE_TARGET_MS);
+    highUtilizationThresholdPercent = M.clip(finiteOr(highUtilizationThresholdPercent, DEFAULT_HIGH_UTILIZATION), 0D, 1D);
+    lowUtilizationThresholdPercent = M.clip(finiteOr(lowUtilizationThresholdPercent, DEFAULT_LOW_UTILIZATION), 0D, 1D);
+  }
+
+  private static double finiteOr(double value, double fallback) {
+    return Double.isFinite(value) ? value : fallback;
   }
 
   private Runnable pollJob(boolean alternatePoll) {

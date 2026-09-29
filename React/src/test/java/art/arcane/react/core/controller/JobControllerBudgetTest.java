@@ -65,6 +65,49 @@ class JobControllerBudgetTest {
   }
 
   @Test
+  void nonFiniteLoadedConfigurationFallsBackToDefaults() {
+    JobController controller = new JobController();
+    JobController loaded = new JobController();
+    loaded.setMaxComputeTime(Double.NaN);
+    loaded.setCurrentComputeTarget(Double.NaN);
+    loaded.setHighUtilizationThresholdPercent(Double.NaN);
+    loaded.setLowUtilizationThresholdPercent(Double.POSITIVE_INFINITY);
+
+    try (MockedStatic<React> react = Mockito.mockStatic(React.class)) {
+      Assertions.assertTrue(controller.applyConfigurationSnapshot(loaded));
+    }
+
+    Assertions.assertEquals(1D, controller.getMaxComputeTime(), 1.0E-9D);
+    Assertions.assertEquals(0.01D, controller.getCurrentComputeTarget(), 1.0E-9D);
+    Assertions.assertEquals(0.75D, controller.getHighUtilizationThresholdPercent(), 1.0E-9D);
+    Assertions.assertEquals(0.25D, controller.getLowUtilizationThresholdPercent(), 1.0E-9D);
+  }
+
+  @Test
+  void notANumberConfiguredComputeTimeStillDrainsQueuedJobs() {
+    JobController controller = new JobController();
+    JobController loaded = new JobController();
+    loaded.setMaxComputeTime(Double.NaN);
+    AtomicInteger ran = new AtomicInteger();
+
+    try (MockedStatic<React> react = Mockito.mockStatic(React.class);
+         MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class)) {
+      bukkit.when(Bukkit::getPluginManager).thenReturn(Mockito.mock(PluginManager.class));
+      controller.applyConfigurationSnapshot(loaded);
+
+      for (int i = 0; i < 5; i++) {
+        controller.queue(ran::incrementAndGet);
+      }
+
+      for (int i = 0; i < 1000 && ran.get() < 5; i++) {
+        controller.execute();
+      }
+    }
+
+    Assertions.assertEquals(5, ran.get());
+  }
+
+  @Test
   void zeroConfiguredComputeTimeStillDrainsQueuedJobs() {
     JobController controller = new JobController();
     JobController loaded = new JobController();
