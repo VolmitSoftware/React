@@ -97,7 +97,6 @@ public class FeatureLazyGravity extends ReactFeature implements Listener {
   public void onActivate() {
     tasks.clear();
     columnIndex.clear();
-    tracked.set(0L);
     projectedSkippedTicks.set(0L);
     tracked.set(0L);
     bypassed.set(0L);
