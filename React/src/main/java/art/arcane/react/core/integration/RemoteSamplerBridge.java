@@ -1,5 +1,6 @@
 package art.arcane.react.core.integration;
 
+import art.arcane.react.React;
 import art.arcane.volmlib.integration.IntegrationMetricDescriptor;
 import art.arcane.volmlib.integration.IntegrationMetricGroup;
 import art.arcane.volmlib.integration.IntegrationMetricSample;
@@ -12,6 +13,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 public class RemoteSamplerBridge {
   private static final long MAX_FUTURE_SAMPLE_MS = 5_000L;
@@ -19,6 +21,16 @@ public class RemoteSamplerBridge {
 
   private final Map<String, Map<String, IntegrationMetricSample>> samplesByPlugin = new ConcurrentHashMap<>();
   private final Map<String, Map<GroupKey, IntegrationMetricGroup>> groupsByPlugin = new ConcurrentHashMap<>();
+  private final Map<String, String> schemaRejections = new ConcurrentHashMap<>();
+  private final Consumer<String> rejectionLog;
+
+  public RemoteSamplerBridge() {
+    this(React::warn);
+  }
+
+  RemoteSamplerBridge(Consumer<String> rejectionLog) {
+    this.rejectionLog = rejectionLog;
+  }
 
   public int updatePluginSamples(
       String pluginId,
@@ -168,6 +180,7 @@ public class RemoteSamplerBridge {
   public void clear() {
     samplesByPlugin.clear();
     groupsByPlugin.clear();
+    schemaRejections.clear();
   }
 
   private static boolean hasPluginPrefix(String key, String pluginId) {
@@ -209,12 +222,32 @@ public class RemoteSamplerBridge {
     }
     IntegrationMetricDescriptor schemaDescriptor = IntegrationMetricSchema.descriptor(mapKey);
     boolean knownSchema = !"unknown".equals(schemaDescriptor.tags().get("origin"));
+    String rejectionKey = pluginId + '|' + mapKey;
     if (knownSchema
         && (sample.descriptor().type() != schemaDescriptor.type()
         || !sample.descriptor().unit().equals(schemaDescriptor.unit()))) {
+      reportSchemaRejection(rejectionKey, pluginId, mapKey, schemaDescriptor, sample.descriptor());
       return null;
     }
+    schemaRejections.remove(rejectionKey);
     return sample;
+  }
+
+  private void reportSchemaRejection(
+      String rejectionKey,
+      String pluginId,
+      String mapKey,
+      IntegrationMetricDescriptor expected,
+      IntegrationMetricDescriptor received
+  ) {
+    String reason = "expected " + expected.type() + " '" + expected.unit() + "', received "
+        + received.type() + " '" + received.unit() + "'";
+    String previous = schemaRejections.put(rejectionKey, reason);
+    if (reason.equals(previous)) {
+      return;
+    }
+
+    rejectionLog.accept("[integration] Rejected " + pluginId + " metric " + mapKey + ": " + reason);
   }
 
   private boolean validGroup(String pluginId, IntegrationMetricGroup group) {
