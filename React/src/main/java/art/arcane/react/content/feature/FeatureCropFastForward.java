@@ -23,16 +23,17 @@ import art.arcane.react.React;
 import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.content.sampler.SamplerIncidentScore;
 import art.arcane.react.content.sampler.SamplerTickTime;
+import art.arcane.react.core.controller.NearbyPlayerIndexController;
 import art.arcane.react.core.controller.ObserverController;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.project.config.ConfigDescription;
 import art.arcane.react.util.project.config.ConfigDoc;
-import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongIterator;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.ChunkSnapshot;
 import org.bukkit.GameRules;
-import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -47,13 +48,13 @@ import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 @ConfigDescription("Configuration for Crop Fast Forward feature. When a chunk transitions from dormant (no nearby player for a long stretch) to active (player approached or chunk reloaded), this feature walks crop and sapling blocks once and advances their growth by an amount proportional to the dormant duration so players do not see frozen farms after returning. Stays inactive during high-load incidents.")
@@ -62,6 +63,7 @@ public class FeatureCropFastForward extends ReactFeature implements Listener {
   private static final int MIN_SAMPLED_Y = -64;
   private static final int MAX_SAMPLED_Y = 320;
   private static final int MAX_CHUNKS_SCANNED_PER_PASS = 128;
+  private static final int MAX_SIMULATION_RADIUS = 32;
 
   @ConfigDoc(value = "Main evaluation interval for crop fast forward in milliseconds.", impact = "Lower values check dormant chunks more often and react quicker; higher values reduce overhead.")
   private int tickIntervalMS = 2500;
@@ -86,12 +88,12 @@ public class FeatureCropFastForward extends ReactFeature implements Listener {
   @ConfigDoc(value = "Probability per random tick that a sapling rolls to grow into a tree under vanilla rules; used for proportional roll math.", impact = "Higher values make saplings more likely to fast-grow after dormant stretches; lower values match stricter sapling growth chances.")
   private double saplingGrowthChance = 0.142D;
 
-  private transient Map<UUID, Long2LongOpenHashMap> lastActiveByWorld;
+  private transient Map<UUID, CropActivityLedger> ledgers;
   private transient final AtomicLong blocksAdvanced = new AtomicLong(0L);
   private transient final AtomicLong fastForwards = new AtomicLong(0L);
   private transient final AtomicLong simulatedTicks = new AtomicLong(0L);
   private transient final AtomicLong lifecycleGeneration = new AtomicLong(0L);
-  private transient final AtomicBoolean scanQueued = new AtomicBoolean(false);
+  private transient volatile long lastStampPassMs;
   private transient volatile boolean silenced;
   private transient volatile boolean active;
 
@@ -103,8 +105,8 @@ public class FeatureCropFastForward extends ReactFeature implements Listener {
   public void onActivate() {
     active = false;
     lifecycleGeneration.incrementAndGet();
-    scanQueued.set(false);
-    lastActiveByWorld = new ConcurrentHashMap<>();
+    ledgers = new ConcurrentHashMap<>();
+    lastStampPassMs = 0L;
     blocksAdvanced.set(0L);
     fastForwards.set(0L);
     simulatedTicks.set(0L);
@@ -116,9 +118,8 @@ public class FeatureCropFastForward extends ReactFeature implements Listener {
   public void onDeactivate() {
     active = false;
     lifecycleGeneration.incrementAndGet();
-    scanQueued.set(false);
-    Map<UUID, Long2LongOpenHashMap> tracked = lastActiveByWorld;
-    lastActiveByWorld = null;
+    Map<UUID, CropActivityLedger> tracked = ledgers;
+    ledgers = null;
     if (tracked != null) {
       tracked.clear();
     }
@@ -132,21 +133,19 @@ public class FeatureCropFastForward extends ReactFeature implements Listener {
   @Override
   public void onTick() {
     updateSilencing();
-    if (!active || silenced || lastActiveByWorld == null || !scanQueued.compareAndSet(false, true)) {
-      enforceCapacity();
+    Map<UUID, CropActivityLedger> tracked = ledgers;
+    if (!active || tracked == null) {
       return;
     }
+
     long generation = lifecycleGeneration.get();
-    J.s(() -> {
-      try {
-        scanForWakes(generation);
-      } finally {
-        if (generation == lifecycleGeneration.get()) {
-          scanQueued.set(false);
-        }
-      }
-    });
-    enforceCapacity();
+    long now = System.currentTimeMillis();
+    seedLoadedChunks(tracked, now);
+    stampSimulatedChunks(tracked, now);
+    if (!silenced) {
+      dispatchWakes(tracked, generation);
+    }
+    enforceCapacity(tracked);
   }
 
   public long readAndResetBlocksAdvanced() {
@@ -163,40 +162,31 @@ public class FeatureCropFastForward extends ReactFeature implements Listener {
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void on(ChunkLoadEvent event) {
-    if (!active || lastActiveByWorld == null) {
+    Map<UUID, CropActivityLedger> tracked = ledgers;
+    if (!active || tracked == null) {
       return;
     }
     Chunk chunk = event.getChunk();
     if (chunk == null) {
       return;
     }
-    long now = System.currentTimeMillis();
-    Long2LongOpenHashMap map = lastActiveByWorld.computeIfAbsent(chunk.getWorld().getUID(), ignored -> new Long2LongOpenHashMap());
-    long key = packChunk(chunk.getX(), chunk.getZ());
-    synchronized (map) {
-      map.put(key, now);
-    }
+    ledger(tracked, chunk.getWorld().getUID())
+        .loaded(CropActivityLedger.pack(chunk.getX(), chunk.getZ()), System.currentTimeMillis());
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void on(ChunkUnloadEvent event) {
-    if (!active || lastActiveByWorld == null) {
+    Map<UUID, CropActivityLedger> tracked = ledgers;
+    if (!active || tracked == null) {
       return;
     }
     Chunk chunk = event.getChunk();
     if (chunk == null) {
       return;
     }
-    Long2LongOpenHashMap map = lastActiveByWorld.get(chunk.getWorld().getUID());
-    if (map == null) {
-      return;
-    }
-    long key = packChunk(chunk.getX(), chunk.getZ());
-    synchronized (map) {
-      map.remove(key);
-      if (map.isEmpty()) {
-        lastActiveByWorld.remove(chunk.getWorld().getUID(), map);
-      }
+    CropActivityLedger ledger = tracked.get(chunk.getWorld().getUID());
+    if (ledger != null) {
+      ledger.unloaded(CropActivityLedger.pack(chunk.getX(), chunk.getZ()));
     }
   }
 
@@ -214,97 +204,103 @@ public class FeatureCropFastForward extends ReactFeature implements Listener {
     }
   }
 
-  void scanForWakes() {
-    scanForWakes(lifecycleGeneration.get());
-  }
-
-  private void scanForWakes(long generation) {
-    if (!isCurrent(generation) || silenced || lastActiveByWorld == null) {
-      return;
-    }
-
+  private void seedLoadedChunks(Map<UUID, CropActivityLedger> tracked, long now) {
     ObserverController observer = React.controller(ObserverController.class);
     if (observer == null) {
       return;
     }
-    long now = System.currentTimeMillis();
-    int range = Math.max(0, activeRange);
     List<ObserverController.LoadedChunkTarget> targets = observer.nextLoadedChunkCoordinateBatch(
         MAX_CHUNKS_SCANNED_PER_PASS
     );
     for (ObserverController.LoadedChunkTarget target : targets) {
-      if (!isCurrent(generation)) {
-        return;
+      ledger(tracked, target.worldId()).seed(CropActivityLedger.pack(target.chunkX(), target.chunkZ()), now);
+    }
+  }
+
+  private void stampSimulatedChunks(Map<UUID, CropActivityLedger> tracked, long now) {
+    NearbyPlayerIndexController playerIndex = React.controller(NearbyPlayerIndexController.class);
+    if (playerIndex == null) {
+      return;
+    }
+
+    Map<UUID, LongOpenHashSet> centersByWorld = new HashMap<>();
+    for (NearbyPlayerIndexController.PlayerViewSnapshot player : playerIndex.playerSnapshots()) {
+      if (player.worldId() == null) {
+        continue;
       }
-      World world = Bukkit.getWorld(target.worldId());
+      long center = CropActivityLedger.pack((int) Math.floor(player.x()) >> 4, (int) Math.floor(player.z()) >> 4);
+      centersByWorld.computeIfAbsent(player.worldId(), ignored -> new LongOpenHashSet()).add(center);
+    }
+
+    long previousPass = lastStampPassMs;
+    long warmTicks = Math.max(1, minElapsedTicks);
+    long maxTicks = Math.max(0, maxFastForwardTicks);
+    for (Map.Entry<UUID, LongOpenHashSet> entry : centersByWorld.entrySet()) {
+      World world = Bukkit.getWorld(entry.getKey());
       if (world == null) {
-        lastActiveByWorld.remove(target.worldId());
+        continue;
+      }
+      int radius = Math.max(0, Math.min(MAX_SIMULATION_RADIUS, world.getSimulationDistance()));
+      CropActivityLedger ledger = ledger(tracked, entry.getKey());
+      LongIterator centers = entry.getValue().iterator();
+      while (centers.hasNext()) {
+        long center = centers.nextLong();
+        ledger.stampInside(
+            CropActivityLedger.chunkX(center),
+            CropActivityLedger.chunkZ(center),
+            radius,
+            now,
+            previousPass,
+            warmTicks,
+            maxTicks
+        );
+      }
+    }
+    lastStampPassMs = now;
+  }
+
+  private void dispatchWakes(Map<UUID, CropActivityLedger> tracked, long generation) {
+    NearbyPlayerIndexController playerIndex = React.controller(NearbyPlayerIndexController.class);
+    int range = Math.max(0, activeRange);
+    if (playerIndex == null || range <= 0) {
+      return;
+    }
+
+    boolean folia = J.isFoliaThreading();
+    long maxTicks = Math.max(0, maxFastForwardTicks);
+    int remaining = MAX_CHUNKS_SCANNED_PER_PASS;
+    Iterator<Map.Entry<UUID, CropActivityLedger>> worlds = tracked.entrySet().iterator();
+    while (worlds.hasNext() && remaining > 0 && isCurrent(generation)) {
+      Map.Entry<UUID, CropActivityLedger> entry = worlds.next();
+      World world = Bukkit.getWorld(entry.getKey());
+      if (world == null) {
+        worlds.remove();
         continue;
       }
 
-      Runnable evaluation = () -> evaluateChunk(
-          world,
-          target.chunkX(),
-          target.chunkZ(),
-          range,
-          now,
-          generation
-      );
-      if (J.isFoliaThreading()) {
-        J.runChunk(world, target.chunkX(), target.chunkZ(), evaluation);
-      } else {
-        evaluation.run();
+      CropActivityLedger ledger = entry.getValue();
+      for (long chunk : ledger.pendingChunks(Integer.MAX_VALUE)) {
+        if (remaining <= 0) {
+          return;
+        }
+        int chunkX = CropActivityLedger.chunkX(chunk);
+        int chunkZ = CropActivityLedger.chunkZ(chunk);
+        if (!playerIndex.hasNearbyPlayerInColumn(world, (chunkX << 4) + 8D, (chunkZ << 4) + 8D, range)) {
+          continue;
+        }
+        long elapsedTicks = Math.min(ledger.takePending(chunk), maxTicks);
+        if (elapsedTicks <= 0L) {
+          continue;
+        }
+        Runnable fastForward = () -> applyFastForward(world, chunkX, chunkZ, elapsedTicks, generation);
+        if (folia) {
+          J.runChunk(world, chunkX, chunkZ, fastForward);
+        } else {
+          J.s(fastForward);
+        }
+        remaining--;
       }
     }
-  }
-
-  private void evaluateChunk(
-      World world,
-      int chunkX,
-      int chunkZ,
-      int range,
-      long now,
-      long generation
-  ) {
-    if (!isCurrent(generation) || world == null || !world.isChunkLoaded(chunkX, chunkZ)) {
-      return;
-    }
-
-    Long2LongOpenHashMap map = lastActiveByWorld.computeIfAbsent(
-        world.getUID(),
-        ignored -> new Long2LongOpenHashMap()
-    );
-    long key = packChunk(chunkX, chunkZ);
-    boolean nearby = hasNearbyPlayerInChunk(world, chunkX, chunkZ, range);
-    long previousActive;
-    synchronized (map) {
-      previousActive = map.get(key);
-      if (nearby || previousActive == 0L) {
-        map.put(key, now);
-      }
-    }
-
-    if (!nearby || previousActive == 0L) {
-      return;
-    }
-
-    long elapsedMs = now - previousActive;
-    long elapsedTicks = Math.min(elapsedMs / 50L, (long) Math.max(0, maxFastForwardTicks));
-    if (elapsedTicks < Math.max(1, minElapsedTicks)) {
-      return;
-    }
-    applyFastForward(world, chunkX, chunkZ, elapsedTicks, generation);
-  }
-
-  private boolean hasNearbyPlayerInChunk(World world, int chunkX, int chunkZ, int range) {
-    if (range <= 0 || world == null) {
-      return false;
-    }
-    int centerX = (chunkX << 4) + 8;
-    int centerZ = (chunkZ << 4) + 8;
-    int centerY = world.getMinHeight() + ((world.getMaxHeight() - world.getMinHeight()) >> 1);
-    Location anchor = new Location(world, centerX, centerY, centerZ);
-    return React.hasNearbyPlayer(anchor, range);
   }
 
   private void applyFastForward(World world, int chunkX, int chunkZ, long elapsedTicks, long generation) {
@@ -320,20 +316,10 @@ public class FeatureCropFastForward extends ReactFeature implements Listener {
       return;
     }
 
-    Chunk chunk;
-    try {
-      chunk = world.getChunkAt(chunkX, chunkZ);
-    } catch (Throwable ex) {
-      React.reportError(ex);
-      return;
-    }
-    if (chunk == null) {
-      return;
-    }
-
     ChunkSnapshot snapshot;
     try {
-      snapshot = chunk.getChunkSnapshot(true, false, false);
+      Chunk chunk = world.getChunkAt(chunkX, chunkZ);
+      snapshot = chunk == null ? null : chunk.getChunkSnapshot(true, false, false);
     } catch (Throwable ex) {
       React.reportError(ex);
       return;
@@ -352,29 +338,16 @@ public class FeatureCropFastForward extends ReactFeature implements Listener {
     for (int x = 0; x < 16 && advancedThisPass < budget && isCurrent(generation); x++) {
       for (int z = 0; z < 16 && advancedThisPass < budget; z++) {
         int columnTop = Math.min(maxY, snapshot.getHighestBlockYAt(x, z));
-        if (columnTop < minY) {
-          continue;
-        }
         for (int y = minY; y <= columnTop && advancedThisPass < budget; y++) {
-          Block block;
-          try {
-            block = world.getBlockAt(worldX0 + x, y, worldZ0 + z);
-          } catch (Throwable ex) {
-            continue;
-          }
-          if (block == null) {
-            continue;
-          }
-          Material type = block.getType();
+          Material type = snapshot.getBlockType(x, y, z);
           if (!isGrowable(type)) {
             continue;
           }
 
+          Block block = world.getBlockAt(worldX0 + x, y, worldZ0 + z);
           if (isSapling(type)) {
-            if (rollSapling(elapsedTicks, randomTickSpeed)) {
-              if (applySaplingGrowth(block)) {
-                advancedThisPass++;
-              }
+            if (rollSapling(elapsedTicks, randomTickSpeed) && applySaplingGrowth(block)) {
+              advancedThisPass++;
             }
             continue;
           }
@@ -518,64 +491,40 @@ public class FeatureCropFastForward extends ReactFeature implements Listener {
     };
   }
 
-  private void enforceCapacity() {
-    if (lastActiveByWorld == null) {
-      return;
-    }
+  private void enforceCapacity(Map<UUID, CropActivityLedger> tracked) {
     int total = 0;
-    for (Long2LongOpenHashMap map : lastActiveByWorld.values()) {
-      synchronized (map) {
-        total += map.size();
-      }
+    for (CropActivityLedger ledger : tracked.values()) {
+      total += ledger.size();
     }
     int cap = Math.max(1024, maxTrackedChunks);
     if (total <= cap) {
       return;
     }
 
-    int overflow = total - cap;
-    long[] timestamps = new long[total];
+    long[] stamps = new long[total];
     int collected = 0;
-    for (Long2LongOpenHashMap map : lastActiveByWorld.values()) {
-      synchronized (map) {
-        Iterator<Long2LongOpenHashMap.Entry> iterator = map.long2LongEntrySet().fastIterator();
-        while (iterator.hasNext() && collected < timestamps.length) {
-          timestamps[collected++] = iterator.next().getLongValue();
-        }
-      }
+    for (CropActivityLedger ledger : tracked.values()) {
+      collected = ledger.collectStamps(stamps, collected);
     }
     if (collected == 0) {
       return;
     }
 
-    int evictions = Math.min(overflow, collected);
-    long[] sorted = collected == timestamps.length ? timestamps : Arrays.copyOf(timestamps, collected);
+    int evictions = Math.min(total - cap, collected);
+    long[] sorted = collected == stamps.length ? stamps : Arrays.copyOf(stamps, collected);
     Arrays.sort(sorted);
     long cutoff = sorted[evictions - 1];
     int remaining = evictions;
-
-    Iterator<Map.Entry<UUID, Long2LongOpenHashMap>> worldIterator = lastActiveByWorld.entrySet().iterator();
-    while (worldIterator.hasNext() && remaining > 0) {
-      Map.Entry<UUID, Long2LongOpenHashMap> entry = worldIterator.next();
-      Long2LongOpenHashMap map = entry.getValue();
-      synchronized (map) {
-        Iterator<Long2LongOpenHashMap.Entry> iterator = map.long2LongEntrySet().fastIterator();
-        while (iterator.hasNext() && remaining > 0) {
-          Long2LongOpenHashMap.Entry mapEntry = iterator.next();
-          if (mapEntry.getLongValue() <= cutoff) {
-            iterator.remove();
-            remaining--;
-          }
-        }
-        if (map.isEmpty()) {
-          worldIterator.remove();
-        }
+    for (CropActivityLedger ledger : tracked.values()) {
+      if (remaining <= 0) {
+        return;
       }
+      remaining -= ledger.evictAtOrBefore(cutoff, remaining);
     }
   }
 
-  private static long packChunk(int cx, int cz) {
-    return (((long) cx) << 32) ^ (cz & 0xFFFFFFFFL);
+  private static CropActivityLedger ledger(Map<UUID, CropActivityLedger> tracked, UUID worldId) {
+    return tracked.computeIfAbsent(worldId, ignored -> new CropActivityLedger());
   }
 
   private boolean isCurrent(long generation) {
