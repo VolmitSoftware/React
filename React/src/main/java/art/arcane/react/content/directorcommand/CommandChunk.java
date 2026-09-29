@@ -30,10 +30,12 @@ import art.arcane.react.util.director.DirectorExecutor;
 import art.arcane.volmlib.util.director.DirectorOrigin;
 import art.arcane.volmlib.util.director.annotations.Director;
 import art.arcane.volmlib.util.localization.MessageArgument;
+import art.arcane.volmlib.util.scheduling.EntityTeleports;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
+import org.bukkit.event.player.PlayerTeleportEvent;
 
 @Director(
     name = "chunk",
@@ -91,7 +93,7 @@ public class CommandChunk implements DirectorExecutor {
       Player p = player();
       if (!J.runChunk(world, chunkX, chunkZ, () -> {
         Location destination = world.getHighestBlockAt(blockX, blockZ).getLocation().add(0.5D, 1D, 0.5D);
-        p.teleportAsync(destination).whenComplete((teleported, failure) -> {
+        EntityTeleports.teleport(React.instance, p, destination, PlayerTeleportEvent.TeleportCause.PLUGIN).whenComplete((teleported, failure) -> {
           if (failure != null) {
             React.reportError(new IllegalStateException("Failed to teleport to worst sampled chunk", failure));
           }

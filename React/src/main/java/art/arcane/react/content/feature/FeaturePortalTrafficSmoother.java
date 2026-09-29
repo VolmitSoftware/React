@@ -24,6 +24,7 @@ import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.content.sampler.SamplerIncidentScore;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.util.common.scheduling.J;
+import art.arcane.volmlib.util.scheduling.EntityTeleports;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -243,7 +244,9 @@ public class FeaturePortalTrafficSmoother extends ReactFeature implements Listen
           return;
         }
 
-        CompletableFuture<Boolean> traversal = player.teleportAsync(
+        CompletableFuture<Boolean> traversal = EntityTeleports.teleport(
+            React.instance,
+            player,
             destination,
             PlayerTeleportEvent.TeleportCause.PLUGIN
         );
@@ -288,7 +291,9 @@ public class FeaturePortalTrafficSmoother extends ReactFeature implements Listen
           return;
         }
 
-        CompletableFuture<Boolean> traversal = entity.teleportAsync(
+        CompletableFuture<Boolean> traversal = EntityTeleports.teleport(
+            React.instance,
+            entity,
             destination,
             PlayerTeleportEvent.TeleportCause.PLUGIN
         );

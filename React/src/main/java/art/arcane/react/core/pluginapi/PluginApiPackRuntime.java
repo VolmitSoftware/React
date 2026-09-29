@@ -113,7 +113,7 @@ public final class PluginApiPackRuntime {
       });
       return;
     }
-    targetVersion = target.getPluginMeta().getVersion();
+    targetVersion = target.getDescription().getVersion();
     if (!PluginApiPackParser.versionMatches(targetVersion, definition.targetVersions())) {
       state = PackState.INCOMPATIBLE;
       detail = "target-version-not-listed:" + targetVersion;
