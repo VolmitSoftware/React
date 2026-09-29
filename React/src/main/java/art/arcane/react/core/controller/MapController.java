@@ -260,6 +260,7 @@ public class MapController extends TickedObject implements IController, Listener
       }
       if (world != null) {
         meta.setMapView(createView(world, renderer));
+        detachViewPipes(view);
       }
     }
 
@@ -1964,7 +1965,9 @@ public class MapController extends TickedObject implements IController, Listener
         view.addRenderer(pipe);
         added = true;
         pipeRegistry.put(pipe, view);
-        view.setLocked(true);
+        if (!view.isLocked()) {
+          view.setLocked(true);
+        }
       } finally {
         if (!added || !isRendererRuntimeActive(ownerId, pipeRegistry)) {
           detachRendererPipe(view, pipe, pipeRegistry);

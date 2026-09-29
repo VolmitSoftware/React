@@ -150,6 +150,36 @@ class MapControllerViewLifecycleTest {
   }
 
   @Test
+  void rendererSelectionRemintDetachesThePipeFromAViewWithoutAWorld() {
+    MapController controller = new MapController();
+    World home = Mockito.mock(World.class);
+    ViewFixture abandoned = new ViewFixture(41, home);
+    ViewFixture reminted = new ViewFixture(42, home);
+    MapItemFixture item = new MapItemFixture(abandoned.view);
+    ReactRenderer renderer = renderer();
+
+    try (MockedStatic<React> react = Mockito.mockStatic(React.class);
+         MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class)) {
+      bukkit.when(Bukkit::getWorlds).thenReturn(List.of(home));
+      bukkit.when(() -> Bukkit.createMap(home)).thenReturn(reminted.view);
+      controller.start();
+      controller.registerRenderer(renderer);
+      controller.updateMapView(abandoned.view, renderer);
+      MapRendererPipe abandonedPipe = abandoned.onlyPipe();
+      Mockito.when(abandoned.view.getWorld()).thenReturn(null);
+
+      controller.setRenderer(item.item, renderer);
+
+      Assertions.assertSame(reminted.view, item.mapView.get());
+      Assertions.assertSame(renderer, reminted.onlyPipe().getRenderer());
+      Assertions.assertTrue(abandoned.renderers.isEmpty());
+      Assertions.assertFalse(abandonedPipe.isActive());
+    } finally {
+      controller.stop();
+    }
+  }
+
+  @Test
   @SuppressWarnings("unchecked")
   void integrationRenderersRescanOnlyWhenCapabilityPresenceChanges() throws ReflectiveOperationException {
     MapController controller = new MapController();
