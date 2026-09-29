@@ -8,8 +8,14 @@ import java.lang.reflect.Field;
 
 class SamplerChunkEventDurationBaseTest {
   @Test
+  void listenerSamplersUseTheListenerIds() {
+    Assertions.assertEquals("chunk-load-listener-ms", new SamplerChunkLoadListenerMS().getId());
+    Assertions.assertEquals("chunk-gen-listener-ms", new SamplerChunkGenListenerMS().getId());
+  }
+
+  @Test
   void startBuildsHistoryFromTheLoadedConfiguration() throws ReflectiveOperationException {
-    SamplerChunkLoadMS sampler = new SamplerChunkLoadMS();
+    SamplerChunkLoadListenerMS sampler = new SamplerChunkLoadListenerMS();
     setMaxHistory(sampler, 3);
 
     sampler.start();
@@ -19,7 +25,7 @@ class SamplerChunkEventDurationBaseTest {
 
   @Test
   void restartRebuildsHistoryAfterAConfigurationChange() throws ReflectiveOperationException {
-    SamplerChunkLoadMS sampler = new SamplerChunkLoadMS();
+    SamplerChunkLoadListenerMS sampler = new SamplerChunkLoadListenerMS();
     setMaxHistory(sampler, 3);
     sampler.start();
     RollingSequence initial = average(sampler);
@@ -35,7 +41,7 @@ class SamplerChunkEventDurationBaseTest {
 
   @Test
   void nonPositiveHistoryIsClampedToOneSample() throws ReflectiveOperationException {
-    SamplerChunkLoadMS sampler = new SamplerChunkLoadMS();
+    SamplerChunkLoadListenerMS sampler = new SamplerChunkLoadListenerMS();
     setMaxHistory(sampler, 0);
 
     sampler.start();

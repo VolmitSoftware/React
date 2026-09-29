@@ -21,10 +21,10 @@ package art.arcane.react.content.sampler;
 
 import org.bukkit.event.world.ChunkLoadEvent;
 
-public class SamplerChunkLoadMS extends SamplerChunkEventDurationBase {
-  public static final String ID = "chunk-load-ms";
+public class SamplerChunkLoadListenerMS extends SamplerChunkEventDurationBase {
+  public static final String ID = "chunk-load-listener-ms";
 
-  public SamplerChunkLoadMS() {
+  public SamplerChunkLoadListenerMS() {
     super(ID);
   }
 
