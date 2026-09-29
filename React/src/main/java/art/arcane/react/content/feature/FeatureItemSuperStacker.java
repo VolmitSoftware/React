@@ -127,7 +127,7 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
   }
 
   public boolean isSuperStack(Item item) {
-    return BundleUtils.isBundle(item.getItemStack()) && BundleUtils.isFlagged(item.getItemStack());
+    return BundleUtils.isFlagged(item.getItemStack());
   }
 
   public List<ItemStack> explode(Item item) {
