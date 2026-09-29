@@ -59,7 +59,7 @@ public class FeatureChunkQuarantine extends ReactFeature implements Listener {
   private int quarantineMS = 12000;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Trigger threshold for score trigger in chunk quarantine.", impact = "Higher values trigger mitigation later; lower values trigger earlier and more aggressively.")
   private double scoreTrigger = 145;
-  @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum tracked chunks allowed by chunk quarantine.", impact = "Higher values allow more throughput before intervention; lower values make mitigation more aggressive.")
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum chunks tracked by chunk quarantine; when full, the least recently active chunk is dropped.", impact = "Higher values keep more chunk scores at a small memory cost; lower values drop less active chunks sooner and reset their scores.")
   private int maxTrackedChunks = 4096;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Controls whether chunk quarantine applies only during pressure.", impact = "Enable to apply this behavior; disable to keep this path inactive.")
   private boolean onlyDuringPressure = true;

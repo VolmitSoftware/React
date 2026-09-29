@@ -1011,8 +1011,8 @@ impact = "Daha yüksek değerler daha hızlı sabit bir şekilde temizlenebilir 
 summary = "chunk karantinasındaki bakım döngüsüne göre denetlenen maksimum chunk-devleti girişleri."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkquarantine.field.maxtrackedchunks]
-impact = "Yüksek değerler müdahaleden önce daha fazla bağlantıya izin verir; düşük değerler daha agresif hale getirir."
-summary = "chunk karantinası tarafından izin verilen en fazla izlenen chunk'lar."
+impact = "Yüksek değerler küçük bir bellek maliyetiyle daha fazla chunk puanı tutar; düşük değerler daha az etkin chunk'ları daha erken kaldırır ve puanlarını sıfırlar."
+summary = "Chunk karantinasının izlediği en fazla chunk sayısı; sınıra ulaşıldığında en uzun süredir etkin olmayan chunk kaldırılır."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkquarantine.field.onlyduringpressure]
 impact = "Bu davranışı uygulamak mümkün; bu yolu aktif tutmak için devre dışı bırakmak."

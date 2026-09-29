@@ -1011,8 +1011,8 @@ impact = "높은 값 깨끗한 stale 상태는 더 빠른 CPU 파열; 더 낮은
 summary = "청크 격리에서 유지보수 주기에 검사되는 최대 청크 상태 항목."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkquarantine.field.maxtrackedchunks]
-impact = "높은 값은 개입 전에 더 많은 처리량을 허용; 낮은 가치는 더 공격적인 완화를 만듭니다."
-summary = "청크 격리에서 허용되는 최대 추적된 청크."
+impact = "높은 값은 적은 메모리 비용으로 더 많은 청크 점수를 유지합니다. 낮은 값은 활동이 적은 청크를 더 빨리 제거하고 점수를 초기화합니다."
+summary = "청크 격리가 추적하는 최대 청크 수입니다. 한도에 도달하면 가장 오래 활동이 없던 청크가 제거됩니다."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkquarantine.field.onlyduringpressure]
 impact = "이 행동을 적용 할 수 있습니다.이 경로 활성화를 유지 할 수 없습니다."

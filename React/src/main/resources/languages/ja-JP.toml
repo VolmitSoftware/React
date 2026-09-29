@@ -1011,8 +1011,8 @@ impact = "高い値で清潔な状態がより速くなります CPU 破裂; 値
 summary = "チャンク隔離で維持サイクルごとに最大限のチャンク状態のエントリが検査される."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkquarantine.field.maxtrackedchunks]
-impact = "より高い値により、介入前のスループットが増加します。低値でミシグレーションがより攻撃的になります。"
-summary = "チャンク隔離によって許容される最大限の チャンクを追跡する."
+impact = "高い値はわずかなメモリ消費でより多くのチャンクのスコアを保持します。低い値は活動の少ないチャンクを早く削除し、そのスコアをリセットします。"
+summary = "チャンク隔離が追跡するチャンクの最大数。上限に達すると、最も長く活動のないチャンクが削除されます。"
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkquarantine.field.onlyduringpressure]
 impact = "この動作を適用することを可能にし、このパスを非アクティブに保つために無効にします。"

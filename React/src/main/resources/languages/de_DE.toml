@@ -1011,8 +1011,8 @@ impact = "Höhere Werte reinigen abgestandenen Zustand schneller mit höheren CP
 summary = "Maximale Chunk-State-Einträge pro Wartungszyklus in Chunk-Kuarantäne überprüft."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkquarantine.field.maxtrackedchunks]
-impact = "Höhere Werte ermöglichen mehr Durchsatz vor dem Eingriff; niedrigere Werte machen die Minderung aggressiver."
-summary = "Maximal tracked Chunks durch Chunk Quarantäne erlaubt."
+impact = "Höhere Werte behalten mehr Chunk-Bewertungen bei geringem Speicheraufwand; niedrigere Werte entfernen weniger aktive Chunks früher und setzen ihre Bewertungen zurück."
+summary = "Maximale Anzahl von Chunks, die die Chunk-Quarantäne verfolgt; ist die Grenze erreicht, wird der am längsten inaktive Chunk entfernt."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkquarantine.field.onlyduringpressure]
 impact = "Aktivieren Sie dieses Verhalten; deaktivieren, um diesen Pfad inaktiv zu halten."

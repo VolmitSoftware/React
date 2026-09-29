@@ -1011,8 +1011,8 @@ impact = "ערכים גבוהים יותר מדינת stale מהירה יותר 
 summary = "כמות מקסימלית של הכניסים למצב צ'אנק שנבדקו על בסיקול שמרון ב-צ'אנק קואראנטיין."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkquarantine.field.maxtrackedchunks]
-impact = "ערכים גבוהים יותר מאפשרים יותר באמצעות מגע לפני התערבות; ערכים נמוכים הופכים את ההפחתה אגרסיבית יותר."
-summary = "מקסימום צ'אנקים מעקב המאפשר על ידי קווארנטיין צ'אנק."
+impact = "ערכים גבוהים שומרים ניקוד של יותר צ'אנקים בעלות זיכרון קטנה; ערכים נמוכים מסירים מוקדם יותר צ'אנקים פחות פעילים ומאפסים את הניקוד שלהם."
+summary = "המספר המרבי של צ'אנקים שקווארנטיין הצ'אנקים עוקב אחריהם; כשמגיעים למגבלה, מוסר הצ'אנק שפעילותו האחרונה הישנה ביותר."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkquarantine.field.onlyduringpressure]
 impact = "ניתן ליישם התנהגות זו; בלתי אפשרי לשמור על נתיב זה לא פעיל."
