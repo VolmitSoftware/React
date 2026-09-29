@@ -15,6 +15,7 @@ import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Zombie;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.junit.jupiter.api.AfterEach;
@@ -275,6 +276,37 @@ class EntityCensusTrackerTest {
 
   @Test
   void reactAiPauseReclassifiesActiveAiWithoutWaitingForTheCensusScan() {
+    LivingEntity mob = pausableMob(LivingEntity.class, new AtomicBoolean(true));
+    EntityCensusTracker.observe(mob);
+    Assertions.assertEquals(1, EntityCensusTracker.activeAi());
+
+    ReactEntity.requestPause(mob, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
+
+    Assertions.assertEquals(0, EntityCensusTracker.activeAi());
+
+    ReactEntity.releasePause(mob, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
+
+    Assertions.assertEquals(1, EntityCensusTracker.activeAi());
+  }
+
+  @Test
+  void releasingThePauseOfARemovedMobDoesNotReaddItToTheCensus() {
+    AtomicBoolean valid = new AtomicBoolean(true);
+    Zombie mob = pausableMob(Zombie.class, valid);
+    EntityCensusTracker.observe(mob);
+    ReactEntity.requestPause(mob, ReactEntity.PauseOwner.DYNAMIC_ACTIVATION_RANGE);
+    Assertions.assertEquals(1, EntityCensusTracker.hostile());
+    Assertions.assertEquals(0, EntityCensusTracker.activeAi());
+
+    EntityCensusTracker.forget(mob);
+    valid.set(false);
+    ReactEntity.releasePause(mob, ReactEntity.PauseOwner.DYNAMIC_ACTIVATION_RANGE);
+
+    Assertions.assertEquals(0, EntityCensusTracker.hostile());
+    Assertions.assertEquals(0, EntityCensusTracker.activeAi());
+  }
+
+  private static <T extends LivingEntity> T pausableMob(Class<T> type, AtomicBoolean valid) {
     AtomicBoolean ai = new AtomicBoolean(true);
     AtomicReference<Byte> marker = new AtomicReference<>();
     PersistentDataContainer container = Mockito.mock(PersistentDataContainer.class);
@@ -288,24 +320,16 @@ class EntityCensusTrackerTest {
       marker.set(null);
       return null;
     }).when(container).remove(Mockito.any(NamespacedKey.class));
-    LivingEntity mob = Mockito.mock(LivingEntity.class);
+    T mob = Mockito.mock(type);
     Mockito.when(mob.getUniqueId()).thenReturn(UUID.randomUUID());
     Mockito.when(mob.getPersistentDataContainer()).thenReturn(container);
+    Mockito.when(mob.isValid()).thenAnswer(ignored -> valid.get());
     Mockito.when(mob.hasAI()).thenAnswer(ignored -> ai.get());
     Mockito.doAnswer(invocation -> {
       ai.set(invocation.getArgument(0));
       return null;
     }).when(mob).setAI(Mockito.anyBoolean());
-    EntityCensusTracker.observe(mob);
-    Assertions.assertEquals(1, EntityCensusTracker.activeAi());
-
-    ReactEntity.requestPause(mob, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
-
-    Assertions.assertEquals(0, EntityCensusTracker.activeAi());
-
-    ReactEntity.releasePause(mob, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
-
-    Assertions.assertEquals(1, EntityCensusTracker.activeAi());
+    return mob;
   }
 
   private void captureGlobalTasks(MockedStatic<FoliaScheduler> scheduler, Deque<Runnable> globalTasks) {

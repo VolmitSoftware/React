@@ -26,6 +26,8 @@ public final class EntityCensus {
   }
 
   public static void aiChanged(Entity entity) {
-    EntityCensusTracker.observe(entity);
+    if (entity.isValid()) {
+      EntityCensusTracker.observe(entity);
+    }
   }
 }
