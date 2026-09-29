@@ -25,18 +25,28 @@ import art.arcane.react.content.feature.FeatureExplosionPacketBatching;
 import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Material;
 
+import java.util.function.LongSupplier;
+
 public class SamplerExplosionPacketReduction extends ReactCachedSampler {
   public static final String ID = "explosion-packet-reduction";
   private static final int WINDOWS = 5;
+  private static final long WINDOW_EXPIRY_MS = 60_000L;
 
+  private transient final LongSupplier clock;
   private transient final long[] windowExplosions = new long[WINDOWS];
   private transient final long[] windowClusters = new long[WINDOWS];
+  private transient final long[] windowRecordedAtMs = new long[WINDOWS];
   private transient int windowCursor;
   private transient int windowCount;
   private transient volatile boolean hasReduction;
 
   public SamplerExplosionPacketReduction() {
+    this(System::currentTimeMillis);
+  }
+
+  SamplerExplosionPacketReduction(LongSupplier clock) {
     super(ID, 1000);
+    this.clock = clock;
   }
 
   @Override
@@ -54,18 +64,22 @@ public class SamplerExplosionPacketReduction extends ReactCachedSampler {
 
   @Override
   public double onSample() {
+    long now = clock.getAsLong();
     FeatureExplosionPacketBatching feature = React.feature(FeatureExplosionPacketBatching.class);
     if (feature != null) {
       long explosions = feature.readAndResetExplosions();
       long clusters = feature.readAndResetClusters();
       if (explosions > 0L || clusters > 0L) {
-        recordWindow(explosions, clusters);
+        recordWindow(explosions, clusters, now);
       }
     }
 
     long totalExplosions = 0L;
     long totalClusters = 0L;
     for (int i = 0; i < windowCount; i++) {
+      if (now - windowRecordedAtMs[i] > WINDOW_EXPIRY_MS) {
+        continue;
+      }
       totalExplosions += windowExplosions[i];
       totalClusters += windowClusters[i];
     }
@@ -93,9 +107,10 @@ public class SamplerExplosionPacketReduction extends ReactCachedSampler {
     return "%";
   }
 
-  private void recordWindow(long explosions, long clusters) {
+  private void recordWindow(long explosions, long clusters, long now) {
     windowExplosions[windowCursor] = explosions;
     windowClusters[windowCursor] = clusters;
+    windowRecordedAtMs[windowCursor] = now;
     windowCursor = (windowCursor + 1) % WINDOWS;
     windowCount = Math.min(WINDOWS, windowCount + 1);
   }
