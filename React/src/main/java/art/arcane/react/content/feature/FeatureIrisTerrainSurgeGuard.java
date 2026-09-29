@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Iris Terrain Surge Guard feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureIrisTerrainSurgeGuard extends ReactCapabilityFeature implements Listener {
   public static final String ID = "feature-iris-terrain-surge-guard";
+  private static final long SURGE_VERDICT_TTL_MS = 1_000L;
 
   @art.arcane.react.util.project.config.ConfigDoc(value = "Main evaluation interval for iris terrain surge guard in milliseconds.", impact = "Lower values react faster but consume more CPU; higher values reduce overhead but react later.")
   private int tickIntervalMS = 1000;
@@ -51,6 +52,7 @@ public class FeatureIrisTerrainSurgeGuard extends ReactCapabilityFeature impleme
 
   private transient final RateWindow<RateCounter> rateWindow = new RateWindow<>(RateCounter.values().length);
   private transient Map<UUID, Long> lastMessageByPlayer = new ConcurrentHashMap<>();
+  private transient Map<UUID, SurgeVerdict> surgeVerdictByWorld = new ConcurrentHashMap<>();
 
   public FeatureIrisTerrainSurgeGuard() {
     super(ID);
@@ -70,11 +72,13 @@ public class FeatureIrisTerrainSurgeGuard extends ReactCapabilityFeature impleme
   public void onActivate() {
     rateWindow.reset(System.currentTimeMillis());
     lastMessageByPlayer = new ConcurrentHashMap<>();
+    surgeVerdictByWorld = new ConcurrentHashMap<>();
   }
 
   @Override
   public void onDeactivate() {
     lastMessageByPlayer.clear();
+    surgeVerdictByWorld.clear();
   }
 
   @Override
@@ -88,11 +92,11 @@ public class FeatureIrisTerrainSurgeGuard extends ReactCapabilityFeature impleme
 
   @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
   public void on(PlayerMoveEvent event) {
-    if (event.getTo() == null || !isSurging(event.getTo().getWorld())) {
+    if (event.getTo() == null || sameChunk(event.getFrom(), event.getTo())) {
       return;
     }
 
-    if (sameChunk(event.getFrom(), event.getTo())) {
+    if (!isSurging(event.getTo().getWorld())) {
       return;
     }
 
@@ -156,6 +160,23 @@ public class FeatureIrisTerrainSurgeGuard extends ReactCapabilityFeature impleme
   }
 
   private boolean isSurging(World world) {
+    if (world == null) {
+      return false;
+    }
+
+    long now = System.currentTimeMillis();
+    UUID worldId = world.getUID();
+    SurgeVerdict cached = surgeVerdictByWorld.get(worldId);
+    if (cached != null && now - cached.evaluatedAtMs() < SURGE_VERDICT_TTL_MS) {
+      return cached.surging();
+    }
+
+    boolean surging = evaluateSurge(world);
+    surgeVerdictByWorld.put(worldId, new SurgeVerdict(surging, now));
+    return surging;
+  }
+
+  private boolean evaluateSurge(World world) {
     IntegrationMetricGroup group = worldGroup(world);
     if (group == null) {
       return false;
@@ -210,5 +231,8 @@ public class FeatureIrisTerrainSurgeGuard extends ReactCapabilityFeature impleme
   private enum RateCounter {
     MOVE,
     TELEPORT
+  }
+
+  private record SurgeVerdict(boolean surging, long evaluatedAtMs) {
   }
 }

@@ -28,11 +28,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.LongSupplier;
 
 public final class HostTelemetryProvider {
   private static final long HARDWARE_DETAIL_REFRESH_MS = 10_000L;
+  private static final long DEVICE_LIST_REFRESH_MS = 30_000L;
 
   private final Path dataPath;
+  private final LongSupplier clock;
   private final HardwareAbstractionLayer hardware;
   private final OperatingSystem operatingSystem;
   private final CentralProcessor processor;
@@ -53,13 +56,20 @@ public final class HostTelemetryProvider {
   private long previousNetworkSendBytes;
   private long previousGcCollections;
   private long nextHardwareDetailRefreshMs;
+  private long nextDeviceListRefreshMs;
+  private List<HWDiskStore> diskStores;
+  private List<OSFileStore> fileStores;
+  private List<NetworkIF> networkInterfaces;
   private String[] sensors;
   private String[] powerSources;
 
   public HostTelemetryProvider(Path dataPath) {
+    this(dataPath, createSystemInfo(), System::currentTimeMillis);
+  }
+
+  HostTelemetryProvider(Path dataPath, SystemInfo systemInfo, LongSupplier clock) {
     this.dataPath = dataPath;
-    WindowsSensorWmiQueryHandler.installIfWindows();
-    SystemInfo systemInfo = new SystemInfo();
+    this.clock = clock;
     this.hardware = systemInfo.getHardware();
     this.operatingSystem = systemInfo.getOperatingSystem();
     this.processor = hardware.getProcessor();
@@ -79,11 +89,17 @@ public final class HostTelemetryProvider {
   }
 
   public HostTelemetrySnapshot capture() throws Exception {
-    long nowMs = System.currentTimeMillis();
+    long nowMs = clock.getAsLong();
     if (nowMs >= nextHardwareDetailRefreshMs) {
       sensors = buildSensors();
       powerSources = buildPowerSources();
       nextHardwareDetailRefreshMs = nowMs + HARDWARE_DETAIL_REFRESH_MS;
+    }
+    if (nowMs >= nextDeviceListRefreshMs) {
+      diskStores = hardware.getDiskStores();
+      fileStores = operatingSystem.getFileSystem().getFileStores();
+      networkInterfaces = hardware.getNetworkIFs();
+      nextDeviceListRefreshMs = nowMs + DEVICE_LIST_REFRESH_MS;
     }
 
     GlobalMemory physicalMemory = hardware.getMemory();
@@ -209,11 +225,10 @@ public final class HostTelemetryProvider {
   }
 
   private DiskCapture captureDisks() throws Exception {
-    List<HWDiskStore> stores = hardware.getDiskStores();
-    List<EnvironmentDto.DiskDto> disks = new ArrayList<>(stores.size());
+    List<EnvironmentDto.DiskDto> disks = new ArrayList<>(diskStores.size());
     long readBytes = 0L;
     long writeBytes = 0L;
-    for (HWDiskStore store : stores) {
+    for (HWDiskStore store : diskStores) {
       store.updateAttributes();
       EnvironmentDto.DiskDto disk = new EnvironmentDto.DiskDto();
       disk.name = store.getName();
@@ -240,9 +255,8 @@ public final class HostTelemetryProvider {
   }
 
   private EnvironmentDto.MountDto[] captureMounts() {
-    List<OSFileStore> stores = operatingSystem.getFileSystem().getFileStores();
-    List<EnvironmentDto.MountDto> mounts = new ArrayList<>(stores.size());
-    for (OSFileStore store : stores) {
+    List<EnvironmentDto.MountDto> mounts = new ArrayList<>(fileStores.size());
+    for (OSFileStore store : fileStores) {
       store.updateAttributes();
       EnvironmentDto.MountDto mount = new EnvironmentDto.MountDto();
       mount.name = store.getName();
@@ -258,14 +272,13 @@ public final class HostTelemetryProvider {
   }
 
   private NetworkCapture captureNetwork() {
-    List<NetworkIF> interfaces = hardware.getNetworkIFs();
-    List<EnvironmentDto.NetworkInterfaceDto> network = new ArrayList<>(interfaces.size());
+    List<EnvironmentDto.NetworkInterfaceDto> network = new ArrayList<>(networkInterfaces.size());
     long receiveBytes = 0L;
     long sendBytes = 0L;
     long receiveDrops = 0L;
     long receiveErrors = 0L;
     long sendErrors = 0L;
-    for (NetworkIF networkInterface : interfaces) {
+    for (NetworkIF networkInterface : networkInterfaces) {
       networkInterface.updateAttributes();
       EnvironmentDto.NetworkInterfaceDto item = new EnvironmentDto.NetworkInterfaceDto();
       item.name = networkInterface.getName();
@@ -362,6 +375,11 @@ public final class HostTelemetryProvider {
       values.add(source.getName() + ": " + Form.pc(source.getRemainingCapacityPercent()));
     }
     return values.toArray(new String[0]);
+  }
+
+  private static SystemInfo createSystemInfo() {
+    WindowsSensorWmiQueryHandler.installIfWindows();
+    return new SystemInfo();
   }
 
   private static long saturatingAdd(long left, long right) {
