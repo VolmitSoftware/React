@@ -42,9 +42,22 @@ public class SamplerEventTime extends ReactCachedSampler implements Listener {
 
   @Override
   public double onSample() {
-    eventController.markSamplerActivity();
-    double windowSeconds = Math.max(1L, eventController.getTinterval()) / 1000.0D;
-    return eventController.getTotalTime() / windowSeconds;
+    EventController controller = eventController;
+    return controller == null ? 0D : controller.getEventTimeMsPerSecond();
+  }
+
+  @Override
+  public boolean isSampleAvailable() {
+    EventController controller = eventController;
+    return controller != null && controller.isMeasuring();
+  }
+
+  @Override
+  public void markDemand() {
+    EventController controller = eventController;
+    if (controller != null) {
+      controller.markSamplerActivity();
+    }
   }
 
   @Override

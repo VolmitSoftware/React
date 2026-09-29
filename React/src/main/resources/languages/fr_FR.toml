@@ -2848,6 +2848,25 @@ summary = "Envoie des résumés de changement à des opérateurs en ligne."
 impact = "Des valeurs plus faibles détectent plus tôt les événements reçus ; les modifications automatiques restent appliquées par lots au maximum une fois toutes les trois secondes."
 summary = "Intervalle d'interrogation des événements du système de fichiers, en millisecondes."
 
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller]
+description = "Mesure le temps des gestionnaires d'événements par plugin en enveloppant les écouteurs enregistrés tant que l'instrumentation est active."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleonms]
+impact = "Des fenêtres plus longues produisent plus d'échantillons enregistrés par période pour un coût récurrent plus élevé."
+summary = "Durée en millisecondes de chaque fenêtre de mesure périodique dans le mode à cycle."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleperiodms]
+impact = "Des périodes plus courtes enregistrent les données d'événements plus souvent et coûtent plus ; des périodes plus longues laissent des trous plus larges dans l'historique."
+summary = "Millisecondes entre les débuts des fenêtres de mesure périodiques dans le mode à cycle."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.instrumentation]
+impact = "ALWAYS impose un surcoût de mesure à chaque gestionnaire d'événements ; ON_DEMAND supprime ce coût au repos mais laisse des trous dans l'historique ; DUTY_CYCLE échange des trous périodiques contre un faible coût récurrent."
+summary = "Détermine quand les enveloppes de mesure des écouteurs sont installées : ALWAYS les garde installées, ON_DEMAND ne les installe que lorsqu'un moniteur, une carte, un espace réservé ou un visiteur web lit des données d'événements, et DUTY_CYCLE ouvre en plus une fenêtre de mesure périodique."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.sampleractivitywindowms]
+impact = "Des valeurs plus élevées gardent l'instrumentation installée plus longtemps après le départ d'un visiteur ; des valeurs plus basses la retirent plus tôt."
+summary = "Millisecondes après la dernière lecture de données d'événements avant le retrait des enveloppes dans les modes à la demande et à cycle."
+
 [config.documentation.annotation.art.arcane.react.core.controller.historycontroller]
 description = "Capture une fois les échantillonneurs de React, stocke une télémétrie historique compressée et traite des requêtes bornées par intervalle de temps."
 

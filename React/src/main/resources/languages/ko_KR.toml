@@ -2848,6 +2848,25 @@ summary = "온라인 연산자에 핫로드 변경 summaries를 전송합니다.
 impact = "값이 낮을수록 수신된 이벤트를 더 빨리 감지하지만, 자동 변경 사항은 여전히 최대 3초에 한 번 일괄 적용됩니다."
 summary = "파일 시스템 이벤트를 확인하는 간격(밀리초)입니다."
 
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller]
+description = "계측이 활성화된 동안 등록된 리스너를 감싸 플러그인별 이벤트 핸들러 시간을 측정합니다."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleonms]
+impact = "창이 길수록 주기마다 더 많은 표본이 기록되지만 반복 비용이 더 높아집니다."
+summary = "주기 모드에서 각 주기적 측정 창의 길이(밀리초)입니다."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleperiodms]
+impact = "주기가 짧을수록 이벤트 데이터를 더 자주 기록하고 비용이 더 들며, 주기가 길수록 기록에 더 넓은 공백을 남깁니다."
+summary = "주기 모드에서 주기적 측정 창의 시작 사이 간격(밀리초)입니다."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.instrumentation]
+impact = "ALWAYS는 모든 이벤트 핸들러에 시간 측정 부담을 더하고, ON_DEMAND는 유휴 상태에서 그 비용을 없애지만 기록에 공백을 남기며, DUTY_CYCLE은 주기적인 공백을 작은 반복 비용과 맞바꿉니다."
+summary = "리스너 시간 측정 래퍼를 설치하는 시점을 정합니다: ALWAYS는 항상 설치된 상태로 유지하고, ON_DEMAND는 모니터, 지도, 자리표시자 또는 웹 뷰어가 이벤트 데이터를 읽는 동안에만 설치하며, DUTY_CYCLE은 추가로 주기적인 측정 창을 엽니다."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.sampleractivitywindowms]
+impact = "값이 높을수록 뷰어가 떠난 뒤에도 계측을 더 오래 유지하고, 값이 낮을수록 더 빨리 제거합니다."
+summary = "요청 시 모드와 주기 모드에서 마지막 이벤트 데이터 읽기 이후 래퍼가 제거되기까지의 밀리초입니다."
+
 [config.documentation.annotation.art.arcane.react.core.controller.historycontroller]
 description = "React 샘플러를 한 번 수집하고 압축된 과거 원격 측정 데이터를 저장하며 제한된 시간 범위 쿼리를 처리합니다."
 

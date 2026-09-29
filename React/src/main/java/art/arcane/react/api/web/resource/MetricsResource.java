@@ -46,7 +46,7 @@ public class MetricsResource {
     }
 
     public SnapshotResponse snapshotData() {
-        MetricSnapshot snapshot = history == null ? MetricSnapshot.empty() : history.latest();
+        MetricSnapshot snapshot = history == null ? MetricSnapshot.empty() : history.latestObserved();
         if (!snapshot.values().isEmpty()) {
             SamplerDto[] data = new SamplerDto[snapshot.values().size()];
             for (int index = 0; index < snapshot.values().size(); index++) {

@@ -57,6 +57,7 @@ public class Graph {
     long now = System.currentTimeMillis();
     synchronized (g) {
       if (now - g.lastPushMs >= PUSH_INTERVAL_MS) {
+        sampler.markDemand();
         HistoryController history = React.instance == null ? null : React.controller(HistoryController.class);
         MetricSnapshotValue snapshot = history == null ? null : history.latest().value(sampler.getId());
         if (snapshot == null) {

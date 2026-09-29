@@ -2848,6 +2848,25 @@ summary = "Siunčia hotship pakeitimų santraukas interneto operatoriams."
 impact = "Mažesnės reikšmės leidžia greičiau aptikti gautus įvykius; automatiniai pakeitimai vis tiek taikomi paketais ne dažniau kaip kartą per tris sekundes."
 summary = "Failų sistemos įvykių tikrinimo intervalas milisekundėmis."
 
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller]
+description = "Matuoja įvykių apdorotuvų laiką pagal papildinį, apgaubdamas registruotus klausytojus, kol instrumentavimas aktyvus."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleonms]
+impact = "Ilgesni langai duoda daugiau įrašytų mėginių per periodą už didesnę pasikartojančią kainą."
+summary = "Kiekvieno periodinio matavimo lango trukmė milisekundėmis ciklo režime."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleperiodms]
+impact = "Trumpesni periodai įvykių duomenis įrašo dažniau ir kainuoja daugiau; ilgesni periodai palieka platesnes spragas istorijoje."
+summary = "Milisekundės tarp periodinių matavimo langų pradžių ciklo režime."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.instrumentation]
+impact = "ALWAYS kiekvienam įvykių apdorotuvui prideda matavimo sąnaudų; ON_DEMAND pašalina šias sąnaudas ramybės būsenoje, bet palieka spragas istorijoje; DUTY_CYCLE periodines spragas iškeičia į nedidelę pasikartojančią kainą."
+summary = "Nustato, kada įdiegiami klausytojų laiko matavimo apvalkalai: ALWAYS laiko juos įdiegtus, ON_DEMAND įdiegia tik tol, kol monitorius, žemėlapis, vietaženklis arba žiniatinklio žiūrovas skaito įvykių duomenis, o DUTY_CYCLE papildomai atveria periodinį matavimo langą."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.sampleractivitywindowms]
+impact = "Didesnės vertės ilgiau išlaiko instrumentavimą įdiegtą žiūrovui pasitraukus; mažesnės vertės pašalina jį anksčiau."
+summary = "Milisekundės po paskutinio įvykių duomenų nuskaitymo, po kurių apvalkalai pašalinami pareikalavimo ir ciklo režimuose."
+
 [config.documentation.annotation.art.arcane.react.core.controller.historycontroller]
 description = "Vieną kartą nuskaito React mėginių ėmiklius, saugo suglaudintą istorinę telemetriją ir vykdo riboto laiko intervalo užklausas."
 

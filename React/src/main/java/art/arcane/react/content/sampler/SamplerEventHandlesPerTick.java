@@ -41,8 +41,22 @@ public class SamplerEventHandlesPerTick extends ReactCachedSampler implements Li
 
   @Override
   public double onSample() {
-    eventController.markSamplerActivity();
-    return eventController.getCallsPerTick();
+    EventController controller = eventController;
+    return controller != null && controller.isMeasuring() ? controller.getCallsPerTick() : 0D;
+  }
+
+  @Override
+  public boolean isSampleAvailable() {
+    EventController controller = eventController;
+    return controller != null && controller.isMeasuring();
+  }
+
+  @Override
+  public void markDemand() {
+    EventController controller = eventController;
+    if (controller != null) {
+      controller.markSamplerActivity();
+    }
   }
 
   @Override

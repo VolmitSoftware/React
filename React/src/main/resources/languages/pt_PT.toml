@@ -2848,6 +2848,25 @@ summary = "Envia resumos de alterações de carga quente para operadores online.
 impact = "Valores mais baixos detetam mais cedo os eventos recebidos; as alterações automáticas continuam a ser aplicadas em lotes, no máximo uma vez a cada três segundos."
 summary = "Intervalo de consulta de eventos do sistema de ficheiros, em milissegundos."
 
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller]
+description = "Mede o tempo dos manipuladores de eventos por plugin envolvendo os ouvintes registados enquanto a instrumentação está ativa."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleonms]
+impact = "Janelas mais longas produzem mais amostras registadas por período com um custo recorrente maior."
+summary = "Duração em milissegundos de cada janela de medição periódica no modo de ciclo."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleperiodms]
+impact = "Períodos mais curtos registam dados de eventos com mais frequência e custam mais; períodos mais longos deixam lacunas mais amplas no histórico."
+summary = "Milissegundos entre os inícios das janelas de medição periódicas no modo de ciclo."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.instrumentation]
+impact = "ALWAYS impõe uma sobrecarga de medição a cada manipulador de eventos; ON_DEMAND remove esse custo em repouso mas deixa lacunas no histórico; DUTY_CYCLE troca lacunas periódicas por um pequeno custo recorrente."
+summary = "Controla quando os invólucros de medição dos ouvintes são instalados: ALWAYS mantém-nos instalados, ON_DEMAND instala-os apenas enquanto um monitor, um mapa, um marcador ou um visitante web lê dados de eventos, e DUTY_CYCLE abre ainda uma janela de medição periódica."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.sampleractivitywindowms]
+impact = "Valores mais altos mantêm a instrumentação instalada mais tempo depois de um visitante sair; valores mais baixos removem-na mais cedo."
+summary = "Milissegundos após a última leitura de dados de eventos antes de os invólucros serem removidos nos modos a pedido e de ciclo."
+
 [config.documentation.annotation.art.arcane.react.core.controller.historycontroller]
 description = "Captura uma vez os amostradores do React, armazena telemetria histórica comprimida e processa consultas limitadas por intervalo de tempo."
 

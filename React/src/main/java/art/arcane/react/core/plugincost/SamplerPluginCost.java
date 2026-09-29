@@ -56,20 +56,36 @@ public class SamplerPluginCost extends ReactCachedSampler {
 
   @Override
   public double onSample() {
+    EventController controller = resolveController();
+    if (controller == null || !controller.isMeasuring()) {
+      return 0D;
+    }
+
+    average.put(controller.getPluginEventTimeMsPerSecond(pluginName));
+    return average.getAverage();
+  }
+
+  @Override
+  public boolean isSampleAvailable() {
+    EventController controller = resolveController();
+    return controller != null && controller.isMeasuring();
+  }
+
+  @Override
+  public void markDemand() {
+    EventController controller = resolveController();
+    if (controller != null) {
+      controller.markSamplerActivity();
+    }
+  }
+
+  private EventController resolveController() {
     EventController controller = eventController;
     if (controller == null) {
       controller = React.controller(EventController.class);
       eventController = controller;
     }
-
-    if (controller == null) {
-      return 0D;
-    }
-
-    controller.markSamplerActivity();
-    average.put(controller.getPluginEventTimeMS(pluginName));
-    double windowSeconds = Math.max(1L, controller.getTinterval()) / 1000.0D;
-    return average.getAverage() / windowSeconds;
+    return controller;
   }
 
   @Override

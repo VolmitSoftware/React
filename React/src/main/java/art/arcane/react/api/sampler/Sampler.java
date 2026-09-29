@@ -48,6 +48,13 @@ public interface Sampler extends Registered, ReactRenderer {
 
   double sample();
 
+  default double capture() {
+    return sample();
+  }
+
+  default void markDemand() {
+  }
+
   default boolean isSampleAvailable() {
     return true;
   }

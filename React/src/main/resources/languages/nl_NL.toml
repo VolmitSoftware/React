@@ -2848,6 +2848,25 @@ summary = "Stuurt hotload wijzigingen samenvattingen naar online operators."
 impact = "Lagere waarden detecteren ontvangen gebeurtenissen eerder; automatische wijzigingen worden nog steeds hoogstens eenmaal per drie seconden gebundeld toegepast."
 summary = "Interval voor het opvragen van bestandssysteemgebeurtenissen in milliseconden."
 
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller]
+description = "Meet de tijd van eventhandlers per plugin door geregistreerde listeners te omhullen zolang de instrumentatie actief is."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleonms]
+impact = "Langere vensters leveren meer vastgelegde metingen per periode tegen hogere terugkerende kosten."
+summary = "Lengte in milliseconden van elk periodiek meetvenster in de cyclusmodus."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleperiodms]
+impact = "Kortere perioden leggen eventgegevens vaker vast en kosten meer; langere perioden laten bredere gaten in de geschiedenis achter."
+summary = "Milliseconden tussen de starts van de periodieke meetvensters in de cyclusmodus."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.instrumentation]
+impact = "ALWAYS belast elke eventhandler met meetoverhead; ON_DEMAND verwijdert die kosten in rust maar laat gaten in de geschiedenis achter; DUTY_CYCLE ruilt periodieke gaten in voor kleine terugkerende kosten."
+summary = "Bepaalt wanneer de tijdmetende omhulsels voor listeners worden geïnstalleerd: ALWAYS houdt ze geïnstalleerd, ON_DEMAND installeert ze alleen zolang een monitor, kaart, plaatshouder of webkijker eventgegevens leest, en DUTY_CYCLE opent daarnaast een periodiek meetvenster."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.sampleractivitywindowms]
+impact = "Hogere waarden houden de instrumentatie langer geïnstalleerd nadat een kijker vertrekt; lagere waarden verwijderen haar eerder."
+summary = "Milliseconden na de laatste lezing van eventgegevens voordat de omhulsels worden verwijderd in de modus op aanvraag en de cyclusmodus."
+
 [config.documentation.annotation.art.arcane.react.core.controller.historycontroller]
 description = "Legt de React-samplers eenmaal vast, bewaart gecomprimeerde historische telemetrie en verwerkt begrensde tijdsbereikquery's."
 

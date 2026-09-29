@@ -2848,6 +2848,25 @@ summary = "Gửi bản tóm tắt về việc thay đổi hàng nóng tới nh�
 impact = "Giá trị thấp hơn giúp phát hiện sự kiện đã nhận sớm hơn; các thay đổi tự động vẫn được áp dụng theo đợt, tối đa một lần mỗi ba giây."
 summary = "Khoảng thời gian thăm dò sự kiện hệ thống tệp, tính bằng mili giây."
 
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller]
+description = "Đo thời gian của các trình xử lý sự kiện theo từng plugin bằng cách bao bọc các trình lắng nghe đã đăng ký trong khi việc đo đạc đang hoạt động."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleonms]
+impact = "Cửa sổ dài hơn tạo ra nhiều mẫu được ghi hơn trong mỗi chu kỳ với chi phí lặp lại cao hơn."
+summary = "Độ dài tính bằng mili giây của mỗi cửa sổ đo định kỳ trong chế độ chu kỳ."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleperiodms]
+impact = "Chu kỳ ngắn hơn ghi dữ liệu sự kiện thường xuyên hơn và tốn kém hơn; chu kỳ dài hơn để lại khoảng trống rộng hơn trong lịch sử."
+summary = "Số mili giây giữa các thời điểm bắt đầu của các cửa sổ đo định kỳ trong chế độ chu kỳ."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.instrumentation]
+impact = "ALWAYS khiến mọi trình xử lý sự kiện chịu thêm chi phí đo thời gian; ON_DEMAND loại bỏ chi phí đó khi rảnh nhưng để lại khoảng trống trong lịch sử; DUTY_CYCLE đổi các khoảng trống định kỳ lấy một chi phí lặp lại nhỏ."
+summary = "Quy định thời điểm cài đặt các lớp bọc đo thời gian cho trình lắng nghe: ALWAYS giữ chúng luôn được cài, ON_DEMAND chỉ cài khi một màn hình theo dõi, bản đồ, phần giữ chỗ hoặc người xem web đang đọc dữ liệu sự kiện, và DUTY_CYCLE còn mở thêm một cửa sổ đo định kỳ."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.sampleractivitywindowms]
+impact = "Giá trị cao hơn giữ việc đo đạc được cài lâu hơn sau khi người xem rời đi; giá trị thấp hơn gỡ nó sớm hơn."
+summary = "Số mili giây sau lần đọc dữ liệu sự kiện cuối cùng trước khi các lớp bọc bị gỡ trong chế độ theo yêu cầu và chế độ chu kỳ."
+
 [config.documentation.annotation.art.arcane.react.core.controller.historycontroller]
 description = "Thu thập các bộ lấy mẫu React một lần, lưu dữ liệu đo từ xa lịch sử đã nén và xử lý các truy vấn có giới hạn khoảng thời gian."
 

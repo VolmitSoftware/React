@@ -26,6 +26,8 @@ import art.arcane.react.api.event.layer.ServerTickEvent;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.common.scheduling.TickedObject;
 import art.arcane.react.util.plugin.IController;
+import art.arcane.react.util.project.config.ConfigDescription;
+import art.arcane.react.util.project.config.ConfigDoc;
 import art.arcane.volmlib.util.scheduling.FoliaScheduler;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -38,7 +40,6 @@ import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockDispenseEvent;
 import org.bukkit.event.entity.EntityPlaceEvent;
-import org.bukkit.plugin.EventExecutor;
 import org.bukkit.plugin.RegisteredListener;
 
 import java.lang.reflect.Field;
@@ -51,17 +52,31 @@ import java.util.concurrent.atomic.AtomicLong;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
+@ConfigDescription("Measures event-handler time per plugin by wrapping registered listeners while instrumentation is active.")
 public class EventController extends TickedObject implements IController, Listener {
   private static final AtomicLong OWNER_SEQUENCE = new AtomicLong();
+  private static final long MIN_DUTY_PERIOD_MS = 1000L;
   private static volatile Field allListsField;
   private static volatile Field handlersField;
   private static volatile Field handlerSlotsField;
-  private static volatile Field executorField;
   private static volatile boolean handlerFieldsResolved;
+
+  @ConfigDoc(value = "Controls when listener timing wrappers are installed: ALWAYS keeps them installed, ON_DEMAND installs them only while a monitor, map, placeholder, or web viewer reads event data, and DUTY_CYCLE additionally opens a periodic measurement window.", impact = "ALWAYS charges every event handler a timing overhead; ON_DEMAND removes that cost at idle but records history gaps; DUTY_CYCLE trades periodic gaps for a small recurring cost.")
+  private InstrumentationMode instrumentation = InstrumentationMode.ALWAYS;
+  @ConfigDoc(value = "Milliseconds after the last event-data read before wrappers are removed in the on-demand and duty-cycle modes.", impact = "Higher values keep instrumentation installed longer after a viewer leaves; lower values remove it sooner.")
+  private long samplerActivityWindowMS = 15000;
+  @ConfigDoc(value = "Length in milliseconds of each periodic measurement window in the duty-cycle mode.", impact = "Longer windows produce more recorded samples per period at a higher recurring cost.")
+  private long dutyCycleOnMS = 5000;
+  @ConfigDoc(value = "Milliseconds between the starts of periodic measurement windows in the duty-cycle mode.", impact = "Shorter periods record event data more often and cost more; longer periods leave wider history gaps.")
+  private long dutyCyclePeriodMS = 60000;
+
   private transient volatile int listenerCount;
   private transient volatile double totalTime;
   private transient volatile int calls;
+  private transient volatile int asyncCalls;
   private transient volatile double callsPerTick;
+  private transient volatile double windowSeconds;
+  private transient volatile long windowPublishedAtMs;
   private transient volatile Map<String, Double> pluginEventTimeMS = Map.of();
   private transient volatile Map<String, Integer> pluginEventCalls = Map.of();
   private transient final AtomicBoolean running = new AtomicBoolean(false);
@@ -74,7 +89,8 @@ public class EventController extends TickedObject implements IController, Listen
   private transient volatile long lastSamplerActivity = 0;
   private transient volatile long instrumentationOwner;
   private transient volatile long cleanupGeneration;
-  private long samplerActivityWindowMS = 15000;
+  private transient volatile long dutyWindowStartMs;
+  private transient volatile long windowStartNanos;
 
   public EventController() {
     super("react", "event", 5000);
@@ -91,10 +107,11 @@ public class EventController extends TickedObject implements IController, Listen
     instrumentationOwner = OWNER_SEQUENCE.incrementAndGet();
     cleanupGeneration = generation;
     active.set(true);
-    instrumentationRequested.set(false);
     spiesInjected = false;
     lastSamplerActivity = 0;
+    dutyWindowStartMs = 0L;
     clearPublishedMetrics();
+    instrumentationRequested.set(mode() == InstrumentationMode.ALWAYS);
     requestReconciliation();
   }
 
@@ -103,16 +120,60 @@ public class EventController extends TickedObject implements IController, Listen
     active.set(false);
     instrumentationRequested.set(false);
     lifecycleGeneration.incrementAndGet();
-    requestReconciliation();
-  }
-
-  public void markSamplerActivity() {
-    lastSamplerActivity = System.currentTimeMillis();
+    long owner = instrumentationOwner;
+    Runnable uninstall = () -> uninstallOwner(owner);
+    if (isAuthoritativeThread()) {
+      uninstall.run();
+      return;
+    }
+    if (FoliaScheduler.runGlobal(React.instance, uninstall)) {
+      return;
+    }
+    uninstall.run();
   }
 
   @Override
   public void postStart() {
 
+  }
+
+  public void markSamplerActivity() {
+    lastSamplerActivity = System.currentTimeMillis();
+    if (active.get()
+        && !spiesInjected
+        && mode() != InstrumentationMode.ALWAYS
+        && instrumentationRequested.compareAndSet(false, true)) {
+      requestReconciliation();
+    }
+  }
+
+  public boolean isMeasuring() {
+    long published = windowPublishedAtMs;
+    return active.get() && published > 0L && System.currentTimeMillis() - published <= windowFreshnessMS();
+  }
+
+  public double getEventTimeMsPerSecond() {
+    return isMeasuring() ? totalTime / windowSeconds : 0D;
+  }
+
+  public double getPluginEventTimeMsPerSecond(String pluginName) {
+    return isMeasuring() ? getPluginEventTimeMS(pluginName) / windowSeconds : 0D;
+  }
+
+  public double getPluginEventTimeMS(String pluginName) {
+    if (!isMeasuring()) {
+      return 0D;
+    }
+    Double time = pluginEventTimeMS.get(pluginName);
+    return time == null ? 0D : time;
+  }
+
+  public Map<String, Double> snapshotPluginEventTimeMS() {
+    return isMeasuring() ? new HashMap<>(pluginEventTimeMS) : new HashMap<>();
+  }
+
+  public Map<String, Integer> snapshotPluginEventCalls() {
+    return isMeasuring() ? new HashMap<>(pluginEventCalls) : new HashMap<>();
   }
 
   @Override
@@ -121,14 +182,13 @@ public class EventController extends TickedObject implements IController, Listen
       return;
     }
 
-    if (System.currentTimeMillis() - lastSamplerActivity > samplerActivityWindowMS) {
-      instrumentationRequested.set(false);
-      requestReconciliation();
+    boolean wanted = evaluateInstrumentation(System.currentTimeMillis());
+    instrumentationRequested.set(wanted);
+    if (!wanted && !spiesInjected && cleanupGeneration == 0L) {
       return;
     }
 
-    instrumentationRequested.set(true);
-    updateHandlerListInjections();
+    requestReconciliation();
   }
 
   public void call(Event event) {
@@ -184,15 +244,12 @@ public class EventController extends TickedObject implements IController, Listen
         Field allLists = HandlerList.class.getDeclaredField("allLists");
         Field handlers = HandlerList.class.getDeclaredField("handlers");
         Field handlerSlots = HandlerList.class.getDeclaredField("handlerslots");
-        Field executor = RegisteredListener.class.getDeclaredField("executor");
         allLists.setAccessible(true);
         handlers.setAccessible(true);
         handlerSlots.setAccessible(true);
-        executor.setAccessible(true);
         allListsField = allLists;
         handlersField = handlers;
         handlerSlotsField = handlerSlots;
-        executorField = executor;
       } catch (Throwable e) {
         React.reportError("Failed to resolve Bukkit event-handler instrumentation fields", e);
       }
@@ -220,14 +277,6 @@ public class EventController extends TickedObject implements IController, Listen
     }
   }
 
-  private static EventExecutor executorOf(RegisteredListener listener) {
-    try {
-      return (EventExecutor) executorField.get(listener);
-    } catch (IllegalAccessException e) {
-      throw new IllegalStateException(e);
-    }
-  }
-
   private static void rebake(HandlerList handlerList) {
     try {
       handlersField.set(handlerList, null);
@@ -237,31 +286,34 @@ public class EventController extends TickedObject implements IController, Listen
     }
   }
 
-  public void updateHandlerListInjections() {
-    if (!active.get()) {
-      return;
+  private InstrumentationMode mode() {
+    InstrumentationMode configured = instrumentation;
+    return configured == null ? InstrumentationMode.ALWAYS : configured;
+  }
+
+  private long windowFreshnessMS() {
+    return 3L * Math.max(1000L, getTinterval());
+  }
+
+  private boolean evaluateInstrumentation(long nowMs) {
+    boolean demanded = nowMs - lastSamplerActivity <= samplerActivityWindowMS;
+    return switch (mode()) {
+      case ALWAYS -> true;
+      case ON_DEMAND -> demanded;
+      case DUTY_CYCLE -> demanded || dutyWindowOpen(nowMs);
+    };
+  }
+
+  private boolean dutyWindowOpen(long nowMs) {
+    long period = Math.max(MIN_DUTY_PERIOD_MS, dutyCyclePeriodMS);
+    long on = Math.max(1L, Math.min(dutyCycleOnMS, period));
+    long windowStart = dutyWindowStartMs;
+    if (windowStart == 0L || nowMs - windowStart >= period) {
+      dutyWindowStartMs = nowMs;
+      return true;
     }
 
-    instrumentationRequested.set(true);
-    requestReconciliation();
-  }
-
-  public void pullOut() {
-    instrumentationRequested.set(false);
-    requestReconciliation();
-  }
-
-  public Map<String, Double> snapshotPluginEventTimeMS() {
-    return new HashMap<>(pluginEventTimeMS);
-  }
-
-  public Map<String, Integer> snapshotPluginEventCalls() {
-    return new HashMap<>(pluginEventCalls);
-  }
-
-  public double getPluginEventTimeMS(String pluginName) {
-    Double time = pluginEventTimeMS.get(pluginName);
-    return time == null ? 0D : time;
+    return nowMs - windowStart < on;
   }
 
   private void requestReconciliation() {
@@ -303,13 +355,13 @@ public class EventController extends TickedObject implements IController, Listen
     long generation = lifecycleGeneration.get();
     long owner = instrumentationOwner;
     if (!active.get()) {
-      uninstallHandlers(owner, false);
+      uninstallHandlers(owner, false, new WindowTotals());
       spiesInjected = false;
       return;
     }
 
     if (cleanupGeneration == generation) {
-      uninstallHandlers(owner, true);
+      uninstallHandlers(owner, true, new WindowTotals());
       if (cleanupGeneration == generation) {
         cleanupGeneration = 0L;
       }
@@ -319,41 +371,54 @@ public class EventController extends TickedObject implements IController, Listen
       return;
     }
 
-    if (!instrumentationRequested.get()
-        || System.currentTimeMillis() - lastSamplerActivity > samplerActivityWindowMS) {
-      instrumentationRequested.set(false);
-      uninstallHandlers(owner, false);
-      spiesInjected = false;
-      clearPublishedMetrics();
+    if (!instrumentationRequested.get()) {
+      if (spiesInjected) {
+        WindowTotals totals = new WindowTotals();
+        uninstallHandlers(owner, false, totals);
+        spiesInjected = false;
+        publishWindow(totals);
+      }
       return;
     }
 
+    boolean hadSpies = spiesInjected;
     WindowTotals totals = new WindowTotals();
-    int listeners = instrumentAndDrain(owner, totals);
-    publishWindow(listeners, totals);
+    instrumentAndDrain(owner, totals);
     spiesInjected = true;
+    if (hadSpies) {
+      publishWindow(totals);
+      return;
+    }
+
+    beginWindow(totals);
   }
 
-  private int instrumentAndDrain(long owner, WindowTotals totals) {
-    int listeners = 0;
+  private void uninstallOwner(long owner) {
+    if (!resolveHandlerFields()) {
+      return;
+    }
+
+    uninstallHandlers(owner, false, new WindowTotals());
+    spiesInjected = false;
+  }
+
+  private void instrumentAndDrain(long owner, WindowTotals totals) {
     ArrayList<HandlerList> handlerLists = new ArrayList<>(allHandlerLists());
     for (HandlerList handlerList : handlerLists) {
       try {
-        listeners += instrumentHandlerList(handlerList, owner, totals);
+        instrumentHandlerList(handlerList, owner, totals);
       } catch (Throwable throwable) {
         React.reportError(throwable);
       }
     }
-    return listeners;
   }
 
-  private int instrumentHandlerList(HandlerList handlerList, long owner, WindowTotals totals) {
+  private void instrumentHandlerList(HandlerList handlerList, long owner, WindowTotals totals) {
     EnumMap<EventPriority, ArrayList<RegisteredListener>> slots = handlerSlotsOf(handlerList);
     if (slots == null) {
-      return 0;
+      return;
     }
 
-    int listeners = 0;
     boolean changed = false;
     try {
       for (ArrayList<RegisteredListener> priorityListeners : slots.values()) {
@@ -363,20 +428,19 @@ public class EventController extends TickedObject implements IController, Listen
             continue;
           }
 
-          listeners++;
+          totals.listeners++;
           if (registered instanceof NaughtyRegisteredListener naughty) {
             if (naughty.isOwnedBy(owner)) {
               drainListener(naughty, totals);
               continue;
             }
-            naughty.drainCounters();
+            registered = naughty.delegate();
           }
 
-          priorityListeners.set(index, instrument(registered, owner));
+          priorityListeners.set(index, new NaughtyRegisteredListener(registered, owner));
           changed = true;
         }
       }
-      return listeners;
     } finally {
       if (changed) {
         rebake(handlerList);
@@ -384,23 +448,12 @@ public class EventController extends TickedObject implements IController, Listen
     }
   }
 
-  private NaughtyRegisteredListener instrument(RegisteredListener registered, long owner) {
-    return new NaughtyRegisteredListener(
-        registered.getListener(),
-        executorOf(registered),
-        registered.getPriority(),
-        registered.getPlugin(),
-        registered.isIgnoringCancelled(),
-        owner
-    );
-  }
-
-  private void uninstallHandlers(long owner, boolean allOwners) {
+  private void uninstallHandlers(long owner, boolean allOwners, WindowTotals totals) {
     int removed = 0;
     ArrayList<HandlerList> handlerLists = new ArrayList<>(allHandlerLists());
     for (HandlerList handlerList : handlerLists) {
       try {
-        removed += uninstallHandlerList(handlerList, owner, allOwners);
+        removed += uninstallHandlerList(handlerList, owner, allOwners, totals);
       } catch (Throwable throwable) {
         React.reportError(throwable);
       }
@@ -410,7 +463,7 @@ public class EventController extends TickedObject implements IController, Listen
     }
   }
 
-  private int uninstallHandlerList(HandlerList handlerList, long owner, boolean allOwners) {
+  private int uninstallHandlerList(HandlerList handlerList, long owner, boolean allOwners, WindowTotals totals) {
     EnumMap<EventPriority, ArrayList<RegisteredListener>> slots = handlerSlotsOf(handlerList);
     if (slots == null) {
       return 0;
@@ -421,13 +474,20 @@ public class EventController extends TickedObject implements IController, Listen
       for (ArrayList<RegisteredListener> priorityListeners : slots.values()) {
         for (int index = 0; index < priorityListeners.size(); index++) {
           RegisteredListener registered = priorityListeners.get(index);
+          if (registered == null) {
+            continue;
+          }
+
+          totals.listeners++;
           if (!(registered instanceof NaughtyRegisteredListener naughty)
               || (!allOwners && !naughty.isOwnedBy(owner))) {
             continue;
           }
 
-          naughty.drainCounters();
-          priorityListeners.set(index, restore(registered));
+          if (naughty.isOwnedBy(owner)) {
+            drainListener(naughty, totals);
+          }
+          priorityListeners.set(index, naughty.delegate());
           removed++;
         }
       }
@@ -439,51 +499,63 @@ public class EventController extends TickedObject implements IController, Listen
     }
   }
 
-  private RegisteredListener restore(RegisteredListener registered) {
-    return new RegisteredListener(
-        registered.getListener(),
-        executorOf(registered),
-        registered.getPriority(),
-        registered.getPlugin(),
-        registered.isIgnoringCancelled()
-    );
-  }
-
   private void drainListener(NaughtyRegisteredListener naughty, WindowTotals totals) {
     NaughtyRegisteredListener.CounterSnapshot snapshot = naughty.drainCounters();
     double listenerTime = snapshot.timeNanos() / 1.0E6D;
     int listenerCalls = saturatingInt(snapshot.calls());
     totals.timeNanos += snapshot.timeNanos();
     totals.calls += snapshot.calls();
+    totals.asyncCalls += snapshot.asyncCalls();
     totals.pluginTime.merge(naughty.pluginName, listenerTime, Double::sum);
     totals.pluginCalls.merge(naughty.pluginName, listenerCalls, EventController::saturatingAdd);
   }
 
-  private void publishWindow(int listeners, WindowTotals totals) {
-    listenerCount = listeners;
+  private void beginWindow(WindowTotals totals) {
+    windowStartNanos = System.nanoTime();
+    measuredTicks.set(0L);
+    listenerCount = totals.listeners;
+  }
+
+  private void publishWindow(WindowTotals totals) {
+    long nowNanos = System.nanoTime();
+    long elapsedNanos = nowNanos - windowStartNanos;
+    windowStartNanos = nowNanos;
+    listenerCount = totals.listeners;
     totalTime = totals.timeNanos / 1.0E6D;
     calls = saturatingInt(totals.calls);
+    asyncCalls = saturatingInt(totals.asyncCalls);
     callsPerTick = averageCallsPerTick(totals.calls, measuredTicks.getAndSet(0L));
     pluginEventTimeMS = Map.copyOf(totals.pluginTime);
     pluginEventCalls = Map.copyOf(totals.pluginCalls);
+    windowSeconds = Math.max(1.0E-6D, elapsedNanos / 1.0E9D);
+    windowPublishedAtMs = System.currentTimeMillis();
   }
 
   private void clearPublishedMetrics() {
     listenerCount = 0;
     totalTime = 0D;
     calls = 0;
+    asyncCalls = 0;
     callsPerTick = 0D;
+    windowSeconds = 0D;
+    windowPublishedAtMs = 0L;
+    windowStartNanos = 0L;
     measuredTicks.set(0L);
     pluginEventTimeMS = Map.of();
     pluginEventCalls = Map.of();
   }
 
+  private boolean isAuthoritativeThread() {
+    try {
+      return J.isFoliaThreading() ? Bukkit.isGlobalTickThread() : Bukkit.isPrimaryThread();
+    } catch (Throwable throwable) {
+      return false;
+    }
+  }
+
   private boolean runOnAuthoritativeScheduler(Runnable mutation) {
     try {
-      boolean correctThread = J.isFoliaThreading()
-          ? Bukkit.isGlobalTickThread()
-          : Bukkit.isPrimaryThread();
-      if (correctThread) {
+      if (isAuthoritativeThread()) {
         mutation.run();
         return true;
       }
@@ -515,10 +587,18 @@ public class EventController extends TickedObject implements IController, Listen
     return (double) calls / ticks;
   }
 
+  public enum InstrumentationMode {
+    ALWAYS,
+    ON_DEMAND,
+    DUTY_CYCLE
+  }
+
   private static final class WindowTotals {
     private final Map<String, Double> pluginTime = new HashMap<>();
     private final Map<String, Integer> pluginCalls = new HashMap<>();
+    private int listeners;
     private long timeNanos;
     private long calls;
+    private long asyncCalls;
   }
 }

@@ -85,6 +85,7 @@ import art.arcane.react.content.tweak.TweakSpawnerPlayerRadius;
 import art.arcane.react.content.tweak.TweakUnknown;
 import art.arcane.react.content.tweak.TweakVehicleIdleBrake;
 import art.arcane.react.core.controller.ConfigInputController;
+import art.arcane.react.core.controller.EventController;
 import art.arcane.react.core.controller.HotloadController;
 import art.arcane.react.core.controller.HistoryController;
 import art.arcane.react.core.controller.IncidentController;
@@ -256,6 +257,7 @@ public final class ConfigLocalization {
         TweakUnknown.class,
         TweakVehicleIdleBrake.class,
         ConfigInputController.class,
+        EventController.class,
         HistoryController.class,
         HotloadController.class,
         IncidentController.class,
