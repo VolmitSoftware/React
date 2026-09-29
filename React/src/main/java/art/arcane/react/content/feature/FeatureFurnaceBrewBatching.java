@@ -35,11 +35,14 @@ import art.arcane.react.core.controller.ObserverController.LoadedChunkTarget;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.project.config.ConfigDescription;
 import art.arcane.react.util.project.config.ConfigDoc;
+import art.arcane.react.util.project.world.BlockEntityScan;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.BrewingStand;
 import org.bukkit.block.Furnace;
@@ -61,15 +64,18 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
-import it.unimi.dsi.fastutil.longs.LongIterator;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -86,6 +92,13 @@ public class FeatureFurnaceBrewBatching extends ReactFeature implements Listener
   private static final int MAX_RESEED_CHUNKS_PER_TICK = 256;
   private static final int MAX_MEASUREMENT_ENTRIES_PER_TICK = 512;
   private static final int MAX_MEASUREMENT_TASKS_PER_TICK = 32;
+  private static final int MAX_PENDING_LOAD_SEEDS = 8192;
+  private static final Set<Material> TRACKED_MATERIALS = EnumSet.of(
+      Material.FURNACE,
+      Material.BLAST_FURNACE,
+      Material.SMOKER,
+      Material.BREWING_STAND
+  );
 
   @ConfigDoc(value ="Main evaluation interval for furnace/brew batching in milliseconds.", impact = "Lower values react faster but consume more CPU; higher values reduce overhead but react later.")
   private int tickIntervalMS = 1000;
@@ -110,6 +123,8 @@ public class FeatureFurnaceBrewBatching extends ReactFeature implements Listener
   private transient final Queue<MeasurementChunkToken> measurementChunkRotation = new ConcurrentLinkedQueue<>();
   private transient final Map<ChunkCoordinate, MeasurementChunkToken> measurementChunks = new ConcurrentHashMap<>();
   private transient final Set<ChunkCoordinate> seedTasksInFlight = ConcurrentHashMap.newKeySet();
+  private transient final Queue<ChunkCoordinate> pendingLoadSeeds = new ArrayBlockingQueue<>(MAX_PENDING_LOAD_SEEDS);
+  private transient final Set<ChunkCoordinate> queuedLoadSeeds = ConcurrentHashMap.newKeySet();
   private transient final AtomicLong trackedBlockCount = new AtomicLong();
   private transient final AtomicLong lifecycleGeneration = new AtomicLong();
   private transient final AtomicLong projectedSkippableTicks = new AtomicLong();
@@ -124,8 +139,8 @@ public class FeatureFurnaceBrewBatching extends ReactFeature implements Listener
   private transient volatile boolean bridgeActive;
   private transient final AtomicLong skippedFurnaceTicks = new AtomicLong();
   private transient final AtomicLong skippedBrewingTicks = new AtomicLong();
-  private transient final Long2IntOpenHashMap furnaceSkipDebt = new Long2IntOpenHashMap();
-  private transient final Long2IntOpenHashMap brewingSkipDebt = new Long2IntOpenHashMap();
+  private transient final SkipDebtLedger furnaceSkipDebt = new SkipDebtLedger();
+  private transient final SkipDebtLedger brewingSkipDebt = new SkipDebtLedger();
   private transient volatile boolean active;
   private transient volatile MeasurementSweep measurementSweep;
 
@@ -141,16 +156,14 @@ public class FeatureFurnaceBrewBatching extends ReactFeature implements Listener
     measurementChunkRotation.clear();
     measurementChunks.clear();
     seedTasksInFlight.clear();
+    pendingLoadSeeds.clear();
+    queuedLoadSeeds.clear();
     trackedBlockCount.set(0);
     projectedSkippableTicks.set(0);
     skippedFurnaceTicks.set(0);
     skippedBrewingTicks.set(0);
-    synchronized (furnaceSkipDebt) {
-      furnaceSkipDebt.clear();
-    }
-    synchronized (brewingSkipDebt) {
-      brewingSkipDebt.clear();
-    }
+    furnaceSkipDebt.clear();
+    brewingSkipDebt.clear();
     lastTotalActive = 0;
     lastTotalProjectedSkippableTicks = 0;
     lastBypassedByPlayer = 0;
@@ -168,16 +181,14 @@ public class FeatureFurnaceBrewBatching extends ReactFeature implements Listener
     measurementChunkRotation.clear();
     measurementChunks.clear();
     seedTasksInFlight.clear();
+    pendingLoadSeeds.clear();
+    queuedLoadSeeds.clear();
     trackedBlockCount.set(0);
     projectedSkippableTicks.set(0);
     measurementSweep = null;
     gate.reset();
-    synchronized (furnaceSkipDebt) {
-      furnaceSkipDebt.clear();
-    }
-    synchronized (brewingSkipDebt) {
-      brewingSkipDebt.clear();
-    }
+    furnaceSkipDebt.clear();
+    brewingSkipDebt.clear();
     uninstallBridgeHooks();
   }
 
@@ -200,48 +211,29 @@ public class FeatureFurnaceBrewBatching extends ReactFeature implements Listener
       return;
     }
     FurnaceTickHook furnace = (World world, int x, int y, int z) -> {
-      long key = blockKey(x, y, z);
-      boolean runVanilla = !gate.isEngaged()
-          || React.hasNearbyPlayer(new Location(world, x + 0.5D, y + 0.5D, z + 0.5D), bypassRadius);
-      if (runVanilla) {
-        int debt;
-        synchronized (furnaceSkipDebt) {
-          debt = furnaceSkipDebt.remove(key);
-        }
-        if (debt > 0) {
-          return FurnaceTickResult.runAndAdvance(debt);
-        }
-        return FurnaceTickResult.RUN_VANILLA;
+      if (shouldRunVanilla(world, x, y, z)) {
+        return FurnaceTickResult.runAndAdvance(furnaceSkipDebt.drain(world, x, y, z));
       }
-      synchronized (furnaceSkipDebt) {
-        furnaceSkipDebt.addTo(key, 1);
-      }
+      furnaceSkipDebt.add(world, x, y, z);
       skippedFurnaceTicks.incrementAndGet();
       return FurnaceTickResult.SKIP;
     };
     BrewingTickHook brewing = (World world, int x, int y, int z) -> {
-      long key = blockKey(x, y, z);
-      boolean runVanilla = !gate.isEngaged()
-          || React.hasNearbyPlayer(new Location(world, x + 0.5D, y + 0.5D, z + 0.5D), bypassRadius);
-      if (runVanilla) {
-        int debt;
-        synchronized (brewingSkipDebt) {
-          debt = brewingSkipDebt.remove(key);
-        }
-        if (debt > 0) {
-          return BrewingTickResult.runAndAdvance(debt);
-        }
-        return BrewingTickResult.RUN_VANILLA;
+      if (shouldRunVanilla(world, x, y, z)) {
+        return BrewingTickResult.runAndAdvance(brewingSkipDebt.drain(world, x, y, z));
       }
-      synchronized (brewingSkipDebt) {
-        brewingSkipDebt.addTo(key, 1);
-      }
+      brewingSkipDebt.add(world, x, y, z);
       skippedBrewingTicks.incrementAndGet();
       return BrewingTickResult.SKIP;
     };
     boolean furnaceOk = bridge.installFurnaceTickHook(furnace);
     boolean brewingOk = bridge.installBrewingTickHook(brewing);
     bridgeActive = furnaceOk || brewingOk;
+  }
+
+  private boolean shouldRunVanilla(World world, int x, int y, int z) {
+    return !gate.isEngaged()
+        || React.hasNearbyPlayer(new Location(world, x + 0.5D, y + 0.5D, z + 0.5D), bypassRadius);
   }
 
   private void uninstallBridgeHooks() {
@@ -481,21 +473,16 @@ public class FeatureFurnaceBrewBatching extends ReactFeature implements Listener
 
   @EventHandler(priority = EventPriority.MONITOR)
   public void on(ChunkLoadEvent event) {
-    Chunk chunk = event.getChunk();
-    seedChunkNow(chunk, lifecycleGeneration.get());
+    queueLoadSeed(ChunkCoordinate.of(event.getChunk()));
   }
 
   @EventHandler(priority = EventPriority.MONITOR)
   public void on(ChunkUnloadEvent event) {
-    Chunk chunk = event.getChunk();
-    ChunkCoordinate coordinate = ChunkCoordinate.of(chunk);
+    ChunkCoordinate coordinate = ChunkCoordinate.of(event.getChunk());
     removeChunkIndex(coordinate);
-    synchronized (furnaceSkipDebt) {
-      evictChunkDebt(furnaceSkipDebt, chunk.getX(), chunk.getZ());
-    }
-    synchronized (brewingSkipDebt) {
-      evictChunkDebt(brewingSkipDebt, chunk.getX(), chunk.getZ());
-    }
+    queuedLoadSeeds.remove(coordinate);
+    furnaceSkipDebt.evictChunk(coordinate.worldId, coordinate.chunkX, coordinate.chunkZ);
+    brewingSkipDebt.evictChunk(coordinate.worldId, coordinate.chunkX, coordinate.chunkZ);
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -507,51 +494,44 @@ public class FeatureFurnaceBrewBatching extends ReactFeature implements Listener
       }
     }
     seedTasksInFlight.removeIf(coordinate -> coordinate.worldId.equals(worldId));
-  }
-
-  private static void evictChunkDebt(Long2IntOpenHashMap debt, int cx, int cz) {
-    LongIterator iterator = debt.keySet().iterator();
-    while (iterator.hasNext()) {
-      long blockKey = iterator.nextLong();
-      if (blockKeyChunkX(blockKey) == cx && blockKeyChunkZ(blockKey) == cz) {
-        iterator.remove();
-      }
-    }
+    queuedLoadSeeds.removeIf(coordinate -> coordinate.worldId.equals(worldId));
+    furnaceSkipDebt.evictWorld(worldId);
+    brewingSkipDebt.evictWorld(worldId);
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void on(BlockPlaceEvent event) {
-    TrackedKind kind = classify(event.getBlock().getType().name());
+    Block block = event.getBlock();
+    TrackedKind kind = trackedKind(block.getType());
     if (kind == null) {
       return;
     }
 
-    Location loc = event.getBlock().getLocation();
-    add(loc.getWorld(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(), kind);
+    add(block.getWorld(), block.getX(), block.getY(), block.getZ(), kind);
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void on(BlockBreakEvent event) {
-    Location loc = event.getBlock().getLocation();
-    World world = loc.getWorld();
-    if (world != null) {
-      ChunkCoordinate coordinate = new ChunkCoordinate(world.getUID(), loc.getBlockX() >> 4, loc.getBlockZ() >> 4);
-      ChunkIndex index = chunkIndexByKey.get(coordinate);
-      if (index != null && index.remove(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ())) {
-        trackedBlockCount.decrementAndGet();
-        if (index.isEmpty()) {
-          removeChunkIndex(coordinate);
-        }
-      }
+    Block block = event.getBlock();
+    TrackedKind kind = trackedKind(block.getType());
+    if (kind == null) {
+      return;
     }
 
-    long blockKey = blockKey(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
-    synchronized (furnaceSkipDebt) {
-      furnaceSkipDebt.remove(blockKey);
+    World world = block.getWorld();
+    int x = block.getX();
+    int y = block.getY();
+    int z = block.getZ();
+    ChunkCoordinate coordinate = new ChunkCoordinate(world.getUID(), x >> 4, z >> 4);
+    ChunkIndex index = chunkIndexByKey.get(coordinate);
+    if (index != null && index.remove(x, y, z)) {
+      trackedBlockCount.decrementAndGet();
+      if (index.isEmpty()) {
+        removeChunkIndex(coordinate);
+      }
     }
-    synchronized (brewingSkipDebt) {
-      brewingSkipDebt.remove(blockKey);
-    }
+    SkipDebtLedger ledger = kind == TrackedKind.FURNACE ? furnaceSkipDebt : brewingSkipDebt;
+    ledger.drain(world, x, y, z);
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -578,17 +558,13 @@ public class FeatureFurnaceBrewBatching extends ReactFeature implements Listener
   }
 
   private void touchHolder(Inventory inventory) {
-    if (inventory == null) {
+    TrackedKind kind = trackedKind(inventory);
+    if (kind == null) {
       return;
     }
 
     Location loc = inventory.getLocation();
     if (loc == null) {
-      return;
-    }
-
-    TrackedKind kind = classify(loc.getBlock().getType().name());
-    if (kind == null) {
       return;
     }
 
@@ -617,15 +593,43 @@ public class FeatureFurnaceBrewBatching extends ReactFeature implements Listener
     }
   }
 
+  private void queueLoadSeed(ChunkCoordinate coordinate) {
+    if (!active || !queuedLoadSeeds.add(coordinate)) {
+      return;
+    }
+    if (!pendingLoadSeeds.offer(coordinate)) {
+      queuedLoadSeeds.remove(coordinate);
+    }
+  }
+
   private void scheduleReseedBatch(long generation) {
-    if (!isActive(generation) || React.instance == null) {
+    if (!isActive(generation)) {
+      return;
+    }
+    int remaining = scheduleLoadSeeds(generation);
+    if (remaining <= 0 || React.instance == null) {
       return;
     }
     ObserverController observer = React.controller(ObserverController.class);
     if (observer == null) {
       return;
     }
-    scheduleReseedTargets(observer.nextLoadedChunkCoordinateBatch(reseedBudget()), generation);
+    scheduleReseedTargets(observer.nextLoadedChunkCoordinateBatch(remaining), generation);
+  }
+
+  private int scheduleLoadSeeds(long generation) {
+    int remaining = reseedBudget();
+    while (remaining > 0 && isActive(generation)) {
+      ChunkCoordinate coordinate = pendingLoadSeeds.poll();
+      if (coordinate == null) {
+        break;
+      }
+      if (queuedLoadSeeds.remove(coordinate)) {
+        scheduleSeed(coordinate, generation);
+        remaining--;
+      }
+    }
+    return remaining;
   }
 
   private void scheduleReseedTargets(List<LoadedChunkTarget> targets, long generation) {
@@ -674,23 +678,17 @@ public class FeatureFurnaceBrewBatching extends ReactFeature implements Listener
       return;
     }
 
-    UUID worldId = chunk.getWorld().getUID();
-    ChunkCoordinate coordinate = new ChunkCoordinate(worldId, chunk.getX(), chunk.getZ());
+    World world = chunk.getWorld();
+    ChunkCoordinate coordinate = new ChunkCoordinate(world.getUID(), chunk.getX(), chunk.getZ());
     removeChunkIndex(coordinate);
 
-    for (BlockState state : chunk.getTileEntities()) {
+    for (BlockState state : BlockEntityScan.runtime().scan(chunk, TRACKED_MATERIALS)) {
       if (!isActive(generation) || trackedBlockCount.get() >= Math.max(1, maxTrackedEntries)) {
         break;
       }
-      if (state instanceof Furnace) {
-        Location loc = state.getLocation();
-        add(chunk.getWorld(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(), TrackedKind.FURNACE);
-        continue;
-      }
-
-      if (state instanceof BrewingStand) {
-        Location loc = state.getLocation();
-        add(chunk.getWorld(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(), TrackedKind.BREWING_STAND);
+      TrackedKind kind = trackedKind(state.getType());
+      if (kind != null) {
+        add(world, state.getX(), state.getY(), state.getZ(), kind);
       }
     }
   }
@@ -718,28 +716,30 @@ public class FeatureFurnaceBrewBatching extends ReactFeature implements Listener
     return Math.max(1, Math.min(reseedChunksPerTick, MAX_RESEED_CHUNKS_PER_TICK));
   }
 
-  private TrackedKind classify(String materialName) {
-    return switch (materialName) {
-      case "FURNACE", "BLAST_FURNACE", "SMOKER" -> TrackedKind.FURNACE;
-      case "BREWING_STAND" -> TrackedKind.BREWING_STAND;
+  private static TrackedKind trackedKind(Material material) {
+    return switch (material) {
+      case FURNACE, BLAST_FURNACE, SMOKER -> TrackedKind.FURNACE;
+      case BREWING_STAND -> TrackedKind.BREWING_STAND;
       default -> null;
     };
+  }
+
+  private static TrackedKind trackedKind(Inventory inventory) {
+    if (inventory instanceof FurnaceInventory) {
+      return TrackedKind.FURNACE;
+    }
+    if (inventory instanceof BrewerInventory) {
+      return TrackedKind.BREWING_STAND;
+    }
+    return null;
   }
 
   private static long blockKey(int x, int y, int z) {
     return ((long) (x & 0x3FFFFFF) << 38) | ((long) (z & 0x3FFFFFF) << 12) | (y & 0xFFFL);
   }
 
-  private static int blockKeyChunkX(long blockKey) {
-    return signExtend26((int) ((blockKey >>> 38) & 0x3FFFFFFL)) >> 4;
-  }
-
-  private static int blockKeyChunkZ(long blockKey) {
-    return signExtend26((int) ((blockKey >>> 12) & 0x3FFFFFFL)) >> 4;
-  }
-
-  private static int signExtend26(int value) {
-    return (value << 6) >> 6;
+  private static long chunkKey(int chunkX, int chunkZ) {
+    return ((long) chunkX << 32) ^ (chunkZ & 0xFFFFFFFFL);
   }
 
   private enum TrackedKind {
@@ -782,6 +782,94 @@ public class FeatureFurnaceBrewBatching extends ReactFeature implements Listener
 
     private static long blockKey(int x, int y, int z) {
       return ((long) (x & 0x3FFFFFF) << 38) | ((long) (z & 0x3FFFFFF) << 12) | (y & 0xFFFL);
+    }
+  }
+
+  private static final class SkipDebtLedger {
+    private final Map<UUID, Long2ObjectOpenHashMap<Long2IntOpenHashMap>> debtByWorld = new HashMap<>();
+    private volatile int outstanding;
+
+    private synchronized void add(World world, int x, int y, int z) {
+      UUID worldId = world.getUID();
+      Long2ObjectOpenHashMap<Long2IntOpenHashMap> chunks = debtByWorld.get(worldId);
+      if (chunks == null) {
+        chunks = new Long2ObjectOpenHashMap<>();
+        debtByWorld.put(worldId, chunks);
+      }
+      long chunk = chunkKey(x >> 4, z >> 4);
+      Long2IntOpenHashMap blocks = chunks.get(chunk);
+      if (blocks == null) {
+        blocks = new Long2IntOpenHashMap();
+        chunks.put(chunk, blocks);
+      }
+      if (blocks.addTo(blockKey(x, y, z), 1) == 0) {
+        outstanding = outstanding + 1;
+      }
+    }
+
+    private int drain(World world, int x, int y, int z) {
+      if (outstanding == 0) {
+        return 0;
+      }
+      synchronized (this) {
+        UUID worldId = world.getUID();
+        Long2ObjectOpenHashMap<Long2IntOpenHashMap> chunks = debtByWorld.get(worldId);
+        if (chunks == null) {
+          return 0;
+        }
+        long chunk = chunkKey(x >> 4, z >> 4);
+        Long2IntOpenHashMap blocks = chunks.get(chunk);
+        if (blocks == null) {
+          return 0;
+        }
+        int debt = blocks.remove(blockKey(x, y, z));
+        if (debt <= 0) {
+          return 0;
+        }
+        outstanding = outstanding - 1;
+        if (blocks.isEmpty()) {
+          chunks.remove(chunk);
+          if (chunks.isEmpty()) {
+            debtByWorld.remove(worldId);
+          }
+        }
+        return debt;
+      }
+    }
+
+    private void evictChunk(UUID worldId, int chunkX, int chunkZ) {
+      if (outstanding == 0) {
+        return;
+      }
+      synchronized (this) {
+        Long2ObjectOpenHashMap<Long2IntOpenHashMap> chunks = debtByWorld.get(worldId);
+        if (chunks == null) {
+          return;
+        }
+        Long2IntOpenHashMap blocks = chunks.remove(chunkKey(chunkX, chunkZ));
+        if (blocks == null) {
+          return;
+        }
+        outstanding = outstanding - blocks.size();
+        if (chunks.isEmpty()) {
+          debtByWorld.remove(worldId);
+        }
+      }
+    }
+
+    private synchronized void evictWorld(UUID worldId) {
+      Long2ObjectOpenHashMap<Long2IntOpenHashMap> chunks = debtByWorld.remove(worldId);
+      if (chunks == null) {
+        return;
+      }
+      for (Long2IntOpenHashMap blocks : chunks.values()) {
+        outstanding = outstanding - blocks.size();
+      }
+    }
+
+    private synchronized void clear() {
+      debtByWorld.clear();
+      outstanding = 0;
     }
   }
 
