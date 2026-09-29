@@ -91,10 +91,22 @@ public class BundleUtils {
     }
 
     ItemMeta meta = item.getItemMeta();
-    if (meta == null) {
-      return false;
+    return meta != null && hasSuperStackLore(meta);
+  }
+
+  public static int superStackCount(ItemStack item) {
+    if (item == null || item.getType() != Material.BUNDLE) {
+      return -1;
     }
 
+    ItemMeta meta = item.getItemMeta();
+    if (!(meta instanceof BundleMeta bundleMeta) || !hasSuperStackLore(meta)) {
+      return -1;
+    }
+    return getTotalCount(bundleMeta.getItems());
+  }
+
+  private static boolean hasSuperStackLore(ItemMeta meta) {
     List<String> lore = meta.getLore();
     return lore != null && lore.size() == 1 && SUPER_STACK_LORE.equals(lore.getFirst());
   }
