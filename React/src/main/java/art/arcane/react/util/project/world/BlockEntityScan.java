@@ -23,7 +23,7 @@ public final class BlockEntityScan {
     return RUNTIME;
   }
 
-  public static BlockEntityScan probe(Class<?> chunkType) {
+  static BlockEntityScan probe(Class<?> chunkType) {
     try {
       chunkType.getMethod("getTileEntities", Predicate.class, boolean.class);
       return new BlockEntityScan(true);
