@@ -104,6 +104,14 @@ public class MapController extends TickedObject implements IController, Listener
   private static final NamespacedKey nsMapToken = new NamespacedKey(React.instance, "react-map-token");
   private static final int megamapSplitsPerPass = 8;
   private static final int megamapRotationResetsPerPass = 8;
+  private static final List<String> INTEGRATION_RENDERER_CAPABILITIES = List.of(
+      "iris",
+      "adapt",
+      "wormholes",
+      "gloss",
+      "hiddenore",
+      "biletools"
+  );
   private static final AtomicLong rendererPipeOwnerSequence = new AtomicLong();
   @ConfigDoc(value = "Main maintenance cadence for map repair logic in milliseconds.", impact = "Lower values repair inventories and item-frames sooner after reload; higher values reduce maintenance overhead.")
   private long maintenanceTickIntervalMs = 500L;
@@ -188,6 +196,7 @@ public class MapController extends TickedObject implements IController, Listener
   private transient ReactRenderer hiddenoreMetricsRenderer;
   private transient ReactRenderer biletoolsMetricsRenderer;
   private transient ReactRenderer reactMetricsRenderer;
+  private transient int integrationRendererFingerprint;
   private transient long startupBoostUntilMs;
 
   public MapController() {
@@ -313,15 +322,16 @@ public class MapController extends TickedObject implements IController, Listener
       return;
     }
 
-    if (!player.getInventory().getItemInMainHand().getType().equals(Material.AIR)) {
-      for (ItemStack i : player.getInventory().addItem(player.getInventory().getItemInMainHand()).values()) {
-        player.getWorld().dropItem(player.getLocation(), i);
-      }
-
-      player.getInventory().setItemInMainHand(null);
+    ItemStack held = player.getInventory().getItemInMainHand();
+    ItemStack displaced = held.getType() == Material.AIR ? null : held.clone();
+    player.getInventory().setItemInMainHand(createMap(player.getWorld(), renderer));
+    if (displaced == null) {
+      return;
     }
 
-    player.getInventory().setItemInMainHand(createMap(player.getWorld(), renderer));
+    for (ItemStack overflow : player.getInventory().addItem(displaced).values()) {
+      player.getWorld().dropItem(player.getLocation(), overflow);
+    }
   }
 
   public void giveMapToInventory(Player player, ReactRenderer renderer) {
@@ -599,6 +609,7 @@ public class MapController extends TickedObject implements IController, Listener
     hiddenoreMetricsRenderer = new RendererHiddenoreMetrics();
     biletoolsMetricsRenderer = new RendererBiletoolsMetrics();
     reactMetricsRenderer = new RendererReactMetrics();
+    integrationRendererFingerprint = -1;
     startupBoostUntilMs = System.currentTimeMillis() + Math.max(0L, startupBoostDurationMs);
     applyMaintenanceTickInterval();
     rendererPipesActive = true;
@@ -749,33 +760,35 @@ public class MapController extends TickedObject implements IController, Listener
   }
 
   private void syncIntegrationRenderers() {
+    if (renderers == null) {
+      return;
+    }
+
+    IntegrationController integration = React.controller(IntegrationController.class);
+    int fingerprint = 0;
+    for (int index = 0; index < INTEGRATION_RENDERER_CAPABILITIES.size(); index++) {
+      if (IntegrationCapabilitySupport.isCapabilityPresent(integration, INTEGRATION_RENDERER_CAPABILITIES.get(index))) {
+        fingerprint |= 1 << index;
+      }
+    }
+
+    if (fingerprint == integrationRendererFingerprint) {
+      return;
+    }
+
+    integrationRendererFingerprint = fingerprint;
     registerRenderer(reactMetricsRenderer);
-    syncIntegrationCapabilityRenderers("iris");
-    syncIntegrationCapabilityRenderers("adapt");
-    syncIntegrationCapabilityRenderers("wormholes");
-    syncIntegrationCapabilityRenderers("gloss");
-    syncIntegrationCapabilityRenderers("hiddenore");
-    syncIntegrationCapabilityRenderers("biletools");
+    for (int index = 0; index < INTEGRATION_RENDERER_CAPABILITIES.size(); index++) {
+      // Do not remove these renderer ids while integration is negotiating after reload.
+      if ((fingerprint & (1 << index)) != 0) {
+        syncIntegrationCapabilityRenderers(INTEGRATION_RENDERER_CAPABILITIES.get(index));
+      }
+    }
   }
 
   private void syncIntegrationCapabilityRenderers(String capability) {
-    if (renderers == null || capability == null || capability.isBlank()) {
-      return;
-    }
-
-    String normalizedCapability = capability.toLowerCase(Locale.ROOT).trim();
-    String prefix = normalizedCapability + "-";
-    boolean available = IntegrationCapabilitySupport.isCapabilityPresent(
-        React.controller(IntegrationController.class),
-        normalizedCapability
-    );
-
-    if (!available) {
-      // Do not remove these renderer ids while integration is negotiating after reload.
-      return;
-    }
-
-    for (ReactRenderer dashboard : integrationDashboardsFor(normalizedCapability)) {
+    String prefix = capability + "-";
+    for (ReactRenderer dashboard : integrationDashboardsFor(capability)) {
       registerRenderer(dashboard);
     }
 
@@ -833,7 +846,6 @@ public class MapController extends TickedObject implements IController, Listener
       return;
     }
 
-    String normalized = normalizeRendererId(renderer.getId());
     if (renderers.put(renderer.getId(), renderer) != renderer) {
       invalidateRendererCaches();
     }
@@ -939,7 +951,7 @@ public class MapController extends TickedObject implements IController, Listener
     }
 
     boolean rekeyed = rekeyWallAssignedInventoryMap(meta, worldHint);
-    if (!repairMapMeta(meta, worldHint, forceRendererUpdate) && !rekeyed) {
+    if (!repairMapMeta(meta, worldHint, forceRendererUpdate, false) && !rekeyed) {
       return false;
     }
 
@@ -1020,7 +1032,7 @@ public class MapController extends TickedObject implements IController, Listener
     return isSpecificRendererId(parseRendererIdFromLore(meta.getLore()));
   }
 
-  private boolean repairMapMeta(MapMeta meta, World worldHint, boolean forceRendererUpdate) {
+  private boolean repairMapMeta(MapMeta meta, World worldHint, boolean forceRendererUpdate, boolean remintOnWorldMismatch) {
     boolean changed = false;
     MapView view = meta.getMapView();
     String storedRendererId = getStoredRendererId(meta);
@@ -1049,10 +1061,13 @@ public class MapController extends TickedObject implements IController, Listener
       world = Bukkit.getWorlds().get(0);
     }
 
-    boolean mapViewChanged = view == null || view.getWorld() == null || (world != null && !view.getWorld().equals(world));
+    boolean mapViewChanged = view == null
+        || view.getWorld() == null
+        || (remintOnWorldMismatch && world != null && !view.getWorld().equals(world));
     if (mapViewChanged) {
       if (world != null) {
         meta.setMapView(createView(world, renderer));
+        detachViewPipes(view);
       }
     } else {
       ensureMapRenderer(view, renderer, forceRendererUpdate);
@@ -1312,7 +1327,7 @@ public class MapController extends TickedObject implements IController, Listener
       return;
     }
 
-    if (repairMapMeta(meta, frame.getWorld(), forceRendererUpdate)) {
+    if (repairMapMeta(meta, frame.getWorld(), forceRendererUpdate, true)) {
       item.setItemMeta(meta);
       setFrameItemQuietly(frame, item);
     }
@@ -1949,6 +1964,7 @@ public class MapController extends TickedObject implements IController, Listener
         view.addRenderer(pipe);
         added = true;
         pipeRegistry.put(pipe, view);
+        view.setLocked(true);
       } finally {
         if (!added || !isRendererRuntimeActive(ownerId, pipeRegistry)) {
           detachRendererPipe(view, pipe, pipeRegistry);
@@ -1964,6 +1980,18 @@ public class MapController extends TickedObject implements IController, Listener
     return rendererPipesActive
         && rendererPipeOwnerId == ownerId
         && ownedRendererPipes == pipeRegistry;
+  }
+
+  private void detachViewPipes(MapView view) {
+    if (view == null) {
+      return;
+    }
+
+    for (MapRenderer renderer : new ArrayList<>(view.getRenderers())) {
+      if (renderer instanceof MapRendererPipe pipe) {
+        detachRendererPipe(view, pipe, ownedRendererPipes);
+      }
+    }
   }
 
   private void detachOwnedRendererPipes(Map<MapRendererPipe, MapView> pipeRegistry) {
