@@ -238,12 +238,9 @@ class SamplerEntitiesMovementTest {
   @Test
   void samplerSignaturesReferenceNoPaperOnlyTypes() {
     for (Method method : SamplerEntities.class.getDeclaredMethods()) {
-      Assertions.assertFalse(
-          method.getReturnType().getName().startsWith("io.papermc."),
-          method.toGenericString()
-      );
+      Assertions.assertFalse(paperOnly(method.getReturnType()), method.toGenericString());
       for (Class<?> parameter : method.getParameterTypes()) {
-        Assertions.assertFalse(parameter.getName().startsWith("io.papermc."), method.toGenericString());
+        Assertions.assertFalse(paperOnly(parameter), method.toGenericString());
       }
     }
   }
@@ -289,5 +286,10 @@ class SamplerEntitiesMovementTest {
     Location location = Mockito.spy(new Location(world, chunkX * 16D + 7.5D, 64.0D, chunkZ * 16D + 3.25D));
     Mockito.lenient().when(world.getChunkAt(location)).thenReturn(chunk);
     return location;
+  }
+
+  private static boolean paperOnly(Class<?> type) {
+    String name = type.getName();
+    return name.startsWith("io.papermc.") || name.startsWith("com.destroystokyo.paper.");
   }
 }
