@@ -151,8 +151,57 @@ class RemoteSamplerBridgeTest {
     Assertions.assertEquals(3, logged.size());
   }
 
+  @Test
+  void topLevelSchemaMismatchIsLoggedOnceWhileAGroupAcceptsTheSameKey() {
+    List<String> logged = new ArrayList<>();
+    RemoteSamplerBridge bridge = new RemoteSamplerBridge(logged::add);
+    String key = IntegrationMetricSchema.IRIS_LOADED_CHUNKS;
+    IntegrationMetricDescriptor schema = IntegrationMetricSchema.descriptor(key);
+    IntegrationMetricDescriptor wrongUnit = new IntegrationMetricDescriptor(key, schema.type(), "milliseconds", schema.tags());
+
+    for (int poll = 0; poll < 3; poll++) {
+      bridge.updatePluginSamples("iris", Set.of(key), Map.of(key, sampleOf(wrongUnit)), "missing");
+      bridge.updatePluginGroups("iris", List.of(worldGroupOf("minecraft:overworld", schema)));
+    }
+
+    Assertions.assertEquals(1, logged.size(), logged.toString());
+    Assertions.assertFalse(bridge.isAvailable("iris", key));
+    Assertions.assertNotNull(bridge.getGroup("iris", "world", "minecraft:overworld"));
+  }
+
+  @Test
+  void mismatchedWorldGroupIsLoggedOnceWhileAnotherWorldGroupAcceptsTheSameKey() {
+    List<String> logged = new ArrayList<>();
+    RemoteSamplerBridge bridge = new RemoteSamplerBridge(logged::add);
+    String key = IntegrationMetricSchema.IRIS_LOADED_CHUNKS;
+    IntegrationMetricDescriptor schema = IntegrationMetricSchema.descriptor(key);
+    IntegrationMetricDescriptor wrongUnit = new IntegrationMetricDescriptor(key, schema.type(), "milliseconds", schema.tags());
+
+    for (int poll = 0; poll < 3; poll++) {
+      bridge.updatePluginGroups("iris", List.of(
+          worldGroupOf("minecraft:the_nether", wrongUnit),
+          worldGroupOf("minecraft:overworld", schema)
+      ));
+    }
+
+    Assertions.assertEquals(1, logged.size(), logged.toString());
+    Assertions.assertTrue(logged.getFirst().contains("'milliseconds'"), logged.getFirst());
+    Assertions.assertNull(bridge.getGroup("iris", "world", "minecraft:the_nether"));
+    Assertions.assertNotNull(bridge.getGroup("iris", "world", "minecraft:overworld"));
+  }
+
   private static IntegrationMetricSample sampleOf(IntegrationMetricDescriptor descriptor) {
     return IntegrationMetricSample.available(descriptor, 4D, System.currentTimeMillis());
+  }
+
+  private static IntegrationMetricGroup worldGroupOf(String identity, IntegrationMetricDescriptor descriptor) {
+    return new IntegrationMetricGroup(
+        "world",
+        identity,
+        identity,
+        Map.of("plugin", "iris"),
+        Map.of(descriptor.key(), sampleOf(descriptor))
+    );
   }
 
   private static IntegrationMetricGroup worldGroup(String identity, double loadedChunks, long now) {
