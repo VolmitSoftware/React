@@ -20,12 +20,13 @@
 package art.arcane.react.content.sampler;
 
 import art.arcane.chrono.ChronoLatch;
+import art.arcane.react.React;
 import art.arcane.react.api.sampler.ReactCachedSampler;
+import art.arcane.react.core.controller.ObserverController;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.project.world.WorldEntitySnapshots;
 import art.arcane.volmlib.util.format.Form;
 import com.google.common.util.concurrent.AtomicDouble;
-import io.papermc.paper.event.entity.EntityMoveEvent;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
@@ -61,6 +62,7 @@ public class SamplerEntities extends ReactCachedSampler implements Listener {
   private transient final AtomicInteger entities;
   private transient final Map<UUID, TrackedEntity> trackedEntities;
   private transient ChronoLatch realEntityUpdate;
+  private transient Listener paperMoveListener;
   private transient volatile boolean acceptingEntityEvents;
   private int realityCheckMS = 10000;
 
@@ -90,12 +92,14 @@ public class SamplerEntities extends ReactCachedSampler implements Listener {
     realEntityUpdate = new ChronoLatch(realityCheckMS);
     activeInstance = this;
     acceptingEntityEvents = true;
+    registerPaperMoveListener();
     refreshEntityCount();
   }
 
   @Override
   public void stop() {
     acceptingEntityEvents = false;
+    unregisterPaperMoveListener();
     if (activeInstance == this) {
       activeInstance = null;
     }
@@ -106,15 +110,19 @@ public class SamplerEntities extends ReactCachedSampler implements Listener {
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void on(EntitySpawnEvent e) {
-    track(e.getEntity(), e.getLocation().getChunk());
+    track(e.getEntity(), e.getLocation());
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void on(EntitiesLoadEvent e) {
+    Chunk chunk = e.getChunk();
+    World world = chunk.getWorld();
+    int chunkX = chunk.getX();
+    int chunkZ = chunk.getZ();
     for (Entity entity : e.getEntities()) {
-      track(entity, e.getChunk());
+      track(entity, world, chunkX, chunkZ);
     }
-    WorldEntitySnapshots.markChunkReconciled(e.getChunk());
+    WorldEntitySnapshots.markChunkReconciled(chunk);
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -156,17 +164,12 @@ public class SamplerEntities extends ReactCachedSampler implements Listener {
 
   @EventHandler(priority = EventPriority.MONITOR)
   public void on(PlayerJoinEvent e) {
-    track(e.getPlayer(), e.getPlayer().getLocation().getChunk());
+    track(e.getPlayer(), e.getPlayer().getLocation());
   }
 
   @EventHandler(priority = EventPriority.MONITOR)
   public void on(PlayerQuitEvent e) {
     untrack(e.getPlayer());
-  }
-
-  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-  public void on(EntityMoveEvent e) {
-    move(e.getEntity(), e.getTo());
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -212,18 +215,81 @@ public class SamplerEntities extends ReactCachedSampler implements Listener {
     }
   }
 
+  void move(Entity entity, Location destination) {
+    if (destination == null) {
+      return;
+    }
+    World destinationWorld = destination.getWorld();
+    if (destinationWorld == null) {
+      return;
+    }
+    WorldEntitySnapshots.observe(entity, destinationWorld);
+    if (!acceptingEntityEvents) {
+      EntityCensusTracker.observe(entity);
+      return;
+    }
+
+    UUID entityId = entity.getUniqueId();
+    UUID worldId = destinationWorld.getUID();
+    int chunkX = destination.getBlockX() >> 4;
+    int chunkZ = destination.getBlockZ() >> 4;
+    TrackedEntity existing = trackedEntities.get(entityId);
+    if (existing != null && existing.coordinate().matches(worldId, chunkX, chunkZ)) {
+      return;
+    }
+
+    relocate(entityId, destinationWorld, chunkX, chunkZ, false);
+    EntityCensusTracker.observe(entity);
+  }
+
+  private void registerPaperMoveListener() {
+    if (paperMoveListener != null) {
+      return;
+    }
+
+    String probeFailure = null;
+    try {
+      Class.forName("io.papermc.paper.event.entity.EntityMoveEvent");
+    } catch (Throwable ex) {
+      probeFailure = ex.getClass().getSimpleName();
+    }
+
+    if (probeFailure != null || React.instance == null) {
+      React.verbose("Entity move events unavailable ("
+          + (probeFailure == null ? "no plugin instance" : probeFailure)
+          + "); entity chunk crossings follow the census reconcile pass.");
+      return;
+    }
+
+    paperMoveListener = new SamplerEntitiesPaperMoveListener(this);
+    React.instance.registerListener(paperMoveListener);
+  }
+
+  private void unregisterPaperMoveListener() {
+    Listener listener = paperMoveListener;
+    paperMoveListener = null;
+    if (listener != null && React.instance != null) {
+      React.instance.unregisterListener(listener);
+    }
+  }
+
   private void refreshEntityCount() {
     J.sync(() -> entities.set(countWorldEntities(Bukkit.getWorlds())));
   }
 
-  private void track(Entity entity, Chunk chunk) {
-    WorldEntitySnapshots.observe(entity, chunk.getWorld());
+  private void track(Entity entity, Location location) {
+    World world = location.getWorld();
+    track(entity, world, location.getBlockX() >> 4, location.getBlockZ() >> 4);
+  }
+
+  private void track(Entity entity, World world, int chunkX, int chunkZ) {
+    WorldEntitySnapshots.observe(entity, world);
     EntityCensusTracker.observe(entity);
-    if (!acceptingEntityEvents) {
+    if (!acceptingEntityEvents || world == null) {
       return;
     }
 
-    relocate(entity.getUniqueId(), chunk, true);
+    relocate(entity.getUniqueId(), world, chunkX, chunkZ, true);
   }
 
   private void reconcile(Entity entity, Chunk chunk) {
@@ -231,18 +297,22 @@ public class SamplerEntities extends ReactCachedSampler implements Listener {
       return;
     }
 
-    WorldEntitySnapshots.observe(entity, chunk.getWorld());
-    relocate(entity.getUniqueId(), chunk, false);
+    World world = chunk.getWorld();
+    WorldEntitySnapshots.observe(entity, world);
+    if (world != null) {
+      relocate(entity.getUniqueId(), world, chunk.getX(), chunk.getZ(), false);
+    }
   }
 
-  private void relocate(UUID entityId, Chunk chunk, boolean countNewEntity) {
-    ChunkCoordinate coordinate = ChunkCoordinate.of(chunk);
+  private void relocate(UUID entityId, World world, int chunkX, int chunkZ, boolean countNewEntity) {
+    UUID worldId = world.getUID();
     TrackedEntity existing = trackedEntities.get(entityId);
-    if (existing != null && existing.coordinate().equals(coordinate)) {
+    if (existing != null && existing.coordinate().matches(worldId, chunkX, chunkZ)) {
       return;
     }
 
-    AtomicDouble counter = getChunkCounter(chunk);
+    ChunkCoordinate coordinate = new ChunkCoordinate(worldId, chunkX, chunkZ);
+    AtomicDouble counter = React.controller(ObserverController.class).get(world, chunkX, chunkZ, this);
     trackedEntities.compute(entityId, (ignored, current) -> {
       if (current == null) {
         if (countNewEntity) {
@@ -276,31 +346,6 @@ public class SamplerEntities extends ReactCachedSampler implements Listener {
     }
   }
 
-  private void move(Entity entity, Location destination) {
-    if (destination == null) {
-      return;
-    }
-    World destinationWorld = destination.getWorld();
-    if (destinationWorld != null) {
-      WorldEntitySnapshots.observe(entity, destinationWorld);
-    }
-    if (!acceptingEntityEvents) {
-      EntityCensusTracker.observe(entity);
-      return;
-    }
-
-    UUID entityId = entity.getUniqueId();
-    TrackedEntity existing = trackedEntities.get(entityId);
-    Chunk chunk = destination.getChunk();
-    ChunkCoordinate coordinate = ChunkCoordinate.of(chunk);
-    if (existing != null && existing.coordinate().equals(coordinate)) {
-      return;
-    }
-
-    relocate(entityId, chunk, false);
-    EntityCensusTracker.observe(entity);
-  }
-
   private void clearTrackedBuckets() {
     for (Map.Entry<UUID, TrackedEntity> entry : trackedEntities.entrySet()) {
       if (trackedEntities.remove(entry.getKey(), entry.getValue())) {
@@ -324,8 +369,8 @@ public class SamplerEntities extends ReactCachedSampler implements Listener {
   }
 
   private record ChunkCoordinate(UUID worldId, int chunkX, int chunkZ) {
-    private static ChunkCoordinate of(Chunk chunk) {
-      return new ChunkCoordinate(chunk.getWorld().getUID(), chunk.getX(), chunk.getZ());
+    private boolean matches(UUID otherWorldId, int otherChunkX, int otherChunkZ) {
+      return chunkX == otherChunkX && chunkZ == otherChunkZ && worldId.equals(otherWorldId);
     }
   }
 

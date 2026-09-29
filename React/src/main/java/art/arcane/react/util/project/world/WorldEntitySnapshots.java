@@ -64,14 +64,18 @@ public final class WorldEntitySnapshots {
 
     UUID entityId = entity.getUniqueId();
     UUID worldId = world.getUID();
-    EntityReference replacement = new EntityReference(entityId, worldId, entity);
+    if (isCurrent(ENTITIES_BY_ID.get(entityId), worldId, entity)) {
+      return;
+    }
+
     ENTITIES_BY_ID.compute(entityId, (ignored, existing) -> {
-      if (existing != null && existing.worldId.equals(worldId) && existing.get() == entity) {
+      if (isCurrent(existing, worldId, entity)) {
         return existing;
       }
       if (existing != null) {
         removeFromWorld(existing);
       }
+      EntityReference replacement = new EntityReference(entityId, worldId, entity);
       ENTITIES_BY_WORLD.computeIfAbsent(worldId, ignoredWorld -> new WorldIndex()).add(replacement);
       return replacement;
     });
@@ -300,6 +304,10 @@ public final class WorldEntitySnapshots {
         coordinate.worldId,
         ignored -> new ConcurrentHashMap<>()
     ).put(coordinate, Boolean.TRUE);
+  }
+
+  private static boolean isCurrent(EntityReference reference, UUID worldId, Entity entity) {
+    return reference != null && reference.worldId.equals(worldId) && reference.get() == entity;
   }
 
   private static void removeFromWorld(EntityReference reference) {
