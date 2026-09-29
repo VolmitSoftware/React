@@ -32,6 +32,8 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityBreedEvent;
 import org.bukkit.event.entity.EntitySpawnEvent;
+import org.bukkit.event.entity.SpawnerSpawnEvent;
+import org.bukkit.event.entity.TrialSpawnerSpawnEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 
 import java.util.Map;
@@ -57,7 +59,7 @@ public class TweakEntityHardstop extends ReactTweak implements Listener {
     super(ID);
   }
 
-  @EventHandler
+  @EventHandler(ignoreCancelled = true)
   public void onEntitySpawn(EntitySpawnEvent event) {
     if (event instanceof CreatureSpawnEvent) {
       return;
@@ -70,23 +72,23 @@ public class TweakEntityHardstop extends ReactTweak implements Listener {
     if (spawnProtected(entity.getType(), at)) {
       return;
     }
-    if (!canSpawnEntity(at)) {
+    if (!canSpawnEntity(at, !precedesEntityAdd(event))) {
       event.setCancelled(true);
     }
   }
 
-  @EventHandler
+  @EventHandler(ignoreCancelled = true)
   public void onCreatureSpawn(CreatureSpawnEvent event) {
     Location at = event.getLocation();
     if (spawnProtected(event.getEntityType(), at, event.getSpawnReason())) {
       return;
     }
-    if (!canSpawnEntity(at)) {
+    if (!canSpawnEntity(at, true)) {
       event.setCancelled(true);
     }
   }
 
-  @EventHandler
+  @EventHandler(ignoreCancelled = true)
   public void onPlayerDropItem(PlayerDropItemEvent event) {
     Location at = event.getPlayer().getLocation();
     if (allowItemDrops) {
@@ -95,18 +97,18 @@ public class TweakEntityHardstop extends ReactTweak implements Listener {
     if (spawnProtected(EntityType.ITEM, at)) {
       return;
     }
-    if (!canSpawnEntity(at)) {
+    if (!canSpawnEntity(at, false)) {
       event.setCancelled(true);
     }
   }
 
-  @EventHandler
+  @EventHandler(ignoreCancelled = true)
   public void onEntityBreed(EntityBreedEvent event) {
     Location at = event.getEntity().getLocation();
     if (spawnProtected(event.getEntity().getType(), at)) {
       return;
     }
-    if (!canSpawnEntity(at)) {
+    if (!canSpawnEntity(at, false)) {
       event.setCancelled(true);
     }
   }
@@ -127,7 +129,11 @@ public class TweakEntityHardstop extends ReactTweak implements Listener {
   }
 
 
-  private boolean canSpawnEntity(Location at) {
+  private static boolean precedesEntityAdd(EntitySpawnEvent event) {
+    return event instanceof SpawnerSpawnEvent || event instanceof TrialSpawnerSpawnEvent;
+  }
+
+  private boolean canSpawnEntity(Location at, boolean reserve) {
     World world = at.getWorld();
     if (world == null) {
       return true;
@@ -136,20 +142,26 @@ public class TweakEntityHardstop extends ReactTweak implements Listener {
     int chunkX = at.getBlockX() >> 4;
     int chunkZ = at.getBlockZ() >> 4;
     long currentTime = System.currentTimeMillis();
+    long rejectionWindowMs = Math.max(0L, (long) cacheIntervalTicks * 50L);
     sweepStaleBudgets(currentTime);
     ChunkKey key = new ChunkKey(world.getUID(), chunkKey(chunkX, chunkZ));
     ChunkBudget budget = chunkBudgets.get(key);
-    if (budget == null || budget.isStale(currentTime)) {
-      if (!world.isChunkLoaded(chunkX, chunkZ)) {
-        return true;
-      }
-      budget = new ChunkBudget(
-          countEntities(world.getChunkAt(chunkX, chunkZ)),
-          saturatingAdd(currentTime, COUNT_CACHE_MS)
-      );
-      chunkBudgets.put(key, budget);
+    Admission admission = budget == null || budget.isStale(currentTime)
+        ? Admission.RECOUNT
+        : budget.admit(currentTime, maxEntitiesPerChunk, rejectionWindowMs, reserve);
+    if (admission != Admission.RECOUNT) {
+      return admission == Admission.ADMIT;
     }
-    return budget.admit(currentTime, maxEntitiesPerChunk, Math.max(0L, (long) cacheIntervalTicks * 50L));
+    if (!world.isChunkLoaded(chunkX, chunkZ)) {
+      return true;
+    }
+    Chunk chunk = world.getChunkAt(chunkX, chunkZ, false);
+    if (!chunk.isEntitiesLoaded()) {
+      return true;
+    }
+    ChunkBudget counted = new ChunkBudget(countEntities(chunk), saturatingAdd(currentTime, COUNT_CACHE_MS));
+    chunkBudgets.put(key, counted);
+    return counted.admit(currentTime, maxEntitiesPerChunk, rejectionWindowMs, reserve) == Admission.ADMIT;
   }
 
   private int countEntities(Chunk chunk) {
@@ -178,12 +190,19 @@ public class TweakEntityHardstop extends ReactTweak implements Listener {
     return (long) cx << 32 | (cz & 0xffffffffL);
   }
 
+  private enum Admission {
+    ADMIT,
+    REJECT,
+    RECOUNT
+  }
+
   private record ChunkKey(UUID worldId, long coordinate) {
   }
 
   private static final class ChunkBudget {
     private final long countExpiresAt;
     private int count;
+    private boolean exact = true;
     private long rejectedUntil;
 
     private ChunkBudget(int count, long countExpiresAt) {
@@ -195,16 +214,22 @@ public class TweakEntityHardstop extends ReactTweak implements Listener {
       return currentTime >= countExpiresAt && currentTime >= rejectedUntil;
     }
 
-    private synchronized boolean admit(long currentTime, int maximum, long rejectionWindowMs) {
+    private synchronized Admission admit(long currentTime, int maximum, long rejectionWindowMs, boolean reserve) {
       if (rejectedUntil > currentTime) {
-        return false;
+        return Admission.REJECT;
       }
       if (count >= maximum) {
+        if (!exact) {
+          return Admission.RECOUNT;
+        }
         rejectedUntil = saturatingAdd(currentTime, rejectionWindowMs);
-        return false;
+        return Admission.REJECT;
       }
-      count++;
-      return true;
+      if (reserve) {
+        count++;
+        exact = false;
+      }
+      return Admission.ADMIT;
     }
   }
 
