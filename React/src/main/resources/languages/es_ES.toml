@@ -1810,10 +1810,6 @@ summary = "Intervalo de evaluación principal para el control de onda iris en mi
 impact = "Los valores superiores desencadenan la mitigación más adelante; los valores inferiores disparan antes y con mayor agresión."
 summary = "umbral de la explosión Iris tiempo de generación en el campo iris guardia de emergencia."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregenqueue]
-impact = "Los valores superiores desencadenan la mitigación más adelante; los valores inferiores disparan antes y con mayor agresión."
-summary = "umbral de desencadenante para la cola de pregeno iris en el área de control del terreno iris."
-
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "Valores más altos retrasan la activación o salida; valores inferiores hacen que este umbral sea más fácil de cruzar."
 summary = "Umbral de tiempo tick para disparar en el control de margen del terreno iris (millisecondas)."
@@ -2440,10 +2436,6 @@ summary = "Adapt umbral de carga de sesión que puede desencadenar el manejo de 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enterincidentscore]
 impact = "Los valores superiores desencadenan la mitigación más adelante; los valores inferiores disparan antes y con mayor agresión."
 summary = "umbral de la trinidad para entrar en el marcador del incidente en modo de incidentes."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririsqueue]
-impact = "Los valores más altos aumentan el trabajo amortiguado o la prestación de ráfagas; los valores inferiores se ajustan a la oscilación."
-summary = "Introduzca el límite de cola iris utilizado por modo incidente trinity."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.entertickms]
 impact = "Valores más altos retrasan la activación o salida; valores inferiores hacen que este umbral sea más fácil de cruzar."
@@ -3773,7 +3765,7 @@ fluid = "Tasa de actividad de actualización fluida."
 fluid_event_span = "Tiempo real transcurrido entre la primera y la última llamada de flujo de fluidos de cada tick."
 gc_pause_p95 = "95th percentile basura colección de la pausa duración."
 gc_time_percent = "Porcentaje de tiempo que se dedica a la GC relativo a la hora de correr."
-gloss_animations = "Animaciones de texto actualmente registradas y en ejecución."
+gloss_animations = "Objetivos de texto de holograma animado que el animador controla actualmente."
 gloss_boards = "Barras laterales de marcador mostradas actualmente a los jugadores."
 gloss_bubbles = "Burbujas de chat generadas sobre los jugadores por segundo."
 gloss_display_entities = "Entidades de visualización solo por paquetes registradas para hologramas."

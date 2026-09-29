@@ -1810,10 +1810,6 @@ summary = "Hauptauswertungsintervall für Iris-Geländeüberspannungsschutz in M
 impact = "Höhere Werte lösen später eine Minderung aus, niedrigere Werte früher und aggressiver."
 summary = "Auslöseschwelle für Iris Erzeugungszeit im Iris-Geländeüberspannungsschutz."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregenqueue]
-impact = "Höhere Werte lösen später eine Minderung aus, niedrigere Werte früher und aggressiver."
-summary = "Auslöseschwelle für die Warteschlange der Trigger-Iris-Prägen in der Überspannungssicherung für Irisgelände."
-
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "Höhere Werte verzögern die Aktivierung oder den Ausstieg; niedrigere Werte erleichtern das Überschreiten dieses Schwellenwerts."
 summary = "Tick-Zeitschwelle für den Auslöser im Iris-Geländeüberspannungsschutz (Millisekunden)."
@@ -2440,10 +2436,6 @@ summary = "Adapt Sitzungslastschwelle, die eine Behandlung von Vorfällen im Tri
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enterincidentscore]
 impact = "Höhere Werte lösen später eine Minderung aus, niedrigere Werte früher und aggressiver."
 summary = "Auslöseschwelle für den Eingabe-Incident-Score im Trinity-Incide-Modus."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririsqueue]
-impact = "Höhere Werte erhöhen die gepufferte Arbeit oder den Berstzuschuss; niedrigere Werte verschärfen die Drosselung."
-summary = "Geben Sie den Grenzwert für die Warteschlange für Iris ein, der im Trinity-Incident-Modus verwendet wird."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.entertickms]
 impact = "Höhere Werte verzögern die Aktivierung oder den Ausstieg; niedrigere Werte erleichtern das Überschreiten dieses Schwellenwerts."
@@ -3773,7 +3765,7 @@ fluid = "Aktivitätsrate der flüssigen Aktualisierung."
 fluid_event_span = "Tatsächlich verstrichene Zeit zwischen dem ersten und letzten Flüssigkeitsfluss-Callback jedes Ticks."
 gc_pause_p95 = "95. Perzentil Garbage Collection Pause Dauer."
 gc_time_percent = "Prozentualer Anteil der Zeit, die in GC relativ zur Laufzeit."
-gloss_animations = "Derzeit registrierte und tickende Textanimationen."
+gloss_animations = "Animierte Hologramm-Textziele, die der Animator derzeit steuert."
 gloss_boards = "Derzeit für Spieler gerenderte Scoreboard-Seitenleisten."
 gloss_bubbles = "Pro Sekunde über Spielern erzeugte Chat-Blasen."
 gloss_display_entities = "Für Hologramme registrierte, rein paketbasierte Display-Entitäten."

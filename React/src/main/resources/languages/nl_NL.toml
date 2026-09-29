@@ -1810,10 +1810,6 @@ summary = "Hoofdevaluatie-interval voor de Iris terrein golfbeveiliging in milli
 impact = "Hogere waarden leiden later tot mitigatie; lagere waarden veroorzaken eerder en agressiever."
 summary = "Drempelwaarde voor de toepassing van de drempel Iris generatietijd in de Iris terrein golf guard."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregenqueue]
-impact = "Hogere waarden leiden later tot mitigatie; lagere waarden veroorzaken eerder en agressiever."
-summary = "Triggerdrempel voor trigger iris pregen wachtrij in Iris terrein golfbeveiliging."
-
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "Hogere waarden vertragen activering of uitgang; lagere waarden maken deze drempel gemakkelijker te overschrijden."
 summary = "tick-tijddrempel voor trigger in iris terrein surge guard (milliseconden )."
@@ -2440,10 +2436,6 @@ summary = "Adapt sessiebelastingdrempel die incidentbehandeling in trinity-incid
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enterincidentscore]
 impact = "Hogere waarden leiden later tot mitigatie; lagere waarden veroorzaken eerder en agressiever."
 summary = "Drempelwaarde voor het invoeren van de incidentscore in drie-eenheidsincidentmodus."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririsqueue]
-impact = "Hogere waarden verhogen gebufferd werk of burst toelage; lagere waarden scherpen het strooien."
-summary = "Voer de limiet van de iris wachtrij in die gebruikt wordt door drie-eenheid incident modus."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.entertickms]
 impact = "Hogere waarden vertragen activering of uitgang; lagere waarden maken deze drempel gemakkelijker te overschrijden."
@@ -3773,7 +3765,7 @@ fluid = "Vocht-update activiteitssnelheid."
 fluid_event_span = "Werkelijke tijd van de eerste tot de laatste callback voor vloeistofstroming in elke tick."
 gc_pause_p95 = "95e percentiele afvalverzameling pauze duur."
 gc_time_percent = "Percentage van de tijd besteed aan GC De Commissie heeft de Raad verzocht om een voorstel voor een richtlijn betreffende de onderlinge aanpassing van de wetgevingen der Lid-Staten inzake het toelaatbare geluidsvermogensniveau van motorvoertuigen."
-gloss_animations = "Momenteel geregistreerde en tikkende tekstanimaties."
+gloss_animations = "Geanimeerde hologramtekstdoelen die de animator momenteel aanstuurt."
 gloss_boards = "Scorebord-zijbalken die momenteel aan spelers worden getoond."
 gloss_bubbles = "Chatballonnen die per seconde boven spelers verschijnen."
 gloss_display_entities = "Alleen-pakket display-entiteiten geregistreerd voor hologrammen."

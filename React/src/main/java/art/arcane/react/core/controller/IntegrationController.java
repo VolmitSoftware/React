@@ -519,7 +519,6 @@ public class IntegrationController extends TickedObject implements IController {
   }
 
   private void evaluateThresholds(long now) {
-    double irisQueue = remoteSamplerBridge.valueOr("iris", IntegrationMetricSchema.IRIS_PREGEN_QUEUE, -1D);
     double adaptSessionLoad = remoteSamplerBridge.valueOr("adapt", IntegrationMetricSchema.ADAPT_SESSION_LOAD, -1D);
     double adaptAbilityOps = remoteSamplerBridge.valueOr("adapt", ReactConfiguration.adaptAbilityOpsMetricKey(), -1D);
     double adaptAbilityTimingBudget = remoteSamplerBridge.valueOr(
@@ -530,13 +529,6 @@ public class IntegrationController extends TickedObject implements IController {
     String adaptAbilityOpsMode = ReactConfiguration.adaptAbilityOpsMetricLabel();
     double tickMs = sampleTickMs();
 
-    evaluateThreshold(
-        "iris.queue.high",
-        irisQueue >= 512D,
-        String.format(Locale.ROOT, "Iris pregenerator queue exceeded threshold (%.0f chunks)", irisQueue),
-        String.format(Locale.ROOT, "Iris pregenerator queue recovered (%.0f chunks)", Math.max(0D, irisQueue)),
-        now
-    );
     evaluateThreshold(
         "adapt.session.load.high",
         adaptSessionLoad >= ADAPT_SESSION_LOAD_THRESHOLD,

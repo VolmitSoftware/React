@@ -1810,10 +1810,6 @@ summary = "İris arazisi için genel değerlendirme aralığı milisans'ta bekç
 impact = "Daha sonra daha yüksek değerler, daha erken ve daha agresif bir şekilde tetiklenir."
 summary = "Başlatma eşiği Iris İris arazi dalga koruyucusunda nesil süresi."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregenqueue]
-impact = "Daha sonra daha yüksek değerler, daha erken ve daha agresif bir şekilde tetiklenir."
-summary = "iris arazi dalgalanmasında iris pregen kuyruklarını tetiklemek için teşhir eşi."
-
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "Yüksek değerler aktivasyon veya çıkış geciktirir; daha düşük değerler bu eşi geçmek için bu eşiği kolaylaştırmaktadır."
 summary = "İris tarzı dalga koruma (Milliseconds)'de tetikleme için tik-zaman eşiği."
@@ -2440,10 +2436,6 @@ summary = "Adapt Oturum yükü eşiği, üçlü olay modunda (yüzde) işlem yap
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enterincidentscore]
 impact = "Daha sonra daha yüksek değerler, daha erken ve daha agresif bir şekilde tetiklenir."
 summary = "Üçnity olay modunda olay puanı almak için teşrik eşi."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririsqueue]
-impact = "Yüksek değerler tamponlanmış iş veya patlama ücretini arttırır; daha düşük değerler sert tonlama."
-summary = "trinity olayı modunda kullanılan iris kuyruk sınırı girin."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.entertickms]
 impact = "Yüksek değerler aktivasyon veya çıkış geciktirir; daha düşük değerler bu eşi geçmek için bu eşiği kolaylaştırmaktadır."
@@ -3773,7 +3765,7 @@ fluid = "Akışkanlar etkinlik oranını günceller."
 fluid_event_span = "Her tick’te ilk ve son sıvı akışı geri çağrısı arasında geçen gerçek süre."
 gc_pause_p95 = "Yüzde 95'i çöp toplama süresi."
 gc_time_percent = "Zaman Yüzdesi içinde harcanan zamanın GC Erkeğin hakkı için."
-gloss_animations = "Şu anda kayıtlı ve çalışan metin animasyonları."
+gloss_animations = "Animatörün şu anda yönettiği animasyonlu hologram metin hedefleri."
 gloss_boards = "Şu anda oyunculara gösterilen skorbord yan çubukları."
 gloss_bubbles = "Saniyede oyuncuların üzerinde oluşturulan sohbet baloncukları."
 gloss_display_entities = "Hologramlar için kayıtlı, yalnızca paket tabanlı görüntü varlıkları."

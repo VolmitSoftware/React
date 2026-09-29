@@ -1810,10 +1810,6 @@ summary = "Iris-maaston purkaussuojan arviointiväli millisekunteina."
 impact = "Suuremmat arvot laukaisevat lieventämisen myöhemmin; alemmat arvot laukaisivat aikaisemmin ja aggressiivisemmin."
 summary = "Liikkumiskynnys Iris Sukupolviaika iirismaastossa."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregenqueue]
-impact = "Suuremmat arvot laukaisevat lieventämisen myöhemmin; alemmat arvot laukaisivat aikaisemmin ja aggressiivisemmin."
-summary = "Liipaisinkynnys liipaisimelle iris pregen jonossa maastossa."
-
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "Suuremmat arvot viivästyttävät aktivointia tai poistumista; alemmat arvot helpottavat tämän kynnysarvon ylittämistä."
 summary = "tick-aikaaika käynnistys irisin maantieteellisen virtavartijan (millisekunnissa ):ssä."
@@ -2440,10 +2436,6 @@ summary = "Adapt istuntokuormituskynnys, joka voi laukaista vaaratilanteiden kä
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enterincidentscore]
 impact = "Suuremmat arvot laukaisevat lieventämisen myöhemmin; alemmat arvot laukaisivat aikaisemmin ja aggressiivisemmin."
 summary = "Antakaa pisteet kolmoishäiriötilassa."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririsqueue]
-impact = "Suuremmat arvot lisäävät puskuroitua työtä tai murtumisvaraa; pienemmät arvot kiristävät kuristamista."
-summary = "Anna iris jonotusraja, jota käytetään kolminaisuustapahtumatilassa."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.entertickms]
 impact = "Suuremmat arvot viivästyttävät aktivointia tai poistumista; alemmat arvot helpottavat tämän kynnysarvon ylittämistä."
@@ -3773,7 +3765,7 @@ fluid = "Nesteen päivitysaktiivisuus."
 fluid_event_span = "Todellinen aika kunkin tickin ensimmäisestä viimeisimpään nestevirtauksen takaisinkutsuun."
 gc_pause_p95 = "95. persentiilin roskien keräys tauko."
 gc_time_percent = "Prosenttia ajasta GC - Entä ajoaika?"
-gloss_animations = "Tällä hetkellä rekisteröidyt ja käynnissä olevat tekstianimaatiot."
+gloss_animations = "Animoidut hologrammitekstikohteet, joita animaattori parhaillaan ohjaa."
 gloss_boards = "Pelaajille tällä hetkellä näytettävät tulostaulun sivupalkit."
 gloss_bubbles = "Pelaajien yläpuolelle sekunnissa luodut chat-kuplat."
 gloss_display_entities = "Vain paketteina toteutetut näyttöyhteisöt, jotka on rekisteröity hologrammeille."

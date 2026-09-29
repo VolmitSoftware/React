@@ -1810,10 +1810,6 @@ summary = "מרווח הערכה עיקרי עבור iris שטח עלייה שמ
 impact = "ערכים גבוהים יותר מעוררים הפחתה מאוחר יותר; ערכים נמוכים גורמים מוקדם יותר ויותר אגרסיבי."
 summary = "סף טריגר Iris זמן דור ב-Irisland Area ge Guard"
 
-[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregenqueue]
-impact = "ערכים גבוהים יותר מעוררים הפחתה מאוחר יותר; ערכים נמוכים גורמים מוקדם יותר ויותר אגרסיבי."
-summary = "סף טריגר לסיבוב iris pregen בתור Iris על משטח Iris חיפוי."
-
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "ערכים גבוהים יותר מעכבים הפעלה או יציאה; ערכים נמוכים הופכים את סף זה לקל יותר לחצות."
 summary = "סף זמן טיק לניצול במגוון הגבול של איריס (מילי שניות)."
@@ -2440,10 +2436,6 @@ summary = "Adapt סף עומס ישיבה שיכול לגרום להליך אי�
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enterincidentscore]
 impact = "ערכים גבוהים יותר מעוררים הפחתה מאוחר יותר; ערכים נמוכים גורמים מוקדם יותר ויותר אגרסיבי."
 summary = "סף טריגר להזנת ציון אירוע במצב תקרית השילוש."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririsqueue]
-impact = "ערכים גבוהים יותר מגבירים את העבודה או קצבה מפורצת; ערכים נמוכים יותר מתכווץ."
-summary = "הזן הגבלת תור iris בשימוש על ידי מצב אירוע trinity."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.entertickms]
 impact = "ערכים גבוהים יותר מעכבים הפעלה או יציאה; ערכים נמוכים הופכים את סף זה לקל יותר לחצות."
@@ -3773,7 +3765,7 @@ fluid = "הורדת עלויות פעילות"
 fluid_event_span = "הזמן בפועל מהקריאה הראשונה ועד האחרונה למטפל בזרימת נוזלים בכל טיק."
 gc_pause_p95 = "איסוף הזבל של 95 אחוזה עוצר את משך הזמן."
 gc_time_percent = "עשרות שנים של זמן בילה GC יחסית לריצה."
-gloss_animations = "הנפשות טקסט הרשומות ופועלות כעת."
+gloss_animations = "יעדי טקסט הולוגרמה מונפשים שהאנימטור מפעיל כעת."
 gloss_boards = "סרגלי צד של לוח תוצאות המוצגים כעת לשחקנים."
 gloss_bubbles = "בועות צ'אט הנוצרות מעל שחקנים בשנייה."
 gloss_display_entities = "ישויות תצוגה מבוססות-חבילות בלבד הרשומות להולוגרמות."

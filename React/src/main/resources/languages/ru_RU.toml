@@ -1810,10 +1810,6 @@ summary = "Основной интервал оценки для защиты о
 impact = "Более высокие значения вызывают смягчение позже; более низкие значения запускают раньше и более агрессивно."
 summary = "Триггерный порог для Iris Время генерации в Ирисе, охрана местности."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregenqueue]
-impact = "Более высокие значения вызывают смягчение позже; более низкие значения запускают раньше и более агрессивно."
-summary = "Порог триггера для очереди ириса прегена в охране рельефа радужной оболочки."
-
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "Более высокие значения задерживают активацию или выход; более низкие значения облегчают пересечение этого порога."
 summary = "Сквл-время порог для запуска в ирис террайн приливной охран (миллисекунд )."
@@ -2440,10 +2436,6 @@ summary = "Adapt порог нагрузки сеанса, который мож
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enterincidentscore]
 impact = "Более высокие значения вызывают смягчение позже; более низкие значения запускают раньше и более агрессивно."
 summary = "Порог триггера для входа в балл инцидента в режиме инцидента троицы."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririsqueue]
-impact = "Более высокие значения увеличивают буферную работу или надбавку за разрыв; более низкие значения ужесточают дросселирование."
-summary = "Введите лимит очередей радужной оболочки, используемый режимом инцидента тринити."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.entertickms]
 impact = "Более высокие значения задерживают активацию или выход; более низкие значения облегчают пересечение этого порога."
@@ -3773,7 +3765,7 @@ fluid = "Скорость активности обновления жидкос
 fluid_event_span = "Реальное время от первого до последнего вызова обработчика течения жидкости в каждом тике."
 gc_pause_p95 = "95-й процентильная пауза сбора мусора."
 gc_time_percent = " времени, проведенного в GC относительно времени выполнения."
-gloss_animations = "Текстовые анимации, зарегистрированные и работающие сейчас."
+gloss_animations = "Анимированные текстовые цели голограмм, которыми сейчас управляет аниматор."
 gloss_boards = "Боковые панели скорборда, отображаемые игрокам сейчас."
 gloss_bubbles = "Пузыри чата, появляющиеся над игроками в секунду."
 gloss_display_entities = "Чисто пакетные display-сущности, зарегистрированные для голограмм."

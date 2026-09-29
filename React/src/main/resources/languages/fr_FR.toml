@@ -1810,10 +1810,6 @@ summary = "Intervalle d'évaluation principal pour le dispositif de protection c
 impact = "Les valeurs plus élevées déclenchent l'atténuation plus tard; les valeurs plus faibles déclenchent plus tôt et de façon plus agressive."
 summary = "Seuil de déclenchement pour Iris temps de génération dans le terrain de protection contre les ondes d'iris."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregenqueue]
-impact = "Les valeurs plus élevées déclenchent l'atténuation plus tard; les valeurs plus faibles déclenchent plus tôt et de façon plus agressive."
-summary = "Seuil de déclenchement pour la file d'attente de l'iris pregen dans le dispositif de protection contre les surcharges."
-
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "Des valeurs plus élevées retardent l'activation ou la sortie; des valeurs plus faibles facilitent le franchissement de ce seuil."
 summary = "Térubin de temps tick pour déclencher dans l'iris sur le terrain garde d'urgence (millisecondes)."
@@ -2440,10 +2436,6 @@ summary = "Adapt seuil de charge de session qui peut déclencher la manipulation
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enterincidentscore]
 impact = "Les valeurs plus élevées déclenchent l'atténuation plus tard; les valeurs plus faibles déclenchent plus tôt et de façon plus agressive."
 summary = "Seuil de déclenchement pour saisir le score d'incident en mode incident trinitaire."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririsqueue]
-impact = "Les valeurs plus élevées augmentent le travail tamponné ou l'allocation de rupture; les valeurs plus faibles resserrent le throttling."
-summary = "Saisissez la limite de file d'attente d'iris utilisée par le mode incident trinitaire."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.entertickms]
 impact = "Des valeurs plus élevées retardent l'activation ou la sortie; des valeurs plus faibles facilitent le franchissement de ce seuil."
@@ -3773,7 +3765,7 @@ fluid = "Taux d'activité de mise à jour fluide."
 fluid_event_span = "Temps réel écoulé entre le premier et le dernier rappel d’écoulement de fluide de chaque tick."
 gc_pause_p95 = "Durée de pause de collecte des ordures du 95e centile."
 gc_time_percent = "Pourcentage de temps passé en GC par rapport à l'heure d'exécution."
-gloss_animations = "Animations de texte actuellement enregistrées et actives."
+gloss_animations = "Cibles de texte d'hologramme animé actuellement pilotées par l'animateur."
 gloss_boards = "Barres latérales de score actuellement affichées aux joueurs."
 gloss_bubbles = "Bulles de discussion créées au-dessus des joueurs par seconde."
 gloss_display_entities = "Entités d'affichage en paquets seuls enregistrées pour les hologrammes."

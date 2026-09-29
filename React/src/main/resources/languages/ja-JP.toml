@@ -1810,10 +1810,6 @@ summary = "ミリ秒におけるアイリス地形サージガードの主な評
 impact = "値が高まると、後で軽減されます。値が小さくなり、攻撃的にもより攻撃的になります。"
 summary = "トリガーのしきい値 Iris 耳鼻咽喉科のサージガードで生成時間。"
 
-[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregenqueue]
-impact = "値が高まると、後で軽減されます。値が小さくなり、攻撃的にもより攻撃的になります。"
-summary = "トリガーのイリスのプレジェネリックキューのためのトリガのしきい値 虹彩地サージガード."
-
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "値の遅延が活性化または終了を遅らせる。この閾値が下がるので、その値をクロスしやすいようにします。"
 summary = "虹膜地形の波紋保護 (ミリ秒)で触発するティック時間限界."
@@ -2440,10 +2436,6 @@ summary = "Adapt セッションロードし、三位一体インシデントモ
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enterincidentscore]
 impact = "値が高まると、後で軽減されます。値が小さくなり、攻撃的にもより攻撃的になります。"
 summary = "トリガは、三位一体インシデントモードでインシデンシャルスコアを入力するためのしきい値。"
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririsqueue]
-impact = "バッファワークやバーストの許容値が高まる。低値で回転を締める。"
-summary = "トリニティインシデントモードで使用されるアイリスキュー制限を入力します。"
 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.entertickms]
 impact = "値の遅延が活性化または終了を遅らせる。この閾値が下がるので、その値をクロスしやすいようにします。"
@@ -3773,7 +3765,7 @@ fluid = "液状更新活動率。"
 fluid_event_span = "各ティックの最初から最後の流体フローコールバックまでの実経過時間。"
 gc_pause_p95 = "廃棄物収集の停止期間は、95パーセントです。"
 gc_time_percent = "過ごした時間にパーセント GC 実行時間に相対的に。"
-gloss_animations = "現在登録され動作中のテキストアニメーション数。"
+gloss_animations = "アニメーターが現在駆動しているアニメーション付きホログラムテキストの対象数。"
 gloss_boards = "現在プレイヤーに表示されているスコアボードのサイドバー数。"
 gloss_bubbles = "毎秒プレイヤーの頭上に生成されるチャット吹き出し数。"
 gloss_display_entities = "ホログラム用に登録されたパケット専用ディスプレイエンティティ数。"

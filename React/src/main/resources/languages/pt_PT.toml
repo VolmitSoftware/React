@@ -1810,10 +1810,6 @@ summary = "Intervalo de avaliação principal para proteção contra picos de te
 impact = "Valores mais elevados desencadeiam mitigação posteriormente; valores mais baixos disparam mais cedo e agressivamente."
 summary = "Limite de desencadeamento para Iris tempo de geração em terreno da íris guarda de pico."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregenqueue]
-impact = "Valores mais elevados desencadeiam mitigação posteriormente; valores mais baixos disparam mais cedo e agressivamente."
-summary = "Limite de gatilho para a fila de disparo da íris pré-gen na proteção de picos do terreno da íris."
-
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "Valores mais elevados atrasam a ativação ou saída; valores mais baixos facilitam a passagem desse limiar."
 summary = "Prazo de tempo tick para o gatilho no campo do iris guarda de ondas (millisecondos)."
@@ -2440,10 +2436,6 @@ summary = "Adapt limiar de carga da sessão que pode desencadear o manuseamento 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enterincidentscore]
 impact = "Valores mais elevados desencadeiam mitigação posteriormente; valores mais baixos disparam mais cedo e agressivamente."
 summary = "Limite de gatilho para inserir pontuação incidente no modo incidente trinity."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririsqueue]
-impact = "Valores mais elevados aumentam o trabalho tamponado ou a licença de ruptura; valores mais baixos apertam estrangulamento."
-summary = "Digite o limite de filas da íris usado pelo modo incidente da trindade."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.entertickms]
 impact = "Valores mais elevados atrasam a ativação ou saída; valores mais baixos facilitam a passagem desse limiar."
@@ -3773,7 +3765,7 @@ fluid = "Taxa de actividade da actualização dos fluidos."
 fluid_event_span = "Tempo real entre a primeira e a última chamada de retorno do fluxo de fluidos em cada tick."
 gc_pause_p95 = "95o percentil coleta de lixo duração da pausa."
 gc_time_percent = "Percentagem de tempo gasto em GC relativa ao tempo de execução."
-gloss_animations = "Animações de texto atualmente registadas e em execução."
+gloss_animations = "Alvos de texto de holograma animado que o animador está a controlar atualmente."
 gloss_boards = "Barras laterais de placar atualmente apresentadas aos jogadores."
 gloss_bubbles = "Bolhas de chat criadas sobre os jogadores por segundo."
 gloss_display_entities = "Entidades de exibição apenas por pacotes registadas para hologramas."

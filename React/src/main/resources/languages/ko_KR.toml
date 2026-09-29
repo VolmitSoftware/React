@@ -1810,10 +1810,6 @@ summary = "iris terrain 서지 가드에 대한 주요 평가 간격."
 impact = "더 높은 값 트리거는 나중에 완화; 더 낮은 가치 트리거 이전과 더욱 적극적인."
 summary = "Trigger 임계 값 Iris 아이리스 지형 서지 가드의 세대 시간."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregenqueue]
-impact = "더 높은 값 트리거는 나중에 완화; 더 낮은 가치 트리거 이전과 더욱 적극적인."
-summary = "방아쇠를 위한 방아쇠 iris pregen queues in 아이리스 지형 큰 파도 감시."
-
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "높은 값 지연 활성화 또는 출구; 낮은 값은이 문턱을 쉽게 교차합니다."
 summary = "IRIS 지형 돌파구 보호 (밀리초 )에서 트리거를 위한 틱 시간 임대."
@@ -2440,10 +2436,6 @@ summary = "Adapt 트리니티 사건 모드(percent)에서 사고 처리할 수 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enterincidentscore]
 impact = "더 높은 값 트리거는 나중에 완화; 더 낮은 가치 트리거 이전과 더욱 적극적인."
 summary = "트리니티 사건 모드에서의 사고 점수를 입력하는 방적 임계 값."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririsqueue]
-impact = "더 높은 가치 증가 버퍼 작업 또는 파열 수당; 낮은 값은 throttling을 바짝 죄."
-summary = "trinity 사건 형태에 의해 이용된 iris queue 한계를 입력하십시오."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.entertickms]
 impact = "높은 값 지연 활성화 또는 출구; 낮은 값은이 문턱을 쉽게 교차합니다."
@@ -3773,7 +3765,7 @@ fluid = "유체 업데이트 활동률."
 fluid_event_span = "각 틱의 첫 유체 흐름 콜백부터 마지막 콜백까지의 실제 경과 시간."
 gc_pause_p95 = "95 의 쓰레기 수집 일시 중지 기간."
 gc_time_percent = "시간에 소요되는 시간의 퍼센트 GC runtime에 관계되는."
-gloss_animations = "현재 등록되어 동작 중인 텍스트 애니메이션."
+gloss_animations = "애니메이터가 현재 구동 중인 애니메이션 홀로그램 텍스트 대상."
 gloss_boards = "현재 플레이어에게 표시되는 스코어보드 사이드바."
 gloss_bubbles = "초당 플레이어 위에 생성되는 채팅 말풍선."
 gloss_display_entities = "홀로그램용으로 등록된 패킷 전용 디스플레이 엔티티."

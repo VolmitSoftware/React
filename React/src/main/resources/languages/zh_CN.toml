@@ -1810,10 +1810,6 @@ summary = "Iris 地形负载突增保护的主要评估间隔（毫秒）。"
 impact = "较高的数值会引发以后的缓解;较低的数值会更早和更剧烈地触发."
 summary = "触发阈值 Iris 虹膜地形突袭守卫中的时间"
 
-[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregenqueue]
-impact = "较高的数值会引发以后的缓解;较低的数值会更早和更剧烈地触发."
-summary = "Iris 地形负载突增保护中 Iris 预生成队列的触发阈值。"
-
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "更高的值延迟激活或退出;较低的值使得这个阈值更容易跨越."
 summary = "在虹膜地形冲击保护 (千秒)中触发的游戏刻时间门."
@@ -2440,10 +2436,6 @@ summary = "Adapt 能够触发三一事件模式下事件处理的会话负载阈
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enterincidentscore]
 impact = "较高的数值会引发以后的缓解;较低的数值会更早和更剧烈地触发."
 summary = "三一事件模式下进入事件分数的触发阈值."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririsqueue]
-impact = "较高的数值增加了缓冲工作或破裂的备抵;较低的数值收紧了节奏。"
-summary = "输入三一事件模式使用的虹膜队列限制."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.entertickms]
 impact = "更高的值延迟激活或退出;较低的值使得这个阈值更容易跨越."
@@ -3773,7 +3765,7 @@ fluid = "流体更新活动率."
 fluid_event_span = "每刻内从首次到最近一次流体流动回调的实际经过时间。"
 gc_pause_p95 = "垃圾收集第95百分位暂停时间。"
 gc_time_percent = "占所花时间的百分比 GC 相对运行时间。"
-gloss_animations = "当前已注册并正在运行的文本动画数。"
+gloss_animations = "动画器当前驱动的动画全息文字目标数。"
 gloss_boards = "当前向玩家显示的计分板侧边栏数。"
 gloss_bubbles = "每秒在玩家头顶生成的聊天气泡数。"
 gloss_display_entities = "为全息图注册的纯数据包展示实体数。"

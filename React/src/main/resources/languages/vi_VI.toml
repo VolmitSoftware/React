@@ -1810,10 +1810,6 @@ summary = "Khoảng đánh giá chính cho việc tăng cường địa hình ll
 impact = "Các giá trị cao hơn kích hoạt giảm nhẹ sau đó; các giá trị thấp hơn kích hoạt sớm hơn và tích cực hơn."
 summary = "Ngưỡng kích hoạt Iris Thời gian ở địa hình Iris tăng cường bảo vệ."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregenqueue]
-impact = "Các giá trị cao hơn kích hoạt giảm nhẹ sau đó; các giá trị thấp hơn kích hoạt sớm hơn và tích cực hơn."
-summary = "Ép buộc ngưỡng cho việc gây ra hàng đợi tiền sử của Iris trong khu vực tăng cường địa hình."
-
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "Giá trị cao hơn trì hoãn hoạt động hoặc thoát; giá trị thấp hơn làm cho ngưỡng này dễ dàng vượt qua."
 summary = "tick-Thời gian cho kích hoạt trong địa hình tăng cường bảo vệ (mili giây)."
@@ -2440,10 +2436,6 @@ summary = "Adapt ngưỡng nạp phiên chạy có thể gây ra sự cố xử 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enterincidentscore]
 impact = "Các giá trị cao hơn kích hoạt giảm nhẹ sau đó; các giá trị thấp hơn kích hoạt sớm hơn và tích cực hơn."
 summary = "Kích hoạt ngưỡng để nhập điểm trong chế độ biến cố ba chiều."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririsqueue]
-impact = "Giá trị cao hơn tăng làm việc đệm hoặc cung cấp bùng nổ; giá trị thấp hơn thắt chặt throtling."
-summary = "Nhập giới hạn hàng đợi Iris được dùng bởi chế độ sự kiện ba chiều."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.entertickms]
 impact = "Giá trị cao hơn trì hoãn hoạt động hoặc thoát; giá trị thấp hơn làm cho ngưỡng này dễ dàng vượt qua."
@@ -3773,7 +3765,7 @@ fluid = "Tốc độ cập nhật dịch chảy."
 fluid_event_span = "Thời gian thực từ lần gọi xử lý dòng chất lỏng đầu tiên đến lần mới nhất trong mỗi tick."
 gc_pause_p95 = "Số lượng rác thải dừng lại trong khoảng thời gian 95 phần trăm."
 gc_time_percent = "Phần trăm thời gian dành cho việc này GC so với thời gian chạy."
-gloss_animations = "Số hoạt ảnh văn bản hiện đã đăng ký và đang chạy."
+gloss_animations = "Số mục tiêu văn bản hologram động mà trình hoạt ảnh đang điều khiển."
 gloss_boards = "Số thanh bên bảng điểm hiện đang hiển thị cho người chơi."
 gloss_bubbles = "Số bong bóng trò chuyện xuất hiện phía trên người chơi mỗi giây."
 gloss_display_entities = "Các thực thể hiển thị chỉ bằng gói tin được đăng ký cho ảnh ba chiều."
