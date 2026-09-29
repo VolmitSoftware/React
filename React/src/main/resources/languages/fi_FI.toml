@@ -1101,11 +1101,11 @@ impact = "Pidempi kesto estää ongelmallista komponenttia kauemmin; lyhyempi yr
 summary = "Piirin rajoituksen kesto millisekunteina."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward]
-description = "Kun chunk siirtyy nukkuvasta (-pelaajasta pitkästä ajalta):n aktiiviseen (player -ohjelmaan tai chunk-ladattu ):een, tämä ominaisuus kulkee kasvien ja siemenen blokkeja kerran ja edistää niiden kasvua suhteessa nukkuvan ajan kestöön, jotta pelaajat eivät näe jäätyneitä maataloita palaamisen jälkeen. Se pysyy inaktiivisena suurten kuormitusten aikana."
+description = "Crop Fast Forward -ominaisuuden asetukset. Palvelin kasvattaa viljelykasveja vain chunkeissa, jotka ovat pelaajan simulaatioetäisyyden sisällä, joten tämä ominaisuus kirjaa, kuinka kauan kukin ladattu chunk viettää tämän etäisyyden ulkopuolella. Kun pelaaja palaa aktiiviselle alueelle, ominaisuus käy chunkin viljelykasvi- ja taimipalikat läpi kerran ja kasvattaa niitä tämän ajan verran, jotta pelaajat eivät näe jäätyneitä viljelmiä palatessaan. Odottava kasvu hylätään, kun chunk poistetaan muistista. Pysyy passiivisena raskaan kuormituksen häiriöiden aikana."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.activerange]
-impact = "Suurimmat arvot siirtyvät nopeammin chunkit:n aikaisempaan; pienemmät arvot lykkäävät, kunnes pelaajat tulevat lähemmäksi."
-summary = "Pelaajan läheisyysalue (blocks), joka luokittelee chunk:n aktiiviseksi. Tässä alueella on nukkumaton seuranta uudelleenasetukset ja kaikki odotettavissa olevat nopeat tulot."
+impact = "Suuremmat arvot kasvattavat kauempana olevia chunkeja aiemmin; pienemmät arvot odottavat, kunnes pelaajat tulevat lähemmäs."
+summary = "Pelaajan etäisyys (palikoina) chunkin keskisarakkeesta, jolla sen odottava pikakelaus otetaan käyttöön. Chunkin aktiivisuus määräytyy maailman simulaatioetäisyyden mukaan."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.engageonincident]
 impact = "Suuremmat arvot pitävät pikakelauksen käynnissä valoon liittyvien tapahtumien aikana; alemmat arvot vaientavat sen aikaisemmin."
@@ -1128,8 +1128,8 @@ impact = "Korkeammat arvot kattavat enemmän maastoa, jossa on enemmän muistia;
 summary = "chunkit-versio on jäljennetty kaikkiin maailmoihin ennen vanhimman chunkit-version poistamista."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.minelapsedticks]
-impact = "Korkeammat arvot ohittavat halpoja viime aikojen valvojaisia; alemmat arvot pikakelaavat jopa lyhyitä asuntolan venyttelyjä."
-summary = "(ticks):n väliaikainen virta on vähintään yksi, mutta se toimii nopeammin."
+impact = "Suuremmat arvot ohittavat lyhyet poissaolot; pienemmät arvot pikakelaavat myös lyhyet jaksot simulaatioetäisyyden ulkopuolella."
+summary = "Vähimmäisaika (tickeinä), jonka chunkin on oltava simulaatioetäisyyden ulkopuolella ennen pikakelausta. Lyhyemmät poissaolot ohitetaan."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.releaseonincident]
 impact = "Korkeammat arvot palaavat nopeammin hiljaisena; alemmat arvot pitävät nopeamman pois vakautta."

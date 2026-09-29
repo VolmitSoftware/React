@@ -1101,11 +1101,11 @@ impact = "持续时间越长，抑制问题组件的时间越久；持续时间�
 summary = "电路限制的持续时间（毫秒）。"
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward]
-description = "配置用于快速前进功能.当一个区块从休眠的(没有附近播放器长时间)转移到活跃的(player接近或区块重新加载)时,这个功能一次进行作物和树苗块走动并以与休眠持续时间相对比例的数量推进它们的生长,以便玩家在返回后不会看到结农场.高负荷事件期间保持不活跃."
+description = "Crop Fast Forward 功能的配置。服务器只会在玩家模拟距离内的区块中生长作物，因此该功能会记录每个已加载区块在该距离之外停留的时间。当玩家回到活动范围内时，它会遍历一次该区块的作物和树苗方块，并按这段时间推进它们的生长，使玩家返回时不会看到停滞的农场。区块卸载时会丢弃待处理的生长。在高负载事件期间保持不活动。"
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.activerange]
-impact = "较大的值更早地向前走 区块;较小的值延迟到玩家走近."
-summary = "玩家近距离范围 (blocks),将区块分类为活跃. 在这个范围内,休眠的追踪重置和任何正在待发的快速前进火灾."
+impact = "较大的值会更早地对更远的区块应用待处理的生长；较小的值会等到玩家走近。"
+summary = "应用区块待处理快进时，玩家与区块中心列之间的距离(方块)。区块是否活动则由世界的模拟距离决定。"
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.engageonincident]
 impact = "较高的值在光照事件期间保持快速前进;较低的值能更快地使光照消音."
@@ -1128,8 +1128,8 @@ impact = "较高的值覆盖了更多带有较多内存的地形;较低的值交
 summary = "在最古老的区块被追踪之前,在所有世界都会追踪最高区块."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.minelapsedticks]
-impact = "较高的数值跳过廉价的最近醒悟;较低的数值快速向前甚至短暂的宿舍拉伸."
-summary = "在警钟启动之前,(ticks)的最小休眠时间快速前进.在此下,区块被视为仍然热."
+impact = "较高的值会跳过短暂的离开；较低的值即使在模拟距离外只停留很短时间也会快进。"
+summary = "区块在被快进之前必须处于模拟距离之外的最短时间(tick)。更短的离开时间会被忽略。"
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.releaseonincident]
 impact = "较高的数值在平静下来后会更快恢复;较低的数值为稳定而持续的时间更长。"

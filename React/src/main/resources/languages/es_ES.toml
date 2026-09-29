@@ -1101,11 +1101,11 @@ impact = "Las duraciones mayores suprimen más tiempo un componente problemátic
 summary = "Duración de la limitación de un circuito en milisegundos."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward]
-description = "Configuración para la función Crop Fast Forward. Cuando un chunk pasa de ( inactivos en ningún jugador cercano durante un largo tramo) a (player activo acercado o chunk recargado), esta característica camina los bloques de cultivo y sable una vez y avanza su crecimiento por una cantidad proporcional a la duración inactivas para que los jugadores no vean granjas congeladas después de regresar. permanece inactivo durante incidentes de alta carga."
+description = "Configuración de la función Crop Fast Forward. El servidor solo hace crecer los cultivos en chunks dentro de la distancia de simulación de un jugador, así que esta función registra cuánto tiempo pasa cada chunk cargado fuera de esa distancia. Cuando un jugador vuelve al rango activo, recorre una vez los bloques de cultivos y brotes del chunk y adelanta su crecimiento ese tiempo, para que los jugadores no vean granjas congeladas al volver. El crecimiento pendiente se descarta cuando un chunk se descarga. Permanece inactiva durante incidentes de carga alta."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.activerange]
-impact = "Los valores más grandes avanzan rápidamente hacia adelante con chunks antes; los valores más pequeños se posponen hasta que los jugadores caminan más cerca."
-summary = "Intervalo de proximidad del jugador (blocks) que clasifica un chunk como activo. Dentro de este rango, los reset de seguimiento latente y cualquier incendio rápido en espera."
+impact = "Los valores mayores aplican antes el crecimiento pendiente a chunks más lejanos; los menores esperan a que los jugadores se acerquen."
+summary = "Distancia del jugador (bloques) a la columna central de un chunk a partir de la cual se aplica su avance pendiente. Si un chunk está activo depende de la distancia de simulación del mundo."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.engageonincident]
 impact = "Los valores superiores siguen corriendo rápidamente durante los incidentes de luz; los valores inferiores lo silencian antes."
@@ -1128,8 +1128,8 @@ impact = "Los valores más altos cubren más terreno con mayor memoria; menor va
 summary = "El máximo de chunks rastreado en todos los mundos antes de que el chunks más antiguo rastreado sea desalojado."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.minelapsedticks]
-impact = "Valores más altos saltan los recientes veloces velas; valores inferiores rápidos incluso breves estiramientos de la dorencia."
-summary = "Duración mínima latencia (ticks) antes de que una activación se active rápido hacia adelante."
+impact = "Los valores mayores omiten ausencias breves; los menores adelantan incluso periodos cortos fuera de la distancia de simulación."
+summary = "Tiempo mínimo (ticks) que un chunk debe pasar fuera de la distancia de simulación antes de adelantarse. Las ausencias más cortas se ignoran."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.releaseonincident]
 impact = "Los valores superiores se reanudarán antes después de un silencio; los valores inferiores mantienen más rápido para la estabilidad."

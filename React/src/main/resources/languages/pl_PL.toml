@@ -1101,11 +1101,11 @@ impact = "Dłuższy czas dłużej tłumi problematyczny komponent; krótszy wcze
 summary = "Czas ograniczenia obwodu w milisekundach."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward]
-description = "Konfiguracja funkcji Crop Fast Forward. Kiedy chunk przechodzi z nieścisłego (no odtwarzacza w pobliżu przez długi czas) do aktywnego (playera zbliżony lub chunk ponownie ładowany), ta funkcja przejeżdża bloki upraw i pęcherzy raz i rozwija ich wzrost proporcjonalnie do czasu trwania spania, aby gracze nie widzieli zamrożonych gospodarstw po powrocie. Pozostaje niesprawione podczas incydentów o wysokim obciążeniu."
+description = "Konfiguracja funkcji Crop Fast Forward. Serwer rozwija uprawy tylko w chunkach znajdujących się w odległości symulacji gracza, dlatego ta funkcja zapisuje, jak długo każdy załadowany chunk przebywa poza tą odległością. Gdy gracz wróci w aktywny zasięg, funkcja raz przechodzi przez bloki upraw i sadzonek w chunku i przyspiesza ich wzrost o ten czas, aby gracze po powrocie nie widzieli zamrożonych farm. Oczekujący wzrost jest odrzucany, gdy chunk zostanie wyładowany. Pozostaje nieaktywna podczas incydentów wysokiego obciążenia."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.activerange]
-impact = "Większe wartości szybko przechodzą dalej niż chunki wcześniej; mniejsze wartości odbywają się, dopóki gracze nie zbliżą się."
-summary = "Odpowiedź: W ramach programu \"System\" funkcjonuje system chunk, który jest aktywny."
+impact = "Większe wartości wcześniej stosują oczekujący wzrost do dalszych chunków; mniejsze czekają, aż gracze podejdą bliżej."
+summary = "Odległość gracza (w blokach) od środkowej kolumny chunka, przy której stosowane jest jego oczekujące przyspieszenie. O aktywności chunka decyduje odległość symulacji świata."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.engageonincident]
 impact = "Wyższe wartości utrzymują bieg w kierunku wstecznym podczas zdarzeń świetlnych; niższe wartości uciszają je wcześniej."
@@ -1128,8 +1128,8 @@ impact = "Wyższe wartości obejmują więcej terenu z większą pamięcią; ni�
 summary = "Maksymalny chunki śledziony na wszystkich światach przed najstarszym śledzonym chunki są wywiezione."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.minelapsedticks]
-impact = "Wyższe wartości pomijają tanie ostatnie budzenie; niższe wartości fast- forward nawet krótkie rozciąganie w uśpionym."
-summary = "Minimalny czas spania (ticks) przed wywołaniem budzenia szybkie w przód. poniżej tego chunk jest traktowany jako wciąż ciepły."
+impact = "Wyższe wartości pomijają krótkie nieobecności; niższe przyspieszają nawet krótkie okresy poza odległością symulacji."
+summary = "Minimalny czas (w tickach), jaki chunk musi spędzić poza odległością symulacji, zanim zostanie przyspieszony. Krótsze nieobecności są pomijane."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.releaseonincident]
 impact = "Wyższe wartości powracają szybciej po wyciszeniu; niższe wartości utrzymują się do przodu dłużej dla stabilności."

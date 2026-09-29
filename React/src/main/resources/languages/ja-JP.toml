@@ -1101,11 +1101,11 @@ impact = "時間を長くすると問題のある構成要素を長く抑制し�
 summary = "回路スロットルの継続時間（ミリ秒）。"
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward]
-description = "作物の速いフォワードの特徴のための構成. いつか チャンク ドーマントからの移行 (長いストレッチのための近くのプレーヤー無し) アクティブに (プレーヤーのアプローチまたは チャンク 再積載), この機能は、クロップと苗木を一度歩き、一定期間に比例した金額で成長を進めます。そのため、プレイヤーは戻ってから冷凍農場が見られません. 高負荷事故時に不アクティブに滞在."
+description = "Crop Fast Forward 機能の設定です。サーバーはプレイヤーのシミュレーション距離内のチャンクでのみ作物を成長させるため、この機能は読み込まれた各チャンクがその距離の外にあった時間を記録します。プレイヤーがアクティブ範囲に戻ると、チャンク内の作物と苗木のブロックを一度走査し、その時間分だけ成長を進めるので、プレイヤーは戻ったときに止まったままの農場を見ずに済みます。チャンクがアンロードされると保留中の成長は破棄されます。高負荷インシデント中は動作しません。"
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.activerange]
-impact = "大きい値は チャンク より早く前進する.小さい値はプレイヤーは近づくまで遅延します."
-summary = "プレイヤーの近距離範囲 (blocks)で チャンク をアクティブに分類します.この範囲内で,眠っている追跡リセットおよび待機中の高速前進ファイアが表示されます."
+impact = "値を大きくすると遠くのチャンクにも早く保留中の成長を適用し、小さくするとプレイヤーが近づくまで待ちます。"
+summary = "保留中の早送りを適用する、チャンク中心の列からのプレイヤー距離 (ブロック) です。チャンクがアクティブかどうかはワールドのシミュレーション距離で決まります。"
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.engageonincident]
 impact = "より高値な値は、光のインシデント中に高速で実行されます。値を下げると、すぐに消音します。"
@@ -1128,8 +1128,8 @@ impact = "よりメモリを持つより多くの地形をカバーする高値�
 summary = "最も古いチャンクが 追い出された前に 世界中でも チャンクを最大限に追跡する."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.minelapsedticks]
-impact = "値が安い最近のウェイクをスキップします。低速の値は、短い休眠ストレッチでさえも高速に上昇します。"
-summary = "警告が起動する前に最小の休眠時間 (ticks).以下では,チャンクはまだ暖かいと処理されます."
+impact = "値を大きくすると短い不在を無視し、小さくするとシミュレーション距離外の短い期間でも早送りします。"
+summary = "チャンクが早送りされるまでにシミュレーション距離の外で過ごす必要がある最短時間 (tick) です。これより短い不在は無視されます。"
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.releaseonincident]
 impact = "より高く評価は静け直後に再開します;低値が安定性のためにより長い断続的にオフを保持します。"

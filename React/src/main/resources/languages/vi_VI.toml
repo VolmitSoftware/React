@@ -1101,11 +1101,11 @@ impact = "Thời gian dài hơn chặn thành phần có vấn đề lâu hơn; 
 summary = "Thời gian giới hạn mạch, tính bằng mili giây."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward]
-description = "Tính năng Crop Fast Forward: Khi một trình điều chỉnh chunk chuyển từ ( không có người chơi gần đó trong thời gian dài) đến (player hoạt động tiếp cận hoặc chunk reloaded), tính năng này đi bộ các khối cây trồng và cây cối một lần và thúc đẩy sự tăng trưởng của chúng tương xứng với thời gian ngủ để người chơi không thấy nông trại đông lạnh sau khi trở lại."
+description = "Cấu hình cho tính năng Crop Fast Forward. Máy chủ chỉ cho cây trồng phát triển trong các chunk nằm trong khoảng cách mô phỏng của người chơi, vì vậy tính năng này ghi lại thời gian mỗi chunk đã tải nằm ngoài khoảng cách đó. Khi người chơi quay lại phạm vi hoạt động, nó duyệt các khối cây trồng và cây non của chunk một lần và cho chúng phát triển thêm tương ứng với thời gian đó, để người chơi không thấy nông trại bị đứng yên khi quay lại. Phần tăng trưởng đang chờ bị hủy khi chunk được dỡ tải. Không hoạt động trong các sự cố tải cao."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.activerange]
-impact = "Các giá trị lớn hơn nhanh chóng tiến về phía trước các chunk sớm hơn; các giá trị nhỏ hơn trì hoãn cho đến khi người chơi bước gần hơn."
-summary = "Player proximity range (blocks) phân loại chunk như hoạt động. Trong phạm vi này, cài đặt lại theo dõi đang ngủ và bất kỳ lửa nhanh nào đang chờ đợi."
+impact = "Giá trị lớn hơn áp dụng tăng trưởng đang chờ cho các chunk xa hơn sớm hơn; giá trị nhỏ hơn chờ tới khi người chơi đến gần hơn."
+summary = "Khoảng cách từ người chơi (tính bằng khối) tới cột trung tâm của chunk mà tại đó phần tua nhanh đang chờ được áp dụng. Việc chunk có hoạt động hay không phụ thuộc vào khoảng cách mô phỏng của thế giới."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.engageonincident]
 impact = "Giá trị cao hơn giữ chạy nhanh trong các sự kiện ánh sáng; giá trị thấp hơn im lặng nó sớm hơn."
@@ -1128,8 +1128,8 @@ impact = "Giá trị cao hơn bao gồm nhiều địa hình với nhiều bộ 
 summary = "các chunk tối đa được theo dõi trên tất cả thế giới trước khi các các chunk lâu đời nhất được theo dõi bị loại bỏ."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.minelapsedticks]
-impact = "Giá trị cao hơn bỏ qua những thức tỉnh rẻ tiền gần đây; giá trị thấp hơn nhanh hơn thậm chí kéo dài ngắn ký túc xá."
-summary = "Thời gian ngủ tối thiểu (ticks) trước khi một thức tỉnh kích hoạt nhanh chóng."
+impact = "Giá trị cao hơn bỏ qua các lần vắng mặt ngắn; giá trị thấp hơn tua nhanh cả những khoảng ngắn ngoài khoảng cách mô phỏng."
+summary = "Thời gian tối thiểu (tính bằng tick) mà chunk phải ở ngoài khoảng cách mô phỏng trước khi được tua nhanh. Các lần vắng mặt ngắn hơn bị bỏ qua."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.releaseonincident]
 impact = "Giá trị cao hơn tiếp tục sớm hơn sau khi một yên tĩnh; giá trị thấp hơn giữ nhanh chóng tua dài hơn cho sự ổn định."

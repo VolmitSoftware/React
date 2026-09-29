@@ -57,7 +57,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 
-@ConfigDescription("Configuration for Crop Fast Forward feature. When a chunk transitions from dormant (no nearby player for a long stretch) to active (player approached or chunk reloaded), this feature walks crop and sapling blocks once and advances their growth by an amount proportional to the dormant duration so players do not see frozen farms after returning. Stays inactive during high-load incidents.")
+@ConfigDescription("Configuration for Crop Fast Forward feature. The server grows crops only in chunks within a player's simulation distance, so this feature records how long each loaded chunk spends outside that distance. When a player comes back within the active range, it walks the chunk's crop and sapling blocks once and advances their growth by that time, so players do not see frozen farms after returning. Pending growth is discarded when a chunk unloads. Stays inactive during high-load incidents.")
 public class FeatureCropFastForward extends ReactFeature implements Listener {
   public static final String ID = "crop-fast-forward";
   private static final int MIN_SAMPLED_Y = -64;
@@ -67,9 +67,9 @@ public class FeatureCropFastForward extends ReactFeature implements Listener {
 
   @ConfigDoc(value = "Main evaluation interval for crop fast forward in milliseconds.", impact = "Lower values check dormant chunks more often and react quicker; higher values reduce overhead.")
   private int tickIntervalMS = 2500;
-  @ConfigDoc(value = "Player proximity range (blocks) that classifies a chunk as active. Within this range, dormant tracking resets and any pending fast-forward fires.", impact = "Larger values fast-forward farther chunks earlier; smaller values defer until players walk closer.")
+  @ConfigDoc(value = "Player distance (blocks) from a chunk's center column at which its pending fast-forward is applied. Chunk activity itself follows the world's simulation distance.", impact = "Larger values apply pending growth to farther chunks sooner; smaller values wait until players walk closer.")
   private int activeRange = 64;
-  @ConfigDoc(value = "Minimum dormant duration (ticks) before a wake triggers fast-forward. Below this, the chunk is treated as still warm.", impact = "Higher values skip cheap recent wakes; lower values fast-forward even brief dormancy stretches.")
+  @ConfigDoc(value = "Minimum time (ticks) a chunk must spend outside simulation distance before it fast-forwards. Shorter absences are ignored.", impact = "Higher values skip brief absences; lower values fast-forward even short stretches outside simulation distance.")
   private int minElapsedTicks = 200;
   @ConfigDoc(value = "Maximum dormant ticks fed into the growth math. Caps runaway fast-forwards after extended absence.", impact = "Higher values allow more catch-up but compress more vanilla growth into one pass; lower values clamp the wake correction.")
   private int maxFastForwardTicks = 24000;
