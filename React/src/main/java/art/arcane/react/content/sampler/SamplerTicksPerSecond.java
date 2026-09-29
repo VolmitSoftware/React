@@ -19,38 +19,34 @@
 
 package art.arcane.react.content.sampler;
 
-import art.arcane.react.api.sampler.ReactTickedSampler;
-import art.arcane.react.util.common.scheduling.J;
+import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Material;
 
-import java.util.concurrent.atomic.AtomicLong;
-
-public class SamplerTicksPerSecond extends ReactTickedSampler {
+public class SamplerTicksPerSecond extends ReactCachedSampler {
   public static final String ID = "ticks-per-second";
-  private transient final AtomicLong lastTick;
-  private transient final AtomicLong lastTickDuration;
-  private transient final AtomicLong lastTickDurationSync;
-  private transient int syncTaskId;
+  private final transient TickClock clock;
   private int countUpTickTimeThresholdMS = 3000;
 
   public SamplerTicksPerSecond() {
-    super(ID, 50, 7);
-    this.lastTickDuration = new AtomicLong(50);
-    this.lastTickDurationSync = new AtomicLong(50);
-    this.lastTick = new AtomicLong(System.currentTimeMillis());
-    this.syncTaskId = -1;
+    this(TickClock.get());
+  }
+
+  SamplerTicksPerSecond(TickClock clock) {
+    super(ID, 250);
+    this.clock = clock;
   }
 
   @Override
   public void start() {
+    clock.acquire(this);
     super.start();
-    if (syncTaskId < 0) {
-      lastTick.set(System.currentTimeMillis());
-      lastTickDuration.set(50L);
-      lastTickDurationSync.set(50L);
-      syncTaskId = J.sr(this::onSyncTick, 0);
-    }
+  }
+
+  @Override
+  public void stop() {
+    clock.release(this);
+    super.stop();
   }
 
   @Override
@@ -58,31 +54,21 @@ public class SamplerTicksPerSecond extends ReactTickedSampler {
     return Material.NAUTILUS_SHELL;
   }
 
-  private void onSyncTick() {
-    onSyncTick(System.currentTimeMillis());
-  }
-
-  void onSyncTick(long now) {
-    long previousTick = lastTick.getAndSet(now);
-    lastTickDurationSync.set(Math.max(0L, now - previousTick));
+  @Override
+  public boolean isSampleAvailable() {
+    return clock.snapshot().hasTicks();
   }
 
   @Override
   public double onSample() {
-    return onSample(System.currentTimeMillis());
-  }
-
-  double onSample(long now) {
-    lastTickDuration.set(Math.max(0L, now - lastTick.get()));
-    return 1000D / Math.max(50D, Math.max((double) lastTickDuration.get(), (double) lastTickDurationSync.get()));
+    return clock.snapshot().ticksPerSecond(System.nanoTime());
   }
 
   @Override
   public String formattedValue(double t) {
-    long dur = System.currentTimeMillis() - lastTick.get();
-
-    if (dur > Math.max(1, countUpTickTimeThresholdMS)) {
-      return Form.durationSplit(dur, 1)[0];
+    double sinceLastTickMS = clock.millisSinceLastTick(System.nanoTime());
+    if (sinceLastTickMS > Math.max(1, countUpTickTimeThresholdMS)) {
+      return Form.durationSplit(sinceLastTickMS, 1)[0];
     }
 
     if (t > 19.98) {
@@ -94,21 +80,11 @@ public class SamplerTicksPerSecond extends ReactTickedSampler {
 
   @Override
   public String formattedSuffix(double t) {
-    long dur = System.currentTimeMillis() - lastTick.get();
-
-    if (dur > Math.max(1, countUpTickTimeThresholdMS)) {
-      return Form.durationSplit(dur, 1)[1];
+    double sinceLastTickMS = clock.millisSinceLastTick(System.nanoTime());
+    if (sinceLastTickMS > Math.max(1, countUpTickTimeThresholdMS)) {
+      return Form.durationSplit(sinceLastTickMS, 1)[1];
     }
 
     return "TPS";
-  }
-
-  @Override
-  public void unregister() {
-    if (syncTaskId >= 0) {
-      J.csr(syncTaskId);
-      syncTaskId = -1;
-    }
-    super.unregister();
   }
 }

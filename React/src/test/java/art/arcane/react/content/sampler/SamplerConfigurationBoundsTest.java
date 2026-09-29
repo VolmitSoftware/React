@@ -1,6 +1,5 @@
 package art.arcane.react.content.sampler;
 
-import art.arcane.react.api.event.layer.ServerTickEvent;
 import art.arcane.react.api.sampler.ReactCachedRateSampler;
 import art.arcane.volmlib.util.math.RollingSequence;
 import org.bukkit.Material;
@@ -8,7 +7,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
-import java.util.ArrayDeque;
 
 class SamplerConfigurationBoundsTest {
   @Test
@@ -39,23 +37,28 @@ class SamplerConfigurationBoundsTest {
   }
 
   @Test
-  void percentileSamplerClampsHistoryAndClearsItOnRestart() throws ReflectiveOperationException {
-    SamplerTickMsP95 sampler = new SamplerTickMsP95();
+  void percentileSamplerClampsHistoryAndResetsWithTheClock() throws ReflectiveOperationException {
+    TickClock clock = new TickClock(() -> null);
+    SamplerTickPercentileBase sampler = new SamplerTickPercentileBase("test-p95", 0.95D, "ms P95", clock) {
+    };
     setInt(SamplerTickPercentileBase.class, sampler, "historyTicks", -1);
     sampler.start();
-    setLong(SamplerTickPercentileBase.class, sampler, "lastTickMS", System.currentTimeMillis() - 50L);
 
-    sampler.on(new ServerTickEvent());
-    setLong(SamplerTickPercentileBase.class, sampler, "lastTickMS", System.currentTimeMillis() - 50L);
-    sampler.on(new ServerTickEvent());
+    long base = 10_000_000_000L;
+    clock.tick(base);
+    clock.tick(base + 10_000_000L);
+    clock.tick(base + 100_000_000L);
+    clock.tick(base + 350_000_000L);
 
-    ArrayDeque<?> history = (ArrayDeque<?>) get(SamplerTickPercentileBase.class, sampler, "tickDurations");
-    Assertions.assertEquals(1, history.size());
+    Assertions.assertTrue(sampler.isSampleAvailable());
+    Assertions.assertEquals(250D, sampler.onSample(), 1.0E-9D);
+    Assertions.assertEquals("ms P95 GAP", sampler.formattedSuffix(250D));
 
     sampler.stop();
     sampler.start();
 
-    Assertions.assertTrue(history.isEmpty());
+    Assertions.assertFalse(sampler.isSampleAvailable());
+    Assertions.assertEquals(0D, sampler.onSample(), 1.0E-9D);
   }
 
   private static Object get(Class<?> owner, Object target, String name) throws ReflectiveOperationException {
@@ -68,12 +71,6 @@ class SamplerConfigurationBoundsTest {
     Field field = owner.getDeclaredField(name);
     field.setAccessible(true);
     field.setInt(target, value);
-  }
-
-  private static void setLong(Class<?> owner, Object target, String name, long value) throws ReflectiveOperationException {
-    Field field = owner.getDeclaredField(name);
-    field.setAccessible(true);
-    field.setLong(target, value);
   }
 
   private static final class TestRateSampler extends ReactCachedRateSampler {
