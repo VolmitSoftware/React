@@ -327,12 +327,6 @@ public class FeaturePortalTrafficSmoother extends ReactFeature implements Listen
       CompletableFuture<Boolean> traversal,
       Runnable completion
   ) {
-    if (traversal == null) {
-      completion.run();
-      React.reportError(new IllegalStateException("Portal teleportAsync returned no completion future."));
-      return;
-    }
-
     traversal.whenComplete((ignored, failure) -> {
       try {
         if (failure != null) {

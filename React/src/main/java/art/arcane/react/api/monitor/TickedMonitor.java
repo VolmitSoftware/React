@@ -27,7 +27,6 @@ import art.arcane.react.util.math.ApproachingValue;
 import art.arcane.volmlib.util.math.M;
 import lombok.Getter;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -108,7 +107,7 @@ public abstract class TickedMonitor extends TickedObject implements Monitor {
       return;
     }
 
-    for (Sampler i : new ArrayList<>(changers.keySet())) {
+    for (Sampler i : changers.keySet()) {
       changers.put(i, M.lerp(getChanger(i), 0, 0.1));
     }
 
