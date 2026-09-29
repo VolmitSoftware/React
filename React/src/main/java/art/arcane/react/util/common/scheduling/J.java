@@ -17,7 +17,6 @@
 
 package art.arcane.react.util.common.scheduling;
 
-import art.arcane.multiburst.MultiBurst;
 import art.arcane.react.React;
 import art.arcane.react.core.controller.JobController;
 import art.arcane.volmlib.util.function.NastyFunction;
@@ -78,11 +77,11 @@ public class J {
   }
 
   public static void a(Runnable a) {
-    MultiBurst.burst.lazy(a);
+    ReactExecutors.async().execute(a);
   }
 
   public static <T> Future<T> a(Callable<T> a) {
-    return MultiBurst.burst.lazySubmit(a);
+    return ReactExecutors.async().submit(a);
   }
 
   public static void attemptAsync(NastyRunnable r) {

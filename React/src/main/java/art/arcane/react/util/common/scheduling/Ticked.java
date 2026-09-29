@@ -61,6 +61,10 @@ public interface Ticked {
   String getTid();
 
   default boolean shouldTick() {
-    return M.ms() - getTlastTick() > getTinterval();
+    return isTickDue(M.ms(), getTlastTick(), getTinterval());
+  }
+
+  static boolean isTickDue(long now, long lastTick, long interval) {
+    return now - lastTick >= interval;
   }
 }

@@ -20,10 +20,7 @@
 package art.arcane.react.util.common.scheduling;
 
 
-import art.arcane.chrono.PrecisionStopwatch;
 import art.arcane.chrono.RollingSequence;
-import art.arcane.multiburst.BurstExecutor;
-import art.arcane.multiburst.MultiBurst;
 import art.arcane.react.React;
 import art.arcane.react.api.feature.Feature;
 import art.arcane.react.api.feature.ReactTickedFeature;
@@ -35,19 +32,25 @@ import art.arcane.react.core.controller.HotloadController;
 import art.arcane.react.core.controller.TweakController;
 import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.model.ReactPlayer;
-import art.arcane.volmlib.util.collection.KList;
 import art.arcane.volmlib.util.scheduling.Looper;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class Ticker {
+  private static final long TICK_MS = 50L;
   private static final long SLOW_TICK_WARN_THRESHOLD_MS = 50L;
   private static final double SLOW_TICK_MSPT_IMPACT_THRESHOLD_MS = 50D;
   private static final long SLOW_TICK_RECENCY_WINDOW_MS = 30_000L;
@@ -57,62 +60,40 @@ public class Ticker {
   private static final long[] FOLIA_BACKOFF_STEPS_MS = new long[]{0L, 1000L, 5000L, 15000L, 60000L};
   private static final long CLOSE_DRAIN_TIMEOUT_MS = 1000L;
   private static final long CLOSE_JOIN_TIMEOUT_MS = 250L;
-  private final KList<Ticked> ticklist;
-  private final KList<Ticked> newTicks;
-  private final KList<String> removeTicks;
+  private final Executor tickExecutor;
+  private final List<TickEntry> ticklist;
+  private final List<Ticked> newTicks;
+  private final List<String> removeTicks;
   private final Object tickChangeLock;
   private final Object executionLock;
   private final Set<Thread> executionThreads;
   private final RollingSequence tasksPerSecond;
   private final RollingSequence tickTime;
+  private final AtomicLong executionNanos;
   private final Looper looper;
-  private final Map<String, SlowTickStats> slowTickStats;
   private final Map<String, SlowTickLogState> slowTickLogStates;
   private final Map<String, FoliaViolationState> foliaViolationStates;
-  private volatile boolean ticking;
   private volatile boolean closed;
   private int activeExecutions;
 
-  public Ticker() {
+  public Ticker(Executor tickExecutor) {
+    this.tickExecutor = tickExecutor;
     this.closed = false;
-    this.ticklist = new KList<>(4096);
-    this.newTicks = new KList<>(128);
-    this.removeTicks = new KList<>(128);
+    this.ticklist = new ArrayList<>(4096);
+    this.newTicks = new ArrayList<>(128);
+    this.removeTicks = new ArrayList<>(128);
     this.tickChangeLock = new Object();
     this.executionLock = new Object();
     this.executionThreads = new HashSet<>();
-    tasksPerSecond = new RollingSequence(20);
-    tickTime = new RollingSequence(10);
-    slowTickStats = new ConcurrentHashMap<>();
-    slowTickLogStates = new ConcurrentHashMap<>();
-    foliaViolationStates = new ConcurrentHashMap<>();
-    ticking = false;
-    looper = new Looper() {
-      PrecisionStopwatch p = PrecisionStopwatch.start();
-      int tps = 0;
-      int tv = 0;
+    this.tasksPerSecond = new RollingSequence(20);
+    this.tickTime = new RollingSequence(10);
+    this.executionNanos = new AtomicLong();
+    this.slowTickLogStates = new ConcurrentHashMap<>();
+    this.foliaViolationStates = new ConcurrentHashMap<>();
+    this.looper = new TickLoop();
+  }
 
-      @Override
-      protected long loop() {
-        if (closed) {
-          return -1;
-        }
-
-        if (!ticking) {
-          p = PrecisionStopwatch.start();
-          tps += tick();
-          tickTime.put(p.getMilliseconds());
-          tv++;
-          if (tv >= 20) {
-            tv = 0;
-            tasksPerSecond.put(tps);
-            tps = 0;
-          }
-        }
-
-        return 50;
-      }
-    };
+  public void start() {
     looper.start();
   }
 
@@ -187,100 +168,100 @@ public class Ticker {
   }
 
   public void clear() {
-    synchronized (ticklist) {
-      ticklist.clear();
-    }
     synchronized (tickChangeLock) {
+      ticklist.clear();
       removeTicks.clear();
       newTicks.clear();
     }
-    slowTickStats.clear();
     slowTickLogStates.clear();
     foliaViolationStates.clear();
-
   }
 
-  private int tick() {
-    ticking = true;
+  static long nextDelayMS(long elapsedMS) {
+    return Math.max(0L, TICK_MS - elapsedMS);
+  }
+
+  int tick() {
     if (closed) {
-      ticking = false;
       return 0;
     }
 
-    int ix = ticklist.size();
-    if (ix > 0) {
-      BurstExecutor e = MultiBurst.burst.burst(ix);
-      for (int i = 0; i < ix; i++) {
-        Ticked ticked = ticklist.get(i);
-        if (ticked == null || !ticked.shouldTick()) {
-          continue;
-        }
-
-        e.queue(() -> executeTick(ticked));
-      }
-      try {
-        e.complete();
-      } catch (Throwable throwable) {
-        if (isInterruptedFailure(throwable) || closed) {
-          Thread.currentThread().interrupt();
-          ticking = false;
-          return ix;
-        }
-
-        throw new RuntimeException("Ticker burst execution failed", throwable);
-      }
-    }
-
     synchronized (tickChangeLock) {
-      while (removeTicks.isNotEmpty()) {
-        removeTickById(removeTicks.remove(0));
+      int size = ticklist.size();
+      for (int i = 0; i < size; i++) {
+        dispatch(ticklist.get(i));
       }
-      while (!newTicks.isEmpty()) {
-        Ticked ticked = newTicks.remove(0);
-        if (ticked == null) {
-          continue;
-        }
 
-        if (containsTickId(ticked.getTid())) {
-          continue;
-        }
-
-        ticklist.add(ticked);
-      }
+      applyPendingChanges();
+      return size;
     }
-
-    ticking = false;
-    return ix;
   }
 
-  private void executeTick(Ticked ticked) {
+  private void dispatch(TickEntry entry) {
+    if (!entry.ticked.shouldTick() || !entry.inFlight.compareAndSet(false, true)) {
+      return;
+    }
+
+    try {
+      tickExecutor.execute(entry);
+    } catch (RejectedExecutionException rejected) {
+      entry.inFlight.set(false);
+      if (!closed) {
+        throw new IllegalStateException("Ticker dispatch rejected for " + describeTicked(entry.ticked), rejected);
+      }
+    }
+  }
+
+  private void applyPendingChanges() {
+    while (!removeTicks.isEmpty()) {
+      removeTickById(removeTicks.remove(0));
+    }
+    while (!newTicks.isEmpty()) {
+      Ticked ticked = newTicks.remove(0);
+      if (ticked == null || containsTickId(ticked.getTid())) {
+        continue;
+      }
+
+      ticklist.add(new TickEntry(ticked));
+    }
+  }
+
+  private double drainExecutionMillis() {
+    return executionNanos.getAndSet(0L) / 1_000_000D;
+  }
+
+  private void executeTick(TickEntry entry) {
     if (!beginExecution()) {
       return;
     }
 
     try {
-      executeActiveTick(ticked);
+      executeActiveTick(entry);
     } finally {
       endExecution();
     }
   }
 
-  private void executeActiveTick(Ticked ticked) {
-    if (shouldBackoffTick(ticked)) {
+  private void executeActiveTick(TickEntry entry) {
+    if (shouldBackoffTick(entry)) {
       return;
     }
 
+    Ticked ticked = entry.ticked;
     try {
       long start = System.nanoTime();
       ticked.tick();
-      clearFoliaViolation(ticked);
-      long elapsedMS = (System.nanoTime() - start) / 1_000_000L;
-      boolean slow = elapsedMS > SLOW_TICK_WARN_THRESHOLD_MS;
-      SlowTickSnapshot snapshot = recordSlowTick(ticked, elapsedMS, slow);
-      if (slow) {
-        warnSlowTick(ticked, elapsedMS, snapshot);
+      long elapsedNanos = System.nanoTime() - start;
+      executionNanos.addAndGet(elapsedNanos);
+      clearFoliaViolation(entry);
+      long elapsedMS = elapsedNanos / 1_000_000L;
+      if (elapsedMS > SLOW_TICK_WARN_THRESHOLD_MS) {
+        warnSlowTick(ticked, elapsedMS, entry.stats.recordSlow(System.currentTimeMillis(), elapsedMS));
       } else {
-        clearSlowTickLogState(ticked);
+        entry.stats.recordFast();
+        if (!slowTickLogStates.isEmpty()) {
+          slowTickLogStates.remove(entry.key);
+        }
       }
     } catch (Throwable exxx) {
       if (closed || React.instance == null || !React.instance.isReady()) {
@@ -288,7 +269,7 @@ public class Ticker {
       }
 
       if (J.isThreadOwnershipViolation(exxx)) {
-        handleFoliaViolation(ticked, exxx);
+        handleFoliaViolation(entry, exxx);
         return;
       }
 
@@ -380,12 +361,12 @@ public class Ticker {
     }
   }
 
-  private boolean shouldBackoffTick(Ticked ticked) {
-    if (ticked == null || !J.isFoliaThreading()) {
+  private boolean shouldBackoffTick(TickEntry entry) {
+    if (foliaViolationStates.isEmpty() || !J.isFoliaThreading()) {
       return false;
     }
 
-    FoliaViolationState state = foliaViolationStates.get(slowTickKey(ticked));
+    FoliaViolationState state = foliaViolationStates.get(entry.key);
     if (state == null) {
       return false;
     }
@@ -393,21 +374,17 @@ public class Ticker {
     return state.isBackoffActive(System.currentTimeMillis());
   }
 
-  private void clearFoliaViolation(Ticked ticked) {
-    if (ticked == null) {
+  private void clearFoliaViolation(TickEntry entry) {
+    if (foliaViolationStates.isEmpty()) {
       return;
     }
 
-    foliaViolationStates.remove(slowTickKey(ticked));
+    foliaViolationStates.remove(entry.key);
   }
 
-  private void handleFoliaViolation(Ticked ticked, Throwable throwable) {
-    if (ticked == null) {
-      return;
-    }
-
-    String key = slowTickKey(ticked);
-    FoliaViolationState state = foliaViolationStates.computeIfAbsent(key, ignored -> new FoliaViolationState());
+  private void handleFoliaViolation(TickEntry entry, Throwable throwable) {
+    Ticked ticked = entry.ticked;
+    FoliaViolationState state = foliaViolationStates.computeIfAbsent(entry.key, ignored -> new FoliaViolationState());
     FoliaViolationSnapshot snapshot = state.record(System.currentTimeMillis());
 
     if (!snapshot.shouldLog) {
@@ -602,7 +579,7 @@ public class Ticker {
     if (lower.startsWith("adapt ")) {
       return "Adapt";
     }
-    if (lower.startsWith("chunk generation/load")) {
+    if (lower.startsWith("chunk load listener")) {
       return "Minecraft";
     }
     if (lower.startsWith("react ")) {
@@ -688,12 +665,6 @@ public class Ticker {
     }
 
     return "Context: executing scheduled task id=" + tid + " class=" + ticked.getClass().getSimpleName() + ".";
-  }
-
-  private SlowTickSnapshot recordSlowTick(Ticked ticked, long elapsedMS, boolean slow) {
-    String key = slowTickKey(ticked);
-    SlowTickStats stats = slowTickStats.computeIfAbsent(key, ignored -> new SlowTickStats());
-    return stats.record(System.currentTimeMillis(), elapsedMS, slow);
   }
 
   private String slowTickKey(Ticked ticked) {
@@ -857,14 +828,14 @@ public class Ticker {
       );
     }
 
-    double chunkGenMs = sampleSampler("chunk-gen-ms", -1D);
-    double chunkLoadMs = sampleSampler("chunk-load-ms", -1D);
+    double chunkGenMs = sampleSampler("chunk-gen-listener-ms", -1D);
+    double chunkLoadMs = sampleSampler("chunk-load-listener-ms", -1D);
     if (chunkGenMs >= 8D || chunkLoadMs >= 8D) {
       return String.format(
           Locale.ROOT,
-          "Chunk generation/load pressure (gen=%.1fms, load=%.1fms)",
-          Math.max(0D, chunkGenMs),
-          Math.max(0D, chunkLoadMs)
+          "Chunk load listener pressure (load=%.1fms, gen=%.1fms)",
+          Math.max(0D, chunkLoadMs),
+          Math.max(0D, chunkGenMs)
       );
     }
 
@@ -1057,7 +1028,7 @@ public class Ticker {
     }
 
     for (int i = 0; i < ticklist.size(); i++) {
-      if (id.equals(ticklist.get(i).getTid())) {
+      if (id.equals(ticklist.get(i).ticked.getTid())) {
         return true;
       }
     }
@@ -1071,8 +1042,60 @@ public class Ticker {
     }
 
     for (int i = ticklist.size() - 1; i >= 0; i--) {
-      if (id.equals(ticklist.get(i).getTid())) {
-        ticklist.remove(i);
+      TickEntry entry = ticklist.get(i);
+      if (!id.equals(entry.ticked.getTid())) {
+        continue;
+      }
+
+      ticklist.remove(i);
+      slowTickLogStates.remove(entry.key);
+      foliaViolationStates.remove(entry.key);
+    }
+  }
+
+  private final class TickLoop extends Looper {
+    private int tps;
+    private int tv;
+
+    @Override
+    protected long loop() {
+      if (closed) {
+        return -1L;
+      }
+
+      long start = System.nanoTime();
+      tps += tick();
+      tickTime.put(drainExecutionMillis());
+      tv++;
+      if (tv >= 20) {
+        tv = 0;
+        tasksPerSecond.put(tps);
+        tps = 0;
+      }
+
+      return nextDelayMS((System.nanoTime() - start) / 1_000_000L);
+    }
+  }
+
+  private final class TickEntry implements Runnable {
+    private final Ticked ticked;
+    private final String key;
+    private final SlowTickStats stats;
+    private final AtomicBoolean inFlight;
+
+    private TickEntry(Ticked ticked) {
+      this.ticked = ticked;
+      this.key = slowTickKey(ticked);
+      this.stats = new SlowTickStats();
+      this.inFlight = new AtomicBoolean(false);
+    }
+
+    @Override
+    public void run() {
+      try {
+        executeTick(this);
+      } finally {
+        inFlight.set(false);
       }
     }
   }
@@ -1112,20 +1135,19 @@ public class Ticker {
     private long totalSlowMS;
     private long maxSlowMS;
 
-    private synchronized SlowTickSnapshot record(long nowMS, long elapsedMS, boolean slow) {
+    private synchronized void recordFast() {
       runs++;
-      prune(nowMS);
+      consecutiveSlowRuns = 0L;
+    }
 
-      if (slow) {
-        slowRuns++;
-        consecutiveSlowRuns++;
-        totalSlowMS += elapsedMS;
-        maxSlowMS = Math.max(maxSlowMS, elapsedMS);
-        recentSlowMS.addLast(nowMS);
-        prune(nowMS);
-      } else {
-        consecutiveSlowRuns = 0L;
-      }
+    private synchronized SlowTickSnapshot recordSlow(long nowMS, long elapsedMS) {
+      runs++;
+      slowRuns++;
+      consecutiveSlowRuns++;
+      totalSlowMS += elapsedMS;
+      maxSlowMS = Math.max(maxSlowMS, elapsedMS);
+      recentSlowMS.addLast(nowMS);
+      prune(nowMS);
 
       double average = slowRuns <= 0L ? 0D : (double) totalSlowMS / (double) slowRuns;
       return new SlowTickSnapshot(

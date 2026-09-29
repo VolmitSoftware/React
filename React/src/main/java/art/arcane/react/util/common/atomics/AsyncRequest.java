@@ -19,7 +19,7 @@
 
 package art.arcane.react.util.atomics;
 
-import art.arcane.react.React;
+import art.arcane.react.util.common.scheduling.J;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -39,7 +39,7 @@ public class AsyncRequest<T> {
   public synchronized T request() {
     if (!active.get()) {
       active.set(true);
-      React.burst.lazy(() -> {
+      J.a(() -> {
         try {
           value.set(supplier.get());
         } finally {

@@ -35,9 +35,11 @@ class TickerCloseLifecycleTest {
       return null;
     }).when(ticked).tick();
 
-    Ticker ticker = new Ticker();
+    ReactExecutors executors = ReactExecutors.create();
+    Ticker ticker = new Ticker(executors.tickPool());
     CompletableFuture<Void> closing = null;
     try {
+      ticker.start();
       ticker.register(ticked);
       assertTrue(started.await(2, TimeUnit.SECONDS));
 
@@ -53,6 +55,7 @@ class TickerCloseLifecycleTest {
       if (closing == null || !closing.isDone()) {
         ticker.close();
       }
+      executors.close();
     }
   }
 }

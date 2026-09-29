@@ -162,7 +162,6 @@ dependencies {
         transitive = false
     }
     slim('com.github.VolmitDev:Curse:23.4.3')
-    slim('com.github.VolmitDev:MultiBurst:22.9.2')
     slim('com.github.VolmitDev:Chrono:22.9.10')
     slim('com.github.VolmitDev:Spatial:22.11.1')
     slim('com.moandjiezana.toml:toml4j:0.7.2')
@@ -239,7 +238,6 @@ slimJar {
     ]
     relocate('art.arcane.chrono', "${lib}.chrono")
     relocate('art.arcane.curse', "${lib}.curse")
-    relocate('art.arcane.multiburst', "${lib}.multiburst")
     relocate('net.bytebuddy', "${lib}.bytebuddy")
     // bStats refuses to enable unless its classes are relocated out of org.bstats
     relocate('org.bstats', "${lib}.bstats")
@@ -286,7 +284,6 @@ tasks.named('shadowJar', ShadowJar).configure {
     relocate('io.github.slimjar', "${lib}.slimjar")
     relocate('art.arcane.chrono', "${lib}.chrono")
     relocate('art.arcane.curse', "${lib}.curse")
-    relocate('art.arcane.multiburst', "${lib}.multiburst")
     relocate('art.arcane.volmlib', "${lib}.volmlib")
     relocate('net.bytebuddy', "${lib}.bytebuddy")
     // Rewrites React's own org.bstats references to match the slimjar runtime relocation
@@ -352,7 +349,6 @@ pluginPackaging {
                 'net.bytebuddy': "${lib}.bytebuddy",
                 'art.arcane.chrono': "${lib}.chrono",
                 'art.arcane.curse': "${lib}.curse",
-                'art.arcane.multiburst': "${lib}.multiburst",
                 'org.bstats': "${lib}.bstats",
                 'org.slf4j': "${lib}.slf4j"
             ]

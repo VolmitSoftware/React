@@ -212,11 +212,6 @@ public class ReactPlayer extends TickedObject {
 
 
   @Override
-  public boolean shouldTick() {
-    return isTickDue(System.currentTimeMillis(), getTlastTick(), getTinterval());
-  }
-
-  @Override
   public void onTick() {
     if (!running) {
       return;
@@ -240,10 +235,6 @@ public class ReactPlayer extends TickedObject {
     if (saveLatch.flip()) {
       saveSettings();
     }
-  }
-
-  static boolean isTickDue(long now, long lastTick, long interval) {
-    return now - lastTick >= interval;
   }
 
   static boolean shouldUseInactiveRate(long now, long lastActive, long interval) {
