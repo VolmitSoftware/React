@@ -1,10 +1,10 @@
 package art.arcane.react.model;
 
-import art.arcane.volmlib.util.math.BlockPosition;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -19,8 +19,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class CircuitWorldTest {
   @Test
   void oneCallbackCountsAsOneEvent() {
-    CircuitWorld world = new CircuitWorld("world-id", "world");
-    world.event(new BlockPosition(0, 64, 0), 1000L);
+    CircuitWorld world = new CircuitWorld(UUID.randomUUID(), "world");
+    world.event(0, 64, 0, 1000L);
     world.rollWindow(1500L, 15000L);
 
     CircuitSnapshot worst = world.worst(1500L);
@@ -33,12 +33,12 @@ public class CircuitWorldTest {
 
   @Test
   void bridgeEventFullyMergesAdjacentComponents() {
-    CircuitWorld world = new CircuitWorld("world-id", "world");
-    world.event(new BlockPosition(0, 64, 0), 1000L);
-    world.event(new BlockPosition(2, 64, 0), 1001L);
+    CircuitWorld world = new CircuitWorld(UUID.randomUUID(), "world");
+    world.event(0, 64, 0, 1000L);
+    world.event(2, 64, 0, 1001L);
     assertEquals(2, world.countCircuits());
 
-    world.event(new BlockPosition(1, 64, 0), 1002L);
+    world.event(1, 64, 0, 1002L);
     world.rollWindow(1500L, 15000L);
 
     assertEquals(1, world.countCircuits());
@@ -49,12 +49,12 @@ public class CircuitWorldTest {
 
   @Test
   void removingBridgeSplitsDisconnectedComponents() {
-    CircuitWorld world = new CircuitWorld("world-id", "world");
-    world.event(new BlockPosition(0, 64, 0), 1000L);
-    world.event(new BlockPosition(1, 64, 0), 1001L);
-    world.event(new BlockPosition(2, 64, 0), 1002L);
+    CircuitWorld world = new CircuitWorld(UUID.randomUUID(), "world");
+    world.event(0, 64, 0, 1000L);
+    world.event(1, 64, 0, 1001L);
+    world.event(2, 64, 0, 1002L);
 
-    world.remove(new BlockPosition(1, 64, 0), 1100L);
+    world.remove(1, 64, 0, 1100L);
 
     assertEquals(2, world.countCircuits());
     assertEquals(2, world.countBlocks());
@@ -63,8 +63,8 @@ public class CircuitWorldTest {
 
   @Test
   void expirationRemovesTopologyDeterministically() {
-    CircuitWorld world = new CircuitWorld("world-id", "world");
-    world.event(new BlockPosition(0, 64, 0), 1000L);
+    CircuitWorld world = new CircuitWorld(UUID.randomUUID(), "world");
+    world.event(0, 64, 0, 1000L);
 
     world.rollWindow(17001L, 15000L);
 
@@ -76,8 +76,8 @@ public class CircuitWorldTest {
 
   @Test
   void throttleHasBoundedRecovery() {
-    CircuitWorld world = new CircuitWorld("world-id", "world");
-    world.event(new BlockPosition(0, 64, 0), 1000L);
+    CircuitWorld world = new CircuitWorld(UUID.randomUUID(), "world");
+    world.event(0, 64, 0, 1000L);
     world.rollWindow(1500L, 15000L);
     CircuitSnapshot candidate = world.worst(1500L);
 
@@ -85,14 +85,14 @@ public class CircuitWorldTest {
 
     assertNotNull(throttled);
     assertNull(world.worst(2000L));
-    world.event(new BlockPosition(0, 64, 0), 2000L);
+    world.event(0, 64, 0, 2000L);
     world.rollWindow(12000L, 15000L);
     assertFalse(world.worst(12000L) == null);
   }
 
   @Test
   void concurrentRegionActivityPreservesIndexes() throws Exception {
-    CircuitWorld world = new CircuitWorld("world-id", "world");
+    CircuitWorld world = new CircuitWorld(UUID.randomUUID(), "world");
     int workers = 4;
     int eventsPerWorker = 250;
     ExecutorService executor = Executors.newFixedThreadPool(workers);
@@ -106,7 +106,7 @@ public class CircuitWorldTest {
         try {
           start.await();
           for (int index = 0; index < eventsPerWorker; index++) {
-            world.event(new BlockPosition(offset + index, 64, 0), 1000L + index);
+            world.event(offset + index, 64, 0, 1000L + index);
           }
         } catch (InterruptedException failure) {
           Thread.currentThread().interrupt();
