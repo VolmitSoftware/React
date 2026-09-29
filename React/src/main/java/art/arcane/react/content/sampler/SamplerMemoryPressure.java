@@ -23,17 +23,29 @@ import art.arcane.react.api.sampler.ReactTickedSampler;
 import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Material;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.LongSupplier;
 
 public class SamplerMemoryPressure extends ReactTickedSampler {
   public static final String ID = "memory-pressure";
+  private static final long WAKE_GAP_NANOS = TimeUnit.SECONDS.toNanos(1L);
+  private static final double NANOS_PER_SECOND = 1_000_000_000D;
   private transient final AtomicLong lastMemory;
-  private transient final Runtime runtime;
+  private transient final AtomicLong lastSampleNanos;
+  private transient final LongSupplier usedMemory;
+  private transient final LongSupplier nanoClock;
 
   public SamplerMemoryPressure() {
+    this(SamplerMemoryPressure::readUsedMemory, System::nanoTime);
+  }
+
+  SamplerMemoryPressure(LongSupplier usedMemory, LongSupplier nanoClock) {
     super(ID, 50, 20);
-    this.runtime = Runtime.getRuntime();
-    this.lastMemory = new AtomicLong(runtime.totalMemory() - runtime.freeMemory());
+    this.usedMemory = usedMemory;
+    this.nanoClock = nanoClock;
+    this.lastMemory = new AtomicLong(usedMemory.getAsLong());
+    this.lastSampleNanos = new AtomicLong(nanoClock.getAsLong());
   }
 
   @Override
@@ -43,14 +55,15 @@ public class SamplerMemoryPressure extends ReactTickedSampler {
 
   @Override
   public double onSample() {
-    long mem = runtime.totalMemory() - runtime.freeMemory();
-    long allocated = mem - lastMemory.get();
-    lastMemory.set(mem);
-    if (allocated >= 0) {
-      return allocated * (1000D / getTinterval());
+    long now = nanoClock.getAsLong();
+    long mem = usedMemory.getAsLong();
+    long elapsedNanos = now - lastSampleNanos.getAndSet(now);
+    long allocated = mem - lastMemory.getAndSet(mem);
+    if (elapsedNanos <= 0L || elapsedNanos > WAKE_GAP_NANOS || allocated <= 0L) {
+      return 0D;
     }
 
-    return 0;
+    return allocated * (NANOS_PER_SECOND / elapsedNanos);
   }
 
   @Override
@@ -66,5 +79,10 @@ public class SamplerMemoryPressure extends ReactTickedSampler {
   @Override
   public String formattedSuffix(double t) {
     return Form.memSizeSplit((long) t, 1)[1] + "/s";
+  }
+
+  private static long readUsedMemory() {
+    Runtime runtime = Runtime.getRuntime();
+    return runtime.totalMemory() - runtime.freeMemory();
   }
 }
