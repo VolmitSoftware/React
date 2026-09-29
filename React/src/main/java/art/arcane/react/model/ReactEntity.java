@@ -77,10 +77,13 @@ public class ReactEntity {
     }
 
     if (getStaleness(entity) > maxTickInterval) {
-      p.updateCrowd(entity);
+      long now = System.currentTimeMillis();
+      double rawPriority = p.getPriority(entity);
+      setRawPriority(entity, rawPriority, now);
+      p.updateCrowd(entity, rawPriority, now);
       p.updateDistanceToPlayer(entity);
-      setPriority(entity, p.getPriorityWithCrowd(entity, getCrowding(entity)));
-      setLastTick(entity, System.currentTimeMillis());
+      setPriority(entity, p.getPriorityWithCrowd(entity, rawPriority, getCrowding(entity)));
+      setLastTick(entity, now);
 
       return true;
     }
@@ -107,6 +110,27 @@ public class ReactEntity {
   public static void setPriority(Entity entity, double priority) {
     Scratch scratch = scratch(entity);
     scratch.priority = priority;
+    scratch.touchedMs = System.currentTimeMillis();
+  }
+
+  public static double getRawPriority(Entity entity, long nowMs) {
+    Scratch scratch = scratchByEntity.get(entity.getUniqueId());
+    if (scratch == null) {
+      return Double.NaN;
+    }
+
+    long age = nowMs - scratch.rawPriorityMs;
+    if (age < 0 || age > maxTickInterval) {
+      return Double.NaN;
+    }
+
+    return scratch.rawPriority;
+  }
+
+  public static void setRawPriority(Entity entity, double rawPriority, long nowMs) {
+    Scratch scratch = scratch(entity);
+    scratch.rawPriority = rawPriority;
+    scratch.rawPriorityMs = nowMs;
     scratch.touchedMs = System.currentTimeMillis();
   }
 
@@ -833,6 +857,8 @@ public class ReactEntity {
   private static final class Scratch {
     private volatile long lastTick;
     private volatile double priority = EntityPriority.BASELINE;
+    private volatile double rawPriority = Double.NaN;
+    private volatile long rawPriorityMs;
     private volatile double crowding = 1;
     private volatile double nearestPlayer = 1;
     private volatile long touchedMs = System.currentTimeMillis();

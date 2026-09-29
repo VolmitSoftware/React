@@ -64,8 +64,7 @@ class EntityPriorityFoliaBoundaryTest {
     Mockito.when(source.getUniqueId()).thenReturn(sourceId);
     Mockito.when(source.getNearbyEntities(8D, 8D, 8D)).thenReturn(List.of(foreignTarget));
     Mockito.when(foreignTarget.getUniqueId()).thenThrow(new AssertionError("foreign UUID read"));
-    EntityPriority priority = Mockito.spy(new EntityPriority());
-    Mockito.doReturn(100D).when(priority).getPriority(source);
+    EntityPriority priority = new EntityPriority();
 
     try (MockedStatic<J> scheduling = Mockito.mockStatic(J.class);
          MockedStatic<ReactEntity> managed = Mockito.mockStatic(ReactEntity.class)) {
@@ -74,7 +73,7 @@ class EntityPriorityFoliaBoundaryTest {
           invocation -> invocation.getArgument(0) == source
       );
 
-      priority.updateCrowd(source);
+      priority.updateCrowd(source, 100D, 0L);
 
       Mockito.verify(foreignTarget, Mockito.never()).getUniqueId();
       Mockito.verify(foreignTarget, Mockito.never()).getType();
