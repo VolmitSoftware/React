@@ -70,6 +70,7 @@ public class FeatureEntityTrimmer extends ReactFeature {
   private transient final AtomicBoolean trimQueued = new AtomicBoolean(false);
   private transient final AtomicInteger cooldown = new AtomicInteger(0);
   private transient final AtomicInteger nextAnchor = new AtomicInteger(0);
+  private transient final AtomicInteger anchorRotation = new AtomicInteger(0);
   private transient final AtomicInteger nextEntity = new AtomicInteger(0);
   private transient final AtomicLong lifecycleGeneration = new AtomicLong(0L);
   private transient final ReentrantReadWriteLock lifecycleLock = new ReentrantReadWriteLock();
@@ -164,6 +165,7 @@ public class FeatureEntityTrimmer extends ReactFeature {
       trimQueued.set(false);
       cooldown.set(0);
       nextAnchor.set(0);
+      anchorRotation.set(0);
       nextEntity.set(0);
       EnumSet<EntityType> configuredBlacklist = EnumSet.noneOf(EntityType.class);
       if (blacklist != null) {
@@ -272,24 +274,34 @@ public class FeatureEntityTrimmer extends ReactFeature {
 
   private List<Player> selectAnchors(Player[] players) {
     NearbyPlayerIndexController index = React.controller(NearbyPlayerIndexController.class);
-    int cellBlocks = Math.max(16, playerMobBlockDistance);
     int start = Math.floorMod(nextAnchor.get(), players.length);
-    List<Player> anchors = new ArrayList<>(Math.min(players.length, MAX_ANCHORS_PER_CYCLE));
-    Set<AnchorCell> cells = new HashSet<>();
+    int rotation = anchorRotation.getAndIncrement();
+    List<List<Player>> groups = new ArrayList<>(Math.min(players.length, MAX_ANCHORS_PER_CYCLE));
+    Map<AnchorCell, List<Player>> groupsByCell = new HashMap<>();
     int visited = 0;
-    while (visited < players.length && anchors.size() < MAX_ANCHORS_PER_CYCLE) {
+    while (visited < players.length && groups.size() < MAX_ANCHORS_PER_CYCLE) {
       Player player = players[(start + visited) % players.length];
       visited++;
-      AnchorCell cell = anchorCell(index, player, cellBlocks);
-      if (cell == null || cells.add(cell)) {
-        anchors.add(player);
+      AnchorCell cell = anchorCell(index, player);
+      List<Player> group = cell == null ? null : groupsByCell.get(cell);
+      if (group == null) {
+        group = new ArrayList<>(2);
+        groups.add(group);
+        if (cell != null) {
+          groupsByCell.put(cell, group);
+        }
       }
+      group.add(player);
     }
     nextAnchor.addAndGet(visited);
+    List<Player> anchors = new ArrayList<>(groups.size());
+    for (List<Player> group : groups) {
+      anchors.add(group.get(Math.floorMod(rotation, group.size())));
+    }
     return anchors;
   }
 
-  private AnchorCell anchorCell(NearbyPlayerIndexController index, Player player, int cellBlocks) {
+  private AnchorCell anchorCell(NearbyPlayerIndexController index, Player player) {
     if (index == null || player == null) {
       return null;
     }
@@ -300,8 +312,9 @@ public class FeatureEntityTrimmer extends ReactFeature {
     NearbyPlayerIndexController.PlayerViewSnapshot view = snapshot.get();
     return new AnchorCell(
         view.worldId(),
-        Math.floorDiv((int) Math.floor(view.x()), cellBlocks),
-        Math.floorDiv((int) Math.floor(view.z()), cellBlocks)
+        (int) Math.floor(view.x()) >> 4,
+        (int) Math.floor(view.y()) >> 4,
+        (int) Math.floor(view.z()) >> 4
     );
   }
 
@@ -769,7 +782,7 @@ public class FeatureEntityTrimmer extends ReactFeature {
     }
   }
 
-  private record AnchorCell(UUID worldId, int x, int z) {
+  private record AnchorCell(UUID worldId, int x, int y, int z) {
   }
 
   private enum Scope {
