@@ -269,8 +269,9 @@ public class ColorPickerGUI {
 
             J.a(() -> {
               ReactLanguage.send(p, GuiMessages.COLOR_PROMPT_HEX);
-              String c = TextInputGui.captureText(p);
+              String c = TextInputGui.captureText(p, picked::get);
               if (c == null) {
+                result.set(null);
                 picked.set(true);
                 return;
               }

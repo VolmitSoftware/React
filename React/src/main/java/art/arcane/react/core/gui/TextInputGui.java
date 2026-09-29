@@ -29,6 +29,8 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
+import java.util.function.BooleanSupplier;
+
 public class TextInputGui implements Listener {
   private final Player player;
   private volatile String response;
@@ -41,7 +43,7 @@ public class TextInputGui implements Listener {
     response = null;
   }
 
-  public static String captureText(Player p) {
+  public static String captureText(Player p, BooleanSupplier abandoned) {
     if (Bukkit.isPrimaryThread()) {
       throw new RuntimeException("Cannot open gui on main thread");
     }
@@ -49,7 +51,7 @@ public class TextInputGui implements Listener {
     TextInputGui gui = new TextInputGui(p);
 
     try {
-      PromptWait.Outcome outcome = PromptWait.await(() -> gui.responded);
+      PromptWait.Outcome outcome = PromptWait.await(() -> gui.responded || abandoned.getAsBoolean());
       if (outcome == PromptWait.Outcome.INTERRUPTED) {
         Thread.currentThread().interrupt();
       }
