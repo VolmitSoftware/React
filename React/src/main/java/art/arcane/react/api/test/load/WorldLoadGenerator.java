@@ -1,5 +1,6 @@
 package art.arcane.react.api.test.load;
 
+import art.arcane.react.React;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -58,10 +59,7 @@ public final class WorldLoadGenerator {
         spawn(herdAt, EntityType.ZOMBIE);
       }
     }
-    int networks = Math.min(MAX_HOPPER_NETWORKS, Math.max(0, profile.hopperNetworks()));
-    for (int network = 0; network < networks; network++) {
-      buildHopperNetwork(network);
-    }
+    buildHopperNetworks(Math.min(MAX_HOPPER_NETWORKS, Math.max(0, profile.hopperNetworks())));
   }
 
   public void tick() {
@@ -145,27 +143,57 @@ public final class WorldLoadGenerator {
     }
   }
 
-  private void buildHopperNetwork(int network) {
-    int originX = center.getBlockX() + HOPPER_NETWORK_OFFSET_X + (network % HOPPER_NETWORKS_PER_ROW) * HOPPER_NETWORK_SPACING;
-    int originY = Math.min(world.getMaxHeight() - 2, center.getBlockY() + HOPPER_NETWORK_OFFSET_Y);
-    int originZ = center.getBlockZ() + (network / HOPPER_NETWORKS_PER_ROW) * HOPPER_NETWORK_SPACING;
-    for (int i = 0; i < HOPPER_RING.length; i++) {
-      placeHopper(world.getBlockAt(originX + HOPPER_RING[i][0], originY, originZ + HOPPER_RING[i][1]), HOPPER_RING_FACING[i]);
+  private void buildHopperNetworks(int networks) {
+    if (networks == 0) {
+      return;
     }
+
+    int originX = center.getBlockX() + HOPPER_NETWORK_OFFSET_X;
+    int originY = Math.min(world.getMaxHeight() - 2, center.getBlockY() + HOPPER_NETWORK_OFFSET_Y);
+    int originZ = center.getBlockZ();
+    int expected = networks * HOPPER_RING.length;
+    int placed = 0;
+    RuntimeException firstFailure = null;
+    for (int network = 0; network < networks; network++) {
+      int ringX = originX + (network % HOPPER_NETWORKS_PER_ROW) * HOPPER_NETWORK_SPACING;
+      int ringZ = originZ + (network / HOPPER_NETWORKS_PER_ROW) * HOPPER_NETWORK_SPACING;
+      for (int i = 0; i < HOPPER_RING.length; i++) {
+        try {
+          if (placeHopper(world.getBlockAt(ringX + HOPPER_RING[i][0], originY, ringZ + HOPPER_RING[i][1]), HOPPER_RING_FACING[i])) {
+            placed++;
+          }
+        } catch (RuntimeException failure) {
+          if (firstFailure == null) {
+            firstFailure = failure;
+          }
+        }
+      }
+    }
+
+    if (placed == expected) {
+      return;
+    }
+
+    String message = "Load test placed " + placed + "/" + expected + " hoppers at "
+        + originX + "," + originY + "," + originZ + " in " + world.getName();
+    if (firstFailure == null) {
+      React.warn(message);
+      return;
+    }
+    React.reportError(message, firstFailure);
   }
 
-  private void placeHopper(Block block, BlockFace facing) {
-    try {
-      BlockState original = block.getState();
-      Directional hopperData = (Directional) Material.HOPPER.createBlockData();
-      hopperData.setFacing(facing);
-      block.setBlockData(hopperData, false);
-      replacedBlocks.add(original);
-      if (block.getState() instanceof Container hopper) {
-        hopper.getInventory().addItem(new ItemStack(Material.COBBLESTONE, ITEMS_PER_HOPPER));
-      }
-    } catch (Throwable ignored) {
+  private boolean placeHopper(Block block, BlockFace facing) {
+    BlockState original = block.getState();
+    Directional hopperData = (Directional) Material.HOPPER.createBlockData();
+    hopperData.setFacing(facing);
+    block.setBlockData(hopperData, false);
+    replacedBlocks.add(original);
+    if (!(block.getState() instanceof Container hopper)) {
+      return false;
     }
+    hopper.getInventory().addItem(new ItemStack(Material.COBBLESTONE, ITEMS_PER_HOPPER));
+    return true;
   }
 
   private void restoreReplacedBlocks() {
@@ -176,7 +204,9 @@ public final class WorldLoadGenerator {
           hopper.getInventory().clear();
         }
         original.update(true, false);
-      } catch (Throwable ignored) {
+      } catch (RuntimeException failure) {
+        React.reportError("Load test failed to restore block at "
+            + original.getX() + "," + original.getY() + "," + original.getZ() + " in " + world.getName(), failure);
       }
     }
     replacedBlocks.clear();
