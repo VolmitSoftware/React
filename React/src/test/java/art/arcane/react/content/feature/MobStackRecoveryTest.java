@@ -1,15 +1,18 @@
 package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
+import art.arcane.react.core.integration.GlossEntityOverlayIntegration;
 import art.arcane.react.core.controller.ObserverController;
 import art.arcane.react.core.controller.ObserverController.LoadedChunkCursor;
 import art.arcane.react.core.controller.ObserverController.LoadedChunkTarget;
+import art.arcane.react.model.ReactEntity;
 import art.arcane.react.util.common.scheduling.J;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.event.world.EntitiesLoadEvent;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -259,6 +262,68 @@ class MobStackRecoveryTest {
 
     react.verify(() -> React.warn("Could not restore a mob stack; its remaining count will be retried.", failure));
     Mockito.verify(cursor, Mockito.times(2)).next(1);
+  }
+
+  @Test
+  void cleanSweepGoesDormantUntilRearmed() {
+    recovery.tick(0L);
+    tasks.getFirst().run();
+    recovery.tick(0L);
+    recovery.tick(0L);
+    recovery.tick(0L);
+
+    Mockito.verify(observer, Mockito.times(1)).openLoadedChunkCursor();
+    Mockito.when(cursor.next(1)).thenReturn(List.of(new LoadedChunkTarget(worldId, 7, -4)));
+    recovery.rearm();
+    recovery.tick(0L);
+
+    Mockito.verify(observer, Mockito.times(2)).openLoadedChunkCursor();
+    Assertions.assertEquals(2, tasks.size());
+  }
+
+  @Test
+  void sweepThatRestoredAStackIsNotDormant() throws ReflectiveOperationException {
+    LivingEntity source = livingEntity();
+    Mockito.when(chunk.getEntities()).thenReturn(new Entity[]{source});
+    Mockito.doReturn(1).when(feature).restoreStack(source, 16, 0L);
+    recovery.tick(0L);
+    tasks.getFirst().run();
+    recovery.tick(0L);
+    Field nextSweepAt = MobStackRecovery.class.getDeclaredField("nextSweepAt");
+    nextSweepAt.setAccessible(true);
+    nextSweepAt.setLong(recovery, 0L);
+    Mockito.when(cursor.next(1)).thenReturn(List.of(new LoadedChunkTarget(worldId, 7, -4)));
+
+    recovery.tick(0L);
+
+    Mockito.verify(observer, Mockito.times(2)).openLoadedChunkCursor();
+  }
+
+  @Test
+  void loadedStackRearmsTheDisabledFeatureRecovery() throws ReflectiveOperationException {
+    Mockito.when(React.instance.getName()).thenReturn("React");
+    Mockito.when(React.instance.namespace()).thenReturn("react");
+    FeatureMobStacking disabled = new FeatureMobStacking(Mockito.mock(GlossEntityOverlayIntegration.class));
+    disabled.setEnabled(false);
+    LivingEntity stacked = livingEntity();
+    EntitiesLoadEvent load = Mockito.mock(EntitiesLoadEvent.class);
+    Mockito.when(load.getEntities()).thenReturn(List.of(stacked));
+    Mockito.when(cursor.next(1)).thenReturn(List.of(new LoadedChunkTarget(worldId, 7, -4)), List.of());
+
+    try (MockedStatic<ReactEntity> managed = Mockito.mockStatic(ReactEntity.class)) {
+      managed.when(() -> ReactEntity.getStackCount(stacked)).thenReturn(3);
+      disabled.onIntegrityTick();
+      tasks.getFirst().run();
+      disabled.onIntegrityTick();
+      disabled.onIntegrityTick();
+      Mockito.verify(observer, Mockito.times(1)).openLoadedChunkCursor();
+
+      Mockito.when(cursor.next(1)).thenReturn(List.of(new LoadedChunkTarget(worldId, 7, -4)));
+      disabled.on(load);
+      disabled.onIntegrityTick();
+    }
+
+    Mockito.verify(observer, Mockito.times(2)).openLoadedChunkCursor();
   }
 
   private LivingEntity livingEntity() {
