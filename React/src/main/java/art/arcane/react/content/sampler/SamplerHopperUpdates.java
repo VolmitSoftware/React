@@ -20,13 +20,13 @@
 package art.arcane.react.content.sampler;
 
 import art.arcane.react.api.sampler.ReactCachedRateSampler;
+import art.arcane.react.util.project.world.HopperMoveContext;
 import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Material;
-import org.bukkit.block.Hopper;
+import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.BlockPhysicsEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 
 public class SamplerHopperUpdates extends ReactCachedRateSampler implements Listener {
@@ -42,22 +42,14 @@ public class SamplerHopperUpdates extends ReactCachedRateSampler implements List
   }
 
   @EventHandler(priority = EventPriority.MONITOR)
-  public void on(BlockPhysicsEvent e) {
-    if (e.getBlock().getType() == Material.HOPPER) {
-      increment();
-      getChunkCounter(e.getBlock()).addAndGet(1D);
-    }
-  }
-
-  @EventHandler(priority = EventPriority.MONITOR)
   public void on(InventoryMoveItemEvent e) {
-    if (e.getSource().getHolder() instanceof Hopper source) {
-      increment();
-      getChunkCounter(source.getChunk()).addAndGet(1D);
-    } else if (e.getDestination().getHolder() instanceof Hopper destination) {
-      increment();
-      getChunkCounter(destination.getChunk()).addAndGet(1D);
+    Block hopper = HopperMoveContext.resolve(e).hopperBlock();
+    if (hopper == null) {
+      return;
     }
+
+    increment();
+    getChunkCounter(hopper).addAndGet(1D);
   }
 
   @Override

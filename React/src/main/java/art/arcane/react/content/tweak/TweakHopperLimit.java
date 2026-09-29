@@ -22,8 +22,8 @@ package art.arcane.react.content.tweak;
 import art.arcane.react.React;
 import art.arcane.react.api.tweak.ReactTweak;
 import art.arcane.react.content.sampler.SamplerHopperEventSpan;
+import art.arcane.react.util.project.world.HopperMoveContext;
 import org.bukkit.block.BlockFace;
-import org.bukkit.block.Hopper;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
@@ -50,7 +50,7 @@ public class TweakHopperLimit extends ReactTweak implements Listener {
    */
   @EventHandler(priority = org.bukkit.event.EventPriority.LOW, ignoreCancelled = true)
   public void on(InventoryMoveItemEvent e) {
-    if (e.getDestination().getHolder() instanceof Hopper) {
+    if (HopperMoveContext.resolve(e).destinationHopperBlock() != null) {
       if (React.sampler(SamplerHopperEventSpan.class).sample() > maxHopperEventSpan) {
         e.setCancelled(true);
       }
