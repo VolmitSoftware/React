@@ -133,8 +133,12 @@ class EventControllerLifecycleTest {
       oldController.onTick();
       scheduler.runFirst();
       Assertions.assertInstanceOf(NaughtyRegisteredListener.class, fixture.registered());
+      oldController.markSamplerActivity();
+      oldController.onTick();
+      Assertions.assertEquals(1, scheduler.size());
 
       oldController.stop();
+      Assertions.assertFalse(fixture.registered() instanceof NaughtyRegisteredListener);
       EventController newController = new EventController();
       newController.setInstrumentation(EventController.InstrumentationMode.ON_DEMAND);
       newController.start();

@@ -21,6 +21,7 @@ package art.arcane.react.api.event;
 
 import org.bukkit.event.Event;
 import org.bukkit.event.EventException;
+import org.bukkit.plugin.EventExecutor;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredListener;
 import org.jetbrains.annotations.NotNull;
@@ -28,7 +29,9 @@ import org.jetbrains.annotations.NotNull;
 import java.util.concurrent.atomic.LongAdder;
 
 public class NaughtyRegisteredListener extends RegisteredListener {
-  private static final ThreadLocal<Frame> FRAMES = ThreadLocal.withInitial(Frame::new);
+  private static final int DEPTH = 0;
+  private static final int CHILD_NANOS = 1;
+  private static final ThreadLocal<long[]> FRAMES = ThreadLocal.withInitial(() -> new long[2]);
 
   public final String pluginName;
   private final RegisteredListener delegate;
@@ -37,8 +40,9 @@ public class NaughtyRegisteredListener extends RegisteredListener {
   private final LongAdder calls;
   private final LongAdder asyncCalls;
 
-  public NaughtyRegisteredListener(@NotNull RegisteredListener delegate, long instrumentationOwner) {
-    super(delegate.getListener(), delegate.getExecutor(), delegate.getPriority(), delegate.getPlugin(),
+  public NaughtyRegisteredListener(@NotNull RegisteredListener delegate, @NotNull EventExecutor executor,
+                                   long instrumentationOwner) {
+    super(delegate.getListener(), executor, delegate.getPriority(), delegate.getPlugin(),
         delegate.isIgnoringCancelled());
     this.delegate = delegate;
     this.pluginName = resolvePluginName(delegate.getPlugin());
@@ -65,18 +69,18 @@ public class NaughtyRegisteredListener extends RegisteredListener {
       return;
     }
 
-    Frame frame = FRAMES.get();
-    long parentChildNanos = frame.childNanos;
-    frame.childNanos = 0L;
-    frame.depth++;
+    long[] frame = FRAMES.get();
+    long parentChildNanos = frame[CHILD_NANOS];
+    frame[CHILD_NANOS] = 0L;
+    frame[DEPTH]++;
     long start = System.nanoTime();
     try {
       delegate.callEvent(event);
     } finally {
       long total = System.nanoTime() - start;
-      record(total - frame.childNanos);
-      frame.depth--;
-      frame.childNanos = frame.depth == 0 ? 0L : parentChildNanos + total;
+      record(total - frame[CHILD_NANOS]);
+      frame[DEPTH]--;
+      frame[CHILD_NANOS] = frame[DEPTH] == 0L ? 0L : parentChildNanos + total;
     }
   }
 
@@ -98,10 +102,5 @@ public class NaughtyRegisteredListener extends RegisteredListener {
   }
 
   public record CounterSnapshot(long timeNanos, long calls, long asyncCalls) {
-  }
-
-  private static final class Frame {
-    private int depth;
-    private long childNanos;
   }
 }

@@ -1,8 +1,10 @@
 package art.arcane.react.api.event;
 
+import art.arcane.react.testutil.IsolatedClassLoader;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventException;
 import org.bukkit.event.EventPriority;
+import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.EventExecutor;
 import org.bukkit.plugin.Plugin;
@@ -11,6 +13,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import java.lang.ref.WeakReference;
+import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -46,9 +50,10 @@ class NaughtyRegisteredListenerTest {
   @Test
   void delegatesToTheOriginalRegisteredListenerIncludingOverrides() throws EventException {
     AtomicInteger overrideCalls = new AtomicInteger();
+    EventExecutor executor = (ignored, event) -> Assertions.fail("executor must not be invoked directly");
     RegisteredListener original = new RegisteredListener(
         Mockito.mock(Listener.class),
-        (ignored, event) -> Assertions.fail("executor must not be invoked directly"),
+        executor,
         EventPriority.HIGH,
         plugin(),
         true
@@ -58,7 +63,7 @@ class NaughtyRegisteredListenerTest {
         overrideCalls.incrementAndGet();
       }
     };
-    NaughtyRegisteredListener wrapped = new NaughtyRegisteredListener(original, 7L);
+    NaughtyRegisteredListener wrapped = new NaughtyRegisteredListener(original, executor, 7L);
 
     wrapped.callEvent(Mockito.mock(Event.class));
 
@@ -127,6 +132,20 @@ class NaughtyRegisteredListenerTest {
   }
 
   @Test
+  void callEventDoesNotPinTheDefiningClassLoaderThroughThreadLocals() throws Exception {
+    WeakReference<ClassLoader> loader = dispatchThroughAnIsolatedRuntime();
+
+    long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+    while (loader.get() != null && System.nanoTime() < deadline) {
+      System.gc();
+      LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
+    }
+
+    Assertions.assertNull(loader.get(),
+        "the class loader that defined the wrapper must be collectable after this thread dispatched an event");
+  }
+
+  @Test
   void concurrentCallsAreAccountedWithoutSerializingRegions() throws Exception {
     int workers = 16;
     int callsPerWorker = 1_000;
@@ -178,7 +197,45 @@ class NaughtyRegisteredListenerTest {
         plugin(),
         false
     );
-    return new NaughtyRegisteredListener(original, 1L);
+    return new NaughtyRegisteredListener(original, executor, 1L);
+  }
+
+  private static WeakReference<ClassLoader> dispatchThroughAnIsolatedRuntime() throws Exception {
+    IsolatedClassLoader loader = new IsolatedClassLoader(NaughtyRegisteredListener.class);
+    Class<?> type = loader.isolatedClass();
+    Assertions.assertNotSame(NaughtyRegisteredListener.class, type);
+    EventExecutor executor = (ignored, event) -> {
+    };
+    Plugin plugin = (Plugin) Proxy.newProxyInstance(
+        Plugin.class.getClassLoader(),
+        new Class<?>[]{Plugin.class},
+        (proxy, method, args) -> switch (method.getName()) {
+          case "getName" -> "MeasuredPlugin";
+          case "isEnabled" -> true;
+          default -> null;
+        }
+    );
+    RegisteredListener original = new RegisteredListener(
+        new Listener() {
+        },
+        executor,
+        EventPriority.NORMAL,
+        plugin,
+        false
+    );
+    Object wrapper = type.getConstructor(RegisteredListener.class, EventExecutor.class, long.class)
+        .newInstance(original, executor, 1L);
+    type.getMethod("callEvent", Event.class).invoke(wrapper, new DispatchedEvent());
+    return new WeakReference<>(loader);
+  }
+
+  private static final class DispatchedEvent extends Event {
+    private static final HandlerList HANDLERS = new HandlerList();
+
+    @Override
+    public HandlerList getHandlers() {
+      return HANDLERS;
+    }
   }
 
   private static Plugin plugin() {

@@ -29,8 +29,11 @@ import art.arcane.react.util.plugin.IController;
 import art.arcane.react.util.project.config.ConfigDescription;
 import art.arcane.react.util.project.config.ConfigDoc;
 import art.arcane.volmlib.util.scheduling.FoliaScheduler;
+import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.event.Event;
@@ -40,6 +43,7 @@ import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockDispenseEvent;
 import org.bukkit.event.entity.EntityPlaceEvent;
+import org.bukkit.plugin.EventExecutor;
 import org.bukkit.plugin.RegisteredListener;
 
 import java.lang.reflect.Field;
@@ -56,10 +60,13 @@ import java.util.concurrent.atomic.AtomicLong;
 public class EventController extends TickedObject implements IController, Listener {
   private static final AtomicLong OWNER_SEQUENCE = new AtomicLong();
   private static final long MIN_DUTY_PERIOD_MS = 1000L;
+  private static final String WRAPPER_CLASS_NAME = NaughtyRegisteredListener.class.getName();
+  private static final PublishedWindow NO_WINDOW = new PublishedWindow(0, 0D, 0, 0, 0D, 0D, 0L, Map.of(), Map.of());
   private static volatile Field allListsField;
   private static volatile Field handlersField;
   private static volatile Field handlerSlotsField;
-  private static volatile boolean handlerFieldsResolved;
+  private static volatile Field executorField;
+  private static volatile boolean reflectionResolved;
 
   @ConfigDoc(value = "Controls when listener timing wrappers are installed: ALWAYS keeps them installed, ON_DEMAND installs them only while a monitor, map, placeholder, or web viewer reads event data, and DUTY_CYCLE additionally opens a periodic measurement window.", impact = "ALWAYS charges every event handler a timing overhead; ON_DEMAND removes that cost at idle but records history gaps; DUTY_CYCLE trades periodic gaps for a small recurring cost.")
   private InstrumentationMode instrumentation = InstrumentationMode.ALWAYS;
@@ -70,15 +77,9 @@ public class EventController extends TickedObject implements IController, Listen
   @ConfigDoc(value = "Milliseconds between the starts of periodic measurement windows in the duty-cycle mode.", impact = "Shorter periods record event data more often and cost more; longer periods leave wider history gaps.")
   private long dutyCyclePeriodMS = 60000;
 
-  private transient volatile int listenerCount;
-  private transient volatile double totalTime;
-  private transient volatile int calls;
-  private transient volatile int asyncCalls;
-  private transient volatile double callsPerTick;
-  private transient volatile double windowSeconds;
-  private transient volatile long windowPublishedAtMs;
-  private transient volatile Map<String, Double> pluginEventTimeMS = Map.of();
-  private transient volatile Map<String, Integer> pluginEventCalls = Map.of();
+  @Getter(AccessLevel.NONE)
+  @Setter(AccessLevel.NONE)
+  private transient volatile PublishedWindow window = NO_WINDOW;
   private transient final AtomicBoolean running = new AtomicBoolean(false);
   private transient final AtomicBoolean active = new AtomicBoolean(false);
   private transient final AtomicBoolean instrumentationRequested = new AtomicBoolean(false);
@@ -120,16 +121,7 @@ public class EventController extends TickedObject implements IController, Listen
     active.set(false);
     instrumentationRequested.set(false);
     lifecycleGeneration.incrementAndGet();
-    long owner = instrumentationOwner;
-    Runnable uninstall = () -> uninstallOwner(owner);
-    if (isAuthoritativeThread()) {
-      uninstall.run();
-      return;
-    }
-    if (FoliaScheduler.runGlobal(React.instance, uninstall)) {
-      return;
-    }
-    uninstall.run();
+    uninstallOwner(instrumentationOwner);
   }
 
   @Override
@@ -148,32 +140,60 @@ public class EventController extends TickedObject implements IController, Listen
   }
 
   public boolean isMeasuring() {
-    long published = windowPublishedAtMs;
-    return active.get() && published > 0L && System.currentTimeMillis() - published <= windowFreshnessMS();
+    return isFresh(window);
   }
 
   public double getEventTimeMsPerSecond() {
-    return isMeasuring() ? totalTime / windowSeconds : 0D;
+    PublishedWindow published = window;
+    return isFresh(published) ? published.totalTime() / published.windowSeconds() : 0D;
   }
 
   public double getPluginEventTimeMsPerSecond(String pluginName) {
-    return isMeasuring() ? getPluginEventTimeMS(pluginName) / windowSeconds : 0D;
+    PublishedWindow published = window;
+    return isFresh(published) ? pluginTime(published, pluginName) / published.windowSeconds() : 0D;
   }
 
   public double getPluginEventTimeMS(String pluginName) {
-    if (!isMeasuring()) {
-      return 0D;
-    }
-    Double time = pluginEventTimeMS.get(pluginName);
-    return time == null ? 0D : time;
+    PublishedWindow published = window;
+    return isFresh(published) ? pluginTime(published, pluginName) : 0D;
   }
 
   public Map<String, Double> snapshotPluginEventTimeMS() {
-    return isMeasuring() ? new HashMap<>(pluginEventTimeMS) : new HashMap<>();
+    PublishedWindow published = window;
+    return isFresh(published) ? new HashMap<>(published.pluginTime()) : new HashMap<>();
   }
 
   public Map<String, Integer> snapshotPluginEventCalls() {
-    return isMeasuring() ? new HashMap<>(pluginEventCalls) : new HashMap<>();
+    PublishedWindow published = window;
+    return isFresh(published) ? new HashMap<>(published.pluginCalls()) : new HashMap<>();
+  }
+
+  public int getListenerCount() {
+    return window.listenerCount();
+  }
+
+  public double getTotalTime() {
+    return window.totalTime();
+  }
+
+  public int getCalls() {
+    return window.calls();
+  }
+
+  public int getAsyncCalls() {
+    return window.asyncCalls();
+  }
+
+  public double getCallsPerTick() {
+    return window.callsPerTick();
+  }
+
+  public double getWindowSeconds() {
+    return window.windowSeconds();
+  }
+
+  public long getWindowPublishedAtMs() {
+    return window.publishedAtMs();
   }
 
   @Override
@@ -230,13 +250,13 @@ public class EventController extends TickedObject implements IController, Listen
     }
   }
 
-  private static boolean resolveHandlerFields() {
-    if (handlerFieldsResolved) {
+  private static boolean resolveReflection() {
+    if (reflectionResolved) {
       return allListsField != null;
     }
 
     synchronized (EventController.class) {
-      if (handlerFieldsResolved) {
+      if (reflectionResolved) {
         return allListsField != null;
       }
 
@@ -244,17 +264,20 @@ public class EventController extends TickedObject implements IController, Listen
         Field allLists = HandlerList.class.getDeclaredField("allLists");
         Field handlers = HandlerList.class.getDeclaredField("handlers");
         Field handlerSlots = HandlerList.class.getDeclaredField("handlerslots");
+        Field executor = RegisteredListener.class.getDeclaredField("executor");
         allLists.setAccessible(true);
         handlers.setAccessible(true);
         handlerSlots.setAccessible(true);
-        allListsField = allLists;
+        executor.setAccessible(true);
+        executorField = executor;
         handlersField = handlers;
         handlerSlotsField = handlerSlots;
+        allListsField = allLists;
       } catch (Throwable e) {
         React.reportError("Failed to resolve Bukkit event-handler instrumentation fields", e);
       }
 
-      handlerFieldsResolved = true;
+      reflectionResolved = true;
       return allListsField != null;
     }
   }
@@ -277,10 +300,48 @@ public class EventController extends TickedObject implements IController, Listen
     }
   }
 
+  private static EventExecutor executorOf(RegisteredListener listener) {
+    try {
+      return (EventExecutor) executorField.get(listener);
+    } catch (IllegalAccessException e) {
+      throw new IllegalStateException(e);
+    }
+  }
+
   private static void rebake(HandlerList handlerList) {
     try {
       handlersField.set(handlerList, null);
       handlerList.bake();
+    } catch (IllegalAccessException exception) {
+      throw new IllegalStateException(exception);
+    }
+  }
+
+  private static boolean isWrapper(RegisteredListener registered) {
+    if (registered instanceof NaughtyRegisteredListener) {
+      return true;
+    }
+
+    Class<?> type = registered.getClass();
+    return type != RegisteredListener.class && WRAPPER_CLASS_NAME.equals(type.getName());
+  }
+
+  private static RegisteredListener unwrapAll(RegisteredListener registered) {
+    RegisteredListener current = registered;
+    while (current != null && isWrapper(current)) {
+      current = current instanceof NaughtyRegisteredListener naughty ? naughty.delegate() : foreignDelegateOf(current);
+    }
+    return current;
+  }
+
+  private static RegisteredListener foreignDelegateOf(RegisteredListener wrapper) {
+    try {
+      Field delegate = wrapper.getClass().getDeclaredField("delegate");
+      delegate.setAccessible(true);
+      return (RegisteredListener) delegate.get(wrapper);
+    } catch (NoSuchFieldException missing) {
+      return new RegisteredListener(wrapper.getListener(), executorOf(wrapper), wrapper.getPriority(),
+          wrapper.getPlugin(), wrapper.isIgnoringCancelled());
     } catch (IllegalAccessException exception) {
       throw new IllegalStateException(exception);
     }
@@ -293,6 +354,16 @@ public class EventController extends TickedObject implements IController, Listen
 
   private long windowFreshnessMS() {
     return 3L * Math.max(1000L, getTinterval());
+  }
+
+  private boolean isFresh(PublishedWindow published) {
+    long publishedAtMs = published.publishedAtMs();
+    return active.get() && publishedAtMs > 0L && System.currentTimeMillis() - publishedAtMs <= windowFreshnessMS();
+  }
+
+  private static double pluginTime(PublishedWindow published, String pluginName) {
+    Double time = published.pluginTime().get(pluginName);
+    return time == null ? 0D : time;
   }
 
   private boolean evaluateInstrumentation(long nowMs) {
@@ -348,7 +419,7 @@ public class EventController extends TickedObject implements IController, Listen
   }
 
   private void reconcileLatestState() {
-    if (!resolveHandlerFields()) {
+    if (!resolveReflection()) {
       return;
     }
 
@@ -390,11 +461,11 @@ public class EventController extends TickedObject implements IController, Listen
       return;
     }
 
-    beginWindow(totals);
+    beginWindow();
   }
 
   private void uninstallOwner(long owner) {
-    if (!resolveHandlerFields()) {
+    if (!resolveReflection()) {
       return;
     }
 
@@ -429,15 +500,13 @@ public class EventController extends TickedObject implements IController, Listen
           }
 
           totals.listeners++;
-          if (registered instanceof NaughtyRegisteredListener naughty) {
-            if (naughty.isOwnedBy(owner)) {
-              drainListener(naughty, totals);
-              continue;
-            }
-            registered = naughty.delegate();
+          if (registered instanceof NaughtyRegisteredListener naughty && naughty.isOwnedBy(owner)) {
+            drainListener(naughty, totals);
+            continue;
           }
 
-          priorityListeners.set(index, new NaughtyRegisteredListener(registered, owner));
+          RegisteredListener original = unwrapAll(registered);
+          priorityListeners.set(index, new NaughtyRegisteredListener(original, executorOf(original), owner));
           changed = true;
         }
       }
@@ -479,15 +548,19 @@ public class EventController extends TickedObject implements IController, Listen
           }
 
           totals.listeners++;
-          if (!(registered instanceof NaughtyRegisteredListener naughty)
-              || (!allOwners && !naughty.isOwnedBy(owner))) {
+          if (!isWrapper(registered)) {
             continue;
           }
 
-          if (naughty.isOwnedBy(owner)) {
-            drainListener(naughty, totals);
+          boolean owned = registered instanceof NaughtyRegisteredListener naughty && naughty.isOwnedBy(owner);
+          if (!owned && !allOwners) {
+            continue;
           }
-          priorityListeners.set(index, naughty.delegate());
+
+          if (owned) {
+            drainListener((NaughtyRegisteredListener) registered, totals);
+          }
+          priorityListeners.set(index, unwrapAll(registered));
           removed++;
         }
       }
@@ -510,39 +583,32 @@ public class EventController extends TickedObject implements IController, Listen
     totals.pluginCalls.merge(naughty.pluginName, listenerCalls, EventController::saturatingAdd);
   }
 
-  private void beginWindow(WindowTotals totals) {
+  private void beginWindow() {
     windowStartNanos = System.nanoTime();
     measuredTicks.set(0L);
-    listenerCount = totals.listeners;
   }
 
   private void publishWindow(WindowTotals totals) {
     long nowNanos = System.nanoTime();
     long elapsedNanos = nowNanos - windowStartNanos;
     windowStartNanos = nowNanos;
-    listenerCount = totals.listeners;
-    totalTime = totals.timeNanos / 1.0E6D;
-    calls = saturatingInt(totals.calls);
-    asyncCalls = saturatingInt(totals.asyncCalls);
-    callsPerTick = averageCallsPerTick(totals.calls, measuredTicks.getAndSet(0L));
-    pluginEventTimeMS = Map.copyOf(totals.pluginTime);
-    pluginEventCalls = Map.copyOf(totals.pluginCalls);
-    windowSeconds = Math.max(1.0E-6D, elapsedNanos / 1.0E9D);
-    windowPublishedAtMs = System.currentTimeMillis();
+    window = new PublishedWindow(
+        totals.listeners,
+        totals.timeNanos / 1.0E6D,
+        saturatingInt(totals.calls),
+        saturatingInt(totals.asyncCalls),
+        averageCallsPerTick(totals.calls, measuredTicks.getAndSet(0L)),
+        Math.max(1.0E-6D, elapsedNanos / 1.0E9D),
+        System.currentTimeMillis(),
+        Map.copyOf(totals.pluginTime),
+        Map.copyOf(totals.pluginCalls)
+    );
   }
 
   private void clearPublishedMetrics() {
-    listenerCount = 0;
-    totalTime = 0D;
-    calls = 0;
-    asyncCalls = 0;
-    callsPerTick = 0D;
-    windowSeconds = 0D;
-    windowPublishedAtMs = 0L;
+    window = NO_WINDOW;
     windowStartNanos = 0L;
     measuredTicks.set(0L);
-    pluginEventTimeMS = Map.of();
-    pluginEventCalls = Map.of();
   }
 
   private boolean isAuthoritativeThread() {
@@ -591,6 +657,11 @@ public class EventController extends TickedObject implements IController, Listen
     ALWAYS,
     ON_DEMAND,
     DUTY_CYCLE
+  }
+
+  private record PublishedWindow(int listenerCount, double totalTime, int calls, int asyncCalls, double callsPerTick,
+                                 double windowSeconds, long publishedAtMs, Map<String, Double> pluginTime,
+                                 Map<String, Integer> pluginCalls) {
   }
 
   private static final class WindowTotals {

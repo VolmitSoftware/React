@@ -3,6 +3,7 @@ package art.arcane.react.core.controller;
 import art.arcane.react.React;
 import art.arcane.react.api.event.NaughtyRegisteredListener;
 import art.arcane.react.api.event.layer.ServerTickEvent;
+import art.arcane.react.testutil.IsolatedClassLoader;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.common.scheduling.Ticker;
 import art.arcane.volmlib.util.scheduling.FoliaScheduler;
@@ -139,7 +140,7 @@ class EventControllerModeTest {
   }
 
   @Test
-  void stopUninstallsEvenWhileAReconciliationIsQueued() {
+  void stopUninstallsOnTheCallingThreadEvenWhileAReconciliationIsQueued() {
     HandlerFixture fixture = new HandlerFixture(plugin);
     try (SchedulerHarness scheduler = new SchedulerHarness(plugin, true, false)) {
       EventController controller = new EventController();
@@ -155,12 +156,59 @@ class EventControllerModeTest {
       Assertions.assertEquals(1, scheduler.size());
 
       controller.stop();
-      Assertions.assertEquals(2, scheduler.size());
-      scheduler.dropFirst();
-      scheduler.runFirst();
-
       Assertions.assertSame(fixture.original(), fixture.registered());
       Assertions.assertFalse(controller.isSpiesInjected());
+      Assertions.assertEquals(1, scheduler.size());
+
+      scheduler.runFirst();
+      Assertions.assertSame(fixture.original(), fixture.registered());
+      Assertions.assertFalse(controller.isSpiesInjected());
+    } finally {
+      fixture.close();
+    }
+  }
+
+  @Test
+  void installedWrapperExposesTheOriginalExecutorWithoutPaperOnlyApi() {
+    HandlerFixture fixture = new HandlerFixture(plugin);
+    try (SchedulerHarness ignored = new SchedulerHarness(plugin, false, true)) {
+      EventController controller = new EventController();
+      controller.setInstrumentation(EventController.InstrumentationMode.ALWAYS);
+      controller.start();
+
+      NaughtyRegisteredListener installed = Assertions.assertInstanceOf(
+          NaughtyRegisteredListener.class,
+          fixture.registered()
+      );
+      Assertions.assertSame(fixture.executor(), installed.getExecutor());
+      Assertions.assertSame(fixture.original(), installed.delegate());
+
+      controller.stop();
+      Assertions.assertSame(fixture.original(), fixture.registered());
+    } finally {
+      fixture.close();
+    }
+  }
+
+  @Test
+  void wrappersFromAnotherClassLoaderAreUnwrappedInsteadOfNested() throws Exception {
+    HandlerFixture fixture = new HandlerFixture(plugin);
+    try (SchedulerHarness ignored = new SchedulerHarness(plugin, false, true)) {
+      RegisteredListener foreign = fixture.wrapWithAnotherRuntime();
+      Assertions.assertFalse(foreign instanceof NaughtyRegisteredListener);
+      Assertions.assertSame(foreign, fixture.registered());
+
+      EventController controller = new EventController();
+      controller.setInstrumentation(EventController.InstrumentationMode.ALWAYS);
+      controller.start();
+      NaughtyRegisteredListener installed = Assertions.assertInstanceOf(
+          NaughtyRegisteredListener.class,
+          fixture.registered()
+      );
+      Assertions.assertSame(fixture.original(), installed.delegate());
+
+      controller.stop();
+      Assertions.assertSame(fixture.original(), fixture.registered());
     } finally {
       fixture.close();
     }
@@ -217,19 +265,39 @@ class EventControllerModeTest {
   private static final class HandlerFixture implements AutoCloseable {
     private final HandlerList handlerList;
     private final Listener listener;
+    private final EventExecutor executor;
     private final RegisteredListener original;
 
     private HandlerFixture(React plugin) {
       handlerList = new HandlerList();
       listener = Mockito.mock(Listener.class);
-      EventExecutor executor = (ignored, event) -> {
+      executor = (ignored, event) -> {
       };
-      original = new RegisteredListener(listener, executor, EventPriority.NORMAL, plugin, false);
+      original = new RegisteredListener(listener, executor, EventPriority.NORMAL, plugin, false) {
+        @Override
+        public EventExecutor getExecutor() {
+          throw new UnsupportedOperationException("RegisteredListener.getExecutor is Paper-only and must not be used");
+        }
+      };
       handlerList.register(original);
     }
 
     private RegisteredListener original() {
       return original;
+    }
+
+    private EventExecutor executor() {
+      return executor;
+    }
+
+    private RegisteredListener wrapWithAnotherRuntime() throws Exception {
+      Class<?> foreignType = new IsolatedClassLoader(NaughtyRegisteredListener.class).isolatedClass();
+      RegisteredListener foreign = (RegisteredListener) foreignType
+          .getConstructor(RegisteredListener.class, EventExecutor.class, long.class)
+          .newInstance(original, executor, 99L);
+      handlerList.unregister(original);
+      handlerList.register(foreign);
+      return foreign;
     }
 
     private RegisteredListener registered() {
@@ -278,10 +346,6 @@ class EventControllerModeTest {
       Runnable task = tasks.pollFirst();
       Assertions.assertNotNull(task);
       task.run();
-    }
-
-    private void dropFirst() {
-      Assertions.assertNotNull(tasks.pollFirst());
     }
 
     @Override
