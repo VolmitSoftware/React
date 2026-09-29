@@ -78,8 +78,8 @@ public class FeatureHopperItemIndex extends ReactFeature implements Listener {
     private transient final AtomicInteger nextFoliaPlayer = new AtomicInteger(0);
     private transient final AtomicInteger nextFoliaChunkOffset = new AtomicInteger(0);
     private transient final AtomicLong lifecycleGeneration = new AtomicLong(0L);
-    private transient final AtomicLong lastReconcileFailureReportMs = new AtomicLong(0L);
-    private transient final AtomicInteger suppressedReconcileFailures = new AtomicInteger(0);
+    private transient final Map<ReconcileFailureKey, ReconcileFailureWindow> reconcileFailureWindows =
+        new ConcurrentHashMap<>();
     private transient final Map<UUID, WeakReference<Item>> trackedItems = new ConcurrentHashMap<>();
     private transient final Queue<UUID> pendingItems = new ConcurrentLinkedQueue<>();
     private transient final Set<UUID> pendingItemIds = ConcurrentHashMap.newKeySet();
@@ -374,7 +374,7 @@ public class FeatureHopperItemIndex extends ReactFeature implements Listener {
             try {
                 needsMore = reconcilePaperChunk(target, workState, generation, budget);
             } catch (Throwable throwable) {
-                reportReconcileFailure(throwable);
+                reportReconcileFailure("paper chunk reconcile", throwable);
                 needsMore = true;
             }
             if (needsMore && isCurrent(generation) && workState == foliaChunkWorkState) {
@@ -540,7 +540,7 @@ public class FeatureHopperItemIndex extends ReactFeature implements Listener {
             }
         } catch (Throwable throwable) {
             cursor.abortHopperCycle();
-            reportReconcileFailure(throwable);
+            reportReconcileFailure("paper hopper check", throwable);
             return true;
         }
         return !window.completedCycle();
@@ -577,7 +577,7 @@ public class FeatureHopperItemIndex extends ReactFeature implements Listener {
                 }
             }
         } catch (Throwable throwable) {
-            reportReconcileFailure(throwable);
+            reportReconcileFailure("folia reconcile planning", throwable);
         } finally {
             finishFoliaPlanTask(flight);
         }
@@ -595,7 +595,7 @@ public class FeatureHopperItemIndex extends ReactFeature implements Listener {
             try {
                 planFoliaChunksAroundPlayer(player, flight, chunkQuota);
             } catch (Throwable throwable) {
-                reportReconcileFailure(throwable);
+                reportReconcileFailure("folia player planning", throwable);
             } finally {
                 completion.run();
             }
@@ -605,7 +605,7 @@ public class FeatureHopperItemIndex extends ReactFeature implements Listener {
         try {
             scheduled = J.runEntity(player, task, 0, completion);
         } catch (Throwable throwable) {
-            reportReconcileFailure(throwable);
+            reportReconcileFailure("folia player plan scheduling", throwable);
         }
         if (!scheduled) {
             completion.run();
@@ -676,7 +676,7 @@ public class FeatureHopperItemIndex extends ReactFeature implements Listener {
                     needsMore = reconcileFoliaChunk(target, claim);
                 }
             } catch (Throwable throwable) {
-                reportReconcileFailure(throwable);
+                reportReconcileFailure("folia chunk reconcile", throwable);
                 needsMore = true;
             } finally {
                 releaseFoliaChunk(key, claim);
@@ -694,7 +694,7 @@ public class FeatureHopperItemIndex extends ReactFeature implements Listener {
                 key.chunkZ(),
                 task);
         } catch (Throwable throwable) {
-            reportReconcileFailure(throwable);
+            reportReconcileFailure("folia chunk scheduling", throwable);
         }
         if (!scheduled) {
             releaseFoliaChunk(key, claim);
@@ -859,7 +859,7 @@ public class FeatureHopperItemIndex extends ReactFeature implements Listener {
             }
         } catch (Throwable throwable) {
             cursor.abortHopperCycle();
-            reportReconcileFailure(throwable);
+            reportReconcileFailure("folia hopper check", throwable);
             return true;
         }
         return !window.completedCycle();
@@ -915,7 +915,7 @@ public class FeatureHopperItemIndex extends ReactFeature implements Listener {
                         keep = reconcileTrackedItem(target, generation);
                     }
                 } catch (Throwable throwable) {
-                    reportReconcileFailure(throwable);
+                    reportReconcileFailure("folia item reconcile", throwable);
                     keep = true;
                 } finally {
                     finishItemReconcile(target, generation, keep, completed);
@@ -926,7 +926,7 @@ public class FeatureHopperItemIndex extends ReactFeature implements Listener {
             try {
                 scheduled = J.runEntity(target.item(), task, 0, retired);
             } catch (Throwable throwable) {
-                reportReconcileFailure(throwable);
+                reportReconcileFailure("folia item scheduling", throwable);
             }
             if (!scheduled) {
                 finishItemReconcile(target, generation, true, completed);
@@ -1046,19 +1046,11 @@ public class FeatureHopperItemIndex extends ReactFeature implements Listener {
         }
     }
 
-    private void reportReconcileFailure(Throwable failure) {
-        long now = System.currentTimeMillis();
-        long last = lastReconcileFailureReportMs.get();
-        if (now - last < RECONCILE_FAILURE_REPORT_INTERVAL_MS
-                || !lastReconcileFailureReportMs.compareAndSet(last, now)) {
-            suppressedReconcileFailures.incrementAndGet();
-            return;
-        }
-        int suppressed = suppressedReconcileFailures.getAndSet(0);
-        String context = suppressed == 0
-            ? "Hopper item index reconcile failed"
-            : "Hopper item index reconcile failed (" + suppressed + " repeats suppressed since last report)";
-        React.reportError(context, failure);
+    private void reportReconcileFailure(String site, Throwable failure) {
+        ReconcileFailureWindow window = reconcileFailureWindows.computeIfAbsent(
+            ReconcileFailureKey.of(site, failure),
+            ignored -> new ReconcileFailureWindow());
+        window.report(site, failure, System.currentTimeMillis());
     }
 
     private void enqueueItem(UUID itemId) {
@@ -1323,5 +1315,30 @@ public class FeatureHopperItemIndex extends ReactFeature implements Listener {
     }
 
     private record ItemReconcileTarget(UUID itemId, WeakReference<Item> reference, Item item) {
+    }
+
+    private record ReconcileFailureKey(String site, Class<? extends Throwable> type, StackTraceElement origin) {
+        private static ReconcileFailureKey of(String site, Throwable failure) {
+            StackTraceElement[] trace = failure.getStackTrace();
+            return new ReconcileFailureKey(site, failure.getClass(), trace.length == 0 ? null : trace[0]);
+        }
+    }
+
+    private static final class ReconcileFailureWindow {
+        private final AtomicLong lastReportMs = new AtomicLong(0L);
+        private final AtomicInteger suppressedReports = new AtomicInteger(0);
+
+        private void report(String site, Throwable failure, long now) {
+            long last = lastReportMs.get();
+            if (now - last < RECONCILE_FAILURE_REPORT_INTERVAL_MS || !lastReportMs.compareAndSet(last, now)) {
+                suppressedReports.incrementAndGet();
+                return;
+            }
+            int suppressed = suppressedReports.getAndSet(0);
+            String context = suppressed == 0
+                ? "Hopper item index " + site + " failed"
+                : "Hopper item index " + site + " failed (" + suppressed + " repeats suppressed since last report)";
+            React.reportError(context, failure);
+        }
     }
 }

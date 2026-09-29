@@ -135,6 +135,51 @@ class FeatureHopperItemIndexTest {
     }
   }
 
+  @Test
+  void distinctReconcileFailuresEachReportTheirFirstStackTrace() {
+    UUID worldId = UUID.randomUUID();
+    World world = Mockito.mock(World.class);
+    Mockito.when(world.getUID()).thenReturn(worldId);
+    Chunk transientChunk = Mockito.mock(Chunk.class);
+    Chunk brokenChunk = Mockito.mock(Chunk.class);
+    Mockito.when(world.isChunkLoaded(Mockito.anyInt(), Mockito.eq(0))).thenReturn(true);
+    Mockito.when(world.getChunkAt(0, 0, false)).thenReturn(transientChunk);
+    Mockito.when(world.getChunkAt(1, 0, false)).thenReturn(brokenChunk);
+    IllegalStateException transientFailure = new IllegalStateException("chunk entity view unavailable");
+    NullPointerException brokenFailure = new NullPointerException("entity list missing");
+    Mockito.when(transientChunk.getEntities()).thenThrow(transientFailure);
+    Mockito.when(brokenChunk.getEntities()).thenThrow(brokenFailure);
+    ObserverController observer = Mockito.mock(ObserverController.class);
+    Mockito.when(observer.nextLoadedChunkCoordinateBatch(64)).thenReturn(List.of(
+        new ObserverController.LoadedChunkTarget(worldId, 0, 0),
+        new ObserverController.LoadedChunkTarget(worldId, 1, 0)));
+    List<Throwable> reported = new ArrayList<>();
+
+    try (MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class);
+         MockedStatic<J> scheduling = Mockito.mockStatic(J.class);
+         MockedStatic<React> react = Mockito.mockStatic(React.class)) {
+      bukkit.when(() -> Bukkit.getWorld(worldId)).thenReturn(world);
+      scheduling.when(J::isFoliaThreading).thenReturn(false);
+      runSyncJobsImmediately(scheduling);
+      react.when(() -> React.controller(ObserverController.class)).thenReturn(observer);
+      react.when(() -> React.reportError(Mockito.any(Throwable.class)))
+          .thenAnswer(invocation -> reported.add(invocation.getArgument(0)));
+      react.when(() -> React.reportError(Mockito.anyString(), Mockito.any(Throwable.class)))
+          .thenAnswer(invocation -> reported.add(invocation.getArgument(1)));
+      FeatureHopperItemIndex feature = new FeatureHopperItemIndex();
+      feature.onActivate();
+
+      for (int pass = 0; pass < 5; pass++) {
+        feature.onTick();
+      }
+
+      Mockito.verify(transientChunk, Mockito.times(5)).getEntities();
+      Mockito.verify(brokenChunk, Mockito.times(5)).getEntities();
+      assertEquals(List.of(transientFailure, brokenFailure), reported);
+      feature.onDeactivate();
+    }
+  }
+
   private static WeakReference<Item> trackUnreferencedItem(FeatureHopperItemIndex feature, World world) {
     Item item = item(new UUID(3L, 1L), new Location(world, 1.5D, 64D, 1.5D));
     feature.on(new ItemSpawnEvent(item));
