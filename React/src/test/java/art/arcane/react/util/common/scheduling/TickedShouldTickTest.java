@@ -8,14 +8,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TickedShouldTickTest {
   @Test
-  void tickIsDueAtIntervalBoundary() {
-    assertFalse(Ticked.isTickDue(1049L, 1000L, 50L));
+  void tickIsDueWithinHalfALoopOfTheInterval() {
+    assertFalse(Ticked.isTickDue(1024L, 1000L, 50L));
+    assertTrue(Ticked.isTickDue(1025L, 1000L, 50L));
     assertTrue(Ticked.isTickDue(1050L, 1000L, 50L));
     assertTrue(Ticked.isTickDue(1100L, 1000L, 50L));
+    assertFalse(Ticked.isTickDue(1974L, 1000L, 1000L));
+    assertTrue(Ticked.isTickDue(1975L, 1000L, 1000L));
   }
 
   @Test
-  void defaultShouldTickFiresExactlyOneIntervalAfterTheLastTick() {
+  void defaultShouldTickIsDueOneIntervalAfterTheLastTick() {
     Ticked ticked = new BoundaryTicked(50L);
 
     assertTrue(ticked.shouldTick());
@@ -23,9 +26,11 @@ class TickedShouldTickTest {
 
   private static final class BoundaryTicked implements Ticked {
     private final long interval;
+    private final long lastTick;
 
     private BoundaryTicked(long interval) {
       this.interval = interval;
+      this.lastTick = M.ms() - interval;
     }
 
     @Override
@@ -70,7 +75,7 @@ class TickedShouldTickTest {
 
     @Override
     public long getTlastTick() {
-      return M.ms() - interval;
+      return lastTick;
     }
 
     @Override

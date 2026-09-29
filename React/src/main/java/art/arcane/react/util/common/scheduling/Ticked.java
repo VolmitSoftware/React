@@ -65,6 +65,6 @@ public interface Ticked {
   }
 
   static boolean isTickDue(long now, long lastTick, long interval) {
-    return now - lastTick >= interval;
+    return now - lastTick + Ticker.TICK_MS / 2L >= interval;
   }
 }

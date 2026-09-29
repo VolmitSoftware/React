@@ -30,6 +30,31 @@ class TickerCadenceTest {
   }
 
   @Test
+  void fiftyMillisecondTickStaysOnCadenceWhenWorkersStartLate() {
+    AtomicLong clock = new AtomicLong(1_000L);
+    List<Runnable> queued = new ArrayList<>();
+    ClockTicked ticked = new ClockTicked(clock::get, "late-start", 50L);
+    Ticker ticker = new Ticker(queued::add);
+    try {
+      ticker.register(ticked);
+      ticker.tick();
+
+      for (int loop = 1; loop <= 20; loop++) {
+        clock.set(1_000L + 50L * loop);
+        ticker.tick();
+        clock.addAndGet(5L);
+        while (!queued.isEmpty()) {
+          queued.remove(0).run();
+        }
+      }
+
+      assertEquals(20, ticked.runs);
+    } finally {
+      ticker.close();
+    }
+  }
+
+  @Test
   void loopDelayKeepsAFixedFiftyMillisecondRate() {
     assertEquals(50L, Ticker.nextDelayMS(0L));
     assertEquals(30L, Ticker.nextDelayMS(20L));

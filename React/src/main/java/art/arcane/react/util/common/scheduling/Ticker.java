@@ -50,7 +50,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class Ticker {
-  private static final long TICK_MS = 50L;
+  static final long TICK_MS = 50L;
   private static final long SLOW_TICK_WARN_THRESHOLD_MS = 50L;
   private static final double SLOW_TICK_MSPT_IMPACT_THRESHOLD_MS = 50D;
   private static final long SLOW_TICK_RECENCY_WINDOW_MS = 30_000L;

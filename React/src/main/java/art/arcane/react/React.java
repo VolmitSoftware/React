@@ -101,7 +101,7 @@ public class React extends VolmitPlugin implements ReloadAware {
   public static React instance;
   public static Thread serverThread;
   public static Ticker ticker;
-  public static ReactExecutors executors;
+  public static volatile ReactExecutors executors;
   // Lazy: Audiences links against slimjar-provided adventure types, so it must not be
   // loaded from <clinit> — the main class initializes before ApplicationBuilder.build().
   private static volatile Audiences audiencesFacade;
