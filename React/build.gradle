@@ -16,6 +16,7 @@
  */
 
 
+import art.arcane.volmit.packaging.PackagingMode
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import io.github.slimjar.resolver.data.Mirror
 
@@ -39,7 +40,7 @@ plugins {
 apply plugin: 'art.arcane.volmit-packaging'
 
 
-version = '2.0.6-26.2' // Needs to be version specific
+version = '2.1.0-26.2' // Needs to be version specific
 def apiVersion = '26.1'
 def pluginName = rootProject.name // Defined in settings.gradle.kts
 String mainClass = 'art.arcane.react.React'
@@ -335,6 +336,10 @@ if (!JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_25)) {
 pluginPackaging {
     artifacts {
         create('distribution') {
+            stripDirectories = true
+            stripLocalVariables = true
+            releaseCompression = providers.gradleProperty('compactRelease').map { it.toBoolean() }
+                    .getOrElse(!PackagingMode.resolve(providers).development())
             packed = true
             packedJarAccessors = ['art/arcane/react/React#jar']
             taskName = 'shadowJar'
