@@ -39,6 +39,7 @@ public final class TickClock implements Listener {
   public static final int HISTORY_TICKS = 1200;
   static final long EPOCH_NANOS = 250_000_000L;
   static final long TPS_WINDOW_NANOS = 5_000_000_000L;
+  static final int EMPTY_WORK_TIME_LATCH_TICKS = 40;
   private static final long NOMINAL_TICK_NANOS = 50_000_000L;
   private static final long STALL_GRACE_NANOS = EPOCH_NANOS + NOMINAL_TICK_NANOS;
   private static final double NANOS_PER_MS = 1_000_000D;
@@ -56,7 +57,9 @@ public final class TickClock implements Listener {
   private int tickCount;
   private int workHead;
   private int workCount;
-  private long[] previousTickTimes;
+  private int ticksSinceEpoch;
+  private int ticksWithoutWorkTimes;
+  private long[] latestTickTimes = EMPTY_LONGS;
   private boolean workTimeUnsupported;
   private boolean hasEpoch;
   private long lastEpochNanos;
@@ -103,10 +106,6 @@ public final class TickClock implements Listener {
     return snapshot;
   }
 
-  public long lastTickNanos() {
-    return lastTickNanos;
-  }
-
   public double millisSinceLastTick(long nowNanos) {
     if (!hasLastTick) {
       return 0D;
@@ -122,13 +121,15 @@ public final class TickClock implements Listener {
 
     lastTickNanos = nowNanos;
     hasLastTick = true;
+    ticksSinceEpoch++;
     if (hasEpoch && nowNanos - lastEpochNanos < EPOCH_NANOS) {
       return;
     }
 
     hasEpoch = true;
     lastEpochNanos = nowNanos;
-    refreshWorkTimes(nowNanos);
+    refreshWorkTimes(nowNanos, ticksSinceEpoch);
+    ticksSinceEpoch = 0;
     snapshot = buildSnapshot(nowNanos);
   }
 
@@ -159,7 +160,9 @@ public final class TickClock implements Listener {
     tickCount = 0;
     workHead = 0;
     workCount = 0;
-    previousTickTimes = null;
+    ticksSinceEpoch = 0;
+    ticksWithoutWorkTimes = 0;
+    latestTickTimes = EMPTY_LONGS;
     workTimeUnsupported = false;
     hasEpoch = false;
     lastEpochNanos = 0L;
@@ -190,28 +193,36 @@ public final class TickClock implements Listener {
     }
   }
 
-  private void refreshWorkTimes(long nowNanos) {
+  private void refreshWorkTimes(long nowNanos, int newTicks) {
     if (workTimeUnsupported) {
       return;
     }
 
     long[] times = tickTimesSource.get();
     if (times == null) {
-      workTimeUnsupported = true;
-      previousTickTimes = null;
+      latchGapMode();
       return;
     }
 
-    long[] current = times.clone();
-    if (previousTickTimes != null && previousTickTimes.length == current.length) {
-      for (int i = 0; i < current.length; i++) {
-        if (current[i] > 0L && current[i] != previousTickTimes[i]) {
-          recordWork(nowNanos, current[i] / NANOS_PER_MS);
-        }
+    if (times.length == 0) {
+      ticksWithoutWorkTimes += newTicks;
+      if (ticksWithoutWorkTimes >= EMPTY_WORK_TIME_LATCH_TICKS) {
+        latchGapMode();
       }
+      return;
     }
 
-    previousTickTimes = current;
+    ticksWithoutWorkTimes = 0;
+    for (int i = times.length - Math.min(newTicks, times.length); i < times.length; i++) {
+      recordWork(nowNanos, times[i] / NANOS_PER_MS);
+    }
+
+    latestTickTimes = times;
+  }
+
+  private void latchGapMode() {
+    workTimeUnsupported = true;
+    latestTickTimes = EMPTY_LONGS;
   }
 
   private Snapshot buildSnapshot(long nowNanos) {
@@ -222,29 +233,22 @@ public final class TickClock implements Listener {
     long[] workAt = new long[workCount];
     double[] work = new double[workCount];
     copyRing(workAtNanos, workMS, workHead, workCount, workAt, work);
-    return new Snapshot(nowNanos, workTimeMode, workTimeMode ? sortedWorkTimes() : EMPTY_DOUBLES, ticks, gaps, workAt, work);
+    double[] sorted = workTimeMode ? sortedMillis(latestTickTimes) : sortedCopy(gaps);
+    return new Snapshot(nowNanos, workTimeMode, sorted, ticks, gaps, workAt, work);
   }
 
-  private double[] sortedWorkTimes() {
-    if (previousTickTimes == null) {
-      return EMPTY_DOUBLES;
+  private static double[] sortedMillis(long[] nanos) {
+    double[] sorted = new double[nanos.length];
+    for (int i = 0; i < nanos.length; i++) {
+      sorted[i] = nanos[i] / NANOS_PER_MS;
     }
 
-    int valid = 0;
-    for (long time : previousTickTimes) {
-      if (time > 0L) {
-        valid++;
-      }
-    }
+    Arrays.sort(sorted);
+    return sorted;
+  }
 
-    double[] sorted = new double[valid];
-    int index = 0;
-    for (long time : previousTickTimes) {
-      if (time > 0L) {
-        sorted[index++] = time / NANOS_PER_MS;
-      }
-    }
-
+  private static double[] sortedCopy(double[] values) {
+    double[] sorted = values.clone();
     Arrays.sort(sorted);
     return sorted;
   }
@@ -275,7 +279,7 @@ public final class TickClock implements Listener {
 
     private final long builtAtNanos;
     private final boolean workTimeMode;
-    private final double[] sortedWorkMS;
+    private final double[] sortedMS;
     private final long[] tickAtNanos;
     private final double[] gapMS;
     private final long[] workAtNanos;
@@ -284,7 +288,7 @@ public final class TickClock implements Listener {
     private Snapshot(
         long builtAtNanos,
         boolean workTimeMode,
-        double[] sortedWorkMS,
+        double[] sortedMS,
         long[] tickAtNanos,
         double[] gapMS,
         long[] workAtNanos,
@@ -292,15 +296,11 @@ public final class TickClock implements Listener {
     ) {
       this.builtAtNanos = builtAtNanos;
       this.workTimeMode = workTimeMode;
-      this.sortedWorkMS = sortedWorkMS;
+      this.sortedMS = sortedMS;
       this.tickAtNanos = tickAtNanos;
       this.gapMS = gapMS;
       this.workAtNanos = workAtNanos;
       this.workMS = workMS;
-    }
-
-    public long builtAtNanos() {
-      return builtAtNanos;
     }
 
     public boolean workTimeMode() {
@@ -312,21 +312,40 @@ public final class TickClock implements Listener {
     }
 
     public boolean hasHistory() {
-      return workTimeMode ? sortedWorkMS.length > 0 : gapMS.length > 0;
+      return sortedMS.length > 0;
     }
 
     public double percentile(double percentile, int historyTicks) {
       if (workTimeMode) {
-        return SamplerMath.percentileSorted(sortedWorkMS, percentile);
+        return SamplerMath.percentileSorted(sortedMS, percentile);
       }
 
-      double[] tail = gapTail(historyTicks);
+      int size = gapTailSize(historyTicks);
+      if (size == gapMS.length) {
+        return SamplerMath.percentileSorted(sortedMS, percentile);
+      }
+
+      double[] tail = Arrays.copyOfRange(gapMS, gapMS.length - size, gapMS.length);
       Arrays.sort(tail);
       return SamplerMath.percentileSorted(tail, percentile);
     }
 
     public double averageTickMS(int historyTicks) {
-      return SamplerMath.mean(workTimeMode ? sortedWorkMS : gapTail(historyTicks));
+      if (workTimeMode) {
+        return SamplerMath.mean(sortedMS);
+      }
+
+      int size = gapTailSize(historyTicks);
+      if (size == 0) {
+        return 0D;
+      }
+
+      double total = 0D;
+      for (int i = gapMS.length - size; i < gapMS.length; i++) {
+        total += gapMS[i];
+      }
+
+      return total / size;
     }
 
     public double spikesPerMinute(long nowNanos, double thresholdMS, long windowMS) {
@@ -365,7 +384,7 @@ public final class TickClock implements Listener {
       long reference = nowNanos - builtAtNanos <= STALL_GRACE_NANOS ? builtAtNanos : nowNanos;
       long windowStart = reference - TPS_WINDOW_NANOS;
       int count = 0;
-      long oldest = reference;
+      long spanStart = reference;
       for (int i = tickAtNanos.length - 1; i >= 0; i--) {
         long at = tickAtNanos[i];
         if (at <= windowStart) {
@@ -375,20 +394,23 @@ public final class TickClock implements Listener {
           continue;
         }
         count++;
-        oldest = at;
+        spanStart = at - Math.round(gapMS[i] * NANOS_PER_MS);
       }
 
       if (count == 0) {
         return 0D;
       }
 
-      double spanSeconds = ((reference - oldest) + NOMINAL_TICK_NANOS) / 1_000_000_000D;
-      return Math.min(NOMINAL_TICKS_PER_SECOND, count / spanSeconds);
+      long spanNanos = reference - spanStart;
+      if (spanNanos <= 0L) {
+        return NOMINAL_TICKS_PER_SECOND;
+      }
+
+      return Math.min(NOMINAL_TICKS_PER_SECOND, count / (spanNanos / 1_000_000_000D));
     }
 
-    private double[] gapTail(int historyTicks) {
-      int size = Math.min(Math.max(1, historyTicks), gapMS.length);
-      return Arrays.copyOfRange(gapMS, gapMS.length - size, gapMS.length);
+    private int gapTailSize(int historyTicks) {
+      return Math.min(Math.max(1, historyTicks), gapMS.length);
     }
   }
 }

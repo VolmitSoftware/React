@@ -36,8 +36,23 @@ class SamplerTicksPerSecondTest {
       clock.tick(at);
     }
 
-    Assertions.assertEquals(10D, sampler.onSample(), 0.25D);
+    Assertions.assertEquals(10D, sampler.onSample(), 1.0E-9D);
     Assertions.assertEquals("10", sampler.formattedValue(10.1D));
+  }
+
+  @Test
+  void halfSecondTicksReadTwoTicksPerSecond() {
+    TickClock clock = new TickClock(() -> null);
+    SamplerTicksPerSecond sampler = new SamplerTicksPerSecond(clock);
+    sampler.start();
+    long at = System.nanoTime() - 10_050L * MS;
+    for (int i = 0; i < 20; i++) {
+      at += 500L * MS;
+      clock.tick(at);
+    }
+
+    Assertions.assertEquals(2D, sampler.onSample(), 1.0E-9D);
+    Assertions.assertEquals("2", sampler.formattedValue(2D));
   }
 
   @Test

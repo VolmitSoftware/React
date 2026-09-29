@@ -49,23 +49,15 @@ class SamplerTickSpikeRateTest {
 
   @Test
   void workTimeSpikesUseTheConfiguredThreshold() throws ReflectiveOperationException {
-    long[] baseline = new long[100];
-    for (int i = 0; i < baseline.length; i++) {
-      baseline[i] = 5L * MS;
-    }
-    long[][] current = {baseline};
-    TickClock clock = new TickClock(() -> current[0]);
+    SimulatedServerTickTimes server = new SimulatedServerTickTimes();
+    TickClock clock = new TickClock(server);
     SamplerTickSpikeRate sampler = new SamplerTickSpikeRate(clock);
     sampler.start();
 
-    long at = System.nanoTime() - 1_000L * MS;
-    clock.tick(at);
-    long[] next = baseline.clone();
-    next[3] = 70L * MS;
-    next[4] = 40L * MS;
-    current[0] = next;
-    at += 500L * MS;
-    clock.tick(at);
+    long at = server.ticks(clock, System.nanoTime() - 20_000L * MS, 100, 5L * MS);
+    at = server.tick(clock, at, 70L * MS);
+    at = server.tick(clock, at, 40L * MS);
+    server.ticks(clock, at, 6, 5L * MS);
 
     Assertions.assertEquals(1D, sampler.onSample(), 1.0E-9D);
 

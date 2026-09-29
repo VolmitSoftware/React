@@ -12,19 +12,18 @@ class SamplerTickTimeTest {
 
   @Test
   void averagesTheServerTickWorkTime() {
-    long[] tickTimes = new long[100];
-    for (int i = 0; i < tickTimes.length; i++) {
-      tickTimes[i] = 37_500_000L;
-    }
-    TickClock clock = new TickClock(() -> tickTimes);
+    SimulatedServerTickTimes server = new SimulatedServerTickTimes();
+    TickClock clock = new TickClock(server);
     SamplerTickTime sampler = new SamplerTickTime(clock);
     sampler.start();
 
     assertFalse(sampler.isSampleAvailable());
-    clock.tick(BASE);
+    long at = server.ticks(clock, BASE, 20, 37_500_000L);
+    clock.tick(at);
 
     assertTrue(sampler.isSampleAvailable());
     assertEquals(37.5D, sampler.onSample(), 1.0E-9D);
+    assertEquals("ms", sampler.formattedSuffix(37.5D));
   }
 
   @Test
@@ -47,8 +46,7 @@ class SamplerTickTimeTest {
 
   @Test
   void formatsSubMillisecondTickTimeWithTwoDecimals() {
-    long[] tickTimes = new long[100];
-    TickClock clock = new TickClock(() -> tickTimes);
+    TickClock clock = new TickClock(() -> new long[0]);
     SamplerTickTime sampler = new SamplerTickTime(clock);
     clock.tick(BASE);
 
@@ -59,9 +57,8 @@ class SamplerTickTimeTest {
   }
 
   @Test
-  void invalidHistoryCannotSignalPressure() {
-    long[] tickTimes = new long[100];
-    TickClock clock = new TickClock(() -> tickTimes);
+  void emptyWorkTimeWindowIsUnavailable() {
+    TickClock clock = new TickClock(() -> new long[0]);
     SamplerTickTime sampler = new SamplerTickTime(clock);
     sampler.start();
     clock.tick(BASE);
