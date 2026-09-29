@@ -25,6 +25,7 @@ import art.arcane.react.api.protect.ReactOperation;
 import art.arcane.react.api.protect.ReactProtection;
 import art.arcane.react.api.protect.internal.ProtectionGuards;
 import art.arcane.react.core.controller.EntityController;
+import art.arcane.react.core.controller.NearbyPlayerIndexController;
 import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.model.ReactEntity;
 import art.arcane.react.util.common.scheduling.J;
@@ -46,6 +47,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.UUID;
@@ -257,17 +259,50 @@ public class FeatureEntityTrimmer extends ReactFeature {
       return;
     }
 
-    int anchorCount = Math.min(players.length, MAX_ANCHORS_PER_CYCLE);
-    int start = Math.floorMod(nextAnchor.getAndAdd(anchorCount), players.length);
-    ScanFlight flight = new ScanFlight(generation, anchorCount);
-    for (int i = 0; i < anchorCount; i++) {
-      Player player = players[(start + i) % players.length];
+    List<Player> anchors = selectAnchors(players);
+    ScanFlight flight = new ScanFlight(generation, anchors.size());
+    for (Player player : anchors) {
       if (folia) {
         flight.scheduleScan(player);
       } else {
-        flight.runScan(player, false);
+        flight.queueScan(player);
       }
     }
+  }
+
+  private List<Player> selectAnchors(Player[] players) {
+    NearbyPlayerIndexController index = React.controller(NearbyPlayerIndexController.class);
+    int cellBlocks = Math.max(16, playerMobBlockDistance);
+    int start = Math.floorMod(nextAnchor.get(), players.length);
+    List<Player> anchors = new ArrayList<>(Math.min(players.length, MAX_ANCHORS_PER_CYCLE));
+    Set<AnchorCell> cells = new HashSet<>();
+    int visited = 0;
+    while (visited < players.length && anchors.size() < MAX_ANCHORS_PER_CYCLE) {
+      Player player = players[(start + visited) % players.length];
+      visited++;
+      AnchorCell cell = anchorCell(index, player, cellBlocks);
+      if (cell == null || cells.add(cell)) {
+        anchors.add(player);
+      }
+    }
+    nextAnchor.addAndGet(visited);
+    return anchors;
+  }
+
+  private AnchorCell anchorCell(NearbyPlayerIndexController index, Player player, int cellBlocks) {
+    if (index == null || player == null) {
+      return null;
+    }
+    Optional<NearbyPlayerIndexController.PlayerViewSnapshot> snapshot = index.playerSnapshot(player.getUniqueId());
+    if (snapshot.isEmpty()) {
+      return null;
+    }
+    NearbyPlayerIndexController.PlayerViewSnapshot view = snapshot.get();
+    return new AnchorCell(
+        view.worldId(),
+        Math.floorDiv((int) Math.floor(view.x()), cellBlocks),
+        Math.floorDiv((int) Math.floor(view.z()), cellBlocks)
+    );
   }
 
   private Player[] capturePlayers(boolean folia) {
@@ -301,18 +336,17 @@ public class FeatureEntityTrimmer extends ReactFeature {
     }
 
     double radiusSquared = (double) radius * radius;
-    Map<ChunkKey, Integer> chunkCounts = new HashMap<>();
-    int playerCount = countObservedEntities(nearby, playerLocation, radiusSquared, folia, chunkCounts, generation);
-    if (!isCurrent(generation) || playerCount == 0) {
+    ObservedEntities observed = observeEntities(nearby, playerLocation, radiusSquared, folia, generation);
+    if (!isCurrent(generation) || observed.count == 0) {
       return;
     }
 
-    List<EntityCandidate> candidates = inspectCandidates(nearby, playerLocation, radiusSquared, folia, generation);
+    List<EntityCandidate> candidates = inspectCandidates(observed, generation);
     if (candidates.isEmpty()) {
       return;
     }
 
-    int playerOverflow = overflow(playerCount, softMaxEntitiesPerPlayer);
+    int playerOverflow = overflow(observed.count, softMaxEntitiesPerPlayer);
     accumulator.record(ScopeKey.player(player.getUniqueId()), playerOverflow, candidates);
 
     int worldOverflow = overflow(world.getEntityCount(), softMaxEntitiesPerWorld);
@@ -322,35 +356,44 @@ public class FeatureEntityTrimmer extends ReactFeature {
     for (EntityCandidate candidate : candidates) {
       candidatesByChunk.computeIfAbsent(candidate.chunk, ignored -> new ArrayList<>()).add(candidate);
     }
-    for (Map.Entry<ChunkKey, Integer> entry : chunkCounts.entrySet()) {
+    for (Map.Entry<ChunkKey, Integer> entry : observed.chunkCounts.entrySet()) {
       List<EntityCandidate> chunkCandidates = candidatesByChunk.get(entry.getKey());
-      int chunkCount = exactChunkCount(chunkCandidates, entry.getValue());
+      int chunkCount = exactChunkCount(accumulator, entry.getKey(), chunkCandidates, entry.getValue());
       int chunkOverflow = overflow(chunkCount, softMaxEntitiesPerChunk);
       accumulator.record(ScopeKey.chunk(entry.getKey()), chunkOverflow, chunkCandidates);
     }
   }
 
-  private int exactChunkCount(List<EntityCandidate> candidates, int observedCount) {
-    if (candidates == null || candidates.isEmpty()) {
+  private int exactChunkCount(
+      ScanAccumulator accumulator,
+      ChunkKey chunkKey,
+      List<EntityCandidate> candidates,
+      int observedCount
+  ) {
+    if (candidates == null || candidates.isEmpty() || softMaxEntitiesPerChunk < 0) {
       return observedCount;
     }
 
-    Chunk chunk = candidates.getFirst().entity.getChunk();
-    return chunk == null ? observedCount : Math.max(observedCount, chunk.getEntities().length);
+    Integer counted = accumulator.exactChunkCounts.get(chunkKey);
+    if (counted == null) {
+      Chunk chunk = candidates.getFirst().entity.getChunk();
+      counted = chunk == null ? observedCount : chunk.getEntities().length;
+      accumulator.exactChunkCounts.put(chunkKey, counted);
+    }
+    return Math.max(observedCount, counted);
   }
 
-  private int countObservedEntities(
+  private ObservedEntities observeEntities(
       List<Entity> nearby,
       Location playerLocation,
       double radiusSquared,
       boolean folia,
-      Map<ChunkKey, Integer> chunkCounts,
       long generation
   ) {
-    int count = 0;
+    ObservedEntities observed = new ObservedEntities(nearby.size());
     for (Entity entity : nearby) {
       if (!isCurrent(generation)) {
-        return count;
+        return observed;
       }
       if (entity == null || (folia && !J.isOwnedByCurrentRegion(entity))) {
         continue;
@@ -361,41 +404,24 @@ public class FeatureEntityTrimmer extends ReactFeature {
         continue;
       }
 
-      count++;
-      ChunkKey chunk = ChunkKey.of(location);
-      chunkCounts.merge(chunk, 1, Integer::sum);
+      observed.add(entity, ChunkKey.of(location));
     }
-    return count;
+    return observed;
   }
 
-  private List<EntityCandidate> inspectCandidates(
-      List<Entity> nearby,
-      Location playerLocation,
-      double radiusSquared,
-      boolean folia,
-      long generation
-  ) {
-    int size = nearby.size();
+  private List<EntityCandidate> inspectCandidates(ObservedEntities observed, long generation) {
+    int size = observed.count;
     int start = Math.floorMod(nextEntity.getAndAdd(MAX_INSPECTED_ENTITIES_PER_ANCHOR), size);
-    int inspected = 0;
-    List<EntityCandidate> candidates = new ArrayList<>(Math.min(size, MAX_INSPECTED_ENTITIES_PER_ANCHOR));
+    int limit = Math.min(size, MAX_INSPECTED_ENTITIES_PER_ANCHOR);
+    List<EntityCandidate> candidates = new ArrayList<>(limit);
 
-    for (int offset = 0; offset < size && inspected < MAX_INSPECTED_ENTITIES_PER_ANCHOR; offset++) {
+    for (int offset = 0; offset < limit; offset++) {
       if (!isCurrent(generation)) {
         return List.of();
       }
 
-      Entity entity = nearby.get((start + offset) % size);
-      if (entity == null || (folia && !J.isOwnedByCurrentRegion(entity))) {
-        continue;
-      }
-
-      Location location = entity.getLocation();
-      if (!withinRadius(playerLocation, location, radiusSquared)) {
-        continue;
-      }
-      inspected++;
-
+      int index = (start + offset) % size;
+      Entity entity = observed.entities[index];
       UUID entityId = entity.getUniqueId();
       if (entityId == null || !isValidTarget(entity)) {
         continue;
@@ -406,7 +432,7 @@ public class FeatureEntityTrimmer extends ReactFeature {
         continue;
       }
 
-      candidates.add(new EntityCandidate(entity, entityId, priority, ChunkKey.of(location)));
+      candidates.add(new EntityCandidate(entity, entityId, priority, observed.chunks[index]));
     }
     return candidates;
   }
@@ -530,6 +556,15 @@ public class FeatureEntityTrimmer extends ReactFeature {
       }
     }
 
+    private void queueScan(Player player) {
+      try {
+        J.s(() -> runScan(player, false));
+      } catch (RuntimeException | Error failure) {
+        React.reportError(failure);
+        completeScan();
+      }
+    }
+
     private void runScan(Player player, boolean folia) {
       try {
         if (isCurrent(generation)) {
@@ -610,6 +645,7 @@ public class FeatureEntityTrimmer extends ReactFeature {
 
   private static final class ScanAccumulator {
     private final Map<ScopeKey, CandidateGroup> groups = new ConcurrentHashMap<>();
+    private final Map<ChunkKey, Integer> exactChunkCounts = new ConcurrentHashMap<>();
 
     private void record(ScopeKey scope, int overflow, List<EntityCandidate> candidates) {
       if (overflow <= 0 || candidates == null || candidates.isEmpty()) {
@@ -712,6 +748,28 @@ public class FeatureEntityTrimmer extends ReactFeature {
       sorted.sort(Comparator.comparingDouble(EntityCandidate::priority));
       return sorted;
     }
+  }
+
+  private static final class ObservedEntities {
+    private final Entity[] entities;
+    private final ChunkKey[] chunks;
+    private final Map<ChunkKey, Integer> chunkCounts = new HashMap<>();
+    private int count;
+
+    private ObservedEntities(int capacity) {
+      entities = new Entity[capacity];
+      chunks = new ChunkKey[capacity];
+    }
+
+    private void add(Entity entity, ChunkKey chunk) {
+      entities[count] = entity;
+      chunks[count] = chunk;
+      count++;
+      chunkCounts.merge(chunk, 1, Integer::sum);
+    }
+  }
+
+  private record AnchorCell(UUID worldId, int x, int z) {
   }
 
   private enum Scope {
