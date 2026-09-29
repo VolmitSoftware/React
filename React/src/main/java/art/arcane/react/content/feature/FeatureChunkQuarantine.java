@@ -23,9 +23,9 @@ import art.arcane.react.React;
 import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.content.sampler.SamplerIncidentScore;
 import art.arcane.react.content.sampler.SamplerTickTime;
+import art.arcane.react.util.project.world.HopperMoveContext;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
-import org.bukkit.block.Hopper;
 import org.bukkit.entity.Monster;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -35,16 +35,17 @@ import org.bukkit.event.block.BlockRedstoneEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 
-import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.objects.ObjectIterator;
+import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import it.unimi.dsi.fastutil.objects.ObjectBidirectionalIterator;
 
-import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Chunk Quarantine feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureChunkQuarantine extends ReactFeature implements Listener {
@@ -88,8 +89,9 @@ public class FeatureChunkQuarantine extends ReactFeature implements Listener {
   private int maxExpiryScansPerCycle = 1024;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Maintenance cadence used by chunk quarantine for pressure checks and stale-state cleanup (milliseconds).", impact = "Lower values respond and clean faster with more overhead; higher values reduce overhead but react/clean slower.")
   private int maintenanceIntervalMS = 1000;
-  private transient Map<UUID, Long2ObjectOpenHashMap<ChunkState>> states = new ConcurrentHashMap<>();
+  private transient Map<UUID, Long2ObjectLinkedOpenHashMap<ChunkState>> states = new ConcurrentHashMap<>();
   private transient final AtomicInteger trackedCount = new AtomicInteger(0);
+  private transient final AtomicLong quarantineDeadlineMS = new AtomicLong(0L);
   private transient volatile boolean pressure;
   private transient volatile long lastMaintenanceMS;
 
@@ -101,6 +103,7 @@ public class FeatureChunkQuarantine extends ReactFeature implements Listener {
   public void onActivate() {
     states = new ConcurrentHashMap<>();
     trackedCount.set(0);
+    quarantineDeadlineMS.set(0L);
     pressure = false;
     maintenanceQueued.set(false);
     lastMaintenanceMS = 0L;
@@ -110,6 +113,7 @@ public class FeatureChunkQuarantine extends ReactFeature implements Listener {
   public void onDeactivate() {
     states.clear();
     trackedCount.set(0);
+    quarantineDeadlineMS.set(0L);
     pressure = false;
     maintenanceQueued.set(false);
     lastMaintenanceMS = 0L;
@@ -154,31 +158,33 @@ public class FeatureChunkQuarantine extends ReactFeature implements Listener {
 
     lastMaintenanceMS = now;
     pressure = !onlyDuringPressure || isPressure();
+    long deadline = quarantineDeadlineMS.get();
+    if (deadline != 0L && now >= deadline) {
+      quarantineDeadlineMS.compareAndSet(deadline, 0L);
+    }
+
     long expiry = Math.max(windowMS * 8L, quarantineMS * 2L);
     int maxRemovals = Math.max(16, maxExpiryRemovalsPerCycle);
     int maxScans = Math.max(maxRemovals, maxExpiryScansPerCycle);
     int removed = 0;
     int scanned = 0;
 
-    Iterator<Map.Entry<UUID, Long2ObjectOpenHashMap<ChunkState>>> worldIterator = states.entrySet().iterator();
-    outer:
-    while (worldIterator.hasNext()) {
-      Map.Entry<UUID, Long2ObjectOpenHashMap<ChunkState>> worldEntry = worldIterator.next();
-      Long2ObjectOpenHashMap<ChunkState> chunkMap = worldEntry.getValue();
+    for (Long2ObjectLinkedOpenHashMap<ChunkState> chunkMap : states.values()) {
       synchronized (chunkMap) {
-        ObjectIterator<Long2ObjectOpenHashMap.Entry<ChunkState>> chunkIterator = chunkMap.long2ObjectEntrySet().fastIterator();
+        ObjectBidirectionalIterator<Long2ObjectMap.Entry<ChunkState>> chunkIterator = chunkMap.long2ObjectEntrySet().fastIterator();
         while (chunkIterator.hasNext()) {
-          if (scanned++ >= maxScans) {
-            break outer;
+          if (scanned >= maxScans || removed >= maxRemovals) {
+            return;
           }
+          scanned++;
           ChunkState state = chunkIterator.next().getValue();
-          if (now - state.lastHit > expiry && now >= state.quarantinedUntil) {
+          if (now - state.lastHit <= expiry) {
+            break;
+          }
+          if (now >= state.quarantinedUntil) {
             chunkIterator.remove();
             trackedCount.decrementAndGet();
             removed++;
-            if (removed >= maxRemovals) {
-              break outer;
-            }
           }
         }
       }
@@ -187,16 +193,17 @@ public class FeatureChunkQuarantine extends ReactFeature implements Listener {
 
   @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
   public void on(CreatureSpawnEvent event) {
-    if (!shouldTrackSpawn(event.getSpawnReason())) {
+    if (isIdle() || !shouldTrackSpawn(event.getSpawnReason())) {
       return;
     }
 
-    boolean quarantined = registerActivity(event.getLocation(), event.getEntity() instanceof Monster ? 1.4 : 1.0);
+    Location location = event.getLocation();
+    boolean quarantined = registerActivity(location, event.getEntity() instanceof Monster ? 1.4 : 1.0);
     if (!quarantined) {
       return;
     }
 
-    if (bypassNearPlayers && React.hasNearbyPlayer(event.getLocation(), bypassPlayerRadius)) {
+    if (bypassNearPlayers && React.hasNearbyPlayer(location, bypassPlayerRadius)) {
       return;
     }
 
@@ -205,12 +212,12 @@ public class FeatureChunkQuarantine extends ReactFeature implements Listener {
 
   @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
   public void on(BlockRedstoneEvent event) {
-    if (!trackRedstone || event.getOldCurrent() == event.getNewCurrent()) {
+    if (!trackRedstone || event.getOldCurrent() == event.getNewCurrent() || isIdle()) {
       return;
     }
 
     Block block = event.getBlock();
-    boolean quarantined = registerActivity(block.getLocation(), 0.8);
+    boolean quarantined = registerActivity(block, 0.8);
     if (!quarantined) {
       return;
     }
@@ -224,7 +231,7 @@ public class FeatureChunkQuarantine extends ReactFeature implements Listener {
 
   @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
   public void on(BlockPhysicsEvent event) {
-    if (!trackPhysics) {
+    if (!trackPhysics || isIdle()) {
       return;
     }
 
@@ -234,7 +241,7 @@ public class FeatureChunkQuarantine extends ReactFeature implements Listener {
     }
 
     Block block = event.getBlock();
-    boolean quarantined = registerActivity(block.getLocation(), 0.45);
+    boolean quarantined = registerActivity(block, 0.45);
     if (!quarantined) {
       return;
     }
@@ -248,11 +255,11 @@ public class FeatureChunkQuarantine extends ReactFeature implements Listener {
 
   @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
   public void on(InventoryMoveItemEvent event) {
-    if (!trackHoppers) {
+    if (!trackHoppers || isIdle()) {
       return;
     }
 
-    Location location = resolveHopperLocation(event);
+    Location location = HopperMoveContext.resolve(event).hopperLocation();
     if (location == null) {
       return;
     }
@@ -269,37 +276,91 @@ public class FeatureChunkQuarantine extends ReactFeature implements Listener {
     event.setCancelled(true);
   }
 
+  private boolean isIdle() {
+    if (pressure) {
+      return false;
+    }
+
+    long deadline = quarantineDeadlineMS.get();
+    return deadline == 0L || System.currentTimeMillis() >= deadline;
+  }
+
   private boolean registerActivity(Location location, double score) {
     if (location == null || location.getWorld() == null) {
       return false;
     }
 
-    UUID worldId = location.getWorld().getUID();
-    long chunkKey = packChunk(location.getBlockX() >> 4, location.getBlockZ() >> 4);
-    Long2ObjectOpenHashMap<ChunkState> chunkMap = states.computeIfAbsent(worldId, ignored -> new Long2ObjectOpenHashMap<>());
-    long now = System.currentTimeMillis();
-    ChunkState state;
-    synchronized (chunkMap) {
-      state = chunkMap.get(chunkKey);
-      if (state == null) {
-        if (trackedCount.get() >= maxTrackedChunks) {
-          return false;
-        }
-        state = new ChunkState(now);
-        chunkMap.put(chunkKey, state);
-        trackedCount.incrementAndGet();
-      }
-    }
+    return registerActivity(location.getWorld().getUID(), location.getBlockX() >> 4, location.getBlockZ() >> 4, score);
+  }
 
+  private boolean registerActivity(Block block, double score) {
+    return registerActivity(block.getWorld().getUID(), block.getX() >> 4, block.getZ() >> 4, score);
+  }
+
+  private boolean registerActivity(UUID worldId, int chunkX, int chunkZ, double score) {
+    long now = System.currentTimeMillis();
+    ChunkState state = track(worldId, packChunk(chunkX, chunkZ), now);
     state.rollover(windowMS, now);
     state.score += score;
 
     if (pressure && state.score >= scoreTrigger) {
-      state.quarantinedUntil = Math.max(state.quarantinedUntil, now + quarantineMS);
+      long until = Math.max(state.quarantinedUntil, now + quarantineMS);
+      state.quarantinedUntil = until;
       state.score = scoreTrigger * 0.5;
+      quarantineDeadlineMS.accumulateAndGet(until, Math::max);
     }
 
     return now < state.quarantinedUntil;
+  }
+
+  private ChunkState track(UUID worldId, long chunkKey, long now) {
+    Long2ObjectLinkedOpenHashMap<ChunkState> chunkMap = states.get(worldId);
+    if (chunkMap == null) {
+      chunkMap = states.computeIfAbsent(worldId, ignored -> new Long2ObjectLinkedOpenHashMap<>());
+    }
+
+    ChunkState state;
+    synchronized (chunkMap) {
+      state = chunkMap.getAndMoveToLast(chunkKey);
+      if (state != null) {
+        return state;
+      }
+
+      state = new ChunkState(now);
+      chunkMap.putAndMoveToLast(chunkKey, state);
+    }
+
+    if (trackedCount.incrementAndGet() > Math.max(1, maxTrackedChunks)) {
+      evictLeastRecentlyActive();
+    }
+    return state;
+  }
+
+  private void evictLeastRecentlyActive() {
+    Long2ObjectLinkedOpenHashMap<ChunkState> oldestMap = null;
+    long oldestHit = Long.MAX_VALUE;
+    for (Long2ObjectLinkedOpenHashMap<ChunkState> chunkMap : states.values()) {
+      synchronized (chunkMap) {
+        if (!chunkMap.isEmpty()) {
+          long lastHit = chunkMap.get(chunkMap.firstLongKey()).lastHit;
+          if (lastHit < oldestHit) {
+            oldestHit = lastHit;
+            oldestMap = chunkMap;
+          }
+        }
+      }
+    }
+
+    if (oldestMap == null) {
+      return;
+    }
+
+    synchronized (oldestMap) {
+      if (!oldestMap.isEmpty()) {
+        oldestMap.removeFirst();
+        trackedCount.decrementAndGet();
+      }
+    }
   }
 
   private static long packChunk(int cx, int cz) {
@@ -320,18 +381,6 @@ public class FeatureChunkQuarantine extends ReactFeature implements Listener {
   private boolean isPressure() {
     return sample(SamplerTickTime.ID) >= pressureTickMS
         || sample(SamplerIncidentScore.ID) >= pressureIncidentScore;
-  }
-
-  private Location resolveHopperLocation(InventoryMoveItemEvent event) {
-    if (event.getSource().getHolder() instanceof Hopper source) {
-      return source.getBlock().getLocation();
-    }
-
-    if (event.getDestination().getHolder() instanceof Hopper destination) {
-      return destination.getBlock().getLocation();
-    }
-
-    return null;
   }
 
   private static final class ChunkState {
