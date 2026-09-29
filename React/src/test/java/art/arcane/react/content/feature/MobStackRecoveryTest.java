@@ -300,6 +300,51 @@ class MobStackRecoveryTest {
   }
 
   @Test
+  void stackThatCouldNotBeRestoredKeepsTheSweepArmed() throws ReflectiveOperationException {
+    LivingEntity source = livingEntity();
+    Mockito.when(chunk.getEntities()).thenReturn(new Entity[]{source});
+    Mockito.doReturn(3).when(feature).getStackCount(source);
+
+    recovery.tick(0L);
+    tasks.getFirst().run();
+
+    assertNextSweepRuns();
+  }
+
+  @Test
+  void entityOwnedByAnotherRegionKeepsTheSweepArmed() throws ReflectiveOperationException {
+    LivingEntity source = livingEntity();
+    Mockito.when(chunk.getEntities()).thenReturn(new Entity[]{source});
+    scheduling.when(() -> J.isOwnedByCurrentRegion(source)).thenReturn(false);
+
+    recovery.tick(0L);
+    tasks.getFirst().run();
+
+    assertNextSweepRuns();
+  }
+
+  @Test
+  void failedChunkKeepsTheSweepArmed() throws ReflectiveOperationException {
+    Mockito.when(world.isChunkLoaded(7, -4)).thenThrow(new IllegalStateException("chunk access failed"));
+
+    recovery.tick(0L);
+    tasks.getFirst().run();
+
+    assertNextSweepRuns();
+  }
+
+  @Test
+  void loadEventDuringAnActiveSweepSkipsStackReads() {
+    LivingEntity stacked = livingEntity();
+    EntitiesLoadEvent load = Mockito.mock(EntitiesLoadEvent.class);
+    Mockito.when(load.getEntities()).thenReturn(List.of(stacked));
+
+    feature.on(load);
+
+    Mockito.verify(feature, Mockito.never()).getStackCount(Mockito.any(Entity.class));
+  }
+
+  @Test
   void loadedStackRearmsTheDisabledFeatureRecovery() throws ReflectiveOperationException {
     Mockito.when(React.instance.getName()).thenReturn("React");
     Mockito.when(React.instance.namespace()).thenReturn("react");
@@ -322,6 +367,18 @@ class MobStackRecoveryTest {
       disabled.on(load);
       disabled.onIntegrityTick();
     }
+
+    Mockito.verify(observer, Mockito.times(2)).openLoadedChunkCursor();
+  }
+
+  private void assertNextSweepRuns() throws ReflectiveOperationException {
+    recovery.tick(0L);
+    Field nextSweepAt = MobStackRecovery.class.getDeclaredField("nextSweepAt");
+    nextSweepAt.setAccessible(true);
+    nextSweepAt.setLong(recovery, 0L);
+    Mockito.when(cursor.next(1)).thenReturn(List.of(new LoadedChunkTarget(worldId, 7, -4)));
+
+    recovery.tick(0L);
 
     Mockito.verify(observer, Mockito.times(2)).openLoadedChunkCursor();
   }

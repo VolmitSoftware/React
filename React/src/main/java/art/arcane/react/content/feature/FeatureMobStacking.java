@@ -961,7 +961,7 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
 
   @EventHandler(priority = EventPriority.MONITOR)
   public void on(EntitiesLoadEvent event) {
-    if (isEnabled()) {
+    if (isEnabled() || !recovery.needsRearm()) {
       return;
     }
     for (Entity entity : event.getEntities()) {
