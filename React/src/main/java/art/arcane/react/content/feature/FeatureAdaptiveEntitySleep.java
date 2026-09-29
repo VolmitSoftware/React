@@ -540,7 +540,7 @@ public class FeatureAdaptiveEntitySleep extends ReactFeature implements Listener
   public void on(EntityDamageEvent event) {
     long generation = lifecycleGeneration.get();
     if (wakeOnDamage && isActive(generation)) {
-      wakeOnOwner(event.getEntity(), generation);
+      wakeIfManaged(event.getEntity(), generation);
     }
   }
 
@@ -551,8 +551,24 @@ public class FeatureAdaptiveEntitySleep extends ReactFeature implements Listener
       return;
     }
 
-    wakeOnOwner(event.getEntity(), generation);
-    wakeOnOwner(event.getTarget(), generation);
+    wakeIfManaged(event.getEntity(), generation);
+    wakeIfManaged(event.getTarget(), generation);
+  }
+
+  private void wakeIfManaged(Entity entity, long generation) {
+    if (holdsSleepState(entity)) {
+      wakeOnOwner(entity, generation);
+    }
+  }
+
+  private boolean holdsSleepState(Entity entity) {
+    if (entity == null) {
+      return false;
+    }
+    if (ReactEntity.isPausedBy(entity, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP)) {
+      return true;
+    }
+    return dutyCycleSupported && entity instanceof Mob mob && !mob.isAware();
   }
 
   private static final class FoliaScanFlight {

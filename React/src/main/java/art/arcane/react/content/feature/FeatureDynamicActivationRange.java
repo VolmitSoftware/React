@@ -369,7 +369,9 @@ public class FeatureDynamicActivationRange extends ReactFeature implements Liste
   }
 
   private void wakeOnOwner(Entity entity, long generation) {
-    if (!isCurrent(generation) || entity == null) {
+    if (!isCurrent(generation)
+        || entity == null
+        || !ReactEntity.isPausedBy(entity, ReactEntity.PauseOwner.DYNAMIC_ACTIVATION_RANGE)) {
       return;
     }
 

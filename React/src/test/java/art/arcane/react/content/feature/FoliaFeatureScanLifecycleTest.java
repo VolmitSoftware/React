@@ -227,6 +227,8 @@ class FoliaFeatureScanLifecycleTest {
             targetTasks.add(invocation.getArgument(1));
             return true;
           });
+      managed.when(() -> ReactEntity.isPausedBy(target, ReactEntity.PauseOwner.DYNAMIC_ACTIVATION_RANGE))
+          .thenReturn(true);
 
       feature.onActivate();
       feature.on(event);
