@@ -33,6 +33,7 @@ import art.arcane.volmlib.nativelib.monitor.TickDecision;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.project.config.ConfigDescription;
 import art.arcane.react.util.project.config.ConfigDoc;
+import art.arcane.react.util.project.world.BlockEntityScan;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import lombok.Getter;
@@ -44,7 +45,6 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
-import org.bukkit.block.Hopper;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -60,6 +60,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -68,6 +69,7 @@ import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.DoubleAdder;
 
 @ConfigDescription("Configuration for Hopper Chain Coalescing feature. Detects linear hopper chains and reports projected tick savings. It remains measurement-only by default; in act mode with the versioned hopper hook, eligible intermediate ticks are skipped and one head-to-tail transfer is synthesized. Synthesized transfers coordinate with FeatureHopperTokenBucket gating instead of cancelling InventoryMoveItemEvent directly.")
 public class FeatureHopperChainCoalescing extends ReactFeature implements Listener {
@@ -85,6 +87,61 @@ public class FeatureHopperChainCoalescing extends ReactFeature implements Listen
       BlockFace.WEST,
       BlockFace.UP
   };
+  private static final Set<Material> HOPPER_MATERIALS = EnumSet.of(Material.HOPPER);
+  private static final Set<Material> CONTAINER_MATERIALS = EnumSet.of(
+      Material.BARREL,
+      Material.BLAST_FURNACE,
+      Material.BREWING_STAND,
+      Material.CHEST,
+      Material.CHISELED_BOOKSHELF,
+      Material.COPPER_CHEST,
+      Material.EXPOSED_COPPER_CHEST,
+      Material.WEATHERED_COPPER_CHEST,
+      Material.OXIDIZED_COPPER_CHEST,
+      Material.WAXED_COPPER_CHEST,
+      Material.WAXED_EXPOSED_COPPER_CHEST,
+      Material.WAXED_WEATHERED_COPPER_CHEST,
+      Material.WAXED_OXIDIZED_COPPER_CHEST,
+      Material.CRAFTER,
+      Material.DECORATED_POT,
+      Material.DISPENSER,
+      Material.DROPPER,
+      Material.FURNACE,
+      Material.HOPPER,
+      Material.JUKEBOX,
+      Material.LECTERN,
+      Material.SMOKER,
+      Material.TRAPPED_CHEST,
+      Material.SHULKER_BOX,
+      Material.WHITE_SHULKER_BOX,
+      Material.ORANGE_SHULKER_BOX,
+      Material.MAGENTA_SHULKER_BOX,
+      Material.LIGHT_BLUE_SHULKER_BOX,
+      Material.YELLOW_SHULKER_BOX,
+      Material.LIME_SHULKER_BOX,
+      Material.PINK_SHULKER_BOX,
+      Material.GRAY_SHULKER_BOX,
+      Material.LIGHT_GRAY_SHULKER_BOX,
+      Material.CYAN_SHULKER_BOX,
+      Material.PURPLE_SHULKER_BOX,
+      Material.BLUE_SHULKER_BOX,
+      Material.BROWN_SHULKER_BOX,
+      Material.GREEN_SHULKER_BOX,
+      Material.RED_SHULKER_BOX,
+      Material.BLACK_SHULKER_BOX,
+      Material.ACACIA_SHELF,
+      Material.BAMBOO_SHELF,
+      Material.BIRCH_SHELF,
+      Material.CHERRY_SHELF,
+      Material.CRIMSON_SHELF,
+      Material.DARK_OAK_SHELF,
+      Material.JUNGLE_SHELF,
+      Material.MANGROVE_SHELF,
+      Material.OAK_SHELF,
+      Material.PALE_OAK_SHELF,
+      Material.SPRUCE_SHELF,
+      Material.WARPED_SHELF
+  );
 
   @ConfigDoc(value = "Main evaluation interval for hopper chain coalescing in milliseconds.", impact = "Lower values rebuild stale chains faster but consume more CPU; higher values reduce overhead.")
   private int tickIntervalMS = 1000;
@@ -121,7 +178,7 @@ public class FeatureHopperChainCoalescing extends ReactFeature implements Listen
   private transient final AtomicLong chainsDetected = new AtomicLong(0L);
   private transient final AtomicLong chainLengthSum = new AtomicLong(0L);
   private transient final AtomicLong fastPathChainCount = new AtomicLong(0L);
-  private transient final AtomicLong ticksSavedAccumulator = new AtomicLong(0L);
+  private transient final DoubleAdder ticksSavedAccumulator = new DoubleAdder();
   private transient final AtomicLong ticksSavedPerEvaluation = new AtomicLong(0L);
   private transient volatile long tickCounter;
   private transient volatile boolean engaged;
@@ -154,7 +211,7 @@ public class FeatureHopperChainCoalescing extends ReactFeature implements Listen
     chainsDetected.set(0L);
     chainLengthSum.set(0L);
     fastPathChainCount.set(0L);
-    ticksSavedAccumulator.set(0L);
+    ticksSavedAccumulator.reset();
     ticksSavedPerEvaluation.set(0L);
     skippedHopperTicks.set(0L);
     synthesizedTransfers.set(0L);
@@ -425,15 +482,15 @@ public class FeatureHopperChainCoalescing extends ReactFeature implements Listen
     if (!isActive(generation)) {
       return;
     }
-    long featureTickServerTicks = Math.max(1L, tickIntervalMS / 50L);
-    tickCounter += featureTickServerTicks;
+    int tickInterval = getTickInterval();
+    tickCounter += Math.max(1L, tickInterval / 50L);
     enqueueMaintenanceRepairs();
     processCoordinateRepairs(generation);
     updateEngagement();
     if (!engaged) {
       return;
     }
-    ticksSavedAccumulator.addAndGet(ticksSavedPerEvaluation.get());
+    ticksSavedAccumulator.add(ticksSavedPerEvaluation.get() * tickInterval / 1000D);
     if (featureActMode && bridgeActive) {
       synthesizeChainTransfers(generation);
     }
@@ -451,8 +508,8 @@ public class FeatureHopperChainCoalescing extends ReactFeature implements Listen
     return chainLengthSum.get() / (double) count;
   }
 
-  public long readAndResetTicksSaved() {
-    return ticksSavedAccumulator.getAndSet(0L);
+  public double readAndResetTicksSaved() {
+    return ticksSavedAccumulator.sumThenReset();
   }
 
   public long fastPathChainCountSnapshot() {
@@ -519,14 +576,9 @@ public class FeatureHopperChainCoalescing extends ReactFeature implements Listen
 
   private boolean isRepairRelevant(Block block) {
     Material material = block.getType();
-    if (material == Material.HOPPER
-        || material == Material.COMPARATOR
+    return material == Material.COMPARATOR
         || material == Material.REPEATER
-        || material == Material.DROPPER
-        || material == Material.DISPENSER) {
-      return true;
-    }
-    return block.getState() instanceof InventoryHolder;
+        || CONTAINER_MATERIALS.contains(material);
   }
 
   private void queueRepair(ChunkCoordinate coordinate, boolean authoritative) {
@@ -624,17 +676,12 @@ public class FeatureHopperChainCoalescing extends ReactFeature implements Listen
     }
     Chunk chunk = world.getChunkAt(coordinate.chunkX, coordinate.chunkZ);
     Long2ObjectOpenHashMap<HopperNode> scannedNodes = new Long2ObjectOpenHashMap<>();
-    for (BlockState state : chunk.getTileEntities()) {
-      if (!(state instanceof Hopper)) {
-        continue;
-      }
-      Location location = state.getLocation();
+    for (BlockState state : BlockEntityScan.runtime().scan(chunk, HOPPER_MATERIALS)) {
       BlockFace facing = hopperFacing(state.getBlockData());
       if (facing == null) {
         continue;
       }
-      long position = packPos(location.getBlockX(), location.getBlockY(), location.getBlockZ());
-      scannedNodes.put(position, new HopperNode(facing));
+      scannedNodes.put(packPos(state.getX(), state.getY(), state.getZ()), new HopperNode(facing));
     }
     publishChunkNodes(coordinate, scannedNodes);
     rebuildChainsFromSnapshot(world, coordinate);
