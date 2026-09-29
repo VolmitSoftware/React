@@ -19,8 +19,7 @@
 
 package art.arcane.react.core.plugincost;
 
-import art.arcane.react.React;
-import art.arcane.react.api.sampler.ReactCachedSampler;
+import art.arcane.react.api.sampler.ReactEventSampler;
 import art.arcane.react.core.controller.EventController;
 import art.arcane.volmlib.util.format.Form;
 import art.arcane.volmlib.util.math.RollingSequence;
@@ -29,10 +28,9 @@ import org.bukkit.Material;
 
 import java.util.Locale;
 
-public class SamplerPluginCost extends ReactCachedSampler {
+public class SamplerPluginCost extends ReactEventSampler {
   private final transient String pluginName;
   private final transient RollingSequence average = new RollingSequence(5);
-  private transient EventController eventController;
 
   public SamplerPluginCost(String pluginName) {
     super(idFor(pluginName), 1000);
@@ -55,43 +53,9 @@ public class SamplerPluginCost extends ReactCachedSampler {
   }
 
   @Override
-  public double onSample() {
-    EventController controller = resolveController();
-    if (controller == null || !controller.isMeasuring()) {
-      return 0D;
-    }
-
+  protected double onMeasuredSample(EventController controller) {
     average.put(controller.getPluginEventTimeMsPerSecond(pluginName));
     return average.getAverage();
-  }
-
-  @Override
-  public boolean isSampleAvailable() {
-    EventController controller = resolveController();
-    return controller != null && controller.isMeasuring();
-  }
-
-  @Override
-  public void markDemand() {
-    EventController controller = resolveController();
-    if (controller != null) {
-      controller.markSamplerActivity();
-    }
-  }
-
-  private EventController resolveController() {
-    EventController controller = eventController;
-    if (controller == null) {
-      controller = React.controller(EventController.class);
-      eventController = controller;
-    }
-    return controller;
-  }
-
-  @Override
-  public void start() {
-    super.start();
-    eventController = React.controller(EventController.class);
   }
 
   @Override

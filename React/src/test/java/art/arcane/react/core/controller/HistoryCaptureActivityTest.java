@@ -4,6 +4,7 @@ import art.arcane.react.React;
 import art.arcane.react.content.sampler.SamplerEventTime;
 import art.arcane.react.core.history.MetricSnapshot;
 import art.arcane.react.core.history.MetricSnapshotValue;
+import art.arcane.react.core.plugincost.SamplerPluginCost;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.common.scheduling.Ticker;
 import art.arcane.volmlib.util.scheduling.FoliaScheduler;
@@ -86,6 +87,28 @@ class HistoryCaptureActivityTest {
     history.captureSnapshot(List.of(sampler), System.currentTimeMillis());
 
     Assertions.assertTrue(controller.getLastSamplerActivity() > 0L);
+  }
+
+  @Test
+  void captureAfterMeasurementStartsDoesNotRecordACachedZero() {
+    SamplerPluginCost pluginCost = new SamplerPluginCost("MeasuredPlugin");
+    pluginCost.start();
+    history.captureSnapshot(List.of(sampler, pluginCost), System.currentTimeMillis());
+    Assertions.assertFalse(controller.isMeasuring());
+
+    controller.setInstrumentation(EventController.InstrumentationMode.ALWAYS);
+    controller.onTick();
+    controller.onTick();
+    Assertions.assertTrue(controller.isMeasuring());
+
+    MetricSnapshot snapshot = history.captureSnapshot(List.of(sampler, pluginCost), System.currentTimeMillis());
+
+    MetricSnapshotValue eventTime = snapshot.value(SamplerEventTime.ID);
+    MetricSnapshotValue cost = snapshot.value(pluginCost.getId());
+    Assertions.assertNotNull(eventTime);
+    Assertions.assertNotNull(cost);
+    Assertions.assertFalse(eventTime.available(), "a value cached before measurement started must stay a gap");
+    Assertions.assertFalse(cost.available(), "a value cached before measurement started must stay a gap");
   }
 
   @Test

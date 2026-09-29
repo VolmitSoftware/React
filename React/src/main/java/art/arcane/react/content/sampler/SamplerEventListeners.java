@@ -19,16 +19,14 @@
 
 package art.arcane.react.content.sampler;
 
-import art.arcane.react.React;
-import art.arcane.react.api.sampler.ReactCachedSampler;
+import art.arcane.react.api.sampler.ReactEventSampler;
 import art.arcane.react.core.controller.EventController;
 import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Material;
 import org.bukkit.event.Listener;
 
-public class SamplerEventListeners extends ReactCachedSampler implements Listener {
+public class SamplerEventListeners extends ReactEventSampler implements Listener {
   public static final String ID = "events-listeners";
-  private transient EventController eventController;
 
   public SamplerEventListeners() {
     super(ID, 50);
@@ -40,29 +38,8 @@ public class SamplerEventListeners extends ReactCachedSampler implements Listene
   }
 
   @Override
-  public double onSample() {
-    EventController controller = eventController;
-    return controller != null && controller.isMeasuring() ? controller.getListenerCount() : 0D;
-  }
-
-  @Override
-  public boolean isSampleAvailable() {
-    EventController controller = eventController;
-    return controller != null && controller.isMeasuring();
-  }
-
-  @Override
-  public void markDemand() {
-    EventController controller = eventController;
-    if (controller != null) {
-      controller.markSamplerActivity();
-    }
-  }
-
-  @Override
-  public void start() {
-    super.start();
-    eventController = React.controller(EventController.class);
+  protected double onMeasuredSample(EventController controller) {
+    return controller.getListenerCount();
   }
 
   @Override
