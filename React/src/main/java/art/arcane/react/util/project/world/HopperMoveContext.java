@@ -9,7 +9,8 @@ import org.bukkit.inventory.Inventory;
 
 public final class HopperMoveContext {
   private static final int RECENT_SLOT_MASK = 63;
-  private static final HopperMoveContext[] RECENT = new HopperMoveContext[RECENT_SLOT_MASK + 1];
+  private static final int RECENT_SLOT_STRIDE_SHIFT = 4;
+  private static final HopperMoveContext[] RECENT = new HopperMoveContext[(RECENT_SLOT_MASK + 1) << RECENT_SLOT_STRIDE_SHIFT];
 
   private final InventoryMoveItemEvent event;
   private final Block sourceHopperBlock;
@@ -26,7 +27,7 @@ public final class HopperMoveContext {
   }
 
   public static HopperMoveContext resolve(InventoryMoveItemEvent event) {
-    int slot = (int) (Thread.currentThread().threadId() & RECENT_SLOT_MASK);
+    int slot = (int) (Thread.currentThread().threadId() & RECENT_SLOT_MASK) << RECENT_SLOT_STRIDE_SHIFT;
     HopperMoveContext recent = RECENT[slot];
     if (recent != null && recent.event == event) {
       return recent;
