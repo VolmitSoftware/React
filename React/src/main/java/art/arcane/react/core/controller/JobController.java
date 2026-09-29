@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @Data
 public class JobController implements IController {
+  private static final double MIN_COMPUTE_TIME_MS = 0.05;
   private transient final RollingSequence usageCyclePercent;
   private transient final ConcurrentLinkedDeque<Runnable> jobs;
   private transient final AtomicInteger queueDepth;
@@ -48,7 +49,7 @@ public class JobController implements IController {
   private transient double costPerJob = 0.1;
   private transient ChronoLatch spikeLatch;
   private transient int code;
-  private transient double overBudget = 0;
+  private transient volatile double overBudget = 0;
   private transient boolean pollFromTail = false;
 
   public JobController() {
@@ -86,6 +87,20 @@ public class JobController implements IController {
 
   }
 
+  @Override
+  public boolean reloadFromDisk(boolean overwriteOnReadFailure) {
+    boolean loaded = IController.super.reloadFromDisk(overwriteOnReadFailure);
+    clampConfiguration();
+    return loaded;
+  }
+
+  @Override
+  public boolean applyConfigurationSnapshot(Object loadedObject) {
+    boolean applied = IController.super.applyConfigurationSnapshot(loadedObject);
+    clampConfiguration();
+    return applied;
+  }
+
   public double getQueuedComputeTime() {
     return getQueueSize() * costPerJob;
   }
@@ -96,14 +111,9 @@ public class JobController implements IController {
 
   public void execute() {
     Bukkit.getPluginManager().callEvent(ste);
-    if (overBudget > maxComputeTime) {
-      overBudget -= maxComputeTime;
-      overBudget = overBudget < 0 ? 0 : overBudget;
+    if (overBudget > maxComputeTime || getQueueSize() <= 0) {
+      overBudget = Math.max(0D, overBudget - maxComputeTime);
       usage.put(0);
-      return;
-    }
-
-    if (getQueueSize() <= 0) {
       return;
     }
 
@@ -153,6 +163,12 @@ public class JobController implements IController {
 
     jobs.offerLast(r);
     queueDepth.incrementAndGet();
+  }
+
+  private void clampConfiguration() {
+    maxComputeTime = Math.max(MIN_COMPUTE_TIME_MS, maxComputeTime);
+    highUtilizationThresholdPercent = M.clip(highUtilizationThresholdPercent, 0D, 1D);
+    lowUtilizationThresholdPercent = M.clip(lowUtilizationThresholdPercent, 0D, 1D);
   }
 
   private Runnable pollJob(boolean alternatePoll) {
