@@ -207,7 +207,7 @@ public interface Sampler extends Registered, ReactRenderer {
 
   private int chartYFor(Graph g, int x, int w, int samples, double pmin, double range, int chartTop, int chartBottom) {
     int sampleIndex = (samples - 1) - ((x * samples) / Math.max(1, w));
-    double normalized = (g.get(sampleIndex) - pmin) / range;
+    double normalized = (g.getSmoothed(sampleIndex) - pmin) / range;
     if (!Double.isFinite(normalized)) {
       normalized = 0.5D;
     }
