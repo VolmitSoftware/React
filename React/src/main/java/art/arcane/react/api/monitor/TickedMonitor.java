@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class TickedMonitor extends TickedObject implements Monitor {
   protected final Map<Sampler, Double> samplers;
@@ -48,12 +49,12 @@ public abstract class TickedMonitor extends TickedObject implements Monitor {
     super("monitor", id, interval);
     this.awakeInterval = interval;
     this.approachers = new HashMap<>();
-    this.visible = new HashMap<>();
+    this.visible = new ConcurrentHashMap<>();
     this.sleepingRate = interval * 2;
     this.sleepDelay = 35;
     this.currentSleepDelay = 20;
-    this.changers = new HashMap<>();
-    this.samplers = new HashMap<>();
+    this.changers = new ConcurrentHashMap<>();
+    this.samplers = new ConcurrentHashMap<>();
   }
 
   public void wakeUp() {
@@ -77,6 +78,10 @@ public abstract class TickedMonitor extends TickedObject implements Monitor {
   }
 
   public void setVisible(Sampler sampler, boolean visible) {
+    if (sampler == null) {
+      return;
+    }
+
     this.visible.put(sampler, visible);
   }
 
@@ -93,7 +98,7 @@ public abstract class TickedMonitor extends TickedObject implements Monitor {
   }
 
   public double getChanger(Sampler s) {
-    Double d = changers.get(s);
+    Double d = s == null ? null : changers.get(s);
     return d == null ? 0 : d;
   }
 

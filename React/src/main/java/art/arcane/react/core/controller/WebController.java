@@ -623,7 +623,7 @@ public class WebController implements IController {
                 );
                 javalin.get("/api/v1/ping", capabilityResource::get);
                 if (featureControlBackend == null) {
-                    ControlMutator fcMutator = (path, value) -> J.sResult(() -> ReactConfigGUI.applyAndSave(null, path, value));
+                    ControlMutator fcMutator = WebController::applyConfigValueOnServerThread;
                     featureControlBackend = new RegistryControlBackend<Feature>(
                         "feature",
                         () -> {
@@ -646,7 +646,7 @@ public class WebController implements IController {
                     );
                 }
                 if (tweakControlBackend == null) {
-                    ControlMutator tcMutator = (path, value) -> J.sResult(() -> ReactConfigGUI.applyAndSave(null, path, value));
+                    ControlMutator tcMutator = WebController::applyConfigValueOnServerThread;
                     tweakControlBackend = new RegistryControlBackend<Tweak>(
                         "tweak",
                         () -> {
@@ -900,10 +900,10 @@ public class WebController implements IController {
                     configTreeSupplier = () -> new ConfigTreeSerializer().serialize(ReactConfiguration.get());
                 }
                 if (configApplier == null) {
-                    configApplier = (path, value) -> J.sResult(() -> ReactConfigGUI.applyAndSave(null, path, value));
+                    configApplier = WebController::applyConfigValueOnServerThread;
                 }
                 if (presetApplier == null) {
-                    presetApplier = name -> J.sResult(() -> ReactConfigGUI.applyPresetHeadless(name));
+                    presetApplier = WebController::applyPresetOnServerThread;
                 }
                 ConfigResource configResource = new ConfigResource(
                     configTreeSupplier,
@@ -1172,6 +1172,15 @@ public class WebController implements IController {
         }
         long lastPort = (long) requestedPort + Math.max(1, searchAttempts) - 1L;
         return (int) Math.min(65535L, lastPort);
+    }
+
+    static boolean applyConfigValueOnServerThread(String path, Object value) {
+        return Boolean.TRUE.equals(J.sResult(() -> ReactConfigGUI.applyAndSave(null, path, value)));
+    }
+
+    static int applyPresetOnServerThread(String name) {
+        Integer updated = J.sResult(() -> ReactConfigGUI.applyPresetHeadless(name));
+        return updated == null ? -1 : updated;
     }
 
     private static boolean isBindFailure(Throwable failure) {
