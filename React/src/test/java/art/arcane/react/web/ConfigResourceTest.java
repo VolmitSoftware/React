@@ -169,8 +169,43 @@ public class ConfigResourceTest {
         assertEquals(List.of(
             "main.verbose=true",
             "main.debug=true",
-            "main.verbose=false"
+            "main.verbose=false",
+            "main.debug=false"
         ), calls);
+        assertTrue(mutations.isEmpty());
+    }
+
+    @Test
+    void put_restores_the_failed_path_when_its_unconfirmed_write_lands_later() {
+        Context ctx = mock(Context.class);
+        when(ctx.<PairingToken>attribute("token")).thenReturn(adminToken);
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("main.verbose", Boolean.TRUE);
+        body.put("main.debug", Boolean.TRUE);
+        when(ctx.bodyAsClass(Map.class)).thenReturn(body);
+        Map<String, Object> live = new LinkedHashMap<>();
+        live.put("main.verbose", Boolean.FALSE);
+        live.put("main.debug", Boolean.FALSE);
+        List<String> timedOut = new ArrayList<>();
+        ConfigResource timingOut = new ConfigResource(
+            this::buildFakeTree,
+            (path, value) -> {
+                live.put(path, value);
+                if ("main.debug".equals(path) && timedOut.isEmpty()) {
+                    timedOut.add(path);
+                    return false;
+                }
+                return true;
+            },
+            recordingPresetApplier,
+            (context, mutation) -> mutations.add(mutation)
+        );
+
+        InternalServerErrorResponse error = assertThrows(InternalServerErrorResponse.class, () -> timingOut.put(ctx));
+
+        assertEquals("Failed to apply config path: main.debug", error.getMessage());
+        assertEquals(Boolean.FALSE, live.get("main.verbose"));
+        assertEquals(Boolean.FALSE, live.get("main.debug"));
         assertTrue(mutations.isEmpty());
     }
 
