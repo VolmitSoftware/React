@@ -30,8 +30,6 @@ import art.arcane.react.nms.NmsBridges;
 import art.arcane.volmlib.nativelib.monitor.TickDecision;
 import art.arcane.react.util.project.config.ConfigDescription;
 import art.arcane.react.util.project.config.ConfigDoc;
-import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import lombok.Getter;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -81,7 +79,7 @@ public class FeatureLazyGravity extends ReactFeature implements Listener {
   private int reapPerTick = 1024;
 
   private transient final Map<UUID, FallingTask> tasks = new ConcurrentHashMap<>();
-  private transient final Map<UUID, Long2ObjectOpenHashMap<UUID>> columnIndex = new ConcurrentHashMap<>();
+  private transient final Map<UUID, LazyGravityColumns> columnIndex = new ConcurrentHashMap<>();
   private transient final AtomicLong projectedSkippedTicks = new AtomicLong(0L);
   private transient final AtomicLong tracked = new AtomicLong(0L);
   private transient final AtomicLong bypassed = new AtomicLong(0L);
@@ -99,6 +97,7 @@ public class FeatureLazyGravity extends ReactFeature implements Listener {
   public void onActivate() {
     tasks.clear();
     columnIndex.clear();
+    tracked.set(0L);
     projectedSkippedTicks.set(0L);
     tracked.set(0L);
     bypassed.set(0L);
@@ -112,6 +111,7 @@ public class FeatureLazyGravity extends ReactFeature implements Listener {
   public void onDeactivate() {
     tasks.clear();
     columnIndex.clear();
+    tracked.set(0L);
     uninstallBridgeHook();
   }
 
@@ -228,13 +228,10 @@ public class FeatureLazyGravity extends ReactFeature implements Listener {
     long expectedExpiry = now + Math.max(50L, landingTick * 50L) + 300L;
 
     FallingTask task = new FallingTask(worldId, columnKey, expectedExpiry);
-    tasks.put(entityId, task);
-    Long2ObjectOpenHashMap<UUID> world = columnIndex.computeIfAbsent(worldId, ignored -> new Long2ObjectOpenHashMap<>());
-    synchronized (world) {
-      world.put(columnKey, entityId);
+    if (tasks.put(entityId, task) == null) {
+      tracked.incrementAndGet();
     }
-
-    tracked.incrementAndGet();
+    columnIndex.computeIfAbsent(worldId, ignored -> new LazyGravityColumns()).put(columnKey, entityId);
     projectedSkippedTicks.addAndGet(landingTick - 1);
   }
 
@@ -254,7 +251,7 @@ public class FeatureLazyGravity extends ReactFeature implements Listener {
   }
 
   private void invalidateColumn(Block block) {
-    if (block == null) {
+    if (tracked.get() == 0L || block == null) {
       return;
     }
 
@@ -263,22 +260,18 @@ public class FeatureLazyGravity extends ReactFeature implements Listener {
       return;
     }
 
-    Long2ObjectOpenHashMap<UUID> map = columnIndex.get(world.getUID());
-    if (map == null) {
+    LazyGravityColumns columns = columnIndex.get(world.getUID());
+    if (columns == null) {
       return;
     }
 
-    long columnKey = packColumn(block.getX(), block.getZ());
-    UUID entityId;
-    synchronized (map) {
-      entityId = map.remove(columnKey);
-    }
-
+    UUID entityId = columns.remove(packColumn(block.getX(), block.getZ()));
     if (entityId == null) {
       return;
     }
 
     if (tasks.remove(entityId) != null) {
+      tracked.decrementAndGet();
       invalidated.incrementAndGet();
     }
   }
@@ -344,41 +337,19 @@ public class FeatureLazyGravity extends ReactFeature implements Listener {
         continue;
       }
 
-      iterator.remove();
-      tracked.decrementAndGet();
-      Long2ObjectOpenHashMap<UUID> world = columnIndex.get(task.worldId);
-      if (world == null) {
+      if (!tasks.remove(entry.getKey(), task)) {
         continue;
       }
-
-      synchronized (world) {
-        UUID currentOwner = world.get(task.columnKey);
-        if (currentOwner != null && currentOwner.equals(entry.getKey())) {
-          world.remove(task.columnKey);
-        }
-        if (world.isEmpty()) {
-          columnIndex.remove(task.worldId, world);
-        }
+      tracked.decrementAndGet();
+      LazyGravityColumns columns = columnIndex.get(task.worldId);
+      if (columns != null) {
+        columns.removeOwned(task.columnKey, entry.getKey());
       }
       reaped++;
     }
 
-    Iterator<Map.Entry<UUID, Long2ObjectOpenHashMap<UUID>>> worldIterator = columnIndex.entrySet().iterator();
-    while (worldIterator.hasNext()) {
-      Map.Entry<UUID, Long2ObjectOpenHashMap<UUID>> entry = worldIterator.next();
-      Long2ObjectOpenHashMap<UUID> map = entry.getValue();
-      synchronized (map) {
-        ObjectIterator<Long2ObjectOpenHashMap.Entry<UUID>> mapIterator = map.long2ObjectEntrySet().fastIterator();
-        while (mapIterator.hasNext()) {
-          Long2ObjectOpenHashMap.Entry<UUID> mapEntry = mapIterator.next();
-          if (!tasks.containsKey(mapEntry.getValue())) {
-            mapIterator.remove();
-          }
-        }
-        if (map.isEmpty()) {
-          worldIterator.remove();
-        }
-      }
+    for (LazyGravityColumns columns : columnIndex.values()) {
+      columns.retainTracked(tasks);
     }
   }
 
