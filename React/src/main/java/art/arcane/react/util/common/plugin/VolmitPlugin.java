@@ -41,17 +41,17 @@ import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 @SuppressWarnings("EmptyMethod")
 public abstract class VolmitPlugin extends JavaPlugin implements Listener {
   public static final boolean bad = false;
   private KMap<KList<String>, VirtualCommand> commands;
-  private Set<Listener> registeredListeners;
+  private final Set<Listener> registeredListeners = ConcurrentHashMap.newKeySet();
 
   public File getJarFile() {
     return getFile();
@@ -74,7 +74,7 @@ public abstract class VolmitPlugin extends JavaPlugin implements Listener {
   }
 
   public void onEnable() {
-    registeredListeners = new HashSet<>();
+    registeredListeners.clear();
     registerInstance();
     registerPermissions();
     registerCommands();
@@ -356,18 +356,15 @@ public abstract class VolmitPlugin extends JavaPlugin implements Listener {
   }
 
   public void registerListener(Listener l) {
-    if (registeredListeners.contains(l)) {
+    if (!registeredListeners.add(l)) {
       return;
     }
 
-    registeredListeners.add(l);
     Bukkit.getPluginManager().registerEvents(l, this);
   }
 
   public void unregisterListener(Listener l) {
-    if (registeredListeners != null) {
-      registeredListeners.remove(l);
-    }
+    registeredListeners.remove(l);
     HandlerList.unregisterAll(l);
   }
 
@@ -377,9 +374,7 @@ public abstract class VolmitPlugin extends JavaPlugin implements Listener {
     }
 
     HandlerList.unregisterAll((Plugin) this);
-    if (registeredListeners != null) {
-      registeredListeners.clear();
-    }
+    registeredListeners.clear();
   }
 
   public void unregisterCommands() {
