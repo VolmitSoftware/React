@@ -2,6 +2,7 @@ package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
 import art.arcane.react.api.feature.PressureGate;
+import art.arcane.react.core.controller.ObserverController;
 import art.arcane.react.nms.NmsBridges;
 import art.arcane.react.testutil.Fakes;
 import art.arcane.react.util.common.scheduling.J;
@@ -187,6 +188,44 @@ class FeatureFurnaceBrewBatchingTest {
 
     assertEquals(1L, field(feature, "trackedBlockCount", AtomicLong.class).get());
     Mockito.verify(chunk, Mockito.never()).getTileEntities();
+    feature.onDeactivate();
+  }
+
+  @Test
+  void chunkLoadBurstLeavesAQuarterOfTheReseedBudgetForTheLoadedChunkRotation() throws Exception {
+    FeatureFurnaceBrewBatching feature = new FeatureFurnaceBrewBatching();
+    feature.onActivate();
+    World world = Fakes.world("furnace-churn");
+    for (int chunkX = 0; chunkX < 40; chunkX++) {
+      feature.on(new ChunkLoadEvent(Fakes.chunk(world, chunkX, 0), true));
+    }
+    List<ObserverController.LoadedChunkTarget> rotation = new ArrayList<>();
+    for (int chunkX = 0; chunkX < 8; chunkX++) {
+      rotation.add(new ObserverController.LoadedChunkTarget(world.getUID(), chunkX, 100));
+    }
+    ObserverController observer = Mockito.mock(ObserverController.class);
+    Mockito.when(observer.nextLoadedChunkCoordinateBatch(8)).thenReturn(rotation);
+    react.when(() -> React.controller(ObserverController.class)).thenReturn(observer);
+    List<Integer> loadSeeds = new ArrayList<>();
+    List<Integer> rotationSeeds = new ArrayList<>();
+    React previous = React.instance;
+    React.instance = Mockito.mock(React.class);
+
+    try (MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class);
+         MockedStatic<J> scheduler = Mockito.mockStatic(J.class)) {
+      bukkit.when(() -> Bukkit.getWorld(world.getUID())).thenReturn(world);
+      scheduler.when(() -> J.runChunk(Mockito.same(world), Mockito.anyInt(), Mockito.anyInt(), Mockito.any(Runnable.class)))
+          .thenAnswer(invocation -> invocation.<Integer>getArgument(2) == 0
+              ? loadSeeds.add(invocation.getArgument(1))
+              : rotationSeeds.add(invocation.getArgument(1)));
+
+      feature.onTick();
+    } finally {
+      React.instance = previous;
+    }
+
+    assertEquals(24, loadSeeds.size());
+    assertEquals(8, rotationSeeds.size());
     feature.onDeactivate();
   }
 

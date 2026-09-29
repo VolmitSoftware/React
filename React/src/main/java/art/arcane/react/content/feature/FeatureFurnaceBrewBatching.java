@@ -618,18 +618,20 @@ public class FeatureFurnaceBrewBatching extends ReactFeature implements Listener
   }
 
   private int scheduleLoadSeeds(long generation) {
-    int remaining = reseedBudget();
-    while (remaining > 0 && isActive(generation)) {
+    int budget = reseedBudget();
+    int loadBudget = Math.max(1, budget - Math.max(1, budget / 4));
+    int scheduled = 0;
+    while (scheduled < loadBudget && isActive(generation)) {
       ChunkCoordinate coordinate = pendingLoadSeeds.poll();
       if (coordinate == null) {
         break;
       }
       if (queuedLoadSeeds.remove(coordinate)) {
         scheduleSeed(coordinate, generation);
-        remaining--;
+        scheduled++;
       }
     }
-    return remaining;
+    return budget - scheduled;
   }
 
   private void scheduleReseedTargets(List<LoadedChunkTarget> targets, long generation) {
