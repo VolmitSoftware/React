@@ -6,6 +6,7 @@ import art.arcane.react.model.CostSnapshot;
 import art.arcane.react.model.SampledChunk;
 import art.arcane.react.testutil.Fakes;
 import art.arcane.react.util.common.scheduling.Ticker;
+import com.google.common.util.concurrent.AtomicDouble;
 import org.bukkit.Chunk;
 import org.bukkit.World;
 import org.junit.jupiter.api.AfterEach;
@@ -61,6 +62,22 @@ class ObserverControllerCostDecayTest {
     }
 
     Assertions.assertEquals(50D, controller.sample(world, -3, 7, entities).orElse(0D));
+  }
+
+  @Test
+  void gaugeWrittenThroughWorldCoordinatesStaysPresentAcrossTenObserverTicks() {
+    World world = Fakes.world("gauge-coordinates");
+    Sampler entities = sampler("entities", true);
+    ObserverController controller = new ObserverController();
+    AtomicDouble counter = controller.get(world, 6, -2, entities);
+    counter.set(50D);
+
+    for (int pass = 0; pass < 10; pass++) {
+      controller.onTick();
+    }
+
+    Assertions.assertEquals(50D, controller.sample(world, 6, -2, entities).orElse(0D));
+    Assertions.assertSame(counter, controller.get(world, 6, -2, entities));
   }
 
   @Test
