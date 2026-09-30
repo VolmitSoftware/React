@@ -61,9 +61,18 @@ public class SampledWorld {
   }
 
   public SampledChunk getChunk(int x, int z) {
-    return chunks.computeIfAbsent(
-        Cache.key(x, z),
-        ignored -> new SampledChunk(worldId, worldKey, x, z)
-    );
+    Long key = Cache.key(x, z);
+    SampledChunk chunk = chunks.get(key);
+    return chunk != null ? chunk : chunks.computeIfAbsent(key, ignored -> new SampledChunk(worldId, worldKey, x, z));
+  }
+
+  public void decay() {
+    for (Map.Entry<Long, SampledChunk> entry : chunks.entrySet()) {
+      SampledChunk chunk = entry.getValue();
+      chunk.decay();
+      if (chunk.isEmpty()) {
+        chunks.remove(entry.getKey(), chunk);
+      }
+    }
   }
 }

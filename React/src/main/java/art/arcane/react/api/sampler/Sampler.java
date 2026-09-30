@@ -52,6 +52,10 @@ public interface Sampler extends Registered, ReactRenderer {
     return true;
   }
 
+  default boolean isChunkGauge() {
+    return false;
+  }
+
   default double sample(Chunk c) {
     return React.controller(ObserverController.class).sample(c, this).orElse(0D);
   }

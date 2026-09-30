@@ -76,6 +76,11 @@ public class SamplerEntities extends ReactCachedSampler implements Listener {
     return Material.CHICKEN_SPAWN_EGG;
   }
 
+  @Override
+  public boolean isChunkGauge() {
+    return true;
+  }
+
   public int getRealCheck() {
     return countWorldEntities(Bukkit.getWorlds());
   }

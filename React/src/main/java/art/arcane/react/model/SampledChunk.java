@@ -19,7 +19,6 @@
 
 package art.arcane.react.model;
 
-import art.arcane.chrono.ChronoLatch;
 import com.google.common.util.concurrent.AtomicDouble;
 import lombok.Data;
 
@@ -31,12 +30,12 @@ import java.util.function.DoubleUnaryOperator;
 
 @Data
 public class SampledChunk {
+  private static final double PRUNE_BELOW = 0.01D;
   private static final DoubleUnaryOperator HALF = (v) -> v * 0.5D;
   private final UUID worldId;
   private final String worldKey;
   private final int chunkX;
   private final int chunkZ;
-  private final ChronoLatch cleaner;
   private final Map<String, AtomicDouble> values;
 
   public SampledChunk(UUID worldId, String worldKey, int chunkX, int chunkZ) {
@@ -45,7 +44,6 @@ public class SampledChunk {
     this.chunkX = chunkX;
     this.chunkZ = chunkZ;
     values = new ConcurrentHashMap<>();
-    cleaner = new ChronoLatch(1000);
   }
 
   public double highestSubScore() {
@@ -72,26 +70,31 @@ public class SampledChunk {
   }
 
   public AtomicDouble get(String key) {
-    if (cleaner.flip()) {
-      cleanup();
-    }
-
-    return values.computeIfAbsent(key, (k) -> new AtomicDouble(0D));
+    AtomicDouble value = values.get(key);
+    return value != null ? value : values.computeIfAbsent(key, (k) -> new AtomicDouble(0D));
   }
 
-  private void cleanup() {
-    String remove = null;
+  public AtomicDouble gauge(String key) {
+    AtomicDouble value = values.get(key);
+    return value != null ? value : values.computeIfAbsent(key, (k) -> new GaugeCounter());
+  }
 
+  public void decay() {
     for (Map.Entry<String, AtomicDouble> entry : values.entrySet()) {
-      double v = entry.getValue().updateAndGet(HALF);
-
-      if (remove == null && v <= 1) {
-        remove = entry.getKey();
+      AtomicDouble value = entry.getValue();
+      if (value instanceof GaugeCounter) {
+        continue;
+      }
+      if (value.updateAndGet(HALF) < PRUNE_BELOW) {
+        values.remove(entry.getKey(), value);
       }
     }
+  }
 
-    if (remove != null) {
-      values.remove(remove);
-    }
+  public boolean isEmpty() {
+    return values.isEmpty();
+  }
+
+  private static final class GaugeCounter extends AtomicDouble {
   }
 }

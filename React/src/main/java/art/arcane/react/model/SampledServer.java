@@ -26,18 +26,25 @@ import org.bukkit.World;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Data
 public class SampledServer {
-  private final Map<String, SampledWorld> worlds;
+  private final Map<UUID, SampledWorld> worlds;
+  private final Map<String, SampledWorld> worldsByKey;
 
   public SampledServer() {
     worlds = new ConcurrentHashMap<>();
+    worldsByKey = new ConcurrentHashMap<>();
   }
 
   public SampledChunk getChunk(Chunk chunk) {
     return getWorld(chunk.getWorld()).getChunk(chunk);
+  }
+
+  public SampledChunk getChunk(World world, int chunkX, int chunkZ) {
+    return getWorld(world).getChunk(chunkX, chunkZ);
   }
 
   public Optional<SampledChunk> optionalChunk(Chunk c) {
@@ -52,42 +59,43 @@ public class SampledServer {
     return optionalWorld(worldKey).flatMap(sampledWorld -> sampledWorld.optionalChunk(chunkX, chunkZ));
   }
 
-  public boolean hasWorld(String world) {
-    return worlds.containsKey(world);
-  }
-
-  public boolean hasWorld(World world) {
-    return hasWorld(WorldIdentity.serialize(world));
-  }
-
   public void removeChunk(Chunk chunk) {
-    if (hasWorld(chunk.getWorld())) {
-      getWorld(chunk.getWorld()).remove(chunk);
+    SampledWorld sampledWorld = worlds.get(chunk.getWorld().getUID());
+    if (sampledWorld != null) {
+      sampledWorld.remove(chunk);
     }
   }
 
   public void removeWorld(World world) {
-    removeWorld(WorldIdentity.serialize(world));
-  }
-
-  public void removeWorld(String name) {
-    worlds.remove(name);
+    SampledWorld removed = worlds.remove(world.getUID());
+    if (removed != null) {
+      worldsByKey.remove(removed.getWorldKey(), removed);
+    }
   }
 
   public SampledWorld getWorld(World world) {
-    String worldKey = WorldIdentity.serialize(world);
-    return worlds.computeIfAbsent(
-        worldKey,
-        ignored -> new SampledWorld(world.getUID(), worldKey)
-    );
+    UUID worldId = world.getUID();
+    SampledWorld sampledWorld = worlds.get(worldId);
+    return sampledWorld != null ? sampledWorld : worlds.computeIfAbsent(worldId, ignored -> index(world, worldId));
   }
 
   public Optional<SampledWorld> optionalWorld(World world) {
-    return Optional.ofNullable(worlds.get(WorldIdentity.serialize(world)));
+    return Optional.ofNullable(worlds.get(world.getUID()));
   }
 
   public Optional<SampledWorld> optionalWorld(String worldKey) {
-    return Optional.ofNullable(worlds.get(worldKey));
+    return Optional.ofNullable(worldsByKey.get(worldKey));
   }
 
+  public void decay() {
+    for (SampledWorld sampledWorld : worlds.values()) {
+      sampledWorld.decay();
+    }
+  }
+
+  private SampledWorld index(World world, UUID worldId) {
+    SampledWorld sampledWorld = new SampledWorld(worldId, WorldIdentity.serialize(world));
+    worldsByKey.put(sampledWorld.getWorldKey(), sampledWorld);
+    return sampledWorld;
+  }
 }
