@@ -1101,11 +1101,11 @@ impact = "Durate maggiori sopprimono più a lungo un componente problematico; du
 summary = "Durata della limitazione di un circuito in millisecondi."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward]
-description = "Configurazione per la funzione di Inoltro Veloce. Quando chunk transizioni da dormiente (nessun giocatore vicino per un lungo tratto) a attivo (giocatore avvicinato o chunk ricaricabile), questa caratteristica cammina raccolto e blocchi di linfatura una volta e avanza la loro crescita da un importo proporzionale alla durata dormiente in modo che i giocatori non vedono le fattorie congelate dopo il ritorno. Rimane inattivo durante gli incidenti ad alto carico."
+description = "Configurazione della funzione Crop Fast Forward. Il server fa crescere le colture solo nei chunk entro la distanza di simulazione di un giocatore, quindi questa funzione registra quanto tempo ogni chunk caricato trascorre fuori da quella distanza. Quando un giocatore torna nel raggio attivo, percorre una volta i blocchi di colture e arboscelli del chunk e ne fa avanzare la crescita di quel tempo, così i giocatori non trovano fattorie congelate al ritorno. La crescita in sospeso viene scartata quando un chunk viene scaricato. Resta inattiva durante gli incidenti di carico elevato."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.activerange]
-impact = "I valori più grandi avanzano velocemente in chunk prima; i valori più piccoli rinviano fino a quando i giocatori si avvicinano."
-summary = "Il range di vicinanza del giocatore (blocks) che classifica un chunk come attivo. all'interno di questo intervallo, riimpostazioni di tracciamento latente e eventuali incendi in sospeso veloci."
+impact = "Valori più grandi applicano prima la crescita in sospeso ai chunk più lontani; valori più piccoli attendono che i giocatori si avvicinino."
+summary = "Distanza del giocatore (in blocchi) dalla colonna centrale di un chunk entro cui viene applicato il suo avanzamento in sospeso. L'attività di un chunk segue invece la distanza di simulazione del mondo."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.engageonincident]
 impact = "I valori più elevati continuano a funzionare velocemente durante gli incidenti leggeri; i valori inferiori lo silenziono prima."
@@ -1128,8 +1128,8 @@ impact = "I valori più elevati coprono più terreno con più memoria; la copert
 summary = "Il massimo di chunk tracciato in tutti i mondi prima che il più antico chunk tracciato venga sfrattato."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.minelapsedticks]
-impact = "Valori più alti saltano le onde recenti a buon mercato; valori inferiori veloci verso l'esterno anche brevi tratti di dormienza."
-summary = "La durata minima di dorma (ticks) prima che un wake si attiva velocemente. Sotto questo, il chunk viene trattato come ancora caldo."
+impact = "Valori più alti saltano le assenze brevi; valori più bassi fanno avanzare anche brevi periodi fuori dalla distanza di simulazione."
+summary = "Tempo minimo (in tick) che un chunk deve trascorrere fuori dalla distanza di simulazione prima di essere fatto avanzare. Le assenze più brevi vengono ignorate."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.releaseonincident]
 impact = "I valori più elevati riprendono prima dopo una quiete; i valori inferiori tengono il passo veloce verso l'esterno più a lungo per la stabilità."

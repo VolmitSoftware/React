@@ -273,6 +273,8 @@ class FeatureAdaptiveEntitySleepLifecycleTest {
             targetTasks.add(invocation.getArgument(1));
             return true;
           });
+      managed.when(() -> ReactEntity.isPausedBy(target, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP))
+          .thenReturn(true);
 
       feature.onActivate();
       feature.on(event);

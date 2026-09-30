@@ -65,6 +65,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
@@ -112,7 +113,8 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
   private transient final AtomicLong lifecycleGeneration = new AtomicLong();
   private transient final Object itemIndexLock = new Object();
   private transient final Object queueLock = new Object();
-  private transient final Object lifecycleMutationLock = new Object();
+  private transient final AtomicInteger anchorRotation = new AtomicInteger();
+  private transient final AtomicInteger candidateRotation = new AtomicInteger();
   private transient volatile long lastGlossCacheSweepMs;
   private transient volatile boolean active;
 
@@ -127,7 +129,7 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
   }
 
   public boolean isSuperStack(Item item) {
-    return BundleUtils.isBundle(item.getItemStack()) && BundleUtils.isFlagged(item.getItemStack());
+    return BundleUtils.isFlagged(item.getItemStack());
   }
 
   public List<ItemStack> explode(Item item) {
@@ -236,14 +238,13 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
       return;
     }
 
-    synchronized (lifecycleMutationLock) {
-      if (!active || item.isDead() || !item.isValid()) {
-        return;
-      }
-      ItemBucketKey bucketKey = indexItem(item);
-      if (bucketKey != null) {
-        mergeBucketOwned(item, bucketKey);
-      }
+    long generation = lifecycleGeneration.get();
+    if (!isActive(generation) || item.isDead() || !item.isValid()) {
+      return;
+    }
+    ItemBucketKey bucketKey = indexItem(item);
+    if (bucketKey != null) {
+      mergeBucketOwned(item, bucketKey, generation);
     }
   }
 
@@ -311,20 +312,18 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
   private void executeBucketFlight(Item anchor, BucketFlight flight) {
     boolean continueWork = false;
     try {
-      synchronized (lifecycleMutationLock) {
-        if (!isActive(flight.generation)
-            || (J.isFoliaThreading() && !J.isOwnedByCurrentRegion(anchor))
-            || anchor.isDead()
-            || !anchor.isValid()) {
-          removeIndexedItem(anchor);
-          continueWork = true;
-        } else {
-          ItemBucketKey currentKey = indexItem(anchor);
-          if (currentKey != null && !currentKey.equals(flight.bucketKey)) {
-            queueBucket(currentKey, 0);
-          } else if (currentKey != null) {
-            continueWork = mergeBucketOwned(anchor, currentKey);
-          }
+      if (!isActive(flight.generation)
+          || (J.isFoliaThreading() && !J.isOwnedByCurrentRegion(anchor))
+          || anchor.isDead()
+          || !anchor.isValid()) {
+        removeIndexedItem(anchor);
+        continueWork = true;
+      } else {
+        ItemBucketKey currentKey = indexItem(anchor);
+        if (currentKey != null && !currentKey.equals(flight.bucketKey)) {
+          queueBucket(currentKey, 0);
+        } else if (currentKey != null) {
+          continueWork = mergeBucketOwned(anchor, currentKey, flight.generation);
         }
       }
     } catch (Throwable failure) {
@@ -335,7 +334,7 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
     }
   }
 
-  private boolean mergeBucketOwned(Item anchor, ItemBucketKey bucketKey) {
+  private boolean mergeBucketOwned(Item anchor, ItemBucketKey bucketKey, long generation) {
     boolean folia = J.isFoliaThreading();
     List<Item> candidates = collectCandidates(
         bucketKey,
@@ -349,8 +348,9 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
       removeIndexedItem(collector);
       return false;
     }
+    int maxBundle = effectiveMaxItemsPerBundle();
     for (Item target : candidates) {
-      if (merged >= effectiveMaxMergesPerPass()) {
+      if (merged >= effectiveMaxMergesPerPass() || !isActive(generation)) {
         break;
       }
       if (target == collector) {
@@ -364,6 +364,9 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
         continue;
       }
       if (!withinMergeRadius(collector, target)) {
+        continue;
+      }
+      if (exceedsBundleCapacity(collector, target, maxBundle)) {
         continue;
       }
 
@@ -399,16 +402,53 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
         && Math.abs(sourceLocation.getZ() - targetLocation.getZ()) <= radius;
   }
 
+  private boolean exceedsBundleCapacity(Item collector, Item target, int maxBundle) {
+    int collectorBundle = cachedBundleCount(collector);
+    int targetBundle = cachedBundleCount(target);
+    if (collectorBundle <= 0 && targetBundle <= 0) {
+      return false;
+    }
+    int collectorCount = collectorBundle > 0 ? collectorBundle : collector.getItemStack().getAmount();
+    int targetCount = targetBundle > 0 ? targetBundle : target.getItemStack().getAmount();
+    return collectorCount + targetCount > maxBundle;
+  }
+
+  private int cachedBundleCount(Item item) {
+    IndexedItem indexed = indexedFor(item);
+    return indexed == null ? -1 : indexed.bundleCount;
+  }
+
+  private void recordBundleCount(Item item, int bundleCount) {
+    IndexedItem indexed = indexedFor(item);
+    if (indexed != null) {
+      indexed.bundleCount = bundleCount;
+    }
+  }
+
+  private IndexedItem indexedFor(Item item) {
+    UUID itemId = item.getUniqueId();
+    if (itemId == null) {
+      return null;
+    }
+    IndexedItem indexed = indexedItems.get(itemId);
+    return indexed == null || indexed.reference.get() != item ? null : indexed;
+  }
+
   private Item mergePair(Item source, Item target, boolean playEffect) {
     ItemStack sourceStack = source.getItemStack();
     ItemStack targetStack = target.getItemStack();
     ItemStack bundled = BundleUtils.merge(sourceStack, targetStack, effectiveMaxItemsPerBundle());
     if (bundled != null) {
+      int sourceBundle = cachedBundleCount(source);
+      int targetBundle = cachedBundleCount(target);
+      int bundledCount = (sourceBundle > 0 ? sourceBundle : sourceStack.getAmount())
+          + (targetBundle > 0 ? targetBundle : targetStack.getAmount());
       if (playEffect) {
         effectMerge(source, target);
       }
       removeTrackedItem(source);
       target.setItemStack(bundled);
+      recordBundleCount(target, bundledCount);
       refreshGloss(target);
       return target;
     }
@@ -494,6 +534,7 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
     ItemStack residualBundle = BundleUtils.createBundle(leftovers);
     if (residualBundle != null) {
       item.setItemStack(residualBundle);
+      recordBundleCount(item, BundleUtils.getTotalCount(leftovers));
       refreshGloss(item);
       return;
     }
@@ -552,11 +593,9 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
 
   @Override
   public void onActivate() {
-    synchronized (lifecycleMutationLock) {
-      lifecycleGeneration.incrementAndGet();
-      active = true;
-      clearMergeIndex();
-    }
+    lifecycleGeneration.incrementAndGet();
+    clearMergeIndex();
+    active = true;
     glossRefreshes.clear();
     EntityController controller = React.controller(EntityController.class);
     if (controller != null) {
@@ -566,11 +605,9 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
 
   @Override
   public void onDeactivate() {
-    synchronized (lifecycleMutationLock) {
-      active = false;
-      lifecycleGeneration.incrementAndGet();
-      clearMergeIndex();
-    }
+    active = false;
+    lifecycleGeneration.incrementAndGet();
+    clearMergeIndex();
     glossRefreshes.clear();
     EntityController controller = React.controller(EntityController.class);
     if (controller != null) {
@@ -618,14 +655,12 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
   }
 
   private void queueItem(Item item, int delayTicks) {
-    synchronized (lifecycleMutationLock) {
-      if (!active) {
-        return;
-      }
-      ItemBucketKey bucketKey = indexItem(item);
-      if (bucketKey != null) {
-        queueBucket(bucketKey, delayTicks);
-      }
+    if (!active) {
+      return;
+    }
+    ItemBucketKey bucketKey = indexItem(item);
+    if (bucketKey != null) {
+      queueBucket(bucketKey, delayTicks);
     }
   }
 
@@ -637,17 +672,23 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
       return null;
     }
 
-    ItemBucketKey bucketKey = new ItemBucketKey(
-        world.getUID(),
-        packChunk(location.getBlockX() >> 4, location.getBlockZ() >> 4)
-    );
+    UUID worldId = world.getUID();
+    long chunkKey = packChunk(location.getBlockX() >> 4, location.getBlockZ() >> 4);
+    IndexedItem current = indexedItems.get(itemId);
+    boolean sameItem = current != null && current.reference.get() == item;
+    if (sameItem && current.bucketKey.chunkKey == chunkKey && current.bucketKey.worldId.equals(worldId)) {
+      return current.bucketKey;
+    }
+
+    ItemBucketKey bucketKey = new ItemBucketKey(worldId, chunkKey);
+    int bundleCount = sameItem ? current.bundleCount : BundleUtils.superStackCount(item.getItemStack());
     synchronized (itemIndexLock) {
       IndexedItem previous = indexedItems.get(itemId);
       if (previous == null && indexedItems.size() >= MAX_INDEXED_ITEMS) {
         return null;
       }
 
-      IndexedItem indexed = new IndexedItem(itemId, bucketKey, new WeakReference<>(item));
+      IndexedItem indexed = new IndexedItem(itemId, bucketKey, new WeakReference<>(item), bundleCount);
       indexedItems.put(itemId, indexed);
       if (previous != null && !previous.bucketKey.equals(bucketKey)) {
         removeFromBucket(previous);
@@ -705,18 +746,31 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
     if (bucket == null) {
       return null;
     }
+    int maxBundle = effectiveMaxItemsPerBundle();
+    int skip = rotationOffset(anchorRotation, bucket.size());
+    Item wrapped = null;
+    int index = 0;
     for (IndexedItem indexed : bucket.values()) {
       Item item = indexed.reference.get();
-      if (item != null) {
+      if (item == null) {
+        bucket.remove(indexed.itemId, indexed);
+        indexedItems.remove(indexed.itemId, indexed);
+        continue;
+      }
+      if (indexed.bundleCount >= maxBundle) {
+        continue;
+      }
+      if (index++ >= skip) {
         return item;
       }
-      bucket.remove(indexed.itemId, indexed);
-      indexedItems.remove(indexed.itemId, indexed);
+      if (wrapped == null) {
+        wrapped = item;
+      }
     }
     if (bucket.isEmpty()) {
       itemBuckets.remove(bucketKey, bucket);
     }
-    return null;
+    return wrapped;
   }
 
   private List<Item> collectCandidates(ItemBucketKey anchorKey, Item anchor, int maximum) {
@@ -737,26 +791,49 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
         if (bucket == null) {
           continue;
         }
-        for (IndexedItem indexed : bucket.values()) {
-          if (candidates.size() >= maximum) {
-            break;
-          }
-          Item item = indexed.reference.get();
-          if (item == null) {
-            bucket.remove(indexed.itemId, indexed);
-            indexedItems.remove(indexed.itemId, indexed);
-            continue;
-          }
-          if (seen.add(item)) {
-            candidates.add(item);
-          }
-        }
+        int skip = rotationOffset(candidateRotation, bucket.size());
+        appendCandidates(bucket, skip, Integer.MAX_VALUE, maximum, candidates, seen);
+        appendCandidates(bucket, 0, skip, maximum, candidates, seen);
         if (bucket.isEmpty()) {
           itemBuckets.remove(bucketKey, bucket);
         }
       }
     }
     return candidates;
+  }
+
+  private void appendCandidates(
+      Map<UUID, IndexedItem> bucket,
+      int from,
+      int to,
+      int maximum,
+      List<Item> candidates,
+      Set<Item> seen
+  ) {
+    int index = 0;
+    for (IndexedItem indexed : bucket.values()) {
+      if (candidates.size() >= maximum || index >= to) {
+        return;
+      }
+      int position = index++;
+      if (position < from) {
+        continue;
+      }
+      Item item = indexed.reference.get();
+      if (item == null) {
+        bucket.remove(indexed.itemId, indexed);
+        indexedItems.remove(indexed.itemId, indexed);
+        continue;
+      }
+      if (seen.add(item)) {
+        candidates.add(item);
+      }
+    }
+  }
+
+  private static int rotationOffset(AtomicInteger rotation, int size) {
+    int window = Math.min(size, MAX_CANDIDATES_PER_BUCKET_PASS);
+    return window <= 1 ? 0 : Math.floorMod(rotation.getAndIncrement(), window);
   }
 
   private void completeBucketFlight(BucketFlight flight, boolean retry) {
@@ -848,11 +925,13 @@ public class FeatureItemSuperStacker extends ReactFeature implements FeatureInte
     private final UUID itemId;
     private final ItemBucketKey bucketKey;
     private final WeakReference<Item> reference;
+    private volatile int bundleCount;
 
-    private IndexedItem(UUID itemId, ItemBucketKey bucketKey, WeakReference<Item> reference) {
+    private IndexedItem(UUID itemId, ItemBucketKey bucketKey, WeakReference<Item> reference, int bundleCount) {
       this.itemId = itemId;
       this.bucketKey = bucketKey;
       this.reference = reference;
+      this.bundleCount = bundleCount;
     }
   }
 

@@ -22,6 +22,7 @@ final class MobStackRecovery {
 
   private final FeatureMobStacking feature;
   private final AtomicBoolean pending = new AtomicBoolean();
+  private final AtomicBoolean rearmRequested = new AtomicBoolean();
   private LoadedChunkCursor cursor;
   private LoadedChunkTarget target;
   private Entity[] entities;
@@ -29,6 +30,8 @@ final class MobStackRecovery {
   private long generation = -1L;
   private long nextSweepAt;
   private long nextWarningAt;
+  private volatile boolean dormant;
+  private boolean sweepFoundStack;
 
   MobStackRecovery(FeatureMobStacking feature) {
     this.feature = feature;
@@ -60,6 +63,7 @@ final class MobStackRecovery {
         try {
           restoreChunk(world, currentGeneration);
         } catch (RuntimeException failure) {
+          sweepFoundStack = true;
           clearTarget();
           React.warn("Could not restore a mob stack; its remaining count will be retried.", failure);
         } finally {
@@ -73,7 +77,16 @@ final class MobStackRecovery {
     }
   }
 
+  void rearm() {
+    rearmRequested.set(true);
+  }
+
+  boolean needsRearm() {
+    return dormant && !rearmRequested.get();
+  }
+
   void warnRejectedSpawn(LivingEntity source) {
+    sweepFoundStack = true;
     long now = System.currentTimeMillis();
     if (now >= nextWarningAt) {
       nextWarningAt = now + WARNING_INTERVAL_MS;
@@ -84,7 +97,11 @@ final class MobStackRecovery {
 
   private boolean nextTarget() {
     if (cursor == null) {
-      if (System.currentTimeMillis() < nextSweepAt) {
+      if (rearmRequested.getAndSet(false)) {
+        dormant = false;
+        nextSweepAt = 0L;
+      }
+      if (dormant || System.currentTimeMillis() < nextSweepAt) {
         return false;
       }
       ObserverController observer = React.controller(ObserverController.class);
@@ -92,11 +109,16 @@ final class MobStackRecovery {
         return false;
       }
       cursor = observer.openLoadedChunkCursor();
+      sweepFoundStack = false;
     }
     List<LoadedChunkTarget> targets = cursor.next(1);
     if (targets.isEmpty()) {
       cursor = null;
-      nextSweepAt = System.currentTimeMillis() + SWEEP_INTERVAL_MS;
+      if (sweepFoundStack) {
+        nextSweepAt = System.currentTimeMillis() + SWEEP_INTERVAL_MS;
+      } else {
+        dormant = true;
+      }
       return false;
     }
     target = targets.getFirst();
@@ -122,11 +144,16 @@ final class MobStackRecovery {
     while (offset < entities.length && inspected++ < MAX_ENTITIES_PER_BATCH && remainingSpawns > 0
         && feature.shouldRecoverStacks(currentGeneration)) {
       Entity entity = entities[offset];
-      if (entity instanceof LivingEntity living
-          && (!J.isFoliaThreading() || J.isOwnedByCurrentRegion(entity))
-          && entity.isValid() && !entity.isDead()) {
-        remainingSpawns -= feature.restoreStack(living, remainingSpawns, currentGeneration);
-        if (remainingSpawns == 0 && feature.getStackCount(entity) > 1) {
+      if (entity instanceof LivingEntity && J.isFoliaThreading() && !J.isOwnedByCurrentRegion(entity)) {
+        sweepFoundStack = true;
+      } else if (entity instanceof LivingEntity living && entity.isValid() && !entity.isDead()) {
+        int restored = feature.restoreStack(living, remainingSpawns, currentGeneration);
+        remainingSpawns -= restored;
+        boolean stacked = feature.getStackCount(living) > 1;
+        if (restored > 0 || stacked) {
+          sweepFoundStack = true;
+        }
+        if (remainingSpawns == 0 && stacked) {
           return;
         }
       }
@@ -140,6 +167,8 @@ final class MobStackRecovery {
   private void reset() {
     cursor = null;
     nextSweepAt = 0L;
+    dormant = false;
+    sweepFoundStack = false;
     clearTarget();
   }
 

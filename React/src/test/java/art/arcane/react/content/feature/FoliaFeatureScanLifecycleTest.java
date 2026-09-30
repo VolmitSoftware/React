@@ -227,6 +227,8 @@ class FoliaFeatureScanLifecycleTest {
             targetTasks.add(invocation.getArgument(1));
             return true;
           });
+      managed.when(() -> ReactEntity.isPausedBy(target, ReactEntity.PauseOwner.DYNAMIC_ACTIVATION_RANGE))
+          .thenReturn(true);
 
       feature.onActivate();
       feature.on(event);
@@ -354,7 +356,7 @@ class FoliaFeatureScanLifecycleTest {
   }
 
   @Test
-  void entityTrimmerPaperQueuesOneBoundedMainThreadScanWithoutEnumeratingWorlds() {
+  void entityTrimmerPaperQueuesOneBoundedJobPerAnchorWithoutEnumeratingWorlds() {
     FeatureEntityTrimmer feature = new FeatureEntityTrimmer();
     Player[] players = players(30);
     List<Runnable> mainTasks = new ArrayList<>();
@@ -370,10 +372,17 @@ class FoliaFeatureScanLifecycleTest {
 
       feature.onTick();
       Assertions.assertEquals(1, mainTasks.size());
-      mainTasks.getFirst().run();
+      mainTasks.removeFirst().run();
       feature.onTick();
 
-      Assertions.assertEquals(2, mainTasks.size());
+      Assertions.assertEquals(24, mainTasks.size());
+      for (Runnable anchorScan : new ArrayList<>(mainTasks)) {
+        anchorScan.run();
+      }
+      mainTasks.clear();
+      feature.onTick();
+
+      Assertions.assertEquals(1, mainTasks.size());
       bukkit.verify(Bukkit::getWorlds, Mockito.never());
     }
   }

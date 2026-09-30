@@ -1101,11 +1101,11 @@ impact = "Daha uzun süreler sorunlu bir bileşeni daha uzun süre bastırır; d
 summary = "Devre kısıtlama süresi (milisaniye)."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward]
-description = "Eklenme Hızlı Forward özelliği için yapılandırma. Ne zaman bir ne zaman chunk Yurt dışından geçişler (Uzun bir süre yakın oyuncu yok) Aktif olarak aktif olmak için (oyuncu yaklaştı veya chunk Yeniden yüklendi), Bu özellik bir kez ek ve filing blokları yürür ve büyümelerini yurt süresine göre miktar olarak ilerletir, böylece oyuncular geri dönmeden sonra donmuş çiftlikleri göremezler.. Yüksek yük olayları sırasında aktif kalın."
+description = "Crop Fast Forward özelliğinin yapılandırması. Sunucu ekinleri yalnızca bir oyuncunun simülasyon mesafesi içindeki chunk'larda büyütür, bu yüzden bu özellik yüklü her chunk'ın bu mesafenin dışında ne kadar süre geçirdiğini kaydeder. Bir oyuncu etkin aralığa geri döndüğünde, chunk'ın ekin ve fidan bloklarını bir kez tarar ve büyümelerini bu süre kadar ilerletir; böylece oyuncular döndüklerinde donmuş çiftlikler görmez. Bir chunk bellekten kaldırıldığında bekleyen büyüme silinir. Yüksek yük olayları sırasında etkin olmaz."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.activerange]
-impact = "Daha büyük değerler daha erken chunk'lar'e hızlı ilerler; küçük değerler oyuncuların yaklaşıncaya kadar ertelenir."
-summary = "Oyuncu yakınlığı aralığı (blocks), bir chunk'i aktif olarak sınıflandırır. Bu aralığın içinde, yatak izleme sıfırlamaları ve bekleyen hızlı ilerleyici yangınlar."
+impact = "Daha büyük değerler bekleyen büyümeyi daha uzak chunk'lara daha erken uygular; daha küçük değerler oyuncular yaklaşana kadar bekler."
+summary = "Bekleyen hızlı ilerletmenin uygulandığı, oyuncunun chunk'ın orta sütununa olan mesafesi (blok). Bir chunk'ın etkin olup olmadığı dünyanın simülasyon mesafesine göre belirlenir."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.engageonincident]
 impact = "Yüksek değerler ışık olayları sırasında hızlı ileri sürmeye devam eder; düşük değerler onu daha erken susturur."
@@ -1128,8 +1128,8 @@ impact = "Daha yüksek değerler daha fazla hafıza ile daha fazla araziyi kapla
 summary = "En eski izlenen chunk'lar'lerin atılmasından önce tüm dünyalarda en fazla chunk'lar takip edilmiştir."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.minelapsedticks]
-impact = "Yüksek değerler ucuz son uyanmaları; daha düşük değerler hızlı bir şekilde, kısa uyku hatları bile."
-summary = "(ticks), bir uyanıklık tetiklenmeden önce hızlı ilerleme gösterir."
+impact = "Daha yüksek değerler kısa yoklukları atlar; daha düşük değerler simülasyon mesafesi dışındaki kısa süreleri bile ilerletir."
+summary = "Bir chunk'ın hızlı ilerletilmeden önce simülasyon mesafesi dışında geçirmesi gereken en kısa süre (tick). Daha kısa yokluklar yok sayılır."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.releaseonincident]
 impact = "Daha yüksek değerler sakinleşmeden sonra erken başlar; düşük değerler istikrar için daha uzun süre hızlı ilerliyor."

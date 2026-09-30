@@ -1101,11 +1101,11 @@ impact = "Langere duur onderdrukt een problematisch onderdeel langer; kortere du
 summary = "Duur van circuitbegrenzing in milliseconden."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward]
-description = "Configuratie voor Crop Fast Forward functie. Wanneer een chunk-overschrijding van de slapende (no nabijgelegen speler voor een lange tijd) naar actieve (player benaderd of chunk herladen), deze functie loopt oogst en planten blokken één keer en bevordert hun groei met een bedrag proportioneel aan de slaapduur zodat spelers niet zien bevroren boerderijen na terugkeer. blijft inactief tijdens hoge belasting incidenten."
+description = "Configuratie voor de Crop Fast Forward-functie. De server laat gewassen alleen groeien in chunks binnen de simulatieafstand van een speler, daarom houdt deze functie bij hoe lang elke geladen chunk buiten die afstand doorbrengt. Wanneer een speler terugkomt binnen het actieve bereik, loopt de functie eenmaal door de gewas- en jonge-boomblokken van de chunk en laat ze met die tijd doorgroeien, zodat spelers bij terugkomst geen bevroren boerderijen zien. Uitstaande groei vervalt wanneer een chunk wordt ontladen. Blijft inactief tijdens incidenten met hoge belasting."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.activerange]
-impact = "Grotere waarden gaan sneller verder in chunks eerder; kleinere waarden vertragen totdat spelers dichterbij komen."
-summary = "Player proximity range (blocks) die een chunk als actief indelt. Binnen dit bereik, slaperige tracking resets en eventuele openstaande snel-voorwaartsbranden."
+impact = "Grotere waarden passen uitstaande groei eerder toe op verder gelegen chunks; kleinere waarden wachten tot spelers dichterbij komen."
+summary = "Afstand van de speler (in blokken) tot de middelste kolom van een chunk waarbinnen de uitstaande versnelling wordt toegepast. Of een chunk actief is, volgt de simulatieafstand van de wereld."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.engageonincident]
 impact = "Hogere waarden blijven snel vooruit draaien tijdens lichtincidenten; lagere waarden laten het eerder zwijgen."
@@ -1128,8 +1128,8 @@ impact = "Hogere waarden bedekken meer terrein met meer geheugen; lagere waarden
 summary = "Maximale chunks-tracking over alle werelden voordat de oudste chunks wordt verwijderd."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.minelapsedticks]
-impact = "Hogere waarden slaan goedkope recente wakkeren over; lagere waarden fast-forward zelfs korte slaaptijd stretches."
-summary = "Minimaal slaperig tijd (ticks) voordat een wake wordt geactiveerd, gaat snel vooruit. Hieronder wordt de chunk als nog warm behandeld."
+impact = "Hogere waarden slaan korte afwezigheden over; lagere waarden versnellen ook korte periodes buiten de simulatieafstand."
+summary = "Minimale tijd (in ticks) die een chunk buiten de simulatieafstand moet doorbrengen voordat hij wordt versneld. Kortere afwezigheden worden genegeerd."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.releaseonincident]
 impact = "Hogere waarden hervatten eerder na een rustigering; lagere waarden houden langer voor stabiliteit in stand."

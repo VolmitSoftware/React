@@ -1101,11 +1101,11 @@ impact = "시간이 길수록 문제가 있는 구성 요소를 더 오래 억�
 summary = "회로 제한 지속 시간(밀리초)."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward]
-description = "Crop Fast Forward 기능의 구성. 청크가 긴 시간 동안 잠식 (나 근처 플레이어)에서 활성 (player에 접근하거나 청크 재충전)로 전환되면, 이 기능은 작물 및 정작 블록을 한 번 걷고 잠식 기간에 비례하는 양으로 성장하도록 진행합니다. 플레이어는 돌아온 후 얼린 농장을 보지 않습니다. 높은 부하 사건 중에 활동하지 않습니다."
+description = "Crop Fast Forward 기능의 구성입니다. 서버는 플레이어의 시뮬레이션 거리 안에 있는 청크에서만 작물을 성장시키므로, 이 기능은 로드된 각 청크가 그 거리 밖에 머문 시간을 기록합니다. 플레이어가 활성 범위 안으로 돌아오면 청크의 작물과 묘목 블록을 한 번 훑어 그 시간만큼 성장을 진행시켜, 플레이어가 돌아왔을 때 멈춘 농장을 보지 않게 합니다. 청크가 언로드되면 대기 중인 성장은 폐기됩니다. 고부하 사고 중에는 비활성 상태로 유지됩니다."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.activerange]
-impact = "더 큰 값은 청크보다 빨리 앞으로 나아갑니다. 작은 값들은 플레이어가 가까워질 때까지 미뤄집니다."
-summary = "플레이어 근접 범위 (blocks)는 청크를 활성으로 분류합니다. 이 범위에, 잠자리 추적 리셋 및 임의의 대기 중인 빠른 전향 화재."
+impact = "값이 클수록 더 먼 청크에도 대기 중인 성장을 더 일찍 적용하고, 작을수록 플레이어가 더 가까이 올 때까지 기다립니다."
+summary = "대기 중인 빠른 진행이 적용되는, 청크 중앙 열로부터의 플레이어 거리(블록)입니다. 청크의 활성 여부는 월드의 시뮬레이션 거리를 따릅니다."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.engageonincident]
 impact = "높은 값은 가벼운 사건 도중 빠른 앞으로 달리는 것을 지킵니다; 더 낮은 가치 침묵 그것 빨리."
@@ -1128,8 +1128,8 @@ impact = "더 많은 메모리를 가진 더 지형을 커버; 기억을 위한 
 summary = "가장 오래된 추적된 청크가 추방되기 전에 모든 세계에서 청크를 추적하는 최대 수입니다."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.minelapsedticks]
-impact = "높은 값은 싼 최근의 웨이브를 건너 뛰고; 낮은 값은 빠른 속도로 짧은 기숙사 스트레치."
-summary = "잠자는 최소 기간 (ticks)는 웨이크가 시작되기 전에 빠르게 진행됩니다. 이 아래에서는 청크은 여전히 따뜻하게 취급됩니다."
+impact = "값이 클수록 짧은 부재를 건너뛰고, 작을수록 시뮬레이션 거리 밖의 짧은 기간도 빠르게 진행합니다."
+summary = "청크가 빠른 진행 대상이 되기 전에 시뮬레이션 거리 밖에서 보내야 하는 최소 시간(틱)입니다. 이보다 짧은 부재는 무시됩니다."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.releaseonincident]
 impact = "더 높은 값은 조용 한 후 빨리 다시 시작합니다. 낮은 값은 안정성을 위해 더 빠른 속도로 유지됩니다."

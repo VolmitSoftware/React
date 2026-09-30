@@ -1101,11 +1101,11 @@ impact = "Ilgesnė trukmė ilgiau slopina probleminį komponentą; trumpesnė j�
 summary = "Grandinės ribojimo trukmė milisekundėmis."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward]
-description = "Konfiguracija už augalų greitojo išankstinio funkcijos. Kai pasaulio segmentas pertrauka nuo miegojančio (ne artimo žaidėjo ilgai trukmės) aktyviam (player arba pasaulio segmentas atkraunama), ši funkcija eina po augalų ir šlapimo blokus vieną kartą ir skatina jų augimą proporcingai prie miegojančios trukmės, todėl žaidėjai negrįžus nematys įšaldytų ūkių. Lieka neaktyvus didelio apkrovos incidentų metu."
+description = "Crop Fast Forward funkcijos konfigūracija. Serveris augina pasėlius tik tuose pasaulio segmentuose, kurie yra žaidėjo simuliacijos atstumu, todėl ši funkcija fiksuoja, kiek laiko kiekvienas įkeltas pasaulio segmentas praleidžia už to atstumo ribų. Kai žaidėjas grįžta į aktyvų diapazoną, funkcija vieną kartą pereina segmento pasėlių ir sodinukų blokus ir paspartina jų augimą tuo laiku, kad grįžę žaidėjai nematytų sustingusių ūkių. Laukiantis augimas atmetamas, kai pasaulio segmentas iškeliamas. Didelės apkrovos incidentų metu lieka neaktyvi."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.activerange]
-impact = "Didesnės vertės greičiau išvyksta į pasaulio segmentai anksčiau; mažesnės reikšmės atidėja, kol žaidėjai pasiekia artimesnį."
-summary = "Žaidėjo artimumo intervalą (blocks), kuris klasifikuoja pasaulio segmentas kaip aktyvus. Šį intervalą, mieguosius sekimo atkurimus ir visus laukusius greitesnius gaisrus."
+impact = "Didesnės reikšmės anksčiau pritaiko laukiantį augimą tolimesniems segmentams; mažesnės laukia, kol žaidėjai prieis arčiau."
+summary = "Žaidėjo atstumas (blokais) nuo pasaulio segmento centrinio stulpelio, kuriuo taikomas laukiantis augimo paspartinimas. Ar segmentas aktyvus, lemia pasaulio simuliacijos atstumas."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.engageonincident]
 impact = "Aukštesnės vertės išlaiko staigų važiavimą per šviesos incidentus; mažesnės vertės tyla jį greičiau."
@@ -1128,8 +1128,8 @@ impact = "Aukštesnės vertės apima daugiau reljefo su daugiau atminties; maže
 summary = "Maksimali pasaulio segmentai sekimas per visus pasaulius prieš seniausią sekimą pasaulio segmentai yra ištrinta."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.minelapsedticks]
-impact = "Aukštesnės vertės praleisti pigus neseniai bumbulai; mažesnės vertės greitai pirmyn net trumpas dormancy driches."
-summary = "Minimali slopinamas laikas (ticks) prieš iškrovimą sparčiai."
+impact = "Didesnės reikšmės praleidžia trumpus nebuvimus; mažesnės paspartina net trumpus laikotarpius už simuliacijos atstumo ribų."
+summary = "Mažiausias laikas (tikais), kurį pasaulio segmentas turi praleisti už simuliacijos atstumo ribų, kad būtų paspartintas. Trumpesni nebuvimai ignoruojami."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.releaseonincident]
 impact = "Didesnės vertės vėl greičiau po tylos; mažesnės vertės išlaikyti negrįžtamai ilgiau stabilumo."

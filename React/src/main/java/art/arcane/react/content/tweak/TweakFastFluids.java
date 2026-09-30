@@ -25,7 +25,6 @@ import art.arcane.volmlib.nativelib.monitor.NativeWorldAccess;
 import art.arcane.react.api.tweak.ReactTweak;
 import art.arcane.react.util.common.scheduling.J;
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -38,13 +37,10 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockFromToEvent;
 import org.bukkit.event.block.FluidLevelChangeEvent;
 
+import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Queue;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Fast Fluids tweak. Fast-forwards water and lava spread chains into bounded burst updates to reduce repeated per-step fluid churn.")
@@ -70,8 +66,7 @@ public class TweakFastFluids extends ReactTweak implements Listener {
   private int maxBurstTicksPerLocationPerServerTick = 16;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Controls whether fast fluids applies draining acceleration around active flow events.", impact = "Enable to accelerate fluid retract and empty behavior near flow updates; disable to accelerate only direct flow ticks.")
   private boolean accelerateDrain = true;
-  private transient Map<FluidPulseKey, FluidPulse> pendingPulses;
-  private transient Queue<FluidPulseKey> pulseOrder;
+  private transient FluidPulseQueue pulses;
   private transient NativeWorldAccess nativeAccess;
   private transient boolean fluidBridgesAvailable;
   private transient BridgeFailureGate bridgeFailureGate;
@@ -94,8 +89,7 @@ public class TweakFastFluids extends ReactTweak implements Listener {
     extraVanillaTicksPerEvent = clampInt(extraVanillaTicksPerEvent, 0, 4);
     maxExtraVanillaTicksPerServerTick = clampInt(maxExtraVanillaTicksPerServerTick, 16, 4096);
     maxBurstTicksPerLocationPerServerTick = clampInt(maxBurstTicksPerLocationPerServerTick, 1, 16);
-    pendingPulses = new ConcurrentHashMap<>();
-    pulseOrder = new ConcurrentLinkedQueue<>();
+    pulses = new FluidPulseQueue();
     bridgeFailureGate = new BridgeFailureGate(
         clampInt(Integer.getInteger("react.fastfluids.bridgeFailureThreshold", 8), 1, 64));
     nativeAccess = NativeAdapters.find(NativeWorldAccess.class).orElse(null);
@@ -169,94 +163,65 @@ public class TweakFastFluids extends ReactTweak implements Listener {
       pulseTaskId = 0;
     }
 
-    if (pendingPulses != null) {
-      pendingPulses.clear();
-    }
-    if (pulseOrder != null) {
-      pulseOrder.clear();
+    if (pulses != null) {
+      pulses.clear();
     }
     fluidBridgesAvailable = false;
     bridgeFailureGate = null;
   }
 
   private void flushPulseQueue() {
-    if (!fluidBridgesAvailable) {
+    FluidPulseQueue queue = pulses;
+    if (!fluidBridgesAvailable || queue == null || queue.isEmpty()) {
       return;
     }
 
-    if (pendingPulses == null || pendingPulses.isEmpty()) {
-      return;
-    }
     int budget = clampInt(maxExtraVanillaTicksPerServerTick, 16, 4096);
     int maxBurst = clampInt(maxBurstTicksPerLocationPerServerTick, 1, 16);
-    int scanLimit = Math.max(budget * 8, 128);
-    int scanned = 0;
-    while (budget > 0 && scanned < scanLimit) {
-      FluidPulseKey key = pulseOrder.poll();
-      if (key == null) {
+    Map<FluidPulseQueue.FluidChunk, List<FluidPulseQueue.FluidBurst>> buckets = queue.drain(budget, maxBurst);
+    boolean folia = J.isFoliaThreading();
+    for (Map.Entry<FluidPulseQueue.FluidChunk, List<FluidPulseQueue.FluidBurst>> entry : buckets.entrySet()) {
+      FluidPulseQueue.FluidChunk chunk = entry.getKey();
+      World world = Bukkit.getWorld(chunk.worldId());
+      if (world == null) {
+        queue.discardWorld(chunk.worldId());
+        continue;
+      }
+
+      List<FluidPulseQueue.FluidBurst> bursts = entry.getValue();
+      if (folia) {
+        J.runChunk(world, chunk.x(), chunk.z(), () -> runBursts(world, bursts));
+      } else {
+        runBursts(world, bursts);
+      }
+    }
+  }
+
+  private void runBursts(World world, List<FluidPulseQueue.FluidBurst> bursts) {
+    for (FluidPulseQueue.FluidBurst burst : bursts) {
+      if (!fluidBridgesAvailable) {
         return;
       }
-
-      scanned++;
-      FluidPulse pulse = pendingPulses.get(key);
-      if (pulse == null) {
-        continue;
-      }
-
-      int burstTicks = pulse.consumeUpTo(Math.min(maxBurst, budget));
-      if (burstTicks <= 0) {
-        pendingPulses.remove(key, pulse);
-        continue;
-      }
-
-      budget -= burstTicks;
-      schedulePulse(key, pulse, burstTicks);
-
-      if (pulse.hasRemaining()) {
-        pulseOrder.offer(key);
-      } else {
-        pendingPulses.remove(key, pulse);
-      }
+      runPulse(world, burst);
     }
   }
 
-  private void schedulePulse(FluidPulseKey key, FluidPulse pulse, int burstTicks) {
-    World world = Bukkit.getWorld(pulse.getWorldId());
-    if (world == null) {
-      pendingPulses.remove(key, pulse);
-      return;
-    }
-
-    Location location = new Location(world, pulse.getX(), pulse.getY(), pulse.getZ());
-    J.s(location, () -> runPulse(key, pulse, burstTicks), 0);
-  }
-
-  private void runPulse(FluidPulseKey key, FluidPulse pulse, int burstTicks) {
-    if (!fluidBridgesAvailable) {
-      return;
-    }
-
-    World world = Bukkit.getWorld(pulse.getWorldId());
-    if (world == null) {
-      pendingPulses.remove(key, pulse);
-      return;
-    }
-
+  private void runPulse(World world, FluidPulseQueue.FluidBurst burst) {
     if (!accelerateWater && !accelerateLava) {
       resetBridgeFailures();
       return;
     }
 
-    int x = pulse.getX();
-    int y = pulse.getY();
-    int z = pulse.getZ();
+    int x = burst.x();
+    int y = burst.y();
+    int z = burst.z();
     if (!isChunkNeighborhoodReady(world, x, z)) {
       resetBridgeFailures();
       return;
     }
 
     try {
-      for (int i = 0; i < Math.max(1, burstTicks); i++) {
+      for (int i = 0; i < Math.max(1, burst.ticks()); i++) {
         if (!nativeAccess.tickFluid(world, x, y, z, accelerateWater, accelerateLava)) {
           break;
         }
@@ -326,17 +291,10 @@ public class TweakFastFluids extends ReactTweak implements Listener {
       return;
     }
 
-    FluidPulseKey key = FluidPulseKey.of(world.getUID(), x, y, z);
-    pendingPulses.compute(key, (ignored, existing) -> {
-      if (existing == null) {
-        FluidPulse created = new FluidPulse(key.getWorldId(), key.getX(), key.getY(), key.getZ(), extraTicks);
-        pulseOrder.offer(key);
-        return created;
-      }
-
-      existing.addTicks(extraTicks);
-      return existing;
-    });
+    FluidPulseQueue queue = pulses;
+    if (queue != null) {
+      queue.enqueue(world.getUID(), x, y, z, extraTicks);
+    }
   }
 
   private void enqueueNeighbors(Block block, int extraTicks) {
@@ -480,129 +438,6 @@ public class TweakFastFluids extends ReactTweak implements Listener {
 
     void markWarned() {
       warned = true;
-    }
-  }
-
-  private static final class FluidPulseKey {
-    private final UUID worldId;
-    private final int x;
-    private final int y;
-    private final int z;
-
-    private FluidPulseKey(UUID worldId, int x, int y, int z) {
-      this.worldId = worldId;
-      this.x = x;
-      this.y = y;
-      this.z = z;
-    }
-
-    private static FluidPulseKey of(UUID worldId, int x, int y, int z) {
-      return new FluidPulseKey(worldId, x, y, z);
-    }
-
-    private UUID getWorldId() {
-      return worldId;
-    }
-
-    private int getX() {
-      return x;
-    }
-
-    private int getY() {
-      return y;
-    }
-
-    private int getZ() {
-      return z;
-    }
-
-    @Override
-    public boolean equals(Object object) {
-      if (this == object) {
-        return true;
-      }
-      if (!(object instanceof FluidPulseKey)) {
-        return false;
-      }
-      FluidPulseKey other = (FluidPulseKey) object;
-
-      return x == other.x
-          && y == other.y
-          && z == other.z
-          && Objects.equals(worldId, other.worldId);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(worldId, x, y, z);
-    }
-  }
-
-  private static final class FluidPulse {
-    private final UUID worldId;
-    private final int x;
-    private final int y;
-    private final int z;
-    private final AtomicInteger remainingTicks;
-
-    private FluidPulse(UUID worldId, int x, int y, int z, int ticks) {
-      this.worldId = worldId;
-      this.x = x;
-      this.y = y;
-      this.z = z;
-      this.remainingTicks = new AtomicInteger(Math.max(0, ticks));
-    }
-
-    private UUID getWorldId() {
-      return worldId;
-    }
-
-    private int getX() {
-      return x;
-    }
-
-    private int getY() {
-      return y;
-    }
-
-    private int getZ() {
-      return z;
-    }
-
-    private void addTicks(int ticks) {
-      int safeTicks = Math.max(0, ticks);
-      if (safeTicks == 0) {
-        return;
-      }
-
-      remainingTicks.updateAndGet(value -> clamp(value + safeTicks, 0, 16));
-    }
-
-    private int consumeUpTo(int maxTicks) {
-      int safeMaxTicks = Math.max(0, maxTicks);
-      if (safeMaxTicks <= 0) {
-        return 0;
-      }
-
-      while (true) {
-        int current = remainingTicks.get();
-        if (current <= 0) {
-          return 0;
-        }
-
-        int consume = Math.min(current, safeMaxTicks);
-        if (remainingTicks.compareAndSet(current, current - consume)) {
-          return consume;
-        }
-      }
-    }
-
-    private boolean hasRemaining() {
-      return remainingTicks.get() > 0;
-    }
-
-    private int clamp(int value, int min, int max) {
-      return Math.max(min, Math.min(max, value));
     }
   }
 }

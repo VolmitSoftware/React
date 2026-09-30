@@ -23,6 +23,7 @@ import art.arcane.react.React;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BundleMeta;
+import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +31,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class BundleUtils {
+  private static final String SUPER_STACK_LORE = "REACT SUPER STACK";
   private static final Set<String> REPORTED_BUNDLE_FAILURES = ConcurrentHashMap.newKeySet();
 
   public static boolean isBundle(ItemStack i) {
@@ -84,11 +86,29 @@ public class BundleUtils {
   }
 
   public static boolean isFlagged(ItemStack item) {
+    if (item == null || item.getType() != Material.BUNDLE) {
+      return false;
+    }
 
-    return item.getItemMeta() != null
-        && item.getItemMeta().getLore() != null
-        && item.getItemMeta().getLore().size() == 1
-        && item.getItemMeta().getLore().get(0).equals("REACT SUPER STACK");
+    ItemMeta meta = item.getItemMeta();
+    return meta != null && hasSuperStackLore(meta);
+  }
+
+  public static int superStackCount(ItemStack item) {
+    if (item == null || item.getType() != Material.BUNDLE) {
+      return -1;
+    }
+
+    ItemMeta meta = item.getItemMeta();
+    if (!(meta instanceof BundleMeta bundleMeta) || !hasSuperStackLore(meta)) {
+      return -1;
+    }
+    return getTotalCount(bundleMeta.getItems());
+  }
+
+  private static boolean hasSuperStackLore(ItemMeta meta) {
+    List<String> lore = meta.getLore();
+    return lore != null && lore.size() == 1 && SUPER_STACK_LORE.equals(lore.getFirst());
   }
 
   public static ItemStack createBundle(List<ItemStack> items) {
@@ -110,7 +130,7 @@ public class BundleUtils {
       }
       return null;
     }
-    bundleMeta.setLore(List.of("REACT SUPER STACK"));
+    bundleMeta.setLore(List.of(SUPER_STACK_LORE));
     bundle.setItemMeta(bundleMeta);
     return bundle;
   }
