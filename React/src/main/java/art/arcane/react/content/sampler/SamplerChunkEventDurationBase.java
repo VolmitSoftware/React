@@ -32,7 +32,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-abstract class SamplerChunkEventDurationBase extends ReactCachedSampler implements Listener {
+public abstract class SamplerChunkEventDurationBase extends ReactCachedSampler implements Listener {
   private transient volatile RollingSequence average;
   private final transient ConcurrentHashMap<Integer, Long> starts;
   private final transient ConcurrentHashMap<Integer, Long> startCreated;

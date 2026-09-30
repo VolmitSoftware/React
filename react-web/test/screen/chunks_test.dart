@@ -37,8 +37,8 @@ ServerSnapshot _fakeSnapshot() {
     _sample('chunks', 1200.0, max: 10000.0),
     _sample('chunks-loaded', 5.0, suffix: '/s', max: 200.0),
     _sample('chunks-generated', 3.0, suffix: '/s', max: 200.0),
-    _sample('chunk-load-ms', 3.2, suffix: 'ms', max: 50.0),
-    _sample('chunk-gen-ms', 8.5, suffix: 'ms', max: 100.0),
+    _sample('chunk-load-listener-ms', 3.2, suffix: 'ms', max: 50.0),
+    _sample('chunk-gen-listener-ms', 8.5, suffix: 'ms', max: 100.0),
     _sample(
       'world-save-event-interval',
       45.0,
@@ -117,17 +117,17 @@ void main() {
       );
     });
 
-    testServer('renders Chunk Load/Gen Time section card heading', (
+    testServer('renders Chunk Listener Time section card heading', (
       ServerTester tester,
     ) async {
       tester.pumpComponent(_wrap(const ChunksScreen()));
       final DocumentResponse res = await tester.request('/');
       expect(res.statusCode, equals(200));
       expect(
-        res.body.contains('Chunk Load/Gen Time'),
+        res.body.contains('Chunk Listener Time'),
         isTrue,
         reason:
-            'Chunk Load/Gen Time section heading must appear in rendered HTML',
+            'Chunk Listener Time section heading must appear in rendered HTML',
       );
     });
 

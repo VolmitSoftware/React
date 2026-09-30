@@ -1,116 +1,69 @@
 package art.arcane.react.content.sampler;
 
-import org.bukkit.Bukkit;
-import org.bukkit.Server;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SamplerTickTimeTest {
+  private static final long MS = 1_000_000L;
+  private static final long BASE = 10_000_000_000L;
+
   @Test
-  void samplesPaperAverageTickTimeOnTheOwningThread() {
-    Server server = mock(Server.class);
-    when(server.getAverageTickTime()).thenReturn(37.5D);
-    SamplerTickTime sampler = new SamplerTickTime();
+  void averagesTheServerTickWorkTime() {
+    SimulatedServerTickTimes server = new SimulatedServerTickTimes();
+    TickClock clock = new TickClock(server);
+    SamplerTickTime sampler = new SamplerTickTime(clock);
+    sampler.start();
 
-    try (MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class)) {
-      bukkit.when(Bukkit::getServer).thenReturn(server);
-      bukkit.when(Bukkit::isPrimaryThread).thenReturn(true);
+    assertFalse(sampler.isSampleAvailable());
+    long at = server.ticks(clock, BASE, 20, 37_500_000L);
+    clock.tick(at);
 
-      assertEquals(37.5D, sampler.onSample());
-    }
+    assertTrue(sampler.isSampleAvailable());
+    assertEquals(37.5D, sampler.onSample(), 1.0E-9D);
+    assertEquals("ms", sampler.formattedSuffix(37.5D));
   }
 
   @Test
-  void invalidServerTickTimeCannotSignalPressure() {
-    Server server = mock(Server.class);
-    SamplerTickTime sampler = new SamplerTickTime();
+  void fallsBackToTickGapsWithoutServerTickTimes() {
+    TickClock clock = new TickClock(() -> null);
+    SamplerTickTime sampler = new SamplerTickTime(clock);
+    sampler.start();
 
-    try (MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class)) {
-      bukkit.when(Bukkit::getServer).thenReturn(server);
-      bukkit.when(Bukkit::isPrimaryThread).thenReturn(true);
+    clock.tick(BASE);
+    clock.tick(BASE + 60L * MS);
+    clock.tick(BASE + 100L * MS);
+    clock.tick(BASE + 140L * MS);
+    clock.tick(BASE + 200L * MS);
+    clock.tick(BASE + 250L * MS);
 
-      when(server.getAverageTickTime()).thenReturn(Double.NaN);
-      assertEquals(0D, sampler.onSample());
-
-      when(server.getAverageTickTime()).thenReturn(-5D);
-      assertEquals(0D, sampler.onSample());
-    }
+    assertTrue(sampler.isSampleAvailable());
+    assertEquals(50D, sampler.onSample(), 1.0E-9D);
+    assertEquals("ms GAP", sampler.formattedSuffix(50D));
   }
 
   @Test
-  void neverReadsTheServerTickTimeFromAThreadThatDoesNotOwnIt() {
-    Server server = mock(Server.class);
-    when(server.getAverageTickTime()).thenReturn(37.5D);
-    SamplerTickTime sampler = new SamplerTickTime();
+  void formatsSubMillisecondTickTimeWithTwoDecimals() {
+    TickClock clock = new TickClock(() -> new long[0]);
+    SamplerTickTime sampler = new SamplerTickTime(clock);
+    clock.tick(BASE);
 
-    try (MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class)) {
-      bukkit.when(Bukkit::getServer).thenReturn(server);
-      bukkit.when(Bukkit::isPrimaryThread).thenReturn(false);
-
-      assertEquals(0D, sampler.onSample());
-      verify(server, never()).getAverageTickTime();
-    }
+    assertEquals("0.28 ms", sampler.format(0.28D));
+    assertEquals("37.5 ms", sampler.format(37.5D));
+    assertEquals("12.34 ms", sampler.format(12.34D));
+    assertEquals("1.5 s", sampler.format(1500D));
   }
 
   @Test
-  void averageTickMSIgnoresInvalidGapsAndAveragesTheRest() {
-    assertEquals(0D, SamplerTickTime.averageTickMS(null));
-    assertEquals(0D, SamplerTickTime.averageTickMS(List.of()));
-    assertEquals(50D, SamplerTickTime.averageTickMS(List.of(40D, 60D)));
+  void emptyWorkTimeWindowIsUnavailable() {
+    TickClock clock = new TickClock(() -> new long[0]);
+    SamplerTickTime sampler = new SamplerTickTime(clock);
+    sampler.start();
+    clock.tick(BASE);
 
-    List<Double> gaps = new ArrayList<>();
-    gaps.add(30D);
-    gaps.add(null);
-    gaps.add(Double.NaN);
-    gaps.add(-5D);
-    gaps.add(90D);
-    assertEquals(60D, SamplerTickTime.averageTickMS(gaps));
-  }
-
-  @Test
-  void fallsBackToMeasuredTickGapsWhenPaperTickTimeIsMissing() {
-    Server server = mock(Server.class);
-    when(server.getAverageTickTime()).thenThrow(new NoSuchMethodError("getAverageTickTime"));
-    SamplerTickTime sampler = new SamplerTickTime();
-
-    try (MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class)) {
-      bukkit.when(Bukkit::getServer).thenReturn(server);
-      bukkit.when(Bukkit::isPrimaryThread).thenReturn(true);
-
-      sampler.recordTick(1_000L);
-      sampler.recordTick(1_060L);
-      sampler.recordTick(1_100L);
-
-      assertEquals(50D, sampler.onSample());
-      assertEquals(50D, sampler.onSample());
-      verify(server, times(1)).getAverageTickTime();
-    }
-  }
-
-  @Test
-  void servesTheLastOwningThreadValueToOffThreadCallers() {
-    Server server = mock(Server.class);
-    when(server.getAverageTickTime()).thenReturn(21.25D);
-    SamplerTickTime sampler = new SamplerTickTime();
-
-    try (MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class)) {
-      bukkit.when(Bukkit::getServer).thenReturn(server);
-      bukkit.when(Bukkit::isPrimaryThread).thenReturn(true);
-      assertEquals(21.25D, sampler.onSample());
-
-      bukkit.when(Bukkit::isPrimaryThread).thenReturn(false);
-      assertEquals(21.25D, sampler.onSample());
-    }
+    assertFalse(sampler.isSampleAvailable());
+    assertEquals(0D, sampler.onSample(), 1.0E-9D);
   }
 }

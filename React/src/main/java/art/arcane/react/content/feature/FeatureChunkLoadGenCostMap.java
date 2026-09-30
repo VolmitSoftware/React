@@ -19,8 +19,8 @@
 
 package art.arcane.react.content.feature;
 
-import art.arcane.react.content.sampler.SamplerChunkGenMS;
-import art.arcane.react.content.sampler.SamplerChunkLoadMS;
+import art.arcane.react.content.sampler.SamplerChunkGenListenerMS;
+import art.arcane.react.content.sampler.SamplerChunkLoadListenerMS;
 import art.arcane.react.content.sampler.SamplerChunksGenerated;
 import art.arcane.react.content.sampler.SamplerChunksLoaded;
 import art.arcane.react.api.web.heatmap.HeatmapWorldRef;
@@ -53,8 +53,8 @@ public class FeatureChunkLoadGenCostMap extends FeatureChunkHeatmapBase {
 
   @Override
   protected double chunkScore(HeatmapWorldRef world, int chunkX, int chunkZ) {
-    double loadMS = chunkSample(world, chunkX, chunkZ, SamplerChunkLoadMS.ID);
-    double genMS = chunkSample(world, chunkX, chunkZ, SamplerChunkGenMS.ID);
+    double loadMS = chunkSample(world, chunkX, chunkZ, SamplerChunkLoadListenerMS.ID);
+    double genMS = chunkSample(world, chunkX, chunkZ, SamplerChunkGenListenerMS.ID);
     double loadRate = chunkSample(world, chunkX, chunkZ, SamplerChunksLoaded.ID);
     double genRate = chunkSample(world, chunkX, chunkZ, SamplerChunksGenerated.ID);
 
