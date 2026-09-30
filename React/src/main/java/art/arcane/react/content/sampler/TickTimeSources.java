@@ -8,6 +8,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 final class TickTimeSources {
+  static final String UNAVAILABLE_WARNING = "Tick work time is unavailable on this server; tick-time and tick-ms percentiles report unavailable.";
   private static final long[] EMPTY_TICKS = new long[0];
 
   private TickTimeSources() {
@@ -16,12 +17,16 @@ final class TickTimeSources {
   static TickTimeSource detect() {
     TickTimeSource source = select(Bukkit.getServer());
     if (source == null) {
-      React.warn("Tick work time is unavailable on this server; tick-time and tick-ms percentiles report unavailable.");
+      warnUnavailable();
     } else if (source instanceof VanillaTickTimes) {
       React.info("Tick work time: vanilla MinecraftServer tick times");
     }
 
     return source;
+  }
+
+  static void warnUnavailable() {
+    React.warn(UNAVAILABLE_WARNING);
   }
 
   static TickTimeSource select(Server server) {

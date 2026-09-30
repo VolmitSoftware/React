@@ -215,6 +215,7 @@ public final class TickClock implements Listener {
     if (times.length == 0) {
       ticksWithoutWorkTimes += newTicks;
       if (ticksWithoutWorkTimes >= EMPTY_WORK_TIME_LATCH_TICKS) {
+        TickTimeSources.warnUnavailable();
         latchWorkTimeUnavailable();
       }
       return;
@@ -292,10 +293,6 @@ public final class TickClock implements Listener {
       this.gapMS = gapMS;
       this.workAtNanos = workAtNanos;
       this.workMS = workMS;
-    }
-
-    public boolean workTimeMode() {
-      return workTimeMode;
     }
 
     public boolean hasTicks() {
