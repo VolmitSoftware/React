@@ -4,6 +4,7 @@ import art.arcane.react.React;
 import art.arcane.react.api.feature.ReactCapabilityFeature;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.core.controller.IntegrationController;
+import art.arcane.react.core.integration.IrisPregenPressure;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.RuntimeMessages;
 import art.arcane.volmlib.integration.IntegrationMetricGroup;
@@ -37,6 +38,8 @@ public class FeatureIrisTerrainSurgeGuard extends ReactCapabilityFeature impleme
   private double triggerTickMS = 56D;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Trigger threshold for Iris generation time in iris terrain surge guard.", impact = "Higher values trigger mitigation later; lower values trigger earlier and more aggressively.")
   private double triggerIrisGenerationMS = 24D;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Iris pregenerator in-flight chunk requests for this world that trigger iris terrain surge guard; values clamp to 1..256.", impact = "Higher values trigger only while the world's pregeneration runs near its full concurrency; lower values also trigger on lighter pregeneration load.")
+  private int triggerIrisPregenInFlight = IrisPregenPressure.DEFAULT_IN_FLIGHT_THRESHOLD;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Rolling enforcement window length used by iris terrain surge guard (milliseconds).", impact = "Longer windows smooth bursts but react slower; shorter windows react faster but are more sensitive.")
   private int windowMS = 2500;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum ungenerated chunk moves allowed per window in iris terrain surge guard.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
@@ -179,11 +182,25 @@ public class FeatureIrisTerrainSurgeGuard extends ReactCapabilityFeature impleme
     if (group == null) {
       return false;
     }
-    double tickMS = sample(SamplerTickTime.ID);
-    double generationMS = metricOr(group, IntegrationMetricSchema.IRIS_GENERATION_TOTAL_MS, -1D);
+    return shouldSurge(
+        sample(SamplerTickTime.ID),
+        metricOr(group, IntegrationMetricSchema.IRIS_GENERATION_TOTAL_MS, -1D),
+        metricOr(group, IntegrationMetricSchema.IRIS_PREGEN_QUEUE, -1D),
+        triggerTickMS,
+        triggerIrisGenerationMS,
+        triggerIrisPregenInFlight
+    );
+  }
 
+  static boolean shouldSurge(double tickMS,
+                             double generationMS,
+                             double pregenInFlight,
+                             double triggerTickMS,
+                             double triggerGenerationMS,
+                             int triggerPregenInFlight) {
     return tickMS >= triggerTickMS
-        || (generationMS >= 0D && generationMS >= triggerIrisGenerationMS);
+        || (generationMS >= 0D && generationMS >= triggerGenerationMS)
+        || IrisPregenPressure.hasInFlightPressure(pregenInFlight, triggerPregenInFlight);
   }
 
   private IntegrationMetricGroup worldGroup(World world) {

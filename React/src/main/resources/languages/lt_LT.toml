@@ -1810,6 +1810,10 @@ summary = "Pagrindinis rainelės reljefo gaubto milisekundėmis vertinimo interv
 impact = "Didesnės vertės sukelia sušvelninimą vėliau; mažesnės vertės sukelti anksčiau ir agresyviau."
 summary = "Ribinė riba Iris generavimo laikas rainelės reljefo viršįtampio apsaugoje."
 
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregeninflight]
+impact = "Didesnės reikšmės apsaugą įjungia tik tada, kai pasaulio išankstinis generavimas veikia beveik visu lygiagretumu; mažesnės reikšmės ją įjungia ir esant lengvesnei apkrovai."
+summary = "Šio pasaulio vykdomos Iris išankstinio generatoriaus chunk užklausos, kurios įjungia Iris reljefo šuolių apsaugą; reikšmės ribojamos iki 1..256."
+
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "Didesnės vertės uždelsimas aktyvavimas arba išėjimas; mažesnės vertės palengvina šį slenkstį."
 summary = "žaidimo taktas laiko ribas, kuriuo galima paleisti iriso žemių krašto srauto apsaugą ( millisekundomis)."
@@ -2436,6 +2440,10 @@ summary = "Adapt seanso apkrovos slenkstis, kuris gali sukelti incidento valdym�
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enterincidentscore]
 impact = "Didesnės vertės sukelia sušvelninimą vėliau; mažesnės vertės sukelti anksčiau ir agresyviau."
 summary = "Ribinė vertė, taikoma siekiant įvesti incidento rezultatą trejybės įvykio režimu."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririspregeninflight]
+impact = "Didesnės reikšmės Iris apkrovą skaičiuoja tik tada, kai išankstinis generatorius veikia beveik visu lygiagretumu; mažesnės reikšmės skaičiuoja ir lengvesnę išankstinio generavimo apkrovą."
+summary = "Vykdomos Iris išankstinio generatoriaus chunk užklausos, kurios Trinity incidentų režime laikomos Iris apkrova; reikšmės ribojamos iki 1..256."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.entertickms]
 impact = "Didesnės vertės uždelsimas aktyvavimas arba išėjimas; mažesnės vertės palengvina šį slenkstį."

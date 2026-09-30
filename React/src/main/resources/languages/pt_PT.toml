@@ -1810,6 +1810,10 @@ summary = "Intervalo de avaliação principal para proteção contra picos de te
 impact = "Valores mais elevados desencadeiam mitigação posteriormente; valores mais baixos disparam mais cedo e agressivamente."
 summary = "Limite de desencadeamento para Iris tempo de geração em terreno da íris guarda de pico."
 
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregeninflight]
+impact = "Valores mais altos só ativam a proteção quando a pregeração do mundo funciona perto da sua concorrência máxima; valores mais baixos também a ativam com cargas mais leves."
+summary = "Pedidos de chunks em curso do pregerador do Iris para este mundo que ativam a proteção contra picos de terreno do Iris; os valores são limitados a 1..256."
+
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "Valores mais elevados atrasam a ativação ou saída; valores mais baixos facilitam a passagem desse limiar."
 summary = "Prazo de tempo tick para o gatilho no campo do iris guarda de ondas (millisecondos)."
@@ -2436,6 +2440,10 @@ summary = "Adapt limiar de carga da sessão que pode desencadear o manuseamento 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enterincidentscore]
 impact = "Valores mais elevados desencadeiam mitigação posteriormente; valores mais baixos disparam mais cedo e agressivamente."
 summary = "Limite de gatilho para inserir pontuação incidente no modo incidente trinity."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririspregeninflight]
+impact = "Valores mais altos só contam pressão do Iris quando o pregerador funciona perto da sua concorrência máxima; valores mais baixos também contam cargas de pregeração mais leves."
+summary = "Pedidos de chunks em curso do pregerador do Iris que contam como pressão do Iris no modo de incidente Trinity; os valores são limitados a 1..256."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.entertickms]
 impact = "Valores mais elevados atrasam a ativação ou saída; valores mais baixos facilitam a passagem desse limiar."

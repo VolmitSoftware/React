@@ -30,6 +30,7 @@ import art.arcane.react.api.tweak.Tweak;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.core.controller.HotloadController;
 import art.arcane.react.core.controller.TweakController;
+import art.arcane.react.core.integration.IrisPregenPressure;
 import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.model.ReactPlayer;
 import art.arcane.volmlib.util.scheduling.Looper;
@@ -816,14 +817,15 @@ public class Ticker {
   }
 
   private String slowTickLikelySource(Ticked ticked) {
-    double irisQueue = sampleSampler("iris-pregen-queue", -1D);
+    double irisPregenInFlight = sampleSampler("iris-pregen-queue", -1D);
     double irisGenerationMs = sampleSampler("iris-generation-total-ms", -1D);
 
-    if (irisQueue > 0D || irisGenerationMs >= 12D) {
+    if (IrisPregenPressure.hasInFlightPressure(irisPregenInFlight, IrisPregenPressure.DEFAULT_IN_FLIGHT_THRESHOLD)
+        || irisGenerationMs >= 12D) {
       return String.format(
           Locale.ROOT,
-          "Iris generation pressure (queue=%.0f, generation=%.1fms)",
-          Math.max(0D, irisQueue),
+          "Iris generation pressure (pregen in-flight=%.0f, generation=%.1fms)",
+          Math.max(0D, irisPregenInFlight),
           Math.max(0D, irisGenerationMs)
       );
     }

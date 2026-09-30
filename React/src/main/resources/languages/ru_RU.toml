@@ -1810,6 +1810,10 @@ summary = "Основной интервал оценки для защиты о
 impact = "Более высокие значения вызывают смягчение позже; более низкие значения запускают раньше и более агрессивно."
 summary = "Триггерный порог для Iris Время генерации в Ирисе, охрана местности."
 
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregeninflight]
+impact = "При больших значениях защита включается только тогда, когда прегенерация мира работает почти с полной параллельностью; при меньших она включается и при более лёгкой нагрузке."
+summary = "Выполняемые запросы чанков прегенератора Iris для этого мира, которые включают защиту от всплесков генерации ландшафта Iris; значения ограничиваются диапазоном 1..256."
+
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "Более высокие значения задерживают активацию или выход; более низкие значения облегчают пересечение этого порога."
 summary = "Сквл-время порог для запуска в ирис террайн приливной охран (миллисекунд )."
@@ -2436,6 +2440,10 @@ summary = "Adapt порог нагрузки сеанса, который мож
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enterincidentscore]
 impact = "Более высокие значения вызывают смягчение позже; более низкие значения запускают раньше и более агрессивно."
 summary = "Порог триггера для входа в балл инцидента в режиме инцидента троицы."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririspregeninflight]
+impact = "При больших значениях нагрузка Iris учитывается только тогда, когда прегенератор работает почти с полной параллельностью; при меньших учитывается и более лёгкая нагрузка прегенерации."
+summary = "Выполняемые запросы чанков прегенератора Iris, которые в режиме инцидентов Trinity считаются нагрузкой Iris; значения ограничиваются диапазоном 1..256."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.entertickms]
 impact = "Более высокие значения задерживают активацию или выход; более низкие значения облегчают пересечение этого порога."

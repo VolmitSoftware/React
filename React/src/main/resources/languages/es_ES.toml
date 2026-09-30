@@ -1810,6 +1810,10 @@ summary = "Intervalo de evaluación principal para el control de onda iris en mi
 impact = "Los valores superiores desencadenan la mitigación más adelante; los valores inferiores disparan antes y con mayor agresión."
 summary = "umbral de la explosión Iris tiempo de generación en el campo iris guardia de emergencia."
 
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregeninflight]
+impact = "Los valores más altos solo activan la protección cuando la pregeneración del mundo funciona cerca de su concurrencia máxima; los valores más bajos también la activan con cargas más ligeras."
+summary = "Solicitudes de chunks en curso del pregenerador de Iris para este mundo que activan la protección contra picos de terreno de Iris; los valores se limitan a 1..256."
+
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "Valores más altos retrasan la activación o salida; valores inferiores hacen que este umbral sea más fácil de cruzar."
 summary = "Umbral de tiempo tick para disparar en el control de margen del terreno iris (millisecondas)."
@@ -2436,6 +2440,10 @@ summary = "Adapt umbral de carga de sesión que puede desencadenar el manejo de 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enterincidentscore]
 impact = "Los valores superiores desencadenan la mitigación más adelante; los valores inferiores disparan antes y con mayor agresión."
 summary = "umbral de la trinidad para entrar en el marcador del incidente en modo de incidentes."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririspregeninflight]
+impact = "Los valores más altos solo cuentan presión de Iris cuando el pregenerador funciona cerca de su concurrencia máxima; los valores más bajos también cuentan cargas de pregeneración más ligeras."
+summary = "Solicitudes de chunks en curso del pregenerador de Iris que cuentan como presión de Iris en el modo de incidente Trinity; los valores se limitan a 1..256."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.entertickms]
 impact = "Valores más altos retrasan la activación o salida; valores inferiores hacen que este umbral sea más fácil de cruzar."

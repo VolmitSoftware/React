@@ -1810,6 +1810,10 @@ summary = "Iris 地形負載突增保護的主要評估間隔（毫秒）。"
 impact = "較高的數值會引發以後的緩解;較低的數值會更早和更劇烈地觸發."
 summary = "觸發閾值 Iris 虹膜地形突襲守衛中的時間"
 
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregeninflight]
+impact = "較高的值僅在該世界的預生成接近其最大並行度運作時才觸發；較低的值在較輕的預生成負載下也會觸發。"
+summary = "觸發 Iris 地形激增防護的此世界 Iris 預生成器進行中區塊請求數；取值限制在 1..256。"
+
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "更高的值延遲啟用或退出;較低的值使得這個閾值更容易跨越."
 summary = "在虹膜地形衝擊保護 (千秒)中觸發的遊戲刻時間門."
@@ -2436,6 +2440,10 @@ summary = "Adapt 能夠觸發三一事件模式下事件處理的會話負載閾
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enterincidentscore]
 impact = "較高的數值會引發以後的緩解;較低的數值會更早和更劇烈地觸發."
 summary = "三一事件模式下進入事件分數的觸發閾值."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririspregeninflight]
+impact = "較高的值僅在預生成器接近其最大並行度運作時才計為 Iris 壓力；較低的值也會計入較輕的預生成負載。"
+summary = "Trinity 事件模式中計為 Iris 壓力的 Iris 預生成器進行中區塊請求數；取值限制在 1..256。"
 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.entertickms]
 impact = "更高的值延遲啟用或退出;較低的值使得這個閾值更容易跨越."

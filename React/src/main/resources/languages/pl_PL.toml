@@ -1810,6 +1810,10 @@ summary = "Główny przedział oceny dla osłon terenu Iris w milisekundach."
 impact = "Wyższe wartości powodują złagodzenie skutków później; niższe wartości wywołują wcześniej i bardziej agresywnie."
 summary = "Próg progowy dla Iris czas generacji w osłonie terenu Iris."
 
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregeninflight]
+impact = "Wyższe wartości uruchamiają ochronę tylko wtedy, gdy pregeneracja świata pracuje blisko pełnej współbieżności; niższe wartości uruchamiają ją także przy lżejszym obciążeniu."
+summary = "Trwające żądania chunków pregeneratora Iris dla tego świata, które uruchamiają ochronę przed skokami terenu Iris; wartości są ograniczane do 1..256."
+
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "Wyższe wartości opóźniają aktywację lub wyjście; niższe wartości ułatwiają przekroczenie tego progu."
 summary = "Poniższy progu czasu tick dla wyzwalacza w IRIS terenu strzeże prądu (millisekundy )."
@@ -2436,6 +2440,10 @@ summary = "Adapt próg obciążenia sesji, który może wywołać obsługę incy
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enterincidentscore]
 impact = "Wyższe wartości powodują złagodzenie skutków później; niższe wartości wywołują wcześniej i bardziej agresywnie."
 summary = "Próg progowy dla wejścia w wynik incydentu w trybie trójcy."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririspregeninflight]
+impact = "Wyższe wartości liczą obciążenie Iris tylko wtedy, gdy pregenerator pracuje blisko pełnej współbieżności; niższe wartości liczą też lżejsze obciążenie pregeneracją."
+summary = "Trwające żądania chunków pregeneratora Iris, które w trybie incydentów Trinity liczą się jako obciążenie Iris; wartości są ograniczane do 1..256."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.entertickms]
 impact = "Wyższe wartości opóźniają aktywację lub wyjście; niższe wartości ułatwiają przekroczenie tego progu."

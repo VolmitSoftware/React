@@ -1810,6 +1810,10 @@ summary = "Khoảng đánh giá chính cho việc tăng cường địa hình ll
 impact = "Các giá trị cao hơn kích hoạt giảm nhẹ sau đó; các giá trị thấp hơn kích hoạt sớm hơn và tích cực hơn."
 summary = "Ngưỡng kích hoạt Iris Thời gian ở địa hình Iris tăng cường bảo vệ."
 
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregeninflight]
+impact = "Giá trị cao hơn chỉ kích hoạt khi quá trình tạo trước của thế giới chạy gần mức đồng thời tối đa; giá trị thấp hơn cũng kích hoạt với tải nhẹ hơn."
+summary = "Số yêu cầu chunk đang xử lý của trình tạo trước Iris cho thế giới này sẽ kích hoạt lớp bảo vệ đột biến địa hình Iris; giá trị bị giới hạn trong 1..256."
+
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "Giá trị cao hơn trì hoãn hoạt động hoặc thoát; giá trị thấp hơn làm cho ngưỡng này dễ dàng vượt qua."
 summary = "tick-Thời gian cho kích hoạt trong địa hình tăng cường bảo vệ (mili giây)."
@@ -2436,6 +2440,10 @@ summary = "Adapt ngưỡng nạp phiên chạy có thể gây ra sự cố xử 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enterincidentscore]
 impact = "Các giá trị cao hơn kích hoạt giảm nhẹ sau đó; các giá trị thấp hơn kích hoạt sớm hơn và tích cực hơn."
 summary = "Kích hoạt ngưỡng để nhập điểm trong chế độ biến cố ba chiều."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririspregeninflight]
+impact = "Giá trị cao hơn chỉ tính áp lực Iris khi trình tạo trước chạy gần mức đồng thời tối đa; giá trị thấp hơn cũng tính cả tải tạo trước nhẹ hơn."
+summary = "Số yêu cầu chunk đang xử lý của trình tạo trước Iris được tính là áp lực Iris trong chế độ sự cố Trinity; giá trị bị giới hạn trong 1..256."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.entertickms]
 impact = "Giá trị cao hơn trì hoãn hoạt động hoặc thoát; giá trị thấp hơn làm cho ngưỡng này dễ dàng vượt qua."

@@ -1810,6 +1810,10 @@ summary = "Iris-maaston purkaussuojan arviointiväli millisekunteina."
 impact = "Suuremmat arvot laukaisevat lieventämisen myöhemmin; alemmat arvot laukaisivat aikaisemmin ja aggressiivisemmin."
 summary = "Liikkumiskynnys Iris Sukupolviaika iirismaastossa."
 
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregeninflight]
+impact = "Suuremmat arvot laukaisevat suojan vain, kun maailman esigenerointi toimii lähes täydellä rinnakkaisuudellaan; pienemmät arvot laukaisevat sen myös kevyemmällä kuormalla."
+summary = "Tämän maailman Iris-esigeneraattorin käynnissä olevat chunk-pyynnöt, jotka laukaisevat Iris-maastopiikkisuojan; arvot rajataan välille 1..256."
+
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "Suuremmat arvot viivästyttävät aktivointia tai poistumista; alemmat arvot helpottavat tämän kynnysarvon ylittämistä."
 summary = "tick-aikaaika käynnistys irisin maantieteellisen virtavartijan (millisekunnissa ):ssä."
@@ -2436,6 +2440,10 @@ summary = "Adapt istuntokuormituskynnys, joka voi laukaista vaaratilanteiden kä
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enterincidentscore]
 impact = "Suuremmat arvot laukaisevat lieventämisen myöhemmin; alemmat arvot laukaisivat aikaisemmin ja aggressiivisemmin."
 summary = "Antakaa pisteet kolmoishäiriötilassa."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririspregeninflight]
+impact = "Suuremmat arvot laskevat Iris-paineen vain, kun esigeneraattori toimii lähes täydellä rinnakkaisuudellaan; pienemmät arvot laskevat myös kevyemmän esigenerointikuorman."
+summary = "Iris-esigeneraattorin käynnissä olevat chunk-pyynnöt, jotka lasketaan Iris-paineeksi Trinity-häiriötilassa; arvot rajataan välille 1..256."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.entertickms]
 impact = "Suuremmat arvot viivästyttävät aktivointia tai poistumista; alemmat arvot helpottavat tämän kynnysarvon ylittämistä."

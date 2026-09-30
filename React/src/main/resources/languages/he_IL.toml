@@ -1810,6 +1810,10 @@ summary = "מרווח הערכה עיקרי עבור iris שטח עלייה שמ
 impact = "ערכים גבוהים יותר מעוררים הפחתה מאוחר יותר; ערכים נמוכים גורמים מוקדם יותר ויותר אגרסיבי."
 summary = "סף טריגר Iris זמן דור ב-Irisland Area ge Guard"
 
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregeninflight]
+impact = "ערכים גבוהים יותר מפעילים את המגן רק כשהיצירה המוקדמת של העולם פועלת קרוב למקביליות המלאה שלה; ערכים נמוכים יותר מפעילים אותו גם בעומס קל יותר."
+summary = "בקשות chunk פעילות של המחולל המקדים של Iris בעולם הזה שמפעילות את מגן זינוקי השטח של Iris; הערכים מוגבלים לטווח 1..256."
+
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "ערכים גבוהים יותר מעכבים הפעלה או יציאה; ערכים נמוכים הופכים את סף זה לקל יותר לחצות."
 summary = "סף זמן טיק לניצול במגוון הגבול של איריס (מילי שניות)."
@@ -2436,6 +2440,10 @@ summary = "Adapt סף עומס ישיבה שיכול לגרום להליך אי�
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enterincidentscore]
 impact = "ערכים גבוהים יותר מעוררים הפחתה מאוחר יותר; ערכים נמוכים גורמים מוקדם יותר ויותר אגרסיבי."
 summary = "סף טריגר להזנת ציון אירוע במצב תקרית השילוש."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririspregeninflight]
+impact = "ערכים גבוהים יותר סופרים לחץ Iris רק כשהמחולל המקדים פועל קרוב למקביליות המלאה שלו; ערכים נמוכים יותר סופרים גם עומס יצירה מוקדמת קל יותר."
+summary = "בקשות chunk פעילות של המחולל המקדים של Iris שנספרות כלחץ Iris במצב התקריות Trinity; הערכים מוגבלים לטווח 1..256."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.entertickms]
 impact = "ערכים גבוהים יותר מעכבים הפעלה או יציאה; ערכים נמוכים הופכים את סף זה לקל יותר לחצות."

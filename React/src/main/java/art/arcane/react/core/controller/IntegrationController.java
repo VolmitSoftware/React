@@ -4,6 +4,7 @@ import art.arcane.react.React;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.core.integration.IntegrationMetricKeySelector;
+import art.arcane.react.core.integration.IrisPregenPressure;
 import art.arcane.react.core.integration.ReactIntegrationService;
 import art.arcane.react.core.integration.ReflectiveIntegrationProviderAdapter;
 import art.arcane.react.core.integration.RemoteSamplerBridge;
@@ -49,8 +50,8 @@ public class IntegrationController extends TickedObject implements IController {
   private static final long TIMELINE_RETENTION_MS = 180_000L;
   private static final double ADAPT_SESSION_LOAD_THRESHOLD = 65D;
   private static final double ADAPT_ABILITY_TIMING_BUDGET_THRESHOLD = 100D;
-  private static final int ADAPT_ABILITY_TIMING_SUSTAINED_SAMPLES = 3;
-  private static final double ADAPT_ABILITY_TIMING_MSPT_GATE = 50D;
+  private static final int IMPACT_SUSTAINED_SAMPLES = 3;
+  private static final double IMPACT_MSPT_GATE = 50D;
   private static final Set<String> PRIMARY_PLUGINS = Set.of("iris", "adapt", "wormholes");
 
   private final transient AtomicBoolean syncTickQueued = new AtomicBoolean(false);
@@ -62,9 +63,10 @@ public class IntegrationController extends TickedObject implements IController {
   private transient ThirdPartyMetricRegistry thirdPartyMetrics;
   private transient long lastDiscoveryMs;
   private transient long lastCorrelationLogMs;
-  private transient double previousIrisQueue;
+  private transient double previousIrisPregenInFlight;
   private transient String lastCorrelationMessage;
   private transient int adaptAbilityTimingImpactSampleStreak;
+  private transient int irisPregenImpactSampleStreak;
 
   public IntegrationController() {
     super("react", "integration", 1000);
@@ -89,9 +91,10 @@ public class IntegrationController extends TickedObject implements IController {
     localService.register();
     lastDiscoveryMs = 0L;
     lastCorrelationLogMs = 0L;
-    previousIrisQueue = -1D;
+    previousIrisPregenInFlight = -1D;
     lastCorrelationMessage = "";
     adaptAbilityTimingImpactSampleStreak = 0;
+    irisPregenImpactSampleStreak = 0;
     nodes.clear();
     timeline.clear();
     activeThresholds.clear();
@@ -111,6 +114,7 @@ public class IntegrationController extends TickedObject implements IController {
     timeline.clear();
     activeThresholds.clear();
     adaptAbilityTimingImpactSampleStreak = 0;
+    irisPregenImpactSampleStreak = 0;
     if (remoteSamplerBridge != null) {
       remoteSamplerBridge.clear();
     }
@@ -495,30 +499,31 @@ public class IntegrationController extends TickedObject implements IController {
     }
 
     double tickMs = tickSampler.sample();
-    double irisQueue = remoteSamplerBridge.valueOr("iris", IntegrationMetricSchema.IRIS_PREGEN_QUEUE, -1D);
+    double irisPregenInFlight = remoteSamplerBridge.valueOr("iris", IntegrationMetricSchema.IRIS_PREGEN_QUEUE, -1D);
 
     if (ReactConfiguration.get().isVerbose()
-        && tickMs >= 50D
-        && irisQueue >= 0D
-        && previousIrisQueue >= 0D
-        && (irisQueue - previousIrisQueue) >= 32D
+        && tickMs >= IMPACT_MSPT_GATE
+        && irisPregenInFlight >= 0D
+        && previousIrisPregenInFlight >= 0D
+        && (irisPregenInFlight - previousIrisPregenInFlight) >= IrisPregenPressure.DEFAULT_IN_FLIGHT_THRESHOLD
         && now - lastCorrelationLogMs >= CORRELATION_COOLDOWN_MS) {
       lastCorrelationLogMs = now;
       lastCorrelationMessage = String.format(Locale.ROOT,
-          "MSPT spike %.1f -> Iris pregenerator queue rise +%.0f (%.0f)",
+          "MSPT spike %.1f -> Iris pregenerator in-flight rise +%.0f (%.0f)",
           tickMs,
-          irisQueue - previousIrisQueue,
-          irisQueue
+          irisPregenInFlight - previousIrisPregenInFlight,
+          irisPregenInFlight
       );
       React.verbose("[integration] correlation " + lastCorrelationMessage);
     }
 
-    if (irisQueue >= 0D) {
-      previousIrisQueue = irisQueue;
+    if (irisPregenInFlight >= 0D) {
+      previousIrisPregenInFlight = irisPregenInFlight;
     }
   }
 
   private void evaluateThresholds(long now) {
+    double irisPregenInFlight = remoteSamplerBridge.valueOr("iris", IntegrationMetricSchema.IRIS_PREGEN_QUEUE, -1D);
     double adaptSessionLoad = remoteSamplerBridge.valueOr("adapt", IntegrationMetricSchema.ADAPT_SESSION_LOAD, -1D);
     double adaptAbilityOps = remoteSamplerBridge.valueOr("adapt", ReactConfiguration.adaptAbilityOpsMetricKey(), -1D);
     double adaptAbilityTimingBudget = remoteSamplerBridge.valueOr(
@@ -529,6 +534,25 @@ public class IntegrationController extends TickedObject implements IController {
     String adaptAbilityOpsMode = ReactConfiguration.adaptAbilityOpsMetricLabel();
     double tickMs = sampleTickMs();
 
+    irisPregenImpactSampleStreak = nextIrisPregenImpactStreak(irisPregenImpactSampleStreak, irisPregenInFlight, tickMs);
+    evaluateThreshold(
+        "iris.pregen.pressure.high",
+        shouldReportIrisPregenPressure(irisPregenInFlight, irisPregenImpactSampleStreak, tickMs),
+        String.format(
+            Locale.ROOT,
+            "Iris pregeneration pressure coincides with elevated MSPT (in-flight=%.0f chunks, MSPT=%.1fms, streak=%d)",
+            irisPregenInFlight,
+            tickMs,
+            irisPregenImpactSampleStreak
+        ),
+        String.format(
+            Locale.ROOT,
+            "Iris pregeneration pressure alert cleared (in-flight=%.0f chunks, MSPT=%.1fms)",
+            Math.max(0D, irisPregenInFlight),
+            Math.max(0D, tickMs)
+        ),
+        now
+    );
     evaluateThreshold(
         "adapt.session.load.high",
         adaptSessionLoad >= ADAPT_SESSION_LOAD_THRESHOLD,
@@ -581,14 +605,31 @@ public class IntegrationController extends TickedObject implements IController {
 
   static boolean shouldReportAdaptAbilityTiming(double timingBudgetPercent, int impactSampleStreak, double tickMs) {
     return hasAdaptAbilityTimingImpact(timingBudgetPercent, tickMs)
-        && impactSampleStreak >= ADAPT_ABILITY_TIMING_SUSTAINED_SAMPLES;
+        && impactSampleStreak >= IMPACT_SUSTAINED_SAMPLES;
+  }
+
+  static int nextIrisPregenImpactStreak(int currentStreak, double pregenInFlight, double tickMs) {
+    if (!hasIrisPregenImpact(pregenInFlight, tickMs)) {
+      return 0;
+    }
+    return Math.min(Integer.MAX_VALUE, Math.max(0, currentStreak) + 1);
+  }
+
+  static boolean shouldReportIrisPregenPressure(double pregenInFlight, int impactSampleStreak, double tickMs) {
+    return hasIrisPregenImpact(pregenInFlight, tickMs) && impactSampleStreak >= IMPACT_SUSTAINED_SAMPLES;
+  }
+
+  private static boolean hasIrisPregenImpact(double pregenInFlight, double tickMs) {
+    return IrisPregenPressure.hasInFlightPressure(pregenInFlight, IrisPregenPressure.DEFAULT_IN_FLIGHT_THRESHOLD)
+        && Double.isFinite(tickMs)
+        && tickMs >= IMPACT_MSPT_GATE;
   }
 
   private static boolean hasAdaptAbilityTimingImpact(double timingBudgetPercent, double tickMs) {
     return Double.isFinite(timingBudgetPercent)
         && timingBudgetPercent >= ADAPT_ABILITY_TIMING_BUDGET_THRESHOLD
         && Double.isFinite(tickMs)
-        && tickMs >= ADAPT_ABILITY_TIMING_MSPT_GATE;
+        && tickMs >= IMPACT_MSPT_GATE;
   }
 
   private void evaluateThreshold(String key, boolean tripped, String tripMessage, String recoverMessage, long now) {

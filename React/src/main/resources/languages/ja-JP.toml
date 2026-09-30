@@ -1810,6 +1810,10 @@ summary = "ミリ秒におけるアイリス地形サージガードの主な評
 impact = "値が高まると、後で軽減されます。値が小さくなり、攻撃的にもより攻撃的になります。"
 summary = "トリガーのしきい値 Iris 耳鼻咽喉科のサージガードで生成時間。"
 
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregeninflight]
+impact = "値を高くすると、ワールドの事前生成が最大並列度近くで動作している間だけ発動します。値を低くすると、より軽い事前生成の負荷でも発動します。"
+summary = "Iris 地形サージガードを発動させる、このワールドの Iris 事前生成の処理中チャンク要求数。値は 1..256 に制限されます。"
+
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "値の遅延が活性化または終了を遅らせる。この閾値が下がるので、その値をクロスしやすいようにします。"
 summary = "虹膜地形の波紋保護 (ミリ秒)で触発するティック時間限界."
@@ -2436,6 +2440,10 @@ summary = "Adapt セッションロードし、三位一体インシデントモ
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enterincidentscore]
 impact = "値が高まると、後で軽減されます。値が小さくなり、攻撃的にもより攻撃的になります。"
 summary = "トリガは、三位一体インシデントモードでインシデンシャルスコアを入力するためのしきい値。"
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririspregeninflight]
+impact = "値を高くすると、事前生成が最大並列度近くで動作している間だけ Iris の負荷として数えます。値を低くすると、より軽い事前生成の負荷も数えます。"
+summary = "Trinity インシデントモードで Iris の負荷として数える、Iris 事前生成の処理中チャンク要求数。値は 1..256 に制限されます。"
 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.entertickms]
 impact = "値の遅延が活性化または終了を遅らせる。この閾値が下がるので、その値をクロスしやすいようにします。"
