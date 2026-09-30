@@ -378,6 +378,10 @@ final class EntityCensusTracker {
   }
 
   private static int classify(Entity entity) {
+    if (entity.isDead()) {
+      return 0;
+    }
+
     int categories = 0;
     if (entity instanceof Item) {
       categories |= GROUND_ITEM;
@@ -399,7 +403,6 @@ final class EntityCensusTracker {
     }
     if (entity instanceof LivingEntity living
         && !(entity instanceof Player)
-        && !living.isDead()
         && living.hasAI()) {
       categories |= ACTIVE_AI;
     }

@@ -34,9 +34,11 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityRemoveEvent;
 import org.bukkit.event.entity.EntitySpawnEvent;
 import org.bukkit.event.entity.EntityTeleportEvent;
@@ -167,6 +169,14 @@ public class SamplerEntities extends ReactCachedSampler implements Listener {
     untrack(e.getEntity());
   }
 
+  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+  public void on(EntityDeathEvent e) {
+    if (e.getEntity() instanceof Player) {
+      return;
+    }
+    retire(e.getEntity().getUniqueId());
+  }
+
   @EventHandler(priority = EventPriority.MONITOR)
   public void on(PlayerJoinEvent e) {
     track(e.getPlayer(), e.getPlayer().getLocation());
@@ -288,6 +298,9 @@ public class SamplerEntities extends ReactCachedSampler implements Listener {
   }
 
   private void track(Entity entity, World world, int chunkX, int chunkZ) {
+    if (entity.isDead()) {
+      return;
+    }
     WorldEntitySnapshots.observe(entity, world);
     EntityCensusTracker.observe(entity);
     if (!acceptingEntityEvents || world == null) {
@@ -298,7 +311,7 @@ public class SamplerEntities extends ReactCachedSampler implements Listener {
   }
 
   private void reconcile(Entity entity, World world, int chunkX, int chunkZ) {
-    if (!acceptingEntityEvents || entity == null || world == null) {
+    if (!acceptingEntityEvents || entity == null || world == null || entity.isDead()) {
       return;
     }
 
@@ -334,7 +347,13 @@ public class SamplerEntities extends ReactCachedSampler implements Listener {
   }
 
   private void untrack(Entity entity) {
-    UUID entityId = entity.getUniqueId();
+    retire(entity.getUniqueId());
+    if (acceptingEntityEvents) {
+      entities.updateAndGet(current -> Math.max(0, current - 1));
+    }
+  }
+
+  private void retire(UUID entityId) {
     WorldEntitySnapshots.forget(entityId);
     EntityCensusTracker.forget(entityId);
     if (!acceptingEntityEvents) {
@@ -342,7 +361,6 @@ public class SamplerEntities extends ReactCachedSampler implements Listener {
     }
 
     TrackedEntity tracked = trackedEntities.remove(entityId);
-    entities.updateAndGet(current -> Math.max(0, current - 1));
     if (tracked != null) {
       decrement(tracked.counter());
     }
