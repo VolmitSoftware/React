@@ -19,6 +19,7 @@
 
 package art.arcane.react.content.sampler;
 
+import art.arcane.react.core.telemetry.SlidingCounterWindow;
 import com.sun.management.GarbageCollectionNotificationInfo;
 
 import javax.management.NotificationEmitter;
@@ -35,13 +36,13 @@ import java.util.Map;
 final class GCStatsTracker {
   private static final Object LOCK = new Object();
   private static final long PAUSE_WINDOW_MS = 300_000L;
+  private static final long GC_TIME_WINDOW_MS = 60_000L;
   private static final int MAX_PAUSES = 4096;
   private static final String CONCURRENT_CYCLE_SUFFIX = " Cycles";
   private static final ArrayDeque<Pause> pauses = new ArrayDeque<>(256);
   private static final Map<NotificationEmitter, NotificationListener> listeners = new HashMap<>();
+  private static final SlidingCounterWindow collectionTime = new SlidingCounterWindow(GC_TIME_WINDOW_MS);
   private static int references = 0;
-  private static long lastCollectionTotalMS = 0;
-  private static long lastCollectionSampleMS = 0;
   private static boolean collecting = false;
 
   private GCStatsTracker() {
@@ -55,8 +56,7 @@ final class GCStatsTracker {
       }
 
       collecting = true;
-      lastCollectionTotalMS = readTotalCollectionTimeMS();
-      lastCollectionSampleMS = System.currentTimeMillis();
+      collectionTime.clear();
       startListeners();
     }
   }
@@ -71,8 +71,7 @@ final class GCStatsTracker {
       collecting = false;
       stopListeners();
       pauses.clear();
-      lastCollectionTotalMS = 0;
-      lastCollectionSampleMS = 0;
+      collectionTime.clear();
     }
   }
 
@@ -93,21 +92,16 @@ final class GCStatsTracker {
   }
 
   static double sampleGcTimePercent() {
+    return sampleGcTimePercent(ManagementFactory.getRuntimeMXBean().getUptime(), readTotalCollectionTimeMS());
+  }
+
+  static double sampleGcTimePercent(long uptimeMs, long totalCollectionMs) {
     synchronized (LOCK) {
-      long now = System.currentTimeMillis();
-      long total = readTotalCollectionTimeMS();
-
-      if (lastCollectionSampleMS == 0) {
-        lastCollectionSampleMS = now;
-        lastCollectionTotalMS = total;
-        return 0;
+      if (collectionTime.isEmpty()) {
+        collectionTime.record(0L, 0L);
       }
-
-      long elapsedMS = Math.max(1, now - lastCollectionSampleMS);
-      long deltaCollectionMS = Math.max(0, total - lastCollectionTotalMS);
-      lastCollectionSampleMS = now;
-      lastCollectionTotalMS = total;
-      return SamplerMath.clip((deltaCollectionMS * 100D) / elapsedMS, 0, 100);
+      collectionTime.record(uptimeMs, totalCollectionMs);
+      return SamplerMath.clip(collectionTime.fraction() * 100D, 0, 100);
     }
   }
 

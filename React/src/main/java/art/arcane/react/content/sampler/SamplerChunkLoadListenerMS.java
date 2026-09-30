@@ -21,11 +21,17 @@ package art.arcane.react.content.sampler;
 
 import org.bukkit.event.world.ChunkLoadEvent;
 
+import java.util.function.LongSupplier;
+
 public class SamplerChunkLoadListenerMS extends SamplerChunkEventDurationBase {
   public static final String ID = "chunk-load-listener-ms";
 
   public SamplerChunkLoadListenerMS() {
     super(ID);
+  }
+
+  SamplerChunkLoadListenerMS(LongSupplier nanoClock) {
+    super(ID, nanoClock);
   }
 
   @Override

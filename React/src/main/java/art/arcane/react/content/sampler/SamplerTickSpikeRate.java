@@ -57,7 +57,7 @@ public class SamplerTickSpikeRate extends ReactCachedSampler {
 
   @Override
   public boolean isSampleAvailable() {
-    return clock.snapshot().hasHistory();
+    return clock.snapshot().hasSpikeHistory();
   }
 
   @Override

@@ -13,7 +13,7 @@ class SamplerTickTimeTest {
   @Test
   void averagesTheServerTickWorkTime() {
     SimulatedServerTickTimes server = new SimulatedServerTickTimes();
-    TickClock clock = new TickClock(server);
+    TickClock clock = new TickClock(() -> server);
     SamplerTickTime sampler = new SamplerTickTime(clock);
     sampler.start();
 
@@ -27,26 +27,26 @@ class SamplerTickTimeTest {
   }
 
   @Test
-  void fallsBackToTickGapsWithoutServerTickTimes() {
+  void isUnavailableWithoutAWorkTimeSource() {
     TickClock clock = new TickClock(() -> null);
     SamplerTickTime sampler = new SamplerTickTime(clock);
     sampler.start();
 
     clock.tick(BASE);
-    clock.tick(BASE + 60L * MS);
+    clock.tick(BASE + 50L * MS);
     clock.tick(BASE + 100L * MS);
-    clock.tick(BASE + 140L * MS);
+    clock.tick(BASE + 150L * MS);
     clock.tick(BASE + 200L * MS);
     clock.tick(BASE + 250L * MS);
 
-    assertTrue(sampler.isSampleAvailable());
-    assertEquals(50D, sampler.onSample(), 1.0E-9D);
-    assertEquals("ms GAP", sampler.formattedSuffix(50D));
+    assertFalse(sampler.isSampleAvailable());
+    assertEquals(0D, sampler.onSample(), 1.0E-9D);
+    assertEquals("ms", sampler.formattedSuffix(0D));
   }
 
   @Test
   void formatsSubMillisecondTickTimeWithTwoDecimals() {
-    TickClock clock = new TickClock(() -> new long[0]);
+    TickClock clock = new TickClock(() -> () -> new long[0]);
     SamplerTickTime sampler = new SamplerTickTime(clock);
     clock.tick(BASE);
 
@@ -58,7 +58,7 @@ class SamplerTickTimeTest {
 
   @Test
   void emptyWorkTimeWindowIsUnavailable() {
-    TickClock clock = new TickClock(() -> new long[0]);
+    TickClock clock = new TickClock(() -> () -> new long[0]);
     SamplerTickTime sampler = new SamplerTickTime(clock);
     sampler.start();
     clock.tick(BASE);

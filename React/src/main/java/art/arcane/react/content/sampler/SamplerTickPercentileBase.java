@@ -27,7 +27,6 @@ public abstract class SamplerTickPercentileBase extends ReactCachedSampler {
   private final transient TickClock clock;
   private final double percentile;
   private final String suffix;
-  private int historyTicks = 1200;
 
   protected SamplerTickPercentileBase(String id, double percentile, String suffix) {
     this(id, percentile, suffix, TickClock.get());
@@ -59,12 +58,12 @@ public abstract class SamplerTickPercentileBase extends ReactCachedSampler {
 
   @Override
   public boolean isSampleAvailable() {
-    return clock.snapshot().hasHistory();
+    return clock.snapshot().hasWorkTimes();
   }
 
   @Override
   public double onSample() {
-    return clock.snapshot().percentile(percentile, historyTicks);
+    return clock.snapshot().percentile(percentile);
   }
 
   @Override
@@ -74,6 +73,6 @@ public abstract class SamplerTickPercentileBase extends ReactCachedSampler {
 
   @Override
   public String formattedSuffix(double t) {
-    return clock.snapshot().workTimeMode() ? suffix : suffix + " GAP";
+    return suffix;
   }
 }

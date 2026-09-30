@@ -37,11 +37,33 @@ class SamplerConfigurationBoundsTest {
   }
 
   @Test
-  void percentileSamplerClampsHistoryAndResetsWithTheClock() throws ReflectiveOperationException {
+  void percentileSamplerReadsWorkTimesAndResetsWithTheClock() {
+    SimulatedServerTickTimes server = new SimulatedServerTickTimes();
+    TickClock clock = new TickClock(() -> server);
+    SamplerTickPercentileBase sampler = new SamplerTickPercentileBase("test-p95", 0.95D, "ms P95", clock) {
+    };
+    sampler.start();
+
+    long at = server.ticks(clock, 10_000_000_000L, 19, 5_000_000L);
+    at = server.tick(clock, at, 250_000_000L);
+    clock.tick(at);
+
+    Assertions.assertTrue(sampler.isSampleAvailable());
+    Assertions.assertEquals(17.25D, sampler.onSample(), 1.0E-9D);
+    Assertions.assertEquals("ms P95", sampler.formattedSuffix(250D));
+
+    sampler.stop();
+    sampler.start();
+
+    Assertions.assertFalse(sampler.isSampleAvailable());
+    Assertions.assertEquals(0D, sampler.onSample(), 1.0E-9D);
+  }
+
+  @Test
+  void percentileSamplerIsUnavailableWithoutAWorkTimeSource() {
     TickClock clock = new TickClock(() -> null);
     SamplerTickPercentileBase sampler = new SamplerTickPercentileBase("test-p95", 0.95D, "ms P95", clock) {
     };
-    setInt(SamplerTickPercentileBase.class, sampler, "historyTicks", -1);
     sampler.start();
 
     long base = 10_000_000_000L;
@@ -49,13 +71,6 @@ class SamplerConfigurationBoundsTest {
     clock.tick(base + 10_000_000L);
     clock.tick(base + 100_000_000L);
     clock.tick(base + 350_000_000L);
-
-    Assertions.assertTrue(sampler.isSampleAvailable());
-    Assertions.assertEquals(250D, sampler.onSample(), 1.0E-9D);
-    Assertions.assertEquals("ms P95 GAP", sampler.formattedSuffix(250D));
-
-    sampler.stop();
-    sampler.start();
 
     Assertions.assertFalse(sampler.isSampleAvailable());
     Assertions.assertEquals(0D, sampler.onSample(), 1.0E-9D);

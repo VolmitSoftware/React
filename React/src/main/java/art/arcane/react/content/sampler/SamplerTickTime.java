@@ -25,7 +25,6 @@ import org.bukkit.Material;
 
 public class SamplerTickTime extends ReactCachedSampler {
   public static final String ID = "tick-time";
-  private static final int GAP_WINDOW_TICKS = 100;
   private final transient TickClock clock;
 
   public SamplerTickTime() {
@@ -56,12 +55,12 @@ public class SamplerTickTime extends ReactCachedSampler {
 
   @Override
   public boolean isSampleAvailable() {
-    return clock.snapshot().hasHistory();
+    return clock.snapshot().hasWorkTimes();
   }
 
   @Override
   public double onSample() {
-    return clock.snapshot().averageTickMS(GAP_WINDOW_TICKS);
+    return clock.snapshot().averageTickMS();
   }
 
   @Override
@@ -71,7 +70,6 @@ public class SamplerTickTime extends ReactCachedSampler {
 
   @Override
   public String formattedSuffix(double t) {
-    String unit = Form.durationSplit(t, 2)[1];
-    return clock.snapshot().workTimeMode() ? unit : unit + " GAP";
+    return Form.durationSplit(t, 2)[1];
   }
 }

@@ -20,18 +20,24 @@
 package art.arcane.react.content.sampler;
 
 import art.arcane.react.api.sampler.ReactCachedSampler;
-import art.arcane.react.util.atomics.AsyncRequest;
-import art.arcane.react.util.reflect.Platform;
+import art.arcane.react.core.controller.TelemetryController;
+import art.arcane.react.core.telemetry.HostTelemetrySnapshot;
 import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Material;
 
+import java.util.function.Supplier;
+
 public class SamplerProcessorSystemLoad extends ReactCachedSampler {
   public static final String ID = "processor-system-load";
-  private transient final AsyncRequest<Double> poller;
+  private transient final Supplier<HostTelemetrySnapshot> host;
 
   public SamplerProcessorSystemLoad() {
+    this(TelemetryController::currentHostSnapshot);
+  }
+
+  SamplerProcessorSystemLoad(Supplier<HostTelemetrySnapshot> host) {
     super(ID, 100);
-    poller = new AsyncRequest<>(Platform.CPU::getCPULoad, 0D);
+    this.host = host;
   }
 
   private static double normalizeCpuLoad(double raw) {
@@ -56,8 +62,13 @@ public class SamplerProcessorSystemLoad extends ReactCachedSampler {
   }
 
   @Override
+  public boolean isSampleAvailable() {
+    return Double.isFinite(host.get().systemCpuLoad());
+  }
+
+  @Override
   public double onSample() {
-    return normalizeCpuLoad(poller.request());
+    return normalizeCpuLoad(host.get().systemCpuLoad());
   }
 
   @Override
