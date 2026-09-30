@@ -14,6 +14,7 @@ import art.arcane.react.core.controller.IntegrationController;
 import art.arcane.react.core.incident.IncidentAction;
 import art.arcane.react.core.incident.IncidentEvidence;
 import art.arcane.react.core.incident.IncidentRecord;
+import art.arcane.react.core.integration.IrisPregenPressure;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
 
@@ -34,8 +35,8 @@ public class FeatureTrinityIncidentMode extends ReactCapabilityFeature {
   private double enterIncidentScore = 62D;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Tick-time threshold for enter in trinity incident mode (milliseconds).", impact = "Higher values delay activation or exit; lower values make this threshold easier to cross.")
   private double enterTickMS = 62D;
-  @art.arcane.react.util.project.config.ConfigDoc(value = "Enter iris queue limit used by trinity incident mode.", impact = "Higher values increase buffered work or burst allowance; lower values tighten throttling.")
-  private double enterIrisQueue = 340D;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Iris pregenerator in-flight chunk requests that count as Iris pressure in trinity incident mode; values clamp to 1..256.", impact = "Higher values count Iris pressure only while the pregenerator runs near its full concurrency; lower values also count lighter pregeneration load.")
+  private int enterIrisPregenInFlight = IrisPregenPressure.DEFAULT_IN_FLIGHT_THRESHOLD;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Adapt session load threshold that can trigger incident handling in trinity incident mode (percent).", impact = "Higher values trigger later during heavier load; lower values trigger earlier.")
   private double enterAdaptSessionLoad = 72D;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Adapt ability timing-budget threshold that can trigger incident handling in trinity incident mode (percent).", impact = "Higher values require more measured Adapt guard-check cost before incident handling; lower values trigger earlier.")
@@ -131,7 +132,7 @@ public class FeatureTrinityIncidentMode extends ReactCapabilityFeature {
 
   private PressureSnapshot capturePressure() {
     double tickMS = sample(SamplerTickTime.ID);
-    double irisQueue = metricOr("iris", IntegrationMetricSchema.IRIS_PREGEN_QUEUE, -1D);
+    double irisPregenInFlight = metricOr("iris", IntegrationMetricSchema.IRIS_PREGEN_QUEUE, -1D);
     double adaptSessionLoad = metricOr("adapt", IntegrationMetricSchema.ADAPT_SESSION_LOAD, -1D);
     double adaptAbilityTimingBudget = metricOr(
         "adapt",
@@ -139,23 +140,23 @@ public class FeatureTrinityIncidentMode extends ReactCapabilityFeature {
         -1D
     );
 
-    boolean irisPressure = irisQueue >= 0D && irisQueue >= enterIrisQueue;
+    boolean irisPressure = IrisPregenPressure.hasInFlightPressure(irisPregenInFlight, enterIrisPregenInFlight);
     boolean adaptPressure = hasAdaptPressure(
         adaptSessionLoad,
         adaptAbilityTimingBudget,
         enterAdaptSessionLoad,
         enterAdaptAbilityTimingBudgetPercent
     );
-    boolean externalPressure = irisPressure || adaptPressure;
     SamplerIncidentScore.IncidentScoreSnapshot incident = incidentScoreSnapshot();
     boolean serverPressure = hasServerPressure(tickMS, incident.score(), enterTickMS, enterIncidentScore);
     return new PressureSnapshot(
         tickMS,
         incident,
-        irisQueue,
+        irisPregenInFlight,
+        irisPressure,
         adaptSessionLoad,
         adaptAbilityTimingBudget,
-        externalPressure && serverPressure
+        (irisPressure || adaptPressure) && serverPressure
     );
   }
 
@@ -217,11 +218,11 @@ public class FeatureTrinityIncidentMode extends ReactCapabilityFeature {
     ));
     evidence.add(evidence(
         IntegrationMetricSchema.IRIS_PREGEN_QUEUE,
-        "Iris Pregenerator Queue",
-        pressure.irisQueue(),
-        pressure.irisQueue() >= 0D,
+        "Iris Pregenerator In-Flight Chunks",
+        pressure.irisPregenInFlight(),
+        pressure.irisPregenInFlight() >= 0D,
         "chunks",
-        enterIrisQueue
+        IrisPregenPressure.clampInFlightThreshold(enterIrisPregenInFlight)
     ));
     evidence.add(evidence(
         IntegrationMetricSchema.ADAPT_SESSION_LOAD,
@@ -239,8 +240,8 @@ public class FeatureTrinityIncidentMode extends ReactCapabilityFeature {
         "%",
         enterAdaptAbilityTimingBudgetPercent
     ));
-    String externalCause = pressure.irisQueue() >= enterIrisQueue
-        ? "Iris pregeneration queue pressure"
+    String externalCause = pressure.irisPressure()
+        ? "Iris pregenerator in-flight chunk requests"
         : pressure.adaptSessionLoad() >= enterAdaptSessionLoad
         ? "Adapt session load"
         : "Adapt ability timing budget pressure";
@@ -401,7 +402,8 @@ public class FeatureTrinityIncidentMode extends ReactCapabilityFeature {
   private record PressureSnapshot(
       double tickMS,
       SamplerIncidentScore.IncidentScoreSnapshot incident,
-      double irisQueue,
+      double irisPregenInFlight,
+      boolean irisPressure,
       double adaptSessionLoad,
       double adaptAbilityTimingBudget,
       boolean severe

@@ -307,10 +307,11 @@ class MobStackMergeTest {
     ItemStack sword = Mockito.mock(ItemStack.class);
     stubMergeIdentity(source, target, EntityType.ZOMBIE);
     Mockito.doReturn(true).when(feature).isStackableType(EntityType.ZOMBIE);
+    Mockito.doReturn(1).when(feature).getStackCount(Mockito.any());
     Mockito.when(source.getEquipment()).thenReturn(equipment);
     Mockito.when(equipment.getItemInMainHand()).thenReturn(sword);
     Mockito.when(sword.getType()).thenReturn(Material.IRON_SWORD);
-    Mockito.when(sword.isEmpty()).thenReturn(false);
+    Mockito.when(sword.getAmount()).thenReturn(1);
 
     Assertions.assertFalse(feature.canMerge(source, target));
     Mockito.verify(source, Mockito.never()).remove();

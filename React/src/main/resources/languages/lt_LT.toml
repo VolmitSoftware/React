@@ -1011,8 +1011,8 @@ impact = "Aukštesnės vertės švarus stalas valstybės greičiau su daugiau CP
 summary = "Maksimali pasaulio segmentas statuso įrašai, tikrinami pagal techninės priežiūros ciklą pasaulio segmentas karantinoje."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkquarantine.field.maxtrackedchunks]
-impact = "Didesnės vertės leidžia pasiekti didesnį našumą prieš intervenciją, mažesnės vertės daro klimato kaitos švelninimą agresyvesnį."
-summary = "Maksimalus pasaulio segmentai, kurį leidžia pasaulio segmentas karantina."
+impact = "Didesnės vertės išlaiko daugiau segmentų įverčių už nedidelę atminties kainą; mažesnės vertės anksčiau pašalina mažiau aktyvius segmentus ir atstato jų įverčius."
+summary = "Didžiausias pasaulio segmentų, kuriuos seka segmentų karantinas, skaičius; pasiekus ribą pašalinamas seniausiai aktyvus segmentas."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkquarantine.field.onlyduringpressure]
 impact = "Įjungti šio elgesio taikymą; išjungti išlaikyti šį kelią neaktyvų."
@@ -1101,11 +1101,11 @@ impact = "Ilgesnė trukmė ilgiau slopina probleminį komponentą; trumpesnė j�
 summary = "Grandinės ribojimo trukmė milisekundėmis."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward]
-description = "Konfiguracija už augalų greitojo išankstinio funkcijos. Kai pasaulio segmentas pertrauka nuo miegojančio (ne artimo žaidėjo ilgai trukmės) aktyviam (player arba pasaulio segmentas atkraunama), ši funkcija eina po augalų ir šlapimo blokus vieną kartą ir skatina jų augimą proporcingai prie miegojančios trukmės, todėl žaidėjai negrįžus nematys įšaldytų ūkių. Lieka neaktyvus didelio apkrovos incidentų metu."
+description = "Crop Fast Forward funkcijos konfigūracija. Serveris augina pasėlius tik tuose pasaulio segmentuose, kurie yra žaidėjo simuliacijos atstumu, todėl ši funkcija fiksuoja, kiek laiko kiekvienas įkeltas pasaulio segmentas praleidžia už to atstumo ribų. Kai žaidėjas grįžta į aktyvų diapazoną, funkcija vieną kartą pereina segmento pasėlių ir sodinukų blokus ir paspartina jų augimą tuo laiku, kad grįžę žaidėjai nematytų sustingusių ūkių. Laukiantis augimas atmetamas, kai pasaulio segmentas iškeliamas. Didelės apkrovos incidentų metu lieka neaktyvi."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.activerange]
-impact = "Didesnės vertės greičiau išvyksta į pasaulio segmentai anksčiau; mažesnės reikšmės atidėja, kol žaidėjai pasiekia artimesnį."
-summary = "Žaidėjo artimumo intervalą (blocks), kuris klasifikuoja pasaulio segmentas kaip aktyvus. Šį intervalą, mieguosius sekimo atkurimus ir visus laukusius greitesnius gaisrus."
+impact = "Didesnės reikšmės anksčiau pritaiko laukiantį augimą tolimesniems segmentams; mažesnės laukia, kol žaidėjai prieis arčiau."
+summary = "Žaidėjo atstumas (blokais) nuo pasaulio segmento centrinio stulpelio, kuriuo taikomas laukiantis augimo paspartinimas. Ar segmentas aktyvus, lemia pasaulio simuliacijos atstumas."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.engageonincident]
 impact = "Aukštesnės vertės išlaiko staigų važiavimą per šviesos incidentus; mažesnės vertės tyla jį greičiau."
@@ -1128,8 +1128,8 @@ impact = "Aukštesnės vertės apima daugiau reljefo su daugiau atminties; maže
 summary = "Maksimali pasaulio segmentai sekimas per visus pasaulius prieš seniausią sekimą pasaulio segmentai yra ištrinta."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.minelapsedticks]
-impact = "Aukštesnės vertės praleisti pigus neseniai bumbulai; mažesnės vertės greitai pirmyn net trumpas dormancy driches."
-summary = "Minimali slopinamas laikas (ticks) prieš iškrovimą sparčiai."
+impact = "Didesnės reikšmės praleidžia trumpus nebuvimus; mažesnės paspartina net trumpus laikotarpius už simuliacijos atstumo ribų."
+summary = "Mažiausias laikas (tikais), kurį pasaulio segmentas turi praleisti už simuliacijos atstumo ribų, kad būtų paspartintas. Trumpesni nebuvimai ignoruojami."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.releaseonincident]
 impact = "Didesnės vertės vėl greičiau po tylos; mažesnės vertės išlaikyti negrįžtamai ilgiau stabilumo."
@@ -1810,9 +1810,13 @@ summary = "Pagrindinis rainelės reljefo gaubto milisekundėmis vertinimo interv
 impact = "Didesnės vertės sukelia sušvelninimą vėliau; mažesnės vertės sukelti anksčiau ir agresyviau."
 summary = "Ribinė riba Iris generavimo laikas rainelės reljefo viršįtampio apsaugoje."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregenqueue]
-impact = "Didesnės vertės sukelia sušvelninimą vėliau; mažesnės vertės sukelti anksčiau ir agresyviau."
-summary = "Ribinė riba, kad sukelti rainelės pregen eilėje rainelės reljefo viršįtampio apsaugas."
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregeninflight]
+impact = "Didesnės reikšmės apsaugą įjungia tik tada, kai pasaulio išankstinis generavimas veikia beveik visu lygiagretumu; mažesnės reikšmės ją įjungia ir esant lengvesnei apkrovai."
+summary = "Šio pasaulio vykdomos Iris išankstinio generatoriaus chunk užklausos, kurios įjungia Iris reljefo šuolių apsaugą, kai tick laikas taip pat pasiekia triggerIrisPregenTickMS; reikšmės ribojamos iki 1..256."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregentickms]
+impact = "Didesnės reikšmės leidžia išankstiniam generavimui vykti neribojant žaidėjų, kol serveris atsilieka labiau; mažesnės reikšmės anksčiau riboja žaidėjų chunk generavimą, kol vyksta išankstinis generavimas."
+summary = "Tick laiko slenkstis, kuris taip pat turi būti pasiektas, kad vykdomos Iris išankstinio generatoriaus užklausos įjungtų Iris reljefo šuolių apsaugą (milisekundėmis); reikšmės ribojamos iki 1..1000."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "Didesnės vertės uždelsimas aktyvavimas arba išėjimas; mažesnės vertės palengvina šį slenkstį."
@@ -2441,9 +2445,9 @@ summary = "Adapt seanso apkrovos slenkstis, kuris gali sukelti incidento valdym�
 impact = "Didesnės vertės sukelia sušvelninimą vėliau; mažesnės vertės sukelti anksčiau ir agresyviau."
 summary = "Ribinė vertė, taikoma siekiant įvesti incidento rezultatą trejybės įvykio režimu."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririsqueue]
-impact = "Didesnės vertės padidina buferinės darbo arba trūkimo norma; mažesnės vertės sugriežtinti trankymas."
-summary = "Įveskite rainelės eilės ribą, naudojamą trejybės incidento režimu."
+[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririspregeninflight]
+impact = "Didesnės reikšmės Iris apkrovą skaičiuoja tik tada, kai išankstinis generatorius veikia beveik visu lygiagretumu; mažesnės reikšmės skaičiuoja ir lengvesnę išankstinio generavimo apkrovą."
+summary = "Vykdomos Iris išankstinio generatoriaus chunk užklausos, kurios Trinity incidentų režime laikomos Iris apkrova; reikšmės ribojamos iki 1..256."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.entertickms]
 impact = "Didesnės vertės uždelsimas aktyvavimas arba išėjimas; mažesnės vertės palengvina šį slenkstį."
@@ -2847,6 +2851,25 @@ summary = "Siunčia hotship pakeitimų santraukas interneto operatoriams."
 [config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms]
 impact = "Mažesnės reikšmės leidžia greičiau aptikti gautus įvykius; automatiniai pakeitimai vis tiek taikomi paketais ne dažniau kaip kartą per tris sekundes."
 summary = "Failų sistemos įvykių tikrinimo intervalas milisekundėmis."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller]
+description = "Matuoja įvykių apdorotuvų laiką pagal papildinį, apgaubdamas registruotus klausytojus, kol instrumentavimas aktyvus."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleonms]
+impact = "Ilgesni langai duoda daugiau įrašytų mėginių per periodą už didesnę pasikartojančią kainą."
+summary = "Kiekvieno periodinio matavimo lango trukmė milisekundėmis ciklo režime."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleperiodms]
+impact = "Trumpesni periodai įvykių duomenis įrašo dažniau ir kainuoja daugiau; ilgesni periodai palieka platesnes spragas istorijoje."
+summary = "Milisekundės tarp periodinių matavimo langų pradžių ciklo režime."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.instrumentation]
+impact = "ALWAYS kiekvienam įvykių apdorotuvui prideda matavimo sąnaudų; ON_DEMAND pašalina šias sąnaudas ramybės būsenoje, bet palieka spragas istorijoje; DUTY_CYCLE periodines spragas iškeičia į nedidelę pasikartojančią kainą."
+summary = "Nustato, kada įdiegiami klausytojų laiko matavimo apvalkalai: ALWAYS laiko juos įdiegtus, ON_DEMAND įdiegia tik tol, kol monitorius, žemėlapis, vietaženklis arba žiniatinklio žiūrovas skaito įvykių duomenis, o DUTY_CYCLE papildomai atveria periodinį matavimo langą."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.sampleractivitywindowms]
+impact = "Didesnės vertės ilgiau išlaiko instrumentavimą įdiegtą žiūrovui pasitraukus; mažesnės vertės pašalina jį anksčiau."
+summary = "Milisekundės po paskutinio įvykių duomenų nuskaitymo, po kurių apvalkalai pašalinami pareikalavimo ir ciklo režimuose."
 
 [config.documentation.annotation.art.arcane.react.core.controller.historycontroller]
 description = "Vieną kartą nuskaito React mėginių ėmiklius, saugo suglaudintą istorinę telemetriją ir vykdo riboto laiko intervalo užklausas."
@@ -3544,8 +3567,8 @@ biletools_watched_jars = "BileTools Stebimi jar failai"
 block_entities = "Blokų subjektai"
 block_entities_ticking = "Taktuojami blokų subjektai"
 bukkit_pending_tasks = "Laukiančios užduotys"
-chunk_gen_ms = "pasaulio segmentas Gen Ms"
-chunk_load_ms = "pasaulio segmentas užkrovimas Ms"
+chunk_gen_listener_ms = "pasaulio segmentas Gen Listener Ms"
+chunk_load_listener_ms = "pasaulio segmentas užkrovimas Listener Ms"
 chunk_tickets = "Pasaulio segmentų bilietai"
 chunk_unloads = "Pasaulio segmentų iškrovimai"
 chunks = "pasaulio segmentai"
@@ -3570,7 +3593,6 @@ gc_time_percent = "Gc laiko procentas"
 gloss_animations = "Gloss Animacijos"
 gloss_boards = "Gloss Rezultatų lentos"
 gloss_bubbles = "Gloss Pokalbių burbulai"
-gloss_builder_server = "Gloss Kūrimo serveris"
 gloss_display_entities = "Gloss Rodymo subjektai"
 gloss_emoji = "Gloss Emoji pakeitimai"
 gloss_holograms = "Gloss Hologramos"
@@ -3605,7 +3627,7 @@ hopper_event_span = "Piltuvų įvykių laiko intervalas"
 incident_score = "Incidentų balas"
 iris_chunks_per_second = "Iris pasaulio segmentai per sekundę"
 iris_generation_total_ms = "Iris Iš viso gamybos įrenginių"
-iris_pregen_queue = "Iris Pregen eilė"
+iris_pregen_queue = "Iris Pregen vykdoma"
 iris_pregen_throughput = "Iris Pregen Exposput"
 jvm_threads = "JVM gijos"
 lazy_gravity_skipped = "Lazy Gravity Praleistas"
@@ -3650,10 +3672,13 @@ villagers = "Kaimiečiai"
 world_save_event_interval = "Pasaulio išsaugojimo įvykių intervalas"
 worlds = "Pasauliai"
 wormholes_block_changes = "Wormholes Blokų pakeitimai"
+wormholes_block_entities = "Wormholes Blokų objektai"
 wormholes_compression = "Wormholes Suspaudimas"
 wormholes_packets = "Wormholes Paketai"
 wormholes_peer_rtt = "Wormholes Mazgų RTT"
 wormholes_peers = "Wormholes Mazgai"
+wormholes_plate_builds = "Wormholes Plokščių kūrimas"
+wormholes_plate_bytes = "Wormholes Plokščių atmintis"
 wormholes_portals = "Wormholes Portalai"
 wormholes_projection_observers = "Wormholes Projekcijos stebėtojai"
 wormholes_projection_render_ms = "Wormholes Projection Render Mis"
@@ -3725,7 +3750,7 @@ adapt_ability_ops = "Adapt veiksenos per minutę (parinkus konfigūraciją adapt
 adapt_cache_hit_ratio = "Gebėjimų lygio patikrinimų dalis, gauta iš aktyvaus lygio podėlio."
 adapt_check_latency = "Vidutinė mikrosekundžių trukmė vienam gebėjimų apsaugos patikrinimui be podėlio."
 adapt_event_ops = "Adaptacijų įvykių apdorotojų iškvietimai per minutę."
-adapt_fx_packets = "Dalelių paketai, sunaudoti dabartiniame FX biudžeto žaidimo takte."
+adapt_fx_packets = "Vidutinis dalelių paketų skaičius, sunaudotas per FX biudžeto taktą per paskutinę sekundę."
 adapt_fx_shed_band = "FX kokybės mažinimo juosta; nulis yra visa kokybė, o keturi didžiausias mažinimas."
 adapt_fx_timelines = "Aktyvios FX laiko juostos, grojamos efektų variklyje."
 adapt_learned_adaptations = "Skirtingos adaptacijos, paruoštos bent vieno prisijungusio žaidėjo."
@@ -3748,8 +3773,8 @@ biletools_watched_jars = "Įskiepių jar failai, sekami karštojo perkrovimo ste
 block_entities = "Blokų subjektai, įkelti visuose pasauliuose."
 block_entities_ticking = "Blokų subjektai, apdorojami kiekvieną žaidimo taktą visuose pasauliuose."
 bukkit_pending_tasks = "Užduotys, laukiančios Bukkit planuotojuje iš visų įskiepių."
-chunk_gen_ms = "pasaulio segmentas generacijos vėlavimas milisekundų."
-chunk_load_ms = "pasaulio segmentas užkrovimo vėlavimas milisekundų."
+chunk_gen_listener_ms = "Pagrindinės gijos milisekundės, kurias kitų papildinių klausytojai sunaudoja per kiekvieno naujai sugeneruoto pasaulio segmento užkrovimo įvykį."
+chunk_load_listener_ms = "Pagrindinės gijos milisekundės, kurias kitų papildinių klausytojai sunaudoja per kiekvieną pasaulio segmento užkrovimo įvykį."
 chunk_tickets = "Pasaulio segmentai, laikomi įkelti įskiepių segmentų bilietais."
 chunk_unloads = "Pasaulio segmentai, iškraunami per sekundę visuose pasauliuose."
 chunks = "Įkrovtas pasaulio segmentas skaičiavimo tendencija."
@@ -3771,10 +3796,9 @@ fluid = "Skysčių atnaujinimo aktyvumo rodiklis."
 fluid_event_span = "Realus laikas nuo pirmojo iki paskutinio skysčio tekėjimo grįžtamojo iškvietimo per kiekvieną tick."
 gc_pause_p95 = "95-asis procentilis šiukšlių surinkimo pauzė trukmė."
 gc_time_percent = "Laiko, praleisto GC palyginti su kilimo ir tūpimo laiku."
-gloss_animations = "Šiuo metu užregistruotos ir veikiančios teksto animacijos."
+gloss_animations = "Šiuo metu animuojami hologramų teksto taikiniai."
 gloss_boards = "Šiuo metu žaidėjams rodomos rezultatų lentos šoninės juostos."
 gloss_bubbles = "Pokalbių burbulai, sukuriami virš žaidėjų per sekundę."
-gloss_builder_server = "Ar veikia žiniatinklio kūrimo serveris; vienetas reiškia veikiantį."
 gloss_display_entities = "Tik paketais valdomi rodymo subjektai, registruoti hologramoms."
 gloss_emoji = "Pokalbių emoji pakeitimai, taikomi per sekundę."
 gloss_holograms = "Nuolatinės teksto hologramos, aktyvios įkeltuose chunkuose."
@@ -3809,7 +3833,7 @@ hopper_event_span = "Realus laikas nuo pirmojo iki paskutinio piltuvo perdavimo 
 incident_score = "Kompozitinis incidentų rezultatas, sukurtas iš daugialinio spaudimo metrikų skaitytuvai."
 iris_chunks_per_second = "Kombinuotas Iris variklio pasaulio segmentas generatyvumo perdavimo pajėgumas."
 iris_generation_total_ms = "Blogiausia aktyvi Iris- pasaulio ritinių kartos laikas."
-iris_pregen_queue = "Iris nutolusi gretimų eilių gylis."
+iris_pregen_queue = "Vykdomos Iris pregeneratoriaus chunk užklausos."
 iris_pregen_throughput = "Iris prateiklis per sekundę pasaulio segmentai."
 jvm_threads = "Gyvos JVM gijos, įskaitant įskiepių ir serverio telkinius."
 lazy_gravity_skipped = "žaidimo taktai, kuriame yra nukrito blokas, buvo išreikštas kaip nešvaistamas dėl laikinos gravitacijos."
@@ -3854,10 +3878,13 @@ villagers = "Kaimiečiai ir klajojantys prekeiviai, įkelti visuose pasauliuose.
 world_save_event_interval = "Praėjęs laikas tarp to paties pasaulio nuoseklių išsaugojimo įvykių."
 worlds = "Pasauliai, šiuo metu įkelti serveryje."
 wormholes_block_changes = "Wormholes per integracijos tiltą paskelbtus planuojamus blokų pakeitimus."
+wormholes_block_entities = "Per sekundę žiūrovams siunčiami projektuojamų blokų objektų atnaujinimai."
 wormholes_compression = "Siunčiamų duomenų suspaudimo santykis; artimas 1.0 reiškia pasenusį žodyną."
 wormholes_packets = "Wormholes projektinis paketų pralaidumas, paskelbtas per integracijos tiltą."
 wormholes_peer_rtt = "Blogiausio atvejo abipusė delsa iki prijungto mazgo serverio."
 wormholes_peers = "Nutolę serveriai, šiuo metu sujungti Wormholes tinkle."
+wormholes_plate_builds = "Per sekundę sukuriamos projekcijos vaizdo plokštės."
+wormholes_plate_bytes = "Talpykloje laikomų projekcijos vaizdo plokščių užimama atmintis."
 wormholes_portals = "Aktyvus Wormholes portalai skaičius paskelbtas per integracijos tiltas."
 wormholes_projection_observers = "Šiuo metu stebintys žaidėjai Wormholes projekcijos."
 wormholes_projection_render_ms = "Wormholes projekcijos pateikimo laikas."
@@ -3991,6 +4018,7 @@ idle = "Tuščias"
 idle_average = "Neveikos veiksenos vartojamoji galia"
 idle_maximum = "Tuščiosios eigos valdiklis"
 idle_minimum = "Tuščiosios eigos min."
+in_flight = "Vykdoma"
 incident = "Incidentas"
 jobs = "Darbas"
 last_reload = "Paskutinis perkrovimas"

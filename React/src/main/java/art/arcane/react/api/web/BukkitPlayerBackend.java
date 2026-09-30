@@ -6,6 +6,7 @@ import art.arcane.react.api.web.heatmap.HeatmapWorldRef;
 import art.arcane.react.core.controller.NearbyPlayerIndexController;
 import art.arcane.react.core.controller.ObserverController;
 import art.arcane.react.util.common.scheduling.J;
+import art.arcane.volmlib.util.scheduling.EntityTeleports;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -225,21 +226,15 @@ public final class BukkitPlayerBackend implements PlayerBackend {
         }
         CompletableFuture<Boolean> teleport;
         try {
-            teleport = player.teleportAsync(
+            teleport = EntityTeleports.teleport(
+                React.instance,
+                player,
                 destination,
                 PlayerTeleportEvent.TeleportCause.PLUGIN
             );
         } catch (RuntimeException | Error failure) {
             fail(playerId, "Web teleport dispatch failed for " + playerId, failure);
             throw failure;
-        }
-        if (teleport == null) {
-            fail(
-                playerId,
-                "Web teleportAsync returned no completion future for " + playerId,
-                null
-            );
-            return;
         }
         teleport.whenComplete((Boolean teleported, Throwable failure) -> {
             activeTeleports.remove(playerId);

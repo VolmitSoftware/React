@@ -19,34 +19,35 @@
 
 package art.arcane.react.content.sampler;
 
-import art.arcane.react.api.event.layer.ServerTickEvent;
 import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Material;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
 
-import java.util.ArrayDeque;
-
-public class SamplerTickSpikeRate extends ReactCachedSampler implements Listener {
+public class SamplerTickSpikeRate extends ReactCachedSampler {
   public static final String ID = "tick-spike-rate";
-  private transient final ArrayDeque<Long> spikes = new ArrayDeque<>();
+  private final transient TickClock clock;
   private int spikeThresholdMS = 50;
   private int windowMS = 60000;
-  private transient long lastTickMS = 0;
 
   public SamplerTickSpikeRate() {
+    this(TickClock.get());
+  }
+
+  SamplerTickSpikeRate(TickClock clock) {
     super(ID, 250);
+    this.clock = clock;
   }
 
   @Override
   public void start() {
-    synchronized (spikes) {
-      spikes.clear();
-    }
-    lastTickMS = 0L;
+    clock.acquire(this);
     super.start();
+  }
+
+  @Override
+  public void stop() {
+    clock.release(this);
+    super.stop();
   }
 
   @Override
@@ -54,36 +55,14 @@ public class SamplerTickSpikeRate extends ReactCachedSampler implements Listener
     return Material.REPEATER;
   }
 
-  @EventHandler(priority = EventPriority.MONITOR)
-  public void on(ServerTickEvent event) {
-    long now = System.currentTimeMillis();
-    if (lastTickMS > 0 && now - lastTickMS >= Math.max(1, spikeThresholdMS)) {
-      synchronized (spikes) {
-        spikes.addLast(now);
-        cleanup(now);
-      }
-    }
-
-    lastTickMS = now;
+  @Override
+  public boolean isSampleAvailable() {
+    return clock.snapshot().hasSpikeHistory();
   }
 
   @Override
   public double onSample() {
-    synchronized (spikes) {
-      cleanup(System.currentTimeMillis());
-      return spikes.size() * (60000D / effectiveWindowMS());
-    }
-  }
-
-  private void cleanup(long now) {
-    int effectiveWindowMS = effectiveWindowMS();
-    while (!spikes.isEmpty() && now - spikes.peekFirst() > effectiveWindowMS) {
-      spikes.removeFirst();
-    }
-  }
-
-  private int effectiveWindowMS() {
-    return Math.max(1000, windowMS);
+    return clock.snapshot().spikesPerMinute(System.nanoTime(), Math.max(1, spikeThresholdMS), Math.max(1000, windowMS));
   }
 
   @Override

@@ -183,13 +183,14 @@ public class FeatureAdaptiveEntitySleep extends ReactFeature implements Listener
       return;
     }
 
+    JobBatch batch = new JobBatch(JobBatch.scanLimits(), () -> sleepScanGeneration.compareAndSet(generation, 0L));
     J.s(() -> {
       try {
         if (isActive(generation)) {
-          applySleepScan(generation);
+          queueSleepScan(generation, batch);
         }
       } finally {
-        sleepScanGeneration.compareAndSet(generation, 0L);
+        batch.seal();
       }
     });
   }
@@ -203,7 +204,7 @@ public class FeatureAdaptiveEntitySleep extends ReactFeature implements Listener
     }
   }
 
-  private void applySleepScan(long generation) {
+  private void queueSleepScan(long generation, JobBatch batch) {
     if (!isActive(generation)) {
       return;
     }
@@ -223,7 +224,7 @@ public class FeatureAdaptiveEntitySleep extends ReactFeature implements Listener
         if (!isActive(generation)) {
           return;
         }
-        manageEntity(entity, generation);
+        batch.submit(() -> manageEntity(entity, generation));
         budget--;
 
         if (budget <= 0) {
@@ -540,7 +541,7 @@ public class FeatureAdaptiveEntitySleep extends ReactFeature implements Listener
   public void on(EntityDamageEvent event) {
     long generation = lifecycleGeneration.get();
     if (wakeOnDamage && isActive(generation)) {
-      wakeOnOwner(event.getEntity(), generation);
+      wakeIfManaged(event.getEntity(), generation);
     }
   }
 
@@ -551,8 +552,24 @@ public class FeatureAdaptiveEntitySleep extends ReactFeature implements Listener
       return;
     }
 
-    wakeOnOwner(event.getEntity(), generation);
-    wakeOnOwner(event.getTarget(), generation);
+    wakeIfManaged(event.getEntity(), generation);
+    wakeIfManaged(event.getTarget(), generation);
+  }
+
+  private void wakeIfManaged(Entity entity, long generation) {
+    if (holdsSleepState(entity)) {
+      wakeOnOwner(entity, generation);
+    }
+  }
+
+  private boolean holdsSleepState(Entity entity) {
+    if (entity == null) {
+      return false;
+    }
+    if (ReactEntity.isPausedBy(entity, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP)) {
+      return true;
+    }
+    return dutyCycleSupported && entity instanceof Mob mob && !mob.isAware();
   }
 
   private static final class FoliaScanFlight {

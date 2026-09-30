@@ -36,6 +36,8 @@ public abstract class ReactCachedSampler implements Sampler {
   private transient final String sid;
   private transient final AtomicBoolean mainRefreshInFlight;
   private transient volatile double mainRefreshValue;
+  private transient volatile boolean mainRefreshUsed;
+  private transient volatile boolean mainRefreshReady;
   private transient volatile boolean runtimeStarted;
   private transient volatile SampleController sampleController;
 
@@ -53,10 +55,11 @@ public abstract class ReactCachedSampler implements Sampler {
   // and queues a single-flight recompute on the main thread. Never blocks the caller,
   // unlike executeSync which sleep-polls until the main thread runs the job.
   protected double sampleOnMainThread(Supplier<Double> compute) {
+    mainRefreshUsed = true;
     if (J.isPrimaryThread()) {
       Double value = compute.get();
       if (value != null) {
-        mainRefreshValue = value;
+        publishMainRefresh(value);
       }
       return mainRefreshValue;
     }
@@ -69,7 +72,7 @@ public abstract class ReactCachedSampler implements Sampler {
           try {
             Double value = compute.get();
             if (value != null) {
-              mainRefreshValue = value;
+              publishMainRefresh(value);
             }
           } finally {
             mainRefreshInFlight.set(false);
@@ -103,6 +106,16 @@ public abstract class ReactCachedSampler implements Sampler {
 
   @Override
   public double sample() {
+    markDemand();
+    return read();
+  }
+
+  @Override
+  public double capture() {
+    return read();
+  }
+
+  private double read() {
     if (!canSampleNow() || !slatch.couldFlip()) {
       return slast.get();
     }
@@ -115,8 +128,21 @@ public abstract class ReactCachedSampler implements Sampler {
     }
   }
 
+  @Override
+  public boolean isSampleAvailable() {
+    return !mainRefreshUsed || mainRefreshReady;
+  }
+
   public String getId() {
     return sid;
+  }
+
+  private void publishMainRefresh(double value) {
+    synchronized (sampleLock) {
+      mainRefreshValue = value;
+      mainRefreshReady = true;
+      slast.set(value);
+    }
   }
 
   private boolean canSampleNow() {

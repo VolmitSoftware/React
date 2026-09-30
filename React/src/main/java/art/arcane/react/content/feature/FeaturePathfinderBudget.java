@@ -95,6 +95,7 @@ public class FeaturePathfinderBudget extends ReactFeature implements FeatureInte
   @art.arcane.react.util.project.config.ConfigDoc(value = "Mobs within this distance of a player always keep their full pathfinding budget (blocks).", impact = "Higher values protect more mobs from budgeting; lower values shed more pathfinding cost near players.")
   private double fullBudgetWithinDistance = 16;
   private transient volatile NativeWorldAccess nativeAccess;
+  private transient volatile boolean bridgesResolved;
   private transient volatile EntityController registeredController;
   private transient volatile boolean bridgesAvailable;
   private transient volatile boolean active;
@@ -115,7 +116,8 @@ public class FeaturePathfinderBudget extends ReactFeature implements FeatureInte
     indexedMobs.clear();
     indexedMobOrder.clear();
     lastTickMs = 0D;
-    if (!resolveBridges()) {
+    bridgesAvailable = resolveBridges();
+    if (!bridgesAvailable) {
       setEnabled(false);
       React.warn("Pathfinder Budget disabled: NMS navigation bridges unavailable on this server software.");
       return;
@@ -189,11 +191,12 @@ public class FeaturePathfinderBudget extends ReactFeature implements FeatureInte
       return;
     }
 
+    JobBatch batch = new JobBatch(JobBatch.scanLimits(), () -> finishScan(generation));
     J.s(() -> {
       try {
-        applyScan(generation);
+        queueScan(generation, batch);
       } finally {
-        finishScan(generation);
+        batch.seal();
       }
     });
   }
@@ -217,7 +220,7 @@ public class FeaturePathfinderBudget extends ReactFeature implements FeatureInte
     }
   }
 
-  private void applyScan(long generation) {
+  private void queueScan(long generation, JobBatch batch) {
     if (!isCurrent(generation)) {
       return;
     }
@@ -245,7 +248,7 @@ public class FeaturePathfinderBudget extends ReactFeature implements FeatureInte
           return;
         }
         remaining--;
-        manageEntity(entity, generation);
+        batch.submit(() -> manageEntity(entity, generation));
       }
     }
   }
@@ -635,12 +638,24 @@ public class FeaturePathfinderBudget extends ReactFeature implements FeatureInte
     }
   }
 
-  private synchronized boolean resolveBridges() {
-    if (nativeAccess == null) {
-      nativeAccess = NativeAdapters.find(NativeWorldAccess.class).orElse(null);
+  private boolean resolveBridges() {
+    if (nativeAccess != null) {
+      return true;
     }
-    bridgesAvailable = nativeAccess != null;
-    return bridgesAvailable;
+    if (bridgesResolved) {
+      return false;
+    }
+    return resolveBridgesOnce();
+  }
+
+  private synchronized boolean resolveBridgesOnce() {
+    if (!bridgesResolved) {
+      if (nativeAccess == null) {
+        nativeAccess = NativeAdapters.find(NativeWorldAccess.class).orElse(null);
+      }
+      bridgesResolved = true;
+    }
+    return nativeAccess != null;
   }
 
   private boolean hasMarker(Mob mob) {

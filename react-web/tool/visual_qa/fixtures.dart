@@ -132,8 +132,8 @@ abstract final class VisualQaFixtures {
       beta: 48.0,
       max: 80.0,
     ),
-    (id: 'chunk-load-ms', suffix: 'ms', alpha: 3.7, beta: 16.4, max: 25.0),
-    (id: 'chunk-gen-ms', suffix: 'ms', alpha: 8.4, beta: 31.7, max: 45.0),
+    (id: 'chunk-load-listener-ms', suffix: 'ms', alpha: 3.7, beta: 16.4, max: 25.0),
+    (id: 'chunk-gen-listener-ms', suffix: 'ms', alpha: 8.4, beta: 31.7, max: 45.0),
     (
       id: 'world-save-event-interval',
       suffix: 'ms',

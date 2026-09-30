@@ -314,6 +314,7 @@ public class FeatureController extends TickedObject implements IController {
   private synchronized void reconcileFeatureGates(long expectedGeneration) {
     if (stopped
         || stopping
+        || reconcilePaused
         || expectedGeneration != lifecycleGeneration.get()
         || !React.instance.isEnabled()
         || !React.instance.isReady()) {

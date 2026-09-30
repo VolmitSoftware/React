@@ -1011,8 +1011,8 @@ impact = "ערכים גבוהים יותר מדינת stale מהירה יותר 
 summary = "כמות מקסימלית של הכניסים למצב צ'אנק שנבדקו על בסיקול שמרון ב-צ'אנק קואראנטיין."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkquarantine.field.maxtrackedchunks]
-impact = "ערכים גבוהים יותר מאפשרים יותר באמצעות מגע לפני התערבות; ערכים נמוכים הופכים את ההפחתה אגרסיבית יותר."
-summary = "מקסימום צ'אנקים מעקב המאפשר על ידי קווארנטיין צ'אנק."
+impact = "ערכים גבוהים שומרים ניקוד של יותר צ'אנקים בעלות זיכרון קטנה; ערכים נמוכים מסירים מוקדם יותר צ'אנקים פחות פעילים ומאפסים את הניקוד שלהם."
+summary = "המספר המרבי של צ'אנקים שקווארנטיין הצ'אנקים עוקב אחריהם; כשמגיעים למגבלה, מוסר הצ'אנק שפעילותו האחרונה הישנה ביותר."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkquarantine.field.onlyduringpressure]
 impact = "ניתן ליישם התנהגות זו; בלתי אפשרי לשמור על נתיב זה לא פעיל."
@@ -1101,11 +1101,11 @@ impact = "משך ארוך יותר מדכא רכיב בעייתי לזמן רב 
 summary = "משך הגבלת מעגל באלפיות שנייה."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward]
-description = "הגדרות לתכונה Crop Fast Forward. כאשר צ'אנק עובר מ- ( לא משחק קרוב ל- ) של משך ארוך לעבר (player פעיל או צ'אנק reloaded), תכונה זו מטילה את בלוקי התוצר והצמח פעם אחת ומקדמת את צמיחה שלהם בכמות שדומה לזמן המשיכה כדי שהמשחקנים לא יראו חוות קפוא לאחר שחזרו. נשאר בלתי פעיל במהלך אירועים עם עומס גבוה."
+description = "הגדרות לתכונה Crop Fast Forward. השרת מגדל יבולים רק בצ'אנקים שנמצאים בתוך מרחק הסימולציה של שחקן, ולכן תכונה זו רושמת כמה זמן כל צ'אנק טעון נמצא מחוץ למרחק הזה. כאשר שחקן חוזר לטווח הפעיל, התכונה עוברת פעם אחת על בלוקי היבולים והשתילים של הצ'אנק ומקדמת את צמיחתם בהתאם לזמן הזה, כדי ששחקנים לא יראו חוות קפואות כשהם חוזרים. צמיחה ממתינה נמחקת כאשר צ'אנק נפרק מהזיכרון. נשארת לא פעילה בזמן תקריות עומס גבוה."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.activerange]
-impact = "ערכים גדולים מדרשים קדימה מהר יותר צ'אנקים מוקדם; הערכים קטנים מעכב עד שמשחקנים הולכים קרוב יותר."
-summary = "טווח קרבה של שחקן (blocks) אשר מסווג צ'אנק כפעיל. בתוך הטווח הזה, חיזוק מעקב ישנה וכל שריפות מהירות ממתינות קדימה."
+impact = "ערכים גדולים יותר מחילים צמיחה ממתינה על צ'אנקים רחוקים מוקדם יותר; ערכים קטנים יותר ממתינים עד ששחקנים מתקרבים."
+summary = "מרחק השחקן (בבלוקים) מהעמודה המרכזית של צ'אנק שבו מוחלת הצמיחה הממתינה שלו. פעילות הצ'אנק עצמה נקבעת לפי מרחק הסימולציה של העולם."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.engageonincident]
 impact = "ערכים גבוהים יותר ממשיכים לרוץ מהר במהלך אירועי אור; ערכים נמוכים יותר להשתיק אותו מוקדם יותר."
@@ -1128,8 +1128,8 @@ impact = "ערכים גבוהים יותר מכסים שטח נוסף עם זי�
 summary = "מקסימום צ'אנקים עקוב אחרי כל העולמות לפני צ'אנקים הקדמי ביותר עקוב אחר מוציא."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.minelapsedticks]
-impact = "ערכים גבוהים יותר לדלג על התעוררות זולה לאחרונה; ערכים נמוכים יותר מהירים אפילו מתתות קצרה."
-summary = "זמן שלמה מינימום של (ticks) לפני ש-wake יפעיל קדימה במהירות. מתחת לזה, צ'אנק מתייחס עדיין חם."
+impact = "ערכים גבוהים יותר מדלגים על היעדרויות קצרות; ערכים נמוכים יותר מקדמים גם פרקי זמן קצרים מחוץ למרחק הסימולציה."
+summary = "הזמן המינימלי (בטיקים) שצ'אנק חייב לבלות מחוץ למרחק הסימולציה לפני שהוא מקודם. מתעלמים מהיעדרויות קצרות יותר."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.releaseonincident]
 impact = "ערכים גבוהים יותר חוזרים מוקדם לאחר שקט; ערכים נמוכים יותר מחזיקים מעמד גבוה יותר קדימה ליציבות."
@@ -1810,9 +1810,13 @@ summary = "מרווח הערכה עיקרי עבור iris שטח עלייה שמ
 impact = "ערכים גבוהים יותר מעוררים הפחתה מאוחר יותר; ערכים נמוכים גורמים מוקדם יותר ויותר אגרסיבי."
 summary = "סף טריגר Iris זמן דור ב-Irisland Area ge Guard"
 
-[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregenqueue]
-impact = "ערכים גבוהים יותר מעוררים הפחתה מאוחר יותר; ערכים נמוכים גורמים מוקדם יותר ויותר אגרסיבי."
-summary = "סף טריגר לסיבוב iris pregen בתור Iris על משטח Iris חיפוי."
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregeninflight]
+impact = "ערכים גבוהים יותר מפעילים את המגן רק כשהיצירה המוקדמת של העולם פועלת קרוב למקביליות המלאה שלה; ערכים נמוכים יותר מפעילים אותו גם בעומס קל יותר."
+summary = "בקשות chunk פעילות של המחולל המקדים של Iris בעולם הזה שמפעילות את מגן זינוקי השטח של Iris כאשר זמן הטיק מגיע גם ל-triggerIrisPregenTickMS; הערכים מוגבלים לטווח 1..256."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregentickms]
+impact = "ערכים גבוהים יותר מאפשרים ליצירה המקדימה לרוץ בלי להגביל שחקנים עד שהשרת מפגר יותר; ערכים נמוכים יותר מגבילים מוקדם יותר את יצירת ה-chunks על ידי שחקנים בזמן יצירה מקדימה."
+summary = "סף זמן טיק שחייב גם להתקיים לפני שבקשות פעילות של המחולל המקדים של Iris מפעילות את מגן זינוקי השטח של Iris (מילישניות); הערכים מוגבלים לטווח 1..1000."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "ערכים גבוהים יותר מעכבים הפעלה או יציאה; ערכים נמוכים הופכים את סף זה לקל יותר לחצות."
@@ -2441,9 +2445,9 @@ summary = "Adapt סף עומס ישיבה שיכול לגרום להליך אי�
 impact = "ערכים גבוהים יותר מעוררים הפחתה מאוחר יותר; ערכים נמוכים גורמים מוקדם יותר ויותר אגרסיבי."
 summary = "סף טריגר להזנת ציון אירוע במצב תקרית השילוש."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririsqueue]
-impact = "ערכים גבוהים יותר מגבירים את העבודה או קצבה מפורצת; ערכים נמוכים יותר מתכווץ."
-summary = "הזן הגבלת תור iris בשימוש על ידי מצב אירוע trinity."
+[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririspregeninflight]
+impact = "ערכים גבוהים יותר סופרים לחץ Iris רק כשהמחולל המקדים פועל קרוב למקביליות המלאה שלו; ערכים נמוכים יותר סופרים גם עומס יצירה מוקדמת קל יותר."
+summary = "בקשות chunk פעילות של המחולל המקדים של Iris שנספרות כלחץ Iris במצב התקריות Trinity; הערכים מוגבלים לטווח 1..256."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.entertickms]
 impact = "ערכים גבוהים יותר מעכבים הפעלה או יציאה; ערכים נמוכים הופכים את סף זה לקל יותר לחצות."
@@ -2847,6 +2851,25 @@ summary = "שלח שינוי עומס חם מסכם למפעילים מקוונ�
 [config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms]
 impact = "ערכים נמוכים יותר מזהים מוקדם יותר אירועים שהתקבלו; השינויים האוטומטיים עדיין מוחלים בקבוצות לכל היותר פעם בשלוש שניות."
 summary = "מרווח בדיקת האירועים של מערכת הקבצים באלפיות שנייה."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller]
+description = "מודד את זמן מטפלי האירועים לכל תוסף על ידי עטיפת המאזינים הרשומים כל עוד המדידה פעילה."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleonms]
+impact = "חלונות ארוכים יותר מפיקים יותר דגימות מתועדות לכל מחזור בעלות חוזרת גבוהה יותר."
+summary = "אורך כל חלון מדידה מחזורי באלפיות שנייה במצב המחזור."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleperiodms]
+impact = "מחזורים קצרים יותר מתעדים נתוני אירועים לעתים קרובות יותר ועולים יותר; מחזורים ארוכים יותר משאירים פערים רחבים יותר בהיסטוריה."
+summary = "אלפיות שנייה בין תחילת חלונות המדידה המחזוריים במצב המחזור."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.instrumentation]
+impact = "ALWAYS מטיל תקורת מדידה על כל מטפל אירועים; ON_DEMAND מסיר את העלות הזו במנוחה אך משאיר פערים בהיסטוריה; DUTY_CYCLE מחליף פערים מחזוריים בעלות חוזרת קטנה."
+summary = "קובע מתי מותקנות עטיפות מדידת הזמן של המאזינים: ALWAYS משאיר אותן מותקנות, ON_DEMAND מתקין אותן רק כאשר מוניטור, מפה, מציין מיקום או צופה ברשת קורא נתוני אירועים, ואילו DUTY_CYCLE פותח בנוסף חלון מדידה מחזורי."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.sampleractivitywindowms]
+impact = "ערכים גבוהים יותר משאירים את המדידה מותקנת זמן רב יותר לאחר שצופה עוזב; ערכים נמוכים יותר מסירים אותה מוקדם יותר."
+summary = "אלפיות שנייה לאחר הקריאה האחרונה של נתוני אירועים לפני הסרת העטיפות במצב לפי דרישה ובמצב המחזור."
 
 [config.documentation.annotation.art.arcane.react.core.controller.historycontroller]
 description = "לוכד פעם אחת את דוגמי React, שומר טלמטריה היסטורית דחוסה ומטפל בשאילתות מוגבלות לטווח זמן."
@@ -3544,8 +3567,8 @@ biletools_watched_jars = "קובצי Jar במעקב של BileTools"
 block_entities = "ישויות בלוק"
 block_entities_ticking = "ישויות בלוק מתקתקות"
 bukkit_pending_tasks = "משימות ממתינות"
-chunk_gen_ms = "צ'אנק Gen Ms"
-chunk_load_ms = "צ'אנק Load Ms"
+chunk_gen_listener_ms = "צ'אנק Gen Listener Ms"
+chunk_load_listener_ms = "צ'אנק Load Listener Ms"
 chunk_tickets = "כרטיסי צ'אנק"
 chunk_unloads = "פריקות צ'אנקים"
 chunks = "צ'אנקים"
@@ -3570,7 +3593,6 @@ gc_time_percent = "זמן Gc"
 gloss_animations = "הנפשות Gloss"
 gloss_boards = "לוחות תוצאות Gloss"
 gloss_bubbles = "בועות צ'אט Gloss"
-gloss_builder_server = "שרת הבונה של Gloss"
 gloss_display_entities = "ישויות תצוגה של Gloss"
 gloss_emoji = "החלפות אימוג'י Gloss"
 gloss_holograms = "הולוגרמות Gloss"
@@ -3605,7 +3627,7 @@ hopper_event_span = "טווח זמן אירועי משפכים"
 incident_score = "ציון אירועים"
 iris_chunks_per_second = "Iris צ'אנקים לשנייה"
 iris_generation_total_ms = "Iris דור שלם גב'"
-iris_pregen_queue = "Iris המונחים: Queue"
+iris_pregen_queue = "Iris Pregen בתהליך"
 iris_pregen_throughput = "Iris המונחים: Throughput"
 jvm_threads = "תהליכוני מכונת ג'אווה"
 lazy_gravity_skipped = "Lazy Gravity דלג"
@@ -3650,10 +3672,13 @@ villagers = "כפריים"
 world_save_event_interval = "מרווח אירועי שמירת עולם"
 worlds = "עולמות"
 wormholes_block_changes = "Wormholes שינויים בלוק"
+wormholes_block_entities = "ישויות בלוק של Wormholes"
 wormholes_compression = "דחיסת Wormholes"
 wormholes_packets = "Wormholes חבילות"
 wormholes_peer_rtt = "RTT של עמיתי Wormholes"
 wormholes_peers = "עמיתי Wormholes"
+wormholes_plate_builds = "בניית לוחות של Wormholes"
+wormholes_plate_bytes = "זיכרון לוחות של Wormholes"
 wormholes_portals = "Wormholes פורטלים"
 wormholes_projection_observers = "Wormholes עקבו אחרי Projection Observers"
 wormholes_projection_render_ms = "Wormholes הקרנה Render גב'"
@@ -3725,7 +3750,7 @@ adapt_ability_ops = "Adapt יכולת פעולה לדקה (Mode שנבחרה ע�
 adapt_cache_hit_ratio = "חלק בדיקות רמת היכולת המוגשות ממטמון הרמות הפעילות."
 adapt_check_latency = "ממוצע מיקרו-שניות לבדיקת שמירת יכולת ללא מטמון."
 adapt_event_ops = "הפעלות מטפלי אירועי אדפטציה לדקה."
-adapt_fx_packets = "חבילות חלקיקים שנצרכו בטיק תקציב ה-FX הנוכחי."
+adapt_fx_packets = "ממוצע חבילות החלקיקים שנצרכו בכל טיק תקציב FX בשנייה האחרונה."
 adapt_fx_shed_band = "רצועת הפחתת FX; אפס הוא איכות מלאה, ארבע הוא ההשלה הכבדה ביותר."
 adapt_fx_timelines = "צירי זמן FX חיים המתנגנים במנוע האפקטים."
 adapt_learned_adaptations = "אדפטציות ייחודיות שחומשו על ידי שחקן מחובר אחד לפחות."
@@ -3748,8 +3773,8 @@ biletools_watched_jars = "קובצי Jar של תוספים במעקב על יד�
 block_entities = "ישויות בלוק טעונות בכל העולמות."
 block_entities_ticking = "ישויות בלוק המתקתקות בכל טיק בכל העולמות."
 bukkit_pending_tasks = "משימות הממתינות במתזמן השרת מכל התוספים."
-chunk_gen_ms = "איחור של ייצור צ'אנק במיליסוקונד."
-chunk_load_ms = "איחור של עומס צ'אנק במילי שניות."
+chunk_gen_listener_ms = "מילישניות של התהליכון הראשי שמאזינים של תוספים אחרים מבלים בכל אירוע טעינה של צ'אנק שנוצר זה עתה."
+chunk_load_listener_ms = "מילישניות של התהליכון הראשי שמאזינים של תוספים אחרים מבלים בכל אירוע טעינת צ'אנק."
 chunk_tickets = "צ'אנקים המוחזקים טעונים על ידי כרטיסי צ'אנק של תוספים."
 chunk_unloads = "צ'אנקים הנפרקים בשנייה בכל העולמות."
 chunks = "נטען צ'אנק ספירה מגמה."
@@ -3771,10 +3796,9 @@ fluid = "הורדת עלויות פעילות"
 fluid_event_span = "הזמן בפועל מהקריאה הראשונה ועד האחרונה למטפל בזרימת נוזלים בכל טיק."
 gc_pause_p95 = "איסוף הזבל של 95 אחוזה עוצר את משך הזמן."
 gc_time_percent = "עשרות שנים של זמן בילה GC יחסית לריצה."
-gloss_animations = "הנפשות טקסט הרשומות ופועלות כעת."
+gloss_animations = "יעדי טקסט הולוגרמה שמונפשים כעת."
 gloss_boards = "סרגלי צד של לוח תוצאות המוצגים כעת לשחקנים."
 gloss_bubbles = "בועות צ'אט הנוצרות מעל שחקנים בשנייה."
-gloss_builder_server = "האם שרת הבנייה ברשת פועל; אחד פירושו מקוון."
 gloss_display_entities = "ישויות תצוגה מבוססות-חבילות בלבד הרשומות להולוגרמות."
 gloss_emoji = "החלפות אימוג'י בצ'אט המוחלות בשנייה."
 gloss_holograms = "הולוגרמות טקסט קבועות הפעילות בצ'אנקים טעונים."
@@ -3809,7 +3833,7 @@ hopper_event_span = "הזמן בפועל מהקריאה הראשונה ועד ה
 incident_score = "ציון התקרית מורכב בנוי מ-דוגמי מדדים לחץ רב."
 iris_chunks_per_second = "סיסמאות הדור של מנועי Iris משולבים."
 iris_generation_total_ms = "הפעיל הגרוע ביותר Iris- עולם מתגלגל זמן"
-iris_pregen_queue = "Iris עומק תור טרוםגן מרוחק."
+iris_pregen_queue = "בקשות צ'אנקים בתהליך של מחולל הקדם של Iris."
 iris_pregen_throughput = "תוצאות ה- Iris pregenerator ב- צ'אנקים לשנייה."
 jvm_threads = "תהליכונים פעילים של מכונת ג'אווה כולל מאגרי תוספים ושרת."
 lazy_gravity_skipped = "תנועת כבלוק הנפילה טיקים נחשבת להיות מתרחקת על ידי כוח הכבידה עצלן."
@@ -3854,10 +3878,13 @@ villagers = "כפריים וסוחרים נודדים טעונים בכל העו
 world_save_event_interval = "הזמן שחלף בין אירועי שמירה עוקבים של אותו עולם."
 worlds = "עולמות הטעונים כעת בשרת."
 wormholes_block_changes = "Wormholes שינויים בבלוקים שבוצעו באמצעות גשר האינטגרציה."
+wormholes_block_entities = "עדכוני ישויות בלוק מוקרנות שנשלחים לצופים בכל שנייה."
 wormholes_compression = "יחס דחיסת התעבורה היוצאת; ערך קרוב ל-1.0 מעיד על מילון מיושן."
 wormholes_packets = "Wormholes חבילת הקרנה באמצעות ערכת האינטגרציה שפורסמה דרך גשר האינטגרציה."
 wormholes_peer_rtt = "זמן הלוך-חזור במקרה הגרוע ביותר אל שרת עמית מחובר."
 wormholes_peers = "שרתים מרוחקים המקושרים כעת לרשת ה-Wormholes."
+wormholes_plate_builds = "לוחות תצוגת הקרנה שנבנים בכל שנייה."
+wormholes_plate_bytes = "זיכרון שתופסים לוחות תצוגת ההקרנה השמורים במטמון."
 wormholes_portals = "מספר הפורטלים הפעילים של Wormholes שפורסם דרך גשר האינטגרציה."
 wormholes_projection_observers = "שחקנים צופים כעת Wormholes תחזיות."
 wormholes_projection_render_ms = "Wormholes הקרנה הופכת את הזמן."
@@ -3991,6 +4018,7 @@ idle = "Idle"
 idle_average = "Idle Avg"
 idle_maximum = "Idle Max"
 idle_minimum = "Idle Min"
+in_flight = "בתהליך"
 incident = "תקרית"
 jobs = "משרות"
 last_reload = "טעינה אחרונה"

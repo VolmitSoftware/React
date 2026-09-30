@@ -4,6 +4,7 @@ import art.arcane.react.React;
 import art.arcane.react.api.feature.ReactCapabilityFeature;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.core.controller.IntegrationController;
+import art.arcane.react.core.integration.IrisPregenPressure;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.RuntimeMessages;
 import art.arcane.volmlib.integration.IntegrationMetricGroup;
@@ -29,15 +30,18 @@ import java.util.concurrent.ConcurrentHashMap;
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Iris Terrain Surge Guard feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureIrisTerrainSurgeGuard extends ReactCapabilityFeature implements Listener {
   public static final String ID = "feature-iris-terrain-surge-guard";
+  private static final long SURGE_VERDICT_TTL_MS = 1_000L;
 
   @art.arcane.react.util.project.config.ConfigDoc(value = "Main evaluation interval for iris terrain surge guard in milliseconds.", impact = "Lower values react faster but consume more CPU; higher values reduce overhead but react later.")
   private int tickIntervalMS = 1000;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Tick-time threshold for trigger in iris terrain surge guard (milliseconds).", impact = "Higher values delay activation or exit; lower values make this threshold easier to cross.")
   private double triggerTickMS = 56D;
-  @art.arcane.react.util.project.config.ConfigDoc(value = "Trigger threshold for trigger iris pregen queue in iris terrain surge guard.", impact = "Higher values trigger mitigation later; lower values trigger earlier and more aggressively.")
-  private double triggerIrisPregenQueue = 280D;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Trigger threshold for Iris generation time in iris terrain surge guard.", impact = "Higher values trigger mitigation later; lower values trigger earlier and more aggressively.")
   private double triggerIrisGenerationMS = 24D;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Iris pregenerator in-flight chunk requests for this world that trigger iris terrain surge guard while tick time also reaches triggerIrisPregenTickMS; values clamp to 1..256.", impact = "Higher values trigger only while the world's pregeneration runs near its full concurrency; lower values also trigger on lighter pregeneration load.")
+  private int triggerIrisPregenInFlight = IrisPregenPressure.DEFAULT_IN_FLIGHT_THRESHOLD;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Tick-time threshold that must also be reached before Iris pregenerator in-flight requests trigger iris terrain surge guard (milliseconds); values clamp to 1..1000.", impact = "Higher values let pregeneration run without limiting players until the server falls further behind; lower values limit player chunk generation sooner while a pregeneration runs.")
+  private double triggerIrisPregenTickMS = IrisPregenPressure.DEFAULT_TICK_GATE_MS;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Rolling enforcement window length used by iris terrain surge guard (milliseconds).", impact = "Longer windows smooth bursts but react slower; shorter windows react faster but are more sensitive.")
   private int windowMS = 2500;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum ungenerated chunk moves allowed per window in iris terrain surge guard.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
@@ -51,6 +55,7 @@ public class FeatureIrisTerrainSurgeGuard extends ReactCapabilityFeature impleme
 
   private transient final RateWindow<RateCounter> rateWindow = new RateWindow<>(RateCounter.values().length);
   private transient Map<UUID, Long> lastMessageByPlayer = new ConcurrentHashMap<>();
+  private transient Map<UUID, SurgeVerdict> surgeVerdictByWorld = new ConcurrentHashMap<>();
 
   public FeatureIrisTerrainSurgeGuard() {
     super(ID);
@@ -70,11 +75,13 @@ public class FeatureIrisTerrainSurgeGuard extends ReactCapabilityFeature impleme
   public void onActivate() {
     rateWindow.reset(System.currentTimeMillis());
     lastMessageByPlayer = new ConcurrentHashMap<>();
+    surgeVerdictByWorld = new ConcurrentHashMap<>();
   }
 
   @Override
   public void onDeactivate() {
     lastMessageByPlayer.clear();
+    surgeVerdictByWorld.clear();
   }
 
   @Override
@@ -88,11 +95,11 @@ public class FeatureIrisTerrainSurgeGuard extends ReactCapabilityFeature impleme
 
   @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
   public void on(PlayerMoveEvent event) {
-    if (event.getTo() == null || !isSurging(event.getTo().getWorld())) {
+    if (event.getTo() == null || sameChunk(event.getFrom(), event.getTo())) {
       return;
     }
 
-    if (sameChunk(event.getFrom(), event.getTo())) {
+    if (!isSurging(event.getTo().getWorld())) {
       return;
     }
 
@@ -156,17 +163,44 @@ public class FeatureIrisTerrainSurgeGuard extends ReactCapabilityFeature impleme
   }
 
   private boolean isSurging(World world) {
+    if (world == null) {
+      return false;
+    }
+
+    long now = System.currentTimeMillis();
+    UUID worldId = world.getUID();
+    SurgeVerdict cached = surgeVerdictByWorld.get(worldId);
+    if (cached != null && now - cached.evaluatedAtMs() < SURGE_VERDICT_TTL_MS) {
+      return cached.surging();
+    }
+
+    boolean surging = evaluateSurge(world);
+    surgeVerdictByWorld.put(worldId, new SurgeVerdict(surging, now));
+    return surging;
+  }
+
+  private boolean evaluateSurge(World world) {
     IntegrationMetricGroup group = worldGroup(world);
     if (group == null) {
       return false;
     }
-    double tickMS = sample(SamplerTickTime.ID);
-    double pregenQueue = metricOr(group, IntegrationMetricSchema.IRIS_PREGEN_QUEUE, -1D);
-    double generationMS = metricOr(group, IntegrationMetricSchema.IRIS_GENERATION_TOTAL_MS, -1D);
+    return shouldSurge(
+        sample(SamplerTickTime.ID),
+        metricOr(group, IntegrationMetricSchema.IRIS_GENERATION_TOTAL_MS, -1D),
+        metricOr(group, IntegrationMetricSchema.IRIS_PREGEN_QUEUE, -1D),
+        new SurgeTriggers(triggerTickMS, triggerIrisGenerationMS, triggerIrisPregenInFlight, triggerIrisPregenTickMS)
+    );
+  }
 
-    return tickMS >= triggerTickMS
-        || (pregenQueue >= 0D && pregenQueue >= triggerIrisPregenQueue)
-        || (generationMS >= 0D && generationMS >= triggerIrisGenerationMS);
+  static boolean shouldSurge(double tickMS, double generationMS, double pregenInFlight, SurgeTriggers triggers) {
+    return tickMS >= triggers.tickMS()
+        || (generationMS >= 0D && generationMS >= triggers.generationMS())
+        || IrisPregenPressure.hasInFlightPressureUnderLoad(
+            pregenInFlight,
+            triggers.pregenInFlight(),
+            tickMS,
+            triggers.pregenTickMS()
+        );
   }
 
   private IntegrationMetricGroup worldGroup(World world) {
@@ -210,5 +244,11 @@ public class FeatureIrisTerrainSurgeGuard extends ReactCapabilityFeature impleme
   private enum RateCounter {
     MOVE,
     TELEPORT
+  }
+
+  private record SurgeVerdict(boolean surging, long evaluatedAtMs) {
+  }
+
+  record SurgeTriggers(double tickMS, double generationMS, int pregenInFlight, double pregenTickMS) {
   }
 }

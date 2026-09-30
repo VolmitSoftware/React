@@ -20,14 +20,24 @@
 package art.arcane.react.content.sampler;
 
 import art.arcane.react.api.sampler.ReactCachedSampler;
+import art.arcane.react.core.controller.TelemetryController;
+import art.arcane.react.core.telemetry.HostTelemetrySnapshot;
 import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Material;
 
+import java.util.function.Supplier;
+
 public class SamplerProcessorOutsideLoad extends ReactCachedSampler {
   public static final String ID = "processor-outside";
+  private transient final Supplier<HostTelemetrySnapshot> host;
 
   public SamplerProcessorOutsideLoad() {
+    this(TelemetryController::currentHostSnapshot);
+  }
+
+  SamplerProcessorOutsideLoad(Supplier<HostTelemetrySnapshot> host) {
     super(ID, 250);
+    this.host = host;
   }
 
   private static double normalizeCpuLoad(double raw) {
@@ -52,10 +62,15 @@ public class SamplerProcessorOutsideLoad extends ReactCachedSampler {
   }
 
   @Override
+  public boolean isSampleAvailable() {
+    HostTelemetrySnapshot snapshot = host.get();
+    return Double.isFinite(snapshot.systemCpuLoad()) && Double.isFinite(snapshot.processCpuLoad());
+  }
+
+  @Override
   public double onSample() {
-    double systemLoad = normalizeCpuLoad(getSampler(SamplerProcessorSystemLoad.ID).sample());
-    double processLoad = normalizeCpuLoad(getSampler(SamplerProcessorProcessLoad.ID).sample());
-    return Math.max(0D, systemLoad - processLoad);
+    HostTelemetrySnapshot snapshot = host.get();
+    return Math.max(0D, normalizeCpuLoad(snapshot.systemCpuLoad()) - normalizeCpuLoad(snapshot.processCpuLoad()));
   }
 
   @Override

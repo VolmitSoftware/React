@@ -1011,8 +1011,8 @@ impact = "높은 값 깨끗한 stale 상태는 더 빠른 CPU 파열; 더 낮은
 summary = "청크 격리에서 유지보수 주기에 검사되는 최대 청크 상태 항목."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkquarantine.field.maxtrackedchunks]
-impact = "높은 값은 개입 전에 더 많은 처리량을 허용; 낮은 가치는 더 공격적인 완화를 만듭니다."
-summary = "청크 격리에서 허용되는 최대 추적된 청크."
+impact = "높은 값은 적은 메모리 비용으로 더 많은 청크 점수를 유지합니다. 낮은 값은 활동이 적은 청크를 더 빨리 제거하고 점수를 초기화합니다."
+summary = "청크 격리가 추적하는 최대 청크 수입니다. 한도에 도달하면 가장 오래 활동이 없던 청크가 제거됩니다."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkquarantine.field.onlyduringpressure]
 impact = "이 행동을 적용 할 수 있습니다.이 경로 활성화를 유지 할 수 없습니다."
@@ -1101,11 +1101,11 @@ impact = "시간이 길수록 문제가 있는 구성 요소를 더 오래 억�
 summary = "회로 제한 지속 시간(밀리초)."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward]
-description = "Crop Fast Forward 기능의 구성. 청크가 긴 시간 동안 잠식 (나 근처 플레이어)에서 활성 (player에 접근하거나 청크 재충전)로 전환되면, 이 기능은 작물 및 정작 블록을 한 번 걷고 잠식 기간에 비례하는 양으로 성장하도록 진행합니다. 플레이어는 돌아온 후 얼린 농장을 보지 않습니다. 높은 부하 사건 중에 활동하지 않습니다."
+description = "Crop Fast Forward 기능의 구성입니다. 서버는 플레이어의 시뮬레이션 거리 안에 있는 청크에서만 작물을 성장시키므로, 이 기능은 로드된 각 청크가 그 거리 밖에 머문 시간을 기록합니다. 플레이어가 활성 범위 안으로 돌아오면 청크의 작물과 묘목 블록을 한 번 훑어 그 시간만큼 성장을 진행시켜, 플레이어가 돌아왔을 때 멈춘 농장을 보지 않게 합니다. 청크가 언로드되면 대기 중인 성장은 폐기됩니다. 고부하 사고 중에는 비활성 상태로 유지됩니다."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.activerange]
-impact = "더 큰 값은 청크보다 빨리 앞으로 나아갑니다. 작은 값들은 플레이어가 가까워질 때까지 미뤄집니다."
-summary = "플레이어 근접 범위 (blocks)는 청크를 활성으로 분류합니다. 이 범위에, 잠자리 추적 리셋 및 임의의 대기 중인 빠른 전향 화재."
+impact = "값이 클수록 더 먼 청크에도 대기 중인 성장을 더 일찍 적용하고, 작을수록 플레이어가 더 가까이 올 때까지 기다립니다."
+summary = "대기 중인 빠른 진행이 적용되는, 청크 중앙 열로부터의 플레이어 거리(블록)입니다. 청크의 활성 여부는 월드의 시뮬레이션 거리를 따릅니다."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.engageonincident]
 impact = "높은 값은 가벼운 사건 도중 빠른 앞으로 달리는 것을 지킵니다; 더 낮은 가치 침묵 그것 빨리."
@@ -1128,8 +1128,8 @@ impact = "더 많은 메모리를 가진 더 지형을 커버; 기억을 위한 
 summary = "가장 오래된 추적된 청크가 추방되기 전에 모든 세계에서 청크를 추적하는 최대 수입니다."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.minelapsedticks]
-impact = "높은 값은 싼 최근의 웨이브를 건너 뛰고; 낮은 값은 빠른 속도로 짧은 기숙사 스트레치."
-summary = "잠자는 최소 기간 (ticks)는 웨이크가 시작되기 전에 빠르게 진행됩니다. 이 아래에서는 청크은 여전히 따뜻하게 취급됩니다."
+impact = "값이 클수록 짧은 부재를 건너뛰고, 작을수록 시뮬레이션 거리 밖의 짧은 기간도 빠르게 진행합니다."
+summary = "청크가 빠른 진행 대상이 되기 전에 시뮬레이션 거리 밖에서 보내야 하는 최소 시간(틱)입니다. 이보다 짧은 부재는 무시됩니다."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.releaseonincident]
 impact = "더 높은 값은 조용 한 후 빨리 다시 시작합니다. 낮은 값은 안정성을 위해 더 빠른 속도로 유지됩니다."
@@ -1810,9 +1810,13 @@ summary = "iris terrain 서지 가드에 대한 주요 평가 간격."
 impact = "더 높은 값 트리거는 나중에 완화; 더 낮은 가치 트리거 이전과 더욱 적극적인."
 summary = "Trigger 임계 값 Iris 아이리스 지형 서지 가드의 세대 시간."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregenqueue]
-impact = "더 높은 값 트리거는 나중에 완화; 더 낮은 가치 트리거 이전과 더욱 적극적인."
-summary = "방아쇠를 위한 방아쇠 iris pregen queues in 아이리스 지형 큰 파도 감시."
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregeninflight]
+impact = "값이 높을수록 월드의 사전 생성이 최대 동시성에 가깝게 동작할 때만 작동하고, 값이 낮을수록 더 가벼운 사전 생성 부하에서도 작동합니다."
+summary = "틱 시간도 triggerIrisPregenTickMS에 도달하면 Iris 지형 급증 방지를 작동시키는 이 월드의 Iris 사전 생성기 처리 중 청크 요청 수입니다. 값은 1..256으로 제한됩니다."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregentickms]
+impact = "값이 높을수록 서버가 더 뒤처질 때까지 플레이어를 제한하지 않고 사전 생성을 계속합니다. 값이 낮을수록 사전 생성 중 플레이어의 청크 생성을 더 일찍 제한합니다."
+summary = "Iris 사전 생성기 처리 중 요청이 Iris 지형 급증 방지를 작동시키기 전에 함께 도달해야 하는 틱 시간 임계값(밀리초)입니다. 값은 1..1000으로 제한됩니다."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "높은 값 지연 활성화 또는 출구; 낮은 값은이 문턱을 쉽게 교차합니다."
@@ -2441,9 +2445,9 @@ summary = "Adapt 트리니티 사건 모드(percent)에서 사고 처리할 수 
 impact = "더 높은 값 트리거는 나중에 완화; 더 낮은 가치 트리거 이전과 더욱 적극적인."
 summary = "트리니티 사건 모드에서의 사고 점수를 입력하는 방적 임계 값."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririsqueue]
-impact = "더 높은 가치 증가 버퍼 작업 또는 파열 수당; 낮은 값은 throttling을 바짝 죄."
-summary = "trinity 사건 형태에 의해 이용된 iris queue 한계를 입력하십시오."
+[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririspregeninflight]
+impact = "값이 높을수록 사전 생성기가 최대 동시성에 가깝게 동작할 때만 Iris 부하로 간주하고, 값이 낮을수록 더 가벼운 사전 생성 부하도 포함합니다."
+summary = "Trinity 사고 모드에서 Iris 부하로 간주하는 Iris 사전 생성기의 처리 중인 청크 요청 수입니다. 값은 1..256으로 제한됩니다."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.entertickms]
 impact = "높은 값 지연 활성화 또는 출구; 낮은 값은이 문턱을 쉽게 교차합니다."
@@ -2847,6 +2851,25 @@ summary = "온라인 연산자에 핫로드 변경 summaries를 전송합니다.
 [config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms]
 impact = "값이 낮을수록 수신된 이벤트를 더 빨리 감지하지만, 자동 변경 사항은 여전히 최대 3초에 한 번 일괄 적용됩니다."
 summary = "파일 시스템 이벤트를 확인하는 간격(밀리초)입니다."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller]
+description = "계측이 활성화된 동안 등록된 리스너를 감싸 플러그인별 이벤트 핸들러 시간을 측정합니다."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleonms]
+impact = "창이 길수록 주기마다 더 많은 표본이 기록되지만 반복 비용이 더 높아집니다."
+summary = "주기 모드에서 각 주기적 측정 창의 길이(밀리초)입니다."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleperiodms]
+impact = "주기가 짧을수록 이벤트 데이터를 더 자주 기록하고 비용이 더 들며, 주기가 길수록 기록에 더 넓은 공백을 남깁니다."
+summary = "주기 모드에서 주기적 측정 창의 시작 사이 간격(밀리초)입니다."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.instrumentation]
+impact = "ALWAYS는 모든 이벤트 핸들러에 시간 측정 부담을 더하고, ON_DEMAND는 유휴 상태에서 그 비용을 없애지만 기록에 공백을 남기며, DUTY_CYCLE은 주기적인 공백을 작은 반복 비용과 맞바꿉니다."
+summary = "리스너 시간 측정 래퍼를 설치하는 시점을 정합니다: ALWAYS는 항상 설치된 상태로 유지하고, ON_DEMAND는 모니터, 지도, 자리표시자 또는 웹 뷰어가 이벤트 데이터를 읽는 동안에만 설치하며, DUTY_CYCLE은 추가로 주기적인 측정 창을 엽니다."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.sampleractivitywindowms]
+impact = "값이 높을수록 뷰어가 떠난 뒤에도 계측을 더 오래 유지하고, 값이 낮을수록 더 빨리 제거합니다."
+summary = "요청 시 모드와 주기 모드에서 마지막 이벤트 데이터 읽기 이후 래퍼가 제거되기까지의 밀리초입니다."
 
 [config.documentation.annotation.art.arcane.react.core.controller.historycontroller]
 description = "React 샘플러를 한 번 수집하고 압축된 과거 원격 측정 데이터를 저장하며 제한된 시간 범위 쿼리를 처리합니다."
@@ -3544,8 +3567,8 @@ biletools_watched_jars = "BileTools 감시 Jar"
 block_entities = "블록 엔티티"
 block_entities_ticking = "틱 처리 블록 엔티티"
 bukkit_pending_tasks = "대기 중인 작업"
-chunk_gen_ms = "청크 Gen Ms"
-chunk_load_ms = "청크 로드 Ms"
+chunk_gen_listener_ms = "청크 Gen 리스너 Ms"
+chunk_load_listener_ms = "청크 로드 리스너 Ms"
 chunk_tickets = "청크 티켓"
 chunk_unloads = "청크 언로드"
 chunks = "청크"
@@ -3570,7 +3593,6 @@ gc_time_percent = "Gc 시간 퍼센트"
 gloss_animations = "Gloss 애니메이션"
 gloss_boards = "Gloss 스코어보드"
 gloss_bubbles = "Gloss 채팅 말풍선"
-gloss_builder_server = "Gloss 빌더 서버"
 gloss_display_entities = "Gloss 디스플레이 엔티티"
 gloss_emoji = "Gloss 이모지 치환"
 gloss_holograms = "Gloss 홀로그램"
@@ -3605,7 +3627,7 @@ hopper_event_span = "호퍼 이벤트 시간 범위"
 incident_score = "의욕심"
 iris_chunks_per_second = "초당 Iris 청크"
 iris_generation_total_ms = "Iris 세대 총 Ms"
-iris_pregen_queue = "Iris Pregen 퀴"
+iris_pregen_queue = "Iris 사전 생성 처리 중"
 iris_pregen_throughput = "Iris Pregen 처리량"
 jvm_threads = "JVM 스레드"
 lazy_gravity_skipped = "Lazy Gravity를 건너 뛰기"
@@ -3650,10 +3672,13 @@ villagers = "주민"
 world_save_event_interval = "월드 저장 이벤트 간격"
 worlds = "월드"
 wormholes_block_changes = "Wormholes 블록 변경"
+wormholes_block_entities = "Wormholes 블록 엔티티"
 wormholes_compression = "Wormholes 압축"
 wormholes_packets = "Wormholes 패킷"
 wormholes_peer_rtt = "Wormholes 피어 RTT"
 wormholes_peers = "Wormholes 피어"
+wormholes_plate_builds = "Wormholes 플레이트 생성"
+wormholes_plate_bytes = "Wormholes 플레이트 메모리"
 wormholes_portals = "Wormholes 포털"
 wormholes_projection_observers = "Wormholes 프로젝트 관찰자"
 wormholes_projection_render_ms = "Wormholes 프로젝트 렌더링 Ms"
@@ -3725,7 +3750,7 @@ adapt_ability_ops = "Adapt 분당 작업(config로 선택된 상태 adaptAbility
 adapt_cache_hit_ratio = "활성 레벨 캐시에서 처리된 능력 레벨 검사의 비율."
 adapt_check_latency = "캐시되지 않은 능력 가드 검사당 평균 마이크로초."
 adapt_event_ops = "분당 적응 이벤트 핸들러 호출."
-adapt_fx_packets = "현재 FX 예산 틱에서 소비된 파티클 패킷."
+adapt_fx_packets = "지난 1초 동안 FX 예산 틱당 소비된 평균 파티클 패킷."
 adapt_fx_shed_band = "FX 품질 저감 단계. 0은 최고 품질, 4는 최대 저감입니다."
 adapt_fx_timelines = "이펙트 엔진에서 재생 중인 라이브 FX 타임라인."
 adapt_learned_adaptations = "온라인 플레이어 한 명 이상이 활성화한 고유 적응."
@@ -3748,8 +3773,8 @@ biletools_watched_jars = "핫 리로드 감시자가 추적하는 플러그인 J
 block_entities = "모든 월드에 로드된 블록 엔티티."
 block_entities_ticking = "모든 월드에서 매 틱마다 처리되는 블록 엔티티."
 bukkit_pending_tasks = "모든 플러그인에서 Bukkit 스케줄러 실행을 기다리는 작업."
-chunk_gen_ms = "밀리초에 청크 생성 지연시간."
-chunk_load_ms = "밀리초에 청크 로드 지연시간."
+chunk_gen_listener_ms = "새로 생성된 청크의 로드 이벤트마다 다른 플러그인의 리스너가 소비하는 메인 스레드 밀리초."
+chunk_load_listener_ms = "각 청크 로드 이벤트에서 다른 플러그인의 리스너가 소비하는 메인 스레드 밀리초."
 chunk_tickets = "플러그인 청크 티켓으로 고정된 청크."
 chunk_unloads = "모든 월드에서 초당 언로드되는 청크 수."
 chunks = "청크 수치가 니다."
@@ -3771,10 +3796,9 @@ fluid = "유체 업데이트 활동률."
 fluid_event_span = "각 틱의 첫 유체 흐름 콜백부터 마지막 콜백까지의 실제 경과 시간."
 gc_pause_p95 = "95 의 쓰레기 수집 일시 중지 기간."
 gc_time_percent = "시간에 소요되는 시간의 퍼센트 GC runtime에 관계되는."
-gloss_animations = "현재 등록되어 동작 중인 텍스트 애니메이션."
+gloss_animations = "현재 애니메이션 중인 홀로그램 텍스트 대상."
 gloss_boards = "현재 플레이어에게 표시되는 스코어보드 사이드바."
 gloss_bubbles = "초당 플레이어 위에 생성되는 채팅 말풍선."
-gloss_builder_server = "웹 빌더 서버 실행 여부. 1이면 온라인입니다."
 gloss_display_entities = "홀로그램용으로 등록된 패킷 전용 디스플레이 엔티티."
 gloss_emoji = "초당 적용되는 채팅 이모지 치환."
 gloss_holograms = "로드된 청크에서 현재 활성화된 영구 텍스트 홀로그램."
@@ -3809,7 +3833,7 @@ hopper_event_span = "각 틱의 첫 호퍼 전송 콜백부터 마지막 콜백�
 incident_score = "복합 압력 메트릭 샘플러에서 만들어진 컴포지트 인센스 득점."
 iris_chunks_per_second = "결합된 Iris 엔진 청크 생성 처리량."
 iris_generation_total_ms = "Worst 활동 Iris- 세계 회전 세대 시간."
-iris_pregen_queue = "Iris 먼 pregen 큐 깊이."
+iris_pregen_queue = "Iris 사전 생성기의 처리 중인 청크 요청 수."
 iris_pregen_throughput = "Iris 프리제너터 처리량은 청크에 초당."
 jvm_threads = "플러그인과 서버 풀을 포함한 활성 JVM 스레드."
 lazy_gravity_skipped = "틱는 느슨한 중력에 의해 점프될 수 있는 것으로 예측되었습니다."
@@ -3854,10 +3878,13 @@ villagers = "모든 월드에 로드된 주민과 떠돌이 상인."
 world_save_event_interval = "한 월드에서 연속된 월드 저장 이벤트 사이의 경과 시간."
 worlds = "서버에 현재 로드된 월드."
 wormholes_block_changes = "Wormholes 통합 브리지를 통해 출판된 블록 변경 사항."
+wormholes_block_entities = "초당 시청자에게 전송되는 투영 블록 엔티티 업데이트."
 wormholes_compression = "발신 와이어 압축 비율. 1.0에 가까우면 사전이 오래된 것입니다."
 wormholes_packets = "Wormholes 통합 브리지를 통해 출판 된 투사 패킷 처리량."
 wormholes_peer_rtt = "연결된 피어 서버까지의 최악 왕복 지연 시간."
 wormholes_peers = "현재 Wormholes 메시에 연결된 원격 서버."
+wormholes_plate_builds = "초당 생성되는 투영 뷰 플레이트."
+wormholes_plate_bytes = "캐시된 투영 뷰 플레이트가 차지하는 메모리."
 wormholes_portals = "의 특징 Wormholes 통합 브리지를 통해 출판된 포털 카운트."
 wormholes_projection_observers = "현재 관찰 선수 Wormholes 프로젝트"
 wormholes_projection_render_ms = "Wormholes 프로젝션 렌더링 시간."
@@ -3991,6 +4018,7 @@ idle = "의 Idle"
 idle_average = "아이들 Avg"
 idle_maximum = "Idle 최대"
 idle_minimum = "아이들 민"
+in_flight = "처리 중"
 incident = "의정부"
 jobs = "의정부"
 last_reload = "최근 리로드"

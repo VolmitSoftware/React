@@ -38,8 +38,8 @@ class ChunksScreen extends StatelessWidget {
     final SamplerSample? chunks = snapshot.sampler('chunks');
     final SamplerSample? chunksLoaded = snapshot.sampler('chunks-loaded');
     final SamplerSample? chunksGenerated = snapshot.sampler('chunks-generated');
-    final SamplerSample? chunkLoadMs = snapshot.sampler('chunk-load-ms');
-    final SamplerSample? chunkGenMs = snapshot.sampler('chunk-gen-ms');
+    final SamplerSample? chunkLoadMs = snapshot.sampler('chunk-load-listener-ms');
+    final SamplerSample? chunkGenMs = snapshot.sampler('chunk-gen-listener-ms');
     final SamplerSample? worldSaveEventInterval = snapshot.sampler(
       'world-save-event-interval',
     );
@@ -53,11 +53,11 @@ class ChunksScreen extends StatelessWidget {
 
     final List<(String, List<double>)> timeSeries = <(String, List<double>)>[
       (
-        reactorText(ReactorText.chunksLoadMs),
+        reactorText(ReactorText.chunksLoadListenerMs),
         chunkLoadMs?.history ?? const <double>[],
       ),
       (
-        reactorText(ReactorText.chunksGenMs),
+        reactorText(ReactorText.chunksGenListenerMs),
         chunkGenMs?.history ?? const <double>[],
       ),
     ];
@@ -67,7 +67,7 @@ class ChunksScreen extends StatelessWidget {
       subtitle: reactorText(ReactorText.chunksSubtitle),
       children: <Widget>[
         SectionPanel(
-          label: reactorText(ReactorText.chunksLoadGenTime),
+          label: reactorText(ReactorText.chunksListenerTime),
           children: <Widget>[
             TimeseriesChart(series: timeSeries, height: 160),
             statGrid(<Widget>[
@@ -84,11 +84,11 @@ class ChunksScreen extends StatelessWidget {
                 sample: chunksGenerated,
               ),
               StatTile(
-                label: reactorText(ReactorText.chunksLoadTime),
+                label: reactorText(ReactorText.chunksLoadListenerTime),
                 sample: chunkLoadMs,
               ),
               StatTile(
-                label: reactorText(ReactorText.chunksGenTime),
+                label: reactorText(ReactorText.chunksGenListenerTime),
                 sample: chunkGenMs,
               ),
             ]),

@@ -241,7 +241,7 @@ abstract class FeatureIrisChunkSharePieBase extends ReactFeature implements List
     }
 
     try {
-      return displayName(chunk.getBlock(8, y, 8).getBiome().key().value());
+      return displayName(chunk.getBlock(8, y, 8).getBiome().getKey().getKey());
     } catch (Throwable ignored) {
       return ReactLanguage.raw(RendererMessages.PIE_UNKNOWN);
     }

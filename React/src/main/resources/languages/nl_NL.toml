@@ -1011,8 +1011,8 @@ impact = "Hogere waarden schone oude staat sneller met hogere CPU barsten; lager
 summary = "Maximale chunk-statusinscripties die per onderhoudscyclus in chunk-quarantine worden gecontroleerd."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkquarantine.field.maxtrackedchunks]
-impact = "Hogere waarden maken meer doorvoer mogelijk voor interventie; lagere waarden maken mitigatie agressiever."
-summary = "Maximale chunks-tracked code toegestaan door chunk Quarantine."
+impact = "Hogere waarden bewaren scores van meer chunks tegen weinig geheugen; lagere waarden verwijderen minder actieve chunks eerder en zetten hun scores terug."
+summary = "Maximaal aantal chunks dat de chunkquarantaine bijhoudt; bij het maximum wordt de chunk met de oudste activiteit verwijderd."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkquarantine.field.onlyduringpressure]
 impact = "Dit gedrag toepassen; dit pad inactief houden kan niet worden uitgevoerd."
@@ -1101,11 +1101,11 @@ impact = "Langere duur onderdrukt een problematisch onderdeel langer; kortere du
 summary = "Duur van circuitbegrenzing in milliseconden."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward]
-description = "Configuratie voor Crop Fast Forward functie. Wanneer een chunk-overschrijding van de slapende (no nabijgelegen speler voor een lange tijd) naar actieve (player benaderd of chunk herladen), deze functie loopt oogst en planten blokken één keer en bevordert hun groei met een bedrag proportioneel aan de slaapduur zodat spelers niet zien bevroren boerderijen na terugkeer. blijft inactief tijdens hoge belasting incidenten."
+description = "Configuratie voor de Crop Fast Forward-functie. De server laat gewassen alleen groeien in chunks binnen de simulatieafstand van een speler, daarom houdt deze functie bij hoe lang elke geladen chunk buiten die afstand doorbrengt. Wanneer een speler terugkomt binnen het actieve bereik, loopt de functie eenmaal door de gewas- en jonge-boomblokken van de chunk en laat ze met die tijd doorgroeien, zodat spelers bij terugkomst geen bevroren boerderijen zien. Uitstaande groei vervalt wanneer een chunk wordt ontladen. Blijft inactief tijdens incidenten met hoge belasting."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.activerange]
-impact = "Grotere waarden gaan sneller verder in chunks eerder; kleinere waarden vertragen totdat spelers dichterbij komen."
-summary = "Player proximity range (blocks) die een chunk als actief indelt. Binnen dit bereik, slaperige tracking resets en eventuele openstaande snel-voorwaartsbranden."
+impact = "Grotere waarden passen uitstaande groei eerder toe op verder gelegen chunks; kleinere waarden wachten tot spelers dichterbij komen."
+summary = "Afstand van de speler (in blokken) tot de middelste kolom van een chunk waarbinnen de uitstaande versnelling wordt toegepast. Of een chunk actief is, volgt de simulatieafstand van de wereld."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.engageonincident]
 impact = "Hogere waarden blijven snel vooruit draaien tijdens lichtincidenten; lagere waarden laten het eerder zwijgen."
@@ -1128,8 +1128,8 @@ impact = "Hogere waarden bedekken meer terrein met meer geheugen; lagere waarden
 summary = "Maximale chunks-tracking over alle werelden voordat de oudste chunks wordt verwijderd."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.minelapsedticks]
-impact = "Hogere waarden slaan goedkope recente wakkeren over; lagere waarden fast-forward zelfs korte slaaptijd stretches."
-summary = "Minimaal slaperig tijd (ticks) voordat een wake wordt geactiveerd, gaat snel vooruit. Hieronder wordt de chunk als nog warm behandeld."
+impact = "Hogere waarden slaan korte afwezigheden over; lagere waarden versnellen ook korte periodes buiten de simulatieafstand."
+summary = "Minimale tijd (in ticks) die een chunk buiten de simulatieafstand moet doorbrengen voordat hij wordt versneld. Kortere afwezigheden worden genegeerd."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.releaseonincident]
 impact = "Hogere waarden hervatten eerder na een rustigering; lagere waarden houden langer voor stabiliteit in stand."
@@ -1810,9 +1810,13 @@ summary = "Hoofdevaluatie-interval voor de Iris terrein golfbeveiliging in milli
 impact = "Hogere waarden leiden later tot mitigatie; lagere waarden veroorzaken eerder en agressiever."
 summary = "Drempelwaarde voor de toepassing van de drempel Iris generatietijd in de Iris terrein golf guard."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregenqueue]
-impact = "Hogere waarden leiden later tot mitigatie; lagere waarden veroorzaken eerder en agressiever."
-summary = "Triggerdrempel voor trigger iris pregen wachtrij in Iris terrein golfbeveiliging."
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregeninflight]
+impact = "Hogere waarden activeren de bewaking alleen wanneer de pregeneratie van de wereld bijna op volle gelijktijdigheid draait; lagere waarden activeren haar ook bij lichtere last."
+summary = "Lopende chunkverzoeken van de Iris-pregenerator voor deze wereld die de Iris-terreinpiekbewaking activeren zodra de ticktijd ook triggerIrisPregenTickMS bereikt; waarden worden begrensd tot 1..256."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregentickms]
+impact = "Hogere waarden laten de pregeneratie doorlopen zonder spelers te beperken tot de server verder achterloopt; lagere waarden beperken chunkgeneratie door spelers eerder terwijl een pregeneratie loopt."
+summary = "Ticktijddrempel die ook bereikt moet zijn voordat lopende verzoeken van de Iris-pregenerator de Iris-terreinpiekbewaking activeren (milliseconden); waarden worden begrensd tot 1..1000."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "Hogere waarden vertragen activering of uitgang; lagere waarden maken deze drempel gemakkelijker te overschrijden."
@@ -2441,9 +2445,9 @@ summary = "Adapt sessiebelastingdrempel die incidentbehandeling in trinity-incid
 impact = "Hogere waarden leiden later tot mitigatie; lagere waarden veroorzaken eerder en agressiever."
 summary = "Drempelwaarde voor het invoeren van de incidentscore in drie-eenheidsincidentmodus."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririsqueue]
-impact = "Hogere waarden verhogen gebufferd werk of burst toelage; lagere waarden scherpen het strooien."
-summary = "Voer de limiet van de iris wachtrij in die gebruikt wordt door drie-eenheid incident modus."
+[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririspregeninflight]
+impact = "Hogere waarden tellen Iris-druk alleen wanneer de pregenerator bijna op volle gelijktijdigheid draait; lagere waarden tellen ook lichtere pregeneratielast mee."
+summary = "Lopende chunkverzoeken van de Iris-pregenerator die in de Trinity-incidentmodus als Iris-druk tellen; waarden worden begrensd tot 1..256."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.entertickms]
 impact = "Hogere waarden vertragen activering of uitgang; lagere waarden maken deze drempel gemakkelijker te overschrijden."
@@ -2847,6 +2851,25 @@ summary = "Stuurt hotload wijzigingen samenvattingen naar online operators."
 [config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms]
 impact = "Lagere waarden detecteren ontvangen gebeurtenissen eerder; automatische wijzigingen worden nog steeds hoogstens eenmaal per drie seconden gebundeld toegepast."
 summary = "Interval voor het opvragen van bestandssysteemgebeurtenissen in milliseconden."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller]
+description = "Meet de tijd van eventhandlers per plugin door geregistreerde listeners te omhullen zolang de instrumentatie actief is."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleonms]
+impact = "Langere vensters leveren meer vastgelegde metingen per periode tegen hogere terugkerende kosten."
+summary = "Lengte in milliseconden van elk periodiek meetvenster in de cyclusmodus."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleperiodms]
+impact = "Kortere perioden leggen eventgegevens vaker vast en kosten meer; langere perioden laten bredere gaten in de geschiedenis achter."
+summary = "Milliseconden tussen de starts van de periodieke meetvensters in de cyclusmodus."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.instrumentation]
+impact = "ALWAYS belast elke eventhandler met meetoverhead; ON_DEMAND verwijdert die kosten in rust maar laat gaten in de geschiedenis achter; DUTY_CYCLE ruilt periodieke gaten in voor kleine terugkerende kosten."
+summary = "Bepaalt wanneer de tijdmetende omhulsels voor listeners worden geïnstalleerd: ALWAYS houdt ze geïnstalleerd, ON_DEMAND installeert ze alleen zolang een monitor, kaart, plaatshouder of webkijker eventgegevens leest, en DUTY_CYCLE opent daarnaast een periodiek meetvenster."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.sampleractivitywindowms]
+impact = "Hogere waarden houden de instrumentatie langer geïnstalleerd nadat een kijker vertrekt; lagere waarden verwijderen haar eerder."
+summary = "Milliseconden na de laatste lezing van eventgegevens voordat de omhulsels worden verwijderd in de modus op aanvraag en de cyclusmodus."
 
 [config.documentation.annotation.art.arcane.react.core.controller.historycontroller]
 description = "Legt de React-samplers eenmaal vast, bewaart gecomprimeerde historische telemetrie en verwerkt begrensde tijdsbereikquery's."
@@ -3544,8 +3567,8 @@ biletools_watched_jars = "BileTools Bewaakte jars"
 block_entities = "Blokentiteiten"
 block_entities_ticking = "Tickende blokentiteiten"
 bukkit_pending_tasks = "Wachtende taken"
-chunk_gen_ms = "chunk Gen Ms"
-chunk_load_ms = "chunk-laden Ms"
+chunk_gen_listener_ms = "chunk Gen Listener Ms"
+chunk_load_listener_ms = "chunk-laden Listener Ms"
 chunk_tickets = "Chunk-tickets"
 chunk_unloads = "Chunk-ontladingen"
 chunks = "chunks"
@@ -3570,7 +3593,6 @@ gc_time_percent = "Gc tijdpercentage"
 gloss_animations = "Gloss Animaties"
 gloss_boards = "Gloss Scoreborden"
 gloss_bubbles = "Gloss Chatballonnen"
-gloss_builder_server = "Gloss Bouwserver"
 gloss_display_entities = "Gloss Display-entiteiten"
 gloss_emoji = "Gloss Emoji-vervangingen"
 gloss_holograms = "Gloss Hologrammen"
@@ -3605,7 +3627,7 @@ hopper_event_span = "Tijdspanne trechtergebeurtenissen"
 incident_score = "Incidentscore"
 iris_chunks_per_second = "Iris chunks per seconde"
 iris_generation_total_ms = "Iris Generatie Totaal"
-iris_pregen_queue = "Iris Pregen-wachtrij"
+iris_pregen_queue = "Iris Pregen onderweg"
 iris_pregen_throughput = "Iris Pregen Throughput"
 jvm_threads = "JVM-threads"
 lazy_gravity_skipped = "Lazy Gravity overgeslagen"
@@ -3650,10 +3672,13 @@ villagers = "Dorpelingen"
 world_save_event_interval = "Interval wereldopslaggebeurtenissen"
 worlds = "Werelden"
 wormholes_block_changes = "Wormholes Blokwijzigingen"
+wormholes_block_entities = "Wormholes Blokentiteiten"
 wormholes_compression = "Wormholes Compressie"
 wormholes_packets = "Wormholes Pakketten"
 wormholes_peer_rtt = "Wormholes Peer-RTT"
 wormholes_peers = "Wormholes Peerservers"
+wormholes_plate_builds = "Wormholes Plaatopbouw"
+wormholes_plate_bytes = "Wormholes Plaatgeheugen"
 wormholes_portals = "Wormholes Portalen"
 wormholes_projection_observers = "Wormholes Projectiewaarnemers"
 wormholes_projection_render_ms = "Wormholes Projectie-render"
@@ -3725,7 +3750,7 @@ adapt_ability_ops = "Adapt vermogensbewerkingen per minuut (modus geselecteerd d
 adapt_cache_hit_ratio = "Aandeel vermogensniveaucontroles geleverd vanuit de actieve-niveaucache."
 adapt_check_latency = "Gemiddelde microseconden per niet-gecachte vermogenscontrole."
 adapt_event_ops = "Aanroepen van adaptatie-gebeurtenishandlers per minuut."
-adapt_fx_packets = "Deeltjespakketten verbruikt in de huidige FX-budgettick."
+adapt_fx_packets = "Gemiddeld aantal deeltjespakketten per FX-budgettick in de afgelopen seconde."
 adapt_fx_shed_band = "FX-degradatieband; nul is volledige kwaliteit, vier is zwaarste afbouw."
 adapt_fx_timelines = "Live FX-tijdlijnen die afspelen in de effectenmotor."
 adapt_learned_adaptations = "Verschillende adaptaties geactiveerd door minstens één online speler."
@@ -3748,8 +3773,8 @@ biletools_watched_jars = "Plugin-jars gevolgd door de hot-reload-bewaker."
 block_entities = "Blokentiteiten geladen in alle werelden."
 block_entities_ticking = "Blokentiteiten die elke tick ticken in alle werelden."
 bukkit_pending_tasks = "Taken van alle plugins die in de Bukkit-scheduler wachten."
-chunk_gen_ms = "chunk generatie latency in milliseconden."
-chunk_load_ms = "chunk-latentie in milliseconden."
+chunk_gen_listener_ms = "Hoofdthread-milliseconden die listeners van andere plugins besteden aan het laadevent van elke nieuw gegenereerde chunk."
+chunk_load_listener_ms = "Hoofdthread-milliseconden die listeners van andere plugins besteden aan elk chunk-laadevent."
 chunk_tickets = "Chunks die geladen blijven door chunk-tickets van plugins."
 chunk_unloads = "Chunks per seconde ontladen in alle werelden."
 chunks = "chunk-telling is gecontroleerd."
@@ -3771,10 +3796,9 @@ fluid = "Vocht-update activiteitssnelheid."
 fluid_event_span = "Werkelijke tijd van de eerste tot de laatste callback voor vloeistofstroming in elke tick."
 gc_pause_p95 = "95e percentiele afvalverzameling pauze duur."
 gc_time_percent = "Percentage van de tijd besteed aan GC De Commissie heeft de Raad verzocht om een voorstel voor een richtlijn betreffende de onderlinge aanpassing van de wetgevingen der Lid-Staten inzake het toelaatbare geluidsvermogensniveau van motorvoertuigen."
-gloss_animations = "Momenteel geregistreerde en tikkende tekstanimaties."
+gloss_animations = "Hologramtekstdoelen die momenteel worden geanimeerd."
 gloss_boards = "Scorebord-zijbalken die momenteel aan spelers worden getoond."
 gloss_bubbles = "Chatballonnen die per seconde boven spelers verschijnen."
-gloss_builder_server = "Of de webbouwserver draait; één betekent online."
 gloss_display_entities = "Alleen-pakket display-entiteiten geregistreerd voor hologrammen."
 gloss_emoji = "Chat-emojivervangingen die per seconde worden toegepast."
 gloss_holograms = "Persistente teksthologrammen die actief zijn in geladen chunks."
@@ -3809,7 +3833,7 @@ hopper_event_span = "Werkelijke tijd van de eerste tot de laatste callback voor 
 incident_score = "Composit incident score gebouwd uit meerdere druk metrieklezers."
 iris_chunks_per_second = "Combineerde Iris-engine chunk generatie doorvoer."
 iris_generation_total_ms = "Slechtst actief Iris- Wereldse generatietijd."
-iris_pregen_queue = "Iris de afstandswachtrijdiepte."
+iris_pregen_queue = "Lopende chunkverzoeken van de Iris-pregenerator."
 iris_pregen_throughput = "Iris-pregenerator doorvoer in chunks per seconde."
 jvm_threads = "Actieve JVM-threads inclusief plugin- en serverpools."
 lazy_gravity_skipped = "ticks-beweging met valblokken, geprojecteerd als overstabbaar door lui zwaartekracht."
@@ -3854,10 +3878,13 @@ villagers = "Dorpelingen en rondtrekkende handelaren geladen in alle werelden."
 world_save_event_interval = "Verstreken tijd tussen opeenvolgende opslaggebeurtenissen van dezelfde wereld."
 worlds = "Werelden die momenteel op de server geladen zijn."
 wormholes_block_changes = "Wormholes verwachte blokwijzigingen gepubliceerd via de integratiebrug."
+wormholes_block_entities = "Geprojecteerde blokentiteit-updates die per seconde naar kijkers worden gestuurd."
 wormholes_compression = "Uitgaande compressieverhouding; bijna 1.0 duidt op een verouderd woordenboek."
 wormholes_packets = "Wormholes projectiepakket doorvoer gepubliceerd via de integratie brug."
 wormholes_peer_rtt = "Slechtste retourlatentie naar een verbonden peerserver."
 wormholes_peers = "Externe servers die momenteel verbonden zijn in het Wormholes-meshnetwerk."
+wormholes_plate_builds = "Projectieweergaveplaten die per seconde worden opgebouwd."
+wormholes_plate_bytes = "Geheugen dat gecachte projectieweergaveplaten innemen."
 wormholes_portals = "Actief Wormholes portaal aantal gepubliceerd via de integratie brug."
 wormholes_projection_observers = "Spelers die momenteel observeren Wormholes projecties."
 wormholes_projection_render_ms = "Wormholes projectieweergavetijd."
@@ -3991,6 +4018,7 @@ idle = "Inactief"
 idle_average = "Inactief"
 idle_maximum = "Stationair max"
 idle_minimum = "Inactief min."
+in_flight = "Onderweg"
 incident = "Incident"
 jobs = "Taken"
 last_reload = "Laatste herlaadactie"

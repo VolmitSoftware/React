@@ -22,6 +22,7 @@ package art.arcane.react.core.gui;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.GuiMessages;
 import art.arcane.react.util.common.scheduling.J;
+import art.arcane.react.util.common.scheduling.PromptWait;
 import art.arcane.react.util.data.TinyColor;
 import art.arcane.react.util.inventorygui.CustomUIElement;
 import art.arcane.react.util.inventorygui.UIStaticDecorator;
@@ -116,8 +117,13 @@ public class ColorPickerGUI {
       });
     });
 
-    while (!picked.get()) {
-      J.sleep(250);
+    PromptWait.Outcome outcome = PromptWait.await(picked::get);
+    if (outcome == PromptWait.Outcome.INTERRUPTED) {
+      Thread.currentThread().interrupt();
+    }
+    if (outcome != PromptWait.Outcome.COMPLETED) {
+      picked.set(true);
+      return null;
     }
 
     return result.get();
@@ -126,6 +132,10 @@ public class ColorPickerGUI {
   public static void pickCustomColor(Player p, AtomicBoolean picked, AtomicReference<Color> result) {
     if (Bukkit.isPrimaryThread()) {
       throw new RuntimeException("Cannot open color picker on main thread");
+    }
+
+    if (picked.get()) {
+      return;
     }
 
     AtomicBoolean refresh = new AtomicBoolean(false);
@@ -259,9 +269,16 @@ public class ColorPickerGUI {
 
             J.a(() -> {
               ReactLanguage.send(p, GuiMessages.COLOR_PROMPT_HEX);
-              String c = TextInputGui.captureText(p);
-              if (c != null) {
-                result.set(new TinyColor(c).getColor());
+              String c = TextInputGui.captureText(p, picked::get);
+              if (c == null) {
+                result.set(null);
+                picked.set(true);
+                return;
+              }
+
+              Color parsed = parseHex(c);
+              if (parsed != null) {
+                result.set(parsed);
               }
               J.a(() -> pickCustomColor(p, picked, result));
             });
@@ -274,5 +291,15 @@ public class ColorPickerGUI {
         }
       });
     });
+  }
+
+  private static Color parseHex(String input) {
+    String trimmed = input.trim();
+    String hex = trimmed.startsWith("#") ? trimmed : "#" + trimmed;
+    try {
+      return new TinyColor(hex).getColor();
+    } catch (NumberFormatException invalid) {
+      return null;
+    }
   }
 }

@@ -45,7 +45,7 @@ public class MetricsResourceTest {
   void snapshotUsesAuthoritativeCachedValues() {
     SampleController controller = mock(SampleController.class);
     HistoryController history = mock(HistoryController.class);
-    when(history.latest()).thenReturn(MetricSnapshot.of(
+    when(history.latestObserved()).thenReturn(MetricSnapshot.of(
         17L,
         1_000L,
         List.of(new MetricSnapshotValue("tick-time", "Tick Time", "ms", 42D, "42 ms", true))
@@ -81,6 +81,7 @@ public class MetricsResourceTest {
   void historyReturns404WhenEveryRequestedIdIsUnknown() {
     HistoryController history = mock(HistoryController.class);
     when(history.latest()).thenReturn(MetricSnapshot.empty());
+    when(history.latestObserved()).thenReturn(MetricSnapshot.empty());
     when(history.effectiveMaxQuerySeries()).thenReturn(16);
     when(history.effectiveMaxQueryPoints()).thenReturn(4_096);
     when(history.effectiveQueryPagePoints()).thenReturn(256);

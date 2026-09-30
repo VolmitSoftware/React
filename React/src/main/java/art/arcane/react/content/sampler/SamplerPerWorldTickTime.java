@@ -205,7 +205,7 @@ public class SamplerPerWorldTickTime extends ReactCachedSampler {
 
     private void push(double share) {
       rolling.put(share);
-      lastMean = rolling.getAverage();
+      lastMean = share;
       lastMax = rolling.getMax();
     }
   }

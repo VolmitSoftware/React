@@ -47,7 +47,6 @@ import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.block.data.BlockData;
-import org.bukkit.entity.AnimalTamer;
 import org.bukkit.entity.Ageable;
 import org.bukkit.entity.Animals;
 import org.bukkit.entity.Chicken;
@@ -73,6 +72,7 @@ import org.bukkit.event.entity.EntityRemoveEvent;
 import org.bukkit.event.entity.EntitySpawnEvent;
 import org.bukkit.event.entity.EntityTameEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.event.world.EntitiesLoadEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
@@ -141,6 +141,7 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
   public static final String ID = "mob-stacking";
   private static final NamespacedKey STACK_LABEL_KEY = new NamespacedKey("react", "mob-stack-label");
   private static final long PRESENTATION_REFRESH_MS = 5_000L;
+  private static final long QUIET_CHUNK_COOLDOWN_MS = 15_000L;
   private static final int MAX_CHUNK_SUBMISSIONS_PER_TICK = 64;
   static final int MAX_CHUNK_INSPECTIONS_PER_TICK = 128;
   private static final int MAX_INDEXED_ENTITIES = 65_536;
@@ -175,19 +176,23 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
   private transient final Map<ChunkWorkKey, ChunkWork> chunkWork = new ConcurrentHashMap<>();
   private transient final Map<UUID, IndexedStackEntity> indexedEntities = new ConcurrentHashMap<>();
   private transient final Map<ChunkWorkKey, Map<UUID, IndexedStackEntity>> indexedChunks = new ConcurrentHashMap<>();
+  private transient final Map<ChunkWorkKey, Long> quietChunks = new ConcurrentHashMap<>();
   private transient final Consumer<Entity> entityTickListener = this::onTick;
   private transient final AtomicLong lifecycleGeneration = new AtomicLong(0L);
   private transient final MobStackRecovery recovery = new MobStackRecovery(this);
+  private transient final MobStateAccess mobState;
   private transient volatile boolean active;
   private transient volatile StackableIndex stackableIndex;
+  private transient volatile long nextQuietSweepMs;
 
   public FeatureMobStacking() {
-    this(new GlossEntityOverlayIntegration());
+    this(new GlossEntityOverlayIntegration(), MobStateAccess.detect());
   }
 
-  FeatureMobStacking(GlossEntityOverlayIntegration glossEntityOverlays) {
+  FeatureMobStacking(GlossEntityOverlayIntegration glossEntityOverlays, MobStateAccess mobState) {
     super(ID);
     this.glossEntityOverlays = Objects.requireNonNull(glossEntityOverlays);
+    this.mobState = Objects.requireNonNull(mobState);
   }
 
   public static Set<EntityType> defaultStackableTypes() {
@@ -217,6 +222,7 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
     chunkWork.clear();
     indexedEntities.clear();
     indexedChunks.clear();
+    quietChunks.clear();
     presentationRefreshes.clear();
     rebuildStackableIndex();
     for (EntityType i : stackableTypes) {
@@ -406,27 +412,11 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
     }
 
     Tameable tameable = (Tameable) entity;
-    if (!ownerId.equals(resolveOwnerId(tameable))) {
+    if (!ownerId.equals(mobState.ownerId(tameable))) {
       return;
     }
 
     splitTamedStack(entity);
-  }
-
-  // Tameable#getOwnerUniqueId is paper-only; probe once, fall back to getOwner on spigot
-  private static volatile boolean ownerUniqueIdUnsupported;
-
-  private static UUID resolveOwnerId(Tameable tameable) {
-    if (!ownerUniqueIdUnsupported) {
-      try {
-        return tameable.getOwnerUniqueId();
-      } catch (NoSuchMethodError e) {
-        ownerUniqueIdUnsupported = true;
-      }
-    }
-
-    AnimalTamer owner = tameable.getOwner();
-    return owner == null ? null : owner.getUniqueId();
   }
 
   private boolean splitTamedStack(LivingEntity entity) {
@@ -616,15 +606,6 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
       }
     }
 
-    if (!hasSafeMergeState(la, li)) {
-      return false;
-    }
-
-    // Check if entities are stackable via config
-    if (skipCustomMobs && (CustomMobChecker.isCustom(a) || CustomMobChecker.isCustom(into))) {
-      return false;
-    }
-
     // Check if entities are marked as non-stackable
     if (a.hasMetadata("DoNotStack") || into.hasMetadata("DoNotStack")) {
       return false;
@@ -637,6 +618,15 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
 
     // Check stack count
     if (exceedsStackLimit(getStackCount(into), getStackCount(a), maxStackSize)) {
+      return false;
+    }
+
+    if (!hasSafeMergeState(la, li)) {
+      return false;
+    }
+
+    // Check if entities are stackable via config
+    if (skipCustomMobs && (CustomMobChecker.isCustom(a) || CustomMobChecker.isCustom(into))) {
       return false;
     }
 
@@ -700,7 +690,7 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
   }
 
   private boolean isItem(ItemStack item) {
-    return item != null && item.getType() != Material.AIR && !item.isEmpty();
+    return item != null && item.getType() != Material.AIR && item.getAmount() > 0;
   }
 
   private boolean hasUserCustomName(LivingEntity entity) {
@@ -732,14 +722,13 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
       return left.isPowered() == right.isPowered()
           && left.getMaxFuseTicks() == right.getMaxFuseTicks()
           && left.getExplosionRadius() == right.getExplosionRadius()
-          && !left.isIgnited() && !right.isIgnited()
+          && !mobState.isIgnited(left) && !mobState.isIgnited(right)
           && left.getFuseTicks() == 0 && right.getFuseTicks() == 0;
     }
     if (source instanceof Enderman left && target instanceof Enderman right) {
       return Objects.equals(left.getCarriedBlock(), right.getCarriedBlock())
           && left.getTarget() == null && right.getTarget() == null
-          && !left.isScreaming() && !right.isScreaming()
-          && !left.hasBeenStaredAt() && !right.hasBeenStaredAt();
+          && !mobState.isProvoked(left) && !mobState.isProvoked(right);
     }
     return true;
   }
@@ -753,12 +742,11 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
       right.setMaxFuseTicks(left.getMaxFuseTicks());
       right.setExplosionRadius(left.getExplosionRadius());
       right.setFuseTicks(0);
-      right.setIgnited(false);
+      mobState.clearIgnition(right);
     } else if (source instanceof Enderman left && target instanceof Enderman right) {
       BlockData carried = left.getCarriedBlock();
       right.setCarriedBlock(carried == null ? null : carried.clone());
-      right.setScreaming(left.isScreaming());
-      right.setHasBeenStaredAt(left.hasBeenStaredAt());
+      mobState.copyProvocation(left, right);
     }
   }
 
@@ -778,16 +766,16 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
     }
     if (source instanceof Cow left && target instanceof Cow right) {
       return Objects.equals(left.getVariant(), right.getVariant())
-          && Objects.equals(left.getSoundVariant(), right.getSoundVariant());
+          && mobState.sameSoundVariant(left, right);
     }
     if (source instanceof Chicken left && target instanceof Chicken right) {
       return Objects.equals(left.getVariant(), right.getVariant())
-          && Objects.equals(left.getSoundVariant(), right.getSoundVariant())
-          && left.isChickenJockey() == right.isChickenJockey();
+          && mobState.sameSoundVariant(left, right)
+          && mobState.isChickenJockey(left) == mobState.isChickenJockey(right);
     }
     if (source instanceof Pig left && target instanceof Pig right) {
       return Objects.equals(left.getVariant(), right.getVariant())
-          && Objects.equals(left.getSoundVariant(), right.getSoundVariant())
+          && mobState.sameSoundVariant(left, right)
           && left.hasSaddle() == right.hasSaddle()
           && left.getBoostTicks() == right.getBoostTicks()
           && left.getCurrentBoostTicks() == right.getCurrentBoostTicks();
@@ -799,15 +787,14 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
   private void copyFarmVariant(LivingEntity source, LivingEntity target) {
     if (source instanceof Cow left && target instanceof Cow right) {
       right.setVariant(left.getVariant());
-      right.setSoundVariant(left.getSoundVariant());
+      mobState.copySoundVariant(left, right);
     } else if (source instanceof Chicken left && target instanceof Chicken right) {
       right.setVariant(left.getVariant());
-      right.setSoundVariant(left.getSoundVariant());
-      right.setIsChickenJockey(left.isChickenJockey());
-      right.setEggLayTime(left.getEggLayTime());
+      mobState.copySoundVariant(left, right);
+      mobState.copyChickenState(left, right);
     } else if (source instanceof Pig left && target instanceof Pig right) {
       right.setVariant(left.getVariant());
-      right.setSoundVariant(left.getSoundVariant());
+      mobState.copySoundVariant(left, right);
       right.setSaddle(left.hasSaddle());
       right.setBoostTicks(left.getBoostTicks());
       right.setCurrentBoostTicks(left.getCurrentBoostTicks());
@@ -954,10 +941,24 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
     presentationRefreshes.remove(entity.getUniqueId());
   }
 
+  @EventHandler(priority = EventPriority.MONITOR)
+  public void on(EntitiesLoadEvent event) {
+    if (isEnabled() || !recovery.needsRearm()) {
+      return;
+    }
+    for (Entity entity : event.getEntities()) {
+      if (entity instanceof LivingEntity && getStackCount(entity) > 1) {
+        recovery.rearm();
+        return;
+      }
+    }
+  }
+
   @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
   public void on(EntitySpawnEvent e) {
     if (active && isStackableType(e.getEntityType())) {
-      markDirty(e.getEntity());
+      Entity entity = e.getEntity();
+      markDirty(entity, entity instanceof LivingEntity ? getStackCount(entity) : 1, true);
     }
   }
 
@@ -987,16 +988,18 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
       return;
     }
 
-    if (entity instanceof LivingEntity && (getStackCount(entity) > 1 || entity.hasMetadata("UniqueMobStack"))) {
+    boolean living = entity instanceof LivingEntity;
+    int stackCount = living ? getStackCount(entity) : 1;
+    if (living && (stackCount > 1 || entity.hasMetadata("UniqueMobStack"))) {
       Long lastRefresh = presentationRefreshes.get(entity.getUniqueId());
       if (lastRefresh == null || System.currentTimeMillis() - lastRefresh >= PRESENTATION_REFRESH_MS) {
         updateEntityCustomName(entity);
       }
     }
-    markDirty(entity);
+    markDirty(entity, stackCount, false);
   }
 
-  private void markDirty(Entity entity) {
+  private void markDirty(Entity entity, int stackCount, boolean force) {
     Location location = entity.getLocation();
     World world = location.getWorld();
     if (world == null) {
@@ -1005,10 +1008,42 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
 
     UUID worldId = world.getUID();
     long chunkKey = packChunkKey(location.getBlockX() >> 4, location.getBlockZ() >> 4);
-    indexEntity(entity, worldId, chunkKey);
+    ChunkWorkKey workKey = new ChunkWorkKey(worldId, chunkKey);
+    boolean changed = indexEntity(entity, workKey, stackCount);
+    if (!force && !changed && isQuiet(workKey)) {
+      return;
+    }
     Set<Long> pending = dirtyChunks.computeIfAbsent(worldId, ignored -> ConcurrentHashMap.newKeySet());
     pending.add(chunkKey);
     addCanonicalNeighborAnchors(worldId, chunkKey, pending);
+  }
+
+  private boolean isQuiet(ChunkWorkKey workKey) {
+    Long quietUntil = quietChunks.get(workKey);
+    if (quietUntil == null) {
+      return false;
+    }
+    if (quietUntil > System.currentTimeMillis()) {
+      return true;
+    }
+    quietChunks.remove(workKey, quietUntil);
+    return false;
+  }
+
+  private void recordPassOutcome(ChunkWorkKey workKey, int merges) {
+    if (merges > 0) {
+      quietChunks.remove(workKey);
+      return;
+    }
+    quietChunks.put(workKey, System.currentTimeMillis() + QUIET_CHUNK_COOLDOWN_MS);
+  }
+
+  private void pruneQuietChunks(long now) {
+    if (now < nextQuietSweepMs || quietChunks.isEmpty()) {
+      return;
+    }
+    nextQuietSweepMs = now + QUIET_CHUNK_COOLDOWN_MS;
+    quietChunks.values().removeIf(quietUntil -> quietUntil <= now);
   }
 
   @EventHandler
@@ -1035,34 +1070,52 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
     }
   }
 
-  private synchronized void indexEntity(Entity entity, UUID worldId, long chunkKey) {
+  private boolean indexEntity(Entity entity, ChunkWorkKey workKey, int stackCount) {
     UUID entityId = entity.getUniqueId();
-    IndexedStackEntity previous = indexedEntities.get(entityId);
-    ChunkWorkKey workKey = new ChunkWorkKey(worldId, chunkKey);
-    if (previous != null && previous.chunkKey().equals(workKey) && previous.reference().get() == entity) {
-      return;
-    }
-    if (previous == null && indexedEntities.size() >= MAX_INDEXED_ENTITIES) {
-      return;
+    if (isIndexedAt(indexedEntities.get(entityId), entity, workKey, stackCount)) {
+      return false;
     }
 
-    IndexedStackEntity indexed = new IndexedStackEntity(entityId, workKey, new WeakReference<>(entity));
-    indexedEntities.put(entityId, indexed);
-    if (previous != null && !previous.chunkKey().equals(workKey)) {
-      removeIndexedFromChunk(previous);
+    synchronized (this) {
+      IndexedStackEntity previous = indexedEntities.get(entityId);
+      if (isIndexedAt(previous, entity, workKey, stackCount)) {
+        return false;
+      }
+      if (previous == null && indexedEntities.size() >= MAX_INDEXED_ENTITIES) {
+        return true;
+      }
+
+      IndexedStackEntity indexed = new IndexedStackEntity(entityId, workKey, new WeakReference<>(entity), stackCount);
+      indexedEntities.put(entityId, indexed);
+      if (previous != null && !previous.chunkKey().equals(workKey)) {
+        removeIndexedFromChunk(previous);
+      }
+      indexedChunks.computeIfAbsent(workKey, ignored -> new ConcurrentHashMap<>()).put(entityId, indexed);
     }
-    indexedChunks.computeIfAbsent(workKey, ignored -> new ConcurrentHashMap<>()).put(entityId, indexed);
+    return true;
   }
 
-  private synchronized void removeIndexed(Entity entity) {
+  private static boolean isIndexedAt(IndexedStackEntity indexed, Entity entity, ChunkWorkKey workKey, int stackCount) {
+    return indexed != null
+        && indexed.stackCount() == stackCount
+        && indexed.chunkKey().equals(workKey)
+        && indexed.reference().get() == entity;
+  }
+
+  private void removeIndexed(Entity entity) {
     UUID entityId = entity.getUniqueId();
     if (entityId == null) {
       return;
     }
     presentationRefreshes.remove(entityId);
-    IndexedStackEntity indexed = indexedEntities.remove(entityId);
-    if (indexed != null) {
-      removeIndexedFromChunk(indexed);
+    if (!indexedEntities.containsKey(entityId)) {
+      return;
+    }
+    synchronized (this) {
+      IndexedStackEntity indexed = indexedEntities.remove(entityId);
+      if (indexed != null) {
+        removeIndexedFromChunk(indexed);
+      }
     }
   }
 
@@ -1114,6 +1167,7 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
       return;
     }
 
+    pruneQuietChunks(System.currentTimeMillis());
     if (dirtyChunks.isEmpty()) {
       return;
     }
@@ -1171,24 +1225,21 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
     if (claims.isEmpty()) {
       return;
     }
-    if (folia) {
-      for (ChunkClaim claim : claims) {
+    for (ChunkClaim claim : claims) {
+      if (folia) {
         submitFoliaChunkClaim(claim);
+      } else {
+        submitPaperChunkClaim(claim);
       }
-      return;
     }
+  }
 
+  private void submitPaperChunkClaim(ChunkClaim claim) {
     try {
-      J.s(() -> {
-        for (ChunkClaim claim : claims) {
-          runChunkClaim(claim);
-        }
-      });
+      J.s(() -> runChunkClaim(claim));
     } catch (Throwable throwable) {
       React.reportError(throwable);
-      for (ChunkClaim claim : claims) {
-        completeChunkClaim(claim, false);
-      }
+      completeChunkClaim(claim, false);
     }
   }
 
@@ -1282,6 +1333,7 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
       Entity[] chunkEntities = chunk.getEntities();
       Entity[] candidates = collectChunkCandidates(workKey, chunkX, chunkZ, chunkEntities);
       if (candidates.length < 2) {
+        recordPassOutcome(workKey, 0);
         return true;
       }
 
@@ -1293,6 +1345,7 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
     boolean completed = advanceChunkWork(work, J.isFoliaThreading());
     if (completed) {
       chunkWork.remove(workKey, work);
+      recordPassOutcome(workKey, work.merges);
     }
     return completed;
   }
@@ -1483,6 +1536,7 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
 
         if (merge(work.currentEntity, survivor)) {
           merged = true;
+          work.merges++;
           break;
         }
       }
@@ -1525,7 +1579,8 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
   private record IndexedStackEntity(
       UUID entityId,
       ChunkWorkKey chunkKey,
-      WeakReference<Entity> reference
+      WeakReference<Entity> reference,
+      int stackCount
   ) {
   }
 
@@ -1537,6 +1592,7 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
     private List<Location> survivorLocations;
     private int[] survivorProtection;
     private int scanCursor;
+    private int merges;
     private int bucketCursor;
     private int entityCursor;
     private int survivorCursor;
@@ -1608,6 +1664,7 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
     chunkWork.clear();
     indexedEntities.clear();
     indexedChunks.clear();
+    quietChunks.clear();
     presentationRefreshes.clear();
   }
 

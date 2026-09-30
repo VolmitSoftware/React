@@ -19,60 +19,36 @@
 
 package art.arcane.react.content.sampler;
 
-import art.arcane.react.api.event.layer.ServerTickEvent;
 import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Material;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.List;
-
-abstract class SamplerTickPercentileBase extends ReactCachedSampler implements Listener {
-  private final ArrayDeque<Double> tickDurations = new ArrayDeque<>();
+public abstract class SamplerTickPercentileBase extends ReactCachedSampler {
+  private final transient TickClock clock;
   private final double percentile;
   private final String suffix;
-  private int historyTicks = 1200;
-  private transient long lastTickMS = 0;
 
   protected SamplerTickPercentileBase(String id, double percentile, String suffix) {
+    this(id, percentile, suffix, TickClock.get());
+  }
+
+  protected SamplerTickPercentileBase(String id, double percentile, String suffix, TickClock clock) {
     super(id, 250);
+    this.clock = clock;
     this.percentile = percentile;
     this.suffix = suffix;
   }
 
   @Override
   public void start() {
-    synchronized (tickDurations) {
-      tickDurations.clear();
-    }
-    lastTickMS = 0L;
+    clock.acquire(this);
     super.start();
   }
 
-  @EventHandler(priority = EventPriority.MONITOR)
-  public void on(ServerTickEvent event) {
-    long now = System.currentTimeMillis();
-    if (lastTickMS > 0) {
-      double tickMS = Math.max(0D, now - lastTickMS);
-      synchronized (tickDurations) {
-        tickDurations.addLast(tickMS);
-        int historyLimit = Math.max(1, historyTicks);
-        while (tickDurations.size() > historyLimit) {
-          tickDurations.removeFirst();
-        }
-      }
-
-      onTickDuration(tickMS, now);
-    }
-
-    lastTickMS = now;
-  }
-
-  protected void onTickDuration(double tickMS, long atMS) {
+  @Override
+  public void stop() {
+    clock.release(this);
+    super.stop();
   }
 
   @Override
@@ -81,13 +57,13 @@ abstract class SamplerTickPercentileBase extends ReactCachedSampler implements L
   }
 
   @Override
-  public double onSample() {
-    List<Double> snapshot;
-    synchronized (tickDurations) {
-      snapshot = new ArrayList<>(tickDurations);
-    }
+  public boolean isSampleAvailable() {
+    return clock.snapshot().hasWorkTimes();
+  }
 
-    return SamplerMath.percentile(snapshot, percentile);
+  @Override
+  public double onSample() {
+    return clock.snapshot().percentile(percentile);
   }
 
   @Override

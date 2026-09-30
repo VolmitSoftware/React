@@ -1011,8 +1011,8 @@ impact = "Giá trị cao hơn làm sạch tình trạng cũ nhanh hơn với c�
 summary = "Số lượng nhập chunk tối đa được kiểm tra theo chu kỳ bảo trì trong phòng ngự chunk."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkquarantine.field.maxtrackedchunks]
-impact = "Các giá trị cao hơn cho phép nhiều thông qua trước khi can thiệp; các giá trị thấp hơn làm giảm nhẹ sự tích cực hơn."
-summary = "các chunk được theo dõi tối đa được phép bởi sự cách ly chunk."
+impact = "Giá trị cao hơn giữ điểm của nhiều chunk hơn với chi phí bộ nhớ nhỏ; giá trị thấp hơn loại bỏ sớm hơn các chunk ít hoạt động và đặt lại điểm của chúng."
+summary = "Số chunk tối đa mà cách ly chunk theo dõi; khi đạt giới hạn, chunk có hoạt động cũ nhất sẽ bị loại bỏ."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkquarantine.field.onlyduringpressure]
 impact = "Bật để áp dụng hành động này; tắt để giữ đường dẫn này bị động."
@@ -1101,11 +1101,11 @@ impact = "Thời gian dài hơn chặn thành phần có vấn đề lâu hơn; 
 summary = "Thời gian giới hạn mạch, tính bằng mili giây."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward]
-description = "Tính năng Crop Fast Forward: Khi một trình điều chỉnh chunk chuyển từ ( không có người chơi gần đó trong thời gian dài) đến (player hoạt động tiếp cận hoặc chunk reloaded), tính năng này đi bộ các khối cây trồng và cây cối một lần và thúc đẩy sự tăng trưởng của chúng tương xứng với thời gian ngủ để người chơi không thấy nông trại đông lạnh sau khi trở lại."
+description = "Cấu hình cho tính năng Crop Fast Forward. Máy chủ chỉ cho cây trồng phát triển trong các chunk nằm trong khoảng cách mô phỏng của người chơi, vì vậy tính năng này ghi lại thời gian mỗi chunk đã tải nằm ngoài khoảng cách đó. Khi người chơi quay lại phạm vi hoạt động, nó duyệt các khối cây trồng và cây non của chunk một lần và cho chúng phát triển thêm tương ứng với thời gian đó, để người chơi không thấy nông trại bị đứng yên khi quay lại. Phần tăng trưởng đang chờ bị hủy khi chunk được dỡ tải. Không hoạt động trong các sự cố tải cao."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.activerange]
-impact = "Các giá trị lớn hơn nhanh chóng tiến về phía trước các chunk sớm hơn; các giá trị nhỏ hơn trì hoãn cho đến khi người chơi bước gần hơn."
-summary = "Player proximity range (blocks) phân loại chunk như hoạt động. Trong phạm vi này, cài đặt lại theo dõi đang ngủ và bất kỳ lửa nhanh nào đang chờ đợi."
+impact = "Giá trị lớn hơn áp dụng tăng trưởng đang chờ cho các chunk xa hơn sớm hơn; giá trị nhỏ hơn chờ tới khi người chơi đến gần hơn."
+summary = "Khoảng cách từ người chơi (tính bằng khối) tới cột trung tâm của chunk mà tại đó phần tua nhanh đang chờ được áp dụng. Việc chunk có hoạt động hay không phụ thuộc vào khoảng cách mô phỏng của thế giới."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.engageonincident]
 impact = "Giá trị cao hơn giữ chạy nhanh trong các sự kiện ánh sáng; giá trị thấp hơn im lặng nó sớm hơn."
@@ -1128,8 +1128,8 @@ impact = "Giá trị cao hơn bao gồm nhiều địa hình với nhiều bộ 
 summary = "các chunk tối đa được theo dõi trên tất cả thế giới trước khi các các chunk lâu đời nhất được theo dõi bị loại bỏ."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.minelapsedticks]
-impact = "Giá trị cao hơn bỏ qua những thức tỉnh rẻ tiền gần đây; giá trị thấp hơn nhanh hơn thậm chí kéo dài ngắn ký túc xá."
-summary = "Thời gian ngủ tối thiểu (ticks) trước khi một thức tỉnh kích hoạt nhanh chóng."
+impact = "Giá trị cao hơn bỏ qua các lần vắng mặt ngắn; giá trị thấp hơn tua nhanh cả những khoảng ngắn ngoài khoảng cách mô phỏng."
+summary = "Thời gian tối thiểu (tính bằng tick) mà chunk phải ở ngoài khoảng cách mô phỏng trước khi được tua nhanh. Các lần vắng mặt ngắn hơn bị bỏ qua."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.releaseonincident]
 impact = "Giá trị cao hơn tiếp tục sớm hơn sau khi một yên tĩnh; giá trị thấp hơn giữ nhanh chóng tua dài hơn cho sự ổn định."
@@ -1810,9 +1810,13 @@ summary = "Khoảng đánh giá chính cho việc tăng cường địa hình ll
 impact = "Các giá trị cao hơn kích hoạt giảm nhẹ sau đó; các giá trị thấp hơn kích hoạt sớm hơn và tích cực hơn."
 summary = "Ngưỡng kích hoạt Iris Thời gian ở địa hình Iris tăng cường bảo vệ."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregenqueue]
-impact = "Các giá trị cao hơn kích hoạt giảm nhẹ sau đó; các giá trị thấp hơn kích hoạt sớm hơn và tích cực hơn."
-summary = "Ép buộc ngưỡng cho việc gây ra hàng đợi tiền sử của Iris trong khu vực tăng cường địa hình."
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregeninflight]
+impact = "Giá trị cao hơn chỉ kích hoạt khi quá trình tạo trước của thế giới chạy gần mức đồng thời tối đa; giá trị thấp hơn cũng kích hoạt với tải nhẹ hơn."
+summary = "Số yêu cầu chunk đang xử lý của trình tạo trước Iris cho thế giới này sẽ kích hoạt lớp bảo vệ đột biến địa hình Iris khi thời gian tick cũng đạt triggerIrisPregenTickMS; giá trị bị giới hạn trong 1..256."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregentickms]
+impact = "Giá trị cao hơn cho phép tạo trước tiếp tục mà không giới hạn người chơi cho đến khi máy chủ bị chậm hơn; giá trị thấp hơn giới hạn việc tạo chunk của người chơi sớm hơn trong khi đang tạo trước."
+summary = "Ngưỡng thời gian tick cũng phải đạt tới trước khi các yêu cầu đang xử lý của trình tạo trước Iris kích hoạt lớp bảo vệ đột biến địa hình Iris (mili giây); giá trị bị giới hạn trong 1..1000."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "Giá trị cao hơn trì hoãn hoạt động hoặc thoát; giá trị thấp hơn làm cho ngưỡng này dễ dàng vượt qua."
@@ -2441,9 +2445,9 @@ summary = "Adapt ngưỡng nạp phiên chạy có thể gây ra sự cố xử 
 impact = "Các giá trị cao hơn kích hoạt giảm nhẹ sau đó; các giá trị thấp hơn kích hoạt sớm hơn và tích cực hơn."
 summary = "Kích hoạt ngưỡng để nhập điểm trong chế độ biến cố ba chiều."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririsqueue]
-impact = "Giá trị cao hơn tăng làm việc đệm hoặc cung cấp bùng nổ; giá trị thấp hơn thắt chặt throtling."
-summary = "Nhập giới hạn hàng đợi Iris được dùng bởi chế độ sự kiện ba chiều."
+[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririspregeninflight]
+impact = "Giá trị cao hơn chỉ tính áp lực Iris khi trình tạo trước chạy gần mức đồng thời tối đa; giá trị thấp hơn cũng tính cả tải tạo trước nhẹ hơn."
+summary = "Số yêu cầu chunk đang xử lý của trình tạo trước Iris được tính là áp lực Iris trong chế độ sự cố Trinity; giá trị bị giới hạn trong 1..256."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.entertickms]
 impact = "Giá trị cao hơn trì hoãn hoạt động hoặc thoát; giá trị thấp hơn làm cho ngưỡng này dễ dàng vượt qua."
@@ -2847,6 +2851,25 @@ summary = "Gửi bản tóm tắt về việc thay đổi hàng nóng tới nh�
 [config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms]
 impact = "Giá trị thấp hơn giúp phát hiện sự kiện đã nhận sớm hơn; các thay đổi tự động vẫn được áp dụng theo đợt, tối đa một lần mỗi ba giây."
 summary = "Khoảng thời gian thăm dò sự kiện hệ thống tệp, tính bằng mili giây."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller]
+description = "Đo thời gian của các trình xử lý sự kiện theo từng plugin bằng cách bao bọc các trình lắng nghe đã đăng ký trong khi việc đo đạc đang hoạt động."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleonms]
+impact = "Cửa sổ dài hơn tạo ra nhiều mẫu được ghi hơn trong mỗi chu kỳ với chi phí lặp lại cao hơn."
+summary = "Độ dài tính bằng mili giây của mỗi cửa sổ đo định kỳ trong chế độ chu kỳ."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleperiodms]
+impact = "Chu kỳ ngắn hơn ghi dữ liệu sự kiện thường xuyên hơn và tốn kém hơn; chu kỳ dài hơn để lại khoảng trống rộng hơn trong lịch sử."
+summary = "Số mili giây giữa các thời điểm bắt đầu của các cửa sổ đo định kỳ trong chế độ chu kỳ."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.instrumentation]
+impact = "ALWAYS khiến mọi trình xử lý sự kiện chịu thêm chi phí đo thời gian; ON_DEMAND loại bỏ chi phí đó khi rảnh nhưng để lại khoảng trống trong lịch sử; DUTY_CYCLE đổi các khoảng trống định kỳ lấy một chi phí lặp lại nhỏ."
+summary = "Quy định thời điểm cài đặt các lớp bọc đo thời gian cho trình lắng nghe: ALWAYS giữ chúng luôn được cài, ON_DEMAND chỉ cài khi một màn hình theo dõi, bản đồ, phần giữ chỗ hoặc người xem web đang đọc dữ liệu sự kiện, và DUTY_CYCLE còn mở thêm một cửa sổ đo định kỳ."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.sampleractivitywindowms]
+impact = "Giá trị cao hơn giữ việc đo đạc được cài lâu hơn sau khi người xem rời đi; giá trị thấp hơn gỡ nó sớm hơn."
+summary = "Số mili giây sau lần đọc dữ liệu sự kiện cuối cùng trước khi các lớp bọc bị gỡ trong chế độ theo yêu cầu và chế độ chu kỳ."
 
 [config.documentation.annotation.art.arcane.react.core.controller.historycontroller]
 description = "Thu thập các bộ lấy mẫu React một lần, lưu dữ liệu đo từ xa lịch sử đã nén và xử lý các truy vấn có giới hạn khoảng thời gian."
@@ -3544,8 +3567,8 @@ biletools_watched_jars = "BileTools Jar theo dõi"
 block_entities = "Thực thể khối"
 block_entities_ticking = "Thực thể khối đang tick"
 bukkit_pending_tasks = "Tác vụ đang chờ"
-chunk_gen_ms = "chunk Gen Ms"
-chunk_load_ms = "chunk Load Ms"
+chunk_gen_listener_ms = "chunk Gen Listener Ms"
+chunk_load_listener_ms = "chunk Load Listener Ms"
 chunk_tickets = "Vé chunk"
 chunk_unloads = "Dỡ tải chunk"
 chunks = "các chunk"
@@ -3570,7 +3593,6 @@ gc_time_percent = "Gc giờ phần trăm Gc"
 gloss_animations = "Gloss Hoạt ảnh"
 gloss_boards = "Gloss Bảng điểm"
 gloss_bubbles = "Gloss Bong bóng trò chuyện"
-gloss_builder_server = "Gloss Máy chủ trình dựng"
 gloss_display_entities = "Gloss Thực thể hiển thị"
 gloss_emoji = "Gloss Thay thế emoji"
 gloss_holograms = "Gloss Ảnh ba chiều"
@@ -3605,7 +3627,7 @@ hopper_event_span = "Khoảng thời gian sự kiện phễu"
 incident_score = "Điểm số tranh chấp"
 iris_chunks_per_second = "Iris các chunk Per Second"
 iris_generation_total_ms = "Iris Tổng thế hệ Hoa hậu"
-iris_pregen_queue = "Iris Hàng đợi tiềngen"
+iris_pregen_queue = "Iris Pregen đang xử lý"
 iris_pregen_throughput = "Iris Thông qua mã số đĩa"
 jvm_threads = "Luồng JVM"
 lazy_gravity_skipped = "Trọng lực lười biếng được bỏ qua"
@@ -3650,10 +3672,13 @@ villagers = "Dân làng"
 world_save_event_interval = "Khoảng cách giữa các sự kiện lưu thế giới"
 worlds = "Thế giới"
 wormholes_block_changes = "Wormholes Thay đổi khối"
+wormholes_block_entities = "Wormholes Thực thể khối"
 wormholes_compression = "Wormholes Độ nén"
 wormholes_packets = "Wormholes Gói tin"
 wormholes_peer_rtt = "Wormholes RTT máy ngang hàng"
 wormholes_peers = "Wormholes Máy ngang hàng"
+wormholes_plate_builds = "Wormholes Dựng tấm"
+wormholes_plate_bytes = "Wormholes Bộ nhớ tấm"
 wormholes_portals = "Wormholes Cổng"
 wormholes_projection_observers = "Wormholes Những người quan sát dự án"
 wormholes_projection_render_ms = "Wormholes Trình vẽ màn hình Cô"
@@ -3725,7 +3750,7 @@ adapt_ability_ops = "Adapt Thao tác khả năng trên phút (tách chọn bằn
 adapt_cache_hit_ratio = "Phần kiểm tra cấp độ khả năng được phục vụ từ cache cấp độ hoạt động."
 adapt_check_latency = "Số micro giây trung bình cho mỗi lần kiểm tra khả năng không qua cache."
 adapt_event_ops = "Số lần gọi trình xử lý sự kiện thích ứng mỗi phút."
-adapt_fx_packets = "Số gói tin hạt đã dùng trong tick ngân sách FX hiện tại."
+adapt_fx_packets = "Số gói tin hạt trung bình đã dùng mỗi tick ngân sách FX trong giây vừa qua."
 adapt_fx_shed_band = "Mức suy giảm FX; không là chất lượng đầy đủ, bốn là giảm tải nặng nhất."
 adapt_fx_timelines = "Các dòng thời gian FX đang chạy trong bộ máy hiệu ứng."
 adapt_learned_adaptations = "Số thích ứng khác nhau được kích hoạt bởi ít nhất một người chơi trực tuyến."
@@ -3748,8 +3773,8 @@ biletools_watched_jars = "Các jar plugin được trình theo dõi tải lại 
 block_entities = "Các thực thể khối được tải trên mọi thế giới."
 block_entities_ticking = "Các thực thể khối tick mỗi tick trên mọi thế giới."
 bukkit_pending_tasks = "Các tác vụ đang chờ trong bộ lập lịch Bukkit trên mọi plugin."
-chunk_gen_ms = "Hỗn độ tạo chunk trong vài millisecond."
-chunk_load_ms = "Hỗn độ tải chunk trong vài millisecond."
+chunk_gen_listener_ms = "Số mili giây luồng chính mà các listener của plugin khác dùng cho sự kiện tải của mỗi chunk mới được tạo."
+chunk_load_listener_ms = "Số mili giây luồng chính mà các listener của plugin khác dùng cho mỗi sự kiện tải chunk."
 chunk_tickets = "Các chunk được giữ tải bởi vé chunk của plugin."
 chunk_unloads = "Các chunk được dỡ tải mỗi giây trên mọi thế giới."
 chunks = "Xu hướng số lượng chunk tải."
@@ -3771,10 +3796,9 @@ fluid = "Tốc độ cập nhật dịch chảy."
 fluid_event_span = "Thời gian thực từ lần gọi xử lý dòng chất lỏng đầu tiên đến lần mới nhất trong mỗi tick."
 gc_pause_p95 = "Số lượng rác thải dừng lại trong khoảng thời gian 95 phần trăm."
 gc_time_percent = "Phần trăm thời gian dành cho việc này GC so với thời gian chạy."
-gloss_animations = "Số hoạt ảnh văn bản hiện đã đăng ký và đang chạy."
+gloss_animations = "Số mục tiêu văn bản hologram đang được hoạt ảnh."
 gloss_boards = "Số thanh bên bảng điểm hiện đang hiển thị cho người chơi."
 gloss_bubbles = "Số bong bóng trò chuyện xuất hiện phía trên người chơi mỗi giây."
-gloss_builder_server = "Máy chủ trình dựng web có đang chạy hay không; một nghĩa là trực tuyến."
 gloss_display_entities = "Các thực thể hiển thị chỉ bằng gói tin được đăng ký cho ảnh ba chiều."
 gloss_emoji = "Số lần thay thế emoji trong trò chuyện mỗi giây."
 gloss_holograms = "Số ảnh ba chiều văn bản cố định đang hoạt động trong các chunk đã tải."
@@ -3809,7 +3833,7 @@ hopper_event_span = "Thời gian thực từ lần gọi xử lý chuyển vật
 incident_score = "Điểm số vụ việc tổng hợp được xây dựng từ nhiều áp lực các bộ đọc chỉ số."
 iris_chunks_per_second = "Kết hợp công cụ Iris chunk sản xuất thông qua."
 iris_generation_total_ms = "Hoạt động tồi tệ nhất Iris- Thế giới lăn lộn thời gian."
-iris_pregen_queue = "Iris Độ sâu hàng đợi sẵn từ xa."
+iris_pregen_queue = "Các yêu cầu chunk đang xử lý của trình tạo trước Iris."
 iris_pregen_throughput = "Tạo lượng trình tạo Iris trong các chunk mỗi giây."
 jvm_threads = "Các luồng JVM đang chạy, gồm cả nhóm luồng của plugin và máy chủ."
 lazy_gravity_skipped = "Quá trình chuyển động khối rơi các tick được dự đoán là có thể bỏ qua bởi lực hấp dẫn lười biếng."
@@ -3854,10 +3878,13 @@ villagers = "Dân làng và thương nhân lang thang được tải trên mọi
 world_save_event_interval = "Thời gian giữa các sự kiện lưu liên tiếp của cùng một thế giới."
 worlds = "Các thế giới hiện đang được tải trên máy chủ."
 wormholes_block_changes = "Wormholes Dự đoán khối gạch thay đổi được xuất bản thông qua cầu tích hợp."
+wormholes_block_entities = "Số cập nhật thực thể khối được chiếu gửi tới người xem mỗi giây."
 wormholes_compression = "Tỷ lệ nén dữ liệu gửi đi; gần 1.0 nghĩa là từ điển đã cũ."
 wormholes_packets = "Wormholes Gói dự đoán được công bố thông qua cầu tích hợp."
 wormholes_peer_rtt = "Độ trễ khứ hồi xấu nhất tới một máy chủ ngang hàng đã kết nối."
 wormholes_peers = "Các máy chủ từ xa đang liên kết trong lưới Wormholes."
+wormholes_plate_builds = "Số tấm khung nhìn chiếu được dựng mỗi giây."
+wormholes_plate_bytes = "Bộ nhớ mà các tấm khung nhìn chiếu trong bộ đệm đang chiếm."
 wormholes_portals = "Hoạt động Wormholes Số lượng cánh cổng được công bố qua cầu tích hợp."
 wormholes_projection_observers = "Người chơi hiện đang quan sát Wormholes Dự đoán."
 wormholes_projection_render_ms = "Wormholes Thời gian vẽ hình ảnh."
@@ -3991,6 +4018,7 @@ idle = "Nghỉ"
 idle_average = "Nghỉ Avg"
 idle_maximum = "Nghỉ tối đa"
 idle_minimum = "Nghỉ"
+in_flight = "Đang xử lý"
 incident = "Nguyên nhân"
 jobs = "Công việc"
 last_reload = "Tải lại cuối"

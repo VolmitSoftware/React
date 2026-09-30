@@ -31,16 +31,29 @@ import org.bukkit.event.world.ChunkLoadEvent;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.LongSupplier;
 
-abstract class SamplerChunkEventDurationBase extends ReactCachedSampler implements Listener {
-  private transient volatile RollingSequence average;
+public abstract class SamplerChunkEventDurationBase extends ReactCachedSampler implements Listener {
+  static final long IDLE_WINDOW_NANOS = 10_000_000_000L;
+
+  private final transient LongSupplier nanoClock;
+  private final transient Object historyLock;
   private final transient ConcurrentHashMap<Integer, Long> starts;
   private final transient ConcurrentHashMap<Integer, Long> startCreated;
+  private transient RollingSequence average;
+  private transient boolean hasRecentEvents;
+  private transient long lastEventNanos;
   private int maxHistory = 48;
   private int staleStartMS = 10000;
 
   protected SamplerChunkEventDurationBase(String id) {
+    this(id, System::nanoTime);
+  }
+
+  protected SamplerChunkEventDurationBase(String id, LongSupplier nanoClock) {
     super(id, 1000);
+    this.nanoClock = nanoClock;
+    this.historyLock = new Object();
     this.average = createAverage();
     this.starts = new ConcurrentHashMap<>();
     this.startCreated = new ConcurrentHashMap<>();
@@ -48,7 +61,11 @@ abstract class SamplerChunkEventDurationBase extends ReactCachedSampler implemen
 
   @Override
   public void start() {
-    average = createAverage();
+    synchronized (historyLock) {
+      average = createAverage();
+      hasRecentEvents = false;
+      lastEventNanos = 0L;
+    }
     starts.clear();
     startCreated.clear();
     super.start();
@@ -67,7 +84,7 @@ abstract class SamplerChunkEventDurationBase extends ReactCachedSampler implemen
 
     int key = System.identityHashCode(event);
     long now = System.currentTimeMillis();
-    starts.put(key, System.nanoTime());
+    starts.put(key, nanoClock.getAsLong());
     startCreated.put(key, now);
   }
 
@@ -85,20 +102,32 @@ abstract class SamplerChunkEventDurationBase extends ReactCachedSampler implemen
       return;
     }
 
-    double durationMS = Math.max(0D, (System.nanoTime() - started) / 1_000_000D);
+    long endedNanos = nanoClock.getAsLong();
+    double durationMS = Math.max(0D, (endedNanos - started) / 1_000_000D);
     getChunkCounter(event.getChunk()).addAndGet(durationMS);
-    RollingSequence currentAverage = average;
-    synchronized (currentAverage) {
-      currentAverage.put(durationMS);
+    synchronized (historyLock) {
+      average.put(durationMS);
+      hasRecentEvents = true;
+      lastEventNanos = endedNanos;
     }
   }
 
   @Override
   public double onSample() {
     cleanupStarts(System.currentTimeMillis());
-    RollingSequence currentAverage = average;
-    synchronized (currentAverage) {
-      return currentAverage.getAverage();
+    long nowNanos = nanoClock.getAsLong();
+    synchronized (historyLock) {
+      if (!hasRecentEvents) {
+        return 0D;
+      }
+
+      if (nowNanos - lastEventNanos > IDLE_WINDOW_NANOS) {
+        average = createAverage();
+        hasRecentEvents = false;
+        return 0D;
+      }
+
+      return average.getAverage();
     }
   }
 

@@ -1,9 +1,15 @@
 package art.arcane.react.api.test.load;
 
+import art.arcane.react.React;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
+import org.bukkit.block.BlockState;
+import org.bukkit.block.Container;
+import org.bukkit.block.data.Directional;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.inventory.ItemStack;
@@ -15,7 +21,19 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public final class WorldLoadGenerator {
   private static final int MAX_ENTITIES = 3000;
+  private static final int MAX_HOPPER_NETWORKS = 64;
+  private static final int HOPPER_NETWORKS_PER_ROW = 8;
+  private static final int HOPPER_NETWORK_SPACING = 4;
+  private static final int HOPPER_NETWORK_OFFSET_X = 32;
+  private static final int HOPPER_NETWORK_OFFSET_Y = 8;
+  private static final int ITEMS_PER_HOPPER = 16;
+  private static final int[][] HOPPER_RING = {{0, 0}, {1, 0}, {2, 0}, {2, 1}, {2, 2}, {1, 2}, {0, 2}, {0, 1}};
+  private static final BlockFace[] HOPPER_RING_FACING = {
+      BlockFace.EAST, BlockFace.EAST, BlockFace.SOUTH, BlockFace.SOUTH,
+      BlockFace.WEST, BlockFace.WEST, BlockFace.NORTH, BlockFace.NORTH
+  };
   private final List<UUID> spawned;
+  private final List<BlockState> replacedBlocks;
   private World world;
   private Location center;
   private LoadProfile profile;
@@ -23,6 +41,7 @@ public final class WorldLoadGenerator {
 
   public WorldLoadGenerator() {
     this.spawned = new ArrayList<UUID>();
+    this.replacedBlocks = new ArrayList<BlockState>();
     this.active = false;
   }
 
@@ -40,6 +59,7 @@ public final class WorldLoadGenerator {
         spawn(herdAt, EntityType.ZOMBIE);
       }
     }
+    buildHopperNetworks(Math.min(MAX_HOPPER_NETWORKS, Math.max(0, profile.hopperNetworks())));
   }
 
   public void tick() {
@@ -77,6 +97,7 @@ public final class WorldLoadGenerator {
       }
     }
     spawned.clear();
+    restoreReplacedBlocks();
     active = false;
   }
 
@@ -120,6 +141,75 @@ public final class WorldLoadGenerator {
       spawned.add(falling.getUniqueId());
     } catch (Throwable ignored) {
     }
+  }
+
+  private void buildHopperNetworks(int networks) {
+    if (networks == 0) {
+      return;
+    }
+
+    int originX = center.getBlockX() + HOPPER_NETWORK_OFFSET_X;
+    int originY = Math.min(world.getMaxHeight() - 2, center.getBlockY() + HOPPER_NETWORK_OFFSET_Y);
+    int originZ = center.getBlockZ();
+    int expected = networks * HOPPER_RING.length;
+    int placed = 0;
+    RuntimeException firstFailure = null;
+    for (int network = 0; network < networks; network++) {
+      int ringX = originX + (network % HOPPER_NETWORKS_PER_ROW) * HOPPER_NETWORK_SPACING;
+      int ringZ = originZ + (network / HOPPER_NETWORKS_PER_ROW) * HOPPER_NETWORK_SPACING;
+      for (int i = 0; i < HOPPER_RING.length; i++) {
+        try {
+          if (placeHopper(world.getBlockAt(ringX + HOPPER_RING[i][0], originY, ringZ + HOPPER_RING[i][1]), HOPPER_RING_FACING[i])) {
+            placed++;
+          }
+        } catch (RuntimeException failure) {
+          if (firstFailure == null) {
+            firstFailure = failure;
+          }
+        }
+      }
+    }
+
+    if (placed == expected) {
+      return;
+    }
+
+    String message = "Load test placed " + placed + "/" + expected + " hoppers at "
+        + originX + "," + originY + "," + originZ + " in " + world.getName();
+    if (firstFailure == null) {
+      React.warn(message);
+      return;
+    }
+    React.reportError(message, firstFailure);
+  }
+
+  private boolean placeHopper(Block block, BlockFace facing) {
+    BlockState original = block.getState();
+    Directional hopperData = (Directional) Material.HOPPER.createBlockData();
+    hopperData.setFacing(facing);
+    block.setBlockData(hopperData, false);
+    replacedBlocks.add(original);
+    if (!(block.getState() instanceof Container hopper)) {
+      return false;
+    }
+    hopper.getInventory().addItem(new ItemStack(Material.COBBLESTONE, ITEMS_PER_HOPPER));
+    return true;
+  }
+
+  private void restoreReplacedBlocks() {
+    for (int i = replacedBlocks.size() - 1; i >= 0; i--) {
+      BlockState original = replacedBlocks.get(i);
+      try {
+        if (original.getBlock().getState() instanceof Container hopper) {
+          hopper.getInventory().clear();
+        }
+        original.update(true, false);
+      } catch (RuntimeException failure) {
+        React.reportError("Load test failed to restore block at "
+            + original.getX() + "," + original.getY() + "," + original.getZ() + " in " + world.getName(), failure);
+      }
+    }
+    replacedBlocks.clear();
   }
 
   private void spawnTnt(Location at) {

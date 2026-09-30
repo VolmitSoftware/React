@@ -5,7 +5,7 @@ import art.arcane.react.util.common.scheduling.J;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.World;
-import org.bukkit.block.BlockState;
+import org.bukkit.block.Block;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
@@ -20,6 +20,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Predicate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -96,7 +97,7 @@ class HopperChainCoalescingRepairTest {
     Chunk chunk = Mockito.mock(Chunk.class);
     Mockito.when(world.isChunkLoaded(14, -9)).thenReturn(true);
     Mockito.when(world.getChunkAt(14, -9)).thenReturn(chunk);
-    Mockito.when(chunk.getTileEntities()).thenReturn(new BlockState[0]);
+    Mockito.when(chunk.getTileEntities(Mockito.<Predicate<? super Block>>any(), Mockito.eq(false))).thenReturn(List.of());
 
     Method queueRepair = FeatureHopperChainCoalescing.class.getDeclaredMethod(
         "queueRepair",

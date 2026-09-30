@@ -1011,8 +1011,8 @@ impact = "數值較高 清淨 stale 狀態更快, 更高 CPU 連續; 平滑的�
 summary = "在區塊隔離中,每次維護週期檢查的最大區塊狀態輸入."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkquarantine.field.maxtrackedchunks]
-impact = "較高的數值允許干預前的更多吞吐量;較低的數值使得緩解更具有積極性."
-summary = "根據區塊隔離允許的最大追蹤區塊."
+impact = "較高的數值以少量記憶體保留更多區塊的評分;較低的數值會更早移除活動較少的區塊並重設其評分."
+summary = "區塊隔離追蹤的最大區塊數;達到上限時移除最久未活動的區塊."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkquarantine.field.onlyduringpressure]
 impact = "啟用應用此行為; 禁用以保持此路徑不活動 。"
@@ -1101,11 +1101,11 @@ impact = "持續時間越長，抑制問題元件的時間越久；持續時間�
 summary = "電路限制的持續時間（毫秒）。"
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward]
-description = "配置用於快速前進功能.當一個區塊從休眠的(沒有附近播放器長時間)轉移到活躍的(player接近或區塊重新加載)時,這個功能一次進行作物和樹苗塊走動並以與休眠持續時間相對比例的數量推進它們的生長,以便玩家在返回後不會看到結農場.高負荷事件期間保持不活躍."
+description = "Crop Fast Forward 功能的設定。伺服器只會在玩家模擬距離內的區塊中生長作物，因此此功能會記錄每個已載入區塊在該距離之外停留的時間。當玩家回到活動範圍內時，它會走訪一次該區塊的作物與樹苗方塊，並依這段時間推進它們的生長，讓玩家返回時不會看到停滯的農場。區塊卸載時會捨棄待處理的生長。在高負載事件期間保持不活動。"
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.activerange]
-impact = "較大的值更早地向前走 區塊;較小的值延遲到玩家走近."
-summary = "玩家近距離範圍 (blocks),將區塊分類爲活躍. 在這個範圍內,休眠的追蹤重置和任何正在待發的快速前進火災."
+impact = "較大的值會更早對更遠的區塊套用待處理的生長；較小的值會等到玩家走近。"
+summary = "套用區塊待處理快轉時，玩家與區塊中心欄之間的距離(方塊)。區塊是否活動則由世界的模擬距離決定。"
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.engageonincident]
 impact = "較高的值在光照事件期間保持快速前進;較低的值能更快地使光照消音."
@@ -1128,8 +1128,8 @@ impact = "較高的值覆蓋了更多帶有較多記憶體的地形;較低的值
 summary = "在最古老的區塊被追蹤之前,在所有世界都會追蹤最高區塊."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.minelapsedticks]
-impact = "較高的數值跳過廉價的最近醒悟;較低的數值快速向前甚至短暫的宿舍拉伸."
-summary = "在警鐘啓動之前,(ticks)的最小休眠時間快速前進.在此下,區塊被視爲仍然熱."
+impact = "較高的值會略過短暫的離開；較低的值即使在模擬距離外只停留很短時間也會快轉。"
+summary = "區塊在被快轉之前必須處於模擬距離之外的最短時間(tick)。更短的離開時間會被忽略。"
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.releaseonincident]
 impact = "較高的數值在平靜下來後會更快恢復;較低的數值為穩定而持續的時間更長。"
@@ -1810,9 +1810,13 @@ summary = "Iris 地形負載突增保護的主要評估間隔（毫秒）。"
 impact = "較高的數值會引發以後的緩解;較低的數值會更早和更劇烈地觸發."
 summary = "觸發閾值 Iris 虹膜地形突襲守衛中的時間"
 
-[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregenqueue]
-impact = "較高的數值會引發以後的緩解;較低的數值會更早和更劇烈地觸發."
-summary = "Iris 地形負載突增保護中 Iris 預生成佇列的觸發閾值。"
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregeninflight]
+impact = "較高的值僅在該世界的預生成接近其最大並行度運作時才觸發；較低的值在較輕的預生成負載下也會觸發。"
+summary = "當遊戲刻時間也達到 triggerIrisPregenTickMS 時，觸發 Iris 地形激增防護的此世界 Iris 預生成器進行中區塊請求數；取值限制在 1..256。"
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregentickms]
+impact = "較高的值會讓預生成繼續執行而不限制玩家，直到伺服器進一步落後；較低的值會在預生成執行期間更早限制玩家的區塊生成。"
+summary = "Iris 預生成器進行中請求觸發 Iris 地形激增防護之前還必須達到的遊戲刻時間閾值（毫秒）；取值限制在 1..1000。"
 
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "更高的值延遲啟用或退出;較低的值使得這個閾值更容易跨越."
@@ -2441,9 +2445,9 @@ summary = "Adapt 能夠觸發三一事件模式下事件處理的會話負載閾
 impact = "較高的數值會引發以後的緩解;較低的數值會更早和更劇烈地觸發."
 summary = "三一事件模式下進入事件分數的觸發閾值."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririsqueue]
-impact = "較高的數值增加了緩衝工作或破裂的備抵;較低的數值收緊了節奏。"
-summary = "輸入三一事件模式使用的虹膜佇列限制."
+[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririspregeninflight]
+impact = "較高的值僅在預生成器接近其最大並行度運作時才計為 Iris 壓力；較低的值也會計入較輕的預生成負載。"
+summary = "Trinity 事件模式中計為 Iris 壓力的 Iris 預生成器進行中區塊請求數；取值限制在 1..256。"
 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.entertickms]
 impact = "更高的值延遲啟用或退出;較低的值使得這個閾值更容易跨越."
@@ -2847,6 +2851,25 @@ summary = "將熱載更改摘要傳送到線上操作員."
 [config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms]
 impact = "較小的值能更早偵測到已收到的事件；自動變更仍然最多每三秒批次套用一次。"
 summary = "檔案系統事件的輪詢間隔，單位為毫秒。"
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller]
+description = "在偵測啟用期間透過包裝已註冊的監聽器,按外掛測量事件處理器耗時。"
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleonms]
+impact = "視窗越長,每個週期記錄的樣本越多,但持續開銷也越高。"
+summary = "週期模式下每個定期測量視窗的長度(毫秒)。"
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleperiodms]
+impact = "週期越短,事件資料記錄得越頻繁,開銷越大;週期越長,歷史中的空白越寬。"
+summary = "週期模式下定期測量視窗開始時刻之間的毫秒數。"
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.instrumentation]
+impact = "ALWAYS 讓每個事件處理器承擔計時開銷;ON_DEMAND 在閒置時消除該開銷但會在歷史中留下空白;DUTY_CYCLE 以週期性空白換取少量持續開銷。"
+summary = "控制何時安裝監聽器計時包裝:ALWAYS 始終保持安裝,ON_DEMAND 僅在監視器、地圖、佔位符或網頁檢視者讀取事件資料時安裝,DUTY_CYCLE 則額外定期開啟一個測量視窗。"
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.sampleractivitywindowms]
+impact = "值越高,檢視者離開後偵測保持安裝的時間越長;值越低,移除得越早。"
+summary = "在依需求模式和週期模式下,自最後一次讀取事件資料後到移除包裝所經過的毫秒數。"
 
 [config.documentation.annotation.art.arcane.react.core.controller.historycontroller]
 description = "一次擷取 React 取樣器，儲存壓縮的歷史遙測資料，並處理有界時間範圍查詢。"
@@ -3544,8 +3567,8 @@ biletools_watched_jars = "BileTools 監看 Jar 數"
 block_entities = "方塊實體"
 block_entities_ticking = "每遊戲刻運算的方塊實體"
 bukkit_pending_tasks = "待處理任務"
-chunk_gen_ms = "區塊生成耗時（毫秒）"
-chunk_load_ms = "區塊載入耗時（毫秒）"
+chunk_gen_listener_ms = "區塊生成監聽器耗時（毫秒）"
+chunk_load_listener_ms = "區塊載入監聽器耗時（毫秒）"
 chunk_tickets = "區塊票據"
 chunk_unloads = "區塊卸載"
 chunks = "區塊"
@@ -3570,7 +3593,6 @@ gc_time_percent = "GC 時間占比"
 gloss_animations = "Gloss 動畫"
 gloss_boards = "Gloss 計分板"
 gloss_bubbles = "Gloss 聊天氣泡"
-gloss_builder_server = "Gloss 建構器伺服器"
 gloss_display_entities = "Gloss 展示實體數"
 gloss_emoji = "Gloss 表情符號取代"
 gloss_holograms = "Gloss 全像圖"
@@ -3605,7 +3627,7 @@ hopper_event_span = "漏斗事件時間跨度"
 incident_score = "事件壓力評分"
 iris_chunks_per_second = "Iris 每秒生成區塊數"
 iris_generation_total_ms = "Iris 總生成耗時（毫秒）"
-iris_pregen_queue = "Iris 預生成佇列"
+iris_pregen_queue = "Iris 預生成進行中"
 iris_pregen_throughput = "Iris 預生成吞吐量"
 jvm_threads = "JVM 執行緒"
 lazy_gravity_skipped = "惰性重力跳過數"
@@ -3650,10 +3672,13 @@ villagers = "村民"
 world_save_event_interval = "世界儲存事件間隔"
 worlds = "世界"
 wormholes_block_changes = "Wormholes 方塊變更數"
+wormholes_block_entities = "Wormholes 方塊實體"
 wormholes_compression = "Wormholes 壓縮率"
 wormholes_packets = "Wormholes 資料包數"
 wormholes_peer_rtt = "Wormholes 對等節點 RTT"
 wormholes_peers = "Wormholes 對等節點數"
+wormholes_plate_builds = "Wormholes 視圖板建構數"
+wormholes_plate_bytes = "Wormholes 視圖板記憶體"
 wormholes_portals = "Wormholes 活躍傳送門數"
 wormholes_projection_observers = "Wormholes 投影觀察者數"
 wormholes_projection_render_ms = "Wormholes 投影渲染耗時（毫秒）"
@@ -3725,7 +3750,7 @@ adapt_ability_ops = "Adapt 能力操作每分鐘( 配置所選擇的模式 adapt
 adapt_cache_hit_ratio = "由活躍等級快取提供的能力等級檢查佔比。"
 adapt_check_latency = "每次未快取能力守衛檢查的平均微秒數。"
 adapt_event_ops = "適應事件處理器每分鐘的呼叫次數。"
-adapt_fx_packets = "目前 FX 預算遊戲刻內消耗的粒子資料包。"
+adapt_fx_packets = "最近一秒內每個 FX 預算遊戲刻平均消耗的粒子資料包數。"
 adapt_fx_shed_band = "FX 降級區段；零為完整品質，四為最重度降載。"
 adapt_fx_timelines = "特效引擎中正在播放的 FX 時間軸。"
 adapt_learned_adaptations = "至少一名線上玩家已啟用的不同適應數。"
@@ -3748,8 +3773,8 @@ biletools_watched_jars = "熱重載監看器追蹤的外掛 jar。"
 block_entities = "所有世界中已載入的方塊實體。"
 block_entities_ticking = "所有世界中每遊戲刻都在運算的方塊實體。"
 bukkit_pending_tasks = "所有外掛在 Bukkit 排程器中等待執行的任務。"
-chunk_gen_ms = "在毫秒內生成區塊延遲."
-chunk_load_ms = "在毫秒內 區塊 載荷延遲."
+chunk_gen_listener_ms = "其他插件的監聽器在每個新生成區塊的載入事件中佔用的主執行緒毫秒數。"
+chunk_load_listener_ms = "其他插件的監聽器在每次區塊載入事件中佔用的主執行緒毫秒數。"
 chunk_tickets = "由外掛區塊票據固定載入的區塊。"
 chunk_unloads = "所有世界每秒卸載的區塊數。"
 chunks = "查看了 區塊 的數據."
@@ -3771,10 +3796,9 @@ fluid = "流體更新活動率."
 fluid_event_span = "每刻內從首次到最近一次流體流動回呼的實際經過時間。"
 gc_pause_p95 = "垃圾收集第95百分位暫停時間。"
 gc_time_percent = "佔所花時間的百分比 GC 相對執行時間。"
-gloss_animations = "目前已註冊且運作中的文字動畫數。"
+gloss_animations = "目前正在動畫的全息文字目標數。"
 gloss_boards = "目前向玩家顯示的計分板側邊欄數。"
 gloss_bubbles = "每秒在玩家頭頂產生的聊天氣泡數。"
-gloss_builder_server = "網頁建構器伺服器是否執行中；一表示線上。"
 gloss_display_entities = "為全像圖註冊的純資料包展示實體。"
 gloss_emoji = "每秒套用的聊天表情符號取代數。"
 gloss_holograms = "已載入區塊中目前作用中的持久文字全像圖數。"
@@ -3809,7 +3833,7 @@ hopper_event_span = "每刻內從首次到最近一次漏斗傳輸回呼的實�
 incident_score = "複合事件分數是從多壓 指標取樣器 中構建的."
 iris_chunks_per_second = "合併 Iris 引擎 區塊 生成吞吐量."
 iris_generation_total_ms = "最壞的活躍 Iris-世界的一代時間"
-iris_pregen_queue = "Iris 遠端預生成佇列深度。"
+iris_pregen_queue = "Iris 預生成器正在處理的區塊請求數。"
 iris_pregen_throughput = "Iris 預生成器吞吐量 區塊 每秒數."
 jvm_threads = "包含外掛與伺服器執行緒集區在內的存活 JVM 執行緒。"
 lazy_gravity_skipped = "由於惰的重力,遊戲刻被投影爲可以跳過."
@@ -3854,10 +3878,13 @@ villagers = "所有世界中已載入的村民與流浪商人。"
 world_save_event_interval = "同一世界連續兩次世界儲存事件之間的經過時間。"
 worlds = "伺服器目前已載入的世界。"
 wormholes_block_changes = "Wormholes 透過整合橋公佈的預計塊變化."
+wormholes_block_entities = "每秒傳送給觀看者的投影方塊實體更新數。"
 wormholes_compression = "傳出線路壓縮比；接近 1.0 表示字典已過時。"
 wormholes_packets = "Wormholes 透過整合橋釋出投影包吞吐量."
 wormholes_peer_rtt = "與已連線對等伺服器之間的最差往返延遲。"
 wormholes_peers = "目前連結至 Wormholes 網格的遠端伺服器。"
+wormholes_plate_builds = "每秒建構的投影視圖板數量。"
+wormholes_plate_bytes = "快取的投影視圖板佔用的記憶體。"
 wormholes_portals = "活動 Wormholes 門戶計數透過整合橋釋出."
 wormholes_projection_observers = "玩家目前觀察 Wormholes 預測。"
 wormholes_projection_render_ms = "Wormholes 投影渲染時間。"
@@ -3991,6 +4018,7 @@ idle = "閒置"
 idle_average = "閒置 Avg"
 idle_maximum = "閒置最大值"
 idle_minimum = "閒置"
+in_flight = "進行中"
 incident = "事件"
 jobs = "工作"
 last_reload = "上次重載"

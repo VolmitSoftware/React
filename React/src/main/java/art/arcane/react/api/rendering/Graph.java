@@ -23,7 +23,6 @@ import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.React;
 import art.arcane.react.core.controller.HistoryController;
 import art.arcane.react.core.history.MetricSnapshotValue;
-import art.arcane.volmlib.util.math.RollingSequence;
 import lombok.Getter;
 
 import java.util.Map;
@@ -40,11 +39,11 @@ public class Graph {
   // Callers that do not ask for a window keep the historical 128-sample view, so a
   // single 128px map and the web history read exactly the same values as before.
   private static final int DEFAULT_WINDOW = 128;
+  private static final int SMOOTHING_SAMPLES = 3;
   private static final Map<String, Graph> graphs = new ConcurrentHashMap<>();
   private final double[] sequence = new double[CAPACITY];
   private int head;
   private int size;
-  private final RollingSequence rs = new RollingSequence(3);
   private long lastPushMs;
   private double cachedMin;
   private double cachedMax;
@@ -57,6 +56,7 @@ public class Graph {
     long now = System.currentTimeMillis();
     synchronized (g) {
       if (now - g.lastPushMs >= PUSH_INTERVAL_MS) {
+        sampler.markDemand();
         HistoryController history = React.instance == null ? null : React.controller(HistoryController.class);
         MetricSnapshotValue snapshot = history == null ? null : history.latest().value(sampler.getId());
         if (snapshot == null) {
@@ -86,9 +86,23 @@ public class Graph {
     return sequence[slot];
   }
 
+  public synchronized double getSmoothed(int index) {
+    if (size <= 0) {
+      return 0;
+    }
+
+    int first = index < 0 ? 0 : Math.min(index, size - 1);
+    int last = Math.min(first + SMOOTHING_SAMPLES - 1, size - 1);
+    double sum = 0D;
+    for (int i = first; i <= last; i++) {
+      sum += get(i);
+    }
+
+    return sum / (last - first + 1);
+  }
+
   public synchronized void push(double v) {
-    rs.put(v);
-    sequence[head] = rs.getAverage();
+    sequence[head] = v;
     head = (head + 1) % CAPACITY;
     if (size < CAPACITY) {
       size++;

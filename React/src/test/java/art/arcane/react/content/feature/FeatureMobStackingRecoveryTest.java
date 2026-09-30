@@ -45,7 +45,7 @@ class FeatureMobStackingRecoveryTest {
     Mockito.when(plugin.isReady()).thenReturn(true);
     React.instance = plugin;
     world = Mockito.mock(World.class);
-    feature = new FeatureMobStacking(Mockito.mock(GlossEntityOverlayIntegration.class));
+    feature = new FeatureMobStacking(Mockito.mock(GlossEntityOverlayIntegration.class), MobStateAccess.detect());
     feature.setEnabled(false);
     state = Mockito.mockStatic(ReactEntity.class);
     state.when(() -> ReactEntity.getStackCount(Mockito.any(Entity.class)))

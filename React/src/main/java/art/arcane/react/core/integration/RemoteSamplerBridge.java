@@ -1,5 +1,6 @@
 package art.arcane.react.core.integration;
 
+import art.arcane.react.React;
 import art.arcane.volmlib.integration.IntegrationMetricDescriptor;
 import art.arcane.volmlib.integration.IntegrationMetricGroup;
 import art.arcane.volmlib.integration.IntegrationMetricSample;
@@ -12,13 +13,25 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 public class RemoteSamplerBridge {
   private static final long MAX_FUTURE_SAMPLE_MS = 5_000L;
   private static final long MAX_STALE_SAMPLE_MS = 15_000L;
+  private static final GroupKey TOP_LEVEL_SCOPE = new GroupKey("", "");
 
   private final Map<String, Map<String, IntegrationMetricSample>> samplesByPlugin = new ConcurrentHashMap<>();
   private final Map<String, Map<GroupKey, IntegrationMetricGroup>> groupsByPlugin = new ConcurrentHashMap<>();
+  private final Map<RejectionKey, String> schemaRejections = new ConcurrentHashMap<>();
+  private final Consumer<String> rejectionLog;
+
+  public RemoteSamplerBridge() {
+    this(React::warn);
+  }
+
+  RemoteSamplerBridge(Consumer<String> rejectionLog) {
+    this.rejectionLog = rejectionLog;
+  }
 
   public int updatePluginSamples(
       String pluginId,
@@ -43,7 +56,7 @@ public class RemoteSamplerBridge {
     int available = 0;
     for (String key : safeExpectedKeys) {
       IntegrationMetricSample supplied = safeSamples.get(key);
-      IntegrationMetricSample sample = validatedSample(normalizedPlugin, key, supplied, now);
+      IntegrationMetricSample sample = validatedSample(normalizedPlugin, TOP_LEVEL_SCOPE, key, supplied, now);
       if (sample != null) {
         pluginSamples.put(key, sample);
         if (sample.available()) {
@@ -66,7 +79,7 @@ public class RemoteSamplerBridge {
         continue;
       }
 
-      IntegrationMetricSample sample = validatedSample(normalizedPlugin, key, entry.getValue(), now);
+      IntegrationMetricSample sample = validatedSample(normalizedPlugin, TOP_LEVEL_SCOPE, key, entry.getValue(), now);
       if (sample != null) {
         pluginSamples.put(key, sample);
       }
@@ -80,10 +93,13 @@ public class RemoteSamplerBridge {
     Map<GroupKey, IntegrationMetricGroup> next = new LinkedHashMap<>();
     if (groups != null) {
       for (IntegrationMetricGroup group : groups) {
-        if (!validGroup(normalizedPlugin, group)) {
+        if (group == null) {
           continue;
         }
-        next.put(new GroupKey(group.scopeKind(), group.scopeId()), group);
+        GroupKey scope = new GroupKey(group.scopeKind(), group.scopeId());
+        if (validGroup(normalizedPlugin, scope, group)) {
+          next.put(scope, group);
+        }
       }
     }
     groupsByPlugin.put(normalizedPlugin, Map.copyOf(next));
@@ -168,6 +184,7 @@ public class RemoteSamplerBridge {
   public void clear() {
     samplesByPlugin.clear();
     groupsByPlugin.clear();
+    schemaRejections.clear();
   }
 
   private static boolean hasPluginPrefix(String key, String pluginId) {
@@ -184,6 +201,7 @@ public class RemoteSamplerBridge {
 
   private IntegrationMetricSample validatedSample(
       String pluginId,
+      GroupKey scope,
       String mapKey,
       IntegrationMetricSample sample,
       long now
@@ -212,21 +230,44 @@ public class RemoteSamplerBridge {
     if (knownSchema
         && (sample.descriptor().type() != schemaDescriptor.type()
         || !sample.descriptor().unit().equals(schemaDescriptor.unit()))) {
+      reportSchemaRejection(new RejectionKey(pluginId, mapKey, scope), schemaDescriptor, sample.descriptor());
       return null;
+    }
+    if (!schemaRejections.isEmpty()) {
+      schemaRejections.remove(new RejectionKey(pluginId, mapKey, scope));
     }
     return sample;
   }
 
-  private boolean validGroup(String pluginId, IntegrationMetricGroup group) {
-    if (group == null || group.scopeKind().isBlank() || group.scopeId().isBlank()) {
+  private void reportSchemaRejection(
+      RejectionKey rejectionKey,
+      IntegrationMetricDescriptor expected,
+      IntegrationMetricDescriptor received
+  ) {
+    String reason = "expected " + expected.type() + " '" + expected.unit() + "', received "
+        + received.type() + " '" + received.unit() + "'";
+    String previous = schemaRejections.put(rejectionKey, reason);
+    if (reason.equals(previous)) {
+      return;
+    }
+
+    GroupKey scope = rejectionKey.scope();
+    String scopeLabel = scope.scopeKind().isEmpty() ? "" : " in " + scope.scopeKind() + " " + scope.scopeId();
+    rejectionLog.accept("[integration] Rejected " + rejectionKey.pluginId() + " metric " + rejectionKey.mapKey()
+        + scopeLabel + ": " + reason);
+  }
+
+  private boolean validGroup(String pluginId, GroupKey scope, IntegrationMetricGroup group) {
+    if (group.scopeKind().isBlank() || group.scopeId().isBlank()) {
       return false;
     }
     String taggedPlugin = normalize(group.tags().get("plugin"));
     if (!taggedPlugin.isBlank() && !pluginId.equals(taggedPlugin)) {
       return false;
     }
+    long now = System.currentTimeMillis();
     for (Map.Entry<String, IntegrationMetricSample> entry : group.samples().entrySet()) {
-      if (validatedSample(pluginId, entry.getKey(), entry.getValue(), System.currentTimeMillis()) == null) {
+      if (validatedSample(pluginId, scope, entry.getKey(), entry.getValue(), now) == null) {
         return false;
       }
     }
@@ -265,5 +306,8 @@ public class RemoteSamplerBridge {
       scopeKind = scopeKind == null ? "" : scopeKind.trim().toLowerCase(Locale.ROOT);
       scopeId = scopeId == null ? "" : scopeId.trim();
     }
+  }
+
+  private record RejectionKey(String pluginId, String mapKey, GroupKey scope) {
   }
 }

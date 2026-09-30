@@ -5,6 +5,7 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
+import org.bukkit.block.Chest;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -35,6 +36,45 @@ public class TweakFastDropsTest {
   }
 
   @Test
+  public void blockExperienceIgnoresCancelledBreaks() throws Exception {
+    Method handler = TweakFastDrops.class.getDeclaredMethod("on", BlockBreakEvent.class);
+    EventHandler annotation = handler.getAnnotation(EventHandler.class);
+
+    Assertions.assertNotNull(annotation);
+    Assertions.assertTrue(annotation.ignoreCancelled());
+  }
+
+  @Test
+  public void containerDropsAreDetectedFromTheBrokenBlockState() {
+    TweakFastDrops tweak = new TweakFastDrops();
+    BlockDropItemEvent event = Mockito.mock(BlockDropItemEvent.class);
+    Block block = Mockito.mock(Block.class);
+    BlockState airState = Mockito.mock(BlockState.class);
+    Chest brokenChest = Mockito.mock(Chest.class);
+    Player player = Mockito.mock(Player.class);
+    PlayerInventory inventory = Mockito.mock(PlayerInventory.class);
+    Item entity = Mockito.mock(Item.class);
+    ItemStack contents = Mockito.mock(ItemStack.class);
+    List<Item> drops = new ArrayList<>(List.of(entity));
+
+    Mockito.when(entity.getItemStack()).thenReturn(contents);
+    Mockito.when(contents.clone()).thenReturn(contents);
+    Mockito.when(inventory.addItem(contents)).thenReturn(new HashMap<>());
+    Mockito.when(event.getBlock()).thenReturn(block);
+    Mockito.when(block.getState()).thenReturn(airState);
+    Mockito.when(event.getBlockState()).thenReturn(brokenChest);
+    Mockito.when(event.getPlayer()).thenReturn(player);
+    Mockito.when(event.getItems()).thenReturn(drops);
+    Mockito.when(player.getGameMode()).thenReturn(GameMode.SURVIVAL);
+    Mockito.when(player.getInventory()).thenReturn(inventory);
+
+    tweak.on(event);
+
+    Assertions.assertEquals(List.of(entity), drops);
+    Mockito.verify(inventory, Mockito.never()).addItem(Mockito.any(ItemStack[].class));
+  }
+
+  @Test
   public void blockDropsClaimOnlyItemsTransferredByFastDrops() {
     TweakFastDrops tweak = new TweakFastDrops();
     BlockDropItemEvent event = Mockito.mock(BlockDropItemEvent.class);
@@ -54,6 +94,7 @@ public class TweakFastDropsTest {
 
     Mockito.when(event.getBlock()).thenReturn(block);
     Mockito.when(block.getState()).thenReturn(blockState);
+    Mockito.when(event.getBlockState()).thenReturn(blockState);
     Mockito.when(event.getPlayer()).thenReturn(player);
     Mockito.when(event.getItems()).thenReturn(drops);
     Mockito.when(player.getGameMode()).thenReturn(GameMode.SURVIVAL);

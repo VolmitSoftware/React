@@ -40,6 +40,7 @@ import java.util.*;
 @Getter
 public class MaterialValue {
   private static final Map<Material, Double> valueMultipliers = new HashMap<>();
+  private static final MaterialValueMemo resolvedValues = new MaterialValueMemo(MaterialValue::resolveValue);
   private static MaterialValue valueCache = null;
 
   static {
@@ -134,10 +135,14 @@ public class MaterialValue {
 
   public static double getValue(Material m) {
     try {
-      return getValue(m, new HashSet<>());
+      return resolvedValues.get(m);
     } catch (Exception ignored) {
       return 1;
     }
+  }
+
+  private static double resolveValue(Material m) {
+    return getValue(m, new HashSet<>());
   }
 
   private static double getValue(Material m, Set<MaterialRecipe> ignore) {

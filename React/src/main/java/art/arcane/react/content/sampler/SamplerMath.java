@@ -57,6 +57,36 @@ final class SamplerMath {
     return (sorted.get(low) * (1D - weight)) + (sorted.get(high) * weight);
   }
 
+  static double percentileSorted(double[] sorted, double percentile) {
+    if (sorted == null || sorted.length == 0) {
+      return 0;
+    }
+
+    double p = clip(percentile, 0, 1);
+    double rank = p * (sorted.length - 1);
+    int low = (int) Math.floor(rank);
+    int high = (int) Math.ceil(rank);
+    if (low == high) {
+      return sorted[low];
+    }
+
+    double weight = rank - low;
+    return (sorted[low] * (1D - weight)) + (sorted[high] * weight);
+  }
+
+  static double mean(double[] values) {
+    if (values == null || values.length == 0) {
+      return 0;
+    }
+
+    double total = 0D;
+    for (double value : values) {
+      total += value;
+    }
+
+    return total / values.length;
+  }
+
   static double clip(double value, double min, double max) {
     return Math.max(min, Math.min(max, value));
   }

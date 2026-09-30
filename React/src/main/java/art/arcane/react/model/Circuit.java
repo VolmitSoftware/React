@@ -1,13 +1,10 @@
 package art.arcane.react.model;
 
-import art.arcane.volmlib.util.math.BlockPosition;
-
-import java.util.HashSet;
-import java.util.Set;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 
 public final class Circuit {
   private final long id;
-  private final Set<BlockPosition> positions;
+  private final LongOpenHashSet positions;
   private int events;
   private int pendingEvents;
   private long lastEventMs;
@@ -15,7 +12,7 @@ public final class Circuit {
 
   public Circuit(long id, long now) {
     this.id = id;
-    positions = new HashSet<>();
+    positions = new LongOpenHashSet();
     lastEventMs = now;
   }
 
@@ -43,15 +40,15 @@ public final class Circuit {
     return blockedUntilMs > now;
   }
 
-  Set<BlockPosition> positions() {
+  LongOpenHashSet positions() {
     return positions;
   }
 
-  void add(BlockPosition position) {
+  void add(long position) {
     positions.add(position);
   }
 
-  void remove(BlockPosition position) {
+  void remove(long position) {
     positions.remove(position);
   }
 

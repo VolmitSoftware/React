@@ -122,7 +122,7 @@ public class MonitorConfigGUI {
 
               J.a(() -> {
                 ReactLanguage.send(p, GuiMessages.GROUP_RENAME_PROMPT);
-                String n = TextInputGui.captureText(p);
+                String n = TextInputGui.captureText(p, () -> false);
 
                 if (n != null) {
                   group.setName(n);
@@ -214,7 +214,7 @@ public class MonitorConfigGUI {
             J.a(() -> {
               J.s(window::close);
               ReactLanguage.send(p, GuiMessages.GROUP_CREATE_PROMPT);
-              String name = TextInputGui.captureText(p);
+              String name = TextInputGui.captureText(p, () -> false);
               Color c = ColorPickerGUI.presetColors.get(new Random().nextInt(ColorPickerGUI.presetColors.size()));
               if (name != null) {
                 MonitorGroup g = MonitorGroup.builder()

@@ -1011,8 +1011,8 @@ impact = "Daha yüksek değerler daha hızlı sabit bir şekilde temizlenebilir 
 summary = "chunk karantinasındaki bakım döngüsüne göre denetlenen maksimum chunk-devleti girişleri."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkquarantine.field.maxtrackedchunks]
-impact = "Yüksek değerler müdahaleden önce daha fazla bağlantıya izin verir; düşük değerler daha agresif hale getirir."
-summary = "chunk karantinası tarafından izin verilen en fazla izlenen chunk'lar."
+impact = "Yüksek değerler küçük bir bellek maliyetiyle daha fazla chunk puanı tutar; düşük değerler daha az etkin chunk'ları daha erken kaldırır ve puanlarını sıfırlar."
+summary = "Chunk karantinasının izlediği en fazla chunk sayısı; sınıra ulaşıldığında en uzun süredir etkin olmayan chunk kaldırılır."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkquarantine.field.onlyduringpressure]
 impact = "Bu davranışı uygulamak mümkün; bu yolu aktif tutmak için devre dışı bırakmak."
@@ -1101,11 +1101,11 @@ impact = "Daha uzun süreler sorunlu bir bileşeni daha uzun süre bastırır; d
 summary = "Devre kısıtlama süresi (milisaniye)."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward]
-description = "Eklenme Hızlı Forward özelliği için yapılandırma. Ne zaman bir ne zaman chunk Yurt dışından geçişler (Uzun bir süre yakın oyuncu yok) Aktif olarak aktif olmak için (oyuncu yaklaştı veya chunk Yeniden yüklendi), Bu özellik bir kez ek ve filing blokları yürür ve büyümelerini yurt süresine göre miktar olarak ilerletir, böylece oyuncular geri dönmeden sonra donmuş çiftlikleri göremezler.. Yüksek yük olayları sırasında aktif kalın."
+description = "Crop Fast Forward özelliğinin yapılandırması. Sunucu ekinleri yalnızca bir oyuncunun simülasyon mesafesi içindeki chunk'larda büyütür, bu yüzden bu özellik yüklü her chunk'ın bu mesafenin dışında ne kadar süre geçirdiğini kaydeder. Bir oyuncu etkin aralığa geri döndüğünde, chunk'ın ekin ve fidan bloklarını bir kez tarar ve büyümelerini bu süre kadar ilerletir; böylece oyuncular döndüklerinde donmuş çiftlikler görmez. Bir chunk bellekten kaldırıldığında bekleyen büyüme silinir. Yüksek yük olayları sırasında etkin olmaz."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.activerange]
-impact = "Daha büyük değerler daha erken chunk'lar'e hızlı ilerler; küçük değerler oyuncuların yaklaşıncaya kadar ertelenir."
-summary = "Oyuncu yakınlığı aralığı (blocks), bir chunk'i aktif olarak sınıflandırır. Bu aralığın içinde, yatak izleme sıfırlamaları ve bekleyen hızlı ilerleyici yangınlar."
+impact = "Daha büyük değerler bekleyen büyümeyi daha uzak chunk'lara daha erken uygular; daha küçük değerler oyuncular yaklaşana kadar bekler."
+summary = "Bekleyen hızlı ilerletmenin uygulandığı, oyuncunun chunk'ın orta sütununa olan mesafesi (blok). Bir chunk'ın etkin olup olmadığı dünyanın simülasyon mesafesine göre belirlenir."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.engageonincident]
 impact = "Yüksek değerler ışık olayları sırasında hızlı ileri sürmeye devam eder; düşük değerler onu daha erken susturur."
@@ -1128,8 +1128,8 @@ impact = "Daha yüksek değerler daha fazla hafıza ile daha fazla araziyi kapla
 summary = "En eski izlenen chunk'lar'lerin atılmasından önce tüm dünyalarda en fazla chunk'lar takip edilmiştir."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.minelapsedticks]
-impact = "Yüksek değerler ucuz son uyanmaları; daha düşük değerler hızlı bir şekilde, kısa uyku hatları bile."
-summary = "(ticks), bir uyanıklık tetiklenmeden önce hızlı ilerleme gösterir."
+impact = "Daha yüksek değerler kısa yoklukları atlar; daha düşük değerler simülasyon mesafesi dışındaki kısa süreleri bile ilerletir."
+summary = "Bir chunk'ın hızlı ilerletilmeden önce simülasyon mesafesi dışında geçirmesi gereken en kısa süre (tick). Daha kısa yokluklar yok sayılır."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.releaseonincident]
 impact = "Daha yüksek değerler sakinleşmeden sonra erken başlar; düşük değerler istikrar için daha uzun süre hızlı ilerliyor."
@@ -1810,9 +1810,13 @@ summary = "İris arazisi için genel değerlendirme aralığı milisans'ta bekç
 impact = "Daha sonra daha yüksek değerler, daha erken ve daha agresif bir şekilde tetiklenir."
 summary = "Başlatma eşiği Iris İris arazi dalga koruyucusunda nesil süresi."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregenqueue]
-impact = "Daha sonra daha yüksek değerler, daha erken ve daha agresif bir şekilde tetiklenir."
-summary = "iris arazi dalgalanmasında iris pregen kuyruklarını tetiklemek için teşhir eşi."
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregeninflight]
+impact = "Daha yüksek değerler korumayı yalnızca dünyanın ön üretimi tam eşzamanlılığına yakın çalışırken tetikler; daha düşük değerler onu daha hafif yükte de tetikler."
+summary = "Tick süresi de triggerIrisPregenTickMS değerine ulaştığında Iris arazi dalgalanma korumasını tetikleyen, bu dünya için Iris ön üreticisinin devam eden chunk istekleri; değerler 1..256 aralığına sınırlanır."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregentickms]
+impact = "Yüksek değerler, sunucu daha fazla geri kalana kadar oyuncuları sınırlamadan ön üretimin sürmesine izin verir; düşük değerler bir ön üretim sürerken oyuncuların chunk üretimini daha erken sınırlar."
+summary = "Iris ön üreticisinin devam eden istekleri Iris arazi dalgalanma korumasını tetiklemeden önce ayrıca ulaşılması gereken tick süresi eşiği (milisaniye); değerler 1..1000 aralığına sınırlanır."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "Yüksek değerler aktivasyon veya çıkış geciktirir; daha düşük değerler bu eşi geçmek için bu eşiği kolaylaştırmaktadır."
@@ -2441,9 +2445,9 @@ summary = "Adapt Oturum yükü eşiği, üçlü olay modunda (yüzde) işlem yap
 impact = "Daha sonra daha yüksek değerler, daha erken ve daha agresif bir şekilde tetiklenir."
 summary = "Üçnity olay modunda olay puanı almak için teşrik eşi."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririsqueue]
-impact = "Yüksek değerler tamponlanmış iş veya patlama ücretini arttırır; daha düşük değerler sert tonlama."
-summary = "trinity olayı modunda kullanılan iris kuyruk sınırı girin."
+[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririspregeninflight]
+impact = "Daha yüksek değerler Iris baskısını yalnızca ön üretici tam eşzamanlılığına yakın çalışırken sayar; daha düşük değerler daha hafif ön üretim yükünü de sayar."
+summary = "Trinity olay modunda Iris baskısı sayılan, Iris ön üreticisinin devam eden chunk istekleri; değerler 1..256 aralığına sınırlanır."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.entertickms]
 impact = "Yüksek değerler aktivasyon veya çıkış geciktirir; daha düşük değerler bu eşi geçmek için bu eşiği kolaylaştırmaktadır."
@@ -2847,6 +2851,25 @@ summary = "Sıcak yük değişim summaryları online operatörlere gönderin."
 [config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms]
 impact = "Daha düşük değerler alınan olayları daha erken algılar; otomatik değişiklikler yine en fazla üç saniyede bir toplu olarak uygulanır."
 summary = "Dosya sistemi olaylarını yoklama aralığı (milisaniye)."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller]
+description = "Enstrümantasyon etkinken kayıtlı dinleyicileri sararak eklenti başına olay işleyici süresini ölçer."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleonms]
+impact = "Daha uzun pencereler daha yüksek yinelenen maliyetle periyot başına daha fazla kayıtlı örnek üretir."
+summary = "Döngü modunda her periyodik ölçüm penceresinin milisaniye cinsinden uzunluğu."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleperiodms]
+impact = "Daha kısa periyotlar olay verisini daha sık kaydeder ve daha fazla maliyet çıkarır; daha uzun periyotlar geçmişte daha geniş boşluklar bırakır."
+summary = "Döngü modunda periyodik ölçüm pencerelerinin başlangıçları arasındaki milisaniye."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.instrumentation]
+impact = "ALWAYS her olay işleyicisine bir zamanlama yükü bindirir; ON_DEMAND boştayken bu maliyeti kaldırır ancak geçmişte boşluklar bırakır; DUTY_CYCLE periyodik boşlukları küçük bir yinelenen maliyetle değiştirir."
+summary = "Dinleyici zamanlama sarmalayıcılarının ne zaman kurulacağını belirler: ALWAYS onları kurulu tutar, ON_DEMAND yalnızca bir monitör, harita, yer tutucu veya web izleyicisi olay verisi okurken kurar ve DUTY_CYCLE ek olarak periyodik bir ölçüm penceresi açar."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.sampleractivitywindowms]
+impact = "Daha yüksek değerler bir izleyici ayrıldıktan sonra enstrümantasyonu daha uzun süre kurulu tutar; daha düşük değerler onu daha erken kaldırır."
+summary = "İsteğe bağlı ve döngü modlarında sarmalayıcılar kaldırılmadan önce son olay verisi okumasından sonra geçen milisaniye."
 
 [config.documentation.annotation.art.arcane.react.core.controller.historycontroller]
 description = "React örnekleyicilerini bir kez yakalar, sıkıştırılmış geçmiş telemetrisini saklar ve sınırlandırılmış zaman aralığı sorgularını işler."
@@ -3544,8 +3567,8 @@ biletools_watched_jars = "BileTools İzlenen Jarlar"
 block_entities = "Blok Varlıkları"
 block_entities_ticking = "Tiklenen Blok Varlıkları"
 bukkit_pending_tasks = "Bekleyen Görevler"
-chunk_gen_ms = "chunk Gen Ms"
-chunk_load_ms = "chunk yükleme Ms"
+chunk_gen_listener_ms = "chunk Gen Dinleyici Ms"
+chunk_load_listener_ms = "chunk yükleme Dinleyici Ms"
 chunk_tickets = "Chunk Biletleri"
 chunk_unloads = "Chunk Boşaltmaları"
 chunks = "chunk'lar"
@@ -3570,7 +3593,6 @@ gc_time_percent = "Gc Time Percent"
 gloss_animations = "Gloss Animasyonları"
 gloss_boards = "Gloss Skorbordları"
 gloss_bubbles = "Gloss Sohbet Baloncukları"
-gloss_builder_server = "Gloss Oluşturucu Sunucusu"
 gloss_display_entities = "Gloss Görüntü Varlıkları"
 gloss_emoji = "Gloss Emoji Değişimleri"
 gloss_holograms = "Gloss Hologramları"
@@ -3605,7 +3627,7 @@ hopper_event_span = "Huni olaylarının zaman aralığı"
 incident_score = "Bu aradaki Puan"
 iris_chunks_per_second = "Iris chunk'lar Per Sekundu"
 iris_generation_total_ms = "Iris Toplam Bayan"
-iris_pregen_queue = "Iris Pregen Queue"
+iris_pregen_queue = "Iris Pregen işlemde"
 iris_pregen_throughput = "Iris Pregen Throughput"
 jvm_threads = "JVM İş Parçacıkları"
 lazy_gravity_skipped = "Enis Gravity Skipped"
@@ -3650,10 +3672,13 @@ villagers = "Köylüler"
 world_save_event_interval = "Dünya kayıt olayları arasındaki süre"
 worlds = "Dünyalar"
 wormholes_block_changes = "Wormholes Blok Değişiklikleri"
+wormholes_block_entities = "Wormholes Blok Varlıkları"
 wormholes_compression = "Wormholes Sıkıştırma"
 wormholes_packets = "Wormholes Packets"
 wormholes_peer_rtt = "Wormholes Eş RTT"
 wormholes_peers = "Wormholes Eşleri"
+wormholes_plate_builds = "Wormholes Plaka Oluşturma"
+wormholes_plate_bytes = "Wormholes Plaka Belleği"
 wormholes_portals = "Wormholes Portals"
 wormholes_projection_observers = "Wormholes Projek Gözlemciler"
 wormholes_projection_render_ms = "Wormholes Projeksiyon Bayan"
@@ -3725,7 +3750,7 @@ adapt_ability_ops = "Adapt Dakika başına yetenek işlemleri (konu tarafından 
 adapt_cache_hit_ratio = "Aktif seviye önbelleğinden karşılanan yetenek seviyesi kontrollerinin payı."
 adapt_check_latency = "Önbelleksiz her yetenek koruma kontrolü başına ortalama mikrosaniye."
 adapt_event_ops = "Dakikadaki adaptasyon olay işleyici çağrıları."
-adapt_fx_packets = "Geçerli FX bütçe tik'inde tüketilen parçacık paketleri."
+adapt_fx_packets = "Son saniyede FX bütçe tiki başına tüketilen ortalama parçacık paketi."
 adapt_fx_shed_band = "FX azaltma bandı; sıfır tam kalite, dört ise en ağır kısıtlama demektir."
 adapt_fx_timelines = "Efekt motorunda oynatılan canlı FX zaman çizelgeleri."
 adapt_learned_adaptations = "En az bir çevrimiçi oyuncunun kuşandığı farklı adaptasyonlar."
@@ -3748,8 +3773,8 @@ biletools_watched_jars = "Sıcak yeniden yükleme izleyicisi tarafından takip e
 block_entities = "Tüm dünyalarda yüklü blok varlıkları."
 block_entities_ticking = "Tüm dünyalarda her tik işlenen blok varlıkları."
 bukkit_pending_tasks = "Tüm eklentilerden Bukkit zamanlayıcısında bekleyen görevler."
-chunk_gen_ms = "chunk jenerasyon gecikmesi milisaniyede."
-chunk_load_ms = "chunk yükleme gecikmesi milisaniyede."
+chunk_gen_listener_ms = "Diğer eklentilerin dinleyicilerinin yeni oluşturulan her chunk'ın yükleme olayında harcadığı ana iş parçacığı milisaniyesi."
+chunk_load_listener_ms = "Diğer eklentilerin dinleyicilerinin her chunk yükleme olayında harcadığı ana iş parçacığı milisaniyesi."
 chunk_tickets = "Eklenti chunk biletleriyle yüklü tutulan chunk'lar."
 chunk_unloads = "Tüm dünyalarda saniyede boşaltılan chunk'lar."
 chunks = "chunk sayım tarzı yüklendi."
@@ -3771,10 +3796,9 @@ fluid = "Akışkanlar etkinlik oranını günceller."
 fluid_event_span = "Her tick’te ilk ve son sıvı akışı geri çağrısı arasında geçen gerçek süre."
 gc_pause_p95 = "Yüzde 95'i çöp toplama süresi."
 gc_time_percent = "Zaman Yüzdesi içinde harcanan zamanın GC Erkeğin hakkı için."
-gloss_animations = "Şu anda kayıtlı ve çalışan metin animasyonları."
+gloss_animations = "Şu anda animasyonlu olan hologram metin hedefleri."
 gloss_boards = "Şu anda oyunculara gösterilen skorbord yan çubukları."
 gloss_bubbles = "Saniyede oyuncuların üzerinde oluşturulan sohbet baloncukları."
-gloss_builder_server = "Web oluşturucu sunucusunun çalışıp çalışmadığı; bir, çevrimiçi demektir."
 gloss_display_entities = "Hologramlar için kayıtlı, yalnızca paket tabanlı görüntü varlıkları."
 gloss_emoji = "Saniyede uygulanan sohbet emoji değişimleri."
 gloss_holograms = "Yüklü chunklarda şu anda etkin olan kalıcı metin hologramları."
@@ -3809,7 +3833,7 @@ hopper_event_span = "Her tick’te ilk ve son huni aktarımı geri çağrısı a
 incident_score = "Kompozite olay puanı, çok baskı metrik okuyucular'den oluşturulmuştur."
 iris_chunks_per_second = "Kombine Iris motor chunk jenerasyon üretimi."
 iris_generation_total_ms = "En kötü aktif Iris-Dünya yuvarlak nesil zamanı."
-iris_pregen_queue = "Iris Uzak pregen kuyruk derinliği."
+iris_pregen_queue = "Iris ön üreticisinin işlemdeki chunk istekleri."
 iris_pregen_throughput = "Iris pregenerator geçişini saniyede chunk'lar'de."
 jvm_threads = "Eklenti ve sunucu havuzları dahil canlı JVM iş parçacıkları."
 lazy_gravity_skipped = "Düşen blok hareketleri tikler tembel çekim tarafından atlanabilir olarak projelendi."
@@ -3854,10 +3878,13 @@ villagers = "Tüm dünyalarda yüklü köylüler ve gezgin tüccarlar."
 world_save_event_interval = "Bir dünyanın art arda gelen kayıt olayları arasında geçen süre."
 worlds = "Sunucuda şu anda yüklü dünyalar."
 wormholes_block_changes = "Wormholes Bütünleşme köprüsü aracılığıyla yayınlanan projelenmiş blok değişiklikleri."
+wormholes_block_entities = "Saniyede izleyicilere gönderilen yansıtılmış blok varlığı güncellemeleri."
 wormholes_compression = "Giden hat sıkıştırma oranı; 1.0'a yakın değer bayat bir sözlük demektir."
 wormholes_packets = "Wormholes İntegra köprüsü aracılığıyla yayınlanan projeksiyon paketi."
 wormholes_peer_rtt = "Bağlı bir eş sunucuya en kötü durum gidiş-dönüş gecikmesi."
 wormholes_peers = "Wormholes ağına şu anda bağlı olan uzak sunucular."
+wormholes_plate_builds = "Saniyede oluşturulan projeksiyon görünüm plakaları."
+wormholes_plate_bytes = "Önbellekteki projeksiyon görünüm plakalarının kullandığı bellek."
 wormholes_portals = "Entegrasyon köprüsünde yayımlanan etkin Wormholes portalı sayısı."
 wormholes_projection_observers = "Oyuncular şu anda gözlemleniyor Wormholes projeksiyonlar."
 wormholes_projection_render_ms = "Wormholes projeksiyon süresi."
@@ -3991,6 +4018,7 @@ idle = "Idle"
 idle_average = "Idle Avg"
 idle_maximum = "Idle Max"
 idle_minimum = "Idle Min"
+in_flight = "İşlemde"
 incident = "Bu olay"
 jobs = "İşler"
 last_reload = "Son Yeniden Yükleme"

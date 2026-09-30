@@ -1011,8 +1011,8 @@ impact = "Korkeammat arvot puhdistavat himmeän tilan nopeammin korkeammalla CPU
 summary = "Maksimatiiviset chunk-tilan tulokset, jotka tarkastetaan chunk-karanteenissa kunkin ylläpitokykyn mukaan."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkquarantine.field.maxtrackedchunks]
-impact = "Suuremmat arvot mahdollistavat enemmän suoritusta ennen interventiota; pienemmät arvot tekevät hillinnästä aggressiivisempaa."
-summary = "chunk-karanteenin sallimat korkeimmat jäljitetyt chunkit:t."
+impact = "Suuremmat arvot säilyttävät useamman chunkin pisteet pienellä muistikustannuksella; pienemmät arvot poistavat vähemmän aktiiviset chunkit aiemmin ja nollaavat niiden pisteet."
+summary = "Chunk-karanteenin seuraamien chunkien enimmäismäärä; kun raja täyttyy, pisimpään toimettomana ollut chunk poistetaan."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkquarantine.field.onlyduringpressure]
 impact = "Pystyt soveltamaan tätä käytöstä; poista polku käytöstä."
@@ -1101,11 +1101,11 @@ impact = "Pidempi kesto estää ongelmallista komponenttia kauemmin; lyhyempi yr
 summary = "Piirin rajoituksen kesto millisekunteina."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward]
-description = "Kun chunk siirtyy nukkuvasta (-pelaajasta pitkästä ajalta):n aktiiviseen (player -ohjelmaan tai chunk-ladattu ):een, tämä ominaisuus kulkee kasvien ja siemenen blokkeja kerran ja edistää niiden kasvua suhteessa nukkuvan ajan kestöön, jotta pelaajat eivät näe jäätyneitä maataloita palaamisen jälkeen. Se pysyy inaktiivisena suurten kuormitusten aikana."
+description = "Crop Fast Forward -ominaisuuden asetukset. Palvelin kasvattaa viljelykasveja vain chunkeissa, jotka ovat pelaajan simulaatioetäisyyden sisällä, joten tämä ominaisuus kirjaa, kuinka kauan kukin ladattu chunk viettää tämän etäisyyden ulkopuolella. Kun pelaaja palaa aktiiviselle alueelle, ominaisuus käy chunkin viljelykasvi- ja taimipalikat läpi kerran ja kasvattaa niitä tämän ajan verran, jotta pelaajat eivät näe jäätyneitä viljelmiä palatessaan. Odottava kasvu hylätään, kun chunk poistetaan muistista. Pysyy passiivisena raskaan kuormituksen häiriöiden aikana."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.activerange]
-impact = "Suurimmat arvot siirtyvät nopeammin chunkit:n aikaisempaan; pienemmät arvot lykkäävät, kunnes pelaajat tulevat lähemmäksi."
-summary = "Pelaajan läheisyysalue (blocks), joka luokittelee chunk:n aktiiviseksi. Tässä alueella on nukkumaton seuranta uudelleenasetukset ja kaikki odotettavissa olevat nopeat tulot."
+impact = "Suuremmat arvot kasvattavat kauempana olevia chunkeja aiemmin; pienemmät arvot odottavat, kunnes pelaajat tulevat lähemmäs."
+summary = "Pelaajan etäisyys (palikoina) chunkin keskisarakkeesta, jolla sen odottava pikakelaus otetaan käyttöön. Chunkin aktiivisuus määräytyy maailman simulaatioetäisyyden mukaan."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.engageonincident]
 impact = "Suuremmat arvot pitävät pikakelauksen käynnissä valoon liittyvien tapahtumien aikana; alemmat arvot vaientavat sen aikaisemmin."
@@ -1128,8 +1128,8 @@ impact = "Korkeammat arvot kattavat enemmän maastoa, jossa on enemmän muistia;
 summary = "chunkit-versio on jäljennetty kaikkiin maailmoihin ennen vanhimman chunkit-version poistamista."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.minelapsedticks]
-impact = "Korkeammat arvot ohittavat halpoja viime aikojen valvojaisia; alemmat arvot pikakelaavat jopa lyhyitä asuntolan venyttelyjä."
-summary = "(ticks):n väliaikainen virta on vähintään yksi, mutta se toimii nopeammin."
+impact = "Suuremmat arvot ohittavat lyhyet poissaolot; pienemmät arvot pikakelaavat myös lyhyet jaksot simulaatioetäisyyden ulkopuolella."
+summary = "Vähimmäisaika (tickeinä), jonka chunkin on oltava simulaatioetäisyyden ulkopuolella ennen pikakelausta. Lyhyemmät poissaolot ohitetaan."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.releaseonincident]
 impact = "Korkeammat arvot palaavat nopeammin hiljaisena; alemmat arvot pitävät nopeamman pois vakautta."
@@ -1810,9 +1810,13 @@ summary = "Iris-maaston purkaussuojan arviointiväli millisekunteina."
 impact = "Suuremmat arvot laukaisevat lieventämisen myöhemmin; alemmat arvot laukaisivat aikaisemmin ja aggressiivisemmin."
 summary = "Liikkumiskynnys Iris Sukupolviaika iirismaastossa."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregenqueue]
-impact = "Suuremmat arvot laukaisevat lieventämisen myöhemmin; alemmat arvot laukaisivat aikaisemmin ja aggressiivisemmin."
-summary = "Liipaisinkynnys liipaisimelle iris pregen jonossa maastossa."
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregeninflight]
+impact = "Suuremmat arvot laukaisevat suojan vain, kun maailman esigenerointi toimii lähes täydellä rinnakkaisuudellaan; pienemmät arvot laukaisevat sen myös kevyemmällä kuormalla."
+summary = "Tämän maailman Iris-esigeneraattorin käynnissä olevat chunk-pyynnöt, jotka laukaisevat Iris-maastopiikkisuojan, kun tick-aika saavuttaa myös arvon triggerIrisPregenTickMS; arvot rajataan välille 1..256."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregentickms]
+impact = "Suuremmat arvot antavat esigeneroinnin jatkua rajoittamatta pelaajia, kunnes palvelin jää enemmän jälkeen; pienemmät arvot rajoittavat pelaajien chunk-generointia aiemmin esigeneroinnin aikana."
+summary = "Tick-ajan kynnys, jonka on myös täytyttävä ennen kuin Iris-esigeneraattorin käynnissä olevat pyynnöt laukaisevat Iris-maastopiikkisuojan (millisekunteina); arvot rajataan välille 1..1000."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "Suuremmat arvot viivästyttävät aktivointia tai poistumista; alemmat arvot helpottavat tämän kynnysarvon ylittämistä."
@@ -2441,9 +2445,9 @@ summary = "Adapt istuntokuormituskynnys, joka voi laukaista vaaratilanteiden kä
 impact = "Suuremmat arvot laukaisevat lieventämisen myöhemmin; alemmat arvot laukaisivat aikaisemmin ja aggressiivisemmin."
 summary = "Antakaa pisteet kolmoishäiriötilassa."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririsqueue]
-impact = "Suuremmat arvot lisäävät puskuroitua työtä tai murtumisvaraa; pienemmät arvot kiristävät kuristamista."
-summary = "Anna iris jonotusraja, jota käytetään kolminaisuustapahtumatilassa."
+[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririspregeninflight]
+impact = "Suuremmat arvot laskevat Iris-paineen vain, kun esigeneraattori toimii lähes täydellä rinnakkaisuudellaan; pienemmät arvot laskevat myös kevyemmän esigenerointikuorman."
+summary = "Iris-esigeneraattorin käynnissä olevat chunk-pyynnöt, jotka lasketaan Iris-paineeksi Trinity-häiriötilassa; arvot rajataan välille 1..256."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.entertickms]
 impact = "Suuremmat arvot viivästyttävät aktivointia tai poistumista; alemmat arvot helpottavat tämän kynnysarvon ylittämistä."
@@ -2847,6 +2851,25 @@ summary = "Lähettää nippujen muutos yhteenvetoja online-operaattoreille."
 [config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms]
 impact = "Pienemmät arvot havaitsevat saapuneet tapahtumat nopeammin; automaattiset muutokset otetaan silti käyttöön erissä enintään kerran kolmessa sekunnissa."
 summary = "Tiedostojärjestelmän tapahtumien kyselyväli millisekunteina."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller]
+description = "Mittaa tapahtumakäsittelijöiden ajan liitännäistä kohden kääntämällä rekisteröidyt kuuntelijat kuoriin, kun mittaus on käytössä."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleonms]
+impact = "Pidemmät ikkunat tuottavat enemmän tallennettuja näytteitä jaksoa kohden suuremmalla toistuvalla kustannuksella."
+summary = "Jokaisen jaksollisen mittausikkunan pituus millisekunteina jaksotilassa."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleperiodms]
+impact = "Lyhyemmät jaksot tallentavat tapahtumatietoja useammin ja maksavat enemmän; pidemmät jaksot jättävät leveämpiä aukkoja historiaan."
+summary = "Millisekunnit jaksollisten mittausikkunoiden alkujen välillä jaksotilassa."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.instrumentation]
+impact = "ALWAYS lisää jokaiselle tapahtumakäsittelijälle mittauskuorman; ON_DEMAND poistaa kustannuksen lepotilassa mutta jättää aukkoja historiaan; DUTY_CYCLE vaihtaa jaksolliset aukot pieneen toistuvaan kustannukseen."
+summary = "Määrittää, milloin kuuntelijoiden ajanmittauskuoret asennetaan: ALWAYS pitää ne asennettuina, ON_DEMAND asentaa ne vain, kun monitori, kartta, paikkamerkki tai verkkokatselija lukee tapahtumatietoja, ja DUTY_CYCLE avaa lisäksi jaksollisen mittausikkunan."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.sampleractivitywindowms]
+impact = "Suuremmat arvot pitävät mittauksen asennettuna pidempään katselijan poistuttua; pienemmät arvot poistavat sen aiemmin."
+summary = "Millisekunnit viimeisestä tapahtumatietojen lukemisesta ennen kuorien poistoa tarvetilassa ja jaksotilassa."
 
 [config.documentation.annotation.art.arcane.react.core.controller.historycontroller]
 description = "Kaappaa React-näytteenottimet kerran, tallentaa pakatun historiallisen telemetrian ja palvelee rajattuja aikavälikyselyjä."
@@ -3544,8 +3567,8 @@ biletools_watched_jars = "BileTools Seuratut jarit"
 block_entities = "Lohkoyhteisöt"
 block_entities_ticking = "Tickaavat lohkoyhteisöt"
 bukkit_pending_tasks = "Odottavat tehtävät"
-chunk_gen_ms = "chunk Gen Ms"
-chunk_load_ms = "chunk-laatu Ms"
+chunk_gen_listener_ms = "chunk Gen Listener Ms"
+chunk_load_listener_ms = "chunk-lataus Listener Ms"
 chunk_tickets = "chunk-liput"
 chunk_unloads = "chunk-purkamiset"
 chunks = "chunkit"
@@ -3570,7 +3593,6 @@ gc_time_percent = "Gc Aika Prosenttia"
 gloss_animations = "Gloss Animaatiot"
 gloss_boards = "Gloss Tulostaulut"
 gloss_bubbles = "Gloss Chat-kuplat"
-gloss_builder_server = "Gloss Builder-palvelin"
 gloss_display_entities = "Gloss Näyttöyhteisöt"
 gloss_emoji = "Gloss Emoji-korvaukset"
 gloss_holograms = "Gloss Hologrammit"
@@ -3605,7 +3627,7 @@ hopper_event_span = "Suppilotapahtumien aikaväli"
 incident_score = "Poikkeamapistemäärä"
 iris_chunks_per_second = "Iris chunkit sekunnissa"
 iris_generation_total_ms = "Iris Sukupolvi yhteensä"
-iris_pregen_queue = "Iris Pregen-jono"
+iris_pregen_queue = "Iris Pregen käynnissä"
 iris_pregen_throughput = "Iris Pregen Throughput"
 jvm_threads = "JVM-säikeet"
 lazy_gravity_skipped = "Laiska painovoima ohitti"
@@ -3650,10 +3672,13 @@ villagers = "Kyläläiset"
 world_save_event_interval = "Maailman tallennustapahtumien väli"
 worlds = "Maailmat"
 wormholes_block_changes = "Wormholes Lohkon muutokset"
+wormholes_block_entities = "Wormholes Lohkoentiteetit"
 wormholes_compression = "Wormholes Pakkaussuhde"
 wormholes_packets = "Wormholes Pakkaus"
 wormholes_peer_rtt = "Wormholes Vertais-RTT"
 wormholes_peers = "Wormholes Vertaiset"
+wormholes_plate_builds = "Wormholes Levyrakennukset"
+wormholes_plate_bytes = "Wormholes Levymuisti"
 wormholes_portals = "Wormholes Portaalit"
 wormholes_projection_observers = "Wormholes Ennustetarkkailijat"
 wormholes_projection_render_ms = "Wormholes Ennuste Render Ms"
@@ -3725,7 +3750,7 @@ adapt_ability_ops = "Adapt kykytoiminta minuutissa (muoto valittu config adaptAb
 adapt_cache_hit_ratio = "Osuus kykytasotarkistuksista, jotka palvellaan aktiivisen tason välimuistista."
 adapt_check_latency = "Keskimääräiset mikrosekunnit yhtä välimuistitonta kykytarkistusta kohden."
 adapt_event_ops = "Adaptaatioiden tapahtumakäsittelijöiden kutsut minuutissa."
-adapt_fx_packets = "Nykyisen FX-budjettitickin aikana kulutetut partikkelipaketit."
+adapt_fx_packets = "Keskimääräiset FX-budjettitickiä kohden kulutetut partikkelipaketit viimeisen sekunnin aikana."
 adapt_fx_shed_band = "FX-pudotustaso; nolla on täysi laatu, neljä on raskain karsinta."
 adapt_fx_timelines = "Efektimoottorissa parhaillaan toistettavat FX-aikajanat."
 adapt_learned_adaptations = "Eri adaptaatiot, jotka vähintään yksi paikalla oleva pelaaja on ottanut käyttöön."
@@ -3748,8 +3773,8 @@ biletools_watched_jars = "Liitännäisjarit, joita uudelleenlatausvahti seuraa."
 block_entities = "Lohkoyhteisöt ladattuina kaikissa maailmoissa."
 block_entities_ticking = "Lohkoyhteisöt, jotka tickaavat joka tick kaikissa maailmoissa."
 bukkit_pending_tasks = "Bukkit-ajastimessa odottavat tehtävät kaikista liitännäisistä."
-chunk_gen_ms = "chunk-generaatio hiljaisuus millisekunnissa."
-chunk_load_ms = "chunk-laadun viivästystä millisekunnissa."
+chunk_gen_listener_ms = "Pääsäikeen millisekunnit, jotka muiden lisäosien kuuntelijat käyttävät jokaisen uuden chunkin lataustapahtumaan."
+chunk_load_listener_ms = "Pääsäikeen millisekunnit, jotka muiden lisäosien kuuntelijat käyttävät jokaiseen chunk-lataustapahtumaan."
 chunk_tickets = "chunkit pidetään ladattuina liitännäisten chunk-lippujen avulla."
 chunk_unloads = "Sekunnissa puretut chunkit kaikissa maailmoissa."
 chunks = "chunk-lasku on täynnä."
@@ -3771,10 +3796,9 @@ fluid = "Nesteen päivitysaktiivisuus."
 fluid_event_span = "Todellinen aika kunkin tickin ensimmäisestä viimeisimpään nestevirtauksen takaisinkutsuun."
 gc_pause_p95 = "95. persentiilin roskien keräys tauko."
 gc_time_percent = "Prosenttia ajasta GC - Entä ajoaika?"
-gloss_animations = "Tällä hetkellä rekisteröidyt ja käynnissä olevat tekstianimaatiot."
+gloss_animations = "Parhaillaan animoitavat hologrammitekstikohteet."
 gloss_boards = "Pelaajille tällä hetkellä näytettävät tulostaulun sivupalkit."
 gloss_bubbles = "Pelaajien yläpuolelle sekunnissa luodut chat-kuplat."
-gloss_builder_server = "Onko web-builder-palvelin käynnissä; yksi tarkoittaa online-tilaa."
 gloss_display_entities = "Vain paketteina toteutetut näyttöyhteisöt, jotka on rekisteröity hologrammeille."
 gloss_emoji = "Sekunnissa tehdyt chatin emoji-korvaukset."
 gloss_holograms = "Ladatuissa chunkeissa aktiiviset pysyvät tekstihologrammit."
@@ -3809,7 +3833,7 @@ hopper_event_span = "Todellinen aika kunkin tickin ensimmäisestä viimeisimpä�
 incident_score = "Komposittikäsittely, joka on rakennettu useasta painostusta mittarilukijat:stä."
 iris_chunks_per_second = "Kombinoitu Iris-moottori chunk-generaatio."
 iris_generation_total_ms = "Pahin aktiivinen Iris-Maailman kierivä sukupolvi."
-iris_pregen_queue = "Iris etäjonon syvyys."
+iris_pregen_queue = "Iris-esigeneraattorin käynnissä olevat chunk-pyynnöt."
 iris_pregen_throughput = "Iris-pregeneratorin läpimäärä chunkit:ssä sekunnissa."
 jvm_threads = "Elävät JVM-säikeet mukaan lukien liitännäis- ja palvelinpoolit."
 lazy_gravity_skipped = "tickit:n laskut-blokkiliikkeen ennustaminen laiskalla painovoimalla."
@@ -3854,10 +3878,13 @@ villagers = "Kyläläiset ja vaeltavat kauppiaat ladattuina kaikissa maailmoissa
 world_save_event_interval = "Aika saman maailman peräkkäisten tallennustapahtumien välillä."
 worlds = "Palvelimella parhaillaan ladatut maailmat."
 wormholes_block_changes = "Wormholes Integraatiosillan kautta julkaistut lohkomuutokset."
+wormholes_block_entities = "Katsojille sekunnissa lähetetyt projisoidut lohkoentiteettipäivitykset."
 wormholes_compression = "Lähtevän liikenteen pakkaussuhde; lähellä arvoa 1.0 tarkoittaa vanhentunutta sanakirjaa."
 wormholes_packets = "Wormholes Projektipaketti läpimeno julkaistaan kautta integraation silta."
 wormholes_peer_rtt = "Pahimman tapauksen edestakainen viive yhdistettyyn vertaispalvelimeen."
 wormholes_peers = "Etäpalvelimet, jotka ovat parhaillaan yhteydessä Wormholes-verkkoon."
+wormholes_plate_builds = "Sekunnissa rakennetut projektion näkymälevyt."
+wormholes_plate_bytes = "Välimuistissa olevien projektion näkymälevyjen käyttämä muisti."
 wormholes_portals = "Aktiivinen Wormholes portaaliluku julkaistaan integraatiosillan kautta."
 wormholes_projection_observers = "Pelaajat, jotka tarkkailevat Wormholes ennusteita."
 wormholes_projection_render_ms = "Wormholes projektion renderointiaika."
@@ -3991,6 +4018,7 @@ idle = "Joutokäynti"
 idle_average = "Jousitus"
 idle_maximum = "Joutokäyntien enimmäispituus"
 idle_minimum = "Joutomin"
+in_flight = "Käynnissä"
 incident = "Tapahtumia"
 jobs = "Työpaikat"
 last_reload = "Viimeisin lataus"

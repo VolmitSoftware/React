@@ -1011,8 +1011,8 @@ impact = "Valores más altos limpia estado de establo más rápido con mayor CPU
 summary = "El número máximo de entradas en estado chunk inspeccionadas por ciclo de mantenimiento en cuarentena chunk."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkquarantine.field.maxtrackedchunks]
-impact = "Los valores más altos permiten mayor rendimiento antes de la intervención; los valores inferiores hacen que la mitigación sea más agresiva."
-summary = "chunks máximo de seguimiento permitido por la cuarentena chunk."
+impact = "Los valores más altos conservan más puntuaciones de chunks con un pequeño coste de memoria; los valores más bajos descartan antes los chunks menos activos y reinician sus puntuaciones."
+summary = "Máximo de chunks que sigue la cuarentena de chunks; al llegar al límite, se descarta el chunk con la actividad menos reciente."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkquarantine.field.onlyduringpressure]
 impact = "Permite aplicar este comportamiento; inhabilitar para mantener este camino inactivo."
@@ -1101,11 +1101,11 @@ impact = "Las duraciones mayores suprimen más tiempo un componente problemátic
 summary = "Duración de la limitación de un circuito en milisegundos."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward]
-description = "Configuración para la función Crop Fast Forward. Cuando un chunk pasa de ( inactivos en ningún jugador cercano durante un largo tramo) a (player activo acercado o chunk recargado), esta característica camina los bloques de cultivo y sable una vez y avanza su crecimiento por una cantidad proporcional a la duración inactivas para que los jugadores no vean granjas congeladas después de regresar. permanece inactivo durante incidentes de alta carga."
+description = "Configuración de la función Crop Fast Forward. El servidor solo hace crecer los cultivos en chunks dentro de la distancia de simulación de un jugador, así que esta función registra cuánto tiempo pasa cada chunk cargado fuera de esa distancia. Cuando un jugador vuelve al rango activo, recorre una vez los bloques de cultivos y brotes del chunk y adelanta su crecimiento ese tiempo, para que los jugadores no vean granjas congeladas al volver. El crecimiento pendiente se descarta cuando un chunk se descarga. Permanece inactiva durante incidentes de carga alta."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.activerange]
-impact = "Los valores más grandes avanzan rápidamente hacia adelante con chunks antes; los valores más pequeños se posponen hasta que los jugadores caminan más cerca."
-summary = "Intervalo de proximidad del jugador (blocks) que clasifica un chunk como activo. Dentro de este rango, los reset de seguimiento latente y cualquier incendio rápido en espera."
+impact = "Los valores mayores aplican antes el crecimiento pendiente a chunks más lejanos; los menores esperan a que los jugadores se acerquen."
+summary = "Distancia del jugador (bloques) a la columna central de un chunk a partir de la cual se aplica su avance pendiente. Si un chunk está activo depende de la distancia de simulación del mundo."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.engageonincident]
 impact = "Los valores superiores siguen corriendo rápidamente durante los incidentes de luz; los valores inferiores lo silencian antes."
@@ -1128,8 +1128,8 @@ impact = "Los valores más altos cubren más terreno con mayor memoria; menor va
 summary = "El máximo de chunks rastreado en todos los mundos antes de que el chunks más antiguo rastreado sea desalojado."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.minelapsedticks]
-impact = "Valores más altos saltan los recientes veloces velas; valores inferiores rápidos incluso breves estiramientos de la dorencia."
-summary = "Duración mínima latencia (ticks) antes de que una activación se active rápido hacia adelante."
+impact = "Los valores mayores omiten ausencias breves; los menores adelantan incluso periodos cortos fuera de la distancia de simulación."
+summary = "Tiempo mínimo (ticks) que un chunk debe pasar fuera de la distancia de simulación antes de adelantarse. Las ausencias más cortas se ignoran."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurecropfastforward.field.releaseonincident]
 impact = "Los valores superiores se reanudarán antes después de un silencio; los valores inferiores mantienen más rápido para la estabilidad."
@@ -1810,9 +1810,13 @@ summary = "Intervalo de evaluación principal para el control de onda iris en mi
 impact = "Los valores superiores desencadenan la mitigación más adelante; los valores inferiores disparan antes y con mayor agresión."
 summary = "umbral de la explosión Iris tiempo de generación en el campo iris guardia de emergencia."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregenqueue]
-impact = "Los valores superiores desencadenan la mitigación más adelante; los valores inferiores disparan antes y con mayor agresión."
-summary = "umbral de desencadenante para la cola de pregeno iris en el área de control del terreno iris."
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregeninflight]
+impact = "Los valores más altos solo activan la protección cuando la pregeneración del mundo funciona cerca de su concurrencia máxima; los valores más bajos también la activan con cargas más ligeras."
+summary = "Solicitudes de chunks en curso del pregenerador de Iris para este mundo que activan la protección contra picos de terreno de Iris cuando el tiempo de tick también alcanza triggerIrisPregenTickMS; los valores se limitan a 1..256."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregentickms]
+impact = "Valores más altos dejan que la pregeneración avance sin limitar a los jugadores hasta que el servidor se retrase más; valores más bajos limitan antes la generación de chunks por jugadores mientras hay una pregeneración en curso."
+summary = "Umbral de tiempo de tick que también debe alcanzarse para que las solicitudes en curso del pregenerador de Iris activen la protección contra picos de terreno de Iris (milisegundos); los valores se limitan a 1..1000."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "Valores más altos retrasan la activación o salida; valores inferiores hacen que este umbral sea más fácil de cruzar."
@@ -2441,9 +2445,9 @@ summary = "Adapt umbral de carga de sesión que puede desencadenar el manejo de 
 impact = "Los valores superiores desencadenan la mitigación más adelante; los valores inferiores disparan antes y con mayor agresión."
 summary = "umbral de la trinidad para entrar en el marcador del incidente en modo de incidentes."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririsqueue]
-impact = "Los valores más altos aumentan el trabajo amortiguado o la prestación de ráfagas; los valores inferiores se ajustan a la oscilación."
-summary = "Introduzca el límite de cola iris utilizado por modo incidente trinity."
+[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririspregeninflight]
+impact = "Los valores más altos solo cuentan presión de Iris cuando el pregenerador funciona cerca de su concurrencia máxima; los valores más bajos también cuentan cargas de pregeneración más ligeras."
+summary = "Solicitudes de chunks en curso del pregenerador de Iris que cuentan como presión de Iris en el modo de incidente Trinity; los valores se limitan a 1..256."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.entertickms]
 impact = "Valores más altos retrasan la activación o salida; valores inferiores hacen que este umbral sea más fácil de cruzar."
@@ -2847,6 +2851,25 @@ summary = "Envía resúmenes de cambio de carga caliente a operadores en línea.
 [config.documentation.annotation.art.arcane.react.core.controller.hotloadcontroller.field.pollintervalms]
 impact = "Los valores más bajos detectan antes los eventos recibidos; los cambios automáticos siguen aplicándose en lotes como máximo una vez cada tres segundos."
 summary = "Intervalo de consulta de eventos del sistema de archivos en milisegundos."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller]
+description = "Mide el tiempo de los manejadores de eventos por plugin envolviendo los oyentes registrados mientras la instrumentación está activa."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleonms]
+impact = "Ventanas más largas producen más muestras registradas por periodo con un coste recurrente mayor."
+summary = "Duración en milisegundos de cada ventana de medición periódica en el modo de ciclo de trabajo."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleperiodms]
+impact = "Periodos más cortos registran datos de eventos con más frecuencia y cuestan más; periodos más largos dejan huecos más amplios en el historial."
+summary = "Milisegundos entre los inicios de las ventanas de medición periódicas en el modo de ciclo de trabajo."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.instrumentation]
+impact = "ALWAYS añade una sobrecarga de medición a cada manejador de eventos; ON_DEMAND elimina ese coste en reposo pero deja huecos en el historial; DUTY_CYCLE cambia huecos periódicos por un pequeño coste recurrente."
+summary = "Controla cuándo se instalan las envolturas de medición de oyentes: ALWAYS las mantiene instaladas, ON_DEMAND las instala solo mientras un monitor, un mapa, un marcador o un visor web lee datos de eventos, y DUTY_CYCLE abre además una ventana de medición periódica."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.sampleractivitywindowms]
+impact = "Valores más altos mantienen la instrumentación instalada más tiempo después de que un visor se vaya; valores más bajos la retiran antes."
+summary = "Milisegundos tras la última lectura de datos de eventos antes de retirar las envolturas en los modos bajo demanda y de ciclo de trabajo."
 
 [config.documentation.annotation.art.arcane.react.core.controller.historycontroller]
 description = "Captura una vez los muestreadores de React, almacena telemetría histórica comprimida y atiende consultas acotadas por intervalo de tiempo."
@@ -3544,8 +3567,8 @@ biletools_watched_jars = "BileTools Jars vigilados"
 block_entities = "Entidades de bloque"
 block_entities_ticking = "Entidades de bloque en tick"
 bukkit_pending_tasks = "Tareas pendientes"
-chunk_gen_ms = "chunk Gen Ms"
-chunk_load_ms = "chunk Carga Ms"
+chunk_gen_listener_ms = "chunk Gen Listener Ms"
+chunk_load_listener_ms = "chunk Carga Listener Ms"
 chunk_tickets = "Tickets de chunk"
 chunk_unloads = "Descargas de chunks"
 chunks = "chunks"
@@ -3570,7 +3593,6 @@ gc_time_percent = "Gc Time Percent"
 gloss_animations = "Gloss Animaciones"
 gloss_boards = "Gloss Marcadores"
 gloss_bubbles = "Gloss Burbujas de chat"
-gloss_builder_server = "Gloss Servidor del constructor"
 gloss_display_entities = "Gloss Entidades de visualización"
 gloss_emoji = "Gloss Reemplazos de emojis"
 gloss_holograms = "Gloss Hologramas"
@@ -3605,7 +3627,7 @@ hopper_event_span = "Intervalo temporal de eventos de tolvas"
 incident_score = "Incident Score"
 iris_chunks_per_second = "Iris chunks por segundo"
 iris_generation_total_ms = "Iris Generation Total Ms"
-iris_pregen_queue = "Iris Pregen Queue"
+iris_pregen_queue = "Iris Pregen en curso"
 iris_pregen_throughput = "Iris Pregen Throughput"
 jvm_threads = "Hilos JVM"
 lazy_gravity_skipped = "Lazy Gravity Skipped"
@@ -3650,10 +3672,13 @@ villagers = "Aldeanos"
 world_save_event_interval = "Intervalo entre eventos de guardado del mundo"
 worlds = "Mundos"
 wormholes_block_changes = "Wormholes Cambios de bloque"
+wormholes_block_entities = "Wormholes Entidades de bloque"
 wormholes_compression = "Wormholes Compresión"
 wormholes_packets = "Wormholes Packets"
 wormholes_peer_rtt = "Wormholes RTT de pares"
 wormholes_peers = "Wormholes Pares"
+wormholes_plate_builds = "Wormholes Construcción de placas"
+wormholes_plate_bytes = "Wormholes Memoria de placas"
 wormholes_portals = "Wormholes Portales"
 wormholes_projection_observers = "Wormholes Projection Observers"
 wormholes_projection_render_ms = "Wormholes Projection Render Ms"
@@ -3725,7 +3750,7 @@ adapt_ability_ops = "Adapt operaciones de habilidad por minuto (modo seleccionad
 adapt_cache_hit_ratio = "Proporción de verificaciones de nivel de habilidad servidas desde la caché de niveles activos."
 adapt_check_latency = "Microsegundos medios por verificación de guarda de habilidad sin caché."
 adapt_event_ops = "Invocaciones de manejadores de eventos de adaptación por minuto."
-adapt_fx_packets = "Paquetes de partículas consumidos en el tick actual del presupuesto FX."
+adapt_fx_packets = "Media de paquetes de partículas consumidos por tick del presupuesto FX durante el último segundo."
 adapt_fx_shed_band = "Banda de degradación FX; cero es calidad completa y cuatro el mayor recorte."
 adapt_fx_timelines = "Líneas de tiempo FX activas reproduciéndose en el motor de efectos."
 adapt_learned_adaptations = "Adaptaciones distintas armadas por al menos un jugador conectado."
@@ -3748,8 +3773,8 @@ biletools_watched_jars = "Jars de plugins rastreados por el vigilante de recarga
 block_entities = "Entidades de bloque cargadas en todos los mundos."
 block_entities_ticking = "Entidades de bloque procesadas en cada tick en todos los mundos."
 bukkit_pending_tasks = "Tareas de todos los plugins en espera en el planificador de Bukkit."
-chunk_gen_ms = "La latencia de generación chunk en milisegundos."
-chunk_load_ms = "La latencia de carga del chunk en milisegundos."
+chunk_gen_listener_ms = "Milisegundos del hilo principal que los listeners de otros plugins consumen en cada evento de carga de un chunk recién generado."
+chunk_load_listener_ms = "Milisegundos del hilo principal que los listeners de otros plugins consumen en cada evento de carga de chunk."
 chunk_tickets = "Chunks mantenidos cargados por tickets de chunk de plugins."
 chunk_unloads = "Chunks descargados por segundo en todos los mundos."
 chunks = "Tendencia de conteo de chunk cargado."
@@ -3771,10 +3796,9 @@ fluid = "Tasa de actividad de actualización fluida."
 fluid_event_span = "Tiempo real transcurrido entre la primera y la última llamada de flujo de fluidos de cada tick."
 gc_pause_p95 = "95th percentile basura colección de la pausa duración."
 gc_time_percent = "Porcentaje de tiempo que se dedica a la GC relativo a la hora de correr."
-gloss_animations = "Animaciones de texto actualmente registradas y en ejecución."
+gloss_animations = "Objetivos de texto de holograma que se están animando actualmente."
 gloss_boards = "Barras laterales de marcador mostradas actualmente a los jugadores."
 gloss_bubbles = "Burbujas de chat generadas sobre los jugadores por segundo."
-gloss_builder_server = "Si el servidor web del constructor está en marcha; uno significa en línea."
 gloss_display_entities = "Entidades de visualización solo por paquetes registradas para hologramas."
 gloss_emoji = "Reemplazos de emojis de chat aplicados por segundo."
 gloss_holograms = "Hologramas de texto persistentes activos en los chunks cargados."
@@ -3809,7 +3833,7 @@ hopper_event_span = "Tiempo real transcurrido entre la primera y la última llam
 incident_score = "Score de incidente compuesto construido a partir de lectores de métricas de múltiples presiones."
 iris_chunks_per_second = "Desempeño de generación combinado del motor Iris chunk."
 iris_generation_total_ms = "Más activo Iris- tiempo de generación en marcha."
-iris_pregen_queue = "Iris profundidad de la cola remota pregen."
+iris_pregen_queue = "Solicitudes de chunks en curso del pregenerador de Iris."
 iris_pregen_throughput = "El rendimiento del pregenerador Iris en chunks por segundo."
 jvm_threads = "Hilos JVM activos, incluidos los grupos del servidor y de los plugins."
 lazy_gravity_skipped = "El movimiento de bloqueo caído del ticks proyectado como saltable por la gravedad perezosa."
@@ -3854,10 +3878,13 @@ villagers = "Aldeanos y comerciantes ambulantes cargados en todos los mundos."
 world_save_event_interval = "Tiempo transcurrido entre eventos de guardado consecutivos de un mismo mundo."
 worlds = "Mundos actualmente cargados en el servidor."
 wormholes_block_changes = "Wormholes Cambios de bloques proyectados publicados a través del puente de integración."
+wormholes_block_entities = "Actualizaciones de entidades de bloque proyectadas enviadas a los espectadores por segundo."
 wormholes_compression = "Ratio de compresión del tráfico saliente; cerca de 1.0 indica un diccionario obsoleto."
 wormholes_packets = "Wormholes paquete de proyección publicado a través del puente de integración."
 wormholes_peer_rtt = "Latencia de ida y vuelta en el peor caso hasta un servidor par conectado."
 wormholes_peers = "Servidores remotos actualmente enlazados en la malla de Wormholes."
+wormholes_plate_builds = "Placas de vista de proyección construidas por segundo."
+wormholes_plate_bytes = "Memoria ocupada por las placas de vista de proyección en caché."
 wormholes_portals = "Activo Wormholes portal cuenta publicado a través del puente de integración."
 wormholes_projection_observers = "Jugadores que observan actualmente Wormholes proyecciones."
 wormholes_projection_render_ms = "Wormholes proyección de tiempo."
@@ -3991,6 +4018,7 @@ idle = "Idle"
 idle_average = "Idle Avg"
 idle_maximum = "Idle Max"
 idle_minimum = "Idle Min"
+in_flight = "En curso"
 incident = "Incident"
 jobs = "Trabajos"
 last_reload = "Última recarga"

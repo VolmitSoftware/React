@@ -244,7 +244,7 @@ public class ErrorScanCheck implements ReactAsyncSubsystemCheck {
     if (dataFolder == null) {
       return null;
     }
-    File pluginsFolder = dataFolder.getParentFile();
+    File pluginsFolder = dataFolder.getAbsoluteFile().getParentFile();
     if (pluginsFolder == null) {
       return null;
     }

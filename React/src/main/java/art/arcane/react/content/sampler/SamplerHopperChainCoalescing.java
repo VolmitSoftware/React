@@ -54,7 +54,7 @@ public class SamplerHopperChainCoalescing extends ReactCachedSampler {
       lastSample = M.ms();
     }
 
-    long ticksSaved = feature.readAndResetTicksSaved();
+    double ticksSaved = feature.readAndResetTicksSaved();
     long now = M.ms();
     long durationMs = Math.max(now - lastSample, 1000L);
     lastSample = now;

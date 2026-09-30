@@ -48,6 +48,7 @@ class EventControllerLifecycleTest {
     HandlerFixture fixture = new HandlerFixture(plugin);
     try (SchedulerHarness scheduler = new SchedulerHarness(plugin, true, false)) {
       EventController controller = new EventController();
+      controller.setInstrumentation(EventController.InstrumentationMode.ON_DEMAND);
       controller.start();
 
       Assertions.assertFalse(fixture.registered() instanceof NaughtyRegisteredListener);
@@ -100,6 +101,7 @@ class EventControllerLifecycleTest {
     HandlerFixture fixture = new HandlerFixture(plugin);
     try (SchedulerHarness scheduler = new SchedulerHarness(plugin, true, false)) {
       EventController controller = new EventController();
+      controller.setInstrumentation(EventController.InstrumentationMode.ON_DEMAND);
       controller.start();
       scheduler.runFirst();
 
@@ -124,15 +126,21 @@ class EventControllerLifecycleTest {
     HandlerFixture fixture = new HandlerFixture(plugin);
     try (SchedulerHarness scheduler = new SchedulerHarness(plugin, true, false)) {
       EventController oldController = new EventController();
+      oldController.setInstrumentation(EventController.InstrumentationMode.ON_DEMAND);
       oldController.start();
       scheduler.runFirst();
       oldController.markSamplerActivity();
       oldController.onTick();
       scheduler.runFirst();
       Assertions.assertInstanceOf(NaughtyRegisteredListener.class, fixture.registered());
+      oldController.markSamplerActivity();
+      oldController.onTick();
+      Assertions.assertEquals(1, scheduler.size());
 
       oldController.stop();
+      Assertions.assertFalse(fixture.registered() instanceof NaughtyRegisteredListener);
       EventController newController = new EventController();
+      newController.setInstrumentation(EventController.InstrumentationMode.ON_DEMAND);
       newController.start();
       scheduler.runLast();
       newController.markSamplerActivity();
@@ -159,6 +167,7 @@ class EventControllerLifecycleTest {
     HandlerFixture fixture = new HandlerFixture(plugin);
     try (SchedulerHarness scheduler = new SchedulerHarness(plugin, false, true)) {
       EventController controller = new EventController();
+      controller.setInstrumentation(EventController.InstrumentationMode.ON_DEMAND);
       controller.start();
       controller.markSamplerActivity();
       controller.onTick();

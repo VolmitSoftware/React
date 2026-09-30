@@ -8,6 +8,7 @@ import art.arcane.volmlib.integration.IntegrationMetricType;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.List;
 import java.util.Set;
@@ -113,6 +114,94 @@ class RemoteSamplerBridgeTest {
     );
     bridge.updatePluginSamples("iris", Set.of(key), Map.of(key, stale), "missing");
     Assertions.assertEquals("invalid-sample", bridge.getSample("iris", key).message());
+  }
+
+  @Test
+  void schemaMismatchIsLoggedOncePerRejectionTransitionWithExpectedAndReceivedShape() {
+    List<String> logged = new ArrayList<>();
+    RemoteSamplerBridge bridge = new RemoteSamplerBridge(logged::add);
+    String key = IntegrationMetricSchema.GLOSS_TICK_MS;
+    IntegrationMetricDescriptor schema = IntegrationMetricSchema.descriptor(key);
+    IntegrationMetricDescriptor wrongUnit = new IntegrationMetricDescriptor(key, schema.type(), "ms", schema.tags());
+    IntegrationMetricDescriptor wrongType = new IntegrationMetricDescriptor(
+        key,
+        IntegrationMetricType.LONG,
+        schema.unit(),
+        schema.tags()
+    );
+
+    bridge.updatePluginSamples("gloss", Set.of(key), Map.of(key, sampleOf(wrongUnit)), "missing");
+    bridge.updatePluginSamples("gloss", Set.of(key), Map.of(key, sampleOf(wrongUnit)), "missing");
+
+    Assertions.assertEquals(1, logged.size());
+    String first = logged.getFirst();
+    Assertions.assertTrue(first.contains("gloss"), first);
+    Assertions.assertTrue(first.contains(key), first);
+    Assertions.assertTrue(first.contains("expected DOUBLE 'ms-per-second'"), first);
+    Assertions.assertTrue(first.contains("received DOUBLE 'ms'"), first);
+    Assertions.assertFalse(bridge.isAvailable("gloss", key));
+
+    bridge.updatePluginSamples("gloss", Set.of(key), Map.of(key, sampleOf(wrongType)), "missing");
+    Assertions.assertEquals(2, logged.size());
+    Assertions.assertTrue(logged.get(1).contains("received LONG 'ms-per-second'"), logged.get(1));
+
+    bridge.updatePluginSamples("gloss", Set.of(key), Map.of(key, sampleOf(schema)), "missing");
+    Assertions.assertTrue(bridge.isAvailable("gloss", key));
+    bridge.updatePluginSamples("gloss", Set.of(key), Map.of(key, sampleOf(wrongType)), "missing");
+    Assertions.assertEquals(3, logged.size());
+  }
+
+  @Test
+  void topLevelSchemaMismatchIsLoggedOnceWhileAGroupAcceptsTheSameKey() {
+    List<String> logged = new ArrayList<>();
+    RemoteSamplerBridge bridge = new RemoteSamplerBridge(logged::add);
+    String key = IntegrationMetricSchema.IRIS_LOADED_CHUNKS;
+    IntegrationMetricDescriptor schema = IntegrationMetricSchema.descriptor(key);
+    IntegrationMetricDescriptor wrongUnit = new IntegrationMetricDescriptor(key, schema.type(), "milliseconds", schema.tags());
+
+    for (int poll = 0; poll < 3; poll++) {
+      bridge.updatePluginSamples("iris", Set.of(key), Map.of(key, sampleOf(wrongUnit)), "missing");
+      bridge.updatePluginGroups("iris", List.of(worldGroupOf("minecraft:overworld", schema)));
+    }
+
+    Assertions.assertEquals(1, logged.size(), logged.toString());
+    Assertions.assertFalse(bridge.isAvailable("iris", key));
+    Assertions.assertNotNull(bridge.getGroup("iris", "world", "minecraft:overworld"));
+  }
+
+  @Test
+  void mismatchedWorldGroupIsLoggedOnceWhileAnotherWorldGroupAcceptsTheSameKey() {
+    List<String> logged = new ArrayList<>();
+    RemoteSamplerBridge bridge = new RemoteSamplerBridge(logged::add);
+    String key = IntegrationMetricSchema.IRIS_LOADED_CHUNKS;
+    IntegrationMetricDescriptor schema = IntegrationMetricSchema.descriptor(key);
+    IntegrationMetricDescriptor wrongUnit = new IntegrationMetricDescriptor(key, schema.type(), "milliseconds", schema.tags());
+
+    for (int poll = 0; poll < 3; poll++) {
+      bridge.updatePluginGroups("iris", List.of(
+          worldGroupOf("minecraft:the_nether", wrongUnit),
+          worldGroupOf("minecraft:overworld", schema)
+      ));
+    }
+
+    Assertions.assertEquals(1, logged.size(), logged.toString());
+    Assertions.assertTrue(logged.getFirst().contains("'milliseconds'"), logged.getFirst());
+    Assertions.assertNull(bridge.getGroup("iris", "world", "minecraft:the_nether"));
+    Assertions.assertNotNull(bridge.getGroup("iris", "world", "minecraft:overworld"));
+  }
+
+  private static IntegrationMetricSample sampleOf(IntegrationMetricDescriptor descriptor) {
+    return IntegrationMetricSample.available(descriptor, 4D, System.currentTimeMillis());
+  }
+
+  private static IntegrationMetricGroup worldGroupOf(String identity, IntegrationMetricDescriptor descriptor) {
+    return new IntegrationMetricGroup(
+        "world",
+        identity,
+        identity,
+        Map.of("plugin", "iris"),
+        Map.of(descriptor.key(), sampleOf(descriptor))
+    );
   }
 
   private static IntegrationMetricGroup worldGroup(String identity, double loadedChunks, long now) {
