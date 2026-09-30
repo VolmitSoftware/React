@@ -22,20 +22,25 @@ import java.util.List;
 class FeatureTrinityIncidentModeIrisTriggerTest {
   @Test
   void pregenAtTheInFlightThresholdEngagesDuringServerPressure() throws ReflectiveOperationException {
-    TrinityRun run = tick(new FeatureTrinityIncidentMode(), 70D, 16D);
+    TrinityRun run = tick(new FeatureTrinityIncidentMode(), 70D, 4D);
 
     Assertions.assertTrue(run.engaged());
     IncidentRecord started = run.record();
     Assertions.assertTrue(started.cause().startsWith("Iris pregenerator in-flight chunk requests"), started.cause());
     IncidentEvidence iris = evidence(started, IntegrationMetricSchema.IRIS_PREGEN_QUEUE);
     Assertions.assertTrue(iris.available());
-    Assertions.assertEquals(16D, iris.value());
-    Assertions.assertEquals(16D, iris.minimum());
+    Assertions.assertEquals(4D, iris.value());
+    Assertions.assertEquals(4D, iris.minimum());
   }
 
   @Test
   void pregenBelowTheInFlightThresholdDoesNotEngage() throws ReflectiveOperationException {
-    Assertions.assertFalse(tick(new FeatureTrinityIncidentMode(), 70D, 15D).engaged());
+    Assertions.assertFalse(tick(new FeatureTrinityIncidentMode(), 70D, 3D).engaged());
+  }
+
+  @Test
+  void throttledPregenAtTheIrisAdaptiveFloorStillCountsAsIrisPressure() throws ReflectiveOperationException {
+    Assertions.assertTrue(tick(new FeatureTrinityIncidentMode(), 70D, 8D).engaged());
   }
 
   @Test

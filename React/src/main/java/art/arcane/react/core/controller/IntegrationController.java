@@ -52,6 +52,7 @@ public class IntegrationController extends TickedObject implements IController {
   private static final double ADAPT_ABILITY_TIMING_BUDGET_THRESHOLD = 100D;
   private static final int IMPACT_SUSTAINED_SAMPLES = 3;
   private static final double IMPACT_MSPT_GATE = 50D;
+  private static final double IRIS_PREGEN_IN_FLIGHT_RISE = 16D;
   private static final Set<String> PRIMARY_PLUGINS = Set.of("iris", "adapt", "wormholes");
 
   private final transient AtomicBoolean syncTickQueued = new AtomicBoolean(false);
@@ -505,7 +506,7 @@ public class IntegrationController extends TickedObject implements IController {
         && tickMs >= IMPACT_MSPT_GATE
         && irisPregenInFlight >= 0D
         && previousIrisPregenInFlight >= 0D
-        && (irisPregenInFlight - previousIrisPregenInFlight) >= IrisPregenPressure.DEFAULT_IN_FLIGHT_THRESHOLD
+        && (irisPregenInFlight - previousIrisPregenInFlight) >= IRIS_PREGEN_IN_FLIGHT_RISE
         && now - lastCorrelationLogMs >= CORRELATION_COOLDOWN_MS) {
       lastCorrelationLogMs = now;
       lastCorrelationMessage = String.format(Locale.ROOT,
@@ -620,9 +621,12 @@ public class IntegrationController extends TickedObject implements IController {
   }
 
   private static boolean hasIrisPregenImpact(double pregenInFlight, double tickMs) {
-    return IrisPregenPressure.hasInFlightPressure(pregenInFlight, IrisPregenPressure.DEFAULT_IN_FLIGHT_THRESHOLD)
-        && Double.isFinite(tickMs)
-        && tickMs >= IMPACT_MSPT_GATE;
+    return IrisPregenPressure.hasInFlightPressureUnderLoad(
+        pregenInFlight,
+        IrisPregenPressure.DEFAULT_IN_FLIGHT_THRESHOLD,
+        tickMs,
+        IMPACT_MSPT_GATE
+    );
   }
 
   private static boolean hasAdaptAbilityTimingImpact(double timingBudgetPercent, double tickMs) {

@@ -1812,7 +1812,11 @@ summary = "Soglia di trigger per Iris tempo di generazione in ghisa terreno iris
 
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregeninflight]
 impact = "Valori più alti attivano la protezione solo quando la pregenerazione del mondo lavora vicino alla sua concorrenza massima; valori più bassi la attivano anche con carichi più leggeri."
-summary = "Richieste di chunk in corso del pregeneratore di Iris per questo mondo che attivano la protezione dai picchi di terreno di Iris; i valori sono limitati a 1..256."
+summary = "Richieste di chunk in corso del pregeneratore di Iris per questo mondo che attivano la protezione dai picchi di terreno di Iris quando anche il tempo di tick raggiunge triggerIrisPregenTickMS; i valori sono limitati a 1..256."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregentickms]
+impact = "Valori più alti lasciano proseguire la pregenerazione senza limitare i giocatori finché il server non rimane più indietro; valori più bassi limitano prima la generazione di chunk da parte dei giocatori durante una pregenerazione."
+summary = "Soglia del tempo di tick che deve essere raggiunta anche prima che le richieste in corso del pregeneratore di Iris attivino la protezione dai picchi di terreno di Iris (millisecondi); i valori sono limitati a 1..1000."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "Valori più elevati ritardano l'attivazione o l'uscita; valori inferiori rendono questa soglia più facile da attraversare."

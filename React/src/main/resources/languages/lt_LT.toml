@@ -1812,7 +1812,11 @@ summary = "Ribinė riba Iris generavimo laikas rainelės reljefo viršįtampio a
 
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregeninflight]
 impact = "Didesnės reikšmės apsaugą įjungia tik tada, kai pasaulio išankstinis generavimas veikia beveik visu lygiagretumu; mažesnės reikšmės ją įjungia ir esant lengvesnei apkrovai."
-summary = "Šio pasaulio vykdomos Iris išankstinio generatoriaus chunk užklausos, kurios įjungia Iris reljefo šuolių apsaugą; reikšmės ribojamos iki 1..256."
+summary = "Šio pasaulio vykdomos Iris išankstinio generatoriaus chunk užklausos, kurios įjungia Iris reljefo šuolių apsaugą, kai tick laikas taip pat pasiekia triggerIrisPregenTickMS; reikšmės ribojamos iki 1..256."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregentickms]
+impact = "Didesnės reikšmės leidžia išankstiniam generavimui vykti neribojant žaidėjų, kol serveris atsilieka labiau; mažesnės reikšmės anksčiau riboja žaidėjų chunk generavimą, kol vyksta išankstinis generavimas."
+summary = "Tick laiko slenkstis, kuris taip pat turi būti pasiektas, kad vykdomos Iris išankstinio generatoriaus užklausos įjungtų Iris reljefo šuolių apsaugą (milisekundėmis); reikšmės ribojamos iki 1..1000."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "Didesnės vertės uždelsimas aktyvavimas arba išėjimas; mažesnės vertės palengvina šį slenkstį."

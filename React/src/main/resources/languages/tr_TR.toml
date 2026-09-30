@@ -1812,7 +1812,11 @@ summary = "Başlatma eşiği Iris İris arazi dalga koruyucusunda nesil süresi.
 
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregeninflight]
 impact = "Daha yüksek değerler korumayı yalnızca dünyanın ön üretimi tam eşzamanlılığına yakın çalışırken tetikler; daha düşük değerler onu daha hafif yükte de tetikler."
-summary = "Iris arazi dalgalanma korumasını tetikleyen, bu dünya için Iris ön üreticisinin devam eden chunk istekleri; değerler 1..256 aralığına sınırlanır."
+summary = "Tick süresi de triggerIrisPregenTickMS değerine ulaştığında Iris arazi dalgalanma korumasını tetikleyen, bu dünya için Iris ön üreticisinin devam eden chunk istekleri; değerler 1..256 aralığına sınırlanır."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregentickms]
+impact = "Yüksek değerler, sunucu daha fazla geri kalana kadar oyuncuları sınırlamadan ön üretimin sürmesine izin verir; düşük değerler bir ön üretim sürerken oyuncuların chunk üretimini daha erken sınırlar."
+summary = "Iris ön üreticisinin devam eden istekleri Iris arazi dalgalanma korumasını tetiklemeden önce ayrıca ulaşılması gereken tick süresi eşiği (milisaniye); değerler 1..1000 aralığına sınırlanır."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "Yüksek değerler aktivasyon veya çıkış geciktirir; daha düşük değerler bu eşi geçmek için bu eşiği kolaylaştırmaktadır."

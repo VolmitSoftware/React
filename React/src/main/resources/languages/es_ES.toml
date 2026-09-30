@@ -1812,7 +1812,11 @@ summary = "umbral de la explosión Iris tiempo de generación en el campo iris g
 
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregeninflight]
 impact = "Los valores más altos solo activan la protección cuando la pregeneración del mundo funciona cerca de su concurrencia máxima; los valores más bajos también la activan con cargas más ligeras."
-summary = "Solicitudes de chunks en curso del pregenerador de Iris para este mundo que activan la protección contra picos de terreno de Iris; los valores se limitan a 1..256."
+summary = "Solicitudes de chunks en curso del pregenerador de Iris para este mundo que activan la protección contra picos de terreno de Iris cuando el tiempo de tick también alcanza triggerIrisPregenTickMS; los valores se limitan a 1..256."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregentickms]
+impact = "Valores más altos dejan que la pregeneración avance sin limitar a los jugadores hasta que el servidor se retrase más; valores más bajos limitan antes la generación de chunks por jugadores mientras hay una pregeneración en curso."
+summary = "Umbral de tiempo de tick que también debe alcanzarse para que las solicitudes en curso del pregenerador de Iris activen la protección contra picos de terreno de Iris (milisegundos); los valores se limitan a 1..1000."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "Valores más altos retrasan la activación o salida; valores inferiores hacen que este umbral sea más fácil de cruzar."

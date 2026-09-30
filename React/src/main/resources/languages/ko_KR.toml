@@ -1812,7 +1812,11 @@ summary = "Trigger 임계 값 Iris 아이리스 지형 서지 가드의 세대 �
 
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregeninflight]
 impact = "값이 높을수록 월드의 사전 생성이 최대 동시성에 가깝게 동작할 때만 작동하고, 값이 낮을수록 더 가벼운 사전 생성 부하에서도 작동합니다."
-summary = "Iris 지형 급증 방지를 작동시키는 이 월드의 Iris 사전 생성기 처리 중 청크 요청 수입니다. 값은 1..256으로 제한됩니다."
+summary = "틱 시간도 triggerIrisPregenTickMS에 도달하면 Iris 지형 급증 방지를 작동시키는 이 월드의 Iris 사전 생성기 처리 중 청크 요청 수입니다. 값은 1..256으로 제한됩니다."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregentickms]
+impact = "값이 높을수록 서버가 더 뒤처질 때까지 플레이어를 제한하지 않고 사전 생성을 계속합니다. 값이 낮을수록 사전 생성 중 플레이어의 청크 생성을 더 일찍 제한합니다."
+summary = "Iris 사전 생성기 처리 중 요청이 Iris 지형 급증 방지를 작동시키기 전에 함께 도달해야 하는 틱 시간 임계값(밀리초)입니다. 값은 1..1000으로 제한됩니다."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "높은 값 지연 활성화 또는 출구; 낮은 값은이 문턱을 쉽게 교차합니다."

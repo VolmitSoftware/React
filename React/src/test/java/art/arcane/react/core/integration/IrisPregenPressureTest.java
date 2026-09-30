@@ -39,9 +39,28 @@ class IrisPregenPressureTest {
   }
 
   @Test
-  void defaultThresholdIsTheSmallestIrisPaperConcurrencyCap() {
-    assertEquals(16, IrisPregenPressure.DEFAULT_IN_FLIGHT_THRESHOLD);
-    assertTrue(IrisPregenPressure.hasInFlightPressure(16D, IrisPregenPressure.DEFAULT_IN_FLIGHT_THRESHOLD));
-    assertFalse(IrisPregenPressure.hasInFlightPressure(15D, IrisPregenPressure.DEFAULT_IN_FLIGHT_THRESHOLD));
+  void defaultThresholdIsTheIrisAdaptiveInFlightFloor() {
+    assertEquals(4, IrisPregenPressure.DEFAULT_IN_FLIGHT_THRESHOLD);
+    assertTrue(IrisPregenPressure.hasInFlightPressure(4D, IrisPregenPressure.DEFAULT_IN_FLIGHT_THRESHOLD));
+    assertTrue(IrisPregenPressure.hasInFlightPressure(8D, IrisPregenPressure.DEFAULT_IN_FLIGHT_THRESHOLD));
+    assertFalse(IrisPregenPressure.hasInFlightPressure(3D, IrisPregenPressure.DEFAULT_IN_FLIGHT_THRESHOLD));
+  }
+
+  @Test
+  void tickGateClampsToOneThroughOneThousandMilliseconds() {
+    assertEquals(1D, IrisPregenPressure.clampTickGateMS(0D));
+    assertEquals(1D, IrisPregenPressure.clampTickGateMS(-20D));
+    assertEquals(50D, IrisPregenPressure.clampTickGateMS(50D));
+    assertEquals(1000D, IrisPregenPressure.clampTickGateMS(5_000D));
+    assertEquals(IrisPregenPressure.DEFAULT_TICK_GATE_MS, IrisPregenPressure.clampTickGateMS(Double.NaN));
+  }
+
+  @Test
+  void pressureUnderLoadRequiresBothInFlightRequestsAndTickTime() {
+    assertFalse(IrisPregenPressure.hasInFlightPressureUnderLoad(256D, 4, 49.9D, 50D));
+    assertFalse(IrisPregenPressure.hasInFlightPressureUnderLoad(3D, 4, 80D, 50D));
+    assertTrue(IrisPregenPressure.hasInFlightPressureUnderLoad(4D, 4, 50D, 50D));
+    assertFalse(IrisPregenPressure.hasInFlightPressureUnderLoad(64D, 4, Double.NaN, 50D));
+    assertFalse(IrisPregenPressure.hasInFlightPressureUnderLoad(-1D, 4, 80D, 50D));
   }
 }

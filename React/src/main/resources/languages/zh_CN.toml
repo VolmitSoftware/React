@@ -1812,7 +1812,11 @@ summary = "触发阈值 Iris 虹膜地形突袭守卫中的时间"
 
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregeninflight]
 impact = "较高的值仅在该世界的预生成接近其最大并发度运行时才触发；较低的值在较轻的预生成负载下也会触发。"
-summary = "触发 Iris 地形激增防护的此世界 Iris 预生成器进行中区块请求数；取值限制在 1..256。"
+summary = "当游戏刻时间也达到 triggerIrisPregenTickMS 时，触发 Iris 地形激增防护的此世界 Iris 预生成器进行中区块请求数；取值限制在 1..256。"
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregentickms]
+impact = "较高的值会让预生成继续运行而不限制玩家，直到服务器进一步落后；较低的值会在预生成运行期间更早限制玩家的区块生成。"
+summary = "Iris 预生成器进行中请求触发 Iris 地形激增防护之前还必须达到的游戏刻时间阈值（毫秒）；取值限制在 1..1000。"
 
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "更高的值延迟激活或退出;较低的值使得这个阈值更容易跨越."

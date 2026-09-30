@@ -1812,7 +1812,11 @@ summary = "Ngưỡng kích hoạt Iris Thời gian ở địa hình Iris tăng c
 
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregeninflight]
 impact = "Giá trị cao hơn chỉ kích hoạt khi quá trình tạo trước của thế giới chạy gần mức đồng thời tối đa; giá trị thấp hơn cũng kích hoạt với tải nhẹ hơn."
-summary = "Số yêu cầu chunk đang xử lý của trình tạo trước Iris cho thế giới này sẽ kích hoạt lớp bảo vệ đột biến địa hình Iris; giá trị bị giới hạn trong 1..256."
+summary = "Số yêu cầu chunk đang xử lý của trình tạo trước Iris cho thế giới này sẽ kích hoạt lớp bảo vệ đột biến địa hình Iris khi thời gian tick cũng đạt triggerIrisPregenTickMS; giá trị bị giới hạn trong 1..256."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregentickms]
+impact = "Giá trị cao hơn cho phép tạo trước tiếp tục mà không giới hạn người chơi cho đến khi máy chủ bị chậm hơn; giá trị thấp hơn giới hạn việc tạo chunk của người chơi sớm hơn trong khi đang tạo trước."
+summary = "Ngưỡng thời gian tick cũng phải đạt tới trước khi các yêu cầu đang xử lý của trình tạo trước Iris kích hoạt lớp bảo vệ đột biến địa hình Iris (mili giây); giá trị bị giới hạn trong 1..1000."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "Giá trị cao hơn trì hoãn hoạt động hoặc thoát; giá trị thấp hơn làm cho ngưỡng này dễ dàng vượt qua."

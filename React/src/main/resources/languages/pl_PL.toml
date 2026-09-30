@@ -1812,7 +1812,11 @@ summary = "Próg progowy dla Iris czas generacji w osłonie terenu Iris."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregeninflight]
 impact = "Wyższe wartości uruchamiają ochronę tylko wtedy, gdy pregeneracja świata pracuje blisko pełnej współbieżności; niższe wartości uruchamiają ją także przy lżejszym obciążeniu."
-summary = "Trwające żądania chunków pregeneratora Iris dla tego świata, które uruchamiają ochronę przed skokami terenu Iris; wartości są ograniczane do 1..256."
+summary = "Trwające żądania chunków pregeneratora Iris dla tego świata, które uruchamiają ochronę przed skokami terenu Iris, gdy czas ticku również osiąga triggerIrisPregenTickMS; wartości są ograniczane do 1..256."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregentickms]
+impact = "Wyższe wartości pozwalają pregeneracji działać bez ograniczania graczy, dopóki serwer nie opóźni się bardziej; niższe wartości wcześniej ograniczają generowanie chunków przez graczy podczas pregeneracji."
+summary = "Próg czasu ticku, który również musi zostać osiągnięty, zanim trwające żądania pregeneratora Iris uruchomią ochronę przed skokami terenu Iris (milisekundy); wartości są ograniczane do 1..1000."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "Wyższe wartości opóźniają aktywację lub wyjście; niższe wartości ułatwiają przekroczenie tego progu."

@@ -1812,7 +1812,11 @@ summary = "Liikkumiskynnys Iris Sukupolviaika iirismaastossa."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregeninflight]
 impact = "Suuremmat arvot laukaisevat suojan vain, kun maailman esigenerointi toimii lähes täydellä rinnakkaisuudellaan; pienemmät arvot laukaisevat sen myös kevyemmällä kuormalla."
-summary = "Tämän maailman Iris-esigeneraattorin käynnissä olevat chunk-pyynnöt, jotka laukaisevat Iris-maastopiikkisuojan; arvot rajataan välille 1..256."
+summary = "Tämän maailman Iris-esigeneraattorin käynnissä olevat chunk-pyynnöt, jotka laukaisevat Iris-maastopiikkisuojan, kun tick-aika saavuttaa myös arvon triggerIrisPregenTickMS; arvot rajataan välille 1..256."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregentickms]
+impact = "Suuremmat arvot antavat esigeneroinnin jatkua rajoittamatta pelaajia, kunnes palvelin jää enemmän jälkeen; pienemmät arvot rajoittavat pelaajien chunk-generointia aiemmin esigeneroinnin aikana."
+summary = "Tick-ajan kynnys, jonka on myös täytyttävä ennen kuin Iris-esigeneraattorin käynnissä olevat pyynnöt laukaisevat Iris-maastopiikkisuojan (millisekunteina); arvot rajataan välille 1..1000."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "Suuremmat arvot viivästyttävät aktivointia tai poistumista; alemmat arvot helpottavat tämän kynnysarvon ylittämistä."

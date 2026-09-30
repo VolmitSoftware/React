@@ -1812,7 +1812,11 @@ summary = "トリガーのしきい値 Iris 耳鼻咽喉科のサージガード
 
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregeninflight]
 impact = "値を高くすると、ワールドの事前生成が最大並列度近くで動作している間だけ発動します。値を低くすると、より軽い事前生成の負荷でも発動します。"
-summary = "Iris 地形サージガードを発動させる、このワールドの Iris 事前生成の処理中チャンク要求数。値は 1..256 に制限されます。"
+summary = "ティック時間も triggerIrisPregenTickMS に達したときに Iris 地形サージガードを発動させる、このワールドの Iris 事前生成の処理中チャンク要求数。値は 1..256 に制限されます。"
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregentickms]
+impact = "値を大きくすると、サーバーの遅れが大きくなるまでプレイヤーを制限せずに事前生成を続けます。値を小さくすると、事前生成中のプレイヤーによるチャンク生成を早めに制限します。"
+summary = "Iris 事前生成の処理中要求が Iris 地形サージガードを発動させる前に、あわせて到達している必要があるティック時間のしきい値 (ミリ秒)。値は 1..1000 に制限されます。"
 
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "値の遅延が活性化または終了を遅らせる。この閾値が下がるので、その値をクロスしやすいようにします。"

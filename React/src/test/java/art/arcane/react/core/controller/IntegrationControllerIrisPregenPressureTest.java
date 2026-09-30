@@ -20,21 +20,21 @@ class IntegrationControllerIrisPregenPressureTest {
 
   @Test
   void pregenAtTheInFlightThresholdWithElevatedMsptIsReportedAfterThreeSamples() {
-    int streak = IntegrationController.nextIrisPregenImpactStreak(0, 16D, 50D);
+    int streak = IntegrationController.nextIrisPregenImpactStreak(0, 4D, 50D);
     assertEquals(1, streak);
     streak = IntegrationController.nextIrisPregenImpactStreak(streak, 32D, 55D);
     assertFalse(IntegrationController.shouldReportIrisPregenPressure(32D, streak, 55D));
-    streak = IntegrationController.nextIrisPregenImpactStreak(streak, 24D, 51D);
+    streak = IntegrationController.nextIrisPregenImpactStreak(streak, 8D, 51D);
 
     assertEquals(3, streak);
-    assertTrue(IntegrationController.shouldReportIrisPregenPressure(24D, streak, 51D));
+    assertTrue(IntegrationController.shouldReportIrisPregenPressure(8D, streak, 51D));
   }
 
   @Test
   void pregenBelowTheThresholdOrRecoveredMsptResetsTheStreak() {
-    assertEquals(0, IntegrationController.nextIrisPregenImpactStreak(8, 15D, 60D));
+    assertEquals(0, IntegrationController.nextIrisPregenImpactStreak(8, 3D, 60D));
     assertEquals(0, IntegrationController.nextIrisPregenImpactStreak(8, 64D, 49.9D));
-    assertFalse(IntegrationController.shouldReportIrisPregenPressure(15D, 8, 60D));
+    assertFalse(IntegrationController.shouldReportIrisPregenPressure(3D, 8, 60D));
   }
 
   @Test
