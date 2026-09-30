@@ -76,7 +76,7 @@ public final class RendererIrisWorldMetrics extends RendererIntegrationMetricsBa
             metric(IntegrationMetricSchema.IRIS_PREGEN_PROGRESS, RendererMessages.METRIC_PROGRESS, 1, "%"),
             metric(IntegrationMetricSchema.IRIS_PREGEN_GENERATED, RendererMessages.METRIC_GENERATED, 0, ""),
             metric(IntegrationMetricSchema.IRIS_PREGEN_TOTAL, RendererMessages.METRIC_TOTAL, 0, ""),
-            metric(IntegrationMetricSchema.IRIS_PREGEN_QUEUE, RendererMessages.METRIC_REMAINING, 0, ""),
+            metric(IntegrationMetricSchema.IRIS_PREGEN_REMAINING, RendererMessages.METRIC_REMAINING, 0, ""),
             metric(IntegrationMetricSchema.IRIS_PREGEN_THROUGHPUT, RendererMessages.METRIC_THROUGHPUT, 1, " ch/s")),
         panel("iris-world-pregen-time", RendererMessages.TITLE_IRIS_WORLD_PREGEN_TIME,
             metric(IntegrationMetricSchema.IRIS_PREGEN_ETA_MS, RendererMessages.METRIC_ETA, 0, " ms"),
@@ -84,7 +84,7 @@ public final class RendererIrisWorldMetrics extends RendererIntegrationMetricsBa
             metric(IntegrationMetricSchema.IRIS_PREGEN_FAILED, RendererMessages.METRIC_FAILED_CHUNKS, 0, ""),
             metric(IntegrationMetricSchema.IRIS_PREGEN_WAIT_PERMIT_MS, RendererMessages.METRIC_PERMIT_WAIT, 2, " ms"),
             metric(IntegrationMetricSchema.IRIS_PREGEN_WAIT_ADAPTIVE_MS, RendererMessages.METRIC_ADAPTIVE_WAIT, 2, " ms"),
-            metric(IntegrationMetricSchema.IRIS_MANTLE_QUEUED_PLATES, RendererMessages.METRIC_UNLOAD_QUEUE, 0, ""),
+            metric(IntegrationMetricSchema.IRIS_PREGEN_QUEUE, RendererMessages.METRIC_IN_FLIGHT, 0, ""),
             metric(IntegrationMetricSchema.IRIS_CHUNKS_PER_SECOND, RendererMessages.METRIC_ENGINE_RATE, 1, " ch/s"))
     );
   }
