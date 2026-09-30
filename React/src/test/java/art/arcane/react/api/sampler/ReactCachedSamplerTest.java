@@ -1,11 +1,15 @@
 package art.arcane.react.api.sampler;
 
 import art.arcane.react.React;
+import art.arcane.react.util.common.scheduling.J;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 class ReactCachedSamplerTest {
@@ -76,6 +80,86 @@ class ReactCachedSamplerTest {
     Assertions.assertTrue(
         sampler.sampleCalls.get() >= 2,
         "expected at least a second recompute after the cache window, got " + sampler.sampleCalls.get());
+  }
+
+  @Test
+  void refreshBehindValueReachesSampleAsSoonAsTheMainThreadJobCompletes() {
+    RefreshBehindSampler sampler = new RefreshBehindSampler("players-test", 60_000L, 5.0D);
+    List<Runnable> queued = new ArrayList<>();
+
+    try (MockedStatic<React> react = Mockito.mockStatic(React.class);
+         MockedStatic<J> j = Mockito.mockStatic(J.class)) {
+      j.when(J::isPrimaryThread).thenReturn(false);
+      j.when(() -> J.s(ArgumentMatchers.any(Runnable.class))).thenAnswer(invocation -> {
+        queued.add(invocation.getArgument(0));
+        return null;
+      });
+      sampler.start();
+
+      sampler.sample();
+      Assertions.assertEquals(1, queued.size());
+      queued.getFirst().run();
+
+      Assertions.assertEquals(5.0D, sampler.sample(), 1.0E-9D);
+    }
+  }
+
+  @Test
+  void refreshBehindSamplerIsUnavailableUntilTheFirstRefreshCompletes() {
+    RefreshBehindSampler sampler = new RefreshBehindSampler("chunk-tickets-test", 60_000L, 3.0D);
+    List<Runnable> queued = new ArrayList<>();
+
+    try (MockedStatic<React> react = Mockito.mockStatic(React.class);
+         MockedStatic<J> j = Mockito.mockStatic(J.class)) {
+      j.when(J::isPrimaryThread).thenReturn(false);
+      j.when(() -> J.s(ArgumentMatchers.any(Runnable.class))).thenAnswer(invocation -> {
+        queued.add(invocation.getArgument(0));
+        return null;
+      });
+      sampler.start();
+
+      sampler.sample();
+      Assertions.assertFalse(sampler.isSampleAvailable());
+
+      queued.getFirst().run();
+      Assertions.assertTrue(sampler.isSampleAvailable());
+    }
+  }
+
+  @Test
+  void samplerWithoutMainThreadRefreshStaysAvailable() {
+    CountingCachedSampler sampler = new CountingCachedSampler("memory-free-test", 60_000L, 1.0D);
+
+    try (MockedStatic<React> react = Mockito.mockStatic(React.class)) {
+      sampler.start();
+      sampler.sample();
+    }
+
+    Assertions.assertTrue(sampler.isSampleAvailable());
+  }
+
+  private static final class RefreshBehindSampler extends ReactCachedSampler {
+    private final double value;
+
+    private RefreshBehindSampler(String id, long sampleDelay, double value) {
+      super(id, sampleDelay);
+      this.value = value;
+    }
+
+    @Override
+    public double onSample() {
+      return sampleOnMainThread(() -> value);
+    }
+
+    @Override
+    public String formattedValue(double t) {
+      return Double.toString(t);
+    }
+
+    @Override
+    public String formattedSuffix(double t) {
+      return "u";
+    }
   }
 
   private static final class CountingCachedSampler extends ReactCachedSampler {

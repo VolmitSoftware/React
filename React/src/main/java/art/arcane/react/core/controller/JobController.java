@@ -35,20 +35,25 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @Data
 public class JobController implements IController {
+  private static final double MIN_COMPUTE_TIME_MS = 0.05;
+  private static final double MIN_COMPUTE_TARGET_MS = 0.01;
+  private static final double DEFAULT_MAX_COMPUTE_TIME_MS = 1D;
+  private static final double DEFAULT_HIGH_UTILIZATION = 0.75;
+  private static final double DEFAULT_LOW_UTILIZATION = 0.25;
   private transient final RollingSequence usageCyclePercent;
   private transient final ConcurrentLinkedDeque<Runnable> jobs;
   private transient final AtomicInteger queueDepth;
-  private double maxComputeTime = 1;
+  private double maxComputeTime = DEFAULT_MAX_COMPUTE_TIME_MS;
   private long maxSpikeInterval = 250;
-  private double currentComputeTarget = 0.01;
-  private double highUtilizationThresholdPercent = 0.75;
-  private double lowUtilizationThresholdPercent = 0.25;
+  private double currentComputeTarget = MIN_COMPUTE_TARGET_MS;
+  private double highUtilizationThresholdPercent = DEFAULT_HIGH_UTILIZATION;
+  private double lowUtilizationThresholdPercent = DEFAULT_LOW_UTILIZATION;
   private transient ServerTickEvent ste = new ServerTickEvent();
   private transient RollingSequence usage = new RollingSequence(20);
   private transient double costPerJob = 0.1;
   private transient ChronoLatch spikeLatch;
   private transient int code;
-  private transient double overBudget = 0;
+  private transient volatile double overBudget = 0;
   private transient boolean pollFromTail = false;
 
   public JobController() {
@@ -86,6 +91,20 @@ public class JobController implements IController {
 
   }
 
+  @Override
+  public boolean reloadFromDisk(boolean overwriteOnReadFailure) {
+    boolean loaded = IController.super.reloadFromDisk(overwriteOnReadFailure);
+    clampConfiguration();
+    return loaded;
+  }
+
+  @Override
+  public boolean applyConfigurationSnapshot(Object loadedObject) {
+    boolean applied = IController.super.applyConfigurationSnapshot(loadedObject);
+    clampConfiguration();
+    return applied;
+  }
+
   public double getQueuedComputeTime() {
     return getQueueSize() * costPerJob;
   }
@@ -96,14 +115,9 @@ public class JobController implements IController {
 
   public void execute() {
     Bukkit.getPluginManager().callEvent(ste);
-    if (overBudget > maxComputeTime) {
-      overBudget -= maxComputeTime;
-      overBudget = overBudget < 0 ? 0 : overBudget;
+    if (overBudget > maxComputeTime || getQueueSize() <= 0) {
+      overBudget = Math.max(0D, overBudget - maxComputeTime);
       usage.put(0);
-      return;
-    }
-
-    if (getQueueSize() <= 0) {
       return;
     }
 
@@ -140,10 +154,10 @@ public class JobController implements IController {
     if (usageCyclePercent.getAverage() > highUtilizationThresholdPercent) {
       currentComputeTarget = M.lerp(currentComputeTarget, maxComputeTime, 0.01);
     } else if (usageCyclePercent.getAverage() < lowUtilizationThresholdPercent) {
-      currentComputeTarget = M.lerp(currentComputeTarget, 0.01, 0.01);
+      currentComputeTarget = M.lerp(currentComputeTarget, MIN_COMPUTE_TARGET_MS, 0.01);
     }
 
-    currentComputeTarget = M.clip(currentComputeTarget, 0.01, maxComputeTime);
+    currentComputeTarget = M.clip(currentComputeTarget, MIN_COMPUTE_TARGET_MS, maxComputeTime);
   }
 
   public void queue(Runnable r) {
@@ -153,6 +167,17 @@ public class JobController implements IController {
 
     jobs.offerLast(r);
     queueDepth.incrementAndGet();
+  }
+
+  private void clampConfiguration() {
+    maxComputeTime = Math.max(MIN_COMPUTE_TIME_MS, finiteOr(maxComputeTime, DEFAULT_MAX_COMPUTE_TIME_MS));
+    currentComputeTarget = finiteOr(currentComputeTarget, MIN_COMPUTE_TARGET_MS);
+    highUtilizationThresholdPercent = M.clip(finiteOr(highUtilizationThresholdPercent, DEFAULT_HIGH_UTILIZATION), 0D, 1D);
+    lowUtilizationThresholdPercent = M.clip(finiteOr(lowUtilizationThresholdPercent, DEFAULT_LOW_UTILIZATION), 0D, 1D);
+  }
+
+  private static double finiteOr(double value, double fallback) {
+    return Double.isFinite(value) ? value : fallback;
   }
 
   private Runnable pollJob(boolean alternatePoll) {

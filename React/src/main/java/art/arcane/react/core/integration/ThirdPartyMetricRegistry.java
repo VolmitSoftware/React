@@ -219,7 +219,12 @@ public final class ThirdPartyMetricRegistry {
 
   private static double readHostMetric(String key) {
     Sampler sampler = React.sampler(key);
-    return sampler == null ? Double.NaN : sampler.sample();
+    if (sampler == null) {
+      return Double.NaN;
+    }
+
+    double value = sampler.sample();
+    return sampler.isSampleAvailable() ? value : Double.NaN;
   }
 
   private static final class SourceState {

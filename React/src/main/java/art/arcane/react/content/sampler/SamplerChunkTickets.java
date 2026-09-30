@@ -73,7 +73,7 @@ public class SamplerChunkTickets extends ReactCachedSampler {
 
   @Override
   public boolean isSampleAvailable() {
-    return available;
+    return available && super.isSampleAvailable();
   }
 
   private double countTickets() {

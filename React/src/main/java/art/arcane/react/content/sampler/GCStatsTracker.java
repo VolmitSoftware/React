@@ -26,12 +26,18 @@ import javax.management.NotificationListener;
 import javax.management.openmbean.CompositeData;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 final class GCStatsTracker {
   private static final Object LOCK = new Object();
-  private static final int MAX_PAUSES = 512;
-  private static final ArrayDeque<Double> pauses = new ArrayDeque<>(MAX_PAUSES + 8);
+  private static final long PAUSE_WINDOW_MS = 300_000L;
+  private static final int MAX_PAUSES = 4096;
+  private static final String CONCURRENT_CYCLE_SUFFIX = " Cycles";
+  private static final ArrayDeque<Pause> pauses = new ArrayDeque<>(256);
   private static final Map<NotificationEmitter, NotificationListener> listeners = new HashMap<>();
   private static int references = 0;
   private static long lastCollectionTotalMS = 0;
@@ -71,8 +77,18 @@ final class GCStatsTracker {
   }
 
   static List<Double> snapshotPauses() {
+    return snapshotPauses(System.currentTimeMillis());
+  }
+
+  static List<Double> snapshotPauses(long nowMs) {
     synchronized (LOCK) {
-      return new ArrayList<>(pauses);
+      evictExpired(nowMs);
+      List<Double> snapshot = new ArrayList<>(pauses.size());
+      for (Pause pause : pauses) {
+        snapshot.add(pause.pauseMs());
+      }
+
+      return snapshot;
     }
   }
 
@@ -95,8 +111,49 @@ final class GCStatsTracker {
     }
   }
 
+  static List<GarbageCollectorMXBean> pauseBeans(List<GarbageCollectorMXBean> beans) {
+    List<GarbageCollectorMXBean> pauseBeans = new ArrayList<>(beans.size());
+    for (GarbageCollectorMXBean bean : beans) {
+      String name = bean.getName();
+      if (name == null || !name.endsWith(CONCURRENT_CYCLE_SUFFIX)) {
+        pauseBeans.add(bean);
+      }
+    }
+
+    return pauseBeans;
+  }
+
+  static long totalCollectionTimeMS(List<GarbageCollectorMXBean> beans) {
+    long total = 0;
+    for (GarbageCollectorMXBean bean : pauseBeans(beans)) {
+      long time = bean.getCollectionTime();
+      if (time > 0) {
+        total += time;
+      }
+    }
+
+    return total;
+  }
+
+  static void recordPause(long tsMs, long pauseMS) {
+    synchronized (LOCK) {
+      pauses.addLast(new Pause(tsMs, Math.max(0L, pauseMS)));
+      while (pauses.size() > MAX_PAUSES) {
+        pauses.removeFirst();
+      }
+      evictExpired(tsMs);
+    }
+  }
+
+  private static void evictExpired(long nowMs) {
+    long cutoff = nowMs - PAUSE_WINDOW_MS;
+    while (!pauses.isEmpty() && pauses.peekFirst().tsMs() < cutoff) {
+      pauses.removeFirst();
+    }
+  }
+
   private static void startListeners() {
-    for (GarbageCollectorMXBean bean : ManagementFactory.getGarbageCollectorMXBeans()) {
+    for (GarbageCollectorMXBean bean : pauseBeans(ManagementFactory.getGarbageCollectorMXBeans())) {
       if (!(bean instanceof NotificationEmitter emitter)) {
         continue;
       }
@@ -116,7 +173,7 @@ final class GCStatsTracker {
           return;
         }
 
-        recordPause(info.getGcInfo().getDuration());
+        recordPause(System.currentTimeMillis(), info.getGcInfo().getDuration());
       };
 
       try {
@@ -138,24 +195,10 @@ final class GCStatsTracker {
     listeners.clear();
   }
 
-  private static void recordPause(long pauseMS) {
-    synchronized (LOCK) {
-      pauses.addLast((double) Math.max(0L, pauseMS));
-      while (pauses.size() > MAX_PAUSES) {
-        pauses.removeFirst();
-      }
-    }
+  private static long readTotalCollectionTimeMS() {
+    return totalCollectionTimeMS(ManagementFactory.getGarbageCollectorMXBeans());
   }
 
-  private static long readTotalCollectionTimeMS() {
-    long total = 0;
-    for (GarbageCollectorMXBean bean : ManagementFactory.getGarbageCollectorMXBeans()) {
-      long time = bean.getCollectionTime();
-      if (time > 0) {
-        total += time;
-      }
-    }
-
-    return total;
+  private record Pause(long tsMs, double pauseMs) {
   }
 }
