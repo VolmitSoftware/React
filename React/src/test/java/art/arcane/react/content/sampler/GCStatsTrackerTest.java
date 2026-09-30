@@ -52,6 +52,26 @@ class GCStatsTrackerTest {
     Assertions.assertEquals(19.5D, SamplerMath.percentile(pauses, 0.95D), 1.0E-9D);
   }
 
+  @Test
+  void gcTimePercentIsStableAcrossPollsAndMatchesTheWindowShare() {
+    long collectionMs = 0L;
+    for (long uptimeMs = 1_000L; uptimeMs <= 300_000L; uptimeMs += 1_000L) {
+      if (uptimeMs % 20_000L == 0L) {
+        collectionMs += 60L;
+      }
+      double percent = GCStatsTracker.sampleGcTimePercent(uptimeMs, collectionMs);
+      if (uptimeMs >= 60_000L) {
+        Assertions.assertEquals(0.3D, percent, 0.0051D);
+      }
+    }
+  }
+
+  @Test
+  void gcTimePercentStartsFromTheJvmLifetimeShare() {
+    Assertions.assertEquals(0.5D, GCStatsTracker.sampleGcTimePercent(120_000L, 600L), 1.0E-9D);
+    Assertions.assertEquals(1D, GCStatsTracker.sampleGcTimePercent(180_000L, 1_200L), 1.0E-9D);
+  }
+
   private static GarbageCollectorMXBean bean(String name, long collectionTimeMs) {
     GarbageCollectorMXBean bean = Mockito.mock(GarbageCollectorMXBean.class);
     Mockito.when(bean.getName()).thenReturn(name);

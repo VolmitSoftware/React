@@ -56,6 +56,11 @@ public final class TelemetryController implements IController, Listener {
     registeredSamplerIds = new ArrayList<>();
   }
 
+  public static HostTelemetrySnapshot currentHostSnapshot() {
+    TelemetryController controller = React.instance == null ? null : React.controller(TelemetryController.class);
+    return controller == null ? HostTelemetrySnapshot.empty() : controller.hostSnapshot();
+  }
+
   @Override
   public String getId() {
     return "telemetry";

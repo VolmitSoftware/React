@@ -24,7 +24,9 @@ public record HostTelemetrySnapshot(
     long directBufferCount,
     double gcCollectionsPerMinute,
     long loadedClasses,
-    long processUptimeMs
+    long processUptimeMs,
+    double systemCpuLoad,
+    double processCpuLoad
 ) {
   public static HostTelemetrySnapshot empty() {
     EnvironmentDto environment = new EnvironmentDto();
@@ -60,7 +62,9 @@ public record HostTelemetrySnapshot(
         0L,
         0D,
         0L,
-        0L
+        0L,
+        Double.NaN,
+        Double.NaN
     );
   }
 }

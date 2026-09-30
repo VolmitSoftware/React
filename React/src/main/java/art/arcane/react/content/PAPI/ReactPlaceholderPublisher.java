@@ -49,8 +49,7 @@ public class ReactPlaceholderPublisher extends TickedObject implements ReactPlac
       return Double.NaN;
     }
 
-    Sampler sampler = samplers.get(samplerId);
-    return sampler == null ? Double.NaN : sampler.sample();
+    return read(samplers.get(samplerId));
   }
 
   public void seedOnlinePlayers() {
@@ -78,6 +77,15 @@ public class ReactPlaceholderPublisher extends TickedObject implements ReactPlac
   @EventHandler(priority = EventPriority.MONITOR)
   public void on(PlayerQuitEvent e) {
     source.releasePlayer(e.getPlayer().getUniqueId());
+  }
+
+  static double read(Sampler sampler) {
+    if (sampler == null) {
+      return Double.NaN;
+    }
+
+    double value = sampler.sample();
+    return sampler.isSampleAvailable() ? value : Double.NaN;
   }
 
   private Registry<Sampler> samplers() {

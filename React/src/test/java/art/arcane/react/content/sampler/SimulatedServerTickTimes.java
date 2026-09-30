@@ -1,9 +1,8 @@
 package art.arcane.react.content.sampler;
 
 import java.util.ArrayDeque;
-import java.util.function.Supplier;
 
-final class SimulatedServerTickTimes implements Supplier<long[]> {
+final class SimulatedServerTickTimes implements TickTimeSource {
   static final long MS = 1_000_000L;
   private static final long NOMINAL_TICK_NANOS = 50L * MS;
   private static final long WINDOW_NANOS = 5_000L * MS;
@@ -35,7 +34,7 @@ final class SimulatedServerTickTimes implements Supplier<long[]> {
   }
 
   @Override
-  public long[] get() {
+  public long[] read() {
     long[] raw = new long[ticks.size()];
     int index = 0;
     for (long[] tick : ticks) {

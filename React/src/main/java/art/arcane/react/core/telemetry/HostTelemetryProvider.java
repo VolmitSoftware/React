@@ -34,6 +34,7 @@ public final class HostTelemetryProvider {
   private static final long STORAGE_REFRESH_MS = 30_000L;
   private static final long NETWORK_REFRESH_MS = 10_000L;
   private static final long NETWORK_LIST_REFRESH_MS = 30_000L;
+  private static final long GC_WINDOW_MS = 60_000L;
 
   private final Path dataPath;
   private final LongSupplier clock;
@@ -49,11 +50,10 @@ public final class HostTelemetryProvider {
   private final boolean sensorQueriesEnabled;
   private final String cpuModel;
   private final String[] graphicsCards;
-  private long[] processorTicks;
-  private long previousCapturedAtMs;
+  private final CpuLoadMeter cpuLoad;
+  private final SlidingCounterWindow gcCollections;
   private long previousStorageRefreshMs;
   private long previousNetworkRefreshMs;
-  private long previousGcCollections;
   private long nextHardwareDetailRefreshMs;
   private long nextStorageRefreshMs;
   private long nextNetworkRefreshMs;
@@ -89,7 +89,10 @@ public final class HostTelemetryProvider {
     this.sensorQueriesEnabled = WindowsSensorWmiQueryHandler.shouldQuerySensors();
     this.cpuModel = processor.getProcessorIdentifier().getName();
     this.graphicsCards = buildGraphicsCards();
-    this.processorTicks = processor.getSystemCpuLoadTicks();
+    this.cpuLoad = new CpuLoadMeter(processor.getLogicalProcessorCount());
+    this.cpuLoad.update(System.nanoTime(), processor.getSystemCpuLoadTicks(), processCpuNanos());
+    this.gcCollections = new SlidingCounterWindow(GC_WINDOW_MS);
+    this.gcCollections.record(0L, 0L);
     this.sensors = new String[0];
     this.powerSources = new String[0];
     this.diskCapture = new DiskCapture(new EnvironmentDto.DiskDto[0], 0L, 0L);
@@ -121,10 +124,9 @@ public final class HostTelemetryProvider {
     VirtualMemory virtualMemory = physicalMemory.getVirtualMemory();
 
     long diskUsable = Math.max(0L, Files.getFileStore(dataPath).getUsableSpace());
-    long elapsedMs = previousCapturedAtMs == 0L ? 0L : Math.max(0L, nowMs - previousCapturedAtMs);
-
-    long gcCollections = totalGcCollections();
-    double gcCollectionsPerMinute = perMinute(gcCollections, previousGcCollections, elapsedMs);
+    long uptimeMs = runtimeBean.getUptime();
+    gcCollections.record(uptimeMs, totalGcCollections());
+    cpuLoad.update(System.nanoTime(), processor.getSystemCpuLoadTicks(), processCpuNanos());
     MemoryUsage heapUsage = memoryBean.getHeapMemoryUsage();
     MemoryUsage nonHeapUsage = memoryBean.getNonHeapMemoryUsage();
     long heapMax = Math.max(0L, heapUsage.getMax());
@@ -141,9 +143,6 @@ public final class HostTelemetryProvider {
     environment.disks = diskCapture.disks();
     environment.mounts = mounts;
     environment.network = networkCapture.interfaces();
-
-    previousCapturedAtMs = nowMs;
-    previousGcCollections = gcCollections;
 
     return new HostTelemetrySnapshot(
         environment,
@@ -165,9 +164,11 @@ public final class HostTelemetryProvider {
         Math.max(0L, nonHeapUsage.getUsed()),
         bufferCapture.bytes(),
         bufferCapture.count(),
-        gcCollectionsPerMinute,
+        gcCollections.perMinute(),
         classLoadingBean.getLoadedClassCount(),
-        runtimeBean.getUptime()
+        uptimeMs,
+        cpuLoad.systemLoad(),
+        cpuLoad.processLoad()
     );
   }
 
@@ -187,9 +188,8 @@ public final class HostTelemetryProvider {
     cpu.model = cpuModel;
     cpu.architecture = System.getProperty("os.arch", "unknown");
     cpu.cores = processor.getLogicalProcessorCount();
-    cpu.systemLoad = processor.getSystemCpuLoadBetweenTicks(processorTicks);
-    processorTicks = processor.getSystemCpuLoadTicks();
-    cpu.processLoad = operatingSystemBean == null ? 0D : Math.max(0D, operatingSystemBean.getProcessCpuLoad());
+    cpu.systemLoad = finiteOrZero(cpuLoad.systemLoad());
+    cpu.processLoad = finiteOrZero(cpuLoad.processLoad());
     cpu.graphicsCards = graphicsCards;
     return cpu;
   }
@@ -350,6 +350,10 @@ public final class HostTelemetryProvider {
     return new BufferCapture(bytes, count);
   }
 
+  private long processCpuNanos() {
+    return operatingSystemBean == null ? -1L : operatingSystemBean.getProcessCpuTime();
+  }
+
   private long totalGcCollections() {
     long collections = 0L;
     for (GarbageCollectorMXBean bean : garbageCollectorBeans) {
@@ -403,6 +407,10 @@ public final class HostTelemetryProvider {
   private static SystemInfo createSystemInfo() {
     WindowsSensorWmiQueryHandler.installIfWindows();
     return new SystemInfo();
+  }
+
+  private static double finiteOrZero(double value) {
+    return Double.isFinite(value) ? value : 0D;
   }
 
   private static long saturatingAdd(long left, long right) {

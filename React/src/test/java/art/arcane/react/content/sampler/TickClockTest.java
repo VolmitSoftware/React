@@ -9,8 +9,12 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Supplier;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
 
 class TickClockTest {
   private static final long MS = 1_000_000L;
@@ -19,7 +23,7 @@ class TickClockTest {
   @Test
   void workTimePercentilesCoverTheServerTrailingWindow() {
     SimulatedServerTickTimes server = new SimulatedServerTickTimes();
-    TickClock clock = new TickClock(server);
+    TickClock clock = new TickClock(() -> server);
     long at = BASE;
     for (int i = 0; i < 100; i++) {
       at = server.tick(clock, at, ((i % 50) + 1) * MS);
@@ -28,53 +32,52 @@ class TickClockTest {
     TickClock.Snapshot snapshot = clock.snapshot();
 
     Assertions.assertEquals(100, server.size());
-    Assertions.assertTrue(snapshot.workTimeMode());
-    Assertions.assertTrue(snapshot.hasHistory());
-    Assertions.assertEquals(25.5D, snapshot.percentile(0.50D, 1200), 1.0E-9D);
-    Assertions.assertEquals(48D, snapshot.percentile(0.95D, 1200), 1.0E-9D);
-    Assertions.assertEquals(50D, snapshot.percentile(0.99D, 1200), 1.0E-9D);
-    Assertions.assertEquals(25.5D, snapshot.averageTickMS(100), 1.0E-9D);
+    Assertions.assertTrue(snapshot.hasWorkTimes());
+    Assertions.assertEquals(25.5D, snapshot.percentile(0.50D), 1.0E-9D);
+    Assertions.assertEquals(48D, snapshot.percentile(0.95D), 1.0E-9D);
+    Assertions.assertEquals(50D, snapshot.percentile(0.99D), 1.0E-9D);
+    Assertions.assertEquals(25.5D, snapshot.averageTickMS(), 1.0E-9D);
   }
 
   @Test
   void lateFirstTickTimesKeepWorkTimeMode() {
     SimulatedServerTickTimes server = new SimulatedServerTickTimes();
-    TickClock clock = new TickClock(server);
+    TickClock clock = new TickClock(() -> server);
 
     server.ticks(clock, BASE, 60, 5L * MS);
     TickClock.Snapshot snapshot = clock.snapshot();
 
-    Assertions.assertTrue(snapshot.workTimeMode());
-    Assertions.assertTrue(snapshot.hasHistory());
-    Assertions.assertEquals(5D, snapshot.averageTickMS(100), 1.0E-9D);
-    Assertions.assertEquals(5D, snapshot.percentile(0.99D, 1200), 1.0E-9D);
+    Assertions.assertTrue(snapshot.hasWorkTimes());
+    Assertions.assertTrue(snapshot.hasSpikeHistory());
+    Assertions.assertEquals(5D, snapshot.averageTickMS(), 1.0E-9D);
+    Assertions.assertEquals(5D, snapshot.percentile(0.99D), 1.0E-9D);
   }
 
   @Test
-  void persistentlyEmptyTickTimesLatchGapMode() {
+  void persistentlyEmptyTickTimesLatchWorkTimeUnavailable() {
     CountingSource source = new CountingSource(new long[0]);
-    TickClock clock = new TickClock(source);
+    TickClock clock = new TickClock(() -> source);
     long at = BASE;
     clock.tick(at);
-    Assertions.assertTrue(clock.snapshot().workTimeMode());
-    Assertions.assertFalse(clock.snapshot().hasHistory());
+    Assertions.assertFalse(clock.snapshot().hasWorkTimes());
+    Assertions.assertFalse(clock.snapshot().hasSpikeHistory());
 
     for (int i = 0; i < 30; i++) {
       at += 50L * MS;
       clock.tick(at);
     }
-    Assertions.assertTrue(clock.snapshot().workTimeMode());
-    Assertions.assertFalse(clock.snapshot().hasHistory());
+    Assertions.assertFalse(clock.snapshot().hasWorkTimes());
+    Assertions.assertFalse(clock.snapshot().hasSpikeHistory());
 
     for (int i = 0; i < 20; i++) {
       at += 50L * MS;
       clock.tick(at);
     }
     TickClock.Snapshot snapshot = clock.snapshot();
-    Assertions.assertFalse(snapshot.workTimeMode());
-    Assertions.assertTrue(snapshot.hasHistory());
-    Assertions.assertEquals(50D, snapshot.percentile(0.50D, 1200), 1.0E-9D);
-    Assertions.assertEquals(50D, snapshot.averageTickMS(100), 1.0E-9D);
+    Assertions.assertFalse(snapshot.hasWorkTimes());
+    Assertions.assertTrue(snapshot.hasSpikeHistory());
+    Assertions.assertEquals(0D, snapshot.percentile(0.50D), 1.0E-9D);
+    Assertions.assertEquals(0D, snapshot.averageTickMS(), 1.0E-9D);
 
     int calls = source.calls;
     for (int i = 0; i < 20; i++) {
@@ -82,17 +85,48 @@ class TickClockTest {
       clock.tick(at);
     }
     Assertions.assertEquals(calls, source.calls);
-    Assertions.assertFalse(clock.snapshot().workTimeMode());
+    Assertions.assertFalse(clock.snapshot().hasWorkTimes());
+    Assertions.assertTrue(clock.snapshot().hasSpikeHistory());
   }
 
   @Test
-  void gapModeLatchesWhenTheServerHasNoTickTimes() {
+  void persistentlyEmptyTickTimesWarnOnceThatWorkTimeIsUnavailable() {
+    List<LogRecord> warnings = recordReactWarnings(() -> {
+      TickClock clock = new TickClock(() -> new CountingSource(new long[0]));
+      long at = BASE;
+      for (int i = 0; i < 200; i++) {
+        at += 50L * MS;
+        clock.tick(at);
+      }
+    });
+
+    Assertions.assertEquals(1, warnings.size());
+    Assertions.assertTrue(warnings.get(0).getMessage().contains(TickTimeSources.UNAVAILABLE_WARNING));
+  }
+
+  @Test
+  void workTimeSourcesThatAnswerOrAreAbsentLogNoLatchWarning() {
+    List<LogRecord> warnings = recordReactWarnings(() -> {
+      SimulatedServerTickTimes server = new SimulatedServerTickTimes();
+      server.ticks(new TickClock(() -> server), BASE, 200, 5L * MS);
+      TickClock absent = new TickClock(() -> null);
+      long at = BASE;
+      for (int i = 0; i < 200; i++) {
+        at += 50L * MS;
+        absent.tick(at);
+      }
+    });
+
+    Assertions.assertTrue(warnings.isEmpty());
+  }
+
+  @Test
+  void workTimeIsUnavailableWhenTheSourceStopsAnswering() {
     CountingSource source = new CountingSource(null);
-    TickClock clock = new TickClock(source);
+    TickClock clock = new TickClock(() -> source);
 
     clock.tick(BASE);
-    Assertions.assertFalse(clock.snapshot().workTimeMode());
-    Assertions.assertFalse(clock.snapshot().hasHistory());
+    Assertions.assertFalse(clock.snapshot().hasWorkTimes());
 
     long at = BASE;
     for (int i = 0; i < 120; i++) {
@@ -104,13 +138,56 @@ class TickClockTest {
     TickClock.Snapshot snapshot = clock.snapshot();
 
     Assertions.assertEquals(1, source.calls);
-    Assertions.assertFalse(snapshot.workTimeMode());
-    Assertions.assertTrue(snapshot.hasHistory());
-    Assertions.assertEquals(50D, snapshot.percentile(0.50D, 1200), 1.0E-9D);
-    Assertions.assertEquals(250D, snapshot.percentile(1.0D, 1200), 1.0E-9D);
-    Assertions.assertEquals(250D, snapshot.percentile(1.0D, 1), 1.0E-9D);
-    Assertions.assertEquals(250D, snapshot.percentile(0.50D, -5), 1.0E-9D);
-    Assertions.assertEquals(150D, snapshot.averageTickMS(2), 1.0E-9D);
+    Assertions.assertFalse(snapshot.hasWorkTimes());
+    Assertions.assertTrue(snapshot.hasSpikeHistory());
+    Assertions.assertEquals(0D, snapshot.percentile(0.99D), 1.0E-9D);
+    Assertions.assertEquals(0D, snapshot.averageTickMS(), 1.0E-9D);
+    Assertions.assertEquals(1D, snapshot.spikesPerMinute(at, 50D, 60_000L), 1.0E-9D);
+  }
+
+  @Test
+  void idleServerWithoutAWorkTimeSourceNeverReadsAsFullyLoaded() {
+    TickClock clock = new TickClock(() -> null);
+    long at = BASE;
+    for (int i = 0; i < 200; i++) {
+      at += 50L * MS;
+      clock.tick(at);
+    }
+    TickClock.Snapshot snapshot = clock.snapshot();
+
+    Assertions.assertFalse(snapshot.hasWorkTimes());
+    Assertions.assertEquals(0D, snapshot.averageTickMS(), 1.0E-9D);
+    Assertions.assertEquals(0D, snapshot.percentile(0.50D), 1.0E-9D);
+    Assertions.assertTrue(snapshot.hasSpikeHistory());
+    Assertions.assertEquals(20D, snapshot.ticksPerSecond(at), 1.0E-9D);
+  }
+
+  @Test
+  void vanillaTickCountSkipsDuplicateSpikesWhileTheServerIsPaused() {
+    VanillaServerFixture server = new VanillaServerFixture();
+    TickTimeSource source = TickTimeSources.vanilla(server.craftServer());
+    TickClock clock = new TickClock(() -> source);
+    long at = BASE;
+    for (int i = 0; i < 100; i++) {
+      server.beginTick();
+      at += 50L * MS;
+      clock.tick(at);
+      server.finishTick(5L * MS);
+    }
+    server.beginTick();
+    at += 50L * MS;
+    clock.tick(at);
+    server.finishTick(70L * MS);
+    for (int i = 0; i < 200; i++) {
+      at += 50L * MS;
+      clock.tick(at);
+    }
+    TickClock.Snapshot snapshot = clock.snapshot();
+
+    Assertions.assertTrue(snapshot.hasWorkTimes());
+    Assertions.assertEquals(1D, snapshot.spikesPerMinute(at, 50D, 60_000L), 1.0E-9D);
+    Assertions.assertEquals(70D, snapshot.percentile(1D), 1.0E-9D);
+    Assertions.assertEquals((99D * 5D + 70D) / 100D, snapshot.averageTickMS(), 1.0E-9D);
   }
 
   @Test
@@ -123,7 +200,7 @@ class TickClockTest {
       clock.tick(at);
     }
 
-    Assertions.assertTrue(clock.snapshot().hasHistory());
+    Assertions.assertTrue(clock.snapshot().hasSpikeHistory());
     Assertions.assertEquals(0D, clock.snapshot().spikesPerMinute(at, 50D, 60_000L), 1.0E-9D);
 
     at += 120L * MS;
@@ -141,7 +218,7 @@ class TickClockTest {
   @Test
   void workTimeSpikesCountOnlyTicksFinishedSinceTheLastEpoch() {
     SimulatedServerTickTimes server = new SimulatedServerTickTimes();
-    TickClock clock = new TickClock(server);
+    TickClock clock = new TickClock(() -> server);
     long at = server.ticks(clock, BASE, 100, 5L * MS);
     Assertions.assertEquals(0D, clock.snapshot().spikesPerMinute(at, 50D, 60_000L), 1.0E-9D);
 
@@ -161,7 +238,7 @@ class TickClockTest {
   @Test
   void spikeRateCountsEachSlowTickOnce() {
     SimulatedServerTickTimes server = new SimulatedServerTickTimes();
-    TickClock clock = new TickClock(server);
+    TickClock clock = new TickClock(() -> server);
     long at = BASE;
     for (int i = 0; i < 1000; i++) {
       at = server.tick(clock, at, i % 200 == 199 ? 70L * MS : 5L * MS);
@@ -214,10 +291,11 @@ class TickClockTest {
     TickClock clock = new TickClock(() -> null);
     TickClock.Snapshot snapshot = clock.snapshot();
 
-    Assertions.assertFalse(snapshot.hasHistory());
+    Assertions.assertFalse(snapshot.hasWorkTimes());
+    Assertions.assertFalse(snapshot.hasSpikeHistory());
     Assertions.assertFalse(snapshot.hasTicks());
-    Assertions.assertEquals(0D, snapshot.percentile(0.5D, 100), 1.0E-9D);
-    Assertions.assertEquals(0D, snapshot.averageTickMS(100), 1.0E-9D);
+    Assertions.assertEquals(0D, snapshot.percentile(0.5D), 1.0E-9D);
+    Assertions.assertEquals(0D, snapshot.averageTickMS(), 1.0E-9D);
     Assertions.assertEquals(0D, snapshot.spikesPerMinute(BASE, 50D, 60_000L), 1.0E-9D);
     Assertions.assertEquals(0D, snapshot.ticksPerSecond(BASE), 1.0E-9D);
     Assertions.assertEquals(0D, clock.millisSinceLastTick(BASE), 1.0E-9D);
@@ -270,6 +348,41 @@ class TickClockTest {
     Assertions.assertTrue(b >= a - 1.0E-9D);
   }
 
+  private static List<LogRecord> recordReactWarnings(Runnable action) {
+    React previous = React.instance;
+    Logger logger = Logger.getLogger("React");
+    boolean parentHandlers = logger.getUseParentHandlers();
+    List<LogRecord> warnings = new ArrayList<>();
+    Handler handler = new Handler() {
+      @Override
+      public void publish(LogRecord record) {
+        if (record.getLevel() == Level.WARNING) {
+          warnings.add(record);
+        }
+      }
+
+      @Override
+      public void flush() {
+      }
+
+      @Override
+      public void close() {
+      }
+    };
+    React.instance = null;
+    logger.setUseParentHandlers(false);
+    logger.addHandler(handler);
+    try {
+      action.run();
+    } finally {
+      logger.removeHandler(handler);
+      logger.setUseParentHandlers(parentHandlers);
+      React.instance = previous;
+    }
+
+    return warnings;
+  }
+
   private static double steadyTicksPerSecond(long gapMillis) {
     TickClock clock = new TickClock(() -> null);
     long at = BASE;
@@ -281,7 +394,7 @@ class TickClockTest {
     return clock.snapshot().ticksPerSecond(at + 50L * MS);
   }
 
-  private static final class CountingSource implements Supplier<long[]> {
+  private static final class CountingSource implements TickTimeSource {
     private final long[] value;
     private int calls;
 
@@ -290,7 +403,7 @@ class TickClockTest {
     }
 
     @Override
-    public long[] get() {
+    public long[] read() {
       calls++;
       return value;
     }

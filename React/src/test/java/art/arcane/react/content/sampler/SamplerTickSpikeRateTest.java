@@ -50,7 +50,7 @@ class SamplerTickSpikeRateTest {
   @Test
   void workTimeSpikesUseTheConfiguredThreshold() throws ReflectiveOperationException {
     SimulatedServerTickTimes server = new SimulatedServerTickTimes();
-    TickClock clock = new TickClock(server);
+    TickClock clock = new TickClock(() -> server);
     SamplerTickSpikeRate sampler = new SamplerTickSpikeRate(clock);
     sampler.start();
 
