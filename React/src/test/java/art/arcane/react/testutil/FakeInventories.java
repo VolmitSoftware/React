@@ -1,11 +1,8 @@
 package art.arcane.react.testutil;
 
-import io.papermc.paper.registry.RegistryAccess;
-import io.papermc.paper.registry.RegistryKey;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.Registry;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
@@ -15,35 +12,14 @@ import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import org.mockito.MockedStatic;
 import org.mockito.Mockito;
-
-import java.lang.reflect.Proxy;
 
 public final class FakeInventories {
   private FakeInventories() {
   }
 
   public static void initializeInventoryTypes() {
-    try (MockedStatic<RegistryAccess> registryAccess = Mockito.mockStatic(RegistryAccess.class)) {
-      RegistryAccess access = Mockito.mock(RegistryAccess.class);
-      registryAccess.when(RegistryAccess::registryAccess).thenReturn(access);
-      Mockito.when(access.getRegistry(Mockito.any(RegistryKey.class))).thenAnswer(invocation -> emptyRegistry());
-      Mockito.when(access.getRegistry(Mockito.any(Class.class))).thenAnswer(invocation -> emptyRegistry());
-      Class.forName(InventoryType.class.getName(), true, InventoryType.class.getClassLoader());
-    } catch (ClassNotFoundException e) {
-      throw new IllegalStateException("InventoryType is not on the test classpath", e);
-    }
-  }
-
-  private static Object emptyRegistry() {
-    return Proxy.newProxyInstance(Registry.class.getClassLoader(), new Class<?>[]{Registry.class},
-        (proxy, method, arguments) -> switch (method.getName()) {
-          case "equals" -> proxy == arguments[0];
-          case "hashCode" -> System.identityHashCode(proxy);
-          case "toString" -> "EmptyRegistry";
-          default -> null;
-        });
+    FakeRegistries.initialize(InventoryType.class);
   }
 
   public static InventoryMoveItemEvent move(Inventory source, Inventory destination) {

@@ -5,17 +5,20 @@ import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.core.controller.NearbyPlayerIndexController;
 import art.arcane.react.core.controller.ObserverController;
+import art.arcane.react.testutil.FakeRegistries;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.common.scheduling.Ticker;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.ChunkSnapshot;
+import org.bukkit.GameRules;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.Ageable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
@@ -34,6 +37,11 @@ class FeatureCropFastForwardScaleTest {
   private World world;
   private ObserverController observer;
   private NearbyPlayerIndexController players;
+
+  @BeforeAll
+  static void initializeGameRules() {
+    FakeRegistries.initialize(GameRules.class);
+  }
 
   @BeforeEach
   void setUp() {
