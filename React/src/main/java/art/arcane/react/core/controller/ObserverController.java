@@ -167,6 +167,10 @@ public class ObserverController extends TickedObject implements IController {
     return counter(sampled.getChunk(c), sampler);
   }
 
+  public AtomicDouble get(World world, int chunkX, int chunkZ, Sampler sampler) {
+    return sampled.getWorld(world).getChunk(chunkX, chunkZ).get(sampler.getId());
+  }
+
   public Optional<Double> sample(Chunk c, Sampler s) {
     return sampled.optionalChunk(c).flatMap(i -> i.optional(s.getId())).map(AtomicDouble::get);
   }

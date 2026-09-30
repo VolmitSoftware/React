@@ -32,19 +32,19 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityBreedEvent;
 import org.bukkit.event.entity.EntitySpawnEvent;
+import org.bukkit.event.entity.SpawnerSpawnEvent;
+import org.bukkit.event.entity.TrialSpawnerSpawnEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 
-import java.util.ArrayDeque;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Entity Hardstop tweak. Hard-caps per-chunk entity population by cancelling new additions once limits are exceeded.")
 public class TweakEntityHardstop extends ReactTweak implements Listener {
   public static final String ID = "entity-hardstop";
-  private static final int MAX_CACHED_REJECTIONS = 65536;
-  private static final int MAX_CACHE_MAINTENANCE_PER_CHECK = 8;
+  private static final long COUNT_CACHE_MS = 1000L;
 
   @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum entities allowed per chunk in entity hardstop.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
   private int maxEntitiesPerChunk = 100;
@@ -52,14 +52,14 @@ public class TweakEntityHardstop extends ReactTweak implements Listener {
   private boolean allowItemDrops = true; // set to false to deny item drops
   @art.arcane.react.util.project.config.ConfigDoc(value = "Cache duration for chunks recently rejected by hardstop before re-checking entity counts (ticks).", impact = "Higher values reduce repeated counting overhead but can deny spawns longer; lower values re-check sooner with more overhead.")
   private int cacheIntervalTicks = 10 * 20; // cache for 10 seconds (20 ticks per second)
-  private transient final Map<ChunkKey, Long> rejectedUntil = new HashMap<>();
-  private transient final Queue<Rejection> rejectionOrder = new ArrayDeque<>();
+  private transient final Map<ChunkKey, ChunkBudget> chunkBudgets = new ConcurrentHashMap<>();
+  private transient final AtomicLong nextSweepMs = new AtomicLong(0L);
 
   public TweakEntityHardstop() {
     super(ID);
   }
 
-  @EventHandler
+  @EventHandler(ignoreCancelled = true)
   public void onEntitySpawn(EntitySpawnEvent event) {
     if (event instanceof CreatureSpawnEvent) {
       return;
@@ -72,23 +72,23 @@ public class TweakEntityHardstop extends ReactTweak implements Listener {
     if (spawnProtected(entity.getType(), at)) {
       return;
     }
-    if (!canSpawnEntity(at.getChunk())) {
+    if (!canSpawnEntity(at, !precedesEntityAdd(event))) {
       event.setCancelled(true);
     }
   }
 
-  @EventHandler
+  @EventHandler(ignoreCancelled = true)
   public void onCreatureSpawn(CreatureSpawnEvent event) {
     Location at = event.getLocation();
     if (spawnProtected(event.getEntityType(), at, event.getSpawnReason())) {
       return;
     }
-    if (!canSpawnEntity(at.getChunk())) {
+    if (!canSpawnEntity(at, true)) {
       event.setCancelled(true);
     }
   }
 
-  @EventHandler
+  @EventHandler(ignoreCancelled = true)
   public void onPlayerDropItem(PlayerDropItemEvent event) {
     Location at = event.getPlayer().getLocation();
     if (allowItemDrops) {
@@ -97,28 +97,26 @@ public class TweakEntityHardstop extends ReactTweak implements Listener {
     if (spawnProtected(EntityType.ITEM, at)) {
       return;
     }
-    if (!canSpawnEntity(at.getChunk())) {
+    if (!canSpawnEntity(at, false)) {
       event.setCancelled(true);
     }
   }
 
-  @EventHandler
+  @EventHandler(ignoreCancelled = true)
   public void onEntityBreed(EntityBreedEvent event) {
     Location at = event.getEntity().getLocation();
     if (spawnProtected(event.getEntity().getType(), at)) {
       return;
     }
-    if (!canSpawnEntity(at.getChunk())) {
+    if (!canSpawnEntity(at, false)) {
       event.setCancelled(true);
     }
   }
 
   @Override
   public void onDeactivate() {
-    synchronized (rejectedUntil) {
-      rejectedUntil.clear();
-      rejectionOrder.clear();
-    }
+    chunkBudgets.clear();
+    nextSweepMs.set(0L);
   }
 
   private boolean spawnProtected(EntityType type, Location at) {
@@ -131,84 +129,57 @@ public class TweakEntityHardstop extends ReactTweak implements Listener {
   }
 
 
-  private boolean canSpawnEntity(Chunk chunk) {
-    long currentTime = System.currentTimeMillis();
-    long cacheWindowMs = Math.max(0L, (long) cacheIntervalTicks * 50L);
-    ChunkKey key = new ChunkKey(chunk.getWorld().getUID(), chunkKey(chunk.getX(), chunk.getZ()));
-    synchronized (rejectedUntil) {
-      maintainCache(currentTime);
-      Long deadline = rejectedUntil.get(key);
-      if (deadline != null && deadline > currentTime) {
-        return false;
-      }
-      if (deadline != null) {
-        rejectedUntil.remove(key, deadline);
-      }
+  private static boolean precedesEntityAdd(EntitySpawnEvent event) {
+    return event instanceof SpawnerSpawnEvent || event instanceof TrialSpawnerSpawnEvent;
+  }
+
+  private boolean canSpawnEntity(Location at, boolean reserve) {
+    World world = at.getWorld();
+    if (world == null) {
+      return true;
     }
-    Entity[] entitiesInChunk = chunk.getEntities();
+
+    int chunkX = at.getBlockX() >> 4;
+    int chunkZ = at.getBlockZ() >> 4;
+    long currentTime = System.currentTimeMillis();
+    long rejectionWindowMs = Math.max(0L, (long) cacheIntervalTicks * 50L);
+    sweepStaleBudgets(currentTime);
+    ChunkKey key = new ChunkKey(world.getUID(), chunkKey(chunkX, chunkZ));
+    ChunkBudget budget = chunkBudgets.get(key);
+    Admission admission = budget == null || budget.isStale(currentTime)
+        ? Admission.RECOUNT
+        : budget.admit(currentTime, maxEntitiesPerChunk, rejectionWindowMs, reserve);
+    if (admission != Admission.RECOUNT) {
+      return admission == Admission.ADMIT;
+    }
+    if (!world.isChunkLoaded(chunkX, chunkZ)) {
+      return true;
+    }
+    Chunk chunk = world.getChunkAt(chunkX, chunkZ, false);
+    if (!chunk.isEntitiesLoaded()) {
+      return true;
+    }
+    ChunkBudget counted = new ChunkBudget(countEntities(chunk), saturatingAdd(currentTime, COUNT_CACHE_MS));
+    chunkBudgets.put(key, counted);
+    return counted.admit(currentTime, maxEntitiesPerChunk, rejectionWindowMs, reserve) == Admission.ADMIT;
+  }
+
+  private int countEntities(Chunk chunk) {
     int entityCount = 0;
-    for (Entity entity : entitiesInChunk) {
+    for (Entity entity : chunk.getEntities()) {
       if (!(entity instanceof Item) || !allowItemDrops) {
         entityCount++;
       }
     }
-    if (entityCount >= maxEntitiesPerChunk) {
-      if (cacheWindowMs > 0L) {
-        cacheRejection(key, saturatingAdd(currentTime, cacheWindowMs));
-      }
-      return false;
-    }
-    return true;
+    return entityCount;
   }
 
-  private void cacheRejection(ChunkKey key, long deadline) {
-    synchronized (rejectedUntil) {
-      if (!rejectedUntil.containsKey(key)) {
-        while (rejectedUntil.size() >= MAX_CACHED_REJECTIONS) {
-          if (!evictOldest()) {
-            rejectedUntil.clear();
-            rejectionOrder.clear();
-            break;
-          }
-        }
-      }
-      rejectedUntil.put(key, deadline);
-      rejectionOrder.offer(new Rejection(key, deadline));
+  private void sweepStaleBudgets(long currentTime) {
+    long due = nextSweepMs.get();
+    if (currentTime < due || !nextSweepMs.compareAndSet(due, saturatingAdd(currentTime, COUNT_CACHE_MS))) {
+      return;
     }
-  }
-
-  private void maintainCache(long currentTime) {
-    int checked = 0;
-    while (checked++ < MAX_CACHE_MAINTENANCE_PER_CHECK) {
-      Rejection rejection = rejectionOrder.poll();
-      if (rejection == null) {
-        return;
-      }
-      Long currentDeadline = rejectedUntil.get(rejection.key());
-      if (currentDeadline == null || currentDeadline.longValue() != rejection.deadline()) {
-        continue;
-      }
-      if (currentDeadline <= currentTime) {
-        rejectedUntil.remove(rejection.key(), currentDeadline);
-      } else {
-        rejectionOrder.offer(rejection);
-      }
-    }
-  }
-
-  private boolean evictOldest() {
-    while (true) {
-      Rejection rejection = rejectionOrder.poll();
-      if (rejection == null) {
-        return false;
-      }
-      Long currentDeadline = rejectedUntil.get(rejection.key());
-      if (currentDeadline != null
-          && currentDeadline.longValue() == rejection.deadline()
-          && rejectedUntil.remove(rejection.key(), currentDeadline)) {
-        return true;
-      }
-    }
+    chunkBudgets.values().removeIf(budget -> budget.isStale(currentTime));
   }
 
   private static long saturatingAdd(long left, long right) {
@@ -219,10 +190,47 @@ public class TweakEntityHardstop extends ReactTweak implements Listener {
     return (long) cx << 32 | (cz & 0xffffffffL);
   }
 
+  private enum Admission {
+    ADMIT,
+    REJECT,
+    RECOUNT
+  }
+
   private record ChunkKey(UUID worldId, long coordinate) {
   }
 
-  private record Rejection(ChunkKey key, long deadline) {
+  private static final class ChunkBudget {
+    private final long countExpiresAt;
+    private int count;
+    private boolean exact = true;
+    private long rejectedUntil;
+
+    private ChunkBudget(int count, long countExpiresAt) {
+      this.count = count;
+      this.countExpiresAt = countExpiresAt;
+    }
+
+    private synchronized boolean isStale(long currentTime) {
+      return currentTime >= countExpiresAt && currentTime >= rejectedUntil;
+    }
+
+    private synchronized Admission admit(long currentTime, int maximum, long rejectionWindowMs, boolean reserve) {
+      if (rejectedUntil > currentTime) {
+        return Admission.REJECT;
+      }
+      if (count >= maximum) {
+        if (!exact) {
+          return Admission.RECOUNT;
+        }
+        rejectedUntil = saturatingAdd(currentTime, rejectionWindowMs);
+        return Admission.REJECT;
+      }
+      if (reserve) {
+        count++;
+        exact = false;
+      }
+      return Admission.ADMIT;
+    }
   }
 
 }

@@ -21,6 +21,7 @@ package art.arcane.react.model;
 
 import art.arcane.react.React;
 import art.arcane.react.api.entity.EntityPriority;
+import art.arcane.react.content.sampler.EntityCensus;
 import art.arcane.react.util.common.scheduling.J;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Entity;
@@ -369,12 +370,14 @@ public class ReactEntity {
 
     entity.setAI(false);
     entity.getPersistentDataContainer().set(nsPaused, PersistentDataType.BYTE, (byte) 1);
+    EntityCensus.aiChanged(entity);
     return true;
   }
 
   private static void releaseAi(LivingEntity entity) {
     entity.setAI(true);
     entity.getPersistentDataContainer().remove(nsPaused);
+    EntityCensus.aiChanged(entity);
   }
 
   private static void releaseOrphanAi(LivingEntity entity) {
