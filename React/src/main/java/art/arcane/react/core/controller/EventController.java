@@ -68,8 +68,8 @@ public class EventController extends TickedObject implements IController, Listen
   private static volatile Field executorField;
   private static volatile boolean reflectionResolved;
 
-  @ConfigDoc(value = "Controls when listener timing wrappers are installed: ALWAYS keeps them installed, ON_DEMAND installs them only while a monitor, map, placeholder, or web viewer reads event data, and DUTY_CYCLE additionally opens a periodic measurement window.", impact = "ALWAYS charges every event handler a timing overhead; ON_DEMAND removes that cost at idle but records history gaps; DUTY_CYCLE trades periodic gaps for a small recurring cost.")
-  private InstrumentationMode instrumentation = InstrumentationMode.ALWAYS;
+  @ConfigDoc(value = "Controls when plugin and event timing wrappers are installed: ON_DEMAND (default) installs them only while a monitor, map, placeholder, or web viewer reads event data, ALWAYS keeps them installed for continuous plugin-cost history, and DUTY_CYCLE additionally opens a periodic measurement window.", impact = "ALWAYS charges every event handler a timing overhead; ON_DEMAND removes that cost at idle but records history gaps; DUTY_CYCLE trades periodic gaps for a small recurring cost.")
+  private InstrumentationMode instrumentation = InstrumentationMode.ON_DEMAND;
   @ConfigDoc(value = "Milliseconds after the last event-data read before wrappers are removed in the on-demand and duty-cycle modes.", impact = "Higher values keep instrumentation installed longer after a viewer leaves; lower values remove it sooner.")
   private long samplerActivityWindowMS = 15000;
   @ConfigDoc(value = "Length in milliseconds of each periodic measurement window in the duty-cycle mode.", impact = "Longer windows produce more recorded samples per period at a higher recurring cost.")
@@ -349,7 +349,7 @@ public class EventController extends TickedObject implements IController, Listen
 
   private InstrumentationMode mode() {
     InstrumentationMode configured = instrumentation;
-    return configured == null ? InstrumentationMode.ALWAYS : configured;
+    return configured == null ? InstrumentationMode.ON_DEMAND : configured;
   }
 
   private long windowFreshnessMS() {

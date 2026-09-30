@@ -45,6 +45,32 @@ class EventControllerModeTest {
   }
 
   @Test
+  void defaultModeIsOnDemandAndInstallsNothingWithoutDemand() {
+    HandlerFixture fixture = new HandlerFixture(plugin);
+    try (SchedulerHarness ignored = new SchedulerHarness(plugin, false, true)) {
+      EventController controller = new EventController();
+      Assertions.assertEquals(EventController.InstrumentationMode.ON_DEMAND, controller.getInstrumentation());
+      controller.start();
+
+      Assertions.assertSame(fixture.original(), fixture.registered());
+      controller.stop();
+    }
+  }
+
+  @Test
+  void missingModeFallsBackToOnDemand() {
+    HandlerFixture fixture = new HandlerFixture(plugin);
+    try (SchedulerHarness ignored = new SchedulerHarness(plugin, false, true)) {
+      EventController controller = new EventController();
+      controller.setInstrumentation(null);
+      controller.start();
+
+      Assertions.assertSame(fixture.original(), fixture.registered());
+      controller.stop();
+    }
+  }
+
+  @Test
   void alwaysModeInstallsWithoutDemandAndStaysInstalled() {
     HandlerFixture fixture = new HandlerFixture(plugin);
     try (SchedulerHarness ignored = new SchedulerHarness(plugin, false, true)) {
