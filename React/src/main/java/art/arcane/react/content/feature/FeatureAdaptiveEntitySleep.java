@@ -183,14 +183,14 @@ public class FeatureAdaptiveEntitySleep extends ReactFeature implements Listener
       return;
     }
 
-    JobFanout fanout = new JobFanout(() -> sleepScanGeneration.compareAndSet(generation, 0L));
+    JobBatch batch = new JobBatch(JobBatch.scanLimits(), () -> sleepScanGeneration.compareAndSet(generation, 0L));
     J.s(() -> {
       try {
         if (isActive(generation)) {
-          queueSleepScan(generation, fanout);
+          queueSleepScan(generation, batch);
         }
       } finally {
-        fanout.seal();
+        batch.seal();
       }
     });
   }
@@ -204,7 +204,7 @@ public class FeatureAdaptiveEntitySleep extends ReactFeature implements Listener
     }
   }
 
-  private void queueSleepScan(long generation, JobFanout fanout) {
+  private void queueSleepScan(long generation, JobBatch batch) {
     if (!isActive(generation)) {
       return;
     }
@@ -224,7 +224,7 @@ public class FeatureAdaptiveEntitySleep extends ReactFeature implements Listener
         if (!isActive(generation)) {
           return;
         }
-        fanout.submit(() -> manageEntity(entity, generation));
+        batch.submit(() -> manageEntity(entity, generation));
         budget--;
 
         if (budget <= 0) {

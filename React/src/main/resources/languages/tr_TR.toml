@@ -1810,6 +1810,14 @@ summary = "İris arazisi için genel değerlendirme aralığı milisans'ta bekç
 impact = "Daha sonra daha yüksek değerler, daha erken ve daha agresif bir şekilde tetiklenir."
 summary = "Başlatma eşiği Iris İris arazi dalga koruyucusunda nesil süresi."
 
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregeninflight]
+impact = "Daha yüksek değerler korumayı yalnızca dünyanın ön üretimi tam eşzamanlılığına yakın çalışırken tetikler; daha düşük değerler onu daha hafif yükte de tetikler."
+summary = "Tick süresi de triggerIrisPregenTickMS değerine ulaştığında Iris arazi dalgalanma korumasını tetikleyen, bu dünya için Iris ön üreticisinin devam eden chunk istekleri; değerler 1..256 aralığına sınırlanır."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregentickms]
+impact = "Yüksek değerler, sunucu daha fazla geri kalana kadar oyuncuları sınırlamadan ön üretimin sürmesine izin verir; düşük değerler bir ön üretim sürerken oyuncuların chunk üretimini daha erken sınırlar."
+summary = "Iris ön üreticisinin devam eden istekleri Iris arazi dalgalanma korumasını tetiklemeden önce ayrıca ulaşılması gereken tick süresi eşiği (milisaniye); değerler 1..1000 aralığına sınırlanır."
+
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "Yüksek değerler aktivasyon veya çıkış geciktirir; daha düşük değerler bu eşi geçmek için bu eşiği kolaylaştırmaktadır."
 summary = "İris tarzı dalga koruma (Milliseconds)'de tetikleme için tik-zaman eşiği."
@@ -2436,6 +2444,10 @@ summary = "Adapt Oturum yükü eşiği, üçlü olay modunda (yüzde) işlem yap
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enterincidentscore]
 impact = "Daha sonra daha yüksek değerler, daha erken ve daha agresif bir şekilde tetiklenir."
 summary = "Üçnity olay modunda olay puanı almak için teşrik eşi."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririspregeninflight]
+impact = "Daha yüksek değerler Iris baskısını yalnızca ön üretici tam eşzamanlılığına yakın çalışırken sayar; daha düşük değerler daha hafif ön üretim yükünü de sayar."
+summary = "Trinity olay modunda Iris baskısı sayılan, Iris ön üreticisinin devam eden chunk istekleri; değerler 1..256 aralığına sınırlanır."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.entertickms]
 impact = "Yüksek değerler aktivasyon veya çıkış geciktirir; daha düşük değerler bu eşi geçmek için bu eşiği kolaylaştırmaktadır."

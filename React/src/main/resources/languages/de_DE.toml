@@ -1810,6 +1810,14 @@ summary = "Hauptauswertungsintervall für Iris-Geländeüberspannungsschutz in M
 impact = "Höhere Werte lösen später eine Minderung aus, niedrigere Werte früher und aggressiver."
 summary = "Auslöseschwelle für Iris Erzeugungszeit im Iris-Geländeüberspannungsschutz."
 
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregeninflight]
+impact = "Höhere Werte lösen erst aus, wenn die Vorgenerierung der Welt nahe an ihrer vollen Parallelität läuft; niedrigere Werte lösen auch bei leichterer Vorgenerierungslast aus."
+summary = "Laufende Chunk-Anfragen des Iris-Pregenerators für diese Welt, ab denen der Iris-Geländespitzenschutz auslöst, sobald die Tick-Zeit auch triggerIrisPregenTickMS erreicht; Werte werden auf 1..256 begrenzt."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregentickms]
+impact = "Höhere Werte lassen die Vorgenerierung ohne Spielerbegrenzung laufen, bis der Server weiter zurückfällt; niedrigere Werte begrenzen die Chunk-Generierung durch Spieler früher, während eine Vorgenerierung läuft."
+summary = "Tick-Zeitschwelle, die zusätzlich erreicht sein muss, bevor laufende Anfragen des Iris-Pregenerators den Iris-Geländespitzenschutz auslösen (Millisekunden); Werte werden auf 1..1000 begrenzt."
+
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "Höhere Werte verzögern die Aktivierung oder den Ausstieg; niedrigere Werte erleichtern das Überschreiten dieses Schwellenwerts."
 summary = "Tick-Zeitschwelle für den Auslöser im Iris-Geländeüberspannungsschutz (Millisekunden)."
@@ -2436,6 +2444,10 @@ summary = "Adapt Sitzungslastschwelle, die eine Behandlung von Vorfällen im Tri
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enterincidentscore]
 impact = "Höhere Werte lösen später eine Minderung aus, niedrigere Werte früher und aggressiver."
 summary = "Auslöseschwelle für den Eingabe-Incident-Score im Trinity-Incide-Modus."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririspregeninflight]
+impact = "Höhere Werte erkennen Iris-Druck erst, wenn der Pregenerator nahe an seiner vollen Parallelität arbeitet; niedrigere Werte zählen auch leichtere Vorgenerierungslast."
+summary = "Laufende Chunk-Anfragen des Iris-Pregenerators, ab denen der Trinity-Störfallmodus Iris-Druck erkennt; Werte werden auf 1..256 begrenzt."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.entertickms]
 impact = "Höhere Werte verzögern die Aktivierung oder den Ausstieg; niedrigere Werte erleichtern das Überschreiten dieses Schwellenwerts."

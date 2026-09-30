@@ -191,12 +191,12 @@ public class FeaturePathfinderBudget extends ReactFeature implements FeatureInte
       return;
     }
 
-    JobFanout fanout = new JobFanout(() -> finishScan(generation));
+    JobBatch batch = new JobBatch(JobBatch.scanLimits(), () -> finishScan(generation));
     J.s(() -> {
       try {
-        queueScan(generation, fanout);
+        queueScan(generation, batch);
       } finally {
-        fanout.seal();
+        batch.seal();
       }
     });
   }
@@ -220,7 +220,7 @@ public class FeaturePathfinderBudget extends ReactFeature implements FeatureInte
     }
   }
 
-  private void queueScan(long generation, JobFanout fanout) {
+  private void queueScan(long generation, JobBatch batch) {
     if (!isCurrent(generation)) {
       return;
     }
@@ -248,7 +248,7 @@ public class FeaturePathfinderBudget extends ReactFeature implements FeatureInte
           return;
         }
         remaining--;
-        fanout.submit(() -> manageEntity(entity, generation));
+        batch.submit(() -> manageEntity(entity, generation));
       }
     }
   }

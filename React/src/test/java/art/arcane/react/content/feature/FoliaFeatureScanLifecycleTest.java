@@ -356,7 +356,7 @@ class FoliaFeatureScanLifecycleTest {
   }
 
   @Test
-  void entityTrimmerPaperQueuesOneBoundedJobPerAnchorWithoutEnumeratingWorlds() {
+  void entityTrimmerPaperQueuesOneBatchJobForAllAnchorsWithoutEnumeratingWorlds() {
     FeatureEntityTrimmer feature = new FeatureEntityTrimmer();
     Player[] players = players(30);
     List<Runnable> mainTasks = new ArrayList<>();
@@ -375,11 +375,11 @@ class FoliaFeatureScanLifecycleTest {
       mainTasks.removeFirst().run();
       feature.onTick();
 
-      Assertions.assertEquals(24, mainTasks.size());
-      for (Runnable anchorScan : new ArrayList<>(mainTasks)) {
-        anchorScan.run();
+      Assertions.assertEquals(1, mainTasks.size());
+      while (!mainTasks.isEmpty()) {
+        Assertions.assertEquals(1, mainTasks.size());
+        mainTasks.removeFirst().run();
       }
-      mainTasks.clear();
       feature.onTick();
 
       Assertions.assertEquals(1, mainTasks.size());

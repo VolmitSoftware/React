@@ -1810,6 +1810,14 @@ summary = "Hoofdevaluatie-interval voor de Iris terrein golfbeveiliging in milli
 impact = "Hogere waarden leiden later tot mitigatie; lagere waarden veroorzaken eerder en agressiever."
 summary = "Drempelwaarde voor de toepassing van de drempel Iris generatietijd in de Iris terrein golf guard."
 
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregeninflight]
+impact = "Hogere waarden activeren de bewaking alleen wanneer de pregeneratie van de wereld bijna op volle gelijktijdigheid draait; lagere waarden activeren haar ook bij lichtere last."
+summary = "Lopende chunkverzoeken van de Iris-pregenerator voor deze wereld die de Iris-terreinpiekbewaking activeren zodra de ticktijd ook triggerIrisPregenTickMS bereikt; waarden worden begrensd tot 1..256."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregentickms]
+impact = "Hogere waarden laten de pregeneratie doorlopen zonder spelers te beperken tot de server verder achterloopt; lagere waarden beperken chunkgeneratie door spelers eerder terwijl een pregeneratie loopt."
+summary = "Ticktijddrempel die ook bereikt moet zijn voordat lopende verzoeken van de Iris-pregenerator de Iris-terreinpiekbewaking activeren (milliseconden); waarden worden begrensd tot 1..1000."
+
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "Hogere waarden vertragen activering of uitgang; lagere waarden maken deze drempel gemakkelijker te overschrijden."
 summary = "tick-tijddrempel voor trigger in iris terrein surge guard (milliseconden )."
@@ -2436,6 +2444,10 @@ summary = "Adapt sessiebelastingdrempel die incidentbehandeling in trinity-incid
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enterincidentscore]
 impact = "Hogere waarden leiden later tot mitigatie; lagere waarden veroorzaken eerder en agressiever."
 summary = "Drempelwaarde voor het invoeren van de incidentscore in drie-eenheidsincidentmodus."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririspregeninflight]
+impact = "Hogere waarden tellen Iris-druk alleen wanneer de pregenerator bijna op volle gelijktijdigheid draait; lagere waarden tellen ook lichtere pregeneratielast mee."
+summary = "Lopende chunkverzoeken van de Iris-pregenerator die in de Trinity-incidentmodus als Iris-druk tellen; waarden worden begrensd tot 1..256."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.entertickms]
 impact = "Hogere waarden vertragen activering of uitgang; lagere waarden maken deze drempel gemakkelijker te overschrijden."

@@ -1810,6 +1810,14 @@ summary = "Intervalle d'évaluation principal pour le dispositif de protection c
 impact = "Les valeurs plus élevées déclenchent l'atténuation plus tard; les valeurs plus faibles déclenchent plus tôt et de façon plus agressive."
 summary = "Seuil de déclenchement pour Iris temps de génération dans le terrain de protection contre les ondes d'iris."
 
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregeninflight]
+impact = "Des valeurs plus élevées ne déclenchent la protection que lorsque la prégénération du monde tourne près de sa concurrence maximale ; des valeurs plus faibles la déclenchent aussi sous une charge plus légère."
+summary = "Requêtes de chunks en cours du prégénérateur Iris pour ce monde qui déclenchent la protection contre les pics de terrain Iris lorsque le temps de tick atteint aussi triggerIrisPregenTickMS ; les valeurs sont limitées à 1..256."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregentickms]
+impact = "Des valeurs plus élevées laissent la prégénération tourner sans limiter les joueurs jusqu'à ce que le serveur prenne plus de retard ; des valeurs plus faibles limitent plus tôt la génération de chunks par les joueurs pendant une prégénération."
+summary = "Seuil de temps de tick qui doit aussi être atteint avant que les requêtes en cours du prégénérateur Iris déclenchent la protection contre les pics de terrain Iris (millisecondes) ; les valeurs sont limitées à 1..1000."
+
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "Des valeurs plus élevées retardent l'activation ou la sortie; des valeurs plus faibles facilitent le franchissement de ce seuil."
 summary = "Térubin de temps tick pour déclencher dans l'iris sur le terrain garde d'urgence (millisecondes)."
@@ -2436,6 +2444,10 @@ summary = "Adapt seuil de charge de session qui peut déclencher la manipulation
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enterincidentscore]
 impact = "Les valeurs plus élevées déclenchent l'atténuation plus tard; les valeurs plus faibles déclenchent plus tôt et de façon plus agressive."
 summary = "Seuil de déclenchement pour saisir le score d'incident en mode incident trinitaire."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririspregeninflight]
+impact = "Des valeurs plus élevées ne comptent la pression Iris que lorsque le prégénérateur tourne près de sa concurrence maximale ; des valeurs plus faibles comptent aussi une charge de prégénération plus légère."
+summary = "Requêtes de chunks en cours du prégénérateur Iris comptées comme pression Iris en mode incident Trinity ; les valeurs sont limitées à 1..256."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.entertickms]
 impact = "Des valeurs plus élevées retardent l'activation ou la sortie; des valeurs plus faibles facilitent le franchissement de ce seuil."

@@ -49,10 +49,10 @@ class WorldEntityConsumerBudgetTest {
       snapshots.when(() -> WorldEntitySnapshots.next(world, 240)).thenReturn(List.of());
       snapshots.when(() -> WorldEntitySnapshots.next(world, 220)).thenReturn(List.of());
 
-      invoke(sleep, "queueSleepScan", new Class<?>[]{long.class, JobFanout.class}, 1L, new JobFanout(() -> { }));
+      invoke(sleep, "queueSleepScan", new Class<?>[]{long.class, JobBatch.class}, 1L, new JobBatch(JobBatch.Limits.forTickBudget(1D), () -> { }));
       invoke(activation, "applyActivationRange", new Class<?>[]{long.class, double.class}, 1L, 32D);
       invoke(backpressure, "removeRemoteItems", new Class<?>[]{boolean.class, long.class}, true, 1L);
-      invoke(pathfinder, "queueScan", new Class<?>[]{long.class, JobFanout.class}, 1L, new JobFanout(() -> { }));
+      invoke(pathfinder, "queueScan", new Class<?>[]{long.class, JobBatch.class}, 1L, new JobBatch(JobBatch.Limits.forTickBudget(1D), () -> { }));
 
       snapshots.verify(() -> WorldEntitySnapshots.next(world, 320));
       snapshots.verify(() -> WorldEntitySnapshots.next(world, 240), Mockito.times(2));
