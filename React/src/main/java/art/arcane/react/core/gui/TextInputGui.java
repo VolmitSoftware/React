@@ -20,7 +20,7 @@
 package art.arcane.react.core.gui;
 
 import art.arcane.react.React;
-import art.arcane.react.util.common.scheduling.J;
+import art.arcane.react.util.common.scheduling.PromptWait;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -28,6 +28,8 @@ import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+
+import java.util.function.BooleanSupplier;
 
 public class TextInputGui implements Listener {
   private final Player player;
@@ -41,7 +43,7 @@ public class TextInputGui implements Listener {
     response = null;
   }
 
-  public static String captureText(Player p) {
+  public static String captureText(Player p, BooleanSupplier abandoned) {
     if (Bukkit.isPrimaryThread()) {
       throw new RuntimeException("Cannot open gui on main thread");
     }
@@ -49,17 +51,12 @@ public class TextInputGui implements Listener {
     TextInputGui gui = new TextInputGui(p);
 
     try {
-      while (!gui.responded) {
-        if (!captureAvailable()) {
-          return null;
-        }
-        if (!J.sleep(50)) {
-          Thread.currentThread().interrupt();
-          return null;
-        }
+      PromptWait.Outcome outcome = PromptWait.await(() -> gui.responded || abandoned.getAsBoolean());
+      if (outcome == PromptWait.Outcome.INTERRUPTED) {
+        Thread.currentThread().interrupt();
       }
 
-      return gui.response;
+      return outcome == PromptWait.Outcome.COMPLETED ? gui.response : null;
     } finally {
       gui.responded = true;
       HandlerList.unregisterAll(gui);
@@ -83,9 +80,5 @@ public class TextInputGui implements Listener {
       responded = true;
       HandlerList.unregisterAll(this);
     }
-  }
-
-  private static boolean captureAvailable() {
-    return React.instance != null && React.instance.isEnabled() && React.instance.isReady();
   }
 }

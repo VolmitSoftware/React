@@ -22,7 +22,6 @@ package art.arcane.react;
 import art.arcane.volmlib.util.diagnostics.BukkitDebugDump;
 import art.arcane.volmlib.util.diagnostics.DebugDumpContributor;
 import art.arcane.chrono.PrecisionStopwatch;
-import art.arcane.multiburst.MultiBurst;
 import art.arcane.react.api.action.Action;
 import art.arcane.react.api.feature.Feature;
 import art.arcane.react.api.sampler.Sampler;
@@ -41,6 +40,7 @@ import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.util.common.plugin.SplashScreen;
 import art.arcane.react.util.common.scheduling.J;
+import art.arcane.react.util.common.scheduling.ReactExecutors;
 import art.arcane.react.util.common.scheduling.Ticker;
 import art.arcane.react.util.format.C;
 import art.arcane.react.util.plugin.IController;
@@ -101,7 +101,7 @@ public class React extends VolmitPlugin implements ReloadAware {
   public static React instance;
   public static Thread serverThread;
   public static Ticker ticker;
-  public static MultiBurst burst;
+  public static volatile ReactExecutors executors;
   // Lazy: Audiences links against slimjar-provided adventure types, so it must not be
   // loaded from <clinit> — the main class initializes before ApplicationBuilder.build().
   private static volatile Audiences audiencesFacade;
@@ -485,8 +485,9 @@ public class React extends VolmitPlugin implements ReloadAware {
     ));
     startupTasks = new CopyOnWriteArrayList<>();
     prejobs = new CopyOnWriteArrayList<>();
-    burst = new MultiBurst("React", Thread.MIN_PRIORITY);
-    ticker = new Ticker();
+    executors = ReactExecutors.create();
+    ticker = new Ticker(executors.tickPool());
+    ticker.start();
     hudBar = new HudActionBar(this);
     hudTitles = new HudTitleService(this);
     bridgeRegistry = new NmsBridgeRegistry();
@@ -537,18 +538,18 @@ public class React extends VolmitPlugin implements ReloadAware {
 
   public void refreshRuntimeSettings(ReactConfiguration configuration) {
     synchronized (runtimeSettingsSubmissionLock) {
-      MultiBurst runtime = burst;
-      if (!ready || runtime == null) {
+      ReactExecutors runtime = executors;
+      if (!ready || runtime == null || runtime.isClosed()) {
         return;
       }
       runtimeSettings = new RuntimeSettings(configuration.isMetrics(), configuration.isUnsafeBytecode());
-      runtime.lazy(() -> applyRuntimeSettings(runtime));
+      runtime.asyncPool().execute(() -> applyRuntimeSettings(runtime));
     }
   }
 
-  private void applyRuntimeSettings(MultiBurst runtime) {
+  private void applyRuntimeSettings(ReactExecutors runtime) {
     synchronized (runtimeSettingsLock) {
-      if (!ready || runtime != burst) {
+      if (!ready || runtime != executors) {
         return;
       }
       RuntimeSettings settings = runtimeSettings;
@@ -668,8 +669,9 @@ public class React extends VolmitPlugin implements ReloadAware {
       hudTitles.shutdown();
       hudTitles = null;
     }
-    if (burst != null) {
-      burst.close();
+    if (executors != null) {
+      executors.close();
+      executors = null;
     }
     closeAudienceProvider();
   }

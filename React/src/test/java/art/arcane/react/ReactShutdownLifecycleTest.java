@@ -1,8 +1,8 @@
 package art.arcane.react;
 
-import art.arcane.multiburst.MultiBurst;
 import art.arcane.react.core.bridge.NmsBridgeRegistry;
 import art.arcane.react.util.common.scheduling.J;
+import art.arcane.react.util.common.scheduling.ReactExecutors;
 import art.arcane.react.util.common.scheduling.Ticker;
 import art.arcane.react.util.plugin.IController;
 import art.arcane.react.util.project.registry.Registry;
@@ -81,7 +81,7 @@ class ReactShutdownLifecycleTest {
   private static final class ShutdownHarness implements AutoCloseable {
     private final React previousInstance;
     private final Ticker previousTicker;
-    private final MultiBurst previousBurst;
+    private final ReactExecutors previousExecutors;
     private final HudActionBar previousHudBar;
     private final HudTitleService previousHudTitles;
     private final BukkitAudiences previousAudienceProvider;
@@ -96,7 +96,7 @@ class ReactShutdownLifecycleTest {
     private ShutdownHarness() throws ReflectiveOperationException {
       previousInstance = React.instance;
       previousTicker = React.ticker;
-      previousBurst = React.burst;
+      previousExecutors = React.executors;
       previousHudBar = (HudActionBar) readStaticField("hudBar");
       previousHudTitles = (HudTitleService) readStaticField("hudTitles");
       previousAudienceProvider = (BukkitAudiences) readStaticField("audienceProvider");
@@ -133,7 +133,7 @@ class ReactShutdownLifecycleTest {
       setField(plugin, "bridgeRegistry", bridgeRegistry);
       React.instance = plugin;
       React.ticker = ticker;
-      React.burst = null;
+      React.executors = null;
       setStaticField("hudBar", null);
       setStaticField("hudTitles", null);
       setStaticField("audienceProvider", null);
@@ -170,7 +170,7 @@ class ReactShutdownLifecycleTest {
       scheduler.close();
       React.instance = previousInstance;
       React.ticker = previousTicker;
-      React.burst = previousBurst;
+      React.executors = previousExecutors;
       setStaticField("hudBar", previousHudBar);
       setStaticField("hudTitles", previousHudTitles);
       setStaticField("audienceProvider", previousAudienceProvider);

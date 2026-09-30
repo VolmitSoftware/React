@@ -18,7 +18,7 @@ class TickerSlowTickWarningTest {
     ReactConfiguration configuration = new ReactConfiguration();
     configuration.setSlowTickLogMode(ReactConfiguration.SlowTickLogMode.OFF);
     Ticked ticked = slowTickedTask();
-    Ticker ticker = new Ticker();
+    Ticker ticker = new Ticker(Runnable::run);
 
     try (MockedStatic<ReactConfiguration> reactConfiguration = Mockito.mockStatic(ReactConfiguration.class);
          MockedStatic<React> react = Mockito.mockStatic(React.class)) {
@@ -37,7 +37,7 @@ class TickerSlowTickWarningTest {
     ReactConfiguration configuration = new ReactConfiguration();
     configuration.setSlowTickLogMode(ReactConfiguration.SlowTickLogMode.BLAME);
     Ticked ticked = slowTickedTask();
-    Ticker ticker = new Ticker();
+    Ticker ticker = new Ticker(Runnable::run);
 
     try (MockedStatic<ReactConfiguration> reactConfiguration = Mockito.mockStatic(ReactConfiguration.class);
          MockedStatic<React> react = Mockito.mockStatic(React.class)) {
@@ -56,7 +56,7 @@ class TickerSlowTickWarningTest {
   void offModeClearsPriorWarningThrottleState() throws Exception {
     ReactConfiguration configuration = new ReactConfiguration();
     Ticked ticked = slowTickedTask();
-    Ticker ticker = new Ticker();
+    Ticker ticker = new Ticker(Runnable::run);
 
     try (MockedStatic<ReactConfiguration> reactConfiguration = Mockito.mockStatic(ReactConfiguration.class);
          MockedStatic<React> react = Mockito.mockStatic(React.class)) {

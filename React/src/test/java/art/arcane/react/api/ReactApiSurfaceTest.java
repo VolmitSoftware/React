@@ -32,7 +32,6 @@ class ReactApiSurfaceTest {
       "art.arcane.volmlib",
       "art.arcane.chrono",
       "art.arcane.curse",
-      "art.arcane.multiburst",
       "net.bytebuddy",
       "io.github.slimjar",
       "net.kyori",
