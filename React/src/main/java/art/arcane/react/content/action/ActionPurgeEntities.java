@@ -49,7 +49,7 @@ import org.bukkit.entity.EntityType;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Purge Entities action. Removes matching entities from selected chunks or worlds.")
@@ -76,10 +76,6 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
   private int secondsToPurge = 5;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Protects player-named entities from purge entities.", impact = "Keep enabled to exclude entities with a custom name; disable it to make named entities eligible for removal.")
   private boolean protectNamedEntities = true;
-
-  private transient int lowerBound = secondsToPurge - 1;
-  private transient int upperBound = secondsToPurge + 2;
-  private transient int randomDelay = new Random().nextInt(upperBound - lowerBound) + lowerBound;
 
   public ActionPurgeEntities() {
     super(ID);
@@ -143,12 +139,16 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
     int delay = (int) (20 * Math.random());
     Runnable removal = () -> {
       if (canPurge(entity, params) && ProtectionGuards.allows(entity, ReactOperation.PURGE)) {
-        React.kill(entity, randomDelay);
+        React.kill(entity, purgeDelaySeconds());
       }
     };
     if (!J.runEntity(entity, removal, delay)) {
       removal.run();
     }
+  }
+
+  private int purgeDelaySeconds() {
+    return Math.max(0, secondsToPurge - 1) + ThreadLocalRandom.current().nextInt(3);
   }
 
   boolean canPurge(Entity entity, Params params) {

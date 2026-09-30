@@ -45,6 +45,7 @@ public final class PluginApiPackController extends TickedObject implements ICont
   private final transient AtomicBoolean scanQueued = new AtomicBoolean();
   private final transient Map<String, PluginApiPackRuntime> packs = new LinkedHashMap<>();
   private final transient Map<String, String> validationErrors = new LinkedHashMap<>();
+  private final transient Set<String> collectFailures = new HashSet<>();
   private transient ExecutorService ioExecutor;
   private transient Path packFolder;
   private transient long lastScanMs;
@@ -109,6 +110,7 @@ public final class PluginApiPackController extends TickedObject implements ICont
       }
       packs.clear();
       validationErrors.clear();
+      collectFailures.clear();
     }
   }
 
@@ -250,6 +252,7 @@ public final class PluginApiPackController extends TickedObject implements ICont
           return false;
         }
         packs.remove(normalizedId);
+        collectFailures.remove(normalizedId);
       }
       removed.retire(React.controller(SampleController.class));
       return true;
@@ -260,14 +263,27 @@ public final class PluginApiPackController extends TickedObject implements ICont
   private void collectOnServerThread() {
     long now = System.currentTimeMillis();
     synchronized (packs) {
-      for (PluginApiPackRuntime runtime : packs.values()) {
-        runtime.collect(now);
+      for (Map.Entry<String, PluginApiPackRuntime> entry : packs.entrySet()) {
+        collectPack(entry.getKey(), entry.getValue(), now);
+      }
+    }
+  }
+
+  private void collectPack(String id, PluginApiPackRuntime runtime, long now) {
+    try {
+      runtime.collect(now);
+      collectFailures.remove(id);
+    } catch (RuntimeException | LinkageError failure) {
+      if (collectFailures.add(id)) {
+        React.reportError("Plugin API pack " + id + " collection failed", failure);
       }
     }
   }
 
   private PreparedCatalog prepareCatalog() throws IOException {
-    Files.createDirectories(packFolder);
+    if (!Files.isDirectory(packFolder)) {
+      Files.createDirectories(packFolder);
+    }
     List<Path> files;
     try (java.util.stream.Stream<Path> stream = Files.list(packFolder)) {
       files = stream
@@ -336,6 +352,7 @@ public final class PluginApiPackController extends TickedObject implements ICont
           PluginApiPackRuntime newRuntime = new PluginApiPackRuntime(replacement);
           if (newRuntime.activate(sampleController)) {
             packs.put(oldId, newRuntime);
+            collectFailures.remove(oldId);
           } else {
             oldRuntime.activate(sampleController);
             validationErrors.put(replacement.sourcePath().getFileName().toString(), newRuntime.detail());
@@ -346,6 +363,7 @@ public final class PluginApiPackController extends TickedObject implements ICont
         if (!prepared.presentPaths().contains(oldPath)) {
           oldRuntime.retire(sampleController);
           packs.remove(oldId);
+          collectFailures.remove(oldId);
         }
       }
       for (PluginApiPackDefinition definition : prepared.definitions().values()) {

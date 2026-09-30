@@ -247,7 +247,11 @@ public class ActionQuarantineHotChunks extends ReactAction<ActionQuarantineHotCh
           continue;
         }
 
-        React.kill(entity, 4 + ThreadLocalRandom.current().nextInt(8));
+        if (params.isUnloadChunk()) {
+          entity.remove();
+        } else {
+          React.kill(entity, 4 + ThreadLocalRandom.current().nextInt(8));
+        }
         culled++;
       }
     }

@@ -122,7 +122,7 @@ public class TweakFastDrops extends ReactTweak implements Listener {
 
   @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
   public void on(BlockDropItemEvent e) {
-    if (!allowContainerDrops && e.getBlock().getState() instanceof InventoryHolder) {
+    if (!allowContainerDrops && e.getBlockState() instanceof InventoryHolder) {
       return;
     }
 
@@ -157,7 +157,7 @@ public class TweakFastDrops extends ReactTweak implements Listener {
     }
   }
 
-  @EventHandler(priority = EventPriority.HIGHEST)
+  @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
   public void on(BlockBreakEvent e) {
     if (!teleportBlockXP) {
       return;

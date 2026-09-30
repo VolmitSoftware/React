@@ -100,6 +100,7 @@ public class ConfigResource {
         for (Map.Entry<String, Object> entry : body.entrySet()) {
             if (!applier.apply(entry.getKey(), entry.getValue())) {
                 rollback(originalValues, applied);
+                applier.apply(entry.getKey(), originalValues.get(entry.getKey()));
                 throw new InternalServerErrorResponse("Failed to apply config path: " + entry.getKey());
             }
             applied.add(entry.getKey());

@@ -61,7 +61,6 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.FallingBlock;
 import org.bukkit.entity.Player;
 
@@ -71,7 +70,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 @Director(
     name = "dev",
@@ -300,43 +298,53 @@ public class CommandDev implements DirectorExecutor {
 
     World world = Bukkit.getWorlds().get(0);
     Location base = world.getSpawnLocation();
-    int x = base.getBlockX();
-    int z = base.getBlockZ();
-    int groundY = world.getHighestBlockYAt(x, z);
+    GravityProbe probe = new GravityProbe(out, world, base.getBlockX(), base.getBlockZ(), onDone);
+    if (!J.runChunk(world, probe.chunkX(), probe.chunkZ(), () -> dropGravityProbe(probe))) {
+      React.reportError(new IllegalStateException("Failed to schedule lazy-gravity verification at the world spawn chunk"));
+      onDone.run();
+    }
+  }
+
+  private void dropGravityProbe(GravityProbe probe) {
+    World world = probe.world();
+    int groundY = world.getHighestBlockYAt(probe.x(), probe.z());
     int spawnY = Math.min(world.getMaxHeight() - 2, groundY + 20);
     if (spawnY <= groundY + 2) {
       ReactLanguage.send(
-          out,
+          probe.out(),
           DevMessages.GRAVITY_NO_HEADROOM,
           MessageArgument.untrusted("ground_y", groundY)
       );
-      onDone.run();
+      probe.onDone().run();
       return;
     }
 
-    Location dropAt = new Location(world, x + 0.5D, spawnY, z + 0.5D);
+    Location dropAt = new Location(world, probe.x() + 0.5D, spawnY, probe.z() + 0.5D);
     FallingBlock falling = world.spawnFallingBlock(dropAt, Material.SAND.createBlockData());
-    UUID id = falling.getUniqueId();
     ReactLanguage.send(
-        out,
+        probe.out(),
         DevMessages.GRAVITY_DROPPED,
         MessageArgument.untrusted("spawn_y", spawnY),
         MessageArgument.untrusted("ground_y", groundY)
     );
 
-    J.s(() -> {
-      Entity entity = Bukkit.getEntity(id);
-      boolean landed = entity == null || entity.isDead() || !entity.isValid();
-      ReactLanguage.send(out, landed ? DevMessages.GRAVITY_PASS : DevMessages.GRAVITY_FAIL);
-      if (!landed && entity != null) {
-        entity.remove();
-      }
-      Block landingBlock = world.getBlockAt(x, groundY + 1, z);
-      if (landingBlock.getType() == Material.SAND) {
-        landingBlock.setType(Material.AIR);
-      }
-      onDone.run();
-    }, 100);
+    if (!J.runChunk(world, probe.chunkX(), probe.chunkZ(), () -> finishGravityProbe(probe, falling, groundY), 100)) {
+      React.reportError(new IllegalStateException("Failed to schedule lazy-gravity landing check at the world spawn chunk"));
+      probe.onDone().run();
+    }
+  }
+
+  private void finishGravityProbe(GravityProbe probe, FallingBlock falling, int groundY) {
+    boolean landed = falling.isDead() || !falling.isValid();
+    ReactLanguage.send(probe.out(), landed ? DevMessages.GRAVITY_PASS : DevMessages.GRAVITY_FAIL);
+    if (!landed) {
+      falling.remove();
+    }
+    Block landingBlock = probe.world().getBlockAt(probe.x(), groundY + 1, probe.z());
+    if (landingBlock.getType() == Material.SAND) {
+      landingBlock.setType(Material.AIR);
+    }
+    probe.onDone().run();
   }
 
   private void sendRuntimeAudit(VolmitSender commandSender, ActionController actionController) {
@@ -631,5 +639,15 @@ public class CommandDev implements DirectorExecutor {
   }
 
   private record ActionTestStep(Action<?> action, ActionParams params) {
+  }
+
+  private record GravityProbe(VolmitSender out, World world, int x, int z, Runnable onDone) {
+    private int chunkX() {
+      return x >> 4;
+    }
+
+    private int chunkZ() {
+      return z >> 4;
+    }
   }
 }

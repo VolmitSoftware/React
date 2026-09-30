@@ -2,7 +2,6 @@ package art.arcane.react.api.test.checks;
 
 import art.arcane.react.React;
 import art.arcane.react.api.feature.Feature;
-import art.arcane.react.api.rendering.ReactRenderer;
 import art.arcane.react.api.test.ReactAsyncSubsystemCheck;
 import art.arcane.react.api.test.TestReport;
 import art.arcane.react.core.controller.FeatureController;
@@ -59,10 +58,7 @@ public class FeatureLifecycleCheck implements ReactAsyncSubsystemCheck {
     List<Feature> enabled = new ArrayList<Feature>();
     Map<String, Boolean> originalActive = new HashMap<String, Boolean>();
     for (Feature feature : registry.all()) {
-      if (feature == null || !feature.isEnabled()) {
-        continue;
-      }
-      if (React.instance.isMonitoringOnly() && !(feature instanceof ReactRenderer)) {
+      if (feature == null || !controller.shouldActivateFeature(feature)) {
         continue;
       }
       enabled.add(feature);

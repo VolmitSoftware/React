@@ -124,6 +124,26 @@ class FeatureControllerLifecycleTest {
   }
 
   @Test
+  void pausedReconcileLeavesFeatureGatesUntouchedUntilResumed() {
+    Feature feature = feature("paused-reconcile", true, -1);
+    Mockito.when(plugin.isReady()).thenReturn(true);
+    controller.setFeatures(registry(Map.of(feature.getId(), feature)));
+    controller.setReconcilePaused(true);
+
+    try (MockedStatic<React> react = Mockito.mockStatic(React.class)) {
+      controller.reconcileRuntimeMode();
+
+      Assertions.assertTrue(controller.getActiveFeatures().isEmpty());
+      Mockito.verify(feature, Mockito.never()).onActivate();
+
+      controller.setReconcilePaused(false);
+      controller.reconcileRuntimeMode();
+
+      Assertions.assertEquals(Set.of("paused-reconcile"), controller.getActiveFeatures().keySet());
+    }
+  }
+
+  @Test
   void activationRollsBackEveryStartedResourceWhenCommitFails() {
     Feature feature = listenerFeature("transactional", true, 50);
     Listener listener = (Listener) feature;

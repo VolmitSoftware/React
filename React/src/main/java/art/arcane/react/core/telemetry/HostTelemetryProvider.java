@@ -23,16 +23,20 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 import java.lang.management.MemoryUsage;
 import java.lang.management.RuntimeMXBean;
-import java.nio.file.FileStore;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.LongSupplier;
 
 public final class HostTelemetryProvider {
   private static final long HARDWARE_DETAIL_REFRESH_MS = 10_000L;
+  private static final long STORAGE_REFRESH_MS = 30_000L;
+  private static final long NETWORK_REFRESH_MS = 10_000L;
+  private static final long NETWORK_LIST_REFRESH_MS = 30_000L;
 
   private final Path dataPath;
+  private final LongSupplier clock;
   private final HardwareAbstractionLayer hardware;
   private final OperatingSystem operatingSystem;
   private final CentralProcessor processor;
@@ -47,19 +51,31 @@ public final class HostTelemetryProvider {
   private final String[] graphicsCards;
   private long[] processorTicks;
   private long previousCapturedAtMs;
-  private long previousDiskReadBytes;
-  private long previousDiskWriteBytes;
-  private long previousNetworkReceiveBytes;
-  private long previousNetworkSendBytes;
+  private long previousStorageRefreshMs;
+  private long previousNetworkRefreshMs;
   private long previousGcCollections;
   private long nextHardwareDetailRefreshMs;
+  private long nextStorageRefreshMs;
+  private long nextNetworkRefreshMs;
+  private long nextNetworkListRefreshMs;
+  private DiskCapture diskCapture;
+  private EnvironmentDto.MountDto[] mounts;
+  private double diskReadRate;
+  private double diskWriteRate;
+  private List<NetworkIF> networkInterfaces;
+  private NetworkCapture networkCapture;
+  private double networkReceiveRate;
+  private double networkSendRate;
   private String[] sensors;
   private String[] powerSources;
 
   public HostTelemetryProvider(Path dataPath) {
+    this(dataPath, createSystemInfo(), System::currentTimeMillis);
+  }
+
+  HostTelemetryProvider(Path dataPath, SystemInfo systemInfo, LongSupplier clock) {
     this.dataPath = dataPath;
-    WindowsSensorWmiQueryHandler.installIfWindows();
-    SystemInfo systemInfo = new SystemInfo();
+    this.clock = clock;
     this.hardware = systemInfo.getHardware();
     this.operatingSystem = systemInfo.getOperatingSystem();
     this.processor = hardware.getProcessor();
@@ -76,14 +92,26 @@ public final class HostTelemetryProvider {
     this.processorTicks = processor.getSystemCpuLoadTicks();
     this.sensors = new String[0];
     this.powerSources = new String[0];
+    this.diskCapture = new DiskCapture(new EnvironmentDto.DiskDto[0], 0L, 0L);
+    this.mounts = new EnvironmentDto.MountDto[0];
+    this.networkInterfaces = List.of();
+    this.networkCapture = new NetworkCapture(new EnvironmentDto.NetworkInterfaceDto[0], 0L, 0L, 0L, 0L, 0L);
   }
 
   public HostTelemetrySnapshot capture() throws Exception {
-    long nowMs = System.currentTimeMillis();
+    long nowMs = clock.getAsLong();
     if (nowMs >= nextHardwareDetailRefreshMs) {
       sensors = buildSensors();
       powerSources = buildPowerSources();
       nextHardwareDetailRefreshMs = nowMs + HARDWARE_DETAIL_REFRESH_MS;
+    }
+    if (nowMs >= nextStorageRefreshMs) {
+      refreshStorage(nowMs);
+      nextStorageRefreshMs = nowMs + STORAGE_REFRESH_MS;
+    }
+    if (nowMs >= nextNetworkRefreshMs) {
+      refreshNetwork(nowMs);
+      nextNetworkRefreshMs = nowMs + NETWORK_REFRESH_MS;
     }
 
     GlobalMemory physicalMemory = hardware.getMemory();
@@ -92,13 +120,8 @@ public final class HostTelemetryProvider {
     long physicalUsed = Math.max(0L, physicalTotal - physicalFree);
     VirtualMemory virtualMemory = physicalMemory.getVirtualMemory();
 
-    DiskCapture diskCapture = captureDisks();
-    NetworkCapture networkCapture = captureNetwork();
+    long diskUsable = Math.max(0L, Files.getFileStore(dataPath).getUsableSpace());
     long elapsedMs = previousCapturedAtMs == 0L ? 0L : Math.max(0L, nowMs - previousCapturedAtMs);
-    double diskReadRate = rate(diskCapture.readBytes(), previousDiskReadBytes, elapsedMs);
-    double diskWriteRate = rate(diskCapture.writeBytes(), previousDiskWriteBytes, elapsedMs);
-    double networkReceiveRate = rate(networkCapture.receiveBytes(), previousNetworkReceiveBytes, elapsedMs);
-    double networkSendRate = rate(networkCapture.sendBytes(), previousNetworkSendBytes, elapsedMs);
 
     long gcCollections = totalGcCollections();
     double gcCollectionsPerMinute = perMinute(gcCollections, previousGcCollections, elapsedMs);
@@ -116,14 +139,10 @@ public final class HostTelemetryProvider {
     environment.jvm = buildJvm(heapUsed, heapMax);
     environment.server = buildServer();
     environment.disks = diskCapture.disks();
-    environment.mounts = captureMounts();
+    environment.mounts = mounts;
     environment.network = networkCapture.interfaces();
 
     previousCapturedAtMs = nowMs;
-    previousDiskReadBytes = diskCapture.readBytes();
-    previousDiskWriteBytes = diskCapture.writeBytes();
-    previousNetworkReceiveBytes = networkCapture.receiveBytes();
-    previousNetworkSendBytes = networkCapture.sendBytes();
     previousGcCollections = gcCollections;
 
     return new HostTelemetrySnapshot(
@@ -132,7 +151,7 @@ public final class HostTelemetryProvider {
         nowMs,
         physicalUsed,
         physicalFree,
-        diskCapture.usableBytes(),
+        diskUsable,
         diskReadRate,
         diskWriteRate,
         networkReceiveRate,
@@ -208,13 +227,39 @@ public final class HostTelemetryProvider {
     return server;
   }
 
-  private DiskCapture captureDisks() throws Exception {
+  private void refreshStorage(long nowMs) {
+    DiskCapture refreshed = captureDisks();
+    long elapsedMs = previousStorageRefreshMs == 0L ? 0L : Math.max(0L, nowMs - previousStorageRefreshMs);
+    diskReadRate = rate(refreshed.readBytes(), diskCapture.readBytes(), elapsedMs);
+    diskWriteRate = rate(refreshed.writeBytes(), diskCapture.writeBytes(), elapsedMs);
+    diskCapture = refreshed;
+    mounts = captureMounts();
+    previousStorageRefreshMs = nowMs;
+  }
+
+  private void refreshNetwork(long nowMs) {
+    if (nowMs >= nextNetworkListRefreshMs) {
+      networkInterfaces = hardware.getNetworkIFs();
+      nextNetworkListRefreshMs = nowMs + NETWORK_LIST_REFRESH_MS;
+    } else {
+      for (NetworkIF networkInterface : networkInterfaces) {
+        networkInterface.updateAttributes();
+      }
+    }
+    NetworkCapture refreshed = captureNetwork();
+    long elapsedMs = previousNetworkRefreshMs == 0L ? 0L : Math.max(0L, nowMs - previousNetworkRefreshMs);
+    networkReceiveRate = rate(refreshed.receiveBytes(), networkCapture.receiveBytes(), elapsedMs);
+    networkSendRate = rate(refreshed.sendBytes(), networkCapture.sendBytes(), elapsedMs);
+    networkCapture = refreshed;
+    previousNetworkRefreshMs = nowMs;
+  }
+
+  private DiskCapture captureDisks() {
     List<HWDiskStore> stores = hardware.getDiskStores();
     List<EnvironmentDto.DiskDto> disks = new ArrayList<>(stores.size());
     long readBytes = 0L;
     long writeBytes = 0L;
     for (HWDiskStore store : stores) {
-      store.updateAttributes();
       EnvironmentDto.DiskDto disk = new EnvironmentDto.DiskDto();
       disk.name = store.getName();
       disk.model = store.getModel();
@@ -230,20 +275,13 @@ public final class HostTelemetryProvider {
       readBytes = saturatingAdd(readBytes, Math.max(0L, disk.readBytes));
       writeBytes = saturatingAdd(writeBytes, Math.max(0L, disk.writeBytes));
     }
-    FileStore dataStore = Files.getFileStore(dataPath);
-    return new DiskCapture(
-        disks.toArray(new EnvironmentDto.DiskDto[0]),
-        readBytes,
-        writeBytes,
-        Math.max(0L, dataStore.getUsableSpace())
-    );
+    return new DiskCapture(disks.toArray(new EnvironmentDto.DiskDto[0]), readBytes, writeBytes);
   }
 
   private EnvironmentDto.MountDto[] captureMounts() {
     List<OSFileStore> stores = operatingSystem.getFileSystem().getFileStores();
-    List<EnvironmentDto.MountDto> mounts = new ArrayList<>(stores.size());
+    List<EnvironmentDto.MountDto> captured = new ArrayList<>(stores.size());
     for (OSFileStore store : stores) {
-      store.updateAttributes();
       EnvironmentDto.MountDto mount = new EnvironmentDto.MountDto();
       mount.name = store.getName();
       mount.mount = store.getMount();
@@ -252,21 +290,19 @@ public final class HostTelemetryProvider {
       mount.totalBytes = store.getTotalSpace();
       mount.freeBytes = store.getFreeSpace();
       mount.usableBytes = store.getUsableSpace();
-      mounts.add(mount);
+      captured.add(mount);
     }
-    return mounts.toArray(new EnvironmentDto.MountDto[0]);
+    return captured.toArray(new EnvironmentDto.MountDto[0]);
   }
 
   private NetworkCapture captureNetwork() {
-    List<NetworkIF> interfaces = hardware.getNetworkIFs();
-    List<EnvironmentDto.NetworkInterfaceDto> network = new ArrayList<>(interfaces.size());
+    List<EnvironmentDto.NetworkInterfaceDto> network = new ArrayList<>(networkInterfaces.size());
     long receiveBytes = 0L;
     long sendBytes = 0L;
     long receiveDrops = 0L;
     long receiveErrors = 0L;
     long sendErrors = 0L;
-    for (NetworkIF networkInterface : interfaces) {
-      networkInterface.updateAttributes();
+    for (NetworkIF networkInterface : networkInterfaces) {
       EnvironmentDto.NetworkInterfaceDto item = new EnvironmentDto.NetworkInterfaceDto();
       item.name = networkInterface.getName();
       item.displayName = networkInterface.getDisplayName();
@@ -364,6 +400,11 @@ public final class HostTelemetryProvider {
     return values.toArray(new String[0]);
   }
 
+  private static SystemInfo createSystemInfo() {
+    WindowsSensorWmiQueryHandler.installIfWindows();
+    return new SystemInfo();
+  }
+
   private static long saturatingAdd(long left, long right) {
     if (right > 0L && left > Long.MAX_VALUE - right) {
       return Long.MAX_VALUE;
@@ -371,12 +412,7 @@ public final class HostTelemetryProvider {
     return left + right;
   }
 
-  private record DiskCapture(
-      EnvironmentDto.DiskDto[] disks,
-      long readBytes,
-      long writeBytes,
-      long usableBytes
-  ) {
+  private record DiskCapture(EnvironmentDto.DiskDto[] disks, long readBytes, long writeBytes) {
   }
 
   private record NetworkCapture(
