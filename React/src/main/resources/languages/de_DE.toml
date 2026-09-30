@@ -1810,10 +1810,6 @@ summary = "Hauptauswertungsintervall für Iris-Geländeüberspannungsschutz in M
 impact = "Höhere Werte lösen später eine Minderung aus, niedrigere Werte früher und aggressiver."
 summary = "Auslöseschwelle für Iris Erzeugungszeit im Iris-Geländeüberspannungsschutz."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregenqueue]
-impact = "Höhere Werte lösen später eine Minderung aus, niedrigere Werte früher und aggressiver."
-summary = "Auslöseschwelle für die Warteschlange der Trigger-Iris-Prägen in der Überspannungssicherung für Irisgelände."
-
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "Höhere Werte verzögern die Aktivierung oder den Ausstieg; niedrigere Werte erleichtern das Überschreiten dieses Schwellenwerts."
 summary = "Tick-Zeitschwelle für den Auslöser im Iris-Geländeüberspannungsschutz (Millisekunden)."
@@ -2440,10 +2436,6 @@ summary = "Adapt Sitzungslastschwelle, die eine Behandlung von Vorfällen im Tri
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enterincidentscore]
 impact = "Höhere Werte lösen später eine Minderung aus, niedrigere Werte früher und aggressiver."
 summary = "Auslöseschwelle für den Eingabe-Incident-Score im Trinity-Incide-Modus."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririsqueue]
-impact = "Höhere Werte erhöhen die gepufferte Arbeit oder den Berstzuschuss; niedrigere Werte verschärfen die Drosselung."
-summary = "Geben Sie den Grenzwert für die Warteschlange für Iris ein, der im Trinity-Incident-Modus verwendet wird."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.entertickms]
 impact = "Höhere Werte verzögern die Aktivierung oder den Ausstieg; niedrigere Werte erleichtern das Überschreiten dieses Schwellenwerts."
@@ -3668,10 +3660,13 @@ villagers = "Dorfbewohner"
 world_save_event_interval = "Intervall der Weltspeicherereignisse"
 worlds = "Welten"
 wormholes_block_changes = "Wormholes Blockänderungen"
+wormholes_block_entities = "Wormholes Blockentitäten"
 wormholes_compression = "Wormholes Kompression"
 wormholes_packets = "Wormholes Packungen"
 wormholes_peer_rtt = "Wormholes Peer-RTT"
 wormholes_peers = "Wormholes Peer-Server"
+wormholes_plate_builds = "Wormholes Plattenaufbauten"
+wormholes_plate_bytes = "Wormholes Plattenspeicher"
 wormholes_portals = "Wormholes Portale"
 wormholes_projection_observers = "Wormholes Projektionsbeobachter"
 wormholes_projection_render_ms = "Wormholes Projektionsrender Ms"
@@ -3743,7 +3738,7 @@ adapt_ability_ops = "Adapt Fähigkeitsoperationen pro Minute (durch Konfiguratio
 adapt_cache_hit_ratio = "Anteil der Fähigkeitsstufen-Prüfungen, die aus dem Aktivstufen-Cache bedient werden."
 adapt_check_latency = "Durchschnittliche Mikrosekunden pro nicht gecachter Fähigkeitsprüfung."
 adapt_event_ops = "Aufrufe von Anpassungs-Ereignishandlern pro Minute."
-adapt_fx_packets = "Im aktuellen FX-Budget-Tick verbrauchte Partikelpakete."
+adapt_fx_packets = "Durchschnittlich pro FX-Budget-Tick verbrauchte Partikelpakete in der letzten Sekunde."
 adapt_fx_shed_band = "FX-Drosselstufe; null bedeutet volle Qualität, vier die stärkste Drosselung."
 adapt_fx_timelines = "Aktive FX-Zeitleisten, die in der Effekt-Engine abgespielt werden."
 adapt_learned_adaptations = "Verschiedene Anpassungen, die von mindestens einem Online-Spieler aktiviert sind."
@@ -3789,7 +3784,7 @@ fluid = "Aktivitätsrate der flüssigen Aktualisierung."
 fluid_event_span = "Tatsächlich verstrichene Zeit zwischen dem ersten und letzten Flüssigkeitsfluss-Callback jedes Ticks."
 gc_pause_p95 = "95. Perzentil Garbage Collection Pause Dauer."
 gc_time_percent = "Prozentualer Anteil der Zeit, die in GC relativ zur Laufzeit."
-gloss_animations = "Derzeit registrierte und tickende Textanimationen."
+gloss_animations = "Animierte Hologramm-Textziele, die der Animator derzeit steuert."
 gloss_boards = "Derzeit für Spieler gerenderte Scoreboard-Seitenleisten."
 gloss_bubbles = "Pro Sekunde über Spielern erzeugte Chat-Blasen."
 gloss_display_entities = "Für Hologramme registrierte, rein paketbasierte Display-Entitäten."
@@ -3871,10 +3866,13 @@ villagers = "Dorfbewohner und fahrende Händler, die über alle Welten geladen s
 world_save_event_interval = "Verstrichene Zeit zwischen aufeinanderfolgenden Speicherereignissen einer Welt."
 worlds = "Welten, die derzeit auf dem Server geladen sind."
 wormholes_block_changes = "Wormholes projizierte Blockänderungen, die über die Integrationsbrücke veröffentlicht werden."
+wormholes_block_entities = "Pro Sekunde an Betrachter gesendete projizierte Blockentitäts-Updates."
 wormholes_compression = "Kompressionsrate des ausgehenden Verkehrs; nahe 1.0 deutet auf ein veraltetes Wörterbuch hin."
 wormholes_packets = "Wormholes durch die Integrationsbrücke veröffentlichter Projektionspaketdurchsatz."
 wormholes_peer_rtt = "Maximale Umlauflatenz zu einem verbundenen Peer-Server."
 wormholes_peers = "Remote-Server, die derzeit im Wormholes-Netz verbunden sind."
+wormholes_plate_builds = "Pro Sekunde erstellte Projektions-Ansichtsplatten."
+wormholes_plate_bytes = "Von zwischengespeicherten Projektions-Ansichtsplatten belegter Speicher."
 wormholes_portals = "Aktiv Wormholes Portalzählung veröffentlicht über die Integrationsbrücke."
 wormholes_projection_observers = "Spieler beobachten derzeit Wormholes Vorsprünge."
 wormholes_projection_render_ms = "Wormholes Projektions-Renderingzeit."

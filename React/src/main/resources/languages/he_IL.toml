@@ -1810,10 +1810,6 @@ summary = "מרווח הערכה עיקרי עבור iris שטח עלייה שמ
 impact = "ערכים גבוהים יותר מעוררים הפחתה מאוחר יותר; ערכים נמוכים גורמים מוקדם יותר ויותר אגרסיבי."
 summary = "סף טריגר Iris זמן דור ב-Irisland Area ge Guard"
 
-[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregenqueue]
-impact = "ערכים גבוהים יותר מעוררים הפחתה מאוחר יותר; ערכים נמוכים גורמים מוקדם יותר ויותר אגרסיבי."
-summary = "סף טריגר לסיבוב iris pregen בתור Iris על משטח Iris חיפוי."
-
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "ערכים גבוהים יותר מעכבים הפעלה או יציאה; ערכים נמוכים הופכים את סף זה לקל יותר לחצות."
 summary = "סף זמן טיק לניצול במגוון הגבול של איריס (מילי שניות)."
@@ -2440,10 +2436,6 @@ summary = "Adapt סף עומס ישיבה שיכול לגרום להליך אי�
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enterincidentscore]
 impact = "ערכים גבוהים יותר מעוררים הפחתה מאוחר יותר; ערכים נמוכים גורמים מוקדם יותר ויותר אגרסיבי."
 summary = "סף טריגר להזנת ציון אירוע במצב תקרית השילוש."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririsqueue]
-impact = "ערכים גבוהים יותר מגבירים את העבודה או קצבה מפורצת; ערכים נמוכים יותר מתכווץ."
-summary = "הזן הגבלת תור iris בשימוש על ידי מצב אירוע trinity."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.entertickms]
 impact = "ערכים גבוהים יותר מעכבים הפעלה או יציאה; ערכים נמוכים הופכים את סף זה לקל יותר לחצות."
@@ -3668,10 +3660,13 @@ villagers = "כפריים"
 world_save_event_interval = "מרווח אירועי שמירת עולם"
 worlds = "עולמות"
 wormholes_block_changes = "Wormholes שינויים בלוק"
+wormholes_block_entities = "ישויות בלוק של Wormholes"
 wormholes_compression = "דחיסת Wormholes"
 wormholes_packets = "Wormholes חבילות"
 wormholes_peer_rtt = "RTT של עמיתי Wormholes"
 wormholes_peers = "עמיתי Wormholes"
+wormholes_plate_builds = "בניית לוחות של Wormholes"
+wormholes_plate_bytes = "זיכרון לוחות של Wormholes"
 wormholes_portals = "Wormholes פורטלים"
 wormholes_projection_observers = "Wormholes עקבו אחרי Projection Observers"
 wormholes_projection_render_ms = "Wormholes הקרנה Render גב'"
@@ -3743,7 +3738,7 @@ adapt_ability_ops = "Adapt יכולת פעולה לדקה (Mode שנבחרה ע�
 adapt_cache_hit_ratio = "חלק בדיקות רמת היכולת המוגשות ממטמון הרמות הפעילות."
 adapt_check_latency = "ממוצע מיקרו-שניות לבדיקת שמירת יכולת ללא מטמון."
 adapt_event_ops = "הפעלות מטפלי אירועי אדפטציה לדקה."
-adapt_fx_packets = "חבילות חלקיקים שנצרכו בטיק תקציב ה-FX הנוכחי."
+adapt_fx_packets = "ממוצע חבילות החלקיקים שנצרכו בכל טיק תקציב FX בשנייה האחרונה."
 adapt_fx_shed_band = "רצועת הפחתת FX; אפס הוא איכות מלאה, ארבע הוא ההשלה הכבדה ביותר."
 adapt_fx_timelines = "צירי זמן FX חיים המתנגנים במנוע האפקטים."
 adapt_learned_adaptations = "אדפטציות ייחודיות שחומשו על ידי שחקן מחובר אחד לפחות."
@@ -3789,7 +3784,7 @@ fluid = "הורדת עלויות פעילות"
 fluid_event_span = "הזמן בפועל מהקריאה הראשונה ועד האחרונה למטפל בזרימת נוזלים בכל טיק."
 gc_pause_p95 = "איסוף הזבל של 95 אחוזה עוצר את משך הזמן."
 gc_time_percent = "עשרות שנים של זמן בילה GC יחסית לריצה."
-gloss_animations = "הנפשות טקסט הרשומות ופועלות כעת."
+gloss_animations = "יעדי טקסט הולוגרמה מונפשים שהאנימטור מפעיל כעת."
 gloss_boards = "סרגלי צד של לוח תוצאות המוצגים כעת לשחקנים."
 gloss_bubbles = "בועות צ'אט הנוצרות מעל שחקנים בשנייה."
 gloss_display_entities = "ישויות תצוגה מבוססות-חבילות בלבד הרשומות להולוגרמות."
@@ -3871,10 +3866,13 @@ villagers = "כפריים וסוחרים נודדים טעונים בכל העו
 world_save_event_interval = "הזמן שחלף בין אירועי שמירה עוקבים של אותו עולם."
 worlds = "עולמות הטעונים כעת בשרת."
 wormholes_block_changes = "Wormholes שינויים בבלוקים שבוצעו באמצעות גשר האינטגרציה."
+wormholes_block_entities = "עדכוני ישויות בלוק מוקרנות שנשלחים לצופים בכל שנייה."
 wormholes_compression = "יחס דחיסת התעבורה היוצאת; ערך קרוב ל-1.0 מעיד על מילון מיושן."
 wormholes_packets = "Wormholes חבילת הקרנה באמצעות ערכת האינטגרציה שפורסמה דרך גשר האינטגרציה."
 wormholes_peer_rtt = "זמן הלוך-חזור במקרה הגרוע ביותר אל שרת עמית מחובר."
 wormholes_peers = "שרתים מרוחקים המקושרים כעת לרשת ה-Wormholes."
+wormholes_plate_builds = "לוחות תצוגת הקרנה שנבנים בכל שנייה."
+wormholes_plate_bytes = "זיכרון שתופסים לוחות תצוגת ההקרנה השמורים במטמון."
 wormholes_portals = "מספר הפורטלים הפעילים של Wormholes שפורסם דרך גשר האינטגרציה."
 wormholes_projection_observers = "שחקנים צופים כעת Wormholes תחזיות."
 wormholes_projection_render_ms = "Wormholes הקרנה הופכת את הזמן."

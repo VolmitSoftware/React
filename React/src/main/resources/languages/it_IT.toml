@@ -1810,10 +1810,6 @@ summary = "Intervallo di valutazione principale per la guardia da sovratensione 
 impact = "I valori più elevati innescano la mitigazione in seguito; i valori inferiori attivano prima e più aggressivo."
 summary = "Soglia di trigger per Iris tempo di generazione in ghisa terreno iris."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregenqueue]
-impact = "I valori più elevati innescano la mitigazione in seguito; i valori inferiori attivano prima e più aggressivo."
-summary = "Soglia di trigger per la coda pregen del grilletto iris in protezione da sovratensione del terreno iris."
-
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "Valori più elevati ritardano l'attivazione o l'uscita; valori inferiori rendono questa soglia più facile da attraversare."
 summary = "Soglia di tempo tick per il trigger in IRIS terrain surge guard (milliseconds)."
@@ -2440,10 +2436,6 @@ summary = "Adapt soglia di carico sessione che può innescare la manipolazione i
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enterincidentscore]
 impact = "I valori più elevati innescano la mitigazione in seguito; i valori inferiori attivano prima e più aggressivo."
 summary = "Soglia di trigger per entrare punteggio incidente in modalità incidente trinità."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririsqueue]
-impact = "I valori più elevati aumentano il lavoro tamponato o l'indennità di scoppio; i valori inferiori stringeno la riduzione."
-summary = "Inserisci il limite di coda iris utilizzato dalla modalità incidente trinità."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.entertickms]
 impact = "Valori più elevati ritardano l'attivazione o l'uscita; valori inferiori rendono questa soglia più facile da attraversare."
@@ -3668,10 +3660,13 @@ villagers = "Abitanti del villaggio"
 world_save_event_interval = "Intervallo degli eventi di salvataggio del mondo"
 worlds = "Mondi"
 wormholes_block_changes = "Wormholes Cambiamenti di blocco"
+wormholes_block_entities = "Wormholes Entità blocco"
 wormholes_compression = "Wormholes Compressione"
 wormholes_packets = "Wormholes Imballaggi"
 wormholes_peer_rtt = "Wormholes RTT dei peer"
 wormholes_peers = "Wormholes Peer"
+wormholes_plate_builds = "Wormholes Costruzioni lastre"
+wormholes_plate_bytes = "Wormholes Memoria lastre"
 wormholes_portals = "Wormholes Portali"
 wormholes_projection_observers = "Wormholes Osservatori di proiezione"
 wormholes_projection_render_ms = "Wormholes Proiezione Render"
@@ -3743,7 +3738,7 @@ adapt_ability_ops = "Adapt operazioni di abilità al minuto (mode selezionato da
 adapt_cache_hit_ratio = "Quota di controlli del livello abilità serviti dalla cache dei livelli attivi."
 adapt_check_latency = "Microsecondi medi per ogni controllo di guardia abilità non in cache."
 adapt_event_ops = "Invocazioni al minuto dei gestori di eventi degli adattamenti."
-adapt_fx_packets = "Pacchetti di particelle consumati nel tick corrente del budget FX."
+adapt_fx_packets = "Media dei pacchetti di particelle consumati per tick del budget FX nell'ultimo secondo."
 adapt_fx_shed_band = "Banda di degradazione FX; zero è qualità piena, quattro è la riduzione più pesante."
 adapt_fx_timelines = "Timeline FX attive in riproduzione nel motore degli effetti."
 adapt_learned_adaptations = "Adattamenti distinti attivati da almeno un giocatore online."
@@ -3789,7 +3784,7 @@ fluid = "Fluid aggiornamento tasso di attività."
 fluid_event_span = "Tempo reale dal primo all'ultimo callback del flusso dei fluidi in ogni tick."
 gc_pause_p95 = "95esimo per cento della raccolta rifiuti durata pausa."
 gc_time_percent = "Percentuale di tempo trascorso in GC rispetto al tempo di esecuzione."
-gloss_animations = "Animazioni di testo attualmente registrate e attive."
+gloss_animations = "Destinazioni di testo olografico animato attualmente gestite dall'animatore."
 gloss_boards = "Barre laterali del punteggio attualmente mostrate ai giocatori."
 gloss_bubbles = "Fumetti di chat generati sopra i giocatori al secondo."
 gloss_display_entities = "Entità display solo pacchetto registrate per gli ologrammi."
@@ -3871,10 +3866,13 @@ villagers = "Abitanti del villaggio e commercianti erranti caricati in tutti i m
 world_save_event_interval = "Tempo trascorso tra eventi consecutivi di salvataggio dello stesso mondo."
 worlds = "Mondi attualmente caricati sul server."
 wormholes_block_changes = "Wormholes modifiche di blocco proiettate pubblicate attraverso il ponte di integrazione."
+wormholes_block_entities = "Aggiornamenti delle entità blocco proiettate inviati agli spettatori al secondo."
 wormholes_compression = "Rapporto di compressione del traffico in uscita; vicino a 1.0 indica un dizionario obsoleto."
 wormholes_packets = "Wormholes proiezione pacchetto throughput pubblicato attraverso il ponte di integrazione."
 wormholes_peer_rtt = "Latenza di andata e ritorno nel caso peggiore verso un peer connesso."
 wormholes_peers = "Server remoti attualmente collegati alla mesh di Wormholes."
+wormholes_plate_builds = "Lastre di vista della proiezione costruite al secondo."
+wormholes_plate_bytes = "Memoria occupata dalle lastre di vista della proiezione in cache."
 wormholes_portals = "AttivitÃ Wormholes il numero del portale pubblicato attraverso il ponte di integrazione."
 wormholes_projection_observers = "I giocatori che osservano attualmente Wormholes proiezioni."
 wormholes_projection_render_ms = "Wormholes tempo di rendering della proiezione."

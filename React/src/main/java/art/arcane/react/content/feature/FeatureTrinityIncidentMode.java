@@ -34,8 +34,6 @@ public class FeatureTrinityIncidentMode extends ReactCapabilityFeature {
   private double enterIncidentScore = 62D;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Tick-time threshold for enter in trinity incident mode (milliseconds).", impact = "Higher values delay activation or exit; lower values make this threshold easier to cross.")
   private double enterTickMS = 62D;
-  @art.arcane.react.util.project.config.ConfigDoc(value = "Enter iris queue limit used by trinity incident mode.", impact = "Higher values increase buffered work or burst allowance; lower values tighten throttling.")
-  private double enterIrisQueue = 340D;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Adapt session load threshold that can trigger incident handling in trinity incident mode (percent).", impact = "Higher values trigger later during heavier load; lower values trigger earlier.")
   private double enterAdaptSessionLoad = 72D;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Adapt ability timing-budget threshold that can trigger incident handling in trinity incident mode (percent).", impact = "Higher values require more measured Adapt guard-check cost before incident handling; lower values trigger earlier.")
@@ -122,7 +120,7 @@ public class FeatureTrinityIncidentMode extends ReactCapabilityFeature {
     }
 
     engaged = false;
-    recordResolution(now, "RESOLVED", "Iris, Adapt, and server pressure recovered below the coordinated trigger thresholds.");
+    recordResolution(now, "RESOLVED", "Adapt and server pressure recovered below the coordinated trigger thresholds.");
     activeIncidentId = null;
     if (verboseTransitions) {
       React.info("Trinity incident mode recovered.");
@@ -131,7 +129,6 @@ public class FeatureTrinityIncidentMode extends ReactCapabilityFeature {
 
   private PressureSnapshot capturePressure() {
     double tickMS = sample(SamplerTickTime.ID);
-    double irisQueue = metricOr("iris", IntegrationMetricSchema.IRIS_PREGEN_QUEUE, -1D);
     double adaptSessionLoad = metricOr("adapt", IntegrationMetricSchema.ADAPT_SESSION_LOAD, -1D);
     double adaptAbilityTimingBudget = metricOr(
         "adapt",
@@ -139,23 +136,20 @@ public class FeatureTrinityIncidentMode extends ReactCapabilityFeature {
         -1D
     );
 
-    boolean irisPressure = irisQueue >= 0D && irisQueue >= enterIrisQueue;
     boolean adaptPressure = hasAdaptPressure(
         adaptSessionLoad,
         adaptAbilityTimingBudget,
         enterAdaptSessionLoad,
         enterAdaptAbilityTimingBudgetPercent
     );
-    boolean externalPressure = irisPressure || adaptPressure;
     SamplerIncidentScore.IncidentScoreSnapshot incident = incidentScoreSnapshot();
     boolean serverPressure = hasServerPressure(tickMS, incident.score(), enterTickMS, enterIncidentScore);
     return new PressureSnapshot(
         tickMS,
         incident,
-        irisQueue,
         adaptSessionLoad,
         adaptAbilityTimingBudget,
-        externalPressure && serverPressure
+        adaptPressure && serverPressure
     );
   }
 
@@ -216,14 +210,6 @@ public class FeatureTrinityIncidentMode extends ReactCapabilityFeature {
         enterTickMS
     ));
     evidence.add(evidence(
-        IntegrationMetricSchema.IRIS_PREGEN_QUEUE,
-        "Iris Pregenerator Queue",
-        pressure.irisQueue(),
-        pressure.irisQueue() >= 0D,
-        "chunks",
-        enterIrisQueue
-    ));
-    evidence.add(evidence(
         IntegrationMetricSchema.ADAPT_SESSION_LOAD,
         "Adapt Session Load",
         pressure.adaptSessionLoad(),
@@ -239,9 +225,7 @@ public class FeatureTrinityIncidentMode extends ReactCapabilityFeature {
         "%",
         enterAdaptAbilityTimingBudgetPercent
     ));
-    String externalCause = pressure.irisQueue() >= enterIrisQueue
-        ? "Iris pregeneration queue pressure"
-        : pressure.adaptSessionLoad() >= enterAdaptSessionLoad
+    String externalCause = pressure.adaptSessionLoad() >= enterAdaptSessionLoad
         ? "Adapt session load"
         : "Adapt ability timing budget pressure";
     controller.record(new IncidentRecord(
@@ -401,7 +385,6 @@ public class FeatureTrinityIncidentMode extends ReactCapabilityFeature {
   private record PressureSnapshot(
       double tickMS,
       SamplerIncidentScore.IncidentScoreSnapshot incident,
-      double irisQueue,
       double adaptSessionLoad,
       double adaptAbilityTimingBudget,
       boolean severe

@@ -1810,10 +1810,6 @@ summary = "Pagrindinis rainelės reljefo gaubto milisekundėmis vertinimo interv
 impact = "Didesnės vertės sukelia sušvelninimą vėliau; mažesnės vertės sukelti anksčiau ir agresyviau."
 summary = "Ribinė riba Iris generavimo laikas rainelės reljefo viršįtampio apsaugoje."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregenqueue]
-impact = "Didesnės vertės sukelia sušvelninimą vėliau; mažesnės vertės sukelti anksčiau ir agresyviau."
-summary = "Ribinė riba, kad sukelti rainelės pregen eilėje rainelės reljefo viršįtampio apsaugas."
-
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "Didesnės vertės uždelsimas aktyvavimas arba išėjimas; mažesnės vertės palengvina šį slenkstį."
 summary = "žaidimo taktas laiko ribas, kuriuo galima paleisti iriso žemių krašto srauto apsaugą ( millisekundomis)."
@@ -2440,10 +2436,6 @@ summary = "Adapt seanso apkrovos slenkstis, kuris gali sukelti incidento valdym�
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enterincidentscore]
 impact = "Didesnės vertės sukelia sušvelninimą vėliau; mažesnės vertės sukelti anksčiau ir agresyviau."
 summary = "Ribinė vertė, taikoma siekiant įvesti incidento rezultatą trejybės įvykio režimu."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririsqueue]
-impact = "Didesnės vertės padidina buferinės darbo arba trūkimo norma; mažesnės vertės sugriežtinti trankymas."
-summary = "Įveskite rainelės eilės ribą, naudojamą trejybės incidento režimu."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.entertickms]
 impact = "Didesnės vertės uždelsimas aktyvavimas arba išėjimas; mažesnės vertės palengvina šį slenkstį."
@@ -3668,10 +3660,13 @@ villagers = "Kaimiečiai"
 world_save_event_interval = "Pasaulio išsaugojimo įvykių intervalas"
 worlds = "Pasauliai"
 wormholes_block_changes = "Wormholes Blokų pakeitimai"
+wormholes_block_entities = "Wormholes Blokų objektai"
 wormholes_compression = "Wormholes Suspaudimas"
 wormholes_packets = "Wormholes Paketai"
 wormholes_peer_rtt = "Wormholes Mazgų RTT"
 wormholes_peers = "Wormholes Mazgai"
+wormholes_plate_builds = "Wormholes Plokščių kūrimas"
+wormholes_plate_bytes = "Wormholes Plokščių atmintis"
 wormholes_portals = "Wormholes Portalai"
 wormholes_projection_observers = "Wormholes Projekcijos stebėtojai"
 wormholes_projection_render_ms = "Wormholes Projection Render Mis"
@@ -3743,7 +3738,7 @@ adapt_ability_ops = "Adapt veiksenos per minutę (parinkus konfigūraciją adapt
 adapt_cache_hit_ratio = "Gebėjimų lygio patikrinimų dalis, gauta iš aktyvaus lygio podėlio."
 adapt_check_latency = "Vidutinė mikrosekundžių trukmė vienam gebėjimų apsaugos patikrinimui be podėlio."
 adapt_event_ops = "Adaptacijų įvykių apdorotojų iškvietimai per minutę."
-adapt_fx_packets = "Dalelių paketai, sunaudoti dabartiniame FX biudžeto žaidimo takte."
+adapt_fx_packets = "Vidutinis dalelių paketų skaičius, sunaudotas per FX biudžeto taktą per paskutinę sekundę."
 adapt_fx_shed_band = "FX kokybės mažinimo juosta; nulis yra visa kokybė, o keturi didžiausias mažinimas."
 adapt_fx_timelines = "Aktyvios FX laiko juostos, grojamos efektų variklyje."
 adapt_learned_adaptations = "Skirtingos adaptacijos, paruoštos bent vieno prisijungusio žaidėjo."
@@ -3789,7 +3784,7 @@ fluid = "Skysčių atnaujinimo aktyvumo rodiklis."
 fluid_event_span = "Realus laikas nuo pirmojo iki paskutinio skysčio tekėjimo grįžtamojo iškvietimo per kiekvieną tick."
 gc_pause_p95 = "95-asis procentilis šiukšlių surinkimo pauzė trukmė."
 gc_time_percent = "Laiko, praleisto GC palyginti su kilimo ir tūpimo laiku."
-gloss_animations = "Šiuo metu užregistruotos ir veikiančios teksto animacijos."
+gloss_animations = "Animuoti hologramų teksto taikiniai, kuriuos šiuo metu valdo animatorius."
 gloss_boards = "Šiuo metu žaidėjams rodomos rezultatų lentos šoninės juostos."
 gloss_bubbles = "Pokalbių burbulai, sukuriami virš žaidėjų per sekundę."
 gloss_display_entities = "Tik paketais valdomi rodymo subjektai, registruoti hologramoms."
@@ -3871,10 +3866,13 @@ villagers = "Kaimiečiai ir klajojantys prekeiviai, įkelti visuose pasauliuose.
 world_save_event_interval = "Praėjęs laikas tarp to paties pasaulio nuoseklių išsaugojimo įvykių."
 worlds = "Pasauliai, šiuo metu įkelti serveryje."
 wormholes_block_changes = "Wormholes per integracijos tiltą paskelbtus planuojamus blokų pakeitimus."
+wormholes_block_entities = "Per sekundę žiūrovams siunčiami projektuojamų blokų objektų atnaujinimai."
 wormholes_compression = "Siunčiamų duomenų suspaudimo santykis; artimas 1.0 reiškia pasenusį žodyną."
 wormholes_packets = "Wormholes projektinis paketų pralaidumas, paskelbtas per integracijos tiltą."
 wormholes_peer_rtt = "Blogiausio atvejo abipusė delsa iki prijungto mazgo serverio."
 wormholes_peers = "Nutolę serveriai, šiuo metu sujungti Wormholes tinkle."
+wormholes_plate_builds = "Per sekundę sukuriamos projekcijos vaizdo plokštės."
+wormholes_plate_bytes = "Talpykloje laikomų projekcijos vaizdo plokščių užimama atmintis."
 wormholes_portals = "Aktyvus Wormholes portalai skaičius paskelbtas per integracijos tiltas."
 wormholes_projection_observers = "Šiuo metu stebintys žaidėjai Wormholes projekcijos."
 wormholes_projection_render_ms = "Wormholes projekcijos pateikimo laikas."

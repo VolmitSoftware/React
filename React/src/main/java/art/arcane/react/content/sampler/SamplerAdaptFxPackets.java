@@ -7,7 +7,7 @@ public class SamplerAdaptFxPackets extends RemoteIntegrationSampler {
   public static final String ID = "adapt-fx-packets";
 
   public SamplerAdaptFxPackets() {
-    super(ID, "adapt", IntegrationMetricSchema.ADAPT_FX_PACKETS_USED, 0, " pkts");
+    super(ID, "adapt", IntegrationMetricSchema.ADAPT_FX_PACKETS_USED, 1, " pkts");
   }
 
   @Override

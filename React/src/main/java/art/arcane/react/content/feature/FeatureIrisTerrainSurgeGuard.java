@@ -35,8 +35,6 @@ public class FeatureIrisTerrainSurgeGuard extends ReactCapabilityFeature impleme
   private int tickIntervalMS = 1000;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Tick-time threshold for trigger in iris terrain surge guard (milliseconds).", impact = "Higher values delay activation or exit; lower values make this threshold easier to cross.")
   private double triggerTickMS = 56D;
-  @art.arcane.react.util.project.config.ConfigDoc(value = "Trigger threshold for trigger iris pregen queue in iris terrain surge guard.", impact = "Higher values trigger mitigation later; lower values trigger earlier and more aggressively.")
-  private double triggerIrisPregenQueue = 280D;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Trigger threshold for Iris generation time in iris terrain surge guard.", impact = "Higher values trigger mitigation later; lower values trigger earlier and more aggressively.")
   private double triggerIrisGenerationMS = 24D;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Rolling enforcement window length used by iris terrain surge guard (milliseconds).", impact = "Longer windows smooth bursts but react slower; shorter windows react faster but are more sensitive.")
@@ -182,11 +180,9 @@ public class FeatureIrisTerrainSurgeGuard extends ReactCapabilityFeature impleme
       return false;
     }
     double tickMS = sample(SamplerTickTime.ID);
-    double pregenQueue = metricOr(group, IntegrationMetricSchema.IRIS_PREGEN_QUEUE, -1D);
     double generationMS = metricOr(group, IntegrationMetricSchema.IRIS_GENERATION_TOTAL_MS, -1D);
 
     return tickMS >= triggerTickMS
-        || (pregenQueue >= 0D && pregenQueue >= triggerIrisPregenQueue)
         || (generationMS >= 0D && generationMS >= triggerIrisGenerationMS);
   }
 

@@ -1810,10 +1810,6 @@ summary = "Основной интервал оценки для защиты о
 impact = "Более высокие значения вызывают смягчение позже; более низкие значения запускают раньше и более агрессивно."
 summary = "Триггерный порог для Iris Время генерации в Ирисе, охрана местности."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggeririspregenqueue]
-impact = "Более высокие значения вызывают смягчение позже; более низкие значения запускают раньше и более агрессивно."
-summary = "Порог триггера для очереди ириса прегена в охране рельефа радужной оболочки."
-
 [config.documentation.annotation.art.arcane.react.content.feature.featureiristerrainsurgeguard.field.triggertickms]
 impact = "Более высокие значения задерживают активацию или выход; более низкие значения облегчают пересечение этого порога."
 summary = "Сквл-время порог для запуска в ирис террайн приливной охран (миллисекунд )."
@@ -2440,10 +2436,6 @@ summary = "Adapt порог нагрузки сеанса, который мож
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enterincidentscore]
 impact = "Более высокие значения вызывают смягчение позже; более низкие значения запускают раньше и более агрессивно."
 summary = "Порог триггера для входа в балл инцидента в режиме инцидента троицы."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.enteririsqueue]
-impact = "Более высокие значения увеличивают буферную работу или надбавку за разрыв; более низкие значения ужесточают дросселирование."
-summary = "Введите лимит очередей радужной оболочки, используемый режимом инцидента тринити."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrinityincidentmode.field.entertickms]
 impact = "Более высокие значения задерживают активацию или выход; более низкие значения облегчают пересечение этого порога."
@@ -3668,10 +3660,13 @@ villagers = "Жители"
 world_save_event_interval = "Интервал событий сохранения мира"
 worlds = "Миры"
 wormholes_block_changes = "Wormholes Блокировать изменения"
+wormholes_block_entities = "Wormholes Блочные сущности"
 wormholes_compression = "Wormholes Сжатие"
 wormholes_packets = "Wormholes Пакет"
 wormholes_peer_rtt = "Wormholes RTT пиров"
 wormholes_peers = "Wormholes Пиры"
+wormholes_plate_builds = "Wormholes Сборка пластин"
+wormholes_plate_bytes = "Wormholes Память пластин"
 wormholes_portals = "Wormholes Порталы"
 wormholes_projection_observers = "Wormholes Наблюдатели прогноза"
 wormholes_projection_render_ms = "Wormholes Проекция Рендер Ms"
@@ -3743,7 +3738,7 @@ adapt_ability_ops = "Adapt - операции по способности в м�
 adapt_cache_hit_ratio = "Доля проверок уровня способностей, обслуженных из кэша активных уровней."
 adapt_check_latency = "Среднее число микросекунд на некэшированную защитную проверку способности."
 adapt_event_ops = "Вызовы обработчиков событий адаптаций в минуту."
-adapt_fx_packets = "Пакеты частиц, израсходованные в текущем тике бюджета FX."
+adapt_fx_packets = "Среднее число пакетов частиц за тик бюджета FX за последнюю секунду."
 adapt_fx_shed_band = "Полоса деградации FX; ноль означает полное качество, четыре — максимальное урезание."
 adapt_fx_timelines = "Живые FX-таймлайны, проигрываемые в движке эффектов."
 adapt_learned_adaptations = "Различные адаптации, активированные хотя бы одним игроком в сети."
@@ -3789,7 +3784,7 @@ fluid = "Скорость активности обновления жидкос
 fluid_event_span = "Реальное время от первого до последнего вызова обработчика течения жидкости в каждом тике."
 gc_pause_p95 = "95-й процентильная пауза сбора мусора."
 gc_time_percent = " времени, проведенного в GC относительно времени выполнения."
-gloss_animations = "Текстовые анимации, зарегистрированные и работающие сейчас."
+gloss_animations = "Анимированные текстовые цели голограмм, которыми сейчас управляет аниматор."
 gloss_boards = "Боковые панели скорборда, отображаемые игрокам сейчас."
 gloss_bubbles = "Пузыри чата, появляющиеся над игроками в секунду."
 gloss_display_entities = "Чисто пакетные display-сущности, зарегистрированные для голограмм."
@@ -3871,10 +3866,13 @@ villagers = "Жители деревни и странствующие торг�
 world_save_event_interval = "Время между последовательными событиями сохранения одного мира."
 worlds = "Миры, загруженные на сервере."
 wormholes_block_changes = "Wormholes Изменения в блоке, опубликованные через интеграционный мост."
+wormholes_block_entities = "Обновления проецируемых блочных сущностей, отправляемые зрителям в секунду."
 wormholes_compression = "Коэффициент сжатия исходящего трафика; около 1.0 означает устаревший словарь."
 wormholes_packets = "Wormholes Проекционная пропускная способность пакета, публикуемая через мост интеграции."
 wormholes_peer_rtt = "Наихудшая круговая задержка до подключённого пир-сервера."
 wormholes_peers = "Удалённые серверы, сейчас связанные в mesh-сети Wormholes."
+wormholes_plate_builds = "Пластины вида проекции, собираемые в секунду."
+wormholes_plate_bytes = "Память, занятая кэшированными пластинами вида проекции."
 wormholes_portals = "Активный Wormholes Порталы публикуются через интеграционный мост."
 wormholes_projection_observers = "Игроки, которые сейчас наблюдают Wormholes прогнозы."
 wormholes_projection_render_ms = "Wormholes Проекция, рендеринг времени."
