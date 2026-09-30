@@ -26,10 +26,10 @@ import org.bukkit.event.Listener;
 
 // PlayerItemFrameChangeEvent is Paper-only, so it lives in its own listener: a missing
 // type here kills only this class instead of every MapController handler on Spigot.
-public class MapFrameChangeListener implements Listener {
+public class MapPaperFrameChangeListener implements Listener {
   private final MapController controller;
 
-  public MapFrameChangeListener(MapController controller) {
+  public MapPaperFrameChangeListener(MapController controller) {
     this.controller = controller;
   }
 

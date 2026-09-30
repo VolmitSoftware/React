@@ -19,6 +19,7 @@
 
 package art.arcane.react.core.controller;
 
+import art.arcane.react.React;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.api.web.heatmap.HeatmapWorldRef;
 import art.arcane.react.model.CostSnapshot;
@@ -29,12 +30,11 @@ import art.arcane.react.util.common.scheduling.TickedObject;
 import art.arcane.react.util.plugin.IController;
 import art.arcane.volmlib.util.bukkit.WorldIdentity;
 import com.google.common.util.concurrent.AtomicDouble;
-import io.papermc.paper.event.world.border.WorldBorderBoundsChangeEvent;
-import io.papermc.paper.event.world.border.WorldBorderCenterChangeEvent;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.Setter;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
@@ -43,6 +43,7 @@ import org.bukkit.WorldBorder;
 import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.event.world.SpawnChangeEvent;
@@ -78,6 +79,9 @@ public class ObserverController extends TickedObject implements IController {
   private transient Map<UUID, HeatmapWorldRef> heatmapWorldsById;
   private transient volatile List<HeatmapWorldRef> heatmapWorldSnapshot;
   private transient volatile boolean indexingLoadedChunks;
+  @Getter(AccessLevel.NONE)
+  @Setter(AccessLevel.NONE)
+  private transient Listener paperBorderListener;
 
   public ObserverController() {
     super("react", "observer", 1000);
@@ -108,6 +112,7 @@ public class ObserverController extends TickedObject implements IController {
     heatmapWorldsById = new ConcurrentHashMap<>();
     heatmapWorldSnapshot = List.of();
     indexingLoadedChunks = true;
+    registerPaperBorderListener();
     for (World world : Bukkit.getWorlds()) {
       indexWorld(world);
       Chunk[] loadedChunks = world.getLoadedChunks();
@@ -122,6 +127,7 @@ public class ObserverController extends TickedObject implements IController {
   @Override
   public void stop() {
     indexingLoadedChunks = false;
+    unregisterPaperBorderListener();
     synchronized (loadedWorldRotationLock) {
       if (loadedChunksByWorld != null) {
         loadedChunksByWorld.clear();
@@ -410,24 +416,6 @@ public class ObserverController extends TickedObject implements IController {
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-  public void on(WorldBorderCenterChangeEvent event) {
-    indexWorld(
-        event.getWorld(),
-        event.getNewCenter(),
-        event.getWorldBorder().getSize()
-    );
-  }
-
-  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-  public void on(WorldBorderBoundsChangeEvent event) {
-    indexWorld(
-        event.getWorld(),
-        event.getWorldBorder().getCenter(),
-        event.getNewSize()
-    );
-  }
-
-  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void on(WorldUnloadEvent event) {
     if (event.isCancelled()) {
       return;
@@ -464,6 +452,42 @@ public class ObserverController extends TickedObject implements IController {
     }
     LoadedWorldChunkIndex worldIndex = loadedChunksByWorld.get(worldId);
     return worldIndex == null ? 0 : worldIndex.size();
+  }
+
+  void borderChanged(World world, Location borderCenter, double borderSize) {
+    indexWorld(world, borderCenter, borderSize);
+  }
+
+  private void registerPaperBorderListener() {
+    if (paperBorderListener != null) {
+      return;
+    }
+
+    String probeFailure = null;
+    try {
+      Class.forName("io.papermc.paper.event.world.border.WorldBorderCenterChangeEvent");
+      Class.forName("io.papermc.paper.event.world.border.WorldBorderBoundsChangeEvent");
+    } catch (Throwable ex) {
+      probeFailure = ex.getClass().getSimpleName();
+    }
+
+    if (probeFailure != null || React.instance == null) {
+      React.verbose("World border change events unavailable ("
+          + (probeFailure == null ? "no plugin instance" : probeFailure)
+          + "); heatmap world borders refresh on world load and spawn change.");
+      return;
+    }
+
+    paperBorderListener = new ObserverPaperBorderListener(this);
+    React.instance.registerListener(paperBorderListener);
+  }
+
+  private void unregisterPaperBorderListener() {
+    Listener listener = paperBorderListener;
+    paperBorderListener = null;
+    if (listener != null && React.instance != null) {
+      React.instance.unregisterListener(listener);
+    }
   }
 
   private void indexWorld(World world) {

@@ -716,7 +716,7 @@ public class MapController extends TickedObject implements IController, Listener
       return;
     }
 
-    frameChangeListener = new MapFrameChangeListener(this);
+    frameChangeListener = new MapPaperFrameChangeListener(this);
     Bukkit.getPluginManager().registerEvents(frameChangeListener, React.instance);
     frameChangeEventsAvailable = true;
   }

@@ -42,6 +42,7 @@ apply plugin: 'art.arcane.volmit-packaging'
 
 version = '2.1.0-26.2' // Needs to be version specific
 def apiVersion = '26.1'
+def spigotApiVersion = '26.2-R0.1-SNAPSHOT'
 def pluginName = rootProject.name // Defined in settings.gradle.kts
 String mainClass = 'art.arcane.react.React'
 String lib = 'art.arcane.react.util.arcane'
@@ -132,9 +133,17 @@ repositories {
     }
     maven { url = uri('https://repo.papermc.io/repository/maven-public/') }
     maven {
+        url = uri('https://hub.spigotmc.org/nexus/content/repositories/snapshots/')
+        content { includeGroup 'org.spigotmc' }
+    }
+    maven {
         url = uri('https://repo.extendedclip.com/content/repositories/placeholderapi/')
         content { includeGroup 'me.clip' }
     }
+}
+
+configurations {
+    spigotCompatibility
 }
 
 configurations.configureEach {
@@ -149,6 +158,7 @@ dependencies {
     compileOnly('io.papermc.paper:paper-api:26.1.2.build.74-stable')
     compileOnly('io.papermc:paperlib:1.0.7')
     testImplementation('io.papermc.paper:paper-api:26.1.2.build.74-stable')
+    spigotCompatibility("org.spigotmc:spigot-api:${spigotApiVersion}")
 
     implementation('com.github.VolmitSoftware.VolmLib:native-api:master-SNAPSHOT')
     implementation('com.github.VolmitSoftware.VolmLib:native-v1_21_R7:master-SNAPSHOT')
@@ -224,6 +234,9 @@ tasks.named('test', Test).configure {
     maxParallelForks = Math.max(1, (int) (Runtime.runtime.availableProcessors() / 2))
     systemProperty('net.bytebuddy.experimental', 'true')
     jvmArgs('-XX:+EnableDynamicAgentLoading')
+    FileCollection spigotClasspath = configurations.spigotCompatibility
+    inputs.files(spigotClasspath).withPropertyName('spigotCompatibilityClasspath').withNormalizer(ClasspathNormalizer)
+    jvmArgumentProviders.add({ ["-Dreact.spigotApiClasspath=${spigotClasspath.asPath}".toString()] } as CommandLineArgumentProvider)
     testLogging {
         events('skipped', 'failed')
     }
@@ -292,6 +305,29 @@ tasks.named('shadowJar', ShadowJar).configure {
 
 tasks.named('build').configure {
     dependsOn('shadowJar')
+}
+
+tasks.register('compileSpigotCompatibility', JavaCompile) {
+    source = fileTree('src/main/java') {
+        include 'art/arcane/react/content/feature/**'
+        exclude 'art/arcane/react/content/feature/Paper*.java'
+        include 'art/arcane/react/content/sampler/EntityCensusTracker.java'
+        include 'art/arcane/react/content/sampler/SamplerEntities.java'
+        include 'art/arcane/react/core/controller/ObserverController.java'
+    }
+    classpath = sourceSets.main.output.classesDirs + files(sourceSets.main.compileClasspath.filter { File dependency ->
+        !dependency.name.startsWith('paper-api-')
+    }) + configurations.spigotCompatibility
+    destinationDirectory.set(layout.buildDirectory.dir('classes/java/spigotCompatibility'))
+    options.annotationProcessorPath = configurations.annotationProcessor
+    options.compilerArgs.addAll(['-parameters', '-implicit:none'])
+    options.encoding = 'UTF-8'
+    options.debugOptions.debugLevel = 'none'
+    options.release.set(25)
+}
+
+tasks.named('check').configure {
+    dependsOn(tasks.named('compileSpigotCompatibility'))
 }
 
 sourceSets {

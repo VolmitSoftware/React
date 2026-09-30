@@ -348,7 +348,7 @@ class MobStackRecoveryTest {
   void loadedStackRearmsTheDisabledFeatureRecovery() throws ReflectiveOperationException {
     Mockito.when(React.instance.getName()).thenReturn("React");
     Mockito.when(React.instance.namespace()).thenReturn("react");
-    FeatureMobStacking disabled = new FeatureMobStacking(Mockito.mock(GlossEntityOverlayIntegration.class));
+    FeatureMobStacking disabled = new FeatureMobStacking(Mockito.mock(GlossEntityOverlayIntegration.class), MobStateAccess.detect());
     disabled.setEnabled(false);
     LivingEntity stacked = livingEntity();
     EntitiesLoadEvent load = Mockito.mock(EntitiesLoadEvent.class);

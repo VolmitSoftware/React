@@ -73,7 +73,7 @@ class FeatureMobStackingMergeOrderTest {
   }
 
   private static FeatureMobStacking feature() {
-    FeatureMobStacking feature = Mockito.spy(new FeatureMobStacking(Mockito.mock(GlossEntityOverlayIntegration.class)));
+    FeatureMobStacking feature = Mockito.spy(new FeatureMobStacking(Mockito.mock(GlossEntityOverlayIntegration.class), MobStateAccess.detect()));
     Mockito.doReturn(true).when(feature).isStackableType(EntityType.ZOMBIE);
     return feature;
   }

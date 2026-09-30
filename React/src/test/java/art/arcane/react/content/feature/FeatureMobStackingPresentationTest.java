@@ -25,7 +25,7 @@ class FeatureMobStackingPresentationTest {
   @Test
   void glossReceivesCountAndRemovesOnlyReactLabel() {
     GlossEntityOverlayIntegration integration = Mockito.mock(GlossEntityOverlayIntegration.class);
-    FeatureMobStacking feature = new FeatureMobStacking(integration);
+    FeatureMobStacking feature = new FeatureMobStacking(integration, MobStateAccess.detect());
     LivingEntity entity = entity(STACK_NAME);
     Mockito.when(integration.refresh(entity, 3)).thenReturn(true);
 
@@ -39,7 +39,7 @@ class FeatureMobStackingPresentationTest {
   @Test
   void glossKeepsUserRenameEvenWhenOldReactLabelIsRecorded() {
     GlossEntityOverlayIntegration integration = Mockito.mock(GlossEntityOverlayIntegration.class);
-    FeatureMobStacking feature = new FeatureMobStacking(integration);
+    FeatureMobStacking feature = new FeatureMobStacking(integration, MobStateAccess.detect());
     LivingEntity entity = entity("Sentinel");
     Mockito.when(entity.getPersistentDataContainer().get(STACK_LABEL_KEY, PersistentDataType.STRING)).thenReturn(STACK_NAME);
     Mockito.when(integration.refresh(entity, 3)).thenReturn(true);
@@ -51,7 +51,7 @@ class FeatureMobStackingPresentationTest {
 
   @Test
   void absentOrDisabledGlossUsesNativeStackLabel() {
-    FeatureMobStacking feature = new FeatureMobStacking(Mockito.mock(GlossEntityOverlayIntegration.class));
+    FeatureMobStacking feature = new FeatureMobStacking(Mockito.mock(GlossEntityOverlayIntegration.class), MobStateAccess.detect());
     LivingEntity entity = entity(null);
 
     feature.refreshStackPresentation(entity, 3);
@@ -62,7 +62,7 @@ class FeatureMobStackingPresentationTest {
 
   @Test
   void standaloneStackNeverOverwritesUserName() {
-    FeatureMobStacking feature = new FeatureMobStacking(Mockito.mock(GlossEntityOverlayIntegration.class));
+    FeatureMobStacking feature = new FeatureMobStacking(Mockito.mock(GlossEntityOverlayIntegration.class), MobStateAccess.detect());
     LivingEntity entity = entity("Sentinel");
 
     feature.refreshStackPresentation(entity, 3);
@@ -73,7 +73,7 @@ class FeatureMobStackingPresentationTest {
   @Test
   void disablingNativeNamesStillPublishesCountToGloss() throws ReflectiveOperationException {
     GlossEntityOverlayIntegration integration = Mockito.mock(GlossEntityOverlayIntegration.class);
-    FeatureMobStacking feature = new FeatureMobStacking(integration);
+    FeatureMobStacking feature = new FeatureMobStacking(integration, MobStateAccess.detect());
     LivingEntity entity = entity(STACK_NAME);
     Field customNames = FeatureMobStacking.class.getDeclaredField("customNames");
     customNames.setAccessible(true);
@@ -87,7 +87,7 @@ class FeatureMobStackingPresentationTest {
 
   @Test
   void shrinkingToOneRemovesRecordedNativeLabel() {
-    FeatureMobStacking feature = new FeatureMobStacking(Mockito.mock(GlossEntityOverlayIntegration.class));
+    FeatureMobStacking feature = new FeatureMobStacking(Mockito.mock(GlossEntityOverlayIntegration.class), MobStateAccess.detect());
     LivingEntity entity = entity(STACK_NAME);
     Mockito.when(entity.getPersistentDataContainer().get(STACK_LABEL_KEY, PersistentDataType.STRING)).thenReturn(STACK_NAME);
 
@@ -98,7 +98,7 @@ class FeatureMobStackingPresentationTest {
 
   @Test
   void deathReplacementDoesNotInheritCanonicalizedStackName() {
-    FeatureMobStacking feature = Mockito.spy(new FeatureMobStacking(Mockito.mock(GlossEntityOverlayIntegration.class)));
+    FeatureMobStacking feature = Mockito.spy(new FeatureMobStacking(Mockito.mock(GlossEntityOverlayIntegration.class), MobStateAccess.detect()));
     LivingEntity source = entity(ChatColor.BOLD + "3x " + ChatColor.GRAY + "Zombie");
     LivingEntity replacement = entity(null);
     World world = Mockito.mock(World.class);

@@ -11,6 +11,7 @@ import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;
 import org.bukkit.WorldBorder;
+import org.bukkit.event.Listener;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
@@ -170,6 +172,27 @@ class ObserverControllerLoadedChunkIndexTest {
   }
 
   @Test
+  void start_registers_the_paper_border_listener_and_stop_unregisters_it() {
+    React plugin = Mockito.mock(React.class);
+    Mockito.when(plugin.getTicker()).thenReturn(Mockito.mock(Ticker.class));
+    React.instance = plugin;
+
+    try (MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class)) {
+      bukkit.when(Bukkit::getWorlds).thenReturn(List.of());
+      ObserverController controller = new ObserverController();
+      controller.start();
+
+      ArgumentCaptor<Listener> registered = ArgumentCaptor.forClass(Listener.class);
+      Mockito.verify(plugin).registerListener(registered.capture());
+      Assertions.assertInstanceOf(ObserverPaperBorderListener.class, registered.getValue());
+
+      controller.stop();
+
+      Mockito.verify(plugin).unregisterListener(registered.getValue());
+    }
+  }
+
+  @Test
   void world_border_metadata_is_snapshotted_and_refreshed_from_owner_events() {
     World world = world("border", 3, -5);
     WorldBorder border = Mockito.mock(WorldBorder.class);
@@ -196,7 +219,8 @@ class ObserverControllerLoadedChunkIndexTest {
           initialCenter,
           movedCenter
       );
-      controller.on(centerEvent);
+      ObserverPaperBorderListener borderListener = new ObserverPaperBorderListener(controller);
+      borderListener.on(centerEvent);
       HeatmapWorldRef centered = controller.heatmapWorld("react-test:border").orElseThrow();
       Assertions.assertEquals(-64D, centered.borderCenterBlockX(), 1e-9);
       Assertions.assertEquals(96D, centered.borderCenterBlockZ(), 1e-9);
@@ -209,7 +233,7 @@ class ObserverControllerLoadedChunkIndexTest {
           512D,
           0L
       );
-      controller.on(boundsEvent);
+      borderListener.on(boundsEvent);
       HeatmapWorldRef resized = controller.heatmapWorld("react-test:border").orElseThrow();
       Assertions.assertEquals(-64D, resized.borderCenterBlockX(), 1e-9);
       Assertions.assertEquals(96D, resized.borderCenterBlockZ(), 1e-9);

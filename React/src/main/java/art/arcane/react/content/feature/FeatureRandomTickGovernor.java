@@ -28,7 +28,6 @@ import art.arcane.react.util.common.scheduling.J;
 import art.arcane.volmlib.util.scheduling.FoliaScheduler;
 import org.bukkit.Bukkit;
 import org.bukkit.GameRule;
-import org.bukkit.GameRules;
 import org.bukkit.World;
 
 import java.util.Map;
@@ -78,7 +77,7 @@ public class FeatureRandomTickGovernor extends ReactFeature {
     GameRule<Integer> rule = randomTickSpeedRule;
     if (rule == null) {
       try {
-        rule = GameRules.RANDOM_TICK_SPEED;
+        rule = PaperGameRules.randomTickSpeed();
       } catch (NoClassDefFoundError e) {
         rule = GameRule.RANDOM_TICK_SPEED;
       }

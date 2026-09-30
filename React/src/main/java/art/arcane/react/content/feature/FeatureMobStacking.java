@@ -47,7 +47,6 @@ import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.block.data.BlockData;
-import org.bukkit.entity.AnimalTamer;
 import org.bukkit.entity.Ageable;
 import org.bukkit.entity.Animals;
 import org.bukkit.entity.Chicken;
@@ -181,17 +180,19 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
   private transient final Consumer<Entity> entityTickListener = this::onTick;
   private transient final AtomicLong lifecycleGeneration = new AtomicLong(0L);
   private transient final MobStackRecovery recovery = new MobStackRecovery(this);
+  private transient final MobStateAccess mobState;
   private transient volatile boolean active;
   private transient volatile StackableIndex stackableIndex;
   private transient volatile long nextQuietSweepMs;
 
   public FeatureMobStacking() {
-    this(new GlossEntityOverlayIntegration());
+    this(new GlossEntityOverlayIntegration(), MobStateAccess.detect());
   }
 
-  FeatureMobStacking(GlossEntityOverlayIntegration glossEntityOverlays) {
+  FeatureMobStacking(GlossEntityOverlayIntegration glossEntityOverlays, MobStateAccess mobState) {
     super(ID);
     this.glossEntityOverlays = Objects.requireNonNull(glossEntityOverlays);
+    this.mobState = Objects.requireNonNull(mobState);
   }
 
   public static Set<EntityType> defaultStackableTypes() {
@@ -411,27 +412,11 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
     }
 
     Tameable tameable = (Tameable) entity;
-    if (!ownerId.equals(resolveOwnerId(tameable))) {
+    if (!ownerId.equals(mobState.ownerId(tameable))) {
       return;
     }
 
     splitTamedStack(entity);
-  }
-
-  // Tameable#getOwnerUniqueId is paper-only; probe once, fall back to getOwner on spigot
-  private static volatile boolean ownerUniqueIdUnsupported;
-
-  private static UUID resolveOwnerId(Tameable tameable) {
-    if (!ownerUniqueIdUnsupported) {
-      try {
-        return tameable.getOwnerUniqueId();
-      } catch (NoSuchMethodError e) {
-        ownerUniqueIdUnsupported = true;
-      }
-    }
-
-    AnimalTamer owner = tameable.getOwner();
-    return owner == null ? null : owner.getUniqueId();
   }
 
   private boolean splitTamedStack(LivingEntity entity) {
@@ -705,7 +690,7 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
   }
 
   private boolean isItem(ItemStack item) {
-    return item != null && item.getType() != Material.AIR && !item.isEmpty();
+    return item != null && item.getType() != Material.AIR && item.getAmount() > 0;
   }
 
   private boolean hasUserCustomName(LivingEntity entity) {
@@ -737,14 +722,13 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
       return left.isPowered() == right.isPowered()
           && left.getMaxFuseTicks() == right.getMaxFuseTicks()
           && left.getExplosionRadius() == right.getExplosionRadius()
-          && !left.isIgnited() && !right.isIgnited()
+          && !mobState.isIgnited(left) && !mobState.isIgnited(right)
           && left.getFuseTicks() == 0 && right.getFuseTicks() == 0;
     }
     if (source instanceof Enderman left && target instanceof Enderman right) {
       return Objects.equals(left.getCarriedBlock(), right.getCarriedBlock())
           && left.getTarget() == null && right.getTarget() == null
-          && !left.isScreaming() && !right.isScreaming()
-          && !left.hasBeenStaredAt() && !right.hasBeenStaredAt();
+          && !mobState.isProvoked(left) && !mobState.isProvoked(right);
     }
     return true;
   }
@@ -758,12 +742,11 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
       right.setMaxFuseTicks(left.getMaxFuseTicks());
       right.setExplosionRadius(left.getExplosionRadius());
       right.setFuseTicks(0);
-      right.setIgnited(false);
+      mobState.clearIgnition(right);
     } else if (source instanceof Enderman left && target instanceof Enderman right) {
       BlockData carried = left.getCarriedBlock();
       right.setCarriedBlock(carried == null ? null : carried.clone());
-      right.setScreaming(left.isScreaming());
-      right.setHasBeenStaredAt(left.hasBeenStaredAt());
+      mobState.copyProvocation(left, right);
     }
   }
 
@@ -783,16 +766,16 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
     }
     if (source instanceof Cow left && target instanceof Cow right) {
       return Objects.equals(left.getVariant(), right.getVariant())
-          && Objects.equals(left.getSoundVariant(), right.getSoundVariant());
+          && mobState.sameSoundVariant(left, right);
     }
     if (source instanceof Chicken left && target instanceof Chicken right) {
       return Objects.equals(left.getVariant(), right.getVariant())
-          && Objects.equals(left.getSoundVariant(), right.getSoundVariant())
-          && left.isChickenJockey() == right.isChickenJockey();
+          && mobState.sameSoundVariant(left, right)
+          && mobState.isChickenJockey(left) == mobState.isChickenJockey(right);
     }
     if (source instanceof Pig left && target instanceof Pig right) {
       return Objects.equals(left.getVariant(), right.getVariant())
-          && Objects.equals(left.getSoundVariant(), right.getSoundVariant())
+          && mobState.sameSoundVariant(left, right)
           && left.hasSaddle() == right.hasSaddle()
           && left.getBoostTicks() == right.getBoostTicks()
           && left.getCurrentBoostTicks() == right.getCurrentBoostTicks();
@@ -804,15 +787,14 @@ public class FeatureMobStacking extends ReactFeature implements FeatureIntegrity
   private void copyFarmVariant(LivingEntity source, LivingEntity target) {
     if (source instanceof Cow left && target instanceof Cow right) {
       right.setVariant(left.getVariant());
-      right.setSoundVariant(left.getSoundVariant());
+      mobState.copySoundVariant(left, right);
     } else if (source instanceof Chicken left && target instanceof Chicken right) {
       right.setVariant(left.getVariant());
-      right.setSoundVariant(left.getSoundVariant());
-      right.setIsChickenJockey(left.isChickenJockey());
-      right.setEggLayTime(left.getEggLayTime());
+      mobState.copySoundVariant(left, right);
+      mobState.copyChickenState(left, right);
     } else if (source instanceof Pig left && target instanceof Pig right) {
       right.setVariant(left.getVariant());
-      right.setSoundVariant(left.getSoundVariant());
+      mobState.copySoundVariant(left, right);
       right.setSaddle(left.hasSaddle());
       right.setBoostTicks(left.getBoostTicks());
       right.setCurrentBoostTicks(left.getCurrentBoostTicks());

@@ -213,10 +213,10 @@ public class SamplerEntities extends ReactCachedSampler implements Listener {
     return (int) count;
   }
 
-  static void reconcileCurrentChunk(Entity entity, Chunk chunk) {
+  static void reconcileCurrentChunk(Entity entity, World world, int chunkX, int chunkZ) {
     SamplerEntities active = activeInstance;
     if (active != null) {
-      active.reconcile(entity, chunk);
+      active.reconcile(entity, world, chunkX, chunkZ);
     }
   }
 
@@ -297,16 +297,13 @@ public class SamplerEntities extends ReactCachedSampler implements Listener {
     relocate(entity.getUniqueId(), world, chunkX, chunkZ, true);
   }
 
-  private void reconcile(Entity entity, Chunk chunk) {
-    if (!acceptingEntityEvents || entity == null || chunk == null) {
+  private void reconcile(Entity entity, World world, int chunkX, int chunkZ) {
+    if (!acceptingEntityEvents || entity == null || world == null) {
       return;
     }
 
-    World world = chunk.getWorld();
     WorldEntitySnapshots.observe(entity, world);
-    if (world != null) {
-      relocate(entity.getUniqueId(), world, chunk.getX(), chunk.getZ(), false);
-    }
+    relocate(entity.getUniqueId(), world, chunkX, chunkZ, false);
   }
 
   private void relocate(UUID entityId, World world, int chunkX, int chunkZ, boolean countNewEntity) {

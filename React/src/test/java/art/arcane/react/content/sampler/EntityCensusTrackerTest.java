@@ -254,12 +254,11 @@ class EntityCensusTrackerTest {
   @Test
   void paperRefreshSamplesOneBoundedWindowWithoutReplacingEventMaintainedCounts() {
     World world = Mockito.mock(World.class);
-    Chunk chunk = Mockito.mock(Chunk.class);
     Item eventObserved = Mockito.mock(Item.class);
     Item sampled = Mockito.mock(Item.class);
     Mockito.when(eventObserved.getUniqueId()).thenReturn(UUID.randomUUID());
     Mockito.when(sampled.getUniqueId()).thenReturn(UUID.randomUUID());
-    Mockito.when(sampled.getChunk()).thenReturn(chunk);
+    Mockito.when(sampled.getLocation()).thenReturn(new Location(world, 8D, 64D, 8D));
     EntityCensusTracker.observe(eventObserved);
 
     try (MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class);

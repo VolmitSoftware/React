@@ -31,9 +31,9 @@ import art.arcane.react.model.ReactEntity;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.project.world.CustomMobChecker;
 import art.arcane.react.util.project.world.EntityRemovalPolicy;
+import art.arcane.react.util.project.world.WorldEntitySnapshots;
 import art.arcane.volmlib.util.math.M;
 import org.bukkit.Bukkit;
-import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
@@ -371,7 +371,7 @@ public class FeatureEntityTrimmer extends ReactFeature {
     int playerOverflow = overflow(observed.count, softMaxEntitiesPerPlayer);
     accumulator.record(ScopeKey.player(player.getUniqueId()), playerOverflow, candidates);
 
-    int worldOverflow = overflow(world.getEntityCount(), softMaxEntitiesPerWorld);
+    int worldOverflow = overflow(WorldEntitySnapshots.count(world), softMaxEntitiesPerWorld);
     accumulator.record(ScopeKey.world(world.getUID()), worldOverflow, candidates);
 
     Map<ChunkKey, List<EntityCandidate>> candidatesByChunk = new HashMap<>();
@@ -380,7 +380,7 @@ public class FeatureEntityTrimmer extends ReactFeature {
     }
     for (Map.Entry<ChunkKey, Integer> entry : observed.chunkCounts.entrySet()) {
       List<EntityCandidate> chunkCandidates = candidatesByChunk.get(entry.getKey());
-      int chunkCount = exactChunkCount(accumulator, entry.getKey(), chunkCandidates, entry.getValue());
+      int chunkCount = exactChunkCount(accumulator, world, entry.getKey(), chunkCandidates, entry.getValue());
       int chunkOverflow = overflow(chunkCount, softMaxEntitiesPerChunk);
       accumulator.record(ScopeKey.chunk(entry.getKey()), chunkOverflow, chunkCandidates);
     }
@@ -388,6 +388,7 @@ public class FeatureEntityTrimmer extends ReactFeature {
 
   private int exactChunkCount(
       ScanAccumulator accumulator,
+      World world,
       ChunkKey chunkKey,
       List<EntityCandidate> candidates,
       int observedCount
@@ -398,8 +399,9 @@ public class FeatureEntityTrimmer extends ReactFeature {
 
     Integer counted = accumulator.exactChunkCounts.get(chunkKey);
     if (counted == null) {
-      Chunk chunk = candidates.getFirst().entity.getChunk();
-      counted = chunk == null ? observedCount : chunk.getEntities().length;
+      counted = world.isChunkLoaded(chunkKey.x, chunkKey.z)
+          ? world.getChunkAt(chunkKey.x, chunkKey.z).getEntities().length
+          : observedCount;
       accumulator.exactChunkCounts.put(chunkKey, counted);
     }
     return Math.max(observedCount, counted);

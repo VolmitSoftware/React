@@ -124,7 +124,7 @@ class FeatureMobStackingDirtyTest {
 
   @Test
   void removingAnUnindexedEntitySkipsTheIndexMonitor() throws Exception {
-    FeatureMobStacking feature = new FeatureMobStacking(Mockito.mock(GlossEntityOverlayIntegration.class));
+    FeatureMobStacking feature = new FeatureMobStacking(Mockito.mock(GlossEntityOverlayIntegration.class), MobStateAccess.detect());
     Entity arrow = Mockito.mock(Entity.class);
     Mockito.when(arrow.getUniqueId()).thenReturn(UUID.randomUUID());
     EntityRemoveEvent event = new EntityRemoveEvent(arrow, EntityRemoveEvent.Cause.DESPAWN);
@@ -170,7 +170,7 @@ class FeatureMobStackingDirtyTest {
   }
 
   private FeatureMobStacking activeFeature() throws ReflectiveOperationException {
-    FeatureMobStacking feature = Mockito.spy(new FeatureMobStacking(Mockito.mock(GlossEntityOverlayIntegration.class)));
+    FeatureMobStacking feature = Mockito.spy(new FeatureMobStacking(Mockito.mock(GlossEntityOverlayIntegration.class), MobStateAccess.detect()));
     Field active = FeatureMobStacking.class.getDeclaredField("active");
     active.setAccessible(true);
     active.setBoolean(feature, true);

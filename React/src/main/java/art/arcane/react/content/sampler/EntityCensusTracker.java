@@ -26,6 +26,7 @@ import art.arcane.react.util.project.world.WorldEntitySnapshots;
 import art.arcane.volmlib.util.scheduling.FoliaScheduler;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.AbstractVillager;
 import org.bukkit.entity.Animals;
@@ -193,7 +194,7 @@ final class EntityCensusTracker {
 
     for (World world : Bukkit.getWorlds()) {
       for (Entity entity : WorldEntitySnapshots.next(world, MAX_PAPER_ENTITIES_PER_WORLD_REFRESH)) {
-        SamplerEntities.reconcileCurrentChunk(entity, entity.getChunk());
+        reconcileLoadedChunk(entity);
         observe(entity);
       }
     }
@@ -334,9 +335,19 @@ final class EntityCensusTracker {
     for (int offset = 0; offset < count; offset++) {
       Entity entity = entities[(start + offset) % entities.length];
       if (entity != null && J.isOwnedByCurrentRegion(entity)) {
-        SamplerEntities.reconcileCurrentChunk(entity, chunk);
+        SamplerEntities.reconcileCurrentChunk(entity, world, target.chunkX(), target.chunkZ());
         observe(entity);
       }
+    }
+  }
+
+  private static void reconcileLoadedChunk(Entity entity) {
+    Location location = entity.getLocation();
+    World world = location.getWorld();
+    int chunkX = location.getBlockX() >> 4;
+    int chunkZ = location.getBlockZ() >> 4;
+    if (world != null && world.isChunkLoaded(chunkX, chunkZ)) {
+      SamplerEntities.reconcileCurrentChunk(entity, world, chunkX, chunkZ);
     }
   }
 
