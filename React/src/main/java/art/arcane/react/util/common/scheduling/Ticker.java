@@ -1059,6 +1059,10 @@ public class Ticker {
     private int tps;
     private int tv;
 
+    private TickLoop() {
+      super("React Ticker");
+    }
+
     @Override
     protected long loop() {
       if (closed) {

@@ -156,7 +156,7 @@ public class EntityController implements IController, Listener {
     EntityKiller.startAccepting();
     ReactEntity.resumeManagedCleanup();
     ReactConfiguration.get().getPriority().rebuildPriority();
-    looper = new Looper() {
+    looper = new Looper("React Entity Controller") {
       @Override
       protected long loop() {
         if (!React.instance.isReady()) {
