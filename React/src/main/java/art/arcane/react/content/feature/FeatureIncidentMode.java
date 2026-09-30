@@ -28,8 +28,8 @@ import art.arcane.react.core.incident.IncidentAction;
 import art.arcane.react.core.incident.IncidentEvidence;
 import art.arcane.react.core.incident.IncidentRecord;
 import art.arcane.react.util.common.scheduling.J;
+import art.arcane.react.util.project.world.HopperMoveContext;
 import org.bukkit.Location;
-import org.bukkit.block.Hopper;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -283,7 +283,7 @@ public class FeatureIncidentMode extends ReactFeature implements Listener {
       return;
     }
 
-    Location location = resolveHopperLocation(event);
+    Location location = HopperMoveContext.resolve(event).hopperLocation();
     if (location == null || shouldBypass(location)) {
       return;
     }
@@ -446,18 +446,6 @@ public class FeatureIncidentMode extends ReactFeature implements Listener {
 
   private boolean shouldBypass(Location location) {
     return bypassNearPlayers && location != null && React.hasNearbyPlayer(location, bypassPlayerRadius);
-  }
-
-  private Location resolveHopperLocation(InventoryMoveItemEvent event) {
-    if (event.getSource().getHolder() instanceof Hopper source) {
-      return source.getBlock().getLocation();
-    }
-
-    if (event.getDestination().getHolder() instanceof Hopper destination) {
-      return destination.getBlock().getLocation();
-    }
-
-    return null;
   }
 
   private enum RateCounter {

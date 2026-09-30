@@ -1011,8 +1011,8 @@ impact = "數值較高 清淨 stale 狀態更快, 更高 CPU 連續; 平滑的�
 summary = "在區塊隔離中,每次維護週期檢查的最大區塊狀態輸入."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkquarantine.field.maxtrackedchunks]
-impact = "較高的數值允許干預前的更多吞吐量;較低的數值使得緩解更具有積極性."
-summary = "根據區塊隔離允許的最大追蹤區塊."
+impact = "較高的數值以少量記憶體保留更多區塊的評分;較低的數值會更早移除活動較少的區塊並重設其評分."
+summary = "區塊隔離追蹤的最大區塊數;達到上限時移除最久未活動的區塊."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkquarantine.field.onlyduringpressure]
 impact = "啟用應用此行為; 禁用以保持此路徑不活動 。"

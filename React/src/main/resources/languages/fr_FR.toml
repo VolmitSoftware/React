@@ -1011,8 +1011,8 @@ impact = "Plus de valeurs plus élevées état d'arrêt propre plus rapidement a
 summary = "Les entrées maximales d'état chunk inspectées par cycle de maintenance en quarantaine chunk."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkquarantine.field.maxtrackedchunks]
-impact = "Des valeurs plus élevées permettent un débit plus élevé avant l'intervention; des valeurs plus faibles rendent l'atténuation plus agressive."
-summary = "chunks maximum suivi autorisé par la quarantaine chunk."
+impact = "Des valeurs plus élevées conservent les scores de plus de chunks pour un faible coût mémoire; des valeurs plus faibles retirent plus tôt les chunks moins actifs et réinitialisent leurs scores."
+summary = "Nombre maximal de chunks suivis par la quarantaine de chunks; une fois la limite atteinte, le chunk à l'activité la moins récente est retiré."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkquarantine.field.onlyduringpressure]
 impact = "Activer pour appliquer ce comportement ; désactiver pour garder ce chemin inactif."

@@ -1011,8 +1011,8 @@ impact = "Hogere waarden schone oude staat sneller met hogere CPU barsten; lager
 summary = "Maximale chunk-statusinscripties die per onderhoudscyclus in chunk-quarantine worden gecontroleerd."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkquarantine.field.maxtrackedchunks]
-impact = "Hogere waarden maken meer doorvoer mogelijk voor interventie; lagere waarden maken mitigatie agressiever."
-summary = "Maximale chunks-tracked code toegestaan door chunk Quarantine."
+impact = "Hogere waarden bewaren scores van meer chunks tegen weinig geheugen; lagere waarden verwijderen minder actieve chunks eerder en zetten hun scores terug."
+summary = "Maximaal aantal chunks dat de chunkquarantaine bijhoudt; bij het maximum wordt de chunk met de oudste activiteit verwijderd."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkquarantine.field.onlyduringpressure]
 impact = "Dit gedrag toepassen; dit pad inactief houden kan niet worden uitgevoerd."

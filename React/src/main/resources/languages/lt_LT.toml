@@ -1011,8 +1011,8 @@ impact = "Aukštesnės vertės švarus stalas valstybės greičiau su daugiau CP
 summary = "Maksimali pasaulio segmentas statuso įrašai, tikrinami pagal techninės priežiūros ciklą pasaulio segmentas karantinoje."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkquarantine.field.maxtrackedchunks]
-impact = "Didesnės vertės leidžia pasiekti didesnį našumą prieš intervenciją, mažesnės vertės daro klimato kaitos švelninimą agresyvesnį."
-summary = "Maksimalus pasaulio segmentai, kurį leidžia pasaulio segmentas karantina."
+impact = "Didesnės vertės išlaiko daugiau segmentų įverčių už nedidelę atminties kainą; mažesnės vertės anksčiau pašalina mažiau aktyvius segmentus ir atstato jų įverčius."
+summary = "Didžiausias pasaulio segmentų, kuriuos seka segmentų karantinas, skaičius; pasiekus ribą pašalinamas seniausiai aktyvus segmentas."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkquarantine.field.onlyduringpressure]
 impact = "Įjungti šio elgesio taikymą; išjungti išlaikyti šį kelią neaktyvų."

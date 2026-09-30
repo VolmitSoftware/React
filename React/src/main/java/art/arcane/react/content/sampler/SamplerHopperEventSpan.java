@@ -21,11 +21,11 @@ package art.arcane.react.content.sampler;
 
 import art.arcane.react.api.event.layer.ServerTickEvent;
 import art.arcane.react.api.sampler.ReactCachedSampler;
+import art.arcane.react.util.project.world.HopperMoveContext;
 import art.arcane.volmlib.util.format.Form;
 import art.arcane.volmlib.util.math.RollingSequence;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
-import org.bukkit.block.Hopper;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
@@ -68,7 +68,7 @@ public class SamplerHopperEventSpan extends ReactCachedSampler implements Listen
 
   @EventHandler
   public void on(InventoryMoveItemEvent e) {
-    if ((e.getSource().getHolder() instanceof Hopper) || (e.getDestination().getHolder() instanceof Hopper)) {
+    if (HopperMoveContext.resolve(e).hopperBlock() != null) {
       recordEvent();
     }
   }

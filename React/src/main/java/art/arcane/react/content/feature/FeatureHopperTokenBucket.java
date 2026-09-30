@@ -21,9 +21,8 @@ package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
 import art.arcane.react.api.feature.ReactFeature;
+import art.arcane.react.util.project.world.HopperMoveContext;
 import org.bukkit.Location;
-import org.bukkit.block.Block;
-import org.bukkit.block.Hopper;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -98,7 +97,7 @@ public class FeatureHopperTokenBucket extends ReactFeature implements Listener {
 
   @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
   public void on(InventoryMoveItemEvent event) {
-    Location location = resolveHopperLocation(event);
+    Location location = HopperMoveContext.resolve(event).hopperLocation();
     if (location == null) {
       return;
     }
@@ -140,20 +139,6 @@ public class FeatureHopperTokenBucket extends ReactFeature implements Listener {
 
   boolean isEnforcing() {
     return active;
-  }
-
-  private Location resolveHopperLocation(InventoryMoveItemEvent event) {
-    if (event.getSource().getHolder() instanceof Hopper source) {
-      Block block = source.getBlock();
-      return block == null ? null : block.getLocation();
-    }
-
-    if (event.getDestination().getHolder() instanceof Hopper destination) {
-      Block block = destination.getBlock();
-      return block == null ? null : block.getLocation();
-    }
-
-    return null;
   }
 
   private static final class Bucket {

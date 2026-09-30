@@ -1011,8 +1011,8 @@ impact = "Giá trị cao hơn làm sạch tình trạng cũ nhanh hơn với c�
 summary = "Số lượng nhập chunk tối đa được kiểm tra theo chu kỳ bảo trì trong phòng ngự chunk."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkquarantine.field.maxtrackedchunks]
-impact = "Các giá trị cao hơn cho phép nhiều thông qua trước khi can thiệp; các giá trị thấp hơn làm giảm nhẹ sự tích cực hơn."
-summary = "các chunk được theo dõi tối đa được phép bởi sự cách ly chunk."
+impact = "Giá trị cao hơn giữ điểm của nhiều chunk hơn với chi phí bộ nhớ nhỏ; giá trị thấp hơn loại bỏ sớm hơn các chunk ít hoạt động và đặt lại điểm của chúng."
+summary = "Số chunk tối đa mà cách ly chunk theo dõi; khi đạt giới hạn, chunk có hoạt động cũ nhất sẽ bị loại bỏ."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkquarantine.field.onlyduringpressure]
 impact = "Bật để áp dụng hành động này; tắt để giữ đường dẫn này bị động."

@@ -1011,8 +1011,8 @@ impact = "Korkeammat arvot puhdistavat himmeän tilan nopeammin korkeammalla CPU
 summary = "Maksimatiiviset chunk-tilan tulokset, jotka tarkastetaan chunk-karanteenissa kunkin ylläpitokykyn mukaan."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkquarantine.field.maxtrackedchunks]
-impact = "Suuremmat arvot mahdollistavat enemmän suoritusta ennen interventiota; pienemmät arvot tekevät hillinnästä aggressiivisempaa."
-summary = "chunk-karanteenin sallimat korkeimmat jäljitetyt chunkit:t."
+impact = "Suuremmat arvot säilyttävät useamman chunkin pisteet pienellä muistikustannuksella; pienemmät arvot poistavat vähemmän aktiiviset chunkit aiemmin ja nollaavat niiden pisteet."
+summary = "Chunk-karanteenin seuraamien chunkien enimmäismäärä; kun raja täyttyy, pisimpään toimettomana ollut chunk poistetaan."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkquarantine.field.onlyduringpressure]
 impact = "Pystyt soveltamaan tätä käytöstä; poista polku käytöstä."

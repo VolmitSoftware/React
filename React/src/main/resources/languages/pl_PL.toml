@@ -1011,8 +1011,8 @@ impact = "Wyższe wartości stan czysty stale szybciej z wyższym CPU pękanie; 
 summary = "Maksymalne wpisy dotyczące stanu chunk sprawdzane na cykl konserwacji w kwarantynie chunk."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkquarantine.field.maxtrackedchunks]
-impact = "Wyższe wartości umożliwiają większą przepustowość przed interwencją; niższe wartości sprawiają, że łagodzenie skutków jest bardziej agresywne."
-summary = "Maksymalny dopuszczony przez kwarantannę chunk śledziony chunki."
+impact = "Wyższe wartości zachowują wyniki większej liczby chunków niewielkim kosztem pamięci; niższe wartości wcześniej usuwają mniej aktywne chunki i zerują ich wyniki."
+summary = "Maksymalna liczba chunków śledzonych przez kwarantannę chunków; po osiągnięciu limitu usuwany jest chunk najdawniej aktywny."
 
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkquarantine.field.onlyduringpressure]
 impact = "Włącz stosowanie tego zachowania; wyłączcie, aby ta ścieżka była nieaktywna."
