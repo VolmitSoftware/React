@@ -67,6 +67,10 @@ public final class WorldEntitySnapshots {
     if (isCurrent(ENTITIES_BY_ID.get(entityId), worldId, entity)) {
       return;
     }
+    if (entity.isDead()) {
+      forget(entityId);
+      return;
+    }
 
     ENTITIES_BY_ID.compute(entityId, (ignored, existing) -> {
       if (isCurrent(existing, worldId, entity)) {
