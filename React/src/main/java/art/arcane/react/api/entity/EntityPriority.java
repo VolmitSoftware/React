@@ -114,20 +114,19 @@ public class EntityPriority {
     ReactEntity.setNearestPlayer(e, Math.max(Math.min(d, nearbyPlayerMultiplier), farPlayerMultiplier));
   }
 
-  public void updateCrowd(Entity e) {
+  public void updateCrowd(Entity e, double priority, long nowMs) {
     if (e == null) {
       return;
     }
 
     boolean folia = J.isFoliaThreading();
     if (folia && !J.isOwnedByCurrentRegion(e)) {
-      J.runEntity(e, () -> updateCrowd(e));
+      J.runEntity(e, () -> updateCrowd(e, priority, nowMs));
       return;
     }
 
     UUID sourceId = e.getUniqueId();
     List<Entity> ees = e.getNearbyEntities(8, 8, 8);
-    double priority = getPriority(e);
     double minPriority = priority * 0.25;
     double maxPriority = priority * 1.15;
     double count = 1;
@@ -145,13 +144,13 @@ public class EntityPriority {
         continue;
       }
 
-      priority = getPriority(i);
+      double neighbourPriority = getCachedPriority(i, nowMs);
 
-      if (priority < minPriority || priority > maxPriority) {
+      if (neighbourPriority < minPriority || neighbourPriority > maxPriority) {
         continue;
       }
 
-      count += M.lerp(1.2, 0.8, M.lerpInverse(minPriority, maxPriority, priority));
+      count += M.lerp(1.2, 0.8, M.lerpInverse(minPriority, maxPriority, neighbourPriority));
     }
 
     ReactEntity.setCrowding(e, count);
@@ -295,8 +294,8 @@ public class EntityPriority {
     return entityTypePriority.getOrDefault(e, BASELINE);
   }
 
-  public double getPriorityWithCrowd(Entity e, double c) {
-    double p = getPriority(e) * ReactEntity.getNearestPlayer(e);
+  public double getPriorityWithCrowd(Entity e, double priority, double c) {
+    double p = priority * ReactEntity.getNearestPlayer(e);
 
     if (c <= 1) {
       return p;
@@ -379,5 +378,16 @@ public class EntityPriority {
     }
 
     return buf;
+  }
+
+  private double getCachedPriority(Entity e, long nowMs) {
+    double cached = ReactEntity.getRawPriority(e, nowMs);
+    if (!Double.isNaN(cached)) {
+      return cached;
+    }
+
+    double priority = getPriority(e);
+    ReactEntity.setRawPriority(e, priority, nowMs);
+    return priority;
   }
 }
