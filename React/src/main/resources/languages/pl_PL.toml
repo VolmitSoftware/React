@@ -2848,6 +2848,25 @@ summary = "Wysyła podsumowania zmian obciążenia w trybie hotload do operator�
 impact = "Niższe wartości pozwalają szybciej wykryć odebrane zdarzenia; automatyczne zmiany są nadal stosowane partiami najwyżej raz na trzy sekundy."
 summary = "Odstęp między sprawdzaniem zdarzeń systemu plików, w milisekundach."
 
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller]
+description = "Mierzy czas procedur obsługi zdarzeń dla każdego pluginu, opakowując zarejestrowane nasłuchiwacze, gdy instrumentacja jest aktywna."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleonms]
+impact = "Dłuższe okna dają więcej zapisanych próbek na okres przy wyższym powtarzającym się koszcie."
+summary = "Długość każdego okresowego okna pomiarowego w milisekundach w trybie cyklicznym."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleperiodms]
+impact = "Krótsze okresy zapisują dane zdarzeń częściej i kosztują więcej; dłuższe okresy zostawiają szersze luki w historii."
+summary = "Milisekundy między początkami okresowych okien pomiarowych w trybie cyklicznym."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.instrumentation]
+impact = "ALWAYS obciąża każdą procedurę obsługi zdarzeń kosztem pomiaru; ON_DEMAND usuwa ten koszt w bezczynności, ale zostawia luki w historii; DUTY_CYCLE zamienia okresowe luki na niewielki powtarzający się koszt."
+summary = "Określa, kiedy instalowane są opakowania mierzące czas nasłuchiwaczy: ALWAYS utrzymuje je zainstalowane, ON_DEMAND instaluje je tylko wtedy, gdy monitor, mapa, symbol zastępczy lub przeglądający w sieci odczytuje dane zdarzeń, a DUTY_CYCLE dodatkowo otwiera okresowe okno pomiarowe."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.sampleractivitywindowms]
+impact = "Wyższe wartości utrzymują instrumentację dłużej po odejściu przeglądającego; niższe wartości usuwają ją wcześniej."
+summary = "Milisekundy od ostatniego odczytu danych zdarzeń, po których opakowania są usuwane w trybie na żądanie i w trybie cyklicznym."
+
 [config.documentation.annotation.art.arcane.react.core.controller.historycontroller]
 description = "Jednorazowo przechwytuje próbniki React, zapisuje skompresowaną telemetrię historyczną i obsługuje ograniczone zapytania o zakres czasu."
 

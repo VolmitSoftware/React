@@ -2848,6 +2848,25 @@ summary = "オンラインでのオペレーターにホットロード変更要
 impact = "値を小さくすると受信済みイベントを早く検出できますが、自動変更の一括適用は引き続き最大でも3秒に1回です。"
 summary = "ファイルシステムイベントを確認する間隔（ミリ秒）。"
 
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller]
+description = "計測が有効な間、登録済みリスナーをラップしてプラグインごとのイベントハンドラー時間を測定します。"
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleonms]
+impact = "ウィンドウが長いほど周期ごとに記録されるサンプルが増えますが、継続コストも高くなります。"
+summary = "デューティサイクルモードにおける各周期的測定ウィンドウの長さ(ミリ秒)。"
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleperiodms]
+impact = "周期が短いほどイベントデータを頻繁に記録してコストが増え、周期が長いほど履歴に広い空白を残します。"
+summary = "デューティサイクルモードにおける周期的測定ウィンドウの開始間隔(ミリ秒)。"
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.instrumentation]
+impact = "ALWAYS はすべてのイベントハンドラーに計時のオーバーヘッドを課し、ON_DEMAND はアイドル時にそのコストをなくしますが履歴に空白を残し、DUTY_CYCLE は周期的な空白と小さな継続コストを引き換えにします。"
+summary = "リスナーの計時ラッパーをいつ導入するかを制御します。ALWAYS は常に導入したままにし、ON_DEMAND はモニター、マップ、プレースホルダー、またはウェブ閲覧者がイベントデータを読んでいる間だけ導入し、DUTY_CYCLE はさらに周期的な測定ウィンドウを開きます。"
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.sampleractivitywindowms]
+impact = "値が大きいほど閲覧者が離れた後も計測を長く維持し、値が小さいほど早く除去します。"
+summary = "オンデマンドモードとデューティサイクルモードで、最後にイベントデータが読まれてからラッパーが除去されるまでのミリ秒数。"
+
 [config.documentation.annotation.art.arcane.react.core.controller.historycontroller]
 description = "React のサンプラーを一度取得し、圧縮した履歴テレメトリーを保存して、時間範囲を制限したクエリを処理します。"
 

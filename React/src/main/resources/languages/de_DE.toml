@@ -2848,6 +2848,25 @@ summary = "Sendet Zusammenfassungen von Hotload-Änderungen an Online-Betreiber.
 impact = "Niedrigere Werte erkennen bereitgestellte Ereignisse früher; automatische Änderungen werden weiterhin höchstens einmal alle drei Sekunden gebündelt angewendet."
 summary = "Abfrageintervall für Dateisystemereignisse in Millisekunden."
 
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller]
+description = "Misst die Zeit der Ereignis-Handler pro Plugin, indem registrierte Listener umhüllt werden, solange die Instrumentierung aktiv ist."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleonms]
+impact = "Längere Fenster liefern mehr aufgezeichnete Werte pro Periode bei höheren wiederkehrenden Kosten."
+summary = "Länge jedes periodischen Messfensters im Taktmodus in Millisekunden."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleperiodms]
+impact = "Kürzere Perioden zeichnen Ereignisdaten häufiger auf und kosten mehr; längere Perioden hinterlassen größere Lücken im Verlauf."
+summary = "Millisekunden zwischen den Startzeitpunkten der periodischen Messfenster im Taktmodus."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.instrumentation]
+impact = "ALWAYS belastet jeden Ereignis-Handler mit einem Zeitmess-Aufwand; ON_DEMAND entfernt diese Kosten im Leerlauf, hinterlässt aber Lücken im Verlauf; DUTY_CYCLE tauscht periodische Lücken gegen geringe wiederkehrende Kosten."
+summary = "Legt fest, wann die Zeitmess-Hüllen für Listener installiert werden: ALWAYS hält sie dauerhaft installiert, ON_DEMAND installiert sie nur, solange ein Monitor, eine Karte, ein Platzhalter oder ein Web-Betrachter Ereignisdaten liest, und DUTY_CYCLE öffnet zusätzlich ein periodisches Messfenster."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.sampleractivitywindowms]
+impact = "Höhere Werte halten die Instrumentierung nach dem Verlassen eines Betrachters länger installiert; niedrigere Werte entfernen sie früher."
+summary = "Millisekunden nach dem letzten Lesen von Ereignisdaten, bevor die Hüllen im Bedarfsmodus und im Taktmodus entfernt werden."
+
 [config.documentation.annotation.art.arcane.react.core.controller.historycontroller]
 description = "Erfasst React-Messwerte einmalig, speichert komprimierte historische Telemetrie und bedient begrenzte Zeitbereichsabfragen."
 

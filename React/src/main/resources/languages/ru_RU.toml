@@ -2848,6 +2848,25 @@ summary = "Отправляет резюме изменений горячей �
 impact = "Меньшие значения позволяют раньше обнаруживать полученные события; автоматические изменения по-прежнему применяются пакетами не чаще одного раза в три секунды."
 summary = "Интервал опроса событий файловой системы в миллисекундах."
 
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller]
+description = "Измеряет время обработчиков событий по плагинам, оборачивая зарегистрированные слушатели, пока инструментирование активно."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleonms]
+impact = "Более длинные окна дают больше записанных выборок за период при более высоких повторяющихся расходах."
+summary = "Длительность каждого периодического окна измерения в миллисекундах в режиме по циклу."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleperiodms]
+impact = "Более короткие периоды записывают данные событий чаще и стоят дороже; более длинные периоды оставляют более широкие пробелы в истории."
+summary = "Миллисекунды между началами периодических окон измерения в режиме по циклу."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.instrumentation]
+impact = "ALWAYS добавляет каждому обработчику событий накладные расходы на замер; ON_DEMAND убирает эти расходы в простое, но оставляет пробелы в истории; DUTY_CYCLE меняет периодические пробелы на небольшие повторяющиеся расходы."
+summary = "Определяет, когда устанавливаются обёртки замера времени слушателей: ALWAYS держит их установленными, ON_DEMAND устанавливает их только пока монитор, карта, плейсхолдер или веб-зритель читает данные событий, а DUTY_CYCLE дополнительно открывает периодическое окно измерения."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.sampleractivitywindowms]
+impact = "Большие значения дольше сохраняют инструментирование после ухода зрителя; меньшие значения снимают его раньше."
+summary = "Миллисекунды после последнего чтения данных событий, после которых обёртки снимаются в режимах по запросу и по циклу."
+
 [config.documentation.annotation.art.arcane.react.core.controller.historycontroller]
 description = "Однократно собирает данные с измерителей React, сохраняет сжатую историческую телеметрию и обслуживает ограниченные запросы по диапазону времени."
 

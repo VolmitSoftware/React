@@ -2848,6 +2848,25 @@ summary = "Invia a operatori online i riassunti di cambiamento di carico caldo."
 impact = "Valori più bassi rilevano prima gli eventi ricevuti; le modifiche automatiche vengono comunque applicate in gruppi al massimo una volta ogni tre secondi."
 summary = "Intervallo di interrogazione degli eventi del file system in millisecondi."
 
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller]
+description = "Misura il tempo dei gestori di eventi per plugin avvolgendo i listener registrati finché la strumentazione è attiva."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleonms]
+impact = "Finestre più lunghe producono più campioni registrati per periodo con un costo ricorrente maggiore."
+summary = "Durata in millisecondi di ogni finestra di misurazione periodica nella modalità a ciclo."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleperiodms]
+impact = "Periodi più brevi registrano i dati di eventi più spesso e costano di più; periodi più lunghi lasciano lacune più ampie nella cronologia."
+summary = "Millisecondi tra gli inizi delle finestre di misurazione periodiche nella modalità a ciclo."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.instrumentation]
+impact = "ALWAYS impone un sovraccarico di misurazione a ogni gestore di eventi; ON_DEMAND elimina quel costo a riposo ma lascia lacune nella cronologia; DUTY_CYCLE scambia lacune periodiche con un piccolo costo ricorrente."
+summary = "Stabilisce quando vengono installati gli involucri di misurazione dei listener: ALWAYS li mantiene installati, ON_DEMAND li installa solo mentre un monitor, una mappa, un segnaposto o un visitatore web legge dati di eventi, e DUTY_CYCLE apre inoltre una finestra di misurazione periodica."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.sampleractivitywindowms]
+impact = "Valori più alti mantengono la strumentazione installata più a lungo dopo che un visitatore se ne va; valori più bassi la rimuovono prima."
+summary = "Millisecondi dopo l'ultima lettura di dati di eventi prima che gli involucri vengano rimossi nelle modalità su richiesta e a ciclo."
+
 [config.documentation.annotation.art.arcane.react.core.controller.historycontroller]
 description = "Acquisisce una volta i campionatori di React, memorizza telemetria storica compressa e gestisce query limitate a un intervallo temporale."
 

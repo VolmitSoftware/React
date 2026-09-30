@@ -19,17 +19,15 @@
 
 package art.arcane.react.content.sampler;
 
-import art.arcane.react.React;
-import art.arcane.react.api.sampler.ReactCachedSampler;
+import art.arcane.react.api.sampler.ReactEventSampler;
 import art.arcane.react.core.controller.EventController;
 import art.arcane.volmlib.util.format.Form;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.event.Listener;
 
-public class SamplerEventTime extends ReactCachedSampler implements Listener {
+public class SamplerEventTime extends ReactEventSampler implements Listener {
   public static final String ID = "event-time";
-  private transient EventController eventController;
 
   public SamplerEventTime() {
     super(ID, 1000);
@@ -41,16 +39,8 @@ public class SamplerEventTime extends ReactCachedSampler implements Listener {
   }
 
   @Override
-  public double onSample() {
-    eventController.markSamplerActivity();
-    double windowSeconds = Math.max(1L, eventController.getTinterval()) / 1000.0D;
-    return eventController.getTotalTime() / windowSeconds;
-  }
-
-  @Override
-  public void start() {
-    super.start();
-    eventController = React.controller(EventController.class);
+  protected double onMeasuredSample(EventController controller) {
+    return controller.getEventTimeMsPerSecond();
   }
 
   @Override

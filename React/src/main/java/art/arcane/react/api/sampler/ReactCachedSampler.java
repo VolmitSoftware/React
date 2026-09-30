@@ -106,6 +106,16 @@ public abstract class ReactCachedSampler implements Sampler {
 
   @Override
   public double sample() {
+    markDemand();
+    return read();
+  }
+
+  @Override
+  public double capture() {
+    return read();
+  }
+
+  private double read() {
     if (!canSampleNow() || !slatch.couldFlip()) {
       return slast.get();
     }

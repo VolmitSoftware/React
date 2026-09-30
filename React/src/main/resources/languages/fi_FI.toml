@@ -2848,6 +2848,25 @@ summary = "Lähettää nippujen muutos yhteenvetoja online-operaattoreille."
 impact = "Pienemmät arvot havaitsevat saapuneet tapahtumat nopeammin; automaattiset muutokset otetaan silti käyttöön erissä enintään kerran kolmessa sekunnissa."
 summary = "Tiedostojärjestelmän tapahtumien kyselyväli millisekunteina."
 
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller]
+description = "Mittaa tapahtumakäsittelijöiden ajan liitännäistä kohden kääntämällä rekisteröidyt kuuntelijat kuoriin, kun mittaus on käytössä."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleonms]
+impact = "Pidemmät ikkunat tuottavat enemmän tallennettuja näytteitä jaksoa kohden suuremmalla toistuvalla kustannuksella."
+summary = "Jokaisen jaksollisen mittausikkunan pituus millisekunteina jaksotilassa."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleperiodms]
+impact = "Lyhyemmät jaksot tallentavat tapahtumatietoja useammin ja maksavat enemmän; pidemmät jaksot jättävät leveämpiä aukkoja historiaan."
+summary = "Millisekunnit jaksollisten mittausikkunoiden alkujen välillä jaksotilassa."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.instrumentation]
+impact = "ALWAYS lisää jokaiselle tapahtumakäsittelijälle mittauskuorman; ON_DEMAND poistaa kustannuksen lepotilassa mutta jättää aukkoja historiaan; DUTY_CYCLE vaihtaa jaksolliset aukot pieneen toistuvaan kustannukseen."
+summary = "Määrittää, milloin kuuntelijoiden ajanmittauskuoret asennetaan: ALWAYS pitää ne asennettuina, ON_DEMAND asentaa ne vain, kun monitori, kartta, paikkamerkki tai verkkokatselija lukee tapahtumatietoja, ja DUTY_CYCLE avaa lisäksi jaksollisen mittausikkunan."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.sampleractivitywindowms]
+impact = "Suuremmat arvot pitävät mittauksen asennettuna pidempään katselijan poistuttua; pienemmät arvot poistavat sen aiemmin."
+summary = "Millisekunnit viimeisestä tapahtumatietojen lukemisesta ennen kuorien poistoa tarvetilassa ja jaksotilassa."
+
 [config.documentation.annotation.art.arcane.react.core.controller.historycontroller]
 description = "Kaappaa React-näytteenottimet kerran, tallentaa pakatun historiallisen telemetrian ja palvelee rajattuja aikavälikyselyjä."
 

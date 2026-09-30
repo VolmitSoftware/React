@@ -21,8 +21,6 @@ package art.arcane.react.api.event;
 
 import org.bukkit.event.Event;
 import org.bukkit.event.EventException;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
 import org.bukkit.plugin.EventExecutor;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredListener;
@@ -31,19 +29,27 @@ import org.jetbrains.annotations.NotNull;
 import java.util.concurrent.atomic.LongAdder;
 
 public class NaughtyRegisteredListener extends RegisteredListener {
+  private static final int DEPTH = 0;
+  private static final int CHILD_NANOS = 1;
+  private static final ThreadLocal<long[]> FRAMES = ThreadLocal.withInitial(() -> new long[2]);
+
   public final String pluginName;
+  private final RegisteredListener delegate;
   private final long instrumentationOwner;
   private final LongAdder timeNanos;
   private final LongAdder calls;
+  private final LongAdder asyncCalls;
 
-  public NaughtyRegisteredListener(@NotNull final Listener listener, @NotNull final EventExecutor executor,
-                                   @NotNull final EventPriority priority, @NotNull final Plugin plugin,
-                                   final boolean ignoreCancelled, long instrumentationOwner) {
-    super(listener, executor, priority, plugin, ignoreCancelled);
-    this.pluginName = resolvePluginName(plugin);
+  public NaughtyRegisteredListener(@NotNull RegisteredListener delegate, @NotNull EventExecutor executor,
+                                   long instrumentationOwner) {
+    super(delegate.getListener(), executor, delegate.getPriority(), delegate.getPlugin(),
+        delegate.isIgnoringCancelled());
+    this.delegate = delegate;
+    this.pluginName = resolvePluginName(delegate.getPlugin());
     this.instrumentationOwner = instrumentationOwner;
     this.timeNanos = new LongAdder();
     this.calls = new LongAdder();
+    this.asyncCalls = new LongAdder();
   }
 
   private static String resolvePluginName(Plugin plugin) {
@@ -55,19 +61,31 @@ public class NaughtyRegisteredListener extends RegisteredListener {
     return name.isBlank() ? "Unknown" : name;
   }
 
-  /**
-   * Calls the event executor
-   *
-   * @param event The event
-   * @throws EventException If an event handler throws an exception.
-   */
+  @Override
   public void callEvent(@NotNull final Event event) throws EventException {
+    if (event.isAsynchronous()) {
+      asyncCalls.increment();
+      delegate.callEvent(event);
+      return;
+    }
+
+    long[] frame = FRAMES.get();
+    long parentChildNanos = frame[CHILD_NANOS];
+    frame[CHILD_NANOS] = 0L;
+    frame[DEPTH]++;
     long start = System.nanoTime();
     try {
-      super.callEvent(event);
+      delegate.callEvent(event);
     } finally {
-      record(System.nanoTime() - start);
+      long total = System.nanoTime() - start;
+      record(total - frame[CHILD_NANOS]);
+      frame[DEPTH]--;
+      frame[CHILD_NANOS] = frame[DEPTH] == 0L ? 0L : parentChildNanos + total;
     }
+  }
+
+  public RegisteredListener delegate() {
+    return delegate;
   }
 
   public boolean isOwnedBy(long owner) {
@@ -75,14 +93,14 @@ public class NaughtyRegisteredListener extends RegisteredListener {
   }
 
   public CounterSnapshot drainCounters() {
-    return new CounterSnapshot(timeNanos.sumThenReset(), calls.sumThenReset());
+    return new CounterSnapshot(timeNanos.sumThenReset(), calls.sumThenReset(), asyncCalls.sumThenReset());
   }
 
-  private void record(long elapsedNanos) {
-    timeNanos.add(Math.max(0L, elapsedNanos));
+  private void record(long exclusiveNanos) {
+    timeNanos.add(Math.max(0L, exclusiveNanos));
     calls.increment();
   }
 
-  public record CounterSnapshot(long timeNanos, long calls) {
+  public record CounterSnapshot(long timeNanos, long calls, long asyncCalls) {
   }
 }

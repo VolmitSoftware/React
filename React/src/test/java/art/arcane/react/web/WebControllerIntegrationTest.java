@@ -124,6 +124,7 @@ public class WebControllerIntegrationTest {
 
         HistoryController historyController = mock(HistoryController.class);
         when(historyController.latest()).thenReturn(MetricSnapshot.empty());
+        when(historyController.latestObserved()).thenReturn(MetricSnapshot.empty());
         when(historyController.descriptors()).thenReturn(List.of(
             new MetricDescriptor("wc-tick-time", "wc-tick-time", "ms", 1_000L, 3_000L, true)
         ));
@@ -345,6 +346,7 @@ public class WebControllerIntegrationTest {
 
         HistoryController historyController = mock(HistoryController.class);
         when(historyController.latest()).thenReturn(MetricSnapshot.empty());
+        when(historyController.latestObserved()).thenReturn(MetricSnapshot.empty());
         when(historyController.effectiveMaxQuerySeries()).thenReturn(16);
         when(historyController.effectiveMaxQueryPoints()).thenReturn(4_096);
         when(historyController.effectiveQueryPagePoints()).thenReturn(256);
@@ -417,6 +419,7 @@ public class WebControllerIntegrationTest {
 
         HistoryController historyController = mock(HistoryController.class);
         when(historyController.latest()).thenReturn(MetricSnapshot.empty());
+        when(historyController.latestObserved()).thenReturn(MetricSnapshot.empty());
         when(historyController.effectiveMaxQuerySeries()).thenReturn(16);
         when(historyController.effectiveMaxQueryPoints()).thenReturn(4_096);
         when(historyController.effectiveQueryPagePoints()).thenReturn(256);

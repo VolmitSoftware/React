@@ -175,7 +175,7 @@ public class FeaturePluginEventImpactListMap extends ReactFeature implements Rea
 
   private double windowSeconds() {
     EventController controller = React.controller(EventController.class);
-    return controller == null ? 5D : Math.max(1L, controller.getTinterval()) / 1000.0D;
+    return controller == null || !controller.isMeasuring() ? 5D : controller.getWindowSeconds();
   }
 
   private boolean isFrameAnchored() {

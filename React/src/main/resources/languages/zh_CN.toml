@@ -2848,6 +2848,25 @@ summary = "将热载更改摘要发送到在线操作员."
 impact = "较小的值能更早检测到已收到的事件；自动更改仍然最多每三秒批量应用一次。"
 summary = "文件系统事件的轮询间隔，单位为毫秒。"
 
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller]
+description = "在检测启用期间通过包装已注册的监听器,按插件测量事件处理器耗时。"
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleonms]
+impact = "窗口越长,每个周期记录的样本越多,但持续开销也越高。"
+summary = "周期模式下每个定期测量窗口的长度(毫秒)。"
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleperiodms]
+impact = "周期越短,事件数据记录得越频繁,开销越大;周期越长,历史中的空白越宽。"
+summary = "周期模式下定期测量窗口开始时刻之间的毫秒数。"
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.instrumentation]
+impact = "ALWAYS 让每个事件处理器承担计时开销;ON_DEMAND 在空闲时消除该开销但会在历史中留下空白;DUTY_CYCLE 以周期性空白换取少量持续开销。"
+summary = "控制何时安装监听器计时包装:ALWAYS 始终保持安装,ON_DEMAND 仅在监视器、地图、占位符或网页查看者读取事件数据时安装,DUTY_CYCLE 则额外定期打开一个测量窗口。"
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.sampleractivitywindowms]
+impact = "值越高,查看者离开后检测保持安装的时间越长;值越低,移除得越早。"
+summary = "在按需模式和周期模式下,自最后一次读取事件数据后到移除包装所经过的毫秒数。"
+
 [config.documentation.annotation.art.arcane.react.core.controller.historycontroller]
 description = "一次采集 React 采样器，存储压缩的历史遥测数据，并处理有界时间范围查询。"
 

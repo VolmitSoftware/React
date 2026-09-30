@@ -2848,6 +2848,25 @@ summary = "Sıcak yük değişim summaryları online operatörlere gönderin."
 impact = "Daha düşük değerler alınan olayları daha erken algılar; otomatik değişiklikler yine en fazla üç saniyede bir toplu olarak uygulanır."
 summary = "Dosya sistemi olaylarını yoklama aralığı (milisaniye)."
 
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller]
+description = "Enstrümantasyon etkinken kayıtlı dinleyicileri sararak eklenti başına olay işleyici süresini ölçer."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleonms]
+impact = "Daha uzun pencereler daha yüksek yinelenen maliyetle periyot başına daha fazla kayıtlı örnek üretir."
+summary = "Döngü modunda her periyodik ölçüm penceresinin milisaniye cinsinden uzunluğu."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleperiodms]
+impact = "Daha kısa periyotlar olay verisini daha sık kaydeder ve daha fazla maliyet çıkarır; daha uzun periyotlar geçmişte daha geniş boşluklar bırakır."
+summary = "Döngü modunda periyodik ölçüm pencerelerinin başlangıçları arasındaki milisaniye."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.instrumentation]
+impact = "ALWAYS her olay işleyicisine bir zamanlama yükü bindirir; ON_DEMAND boştayken bu maliyeti kaldırır ancak geçmişte boşluklar bırakır; DUTY_CYCLE periyodik boşlukları küçük bir yinelenen maliyetle değiştirir."
+summary = "Dinleyici zamanlama sarmalayıcılarının ne zaman kurulacağını belirler: ALWAYS onları kurulu tutar, ON_DEMAND yalnızca bir monitör, harita, yer tutucu veya web izleyicisi olay verisi okurken kurar ve DUTY_CYCLE ek olarak periyodik bir ölçüm penceresi açar."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.sampleractivitywindowms]
+impact = "Daha yüksek değerler bir izleyici ayrıldıktan sonra enstrümantasyonu daha uzun süre kurulu tutar; daha düşük değerler onu daha erken kaldırır."
+summary = "İsteğe bağlı ve döngü modlarında sarmalayıcılar kaldırılmadan önce son olay verisi okumasından sonra geçen milisaniye."
+
 [config.documentation.annotation.art.arcane.react.core.controller.historycontroller]
 description = "React örnekleyicilerini bir kez yakalar, sıkıştırılmış geçmiş telemetrisini saklar ve sınırlandırılmış zaman aralığı sorgularını işler."
 

@@ -2848,6 +2848,25 @@ summary = "Envía resúmenes de cambio de carga caliente a operadores en línea.
 impact = "Los valores más bajos detectan antes los eventos recibidos; los cambios automáticos siguen aplicándose en lotes como máximo una vez cada tres segundos."
 summary = "Intervalo de consulta de eventos del sistema de archivos en milisegundos."
 
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller]
+description = "Mide el tiempo de los manejadores de eventos por plugin envolviendo los oyentes registrados mientras la instrumentación está activa."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleonms]
+impact = "Ventanas más largas producen más muestras registradas por periodo con un coste recurrente mayor."
+summary = "Duración en milisegundos de cada ventana de medición periódica en el modo de ciclo de trabajo."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleperiodms]
+impact = "Periodos más cortos registran datos de eventos con más frecuencia y cuestan más; periodos más largos dejan huecos más amplios en el historial."
+summary = "Milisegundos entre los inicios de las ventanas de medición periódicas en el modo de ciclo de trabajo."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.instrumentation]
+impact = "ALWAYS añade una sobrecarga de medición a cada manejador de eventos; ON_DEMAND elimina ese coste en reposo pero deja huecos en el historial; DUTY_CYCLE cambia huecos periódicos por un pequeño coste recurrente."
+summary = "Controla cuándo se instalan las envolturas de medición de oyentes: ALWAYS las mantiene instaladas, ON_DEMAND las instala solo mientras un monitor, un mapa, un marcador o un visor web lee datos de eventos, y DUTY_CYCLE abre además una ventana de medición periódica."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.sampleractivitywindowms]
+impact = "Valores más altos mantienen la instrumentación instalada más tiempo después de que un visor se vaya; valores más bajos la retiran antes."
+summary = "Milisegundos tras la última lectura de datos de eventos antes de retirar las envolturas en los modos bajo demanda y de ciclo de trabajo."
+
 [config.documentation.annotation.art.arcane.react.core.controller.historycontroller]
 description = "Captura una vez los muestreadores de React, almacena telemetría histórica comprimida y atiende consultas acotadas por intervalo de tiempo."
 

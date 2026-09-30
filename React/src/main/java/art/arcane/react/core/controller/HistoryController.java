@@ -24,6 +24,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -47,6 +48,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class HistoryController implements IController {
   private static final long CAPTURE_DRIVER_INTERVAL_MS = 100L;
   private static final long FAILURE_LOG_INTERVAL_MS = 10_000L;
+  private static final long OBSERVER_WINDOW_MS = 15_000L;
   private static final int WRITER_QUEUE_CAPACITY = 32;
 
   @ConfigDoc(value = "Persists sampler history under plugins/React/history.", impact = "Disabling storage keeps live web snapshots but records no new historical samples. Existing history remains readable.")
@@ -88,6 +90,7 @@ public class HistoryController implements IController {
   private transient Map<String, Long> samplerFailureLogMs;
   private transient volatile boolean storageOperational;
   private transient volatile boolean stopping;
+  private transient volatile long lastObservedMs;
   private transient volatile Throwable storageFailure;
   private transient long lastCaptureNanos;
   private transient AtomicLong lastPersistedBucket;
@@ -188,6 +191,11 @@ public class HistoryController implements IController {
   }
 
   public MetricSnapshot latest() {
+    return latestSnapshot.get();
+  }
+
+  public MetricSnapshot latestObserved() {
+    lastObservedMs = System.currentTimeMillis();
     return latestSnapshot.get();
   }
 
@@ -419,16 +427,13 @@ public class HistoryController implements IController {
   private MetricSnapshot captureSnapshot() {
     SampleController sampleController = React.controller(SampleController.class);
     Registry<Sampler> registry = sampleController == null ? null : sampleController.getSamplers();
-    long capturedAtMs = System.currentTimeMillis();
+    return captureSnapshot(registry == null ? List.of() : registry.all(), System.currentTimeMillis());
+  }
+
+  MetricSnapshot captureSnapshot(Collection<Sampler> registered, long capturedAtMs) {
     long currentSequence = sequence.incrementAndGet();
-    if (registry == null) {
-      registeredSamplerCount = 0;
-      availableSamplerCount = 0;
-      unavailableSamplerCount = 0;
-      failedSamplerCount = 0;
-      return MetricSnapshot.of(currentSequence, capturedAtMs, List.of());
-    }
-    List<Sampler> samplers = new ArrayList<>(registry.all());
+    boolean observed = capturedAtMs - lastObservedMs <= OBSERVER_WINDOW_MS;
+    List<Sampler> samplers = new ArrayList<>(registered);
     samplers.sort(Comparator.comparing(Sampler::getId));
     List<MetricSnapshotValue> values = new ArrayList<>(samplers.size());
     int availableCount = 0;
@@ -436,7 +441,10 @@ public class HistoryController implements IController {
     int failureCount = 0;
     for (Sampler sampler : samplers) {
       try {
-        double value = sampler.sample();
+        if (observed) {
+          sampler.markDemand();
+        }
+        double value = sampler.capture();
         boolean available = sampler.isSampleAvailable() && Double.isFinite(value);
         if (available) {
           availableCount++;

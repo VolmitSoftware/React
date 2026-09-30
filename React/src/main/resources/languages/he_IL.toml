@@ -2848,6 +2848,25 @@ summary = "שלח שינוי עומס חם מסכם למפעילים מקוונ�
 impact = "ערכים נמוכים יותר מזהים מוקדם יותר אירועים שהתקבלו; השינויים האוטומטיים עדיין מוחלים בקבוצות לכל היותר פעם בשלוש שניות."
 summary = "מרווח בדיקת האירועים של מערכת הקבצים באלפיות שנייה."
 
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller]
+description = "מודד את זמן מטפלי האירועים לכל תוסף על ידי עטיפת המאזינים הרשומים כל עוד המדידה פעילה."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleonms]
+impact = "חלונות ארוכים יותר מפיקים יותר דגימות מתועדות לכל מחזור בעלות חוזרת גבוהה יותר."
+summary = "אורך כל חלון מדידה מחזורי באלפיות שנייה במצב המחזור."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.dutycycleperiodms]
+impact = "מחזורים קצרים יותר מתעדים נתוני אירועים לעתים קרובות יותר ועולים יותר; מחזורים ארוכים יותר משאירים פערים רחבים יותר בהיסטוריה."
+summary = "אלפיות שנייה בין תחילת חלונות המדידה המחזוריים במצב המחזור."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.instrumentation]
+impact = "ALWAYS מטיל תקורת מדידה על כל מטפל אירועים; ON_DEMAND מסיר את העלות הזו במנוחה אך משאיר פערים בהיסטוריה; DUTY_CYCLE מחליף פערים מחזוריים בעלות חוזרת קטנה."
+summary = "קובע מתי מותקנות עטיפות מדידת הזמן של המאזינים: ALWAYS משאיר אותן מותקנות, ON_DEMAND מתקין אותן רק כאשר מוניטור, מפה, מציין מיקום או צופה ברשת קורא נתוני אירועים, ואילו DUTY_CYCLE פותח בנוסף חלון מדידה מחזורי."
+
+[config.documentation.annotation.art.arcane.react.core.controller.eventcontroller.field.sampleractivitywindowms]
+impact = "ערכים גבוהים יותר משאירים את המדידה מותקנת זמן רב יותר לאחר שצופה עוזב; ערכים נמוכים יותר מסירים אותה מוקדם יותר."
+summary = "אלפיות שנייה לאחר הקריאה האחרונה של נתוני אירועים לפני הסרת העטיפות במצב לפי דרישה ובמצב המחזור."
+
 [config.documentation.annotation.art.arcane.react.core.controller.historycontroller]
 description = "לוכד פעם אחת את דוגמי React, שומר טלמטריה היסטורית דחוסה ומטפל בשאילתות מוגבלות לטווח זמן."
 
