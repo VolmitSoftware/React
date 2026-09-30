@@ -262,13 +262,22 @@ public class FeatureEntityTrimmer extends ReactFeature {
     }
 
     List<Player> anchors = selectAnchors(players);
-    ScanFlight flight = new ScanFlight(generation, anchors.size());
-    for (Player player : anchors) {
-      if (folia) {
+    if (folia) {
+      ScanFlight flight = new ScanFlight(generation, anchors.size());
+      for (Player player : anchors) {
         flight.scheduleScan(player);
-      } else {
-        flight.queueScan(player);
       }
+      return;
+    }
+
+    ScanFlight flight = new ScanFlight(generation, 1);
+    JobBatch batch = new JobBatch(JobBatch.scanLimits(), flight::completeScan);
+    try {
+      for (Player player : anchors) {
+        batch.submit(() -> flight.scanAnchor(player));
+      }
+    } finally {
+      batch.seal();
     }
   }
 
@@ -569,24 +578,9 @@ public class FeatureEntityTrimmer extends ReactFeature {
       }
     }
 
-    private void queueScan(Player player) {
-      try {
-        J.s(() -> runScan(player, false));
-      } catch (RuntimeException | Error failure) {
-        React.reportError(failure);
-        completeScan();
-      }
-    }
-
-    private void runScan(Player player, boolean folia) {
-      try {
-        if (isCurrent(generation)) {
-          scanAroundPlayer(player, accumulator, generation, folia);
-        }
-      } catch (Throwable throwable) {
-        React.reportError(throwable);
-      } finally {
-        completeScan();
+    private void scanAnchor(Player player) {
+      if (isCurrent(generation)) {
+        scanAroundPlayer(player, accumulator, generation, false);
       }
     }
 

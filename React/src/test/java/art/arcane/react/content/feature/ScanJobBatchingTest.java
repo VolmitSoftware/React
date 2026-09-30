@@ -12,6 +12,7 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -26,7 +27,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-class MonolithicJobFanoutTest {
+class ScanJobBatchingTest {
   static {
     if (React.instance == null) {
       React react = Mockito.mock(React.class);
@@ -37,9 +38,10 @@ class MonolithicJobFanoutTest {
   }
 
   @Test
-  void adaptiveSleepQueuesOneJobPerSampledEntityAndHoldsTheScanUntilTheyFinish() {
+  void adaptiveSleepRunsEverySampledEntityThroughOneBoundedBatchJobAndHoldsTheScanUntilItDrains() {
     World world = Mockito.mock(World.class);
-    List<Entity> entities = List.of(Mockito.mock(Entity.class), Mockito.mock(Entity.class), Mockito.mock(Entity.class));
+    AtomicInteger managed = new AtomicInteger();
+    List<Entity> entities = countingEntities(Entity.class, 150, managed);
     List<Runnable> jobs = new ArrayList<>();
     FeatureAdaptiveEntitySleep feature = new FeatureAdaptiveEntitySleep();
 
@@ -47,7 +49,7 @@ class MonolithicJobFanoutTest {
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class);
          MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class);
          MockedStatic<WorldEntitySnapshots> snapshots = Mockito.mockStatic(WorldEntitySnapshots.class);
-         MockedStatic<ReactEntity> managed = Mockito.mockStatic(ReactEntity.class)) {
+         MockedStatic<ReactEntity> reactEntity = Mockito.mockStatic(ReactEntity.class)) {
       scheduling.when(J::isFoliaThreading).thenReturn(false);
       scheduling.when(() -> J.s(Mockito.any(Runnable.class))).thenAnswer(invocation -> {
         jobs.add(invocation.getArgument(0));
@@ -61,20 +63,17 @@ class MonolithicJobFanoutTest {
       Assertions.assertEquals(1, jobs.size());
       jobs.removeFirst().run();
 
-      Assertions.assertEquals(3, jobs.size());
-      for (Entity entity : entities) {
-        Mockito.verifyNoInteractions(entity);
-      }
+      Assertions.assertEquals(1, jobs.size());
+      Assertions.assertEquals(0, managed.get());
       feature.onTick();
-      Assertions.assertEquals(3, jobs.size());
+      Assertions.assertEquals(1, jobs.size());
 
-      for (Runnable job : new ArrayList<>(jobs)) {
-        job.run();
-      }
-      jobs.clear();
+      drainOneJobAtATime(jobs, managed, JobBatch.MAX_UNITS_PER_RUN);
+      Assertions.assertEquals(entities.size(), managed.get());
       for (Entity entity : entities) {
         Mockito.verify(entity).isDead();
       }
+
       feature.onTick();
       Assertions.assertEquals(1, jobs.size());
       feature.onDeactivate();
@@ -82,9 +81,11 @@ class MonolithicJobFanoutTest {
   }
 
   @Test
-  void pathfinderBudgetQueuesOneJobPerSampledEntityAndHoldsTheScanUntilTheyFinish() throws ReflectiveOperationException {
+  void pathfinderBudgetRunsEverySampledMobThroughOneBoundedBatchJobAndHoldsTheScanUntilItDrains()
+      throws ReflectiveOperationException {
     World world = Mockito.mock(World.class);
-    List<Entity> entities = List.of(Mockito.mock(Entity.class), Mockito.mock(Entity.class));
+    AtomicInteger managed = new AtomicInteger();
+    List<Entity> mobs = new ArrayList<>(countingEntities(Mob.class, 240, managed));
     List<Runnable> jobs = new ArrayList<>();
     FeaturePathfinderBudget feature = new FeaturePathfinderBudget();
     set(feature, "nativeAccess", Mockito.mock(NativeWorldAccess.class));
@@ -102,30 +103,30 @@ class MonolithicJobFanoutTest {
         return null;
       });
       bukkit.when(Bukkit::getWorlds).thenReturn(List.of(world));
-      snapshots.when(() -> WorldEntitySnapshots.next(Mockito.eq(world), Mockito.anyInt())).thenReturn(entities);
+      snapshots.when(() -> WorldEntitySnapshots.next(Mockito.eq(world), Mockito.anyInt())).thenReturn(mobs);
 
       feature.onTick();
       Assertions.assertEquals(1, jobs.size());
       jobs.removeFirst().run();
 
-      Assertions.assertEquals(2, jobs.size());
-      for (Entity entity : entities) {
-        Mockito.verifyNoInteractions(entity);
-      }
+      Assertions.assertEquals(1, jobs.size());
+      Assertions.assertEquals(0, managed.get());
       feature.onTick();
-      Assertions.assertEquals(2, jobs.size());
+      Assertions.assertEquals(1, jobs.size());
 
-      for (Runnable job : new ArrayList<>(jobs)) {
-        job.run();
+      drainOneJobAtATime(jobs, managed, JobBatch.MAX_UNITS_PER_RUN);
+      Assertions.assertEquals(mobs.size(), managed.get());
+      for (Entity mob : mobs) {
+        Mockito.verify(mob).isDead();
       }
-      jobs.clear();
+
       feature.onTick();
       Assertions.assertEquals(1, jobs.size());
     }
   }
 
   @Test
-  void entityTrimmerQueuesOneScanJobPerDistinctAnchorRegion() throws ReflectiveOperationException {
+  void entityTrimmerScansEachDistinctAnchorRegionThroughOneBatchJob() throws ReflectiveOperationException {
     World world = Mockito.mock(World.class);
     UUID worldId = UUID.randomUUID();
     Mockito.when(world.getUID()).thenReturn(worldId);
@@ -151,11 +152,14 @@ class MonolithicJobFanoutTest {
       Assertions.assertEquals(1, jobs.size());
       jobs.removeFirst().run();
 
-      Assertions.assertEquals(2, jobs.size());
+      Assertions.assertEquals(1, jobs.size());
       Mockito.verify(first, Mockito.never()).getNearbyEntities(Mockito.anyDouble(), Mockito.anyDouble(), Mockito.anyDouble());
-      for (Runnable job : new ArrayList<>(jobs)) {
-        job.run();
+      while (!jobs.isEmpty()) {
+        Assertions.assertEquals(1, jobs.size());
+        jobs.removeFirst().run();
       }
+      feature.onTick();
+      Assertions.assertEquals(1, jobs.size());
     }
 
     Mockito.verify(first).getNearbyEntities(32D, 32D, 32D);
@@ -208,6 +212,29 @@ class MonolithicJobFanoutTest {
     }
 
     Assertions.assertEquals(nearby.size(), locationReads.get());
+  }
+
+  private static void drainOneJobAtATime(List<Runnable> jobs, AtomicInteger managed, int maxUnitsPerRun) {
+    while (!jobs.isEmpty()) {
+      Assertions.assertEquals(1, jobs.size());
+      int before = managed.get();
+      jobs.removeFirst().run();
+      int ran = managed.get() - before;
+      Assertions.assertTrue(ran >= 1 && ran <= maxUnitsPerRun, "units in one run: " + ran);
+    }
+  }
+
+  private static <T extends Entity> List<Entity> countingEntities(Class<T> type, int count, AtomicInteger managed) {
+    List<Entity> entities = new ArrayList<>(count);
+    for (int index = 0; index < count; index++) {
+      T entity = Mockito.mock(type);
+      Mockito.when(entity.isDead()).thenAnswer(invocation -> {
+        managed.incrementAndGet();
+        return true;
+      });
+      entities.add(entity);
+    }
+    return entities;
   }
 
   private static Player player(World world, double x, double z) {
