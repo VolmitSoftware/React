@@ -170,7 +170,7 @@ public final class MapMessages {
       samplerSummary("wormholes-view-subscriptions", "Remote-view sessions this server is serving to peers."),
       samplerSummary("wormholes-wire-in", "Post-compression network ingress from remote peers."),
       samplerSummary("wormholes-wire-out", "Post-compression network egress of the wormholes mesh."),
-      samplerSummary("gloss-animations", "Animated hologram text targets the animator is currently driving."),
+      samplerSummary("gloss-animations", "Hologram text targets currently animating."),
       samplerSummary("gloss-boards", "Scoreboard sidebars currently rendered for players."),
       samplerSummary("gloss-bubbles", "Chat bubbles spawned above players per second."),
       samplerSummary("gloss-display-entities", "Packet-only display entities registered for holograms."),
