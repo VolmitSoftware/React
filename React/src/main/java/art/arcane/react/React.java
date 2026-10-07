@@ -19,6 +19,8 @@
 
 package art.arcane.react;
 
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.CompletableFuture;
 import art.arcane.volmlib.util.diagnostics.BukkitDebugDump;
 import art.arcane.volmlib.util.diagnostics.DebugDumpContributor;
 import art.arcane.chrono.PrecisionStopwatch;
@@ -699,9 +701,10 @@ public class React extends VolmitPlugin implements ReloadAware {
   }
 
   @Override
-  public void onPreUnload(ReloadAware.PreUnloadReason reason) {
+  public CompletionStage<Void> commitReload(ReloadAware.PreUnloadReason reason) {
     React.verbose("BileTools pre-unload hook fired (" + reason + "). Shutting down React controllers.");
     stop();
+    return CompletableFuture.completedFuture(null);
   }
 
   @Override
