@@ -27,6 +27,9 @@ const String _betaId = 'srv-beta';
 
 class _StubClient implements IReactClient {
   @override
+  Future<void> close() async {}
+
+  @override
   Future<IdentityInfo> identity() async => IdentityInfo(
     serverName: 'Stub',
     version: '1.0.0',

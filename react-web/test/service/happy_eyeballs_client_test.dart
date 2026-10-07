@@ -11,6 +11,14 @@ import 'package:react_web/service/react_client.dart';
 import 'package:react_web/service/react_exceptions.dart';
 
 class _FakeClient implements IReactClient, IPlayerClient {
+  @override
+  Future<void> close() async {
+    closeCalls++;
+  }
+
+  int closeCalls = 0;
+  int identityCalls = 0;
+
   String serverId;
   Duration delay;
   bool shouldThrow;
@@ -24,6 +32,7 @@ class _FakeClient implements IReactClient, IPlayerClient {
 
   @override
   Future<IdentityInfo> identity() async {
+    identityCalls++;
     if (delay > Duration.zero) await Future<void>.delayed(delay);
     if (shouldThrow) throw const ReactUnavailable();
     return IdentityInfo(
@@ -66,6 +75,36 @@ class _FakeClient implements IReactClient, IPlayerClient {
 }
 
 void main() {
+  test(
+    'concurrent reads share resolution and close terminates both transports',
+    () async {
+      final _FakeClient direct = _FakeClient(
+        serverId: 'server',
+        delay: const Duration(milliseconds: 5),
+      );
+      final _FakeClient relay = _FakeClient(
+        serverId: 'server',
+        delay: const Duration(milliseconds: 15),
+      );
+      final HappyEyeballsClient client = HappyEyeballsClient(
+        direct: direct,
+        relay: relay,
+      );
+      await Future.wait(<Future<ServerSnapshot>>[
+        client.metrics(),
+        client.metrics(),
+        client.metrics(),
+      ]);
+      expect(direct.identityCalls, 2);
+      await client.close();
+      await client.close();
+      expect(direct.closeCalls, 1);
+      expect(relay.closeCalls, 1);
+      await expectLater(client.metrics(), throwsA(isA<ReactUnavailable>()));
+      expect(client.activePath, RelayPath.none);
+    },
+  );
+
   group('HappyEyeballsClient', () {
     test(
       '(1) both succeed, direct returns first -> activePath==direct',

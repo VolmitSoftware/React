@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -21,6 +22,31 @@ void main() {
     host: 'localhost',
     port: 9696,
     bearer: 'tok-abc',
+  );
+
+  test(
+    'close rejects an in-flight response and prevents further requests',
+    () async {
+      final Completer<http.Response> response = Completer<http.Response>();
+      int calls = 0;
+      final ReactClient client = ReactClient(
+        cred,
+        client: MockClient((http.Request _) {
+          calls++;
+          return response.future;
+        }),
+      );
+      final Future<void> rejected = expectLater(
+        client.identity(),
+        throwsA(isA<ReactUnavailable>()),
+      );
+      await Future<void>.delayed(Duration.zero);
+      await client.close();
+      response.complete(http.Response('{}', 200));
+      await rejected;
+      await expectLater(client.identity(), throwsA(isA<ReactUnavailable>()));
+      expect(calls, 1);
+    },
   );
 
   group('ReactClient.ping()', () {

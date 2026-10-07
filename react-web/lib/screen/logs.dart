@@ -15,6 +15,7 @@ import '../state/operate_scope.dart';
 import '../state/role_scope.dart';
 import '../state/server_scope.dart';
 import '../ui/reactor_ui.dart';
+import '../widget/row_window.dart';
 
 class LogsView extends StatelessWidget {
   final List<String> lines;
@@ -115,18 +116,23 @@ class LogsView extends StatelessWidget {
                   icon: ArcaneIcon.scrollText(size: IconSize.sm),
                 )
               else
-                dom.div(
-                  attributes: const <String, String>{
-                    'role': 'log',
-                    'aria-live': 'off',
-                  },
-                  classes: 'reactor-terminal-lines',
-                  <Widget>[
-                    for (final String line in lines)
-                      dom.div(classes: _lineClasses(line), <Widget>[
-                        Component.text(line),
-                      ]),
-                  ],
+                RowWindow<String>(
+                  rows: lines,
+                  pageSize: 200,
+                  latest: true,
+                  builder: (List<String> visible) => dom.div(
+                    attributes: const <String, String>{
+                      'role': 'log',
+                      'aria-live': 'off',
+                    },
+                    classes: 'reactor-terminal-lines',
+                    <Widget>[
+                      for (final String line in visible)
+                        dom.div(classes: _lineClasses(line), <Widget>[
+                          Component.text(line),
+                        ]),
+                    ],
+                  ),
                 ),
             ]),
             dom.div(classes: 'reactor-console', <Widget>[

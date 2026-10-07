@@ -16,6 +16,10 @@ final class RelayBroker {
       HashMap<RelaySink, _AppRegistration>.identity();
   final Map<String, Set<RelaySink>> _appsByServer = <String, Set<RelaySink>>{};
   final Map<String, _PendingRequest> _pending = <String, _PendingRequest>{};
+  final Map<String, _MetricsRequest> _metricsByKey =
+      <String, _MetricsRequest>{};
+  final Map<String, _MetricsRequest> _metricsByRequest =
+      <String, _MetricsRequest>{};
   final String _requestPrefix;
   int _nextRequestId = 0;
 
@@ -136,11 +140,16 @@ final class RelayBroker {
       return false;
     }
 
+    final String? metricsKey = _metricsKey(serverId, frame.payload!);
+    final _MetricsRequest? shared = metricsKey == null
+        ? null
+        : _metricsByKey[metricsKey];
     final String brokerRequestId = _newBrokerRequestId();
     final _PendingRequest pending = _PendingRequest(
       app: app,
       serverId: serverId,
       clientRequestId: clientRequestId,
+      metrics: shared,
     );
     pending.timeout = Timer(
       limits.requestTimeout,
@@ -148,6 +157,22 @@ final class RelayBroker {
     );
     _pending[brokerRequestId] = pending;
     registration.pendingByClientId[clientRequestId] = brokerRequestId;
+
+    if (shared != null) {
+      shared.waiters.add(brokerRequestId);
+      return true;
+    }
+    if (metricsKey != null) {
+      final _MetricsRequest group = _MetricsRequest(
+        metricsKey,
+        serverId,
+        brokerRequestId,
+      );
+      group.waiters.add(brokerRequestId);
+      pending.metrics = group;
+      _metricsByKey[metricsKey] = group;
+      _metricsByRequest[brokerRequestId] = group;
+    }
 
     agent.send(
       RelayFrame(
@@ -168,30 +193,62 @@ final class RelayBroker {
     }
     final String? brokerRequestId = frame.requestId;
     if (brokerRequestId == null) return false;
+    final _MetricsRequest? shared = _metricsByRequest[brokerRequestId];
     final _PendingRequest? pending = _pending[brokerRequestId];
-    if (pending == null || pending.serverId != serverId) return false;
-
-    final String? responseError = _validateResponse(frame);
-    final _PendingRequest completed = _takePending(brokerRequestId)!;
-    if (responseError != null) {
-      _sendFailure(
-        completed.app,
-        serverId,
-        completed.clientRequestId,
-        502,
-        responseError,
-      );
+    if (shared == null && (pending == null || pending.serverId != serverId)) {
       return false;
     }
-    completed.app.send(
-      RelayFrame(
-        type: frame.type,
-        serverId: serverId,
-        requestId: completed.clientRequestId,
-        payload: frame.payload,
-      ),
-    );
-    return true;
+    if (shared != null && shared.serverId != serverId) return false;
+
+    final String? responseError = _validateResponse(frame);
+    final List<String> waiters = shared == null
+        ? <String>[brokerRequestId]
+        : List<String>.of(shared.waiters);
+    for (final String waiter in waiters) {
+      final _PendingRequest? completed = _takePending(waiter);
+      if (completed == null) continue;
+      if (responseError != null) {
+        _sendFailure(
+          completed.app,
+          serverId,
+          completed.clientRequestId,
+          502,
+          responseError,
+        );
+      } else {
+        completed.app.send(
+          RelayFrame(
+            type: frame.type,
+            serverId: serverId,
+            requestId: completed.clientRequestId,
+            payload: frame.payload,
+          ),
+        );
+      }
+    }
+    return responseError == null;
+  }
+
+  String? _metricsKey(String serverId, Map<String, dynamic> payload) {
+    if (payload['method'] != 'GET' ||
+        payload['path'] != '/api/v1/metrics' ||
+        (payload['body'] != null && payload['body'] != '')) {
+      return null;
+    }
+    final Map<String, dynamic> headers =
+        payload['headers'] as Map<String, dynamic>;
+    final Object? authorization =
+        headers['Authorization'] ?? headers['authorization'];
+    if (authorization is! String ||
+        !authorization.startsWith('Bearer ') ||
+        authorization.length <= 7) {
+      return null;
+    }
+    final List<String> names = headers.keys.toList()..sort();
+    return jsonEncode(<Object?>[
+      serverId,
+      for (final String name in names) <Object?>[name, headers[name]],
+    ]);
   }
 
   bool isOnline(String serverId) => _servers.containsKey(serverId);
@@ -252,6 +309,14 @@ final class RelayBroker {
     final _PendingRequest? pending = _pending.remove(brokerRequestId);
     if (pending == null) return null;
     pending.timeout?.cancel();
+    final _MetricsRequest? group = pending.metrics;
+    if (group != null) {
+      group.waiters.remove(brokerRequestId);
+      if (group.waiters.isEmpty) {
+        _metricsByKey.remove(group.key);
+        _metricsByRequest.remove(group.requestId);
+      }
+    }
     final _AppRegistration? registration = _apps[pending.app];
     registration?.pendingByClientId.remove(pending.clientRequestId);
     return pending;
@@ -382,10 +447,21 @@ final class _PendingRequest {
   final String serverId;
   final String clientRequestId;
   Timer? timeout;
+  _MetricsRequest? metrics;
 
   _PendingRequest({
     required this.app,
     required this.serverId,
     required this.clientRequestId,
+    this.metrics,
   });
+}
+
+final class _MetricsRequest {
+  final String key;
+  final String serverId;
+  final String requestId;
+  final Set<String> waiters = <String>{};
+
+  _MetricsRequest(this.key, this.serverId, this.requestId);
 }

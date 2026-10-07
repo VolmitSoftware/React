@@ -31,7 +31,9 @@ class TimeseriesChart extends StatefulComponent {
 }
 
 class _TimeseriesChartState extends State<TimeseriesChart> {
-  final Set<int> _hiddenSeries = <int>{};
+  Set<int> _hiddenSeries = <int>{};
+  List<DateTime>? _timestamps;
+  ChartTimeline? _timeline;
   int? _activeSample;
 
   @override
@@ -41,9 +43,13 @@ class _TimeseriesChartState extends State<TimeseriesChart> {
       ((String, List<double>) item) => item.$2.isNotEmpty,
     );
     final List<DateTime>? timestamps = component.sampleTimestamps;
-    final ChartTimeline? timeline = timestamps == null
-        ? null
-        : ChartTimeline.fromTimestamps(timestamps);
+    if (!identical(_timestamps, timestamps)) {
+      _timestamps = timestamps;
+      _timeline = timestamps == null
+          ? null
+          : ChartTimeline.fromTimestamps(timestamps);
+    }
+    final ChartTimeline? timeline = _timeline;
     return dom.div(classes: 'reactor-chart${hasSamples ? '' : ' is-empty'}', <
       Component
     >[
@@ -58,8 +64,9 @@ class _TimeseriesChartState extends State<TimeseriesChart> {
           samplePositions: timeline?.positions,
           breakBeforeSamples: timeline?.breakBefore ?? const <int>{},
           secondarySeries: component.secondarySeries,
-          onSampleHover: (int? sample) =>
-              setState(() => _activeSample = sample),
+          onSampleHover: (int? sample) {
+            if (_activeSample != sample) setState(() => _activeSample = sample);
+          },
         )
       else
         dom.div(
@@ -116,6 +123,7 @@ class _TimeseriesChartState extends State<TimeseriesChart> {
 
   void _toggleSeries(int index) {
     setState(() {
+      _hiddenSeries = Set<int>.of(_hiddenSeries);
       if (!_hiddenSeries.remove(index)) {
         _hiddenSeries.add(index);
       }

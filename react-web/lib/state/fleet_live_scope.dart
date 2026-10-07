@@ -3,14 +3,17 @@ import 'package:jaspr/jaspr.dart' show InheritedComponent;
 
 import 'fleet_live_model.dart';
 import 'fleet_rollup.dart';
+import 'paint_scheduler.dart';
 
 class FleetLiveScope extends InheritedComponent {
   final List<FleetServerLive> servers;
   final int revision;
+  final FleetLiveModel? model;
 
   const FleetLiveScope({
     required this.servers,
     required this.revision,
+    this.model,
     required super.child,
     super.key,
   });
@@ -38,15 +41,16 @@ class FleetLiveObserver extends StatefulWidget {
 
 class _FleetLiveObserverState extends State<FleetLiveObserver> {
   late FleetLiveModel _model;
+  late PaintScheduler _paint;
   int _revision = 0;
 
   @override
   void initState() {
     super.initState();
-    _model = FleetLiveModel(
-      component.sources,
-      onChange: () => setState(() => _revision++),
-    );
+    _paint = PaintScheduler(() {
+      if (mounted) setState(() => _revision++);
+    });
+    _model = FleetLiveModel(component.sources, onChange: _paint.schedule);
   }
 
   @override
@@ -59,6 +63,7 @@ class _FleetLiveObserverState extends State<FleetLiveObserver> {
 
   @override
   void dispose() {
+    _paint.dispose();
     _model.dispose();
     super.dispose();
   }
@@ -66,6 +71,7 @@ class _FleetLiveObserverState extends State<FleetLiveObserver> {
   @override
   Widget build(BuildContext context) {
     return FleetLiveScope(
+      model: _model,
       servers: _model.servers,
       revision: _revision,
       child: component.child,

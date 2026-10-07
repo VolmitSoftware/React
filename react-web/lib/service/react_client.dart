@@ -40,6 +40,7 @@ abstract interface class IHistoryClient {
 
 abstract interface class IReactClient implements IMetricsClient {
   Future<IdentityInfo> identity();
+  Future<void> close();
 }
 
 abstract interface class IPingClient {
@@ -150,10 +151,22 @@ class ReactClient
   final ServerCredential cred;
   final http.Client _http;
   final MonotonicCounter _counter;
+  bool _closed = false;
 
   ReactClient(this.cred, {http.Client? client, MonotonicCounter? counter})
     : _http = client ?? http.Client(),
       _counter = counter ?? MonotonicCounter(InMemoryFleetStorage());
+
+  @override
+  Future<void> close() async {
+    if (_closed) return;
+    _closed = true;
+    _http.close();
+  }
+
+  void _ensureOpen() {
+    if (_closed) throw const ReactUnavailable('Client closed');
+  }
 
   Map<String, String> get _headers => <String, String>{
     'Authorization': 'Bearer ${cred.bearer}',
@@ -161,6 +174,7 @@ class ReactClient
   };
 
   Future<http.Response> _get(String path, {bool authenticated = true}) async {
+    _ensureOpen();
     final Uri uri = cred.directEndpoint('api/v1$path');
     try {
       final http.Response response = await _http
@@ -169,6 +183,7 @@ class ReactClient
             headers: authenticated ? _headers : const <String, String>{},
           )
           .timeout(const Duration(seconds: 2));
+      _ensureOpen();
       if (response.statusCode == 401) {
         throw const ReactAuthException();
       }
@@ -239,6 +254,7 @@ class ReactClient
     String path,
     Map<String, Object?> body,
   ) async {
+    _ensureOpen();
     final Uri uri = cred.directEndpoint('api/v1$path');
     final Map<String, String> headers = <String, String>{
       'Authorization': 'Bearer ${cred.bearer}',
@@ -249,6 +265,7 @@ class ReactClient
       final http.Response response = await _http
           .put(uri, headers: headers, body: jsonEncode(body))
           .timeout(const Duration(seconds: 2));
+      _ensureOpen();
       switch (response.statusCode) {
         case 200:
           return _decodeData(response.body);
@@ -290,6 +307,7 @@ class ReactClient
     String path,
     Map<String, Object?> body,
   ) async {
+    _ensureOpen();
     final Uri uri = cred.directEndpoint('api/v1$path');
     final Map<String, String> headers = <String, String>{
       'Authorization': 'Bearer ${cred.bearer}',
@@ -300,6 +318,7 @@ class ReactClient
       final http.Response response = await _http
           .post(uri, headers: headers, body: jsonEncode(body))
           .timeout(const Duration(seconds: 2));
+      _ensureOpen();
       switch (response.statusCode) {
         case 200:
         case 202:
@@ -339,6 +358,7 @@ class ReactClient
   }
 
   Future<Map<String, dynamic>> _deleteData(String path) async {
+    _ensureOpen();
     final Uri uri = cred.directEndpoint('api/v1$path');
     final Map<String, String> headers = <String, String>{
       'Authorization': 'Bearer ${cred.bearer}',
@@ -349,6 +369,7 @@ class ReactClient
       final http.Response response = await _http
           .delete(uri, headers: headers)
           .timeout(const Duration(seconds: 2));
+      _ensureOpen();
       switch (response.statusCode) {
         case 200:
           return _decodeData(response.body);

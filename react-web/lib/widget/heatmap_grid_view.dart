@@ -38,6 +38,10 @@ class _HeatmapGridViewState extends State<HeatmapGridView> {
   void Function()? _uninstallInteraction;
   bool _installPending = false;
   bool _disposed = false;
+  HeatmapGrid? _cachedGrid;
+  ReactorLocaleScope? _cachedLocale;
+  Map<(int, int), HeatmapCell> _indexedCells = <(int, int), HeatmapCell>{};
+  final Map<(int, int), (bool, Widget)> _cells = <(int, int), (bool, Widget)>{};
 
   String get _gridId => 'reactor-heatmap-grid-${component.grid.id}';
 
@@ -176,7 +180,14 @@ class _HeatmapGridViewState extends State<HeatmapGridView> {
 
   @override
   Widget build(BuildContext context) {
-    dependOnReactorLocale(context);
+    final ReactorLocaleScope? locale = dependOnReactorLocale(context);
+    if (!identical(_cachedGrid, component.grid) ||
+        !identical(_cachedLocale, locale)) {
+      _cachedGrid = component.grid;
+      _cachedLocale = locale;
+      _indexedCells = component.grid.indexCells();
+      _cells.clear();
+    }
     _ensureSelection();
     _scheduleInteraction();
     final HeatmapGrid grid = component.grid;
@@ -184,7 +195,7 @@ class _HeatmapGridViewState extends State<HeatmapGridView> {
     final int rows = grid.rows;
     final int selectedX = _selectedChunkX!;
     final int selectedZ = _selectedChunkZ!;
-    final Map<(int, int), HeatmapCell> indexedCells = grid.indexCells();
+    final Map<(int, int), HeatmapCell> indexedCells = _indexedCells;
     final HeatmapCell? selectedCell = indexedCells[(selectedX, selectedZ)];
     final bool showCellDetails = math.max(columns, rows) <= 24;
     final bool showEmptyLabel = math.max(columns, rows) <= 16;
@@ -211,10 +222,15 @@ class _HeatmapGridViewState extends State<HeatmapGridView> {
       for (int column = 0; column < columns; column++) {
         final int chunkX = grid.originChunkX + column * grid.cellSizeChunks;
         final int chunkZ = grid.originChunkZ + row * grid.cellSizeChunks;
+        final bool selected = chunkX == selectedX && chunkZ == selectedZ;
+        final (bool, Widget)? cached = _cells[(chunkX, chunkZ)];
+        if (cached != null && cached.$1 == selected) {
+          cells.add(cached.$2);
+          continue;
+        }
         final HeatmapCell? cell = indexedCells[(chunkX, chunkZ)];
         final int maximumChunkX = chunkX + grid.cellSizeChunks - 1;
         final int maximumChunkZ = chunkZ + grid.cellSizeChunks - 1;
-        final bool selected = chunkX == selectedX && chunkZ == selectedZ;
         final bool center =
             grid.centerChunkX >= chunkX &&
             grid.centerChunkX <= maximumChunkX &&
@@ -316,6 +332,7 @@ class _HeatmapGridViewState extends State<HeatmapGridView> {
             ],
           ),
         );
+        _cells[(chunkX, chunkZ)] = (selected, cells.last);
       }
     }
 

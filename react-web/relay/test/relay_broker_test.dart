@@ -50,7 +50,54 @@ RelayFrame _response(String brokerRequestId, String marker) {
 
 int _status(RelayFrame frame) => frame.payload!['status'] as int;
 
+RelayFrame _metrics(String id, String token) => RelayFrame(
+  type: RelayFrameType.route,
+  serverId: 'S1',
+  requestId: id,
+  payload: <String, dynamic>{
+    'method': 'GET',
+    'path': '/api/v1/metrics',
+    'headers': <String, dynamic>{'Authorization': 'Bearer $token'},
+  },
+);
+
 void main() {
+  test(
+    'coalesces only matching authorization and survives first waiter removal',
+    () {
+      final RelayBroker broker = RelayBroker();
+      final _FakeSink agent = _FakeSink();
+      final _FakeSink first = _FakeSink();
+      final _FakeSink second = _FakeSink();
+      final _FakeSink otherToken = _FakeSink();
+      broker.registerServer('S1', agent);
+      for (final _FakeSink app in <_FakeSink>[first, second, otherToken]) {
+        broker.subscribeApp('S1', app);
+      }
+      broker.routeFromApp('S1', first, _metrics('first', 'token-a'));
+      broker.routeFromApp('S1', second, _metrics('second', 'token-a'));
+      broker.routeFromApp('S1', otherToken, _metrics('other', 'token-b'));
+      expect(agent.sent, hasLength(2));
+      expect(broker.pendingRequestCount, 3);
+      broker.unregisterApp(first);
+      broker.routeFromServer(
+        'S1',
+        agent,
+        _response(agent.sent.first.requestId!, 'snapshot'),
+      );
+      expect(first.sent, isEmpty);
+      expect(second.sent.single.requestId, 'second');
+      expect(otherToken.sent, isEmpty);
+      broker.unregisterServer('S1', agent);
+      expect(_status(otherToken.sent.single), 503);
+      expect(broker.pendingRequestCount, 0);
+      broker.registerServer('S1', agent);
+      broker.routeFromApp('S1', second, _metrics('next', 'token-a'));
+      expect(agent.sent, hasLength(3));
+      broker.unregisterApp(second);
+    },
+  );
+
   group('RelayBroker', () {
     test('rewrites broker request ID and restores the browser request ID', () {
       final RelayBroker broker = RelayBroker();

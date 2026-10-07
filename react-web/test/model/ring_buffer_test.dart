@@ -4,6 +4,33 @@ import 'package:test/test.dart';
 import 'package:react_web/model/ring_buffer.dart';
 
 void main() {
+  test('snapshots and extrema survive wraparound and duplicate values', () {
+    final RingBuffer buffer = RingBuffer(19);
+    final List<List<double>> snapshots = <List<double>>[];
+    final List<List<double>> expected = <List<double>>[];
+    final List<double> window = <double>[];
+    for (int i = 0; i < 300; i++) {
+      final double value = ((i * 17) % 23).toDouble();
+      window.add(value);
+      if (window.length > 19) window.removeAt(0);
+      buffer.add(value);
+      snapshots.add(buffer.snapshot());
+      expected.add(List<double>.of(window));
+      expect(
+        buffer.minimum,
+        window.reduce((double a, double b) => a < b ? a : b),
+      );
+      expect(
+        buffer.maximum,
+        window.reduce((double a, double b) => a > b ? a : b),
+      );
+    }
+    for (int i = 0; i < snapshots.length; i++) {
+      expect(snapshots[i], expected[i]);
+    }
+    expect(() => snapshots.last[0] = 100, throwsUnsupportedError);
+  });
+
   group('RingBuffer', () {
     test('capacity 3: adding 4 elements keeps newest 3', () {
       final RingBuffer buf = RingBuffer(3);

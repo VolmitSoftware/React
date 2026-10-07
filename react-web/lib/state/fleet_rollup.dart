@@ -99,7 +99,13 @@ class FleetRollup {
       AlertSeverity.warning: 0,
       AlertSeverity.info: 0,
     };
+    final Map<String, int> alertsByServer = <String, int>{};
     for (final FleetAlert a in openAlerts) {
+      alertsByServer.update(
+        a.serverId,
+        (int count) => count + 1,
+        ifAbsent: () => 1,
+      );
       alertCounts[a.severity] = (alertCounts[a.severity] ?? 0) + 1;
     }
 
@@ -147,9 +153,7 @@ class FleetRollup {
         health = FleetHealth.healthy;
       }
 
-      final int serverAlertCount = openAlerts
-          .where((FleetAlert a) => a.serverId == srv.id)
-          .length;
+      final int serverAlertCount = alertsByServer[srv.id] ?? 0;
 
       if (tps != null) {
         tpsSum += tps;

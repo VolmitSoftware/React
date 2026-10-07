@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as developer;
 
@@ -35,6 +36,9 @@ class FleetManager {
       <String, ConnectionManager>{};
   final Map<String, IReactClient> _clients = <String, IReactClient>{};
   String? _activeId;
+  bool _disposed = false;
+  int _generation = 0;
+  final Map<String, IReactClient> _pendingClients = <String, IReactClient>{};
 
   FleetManager({
     required this.storage,
@@ -74,17 +78,37 @@ class FleetManager {
   }
 
   Future<void> add(ServerCredential cred) async {
+    if (_disposed) throw const ReactUnavailable('Fleet closed');
+    if (_clients.containsKey(cred.id) || _pendingClients.containsKey(cred.id)) {
+      throw const ReactConflict('Server already exists');
+    }
+    final int generation = _generation;
     final IReactClient client = _resolveClient(cred);
-    await _verifyDirectFingerprint(cred, client);
-    final IdentityInfo identity = await client.identity();
-    final String verifiedName = identity.serverName.trim();
-    final ServerCredential verified = verifiedName.isEmpty
-        ? cred
-        : cred.copyWith(label: verifiedName);
-    _clients[verified.id] = client;
-    _servers.add(verified);
-    _managers[verified.id] = _buildManager(verified, client);
-    _persist();
+    _pendingClients[cred.id] = client;
+    try {
+      await _verifyDirectFingerprint(cred, client);
+      final IdentityInfo identity = await client.identity();
+      if (_disposed ||
+          generation != _generation ||
+          !identical(_pendingClients[cred.id], client)) {
+        throw const ReactUnavailable('Server connection cancelled');
+      }
+      final String verifiedName = identity.serverName.trim();
+      final ServerCredential verified = verifiedName.isEmpty
+          ? cred
+          : cred.copyWith(label: verifiedName);
+      _clients[verified.id] = client;
+      _servers.add(verified);
+      _managers[verified.id] = _buildManager(verified, client);
+      _persist();
+    } on Object {
+      await client.close();
+      rethrow;
+    } finally {
+      if (identical(_pendingClients[cred.id], client)) {
+        _pendingClients.remove(cred.id);
+      }
+    }
   }
 
   void rename(String id, String label) {
@@ -98,7 +122,8 @@ class FleetManager {
     _servers.removeWhere((ServerCredential c) => c.id == id);
     final ConnectionManager? manager = _managers.remove(id);
     manager?.dispose();
-    _clients.remove(id);
+    unawaited(_clients.remove(id)?.close());
+    unawaited(_pendingClients.remove(id)?.close());
     if (_activeId == id) _activeId = null;
     _persist();
   }
@@ -189,11 +214,22 @@ class FleetManager {
   }
 
   void dispose() {
+    if (_disposed) return;
+    _disposed = true;
     _disposeAll();
     _managers.clear();
+    _clients.clear();
   }
 
   void _disposeAll() {
+    _generation++;
+    for (final IReactClient client in <IReactClient>{
+      ..._clients.values,
+      ..._pendingClients.values,
+    }) {
+      unawaited(client.close());
+    }
+    _pendingClients.clear();
     for (final ConnectionManager manager in _managers.values) {
       manager.dispose();
     }
@@ -268,7 +304,6 @@ class FleetManager {
     }
     return ConnectionManager(
       client,
-      socket: createMetricsSocket(cred),
       socketFactory: () => createMetricsSocket(cred),
     );
   }

@@ -34,6 +34,9 @@ const ServerCredential _credential = ServerCredential(
 );
 
 class _StubReactClient implements IReactClient {
+  @override
+  Future<void> close() async {}
+
   final Completer<ServerSnapshot> _snapshot = Completer<ServerSnapshot>();
 
   @override

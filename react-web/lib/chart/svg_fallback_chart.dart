@@ -6,7 +6,7 @@ import 'package:jaspr/jaspr.dart';
 import '../localization/reactor_locale.dart';
 import '../localization/reactor_localizations.dart';
 
-class SvgFallbackChart extends StatelessComponent {
+class SvgFallbackChart extends StatefulComponent {
   const SvgFallbackChart({
     required this.series,
     this.height = 160,
@@ -33,10 +33,54 @@ class SvgFallbackChart extends StatelessComponent {
   final void Function(int?)? onSampleHover;
 
   @override
+  State<SvgFallbackChart> createState() => _SvgFallbackChartState();
+}
+
+class _SvgFallbackChartState extends State<SvgFallbackChart> {
+  List<(String, List<double>)> get series => component.series;
+  int get height => component.height;
+  Set<int> get hiddenSeries => component.hiddenSeries;
+  int? get activeSample => component.activeSample;
+  String Function(double)? get valueFormatter => component.valueFormatter;
+  List<String>? get sampleLabels => component.sampleLabels;
+  List<double>? get samplePositions => component.samplePositions;
+  Set<int> get breakBeforeSamples => component.breakBeforeSamples;
+  Set<int> get secondarySeries => component.secondarySeries;
+  void Function(int?)? get onSampleHover => component.onSampleHover;
+  (double, double)? _bounds;
+  List<Component>? _lines;
+  List<Component>? _targets;
+  ReactorLocaleScope? _locale;
+
+  @override
+  void didUpdateComponent(SvgFallbackChart oldComponent) {
+    super.didUpdateComponent(oldComponent);
+    if (oldComponent.series != series ||
+        oldComponent.hiddenSeries != hiddenSeries ||
+        oldComponent.samplePositions != samplePositions ||
+        oldComponent.breakBeforeSamples != breakBeforeSamples ||
+        oldComponent.secondarySeries != secondarySeries) {
+      _bounds = null;
+      _lines = null;
+      _targets = null;
+    }
+    if (oldComponent.sampleLabels != sampleLabels ||
+        oldComponent.valueFormatter != valueFormatter) {
+      _targets = null;
+    }
+  }
+
+  @override
   Component build(BuildContext context) {
-    dependOnReactorLocale(context);
-    final (double, double) bounds = _globalBounds();
-    final List<int> interactiveSamples = _interactiveSamples;
+    final ReactorLocaleScope? locale = dependOnReactorLocale(context);
+    if (!identical(locale, _locale)) {
+      _locale = locale;
+      _targets = null;
+    }
+    final (double, double) bounds = _bounds ??= _globalBounds();
+    final List<int> interactiveSamples = _targets == null
+        ? _interactiveSamples
+        : const <int>[];
     final String accessibleLabel = series.isEmpty
         ? reactorText(ReactorText.chartNoTimeSeriesData)
         : reactorText(ReactorText.chartTimeSeriesLabel, <String, Object?>{
@@ -62,27 +106,31 @@ class SvgFallbackChart extends StatelessComponent {
                 'vector-effect': 'non-scaling-stroke',
               },
             ),
-          ..._seriesLines(bounds),
+          ...(_lines ??= _seriesLines(bounds)),
           if (activeSample != null) _activeGuide(bounds, activeSample!),
-          for (final (int targetIndex, int index) in interactiveSamples.indexed)
-            rect(
-              const <Component>[],
-              x: '${targetIndex * (100 / interactiveSamples.length)}',
-              y: '0',
-              width: '${100 / interactiveSamples.length}',
-              height: '100',
-              classes: 'reactor-chart-hit-target',
-              attributes: <String, String>{
-                'tabindex': '0',
-                'aria-label': _sampleLabel(index),
-              },
-              events: <String, EventCallback>{
-                'mouseenter': (_) => onSampleHover?.call(index),
-                'focus': (_) => onSampleHover?.call(index),
-                'mouseleave': (_) => onSampleHover?.call(null),
-                'blur': (_) => onSampleHover?.call(null),
-              },
-            ),
+          ...(_targets ??= <Component>[
+            for (final (int targetIndex, int index)
+                in interactiveSamples.indexed)
+              rect(
+                const <Component>[],
+                key: ValueKey<int>(index),
+                x: '${targetIndex * (100 / interactiveSamples.length)}',
+                y: '0',
+                width: '${100 / interactiveSamples.length}',
+                height: '100',
+                classes: 'reactor-chart-hit-target',
+                attributes: <String, String>{
+                  'tabindex': '0',
+                  'aria-label': _sampleLabel(index),
+                },
+                events: <String, EventCallback>{
+                  'mouseenter': (_) => onSampleHover?.call(index),
+                  'focus': (_) => onSampleHover?.call(index),
+                  'mouseleave': (_) => onSampleHover?.call(null),
+                  'blur': (_) => onSampleHover?.call(null),
+                },
+              ),
+          ]),
         ],
         viewBox: '0 0 100 100',
         classes: 'reactor-chart-svg',

@@ -39,6 +39,7 @@ class RelayReactClient
   final IRelayConnection _connection;
   final ServerCredential _cred;
   final MonotonicCounter _counter;
+  bool _closed = false;
 
   RelayReactClient(
     IRelayConnection connection,
@@ -47,6 +48,13 @@ class RelayReactClient
   }) : _connection = connection,
        _cred = cred,
        _counter = counter ?? MonotonicCounter(InMemoryFleetStorage());
+
+  @override
+  Future<void> close() async {
+    if (_closed) return;
+    _closed = true;
+    await _connection.close();
+  }
 
   Map<String, String> _headers({required bool mutating}) => <String, String>{
     'Authorization': 'Bearer ${_cred.bearer}',
@@ -59,6 +67,7 @@ class RelayReactClient
     String path, {
     Map<String, Object?>? body,
   }) async {
+    if (_closed) throw const ReactUnavailable('Client closed');
     final bool mutating = method != 'GET';
     final RelayResponse response = await _connection.request(
       method: method,
@@ -66,6 +75,7 @@ class RelayReactClient
       headers: _headers(mutating: mutating),
       body: body == null ? null : jsonEncode(body),
     );
+    if (_closed) throw const ReactUnavailable('Client closed');
     switch (response.status) {
       case 200:
       case 202:

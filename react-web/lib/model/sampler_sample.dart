@@ -36,10 +36,17 @@ class SamplerSample {
     );
   }
 
-  SamplerSample withLiveHistory(List<double> values) {
-    double minimum = value;
-    double maximum = value;
-    for (final double sample in values) {
+  SamplerSample withLiveHistory(
+    List<double> values, {
+    double? minimumValue,
+    double? maximumValue,
+  }) {
+    double minimum = minimumValue ?? value;
+    double maximum = maximumValue ?? value;
+    for (final double sample
+        in minimumValue == null || maximumValue == null
+            ? values
+            : const <double>[]) {
       if (sample < minimum) minimum = sample;
       if (sample > maximum) maximum = sample;
     }

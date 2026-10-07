@@ -50,7 +50,7 @@ class _WebRelayConnection implements IRelayConnection {
           ).encode().toJS,
         );
         for (final RelayFrame frame in _outbound) {
-          socket.send(frame.encode().toJS);
+          if (_mux.isPending(frame.requestId)) socket.send(frame.encode().toJS);
         }
         _outbound.clear();
       }).toJS,
@@ -109,6 +109,9 @@ class _WebRelayConnection implements IRelayConnection {
       socket.send(frame.encode().toJS);
       return;
     }
+    _outbound.removeWhere(
+      (RelayFrame queued) => !_mux.isPending(queued.requestId),
+    );
     if (!_closed && _outbound.length < 64) {
       _outbound.add(frame);
     }

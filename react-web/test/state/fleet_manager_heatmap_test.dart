@@ -20,6 +20,8 @@ class _DualClient
         IPlayerClient,
         IPluginApiPackClient {
   @override
+  Future<void> close() async {}
+  @override
   Future<IdentityInfo> identity() async => IdentityInfo(
     serverName: 'Dual',
     version: '1.0.0',
@@ -80,6 +82,9 @@ class _DualClient
 }
 
 class _MetricsOnlyClient implements IReactClient {
+  @override
+  Future<void> close() async {}
+
   @override
   Future<IdentityInfo> identity() async => IdentityInfo(
     serverName: 'MetricsOnly',

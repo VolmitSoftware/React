@@ -21,6 +21,9 @@ import 'package:react_web/state/operate_scope.dart';
 
 class _FullOpClient implements IReactClient, IOperateClient {
   @override
+  Future<void> close() async {}
+
+  @override
   Future<IdentityInfo> identity() async => IdentityInfo(
     serverName: 'Full',
     version: '1.0.0',
@@ -63,6 +66,9 @@ class _FullOpClient implements IReactClient, IOperateClient {
 }
 
 class _MetricsOnlyClient implements IReactClient {
+  @override
+  Future<void> close() async {}
+
   @override
   Future<IdentityInfo> identity() async => IdentityInfo(
     serverName: 'MetricsOnly',

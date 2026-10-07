@@ -27,6 +27,45 @@ ServerSnapshot _makeSnapshot() => ServerSnapshot(
 );
 
 void main() {
+  test(
+    'a snapshot invalidates only its server and publishes without a paint',
+    () async {
+      final StreamController<ServerSnapshot> snapshots =
+          StreamController<ServerSnapshot>.broadcast(sync: true);
+      final FleetLiveModel model = FleetLiveModel(<FleetLiveSource>[
+        FleetLiveSource(
+          id: 'a',
+          name: 'A',
+          initialState: ConnState.live,
+          snapshots: snapshots.stream,
+          stateChanges: const Stream<ConnState>.empty(),
+        ),
+        const FleetLiveSource(
+          id: 'b',
+          name: 'B',
+          initialState: ConnState.live,
+          snapshots: Stream<ServerSnapshot>.empty(),
+          stateChanges: Stream<ConnState>.empty(),
+        ),
+      ]);
+      final FleetServerLive beforeA = model.server('a')!;
+      final FleetServerLive beforeB = model.server('b')!;
+      final List<String?> changes = <String?>[];
+      final StreamSubscription<String?> subscription = model.changes.listen(
+        changes.add,
+      );
+      final ServerSnapshot incoming = _makeSnapshot();
+      snapshots.add(incoming);
+      expect(changes, <String>['a']);
+      expect(identical(beforeB, model.server('b')), isTrue);
+      expect(identical(beforeA, model.server('a')), isFalse);
+      expect(model.server('a')!.snapshot, same(incoming));
+      await subscription.cancel();
+      model.dispose();
+      await snapshots.close();
+    },
+  );
+
   group('FleetLiveModel — initial state', () {
     test(
       'servers has correct length and all entries have null snapshot and null lastSeen',

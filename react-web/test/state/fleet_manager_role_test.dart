@@ -13,6 +13,9 @@ import 'package:react_web/state/memory_fleet_storage.dart';
 
 class _RoleCapableClient implements IReactClient, IRoleClient {
   @override
+  Future<void> close() async {}
+
+  @override
   Future<IdentityInfo> identity() async => IdentityInfo(
     serverName: 'RoleServer',
     version: '1.0.0',
@@ -31,6 +34,9 @@ class _RoleCapableClient implements IReactClient, IRoleClient {
 }
 
 class _MetricsOnlyClient implements IReactClient {
+  @override
+  Future<void> close() async {}
+
   @override
   Future<IdentityInfo> identity() async => IdentityInfo(
     serverName: 'MetricsOnly',

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 
 import '../service/react_client.dart';
 import '../service/react_log_socket.dart';
@@ -11,7 +12,10 @@ class LogController {
 
   static const int maxLines = 1000;
 
-  final List<String> _buffer = <String>[];
+  final ListQueue<String> _buffer = ListQueue<String>(maxLines);
+  List<String>? _visible;
+  Timer? _notifyTimer;
+  bool _disposed = false;
   bool _paused = false;
   String _levelFilter = 'ALL';
   bool _loading = false;
@@ -35,7 +39,9 @@ class LogController {
 
   bool get loading => _loading;
 
-  List<String> get visible {
+  List<String> get visible => _visible ??= _filterLines();
+
+  List<String> _filterLines() {
     if (_levelFilter == 'ALL') {
       return List<String>.unmodifiable(_buffer);
     }
@@ -45,18 +51,29 @@ class LogController {
         .toList();
   }
 
-  void _notify() => onChange?.call();
+  void _notify() {
+    _notifyTimer?.cancel();
+    _notifyTimer = null;
+    if (!_disposed) onChange?.call();
+  }
+
+  void _scheduleNotify() {
+    _notifyTimer ??= Timer(const Duration(milliseconds: 50), _notify);
+  }
 
   Future<void> load({int limit = 200}) async {
+    if (_disposed || _loading) return;
     _loading = true;
     _notify();
     try {
       final List<String> seeded = await _client.logs(limit: limit);
+      if (_disposed) return;
       _buffer.clear();
       _buffer.addAll(seeded);
+      _visible = null;
       _trimBuffer();
     } catch (e) {
-      onError?.call(e);
+      if (!_disposed) onError?.call(e);
     } finally {
       _loading = false;
       _notify();
@@ -75,16 +92,17 @@ class LogController {
       return;
     }
     _sub = socket.lines.listen((String line) {
-      if (_paused) return;
+      if (_paused || _disposed) return;
       _buffer.add(line);
+      _visible = null;
       _trimBuffer();
-      _notify();
+      _scheduleNotify();
     });
   }
 
   void _trimBuffer() {
     while (_buffer.length > maxLines) {
-      _buffer.removeAt(0);
+      _buffer.removeFirst();
     }
   }
 
@@ -95,15 +113,20 @@ class LogController {
 
   void clear() {
     _buffer.clear();
+    _visible = null;
     _notify();
   }
 
   void setLevelFilter(String level) {
     _levelFilter = level;
+    _visible = null;
     _notify();
   }
 
   void dispose() {
+    _disposed = true;
+    _notifyTimer?.cancel();
+    _notifyTimer = null;
     _pollTimer?.cancel();
     _pollTimer = null;
     _sub?.cancel();

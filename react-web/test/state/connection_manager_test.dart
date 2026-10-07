@@ -71,6 +71,33 @@ Future<void> pump([int count = 20]) async {
 // ---------------------------------------------------------------------------
 
 void main() {
+  test(
+    'restart ignores a previous generation request and removes retired metrics',
+    () async {
+      final Completer<ServerSnapshot> oldRequest = Completer<ServerSnapshot>();
+      final ServerSnapshot current = _makeSnapshot(seq: 2, cpuValue: 40);
+      final _FakeMetricsClient client = _FakeMetricsClient(<Object>[
+        oldRequest.future,
+        current,
+      ]);
+      final ConnectionManager manager = ConnectionManager(
+        client,
+        pollInterval: const Duration(hours: 1),
+      );
+      final List<ServerSnapshot> received = <ServerSnapshot>[];
+      manager.snapshots.listen(received.add);
+      manager.start();
+      manager.stop();
+      manager.start();
+      await pump();
+      oldRequest.complete(_makeSnapshot(seq: 1, cpuValue: 99));
+      await pump();
+      expect(received.map((ServerSnapshot snapshot) => snapshot.seq), <int>[2]);
+      expect(manager.samplerHistory('cpu'), <double>[40]);
+      manager.dispose();
+    },
+  );
+
   group('ConnectionManager — initial state', () {
     test('starts in connecting state before start() is called', () {
       final ConnectionManager manager = ConnectionManager(

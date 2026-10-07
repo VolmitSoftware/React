@@ -1,5 +1,7 @@
 library;
 
+import 'dart:async';
+
 import 'package:test/test.dart';
 
 import 'package:react_web/model/identity_info.dart';
@@ -7,10 +9,19 @@ import 'package:react_web/model/server_credential.dart';
 import 'package:react_web/model/server_snapshot.dart';
 import 'package:react_web/service/happy_eyeballs_client.dart';
 import 'package:react_web/service/react_client.dart';
+import 'package:react_web/service/react_exceptions.dart';
 import 'package:react_web/state/fleet_manager.dart';
 import 'package:react_web/state/memory_fleet_storage.dart';
 
 class _FakeClient implements IReactClient {
+  @override
+  Future<void> close() async {
+    closed = true;
+  }
+
+  bool closed = false;
+  Completer<IdentityInfo>? pendingIdentity;
+
   final String serverId;
   int identityCallCount = 0;
 
@@ -19,6 +30,7 @@ class _FakeClient implements IReactClient {
   @override
   Future<IdentityInfo> identity() async {
     identityCallCount++;
+    if (pendingIdentity != null) return pendingIdentity!.future;
     return IdentityInfo(
       serverName: 'Fake',
       version: '1.0',
@@ -48,6 +60,38 @@ ServerCredential _cred({
 );
 
 void main() {
+  test(
+    'remove cancels pending pairing and cannot resurrect its client',
+    () async {
+      final _FakeClient client = _FakeClient();
+      final Completer<IdentityInfo> identity = Completer<IdentityInfo>();
+      client.pendingIdentity = identity;
+      final FleetManager fleet = FleetManager(
+        storage: InMemoryFleetStorage(),
+        clientFactory: (_) => client,
+      );
+      final Future<void> rejected = expectLater(
+        fleet.add(_cred(id: 'removed')),
+        throwsA(isA<ReactUnavailable>()),
+      );
+      await Future<void>.delayed(Duration.zero);
+      fleet.remove('removed');
+      expect(client.closed, isTrue);
+      identity.complete(
+        const IdentityInfo(
+          serverName: 'Test',
+          version: '1',
+          folia: false,
+          serverId: 'server',
+        ),
+      );
+      await rejected;
+      expect(fleet.servers, isEmpty);
+      expect(fleet.resolvedClientFor('removed'), isNull);
+      fleet.dispose();
+    },
+  );
+
   group('FleetManager relay transport', () {
     test(
       '(1) credential with relayUrl + fingerprint + relayClientFactory '

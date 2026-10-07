@@ -3,6 +3,7 @@ library;
 import 'package:arcane_jaspr/arcane_jaspr.dart';
 import 'package:arcane_jaspr_shadcn/arcane_jaspr_shadcn.dart';
 import 'package:jaspr_test/server_test.dart';
+import 'package:jaspr/jaspr.dart' show Component, DomComponent;
 
 import 'package:react_web/model/heatmap.dart';
 import 'package:react_web/widget/heatmap_grid_view.dart';
@@ -53,6 +54,40 @@ const HeatmapCell _sample = HeatmapCell(
 );
 
 void main() {
+  testComponents(
+    'selection preserves untouched cells and updates both selection states',
+    (ComponentTester tester) async {
+      tester.pumpComponent(
+        _wrap(
+          HeatmapGridView(grid: _grid(cells: const <HeatmapCell>[_sample])),
+        ),
+      );
+      Finder cell(int x, int z) => find.byComponentPredicate(
+        (Component component) =>
+            component is DomComponent &&
+            component.attributes?['role'] == 'gridcell' &&
+            component.attributes?['data-cx'] == '$x' &&
+            component.attributes?['data-cz'] == '$z',
+      );
+      final Component unchanged = cell(-1, -1).evaluate().single.component;
+      await tester.click(cell(1, 1));
+      expect(
+        identical(cell(-1, -1).evaluate().single.component, unchanged),
+        isTrue,
+      );
+      expect(
+        (cell(0, 0).evaluate().single.component as DomComponent)
+            .attributes?['aria-selected'],
+        'false',
+      );
+      expect(
+        (cell(1, 1).evaluate().single.component as DomComponent)
+            .attributes?['aria-selected'],
+        'true',
+      );
+    },
+  );
+
   group('HeatmapGridView', () {
     testServer('renders a literal north-up coordinate plane from grid cells', (
       ServerTester tester,

@@ -7,6 +7,60 @@ import 'package:react_web/chart/timeseries_chart.dart';
 
 void main() {
   group('SvgFallbackChart', () {
+    testComponents(
+      'hover preserves geometry and updated samples invalidate it',
+      (ComponentTester tester) async {
+        List<(String, List<double>)> series = <(String, List<double>)>[
+          ('TPS', <double>[10, 15, 20]),
+        ];
+        late void Function(void Function()) rebuild;
+        tester.pumpComponent(
+          StatefulBuilder(
+            builder:
+                (
+                  BuildContext context,
+                  void Function(void Function()) setState,
+                ) {
+                  rebuild = setState;
+                  return TimeseriesChart(series: series);
+                },
+          ),
+        );
+        final Component original = find
+            .tag('polyline')
+            .evaluate()
+            .single
+            .component;
+        tester.dispatchEvent(
+          find.byComponentPredicate(
+            (Component component) =>
+                component is DomComponent &&
+                component.tag == 'rect' &&
+                (component.attributes?['aria-label']?.startsWith('Sample 2:') ??
+                    false),
+          ),
+          'mouseenter',
+        );
+        await tester.pump();
+        expect(
+          identical(find.tag('polyline').evaluate().single.component, original),
+          isTrue,
+        );
+        expect(find.text('15.00'), findsOneComponent);
+        rebuild(
+          () => series = <(String, List<double>)>[
+            ('TPS', <double>[20, 10, 15]),
+          ],
+        );
+        await tester.pump();
+        expect(
+          identical(find.tag('polyline').evaluate().single.component, original),
+          isFalse,
+        );
+        expect(find.text('10.00'), findsOneComponent);
+      },
+    );
+
     testComponents('renders a polyline element for a 5-element series', (
       ComponentTester tester,
     ) async {

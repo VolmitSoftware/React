@@ -25,7 +25,9 @@ class _ServerEntry {
   ServerSnapshot? snapshot;
   DateTime? lastSeen;
   final String id;
-  final String name;
+  String name;
+  late FleetLiveSource source;
+  FleetServerLive? cached;
   StreamSubscription<ServerSnapshot>? snapshotSub;
   StreamSubscription<ConnState>? stateSub;
 
@@ -38,24 +40,45 @@ class FleetLiveModel {
   final List<String> _order = <String>[];
   final Map<String, _ServerEntry> _entries = <String, _ServerEntry>{};
   bool _disposed = false;
+  List<FleetServerLive>? _cachedServers;
+  final StreamController<String?> _changes =
+      StreamController<String?>.broadcast(sync: true);
+
+  Stream<String?> get changes => _changes.stream;
+
+  FleetServerLive? server(String id) {
+    final _ServerEntry? entry = _entries[id];
+    if (entry == null) return null;
+    return entry.cached ??= FleetServerLive(
+      id: entry.id,
+      name: entry.name,
+      state: entry.state,
+      snapshot: entry.snapshot,
+      lastSeen: entry.lastSeen,
+    );
+  }
+
+  void _changed(String? id) {
+    _cachedServers = null;
+    if (id != null) _entries[id]?.cached = null;
+    if (!_disposed) {
+      _changes.add(id);
+      onChange?.call();
+    }
+  }
 
   FleetLiveModel(List<FleetLiveSource> sources, {this.onChange}) {
     _subscribe(sources);
   }
 
   List<FleetServerLive> get servers =>
-      _order.where((String id) => _entries.containsKey(id)).map((String id) {
-        final _ServerEntry e = _entries[id]!;
-        return FleetServerLive(
-          id: e.id,
-          name: e.name,
-          state: e.state,
-          snapshot: e.snapshot,
-          lastSeen: e.lastSeen,
-        );
-      }).toList();
+      _cachedServers ??= List<FleetServerLive>.unmodifiable(<FleetServerLive>[
+        for (final String id in _order)
+          if (_entries.containsKey(id)) server(id)!,
+      ]);
 
   void update(List<FleetLiveSource> sources) {
+    if (_disposed) return;
     final Set<String> newIds = sources.map((FleetLiveSource s) => s.id).toSet();
     bool changed = false;
 
@@ -76,7 +99,26 @@ class FleetLiveModel {
     }
 
     for (final FleetLiveSource source in sources) {
-      if (!_entries.containsKey(source.id)) {
+      final _ServerEntry? existing = _entries[source.id];
+      if (existing != null) {
+        if (existing.name != source.name) {
+          existing.name = source.name;
+          existing.cached = null;
+          changed = true;
+        }
+        if (existing.source.snapshots != source.snapshots ||
+            existing.source.stateChanges != source.stateChanges) {
+          existing.snapshotSub?.cancel();
+          existing.stateSub?.cancel();
+          existing.state = source.initialState;
+          existing.snapshot = null;
+          existing.lastSeen = null;
+          existing.cached = null;
+          _attachSource(source, existing);
+          changed = true;
+        }
+      }
+      if (existing == null) {
         changed = true;
         final _ServerEntry entry = _ServerEntry(
           id: source.id,
@@ -90,7 +132,7 @@ class FleetLiveModel {
     }
 
     if (!_disposed && changed) {
-      onChange?.call();
+      _changed(null);
     }
   }
 
@@ -102,6 +144,8 @@ class FleetLiveModel {
     }
     _entries.clear();
     _order.clear();
+    _cachedServers = null;
+    _changes.close();
   }
 
   void _subscribe(List<FleetLiveSource> sources) {
@@ -118,17 +162,26 @@ class FleetLiveModel {
   }
 
   void _attachSource(FleetLiveSource source, _ServerEntry entry) {
+    entry.source = source;
     entry.snapshotSub = source.snapshots.listen((ServerSnapshot snap) {
-      if (_disposed) return;
+      if (_disposed ||
+          !identical(_entries[source.id], entry) ||
+          !identical(entry.source, source)) {
+        return;
+      }
       entry.snapshot = snap;
       entry.lastSeen = DateTime.now();
-      onChange?.call();
+      _changed(source.id);
     });
 
     entry.stateSub = source.stateChanges.listen((ConnState state) {
-      if (_disposed) return;
+      if (_disposed ||
+          !identical(_entries[source.id], entry) ||
+          !identical(entry.source, source)) {
+        return;
+      }
       entry.state = state;
-      onChange?.call();
+      _changed(source.id);
     });
   }
 }

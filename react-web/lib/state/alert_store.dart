@@ -104,6 +104,21 @@ class AlertStore {
     return open;
   }
 
+  Set<String> detectNewCriticalForServer(
+    String serverId,
+    List<FleetAlert> live,
+  ) {
+    final String prefix = '$serverId/';
+    final Set<String> current = <String>{
+      for (final FleetAlert alert in live)
+        if (alert.severity == AlertSeverity.critical) alert.key,
+    };
+    final Set<String> added = current.difference(_previousCriticalKeys);
+    _previousCriticalKeys.removeWhere((String key) => key.startsWith(prefix));
+    _previousCriticalKeys.addAll(current);
+    return added;
+  }
+
   Set<String> detectNewCritical(List<FleetAlert> live) {
     final Set<String> currentCritical = <String>{};
     for (final FleetAlert a in live) {

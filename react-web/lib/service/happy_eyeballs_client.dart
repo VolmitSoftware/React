@@ -38,6 +38,8 @@ class HappyEyeballsClient
   final IReactClient? _relay;
   final String? _pinnedFingerprint;
   RelayPath _active;
+  bool _closed = false;
+  Future<IReactClient>? _resolving;
 
   HappyEyeballsClient({
     IReactClient? direct,
@@ -52,6 +54,17 @@ class HappyEyeballsClient
     }
   }
 
+  @override
+  Future<void> close() async {
+    if (_closed) return;
+    _closed = true;
+    _active = RelayPath.none;
+    await Future.wait<void>(<Future<void>>[
+      if (_direct != null) _direct.close(),
+      if (_relay != null && !identical(_relay, _direct)) _relay.close(),
+    ]);
+  }
+
   RelayPath get activePath => _active;
 
   void _markStale() {
@@ -59,6 +72,19 @@ class HappyEyeballsClient
   }
 
   Future<IReactClient> _resolve() async {
+    if (_closed) throw const ReactUnavailable('Client closed');
+    final Future<IReactClient>? resolving = _resolving;
+    if (resolving != null) return resolving;
+    final Future<IReactClient> pending = _resolvePath();
+    _resolving = pending;
+    try {
+      return await pending;
+    } finally {
+      if (identical(_resolving, pending)) _resolving = null;
+    }
+  }
+
+  Future<IReactClient> _resolvePath() async {
     if (_active != RelayPath.none) {
       final IReactClient? cached = _active == RelayPath.direct
           ? _direct
@@ -105,6 +131,7 @@ class HappyEyeballsClient
           identityServerId: observedFingerprint,
         )) {
           await client.identity();
+          if (_closed) throw const ReactUnavailable('Client closed');
           outstanding--;
           if (!winner.isCompleted) {
             _active = path;
@@ -140,7 +167,10 @@ class HappyEyeballsClient
   ) async {
     final IReactClient client = await _resolve();
     try {
-      return await operation(client);
+      if (_closed) throw const ReactUnavailable('Client closed');
+      final T result = await operation(client);
+      if (_closed) throw const ReactUnavailable('Client closed');
+      return result;
     } on ReactUnavailable {
       _markStale();
       rethrow;

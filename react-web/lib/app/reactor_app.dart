@@ -15,6 +15,7 @@ import '../localization/reactor_localizations.dart';
 import '../localization/reactor_overlay_loader.dart';
 import '../model/sampler_sample.dart';
 import '../model/server_snapshot.dart';
+import '../state/paint_scheduler.dart';
 import '../screen/actions.dart';
 import '../screen/add_server.dart';
 import '../screen/alerts_inbox.dart';
@@ -472,6 +473,7 @@ class LiveServerScope extends StatefulWidget {
 }
 
 class _LiveServerScopeState extends State<LiveServerScope> {
+  late PaintScheduler _paint;
   ServerSnapshot? _snapshot;
   late ConnState _state;
   StreamSubscription<ServerSnapshot>? _snapshotSub;
@@ -480,6 +482,9 @@ class _LiveServerScopeState extends State<LiveServerScope> {
   @override
   void initState() {
     super.initState();
+    _paint = PaintScheduler(() {
+      if (mounted) setState(() {});
+    });
     _bind(component.manager);
   }
 
@@ -494,14 +499,16 @@ class _LiveServerScopeState extends State<LiveServerScope> {
 
   void _bind(ConnectionManager manager) {
     _state = manager.state;
-    _snapshot = null;
+    _snapshot = manager.latestSnapshot;
     _snapshotSub = manager.snapshots.listen((ServerSnapshot snap) {
-      if (!mounted) return;
-      setState(() => _snapshot = snap);
+      if (!mounted || !identical(manager, component.manager)) return;
+      _snapshot = snap;
+      _paint.schedule();
     });
     _stateSub = manager.stateChanges.listen((ConnState next) {
-      if (!mounted) return;
-      setState(() => _state = next);
+      if (!mounted || !identical(manager, component.manager)) return;
+      _state = next;
+      _paint.schedule();
     });
   }
 
@@ -514,6 +521,7 @@ class _LiveServerScopeState extends State<LiveServerScope> {
 
   @override
   void dispose() {
+    _paint.dispose();
     _unbind();
     super.dispose();
   }

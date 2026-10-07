@@ -16,6 +16,7 @@ import '../service/react_client.dart';
 import '../state/server_scope.dart';
 import '../ui/reactor_ui.dart';
 import '../widget/server_snapshot_state.dart';
+import '../widget/row_window.dart';
 
 class MetricsExplorerScreen extends StatefulWidget {
   const MetricsExplorerScreen({super.key});
@@ -45,6 +46,12 @@ class _MetricsExplorerScreenState extends State<MetricsExplorerScreen> {
   String? _historyError;
   int _catalogGeneration = 0;
   int _queryGeneration = 0;
+  List<MetricHistoryPoint>? _chartPoints;
+  ReactorLocaleScope? _chartLocale;
+  Widget? _chart;
+  final Map<(String, String), (DateTime, List<MetricHistoryPoint>, Duration?)>
+  _historyCache =
+      <(String, String), (DateTime, List<MetricHistoryPoint>, Duration?)>{};
 
   @override
   Widget build(BuildContext context) {
@@ -128,7 +135,11 @@ class _MetricsExplorerScreenState extends State<MetricsExplorerScreen> {
                 icon: ArcaneIcon.searchX(size: IconSize.sm),
               )
             else
-              _metricTable(filtered),
+              RowWindow<_MetricRow>(
+                key: ValueKey<String>(normalizedQuery),
+                rows: filtered,
+                builder: _metricTable,
+              ),
           ],
         ),
       ],
@@ -226,37 +237,47 @@ class _MetricsExplorerScreenState extends State<MetricsExplorerScreen> {
               ),
             ]),
         ]),
-        TimeseriesChart(
-          series: <(String, List<double>)>[
-            (
-              reactorText(ReactorText.metricsAverage),
-              _points.map((MetricHistoryPoint point) => point.average).toList(),
-            ),
-            (
-              reactorText(ReactorText.metricsMinimum),
-              _points.map((MetricHistoryPoint point) => point.minimum).toList(),
-            ),
-            (
-              reactorText(ReactorText.metricsMaximum),
-              _points.map((MetricHistoryPoint point) => point.maximum).toList(),
-            ),
-            (
-              reactorText(ReactorText.metricsLast),
-              _points.map((MetricHistoryPoint point) => point.last).toList(),
-            ),
-          ],
-          sampleLabels: _points
-              .map((MetricHistoryPoint point) => _formatTimestamp(point.at))
-              .toList(),
-          sampleTimestamps: _points
-              .map((MetricHistoryPoint point) => point.at)
-              .toList(growable: false),
-          secondarySeries: const <int>{1, 2},
-          valueFormatter: (double value) => _format(value, suffix),
-          height: 260,
-        ),
+        _historyChart(suffix),
       ],
     ]);
+  }
+
+  Widget _historyChart(String suffix) {
+    final ReactorLocaleScope? locale = dependOnReactorLocale(context);
+    if (!identical(_chartPoints, _points) || !identical(_chartLocale, locale)) {
+      _chartPoints = _points;
+      _chartLocale = locale;
+      _chart = TimeseriesChart(
+        series: <(String, List<double>)>[
+          (
+            reactorText(ReactorText.metricsAverage),
+            _points.map((MetricHistoryPoint point) => point.average).toList(),
+          ),
+          (
+            reactorText(ReactorText.metricsMinimum),
+            _points.map((MetricHistoryPoint point) => point.minimum).toList(),
+          ),
+          (
+            reactorText(ReactorText.metricsMaximum),
+            _points.map((MetricHistoryPoint point) => point.maximum).toList(),
+          ),
+          (
+            reactorText(ReactorText.metricsLast),
+            _points.map((MetricHistoryPoint point) => point.last).toList(),
+          ),
+        ],
+        sampleLabels: _points
+            .map((MetricHistoryPoint point) => _formatTimestamp(point.at))
+            .toList(),
+        sampleTimestamps: _points
+            .map((MetricHistoryPoint point) => point.at)
+            .toList(growable: false),
+        secondarySeries: const <int>{1, 2},
+        valueFormatter: (double value) => _format(value, suffix),
+        height: 260,
+      );
+    }
+    return _chart!;
   }
 
   Widget _metricTable(List<_MetricRow> rows) {
@@ -341,6 +362,7 @@ class _MetricsExplorerScreenState extends State<MetricsExplorerScreen> {
   void _bindHistoryClient(IHistoryClient? client) {
     if (identical(client, _historyClient)) return;
     _historyClient = client;
+    _historyCache.clear();
     _catalog = <MetricHistoryDescriptor>[];
     _points = <MetricHistoryPoint>[];
     _selectedId = null;
@@ -402,6 +424,19 @@ class _MetricsExplorerScreenState extends State<MetricsExplorerScreen> {
     final IHistoryClient? client = _historyClient;
     if (client == null) return;
     final int generation = ++_queryGeneration;
+    final (String, String) cacheKey = (id, _range);
+    final (DateTime, List<MetricHistoryPoint>, Duration?)? cached =
+        _historyCache[cacheKey];
+    if (cached != null &&
+        DateTime.now().difference(cached.$1) < const Duration(seconds: 30)) {
+      setState(() {
+        _points = cached.$2;
+        _resolution = cached.$3;
+        _loadingHistory = false;
+        _historyError = null;
+      });
+      return;
+    }
     final DateTime to = DateTime.now().add(const Duration(milliseconds: 1));
     final Duration? range = _ranges[_range];
     final MetricHistoryDescriptor? descriptor = _descriptor(id);
@@ -440,6 +475,10 @@ class _MetricsExplorerScreenState extends State<MetricsExplorerScreen> {
             left.at.compareTo(right.at),
       );
       if (!mounted || generation != _queryGeneration) return;
+      if (_historyCache.length >= 8) {
+        _historyCache.remove(_historyCache.keys.first);
+      }
+      _historyCache[cacheKey] = (DateTime.now(), points, resolution);
       setState(() {
         _points = points;
         _resolution = resolution;

@@ -17,6 +17,9 @@ import 'package:react_web/state/connection_manager.dart';
 import 'package:react_web/state/fleet_manager.dart';
 
 class _SuccessClient implements IReactClient, IPingClient {
+  @override
+  Future<void> close() async {}
+
   final String serverFingerprint;
   final Object? pingFailure;
   int identityCallCount = 0;
@@ -53,6 +56,9 @@ class _SuccessClient implements IReactClient, IPingClient {
 }
 
 class _FailClient implements IReactClient, IPingClient {
+  @override
+  Future<void> close() async {}
+
   @override
   Future<IdentityInfo> identity() async =>
       throw Exception('connection refused');

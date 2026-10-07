@@ -38,6 +38,51 @@ class _FakeLogSocket implements ILogSocket {
 }
 
 void main() {
+  test(
+    'batches a burst while retaining bounded ordered lines and filter results',
+    () async {
+      final _FakeLogSocket socket = _FakeLogSocket();
+      int notifications = 0;
+      final LogController controller = LogController(
+        _FakeLogClient(),
+        socket: socket,
+        onChange: () => notifications++,
+      );
+      controller.start();
+      for (int index = 0; index < 1200; index++) {
+        socket.add('[INFO] $index');
+      }
+      await Future<void>.delayed(Duration.zero);
+      expect(controller.visible.length, LogController.maxLines);
+      expect(controller.visible.first, '[INFO] 200');
+      expect(controller.visible.last, '[INFO] 1199');
+      expect(notifications, 0);
+      await Future<void>.delayed(const Duration(milliseconds: 70));
+      expect(notifications, 1);
+      final List<String> cached = controller.visible;
+      expect(identical(controller.visible, cached), isTrue);
+      controller.setLevelFilter('ERROR');
+      expect(controller.visible, isEmpty);
+      controller.dispose();
+    },
+  );
+
+  test('disposing cancels scheduled rendering', () async {
+    final _FakeLogSocket socket = _FakeLogSocket();
+    int notifications = 0;
+    final LogController controller = LogController(
+      _FakeLogClient(),
+      socket: socket,
+      onChange: () => notifications++,
+    );
+    controller.start();
+    socket.add('[INFO] last');
+    await Future<void>.delayed(Duration.zero);
+    controller.dispose();
+    await Future<void>.delayed(const Duration(milliseconds: 70));
+    expect(notifications, 0);
+  });
+
   group('LogController.load', () {
     test(
       'seeds buffer from client.logs and visible matches seeded list',
