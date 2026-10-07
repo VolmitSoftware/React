@@ -24,6 +24,10 @@ import java.util.logging.Level;
 
 public final class GameplayObserver extends JavaPlugin implements Listener {
     private ComparisonFixture comparison;
+    private PerformanceFixture performance;
+    private ProfileCaptureFixture profiles;
+    private AsyncPrewarmFixture prewarm;
+    private DistanceBudgetFixture distance;
     private long breaks;
     private long placements;
     private long moves;
@@ -37,6 +41,10 @@ public final class GameplayObserver extends JavaPlugin implements Listener {
             }
             Bukkit.getPluginManager().registerEvents(this, this);
             comparison = new ComparisonFixture(this);
+            performance = new PerformanceFixture(this);
+            profiles = new ProfileCaptureFixture(this);
+            prewarm = new AsyncPrewarmFixture(this);
+            distance = new DistanceBudgetFixture(this);
         } catch (Exception failure) {
             getLogger().log(Level.SEVERE, "Gameplay observer refused startup", failure);
             Bukkit.getPluginManager().disablePlugin(this);
@@ -46,6 +54,10 @@ public final class GameplayObserver extends JavaPlugin implements Listener {
     @Override
     public void onDisable() {
         if (comparison != null) comparison.close();
+        if (performance != null) performance.close();
+        if (profiles != null) profiles.close();
+        if (prewarm != null) prewarm.close();
+        if (distance != null) distance.close();
     }
 
     private boolean actor(Player player) {
@@ -70,6 +82,10 @@ public final class GameplayObserver extends JavaPlugin implements Listener {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player player) || !player.isOp()) return false;
+        if (args.length > 1 && args[0].equals("prewarm")) return prewarm.execute(player, args);
+        if (args.length > 1 && args[0].equals("distance")) return distance.execute(player, args);
+        if (args.length > 1 && args[0].equals("profile")) return profiles.execute(player, args);
+        if (args.length > 1 && args[0].equals("performance")) return performance.execute(player, args);
         if (args.length > 1 && args[0].equals("comparison")) return comparison.execute(player, args);
         if (args.length != 1 || !args[0].matches("[a-z0-9]+")) return false;
         Map<String, Object> snapshot = new LinkedHashMap<>();

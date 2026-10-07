@@ -11,6 +11,7 @@ import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,12 +19,22 @@ import java.util.NavigableMap;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Stream;
+import java.util.function.Supplier;
 
 public final class HistoryStore {
+  private static final long QUERY_CACHE_BYTES = 16L * 1024L * 1024L;
+  private static final int QUERY_CACHE_ENTRIES = 128;
+
   private final Path root;
   private final EnumMap<HistoryTier, ConcurrentSkipListMap<Long, Path>> filesByTier;
   private final ConcurrentHashMap<String, MetricDescriptor> descriptors;
+  private final ReentrantReadWriteLock fileLock = new ReentrantReadWriteLock();
+  private final Map<QuerySegmentKey, CachedSegment> queryCache = new LinkedHashMap<>(16, 0.75F, true);
+  private final Map<Path, Integer> queryReaders = new HashMap<>();
+  private final Set<Path> pendingDeletes = new HashSet<>();
+  private long queryCacheBytes;
   private volatile int compressionLevel;
 
   public HistoryStore(Path root, int compressionLevel) {
@@ -41,6 +52,10 @@ public final class HistoryStore {
   }
 
   public void initialize() throws IOException {
+    synchronized (queryCache) {
+      queryCache.clear();
+      queryCacheBytes = 0L;
+    }
     Files.createDirectories(root);
     for (HistoryTier tier : HistoryTier.values()) {
       Path directory = directory(tier);
@@ -78,17 +93,48 @@ public final class HistoryStore {
 
   public void write(HistorySegment segment) throws IOException {
     Path target = segmentPath(segment.tier(), segment.startMs());
-    HistorySegmentCodec.write(target, segment, compressionLevel);
-    filesByTier.get(segment.tier()).put(segment.startMs(), target);
+    fileLock.writeLock().lock();
+    try {
+      HistorySegmentCodec.write(target, segment, compressionLevel);
+      pendingDeletes.remove(target);
+      invalidateCached(target);
+      filesByTier.get(segment.tier()).put(segment.startMs(), target);
+    } finally {
+      fileLock.writeLock().unlock();
+    }
     mergeDescriptors(segment, false);
   }
 
   public HistorySegment read(HistoryTier tier, long startMs, Set<String> ids) throws IOException {
-    Path path = filesByTier.get(tier).get(startMs);
-    return path == null ? null : HistorySegmentCodec.read(path, ids);
+    fileLock.readLock().lock();
+    try {
+      Path path = filesByTier.get(tier).get(startMs);
+      return path == null ? null : HistorySegmentCodec.read(path, ids);
+    } finally {
+      fileLock.readLock().unlock();
+    }
+  }
+
+  QueryView openQuery(long fromMs, long toMs, Supplier<Map<String, List<HistoryPoint>>> activeSource) {
+    fileLock.writeLock().lock();
+    try {
+      Map<String, List<HistoryPoint>> active = activeSource.get();
+      EnumMap<HistoryTier, List<Map.Entry<Long, Path>>> files = new EnumMap<>(HistoryTier.class);
+      for (HistoryTier tier : HistoryTier.values()) {
+        List<Map.Entry<Long, Path>> candidates = overlapping(tier, fromMs, toMs);
+        files.put(tier, candidates);
+        for (Map.Entry<Long, Path> candidate : candidates) {
+          queryReaders.merge(candidate.getValue(), 1, Integer::sum);
+        }
+      }
+      return new QueryView(files, active);
+    } finally {
+      fileLock.writeLock().unlock();
+    }
   }
 
   Map<String, List<HistoryPoint>> points(
+      QueryView view,
       HistoryTier tier,
       Set<String> ids,
       long fromMs,
@@ -98,9 +144,14 @@ public final class HistoryStore {
     if (ids.isEmpty() || toMs <= fromMs) {
       return points;
     }
-    List<Map.Entry<Long, Path>> candidates = overlapping(tier, fromMs, toMs);
-    for (Map.Entry<Long, Path> candidate : candidates) {
-      HistorySegment segment = HistorySegmentCodec.read(candidate.getValue(), ids);
+    if (view.closed) {
+      throw new IllegalStateException("History query view is closed");
+    }
+    for (Map.Entry<Long, Path> candidate : view.files.get(tier)) {
+      if (candidate.getKey() >= toMs || candidate.getKey() + tier.segmentDurationMs() <= fromMs) {
+        continue;
+      }
+      HistorySegment segment = querySegment(candidate.getValue(), ids);
       int fromIndex = (int) Math.max(0L, Math.floorDiv(fromMs - segment.startMs(), tier.intervalMs()));
       int toIndex = (int) Math.min(
           segment.bucketCount(),
@@ -129,6 +180,14 @@ public final class HistoryStore {
   }
 
   public int prune(long nowMs, Map<HistoryTier, Long> retentionByTier) throws IOException {
+    fileLock.writeLock().lock();
+    try {
+      for (Path path : List.copyOf(pendingDeletes)) {
+        deleteUnpinned(path);
+      }
+    } finally {
+      fileLock.writeLock().unlock();
+    }
     int removed = 0;
     HistoryTier[] tiers = HistoryTier.values();
     for (int tierIndex = 0; tierIndex < tiers.length - 1; tierIndex++) {
@@ -149,9 +208,17 @@ public final class HistoryStore {
         if (!filesByTier.get(target).containsKey(targetStart)) {
           continue;
         }
-        if (Files.deleteIfExists(entry.getValue())) {
-          filesByTier.get(source).remove(entry.getKey(), entry.getValue());
+        fileLock.writeLock().lock();
+        try {
+          Path path = entry.getValue();
+          if (!filesByTier.get(source).remove(entry.getKey(), path)) {
+            continue;
+          }
+          pendingDeletes.add(path);
+          deleteUnpinned(path);
           removed++;
+        } finally {
+          fileLock.writeLock().unlock();
         }
       }
     }
@@ -207,13 +274,108 @@ public final class HistoryStore {
   }
 
   public long diskBytes() throws IOException {
-    long total = Files.exists(walPath()) ? Files.size(walPath()) : 0L;
-    for (HistoryTier tier : HistoryTier.values()) {
-      for (Path path : filesByTier.get(tier).values()) {
+    fileLock.readLock().lock();
+    try {
+      long total = Files.exists(walPath()) ? Files.size(walPath()) : 0L;
+      for (HistoryTier tier : HistoryTier.values()) {
+        for (Path path : filesByTier.get(tier).values()) {
+          total += Files.size(path);
+        }
+      }
+      for (Path path : pendingDeletes) {
         total += Files.size(path);
       }
+      return total;
+    } finally {
+      fileLock.readLock().unlock();
     }
-    return total;
+  }
+
+  private void deleteUnpinned(Path path) throws IOException {
+    if (queryReaders.containsKey(path) || !pendingDeletes.contains(path)) {
+      return;
+    }
+    Files.deleteIfExists(path);
+    invalidateCached(path);
+    pendingDeletes.remove(path);
+  }
+
+  private void closeQuery(QueryView view) throws IOException {
+    fileLock.writeLock().lock();
+    try {
+      if (view.closed) {
+        return;
+      }
+      view.closed = true;
+      IOException failure = null;
+      for (List<Map.Entry<Long, Path>> files : view.files.values()) {
+        for (Map.Entry<Long, Path> entry : files) {
+          Path path = entry.getValue();
+          int remaining = queryReaders.get(path) - 1;
+          if (remaining > 0) {
+            queryReaders.put(path, remaining);
+            continue;
+          }
+          queryReaders.remove(path);
+          try {
+            deleteUnpinned(path);
+          } catch (IOException deletionFailure) {
+            if (failure == null) {
+              failure = deletionFailure;
+            } else {
+              failure.addSuppressed(deletionFailure);
+            }
+          }
+        }
+      }
+      if (failure != null) {
+        throw failure;
+      }
+    } finally {
+      fileLock.writeLock().unlock();
+    }
+  }
+
+  private HistorySegment querySegment(Path path, Set<String> ids) throws IOException {
+    fileLock.readLock().lock();
+    try {
+      QuerySegmentKey key = new QuerySegmentKey(path, Set.copyOf(ids));
+      synchronized (queryCache) {
+        CachedSegment cached = queryCache.get(key);
+        if (cached != null) {
+          return cached.segment();
+        }
+      }
+      HistorySegment segment = HistorySegmentCodec.read(path, ids);
+      long bytes = 256L + (long) segment.series().size() * (256L + 48L * segment.bucketCount());
+      if (bytes <= QUERY_CACHE_BYTES) {
+        synchronized (queryCache) {
+          CachedSegment previous = queryCache.put(key, new CachedSegment(segment, bytes));
+          queryCacheBytes += bytes - (previous == null ? 0L : previous.bytes());
+          Iterator<CachedSegment> oldest = queryCache.values().iterator();
+          while (queryCacheBytes > QUERY_CACHE_BYTES || queryCache.size() > QUERY_CACHE_ENTRIES) {
+            queryCacheBytes -= oldest.next().bytes();
+            oldest.remove();
+          }
+        }
+      }
+      return segment;
+    } finally {
+      fileLock.readLock().unlock();
+    }
+  }
+
+  private void invalidateCached(Path path) {
+    synchronized (queryCache) {
+      Iterator<Map.Entry<QuerySegmentKey, CachedSegment>> entries = queryCache.entrySet().iterator();
+      while (entries.hasNext()) {
+        Map.Entry<QuerySegmentKey, CachedSegment> entry = entries.next();
+        if (entry.getKey().path().equals(path)) {
+          queryCacheBytes -= entry.getValue().bytes();
+          entries.remove();
+        }
+      }
+    }
   }
 
   private void compact(HistoryTier source, HistoryTier target, long nowMs) throws IOException {
@@ -365,4 +527,28 @@ public final class HistoryStore {
   private Path segmentPath(HistoryTier tier, long startMs) {
     return directory(tier).resolve(startMs + ".rht");
   }
+  final class QueryView implements AutoCloseable {
+    private final EnumMap<HistoryTier, List<Map.Entry<Long, Path>>> files;
+    private final Map<String, List<HistoryPoint>> activePoints;
+    private boolean closed;
+
+    private QueryView(EnumMap<HistoryTier, List<Map.Entry<Long, Path>>> files, Map<String, List<HistoryPoint>> activePoints) {
+      this.files = files;
+      this.activePoints = activePoints;
+    }
+
+    Map<String, List<HistoryPoint>> activePoints() {
+      return activePoints;
+    }
+
+    @Override
+    public void close() throws IOException {
+      closeQuery(this);
+    }
+  }
+
+  private record QuerySegmentKey(Path path, Set<String> ids) {}
+
+  private record CachedSegment(HistorySegment segment, long bytes) {}
+
 }

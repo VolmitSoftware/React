@@ -29,6 +29,7 @@ import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.plugin.IController;
 import art.arcane.react.util.project.value.MaterialValue;
 import art.arcane.react.util.project.world.EntityKiller;
+import art.arcane.react.util.project.world.NearbyEntitySampler;
 import art.arcane.react.util.project.world.WorldEntitySnapshots;
 import art.arcane.volmlib.util.scheduling.FoliaScheduler;
 import art.arcane.volmlib.util.scheduling.Looper;
@@ -61,7 +62,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -77,6 +77,7 @@ public class EntityController implements IController, Listener {
   private static final int INITIAL_RECONCILE_ENTITIES_PER_TICK = 256;
 
   private int perWorldUpdatesPerTick = 15;
+  private transient final NearbyEntitySampler nearbyEntitySampler = new NearbyEntitySampler();
   private transient final AtomicBoolean entityScanQueued = new AtomicBoolean(false);
   private transient final AtomicBoolean foliaPlayerSnapshotQueued = new AtomicBoolean(false);
   private transient final AtomicInteger nextFoliaPlayer = new AtomicInteger(0);
@@ -145,6 +146,7 @@ public class EntityController implements IController, Listener {
   @Override
   public void start() {
     lifecycleGeneration.incrementAndGet();
+    nearbyEntitySampler.clear();
     entityScanQueued.set(false);
     foliaPlayerSnapshotQueued.set(false);
     foliaScanFlight.set(null);
@@ -312,11 +314,13 @@ public class EntityController implements IController, Listener {
   @EventHandler
   public void on(PlayerQuitEvent event) {
     foliaPlayerSnapshotAtMS = 0L;
+    nearbyEntitySampler.forget(event.getPlayer().getUniqueId());
   }
 
   @Override
   public void stop() {
     lifecycleGeneration.incrementAndGet();
+    nearbyEntitySampler.clear();
     entityScanQueued.set(false);
     foliaPlayerSnapshotQueued.set(false);
     foliaPlayers = new Player[0];
@@ -473,12 +477,14 @@ public class EntityController implements IController, Listener {
         return;
       }
 
-      List<Entity> nearby = player.getNearbyEntities(48, 32, 48);
+      List<Entity> nearby = nearbyEntitySampler.sample(
+          player, new NearbyEntitySampler.Request("entity", 48D, 32D, 1)
+      );
       if (nearby == null || nearby.isEmpty()) {
         return;
       }
 
-      Entity sampled = nearby.get(ThreadLocalRandom.current().nextInt(nearby.size()));
+      Entity sampled = nearby.getFirst();
       if (sampled != null
           && J.isOwnedByCurrentRegion(sampled)
           && flight.isCurrent(lifecycleGeneration.get())) {

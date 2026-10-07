@@ -180,12 +180,13 @@
 #   {world}  Minecraft pasaulio pavadinimas
 
 [command.description]
+"action.capture_profile" = "Įrašyti vietinį JDK Flight Recorder profilį jo nesiunčiant"
 debugdump = "Sukurti diagnostikos ataskaitą ir pasirinktinai ją įkelti"
 action = "Veiklos priemonės, skirtos sušvelninti, išvalyti ir operacinei diagnostikai"
 "action.audit" = "Sąrašas visų registruotų veiksmų, įjungta būsena, ir dabartinis elgesio santrauka"
 "action.collect_garbage" = "Prašymas JVM šiukšlių surinkimas ir pranešimas apie nedelsiant susigrąžintą krūvą"
 "action.hopper_network_normalize" = "Normalizuoti piltuvas šilumos taškus suderinant artimiems perdavimo elementams"
-"action.incident_playbook" = "Sukeisti visą incidentų padarinių mažinimo veiksmų seką"
+"action.incident_playbook" = "Taikyti tinkamas incidento mažinimo priemones po vieną, kol apkrova išlieka didelė"
 "action.prewarm_critical_chunks" = "Išankstinis įkrovimas kritinių pasaulio segmentai ir kaimynų"
 "action.purge_chunks" = "Bandymas atsisiųsti pasaulio segmentai pasirinktoje svetainėje"
 "action.purge_entities" = "Išbraukti atitinkamus objektus pasirinktoje pasaulio ir pasaulio segmentas spinduliuose"
@@ -235,7 +236,8 @@ language = "Pasirinkite savo arba serverio kalbą"
 debugdump_upload = "Įkelti ataskaitą į mclo.gs"
 
 [command.parameter.action]
-include_gc = "Ar įtraukti šiukšlių surinkimo žingsnį"
+profile_seconds = "Įrašymo trukmė sekundėmis, nuo 1 iki 300"
+include_gc = "Leisti atminties šiukšlių surinkimą, kai krūvos apkrova ir atlaisvinamos atminties kiekis yra dideli"
 max_chunks = "Maksimalus šio veiksmo taikomų pasaulio segmentai skaičius"
 max_entities = "Šiame veiksme gali būti naudojami maksimalūs elementai"
 min_age_seconds = "Minimalus amžius sekundėmis iki subjektų tinkamumo"
@@ -375,7 +377,7 @@ reclaimed = "Laisva {freed} ({before} -> {after}) {duration}"
 completed = "Normalizėtais {hoppers} piltuvai, susijungtomis {items} elementų entitetomis ir iškraunama {chunks} pasaulio segmentai {duration}"
 
 [action.incident_playbook]
-completed = "Grojaraščių pakopos {tier} eilėje {actions} poveikio mažinimo veiksmai {duration}"
+completed = "{tier} lygio veiksmų planas atliko {actions} apkrovos mažinimo veiksmus per {duration}"
 
 [action.prewarm_chunks]
 completed = "Iš anksto užgrėstas {warmed} pasaulio segmentai ({loaded} naujai įkrovtas) {duration}"
@@ -4562,3 +4564,57 @@ open = "Atidaryti: {url}"
 open-description = "Atidaryti įkeltą diagnostikos ataskaitą."
 copy-path = "Kopijuoti vietinį kelią"
 copy-path-description = "Kopijuoti vietinį ataskaitos kelią."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumincidentscore]
+summary = "Incidento balas, kurio reikia apkrovos mažinimui tęsti."
+impact = "Planas tęsiamas pasiekus šį balą arba minimumTickMS."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumtickms]
+summary = "Vidutinė tiko trukmė milisekundėmis, kurios reikia apkrovos mažinimui tęsti."
+impact = "Planas sustabdomas, kai abu apkrovos rodikliai nukrenta žemiau savo slenksčių."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumentitiesperchunk]
+summary = "Viename chunke stebimų esybių skaičius, kurio reikia prieš jų mažinimą."
+impact = "Didesnės reikšmės apriboja mažinimą iki tankesnių esybių sankaupų."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.recheckdelayms]
+summary = "Stebėjimo intervalas užbaigus antrinį veiksmą, milisekundėmis; mažiausiai 1000."
+impact = "Leidžia atnaujinti rodiklius prieš pasirenkant kitą priemonę."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.childtimeoutms]
+summary = "Didžiausia vieno apkrovos mažinimo etapo trukmė milisekundėmis; mažiausiai 1000."
+impact = "Pasibaigus antrinio veiksmo laikui, planas laikomas nepavykusiu ir tolesnės priemonės netaikomos."
+
+[config.documentation.annotation.art.arcane.react.content.action.actiontrimentitiesbyagepriority_params.field.minimumentitiesperchunk]
+summary = "Mažiausias chunke stebimų esybių skaičius prieš mažinimą; nulis apima visus stebimus chunkus."
+impact = "Teigiama reikšmė apriboja mažinimą iki tankiai užpildytų chunkų."
+
+[action.capture_profile]
+completed = "Į {path} įrašytas {count} vietinis profilis"
+
+[config.documentation.annotation.art.arcane.react.content.action.actioncaptureprofile]
+description = "Pagal užklausą įrašo vietinį JDK Flight Recorder profilį su vykdymo, atminties skyrimo ir GC įvykiais. Saugo tris įrašus ir niekada jų nesiunčia."
+
+[config.documentation.annotation.art.arcane.react.content.action.actioncaptureprofile_params.field.seconds]
+summary = "Profilio trukmė sekundėmis, apribota nuo 1 iki 300."
+impact = "Ilgesni įrašai apima daugiau veiklos; JFR saugo ne daugiau kaip 64 MiB naujausių duomenų."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.playerchunkbudgetenabled]
+summary = "Įjungia žaidėjų chunk biudžetus kiekvienam pasauliui; persidengimai skaičiuojami vieną kartą."
+impact = "Pagal numatytąsias nuostatas išjungta. Biudžetai gali sumažinti esamus tikslinius atstumus, o atkūrimas vyksta palaipsniui."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.playertickingchunkbudget]
+summary = "Didžiausias numatomas žaidėjams simuliuojamų chunk skaičius pasaulyje; mažiausiai 1."
+impact = "Persidengiančios simuliacijos sritys skaičiuojamos vieną kartą. Jei biudžetas nepasiekiamas, pirmenybė teikiama nustatytiems minimaliems atstumams."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.playerviewonlychunkbudget]
+summary = "Didžiausias numatomas tik matomų chunk skaičius pasaulyje; mažiausiai 1."
+impact = "Skaičiuoja matomą sritį už simuliacijos ribų. Numato žaidėjų poreikį, o ne įkeltus chunk ar įskiepių bilietus."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.budgetrecoverychecks]
+summary = "Nuoseklių sveikų biudžeto vertinimų skaičius prieš didinant atstumą; mažiausiai 1."
+impact = "Vertinimai vyksta pagal updateCooldownSeconds. Nežinoma tikų telemetrija arba neparengtas žaidėjų indeksas iš naujo nustato atkūrimą."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.budgetrecoverystep]
+summary = "Didžiausias atstumo padidėjimas atkūrus biudžetą, chunk vienetais; apribotas nuo 1 iki 32."
+impact = "Mažesni žingsniai riboja įkėlimo šuolius atkūrimo metu. Taikoma tik įjungus žaidėjų chunk biudžetus."

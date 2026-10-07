@@ -57,11 +57,13 @@ public final class CommandMessages {
   public static final TextKey ACTION_PURGE_ENTITIES_DESCRIPTION = TextKey.of("command.description.action.purge_entities", "Remove matching entities in the selected world and chunk radius");
   public static final TextKey ACTION_PURGE_CHUNKS_DESCRIPTION = TextKey.of("command.description.action.purge_chunks", "Attempt to unload chunks in the selected world");
   public static final TextKey ACTION_COLLECT_GARBAGE_DESCRIPTION = TextKey.of("command.description.action.collect_garbage", "Request JVM garbage collection and report immediate reclaimed heap");
+  public static final TextKey ACTION_CAPTURE_PROFILE_DESCRIPTION = TextKey.of("command.description.action.capture_profile", "Save a local JDK Flight Recorder profile without uploading it");
+  public static final TextKey ACTION_PROFILE_SECONDS_PARAM = TextKey.of("command.parameter.action.profile_seconds", "Capture duration in seconds, from 1 to 300");
   public static final TextKey ACTION_QUARANTINE_DESCRIPTION = TextKey.of("command.description.action.quarantine_hot_chunks", "Temporarily isolate the hottest sampled chunks");
   public static final TextKey ACTION_TRIM_DESCRIPTION = TextKey.of("command.description.action.trim_entities", "Trim old low-priority entities with safety guards");
   public static final TextKey ACTION_HOPPER_DESCRIPTION = TextKey.of("command.description.action.hopper_network_normalize", "Normalize hopper hotspots by merging nearby transfer items");
   public static final TextKey ACTION_PREWARM_DESCRIPTION = TextKey.of("command.description.action.prewarm_critical_chunks", "Preload the most critical sampled chunks and neighbors");
-  public static final TextKey ACTION_PLAYBOOK_DESCRIPTION = TextKey.of("command.description.action.incident_playbook", "Queue a full lag-incident mitigation action sequence");
+  public static final TextKey ACTION_PLAYBOOK_DESCRIPTION = TextKey.of("command.description.action.incident_playbook", "Run relevant incident mitigations one at a time while pressure remains");
   public static final TextKey ACTION_AUDIT_DESCRIPTION = TextKey.of("command.description.action.audit", "List all registered actions, enabled state, and current behavior summary");
   public static final TextKey ACTION_RADIUS_PARAM = TextKey.of("command.parameter.action.radius", "Chunk radius around you; zero uses all chunks");
   public static final TextKey ACTION_WORLD_PARAM = TextKey.of("command.parameter.action.world", "World targeted by this action");
@@ -71,7 +73,7 @@ public final class CommandMessages {
   public static final TextKey ACTION_MIN_AGE_PARAM = TextKey.of("command.parameter.action.min_age_seconds", "Minimum age in seconds before entities are eligible");
   public static final TextKey ACTION_MIN_HOPPER_UPDATES_PARAM = TextKey.of("command.parameter.action.min_hopper_updates", "Minimum hopper updates per chunk to be considered hot");
   public static final TextKey ACTION_NEIGHBOR_RADIUS_PARAM = TextKey.of("command.parameter.action.neighbor_radius", "Neighbor radius around each critical chunk");
-  public static final TextKey ACTION_INCLUDE_GC_PARAM = TextKey.of("command.parameter.action.include_gc", "Whether to include a garbage collection step");
+  public static final TextKey ACTION_INCLUDE_GC_PARAM = TextKey.of("command.parameter.action.include_gc", "Allow garbage collection when heap pressure and reclaimable garbage are high");
   public static final TextKey ACTION_TIER_PARAM = TextKey.of("command.parameter.action.tier", "Force tier: -1 auto, 0 mild, 1 medium, 2 severe");
   public static final TextKey DEV_DESCRIPTION = TextKey.of("command.description.dev", "Developer-only React validation and diagnostics");
   public static final TextKey DEV_TEST_ALL_DESCRIPTION = TextKey.of("command.description.dev.test_all", "Audit React state, then queue the direct action suite one step at a time in your current world");
@@ -209,6 +211,8 @@ public final class CommandMessages {
     builder.add(ACTION_PURGE_ENTITIES_DESCRIPTION);
     builder.add(ACTION_PURGE_CHUNKS_DESCRIPTION);
     builder.add(ACTION_COLLECT_GARBAGE_DESCRIPTION);
+    builder.add(ACTION_CAPTURE_PROFILE_DESCRIPTION);
+    builder.add(ACTION_PROFILE_SECONDS_PARAM);
     builder.add(ACTION_QUARANTINE_DESCRIPTION);
     builder.add(ACTION_TRIM_DESCRIPTION);
     builder.add(ACTION_HOPPER_DESCRIPTION);

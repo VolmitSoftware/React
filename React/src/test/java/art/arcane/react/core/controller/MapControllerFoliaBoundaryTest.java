@@ -23,6 +23,8 @@ import org.mockito.Mockito;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -260,6 +262,93 @@ class MapControllerFoliaBoundaryTest {
       retirement.get().run();
       Assertions.assertFalse(atomicBoolean(first, "pushDispatchInFlight").get());
       Assertions.assertTrue(longField(first, "nextPushDispatchMs") <= System.currentTimeMillis());
+    } finally {
+      controller.stop();
+    }
+  }
+
+  @Test
+  void coalescesFramesIntoOneGlobalDispatchAndOneOwnerTaskPerViewer() throws ReflectiveOperationException {
+    MapController controller = startedController(false);
+    UUID worldId = UUID.randomUUID();
+    UUID playerId = UUID.randomUUID();
+    World world = world(worldId);
+    ItemFrame frame = frame(world, new Location(world, 0D, 64D, 0D));
+    Player player = player(world, playerId);
+    NearbyPlayerIndexController playerIndex = playerIndex(worldId, playerId, Set.of());
+    List<Runnable> globalTasks = new ArrayList<>();
+    List<Runnable> playerTasks = new ArrayList<>();
+    MapView first = Mockito.mock(MapView.class);
+    MapView replacement = Mockito.mock(MapView.class);
+    MapView second = Mockito.mock(MapView.class);
+    try (MockedStatic<React> react = Mockito.mockStatic(React.class);
+         MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class);
+         MockedStatic<FoliaScheduler> folia = Mockito.mockStatic(FoliaScheduler.class);
+         MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
+      react.when(() -> React.controller(NearbyPlayerIndexController.class)).thenReturn(playerIndex);
+      bukkit.when(() -> Bukkit.getPlayer(playerId)).thenReturn(player);
+      folia.when(() -> FoliaScheduler.runGlobal(Mockito.eq(plugin), Mockito.any(Runnable.class)))
+          .thenAnswer(invocation -> { globalTasks.add(invocation.getArgument(1)); return true; });
+      scheduling.when(() -> J.runEntity(Mockito.eq(player), Mockito.any(Runnable.class)))
+          .thenAnswer(invocation -> { playerTasks.add(invocation.getArgument(1)); return true; });
+      scheduling.when(() -> J.isOwnedByCurrentRegion(player)).thenReturn(true);
+      invokeRegionLocalPush(controller, frame, first, 41);
+      invokeRegionLocalPush(controller, frame, replacement, 41);
+      invokeRegionLocalPush(controller, frame, second, 42);
+      Assertions.assertEquals(1, globalTasks.size());
+      Mockito.verifyNoInteractions(player);
+      globalTasks.getFirst().run();
+      Assertions.assertEquals(1, playerTasks.size());
+      Mockito.verifyNoInteractions(player);
+      playerTasks.getFirst().run();
+      Mockito.verify(player, Mockito.never()).sendMap(first);
+      Mockito.verify(player).sendMap(replacement);
+      Mockito.verify(player).sendMap(second);
+    } finally {
+      controller.stop();
+    }
+  }
+
+  @Test
+  void frameDispatchBoundsEachViewerBatchAndRetriesARejectedGlobalSchedule() throws ReflectiveOperationException {
+    MapController controller = startedController(false);
+    UUID worldId = UUID.randomUUID();
+    UUID playerId = UUID.randomUUID();
+    World world = world(worldId);
+    ItemFrame frame = frame(world, new Location(world, 0D, 64D, 0D));
+    Player player = player(world, playerId);
+    NearbyPlayerIndexController playerIndex = playerIndex(worldId, playerId, Set.of());
+    List<Runnable> globalTasks = new ArrayList<>();
+    List<Runnable> playerTasks = new ArrayList<>();
+    AtomicBoolean reject = new AtomicBoolean(true);
+    try (MockedStatic<React> react = Mockito.mockStatic(React.class);
+         MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class);
+         MockedStatic<FoliaScheduler> folia = Mockito.mockStatic(FoliaScheduler.class);
+         MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
+      react.when(() -> React.controller(NearbyPlayerIndexController.class)).thenReturn(playerIndex);
+      bukkit.when(() -> Bukkit.getPlayer(playerId)).thenReturn(player);
+      folia.when(() -> FoliaScheduler.runGlobal(Mockito.eq(plugin), Mockito.any(Runnable.class)))
+          .thenAnswer(invocation -> {
+            if (reject.getAndSet(false)) { return false; }
+            globalTasks.add(invocation.getArgument(1));
+            return true;
+          });
+      scheduling.when(() -> J.runEntity(Mockito.eq(player), Mockito.any(Runnable.class)))
+          .thenAnswer(invocation -> { playerTasks.add(invocation.getArgument(1)); return true; });
+      scheduling.when(() -> J.isOwnedByCurrentRegion(player)).thenReturn(true);
+      for (int index = 0; index < 33; index++) {
+        invokeRegionLocalPush(controller, frame, Mockito.mock(MapView.class), index);
+      }
+      Assertions.assertEquals(1, globalTasks.size());
+      globalTasks.getFirst().run();
+      Assertions.assertEquals(2, globalTasks.size());
+      Assertions.assertEquals(1, playerTasks.size());
+      playerTasks.getFirst().run();
+      Mockito.verify(player, Mockito.times(32)).sendMap(Mockito.any(MapView.class));
+      globalTasks.get(1).run();
+      Assertions.assertEquals(2, playerTasks.size());
+      playerTasks.get(1).run();
+      Mockito.verify(player, Mockito.times(33)).sendMap(Mockito.any(MapView.class));
     } finally {
       controller.stop();
     }

@@ -101,6 +101,8 @@ public class HistoryController implements IController {
   private transient volatile int availableSamplerCount;
   private transient volatile int unavailableSamplerCount;
   private transient volatile int failedSamplerCount;
+  private transient List<Sampler> orderedSamplers = List.of();
+  private transient Map<String, Sampler> samplerIdentities = new HashMap<>();
 
   public HistoryController() {
     latestSnapshot = new AtomicReference<>(MetricSnapshot.empty());
@@ -133,6 +135,8 @@ public class HistoryController implements IController {
     lastWriteDurationNanos.set(0L);
     lastSuccessfulPersistMs.set(0L);
     samplerFailureLogMs.clear();
+    orderedSamplers = List.of();
+    samplerIdentities.clear();
     storageOperational = false;
     stopping = false;
     storageFailure = null;
@@ -259,9 +263,7 @@ public class HistoryController implements IController {
           .toList();
       return new HistoryQueryResult(fromMs, toMs, resolutionMs, throughSequence, throughMs, empty);
     }
-    synchronized (activeSegmentLock) {
-      return engine.query(ids, fromMs, toMs, resolutionMs, throughSequence, throughMs);
-    }
+    return engine.query(ids, fromMs, toMs, resolutionMs, throughSequence, throughMs);
   }
 
   public int effectiveMaxQuerySeries() {
@@ -433,8 +435,7 @@ public class HistoryController implements IController {
   MetricSnapshot captureSnapshot(Collection<Sampler> registered, long capturedAtMs) {
     long currentSequence = sequence.incrementAndGet();
     boolean observed = capturedAtMs - lastObservedMs <= OBSERVER_WINDOW_MS;
-    List<Sampler> samplers = new ArrayList<>(registered);
-    samplers.sort(Comparator.comparing(Sampler::getId));
+    List<Sampler> samplers = orderedSamplers(registered);
     List<MetricSnapshotValue> values = new ArrayList<>(samplers.size());
     int availableCount = 0;
     int unavailableCount = 0;
@@ -480,6 +481,29 @@ public class HistoryController implements IController {
     unavailableSamplerCount = unavailableCount;
     failedSamplerCount = failureCount;
     return MetricSnapshot.of(currentSequence, capturedAtMs, values);
+  }
+
+  private List<Sampler> orderedSamplers(Collection<Sampler> registered) {
+    boolean changed = registered.size() != samplerIdentities.size();
+    if (!changed) {
+      for (Sampler sampler : registered) {
+        if (samplerIdentities.get(sampler.getId()) != sampler) {
+          changed = true;
+          break;
+        }
+      }
+    }
+    if (changed) {
+      List<Sampler> updated = new ArrayList<>(registered);
+      updated.sort(Comparator.comparing(Sampler::getId));
+      Map<String, Sampler> identities = new HashMap<>(updated.size());
+      for (Sampler sampler : updated) {
+        identities.put(sampler.getId(), sampler);
+      }
+      samplerIdentities = identities;
+      orderedSamplers = List.copyOf(updated);
+    }
+    return orderedSamplers;
   }
 
   private boolean enqueue(MetricSnapshot snapshot) {
@@ -531,23 +555,29 @@ public class HistoryController implements IController {
     store.compressionLevel(effectiveCompressionLevel());
     long bucketTimestamp = rawBucket(snapshot.capturedAtMs());
     long segmentStart = HistoryTier.RAW.segmentStart(bucketTimestamp);
-    synchronized (activeSegmentLock) {
-      if (activeSegment == null || activeSegment.startMs() != segmentStart) {
-        sealActive(store);
-        localWal.reset();
-        activeSegment = store.contains(HistoryTier.RAW, segmentStart)
-            ? store.read(HistoryTier.RAW, segmentStart, null)
-            : newRawSegment(segmentStart);
-        store.compactAll(bucketTimestamp);
-        store.prune(bucketTimestamp, retentionByTier());
+    boolean rotated = activeSegment == null || activeSegment.startMs() != segmentStart;
+    if (rotated) {
+      sealActive(store);
+      localWal.reset();
+      HistorySegment next = store.contains(HistoryTier.RAW, segmentStart)
+          ? store.read(HistoryTier.RAW, segmentStart, null)
+          : newRawSegment(segmentStart);
+      synchronized (activeSegmentLock) {
+        activeSegment = next;
       }
-      localWal.append(snapshot);
+    }
+    localWal.append(snapshot);
+    synchronized (activeSegmentLock) {
       int bucketIndex = rawBucketIndex(segmentStart, bucketTimestamp);
       for (MetricSnapshotValue value : snapshot.values()) {
         if (value.available() && Double.isFinite(value.value())) {
           activeSegment.series(value.id(), value.name(), value.suffix()).set(bucketIndex, value.value());
         }
       }
+    }
+    if (rotated) {
+      store.compactAll(bucketTimestamp);
+      store.prune(bucketTimestamp, retentionByTier());
     }
     if (snapshot.capturedAtMs() - lastWalForceMs >= effectiveWalForceIntervalMs()) {
       localWal.force();
@@ -593,13 +623,11 @@ public class HistoryController implements IController {
       if (localWal != null) {
         localWal.force();
       }
-      synchronized (activeSegmentLock) {
-        if (store != null) {
-          sealActive(store);
-        }
-        if (localWal != null) {
-          localWal.reset();
-        }
+      if (store != null) {
+        sealActive(store);
+      }
+      if (localWal != null) {
+        localWal.reset();
       }
     } catch (Throwable failure) {
       React.reportError("Failed to flush React metric history during shutdown", failure);
@@ -622,12 +650,16 @@ public class HistoryController implements IController {
   }
 
   private void sealActive(HistoryStore store) throws IOException {
-    if (activeSegment == null || activeSegment.series().isEmpty()) {
-      activeSegment = null;
-      return;
+    HistorySegment sealing;
+    synchronized (activeSegmentLock) {
+      sealing = activeSegment;
     }
-    store.write(activeSegment);
-    activeSegment = null;
+    if (sealing != null && !sealing.series().isEmpty()) {
+      store.write(sealing);
+    }
+    synchronized (activeSegmentLock) {
+      activeSegment = null;
+    }
   }
 
   private HistorySegment newRawSegment(long startMs) {

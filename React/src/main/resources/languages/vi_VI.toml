@@ -180,12 +180,13 @@
 #   {world}  Tên thế giới Minecraft
 
 [command.description]
+"action.capture_profile" = "Lưu hồ sơ JDK Flight Recorder cục bộ mà không tải lên"
 debugdump = "Tạo báo cáo chẩn đoán và tải lên nếu muốn"
 action = "Tiện ích hành động để giảm thiểu, làm sạch và chẩn đoán hoạt động"
 "action.audit" = "Liệt kê tất cả các hành động đã đăng ký, trạng thái được bật và tóm tắt hành vi hiện thời"
 "action.collect_garbage" = "Yêu cầu JVM Thu thập rác và báo cáo đống được cải tạo ngay lập tức"
 "action.hopper_network_normalize" = "Tiêu chuẩn các điểm nóng phễu bằng cách hợp nhất các mục chuyển tiếp gần đó"
-"action.incident_playbook" = "Hàng đợi một chuỗi hành động giảm dần đầy đủ"
+"action.incident_playbook" = "Thực hiện lần lượt các biện pháp phù hợp khi áp lực vẫn còn"
 "action.prewarm_critical_chunks" = "Sắp tải trước các các chunk và hàng xóm đo trọng nhất"
 "action.purge_chunks" = "Cố gắng tải xuống các chunk trong thế giới được chọn"
 "action.purge_entities" = "Xóa các thực thể phù hợp trong thế giới và bán kính chunk được chọn"
@@ -235,7 +236,8 @@ language = "Chọn ngôn ngữ của bạn hoặc của máy chủ"
 debugdump_upload = "Tải báo cáo lên mclo.gs"
 
 [command.parameter.action]
-include_gc = "Có nên thêm một bước thu thập rác không"
+profile_seconds = "Thời gian ghi tính bằng giây, từ 1 đến 300"
+include_gc = "Cho phép thu gom rác khi áp lực bộ nhớ heap và lượng bộ nhớ có thể thu hồi đều cao"
 max_chunks = "Số lượng các chunk tối đa được nhắm mục tiêu bởi hành động này"
 max_entities = "Thực thể tối đa cần cắt giảm trong hành động này"
 min_age_seconds = "Tuổi tối thiểu trong giây trước khi thực thể đủ điều kiện"
@@ -375,7 +377,7 @@ reclaimed = "Tự do {freed} ({before} -> {after}) trong {duration}"
 completed = "{hoppers} các phễu bình thường, các thực thể mục {items} hợp nhất và {chunks} các chunk được tải xuống trong {duration}"
 
 [action.incident_playbook]
-completed = "Bộ thắt dây sách chơi {tier} hàng đợi {actions} Hành động giảm dần vào {duration}"
+completed = "Kịch bản cấp {tier} đã hoàn tất {actions} biện pháp giảm tải trong {duration}"
 
 [action.prewarm_chunks]
 completed = "{warmed} prewarmed các chunk ({loaded} mới tải) trong {duration}"
@@ -4562,3 +4564,57 @@ open = "Mở: {url}"
 open-description = "Mở báo cáo chẩn đoán đã tải lên."
 copy-path = "Sao chép đường dẫn cục bộ"
 copy-path-description = "Sao chép đường dẫn cục bộ của báo cáo."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumincidentscore]
+summary = "Điểm sự cố cần đạt để tiếp tục giảm tải."
+impact = "Kịch bản tiếp tục khi đạt điểm này hoặc minimumTickMS."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumtickms]
+summary = "Thời gian tick trung bình tính bằng mili giây cần đạt để tiếp tục giảm tải."
+impact = "Kịch bản dừng khi cả hai chỉ số áp lực đều thấp hơn ngưỡng tương ứng."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumentitiesperchunk]
+summary = "Số thực thể quan sát được trong một chunk cần có trước bước cắt giảm thực thể."
+impact = "Giá trị cao hơn giới hạn việc cắt giảm ở các cụm thực thể dày đặc hơn."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.recheckdelayms]
+summary = "Khoảng theo dõi sau khi một hành động con hoàn tất, tính bằng mili giây; tối thiểu 1000."
+impact = "Cho phép làm mới số liệu trước khi chọn biện pháp tiếp theo."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.childtimeoutms]
+summary = "Thời gian tối đa của một bước giảm tải, tính bằng mili giây; tối thiểu 1000."
+impact = "Hành động con hết thời gian khiến kịch bản thất bại và dừng tăng cường biện pháp."
+
+[config.documentation.annotation.art.arcane.react.content.action.actiontrimentitiesbyagepriority_params.field.minimumentitiesperchunk]
+summary = "Số thực thể tối thiểu quan sát được trong một chunk trước khi cắt giảm; 0 bao gồm mọi chunk đã quan sát được."
+impact = "Đặt giá trị dương để giới hạn việc cắt giảm ở các chunk có mật độ cao."
+
+[action.capture_profile]
+completed = "Đã lưu {count} hồ sơ cục bộ vào {path}"
+
+[config.documentation.annotation.art.arcane.react.content.action.actioncaptureprofile]
+description = "Ghi hồ sơ JDK Flight Recorder cục bộ theo yêu cầu với sự kiện thực thi, cấp phát và GC. Giữ ba bản ghi; không bao giờ tải lên."
+
+[config.documentation.annotation.art.arcane.react.content.action.actioncaptureprofile_params.field.seconds]
+summary = "Thời gian hồ sơ tính bằng giây, giới hạn từ 1 đến 300."
+impact = "Bản ghi dài hơn bao quát nhiều hoạt động hơn; JFR giữ tối đa 64 MiB dữ liệu gần nhất."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.playerchunkbudgetenabled]
+summary = "Bật ngân sách chunk của người chơi theo từng thế giới; vùng chồng lấn chỉ tính một lần."
+impact = "Mặc định tắt. Ngân sách có thể giảm khoảng cách mục tiêu hiện có; việc khôi phục diễn ra dần dần."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.playertickingchunkbudget]
+summary = "Số chunk mô phỏng cho người chơi tối đa ước tính trong mỗi thế giới; tối thiểu 1."
+impact = "Vùng mô phỏng chồng lấn chỉ tính một lần. Khoảng cách tối thiểu đã đặt được ưu tiên nếu không thể đáp ứng ngân sách."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.playerviewonlychunkbudget]
+summary = "Số chunk chỉ hiển thị tối đa ước tính trong mỗi thế giới; tối thiểu 1."
+impact = "Đếm vùng nhìn ngoài vùng mô phỏng. Dự đoán nhu cầu của người chơi, không phải chunk đã tải hay vé của plugin."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.budgetrecoverychecks]
+summary = "Số lần đánh giá ngân sách tốt liên tiếp cần có trước khi tăng khoảng cách; tối thiểu 1."
+impact = "Các lần đánh giá theo updateCooldownSeconds. Thiếu dữ liệu tick hoặc chỉ mục người chơi chưa sẵn sàng sẽ đặt lại quá trình khôi phục."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.budgetrecoverystep]
+summary = "Mức tăng khoảng cách tối đa sau khi ngân sách phục hồi, tính bằng chunk; giới hạn từ 1 đến 32."
+impact = "Bước nhỏ hạn chế đợt tải chunk lớn khi khôi phục. Chỉ áp dụng khi bật ngân sách chunk của người chơi."

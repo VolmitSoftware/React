@@ -80,6 +80,9 @@ public class ActionQuarantineHotChunks extends ReactAction<ActionQuarantineHotCh
 
   @Override
   public void workOn(ActionTicket<Params> ticket) {
+    if (ticket.isDone()) {
+      return;
+    }
     Params params = ticket.getParams();
     if (!params.isPrepared()) {
       prepare(params);
@@ -116,7 +119,7 @@ public class ActionQuarantineHotChunks extends ReactAction<ActionQuarantineHotCh
         break;
       }
 
-      dispatchChunkQuarantine(next, params);
+      dispatchChunkQuarantine(next, params, ticket);
       dispatched++;
     }
 
@@ -194,7 +197,7 @@ public class ActionQuarantineHotChunks extends ReactAction<ActionQuarantineHotCh
         .forEach(params.getQueue()::add);
   }
 
-  private void dispatchChunkQuarantine(ChunkRef ref, Params params) {
+  private void dispatchChunkQuarantine(ChunkRef ref, Params params, ActionTicket<Params> ticket) {
     World world = WorldIdentity.resolve(ref.world()).orElse(null);
     if (world == null) {
       params.getProcessedChunks().incrementAndGet();
@@ -204,6 +207,9 @@ public class ActionQuarantineHotChunks extends ReactAction<ActionQuarantineHotCh
     params.getInFlightChunks().incrementAndGet();
     boolean scheduled = J.runChunk(world, ref.x(), ref.z(), () -> {
       try {
+        if (ticket.isDone()) {
+          return;
+        }
         QuarantineResult result = quarantineChunkSync(ref, params);
         if (result != null) {
           if (result.entitiesCulled() > 0) {
@@ -213,6 +219,9 @@ public class ActionQuarantineHotChunks extends ReactAction<ActionQuarantineHotCh
             params.getChunksQuarantinedAtomic().incrementAndGet();
           }
         }
+      } catch (Throwable failure) {
+        ticket.fail(failure);
+        React.reportError("Incident mitigation chunk operation failed", failure);
       } finally {
         params.getProcessedChunks().incrementAndGet();
         params.getInFlightChunks().decrementAndGet();

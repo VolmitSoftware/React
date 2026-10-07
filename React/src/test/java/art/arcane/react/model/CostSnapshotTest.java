@@ -82,6 +82,27 @@ class CostSnapshotTest {
   }
 
   @Test
+  void captureAndDecayKeepsPreDecayRankingAndGauges() {
+    SampledServer server = new SampledServer();
+    SampledWorld world = server.getWorld(Fakes.world("decay"));
+    SampledChunk split = world.getChunk(0, 0);
+    split.get("physics").set(15D);
+    split.get("fluid").set(15D);
+    SampledChunk worst = world.getChunk(1, 0);
+    worst.get("redstone").set(30D);
+    world.getChunk(2, 0).gauge("entities").set(12D);
+    world.getChunk(3, 0).get("physics").set(0.015D);
+
+    CostSnapshot snapshot = CostSnapshot.captureAndDecay(server);
+
+    Assertions.assertEquals(72.015D, snapshot.total(), 1.0E-9D);
+    Assertions.assertSame(worst, snapshot.worstChunk());
+    Assertions.assertEquals(15D, worst.totalScore());
+    Assertions.assertEquals(12D, world.getChunk(2, 0).totalScore());
+    Assertions.assertTrue(world.optionalChunk(3, 0).isEmpty());
+  }
+
+  @Test
   void emptyServerCapturesTheEmptySnapshot() {
     CostSnapshot snapshot = CostSnapshot.capture(new SampledServer());
 

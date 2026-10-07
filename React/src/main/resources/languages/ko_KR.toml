@@ -180,12 +180,13 @@
 #   {world}  Minecraft 월드 이름
 
 [command.description]
+"action.capture_profile" = "JDK Flight Recorder 프로필을 업로드하지 않고 로컬에 저장"
 debugdump = "진단 보고서를 생성하고 선택적으로 업로드"
 action = "완화, 정화 및 운영 진단을위한 행동 유틸리티"
 "action.audit" = "등록된 모든 작업을 나열하고, 상태 활성화 및 현재 행동 요약"
 "action.collect_garbage" = "의정부 JVM 쓰레기 수집 및 즉시 reclaimed heap 신고"
 "action.hopper_network_normalize" = "호퍼 핫스팟을 일반화하여 가까운 전송 항목을 통합합니다."
-"action.incident_playbook" = "전체 지연감시 완화 작업 시퀀스를 대기"
+"action.incident_playbook" = "부하가 지속되는 동안 관련 완화 조치를 하나씩 실행"
 "action.prewarm_critical_chunks" = "가장 중요한 측정된 청크 및 이웃을 미리 로드하십시오"
 "action.purge_chunks" = "선택된 세계에서 청크를 다운로드하려고 시도합니다."
 "action.purge_entities" = "선택된 세계 및 청크 반경에서 일치하는 엔티트를 제거합니다."
@@ -235,7 +236,8 @@ language = "개인 언어 또는 서버 언어 선택"
 debugdump_upload = "보고서를 mclo.gs에 업로드"
 
 [command.parameter.action]
-include_gc = "쓰레기 수집 단계 포함 여부"
+profile_seconds = "기록 시간(초), 1~300"
+include_gc = "힙 부하와 회수 가능한 메모리가 모두 많을 때 가비지 컬렉션 허용"
 max_chunks = "이 액션에 의해 대상된 청크의 최대 수"
 max_entities = "이 행동에서 손질하는 최대 entities"
 min_age_seconds = "초 만에 한도는 자격이 있습니다."
@@ -375,7 +377,7 @@ reclaimed = "무료 다운로드 {freed} ({before} -> {after}) 에서 {duration}
 completed = "정상화된 {hoppers} 호퍼, 통합된 {items} 항목 엔티티 및 {duration}에서 풀린 {chunks} 청크"
 
 [action.incident_playbook]
-completed = "플레이북 등급 {tier}: {actions}개의 완화 작업을 {duration} 만에 대기열에 추가했습니다."
+completed = "{tier}단계 대응 절차가 {duration} 동안 완화 조치 {actions}개를 완료했습니다"
 
 [action.prewarm_chunks]
 completed = "{warmed}를 미리 따뜻하게 한 청크 ({loaded} {duration}에서 새로 로드된)"
@@ -4562,3 +4564,57 @@ open = "열기: {url}"
 open-description = "업로드한 진단 보고서를 엽니다."
 copy-path = "로컬 경로 복사"
 copy-path-description = "보고서의 로컬 경로를 복사합니다."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumincidentscore]
+summary = "완화 조치를 계속하기 위해 필요한 사고 점수입니다."
+impact = "이 점수 또는 minimumTickMS에 도달하면 절차를 계속합니다."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumtickms]
+summary = "완화 조치를 계속하기 위해 필요한 평균 틱 시간이며, 단위는 밀리초입니다."
+impact = "두 부하 지표가 모두 각 임계값 아래로 내려가면 절차를 중지합니다."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumentitiesperchunk]
+summary = "엔티티 정리 단계를 시작하기 위해 한 청크에서 관측되어야 하는 엔티티 수입니다."
+impact = "값이 높을수록 더 밀집된 엔티티 영역만 정리합니다."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.recheckdelayms]
+summary = "하위 작업 완료 후 관찰 간격이며, 밀리초 단위로 최소 1000입니다."
+impact = "다음 완화 조치를 선택하기 전에 지표가 갱신되도록 합니다."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.childtimeoutms]
+summary = "완화 단계 하나의 최대 실행 시간이며, 밀리초 단위로 최소 1000입니다."
+impact = "하위 작업이 시간 초과되면 절차가 실패하고 추가 조치를 중지합니다."
+
+[config.documentation.annotation.art.arcane.react.content.action.actiontrimentitiesbyagepriority_params.field.minimumentitiesperchunk]
+summary = "정리 전에 청크에서 관측되어야 하는 최소 엔티티 수입니다. 0이면 관측된 모든 청크를 포함합니다."
+impact = "양수로 설정하면 엔티티가 밀집된 청크만 정리합니다."
+
+[action.capture_profile]
+completed = "로컬 프로필 {count}개를 {path}에 저장했습니다"
+
+[config.documentation.annotation.art.arcane.react.content.action.actioncaptureprofile]
+description = "요청 시 실행, 할당, GC 이벤트를 포함한 JDK Flight Recorder 프로필을 로컬에 기록합니다. 세 개를 보관하며 업로드하지 않습니다."
+
+[config.documentation.annotation.art.arcane.react.content.action.actioncaptureprofile_params.field.seconds]
+summary = "프로필 기록 시간(초)이며 1~300으로 제한됩니다."
+impact = "기록 시간이 길수록 더 많은 활동을 담습니다. JFR은 최근 데이터를 최대 64 MiB 보관합니다."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.playerchunkbudgetenabled]
+summary = "월드별 플레이어 청크 예산을 활성화하며 겹치는 영역은 한 번만 셉니다."
+impact = "기본값은 비활성화입니다. 예산에 따라 기존 목표 거리를 줄일 수 있으며 복구 시 점진적으로 늘립니다."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.playertickingchunkbudget]
+summary = "월드별 플레이어 시뮬레이션 청크의 최대 추정 개수입니다. 최소 1입니다."
+impact = "겹치는 시뮬레이션 영역은 한 번만 셉니다. 예산을 맞출 수 없으면 설정된 최소 거리가 우선합니다."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.playerviewonlychunkbudget]
+summary = "월드별 표시 전용 청크의 최대 추정 개수입니다. 최소 1입니다."
+impact = "시뮬레이션 영역 밖의 표시 영역을 셉니다. 실제 로드된 청크나 플러그인 티켓이 아닌 플레이어 수요를 예측합니다."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.budgetrecoverychecks]
+summary = "거리를 늘리기 전에 필요한 연속 정상 예산 평가 횟수입니다. 최소 1입니다."
+impact = "평가 간격은 updateCooldownSeconds를 따릅니다. 틱 정보가 없거나 플레이어 색인이 준비되지 않으면 복구를 초기화합니다."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.budgetrecoverystep]
+summary = "예산 복구 후 최대 거리 증가량(청크)이며 1~32로 제한됩니다."
+impact = "작은 증가폭은 복구 중 청크 로드 급증을 제한합니다. 플레이어 청크 예산이 활성화된 경우에만 적용됩니다."

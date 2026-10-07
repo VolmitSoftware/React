@@ -94,8 +94,7 @@ public class ObserverController extends TickedObject implements IController {
   @Override
   public void onTick() {
     seedInitialLoadedChunkCoordinates();
-    costSnapshot.set(CostSnapshot.capture(sampled));
-    sampled.decay();
+    costSnapshot.set(CostSnapshot.captureAndDecay(sampled));
   }
 
   @Override

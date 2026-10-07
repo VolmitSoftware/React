@@ -28,6 +28,7 @@ import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.core.controller.EntityController;
 import art.arcane.react.model.ReactEntity;
 import art.arcane.react.util.common.scheduling.J;
+import art.arcane.react.util.project.world.NearbyEntitySampler;
 import art.arcane.react.util.project.world.WorldEntitySnapshots;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
@@ -52,7 +53,6 @@ import java.util.concurrent.atomic.AtomicLong;
 public class FeatureDynamicActivationRange extends ReactFeature implements Listener {
   public static final String ID = "dynamic-activation-range";
   private transient final AtomicBoolean activationRangeScanQueued = new AtomicBoolean(false);
-  private transient final AtomicInteger nextEntitySample = new AtomicInteger(0);
   private transient final AtomicInteger nextFoliaAnchor = new AtomicInteger(0);
   private transient final AtomicInteger nextWorldSample = new AtomicInteger(0);
   private transient final AtomicLong lifecycleGeneration = new AtomicLong(0L);
@@ -89,7 +89,6 @@ public class FeatureDynamicActivationRange extends ReactFeature implements Liste
       active = false;
       lifecycleGeneration.incrementAndGet();
       activationRangeScanQueued.set(false);
-      nextEntitySample.set(0);
       nextFoliaAnchor.set(0);
       nextWorldSample.set(0);
       currentActivationRange = maximumActivationRange;
@@ -256,23 +255,24 @@ public class FeatureDynamicActivationRange extends ReactFeature implements Liste
       return;
     }
 
-    List<Entity> nearby = player.getNearbyEntities(
-        activationRange + 16,
-        Math.max(32, activationRange),
-        activationRange + 16
+    EntityController controller = React.controller(EntityController.class);
+    if (controller == null) {
+      return;
+    }
+    List<Entity> nearby = controller.getNearbyEntitySampler().sample(
+        player, new NearbyEntitySampler.Request(ID, activationRange + 16, Math.max(32, activationRange), quota)
     );
     if (nearby.isEmpty()) {
       return;
     }
 
     int sample = Math.min(nearby.size(), quota);
-    int start = Math.floorMod(nextEntitySample.getAndAdd(sample), nearby.size());
     for (int i = 0; i < sample; i++) {
       if (generation != lifecycleGeneration.get()) {
         return;
       }
 
-      Entity entity = nearby.get((start + i) % nearby.size());
+      Entity entity = nearby.get(i);
       if (entity == null) {
         continue;
       }

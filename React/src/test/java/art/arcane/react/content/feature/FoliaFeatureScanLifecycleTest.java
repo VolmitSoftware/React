@@ -9,10 +9,12 @@ import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.core.controller.EntityController;
 import art.arcane.react.model.ReactEntity;
 import art.arcane.react.util.common.scheduling.J;
+import art.arcane.react.util.project.world.NearbyEntitySampler;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.util.BoundingBox;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
@@ -51,6 +53,7 @@ class FoliaFeatureScanLifecycleTest {
     Sampler sampler = Mockito.mock(Sampler.class);
     Mockito.when(sampler.sample()).thenReturn(40D);
     EntityController controller = Mockito.mock(EntityController.class);
+    Mockito.when(controller.getNearbyEntitySampler()).thenReturn(new NearbyEntitySampler());
     Player[] players = players(5);
     Mockito.when(controller.getFoliaPlayers()).thenReturn(players);
     List<ScheduledTask> tasks = new ArrayList<>();
@@ -100,6 +103,7 @@ class FoliaFeatureScanLifecycleTest {
     Sampler sampler = Mockito.mock(Sampler.class);
     Mockito.when(sampler.sample()).thenReturn(40D);
     EntityController controller = Mockito.mock(EntityController.class);
+    Mockito.when(controller.getNearbyEntitySampler()).thenReturn(new NearbyEntitySampler());
     Player[] players = players(4);
     Mockito.when(controller.getFoliaPlayers()).thenReturn(players);
     AtomicInteger attempts = new AtomicInteger();
@@ -167,7 +171,13 @@ class FoliaFeatureScanLifecycleTest {
     Sampler sampler = Mockito.mock(Sampler.class);
     Mockito.when(sampler.sample()).thenReturn(40D);
     EntityController controller = Mockito.mock(EntityController.class);
+    Mockito.when(controller.getNearbyEntitySampler()).thenReturn(new NearbyEntitySampler());
     Player player = Mockito.mock(Player.class);
+    World world = Mockito.mock(World.class);
+    Mockito.when(world.getUID()).thenReturn(UUID.randomUUID());
+    Mockito.when(player.getWorld()).thenReturn(world);
+    Mockito.when(player.getUniqueId()).thenReturn(UUID.randomUUID());
+    Mockito.when(player.getBoundingBox()).thenAnswer(ignored -> new BoundingBox(0D, 64D, 0D, 1D, 66D, 1D));
     Mockito.when(player.isOnline()).thenReturn(true);
     Mockito.when(controller.getFoliaPlayers()).thenReturn(new Player[]{player});
     List<Runnable> tasks = new ArrayList<>();
@@ -252,7 +262,13 @@ class FoliaFeatureScanLifecycleTest {
     setInt(feature, "maxEntitiesSampledPerCycle", 1);
     Sampler sampler = Mockito.mock(Sampler.class);
     EntityController controller = Mockito.mock(EntityController.class);
+    Mockito.when(controller.getNearbyEntitySampler()).thenReturn(new NearbyEntitySampler());
     Player player = Mockito.mock(Player.class);
+    World world = Mockito.mock(World.class);
+    Mockito.when(world.getUID()).thenReturn(UUID.randomUUID());
+    Mockito.when(player.getWorld()).thenReturn(world);
+    Mockito.when(player.getUniqueId()).thenReturn(UUID.randomUUID());
+    Mockito.when(player.getBoundingBox()).thenAnswer(ignored -> new BoundingBox(0D, 64D, 0D, 1D, 66D, 1D));
     Entity candidate = Mockito.mock(Entity.class);
     UUID candidateId = UUID.randomUUID();
     AtomicBoolean candidateOwned = new AtomicBoolean(false);
@@ -314,6 +330,7 @@ class FoliaFeatureScanLifecycleTest {
     setInt(feature, "softMaxEntitiesPerWorld", 4);
 
     EntityController controller = Mockito.mock(EntityController.class);
+    Mockito.when(controller.getNearbyEntitySampler()).thenReturn(new NearbyEntitySampler());
     Player[] players = players(30);
     Mockito.when(controller.getFoliaPlayers()).thenReturn(players);
     List<ScheduledTask> tasks = new ArrayList<>();
@@ -397,8 +414,13 @@ class FoliaFeatureScanLifecycleTest {
     setDouble(feature, "maxPriority", 100D);
 
     EntityController controller = Mockito.mock(EntityController.class);
+    Mockito.when(controller.getNearbyEntitySampler()).thenReturn(new NearbyEntitySampler());
     Player player = Mockito.mock(Player.class);
     World world = Mockito.mock(World.class);
+    Mockito.when(world.getUID()).thenReturn(UUID.randomUUID());
+    Mockito.when(player.getWorld()).thenReturn(world);
+    Mockito.when(player.getUniqueId()).thenReturn(UUID.randomUUID());
+    Mockito.when(player.getBoundingBox()).thenAnswer(ignored -> new BoundingBox(0D, 64D, 0D, 1D, 66D, 1D));
     UUID worldId = UUID.randomUUID();
     Location center = new Location(world, 0D, 64D, 0D);
     Mockito.when(player.isOnline()).thenReturn(true);
@@ -487,8 +509,13 @@ class FoliaFeatureScanLifecycleTest {
     setDouble(feature, "maxPriority", 100D);
 
     EntityController controller = Mockito.mock(EntityController.class);
+    Mockito.when(controller.getNearbyEntitySampler()).thenReturn(new NearbyEntitySampler());
     Player player = Mockito.mock(Player.class);
     World world = Mockito.mock(World.class);
+    Mockito.when(world.getUID()).thenReturn(UUID.randomUUID());
+    Mockito.when(player.getWorld()).thenReturn(world);
+    Mockito.when(player.getUniqueId()).thenReturn(UUID.randomUUID());
+    Mockito.when(player.getBoundingBox()).thenAnswer(ignored -> new BoundingBox(0D, 64D, 0D, 1D, 66D, 1D));
     Chunk chunk = Mockito.mock(Chunk.class);
     Location center = new Location(world, 0D, 64D, 0D);
     List<Entity> entities = entities(8);
@@ -546,6 +573,11 @@ class FoliaFeatureScanLifecycleTest {
     Player[] players = new Player[count];
     for (int i = 0; i < count; i++) {
       Player player = Mockito.mock(Player.class);
+    World world = Mockito.mock(World.class);
+    Mockito.when(world.getUID()).thenReturn(UUID.randomUUID());
+    Mockito.when(player.getWorld()).thenReturn(world);
+    Mockito.when(player.getUniqueId()).thenReturn(UUID.randomUUID());
+    Mockito.when(player.getBoundingBox()).thenAnswer(ignored -> new BoundingBox(0D, 64D, 0D, 1D, 66D, 1D));
       Mockito.when(player.isOnline()).thenReturn(false);
       players[i] = player;
     }

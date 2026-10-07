@@ -180,12 +180,13 @@
 #   {world}  Название мира Minecraft
 
 [command.description]
+"action.capture_profile" = "Сохранить локальный профиль JDK Flight Recorder без отправки"
 debugdump = "Создать диагностический отчёт и при желании загрузить его"
 action = "Утилиты действий для смягчения последствий, очистки и оперативной диагностики"
 "action.audit" = "Перечислите все зарегистрированные действия, включенное состояние и текущее резюме поведения."
 "action.collect_garbage" = "Просьба JVM сбор мусора и отчет о немедленно восстановленной куче"
 "action.hopper_network_normalize" = "Нормализация воронка-горячих точек путем слияния близлежащих передаточных элементов"
-"action.incident_playbook" = "Выполнение полной последовательности действий по смягчению последствий лаг-инцидентов"
+"action.incident_playbook" = "Выполнять подходящие меры по очереди, пока сохраняется нагрузка"
 "action.prewarm_critical_chunks" = "Загрузка наиболее критической чанки и соседних измеримых файлов"
 "action.purge_chunks" = "Попытка разгрузить чанки в выбранном мире"
 "action.purge_entities" = "Удалить совпадающие объекты в выбранном мире и радиусе чанк"
@@ -235,7 +236,8 @@ language = "Выбрать свой язык или язык сервера"
 debugdump_upload = "Загрузить отчёт на mclo.gs"
 
 [command.parameter.action]
-include_gc = "Включает ли этап сбора мусора"
+profile_seconds = "Длительность записи в секундах, от 1 до 300"
+include_gc = "Разрешить сборку мусора при высокой загрузке кучи и большом объёме освобождаемой памяти"
 max_chunks = "Максимальное количество чанки, на которое направлено это действие"
 max_entities = "Максимальные объекты для обрезки в этом действии"
 min_age_seconds = "Минимальный возраст за несколько секунд до того, как субъекты будут иметь право на участие"
@@ -375,7 +377,7 @@ reclaimed = "освобожденный {freed} ({before} -> {after}) в {durati
 completed = "Нормализованный {hoppers} воронки, объединенные объекты {items} и разгруженный {chunks} чанки в {duration}"
 
 [action.incident_playbook]
-completed = "Игровой лист {tier} в очереди {actions} Меры по смягчению последствий в {duration}"
+completed = "Сценарий уровня {tier} завершил {actions} мер за {duration}"
 
 [action.prewarm_chunks]
 completed = "Прегретый {warmed} чанки ({loaded} вновь загруженный) в {duration}"
@@ -4562,3 +4564,57 @@ open = "Открыть: {url}"
 open-description = "Открыть отправленный диагностический отчёт."
 copy-path = "Копировать локальный путь"
 copy-path-description = "Копировать локальный путь к отчёту."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumincidentscore]
+summary = "Оценка инцидента, необходимая для продолжения мер по снижению нагрузки."
+impact = "Сценарий продолжается при достижении этой оценки или minimumTickMS."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumtickms]
+summary = "Средняя длительность тика в миллисекундах, необходимая для продолжения мер."
+impact = "Сценарий останавливается, когда оба показателя нагрузки опускаются ниже своих порогов."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumentitiesperchunk]
+summary = "Количество обнаруженных сущностей в одном чанке, необходимое перед их сокращением."
+impact = "Более высокие значения ограничивают сокращение более плотными скоплениями сущностей."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.recheckdelayms]
+summary = "Интервал наблюдения после завершения дочернего действия в миллисекундах; минимум 1000."
+impact = "Позволяет обновить метрики перед выбором следующей меры."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.childtimeoutms]
+summary = "Максимальная длительность одного этапа в миллисекундах; минимум 1000."
+impact = "Превышение времени дочернего действия завершает сценарий с ошибкой и останавливает дальнейшую эскалацию."
+
+[config.documentation.annotation.art.arcane.react.content.action.actiontrimentitiesbyagepriority_params.field.minimumentitiesperchunk]
+summary = "Минимальное количество обнаруженных сущностей в чанке перед сокращением; ноль включает все наблюдаемые чанки."
+impact = "Положительное значение ограничивает сокращение плотно заполненными чанками."
+
+[action.capture_profile]
+completed = "Локальный профиль ({count}) сохранён в {path}"
+
+[config.documentation.annotation.art.arcane.react.content.action.actioncaptureprofile]
+description = "По запросу записывает локальный профиль JDK Flight Recorder с событиями выполнения, выделения памяти и GC. Хранит три записи; никогда их не отправляет."
+
+[config.documentation.annotation.art.arcane.react.content.action.actioncaptureprofile_params.field.seconds]
+summary = "Длительность профиля в секундах, ограниченная диапазоном 1–300."
+impact = "Более долгие записи охватывают больше событий; JFR хранит до 64 MiB последних данных."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.playerchunkbudgetenabled]
+summary = "Включает бюджеты чанков игроков для каждого мира; пересечения учитываются один раз."
+impact = "По умолчанию выключено. Бюджеты могут уменьшать текущие целевые дистанции; восстановление происходит постепенно."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.playertickingchunkbudget]
+summary = "Максимальное расчётное число симулируемых для игроков чанков на мир; минимум 1."
+impact = "Пересекающиеся области симуляции учитываются один раз. Если бюджет недостижим, заданные минимальные дистанции имеют приоритет."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.playerviewonlychunkbudget]
+summary = "Максимальное расчётное число только видимых чанков на мир; минимум 1."
+impact = "Учитывает область видимости вне симуляции. Оценивает потребность игроков, а не загруженные чанки или билеты плагинов."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.budgetrecoverychecks]
+summary = "Число последовательных благополучных проверок бюджета перед увеличением дистанции; минимум 1."
+impact = "Интервал проверок задаёт updateCooldownSeconds. Отсутствие телеметрии тиков или неготовый индекс игроков сбрасывают восстановление."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.budgetrecoverystep]
+summary = "Максимальное увеличение дистанции после восстановления бюджета, в чанках; ограничено диапазоном 1–32."
+impact = "Малые шаги ограничивают всплески загрузки при восстановлении. Применяется только при включённых бюджетах чанков игроков."

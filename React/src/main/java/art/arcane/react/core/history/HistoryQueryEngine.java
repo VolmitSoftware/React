@@ -3,7 +3,6 @@ package art.arcane.react.core.history;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -59,28 +58,30 @@ public final class HistoryQueryEngine {
     for (String id : ids) {
       selected.put(id, new LinkedHashMap<>());
     }
-
-    List<HistoryTier> sources = new ArrayList<>();
-    for (HistoryTier tier : HistoryTier.values()) {
-      if (tier.intervalMs() <= resolutionMs) {
-        sources.add(tier);
-      }
-    }
-    sources.sort(Comparator.comparingLong(HistoryTier::intervalMs).reversed());
-    for (HistoryTier tier : sources) {
-      Map<String, List<HistoryPoint>> tierPoints = store.points(tier, ids, fromMs, toMs);
-      if (tier == HistoryTier.RAW) {
-        mergePointLists(tierPoints, activePointSource.points(ids, fromMs, toMs));
-      }
-      Map<String, Map<Long, HistoryPoint>> aggregated = aggregate(tierPoints, fromMs, resolutionMs);
-      for (String id : ids) {
-        Map<Long, HistoryPoint> target = selected.get(id);
-        Map<Long, HistoryPoint> candidates = aggregated.get(id);
-        if (candidates == null) {
-          continue;
+    try (HistoryStore.QueryView view = store.openQuery(fromMs, toMs, () -> activePointSource.points(ids, fromMs, toMs))) {
+      List<HistoryTier> sources = new ArrayList<>();
+      for (HistoryTier tier : HistoryTier.values()) {
+        if (tier.intervalMs() <= resolutionMs) {
+          sources.add(tier);
         }
-        for (Map.Entry<Long, HistoryPoint> candidate : candidates.entrySet()) {
-          target.putIfAbsent(candidate.getKey(), candidate.getValue());
+      }
+      sources.sort(Comparator.comparingLong(HistoryTier::intervalMs).reversed());
+      for (HistoryTier tier : sources) {
+        Map<MissingRange, Set<String>> missing = missingRanges(selected, fromMs, toMs, resolutionMs);
+        for (Map.Entry<MissingRange, Set<String>> entry : missing.entrySet()) {
+          MissingRange range = entry.getKey();
+          Set<String> missingIds = entry.getValue();
+          Map<String, List<HistoryPoint>> tierPoints = store.points(view, tier, missingIds, range.fromMs(), range.toMs());
+          if (tier == HistoryTier.RAW) {
+            mergeActiveRange(tierPoints, view.activePoints(), missingIds, range);
+          }
+          Map<String, Map<Long, HistoryPoint>> aggregated = aggregate(tierPoints, fromMs, resolutionMs);
+          for (String id : missingIds) {
+            Map<Long, HistoryPoint> target = selected.get(id);
+            for (Map.Entry<Long, HistoryPoint> candidate : aggregated.getOrDefault(id, Map.of()).entrySet()) {
+              target.putIfAbsent(candidate.getKey(), candidate.getValue());
+            }
+          }
         }
       }
     }
@@ -102,6 +103,50 @@ public final class HistoryQueryEngine {
         throughMs,
         List.copyOf(series)
     );
+  }
+
+  private static Map<MissingRange, Set<String>> missingRanges(
+      Map<String, Map<Long, HistoryPoint>> selected,
+      long fromMs,
+      long toMs,
+      long resolutionMs
+  ) {
+    Map<MissingRange, Set<String>> ranges = new LinkedHashMap<>();
+    for (Map.Entry<String, Map<Long, HistoryPoint>> entry : selected.entrySet()) {
+      Map<Long, HistoryPoint> target = entry.getValue();
+      long cursor = fromMs;
+      while (cursor < toMs) {
+        if (target.containsKey(cursor)) {
+          cursor = nextBucket(cursor, resolutionMs, toMs);
+          continue;
+        }
+        long missingFrom = cursor;
+        do {
+          cursor = nextBucket(cursor, resolutionMs, toMs);
+        } while (cursor < toMs && !target.containsKey(cursor));
+        ranges.computeIfAbsent(new MissingRange(missingFrom, cursor), ignored -> new LinkedHashSet<>()).add(entry.getKey());
+      }
+    }
+    return ranges;
+  }
+
+  private static void mergeActiveRange(
+      Map<String, List<HistoryPoint>> tierPoints,
+      Map<String, List<HistoryPoint>> active,
+      Set<String> ids,
+      MissingRange range
+  ) {
+    Map<String, List<HistoryPoint>> activeRange = new HashMap<>();
+    for (String id : ids) {
+      List<HistoryPoint> points = new ArrayList<>();
+      for (HistoryPoint point : active.getOrDefault(id, List.of())) {
+        if (point.timestampMs() >= range.fromMs() && point.timestampMs() < range.toMs()) {
+          points.add(point);
+        }
+      }
+      activeRange.put(id, points);
+    }
+    mergePointLists(tierPoints, activeRange);
   }
 
   private static Map<String, Map<Long, HistoryPoint>> aggregate(
@@ -148,9 +193,15 @@ public final class HistoryQueryEngine {
     return Math.floorDiv(value + divisor - 1L, divisor);
   }
 
+  private static long nextBucket(long timestamp, long resolutionMs, long toMs) {
+    return timestamp > Long.MAX_VALUE - resolutionMs ? toMs : Math.min(toMs, timestamp + resolutionMs);
+  }
+
   public interface ActivePointSource {
     Map<String, List<HistoryPoint>> points(Set<String> ids, long fromMs, long toMs);
   }
+
+  private record MissingRange(long fromMs, long toMs) {}
 
   private static final class MutableAggregate {
     private double first;

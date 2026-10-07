@@ -24,6 +24,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Trinity Incident Mode feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureTrinityIncidentMode extends ReactCapabilityFeature {
@@ -52,6 +53,7 @@ public class FeatureTrinityIncidentMode extends ReactCapabilityFeature {
   private transient long engagedSinceMS;
   private transient long lastPlaybookAtMS;
   private transient String activeIncidentId;
+  private transient final AtomicReference<ActionTicket<?>> activePlaybook = new AtomicReference<>();
 
   public FeatureTrinityIncidentMode() {
     super(ID);
@@ -69,6 +71,7 @@ public class FeatureTrinityIncidentMode extends ReactCapabilityFeature {
 
   @Override
   public void onActivate() {
+    cancelPlaybook();
     engaged = false;
     engagedSinceMS = 0L;
     lastPlaybookAtMS = 0L;
@@ -77,6 +80,7 @@ public class FeatureTrinityIncidentMode extends ReactCapabilityFeature {
 
   @Override
   public void onDeactivate() {
+    cancelPlaybook();
     if (engaged && activeIncidentId != null) {
       recordResolution(
           System.currentTimeMillis(),
@@ -178,28 +182,46 @@ public class FeatureTrinityIncidentMode extends ReactCapabilityFeature {
   private void coordinateMitigation(long now) {
     J.s(this::ensureMitigationFeaturesActive);
 
-    if (now - lastPlaybookAtMS < playbookCooldownMS) {
+    if (activePlaybook.get() != null || now - lastPlaybookAtMS < playbookCooldownMS) {
       return;
     }
 
     Action<?> playbook = React.action(ActionIncidentPlaybook.ID);
-    if (playbook == null) {
+    if (playbook == null || !playbook.isEnabled()) {
       return;
     }
 
     ActionTicket<?> ticket = playbook.create();
+    if (!activePlaybook.compareAndSet(null, ticket)) {
+      return;
+    }
     String incidentId = activeIncidentId;
     recordPlaybook(incidentId, now, "QUEUED", "The coordinated mitigation playbook was queued.");
-    ticket.onTerminal(completed -> recordPlaybook(
-        incidentId,
-        System.currentTimeMillis(),
-        completed.isFailed() ? "FAILED" : "COMPLETED",
-        completed.isFailed()
-            ? "The coordinated mitigation playbook failed: " + completed.getFailure().getMessage()
-            : "The coordinated mitigation playbook queued " + completed.getCount() + " child actions."
-    ));
-    ticket.queue();
-    lastPlaybookAtMS = now;
+    ticket.onTerminal(completed -> {
+      activePlaybook.compareAndSet(ticket, null);
+      recordPlaybook(
+          incidentId,
+          System.currentTimeMillis(),
+          completed.isFailed() ? "FAILED" : "COMPLETED",
+          completed.isFailed()
+              ? "The coordinated mitigation playbook failed: " + completed.getFailure().getMessage()
+              : "The coordinated mitigation playbook completed " + completed.getCount() + " mitigation actions."
+      );
+    });
+    try {
+      ticket.queue();
+      lastPlaybookAtMS = now;
+    } catch (Throwable failure) {
+      ticket.fail(failure);
+      React.reportError("Could not queue Trinity incident mitigation", failure);
+    }
+  }
+
+  private void cancelPlaybook() {
+    ActionTicket<?> ticket = activePlaybook.getAndSet(null);
+    if (ticket != null && !ticket.isDone()) {
+      ticket.fail(new IllegalStateException("Trinity incident coordination stopped"));
+    }
   }
 
   private void recordEngagement(long now, PressureSnapshot pressure) {

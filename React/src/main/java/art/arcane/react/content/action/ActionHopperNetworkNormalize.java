@@ -78,6 +78,9 @@ public class ActionHopperNetworkNormalize extends ReactAction<ActionHopperNetwor
 
   @Override
   public void workOn(ActionTicket<Params> ticket) {
+    if (ticket.isDone()) {
+      return;
+    }
     Params params = ticket.getParams();
     if (!params.isPrepared()) {
       List<ChunkTarget> queue = buildQueue(params);
@@ -121,7 +124,7 @@ public class ActionHopperNetworkNormalize extends ReactAction<ActionHopperNetwor
         break;
       }
 
-      dispatchChunkNormalize(next, params);
+      dispatchChunkNormalize(next, params, ticket);
       dispatched++;
     }
 
@@ -197,7 +200,7 @@ public class ActionHopperNetworkNormalize extends ReactAction<ActionHopperNetwor
     return targets;
   }
 
-  private void dispatchChunkNormalize(ChunkTarget target, Params params) {
+  private void dispatchChunkNormalize(ChunkTarget target, Params params, ActionTicket<Params> ticket) {
     World world = WorldIdentity.resolve(target.world()).orElse(null);
     if (world == null) {
       params.getProcessedChunks().incrementAndGet();
@@ -207,6 +210,9 @@ public class ActionHopperNetworkNormalize extends ReactAction<ActionHopperNetwor
     params.getInFlightChunks().incrementAndGet();
     boolean scheduled = J.runChunk(world, target.x(), target.z(), () -> {
       try {
+        if (ticket.isDone()) {
+          return;
+        }
         NormalizeResult result = normalizeChunkSync(target, params);
         if (result != null) {
           if (result.hoppersNormalized() > 0) {
@@ -219,6 +225,9 @@ public class ActionHopperNetworkNormalize extends ReactAction<ActionHopperNetwor
             params.getChunksUnloadedAtomic().incrementAndGet();
           }
         }
+      } catch (Throwable failure) {
+        ticket.fail(failure);
+        React.reportError("Incident mitigation chunk operation failed", failure);
       } finally {
         params.getProcessedChunks().incrementAndGet();
         params.getInFlightChunks().decrementAndGet();

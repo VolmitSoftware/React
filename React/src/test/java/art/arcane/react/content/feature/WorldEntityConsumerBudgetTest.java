@@ -5,6 +5,7 @@ import art.arcane.react.util.common.scheduling.Ticker;
 import art.arcane.react.util.project.world.WorldEntitySnapshots;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
+import org.bukkit.entity.Entity;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -58,6 +59,29 @@ class WorldEntityConsumerBudgetTest {
       snapshots.verify(() -> WorldEntitySnapshots.next(world, 240), Mockito.times(2));
       snapshots.verify(() -> WorldEntitySnapshots.next(world, 220));
       bukkit.verify(Bukkit::getWorlds, Mockito.times(4));
+    }
+  }
+
+  @Test
+  void sleepRotatesWorldsWhenEachWorldExhaustsTheBudget() throws Exception {
+    World first = Mockito.mock(World.class);
+    World second = Mockito.mock(World.class);
+    Entity entity = Mockito.mock(Entity.class);
+    FeatureAdaptiveEntitySleep sleep = active(new FeatureAdaptiveEntitySleep());
+    Field budget = FeatureAdaptiveEntitySleep.class.getDeclaredField("maxEntitiesSampledPerCycle");
+    budget.setAccessible(true);
+    budget.setInt(sleep, 1);
+    try (MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class);
+         MockedStatic<WorldEntitySnapshots> snapshots = Mockito.mockStatic(WorldEntitySnapshots.class)) {
+      bukkit.when(Bukkit::getWorlds).thenReturn(List.of(first, second));
+      snapshots.when(() -> WorldEntitySnapshots.next(Mockito.any(World.class), Mockito.eq(1)))
+          .thenReturn(List.of(entity));
+      for (int cycle = 0; cycle < 4; cycle++) {
+        invoke(sleep, "queueSleepScan", new Class<?>[]{long.class, JobBatch.class}, 1L,
+            new JobBatch(JobBatch.Limits.forTickBudget(1D), () -> { }));
+      }
+      snapshots.verify(() -> WorldEntitySnapshots.next(first, 1), Mockito.times(2));
+      snapshots.verify(() -> WorldEntitySnapshots.next(second, 1), Mockito.times(2));
     }
   }
 

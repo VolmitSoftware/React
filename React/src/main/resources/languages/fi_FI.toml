@@ -180,12 +180,13 @@
 #   {world}  Minecraft-maailman nimi
 
 [command.description]
+"action.capture_profile" = "Tallenna paikallinen JDK Flight Recorder -profiili lähettämättä sitä verkkoon"
 debugdump = "Luo diagnostiikkaraportti ja lähetä se halutessasi"
 action = "Toimintaohjelmat, joilla vähennetään päästöjä, siivotaan ja diagnostiikka"
 "action.audit" = "Luettele kaikki rekisteröidyt toiminnot, käytössä tilassa ja nykyinen käyttäytymisen yhteenveto"
 "action.collect_garbage" = "Pyyntö JVM jätekasa ja välittömästi regeneroitu kasa"
 "action.hopper_network_normalize" = "Normaalittakaa suppilo-pisteet yhdistämällä lähialueen siirtoesineitä ."
-"action.incident_playbook" = "Jonota täydellinen viiveen hillitsemistoimet"
+"action.incident_playbook" = "Suorita tilanteeseen sopivat toimet yksi kerrallaan kuormituksen jatkuessa"
 "action.prewarm_critical_chunks" = "Laata ennakkoon kriittisin mitattu chunkit ja naapurit"
 "action.purge_chunks" = "Yritä ladata chunkit-versio valituissa maailmassa"
 "action.purge_entities" = "Poista vastaavia entiteetteja valituissa maailmoissa ja chunk-radiuksessa"
@@ -235,7 +236,8 @@ language = "Valitse oma kielesi tai palvelimen kieli"
 debugdump_upload = "Lähetä raportti mclo.gs-palveluun"
 
 [command.parameter.action]
-include_gc = "Sisällytetäänkö jätekeräysvaihe"
+profile_seconds = "Tallennuksen kesto sekunteina, 1–300"
+include_gc = "Salli roskienkeruu, kun keon kuormitus ja vapautettavan muistin määrä ovat suuria"
 max_chunks = "Tämän toiminnan kohteena olevien chunkit-yhteyden enimmäismäärä"
 max_entities = "Tässä toimessa on tehtävä mahdollisimman paljon korjauksia"
 min_age_seconds = "Vähimmäisikä sekuntia ennen kuin yhteisöt ovat tukikelpoisia"
@@ -375,7 +377,7 @@ reclaimed = "Freed {freed} ({before} -> {after}) {duration}"
 completed = "Normaalittunut {hoppers} suppilot, yhdistetyt {items}-elementtien yksiköitä ja purettu {chunks} chunkit {duration}: ssa"
 
 [action.incident_playbook]
-completed = "Playbook-taso {tier} jonossa {actions} • {duration}"
+completed = "Tason {tier} toimintasuunnitelma suoritti {actions} lievennystoimea ajassa {duration}"
 
 [action.prewarm_chunks]
 completed = "Ennakko lämmitetty {warmed} chunkit ({loaded} uusi ladattu) {duration}: ssä"
@@ -4562,3 +4564,57 @@ open = "Avaa: {url}"
 open-description = "Avaa lähetetty diagnostiikkaraportti."
 copy-path = "Kopioi paikallinen polku"
 copy-path-description = "Kopioi raportin paikallinen polku."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumincidentscore]
+summary = "Häiriöpisteiden vähimmäismäärä lievennystoimien jatkamiseksi."
+impact = "Toimintasuunnitelma jatkuu, kun tämä pistemäärä tai minimumTickMS saavutetaan."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumtickms]
+summary = "Tickin keskimääräinen kesto millisekunteina, joka vaaditaan lievennystoimien jatkamiseen."
+impact = "Toimintasuunnitelma pysähtyy, kun molemmat kuormitusarvot alittavat raja-arvonsa."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumentitiesperchunk]
+summary = "Chunkissa havaittujen entiteettien määrä, joka vaaditaan ennen niiden vähentämistä."
+impact = "Suuremmat arvot rajaavat vähentämisen tiheämpiin entiteettikeskittymiin."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.recheckdelayms]
+summary = "Tarkkailuväli alitoimen valmistuttua millisekunteina; vähintään 1000."
+impact = "Antaa mittareiden päivittyä ennen seuraavan lievennystoimen valintaa."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.childtimeoutms]
+summary = "Yhden lievennysvaiheen enimmäiskesto millisekunteina; vähintään 1000."
+impact = "Alitoimen aikakatkaisu keskeyttää toimintasuunnitelman eikä lievennystä enää laajenneta."
+
+[config.documentation.annotation.art.arcane.react.content.action.actiontrimentitiesbyagepriority_params.field.minimumentitiesperchunk]
+summary = "Chunkissa havaittujen entiteettien vähimmäismäärä ennen vähentämistä; nolla sisältää kaikki havaitut chunkit."
+impact = "Positiivinen arvo rajaa vähentämisen tiheisiin chunkeihin."
+
+[action.capture_profile]
+completed = "Tallennettiin {count} paikallinen profiili polkuun {path}"
+
+[config.documentation.annotation.art.arcane.react.content.action.actioncaptureprofile]
+description = "Tallentaa pyynnöstä paikallisen JDK Flight Recorder -profiilin suoritus-, varaus- ja GC-tapahtumista. Säilyttää kolme tallennetta eikä lähetä niitä verkkoon."
+
+[config.documentation.annotation.art.arcane.react.content.action.actioncaptureprofile_params.field.seconds]
+summary = "Profiilin kesto sekunteina, rajattu välille 1–300."
+impact = "Pidempi tallennus kattaa enemmän toimintaa; JFR säilyttää enintään 64 MiB viimeisintä tietoa."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.playerchunkbudgetenabled]
+summary = "Ottaa pelaajien maailmakohtaiset chunk-budjetit käyttöön; päällekkäisyydet lasketaan kerran."
+impact = "Oletuksena pois käytöstä. Budjetit voivat pienentää nykyisiä tavoite-etäisyyksiä, ja palautuminen on asteittaista."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.playertickingchunkbudget]
+summary = "Pelaajien simuloitujen chunkien arvioitu enimmäismäärä maailmaa kohti; vähintään 1."
+impact = "Päällekkäiset simulointialueet lasketaan kerran. Asetetut vähimmäisetäisyydet ovat etusijalla, jos budjettia ei voida saavuttaa."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.playerviewonlychunkbudget]
+summary = "Vain näkyvien chunkien arvioitu enimmäismäärä maailmaa kohti; vähintään 1."
+impact = "Laskee näkyvän alueen simulointialueen ulkopuolella. Ennustaa pelaajien tarvetta, ei ladattuja chunkeja tai lisäosien tikettejä."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.budgetrecoverychecks]
+summary = "Peräkkäisten terveiden budjettiarvioiden määrä ennen etäisyyden kasvattamista; vähintään 1."
+impact = "Arviovälin määrää updateCooldownSeconds. Puuttuva tick-telemetria tai keskeneräinen pelaajaindeksi nollaa palautumisen."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.budgetrecoverystep]
+summary = "Etäisyyden suurin lisäys onnistuneen budjettipalautumisen jälkeen chunkeina; rajattu välille 1–32."
+impact = "Pienet askeleet rajoittavat latauspiikkejä palautumisen aikana. Koskee vain käytössä olevia pelaajien chunk-budjetteja."

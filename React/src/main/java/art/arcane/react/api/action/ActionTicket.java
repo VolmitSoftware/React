@@ -140,11 +140,11 @@ public class ActionTicket<T extends ActionParams> {
         return;
       }
 
+      failure = failureCause;
+      failed = true;
       if (!done) {
         finish();
       }
-      failure = failureCause;
-      failed = true;
     }
     invokeTerminalCallbacks();
   }

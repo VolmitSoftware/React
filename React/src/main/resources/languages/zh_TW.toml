@@ -180,12 +180,13 @@
 #   {world}  Minecraft 世界名稱
 
 [command.description]
+"action.capture_profile" = "儲存本機 JDK Flight Recorder 效能剖析記錄，不上傳"
 debugdump = "建立診斷報告並選擇是否上傳"
 action = "緩解、清理和業務診斷方面的行動設施"
 "action.audit" = "列出所有已註冊的動作、 啟用狀態和當前行為摘要"
 "action.collect_garbage" = "請求 JVM 收集垃圾並立即報告回收堆積"
 "action.hopper_network_normalize" = "通過將附近的轉移項目合併來正常化漏斗熱點"
-"action.incident_playbook" = "排出一個完全滯後的緩解行動序列"
+"action.incident_playbook" = "負載壓力持續時逐項執行適用的緩解措施"
 "action.prewarm_critical_chunks" = "預先加載最關鍵的測量區塊和鄰居"
 "action.purge_chunks" = "嘗試在選擇的世界中卸載區塊"
 "action.purge_entities" = "刪除選擇的世界和區塊半徑中的匹配實體"
@@ -235,7 +236,8 @@ language = "選擇個人語言或伺服器語言"
 debugdump_upload = "將報告上傳至 mclo.gs"
 
 [command.parameter.action]
-include_gc = "是否包含垃圾收集步驟"
+profile_seconds = "記錄時間（秒），範圍為 1 到 300"
+include_gc = "堆積記憶體壓力與可回收記憶體皆偏高時，允許垃圾回收"
 max_chunks = "針對此行動的區塊最大數量"
 max_entities = "最大此動作中要剪下的實體"
 min_age_seconds = "實體有資格達到的最低年齡以秒計"
@@ -375,7 +377,7 @@ reclaimed = "釋放 {freed} ({before} -> {after}) 中, {duration}"
 completed = "標準化{hoppers} 漏斗,合併的{items}項目實體和{duration}中解載的{chunks} 區塊"
 
 [action.incident_playbook]
-completed = "遊戲本級 {tier} 佇列已排入 {actions} 緩解行動 {duration}"
+completed = "等級 {tier} 的處置流程已在 {duration} 內完成 {actions} 項緩解措施"
 
 [action.prewarm_chunks]
 completed = "預熱{warmed} 區塊 ({loaded} 新加載)在 {duration} 中"
@@ -4562,3 +4564,57 @@ open = "開啟：{url}"
 open-description = "開啟已上傳的診斷報告。"
 copy-path = "複製本機路徑"
 copy-path-description = "複製報告的本機路徑。"
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumincidentscore]
+summary = "繼續執行緩解措施所需的事件評分。"
+impact = "達到此評分或 minimumTickMS 時，流程將繼續。"
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumtickms]
+summary = "繼續執行緩解措施所需的平均刻耗時，單位為毫秒。"
+impact = "兩個負載指標皆低於各自門檻時，流程停止。"
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumentitiesperchunk]
+summary = "開始實體清理階段前，單一區塊內需要觀測到的實體數量。"
+impact = "數值越高，清理範圍越集中於實體密集區域。"
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.recheckdelayms]
+summary = "子操作完成後的觀測間隔，單位為毫秒；最小為 1000。"
+impact = "選擇下一項緩解措施前，留出時間更新指標。"
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.childtimeoutms]
+summary = "單一緩解階段的最長執行時間，單位為毫秒；最小為 1000。"
+impact = "子操作逾時將導致流程失敗，並停止進一步升級措施。"
+
+[config.documentation.annotation.art.arcane.react.content.action.actiontrimentitiesbyagepriority_params.field.minimumentitiesperchunk]
+summary = "清理前區塊內需要觀測到的最少實體數量；0 表示包含所有已觀測區塊。"
+impact = "設為正數可將清理範圍限制為實體密集區塊。"
+
+[action.capture_profile]
+completed = "已將 {count} 份本機效能剖析記錄儲存至 {path}"
+
+[config.documentation.annotation.art.arcane.react.content.action.actioncaptureprofile]
+description = "依需求在本機記錄包含執行、配置和 GC 事件的 JDK Flight Recorder 效能剖析。保留三份記錄，絕不上傳。"
+
+[config.documentation.annotation.art.arcane.react.content.action.actioncaptureprofile_params.field.seconds]
+summary = "效能剖析時間（秒），限制為 1 到 300。"
+impact = "較長的記錄可涵蓋更多活動；JFR 最多保留 64 MiB 的滾動資料。"
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.playerchunkbudgetenabled]
+summary = "啟用每個世界的玩家區塊預算；重疊部分只計算一次。"
+impact = "預設關閉。預算可降低現有目標距離，恢復時逐步增加。"
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.playertickingchunkbudget]
+summary = "每個世界中玩家模擬區塊的估算上限；最小為 1。"
+impact = "重疊的模擬範圍只計算一次。無法滿足預算時，優先遵守設定的最小距離。"
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.playerviewonlychunkbudget]
+summary = "每個世界中僅顯示區塊的估算上限；最小為 1。"
+impact = "計算模擬範圍之外的顯示範圍。預測玩家需求，而非實際載入的區塊或外掛區塊票證。"
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.budgetrecoverychecks]
+summary = "增加距離前需要連續通過的正常預算評估次數；最小為 1。"
+impact = "評估間隔遵循 updateCooldownSeconds。刻遙測未知或玩家索引尚未就緒時，將重設恢復進度。"
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.budgetrecoverystep]
+summary = "預算恢復後單次增加的最大距離（區塊），限制為 1 到 32。"
+impact = "較小的步長可限制恢復時的區塊載入突增量。僅在啟用玩家區塊預算時生效。"

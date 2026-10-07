@@ -180,12 +180,13 @@
 #   {world}  שם עולם Minecraft
 
 [command.description]
+"action.capture_profile" = "שמירת פרופיל JDK Flight Recorder מקומי ללא העלאה"
 debugdump = "יצירת דוח אבחון והעלאתו לפי בחירה"
 action = "שיטות פעולה להפחתה, ניקוי ואבחון תפעולי"
 "action.audit" = "רשימה של כל הפעולות הרשומות, המדינה המותרת והסיכום הנוכחי להתנהגות"
 "action.collect_garbage" = "בקשה JVM איסוף אשפה ודיווח מיידי על הערימה"
 "action.hopper_network_normalize" = "תדמיני נקודות חום משפך על ידי מיזוג פריטים העברה הסמוכים"
-"action.incident_playbook" = "רצף פעולה מלא של lag-incident mitigation"
+"action.incident_playbook" = "ביצוע פעולות מתאימות להפחתת העומס בזו אחר זו כל עוד העומס נמשך"
 "action.prewarm_critical_chunks" = "להעלות מראש את צ'אנקים המודד החשוב ביותר ושל השכנים"
 "action.purge_chunks" = "ניסיון לפרק צ'אנקים בעולם הנבחר"
 "action.purge_entities" = "להסיר יחידות מתאימות בעולם וברדיוס צ'אנק שנבחר."
@@ -235,7 +236,8 @@ language = "בחירת השפה שלך או שפת השרת"
 debugdump_upload = "העלאת הדוח אל mclo.gs"
 
 [command.parameter.action]
-include_gc = "בין אם לכלול שלב איסוף אשפה"
+profile_seconds = "משך ההקלטה בשניות, בין 1 ל־300"
+include_gc = "לאפשר איסוף אשפה כשהעומס על הערימה וכמות הזיכרון הניתן לשחרור גבוהים"
 max_chunks = "מספר מקסימלי של צ'אנקים שהפעולה הזו מכוונת אליו"
 max_entities = "ישויות מקסימליות לטרידם בפעולה זו"
 min_age_seconds = "גיל מינימום בתוך שניות לפני שהגופים זכאים"
@@ -375,7 +377,7 @@ reclaimed = "חופשי {freed} ({before} -> {after}ב) {duration}"
 completed = "{hoppers} משפכים נורמלי, יחידות פריטים {items} הוגשו ו-{chunks} צ'אנקים לא פורסמו ב- {duration}"
 
 [action.incident_playbook]
-completed = "Playbook tier {tier} תור {actions} פעולות הקטנת {duration}"
+completed = "תוכנית הפעולה ברמה {tier} השלימה {actions} פעולות להפחתת העומס תוך {duration}"
 
 [action.prewarm_chunks]
 completed = "{warmed} מקודם צ'אנקים ({loaded} נשלח לאחרונה) ב {duration}"
@@ -4562,3 +4564,57 @@ open = "פתיחה: {url}"
 open-description = "פתיחת דוח האבחון שהועלה."
 copy-path = "העתקת הנתיב המקומי"
 copy-path-description = "העתקת הנתיב המקומי של הדוח."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumincidentscore]
+summary = "ציון האירוע הנדרש להמשך פעולות הפחתת העומס."
+impact = "התוכנית ממשיכה כאשר ציון זה או minimumTickMS מגיעים לסף."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumtickms]
+summary = "משך הטיק הממוצע במילישניות הנדרש להמשך פעולות הפחתת העומס."
+impact = "התוכנית נעצרת כאשר שני מדדי העומס נמוכים מהספים שלהם."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumentitiesperchunk]
+summary = "מספר הישויות שנצפו בצ׳אנק אחד הנדרש לפני שלב צמצום הישויות."
+impact = "ערכים גבוהים יותר מגבילים את הצמצום לריכוזי ישויות צפופים יותר."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.recheckdelayms]
+summary = "מרווח התצפית לאחר השלמת פעולת משנה, במילישניות; לפחות 1000."
+impact = "מאפשר לעדכן את המדדים לפני בחירת הפעולה הבאה."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.childtimeoutms]
+summary = "משך הזמן המרבי של שלב הפחתת עומס אחד, במילישניות; לפחות 1000."
+impact = "חריגה ממגבלת הזמן של פעולת משנה מכשילה את התוכנית ועוצרת הסלמה נוספת."
+
+[config.documentation.annotation.art.arcane.react.content.action.actiontrimentitiesbyagepriority_params.field.minimumentitiesperchunk]
+summary = "מספר הישויות המזערי שנצפו בצ׳אנק לפני הצמצום; אפס כולל את כל הצ׳אנקים שנצפו."
+impact = "ערך חיובי מגביל את הצמצום לצ׳אנקים צפופים."
+
+[action.capture_profile]
+completed = "נשמר פרופיל מקומי אחד ({count}) בנתיב {path}"
+
+[config.documentation.annotation.art.arcane.react.content.action.actioncaptureprofile]
+description = "מקליט לפי בקשה פרופיל JDK Flight Recorder מקומי עם אירועי ביצוע, הקצאה ו־GC. שומר שלוש הקלטות ולעולם אינו מעלה אותן."
+
+[config.documentation.annotation.art.arcane.react.content.action.actioncaptureprofile_params.field.seconds]
+summary = "משך הפרופיל בשניות, מוגבל לטווח 1–300."
+impact = "הקלטות ארוכות מכסות פעילות רבה יותר; JFR שומר עד 64 MiB של הנתונים האחרונים."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.playerchunkbudgetenabled]
+summary = "מפעיל תקציבי צ׳אנקים של שחקנים לכל עולם; חפיפות נספרות פעם אחת."
+impact = "כבוי כברירת מחדל. התקציבים יכולים להקטין מרחקי יעד קיימים, והשחזור מתבצע בהדרגה."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.playertickingchunkbudget]
+summary = "המספר המרבי המשוער של צ׳אנקים שמסומלצים עבור שחקנים בכל עולם; לפחות 1."
+impact = "אזורי סימולציה חופפים נספרים פעם אחת. אם התקציב אינו ניתן להשגה, למרחקים המזעריים שהוגדרו יש עדיפות."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.playerviewonlychunkbudget]
+summary = "המספר המרבי המשוער של צ׳אנקים לתצוגה בלבד בכל עולם; לפחות 1."
+impact = "סופר את אזור התצוגה שמחוץ לאזור הסימולציה. חוזה ביקוש של שחקנים, לא צ׳אנקים טעונים או כרטיסי תוספים."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.budgetrecoverychecks]
+summary = "מספר בדיקות תקציב תקינות רצופות הנדרש לפני הגדלת מרחק; לפחות 1."
+impact = "הבדיקות מתבצעות לפי updateCooldownSeconds. טלמטריית טיקים לא ידועה או אינדקס שחקנים שאינו מוכן מאפסים את ההתאוששות."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.budgetrecoverystep]
+summary = "הגדלת המרחק המרבית אחרי התאוששות התקציב, בצ׳אנקים; מוגבלת לטווח 1–32."
+impact = "צעדים קטנים מגבילים קפיצות טעינה בזמן ההתאוששות. חל רק כאשר תקציבי הצ׳אנקים של השחקנים פעילים."

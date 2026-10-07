@@ -180,12 +180,13 @@
 #   {world}  Minecraft ワールド名
 
 [command.description]
+"action.capture_profile" = "JDK Flight Recorder のプロファイルをアップロードせずローカルに保存"
 debugdump = "診断レポートを作成し、必要に応じてアップロードする"
 action = "緩和、清掃および操作上の診断のための行動ユーティリティ"
 "action.audit" = "登録したアクション、有効状態、現在の動作のまとめをすべてリストする"
 "action.collect_garbage" = "リクエスト JVM ゴミ収集と即時回収を報告"
 "action.hopper_network_normalize" = "ホッパー ホットスポットを標準化して,近くの転送アイテムを統合します."
-"action.incident_playbook" = "完全なラグ・インシデントの緩和アクションシーケンスをキュー"
+"action.incident_playbook" = "負荷が続く間、状況に適した軽減策を一つずつ実行する"
 "action.prewarm_critical_chunks" = "最も重要な測定されたチャンクと隣接するファイルをプリロードします"
 "action.purge_chunks" = "選択された世界でチャンクをダウンロードしようとします."
 "action.purge_entities" = "選択された世界とチャンク半径で一致するエンティティを削除します"
@@ -235,7 +236,8 @@ language = "自分の言語またはサーバーの言語を選択"
 debugdump_upload = "レポートを mclo.gs にアップロードする"
 
 [command.parameter.action]
-include_gc = "ゴミ収集のステップを含むかどうか"
+profile_seconds = "記録時間（秒）、1～300"
+include_gc = "ヒープ負荷と回収可能なメモリ量が大きい場合にガベージコレクションを許可する"
 max_chunks = "このアクションが対象となるチャンクの最大数値"
 max_entities = "このアクションでトリミングする最大エンティティティ"
 min_age_seconds = "法人が対象になるまで、最低年齢の秒数"
@@ -375,7 +377,7 @@ reclaimed = "フリガナ {freed} ({before} -> {after}) で {duration}"
 completed = "標準化された {hoppers} ホッパー,統合された {items} アイテムエンティティ,および {duration} で {chunks} チャンク を解装した"
 
 [action.incident_playbook]
-completed = "Playbook ティア {tier} キューイング {actions} 緩和アクションにおける {duration}"
+completed = "レベル {tier} の手順で {actions} 件の軽減策を {duration} で完了しました"
 
 [action.prewarm_chunks]
 completed = "プリウォームされた{warmed} チャンク ({loaded} {duration}で)が新たにロードされました"
@@ -4562,3 +4564,57 @@ open = "開く: {url}"
 open-description = "アップロードした診断レポートを開きます。"
 copy-path = "ローカルパスをコピー"
 copy-path-description = "レポートのローカルパスをコピーします。"
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumincidentscore]
+summary = "軽減策を継続するために必要なインシデントスコア。"
+impact = "このスコアまたは minimumTickMS に達すると手順を継続します。"
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumtickms]
+summary = "軽減策を継続するために必要な平均ティック時間（ミリ秒）。"
+impact = "両方の負荷指標がそれぞれのしきい値を下回ると手順を終了します。"
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumentitiesperchunk]
+summary = "エンティティ削減を開始するために、一つのチャンクで観測される必要があるエンティティ数。"
+impact = "値を上げると、密度の高いエンティティ集積に削減対象を限定します。"
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.recheckdelayms]
+summary = "子アクション完了後の観測間隔（ミリ秒）。最小値は 1000。"
+impact = "次の軽減策を選ぶ前に指標を更新する時間を確保します。"
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.childtimeoutms]
+summary = "一つの軽減段階の最大実行時間（ミリ秒）。最小値は 1000。"
+impact = "子アクションがタイムアウトすると手順は失敗し、それ以上の対策を停止します。"
+
+[config.documentation.annotation.art.arcane.react.content.action.actiontrimentitiesbyagepriority_params.field.minimumentitiesperchunk]
+summary = "削減前にチャンク内で観測される必要がある最小エンティティ数。0 は観測されたすべてのチャンクを含みます。"
+impact = "正の値を設定すると、密度の高いチャンクに削減対象を限定します。"
+
+[action.capture_profile]
+completed = "ローカルプロファイル {count} 件を {path} に保存しました"
+
+[config.documentation.annotation.art.arcane.react.content.action.actioncaptureprofile]
+description = "要求時に実行、割り当て、GCイベントを含むJDK Flight Recorderプロファイルをローカルに記録します。3件を保持し、アップロードは行いません。"
+
+[config.documentation.annotation.art.arcane.react.content.action.actioncaptureprofile_params.field.seconds]
+summary = "プロファイルの記録時間（秒）。1～300に制限されます。"
+impact = "記録時間を延ばすとより多くの活動を記録できます。JFRは最新のデータを最大64 MiB保持します。"
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.playerchunkbudgetenabled]
+summary = "ワールドごとのプレイヤーチャンク予算を有効にします。重複範囲は1回だけ数えます。"
+impact = "既定では無効です。予算に応じて既存の目標距離を縮小し、回復時は段階的に戻します。"
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.playertickingchunkbudget]
+summary = "ワールドごとのプレイヤー用シミュレーションチャンク数の推定上限。最小1。"
+impact = "重複するシミュレーション範囲は1回だけ数えます。予算を満たせない場合は設定済みの最小距離を優先します。"
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.playerviewonlychunkbudget]
+summary = "ワールドごとの表示専用チャンク数の推定上限。最小1。"
+impact = "シミュレーション範囲外の表示範囲を数えます。実際の読み込み数やプラグインチケットではなく、プレイヤーの需要を予測します。"
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.budgetrecoverychecks]
+summary = "距離を拡大するまでに必要な、予算内に収まる連続評価回数。最小1。"
+impact = "評価間隔はupdateCooldownSecondsに従います。ティック情報が不明な場合やプレイヤー索引が未準備の場合は回復判定をリセットします。"
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.budgetrecoverystep]
+summary = "予算回復後の最大距離増加量（チャンク）。1～32に制限されます。"
+impact = "小さい増加幅は回復中の読み込み集中を抑えます。プレイヤーチャンク予算が有効な場合にのみ適用されます。"

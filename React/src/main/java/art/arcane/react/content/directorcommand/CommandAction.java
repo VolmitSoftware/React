@@ -21,6 +21,7 @@ package art.arcane.react.content.directorcommand;
 
 import art.arcane.react.React;
 import art.arcane.react.api.action.Action;
+import art.arcane.react.content.action.ActionCaptureProfile;
 import art.arcane.react.content.action.ActionCollectGarbage;
 import art.arcane.react.content.action.ActionHopperNetworkNormalize;
 import art.arcane.react.content.action.ActionIncidentPlaybook;
@@ -53,6 +54,24 @@ import java.util.Comparator;
     descriptionKey = "command.description.action"
 )
 public class CommandAction implements DirectorExecutor {
+  @Director(
+      name = "capture-profile",
+      description = "Save a local JDK Flight Recorder profile without uploading it",
+      descriptionKey = "command.description.action.capture_profile"
+  )
+  public void captureProfile(
+      @Param(
+          name = "seconds",
+          description = "Capture duration in seconds, from 1 to 300",
+          descriptionKey = "command.parameter.action.profile_seconds",
+          defaultValue = "30"
+      )
+      int seconds
+  ) {
+    Action<ActionCaptureProfile.Params> action = React.action(ActionCaptureProfile.ID);
+    action.create(action.getDefaultParams().setSeconds(seconds), sender()).queue();
+  }
+
   @Director(
       name = "purge-entities",
       aliases = {"pe"},
@@ -327,15 +346,15 @@ public class CommandAction implements DirectorExecutor {
   @Director(
       name = "incident-playbook",
       aliases = {"aip"},
-      description = "Queue a full lag-incident mitigation action sequence",
+      description = "Run relevant incident mitigations one at a time while pressure remains",
       descriptionKey = "command.description.action.incident_playbook"
   )
   public void incidentPlaybook(
       @Param(
           name = "include-gc",
-          description = "Whether to include a garbage collection step",
+          description = "Allow garbage collection when heap pressure and reclaimable garbage are high",
           descriptionKey = "command.parameter.action.include_gc",
-          defaultValue = "true",
+          defaultValue = "false",
           aliases = {"gc"}
       )
       boolean includeGC,

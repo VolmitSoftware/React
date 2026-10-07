@@ -180,12 +180,13 @@
 #   {world}  Minecraft 世界名称
 
 [command.description]
+"action.capture_profile" = "保存本地 JDK Flight Recorder 性能剖析记录，不上传"
 debugdump = "创建诊断报告并选择是否上传"
 action = "缓解、清理和业务诊断方面的行动设施"
 "action.audit" = "列出所有已注册的动作、 启用状态和当前行为摘要"
 "action.collect_garbage" = "请求 JVM 收集垃圾并立即报告回收堆积"
 "action.hopper_network_normalize" = "通过将附近的转移项目合并来正常化漏斗热点"
-"action.incident_playbook" = "排出一个完全滞后的缓解行动序列"
+"action.incident_playbook" = "在负载压力持续时逐项执行适用的缓解措施"
 "action.prewarm_critical_chunks" = "预先加载最关键的测量区块和邻居"
 "action.purge_chunks" = "尝试在选择的世界中卸载区块"
 "action.purge_entities" = "删除选择的世界和区块半径中的匹配实体"
@@ -235,7 +236,8 @@ language = "选择个人语言或服务器语言"
 debugdump_upload = "将报告上传到 mclo.gs"
 
 [command.parameter.action]
-include_gc = "是否包含垃圾收集步骤"
+profile_seconds = "记录时长（秒），范围为 1 到 300"
+include_gc = "在堆内存压力和可回收内存都较高时允许垃圾回收"
 max_chunks = "针对此行动的区块最大数量"
 max_entities = "最大此动作中要剪切的实体"
 min_age_seconds = "实体有资格达到的最低年龄以秒计"
@@ -375,7 +377,7 @@ reclaimed = "释放 {freed} ({before} -> {after}) 中, {duration}"
 completed = "标准化{hoppers} 漏斗,合并的{items}项目实体和{duration}中解载的{chunks} 区块"
 
 [action.incident_playbook]
-completed = "游戏本级 {tier} 队列已排入 {actions} 缓解行动 {duration}"
+completed = "级别 {tier} 的处置流程已在 {duration} 内完成 {actions} 项缓解措施"
 
 [action.prewarm_chunks]
 completed = "预热{warmed} 区块 ({loaded} 新加载)在 {duration} 中"
@@ -4562,3 +4564,57 @@ open = "打开：{url}"
 open-description = "打开已上传的诊断报告。"
 copy-path = "复制本地路径"
 copy-path-description = "复制报告的本地路径。"
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumincidentscore]
+summary = "继续执行缓解措施所需的事件评分。"
+impact = "达到此评分或 minimumTickMS 时，流程将继续。"
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumtickms]
+summary = "继续执行缓解措施所需的平均刻耗时，单位为毫秒。"
+impact = "两个负载指标均低于各自阈值时，流程停止。"
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumentitiesperchunk]
+summary = "开始实体清理阶段前，单个区块内需要观测到的实体数量。"
+impact = "数值越高，清理范围越集中于实体密集区域。"
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.recheckdelayms]
+summary = "子操作完成后的观测间隔，单位为毫秒；最小为 1000。"
+impact = "在选择下一项缓解措施前，留出时间更新指标。"
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.childtimeoutms]
+summary = "单个缓解阶段的最长运行时间，单位为毫秒；最小为 1000。"
+impact = "子操作超时将导致流程失败，并停止进一步升级措施。"
+
+[config.documentation.annotation.art.arcane.react.content.action.actiontrimentitiesbyagepriority_params.field.minimumentitiesperchunk]
+summary = "清理前区块内需要观测到的最少实体数量；0 表示包含所有已观测区块。"
+impact = "设为正数可将清理范围限制为实体密集区块。"
+
+[action.capture_profile]
+completed = "已将 {count} 份本地性能剖析记录保存到 {path}"
+
+[config.documentation.annotation.art.arcane.react.content.action.actioncaptureprofile]
+description = "按需在本地记录包含执行、分配和 GC 事件的 JDK Flight Recorder 性能剖析。保留三份记录，绝不上传。"
+
+[config.documentation.annotation.art.arcane.react.content.action.actioncaptureprofile_params.field.seconds]
+summary = "性能剖析时长（秒），限制为 1 到 300。"
+impact = "较长的记录可覆盖更多活动；JFR 最多保留 64 MiB 的滚动数据。"
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.playerchunkbudgetenabled]
+summary = "启用每个世界的玩家区块预算；重叠部分只计算一次。"
+impact = "默认关闭。预算可降低现有目标距离，恢复时逐步增加。"
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.playertickingchunkbudget]
+summary = "每个世界中玩家模拟区块的估算上限；最小为 1。"
+impact = "重叠的模拟范围只计算一次。无法满足预算时，优先遵守配置的最小距离。"
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.playerviewonlychunkbudget]
+summary = "每个世界中仅显示区块的估算上限；最小为 1。"
+impact = "计算模拟范围之外的显示范围。预测玩家需求，而非实际加载的区块或插件区块票据。"
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.budgetrecoverychecks]
+summary = "增加距离前需要连续通过的正常预算评估次数；最小为 1。"
+impact = "评估间隔遵循 updateCooldownSeconds。刻遥测未知或玩家索引未就绪时，将重置恢复进度。"
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.budgetrecoverystep]
+summary = "预算恢复后单次增加的最大距离（区块），限制为 1 到 32。"
+impact = "较小的步长可限制恢复时的区块加载突发量。仅在启用玩家区块预算时生效。"

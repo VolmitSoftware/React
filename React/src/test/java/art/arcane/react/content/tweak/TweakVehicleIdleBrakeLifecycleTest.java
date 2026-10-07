@@ -3,6 +3,9 @@ package art.arcane.react.content.tweak;
 import art.arcane.react.React;
 import art.arcane.react.core.controller.EntityController;
 import art.arcane.react.util.common.scheduling.J;
+import art.arcane.react.util.project.world.NearbyEntitySampler;
+import org.bukkit.World;
+import org.bukkit.util.BoundingBox;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Minecart;
 import org.bukkit.entity.Player;
@@ -37,6 +40,7 @@ class TweakVehicleIdleBrakeLifecycleTest {
     TweakVehicleIdleBrake tweak = new TweakVehicleIdleBrake();
     setInt(tweak, "maxVehiclesSampledPerWorld", 24);
     EntityController controller = Mockito.mock(EntityController.class);
+    Mockito.when(controller.getNearbyEntitySampler()).thenReturn(new NearbyEntitySampler());
     Player firstPlayer = playerWithNearbyVehicles(30);
     Player secondPlayer = playerWithNearbyVehicles(30);
     Mockito.when(controller.getFoliaPlayers()).thenReturn(new Player[]{firstPlayer, secondPlayer});
@@ -68,6 +72,7 @@ class TweakVehicleIdleBrakeLifecycleTest {
     TweakVehicleIdleBrake tweak = new TweakVehicleIdleBrake();
     setInt(tweak, "maxVehiclesSampledPerWorld", 24);
     EntityController controller = Mockito.mock(EntityController.class);
+    Mockito.when(controller.getNearbyEntitySampler()).thenReturn(new NearbyEntitySampler());
     Player first = emptyPlayer();
     Player second = emptyPlayer();
     Player third = emptyPlayer();
@@ -94,9 +99,38 @@ class TweakVehicleIdleBrakeLifecycleTest {
   }
 
   @Test
+  void smallVehicleQuotaEventuallyVisitsEveryStableCandidate() throws ReflectiveOperationException {
+    TweakVehicleIdleBrake tweak = new TweakVehicleIdleBrake();
+    setInt(tweak, "maxVehiclesSampledPerWorld", 1);
+    EntityController controller = Mockito.mock(EntityController.class);
+    Mockito.when(controller.getNearbyEntitySampler()).thenReturn(new NearbyEntitySampler());
+    Player player = playerWithNearbyVehicles(64);
+    List<Entity> vehicles = player.getNearbyEntities(0D, 0D, 0D);
+    Mockito.when(controller.getFoliaPlayers()).thenReturn(new Player[]{player});
+    List<ScheduledTask> scheduled = new ArrayList<>();
+    try (MockedStatic<React> react = Mockito.mockStatic(React.class);
+         MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
+      react.when(() -> React.controller(EntityController.class)).thenReturn(controller);
+      scheduling.when(J::isFoliaThreading).thenReturn(true);
+      scheduling.when(() -> J.isOwnedByCurrentRegion(Mockito.any(Entity.class))).thenReturn(true);
+      captureEntityTasks(scheduling, scheduled);
+      tweak.onActivate();
+      for (int cycle = 0; cycle < vehicles.size(); cycle++) {
+        tweak.onTick();
+        Assertions.assertEquals(1, scheduled.size());
+        scheduled.removeFirst().runnable().run();
+      }
+      for (Entity vehicle : vehicles) {
+        Mockito.verify(vehicle).setVelocity(Mockito.any(Vector.class));
+      }
+    }
+  }
+
+  @Test
   void delayedVehicleCallbackStopsAfterRestart() {
     TweakVehicleIdleBrake tweak = new TweakVehicleIdleBrake();
     EntityController controller = Mockito.mock(EntityController.class);
+    Mockito.when(controller.getNearbyEntitySampler()).thenReturn(new NearbyEntitySampler());
     Player player = emptyPlayer();
     Mockito.when(controller.getFoliaPlayers()).thenReturn(new Player[]{player});
     List<ScheduledTask> scheduled = new ArrayList<>();
@@ -125,6 +159,7 @@ class TweakVehicleIdleBrakeLifecycleTest {
     TweakVehicleIdleBrake tweak = new TweakVehicleIdleBrake();
     setInt(tweak, "maxVehiclesSampledPerWorld", 5);
     EntityController controller = Mockito.mock(EntityController.class);
+    Mockito.when(controller.getNearbyEntitySampler()).thenReturn(new NearbyEntitySampler());
     AtomicInteger brakes = new AtomicInteger(0);
     AtomicInteger inspections = new AtomicInteger(0);
     List<Minecart> vehicles = vehicles(1000, brakes, inspections);
@@ -160,6 +195,11 @@ class TweakVehicleIdleBrakeLifecycleTest {
 
   private static Player emptyPlayer() {
     Player player = Mockito.mock(Player.class);
+    World world = Mockito.mock(World.class);
+    Mockito.when(world.getUID()).thenReturn(UUID.randomUUID());
+    Mockito.when(player.getWorld()).thenReturn(world);
+    Mockito.when(player.getUniqueId()).thenReturn(UUID.randomUUID());
+    Mockito.when(player.getBoundingBox()).thenAnswer(ignored -> new BoundingBox(0D, 64D, 0D, 1D, 66D, 1D));
     Mockito.when(player.isOnline()).thenReturn(true);
     Mockito.when(player.getNearbyEntities(Mockito.anyDouble(), Mockito.anyDouble(), Mockito.anyDouble()))
         .thenReturn(List.of());
@@ -168,6 +208,11 @@ class TweakVehicleIdleBrakeLifecycleTest {
 
   private static Player playerWithNearbyVehicles(int count) {
     Player player = Mockito.mock(Player.class);
+    World world = Mockito.mock(World.class);
+    Mockito.when(world.getUID()).thenReturn(UUID.randomUUID());
+    Mockito.when(player.getWorld()).thenReturn(world);
+    Mockito.when(player.getUniqueId()).thenReturn(UUID.randomUUID());
+    Mockito.when(player.getBoundingBox()).thenAnswer(ignored -> new BoundingBox(0D, 64D, 0D, 1D, 66D, 1D));
     List<Entity> nearby = new ArrayList<>();
     for (int i = 0; i < count; i++) {
       nearby.add(vehicle(null));

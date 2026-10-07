@@ -23,6 +23,7 @@ import art.arcane.react.React;
 import art.arcane.react.api.tweak.ReactTweak;
 import art.arcane.react.core.controller.EntityController;
 import art.arcane.react.util.common.scheduling.J;
+import art.arcane.react.util.project.world.NearbyEntitySampler;
 import org.bukkit.entity.Boat;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Minecart;
@@ -37,7 +38,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -199,33 +199,29 @@ public class TweakVehicleIdleBrake extends ReactTweak {
       return;
     }
 
-    List<Entity> nearby = player.getNearbyEntities(
-        maxDistanceWithoutPlayer + 24,
-        Math.max(32, maxDistanceWithoutPlayer),
-        maxDistanceWithoutPlayer + 24
-    );
-    if (nearby.isEmpty()) {
+    EntityController controller = React.controller(EntityController.class);
+    if (controller == null) {
       return;
     }
-
-    int start = ThreadLocalRandom.current().nextInt(nearby.size());
-    int inspectionLimit = Math.min(nearby.size(), Math.max(64, perAnchor * 8));
-    int sampled = 0;
-    for (int i = 0; i < inspectionLimit && sampled < perAnchor; i++) {
-      if (!isActive(cycle) || cycle.remainingVehicles() <= 0) {
+    List<Entity> nearby = controller.getNearbyEntitySampler().sample(
+        player,
+        new NearbyEntitySampler.Request(ID, maxDistanceWithoutPlayer + 24, Math.max(32, maxDistanceWithoutPlayer), perAnchor),
+        entity -> claimNearbyVehicle(entity, cycle)
+    );
+    for (Entity entity : nearby) {
+      if (!isActive(cycle)) {
         return;
       }
-
-      Entity entity = nearby.get((start + i) % nearby.size());
-      if (!isBrakeableVehicle(entity)
-          || !J.isOwnedByCurrentRegion(entity)
-          || !cycle.claimVehicle(entity.getUniqueId())) {
-        continue;
-      }
-
-      sampled++;
       brakeIfIdle(entity, cycle);
     }
+  }
+
+  private boolean claimNearbyVehicle(Entity entity, ScanCycle cycle) {
+    return isActive(cycle)
+        && cycle.remainingVehicles() > 0
+        && isBrakeableVehicle(entity)
+        && J.isOwnedByCurrentRegion(entity)
+        && cycle.claimVehicle(entity.getUniqueId());
   }
 
   private boolean isBrakeableVehicle(Entity entity) {

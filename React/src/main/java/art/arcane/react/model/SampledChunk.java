@@ -95,6 +95,23 @@ public class SampledChunk {
     return values.isEmpty();
   }
 
+  public Score captureAndDecay() {
+    double total = 0D;
+    double highest = 0D;
+    for (Map.Entry<String, AtomicDouble> entry : values.entrySet()) {
+      AtomicDouble counter = entry.getValue();
+      double value = counter instanceof GaugeCounter ? counter.get() : counter.getAndUpdate(HALF);
+      total += value;
+      highest = Math.max(highest, value);
+      if (!(counter instanceof GaugeCounter) && value * 0.5D < PRUNE_BELOW) {
+        values.remove(entry.getKey(), counter);
+      }
+    }
+    return new Score(total, highest);
+  }
+
+  public record Score(double total, double highest) {}
+
   private static final class GaugeCounter extends AtomicDouble {
   }
 }

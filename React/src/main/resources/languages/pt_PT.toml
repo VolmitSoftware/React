@@ -180,12 +180,13 @@
 #   {world}  Nome do mundo Minecraft
 
 [command.description]
+"action.capture_profile" = "Guardar um perfil local do JDK Flight Recorder sem o enviar"
 debugdump = "Criar um relatório de diagnóstico e carregá-lo opcionalmente"
 action = "Utilitários de ação para mitigação, limpeza e diagnósticos operacionais"
 "action.audit" = "Listar todas as ações registradas, estado habilitado e resumo do comportamento atual"
 "action.collect_garbage" = "Pedido JVM coleta de lixo e relatório imediato recuperado pilha"
 "action.hopper_network_normalize" = "Normalize hotspots funil através da fusão de itens de transferência próximos"
-"action.incident_playbook" = "Em fila, uma sequência de ação de mitigação por defasagem completa"
+"action.incident_playbook" = "Executar as medidas adequadas uma de cada vez enquanto a pressão persistir"
 "action.prewarm_critical_chunks" = "Precarregar o chunks mais crítico e vizinhos medidos"
 "action.purge_chunks" = "Tente descarregar chunks no mundo selecionado"
 "action.purge_entities" = "Remover entidades correspondentes no mundo selecionado e raio chunk"
@@ -235,7 +236,8 @@ language = "Escolhe o teu idioma ou o idioma do servidor"
 debugdump_upload = "Carregar o relatório para mclo.gs"
 
 [command.parameter.action]
-include_gc = "Se deve incluir uma etapa de recolha de lixo"
+profile_seconds = "Duração da captura em segundos, de 1 a 300"
+include_gc = "Permitir a recolha de lixo quando a pressão sobre o heap e a memória recuperável forem elevadas"
 max_chunks = "Número máximo de chunks visados por esta ação"
 max_entities = "Máximas entidades a cortar nesta ação"
 min_age_seconds = "Idade mínima em segundos antes de as entidades serem elegíveis"
@@ -375,7 +377,7 @@ reclaimed = "Livre {freed} ({before} -> {after}) em {duration}"
 completed = "{hoppers} funis normalizado, entidades de itens {items} combinadas e chunks {chunks} descarregado em {duration}"
 
 [action.incident_playbook]
-completed = "Nível do livro de reprodução {tier} fila de espera {actions} acções de redução em {duration}"
+completed = "O procedimento de nível {tier} concluiu {actions} medidas de mitigação em {duration}"
 
 [action.prewarm_chunks]
 completed = "{warmed} pre-calentado chunks ({loaded} recém carregado) em {duration}"
@@ -4562,3 +4564,57 @@ open = "Abrir: {url}"
 open-description = "Abrir o relatório de diagnóstico enviado."
 copy-path = "Copiar caminho local"
 copy-path-description = "Copiar o caminho local do relatório."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumincidentscore]
+summary = "Pontuação de incidente necessária para continuar a mitigação."
+impact = "O procedimento continua quando esta pontuação ou minimumTickMS é atingido."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumtickms]
+summary = "Duração média do tick, em milissegundos, necessária para continuar a mitigação."
+impact = "O procedimento para quando ambos os indicadores de pressão ficam abaixo dos respetivos limiares."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumentitiesperchunk]
+summary = "Número de entidades observadas num chunk necessário antes da sua redução."
+impact = "Valores mais altos limitam a redução às concentrações de entidades mais densas."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.recheckdelayms]
+summary = "Intervalo de observação após concluir uma ação secundária, em milissegundos; mínimo 1000."
+impact = "Permite atualizar as métricas antes de escolher outra medida."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.childtimeoutms]
+summary = "Duração máxima de uma etapa de mitigação, em milissegundos; mínimo 1000."
+impact = "Se uma ação secundária exceder o tempo limite, o procedimento falha e não avança para outras medidas."
+
+[config.documentation.annotation.art.arcane.react.content.action.actiontrimentitiesbyagepriority_params.field.minimumentitiesperchunk]
+summary = "Mínimo de entidades observadas num chunk antes da redução; zero inclui todos os chunks observados."
+impact = "Um valor positivo limita a redução aos chunks mais densos."
+
+[action.capture_profile]
+completed = "Guardado {count} perfil local em {path}"
+
+[config.documentation.annotation.art.arcane.react.content.action.actioncaptureprofile]
+description = "Captura a pedido um perfil local do JDK Flight Recorder com eventos de execução, alocação e GC. Conserva três capturas; nunca as envia."
+
+[config.documentation.annotation.art.arcane.react.content.action.actioncaptureprofile_params.field.seconds]
+summary = "Duração do perfil em segundos, limitada entre 1 e 300."
+impact = "Capturas mais longas abrangem mais atividade; a gravação JFR conserva até 64 MiB de dados recentes."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.playerchunkbudgetenabled]
+summary = "Ativa orçamentos de chunks dos jogadores por mundo; as sobreposições contam uma vez."
+impact = "Desativado por predefinição. Os orçamentos podem reduzir as distâncias pretendidas existentes e a recuperação é gradual."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.playertickingchunkbudget]
+summary = "Máximo estimado de chunks simulados para os jogadores por mundo; mínimo 1."
+impact = "As áreas de simulação sobrepostas contam uma vez. As distâncias mínimas configuradas têm prioridade se o orçamento não puder ser cumprido."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.playerviewonlychunkbudget]
+summary = "Máximo estimado de chunks apenas visíveis por mundo; mínimo 1."
+impact = "Conta a área visível fora da área simulada. Estima a procura dos jogadores, não os chunks carregados nem os tickets dos plugins."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.budgetrecoverychecks]
+summary = "Avaliações saudáveis consecutivas do orçamento necessárias antes de aumentar uma distância; mínimo 1."
+impact = "As avaliações seguem updateCooldownSeconds. Telemetria de ticks desconhecida ou um índice de jogadores indisponível reiniciam a recuperação."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.budgetrecoverystep]
+summary = "Aumento máximo da distância após a recuperação do orçamento, em chunks; limitado entre 1 e 32."
+impact = "Passos pequenos limitam picos de carregamento durante a recuperação. Aplica-se apenas com os orçamentos de chunks dos jogadores ativos."

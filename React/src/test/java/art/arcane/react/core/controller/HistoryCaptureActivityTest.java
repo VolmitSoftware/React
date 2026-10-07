@@ -1,6 +1,7 @@
 package art.arcane.react.core.controller;
 
 import art.arcane.react.React;
+import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.content.sampler.SamplerEventTime;
 import art.arcane.react.core.history.MetricSnapshot;
 import art.arcane.react.core.history.MetricSnapshotValue;
@@ -56,6 +57,22 @@ class HistoryCaptureActivityTest {
     scheduling.close();
     react.close();
     React.instance = previous;
+  }
+
+  @Test
+  void registryOrderingRefreshesForReplacementAndRemoval() {
+    Sampler first = Mockito.mock(Sampler.class);
+    Mockito.when(first.getId()).thenReturn("dynamic");
+    Mockito.when(first.getName()).thenReturn("First");
+    Sampler replacement = Mockito.mock(Sampler.class);
+    Mockito.when(replacement.getId()).thenReturn("dynamic");
+    Mockito.when(replacement.getName()).thenReturn("Replacement");
+
+    Assertions.assertEquals("First", history.captureSnapshot(List.of(first, sampler), 1L).value("dynamic").name());
+    Assertions.assertEquals("Replacement", history.captureSnapshot(List.of(sampler, replacement), 2L).value("dynamic").name());
+    Assertions.assertNull(history.captureSnapshot(List.of(sampler), 3L).value("dynamic"));
+    Mockito.verify(first, Mockito.times(1)).capture();
+    Mockito.verify(replacement, Mockito.times(1)).capture();
   }
 
   @Test

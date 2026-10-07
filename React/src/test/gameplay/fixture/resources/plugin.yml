@@ -2,6 +2,7 @@ name: ReactGameplayObserver
 version: '1.0'
 main: art.arcane.react.test.GameplayObserver
 api-version: '26.1'
+folia-supported: true
 depend: [React]
 commands:
   reactqa:

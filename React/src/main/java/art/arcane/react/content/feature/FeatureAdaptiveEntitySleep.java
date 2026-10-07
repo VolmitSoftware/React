@@ -28,6 +28,7 @@ import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.core.controller.EntityController;
 import art.arcane.react.model.ReactEntity;
 import art.arcane.react.util.common.scheduling.J;
+import art.arcane.react.util.project.world.NearbyEntitySampler;
 import art.arcane.react.util.project.world.WorldEntitySnapshots;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -47,7 +48,6 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityTargetEvent;
 
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -66,6 +66,7 @@ public class FeatureAdaptiveEntitySleep extends ReactFeature implements Listener
 
   public static final String ID = "adaptive-entity-sleep";
   private transient final AtomicLong sleepScanGeneration = new AtomicLong(0L);
+  private transient final AtomicInteger nextPaperWorld = new AtomicInteger(0);
   private transient final AtomicInteger nextFoliaAnchor = new AtomicInteger(0);
   private transient final AtomicLong lifecycleGeneration = new AtomicLong(0L);
   private transient final AtomicReference<FoliaScanFlight> foliaScanFlight = new AtomicReference<>();
@@ -118,6 +119,7 @@ public class FeatureAdaptiveEntitySleep extends ReactFeature implements Listener
       sleepScanGeneration.set(0L);
       foliaScanFlight.set(null);
       nextFoliaAnchor.set(0);
+      nextPaperWorld.set(0);
       dutyCycleSupported = false;
       dutyCycleIndex = 0;
       lastTickMs = 0;
@@ -209,8 +211,14 @@ public class FeatureAdaptiveEntitySleep extends ReactFeature implements Listener
       return;
     }
 
+    List<World> worlds = Bukkit.getWorlds();
+    if (worlds.isEmpty()) {
+      return;
+    }
     int budget = Math.max(1, maxEntitiesSampledPerCycle);
-    for (World world : Bukkit.getWorlds()) {
+    int start = Math.floorMod(nextPaperWorld.getAndIncrement(), worlds.size());
+    for (int index = 0; index < worlds.size(); index++) {
+      World world = worlds.get((start + index) % worlds.size());
       if (budget <= 0) {
         return;
       }
@@ -299,25 +307,26 @@ public class FeatureAdaptiveEntitySleep extends ReactFeature implements Listener
       return;
     }
 
-    List<Entity> nearby = player.getNearbyEntities(
-        sleepBeyondNearestPlayer + 16,
-        Math.max(32, sleepBeyondNearestPlayer),
-        sleepBeyondNearestPlayer + 16
+    EntityController controller = React.controller(EntityController.class);
+    if (controller == null) {
+      return;
+    }
+    List<Entity> nearby = controller.getNearbyEntitySampler().sample(
+        player,
+        new NearbyEntitySampler.Request(ID, sleepBeyondNearestPlayer + 16, Math.max(32, sleepBeyondNearestPlayer), perAnchor),
+        entity -> isActive(generation) && flight.isCurrent(lifecycleGeneration.get()) && remaining.getAndDecrement() > 0
     );
     if (nearby.isEmpty()) {
       return;
     }
 
     int samples = Math.min(nearby.size(), perAnchor);
-    int start = ThreadLocalRandom.current().nextInt(nearby.size());
     for (int i = 0; i < samples; i++) {
-      if (!isActive(generation)
-          || !flight.isCurrent(lifecycleGeneration.get())
-          || remaining.getAndDecrement() <= 0) {
+      if (!isActive(generation) || !flight.isCurrent(lifecycleGeneration.get())) {
         return;
       }
 
-      Entity entity = nearby.get((start + i) % nearby.size());
+      Entity entity = nearby.get(i);
       manageEntity(entity, generation, flight);
     }
   }

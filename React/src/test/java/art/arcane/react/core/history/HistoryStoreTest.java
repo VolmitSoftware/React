@@ -3,6 +3,7 @@ package art.arcane.react.core.history;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
@@ -12,6 +13,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class HistoryStoreTest {
@@ -27,7 +29,7 @@ class HistoryStoreTest {
     store.write(raw);
 
     store.compactAll(HistoryTier.TEN_SECONDS.segmentDurationMs());
-    Map<String, List<HistoryPoint>> points = store.points(
+    Map<String, List<HistoryPoint>> points = readPoints(store,
         HistoryTier.TEN_SECONDS,
         Set.of("tick-time"),
         0L,
@@ -80,7 +82,7 @@ class HistoryStoreTest {
     Files.setLastModifiedTime(rawPath, FileTime.fromMillis(System.currentTimeMillis() + 10_000L));
 
     store.compactAll(HistoryTier.TEN_SECONDS.segmentDurationMs());
-    HistoryPoint point = store.points(
+    HistoryPoint point = readPoints(store,
         HistoryTier.TEN_SECONDS,
         Set.of("tps"),
         0L,
@@ -91,4 +93,34 @@ class HistoryStoreTest {
     assertEquals(60D, point.sum());
     assertEquals(40D, point.maximum());
   }
+
+  @Test
+  void retriesRetiredFileDeletionOnTheNextPrune(@TempDir Path directory) throws Exception {
+    HistoryStore store = new HistoryStore(directory, 3);
+    store.initialize();
+    HistorySegment raw = new HistorySegment(HistoryTier.RAW, 0L, 900);
+    raw.series("tps", "TPS", "").set(0, 20D);
+    store.write(raw);
+    store.compactAll(HistoryTier.TEN_SECONDS.segmentDurationMs());
+    Path rawPath = directory.resolve(HistoryTier.RAW.directory()).resolve("0.rht");
+    Files.delete(rawPath);
+    Files.createDirectory(rawPath);
+    Path blocker = Files.createFile(rawPath.resolve("busy"));
+
+    assertThrows(IOException.class, () -> store.prune(Long.MAX_VALUE / 4L, Map.of(HistoryTier.RAW, 1L)));
+    assertFalse(store.contains(HistoryTier.RAW, 0L));
+    assertTrue(Files.exists(rawPath));
+    Files.delete(blocker);
+
+    store.prune(Long.MAX_VALUE / 4L, Map.of(HistoryTier.RAW, 1L));
+    assertFalse(Files.exists(rawPath));
+    assertTrue(store.contains(HistoryTier.TEN_SECONDS, 0L));
+  }
+
+  private Map<String, List<HistoryPoint>> readPoints(HistoryStore store, HistoryTier tier, Set<String> ids, long fromMs, long toMs) throws Exception {
+    try (HistoryStore.QueryView view = store.openQuery(fromMs, toMs, Map::of)) {
+      return store.points(view, tier, ids, fromMs, toMs);
+    }
+  }
+
 }

@@ -180,12 +180,13 @@
 #   {world}  Minecraft dünyasının adı
 
 [command.description]
+"action.capture_profile" = "JDK Flight Recorder profilini yüklemeden yerel olarak kaydet"
 debugdump = "Tanılama raporu oluştur ve isteğe bağlı olarak yükle"
 action = "Dava, temizlenme ve operasyonel tanınmaları için eylem hizmetleri"
 "action.audit" = "Tüm kayıtlı eylemleri listeleyin, etkinleştirilen devlet ve mevcut davranış özetini"
 "action.collect_garbage" = "İstek İste JVM çöp toplama ve derhal geri bildirimde bulundu"
 "action.hopper_network_normalize" = "Yakın transfer öğelerini birleştirerek huni sıcak noktalarını normalleştirin"
-"action.incident_playbook" = "Queue a full lag-incident mitigation action serisi"
+"action.incident_playbook" = "Baskı sürdükçe ilgili olay azaltma işlemlerini teker teker çalıştır"
 "action.prewarm_critical_chunks" = "En kritik ölçülen chunk'lar ve komşuları önceden yükle"
 "action.purge_chunks" = "Seçili dünyada chunk'lar'i boşaltmaya çalışın"
 "action.purge_entities" = "Seçilen dünya ve chunk radyusundaki eşleşen varlıkları kaldırın"
@@ -235,7 +236,8 @@ language = "Kendi dilinizi veya sunucu dilini seçin"
 debugdump_upload = "Raporu mclo.gs üzerine yükle"
 
 [command.parameter.action]
-include_gc = "Çöp toplama adımını eklemek"
+profile_seconds = "Saniye cinsinden kayıt süresi, 1 ile 300 arası"
+include_gc = "Heap baskısı ve geri kazanılabilir bellek yüksek olduğunda çöp toplamaya izin ver"
 max_chunks = "Bu eylemin hedefi olan maksimum chunk'lar sayısı"
 max_entities = "Bu eylemde yer alan maksimum varlıklar"
 min_age_seconds = "Varlıklar için saniyeler içinde en az yaş uygun"
@@ -375,7 +377,7 @@ reclaimed = "Freed {freed} ({before} -> {after}) {duration}"
 completed = "Normal {hoppers} huniler, birleşmiş {items} öğe varlıkları ve {duration}'da boşaltılmış {chunks} chunk'lar"
 
 [action.incident_playbook]
-completed = "Playbook tier {tier} kuyruk {actions} Dava eylemleri {duration}"
+completed = "{tier} düzeyindeki işlem planı, {duration} içinde {actions} azaltma işlemini tamamladı"
 
 [action.prewarm_chunks]
 completed = "Önceleri ısınmış {warmed} chunk'lar ({loaded} yeni yüklenmiş) {duration}'de"
@@ -4562,3 +4564,57 @@ open = "Aç: {url}"
 open-description = "Yüklenen tanılama raporunu aç."
 copy-path = "Yerel yolu kopyala"
 copy-path-description = "Raporun yerel yolunu kopyala."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumincidentscore]
+summary = "Azaltma işlemlerine devam etmek için gereken olay puanı."
+impact = "Bu puana veya minimumTickMS değerine ulaşıldığında plan devam eder."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumtickms]
+summary = "Azaltma işlemlerine devam etmek için gereken ortalama tick süresi, milisaniye cinsinden."
+impact = "Her iki baskı göstergesi de kendi eşiğinin altına düştüğünde plan durur."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumentitiesperchunk]
+summary = "Varlık azaltma aşamasından önce bir chunk içinde gözlemlenmesi gereken varlık sayısı."
+impact = "Yüksek değerler, azaltmayı daha yoğun varlık kümeleriyle sınırlar."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.recheckdelayms]
+summary = "Bir alt işlem tamamlandıktan sonraki gözlem aralığı, milisaniye cinsinden; en az 1000."
+impact = "Başka bir azaltma işlemi seçilmeden önce ölçümlerin yenilenmesini sağlar."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.childtimeoutms]
+summary = "Bir azaltma aşamasının azami süresi, milisaniye cinsinden; en az 1000."
+impact = "Alt işlem zaman aşımına uğrarsa plan başarısız olur ve daha ileri önlemler durdurulur."
+
+[config.documentation.annotation.art.arcane.react.content.action.actiontrimentitiesbyagepriority_params.field.minimumentitiesperchunk]
+summary = "Azaltmadan önce bir chunk içinde gözlemlenmesi gereken asgari varlık sayısı; sıfır, gözlemlenen tüm chunkları kapsar."
+impact = "Pozitif bir değer, azaltmayı yoğun chunklarla sınırlar."
+
+[action.capture_profile]
+completed = "{count} yerel profil {path} konumuna kaydedildi"
+
+[config.documentation.annotation.art.arcane.react.content.action.actioncaptureprofile]
+description = "İstek üzerine yürütme, bellek ayırma ve GC olayları içeren yerel JDK Flight Recorder profili kaydeder. Üç kayıt saklar; hiçbirini yüklemez."
+
+[config.documentation.annotation.art.arcane.react.content.action.actioncaptureprofile_params.field.seconds]
+summary = "Saniye cinsinden profil süresi; 1 ile 300 arasında sınırlandırılır."
+impact = "Uzun kayıtlar daha fazla etkinliği kapsar; JFR en fazla 64 MiB yakın tarihli veri tutar."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.playerchunkbudgetenabled]
+summary = "Dünya başına oyuncu chunk bütçelerini etkinleştirir; örtüşmeler bir kez sayılır."
+impact = "Varsayılan olarak kapalıdır. Bütçeler mevcut hedef mesafeleri azaltabilir; geri yükseliş kademelidir."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.playertickingchunkbudget]
+summary = "Dünya başına oyuncular için simüle edilen tahmini en fazla chunk sayısı; en az 1."
+impact = "Örtüşen simülasyon alanları bir kez sayılır. Bütçe sağlanamıyorsa yapılandırılan en düşük mesafeler önceliklidir."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.playerviewonlychunkbudget]
+summary = "Dünya başına yalnızca görünen tahmini en fazla chunk sayısı; en az 1."
+impact = "Simülasyon alanının dışındaki görüş alanını sayar. Yüklü chunk veya eklenti biletlerini değil, oyuncu talebini tahmin eder."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.budgetrecoverychecks]
+summary = "Mesafeyi artırmadan önce gereken ardışık sağlıklı bütçe değerlendirmeleri; en az 1."
+impact = "Değerlendirmeler updateCooldownSeconds aralığını izler. Bilinmeyen tick telemetrisi veya hazır olmayan oyuncu dizini toparlanmayı sıfırlar."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.budgetrecoverystep]
+summary = "Bütçe toparlandıktan sonra chunk cinsinden en yüksek mesafe artışı; 1 ile 32 arasında sınırlandırılır."
+impact = "Küçük adımlar toparlanma sırasında yükleme patlamalarını sınırlar. Yalnızca oyuncu chunk bütçeleri açıkken uygulanır."

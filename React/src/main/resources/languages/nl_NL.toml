@@ -180,12 +180,13 @@
 #   {world}  Naam van de Minecraft-wereld
 
 [command.description]
+"action.capture_profile" = "Een lokaal JDK Flight Recorder-profiel opslaan zonder upload"
 debugdump = "Maak een diagnostisch rapport en upload het desgewenst"
 action = "Actiehulpprogramma's voor mitigatie, opruiming en operationele diagnostiek"
 "action.audit" = "Alle geregistreerde acties, ingeschakelde status en huidige gedragssamenvatting tonen"
 "action.collect_garbage" = "Verzoek JVM Afvalinzameling en rapport onmiddellijk teruggewonnen hoop"
 "action.hopper_network_normalize" = "Normaliseren van trechter-hotspots door het samenvoegen van nabijgelegen overdracht items"
-"action.incident_playbook" = "Wacht op een volledige vertragings-incident mitigatieactiereeks"
+"action.incident_playbook" = "Passende incidentmaatregelen één voor één uitvoeren zolang de belasting aanhoudt"
 "action.prewarm_critical_chunks" = "Voorafladen van de meest kritische gemeten chunks en naburigen"
 "action.purge_chunks" = "Probeer chunks te downloaden in de geselecteerde wereld"
 "action.purge_entities" = "Verwijder overeenkomende entiteiten in de geselecteerde wereld en chunk-radius"
@@ -235,7 +236,8 @@ language = "Kies je eigen taal of de servertaal"
 debugdump_upload = "Upload het rapport naar mclo.gs"
 
 [command.parameter.action]
-include_gc = "Of er een afvalverzamelingsstap moet worden toegevoegd"
+profile_seconds = "Opnameduur in seconden, van 1 tot 300"
+include_gc = "Garbagecollection toestaan bij hoge heapbelasting en veel vrij te maken geheugen"
 max_chunks = "Maximaal aantal chunks's waarop deze actie is gericht"
 max_entities = "Maximum aantal entiteiten dat in deze actie moet worden getrimd"
 min_age_seconds = "Minimumleeftijd in seconden voordat entiteiten in aanmerking komen"
@@ -375,7 +377,7 @@ reclaimed = "Vrij {freed} ({before} -> {after}) in {duration}"
 completed = "Genormale {hoppers} trechters, samengestelde {items}-item entiteiten en {chunks} chunks in {duration} ontladen"
 
 [action.incident_playbook]
-completed = "Speelboek-niveau {tier} wachtrij {actions} mitigerende maatregelen in {duration}"
+completed = "Het draaiboek van niveau {tier} heeft {actions} maatregelen voltooid in {duration}"
 
 [action.prewarm_chunks]
 completed = "Prewarmed {warmed} chunks ({loaded} nieuw geladen) in {duration}"
@@ -4562,3 +4564,57 @@ open = "Openen: {url}"
 open-description = "Het geüploade diagnoserapport openen."
 copy-path = "Lokaal pad kopiëren"
 copy-path-description = "Het lokale pad van het rapport kopiëren."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumincidentscore]
+summary = "Vereiste incidentscore om verdere maatregelen uit te voeren."
+impact = "Het draaiboek gaat door wanneer deze score of minimumTickMS wordt bereikt."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumtickms]
+summary = "Vereiste gemiddelde tickduur in milliseconden om verdere maatregelen uit te voeren."
+impact = "Het draaiboek stopt wanneer beide belastingswaarden onder hun drempel liggen."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumentitiesperchunk]
+summary = "Vereist aantal waargenomen entiteiten in één chunk voordat entiteiten worden verwijderd."
+impact = "Hogere waarden beperken het verwijderen tot dichtere groepen entiteiten."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.recheckdelayms]
+summary = "Observatietijd na een onderliggende actie, in milliseconden; minimaal 1000."
+impact = "Laat meetwaarden verversen voordat de volgende maatregel wordt gekozen."
+
+[config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.childtimeoutms]
+summary = "Maximale duur van één maatregel in milliseconden; minimaal 1000."
+impact = "Bij een time-out van een onderliggende actie mislukt het draaiboek en stopt verdere escalatie."
+
+[config.documentation.annotation.art.arcane.react.content.action.actiontrimentitiesbyagepriority_params.field.minimumentitiesperchunk]
+summary = "Minimaal aantal waargenomen entiteiten per chunk vóór verwijdering; nul omvat alle waargenomen chunks."
+impact = "Een positieve waarde beperkt het verwijderen tot dichtbezette chunks."
+
+[action.capture_profile]
+completed = "{count} lokaal profiel opgeslagen in {path}"
+
+[config.documentation.annotation.art.arcane.react.content.action.actioncaptureprofile]
+description = "Maakt op aanvraag een lokaal JDK Flight Recorder-profiel met uitvoerings-, allocatie- en GC-gebeurtenissen. Bewaart drie opnamen en uploadt ze nooit."
+
+[config.documentation.annotation.art.arcane.react.content.action.actioncaptureprofile_params.field.seconds]
+summary = "Profielduur in seconden, begrensd op 1 tot 300."
+impact = "Langere opnamen omvatten meer activiteit; de JFR-opname bewaart maximaal 64 MiB aan recente gegevens."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.playerchunkbudgetenabled]
+summary = "Schakelt chunkbudgetten per wereld voor spelers in; overlap telt één keer."
+impact = "Standaard uitgeschakeld. Budgetten kunnen bestaande doelafstanden verlagen; herstel verloopt geleidelijk."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.playertickingchunkbudget]
+summary = "Maximaal geschat aantal voor spelers gesimuleerde chunks per wereld; minimaal 1."
+impact = "Overlappende simulatiegebieden tellen één keer. Ingestelde minimumafstanden gaan voor als het budget niet haalbaar is."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.playerviewonlychunkbudget]
+summary = "Maximaal geschat aantal alleen zichtbare chunks per wereld; minimaal 1."
+impact = "Telt het zichtgebied buiten het simulatiegebied. Voorspelt spelersvraag, niet werkelijk geladen chunks of plugintickets."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.budgetrecoverychecks]
+summary = "Vereist aantal opeenvolgende gezonde budgetcontroles vóór een afstand toeneemt; minimaal 1."
+impact = "Controles volgen updateCooldownSeconds. Onbekende tickmetingen of een onvolledige spelersindex stellen het herstel opnieuw in."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.budgetrecoverystep]
+summary = "Maximale afstandstoename na succesvol budgetherstel, in chunks; begrensd op 1 tot 32."
+impact = "Kleine stappen beperken laadpieken tijdens herstel. Geldt alleen als chunkbudgetten voor spelers zijn ingeschakeld."

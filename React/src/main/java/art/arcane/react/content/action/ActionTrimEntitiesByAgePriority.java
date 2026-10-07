@@ -20,6 +20,7 @@
 package art.arcane.react.content.action;
 
 import art.arcane.react.React;
+import art.arcane.react.content.sampler.SamplerEntities;
 import art.arcane.react.api.action.ActionParams;
 import art.arcane.react.api.action.ActionTicket;
 import art.arcane.react.api.action.ReactAction;
@@ -130,6 +131,9 @@ public class ActionTrimEntitiesByAgePriority extends ReactAction<ActionTrimEntit
 
   @Override
   public void workOn(ActionTicket<Params> ticket) {
+    if (ticket.isDone()) {
+      return;
+    }
     Params params = ticket.getParams();
     if (!params.isPrepared()) {
       List<ChunkRef> queue = buildQueue(params);
@@ -173,7 +177,7 @@ public class ActionTrimEntitiesByAgePriority extends ReactAction<ActionTrimEntit
         break;
       }
 
-      dispatchChunkTrim(next, params);
+      dispatchChunkTrim(next, params, ticket);
       dispatched++;
     }
 
@@ -221,6 +225,11 @@ public class ActionTrimEntitiesByAgePriority extends ReactAction<ActionTrimEntit
       }
 
       for (SampledChunk sampledChunk : sampledWorld.getChunks().values()) {
+        if (params.getMinimumEntitiesPerChunk() > 0
+            && sampledChunk.optional(SamplerEntities.ID).map(value -> value.get()).orElse(0D)
+                < params.getMinimumEntitiesPerChunk()) {
+          continue;
+        }
         weighted.add(Map.entry(
             new ChunkRef(worldKey, sampledChunk.getChunkX(), sampledChunk.getChunkZ()),
             sampledChunk.totalScore()
@@ -236,7 +245,7 @@ public class ActionTrimEntitiesByAgePriority extends ReactAction<ActionTrimEntit
     return refs;
   }
 
-  private void dispatchChunkTrim(ChunkRef ref, Params params) {
+  private void dispatchChunkTrim(ChunkRef ref, Params params, ActionTicket<Params> ticket) {
     World world = WorldIdentity.resolve(ref.world()).orElse(null);
     if (world == null) {
       params.getChunksProcessedAtomic().incrementAndGet();
@@ -252,6 +261,9 @@ public class ActionTrimEntitiesByAgePriority extends ReactAction<ActionTrimEntit
     params.getInFlightChunks().incrementAndGet();
     boolean scheduled = J.runChunk(world, ref.x(), ref.z(), () -> {
       try {
+        if (ticket.isDone()) {
+          return;
+        }
         int removed = trimChunkSync(ref, params, reserved);
         if (removed > 0) {
           params.getTrimmedAtomic().addAndGet(removed);
@@ -261,6 +273,9 @@ public class ActionTrimEntitiesByAgePriority extends ReactAction<ActionTrimEntit
         if (unused > 0) {
           params.getRemainingTrimBudget().addAndGet(unused);
         }
+      } catch (Throwable failure) {
+        ticket.fail(failure);
+        React.reportError("Incident mitigation chunk operation failed", failure);
       } finally {
         params.getChunksProcessedAtomic().incrementAndGet();
         params.getInFlightChunks().decrementAndGet();
@@ -444,6 +459,9 @@ public class ActionTrimEntitiesByAgePriority extends ReactAction<ActionTrimEntit
     @Builder.Default
     @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum trim allowed per chunk in trim entities by age priority.", impact = "Higher values permit larger bursts before control engages; lower values clamp spikes sooner.")
     private int maxTrimPerChunk = 12;
+    @Builder.Default
+    @art.arcane.react.util.project.config.ConfigDoc(value = "Minimum observed entities in a chunk before trimming; zero includes every observed chunk.", impact = "Set a positive value to restrict trimming to dense chunks.")
+    private int minimumEntitiesPerChunk = 0;
     @Builder.Default
     @art.arcane.react.util.project.config.ConfigDoc(value = "Minimum entity age ticks required by trim entities by age priority.", impact = "Higher values require stronger signals before action; lower values make this condition easier to satisfy.")
     private int minEntityAgeTicks = 20 * 60 * 5;

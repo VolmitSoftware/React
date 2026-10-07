@@ -4,6 +4,7 @@ import art.arcane.react.api.action.ReactAction;
 import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.api.tweak.ReactTweak;
 import art.arcane.react.api.web.WebConfiguration;
+import art.arcane.react.content.action.ActionCaptureProfile;
 import art.arcane.react.content.action.ActionCollectGarbage;
 import art.arcane.react.content.action.ActionHopperNetworkNormalize;
 import art.arcane.react.content.action.ActionIncidentPlaybook;
@@ -177,6 +178,7 @@ public final class ConfigLocalization {
         ReactFeature.class,
         ReactTweak.class,
         WebConfiguration.class,
+        ActionCaptureProfile.class,
         ActionCollectGarbage.class,
         ActionHopperNetworkNormalize.class,
         ActionIncidentPlaybook.class,

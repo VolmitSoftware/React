@@ -180,6 +180,7 @@ public class MapController extends TickedObject implements IController, Listener
   private transient Listener frameChangeListener;
   private transient boolean frameChangeEventsAvailable;
   private transient AtomicBoolean maintenanceTickQueued;
+  private transient volatile RegionFrameDispatch regionFrameDispatch;
   private transient Map<MapRendererPipe, MapView> ownedRendererPipes;
   private transient volatile boolean rendererPipesActive;
   private transient volatile long rendererPipeOwnerId;
@@ -594,6 +595,7 @@ public class MapController extends TickedObject implements IController, Listener
     megamapSolvedVersion = 0;
     megamapSolvedEnabled = !megamapEnabled;
     maintenanceTickQueued = new AtomicBoolean(false);
+    regionFrameDispatch = new RegionFrameDispatch();
     itemFrameSetItemSilentMethod = null;
     itemFrameSetItemSilentMethodResolved = false;
     lastInventoryRepairMs = 0L;
@@ -618,6 +620,12 @@ public class MapController extends TickedObject implements IController, Listener
 
   @Override
   public void stop() {
+    RegionFrameDispatch dispatch = regionFrameDispatch;
+    regionFrameDispatch = null;
+    if (dispatch != null) {
+      dispatch.pending.clear();
+      dispatch.order.clear();
+    }
     rendererPipesActive = false;
     if (maintenanceTickQueued != null) {
       maintenanceTickQueued.set(false);
@@ -2194,18 +2202,66 @@ public class MapController extends TickedObject implements IController, Listener
         ownedRendererPipes,
         pushState
     );
-    if (!FoliaScheduler.runGlobal(React.instance, () -> dispatchRegionLocalFramePush(push, radius))) {
-      React.verbose(() -> "Failed to schedule Folia frame-map candidate resolution for map " + mapId);
+    RegionFrameDispatch dispatch = regionFrameDispatch;
+    if (dispatch == null || !isRegionLocalFramePushActive(push)) {
+      return;
+    }
+    FramePushSource key = new FramePushSource(frame.getUniqueId(), mapId);
+    if (dispatch.pending.put(key, push) == null) {
+      dispatch.order.offer(key);
+    }
+    scheduleRegionFrameDispatch(dispatch);
+  }
+
+  private void scheduleRegionFrameDispatch(RegionFrameDispatch dispatch) {
+    if (regionFrameDispatch != dispatch || !dispatch.queued.compareAndSet(false, true)) {
+      return;
+    }
+    try {
+      if (!FoliaScheduler.runGlobal(React.instance, () -> dispatchRegionLocalFramePushes(dispatch))) {
+        dispatch.queued.set(false);
+      }
+    } catch (RuntimeException | Error failure) {
+      dispatch.queued.set(false);
+      throw failure;
     }
   }
 
-  private void dispatchRegionLocalFramePush(RegionLocalFramePush push, double radius) {
-    if (!isRegionLocalFramePushActive(push)) {
-      return;
+  private void dispatchRegionLocalFramePushes(RegionFrameDispatch dispatch) {
+    try {
+      if (regionFrameDispatch != dispatch) {
+        return;
+      }
+      Map<Player, List<RegionLocalFramePush>> byPlayer = new HashMap<>();
+      for (int index = 0; index < 32; index++) {
+        FramePushSource key = dispatch.order.poll();
+        if (key == null) {
+          break;
+        }
+        RegionLocalFramePush push = dispatch.pending.remove(key);
+        if (!isRegionLocalFramePushActive(push)) {
+          continue;
+        }
+        for (Player player : collectRegionLocalFrameMapCandidates(push, Math.sqrt(push.radiusSq()))) {
+          byPlayer.computeIfAbsent(player, ignored -> new ArrayList<>()).add(push);
+        }
+      }
+      for (Map.Entry<Player, List<RegionLocalFramePush>> entry : byPlayer.entrySet()) {
+        Player player = entry.getKey();
+        List<RegionLocalFramePush> pushes = entry.getValue();
+        J.runEntity(player, () -> pushMapsToPlayerRegionLocal(player, pushes));
+      }
+    } finally {
+      dispatch.queued.set(false);
+      if (regionFrameDispatch == dispatch && !dispatch.order.isEmpty()) {
+        scheduleRegionFrameDispatch(dispatch);
+      }
     }
+  }
 
-    for (Player player : collectRegionLocalFrameMapCandidates(push, radius)) {
-      J.runEntity(player, () -> pushMapToPlayerRegionLocal(player, push));
+  private void pushMapsToPlayerRegionLocal(Player player, List<RegionLocalFramePush> pushes) {
+    for (RegionLocalFramePush push : pushes) {
+      pushMapToPlayerRegionLocal(player, push);
     }
   }
 
@@ -3298,6 +3354,15 @@ public class MapController extends TickedObject implements IController, Listener
   }
 
   private record FramePushKey(int mapId, UUID playerId) {
+  }
+
+  private static final class RegionFrameDispatch {
+    private final Map<FramePushSource, RegionLocalFramePush> pending = new ConcurrentHashMap<>();
+    private final ConcurrentLinkedQueue<FramePushSource> order = new ConcurrentLinkedQueue<>();
+    private final AtomicBoolean queued = new AtomicBoolean();
+  }
+
+  private record FramePushSource(UUID frameId, int mapId) {
   }
 
   private record RegionLocalFramePush(

@@ -6,7 +6,10 @@ import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.core.controller.EntityController;
 import art.arcane.react.model.ReactEntity;
 import art.arcane.react.util.common.scheduling.J;
+import art.arcane.react.util.project.world.NearbyEntitySampler;
 import org.bukkit.Bukkit;
+import org.bukkit.World;
+import org.bukkit.util.BoundingBox;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
@@ -18,6 +21,7 @@ import org.mockito.Mockito;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 class FeatureAdaptiveEntitySleepLifecycleTest {
   static {
@@ -72,8 +76,14 @@ class FeatureAdaptiveEntitySleepLifecycleTest {
   void staleFoliaAnchorCannotInspectPlayersAfterDeactivation() {
     FeatureAdaptiveEntitySleep feature = new FeatureAdaptiveEntitySleep();
     EntityController controller = Mockito.mock(EntityController.class);
+    Mockito.when(controller.getNearbyEntitySampler()).thenReturn(new NearbyEntitySampler());
     Sampler sampler = Mockito.mock(Sampler.class);
     Player player = Mockito.mock(Player.class);
+    World world = Mockito.mock(World.class);
+    Mockito.when(world.getUID()).thenReturn(UUID.randomUUID());
+    Mockito.when(player.getWorld()).thenReturn(world);
+    Mockito.when(player.getUniqueId()).thenReturn(UUID.randomUUID());
+    Mockito.when(player.getBoundingBox()).thenAnswer(ignored -> new BoundingBox(0D, 64D, 0D, 1D, 66D, 1D));
     List<Runnable> regionTasks = new ArrayList<>();
     Mockito.when(controller.getFoliaPlayers()).thenReturn(new Player[]{player});
     Mockito.when(sampler.sample()).thenReturn(50D);
@@ -116,6 +126,7 @@ class FeatureAdaptiveEntitySleepLifecycleTest {
   void delayedFoliaOwnersSuppressCyclesUntilEveryAnchorRetires() {
     FeatureAdaptiveEntitySleep feature = new FeatureAdaptiveEntitySleep();
     EntityController controller = Mockito.mock(EntityController.class);
+    Mockito.when(controller.getNearbyEntitySampler()).thenReturn(new NearbyEntitySampler());
     Sampler sampler = Mockito.mock(Sampler.class);
     Player first = Mockito.mock(Player.class);
     Player second = Mockito.mock(Player.class);
@@ -160,8 +171,14 @@ class FeatureAdaptiveEntitySleepLifecycleTest {
   void rejectedAndRetiredAnchorReleasesFlightExactlyOnce() {
     FeatureAdaptiveEntitySleep feature = new FeatureAdaptiveEntitySleep();
     EntityController controller = Mockito.mock(EntityController.class);
+    Mockito.when(controller.getNearbyEntitySampler()).thenReturn(new NearbyEntitySampler());
     Sampler sampler = Mockito.mock(Sampler.class);
     Player player = Mockito.mock(Player.class);
+    World world = Mockito.mock(World.class);
+    Mockito.when(world.getUID()).thenReturn(UUID.randomUUID());
+    Mockito.when(player.getWorld()).thenReturn(world);
+    Mockito.when(player.getUniqueId()).thenReturn(UUID.randomUUID());
+    Mockito.when(player.getBoundingBox()).thenAnswer(ignored -> new BoundingBox(0D, 64D, 0D, 1D, 66D, 1D));
     Mockito.when(controller.getFoliaPlayers()).thenReturn(new Player[]{player});
     Mockito.when(sampler.sample()).thenReturn(50D);
     List<Runnable> retired = new ArrayList<>();
@@ -198,8 +215,14 @@ class FeatureAdaptiveEntitySleepLifecycleTest {
   void staleFoliaEntityHandoffCannotMutateAfterDeactivation() {
     FeatureAdaptiveEntitySleep feature = new FeatureAdaptiveEntitySleep();
     EntityController controller = Mockito.mock(EntityController.class);
+    Mockito.when(controller.getNearbyEntitySampler()).thenReturn(new NearbyEntitySampler());
     Sampler sampler = Mockito.mock(Sampler.class);
     Player player = Mockito.mock(Player.class);
+    World world = Mockito.mock(World.class);
+    Mockito.when(world.getUID()).thenReturn(UUID.randomUUID());
+    Mockito.when(player.getWorld()).thenReturn(world);
+    Mockito.when(player.getUniqueId()).thenReturn(UUID.randomUUID());
+    Mockito.when(player.getBoundingBox()).thenAnswer(ignored -> new BoundingBox(0D, 64D, 0D, 1D, 66D, 1D));
     Entity entity = Mockito.mock(Entity.class);
     List<Entity> taskEntities = new ArrayList<>();
     List<Runnable> regionTasks = new ArrayList<>();

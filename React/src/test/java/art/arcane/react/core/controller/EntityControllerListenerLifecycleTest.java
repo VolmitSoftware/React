@@ -8,6 +8,8 @@ import art.arcane.react.model.ReactEntity;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.project.world.EntityKiller;
 import org.bukkit.Bukkit;
+import org.bukkit.World;
+import org.bukkit.util.BoundingBox;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
@@ -20,6 +22,7 @@ import org.mockito.Mockito;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -201,6 +204,11 @@ class EntityControllerListenerLifecycleTest {
 
   private static Player scanPlayer() {
     Player player = Mockito.mock(Player.class);
+    World world = Mockito.mock(World.class);
+    Mockito.when(world.getUID()).thenReturn(UUID.randomUUID());
+    Mockito.when(player.getWorld()).thenReturn(world);
+    Mockito.when(player.getUniqueId()).thenReturn(UUID.randomUUID());
+    Mockito.when(player.getBoundingBox()).thenAnswer(ignored -> new BoundingBox(0D, 64D, 0D, 1D, 66D, 1D));
     Mockito.when(player.isOnline()).thenReturn(true);
     return player;
   }
