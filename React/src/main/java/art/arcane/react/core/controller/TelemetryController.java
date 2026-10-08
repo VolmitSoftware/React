@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
+import java.util.function.LongSupplier;
 
 public final class TelemetryController implements IController, Listener {
   private static final long REFRESH_INTERVAL_MS = 1_000L;
@@ -45,6 +46,8 @@ public final class TelemetryController implements IController, Listener {
   private transient volatile double historyDropsPerMinute;
   private transient volatile long historyDiskBytes;
   private transient volatile long historyWalBytes;
+  private transient volatile long historyRateSampledAtMs;
+  private transient volatile long historySizeSampledAtMs;
   private transient long nextHistorySizeRefreshMs;
   private transient long lastHostFailureLogMs;
   private transient long lastHistorySizeFailureLogMs;
@@ -81,6 +84,8 @@ public final class TelemetryController implements IController, Listener {
     historyDropsPerMinute = 0D;
     historyDiskBytes = 0L;
     historyWalBytes = 0L;
+    historyRateSampledAtMs = 0L;
+    historySizeSampledAtMs = 0L;
     nextHistorySizeRefreshMs = 0L;
     lastHostFailureLogMs = 0L;
     lastHistorySizeFailureLogMs = 0L;
@@ -177,6 +182,7 @@ public final class TelemetryController implements IController, Listener {
         historyController.droppedSnapshotsTotal(),
         nowMs
     );
+    historyRateSampledAtMs = nowMs;
     if (nowMs < nextHistorySizeRefreshMs) {
       return;
     }
@@ -184,6 +190,7 @@ public final class TelemetryController implements IController, Listener {
     try {
       historyDiskBytes = historyController.historyDiskBytes();
       historyWalBytes = historyController.walDiskBytes();
+      historySizeSampledAtMs = nowMs;
     } catch (Throwable failure) {
       if (nowMs - lastHistorySizeFailureLogMs >= FAILURE_LOG_INTERVAL_MS) {
         lastHistorySizeFailureLogMs = nowMs;
@@ -272,69 +279,69 @@ public final class TelemetryController implements IController, Listener {
   }
 
   private void registerHostSamplers(SampleController sampleController) {
-    register(sampleController, options(
+    register(sampleController, hostOptions(
         "physical-memory-used", "Physical Memory Used", "", Material.WATER_BUCKET,
         () -> hostSnapshot().physicalMemoryUsed(), this::hostAvailable, TelemetrySampler.Format.BYTES));
-    register(sampleController, options(
+    register(sampleController, hostOptions(
         "physical-memory-free", "Physical Memory Free", "", Material.BUCKET,
         () -> hostSnapshot().physicalMemoryFree(), this::hostAvailable, TelemetrySampler.Format.BYTES));
-    register(sampleController, options(
+    register(sampleController, hostOptions(
         "disk-usable", "Disk Usable", "", Material.IRON_PICKAXE,
         () -> hostSnapshot().diskUsable(), this::hostAvailable, TelemetrySampler.Format.BYTES));
-    register(sampleController, options(
+    register(sampleController, hostOptions(
         "disk-read-rate", "Disk Read Rate", "", Material.IRON_PICKAXE,
         () -> hostSnapshot().diskReadBytesPerSecond(), this::hostAvailable,
         TelemetrySampler.Format.BYTES_PER_SECOND));
-    register(sampleController, options(
+    register(sampleController, hostOptions(
         "disk-write-rate", "Disk Write Rate", "", Material.IRON_PICKAXE,
         () -> hostSnapshot().diskWriteBytesPerSecond(), this::hostAvailable,
         TelemetrySampler.Format.BYTES_PER_SECOND));
-    register(sampleController, options(
+    register(sampleController, hostOptions(
         "network-receive-rate", "Network Receive Rate", "", Material.OBSERVER,
         () -> hostSnapshot().networkReceiveBytesPerSecond(), this::hostAvailable,
         TelemetrySampler.Format.BYTES_PER_SECOND));
-    register(sampleController, options(
+    register(sampleController, hostOptions(
         "network-send-rate", "Network Send Rate", "", Material.OBSERVER,
         () -> hostSnapshot().networkSendBytesPerSecond(), this::hostAvailable,
         TelemetrySampler.Format.BYTES_PER_SECOND));
-    register(sampleController, options(
+    register(sampleController, hostOptions(
         "network-receive-drops", "Network Receive Drops", "drops", Material.OBSERVER,
         () -> hostSnapshot().networkReceiveDrops(), this::hostAvailable, TelemetrySampler.Format.COUNT));
-    register(sampleController, options(
+    register(sampleController, hostOptions(
         "network-receive-errors", "Network Receive Errors", "errors", Material.OBSERVER,
         () -> hostSnapshot().networkReceiveErrors(), this::hostAvailable, TelemetrySampler.Format.COUNT));
-    register(sampleController, options(
+    register(sampleController, hostOptions(
         "network-send-errors", "Network Send Errors", "errors", Material.OBSERVER,
         () -> hostSnapshot().networkSendErrors(), this::hostAvailable, TelemetrySampler.Format.COUNT));
   }
 
   private void registerJvmSamplers(SampleController sampleController) {
-    register(sampleController, options(
+    register(sampleController, hostOptions(
         "jvm-heap-max", "JVM Heap Max", "", Material.EXPERIENCE_BOTTLE,
         () -> hostSnapshot().heapMax(), this::hostAvailable, TelemetrySampler.Format.BYTES));
-    register(sampleController, options(
+    register(sampleController, hostOptions(
         "jvm-heap-committed", "JVM Heap Committed", "", Material.EXPERIENCE_BOTTLE,
         () -> hostSnapshot().heapCommitted(), this::hostAvailable, TelemetrySampler.Format.BYTES));
-    register(sampleController, options(
+    register(sampleController, hostOptions(
         "jvm-heap-utilization", "JVM Heap Utilization", "%", Material.EXPERIENCE_BOTTLE,
         () -> hostSnapshot().heapUtilization(), this::hostAvailable, TelemetrySampler.Format.PERCENT));
-    register(sampleController, options(
+    register(sampleController, hostOptions(
         "jvm-nonheap-used", "JVM Non-Heap Used", "", Material.EXPERIENCE_BOTTLE,
         () -> hostSnapshot().nonHeapUsed(), this::hostAvailable, TelemetrySampler.Format.BYTES));
-    register(sampleController, options(
+    register(sampleController, hostOptions(
         "jvm-direct-buffer-bytes", "JVM Direct Buffer Memory", "", Material.EXPERIENCE_BOTTLE,
         () -> hostSnapshot().directBufferBytes(), this::hostAvailable, TelemetrySampler.Format.BYTES));
-    register(sampleController, options(
+    register(sampleController, hostOptions(
         "jvm-direct-buffer-count", "JVM Direct Buffer Count", "buffers", Material.EXPERIENCE_BOTTLE,
         () -> hostSnapshot().directBufferCount(), this::hostAvailable, TelemetrySampler.Format.COUNT));
-    register(sampleController, options(
+    register(sampleController, hostOptions(
         "jvm-gc-collections-rate", "JVM GC Collections", "/min", Material.EXPERIENCE_BOTTLE,
         () -> hostSnapshot().gcCollectionsPerMinute(), this::hostAvailable,
         TelemetrySampler.Format.DECIMAL));
-    register(sampleController, options(
+    register(sampleController, hostOptions(
         "jvm-loaded-classes", "JVM Loaded Classes", "classes", Material.EXPERIENCE_BOTTLE,
         () -> hostSnapshot().loadedClasses(), this::hostAvailable, TelemetrySampler.Format.COUNT));
-    register(sampleController, options(
+    register(sampleController, hostOptions(
         "jvm-process-uptime", "JVM Process Uptime", "ms", Material.CLOCK,
         () -> hostSnapshot().processUptimeMs(), this::hostAvailable, TelemetrySampler.Format.COUNT));
   }
@@ -363,6 +370,11 @@ public final class TelemetryController implements IController, Listener {
       BooleanSupplier availabilitySupplier,
       TelemetrySampler.Format format
   ) {
+    LongSupplier sampledAt = switch (id) {
+      case "react-history-drop-rate" -> () -> historyRateSampledAtMs;
+      case "react-history-disk-bytes", "react-history-wal-bytes" -> () -> historySizeSampledAtMs;
+      default -> System::currentTimeMillis;
+    };
     return new TelemetrySampler.Options(
         id,
         name,
@@ -370,8 +382,22 @@ public final class TelemetryController implements IController, Listener {
         icon,
         valueSupplier,
         availabilitySupplier,
-        format
+        format,
+        sampledAt
     );
+  }
+
+  private TelemetrySampler.Options hostOptions(
+      String id,
+      String name,
+      String suffix,
+      Material icon,
+      DoubleSupplier valueSupplier,
+      BooleanSupplier availabilitySupplier,
+      TelemetrySampler.Format format
+  ) {
+    return new TelemetrySampler.Options(id, name, suffix, icon, valueSupplier,
+        availabilitySupplier, format, () -> hostSnapshot().capturedAtMs());
   }
 
   private void register(SampleController controller, TelemetrySampler.Options options) {

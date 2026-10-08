@@ -1,6 +1,7 @@
 package art.arcane.react.core.integration;
 
 import art.arcane.react.api.metric.ReactMetric;
+import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.api.metric.ReactMetricKind;
 import art.arcane.react.api.metric.internal.MetricKeys;
 import art.arcane.react.api.metric.internal.PublishedMetricStore;
@@ -18,6 +19,21 @@ class PublishedMetricSamplerTest {
     List<ReactMetric> accepted = store.declare(SOURCE, List.of(metric));
     return new PublishedMetricSampler(
         MetricKeys.samplerIdFor(accepted.getFirst().key()), accepted.getFirst(), store);
+  }
+
+  @Test
+  void snapshotReadingUsesPublisherTimestampAndWithdrawalState() {
+    PublishedMetricStore store = new PublishedMetricStore();
+    PublishedMetricSampler sampler = sampler(store, ReactMetric.gauge(LIVE, "Live Pets", " pets"));
+    long now = System.currentTimeMillis();
+    long sampledAt = now - 5_000L;
+    store.publish(SOURCE, LIVE, 9D, sampledAt, now);
+    Sampler.Reading reading = sampler.captureReading();
+    Assertions.assertTrue(reading.available());
+    Assertions.assertEquals(sampledAt, reading.sampledAtMs());
+    Assertions.assertEquals(9D, reading.value());
+    store.withdraw(SOURCE, LIVE);
+    Assertions.assertFalse(sampler.captureReading().available());
   }
 
   @Test

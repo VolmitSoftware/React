@@ -194,7 +194,7 @@ public class RemoteSamplerBridge {
         && key.startsWith(pluginId);
   }
 
-  private IntegrationMetricSample storedSample(String pluginId, String key) {
+  public IntegrationMetricSample storedSample(String pluginId, String key) {
     Map<String, IntegrationMetricSample> pluginSamples = samplesByPlugin.get(normalizePlugin(pluginId));
     return pluginSamples == null ? null : pluginSamples.get(key);
   }

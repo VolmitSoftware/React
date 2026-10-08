@@ -72,6 +72,9 @@ public class ReactConfiguration {
   @ConfigDoc(value = "Enables anonymous bStats usage reporting for React.", impact = "Set to false to stop React's bStats submissions. Changes apply automatically.")
   private boolean metrics = true;
 
+  @ConfigDoc(value = "Maximum distinct metrics retained for integration snapshot demand.", impact = "Clamped to 1 through 65536. Changes clear cached publications on the next one-second collection cycle.")
+  private int integrationSnapshotMaxMetrics = 65_536;
+
   @ConfigDoc(value = "Entity priority model used by multiple React subsystems.", impact = "Changing these weights can alter culling, queueing, and visibility behavior.")
   private EntityPriority priority = new EntityPriority();
 
@@ -107,6 +110,10 @@ public class ReactConfiguration {
 
   @ConfigDoc(value = "Default monitor layout shown to players.", impact = "Changes affect the baseline monitoring dashboard composition and sampler grouping.")
   private Monitoring monitoring = new Monitoring();
+
+  public int getIntegrationSnapshotMaxMetrics() {
+    return Math.max(1, Math.min(65_536, integrationSnapshotMaxMetrics));
+  }
 
   public static ReactConfiguration get() {
     synchronized (CONFIG_LOCK) {
@@ -176,6 +183,7 @@ public class ReactConfiguration {
   }
 
   private void normalize() {
+    integrationSnapshotMaxMetrics = getIntegrationSnapshotMaxMetrics();
     if (adaptAbilityOpsMetricMode == null || adaptAbilityOpsMetricMode == AdaptAbilityOpsMetricMode.ALL_CHECKS) {
       adaptAbilityOpsMetricMode = AdaptAbilityOpsMetricMode.SUCCESSFUL_CHECKS;
     }

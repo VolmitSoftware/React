@@ -32,6 +32,7 @@ public abstract class ReactTickedSampler extends TickedObject implements Sampler
   private transient final AtomicLong slastFailureLog;
   private transient final long sactiveInterval;
   private transient final Object sequenceLock;
+  private transient long sampledAtMs;
   private transient volatile boolean ssleeping;
   private transient volatile boolean sregistered;
 
@@ -80,6 +81,14 @@ public abstract class ReactTickedSampler extends TickedObject implements Sampler
     }
   }
 
+  @Override
+  public Reading captureReading() {
+    sample();
+    synchronized (sequenceLock) {
+      return new Reading(ssequence.getAverage(), sampledAtMs, sregistered && sampledAtMs > 0L);
+    }
+  }
+
   private void setSsleeping(boolean ssleeping) {
     boolean wasSleeping = this.ssleeping;
     this.ssleeping = ssleeping;
@@ -106,6 +115,7 @@ public abstract class ReactTickedSampler extends TickedObject implements Sampler
       double sample = onSample();
       synchronized (sequenceLock) {
         ssequence.put(sample);
+        sampledAtMs = System.currentTimeMillis();
       }
     } catch (Throwable e) {
       long now = System.currentTimeMillis();

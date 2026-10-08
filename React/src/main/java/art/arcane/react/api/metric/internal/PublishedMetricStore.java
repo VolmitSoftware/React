@@ -139,6 +139,11 @@ public final class PublishedMetricStore implements MetricBinding {
     return reading != null && nowMs - reading.sampledAtMs() <= MAX_STALE_MS;
   }
 
+  public Reading reading(String key, long nowMs) {
+    Reading reading = key == null ? null : readings.get(key);
+    return reading == null || nowMs - reading.sampledAtMs() > MAX_STALE_MS ? null : reading;
+  }
+
   public double valueOr(String key, double fallback, long nowMs) {
     Reading reading = key == null ? null : readings.get(key);
 
@@ -176,6 +181,6 @@ public final class PublishedMetricStore implements MetricBinding {
     readings.clear();
   }
 
-  private record Reading(double value, long sampledAtMs) {
+  public record Reading(double value, long sampledAtMs) {
   }
 }

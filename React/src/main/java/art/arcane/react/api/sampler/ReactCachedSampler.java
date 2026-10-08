@@ -36,6 +36,7 @@ public abstract class ReactCachedSampler implements Sampler {
   private transient final String sid;
   private transient final AtomicBoolean mainRefreshInFlight;
   private transient volatile double mainRefreshValue;
+  private transient long sampledAtMs;
   private transient volatile boolean mainRefreshUsed;
   private transient volatile boolean mainRefreshReady;
   private transient volatile boolean runtimeStarted;
@@ -93,6 +94,10 @@ public abstract class ReactCachedSampler implements Sampler {
   public void start() {
     sampleController = null;
     mainRefreshInFlight.set(false);
+    synchronized (sampleLock) {
+      sampledAtMs = 0L;
+      mainRefreshReady = false;
+    }
     runtimeStarted = true;
   }
 
@@ -115,6 +120,14 @@ public abstract class ReactCachedSampler implements Sampler {
     return read();
   }
 
+  @Override
+  public Reading captureReading() {
+    synchronized (sampleLock) {
+      double value = sample();
+      return new Reading(value, sampledAtMs, runtimeStarted && sampledAtMs > 0L && isSampleAvailable());
+    }
+  }
+
   private double read() {
     if (!canSampleNow() || !slatch.couldFlip()) {
       return slast.get();
@@ -123,6 +136,9 @@ public abstract class ReactCachedSampler implements Sampler {
     synchronized (sampleLock) {
       if (slatch.flip()) {
         slast.set(onSample());
+        if (!mainRefreshUsed) {
+          sampledAtMs = System.currentTimeMillis();
+        }
       }
       return slast.get();
     }
@@ -141,6 +157,7 @@ public abstract class ReactCachedSampler implements Sampler {
     synchronized (sampleLock) {
       mainRefreshValue = value;
       mainRefreshReady = true;
+      sampledAtMs = System.currentTimeMillis();
       slast.set(value);
     }
   }

@@ -2,12 +2,17 @@ package art.arcane.react.core.integration;
 
 import art.arcane.react.React;
 import art.arcane.react.api.metric.ReactMetrics;
+import art.arcane.react.api.sampler.Sampler;
+import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.content.sampler.SamplerUnknown;
 import art.arcane.volmlib.integration.IntegrationHandshakeRequest;
 import art.arcane.volmlib.integration.IntegrationHandshakeResponse;
 import art.arcane.volmlib.integration.IntegrationHeartbeat;
 import art.arcane.volmlib.integration.IntegrationMetricDescriptor;
 import art.arcane.volmlib.integration.IntegrationMetricSample;
+import art.arcane.volmlib.integration.IntegrationMetricPublisher;
+import art.arcane.volmlib.integration.IntegrationMetricSnapshot;
+import art.arcane.volmlib.integration.IntegrationSnapshotProvider;
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
 import art.arcane.volmlib.integration.IntegrationMetricType;
 import art.arcane.volmlib.integration.IntegrationProtocolNegotiator;
@@ -26,7 +31,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class ReactIntegrationService implements IntegrationServiceContract {
+public class ReactIntegrationService implements IntegrationSnapshotProvider {
   private static final long SAMPLER_FAILURE_LOG_INTERVAL_MS = 10_000L;
   private static final String SAMPLER_METRIC_PREFIX = "react.sampler.";
   private static final IntegrationProtocolVersion CURRENT_PROTOCOL = new IntegrationProtocolVersion(1, 2);
@@ -39,15 +44,19 @@ public class ReactIntegrationService implements IntegrationServiceContract {
       "handshake",
       "heartbeat",
       "metrics",
+      IntegrationSnapshotProvider.CAPABILITY,
       "react-status"
   );
+  private final IntegrationMetricPublisher snapshots = new IntegrationMetricPublisher(65_536, 30_000L);
   private final AtomicLong lastSamplerFailureLogMs = new AtomicLong(0L);
 
   public void register() {
+    refreshSnapshots();
     Bukkit.getServicesManager().register(IntegrationServiceContract.class, this, React.instance, ServicePriority.Normal);
   }
 
   public void unregister() {
+    snapshots.clear();
     Bukkit.getServicesManager().unregister(IntegrationServiceContract.class, this);
   }
 
@@ -183,6 +192,56 @@ public class ReactIntegrationService implements IntegrationServiceContract {
       samples.put(metricKey, sampleSampler(descriptor, samplerId, now));
     }
     return samples;
+  }
+
+  @Override
+  public IntegrationMetricSnapshot snapshotMetrics(Set<String> metricKeys) {
+    return snapshots.snapshotMetrics(metricKeys, System.currentTimeMillis());
+  }
+
+  public void refreshSnapshots() {
+    int capacity = ReactConfiguration.get().getIntegrationSnapshotMaxMetrics();
+    snapshots.reconfigureCapacity(capacity);
+    publishSnapshots();
+  }
+
+  void publishSnapshots() {
+    IntegrationMetricPublisher publisher = snapshots;
+    IntegrationMetricPublisher.Demand demand = publisher.demandedKeys(System.currentTimeMillis());
+    if (demand.keys().isEmpty()) {
+      return;
+    }
+    Map<String, IntegrationMetricSample> samples = new LinkedHashMap<>(demand.keys().size());
+    for (String key : demand.keys()) {
+      samples.put(key, captureSnapshotMetric(key));
+    }
+    publisher.publish(demand, System.currentTimeMillis(), samples);
+  }
+
+  IntegrationMetricSample captureSnapshotMetric(String key) {
+    long now = System.currentTimeMillis();
+    if (!key.startsWith(SAMPLER_METRIC_PREFIX)) {
+      return IntegrationMetricSample.unavailable(IntegrationMetricSchema.descriptor(key),
+          "react-does-not-publish-this-metric", now);
+    }
+    String samplerId = key.substring(SAMPLER_METRIC_PREFIX.length());
+    IntegrationMetricDescriptor descriptor = samplerDescriptor(samplerId);
+    try {
+      Sampler sampler = React.sampler(samplerId);
+      if (sampler == null || SamplerUnknown.ID.equals(samplerId)) {
+        return IntegrationMetricSample.unavailable(descriptor, "react-sampler-not-registered", now);
+      }
+      Sampler.Reading reading = sampler.captureReading();
+      if (!reading.available() || !Double.isFinite(reading.value()) || reading.sampledAtMs() <= 0L
+          || reading.sampledAtMs() > System.currentTimeMillis()) {
+        return IntegrationMetricSample.unavailable(descriptor, "react-sampler-value-unavailable", now);
+      }
+      return IntegrationMetricSample.available(descriptor, reading.value(), reading.sampledAtMs());
+    } catch (Throwable failure) {
+      reportSamplerFailure(samplerId, failure, now);
+      return IntegrationMetricSample.unavailable(descriptor,
+          "react-sampler-error:" + failure.getClass().getSimpleName(), now);
+    }
   }
 
   private List<String> samplerIds() {

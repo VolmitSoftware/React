@@ -3,6 +3,7 @@ package art.arcane.react.core.pluginapi;
 import art.arcane.react.core.pluginapi.PluginApiPackDefinition.MetricDefinition;
 import art.arcane.react.core.pluginapi.PluginApiPackDefinition.TransformDefinition;
 import art.arcane.react.core.pluginapi.PluginApiPackDefinition.TransformMode;
+import art.arcane.react.api.sampler.Sampler;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 
@@ -18,6 +19,7 @@ public final class PluginApiMetricRuntime {
   private final LongAdder eventCount = new LongAdder();
   private final AtomicLong totalSamples = new AtomicLong();
   private final AtomicLong failedSamples = new AtomicLong();
+  private volatile Sampler.Reading reading = new Sampler.Reading(0D, 0L, false);
   private volatile double lastValue;
   private volatile long sampledAtMs;
   private volatile long lastAttemptMs;
@@ -56,6 +58,7 @@ public final class PluginApiMetricRuntime {
     }
     lastValue = transformed;
     sampledAtMs = sampledAt;
+    reading = new Sampler.Reading(transformed, sampledAt, true);
     availabilityReason = "";
     consecutiveFailures = 0;
     totalSamples.incrementAndGet();
@@ -80,6 +83,11 @@ public final class PluginApiMetricRuntime {
         && availabilityReason.isEmpty()
         && sampledAtMs > 0L
         && nowMs - sampledAtMs <= definition.staleAfterMs();
+  }
+
+  public Sampler.Reading reading() {
+    Sampler.Reading captured = reading;
+    return new Sampler.Reading(captured.value(), captured.sampledAtMs(), available(System.currentTimeMillis()));
   }
 
   public double lastValue() {

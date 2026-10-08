@@ -15,6 +15,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PluginApiMetricRuntimeTest {
   @Test
+  void snapshotReadingKeepsCaptureTimeAcrossReadsAndFailures() {
+    PluginApiMetricRuntime runtime = runtime(new TransformDefinition(TransformMode.VALUE, 1D, 0D, null, null));
+    long sampledAt = System.currentTimeMillis() - 1_000L;
+    runtime.accept(5D, sampledAt, 0L);
+    assertEquals(sampledAt, runtime.reading().sampledAtMs());
+    assertEquals(5D, runtime.reading().value());
+    assertTrue(runtime.reading().available());
+    runtime.unavailable("failure", 0L, true);
+    assertFalse(runtime.reading().available());
+    assertEquals(sampledAt, runtime.reading().sampledAtMs());
+  }
+
+  @Test
   void appliesDeltaScaleOffsetAndBounds() {
     PluginApiMetricRuntime runtime = runtime(new TransformDefinition(TransformMode.DELTA_PER_SECOND, 2D, 1D, 0D, 11D));
     runtime.accept(10D, 1_000L, 1L);

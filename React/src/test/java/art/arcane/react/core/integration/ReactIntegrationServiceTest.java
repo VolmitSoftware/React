@@ -1,9 +1,15 @@
 package art.arcane.react.core.integration;
 
 import art.arcane.react.React;
+import art.arcane.react.model.ReactConfiguration;
+import org.bukkit.Bukkit;
+import org.bukkit.plugin.ServicesManager;
 import art.arcane.react.api.metric.internal.MetricInstaller;
 import art.arcane.volmlib.integration.IntegrationMetricDescriptor;
 import art.arcane.volmlib.integration.IntegrationMetricSample;
+import art.arcane.volmlib.integration.IntegrationMetricSnapshot;
+import art.arcane.volmlib.integration.IntegrationSnapshotProvider;
+import art.arcane.react.api.sampler.Sampler;
 import art.arcane.volmlib.integration.IntegrationMetricType;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -23,6 +29,73 @@ class ReactIntegrationServiceTest {
   @AfterEach
   void clearHostMetrics() {
     MetricInstaller.installHostMetrics(null, null);
+  }
+
+  @Test
+  void shutdownAndCapacityChangesInvalidatePublicationWithoutResettingGeneration() {
+    ReactIntegrationService service = new ReactIntegrationService();
+    Set<String> key = Set.of("unsupported.metric");
+    service.snapshotMetrics(key);
+    service.publishSnapshots();
+    long generation = service.snapshotMetrics(key).generation();
+    ReactConfiguration configuration = new ReactConfiguration();
+    configuration.setIntegrationSnapshotMaxMetrics(1);
+    try (MockedStatic<ReactConfiguration> settings = Mockito.mockStatic(ReactConfiguration.class)) {
+      settings.when(ReactConfiguration::get).thenReturn(configuration);
+      service.refreshSnapshots();
+      IntegrationMetricSnapshot cleared = service.snapshotMetrics(key);
+      Assertions.assertTrue(cleared.samples().isEmpty());
+      Assertions.assertTrue(cleared.generation() > generation);
+      Assertions.assertThrows(IllegalArgumentException.class,
+          () -> service.snapshotMetrics(Set.of("unsupported.metric", "another.metric")));
+      service.publishSnapshots();
+      generation = service.snapshotMetrics(key).generation();
+    }
+    try (MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class)) {
+      bukkit.when(Bukkit::getServicesManager).thenReturn(Mockito.mock(ServicesManager.class));
+      service.unregister();
+      IntegrationMetricSnapshot cleared = service.snapshotMetrics(key);
+      Assertions.assertTrue(cleared.samples().isEmpty());
+      Assertions.assertTrue(cleared.generation() > generation);
+    }
+  }
+
+  @Test
+  void snapshotsReadOnlyPublicationsAndPreserveSamplerCaptureTime() {
+    long sampledAt = System.currentTimeMillis() - 5_000L;
+    Sampler sampler = Mockito.mock(Sampler.class);
+    Mockito.when(sampler.captureReading()).thenReturn(new Sampler.Reading(7D, sampledAt, true));
+    ReactIntegrationService service = new ReactIntegrationService();
+    Set<String> keys = Set.of("react.sampler.alpha");
+    try (MockedStatic<React> react = Mockito.mockStatic(React.class)) {
+      react.when(() -> React.sampler("alpha")).thenReturn(sampler);
+      service.publishSnapshots();
+      Assertions.assertTrue(service.snapshotMetrics(keys).samples().isEmpty());
+      react.verifyNoInteractions();
+      Mockito.verifyNoInteractions(sampler);
+
+      service.publishSnapshots();
+      IntegrationMetricSnapshot first = service.snapshotMetrics(keys);
+      Assertions.assertEquals(sampledAt, first.samples().get("react.sampler.alpha").sampledAtMs());
+      Assertions.assertEquals(7D, first.samples().get("react.sampler.alpha").numericValue());
+      Assertions.assertEquals(first, service.snapshotMetrics(keys));
+      Mockito.verify(sampler, Mockito.times(1)).captureReading();
+      Assertions.assertTrue(service.capabilities().contains(IntegrationSnapshotProvider.CAPABILITY));
+    }
+  }
+
+  @Test
+  void failedSnapshotCaptureDoesNotReuseAnAvailableValue() {
+    Sampler sampler = Mockito.mock(Sampler.class);
+    Mockito.when(sampler.captureReading()).thenReturn(new Sampler.Reading(7D, 0L, false));
+    ReactIntegrationService service = new ReactIntegrationService();
+    Set<String> keys = Set.of("react.sampler.alpha");
+    try (MockedStatic<React> react = Mockito.mockStatic(React.class)) {
+      react.when(() -> React.sampler("alpha")).thenReturn(sampler);
+      service.snapshotMetrics(keys);
+      service.publishSnapshots();
+      Assertions.assertFalse(service.snapshotMetrics(keys).samples().get("react.sampler.alpha").available());
+    }
   }
 
   @Test

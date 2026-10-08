@@ -6,6 +6,7 @@ import org.bukkit.Material;
 
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
+import java.util.function.LongSupplier;
 
 public final class TelemetrySampler implements Sampler {
   private final Options options;
@@ -42,6 +43,12 @@ public final class TelemetrySampler implements Sampler {
   @Override
   public double sample() {
     return active ? options.valueSupplier().getAsDouble() : 0D;
+  }
+
+  @Override
+  public Reading captureReading() {
+    long sampledAtMs = options.sampledAtSupplier().getAsLong();
+    return new Reading(sample(), sampledAtMs, isSampleAvailable());
   }
 
   @Override
@@ -98,7 +105,8 @@ public final class TelemetrySampler implements Sampler {
       Material icon,
       DoubleSupplier valueSupplier,
       BooleanSupplier availabilitySupplier,
-      Format format
+      Format format,
+      LongSupplier sampledAtSupplier
   ) {
   }
 }

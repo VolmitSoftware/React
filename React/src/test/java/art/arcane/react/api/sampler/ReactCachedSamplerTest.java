@@ -15,6 +15,22 @@ import java.util.concurrent.atomic.AtomicInteger;
 class ReactCachedSamplerTest {
 
   @Test
+  void cachedReadingRetainsCaptureTimeUntilTheCacheRefreshes() {
+    CountingCachedSampler sampler = new CountingCachedSampler("capture-time", 60_000L, 42D);
+    try (MockedStatic<React> react = Mockito.mockStatic(React.class)) {
+      Assertions.assertFalse(sampler.captureReading().available());
+      sampler.start();
+      Sampler.Reading first = sampler.captureReading();
+      Assertions.assertTrue(first.available());
+      Assertions.assertTrue(first.sampledAtMs() > 0L);
+      Assertions.assertEquals(first, sampler.captureReading());
+      Assertions.assertEquals(1, sampler.sampleCalls.get());
+      sampler.stop();
+      Assertions.assertFalse(sampler.captureReading().available());
+    }
+  }
+
+  @Test
   void invokesValueSupplierOnceForManyRapidCallsWithinCacheWindow() {
     CountingCachedSampler sampler = new CountingCachedSampler("processor-load-test", 60_000L, 42.0D);
 
@@ -96,11 +112,13 @@ class ReactCachedSamplerTest {
       });
       sampler.start();
 
-      sampler.sample();
+      Assertions.assertFalse(sampler.captureReading().available());
       Assertions.assertEquals(1, queued.size());
       queued.getFirst().run();
 
       Assertions.assertEquals(5.0D, sampler.sample(), 1.0E-9D);
+      Assertions.assertTrue(sampler.captureReading().sampledAtMs() > 0L);
+      Assertions.assertTrue(sampler.captureReading().available());
     }
   }
 

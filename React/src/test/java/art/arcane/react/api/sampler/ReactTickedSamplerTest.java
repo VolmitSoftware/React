@@ -29,10 +29,14 @@ class ReactTickedSamplerTest {
   void activeSamplerPublishesTickedValues() {
     TestSampler sampler = new TestSampler(false);
 
-    sampler.sample();
+    Assertions.assertFalse(sampler.captureReading().available());
     sampler.onTick();
 
     Assertions.assertEquals(7D, sampler.sample(), 1.0E-9D);
+    Sampler.Reading reading = sampler.captureReading();
+    Assertions.assertTrue(reading.available());
+    Assertions.assertTrue(reading.sampledAtMs() > 0L);
+    Assertions.assertEquals(reading, sampler.captureReading());
   }
 
   @Test

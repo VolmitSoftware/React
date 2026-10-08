@@ -20,6 +20,10 @@ class SamplerProcessorLoadTest {
     Assertions.assertEquals(0.9D, system.onSample(), 1.0E-9D);
     Assertions.assertEquals(0.25D, process.onSample(), 1.0E-9D);
     Assertions.assertEquals(0.65D, outside.onSample(), 1.0E-9D);
+    Assertions.assertEquals(1L, system.captureReading().sampledAtMs());
+    Assertions.assertEquals(1L, process.captureReading().sampledAtMs());
+    Assertions.assertEquals(1L, outside.captureReading().sampledAtMs());
+    Assertions.assertEquals(0.65D, outside.captureReading().value(), 1.0E-9D);
 
     host.set(withCpu(0.1D, 0.3D));
     Assertions.assertEquals(0D, outside.onSample(), 1.0E-9D);

@@ -48,6 +48,14 @@ public interface Sampler extends Registered, ReactRenderer {
 
   double sample();
 
+  default Reading captureReading() {
+    double value = sample();
+    return new Reading(value, System.currentTimeMillis(), isSampleAvailable());
+  }
+
+  record Reading(double value, long sampledAtMs, boolean available) {
+  }
+
   default double capture() {
     return sample();
   }

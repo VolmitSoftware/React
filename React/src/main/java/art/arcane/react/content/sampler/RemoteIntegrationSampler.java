@@ -4,6 +4,7 @@ import art.arcane.react.React;
 import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.react.core.controller.IntegrationController;
 import art.arcane.volmlib.util.format.Form;
+import art.arcane.volmlib.integration.IntegrationMetricSample;
 
 abstract class RemoteIntegrationSampler extends ReactCachedSampler {
   private final String pluginId;
@@ -25,6 +26,17 @@ abstract class RemoteIntegrationSampler extends ReactCachedSampler {
     this.defaultMetricKey = metricKey;
     this.decimals = Math.max(0, decimals);
     this.suffix = suffix == null ? "" : suffix;
+  }
+
+  @Override
+  public Reading captureReading() {
+    IntegrationController controller = React.controller(IntegrationController.class);
+    if (controller == null || controller.getRemoteSamplerBridge() == null) {
+      return new Reading(0D, 0L, false);
+    }
+    IntegrationMetricSample sample = controller.getRemoteSamplerBridge().storedSample(pluginId, metricKey());
+    return sample == null ? new Reading(0D, 0L, false)
+        : new Reading(sample.valueOr(0D), sample.sampledAtMs(), sample.available());
   }
 
   @Override

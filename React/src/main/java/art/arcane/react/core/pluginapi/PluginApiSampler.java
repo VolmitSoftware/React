@@ -58,6 +58,11 @@ public final class PluginApiSampler extends ReactCachedSampler {
   }
 
   @Override
+  public Reading captureReading() {
+    return runtime.reading();
+  }
+
+  @Override
   public double onSample() {
     return runtime.lastValue();
   }

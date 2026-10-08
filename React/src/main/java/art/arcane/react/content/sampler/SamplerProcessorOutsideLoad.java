@@ -68,6 +68,13 @@ public class SamplerProcessorOutsideLoad extends ReactCachedSampler {
   }
 
   @Override
+  public Reading captureReading() {
+    HostTelemetrySnapshot snapshot = host.get();
+    return new Reading(Math.max(0D, normalizeCpuLoad(snapshot.systemCpuLoad()) - normalizeCpuLoad(snapshot.processCpuLoad())), snapshot.capturedAtMs(),
+        snapshot.available() && Double.isFinite(snapshot.systemCpuLoad()) && Double.isFinite(snapshot.processCpuLoad()));
+  }
+
+  @Override
   public double onSample() {
     HostTelemetrySnapshot snapshot = host.get();
     return Math.max(0D, normalizeCpuLoad(snapshot.systemCpuLoad()) - normalizeCpuLoad(snapshot.processCpuLoad()));

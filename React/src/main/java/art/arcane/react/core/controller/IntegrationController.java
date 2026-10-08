@@ -210,6 +210,9 @@ public class IntegrationController extends TickedObject implements IController {
       updateNode(node, now);
     }
 
+    if (localService != null) {
+      localService.refreshSnapshots();
+    }
     evaluateCorrelation(now);
     evaluateThresholds(now);
     trimTimeline(now);
