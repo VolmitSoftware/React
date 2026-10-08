@@ -3045,6 +3045,10 @@ summary = "Permet la débogage et des diagnostics supplémentaires."
 impact = "Désactivé par défaut. Activer pour autoriser Iris/Adapt des faisceaux secrets lorsque des dépendances sont présentes."
 summary = "Active les fonctionnalités d'intégration secrètes avec plugin."
 
+[config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsnapshotmaxmetrics]
+impact = "Limité à une valeur de 1 à 65536. Les modifications effacent les publications en cache au prochain cycle de collecte d’une seconde."
+summary = "Nombre maximal de métriques distinctes conservées pour les demandes de données instantanées des intégrations."
+
 [config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language]
 impact = "L'anglais intégré au code reste la langue de secours ; les catalogues TOML modifiables sont chargés depuis languages."
 summary = "Locale utilisée pour React interfaces de lecteur et opérateur."

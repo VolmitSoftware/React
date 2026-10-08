@@ -3045,6 +3045,10 @@ summary = "Inschakelt debug logging en aanvullende diagnostiek."
 impact = "Standaard uitgeschakeld. Inschakelen Iris/Adapt geheime bundels wanneer afhankelijkheden aanwezig zijn."
 summary = "Activeert plugin-gaated geheime integratie functies."
 
+[config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsnapshotmaxmetrics]
+impact = "Begrensd tot 1 tot en met 65536. Wijzigingen wissen de publicaties in de cache bij de volgende verzamelcyclus van één seconde."
+summary = "Maximumaantal verschillende metrieken dat wordt bewaard voor aanvragen van integratiemomentopnamen."
+
 [config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language]
 impact = "Het Engels in de code blijft de terugvaltaal; bewerkbare TOML-catalogi worden geladen uit languages."
 summary = "Lokaal gebruikt voor React interfaces voor spelers en exploitanten."

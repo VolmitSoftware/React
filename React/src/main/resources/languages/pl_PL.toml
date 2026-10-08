@@ -3045,6 +3045,10 @@ summary = "Umożliwia logowanie debugowania i dodatkową diagnostykę."
 impact = "Domyślnie wyłączone. Włącz Iris/Adapt tajnych pakietów, gdy są obecne zależności."
 summary = "Umożliwia wtykowe funkcje integracji."
 
+[config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsnapshotmaxmetrics]
+impact = "Ograniczona do zakresu od 1 do 65536. Zmiany usuwają publikacje z pamięci podręcznej w następnym jednosekundowym cyklu zbierania danych."
+summary = "Maksymalna liczba różnych metryk przechowywanych na potrzeby żądań migawek integracji."
+
 [config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language]
 impact = "Angielski zapisany w kodzie pozostaje językiem zapasowym; edytowalne katalogi TOML są wczytywane z languages."
 summary = "Locale stosowane do React interfejsy odtwarzacza i operatora."

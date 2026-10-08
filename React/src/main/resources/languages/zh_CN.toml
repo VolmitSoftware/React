@@ -3045,6 +3045,10 @@ summary = "启用调试记录和额外的诊断。"
 impact = "默认禁用 。 启用允许 Iris/Adapt 当依赖存在时, 密钥捆绑。"
 summary = "启用插件加码的秘密集成功能。"
 
+[config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsnapshotmaxmetrics]
+impact = "限制在1到65536之间。更改后，会在下一个每秒运行的采集周期清除缓存的发布数据。"
+summary = "为集成快照请求保留的不同指标的最大数量。"
+
 [config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language]
 impact = "代码内置的英语仍作为后备语言；可编辑的 TOML 语言目录从 languages 文件夹加载。"
 summary = "用于 React 播放器和操作员界面。"

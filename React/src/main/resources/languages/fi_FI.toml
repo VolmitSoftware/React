@@ -3045,6 +3045,10 @@ summary = "Mahdollistaa vianetsinnän ja lisädiagnostiikan."
 impact = "Oletusrajoitteinen. Sallitaan Iris/Adapt salaiset nippuja, kun riippuvuudet ovat läsnä."
 summary = "Mahdollistaa plugin- gated salaisia integraation ominaisuuksia."
 
+[config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsnapshotmaxmetrics]
+impact = "Rajataan arvoihin 1 ja 65536 sekä niiden väliin. Muutokset tyhjentävät välimuistissa olevat julkaisut seuraavalla yhden sekunnin keruukierroksella."
+summary = "Integraatioiden tilannekuvapyyntöjä varten säilytettävien eri mittareiden enimmäismäärä."
+
 [config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language]
 impact = "Koodiin sisältyvä englanti säilyy varakielenä; muokattavat TOML-katalogit ladataan languages-kansiosta."
 summary = "Paikallinen React pelaaja- ja operaattoriliitännät."

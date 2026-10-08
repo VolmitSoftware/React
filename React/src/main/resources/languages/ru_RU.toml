@@ -3045,6 +3045,10 @@ summary = "Позволяет отлаживать лесозаготовки и
 impact = "Отключен по умолчанию. позволяет разрешить Iris/Adapt Секретные пучки, когда присутствуют зависимости."
 summary = "Включает функции секретной интеграции, связанные с плагином."
 
+[config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsnapshotmaxmetrics]
+impact = "Ограничено диапазоном от 1 до 65536. Изменения очищают кэш публикаций в следующем цикле сбора длительностью одну секунду."
+summary = "Максимальное число различных метрик, сохраняемых для запросов снимков интеграций."
+
 [config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language]
 impact = "Встроенный в код английский остаётся резервным языком; редактируемые каталоги TOML загружаются из languages."
 summary = "Локальные, используемые для React Интерфейсы игрока и оператора."

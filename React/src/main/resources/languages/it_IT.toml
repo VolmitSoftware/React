@@ -3045,6 +3045,10 @@ summary = "Consente di eseguire il debug e la diagnostica aggiuntiva."
 impact = "Disabilitato per impostazione predefinita. Attivare per consentire Iris/Adapt pacchetti segreti quando le dipendenze sono presenti."
 summary = "Consente di integrare le funzioni segrete con plugin-gated."
 
+[config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsnapshotmaxmetrics]
+impact = "Limitato a un valore da 1 a 65536. Le modifiche cancellano le pubblicazioni in cache nel successivo ciclo di raccolta di un secondo."
+summary = "Numero massimo di metriche distinte conservate per le richieste di istantanee delle integrazioni."
+
 [config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language]
 impact = "L'inglese incluso nel codice rimane la lingua di riserva; i cataloghi TOML modificabili vengono caricati da languages."
 summary = "Locale utilizzato per React Interfacce di giocatore e operatore."

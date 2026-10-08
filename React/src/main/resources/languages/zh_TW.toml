@@ -3045,6 +3045,10 @@ summary = "啟用除錯記錄和額外的診斷。"
 impact = "預設禁用 。 啟用允許 Iris/Adapt 當依賴存在時, 金鑰捆綁。"
 summary = "啟用外掛加碼的秘密整合功能。"
 
+[config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsnapshotmaxmetrics]
+impact = "限制在1到65536之間。變更後，會在下一個每秒執行的收集週期清除快取的發布資料。"
+summary = "為整合快照請求保留的不同指標的最大數量。"
+
 [config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language]
 impact = "程式碼內建的英語仍作為備用語言；可編輯的 TOML 語言目錄從 languages 資料夾載入。"
 summary = "用於 React 播放器和操作員介面。"

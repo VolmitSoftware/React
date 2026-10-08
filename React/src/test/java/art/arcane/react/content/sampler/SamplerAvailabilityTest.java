@@ -12,6 +12,8 @@ import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 class SamplerAvailabilityTest {
   @Test
@@ -20,10 +22,10 @@ class SamplerAvailabilityTest {
     World tickingBlockEntitiesWorld = Mockito.mock(World.class);
     World forceLoadedWorld = Mockito.mock(World.class);
     World chunkTicketsWorld = Mockito.mock(World.class);
-    Mockito.when(blockEntitiesWorld.getTileEntityCount()).thenThrow(UnsupportedOperationException.class);
-    Mockito.when(tickingBlockEntitiesWorld.getTickableTileEntityCount()).thenThrow(UnsupportedOperationException.class);
-    Mockito.when(forceLoadedWorld.getForceLoadedChunks()).thenThrow(UnsupportedOperationException.class);
-    Mockito.when(chunkTicketsWorld.getPluginChunkTickets()).thenThrow(UnsupportedOperationException.class);
+    Mockito.when(blockEntitiesWorld.getTileEntityCount()).thenThrow(UnsupportedOperationException.class).thenReturn(0);
+    Mockito.when(tickingBlockEntitiesWorld.getTickableTileEntityCount()).thenThrow(UnsupportedOperationException.class).thenReturn(0);
+    Mockito.when(forceLoadedWorld.getForceLoadedChunks()).thenThrow(UnsupportedOperationException.class).thenReturn(Set.of());
+    Mockito.when(chunkTicketsWorld.getPluginChunkTickets()).thenThrow(UnsupportedOperationException.class).thenReturn(Map.of());
 
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class);
@@ -80,6 +82,8 @@ class SamplerAvailabilityTest {
     Assertions.assertFalse(sampler.isSampleAvailable());
 
     sampler.start();
+    Assertions.assertFalse(sampler.isSampleAvailable());
+    Assertions.assertEquals(0D, sampler.onSample());
     Assertions.assertTrue(sampler.isSampleAvailable());
   }
 }

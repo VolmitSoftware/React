@@ -3045,6 +3045,10 @@ summary = "Cho phép ghi nhật ký gỡ lỗi và chẩn đoán bổ sung."
 impact = "Đã tắt theo mặc định. Bật Iris/Adapt gói giữ bí mật khi có phụ thuộc."
 summary = "Kích hoạt tính năng tích hợp bí mật bổ sung."
 
+[config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsnapshotmaxmetrics]
+impact = "Giới hạn từ 1 đến 65536. Thay đổi xóa các bản công bố trong bộ nhớ đệm ở chu kỳ thu thập một giây tiếp theo."
+summary = "Số lượng tối đa các chỉ số riêng biệt được lưu cho yêu cầu ảnh chụp dữ liệu tích hợp."
+
 [config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language]
 impact = "Tiếng Anh có sẵn trong mã vẫn là ngôn ngữ dự phòng; các danh mục TOML có thể chỉnh sửa được tải từ languages."
 summary = "Miền địa phương dùng cho React Người chơi và người điều khiển giao diện."

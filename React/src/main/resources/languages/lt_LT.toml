@@ -3045,6 +3045,10 @@ summary = "Įjungia derinimo žurnalą ir papildomą diagnostiką."
 impact = "Pagal nutylėjimą išjungta. Įjungti leidimą Iris/Adapt slapti ryšuliai, kai yra priklausomybių."
 summary = "Įjungia slapto integravimo į tinklą funkcijas."
 
+[config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsnapshotmaxmetrics]
+impact = "Ribojamas nuo 1 iki 65536. Pakeitimai išvalo talpykloje esančius skelbinius per kitą vienos sekundės rinkimo ciklą."
+summary = "Didžiausias skirtingų metrikų, saugomų integracijų momentinių duomenų užklausoms, skaičius."
+
 [config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language]
 impact = "Kode esanti anglų kalba lieka atsargine kalba; redaguojami TOML katalogai įkeliami iš languages."
 summary = "Lokalas naudojamas React grotuvo ir operatoriaus sąsajos."

@@ -3045,6 +3045,10 @@ summary = "Ermöglicht Debug-Logging und zusätzliche Diagnosen."
 impact = "Standardmäßig deaktiviert. Ermöglicht es, Iris/Adapt geheime Bündel, wenn Abhängigkeiten vorhanden sind."
 summary = "Ermöglicht Plugin-gelieferte geheime Integrationsfunktionen."
 
+[config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsnapshotmaxmetrics]
+impact = "Auf 1 bis 65536 begrenzt. Änderungen leeren die zwischengespeicherten Veröffentlichungen im nächsten Erfassungszyklus von einer Sekunde."
+summary = "Maximale Anzahl unterschiedlicher Metriken für Integrations-Snapshot-Anfragen."
+
 [config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language]
 impact = "Das im Code enthaltene Englisch bleibt die Rückfallsprache; bearbeitbare TOML-Kataloge werden aus languages geladen."
 summary = "Locale wird verwendet für React Spieler- und Bedienerschnittstellen."

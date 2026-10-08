@@ -3045,6 +3045,10 @@ summary = "Permite depurar la tala y el diagnóstico adicional."
 impact = "Discapacitados por defecto. Permitir Iris/Adapt paquetes secretos cuando las dependencias están presentes."
 summary = "Permite funciones de integración secreta con plugin."
 
+[config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsnapshotmaxmetrics]
+impact = "Limitado a un valor entre 1 y 65536. Los cambios borran las publicaciones en caché en el siguiente ciclo de recopilación de un segundo."
+summary = "Número máximo de métricas distintas conservadas para las solicitudes de instantáneas de las integraciones."
+
 [config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language]
 impact = "El inglés incluido en el código sigue siendo el idioma de respaldo; los catálogos TOML editables se cargan desde languages."
 summary = "Locale utilizado para React interfaces de reproductor y operador."

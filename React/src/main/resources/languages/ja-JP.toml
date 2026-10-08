@@ -3045,6 +3045,10 @@ summary = "デバッグロギングと追加の診断を有効にします。"
 impact = "デフォルトで無効にしました。 許可する有効 Iris/Adapt 依存関係が存在するときの秘密束。"
 summary = "プラグインをゲートしたシークレット統合機能を有効にします。"
 
+[config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsnapshotmaxmetrics]
+impact = "1から65536の範囲に制限されます。変更すると、次の1秒間隔の収集サイクルでキャッシュ済みの公開データが消去されます。"
+summary = "連携のスナップショット要求用に保持する異なるメトリクスの最大数。"
+
 [config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language]
 impact = "コード内の英語を引き続きフォールバックとして使用します。編集可能なTOMLカタログはlanguagesから読み込みます。"
 summary = "ロケール使用 React プレーヤーおよびオペレータはインターフェイスします。"

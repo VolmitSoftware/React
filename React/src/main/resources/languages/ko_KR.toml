@@ -3045,6 +3045,10 @@ summary = "디버그 로깅 및 추가 진단을 가능하게 합니다."
 impact = "기본적으로 비활성화. 허용하기 Iris/Adapt 종속성이 존재할 때 비밀 번들."
 summary = "플러그인을 활성화된 비밀 통합 기능."
 
+[config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsnapshotmaxmetrics]
+impact = "1에서 65536 사이로 제한됩니다. 변경 사항은 다음 1초 수집 주기에 캐시된 게시 데이터를 지웁니다."
+summary = "통합 스냅샷 요청을 위해 보관하는 서로 다른 메트릭의 최대 개수입니다."
+
 [config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language]
 impact = "코드에 포함된 영어를 계속 대체 언어로 사용하며, 편집 가능한 TOML 카탈로그는 languages에서 불러옵니다."
 summary = "현지에 사용 React 플레이어 및 운영자 인터페이스."

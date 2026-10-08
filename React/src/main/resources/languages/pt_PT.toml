@@ -3045,6 +3045,10 @@ summary = "Activa o registo de depuração e diagnósticos adicionais."
 impact = "Desactivado por omissão. Activar para permitir Iris/Adapt pacotes secretos quando as dependências estão presentes."
 summary = "Activa as funcionalidades de integração secreta com o 'plugin'."
 
+[config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsnapshotmaxmetrics]
+impact = "Limitado a um valor entre 1 e 65536. As alterações limpam as publicações em cache no próximo ciclo de recolha de um segundo."
+summary = "Número máximo de métricas distintas mantidas para os pedidos de instantâneos das integrações."
+
 [config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language]
 impact = "O inglês incluído no código continua a ser o idioma de recurso; os catálogos TOML editáveis são carregados a partir de languages."
 summary = "Localidade utilizada para React interfaces de jogador e operador."

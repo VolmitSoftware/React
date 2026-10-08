@@ -3045,6 +3045,10 @@ summary = "Enables debug log ve ek tanılar."
 impact = "Varsayılan olarak devre dışıdır. Bağımlılıklar mevcut olduğunda Iris/Adapt gizli paketlerine izin vermek için etkinleştirin."
 summary = "Enables eklentili gizli entegrasyon özellikleri."
 
+[config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsnapshotmaxmetrics]
+impact = "1 ile 65536 arasında sınırlandırılır. Değişiklikler, sonraki bir saniyelik toplama döngüsünde önbellekteki yayınları temizler."
+summary = "Entegrasyon anlık görüntü istekleri için saklanan farklı metriklerin azami sayısı."
+
 [config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language]
 impact = "Koda gömülü İngilizce yedek dil olarak kullanılmaya devam eder; düzenlenebilir TOML katalogları languages klasöründen yüklenir."
 summary = "Locale için kullanılır React oyuncu ve operatör arabirimleri."

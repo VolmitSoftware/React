@@ -3045,6 +3045,10 @@ summary = "Enables debug logging ואבחון נוסף."
 impact = "נכים כברירת מחדל לאפשר Iris/Adapt חבילות סוד כאשר התלויים נמצאים."
 summary = "תכונות שילוב חשאיות של תוסף."
 
+[config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.integrationsnapshotmaxmetrics]
+impact = "מוגבל לטווח של 1 עד 65536. שינויים מנקים פרסומים מהמטמון במחזור האיסוף הבא, שאורכו שנייה אחת."
+summary = "המספר המרבי של מדדים שונים הנשמרים עבור בקשות לתמונות מצב של שילובים."
+
 [config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.language]
 impact = "האנגלית המובנית בקוד נשארת שפת הגיבוי; קטלוגי TOML הניתנים לעריכה נטענים מתוך languages."
 summary = "מקומי המשמש לשימוש React ממשקי שחקן ומפעיל."
