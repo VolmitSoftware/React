@@ -12,6 +12,9 @@ commands:
   react:
     aliases: [ re ]
 permissions:
+  react.update:
+    description: Allows viewing React updates in VolmLib's combined update reports.
+    default: op
   react.debugdump:
     description: Allows creating and optionally uploading diagnostic reports.
     default: op
@@ -25,6 +28,7 @@ permissions:
     description: Allows using all /react commands.
     default: op
     children:
+      react.update: true
       react.debugdump: true
       react.language.self: true
       react.use: true

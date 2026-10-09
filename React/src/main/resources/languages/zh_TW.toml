@@ -4569,6 +4569,10 @@ open-description = "開啟已上傳的診斷報告。"
 copy-path = "複製本機路徑"
 copy-path-description = "複製報告的本機路徑。"
 
+[config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.updatenotifications]
+summary = "檢查 GitHub 發布中的 React 更新。"
+impact = "預設啟用。VolmLib 將更新合併為一則加入通知和 /volmit plugins updates 報告。停用後停止檢查 React 更新。"
+
 [config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumincidentscore]
 summary = "繼續執行緩解措施所需的事件評分。"
 impact = "達到此評分或 minimumTickMS 時，流程將繼續。"

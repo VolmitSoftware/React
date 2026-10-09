@@ -4569,6 +4569,10 @@ open-description = "Atidaryti įkeltą diagnostikos ataskaitą."
 copy-path = "Kopijuoti vietinį kelią"
 copy-path-description = "Kopijuoti vietinį ataskaitos kelią."
 
+[config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.updatenotifications]
+summary = "Tikrina React atnaujinimus GitHub leidimuose."
+impact = "Įjungta pagal numatymą. VolmLib sujungia atnaujinimus į vieną prisijungimo pranešimą ir /volmit plugins updates ataskaitą. Išjungus React tikrinimai sustabdomi."
+
 [config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumincidentscore]
 summary = "Incidento balas, kurio reikia apkrovos mažinimui tęsti."
 impact = "Planas tęsiamas pasiekus šį balą arba minimumTickMS."

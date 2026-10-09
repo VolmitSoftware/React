@@ -4569,6 +4569,10 @@ open-description = "アップロードした診断レポートを開きます。
 copy-path = "ローカルパスをコピー"
 copy-path-description = "レポートのローカルパスをコピーします。"
 
+[config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.updatenotifications]
+summary = "GitHubのリリースでReactの更新を確認します。"
+impact = "既定で有効です。VolmLibは更新を参加時の通知と /volmit plugins updates のレポートにまとめます。無効にするとReactの確認を停止します。"
+
 [config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumincidentscore]
 summary = "軽減策を継続するために必要なインシデントスコア。"
 impact = "このスコアまたは minimumTickMS に達すると手順を継続します。"

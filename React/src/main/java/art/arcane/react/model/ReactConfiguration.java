@@ -72,6 +72,9 @@ public class ReactConfiguration {
   @ConfigDoc(value = "Enables anonymous bStats usage reporting for React.", impact = "Set to false to stop React's bStats submissions. Changes apply automatically.")
   private boolean metrics = true;
 
+  @ConfigDoc(value = "Checks GitHub releases for React updates.", impact = "Enabled by default. VolmLib combines permitted plugin updates in one join notice and /volmit plugins updates report. Disable to stop React checks.")
+  private boolean updateNotifications = true;
+
   @ConfigDoc(value = "Maximum distinct metrics retained for integration snapshot demand.", impact = "Clamped to 1 through 65536. Changes clear cached publications on the next one-second collection cycle.")
   private int integrationSnapshotMaxMetrics = 65_536;
 

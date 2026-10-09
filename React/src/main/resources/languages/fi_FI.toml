@@ -4569,6 +4569,10 @@ open-description = "Avaa lähetetty diagnostiikkaraportti."
 copy-path = "Kopioi paikallinen polku"
 copy-path-description = "Kopioi raportin paikallinen polku."
 
+[config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.updatenotifications]
+summary = "Tarkistaa React-päivitykset GitHub-julkaisuista."
+impact = "Oletuksena käytössä. VolmLib yhdistää päivitykset yhteen liittymisilmoitukseen ja /volmit plugins updates -raporttiin. Poistaminen käytöstä lopettaa React-tarkistukset."
+
 [config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumincidentscore]
 summary = "Häiriöpisteiden vähimmäismäärä lievennystoimien jatkamiseksi."
 impact = "Toimintasuunnitelma jatkuu, kun tämä pistemäärä tai minimumTickMS saavutetaan."

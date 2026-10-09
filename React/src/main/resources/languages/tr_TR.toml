@@ -4569,6 +4569,10 @@ open-description = "Yüklenen tanılama raporunu aç."
 copy-path = "Yerel yolu kopyala"
 copy-path-description = "Raporun yerel yolunu kopyala."
 
+[config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.updatenotifications]
+summary = "GitHub sürümlerinde React güncellemelerini denetler."
+impact = "Varsayılan olarak etkindir. VolmLib güncellemeleri tek bir giriş bildirimi ve /volmit plugins updates raporunda birleştirir. Devre dışı bırakmak React denetimlerini durdurur."
+
 [config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumincidentscore]
 summary = "Azaltma işlemlerine devam etmek için gereken olay puanı."
 impact = "Bu puana veya minimumTickMS değerine ulaşıldığında plan devam eder."

@@ -4569,6 +4569,10 @@ open-description = "Het geüploade diagnoserapport openen."
 copy-path = "Lokaal pad kopiëren"
 copy-path-description = "Het lokale pad van het rapport kopiëren."
 
+[config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.updatenotifications]
+summary = "Controleert GitHub-releases op React-updates."
+impact = "Standaard ingeschakeld. VolmLib bundelt updates in één melding bij aanmelden en in /volmit plugins updates. Uitschakelen stopt de controles voor React."
+
 [config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumincidentscore]
 summary = "Vereiste incidentscore om verdere maatregelen uit te voeren."
 impact = "Het draaiboek gaat door wanneer deze score of minimumTickMS wordt bereikt."

@@ -8,6 +8,7 @@ import art.arcane.react.util.plugin.IController;
 import art.arcane.react.util.project.registry.Registry;
 import art.arcane.volmlib.util.hud.HudActionBar;
 import art.arcane.volmlib.util.hud.HudTitleService;
+import art.arcane.volmlib.integration.ReloadAware;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import org.bukkit.event.server.PluginDisableEvent;
 import org.junit.jupiter.api.Assertions;
@@ -17,10 +18,28 @@ import org.mockito.Mockito;
 
 import java.lang.reflect.Field;
 import java.util.List;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 class ReactShutdownLifecycleTest {
+  @Test
+  void reloadCommitReportsSuccessfulAndIncompleteDrains() throws ReflectiveOperationException {
+    React plugin = Mockito.mock(React.class);
+    Mockito.doCallRealMethod().when(plugin).commitReload(ReloadAware.PreUnloadReason.HOT_RELOAD);
+    try (MockedStatic<React> logging = Mockito.mockStatic(React.class)) {
+      setField(plugin, "shutdownDrained", true);
+      plugin.commitReload(ReloadAware.PreUnloadReason.HOT_RELOAD).toCompletableFuture().join();
+      Mockito.verify(plugin).stop();
+
+      setField(plugin, "shutdownDrained", false);
+      CompletionException failure = Assertions.assertThrows(CompletionException.class,
+          () -> plugin.commitReload(ReloadAware.PreUnloadReason.HOT_RELOAD).toCompletableFuture().join());
+      Assertions.assertInstanceOf(IllegalStateException.class, failure.getCause());
+      Mockito.verify(plugin, Mockito.times(2)).stop();
+    }
+  }
+
   @Test
   void pluginDisableEventDrainsOnceBeforeFrameworkSchedulerRetirement() throws ReflectiveOperationException {
     try (ShutdownHarness harness = new ShutdownHarness()) {

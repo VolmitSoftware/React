@@ -4569,6 +4569,10 @@ open-description = "Mở báo cáo chẩn đoán đã tải lên."
 copy-path = "Sao chép đường dẫn cục bộ"
 copy-path-description = "Sao chép đường dẫn cục bộ của báo cáo."
 
+[config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.updatenotifications]
+summary = "Kiểm tra bản cập nhật React trong các bản phát hành GitHub."
+impact = "Bật theo mặc định. VolmLib gộp các bản cập nhật vào một thông báo khi vào máy chủ và báo cáo /volmit plugins updates. Tắt để dừng kiểm tra React."
+
 [config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumincidentscore]
 summary = "Điểm sự cố cần đạt để tiếp tục giảm tải."
 impact = "Kịch bản tiếp tục khi đạt điểm này hoặc minimumTickMS."

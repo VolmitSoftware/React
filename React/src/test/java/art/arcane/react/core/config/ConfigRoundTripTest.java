@@ -88,6 +88,16 @@ public class ConfigRoundTripTest {
   }
 
   @Test
+  public void updateNotificationsDefaultToEnabledAndRetainOptOut() throws Exception {
+    ReactConfiguration defaults = new ReactConfiguration();
+    Assertions.assertTrue(defaults.isUpdateNotifications());
+    defaults.setUpdateNotifications(false);
+    ReactConfiguration parsed = TomlCodec.fromToml(
+        TomlCodec.toToml(defaults, "main-config"), ReactConfiguration.class);
+    Assertions.assertFalse(parsed.isUpdateNotifications());
+  }
+
+  @Test
   public void globalConfigStartsWithLanguageThenMetrics() {
     String toml = TomlCodec.toToml(new ReactConfiguration(), "main-config");
 

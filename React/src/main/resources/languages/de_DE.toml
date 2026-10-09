@@ -4622,3 +4622,7 @@ impact = "Prüfungen folgen updateCooldownSeconds. Fehlende Tickdaten oder ein n
 [config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.budgetrecoverystep]
 summary = "Maximale Distanzerhöhung nach erfolgreicher Budgeterholung in Chunks; begrenzt auf 1 bis 32."
 impact = "Kleinere Schritte begrenzen Ladespitzen bei der Wiederherstellung. Gilt nur bei aktivierten Spieler-Chunk-Budgets."
+
+[config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.updatenotifications]
+summary = "Prüft GitHub-Releases auf React-Updates."
+impact = "Standardmäßig aktiviert. VolmLib fasst Updates in einer Beitrittsmeldung und unter /volmit plugins updates zusammen. Deaktivieren stoppt React-Prüfungen."

@@ -4569,6 +4569,10 @@ open-description = "Apri il rapporto diagnostico caricato."
 copy-path = "Copia il percorso locale"
 copy-path-description = "Copia il percorso locale del rapporto."
 
+[config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.updatenotifications]
+summary = "Cerca aggiornamenti di React nelle versioni GitHub."
+impact = "Attivo per impostazione predefinita. VolmLib riunisce gli aggiornamenti in un avviso di accesso e in /volmit plugins updates. Disattiva per interrompere i controlli di React."
+
 [config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumincidentscore]
 summary = "Punteggio dell’incidente necessario per continuare la mitigazione."
 impact = "La procedura continua se viene raggiunto questo punteggio o minimumTickMS."

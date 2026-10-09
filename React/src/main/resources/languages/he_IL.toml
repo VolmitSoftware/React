@@ -4569,6 +4569,10 @@ open-description = "פתיחת דוח האבחון שהועלה."
 copy-path = "העתקת הנתיב המקומי"
 copy-path-description = "העתקת הנתיב המקומי של הדוח."
 
+[config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.updatenotifications]
+summary = "בודק עדכוני React במהדורות GitHub."
+impact = "מופעל כברירת מחדל. VolmLib מאחד עדכונים בהודעת כניסה אחת ובדוח /volmit plugins updates. השבתה מפסיקה בדיקות של React."
+
 [config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumincidentscore]
 summary = "ציון האירוע הנדרש להמשך פעולות הפחתת העומס."
 impact = "התוכנית ממשיכה כאשר ציון זה או minimumTickMS מגיעים לסף."

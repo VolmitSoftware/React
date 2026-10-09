@@ -3,6 +3,7 @@ package art.arcane.react;
 import art.arcane.react.core.bridge.BytecodeAgent;
 import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.util.common.scheduling.ReactExecutors;
+import art.arcane.volmlib.util.update.BukkitUpdateService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -68,6 +69,28 @@ class ReactRuntimeSettingsTest {
     metrics.close();
     React.executors = previousExecutors;
     field(ReactConfiguration.class, "configuration").set(null, previousConfiguration);
+  }
+
+  @Test
+  void updateChecksFollowPublishedSettingsAndIgnoreUncommittedEdits() throws Exception {
+    BukkitUpdateService updates = mock(BukkitUpdateService.class);
+    field(React.class, "updates").set(plugin, updates);
+    configuration.setUpdateNotifications(false);
+    plugin.refreshRuntimeSettings(configuration);
+    configuration.setUpdateNotifications(true);
+    pending.removeFirst().run();
+    assertEquals(false, field(React.class, "updateNotificationsEnabled").get(plugin));
+    verify(updates, times(1)).reconfigure();
+
+    apply();
+    assertEquals(true, field(React.class, "updateNotificationsEnabled").get(plugin));
+    verify(updates, times(2)).reconfigure();
+
+    field(React.class, "ready").set(plugin, false);
+    configuration.setUpdateNotifications(false);
+    plugin.refreshRuntimeSettings(configuration);
+    assertEquals(0, pending.size());
+    verify(updates, times(2)).reconfigure();
   }
 
   @Test

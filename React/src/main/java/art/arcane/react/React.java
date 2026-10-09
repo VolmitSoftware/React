@@ -39,6 +39,7 @@ import art.arcane.react.core.controller.PlayerController;
 import art.arcane.react.core.controller.SampleController;
 import art.arcane.react.core.controller.TweakController;
 import art.arcane.react.localization.ReactLanguage;
+import art.arcane.volmlib.util.update.BukkitUpdateService;
 import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.util.common.plugin.SplashScreen;
 import art.arcane.react.util.common.scheduling.J;
@@ -84,6 +85,8 @@ import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
@@ -99,6 +102,8 @@ public class React extends VolmitPlugin implements ReloadAware {
   private final Object runtimeSettingsLock = new Object();
   private final Object runtimeSettingsSubmissionLock = new Object();
   private volatile RuntimeSettings runtimeSettings;
+  private volatile boolean updateNotificationsEnabled;
+  private BukkitUpdateService updates;
   private static final boolean SLIMJAR_DEBUG = Boolean.getBoolean("react.debug-slimjar");
   public static React instance;
   public static Thread serverThread;
@@ -478,6 +483,9 @@ public class React extends VolmitPlugin implements ReloadAware {
     PrecisionStopwatch psw = PrecisionStopwatch.start();
     ReactConfiguration.get();
     ReactLanguage.initialize();
+    updateNotificationsEnabled = ReactConfiguration.get().isUpdateNotifications();
+    updates = BukkitUpdateService.register(this, new BukkitUpdateService.Options(
+        "VolmitSoftware", "React", "react.update", () -> updateNotificationsEnabled));
     debugDump = BukkitDebugDump.create(this, new BukkitDebugDump.Options(
         () -> true,
         this::captureDebugState,
@@ -544,7 +552,8 @@ public class React extends VolmitPlugin implements ReloadAware {
       if (!ready || runtime == null || runtime.isClosed()) {
         return;
       }
-      runtimeSettings = new RuntimeSettings(configuration.isMetrics(), configuration.isUnsafeBytecode());
+      runtimeSettings = new RuntimeSettings(configuration.isMetrics(), configuration.isUnsafeBytecode(),
+          configuration.isUpdateNotifications());
       runtime.asyncPool().execute(() -> applyRuntimeSettings(runtime));
     }
   }
@@ -555,6 +564,10 @@ public class React extends VolmitPlugin implements ReloadAware {
         return;
       }
       RuntimeSettings settings = runtimeSettings;
+      updateNotificationsEnabled = settings.updateNotifications();
+      if (updates != null) {
+        updates.reconfigure();
+      }
       try {
         setupMetrics(settings.metrics());
       } catch (Throwable failure) {
@@ -632,6 +645,10 @@ public class React extends VolmitPlugin implements ReloadAware {
     ReactLanguage.close();
     closeAudienceProvider();
     synchronized (runtimeSettingsLock) {
+      if (updates != null) {
+        updates.close();
+        updates = null;
+      }
       stopMetrics();
     }
     if (ticker != null) {
@@ -704,7 +721,9 @@ public class React extends VolmitPlugin implements ReloadAware {
   public CompletionStage<Void> commitReload(ReloadAware.PreUnloadReason reason) {
     React.verbose("BileTools pre-unload hook fired (" + reason + "). Shutting down React controllers.");
     stop();
-    return CompletableFuture.completedFuture(null);
+    return shutdownDrained
+        ? CompletableFuture.completedFuture(null)
+        : CompletableFuture.failedFuture(new IllegalStateException("React controllers did not finish shutting down"));
   }
 
   @Override
@@ -730,6 +749,6 @@ public class React extends VolmitPlugin implements ReloadAware {
     }
   }
 
-  private record RuntimeSettings(boolean metrics, boolean unsafeBytecode) {
+  private record RuntimeSettings(boolean metrics, boolean unsafeBytecode, boolean updateNotifications) {
   }
 }

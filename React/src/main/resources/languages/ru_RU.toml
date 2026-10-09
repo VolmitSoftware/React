@@ -4569,6 +4569,10 @@ open-description = "Открыть отправленный диагностич
 copy-path = "Копировать локальный путь"
 copy-path-description = "Копировать локальный путь к отчёту."
 
+[config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.updatenotifications]
+summary = "Проверяет обновления React в релизах GitHub."
+impact = "По умолчанию включено. VolmLib объединяет обновления в одном уведомлении при входе и отчёте /volmit plugins updates. Отключение останавливает проверки React."
+
 [config.documentation.annotation.art.arcane.react.content.action.actionincidentplaybook_params.field.minimumincidentscore]
 summary = "Оценка инцидента, необходимая для продолжения мер по снижению нагрузки."
 impact = "Сценарий продолжается при достижении этой оценки или minimumTickMS."
