@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -134,6 +135,51 @@ class JfrTelemetryTest {
     Assertions.assertEquals(256D, snapshot.metrics().get("jfr-region-read-bytes-rate").value());
     Assertions.assertTrue(snapshot.series().stream().anyMatch(series -> series.level().equals("minecraft:overworld") && series.category().equals("noise")));
     Assertions.assertTrue(snapshot.series().stream().anyMatch(series -> series.level().equals("world") && series.category().equals("chunk")));
+  }
+
+  @Test
+  void missingSeriesLabelsMarkOnlyTheirWindowIncomplete() {
+    JfrTelemetry.Accumulator accumulator = new JfrTelemetry.Accumulator(10L, 0L);
+    accumulator.record(JfrTelemetry.Channel.GENERATION, 1L, 0L, 4D);
+    accumulator.recordSeries(JfrTelemetry.Channel.GENERATION, null, "noise", 0L, 4D);
+    JfrTelemetry.Snapshot missing = accumulator.publish(Set.of("minecraft.ChunkGeneration"), true, 1_000L, 1_000_000_000L);
+    Assertions.assertFalse(missing.complete());
+    Assertions.assertTrue(missing.available());
+    Assertions.assertEquals("unknown", missing.series().getFirst().level());
+    Assertions.assertEquals(1D, missing.metrics().get("jfr-chunk-generation-rate").value());
+    Assertions.assertEquals(4D, missing.metrics().get("jfr-chunk-generation-mean-ms").value());
+    Assertions.assertTrue(accumulator.publish(Set.of("minecraft.ChunkGeneration"), true, 2_000L, 2_000_000_000L).complete());
+  }
+
+  @Test
+  void streamingResolvesPooledGenerationLabels() throws Exception {
+    EventType.getEventType(ChunkStage.class);
+    List<JfrTelemetry.Series> observed = new ArrayList<>();
+    try (JfrTelemetry telemetry = JfrTelemetry.start(new JfrTelemetry.Options(10L), failure -> Assertions.fail(failure))) {
+      for (int index = 0; index < 4_096; index++) {
+        ChunkStage event = new ChunkStage();
+        event.level = "minecraft:overworld";
+        event.targetStatus = "minecraft:structure_references";
+        event.commit();
+      }
+      long count = 0L;
+      long deadline = System.nanoTime() + 10_000_000_000L;
+      while (count < 4_096L && System.nanoTime() < deadline) {
+        JfrTelemetry.Snapshot snapshot = telemetry.snapshot(System.currentTimeMillis());
+        for (JfrTelemetry.Series series : snapshot.series()) {
+          if (series.channel().equals("jfr-chunk-generation")) {
+            observed.add(series);
+            count += series.count();
+          }
+        }
+        if (count < 4_096L) {
+          Thread.sleep(20L);
+        }
+      }
+      Assertions.assertEquals(4_096L, count);
+    }
+    Assertions.assertTrue(observed.stream().allMatch(series -> series.level().equals("minecraft:overworld")
+        && series.category().equals("minecraft:structure_references")), observed.toString());
   }
 
   @Test

@@ -169,6 +169,7 @@ public final class JfrTelemetry implements AutoCloseable {
     private long receivedPackets;
     private long receivedBytes;
     private long delayMs;
+    private boolean incompleteLabels;
 
     Accumulator(long thresholdMs, long nowNanos) {
       this.thresholdMs = thresholdMs;
@@ -204,6 +205,7 @@ public final class JfrTelemetry implements AutoCloseable {
     }
 
     synchronized void recordSeries(Channel channel, String world, String category, long bytes, double durationMs) {
+      incompleteLabels |= world == null || world.isBlank() || category == null || category.isBlank();
       SeriesKey key = new SeriesKey(channel, bounded(world), bounded(category));
       if (!series.containsKey(key) && series.size() >= MAX_SERIES - 3) {
         key = new SeriesKey(channel, "other", "other");
@@ -247,6 +249,8 @@ public final class JfrTelemetry implements AutoCloseable {
         Totals value = entry.getValue();
         details.add(new Series(key.channel.id, key.world, key.category, value.count, value.bytes, value.mean(), value.maxMs));
       }
+      boolean complete = available && !dataLoss && !incompleteLabels;
+      incompleteLabels = false;
       totals.clear();
       series.clear();
       receivedPackets = 0L;
@@ -254,7 +258,7 @@ public final class JfrTelemetry implements AutoCloseable {
       delayMs = 0L;
       previousNanos = nowNanos;
       return new Snapshot(nowMs, Math.max(1L, elapsedNanos / 1_000_000L), thresholdMs, available,
-          available && !dataLoss, supported, Map.copyOf(metrics), List.copyOf(details));
+          complete, supported, Map.copyOf(metrics), List.copyOf(details));
     }
 
     private static void put(Map<String, RuntimeMetric> metrics, String id, double value, long nowMs, boolean available) {
