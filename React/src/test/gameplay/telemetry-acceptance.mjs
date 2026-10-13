@@ -33,6 +33,9 @@ export default {
           for (const id of ['memory-pressure', 'jvm-heap-utilization', 'react-nearby-queries', 'react-nearby-candidates', 'react-nearby-samples']) {
             const value = values[id]
             context.expect(value && value.available && Number.isFinite(value.value) && value.value >= 0, `Metric ${id} is available`, value)
+            context.expect(value.sampledAtMs > 0 && value.metadata.intervalMs === 1000, `Metric ${id} retains source time and interval`, value)
+            const expectedUnit = id === 'memory-pressure' ? 'bytes/s' : id === 'jvm-heap-utilization' ? '%' : '/s'
+            context.expect(value.metadata.unit === expectedUnit && value.metadata.quality === (id === 'memory-pressure' ? 'ESTIMATED' : 'MEASURED'), `Metric ${id} declares its raw unit and quality`, value)
           }
           previousSequence = state.history.sequence
           previousCapture = state.history.capturedAtMs
@@ -43,6 +46,16 @@ export default {
           evidence.snapshots.push(state)
         }
         context.expect(positive.size === 3, 'Every neighborhood acquisition counter observes work', [...positive])
+        const regional = await qa('snapshot region-tps-lowest,region-player-coverage,region-players-below-18-tps')
+        evidence.regional = regional
+        const regionValues = Object.fromEntries(regional.history.values.map(value => [value.id, value]))
+        context.expect(Object.keys(regionValues).length === 3, 'Regional metrics are registered on both platforms')
+        if (regional.folia) {
+          context.expect(regionValues['region-tps-lowest'].available && regionValues['region-tps-lowest'].value > 0, 'Folia provides observed regional TPS', regionValues)
+          context.expect(regionValues['region-player-coverage'].available && regionValues['region-player-coverage'].value === 100, 'The sole player has a current region observation', regionValues)
+        } else {
+          context.expect(!regionValues['region-tps-lowest'].available, 'Paper does not report invented regional TPS', regionValues)
+        }
         evidence.status = 'verified'
       })
     } finally {

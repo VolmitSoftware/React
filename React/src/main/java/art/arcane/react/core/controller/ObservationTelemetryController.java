@@ -2,7 +2,8 @@ package art.arcane.react.core.controller;
 
 import art.arcane.react.React;
 import art.arcane.react.core.telemetry.ObservationMetrics;
-import art.arcane.react.core.telemetry.TelemetrySampler;
+import art.arcane.react.api.sampler.Sampler;
+import art.arcane.volmlib.util.format.Form;
 import art.arcane.react.util.plugin.IController;
 import org.bukkit.Material;
 
@@ -40,12 +41,7 @@ public final class ObservationTelemetryController implements IController {
   public void postStart() {
     SampleController controller = React.controller(SampleController.class);
     for (ObservationMetrics.Counter counter : ObservationMetrics.Counter.values()) {
-      TelemetrySampler sampler = new TelemetrySampler(new TelemetrySampler.Options(
-          counter.id(), counter.displayName(), counter.unit(), Material.COMPARATOR,
-          () -> snapshot.values()[counter.ordinal()],
-          () -> snapshot.sampledAtMs() > 0L && System.currentTimeMillis() - snapshot.sampledAtMs() < 3_000L,
-          TelemetrySampler.Format.DECIMAL, () -> snapshot.sampledAtMs()
-      ));
+      CounterSampler sampler = new CounterSampler(counter);
       if (controller != null && controller.registerSampler(sampler)) {
         samplerIds.add(counter.id());
       }
@@ -93,6 +89,83 @@ public final class ObservationTelemetryController implements IController {
       values[counter.ordinal()] = counter.rate(counters[counter.ordinal()], elapsed);
     }
     snapshot = new Snapshot(values, System.currentTimeMillis());
+  }
+
+  private final class CounterSampler implements Sampler {
+    private final ObservationMetrics.Counter counter;
+    private volatile boolean active;
+
+    private CounterSampler(ObservationMetrics.Counter counter) {
+      this.counter = counter;
+    }
+
+    @Override
+    public String getId() {
+      return counter.id();
+    }
+
+    @Override
+    public String getName() {
+      return counter.displayName();
+    }
+
+    @Override
+    public Material getIcon() {
+      return Material.COMPARATOR;
+    }
+
+    @Override
+    public void loadConfiguration() {
+    }
+
+    @Override
+    public boolean reloadConfiguration() {
+      return true;
+    }
+
+    @Override
+    public double sample() {
+      return active ? snapshot.values()[counter.ordinal()] : 0D;
+    }
+
+    @Override
+    public Reading captureReading() {
+      Snapshot current = snapshot;
+      long age = System.currentTimeMillis() - current.sampledAtMs();
+      boolean available = active && current.sampledAtMs() > 0L && age >= 0L && age < 3_000L;
+      String reason = !active ? "stopped" : current.sampledAtMs() <= 0L ? "warming-up" : "stale";
+      return reading(current.values()[counter.ordinal()], current.sampledAtMs(), available, reason);
+    }
+
+    @Override
+    public Metadata metadata() {
+      return new Metadata(1_000L, 1_000L, Quality.MEASURED, counter.unit());
+    }
+
+    @Override
+    public boolean isSampleAvailable() {
+      return captureReading().available();
+    }
+
+    @Override
+    public String formattedValue(double value) {
+      return isSampleAvailable() ? Form.f(value, 2) : "---";
+    }
+
+    @Override
+    public String formattedSuffix(double value) {
+      return isSampleAvailable() ? counter.unit() : "";
+    }
+
+    @Override
+    public void start() {
+      active = true;
+    }
+
+    @Override
+    public void stop() {
+      active = false;
+    }
   }
 
   private record Snapshot(double[] values, long sampledAtMs) {
