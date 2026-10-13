@@ -32,11 +32,16 @@ abstract class RemoteIntegrationSampler extends ReactCachedSampler {
   public Reading captureReading() {
     IntegrationController controller = React.controller(IntegrationController.class);
     if (controller == null || controller.getRemoteSamplerBridge() == null) {
-      return new Reading(0D, 0L, false);
+      return reading(0D, 0L, false);
     }
     IntegrationMetricSample sample = controller.getRemoteSamplerBridge().storedSample(pluginId, metricKey());
-    return sample == null ? new Reading(0D, 0L, false)
-        : new Reading(sample.valueOr(0D), sample.sampledAtMs(), sample.available());
+    return sample == null ? reading(0D, 0L, false)
+        : reading(sample.valueOr(0D), sample.sampledAtMs(), sample.available());
+  }
+
+  @Override
+  public Metadata metadata() {
+    return new Metadata(sampleDelay, 0L, Quality.UNKNOWN, suffix.trim());
   }
 
   @Override

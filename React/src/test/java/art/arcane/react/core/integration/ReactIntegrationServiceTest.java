@@ -64,7 +64,7 @@ class ReactIntegrationServiceTest {
   void snapshotsReadOnlyPublicationsAndPreserveSamplerCaptureTime() {
     long sampledAt = System.currentTimeMillis() - 5_000L;
     Sampler sampler = Mockito.mock(Sampler.class);
-    Mockito.when(sampler.captureReading()).thenReturn(new Sampler.Reading(7D, sampledAt, true));
+    Mockito.when(sampler.captureReading()).thenReturn(new Sampler.Reading(7D, sampledAt, true, Sampler.Metadata.UNKNOWN, ""));
     ReactIntegrationService service = new ReactIntegrationService();
     Set<String> keys = Set.of("react.sampler.alpha");
     try (MockedStatic<React> react = Mockito.mockStatic(React.class)) {
@@ -87,7 +87,7 @@ class ReactIntegrationServiceTest {
   @Test
   void failedSnapshotCaptureDoesNotReuseAnAvailableValue() {
     Sampler sampler = Mockito.mock(Sampler.class);
-    Mockito.when(sampler.captureReading()).thenReturn(new Sampler.Reading(7D, 0L, false));
+    Mockito.when(sampler.captureReading()).thenReturn(new Sampler.Reading(7D, 0L, false, Sampler.Metadata.UNKNOWN, "warming-up"));
     ReactIntegrationService service = new ReactIntegrationService();
     Set<String> keys = Set.of("react.sampler.alpha");
     try (MockedStatic<React> react = Mockito.mockStatic(React.class)) {
