@@ -46,9 +46,16 @@ export default {
           evidence.snapshots.push(state)
         }
         context.expect(positive.size === 3, 'Every neighborhood acquisition counter observes work', [...positive])
-        const regional = await qa('snapshot region-tps-lowest,region-player-coverage,region-players-below-18-tps')
+        let regional = await qa('snapshot region-tps-lowest,region-player-coverage,region-players-below-18-tps')
+        let regionValues = Object.fromEntries(regional.history.values.map(value => [value.id, value]))
+        if (regional.folia) {
+          await context.waitUntil(async () => {
+            regional = await qa('snapshot region-tps-lowest,region-player-coverage,region-players-below-18-tps')
+            regionValues = Object.fromEntries(regional.history.values.map(value => [value.id, value]))
+            return regionValues['region-tps-lowest']?.available && regionValues['region-player-coverage']?.value === 100
+          }, { label: 'Folia player region publishes its TPS window', timeoutMs: 20_000, intervalMs: 1000 })
+        }
         evidence.regional = regional
-        const regionValues = Object.fromEntries(regional.history.values.map(value => [value.id, value]))
         context.expect(Object.keys(regionValues).length === 3, 'Regional metrics are registered on both platforms')
         if (regional.folia) {
           context.expect(regionValues['region-tps-lowest'].available && regionValues['region-tps-lowest'].value > 0, 'Folia provides observed regional TPS', regionValues)
